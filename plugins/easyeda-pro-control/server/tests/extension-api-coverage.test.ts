@@ -1307,11 +1307,11 @@ void test("every coverage input-discovery request resolves to an actual strict a
     assert.ok(isRecord(request));
     const result = queryOfflineApi(apiRequestSchema.parse(request)).result;
     assert.ok(isRecord(result));
-    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "netlist-files", "library-files"].includes(String(request["action"]))) {
+    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "netlist-files", "library-files"].includes(String(request["action"]))) {
       assert.ok(isRecord(result["inputSchema"]));
       // The ordinary SCH and 209 opening routes expose their lifecycle union at the root;
       // Existing routes still promise a separate phase schema as well.
-      if (!["project-schematic-operation", "pcb209-opening", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "netlist-files", "library-files"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
+      if (!["project-schematic-operation", "pcb209-opening", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "netlist-files", "library-files"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
       assert.equal(result["executionAuthorized"], false);
     } else {
       const entries = result["entries"];
@@ -1412,8 +1412,9 @@ void test("footprint source coverage is a scoped cache equivalent despite the ab
   const row = inventoryExtensionApiCoverage().find(entry => entry.path === "eda.lib_Footprint.getDocumentSource");
   assert.ok(row); assert.equal(row.status, "implemented-native-equivalent");
   assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
-  assert.equal(row.routes.length, 1);
-  const route = row.routes[0]; assert.ok(route);
+  assert.equal(row.routes.length, 2);
+  assert.deepEqual(row.routes.map(route => route.selector).toSorted(), ["footprint-forward-prewrite/qualify-footprint-source", "observe-footprint-source"]);
+  const route = row.routes.find(value => value.selector === "observe-footprint-source"); assert.ok(route);
   assert.equal(route.tool, "easyeda_control_pcb209_worker_startup"); assert.equal(route.selector, "observe-footprint-source");
   assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [4]);
   assert.match(route.scope, /handler that is absent/u);
@@ -1422,4 +1423,11 @@ void test("footprint source coverage is a scoped cache equivalent despite the ab
   assert.ok(route.source.includes("current-footprint-cache-source-read.ts"));
   assert.ok(route.source.includes("current-footprint-source-plan.ts"));
   assert.equal(route.source.includes("current-footprint-copy-append.ts"), false);
+  const forward = row.routes.find(value => value.selector === "footprint-forward-prewrite/qualify-footprint-source"); assert.ok(forward);
+  assert.equal(forward.tool, "easyeda_control_pcb209_worker_startup"); assert.equal(forward.implementation, "native-task-equivalent");
+  assert.deepEqual(forward.documentTypes, [4]); assert.equal(forward.executionState, "available-with-runtime-guards");
+  assert.match(forward.scope, /executionReady:false/u); assert.match(forward.scope, /No public SDK wrapper, create, scheduler, copy\/delete or Save call/u);
+  assert.deepEqual(forward.inputDiscovery, { tool: "easyeda_control_api", arguments: { request: { action: "footprint-forward-prewrite", query: { includeSchemas: true } } } });
+  assert.ok(forward.source.includes("current-footprint-forward-prewrite-validation.ts"));
+  assert.ok(forward.tests.includes("current-footprint-forward-source-lifecycle.test.ts"));
 });

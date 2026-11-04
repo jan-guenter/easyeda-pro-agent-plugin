@@ -1,4 +1,4 @@
-/* oxlint-disable eslint/max-classes-per-file -- The actual extracted index dispatcher selects between these seven synthetic lifecycle classes. */
+/* oxlint-disable eslint/max-classes-per-file -- The actual extracted index dispatcher selects between these eight synthetic lifecycle classes. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
@@ -23,15 +23,26 @@ function startupDeclarations(source: string): string {
     assert.equal(matches.length, 1); const node = matches[0]; assert.ok(node?.type === "VariableDeclaration");
     assert.equal(node.kind, name === "runStartup" ? "const" : "let");
     const initializer = node.declarations[0]?.init;
-    if (name === "runStartup") { assert.equal(initializer?.type, "ArrowFunctionExpression"); }
+    if (name === "runStartup") {
+      assert.ok(initializer?.type === "ArrowFunctionExpression" && initializer.body.type === "BlockStatement");
+      assert.equal(initializer.async, false);
+      assert.deepEqual(initializer.params.map(parameter => {
+        if (parameter.type === "Identifier") { return parameter.name; }
+        assert.ok(parameter.type === "AssignmentPattern" && parameter.left.type === "Identifier"); return parameter.left.name;
+      }),
+      ["request", "emptyPurpose", "ratlinePurpose", "continuationPurpose", "footprintPurpose", "routePurpose", "combinedPurpose", "forwardPurpose"]);
+      assert.ok(initializer.params.slice(1).every(parameter => parameter.type === "AssignmentPattern" && parameter.right.type === "Literal" && parameter.right.value === false));
+    }
     else if (name === "startupCalls") { assert.ok(initializer?.type === "Literal" && initializer.value === 0); }
     else { assert.equal(initializer, null); }
-    assert.ok(node.end > node.start && node.end - node.start < (name === "runStartup" ? 24_000 : 3000));
+    // The forward source branch expands only this unique dispatcher to 25,763
+    // Units; retain the separate 3,000-unit bounds on its original state.
+    assert.ok(node.end > node.start && node.end - node.start < (name === "runStartup" ? 28_000 : 3000));
     return source.slice(node.start, node.end);
   }).join("\n");
   // Bound the actual callback independently of erased type padding and the
   // Unused historical dispatcher/registration descriptions in the same block.
-  assert.ok(selected.length < 28_000); return selected;
+  assert.ok(selected.length < 32_000); return selected;
 }
 /** Evaluate the unchanged dispatcher against inert purpose owners and a gate
  * whose queued work can be held to exercise reservation and method drift. */
@@ -57,6 +68,7 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
   class Continuation209 extends Owner {}
   class Footprint209 extends Owner {}
   class FootprintRoute209 extends Owner {}
+  class ForwardPrewrite209 extends Owner {}
   class Ratline209 extends Owner {
     public observeWorkerStartupRatline(): Promise<Row> {
       assert.equal(this.hasActiveReservation(), true); return Promise.resolve({ synthetic: true, held: true });
@@ -91,7 +103,7 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
   const data = { diagnostic209: true, CurrentPcbWorkerStartupLifecycle: Owner, CurrentPcb209WorkerStartupLifecycle: Owner209,
     CurrentPcb209EmptyStartupLifecycle: Empty209, CurrentPcb209RatlineStartupLifecycle: Ratline209,
     CurrentPcb209RatlineContinuationLifecycle: Continuation209, CurrentFootprintCopyPreparationLifecycle: Footprint209,
-    CurrentFootprintCopyRoutePreparationLifecycle: FootprintRoute209, engine, bridgeGate, upstream,
+    CurrentFootprintCopyRoutePreparationLifecycle: FootprintRoute209, CurrentFootprintForwardPrewriteLifecycle: ForwardPrewrite209, engine, bridgeGate, upstream,
     retainedControlRoot: Object.freeze({ path: "/synthetic-control" }), controlDataDirectory: (): string => "/synthetic-control", resolve,
     CURRENT_PCB_DIAGNOSTIC_PROFILE: Object.freeze({ powershell: { sha256: "a".repeat(64), bytes: 1 } }),
     windowsRuntime: undefined, ordinaryLaunchRuntime: undefined, currentDisposableOpenCoordinator: undefined,

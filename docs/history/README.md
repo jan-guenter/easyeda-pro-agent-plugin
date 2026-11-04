@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-04 registration and coverage fixture follow-up](2026-11-04-registration-fixture-followup.md). Retained failed CI, corrected exact dispatcher/VM/coverage expectations and unchanged production payload.
+
 - [2026-11-04 forward footprint source qualification](2026-11-04-footprint-forward-prewrite-qualification.md). Fresh native birth, original source/route preparation, explicit writer limits and prepublication reachability review.
 
 - [2026-11-04 autonomous controller review follow-up](2026-11-04-autonomous-controller-review-followup.md). Retained review history, precise retirement reservations and the original startup-helper cleanup acknowledgment fix.
