@@ -6,7 +6,7 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { CurrentFootprintCombinedLifecycle, CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentFootprintCombinedLifecycle, CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintForwardPrewriteLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentFootprintCombinedUnknownAbandonmentOptions } from "../src/current-footprint-combined-unknown-abandonment.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
@@ -17,6 +17,7 @@ import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
 import { currentPcb209OpeningRequestSchema } from "../src/current-pcb-209-opening-validation.ts";
 import { currentPcb209VisualRequestSchema } from "../src/current-pcb-209-visual-validation.ts";
 import { currentFootprintCombinedValidationRequestSchema } from "../src/current-footprint-combined-validation.ts";
+import { currentFootprintForwardPrewriteValidationRequestSchema } from "../src/current-footprint-forward-prewrite-validation.ts";
 import { currentPcb209WorkerStartupToolRequestSchema } from "../src/current-pcb-209-empty-startup-validation.ts";
 import { SerializedGate } from "../src/engine.ts";
 import { facadeToolRegistered } from "../src/facade-mode.ts";
@@ -33,6 +34,86 @@ const capture = { action: "capture-project", operationId, expectedBindingSha256,
   confirmDisposableProject: true, acceptNormalOpenEffects: true, acceptDebuggerPauseEffects: true };
 const wrap = (request: unknown): Readonly<{ action: "worker-startup"; request: unknown }> => ({ action: "worker-startup", request });
 const wrapCombined = (request: unknown): { request: { action: "footprint-combined"; request: unknown } } => ({ request: { action: "footprint-combined", request } });
+const wrapForward = (request: unknown): { request: unknown } => ({ request: { action: "footprint-forward-prewrite", request } });
+
+void test("registered forward qualification binds its own method and abort remains available through an occupied gate", { timeout: 5000 }, async () => {
+  const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
+  const start = source.indexOf('if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation") ||');
+  const end = source.indexOf('registerFacadeTool(\n  "easyeda_control_launch",', start + 1);
+  const helpers = source.slice(source.indexOf("function disposableOwnData("), source.indexOf("function disposableIndexMethods("));
+  assert.ok(start > 0 && end > start);
+  let invoke: ((input: { request: unknown }) => Promise<unknown>) | undefined;
+  let allocations = 0, gateCalls = 0;
+  const owners: Coordinator[] = [];
+  const entered = Promise.withResolvers<null>(), release = Promise.withResolvers<null>();
+  const calls: string[] = [];
+  class Coordinator extends CurrentFootprintForwardPrewriteLifecycle {
+    readonly #options: CurrentPcbDiagnosticLifecycleOptions;
+    #attempted = false;
+    #reserved = false;
+    #sealed = false;
+    public constructor(options: CurrentPcbDiagnosticLifecycleOptions) { super(options); this.#options = options; allocations += 1; owners.push(this); }
+    /** Exercise the real mount's original-method checks using a synthetic owner
+     * whose abort cutoff survives while qualification holds the actual gate. */
+    public override async run(input: unknown): Promise<Record<string, unknown>> {
+      const request = currentFootprintForwardPrewriteValidationRequestSchema.parse(input); this.#options.assertLocalAllowed();
+      if (request.action === "launch") { await this.#options.assertAllowed(); this.#attempted = true; this.#reserved = true; }
+      if (request.action === "abort-generation") { this.#sealed = true; }
+      calls.push(request.action); return { synthetic: true, executionReady: false, action: request.action };
+    }
+    /** Retain the exact qualification receiver and arguments across a held await;
+     * the later original abort must prevent a successful qualification reply. */
+    public override async qualifyWorkerStartupFootprintSource(id: string, binding: string, input: { footprintUuid: string }): Promise<Record<string, unknown>> {
+      this.#options.assertLocalAllowed(); assert.equal(id, "footprint-copy-qualify-registration"); assert.equal(binding, expectedBindingSha256);
+      assert.equal(input.footprintUuid, "b".repeat(32)); calls.push("qualify-footprint-source"); entered.resolve(null);
+      await release.promise; this.#options.assertLocalAllowed(); assert.equal(this.#sealed, true);
+      throw new Error("synthetic forward qualification sealed");
+    }
+    public override hasActiveReservation(): boolean { return this.#reserved; }
+    public override hasAttemptedNativeOwnerAllocation(): boolean { return this.#attempted; }
+  }
+  const gate = new SerializedGate(), upstream = {};
+  const engine = { upstream, executionAuthorityValidator: {}, controlFingerprintPromise: Promise.resolve({ sha256: "a".repeat(64) }),
+    assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
+  const scope = vm.createContext({ z, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema,
+    currentPcb209WorkerStartupToolRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
+    CurrentPcbDiagnosticLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209EmptyStartupLifecycle,
+    CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209WorkerStartupLifecycle,
+    CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintCombinedLifecycle,
+    CurrentFootprintForwardPrewriteLifecycle: Coordinator, CurrentPcbWorkerStartupLifecycle,
+    ordinaryLaunchCoordinator: undefined, currentPcbWorkerStartupLifecycle: undefined, currentPcbDiagnosticLifecycle: undefined,
+    currentPcbStringPrecreateLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined,
+    currentFootprintHeadAgeValidation: undefined, process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets" } },
+    engine, upstream, facadeMode: "public-utilities-only", facadeToolRegistered,
+    bridgeGate: { run: (handler: () => Promise<unknown>): Promise<unknown> => { gateCalls += 1; return gate.run(handler); } },
+    retainedControlRoot: { path: "/synthetic/control" }, controlDataDirectory: (): string => "/synthetic/control", resolve: (): string => "/synthetic/plugin",
+    currentSymbolOperationToolOutputSchema: z.object({ result: z.unknown() }), windowsRuntime: undefined, ordinaryLaunchRuntime: undefined,
+    currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
+    closedSymbolIndexReservation: undefined, closedSymbolUnreservedFailure: { observed: false }, scheduledShutdown: undefined,
+    guarded: (handler: NonNullable<typeof invoke>): NonNullable<typeof invoke> => async input => { const result = await handler(input); return result; },
+    server: { registerTool: (name: string, _configuration: unknown, handler: typeof invoke): void => {
+      if (name === "easyeda_control_pcb209_worker_startup") { invoke = handler; }
+    } },
+  });
+  vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
+  assert.ok(invoke);
+  const id = "footprint-copy-qualify-registration";
+  await assert.rejects(invoke(wrapForward({ ...launch, operationId: id }))); assert.equal(allocations, 0);
+  await invoke(wrapForward({ ...launch, operationId: id, acceptDebuggerPauseEffects: true }));
+  await invoke(wrapForward({ action: "observe-main-construction", operationId: id, expectedBindingSha256 }));
+  const original = owners[0]; assert.ok(original);
+  const qualification = { action: "qualify-footprint-source", operationId: id, expectedBindingSha256, footprintUuid: "b".repeat(32) };
+  Object.defineProperty(original, "qualifyWorkerStartupFootprintSource", { configurable: true, value: (): never => { throw new Error("substituted qualification called"); } });
+  try { await assert.rejects(invoke(wrapForward(qualification)), /original index owner/u); }
+  finally { assert.equal(Reflect.deleteProperty(original, "qualifyWorkerStartupFootprintSource"), true); }
+  const pending = invoke(wrapForward(qualification)); const refused = assert.rejects(pending, /synthetic forward qualification sealed/u);
+  await entered.promise;
+  await assert.rejects(invoke(wrapCombined({ action: "inspect", operationId: "footprint-combined-foreign" })), /purpose cannot change/u);
+  const beforeAbort = gateCalls;
+  await invoke(wrapForward({ action: "abort-generation", operationId: id, expectedBindingSha256, confirmAbortOriginalForwardJob: true }));
+  assert.equal(gateCalls, beforeAbort); release.resolve(null); await refused;
+  assert.equal(allocations, 1); assert.deepEqual(calls, ["launch", "observe-main-construction", "qualify-footprint-source", "abort-generation"]);
+});
 
 void test("startup validation is discoverable through the existing offline diagnostic wrapper without execution claims", () => {
   const startup = queryCurrentPcbWorkerStartupValidation(true);
@@ -123,7 +204,7 @@ void test("startup public registration binds the actual inherited methods, fixed
     assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => { checks += 1; return Promise.resolve(); } };
   const scope = vm.createContext({ z, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
     CurrentPcbDiagnosticLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209WorkerStartupLifecycle,
-    CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle,
+    CurrentFootprintForwardPrewriteLifecycle, CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle,
     CurrentPcbWorkerStartupLifecycle: Coordinator, currentPcbWorkerStartupLifecycle: undefined,
     currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined,
     process: { env: environment }, engine, upstream,
@@ -250,7 +331,7 @@ void test("registered combined wrapper retains its lifecycle and confirmed abort
     currentPcb209WorkerStartupToolRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
     CurrentPcbDiagnosticLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle,
     CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentFootprintCopyPreparationLifecycle,
-    CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintCombinedLifecycle: Coordinator, CurrentPcbWorkerStartupLifecycle,
+    CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintForwardPrewriteLifecycle, CurrentFootprintCombinedLifecycle: Coordinator, CurrentPcbWorkerStartupLifecycle,
     CurrentFootprintCombinedUnknownAbandonment: HistoricalCoordinator, ordinaryLaunchCoordinator: undefined,
     currentPcbWorkerStartupLifecycle: undefined, currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined,
     currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "Ubuntu" } },

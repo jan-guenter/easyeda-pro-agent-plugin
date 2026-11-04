@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import { test } from "node:test";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY as CAPACITY } from "../src/current-footprint-copy-forward-capacity.ts";
+import { CurrentFootprintCopyForwardStartupChannel } from "../src/current-pcb-worker-startup-channel.ts";
 import { currentFootprintSavedCacheNativeCases } from "../src/current-footprint-saved-cache-native.ts";
 import { diagnosticNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
 import { combinedReadyFactoryFixture } from "./helpers/current-footprint-combined-ready-fixture.ts";
@@ -87,10 +88,11 @@ void test("normal forward reproof controls stop before the original termination 
   const f = await combinedReadyFactoryFixture("resource-traffic", "forward");
   const owner = await f.api.startCurrentFootprintCopyForwardNativeOwner(f.options);
   context.after(async () => { if (!owner.status().helperClosed) { const closed = once(f.child(), "close"); f.child().stdin.end(); await closed; } });
-  const normal = CAPACITY.controls.perGeneration - CAPACITY.controls.terminationObservationsPerGeneration -
-    CAPACITY.controls.normalCloseAttemptsPerGeneration - CAPACITY.controls.abortAttemptsPerGeneration - 4;
-  assert.equal(normal, 266);
-  for (let index = 0; index < normal; index += 1) { await owner.syntheticForwardRequestForTest({ action: "worker-startup-reprove" }); }
+  const normal = CAPACITY.controls.writer.normal;
+  // Fast-forward only the original ledger, then exercise its final admitted
+  // Control and refused next send through the actual private owner/child pipe.
+  owner.syntheticForwardControlsForTest(normal - 1, 0);
+  await owner.syntheticForwardRequestForTest({ action: "worker-startup-reprove" });
   const written = f.state.writes;
   await assert.rejects(owner.syntheticForwardRequestForTest({ action: "worker-startup-reprove" }), /FORWARD_CONTROL_CLEANUP_RESERVE/u);
   assert.equal(f.state.writes, written); assert.equal(owner.status().forwardResources?.cleanupOnly, true);
@@ -98,7 +100,65 @@ void test("normal forward reproof controls stop before the original termination 
   for (const action of ["window", "main-close-detach", "normal-close", "combined-abort"]) { await owner.syntheticForwardRequestForTest({ action }); }
   // The channel's final original-exit reproof follows the coordinator's samples.
   for (let index = 0; index <= CAPACITY.controls.terminationObservationsPerGeneration; index += 1) { await owner.syntheticForwardRequestForTest({ action: "termination" }); }
-  assert.equal(owner.status().forwardResources?.counters.controls, CAPACITY.controls.perGeneration - 1);
-  await owner.releaseUnlaunched(); assert.equal(owner.status().forwardResources?.counters.controls, CAPACITY.controls.perGeneration);
+  const remaining = CAPACITY.controls.writer.cleanup - 4 - (CAPACITY.controls.terminationObservationsPerGeneration + 1) - 1;
+  owner.syntheticForwardControlsForTest(0, remaining);
+  assert.equal(owner.status().forwardResources?.counters.controls, CAPACITY.controls.writer.total - 1);
+  await owner.releaseUnlaunched(); assert.equal(owner.status().forwardResources?.counters.controls, CAPACITY.controls.writer.total);
   assert.equal(f.child().exitCode, 0);
+});
+
+/** Actual channel callbacks retain the original native owner and charge both
+ * original reproof exchanges. The inert child supplies no Windows authority. */
+void test("forward original channel reproof trace exceeds the former normal-control cutoff", { timeout: 30_000 }, async context => {
+  const f = await combinedReadyFactoryFixture("resource-traffic", "forward");
+  const owner = await f.api.startCurrentFootprintCopyForwardNativeOwner(f.options);
+  context.after(async () => { if (!owner.status().helperClosed) { const closed = once(f.child(), "close"); f.child().stdin.end(); await closed; } });
+  const parent = Object.freeze({ targetId: "parent-target", sessionId: "parent-session", nextRequestId: 1 });
+  const channel = new CurrentFootprintCopyForwardStartupChannel({
+    requireOriginalParent: async (): Promise<typeof parent> => {
+      await owner.syntheticForwardRequestForTest({ action: "worker-startup-reprove" });
+      await owner.syntheticForwardRequestForTest({ action: "worker-startup-reprove" }); return parent;
+    },
+    assertOriginalTermination: (): Promise<void> => Promise.resolve(),
+    observeOriginalParentEvent: (): void => undefined,
+    exchange: (request): Promise<unknown> => owner.syntheticForwardRequestForTest({ ...request }),
+  }, (): void => undefined);
+  const dependency = await channel.start(); const initial = owner.status().forwardResources?.counters.controls; assert.equal(initial, 2);
+  for (let index = 0; index < 160; index += 1) { await dependency.assertOriginalOwner(); }
+  assert.equal(owner.status().forwardResources?.counters.controls, 322);
+  assert.equal(f.state.actions.filter(action => action === "worker-startup-reprove").length, 322);
+  const stop = dependency.subscribe((): void => undefined);
+  await dependency.request({ method: "Target.setAutoAttach", params: { autoAttach: true, waitForDebuggerOnStart: true, flatten: true, filter: [{ type: "worker", exclude: false }, { exclude: true }] }, sessionId: parent.sessionId });
+  assert.equal(owner.status().forwardResources?.counters.rendererRequests, 1);
+  assert.ok(f.state.actions.includes("worker-startup-send")); stop(); await channel.releaseAfterTermination();
+  await owner.releaseUnlaunched(); assert.equal(owner.status().helperClosed, true);
+});
+
+void test("original forward channel reaches each read-only route gate and rejects registration method replacement", async context => {
+  const f = await combinedReadyFactoryFixture("resource-traffic", "forward");
+  const owner = await f.api.startCurrentFootprintCopyForwardNativeOwner(f.options);
+  context.after(async () => { if (!owner.status().helperClosed) { const closed = once(f.child(), "close"); f.child().stdin.end(); await closed; } });
+  const channel = new CurrentFootprintCopyForwardStartupChannel({ requireOriginalParent: (): Promise<never> => Promise.reject(new Error("unused")),
+    assertOriginalTermination: (): Promise<void> => Promise.resolve(), observeOriginalParentEvent: (): void => undefined,
+    exchange: (): Promise<never> => Promise.reject(new Error("unused")) }, (): void => undefined);
+  const opening = Object.freeze({}), result = Object.freeze({});
+  const invoke = async (method: unknown): Promise<void> => {
+    assert.ok(typeof method === "function"); const pending: unknown = Reflect.apply(method, owner, [opening, result]);
+    assert.ok(pending instanceof Promise); await pending;
+  };
+  // Only the synthetic fixture installs prerequisite slots. Actual purpose,
+  // Concrete channel class and retained prototype gates remain unchanged.
+  owner.syntheticForwardRouteForTest(channel, opening, result);
+  await assert.rejects(invoke(owner.observeFootprintCopyUi.bind(owner)), /FOOTPRINT_COPY_UI_SOURCE/u);
+  owner.syntheticForwardRouteForTest(channel, opening, result);
+  await assert.rejects(invoke(owner.observeFootprintCopyClockRegistration.bind(owner)), /SYNTHETIC_ROUTE_GATE_PASSED/u);
+  owner.syntheticForwardRouteForTest(channel, opening, result);
+  await assert.rejects(invoke(owner.observeFootprintCopyManagerRoute.bind(owner)), /SYNTHETIC_ROUTE_GATE_PASSED/u);
+  Object.defineProperty(CurrentFootprintCopyForwardStartupChannel.prototype, "requestFootprintClockRegistration", {
+    configurable: true, value: (): Promise<never> => Promise.reject(new Error("Substituted method must never execute")) });
+  try {
+    owner.syntheticForwardRouteForTest(channel, opening, result);
+    await assert.rejects(invoke(owner.observeFootprintCopyClockRegistration.bind(owner)), /FOOTPRINT_CLOCK_REGISTRATION_UNAVAILABLE/u);
+  } finally { Reflect.deleteProperty(CurrentFootprintCopyForwardStartupChannel.prototype, "requestFootprintClockRegistration"); }
+  assert.equal(f.state.writes, 0);
 });

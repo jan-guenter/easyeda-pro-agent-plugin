@@ -586,9 +586,11 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
     if (this.supervisorAcquisition !== undefined) {
       try { supervisor = await this.supervisorAcquisition; }
       catch (error) {
-        // Failed hashing or admission allocated nothing. A failed start may
-        // Have allocated a helper, so its uncertainty cannot acknowledge close.
-        if (this.supervisorAllocationAttempted) { throw error; }
+        // Startup can retain and close its helper before rejecting state drift.
+        // Join that same release; an allocated start with no retained helper
+        // Remains uncertain and cannot acknowledge closure.
+        supervisor = this.supervisor;
+        if (supervisor === undefined && this.supervisorAllocationAttempted) { throw error; }
       }
     }
     if (supervisor !== undefined) { await this.releaseSupervisorOnce(supervisor); }

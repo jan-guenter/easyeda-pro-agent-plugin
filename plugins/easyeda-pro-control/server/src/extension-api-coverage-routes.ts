@@ -546,6 +546,15 @@ groups.push({ namespace: "lib_Footprint", methods: ["getDocumentSource"], route:
   tests: ["current-footprint-source-plan.test.ts", "current-footprint-cache-source-read.test.ts", "current-footprint-source-read-runner.test.ts", "current-pcb-209-worker-startup-lifecycle.test.ts"],
   documentTypes: [4], validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
   inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb209-worker-startup", query: { includeSchemas: true } } } },
+} }, { namespace: "lib_Footprint", methods: ["getDocumentSource"], route: {
+  tool: "easyeda_control_pcb209_worker_startup", selector: "footprint-forward-prewrite/qualify-footprint-source", implementation: "native-task-equivalent",
+  scope: "Separate born-forward original main/renderer qualification owner only, after published main construction, disposable project/worker capture, assignments, actor and route observations. One checkpoint-member footprint source is read twice and joined to its original copy preparation, source assets and historical head. This is point-in-time source/route qualification with executionReady:false. It does not seal source for a closed snapshot, verify current unlocked-head age or atomic prewrite queues, arm document clocks, reserve complete four-generation capacity or issue a writer/execution owner. No public SDK wrapper, create, scheduler, copy/delete or Save call is mounted. Existing owners cannot upgrade and historical JSON cannot recreate the original owner.",
+  source: ["current-footprint-forward-prewrite-validation.ts", "current-pcb-209-empty-startup-validation.ts", "current-pcb-diagnostic-lifecycle.ts",
+    "current-pcb-diagnostic-lifecycle-journal.ts", "current-footprint-source-plan.ts", "current-footprint-source-read-runner.ts"],
+  tests: ["current-pcb-209-empty-startup-validation.test.ts", "current-pcb-worker-startup-validation.test.ts",
+    "current-footprint-forward-before-launch-lifecycle.test.ts", "current-footprint-forward-prewrite-lifecycle.test.ts", "current-footprint-forward-source-lifecycle.test.ts"],
+  documentTypes: [4], validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+  inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "footprint-forward-prewrite", query: { includeSchemas: true } } } },
 } });
 for (const method of ["create", "modify"]) {
   add("lib_Footprint", [method], "easyeda_control_library", `library.footprint.${method}`, "public-method", "Current-project footprint metadata only; classifications and lossy null-description cases refused; complete selected-branch persistence proof.", ["library-runtime.ts", "library-persistence-proof.ts"], ["library-execution.test.ts"]);

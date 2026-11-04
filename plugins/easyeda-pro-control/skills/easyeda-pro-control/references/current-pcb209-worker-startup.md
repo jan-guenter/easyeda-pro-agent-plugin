@@ -24,6 +24,11 @@ each inner request with `pcb209-worker-startup-validate`. The API wrapper is:
 
 Validation is offline. It neither creates a journal nor grants authority.
 
+The separate [forward prewrite qualification purpose](current-footprint-forward-prewrite.md)
+uses a new born-forward main/renderer owner and `footprint-copy-qualify-*` IDs.
+It cannot upgrade this startup purpose. Source/route qualification keeps
+`executionReady:false` and mounts no writer, create, scheduler or execution owner.
+
 ## Original-owner sequence
 
 1. `launch` requires a unique `pcb209-startup-*` operation ID and

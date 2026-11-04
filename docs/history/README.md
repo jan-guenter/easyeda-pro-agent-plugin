@@ -1,5 +1,9 @@
 # Project history
 
+- [2026-11-04 forward footprint source qualification](2026-11-04-footprint-forward-prewrite-qualification.md). Fresh native birth, original source/route preparation, explicit writer limits and prepublication reachability review.
+
+- [2026-11-04 autonomous controller review follow-up](2026-11-04-autonomous-controller-review-followup.md). Retained review history, precise retirement reservations and the original startup-helper cleanup acknowledgment fix.
+
 - [2026-11-04 autonomous controller lifecycle](2026-11-04-autonomous-control-loop.md). Persistent controller replacement, original helper disposal, startup-conflict cleanup and a complete disposable V3 cache lifecycle through the new client.
 
 - [2026-11-04 PR166 publication and fresh-agent handoff](2026-11-04-104500-pr166-publication-and-fresh-agent-handoff.md). Protected release/install, review scope, latest-package startup in a fresh subagent, the older owner's retained lease and remaining work.

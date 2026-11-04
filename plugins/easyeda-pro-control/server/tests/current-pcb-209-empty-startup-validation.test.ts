@@ -4,6 +4,8 @@ import { test } from "node:test";
 import { currentPcb209EmptyStartupLifecycleRequestSchema, currentPcb209EmptyStartupValidationRequestSchema,
   currentPcb209WorkerStartupToolRequestSchema, queryCurrentPcb209EmptyStartupValidation,
   validateCurrentPcb209EmptyStartupArguments } from "../src/current-pcb-209-empty-startup-validation.ts";
+import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
+import { currentFootprintForwardPrewriteValidationRequestSchema } from "../src/current-footprint-forward-prewrite-validation.ts";
 import { currentPcb209WorkerStartupValidationRequestSchema } from "../src/current-pcb-209-worker-startup-validation.ts";
 import { diagnosticLifecycleRecordSchemas } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 import { CURRENT_PCB_209_EMPTY_STARTUP_RESULT_MAX_BYTES } from "../src/current-pcb-209-empty-startup-packet-schema.ts";
@@ -12,6 +14,30 @@ import { CURRENT_PCB_209_EMPTY_BASELINE_PACKET_MAX_BYTES } from "../src/current-
 const digest = "a".repeat(64), operationId = "pcb209-empty-contract";
 const launch = { action: "launch", operationId, confirmValidationOnly: true, confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true };
 const observe = { action: "observe-empty-baseline", operationId, expectedBindingSha256: digest, acceptNormalOpenEffects: true };
+
+void test("forward prewrite wrapper and discovery preserve a separate qualification-only grammar", () => {
+  const id = "footprint-copy-qualify-contract";
+  const qualify = { action: "qualify-footprint-source", operationId: id, expectedBindingSha256: digest, footprintUuid: "b".repeat(32) };
+  const forwardLaunch = { ...launch, operationId: id, acceptDebuggerPauseEffects: true };
+  assert.equal(currentFootprintForwardPrewriteValidationRequestSchema.safeParse(forwardLaunch).success, true);
+  assert.equal(currentPcb209WorkerStartupToolRequestSchema.safeParse({ action: "footprint-forward-prewrite", request: qualify }).success, true);
+  assert.equal(currentPcb209WorkerStartupToolRequestSchema.safeParse(qualify).success, false);
+  for (const wrapper of ["footprint-combined", "footprint-copy-preparation", "footprint-copy-route-preparation", "empty-baseline"]) {
+    assert.equal(currentPcb209WorkerStartupToolRequestSchema.safeParse({ action: wrapper, request: qualify }).success, false);
+  }
+  for (const change of [{ action: "create" }, { action: "execute" }, { action: "save" }, { action: "observe-saved-cache-accessor" },
+    { scheduler: {} }, { executionOwner: {} }, { executionReady: true }, { callerCode: "unavailable" }, { operationId: "footprint-combined-old" }]) {
+    assert.equal(currentFootprintForwardPrewriteValidationRequestSchema.safeParse({ ...qualify, ...change }).success, false);
+  }
+  const query = queryOfflineApi(apiRequestSchema.parse({ action: "footprint-forward-prewrite", query: { includeSchemas: true } })).result;
+  assert.ok(query !== null && typeof query === "object" && "executionReady" in query && "inputSchema" in query && "actions" in query);
+  assert.equal(query.executionReady, false); assert.notEqual(query.inputSchema, undefined);
+  assert.ok(Array.isArray(query.actions) && query.actions.includes("qualify-footprint-source") && query.actions.includes("abort-generation"));
+  const validated = queryOfflineApi(apiRequestSchema.parse({ action: "footprint-forward-prewrite-validate", query: { request: qualify } })).result;
+  assert.ok(validated !== null && typeof validated === "object" && "valid" in validated && "executionReady" in validated);
+  assert.equal(validated.valid, true); assert.equal(validated.executionReady, false);
+});
+
 void test("empty startup has a separate strict wrapper and cannot upgrade legacy startup IDs or authority", () => {
   assert.equal(currentPcb209EmptyStartupLifecycleRequestSchema.safeParse(launch).success, true);
   assert.equal(currentPcb209EmptyStartupLifecycleRequestSchema.safeParse(observe).success, false);

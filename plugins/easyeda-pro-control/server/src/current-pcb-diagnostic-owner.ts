@@ -2084,7 +2084,7 @@ class CurrentPcbRetainedOwnerCore {
     result: CurrentFootprintCopyOpeningResult): Promise<CurrentFootprintCopyUiObservation> {
     const context = this.#stagedContext, handoff = this.#startupHandoff, source = this.#footprintUiSource;
     if ((this.#purpose !== "worker-startup-footprint209" && !footprintCopyObservationPurpose(this.#purpose)) || this.#footprintUiAttempted || handoff === null || context === null || source === null ||
-        !(handoff.channel instanceof CurrentFootprintCopyPreparationChannel || handoff.channel instanceof CurrentFootprintCopyExecutionChannel || handoff.channel instanceof CurrentFootprintCombinedStartupChannel)) { throw error("FOOTPRINT_UI_UNAVAILABLE"); }
+        !(handoff.channel instanceof CurrentFootprintCopyPreparationChannel || handoff.channel instanceof CurrentFootprintCopyExecutionChannel || handoff.channel instanceof CurrentFootprintCombinedStartupChannel || handoff.channel instanceof CurrentFootprintCopyForwardStartupChannel)) { throw error("FOOTPRINT_UI_UNAVAILABLE"); }
     this.#enter(true); this.#footprintUiAttempted = true;
     this.#footprintUiOpening = opening; this.#footprintUiOpeningResult = result;
     try {
@@ -2149,9 +2149,10 @@ class CurrentPcbRetainedOwnerCore {
     const context = this.#stagedContext, handoff = this.#startupHandoff, packet = this.#footprintUiPacket, ui = this.#footprintUiRunner;
     if (!footprintCopyObservationPurpose(this.#purpose) || this.#footprintClockRegistrationAttempted || context === null || handoff === null ||
         ui === null || packet === null || opening !== this.#footprintUiOpening || result !== this.#footprintUiOpeningResult || !this.#footprintUiReproofAttempted ||
-        !(handoff.channel instanceof CurrentFootprintCopyExecutionChannel || handoff.channel instanceof CurrentFootprintCombinedStartupChannel) || CurrentFootprintCopyUiRunner.prototype.createClockRegistration !== createFootprintClockRegistration ||
+        !(handoff.channel instanceof CurrentFootprintCopyExecutionChannel || handoff.channel instanceof CurrentFootprintCombinedStartupChannel || handoff.channel instanceof CurrentFootprintCopyForwardStartupChannel) || CurrentFootprintCopyUiRunner.prototype.createClockRegistration !== createFootprintClockRegistration ||
         (CurrentFootprintCopyExecutionChannel.prototype.requestFootprintClockRegistration !== requestFootprintClockRegistration ||
-          CurrentFootprintCombinedStartupChannel.prototype.requestFootprintClockRegistration !== requestFootprintClockRegistration)) { throw error("FOOTPRINT_CLOCK_REGISTRATION_UNAVAILABLE"); }
+          CurrentFootprintCombinedStartupChannel.prototype.requestFootprintClockRegistration !== requestFootprintClockRegistration ||
+          CurrentFootprintCopyForwardStartupChannel.prototype.requestFootprintClockRegistration !== requestFootprintClockRegistration)) { throw error("FOOTPRINT_CLOCK_REGISTRATION_UNAVAILABLE"); }
     this.#enter(true); this.#footprintClockRegistrationAttempted = true;
     try {
       const channel = handoff.channel, original = this.#binding, script = context.script(), selected = context.openingContext();
@@ -2164,7 +2165,8 @@ class CurrentPcbRetainedOwnerCore {
               context.openingContext().sessionId !== selected.sessionId || handoff.dependency.parentSessionId !== selected.sessionId ||
               CurrentFootprintCopyUiRunner.prototype.createClockRegistration !== createFootprintClockRegistration ||
               (CurrentFootprintCopyExecutionChannel.prototype.requestFootprintClockRegistration !== requestFootprintClockRegistration ||
-                CurrentFootprintCombinedStartupChannel.prototype.requestFootprintClockRegistration !== requestFootprintClockRegistration)) { throw error("FOOTPRINT_CLOCK_REGISTRATION_OWNER_CHANGED"); }
+                CurrentFootprintCombinedStartupChannel.prototype.requestFootprintClockRegistration !== requestFootprintClockRegistration ||
+          CurrentFootprintCopyForwardStartupChannel.prototype.requestFootprintClockRegistration !== requestFootprintClockRegistration)) { throw error("FOOTPRINT_CLOCK_REGISTRATION_OWNER_CHANGED"); }
         };
         same(); await handoff.opening.reprove(); same();
       };
@@ -2256,7 +2258,7 @@ class CurrentPcbRetainedOwnerCore {
     const context = this.#stagedContext, handoff = this.#startupHandoff, packet = this.#footprintUiPacket, ui = this.#footprintUiRunner;
     if ((this.#purpose !== "worker-startup-footprint209" && !footprintCopyObservationPurpose(this.#purpose)) || this.#footprintManagerAttempted || context === null || handoff === null ||
         ui === null || packet === null || opening !== this.#footprintUiOpening || result !== this.#footprintUiOpeningResult ||
-        !this.#footprintUiReproofAttempted || !(handoff.channel instanceof CurrentFootprintCopyPreparationChannel || handoff.channel instanceof CurrentFootprintCopyExecutionChannel || handoff.channel instanceof CurrentFootprintCombinedStartupChannel)) { throw error("FOOTPRINT_MANAGER_ROUTE_UNAVAILABLE"); }
+        !this.#footprintUiReproofAttempted || !(handoff.channel instanceof CurrentFootprintCopyPreparationChannel || handoff.channel instanceof CurrentFootprintCopyExecutionChannel || handoff.channel instanceof CurrentFootprintCombinedStartupChannel || handoff.channel instanceof CurrentFootprintCopyForwardStartupChannel)) { throw error("FOOTPRINT_MANAGER_ROUTE_UNAVAILABLE"); }
     this.#enter(true); this.#footprintManagerAttempted = true;
     try {
       const channel = handoff.channel, original = this.#binding, script = context.script(), selected = context.openingContext();
@@ -3799,7 +3801,8 @@ class CurrentPcbRetainedOwnerCore {
       request["method"] === "Debugger.removeBreakpoint" || request["method"] === "Debugger.resume" || request["method"] === "Runtime.releaseObjectGroup";
     const cleanup = commandCleanup || combinedCleanupControl(request) ||
       ["window", "normal-close", "main-close-detach", "release-unlaunched"].includes(String(action)) || action === "main-poll" && request["cleanup"] === true ||
-      action === "worker-startup-reprove" && (this.#forwardCleanupOnly || channel?.status().failed === true);
+      action === "worker-startup-reprove" && (this.#forwardCleanupOnly || channel?.status().failed === true) ||
+      action === "main-reprove" && this.#mainCloseCleanupActive;
     const waiting = action === "poll" && ((channel instanceof CurrentFootprintCopyForwardStartupChannel || channel instanceof CurrentFootprintCopyForwardSavedStartupChannel) ?
       forwardPollWaiting.call(channel) : this.#pipe.status().pendingRequestId !== null);
     try {
@@ -3810,13 +3813,9 @@ class CurrentPcbRetainedOwnerCore {
       } else if (action === "main-poll") {
         methods.consumeMainPoll.call(ledger, role, this, request["cleanup"] === true);
       } else if (action !== "poll") {
-        // Release observations are local. Preserve every termination sample,
-        // Normal close and abort plus window, main detach, the channel's final
-        // Termination reproof and actual release under the unchanged512 cap.
-        const maximum = CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.perGeneration;
         const controls = CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls;
-        const reserve = controls.terminationObservationsPerGeneration + controls.normalCloseAttemptsPerGeneration + controls.abortAttemptsPerGeneration + 4;
-        if (!cleanup && methods.generationStatus.call(ledger, role, this).controls >= maximum - reserve) { throw error("FORWARD_CONTROL_CLEANUP_RESERVE"); }
+        const limits = role === "forward-writer" ? controls.writer : controls.saved;
+        if (!cleanup && methods.generationStatus.call(ledger, role, this).normalControls >= limits.normal) { throw error("FORWARD_CONTROL_CLEANUP_RESERVE"); }
         methods.consumeControl.call(ledger, role, this, cleanup);
       }
     } catch (caughtError) { this.#forwardCleanupOnly = true; throw caughtError; }
@@ -4134,7 +4133,8 @@ class CurrentPcbRetainedOwnerCore {
         const { ledger, methods, role } = this.#forwardResources();
         methods.consumeBytes.call(ledger, role, this, "helper-stdout", chunk.length);
       } catch { this.#fail("FORWARD_HELPER_STDOUT"); return; }
-      const reserve = CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.perGeneration * CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.replyHeaderBytes + MAX_LINE;
+      const limits = this.#forwardRole === "forward-writer" ? CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.writer : CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.saved;
+      const reserve = limits.cleanup * CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.replyHeaderBytes + MAX_LINE;
       const ceiling = this.#forwardRole === "forward-writer" ? CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.helperStdoutBytes :
         Math.min(MAX_TOTAL, CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.saved.helperStdoutBytes);
       if (this.#total + chunk.length > ceiling - reserve) { this.#forwardCleanupOnly = true; }

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { setImmediate as nextTurn } from "node:timers/promises";
 import { runInNewContext } from "node:vm";
 import { sha256Json } from "../src/core.ts";
 import { acquireCurrentPcbDiagnosticLaunchExclusion, releaseCurrentPcbDiagnosticLaunchExclusion,
@@ -315,6 +316,47 @@ void test("release waits for an already allocated prelaunch helper and its origi
   assert.equal(observations, 0);
   assert.equal(releases, 1);
   assert.equal(starts, 1);
+});
+
+void test("release joins the original startup close after observation and launch race", async () => {
+  for (const releaseFails of [false, true]) {
+    const started = Promise.withResolvers<WindowsAuthoritySupervisor>(), starting = Promise.withResolvers<null>();
+    const close = Promise.withResolvers<null>(), closing = Promise.withResolvers<null>();
+    const failure = new Error("synthetic-startup-close-failure");
+    let launches = 0, observations = 0, releases = 0, starts = 0;
+    const fixture = releaseRuntimeFixture({
+      release() { releases += 1; closing.resolve(null); return waitForRuntimeClose(close.promise); },
+      launch(): never { launches += 1; throw new Error("State-drifted acquisition must not launch."); },
+      observeExistingApplication(): never { observations += 1; throw new Error("State-drifted acquisition must not observe."); },
+    }, { startSupervisor() { starts += 1; starting.resolve(null); return started.promise; } });
+    const observation = fixture.runtime.observeExistingApplication();
+    const observationFailure = releaseFails ? assertOriginalFailure(observation, failure) : assert.rejects(observation, /changed during helper startup/u);
+    await starting.promise;
+    const launch = fixture.runtime.launch();
+    const launchFailure = releaseFails ? assertOriginalFailure(launch, failure) : assert.rejects(launch, /changed during helper startup/u);
+    const deadline = performance.now() + 5000;
+    while (fixture.runtime.status().state !== "launching") {
+      assert.ok(performance.now() < deadline, "Original launch did not reach the shared acquisition.");
+      await nextTurn();
+    }
+    started.resolve(fixture.supervisor);
+    await closing.promise;
+    assert.equal(fixture.runtime.isReleaseAcknowledged(), false);
+    assert.equal(releases, 1);
+    if (releaseFails) { close.reject(failure); } else { close.resolve(null); }
+    await observationFailure;
+    await launchFailure;
+    assert.equal(fixture.runtime.status().state, "launch-unknown");
+    const released = fixture.runtime.release();
+    assert.equal(fixture.runtime.release(), released);
+    await (releaseFails ? assertOriginalFailure(released, failure) : released);
+    assert.equal(fixture.runtime.isReleaseAcknowledged(), !releaseFails);
+    assert.equal(fixture.runtime.release(), released);
+    assert.equal(releases, 1);
+    assert.equal(starts, 1);
+    assert.equal(launches, 0);
+    assert.equal(observations, 0);
+  }
 });
 
 void test("release during prelaunch hashing prevents allocation before acknowledging empty closure", async () => {
