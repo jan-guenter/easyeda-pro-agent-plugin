@@ -1204,7 +1204,16 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     forwardPrewriteResult.result.copyPlanSha256 === forwardPrewriteResult.preparation.copyPlanSha256 &&
     forwardPrewriteResult.result.nativeArgumentsSha256 === forwardPrewriteResult.preparation.nativeArgumentsSha256, "FORWARD_PREWRITE_RESULT_CHAIN");
   requireValue(forwardPrewriteFailure === undefined || forwardPrewrite !== undefined && forwardPrewriteResult === undefined &&
-    forwardPrewriteFailure.intentSha256 === sha256Json(forwardPrewrite), "FORWARD_PREWRITE_FAILURE_CHAIN");
+    forwardPrewriteFailure.intentSha256 === sha256Json(forwardPrewrite) && footprintRouteResult !== undefined &&
+    (forwardPrewriteFailure.source === null || forwardPrewriteFailure.source.request.footprintUuid === forwardPrewrite.footprintUuid &&
+      forwardPrewriteFailure.source.request.client === footprintRouteResult.result.state.client &&
+      forwardPrewriteFailure.source.request.maximumTicket === footprintRouteResult.result.state.maximumTicket &&
+      canonicalJson(forwardPrewriteFailure.source.request.identity) === canonicalJson(footprintRouteResult.result.state.identity)) &&
+    (forwardPrewriteFailure.preparation === null || forwardPrewriteFailure.source !== null &&
+      forwardPrewriteFailure.preparation.sourcePacketSha256 === sha256Json(forwardPrewriteFailure.source) &&
+      forwardPrewriteFailure.preparation.sourcePlanSha256 === forwardPrewrite.sourcePlanSha256 &&
+      forwardPrewriteFailure.preparation.beforeCheckpointSha256 === forwardPrewrite.checkpointSha256 &&
+      forwardPrewriteFailure.preparation.beforeSqlSha256 === forwardPrewrite.beforeSqlSha256), "FORWARD_PREWRITE_FAILURE_CHAIN");
   const footprintSource = records["worker-startup-footprint-source-intent.json"], footprintSourceResult = records["worker-startup-footprint-source-result.json"];
   requireValue(footprintSource === undefined || startup209 && startupPurpose && footprintResult !== undefined &&
     binding !== undefined && startupOpening !== undefined && footprintSource.bindingSha256 === sha256Json(binding) &&

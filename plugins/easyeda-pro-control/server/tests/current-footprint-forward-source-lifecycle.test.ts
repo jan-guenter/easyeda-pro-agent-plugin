@@ -128,7 +128,7 @@ function recordBytes(value: unknown): Buffer { return Buffer.from(`${JSON.string
 
 /** Exercise the genuine mounted stage and original-reference joins. Native
  * inspection and plan leaves are synthetic; all lifecycle/journal guards run. */
-async function fixture(context: TestContext, mode: "success" | "capacity" | "source-failure" | "checkpoint-failure" | "publication" | "method-drift" | "unsupported" | "unicode-failure" | "route-capacity" | "result-bound", routeHeadroom: "exact" | "short" = "short"):
+async function fixture(context: TestContext, mode: "success" | "capacity" | "source-failure" | "checkpoint-failure" | "publication" | "method-drift" | "unsupported" | "unicode-failure" | "route-capacity" | "result-bound" | "failure-chain", routeHeadroom: "exact" | "short" = "short"):
 Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[]; qualify: () => Promise<Row>; next: () => number; route: () => Promise<Row>; routeStarted: () => boolean; normal: () => number }>> {
   const calls: string[] = [];
   let id = `footprint-copy-qualify-test-${mode}`;
@@ -212,7 +212,7 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
         assert.equal(selected, preparation); assert.ok(opening instanceof Opening);
         await opening.requireFootprintSource(result, assignments, state, plan, source);
         if (mode === "unicode-failure") { throw new Error("\u0000\uD800".repeat(2048)); }
-        return { before, sourcePlan: plan, sourceAssets: Object.freeze({ status: mode === "unsupported" ? "unsupported" : "qualified" }), headReference: Object.freeze({ ageVerified: false }) };
+        return { before, sourcePlan: plan, sourceAssets: Object.freeze({ status: mode === "unsupported" || mode === "failure-chain" ? "unsupported" : "qualified" }), headReference: Object.freeze({ ageVerified: false }) };
       },
     }]]);
   const adapterPath = new URL("../src/current-pcb-worker-startup-lifecycle-adapter.ts", import.meta.url);
@@ -363,17 +363,22 @@ void test("maximum escaped forward failure publishes and reads at the exact fini
   assert.equal(failure.error.length, 4096);
   assert.equal(Buffer.byteLength(JSON.stringify(failure.error)), 4096 * 6 + 2);
   assert.equal(Buffer.byteLength(failure.source.content), CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.contentBytes);
-  // Maximized source/request fields remain schema data without native custody.
-  // The real managed reader must retain this complete failure.
+  // Preserve the original intent/route request when publishing boundary data.
   const source = currentFootprintSourceReadPacketSchema.parse({ ...failure.source,
-    request: { identity: { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), windowTabId: "w".repeat(128) },
-      footprintUuid: "c".repeat(32), client: "d".repeat(16), maximumTicket: Number.MAX_SAFE_INTEGER - 3 },
     cacheRead: { keys: 64, bytes: 8_388_608, atoms: 4096 }, canvasRecords: 4096, tombstones: 4096 });
   const maximum = schema.parse({ ...failure, createdAt: new Date(0).toISOString(), failedStage: "source-assets", source,
     preparation: { ...failure.preparation, sourcePacketSha256: sha256Json(source) } });
+  // Independently maximize schema metadata without claiming original ownership.
+  // These foreign request headers are never published into the managed chain.
+  const maximumMetadataSource = currentFootprintSourceReadPacketSchema.parse({ ...source,
+    request: { identity: { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), windowTabId: "w".repeat(128) },
+      footprintUuid: "c".repeat(32), client: "d".repeat(16), maximumTicket: Number.MAX_SAFE_INTEGER - 3 } });
+  const maximumMetadata = schema.parse({ ...maximum, source: maximumMetadataSource,
+    preparation: { ...maximum.preparation, sourcePacketSha256: sha256Json(maximumMetadataSource) } });
   const payloadBytes = (CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.contentBytes + 4096) * 6;
-  const metadataBytes = recordBytes(maximum).length - payloadBytes;
+  const metadataBytes = recordBytes(maximumMetadata).length - payloadBytes;
   assert.equal(metadataBytes, 2574);
+  assert.ok(recordBytes(maximum).length - payloadBytes <= metadataBytes);
   assert.equal(CURRENT_FOOTPRINT_FORWARD_PREWRITE_FAILURE_MAX_BYTES, payloadBytes + 8192);
   assert.ok(original.length > 4 * 1024 * 1024 + 64 * 1024 + 8192);
   // ISO precision has no schema length maximum. Fill the finite metadata reserve.
@@ -403,6 +408,55 @@ void test("maximum escaped forward failure publishes and reads at the exact fini
   await f.value.coordinator.run({ action: "observe-termination", operationId: f.id, expectedBindingSha256: f.binding });
   await f.value.coordinator.run({ action: "release-closed", operationId: f.id, expectedBindingSha256: f.binding });
   assert.equal(f.value.coordinator.hasActiveReservation(), false);
+});
+
+void test("managed forward failure reader joins present source and preparation while preserving null stages", async context => {
+  const f = await fixture(context, "failure-chain");
+  await assert.rejects(f.qualify(), /SOURCE_ASSETS_UNSUPPORTED/u);
+  const name = "forward-prewrite-failure.json", path = join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", f.id, name);
+  const original = await readFile(path), schema = diagnosticLifecycleRecordSchemas[name];
+  const failure = schema.parse(JSON.parse(original.toString("utf8")) as unknown);
+  assert.ok(failure.source !== null && failure.preparation !== null);
+  const { preparation, source } = failure;
+  try {
+    for (const valid of [failure, schema.parse({ ...failure, failedStage: "preparation", preparation: null }),
+      schema.parse({ ...failure, failedStage: "source", source: null, preparation: null })]) {
+      await writeFile(path, recordBytes(valid));
+      const operations = await readCurrentPcbDiagnosticLifecycles();
+      assert.deepEqual(operations.find(value => value.operationId === f.id)?.records[name], valid);
+    }
+    for (const request of [
+      { ...source.request, footprintUuid: "fedcba0987654321" },
+      { ...source.request, identity: { ...source.request.identity, projectUuid: sha256Text("foreign-project") } },
+      { ...source.request, identity: { ...source.request.identity, branchUuid: sha256Text("foreign-branch").slice(0, 32) } },
+      { ...source.request, identity: { ...source.request.identity, windowTabId: "foreign-window-tab" } },
+      { ...source.request, client: "fedcba0987654321" },
+      { ...source.request, maximumTicket: source.request.maximumTicket + 1 },
+    ]) {
+      const foreign = currentFootprintSourceReadPacketSchema.parse({ ...source, request });
+      // Keep the packet digest coherent so only its original request join fails.
+      const changed = schema.parse({ ...failure, source: foreign,
+        preparation: { ...preparation, sourcePacketSha256: sha256Json(foreign) } });
+      await writeFile(path, recordBytes(changed));
+      await assert.rejects(readCurrentPcbDiagnosticLifecycles(), /FORWARD_PREWRITE_FAILURE_CHAIN/u);
+    }
+    for (const key of ["sourcePacketSha256", "sourcePlanSha256", "beforeCheckpointSha256", "beforeSqlSha256"] as const) {
+      const digest = sha256Text(`foreign-${key}`); assert.notEqual(digest, preparation[key]);
+      const changed = schema.parse({ ...failure, preparation: { ...preparation, [key]: digest } });
+      await writeFile(path, recordBytes(changed));
+      await assert.rejects(readCurrentPcbDiagnosticLifecycles(), /FORWARD_PREWRITE_FAILURE_CHAIN/u);
+    }
+    await writeFile(path, recordBytes(schema.parse({ ...failure, source: null })));
+    await assert.rejects(readCurrentPcbDiagnosticLifecycles(), /FORWARD_PREWRITE_FAILURE_CHAIN/u);
+  } finally {
+    await writeFile(path, original);
+    await f.value.coordinator.run({ action: "observe-window", operationId: f.id, expectedBindingSha256: f.binding });
+    await f.value.coordinator.run({ action: "normal-close", operationId: f.id, expectedBindingSha256: f.binding, hwnd: "12345", confirmNormalClose: true });
+    f.value.state.terminated = true;
+    await f.value.coordinator.run({ action: "observe-termination", operationId: f.id, expectedBindingSha256: f.binding });
+    await f.value.coordinator.run({ action: "release-closed", operationId: f.id, expectedBindingSha256: f.binding });
+    assert.equal(f.value.coordinator.hasActiveReservation(), false);
+  }
 });
 for (const mode of ["success", "capacity", "source-failure", "checkpoint-failure", "publication", "method-drift", "unsupported"] as const) {
   void test(`born-forward source/route qualification preserves original inputs and cleanup: ${mode}`, async context => {

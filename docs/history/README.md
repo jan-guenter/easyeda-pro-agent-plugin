@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-04 forward failure evidence and dependency count](2026-11-04-forward-failure-evidence-and-dependency-count.md). Original target/preparation joins, valid early failures and the current 64-function inventory.
+
 - [2026-11-04 controller output and publication recovery](2026-11-04-controller-output-and-publication-recovery.md). Async stdout custody, exact leftover completion settlement, early success-record byte bounds and complete idle-cleanup limits.
 
 - [2026-11-04 release IDs and source scope](2026-11-04-release-id-grammar-and-source-scope.md). Genuine copy-ID compatibility, hash-only qualification output and normal closure of an automatically initialized legacy facade.
