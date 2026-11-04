@@ -101,6 +101,11 @@ void test("registered forward qualification binds its own method and abort remai
   await assert.rejects(invoke(wrapForward({ ...launch, operationId: id }))); assert.equal(allocations, 0);
   await invoke(wrapForward({ ...launch, operationId: id, acceptDebuggerPauseEffects: true }));
   await invoke(wrapForward({ action: "observe-main-construction", operationId: id, expectedBindingSha256 }));
+  for (const action of ["seal-footprint-source", "prove-closed-baseline"]) {
+    await invoke(wrapForward({ action, operationId: id, expectedBindingSha256 }));
+  }
+  await invoke(wrapForward({ action: "read-qualified-source", operationId: id, expectedBindingSha256,
+    expectedSourcePacketSha256: "c".repeat(64), offsetBytes: 0, lengthBytes: 65_536 }));
   const original = owners[0]; assert.ok(original);
   const qualification = { action: "qualify-footprint-source", operationId: id, expectedBindingSha256, footprintUuid: "b".repeat(32) };
   Object.defineProperty(original, "qualifyWorkerStartupFootprintSource", { configurable: true, value: (): never => { throw new Error("substituted qualification called"); } });
@@ -112,7 +117,7 @@ void test("registered forward qualification binds its own method and abort remai
   const beforeAbort = gateCalls;
   await invoke(wrapForward({ action: "abort-generation", operationId: id, expectedBindingSha256, confirmAbortOriginalForwardJob: true }));
   assert.equal(gateCalls, beforeAbort); release.resolve(null); await refused;
-  assert.equal(allocations, 1); assert.deepEqual(calls, ["launch", "observe-main-construction", "qualify-footprint-source", "abort-generation"]);
+  assert.equal(allocations, 1); assert.deepEqual(calls, ["launch", "observe-main-construction", "seal-footprint-source", "prove-closed-baseline", "read-qualified-source", "qualify-footprint-source", "abort-generation"]);
 });
 
 void test("startup validation is discoverable through the existing offline diagnostic wrapper without execution claims", () => {

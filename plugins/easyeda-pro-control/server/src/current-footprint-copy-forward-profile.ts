@@ -3,7 +3,8 @@
 import { CURRENT_FOOTPRINT_COPY_ALLOCATED_CREATE_CLOCK_BUDGET as ALLOCATION } from "./current-footprint-copy-allocated-create-clock-budget.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE as PREPARATION } from "./current-footprint-copy-execution-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_KNOWN_CAPACITY as MAIN } from "./current-footprint-copy-main-capacity.ts";
-import { CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS as SOURCE_PREPARATION } from "./current-footprint-copy-preparation.ts";
+import { CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS as SOURCE_PREPARATION,
+  CURRENT_FOOTPRINT_COPY_SOURCE_SEAL_REQUESTS as SOURCE_SEAL } from "./current-footprint-copy-preparation.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS as SOURCE } from "./current-footprint-copy-source-stage-budget.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_LIMITS as COORDINATOR } from "./current-footprint-copy-execution.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_TRANSPORT as MAIN_STREAM } from "./current-footprint-copy-main-transport-contract.ts";
@@ -11,7 +12,7 @@ import { CURRENT_PCB_WORKER_STARTUP_STREAM_LIMITS as STREAM } from "./current-pc
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE = "worker-startup-footprint-forward209";
-const normal = PREPARATION.normalRequestLimit - PREPARATION.requests.transactionClock + ALLOCATION.normal + SOURCE + SOURCE_PREPARATION;
+const normal = PREPARATION.normalRequestLimit - PREPARATION.requests.transactionClock + ALLOCATION.normal + SOURCE + SOURCE_PREPARATION + SOURCE_SEAL;
 const cleanup = PREPARATION.requests.cleanup - 5 + ALLOCATION.cleanup;
 const requests = normal + cleanup;
 // Every parent proof performs two worker-startup-reprove exchanges. A normal
@@ -24,7 +25,8 @@ const controlsPerParentProof = 2, parentProofsPerRendererRequest = 16;
 const wrapperStages = Object.freeze(["launch-discovery", "capture-parent", "capture-opening", "capture-constructors", "capture-worker",
   "assignments", "actor", "cache-construction", "state", "producers", "dependencies", "callbacks", "destinations", "ui", "ui-reproof",
   "registration", "manager", "peer", "route-reproof", "windows-clock", "registration-sample", "source-plan", "source", "source-reproof",
-  "preparation-reproof-first", "preparation-reproof-second", "preparation-reproof-third", "owned-preparation-reproof"]);
+  "preparation-reproof-first", "preparation-reproof-second", "preparation-reproof-third", "owned-preparation-reproof",
+  "source-seal-opening-first", "source-seal-preparation-first", "source-seal-opening-second", "source-seal-preparation-second"]);
 // A stage can bracket its native commands with up to32 opening checks, each
 // Containing two original-parent callbacks. The command-associated callbacks
 // Above are additional. Reserve the same wrapper allowance for interrupted

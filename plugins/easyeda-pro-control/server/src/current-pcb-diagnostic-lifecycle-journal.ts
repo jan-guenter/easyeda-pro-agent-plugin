@@ -58,8 +58,9 @@ import { CURRENT_PCB_209_PAD_SHAPES_RESULT_BYTES } from "./current-pcb-209-pad-s
 import { CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES, currentPcb209SelectionRelationsComponentIdsSchema } from "./current-pcb-209-selection-relations.ts";
 import { assertNoUnresolvedCurrentPcbStringLedgers } from "./current-pcb-string-ledger-exclusion.ts";
 import { CURRENT_FOOTPRINT_MAIN_OPERATION_PREFIX, currentFootprintMainIdSchema } from "./current-footprint-main-validation.ts";
-import { CURRENT_FOOTPRINT_FORWARD_PREWRITE_OPERATION_PREFIX, currentFootprintForwardPrewriteIdSchema,
-  currentFootprintForwardPrewriteResultSchema } from "./current-footprint-forward-prewrite-validation.ts";
+import { CURRENT_FOOTPRINT_FORWARD_PREWRITE_OPERATION_PREFIX, currentFootprintForwardClosedBaselineResultSchema,
+  currentFootprintForwardPrewriteIdSchema, currentFootprintForwardPrewriteResultSchema,
+  currentFootprintForwardSourceSealResultSchema } from "./current-footprint-forward-prewrite-validation.ts";
 import { CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX, currentFootprintCombinedIdSchema } from "./current-footprint-combined-validation.ts";
 import { currentFootprintCombinedHistoricalIntentSchema } from "./current-footprint-combined-abandonment-contract.ts";
 import { assertCurrentFootprintCombinedHistoricalSnapshot, readCurrentFootprintCombinedAbandonment,
@@ -246,6 +247,22 @@ const forwardPrewriteFailureSchema = z.object({ ...base, operationId: currentFoo
   schema: z.literal("easyeda-pro-control.footprint-forward-prewrite-failure.v1"), intentSha256: diagnosticLifecycleDigestSchema,
   failedStage: z.enum(["source", "preparation", "source-assets"]), error: z.string().max(FORWARD_PREWRITE_ERROR_MAX_UNITS),
   source: currentFootprintSourceReadPacketSchema.nullable(), preparation: currentFootprintCopyPreparationSchema.nullable(),
+  executionReady: z.literal(false), executionAuthorized: z.literal(false), saveAuthorized: z.literal(false) }).strict();
+const forwardSourceSealIntentSchema = z.object({ ...base, operationId: currentFootprintForwardPrewriteIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-forward-source-seal-intent.v1"), bindingSha256: diagnosticLifecycleDigestSchema,
+  qualificationResultSha256: diagnosticLifecycleDigestSchema }).strict();
+const forwardSourceSealResultSchema = z.object({ ...base, operationId: currentFootprintForwardPrewriteIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-forward-source-seal-result.v1"), intentSha256: diagnosticLifecycleDigestSchema,
+  result: currentFootprintForwardSourceSealResultSchema }).strict();
+const forwardClosedBaselineIntentSchema = z.object({ ...base, operationId: currentFootprintForwardPrewriteIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-forward-closed-baseline-intent.v1"), bindingSha256: diagnosticLifecycleDigestSchema,
+  sourceSealResultSha256: diagnosticLifecycleDigestSchema, terminationSha256: diagnosticLifecycleDigestSchema }).strict();
+const forwardClosedBaselineResultSchema = z.object({ ...base, operationId: currentFootprintForwardPrewriteIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-forward-closed-baseline-result.v1"), intentSha256: diagnosticLifecycleDigestSchema,
+  result: currentFootprintForwardClosedBaselineResultSchema }).strict();
+const forwardBaselineFailureSchema = z.object({ ...base, operationId: currentFootprintForwardPrewriteIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-forward-baseline-failure.v1"), intentSha256: diagnosticLifecycleDigestSchema,
+  failedStage: z.enum(["source-seal", "closed-baseline"]), error: z.string().max(FORWARD_PREWRITE_ERROR_MAX_UNITS),
   executionReady: z.literal(false), executionAuthorized: z.literal(false), saveAuthorized: z.literal(false) }).strict();
 const footprintRouteId = z.union([currentFootprintCopyRoutePreparationIdSchema, currentFootprintCombinedIdSchema, currentFootprintForwardPrewriteIdSchema]);
 const footprintStartupId = z.union([currentPcb209WorkerStartupLifecycleIdSchema, currentFootprintCopyPreparationIdSchema]);
@@ -811,6 +828,11 @@ export const diagnosticLifecycleRecordSchemas = {
   "forward-prewrite-intent.json": forwardPrewriteIntentSchema,
   "forward-prewrite-result.json": forwardPrewriteResultSchema,
   "forward-prewrite-failure.json": forwardPrewriteFailureSchema,
+  "forward-source-seal-intent.json": forwardSourceSealIntentSchema,
+  "forward-source-seal-result.json": forwardSourceSealResultSchema,
+  "forward-closed-baseline-intent.json": forwardClosedBaselineIntentSchema,
+  "forward-closed-baseline-result.json": forwardClosedBaselineResultSchema,
+  "forward-baseline-failure.json": forwardBaselineFailureSchema,
   "combined-factory-before-launch.json": combinedFactoryBeforeLaunchSchema,
   "combined-abort-intent.json": combinedAbortIntentSchema,
   "combined-abort-acknowledged.json": combinedAbortAckSchema,
@@ -855,6 +877,7 @@ function recordBound(name: RecordName): number {
   if (name === "footprint-copy-route-result.json" || name === "footprint-copy-route-failure.json") { return CURRENT_FOOTPRINT_COPY_ROUTE_RESULT_MAX_BYTES + MAX_BYTES; }
   if (name === "forward-prewrite-result.json") { return CURRENT_FOOTPRINT_FORWARD_PREWRITE_RESULT_MAX_BYTES; }
   if (name === "forward-prewrite-failure.json") { return CURRENT_FOOTPRINT_FORWARD_PREWRITE_FAILURE_MAX_BYTES; }
+  if (name === "forward-baseline-failure.json") { return 6 * FORWARD_PREWRITE_ERROR_MAX_UNITS + MAX_BYTES; }
   if (name === "worker-startup-footprint-source-result.json") { return FOOTPRINT_SOURCE_RESULT_MAX_BYTES; }
   if (name === "worker-startup-ratline-result.json") { return CURRENT_PCB_209_RATLINE_STARTUP_RESULT_MAX_BYTES; }
   if (name === "worker-startup-empty-result.json") { return CURRENT_PCB_209_EMPTY_STARTUP_RESULT_MAX_BYTES; }
@@ -1214,6 +1237,26 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
       forwardPrewriteFailure.preparation.sourcePlanSha256 === forwardPrewrite.sourcePlanSha256 &&
       forwardPrewriteFailure.preparation.beforeCheckpointSha256 === forwardPrewrite.checkpointSha256 &&
       forwardPrewriteFailure.preparation.beforeSqlSha256 === forwardPrewrite.beforeSqlSha256), "FORWARD_PREWRITE_FAILURE_CHAIN");
+  const forwardSeal = records["forward-source-seal-intent.json"], forwardSealed = records["forward-source-seal-result.json"];
+  const forwardClosed = records["forward-closed-baseline-intent.json"], forwardClosedResult = records["forward-closed-baseline-result.json"];
+  const forwardBaselineFailure = records["forward-baseline-failure.json"];
+  requireValue(forwardSeal === undefined || forwardPurpose && binding !== undefined && forwardPrewriteResult !== undefined &&
+    forwardSeal.bindingSha256 === sha256Json(binding) && forwardSeal.qualificationResultSha256 === sha256Json(forwardPrewriteResult), "FORWARD_SOURCE_SEAL_CHAIN");
+  requireValue(forwardSealed === undefined || forwardSeal !== undefined && forwardPrewriteResult !== undefined &&
+    forwardSealed.intentSha256 === sha256Json(forwardSeal) && forwardSealed.result.qualificationResultSha256 === sha256Json(forwardPrewriteResult) &&
+    forwardSealed.result.beforeCheckpointSha256 === forwardPrewriteResult.result.beforeCheckpointSha256 &&
+    forwardSealed.result.beforeSqlSha256 === forwardPrewriteResult.result.beforeSqlSha256, "FORWARD_SOURCE_SEAL_RESULT_CHAIN");
+  requireValue(forwardClosed === undefined || forwardPurpose && binding !== undefined && forwardSealed !== undefined && records["terminated.json"] !== undefined &&
+    records["close-acknowledged.json"] !== undefined && forwardClosed.bindingSha256 === sha256Json(binding) &&
+    forwardClosed.sourceSealResultSha256 === sha256Json(forwardSealed) && forwardClosed.terminationSha256 === sha256Json(records["terminated.json"]), "FORWARD_CLOSED_BASELINE_CHAIN");
+  requireValue(forwardClosedResult === undefined || forwardClosed !== undefined && forwardSealed !== undefined &&
+    forwardClosedResult.intentSha256 === sha256Json(forwardClosed) && forwardClosedResult.result.sourceSealResultSha256 === sha256Json(forwardSealed) &&
+    forwardClosedResult.result.beforeCheckpointSha256 === forwardSealed.result.beforeCheckpointSha256 &&
+    forwardClosedResult.result.beforeSqlSha256 === forwardSealed.result.beforeSqlSha256 &&
+    forwardClosedResult.result.closedSqlSha256 === forwardSealed.result.beforeSqlSha256, "FORWARD_CLOSED_BASELINE_RESULT_CHAIN");
+  requireValue(forwardBaselineFailure === undefined || (forwardBaselineFailure.failedStage === "source-seal" ?
+    forwardSeal !== undefined && forwardSealed === undefined && forwardBaselineFailure.intentSha256 === sha256Json(forwardSeal) :
+    forwardClosed !== undefined && forwardClosedResult === undefined && forwardBaselineFailure.intentSha256 === sha256Json(forwardClosed)), "FORWARD_BASELINE_FAILURE_CHAIN");
   const footprintSource = records["worker-startup-footprint-source-intent.json"], footprintSourceResult = records["worker-startup-footprint-source-result.json"];
   requireValue(footprintSource === undefined || startup209 && startupPurpose && footprintResult !== undefined &&
     binding !== undefined && startupOpening !== undefined && footprintSource.bindingSha256 === sha256Json(binding) &&

@@ -1431,7 +1431,7 @@ string[] result=new string[count];for(int i=0;i<count;i++)result[i]=System.BitCo
 }
 public static class EasyedaFootprintCombinedLimits { public const int MainNormal=42; public const int MainCleanup=13; public const int MainRequests=55; public const int Requests=856; public const int NormalRequests=811; public const long NormalMilliseconds=3600000L; public const long TotalMilliseconds=3660000L; }
 // BEGIN GENERATED FOOTPRINT FORWARD LIMITS
-public static class EasyedaFootprintForwardLimits { public const int MainNormal=87; public const int MainCleanup=41; public const int MainRequests=128; public const int Requests=996; public const int NormalRequests=996; public const int NormalClass=935; public const int CleanupClass=61; public const long NormalMilliseconds=3600000L; public const long TotalMilliseconds=3660000L; }
+public static class EasyedaFootprintForwardLimits { public const int MainNormal=87; public const int MainCleanup=41; public const int MainRequests=128; public const int Requests=1002; public const int NormalRequests=1002; public const int NormalClass=941; public const int CleanupClass=61; public const long NormalMilliseconds=3600000L; public const long TotalMilliseconds=3660000L; }
 // END GENERATED FOOTPRINT FORWARD LIMITS
 internal sealed class EasyedaOriginalMainTransport {
 [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)] struct SA { public int length; public System.IntPtr descriptor; [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)] public bool inherit; }
@@ -2239,13 +2239,13 @@ public sealed class EasyedaDiagnosticOwner {
   }
   public static void VerifyFootprintForwardSmoke(){
     var fresh=CreateWorkerStartupFootprintForward209();var old=CreateWorkerStartupFootprintCombined209();
-    if(!fresh.workerStartupFootprintForward209||fresh.workerStartupFootprintCombined209||fresh.footprintCreateClockPurpose||fresh.FootprintRequestLimit!=996||fresh.FootprintNormalRequestLimit!=996||old.FootprintRequestLimit!=856||old.FootprintNormalRequestLimit!=811||fresh.ForwardMainReceivedBytes!=0||fresh.ForwardMainFrames!=0)throw Error("forward-birth-smoke");
+    if(!fresh.workerStartupFootprintForward209||fresh.workerStartupFootprintCombined209||fresh.footprintCreateClockPurpose||fresh.FootprintRequestLimit!=EasyedaFootprintForwardLimits.Requests||fresh.FootprintNormalRequestLimit!=EasyedaFootprintForwardLimits.NormalRequests||old.FootprintRequestLimit!=856||old.FootprintNormalRequestLimit!=811||fresh.ForwardMainReceivedBytes!=0||fresh.ForwardMainFrames!=0)throw Error("forward-birth-smoke");
     foreach(string action in new string[]{"footprint-copy-native-create","footprint-copy-allocated-create-clock-begin","footprint-copy-clock","footprint-clock-rpc-begin","main-completion-begin"}){bool refused=false;try{fresh.AdmitForwardAction(action);}catch(InvalidOperationException e){if(e.Message!="pcb-diagnostic-forward-writer-unmounted")throw;refused=true;}if(!refused||fresh.footprintCreateClockBegun||fresh.launchAttempted||fresh.root!=IntPtr.Zero)throw Error("forward-unmounted-smoke");}
     fresh.AdmitForwardAction("identity");fresh.AdmitForwardAction("release-unlaunched");
     for(int i=1;i<=EasyedaFootprintForwardLimits.NormalClass;i++)fresh.ChargeForwardRenderer(i,"{\"id\":"+i+",\"method\":\"Runtime.enable\"}");
     for(int i=EasyedaFootprintForwardLimits.NormalClass+1;i<=EasyedaFootprintForwardLimits.Requests;i++)fresh.ChargeForwardRenderer(i,"{\"id\":"+i+",\"method\":\"Runtime.releaseObjectGroup\"}");
-    bool full=false;try{fresh.ChargeForwardRenderer(997,"{\"id\":997,\"method\":\"Runtime.enable\"}");}catch(InvalidOperationException){full=true;}
-    if(!full||fresh.forwardNormalRequests!=935||fresh.forwardCleanupRequests!=61||old.forwardNormalRequests!=0||old.forwardCleanupRequests!=0)throw Error("forward-renderer-budget-smoke");
+    int overflowId=checked(EasyedaFootprintForwardLimits.Requests+1);bool full=false;try{fresh.ChargeForwardRenderer(overflowId,"{\"id\":"+overflowId+",\"method\":\"Runtime.enable\"}");}catch(InvalidOperationException){full=true;}
+    if(!full||fresh.forwardNormalRequests!=EasyedaFootprintForwardLimits.NormalClass||fresh.forwardCleanupRequests!=EasyedaFootprintForwardLimits.CleanupClass||old.forwardNormalRequests!=0||old.forwardCleanupRequests!=0)throw Error("forward-renderer-budget-smoke");
   }
   public void AdmitCombinedAction(string action){
     if((workerStartupFootprintCombined209||workerStartupFootprintForward209)&&footprintCombinedAbortAttempted&&action!="combined-abort"&&action!="identity"&&action!="termination"&&action!="release"&&action!="no-process-proof"&&action!="release-no-process"&&action!="footprint-clock-rpc-retire"&&action!="footprint-copy-create-clock-retire"&&action!="main-completion-retire")throw Error("combined-abort-consumed");

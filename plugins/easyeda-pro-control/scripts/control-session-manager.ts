@@ -23,6 +23,7 @@ import { createPrivateTemporaryDirectory } from "./private-temporary-directory.t
 import type { PrivateTemporaryDirectory } from "./private-temporary-directory.ts";
 import { sessionRetirementOutputSchema } from "../server/src/session-retirement.ts";
 import { currentFootprintForwardPrewriteValidationRequestSchema } from "../server/src/current-footprint-forward-prewrite-validation.ts";
+import { diagnosticLifecycleBindingSchema } from "../server/src/current-pcb-diagnostic-binding-schema.ts";
 
 const requestId = z.union([z.string().min(1).max(128), z.number().int()]);
 const generationSchema = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
@@ -164,12 +165,15 @@ interface Connection {
   readonly tools: Set<string>;
   readonly loadedFacade: z.infer<typeof loadedFacadeSchema>;
 }
+type ForwardCleanupBinding = Readonly<{ operationId: string; bindingSha256: string }>;
 interface InterruptedCall {
   readonly connection: Connection;
   readonly generation: number;
   readonly requestId: string | number;
   readonly tool: string;
-  readonly forward: Readonly<{ operationId: string; bindingSha256: string }> | null;
+  readonly forward: ForwardCleanupBinding | null;
+  readonly forwardLaunchOperationId: string | null;
+  inspectedLaunchBinding?: ForwardCleanupBinding;
   intentSha256?: string;
 }
 interface RetainedRecord {
@@ -269,8 +273,8 @@ export class ForegroundSessionManager {
       callerToolDispatchStarted: observed === undefined ? false : this.callerToolDispatches.has(observed.transport),
       interruptedRequest: this.interrupted === undefined ? null : { id: this.interrupted.requestId,
         generation: this.interrupted.generation, tool: this.interrupted.tool,
-        forward: this.interrupted.forward, outcome: "unknown", cleanupAvailable: this.stage === "blocked" &&
-          !this.retirementUncertain && this.interrupted.forward !== null &&
+        forward: this.interrupted.forward ?? this.interrupted.inspectedLaunchBinding ?? null, outcome: "unknown", cleanupAvailable: this.stage === "blocked" &&
+          !this.retirementUncertain && (this.interrupted.forward !== null || this.interrupted.forwardLaunchOperationId !== null) &&
           this.interrupted.connection === this.connection && this.connection.client.transport === this.connection.transport &&
           this.connection.transport.hasUnclosedChild() && !this.evidenceFault && !this.publicationFault &&
           !this.records.some(row => Object.hasOwn(row, "unpublishedValue")) },
@@ -369,7 +373,7 @@ export class ForegroundSessionManager {
     if (this.evidenceFault || this.publicationFault || this.records.some(row => Object.hasOwn(row, "unpublishedValue"))) { throw new Error("manager-evidence-unsettled"); }
     if (this.stage === "active") { return this.requireActive(); }
     const connection = this.connection, interrupted = this.interrupted;
-    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null || connection === undefined ||
+    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.inspectedLaunchBinding === undefined || connection === undefined ||
         interrupted.connection !== connection || interrupted.generation !== this.generation ||
         connection.client.transport !== connection.transport || !connection.transport.hasUnclosedChild()) {
       throw new Error("manager-original-connection-required");
@@ -385,37 +389,67 @@ export class ForegroundSessionManager {
     const selected = outer.success ? outer.data.request.request : null;
     const forward = request.tool === "easyeda_control_pcb209_worker_startup" && selected !== null &&
       "expectedBindingSha256" in selected ? Object.freeze({ operationId: selected.operationId, bindingSha256: selected.expectedBindingSha256 }) : null;
-    return { connection, generation: this.generation, requestId: request.id, tool: request.tool, forward };
+    const forwardLaunchOperationId = request.tool === "easyeda_control_pcb209_worker_startup" && selected?.action === "launch" ? selected.operationId : null;
+    return { connection, generation: this.generation, requestId: request.id, tool: request.tool, forward, forwardLaunchOperationId };
   }
 
   /** Reject foreign, disconnected or unpublished original state before any
    * reservation. Invalid cleanup input cannot freeze a healthy active owner. */
   private requireOriginalCleanup(request: OriginalCleanupRequest): Readonly<{
-    connection: Connection; interrupted: InterruptedCall; binding: NonNullable<InterruptedCall["forward"]>;
+    connection: Connection; interrupted: InterruptedCall; operationId: string; binding: ForwardCleanupBinding | undefined;
   }> {
     const connection = this.connection, interrupted = this.interrupted;
-    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null || connection === undefined ||
+    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.forwardLaunchOperationId === null || connection === undefined ||
         this.retirementUncertain || this.evidenceFault || this.publicationFault || this.records.some(row => Object.hasOwn(row, "unpublishedValue")) ||
         interrupted.connection !== connection || interrupted.generation !== this.generation || request.generation !== this.generation ||
         request.interruptedRequestId !== interrupted.requestId || connection.client.transport !== connection.transport ||
         !connection.transport.hasUnclosedChild() || !connection.tools.has("easyeda_control_pcb209_worker_startup")) {
       throw new Error("manager-original-cleanup-not-authorized");
     }
+    const binding = interrupted.forward ?? interrupted.inspectedLaunchBinding;
+    const operationId = binding?.operationId ?? interrupted.forwardLaunchOperationId;
+    if (operationId === null || binding === undefined && request.request.action !== "inspect") {
+      throw new Error("manager-original-launch-inspection-required");
+    }
     if (request.request.action === "settle-records" && interrupted.intentSha256 === undefined) {
       throw new Error("manager-original-intent-inspection-required");
     }
-    return { connection, interrupted, binding: interrupted.forward };
+    return { connection, interrupted, operationId, binding };
+  }
+
+  /** A historical binding alone cannot identify this interrupted launch. The
+   * facade emits the settlement marker only for its matching private attempt
+   * and held launch lease. This same-client observation supplies cleanup data;
+   * the original facade's private native guards still authorize every action.
+   */
+  private learnOriginalLaunchBinding(interrupted: InterruptedCall, operationId: string, envelope: z.infer<typeof toolResultSchema>): void {
+    if (this.interrupted !== interrupted || this.connection !== interrupted.connection || this.generation !== interrupted.generation) {
+      throw new Error("manager-original-launch-inspection-required");
+    }
+    if (interrupted.forwardLaunchOperationId !== operationId || interrupted.inspectedLaunchBinding !== undefined) { return; }
+    const inspected = z.looseObject({ ok: z.literal(true).optional(), result: z.looseObject({ ok: z.literal(true).optional(),
+      operationId: z.literal(operationId), state: z.literal("launched"),
+      launchAcknowledged: z.literal(true), publicationSettlementAvailable: z.literal(true),
+      binding: diagnosticLifecycleBindingSchema.refine(value => value.rootCreated !== "0"),
+      bindingSha256: z.string().regex(/^[a-f0-9]{64}$/u), intentSha256: z.string().regex(/^[a-f0-9]{64}$/u) }) }).safeParse(envelope.structuredContent);
+    if (!inspected.success) { return; }
+    const result = inspected.data.result;
+    interrupted.inspectedLaunchBinding = Object.freeze({ operationId, bindingSha256: result.bindingSha256 });
+    interrupted.intentSha256 = result.intentSha256;
   }
 
   /** Generate one allowlisted original-owner cleanup call. Normal/replay routes
    * remain blocked, and no cleanup result settles the interrupted call's unknown
    * outcome. Only the facade's own final retirement can release that custody. */
   private async cleanupOriginal(request: OriginalCleanupRequest): Promise<void> {
-    const { binding, connection, interrupted } = this.requireOriginalCleanup(request);
+    const { binding, connection, interrupted, operationId } = this.requireOriginalCleanup(request);
     const selected = request.request;
-    const input: Record<string, unknown> = { ...selected, operationId: binding.operationId };
+    const input: Record<string, unknown> = { ...selected, operationId };
     if (selected.action === "settle-records") { input["expectedIntentSha256"] = interrupted.intentSha256; }
-    else if (selected.action !== "inspect") { input["expectedBindingSha256"] = binding.bindingSha256; }
+    else if (selected.action !== "inspect") {
+      if (binding === undefined) { throw new Error("manager-original-launch-inspection-required"); }
+      input["expectedBindingSha256"] = binding.bindingSha256;
+    }
     const nested = currentFootprintForwardPrewriteValidationRequestSchema.parse(input);
     const call: CallRequest = { id: request.id, tool: "easyeda_control_pcb209_worker_startup", timeoutMs: SESSION_CALL_TIMEOUT_MS,
       arguments: { request: { action: "footprint-forward-prewrite", request: nested } },
@@ -425,10 +459,14 @@ export class ForegroundSessionManager {
     const result = await connection.client.callTool({ name: call.tool, arguments: call.arguments }, undefined, { timeout: call.timeoutMs });
     await this.retain("original-cleanup-result", { id: request.id, result }, "cleanup");
     const envelope = toolResultSchema.parse(result);
-    if (selected.action === "inspect" && envelope.isError !== true) {
-      const inspected = z.looseObject({ result: z.looseObject({ operationId: z.literal(binding.operationId),
-        bindingSha256: z.literal(binding.bindingSha256), intentSha256: z.string().regex(/^[a-f0-9]{64}$/u).optional() }) }).safeParse(envelope.structuredContent);
-      if (inspected.success && inspected.data.result.intentSha256 !== undefined) {
+    if (selected.action === "inspect" && envelope.isError !== true && envelope["ok"] !== false) {
+      this.requireOriginalCleanup(request);
+      if (binding === undefined) { this.learnOriginalLaunchBinding(interrupted, operationId, envelope); }
+      const currentBinding = interrupted.forward ?? interrupted.inspectedLaunchBinding;
+      const inspected = currentBinding === undefined ? null : z.looseObject({ ok: z.literal(true).optional(), result: z.looseObject({
+        ok: z.literal(true).optional(), operationId: z.literal(currentBinding.operationId),
+        bindingSha256: z.literal(currentBinding.bindingSha256), intentSha256: z.string().regex(/^[a-f0-9]{64}$/u).optional() }) }).safeParse(envelope.structuredContent);
+      if (inspected?.success === true && inspected.data.result.intentSha256 !== undefined) {
         if (interrupted.intentSha256 !== undefined && interrupted.intentSha256 !== inspected.data.result.intentSha256) {
           throw new Error("manager-original-intent-changed");
         }

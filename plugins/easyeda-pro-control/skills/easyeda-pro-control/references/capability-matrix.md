@@ -158,9 +158,19 @@ The separate [forward prewrite qualification](current-footprint-forward-prewrite
 mounts a fresh `footprint-copy-qualify-*` born-forward owner. After published
 main construction and worker/actor/route observations, it joins one complete
 checkpoint-member source to original owned preparation and historical head
-evidence. Its result retains `executionReady:false`; source sealing, current
-head age, atomic prewrite queues, document clocks, complete writer capacity,
-create/scheduler/execution ownership and Save remain unavailable.
+evidence. Its v1 result retains `executionReady:false`. Separate once-only
+stages reuse the original native source seal and compare a complete closed SQL
+snapshot after acknowledged normal close and observed original root/empty-Job
+termination. They preserve the v1 result and keep helper release separate.
+Current head age, atomic prewrite queues, document clocks, complete writer
+capacity, create/scheduler/execution ownership and Save remain unavailable.
+A separate bounded `read-qualified-source` action returns the original published
+packet as base64 byte pages of complete canonical UTF-8 JSON, including exact
+source content and packet/source hashes. Every page checks original private
+packet custody and the exact published binding/record. It makes no native call,
+accepts no arbitrary path and proves no current or saved state. The qualifier's
+v1 return remains hash-only. These new stages and reader have source and offline
+coverage only.
 
 The separate [combined main/renderer validation](current-footprint-combined.md)
 seals both channels to one original root/Job before launch. It requires published

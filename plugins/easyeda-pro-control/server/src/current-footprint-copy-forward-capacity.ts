@@ -8,7 +8,7 @@ import { CURRENT_FOOTPRINT_COPY_EXECUTION_LIMITS as COORDINATOR } from "./curren
 import { CURRENT_FOOTPRINT_COPY_MAIN_KNOWN_CAPACITY as MAIN } from "./current-footprint-copy-main-capacity.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_TRANSPORT as MAIN_STREAM } from "./current-footprint-copy-main-transport-contract.ts";
 import { CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_LIMITS as CREATE } from "./current-footprint-copy-native-create-wire.ts";
-import { CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS as SOURCE_PREPARATION } from "./current-footprint-copy-preparation.ts";
+import { CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS as SOURCE_PREPARATION, CURRENT_FOOTPRINT_COPY_SOURCE_SEAL_REQUESTS as SOURCE_SEAL } from "./current-footprint-copy-preparation.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE as SAVED } from "./current-footprint-copy-saved-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS as SOURCE } from "./current-footprint-copy-source-stage-budget.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_CONTROL_BUDGET as CONTROLS } from "./current-footprint-copy-forward-profile.ts";
@@ -22,7 +22,7 @@ import { types } from "node:util";
 
 const MiB = 1024 * 1024;
 const legacyClockCleanup = 5;
-const normal = PREPARATION.normalRequestLimit - PREPARATION.requests.transactionClock + ALLOCATION.normal + SOURCE + SOURCE_PREPARATION;
+const normal = PREPARATION.normalRequestLimit - PREPARATION.requests.transactionClock + ALLOCATION.normal + SOURCE + SOURCE_PREPARATION + SOURCE_SEAL;
 const cleanup = PREPARATION.requests.cleanup - legacyClockCleanup + ALLOCATION.cleanup;
 const rendererRequests = normal + cleanup;
 const rendererPolls = STREAM.dataPolls + STREAM.idlePolls + STREAM.waitPolls;
@@ -69,7 +69,7 @@ export const CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY = freezeDeep({
       normalIdCeiling: rendererRequests, receivedBytes: STREAM.receivedBytes, eventCount: STREAM.eventCount,
       eventBytes: STREAM.eventBytes, polls: rendererPolls,
       stages: { preparationCeiling: PREPARATION.normalRequestLimit, removedLegacyClockNormal: PREPARATION.requests.transactionClock,
-        removedLegacyClockCleanup: legacyClockCleanup, source: SOURCE, sourcePreparation: SOURCE_PREPARATION,
+        removedLegacyClockCleanup: legacyClockCleanup, source: SOURCE, sourcePreparation: SOURCE_PREPARATION, sourceSeal: SOURCE_SEAL,
         allocatedCreateClockNormal: ALLOCATION.normal, allocatedCreateClockCleanup: ALLOCATION.cleanup,
         allocatedCreateClockTotal: ALLOCATION.total, handoffMaximum: ALLOCATION.handoffMaximum } },
     main: { normalClassLimit: MAIN.minimumNormal, cleanupClassLimit: MAIN.minimumCleanup, requestLimit: MAIN.minimumTotal,

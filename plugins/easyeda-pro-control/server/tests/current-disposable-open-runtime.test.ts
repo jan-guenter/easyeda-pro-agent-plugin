@@ -9,7 +9,7 @@ import { test } from "node:test";
 import type { TestContext } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { assertOperationIdUnused, controlDataDirectory, createOperation, ensureOperationStorage } from "../src/artifacts.ts";
+import { assertOperationIdUnused, controlDataDirectory, createOperation, ensureOperationStorage, operationPath } from "../src/artifacts.ts";
 import { OPERATION_SCHEMA, assertSubset, assertUpstreamReplySettled, buildPlanHash, canonicalJson, extractToolPayload, isRecord, isTerminalOperation, sha256Json, sha256Text } from "../src/core.ts";
 import { CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS, buildCurrentDisposableOpenProgram,
   currentDisposableOpenSealedTargetSchema, currentDisposableOpenTargetSchema, parseCurrentDisposableOpenRequest, validateCurrentDisposableOpenResult } from "../src/current-disposable-open.ts";
@@ -203,14 +203,31 @@ function fixture(suffix: string): Fixture {
   return { coordinator: new CurrentDisposableOpenCoordinator(options, services), input, state, calls, journals, artifacts, services, options };
 }
 
-void test("copy baseline parser preserves broad original keys before refusing an unowned transfer", async () => {
+void test("baseline managed-path preflight precedes every owner read and preserves uppercase managed keys", async () => {
   const value = fixture("copy-release-key-parser");
   const sqlRuntime = { nodeExecutable: "/synthetic/not-invoked", nodeVersion: "24.18.0" as const, nodeSha256: HASH };
   const source = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), symbolUuid: "c".repeat(16) };
-  for (const operationId of ["Upper.Copy:Baseline_1", "A", "A".repeat(160)]) {
-    await assert.rejects(value.coordinator.beginCopyBaseline(value.input.operationId,
-      { operationId, source, confirmNormalClose: true }, sqlRuntime), /cannot issue from injected opening services/u);
+  const reads: string[] = [];
+  const descriptors = new Map<string, PropertyDescriptor>();
+  for (const name of ["productionServices", "options", "retained", "baselines", "busy"]) {
+    const descriptor = Object.getOwnPropertyDescriptor(value.coordinator, name); assert.ok(descriptor !== undefined);
+    descriptors.set(name, descriptor);
+    Object.defineProperty(value.coordinator, name, { configurable: true, get: (): never => {
+      reads.push(name); throw new Error("Managed-path refusal must precede every opening owner read.");
+    } });
   }
+  try {
+    for (const operationId of ["Upper.Copy:Baseline_1", "A", "A".repeat(97), "A".repeat(160)]) {
+      assert.equal(currentSymbolBaselineRequestSchema.shape.operationId.parse(operationId), operationId);
+      await assert.rejects(value.coordinator.beginCopyBaseline(value.input.operationId,
+        { operationId, source, confirmNormalClose: true }, sqlRuntime), /^Error: Invalid operationId\.$/u);
+    }
+    assert.deepEqual(reads, []);
+  } finally {
+    for (const [name, descriptor] of descriptors) { Object.defineProperty(value.coordinator, name, descriptor); }
+  }
+  await assert.rejects(value.coordinator.beginCopyBaseline(value.input.operationId,
+    { operationId: "Upper-Managed-Baseline-Key", source, confirmNormalClose: true }, sqlRuntime), /cannot issue from injected opening services/u);
   assert.deepEqual(value.calls, []);
 });
 function resultValue(value: Value): Value { const result = value["result"]; assert.ok(isRecord(result)); return result; }
@@ -832,7 +849,7 @@ async function sourcePreparation(services: CurrentDisposableOpenDependencies, re
     CurrentSymbolBaselineCoordinator: baselineClass, currentSymbolBaselineRequestSchema, currentSymbolFinishSnapshotStatus,
     EasyedaControlEngine: Object, WindowsControlRuntime: Object,
     createOperation: services.createOperation, loadOperation: services.loadOperation, updateOperation: services.updateOperation,
-    operationPath: (id: string): string => `/fixture/${id}.json`, writePhaseArtifact: services.writePhaseArtifact,
+    operationPath: (id: string): string => { operationPath(id); return `/fixture/${id}.json`; }, writePhaseArtifact: services.writePhaseArtifact,
     assertOperationIdUnused: services.assertOperationIdUnused, prepareCurrentDisposableOpenCheckpoint: services.prepareCheckpoint,
     prepareCurrentSymbolOperationCheckpoint: services.prepareOrdinaryCheckpoint, verifyCurrentSymbolOperationCheckpoint: services.verifyOrdinaryCheckpoint,
     prepareCurrentSchematicOperationCheckpoint: services.prepareSchematicCheckpoint, verifyCurrentSchematicOperationCheckpoint: services.verifySchematicCheckpoint,
@@ -1126,6 +1143,14 @@ void test("owned baseline transfer reserves the runtime across Jobs and stops in
   await observingSibling.run(observingInput, FINGERPRINT);
   const beforeReservation = dispatches(isolated);
   const request = { operationId: baselineId, preparation: input, confirmNormalClose: true };
+  const beforeInvalidIds = [...isolated.calls], beforeOpening = canonicalJson(isolated.journals.get(isolated.input.operationId));
+  for (const operationId of ["Unsupported.Baseline:Key_1", "A", "A".repeat(97), "A".repeat(160)]) {
+    await assert.rejects(coordinator.beginSymbolBaseline(isolated.input.operationId,
+      currentSymbolBaselineRequestSchema.parse({ ...request, operationId }), sqlRuntime), /^Error: Invalid operationId\.$/u);
+    assert.equal(constructed, 0); assert.equal(retainedOwner, undefined);
+    assert.deepEqual(isolated.calls, beforeInvalidIds);
+    assert.equal(canonicalJson(isolated.journals.get(isolated.input.operationId)), beforeOpening);
+  }
   // Both sibling actions begin before the baseline reserves the shared Job.
   // Their next awaited-boundary checks must stop before another CAD dispatch.
   const revalidation = loaded.revalidate(siblingOriginal.generation, engine);

@@ -84,6 +84,16 @@ the privately retained interrupted request ID and generation. Normal calls,
 replay and replacement stay blocked. The manager's separate `cleanup-original`
 command uses that exact original client and transport.
 
+A strict interrupted `launch` has no binding in its original arguments. Until
+the manager learns it, only `cleanup-original` with `request:{action:"inspect"}`
+is available. The same original client must return a complete matching private
+attempt inspection: `state:"launched"`, acknowledged launch, full binding,
+intent/binding digests and `publicationSettlementAvailable:true`. Incomplete or
+historical inspections leave cleanup restricted to inspection. The learned data
+cannot recreate a native owner; every cleanup action still passes the original
+facade's private owner guards. Result-publication failures cannot create this
+launch-recovery context.
+
 Use `abort-generation` only when the user has authorized forced termination of
 that original EasyEDA Job. The confirmation below records that authority; it
 does not grant it or prove unchanged saved state.
@@ -95,8 +105,8 @@ does not grant it or prove unchanged saved state.
 
 Only `inspect`, explicitly confirmed `abort-generation`, `observe-termination`,
 `release-closed` and `settle-records` are accepted. The manager injects the
-original operation and binding from its interrupted arguments and validates the
-generated call with the maintained forward schema. Callers cannot supply a tool,
+original operation and binding from its interrupted arguments or qualifying
+same-client private launch inspection, and validates the generated call with the maintained forward schema. Callers cannot supply a tool,
 operation, binding, code or intent hash. `settle-records` requires the intent hash
 from an earlier same-operation, same-binding original inspection. These calls
 consume the bounded cleanup reserve and never retry automatically. A refused or

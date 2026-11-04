@@ -1,12 +1,16 @@
 # Project history
 
+- [2026-11-04 composed source and launch recovery](2026-11-04-next-composed-source-and-launch-recovery.md). Original source pages/seal/closed baseline, private input custody and same-client interrupted-launch cleanup composed on the final review fixes.
+
 - [2026-11-04 host deadline and review completion](2026-11-04-host-deadline-and-review-completion.md). Direct MCP lifetime bound, combined-error retention and all five inline/outside-diff/test review corrections.
 
 - [2026-11-04 settled delivery and recovery confirmation](2026-11-04-settled-delivery-and-recovery-confirmation.md). Explicit pre-emit result refusals, exact historical publication confirmation and force-termination authority.
 
 - [2026-11-04 forward failure evidence and dependency count](2026-11-04-forward-failure-evidence-and-dependency-count.md). Original target/preparation joins, valid early failures and the current 64-function inventory.
+- [2026-11-04 original forward execution inputs](2026-11-04-forward-execution-input-origin.md). Private factory-issued input custody for a future execution binding, with writer admission unchanged.
 
 - [2026-11-04 controller output and publication recovery](2026-11-04-controller-output-and-publication-recovery.md). Async stdout custody, exact leftover completion settlement, early success-record byte bounds and complete idle-cleanup limits.
+- [2026-11-04 forward source sealing and closed baseline](2026-11-04-forward-source-sealing.md). Separate once-only original-source seal, complete closed-SQL baseline and bounded published source retrieval, with unchanged writer restrictions and offline-only evidence.
 
 - [2026-11-04 release IDs and source scope](2026-11-04-release-id-grammar-and-source-scope.md). Genuine copy-ID compatibility, hash-only qualification output and normal closure of an automatically initialized legacy facade.
 

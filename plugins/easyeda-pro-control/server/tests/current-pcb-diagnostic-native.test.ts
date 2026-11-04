@@ -30,6 +30,14 @@ void test("native helper bytes and hash match both owner and synthetic launch sm
   assert.equal(/^if \(\$helperHash -cne '([a-f0-9]{64})'\) \{$/mu.exec(smoke)?.[1], digest);
 });
 
+void test("native forward birth self-check follows its generated purpose ceilings", async () => {
+  const source = await readFile(sourcePath, "utf8");
+  assert.ok(source.includes("fresh.FootprintRequestLimit!=EasyedaFootprintForwardLimits.Requests||fresh.FootprintNormalRequestLimit!=EasyedaFootprintForwardLimits.NormalRequests"));
+  assert.doesNotMatch(source, /fresh\.(?:Footprint(?:Normal)?RequestLimit|forward(?:Normal|Cleanup)Requests)!=\d/u);
+  assert.ok(source.includes("int overflowId=checked(EasyedaFootprintForwardLimits.Requests+1)"));
+  assert.ok(source.includes("fresh.forwardNormalRequests!=EasyedaFootprintForwardLimits.NormalClass||fresh.forwardCleanupRequests!=EasyedaFootprintForwardLimits.CleanupClass"));
+});
+
 void test("native helper embeds the complete fixed worker program with separate outgoing frame budget", async () => {
   const source = await readFile(sourcePath, "utf8");
   const expression = readPackedNativeProgram(source, "WorkerExpressionFunction");
