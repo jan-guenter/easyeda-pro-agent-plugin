@@ -186,3 +186,13 @@ Both bundles reproduce exactly and all external compatibility pins remain
 unchanged. Strict types, zero-warning type-aware lint and coverage checks pass;
 the revised manager slice passes all 11 tests. Final-head CI, automatic review,
 protected merge and installed-package verification remain subsequent stages.
+
+The automatic review of `d93300aa37d49e44d1ba98a2e75a0d6919bed369` marked
+the five original comments addressed and passed all five premerge checks,
+including docstring coverage at 97.30%. One collapsed additional comment
+identified imprecise wording about the final-retirement threshold. The guide
+now requires inspection of the exact cleanup counters before dispatch and
+states the three-record/4 MiB reservation. At 126 used cleanup records a
+cleanup call can still fit while retirement is already final. This correction
+changes documentation only; the source, runtime and version pins above remain
+unchanged. Its final-head review and CI remain required before merge.

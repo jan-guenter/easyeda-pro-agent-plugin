@@ -97,8 +97,13 @@ termination signal. Only then does it publish `replacementAllowed:true`.
 An acknowledged preflight refusal is inspected on that same connection. Exact
 active state preserves the original cleanup path; finish that cleanup before
 another explicit retirement while its cleanup reserve remains available.
-Once that reserve is exhausted, the manager permits one final retirement and
-sets `finalRetirementAttemptConsumed` before dispatch. Even an exact active-state
+Before dispatch, inspect `budgets.records.cleanup` and `budgets.bytes.cleanup`.
+An ordinary retirement requires room for three cleanup records and 4 MiB in
+that reserve: at most 125 used records and 130,023,424 used bytes, within the
+128-record and 128 MiB limits. If either threshold is exceeded, the manager
+permits one final retirement and sets `finalRetirementAttemptConsumed` before
+dispatch. For example, at 126 used cleanup records another cleanup call can
+still fit, but retirement is already final. Even an exact active-state
 preflight refusal consumes that final attempt. Finish original cleanup before
 using it. After successful final retirement and child closure, shut down the
 exhausted manager; it cannot start another generation. Unknown acknowledgments
