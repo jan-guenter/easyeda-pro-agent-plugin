@@ -23,8 +23,8 @@ proofs. No duplicate full local suite was run.
 CodeRabbit's four reported issues were fixed, including the two findings in
 collapsed review text and the persisted-record compatibility issue. Both inline
 threads were naturally resolved/outdated after the fixes. The final exact-head
-review reported no new actionable or legacy issues. The one authored command
-was exactly `@coderabbitai full review`. That particular invocation stopped
+review reported no new actionable or legacy issues. For PR166, the only review
+command issued was exactly `@coderabbitai full review`. That particular invocation stopped
 after the head changed. The initial full PR review and subsequent exact-head
 reviews cover the PR changes; they do not establish review of every unchanged
 file in the repository.

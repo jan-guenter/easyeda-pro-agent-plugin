@@ -231,8 +231,11 @@ subagent handoff, use the [cooperative retirement workflow](../../easyeda-pro-co
 Spawn a fresh subagent only after that installation and verify its actual payload and full
 process/source admission. An existing conflict connection never retries, and
 older snapshots without retirement cannot use this handoff. Report that limit
-without repeatedly requesting chat restarts. Do not kill the host-owned gateway,
-patch a loaded cache or force a connected runtime onto a new source tree.
+without repeatedly requesting chat restarts. Prefer supported normal closure.
+Only the user's explicit narrow authorization can permit normal termination of
+a verified idle legacy server with no native owner; preserve its scope and
+observe the exact original process exiting. Never use SIGKILL, patch a loaded
+cache or force a connected native owner onto a new source tree.
 Report any outstanding live admission/import requirement explicitly.
 
 Use `scripts/probe-installed-offline-catalog.ts /absolute/installed/plugin`

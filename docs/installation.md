@@ -40,8 +40,11 @@ before installation, followed by the foreground manager or a fresh-context
 subagent. An older serving process without retirement needs supported normal
 connection closure once; installing newer files cannot add a method to that
 already running process. Recheck the replacement's actual process and installed
-payload. Do not terminate a host-owned facade, write to its stdio, or patch a
-cache to force an update.
+payload. Do not write to a host facade's stdio or patch a cache to force an
+update. Normal termination of an idle legacy server requires the narrow
+explicit user authorization and process checks in the
+[repository rules](../AGENTS.md#non-negotiable-safety-rules). It is not native
+owner cleanup or an authority-transfer mechanism.
 
 Newer snapshots also accept `close-retired` after acknowledged retirement and
 zero active callbacks. It schedules their own normal shutdown once. The reply

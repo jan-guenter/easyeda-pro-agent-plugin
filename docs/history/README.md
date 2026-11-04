@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-04 conflict closure and full-review repairs](2026-11-04-conflict-closure-and-review-repairs.md). Normal conflict-server closure, explicit idle legacy cleanup, real manager retirement, full review and both cleanup/journal fixes.
+
 - [2026-11-04 historical recovery continuation](2026-11-04-historical-recovery-continuation.md). CodeRabbit's cross-version partial-intent fix, fresh-proof regression and retained source-only retirement fixture failure.
 
 - [2026-11-04 controller timeout recovery and retirement](2026-11-04-controller-timeout-and-retirement.md). Interrupted disposable capture, unchanged closed fixture, original-client cleanup and supported retired connection closure.

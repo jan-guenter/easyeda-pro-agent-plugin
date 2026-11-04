@@ -28,6 +28,7 @@ import { currentFootprintCopyBindingsSchema } from "./current-footprint-copy-bin
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_OPERATION_PREFIX, currentFootprintCopyPreparationIdSchema } from "./current-footprint-copy-preparation-validation.ts";
 import { currentFootprintCopyPreparationSchema } from "./current-footprint-copy-preparation.ts";
 import { currentFootprintSourceReadPacketSchema } from "./current-footprint-source-read-runner.ts";
+import { CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS } from "./current-footprint-copy-source-read.ts";
 import { controlDataDirectory, controlRootCapability, publishManagedAttachmentExclusive } from "./artifacts.ts";
 import type { ControlRootDirectory } from "./control-root.ts";
 import { canonicalJson, sha256Json } from "./core.ts";
@@ -82,6 +83,12 @@ export { diagnosticLifecycleBindingSchema } from "./current-pcb-diagnostic-bindi
 
 const DIRECTORY = "pcb-diagnostic-lifecycle-v1";
 const MAX_BYTES = 8192;
+const FORWARD_PREWRITE_ERROR_MAX_UNITS = 4096;
+/** JSON can use six bytes per source byte or error UTF-16 unit. With ISO24,
+ * maximized strict metadata needs 2,574 bytes including quotes and newline.
+ * The unchanged 8 KiB metadata reserve also bounds extra ISO fractional precision. */
+export const CURRENT_FOOTPRINT_FORWARD_PREWRITE_FAILURE_MAX_BYTES =
+  CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.contentBytes * 6 + FORWARD_PREWRITE_ERROR_MAX_UNITS * 6 + MAX_BYTES;
 export const DIAGNOSTIC_OBSERVATION_MAX_BYTES = 128 * 1024;
 /** V3 adds16KiB each for move/startup and finite-effect observations.
  * Historical V1/V2 retain384/680KiB; diagnostic remains128KiB. */
@@ -232,7 +239,7 @@ const forwardPrewriteResultSchema = z.object({ ...base, operationId: currentFoot
   result: currentFootprintForwardPrewriteResultSchema }).strict();
 const forwardPrewriteFailureSchema = z.object({ ...base, operationId: currentFootprintForwardPrewriteIdSchema,
   schema: z.literal("easyeda-pro-control.footprint-forward-prewrite-failure.v1"), intentSha256: diagnosticLifecycleDigestSchema,
-  failedStage: z.enum(["source", "preparation", "source-assets"]), error: z.string().max(4096),
+  failedStage: z.enum(["source", "preparation", "source-assets"]), error: z.string().max(FORWARD_PREWRITE_ERROR_MAX_UNITS),
   source: currentFootprintSourceReadPacketSchema.nullable(), preparation: currentFootprintCopyPreparationSchema.nullable(),
   executionReady: z.literal(false), executionAuthorized: z.literal(false), saveAuthorized: z.literal(false) }).strict();
 const footprintRouteId = z.union([currentFootprintCopyRoutePreparationIdSchema, currentFootprintCombinedIdSchema, currentFootprintForwardPrewriteIdSchema]);
@@ -842,7 +849,8 @@ function recordBound(name: RecordName): number {
   if (name === "common-baseline-failure.json") { return CURRENT_PCB_COMMON_FAILURE_MAX_BYTES + MAX_BYTES; }
   if (name === "worker-startup-continuation-result.json") { return CURRENT_PCB_209_RATLINE_CONTINUATION_RESULT_MAX_BYTES; }
   if (name === "footprint-copy-route-result.json" || name === "footprint-copy-route-failure.json") { return CURRENT_FOOTPRINT_COPY_ROUTE_RESULT_MAX_BYTES + MAX_BYTES; }
-  if (name === "forward-prewrite-result.json" || name === "forward-prewrite-failure.json") { return FOOTPRINT_SOURCE_RESULT_MAX_BYTES + MAX_BYTES; }
+  if (name === "forward-prewrite-result.json") { return FOOTPRINT_SOURCE_RESULT_MAX_BYTES + MAX_BYTES; }
+  if (name === "forward-prewrite-failure.json") { return CURRENT_FOOTPRINT_FORWARD_PREWRITE_FAILURE_MAX_BYTES; }
   if (name === "worker-startup-footprint-source-result.json") { return FOOTPRINT_SOURCE_RESULT_MAX_BYTES; }
   if (name === "worker-startup-ratline-result.json") { return CURRENT_PCB_209_RATLINE_STARTUP_RESULT_MAX_BYTES; }
   if (name === "worker-startup-empty-result.json") { return CURRENT_PCB_209_EMPTY_STARTUP_RESULT_MAX_BYTES; }

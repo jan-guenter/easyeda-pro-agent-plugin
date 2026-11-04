@@ -1,8 +1,11 @@
 /** Actual maintained stages with fixed synthetic I/O. No native execution. */
+/* oxlint-disable import/max-dependencies -- Join the original completed coordinator and terminal issuer with the real release path in this provenance regression. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { handlerFixture, originalClaim } from "./closed-symbol-disposable-entry-fixture.ts";
 import { ClosedSymbolDisposableEntry } from "../../src/closed-symbol-disposable-entry.ts";
+import type { FinalEvidenceRecord } from "../../src/closed-symbol-coordinator.ts";
+import { assertOriginalClosedSymbolCompletion } from "../../src/closed-symbol-terminal.ts";
 import { ClosedSymbolCoordinator, originalClosedSymbolFullEvidenceKind } from "../../src/closed-symbol-coordinator.ts";
 import { OPERATION_SCHEMA, buildPlanHash, isRecord, newOperationId, sha256Json } from "../../src/core.ts";
 import { createOperation, operationPath } from "../../src/artifacts.ts";
@@ -48,6 +51,42 @@ export function registerSuccess(kind: "locked" | "aged"): void {
     const other = new ClosedSymbolDisposableEntry(f.engine, f.upstream, f.runtime, f.ui, f.gate);
     const refused = await other.run(f.request); assert.equal(refused.outcome, "stopped");
     assert.deepEqual(f.events, events); assert.equal(f.entry.retained()["full"], retained["full"]); assert.equal(f.entry.retained()["completion"], retained["completion"]);
+  });
+}
+
+/** A failed completion preflight cannot poison the genuine final owner; a
+ * concurrent request cannot create another release owner while checks await. */
+export function registerReleasePreflightRetry(): void {
+  void test("closed-symbol release permits original retry after preflight refusal and releases its helper once", async context => {
+    const f = await handlerFixture(context), result = await f.entry.run(f.request);
+    assert.equal(result.outcome, "completed", String(f.entry.retained()["failure"])); assert.ok(result.outcome === "completed");
+    const retained = f.entry.retained();
+    const coordinator = retained["coordinator"];
+    const full = retained["full"];
+    const completion = retained["completion"];
+    assert.ok(coordinator instanceof ClosedSymbolCoordinator);
+    assert.equal(originalClosedSymbolFullEvidenceKind(full, f.engine, result.operationId), "locked");
+    assertOriginalClosedSymbolCompletion(completion, f.engine, result.operationId);
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The actual coordinator registry above verifies this retained original full result, not caller JSON.
+    const originalFull = full as FinalEvidenceRecord;
+    let disposed = 0, releases = 0;
+    const release = f.runtime.release.bind(f.runtime);
+    context.mock.method(f.runtime, "release", (): ReturnType<typeof release> => { releases += 1; return release(); });
+    const complete = (runtime: typeof f.runtime): void => { assert.equal(runtime, f.runtime); assert.equal(runtime.isReleaseAcknowledged(), true); disposed += 1; };
+    const captureCount = (): number => f.owner.requests.filter(request => request["action"] === "release-capture").length;
+    const before = captureCount();
+    const invalid = assert.rejects(coordinator.releaseCompletedRuntime(originalFull, structuredClone(completion), complete), /Original terminal completion owner or value differs/u);
+    await assert.rejects(coordinator.releaseCompletedRuntime(originalFull, completion, complete), /preflight is already pending/u);
+    await invalid;
+    assert.equal(releases, 0); assert.equal(disposed, 0); assert.equal(captureCount(), before); assert.equal(coordinator.isRuntimeDisposed(), false);
+    const valid = coordinator.releaseCompletedRuntime(originalFull, completion, complete);
+    await assert.rejects(coordinator.releaseCompletedRuntime(originalFull, completion, complete), /preflight is already pending/u);
+    const receipt = await valid;
+    assert.equal(receipt.helperReleaseAcknowledged, true); assert.equal(coordinator.isRuntimeDisposed(f.runtime), true);
+    assert.equal(releases, 1); assert.equal(disposed, 1); assert.equal(captureCount(), before + 3);
+    assert.equal(f.entry.retained()["full"], full); assert.equal(f.entry.retained()["completion"], completion);
+    await assert.rejects(coordinator.releaseCompletedRuntime(originalFull, completion, complete), /completed/u);
+    assert.equal(releases, 1); assert.equal(disposed, 1); assert.equal(captureCount(), before + 3);
   });
 }
 

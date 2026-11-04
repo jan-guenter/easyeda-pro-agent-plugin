@@ -84,7 +84,7 @@ not promoted or retried. The new startup-cleanup action removes this external
 step from subsequent supported startup failures.
 
 A genuinely new foreground manager then started the installed084035 facade and
-acquired the lease. Actual loaded identity, original process/stdios/control
+acquired the lease. Actual loaded identity, original process, stdio streams and control
 descriptor, pinned executable/profile and the complete installed package were
 checked. All 2,525 files, 42 directories and 48,849,063 bytes matched the published
 commit; its 998-file source and three-file runtime projections matched again.

@@ -19,7 +19,7 @@ one checkpoint-member footprint's complete native source to its original owned
 copy preparation, source assets and selected historical head.
 
 The route retains actual opening, source and preparation references across
-awaits. It accepts no caller-supplied plan, native handle, clock, command budget
+await boundaries. It accepts no caller-supplied plan, native handle, clock, command budget
 or execution owner. Separate strict launch, factory, qualification and abort
 journal discriminants preserve the older persisted formats. Failures consume
 their stage, preserve partial observations and retain the original cleanup

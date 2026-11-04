@@ -1,5 +1,8 @@
 # Historical recovery continuation across plugin versions
 
+The later full review and controller observations are retained in the
+[conflict closure and review repairs](2026-11-04-conflict-closure-and-review-repairs.md).
+
 This follows the [timeout and retirement batch](2026-11-04-controller-timeout-and-retirement.md).
 CodeRabbit's exact-head review of `4e22859b6a10af70036c0b3a2293cc9d69a09480`
 found that a partially published historical relinquishment intent could prevent

@@ -79,6 +79,21 @@ an unacknowledged request. This action exists only in snapshots that implement
 it. The foreground manager ordinarily closes its retired child's stdin and
 observes exit instead.
 
+A startup ownership-conflict connection can expose a different local
+`easyeda_control_session` contract:
+`{"request":{"action":"close-conflict","confirmCloseConflict":true}}`.
+Use it only when that original connection's tool metadata advertises it. This
+branch acquired no lease, upstream, gateway or native owner. It consumes one
+request to close itself normally and cannot affect the observed owner's
+process. Its close-scheduled result proves neither reply delivery nor exit;
+observe that original process exiting independently. The ordinary facade
+rejects this request, and older conflict snapshots lack it entirely.
+
+First use this connection's `{"request":{"action":"inspect"}}` to obtain its
+own PID, then verify and retain that original process for exit observation.
+The returned `observedOwnerPid` is still the immutable startup snapshot about
+another process. Neither field grants ownership or authority to signal it.
+
 This handoff currently follows fully released diagnostic owners, an ordinary
 launch that completed its own `release-closed`, or a connection that allocated
 no native owner. Supported completed project-opening and metadata workflows
@@ -143,9 +158,13 @@ can leave the actual lock state uncertain. Do not remove or repair it manually.
 Older snapshots without this route cannot retire themselves through MCP. A
 fresh subagent started while such an owner remains will only encounter the
 ownership conflict. Report the missing capability and use supported connection
-closure when available. Do not kill an owner, change control roots, patch a
-cache or repeatedly ask for chat restarts. The maintained foreground client
-remains an option only when the original control lease is free.
+closure when available. Only an explicit user authorization for verified idle
+legacy-server termination can permit normal SIGTERM, with original PID/start,
+module and resource checks and observed exit. It grants no native-owner cleanup;
+never use SIGKILL, remove a lease, change control roots or patch a cache. Keep
+any standing authorization's exact scope instead of requesting it again.
+The maintained foreground client remains an option only when the original
+control lease is free. Do not repeatedly ask for chat restarts.
 
 ### Ordinary application startup on the current tuple
 

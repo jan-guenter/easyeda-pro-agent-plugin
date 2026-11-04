@@ -210,6 +210,7 @@ export class ClosedSymbolCoordinator {
   private terminationObservations = 0;
   private readonly nativeRuntime: MachineProfile["runtime"];
   private runtimeRelease: OriginalTerminalRuntimeRelease | undefined;
+  private runtimeReleasePreflight = false;
   private runtimeReleaseFull: FinalEvidenceRecord | undefined;
   private runtimeReleaseCompletion: OriginalTerminalCompletion | OriginalAgedTerminalCompletion | undefined;
   private captureRetirementAttempted = false;
@@ -249,65 +250,71 @@ export class ClosedSymbolCoordinator {
     need(!active.has(this.engine) && issued !== undefined && issued.engine === this.engine && issued.operationId === full.operationId &&
       this.failure === undefined && this.lastSuccessfulStage === "verify-sql-compare", "Closed symbol release requires its original successful full coordinator.");
     if (this.runtimeRelease === undefined) {
+      need(!this.runtimeReleasePreflight, "Closed symbol release preflight is already pending.");
       need(!settleRecordsOnly && this.runtimeReleaseFull === undefined && this.runtimeReleaseCompletion === undefined,
         "Closed symbol settlement has no original release attempt.");
-      this.runtimeReleaseFull = full; this.runtimeReleaseCompletion = completion;
-      const kind = originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId);
-      const terminalModule = kind === "locked" ? await import("./closed-symbol-terminal.ts") : await import("./closed-symbol-aged-terminal.ts");
-      /** Use the original locked or aged terminal issuer selected by the full result.
-       * Matching serialized fields never replace that engine-bound completion token.
-       */
-      const assertCompletion = (value: OriginalTerminalCompletion | OriginalAgedTerminalCompletion): void => {
-        const check: (candidate: unknown, engine: EasyedaControlEngine, operationId: string) => void =
-          "assertOriginalClosedSymbolCompletion" in terminalModule ? terminalModule.assertOriginalClosedSymbolCompletion : terminalModule.assertOriginalAgedClosedSymbolCompletion;
-        check(value, this.engine, full.operationId);
-      };
-      assertCompletion(completion);
-      const bindings = issued.bindings, { runtime } = this, launch = bindings.verification.launch.launch;
-      const completionText = canonicalJson(completion);
-      const terminal = await loadClosedSymbolHistoricalPhaseJournal(full.operationId);
-      assertCompletion(completion);
-      need(terminal.journal.state === "closed-session-completed" && canonicalJson(terminal.predecessor) === canonicalJson(bindings.journal) &&
-        canonicalJson(terminal.journal["terminalArtifact"]) === canonicalJson(completion.terminalArtifact), "Closed symbol terminal publication changed.");
-      const terminalText = canonicalJson(terminal.journal);
-      /** Retain the exact successful coordinator, full result and terminal completion
-       * through cleanup, including after capture retirement invalidates native proofs.
-       */
-      const owner = (): void => {
-        issued.current();
-        need(this.runtime === runtime && fullEvidenceOwners.get(full) === issued && this.runtimeReleaseFull === full && this.runtimeReleaseCompletion === completion &&
-          canonicalJson(completion) === completionText && fullEvidenceText(full, bindings) === issued.text && this.failure === undefined,
-        "Closed symbol disposal lost its exact original completion or final generation.");
-      };
-      /** Reprove the terminal records and original completion before native cleanup.
-       * The actual final root and empty Job must be observed with no bridge scope left.
-       */
-      const eligible = async (): Promise<void> => {
-        owner(); assertCompletion(completion);
-        const current = await loadClosedSymbolHistoricalPhaseJournal(full.operationId); owner(); assertCompletion(completion);
-        need(canonicalJson(current.journal) === terminalText, "Closed symbol terminal records changed before disposal.");
-        await readExactUtf8Artifact(completion.terminalArtifact); owner(); assertCompletion(completion);
-        await this.engine.assertRecoveryOperationIsolated(full.operationId); owner(); assertCompletion(completion);
-        const observation = await runtime.observeLaunchTermination(); owner(); assertCompletion(completion);
-        need(observation.terminated && observation.jobId === launch.jobId && observation.helperInstance === launch.helperInstance,
-          "Closed symbol disposal requires its actual latest original root and empty Job.");
-        const lifecycle = this.upstream.bridgeSessionLifecycle();
-        need(lifecycle?.activeSession === null && this.upstream.currentAuthenticatedBridgeDispatchBinding() === undefined,
-          "Closed symbol disposal requires its closed authenticated bridge scope.");
-      };
-      /** Consume retirement of the three original admission captures after terminal
-       * completion. Any uncertain release remains consumed and cannot be retried.
-       */
-      const retireCaptures = async (): Promise<void> => {
-        owner(); assertCompletion(completion);
-        need(!this.captureRetirementAttempted, "Closed symbol capture retirement is consumed."); this.captureRetirementAttempted = true;
-        // The successful original stages already settled all their extra witness
-        // And saved-reader captures. Retire the three primary admissions once.
-        for (const admission of [bindings.baseline.admission, bindings.edit.admission, bindings.verification.admission]) {
-          await this.engine.releaseClosedSessionAuthority(admission.capture); owner();
-        }
-      };
-      this.runtimeRelease = new OriginalTerminalRuntimeRelease(runtime, full.operationId, "symbol-metadata", launch, owner, eligible, retireCaptures);
+      this.runtimeReleasePreflight = true;
+      try {
+        const kind = originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId);
+        const terminalModule = kind === "locked" ? await import("./closed-symbol-terminal.ts") : await import("./closed-symbol-aged-terminal.ts");
+        /** Use the original locked or aged terminal issuer selected by the full result.
+         * Matching serialized fields never replace that engine-bound completion token.
+         */
+        const assertCompletion = (value: OriginalTerminalCompletion | OriginalAgedTerminalCompletion): void => {
+          const check: (candidate: unknown, engine: EasyedaControlEngine, operationId: string) => void =
+            "assertOriginalClosedSymbolCompletion" in terminalModule ? terminalModule.assertOriginalClosedSymbolCompletion : terminalModule.assertOriginalAgedClosedSymbolCompletion;
+          check(value, this.engine, full.operationId);
+        };
+        assertCompletion(completion);
+        const bindings = issued.bindings, { runtime } = this, launch = bindings.verification.launch.launch;
+        const completionText = canonicalJson(completion);
+        const terminal = await loadClosedSymbolHistoricalPhaseJournal(full.operationId);
+        assertCompletion(completion);
+        need(terminal.journal.state === "closed-session-completed" && canonicalJson(terminal.predecessor) === canonicalJson(bindings.journal) &&
+          canonicalJson(terminal.journal["terminalArtifact"]) === canonicalJson(completion.terminalArtifact), "Closed symbol terminal publication changed.");
+        const terminalText = canonicalJson(terminal.journal);
+        /** Retain the exact successful coordinator, full result and terminal completion
+         * through cleanup, including after capture retirement invalidates native proofs.
+         */
+        const owner = (): void => {
+          issued.current();
+          need(this.runtime === runtime && fullEvidenceOwners.get(full) === issued && this.runtimeReleaseFull === full && this.runtimeReleaseCompletion === completion &&
+            canonicalJson(completion) === completionText && fullEvidenceText(full, bindings) === issued.text && this.failure === undefined,
+          "Closed symbol disposal lost its exact original completion or final generation.");
+        };
+        /** Reprove the terminal records and original completion before native cleanup.
+         * The actual final root and empty Job must be observed with no bridge scope left.
+         */
+        const eligible = async (): Promise<void> => {
+          owner(); assertCompletion(completion);
+          const current = await loadClosedSymbolHistoricalPhaseJournal(full.operationId); owner(); assertCompletion(completion);
+          need(canonicalJson(current.journal) === terminalText, "Closed symbol terminal records changed before disposal.");
+          await readExactUtf8Artifact(completion.terminalArtifact); owner(); assertCompletion(completion);
+          await this.engine.assertRecoveryOperationIsolated(full.operationId); owner(); assertCompletion(completion);
+          const observation = await runtime.observeLaunchTermination(); owner(); assertCompletion(completion);
+          need(observation.terminated && observation.jobId === launch.jobId && observation.helperInstance === launch.helperInstance,
+            "Closed symbol disposal requires its actual latest original root and empty Job.");
+          const lifecycle = this.upstream.bridgeSessionLifecycle();
+          need(lifecycle?.activeSession === null && this.upstream.currentAuthenticatedBridgeDispatchBinding() === undefined,
+            "Closed symbol disposal requires its closed authenticated bridge scope.");
+        };
+        /** Consume retirement of the three original admission captures after terminal
+         * completion. Any uncertain release remains consumed and cannot be retried.
+         */
+        const retireCaptures = async (): Promise<void> => {
+          owner(); assertCompletion(completion);
+          need(!this.captureRetirementAttempted, "Closed symbol capture retirement is consumed."); this.captureRetirementAttempted = true;
+          // The successful original stages already settled all their extra witness
+          // And saved-reader captures. Retire the three primary admissions once.
+          for (const admission of [bindings.baseline.admission, bindings.edit.admission, bindings.verification.admission]) {
+            await this.engine.releaseClosedSessionAuthority(admission.capture); owner();
+          }
+        };
+        // Construction invokes no callback or native cleanup. Publish the exact
+        // Release owner and completion together only after preflight succeeds.
+        const release = new OriginalTerminalRuntimeRelease(runtime, full.operationId, "symbol-metadata", launch, owner, eligible, retireCaptures);
+        this.runtimeReleaseFull = full; this.runtimeReleaseCompletion = completion; this.runtimeRelease = release;
+      } finally { this.runtimeReleasePreflight = false; }
     }
     need(this.runtimeReleaseFull === full && this.runtimeReleaseCompletion === completion, "Closed symbol release cannot substitute another original completion.");
     return settleRecordsOnly ? this.runtimeRelease.settle(complete) : this.runtimeRelease.run(complete);
