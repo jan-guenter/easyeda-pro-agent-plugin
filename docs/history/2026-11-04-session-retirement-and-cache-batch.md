@@ -113,3 +113,21 @@ The CBB report now includes the exact three original HTTP request definitions
 recovered from retained tool history. It distinguishes the requests and 403
 error messages from response headers/bodies, which were never retained. No
 probe was rerun to fill that evidence gap.
+
+A final source check established an ordering requirement for the new handoff.
+Retirement's fresh historical qualification can reopen the serving package's
+compatibility manifest, metadata compiler scripts and native helper. Official
+installation can prune that package, so supported owners must complete cleanup
+and retirement while those files exist, before upgrading/installing. The agent
+rules, operating skills and installation guidance now state that sequence.
+An older snapshot without retirement still needs supported host closure; this
+documentation adds no shutdown capability to an already running old process.
+
+Read-only host investigation also found no supported reload attachment for the
+current stdio app-server. Its sockets were connected, not listening. The current
+CLI proxy requires an existing Unix control socket. The documented
+[`config/mcpServer/reload`](https://learn.chatgpt.com/docs/app-server) method
+queues refreshes for loaded threads and has no thread/server selector in this
+CLI's generated schema. No live reload request, new daemon, host signal or
+stdio write was attempted. Other hosts may expose a supported client control;
+its availability must be established rather than assumed.

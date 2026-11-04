@@ -21,7 +21,8 @@ runtime admission or native ownership; retain the required process/source checks
 
 For a user-requested update handoff to a fresh-context subagent, read the
 [cooperative retirement workflow](references/connection-and-context.md#cooperative-retirement-and-update-handoff).
-Finish original native cleanup, await acknowledged retirement, then spawn and
+Finish original native cleanup and retire while the original package still
+exists, before upgrading/installing. Verify the installed update, then spawn and
 prove the replacement's loaded snapshot and process admission. A subagent
 already in ownership-conflict mode cannot retry. Older snapshots without the
 retirement tool cannot perform this handoff; report the limit without repeated

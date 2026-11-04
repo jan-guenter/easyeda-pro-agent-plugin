@@ -71,7 +71,14 @@ allocated even after their internal final closure. They have no index-level
 disposal through this tool and still refuse retirement; completing their
 workflow alone is insufficient. Do not clear those owners or their leases.
 
-For a user-requested handoff to a fresh-context subagent after an update:
+For a user-requested handoff to a fresh-context subagent during an update:
+
+Keep the original package present through retirement. Fresh historical journal
+qualification can reread its compatibility manifest, metadata scripts and
+native helper. An installer that prunes that package can make retirement
+preflight refuse. Publish the update first. When the current owning snapshot
+supports retirement, retire it before upgrading/installing. Then verify the new
+package and start its replacement.
 
 1. Query offline `session` with `includeSchemas:true` and validate the assembled
    request with `session-validate`. Finish every original workflow's native closure, observed root/Job termination,
@@ -91,13 +98,20 @@ For a user-requested handoff to a fresh-context subagent after an update:
    source/reference queries such as `loaded-facade`; managed-file preparation
    and SQL baseline analysis refuse. Existing API calls must finish before
    retirement and new API calls refuse while checking or retiring.
-4. Only then spawn a new subagent with fresh context. Pass the scoped task,
+4. Upgrade/install through the official workflow and verify the complete package
+   and offline catalog. Then spawn a new subagent with fresh context. Pass the scoped task,
    expected installed version/payload and necessary evidence references.
    The subagent must query offline `loaded-facade` and verify its serving PID,
    module path, Node version, exact installed payload and full process/source
    admission before any live call. A new process does not prove it loaded the
    latest plugin. A subagent or connection already in ownership-conflict mode
    never retries; create a later fresh connection after release.
+
+If the fresh subagent still has an older host catalog or lacks the tool, the
+[foreground client](#foreground-mcp-session) can explicitly target the verified
+latest package while the original lease is free. Admit and retain that client's
+actual facade through cleanup. Record foreground validation separately from
+Codex-host admission; a fresh context does not establish either one.
 
 After any retirement error, inspect the same original connection. `state:"active"`
 means preflight refused before cleanup, so its original workflow can finish

@@ -222,11 +222,13 @@ can invalidate build receipts even when runtime output happens to match. Derive
 and review the actual closure; never copy old evidence onto a new generation.
 Import or activate changed runtime bytes only through the supported workflow.
 
-After Git publication and marketplace installation, verify version, packaged
-file inventory, metadata and offline catalog. For a user-requested fresh-context
+After Git publication, finish original native cleanup and settlement. When the
+owning facade supports retirement, await its acknowledgement before upgrading
+or installing. Retirement's fresh journal checks can require its original
+package files. Then verify the installed version, complete file inventory,
+metadata and offline catalog. For a user-requested fresh-context
 subagent handoff, use the [cooperative retirement workflow](../../easyeda-pro-control/references/connection-and-context.md#cooperative-retirement-and-update-handoff).
-Finish original native cleanup and settlement, await acknowledged retirement,
-then spawn a fresh subagent and verify its actual installed payload and full
+Spawn a fresh subagent only after that installation and verify its actual payload and full
 process/source admission. An existing conflict connection never retries, and
 older snapshots without retirement cannot use this handoff. Report that limit
 without repeatedly requesting chat restarts. Do not kill the host-owned gateway,

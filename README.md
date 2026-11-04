@@ -137,6 +137,10 @@ versions or general writing.
 
 Install the published GitHub marketplace snapshot:
 
+For an update with a connected facade that supports cooperative retirement,
+finish its original native cleanup and retire it before upgrading or installing.
+Keep its original package files until retirement is acknowledged.
+
 ```bash
 umask 022
 codex plugin marketplace add https://github.com/jan-guenter/easyeda-pro-agent-plugin.git --ref main
@@ -146,8 +150,8 @@ codex plugin add easyeda-pro-control@easyeda-pro-agent
 After installation or upgrade, load a fresh MCP connection and verify its
 actual `loaded-facade` snapshot before live work. For a requested fresh-context
 subagent handoff, supported facades can retire cooperatively after all original
-native cleanup and calls finish. Await retirement before spawning the subagent;
-verify its installed payload and process admission. Older snapshots lack this
+native cleanup and calls finish. Retire before installing the update, then
+spawn the subagent and verify its installed payload and process admission. Older snapshots lack this
 route. See [connection handoff](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/connection-and-context.md#cooperative-retirement-and-update-handoff).
 The marketplace [manifest](.agents/plugins/marketplace.json) identifies the plugin package.
 
