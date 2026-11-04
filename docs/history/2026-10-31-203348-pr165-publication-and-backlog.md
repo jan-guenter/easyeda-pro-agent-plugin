@@ -15,7 +15,7 @@ protected-squashed from reviewed payload
 `0dcfdfbf564a0a2d08cbbc9755bbdda1a8c9064b` match the reviewed payload exactly.
 No administrator bypass was used.
 
-The batch adds three offline supplied `.elibz2` footprint/symbol source actions,
+The batch adds three offline actions for supplied `.elibz2` footprint/symbol sources,
 qualified original Node process-context binding for head-age observation,
 bounded private CDP failures, loader-free stable inventory checks and redacted
 frame-drift diagnostics. A pure queued-structure comparison model supplies a
