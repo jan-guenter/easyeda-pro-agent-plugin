@@ -83,6 +83,9 @@ export { diagnosticLifecycleBindingSchema } from "./current-pcb-diagnostic-bindi
 
 const DIRECTORY = "pcb-diagnostic-lifecycle-v1";
 const MAX_BYTES = 8192;
+const FOOTPRINT_SOURCE_RESULT_MAX_BYTES = 4 * 1024 * 1024 + 64 * 1024;
+/** Complete published source packet, fixed preparation and ordinary metadata margin. */
+export const CURRENT_FOOTPRINT_FORWARD_PREWRITE_RESULT_MAX_BYTES = FOOTPRINT_SOURCE_RESULT_MAX_BYTES + MAX_BYTES;
 const FORWARD_PREWRITE_ERROR_MAX_UNITS = 4096;
 /** JSON can use six bytes per source byte or error UTF-16 unit. With ISO24,
  * maximized strict metadata needs 2,574 bytes including quotes and newline.
@@ -236,7 +239,9 @@ const forwardPrewriteIntentSchema = z.object({ ...base, operationId: currentFoot
 const forwardPrewriteResultSchema = z.object({ ...base, operationId: currentFootprintForwardPrewriteIdSchema,
   schema: z.literal("easyeda-pro-control.footprint-forward-prewrite-result.v1"), intentSha256: diagnosticLifecycleDigestSchema,
   source: currentFootprintSourceReadPacketSchema, preparation: currentFootprintCopyPreparationSchema,
-  result: currentFootprintForwardPrewriteResultSchema }).strict();
+  result: currentFootprintForwardPrewriteResultSchema }).strict().refine(value =>
+  Buffer.byteLength(canonicalJson(value)) + 1 <= CURRENT_FOOTPRINT_FORWARD_PREWRITE_RESULT_MAX_BYTES,
+  "Forward prewrite result exceeds its complete evidence bound.");
 const forwardPrewriteFailureSchema = z.object({ ...base, operationId: currentFootprintForwardPrewriteIdSchema,
   schema: z.literal("easyeda-pro-control.footprint-forward-prewrite-failure.v1"), intentSha256: diagnosticLifecycleDigestSchema,
   failedStage: z.enum(["source", "preparation", "source-assets"]), error: z.string().max(FORWARD_PREWRITE_ERROR_MAX_UNITS),
@@ -642,7 +647,6 @@ const workerStartupFootprintSourceIntentSchema = z.object({
 // The native observation already caps its JSON encoding near 4MiB. This bound
 // Includes the durable packet and chain metadata; it does not change any other
 // Journal family's allowance or permit truncating source/effect evidence.
-const FOOTPRINT_SOURCE_RESULT_MAX_BYTES = 4 * 1024 * 1024 + 64 * 1024;
 const workerStartupFootprintSourceResultSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb209-footprint-source-result.v1"), ...base,
   operationId: footprintStartupId, intentSha256: diagnosticLifecycleDigestSchema,
@@ -849,7 +853,7 @@ function recordBound(name: RecordName): number {
   if (name === "common-baseline-failure.json") { return CURRENT_PCB_COMMON_FAILURE_MAX_BYTES + MAX_BYTES; }
   if (name === "worker-startup-continuation-result.json") { return CURRENT_PCB_209_RATLINE_CONTINUATION_RESULT_MAX_BYTES; }
   if (name === "footprint-copy-route-result.json" || name === "footprint-copy-route-failure.json") { return CURRENT_FOOTPRINT_COPY_ROUTE_RESULT_MAX_BYTES + MAX_BYTES; }
-  if (name === "forward-prewrite-result.json") { return FOOTPRINT_SOURCE_RESULT_MAX_BYTES + MAX_BYTES; }
+  if (name === "forward-prewrite-result.json") { return CURRENT_FOOTPRINT_FORWARD_PREWRITE_RESULT_MAX_BYTES; }
   if (name === "forward-prewrite-failure.json") { return CURRENT_FOOTPRINT_FORWARD_PREWRITE_FAILURE_MAX_BYTES; }
   if (name === "worker-startup-footprint-source-result.json") { return FOOTPRINT_SOURCE_RESULT_MAX_BYTES; }
   if (name === "worker-startup-ratline-result.json") { return CURRENT_PCB_209_RATLINE_STARTUP_RESULT_MAX_BYTES; }

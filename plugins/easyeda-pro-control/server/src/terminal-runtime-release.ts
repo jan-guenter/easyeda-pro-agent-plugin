@@ -2,7 +2,7 @@
 import { dirname, join } from "node:path";
 import { operationPath, publishManagedAttachmentExclusive, readExactUtf8Artifact } from "./artifacts.ts";
 import type { ArtifactDescriptor } from "./artifacts.ts";
-import { canonicalJson, sha256Json } from "./core.ts";
+import { canonicalJson, sha256Json, sha256Text } from "./core.ts";
 import type { WindowsAuthorityLaunch } from "./windows-authority.ts";
 import type { WindowsControlRuntime } from "./windows-runtime.ts";
 
@@ -98,6 +98,27 @@ export class OriginalTerminalRuntimeRelease {
       "Original native runtime disposal", bytes, "easyeda-pro-control.terminal-runtime-release.v1");
     return Object.freeze({ path: descriptor.path, sha256: descriptor.sha256, bytes: descriptor.bytes });
   }
+  /** Only explicit settlement may recover a completion left by failed cleanup.
+   * The original closed owner and exact retained record bind the managed read;
+   * Absent or different bytes preserve the publication failure.
+   */
+  private async publishReleasedRecord(value: unknown, settleRecordsOnly: boolean): Promise<ArtifactDescriptor> {
+    try { return await this.publish("native-runtime-released.json", value); }
+    catch (publicationError) {
+      if (!settleRecordsOnly) { throw publicationError; }
+      try {
+        this.current(true);
+        const text = `${JSON.stringify(value)}\n`;
+        const directory = dirname(operationPath(this.operationId));
+        const expected = Object.freeze({ path: join(directory, this.operationId, "native-runtime-released.json"),
+          bytes: Buffer.byteLength(text), sha256: sha256Text(text) });
+        need(expected.bytes <= 16_384, "Native disposal record exceeds its bound.");
+        const existing = await readExactUtf8Artifact(expected); this.current(true);
+        need(existing.text === text, "Native disposal completion differs from its retained record.");
+        return expected;
+      } catch { throw publicationError; }
+    }
+  }
   /** Report irreversible disposal only after records and the allocation callback
    * have completed, optionally restricted to this exact retained runtime.
    */
@@ -140,7 +161,7 @@ export class OriginalTerminalRuntimeRelease {
       const released = Object.freeze({ schema: "easyeda-pro-control.terminal-runtime-released.v1", operationId: this.operationId,
         family: this.family, releaseIntentSha256: sha256Json(this.intent), originalLatestLaunchSha256: sha256Json(this.launch),
         helperTransportClosed: true, captureRetirementAcknowledged: true, executionAuthorized: false, replayAllowed: false });
-      this.releaseArtifact ??= await this.publish("native-runtime-released.json", released); this.current(true);
+      this.releaseArtifact ??= await this.publishReleasedRecord(released, settleRecordsOnly); this.current(true);
       const releaseRecord = await readExactUtf8Artifact(this.releaseArtifact);
       need(releaseRecord.text === `${JSON.stringify(released)}\n`, "Native disposal completion changed.");
       this.current(true);

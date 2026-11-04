@@ -4,6 +4,7 @@ import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { chmod, copyFile, lstat, mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { Writable } from "node:stream";
 import { setTimeout as wait } from "node:timers/promises";
 import { test } from "node:test";
 import { pathToFileURL } from "node:url";
@@ -12,7 +13,7 @@ import { build } from "esbuild";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { z } from "zod";
 
-import { ForegroundSessionManager, SessionManagerRetirementReservation, managerInputLines, parseSessionManagerRequest, runManagerInput, sessionManagerCallBudgetAvailable, sessionManagerRetirementBudgetAvailable, sessionManagerStartBudgetAvailable } from "../../scripts/control-session-manager.ts";
+import { ForegroundSessionManager, SessionManagerRetirementReservation, createManagerOutputPublisher, managerInputLines, parseSessionManagerRequest, runManagerInput, sessionManagerCallBudgetAvailable, sessionManagerRetirementBudgetAvailable, sessionManagerStartBudgetAvailable } from "../../scripts/control-session-manager.ts";
 import { MAXIMUM_REQUEST_BYTES } from "../../scripts/control-session.ts";
 import { ForegroundSessionTransport } from "../../scripts/control-session-transport.ts";
 import { assertTestIsolation } from "../../scripts/test-isolation.ts";
@@ -523,6 +524,58 @@ void test("actual manager keeps original cleanup calls after semantic errors and
     await manager.handle(retire("after-cleanup", 1));
     assert.equal(record(outputs.at(-1))["retired"], true);
     await manager.handle(request({ id: "done", action: "shutdown" }));
+  });
+});
+
+void test("asynchronous admitted stdout failure blocks publication while retaining the exact unused startup child", { timeout: 45_000 }, async context => {
+  const entered = Promise.withResolvers<null>();
+  const selected = await fixture();
+  await selectedProfile(selected.profilePath, async () => {
+    const output = new Writable({ highWaterMark: 2 * 1024 * 1024,
+      // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Reproduce the actual Writable completion callback rather than a promise-shaped stand-in.
+      write(_chunk, _encoding, callback): void {
+        entered.resolve(null);
+        // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Fail the admitted write on the next turn, after write() has returned true.
+        setImmediate(() => { callback(new Error("private-asynchronous-output-failure")); });
+      } });
+    const emit = createManagerOutputPublisher(output);
+    let fixtureCleanup = false;
+    const manager = new ForegroundSessionManager(value => fixtureCleanup ? Promise.resolve() : emit(value));
+    // Only the test publisher is bypassed during fixture disposal. The real
+    // Failed output remains permanently unavailable; no recovery is implied.
+    context.after(async () => {
+      fixtureCleanup = true;
+      if (manager.inspect()["facadePid"] !== null && record(manager.inspect()["closure"] ?? {})["closeObserved"] !== true) {
+        await manager.handle(request({ id: "fixture-close-unused-output-owner", action: "cleanup-startup", confirmCloseOriginalStartup: true }));
+      }
+      if (manager.inspect()["stage"] !== "closed") { await manager.handle(request({ id: "fixture-close-output-manager", action: "shutdown" })); }
+      output.destroy();
+    });
+    const failed = assert.rejects(manager.initialize(selected.root), /manager-output-unavailable/u);
+    await entered.promise;
+    const original = manager.inspect();
+    // Write admission returned true for this small line before its failure.
+    assert.equal(output.writableNeedDrain, false);
+    assert.equal(original["stage"], "starting"); assert.equal(original["publicationFault"], false);
+    assert.equal(original["callerToolDispatchStarted"], false);
+    assert.equal(typeof original["facadePid"], "number");
+    await failed;
+    const blocked = manager.inspect();
+    assert.equal(blocked["stage"], "blocked"); assert.equal(blocked["publicationFault"], true);
+    assert.equal(blocked["facadePid"], original["facadePid"]); assert.equal(blocked["generation"], original["generation"]);
+    assert.equal(blocked["closure"], null);
+    await assert.rejects(emit({ afterFailure: true }), /manager-output-unavailable/u);
+    const evidence = String(blocked["evidenceDirectory"]), names = await readdir(evidence);
+    const texts = await Promise.all(names.map(name => readFile(join(evidence, name), "utf8")));
+    const text = texts.join("");
+    assert.match(text, /publication-failed/u); assert.equal(text.includes("private-asynchronous-output-failure"), false);
+    fixtureCleanup = true;
+    await manager.handle(request({ id: "close-original-unused-output-owner", action: "cleanup-startup", confirmCloseOriginalStartup: true }));
+    const closure = record(manager.inspect()["closure"]);
+    assert.equal(closure["pid"], original["facadePid"]); assert.equal(closure["stdinEof"], true);
+    assert.equal(closure["exitObserved"], true); assert.equal(closure["closeObserved"], true);
+    assert.equal(closure["exitCode"], 0); assert.equal(closure["signal"], null);
+    await manager.handle(request({ id: "close-original-output-manager", action: "shutdown" }));
   });
 });
 

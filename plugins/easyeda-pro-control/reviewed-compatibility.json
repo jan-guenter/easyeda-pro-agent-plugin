@@ -3,7 +3,7 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "7cd92f6e1684a67bf9d98461092235c941efab883d7250a85b680e97bf9105de",
+      "sha256": "5ee54723cb52defeb443c46018f39eeff4cd46aac21e180450d57e5e695fb345",
       "fileCount": 1005,
       "files": [
         {
@@ -2278,8 +2278,8 @@
         },
         {
           "relativePath": "current-pcb-diagnostic-lifecycle-journal.ts",
-          "bytes": 146053,
-          "sha256": "d14c27bc03475dfab3d0353fbd5e143962efe750219522337816f79f925937f1"
+          "bytes": 146446,
+          "sha256": "27098c77baa56ab7cad60a13d5c464f5d03d247f2b2b34cd145cd4e76d200130"
         },
         {
           "relativePath": "current-pcb-diagnostic-lifecycle.ts",
@@ -4938,8 +4938,8 @@
         },
         {
           "relativePath": "terminal-runtime-release.ts",
-          "bytes": 10882,
-          "sha256": "73312a4b6d9f1f90433b751b18949e16c2a761b03f9cd0cbfb6b2a0a9ed99bab"
+          "bytes": 12098,
+          "sha256": "be47042855179357d304666ab060d1be91c7c9d854b1585ec81fe8412e2f3fa0"
         },
         {
           "relativePath": "tool-operation-envelope.ts",
@@ -5036,7 +5036,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "b68fb28f30be02f212487a6fde80bfae86a0991af8ec8e525f94fb91ac27aceb",
+      "sha256": "a001f6afb80044333f17b032384c14d23d72190d1f01fdfc6dd56ffb10be458e",
       "fileCount": 3,
       "files": [
         {
@@ -5046,19 +5046,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 12233354,
-          "sha256": "30117ec72ddb5ff6248a70d2fd844d1582dae9562a7710c6181e8b59a070e53e"
+          "bytes": 12234457,
+          "sha256": "9bc55d98fedae4a5416736ed8bbf05968907497776a00cc5b65d13e4e8ea8350"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 795316,
-          "sha256": "c4accfbe8ecf89757add82d32f7fb9d673465b687b0c09c56251ae4363a1ab68"
+          "sha256": "d1a24b01c8542901dc3e0b0171ee40778424017dd9220bd5a6eb881c49a9c431"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-04T19:19:42.924Z",
+  "reviewedAt": "2026-11-04T19:50:25.508Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

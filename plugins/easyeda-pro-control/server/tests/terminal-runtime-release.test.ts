@@ -1,9 +1,11 @@
 /** Real runtime and managed publication, synthetic native transport only. */
 import assert from "node:assert/strict";
-import { mkdir, rmdir } from "node:fs/promises";
+import { mkdir, readFile, rename, rmdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
-import { operationPath, readExactUtf8Artifact, writePhaseArtifact } from "../src/artifacts.ts";
+import { operationPath, publishManagedAttachmentExclusive, readExactUtf8Artifact, writePhaseArtifact } from "../src/artifacts.ts";
+import type { ArtifactDescriptor } from "../src/artifacts.ts";
+import { sha256Text } from "../src/core.ts";
 import { OriginalTerminalRuntimeRelease, assertOriginalTerminalRuntimeDisposal, isOriginalTerminalRuntimeDisposalCompleted } from "../src/terminal-runtime-release.ts";
 import type { OriginalTerminalRuntimeDisposal } from "../src/terminal-runtime-release.ts";
 import { WindowsControlRuntime } from "../src/windows-runtime.ts";
@@ -71,6 +73,40 @@ async function fixture(operationId: string, releaseGate?: Promise<unknown>, fail
   return { runtime, release, helperStarted: helperStarted.promise, state, complete };
 }
 
+/** Fail the real publisher's path revalidation and pre-unlink identity check.
+ * Only publication I/O is replaced; runtime ownership and the opaque receipt
+ * registry remain the maintained implementation on the original instance.
+ */
+function failCompletionPublication(value: Awaited<ReturnType<typeof fixture>>, operationId: string,
+  leftover: "exact" | "absent" | "different"): { failures: unknown[]; expected?: ArtifactDescriptor } {
+  const state: { failures: unknown[]; expected?: ArtifactDescriptor } = { failures: [] };
+  const prototype: unknown = Object.getPrototypeOf(value.release);
+  assert.ok(typeof prototype === "object" && prototype !== null);
+  const publish: unknown = Object.getOwnPropertyDescriptor(prototype, "publish")?.value;
+  assert.ok(typeof publish === "function");
+  let attempts = 0;
+  Object.defineProperty(value.release, "publish", { value: async (name: string, record: unknown): Promise<unknown> => {
+    if (name !== "native-runtime-released.json") {
+      const result: unknown = Reflect.apply(publish, value.release, [name, record]); return await result;
+    }
+    attempts += 1;
+    const bytes = Buffer.from(`${JSON.stringify(record)}\n`), path = join(dirname(operationPath(operationId)), operationId, name);
+    state.expected = { path, bytes: bytes.length, sha256: sha256Text(bytes.toString("utf8")) };
+    try {
+      return await publishManagedAttachmentExclusive(path, "Original native runtime disposal", bytes,
+        "easyeda-pro-control.terminal-runtime-release.v1", async () => {
+          await rename(path, join(dirname(path), `native-runtime-release-unpublished-${attempts}.json`));
+          if (leftover !== "absent") {
+            const replacement = Buffer.from(bytes);
+            if (leftover === "different") { replacement[0] = 0x5B; }
+            await publishManagedAttachmentExclusive(path, "Synthetic replacement after publication", replacement, "synthetic-publication-fault");
+          }
+        });
+    } catch (error) { state.failures.push(error); throw error; }
+  } });
+  return state;
+}
+
 void test("terminal cleanup awaits actual runtime helper closure and survives an owned-only index resolver", async () => {
   const gate = Promise.withResolvers<null>();
   const value = await fixture("synthetic-terminal-release-pending", gate.promise);
@@ -115,6 +151,40 @@ void test("acknowledged helper release permits only explicit retained record set
   assert.equal(value.release.isDisposed(), true); assert.equal(value.state.helpersReleased, 1); assert.equal(value.state.capturesRetired, 1);
   assert.equal(isOriginalTerminalRuntimeDisposalCompleted(receipt, value.runtime), true);
 });
+
+for (const leftover of ["exact", "absent", "different"] as const) {
+  void test(`original terminal settlement recovers only exact managed completion after ${leftover} publication cleanup`, async () => {
+    const id = `synthetic-terminal-release-leftover-${leftover}`, value = await fixture(id);
+    const publication = failCompletionPublication(value, id, leftover);
+    await assert.rejects(value.release.run(value.complete), (error: unknown) => error === publication.failures[0]);
+    assert.equal(publication.failures.length, 1);
+    assert.ok(publication.failures[0] instanceof AggregateError);
+    assert.match(publication.failures[0].message, /publication failed and cleanup was incomplete/u);
+    const intentPath = join(dirname(operationPath(id)), id, "native-runtime-release-intent.json");
+    const intent = await readFile(intentPath);
+    assert.equal(value.runtime.isReleaseAcknowledged(), true); assert.equal(value.release.isDisposed(), false);
+    assert.equal(value.state.helpersReleased, 1); assert.equal(value.state.capturesRetired, 1); assert.equal(value.state.allocationsCleared, 0);
+    assert.ok(publication.expected !== undefined);
+    if (leftover === "exact") {
+      const existing = await readExactUtf8Artifact(publication.expected); assert.equal(existing.bytes, publication.expected.bytes);
+    }
+    else { await assert.rejects(readExactUtf8Artifact(publication.expected)); }
+    await assert.rejects(value.release.run(value.complete), /consumed/u);
+    if (leftover === "exact") {
+      const receipt = await value.release.settle(value.complete);
+      assert.deepEqual(receipt.releaseArtifact, publication.expected);
+      assert.equal(isOriginalTerminalRuntimeDisposalCompleted(receipt, value.runtime), true);
+      assert.equal(value.release.isDisposed(), true); assert.equal(value.state.allocationsCleared, 1);
+      await assert.rejects(value.release.settle(value.complete), /completed/u);
+    } else {
+      await assert.rejects(value.release.settle(value.complete), (error: unknown) => error === publication.failures[1]);
+      assert.equal(value.release.isDisposed(), false); assert.equal(value.state.allocationsCleared, 0);
+    }
+    assert.equal(publication.failures.length, 2);
+    assert.deepEqual(await readFile(intentPath), intent);
+    assert.equal(value.state.helpersReleased, 1); assert.equal(value.state.capturesRetired, 1);
+  });
+}
 
 void test("uncertain original capture retirement blocks the native helper release permanently", async () => {
   const value = await fixture("synthetic-terminal-release-capture", undefined, true);

@@ -24,7 +24,7 @@ import { currentFootprintCopyPreparationSchema } from "../src/current-footprint-
 import { currentFootprintSourceReadPacketSchema } from "../src/current-footprint-source-read-runner.ts";
 import { currentFootprintCopyRouteObservationSchema } from "../src/current-footprint-copy-route-observation.ts";
 import { CurrentPcbWorkerStartupChannel } from "../src/current-pcb-worker-startup-channel.ts";
-import { CURRENT_FOOTPRINT_FORWARD_PREWRITE_FAILURE_MAX_BYTES, diagnosticLifecycleRecordSchemas,
+import { CURRENT_FOOTPRINT_FORWARD_PREWRITE_FAILURE_MAX_BYTES, CURRENT_FOOTPRINT_FORWARD_PREWRITE_RESULT_MAX_BYTES, diagnosticLifecycleRecordSchemas,
   publishCurrentPcbDiagnosticLifecycleRecord, readCurrentPcbDiagnosticLifecycles } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 import type { CurrentFootprintForwardPrewriteLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentFootprintCopyStartupOpeningResult } from "../src/current-pcb-209-worker-startup-opening.ts";
@@ -128,7 +128,7 @@ function recordBytes(value: unknown): Buffer { return Buffer.from(`${JSON.string
 
 /** Exercise the genuine mounted stage and original-reference joins. Native
  * inspection and plan leaves are synthetic; all lifecycle/journal guards run. */
-async function fixture(context: TestContext, mode: "success" | "capacity" | "source-failure" | "checkpoint-failure" | "publication" | "method-drift" | "unsupported" | "unicode-failure" | "route-capacity", routeHeadroom: "exact" | "short" = "short"):
+async function fixture(context: TestContext, mode: "success" | "capacity" | "source-failure" | "checkpoint-failure" | "publication" | "method-drift" | "unsupported" | "unicode-failure" | "route-capacity" | "result-bound", routeHeadroom: "exact" | "short" = "short"):
 Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[]; qualify: () => Promise<Row>; next: () => number; route: () => Promise<Row>; routeStarted: () => boolean; normal: () => number }>> {
   const calls: string[] = [];
   let id = `footprint-copy-qualify-test-${mode}`;
@@ -312,6 +312,38 @@ void test("forward route reserves its original normal class separately from unus
       const intentPath = join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", f.id, "footprint-copy-route-intent.json");
       await assert.rejects(readFile(intentPath), { code: "ENOENT" });
     }
+    await f.value.coordinator.run({ action: "observe-window", operationId: f.id, expectedBindingSha256: f.binding });
+    await f.value.coordinator.run({ action: "normal-close", operationId: f.id, expectedBindingSha256: f.binding, hwnd: "12345", confirmNormalClose: true });
+    f.value.state.terminated = true;
+    await f.value.coordinator.run({ action: "observe-termination", operationId: f.id, expectedBindingSha256: f.binding });
+    await f.value.coordinator.run({ action: "release-closed", operationId: f.id, expectedBindingSha256: f.binding });
+    assert.equal(f.value.coordinator.hasActiveReservation(), false);
+  }
+});
+
+void test("forward success schema refuses beyond its unchanged complete publication byte bound", async context => {
+  const f = await fixture(context, "result-bound");
+  await f.qualify();
+  const name = "forward-prewrite-result.json", path = join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", f.id, name);
+  const original = await readFile(path), schema = diagnosticLifecycleRecordSchemas[name];
+  try {
+    const observed = schema.parse(JSON.parse(original.toString("utf8")) as unknown);
+    const content = "\\".repeat(CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.contentBytes);
+    const source = currentFootprintSourceReadPacketSchema.parse({ ...observed.source, content, sourceSha256: sha256Text(content) });
+    const sourcePacketSha256 = sha256Json(source);
+    const maximum = schema.parse({ ...observed, createdAt: new Date(0).toISOString(), source,
+      preparation: { ...observed.preparation, sourcePacketSha256 }, result: { ...observed.result, sourcePacketSha256 } });
+    assert.equal(CURRENT_FOOTPRINT_FORWARD_PREWRITE_RESULT_MAX_BYTES, 4 * 1024 * 1024 + 64 * 1024 + 8192);
+    const padding = CURRENT_FOOTPRINT_FORWARD_PREWRITE_RESULT_MAX_BYTES - recordBytes(maximum).length;
+    assert.ok(padding > 0);
+    const edge = schema.parse({ ...maximum, createdAt: `1970-01-01T00:00:00.${"0".repeat(3 + padding)}Z` });
+    assert.equal(recordBytes(edge).length, CURRENT_FOOTPRINT_FORWARD_PREWRITE_RESULT_MAX_BYTES);
+    const excessive = { ...edge, createdAt: edge.createdAt.replace(/Z$/u, "0Z") };
+    assert.equal(recordBytes(excessive).length, CURRENT_FOOTPRINT_FORWARD_PREWRITE_RESULT_MAX_BYTES + 1);
+    assert.equal(schema.safeParse(excessive).success, false);
+    await assert.rejects(publishCurrentPcbDiagnosticLifecycleRecord(f.id, name, excessive), /complete evidence bound/u);
+    assert.deepEqual(await readFile(path), original);
+  } finally {
     await f.value.coordinator.run({ action: "observe-window", operationId: f.id, expectedBindingSha256: f.binding });
     await f.value.coordinator.run({ action: "normal-close", operationId: f.id, expectedBindingSha256: f.binding, hwnd: "12345", confirmNormalClose: true });
     f.value.state.terminated = true;

@@ -158,9 +158,12 @@ can leave the actual lock state uncertain. Do not remove or repair it manually.
 Older snapshots without this route cannot retire themselves through MCP. A
 fresh subagent started while such an owner remains will only encounter the
 ownership conflict. Report the missing capability and use supported connection
-closure when available. Only an explicit user authorization for verified idle
-legacy-server termination can permit normal SIGTERM, with original PID/start,
-module and resource checks and observed exit. It grants no native-owner cleanup;
+closure when available. Only explicit user authorization for a verified idle legacy EasyEDA MCP server
+that lacks a usable shutdown command can permit normal SIGTERM. The server must
+be retired, reference-only or ownership-conflict and have no native owner.
+Verify its original PID/start identity, executable, module and lack of owned
+resources immediately before signaling; retain a pidfd through observed exit.
+This exception grants no native-owner cleanup;
 never use SIGKILL, remove a lease, change control roots or patch a cache. Keep
 any standing authorization's exact scope instead of requesting it again.
 The maintained foreground client remains an option only when the original

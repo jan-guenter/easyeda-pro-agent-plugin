@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-04 controller output and publication recovery](2026-11-04-controller-output-and-publication-recovery.md). Async stdout custody, exact leftover completion settlement, early success-record byte bounds and complete idle-cleanup limits.
+
 - [2026-11-04 release IDs and source scope](2026-11-04-release-id-grammar-and-source-scope.md). Genuine copy-ID compatibility, hash-only qualification output and normal closure of an automatically initialized legacy facade.
 
 - [2026-11-04 historical controller recovery completed](2026-11-04-controller-recovery-completed.md). Actual separate unknown-opening relinquishment, unchanged original journals and two-generation normal retirement without a Codex restart.

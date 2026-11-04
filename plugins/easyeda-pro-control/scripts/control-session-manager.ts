@@ -7,6 +7,7 @@ import { open } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import process from "node:process";
+import type { Writable } from "node:stream";
 import { pathToFileURL } from "node:url";
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -651,15 +652,38 @@ export async function runManagerInput(manager: ForegroundSessionManager, chunks:
   return "input-closed";
 }
 
-/** Write one protocol response line while honoring stdout backpressure, so
- * callers await publication before advancing ownership or request state. */
-async function emitJson(value: unknown): Promise<void> {
-  if (!process.stdout.write(`${JSON.stringify(value)}\n`)) { await once(process.stdout, "drain"); }
+/** Install permanent output-error custody before the first publication. A
+ * successful write admission alone proves no delivery; await its callback and
+ * backpressure before the manager can advance its original ownership state. */
+export function createManagerOutputPublisher(output: Writable): Emitter {
+  let failed = false;
+  // Resolving this latch also handles an idle failure before the next write.
+  const failure = Promise.withResolvers<null>();
+  const fail = (): void => { if (!failed) { failed = true; failure.resolve(null); } };
+  output.on("error", fail);
+  output.on("close", fail);
+  return async (value: unknown): Promise<void> => {
+    if (failed) { throw new Error("manager-output-unavailable"); }
+    const drainAbort = new AbortController();
+    const written = Promise.withResolvers<null>();
+    let drained: Promise<unknown> = Promise.resolve();
+    try {
+      // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Writable admission and drain do not prove completion; await its original write callback too.
+      if (!output.write(`${JSON.stringify(value)}\n`, error => {
+        if (error) { fail(); written.reject(new Error("manager-output-unavailable")); }
+        else { written.resolve(null); }
+      })) { drained = once(output, "drain", { signal: drainAbort.signal }); }
+    } catch { fail(); written.reject(new Error("manager-output-unavailable")); }
+    try { await Promise.race([Promise.all([written.promise, drained]), failure.promise]); }
+    catch { throw new Error("manager-output-unavailable"); }
+    finally { drainAbort.abort(); }
+    if (failed) { throw new Error("manager-output-unavailable"); }
+  };
 }
 
 /** Keep one foreground request loop through startup refusal and explicit cleanup.
  * Closing input cannot silently release an active or ambiguous original owner. */
-async function main(): Promise<void> {
+async function main(emitJson: Emitter): Promise<void> {
   const pluginRoot = process.argv[3];
   if (process.argv.length !== 4 || process.argv[2] !== "--plugin-root" || pluginRoot === undefined) {
     throw new Error("usage-control-session--plugin-root-absolute-path");
@@ -679,11 +703,19 @@ async function main(): Promise<void> {
 }
 
 if (import.meta.main) {
+  const emitJson = createManagerOutputPublisher(process.stdout);
   try {
     // oxlint-disable-next-line node/no-top-level-await -- This executable owns one foreground manager; imports never enter its main loop.
-    await main();
+    await main(emitJson);
   } catch (error) {
     process.exitCode = 1;
-    process.stdout.write(`${JSON.stringify(sessionFailureDiagnostic("requests", error))}\n`);
+    // The original child remains referenced when output has become unusable.
+    // The same failed channel cannot publish another diagnostic or recover.
+    try {
+      // oxlint-disable-next-line node/no-top-level-await -- The executable handles diagnostic failure before returning to the owned child's event loop.
+      await emitJson(sessionFailureDiagnostic("requests", error));
+    } catch {
+      // The persistent output failure is already retained.
+    }
   }
 }
