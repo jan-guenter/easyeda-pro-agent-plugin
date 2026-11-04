@@ -1,5 +1,35 @@
 # Project history
 
+- [2026-11-04 host deadline and review completion](2026-11-04-host-deadline-and-review-completion.md). Direct MCP lifetime bound, combined-error retention and all five inline/outside-diff/test review corrections.
+
+- [2026-11-04 settled delivery and recovery confirmation](2026-11-04-settled-delivery-and-recovery-confirmation.md). Explicit pre-emit result refusals, exact historical publication confirmation and force-termination authority.
+
+- [2026-11-04 forward failure evidence and dependency count](2026-11-04-forward-failure-evidence-and-dependency-count.md). Original target/preparation joins, valid early failures and the current 64-function inventory.
+
+- [2026-11-04 controller output and publication recovery](2026-11-04-controller-output-and-publication-recovery.md). Async stdout custody, exact leftover completion settlement, early success-record byte bounds and complete idle-cleanup limits.
+
+- [2026-11-04 release IDs and source scope](2026-11-04-release-id-grammar-and-source-scope.md). Genuine copy-ID compatibility, hash-only qualification output and normal closure of an automatically initialized legacy facade.
+
+- [2026-11-04 historical controller recovery completed](2026-11-04-controller-recovery-completed.md). Actual separate unknown-opening relinquishment, unchanged original journals and two-generation normal retirement without a Codex restart.
+
+- [2026-11-04 manager input recovery](2026-11-04-manager-input-recovery.md). Recoverable bounded framing, same-controller cleanup proof and preserved isolated-test/CI failures.
+
+- [2026-11-04 conflict closure and full-review repairs](2026-11-04-conflict-closure-and-review-repairs.md). Normal conflict-server closure, explicit idle legacy cleanup, real manager retirement, full review and both cleanup/journal fixes.
+
+- [2026-11-04 historical recovery continuation](2026-11-04-historical-recovery-continuation.md). CodeRabbit's cross-version partial-intent fix, fresh-proof regression and retained source-only retirement fixture failure.
+
+- [2026-11-04 controller timeout recovery and retirement](2026-11-04-controller-timeout-and-retirement.md). Interrupted disposable capture, unchanged closed fixture, original-client cleanup and supported retired connection closure.
+
+- [2026-11-04 registration and coverage fixture follow-up](2026-11-04-registration-fixture-followup.md). Retained failed CI, corrected exact dispatcher/VM/coverage expectations and unchanged production payload.
+
+- [2026-11-04 forward footprint source qualification](2026-11-04-footprint-forward-prewrite-qualification.md). Fresh native birth, original source/route preparation, explicit writer limits and prepublication reachability review.
+
+- [2026-11-04 autonomous controller review follow-up](2026-11-04-autonomous-controller-review-followup.md). Retained review history, precise retirement reservations and the original startup-helper cleanup acknowledgment fix.
+
+- [2026-11-04 autonomous controller lifecycle](2026-11-04-autonomous-control-loop.md). Persistent controller replacement, original helper disposal, startup-conflict cleanup and a complete disposable V3 cache lifecycle through the new client.
+
+- [2026-11-04 PR166 publication and fresh-agent handoff](2026-11-04-104500-pr166-publication-and-fresh-agent-handoff.md). Protected release/install, review scope, latest-package startup in a fresh subagent, the older owner's retained lease and remaining work.
+
 - [2026-11-04 session retirement and cache startup batch](2026-11-04-session-retirement-and-cache-batch.md). Cooperative idle-owner handoff, source/reference-only retirement, actual isolated MCP proof and combined verification.
 - [2026-11-04 held-cache startup wait](2026-11-04-held-cache-startup-wait.md). Source-timed loader lifecycle, a bounded V3 wait and retained historical V1/V2 formats.
 - [2026-11-04 native clock validation and subagent loading](2026-11-04-native-clock-validation-and-subagent-loading.md). Complete installed193000 read-only clock lifecycle, terminal cache startup refusal and the separate fresh-context MCP ownership experiment.

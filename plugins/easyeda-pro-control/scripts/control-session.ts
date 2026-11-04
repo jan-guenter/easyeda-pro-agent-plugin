@@ -17,6 +17,9 @@ import { loadMachineLaunchProfile, machineProfileLaunchConfiguration } from "../
 import type { MachineProfile } from "../server/src/machine-profile.ts";
 
 export const MAXIMUM_REQUEST_BYTES = 65_536;
+// Cover the native owner's one-hour normal lifetime, one-minute cleanup and
+// One-minute delivery margin, including preparation outside its leaf RPC timer.
+export const SESSION_CALL_TIMEOUT_MS = 3_720_000;
 const MAXIMUM_INLINE_BYTES = 1_048_576;
 const MAXIMUM_RESULT_BYTES = 67_108_864;
 const TOOL_PATTERN = /^easyeda_control_[a-z][a-z0-9_]*$/u;
@@ -25,7 +28,7 @@ const callSchema = z.strictObject({
   id: requestId,
   tool: z.string().regex(TOOL_PATTERN),
   arguments: z.record(z.string(), z.unknown()).default({}),
-  timeoutMs: z.number().int().min(1000).max(600_000).default(600_000),
+  timeoutMs: z.number().int().min(1000).max(SESSION_CALL_TIMEOUT_MS).default(SESSION_CALL_TIMEOUT_MS),
   responseFile: z.string().refine(isAbsolute).optional(),
 });
 const requestSchema = z.union([
@@ -33,7 +36,7 @@ const requestSchema = z.union([
   z.strictObject({ id: requestId, shutdown: z.literal(true) }),
 ]);
 type SessionRequest = z.infer<typeof requestSchema>;
-type CallRequest = z.infer<typeof callSchema>;
+export type CallRequest = z.infer<typeof callSchema>;
 type Emitter = (value: unknown) => Promise<void>;
 type Invoker = (request: CallRequest) => Promise<unknown>;
 
@@ -144,21 +147,24 @@ export async function* boundedLines(
   }
 }
 
-async function publishResult(
+/** Publish one bounded result inline or as an exclusive, synced private file.
+ * Return deterministic refusals before file creation or emission. Actual I/O
+ * failures still throw; neither outcome grants an operation retry. */
+export async function publishSessionResult(
   request: CallRequest,
   result: unknown,
   emit: Emitter,
-): Promise<void> {
+): Promise<"published" | "result-needs-response-file" | "response-directory-must-be-private-and-canonical"> {
   const bytes = Buffer.from(JSON.stringify({ id: request.id, result }));
   if (bytes.length > MAXIMUM_RESULT_BYTES) {
     throw new Error("result-too-large");
   }
   if (request.responseFile === undefined) {
     if (bytes.length > MAXIMUM_INLINE_BYTES) {
-      throw new Error("result-needs-response-file");
+      return "result-needs-response-file";
     }
     await emit({ id: request.id, result });
-    return;
+    return "published";
   }
   const directory = dirname(request.responseFile);
   const directoryInfo = await lstat(directory);
@@ -168,7 +174,7 @@ async function publishResult(
     directoryInfo.uid !== process.getuid?.() ||
     await realpath(directory) !== directory
   ) {
-    throw new Error("response-directory-must-be-private-and-canonical");
+    return "response-directory-must-be-private-and-canonical";
   }
   // Exclusive creation refuses existing files and symlinks. The caller must
   // Retain ownership of the private parent directory throughout this call.
@@ -185,8 +191,11 @@ async function publishResult(
     bytes: bytes.length,
     sha256: createHash("sha256").update(bytes).digest("hex"),
   });
+  return "published";
 }
 
+/** Dispatch admitted tools serially and await each result's publication.
+ * Invalid input, shutdown or uncertain dispatch/publication stops later lines. */
 export async function runSessionRequests(
   lines: AsyncIterable<string>,
   allowedTools: ReadonlySet<string>,
@@ -211,7 +220,8 @@ export async function runSessionRequests(
     }
     try {
       const result = await invoke(request);
-      await publishResult(request, result, emit);
+      const outcome = await publishSessionResult(request, result, emit);
+      if (outcome !== "published") { throw new Error(outcome); }
     } catch (error) {
       // Never print private transport stderr or nested exceptions. A timeout,
       // Disconnect or result-publication failure ends this session, never retries.
@@ -234,6 +244,7 @@ const serverSchema = z.object({
   args: z.tuple([z.literal("server/dist/server.mjs"), z.literal("--machine-launch")]),
   cwd: z.literal("."),
   env: z.record(z.string(), z.string()).refine((environment) => Object.keys(environment).length === 0),
+  tool_timeout_sec: z.literal(SESSION_CALL_TIMEOUT_MS / 1000),
 });
 const serversSchema = z.strictObject({ easyeda_pro_control: serverSchema });
 const configurationSchema = z.object({ mcpServers: serversSchema });
@@ -303,12 +314,10 @@ export function sessionMachineLaunchConfiguration(profilePath: string, profile: 
   return { ...definition, args: [...definition.args, "--machine-launch"], env: { EASYEDA_MACHINE_PROFILE: profilePath } };
 }
 
-async function main(): Promise<void> {
-  sessionPhase = "arguments";
-  const option = process.argv[2];
-  const suppliedRoot = process.argv[3];
-  if (process.argv.length !== 4 || option !== "--plugin-root" ||
-    suppliedRoot === undefined || !isAbsolute(suppliedRoot)) {
+/** Shared selector for maintained foreground clients. It supplies neither live
+ * admission nor permission to replace an existing control owner. */
+export async function selectSessionLaunch(suppliedRoot: string): Promise<ReturnType<typeof sessionMachineLaunchConfiguration>> {
+  if (!isAbsolute(suppliedRoot)) {
     throw new Error("usage-control-session--plugin-root-absolute-path");
   }
   sessionPhase = "core-limit";
@@ -341,6 +350,20 @@ async function main(): Promise<void> {
     throw new Error("unreviewed-node-command");
   }
   await verifyBundle(pluginRoot);
+  return definition;
+}
+
+/** Retain one verified facade connection for the serial foreground request loop.
+ * Cleanup closes that original transport without reconnecting after an error. */
+async function main(): Promise<void> {
+  sessionPhase = "arguments";
+  const option = process.argv[2];
+  const suppliedRoot = process.argv[3];
+  if (process.argv.length !== 4 || option !== "--plugin-root" || suppliedRoot === undefined) {
+    throw new Error("usage-control-session--plugin-root-absolute-path");
+  }
+  const definition = await selectSessionLaunch(suppliedRoot);
+  const pluginRoot = definition.cwd;
   // The facade retains its own atomic lease. Never create another data root to
   // Evading an existing owner or spawning the upstream directly is prohibited.
   sessionPhase = "transport-create";

@@ -3,6 +3,8 @@
  */
 /* oxlint-disable import/max-dependencies -- Reuse the original writer, native launch/capture, fixed cache/open/read programs and complete SQL readers without alternate issuer callbacks. */
 import { loadOperation, updateOperation, writePhaseArtifact } from "./artifacts.ts";
+import { OriginalTerminalRuntimeRelease } from "./terminal-runtime-release.ts";
+import type { OriginalTerminalRuntimeDisposal } from "./terminal-runtime-release.ts";
 import { compareCompleteClosedSql } from "./closed-sql-equality.ts";
 import { assertExpectedFingerprint, assertSubset, buildPlanHash, canonicalJson, isRecord, sha256Json, sha256Text } from "./core.ts";
 import { verifyCurrentDisposableOpenImplementation, verifyCurrentProjectOnlyOpenImplementation } from "./current-disposable-open-profile.ts";
@@ -87,7 +89,7 @@ export async function revalidateCurrentSymbolCopyVerificationGeneration(value: u
 }
 function methods(engine: EasyedaControlEngine, runtime: WindowsControlRuntime): readonly unknown[] {
   /* oxlint-disable typescript/unbound-method -- Identity comparison only; all invocations retain their original receiver. */
-  return [runtime.launch, runtime.status, runtime.clockObservationForLaunch, runtime.releaseCapture,
+  return [runtime.launch, runtime.status, runtime.clockObservationForLaunch, runtime.releaseCapture, runtime.release, runtime.isReleaseAcknowledged,
     runtime.observeApplicationWindow, runtime.normalClose, runtime.observeLaunchTermination,
     runtime.prepareClosedSessionClose, runtime.requestClosedSessionNormalClose, runtime.probeClosedSessionTermination,
     engine.captureClosedSessionAuthority, engine.releaseClosedSessionAuthority, engine.clockObservationForClosedCapture,
@@ -125,8 +127,71 @@ function closeBinding(slot: Slot): Omit<Parameters<WindowsControlRuntime["prepar
 export class CurrentSymbolCopyVerificationCoordinator {
   private readonly engine: EasyedaControlEngine;
   private readonly slots = new Map<string, Slot>();
+  private readonly runtimeReleases = new Map<string, OriginalTerminalRuntimeRelease>();
   private busy = false;
   public constructor(engine: EasyedaControlEngine) { this.engine = engine; }
+  /** Only a fully successful original final verifier can release this helper.
+   * Cleanup and partially constructed generations retain their original owners.
+   */
+  public isRuntimeDisposed(runtime?: WindowsControlRuntime): boolean {
+    return this.slots.size > 0 && this.runtimeReleases.size === this.slots.size &&
+      [...this.runtimeReleases.values()].every(release => release.isDisposed(runtime));
+  }
+  /** Settle disposal evidence after acknowledged original helper closure;
+   * this path cannot dispatch another release or reconstruct copy ownership.
+   */
+  public settleRuntimeReleaseRecords(operationId: string,
+    complete: (runtime: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal) => void): Promise<OriginalTerminalRuntimeDisposal> {
+    return this.releaseCompletedRuntime(operationId, complete, true);
+  }
+  /** Dispose of the successful copy verifier's retained native allocation only
+   * through its original helper and opaque completion receipt. Partial or
+   * uncertain verification cannot release the allocation owner.
+   */
+  public async releaseCompletedRuntime(operationId: string,
+    complete: (runtime: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal) => void, settleRecordsOnly = false): Promise<OriginalTerminalRuntimeDisposal> {
+    const slot = this.slots.get(operationId);
+    need(!this.busy && this.slots.size === 1 && slot !== undefined && slot.retired && slot.releaseAttempted && !slot.failed &&
+      !slot.dispatchCaptureCleanupUncertain && slot.capture !== undefined && slot.launch !== undefined &&
+      slot.termination?.status === "terminated" && slot.saved !== undefined && slot.snapshot !== undefined && slot.comparison !== undefined,
+    "Symbol copy native release requires one fully completed original verification; partial and cleanup generations remain blocked.");
+    this.busy = true;
+    try {
+      let release = this.runtimeReleases.get(operationId);
+      if (release === undefined) {
+        const { runtime, launch } = slot, upstream = this.engine.upstream, validator = this.engine.executionAuthorityValidator;
+        const capture = slot.capture, journalText = slot.journalText, source = slot.source;
+        const settledText = canonicalJson({ saved: slot.saved, snapshot: slot.snapshot, comparison: slot.comparison });
+        /** Keep the final verifier, capture and completed SQL/readback records
+         * bound to the same allocation through helper closure and settlement.
+         */
+        const owner = (): void => {
+          need(this.slots.get(operationId) === slot && slot.runtime === runtime && slot.launch === launch && slot.source === source &&
+            slot.capture === capture && slot.retired && slot.releaseAttempted && !slot.failed && !slot.dispatchCaptureCleanupUncertain &&
+            slot.journalText === journalText && canonicalJson(slot.journal) === journalText && this.engine.upstream === upstream &&
+            this.engine.executionAuthorityValidator === validator && canonicalJson({ saved: slot.saved, snapshot: slot.snapshot, comparison: slot.comparison }) === settledText,
+          "Symbol copy final original verifier or settled records changed.");
+        };
+        /** Read the unchanged terminal journal and independently observe the
+         * latest original root/empty Job before surrendering its helper.
+         */
+        const eligible = async (): Promise<void> => {
+          owner(); slot.infrastructure();
+          need(canonicalJson(await loadOperation(operationId)) === journalText, "Symbol copy terminal journal changed before native release.");
+          owner(); slot.infrastructure(); await this.engine.assertRecoveryOperationIsolated(operationId); owner(); slot.infrastructure();
+          const observation = await runtime.observeLaunchTermination(); owner(); slot.infrastructure();
+          need(observation.terminated && observation.jobId === launch.jobId && observation.helperInstance === launch.helperInstance,
+            "Symbol copy native release requires the actual latest original root and empty Job.");
+          const lifecycle = upstream.bridgeSessionLifecycle?.();
+          need(isRecord(lifecycle) && lifecycle["activeSession"] === null && upstream.currentAuthenticatedBridgeDispatchBinding?.() === undefined,
+            "Symbol copy native release requires its closed authenticated dispatch scope.");
+        };
+        release = new OriginalTerminalRuntimeRelease(runtime, operationId, "symbol-copy", launch, owner, eligible);
+        this.runtimeReleases.set(operationId, release);
+      }
+      return await (settleRecordsOnly ? release.settle(complete) : release.run(complete));
+    } finally { this.busy = false; }
+  }
   private current(slot: Slot, scopeText?: string): void {
     need(this.slots.get(slot.source.operationId) === slot && !slot.retired);
     need(assertOriginalCurrentSymbolCopyWriterContinuation(slot.continuation, this.engine) === slot.source);

@@ -28,6 +28,7 @@ import { currentFootprintCopyBindingsSchema } from "./current-footprint-copy-bin
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_OPERATION_PREFIX, currentFootprintCopyPreparationIdSchema } from "./current-footprint-copy-preparation-validation.ts";
 import { currentFootprintCopyPreparationSchema } from "./current-footprint-copy-preparation.ts";
 import { currentFootprintSourceReadPacketSchema } from "./current-footprint-source-read-runner.ts";
+import { CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS } from "./current-footprint-copy-source-read.ts";
 import { controlDataDirectory, controlRootCapability, publishManagedAttachmentExclusive } from "./artifacts.ts";
 import type { ControlRootDirectory } from "./control-root.ts";
 import { canonicalJson, sha256Json } from "./core.ts";
@@ -57,11 +58,19 @@ import { CURRENT_PCB_209_PAD_SHAPES_RESULT_BYTES } from "./current-pcb-209-pad-s
 import { CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES, currentPcb209SelectionRelationsComponentIdsSchema } from "./current-pcb-209-selection-relations.ts";
 import { assertNoUnresolvedCurrentPcbStringLedgers } from "./current-pcb-string-ledger-exclusion.ts";
 import { CURRENT_FOOTPRINT_MAIN_OPERATION_PREFIX, currentFootprintMainIdSchema } from "./current-footprint-main-validation.ts";
+import { CURRENT_FOOTPRINT_FORWARD_PREWRITE_OPERATION_PREFIX, currentFootprintForwardPrewriteIdSchema,
+  currentFootprintForwardPrewriteResultSchema } from "./current-footprint-forward-prewrite-validation.ts";
 import { CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX, currentFootprintCombinedIdSchema } from "./current-footprint-combined-validation.ts";
 import { currentFootprintCombinedHistoricalIntentSchema } from "./current-footprint-combined-abandonment-contract.ts";
 import { assertCurrentFootprintCombinedHistoricalSnapshot, readCurrentFootprintCombinedAbandonment,
   readCurrentFootprintCombinedHistoricalSnapshot, requireCurrentFootprintCombinedHistoricalSnapshot } from "./current-footprint-combined-abandonment-journal.ts";
 import type { CurrentFootprintCombinedHistoricalSnapshot } from "./current-footprint-combined-abandonment-journal.ts";
+import { currentFootprintForwardOpeningHistoricalIntentSchema } from "./current-footprint-forward-opening-relinquishment-contract.ts";
+/* oxlint-disable import/no-cycle -- The separate receipt reader calls this maintained parser only lazily; no initialization path can admit or reconstruct an owner. */
+import { assertCurrentFootprintForwardOpeningHistoricalSnapshot, readCurrentFootprintForwardOpeningHistoricalSnapshot,
+  readCurrentFootprintForwardOpeningRelinquishment, requireCurrentFootprintForwardOpeningHistoricalSnapshot } from "./current-footprint-forward-opening-relinquishment-journal.ts";
+/* oxlint-enable import/no-cycle */
+import type { CurrentFootprintForwardOpeningHistoricalSnapshot } from "./current-footprint-forward-opening-relinquishment-journal.ts";
 import { currentFootprintCombinedBeforeLaunchFailureProofSchema } from "./current-footprint-combined-ready.ts";
 import { CURRENT_FOOTPRINT_SAVED_CACHE_PROBE_LIMITS } from "./current-footprint-saved-cache-probe.ts";
 import { currentFootprintSavedCacheObservationSchema } from "./current-footprint-saved-cache-runner.ts";
@@ -74,6 +83,15 @@ export { diagnosticLifecycleBindingSchema } from "./current-pcb-diagnostic-bindi
 
 const DIRECTORY = "pcb-diagnostic-lifecycle-v1";
 const MAX_BYTES = 8192;
+const FOOTPRINT_SOURCE_RESULT_MAX_BYTES = 4 * 1024 * 1024 + 64 * 1024;
+/** Complete published source packet, fixed preparation and ordinary metadata margin. */
+export const CURRENT_FOOTPRINT_FORWARD_PREWRITE_RESULT_MAX_BYTES = FOOTPRINT_SOURCE_RESULT_MAX_BYTES + MAX_BYTES;
+const FORWARD_PREWRITE_ERROR_MAX_UNITS = 4096;
+/** JSON can use six bytes per source byte or error UTF-16 unit. With ISO24,
+ * maximized strict metadata needs 2,574 bytes including quotes and newline.
+ * The unchanged 8 KiB metadata reserve also bounds extra ISO fractional precision. */
+export const CURRENT_FOOTPRINT_FORWARD_PREWRITE_FAILURE_MAX_BYTES =
+  CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.contentBytes * 6 + FORWARD_PREWRITE_ERROR_MAX_UNITS * 6 + MAX_BYTES;
 export const DIAGNOSTIC_OBSERVATION_MAX_BYTES = 128 * 1024;
 /** V3 adds16KiB each for move/startup and finite-effect observations.
  * Historical V1/V2 retain384/680KiB; diagnostic remains128KiB. */
@@ -155,7 +173,7 @@ const mainIntentSchema = workerStartupIntentSchema.extend({
   schema: z.literal("easyeda-pro-control.footprint-main-launch-intent.v1"), operationId: currentFootprintMainIdSchema,
   acceptDebuggerPauseEffects: z.literal(true),
 });
-const mainConstructionId = z.union([currentFootprintMainIdSchema, currentFootprintCombinedIdSchema]);
+const mainConstructionId = z.union([currentFootprintMainIdSchema, currentFootprintCombinedIdSchema, currentFootprintForwardPrewriteIdSchema]);
 const mainBound = { ...base, operationId: mainConstructionId, bindingSha256: diagnosticLifecycleDigestSchema };
 const mainObservationIntentSchema = z.object({ ...mainBound, schema: z.literal("easyeda-pro-control.footprint-main-construction-intent.v1") }).strict();
 const mainObservationResultSchema = z.object({ ...base, operationId: mainConstructionId,
@@ -202,13 +220,40 @@ const combinedAbortIntentSchema = z.object({ ...base, operationId: currentFootpr
 const combinedAbortAckSchema = z.object({ ...base, operationId: currentFootprintCombinedIdSchema,
   schema: z.literal("easyeda-pro-control.footprint-combined-abort-acknowledged.v1"), intentSha256: diagnosticLifecycleDigestSchema,
   abortDispatched: z.literal(true), terminationProved: z.literal(false) }).strict();
-const footprintRouteId = z.union([currentFootprintCopyRoutePreparationIdSchema, currentFootprintCombinedIdSchema]);
+const forwardIntentSchema = workerStartupIntentSchema.extend({
+  schema: z.literal("easyeda-pro-control.footprint-forward-prewrite-launch-intent.v1"), operationId: currentFootprintForwardPrewriteIdSchema,
+  acceptDebuggerPauseEffects: z.literal(true), dispatchProtocol: z.literal("challenge-ready-before-launch.v1"),
+});
+const forwardFactoryBeforeLaunchSchema = combinedFactoryBeforeLaunchSchema.extend({ operationId: currentFootprintForwardPrewriteIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-forward-factory-before-launch.v1") });
+const forwardAbortIntentSchema = z.object({ ...base, operationId: currentFootprintForwardPrewriteIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-forward-abort-intent.v1"), bindingSha256: diagnosticLifecycleDigestSchema,
+  previousRecordsSha256: diagnosticLifecycleDigestSchema, confirmAbortOriginalForwardJob: z.literal(true) }).strict();
+const forwardAbortAckSchema = combinedAbortAckSchema.extend({ operationId: currentFootprintForwardPrewriteIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-forward-abort-acknowledged.v1") });
+const forwardPrewriteIntentSchema = z.object({ ...base, operationId: currentFootprintForwardPrewriteIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-forward-prewrite-intent.v1"), bindingSha256: diagnosticLifecycleDigestSchema,
+  mainResultSha256: diagnosticLifecycleDigestSchema, routeResultSha256: diagnosticLifecycleDigestSchema,
+  beforeSqlSha256: diagnosticLifecycleDigestSchema, checkpointSha256: diagnosticLifecycleDigestSchema,
+  sourcePlanSha256: diagnosticLifecycleDigestSchema, ...currentPcb209WorkerStartupFootprintSourceInputSchema.shape }).strict();
+const forwardPrewriteResultSchema = z.object({ ...base, operationId: currentFootprintForwardPrewriteIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-forward-prewrite-result.v1"), intentSha256: diagnosticLifecycleDigestSchema,
+  source: currentFootprintSourceReadPacketSchema, preparation: currentFootprintCopyPreparationSchema,
+  result: currentFootprintForwardPrewriteResultSchema }).strict().refine(value =>
+  Buffer.byteLength(canonicalJson(value)) + 1 <= CURRENT_FOOTPRINT_FORWARD_PREWRITE_RESULT_MAX_BYTES,
+  "Forward prewrite result exceeds its complete evidence bound.");
+const forwardPrewriteFailureSchema = z.object({ ...base, operationId: currentFootprintForwardPrewriteIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-forward-prewrite-failure.v1"), intentSha256: diagnosticLifecycleDigestSchema,
+  failedStage: z.enum(["source", "preparation", "source-assets"]), error: z.string().max(FORWARD_PREWRITE_ERROR_MAX_UNITS),
+  source: currentFootprintSourceReadPacketSchema.nullable(), preparation: currentFootprintCopyPreparationSchema.nullable(),
+  executionReady: z.literal(false), executionAuthorized: z.literal(false), saveAuthorized: z.literal(false) }).strict();
+const footprintRouteId = z.union([currentFootprintCopyRoutePreparationIdSchema, currentFootprintCombinedIdSchema, currentFootprintForwardPrewriteIdSchema]);
 const footprintStartupId = z.union([currentPcb209WorkerStartupLifecycleIdSchema, currentFootprintCopyPreparationIdSchema]);
 const legacyStartupId = z.union([currentPcbWorkerStartupLifecycleIdSchema, footprintStartupId]);
 const startupId = z.union([legacyStartupId, footprintRouteId]);
 const startupOpeningId = z.union([startupId, currentPcb209EmptyStartupIdSchema, currentPcb209RatlineStartupIdSchema, currentPcb209RatlineContinuationIdSchema]);
 const intentSchema = z.discriminatedUnion("schema", [diagnosticIntentSchema, visualIntentSchema, stringIntentSchema, workerStartupIntentSchema,
-  workerStartup209IntentSchema, workerStartupEmpty209IntentSchema, workerStartupRatline209IntentSchema, workerStartupContinuation209IntentSchema, workerStartupFootprint209IntentSchema, workerStartupFootprintRoute209IntentSchema, mainIntentSchema, combinedIntentSchema, combinedReadyIntentSchema]);
+  workerStartup209IntentSchema, workerStartupEmpty209IntentSchema, workerStartupRatline209IntentSchema, workerStartupContinuation209IntentSchema, workerStartupFootprint209IntentSchema, workerStartupFootprintRoute209IntentSchema, mainIntentSchema, combinedIntentSchema, combinedReadyIntentSchema, forwardIntentSchema]);
 const workerStartupHandoffIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-worker-startup-handoff-intent.v1"), ...base,
   operationId: startupOpeningId, bindingSha256: diagnosticLifecycleDigestSchema,
   scriptResultSha256: diagnosticLifecycleDigestSchema,
@@ -492,7 +537,7 @@ const workerStartupOpeningResultSchema = z.object({
   operationId: startupOpeningId, intentSha256: diagnosticLifecycleDigestSchema,
   result: z.union([workerStartupResultSchema, workerStartup209ResultSchema, workerStartupFootprintRouteResultSchema]), executionAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES &&
-  (value.operationId.startsWith(CURRENT_FOOTPRINT_COPY_ROUTE_PREPARATION_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX)) === (value.result.construction.profile === "private.current-footprint-copy-construction.v1") &&
+  (value.operationId.startsWith(CURRENT_FOOTPRINT_COPY_ROUTE_PREPARATION_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_FOOTPRINT_FORWARD_PREWRITE_OPERATION_PREFIX)) === (value.result.construction.profile === "private.current-footprint-copy-construction.v1") &&
   (value.operationId.startsWith(CURRENT_FOOTPRINT_COPY_PREPARATION_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_PCB_209_EMPTY_STARTUP_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_PCB_209_RATLINE_STARTUP_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_PCB_209_RATLINE_CONTINUATION_OPERATION_PREFIX)) ===
     (value.result.construction.profile === "private.current-pcb209-worker-construction.v1"), "Startup opening generation or bound differs.");
 const workerStartupEmptyIntentSchema = z.object({
@@ -567,7 +612,7 @@ const workerStartupActorResultSchema = z.object({
   result: z.union([currentPcbWorkerStartupActorPacketSchema, currentPcb209WorkerStartupActorPacketSchema]), pointInTimeObservation: z.literal(true),
   executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES &&
-  (value.operationId.startsWith(CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_FOOTPRINT_COPY_ROUTE_PREPARATION_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_FOOTPRINT_COPY_PREPARATION_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX)) ===
+  (value.operationId.startsWith(CURRENT_FOOTPRINT_FORWARD_PREWRITE_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_FOOTPRINT_COPY_ROUTE_PREPARATION_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_FOOTPRINT_COPY_PREPARATION_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX)) ===
     (value.result.profile === "private.current-pcb209-worker-startup-actor.v1"), "Startup actor generation or bound differs.");
 const workerStartupChannelIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-worker-startup-channel-intent.v1"), ...base,
@@ -602,7 +647,6 @@ const workerStartupFootprintSourceIntentSchema = z.object({
 // The native observation already caps its JSON encoding near 4MiB. This bound
 // Includes the durable packet and chain metadata; it does not change any other
 // Journal family's allowance or permit truncating source/effect evidence.
-const FOOTPRINT_SOURCE_RESULT_MAX_BYTES = 4 * 1024 * 1024 + 64 * 1024;
 const workerStartupFootprintSourceResultSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb209-footprint-source-result.v1"), ...base,
   operationId: footprintStartupId, intentSha256: diagnosticLifecycleDigestSchema,
@@ -761,6 +805,12 @@ export const diagnosticLifecycleRecordSchemas = {
   "saved-cache-accessor-result.json": savedCacheAccessorResultSchema,
   "main-terminate-intent.json": mainTerminateIntentSchema,
   "main-terminate-acknowledged.json": mainTerminateAckSchema,
+  "forward-factory-before-launch.json": forwardFactoryBeforeLaunchSchema,
+  "forward-abort-intent.json": forwardAbortIntentSchema,
+  "forward-abort-acknowledged.json": forwardAbortAckSchema,
+  "forward-prewrite-intent.json": forwardPrewriteIntentSchema,
+  "forward-prewrite-result.json": forwardPrewriteResultSchema,
+  "forward-prewrite-failure.json": forwardPrewriteFailureSchema,
   "combined-factory-before-launch.json": combinedFactoryBeforeLaunchSchema,
   "combined-abort-intent.json": combinedAbortIntentSchema,
   "combined-abort-acknowledged.json": combinedAbortAckSchema,
@@ -803,6 +853,8 @@ function recordBound(name: RecordName): number {
   if (name === "common-baseline-failure.json") { return CURRENT_PCB_COMMON_FAILURE_MAX_BYTES + MAX_BYTES; }
   if (name === "worker-startup-continuation-result.json") { return CURRENT_PCB_209_RATLINE_CONTINUATION_RESULT_MAX_BYTES; }
   if (name === "footprint-copy-route-result.json" || name === "footprint-copy-route-failure.json") { return CURRENT_FOOTPRINT_COPY_ROUTE_RESULT_MAX_BYTES + MAX_BYTES; }
+  if (name === "forward-prewrite-result.json") { return CURRENT_FOOTPRINT_FORWARD_PREWRITE_RESULT_MAX_BYTES; }
+  if (name === "forward-prewrite-failure.json") { return CURRENT_FOOTPRINT_FORWARD_PREWRITE_FAILURE_MAX_BYTES; }
   if (name === "worker-startup-footprint-source-result.json") { return FOOTPRINT_SOURCE_RESULT_MAX_BYTES; }
   if (name === "worker-startup-ratline-result.json") { return CURRENT_PCB_209_RATLINE_STARTUP_RESULT_MAX_BYTES; }
   if (name === "worker-startup-empty-result.json") { return CURRENT_PCB_209_EMPTY_STARTUP_RESULT_MAX_BYTES; }
@@ -866,9 +918,14 @@ function hashRecord(hash: Hash, name: RecordName, bytes: Buffer): void {
 }
 function settled(operation: DiagnosticLifecycleOperation): boolean {
   return operation.records["released.json"] !== undefined || operation.records["not-dispatched.json"] !== undefined ||
-    operation.records["no-process-released.json"] !== undefined || operation.records["combined-factory-before-launch.json"] !== undefined;
+    operation.records["no-process-released.json"] !== undefined || operation.records["combined-factory-before-launch.json"] !== undefined || operation.records["forward-factory-before-launch.json"] !== undefined;
 }
 async function recordedHistoricalRelinquishment(operation: DiagnosticLifecycleOperation): Promise<boolean> {
+  if (currentFootprintForwardOpeningHistoricalIntentSchema.safeParse(operation.records["intent.json"]).success) {
+    const snapshot = await readCurrentFootprintForwardOpeningHistoricalSnapshot(operation.operationId);
+    const receipt = await readCurrentFootprintForwardOpeningRelinquishment(snapshot);
+    return receipt !== null && receipt.result !== null;
+  }
   if (Object.keys(operation.records).length !== 1 || !currentFootprintCombinedHistoricalIntentSchema.safeParse(operation.records["intent.json"]).success) { return false; }
   const snapshot = await readCurrentFootprintCombinedHistoricalSnapshot(operation.operationId);
   const receipt = await readCurrentFootprintCombinedAbandonment(snapshot); return receipt !== null && receipt.result !== null;
@@ -950,6 +1007,12 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   const startupLegacy209 = intent?.schema === "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1";
   const startupRatline209 = intent?.schema === "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1";
   const startupContinuation209 = intent?.schema === "easyeda-pro-control.pcb209-ratline-continuation-launch-intent.v1";
+  const forwardPurpose = intent?.schema === "easyeda-pro-control.footprint-forward-prewrite-launch-intent.v1";
+  requireValue(!forwardPurpose || operation.operationId.startsWith(CURRENT_FOOTPRINT_FORWARD_PREWRITE_OPERATION_PREFIX), "FORWARD_PURPOSE_ID");
+  requireValue(intent === undefined || forwardPurpose || !operation.operationId.startsWith(CURRENT_FOOTPRINT_FORWARD_PREWRITE_OPERATION_PREFIX), "RESERVED_FORWARD_PURPOSE_ID");
+  const forwardFactory = records["forward-factory-before-launch.json"];
+  requireValue(forwardFactory === undefined || forwardPurpose && intent.dispatchProtocol === "challenge-ready-before-launch.v1" &&
+    forwardFactory.intentSha256 === sha256Json(intent) && Object.keys(records).length === 2, "FORWARD_FACTORY_BEFORE_LAUNCH_CHAIN");
   const combinedReadyPurpose = intent?.schema === "easyeda-pro-control.footprint-combined-launch-intent.v2";
   const combinedPurpose = combinedReadyPurpose || intent?.schema === "easyeda-pro-control.footprint-combined-launch-intent.v1";
   const factoryBeforeLaunch = records["combined-factory-before-launch.json"];
@@ -982,7 +1045,7 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     savedCacheAccessorResult.intentSha256 === sha256Json(savedCacheAccessor) &&
     canonicalJson(savedCacheAccessorResult.result.engine) === canonicalJson(records["browser-result.json"]?.result["version"]), "SAVED_CACHE_ACCESSOR_RESULT_CHAIN");
   const mainAck = records["main-terminate-acknowledged.json"], mainTerminate = records["main-terminate-intent.json"];
-  requireValue(mainObservation === undefined || (mainPurpose || combinedPurpose) && binding !== undefined && binding.launchAcknowledged && mainObservation.bindingSha256 === sha256Json(binding), "MAIN_CONSTRUCTION_CHAIN");
+  requireValue(mainObservation === undefined || (mainPurpose || combinedPurpose || forwardPurpose) && binding !== undefined && binding.launchAcknowledged && mainObservation.bindingSha256 === sha256Json(binding), "MAIN_CONSTRUCTION_CHAIN");
   requireValue(mainResult === undefined || mainObservation !== undefined && mainResult.intentSha256 === sha256Json(mainObservation), "MAIN_CONSTRUCTION_RESULT_CHAIN");
   requireValue(mainTerminate === undefined || mainPurpose && binding !== undefined && mainTerminate.bindingSha256 === sha256Json(binding) && close === undefined, "MAIN_TERMINATE_CHAIN");
   requireValue(mainAck === undefined || mainTerminate !== undefined && mainAck.intentSha256 === sha256Json(mainTerminate), "MAIN_TERMINATE_ACK_CHAIN");
@@ -995,9 +1058,17 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     const beforeAbort = Object.fromEntries(Object.entries(records).filter(([name]) => !laterCleanup.has(name)));
     requireValue(sha256Json(beforeAbort) === combinedAbort.previousRecordsSha256, "COMBINED_ABORT_PREFIX_CHANGED");
   }
+  const forwardAbort = records["forward-abort-intent.json"], forwardAck = records["forward-abort-acknowledged.json"];
+  requireValue(forwardAbort === undefined || forwardPurpose && binding !== undefined && forwardAbort.bindingSha256 === sha256Json(binding), "FORWARD_ABORT_CHAIN");
+  requireValue(forwardAck === undefined || forwardAbort !== undefined && forwardAck.intentSha256 === sha256Json(forwardAbort), "FORWARD_ABORT_ACK_CHAIN");
+  if (forwardAbort !== undefined) {
+    const laterCleanup = new Set(["forward-abort-intent.json", "forward-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"]);
+    const beforeAbort = Object.fromEntries(Object.entries(records).filter(([name]) => !laterCleanup.has(name)));
+    requireValue(sha256Json(beforeAbort) === forwardAbort.previousRecordsSha256, "FORWARD_ABORT_PREFIX_CHANGED");
+  }
   const startupFootprintRoute209 = intent?.schema === "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1";
   const startupFootprint209 = intent?.schema === "easyeda-pro-control.footprint-copy-preparation-launch-intent.v1";
-  const startup209 = startupLegacy209 || startupEmpty209 || startupRatline209 || startupContinuation209 || startupFootprint209 || startupFootprintRoute209 || combinedPurpose;
+  const startup209 = startupLegacy209 || startupEmpty209 || startupRatline209 || startupContinuation209 || startupFootprint209 || startupFootprintRoute209 || combinedPurpose || forwardPurpose;
   const startup206 = intent?.schema === "easyeda-pro-control.pcb-worker-startup-launch-intent.v1";
   const startupPurpose = startup206 || startup209;
   requireValue(!startupFootprintRoute209 || operation.operationId.startsWith(CURRENT_FOOTPRINT_COPY_ROUTE_PREPARATION_OPERATION_PREFIX), "FOOTPRINT_ROUTE_PURPOSE_ID");
@@ -1047,10 +1118,10 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(handedOff === undefined || handoff !== undefined && handedOff.intentSha256 === sha256Json(handoff), "WORKER_STARTUP_HANDOFF_RESULT_CHAIN");
   const startupOpened = records["worker-startup-opening-result.json"], startupOpening = records["worker-startup-opening-intent.json"];
   let expectedConstruction = startup209 ? "private.current-pcb209-worker-construction.v1" : "private.current-pcb-worker-construction.v1";
-  if (startupFootprintRoute209 || combinedPurpose) { expectedConstruction = "private.current-footprint-copy-construction.v1"; }
+  if (startupFootprintRoute209 || combinedPurpose || forwardPurpose) { expectedConstruction = "private.current-footprint-copy-construction.v1"; }
   requireValue(startupOpened === undefined || startupOpened.result.construction.profile === expectedConstruction,
     "WORKER_STARTUP_CONSTRUCTION_GENERATION");
-  requireValue(!combinedPurpose || startupOpening === undefined || mainResult !== undefined, "COMBINED_MAIN_BEFORE_PROJECT");
+  requireValue(!(combinedPurpose || forwardPurpose) || startupOpening === undefined || mainResult !== undefined, "COMBINED_MAIN_BEFORE_PROJECT");
   requireValue(startupOpening === undefined || startupPurpose && handedOff !== undefined && binding !== undefined &&
     startupOpening.handoffResultSha256 === sha256Json(handedOff) && startupOpening.bindingSha256 === sha256Json(binding), "WORKER_STARTUP_OPENING_CHAIN");
   requireValue(startupOpened === undefined || startupOpening !== undefined && startupOpened.intentSha256 === sha256Json(startupOpening) &&
@@ -1107,12 +1178,42 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     footprintResult.intentSha256 === sha256Json(footprint) && canonicalJson(footprintResult.result.identity) === canonicalJson(startupOpened.result.workerIdentity),
   "WORKER_STARTUP_FOOTPRINT_RESULT_CHAIN");
   const footprintRoute = records["footprint-copy-route-intent.json"], footprintRouteFailure = records["footprint-copy-route-failure.json"], footprintRouteResult = records["footprint-copy-route-result.json"];
-  requireValue(footprintRoute === undefined || (startupFootprintRoute209 || combinedPurpose) && binding !== undefined && assigned !== undefined && actorResult !== undefined &&
+  requireValue(footprintRoute === undefined || (startupFootprintRoute209 || combinedPurpose || forwardPurpose) && binding !== undefined && assigned !== undefined && actorResult !== undefined &&
     footprintRoute.bindingSha256 === sha256Json(binding) && footprintRoute.assignmentsResultSha256 === sha256Json(assigned) && footprintRoute.actorResultSha256 === sha256Json(actorResult), "FOOTPRINT_ROUTE_CHAIN");
   requireValue(footprintRouteResult === undefined || footprintRoute !== undefined && binding !== undefined && startupOpened !== undefined &&
     footprintRouteResult.intentSha256 === sha256Json(footprintRoute) && canonicalJson(footprintRouteResult.result.state.identity) === canonicalJson(startupOpened.result.workerIdentity) &&
     canonicalJson(footprintRouteResult.result.windowsClock.binding) === canonicalJson(binding.binding), "FOOTPRINT_ROUTE_RESULT_CHAIN");
   requireValue(footprintRouteFailure === undefined || footprintRoute !== undefined && footprintRouteFailure.intentSha256 === sha256Json(footprintRoute) && footprintRouteResult === undefined, "FOOTPRINT_ROUTE_FAILURE_CHAIN");
+  const forwardPrewrite = records["forward-prewrite-intent.json"], forwardPrewriteFailure = records["forward-prewrite-failure.json"], forwardPrewriteResult = records["forward-prewrite-result.json"];
+  requireValue(forwardPrewrite === undefined || forwardPurpose && binding !== undefined && mainResult !== undefined && footprintRouteResult !== undefined && startupOpening !== undefined &&
+    forwardPrewrite.bindingSha256 === sha256Json(binding) && forwardPrewrite.mainResultSha256 === sha256Json(mainResult) &&
+    forwardPrewrite.routeResultSha256 === sha256Json(footprintRouteResult) && forwardPrewrite.beforeSqlSha256 === startupOpening.beforeSqlSha256 &&
+    forwardPrewrite.checkpointSha256 === startupOpening.preparationCheckpoint.sha256, "FORWARD_PREWRITE_CHAIN");
+  requireValue(forwardPrewriteResult === undefined || forwardPrewrite !== undefined && footprintRouteResult !== undefined &&
+    forwardPrewriteResult.intentSha256 === sha256Json(forwardPrewrite) && forwardPrewriteResult.source.request.footprintUuid === forwardPrewrite.footprintUuid &&
+    forwardPrewriteResult.source.request.client === footprintRouteResult.result.state.client &&
+    forwardPrewriteResult.source.request.maximumTicket === footprintRouteResult.result.state.maximumTicket &&
+    canonicalJson(forwardPrewriteResult.source.request.identity) === canonicalJson(footprintRouteResult.result.state.identity) &&
+    forwardPrewriteResult.preparation.sourcePacketSha256 === sha256Json(forwardPrewriteResult.source) &&
+    forwardPrewriteResult.preparation.sourcePlanSha256 === forwardPrewrite.sourcePlanSha256 &&
+    forwardPrewriteResult.preparation.beforeCheckpointSha256 === forwardPrewrite.checkpointSha256 &&
+    forwardPrewriteResult.preparation.beforeSqlSha256 === forwardPrewrite.beforeSqlSha256 &&
+    forwardPrewriteResult.result.mainResultSha256 === forwardPrewrite.mainResultSha256 && forwardPrewriteResult.result.routeResultSha256 === forwardPrewrite.routeResultSha256 &&
+    forwardPrewriteResult.result.beforeCheckpointSha256 === forwardPrewrite.checkpointSha256 && forwardPrewriteResult.result.beforeSqlSha256 === forwardPrewrite.beforeSqlSha256 &&
+    forwardPrewriteResult.result.sourcePlanSha256 === forwardPrewrite.sourcePlanSha256 && forwardPrewriteResult.result.sourcePacketSha256 === sha256Json(forwardPrewriteResult.source) &&
+    forwardPrewriteResult.result.copyPlanSha256 === forwardPrewriteResult.preparation.copyPlanSha256 &&
+    forwardPrewriteResult.result.nativeArgumentsSha256 === forwardPrewriteResult.preparation.nativeArgumentsSha256, "FORWARD_PREWRITE_RESULT_CHAIN");
+  requireValue(forwardPrewriteFailure === undefined || forwardPrewrite !== undefined && forwardPrewriteResult === undefined &&
+    forwardPrewriteFailure.intentSha256 === sha256Json(forwardPrewrite) && footprintRouteResult !== undefined &&
+    (forwardPrewriteFailure.source === null || forwardPrewriteFailure.source.request.footprintUuid === forwardPrewrite.footprintUuid &&
+      forwardPrewriteFailure.source.request.client === footprintRouteResult.result.state.client &&
+      forwardPrewriteFailure.source.request.maximumTicket === footprintRouteResult.result.state.maximumTicket &&
+      canonicalJson(forwardPrewriteFailure.source.request.identity) === canonicalJson(footprintRouteResult.result.state.identity)) &&
+    (forwardPrewriteFailure.preparation === null || forwardPrewriteFailure.source !== null &&
+      forwardPrewriteFailure.preparation.sourcePacketSha256 === sha256Json(forwardPrewriteFailure.source) &&
+      forwardPrewriteFailure.preparation.sourcePlanSha256 === forwardPrewrite.sourcePlanSha256 &&
+      forwardPrewriteFailure.preparation.beforeCheckpointSha256 === forwardPrewrite.checkpointSha256 &&
+      forwardPrewriteFailure.preparation.beforeSqlSha256 === forwardPrewrite.beforeSqlSha256), "FORWARD_PREWRITE_FAILURE_CHAIN");
   const footprintSource = records["worker-startup-footprint-source-intent.json"], footprintSourceResult = records["worker-startup-footprint-source-result.json"];
   requireValue(footprintSource === undefined || startup209 && startupPurpose && footprintResult !== undefined &&
     binding !== undefined && startupOpening !== undefined && footprintSource.bindingSha256 === sha256Json(binding) &&
@@ -1386,6 +1487,22 @@ export async function assertCurrentFootprintCombinedAbandonmentIsolated(snapshot
     } else { requireValue(settled(operation) || await recordedHistoricalRelinquishment(operation), "UNRESOLVED_LAUNCH"); }
   }
   requireValue(selected, "COMBINED_ABANDONMENT_ORIGINAL_MISSING"); await assertCurrentFootprintCombinedHistoricalSnapshot(snapshot);
+}
+
+/** Only this descriptor-issued full opening snapshot is exempt during its
+ * separate resolver. No ID, copied JSON or normal caller can select an exception. */
+export async function assertCurrentFootprintForwardOpeningRelinquishmentIsolated(snapshot: CurrentFootprintForwardOpeningHistoricalSnapshot): Promise<void> {
+  await assertNoUnresolvedFootprintHeldCacheValidation(); await assertNoUnresolvedFootprintHeadAgeValidation();
+  await assertNoUnresolvedCurrentPcbStringLedgers();
+  const original = requireCurrentFootprintForwardOpeningHistoricalSnapshot(snapshot);
+  await assertCurrentFootprintForwardOpeningHistoricalSnapshot(snapshot);
+  const operations = await readCurrentPcbDiagnosticLifecycles(); let selected = false;
+  for (const operation of operations) {
+    if (operation.operationId === original.operationId) {
+      requireValue(canonicalJson(operation.records) === canonicalJson(original.records), "FORWARD_RELINQUISHMENT_ORIGINAL_CHANGED"); selected = true;
+    } else { requireValue(settled(operation) || await recordedHistoricalRelinquishment(operation), "UNRESOLVED_LAUNCH"); }
+  }
+  requireValue(selected, "FORWARD_RELINQUISHMENT_ORIGINAL_MISSING"); await assertCurrentFootprintForwardOpeningHistoricalSnapshot(snapshot);
 }
 
 export async function assertNoUnresolvedCurrentPcbDiagnosticLaunches(): Promise<void> {

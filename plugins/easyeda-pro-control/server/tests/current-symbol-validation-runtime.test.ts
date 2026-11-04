@@ -18,6 +18,10 @@ interface Harness {
   readonly invoke: (name: string, argument?: unknown) => Promise<Value>;
   readonly inspect: () => Value;
 }
+/** Evaluate the metadata lifecycle with separate synthetic forward and inverse
+ * owners, preserving their original continuation identities and call ordering.
+ * Native receipt issuance is tested in the concrete verifier and runtime suites.
+ */
 async function fixture(purpose: Harness["state"]["purpose"] = "disposable-validation"): Promise<Harness> {
   const calls: string[] = [], state: Harness["state"] = { authenticationPending: false, terminationPending: false, cleanupInspectionFails: false,
     purpose, startupExpectationRetained: true, fullReopenReadbackInvariant: true };
@@ -30,6 +34,7 @@ async function fixture(purpose: Harness["state"]["purpose"] = "disposable-valida
   class Controller {
     public readonly kind: string;
     public owned = false;
+    private runtimeDisposed = false;
     public status: Value = { closeAttempted: false, closeAcknowledged: false, finishCloseAttempted: false,
       finishCloseAcknowledged: false, finishObservationAvailable: false, failed: false, retired: false };
     public constructor(kind: string) { this.kind = kind; }
@@ -37,6 +42,17 @@ async function fixture(purpose: Harness["state"]["purpose"] = "disposable-valida
       const event = `${this.kind}.${name}`; calls.push(event);
       if (state.failure === event) { this.status["failed"] = true; throw new Error(`Synthetic failure: ${event}`); }
       return { ...this.status };
+    }
+    public isRuntimeDisposed(): boolean { return this.runtimeDisposed; }
+    /** Model one final verifier callback after its original synthetic retirement.
+     * The wrapper test checks owner selection; this receipt grants no native authority.
+     */
+    public releaseCompletedRuntime(operationId: string, complete: (runtime: object, receipt: Value) => void): Promise<Value> {
+      assert.equal(this.runtimeDisposed, false); assert.equal(this.status["retired"], true);
+      this.step("release-runtime");
+      const receipt = Object.freeze({ operationId, family: "symbol-metadata" });
+      complete(Object.freeze({ original: "shared-runtime" }), receipt); this.runtimeDisposed = true;
+      return Promise.resolve(receipt);
     }
     public inspect(): Value {
       if (this.kind === "inverse-baseline" && state.cleanupInspectionFails) { throw new Error("Synthetic cleanup inspection failed"); }
@@ -301,4 +317,26 @@ void test("ordinary lost forward response retains its consumed writer for cleanu
   assert.equal(f.calls.filter((call) => call === "forward-writer.finishNormalClose").length, 1);
   assert.equal(f.calls.includes("baseline.finishNormalClose"), false);
   assert.equal(f.calls.some((call) => call.startsWith("inverse-") || call.includes("verifier.start") || call.endsWith(".getResultContinuation")), false);
+});
+
+void test("metadata disposal selects only the actual completed final forward or inverse verifier", async () => {
+  for (const purpose of ["ordinary-symbol-metadata", "disposable-validation"] as const) {
+    const f = await fixture(purpose), ordinary = purpose === "ordinary-symbol-metadata";
+    await f.invoke(ordinary ? "beginOrdinary" : "begin");
+    let callbacks = 0;
+    /** Require the purpose-selected final operation ID: the ordinary forward owner
+     * or the disposable inverse owner, with exactly one allocation callback.
+     */
+    const complete = (runtime: unknown, receipt: unknown): void => {
+      assert.deepEqual(runtime, { original: "shared-runtime" });
+      assert.equal(object(receipt)["operationId"], ordinary ? ID : INVERSE_ID); callbacks += 1;
+    };
+    await assert.rejects(f.invoke("releaseCompletedRuntime", complete), /complete original/u);
+    assert.equal(callbacks, 0); assert.equal(f.calls.some(call => call.endsWith(".release-runtime")), false);
+    await reach(f, "completed", ordinary);
+    await f.invoke("releaseCompletedRuntime", complete);
+    assert.equal(callbacks, 1);
+    assert.equal(f.calls.at(-1), ordinary ? "forward-verifier.release-runtime" : "inverse-verifier.release-runtime");
+    await assert.rejects(f.invoke("releaseCompletedRuntime", complete)); assert.equal(callbacks, 1);
+  }
 });

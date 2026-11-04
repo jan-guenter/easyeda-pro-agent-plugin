@@ -24,6 +24,8 @@ export interface SyntheticForwardFactoryOwner extends CurrentFootprintCopyForwar
   syntheticClockIssuerForTest: (issuer: CurrentFootprintCopyWindowsClockIssuer) => void;
   syntheticForwardRequestForTest: (request: Readonly<Record<string, unknown>>) => Promise<Readonly<Record<string, unknown>>>;
   syntheticForwardFrameForTest: (frame: Buffer) => Promise<void>;
+  syntheticForwardControlsForTest: (normal: number, cleanup: number) => void;
+  syntheticForwardRouteForTest: (channel: object, opening: object, result: object) => void;
 }
 export interface SyntheticForwardSavedFactoryOwner extends CurrentFootprintCopyForwardSavedNativeOwner {
   syntheticForwardRequestForTest: (request: Readonly<Record<string, unknown>>) => Promise<Readonly<Record<string, unknown>>>;
@@ -63,6 +65,8 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
     // An explicit synthetic command seam reaches actual original counters and
     // Pipe callbacks. It proves no Windows handle, app launch or writer route.
     ownerSource = ownerSource.replace("  public status():", "  public syntheticForwardRequestForTest(request: RecordValue): Promise<RecordValue> { return this.#request(request); }\n" +
+      "  public syntheticForwardControlsForTest(normal: number, cleanup: number): void { const {ledger,role}=this.#forwardResources(); ledger.syntheticControlsForTest(role,this,normal,cleanup); }\n" +
+      "  public syntheticForwardRouteForTest(channel: object, opening: object, result: object): void { this.#binding={helperInstance:'b'.repeat(32),jobId:'c'.repeat(32),rootPid:123,rootCreated:'123456789012345'}; this.#stagedContext={script:()=>{throw new Error('SYNTHETIC_ROUTE_GATE_PASSED');}} as never;this.#startupChannel=channel as never;this.#startupHandoff={channel,dependency:{},opening:{}} as never;this.#footprintUiSource={} as never;this.#footprintUiRunner={} as never;this.#footprintUiPacket={} as never;this.#footprintUiOpening=opening as never;this.#footprintUiOpeningResult=result as never;this.#footprintUiReproofAttempted=true;this.#footprintUiAttempted=false;this.#footprintClockRegistrationAttempted=false;this.#footprintManagerAttempted=false; }\n" +
       "  public syntheticForwardFrameForTest(frame: Buffer): Promise<void> { return new Promise<void>((resolve,reject)=>{void this.#sendFrame(frame,cause=>{if(cause===undefined||cause===null){resolve();}else{reject(cause);}});}); }\n" +
       "  public syntheticClockIssuerForTest(issuer: CurrentFootprintCopyWindowsClockIssuer): void { this.#footprintWindowsClock=issuer; }\n" +
       "  public syntheticForwardClosedSourceForTest(source: CurrentFootprintCopyNativeTarget): void { this.#footprintSourceBinding=source; this.#footprintSourceBindingText=canonicalJson({...source,before:undefined}); }\n  public status():");
@@ -79,8 +83,24 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
   let selectedAfter: object | null = null, selectedWriter: SyntheticForwardFactoryOwner | null = null;
   const checkpoint = Object.freeze({ sourceSha256: "d".repeat(64) });
   const state: { writes: number; bytes: number; readySent: boolean; actions: string[] } = { writes: 0, bytes: 0, readySent: false, actions: [] };
+  const capacityPath = new URL("../../src/current-footprint-copy-forward-capacity.ts", import.meta.url);
+  const capacitySource = await readFile(capacityPath, "utf8");
+  const capacityRaw = capacitySource.replace("  public consumeControl(",
+    "  public syntheticControlsForTest(role: CurrentFootprintCopyForwardRole, original: object, normal: number, cleanup: number): void { const held=this.#original(role,original); held.normalControls+=normal;held.cleanupControls+=cleanup;held.controls+=normal+cleanup; }\n  public consumeControl(");
+  const capacityOutput = await transform(capacityRaw, { loader: "ts", format: "cjs", target: "node24", logLevel: "silent" });
+  const capacityLoaded: { exports: Record<string, unknown> } = { exports: {} };
+  const capacityEvaluate: unknown = runInThisContext(`(function(require,module,exports){${capacityOutput.code}\n})`); assert.ok(typeof capacityEvaluate === "function");
+  Reflect.apply(capacityEvaluate, undefined, [createRequire(capacityPath), capacityLoaded, capacityLoaded.exports]);
+  const mainAccountingPath = new URL("../../src/current-footprint-copy-forward-main-accounting.ts", import.meta.url);
+  const mainAccountingOutput = await transform(await readFile(mainAccountingPath, "utf8"), { loader: "ts", format: "cjs", target: "node24", logLevel: "silent" });
+  const mainAccountingLoaded: { exports: Record<string, unknown> } = { exports: {} }, mainAccountingRequire = createRequire(mainAccountingPath);
+  const mainAccountingEvaluate: unknown = runInThisContext(`(function(require,module,exports){${mainAccountingOutput.code}\n})`); assert.ok(typeof mainAccountingEvaluate === "function");
+  Reflect.apply(mainAccountingEvaluate, undefined, [(name: string): unknown => name === "./current-footprint-copy-forward-capacity.ts" ? capacityLoaded.exports : mainAccountingRequire(name) as unknown,
+    mainAccountingLoaded, mainAccountingLoaded.exports]);
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${output.code}\n})`); assert.ok(typeof evaluate === "function");
   Reflect.apply(evaluate, undefined, [(name: string): unknown => {
+    if (name === "./current-footprint-copy-forward-main-accounting.ts") { return mainAccountingLoaded.exports; }
+    if (name === "./current-footprint-copy-forward-capacity.ts") { return capacityLoaded.exports; }
     if (name === "./current-pcb-diagnostic-installation.ts") { return {
       verifyCurrentPcb209DiagnosticInstallation: (): Promise<unknown> => mode === "saved-admission-failure" && selectedWriter !== null ?
         Promise.reject(new Error("Synthetic saved admission failed")) : Promise.resolve(installation),
@@ -113,13 +133,13 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
         creationState: "not-entered", processCreated: false, emptyJob: true, pipesChecked: true };
       const child = spawn(process.execPath, ["-e", `
 const mode=${JSON.stringify(mode)},packet=${JSON.stringify(packet)},saved=${JSON.stringify(saved)};const readline=require('node:readline');
-const input=readline.createInterface({input:process.stdin});
+const input=readline.createInterface({input:process.stdin});let rendererId=1,rendererSession;
 if(mode.startsWith('stderr'))process.stderr.write('private-synthetic-diagnostic');
 else if(!saved)setTimeout(()=>{if(mode==='oversize-no-newline'){process.stdout.write('x'.repeat(513));return;}if(mode==='malformed')packet.processCreated=true;if(mode==='wrong-challenge')packet.challenge=(packet.challenge[0]==='0'?'1':'0')+packet.challenge.slice(1);process.stdout.write(JSON.stringify(packet)+'\\n');},20);
 input.on('line',line=>{const q=JSON.parse(line);let result;
 if(q.action==='release-unlaunched')result={released:true,launchNeverAttempted:true};
-else if(mode==='resource-traffic'&&(q.action==='send'||q.action==='main-send'||q.action==='saved-cache-native'))result={written:true};
-else if(mode==='resource-traffic'&&q.action==='poll')result={bytes:Buffer.from(JSON.stringify({id:1,result:{}})+'\\0').toString('base64')};
+else if(mode==='resource-traffic'&&(q.action==='send'||q.action==='worker-startup-send'||q.action==='worker-startup-parent'||q.action==='main-send'||q.action==='saved-cache-native')){if(q.action!=='main-send'){rendererId=q.requestId;rendererSession=q.sessionId;}result={written:true};}
+else if(mode==='resource-traffic'&&q.action==='poll')result={bytes:Buffer.from(JSON.stringify({id:rendererId,...(rendererSession===undefined?{}:{sessionId:rendererSession}),result:{}})+'\\0').toString('base64')};
 else if(mode==='resource-traffic'&&q.action==='main-poll')result={bytes:Buffer.from('{}\\0').toString('base64'),receivedBytes:4,frames:1};
 else if(mode==='resource-traffic'&&q.action==='worker-startup-reprove')result={current:true};
 else if(mode==='resource-traffic'&&['termination','window','normal-close','main-close-detach','combined-abort'].includes(q.action))result={syntheticCleanup:true};

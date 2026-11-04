@@ -29,6 +29,10 @@ export function syntheticClockSample(index = 0): Bag {
     qpcAfter: (10_000_000_000_001_000n + base).toString(), qpcFrequency: "1000000", highResolution: true,
     localOffsetMinutes: 120, zoneRulesSha256: "f".repeat(64) };
 }
+/** Emulate only the fixed native child protocol while keeping maintained issuers.
+ * Retain each synthetic capture's original Job across relaunch and consume that
+ * binding on release; only the fixed read-only SQL delegate may spawn a real child.
+ */
 export async function clockSpawnFixture(context: TestContext, reviewedExecutionScopeSha256 = "e".repeat(64)): Promise<{
   helperPath: string; requests: Bag[]; behavior: ClockSpawnBehavior; child: SyntheticChild;
   spawnCalls: () => number; closeCount: () => number;
@@ -58,6 +62,7 @@ export async function clockSpawnFixture(context: TestContext, reviewedExecutionS
   // The fixed read-only Linux SQLite delegate below may spawn.
   const child = fake;
   let clockIndex = 0, closes = 0, generation = 0, spawns = 0;
+  const captures = new Map<string, string>();
   let buffer = "", jobId = "";
   const distribution = process.env["WSL_DISTRO_NAME"];
   assert.ok(distribution !== undefined && /^[A-Za-z0-9._-]+$/u.test(distribution));
@@ -68,11 +73,20 @@ export async function clockSpawnFixture(context: TestContext, reviewedExecutionS
     return [{ pid: 100, role: "easyeda-main", startIdentity: `win32:63924748600000000${generation}:job:${jobId}` },
       { pid: 101, role: probe ? "native-socket-owner" : "renderer", startIdentity: `win32:63924748610000000${generation}:job:${jobId}` }];
   }
+  /** Build a fixed synthetic protocol reply for the current launch or retained
+   * capture. Releasing an older capture must match its original Job, and an unknown
+   * or consumed binding cannot acquire a replacement ownership response.
+   */
   function response(request: Bag): Bag {
     const action = request["action"];
     if (action === "begin-probe") { return { schema: "easyeda-pro-control.windows-process-probe.v1", bindingSha256: request["bindingSha256"], port: 12_345, nonce: "0".repeat(64) }; }
     if (action === "end-probe") { return { closed: true, bindingSha256: request["bindingSha256"] }; }
-    if (action === "release-capture") { return { released: true, captureBindingSha256: request["captureBindingSha256"], jobId, helperInstance: HELPER }; }
+    if (action === "release-capture") {
+      const binding = request["captureBindingSha256"]; assert.equal(typeof binding, "string"); assert.ok(typeof binding === "string");
+      const capturedJob = captures.get(binding); assert.ok(capturedJob !== undefined); assert.equal(request["jobId"], capturedJob);
+      captures.delete(binding);
+      return { released: true, captureBindingSha256: binding, jobId: capturedJob, helperInstance: HELPER };
+    }
     if (action === "normal-close") { return { closeDispatched: true, jobId, saveOrDiscardSelected: false }; }
     if (action === "observe-launch-termination") { return { jobId, helperInstance: HELPER, terminated: true }; }
     let phase: "launch" | "capture" | "termination" | "owned-observation";
@@ -83,6 +97,8 @@ export async function clockSpawnFixture(context: TestContext, reviewedExecutionS
     } else if (action === "clocked-capture" || action === "clocked-finish-probe") {
       phase = "capture";
       const probe = action === "clocked-finish-probe";
+      const binding = request["bindingSha256"]; assert.equal(typeof binding, "string"); assert.ok(typeof binding === "string");
+      assert.equal(captures.has(binding), false); captures.set(binding, jobId);
       base = { bindingSha256: request["bindingSha256"], jobId, helperInstance: HELPER, capturedAt: "2026-10-12T12:00:00.0000000Z",
         processes: processes(probe), runtimePid: probe ? null : 101, socketOwnerPid: probe ? 101 : null };
     } else if (action === "clocked-observe-owned-clock") {

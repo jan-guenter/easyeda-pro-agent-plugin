@@ -64,12 +64,45 @@ lease while keeping its MCP connection available for local retirement state
 and synchronous source/reference API queries. It never closes EasyEDA, releases
 native proof handles, chooses a prompt or takes over another owner.
 
+A session that has admitted only static API reference queries retains private
+source-only status. It can retire without parsing unrelated global journals,
+after checking its local owners and reservations. Any admitted non-reference
+callback permanently consumes that status, even if the callback refuses.
+Callers cannot assert or restore it.
+
+After acknowledged retirement and all metadata callbacks have finished,
+`{"request":{"action":"close-retired","confirmCloseRetired":true}}`
+consumes one supported request to schedule the server's normal shutdown.
+Its separate close-scheduled result proves neither response delivery nor
+process exit. Observe the original process exiting independently; do not retry
+an unacknowledged request. This action exists only in snapshots that implement
+it. The foreground manager ordinarily closes its retired child's stdin and
+observes exit instead.
+
+A startup ownership-conflict connection can expose a different local
+`easyeda_control_session` contract:
+`{"request":{"action":"close-conflict","confirmCloseConflict":true}}`.
+Use it only when that original connection's tool metadata advertises it. This
+branch acquired no lease, upstream, gateway or native owner. It consumes one
+request to close itself normally and cannot affect the observed owner's
+process. Its close-scheduled result proves neither reply delivery nor exit;
+observe that original process exiting independently. The ordinary facade
+rejects this request, and older conflict snapshots lack it entirely.
+
+First use this connection's `{"request":{"action":"inspect"}}` to obtain its
+own PID, then verify and retain that original process for exit observation.
+The returned `observedOwnerPid` is still the immutable startup snapshot about
+another process. Neither field grants ownership or authority to signal it.
+
 This handoff currently follows fully released diagnostic owners, an ordinary
 launch that completed its own `release-closed`, or a connection that allocated
-no native owner. Project-opening and metadata-writer coordinators can remain
-allocated even after their internal final closure. They have no index-level
-disposal through this tool and still refuse retirement; completing their
-workflow alone is insufficient. Do not clear those owners or their leases.
+no native owner. Supported completed project-opening and metadata workflows
+must explicitly finish `easyeda_control_native_release` first. That separate
+original-owner route awaits helper closure and releases the matching index
+allocation while retaining coordinator history. Completion alone is insufficient;
+partial construction, multiple unrelated roots and unsupported cleanup remain
+blocked. Read the [autonomous update workflow](autonomous-controller-updates.md)
+for exact release and evidence-settlement requests. Never clear owners or leases.
 
 For a user-requested handoff to a fresh-context subagent during an update:
 
@@ -125,9 +158,16 @@ can leave the actual lock state uncertain. Do not remove or repair it manually.
 Older snapshots without this route cannot retire themselves through MCP. A
 fresh subagent started while such an owner remains will only encounter the
 ownership conflict. Report the missing capability and use supported connection
-closure when available. Do not kill an owner, change control roots, patch a
-cache or repeatedly ask for chat restarts. The maintained foreground client
-remains an option only when the original control lease is free.
+closure when available. Only explicit user authorization for a verified idle legacy EasyEDA MCP server
+that lacks a usable shutdown command can permit normal SIGTERM. The server must
+be retired, reference-only or ownership-conflict and have no native owner.
+Verify its original PID/start identity, executable, module and lack of owned
+resources immediately before signaling; retain a pidfd through observed exit.
+This exception grants no native-owner cleanup;
+never use SIGKILL, remove a lease, change control roots or patch a cache. Keep
+any standing authorization's exact scope instead of requesting it again.
+The maintained foreground client remains an option only when the original
+control lease is free. Do not repeatedly ask for chat restarts.
 
 ### Ordinary application startup on the current tuple
 
@@ -444,6 +484,14 @@ After its `ready` response, send one JSON request per line:
 ```
 
 Only tools actually listed by that facade are accepted. The client dispatches serially and never retries a timeout, disconnect, or failed result publication. Such failures close the session; inspect the facade journal before retrying an uncertain operation. Tool error results remain errors, even though transport succeeded. All facade authentication, compatibility, quarantine and writer restrictions remain in force.
+
+The caller timeout defaults to a finite 3,720,000 milliseconds and accepts
+explicit smaller bounds. This outer lifetime/delivery allowance does not prove
+native cancellation or completion. For supported cleanup after an ambiguous
+bound forward request, prefer the maintained manager's
+[original cleanup command](autonomous-controller-updates.md#establish-one-controller),
+which preserves the same connection and keeps normal calls and replacement
+blocked through original cleanup and genuine retirement.
 
 Use the reported serving PID, module URL and Node version for the foreground
 facade's own source/process admission. Its parent is the retained developer

@@ -154,6 +154,14 @@ budgets. Explicit confirmed termination affects only its original diagnostic Job
 observed root exit and empty Job remain required before release. Installed211407
 passed one complete original-main construction case; that scoped result does not
 admit this source payload or an actual backend request.
+The separate [forward prewrite qualification](current-footprint-forward-prewrite.md)
+mounts a fresh `footprint-copy-qualify-*` born-forward owner. After published
+main construction and worker/actor/route observations, it joins one complete
+checkpoint-member source to original owned preparation and historical head
+evidence. Its result retains `executionReady:false`; source sealing, current
+head age, atomic prewrite queues, document clocks, complete writer capacity,
+create/scheduler/execution ownership and Save remain unavailable.
+
 The separate [combined main/renderer validation](current-footprint-combined.md)
 seals both channels to one original root/Job before launch. It requires published
 main construction before disposable capture, then offers the existing assignment,

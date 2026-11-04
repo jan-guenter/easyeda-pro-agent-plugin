@@ -19,6 +19,14 @@ module URL and Node version help detect a stale MCP generation even when skills
 have refreshed. An older server may reject the action. The report grants no
 runtime admission or native ownership; retain the required process/source checks.
 
+For repeated extension implementation and disposable validation, prefer the
+[autonomous foreground manager](references/autonomous-controller-updates.md).
+It keeps its own process alive across acknowledged controller retirement,
+official installation and selection of a verified replacement. Finish each
+workflow's original helper release before retiring; supported project and
+metadata workflows expose separate `easyeda_control_native_release` cleanup.
+The manager preserves exact errors and original cleanup access without replay.
+
 For a user-requested update handoff to a fresh-context subagent, read the
 [cooperative retirement workflow](references/connection-and-context.md#cooperative-retirement-and-update-handoff).
 Finish original native cleanup and retire while the original package still

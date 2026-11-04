@@ -18,7 +18,7 @@ import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-ope
 import { prepareCurrentDisposableOpenCheckpoint, readCurrentPcbCommonOpenInventory, verifyCurrentDisposableOpenCheckpoint, verifyHistoricalCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import { assertNoUnresolvedOrdinaryLaunches } from "./ordinary-launch.ts";
-import { currentFootprintCombinedFactoryFailureDiagnostics, requireCurrentFootprintCombinedUnlaunchedFactoryFailure, startCurrentFootprintCombinedNativeOwner, startCurrentFootprintCopyNativeOwner, startCurrentFootprintCopyPreparationOwner, startCurrentFootprintMainNativeOwner, startCurrentPcb209DiagnosticOwner, startCurrentPcb209EmptyStartupOwner, startCurrentPcb209RatlineContinuationOwner, startCurrentPcb209RatlineStartupOwner, startCurrentPcb209VisualOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
+import { currentFootprintCombinedFactoryFailureDiagnostics, currentFootprintCopyForwardFactoryFailureDiagnostics, requireCurrentFootprintCombinedUnlaunchedFactoryFailure, requireCurrentFootprintCopyForwardUnlaunchedFactoryFailure, startCurrentFootprintCombinedNativeOwner, startCurrentFootprintCopyForwardNativeOwner, startCurrentFootprintCopyNativeOwner, startCurrentFootprintCopyPreparationOwner, startCurrentFootprintMainNativeOwner, startCurrentPcb209DiagnosticOwner, startCurrentPcb209EmptyStartupOwner, startCurrentPcb209RatlineContinuationOwner, startCurrentPcb209RatlineStartupOwner, startCurrentPcb209VisualOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintCopyNativeOwner, CurrentFootprintCopyPreparationOwner, CurrentFootprintMainNativeOwner, CurrentPcb209RatlineContinuationOwner, CurrentPcb209RatlineStartupOwner, CurrentPcb209WorkerStartupOwner, CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner, CurrentPcbWorkerStartupHandoff, CurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
 import { verifyCurrentPcb209DiagnosticInstallation, verifyCurrentPcb209RatlineInstallation, verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation, CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
@@ -110,15 +110,20 @@ import { CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX, currentFootprintCombinedId
   currentFootprintCombinedValidationRequestSchema } from "./current-footprint-combined-validation.ts";
 import { currentFootprintCombinedFactoryFailureDiagnosticsSchema } from "./current-footprint-combined-ready.ts";
 import type { CurrentFootprintCombinedBeforeLaunchFailureProof, CurrentFootprintCombinedFactoryFailureDiagnostics } from "./current-footprint-combined-ready.ts";
+import { CURRENT_FOOTPRINT_FORWARD_PREWRITE_OPERATION_PREFIX, currentFootprintForwardPrewriteIdSchema,
+  currentFootprintForwardPrewriteLifecycleRequestSchema, currentFootprintForwardPrewriteResultSchema,
+  currentFootprintForwardPrewriteValidationRequestSchema } from "./current-footprint-forward-prewrite-validation.ts";
+import type { CurrentFootprintForwardPrewriteValidationRequest } from "./current-footprint-forward-prewrite-validation.ts";
+import { CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY } from "./current-footprint-copy-forward-capacity.ts";
 import type { CurrentFootprintCombinedValidationRequest } from "./current-footprint-combined-validation.ts";
 
 export type { CurrentPcbWorkerStartupOpeningCoordinator } from "./current-pcb-worker-startup-lifecycle-adapter.ts";
 
 type LifecycleRequest = Request | CurrentPcbStringPrecreateRequest | CurrentPcb209OpeningRequest | CurrentPcb209VisualRequest;
-type LifecycleGeneration = "209-visual" | "209-startup-footprint-combined" | "209-startup-footprint-main" | "209-startup-footprint-route" | "206" | "209-opening" | "209-startup" | "209-startup-footprint" | "209-startup-empty" | "209-startup-ratline" | "209-startup-ratline-continuation";
+type LifecycleGeneration = "209-startup-footprint-forward" | "209-visual" | "209-startup-footprint-combined" | "209-startup-footprint-main" | "209-startup-footprint-route" | "206" | "209-opening" | "209-startup" | "209-startup-footprint" | "209-startup-empty" | "209-startup-ratline" | "209-startup-ratline-continuation";
 function opening209(generation: LifecycleGeneration): boolean { return generation === "209-opening" || generation === "209-visual"; }
-function routeStartup209(generation: LifecycleGeneration): boolean { return generation === "209-startup-footprint-route" || generation === "209-startup-footprint-combined"; }
-function startup209(generation: LifecycleGeneration): boolean { return generation === "209-startup-footprint-combined" || generation === "209-startup-footprint-route" || generation === "209-startup-footprint" || generation === "209-startup" || generation === "209-startup-empty" || generation === "209-startup-ratline" || generation === "209-startup-ratline-continuation"; }
+function routeStartup209(generation: LifecycleGeneration): boolean { return generation === "209-startup-footprint-forward" || generation === "209-startup-footprint-route" || generation === "209-startup-footprint-combined"; }
+function startup209(generation: LifecycleGeneration): boolean { return generation === "209-startup-footprint-forward" || generation === "209-startup-footprint-combined" || generation === "209-startup-footprint-route" || generation === "209-startup-footprint" || generation === "209-startup" || generation === "209-startup-empty" || generation === "209-startup-ratline" || generation === "209-startup-ratline-continuation"; }
 const startupStages = ["browser", "frames", "script"] as const;
 const launchPurposeFields = {
   diagnostic: { schema: "easyeda-pro-control.pcb-diagnostic-launch-intent.v1" },
@@ -126,7 +131,8 @@ const launchPurposeFields = {
   "worker-startup": { schema: "easyeda-pro-control.pcb-worker-startup-launch-intent.v1", purpose: "worker-startup" },
 } as const;
 function launchFields(purpose: CurrentPcbDiagnosticLifecyclePurpose, generation: LifecycleGeneration):
-  typeof launchPurposeFields[CurrentPcbDiagnosticLifecyclePurpose] | Readonly<{ schema: "easyeda-pro-control.pcb209-visual-launch-intent.v1" }> | Readonly<{ schema: "easyeda-pro-control.footprint-combined-launch-intent.v2" | "easyeda-pro-control.footprint-main-launch-intent.v1" | "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1" | "easyeda-pro-control.footprint-copy-preparation-launch-intent.v1" | "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-empty-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-continuation-launch-intent.v1"; purpose: "worker-startup" }> {
+  typeof launchPurposeFields[CurrentPcbDiagnosticLifecyclePurpose] | Readonly<{ schema: "easyeda-pro-control.pcb209-visual-launch-intent.v1" }> | Readonly<{ schema: "easyeda-pro-control.footprint-forward-prewrite-launch-intent.v1" | "easyeda-pro-control.footprint-combined-launch-intent.v2" | "easyeda-pro-control.footprint-main-launch-intent.v1" | "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1" | "easyeda-pro-control.footprint-copy-preparation-launch-intent.v1" | "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-empty-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-continuation-launch-intent.v1"; purpose: "worker-startup" }> {
+  if (generation === "209-startup-footprint-forward") { return { schema: "easyeda-pro-control.footprint-forward-prewrite-launch-intent.v1", purpose: "worker-startup" }; }
   if (generation === "209-startup-footprint-combined") { return { schema: "easyeda-pro-control.footprint-combined-launch-intent.v2", purpose: "worker-startup" }; }
   if (generation === "209-startup-footprint-main") { return { schema: "easyeda-pro-control.footprint-main-launch-intent.v1", purpose: "worker-startup" }; }
   if (routeStartup209(generation)) { return { schema: "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1", purpose: "worker-startup" }; }
@@ -158,6 +164,8 @@ const footprintStateMethods = Object.freeze({ observe: CurrentPcb209WorkerStartu
   require: CurrentPcb209WorkerStartupOpening.prototype.requireFootprintState, retained: CurrentPcb209WorkerStartupOpening.prototype.retainedFootprintState });
 const footprintSourceMethods = Object.freeze({ observe: CurrentPcb209WorkerStartupOpening.prototype.observeFootprintSource,
   require: CurrentPcb209WorkerStartupOpening.prototype.requireFootprintSource, retained: CurrentPcb209WorkerStartupOpening.prototype.retainedFootprintSource });
+const footprintForwardSourceMethods = Object.freeze({ observe: CurrentFootprintCopyStartupOpening.prototype.observeFootprintSource,
+  require: CurrentFootprintCopyStartupOpening.prototype.requireFootprintSource, retained: CurrentFootprintCopyStartupOpening.prototype.retainedFootprintSource });
 const footprintDependencyMethods = Object.freeze({ observe: CurrentPcb209WorkerStartupOpening.prototype.observeFootprintDependencies,
   require: CurrentPcb209WorkerStartupOpening.prototype.requireFootprintDependencies, retained: CurrentPcb209WorkerStartupOpening.prototype.retainedFootprintDependencies });
 const emptySessionMethods = Object.freeze({ openPcb: CurrentPcb209WorkerStartupPcbSession.prototype.openAndQualify,
@@ -257,6 +265,16 @@ interface ProjectPreparation {
   readonly originalTarget: Extract<Request, { action: "open-project" }>["target"];
   readonly commonInventory: Awaited<ReturnType<typeof readExactSqlInventory>> | null;
 }
+const footprintAbortVariants = Object.freeze({
+  combined: Object.freeze({ generation: "209-startup-footprint-combined", consumed: "COMBINED_ABORT_CONSUMED", unavailable: "COMBINED_ABORT_UNAVAILABLE",
+    intentName: "combined-abort-intent.json", intentSchema: "easyeda-pro-control.footprint-combined-abort-intent.v1",
+    acknowledgmentName: "combined-abort-acknowledged.json", acknowledgmentSchema: "easyeda-pro-control.footprint-combined-abort-acknowledged.v1",
+    confirmation: "confirmAbortOriginalCombinedJob" }),
+  forward: Object.freeze({ generation: "209-startup-footprint-forward", consumed: "FORWARD_ABORT_CONSUMED", unavailable: "FORWARD_ABORT_UNAVAILABLE",
+    intentName: "forward-abort-intent.json", intentSchema: "easyeda-pro-control.footprint-forward-abort-intent.v1",
+    acknowledgmentName: "forward-abort-acknowledged.json", acknowledgmentSchema: "easyeda-pro-control.footprint-forward-abort-acknowledged.v1",
+    confirmation: "confirmAbortOriginalForwardJob" }),
+} as const);
 const claims = Object.freeze({ bridgeAuthentication: false, frameWorkerVerified: false, startupQualified: false,
   validationOnly: true, executionAuthorized: false, designExecutionAuthorized: false, savedStateVerified: false, historicalOwnershipRecreated: false });
 function requireValue(value: boolean, message: string): asserts value {
@@ -273,7 +291,7 @@ function describe(operationId: string, operation: DiagnosticLifecycleOperation |
   if (binding?.binding.rootCreated === "0") { state = "cleanup-only"; }
   if (records?.["terminated.json"] !== undefined) { state = "terminated"; }
   if (records?.["released.json"] !== undefined) { state = "released"; }
-  if (records?.["combined-factory-before-launch.json"] !== undefined) { state = "factory-before-launch-failed"; }
+  if (records?.["combined-factory-before-launch.json"] !== undefined || records?.["forward-factory-before-launch.json"] !== undefined) { state = "factory-before-launch-failed"; }
   if (records?.["not-dispatched.json"] !== undefined) { state = "not-dispatched"; }
   if (records?.["no-process-released.json"] !== undefined) { state = "no-process-released"; }
   return { operationId, state, attemptConsumed: operation !== undefined, closeAttemptConsumed: records?.["close-intent.json"] !== undefined,
@@ -440,6 +458,15 @@ class CurrentPcbLifecycleCore {
   #combinedAbortBusy = false;
   #publicationTail: Promise<void> = Promise.resolve();
   readonly #combinedAbortedRecords = new Map<DiagnosticLifecycleRecordName, string>();
+  #forwardQualificationAttempted = false;
+  #forwardRoute: Readonly<{ opening: CurrentFootprintCopyStartupOpening; result: CurrentFootprintCopyStartupOpeningResult;
+    state: CurrentFootprintCopyStatePacket }> | null = null;
+  #forwardSourcePlan: CurrentFootprintSourcePlan | null = null;
+  #forwardSourcePacket: CurrentFootprintSourceReadPacket | null = null;
+  #forwardPreparation: CurrentFootprintCopyPreparation | null = null;
+  #forwardFactoryError: unknown = null;
+  #forwardFactoryFailure: CurrentFootprintCombinedBeforeLaunchFailureProof | null = null;
+  #forwardFactoryDiagnostics: CurrentFootprintCombinedFactoryFailureDiagnostics | null = null;
   #footprintRouteAttempted = false;
   #footprintRouteRetained: Record<string, unknown> | null = null;
   #startupActorAttempted = false;
@@ -487,6 +514,7 @@ class CurrentPcbLifecycleCore {
     if (generation === "209-startup-ratline") { allocate = startCurrentPcb209RatlineStartupOwner; }
     if (generation === "209-startup-ratline-continuation") { allocate = startCurrentPcb209RatlineContinuationOwner; }
     else if (generation === "209-startup-empty") { allocate = startCurrentPcb209EmptyStartupOwner; }
+    else if (generation === "209-startup-footprint-forward") { allocate = startCurrentFootprintCopyForwardNativeOwner; }
     else if (generation === "209-startup-footprint-combined") { allocate = startCurrentFootprintCombinedNativeOwner; }
     else if (generation === "209-startup-footprint-main") { allocate = startCurrentFootprintMainNativeOwner; }
     else if (routeStartup209(generation)) { allocate = startCurrentFootprintCopyNativeOwner; }
@@ -496,7 +524,7 @@ class CurrentPcbLifecycleCore {
     else if (generation === "209-opening") { allocate = startCurrentPcb209DiagnosticOwner; }
     this.#allocate = dependencies.allocateOwner ?? allocate;
     const publish = dependencies.publishRecord ?? publishCurrentPcbDiagnosticLifecycleRecord;
-    this.#publish = generation === "209-startup-footprint-combined" ? (operationId, name, record): Promise<void> => {
+    this.#publish = (generation === "209-startup-footprint-combined" || generation === "209-startup-footprint-forward") ? (operationId, name, record): Promise<void> => {
       const previous = this.#publicationTail;
       const pending = (async (): Promise<void> => {
         await previous; this.#assertPublicationAllowed(name);
@@ -534,8 +562,11 @@ class CurrentPcbLifecycleCore {
    */
   public async run(input: unknown): Promise<Record<string, unknown>> {
     let request: LifecycleRequest;
-    if (this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined") {
-      const selected = (this.#generation === "209-startup-footprint-combined" ? currentFootprintCombinedLifecycleRequestSchema : currentFootprintMainLifecycleRequestSchema).parse(input);
+    if (this.#generation === "209-startup-footprint-forward" || this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined") {
+      let schema: typeof currentFootprintForwardPrewriteLifecycleRequestSchema | typeof currentFootprintCombinedLifecycleRequestSchema | typeof currentFootprintMainLifecycleRequestSchema = currentFootprintMainLifecycleRequestSchema;
+      if (this.#generation === "209-startup-footprint-forward") { schema = currentFootprintForwardPrewriteLifecycleRequestSchema; }
+      else if (this.#generation === "209-startup-footprint-combined") { schema = currentFootprintCombinedLifecycleRequestSchema; }
+      const selected = schema.parse(input);
       request = selected.action === "launch" ? currentPcbDiagnosticValidationRequestSchema.parse({ action: selected.action, operationId: selected.operationId, confirmValidationOnly: selected.confirmValidationOnly, confirmDiagnosticLaunch: selected.confirmDiagnosticLaunch, acceptExistingProfileEffects: selected.acceptExistingProfileEffects }) : selected;
     }
     else if (this.#generation === "209-startup-footprint-route") { request = currentFootprintCopyRoutePreparationLifecycleRequestSchema.parse(input); }
@@ -628,7 +659,11 @@ class CurrentPcbLifecycleCore {
         const diagnostics = currentFootprintCombinedFactoryFailureDiagnostics(this.#combinedFactoryError, this.#options);
         this.#combinedFactoryDiagnostics = diagnostics === null ? null : currentFootprintCombinedFactoryFailureDiagnosticsSchema.parse(diagnostics);
       }
-      const combinedNativeState = this.#generation === "209-startup-footprint-combined" && native !== null ? currentFootprintCombinedNativeStateSchema.parse({
+      if (this.#attempt?.operationId === request.operationId && this.#forwardFactoryError !== null) {
+        const diagnostics = currentFootprintCopyForwardFactoryFailureDiagnostics(this.#forwardFactoryError, this.#options);
+        this.#forwardFactoryDiagnostics = diagnostics === null ? null : currentFootprintCombinedFactoryFailureDiagnosticsSchema.parse(diagnostics);
+      }
+      const combinedNativeState = (this.#generation === "209-startup-footprint-combined" || this.#generation === "209-startup-footprint-forward") && native !== null ? currentFootprintCombinedNativeStateSchema.parse({
         combinedAbortDispatchAttempted: native.combinedAbortDispatchAttempted, combinedOutputCleanupOnly: native.combinedOutputCleanupOnly,
       }) : { combinedAbortDispatchAttempted: null, combinedOutputCleanupOnly: null };
       return { ...describe(request.operationId, operation), busy: this.#busy, observations, noProcessCleanupAvailable,
@@ -676,6 +711,8 @@ class CurrentPcbLifecycleCore {
         mainTerminationAcknowledged: operation?.records["main-terminate-acknowledged.json"] !== undefined,
         combinedAbortAttemptConsumed: operation?.records["combined-abort-intent.json"] !== undefined || original && this.#combinedAbortAttempted,
         combinedAbortAcknowledged: operation?.records["combined-abort-acknowledged.json"] !== undefined,
+        forwardAbortAttemptConsumed: operation?.records["forward-abort-intent.json"] !== undefined || original && this.#generation === "209-startup-footprint-forward" && this.#combinedAbortAttempted,
+        forwardAbortAcknowledged: operation?.records["forward-abort-acknowledged.json"] !== undefined,
         combinedAbortedUnpublishedRecordCount: original ? this.#combinedAbortedRecords.size : 0,
         workerStartupOpeningAttemptConsumed: operation?.records["worker-startup-opening-intent.json"] !== undefined ||
           original && this.#purpose === "worker-startup" && this.#openingAttempted,
@@ -711,6 +748,17 @@ class CurrentPcbLifecycleCore {
         footprintDependenciesResult: operation?.records["footprint-copy-dependencies-result.json"]?.result ?? null,
         footprintManagerRouteAttemptConsumed: operation?.records["footprint-copy-manager-route-intent.json"] !== undefined || original && this.#footprintManagerRouteAttempted,
         footprintManagerRouteRetained: original && this.#footprintManagerRoute !== null,
+        forwardQualificationAttemptConsumed: operation?.records["forward-prewrite-intent.json"] !== undefined || original && this.#forwardQualificationAttempted,
+        forwardQualificationResult: operation?.records["forward-prewrite-result.json"]?.result ?? null,
+        forwardQualificationFailure: operation?.records["forward-prewrite-failure.json"]?.error ?? null,
+        forwardSourcePlanRetained: original && this.#forwardSourcePlan !== null,
+        forwardSourcePacketRetained: original && this.#forwardSourcePacket !== null,
+        forwardPreparationRetained: original && this.#forwardPreparation !== null,
+        forwardSourceObservation: original && this.#forwardRoute !== null ?
+          publicCurrentFootprintRouteSummary(footprintForwardSourceMethods.retained.call(this.#forwardRoute.opening)) : null,
+        forwardFactoryBeforeLaunchPublished: operation?.records["forward-factory-before-launch.json"] !== undefined,
+        forwardFactoryBeforeLaunchRetained: this.#attempt?.operationId === request.operationId && this.#forwardFactoryFailure !== null,
+        forwardFactoryFailureDiagnostics: this.#attempt?.operationId === request.operationId ? this.#forwardFactoryDiagnostics : null,
         footprintRouteAttemptConsumed: operation?.records["footprint-copy-route-intent.json"] !== undefined || original && this.#footprintRouteAttempted,
         footprintRouteResult: operation?.records["footprint-copy-route-result.json"]?.result ?? null,
         footprintRouteFailure: operation?.records["footprint-copy-route-failure.json"] ?? null,
@@ -819,7 +867,7 @@ class CurrentPcbLifecycleCore {
   protected async runMainAction(request: Extract<CurrentFootprintMainValidationRequest,
     { action: "observe-main-construction" | "terminate-main" }>): Promise<Record<string, unknown>> {
     this.#options.assertLocalAllowed();
-    requireValue((this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined") && !this.#busy && !this.#combinedAbortAttempted, "MAIN_PURPOSE_OR_BUSY");
+    requireValue((this.#generation === "209-startup-footprint-forward" || this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined") && !this.#busy && !this.#combinedAbortAttempted, "MAIN_PURPOSE_OR_BUSY");
     this.#busy = true;
     try {
       const operations = await readCurrentPcbDiagnosticLifecycles();
@@ -1057,8 +1105,8 @@ class CurrentPcbLifecycleCore {
 
   protected openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "206"): Promise<CurrentPcbWorkerStartupOpeningResult>;
   protected openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "209-startup" | "209-startup-footprint" | "209-startup-empty" | "209-startup-ratline" | "209-startup-ratline-continuation"): Promise<CurrentPcb209WorkerStartupOpeningResult>;
-  protected openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "209-startup-footprint-route" | "209-startup-footprint-combined"): Promise<CurrentFootprintCopyStartupOpeningResult>;
-  protected async openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "209-startup-footprint-route" | "209-startup-footprint-combined" | "206" | "209-startup" | "209-startup-footprint" | "209-startup-empty" | "209-startup-ratline" | "209-startup-ratline-continuation"): Promise<CurrentPcbStartupOpeningResult> {
+  protected openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "209-startup-footprint-forward" | "209-startup-footprint-route" | "209-startup-footprint-combined"): Promise<CurrentFootprintCopyStartupOpeningResult>;
+  protected async openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "209-startup-footprint-forward" | "209-startup-footprint-route" | "209-startup-footprint-combined" | "206" | "209-startup" | "209-startup-footprint" | "209-startup-empty" | "209-startup-ratline" | "209-startup-ratline-continuation"): Promise<CurrentPcbStartupOpeningResult> {
     requireValue(this.#generation === generation, "GENERATION_MISMATCH");
     this.#startupId(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
     const request = startupCaptureInputSchema.parse(input);
@@ -1550,7 +1598,7 @@ class CurrentPcbLifecycleCore {
         "FOOTPRINT_ROUTE_METHODS_CHANGED");
       };
       const capacity = (): void => {
-        current(); const channel = retained.methods.status.call(retained.owner).workerStartupChannel;
+        current(); const ownerStatus = retained.methods.status.call(retained.owner); const channel = ownerStatus.workerStartupChannel;
         // Conservative original reserves include unused source/plan work. The
         // Windows control sample has its own four-message native limit.
         const requests = CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.bindings + CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.dependencies +
@@ -1560,7 +1608,8 @@ class CurrentPcbLifecycleCore {
           CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.requests.clockRegistration;
         requireValue(channel !== undefined && channel !== null && channel.started && !channel.failed && !channel.released && channel.pendingReplies === 0 &&
           Number.isSafeInteger(channel.nextRequestId) && channel.nextRequestId >= 1 &&
-          channel.nextRequestId + requests - 1 <= CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.normalRequestLimit, "FOOTPRINT_ROUTE_CAPACITY");
+          channel.nextRequestId + requests - 1 <= (this.#generation === "209-startup-footprint-forward" ? CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.normalIdCeiling : CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.normalRequestLimit) &&
+          (this.#generation !== "209-startup-footprint-forward" || this.#forwardRendererHeadroom(ownerStatus, channel.nextRequestId, requests)), "FOOTPRINT_ROUTE_CAPACITY");
       };
       await this.#installation(retained); current();
       await this.#verifyHistoricalCheckpoint(checkpoint.prepared, checkpoint.originalTarget); current();
@@ -1582,6 +1631,7 @@ class CurrentPcbLifecycleCore {
         evidence["cacheConstruction"] = cacheConstruction; current();
         stage = "state";
         const state = await footprintRouteMethods.state.call(opened.opening, opened.result, assignments); evidence["state"] = state; current();
+        if (this.#generation === "209-startup-footprint-forward") { this.#forwardRoute = Object.freeze({ opening: opened.opening, result: opened.result, state }); }
         stage = "producers";
         const producers = await footprintRouteMethods.producers.call(opened.opening, opened.result, assignments, state); evidence["producers"] = producers; current();
         stage = "dependencies";
@@ -1827,6 +1877,126 @@ class CurrentPcbLifecycleCore {
       await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); current();
       return { operationId, result: structuredClone(result.result), preparationPublished: true,
         validationOnly: true, executionAuthorized: false, saveAuthorized: false, persistenceVerified: false };
+    } finally { this.#busy = false; }
+  }
+
+  /** Join the original born-forward route to its complete native source and
+   * checkpoint-owned preparation. This read-only stage has no execution issuer;
+   * its selected historical head is explicitly not a current head-age proof. */
+  protected async qualifyStartupFootprintSource(operationId: string, expectedBindingSha256: string, input: unknown): Promise<Record<string, unknown>> {
+    this.#startupId(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
+    const selected = currentPcb209WorkerStartupFootprintSourceInputSchema.parse(input);
+    this.#options.assertLocalAllowed();
+    requireValue(this.#generation === "209-startup-footprint-forward" && !this.#busy, "FORWARD_QUALIFICATION_PURPOSE_OR_BUSY");
+    this.#busy = true;
+    try {
+      const operations = await readCurrentPcbDiagnosticLifecycles();
+      const operation = operations.find(value => value.operationId === operationId), retained = this.#retained;
+      this.#assertPurpose(operationId, operation);
+      const openingResult = this.#startupOpeningResult, original = this.#startupOpening, route = this.#forwardRoute;
+      const actor = this.#startupActorPacket, assignments = this.#startupAssignments, checkpoint = this.#projectPreparation;
+      const mainRecord = operation?.records["main-construction-result.json"], routeRecord = operation?.records["footprint-copy-route-result.json"];
+      const assignedRecord = operation?.records["worker-startup-assignments-result.json"], openingRecord = operation?.records["worker-startup-opening-result.json"];
+      const actorRecord = operation?.records["worker-startup-actor-result.json"];
+      requireValue(operation !== undefined && retained !== null && retained.operationId === operationId && original !== null &&
+        openingResult !== null && assignments !== null && actor !== null && route !== null && checkpoint !== null && checkpoint.commonInventory !== null &&
+        mainRecord !== undefined && routeRecord !== undefined && openingRecord !== undefined && assignedRecord !== undefined && actorRecord !== undefined &&
+        this.#pending.get("main-construction-result.json") === canonicalJson(mainRecord) &&
+        this.#pending.get("footprint-copy-route-result.json") === canonicalJson(routeRecord) &&
+        this.#pending.get("worker-startup-opening-result.json") === canonicalJson(openingRecord) &&
+        this.#pending.get("worker-startup-assignments-result.json") === canonicalJson(assignedRecord) &&
+        this.#pending.get("worker-startup-actor-result.json") === canonicalJson(actorRecord) &&
+        canonicalJson(routeRecord.result.state) === canonicalJson(route.state) &&
+        !this.#startupOpeningReleased && !this.#closeAttempted && operation.records["close-intent.json"] === undefined &&
+        operation.records["terminated.json"] === undefined && sha256Json(operation.records["binding.json"]) === expectedBindingSha256,
+      "ORIGINAL_FORWARD_ROUTE_REQUIRED");
+      this.#assertNormalOwner(retained);
+      requireValue(!this.#forwardQualificationAttempted && operation.records["forward-prewrite-intent.json"] === undefined, "FORWARD_QUALIFICATION_CONSUMED");
+      this.#forwardQualificationAttempted = true;
+      const before = checkpoint.commonInventory, completion = readerCompletion(before);
+      const current = (): void => {
+        this.#assertNormalOwner(retained);
+        requireValue(this.#startupOpening === original && this.#startupOpeningResult === openingResult && this.#forwardRoute === route &&
+          this.#startupAssignments === assignments && this.#startupActorPacket === actor && this.#projectPreparation === checkpoint &&
+          checkpoint.commonInventory === before && readerCompletion(before) === completion && canonicalJson(checkpoint.prepared) === checkpoint.preparedText,
+        "FORWARD_QUALIFICATION_INPUT_CHANGED");
+        const opened = requireCurrentFootprintCopyStartupOpening(original.owner, openingResult);
+        requireValue(opened.opening === route.opening && opened.result === route.result &&
+          route.opening.observeFootprintSource === footprintForwardSourceMethods.observe && route.opening.requireFootprintSource === footprintForwardSourceMethods.require &&
+          route.opening.retainedFootprintSource === footprintForwardSourceMethods.retained, "ORIGINAL_FORWARD_SOURCE_METHODS_REQUIRED");
+      };
+      const capacity = (): void => {
+        current(); const ownerStatus = retained.methods.status.call(retained.owner); const channel = ownerStatus.workerStartupChannel;
+        requireValue(channel !== undefined && channel !== null && channel.started && !channel.failed && !channel.released && channel.pendingReplies === 0 &&
+          Number.isSafeInteger(channel.nextRequestId) && channel.nextRequestId >= 1 &&
+          channel.nextRequestId + CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS + CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS - 1 <=
+            CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.normalIdCeiling &&
+          this.#forwardRendererHeadroom(ownerStatus, channel.nextRequestId, CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS + CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS), "FORWARD_QUALIFICATION_CAPACITY");
+      };
+      await this.#installation(retained); current();
+      await this.#verifyHistoricalCheckpoint(checkpoint.prepared, checkpoint.originalTarget); current();
+      const plan = await prepareCurrentFootprintSourcePlan(before, { projectUuid: checkpoint.sealedTarget.projectUuid,
+        branchUuid: checkpoint.sealedTarget.branchUuid, footprintUuid: selected.footprintUuid }); current();
+      requireValue(plan.maximumTicket === route.state.maximumTicket && plan.beforeSqlSha256 === before.logicalSha256 &&
+        plan.beforeCheckpointSha256 === checkpoint.prepared.checkpoint.checkpointSha256, "FORWARD_SOURCE_BASELINE_CHANGED");
+      await assertSnapshot(operations); capacity();
+      const intent: NonNullable<DiagnosticLifecycleRecords["forward-prewrite-intent.json"]> = {
+        schema: "easyeda-pro-control.footprint-forward-prewrite-intent.v1", operationId, createdAt: new Date().toISOString(),
+        bindingSha256: expectedBindingSha256, mainResultSha256: sha256Json(mainRecord), routeResultSha256: sha256Json(routeRecord),
+        beforeSqlSha256: before.logicalSha256, checkpointSha256: before.checkpointSha256, sourcePlanSha256: sha256Json(plan), ...selected,
+      };
+      await this.#record(operationId, "forward-prewrite-intent.json", intent); current();
+      const updated = { ...operation, records: { ...operation.records, "forward-prewrite-intent.json": intent } };
+      const expected = operations.map(value => value.operationId === operationId ? updated : value);
+      await assertSnapshot(expected); capacity();
+      let stage: "source" | "preparation" | "source-assets" = "source";
+      let preparation: CurrentFootprintCopyPreparation | null = null, source: CurrentFootprintSourceReadPacket | null = null;
+      try {
+        this.#forwardSourcePlan = plan;
+        source = await route.opening.observeFootprintSource(route.result, assignments, route.state, plan);
+        this.#forwardSourcePacket = source; current();
+        await route.opening.requireFootprintSource(route.result, assignments, route.state, plan, source); current();
+        stage = "preparation";
+        preparation = await prepareCurrentFootprintCopyOwned(Object.freeze({ opening: route.opening, result: route.result,
+          assignments, state: route.state, sourcePlan: plan, source, before }));
+        this.#forwardPreparation = preparation; current();
+        const owned = await requireCurrentFootprintCopyOwned(preparation, route.opening); current();
+        stage = "source-assets";
+        requireValue(owned.before === before && owned.sourcePlan === plan && owned.sourceAssets.status === "qualified", "FORWARD_SOURCE_ASSETS_UNSUPPORTED");
+        const result = currentFootprintForwardPrewriteResultSchema.parse({ profile: "private.current-footprint-forward-prewrite.v1",
+          mainResultSha256: sha256Json(mainRecord), routeResultSha256: sha256Json(routeRecord),
+          beforeCheckpointSha256: before.checkpointSha256, beforeSqlSha256: before.logicalSha256,
+          sourcePlanSha256: sha256Json(plan), sourcePacketSha256: sha256Json(source), copyPlanSha256: preparation.copyPlanSha256,
+          nativeArgumentsSha256: preparation.nativeArgumentsSha256, sourceAssetsSha256: sha256Json(owned.sourceAssets), headReferenceSha256: sha256Json(owned.headReference),
+          prewriteSourceRouteJoined: true, originalForwardOwnerRetained: true, sourceSealedForClosedSnapshot: false,
+          headAgeVerified: false, atomicPrewriteQueuesVerified: false, documentClocksArmed: false, backendPublicationVerified: false,
+          wholeFourGenerationBudgetReserved: false, executionReady: false, executionAuthorized: false, saveAuthorized: false });
+        const record = diagnosticLifecycleRecordSchemas["forward-prewrite-result.json"].parse({
+          schema: "easyeda-pro-control.footprint-forward-prewrite-result.v1", operationId, createdAt: new Date().toISOString(),
+          intentSha256: sha256Json(intent), source, preparation, result });
+        this.#retainRecord("forward-prewrite-result.json", record);
+        await assertSnapshot(expected); current(); await this.#publish(operationId, "forward-prewrite-result.json", record); current();
+        const completed = { ...updated, records: { ...updated.records, "forward-prewrite-result.json": record } };
+        await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); current();
+        return { operationId, result: structuredClone(result), qualificationPublished: true, validationOnly: true,
+          executionReady: false, executionAuthorized: false, saveAuthorized: false, persistenceVerified: false };
+      } catch (error) {
+        // A retained success plan may have failed publication. Keep it for exact
+        // Record settlement instead of manufacturing a contradictory failure.
+        if (!this.#pending.has("forward-prewrite-result.json")) {
+          const failure = diagnosticLifecycleRecordSchemas["forward-prewrite-failure.json"].parse({
+            schema: "easyeda-pro-control.footprint-forward-prewrite-failure.v1", operationId, createdAt: new Date().toISOString(),
+            intentSha256: sha256Json(intent), failedStage: stage, error: (error instanceof Error ? error.message : String(error)).slice(0, 4096), source, preparation,
+            executionReady: false, executionAuthorized: false, saveAuthorized: false });
+          this.#retainRecord("forward-prewrite-failure.json", failure);
+          try { await assertSnapshot(expected); await this.#publish(operationId, "forward-prewrite-failure.json", failure); }
+          catch (publicationError) {
+            // oxlint-disable-next-line eslint/preserve-caught-error -- Keep the original qualification as cause; both errors remain in the aggregate.
+            throw new AggregateError([error, publicationError], "FORWARD_PREWRITE_FAILURE_PUBLICATION", { cause: error });
+          }
+        }
+        throw error;
+      }
     } finally { this.#busy = false; }
   }
 
@@ -2196,7 +2366,8 @@ class CurrentPcbLifecycleCore {
     return this.#generation === "209-startup-footprint" ? CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.normalRequestLimit : 224;
   }
   #startupId(operationId: string): void {
-    if (this.#generation === "209-startup-footprint-combined") { currentFootprintCombinedIdSchema.parse(operationId); }
+    if (this.#generation === "209-startup-footprint-forward") { currentFootprintForwardPrewriteIdSchema.parse(operationId); }
+    else if (this.#generation === "209-startup-footprint-combined") { currentFootprintCombinedIdSchema.parse(operationId); }
     else if (this.#generation === "209-startup-footprint-main") { currentFootprintMainIdSchema.parse(operationId); }
     else if (this.#generation === "209-startup-footprint-route") { currentFootprintCopyRoutePreparationIdSchema.parse(operationId); }
     else if (this.#generation === "209-startup-footprint") { currentFootprintCopyPreparationIdSchema.parse(operationId); }
@@ -2212,20 +2383,21 @@ class CurrentPcbLifecycleCore {
     const continuation209 = operationId.startsWith(CURRENT_PCB_209_RATLINE_CONTINUATION_OPERATION_PREFIX);
     const empty209 = operationId.startsWith(CURRENT_PCB_209_EMPTY_STARTUP_OPERATION_PREFIX), ratline209 = operationId.startsWith(CURRENT_PCB_209_RATLINE_STARTUP_OPERATION_PREFIX);
     const visual209 = operationId.startsWith("pcb209-visual-");
+    const forward209 = operationId.startsWith(CURRENT_FOOTPRINT_FORWARD_PREWRITE_OPERATION_PREFIX);
     const combined209 = operationId.startsWith(CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX);
     const main209 = operationId.startsWith(CURRENT_FOOTPRINT_MAIN_OPERATION_PREFIX);
     const footprintRoute209 = operationId.startsWith(CURRENT_FOOTPRINT_COPY_ROUTE_PREPARATION_OPERATION_PREFIX);
     const footprint209 = operationId.startsWith(CURRENT_FOOTPRINT_COPY_PREPARATION_OPERATION_PREFIX);
     const project209 = operationId.startsWith(CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX);
     if (operationId.startsWith(CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX)) { idPurpose = "string-precreate"; }
-    else if (operationId.startsWith(CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX) || project209 || empty209 || ratline209 || continuation209 || footprint209 || footprintRoute209 || main209 || combined209) { idPurpose = "worker-startup"; }
+    else if (operationId.startsWith(CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX) || project209 || empty209 || ratline209 || continuation209 || footprint209 || footprintRoute209 || main209 || combined209 || forward209) { idPurpose = "worker-startup"; }
     const expectedSchema = launchFields(this.#purpose, this.#generation).schema;
-    requireValue(visual209 === (this.#generation === "209-visual") && combined209 === (this.#generation === "209-startup-footprint-combined") && main209 === (this.#generation === "209-startup-footprint-main") && footprintRoute209 === (this.#generation === "209-startup-footprint-route") && footprint209 === (this.#generation === "209-startup-footprint") && continuation209 === (this.#generation === "209-startup-ratline-continuation") && ratline209 === (this.#generation === "209-startup-ratline") && project209 === (this.#generation === "209-startup") && empty209 === (this.#generation === "209-startup-empty") &&
+    requireValue(forward209 === (this.#generation === "209-startup-footprint-forward") && visual209 === (this.#generation === "209-visual") && combined209 === (this.#generation === "209-startup-footprint-combined") && main209 === (this.#generation === "209-startup-footprint-main") && footprintRoute209 === (this.#generation === "209-startup-footprint-route") && footprint209 === (this.#generation === "209-startup-footprint") && continuation209 === (this.#generation === "209-startup-ratline-continuation") && ratline209 === (this.#generation === "209-startup-ratline") && project209 === (this.#generation === "209-startup") && empty209 === (this.#generation === "209-startup-empty") &&
       (operationId.startsWith(CURRENT_PCB_209_OPENING_PROFILE.operationPrefix) && !project209 && !empty209 && !ratline209 && !continuation209) === (opening209(this.#generation)), "GENERATION_MISMATCH");
     requireValue(idPurpose === this.#purpose && (intent === undefined || intent.schema === expectedSchema || combined209 && intent.schema === "easyeda-pro-control.footprint-combined-launch-intent.v1"), "PURPOSE_MISMATCH");
   }
   protected async requireCombinedMainPublished(operationId: string, expectedBindingSha256: string): Promise<void> {
-    this.assertCombinedNormal(); currentFootprintCombinedIdSchema.parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
+    this.assertCombinedNormal(); this.#startupId(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
     const operations = await readCurrentPcbDiagnosticLifecycles(); this.assertCombinedNormal();
     const operation = operations.find(value => value.operationId === operationId), retained = this.#retained;
     this.#assertPurpose(operationId, operation);
@@ -2237,9 +2409,29 @@ class CurrentPcbLifecycleCore {
     requireValue(this.#mainObservationAttempted && result !== undefined && this.#pending.get("main-construction-result.json") === canonicalJson(result), "COMBINED_MAIN_PUBLICATION_REQUIRED");
     await assertSnapshot(operations); this.#assertNormalOwner(retained);
   }
-  protected async runCombinedAbort(request: Extract<CurrentFootprintCombinedValidationRequest, { action: "abort-generation" }>): Promise<Record<string, unknown>> {
+  /** Keep the fixed Combined wrapper pinned while sharing the original abort sequence. */
+  protected runCombinedAbort(request: Extract<CurrentFootprintCombinedValidationRequest, { action: "abort-generation" }>): Promise<Record<string, unknown>> {
+    return this.#runFootprintAbort(request, "combined");
+  }
+  /** Reserve only this born-forward Job; acknowledgment supplies no termination or release proof. */
+  protected runForwardAbort(request: Extract<CurrentFootprintForwardPrewriteValidationRequest, { action: "abort-generation" }>): Promise<Record<string, unknown>> {
+    return this.#runFootprintAbort(request, "forward");
+  }
+  /** A generation's own counters reserve normal classes independently of its
+   * ID ceiling. Saved-generation totals cannot spend this writer's headroom. */
+  #forwardRendererHeadroom(status: ReturnType<LifecycleOwner["status"]>, nextId: number, required: number): boolean {
+    const resources = status.forwardResources; const generation = resources?.generation;
+    return this.#generation === "209-startup-footprint-forward" && resources !== undefined && !resources.cleanupOnly && generation !== undefined && !generation.failed &&
+      Number.isSafeInteger(generation.rendererRequests) && generation.rendererRequests >= 0 && generation.rendererRequests + 1 === nextId &&
+      Number.isSafeInteger(generation.rendererNormalRequests) && generation.rendererNormalRequests >= 0 &&
+      generation.rendererNormalRequests + required <= CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.normalClassLimit;
+  }
+  /** Consume before the first await, preserve the published prefix and privately
+   * retain interrupted plans before dispatching this generation's original Job. */
+  async #runFootprintAbort(request: Extract<CurrentFootprintCombinedValidationRequest | CurrentFootprintForwardPrewriteValidationRequest, { action: "abort-generation" }>, variant: keyof typeof footprintAbortVariants): Promise<Record<string, unknown>> {
+    const selected = footprintAbortVariants[variant];
     this.#options.assertLocalAllowed();
-    requireValue(this.#generation === "209-startup-footprint-combined" && !this.#combinedAbortBusy && !this.#combinedAbortAttempted, "COMBINED_ABORT_CONSUMED");
+    requireValue(this.#generation === selected.generation && !this.#combinedAbortBusy && !this.#combinedAbortAttempted, selected.consumed);
     const retained = this.#retained;
     const bindingText = this.#pending.get("binding.json");
     requireValue(retained !== null && retained.operationId === request.operationId && bindingText !== undefined &&
@@ -2258,54 +2450,54 @@ class CurrentPcbLifecycleCore {
       this.#assertPurpose(request.operationId, operation);
       const binding = operation?.records["binding.json"];
       requireValue(operation !== undefined && binding !== undefined && canonicalJson(binding) === bindingText &&
-        operation.records["combined-abort-intent.json"] === undefined && operation.records["terminated.json"] === undefined &&
-        operation.records["release-intent.json"] === undefined && operation.records["released.json"] === undefined, "COMBINED_ABORT_UNAVAILABLE");
+        operation.records[selected.intentName] === undefined && operation.records["terminated.json"] === undefined &&
+        operation.records["release-intent.json"] === undefined && operation.records["released.json"] === undefined, selected.unavailable);
       requireValue(Object.keys(operation.records).every(name => [...this.#pending].some(([known, text]) => known === name && canonicalJson(operation.records[known]) === text)), "JOURNAL_CHANGED");
       // Retain interrupted plans privately. They cannot become post-abort
       // Success records or obstruct the original generation's cleanup.
       for (const [name, text] of this.#pending) {
         if (operation.records[name] === undefined) { this.#combinedAbortedRecords.set(name, text); this.#pending.delete(name); }
       }
-      const intent: NonNullable<DiagnosticLifecycleRecords["combined-abort-intent.json"]> = {
-        schema: "easyeda-pro-control.footprint-combined-abort-intent.v1", operationId: request.operationId,
+      const intent = diagnosticLifecycleRecordSchemas[selected.intentName].parse({
+        schema: selected.intentSchema, operationId: request.operationId,
         createdAt: new Date().toISOString(), bindingSha256: request.expectedBindingSha256,
-        previousRecordsSha256: sha256Json(operation.records), confirmAbortOriginalCombinedJob: true,
-      };
+        previousRecordsSha256: sha256Json(operation.records), [selected.confirmation]: true,
+      });
       await assertSnapshot(operations); this.#assertOwner(retained);
-      await this.#record(request.operationId, "combined-abort-intent.json", intent); this.#assertOwner(retained);
-      const updated = { ...operation, records: { ...operation.records, "combined-abort-intent.json": intent } };
+      await this.#record(request.operationId, selected.intentName, intent); this.#assertOwner(retained);
+      const updated = { ...operation, records: { ...operation.records, [selected.intentName]: intent } };
       const expected = operations.map(value => value.operationId === request.operationId ? updated : value);
       await assertSnapshot(expected); this.#assertOwner(retained);
-      await dispatch.call(retained.owner, reservation, request.confirmAbortOriginalCombinedJob); this.#assertOwner(retained);
+      await dispatch.call(retained.owner, reservation, ("confirmAbortOriginalCombinedJob" in request ? request.confirmAbortOriginalCombinedJob : request.confirmAbortOriginalForwardJob)); this.#assertOwner(retained);
       await assertSnapshot(expected); this.#assertOwner(retained);
-      const acknowledgment: NonNullable<DiagnosticLifecycleRecords["combined-abort-acknowledged.json"]> = {
-        schema: "easyeda-pro-control.footprint-combined-abort-acknowledged.v1", operationId: request.operationId,
+      const acknowledgment = diagnosticLifecycleRecordSchemas[selected.acknowledgmentName].parse({
+        schema: selected.acknowledgmentSchema, operationId: request.operationId,
         createdAt: new Date().toISOString(), intentSha256: sha256Json(intent), abortDispatched: true, terminationProved: false,
-      };
-      await this.#record(request.operationId, "combined-abort-acknowledged.json", acknowledgment); this.#assertOwner(retained);
-      return { ...describe(request.operationId, { ...updated, records: { ...updated.records, "combined-abort-acknowledged.json": acknowledgment } }),
+      });
+      await this.#record(request.operationId, selected.acknowledgmentName, acknowledgment); this.#assertOwner(retained);
+      return { ...describe(request.operationId, { ...updated, records: { ...updated.records, [selected.acknowledgmentName]: acknowledgment } }),
         abortDispatched: true, terminationProved: false, executionAuthorized: false, saveAuthorized: false };
     } finally { this.#combinedAbortBusy = false; }
   }
   protected assertCombinedNormal(): void {
     this.#options.assertLocalAllowed();
-    requireValue(this.#generation === "209-startup-footprint-combined" && !this.#combinedAbortAttempted, "COMBINED_GENERATION_ABORTED");
+    requireValue((this.#generation === "209-startup-footprint-combined" || this.#generation === "209-startup-footprint-forward") && !this.#combinedAbortAttempted, "COMBINED_GENERATION_ABORTED");
   }
   #assertNormalOwner(retained: Retained): void {
-    requireValue(this.#generation !== "209-startup-footprint-combined" || !this.#combinedAbortAttempted, "COMBINED_GENERATION_ABORTED");
+    requireValue(!(this.#generation === "209-startup-footprint-combined" || this.#generation === "209-startup-footprint-forward") || !this.#combinedAbortAttempted, "COMBINED_GENERATION_ABORTED");
     requireValue(!this.#visualAbortAttempted, "VISUAL_GENERATION_ABORTED");
     this.#assertOwner(retained);
   }
   #assertPublicationAllowed(name: DiagnosticLifecycleRecordName): void {
     requireValue(!this.#visualAbortAttempted || ["visual-abort-intent.json", "visual-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"].includes(name), "VISUAL_GENERATION_ABORTED");
-    requireValue(!this.#combinedAbortAttempted || ["combined-abort-intent.json", "combined-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"].includes(name), "COMBINED_GENERATION_ABORTED");
+    requireValue(!this.#combinedAbortAttempted || ["combined-abort-intent.json", "combined-abort-acknowledged.json", "forward-abort-intent.json", "forward-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"].includes(name), "COMBINED_GENERATION_ABORTED");
   }
   #assertOwner(retained: Retained): void {
     this.#options.assertLocalAllowed();
     requireValue(this.#lease !== null, "ORIGINAL_LEASE_REQUIRED"); assertCurrentPcbDiagnosticLaunchExclusion(this.#lease);
     requireValue(this.#retained === retained && methods.every(name => retained.owner[name] === retained.methods[name]), "OWNER_CHANGED");
     const status = retained.methods.status.call(retained.owner);
-    const expectedProfile = this.#generation === "206" ? this.#purpose : { "209-startup-footprint-combined": "worker-startup-footprint-combined209", "209-startup-footprint-main": "worker-startup-footprint-main209", "209-startup-footprint-route": "worker-startup-footprint-copy209", "209-startup-footprint": "worker-startup-footprint209", "209-startup": "worker-startup209", "209-startup-empty": "worker-startup-empty209", "209-startup-ratline": "worker-startup-ratline209", "209-startup-ratline-continuation": "worker-startup-ratline-continuation209", "209-visual": "visual209", "209-opening": "diagnostic209" }[this.#generation];
+    const expectedProfile = this.#generation === "206" ? this.#purpose : { "209-startup-footprint-forward": "worker-startup-footprint-forward209", "209-startup-footprint-combined": "worker-startup-footprint-combined209", "209-startup-footprint-main": "worker-startup-footprint-main209", "209-startup-footprint-route": "worker-startup-footprint-copy209", "209-startup-footprint": "worker-startup-footprint209", "209-startup": "worker-startup209", "209-startup-empty": "worker-startup-empty209", "209-startup-ratline": "worker-startup-ratline209", "209-startup-ratline-continuation": "worker-startup-ratline-continuation209", "209-visual": "visual209", "209-opening": "diagnostic209" }[this.#generation];
     requireValue(status.profile === expectedProfile &&
       (this.#generation !== "209-visual" || typeof retained.methods.restoreWindowForCapture209 === "function" && retained.owner.restoreWindowForCapture209 === retained.methods.restoreWindowForCapture209 &&
         typeof retained.methods.resizeWindowForCapture209 === "function" && retained.owner.resizeWindowForCapture209 === retained.methods.resizeWindowForCapture209 &&
@@ -2348,7 +2540,7 @@ class CurrentPcbLifecycleCore {
         retained.owner.requireFootprintCopyManagerRoute === retained.methods.requireFootprintCopyManagerRoute &&
         retained.owner.retainedFootprintCopyManagerRoute === retained.methods.retainedFootprintCopyManagerRoute, "FOOTPRINT_MANAGER_ROUTE_OWNER_CHANGED");
     }
-    if (this.#generation === "209-startup-footprint-combined") {
+    if (this.#generation === "209-startup-footprint-combined" || this.#generation === "209-startup-footprint-forward") {
       for (const name of ["abortFootprintCombined", "reserveFootprintCombinedAbort", "dispatchFootprintCombinedAbort"] as const) {
         requireValue(typeof retained.methods[name] === "function" && retained.owner[name] === retained.methods[name], "COMBINED_OWNER_METHODS_CHANGED");
       }
@@ -2356,7 +2548,7 @@ class CurrentPcbLifecycleCore {
     if (this.#generation === "209-startup-footprint-main") {
       requireValue(typeof retained.methods.terminateFootprintMain === "function" && retained.owner.terminateFootprintMain === retained.methods.terminateFootprintMain, "MAIN_OWNER_METHODS_CHANGED");
     }
-    if (this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined") {
+    if (this.#generation === "209-startup-footprint-forward" || this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined") {
       for (const name of ["observeFootprintMainConstruction", "retainedFootprintMainConstruction"] as const) {
         requireValue(typeof retained.methods[name] === "function" && retained.owner[name] === retained.methods[name], "MAIN_OWNER_METHODS_CHANGED");
       }
@@ -2463,7 +2655,8 @@ class CurrentPcbLifecycleCore {
     requireValue(Object.keys(operation.records).length === this.#pending.size && [...this.#pending].every(([name, text]) =>
       canonicalJson(operation.records[name]) === text), "JOURNAL_CHANGED");
     if (operation.records["released.json"] !== undefined || operation.records["not-dispatched.json"] !== undefined ||
-        operation.records["no-process-released.json"] !== undefined || operation.records["combined-factory-before-launch.json"] !== undefined) {
+        operation.records["no-process-released.json"] !== undefined || operation.records["combined-factory-before-launch.json"] !== undefined ||
+        operation.records["forward-factory-before-launch.json"] !== undefined) {
       this.#releaseLease();
     }
     return describe(operationId, operation);
@@ -2474,14 +2667,14 @@ class CurrentPcbLifecycleCore {
   }
   async #cleanupUnlaunched(operationId: string, intentSha256: string): Promise<Record<string, unknown>> {
     const attempt = this.#assertAttempt(operationId, intentSha256);
-    if (this.#combinedFactoryError !== null && !attempt.launchInvoked && this.#retained === null) {
+    if ((this.#combinedFactoryError !== null || this.#forwardFactoryError !== null) && !attempt.launchInvoked && this.#retained === null) {
       const operations = await readCurrentPcbDiagnosticLifecycles(); this.#assertAttempt(operationId, intentSha256);
       const operation = operations.find(candidate => candidate.operationId === operationId);
-      if (await this.#completeCombinedFactoryFailure(operation, operations)) {
+      if (await this.#completeForwardFactoryFailure(operation, operations) || await this.#completeCombinedFactoryFailure(operation, operations)) {
         const completed = await readCurrentPcbDiagnosticLifecycles(); return describe(operationId, completed.find(candidate => candidate.operationId === operationId));
       }
     }
-    requireValue(!attempt.launchInvoked && (!attempt.allocationInvoked || this.#retained !== null || this.#combinedFactoryFailure !== null), "NONDISPATCH_NOT_PROVED");
+    requireValue(!attempt.launchInvoked && (!attempt.allocationInvoked || this.#retained !== null || this.#combinedFactoryFailure !== null || this.#forwardFactoryFailure !== null), "NONDISPATCH_NOT_PROVED");
     const settled = await this.#settleRecords(operationId, intentSha256);
     if (settled["state"] === "not-dispatched" || settled["state"] === "factory-before-launch-failed") { return settled; }
     this.#assertAttempt(operationId, intentSha256);
@@ -2576,6 +2769,35 @@ class CurrentPcbLifecycleCore {
       { ...candidate, records: { ...candidate.records, "combined-factory-before-launch.json": record } } : candidate));
     this.#options.assertLocalAllowed(); assertCurrentPcbDiagnosticLaunchExclusion(this.#lease); this.#releaseLease(); return true;
   }
+  /** Only the original forward factory can prove a closed helper received no
+   * launch input. Publish that exact terminal before releasing launch exclusion. */
+  async #completeForwardFactoryFailure(operation: DiagnosticLifecycleOperation | undefined, operations: readonly DiagnosticLifecycleOperation[]): Promise<boolean> {
+    if (this.#forwardFactoryError === null) { return false; }
+    const proof = requireCurrentFootprintCopyForwardUnlaunchedFactoryFailure(this.#forwardFactoryError, this.#options);
+    if (proof === null) { return false; }
+    const attempt = this.#attempt, intent = operation?.records["intent.json"];
+    requireValue(this.#generation === "209-startup-footprint-forward" && operation !== undefined &&
+      intent?.schema === "easyeda-pro-control.footprint-forward-prewrite-launch-intent.v1" && attempt !== null &&
+      attempt.operationId === operation.operationId && attempt.intentSha256 === sha256Json(intent) && attempt.allocationInvoked &&
+      !attempt.launchInvoked && this.#retained === null && this.#lease !== null, "FORWARD_FACTORY_FAILURE_PURPOSE");
+    this.#forwardFactoryFailure = proof;
+    this.#options.assertLocalAllowed(); assertCurrentPcbDiagnosticLaunchExclusion(this.#lease);
+    await assertSnapshot(operations); this.#options.assertLocalAllowed(); assertCurrentPcbDiagnosticLaunchExclusion(this.#lease);
+    const retained = this.#pending.get("forward-factory-before-launch.json");
+    const published = operation.records["forward-factory-before-launch.json"];
+    if (published !== undefined) {
+      requireValue(retained !== undefined && retained === canonicalJson(published), "FORWARD_FACTORY_PUBLICATION_CHANGED");
+      this.#releaseLease(); return true;
+    }
+    const record: NonNullable<DiagnosticLifecycleRecords["forward-factory-before-launch.json"]> = retained === undefined ? {
+      schema: "easyeda-pro-control.footprint-forward-factory-before-launch.v1", operationId: operation.operationId,
+      createdAt: new Date().toISOString(), intentSha256: attempt.intentSha256, proof,
+    } : diagnosticLifecycleRecordSchemas["forward-factory-before-launch.json"].parse(JSON.parse(retained) as unknown);
+    await this.#record(operation.operationId, "forward-factory-before-launch.json", record);
+    await assertSnapshot(operations.map(candidate => candidate.operationId === operation.operationId ?
+      { ...candidate, records: { ...candidate.records, "forward-factory-before-launch.json": record } } : candidate));
+    this.#options.assertLocalAllowed(); assertCurrentPcbDiagnosticLaunchExclusion(this.#lease); this.#releaseLease(); return true;
+  }
   /** Reserve one operation ID and durably record its purpose/installation intent
    * before allocating the native helper. Recheck launch exclusion and journal state;
    * a failed allocation or acknowledgment stays consumed and retains its cleanup path.
@@ -2601,8 +2823,8 @@ class CurrentPcbLifecycleCore {
       facadeSha256: installation.facadeSha256, installationSha256: sha256Json(installation),
       confirmValidationOnly: true, confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true,
       ...(this.#generation === "209-visual" ? { acceptVisualStateChanges: true as const } : {}),
-      ...(this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined" ? { acceptDebuggerPauseEffects: true as const } : {}),
-      ...(this.#generation === "209-startup-footprint-combined" ? { dispatchProtocol: "challenge-ready-before-launch.v1" as const } : {}),
+      ...(this.#generation === "209-startup-footprint-forward" || this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined" ? { acceptDebuggerPauseEffects: true as const } : {}),
+      ...(this.#generation === "209-startup-footprint-combined" || this.#generation === "209-startup-footprint-forward" ? { dispatchProtocol: "challenge-ready-before-launch.v1" as const } : {}),
     });
     this.#attempt = { operationId: request.operationId, intentSha256: sha256Json(intent), allocationInvoked: false, launchInvoked: false };
     await this.#record(request.operationId, "intent.json", intent);
@@ -2613,6 +2835,13 @@ class CurrentPcbLifecycleCore {
     let owner: LifecycleOwner;
     try { owner = await this.#allocate(this.#options); }
     catch (error) {
+      if (this.#generation === "209-startup-footprint-forward") {
+        const diagnostics = currentFootprintCopyForwardFactoryFailureDiagnostics(error, this.#options);
+        this.#forwardFactoryDiagnostics = diagnostics === null ? null : currentFootprintCombinedFactoryFailureDiagnosticsSchema.parse(diagnostics);
+        if (diagnostics !== null) { this.#forwardFactoryError = error; }
+        try { await this.#completeForwardFactoryFailure(expected.find(operation => operation.operationId === request.operationId), expected); }
+        catch (publicationError) { throw new AggregateError([error, publicationError], "FORWARD_FACTORY_FAILURE_PUBLICATION", { cause: publicationError }); }
+      }
       if (this.#generation === "209-startup-footprint-combined") {
         const diagnostics = currentFootprintCombinedFactoryFailureDiagnostics(error, this.#options);
         this.#combinedFactoryDiagnostics = diagnostics === null ? null : currentFootprintCombinedFactoryFailureDiagnosticsSchema.parse(diagnostics);
@@ -2641,8 +2870,9 @@ class CurrentPcbLifecycleCore {
         requireFootprintCopyUi: owner.requireFootprintCopyUi, retainedFootprintCopyUi: owner.retainedFootprintCopyUi,
         observeFootprintCopyManagerRoute: owner.observeFootprintCopyManagerRoute, requireFootprintCopyManagerRoute: owner.requireFootprintCopyManagerRoute,
         retainedFootprintCopyManagerRoute: owner.retainedFootprintCopyManagerRoute } : {}),
-      ...(this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined" ? { observeFootprintMainConstruction: owner.observeFootprintMainConstruction, retainedFootprintMainConstruction: owner.retainedFootprintMainConstruction } : {}),
+      ...(this.#generation === "209-startup-footprint-forward" || this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined" ? { observeFootprintMainConstruction: owner.observeFootprintMainConstruction, retainedFootprintMainConstruction: owner.retainedFootprintMainConstruction } : {}),
       ...(this.#generation === "209-startup-footprint-main" ? { terminateFootprintMain: owner.terminateFootprintMain } : {}),
+      ...(this.#generation === "209-startup-footprint-forward" ? { abortFootprintCombined: owner.abortFootprintCombined, reserveFootprintCombinedAbort: owner.reserveFootprintCombinedAbort, dispatchFootprintCombinedAbort: owner.dispatchFootprintCombinedAbort } : {}),
       ...(this.#generation === "209-startup-footprint-combined" ? { abortFootprintCombined: owner.abortFootprintCombined, reserveFootprintCombinedAbort: owner.reserveFootprintCombinedAbort, dispatchFootprintCombinedAbort: owner.dispatchFootprintCombinedAbort, observeSavedCacheNative: owner.observeSavedCacheNative, observeSavedCacheAccessor: owner.observeSavedCacheAccessor } : {}),
       ...(routeStartup209(this.#generation) ? { observeFootprintCopyWindowsClock: owner.observeFootprintCopyWindowsClock, joinFootprintCopyManagerPeer: owner.joinFootprintCopyManagerPeer,
         observeFootprintCopyClockRegistration: owner.observeFootprintCopyClockRegistration, sampleFootprintCopyClockRegistration: owner.sampleFootprintCopyClockRegistration,
@@ -3691,6 +3921,54 @@ export class CurrentFootprintCombinedLifecycle extends CurrentPcbLifecycleCore {
   }
   public observeWorkerStartupChannel(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
     this.assertCombinedNormal(); return this.observeStartupChannel(operationId, expectedBindingSha256);
+  }
+  public observeWorkerStartupFootprintRoute(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    this.assertCombinedNormal(); return this.observeStartupFootprintRoute(operationId, expectedBindingSha256);
+  }
+}
+
+/** Fresh accounted forward source/route qualification. Every native write stays unavailable. */
+export class CurrentFootprintForwardPrewriteLifecycle extends CurrentPcbLifecycleCore {
+  public constructor(options: CurrentPcbDiagnosticLifecycleOptions, dependencies: CurrentPcb209WorkerStartupLifecycleDependencies = {}) {
+    super(options, dependencies, "worker-startup", "209-startup-footprint-forward");
+  }
+  /** Keep original Job abort available independently of an in-flight observation. */
+  public override run(input: unknown): Promise<Record<string, unknown>> {
+    try {
+      const request = currentFootprintForwardPrewriteValidationRequestSchema.parse(input);
+    if (request.action === "abort-generation") { return this.runForwardAbort(request); }
+    if (!["inspect", "observe-termination", "release-closed", "settle-records", "cleanup-unlaunched", "cleanup-no-process"].includes(request.action)) { this.assertCombinedNormal(); }
+      if (request.action === "observe-main-construction") { return this.runMainAction(request); }
+      if (request.action === "qualify-footprint-source") { return this.qualifyWorkerStartupFootprintSource(request.operationId, request.expectedBindingSha256, { footprintUuid: request.footprintUuid }); }
+      return super.run(request);
+    } catch (error) { return Promise.reject(error instanceof Error ? error : new Error("FORWARD_REQUEST_REFUSED")); }
+  }
+  public async handoffWorkerStartup(operationId: string, expectedBindingSha256: string): Promise<CurrentPcbWorkerStartupHandoff> {
+    await this.requireCombinedMainPublished(operationId, expectedBindingSha256); this.assertCombinedNormal();
+    return this.handoffStartup(operationId, expectedBindingSha256);
+  }
+  public async openWorkerStartup(operationId: string, expectedBindingSha256: string, input: unknown): Promise<CurrentFootprintCopyStartupOpeningResult> {
+    await this.requireCombinedMainPublished(operationId, expectedBindingSha256); this.assertCombinedNormal();
+    return this.openStartup(operationId, expectedBindingSha256, input, "209-startup-footprint-forward");
+  }
+  public async captureWorkerStartup(operationId: string, expectedBindingSha256: string, input: unknown): Promise<Record<string, unknown>> {
+    const request = startupCaptureInputSchema.parse(input);
+    await this.handoffWorkerStartup(operationId, expectedBindingSha256); this.assertCombinedNormal();
+    const result = await this.openWorkerStartup(operationId, expectedBindingSha256, request); this.assertCombinedNormal();
+    return { ...structuredClone(result), operationId, validationOnly: true, executionAuthorized: false, saveAuthorized: false };
+  }
+  public observeWorkerStartupAssignments(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    this.assertCombinedNormal(); return this.observeStartupAssignments(operationId, expectedBindingSha256);
+  }
+  public observeWorkerStartupActor(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    this.assertCombinedNormal(); return this.observeStartupActor(operationId, expectedBindingSha256);
+  }
+  public observeWorkerStartupChannel(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    this.assertCombinedNormal(); return this.observeStartupChannel(operationId, expectedBindingSha256);
+  }
+  /** Read native source and prepare only from this owner's published original route. */
+  public qualifyWorkerStartupFootprintSource(operationId: string, expectedBindingSha256: string, input: unknown): Promise<Record<string, unknown>> {
+    this.assertCombinedNormal(); return this.qualifyStartupFootprintSource(operationId, expectedBindingSha256, input);
   }
   public observeWorkerStartupFootprintRoute(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
     this.assertCombinedNormal(); return this.observeStartupFootprintRoute(operationId, expectedBindingSha256);

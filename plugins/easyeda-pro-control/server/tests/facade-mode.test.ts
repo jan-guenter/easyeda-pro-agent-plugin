@@ -13,7 +13,7 @@ void test("only the exact legacy configuration retains legacy tool registration"
 });
 
 void test("restricted registration admits scoped metadata and disposable opening but no generic design or recovery route", () => {
-  assert.equal(CALCULATION_ONLY_TOOLS.length, 28);
+  assert.equal(CALCULATION_ONLY_TOOLS.length, 29);
   assert.equal(facadeToolRegistered("calculation-only", "easyeda_control_pcb_string_precreate_validation"), true);
   assert.equal(facadeToolRegistered("calculation-only", "easyeda_control_project_open"), true);
   assert.equal(facadeToolRegistered("calculation-only", "easyeda_control_history"), true);
@@ -37,10 +37,10 @@ void test("restricted registration admits scoped metadata and disposable opening
   }
 });
 
-void test("exact209 selectors expose seventeen scoped tools without inheriting unreviewed old routes", () => {
+void test("exact209 selectors expose eighteen scoped tools without inheriting unreviewed old routes", () => {
   assert.equal(configuredFacadeMode({ EASYEDA_PCB_BUNDLE_VERSION: "3.2.195.6b67774e",
     EASYEDA_PUBLIC_API_BUNDLE_VERSION: "0.3.59.1ca9efb5" }), "public-utilities-only");
-  assert.equal(PUBLIC_UTILITIES_ONLY_TOOLS.length, 17);
+  assert.equal(PUBLIC_UTILITIES_ONLY_TOOLS.length, 18);
   assert.equal(facadeToolRegistered("legacy-reviewed", "easyeda_control_public_readers"), false);
   assert.equal(facadeToolRegistered("calculation-only", "easyeda_control_public_readers"), false);
   assert.equal(facadeToolRegistered("legacy-reviewed", "easyeda_control_catalog_footprint"), false);
@@ -72,12 +72,12 @@ void test("exact209 selectors expose seventeen scoped tools without inheriting u
   assert.equal(Object.hasOwn(capabilities, "projectSymbolMetadata"), false);
   assert.deepEqual(capabilities["disposableWorkerStartup"], { tool: "easyeda_control_pcb209_worker_startup", validationOnly: true, connectedValidation: false,
     runtimeAdmissionRequired: true, debuggerPauseAcceptanceRequired: true, startupCompletionVerified: false,
-    scope: "separate-project-worker-constructor-footprint-copy-preparation-and-route-preparation-combined-main-renderer-empty-baseline-ratline-held-import-and-continuation-purposes;no-complete-startup-or-writer-authority",
+    scope: "separate-project-worker-constructor-footprint-copy-preparation-and-route-preparation-forward-prewrite-qualification-combined-main-renderer-empty-baseline-ratline-held-import-and-continuation-purposes;no-complete-startup-or-writer-authority",
     completeLiveBaselineVerified: false, serverClockProvenanceVerified: false, cadAuthority: false });
   assert.deepEqual(capabilities["save"], { enabled: false }); assert.deepEqual(capabilities["recovery"], { enabled: false });
   assert.deepEqual(capabilities["nativeAdapters"], { enabled: true,
     scope: "identity-and-disposable209-opening-layer-primitive-selection-relations;project-worker-constructor-footprint-copy-preparation-and-route-preparation-empty-baseline-held-ratline-import-and-ratline-continuation-observations-only" });
-  assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /eight distinct disposable launch purposes/u);
+  assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /eleven distinct disposable launch purposes/u);
   assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /empty-baseline purpose joins fixed common data to the original completed SQL checkpoint/u);
   assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /ratline-held-import purpose qualifies PCB construction/u);
   assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /observes a bounded first-child native creation stack/u);

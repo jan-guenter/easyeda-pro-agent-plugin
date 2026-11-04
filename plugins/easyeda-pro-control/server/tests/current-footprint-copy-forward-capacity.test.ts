@@ -30,9 +30,9 @@ void test("forward ceiling separates two generations, normal classes and global 
   assert.equal(CAPACITY.wholeFourGenerationBudgetReserved, false); assert.equal(CAPACITY.executionAuthorized, false);
   const writerMinimumStdout = 4 * Math.ceil((STREAM.receivedBytes + MAIN_STREAM.totalReceivedBytes) / 3) +
     4 * (CAPACITY.writer.renderer.polls + MAIN_STREAM.totalPolls) +
-    (CAPACITY.writer.renderer.polls + MAIN_STREAM.totalPolls + 996 + 128 + CAPACITY.controls.perGeneration) * CAPACITY.controls.replyHeaderBytes;
+    (CAPACITY.writer.renderer.polls + MAIN_STREAM.totalPolls + 996 + 128 + CAPACITY.controls.writer.total) * CAPACITY.controls.replyHeaderBytes;
   assert.ok(CAPACITY.writer.helperStdoutBytes >= writerMinimumStdout);
-  assert.ok(CAPACITY.controls.perGeneration > CAPACITY.controls.terminationObservationsPerGeneration +
+  assert.ok(CAPACITY.controls.writer.total > CAPACITY.controls.terminationObservationsPerGeneration +
     CAPACITY.controls.releaseObservationsPerGeneration + CAPACITY.controls.normalCloseAttemptsPerGeneration + 1);
   assert.equal(CAPACITY.output.retainedBytes, CAPACITY.output.artifactBytes + CAPACITY.output.journalBytes);
 });
@@ -47,6 +47,8 @@ void test("normal request IDs remain usable after reserved interleaved cleanup",
   }
   for (let id = 62; id <= 996; id += 1) { ledger.consumeRequest("forward-writer", owner, "renderer", id, false); }
   assert.equal(ledger.status().rendererRequests, 996); assert.equal(ledger.status().failed, false);
+  assert.equal(ledger.generationStatus("forward-writer", owner).rendererNormalRequests, 935);
+  assert.equal(ledger.generationStatus("forward-writer", owner).rendererCleanupRequests, 61);
   assert.throws(() =>{  ledger.consumeRequest("forward-writer", owner, "renderer", 997, false); }, /RENDERER_REQUEST/u);
   assert.equal(ledger.status().failed, true);
   assert.throws(() =>{  ledger.consumeRequest("forward-saved-readback", saved, "renderer", 1, false); }, /REQUEST_CLASS/u);
@@ -137,20 +139,17 @@ void test("writer controls cannot reduce the saved owner's separate cleanup rese
   const ledger = new Ledger(), saved = Object.freeze({}), writer = Object.freeze({});
   const binding = requireOriginalForwardLedgerBinding(ledger);
   binding.bind("forward-writer", writer); binding.bind("forward-saved-readback", saved);
-  const reserve = CAPACITY.controls.terminationObservationsPerGeneration + CAPACITY.controls.releaseObservationsPerGeneration +
-    CAPACITY.controls.normalCloseAttemptsPerGeneration + CAPACITY.controls.abortAttemptsPerGeneration;
-  for (let index = 0; index < CAPACITY.controls.perGeneration; index += 1) { binding.consumeControl("forward-writer", writer); }
-  assert.equal(binding.generationStatus("forward-writer", writer).controls, CAPACITY.controls.perGeneration);
+  binding.consumeControl("forward-writer", writer); binding.consumeControl("forward-writer", writer, true);
+  assert.equal(binding.generationStatus("forward-writer", writer).normalControls, 1);
+  assert.equal(binding.generationStatus("forward-writer", writer).cleanupControls, 1);
   assert.equal(binding.generationStatus("forward-saved-readback", saved).controls, 0);
-  for (let index = 0; index < CAPACITY.controls.perGeneration - reserve; index += 1) { binding.consumeControl("forward-saved-readback", saved); }
-  assert.equal(binding.status().controls, CAPACITY.controls.perGeneration * 2 - reserve);
-  assert.equal(CAPACITY.controls.perGeneration - binding.generationStatus("forward-saved-readback", saved).controls, reserve);
-  for (let index = 0; index < reserve; index += 1) { binding.consumeControl("forward-saved-readback", saved, true); }
-  assert.equal(binding.generationStatus("forward-saved-readback", saved).controls, CAPACITY.controls.perGeneration);
-  assert.equal(binding.status().controls, CAPACITY.controls.perGeneration * 2);
-  assert.throws(() => { binding.consumeControl("forward-saved-readback", saved, true); }, /CAPACITY_CONTROL/u);
-  assert.equal(binding.generationStatus("forward-writer", writer).controls, CAPACITY.controls.perGeneration);
-  assert.equal(binding.generationStatus("forward-saved-readback", saved).executionAuthorized, false);
+  for (let index = 0; index < CAPACITY.controls.saved.normal; index += 1) { binding.consumeControl("forward-saved-readback", saved); }
+  assert.equal(binding.generationStatus("forward-saved-readback", saved).cleanupControls, 0);
+  for (let index = 0; index < CAPACITY.controls.saved.cleanup; index += 1) { binding.consumeControl("forward-saved-readback", saved, true); }
+  assert.equal(binding.generationStatus("forward-saved-readback", saved).controls, 512);
+  assert.equal(binding.status().controls, 514);
+  assert.throws(() => { binding.consumeControl("forward-saved-readback", saved); }, /CONTROL/u);
+  assert.equal(binding.generationStatus("forward-writer", writer).controls, 2);
 });
 
 void test("generation snapshots retain their own requests and received bytes", () => {
@@ -168,10 +167,10 @@ void test("generation snapshots retain their own requests and received bytes", (
   binding.consumeRequest("forward-saved-readback", saved, "renderer", 1, false);
   binding.consumeBytes("forward-saved-readback", saved, "renderer", 19); binding.consumeBytes("forward-saved-readback", saved, "helper-stdout", 23);
   binding.consumeRendererPoll("forward-saved-readback", saved, "idle"); binding.consumeRendererEvent("forward-saved-readback", saved, 5);
-  assert.deepEqual(binding.generationStatus("forward-writer", writer), { failed: false, rendererRequests: 1, mainRequests: 1, controls: 0,
+  assert.deepEqual(binding.generationStatus("forward-writer", writer), { failed: false, rendererRequests: 1, rendererNormalRequests: 1, rendererCleanupRequests: 0, mainRequests: 1, controls: 0, normalControls: 0, cleanupControls: 0,
     rendererPolls: 1, mainPolls: 1, rendererEvents: 1, mainFrames: 1, rendererBytes: 11, rendererEventBytes: 3,
     mainBytes: 13, helperStdoutBytes: 17, executionAuthorized: false });
-  assert.deepEqual(binding.generationStatus("forward-saved-readback", saved), { failed: false, rendererRequests: 1, mainRequests: 0, controls: 0,
+  assert.deepEqual(binding.generationStatus("forward-saved-readback", saved), { failed: false, rendererRequests: 1, rendererNormalRequests: 1, rendererCleanupRequests: 0, mainRequests: 0, controls: 0, normalControls: 0, cleanupControls: 0,
     rendererPolls: 1, mainPolls: 0, rendererEvents: 1, mainFrames: 0, rendererBytes: 19, rendererEventBytes: 5,
     mainBytes: 0, helperStdoutBytes: 23, executionAuthorized: false });
   assert.equal(before.rendererRequests, 0); assert.equal(before.rendererBytes, 0);

@@ -7,6 +7,8 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { openControlRootCapability } from "../src/control-root.ts";
 import { FacadeLeaseContentionError, acquireFacadeLease } from "../src/lease.ts";
 import { acquireFacadeLeaseOrDiagnose } from "../src/ownership-conflict-startup.ts";
+import { ForegroundSessionTransport } from "../../scripts/control-session-transport.ts";
+// oxlint-disable-next-line import/max-dependencies -- SDK startup compatibility and original-child exit/stdio custody need their distinct real transports alongside this shared isolated ownership fixture.
 import { createTestTemporaryDirectory } from "./helpers/temporary-directory.ts";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -26,7 +28,7 @@ void test("actual index completes MCP handshake in diagnostic-only mode while an
   const errors: string[] = [];
   transport.stderr?.on("data", (chunk: Buffer) => { errors.push(chunk.toString()); });
   await client.connect(transport, { timeout: 15_000 });
-  const catalog = await client.listTools(); assert.deepEqual(catalog.tools.map(tool => tool.name), ["easyeda_control_status"]);
+  const catalog = await client.listTools(); assert.deepEqual(catalog.tools.map(tool => tool.name), ["easyeda_control_status", "easyeda_control_session"]);
   const first = await client.callTool({ name: "easyeda_control_status", arguments: {} });
   assert.equal(first.isError, true); const snapshot = first.structuredContent; assert.ok(isRecord(snapshot));
   assert.equal(snapshot["mode"], "ownership-conflict");
@@ -49,12 +51,54 @@ void test("actual index completes MCP handshake in diagnostic-only mode while an
     }
   }
   await owner.release();
-  const afterCatalog = await client.listTools(); assert.deepEqual(afterCatalog.tools.map(tool => tool.name), ["easyeda_control_status"]);
+  const afterCatalog = await client.listTools(); assert.deepEqual(afterCatalog.tools.map(tool => tool.name), ["easyeda_control_status", "easyeda_control_session"]);
   const afterRelease = await client.callTool({ name: "easyeda_control_status", arguments: {} });
   assert.deepEqual(afterRelease.structuredContent, snapshot);
   await assert.rejects(lstat(owner.path), { code: "ENOENT" });
   await client.close(); assert.equal(errors.join(""), "");
   await assert.rejects(lstat(`/proc/${String(pid)}`), { code: "ENOENT" });
+});
+
+void test("a conflict connection closes only its original process without touching the actual owner's lease", { timeout: 30_000 }, async context => {
+  const root = await createTestTemporaryDirectory("easyeda-conflict-close-");
+  const owner = await acquireFacadeLease(root);
+  const before = await readFile(owner.path);
+  context.after(async () => { await owner.release(); });
+  const transport = new ForegroundSessionTransport({ command: process.execPath, args: [resolve("server/src/index.ts")], cwd: process.cwd(),
+    env: { EASYEDA_CONTROL_DATA_DIR: root, EASYEDA_UPSTREAM_ROOT: join(root, "absent-upstream"), EASYEDA_ASSETS_ROOT: join(root, "absent-assets") } });
+  const client = new Client({ name: "conflict-close-regression", version: "1.0.0" }, { capabilities: {} });
+  context.after(async () => { await client.close(); });
+  await client.connect(transport, { timeout: 15_000 });
+  const pid = transport.pid; assert.ok(pid !== undefined);
+  const inspection = await client.callTool({ name: "easyeda_control_session", arguments: { request: { action: "inspect" } } });
+  assert.notEqual(inspection.isError, true); assert.ok(isRecord(inspection.structuredContent));
+  const inspected = inspection.structuredContent["result"]; assert.ok(isRecord(inspected));
+  assert.equal(inspected["pid"], pid); assert.equal(inspected["observedOwnerPid"], process.pid);
+  assert.equal(inspected["leaseAcquired"], false); assert.equal(inspected["admissionGranted"], false);
+  for (const request of [{ action: "close-conflict", confirmCloseConflict: false },
+    { action: "close-conflict", confirmCloseConflict: true, ownerPid: process.pid },
+    { action: "inspect", ownerPid: process.pid },
+    { action: "retire", confirmRetire: true }]) {
+    const refused = await client.callTool({ name: "easyeda_control_session", arguments: { request } });
+    assert.equal(refused.isError, true); assert.equal(transport.inspectClosure(), null);
+    assert.deepEqual(await readFile(owner.path), before);
+  }
+  try {
+    const closed = await client.callTool({ name: "easyeda_control_session", arguments: { request: { action: "close-conflict", confirmCloseConflict: true } } });
+    assert.notEqual(closed.isError, true); assert.ok(isRecord(closed.structuredContent));
+    const result = closed.structuredContent["result"]; assert.ok(isRecord(result));
+    assert.equal(result["schema"], "easyeda-pro-control.ownership-conflict-close-scheduled.v1");
+    assert.equal(result["pid"], pid);
+    assert.equal(result["closeScheduled"], true); assert.equal(result["deliveryAcknowledged"], false);
+    assert.equal(result["processExitProved"], false); assert.equal(result["leaseAcquired"], false);
+  } catch (error) {
+    // Only independently observed closure can settle a lost final reply.
+    assert.ok(error instanceof Error && "code" in error && error.code === -32_000);
+  }
+  assert.deepEqual(await transport.awaitOwnedClosure(), { pid, exitObserved: true, closeObserved: true, exitCode: 0, signal: null, stdinEof: false });
+  assert.equal(transport.hasUnclosedChild(), false);
+  await assert.rejects(lstat(`/proc/${String(pid)}`), { code: "ENOENT" });
+  assert.deepEqual(await readFile(owner.path), before);
 });
 
 void test("only exact live lease contention is typed; normal ownership and corrupt lease refusal keep their contracts", async () => {

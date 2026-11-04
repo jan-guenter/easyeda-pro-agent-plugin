@@ -1,15 +1,17 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { chmod, lstat, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
   MAXIMUM_REQUEST_BYTES,
+  SESSION_CALL_TIMEOUT_MS,
   boundedLines,
   parseSessionConfiguration,
   parseSessionRequest,
+  publishSessionResult,
   runSessionRequests,
   sessionFailureDiagnostic,
   sessionMachineLaunchConfiguration,
@@ -17,25 +19,61 @@ import {
 } from "../../scripts/control-session.ts";
 import { machineProfileSchema } from "../src/machine-profile.ts";
 import { assertTestIsolation } from "../../scripts/test-isolation.ts";
+import { CURRENT_PCB_209_STARTUP_OPENING_TIMING } from "../src/current-pcb-209-worker-startup-timing.ts";
 
 async function* values<T>(items: readonly T[]): AsyncGenerator<T> {
   yield* await Promise.resolve(items);
 }
+
+void test("pre-emit result refusals are explicit outcomes while emitter and response-file faults still throw", async () => {
+  const isolation = await assertTestIsolation();
+  const directory = join(isolation.directory, "result-publication"), publicDirectory = join(directory, "public");
+  await mkdir(directory, { mode: 0o700 });
+  await mkdir(publicDirectory); await chmod(publicDirectory, 0o755);
+  const parsed = parseSessionRequest(JSON.stringify({ id: "publication", tool: "easyeda_control_api" }));
+  assert.ok("tool" in parsed);
+  let emitted = 0;
+  const emit = async (): Promise<void> => { emitted += 1; await Promise.resolve(); };
+  assert.equal(await publishSessionResult(parsed, "x".repeat(1_048_576), emit), "result-needs-response-file");
+  const publicFile = join(publicDirectory, "result.json");
+  assert.equal(await publishSessionResult({ ...parsed, responseFile: publicFile }, {}, emit), "response-directory-must-be-private-and-canonical");
+  assert.equal(emitted, 0); await assert.rejects(lstat(publicFile), { code: "ENOENT" });
+  for (const message of ["result-needs-response-file", "response-directory-must-be-private-and-canonical"]) {
+    const failure = new Error(message);
+    await assert.rejects(publishSessionResult(parsed, {}, () => Promise.reject(failure)), error => error === failure);
+  }
+  const existingFile = join(directory, "existing.json"); await writeFile(existingFile, "unchanged");
+  await assert.rejects(publishSessionResult({ ...parsed, responseFile: existingFile }, {}, emit), { code: "EEXIST" });
+  assert.equal(await readFile(existingFile, "utf8"), "unchanged"); assert.equal(emitted, 0);
+});
 
 void test("session selection requires the complete installed bundled-launch contract", async () => {
   const source = await readFile(new URL("../../.mcp.json", import.meta.url), "utf8");
   const configuration = parseSessionConfiguration(JSON.parse(source));
   const server = configuration.mcpServers.easyeda_pro_control;
   assert.deepEqual(server.args, ["server/dist/server.mjs", "--machine-launch"]);
+  assert.ok(server.tool_timeout_sec * 1000 >= SESSION_CALL_TIMEOUT_MS);
   for (const candidate of [{ ...server, args: ["scripts/launch-machine.ts"] },
     { ...server, args: ["server/dist/server.mjs"] },
     { ...server, args: ["--machine-launch", "server/dist/server.mjs"] },
     { ...server, args: ["server/dist/server.mjs", "--machine-launch", "--profile", "/caller/profile"] },
     { ...server, command: "/private/node" }, { ...server, enabled: false },
-    { ...server, env: { EASYEDA_CONTROL_DATA_DIR: "/caller/control" } }]) {
+    { ...server, env: { EASYEDA_CONTROL_DATA_DIR: "/caller/control" } },
+    { ...server, tool_timeout_sec: 600 }, { ...server, tool_timeout_sec: undefined }]) {
     assert.throws(() => parseSessionConfiguration({ mcpServers: { easyeda_pro_control: candidate } }));
   }
   assert.throws(() => parseSessionConfiguration({ mcpServers: { ...configuration.mcpServers, other: server } }));
+});
+
+void test("caller deadline covers the native lifetime envelope while smaller explicit bounds remain valid", () => {
+  const ordinary = { id: "outer-bound", tool: "easyeda_control_pcb209_worker_startup" };
+  const parsed = parseSessionRequest(JSON.stringify(ordinary)); assert.ok("timeoutMs" in parsed);
+  assert.equal(parsed.timeoutMs, 3_600_000 + 60_000 + 60_000);
+  assert.ok(parsed.timeoutMs > CURRENT_PCB_209_STARTUP_OPENING_TIMING.hostMs + CURRENT_PCB_209_STARTUP_OPENING_TIMING.openingCompletionMs);
+  assert.equal(parsed.timeoutMs, SESSION_CALL_TIMEOUT_MS);
+  const smaller = parseSessionRequest(JSON.stringify({ ...ordinary, timeoutMs: 721_000 })); assert.ok("timeoutMs" in smaller);
+  assert.equal(smaller.timeoutMs, 721_000);
+  assert.throws(() => parseSessionRequest(JSON.stringify({ ...ordinary, timeoutMs: SESSION_CALL_TIMEOUT_MS + 1 })));
 });
 
 void test("session preserves only the WSL share identity in addition to its configured environment", () => {

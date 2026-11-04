@@ -49,6 +49,7 @@ const AUTO_APPROVED_TOOLS = new Set([
 const OUTPUT_SCHEMA_ANCHORS = {
   easyeda_control_api: ["offline", "result"],
   easyeda_control_session: ["result"],
+  easyeda_control_native_release: ["result"],
   easyeda_control_sdk_read: ["summary", "evidence"],
   easyeda_control_calculate: ["result"],
   easyeda_control_system: ["result"],

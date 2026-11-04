@@ -27,12 +27,27 @@ function startupRegistration(source: string): string {
     statement.type === "IfStatement" && statement.consequent.type === "BlockStatement" && statement.consequent.body.some(node =>
       node.type === "VariableDeclaration" && node.declarations.some(declaration => declaration.id.type === "Identifier" && declaration.id.name === "runStartup")) ? [statement.consequent] : []);
   assert.equal(blocks.length, 1); const block = blocks[0]; assert.ok(block);
-  const declarations = ["startupOriginal", "startupCalls", "combinedHistoricalOriginal", "runStartup"].map(name => {
+  const declarations = ["startupOriginal", "startupCalls", "combinedHistoricalOriginal", "forwardOpeningHistoricalOriginal", "runStartup"].map(name => {
     const matches = block.body.filter(node => node.type === "VariableDeclaration" && node.declarations.length === 1 &&
       node.declarations[0]?.id.type === "Identifier" && node.declarations[0].id.name === name);
     assert.equal(matches.length, 1); const node = matches[0]; assert.ok(node?.type === "VariableDeclaration");
     assert.equal(node.kind, name === "runStartup" ? "const" : "let");
-    assert.ok(node.end > node.start && node.end - node.start < 24_000); return source.slice(node.start, node.end);
+    const initializer = node.declarations[0]?.init;
+    if (name === "runStartup") {
+      assert.ok(initializer?.type === "ArrowFunctionExpression" && initializer.body.type === "BlockStatement");
+      assert.equal(initializer.async, false);
+      assert.deepEqual(initializer.params.map(parameter => {
+        if (parameter.type === "Identifier") { return parameter.name; }
+        assert.ok(parameter.type === "AssignmentPattern" && parameter.left.type === "Identifier"); return parameter.left.name;
+      }),
+      ["request", "emptyPurpose", "ratlinePurpose", "continuationPurpose", "footprintPurpose", "routePurpose", "combinedPurpose", "forwardPurpose"]);
+      assert.ok(initializer.params.slice(1).every(parameter => parameter.type === "AssignmentPattern" && parameter.right.type === "Literal" && parameter.right.value === false));
+    } else if (name === "startupCalls") { assert.ok(initializer?.type === "Literal" && initializer.value === 0); }
+    else { assert.equal(initializer, null); }
+    // The forward source branch brings this exact eight-argument dispatcher to
+    // 25,763 units. Keep the larger bound local to its unique AST declaration.
+    assert.ok(node.end > node.start && node.end - node.start < (name === "runStartup" ? 28_000 : 3000));
+    return source.slice(node.start, node.end);
   });
   const registrations = block.body.filter(node => node.type === "IfStatement" && node.consequent.type === "BlockStatement" &&
     node.consequent.body.some(statement => statement.type === "ExpressionStatement" && statement.expression.type === "CallExpression" &&
@@ -75,6 +90,7 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; calls: readonly Ro
   }
   class Preparation extends Base { public constructor(options: ConstructorParameters<typeof Base>[1]) { super("preparation", options); } }
   class RoutePreparation extends Base { public constructor(options: ConstructorParameters<typeof Base>[1]) { super("route-preparation", options); } }
+  class ForwardPrewrite extends Base { public constructor(options: ConstructorParameters<typeof Base>[1]) { super("forward-prewrite", options); } }
   class Ordinary extends Base { public constructor(options: ConstructorParameters<typeof Base>[1]) { super("ordinary", options); } }
   class Empty extends Base { public constructor(options: ConstructorParameters<typeof Base>[1]) { super("empty", options); } }
   class Ratline extends Base { public constructor(options: ConstructorParameters<typeof Base>[1]) { super("ratline", options); } }
@@ -97,7 +113,7 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; calls: readonly Ro
   let handler: Handler | null = null;
   const scope = vm.createContext({ z, currentPcb209WorkerStartupToolRequestSchema, currentSymbolOperationToolOutputSchema: z.unknown(),
     CurrentPcbWorkerStartupLifecycle: Ordinary, CurrentPcb209WorkerStartupLifecycle: Ordinary, CurrentFootprintCopyPreparationLifecycle: Preparation,
-    CurrentFootprintCopyRoutePreparationLifecycle: RoutePreparation,
+    CurrentFootprintCopyRoutePreparationLifecycle: RoutePreparation, CurrentFootprintForwardPrewriteLifecycle: ForwardPrewrite,
     CurrentPcb209EmptyStartupLifecycle: Empty, CurrentPcb209RatlineStartupLifecycle: Ratline, CurrentPcb209RatlineContinuationLifecycle: Continuation,
     diagnostic209: true, facadeMode: "public-utilities-only", facadeToolRegistered: (): boolean => true,
     process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "synthetic" } },

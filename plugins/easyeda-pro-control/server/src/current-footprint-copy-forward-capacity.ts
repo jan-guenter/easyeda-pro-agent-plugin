@@ -11,6 +11,7 @@ import { CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_LIMITS as CREATE } from "./current
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS as SOURCE_PREPARATION } from "./current-footprint-copy-preparation.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE as SAVED } from "./current-footprint-copy-saved-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS as SOURCE } from "./current-footprint-copy-source-stage-budget.ts";
+import { CURRENT_FOOTPRINT_COPY_FORWARD_CONTROL_BUDGET as CONTROLS } from "./current-footprint-copy-forward-profile.ts";
 import { CURRENT_PCB_WORKER_STARTUP_STREAM_LIMITS as STREAM } from "./current-pcb-worker-startup-stream-limits.ts";
 import { MAX_ENCODED_BYTES as SQL_BYTES, freezeDeep } from "./sqlite-inventory-core.ts";
 import { assertCurrentFootprintCopyOutputHeadroom, reserveCurrentFootprintCopyOutput } from "./current-footprint-copy-output-reservation.ts";
@@ -25,21 +26,27 @@ const normal = PREPARATION.normalRequestLimit - PREPARATION.requests.transaction
 const cleanup = PREPARATION.requests.cleanup - legacyClockCleanup + ALLOCATION.cleanup;
 const rendererRequests = normal + cleanup;
 const rendererPolls = STREAM.dataPolls + STREAM.idlePolls + STREAM.waitPolls;
-const ownerControlsPerGeneration = 512;
+const savedControls = Object.freeze({ normal: 266, cleanup: 246, total: 512 });
 // Fixed control responses have only bounded scalar/label fields. Binary poll
 // Payloads are accounted separately. Every maximum poll, including empty polls,
 // Retains its own 512-byte JSON/header allowance rather than disappearing from
 // An optimistic sum of raw renderer/main byte caps.
 const controlReplyBytes = 512;
 const base64 = (bytes: number): number => 4 * Math.ceil(bytes / 3);
-function stdout(rawBytes: number, polls: number, commands: number): number {
+function stdout(rawBytes: number, polls: number, commands: number, controls: number): number {
   // Each chunk can round independently; allow four extra bytes per data poll.
-  const bytes = base64(rawBytes) + 4 * polls + (polls + commands + ownerControlsPerGeneration) * controlReplyBytes;
+  const bytes = base64(rawBytes) + 4 * polls + (polls + commands + controls) * controlReplyBytes;
   return Math.ceil(bytes / MiB) * MiB;
 }
 const writerRawBytes = STREAM.receivedBytes + MAIN_STREAM.totalReceivedBytes;
-const writerHelperBytes = stdout(writerRawBytes, rendererPolls + MAIN_STREAM.totalPolls, rendererRequests + MAIN.minimumTotal);
-const savedHelperBytes = stdout(STREAM.receivedBytes, rendererPolls, SAVED.requestLimit);
+const writerHelperBytes = stdout(writerRawBytes, rendererPolls + MAIN_STREAM.totalPolls, rendererRequests + MAIN.minimumTotal, CONTROLS.total);
+const savedHelperBytes = stdout(STREAM.receivedBytes, rendererPolls, SAVED.requestLimit, savedControls.total);
+// The native Windows-clock response is the one nonpoll control whose two
+// Complete bounded samples can exceed512 bytes. Four phases, each at most1177
+// UTF-8 bytes including the correlated32-character ID and CRLF. Full envelopes
+// Are reserved in addition to their already counted scalar slots.
+const windowsClockPhases = 4, windowsClockReplyBytes = 1177;
+const writerExceptionalControlBytes = windowsClockReplyBytes * windowsClockPhases;
 const controlJournalBytes = 8 * MiB;
 const savedObservationBytes = 2 * 2_097_152 + 4096;
 const savedFrameBytes = 2 * savedObservationBytes + 4096;
@@ -52,7 +59,7 @@ const artifactBytes = writerRawBytes + STREAM.receivedBytes + STREAM.eventBytes 
   2 * savedFrameBytes + 2 * savedObservationBytes + 4 * 131_072 + savedPacketBytes;
 
 export const CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY = freezeDeep({
-  profile: "private.current-footprint-copy-forward-capacity.v1",
+  profile: "private.current-footprint-copy-forward-capacity.v2",
   purpose: "worker-startup-footprint-forward209",
   generations: ["forward-writer", "forward-saved-readback"], inverseAvailable: false,
   writer: {
@@ -68,19 +75,19 @@ export const CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY = freezeDeep({
     main: { normalClassLimit: MAIN.minimumNormal, cleanupClassLimit: MAIN.minimumCleanup, requestLimit: MAIN.minimumTotal,
       receivedBytes: MAIN_STREAM.totalReceivedBytes, messageBytes: MAIN_STREAM.messageBytes, eventCount: MAIN_STREAM.frames,
       polls: MAIN_STREAM.totalPolls },
-    helperStdoutBytes: writerHelperBytes,
+    helperStdoutBytes: writerHelperBytes + writerExceptionalControlBytes,
   },
   saved: { normalIdCeiling: SAVED.normalRequestLimit, requestLimit: SAVED.requestLimit,
     receivedBytes: STREAM.receivedBytes, eventCount: STREAM.eventCount, eventBytes: STREAM.eventBytes,
     helperStdoutBytes: savedHelperBytes },
-  controls: { perGeneration: ownerControlsPerGeneration, replyHeaderBytes: controlReplyBytes,
+  controls: { writer: CONTROLS, saved: savedControls, replyHeaderBytes: controlReplyBytes, windowsClockReplyBytes, windowsClockPhases,
     terminationObservationsPerGeneration: COORDINATOR.terminationObservationsPerGeneration,
     releaseObservationsPerGeneration: COORDINATOR.releaseObservationsPerGeneration,
     normalCloseAttemptsPerGeneration: COORDINATOR.normalCloseAttemptsPerGeneration, abortAttemptsPerGeneration: 1 },
   output: { rawRendererArtifactBytesPerGeneration: STREAM.receivedBytes, rawMainArtifactBytes: MAIN_STREAM.totalReceivedBytes,
     sqlSnapshots: 3, sqlSnapshotBytes: SQL_BYTES, journalRecords: COORDINATOR.journalRecords,
     controlJournalRecordBytes: controlJournalBytes, artifactBytes, journalBytes,
-    helperStdoutBytes: writerHelperBytes + savedHelperBytes, retainedBytes: artifactBytes + journalBytes },
+    helperStdoutBytes: writerHelperBytes + writerExceptionalControlBytes + savedHelperBytes, retainedBytes: artifactBytes + journalBytes },
   normalMillisecondsPerGeneration: STREAM.lifetimeMilliseconds, cleanupMillisecondsPerGeneration: SAVED.cleanupMilliseconds,
   originalPrewriteRequirements: ["sealed-disposable-source-and-whole-checkpoint", "fresh-complete-source-and-copy-argument-custody",
     "original-branch-head-eligibility-before-create", "original-current-empty-queues-and-sole-upload-route",
@@ -119,6 +126,8 @@ interface Generation {
   mainNormal: number;
   mainCleanup: number;
   controls: number;
+  normalControls: number;
+  cleanupControls: number;
   readonly rendererPolls: Record<RendererPollKind, number>;
   mainPolls: number;
   rendererEvents: number;
@@ -143,7 +152,7 @@ export class CurrentFootprintCopyForwardResourceLedger {
     if (this.#failed || !CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.generations.includes(role) || this.#generations.has(role) ||
         original === null || typeof original !== "object" || [...this.#generations.values()].some(value => value.original === original)) { fail("GENERATION"); }
     this.#generations.set(role, { original, rendererId: 0, rendererNormal: 0, rendererCleanup: 0,
-      mainId: 0, mainNormal: 0, mainCleanup: 0, controls: 0, rendererPolls: { data: 0, idle: 0, wait: 0 },
+      mainId: 0, mainNormal: 0, mainCleanup: 0, controls: 0, normalControls: 0, cleanupControls: 0, rendererPolls: { data: 0, idle: 0, wait: 0 },
       mainPolls: 0, rendererEvents: 0, mainFrames: 0, bytes: new Map() });
   }
   #original(role: CurrentFootprintCopyForwardRole, original: object): Generation {
@@ -219,18 +228,21 @@ export class CurrentFootprintCopyForwardResourceLedger {
   public consumeControl(role: CurrentFootprintCopyForwardRole, original: object, cleanupControl = false): void {
     const value = this.#original(role, original);
     if (typeof cleanupControl !== "boolean" || this.#failed && !cleanupControl) { fail("CONTROL_CLASS"); }
-    if (value.controls >= CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.perGeneration) { this.#refuse("CONTROL"); } value.controls += 1;
+    const limits = role === "forward-writer" ? CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.writer : CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.saved;
+    if (cleanupControl ? value.cleanupControls >= limits.cleanup : value.normalControls >= limits.normal) { this.#refuse("CONTROL"); }
+    value.controls += 1; if (cleanupControl) { value.cleanupControls += 1; } else { value.normalControls += 1; }
   }
   /** Cleanup reserves use this generation's original counters. Aggregate
    * controls include the other owner and cannot determine its remaining slots.
    * Artifact and journal bytes retain their separate shared ceilings. */
   public generationStatus(role: CurrentFootprintCopyForwardRole, original: object): Readonly<{
-    failed: boolean; rendererRequests: number; mainRequests: number; controls: number;
+    failed: boolean; rendererRequests: number; rendererNormalRequests: number; rendererCleanupRequests: number; mainRequests: number; controls: number; normalControls: number; cleanupControls: number;
     rendererPolls: number; mainPolls: number; rendererEvents: number; mainFrames: number;
     rendererBytes: number; rendererEventBytes: number; mainBytes: number; helperStdoutBytes: number;
     executionAuthorized: false }> {
     const value = this.#original(role, original); return Object.freeze({ failed: this.#failed,
-      rendererRequests: value.rendererId, mainRequests: value.mainId, controls: value.controls,
+      rendererRequests: value.rendererId, rendererNormalRequests: value.rendererNormal, rendererCleanupRequests: value.rendererCleanup,
+      mainRequests: value.mainId, controls: value.controls, normalControls: value.normalControls, cleanupControls: value.cleanupControls,
       rendererPolls: value.rendererPolls.data + value.rendererPolls.idle + value.rendererPolls.wait,
       mainPolls: value.mainPolls, rendererEvents: value.rendererEvents, mainFrames: value.mainFrames,
       rendererBytes: value.bytes.get("renderer") ?? 0, rendererEventBytes: value.bytes.get("renderer-event") ?? 0,
@@ -244,6 +256,7 @@ export class CurrentFootprintCopyForwardResourceLedger {
     const values = [...this.#generations.values()]; return Object.freeze({ failed: this.#failed, boundGenerations: values.length,
       rendererRequests: values.reduce((sum, value) => sum + value.rendererId, 0), mainRequests: values.reduce((sum, value) => sum + value.mainId, 0),
       controls: values.reduce((sum, value) => sum + value.controls, 0),
+      normalControls: values.reduce((sum, value) => sum + value.normalControls, 0), cleanupControls: values.reduce((sum, value) => sum + value.cleanupControls, 0),
       rendererPolls: values.reduce((sum, value) => sum + value.rendererPolls.data + value.rendererPolls.idle + value.rendererPolls.wait, 0),
       mainPolls: values.reduce((sum, value) => sum + value.mainPolls, 0), rendererEvents: values.reduce((sum, value) => sum + value.rendererEvents, 0),
       mainFrames: values.reduce((sum, value) => sum + value.mainFrames, 0),

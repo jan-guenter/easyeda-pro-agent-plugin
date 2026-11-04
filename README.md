@@ -258,11 +258,16 @@ See [architecture and runtime isolation](docs/architecture.md) for details.
 Read [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md) and
 [SECURITY.md](SECURITY.md). Use the pinned Node/npm versions above, install GNU
 binutils for sanitizer checks, and run `npm ci` in `plugins/easyeda-pro-control`.
-The package configures 53 facade tools. Its older restricted profile registers
-28, and the 3.2.209 utility profile registers 17. Offline-only and ownership-conflict
+The package configures 54 facade tools. Its older restricted profile registers
+29, and the 3.2.209 utility profile registers 18. Offline-only and ownership-conflict
 startup retain their separate smaller catalogs. `easyeda_control_session` adds
 local inspection and confirmed cooperative retirement to the three live-capable
 profiles; it grants no design or native cleanup authority.
+For repeated implementation and disposable validation, the
+[foreground manager](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/autonomous-controller-updates.md)
+keeps Codex running while it retires and replaces its own controller. The
+separate `easyeda_control_native_release` tool finishes supported completed
+workflows' original helper disposal before retirement.
 First-party server, test and tooling source is TypeScript. Node runs erasable
 TypeScript directly; TypeScript checks types, Oxlint checks code, and esbuild
 produces committed runtime bundles.

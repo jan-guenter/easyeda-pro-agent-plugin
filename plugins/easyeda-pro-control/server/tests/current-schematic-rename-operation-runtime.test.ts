@@ -21,15 +21,16 @@ function object(value: unknown): Value { assert.ok(isRecord(value)); return valu
 async function fixture(purpose: "ordinary-schematic-rename" | "disposable-validation" = "disposable-validation"): Promise<{
   calls: string[]; run: (request: unknown) => Promise<Value>; inspect: () => Value;
   ordinary: (request: unknown) => Promise<Value>;
+  isDisposed: () => boolean;
   state: { failure: string | undefined; returnedFailure: boolean; pendingAuthentication: boolean; pendingTermination: boolean;
-    invariant: boolean; metadata: boolean; childRoster: boolean; cleanupGate: Promise<unknown> | undefined;
+    invariant: boolean; metadata: boolean; childRoster: boolean; openerDisposed: boolean; cleanupGate: Promise<unknown> | undefined;
     beginGate: Promise<unknown> | undefined;
     writeGate: Promise<unknown> | undefined; writeStarted: (() => void) | undefined;
     cleanupStarted: (() => void) | undefined;
     scratchGate: Promise<unknown> | undefined; scratchStarted: (() => void) | undefined };
 }> {
   const calls: string[] = [], state = { failure: undefined as string | undefined, returnedFailure: false,
-    pendingAuthentication: false, pendingTermination: false, invariant: true, metadata: true, childRoster: true, cleanupGate: undefined as Promise<unknown> | undefined,
+    pendingAuthentication: false, pendingTermination: false, invariant: true, metadata: true, childRoster: true, openerDisposed: false, cleanupGate: undefined as Promise<unknown> | undefined,
     beginGate: undefined as Promise<unknown> | undefined,
     writeGate: undefined as Promise<unknown> | undefined, writeStarted: undefined as (() => void) | undefined,
     cleanupStarted: undefined as (() => void) | undefined,
@@ -43,6 +44,7 @@ async function fixture(purpose: "ordinary-schematic-rename" | "disposable-valida
     public owned = false;
     public status: Value = { state: "ready", failed: false, retired: false, closeAttempted: false, finishObservationAvailable: false };
     public constructor(kind: string) { this.kind = kind; }
+    public isRuntimeDisposed(): boolean { return this.status["runtimeDisposed"] === true; }
     private summary(): Value {
       const available = this.owned && this.status["ownerRetained"] !== false && this.status["retired"] !== true && this.status["releaseAttempted"] !== true;
       const cleanup = available && (this.kind !== "baseline" || this.status["cleanupOnly"] === true);
@@ -117,7 +119,7 @@ async function fixture(purpose: "ordinary-schematic-rename" | "disposable-valida
     withAuthenticatedBridgeDispatchScope: async (task: () => Promise<void>): Promise<void> => {
       assert.equal(scoped, false); scoped = true; try { await task(); } finally { scoped = false; }
     } } };
-  const opener = { runSchematicOpening: async (request: Value): Promise<Value> => {
+  const opener = { isRuntimeDisposed: (): boolean => state.openerDisposed, runSchematicOpening: async (request: Value): Promise<Value> => {
     calls.push(`opening.${String(request["action"])}`);
     if (request["action"] === "open") { state.writeStarted?.(); await state.writeGate; }
     return { purpose: CURRENT_SCHEMATIC_OPERATION_PURPOSE, action: request["action"] };
@@ -156,11 +158,22 @@ async function fixture(purpose: "ordinary-schematic-rename" | "disposable-valida
   });
   const constructor: unknown = runInContext(`${program}\nCurrentSchematicRenameOperationCoordinator;`, context); assert.equal(typeof constructor, "function");
   assert.ok(typeof constructor === "function"); const instance = object(Reflect.construct(constructor, [engine, opener]));
-  const invoke = (name: string, argument: unknown): unknown => { const method = instance[name]; assert.equal(typeof method, "function");
+  const invoke = (name: string, argument?: unknown): unknown => { const method = instance[name]; assert.equal(typeof method, "function");
     assert.ok(typeof method === "function"); return Reflect.apply(method, instance, [argument]) as unknown; };
   return { calls, state, run: async request => object(await invoke("run", request)),
+    isDisposed: (): boolean => invoke("isRuntimeDisposed") === true,
     ordinary: async request => object(await invoke("runOrdinary", request)), inspect: (): Value => object(invoke("inspect", ID)) };
 }
+
+void test("only an empty schematic coordinator delegates disposal to its original opening owner", async () => {
+  const value = await fixture(); assert.equal(value.isDisposed(), false);
+  value.state.openerDisposed = true; assert.equal(value.isDisposed(), true);
+  const gate = Promise.withResolvers<null>(); value.state.beginGate = gate.promise;
+  const pending = value.run(BEGIN); assert.equal(value.isDisposed(), false);
+  gate.resolve(null); await pending; assert.equal(value.isDisposed(), false);
+  const failed = await fixture(); failed.state.openerDisposed = true; failed.state.failure = "opening.transfer";
+  await assert.rejects(failed.run(BEGIN)); assert.equal(failed.isDisposed(), false);
+});
 type Harness = Awaited<ReturnType<typeof fixture>>;
 function step(phase: unknown): Value {
   assert.equal(typeof phase, "string");

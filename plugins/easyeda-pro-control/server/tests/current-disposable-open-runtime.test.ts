@@ -32,6 +32,8 @@ import { currentSymbolStartupExpectationSchema } from "../src/current-symbol-sta
 import type { AuthenticatedBridgeDispatchBinding, EasyedaControlEngine, ExecutionAuthorityEvidence } from "../src/engine.ts";
 import { decodeExactReadEnvelope, encodeExactReadEnvelope } from "../src/exact-readers.ts";
 import { encrypted } from "./helpers/symbol-sql-fixture.ts";
+import { OriginalTerminalRuntimeRelease, assertOriginalTerminalRuntimeDisposal, isOriginalTerminalRuntimeDisposalCompleted } from "../src/terminal-runtime-release.ts";
+import { CurrentSchematicRenameOperationCoordinator } from "../src/current-schematic-rename-operation-runtime.ts";
 
 type Value = Record<string, unknown>;
 // Pinned upstream L0_diagnostics_api.js validates this before calling the bridge.
@@ -200,6 +202,17 @@ function fixture(suffix: string): Fixture {
   const options: CurrentDisposableOpenOptions = { engine, runtime: () => runtime, assertOwner: () => { assert.equal(state.ownerLost, false, "fixture owner lost"); } };
   return { coordinator: new CurrentDisposableOpenCoordinator(options, services), input, state, calls, journals, artifacts, services, options };
 }
+
+void test("copy baseline parser preserves broad original keys before refusing an unowned transfer", async () => {
+  const value = fixture("copy-release-key-parser");
+  const sqlRuntime = { nodeExecutable: "/synthetic/not-invoked", nodeVersion: "24.18.0" as const, nodeSha256: HASH };
+  const source = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), symbolUuid: "c".repeat(16) };
+  for (const operationId of ["Upper.Copy:Baseline_1", "A", "A".repeat(160)]) {
+    await assert.rejects(value.coordinator.beginCopyBaseline(value.input.operationId,
+      { operationId, source, confirmNormalClose: true }, sqlRuntime), /cannot issue from injected opening services/u);
+  }
+  assert.deepEqual(value.calls, []);
+});
 function resultValue(value: Value): Value { const result = value["result"]; assert.ok(isRecord(result)); return result; }
 function dispatches(value: Fixture): string[] { return value.calls.filter((call) => call.startsWith("dispatch:")); }
 const RETIRE = { action: "retire-after-termination", confirmRetire: true, acceptUnknownFileEffects: true };
@@ -808,6 +821,7 @@ async function sourcePreparation(services: CurrentDisposableOpenDependencies, re
     stripTypeScriptTypes(await readFile(new URL(`../src/${name}.ts`, import.meta.url), "utf8"))
       .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "")));
   const scope = vm.createContext({ z, Buffer, structuredClone, Object, Date, Reflect,
+    OriginalTerminalRuntimeRelease, assertOriginalTerminalRuntimeDisposal, isOriginalTerminalRuntimeDisposalCompleted,
     canonicalJson, sha256Json, sha256Text, isRecord, assertSubset, isTerminalOperation, OPERATION_SCHEMA, buildPlanHash, extractToolPayload,
     CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS, CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION,
     currentDisposableOpenSealedTargetSchema, parseCurrentDisposableOpenRequest, buildCurrentDisposableOpenProgram, validateCurrentDisposableOpenResult,
@@ -833,6 +847,43 @@ async function sourcePreparation(services: CurrentDisposableOpenDependencies, re
     revalidate: typeof revalidateCurrentDisposableOpenGeneration; baselineOwner: typeof assertCurrentSymbolBaselineOwner;
     revalidateBaselineOwner: typeof revalidateCurrentSymbolBaselineOwner };
 }
+
+void test("original successful opening disposes only after its latest root and closed bridge, without resolving an owned-only runtime after release", async () => {
+  const value = fixture("native-release-original");
+  const runtime = value.options.runtime();
+  const priorStatus = runtime.status;
+  let acknowledged = false, allocations = 0, helpers = 0;
+  Object.assign(runtime, {
+    status: (): ReturnType<typeof priorStatus> => ({ ...priorStatus.call(runtime), state: acknowledged ? "released" : "owned",
+      launch: acknowledged ? null : priorStatus.call(runtime).launch }),
+    release: (): Promise<void> => { helpers += 1; acknowledged = true; return Promise.resolve(); },
+    isReleaseAcknowledged: (): boolean => acknowledged,
+  });
+  Object.assign(value.options, { runtime: (): typeof runtime => {
+    assert.equal(runtime.status().state, "owned", "Original index resolver rejects released runtimes."); return runtime;
+  } });
+  Object.assign(value.options.engine.upstream, {
+    bridgeSessionLifecycle: (): Value => ({ activeSession: value.state.closed ? null : PRIOR }),
+    currentAuthenticatedBridgeDispatchBinding: (): undefined => undefined,
+  });
+  const loaded = await sourcePreparation(value.services, (): never => { throw new Error("Disposal cannot read a symbol."); });
+  const coordinator = new loaded.Coordinator(value.options);
+  const schematicOwner: unknown = Reflect.construct(CurrentSchematicRenameOperationCoordinator, [value.options.engine, coordinator]);
+  assert.ok(schematicOwner instanceof CurrentSchematicRenameOperationCoordinator);
+  assert.equal(schematicOwner.isRuntimeDisposed(), false);
+  const complete = (): void => { assert.equal(acknowledged, true); allocations += 1; };
+  await assert.rejects(coordinator.releaseCompletedRuntime(value.input.operationId, complete), /complete success/u);
+  await coordinator.run(value.input, FINGERPRINT);
+  await assert.rejects(coordinator.releaseCompletedRuntime(value.input.operationId, complete));
+  assert.equal(schematicOwner.isRuntimeDisposed(), false);
+  assert.equal(helpers, 0); value.state.terminated = true; value.state.closed = true;
+  const receipt = await coordinator.releaseCompletedRuntime(value.input.operationId, complete);
+  assert.equal(receipt.family, "project-opening"); assert.equal(helpers, 1); assert.equal(allocations, 1); assert.equal(coordinator.isRuntimeDisposed(), true);
+  assert.equal(schematicOwner.isRuntimeDisposed(), true);
+  const historical = new loaded.Coordinator(value.options);
+  await assert.rejects(historical.releaseCompletedRuntime(value.input.operationId, complete), /historical JSON/u);
+  assert.equal(historical.isRuntimeDisposed(), false); assert.equal(helpers, 1);
+});
 
 function historyRecord(type: string, body: unknown, id?: string): string {
   return `${JSON.stringify({ type, ticket: 1, ...(id === undefined ? {} : { id }) })}||${JSON.stringify(body)}|\n`;

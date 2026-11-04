@@ -16,27 +16,38 @@ const release = { action: "release-closed", operationId: launch.operationId, exp
   expectedTerminationSha256: "b".repeat(64), confirmReleaseClosed: true };
 
 /** Select the actual startup dispatcher and its original retained state by
- * AST shape, excluding unrelated declarations without widening source bounds. */
+ * AST shape, with separate finite bounds for the dispatcher and retained state. */
 function startupDeclarations(source: string): string {
   const blocks = parse(source, { ecmaVersion: "latest", sourceType: "module" }).body.flatMap(statement =>
     statement.type === "IfStatement" && statement.consequent.type === "BlockStatement" && statement.consequent.body.some(node =>
       node.type === "VariableDeclaration" && node.declarations.some(declaration => declaration.id.type === "Identifier" && declaration.id.name === "runStartup")) ? [statement.consequent] : []);
   assert.equal(blocks.length, 1); const block = blocks[0]; assert.ok(block);
-  const selected = ["startupOriginal", "startupCalls", "combinedHistoricalOriginal", "runStartup"].map(name => {
+  const selected = ["startupOriginal", "startupCalls", "combinedHistoricalOriginal", "forwardOpeningHistoricalOriginal", "runStartup"].map(name => {
     const matches = block.body.filter(node => node.type === "VariableDeclaration" && node.declarations.length === 1 &&
       node.declarations[0]?.id.type === "Identifier" && node.declarations[0].id.name === name);
     assert.equal(matches.length, 1); const node = matches[0]; assert.ok(node?.type === "VariableDeclaration");
     assert.equal(node.kind, name === "runStartup" ? "const" : "let");
     const initializer = node.declarations[0]?.init;
-    if (name === "runStartup") { assert.equal(initializer?.type, "ArrowFunctionExpression"); }
+    if (name === "runStartup") {
+      assert.ok(initializer?.type === "ArrowFunctionExpression" && initializer.body.type === "BlockStatement");
+      assert.equal(initializer.async, false);
+      assert.deepEqual(initializer.params.map(parameter => {
+        if (parameter.type === "Identifier") { return parameter.name; }
+        assert.ok(parameter.type === "AssignmentPattern" && parameter.left.type === "Identifier"); return parameter.left.name;
+      }),
+      ["request", "emptyPurpose", "ratlinePurpose", "continuationPurpose", "footprintPurpose", "routePurpose", "combinedPurpose", "forwardPurpose"]);
+      assert.ok(initializer.params.slice(1).every(parameter => parameter.type === "AssignmentPattern" && parameter.right.type === "Literal" && parameter.right.value === false));
+    }
     else if (name === "startupCalls") { assert.ok(initializer?.type === "Literal" && initializer.value === 0); }
     else { assert.equal(initializer, null); }
-    assert.ok(node.end > node.start && node.end - node.start < (name === "runStartup" ? 24_000 : 3000));
+    // The exact dispatcher is 25,763 units after adding the forward source
+    // Branch; its retained state keeps the original 3,000-unit per-node cap.
+    assert.ok(node.end > node.start && node.end - node.start < (name === "runStartup" ? 28_000 : 3000));
     return source.slice(node.start, node.end);
   }).join("\n");
   // Bound the actual callback independently of erased type padding and the
   // Unused historical dispatcher/registration descriptions in the same block.
-  assert.ok(selected.length < 28_000); return selected;
+  assert.ok(selected.length < 32_000); return selected;
 }
 
 /** Join the real ordinary allocation guard, launch registration and startup
@@ -105,6 +116,7 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
     public hasActiveReservation(): boolean { return this.reserved; }
     public hasAttemptedNativeOwnerAllocation(): boolean { return this.allocated; }
   }
+  class ForwardPrewrite extends Diagnostic {}
   for (const key of ["captureWorkerStartup", "handoffWorkerStartup", "openWorkerStartup", "handoffStartup", "openStartup", "requireStartup",
     "observeWorkerStartupAssignments", "observeStartupAssignments", "requireStartupAssignments", "observeWorkerStartupFootprint", "observeStartupFootprint", "observeWorkerStartupActor", "observeStartupActor",
     "observeWorkerStartupFootprintSource", "observeStartupFootprintSource",
@@ -123,7 +135,7 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
     CurrentPcbDiagnosticLifecycle: Diagnostic, CurrentPcbWorkerStartupLifecycle: Diagnostic, CurrentPcb209WorkerStartupLifecycle: Diagnostic,
     CurrentPcb209EmptyStartupLifecycle: Diagnostic, CurrentPcb209RatlineStartupLifecycle: Diagnostic,
     CurrentPcb209RatlineContinuationLifecycle: Diagnostic, CurrentFootprintCopyPreparationLifecycle: Diagnostic,
-    CurrentFootprintCopyRoutePreparationLifecycle: Diagnostic, diagnostic209: true,
+    CurrentFootprintCopyRoutePreparationLifecycle: Diagnostic, CurrentFootprintForwardPrewriteLifecycle: ForwardPrewrite, diagnostic209: true,
     upstream, engine, bridgeGate: { run: async (work: () => Promise<unknown>): Promise<unknown> => { await Promise.resolve(); return work(); } },
     process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "synthetic" } },
     resolve: (): string => "/synthetic/plugin", controlDataDirectory: (): string => "/synthetic/control", retainedControlRoot: { path: "/synthetic/control" },

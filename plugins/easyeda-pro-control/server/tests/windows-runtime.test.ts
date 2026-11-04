@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { setImmediate as nextTurn } from "node:timers/promises";
 import { runInNewContext } from "node:vm";
 import { sha256Json } from "../src/core.ts";
 import { acquireCurrentPcbDiagnosticLaunchExclusion, releaseCurrentPcbDiagnosticLaunchExclusion,
@@ -13,7 +14,7 @@ import {
   deriveWindowsRuntimePaths,
   performWindowsAuthenticatedProcessProbe,
 } from "../src/windows-runtime.ts";
-import type { WindowsControlRuntimeOptions } from "../src/windows-runtime.ts";
+import type { WindowsControlRuntimeOptions, WindowsRuntimeDependencies } from "../src/windows-runtime.ts";
 import { INPUT, closedSessionFixture } from "./helpers/windows-closed-session-fixture.ts";
 
 const SESSION: AuthenticatedBridgeSessionIdentity = { authenticatedAtEpochMs: 1000, authenticationReceiptSha256: "a".repeat(64), gatewayInstanceId: "gateway", sequence: 1, sessionId: "session" };
@@ -148,6 +149,7 @@ void test("runtime does not start helpers implicitly and binds normal close/rele
     startSupervisor(options): Promise<WindowsAuthoritySupervisor> { startOptions = options; calls.push("helper"); return Promise.resolve(supervisor); },
   });
   assert.equal(runtime.status().state, "not-launched");
+  assert.equal(runtime.isReleaseAcknowledged(), false);
   assert.deepEqual(calls, []);
   await assert.rejects(runtime.normalClose("123"), /explicitly launched/u);
   await assert.rejects(runtime.observeApplicationWindow(), /explicitly launched/u);
@@ -167,9 +169,340 @@ void test("runtime does not start helpers implicitly and binds normal close/rele
   assert.equal(runtime.status().state, "owned");
   await runtime.release();
   assert.equal(runtime.status().state, "released");
+  assert.equal(runtime.isReleaseAcknowledged(), true);
   await assert.rejects(runtime.launch(), /current state/u);
   await assert.rejects(runtime.observeApplicationWindow(), /explicitly launched/u);
   assert.deepEqual(calls, ["hash", "helper", "launch", "observe-window", "observe-window", "normal-close", "release"]);
+});
+
+async function waitForRuntimeClose(pending: Promise<null>): Promise<void> { await pending; }
+
+/** Check rejection by object identity so wrapping or replacing a consumed
+ * release failure cannot satisfy the regression through equal error text.
+ */
+async function assertOriginalFailure(pending: Promise<unknown>, failure: Error): Promise<void> {
+  let observed: unknown;
+  try { await pending; } catch (error) { observed = error; }
+  assert.equal(observed, failure);
+}
+
+/** Build an offline runtime around the synthetic supervisor, allowing tests
+ * to hold or reject actual acquisition/release awaits without native startup.
+ */
+function releaseRuntimeFixture(overrides: Partial<WindowsAuthoritySupervisor> = {}, dependencies: WindowsRuntimeDependencies = {}): {
+  readonly runtime: WindowsControlRuntime; readonly supervisor: WindowsAuthoritySupervisor;
+} {
+  const authority = closedSessionFixture();
+  const supervisor: WindowsAuthoritySupervisor = { ...authority.supervisor,
+    observeExistingApplication: (): Promise<{ running: boolean }> => Promise.resolve({ running: false }), ...overrides };
+  const runtime = new WindowsControlRuntime({ upstream: upstreamFixture().upstream, pluginRoot: "/opt/control",
+    assetsRoot: "/mnt/d/Apps/EasyEDA/resources/app/assets", wslDistribution: "ReviewDistro",
+    reviewedExecutionScopeSha256: "e".repeat(64) }, {
+    hashExecutable: (): Promise<string> => Promise.resolve("d".repeat(64)),
+    startSupervisor: (): Promise<WindowsAuthoritySupervisor> => Promise.resolve(supervisor), ...dependencies,
+  });
+  return { runtime, supervisor };
+}
+
+void test("unallocated release closes admission once without allocating a helper", async () => {
+  const { runtime } = releaseRuntimeFixture({}, {
+    hashExecutable(): never { throw new Error("Release must not hash an executable."); },
+    startSupervisor(): never { throw new Error("Release must not allocate a helper."); },
+  });
+  const released = runtime.release();
+  assert.equal(runtime.release(), released);
+  assert.equal(runtime.status().state, "released");
+  assert.equal(runtime.isReleaseAcknowledged(), false);
+  await assert.rejects(runtime.launch(), /current state/u);
+  await assert.rejects(runtime.observeExistingApplication(), /current state/u);
+  assert.throws(() => runtime.capture(INPUT), /explicitly launched/u);
+  await released;
+  assert.equal(runtime.isReleaseAcknowledged(), true);
+  assert.equal(runtime.release(), released);
+  assert.deepEqual(Object.keys(runtime.status()).toSorted(), ["executableSha256", "launch", "reviewedExecutionScopeSha256", "state"]);
+});
+
+void test("release keeps the original helper close pending and acknowledges only its fulfillment", async () => {
+  const called = Promise.withResolvers<null>(), close = Promise.withResolvers<null>();
+  let releases = 0;
+  const { runtime } = releaseRuntimeFixture({ release() { releases += 1; called.resolve(null); return waitForRuntimeClose(close.promise); } });
+  const launch = await runtime.launch();
+  const binding = await runtimeClosedBinding(runtime);
+  const intent = await runtime.prepareClosedSessionClose({ ...binding, windowHandle: "12345" });
+  const receipt = await runtime.requestClosedSessionNormalClose({ ...binding, intent, confirmNormalClose: true });
+  const released = runtime.release();
+  await called.promise;
+  assert.equal(runtime.release(), released);
+  assert.equal(runtime.status().state, "released");
+  assert.equal(runtime.status().launch, null);
+  assert.equal(runtime.isReleaseAcknowledged(), false);
+  assert.equal(releases, 1);
+  await assert.rejects(runtime.launch(), /current state/u);
+  await assert.rejects(runtime.clockObservationForLaunch(launch), /explicitly launched/u);
+  assert.throws(() => runtime.capture(INPUT), /explicitly launched/u);
+  assert.throws(() => runtime.proveClosedSession({ ...binding, intent, closeReceipt: receipt }), /explicitly launched/u);
+  close.resolve(null);
+  await released;
+  assert.equal(runtime.isReleaseAcknowledged(), true);
+  assert.equal(runtime.release(), released);
+  assert.equal(releases, 1);
+});
+
+void test("rejected or synchronously failed helper release retains the original consumed failure", async () => {
+  for (const synchronous of [false, true]) {
+    const called = Promise.withResolvers<null>(), close = Promise.withResolvers<null>();
+    const failure = new Error(`synthetic-release-${String(synchronous)}`);
+    let releases = 0;
+    const { runtime } = releaseRuntimeFixture({ release() {
+      releases += 1; called.resolve(null);
+      if (synchronous) { throw failure; }
+      return waitForRuntimeClose(close.promise);
+    } });
+    await runtime.observeExistingApplication();
+    const released = runtime.release();
+    const rejected = assertOriginalFailure(released, failure);
+    await called.promise;
+    assert.equal(runtime.release(), released);
+    assert.equal(runtime.isReleaseAcknowledged(), false);
+    if (!synchronous) { close.reject(failure); }
+    await rejected;
+    await assertOriginalFailure(runtime.release(), failure);
+    assert.equal(runtime.isReleaseAcknowledged(), false);
+    assert.equal(releases, 1);
+    await assert.rejects(runtime.launch(), /current state/u);
+  }
+});
+
+void test("release refuses a substituted helper method without acknowledging or invoking it", async () => {
+  let originalCalls = 0, replacementCalls = 0;
+  const fixture = releaseRuntimeFixture({ release() { originalCalls += 1; return Promise.resolve(); } });
+  await fixture.runtime.observeExistingApplication();
+  const released = fixture.runtime.release();
+  Object.defineProperty(fixture.supervisor, "release", { value: (): Promise<void> => { replacementCalls += 1; return Promise.resolve(); } });
+  await assert.rejects(released, /original helper or release method/u);
+  assert.equal(fixture.runtime.release(), released);
+  assert.equal(fixture.runtime.isReleaseAcknowledged(), false);
+  assert.equal(originalCalls, 0);
+  assert.equal(replacementCalls, 0);
+});
+
+void test("release waits for an already allocated prelaunch helper and its original close", async () => {
+  const started = Promise.withResolvers<WindowsAuthoritySupervisor>(), starting = Promise.withResolvers<null>();
+  const close = Promise.withResolvers<null>(), closing = Promise.withResolvers<null>();
+  let observations = 0, releases = 0, starts = 0;
+  const fixture = releaseRuntimeFixture({
+    release() { releases += 1; closing.resolve(null); return waitForRuntimeClose(close.promise); },
+    observeExistingApplication() { observations += 1; return Promise.resolve({ running: false }); },
+  }, { startSupervisor() { starts += 1; starting.resolve(null); return started.promise; } });
+  const observation = fixture.runtime.observeExistingApplication();
+  const refused = assert.rejects(observation, /changed during helper startup/u);
+  const secondObservation = fixture.runtime.observeExistingApplication();
+  const secondRefused = assert.rejects(secondObservation, /changed during helper startup/u);
+  await starting.promise;
+  const released = fixture.runtime.release();
+  assert.equal(fixture.runtime.release(), released);
+  assert.equal(fixture.runtime.isReleaseAcknowledged(), false);
+  assert.equal(releases, 0);
+  started.resolve(fixture.supervisor);
+  await closing.promise;
+  assert.equal(fixture.runtime.isReleaseAcknowledged(), false);
+  assert.equal(fixture.runtime.release(), released);
+  assert.equal(releases, 1);
+  close.resolve(null);
+  await released;
+  await refused;
+  await secondRefused;
+  assert.equal(fixture.runtime.isReleaseAcknowledged(), true);
+  assert.equal(observations, 0);
+  assert.equal(releases, 1);
+  assert.equal(starts, 1);
+});
+
+void test("release joins the original startup close after observation and launch race", async () => {
+  for (const releaseFails of [false, true]) {
+    const started = Promise.withResolvers<WindowsAuthoritySupervisor>(), starting = Promise.withResolvers<null>();
+    const close = Promise.withResolvers<null>(), closing = Promise.withResolvers<null>();
+    const failure = new Error("synthetic-startup-close-failure");
+    let launches = 0, observations = 0, releases = 0, starts = 0;
+    const fixture = releaseRuntimeFixture({
+      release() { releases += 1; closing.resolve(null); return waitForRuntimeClose(close.promise); },
+      launch(): never { launches += 1; throw new Error("State-drifted acquisition must not launch."); },
+      observeExistingApplication(): never { observations += 1; throw new Error("State-drifted acquisition must not observe."); },
+    }, { startSupervisor() { starts += 1; starting.resolve(null); return started.promise; } });
+    const observation = fixture.runtime.observeExistingApplication();
+    const observationFailure = releaseFails ? assertOriginalFailure(observation, failure) : assert.rejects(observation, /changed during helper startup/u);
+    await starting.promise;
+    const launch = fixture.runtime.launch();
+    const launchFailure = releaseFails ? assertOriginalFailure(launch, failure) : assert.rejects(launch, /changed during helper startup/u);
+    const deadline = performance.now() + 5000;
+    while (fixture.runtime.status().state !== "launching") {
+      assert.ok(performance.now() < deadline, "Original launch did not reach the shared acquisition.");
+      await nextTurn();
+    }
+    started.resolve(fixture.supervisor);
+    await closing.promise;
+    assert.equal(fixture.runtime.isReleaseAcknowledged(), false);
+    assert.equal(releases, 1);
+    if (releaseFails) { close.reject(failure); } else { close.resolve(null); }
+    await observationFailure;
+    await launchFailure;
+    assert.equal(fixture.runtime.status().state, "launch-unknown");
+    const released = fixture.runtime.release();
+    assert.equal(fixture.runtime.release(), released);
+    await (releaseFails ? assertOriginalFailure(released, failure) : released);
+    assert.equal(fixture.runtime.isReleaseAcknowledged(), !releaseFails);
+    assert.equal(fixture.runtime.release(), released);
+    assert.equal(releases, 1);
+    assert.equal(starts, 1);
+    assert.equal(launches, 0);
+    assert.equal(observations, 0);
+  }
+});
+
+void test("release during prelaunch hashing prevents allocation before acknowledging empty closure", async () => {
+  const hash = Promise.withResolvers<string>(), hashing = Promise.withResolvers<null>();
+  let starts = 0;
+  const { runtime } = releaseRuntimeFixture({}, {
+    hashExecutable() { hashing.resolve(null); return hash.promise; },
+    startSupervisor(): never { starts += 1; throw new Error("Helper must not start after release."); },
+  });
+  const observation = runtime.observeExistingApplication();
+  const refused = assert.rejects(observation, /changed during release/u);
+  await hashing.promise;
+  const released = runtime.release();
+  assert.equal(runtime.isReleaseAcknowledged(), false);
+  hash.resolve("d".repeat(64));
+  await released;
+  await refused;
+  assert.equal(runtime.isReleaseAcknowledged(), true);
+  assert.equal(starts, 0);
+});
+
+void test("an uncertain prelaunch helper allocation cannot acknowledge release", async () => {
+  const started = Promise.withResolvers<WindowsAuthoritySupervisor>(), starting = Promise.withResolvers<null>();
+  const failure = new Error("synthetic-helper-allocation-unknown");
+  let starts = 0;
+  const { runtime } = releaseRuntimeFixture({}, { startSupervisor() { starts += 1; starting.resolve(null); return started.promise; } });
+  const observation = runtime.observeExistingApplication();
+  const observationFailure = assertOriginalFailure(observation, failure);
+  await starting.promise;
+  const released = runtime.release();
+  const releaseFailure = assertOriginalFailure(released, failure);
+  started.reject(failure);
+  await observationFailure;
+  await releaseFailure;
+  assert.equal(runtime.release(), released);
+  assert.equal(runtime.isReleaseAcknowledged(), false);
+  assert.equal(starts, 1);
+});
+
+void test("release refuses pending launch admission before consuming the original owner", async () => {
+  let hashes = 0;
+  const { runtime } = releaseRuntimeFixture({}, { hashExecutable(): Promise<string> { hashes += 1; return Promise.resolve("d".repeat(64)); } });
+  const launching = runtime.launch();
+  await assert.rejects(runtime.release(), /during launch/u);
+  assert.equal(runtime.status().state, "not-launched");
+  assert.equal(runtime.isReleaseAcknowledged(), false);
+  const launch = await launching;
+  assert.equal(runtime.status().state, "owned");
+  assert.deepEqual(runtime.status().launch, launch);
+  assert.equal(hashes, 1);
+  const released = runtime.release();
+  await released;
+  assert.equal(runtime.release(), released);
+  assert.equal(runtime.isReleaseAcknowledged(), true);
+});
+
+void test("release preflight preserves an already dispatched launch and its original normal-close and termination proof", async () => {
+  const authority = closedSessionFixture();
+  const dispatched = Promise.withResolvers<WindowsAuthorityLaunch>(), finishLaunch = Promise.withResolvers<null>();
+  const close = Promise.withResolvers<null>(), closing = Promise.withResolvers<null>();
+  let releases = 0;
+  const { runtime } = releaseRuntimeFixture({ ...authority.supervisor,
+    async launch(confirmation) {
+      const launch = await authority.supervisor.launch(confirmation);
+      dispatched.resolve(launch); await finishLaunch.promise; return launch;
+    },
+    async release() { releases += 1; closing.resolve(null); await close.promise; await authority.supervisor.release(); },
+  });
+  const pending = runtime.launch();
+  const original = await dispatched.promise;
+  await assert.rejects(runtime.release(), /during launch/u);
+  await assert.rejects(runtime.release(), /during launch/u);
+  assert.equal(runtime.status().state, "launching");
+  assert.equal(runtime.isReleaseAcknowledged(), false);
+  assert.equal(releases, 0);
+  finishLaunch.resolve(null);
+  const launch = await pending;
+  assert.deepEqual(launch, original);
+  assert.deepEqual(runtime.status().launch, original);
+  assert.equal(runtime.status().state, "owned");
+  const binding = await runtimeClosedBinding(runtime);
+  const intent = await runtime.prepareClosedSessionClose({ ...binding, windowHandle: "12345" });
+  const receipt = await runtime.requestClosedSessionNormalClose({ ...binding, intent, confirmNormalClose: true });
+  const proof = await runtime.proveClosedSession({ ...binding, intent, closeReceipt: receipt });
+  assert.equal(await assertClosedSessionCopyAuthority(proof), proof);
+  assert.equal(authority.requests.filter(request => request["action"] === "launch").length, 1);
+  assert.equal(authority.requests.filter(request => request["action"] === "normal-close").length, 1);
+  assert.equal(authority.requests.filter(request => request["action"] === "prove-terminated").length, 1);
+  const released = runtime.release();
+  await closing.promise;
+  assert.equal(runtime.release(), released);
+  assert.equal(runtime.isReleaseAcknowledged(), false);
+  assert.equal(releases, 1);
+  close.resolve(null); await released;
+  assert.equal(runtime.release(), released);
+  assert.equal(runtime.isReleaseAcknowledged(), true);
+  assert.equal(releases, 1);
+  await assert.rejects(assertClosedSessionCopyAuthority(proof), /retained|unavailable|lost|released/u);
+});
+
+void test("release preflight during helper allocation preserves its eventual launch and permits later release", async () => {
+  const started = Promise.withResolvers<WindowsAuthoritySupervisor>(), starting = Promise.withResolvers<null>();
+  const close = Promise.withResolvers<null>(), closing = Promise.withResolvers<null>();
+  let releases = 0;
+  const fixture = releaseRuntimeFixture({
+    release() { releases += 1; closing.resolve(null); return waitForRuntimeClose(close.promise); },
+  }, { startSupervisor() { starting.resolve(null); return started.promise; } });
+  const launching = fixture.runtime.launch();
+  await starting.promise;
+  await assert.rejects(fixture.runtime.release(), /during launch/u);
+  assert.equal(fixture.runtime.status().state, "launching");
+  started.resolve(fixture.supervisor);
+  const launch = await launching;
+  assert.equal(fixture.runtime.status().state, "owned");
+  assert.deepEqual(fixture.runtime.status().launch, launch);
+  assert.equal(fixture.runtime.isReleaseAcknowledged(), false);
+  assert.equal(releases, 0);
+  await fixture.runtime.normalClose("12345");
+  const released = fixture.runtime.release();
+  await closing.promise;
+  assert.equal(fixture.runtime.release(), released);
+  assert.equal(fixture.runtime.isReleaseAcknowledged(), false);
+  assert.equal(releases, 1);
+  close.resolve(null); await released;
+  assert.equal(fixture.runtime.isReleaseAcknowledged(), true);
+  assert.equal(fixture.runtime.release(), released);
+  assert.equal(releases, 1);
+});
+
+void test("a capture started before release cannot return usable proof after closure", async () => {
+  const capture = Promise.withResolvers<Awaited<ReturnType<WindowsAuthoritySupervisor["capture"]>>>();
+  const called = Promise.withResolvers<null>();
+  const original = closedSessionFixture();
+  const { runtime } = releaseRuntimeFixture({
+    launch: original.supervisor.launch,
+    capture() { called.resolve(null); return capture.promise; },
+  });
+  await runtime.launch();
+  const pending = runtime.capture(INPUT);
+  const refused = assert.rejects(pending, /explicitly launched/u);
+  await called.promise;
+  const evidence = await original.supervisor.capture(INPUT);
+  await runtime.release();
+  capture.resolve(evidence);
+  await refused;
+  assert.equal(runtime.isReleaseAcknowledged(), true);
 });
 
 void test("capability-pinned launch refuses executable substitution before starting its helper", async () => {

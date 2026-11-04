@@ -71,7 +71,16 @@ Open questions are not requirements.
    Missing/error acknowledgment consumes Save; reconcile/restart grants no retry.
    Leave Save/Discard prompts unanswered unless authorized.
 6. Preserve unrelated changes, evidence and journals. Never rewrite upstream
-   `easyeda-mcp-pro`, broadly delete temporary roots, kill host gateways or patch caches.
+   `easyeda-mcp-pro`, broadly delete temporary roots or patch caches. Prefer
+   supported retirement, `close-retired` and original-child EOF for host gateways.
+   The user has authorized normal SIGTERM only for verified idle legacy EasyEDA
+   MCP servers whose version lacks a usable shutdown command. They must be
+   retired, reference-only or ownership-conflict servers with no native owner.
+   Verify the original PID/start identity, executable, module and lack of owned
+   resources immediately before signaling; retain a pidfd through observed exit.
+   Never use SIGKILL, signal unrelated services, remove a lease manually or treat
+   host exit as original native termination/helper-release proof. This narrow
+   standing exception does not permit terminating an active native owner.
    Restoration needs exact authority, closed-file scope, backup and independent proof.
    Exit does not prove discard.
 7. Never commit credentials, keys, projects, generated evidence, journals or private
@@ -170,6 +179,8 @@ are build/check dependencies only.
 - Obtain CodeRabbit's PR review before merging. Address its reported issues,
   including legacy issues outside the immediate diff. If a substantive review
   recommendation remains disputed, ask the user to decide before merging.
+  The minimal inherited CodeRabbit configuration disables commit-threshold
+  auto-pausing. A skipped or paused check is not a review of the current head.
 - Keep marketplace/manifests/README/skills/agent metadata/tool descriptions and exhaustive
   coverage/omission reasons consistent. Publish only with green exact-payload CI and
   reproducible bundles. Scan staged secrets/design artifacts; preserve bridge identity/key epoch.
@@ -190,9 +201,16 @@ are build/check dependencies only.
   exact installed payload and full process/source admission before live work;
   a new subagent alone proves no package refresh. Keep the retired connection
   offline. Older snapshots without retirement cannot use this handoff; report
-  that limit without inventing shutdown, killing/rebinding owners or patching
-  caches. Do not repeatedly request chat restarts as the default update loop.
+  that limit without inventing shutdown, rebinding owners or patching caches.
+  The explicit idle legacy-host exception above supplies no native-owner cleanup
+  or adoption. Do not repeatedly request chat restarts as the default update loop.
   Report pending connected validation/import separately.
+- For repeated development and disposable validation, prefer the maintained
+  foreground manager after retiring the original Codex connection. Keep the
+  selected payload frozen through native cleanup. Finish each workflow's own
+  acknowledged helper release, retire the original facade before installation,
+  observe its exit, then select and admit the verified replacement. Manager
+  generations and historical receipts cannot transfer unfinished native owners.
 
 ## Maintaining documentation and history
 

@@ -12,6 +12,8 @@ import { CurrentSymbolCopyWriterCoordinator } from "./current-symbol-copy-writer
 // oxlint-disable-next-line import/no-cycle -- The verifier consumes the original writer continuation within this fixed lifecycle.
 import { CurrentSymbolCopyVerificationCoordinator } from "./current-symbol-copy-verification-runtime.ts";
 import type { EasyedaControlEngine } from "./engine.ts";
+import type { WindowsControlRuntime } from "./windows-runtime.ts";
+import type { OriginalTerminalRuntimeDisposal } from "./terminal-runtime-release.ts";
 
 type Value = Readonly<Record<string, unknown>>;
 type CloseOwner = CurrentSymbolBaselineCoordinator | CurrentSymbolCopyWriterCoordinator | CurrentSymbolCopyVerificationCoordinator;
@@ -42,6 +44,36 @@ export class CurrentSymbolCopyOperationCoordinator {
   public constructor(engine: EasyedaControlEngine, baseline: CurrentSymbolBaselineCoordinator) {
     this.engine = engine; this.baseline = baseline;
     this.writer = new CurrentSymbolCopyWriterCoordinator(engine); this.verifier = new CurrentSymbolCopyVerificationCoordinator(engine);
+  }
+
+  /** Expose only a completed copy's original final-verifier disposal latch.
+   * Failed phases, selected cleanup or a pending coordinator never count as disposal.
+   */
+  public isRuntimeDisposed(runtime?: WindowsControlRuntime): boolean {
+    return !this.busy && this.slot?.next === "completed" && this.slot.copyVerified && this.slot.failedPhase === undefined &&
+      !this.slot.cleanupRequested && this.slot.cleanup === undefined && this.verifier.isRuntimeDisposed(runtime);
+  }
+  public settleRuntimeReleaseRecords(operationId: string,
+    complete: (runtime: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal) => void): Promise<OriginalTerminalRuntimeDisposal> {
+    return this.releaseCompletedRuntime(operationId, complete, true);
+  }
+  /** Release through the successful copy's retained final verifier and callback.
+   * The same slot must remain complete and free of cleanup before its original
+   * runtime receipt can reach the opening owner and matching index allocation.
+   */
+  public async releaseCompletedRuntime(operationId: string,
+    complete: (runtime: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal) => void, settleRecordsOnly = false): Promise<OriginalTerminalRuntimeDisposal> {
+    const slot = this.slot;
+    need(!this.busy && slot !== undefined && slot.operationId === operationId && slot.next === "completed" && slot.copyVerified &&
+      slot.failedPhase === undefined && !slot.cleanupRequested && slot.cleanup === undefined,
+    "Symbol copy native release requires its fully completed original lifecycle; partial and cleanup generations remain blocked.");
+    this.busy = true;
+    try {
+      return await this.verifier.releaseCompletedRuntime(operationId, (runtime, receipt) => {
+        need(this.slot === slot && slot.next === "completed" && slot.copyVerified && !slot.cleanupRequested && slot.cleanup === undefined);
+        complete(runtime, receipt);
+      }, settleRecordsOnly);
+    } finally { this.busy = false; }
   }
 
   /** Local original-token checks only; a refusal leaves the baseline close path intact. */

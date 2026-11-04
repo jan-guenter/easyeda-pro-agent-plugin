@@ -7,9 +7,11 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { z } from "zod";
+import { currentSymbolBaselineRequestSchema } from "../src/current-symbol-baseline-runtime.ts";
 import { OPERATION_SCHEMA, buildPlanHash, canonicalJson, isRecord, sha256Text } from "../src/core.ts";
 import { currentDisposableOpenSealedTargetSchema, parseCurrentDisposableOpenRequest } from "../src/current-disposable-open.ts";
 import { CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION } from "../src/current-disposable-open-profile.ts";
+// oxlint-disable-next-line import/max-dependencies -- The original opener VM also needs its real shared baseline schema; duplicating that parser would conceal producer/release grammar drift.
 import { CURRENT_SYMBOL_COPY_OPERATION_PURPOSE, parseCurrentSymbolCopyOperationRequest } from "../src/current-symbol-copy-operation.ts";
 
 type Bag = Record<string, unknown>;
@@ -80,7 +82,7 @@ async function fixture(failure: Failure = "none"): Promise<{
     currentDisposableOpenSealedTargetSchema, parseCurrentDisposableOpenRequest,
     CURRENT_SYMBOL_OPERATION_PURPOSE: "ordinary-symbol-metadata", EasyedaControlEngine: Object, WindowsControlRuntime: Object,
     CURRENT_SCHEMATIC_OPERATION_PURPOSE: "ordinary-schematic-rename",
-    CurrentSymbolBaselineCoordinator: Baseline,
+    CurrentSymbolBaselineCoordinator: Baseline, currentSymbolBaselineRequestSchema,
     currentOwnedSymbolCopyRequestSchema: z.object({ projectUuid: z.string(), branchUuid: z.string(), symbolUuid: z.string() }).strict(),
     prepareCurrentOwnedSymbolCopy: (): never => { state.preparations += 1; throw new Error("Synthetic preparation refused"); },
     createOperation: noOp, updateOperation: (): never => { throw new Error("Cleanup must not overwrite the original journal"); },
