@@ -11,7 +11,6 @@ import {
 } from "node:path";
 import process from "node:process";
 import { inflateSync } from "node:zlib";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ToolCallback } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type {
@@ -92,7 +91,9 @@ import { discoverReviewedOrLiveTools } from "./reviewed-upstream-tools.ts";
 import { buildDsnExportCode, wrapWithContextGuard } from "./runtime-scripts.ts";
 import { UpstreamEasyedaClient, UpstreamStartupError } from "./upstream.ts";
 import { createSerializedShutdown } from "./shutdown.ts";
-import { offlineApiToolConfiguration, runOfflineApi } from "./offline-api.ts";
+import { FacadeSessionRetirement, sessionRetirementOutputSchema, sessionRetirementRequestSchema } from "./session-retirement.ts";
+import { SessionRetirementMcpServer } from "./session-mcp-server.ts";
+import { offlineApiToolConfiguration, queryOfflineApi, runOfflineApi } from "./offline-api.ts";
 import { publicSdkReadImplementationKind, publicSdkReadRequestSchema } from "./public-sdk-read.ts";
 import { isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
 import { SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "./schematic-component-properties.ts";
@@ -128,7 +129,7 @@ import { readStartupExtensions } from "./startup-extensions-runtime.ts";
 import { editorShellRequestSchema } from "./editor-shell.ts";
 import { editorContextRequestSchema } from "./editor-context.ts";
 import { readEditorContext, readEditorShell } from "./editor-shell-runtime.ts";
-import { OrdinaryLaunchCoordinator, ordinaryLaunchRequestSchema } from "./ordinary-launch.ts";
+import { OrdinaryLaunchCoordinator, assertNoUnresolvedOrdinaryLaunches, ordinaryLaunchRequestSchema } from "./ordinary-launch.ts";
 import type { OrdinaryLaunchRuntime } from "./ordinary-launch.ts";
 import { CurrentFootprintCombinedLifecycle, CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintMainLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "./current-pcb-diagnostic-lifecycle.ts";
 import { currentPcbDiagnosticToolRequestSchema } from "./current-pcb-diagnostic-validation.ts";
@@ -237,6 +238,18 @@ const libraryExecutor = new LibraryExecutor(engine);
 const ruleCheckExecutor = new RuleCheckExecutor(engine);
 const projectOpenExecutor = new ProjectOpenExecutor(engine);
 const bridgeGate = new SerializedGate();
+const facadeSession = new FacadeSessionRetirement({
+  assertQuiescent: async (): Promise<void> => {
+    assertSessionRetirementNativeOwnersSettled();
+    await engine.assertBridgeAndNativeUiEditingAdmission();
+    assertSessionRetirementNativeOwnersSettled();
+    await assertNoUnresolvedOrdinaryLaunches();
+    assertSessionRetirementNativeOwnersSettled();
+  },
+  closeLiveAdmission: (): void => { bridgeGate.closeAdmission(); },
+  authority: upstream,
+  lease: facadeLease,
+});
 
 interface ClosedSymbolIndexReservation {
   readonly engine: EasyedaControlEngine;
@@ -266,6 +279,23 @@ interface ClosedSymbolIndexReservation {
 }
 let closedSymbolIndexReservation: ClosedSymbolIndexReservation | undefined;
 const closedSymbolUnreservedFailure: { observed: boolean; original: unknown } = { observed: false, original: undefined };
+
+/** Retirement requires each original native workflow to have completed its
+ * own cleanup. It never releases, adopts or terminates a native owner. */
+function assertSessionRetirementNativeOwnersSettled(): void {
+  if (scheduledShutdown !== undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined ||
+      closedSymbolIndexReservation !== undefined || closedSymbolUnreservedFailure.observed ||
+      currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
+      currentSchematicRenameOperationCoordinator !== undefined) {
+    throw new Error("EasyEDA retirement requires completed native cleanup and no retained runtime, project or writer owner.");
+  }
+  const diagnostics = [currentPcbDiagnosticLifecycle, currentPcbStringPrecreateLifecycle,
+    currentPcbWorkerStartupLifecycle, currentFootprintMainLifecycle, currentFootprintHeldCacheValidation, currentFootprintHeadAgeValidation];
+  if (diagnostics.some(owner => owner?.hasActiveReservation() === true) ||
+      currentFootprintHeldCacheValidation?.hasOwnedAllocation() === true || currentFootprintHeadAgeValidation?.hasOwnedAllocation() === true) {
+    throw new Error("EasyEDA retirement requires every diagnostic reservation and native allocation to be released by its original owner.");
+  }
+}
 
 function disposableOwnData(owner: object, key: string): unknown {
   const descriptor = Object.getOwnPropertyDescriptor(owner, key);
@@ -1965,6 +1995,7 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_design: z.object({ operationId: z.string().optional(), state: z.string().optional(), nextSafeAction: z.string().optional(), capabilities: z.record(z.string(), z.unknown()).optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_library: z.object({ operationId: z.string().optional(), state: z.string().optional(), result: z.unknown().optional(), nextSafeAction: z.string().optional(), capabilities: z.array(z.unknown()).optional() }).catchall(z.unknown()),
   easyeda_control_status: statusSuccessOutputSchema,
+  easyeda_control_session: z.object({ result: sessionRetirementOutputSchema.optional(), ...optionalFailureOutputShape }).strict(),
   easyeda_control_discover: discoverSuccessOutputSchema,
   easyeda_control_context: contextOutputSchema,
   easyeda_control_exact_read: evidenceSuccessOutputSchema,
@@ -1989,7 +2020,8 @@ const previousGenerationInstructions = facadeMode === "calculation-only"
         ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry reads, historical abandonment, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local file and checkpoint-member PCB; it permits migrations/cache replay/automatic Save effects. The project-open validation-* actions run one sealed disposable metadata forward/inverse lifecycle with exact phase acknowledgements and original owners. Its META-only lifecycle passed an installed101500 disposable round trip. Installed210000 passed the disposable canvas-segments forward/inverse round trip with complete closed SQL, reopened content and final closure. The easyeda_control_project_symbol_metadata route supports an original-owner forward-only name/non-null-description change for an unused project-local symbol with complete META-only or bounded canvas-segments history, including tombstones. Ordinary purpose reserves exactly one write and no inverse. Canvas clocks must follow every target header; saved drawing records remain byte-exact. Installed080000 passed the ordinary unused drawn-symbol forward lifecycle with complete closed SQL, exact reopened content and final closure on a disposable fixture. Installed123000 passed that ordinary entrypoint's unused META-only forward lifecycle with exact closed SQL, reopened content and final closure. Historical validation grants no current-invocation authority. Both symbol routes require pre-dispatch proof budgets, exact runtime admission and complete SQL/reopened-content verification. The separate original-owner ordinary SCH-container title route passed its installed203733 disposable-fixture lifecycle, including batching, full closed SQL and fresh metadata/peer/child-roster and both AST readback followed by final closure/SQL equality. Its ordinary-project scope retains the startup, clock and one-write guards; this historical result grants no current-invocation authority. Generic design writers, native controls, navigation, explicit Save and design recovery remain unavailable. Launch does not prove isolation or readiness; observations grant no later authority. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart."
         : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal.";
 
-const server = new McpServer(
+const server = new SessionRetirementMcpServer(
+  facadeSession, failure,
   { name: "easyeda-pro-control", version: CONTROL_VERSION },
   {
     capabilities: { tools: {} },
@@ -2013,6 +2045,17 @@ function registerFacadeTool<InputArgs extends z.ZodRawShape>(
     handler,
   );
 }
+
+registerFacadeTool(
+  "easyeda_control_session",
+  {
+    title: "Inspect or retire this EasyEDA control connection",
+    description: "Cooperatively retire this original facade after every tool call, queued operation, journal and native owner has settled. retire requires confirmRetire:true. It refuses retained runtime/project/writer owners and active diagnostic reservations or allocations; complete original native cleanup first. It closes only its own upstream and authenticated gateway, then releases its own control lease. It never terminates EasyEDA, chooses Save/Discard, rebinds an owner or retries cleanup. Successful retirement permanently refuses every tool except this local state endpoint and source/reference easyeda_control_api queries. Managed-file preparation and SQL analysis refuse after retirement. Only after acknowledged retired state may a fresh MCP connection or fresh-context subagent start; an ownership-conflict connection never retries and loaded-facade/process admission must prove the replacement snapshot. Cleanup failure consumes retirement, keeps live admission closed and retains the lease after authority close failure. Older installed facades lack this route.",
+    inputSchema: { request: sessionRetirementRequestSchema },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  },
+  guarded(async ({ request }) => ({ result: request.action === "inspect" ? facadeSession.inspect() : await facadeSession.retire() })),
+);
 
 registerFacadeTool(
   "easyeda_control_status",
@@ -2103,7 +2146,16 @@ registerFacadeTool(
 registerFacadeTool(
   "easyeda_control_api",
   offlineApiToolConfiguration,
-  guarded(({ request }) => runOfflineApi(request)),
+  guarded(({ request }) => {
+    const state = facadeSession.inspect().state;
+    if (state === "retired" || state === "retirement-failed") {
+      if (request.action === "project-symbol-prepare" || request.action === "baseline-analyze") {
+        throw new Error("This retired EasyEDA facade permits source/reference API queries only; managed-file preparation and SQL analysis require an active owner.");
+      }
+      return queryOfflineApi(request);
+    }
+    return runOfflineApi(request);
+  }),
 );
 
 registerFacadeTool(

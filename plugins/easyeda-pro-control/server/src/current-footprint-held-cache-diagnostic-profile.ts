@@ -118,12 +118,60 @@ export const currentFootprintHeldCacheStartupObservationV2Schema = z.object({
   if (observation.failureKind === "version") { valid &&= observation.stage === "browser-version" && observation.versionSha256 === null; }
   if (!valid) { context.addIssue({ code: "custom", message: "Startup V2 stage, attempts, complete inventory stabilization and failure classification must agree." }); }
 }).readonly();
-/** Accept either released diagnostic version without promoting historical JSON into ownership. */
+/** The admitted backend deliberately retains its loader across a 4700 ms
+ * timer and a later 300 ms timer. Keep the same finite sample/request count
+ * while allowing that intended transition and later exact confirmation. */
+export const CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS_V3 = Object.freeze({ targetSamples: 16, delayMilliseconds: 1000 });
+/** V3 changes only the deliberate wait interval. Released V1/V2 declarations
+ * retain their original 250 ms literals, sample rules and serialized meaning. */
+export const currentFootprintHeldCacheStartupObservationV3Schema = z.object({
+  schema: z.literal("private.current-footprint-held-cache-startup-observation.v3"), stage: z.enum(startupStages),
+  failed: z.boolean(), failureKind: z.enum(["inventory", "selection", "target-limit", "version", "transport-or-owner"]).nullable(),
+  versionAttempts: counter(1), versionSha256: z.string().regex(/^[a-f\d]{64}(?![\s\S])/u).nullable(),
+  targetAttempts: counter(CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS_V3.targetSamples),
+  maximumTargetSamples: z.literal(CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS_V3.targetSamples),
+  delayMilliseconds: z.literal(CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS_V3.delayMilliseconds),
+  samples: z.array(z.unknown()).max(CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS_V3.targetSamples).pipe(z.array(startupSampleSchema)).readonly(),
+  uiSourceQualified: z.literal(false), cacheQualificationGranted: z.literal(false), executionAuthorized: z.literal(false),
+}).strict().superRefine((observation, context) => {
+  const last = observation.samples.at(-1), preceding = observation.samples.at(-2);
+  const stable = matchingExclusiveSamples(preceding, last);
+  let valid = observation.failed === (observation.failureKind !== null) &&
+    observation.samples.length <= observation.targetAttempts && observation.targetAttempts <= observation.samples.length + 1 &&
+    (observation.versionSha256 === null ? observation.targetAttempts === 0 : observation.versionAttempts === 1);
+  for (const [index, sample] of observation.samples.entries()) {
+    const final = index === observation.samples.length - 1;
+    valid &&= sample.attempt === index + 1 && sample.pageCount <= sample.targetCount && pageCountMatches(sample) &&
+      (final || waitingForStableEditor(sample.classification)) &&
+      (final || !matchingExclusiveSamples(observation.samples[index - 1], sample));
+  }
+  if (last !== undefined && !waitingForStableEditor(last.classification) || stable) { valid &&= observation.targetAttempts === observation.samples.length; }
+  if (["checkpoint", "launch", "native-reproof"].includes(observation.stage)) {
+    valid &&= observation.versionAttempts === 0 && observation.versionSha256 === null && observation.targetAttempts === 0;
+  } else if (observation.stage === "browser-version") { valid &&= observation.versionAttempts === 1 && observation.targetAttempts === 0; }
+  else {
+    valid &&= observation.versionAttempts === 1 && observation.versionSha256 !== null;
+    if (observation.stage !== "browser-targets") { valid &&= stable; }
+  }
+  if (observation.failureKind === "target-limit") {
+    valid &&= observation.stage === "browser-targets" && observation.targetAttempts === 16 && observation.samples.length === 16 &&
+      last !== undefined && waitingForStableEditor(last.classification) && !stable;
+  }
+  if (observation.failureKind === "inventory") { valid &&= observation.stage === "browser-targets" && observation.targetAttempts === observation.samples.length + 1; }
+  if (observation.failureKind === "selection") { valid &&= observation.stage === "browser-targets" && last !== undefined && ["multiple-pages", "attached-page", "unexpected-page"].includes(last.classification); }
+  if (observation.failureKind === "version") { valid &&= observation.stage === "browser-version" && observation.versionSha256 === null; }
+  if (!valid) { context.addIssue({ code: "custom", message: "Startup V3 stage, attempts, complete inventory stabilization and failure classification must agree." }); }
+}).readonly();
+/** Accept released diagnostic versions without promoting historical JSON into ownership. */
 export const currentFootprintHeldCacheStartupObservationRecordSchema = z.union([
   currentFootprintHeldCacheStartupObservationSchema, currentFootprintHeldCacheStartupObservationV2Schema,
 ]);
-export type CurrentFootprintHeldCacheStartupObservation = z.infer<typeof currentFootprintHeldCacheStartupObservationRecordSchema>;
-const discovery = { browser: 1 + CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS.targetSamples, frames: 6, script: 7, parent: 2, ancillary: 2 } as const;
+/** Current outer record V2 explicitly admits V3 without widening released outer V1. */
+export const currentFootprintHeldCacheStartupObservationAllVersionsSchema = z.union([
+  currentFootprintHeldCacheStartupObservationRecordSchema, currentFootprintHeldCacheStartupObservationV3Schema,
+]);
+export type CurrentFootprintHeldCacheStartupObservation = z.infer<typeof currentFootprintHeldCacheStartupObservationAllVersionsSchema>;
+const discovery = { browser: 1 + CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS_V3.targetSamples, frames: 6, script: 7, parent: 2, ancillary: 2 } as const;
 const discoveryRequests = Object.values(discovery).reduce((total, value) => total + value, 0);
 export const CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE = freezeDeep({
   purpose: "footprint-held-cache209", discovery, discoveryRequests,

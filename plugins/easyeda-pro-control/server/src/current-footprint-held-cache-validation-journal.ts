@@ -8,7 +8,7 @@ import { controlDataDirectory, controlRootCapability, publishManagedAttachmentEx
 import type { ControlRootDirectory } from "./control-root.ts";
 import { canonicalJson, sha256Json } from "./core.ts";
 import { CURRENT_FOOTPRINT_HELD_CACHE_VALIDATION_RECORD_BYTES as RECORD_BYTES, assertFootprintHeldCacheJournalBudget,
-  currentFootprintHeldCacheValidationIdSchema, currentFootprintHeldCacheValidationRecordSchema, currentFootprintHeldCacheValidationRequestSchema } from "./current-footprint-held-cache-validation-schema.ts";
+  currentFootprintHeldCacheValidationIdSchema, currentFootprintHeldCacheValidationPersistedRecordSchema, currentFootprintHeldCacheValidationRequestSchema } from "./current-footprint-held-cache-validation-schema.ts";
 import type { CurrentFootprintHeldCacheValidationRecord as RecordEntry } from "./current-footprint-held-cache-validation-schema.ts";
 
 const DIRECTORY = "footprint-held-cache-validation-v1", MAX_OPERATIONS = 128, MAX_RECORDS = 512, OPERATION_BYTES = 8 * 1024 * 1024;
@@ -31,6 +31,7 @@ export function assertFootprintHeldCacheValidationChain(records: readonly Record
   const seen = new Set<RecordEntry["kind"]>(); let branch: RecordEntry["kind"] | null = null, pendingPoll = false, polls = 0, terminal = false, terminated = false;
   const requirePrior = (kind: RecordEntry["kind"]): void => { need(seen.has(kind), "MISSING_INTENT_OR_PREDECESSOR"); };
   for (const [index, record] of records.entries()) {
+    need(record.schema === records[0]?.schema, "RECORD_VERSION_CHANGED");
     need(!terminal && (branch === null || record.kind === "failure" || record.kind === branch), "AFTER_TERMINAL_OR_CLEANUP_BRANCH");
     need(index !== 0 || record.kind === "launch-intent", "LAUNCH_INTENT_REQUIRED");
     if (record.kind !== "failure" && record.kind !== "termination-intent" && record.kind !== "termination-result") { need(!seen.has(record.kind), "DUPLICATE_STAGE"); }
@@ -104,7 +105,7 @@ async function read(directory: ControlRootDirectory, name: string): Promise<Read
     need(count === Number(before.size) && same(before, await handle.stat({ bigint: true })) && same(before, await lstat(path, { bigint: true })), "FILE_CHANGED");
     const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, count));
     const value: unknown = JSON.parse(text);
-    return { record: currentFootprintHeldCacheValidationRecordSchema.parse(value), bytes: count };
+    return { record: currentFootprintHeldCacheValidationPersistedRecordSchema.parse(value), bytes: count };
   } finally { await handle.close(); }
 }
 
@@ -188,7 +189,7 @@ export async function reserveFootprintHeldCacheValidation(operationId: string): 
 /** Publish one original retained record, or observe its exact already-published
  * bytes after an acknowledgment failure. This retries no native operation. */
 export async function publishFootprintHeldCacheValidationRecord(input: RecordEntry): Promise<void> {
-  const record = currentFootprintHeldCacheValidationRecordSchema.parse(input);
+  const record = currentFootprintHeldCacheValidationPersistedRecordSchema.parse(input);
   const prior = await readFootprintHeldCacheValidation(record.operationId);
   need(prior !== null && prior.records.length >= record.sequence && prior.records.length <= record.sequence + 1, "PUBLICATION_POSITION");
   if (prior.records.length === record.sequence + 1) { need(canonicalJson(prior.records.at(-1)) === canonicalJson(record), "PUBLICATION_CHANGED"); return; }

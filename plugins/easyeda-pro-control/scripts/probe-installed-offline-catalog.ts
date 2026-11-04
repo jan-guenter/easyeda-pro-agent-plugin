@@ -29,7 +29,7 @@ const EXPECTED_TOOLS = [
   "api", "calculate", "discover", "disposable_pcb_rename", "disposable_schematic_rename", "disposable_symbol_copy",
   "editor_context", "editor_shell", "extensions", "history", "launch", "library_files", "pcb_diagnostic_validation", "pcb_geometry",
   "pcb_identities", "pcb_layers", "pcb_string_precreate_validation", "project_board", "project_open", "project_pcb", "project_schematic",
-  "project_schematic_rename", "project_symbol", "project_symbol_metadata", "shortcuts", "status", "system",
+  "project_schematic_rename", "project_symbol", "project_symbol_metadata", "session", "shortcuts", "status", "system",
 ].map(name => `easyeda_control_${name}`).toSorted();
 
 function isRecord(value: unknown): value is Record<string, unknown> {

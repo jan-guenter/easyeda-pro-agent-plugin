@@ -5,6 +5,11 @@ The Codex marketplace manifest is [`.agents/plugins/marketplace.json`](../.agent
 These commands install the published GitHub snapshot. Check its plugin version
 and actual tool catalog; an older cached snapshot can differ from this checkout.
 
+When an existing owning facade supports cooperative retirement, finish its
+native cleanup and retire it before these installation or upgrade commands.
+Its original package files must remain present through the fresh retirement
+checks. Follow the [handoff workflow](../plugins/easyeda-pro-control/skills/easyeda-pro-control/references/connection-and-context.md#cooperative-retirement-and-update-handoff).
+
 ```bash
 umask 022
 codex plugin marketplace add https://github.com/jan-guenter/easyeda-pro-agent-plugin.git --ref main
@@ -88,8 +93,12 @@ Replace the path and commit placeholders with the observed installation and
 full release SHA. Repeat this comparison after a scoped official plugin list
 and confirm the intended version is installed and enabled. A same-HEAD no-op
 does not repair a failed comparison. Use official installation operations for
-recovery; do not edit or chmod cache files. Finally, load a fresh Codex session
-and admit its actual serving process before live calls, as described above.
+recovery; do not edit or chmod cache files. Load a fresh MCP connection and
+admit its actual serving process before live calls. A user-requested fresh-context
+subagent can follow [cooperative retirement](../plugins/easyeda-pro-control/skills/easyeda-pro-control/references/connection-and-context.md#cooperative-retirement-and-update-handoff)
+when the original facade supports it; retire while its package still exists,
+before upgrading or installing, then spawn and verify the
+replacement payload. Older snapshots cannot perform that handoff.
 
 ## Bridge setup
 

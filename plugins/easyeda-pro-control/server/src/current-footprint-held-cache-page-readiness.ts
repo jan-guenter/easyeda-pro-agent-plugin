@@ -4,7 +4,7 @@ import { sha256Json, sha256Text } from "./core.ts";
 import path from "node:path";
 import { diagnosticExact } from "./current-pcb-diagnostic-protocol.ts";
 import { diagnosticTargetInventory } from "./current-pcb-diagnostic-context.ts";
-import { CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS as LIMITS, currentFootprintHeldCacheStartupObservationV2Schema } from "./current-footprint-held-cache-diagnostic-profile.ts";
+import { CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS_V3 as LIMITS, currentFootprintHeldCacheStartupObservationV3Schema } from "./current-footprint-held-cache-diagnostic-profile.ts";
 import type { CurrentFootprintHeldCacheStartupObservation, CurrentFootprintHeldCacheStartupStage } from "./current-footprint-held-cache-diagnostic-profile.ts";
 
 export type { CurrentFootprintHeldCacheStartupObservation, CurrentFootprintHeldCacheStartupStage } from "./current-footprint-held-cache-diagnostic-profile.ts";
@@ -17,7 +17,7 @@ interface Sample {
 }
 interface Transport {
   readonly assertCurrent: () => void; readonly version: () => Promise<Row>; readonly targets: () => Promise<Row>;
-  readonly pause: () => Promise<void>;
+  readonly pause: (milliseconds: typeof LIMITS.delayMilliseconds) => Promise<void>;
 }
 /** Stop readiness with a bounded code instead of selecting or retrying another target. */
 function refuse(code: string): never { throw new Error(`PCB_DIAGNOSTIC_HELD_CACHE_READINESS_${code}`); }
@@ -114,7 +114,7 @@ export class CurrentFootprintHeldCachePageReadiness {
         if (!["empty", "about-blank", "startup-loading", "ready-with-loading", "ready"].includes(classification)) { this.#failureKind = "selection"; refuse("PAGE"); }
         precedingExclusiveInventory = classification === "ready" ? inventoryJson : null;
         if (attempt === LIMITS.targetSamples) { this.#failureKind = "target-limit"; refuse("TARGET_LIMIT"); }
-        await pause(); current();
+        await pause(LIMITS.delayMilliseconds); current();
       }
       return refuse("TARGET_LIMIT");
     } catch (error) { this.fail(); throw error; }
@@ -122,9 +122,9 @@ export class CurrentFootprintHeldCachePageReadiness {
 
   /** Return a fresh bounded diagnostic snapshot. It grants no live authority. */
   public observation(): CurrentFootprintHeldCacheStartupObservation {
-    return currentFootprintHeldCacheStartupObservationV2Schema.parse({ schema: "private.current-footprint-held-cache-startup-observation.v2", stage: this.#stage,
+    return currentFootprintHeldCacheStartupObservationV3Schema.parse({ schema: "private.current-footprint-held-cache-startup-observation.v3", stage: this.#stage,
       failed: this.#failed, failureKind: this.#failureKind, versionAttempts: this.#versionAttempts, versionSha256: this.#versionSha256,
-      targetAttempts: this.#targetAttempts, maximumTargetSamples: 16, delayMilliseconds: 250, samples: Object.freeze([...this.#samples]),
+      targetAttempts: this.#targetAttempts, maximumTargetSamples: LIMITS.targetSamples, delayMilliseconds: LIMITS.delayMilliseconds, samples: Object.freeze([...this.#samples]),
       uiSourceQualified: false, cacheQualificationGranted: false, executionAuthorized: false });
   }
 }

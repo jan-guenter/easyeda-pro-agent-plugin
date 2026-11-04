@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const FACADE_TOOL_NAMES = [
   "easyeda_control_api",
+  "easyeda_control_session",
   "easyeda_control_sdk_read",
   "easyeda_control_calculate",
   "easyeda_control_system",

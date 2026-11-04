@@ -29,8 +29,8 @@ void describe("dependency-free installed package offline catalog probe", () => {
     const result = await probeInstalledOfflineCatalog(root);
     assert.equal(result["ok"], true);
     assert.equal(result["scope"], "synthetic-profile-installed-package-offline-catalog;not-runtime-admission");
-    assert.equal(result["tools"], 27);
-    assert.equal(result["configuredTools"], 52);
+    assert.equal(result["tools"], 28);
+    assert.equal(result["configuredTools"], 53);
     assert.equal(result["queries"], 54);
     assert.equal(result["loadedFacadeChecked"], true);
     const closed = result["closed"];

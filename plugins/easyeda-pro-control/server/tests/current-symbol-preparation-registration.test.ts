@@ -96,6 +96,7 @@ void test(`${entry} registers asynchronous preparation without allocating a live
     invoke = handler;
   };
   const scope = vm.createContext({ offlineApiToolConfiguration, outputSchema: {},
+    facadeSession: { inspect: (): { state: string } => ({ state: "active" }) }, queryOfflineApi,
     guarded: (handler: Callback): Callback => handler,
     offlineGuard: (handler: Callback): Callback => handler,
     runOfflineApi: (request: Request): Promise<unknown> => { calls.push(request); return completion.promise; },

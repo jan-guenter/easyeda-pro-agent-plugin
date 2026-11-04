@@ -137,15 +137,23 @@ versions or general writing.
 
 Install the published GitHub marketplace snapshot:
 
+For an update with a connected facade that supports cooperative retirement,
+finish its original native cleanup and retire it before upgrading or installing.
+Keep its original package files until retirement is acknowledged.
+
 ```bash
 umask 022
 codex plugin marketplace add https://github.com/jan-guenter/easyeda-pro-agent-plugin.git --ref main
 codex plugin add easyeda-pro-control@easyeda-pro-agent
 ```
 
-Start a fresh Codex chat after installation or upgrade to load its skills and
-MCP catalog. The marketplace
-[manifest](.agents/plugins/marketplace.json) identifies the plugin package.
+After installation or upgrade, load a fresh MCP connection and verify its
+actual `loaded-facade` snapshot before live work. For a requested fresh-context
+subagent handoff, supported facades can retire cooperatively after all original
+native cleanup and calls finish. Retire before installing the update, then
+spawn the subagent and verify its installed payload and process admission. Older snapshots lack this
+route. See [connection handoff](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/connection-and-context.md#cooperative-retirement-and-update-handoff).
+The marketplace [manifest](.agents/plugins/marketplace.json) identifies the plugin package.
 
 Marketplace installation does not create a credential or modify EasyEDA. From
 a trusted checkout of this repository, prepare the pinned toolchain and build
@@ -250,6 +258,11 @@ See [architecture and runtime isolation](docs/architecture.md) for details.
 Read [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md) and
 [SECURITY.md](SECURITY.md). Use the pinned Node/npm versions above, install GNU
 binutils for sanitizer checks, and run `npm ci` in `plugins/easyeda-pro-control`.
+The package configures 53 facade tools. Its older restricted profile registers
+28, and the 3.2.209 utility profile registers 17. Offline-only and ownership-conflict
+startup retain their separate smaller catalogs. `easyeda_control_session` adds
+local inspection and confirmed cooperative retirement to the three live-capable
+profiles; it grants no design or native cleanup authority.
 First-party server, test and tooling source is TypeScript. Node runs erasable
 TypeScript directly; TypeScript checks types, Oxlint checks code, and esbuild
 produces committed runtime bundles.
