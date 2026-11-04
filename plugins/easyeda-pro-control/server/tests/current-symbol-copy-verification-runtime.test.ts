@@ -7,6 +7,7 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { canonicalJson, isRecord, sha256Json, sha256Text } from "../src/core.ts";
+import { nativeRuntimeReleaseRequestSchema, nativeRuntimeReleaseResultSchema } from "../src/native-runtime-release.ts";
 import { OriginalTerminalRuntimeRelease, assertOriginalTerminalRuntimeDisposal } from "../src/terminal-runtime-release.ts";
 import type { OriginalTerminalRuntimeDisposal } from "../src/terminal-runtime-release.ts";
 import type { WindowsControlRuntime } from "../src/windows-runtime.ts";
@@ -296,13 +297,19 @@ void test("verification refuses foreign journal replacement without close or ove
 });
 
 void test("completed symbol-copy verifier releases its original helper and issues one opaque disposal receipt", async () => {
-  const f = await fixture("none", "synthetic-symbol-copy-release-complete");
+  const operationId = "Synthetic-Symbol-Copy-Release-Complete";
+  const request = nativeRuntimeReleaseRequestSchema.parse({ action: "release-completed", kind: "symbol-copy", operationId,
+    confirmReleaseOriginalRuntime: true });
+  const f = await fixture("none", request.operationId);
   assert.equal(f.isDisposed(), false);
   await assert.rejects(f.releaseRuntime(), /fully completed original verification/u);
   await open(f); await f.invoke("collectSavedContent");
   await assert.rejects(f.releaseRuntime(), /fully completed original verification/u);
   await finish(f);
   const receipt = await f.releaseRuntime();
+  const result = nativeRuntimeReleaseResultSchema.parse({ schema: "easyeda-pro-control.native-runtime-release-result.v1",
+    requestedOperationId: request.operationId, kind: request.kind, disposal: receipt });
+  assert.equal(result.disposal.operationId, operationId);
   assert.equal(receipt["family"], "symbol-copy");
   assert.equal(receipt["helperReleaseAcknowledged"], true);
   assert.equal(f.isDisposed(), true);

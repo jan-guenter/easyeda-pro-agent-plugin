@@ -1114,7 +1114,7 @@ export class CurrentDisposableOpenCoordinator {
 
   private async beginBaseline(openingOperationId: string, input: unknown, sqlRuntime: MachineProfile["runtime"],
     purpose: BaselinePurpose): Promise<Value> {
-    const copyBaselineRequestSchema = z.object({ operationId: z.string().regex(/^[A-Za-z0-9._:-]{1,160}$/u),
+    const copyBaselineRequestSchema = z.object({ operationId: currentSymbolBaselineRequestSchema.shape.operationId,
       source: currentOwnedSymbolCopyRequestSchema, confirmNormalClose: z.literal(true) }).strict();
     const parsed = purpose === "disposable-symbol-copy" ? copyBaselineRequestSchema.parse(input) : currentSymbolBaselineRequestSchema.parse(input);
     const request = { operationId: parsed.operationId, preparation: "source" in parsed ? parsed.source : parsed.preparation };

@@ -202,6 +202,17 @@ function fixture(suffix: string): Fixture {
   const options: CurrentDisposableOpenOptions = { engine, runtime: () => runtime, assertOwner: () => { assert.equal(state.ownerLost, false, "fixture owner lost"); } };
   return { coordinator: new CurrentDisposableOpenCoordinator(options, services), input, state, calls, journals, artifacts, services, options };
 }
+
+void test("copy baseline parser preserves broad original keys before refusing an unowned transfer", async () => {
+  const value = fixture("copy-release-key-parser");
+  const sqlRuntime = { nodeExecutable: "/synthetic/not-invoked", nodeVersion: "24.18.0" as const, nodeSha256: HASH };
+  const source = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), symbolUuid: "c".repeat(16) };
+  for (const operationId of ["Upper.Copy:Baseline_1", "A", "A".repeat(160)]) {
+    await assert.rejects(value.coordinator.beginCopyBaseline(value.input.operationId,
+      { operationId, source, confirmNormalClose: true }, sqlRuntime), /cannot issue from injected opening services/u);
+  }
+  assert.deepEqual(value.calls, []);
+});
 function resultValue(value: Value): Value { const result = value["result"]; assert.ok(isRecord(result)); return result; }
 function dispatches(value: Fixture): string[] { return value.calls.filter((call) => call.startsWith("dispatch:")); }
 const RETIRE = { action: "retire-after-termination", confirmRetire: true, acceptUnknownFileEffects: true };

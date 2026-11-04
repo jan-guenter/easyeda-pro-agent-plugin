@@ -7,6 +7,7 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { canonicalJson, isRecord, sha256Json } from "../src/core.ts";
+import { nativeRuntimeReleaseRequestSchema } from "../src/native-runtime-release.ts";
 
 type Bag = Record<string, unknown>;
 function record(value: unknown): Bag { assert.ok(isRecord(value)); return value; }
@@ -108,6 +109,8 @@ void test("inverse owner requires the genuine predecessor and derives only the i
   assert.equal(source["purpose"], "disposable-validation");
   assert.equal(record(owner)["openingOperationId"], record(f.predecessor)["operationId"]);
   assert.equal(record(owner)["operationId"], `inverse-${sha256Json({ operationId: "original-forward", snapshot: "1".repeat(64) })}`);
+  assert.equal(nativeRuntimeReleaseRequestSchema.parse({ action: "settle-release-records", kind: "symbol-metadata",
+    operationId: record(owner)["operationId"] }).operationId, record(owner)["operationId"]);
   assert.equal(f.state.preparations, 1); assert.equal(f.state.stats, 1); assert.equal(f.state.transfers, 0);
   const request = f.requests[0]; assert.ok(request !== undefined);
   assert.deepEqual(request["patch"], { name: f.initial["name"], description: f.initial["description"] });

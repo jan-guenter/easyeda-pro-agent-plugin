@@ -55,6 +55,10 @@ from this original channel. These are code-derived capacity bounds, not measured
 native timings or permission to reset the shared counter. Keep the separate
 original cleanup reserve.
 
+The tool returns qualification hashes and flags, not raw source text. The
+complete source packet is retained in the managed `forward-prewrite-result.json`
+diagnostic journal. This action does not stream that source through MCP.
+
 The joined result is point-in-time qualification. It does not seal the source
 for a closed snapshot, prove current unlocked-head age or atomic prewrite
 queues, arm document clocks, prove backend publication or reserve the complete
