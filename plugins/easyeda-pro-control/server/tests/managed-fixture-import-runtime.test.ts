@@ -16,6 +16,7 @@ function fixture(id: string, lostReply = false, lostEnvironment = false, watchCh
   const launch = { jobId: "1".repeat(32), helperInstance: "2".repeat(32), root: { pid: 123, role: "easyeda-main" as const,
     startIdentity: `win32:123456789012345678:job:${"1".repeat(32)}` } };
   let originalJournal: TrackedDispatchOperationJournal | undefined;
+  const cleanupComplete = new Set<string>(), cleanupJournals = new Map<string, TrackedDispatchOperationJournal>();
   let publicationFailed = false;
   const engine: ManagedFixtureImportOptions["engine"] = {
     assertBridgeDispatchAllowed: () => { calls.push("guard"); return Promise.resolve(true); },
@@ -53,8 +54,15 @@ function fixture(id: string, lostReply = false, lostEnvironment = false, watchCh
     assertOriginalOwner: () => { calls.push("original-owner"); },
     runtime: { status: () => ({ state: "owned", launch, executableSha256: "3".repeat(64), reviewedExecutionScopeSha256: "4".repeat(64) }),
       observeLaunchTermination: () => Promise.resolve({ jobId: launch.jobId, helperInstance: launch.helperInstance, terminated: true }) },
-    cleanup: { retain: (journal) => { calls.push("retain-cleanup"); originalJournal = journal; }, inspect: () => ({ cleanupAvailable: true }),
-      run: () => Promise.resolve({ cleanupComplete: true }) },
+    cleanup: { retain: (journal) => { calls.push("retain-cleanup"); originalJournal = journal; cleanupJournals.set(journal.operationId, journal); },
+      inspect: (operation) => ({ cleanupAvailable: true, cleanupComplete: cleanupComplete.has(operation) }),
+      run: async (request) => {
+        if (request.action === "finish-cleanup") {
+          const journal = cleanupJournals.get(request.operationId); assert.ok(journal !== undefined);
+          journal.hardStop = false; journal.orphanedCallPossible = false; journal.state = "completed"; await updateOperation(journal); cleanupComplete.add(request.operationId);
+        }
+        return { cleanupComplete: cleanupComplete.has(request.operationId) };
+      } },
   }, { assertFingerprint: (input) => { assert.deepEqual(input, expected); }, verifySources: () => Promise.resolve(),
     writeArtifact: async (operation, sequence, phase, payload) => {
       const artifact = await writePhaseArtifact(operation, sequence, phase, payload);
@@ -87,9 +95,16 @@ void test("actual import coordinator stages a fresh archive, seals destination a
   const journal = await loadOperation("managed-import-runtime-success");
   assert.equal(journal["orphanedCallPossible"], false); assert.equal(journal["hardStop"], true); assert.equal(journal["saved"], false);
   assert.equal(value.owner.hasRetainedDestination(), true);
+  assert.equal(value.owner.hasActiveReservation(), true);
   await assert.rejects(value.owner.execute(value.request, value.expected)); assert.equal(value.calls.filter((call) => call === "import").length, 1);
   const released = await value.owner.execute({ action: "release-destination", operationId: "managed-import-runtime-success", confirmReleaseRetainedDirectory: true });
   assert.equal(released["destinationReleased"], true); assert.equal(released["filesDeleted"], false);
+  assert.equal(value.owner.hasActiveReservation(), true);
+  await assert.rejects(value.owner.execute({ action: "release-owner", operationId: "managed-import-runtime-success", confirmReleaseFixtureOwner: true }));
+  await value.owner.execute({ action: "finish-cleanup", operationId: "managed-import-runtime-success", cleanupNonce: "1".repeat(64) });
+  await value.owner.execute({ action: "release-owner", operationId: "managed-import-runtime-success", confirmReleaseFixtureOwner: true });
+  assert.equal(value.owner.hasActiveReservation(), false); assert.equal(value.owner.hasPendingWork(), false);
+  await assert.rejects(value.owner.execute(value.request, value.expected)); assert.equal(value.owner.hasActiveReservation(), false);
 });
 
 void test("ambiguous environment preserves its own original journal and cannot allocate a destination or importer", async () => {
@@ -97,6 +112,8 @@ void test("ambiguous environment preserves its own original journal and cannot a
   await assert.rejects(value.owner.execute(value.request, value.expected), /environment-ambiguous-environment/u);
   const result = await value.owner.execute({ action: "inspect", operationId: "managed-import-environment-ambiguous-environment" });
   assert.equal(result["phase"], "environment-ambiguous-or-refused"); assert.equal(value.owner.hasRetainedDestination(), false);
+  assert.equal(value.owner.hasPendingWork(), true);
+  await assert.rejects(value.owner.execute({ action: "release-owner", operationId: "managed-import-environment-ambiguous", confirmReleaseFixtureOwner: true }));
   const journal = await loadOperation("managed-import-environment-ambiguous-environment"); assert.equal(journal["orphanedCallPossible"], true);
   assert.equal(value.calls.includes("import"), false); await assert.rejects(value.owner.execute(value.request, value.expected));
 });
@@ -133,6 +150,7 @@ void test("lost local SDK evidence acknowledgments settle only retained exact ca
     const id = `managed-import-publication-${failure}`, value = fixture(id, false, false, false, failure);
     await assert.rejects(value.owner.execute(value.request, value.expected));
     const pending = value.owner.inspect(id); assert.equal(pending["publicationPending"], true);
+    assert.equal(value.owner.hasActiveReservation(), true);
     const calls = value.calls.filter((call) => call === "import").length; assert.equal(calls, 1);
     const settled = await value.owner.execute({ action: "settle-import-records", operationId: id });
     assert.equal(settled["publicationPending"], false); assert.equal(settled["importedFixtureAccepted"], false);

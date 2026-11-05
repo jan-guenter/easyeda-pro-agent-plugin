@@ -30,6 +30,7 @@ export const managedFixtureImportRequestSchema = z.discriminatedUnion("action", 
   z.object({ action: z.literal("finish-cleanup"), operationId, cleanupNonce: z.string().regex(/^[a-f0-9]{64}$/u) }).strict(),
   z.object({ action: z.literal("settle-cleanup-records"), operationId, cleanupNonce: z.string().regex(/^[a-f0-9]{64}$/u) }).strict(),
   z.object({ action: z.literal("settle-import-records"), operationId }).strict(),
+  z.object({ action: z.literal("release-owner"), operationId, confirmReleaseFixtureOwner: z.literal(true) }).strict(),
 ]);
 export type ManagedFixtureImportRequest = z.infer<typeof managedFixtureImportRequestSchema>;
 type Observation = z.infer<typeof managedFixtureImportJobObservationSchema>;
@@ -39,7 +40,7 @@ export const MANAGED_FIXTURE_IMPORT_DISPATCH_PHASE = "managed-fixture-import";
 export function queryManagedFixtureImport(input: unknown = {}): Record<string, unknown> {
   const request = z.object({ includeSchemas: z.boolean().default(false) }).strict().parse(input);
   return { tool: "easyeda_control_fixture_import", profile: MANAGED_FIXTURE_IMPORT_PROFILE,
-    actions: ["import-generated-fixture", "inspect", "settle-import-records", "inspect-destination", "request-cleanup-close", "observe-cleanup-termination", "finish-cleanup", "settle-cleanup-records", "release-destination"],
+    actions: ["import-generated-fixture", "inspect", "settle-import-records", "inspect-destination", "request-cleanup-close", "observe-cleanup-termination", "finish-cleanup", "settle-cleanup-records", "release-destination", "release-owner"],
     effect: "fresh-managed-disposable-native-import", nativeImportLiveValidation: "not-recorded", importedFixtureAccepted: false,
     retryAllowed: false, deletionAuthorized: false, designExecutionAuthorized: false,
     limitations: ["Requires the same original ordinary 209 launch, exact empty StartPage, current SDK/UI/manager/main pins and authenticated tracked dispatch.",
@@ -118,6 +119,10 @@ export class ManagedFixtureImportCoordinator {
   private environmentObservation: z.infer<typeof managedFixtureEnvironmentObservationSchema> | undefined;
   private pendingPublication: PendingPublication | undefined;
   private readonly refusedBeforeDispatch = new Set<TrackedDispatchOperationJournal>();
+  private reservation: "reserved" | "released" = "reserved";
+  private busy = false;
+  private attemptedOperationId: string | undefined;
+  private lastNativeJournal: TrackedDispatchOperationJournal | undefined;
   private destination: ReturnType<NonNullable<ManagedFixtureImportDependencies["destination"]>> | undefined;
   private destinationReleased = false;
   private migrationExclusionVerified = false;
@@ -197,6 +202,7 @@ export class ManagedFixtureImportCoordinator {
       operation: structuredClone(operation), sdkObservation: this.observation, destination: this.destinationObservation,
       environment: this.environmentObservation, environmentOperationId: this.environmentOperation?.operationId,
       publicationPending: this.pendingPublication?.operation.operationId === id, originalJournalRetained: true,
+      ownerReservation: this.reservation, operationInFlight: this.busy,
       destinationReleased: this.destinationReleased, lastError: this.error,
       libraryMigrationExcluded: this.migrationExclusionVerified,
       nativeImportMayHaveBeenDispatched: operation.mutationMayHaveOccurred, retryAllowed: false, filesDeleted: false,
@@ -214,6 +220,13 @@ export class ManagedFixtureImportCoordinator {
     return operation;
   }
   public hasRetainedDestination(): boolean { return this.destination !== undefined && !this.destinationReleased; }
+  /** Synchronous monotonic index custody. True from construction through every
+   * preflight/import Promise, ambiguous return, publication and directory/watch
+   * release. Only explicit release-owner after original cleanup can turn it
+   * false. It does not reconstruct a Promise from persisted journal state.
+   */
+  public hasActiveReservation(): boolean { return this.reservation === "reserved" || this.busy; }
+  public hasPendingWork(): boolean { return this.hasActiveReservation(); }
   private async observeEnvironment(id: string, fingerprint: Record<string, unknown>): Promise<z.infer<typeof managedFixtureEnvironmentObservationSchema>> {
     const environmentId = `${id}-environment`; const body = buildManagedFixtureEnvironmentProgram();
     const code = `const value=await(async()=>{${body}})();const json=JSON.stringify(value);return {schema:'easyeda-pro-control.exact-json.v1',utf8Bytes:new TextEncoder().encode(json).byteLength,json};`;
@@ -235,7 +248,7 @@ export class ManagedFixtureImportCoordinator {
       await this.change({ mutationMayHaveOccurred: true, mutationState: "profile-config-get-intent" });
       this.options.cleanup.retain(journal); this.current();
       await this.checked(() => this.options.engine.dispatchWithOrphanTracking(journal, MANAGED_FIXTURE_IMPORT_DISPATCH_PHASE, "easyeda_execute", { code, timeoutMs: 60_000, confirmWrite: true }, 70_000,
-        async () => { await revalidate(); await this.checked(() => (this.dependencies.verifySources ?? verifyManagedFixtureImportSources)(this.options.assetsRoot)); await revalidate(); },
+        async () => { await revalidate(); await this.checked(() => (this.dependencies.verifySources ?? verifyManagedFixtureImportSources)(this.options.assetsRoot)); await revalidate(); this.lastNativeJournal = journal; },
         async (raw) => {
           this.current(); const envelope = extractToolPayload(raw);
           if (Buffer.byteLength(JSON.stringify(envelope), "utf8") > 32_768) { throw new Error("Fixture environment response exceeds its bounded exact transport."); }
@@ -254,7 +267,29 @@ export class ManagedFixtureImportCoordinator {
   public async execute(input: unknown, expectedFingerprint?: Record<string, unknown>): Promise<Record<string, unknown>> {
     const request = managedFixtureImportRequestSchema.parse(input);
     if (request.action === "inspect") { return this.inspect(request.operationId); }
+    if (this.busy || this.reservation !== "reserved") { throw new Error("Fixture owner is busy or its original reservation has been released."); }
+    if (request.action === "import-generated-fixture") {
+      if (this.attemptedOperationId !== undefined) { throw new Error("Original fixture import attempt cannot be repeated or replaced."); }
+      this.attemptedOperationId = request.operationId;
+    }
+    this.busy = true; try { return await this.run(request, expectedFingerprint); } finally { this.busy = false; }
+  }
+  private async run(input: unknown, expectedFingerprint?: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const request = managedFixtureImportRequestSchema.parse(input);
+    if (request.action === "inspect") { return this.inspect(request.operationId); }
     this.current();
+    if (request.action === "release-owner") {
+      if (request.operationId !== this.attemptedOperationId || this.pendingPublication !== undefined || this.hasRetainedDestination() || this.refusedBeforeDispatch.size > 0 ||
+          [this.operation, this.environmentOperation].some((journal) => journal !== undefined && (journal.orphanedCallPossible || journal.hardStop)) ||
+          this.lastNativeJournal !== undefined && this.options.cleanup.inspect(this.lastNativeJournal.operationId)["cleanupComplete"] !== true) {
+        throw new Error("Fixture reservation requires its original settled publication, root/Job/session cleanup and released destination before owner release.");
+      }
+      this.reservation = "released";
+      return { schema: "easyeda-pro-control.managed-fixture-owner-released.v1", operationId: request.operationId,
+        originalReservationReleased: true, nativeDispatcherEntered: this.lastNativeJournal !== undefined,
+        originalCleanupRequiredAndCompleted: this.lastNativeJournal !== undefined, filesDeleted: false, importedFixtureAccepted: false,
+        registrationVerified: false, closedSqlVerified: false, designExecutionAuthorized: false, retryAllowed: false };
+    }
     if (request.action === "settle-import-records") {
       const original = this.originalJournalForCleanup(request.operationId);
       if (this.pendingPublication !== undefined && this.pendingPublication.operation !== original) { throw new Error("Pending fixture publication belongs to a different original operation."); }
@@ -351,6 +386,7 @@ export class ManagedFixtureImportCoordinator {
           if (this.destinationObservation.entries.length > 0) { throw new Error("Managed fixture destination changed before the sole import dispatch."); }
           await revalidate();
           nativeDispatcherEntered = true;
+          this.lastNativeJournal = operation;
         },
         async (raw) => {
           this.current(); const envelope = extractToolPayload(raw);

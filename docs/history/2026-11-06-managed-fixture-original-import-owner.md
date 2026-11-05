@@ -104,8 +104,17 @@ call. Local record settlement performs no native dispatch. The four cleanup acti
 dispatch scopes, as required by the existing cleanup owner. Destination
 inspection/release is original local helper I/O; release must precede ordinary
 runtime/helper release. Native allocations and controller retirement must refuse
-while this owner retains a destination/helper/watch, including after failed
-allocation or dispatch. Do not recreate one from operation JSON.
+while `hasActiveReservation()` (or its conservative `hasPendingWork()` alias)
+is true. This synchronous observer starts true at construction and covers
+environment/import Promises, ambiguous returns, publication and directory/watch
+release. `hasRetainedDestination()` alone is insufficient before allocation or
+after directory release. Only explicit `release-owner` can end the monotonic
+reservation: no pending record, no retained directory, no unresolved journal,
+and the last actual dispatcher must have completed its own original cleanup.
+A refused attempt before any native dispatcher may release its local reservation
+without claiming native cleanup. Owner release accepts no files or effects and
+does not permit reusing this coordinator. It must precede ordinary runtime/helper
+release. Do not recreate an owner from operation JSON.
 
 This branch avoids central index/generated bundle/coverage/compatibility writes
 to permit the parent integration to join its other original-launch changes.
