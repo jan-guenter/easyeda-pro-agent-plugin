@@ -9,12 +9,13 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintForwardPrewriteLifecycle, CurrentFootprintMainLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209WorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintForwardPrewriteLifecycle, CurrentFootprintMainLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbSpatialLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
 import { currentPcbDiagnosticToolRequestSchema } from "../src/current-pcb-diagnostic-validation.ts";
 import { currentPcb209OpeningRequestSchema } from "../src/current-pcb-209-opening-validation.ts";
 import { currentPcb209VisualRequestSchema } from "../src/current-pcb-209-visual-validation.ts";
+import { currentPcbSpatialRequestSchema } from "../src/current-pcb-spatial-validation.ts";
 import { sha256Text } from "../src/core.ts";
 import { currentPcb209WorkerStartupToolRequestSchema } from "../src/current-pcb-209-empty-startup-validation.ts";
 import { facadeToolRegistered } from "../src/facade-mode.ts";
@@ -58,9 +59,9 @@ void test("209 public opening and startup callbacks select original lifecycles a
       checks += 1; if (blocked) { throw new Error("synthetic unresolved engine journal"); }
       if (pendingAdmission !== undefined) { await pendingAdmission; }
     } };
-  const scope = vm.createContext({ z, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupToolRequestSchema,
+  const scope = vm.createContext({ z, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupToolRequestSchema,
     CURRENT_PCB_DIAGNOSTIC_PROFILE, CurrentPcb209DiagnosticLifecycle: Selected209Lifecycle,
-    CurrentPcb209VisualLifecycle: Selected209VisualLifecycle,
+    CurrentPcb209VisualLifecycle: Selected209VisualLifecycle, CurrentPcbSpatialLifecycle,
     CurrentPcb209WorkerStartupLifecycle: Selected209StartupLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle,
     CurrentFootprintMainLifecycle, CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintForwardPrewriteLifecycle,
     CurrentPcbDiagnosticLifecycle: forbiddenLegacyLifecycle, CurrentPcbWorkerStartupLifecycle: forbiddenLegacyLifecycle,

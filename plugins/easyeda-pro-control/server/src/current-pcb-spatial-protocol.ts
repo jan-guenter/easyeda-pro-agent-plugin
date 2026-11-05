@@ -40,9 +40,13 @@ const schema = z.discriminatedUnion("spatialPhase", [
   z.strictObject({ spatialPhase: z.literal("release"), method: z.literal("Runtime.releaseObjectGroup"), params: releaseParams }),
 ]);
 export type CurrentPcbSpatialWireCommand = CurrentPcbSpatialCaptureCommand & Readonly<{ id: number; sessionId: string }>;
+/** Admit only the fixed programs, selectors and effect flags after inert input
+ * Capture. Validation supplies no native session or execution authority. */
 export function validateCurrentPcbSpatialCommand(input: unknown): CurrentPcbSpatialCaptureCommand {
   return freezeDeep(schema.parse(captureCurrentPcbSpatialCommand(input)));
 }
+/** Encode the closed native field vocabulary for one original session request.
+ * Normal work cannot consume the final request reserved for group release. */
 export function currentPcbSpatialWire(input: unknown, id: number, sessionId: string): Readonly<{
   command: CurrentPcbSpatialWireCommand; request: Readonly<Record<string, unknown>>;
 }> {

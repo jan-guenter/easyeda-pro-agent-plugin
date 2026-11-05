@@ -68,10 +68,12 @@ export interface CurrentPcbSpatialCaptureObservation {
   readonly saveAuthorized: false;
 }
 function refuse(): never { throw new Error("PCB_SPATIAL_CAPTURE"); }
+/** Bound an opaque original inspector identifier without resolving or adopting it. */
 function token(value: string): string {
   if (!/^[A-Za-z\d_.:-]{1,256}$/u.test(value)) { return refuse(); }
   return value;
 }
+/** Copy an exact own-data envelope without getters, proxies or inherited fields. */
 function record(input: unknown, keys: readonly string[]): Record<string, unknown> {
   if (input === null || typeof input !== "object" || types.isProxy(input) || Array.isArray(input)) { return refuse(); }
   const actual = Reflect.ownKeys(input), prototype: unknown = Object.getPrototypeOf(input);
@@ -85,6 +87,8 @@ function record(input: unknown, keys: readonly string[]): Record<string, unknown
   }
   return copy;
 }
+/** Decode the fixed private binding-container handle. Its Object label alone
+ * Proves no source identity; the runner separately qualifies its fixed callees. */
 function bundleHandle(input: unknown): string {
   const outer = record(input, ["result"]), remote = record(outer["result"], ["type", "className", "description", "objectId"]);
   if (remote["type"] !== "object" || remote["className"] !== "Object" || remote["description"] !== "Object" ||
@@ -103,6 +107,8 @@ export class CurrentPcbSpatialCaptureRunner {
   readonly #contextId: string;
   readonly #documentUuid: string;
   #consumed = false;
+  /** Retain the original receiver and callbacks with their admitted context.
+   * Construction sends no request and cannot reconstruct an original owner. */
   public constructor(transport: CurrentPcbSpatialCaptureTransport, scriptId: string, uniqueContextId: string, documentUuid: string) {
     this.#transport = transport;
     this.#requestCallback = transport.request; this.#assertCallback = transport.assertCurrent;
@@ -110,11 +116,14 @@ export class CurrentPcbSpatialCaptureRunner {
     if (!/^(?:[a-f\d]{16}|[a-f\d]{32})$/u.test(documentUuid)) { refuse(); }
     this.#documentUuid = documentUuid;
   }
+  /** Recheck callback identity before and after the original context assertion. */
   #current(): void {
     if (this.#transport.request !== this.#requestCallback || this.#transport.assertCurrent !== this.#assertCallback) { refuse(); }
     this.#assertCallback.call(this.#transport);
     if (this.#transport.request !== this.#requestCallback || this.#transport.assertCurrent !== this.#assertCallback) { refuse(); }
   }
+  /** Dispatch through the original receiver, decode before hooks can change
+   * Reply aliases, then reprove the same retained context after the await. */
   async #request<T>(command: CurrentPcbSpatialCaptureCommand, decode: (input: unknown) => T): Promise<T> {
     this.#current();
     const arrived = await this.#requestCallback.call(this.#transport, freezeDeep(command));
@@ -122,11 +131,16 @@ export class CurrentPcbSpatialCaptureRunner {
     const result = decode(arrived);
     this.#current(); return result;
   }
+  /** Read only own descriptors of an original group handle through the same
+   * Guarded request path; no getter or new target is selected. */
   #properties<T>(objectId: string, decode: (input: unknown) => T): Promise<T> {
     return this.#request({ spatialPhase: "properties", method: "Runtime.getProperties", params: {
       objectId: token(objectId), ownProperties: true, accessorPropertiesOnly: false, generatePreview: false,
     } }, decode);
   }
+  /** Consume capture once and retain all handles inside its original group.
+   * After any started attempt, release uses the original callback even on drift;
+   * Capture, consume, release or final-context failures all withhold the result. */
   async #run<T>(consume: (bundle: string) => Promise<T>, qualify: boolean): Promise<T> {
     if (this.#consumed) { return refuse(); }
     this.#consumed = true;

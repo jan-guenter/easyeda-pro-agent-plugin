@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- Exact startup wire cases, independent build compaction and the separate shared-source ceiling must be checked together; their runtime limits remain distinct. */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -9,7 +10,7 @@ import { currentFootprintCopyDependencyNativeCases, currentFootprintCopyProducer
 import { currentFootprintCopyPreparationWire, currentPcb209RatlineWorkerStartupWire, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
 import { CURRENT_PCB_209_RATLINE_OPENING_FUNCTION } from "../src/current-pcb-209-ratline-opening-program.ts";
 import { CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION, CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION, currentPcbWorkerStartupUiActorCommand } from "../src/current-pcb-worker-startup-actor.ts";
-// oxlint-disable-next-line import/max-dependencies -- The independent build compactor supplements the existing exact native cases and wire/purpose guards.
+import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES } from "../src/current-pcb-diagnostic-helper-source-profile.ts";
 import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS } from "../src/current-pcb-worker-startup-channel-observation.ts";
 
 const samples = currentPcbWorkerStartupNativeCases();
@@ -196,7 +197,9 @@ void test("native 209 launch fixes its encoder without a caller generation field
   assert.ok(native.includes("[EasyedaWorkerStartupProtocol]::Verify209Smoke()"));
   assert.ok(native.includes('owner.RequestLimit!=256 || owner.nextRequest!=1'));
   assert.ok(native.includes('fields.Add("generation","209");bool extra=false;'));
-  assert.ok(Buffer.byteLength(native) < 1_048_576);
+  // Keep the shared source-artifact ceiling separate from startup command bounds.
+  // The unchanged fixed request bytes are checked separately above.
+  assert.ok(Buffer.byteLength(native) < CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES);
 });
 
 void test("startup compile-only packing retains every legacy,209 and parent expected command byte", () => {

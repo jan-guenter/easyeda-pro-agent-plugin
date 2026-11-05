@@ -12,7 +12,7 @@ import { sha256Text } from "../src/core.ts";
 import { currentFootprintForwardNativeOutputs, currentFootprintForwardNativePins, currentFootprintForwardNativeSmoke } from "../src/current-footprint-forward-native-graph-source.ts";
 import { CURRENT_FOOTPRINT_FORWARD_NATIVE_GRAPH as GRAPH } from "../src/current-footprint-forward-native-graph-pins.ts";
 import { CURRENT_FOOTPRINT_FORWARD_NATIVE_GRAPH_LIMITS as LIMITS } from "../src/current-footprint-forward-native-limits.ts";
-import { FORWARD_NATIVE_CURRENT_SHARED_HELPER, FORWARD_NATIVE_LEGACY, FORWARD_NATIVE_PREDECESSOR,
+import { FORWARD_NATIVE_LEGACY, FORWARD_NATIVE_NUMERIC_SPATIAL_SHARED_HELPER, FORWARD_NATIVE_PREDECESSOR,
   migrateForwardNativePredecessor, normalizeForwardNativeLegacySource } from "../src/current-footprint-forward-native-migration.ts";
 import { captureCurrentFootprintForwardNativeGraph } from "../src/current-footprint-forward-native-graph.ts";
 import { currentFootprintCopyClockRegistrationV2NativeCases } from "../src/current-footprint-copy-clock-registration-v2-native.ts";
@@ -21,7 +21,7 @@ import { currentFootprintCopyClockRpcV2NativeCases } from "../src/current-footpr
 
 void test("the exact current helper preserves all released forward graph bytes through a separately pinned spatial projection", async () => {
   const shared = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
-  assert.equal(Buffer.byteLength(shared), FORWARD_NATIVE_CURRENT_SHARED_HELPER.bytes); assert.equal(sha256Text(shared), FORWARD_NATIVE_CURRENT_SHARED_HELPER.sha256);
+  assert.equal(Buffer.byteLength(shared), FORWARD_NATIVE_NUMERIC_SPATIAL_SHARED_HELPER.bytes); assert.equal(sha256Text(shared), FORWARD_NATIVE_NUMERIC_SPATIAL_SHARED_HELPER.sha256);
   const legacy = normalizeForwardNativeLegacySource(shared);
   assert.equal(Buffer.byteLength(legacy), FORWARD_NATIVE_LEGACY.bytes); assert.equal(sha256Text(legacy), FORWARD_NATIVE_LEGACY.sha256);
   assert.equal(normalizeForwardNativeLegacySource(legacy), legacy);
@@ -65,8 +65,9 @@ void test("the exact current helper preserves all released forward graph bytes t
 void test("altered spatial additions and unknown same-size or extended shared source refuse before released migration", async () => {
   const shared = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   const changedLimit = shared.replace("spatial209?384:", "spatial209?385:");
-  const changedPurpose = shared.replace("pcb-spatial209", "pcb-spatial20x");
-  assert.notEqual(changedLimit, shared); assert.notEqual(changedPurpose, shared);
+  const changedPurpose = shared.replace("Spatial209Birth.SourceQualified", "Spatial209Birth.SourceQualifieX");
+  assert.ok(changedLimit !== shared, "The fixed-limit mutation must change the fixture.");
+  assert.ok(changedPurpose !== shared, "The private birth mutation must change the fixture.");
   for (const altered of [changedLimit, changedPurpose, `${shared}\n`, `${shared.slice(0, -1)}!`]) {
     assert.throws(() => normalizeForwardNativeLegacySource(altered), /FORWARD_NATIVE_LEGACY_SOURCE/u);
     assert.throws(() => currentFootprintForwardNativeOutputs(altered), /FORWARD_NATIVE_LEGACY_SOURCE/u);

@@ -26,6 +26,8 @@ function refuse(): never { throw new Error("PCB_SPATIAL_FUNCTION_SCOPE"); }
  * or proxy traps. The native transport still owns raw JSON duplicate detection.
  */
 function data(input: unknown): unknown { return copyData(input, 0, { nodes: 0, bytes: 0 }); }
+/** Rebuild only dense arrays and plain data under the shared reply budget.
+ * Accessor descriptors and proxy objects refuse before lexical-scope parsing. */
 function copyData(input: unknown, depth: number, budget: { nodes: number; bytes: number }): unknown {
   budget.nodes += 1;
   if (depth > 10 || budget.nodes > 2048) { return refuse(); }

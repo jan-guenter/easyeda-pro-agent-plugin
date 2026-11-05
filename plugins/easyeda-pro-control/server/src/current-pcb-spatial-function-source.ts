@@ -54,6 +54,8 @@ function refuse(): never { throw new Error("PCB_SPATIAL_FUNCTION_SOURCE"); }
  * independently bounds and rejects duplicate keys in the raw protocol JSON.
  */
 function data(input: unknown): unknown { return copy(input, 0, { nodes: 0, bytes: 0 }); }
+/** Rebuild dense arrays and plain own data within one shared depth/node/byte
+ * Budget. Accessors, proxies and malformed strings refuse before schema reads. */
 function copy(input: unknown, depth: number, budget: { nodes: number; bytes: number }): unknown {
   budget.nodes += 1;
   if (depth > 12 || budget.nodes > 32_768) { return refuse(); }
@@ -85,14 +87,19 @@ function copy(input: unknown, depth: number, budget: { nodes: number; bytes: num
   return array ? items : result;
 }
 
+/** Require the fixed catalog to remain nonempty, bounded and uniquely keyed.
+ * A caller cannot replace this module-owned source qualification roster. */
 function profiles(): readonly Profile[] {
   const selected: readonly Profile[] = CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES;
   if (selected.length === 0 || selected.length > MAX_FUNCTIONS || new Set(selected.map(item => item.key)).size !== selected.length) { return refuse(); }
   return selected;
 }
+/** Resolve one key only within the fixed catalog; unknown callees refuse. */
 function profile(key: CurrentPcbSpatialFunctionSourceKey): Profile {
   return profiles().find(item => item.key === key) ?? refuse();
 }
+/** Check the complete V8 description's kind, UTF-16 extent, UTF-8 bytes and
+ * Digest. The returned handle still needs its independent script/location check. */
 function source(value: Remote, expected: Profile): string {
   if (value.type !== "function" || value.className !== expected.className || value.subtype !== undefined ||
       value.value !== undefined || value.unserializableValue !== undefined || value.objectId === undefined ||
@@ -101,14 +108,19 @@ function source(value: Remote, expected: Profile): string {
       createHash("sha256").update(value.description).digest("hex") !== expected.sourceSha256) { return refuse(); }
   return value.objectId;
 }
+/** Require a non-value remote reference of the expected inspector shape.
+ * A matching display label supplies no callable or original-owner authority. */
 function referenced(value: Remote, type: "object" | "function", className: string): void {
   if (value.type !== type || value.className !== className || value.objectId === undefined ||
       value.value !== undefined || value.unserializableValue !== undefined) { refuse(); }
 }
+/** Require an ordinary nonsymbol data descriptor without invoking its value. */
 function ordinary(item: z.infer<typeof property> | undefined): DataProperty {
   if (item === undefined || !("value" in item) || item.symbol !== undefined) { return refuse(); }
   return item;
 }
+/** Match the fixed own name/arity descriptor, including its immutable value and
+ * Exact flags, rather than accepting a getter or substituted remote handle. */
 function scalar(item: DataProperty, type: "string" | "number", value: string | number): void {
   if (item.writable || !item.configurable || item.enumerable || item.value.type !== type || item.value.value !== value ||
       Object.is(item.value.value, -0) || item.value.objectId !== undefined || item.value.className !== undefined ||

@@ -175,3 +175,23 @@ synthetic offline catalog budget from 76 to 79 queries for its three new
 spatial discovery/validation calls. Earlier check outcomes remain retained; the
 final frozen package will be checked separately. No connected spatial result,
 publication or installation is claimed by these local checks.
+
+## Connected-fixture feasibility
+
+The retained registered disposable PCB contains Line, Via, Component, Pad and
+Attribute objects. It cannot produce a positive result from the strict Via-only
+whole-index reader. An initial planning note misread JSON-escaped path
+separators; a direct Node code-unit check confirms that the exact historical
+raw path passes both the target schema and host checkpoint resolver. No path
+compatibility change is needed. The incorrect expectation and correction are
+retained privately. A negative native refusal check is feasible on this fixture;
+it cannot establish positive Via-only query support.
+
+No maintained Via-only fixture creation, project clone/registration or Via
+creation lifecycle is currently available. Generic project creation awaits
+executor validation; PCB creation still needs debounced project-structure
+completion. A checkpoint copy preserves the mixed scene and cannot solve that
+gap. Positive connected spatial validation therefore remains pending for a
+concrete fixture reason. The next fixture work must supply an explicitly
+disposable Via-only PCB through a reviewed creation lifecycle. No path guard,
+fixture, general writer or ordinary-project scope was changed to force a pass.

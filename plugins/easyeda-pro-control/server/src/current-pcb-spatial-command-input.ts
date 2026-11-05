@@ -3,8 +3,11 @@
 import { types } from "node:util";
 
 function refuse(): never { throw new Error("PCB_SPATIAL_COMMAND_INPUT"); }
+/** Snapshot a bounded command using own data descriptors before schema parsing.
+ * Proxy objects and accessor-backed fields cannot execute during this capture. */
 export function captureCurrentPcbSpatialCommand(input: unknown): unknown {
   const seen = new Set<object>(); let nodes = 0;
+  /** Rebuild only bounded JSON-shaped data while sharing the outer node budget. */
   function copy(value: unknown, depth: number): unknown {
     nodes += 1;
     if (nodes > 128 || depth > 8) { return refuse(); }
@@ -13,6 +16,7 @@ export function captureCurrentPcbSpatialCommand(input: unknown): unknown {
     if (typeof value === "number") { if (!Number.isFinite(value) || Object.is(value, -0)) { return refuse(); } return value; }
     if (typeof value !== "object" || types.isProxy(value) || seen.has(value)) { return refuse(); }
     seen.add(value);
+    /** Read a field descriptor without invoking a supplied getter. */
     const read = (key: string): unknown => {
       const field = Object.getOwnPropertyDescriptor(value, key);
       if (field === undefined || !Object.hasOwn(field, "value") || field.enumerable !== true) { return refuse(); }

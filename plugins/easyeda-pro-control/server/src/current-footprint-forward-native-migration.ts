@@ -7,6 +7,35 @@ export const FORWARD_NATIVE_PREDECESSOR = Object.freeze({ bytes: 1_046_915, sha2
 /** Exact later shared helper. Its separate spatial birth is not part of the
  * released forward-only graph and grants no upgrade to that graph's purpose. */
 export const FORWARD_NATIVE_CURRENT_SHARED_HELPER = Object.freeze({ bytes: 1_097_306, sha256: "6ec843c4d7b40dde941b2b01691536ce8a944a4a8c33fc121bc3b418d508743a" });
+/** Distinct spatial constructor type fixes the C# string-overload collision.
+ * The preceding exact shared-helper input remains a separately retained shape. */
+export const FORWARD_NATIVE_TYPED_SPATIAL_SHARED_HELPER = Object.freeze({ bytes: 1_097_388, sha256: "c5124f154b7c111e71cb2ff956a5371cc1d4aef8bdf14ac74d6a062bf5ec134f" });
+/** PowerShell decimal/G17 correction has a separate exact input identity. */
+export const FORWARD_NATIVE_NUMERIC_SPATIAL_SHARED_HELPER = Object.freeze({ bytes: 1_099_788, sha256: "a45801f6f5053d966ac738f824c83e49759f45a165bc3b2fe963f0d9039346f8" });
+/** Exact numeric-decoder/serialization correction, normalized only after
+ * admission of its independent complete helper pin. */
+const numericSpatialProjection = [
+  {
+    "before": "    object value=fields[key];if(!(value is int)&&!(value is long)&&!(value is double)&&!(value is decimal))throw Error(\"spatial209-number\");\n",
+    "after": "    object value=fields[key];if(!(value is int)&&!(value is long)&&!(value is double))throw Error(\"spatial209-number\");\n"
+  },
+  {
+    "before": "      return \"{\\\"kind\\\":\\\"point\\\",\\\"xMil\\\":\"+SpatialNumber(fields,\"xMil\").ToString(\"G17\",CultureInfo.InvariantCulture)+\",\\\"yMil\\\":\"+SpatialNumber(fields,\"yMil\").ToString(\"G17\",CultureInfo.InvariantCulture)+\"}\";\n",
+    "after": "      return \"{\\\"kind\\\":\\\"point\\\",\\\"xMil\\\":\"+SpatialNumber(fields,\"xMil\").ToString(\"R\",CultureInfo.InvariantCulture)+\",\\\"yMil\\\":\"+SpatialNumber(fields,\"yMil\").ToString(\"R\",CultureInfo.InvariantCulture)+\"}\";\n"
+  },
+  {
+    "before": "    return \"{\\\"kind\\\":\\\"region\\\",\\\"mode\\\":\"+JsonString(mode)+\",\\\"leftMil\\\":\"+left.ToString(\"G17\",CultureInfo.InvariantCulture)+\",\\\"rightMil\\\":\"+right.ToString(\"G17\",CultureInfo.InvariantCulture)+\",\\\"bottomMil\\\":\"+bottom.ToString(\"G17\",CultureInfo.InvariantCulture)+\",\\\"topMil\\\":\"+top.ToString(\"G17\",CultureInfo.InvariantCulture)+\"}\";\n",
+    "after": "    return \"{\\\"kind\\\":\\\"region\\\",\\\"mode\\\":\"+JsonString(mode)+\",\\\"leftMil\\\":\"+left.ToString(\"R\",CultureInfo.InvariantCulture)+\",\\\"rightMil\\\":\"+right.ToString(\"R\",CultureInfo.InvariantCulture)+\",\\\"bottomMil\\\":\"+bottom.ToString(\"R\",CultureInfo.InvariantCulture)+\",\\\"topMil\\\":\"+top.ToString(\"R\",CultureInfo.InvariantCulture)+\"}\";\n"
+  },
+  {
+    "before": "    fields[\"xMil\"]=0.1m;fields[\"yMil\"]=-0.25m;\n    Spatial209ProtocolMessage(383,\"Runtime.callFunctionOn\",\"s\",\"read\",fields);\n",
+    "after": ""
+  },
+  {
+    "before": "    # BEGIN GENERATED PCB209 SPATIAL NUMBER SMOKE\n    # Exercise the actual PowerShell5.1 JSON decoder and .NET numeric binder.\n    # Decimal fractions remain numbers; all six coordinates round-trip as doubles.\n    foreach ($spatialNumberSmokeJson in @(\n      '{\"queryKind\":\"point\",\"xMil\":0.1,\"yMil\":0.84551240822557006}',\n      '{\"queryKind\":\"region\",\"queryMode\":\"intersects\",\"leftMil\":-0.1,\"rightMil\":0.1,\"bottomMil\":-0.84551240822557006,\"topMil\":0.84551240822557006}'\n    )) {\n      $spatialNumberSmokeRequest=ConvertFrom-Json -InputObject $spatialNumberSmokeJson\n      $spatialNumberSmokeFields=New-Object 'System.Collections.Hashtable' ([StringComparer]::Ordinal)\n      $spatialNumberSmokeFields.Add('objectId','original-bundle')\n      foreach ($property in $spatialNumberSmokeRequest.PSObject.Properties) {$spatialNumberSmokeFields.Add($property.Name,$property.Value)}\n      $spatialNumberSmokeMessage=[EasyedaDiagnosticOwner]::Spatial209ProtocolMessage(383,'Runtime.callFunctionOn','s','read',$spatialNumberSmokeFields)\n      if ($spatialNumberSmokeMessage[$spatialNumberSmokeMessage.Length-1] -ne [char]0) {throw 'pcb-diagnostic-spatial209-number-smoke-envelope'}\n      $spatialNumberSmokeDecoded=ConvertFrom-Json -InputObject $spatialNumberSmokeMessage.Substring(0,$spatialNumberSmokeMessage.Length-1)\n      $spatialNumberSmokeQuery=$spatialNumberSmokeDecoded.params.arguments[0].value\n      if ($spatialNumberSmokeQuery.kind -cne $spatialNumberSmokeRequest.queryKind) {throw 'pcb-diagnostic-spatial209-number-smoke-kind'}\n      foreach ($field in @('xMil','yMil','leftMil','rightMil','bottomMil','topMil')) {\n        if ($null -ne $spatialNumberSmokeRequest.PSObject.Properties[$field]) {\n          $spatialNumberSmokeBefore=[Convert]::ToDouble($spatialNumberSmokeRequest.$field,[Globalization.CultureInfo]::InvariantCulture)\n          $spatialNumberSmokeAfter=[Convert]::ToDouble($spatialNumberSmokeQuery.$field,[Globalization.CultureInfo]::InvariantCulture)\n          if ([BitConverter]::DoubleToInt64Bits($spatialNumberSmokeBefore) -ne [BitConverter]::DoubleToInt64Bits($spatialNumberSmokeAfter)) {throw 'pcb-diagnostic-spatial209-number-smoke-roundtrip'}\n        }\n      }\n    }\n    # END GENERATED PCB209 SPATIAL NUMBER SMOKE\n",
+    "after": ""
+  }
+] as const;
 /** Exact reviewed spatial-only source projection. These build-time strings
  * are not runtime commands or a generic removal rule. */
 const sharedSpatialProjection = [
@@ -188,10 +217,29 @@ const hash = (value: string): string => createHash("sha256").update(value).diges
  * source, changed additions and every collateral byte still fail closed. */
 export function normalizeForwardNativeLegacySource(input: string): string {
   if (Buffer.byteLength(input) === FORWARD_NATIVE_LEGACY.bytes && hash(input) === FORWARD_NATIVE_LEGACY.sha256) { return input; }
-  if (Buffer.byteLength(input) !== FORWARD_NATIVE_CURRENT_SHARED_HELPER.bytes || hash(input) !== FORWARD_NATIVE_CURRENT_SHARED_HELPER.sha256) {
+  let reviewed = input;
+  if (Buffer.byteLength(reviewed) === FORWARD_NATIVE_NUMERIC_SPATIAL_SHARED_HELPER.bytes && hash(reviewed) === FORWARD_NATIVE_NUMERIC_SPATIAL_SHARED_HELPER.sha256) {
+    for (const [index, projection] of numericSpatialProjection.entries()) {
+      if (reviewed.split(projection.before).length !== 2) { throw new Error(`FORWARD_NATIVE_NUMERIC_SPATIAL_PROJECTION_${String(index)}`); }
+      reviewed = reviewed.replace(projection.before, projection.after);
+    }
+    if (Buffer.byteLength(reviewed) !== FORWARD_NATIVE_TYPED_SPATIAL_SHARED_HELPER.bytes || hash(reviewed) !== FORWARD_NATIVE_TYPED_SPATIAL_SHARED_HELPER.sha256) {
+      throw new Error("FORWARD_NATIVE_NUMERIC_TYPED_PROOF");
+    }
+  }
+  if (Buffer.byteLength(reviewed) === FORWARD_NATIVE_TYPED_SPATIAL_SHARED_HELPER.bytes && hash(reviewed) === FORWARD_NATIVE_TYPED_SPATIAL_SHARED_HELPER.sha256) {
+    const before = '  enum Spatial209Birth { SourceQualified }\n' +
+      '  EasyedaDiagnosticOwner(Spatial209Birth purpose) { if(purpose!=Spatial209Birth.SourceQualified)throw Error("spatial209-birth");spatial209=true; }\n' +
+      '  public static EasyedaDiagnosticOwner CreateSpatial209() { return new EasyedaDiagnosticOwner(Spatial209Birth.SourceQualified); }\n';
+    const after = '  EasyedaDiagnosticOwner(string purpose) { if(purpose!="pcb-spatial209")throw Error("spatial209-birth");spatial209=true; }\n' +
+      '  public static EasyedaDiagnosticOwner CreateSpatial209() { return new EasyedaDiagnosticOwner("pcb-spatial209"); }\n';
+    if (reviewed.split(before).length !== 2) { throw new Error("FORWARD_NATIVE_TYPED_SPATIAL_PROJECTION"); }
+    reviewed = reviewed.replace(before, after);
+  }
+  if (Buffer.byteLength(reviewed) !== FORWARD_NATIVE_CURRENT_SHARED_HELPER.bytes || hash(reviewed) !== FORWARD_NATIVE_CURRENT_SHARED_HELPER.sha256) {
     throw new Error("FORWARD_NATIVE_LEGACY_SOURCE");
   }
-  let source = input;
+  let source = reviewed;
   for (const [index, projection] of sharedSpatialProjection.entries()) {
     if (source.split(projection.before).length !== 2) { throw new Error(`FORWARD_NATIVE_CURRENT_PROJECTION_${String(index)}`); }
     source = source.replace(projection.before, projection.after);

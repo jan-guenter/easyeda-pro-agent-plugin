@@ -1955,8 +1955,9 @@ public sealed class EasyedaDiagnosticOwner {
     ExpectPackedProgramRefusal("H4sIAAAAAAACA/sPAAAAAP8BAAAA",1,"a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89","e34a8da08a5b8db95457a0590eaef0922f506d44be9792f6b30612ee6da302f4");
   }
   static void Native(bool value) { if(!value) throw Error("native-call"); }
-  EasyedaDiagnosticOwner(string purpose) { if(purpose!="pcb-spatial209")throw Error("spatial209-birth");spatial209=true; }
-  public static EasyedaDiagnosticOwner CreateSpatial209() { return new EasyedaDiagnosticOwner("pcb-spatial209"); }
+  enum Spatial209Birth { SourceQualified }
+  EasyedaDiagnosticOwner(Spatial209Birth purpose) { if(purpose!=Spatial209Birth.SourceQualified)throw Error("spatial209-birth");spatial209=true; }
+  public static EasyedaDiagnosticOwner CreateSpatial209() { return new EasyedaDiagnosticOwner(Spatial209Birth.SourceQualified); }
   // BEGIN GENERATED PCB209 SPATIAL PROTOCOL
   const string SpatialWrapperFunctionGzip="H4sIAAAAAAACA3VTyW7bMBC95yssHgwSYJ3lVhgsYDtumy6w4OXSiyFRlMxa5ghcohpV/r0gJXlJkxOJmTdv3pshMSbs01/kjBgYqyW3aHzDQRk7SJOMhaTdaagHStSDudagMYpn04e7j9tVPFk/TX5sZ5N4vVnOt8v5581q/ojI+KXngFoxDHTvaWSOgTGmXFk2DbbHSkA+gIgxBOlvwS0aDi+DuVPcSlCIkDTJMBm3jBlbBPSoEHZRq1hDJbQ9PgrDtaws6NBuLHMcZU0TdeBdYha1whlFz0npxIlTC+u0GmSjEL7QHcoYvJb9huqmmWidHEfShBPDK244s6rkIDI/D3/xI2kpMPTmqgtzsQYLvt8ix0AoZ1ArXFEUkNpxCxoFn50mfjW0pvFwTpFvhUjEmL+colVPHlLVu4pTLbNChNoM+9qihDQp1ztpKPq5+rKdblbbeDZFhKKv3xChqTMX6LacooMwJinE1BkPXAiLSN/BuNRvLhUZ66fhC52h6JxChND3ZnNGkfGNzHEVsR55cjkc+qhfYee0a24TszdhsGcWiiqe3oo/VigjQU3ip9sMuDsIZT+E1vIgrXwWExuDVMGJf2zXjyAQk6Z5W3KbjRhri04y2/WELEWlUIXdhf3cN81S5KVnglp9F0fTUYxaUMTYw//GLvbQUd756f+6F4hQnpRlmvA969MU9aHO0TkhzdIpJVURxFjtxOkj9DXXH/bqNfWQ8c0LweQfzx4YD28EAAA=";
   const string SpatialWrapperFunctionSha256="65466781d08fcf7def1b53bdc15df63208f75c7d7299180396c742af73648ee5";
@@ -2008,7 +2009,7 @@ public sealed class EasyedaDiagnosticOwner {
     if(text==null||text.Length>maximum||!System.Text.RegularExpressions.Regex.IsMatch(text,@"\A[A-Za-z0-9_.:-]+\z"))throw Error("spatial209-handle");return text;
   }
   static double SpatialNumber(System.Collections.IDictionary fields,string key) {
-    object value=fields[key];if(!(value is int)&&!(value is long)&&!(value is double))throw Error("spatial209-number");
+    object value=fields[key];if(!(value is int)&&!(value is long)&&!(value is double)&&!(value is decimal))throw Error("spatial209-number");
     double number=Convert.ToDouble(value,CultureInfo.InvariantCulture);
     if(Double.IsNaN(number)||Double.IsInfinity(number)||Math.Abs(number)>10000000||number==0&&Double.IsNegativeInfinity(1/number))throw Error("spatial209-number");return number;
   }
@@ -2016,14 +2017,14 @@ public sealed class EasyedaDiagnosticOwner {
     string kind=fields["queryKind"] as string;expected.Add("queryKind");
     if(kind=="point") {
       expected.Add("xMil");expected.Add("yMil");
-      return "{\"kind\":\"point\",\"xMil\":"+SpatialNumber(fields,"xMil").ToString("R",CultureInfo.InvariantCulture)+",\"yMil\":"+SpatialNumber(fields,"yMil").ToString("R",CultureInfo.InvariantCulture)+"}";
+      return "{\"kind\":\"point\",\"xMil\":"+SpatialNumber(fields,"xMil").ToString("G17",CultureInfo.InvariantCulture)+",\"yMil\":"+SpatialNumber(fields,"yMil").ToString("G17",CultureInfo.InvariantCulture)+"}";
     }
     if(kind!="region")throw Error("spatial209-kind");
     string mode=fields["queryMode"] as string;if(mode!="inside"&&mode!="intersects")throw Error("spatial209-mode");
     expected.AddRange(new string[]{"queryMode","leftMil","rightMil","bottomMil","topMil"});
     double left=SpatialNumber(fields,"leftMil"),right=SpatialNumber(fields,"rightMil"),bottom=SpatialNumber(fields,"bottomMil"),top=SpatialNumber(fields,"topMil");
     if(left>=right||bottom>=top)throw Error("spatial209-region");
-    return "{\"kind\":\"region\",\"mode\":"+JsonString(mode)+",\"leftMil\":"+left.ToString("R",CultureInfo.InvariantCulture)+",\"rightMil\":"+right.ToString("R",CultureInfo.InvariantCulture)+",\"bottomMil\":"+bottom.ToString("R",CultureInfo.InvariantCulture)+",\"topMil\":"+top.ToString("R",CultureInfo.InvariantCulture)+"}";
+    return "{\"kind\":\"region\",\"mode\":"+JsonString(mode)+",\"leftMil\":"+left.ToString("G17",CultureInfo.InvariantCulture)+",\"rightMil\":"+right.ToString("G17",CultureInfo.InvariantCulture)+",\"bottomMil\":"+bottom.ToString("G17",CultureInfo.InvariantCulture)+",\"topMil\":"+top.ToString("G17",CultureInfo.InvariantCulture)+"}";
   }
   public static string Spatial209ProtocolMessage(int id,string method,string session,string phase,System.Collections.IDictionary fields) {
     if(id<1||id>Spatial209Requests||session==null||!System.Text.RegularExpressions.Regex.IsMatch(session,@"\A[A-Za-z0-9_.:-]{1,128}\z")||fields==null)throw Error("spatial209-fields");
@@ -2080,6 +2081,8 @@ public sealed class EasyedaDiagnosticOwner {
     var fields=new System.Collections.Hashtable(StringComparer.Ordinal);fields.Add("objectId","bundle");fields.Add("queryKind","point");fields.Add("xMil",0);fields.Add("yMil",1);
     string encoded=Spatial209ProtocolMessage(383,"Runtime.callFunctionOn","s","read",fields);
     if(encoded.IndexOf("\"throwOnSideEffect\":false",StringComparison.Ordinal)<0||encoded.IndexOf("\"awaitPromise\":false",StringComparison.Ordinal)<0)throw Error("spatial209-fixed-flags-smoke");
+    fields["xMil"]=0.1m;fields["yMil"]=-0.25m;
+    Spatial209ProtocolMessage(383,"Runtime.callFunctionOn","s","read",fields);
     fields["xMil"]="0";bool coercion=false;try{Spatial209ProtocolMessage(1,"Runtime.callFunctionOn","s","read",fields);}catch{coercion=true;}if(!coercion)throw Error("spatial209-number-smoke");
     fields.Remove("queryKind");fields.Remove("xMil");fields.Remove("yMil");
     bool reserve=false;try{Spatial209ProtocolMessage(384,"Runtime.getProperties","s","properties",fields);}catch{reserve=true;}if(!reserve)throw Error("spatial209-reserve-smoke");
@@ -5841,6 +5844,31 @@ try {
     [EasyedaDiagnosticOwner]::VerifySelectionRelations209Smoke()
     [EasyedaDiagnosticOwner]::VerifyStringClockSmoke()
     [EasyedaDiagnosticOwner]::VerifyFootprintWindowsClockSmoke()
+    # BEGIN GENERATED PCB209 SPATIAL NUMBER SMOKE
+    # Exercise the actual PowerShell5.1 JSON decoder and .NET numeric binder.
+    # Decimal fractions remain numbers; all six coordinates round-trip as doubles.
+    foreach ($spatialNumberSmokeJson in @(
+      '{"queryKind":"point","xMil":0.1,"yMil":0.84551240822557006}',
+      '{"queryKind":"region","queryMode":"intersects","leftMil":-0.1,"rightMil":0.1,"bottomMil":-0.84551240822557006,"topMil":0.84551240822557006}'
+    )) {
+      $spatialNumberSmokeRequest=ConvertFrom-Json -InputObject $spatialNumberSmokeJson
+      $spatialNumberSmokeFields=New-Object 'System.Collections.Hashtable' ([StringComparer]::Ordinal)
+      $spatialNumberSmokeFields.Add('objectId','original-bundle')
+      foreach ($property in $spatialNumberSmokeRequest.PSObject.Properties) {$spatialNumberSmokeFields.Add($property.Name,$property.Value)}
+      $spatialNumberSmokeMessage=[EasyedaDiagnosticOwner]::Spatial209ProtocolMessage(383,'Runtime.callFunctionOn','s','read',$spatialNumberSmokeFields)
+      if ($spatialNumberSmokeMessage[$spatialNumberSmokeMessage.Length-1] -ne [char]0) {throw 'pcb-diagnostic-spatial209-number-smoke-envelope'}
+      $spatialNumberSmokeDecoded=ConvertFrom-Json -InputObject $spatialNumberSmokeMessage.Substring(0,$spatialNumberSmokeMessage.Length-1)
+      $spatialNumberSmokeQuery=$spatialNumberSmokeDecoded.params.arguments[0].value
+      if ($spatialNumberSmokeQuery.kind -cne $spatialNumberSmokeRequest.queryKind) {throw 'pcb-diagnostic-spatial209-number-smoke-kind'}
+      foreach ($field in @('xMil','yMil','leftMil','rightMil','bottomMil','topMil')) {
+        if ($null -ne $spatialNumberSmokeRequest.PSObject.Properties[$field]) {
+          $spatialNumberSmokeBefore=[Convert]::ToDouble($spatialNumberSmokeRequest.$field,[Globalization.CultureInfo]::InvariantCulture)
+          $spatialNumberSmokeAfter=[Convert]::ToDouble($spatialNumberSmokeQuery.$field,[Globalization.CultureInfo]::InvariantCulture)
+          if ([BitConverter]::DoubleToInt64Bits($spatialNumberSmokeBefore) -ne [BitConverter]::DoubleToInt64Bits($spatialNumberSmokeAfter)) {throw 'pcb-diagnostic-spatial209-number-smoke-roundtrip'}
+        }
+      }
+    }
+    # END GENERATED PCB209 SPATIAL NUMBER SMOKE
     $selectionSmokePath='C:\Reviewed\SelectionRelationsFixture.eprj2'
     $selectionSmokeHasher=[Security.Cryptography.SHA256]::Create()
     try {$selectionSmokeProject=([BitConverter]::ToString($selectionSmokeHasher.ComputeHash([Text.Encoding]::UTF8.GetBytes($selectionSmokePath)))).Replace('-','').ToLowerInvariant()}

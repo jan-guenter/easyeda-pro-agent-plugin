@@ -128,6 +128,8 @@ export type { CurrentPcbWorkerStartupOpeningCoordinator } from "./current-pcb-wo
 
 type LifecycleRequest = Request | CurrentPcbStringPrecreateRequest | CurrentPcb209OpeningRequest | CurrentPcb209VisualRequest | CurrentPcbSpatialRequest;
 type LifecycleGeneration = "209-spatial" | "209-startup-footprint-forward" | "209-visual" | "209-startup-footprint-combined" | "209-startup-footprint-main" | "209-startup-footprint-route" | "206" | "209-opening" | "209-startup" | "209-startup-footprint" | "209-startup-empty" | "209-startup-ratline" | "209-startup-ratline-continuation";
+/** Identify generations that share the fixed disposable project/PCB opening
+ * Admission, without sharing their later spatial, visual or object stages. */
 function opening209(generation: LifecycleGeneration): boolean { return generation === "209-spatial" || generation === "209-opening" || generation === "209-visual"; }
 function routeStartup209(generation: LifecycleGeneration): boolean { return generation === "209-startup-footprint-forward" || generation === "209-startup-footprint-route" || generation === "209-startup-footprint-combined"; }
 function startup209(generation: LifecycleGeneration): boolean { return generation === "209-startup-footprint-forward" || generation === "209-startup-footprint-combined" || generation === "209-startup-footprint-route" || generation === "209-startup-footprint" || generation === "209-startup" || generation === "209-startup-empty" || generation === "209-startup-ratline" || generation === "209-startup-ratline-continuation"; }
@@ -137,6 +139,8 @@ const launchPurposeFields = {
   "string-precreate": { schema: "easyeda-pro-control.pcb-string-precreate-launch-intent.v1", purpose: "string-precreate" },
   "worker-startup": { schema: "easyeda-pro-control.pcb-worker-startup-launch-intent.v1", purpose: "worker-startup" },
 } as const;
+/** Select the immutable launch-record schema for the construction-time purpose.
+ * Historical schema parsing never upgrades its owner to a newer generation. */
 function launchFields(purpose: CurrentPcbDiagnosticLifecyclePurpose, generation: LifecycleGeneration):
   typeof launchPurposeFields[CurrentPcbDiagnosticLifecyclePurpose] | Readonly<{ schema: "easyeda-pro-control.pcb209-visual-launch-intent.v1" | "easyeda-pro-control.pcb209-spatial-launch-intent.v1" }> | Readonly<{ schema: "easyeda-pro-control.footprint-forward-prewrite-launch-intent.v1" | "easyeda-pro-control.footprint-combined-launch-intent.v2" | "easyeda-pro-control.footprint-main-launch-intent.v1" | "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1" | "easyeda-pro-control.footprint-copy-preparation-launch-intent.v1" | "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-empty-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-continuation-launch-intent.v1"; purpose: "worker-startup" }> {
   if (generation === "209-startup-footprint-forward") { return { schema: "easyeda-pro-control.footprint-forward-prewrite-launch-intent.v1", purpose: "worker-startup" }; }
@@ -513,6 +517,8 @@ class CurrentPcbLifecycleCore {
   #startupContinuationCleanupFailed = false;
   #startupContinuationReleased = false;
 
+  /** Seal the stage roster, installation verifier and allocator for one purpose.
+   * Merely constructing the coordinator allocates no helper or application. */
   public constructor(options: CurrentPcbDiagnosticLifecycleOptions,
     dependencies: CurrentPcbDiagnosticLifecycleDependencies | CurrentPcbStringPrecreateLifecycleDependencies | CurrentPcbWorkerStartupLifecycleDependencies | CurrentPcb209WorkerStartupLifecycleDependencies,
     purpose: CurrentPcbDiagnosticLifecyclePurpose, generation: LifecycleGeneration = "206") {
@@ -2553,6 +2559,8 @@ class CurrentPcbLifecycleCore {
     else if (this.#generation === "209-startup") { currentPcb209WorkerStartupLifecycleIdSchema.parse(operationId); }
     else { currentPcbWorkerStartupLifecycleIdSchema.parse(operationId); }
   }
+  /** Match the request namespace and retained launch schema to this generation.
+   * Older broad-prefix journals keep their original purpose without spatial access. */
   #assertPurpose(operationId: string, operation?: DiagnosticLifecycleOperation): void {
     const intent = operation?.records["intent.json"];
     let idPurpose: CurrentPcbDiagnosticLifecyclePurpose = "diagnostic";
@@ -2672,6 +2680,8 @@ class CurrentPcbLifecycleCore {
     requireValue(!this.#visualAbortAttempted || ["visual-abort-intent.json", "visual-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"].includes(name), "VISUAL_GENERATION_ABORTED");
     requireValue(!this.#combinedAbortAttempted || ["combined-abort-intent.json", "combined-abort-acknowledged.json", "forward-abort-intent.json", "forward-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"].includes(name), "COMBINED_GENERATION_ABORTED");
   }
+  /** Reprove the original launch lease, owner, profile and captured method set.
+   * Optional startup sessions also retain their original callback identities. */
   #assertOwner(retained: Retained): void {
     this.#options.assertLocalAllowed();
     requireValue(this.#lease !== null, "ORIGINAL_LEASE_REQUIRED"); assertCurrentPcbDiagnosticLaunchExclusion(this.#lease);
@@ -3129,6 +3139,8 @@ class CurrentPcbLifecycleCore {
     return { ...describe(request.operationId, updated), terminationDispatched: true, terminationProved: false, saveAuthorized: false };
   }
 
+  /** Route actions only through the retained owner after exact binding and
+   * Journal-snapshot checks. Closure does not depend on renewed startup admission. */
   async #cleanup(request: CleanupRequest): Promise<Record<string, unknown>> {
     const operations = await readCurrentPcbDiagnosticLifecycles();
     const operation = operations.find(value => value.operationId === request.operationId);
@@ -3914,6 +3926,7 @@ export class CurrentPcb209DiagnosticLifecycle extends CurrentPcbLifecycleCore {
 /** Separate launch-sealed disposable spatial reader. Old model, worker and
  * visual stages are absent from its grammar and retained stage roster. */
 export class CurrentPcbSpatialLifecycle extends CurrentPcbLifecycleCore {
+  /** Fix the spatial generation before any allocation or journaled launch. */
   public constructor(options: CurrentPcbDiagnosticLifecycleOptions, dependencies: CurrentPcbDiagnosticLifecycleDependencies = {}) {
     super(options, dependencies, "diagnostic", "209-spatial");
   }

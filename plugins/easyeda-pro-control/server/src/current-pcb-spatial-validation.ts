@@ -55,11 +55,15 @@ export function requireCurrentPcbSpatialObservation(input: unknown, target: Curr
   if (result.results.length !== queries.length || result.results.some((row, index) => row.documentUuid !== target.documentUuid ||
       canonicalJson(row.query) !== canonicalJson(queries[index]))) { throw new Error("PCB_SPATIAL_OBSERVATION_BINDING"); }
 }
+/** Bound and freeze the ordered batch for retention. Target/query custody is
+ * Checked separately against the original lifecycle's consumed intent. */
 export function currentPcbSpatialObservation(input: unknown): Readonly<z.infer<typeof currentPcbSpatialObservationSchema>> {
   return freezeDeep(currentPcbSpatialObservationSchema.parse({ schema: "easyeda-pro-control.pcb209-spatial-observation.v1",
     results: input, executionAuthorized: false, saveAuthorized: false }));
 }
 
+/** Describe the spatial wrapper, strict grammar and evidence limits offline.
+ * Schema discovery allocates no owner and authorizes no native request. */
 export function queryCurrentPcbSpatial(input: unknown = {}): Record<string, unknown> {
   const request = z.strictObject({ includeSchemas: z.boolean().default(false) }).parse(input);
   return { offline: true, tool: "easyeda_control_pcb209_opening", wrapperAction: "spatial", validationOnly: true,
@@ -74,6 +78,8 @@ export function queryCurrentPcbSpatial(input: unknown = {}): Record<string, unkn
       "Opening can restore tabs, migrate, replay caches and automatically persist files. Missing replies consume their original stages; record settlement never replays dispatch. Keep the original owner through normal closure, observed root/Job exit and acknowledged release.",
     ], ...(request.includeSchemas ? { inputSchema: z.toJSONSchema(currentPcbSpatialRequestSchema) } : {}) };
 }
+/** Return bounded argument diagnostics without allocating or dispatching work.
+ * Both valid and invalid responses retain false execution and Save authority. */
 export function validateCurrentPcbSpatialArguments(input: unknown): Record<string, unknown> {
   const parsed = currentPcbSpatialRequestSchema.safeParse(input);
   return parsed.success ? { valid: true, request: parsed.data, validationOnly: true, executionAuthorized: false, saveAuthorized: false } : {

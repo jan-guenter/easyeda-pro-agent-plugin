@@ -210,8 +210,8 @@ import { CURRENT_FOOTPRINT_FORWARD_NATIVE_MAIN_LIMITS } from "./current-footprin
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "6ec843c4d7b40dde941b2b01691536ce8a944a4a8c33fc121bc3b418d508743a";
-const HELPER_BYTES = 1_097_306;
+const HELPER_SHA256 = "a45801f6f5053d966ac738f824c83e49759f45a165bc3b2fe963f0d9039346f8";
+const HELPER_BYTES = 1_099_788;
 const heldRunnerDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintSavedCacheHeldRunner.prototype);
 /* oxlint-disable typescript/unbound-method -- Retain fixed methods and invoke them only on the original private-field runner. */
 const heldRunnerMethods = Object.freeze({ prepare: CurrentFootprintSavedCacheHeldRunner.prototype.prepare,
@@ -742,6 +742,8 @@ class CurrentPcbRetainedOwnerCore {
   readonly #heldSavedLedger: CurrentFootprintCopyHeldSavedResourceLedger | null;
   readonly #heldSavedLedgerMethods: CurrentFootprintCopyHeldSavedLedgerBinding | null;
 
+  /** Bind one original helper child to its fixed purpose and verification hooks.
+   * Transport and resource-ledger selection happen before listeners or launch. */
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     installation: CurrentPcbDiagnosticInstallation | null, verifyInstallation: () => Promise<void>, purpose: OwnerPurpose,
     verifyStartupFacade: () => Promise<void> = verifyInstallation, actorClockSource: CurrentPcb209ActorClockSourceQualification | null = null,
@@ -1254,8 +1256,9 @@ class CurrentPcbRetainedOwnerCore {
     finally { this.#busy = false; }
   }
 
-  /** Private, still unregistered spatial reader. Only its fresh dedicated birth
-   * can bind the original source-admitted PCB realm and run a bounded batch.
+  /** Once-only spatial reader for the separately selected disposable purpose.
+   * Only its fresh birth can bind the source-admitted PCB realm and fixed callees.
+   * Standard renderer intrinsics remain trusted, not independently verified.
    * Existing owners cannot select this transport or qualification budget.
    */
   public async observeSpatial209(input: CurrentDisposableOpenSealedTarget, queries: unknown): Promise<readonly CurrentPcb209SpatialResult[]> {
@@ -1269,6 +1272,7 @@ class CurrentPcbRetainedOwnerCore {
     this.#enter(true); this.#spatial209Consumed = true;
     try {
       const pcb = context.modelContext(), ui = context.pcbOpeningContext();
+      /** Reprove the original staged source and both retained realm identities. */
       const current = (): void => {
         this.#available(); context.pcbScript(profile);
         if (this.#stagedContext !== context || JSON.stringify(context.modelContext()) !== JSON.stringify(pcb) ||
@@ -4731,10 +4735,11 @@ export class CurrentPcb209DiagnosticOwner extends CurrentPcbRetainedOwnerCore {
   }
 }
 
-/** Unregistered fresh spatial birth. Its fixed larger qualification budget is
- * unavailable to existing diagnostic, visual, model and writer owners.
+/** Separate fresh spatial birth. Its fixed larger qualification budget is
+ * Unavailable to existing diagnostic, visual, model and writer owners.
  */
 export class CurrentPcbSpatialOwner extends CurrentPcbRetainedOwnerCore {
+  /** Select the spatial transport at construction; no existing owner is upgraded. */
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve()) {
     super(child, verify, installation, verifyInstallation, "pcb-spatial209");
@@ -5599,6 +5604,9 @@ export function currentFootprintHeadAgeValidationAllocationOutcome(binding: Curr
   return Object.freeze({ status: allocation.status === "retained" ? "unresolved" : allocation.status, owner: null });
 }
 
+/** Pin the generation, purpose and original source inputs before helper allocation.
+ * Construct the matching fixed owner and retain it before listeners start;
+ * Callers cannot substitute native arguments or upgrade an existing purpose. */
 async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, purpose: OwnerPurpose,
   generation: "206" | "209-opening" | "209-visual" | "209-spatial" | "209-startup" | "209-held-cache" = "206", savedWriter?: CurrentFootprintCopyNativeOwner,
   forwardSavedHandoff: object | null = null, heldValidation: HeldCacheValidationAllocation | null = null, headAgeValidation: HeadAgeValidationAllocation | null = null,

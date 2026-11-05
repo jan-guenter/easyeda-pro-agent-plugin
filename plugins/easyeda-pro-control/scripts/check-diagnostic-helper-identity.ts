@@ -7,6 +7,8 @@ import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES } from "../server/src/cu
 
 const MAX_BYTES = 1024 * 1024;
 function refuse(reason: string): never { throw new Error(`Diagnostic helper identity check refused: ${reason}.`); }
+/** Read one bounded regular source through its original descriptor. Final-component symlinks,
+ * Truncation and metadata drift refuse before any source identity is accepted. */
 async function readBounded(relative: string, maximumBytes = MAX_BYTES): Promise<Buffer> {
   // oxlint-disable-next-line eslint/no-bitwise -- Combine kernel open flags to refuse final-component symlink substitution in the static source check.
   const handle = await open(new URL(relative, import.meta.url), constants.O_RDONLY | constants.O_NOFOLLOW);
@@ -29,6 +31,8 @@ function one(source: string, pattern: RegExp, label: string): string {
   const matches = [...source.matchAll(pattern)]; const value = matches[0]?.[1];
   if (matches.length !== 1 || value === undefined) { refuse(`${label} must occur exactly once`); } return value;
 }
+/** Compare the complete ASCII helper with the independent owner and Windows
+ * Smoke pins. This read-only check never refreshes an identity or launches it. */
 async function main(): Promise<void> {
   if (process.argv.length !== 2) { refuse("no arguments or write mode are supported"); }
   const [helper, ownerBytes, smokeBytes] = await Promise.all([

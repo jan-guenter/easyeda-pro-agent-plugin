@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import { PassThrough } from "node:stream";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { CurrentPcbDiagnosticPipe } from "../src/current-pcb-diagnostic-pipe.ts";
@@ -56,6 +57,38 @@ void test("spatial purpose derives its fixed complete-workflow cap from the func
   assert.ok(CURRENT_PCB_SPATIAL_REQUEST_DERIVATION.headroom >= 0);
   pipe.assertSpatialCapacity(); assert.equal(sent.length, 0);
   assert.equal("bindSpatial" in new CurrentPcbDiagnosticPipe(new PassThrough(), new PassThrough()), false);
+});
+
+void test("spatial native birth has a private distinct type and no duplicate owner constructor signature", async () => {
+  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  assert.ok(source.includes("enum Spatial209Birth { SourceQualified }"));
+  assert.ok(source.includes("EasyedaDiagnosticOwner(Spatial209Birth purpose)"));
+  assert.ok(source.includes("return new EasyedaDiagnosticOwner(Spatial209Birth.SourceQualified);"));
+  const signatures = [...source.matchAll(/^\s+(?:public\s+)?EasyedaDiagnosticOwner\(([^)]*)\)/gmu)].map(match => {
+    assert.ok(match[1] !== undefined);
+    return match[1].split(",").map(parameter => parameter.trim().split(/\s+/u).slice(0, -1).join(" ")).join(",");
+  });
+  assert.ok(signatures.length > 1);
+  assert.equal(new Set(signatures).size, signatures.length, "A C# constructor collision must refuse before Windows CI.");
+});
+
+void test("native CompileOnly exercises PowerShell-decoded fractions and invariant G17 for all six coordinates", async () => {
+  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  assert.ok(source.includes("!(value is double)&&!(value is decimal)"));
+  const begin = source.indexOf("  static string SpatialQuery("), end = source.indexOf("  public static string Spatial209ProtocolMessage(", begin);
+  assert.ok(begin !== -1 && end > begin);
+  const query = source.slice(begin, end);
+  assert.equal([...query.matchAll(/ToString\("G17",CultureInfo\.InvariantCulture\)/gu)].length, 6);
+  assert.equal(query.includes('ToString("R"'), false);
+  const compile = source.indexOf("  if ($CompileOnly) {"), smoke = source.indexOf("    # BEGIN GENERATED PCB209 SPATIAL NUMBER SMOKE");
+  const cleanupRelease = source.indexOf("    $owner.ReleaseUnlaunched()", compile);
+  assert.ok(compile !== -1 && smoke > compile && cleanupRelease > smoke);
+  // oxlint-disable-next-line unicorn/prefer-set-has -- This is PowerShell source text; these are substring checks rather than collection membership.
+  const decoded = source.slice(smoke, cleanupRelease);
+  assert.ok(decoded.includes("$spatialNumberSmokeRequest=ConvertFrom-Json -InputObject $spatialNumberSmokeJson"));
+  assert.ok(decoded.includes("$spatialNumberSmokeDecoded=ConvertFrom-Json -InputObject $spatialNumberSmokeMessage.Substring"));
+  assert.ok(decoded.includes("[BitConverter]::DoubleToInt64Bits($spatialNumberSmokeBefore)"));
+  assert.ok(decoded.includes("[BitConverter]::DoubleToInt64Bits($spatialNumberSmokeAfter)"));
 });
 
 void test("legacy 103 requests remain unchanged while spatial preserves request384 for original release", async context => {
