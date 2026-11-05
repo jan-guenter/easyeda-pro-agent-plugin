@@ -1,7 +1,9 @@
 import { createHash, randomUUID } from "node:crypto";
+import { lstat, mkdir, readdir } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
-import { controlDataDirectory, ensureManagedDirectory, publishManagedAttachmentExclusive, readExactBinaryArtifact } from "./artifacts.ts";
+import { controlDataDirectory, controlRootCapability, ensureManagedDirectory, publishManagedAttachmentExclusive, readExactBinaryArtifact } from "./artifacts.ts";
 import { MANAGED_LIBRARY_FILES_MAX_RESULT_BYTES, decodeManagedLibraryBase64, decodeManagedProjectArchive, extractManagedLibraryMetadata, extractManagedProjectMetadata,
+  managedFixtureArchivePrepareRequestSchema,
   managedLibraryArchiveSourceListRequestSchema, managedLibraryArchiveSourceReadRequestSchema, managedLibraryArchiveSourcesRequestSchema,
   managedLibraryExtractRequestSchema, managedLibraryFileSchema, managedLibraryFilesRequestSchema, managedLibraryMetadataSchema,
   managedLibraryPrepareRequestSchema, managedPcbStackRulesRequestSchema, managedProjectDocumentSourceListRequestSchema, managedProjectDocumentSourceReadRequestSchema,
@@ -20,10 +22,11 @@ import { collectManagedProjectDocumentSources, encodeManagedProjectDocumentSourc
   pageManagedProjectDocumentRoster, pageManagedProjectDocumentSource } from "./managed-project-document-sources.ts";
 import type { ManagedProjectDocumentSource, ManagedProjectDocumentSourceSet } from "./managed-project-document-sources.ts";
 import { inspectManagedSchematicRecords } from "./managed-schematic-records.ts";
+// oxlint-disable-next-line import/max-dependencies -- Fixed offline dispatch joins exact artifact guards and each supported decoder. A pass-through module would hide these same dependencies.
 import { inspectManagedPcbStackRules } from "./managed-pcb-stack-rules.ts";
-// oxlint-disable-next-line import/max-dependencies -- Fixed offline dispatch joins the exact artifact guards and each supported decoder; a pass-through module would hide the same operation dependencies.
 import { collectManagedLibraryArchiveSources, encodeManagedLibraryArchiveSourceIndex, pageManagedLibraryArchiveRoster, pageManagedLibraryArchiveSource } from "./managed-library-archive-sources.ts";
 import type { ManagedLibraryArchiveSourceSet } from "./managed-library-archive-sources.ts";
+import { qualifyManagedFixtureArchive } from "./managed-fixture-archive.ts";
 
 /** Resolve the sole prepared-input directory from the control root, never from caller paths. */
 function inputsDirectory(): string { return join(controlDataDirectory(), "artifacts", "library-file-inputs"); }
@@ -57,6 +60,57 @@ export async function prepareManagedLibraryFile(input: unknown): Promise<Record<
   const file = managedLibraryFileSchema.parse({ schema: "easyeda-pro-control.library-file.v1", name: request.name,
     path: artifact.path, bytes: artifact.bytes, sha256: artifact.sha256 });
   return result({ action: request.action, localArtifactWritten: true, file });
+}
+
+/** Publish an exact, independently qualified archive package before any native
+ * import is considered. The durable intent precedes both package files. Failed
+ * preparation retains that intent and any completed file, without native retry
+ * or deletion. This staging path is never presented as a registered project. */
+export async function prepareManagedFixtureArchive(input: unknown): Promise<Record<string, unknown>> {
+  const request = managedFixtureArchivePrepareRequestSchema.parse(input);
+  const content = await exactInput(request.file), qualification = qualifyManagedFixtureArchive(content);
+  const parent = await ensureManagedDirectory(join(controlDataDirectory(), "artifacts", "fixture-archives"));
+  const stageId = randomUUID(); const directory = join(parent, stageId);
+  // A fresh directory is exclusive; ensureManagedDirectory alone would adopt an
+  // Existing directory. The artifact writer then rebinds its managed parent.
+  const root = await controlRootCapability(); const heldParent = await root.openDirectory(parent, false);
+  try {
+    await root.assertCurrent();
+    const boundDirectory = `/proc/self/fd/${heldParent.handle.fd}/${stageId}`;
+    await mkdir(boundDirectory, { mode: 0o700 });
+    const created = await lstat(boundDirectory, { bigint: true });
+    await heldParent.handle.sync();
+    await root.assertCurrent();
+    const heldStage = await root.openDirectory(directory, false);
+    const reprove = async (): Promise<void> => {
+      await root.assertCurrent(); const current = await root.openDirectory(directory, false);
+      try {
+        if (current.info.dev !== created.dev || current.info.ino !== created.ino || heldStage.info.dev !== created.dev || heldStage.info.ino !== created.ino) {
+          throw new Error("Fixture staging directory changed during publication.");
+        }
+      } finally { await current.handle.close(); }
+    };
+    try {
+      await reprove();
+      const intent = await publishManagedAttachmentExclusive(join(directory, "intent.json"), "Fixture archive preparation intent",
+        Buffer.from(JSON.stringify({ schema: "easyeda-pro-control.fixture-archive-preparation-intent.v1", stageId,
+          source: request.file, qualificationSha256: qualification.qualificationSha256, nativeDispatchPossible: false }), "utf8"), "fixture-archive-intent", reprove);
+      const archive = await publishManagedAttachmentExclusive(join(directory, request.file.name), "Qualified original fixture archive", content, "fixture-archive", reprove);
+      const report = await publishManagedAttachmentExclusive(join(directory, "qualification.json"), "Complete supplied fixture archive roster",
+        Buffer.from(JSON.stringify(qualification), "utf8"), "fixture-archive-qualification", reprove);
+      const entries = await readdir(`/proc/self/fd/${heldStage.handle.fd}`);
+      if (JSON.stringify(entries.toSorted()) !== JSON.stringify([request.file.name, "intent.json", "qualification.json"].toSorted())) {
+        throw new Error("Fixture staging directory has an unexpected complete file roster.");
+      }
+      await reprove();
+      return result({ action: request.action, state: "prepared", stageId, directory, intent, archive, report, qualification,
+        localArtifactWritten: true, disposableAttestationRecorded: true, nativeImportAvailable: false,
+        nativeDestinationReserved: false, registrationVerified: false,
+        nextRequirement: "Retained original native import-job ownership, exact destination and registration identity, complete closed SQL effect, partial-failure observation and original closure are required before native dispatch." }, false);
+    } finally { await heldStage.handle.close(); }
+  } catch (error) {
+    throw new Error(`Fixture archive preparation is incomplete; retain its intent and partial package at ${directory}. No native import was dispatched.`, { cause: error });
+  } finally { await heldParent.handle.close(); }
 }
 
 /** Combine validated standalone metadata from distinct prepared filenames.
@@ -282,6 +336,7 @@ export async function readManagedLibraryArchiveSource(input: unknown): Promise<R
 export async function executeManagedLibraryFiles(input: unknown): Promise<Record<string, unknown>> {
   const request = managedLibraryFilesRequestSchema.parse(input);
   const routes = { "prepare-file": prepareManagedLibraryFile, "extract-library-info": extractManagedLibraryFiles,
+    "prepare-fixture-archive": prepareManagedFixtureArchive,
     "extract-project-info": extractManagedProjectFile, "extract-project-footprint-sources": extractManagedProjectFootprintSources,
     "list-project-footprint-sources": listManagedProjectFootprintSources,
     "read-project-footprint-source": readManagedProjectFootprintSource, "extract-symbol-sources": extractManagedSymbolSources,

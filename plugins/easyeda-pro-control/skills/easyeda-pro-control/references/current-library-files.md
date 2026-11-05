@@ -59,6 +59,34 @@ returned scope when reporting the result. Metadata actions return
 `metadataOnly:true`, as do source-roster pages. Source-index extraction and
 source-body pages return `metadataOnly:false` and `cadFramingValidated:false`.
 
+## Prepare a disposable fixture archive
+
+After `prepare-file`, use
+`request:{action:"prepare-fixture-archive",file,confirmDisposableFixture:true,
+confirmLocalArtifact:true}` for one supplied `.epro2`. This action admits exactly
+`project2.json` and one canonical root `.epru` member. The manifest must describe
+an ordinary project with a safe ASCII title and an absent or `3.2.209` editor
+version. The stream must contain 1 to 32 unique native documents with complete
+UTF-8 record framing and unique record IDs. Histories, tombstones, images, extra
+members and conflicting manifests refuse before staging begins.
+
+The result contains one fresh private `directory`, its preparation `intent`, the
+byte-exact original `archive`, a `report` and the complete `qualification`.
+Every member and document has its original hash and byte count. Unknown native
+bodies remain opaque. The expected output basename is a source-derived plan,
+not an observed destination. Keep `nativeDestinationReserved:false`,
+`registrationVerified:false`, `geometryVerified:false` and
+`dependencyClosureVerified:false` when reporting it.
+
+The facade retains directory descriptors and checks their original identities
+through publication. It writes the intent before copying the archive or report.
+A preparation error names the retained staging directory, which can contain an
+empty directory or an intent and partial package. It performs no native import,
+registration or project deletion. No native import action is registered. A
+native route still needs its original process and job owner, an exclusive native
+destination, exact registration and complete closed-SQL proof, and original
+closure. Do not call the public importer to skip those prerequisites.
+
 ## Read reusable library archive sources
 
 Prepare the actual supplied `.elibz2` bytes with `prepare-file`, then send

@@ -31,6 +31,9 @@ const standaloneFileSchema = managedLibraryFileSchema.extend({
 });
 const symbolSourceFileSchema = managedLibraryFileSchema.extend({ name: z.string().max(128).regex(/^[A-Za-z0-9][A-Za-z0-9_ -]*\.(?:esym|epro|epro2)$/u) });
 const projectFileSchema = managedLibraryFileSchema.extend({ name: z.string().max(128).regex(/^[A-Za-z0-9][A-Za-z0-9_ -]*\.epro2?$/u) });
+export const managedFixtureArchivePrepareRequestSchema = z.object({ action: z.literal("prepare-fixture-archive"),
+  file: projectFileSchema.extend({ name: z.string().max(128).regex(/^[A-Za-z0-9][A-Za-z0-9_ -]*\.epro2$/u) }),
+  confirmDisposableFixture: z.literal(true), confirmLocalArtifact: z.literal(true) }).strict();
 const libraryArchiveFileSchema = managedLibraryFileSchema.extend({ name: z.string().max(128).regex(/^[A-Za-z0-9][A-Za-z0-9_ -]*\.elibz2$/u) });
 export const managedLibraryExtractRequestSchema = z.object({ action: z.literal("extract-library-info"),
   files: z.array(standaloneFileSchema).min(1).max(16)
@@ -82,6 +85,7 @@ export const managedLibraryArchiveSourceReadRequestSchema = z.object({ action: z
   expectedSourceSetSha256: sha256, sourceId: sha256, offset: z.number().int().min(0).max(MANAGED_LIBRARY_ARCHIVE_MAX_SOURCE_BYTES).default(0),
   length: z.number().int().min(1).max(MANAGED_PROJECT_FOOTPRINT_SOURCE_PAGE_UNITS).default(MANAGED_PROJECT_FOOTPRINT_SOURCE_PAGE_UNITS) }).strict();
 export const managedLibraryFilesRequestSchema = z.discriminatedUnion("action", [managedLibraryPrepareRequestSchema,
+  managedFixtureArchivePrepareRequestSchema,
   managedLibraryExtractRequestSchema, managedProjectExtractRequestSchema, managedProjectFootprintSourcesRequestSchema,
   managedProjectFootprintSourceListRequestSchema, managedProjectFootprintSourceReadRequestSchema, managedSymbolSourcesRequestSchema,
   managedSymbolSourceListRequestSchema, managedSymbolSourceReadRequestSchema, managedSymbolPinsRequestSchema,
@@ -183,6 +187,7 @@ export function validateManagedLibraryFileContents(fileInput: unknown, bytes: Bu
 }
 
 const limitations = [
+  "prepare-fixture-archive freshly verifies one prepared .epro2, requires explicit disposable/local-artifact confirmations and qualifies exactly project2.json plus one root .epru. It publishes the byte-exact archive and a complete original member/document roster in a fresh private staging directory. Unknown native bodies remain opaque. No native destination, registration, geometry/dependency proof, process, import or cleanup authority is created. Interrupted preparation retains its intent and partial package for inspection; it never deletes an ambiguous native project.",
   "Offline native-task-equivalent metadata readers. No public SDK call, EasyEDA process, runtime admission, bridge, project open, network, import, conversion, Save or archive extraction to disk.",
   "prepare-file accepts canonical base64 and a bounded filename, validates the complete admitted container, then writes one exclusive managed input. Later reads require its exact managed directory, filename, SHA-256 and byte length; callers cannot select an external path or output destination.",
   "Project inputs support unencrypted ZIP32 .epro/project.json.config and .epro2/project2.json metadata: title, Boolean cbbProject and optional string editorVersion. Filenames and member paths use the declared ASCII subset; metadata text may be Unicode. Every ZIP member is bounded, inflated and CRC-checked. No ZIP64, data descriptors, extras, multipart archives, links, unsafe paths, duplicate/case aliases, conflicting manifests or trailing compressed bytes.",
