@@ -6,12 +6,15 @@ import { types } from "node:util";
 import { z } from "zod";
 import { canonicalJson } from "./core.ts";
 import { CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION, CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION, CURRENT_PCB_209_SPATIAL_FUNCTIONS_FUNCTION,
-  CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION } from "./current-pcb-209-spatial-capture-program.ts";
+  CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION, CURRENT_PCB_209_SPATIAL_TRACK_BINDINGS_FUNCTION } from "./current-pcb-209-spatial-capture-program.ts";
 import { decodeCurrentPcbSpatialFunction, decodeCurrentPcbSpatialFunctionScope,
   decodeCurrentPcbSpatialFunctionScopeList } from "./current-pcb-spatial-function-scope.ts";
-import { CURRENT_PCB_209_SPATIAL_READ_FUNCTION } from "./current-pcb-209-spatial-read-program.ts";
+import { CURRENT_PCB_209_SPATIAL_READ_FUNCTION, CURRENT_PCB_209_SPATIAL_TRACK_READ_FUNCTION } from "./current-pcb-209-spatial-read-program.ts";
 import { currentPcb209SpatialQuerySchema, decodeCurrentPcb209SpatialReply } from "./current-pcb-209-spatial-read.ts";
 import type { CurrentPcb209SpatialQuery, CurrentPcb209SpatialResult } from "./current-pcb-209-spatial-read.ts";
+import { currentPcb209SpatialTrackQueriesSchema, decodeCurrentPcb209SpatialTrackReply } from "./current-pcb-209-spatial-track-read.ts";
+import type { CurrentPcb209SpatialTrackResult } from "./current-pcb-209-spatial-track-read.ts";
+import type { CurrentPcbSpatialVariant } from "./current-pcb-spatial-function-source.ts";
 import { decodeCurrentPcbSpatialFunctionSourceArray, decodeCurrentPcbSpatialFunctionSourceMetadata,
   decodeCurrentPcbSpatialFunctionSourceTuple } from "./current-pcb-spatial-function-source.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -32,13 +35,13 @@ export type CurrentPcbSpatialCaptureCommand =
     objectId: string; functionDeclaration: typeof CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION;
     objectGroup: typeof CURRENT_PCB_SPATIAL_OBJECT_GROUP; returnByValue: false;
   }> }>
-  | Readonly<{ spatialPhase: "bindings"; method: "Runtime.callFunctionOn"; params: Omit<typeof EFFECTS, "throwOnSideEffect"> & Readonly<{
+  | Readonly<{ spatialPhase: "bindings" | "bindings-track"; method: "Runtime.callFunctionOn"; params: Omit<typeof EFFECTS, "throwOnSideEffect"> & Readonly<{
     throwOnSideEffect: false;
     objectId: string; functionDeclaration: typeof CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION;
     objectGroup: typeof CURRENT_PCB_SPATIAL_OBJECT_GROUP; returnByValue: false;
     arguments: readonly [Readonly<{ objectId: string }>];
   }> }>
-  | Readonly<{ spatialPhase: "read"; method: "Runtime.callFunctionOn"; params: Omit<typeof EFFECTS, "throwOnSideEffect"> & Readonly<{
+  | Readonly<{ spatialPhase: "read" | "read-track"; method: "Runtime.callFunctionOn"; params: Omit<typeof EFFECTS, "throwOnSideEffect"> & Readonly<{
     throwOnSideEffect: false; objectId: string; functionDeclaration: typeof CURRENT_PCB_209_SPATIAL_READ_FUNCTION;
     objectGroup: typeof CURRENT_PCB_SPATIAL_OBJECT_GROUP; returnByValue: true;
     arguments: readonly [Readonly<{ value: CurrentPcb209SpatialQuery }>];
@@ -141,7 +144,7 @@ export class CurrentPcbSpatialCaptureRunner {
   /** Consume capture once and retain all handles inside its original group.
    * After any started attempt, release uses the original callback even on drift;
    * Capture, consume, release or final-context failures all withhold the result. */
-  async #run<T>(consume: (bundle: string) => Promise<T>, qualify: boolean): Promise<T> {
+  async #run<T>(consume: (bundle: string) => Promise<T>, qualify: boolean, variant: CurrentPcbSpatialVariant = "via"): Promise<T> {
     if (this.#consumed) { return refuse(); }
     this.#consumed = true;
     let started = false;
@@ -162,21 +165,21 @@ export class CurrentPcbSpatialCaptureRunner {
       } }, input => decodeCurrentPcbSpatialFunction(input, "point-handler"));
       const handlerScopes = await this.#properties(handler, input => decodeCurrentPcbSpatialFunctionScopeList(input, this.#scriptId, "point-handler"));
       const handlerScope = await this.#properties(handlerScopes, input => decodeCurrentPcbSpatialFunctionScope(input, "point-handler"));
-      const bundle = await this.#request({ spatialPhase: "bindings", method: "Runtime.callFunctionOn", params: {
+      const bundle = await this.#request({ spatialPhase: variant === "via" ? "bindings" : "bindings-track", method: "Runtime.callFunctionOn", params: {
         // The fixed bindings program only allocates and seals private containers.
         // V8 refuses its defineProperty/freeze calls under the side-effect flag.
         // No vendor getter, callback or hit method runs or app object changes.
-        ...EFFECTS, throwOnSideEffect: false, objectId: handlerScope, functionDeclaration: CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION,
+        ...EFFECTS, throwOnSideEffect: false, objectId: handlerScope, functionDeclaration: variant === "via" ? CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION : CURRENT_PCB_209_SPATIAL_TRACK_BINDINGS_FUNCTION,
         objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP, returnByValue: false, arguments: [{ objectId: wrapper }],
       } }, bundleHandle);
       if (qualify) {
         const functions = await this.#request({ spatialPhase: "functions", method: "Runtime.callFunctionOn", params: {
           ...EFFECTS, objectId: bundle, functionDeclaration: CURRENT_PCB_209_SPATIAL_FUNCTIONS_FUNCTION,
           objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP, returnByValue: false,
-        } }, decodeCurrentPcbSpatialFunctionSourceArray);
-        const references = await this.#properties(functions, decodeCurrentPcbSpatialFunctionSourceTuple);
+        } }, input => decodeCurrentPcbSpatialFunctionSourceArray(input, variant));
+        const references = await this.#properties(functions, input => decodeCurrentPcbSpatialFunctionSourceTuple(input, variant));
         for (const reference of references) {
-          await this.#properties(reference.objectId, reply => decodeCurrentPcbSpatialFunctionSourceMetadata(reply, this.#scriptId, reference.key));
+          await this.#properties(reference.objectId, reply => decodeCurrentPcbSpatialFunctionSourceMetadata(reply, this.#scriptId, reference.key, variant));
         }
       }
       result = await consume(bundle);
@@ -229,5 +232,24 @@ export class CurrentPcbSpatialCaptureRunner {
       }
       return Object.freeze(results);
     }, true);
+  }
+  /** The separate mixed-family program consumes the same original capture and
+   * group, qualifies all256 callees and retains the unchanged native ID cap. */
+  public readTrackBatch(input: unknown): Promise<readonly CurrentPcb209SpatialTrackResult[]> {
+    const queries = freezeDeep(currentPcb209SpatialTrackQueriesSchema.parse(input));
+    return this.#run(async bundle => {
+      const results: CurrentPcb209SpatialTrackResult[] = [];
+      for (const query of queries) {
+        results.push(await this.#request({ spatialPhase: "read-track", method: "Runtime.callFunctionOn", params: {
+          ...EFFECTS, throwOnSideEffect: false, objectId: bundle, functionDeclaration: CURRENT_PCB_209_SPATIAL_TRACK_READ_FUNCTION,
+          objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP, returnByValue: true, arguments: [{ value: query }],
+        } }, reply => {
+          const result = decodeCurrentPcb209SpatialTrackReply(reply);
+          if (result.documentUuid !== this.#documentUuid || canonicalJson(result.query) !== canonicalJson(query)) { return refuse(); }
+          return result;
+        }));
+      }
+      return Object.freeze(results);
+    }, true, "line-via");
   }
 }

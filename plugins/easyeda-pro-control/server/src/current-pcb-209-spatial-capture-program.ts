@@ -8,34 +8,55 @@
  * This does not sandbox hostile page JavaScript.
  */
 import { CURRENT_PCB_209_SPATIAL_CLASS_RELATIONS, CURRENT_PCB_209_SPATIAL_FUNCTION_PLANS } from "./current-pcb-209-spatial-source-profile.ts";
+import { CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_PLANS, CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_RELATIONS } from "./current-pcb-209-spatial-track-source-profile.ts";
+
+// Encode only module-owned identifier rosters. Splitting a fixed delimiter keeps
+// The native command below its existing 64KiB bound without dropping a check.
+function encodedClassRelations(track: boolean): unknown[] {
+  const relations = { ...CURRENT_PCB_209_SPATIAL_CLASS_RELATIONS, ...(track ? CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_RELATIONS : {}) };
+  return Object.entries(relations).map(([key, profile]) => {
+  if (profile.prototypeKeys.some(name => name.includes("|"))) { throw new Error("PCB209_SPATIAL_RELATION_ENCODING"); }
+  return [key, profile.parent, profile.prototypeKeys.join("|")];
+  });
+}
 
 /** Constructors used only in initializers may be elided from the V8 closure.
  * Follow their one fixed original receiver/prototype association instead. */
-export const CURRENT_PCB_209_SPATIAL_BINDING_COLLECTOR = `const collectBindings=scope=>{
+function bindingCollector(track: boolean): string { return `const collectBindings=scope=>{
 const names=["Hr","Ke","zi","wl","x","mx","vD","Nd","BI","D0","qs","Ve","Qg","ki","M2","WA","Ff","sy","GN","Ud","g0","at","E","M","pe","Rut","Ys","ln","e0","vMe","Re","Ne","Le","Ue","si","Zi","In","yr","lr","ft","xt","je","Ba","qn","Ms","lt","_r","tb","BLe","CQ","E2e","Fi","Rr","j1","Ll","YP","qt","a4","Me","Ht","G_e","ye","Sr","St","Jdt","Em","N4","Wj","M0"];
 const bindings={};for(const name of names)Object.defineProperty(bindings,name,{value:own(scope,name),enumerable:true});
+${track ? 'for(const name of ["xr","qr","bR","V0","iy","yh","bC","oie"])Object.defineProperty(bindings,name,{value:own(scope,name),enumerable:true});' : ""}
 const constructor=o=>{const p=Object.getPrototypeOf(object(o)),c=own(p,"constructor");if(typeof c!=="function"||own(c,"prototype")!==p)bad();return c;},parent=c=>constructor(own(c,"prototype"));
 const derived={LH:constructor(bindings.qt),Ni:parent(bindings.zi),n3:parent(bindings.qs),iV:constructor(bindings.Ht),
 V_e:constructor(bindings.G_e),Ude:constructor(bindings.ye),It:parent(bindings.Qg),cP:parent(bindings.ki),_oe:parent(bindings.vD),
 l8:parent(bindings.Ff),UD:parent(bindings.Ud),yl:parent(bindings.M),Zdt:constructor(bindings.Jdt),xe:constructor(own(bindings.Jdt,"fac")),
 qme:constructor(bindings.Me),StClass:constructor(bindings.St),ls:parent(bindings.Ve),k0:parent(bindings.Zi),p0:parent(bindings.qn)};
+${track ? 'derived.mt=parent(bindings.qr);derived.lEe=constructor(bindings.yh);' : ""}
 for(const [key,value]of Object.entries(derived)){if(typeof value!=="function")bad();Object.defineProperty(bindings,key,{value,enumerable:true});}
-for(const [key,profile]of Object.entries(${JSON.stringify(CURRENT_PCB_209_SPATIAL_CLASS_RELATIONS)})){
-const c=own(bindings,key),p=own(c,"prototype"),expected=profile.parent===null?null:own(bindings,profile.parent),keys=Reflect.ownKeys(p);
-if(typeof c!=="function"||own(p,"constructor")!==c||Object.getPrototypeOf(p)!==(expected===null?Object.prototype:own(expected,"prototype"))||Object.getPrototypeOf(c)!==(expected===null?Function.prototype:expected)||keys.length!==profile.prototypeKeys.length||keys.some(k=>!profile.prototypeKeys.includes(k))||Reflect.ownKeys(c).some(k=>typeof k!=="string"))bad();}
-return Object.freeze(bindings);};`;
+for(const [key,parentName,encodedKeys]of ${JSON.stringify(encodedClassRelations(track))}){
+const prototypeKeys=encodedKeys.split("|"),c=own(bindings,key),p=own(c,"prototype"),expected=parentName===null?null:own(bindings,parentName),keys=Reflect.ownKeys(p);
+if(typeof c!=="function"||own(p,"constructor")!==c||Object.getPrototypeOf(p)!==(expected===null?Object.prototype:own(expected,"prototype"))||Object.getPrototypeOf(c)!==(expected===null?Function.prototype:expected)||keys.length!==prototypeKeys.length||keys.some(k=>!prototypeKeys.includes(k))||Reflect.ownKeys(c).some(k=>typeof k!=="string"))bad();}
+return Object.freeze(bindings);};`; }
+export const CURRENT_PCB_209_SPATIAL_BINDING_COLLECTOR = bindingCollector(false);
+export const CURRENT_PCB_209_SPATIAL_TRACK_BINDING_COLLECTOR = bindingCollector(true);
 
-const functionPaths = CURRENT_PCB_209_SPATIAL_FUNCTION_PLANS.map(plan => [
-  plan.role, plan.target, "property" in plan ? plan.property : null, "getter" in plan && plan.getter,
+function functionCollector(track: boolean): string {
+  const plans = [...CURRENT_PCB_209_SPATIAL_FUNCTION_PLANS, ...(track ? CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_PLANS : [])];
+  const functionPaths = plans.map(plan => [
+  plan.role, ["class", "function", "field", "prototype", "static"].indexOf(plan.target),
+  "property" in plan ? plan.property : null, "getter" in plan && plan.getter ? 1 : 0,
 ]);
-export const CURRENT_PCB_209_SPATIAL_FUNCTION_COLLECTOR = `const collectFunctions=bindings=>{
+  return `const collectFunctions=bindings=>{
 const plans=${JSON.stringify(functionPaths)},result=[];
 for(const [role,target,property,getter]of plans){const owner=own(bindings,role);let value;
-if(target==="class"||target==="function")value=owner;
-else if(target==="field")value=own(owner,property);
-else{const container=target==="prototype"?own(owner,"prototype"):owner,d=Object.getOwnPropertyDescriptor(container,property);
-if(!d)bad();if(getter===true){if(Object.hasOwn(d,"value")||typeof d.get!=="function")bad();value=d.get;}else{if(!Object.hasOwn(d,"value"))bad();value=d.value;}}
+if(target===0||target===1)value=owner;
+else if(target===2)value=own(owner,property);
+else{const container=target===3?own(owner,"prototype"):owner,d=Object.getOwnPropertyDescriptor(container,property);
+if(!d)bad();if(getter===1){if(Object.hasOwn(d,"value")||typeof d.get!=="function")bad();value=d.get;}else{if(!Object.hasOwn(d,"value"))bad();value=d.value;}}
 if(typeof value!=="function")bad();result.push(value);}return Object.freeze(result);};`;
+}
+export const CURRENT_PCB_209_SPATIAL_FUNCTION_COLLECTOR = functionCollector(false);
+export const CURRENT_PCB_209_SPATIAL_TRACK_FUNCTION_COLLECTOR = functionCollector(true);
 
 const guards = `"use strict";
 const bad=()=>{throw new Error("PCB209_SPATIAL_CAPTURE_REFUSED");};
@@ -63,10 +84,10 @@ const handler=own(object(own(this,"object")),"t");if(typeof handler!=="function"
  * selected by the fixed scope decoder. It proves no complete geometry graph.
  * The returned object stays private in the original object group.
  */
-export const CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION = `function(originalCallback){${guards}
+function bindingsFunction(track: boolean): string { return `function(originalCallback){${guards}
 if((${CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION})!==originalCallback)bad();
-${CURRENT_PCB_209_SPATIAL_BINDING_COLLECTOR}
-${CURRENT_PCB_209_SPATIAL_FUNCTION_COLLECTOR}
+${bindingCollector(track)}
+${functionCollector(track)}
 const scope=object(own(this,"object")),bindings=collectBindings(scope);
 if(typeof bindings.Hr!=="function"||typeof bindings.LH!=="function"||Object.getPrototypeOf(bindings.qt)!==own(bindings.LH,"prototype"))bad();
 if(own(bindings.Me,"_smartMode")!==false||typeof bindings.Fi!=="function"||bindings.a4===null||typeof bindings.a4!=="object")bad();
@@ -74,7 +95,9 @@ const dialog=Object.getOwnPropertyDescriptor(bindings.qt,"dialog");
 if(dialog&&(!Object.hasOwn(dialog,"value")||dialog.value!==undefined))bad();
 if("dialog" in bindings.qt&&!dialog)bad();
 return Object.freeze({scope,originalCallback,bindings,functions:collectFunctions(bindings)});
-}`;
+}`; }
+export const CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION = bindingsFunction(false);
+export const CURRENT_PCB_209_SPATIAL_TRACK_BINDINGS_FUNCTION = bindingsFunction(true);
 
 /** Return the same frozen original tuple created by the binding capture.
  * The runner qualifies every original function before the read kernel runs. */

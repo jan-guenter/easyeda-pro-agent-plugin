@@ -8,8 +8,11 @@ import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { z } from "zod";
 import { CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES } from "./current-pcb-209-spatial-source-profile.ts";
+import { CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_PROFILES } from "./current-pcb-209-spatial-track-source-profile.ts";
 
-type FixedProfile = (typeof CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES)[number];
+const trackProfiles = Object.freeze([...CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES, ...CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_PROFILES]);
+export type CurrentPcbSpatialVariant = "via" | "line-via";
+type FixedProfile = (typeof trackProfiles)[number];
 export type CurrentPcbSpatialFunctionSourceKey = FixedProfile["key"];
 type Profile = Readonly<{ key: CurrentPcbSpatialFunctionSourceKey;
   kind: "class" | "method" | "getter" | "function" | "arrow";
@@ -89,14 +92,14 @@ function copy(input: unknown, depth: number, budget: { nodes: number; bytes: num
 
 /** Require the fixed catalog to remain nonempty, bounded and uniquely keyed.
  * A caller cannot replace this module-owned source qualification roster. */
-function profiles(): readonly Profile[] {
-  const selected: readonly Profile[] = CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES;
+function profiles(variant: CurrentPcbSpatialVariant): readonly Profile[] {
+  const selected: readonly Profile[] = variant === "line-via" ? trackProfiles : CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES;
   if (selected.length === 0 || selected.length > MAX_FUNCTIONS || new Set(selected.map(item => item.key)).size !== selected.length) { return refuse(); }
   return selected;
 }
 /** Resolve one key only within the fixed catalog; unknown callees refuse. */
-function profile(key: CurrentPcbSpatialFunctionSourceKey): Profile {
-  return profiles().find(item => item.key === key) ?? refuse();
+function profile(key: CurrentPcbSpatialFunctionSourceKey, variant: CurrentPcbSpatialVariant): Profile {
+  return profiles(variant).find(item => item.key === key) ?? refuse();
 }
 /** Check the complete V8 description's kind, UTF-16 extent, UTF-8 bytes and
  * Digest. The returned handle still needs its independent script/location check. */
@@ -128,11 +131,11 @@ function scalar(item: DataProperty, type: "string" | "number", value: string | n
 }
 
 /** Decode only the fixed frozen callee-array handle from the capture program. */
-export function decodeCurrentPcbSpatialFunctionSourceArray(input: unknown): string {
+export function decodeCurrentPcbSpatialFunctionSourceArray(input: unknown, variant: CurrentPcbSpatialVariant = "via"): string {
   try {
     const value = z.strictObject({ result: remote }).parse(data(input)).result;
     referenced(value, "object", "Array");
-    if (value.subtype !== "array" || value.description !== `Array(${profiles().length})`) { return refuse(); }
+    if (value.subtype !== "array" || value.description !== `Array(${profiles(variant).length})`) { return refuse(); }
     return value.objectId ?? refuse();
   } catch { return refuse(); }
 }
@@ -140,9 +143,9 @@ export function decodeCurrentPcbSpatialFunctionSourceArray(input: unknown): stri
 /** Decode fixed slots, full descriptions and frozen descriptors in one pass.
  * No caller-provided profile or source text can extend this private catalog.
  */
-export function decodeCurrentPcbSpatialFunctionSourceTuple(input: unknown): readonly CurrentPcbSpatialFunctionSourceReference[] {
+export function decodeCurrentPcbSpatialFunctionSourceTuple(input: unknown, variant: CurrentPcbSpatialVariant = "via"): readonly CurrentPcbSpatialFunctionSourceReference[] {
   try {
-    const expected = profiles();
+    const expected = profiles(variant);
     const reply = z.strictObject({ result: z.array(dataProperty).length(expected.length + 1),
       internalProperties: z.array(internal).length(1) }).parse(data(input));
     const fields = new Map(reply.result.map(item => [item.name, item]));
@@ -170,9 +173,9 @@ export function decodeCurrentPcbSpatialFunctionSourceTuple(input: unknown): read
  * no matching application location and are never admitted by their text alone.
  */
 export function decodeCurrentPcbSpatialFunctionSourceMetadata(input: unknown, scriptId: string,
-  key: CurrentPcbSpatialFunctionSourceKey): true {
+  key: CurrentPcbSpatialFunctionSourceKey, variant: CurrentPcbSpatialVariant = "via"): true {
   try {
-    handle.parse(scriptId); const expected = profile(key);
+    handle.parse(scriptId); const expected = profile(key, variant);
     const generator = expected.className === "GeneratorFunction" || expected.className === "AsyncGeneratorFunction";
     const reply = z.strictObject({ result: z.array(property).min(2).max(MAX_FUNCTIONS),
       internalProperties: z.array(internal).length(generator ? 4 : 3) }).parse(data(input));

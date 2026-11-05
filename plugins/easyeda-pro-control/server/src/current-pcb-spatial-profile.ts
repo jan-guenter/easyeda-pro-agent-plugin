@@ -1,6 +1,7 @@
 /** Private fresh-birth transport limits. No caller cap or existing-owner upgrade. */
 import { z } from "zod";
 import { CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES } from "./current-pcb-209-spatial-source-profile.ts";
+import { CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_PROFILES } from "./current-pcb-209-spatial-track-source-profile.ts";
 
 export const CURRENT_PCB_SPATIAL_PROFILE = Object.freeze({ purpose: "pcb-spatial209", requestLimit: 384, normalRequestLimit: 383,
   maximumReads: 16, sessionBytes: 64 * 1024 * 1024, requestMilliseconds: 5000, sourceRequestMilliseconds: 30_000 } as const);
@@ -13,6 +14,17 @@ export const CURRENT_PCB_SPATIAL_REQUEST_DERIVATION = Object.freeze({
   originalOpeningSourceAndReproof: 103, capture: 7, functions: 1, tuple: 1, calleeProperties,
   reads: CURRENT_PCB_SPATIAL_PROFILE.maximumReads, release: 1, spatialStage, fullWorkflow: 103 + spatialStage,
   headroom: CURRENT_PCB_SPATIAL_PROFILE.requestLimit - 103 - spatialStage,
+} as const);
+/** The additional thirty callees consume the old spare requests. A mixed
+ * batch is therefore capped at fifteen reads, retaining the release reserve
+ * and the existing384-ID native purpose rather than raising its ceiling. */
+const trackCallees = calleeProperties + CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_PROFILES.length;
+const trackReads = 15;
+const trackStage = 7 + 1 + 1 + trackCallees + trackReads + 1;
+export const CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION = Object.freeze({
+  originalOpeningSourceAndReproof: 103, capture: 7, functions: 1, tuple: 1, calleeProperties: trackCallees,
+  reads: trackReads, release: 1, spatialStage: trackStage, fullWorkflow: 103 + trackStage,
+  headroom: CURRENT_PCB_SPATIAL_PROFILE.requestLimit - 103 - trackStage,
 } as const);
 const token = z.string().regex(/^[A-Za-z\d_.:-]{1,128}(?![\s\S])/u);
 /** This local seal records the owner's already admitted original page/source.

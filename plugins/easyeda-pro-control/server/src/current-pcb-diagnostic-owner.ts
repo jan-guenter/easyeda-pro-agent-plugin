@@ -19,10 +19,11 @@ import { ORDINARY_LAUNCH_209_PROFILE } from "./ordinary-launch-209-profile.ts";
 import { CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentFootprintCopyForwardSavedDiscoveryPipe, CurrentFootprintHeldCacheDiagnosticPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbWorkerStartupDiscoveryPipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
 import type { CurrentPcbDiagnosticFailureObservation } from "./current-pcb-diagnostic-pipe.ts";
 import { CurrentPcbSpatialPipe, spatialDiagnosticNativeRequest } from "./current-pcb-spatial-pipe.ts";
-import { CURRENT_PCB_SPATIAL_PROFILE, CURRENT_PCB_SPATIAL_REQUEST_DERIVATION } from "./current-pcb-spatial-profile.ts";
+import { CURRENT_PCB_SPATIAL_PROFILE, CURRENT_PCB_SPATIAL_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION } from "./current-pcb-spatial-profile.ts";
 import { CURRENT_PCB_209_SPATIAL_SOURCE_PROFILE } from "./current-pcb-209-spatial-source-profile.ts";
 import { CurrentPcbSpatialCaptureRunner } from "./current-pcb-spatial-capture-runner.ts";
 import type { CurrentPcb209SpatialResult } from "./current-pcb-209-spatial-read.ts";
+import type { CurrentPcb209SpatialTrackResult } from "./current-pcb-209-spatial-track-read.ts";
 import { DIAGNOSTIC_REQUEST_LIMIT, combinedDiagnosticNativeRequest, diagnosticNativeRequest, heldCacheDiagnosticNativeRequest, stringPrecreateNativeRequest, visualDiagnosticNativeRequest } from "./current-pcb-diagnostic-protocol.ts";
 import { CurrentPcbDiagnosticContext, diagnosticBoundedObservation, diagnosticTargetInventory, diagnosticTargetSummary,
   validateDiagnosticFrameExpectation, validateDiagnosticScriptProfile } from "./current-pcb-diagnostic-context.ts";
@@ -1261,7 +1262,18 @@ class CurrentPcbRetainedOwnerCore {
    * Standard renderer intrinsics remain trusted, not independently verified.
    * Existing owners cannot select this transport or qualification budget.
    */
-  public async observeSpatial209(input: CurrentDisposableOpenSealedTarget, queries: unknown): Promise<readonly CurrentPcb209SpatialResult[]> {
+  public observeSpatial209(input: CurrentDisposableOpenSealedTarget, queries: unknown): Promise<readonly CurrentPcb209SpatialResult[]> {
+    return this.#observeSpatial209(input, runner => runner.readBatch(queries), CURRENT_PCB_SPATIAL_REQUEST_DERIVATION.spatialStage);
+  }
+  /** Separate fixed mixed Track/Line and Via program. Both variants share the
+   * original one-shot reservation, so a failed read cannot select a fallback. */
+  public observeSpatialTrack209(input: CurrentDisposableOpenSealedTarget, queries: unknown): Promise<readonly CurrentPcb209SpatialTrackResult[]> {
+    return this.#observeSpatial209(input, runner => runner.readTrackBatch(queries), CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION.spatialStage);
+  }
+  /** Keep all ownership, source and cleanup checks identical for both fixed
+   * internal variants; the caller supplies neither a program nor a transport. */
+  async #observeSpatial209<T>(input: CurrentDisposableOpenSealedTarget,
+    read: (runner: CurrentPcbSpatialCaptureRunner) => Promise<T>, stageRequests: number): Promise<T> {
     const context = this.#stagedContext, pipe = this.#pipe, profile = this.#pcbSourceProfile;
     const source = CURRENT_PCB_209_SPATIAL_SOURCE_PROFILE, target = currentDisposableOpenSealedTargetSchema.parse(input);
     if (this.#purpose !== "pcb-spatial209" || !(pipe instanceof CurrentPcbSpatialPipe) || context === null || profile === null ||
@@ -1282,14 +1294,14 @@ class CurrentPcbRetainedOwnerCore {
       await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current();
       // The stage includes all sixteen reads and its original group release.
       // Retain additional capacity for the existing post-observation reproofs.
-      if (pipe.status().requestCount + 1 + CURRENT_PCB_SPATIAL_REQUEST_DERIVATION.spatialStage + 16 > CURRENT_PCB_SPATIAL_PROFILE.requestLimit) {
+      if (pipe.status().requestCount + 1 + stageRequests + 16 > CURRENT_PCB_SPATIAL_PROFILE.requestLimit) {
         throw error("SPATIAL209_CAPACITY");
       }
       pipe.bindSpatial({ uniqueContextId: pcb.uniqueContextId, scriptId: pcb.scriptId });
       const runner = new CurrentPcbSpatialCaptureRunner({
         request: (command): Promise<unknown> => this.#transfer(() => pipe.observeSpatial(command)), assertCurrent: current,
       }, pcb.scriptId, pcb.uniqueContextId, target.documentUuid);
-      const result = await runner.readBatch(queries);
+      const result = await read(runner);
       current(); await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current();
       await this.#verifyInstallation(); current(); await this.#verify(); current();
       return result;

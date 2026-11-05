@@ -92,7 +92,7 @@ const REQUEST_PHASES = [
   ...(["capture", "array-properties", "constructor-properties", "match-properties", "recheck", "release"] as const).map(phase => `saved-cache-${phase}` as const),
   ...(["capture", "array-properties", "constructor-properties", "match-properties", "getter-properties", "recheck", "release"] as const).map(phase => `saved-accessor-${phase}` as const),
   ...([...HELD_CACHE_PHASES, "release"] as const).map(phase => `held-cache-${phase}` as const),
-  ...(["wrapper", "properties", "handler", "bindings", "functions", "read", "release"] as const).map(phase => `spatial-${phase}` as const),
+  ...(["wrapper", "properties", "handler", "bindings", "bindings-track", "functions", "read", "read-track", "release"] as const).map(phase => `spatial-${phase}` as const),
 ] as const satisfies readonly RequestPhase[];
 const EVENT_KINDS = [
   "Target.attachedToTarget", "Target.detachedFromTarget", "Target.targetCreated", "Target.targetDestroyed",
@@ -170,6 +170,7 @@ class CurrentPcbFixedPipeCore {
   #spatialBinding: CurrentPcbSpatialBinding | null = null;
   #spatialStage = 0;
   #spatialReads = 0;
+  #spatialTrack = false;
   #spatialReleaseAttempted = false;
   readonly #observeEventBytes: ((bytes: number) => void) | null;
   #savedCacheSession: string | null = null;
@@ -377,16 +378,19 @@ class CurrentPcbFixedPipeCore {
       if (this.#nextId >= CURRENT_PCB_SPATIAL_PROFILE.requestLimit) { throw new Error("PCB_SPATIAL_PIPE_CLEANUP_RESERVE"); }
       if (phase === "properties") {
         if (this.#spatialStage < 1 || this.#spatialStage > 4) { throw new Error("PCB_SPATIAL_PIPE_SEQUENCE"); }
-      } else if (phase === "read") {
-        if (this.#spatialStage < 4 || this.#spatialStage > 5 || this.#spatialReads >= CURRENT_PCB_SPATIAL_PROFILE.maximumReads) {
+      } else if (phase === "read" || phase === "read-track") {
+        if ((phase === "read-track") !== this.#spatialTrack || this.#spatialStage < 4 || this.#spatialStage > 5 ||
+            this.#spatialReads >= (this.#spatialTrack ? 15 : CURRENT_PCB_SPATIAL_PROFILE.maximumReads)) {
           throw new Error("PCB_SPATIAL_PIPE_READ_SEQUENCE");
         }
         this.#spatialReads += 1; this.#spatialStage = 5;
       } else {
-        if ((["wrapper", "handler", "bindings", "functions"] as const)[this.#spatialStage] !== phase) {
+        const step = phase === "bindings-track" ? "bindings" : phase;
+        if ((["wrapper", "handler", "bindings", "functions"] as const)[this.#spatialStage] !== step) {
           throw new Error("PCB_SPATIAL_PIPE_SEQUENCE");
         }
         if (phase === "wrapper" && fixed.command.params.uniqueContextId !== binding.uniqueContextId) { throw new Error("PCB_SPATIAL_PIPE_CONTEXT"); }
+        if (phase === "bindings-track") { this.#spatialTrack = true; }
         this.#spatialStage += 1;
       }
     }

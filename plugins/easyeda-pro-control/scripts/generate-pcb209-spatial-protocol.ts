@@ -1,22 +1,26 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION, CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION,
-  CURRENT_PCB_209_SPATIAL_FUNCTIONS_FUNCTION, CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION } from "../server/src/current-pcb-209-spatial-capture-program.ts";
-import { CURRENT_PCB_209_SPATIAL_READ_FUNCTION } from "../server/src/current-pcb-209-spatial-read-program.ts";
+  CURRENT_PCB_209_SPATIAL_FUNCTIONS_FUNCTION, CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION, CURRENT_PCB_209_SPATIAL_TRACK_BINDINGS_FUNCTION } from "../server/src/current-pcb-209-spatial-capture-program.ts";
+import { CURRENT_PCB_209_SPATIAL_READ_FUNCTION, CURRENT_PCB_209_SPATIAL_TRACK_READ_FUNCTION } from "../server/src/current-pcb-209-spatial-read-program.ts";
 import { packedNativeProgram } from "./native-program-packing.ts";
-import { CURRENT_PCB_SPATIAL_PROFILE, CURRENT_PCB_SPATIAL_REQUEST_DERIVATION } from "../server/src/current-pcb-spatial-profile.ts";
+import { CURRENT_PCB_SPATIAL_PROFILE, CURRENT_PCB_SPATIAL_REQUEST_DERIVATION,
+  CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION } from "../server/src/current-pcb-spatial-profile.ts";
 import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES } from "../server/src/current-pcb-diagnostic-helper-source-profile.ts";
 
 const programs = [
   ["SpatialWrapperFunction", CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION], ["SpatialHandlerFunction", CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION],
   ["SpatialBindingsFunction", CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION], ["SpatialFunctionsFunction", CURRENT_PCB_209_SPATIAL_FUNCTIONS_FUNCTION],
   ["SpatialReadFunction", CURRENT_PCB_209_SPATIAL_READ_FUNCTION],
+  ["SpatialTrackBindingsFunction", CURRENT_PCB_209_SPATIAL_TRACK_BINDINGS_FUNCTION],
+  ["SpatialTrackReadFunction", CURRENT_PCB_209_SPATIAL_TRACK_READ_FUNCTION],
 ] as const;
 const native = String.raw`
   const int Spatial209Requests=${CURRENT_PCB_SPATIAL_PROFILE.requestLimit},Spatial209NormalRequests=${CURRENT_PCB_SPATIAL_PROFILE.normalRequestLimit};
   const int Spatial209Functions=${CURRENT_PCB_SPATIAL_REQUEST_DERIVATION.calleeProperties},Spatial209StageRequests=${CURRENT_PCB_SPATIAL_REQUEST_DERIVATION.spatialStage},Spatial209WorkflowRequests=${CURRENT_PCB_SPATIAL_REQUEST_DERIVATION.fullWorkflow};
+  const int Spatial209TrackFunctions=${CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION.calleeProperties},Spatial209TrackStageRequests=${CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION.spatialStage},Spatial209TrackWorkflowRequests=${CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION.fullWorkflow};
   string spatialParentSession,spatialPcbSession,spatialSourceSession,spatialContext;
   const int Spatial209ReadLimit=${CURRENT_PCB_SPATIAL_PROFILE.maximumReads};
-  int spatialStage,spatialReads;bool spatialReleased,spatialAttachmentAttempted;
+  int spatialStage,spatialReads;bool spatialReleased,spatialAttachmentAttempted,spatialTrack;
   public void AdmitSpatialAction(string action) {
     if(!spatial209)return;
     foreach(string allowed in new string[]{"identity","launch","send","spatial209","poll","window","normal-close","termination","release","release-unlaunched","release-no-process","no-process-proof"})if(action==allowed)return;
@@ -67,7 +71,7 @@ const native = String.raw`
     if(id<1||id>Spatial209Requests||session==null||!System.Text.RegularExpressions.Regex.IsMatch(session,@"\A[A-Za-z0-9_.:-]{1,128}\z")||fields==null)throw Error("spatial209-fields");
     if(id>Spatial209NormalRequests&&phase!="release")throw Error("spatial209-cleanup-reserve");
     const string group="easyeda-pro-control-pcb209-spatial-v1";
-    string effects="\"throwOnSideEffect\":"+(phase=="read"||phase=="bindings"?"false":"true")+",\"silent\":true,\"awaitPromise\":false,\"generatePreview\":false,\"userGesture\":false";
+    string effects="\"throwOnSideEffect\":"+(phase=="read"||phase=="bindings"||phase=="read-track"||phase=="bindings-track"?"false":"true")+",\"silent\":true,\"awaitPromise\":false,\"generatePreview\":false,\"userGesture\":false";
     string parameters;List<string> expected=new List<string>();
     if(phase=="wrapper"&&method=="Runtime.evaluate") {
       expected.Add("uniqueContextId");string context=SpatialText(fields,"uniqueContextId",128);
@@ -75,12 +79,12 @@ const native = String.raw`
     } else if(phase=="properties"&&method=="Runtime.getProperties") {
       expected.Add("objectId");parameters="\"objectId\":"+JsonString(SpatialText(fields,"objectId",256))+",\"ownProperties\":true,\"accessorPropertiesOnly\":false,\"generatePreview\":false";
     } else if(phase=="release"&&method=="Runtime.releaseObjectGroup")parameters="\"objectGroup\":"+JsonString(group);
-    else if(method=="Runtime.callFunctionOn"&&(phase=="handler"||phase=="bindings"||phase=="functions"||phase=="read")) {
+    else if(method=="Runtime.callFunctionOn"&&(phase=="handler"||phase=="bindings"||phase=="bindings-track"||phase=="functions"||phase=="read"||phase=="read-track")) {
       expected.Add("objectId");string scope=SpatialText(fields,"objectId",256);
-      string program=phase=="handler"?SpatialHandlerFunction:phase=="bindings"?SpatialBindingsFunction:phase=="functions"?SpatialFunctionsFunction:SpatialReadFunction;
-      parameters=effects+",\"objectId\":"+JsonString(scope)+",\"functionDeclaration\":"+JsonString(program)+",\"objectGroup\":"+JsonString(group)+",\"returnByValue\":"+(phase=="read"?"true":"false");
-      if(phase=="bindings") {expected.Add("callbackObjectId");parameters+=",\"arguments\":[{\"objectId\":"+JsonString(SpatialText(fields,"callbackObjectId",256))+"}]";}
-      if(phase=="read")parameters+=",\"arguments\":[{\"value\":"+SpatialQuery(fields,expected)+"}]";
+      string program=phase=="handler"?SpatialHandlerFunction:phase=="bindings"?SpatialBindingsFunction:phase=="bindings-track"?SpatialTrackBindingsFunction:phase=="functions"?SpatialFunctionsFunction:phase=="read-track"?SpatialTrackReadFunction:SpatialReadFunction;
+      parameters=effects+",\"objectId\":"+JsonString(scope)+",\"functionDeclaration\":"+JsonString(program)+",\"objectGroup\":"+JsonString(group)+",\"returnByValue\":"+(phase=="read"||phase=="read-track"?"true":"false");
+      if(phase=="bindings"||phase=="bindings-track") {expected.Add("callbackObjectId");parameters+=",\"arguments\":[{\"objectId\":"+JsonString(SpatialText(fields,"callbackObjectId",256))+"}]";}
+      if(phase=="read"||phase=="read-track")parameters+=",\"arguments\":[{\"value\":"+SpatialQuery(fields,expected)+"}]";
     } else throw Error("spatial209-phase");
     if(fields.Count!=expected.Count)throw Error("spatial209-extra-fields");foreach(object key in fields.Keys)if(!(key is string)||!expected.Contains((string)key))throw Error("spatial209-extra-fields");
     string message="{\"id\":"+id.ToString(CultureInfo.InvariantCulture)+",\"method\":"+JsonString(method)+",\"params\":{"+parameters+"},\"sessionId\":"+JsonString(session)+"}\0";
@@ -92,9 +96,10 @@ const native = String.raw`
     if(phase=="release") {if(spatialStage==0)throw Error("spatial209-sequence");spatialReleased=true;return;}
     if(id>Spatial209NormalRequests)throw Error("spatial209-cleanup-reserve");
     if(phase=="properties") {if(spatialStage<1||spatialStage>4)throw Error("spatial209-sequence");return;}
-    if(phase=="read") {if(spatialStage<4||spatialStage>5||spatialReads>=Spatial209ReadLimit)throw Error("spatial209-read-sequence");spatialReads++;spatialStage=5;return;}
+    if(phase=="read"||phase=="read-track") {if((phase=="read-track")!=spatialTrack||spatialStage<4||spatialStage>5||spatialReads>=(spatialTrack?15:Spatial209ReadLimit))throw Error("spatial209-read-sequence");spatialReads++;spatialStage=5;return;}
     string[] sequence={"wrapper","handler","bindings","functions"};
-    if(spatialStage>=sequence.Length||sequence[spatialStage]!=phase)throw Error("spatial209-sequence");
+    if(spatialStage>=sequence.Length||sequence[spatialStage]!=(phase=="bindings-track"?"bindings":phase))throw Error("spatial209-sequence");
+    if(phase=="bindings-track")spatialTrack=true;
     if(phase=="wrapper") {if(spatialContext!=null)throw Error("spatial209-context-consumed");spatialContext=SpatialText(fields,"uniqueContextId",128);}
     spatialStage++;
   }
@@ -106,6 +111,7 @@ const native = String.raw`
   public static void VerifySpatial209Smoke() {
     EasyedaDiagnosticOwner owner=CreateSpatial209();
     if(Spatial209StageRequests!=7+1+1+Spatial209Functions+16+1||Spatial209WorkflowRequests!=103+Spatial209StageRequests||Spatial209WorkflowRequests>Spatial209Requests)throw Error("spatial209-derivation-smoke");
+    if(Spatial209TrackStageRequests!=7+1+1+Spatial209TrackFunctions+15+1||Spatial209TrackWorkflowRequests!=103+Spatial209TrackStageRequests||Spatial209TrackWorkflowRequests>Spatial209Requests)throw Error("spatial209-track-derivation-smoke");
     if(!owner.spatial209||owner.stringPrecreate||owner.workerStartup||owner.layers209||owner.visual209||owner.EffectiveRequestLimit!=Spatial209Requests)throw Error("spatial209-birth-smoke");
     var empty=new System.Collections.Hashtable(StringComparer.Ordinal);
     foreach(EasyedaDiagnosticOwner old in new[]{new EasyedaDiagnosticOwner(),CreateLayers209(),CreateVisual209(),CreateStringPrecreate(),CreateWorkerStartup209()}) {
