@@ -56,3 +56,29 @@ operation was started at this checkpoint. The parent direct conflict transport
 from the earlier release was closed; never retry or adopt it. A later connected
 case must use a fresh maintained manager connection, actual payload admission,
 disposable scope and original cleanup. Do not ask for a Codex restart by default.
+
+## Later source integration and connection cleanup
+
+`111b5fe` adds the checkpoint-bound ordinary schematic page opener and the
+separately pinned type-1 Text/Wire/Bus and supported-selection readers. Its
+initial registered branches still lacked the upstream authenticated dispatch
+scope; the owning agent identified that before any live run and is implementing
+the correction and an original-process recovery composition. Do not live-test
+that intermediate commit alone.
+
+`70779d8` adds reachable fresh Via-only and Line/Via archive generation. The
+generator writes new data through maintained preparation, and the pinned native
+codec bodies were checked offline. It neither registers nor opens a project;
+the original import owner and destination custody are still being implemented.
+
+The host eagerly allocated a normal metadata-only MCP facade for the fixture
+agent even though it had made no explicit tool call. That agent inspected and
+normally retired its own PID797529, received lease-release acknowledgment, used
+`close-retired` once and independently observed original exit through a retained
+pidfd. The other two agents normally closed their own conflict stubs820940 and
+821912 and observed their original exits. No signals or app/native calls were
+made. The corresponding requirement is now in `AGENTS.md` (`fb03a35`).
+
+One redundant parent session inspection returned `Transport closed`; that old
+connection remains closed and must never be retried. A fresh manager connection
+is the later live-validation route. Original cleanup evidence stays private.
