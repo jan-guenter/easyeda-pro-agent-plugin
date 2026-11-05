@@ -226,6 +226,13 @@ are build/check dependencies only.
   cannot be retried. Starting or resuming another subagent is not a way to close
   a lost connection. Preserve its evidence and use only an already-authorized
   cleanup path. Conservative Linux recovery probes count these stubs too.
+- Source-only subagents must also inspect their own session before assuming
+  that no facade was allocated. The host can start the normal MCP connection
+  eagerly even when the agent has made no explicit tool call. Retire that
+  original idle metadata-only connection and use its supported `close-retired`
+  action, retaining its original pidfd through observed exit, before returning
+  or waiting through another controller's native work. This grants no native
+  allocation, signal, owner adoption or retry of a closed transport.
 
 ## Maintaining documentation and history
 
