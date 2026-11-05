@@ -4,7 +4,7 @@ This read-only assessment accompanies the
 [spatial-reader batch](2026-11-05-pcb-spatial-reader-implementation.md).
 It identifies implementation dependencies; it enables no execution route.
 
-The [coverage inventory](../../plugins/easyeda-pro-control/api-coverage.json),
+The [coverage inventory snapshot](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/73d08e6561bb330dc406f7840a669bab2be47208/plugins/easyeda-pro-control/api-coverage.json),
 SHA-256 `f437887930046dd8a35d64e31f47f19fd27e66dc4e387c14c28dc3e493053e54`,
 contains 835 union methods: 216 public subsets, 46 native equivalents, 13 HTTP
 equivalents, 79 implemented-but-blocked methods and 481 omissions. The installed
