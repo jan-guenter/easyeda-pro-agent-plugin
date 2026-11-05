@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES } from "../src/current-pcb-diagnostic-helper-source-profile.ts";
 
 const fixturePath = new URL("../../scripts/pcb-diagnostic-launch-smoke.ps1", import.meta.url);
 const helperPath = new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url);
@@ -17,8 +18,8 @@ void test("synthetic launch fixture binds exact helper bytes without executing i
   assert.ok(!fixture.includes("& $helper"));
   assert.ok(!fixture.includes(". $helper"));
   assert.ok(!fixture.includes("Start-Process"));
-  assert.ok(fixture.includes("Read-BoundedFile $helper 1048576"));
-  assert.ok(helper.length <= 1_048_576);
+  assert.ok(fixture.includes(`Read-BoundedFile $helper ${CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES}`));
+  assert.ok(helper.length <= CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES);
   assert.ok(fixture.includes("Read-BoundedFile $executable 1048576"));
 });
 

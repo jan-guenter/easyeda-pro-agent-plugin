@@ -372,6 +372,8 @@ and empty-Job construction do not qualify the custom EasyEDA build. Actual
 connected project-worker/compiler qualification, complete pending producers and
 PCB text observers, writers and saved/reopened proof remain unfinished.
 
+For original Via point/region identities, the separate [spatial reader](../../easyeda-pro-control/references/current-pcb209-spatial.md) qualifies fixed original application callees by complete CDP descriptions and script locations, then rechecks actual member resolution before dispatch. Standard renderer intrinsics remain an explicit unverified trust assumption. Its fresh fixed-budget purpose admits bounded native math scratch and up to sixteen ordered queries, preserving old diagnostic limits. The public region getter selects and must not be substituted. Unsupported geometry, pending trees and boundary crossings refuse; this is a narrow native task equivalent, with no SDK-instance, complete-source or writer claim.
+
 The separate [PCB209 reader route](../../easyeda-pro-control/references/current-pcb209-opening.md)
 has eight optional stages across ten primitive families. Its normal opening
 and all-eight sequence uses 79 requests, but ancillary frame checks would raise
@@ -383,11 +385,14 @@ Exact `diagnostic209` observation messages have a 32768-byte aggregate helper
 limit, including binding, target and selectors. Other messages retain their
 existing bounds; this is not permission for caller code or a new transport budget.
 
-All eight fixed PCB209 programs are stored as generated gzip/base64 literals
+The fixed PCB209 programs are stored as generated gzip/base64 literals
 inside the same native helper. The bounded decoder checks canonical base64,
 compressed SHA-256, exact decompressed byte length, program SHA-256 and strict
 UTF-8 before use. Compressed and decompressed programs are each limited to
-65536 bytes; the helper retains its 1 MiB file ceiling. Packing changes storage
+65536 bytes. The exact-pinned first-party helper has a fixed2MiB source-file
+ceiling after adding the separate spatial programs. Its byte length and SHA-256
+remain mandatory; caller source, paths or caps are unavailable. Runtime input,
+response, clock and session limits remain separate. Packing changes storage
 only: the six preexisting programs retain their exact execution strings and
 hashes, and earlier v1 results retain their meaning. There is no caller-supplied
 blob, path, file read or network fetch in this decoder. Regenerate the native

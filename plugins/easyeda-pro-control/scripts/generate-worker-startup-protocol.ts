@@ -1,5 +1,6 @@
 /* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
 import { readFile, writeFile } from "node:fs/promises";
+import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES } from "../server/src/current-pcb-diagnostic-helper-source-profile.ts";
 import { currentPcbDiagnosticFixedTableNativeSource } from "../server/src/current-pcb-diagnostic-fixed-table-native.ts";
 import { compactGeneratedCSharpIndentation } from "./csharp-generated-indentation.ts";
 import { currentFootprintCopyManagerRouteNativeSource } from "../server/src/current-footprint-copy-manager-route-native.ts";
@@ -82,7 +83,7 @@ function ratlineSource(): string {
 
 /** Regenerate or verify each uniquely delimited native protocol block using only
  * fixed builders. Refuse duplicate markers, changed worker fields or a helper over
- * 1 MiB before writing; check mode never changes the helper.
+ * the fixed first-party helper-source ceiling before writing; check mode never changes the helper.
  */
 async function main(): Promise<void> {
   const action = process.argv[2];
@@ -111,7 +112,9 @@ async function main(): Promise<void> {
   next = next.slice(0, readyStart) + currentFootprintCombinedReadyNativeSource() + next.slice(readyStop + readyEnd.length);
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
   assertCurrentFootprintCopyForwardNativeRequestIds(next);
-  if (Buffer.byteLength(next) > 1_048_576) { throw new Error(`Native startup helper exceeds its fixed byte bound: ${String(Buffer.byteLength(next))} >1048576`); }
+  if (Buffer.byteLength(next) > CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES) {
+    throw new Error(`Native startup helper exceeds its fixed byte bound: ${String(Buffer.byteLength(next))} >${String(CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES)}`);
+  }
   if (action === "--write") { await writeFile(path, next); }
   else if (next !== source) { throw new Error("Generated native startup protocol differs"); }
 }

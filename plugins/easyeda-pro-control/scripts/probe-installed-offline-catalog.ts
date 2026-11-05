@@ -22,7 +22,7 @@ const NODE_VERSION = "24.18.0";
 const MAX_REPLY_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
-const CATALOG_QUERY_COUNT = 76;
+const CATALOG_QUERY_COUNT = 79;
 // Initialize and tool discovery plus the fixed catalog requests below.
 const REQUEST_LIMIT = 2 + CATALOG_QUERY_COUNT;
 const EXPECTED_TOOLS = [
@@ -368,6 +368,19 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
     const result = await offlineApi(child, { action: "pcb-string-precreate-validation-validate", query: { request } });
     requireCheck(result["valid"] === valid && result["executionAuthorized"] === false,
       "String precreate exact-argument validation changed or implies execution authority.");
+  }
+  const spatial = await offlineApi(child, { action: "pcb209-spatial", query: { includeSchemas: true } });
+  requireCheck(spatial["tool"] === "easyeda_control_pcb209_opening" && spatial["wrapperAction"] === "spatial" &&
+    spatial["validationOnly"] === true && spatial["executionAuthorized"] === false && spatial["saveAuthorized"] === false &&
+    spatial["connectedValidation"] === false && spatial["maximumQueries"] === 16 && Array.isArray(record(spatial["inputSchema"])["oneOf"]),
+  "Spatial discovery lost its separate purpose, bounded batch or evidence limits.");
+  const spatialRequest = { action: "observe-spatial", operationId: "pcb209-spatial-offline-catalog",
+    expectedBindingSha256: "a".repeat(64), acceptNativeScratchEffects: true,
+    queries: [{ kind: "point", xMil: 0, yMil: 0 }] };
+  for (const [request, valid] of [[spatialRequest, true], [{ ...spatialRequest, requestLimit: 384 }, false]] as const) {
+    const result = await offlineApi(child, { action: "pcb209-spatial-validate", query: { request } });
+    requireCheck(result["valid"] === valid && result["executionAuthorized"] === false && result["saveAuthorized"] === false,
+      "Spatial validation accepted a caller budget or implied write authority.");
   }
   const empty = await offlineApi(child, { action: "pcb209-empty-baseline", query: { includeSchemas: true } });
   requireCheck(empty["toolWrapperAction"] === "empty-baseline" && empty["executionAuthorized"] === false &&

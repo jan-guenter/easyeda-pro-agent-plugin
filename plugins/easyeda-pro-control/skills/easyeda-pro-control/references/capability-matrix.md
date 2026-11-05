@@ -255,7 +255,9 @@ is cleared on every handoff outcome. Fixed native begin/send/retire reserves all
 handoff. Native counters consume before possible writes, and failed retirement
 requires retained original-generation exit. This grants no public clock action,
 complete writer reservation or connected origin/router execution proof. The
-fixed clock/completion codecs remain under the unchanged1MiB helper cap.
+fixed clock/completion codecs retain their exact programs inside the pinned
+helper. Its fixed source-file ceiling is2MiB to accommodate the separate spatial
+programs; runtime request, clock, response and session limits do not grow.
 
 The complete writer, main request/completion route and logical delete/saved-reader
 models remain unmounted. Existing native profiles, message/output/control bounds

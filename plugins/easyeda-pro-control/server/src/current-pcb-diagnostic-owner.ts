@@ -18,6 +18,11 @@ import { canonicalJson, sha256Json } from "./core.ts";
 import { ORDINARY_LAUNCH_209_PROFILE } from "./ordinary-launch-209-profile.ts";
 import { CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentFootprintCopyForwardSavedDiscoveryPipe, CurrentFootprintHeldCacheDiagnosticPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbWorkerStartupDiscoveryPipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
 import type { CurrentPcbDiagnosticFailureObservation } from "./current-pcb-diagnostic-pipe.ts";
+import { CurrentPcbSpatialPipe, spatialDiagnosticNativeRequest } from "./current-pcb-spatial-pipe.ts";
+import { CURRENT_PCB_SPATIAL_PROFILE, CURRENT_PCB_SPATIAL_REQUEST_DERIVATION } from "./current-pcb-spatial-profile.ts";
+import { CURRENT_PCB_209_SPATIAL_SOURCE_PROFILE } from "./current-pcb-209-spatial-source-profile.ts";
+import { CurrentPcbSpatialCaptureRunner } from "./current-pcb-spatial-capture-runner.ts";
+import type { CurrentPcb209SpatialResult } from "./current-pcb-209-spatial-read.ts";
 import { DIAGNOSTIC_REQUEST_LIMIT, combinedDiagnosticNativeRequest, diagnosticNativeRequest, heldCacheDiagnosticNativeRequest, stringPrecreateNativeRequest, visualDiagnosticNativeRequest } from "./current-pcb-diagnostic-protocol.ts";
 import { CurrentPcbDiagnosticContext, diagnosticBoundedObservation, diagnosticTargetInventory, diagnosticTargetSummary,
   validateDiagnosticFrameExpectation, validateDiagnosticScriptProfile } from "./current-pcb-diagnostic-context.ts";
@@ -205,8 +210,8 @@ import { CURRENT_FOOTPRINT_FORWARD_NATIVE_MAIN_LIMITS } from "./current-footprin
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "58f681b7c896069fd748b957fe925e39ed4b8990f88de3483fbda781a65dccee";
-const HELPER_BYTES = 1_042_994;
+const HELPER_SHA256 = "6ec843c4d7b40dde941b2b01691536ce8a944a4a8c33fc121bc3b418d508743a";
+const HELPER_BYTES = 1_097_306;
 const heldRunnerDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintSavedCacheHeldRunner.prototype);
 /* oxlint-disable typescript/unbound-method -- Retain fixed methods and invoke them only on the original private-field runner. */
 const heldRunnerMethods = Object.freeze({ prepare: CurrentFootprintSavedCacheHeldRunner.prototype.prepare,
@@ -241,7 +246,7 @@ const forwardExecutionChannelStatus = CurrentFootprintForwardExecutionStartupCha
 
 
 type RecordValue = Record<string, unknown>;
-type OwnerPurpose = "footprint-head-age209" | "footprint-held-cache209" | "worker-startup-footprint-held-saved209" | "visual209" | "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-footprint-saved209" | "worker-startup-footprint-main209" | typeof CURRENT_FOOTPRINT_COMBINED_PURPOSE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE | typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
+type OwnerPurpose = "pcb-spatial209" | "footprint-head-age209" | "footprint-held-cache209" | "worker-startup-footprint-held-saved209" | "visual209" | "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-footprint-saved209" | "worker-startup-footprint-main209" | typeof CURRENT_FOOTPRINT_COMBINED_PURPOSE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE | typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
 function heldCachePurpose(purpose: OwnerPurpose): boolean {
   return purpose === "worker-startup-footprint-held-saved209" || purpose === "footprint-held-cache209";
 }
@@ -620,6 +625,7 @@ class CurrentPcbRetainedOwnerCore {
   #arcShapes209Consumed = false;
   #pouredShapes209Consumed = false;
   #selectionRelations209Consumed = false;
+  #spatial209Consumed = false;
   #windowNativeFailure: CurrentWindowFailure | null = null;
   #windowRestore209Consumed = false;
   #windowRestore209ReadinessObserved = false;
@@ -791,7 +797,8 @@ class CurrentPcbRetainedOwnerCore {
         this.#send = this.#sendFrame(chunk, callback);
       },
     });
-    if (this.#purpose === "footprint-held-cache209") { this.#pipe = new CurrentFootprintHeldCacheDiagnosticPipe(this.#input, this.#output, (bytes): void => { this.#heldSavedEventBytes(bytes); }); }
+    if (this.#purpose === "pcb-spatial209") { this.#pipe = new CurrentPcbSpatialPipe(this.#input, this.#output); }
+    else if (this.#purpose === "footprint-held-cache209") { this.#pipe = new CurrentFootprintHeldCacheDiagnosticPipe(this.#input, this.#output, (bytes): void => { this.#heldSavedEventBytes(bytes); }); }
     else if (forwardBirthPurpose(this.#purpose)) { this.#pipe = new CurrentFootprintCopyForwardDiscoveryPipe(this.#input, this.#output, (bytes): void => { this.#forwardRendererEvent(bytes); }); }
     else if (saved !== null) { this.#pipe = new CurrentFootprintCopyForwardSavedDiscoveryPipe(this.#input, this.#output, (bytes): void => { this.#forwardRendererEvent(bytes); }); }
     else if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) { this.#pipe = new CurrentFootprintCombinedDiscoveryPipe(this.#input, this.#output); }
@@ -815,6 +822,7 @@ class CurrentPcbRetainedOwnerCore {
     this.#child.stderr.on("data", this.#stderr);
     this.#child.stdout.on("data", this.#data);
     this.#pipe.start();
+    if (this.#pipe instanceof CurrentPcbSpatialPipe) { this.#pipe.assertSpatialCapacity(); }
   }
 
   /** Report cached owner, consumption, transport and cleanup state without launching
@@ -1246,6 +1254,45 @@ class CurrentPcbRetainedOwnerCore {
     finally { this.#busy = false; }
   }
 
+  /** Private, still unregistered spatial reader. Only its fresh dedicated birth
+   * can bind the original source-admitted PCB realm and run a bounded batch.
+   * Existing owners cannot select this transport or qualification budget.
+   */
+  public async observeSpatial209(input: CurrentDisposableOpenSealedTarget, queries: unknown): Promise<readonly CurrentPcb209SpatialResult[]> {
+    const context = this.#stagedContext, pipe = this.#pipe, profile = this.#pcbSourceProfile;
+    const source = CURRENT_PCB_209_SPATIAL_SOURCE_PROFILE, target = currentDisposableOpenSealedTargetSchema.parse(input);
+    if (this.#purpose !== "pcb-spatial209" || !(pipe instanceof CurrentPcbSpatialPipe) || context === null || profile === null ||
+        this.#spatial209Consumed || !this.#pcbSourceQualified || this.#pcbFrameObservation?.ok !== true ||
+        this.#workersConsumed || this.#modelConsumed || profile.family !== "pcb" || profile.relativePath !== source.relativePath ||
+        profile.scriptSha256 !== source.sha256 || profile.scriptBytes !== source.bytes ||
+        JSON.stringify(target) !== JSON.stringify(this.#projectOpeningTarget)) { throw error("SPATIAL209_UNAVAILABLE"); }
+    this.#enter(true); this.#spatial209Consumed = true;
+    try {
+      const pcb = context.modelContext(), ui = context.pcbOpeningContext();
+      const current = (): void => {
+        this.#available(); context.pcbScript(profile);
+        if (this.#stagedContext !== context || JSON.stringify(context.modelContext()) !== JSON.stringify(pcb) ||
+            JSON.stringify(context.pcbOpeningContext()) !== JSON.stringify(ui)) { throw error("SPATIAL209_CONTEXT"); }
+      };
+      await this.#verifyInstallation(); current(); await this.#verify(); current();
+      await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current();
+      // The stage includes all sixteen reads and its original group release.
+      // Retain additional capacity for the existing post-observation reproofs.
+      if (pipe.status().requestCount + 1 + CURRENT_PCB_SPATIAL_REQUEST_DERIVATION.spatialStage + 16 > CURRENT_PCB_SPATIAL_PROFILE.requestLimit) {
+        throw error("SPATIAL209_CAPACITY");
+      }
+      pipe.bindSpatial({ uniqueContextId: pcb.uniqueContextId, scriptId: pcb.scriptId });
+      const runner = new CurrentPcbSpatialCaptureRunner({
+        request: (command): Promise<unknown> => this.#transfer(() => pipe.observeSpatial(command)), assertCurrent: current,
+      }, pcb.scriptId, pcb.uniqueContextId, target.documentUuid);
+      const result = await runner.readBatch(queries);
+      current(); await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current();
+      await this.#verifyInstallation(); current(); await this.#verify(); current();
+      return result;
+    } catch (caughtError) { this.#input.emit("error", error("SPATIAL209_FAILED")); throw caughtError; }
+    finally { this.#busy = false; }
+  }
+
   /** One fixed four-family209 DTO read through the original qualified child.
    * This stage owns no model scope, source baseline, write or Save authority. */
   public async observePrimitives209(input: CurrentDisposableOpenSealedTarget): Promise<Readonly<RecordValue>> {
@@ -1662,7 +1709,7 @@ class CurrentPcbRetainedOwnerCore {
   /** Fixed parent-only child reporting. The optional profile is an internal
    * synthetic-test seam, never part of the public lifecycle request. */
   public async inspectWorkers(profile?: DiagnosticWorkerScriptProfile): Promise<Readonly<RecordValue>> {
-    if (this.#startupPurpose || (this.#purpose === "diagnostic209" || this.#purpose === "visual209")) { throw error("STARTUP_LEGACY_ROUTE"); }
+    if (this.#startupPurpose || (this.#purpose === "diagnostic209" || this.#purpose === "visual209" || this.#purpose === "pcb-spatial209")) { throw error("STARTUP_LEGACY_ROUTE"); }
     const attachment = this.#stagedAttachment;
     if (this.#workersConsumed || this.#stagedContext === null || attachment === null || this.#inspectionConsumed ||
         this.#modelConsumed || (this.#stringPurpose ? !this.#pcbSourceQualified : this.#pcbOpeningConsumed)) {
@@ -1717,7 +1764,7 @@ class CurrentPcbRetainedOwnerCore {
   /** Fixed read-only scope path in an already source-qualified PCB context.
    * No opened UI/worker or caller-provided handle can substitute for it. */
   public async observeModelState(): Promise<CurrentPcbDiagnosticModelObservation> {
-    if (this.#purpose === "diagnostic209" || this.#purpose === "visual209") { throw error("MODEL_OBSERVATION_UNAVAILABLE"); }
+    if (this.#purpose === "diagnostic209" || this.#purpose === "visual209" || this.#purpose === "pcb-spatial209") { throw error("MODEL_OBSERVATION_UNAVAILABLE"); }
     if (this.#startupPurpose) { throw error("STARTUP_LEGACY_ROUTE"); }
     const context = this.#stagedContext;
     if (this.#stringPurpose || this.#modelConsumed || context === null || !this.#scriptConsumed || this.#inspectionConsumed ||
@@ -4180,6 +4227,7 @@ class CurrentPcbRetainedOwnerCore {
       if (bornFootprintTransport(this.#purpose)) { nativeRequest = combinedDiagnosticNativeRequest; }
       else if (this.#purpose === "footprint-held-cache209") { nativeRequest = heldCacheDiagnosticNativeRequest; }
       else if (this.#purpose === "visual209") { nativeRequest = visualDiagnosticNativeRequest; }
+      else if (this.#purpose === "pcb-spatial209") { nativeRequest = spatialDiagnosticNativeRequest; }
       const result = await this.#request(this.#stringPurpose ? stringPrecreateNativeRequest(chunk) : nativeRequest(chunk));
       if (!exact(result, ["written"]) || result["written"] !== true) { throw error("WRITE_ACK"); }
       // oxlint-disable-next-line promise/prefer-await-to-callbacks, eslint/no-useless-return -- Writable completion must be the terminal branch operation.
@@ -4683,6 +4731,16 @@ export class CurrentPcb209DiagnosticOwner extends CurrentPcbRetainedOwnerCore {
   }
 }
 
+/** Unregistered fresh spatial birth. Its fixed larger qualification budget is
+ * unavailable to existing diagnostic, visual, model and writer owners.
+ */
+export class CurrentPcbSpatialOwner extends CurrentPcbRetainedOwnerCore {
+  public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
+    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve()) {
+    super(child, verify, installation, verifyInstallation, "pcb-spatial209");
+  }
+}
+
 /** Unregistered pre-create-only facade, with no create, Save or generic send. */
 export class CurrentPcbStringPrecreateOwner extends CurrentPcbRetainedOwnerCore {
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
@@ -5172,6 +5230,11 @@ export function startCurrentPcb209VisualOwner(options: CurrentPcbDiagnosticInsta
 export function startCurrentPcb209DiagnosticOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcb209DiagnosticOwner> {
   return startFixedOwner(options, "diagnostic209", "209-opening");
 }
+
+/** Private spatial factory only. No live route is registered by this export. */
+export function startCurrentPcbSpatialOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbSpatialOwner> {
+  return startFixedOwner(options, "pcb-spatial209", "209-spatial");
+}
 /** Called only by the separate String lifecycle, never diagnostic requests. */
 export function startCurrentPcbStringPrecreateOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbStringPrecreateOwner> {
   return startFixedOwner(options, "string-precreate");
@@ -5537,7 +5600,7 @@ export function currentFootprintHeadAgeValidationAllocationOutcome(binding: Curr
 }
 
 async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, purpose: OwnerPurpose,
-  generation: "206" | "209-opening" | "209-visual" | "209-startup" | "209-held-cache" = "206", savedWriter?: CurrentFootprintCopyNativeOwner,
+  generation: "206" | "209-opening" | "209-visual" | "209-spatial" | "209-startup" | "209-held-cache" = "206", savedWriter?: CurrentFootprintCopyNativeOwner,
   forwardSavedHandoff: object | null = null, heldValidation: HeldCacheValidationAllocation | null = null, headAgeValidation: HeadAgeValidationAllocation | null = null,
   forwardExecutionBirth: ForwardExecutionBirthAllocation | null = null): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
   if ((forwardExecutionBirth !== null) !== (purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE) || forwardExecutionBirth !== null &&
@@ -5549,6 +5612,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   if (forwardSaved !== null && (purpose !== "worker-startup-footprint-saved209" || generation !== "209-startup" || savedWriter !== undefined)) { throw error("FORWARD_SAVED_PURPOSE"); }
   const startup209 = purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-held-saved209" || purpose === "worker-startup-footprint-main209" || purpose === "footprint-head-age209" || bornFootprintTransport(purpose)) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
   if ((generation === "209-opening") !== (purpose === "diagnostic209") || (generation === "209-visual") !== (purpose === "visual209") ||
+      (generation === "209-spatial") !== (purpose === "pcb-spatial209") ||
       (generation === "209-startup") !== startup209 || (generation === "209-held-cache") !== (purpose === "footprint-held-cache209") ||
       (heldValidation !== null) !== (purpose === "footprint-held-cache209")) { throw error("INSTALLATION_PURPOSE"); }
   if (heldValidation !== null) { requireHeldCacheValidationBinding(heldValidation); }
@@ -5617,6 +5681,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === "string-precreate") { purposeSwitch = " -StringPrecreate"; }
   else if (purpose === "visual209") { purposeSwitch = " -Visual209"; }
   else if (purpose === "diagnostic209") { purposeSwitch = " -Layers209"; }
+  else if (purpose === "pcb-spatial209") { purposeSwitch = " -Spatial209"; }
   else if (purpose === "footprint-held-cache209") { purposeSwitch = " -FootprintHeldCache209"; }
   const legacyBootstrap = `$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';` +
     `$file=[IO.File]::Open('${windowsPath.replaceAll("'", "''")}',[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read);` +
@@ -5714,6 +5779,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === "string-precreate") { owner = new CurrentPcbStringPrecreateOwner(child, verify, installation, verifyInstallation); }
   else if (purpose === "visual209") { owner = new CurrentPcb209VisualOwner(child, verify, installation, verifyInstallation); }
   else if (purpose === "diagnostic209") { owner = new CurrentPcb209DiagnosticOwner(child, verify, installation, verifyInstallation); }
+  else if (purpose === "pcb-spatial209") { owner = new CurrentPcbSpatialOwner(child, verify, installation, verifyInstallation); }
   else { owner = new CurrentPcbDiagnosticOwner(child, verify, installation, verifyInstallation); }
   if (owner instanceof CurrentFootprintCopyNativeOwner || owner instanceof CurrentFootprintCopySavedNativeOwner || owner instanceof CurrentFootprintCopyHeldSavedNativeOwner || owner instanceof CurrentFootprintCopyForwardNativeOwner || owner instanceof CurrentFootprintCopyForwardSavedNativeOwner) {
     footprintFactories.set(owner, Object.freeze({ options: sealedOptions, installation }));

@@ -4,6 +4,65 @@ import { createHash } from "node:crypto";
 
 export const FORWARD_NATIVE_LEGACY = Object.freeze({ bytes: 1_042_994, sha256: "58f681b7c896069fd748b957fe925e39ed4b8990f88de3483fbda781a65dccee" });
 export const FORWARD_NATIVE_PREDECESSOR = Object.freeze({ bytes: 1_046_915, sha256: "438199ce665e55ca5256c2310768fc2c24c672e81f49cad26145186744b1943b" });
+/** Exact later shared helper. Its separate spatial birth is not part of the
+ * released forward-only graph and grants no upgrade to that graph's purpose. */
+export const FORWARD_NATIVE_CURRENT_SHARED_HELPER = Object.freeze({ bytes: 1_097_306, sha256: "6ec843c4d7b40dde941b2b01691536ce8a944a4a8c33fc121bc3b418d508743a" });
+/** Exact reviewed spatial-only source projection. These build-time strings
+ * are not runtime commands or a generic removal rule. */
+const sharedSpatialProjection = [
+  {
+    "before": "param([switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup,[switch]$Layers209,[switch]$Visual209,[switch]$Spatial209,[switch]$WorkerStartup209,[switch]$WorkerStartupEmpty209,[switch]$WorkerStartupRatline209,[switch]$WorkerStartupRatlineContinuation209,[switch]$WorkerStartupFootprint209,[switch]$WorkerStartupFootprintCopy209,[switch]$WorkerStartupFootprintSaved209,[switch]$WorkerStartupFootprintHeldSaved209,[switch]$FootprintHeldCache209,[switch]$FootprintHeadAge209,[switch]$WorkerStartupFootprintMain209,[switch]$WorkerStartupFootprintCombined209,[switch]$WorkerStartupFootprintForward209,[string]$CombinedReadyChallenge)\n",
+    "after": "param([switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup,[switch]$Layers209,[switch]$Visual209,[switch]$WorkerStartup209,[switch]$WorkerStartupEmpty209,[switch]$WorkerStartupRatline209,[switch]$WorkerStartupRatlineContinuation209,[switch]$WorkerStartupFootprint209,[switch]$WorkerStartupFootprintCopy209,[switch]$WorkerStartupFootprintSaved209,[switch]$WorkerStartupFootprintHeldSaved209,[switch]$FootprintHeldCache209,[switch]$FootprintHeadAge209,[switch]$WorkerStartupFootprintMain209,[switch]$WorkerStartupFootprintCombined209,[switch]$WorkerStartupFootprintForward209,[string]$CombinedReadyChallenge)\n"
+  },
+  {
+    "before": "if ($Spatial209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $Visual209 -or $WorkerStartup209 -or $WorkerStartupEmpty209 -or $WorkerStartupRatline209 -or $WorkerStartupRatlineContinuation209 -or $WorkerStartupFootprint209 -or $WorkerStartupFootprintCopy209 -or $WorkerStartupFootprintSaved209 -or $WorkerStartupFootprintHeldSaved209 -or $FootprintHeldCache209 -or $FootprintHeadAge209 -or $WorkerStartupFootprintMain209 -or $WorkerStartupFootprintCombined209 -or $WorkerStartupFootprintForward209)) {throw 'pcb-diagnostic-conflicting-spatial-purpose'}\n",
+    "after": ""
+  },
+  {
+    "before": "  readonly bool layers209,visual209,spatial209;\n",
+    "after": "  readonly bool layers209,visual209;\n"
+  },
+  {
+    "before": "  int RequestLimit { get { return spatial209?384:workerStartup?256:stringPrecreate?3309:103; } }\n",
+    "after": "  int RequestLimit { get { return workerStartup?256:stringPrecreate?3309:103; } }\n"
+  },
+  {
+    "before": "    string encoded=DomProtocolMessageCore(spatial209?1:id,method,sessionId,frameId,backendNodeId,stringPrecreate);\n    if(spatial209)SpatialDiscovery(method,sessionId);\n    SendMessage(id,spatial209?SpatialOriginalId(id,encoded):encoded);\n",
+    "after": "    SendMessage(id,DomProtocolMessageCore(id,method,sessionId,frameId,backendNodeId,stringPrecreate));\n"
+  },
+  {
+    "before": "    string message=ProtocolMessageCore(spatial209?1:id,method,OptionalText(targetId),OptionalText(sessionId),OptionalText(scriptId),OptionalText(uniqueContextId),stringPrecreate);\n    if(spatial209) {SpatialDiscovery(method,OptionalText(sessionId));message=SpatialOriginalId(id,message);}\n",
+    "after": "    string message=ProtocolMessageCore(id,method,OptionalText(targetId),OptionalText(sessionId),OptionalText(scriptId),OptionalText(uniqueContextId),stringPrecreate);\n"
+  },
+  {
+    "before": "    string encoded=OpeningProtocolMessageCore(false,spatial209?1:id,sessionId,uniqueContextId,phase,path,project,branch,document,source,stringPrecreate);\n    if(spatial209) {SpatialSession(sessionId);if(spatialStage>0)throw Error(\"spatial209-navigation-consumed\");}\n    SendMessage(id,spatial209?SpatialOriginalId(id,encoded):encoded);\n",
+    "after": "    SendMessage(id,OpeningProtocolMessageCore(false,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,stringPrecreate));\n"
+  },
+  {
+    "before": "    string encoded=OpeningProtocolMessageCore(true,spatial209?1:id,sessionId,uniqueContextId,phase,path,project,branch,document,source,stringPrecreate);\n    if(spatial209) {SpatialSession(sessionId);if(spatialStage>0 && phase!=\"observe\")throw Error(\"spatial209-navigation-consumed\");if(phase==\"observe\") {if(spatialPcbSession!=null && spatialPcbSession!=sessionId)throw Error(\"spatial209-original-pcb\");spatialPcbSession=sessionId;}}\n    SendMessage(id,spatial209?SpatialOriginalId(id,encoded):encoded);\n",
+    "after": "    SendMessage(id,OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,stringPrecreate));\n"
+  },
+  {
+    "before": "$owner=if ($Spatial209) {[EasyedaDiagnosticOwner]::CreateSpatial209()} elseif ($FootprintHeadAge209) {[EasyedaDiagnosticOwner]::CreateFootprintHeadAge209()} elseif ($FootprintHeldCache209) {[EasyedaDiagnosticOwner]::CreateFootprintHeldCache209()} elseif ($WorkerStartupFootprintHeldSaved209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintHeldSaved209()} elseif ($Visual209) {[EasyedaDiagnosticOwner]::CreateVisual209()} elseif ($WorkerStartupFootprintForward209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintForward209()} elseif ($WorkerStartupFootprintCombined209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintCombined209()} elseif ($WorkerStartupFootprintMain209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintMain209()} elseif ($WorkerStartupFootprintSaved209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintSaved209()} elseif ($WorkerStartupFootprintCopy209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintCopy209()} elseif ($WorkerStartupFootprint209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprint209()} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatlineContinuation209()} elseif ($WorkerStartupRatline209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatline209()} elseif ($WorkerStartupEmpty209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupEmpty209()} elseif ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()} elseif ($WorkerStartup) {[EasyedaDiagnosticOwner]::CreateWorkerStartup()} elseif ($StringPrecreate) {[EasyedaDiagnosticOwner]::CreateStringPrecreate()} elseif ($Layers209) {[EasyedaDiagnosticOwner]::CreateLayers209()} else {New-Object EasyedaDiagnosticOwner}\n",
+    "after": "$owner=if ($FootprintHeadAge209) {[EasyedaDiagnosticOwner]::CreateFootprintHeadAge209()} elseif ($FootprintHeldCache209) {[EasyedaDiagnosticOwner]::CreateFootprintHeldCache209()} elseif ($WorkerStartupFootprintHeldSaved209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintHeldSaved209()} elseif ($Visual209) {[EasyedaDiagnosticOwner]::CreateVisual209()} elseif ($WorkerStartupFootprintForward209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintForward209()} elseif ($WorkerStartupFootprintCombined209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintCombined209()} elseif ($WorkerStartupFootprintMain209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintMain209()} elseif ($WorkerStartupFootprintSaved209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintSaved209()} elseif ($WorkerStartupFootprintCopy209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintCopy209()} elseif ($WorkerStartupFootprint209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprint209()} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatlineContinuation209()} elseif ($WorkerStartupRatline209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatline209()} elseif ($WorkerStartupEmpty209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupEmpty209()} elseif ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()} elseif ($WorkerStartup) {[EasyedaDiagnosticOwner]::CreateWorkerStartup()} elseif ($StringPrecreate) {[EasyedaDiagnosticOwner]::CreateStringPrecreate()} elseif ($Layers209) {[EasyedaDiagnosticOwner]::CreateLayers209()} else {New-Object EasyedaDiagnosticOwner}\n"
+  },
+  {
+    "before": "    [EasyedaDiagnosticOwner]::VerifySpatial209Smoke()\n",
+    "after": ""
+  },
+  {
+    "before": "      if ($Spatial209) {$owner.AdmitSpatialAction($request.action)}\n",
+    "after": ""
+  },
+  {
+    "before": "        'spatial209' {\n          if (-not $Spatial209 -or -not $launched -or $request.method -isnot [string] -or $request.sessionId -isnot [string] -or $request.spatialPhase -isnot [string] -or\n              ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt 384) {throw 'pcb-diagnostic-spatial209-fields'}\n          $spatialBase=@('action','helperInstance','id','jobId','method','requestId','rootCreated','rootPid','sessionId','spatialPhase')\n          $spatialFields=@{}\n          foreach ($property in $request.PSObject.Properties) {\n            if ($spatialBase -cnotcontains $property.Name) {$spatialFields[$property.Name]=$property.Value}\n          }\n          foreach ($field in $spatialBase) {if (@($request.PSObject.Properties.Name) -cnotcontains $field) {throw 'pcb-diagnostic-spatial209-field'}}\n          $owner.SendSpatial209([int]$request.requestId,$request.method,$request.sessionId,$request.spatialPhase,$spatialFields)\n          $result=@{written=$true}\n        }\n",
+    "after": ""
+  },
+  {
+    "before": "          $requestLimit=if ($Spatial209) {383} elseif ($StringPrecreate) {3309} else {103}\n          if ($Spatial209 -and ($null -ne $request.modelPhase -or $null -ne $request.stringPhase -or $null -ne $request.commonPhase -or $null -ne $request.workerProducerPhase -or $null -ne $request.movePhase -or $null -ne $request.actorClockPhase -or (@('Browser.getVersion','Target.getTargets','Target.attachToTarget','Page.enable','Page.getFrameTree','Runtime.enable','Debugger.enable','Debugger.getScriptSource','DOM.getFrameOwner','DOM.describeNode') -cnotcontains $request.method -and -not ($request.method -ceq 'Runtime.callFunctionOn' -and ($null -ne $request.openingPhase -or $null -ne $request.pcbOpeningPhase))))) {throw 'pcb-diagnostic-spatial209-discovery-only'}\n",
+    "after": "          $requestLimit=if ($StringPrecreate) {3309} else {103}\n"
+  }
+] as const;
 const transforms = [
   {
     "label": "future-birth-group-01",
@@ -124,9 +183,35 @@ const transforms = [
 /** Reconstruct all 45 added/28 removed predecessor lines from the exact legacy
  * source; missing/duplicate anchors or any unrelated input drift refuse. */
 const hash = (value: string): string => createHash("sha256").update(value).digest("hex");
-export function migrateForwardNativePredecessor(input: string): string {
-  if (Buffer.byteLength(input) !== FORWARD_NATIVE_LEGACY.bytes || hash(input) !== FORWARD_NATIVE_LEGACY.sha256) { throw new Error("FORWARD_NATIVE_LEGACY_SOURCE"); }
+/** Normalize only the separately pinned current shared helper into the exact
+ * released legacy bytes before any existing forward transformation. Unknown
+ * source, changed additions and every collateral byte still fail closed. */
+export function normalizeForwardNativeLegacySource(input: string): string {
+  if (Buffer.byteLength(input) === FORWARD_NATIVE_LEGACY.bytes && hash(input) === FORWARD_NATIVE_LEGACY.sha256) { return input; }
+  if (Buffer.byteLength(input) !== FORWARD_NATIVE_CURRENT_SHARED_HELPER.bytes || hash(input) !== FORWARD_NATIVE_CURRENT_SHARED_HELPER.sha256) {
+    throw new Error("FORWARD_NATIVE_LEGACY_SOURCE");
+  }
   let source = input;
+  for (const [index, projection] of sharedSpatialProjection.entries()) {
+    if (source.split(projection.before).length !== 2) { throw new Error(`FORWARD_NATIVE_CURRENT_PROJECTION_${String(index)}`); }
+    source = source.replace(projection.before, projection.after);
+  }
+  const begin = '  EasyedaDiagnosticOwner(string purpose) { if(purpose!="pcb-spatial209")throw Error("spatial209-birth");spatial209=true; }\n';
+  const end = "  // END GENERATED PCB209 SPATIAL PROTOCOL\n";
+  if (source.split(begin).length !== 2 || source.split(end).length !== 2) { throw new Error("FORWARD_NATIVE_CURRENT_SPATIAL_SECTION"); }
+  const start = source.indexOf(begin), stop = source.indexOf(end) + end.length;
+  const removed = source.slice(start, stop);
+  if (Buffer.byteLength(removed) !== 50_933 || hash(removed) !== "4c982098e757ca9f6134ef66a43f50ed5d19037ef6b21c3b5293d4f29818b3f8") {
+    throw new Error("FORWARD_NATIVE_CURRENT_SPATIAL_SECTION");
+  }
+  source = source.slice(0, start) + source.slice(stop);
+  if (Buffer.byteLength(source) !== FORWARD_NATIVE_LEGACY.bytes || hash(source) !== FORWARD_NATIVE_LEGACY.sha256) {
+    throw new Error("FORWARD_NATIVE_CURRENT_LEGACY_PROOF");
+  }
+  return source;
+}
+export function migrateForwardNativePredecessor(input: string): string {
+  let source = normalizeForwardNativeLegacySource(input);
   for (const transform of transforms) {
     if (source.split(transform.before).length !== 2) { throw new Error(`FORWARD_NATIVE_MIGRATION_${transform.label}`); }
     source = source.replace(transform.before, transform.after);

@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { currentPcb209RatlineNativeSource } from "../src/current-pcb-209-ratline-native.ts";
 import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE as profile } from "../src/current-pcb-209-ratline-budget.ts";
+import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES } from "../src/current-pcb-diagnostic-helper-source-profile.ts";
 
 const sourcePath = new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url);
 void test("native ratline purpose embeds exact finite runtime and fixed cumulative resource limits", async () => {
@@ -15,7 +16,7 @@ void test("native ratline purpose embeds exact finite runtime and fixed cumulati
   const end = source.indexOf("// END GENERATED WORKER STARTUP RATLINE209 PROTOCOL"), start = source.indexOf("public static class EasyedaRatline209Limits {");
   assert.ok(start > 0 && end > start);
   assert.deepEqual(Object.fromEntries([...source.slice(start, end).matchAll(/public const long (\w+)=(\d+)L;/gu)].map(match => [match[1], Number(match[2])])), values);
-  assert.ok(Buffer.byteLength(source) <= 1_048_576);
+  assert.ok(Buffer.byteLength(source) <= CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES);
   assert.ok(source.includes("workerStartupRatline209=true;emptyElapsed=Stopwatch.StartNew();"));
   assert.ok(source.includes("readonly bool workerStartupRatlineContinuation209;"));
   assert.ok(source.includes('workerStartupRatlineContinuation209=purpose=="worker-startup-ratline-continuation209";'));
