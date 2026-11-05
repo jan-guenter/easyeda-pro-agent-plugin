@@ -70,18 +70,24 @@ function arrayProperties(size: number, namespace: number): Data {
   result.push(property("length", { type: "number", value: size }, true, false, false));
   return { result, internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", description: "Array(0)", objectId: "array-prototype" } }] };
 }
-function fixture(mode: "success" | "resume-lost" | "release-lost" | "unsubscribe-failed" | "relocated" | "settlement-held" | "arm-held" = "success"): Readonly<{
+function fixture(mode: "success" | "resume-lost" | "release-lost" | "unsubscribe-failed" | "relocated" | "settlement-held" | "arm-held" |
+  "second-arm-held" | "second-arm-remove-held" | "remove-held" | "release-held" | "malformed-pause" = "success"): Readonly<{
   runner: CurrentFootprintCopyCacheConstructionRunner; calls: Command[]; emit: (ordinal: number) => void; lost: () => void;
   unblockMetadata: () => void; metadataEntered: Promise<null>; unblockAllocation: () => void;
+  removalEntered: Promise<null>; unblockRemoval: () => void; rejectRemoval: () => void;
+  releaseEntered: Promise<null>; unblockRelease: () => void;
+  subscribed: () => boolean; cleanupChecks: () => number;
 }> {
   let listener: Parameters<CurrentFootprintCopyCacheConstructionTransport["subscribe"]>[0] | null = null;
-  let arrayCount = 0, ordinal = 0, resumes = 0;
+  let arrayCount = 0, cleanupChecks = 0, heldIndex = 0, ordinal = 0, resumes = 0;
   const arrays = new Map<string, Data>(), calls: Command[] = [], removed = new Set<string>();
   const entered = Promise.withResolvers<null>(), metadataGate = Promise.withResolvers<null>();
   const allocation = Promise.withResolvers<unknown>();
+  const removal = Promise.withResolvers<null>(), removalEntered = Promise.withResolvers<null>();
+  const release = Promise.withResolvers<null>(), releaseEntered = Promise.withResolvers<null>();
   const emit = (index: number): void => {
     ordinal = index; const site = SITES[index % 2]; assert.ok(site !== undefined && listener !== null);
-    listener.paused({ reason: "other", hitBreakpoints: [`point-${String(index % 2)}`], callFrames: [{ callFrameId: `frame-${String(index)}`, functionName: "open",
+    listener.paused({ reason: "other", hitBreakpoints: [`point-${String(index % 2)}`], callFrames: mode === "malformed-pause" ? [] : [{ callFrameId: `frame-${String(index)}`, functionName: "open",
       location: { scriptId: "script", lineNumber: site.lineNumber, columnNumber: site.columnNumber } },
       { callFrameId: "caller", functionName: "Gi", location: { scriptId: "script", lineNumber: 106, columnNumber: 57_200 } }] });
   };
@@ -89,7 +95,9 @@ function fixture(mode: "success" | "resume-lost" | "release-lost" | "unsubscribe
     await Promise.resolve(); calls.push(command);
     if (command.method === "Debugger.setBreakpoint") {
       const index = calls.filter(item => item.method === "Debugger.setBreakpoint").length - 1;
-      if (mode === "arm-held") { entered.resolve(null); return allocation.promise; }
+      if (mode === "arm-held" || index === 1 && (mode === "second-arm-held" || mode === "second-arm-remove-held")) {
+        heldIndex = index; entered.resolve(null); return allocation.promise;
+      }
       return { breakpointId: `point-${String(index)}`, actualLocation: { ...command.params.location, ...(mode === "relocated" ? { columnNumber: command.params.location.columnNumber + 1 } : {}) } };
     }
     if (command.method === "Debugger.evaluateOnCallFrame") { return { result: { type: "object", className: "bb", description: "bb", objectId: `wrapper-${String(Math.floor(ordinal / 2))}` } }; }
@@ -108,8 +116,14 @@ function fixture(mode: "success" | "resume-lost" | "release-lost" | "unsubscribe
       arrays.set(id, arrayProperties(size, Math.floor(ordinal / 2)));
       return { result: { type: "object", subtype: "array", className: "Array", description: `Array(${String(size)})`, objectId: id } };
     }
-    if (command.method === "Debugger.removeBreakpoint") { removed.add(command.params.breakpointId); }
+    if (command.method === "Debugger.removeBreakpoint") {
+      if (command.params.breakpointId === "point-0" && (mode === "second-arm-remove-held" || mode === "remove-held")) {
+        removalEntered.resolve(null); await removal.promise;
+      }
+      removed.add(command.params.breakpointId);
+    }
     if (command.method === "Runtime.releaseObjectGroup" && mode === "release-lost") { throw new Error("lost release acknowledgment"); }
+    if (command.method === "Runtime.releaseObjectGroup" && mode === "release-held") { releaseEntered.resolve(null); await release.promise; }
     if (command.method === "Debugger.resume") {
       resumes += 1; assert.ok(listener !== null); listener.resumed();
       if (ordinal < 3 && !removed.has(`point-${String((ordinal + 1) % 2)}`)) { const next = ordinal + 1; queueMicrotask(() => { emit(next); }); }
@@ -119,7 +133,7 @@ function fixture(mode: "success" | "resume-lost" | "release-lost" | "unsubscribe
   };
   const transport: CurrentFootprintCopyCacheConstructionTransport = Object.freeze({
     assertOriginalWorker: (): Promise<void> => { assert.ok(listener !== undefined); return Promise.resolve(); },
-    assertCleanup: (): void => { assert.ok(transport !== undefined); }, request,
+    assertCleanup: (): void => { assert.ok(transport !== undefined); cleanupChecks += 1; }, request,
     subscribe: (value: Parameters<CurrentFootprintCopyCacheConstructionTransport["subscribe"]>[0]): (() => void) => {
       assert.equal(listener, null); listener = value; return (): void => {
         if (mode === "unsubscribe-failed") { throw new Error("cache listener remains owned"); }
@@ -129,10 +143,26 @@ function fixture(mode: "success" | "resume-lost" | "release-lost" | "unsubscribe
   });
   return { runner: new CurrentFootprintCopyCacheConstructionRunner(transport, { scriptId: "script", projectObjectId: "project", projectUuid: "a".repeat(64) }), calls, emit,
     unblockMetadata: (): void => { metadataGate.resolve(null); }, metadataEntered: entered.promise,
-    unblockAllocation: (): void => { const site = SITES[0]; assert.ok(site !== undefined);
-      allocation.resolve({ breakpointId: "point-0", actualLocation: { scriptId: "script", lineNumber: site.lineNumber, columnNumber: site.columnNumber } }); },
+    unblockAllocation: (): void => { const site = SITES[heldIndex]; assert.ok(site !== undefined);
+      allocation.resolve({ breakpointId: `point-${String(heldIndex)}`, actualLocation: { scriptId: "script", lineNumber: site.lineNumber, columnNumber: site.columnNumber } }); },
+    removalEntered: removalEntered.promise, unblockRemoval: (): void => { removal.resolve(null); },
+    rejectRemoval: (): void => { removal.reject(new Error("late removal acknowledgment lost")); },
+    releaseEntered: releaseEntered.promise, unblockRelease: (): void => { release.resolve(null); },
+    subscribed: (): boolean => listener !== null, cleanupChecks: (): number => cleanupChecks,
     lost: (): void => { assert.ok(listener !== null); listener.lost(); } };
 }
+
+void test("a malformed owned cache pause retains unknown pause custody after known IDs are removed", async () => {
+  const f = fixture("malformed-pause"); await f.runner.arm(); f.emit(0);
+  await assert.rejects(f.runner.result()); const failure = f.runner.diagnostics().firstFailure;
+  await assert.rejects(f.runner.cleanup());
+  assert.equal(f.calls.filter(call => call.method === "Debugger.removeBreakpoint").length, 2);
+  assert.equal(f.calls.filter(call => call.method === "Debugger.resume" || call.method === "Runtime.releaseObjectGroup").length, 0);
+  assert.equal(f.subscribed(), true); assert.equal(f.runner.diagnostics().released, false);
+  assert.equal(f.runner.diagnostics().firstFailure, failure);
+  const calls = f.calls.length; await assert.rejects(f.runner.release()); await assert.rejects(f.runner.cleanup());
+  assert.equal(f.calls.length, calls);
+});
 
 void test("registered original cache events consume33 requests through reproof and release, without native open dispatch", async () => {
   const f = fixture(); await f.runner.arm(); f.emit(0);
@@ -188,12 +218,101 @@ void test("lost or expired cache arm settles its caller while retaining unknown 
       assert.equal(f.runner.diagnostics().firstFailure, firstFailure);
       assert.equal(f.runner.retained()["released"], false);
       await assert.rejects(f.runner.cleanup());
-      assert.deepEqual(f.calls.map(call => call.method), ["Debugger.setBreakpoint"]);
+      await assert.rejects(f.runner.cleanup());
+      assert.deepEqual(f.calls.map(call => call.method), ["Debugger.setBreakpoint", "Debugger.removeBreakpoint"]);
+      assert.equal(f.cleanupChecks(), 2); assert.equal(f.subscribed(), true);
     } finally {
       expiry.abort();
       f.unblockAllocation(); await Promise.allSettled([arming]);
     }
   }
+});
+void test("uncertain second cache allocation cleans each retained original ID once without forgetting uncertainty", async () => {
+  const f = fixture("second-arm-held"); const arming = f.runner.arm();
+  try {
+    await f.metadataEntered; f.lost(); const failure = await arming.catch((error: unknown) => error);
+    assert.ok(failure instanceof Error); const firstFailure = f.runner.diagnostics().firstFailure;
+    const refusesUnknown = (error: unknown): boolean => error instanceof AggregateError && error.cause === failure &&
+      error.errors[0] === failure && error.errors.some(item => item instanceof Error && item.message === "FOOTPRINT_CACHE_CONSTRUCTION_RETAIN_UNKNOWN_ALLOCATION");
+    await assert.rejects(f.runner.cleanup(), refusesUnknown);
+    assert.deepEqual(f.calls.map(call => call.method), ["Debugger.setBreakpoint", "Debugger.setBreakpoint", "Debugger.removeBreakpoint"]);
+    assert.deepEqual(f.calls.filter(call => call.method === "Debugger.removeBreakpoint").map(call => call.params.breakpointId), ["point-0"]);
+    await assert.rejects(f.runner.cleanup(), refusesUnknown); assert.equal(f.calls.length, 3);
+    assert.equal(f.runner.diagnostics().pendingAllocations, 1); assert.equal(f.subscribed(), true);
+    f.unblockAllocation(); await nextTurn();
+    await assert.rejects(f.runner.cleanup(), refusesUnknown); await assert.rejects(f.runner.cleanup(), refusesUnknown);
+    assert.deepEqual(f.calls.filter(call => call.method === "Debugger.removeBreakpoint").map(call => call.params.breakpointId), ["point-0", "point-1"]);
+    assert.equal(f.cleanupChecks(), 4); assert.equal(f.runner.diagnostics().allocationUncertain, true);
+    assert.equal(f.runner.diagnostics().firstFailure, firstFailure); assert.equal(f.subscribed(), true);
+    await assert.rejects(f.runner.release()); await assert.rejects(f.runner.arm()); await assert.rejects(f.runner.result());
+    assert.equal(f.calls.length, 4);
+  } finally { f.unblockAllocation(); await Promise.allSettled([arming]); }
+});
+void test("cache loss rejects capture before a held original read and bounds cleanup without joining its pending chain", { timeout: 8000 }, async () => {
+  const f = fixture("settlement-held"); await f.runner.arm();
+  const capturing = f.runner.waitOriginalCaptureComplete(); f.emit(0);
+  try {
+    await f.metadataEntered; f.lost(); const failure = await capturing.catch((error: unknown) => error);
+    assert.ok(failure instanceof Error); assert.match(failure.message, /CHANNEL_LOST/u);
+    const firstFailure = f.runner.diagnostics().firstFailure;
+    await assert.rejects(f.runner.cleanup(), (error: unknown) => error instanceof AggregateError && error.cause === failure &&
+      error.errors.some(item => item instanceof Error && item.message === "FOOTPRINT_CACHE_CONSTRUCTION_DEADLINE"));
+    assert.deepEqual(f.calls.filter(call => call.method === "Debugger.removeBreakpoint").map(call => call.params.breakpointId), ["point-0", "point-1"]);
+    assert.equal(f.calls.some(call => call.method === "Debugger.resume" || call.method === "Runtime.releaseObjectGroup"), false);
+    await assert.rejects(f.runner.release()); assert.equal(f.subscribed(), true);
+    f.unblockMetadata(); await nextTurn(); await f.runner.cleanup();
+    assert.equal(f.runner.diagnostics().firstFailure, firstFailure); assert.equal(f.runner.retained()["failed"], true);
+    assert.equal(f.calls.filter(call => call.method === "Debugger.removeBreakpoint").length, 2);
+    assert.equal(f.calls.filter(call => call.method === "Debugger.resume").length, 1);
+    assert.equal(f.calls.filter(call => call.method === "Runtime.releaseObjectGroup").length, 1);
+    assert.equal(f.subscribed(), false); await assert.rejects(f.runner.result());
+  } finally { f.unblockMetadata(); await Promise.allSettled([capturing]); }
+});
+void test("unknown cache removal retains its late acknowledgment or failure without replaying the original send", { timeout: 12_000 }, async () => {
+  for (const acknowledgment of ["success", "lost"] as const) {
+    const f = fixture("second-arm-remove-held"); const arming = f.runner.arm();
+    try {
+      await f.metadataEntered; f.lost(); const failure = await arming.catch((error: unknown) => error);
+      const cleaning = f.runner.cleanup(); await f.removalEntered;
+      await assert.rejects(cleaning, (error: unknown) => error instanceof AggregateError && error.cause === failure &&
+        error.errors.some(item => item instanceof Error && item.message === "FOOTPRINT_CACHE_CONSTRUCTION_DEADLINE"));
+      const sent = [...f.calls]; await assert.rejects(f.runner.cleanup()); await assert.rejects(f.runner.release());
+      assert.deepEqual(f.calls, sent); assert.equal(f.cleanupChecks(), 1); assert.equal(f.subscribed(), true);
+      if (acknowledgment === "success") { f.unblockRemoval(); } else { f.rejectRemoval(); }
+      await nextTurn();
+      await assert.rejects(f.runner.cleanup(), (error: unknown) => error instanceof AggregateError && error.cause === failure &&
+        (acknowledgment === "success" || error.errors.some(item => item instanceof Error && item.message === "late removal acknowledgment lost")));
+      assert.deepEqual(f.calls, sent); assert.equal(f.cleanupChecks(), acknowledgment === "success" ? 2 : 1);
+      assert.equal(f.runner.diagnostics().allocationUncertain, true); assert.equal(f.runner.retained()["released"], false);
+      assert.equal(f.subscribed(), true);
+    } finally { f.unblockRemoval(); f.unblockAllocation(); await Promise.allSettled([arming]); }
+  }
+});
+void test("an unacknowledged cache removal blocks direct release even when all original allocations are known", { timeout: 8000 }, async () => {
+  const f = fixture("remove-held"); await f.runner.arm(); f.lost();
+  try {
+    const cleaning = f.runner.cleanup(); await f.removalEntered; await assert.rejects(cleaning, /CLEANUP_FAILED/u);
+    assert.equal(f.runner.diagnostics().allocationUncertain, false);
+    const sent = [...f.calls]; await assert.rejects(f.runner.release()); await assert.rejects(f.runner.cleanup());
+    assert.deepEqual(f.calls, sent); assert.equal(f.subscribed(), true);
+    f.unblockRemoval(); await nextTurn(); await f.runner.cleanup();
+    assert.equal(f.calls.filter(call => call.method === "Debugger.removeBreakpoint").length, 2);
+    assert.equal(f.calls.filter(call => call.method === "Runtime.releaseObjectGroup").length, 1);
+    assert.equal(f.subscribed(), false); assert.equal(f.runner.retained()["failed"], true);
+  } finally { f.unblockRemoval(); }
+});
+void test("a late owned pause after cache group acknowledgment retains the subscription and consumes release once", async () => {
+  const f = fixture("release-held"); await f.runner.arm(); f.lost(); const cleaning = f.runner.cleanup();
+  try {
+    await f.releaseEntered; f.emit(0); await nextTurn(); f.unblockRelease();
+    await assert.rejects(cleaning, /CLEANUP_FAILED/u);
+    assert.equal(f.runner.diagnostics().pauseCount, 1); assert.equal(f.runner.diagnostics().resumedPauses, 0);
+    assert.equal(f.runner.retained()["releaseAttempted"], true); assert.equal(f.runner.retained()["released"], false);
+    assert.equal(f.subscribed(), true); await assert.rejects(f.runner.release());
+    await assert.rejects(f.runner.cleanup(), /CLEANUP_FAILED/u);
+    assert.equal(f.calls.filter(call => call.method === "Runtime.releaseObjectGroup").length, 1);
+    assert.equal(f.calls.filter(call => call.method === "Debugger.resume").length, 1); assert.equal(f.subscribed(), true);
+  } finally { f.unblockRelease(); await Promise.allSettled([cleaning]); }
 });
 void test("cache pause routing uses only retained breakpoint IDs and never evaluates caller accessors", async () => {
   const f = fixture();

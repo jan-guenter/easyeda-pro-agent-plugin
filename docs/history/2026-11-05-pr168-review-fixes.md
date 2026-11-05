@@ -202,3 +202,35 @@ refuse normal replay and complete original cleanup. Independent source review
 found no blocker. This final correction remains separate from the successful
 CI and full review of its `6bce4e3` base; its final build, CI, review disposition
 and publication checks are pending at this append.
+
+## Cache cleanup after the next review, 2026-11-05
+
+The owner-loss correction at `62984e26177887919a8fd6e683951414667b5bee`
+passed all eleven required CI jobs. The facade results were 14,195 tests,
+14,190 passed and five supported platform skips, with no failures. The bridge
+results remained 424 passed. Actual checkout trees, source/runtime pins and the
+Windows request-ID boundary smoke matched that frozen candidate.
+
+CodeRabbit's subsequent review
+[5779010958](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/168#pullrequestreview-5779010958)
+reported a major issue outside the immediate diff. Cache cleanup refused an
+uncertain allocation before removing breakpoint IDs that it already owned, and
+could wait indefinitely for its event chain. The correction attempts each known
+ID once, retains its original removal promise and late acknowledgment, and
+bounds the caller's cleanup waits. It preserves the original failure and unknown
+allocation state. No allocation, removal, resume or object-group release is
+repeated after an ambiguous acknowledgment.
+
+Release now requires all known breakpoint removals acknowledged, no uncertain
+allocation, a settled event chain and the latest held pause resumed. It checks
+these conditions again after the object-group acknowledgment, before dropping
+the subscription. A malformed event for an owned breakpoint retains unknown
+pause custody, including after known IDs are removed. It cannot manufacture a
+frame or release permission.
+
+All sixteen focused cache tests passed, including held reads, uncertain second
+allocations, late removal success/failure, direct-release refusal, a pause
+arriving during release and malformed owned pauses. Full types and strict
+type-aware lint passed with zero warnings. These are isolated transport tests;
+connected qualification, final-head CI, review disposition and publication
+remain separate gates. The batch version remains unchanged.

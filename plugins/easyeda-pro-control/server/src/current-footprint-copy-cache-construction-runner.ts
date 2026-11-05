@@ -31,13 +31,14 @@ export interface CurrentFootprintCopyCacheConstructionObservation {
   readonly networkBackendOwned: false;
   readonly executionAuthorized: false;
 }
-interface Breakpoint { readonly id: string; readonly site: number; attempted: boolean; removed: boolean }
+interface Breakpoint { readonly id: string; readonly site: number; attempted: boolean; removed: boolean;
+  removal: Promise<void> | null; removalFailure: Readonly<{ error: unknown }> | null }
 interface Pause { readonly ordinal: number; readonly frame: string; resumeAttempted: boolean; resumed: boolean }
 interface Allocation { reply: Promise<void> | null; settled: boolean; idRetained: boolean }
 type Step = "not-started" | "arm" | "frame" | "before" | "metadata" | "bind" | "after" | "remove" | "resume" | "join" | "capture-wait" | "release" | "cleanup";
 interface Failure { readonly step: Step; readonly code: string; readonly requests: number; readonly replies: number; readonly pauses: number; readonly metadataIndex: number | null }
 const failures = new WeakMap<Error, string>();
-function fail(code: "OWNER" | "DEADLINE" | "CLEANUP" | "CHANNEL_LOST" | "RETAIN_UNKNOWN_ALLOCATION"): Error {
+function fail(code: "OWNER" | "DEADLINE" | "CLEANUP" | "CHANNEL_LOST" | "RETAIN_UNKNOWN_ALLOCATION" | "RETAIN_UNKNOWN_REMOVAL" | "RETAIN_UNKNOWN_PAUSE"): Error {
   const error = new Error(`FOOTPRINT_CACHE_CONSTRUCTION_${code}`); failures.set(error, code); return error;
 }
 const fields = ["assertOriginalWorker", "assertCleanup", "request", "subscribe"] as const;
@@ -70,6 +71,8 @@ export class CurrentFootprintCopyCacheConstructionRunner {
   #allocationUncertain = false;
   #unsubscribe: (() => void) | null = null;
   #chain: Promise<void> = Promise.resolve();
+  #pendingEvents = 0;
+  #unknownPause = false;
   #resumeSignal: (() => void) | null = null;
   #bound: string | null = null;
   #armed = false;
@@ -149,13 +152,26 @@ export class CurrentFootprintCopyCacheConstructionRunner {
     const maybe = z.looseObject({ hitBreakpoints: z.array(z.string()) }).safeParse(raw);
     if (!maybe.success || !maybe.data.hitBreakpoints.some(id => this.#breakpoints.some(point => point.id === id))) { return; }
     this.#raw.push(raw);
+    this.#pendingEvents += 1;
     this.#chain = this.#queued(this.#chain, raw);
   }
   async #queued(previous: Promise<void>, raw: unknown): Promise<void> {
-    await previous; try { await this.#process(raw); } catch (error) { this.#stop(error); }
+    let recognized = false;
+    try {
+      await previous; const before = this.#pauses.length;
+      try { await this.#process(raw); } finally { recognized = this.#pauses.length > before; }
+    } catch (error) { if (!recognized) { this.#unknownPause = true; } this.#stop(error); }
+    finally { this.#pendingEvents -= 1; }
   }
   static async #deadline(milliseconds: number, signal: AbortSignal): Promise<never> {
     await delay(milliseconds, undefined, { signal }); throw fail("DEADLINE");
+  }
+  /** Bound only the caller's cleanup wait. The original work and its late
+   * acknowledgment remain retained and cannot be dispatched again. */
+  static async #boundedCleanup(work: Promise<void>): Promise<void> {
+    const timeout = new AbortController();
+    try { await Promise.race([work, CurrentFootprintCopyCacheConstructionRunner.#deadline(CURRENT_PCB_209_STARTUP_TIMING.requestMs, timeout.signal)]); }
+    finally { timeout.abort(); }
   }
   /** Stop the caller's arming wait without settling its original allocation.
    * Late replies remain privately retained; uncertainty permits no continuation. */
@@ -186,7 +202,7 @@ export class CurrentFootprintCopyCacheConstructionRunner {
             const allocated = z.looseObject({ breakpointId: handle }).safeParse(raw);
             if (allocated.success) {
               if (!this.#breakpoints.some(point => point.id === allocated.data.breakpointId)) {
-                this.#breakpoints.push({ id: allocated.data.breakpointId, site: index, attempted: false, removed: false });
+                this.#breakpoints.push({ id: allocated.data.breakpointId, site: index, attempted: false, removed: false, removal: null, removalFailure: null });
               }
               allocation.idRetained = this.#breakpoints.some(point => point.id === allocated.data.breakpointId && point.site === index);
             }
@@ -201,9 +217,17 @@ export class CurrentFootprintCopyCacheConstructionRunner {
       this.#armed = true;
     } catch (error) { this.#stop(error); throw this.#error; }
   }
-  async #remove(point: Breakpoint): Promise<void> {
-    if (point.removed) { return; } need(!point.attempted); point.attempted = true;
-    empty.parse(await this.#send({ method: "Debugger.removeBreakpoint", params: { breakpointId: point.id } }, true)); point.removed = true;
+  async #remove(point: Breakpoint, bounded = false): Promise<void> {
+    if (point.removed) { return; }
+    if (point.attempted) { throw point.removalFailure === null ? fail("RETAIN_UNKNOWN_REMOVAL") : point.removalFailure.error; }
+    point.attempted = true;
+    const work = (async (): Promise<void> => {
+      try {
+        empty.parse(await this.#send({ method: "Debugger.removeBreakpoint", params: { breakpointId: point.id } }, true)); point.removed = true;
+      } catch (error) { point.removalFailure = Object.freeze({ error }); throw error; }
+    })();
+    point.removal = work;
+    await (bounded ? CurrentFootprintCopyCacheConstructionRunner.#boundedCleanup(work) : work);
   }
   async #resume(pause: Pause): Promise<void> {
     need(!pause.resumeAttempted); pause.resumeAttempted = true;
@@ -264,7 +288,7 @@ export class CurrentFootprintCopyCacheConstructionRunner {
     try {
       await this.#current();
       await Promise.race([this.#completion.promise, CurrentFootprintCopyCacheConstructionRunner.#deadline(300_000, timeout.signal)]);
-      await this.#chain; if (this.#failed) { throw this.#error; }
+      if (this.#failed) { throw this.#error; } await this.#chain; if (this.#failed) { throw this.#error; }
       need(this.#captureComplete && this.#completed.length === 2 && this.#pauses.length === 4 && this.#pauses.every(pause => pause.resumed)); await this.#current();
     } catch (error) { this.#stop(error); throw error; }
     finally { timeout.abort(); }
@@ -289,22 +313,37 @@ export class CurrentFootprintCopyCacheConstructionRunner {
     need(packet === this.#packet && this.#packet !== null && !this.#reproofAttempted); this.#reproofAttempted = true;
     try { await this.#join(); } catch (error) { this.#stop(error); throw error; }
   }
+  #cleanupSettled(): boolean {
+    const held = this.#pauses.at(-1);
+    return !this.#allocationUncertain && !this.#unknownPause && this.#pendingEvents === 0 && this.#breakpoints.every(point => point.removed) && (held === undefined || held.resumed);
+  }
   public async release(): Promise<void> {
-    need(!this.#allocationUncertain && !this.#releaseAttempted && (this.#packet !== null || this.#failed)); this.#releaseAttempted = true;
+    need(this.#cleanupSettled() && !this.#releaseAttempted && (this.#packet !== null || this.#failed)); this.#releaseAttempted = true;
     empty.parse(await this.#send({ method: "Runtime.releaseObjectGroup", params: { objectGroup: GROUP } }, true));
+    need(this.#cleanupSettled());
     this.#unsubscribe?.(); this.#unsubscribe = null; this.#released = true;
   }
   public async cleanup(): Promise<void> {
     this.#step = "cleanup"; this.#stop(fail("CLEANUP"));
-    if (this.#allocationUncertain) { throw new AggregateError([this.#error, fail("RETAIN_UNKNOWN_ALLOCATION")], "FOOTPRINT_CACHE_CONSTRUCTION_CLEANUP_FAILED", { cause: this.#error }); }
-    await this.#chain;
     const errors: unknown[] = [];
-    for (const point of this.#breakpoints) { try { await this.#remove(point); } catch (error) { errors.push(error); } }
+    if (this.#allocationUncertain) { errors.push(this.#error, fail("RETAIN_UNKNOWN_ALLOCATION")); }
+    let chainSettled = false;
+    if (!this.#allocationUncertain) {
+      try { await CurrentFootprintCopyCacheConstructionRunner.#boundedCleanup(this.#chain); chainSettled = true; } catch (error) { errors.push(error); }
+    }
+    // Snapshot only IDs already retained by the original allocations. A late
+    // Allocation remains uncertain even after its own ID can be cleaned once.
+    const known = [...this.#breakpoints];
+    for (const point of known) { try { await this.#remove(point, true); } catch (error) { errors.push(error); } }
+    if (this.#unknownPause) { errors.push(this.#error, fail("RETAIN_UNKNOWN_PAUSE")); }
+    if (this.#allocationUncertain || this.#unknownPause || !chainSettled || this.#breakpoints.some(point => !point.removed)) {
+      throw new AggregateError(errors, "FOOTPRINT_CACHE_CONSTRUCTION_CLEANUP_FAILED", { cause: this.#error });
+    }
     const held = this.#pauses.at(-1);
-    if (held !== undefined && !held.resumeAttempted) { try { await this.#resume(held); } catch (error) { errors.push(error); } }
-    if (!this.#releaseAttempted) { try { await this.release(); } catch (error) { errors.push(error); } }
+    if (held !== undefined && !held.resumeAttempted) { try { await CurrentFootprintCopyCacheConstructionRunner.#boundedCleanup(this.#resume(held)); } catch (error) { errors.push(error); } }
+    if (!this.#releaseAttempted) { try { await CurrentFootprintCopyCacheConstructionRunner.#boundedCleanup(this.release()); } catch (error) { errors.push(error); } }
     if (!this.#released) { errors.push(new Error("FOOTPRINT_CACHE_CONSTRUCTION_RELEASE_UNCONFIRMED")); }
-    if (errors.length > 0) { throw new AggregateError(errors, "FOOTPRINT_CACHE_CONSTRUCTION_CLEANUP_FAILED"); }
+    if (errors.length > 0) { throw new AggregateError(errors, "FOOTPRINT_CACHE_CONSTRUCTION_CLEANUP_FAILED", { cause: this.#error }); }
   }
   public retained(): Readonly<Record<string, unknown>> {
     return Object.freeze({ armAttempted: this.#armAttempted, armed: this.#armed, failed: this.#failed, requests: this.#requests,
