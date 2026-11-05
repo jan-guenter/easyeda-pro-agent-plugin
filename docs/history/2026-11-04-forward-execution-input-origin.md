@@ -50,3 +50,16 @@ had two assertions expecting different fixed refusal labels; the maintained
 guards refused as required, and the assertions were corrected. Independent
 source review found no concrete blocker. The complete local suites were not run.
 The source-sealing worktree remains clean at `a41cd0d`.
+
+## Exact source provenance, 2026-11-05
+
+The 48-test checkpoint above used starting candidate
+`a41cd0de01d298fc9ad762cd42ad4c1c7db065e2` plus the retained six-file
+source patch with SHA-256
+`b1e7b8379e1d81a1d2c22cb6667933a58692407757f572a4bc453202dafbf45d`.
+That patch identifies the changed source, tests, fixture and history snapshot;
+it was not a standalone commit. Its retained verification proof has SHA-256
+`585a90ec6e2316451678ce129d62f1c1519c3eea4f69e924da76674688f16f78`
+and binds the six selected test files to 48 passes, with no failures, skips or
+cancellations. The starting candidate and any later composed commit have
+separate attribution; neither replaces this original tested patch identity.

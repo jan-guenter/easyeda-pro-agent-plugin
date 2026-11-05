@@ -2,7 +2,7 @@
 
 - [2026-11-05 PR168 review fixes](2026-11-05-pr168-review-fixes.md). Both complete reviews, original failed CI, allocation custody and native parser corrections, focused checks and remaining native/API work against base `0ebd4c498a37148e61a9e69f7695126ab794b77e`.
 
-- [2026-11-05 forward capture recovery and source fixes](2026-11-05-forward-capture-recovery-and-source-fixes.md). Observed cache-arm stall, authorized terminal physical closure, exact versioned producer adapters and pending typed historical recovery. Original frozen payload `15dc1cc6fed3bb90cfebfff3e3ea3bf3cd45da8c`; terminal recovery payload `0ebd4c498a37148e61a9e69f7695126ab794b77e`.
+- [2026-11-05 forward capture recovery and source fixes](2026-11-05-forward-capture-recovery-and-source-fixes.md). Observed cache-arm stall, authorized terminal physical closure, exact versioned producer adapters and completed typed historical v2 recovery on 2026-11-05. Original capture, termination and helper-release outcomes remain unknown. Original frozen payload `15dc1cc6fed3bb90cfebfff3e3ea3bf3cd45da8c`; terminal recovery payload `0ebd4c498a37148e61a9e69f7695126ab794b77e`.
 
 - [2026-11-05 packaged foreground manager source](2026-11-05-packaged-foreground-manager.md). Separate dependency-free frontend, pinned launcher and actual isolated CLI retirement, with native admission unchanged. Source base `15dc1cc6fed3bb90cfebfff3e3ea3bf3cd45da8c` plus packaging patch SHA-256 `31b29a3bb5fcade4a14a8166cc51a0a4ff5cb8ee2f47ddd31e2447d2a99dcf8c`; reproduced frontend in `0ebd4c498a37148e61a9e69f7695126ab794b77e`.
 
