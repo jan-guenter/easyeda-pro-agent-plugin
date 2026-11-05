@@ -365,6 +365,11 @@ void test("209 public opening and startup callbacks select original lifecycles a
   const authenticatedRegistration = registrations.get("easyeda_control_pcb209_opening"); assert.ok(authenticatedRegistration);
   const scopedRead = await authenticatedRegistration.invoke(pageRead);
   assert.match(JSON.stringify(scopedRead), /authenticatedScopeObserved/u); assert.equal(authenticated.calls(), 1);
+  const electricalRead = { request: { action: "schematic-page-read", request: { target: pageTarget,
+    operation: { method: "native.sch_Page.observeComponentsPinsNets", arguments: {} } }, expectedFingerprint: {} } };
+  assert.equal(authenticatedRegistration.inputSchema.safeParse(electricalRead).success, true);
+  const electricalResult = await authenticatedRegistration.invoke(electricalRead);
+  assert.match(JSON.stringify(electricalResult), /authenticatedScopeObserved/u); assert.equal(authenticated.calls(), 2);
   await assert.rejects(authenticatedRegistration.invoke(pageOpen)); assert.equal(pageConstructed, 1);
   assert.equal(authenticated.upstream.currentAuthenticatedBridgeDispatchBinding(), undefined);
   const beforeCleanup = counts();
@@ -373,5 +378,5 @@ void test("209 public opening and startup callbacks select original lifecycles a
   } } });
   assert.match(JSON.stringify(cleanupResult), /retainedCleanupObserved/u);
   assert.equal(counts().gateCalls, beforeCleanup.gateCalls + 1); assert.equal(pageConstructed, 1);
-  assert.equal(authenticated.calls(), 1);
+  assert.equal(authenticated.calls(), 2);
 });

@@ -767,6 +767,15 @@ for (const namespace of ["sch_PrimitiveText", "sch_PrimitiveWire", "sch_Primitiv
   } });
 }
 
+groups.push({ namespace: "sch_PrimitiveComponent", methods: ["getAll", "getAllPinsByPrimitiveId"], route: {
+  tool: "easyeda_control_pcb209_opening", selector: "schematic-page-read/native.sch_Page.observeComponentsPinsNets", implementation: "native-task-equivalent", documentTypes: [1],
+  scope: "Alternate aggregate native observation on one exact already-active current209 ordinary type-1 page. The custom native.sch_Page.observeComponentsPinsNets operation has fixed empty arguments and returns the complete bounded root Symbol roster, placed pins, raw component/pin/attribute/no-connect backing fields, literal Wire/Bus names/lines and already-built native contact Set membership. It does not reproduce public getter instances, overloads or effective inherited/variant/instance values. Original tree/source-ID/Map/Set/point identities and scalar fields are rechecked synchronously before transport; missing caches, contradictory pin/line membership, BusEntry and unsupported component kinds refuse. Contact-cache freshness, complete topology, raw source, persistence, writer and Save authority remain false. No getValue, getSchPinNet, compiled AST, public family getter, parts sorting, source encoder, contact-cache getter/build/refresh, annotation, page opening, CAD edit or Save is invoked. At most256 components,4096 pins,8192 attributes/contact nodes and256 Wire/Bus groups within the existing2MiB bound. This supports read observation only; generic schematic topology/display-writer guards remain unchanged.",
+  source: ["current-schematic-page-electrical-read.ts", "current-schematic-page-read.ts", "current-schematic-page-read-program.ts", "current-schematic-page-read-runtime.ts", "current-schematic-page-read-profile.ts", "schematic-netgroup-read.ts"],
+  tests: ["current-schematic-page-electrical-read.test.ts", "current-schematic-page-coverage.test.ts", "current-pcb-209-opening-registration.test.ts"],
+  validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+  inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "schematic-page-read", query: { includeSchemas: true } } } },
+} });
+
 export function maintainedApiCoverageRoutes(): ReadonlyMap<string, readonly ApiCoverageRoute[]> {
   const result = new Map<string, ApiCoverageRoute[]>();
   for (const group of groups) {

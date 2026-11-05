@@ -1,4 +1,5 @@
 import { CURRENT_SCHEMATIC_PAGE_READ_MAX_BYTES, currentSchematicPageReadRequestSchema } from "./current-schematic-page-read.ts";
+import { CURRENT_SCHEMATIC_ELECTRICAL_READ_METHOD, buildCurrentSchematicElectricalReadExpression } from "./current-schematic-page-electrical-read.ts";
 import { buildSchematicTextReadExpression } from "./schematic-text-read.ts";
 import { buildSchematicNetGroupReadExpression } from "./schematic-netgroup-read.ts";
 import { buildSchematicPrimitiveReadExpression } from "./schematic-primitive-read.ts";
@@ -18,7 +19,8 @@ function selectedExpression(): string {
 export function buildCurrentSchematicPageReadProgram(input: unknown): string {
   const request = currentSchematicPageReadRequestSchema.parse(input), selected = request.operation.method === "eda.sch_SelectControl.getSelectedPrimitives";
   let expression: string;
-  if (selected) { expression = selectedExpression(); }
+  if (request.operation.method === CURRENT_SCHEMATIC_ELECTRICAL_READ_METHOD) { expression = buildCurrentSchematicElectricalReadExpression(); }
+  else if (selected) { expression = selectedExpression(); }
   else if (request.operation.method.includes("PrimitiveText")) { expression = buildSchematicTextReadExpression(request.operation); }
   else { expression = buildSchematicNetGroupReadExpression(request.operation); }
   return `"use strict";
@@ -46,11 +48,12 @@ if(${JSON.stringify(selected)}&&(project.selectMgr!==selection||typeof selectedR
 const source=()=>{check();const value=apply(sourceReader,handler,[]);check();if(!(value instanceof Map)||value.size>20000)bad();const copy=[];for(const [id,marker] of value){if(typeof id!=="string"||!id||id.length>256||marker!==1)bad();copy.push([id,marker]);}return JSON.stringify(copy);};
 const selectedCapture=()=>{check();const raw=apply(selectedReader,selection,[target.tabId]);check();if(!Array.isArray(raw)||raw.length>256||Reflect.ownKeys(raw).length!==raw.length+1)bad();const seen=new Set(),result=[],rawSeen=new Set();for(let i=0;i<raw.length;i++){const id=own(raw,String(i));if(typeof id!=="string"||!id||id.length>256||rawSeen.has(id))bad();rawSeen.add(id);const model=page.idManager.idMap.get(id);if(!model)bad();let resolved=id;if((model.modelType==="Wire"||model.modelType==="Bus")&&model.tagName==="NetGroupLine"){const parent=model.parent;if(!parent||parent.modelType!=="NetGroup"||parent.parent!==page.shapeManager.root)bad();resolved=parent.id;}if(!seen.has(resolved)){seen.add(resolved);result.push(resolved);}}return{raw:[...raw],ids:result};};
 check();const beforeSource=source(),beforeSelection=${selected ? "selectedCapture()" : "null"},selectedIds=beforeSelection?.ids??[];
-const read=()=>${expression};
+let electricalReadReproof;const read=()=>${expression};
 const first=read();check();if(source()!==beforeSource)bad();const second=read();check();if(source()!==beforeSource||JSON.stringify(first)!==JSON.stringify(second))bad();
 ${selected ? 'const afterSelection=selectedCapture();if(JSON.stringify(beforeSelection)!==JSON.stringify(afterSelection))bad();' : ""}
 const plainData=value=>{const pending=[value];let nodes=0;while(pending.length){if(++nodes>100000)bad();const current=pending.pop();if(typeof current==="number"&&(!Number.isFinite(current)||Object.is(current,-0)))bad();if(typeof current==="string"&&!current.isWellFormed())bad();if(current!==null&&typeof current==="object"){for(const item of Object.values(current))pending.push(item);}}};
 plainData(first);check();
+${request.operation.method === CURRENT_SCHEMATIC_ELECTRICAL_READ_METHOD ? 'if(typeof electricalReadReproof!=="function")bad();electricalReadReproof();' : ""}
 const json=JSON.stringify({schema:"easyeda-pro-control.current-schematic-page-read.v1",target,method:${JSON.stringify(request.operation.method)},value:first,samples:2,sourceIdsUnchanged:true,originalPageRechecked:true,implementationKind:"native-task-equivalent",completeSourceVerified:false,connectivityVerified:false,persistenceVerified:false,executionAuthorized:false,saveAuthorized:false});
 const utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
 if(utf8Bytes>${CURRENT_SCHEMATIC_PAGE_READ_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_SCHEMATIC_PAGE_READ_MAX_BYTES})bad();return envelope;`;

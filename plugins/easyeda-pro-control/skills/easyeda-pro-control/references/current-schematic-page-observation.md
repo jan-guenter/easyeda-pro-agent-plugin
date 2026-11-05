@@ -49,13 +49,43 @@ The complete supported family, reciprocal tree, ID index, source-ID membership
 and scalar samples must agree under one retained type-1 page. Selected Wire/Bus
 line children promote to their root group, deduplicated in native selection
 order. Missing, inherited and unsupported selected families refuse the complete
-result. Symbols, placed-component pins and arbitrary annotations are excluded.
+result. This DTO family excludes symbols, placed-component pins and arbitrary
+annotations; the separate aggregate below observes raw component/pin state.
 
 These reads invoke no compiler, serializer, source exporter, public family
 getter, selection change or Save. Stable source-ID membership is not complete raw
 source, connectivity, saved membership or persistence proof. The current209 SCH
 and UI files are independently hash-qualified around the read; legacy schematic
 writer pins remain unchanged.
+
+For raw components, placed pins and native endpoint-cache membership, use the
+same `schematic-page-read` wrapper with
+`operation:{method:"native.sch_Page.observeComponentsPinsNets",arguments:{}}`.
+This is an explicitly separate aggregate native DTO, rather than the public SDK
+getter-instance projection. Its single `value` row contains the complete bounded
+root Symbol roster, component and pin origins, raw attribute/no-connect backing
+fields, literal Wire/Bus DTO names and lines, and the already-built contact
+cache's member IDs. A pin's `contactIndex` selects its one observed contact row;
+wire and bus group IDs identify the corresponding literal name rows.
+
+Raw fields distinguish absent properties, own `undefined` and own scalar values,
+including `null`. They retain symbol, block and variant backing values separately.
+The route does not evaluate effective instance or inherited values, assign a
+designator, resolve a compiled pin net or rebuild the contact cache. It reads the
+original `sourceCodeIdMap`, Symbol/Pin maps, raw point values and already-built
+`_netPointData.points` Set; the lazy `netPointData` getter is never used. Original
+Maps, Sets, child rosters, identities, scalar fields and points must remain exact
+through the final synchronous reproof after the last source-reader callback.
+
+Missing caches, contradictory or incomplete pin/line membership, BusEntry,
+unsupported component kinds and malformed raw fields refuse the complete result.
+The aggregate admits at most256 components,4096 pins,8192 attributes/contact
+nodes and256 Wire/Bus groups within the existing2MiB bound. Genuine independently
+proved empty inventories remain empty; a missing cache is not an empty fallback.
+Effective attribute values, cache freshness, complete topology, persistence and
+writer authority remain false. Cached contacts can reflect native tolerance and
+are not a cross-sheet or complete electrical net proof. The generic schematic
+topology and display-transaction guards remain unchanged.
 
 For local evidence after an uncertain open, submit the opening wrapper with
 `request:{action:"inspect",operationId:<original>}`. Inspection reads the managed
