@@ -108,3 +108,20 @@ not change old persisted result contracts.
 For the single supported historical Source v2 cleanup failure, consult the
 [historical startup-blocker receipt](current-footprint-forward-source-relinquishment.md).
 It requires original process cleanup first and does not resume that capture.
+
+Before native launch is invoked, an uncertain launch-intent publication is still
+an original prelaunch cleanup case. Retain the same provider, settle the intent,
+and use `cleanup-before-launch`. A ready original helper must acknowledge its
+unlaunched release and actually close. The separate
+`cleanup-unlaunched-owner` terminal records those facts before or after a launch
+intent; it makes no zero-total-input claim. The old zero-input terminal remains
+reserved for its original closed-before-owner factory diagnostics. An actual
+native launch invocation rules out this prelaunch path.
+
+A release rejected strictly before any release work can be tried again only
+when the provider consumes the native owner's one-use original preflight proof.
+It clears only that rejected cleanup attempt or promise. Make the later cleanup
+call explicitly on this same owner; normal work remains ended. No status boolean,
+error message or copied result can supply the proof. Once release work begins,
+including its termination query or channel cleanup, later failures cannot reset
+the attempt. Keep unknown and partial releases in their existing consumed state.

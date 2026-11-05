@@ -385,7 +385,7 @@ and interrupted request. It checks the strict receipt, operation and four
 original digests, retains the unknown original outcome and keeps normal/native
 calls blocked. Busy, missing-pending and contradictory replies grant no
 settlement. Closure still requires the original facade's retirement preflight
-and actual original child EOF/exit. Its eighteen-case focused selection and
+and actual original child EOF/exit. Its focused selection of eighteen cases and
 strict lint pass; validation proof SHA-256:
 `a6b0b6549879a4eca1894ec6bfda97241b77ae6d2298dbf579bdcdb435f1ff8b`.
 Independent review proof:
@@ -414,3 +414,88 @@ package verification, complete green exact-head CI and another actual
 CodeRabbit review remain publication gates. No original-process signal,
 historical resolver or new connected Source attempt has been performed by this
 follow-up.
+
+
+## Launch/publication boundary corrections
+
+Commit `a0d39c8a6881cc8fb7b52948516dc5e4bee83fbb` passed all eleven required
+CI checks: 14,287 facade passes, five supported skips, zero failures across
+65 suites, and all 424 bridge cases. Every checkout, full source/runtime pin
+object, raw log archive and uploaded package matched the frozen local payload.
+The artifact contained 2,631 files, 43 directories and 53,630,021 bytes with
+exact modes. Complete CI proof SHA-256:
+`ee2916cf28f26e5f9334388d980d714faa8e61dffed095ca2d8d1dbde738a292`.
+This is a passing exact-head source/test result, not a live Source lifecycle.
+
+CodeRabbit review `5785024704` reported one Major cleanup issue, one Minor
+history-label correction and two explicitly unverified wording suggestions.
+All were addressed. The history index now identifies the replacement facade
+in the retained manager's generation 4, matching the linked installation note;
+the two prose edits preserve the recorded meaning. The provider's Major gap
+occurs after a launch intent is stored but before native launch is invoked.
+The original helper can close, yet the old terminal refuses that record prefix.
+Review proof SHA-256:
+`22474348a60e2175cf3550a0c714c6088f7a2faf9cca3dc9e0326d3180e3c13b`.
+The provider again reported incomplete native-core coverage and the same
+inconclusive documentation metric; successful checks do not remove those limits.
+
+The additive `cleanup-unlaunched-owner` terminal records actual original helper
+closure, never-invoked launch and acknowledged original unlaunched release.
+It covers a ready original owner before or after the launch intent, including
+failure before allocation-result publication. Old zero-input diagnostics,
+budget, request/result schemas and the exact historical 23-record profile stay
+unchanged. A genuine pending launch-intent acknowledgment regression first
+reproduced the reported refusal; that failed cut remains retained.
+
+The adjacent review also found that ready-owner prelaunch cleanup had reported
+zero total stdin despite issuing the helper's cleanup command. The new terminal
+uses truthful lifecycle facts; the old zero-input terminal remains limited to
+its original factory diagnostics. Another preserved first-failure case covers
+that evidence correction.
+
+The remaining adjacent defect was a release rejected during local preflight.
+The native v2 owner now classifies only the exact original error, release kind,
+latest invocation and native activity, with a one-use private proof. A sticky
+per-owner marker is set before any release termination, helper or channel work.
+Queued/concurrent work, helper failure, stale or forged errors and any started
+release pipeline refuse a reset. Existing termination observations outside the
+release pipeline do not supply or consume this proof. Legacy profiles and all
+Windows helper bytes/commands remain unchanged.
+
+Only a positive original proof can clear the provider's rejected cleanup
+attempt or promise. It performs no automatic resend and does not reopen normal
+work. Any later explicit cleanup rechecks that same original owner. Unknown
+or partial native release work stays consumed. The provider preserves the
+original error when classification refuses or throws.
+
+Final frozen checks pass: 25 provider/controller cases, two historical cases,
+ten new genuine-factory synthetic native cases, fourteen relevant existing
+native cases, targeted strict lint and the final combined type/lint checks.
+No full local suites were repeated. Provider proof SHA-256:
+`777f0a8c4cacb3531ec6b1742e38a5f694630b03fd0620712e7833f86748096e`.
+Native proof SHA-256:
+`f19e550f98e43d88ae24af29d34e9ef0c5804902cf6f46bf1bafb81a999bbc5c`.
+
+Independent native review proof:
+`f61caa3c732295f9e7348e259ca400c63045f071277ce0d1b744c183a42582b4`;
+combined provider review proof:
+`899e0b7df7ecf12edd7359ba526acd682e337c2efc6595ded11ce698d4d1f1e1`.
+These are source/synthetic results. Final package, exact-head CI and CodeRabbit
+review remain required; no new native application attempt, explicit Save or
+original-process signal occurred during these corrections.
+
+
+The launch/release correction cut passes the complete combined types, strict
+lint, build, sanitizer/protocol checks, compatibility, repository/privacy,
+plugin, skill and API coverage validation. Rebuilding preserves all 3,040
+repository file bytes and modes; proof SHA-256:
+`28af97f84cae0bd073399f48bb283a81463f6b658c200188eac276e5f2cb3870`.
+The final 1,049-source-file projection is
+`a05b9dcc7dd3784ff4af9e4fe559aa37ca898b09cdc29a244c97cc07524318c4`;
+the three-file runtime projection is
+`f4fedac1116895c1ff2f3e62f0ee9f62c19b4c5eca27d56137f6d93094c48edd`.
+Only facade projections and review time changed; external pins, the bridge/key
+epoch, native helper programs and the retained original package stay intact.
+Clean package checks, exact-head CI and another actual full PR review remain
+required before publication. The plugin version remains the same unpublished
+candidate, with no new session or native-owner adoption.

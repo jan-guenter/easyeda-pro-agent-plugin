@@ -408,6 +408,11 @@ export interface CurrentFootprintCombinedAbortReservation {
 const footprintCombinedFactories = new WeakMap<object, CurrentPcbDiagnosticInstallation>();
 const footprintForwardFactories = new WeakMap<object, CurrentPcbDiagnosticInstallation>();
 const footprintForwardExecutionFactories = new WeakMap<object, CurrentPcbDiagnosticInstallation>();
+type ForwardExecutionReleaseKind = "closed" | "unlaunched" | "no-process";
+const forwardExecutionReleasePreflightFailures = new WeakMap<object, Readonly<{
+  owner: CurrentPcbRetainedOwnerCore; attempt: object; kind: ForwardExecutionReleaseKind; activity: object | null;
+}>>();
+const forwardExecutionReleaseFailureErrors = new WeakSet<object>();
 interface ForwardExecutionBirthAllocation {
   readonly options: CurrentPcbDiagnosticInstallationOptions;
   state: "pending" | "no-resource" | "unresolved" | "retained";
@@ -568,6 +573,10 @@ class CurrentPcbRetainedOwnerCore {
   #observationFailure: CurrentPcbObservationFailure | null = null;
   #closeConsumed = false;
   #releaseConsumed = false;
+  #forwardExecutionReleaseAttempt: object | null = null;
+  #forwardExecutionReleaseWorkEverStarted = false;
+  #forwardExecutionNativeActivity: object | null = null;
+  readonly #forwardExecutionPendingNativeRequests = new Set<object>();
   #released = false;
   #childClosed = false;
   #send: Promise<void> | null = null;
@@ -3971,24 +3980,31 @@ class CurrentPcbRetainedOwnerCore {
     return this.#terminationObserved && this.#terminationObservation?.terminated === true;
   }
 
-  public releaseClosed(): Promise<void> { return this.#release(false); }
+  public releaseClosed(): Promise<void> { return this.#releaseWithPreflightProof("closed", () => this.#release(false)); }
 
   /** Original helper only, before this owner has ever invoked launch. Native
    * state independently proves no creation attempt and an empty original Job. */
-  public async releaseUnlaunched(): Promise<void> {
-    if (this.#launchConsumed || this.#binding !== null) { throw error("UNLAUNCHED_RELEASE_REFUSED"); }
-    await this.#release(true);
+  public releaseUnlaunched(): Promise<void> {
+    return this.#releaseWithPreflightProof("unlaunched", async () => {
+      if (this.#launchConsumed || this.#binding !== null) { throw error("UNLAUNCHED_RELEASE_REFUSED"); }
+      await this.#release(true);
+    });
   }
 
   /** A completed original launch refusal is not an uncertain dispatch. The
    * helper independently proves its creation phase and empty original Job. */
-  public async releaseNoProcess(): Promise<Readonly<CurrentPcbDiagnosticNoProcessRelease>> {
+  public releaseNoProcess(): Promise<Readonly<CurrentPcbDiagnosticNoProcessRelease>> {
+    return this.#releaseWithPreflightProof("no-process", () => this.#releaseNoProcess());
+  }
+
+  async #releaseNoProcess(): Promise<Readonly<CurrentPcbDiagnosticNoProcessRelease>> {
     if (this.#releaseConsumed) { throw error("RELEASE_CONSUMED"); }
     if (!this.#noProcessCleanupAvailable()) { throw error("NO_PROCESS_CLEANUP_UNAVAILABLE"); }
     const launchRequestOutcome = this.#launchRequestIssued ? "native-refused" : "not-issued";
     this.#enter();
     try {
       await this.#verify(); this.#available();
+      this.#beginReleaseWork();
       this.#releaseConsumed = true;
       const proof = noProcessState(await this.#request({ action: "release-no-process" }), true);
       if (launchRequestOutcome === "not-issued" ? proof.creationState !== "not-entered" : JSON.stringify(proof) !== JSON.stringify(this.#noProcessProof)) {
@@ -4006,12 +4022,59 @@ class CurrentPcbRetainedOwnerCore {
       (!this.#launchRequestIssued || this.#nativeLaunchRefused && this.#noProcessProof !== null);
   }
 
+  /** A one-use original-error proof permits a later explicit cleanup call only
+   * when this genuine v2 pipeline has never begun native or channel release. */
+  public consumeFootprintForwardExecutionReleasePreflightFailure(caught: unknown, kind: ForwardExecutionReleaseKind): boolean {
+    if (!footprintForwardExecutionFactories.has(this) || caught === null || typeof caught !== "object" || types.isProxy(caught)) { return false; }
+    try { assertOriginalCurrentFootprintForwardExecutionNativeOwner(this); } catch { return false; }
+    const held = forwardExecutionReleasePreflightFailures.get(caught);
+    if (held?.owner !== this || held.kind !== kind || held.attempt !== this.#forwardExecutionReleaseAttempt ||
+        held.activity !== this.#forwardExecutionNativeActivity || !this.#releasePreflightIdle()) { return false; }
+    forwardExecutionReleasePreflightFailures.delete(caught); return true;
+  }
+
+  #releasePreflightIdle(): boolean {
+    return !this.#forwardExecutionReleaseWorkEverStarted && !this.#releaseConsumed && !this.#released && !this.#busy &&
+      this.#pending === null && this.#send === null && this.#forwardExecutionPendingNativeRequests.size === 0 &&
+      this.#failure === null && !this.#childClosed && this.#child.exitCode === null && this.#child.signalCode === null &&
+      (this.#forwardExecutionMainPoll === null || this.#forwardExecutionMainPoll.delivered);
+  }
+
+  #releaseWithPreflightProof<Result>(kind: ForwardExecutionReleaseKind, run: () => Promise<Result>): Promise<Result> {
+    if (this.#purpose !== CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE) { return run(); }
+    return this.#forwardExecutionRelease(kind, run);
+  }
+
+  async #forwardExecutionRelease<Result>(kind: ForwardExecutionReleaseKind, run: () => Promise<Result>): Promise<Result> {
+    const activity = this.#forwardExecutionNativeActivity, attempt = Object.freeze({});
+    this.#forwardExecutionReleaseAttempt = attempt;
+    try { return await run(); }
+    catch (caughtError) {
+      if (caughtError !== null && typeof caughtError === "object" && !types.isProxy(caughtError) && !forwardExecutionReleaseFailureErrors.has(caughtError) &&
+          this.#forwardExecutionReleaseAttempt === attempt && this.#forwardExecutionNativeActivity === activity && this.#releasePreflightIdle()) {
+        try {
+          assertOriginalCurrentFootprintForwardExecutionNativeOwner(this);
+          forwardExecutionReleaseFailureErrors.add(caughtError);
+          forwardExecutionReleasePreflightFailures.set(caughtError, Object.freeze({ owner: this, attempt, kind, activity }));
+        } catch {
+          // Preserve the original refusal without issuing a proof for drift.
+        }
+      }
+      throw caughtError;
+    }
+  }
+
+  #beginReleaseWork(): void {
+    if (this.#purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE) { this.#forwardExecutionReleaseWorkEverStarted = true; }
+  }
+
   async #release(unlaunched: boolean): Promise<void> {
     if (this.#releaseConsumed) { throw error("RELEASE_CONSUMED"); }
     this.#enter();
     try {
       await this.#verify(); this.#available();
       if (!unlaunched) {
+        this.#beginReleaseWork();
         const termination = terminationObservation(await this.#request({ action: "termination" }));
         if (!termination.terminated) { throw error("RETAIN_LIVE_OWNER"); }
         this.#terminationObservation = termination; this.#terminationObserved = true;
@@ -4025,6 +4088,7 @@ class CurrentPcbRetainedOwnerCore {
           await this.#heldSavedOpening.releaseAfterTermination(); this.#heldSavedOpeningReleased = true;
         }
       }
+      this.#beginReleaseWork();
       this.#releaseConsumed = true;
       // Native release independently observes original root and Job again.
       // A rejected live release consumes only this call, never closes a pipe.
@@ -4259,6 +4323,18 @@ class CurrentPcbRetainedOwnerCore {
    * Recheck held normal-work cutoff and the optional original-owner assertion
    * at dispatch, preserving a predecessor's refusal without blocking cleanup. */
   #request(request: RecordValue, beforeDispatch?: () => void, forwardMain?: ForwardExecutionMainRequest): Promise<RecordValue> {
+    if (this.#purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE) {
+      return this.#forwardExecutionTrackedRequest(request, beforeDispatch, forwardMain);
+    }
+    return this.#queuedRequest(request, beforeDispatch, forwardMain);
+  }
+  async #forwardExecutionTrackedRequest(request: RecordValue, beforeDispatch?: () => void, forwardMain?: ForwardExecutionMainRequest): Promise<RecordValue> {
+    const activity = Object.freeze({});
+    this.#forwardExecutionNativeActivity = activity; this.#forwardExecutionPendingNativeRequests.add(activity);
+    try { return await this.#queuedRequest(request, beforeDispatch, forwardMain); }
+    finally { this.#forwardExecutionPendingNativeRequests.delete(activity); }
+  }
+  #queuedRequest(request: RecordValue, beforeDispatch?: () => void, forwardMain?: ForwardExecutionMainRequest): Promise<RecordValue> {
     if (this.#startupParent === null && !bornFootprintTransport(this.#purpose) && !heldCachePurpose(this.#purpose) && this.#purpose !== "footprint-head-age209") {
       beforeDispatch?.(); return this.#requestNow(request, forwardMain);
     }

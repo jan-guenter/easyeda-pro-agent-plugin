@@ -4,7 +4,7 @@
 
 - [2026-11-05 forward execution eligibility research](2026-11-05-forward-execution-eligibility-research.md). Exact current209 worker/main source findings, missing head/frontier/continuation custody, official CLI version limits and prior catalog text retained verbatim. Repository basis `4bdd63f5fdeb9d74975bf18565209942f6e39ff0`; worker/main hashes and source spans are recorded in the note.
 
-- [2026-11-05 PR168 publication and installation](2026-11-05-pr168-publication-and-installation.md). Protected main `4bdd63f5fdeb9d74975bf18565209942f6e39ff0`, reviewed head `891601248e0254ff54c6c5f553a5e591cc444ae9`, exact PR/main CI, official `0.3.0+codex.20261105000443` installation and original-manager generation 4 package/process verification, with connected capture/clock limits retained.
+- [2026-11-05 PR168 publication and installation](2026-11-05-pr168-publication-and-installation.md). Protected main `4bdd63f5fdeb9d74975bf18565209942f6e39ff0`, reviewed head `891601248e0254ff54c6c5f553a5e591cc444ae9`, exact PR/main CI, official `0.3.0+codex.20261105000443` installation and package/process verification of the replacement facade in generation 4, with connected capture/clock limits retained.
 
 - [2026-11-05 PR168 review fixes](2026-11-05-pr168-review-fixes.md). Both complete reviews, original failed CI, allocation custody and native parser corrections, focused checks and remaining native/API work against base `0ebd4c498a37148e61a9e69f7695126ab794b77e`.
 

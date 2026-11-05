@@ -10,7 +10,8 @@ import { loadOperation, operationPath } from "../src/artifacts.ts";
 import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_BUDGET as BUDGET, CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_NORMAL_STAGES as NORMAL,
   currentFootprintForwardExecutionOpeningProducerEvidenceSchema, currentFootprintForwardExecutionOpeningRecordSchema, currentFootprintForwardExecutionOpeningRequestSchema } from "../src/current-footprint-forward-execution-opening-contract.ts";
 import type { CurrentFootprintForwardExecutionOpeningRecord as Entry, CurrentFootprintForwardExecutionOpeningPhase as Phase } from "../src/current-footprint-forward-execution-opening-contract.ts";
-import { CurrentFootprintForwardExecutionOpeningJournal, assertCurrentFootprintForwardExecutionOpeningChain, assertNoUnresolvedCurrentFootprintForwardExecutionOpenings } from "../src/current-footprint-forward-execution-opening-journal.ts";
+import { CurrentFootprintForwardExecutionOpeningJournal, assertCurrentFootprintForwardExecutionOpeningChain, assertNoUnresolvedCurrentFootprintForwardExecutionOpenings,
+  readCurrentFootprintForwardExecutionOpeningHistory } from "../src/current-footprint-forward-execution-opening-journal.ts";
 import { CurrentFootprintForwardExecutionOpeningProvider } from "../src/current-footprint-forward-execution-opening.ts";
 import { CurrentFootprintCopyStartupOpening } from "../src/current-pcb-209-worker-startup-opening.ts";
 import { forwardExecutionOpeningJournalFixture } from "./helpers/forward-execution-opening-journal-fixture.ts";
@@ -73,6 +74,45 @@ void test("a second equal request cannot adopt the first original managed journa
   await original.append("cleanup-no-allocation", { noAllocationProved: true });
 });
 
+void test("original unlaunched release is a distinct strict terminal and preserves the earlier cleanup predecessors", async () => {
+  const evidence = { helperClosed: true, launchNeverInvoked: true, originalUnlaunchedReleaseAcknowledged: true };
+  for (const allocationPublished of [false, true]) {
+    const journal = new CurrentFootprintForwardExecutionOpeningJournal(request(`allocation-${String(allocationPublished)}-terminal`)); await journal.reserve();
+    await journal.append("prepare-intent", {}); await journal.append("prepare-result", {});
+    await assert.rejects(journal.append("cleanup-unlaunched-owner", evidence), /UNINVOKED_LAUNCH_REQUIRED/u);
+    await journal.append("allocation-intent", {});
+    if (allocationPublished) { await journal.append("allocation-result", {}); }
+    await journal.append("cleanup-unlaunched-owner", evidence);
+  }
+  for (const suffix of ["new-terminal", "bound-terminal", "close-terminal", "no-process-terminal"] as const) {
+    const selected = request(suffix); const journal = new CurrentFootprintForwardExecutionOpeningJournal(selected); await journal.reserve();
+    for (const stage of ["prepare", "allocation"] as const) { await journal.append(`${stage}-intent`, {}); await journal.append(`${stage}-result`, {}); }
+    await journal.append("launch-intent", {});
+    await assert.rejects(journal.append("cleanup-before-launch", { helperClosed: true, stdinBytesWritten: 0 }), /BEFORE_LAUNCH_REQUIRED/u);
+    for (const malformed of [{ ...evidence, helperClosed: false }, { ...evidence, launchNeverInvoked: false },
+      { ...evidence, originalUnlaunchedReleaseAcknowledged: false }, { ...evidence, callerAuthority: true }, { helperClosed: true }]) {
+      await assert.rejects(journal.append("cleanup-unlaunched-owner", malformed));
+    }
+    if (suffix === "new-terminal") {
+      await journal.append("failure", { phase: "new", originalErrorRetained: true, code: "ORIGINAL_STAGE_FAILED" });
+      await journal.append("cleanup-unlaunched-owner", evidence);
+      await assert.rejects(journal.append("cleanup-unlaunched-owner", evidence), /CHAIN_IDENTITY/u);
+    } else {
+      if (suffix === "bound-terminal") { await journal.append("binding", {}); }
+      if (suffix === "close-terminal") { await journal.append("close-intent", { hwnd: "123" }); }
+      if (suffix === "no-process-terminal") { await journal.append("no-process-release-intent", {}); }
+      await assert.rejects(journal.append("cleanup-unlaunched-owner", evidence), /UNINVOKED_LAUNCH_REQUIRED/u);
+      if (suffix === "no-process-terminal") { await journal.append("cleanup-no-process", { helperReleased: true, noProcessProved: true }); }
+      else {
+        if (suffix === "bound-terminal") { await journal.append("close-intent", { hwnd: "123" }); }
+        await journal.append("termination-intent", { ordinal: 1 }); await journal.append("termination-result", { ordinal: 1, terminated: true });
+        await journal.append("release-intent", {}); await journal.append("release-result", { released: true });
+      }
+    }
+  }
+  await assertNoUnresolvedCurrentFootprintForwardExecutionOpenings();
+});
+
 for (const mode of ["create-ack", "manifest-ack"] as const) {
   void test(`the original ${mode} publication settles without a second reservation or phase publication`, async () => {
     const f = await forwardExecutionOpeningJournalFixture(mode); const selected = request(mode); const journal = new f.Journal(selected);
@@ -132,6 +172,10 @@ void test("managed preparation is published before the actual v2 factory and its
   assert.equal(currentFootprintForwardExecutionOpeningProducerEvidenceSchema.safeParse({ ...producer, installationSha256: "not-a-digest" }).success, false);
   assert.equal(f.provider.retained().originalOwner, true); assert.equal(f.provider.retained().failed, true);
   await f.provider.cleanupBeforeLaunch(); assert.equal(f.factory.child().exitCode, 0);
+  const closedBeforeOwner = await readCurrentFootprintForwardExecutionOpeningHistory(selected.operationId);
+  assert.equal(closedBeforeOwner.records.at(-1)?.kind, "cleanup-before-launch");
+  assert.deepEqual(closedBeforeOwner.records.at(-1)?.evidence, { helperClosed: true, stdinBytesWritten: 0 });
+  assert.equal(f.factory.state.writes, 0);
   await assertNoUnresolvedCurrentFootprintForwardExecutionOpenings();
   await assert.rejects(f.provider.launch(selected), /NORMAL_ENDED/u); assert.equal(f.state.allocations, 1);
 });
@@ -182,6 +226,10 @@ void test("lost prelaunch cleanup publication settles the original terminal with
   await f.provider.cleanupBeforeLaunch();
   assert.equal(f.provider.hasActiveReservation(), false); assert.equal(f.provider.retained().publicationPending, false);
   assert.deepEqual(f.factory.state.actions, ["release-unlaunched"]);
+  const originalRelease = await readCurrentFootprintForwardExecutionOpeningHistory(selected.operationId);
+  assert.equal(originalRelease.records.at(-1)?.kind, "cleanup-unlaunched-owner");
+  assert.deepEqual(originalRelease.records.at(-1)?.evidence, { helperClosed: true, launchNeverInvoked: true, originalUnlaunchedReleaseAcknowledged: true });
+  assert.ok(f.factory.state.bytes > 0);
   assert.deepEqual(f.journalFixture.state, publications); assert.deepEqual(await readFile(operationPath(selected.operationId)), before);
   await assertNoUnresolvedCurrentFootprintForwardExecutionOpenings();
   await f.provider.cleanupBeforeLaunch(); assert.deepEqual(f.factory.state.actions, ["release-unlaunched"]);
@@ -200,6 +248,53 @@ void test("lost prelaunch cleanup publication settles the original terminal with
   await assertNoUnresolvedCurrentFootprintForwardExecutionOpenings();
 });
 
+for (const mode of ["allocation-current", "launch-intent-ack", "launch-current", "launch-intent-cleanup-ack", "launch-current-cleanup-ack"] as const) {
+  void test(`${mode === "allocation-current" ? "post-allocation" : "post-intent"} prelaunch cleanup settles ${mode} through the original unlaunched release`, async context => {
+    const selected = request(mode); const f = await forwardExecutionOpeningProviderFixture(selected, mode);
+    context.after(() => { if (f.state.allocations > 0 && !f.factory.child().stdin.writableEnded) { f.factory.child().stdin.end(); } });
+    await assert.rejects(f.provider.launch(selected), /synthetic (?:launch-intent manifest acknowledgment lost|post-(?:allocation|launch-intent) current check failed)/u);
+    assert.equal(f.state.allocations, 1); assert.equal(f.state.currentFailures, mode === "allocation-current" || mode.startsWith("launch-current") ? 1 : 0);
+    assert.equal(f.provider.hasOwnedAllocation(), true); assert.deepEqual(f.factory.state.actions, []);
+    assert.equal(f.provider.retained().publicationPending, mode.startsWith("launch-intent"));
+    const pending = await readCurrentFootprintForwardExecutionOpeningHistory(selected.operationId);
+    assert.equal(pending.operation["state"], "prepared");
+    assert.equal(pending.records.some(record => record.kind === "launch-intent"), mode !== "allocation-current");
+    if (mode === "allocation-current") { assert.equal(pending.records.some(record => record.kind === "allocation-result"), false); }
+    assert.equal(pending.records.some(record => record.kind === "binding"), false);
+    await assert.rejects(assertNoUnresolvedCurrentFootprintForwardExecutionOpenings(), /UNRESOLVED_OWNER/u);
+    await assert.rejects(f.provider.close("123"), /CLOSE_UNAVAILABLE/u);
+    await assert.rejects(f.provider.abort(true), /ABORT_UNAVAILABLE/u);
+    await assert.rejects(f.provider.cleanupNoProcess(), /NO_PROCESS_UNAVAILABLE/u);
+    const publications = f.journalFixture === null ? null : { ...f.journalFixture.state };
+    if (mode !== "launch-intent-ack") {
+      await f.provider.settleRecords();
+      if (publications !== null) { assert.deepEqual(f.journalFixture?.state, publications); }
+      assert.deepEqual(f.factory.state.actions, []); assert.equal(f.provider.retained().publicationPending, false);
+    }
+    if (mode.endsWith("cleanup-ack")) {
+      await assert.rejects(f.provider.cleanupBeforeLaunch(), /original manifest acknowledgment lost/u);
+      assert.equal(f.provider.hasActiveReservation(), true); assert.equal(f.provider.retained().publicationPending, true);
+      assert.equal(f.provider.hasOwnedAllocation(), false); assert.equal(f.factory.child().exitCode, 0);
+      assert.deepEqual(f.factory.state.actions, ["release-unlaunched"]);
+      const terminal = await readFile(operationPath(selected.operationId)); const counts = { ...f.journalFixture?.state };
+      await f.provider.settleRecords(); await f.provider.cleanupBeforeLaunch();
+      assert.deepEqual(await readFile(operationPath(selected.operationId)), terminal); assert.deepEqual(f.journalFixture?.state, counts);
+    } else { await f.provider.cleanupBeforeLaunch(); }
+    const completed = await readCurrentFootprintForwardExecutionOpeningHistory(selected.operationId);
+    assert.equal(completed.operation["state"], "completed"); assert.equal(completed.records.at(-1)?.kind, "cleanup-unlaunched-owner");
+    assert.deepEqual(completed.records.at(-1)?.evidence, { helperClosed: true, launchNeverInvoked: true, originalUnlaunchedReleaseAcknowledged: true });
+    assert.equal(completed.records.filter(record => record.kind === "cleanup-unlaunched-owner").length, 1);
+    assert.equal(completed.records.some(record => record.kind === "cleanup-before-launch" || record.kind === "close-intent" || record.kind === "abort-intent"), false);
+    assert.equal(f.factory.child().exitCode, 0); assert.deepEqual(f.factory.state.actions, ["release-unlaunched"]);
+    assert.equal(f.provider.hasOwnedAllocation(), false); assert.equal(f.provider.hasActiveReservation(), false);
+    await f.provider.cleanupBeforeLaunch(); assert.deepEqual(f.factory.state.actions, ["release-unlaunched"]);
+    await assert.rejects(f.provider.launch(selected), /NORMAL_ENDED/u);
+    await assert.rejects(f.provider.close("123"), /CLOSE_UNAVAILABLE/u); await assert.rejects(f.provider.abort(true), /ABORT_UNAVAILABLE/u);
+    await assertNoUnresolvedCurrentFootprintForwardExecutionOpenings();
+    const lease = acquireCurrentPcbDiagnosticLaunchExclusion(); releaseCurrentPcbDiagnosticLaunchExclusion(lease);
+  });
+}
+
 void test("no-process cleanup settles its original release and terminal after publication failure without a binding or resend", async context => {
   const selected = request("no-process-cleanup-ack"); const f = await forwardExecutionOpeningProviderFixture(selected, "no-process-cleanup-ack");
   context.after(() => { if (f.state.allocations > 0 && !f.factory.child().stdin.writableEnded) { f.factory.child().stdin.end(); } });
@@ -207,6 +302,7 @@ void test("no-process cleanup settles its original release and terminal after pu
   // Owner state consumes launch but issues no native launch request or binding.
   await assert.rejects(f.provider.launch(selected), /INSTALLATION_TARGET/u);
   assert.equal(f.state.allocations, 1); assert.equal(f.provider.inspection()["binding"], null);
+  await assert.rejects(f.provider.cleanupBeforeLaunch(), /BEFORE_LAUNCH_ONLY/u); assert.deepEqual(f.factory.state.actions, []);
   await assert.rejects(f.provider.cleanupNoProcess(), /original manifest acknowledgment lost/u);
   assert.equal(f.factory.child().exitCode, 0); assert.deepEqual(f.factory.state.actions, ["release-no-process"]);
   assert.equal(f.provider.hasActiveReservation(), true); assert.equal(f.provider.retained().publicationPending, true);
@@ -220,4 +316,88 @@ void test("no-process cleanup settles its original release and terminal after pu
   await assert.rejects(f.provider.launch(selected), /NORMAL_ENDED/u);
   await assertNoUnresolvedCurrentFootprintForwardExecutionOpenings();
   const lease = acquireCurrentPcbDiagnosticLaunchExclusion(); releaseCurrentPcbDiagnosticLaunchExclusion(lease);
+});
+
+for (const kind of ["unlaunched", "no-process", "closed"] as const) {
+  void test(`genuine ${kind} release preflight failure permits only the next explicit original cleanup`, async context => {
+    const selected = request(`${kind}-release-preflight`); const failure = new Error(`synthetic original ${kind} release verification failed`);
+    let armed: Error | null = null;
+    const verifyNativeGraph = (): Promise<void> => {
+      const original = armed; armed = null; return original === null ? Promise.resolve() : Promise.reject(original);
+    };
+    const closed = kind === "closed" ? {
+      launchTarget: { windowsPath: "C:\\Synthetic\\easyeda-pro.exe", sha256: "e".repeat(64) },
+      childProgram: `
+        const readline=require('node:readline');const input=readline.createInterface({input:process.stdin});
+        process.stdout.write(JSON.stringify(packet)+'\\n');
+        input.on('line',line=>{const q=JSON.parse(line);let result;
+          if(q.action==='launch')result={helperInstance:packet.helperInstance,jobId:packet.jobId,rootPid:123,rootCreated:'123456789012345'};
+          else if(q.action==='normal-close')result={closeDispatched:true,saveOrDiscardSelected:false};
+          else if(q.action==='termination')result={terminated:true,originalRootExited:true,originalJobEmpty:true};
+          else if(q.action==='release')result={released:true};else throw Error('Unexpected inert cleanup request');
+          process.stdout.write(JSON.stringify({id:q.id,ok:true,result})+'\\n');});
+      `,
+    } : {};
+    let mode: "launch-current" | "no-process-preflight" | "launched" = "launch-current";
+    if (kind === "no-process") { mode = "no-process-preflight"; }
+    else if (kind === "closed") { mode = "launched"; }
+    const f = await forwardExecutionOpeningProviderFixture(selected, mode, { verifyNativeGraph, ...closed });
+    context.after(() => { if (f.state.allocations > 0 && !f.factory.child().stdin.writableEnded) { f.factory.child().stdin.end(); } });
+    if (kind === "closed") { await f.provider.launch(selected); await f.provider.close("123"); assert.equal(await f.provider.observeTermination(), true); }
+    else { await assert.rejects(f.provider.launch(selected), /post-launch-intent current check failed|INSTALLATION_TARGET/u); }
+    const cleanup = (): Promise<void> => {
+      if (kind === "closed") { return f.provider.release(); }
+      if (kind === "no-process") { return f.provider.cleanupNoProcess(); }
+      return f.provider.cleanupBeforeLaunch();
+    };
+    const before = [...f.factory.state.actions]; armed = failure;
+    await assert.rejects(cleanup(), caught => caught === failure);
+    assert.deepEqual(f.factory.state.actions, before); assert.equal(armed, null);
+    assert.equal(f.provider.hasOwnedAllocation(), true); assert.equal(f.provider.hasActiveReservation(), true);
+    assert.equal(f.provider.inspection()["releaseAttempted"], false);
+    const unfinished = await readCurrentFootprintForwardExecutionOpeningHistory(selected.operationId);
+    assert.equal(unfinished.operation["state"], "prepared");
+    const turn = Promise.withResolvers<null>(); setImmediate(() => { turn.resolve(null); }); await turn.promise;
+    assert.deepEqual(f.factory.state.actions, before);
+    await assert.rejects(f.provider.observeMain(), /NORMAL_ENDED/u);
+    await cleanup();
+    let releasedActions = ["release-unlaunched"], terminal = "cleanup-unlaunched-owner";
+    if (kind === "no-process") { releasedActions = ["release-no-process"]; terminal = "cleanup-no-process"; }
+    else if (kind === "closed") { releasedActions = ["termination", "release"]; terminal = "release-result"; }
+    assert.deepEqual(f.factory.state.actions, [...before, ...releasedActions]); assert.equal(f.factory.child().exitCode, 0);
+    const completed = await readCurrentFootprintForwardExecutionOpeningHistory(selected.operationId);
+    assert.equal(completed.records.at(-1)?.kind, terminal);
+    assert.equal(f.provider.hasOwnedAllocation(), false); assert.equal(f.provider.hasActiveReservation(), false);
+    if (kind === "unlaunched") { await cleanup(); }
+    else { assert.equal(await f.provider.observeRelease(), "released"); }
+    assert.deepEqual(f.factory.state.actions, [...before, ...releasedActions]);
+    await assert.rejects(f.provider.launch(selected), /NORMAL_ENDED/u);
+    await assertNoUnresolvedCurrentFootprintForwardExecutionOpenings();
+    const lease = acquireCurrentPcbDiagnosticLaunchExclusion(); releaseCurrentPcbDiagnosticLaunchExclusion(lease);
+  });
+}
+
+void test("a post-dispatch release refusal retains its original rejected promise and unresolved journal", async context => {
+  const selected = request("post-dispatch-release-refusal");
+  const f = await forwardExecutionOpeningProviderFixture(selected, "no-process-preflight", { childProgram: `
+    const readline=require('node:readline');const input=readline.createInterface({input:process.stdin});
+    process.stdout.write(JSON.stringify(packet)+'\\n');
+    input.on('line',line=>{const q=JSON.parse(line);if(q.action!=='release-no-process')throw Error('Unexpected inert request');
+      process.stdout.write(JSON.stringify({id:q.id,ok:true,result:{creationState:'not-entered',processCreated:false,released:false}})+'\\n');});
+  ` });
+  // Retain this refused synthetic journal. EOF only disposes the inert test
+  // Child and cannot stand in for an acknowledged original helper release.
+  context.after(() => { if (f.state.allocations > 0 && !f.factory.child().stdin.writableEnded) { f.factory.child().stdin.end(); } });
+  await assert.rejects(f.provider.launch(selected), /INSTALLATION_TARGET/u);
+  let originalFailure: unknown;
+  await assert.rejects(f.provider.cleanupNoProcess(), caught => { originalFailure = caught; return caught instanceof Error && /NO_PROCESS_PROOF/u.test(caught.message); });
+  assert.deepEqual(f.factory.state.actions, ["release-no-process"]); assert.equal(f.provider.inspection()["releaseAttempted"], true);
+  await assert.rejects(f.provider.cleanupNoProcess(), caught => caught === originalFailure);
+  assert.deepEqual(f.factory.state.actions, ["release-no-process"]); assert.equal(f.provider.inspection()["releaseAttempted"], true);
+  assert.equal(f.provider.hasOwnedAllocation(), true); assert.equal(f.provider.hasActiveReservation(), true);
+  const history = await readCurrentFootprintForwardExecutionOpeningHistory(selected.operationId);
+  assert.equal(history.operation["state"], "prepared"); assert.equal(history.records.at(-1)?.kind, "no-process-release-intent");
+  await assert.rejects(assertNoUnresolvedCurrentFootprintForwardExecutionOpenings(), /UNRESOLVED_OWNER/u);
+  await assert.rejects(f.provider.cleanupBeforeLaunch(), /BEFORE_LAUNCH_ONLY/u);
+  await assert.rejects(f.provider.launch(selected), /NORMAL_ENDED/u);
 });

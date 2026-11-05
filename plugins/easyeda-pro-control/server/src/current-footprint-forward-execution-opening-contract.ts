@@ -41,7 +41,7 @@ export const CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_PHASES = [
   "handoff-intent", "handoff-result", "opening-intent", "opening-result", "assignments-intent", "assignments-result", "ui-intent", "ui-result",
   "state-intent", "state-result", "source-intent", "source-result", "preparation-intent", "preparation-result", "seal-intent", "seal-result",
   "close-intent", "close-result", "abort-intent", "abort-result", "termination-intent", "termination-result", "release-intent", "release-result",
-  "no-process-release-intent", "cleanup-before-launch", "cleanup-no-process", "cleanup-no-allocation", "failure",
+  "no-process-release-intent", "cleanup-before-launch", "cleanup-unlaunched-owner", "cleanup-no-process", "cleanup-no-allocation", "failure",
 ] as const;
 export type CurrentFootprintForwardExecutionOpeningPhase = typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_PHASES[number];
 const digest = z.string().regex(/^[a-f\d]{64}$(?![\s\S])/u);

@@ -10,7 +10,7 @@ import type { CurrentFootprintForwardExecutionOpeningJournal } from "../../src/c
 
 const artifacts = { assertOperationIdUnused, createOperation, createOperationScanner, ensureOperationStorage, loadOperation, operationPath, updateOperation, verifyExactManagedArtifact, writePhaseArtifact };
 
-export async function forwardExecutionOpeningJournalFixture(mode: "create-ack" | "manifest-ack" | "cleanup-ack" | "held-artifact" | "held-main-result" | "ensure-storage" | "held-storage" | "create-conflict"): Promise<Readonly<{
+export async function forwardExecutionOpeningJournalFixture(mode: "create-ack" | "manifest-ack" | "cleanup-ack" | "launch-intent-ack" | "launch-intent-cleanup-ack" | "held-artifact" | "held-main-result" | "ensure-storage" | "held-storage" | "create-conflict"): Promise<Readonly<{
   Journal: typeof CurrentFootprintForwardExecutionOpeningJournal;
   state: { creates: number; artifacts: number; manifests: number; fail: boolean };
   release: () => void;
@@ -18,7 +18,7 @@ export async function forwardExecutionOpeningJournalFixture(mode: "create-ack" |
 }>> {
   const source = new URL("../../src/current-footprint-forward-execution-opening-journal.ts", import.meta.url); const require = createRequire(source);
   const output = await transform(await readFile(source, "utf8"), { loader: "ts", format: "cjs", target: "node24" });
-  const loaded = { exports: {} }; const state = { creates: 0, artifacts: 0, manifests: 0, fail: true };
+  const loaded = { exports: {} }; const state = { creates: 0, artifacts: 0, manifests: 0, fail: true }; let launchAckLost = false;
   const held = Promise.withResolvers<null>(); const entered = Promise.withResolvers<null>();
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${output.code}\n})`); assert.equal(typeof evaluate, "function"); assert.ok(typeof evaluate === "function");
   Reflect.apply(evaluate, undefined, [(name: string): unknown => {
@@ -48,7 +48,12 @@ export async function forwardExecutionOpeningJournalFixture(mode: "create-ack" |
       },
       updateOperation: async (...args: Parameters<typeof artifacts.updateOperation>): ReturnType<typeof artifacts.updateOperation> => {
         state.manifests += 1; const result = await artifacts.updateOperation(...args);
-        if (state.fail && (mode === "manifest-ack" || mode === "cleanup-ack" && args[0]["state"] === "completed")) {
+        const records = args[0]["records"]; const latest: unknown = Array.isArray(records) ? records.at(-1) : undefined;
+        if ((mode === "launch-intent-ack" || mode === "launch-intent-cleanup-ack") && !launchAckLost &&
+          latest !== null && typeof latest === "object" && "kind" in latest && latest.kind === "launch-intent") {
+          launchAckLost = true; throw new Error("synthetic launch-intent manifest acknowledgment lost");
+        }
+        if (state.fail && (mode === "manifest-ack" || (mode === "cleanup-ack" || mode === "launch-intent-cleanup-ack") && args[0]["state"] === "completed")) {
           state.fail = false; throw new Error("synthetic original manifest acknowledgment lost");
         } return result;
       },

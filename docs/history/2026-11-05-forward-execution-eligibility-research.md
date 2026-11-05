@@ -125,8 +125,8 @@ The needed next boundary is an original pre-project producer roster with complet
 entry/completion coverage. It must retain each original pending Promise, timer
 and queued slot before it can escape, and reject unknown lineage. It must join
 a fresh same-main head/lock/ticket read to original dispatch and continuation
-exclusion, with a final frontier check before mutation. A locked-head first
-profile could avoid the additional unlocked-head age bracket only after those
+exclusion, with a final frontier check before mutation. An initial profile limited to locked heads
+could avoid the additional unlocked-head age bracket only after those
 other checks exist. This research implements none of that provider and declares
 no complete writer budget or native eligibility.
 

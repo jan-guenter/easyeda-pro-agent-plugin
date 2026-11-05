@@ -45,7 +45,7 @@ const openingMethods = ["open", "requireOriginal", "proveCurrentAssignments", "o
 const nativeMethods = ["launch", "status", "observeFootprintMainConstruction", "browserObservation", "inspectFrames", "inspectScript", "handoffWorkerStartup",
   "observeFootprintCopyUi", "requireFootprintCopyUi", "assertFootprintForwardExecutionSourceCapacity", "sealFootprintForwardExecutionSource", "originalFootprintForwardExecutionSource", "requestNormalClose",
   "observeApplicationWindow",
-  "observeTermination", "releaseClosed", "releaseUnlaunched", "releaseNoProcess", "reserveFootprintCombinedAbort", "dispatchFootprintCombinedAbort", "observeFootprintForwardExecutionRelease"] as const;
+  "observeTermination", "releaseClosed", "releaseUnlaunched", "releaseNoProcess", "consumeFootprintForwardExecutionReleasePreflightFailure", "reserveFootprintCombinedAbort", "dispatchFootprintCombinedAbort", "observeFootprintForwardExecutionRelease"] as const satisfies readonly (keyof CurrentFootprintForwardExecutionNativeOwner)[];
 function need(condition: boolean, code: string): asserts condition { if (!condition) { throw new Error(`FORWARD_EXECUTION_OPENING_${code}`); } }
 type Inventory = Awaited<ReturnType<typeof readExactSqlInventory>>;
 type Stage = Exclude<typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_NORMAL_STAGES[number], "prepare" | "allocation" | "launch" | "seal">;
@@ -118,7 +118,7 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
   #windowPending: Promise<string | null> | null = null;
   #windowFailure: unknown = null;
   #prelaunchRelease: Promise<void> | null = null;
-  #prelaunchCleanupKind: "cleanup-no-allocation" | "cleanup-before-launch" | null = null;
+  #prelaunchCleanupKind: "cleanup-no-allocation" | "cleanup-before-launch" | "cleanup-unlaunched-owner" | null = null;
   public constructor(input: CurrentPcbDiagnosticLifecycleOptions) {
     this.#options = options(input);
     this.#guards = Object.freeze<readonly unknown[]>([input.assertAllowed, input.assertLocalAllowed, input.assertOtherLaunchesSettled]);
@@ -164,6 +164,23 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
   }
   #journalRequired(): CurrentFootprintForwardExecutionOpeningJournal { need(this.#journal !== null, "JOURNAL_REQUIRED"); return this.#journal; }
   #ownerRequired(): CurrentFootprintForwardExecutionNativeOwner { need(this.#owner !== null, "OWNER_REQUIRED"); return this.#owner; }
+  /** Only the original native attempt can prove that release work never
+   * started. A missing proof or classifier failure retains the original error
+   * and consumed provider state, without sending another native command. */
+  #releasePreflightFailure(owner: CurrentFootprintForwardExecutionNativeOwner, failure: unknown, kind: "closed" | "unlaunched" | "no-process"): boolean {
+    try { this.#current(true); return this.#owner === owner && owner.consumeFootprintForwardExecutionReleasePreflightFailure(failure, kind); }
+    catch { return false; }
+  }
+  async #awaitNoProcessRelease(owner: CurrentFootprintForwardExecutionNativeOwner): Promise<void> {
+    const pending = this.#noProcessReleasePending; need(pending !== null, "ORIGINAL_NO_PROCESS_RELEASE_REQUIRED");
+    try { await pending; }
+    catch (error) {
+      if (this.#releasePreflightFailure(owner, error, "no-process")) {
+        this.#releaseAttempted = false; this.#noProcessReleasePending = null; this.#noProcessRelease = false;
+      }
+      throw error;
+    }
+  }
   /** Consume durable intent before native work and retain actual returned
    * resources before fallible result publication or post-reply reproof. */
   async #stageCall<T>(stage: Stage, evidence: Readonly<Record<string, unknown>>, action: () => Promise<T>, retain: (value: T) => void = (): void => {
@@ -432,8 +449,13 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
         }
         this.#openingReleased = true;
       }
-      this.#releaseAttempted = true;
-      await this.#ownerRequired().releaseClosed(); this.#releaseObserved = true;
+      const owner = this.#ownerRequired(); this.#releaseAttempted = true;
+      try { await owner.releaseClosed(); }
+      catch (error) {
+        if (this.#releasePreflightFailure(owner, error, "closed")) { this.#releaseAttempted = false; }
+        throw error;
+      }
+      this.#releaseObserved = true;
       await this.#journalRequired().append("release-result", { released: true }); this.#releaseLease();
     } finally { this.#cleanupBusy = false; }
   }
@@ -459,7 +481,7 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
       need(this.#noProcessRelease && this.#noProcessReleasePending !== null, "NO_PROCESS_UNAVAILABLE");
       this.#cleanupBusy = true;
       try {
-        await this.#noProcessReleasePending; this.#releaseObserved = true;
+        await this.#awaitNoProcessRelease(owner); this.#releaseObserved = true;
         need(await this.observeRelease() === "released", "NO_PROCESS_ORIGINAL_RELEASE_PENDING");
       } finally { this.#cleanupBusy = false; }
       return;
@@ -470,7 +492,7 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
       const journal = this.#journalRequired(); await journal.settle();
       if (!journal.retained().records.some(record => record.kind === "no-process-release-intent")) { await journal.append("no-process-release-intent", {}); }
       this.#releaseAttempted = true; this.#noProcessReleasePending = owner.releaseNoProcess();
-      await this.#noProcessReleasePending; this.#releaseObserved = true;
+      await this.#awaitNoProcessRelease(owner); this.#releaseObserved = true;
       await journal.append("cleanup-no-process", { helperReleased: true, noProcessProved: true }); this.#releaseLease();
     } finally { this.#cleanupBusy = false; }
   }
@@ -501,19 +523,28 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
       const owner = this.#ownerRequired();
       const diagnostics = currentFootprintForwardExecutionBirthFailureDiagnostics(this.#factoryFailure, this.#birthOptions);
       if (diagnostics?.helperClosed !== true || diagnostics.launchInvoked || diagnostics.stdinBytesWritten !== 0) {
-        this.#prelaunchRelease ??= owner.releaseUnlaunched(); await this.#prelaunchRelease;
+        this.#prelaunchRelease ??= owner.releaseUnlaunched();
+        try { await this.#prelaunchRelease; }
+        catch (error) {
+          if (this.#releasePreflightFailure(owner, error, "unlaunched")) { this.#prelaunchRelease = null; }
+          throw error;
+        }
       }
       need(owner.status().helperClosed, "ORIGINAL_HELPER_NOT_CLOSED");
-      await this.#publishPrelaunchCleanup("cleanup-before-launch");
+      // Cleanup writes helper input even when launch was never invoked.
+      // Only factory diagnostics can prove the old zero-input outcome.
+      await this.#publishPrelaunchCleanup(this.#prelaunchRelease === null ? "cleanup-before-launch" : "cleanup-unlaunched-owner");
     } finally { this.#cleanupBusy = false; }
   }
   /** Retain only an already-proved original cleanup fact across publication
    * failures. Settlement cannot resend native release or append a terminal twice. */
-  async #publishPrelaunchCleanup(kind: "cleanup-no-allocation" | "cleanup-before-launch"): Promise<void> {
+  async #publishPrelaunchCleanup(kind: "cleanup-no-allocation" | "cleanup-before-launch" | "cleanup-unlaunched-owner"): Promise<void> {
     need(this.#prelaunchCleanupKind === null || this.#prelaunchCleanupKind === kind, "ORIGINAL_PRELAUNCH_CLEANUP");
     this.#prelaunchCleanupKind = kind;
     const journal = this.#journalRequired();
-    const evidence = kind === "cleanup-no-allocation" ? { noAllocationProved: true } : { helperClosed: true, stdinBytesWritten: 0 };
+    let evidence: Readonly<Record<string, unknown>> = { helperClosed: true, stdinBytesWritten: 0 };
+    if (kind === "cleanup-no-allocation") { evidence = { noAllocationProved: true }; }
+    else if (kind === "cleanup-unlaunched-owner") { evidence = { helperClosed: true, launchNeverInvoked: true, originalUnlaunchedReleaseAcknowledged: true }; }
     await journal.settle(); this.#current(true);
     const published = journal.retained().records.find(record => record.kind === kind);
     if (published === undefined) { await journal.append(kind, evidence); }

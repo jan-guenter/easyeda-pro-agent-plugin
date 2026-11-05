@@ -16,22 +16,36 @@ import { forwardExecutionOpeningJournalFixture } from "./forward-execution-openi
 import { combinedReadyFactoryFixture } from "./current-footprint-combined-ready-fixture.ts";
 
 export async function forwardExecutionOpeningProviderFixture(request: CurrentFootprintForwardExecutionOpeningRequest,
-  mode?: "prepared-publication" | "prelaunch-cleanup-ack" | "no-allocation-cleanup-ack" | "no-process-cleanup-ack" | "ensure-storage" | "held-storage" | "create-ack" | "create-conflict"): Promise<Readonly<{
+  mode?: "prepared-publication" | "prelaunch-cleanup-ack" | "no-allocation-cleanup-ack" | "no-process-cleanup-ack" | "no-process-preflight" | "launched" | "allocation-current" | "launch-intent-ack" | "launch-intent-cleanup-ack" | "launch-current" | "launch-current-cleanup-ack" | "ensure-storage" | "held-storage" | "create-ack" | "create-conflict",
+  supplied: Readonly<{ verifyNativeGraph?: () => Promise<void>; childProgram?: string; launchTarget?: Readonly<{ windowsPath: string; sha256: string }> }> = {}): Promise<Readonly<{
   provider: CurrentFootprintForwardExecutionOpeningProvider;
   factory: Awaited<ReturnType<typeof combinedReadyFactoryFixture>>;
-  state: { allocations: number; checkpointReads: number; sqlReads: number; preparedWasPublished: boolean; producerWasPublished: boolean; installationChecks: number };
+  state: { allocations: number; checkpointReads: number; sqlReads: number; preparedWasPublished: boolean; producerWasPublished: boolean; installationChecks: number; currentFailures: number };
   journalFixture: Awaited<ReturnType<typeof forwardExecutionOpeningJournalFixture>> | null;
 }>> {
-  const factory = await combinedReadyFactoryFixture(mode === "prelaunch-cleanup-ack" || mode === "no-process-cleanup-ack" ? "ready" : "wrong-challenge", "forward-execution", false,
-    mode === "no-process-cleanup-ack" ? { childProgram: `
+  const noProcess = mode === "no-process-cleanup-ack" || mode === "no-process-preflight";
+  const postIntent = mode === "launch-intent-ack" || mode === "launch-intent-cleanup-ack" || mode === "launch-current" || mode === "launch-current-cleanup-ack";
+  const modules: Record<string, unknown> = {};
+  if (supplied.verifyNativeGraph !== undefined) {
+    const verify = supplied.verifyNativeGraph;
+    modules["./current-footprint-forward-native-graph.ts"] = { captureCurrentFootprintForwardNativeGraph: (distribution: unknown, challenge: unknown): Promise<object> => {
+      assert.equal(distribution, "Synthetic"); assert.equal(typeof challenge, "string"); assert.match(String(challenge), /^[a-f\d]{32}$/u);
+      return Promise.resolve(Object.freeze({ verify,
+        bootstrap: `$ErrorActionPreference='Stop';# synthetic fixed graph, never executed\n& {} -WorkerStartupFootprintForwardExecution209 -CombinedReadyChallenge '${String(challenge)}'` }));
+    } };
+  }
+  let childProgram = supplied.childProgram;
+  if (childProgram === undefined && noProcess) { childProgram = `
       const readline=require('node:readline');const input=readline.createInterface({input:process.stdin});
       process.stdout.write(JSON.stringify(packet)+'\\n');
       input.on('line',line=>{const q=JSON.parse(line);if(q.action!=='release-no-process')throw Error('Unexpected inert request');
         process.stdout.write(JSON.stringify({id:q.id,ok:true,result:{creationState:'not-entered',processCreated:false,released:true}})+'\\n');});
-    ` } : {});
+    `; }
+  const factory = await combinedReadyFactoryFixture(mode === "prelaunch-cleanup-ack" || noProcess || mode === "launched" || mode === "allocation-current" || postIntent ? "ready" : "wrong-challenge", "forward-execution", false,
+    { modules, ...(childProgram === undefined ? {} : { childProgram }), ...(supplied.launchTarget === undefined ? {} : { launchTarget: supplied.launchTarget }) });
   const source = new URL("../../src/current-footprint-forward-execution-opening.ts", import.meta.url); const require = createRequire(source);
   const output = await transform(await readFile(source, "utf8"), { loader: "ts", format: "cjs", target: "node24" });
-  const loaded = { exports: {} }, state = { allocations: 0, checkpointReads: 0, sqlReads: 0, preparedWasPublished: false, producerWasPublished: false, installationChecks: 0 };
+  const loaded = { exports: {} }, state = { allocations: 0, checkpointReads: 0, sqlReads: 0, preparedWasPublished: false, producerWasPublished: false, installationChecks: 0, currentFailures: 0 };
   const installationFile = Object.freeze({ windowsPath: "C:\\Synthetic\\easyeda-pro.exe", bytes: 1, sha256: "e".repeat(64) });
   const installationPlan = Object.freeze({ schema: "easyeda-pro-control.pcb-diagnostic-installation.v1", files: Object.freeze([installationFile]) });
   const installation = Object.freeze({ paths: Object.freeze({ syntheticVerifiedPaths: true }), facadeSha256: "f".repeat(64), plan: installationPlan });
@@ -39,15 +53,18 @@ export async function forwardExecutionOpeningProviderFixture(request: CurrentFoo
     targetEvidence: Object.freeze({ projectUuid: request.target.projectUuid, documentUuid: request.target.documentUuid, branchUuid: "b".repeat(32), docType: "PCB", sourceSha256: request.target.expectedSourceSha256 }) });
   const before = Object.freeze({ checkpointSha256: "a".repeat(64), logicalSha256: "c".repeat(64) });
   const completion = Object.freeze({ observedChildClose: true, exitCode: 0, exitSignal: null, elapsedMs: 1 });
-  const journalFixture = mode !== undefined && mode !== "prepared-publication" ? await forwardExecutionOpeningJournalFixture(mode === "prelaunch-cleanup-ack" || mode === "no-allocation-cleanup-ack" || mode === "no-process-cleanup-ack" ? "cleanup-ack" : mode) : null;
+  const journalMode = mode === "prelaunch-cleanup-ack" || mode === "no-allocation-cleanup-ack" || mode === "no-process-cleanup-ack" || mode === "launch-current-cleanup-ack" ? "cleanup-ack" : mode;
+  const journalFixture = journalMode !== undefined && journalMode !== "prepared-publication" && journalMode !== "launch-current" && journalMode !== "allocation-current" && journalMode !== "launched" && journalMode !== "no-process-preflight" ? await forwardExecutionOpeningJournalFixture(journalMode) : null;
   const BaseJournal = journalFixture?.Journal ?? CurrentFootprintForwardExecutionOpeningJournal;
   let fail = mode === "prepared-publication" || mode === "no-allocation-cleanup-ack";
   let allocationFail = mode === "prelaunch-cleanup-ack";
+  let failCurrent = false;
   class InterruptedJournal extends BaseJournal {
     public override async append(...args: Parameters<CurrentFootprintForwardExecutionOpeningJournal["append"]>): Promise<void> {
       await super.append(...args);
       if (args[0] === "prepare-result" && fail) { fail = false; throw new Error("synthetic prepared publication acknowledgment lost"); }
       if (args[0] === "allocation-result" && allocationFail) { allocationFail = false; throw new Error("synthetic original prelaunch collector failed"); }
+      if (args[0] === "launch-intent" && (mode === "launch-current" || mode === "launch-current-cleanup-ack")) { failCurrent = true; }
     }
   }
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${output.code}\n})`); assert.ok(typeof evaluate === "function");
@@ -67,7 +84,9 @@ export async function forwardExecutionOpeningProviderFixture(request: CurrentFoo
         assert.deepEqual(intent.evidence.producer, { schema: "easyeda-pro-control.footprint-forward-execution-opening-producer.v1",
           source: "verifyCurrentPcb209DiagnosticInstallation", facadeSha256: installation.facadeSha256, installationSha256: sha256Json(installation) });
         assert.equal(state.installationChecks, 1); state.producerWasPublished = true;
-        return factory.api.startCurrentFootprintForwardExecutionNativeOwner(input);
+        const owner = await factory.api.startCurrentFootprintForwardExecutionNativeOwner(input);
+        if (mode === "allocation-current") { failCurrent = true; }
+        return owner;
       } };
     }
     if (name === "./current-disposable-open-checkpoint.ts") { return {
@@ -89,7 +108,9 @@ export async function forwardExecutionOpeningProviderFixture(request: CurrentFoo
   const api: unknown = loaded.exports; assert.ok(api !== null && typeof api === "object" && "CurrentFootprintForwardExecutionOpeningProvider" in api && typeof api.CurrentFootprintForwardExecutionOpeningProvider === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Original transformed provider composes the actual factory's private module instance; external collectors are explicitly synthetic.
   const Constructor = api.CurrentFootprintForwardExecutionOpeningProvider as typeof CurrentFootprintForwardExecutionOpeningProvider;
-  const provider = new Constructor(Object.freeze({ ...factory.options, assertLocalAllowed: (): void => undefined,
+  const provider = new Constructor(Object.freeze({ ...factory.options, assertLocalAllowed: (): void => {
+    if (failCurrent) { failCurrent = false; state.currentFailures += 1; throw new Error(`synthetic ${mode === "allocation-current" ? "post-allocation" : "post-launch-intent"} current check failed`); }
+  },
     assertAllowed: (): Promise<void> => Promise.resolve(), assertOtherLaunchesSettled: (): Promise<void> => Promise.resolve() }));
   return Object.freeze({ provider, factory, state, journalFixture });
 }

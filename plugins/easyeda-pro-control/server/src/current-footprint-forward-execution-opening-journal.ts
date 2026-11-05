@@ -20,7 +20,7 @@ import type { CurrentFootprintForwardSourceHistoricalSnapshot } from "./current-
 const PREFIX = "footprint-forward-execution-";
 const MAX_RECORDS = BUDGET.records;
 const BUDGET_SHA256 = sha256Json(BUDGET);
-const TERMINAL = new Set<Phase>(["release-result", "cleanup-before-launch", "cleanup-no-process", "cleanup-no-allocation"]);
+const TERMINAL = new Set<Phase>(["release-result", "cleanup-before-launch", "cleanup-unlaunched-owner", "cleanup-no-process", "cleanup-no-allocation"]);
 function need(condition: boolean, code: string): asserts condition { if (!condition) { throw new Error(`FORWARD_EXECUTION_JOURNAL_${code}`); } }
 function core(value: Readonly<UnknownRecord>): string {
   const { journalSha256: _hash, integrityModel: _model, ...fields } = value; return canonicalJson(fields);
@@ -47,6 +47,8 @@ function cleanupEvidence(entry: Entry): void {
     case "release-result": { z.object({ released: z.literal(true) }).strict().parse(entry.evidence); break;
     }
     case "cleanup-before-launch": { z.object({ helperClosed: z.literal(true), stdinBytesWritten: z.literal(0) }).strict().parse(entry.evidence); break;
+    }
+    case "cleanup-unlaunched-owner": { z.object({ helperClosed: z.literal(true), launchNeverInvoked: z.literal(true), originalUnlaunchedReleaseAcknowledged: z.literal(true) }).strict().parse(entry.evidence); break;
     }
     case "cleanup-no-process": { z.object({ helperReleased: z.literal(true), noProcessProved: z.literal(true) }).strict().parse(entry.evidence); break;
     }
@@ -104,6 +106,9 @@ export function assertCurrentFootprintForwardExecutionOpeningChain(records: read
       } else if (entry.kind === "release-intent") { need(terminated && !pendingTermination, "TERMINATION_REQUIRED"); }
       else if (entry.kind === "release-result") { need(seen.has("release-intent") && terminated && entry.evidence["released"] === true, "RELEASE_RESULT"); }
       else if (entry.kind === "cleanup-before-launch") { need(seen.has("allocation-intent") && !seen.has("launch-intent") && entry.evidence["helperClosed"] === true, "BEFORE_LAUNCH_REQUIRED"); }
+      else if (entry.kind === "cleanup-unlaunched-owner") {
+        need(seen.has("allocation-intent") && !seen.has("binding") && !cleanup && !seen.has("release-intent"), "UNINVOKED_LAUNCH_REQUIRED");
+      }
       else if (entry.kind === "no-process-release-intent") { need(seen.has("launch-intent") && !cleanup && !seen.has("release-intent"), "NO_PROCESS_INTENT"); cleanup = true; }
       else if (entry.kind === "cleanup-no-process") { need(seen.has("no-process-release-intent") && entry.evidence["helperReleased"] === true && entry.evidence["noProcessProved"] === true, "NO_PROCESS_REQUIRED"); }
       else if (entry.kind === "cleanup-no-allocation") { need(!seen.has("allocation-result") && entry.evidence["noAllocationProved"] === true, "NO_ALLOCATION_REQUIRED"); }
