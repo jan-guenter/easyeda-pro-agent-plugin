@@ -21,11 +21,15 @@ import { CURRENT_FOOTPRINT_COPY_CLOCK_REGISTRATION_V2_SOURCE as SOURCE, assertCu
 import type { CurrentFootprintCopyClockRegistrationV2Source, CurrentFootprintCopyClockRegistrationV2Role as Role } from "./current-footprint-copy-clock-registration-v2-source.ts";
 import type { CurrentFootprintCopyClockRpcV2RegistrationBinding, CurrentFootprintCopyClockRpcV2RegistrationRetention } from "./current-footprint-copy-clock-rpc-v2-retention.ts";
 
-const rpcRetentions = new WeakMap<CurrentFootprintCopyClockRpcV2RegistrationRetention, CurrentFootprintCopyClockRpcV2RegistrationBinding>();
+const rpcRetentions = new WeakMap<CurrentFootprintCopyClockRpcV2RegistrationRetention, Readonly<{
+  binding: CurrentFootprintCopyClockRpcV2RegistrationBinding; assertOriginal: () => void;
+}>>();
 /** Resolve only this runner's opaque retention and recheck its exact references.
- * Equal JSON, copied tokens and proxy aliases retain no original handles. */
-export function requireCurrentFootprintCopyClockRpcV2RegistrationRetention(token: CurrentFootprintCopyClockRpcV2RegistrationRetention): CurrentFootprintCopyClockRpcV2RegistrationBinding {
-  const retained = rpcRetentions.get(token); need(!types.isProxy(token) && retained !== undefined); retained.assertCleanup(); return retained;
+ * Normal resolution ends on failure or release. Cleanup retains no sampling
+ * eligibility. Equal JSON, copied tokens and proxies retain no handles. */
+export function requireCurrentFootprintCopyClockRpcV2RegistrationRetention(token: CurrentFootprintCopyClockRpcV2RegistrationRetention, cleanup = false): CurrentFootprintCopyClockRpcV2RegistrationBinding {
+  const retained = rpcRetentions.get(token); need(!types.isProxy(token) && retained !== undefined && typeof cleanup === "boolean");
+  if (cleanup) { retained.binding.assertCleanup(); } else { retained.assertOriginal(); } return retained.binding;
 }
 
 const handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
@@ -96,7 +100,10 @@ export class CurrentFootprintCopyClockRegistrationV2Runner {
     this.#binding = Object.freeze(bindingSchema.parse(captureCurrentPcbStringClockReply(binding).value));
   }
   #same(): void {
-    need(!this.#failed && !this.#releaseAttempted && methods(this.#transport).every((item, index) => item === this.#methods[index]));
+    need(!this.#failed && !this.#releaseAttempted); this.#sameReferences();
+  }
+  #sameReferences(): void {
+    need(methods(this.#transport).every((item, index) => item === this.#methods[index]));
     requireCurrentFootprintCopyUiSource(this.#source);
     for (const role of ["wrapper", "callback"] as const) { const source = this.#sources[role]; if (source !== undefined) { requireCurrentFootprintCopyClockRegistrationV2Source(source.qualified, role); } }
   }
@@ -182,20 +189,23 @@ export class CurrentFootprintCopyClockRegistrationV2Runner {
     } catch (error) { this.#retainFailure(); throw error; } finally { this.#busy = false; }
   }
   /** Retains these exact private references only. This token grants no native
-   * owner, budget or invocation lease and cannot be recreated from packet JSON. */
+   * owner, budget or invocation lease and cannot be recreated from packet JSON.
+   * Existing RPC cleanup keeps these references after sampling fails or this
+   * registration begins release; every normal guard remains consumed. */
   public retainForRpc(packet: CurrentFootprintCopyClockRegistrationV2Observation): CurrentFootprintCopyClockRpcV2RegistrationRetention {
     this.#same(); const retained = this.#retained; const wrapper = this.#sources.wrapper; const callback = this.#sources.callback;
     need(!this.#busy && packet === this.#packet && packet !== null && retained !== null && wrapper !== undefined && callback !== undefined && wrapper.scriptId !== callback.scriptId);
     if (this.#rpcRetention !== null) { return this.#rpcRetention; }
-    const same = (): void => {
-      this.#same(); need(this.#retained === retained && this.#packet === packet && this.#sources.wrapper === wrapper && this.#sources.callback === callback);
-    };
+    const references = (): void => { need(this.#retained === retained && this.#packet === packet && this.#sources.wrapper === wrapper && this.#sources.callback === callback); };
+    const same = (): void => { this.#same(); references(); };
+    const cleanup = (): void => { this.#sameReferences(); references(); };
     const token = Object.freeze({ profile: "private.current-footprint-clock-rpc-registration-retention.v2" as const });
-    rpcRetentions.set(token, Object.freeze({ issuer: this, ...this.#binding, wrapperScriptId: wrapper.scriptId, callbackScriptId: callback.scriptId,
+    const binding = Object.freeze({ issuer: this, ...this.#binding, wrapperScriptId: wrapper.scriptId, callbackScriptId: callback.scriptId,
       registrationArrayObjectId: retained.first, wrapperObjectId: retained.wrapper, callbackObjectId: retained.callback, bindingsArrayObjectId: retained.bindings,
-      wrapperSource: wrapper.qualified, callbackSource: callback.qualified, assertCleanup: same,
+      wrapperSource: wrapper.qualified, callbackSource: callback.qualified, assertCleanup: cleanup,
       assertOriginal: async (): Promise<void> => { same(); await this.#current(); same(); },
-    }));
+    });
+    rpcRetentions.set(token, Object.freeze({ binding, assertOriginal: same }));
     this.#rpcRetention = token; return token;
   }
   public async release(): Promise<void> {

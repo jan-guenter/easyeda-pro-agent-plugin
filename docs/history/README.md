@@ -2,7 +2,7 @@
 
 - [2026-11-05 forward source validation batch](2026-11-05-forward-source-validation-batch.md). Unpublished source and focused-test cuts on protected main `4bdd63f5fdeb9d74975bf18565209942f6e39ff0`: managed v2 source validation, original cleanup/publication custody, fixed native main profile and explicit writer prerequisites; exact evidence digests are recorded in the note.
 
-- [2026-11-05 forward execution eligibility research](2026-11-05-forward-execution-eligibility-research.md). Exact current209 worker/main source findings, missing head/frontier/continuation custody, official CLI version limits and prior catalog text retained verbatim. Repository basis `4bdd63f5fdeb9d74975bf18565209942f6e39ff0`; worker/main hashes and source spans are recorded in the note.
+- [2026-11-05 forward execution eligibility research](2026-11-05-forward-execution-eligibility-research.md). Source findings for the EasyEDA Pro 3.2.209 client profile, including its embedded 3.2.185 worker and main process, missing head/frontier/continuation custody, official CLI version limits and prior catalog text retained verbatim. Repository basis `4bdd63f5fdeb9d74975bf18565209942f6e39ff0`; worker/main hashes and source spans are recorded in the note.
 
 - [2026-11-05 PR168 publication and installation](2026-11-05-pr168-publication-and-installation.md). Protected main `4bdd63f5fdeb9d74975bf18565209942f6e39ff0`, reviewed head `891601248e0254ff54c6c5f553a5e591cc444ae9`, exact PR/main CI, official `0.3.0+codex.20261105000443` installation and package/process verification of the replacement facade in generation 4, with connected capture/clock limits retained.
 

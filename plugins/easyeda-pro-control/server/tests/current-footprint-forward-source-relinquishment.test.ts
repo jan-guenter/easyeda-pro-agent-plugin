@@ -4,6 +4,7 @@ import { readFile, readdir, rename, rm, symlink, unlink, writeFile } from "node:
 import { join } from "node:path";
 import { test } from "node:test";
 import { controlDataDirectory, createOperation, operationPath } from "../src/artifacts.ts";
+import { scanQualifiedAdmissionOperations } from "../src/closed-symbol-terminal-admission.ts";
 import { OPERATION_SCHEMA, buildPlanHash, isRecord } from "../src/core.ts";
 import { CURRENT_FOOTPRINT_FORWARD_SOURCE_HISTORICAL_PROFILE, queryCurrentFootprintForwardSourceRelinquishment,
   validateCurrentFootprintForwardSourceRelinquishment } from "../src/current-footprint-forward-source-relinquishment-contract.ts";
@@ -208,4 +209,23 @@ void test("Source historical snapshots refuse replaced paths and changed origina
   const original = await readFile(artifact); await writeFile(artifact, Buffer.concat([original, Buffer.from(" ")]));
   await assert.rejects(f.historical.readCurrentFootprintForwardSourceHistoricalSnapshot(f.operationId));
   assert.equal(f.owner.hasActiveReservation(), false); assert.equal(f.state.files, 0);
+});
+
+
+void test("unrelated prepared Source histories retain legacy admission without historical-reader quarantine", async context => {
+  const operationId = "footprint-forward-execution-unrelated-admission";
+  const plan = { profile: "private.current-footprint-forward-execution-opening.v2" };
+  await createOperation({ schema: OPERATION_SCHEMA, operationId, plan, planHash: buildPlanHash(plan), state: "prepared", artifacts: [] });
+  context.after(() => rm(operationPath(operationId), { force: true }));
+  const operations = await scanQualifiedAdmissionOperations();
+  const selected = operations.find(operation => operation.summary.operationId === operationId);
+  assert.ok(selected !== undefined);
+  assert.equal(selected.qualification, "legacy");
+  assert.equal(selected.recordedState, "prepared");
+  assert.equal(selected.summary.state, "prepared");
+  assert.equal(selected.unfinished, true);
+  assert.equal(selected.historicalCompletionVerified, false);
+  assert.equal(selected.authorityRestored, false);
+  assert.equal(selected.executionAuthorized, false);
+  assert.equal(selected.replayAllowed, false);
 });

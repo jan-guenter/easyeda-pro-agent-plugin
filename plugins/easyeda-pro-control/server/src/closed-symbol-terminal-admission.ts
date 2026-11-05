@@ -218,6 +218,10 @@ async function qualifySourceRelinquishment(candidate: DetailedScanCandidate): Pr
   const expected = candidate.historicalSource;
   if (expected === undefined || expected === null) { return observation(candidate, "abandonment-evidence-invalid"); }
   try {
+    const { CURRENT_FOOTPRINT_FORWARD_SOURCE_HISTORICAL_PROFILE } = await import("./current-footprint-forward-source-relinquishment-contract.ts");
+    if (expected.entireStoredJournalSha256 !== CURRENT_FOOTPRINT_FORWARD_SOURCE_HISTORICAL_PROFILE.canonicalManifestSha256) {
+      return observation(candidate, "legacy");
+    }
     const { inspectCurrentFootprintForwardSourceRelinquishment } = await import("./current-footprint-forward-source-relinquishment-journal.ts");
     const inspected = await inspectCurrentFootprintForwardSourceRelinquishment(expected.operationId);
     if (inspected === null) { return observation(candidate, "legacy"); }

@@ -16,7 +16,7 @@ import { currentFootprintCopyClockRpcV2Wire } from "../src/current-footprint-cop
 import { currentFootprintCopyClockRpcV2NativeCases, currentFootprintCopyClockRpcV2NativeSource } from "../src/current-footprint-copy-clock-rpc-v2-native.ts";
 import type { CurrentFootprintCopyClockRegistrationV2Observation, CurrentFootprintCopyClockRegistrationV2Runner } from "../src/current-footprint-copy-clock-registration-v2-runner.ts";
 import type { CurrentFootprintCopyClockRpcV2Observation, CurrentFootprintCopyClockRpcV2Runner } from "../src/current-footprint-copy-clock-rpc-v2-runner.ts";
-import type { CurrentFootprintCopyClockRpcV2RegistrationRetention, CurrentFootprintCopyClockRpcV2Transport } from "../src/current-footprint-copy-clock-rpc-v2-retention.ts";
+import type { CurrentFootprintCopyClockRpcV2RegistrationBinding, CurrentFootprintCopyClockRpcV2RegistrationRetention, CurrentFootprintCopyClockRpcV2Transport } from "../src/current-footprint-copy-clock-rpc-v2-retention.ts";
 import { SYNTHETIC_SOURCES, clockRpcV2Fixture, documentUuid } from "./helpers/footprint-clock-rpc-v2-fixture.ts";
 
 type Module = Record<string, unknown>;
@@ -28,7 +28,7 @@ async function load(path: string, replacements: Module = {}, text?: string): Pro
   return loaded.exports;
 }
 interface RegistrationModule { readonly CurrentFootprintCopyClockRegistrationV2Runner: typeof CurrentFootprintCopyClockRegistrationV2Runner;
-  readonly requireCurrentFootprintCopyClockRpcV2RegistrationRetention: (token: CurrentFootprintCopyClockRpcV2RegistrationRetention) => unknown }
+  readonly requireCurrentFootprintCopyClockRpcV2RegistrationRetention: (token: CurrentFootprintCopyClockRpcV2RegistrationRetention, cleanup?: boolean) => CurrentFootprintCopyClockRpcV2RegistrationBinding }
 interface RpcModule { readonly CurrentFootprintCopyClockRpcV2Runner: typeof CurrentFootprintCopyClockRpcV2Runner;
   readonly currentFootprintCopyClockRpcV2ObservationSchema: { parse: (value: unknown) => CurrentFootprintCopyClockRpcV2Observation } }
 async function fixture(override?: (transport: CurrentFootprintCopyClockRpcV2Transport) => CurrentFootprintCopyClockRpcV2Transport): Promise<ReturnType<typeof clockRpcV2Fixture> & Readonly<{
@@ -94,6 +94,48 @@ void test("mixed original registration and two RPC traces derive49/18/67 while k
   const released = await fixture(); await released.registration.release();
   assert.throws(() => released.registrationModule.requireCurrentFootprintCopyClockRpcV2RegistrationRetention(released.retention));
   await assert.rejects(released.runner.arm()); assert.equal(released.commands.length, 0);
+});
+
+for (const state of ["sample-failed", "released", "release-pending"] as const) {
+  void test(`RPC cleanup retains only original cleanup references after registration ${state}`, async () => {
+    const f = await fixture(); await f.runner.arm();
+    let release: Promise<void> | null = null;
+    if (state === "sample-failed") {
+      f.state.registrationSampleFailure = true;
+      await assert.rejects(f.registration.sampleOriginal(f.registrationPacket), /original registration sample failed/u);
+    } else if (state === "release-pending") {
+      f.state.holdRegistrationRelease = true; release = assert.rejects(f.registration.release());
+      await f.registrationRelease.entered;
+    } else { await f.registration.release(); }
+    const failure = f.registration.retained().failure, phase = f.runner.diagnostics()["phase"];
+    assert.throws(() => f.registrationModule.requireCurrentFootprintCopyClockRpcV2RegistrationRetention(f.retention));
+    assert.throws(() => f.registration.retainForRpc(f.registrationPacket));
+    assert.throws(() => { f.runner.consumeBeforeInvocation(); }); assert.equal(f.runner.diagnostics()["phase"], phase);
+    assert.equal(phase, "armed"); assert.equal(f.commands.length, 13);
+    try { await f.runner.cleanup(); }
+    finally { f.registrationRelease.finish(); if (release !== null) { await release; } }
+    const cleanup = f.commands.slice(13), points = f.commands.filter(command => command.method === "Debugger.setBreakpoint");
+    assert.equal(cleanup.filter(command => command.method === "Debugger.removeBreakpoint").length, points.length);
+    assert.equal(cleanup.filter(command => command.method === "Runtime.releaseObjectGroup").length, 2);
+    assert.ok(cleanup.every(command => command.method === "Debugger.removeBreakpoint" || command.method === "Runtime.releaseObjectGroup"));
+    const retained = f.registrationModule.requireCurrentFootprintCopyClockRpcV2RegistrationRetention(f.retention, true);
+    retained.assertCleanup(); await assert.rejects(retained.assertOriginal());
+    for (const token of [structuredClone(f.retention), new Proxy(f.retention, {})]) {
+      assert.throws(() => f.registrationModule.requireCurrentFootprintCopyClockRpcV2RegistrationRetention(token, true));
+    }
+    assert.equal(f.state.clockCalls, 0); assert.equal(f.state.started, false); assert.equal(f.state.retired, true);
+    assert.equal(f.runner.diagnostics()["executionAuthorized"], false); assert.equal(f.runner.diagnostics()["nativeMounted"], false);
+    if (state === "sample-failed") { assert.equal(f.registration.retained().failure, failure); }
+    await assert.rejects(f.registration.sampleOriginal(f.registrationPacket)); await assert.rejects(f.runner.cleanup());
+  });
+}
+
+void test("registration transport substitution blocks RPC cleanup before any downstream command", async () => {
+  const f = await fixture(); await f.runner.arm(); await f.registration.release();
+  Reflect.set(f.registrationTransport, "request", (): Promise<unknown> => Promise.resolve({}));
+  assert.throws(() => f.registrationModule.requireCurrentFootprintCopyClockRpcV2RegistrationRetention(f.retention, true));
+  await assert.rejects(f.runner.cleanup()); assert.equal(f.commands.length, 13); assert.equal(f.state.clockCalls, 0);
+  f.state.exited = true; await f.runner.observeOriginalGenerationEnded();
 });
 
 void test("relocated allocation and wrong preload caller location fail before continuation and retain their first reply evidence", async () => {

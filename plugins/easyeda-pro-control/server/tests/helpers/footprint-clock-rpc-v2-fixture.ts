@@ -60,7 +60,9 @@ export function clockRpcV2Fixture(): Readonly<{
   transport: CurrentFootprintCopyClockRpcV2Transport; registrationTransport: CurrentFootprintCopyClockRegistrationV2Transport;
   workerLease: CurrentFootprintCopyClockRpcConstructionLease; construction: ObjectValue; workerSource: object;
   commands: Command[]; registrationCommands: RegistrationCommand[];
-  state: { started: boolean; exited: boolean; stage: number; lostResume: boolean; wrongTarget: boolean; reusedUiTask: boolean; changedResult: boolean; lostWorkerLease: boolean; retired: boolean; clockCalls: number; semanticFailures: number };
+  state: { started: boolean; exited: boolean; stage: number; lostResume: boolean; wrongTarget: boolean; reusedUiTask: boolean; changedResult: boolean; lostWorkerLease: boolean; retired: boolean; clockCalls: number; semanticFailures: number;
+    registrationSampleFailure: boolean; holdRegistrationRelease: boolean };
+  registrationRelease: Readonly<{ entered: Promise<null>; finish: () => void }>;
 }> {
   const worker = createContext({}); const ui = createContext({}); runInContext(nativeSetup, worker); runInContext(nativeSetup, ui);
   const dependencyIndexes = Object.fromEntries(CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES.map((value, index) => [value.key, index]));
@@ -92,7 +94,9 @@ globalThis.refs={bus,queue,initialTask,first,bindings,callback,wrapper,UiTask,ro
     if (value === wb["bc"] || value === ub["bc"]) { return { type: "object", className: "BroadcastChannel", objectId: register(value) }; }
     return { type: "object", ...(Array.isArray(value) ? { subtype: "array", className: "Array", description: `Array(${String(value.length)})` } : { className: "Object", description: "Object" }), objectId: register(value) };
   };
-  const state = { started: false, exited: false, stage: 0, lostResume: false, wrongTarget: false, reusedUiTask: false, changedResult: false, lostWorkerLease: false, retired: false, clockCalls: 0, semanticFailures: 0 };
+  const state = { started: false, exited: false, stage: 0, lostResume: false, wrongTarget: false, reusedUiTask: false, changedResult: false, lostWorkerLease: false, retired: false, clockCalls: 0, semanticFailures: 0,
+    registrationSampleFailure: false, holdRegistrationRelease: false };
+  const releaseEntered = Promise.withResolvers<null>(), releaseFinished = Promise.withResolvers<null>();
   const commands: Command[] = [], events: CurrentFootprintCopyClockRpcV2Event[] = [], points = new Map<string, string>(), registrationCommands: RegistrationCommand[] = [];
   let callerFrame: unknown; let currentFrame: unknown; let currentId = 0; let currentMessage: unknown; let currentPending: unknown;
   let currentTopic = ""; let head: unknown[]; let lastUiTask: unknown = null; let replyQueue: unknown[];
@@ -175,11 +179,14 @@ globalThis.refs={bus,queue,initialTask,first,bindings,callback,wrapper,UiTask,ro
   };
   const registrationTransport: CurrentFootprintCopyClockRegistrationV2Transport = { assertCurrent: current, request: async (command): Promise<unknown> => {
     registrationCommands.push(command);
+    if (command.phase === "sample" && state.registrationSampleFailure) { throw new Error("synthetic original registration sample failed"); }
+    if (command.phase === "release" && state.holdRegistrationRelease) { releaseEntered.resolve(null); await releaseFinished.promise; }
     if (command.method === "Debugger.getScriptSource") { return { scriptSource: SYNTHETIC_SOURCES[command.phase === "wrapper-source" ? "wrapper" : "callback"] }; }
     // The same actual object registry and fixed descriptor evaluator serve both
     // Stages; registration commands are kept out of the RPC counter witness.
     const reply = await transport.request(command, false); commands.pop(); return reply;
   } };
-  return Object.freeze({ transport, registrationTransport, workerLease, construction, workerSource, commands, registrationCommands, state });
+  return Object.freeze({ transport, registrationTransport, workerLease, construction, workerSource, commands, registrationCommands, state,
+    registrationRelease: Object.freeze({ entered: releaseEntered.promise, finish: (): void => { releaseFinished.resolve(null); } }) });
 }
 export { documentUuid };

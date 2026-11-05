@@ -5,6 +5,7 @@ import { test } from "node:test";
 import { CurrentFootprintCopyAllocatedCreateClockBudget as LegacyBudget, CURRENT_FOOTPRINT_COPY_ALLOCATION_NATIVE_ORDER as ORDER,
   CURRENT_FOOTPRINT_COPY_ALLOCATED_CREATE_CLOCK_BUDGET as UNIT } from "../src/current-footprint-copy-allocated-create-clock-budget.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE as FORWARD } from "../src/current-footprint-copy-forward-profile.ts";
+import { CURRENT_FOOTPRINT_FORWARD_NATIVE_LIMITS as NATIVE } from "../src/current-footprint-forward-native-limits.ts";
 import { CurrentFootprintForwardAllocatedCreateClockBudget as Budget,
   requireCurrentFootprintForwardAllocatedClockHandoffHeadroom } from "../src/current-footprint-forward-allocated-create-clock-budget.ts";
 import { currentFootprintCopyAllocationNativeCases } from "../src/current-footprint-copy-allocation-native.ts";
@@ -26,9 +27,11 @@ function complete(budget: Budget): void {
   for (let index = 10; index < UNIT.clockCleanup; index += 1) { budget.consume(nextId(), true); }
 }
 
-void test("forward allocation/clock unit retains physical IDs through1002 and leaves legacy811/856 unchanged", () => {
-  const ceiling = FORWARD.renderer.requestLimit, first = ceiling - UNIT.total + 1;
-  assert.equal(ceiling, 1002); assert.equal(FORWARD.renderer.normalClassLimit, 941); assert.equal(FORWARD.renderer.cleanupClassLimit, 61);
+void test("forward execution allocation/clock unit retains physical IDs through1003 and leaves legacy ceilings unchanged", () => {
+  const ceiling = NATIVE.requestLimit, first = ceiling - UNIT.total + 1;
+  assert.equal(ceiling, 1003); assert.equal(first, 926); assert.equal(first + UNIT.createOffset, 940);
+  assert.equal(NATIVE.normalClass, 942); assert.equal(NATIVE.cleanupClass, 61);
+  assert.equal(FORWARD.renderer.requestLimit, 1002); assert.equal(FORWARD.renderer.normalClassLimit, 941); assert.equal(FORWARD.renderer.cleanupClassLimit, 61);
   assert.equal(UNIT.maximumNormalId, 811); assert.equal(UNIT.maximumRequestId, 856);
   const budget = new Budget(first); complete(budget); budget.requireCompleted(); budget.retire();
   const state = budget.snapshot();
@@ -41,10 +44,11 @@ void test("forward allocation/clock unit retains physical IDs through1002 and le
 });
 
 void test("forward headroom reserves the original handoff and rejects malformed or overflowing physical IDs", () => {
-  const first = FORWARD.renderer.requestLimit - UNIT.total + 1;
+  const first = NATIVE.requestLimit - UNIT.total + 1;
   const handoff = first - UNIT.handoffMaximum;
   assert.deepEqual(requireCurrentFootprintForwardAllocatedClockHandoffHeadroom(handoff), {
-    nextId: handoff, lastReservedId: 1002, handoffMaximum: UNIT.handoffMaximum, reservedIds: UNIT.handoffAndUnit });
+    nextId: handoff, lastReservedId: 1003, handoffMaximum: UNIT.handoffMaximum, reservedIds: UNIT.handoffAndUnit });
+  assert.equal(handoff, 924);
   assert.throws(() => requireCurrentFootprintForwardAllocatedClockHandoffHeadroom(handoff + 1), /HEADROOM/u);
   assert.throws(() => new Budget(first + 1), /HEADROOM/u);
   for (const id of [0, -0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER]) {
@@ -75,7 +79,7 @@ function clock(cleanup: boolean): CurrentFootprintCopyClockRpcCommand {
 }
 
 void test("the distinct forward channel preserves all78 physical IDs and one original pending create above the legacy ceiling", async () => {
-  const first = FORWARD.renderer.requestLimit - UNIT.total + 1;
+  const first = NATIVE.requestLimit - UNIT.total + 1;
   let created = 0, current = clock(false), retired = 0;
   const events: object[] = [];
   const f = await createClockChannelFixture(true, {}, {
@@ -108,7 +112,7 @@ void test("the distinct forward channel preserves all78 physical IDs and one ori
     assert.equal(route.takeEvent(), null); await route.retire(); assert.equal(await route.joinCreate(pending), '{"success":true}');
     const ids = f.state.sent.flatMap(request => typeof request["requestId"] === "number" ? [request["requestId"]] : []);
     assert.deepEqual(ids, Array.from({ length: UNIT.total }, (_, index) => first + index));
-    assert.equal(f.channel.status().nextRequestId, 1003); assert.equal(created, 1); assert.equal(retired, 1);
+    assert.equal(f.channel.status().nextRequestId, 1004); assert.equal(created, 1); assert.equal(retired, 1);
     assert.equal(f.state.sent.filter(request => request["action"] === "footprint-copy-native-create").length, 1);
     await assert.rejects(route.dispatchCreate()); await assert.rejects(route.request(allocation[0], false));
   } finally { f.state.exited = true; await f.channel.releaseAfterTermination(); }

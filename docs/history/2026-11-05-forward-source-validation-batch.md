@@ -499,3 +499,82 @@ epoch, native helper programs and the retained original package stay intact.
 Clean package checks, exact-head CI and another actual full PR review remain
 required before publication. The plugin version remains the same unpublished
 candidate, with no new session or native-owner adoption.
+
+
+## Renderer completion and private clock cleanup
+
+Commit `43b0f1ecd48df37b16ae5401125091d61e5960f4` passed all eleven required
+CI checks: 14,307 facade passes, five supported skips and zero failures across
+65 suites, plus all 424 bridge cases. Checkout ancestry, full source/runtime
+pins, raw log CRCs and the uploaded package matched the frozen payload. Its
+2,632 files, 43 directories and 53,673,220 bytes matched exact modes and roster.
+Complete CI proof SHA-256:
+`bf87a9911f58e9e1ff7576d733a66c5a6fa3901de0000a5ac35b73c630bad2ec`.
+
+CodeRabbit review `5785792524` reported one Major, two Minor, one Trivial and
+one explicitly unverified wording item. All are accepted. The new preflight
+idle check incorrectly used the presence of the retained renderer send promise,
+which remains assigned after discovery completes. The private clock issuer's
+normal guard also prevented cleanup after sampling failure or release start.
+Its allocated v2 budget still used the old forward profile's 1,002-ID bound.
+The other items request an early canonical-profile selection and a precise
+client/embedded-worker label in the history index. Complete review proof:
+`3671ad8b3f65d7ed9ddd3543fc0f96d5289fedba9be33048695cd82bec633358`.
+Actual coverage selected 122 files and filtered three generated bundles;
+native-core remained unavailable. The documentation metric stayed inconclusive
+at 30.41%, with 148 functions across 50 files and 71 skips: 16 unsupported and
+55 at the file limit. A successful review check is not complete coverage.
+
+Actual browser discovery followed by a release preflight refusal reproduced
+the Major defect. Active v2 frame tokens now span the real callback through
+settlement; the existing send promise assignment and serialization remain
+unchanged. Active callbacks, queued native work and the existing sticky release
+and identity checks still refuse a proof. Twelve v2 release and five existing
+discovery cases pass, as do strict lint/types. Author proof SHA-256:
+`e5a0dc535f4a5d7f4e39991ec2b13a81fd0d725acd1d60db122c1945ec027501`.
+
+Independent review proof:
+`a5eb7bc246cf5e6e6c5631385f66d5465e2a69d70aac5b78be7659cf045c6c52`.
+
+The clock registry now distinguishes normal retention from cleanup retention.
+Normal synchronous invocation still refuses before its phase advances after
+issuer failure or release; only the existing cleanup grammar selects the
+reference-only guard. Original source, transport and captured references stay
+pinned, and cleanup sends only its retained breakpoint/group removal commands.
+The v2 budget imports its authoritative native 1,003-ID limit. The legacy
+1,002 limit, old units and class headroom/safe-integer checks remain unchanged.
+Both original failure cases are preserved. Twenty focused cases and strict
+six-file lint pass; author proof:
+`69807a0df083af31f512c2f7998fd6d53ab98714e2b627b7bb15df7489a37f84`.
+Independent final review:
+`7b81aae278b392d37b7868b7e79ec1c5fa875ab8b4c3bf77c300245e5d9ea461`.
+These are private source/synthetic checks and grant no genuine paired clock or
+writer authority.
+
+The admission selector now compares the fresh candidate's canonical manifest
+hash to the fixed historical profile before asking its full history reader.
+Only an exact candidate reaches that still-authoritative inspector. Unrelated
+prepared Source operations retain their legacy state and unfinished editing
+blocker, avoiding spurious historical-reader quarantine. The first regression
+failed before correction; it and the two exact-profile/isolation cases pass
+with strict lint afterward. The history index now explicitly distinguishes the
+3.2.209 client profile from its embedded 3.2.185 worker.
+
+Final combined strict types and type-aware lint pass at zero warnings. Package,
+rebuild and new exact-head CI/full review remain required. No native application,
+Source recovery, explicit Save, process signal or new plugin version occurred
+while addressing these findings.
+
+
+The combined renderer/clock correction cut passes types, strict lint, build,
+compatibility, API coverage, repository/privacy, plugin and all-skill checks.
+The reproducible rebuild preserves all 3,040 file bytes and modes; proof:
+`d06b7a225bbd9b2deb6cbf4bd8c210bb91c4f743b8836d28c485ee2f198f14cc`.
+Its 1,049-source-file projection is
+`8a67b151bb2d89e6664cbefaab5d3259d29de0a682382d0cd72afc25287d68a7`;
+the three-file runtime projection is
+`28d3b068569792210117683b042255fca241b6237de3aa912982012f25925bd0`.
+Only facade projections and review time changed. Complete local check proof:
+`d7d922c75663581d2ed9acf77d3ff88c4c20b03733acbfb3fcfb9eb3a956eeec`.
+Clean package checks, exact new-head CI and another actual CodeRabbit review
+remain required. The unpublished candidate version is unchanged.

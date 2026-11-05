@@ -3,13 +3,13 @@
  * grants no native owner, invocation lease or whole-writer reservation. */
 import { CurrentFootprintCopyAllocatedCreateClockBudget,
   CURRENT_FOOTPRINT_COPY_ALLOCATED_CREATE_CLOCK_BUDGET as UNIT } from "./current-footprint-copy-allocated-create-clock-budget.ts";
-import { CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE as FORWARD } from "./current-footprint-copy-forward-profile.ts";
+import { CURRENT_FOOTPRINT_FORWARD_NATIVE_LIMITS as LIMITS } from "./current-footprint-forward-native-limits.ts";
 
 function fail(code: string): Error { return new Error(`FOOTPRINT_FORWARD_ALLOCATED_CLOCK_${code}`); }
 function lastId(first: number, prefix: number): number {
-  if (!Number.isSafeInteger(first) || first < 1 || first > FORWARD.renderer.requestLimit) { throw fail("START_ID"); }
+  if (!Number.isSafeInteger(first) || first < 1 || first > LIMITS.requestLimit) { throw fail("START_ID"); }
   const last = first + prefix + UNIT.total - 1;
-  if (last > FORWARD.renderer.normalRequestLimit || last > FORWARD.renderer.requestLimit) { throw fail("HEADROOM"); }
+  if (last > LIMITS.requestLimit) { throw fail("HEADROOM"); }
   return last;
 }
 

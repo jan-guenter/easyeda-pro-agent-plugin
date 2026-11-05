@@ -123,7 +123,7 @@ export class CurrentFootprintCopyClockRpcV2Runner {
   #end(): void { this.#busy = false; this.#idle?.resolve(null); }
   #same(cleanup = false): void {
     need(!this.#retired && requireCurrentFootprintCopyClockRpcConstructionLease(this.#workerLease) === this.#worker &&
-      requireCurrentFootprintCopyClockRpcV2RegistrationRetention(this.#retention) === this.#ui && methods(this.#transport).every((value, index) => value === this.#methods[index]), "ORIGINAL_REFERENCES");
+      requireCurrentFootprintCopyClockRpcV2RegistrationRetention(this.#retention, cleanup) === this.#ui && methods(this.#transport).every((value, index) => value === this.#methods[index]), "ORIGINAL_REFERENCES");
     this.#worker.assertCleanup(); this.#ui.assertCleanup();
     requireCurrentFootprintCopyClockRpcSource(this.#worker.qualifiedSource, "worker");
     requireCurrentFootprintCopyClockRegistrationV2Source(this.#ui.wrapperSource, "wrapper");

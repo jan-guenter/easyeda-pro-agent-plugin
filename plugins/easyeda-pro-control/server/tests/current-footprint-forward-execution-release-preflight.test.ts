@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
+import { setImmediate } from "node:timers/promises";
 import { combinedReadyFactoryFixture } from "./helpers/current-footprint-combined-ready-fixture.ts";
 
 type ReleaseKind = "closed" | "unlaunched" | "no-process";
@@ -14,7 +15,7 @@ async function rejected(pending: Promise<unknown>): Promise<unknown> {
   throw new Error("The original release invocation must reject.");
 }
 
-async function fixture(context: TestContext, mode: "normal" | "live-termination" | "malformed-release" | "slow-termination" = "normal"): Promise<Readonly<{
+async function fixture(context: TestContext, mode: "normal" | "live-termination" | "malformed-release" | "slow-termination" | "slow-discovery" = "normal"): Promise<Readonly<{
   source: Awaited<ReturnType<typeof combinedReadyFactoryFixture>>;
   owner: Awaited<ReturnType<Awaited<ReturnType<typeof combinedReadyFactoryFixture>>["api"]["startCurrentFootprintForwardExecutionNativeOwner"]>>;
   verifyNext: (run: () => Promise<void>) => void;
@@ -30,15 +31,18 @@ async function fixture(context: TestContext, mode: "normal" | "live-termination"
       })),
     } },
     childProgram: `const mode=${JSON.stringify(mode)};const readline=require('node:readline');
-process.stdout.write(JSON.stringify(packet)+'\\n');const input=readline.createInterface({input:process.stdin});
+process.stdout.write(JSON.stringify(packet)+'\\n');const input=readline.createInterface({input:process.stdin});let rendererId=0,rendererMethod='';
 input.on('line',line=>{const q=JSON.parse(line);let result;
-if(q.action==='termination')result={terminated:mode!=='live-termination',originalRootExited:mode!=='live-termination',originalJobEmpty:true};
+if(q.action==='launch')result={helperInstance:packet.helperInstance,jobId:packet.jobId,rootPid:1234,rootCreated:'133760000000000000'};
+else if(q.action==='send'){rendererId=q.requestId;rendererMethod=q.method;result={written:true};}
+else if(q.action==='poll'){const reply=rendererMethod==='Browser.getVersion'?{protocolVersion:'1.3',product:'Synthetic/1',revision:'synthetic',userAgent:'inert-peer',jsVersion:'synthetic'}:{targetInfos:[]};result={bytes:Buffer.from(JSON.stringify({id:rendererId,result:reply})+'\\0').toString('base64')};}
+else if(q.action==='termination')result={terminated:mode!=='live-termination',originalRootExited:mode!=='live-termination',originalJobEmpty:true};
 else if(mode==='malformed-release')result={released:false};
 else if(q.action==='release-unlaunched')result={released:true,launchNeverAttempted:true};
 else if(q.action==='release-no-process')result={released:true,creationState:'not-entered',processCreated:false};
 else if(q.action==='release')result={released:true};else throw Error('Unexpected inert release request');
 const reply=()=>process.stdout.write(JSON.stringify({id:q.id,ok:true,result})+'\\n');
-if(mode==='slow-termination'&&q.action==='termination')setTimeout(reply,30);else reply();});`,
+if(mode==='slow-termination'&&q.action==='termination'||mode==='slow-discovery'&&q.action==='send')setTimeout(reply,30);else reply();});`,
   });
   const owner = await source.api.startCurrentFootprintForwardExecutionNativeOwner(source.options);
   context.after(async () => {
@@ -158,4 +162,39 @@ void test("writer-v2 current helper failure prevents consumption of an earlier o
   f.source.child().stderr.emit("data", Buffer.from("synthetic helper failure"));
   assert.equal(f.owner.consumeFootprintForwardExecutionReleasePreflightFailure(original, "unlaunched"), false);
   assert.equal(f.source.state.writes, 0);
+});
+
+void test("writer-v2 completed renderer discovery permits an original closed-release preflight proof without resetting its send tail", async context => {
+  const f = await fixture(context); await f.owner.launch(launch);
+  const observed = await f.owner.browserObservation();
+  assert.equal(observed["executionAuthorized"], false);
+  assert.deepEqual(f.source.state.actions, ["launch", "send", "poll", "send", "poll"]);
+  assert.equal(f.owner.status().forwardResources?.counters.rendererRequests, 2);
+  const original = new Error("release preflight after actual renderer discovery"); f.failNext(original);
+  assert.equal(await rejected(f.owner.releaseClosed()), original);
+  assert.equal(f.owner.consumeFootprintForwardExecutionReleasePreflightFailure(original, "closed"), true);
+  assert.equal(f.owner.consumeFootprintForwardExecutionReleasePreflightFailure(original, "closed"), false);
+  assert.deepEqual(f.source.state.actions, ["launch", "send", "poll", "send", "poll"]);
+  await f.owner.releaseClosed();
+  assert.equal(f.owner.status().helperClosed, true);
+  assert.deepEqual(f.source.state.actions, ["launch", "send", "poll", "send", "poll", "termination", "release"]);
+});
+
+void test("writer-v2 active renderer discovery retains BUSY ownership and refuses release preflight proof", async context => {
+  const f = await fixture(context, "slow-discovery"); await f.owner.launch(launch);
+  const stale = new Error("prefix before renderer discovery"); f.failNext(stale);
+  await rejected(f.owner.releaseClosed());
+  const pending = f.owner.browserObservation();
+  const deadline = performance.now() + 1000;
+  while (!f.source.state.actions.includes("send")) { assert.ok(performance.now() < deadline); await setImmediate(); }
+  const busy = await rejected(f.owner.releaseClosed());
+  assert.equal(f.owner.consumeFootprintForwardExecutionReleasePreflightFailure(busy, "closed"), false);
+  assert.equal(f.owner.consumeFootprintForwardExecutionReleasePreflightFailure(stale, "closed"), false);
+  assert.equal(f.owner.status().busy, true); assert.ok(!f.source.state.actions.includes("termination"));
+  await pending;
+  assert.deepEqual(f.source.state.actions, ["launch", "send", "poll", "send", "poll"]);
+  const original = new Error("new prefix after discovery settled"); f.failNext(original);
+  await rejected(f.owner.releaseClosed());
+  assert.equal(f.owner.consumeFootprintForwardExecutionReleasePreflightFailure(original, "closed"), true);
+  await f.owner.releaseClosed(); assert.equal(f.owner.status().helperClosed, true);
 });

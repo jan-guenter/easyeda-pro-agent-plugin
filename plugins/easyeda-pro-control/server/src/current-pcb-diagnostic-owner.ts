@@ -577,8 +577,10 @@ class CurrentPcbRetainedOwnerCore {
   #forwardExecutionReleaseWorkEverStarted = false;
   #forwardExecutionNativeActivity: object | null = null;
   readonly #forwardExecutionPendingNativeRequests = new Set<object>();
+  readonly #forwardExecutionPendingFrameWrites = new Set<object>();
   #released = false;
   #childClosed = false;
+  // Retain the last frame promise for transfer even after its settlement.
   #send: Promise<void> | null = null;
   #inspectionConsumed = false;
   #browserObservationConsumed = false;
@@ -4035,7 +4037,7 @@ class CurrentPcbRetainedOwnerCore {
 
   #releasePreflightIdle(): boolean {
     return !this.#forwardExecutionReleaseWorkEverStarted && !this.#releaseConsumed && !this.#released && !this.#busy &&
-      this.#pending === null && this.#send === null && this.#forwardExecutionPendingNativeRequests.size === 0 &&
+      this.#pending === null && this.#forwardExecutionPendingFrameWrites.size === 0 && this.#forwardExecutionPendingNativeRequests.size === 0 &&
       this.#failure === null && !this.#childClosed && this.#child.exitCode === null && this.#child.signalCode === null &&
       (this.#forwardExecutionMainPoll === null || this.#forwardExecutionMainPoll.delivered);
   }
@@ -4170,6 +4172,8 @@ class CurrentPcbRetainedOwnerCore {
    * Invalid frames and uncertain writes retain the fixed failure result. */
   // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This adapter must settle the original Writable completion callback after native WriteFile.
   async #sendFrame(chunk: unknown, callback: (cause?: Error | null) => void): Promise<void> {
+    const frame = this.#purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE ? Object.freeze({}) : null;
+    if (frame !== null) { this.#forwardExecutionPendingFrameWrites.add(frame); }
     try {
       if (!Buffer.isBuffer(chunk)) { throw error("OUTBOUND_FRAME"); }
       let nativeRequest = diagnosticNativeRequest;
@@ -4183,7 +4187,7 @@ class CurrentPcbRetainedOwnerCore {
     } catch {
       // oxlint-disable-next-line promise/prefer-await-to-callbacks, eslint/no-useless-return -- Native failure settles the Writable callback as the terminal branch operation.
       callback(error("WRITE_FAILED")); return;
-    }
+    } finally { if (frame !== null) { this.#forwardExecutionPendingFrameWrites.delete(frame); } }
   }
   #forwardResources(): Readonly<ForwardResources & { role: CurrentFootprintCopyForwardRole }> {
     const ledger = this.#forwardLedger, methods = this.#forwardLedgerMethods, role = this.#forwardRole;
