@@ -178,3 +178,27 @@ contracts and effect/saved-result verification; the
 keeps implemented routes and omissions separate. Broader repeated-read
 optimization must preserve fresh complete bytes, descriptor/path identities,
 predecessor links, malformed-refusal order and all global owner exclusions.
+
+## Full-head review and loss-cause correction, 2026-11-05
+
+The corrected payload at `6bce4e3fd97caedb7830bfa616d50313ab5120ba`
+passed all eleven required CI jobs: 14,193 facade tests, with 14,188 passed,
+five supported platform skips and no failures, plus 424 bridge tests. The
+actual checkout trees and source/runtime pins matched the frozen candidate.
+Windows also executed the new C# request-ID boundary smoke successfully.
+
+The subsequent full-head CodeRabbit review
+[5778730065](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/168#pullrequestreview-5778730065)
+reported one additional issue. The worker construction loss handler notified
+listeners before recording `OWNER_LOST`; a listener could therefore replace
+the first cause with `STRUCTURE_OBSERVER_FAILED`. The correction records owner
+loss first, preserving listener order, the original waiting rejection and the
+existing earlier-failure latch.
+
+Two focused regressions passed through the actual core subscription and
+original inert-inspector transport. A fresh loss retains `OWNER_LOST`; a prior
+observer failure retains the identical earlier failure object. Both cases
+refuse normal replay and complete original cleanup. Independent source review
+found no blocker. This final correction remains separate from the successful
+CI and full review of its `6bce4e3` base; its final build, CI, review disposition
+and publication checks are pending at this append.

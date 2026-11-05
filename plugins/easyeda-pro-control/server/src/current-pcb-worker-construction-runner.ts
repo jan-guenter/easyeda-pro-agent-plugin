@@ -465,7 +465,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (currentPcbStartupMonotonicMs() - paused.window.startedAtMs >= paused.window.limitMs) { this.#fail("PAUSE_DEADLINE"); }
     paused.resumeObserved = true; clearTimeout(paused.watchdog); paused.resumed.resolve(null);
   };
-  readonly #onLost = (): void => { this.#structureListener?.lost(); this.#footprintCacheListener?.lost(); this.#fail("OWNER_LOST"); this.#waiting.reject(this.#failed); };
+  readonly #onLost = (): void => { this.#fail("OWNER_LOST"); this.#structureListener?.lost(); this.#footprintCacheListener?.lost(); this.#waiting.reject(this.#failed); };
   #resume(paused: RetainedPause, origin: ResumeOrigin = "normal"): Promise<void> {
     if (paused.resumeResult !== null) { return paused.resumeResult; }
     if (origin === "normal") { this.#checkWindow(); }

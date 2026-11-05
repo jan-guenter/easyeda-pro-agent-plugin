@@ -13,9 +13,9 @@ import { construction209Inspector } from "./helpers/current-pcb-worker-construct
  * the real allocation; they never replace the opaque construction lease. */
 async function original(context: TestContext, fault: "none" | "owner" | "pause" = "none",
   allocation?: Readonly<{ reply: (raw: unknown, lose: () => void) => Promise<unknown>; removed: (id: string) => void }>): Promise<Readonly<{ fixture: Awaited<ReturnType<typeof construction209Inspector>>;
-  runner: CurrentPcb209WorkerConstructionRunner; lease: Awaited<ReturnType<CurrentPcb209WorkerConstructionRunner["issueStructureObservationLease"]>> }>> {
+  runner: CurrentPcb209WorkerConstructionRunner; lease: Awaited<ReturnType<CurrentPcb209WorkerConstructionRunner["issueStructureObservationLease"]>>; loseTransport: () => void }>> {
   const fixture = await construction209Inspector(context);
-  let observing = false;
+  let lostEvent: (() => void) | null = null, observing = false;
   const runner = new CurrentPcb209WorkerConstructionRunner({ ...fixture.transport,
     request: async (command): Promise<unknown> => {
       if (observing && command.method === "Debugger.removeBreakpoint") { allocation?.removed(command.params.breakpointId); }
@@ -24,17 +24,37 @@ async function original(context: TestContext, fault: "none" | "owner" | "pause" 
       if (observing && fault === "owner" && command.method === "Runtime.callFunctionOn" && command.params.functionDeclaration === CURRENT_PROJECT_STRUCTURE_WORKER_CALLS.success) { fixture.lose(); }
       return reply;
     },
-    subscribe: (events): (() => void) => fixture.transport.subscribe({ ...events, paused: input => {
+    subscribe: (events): (() => void) => { lostEvent = events.lost; return fixture.transport.subscribe({ ...events, paused: input => {
       if (observing && fault === "pause") {
         const value = z.looseObject({ hitBreakpoints: z.array(z.string()) }).parse(input);
         events.paused({ reason: "exception", hitBreakpoints: value.hitBreakpoints, callFrames: [] });
       } else { events.paused(input); }
-    } }),
+    } }); },
   });
   const capture = runner.capture(); await runner.whenArmed(); const running = fixture.run(); const packet = await capture; await running;
   const assignments = await runner.proveCurrentAssignments(packet), lease = await runner.issueStructureObservationLease(packet, assignments);
   await fixture.syntheticEvaluate(`globalThis.SYNTHETIC_TIMER_COUNT=0;globalThis.SYNTHETIC_TIMERS=new Map;globalThis.SYNTHETIC_SET_TIMEOUT=setTimeout;globalThis.SYNTHETIC_CLEAR_TIMEOUT=clearTimeout;globalThis.setTimeout=(callback,delay)=>{const id=++SYNTHETIC_TIMER_COUNT;SYNTHETIC_TIMERS.set(id,SYNTHETIC_SET_TIMEOUT(callback,delay));return id;};globalThis.clearTimeout=id=>SYNTHETIC_CLEAR_TIMEOUT(SYNTHETIC_TIMERS.get(id));PROJECT.uuid="${"a".repeat(64)}";PROJECT._branchUuid="${"b".repeat(32)}";PROJECT.branchUuid=PROJECT._branchUuid;PROJECT.isReady=true;PROJECT.isReadOnly=()=>false;PROJECT.projectDetails={owner:"synthetic-owner"};PROJECT.consistencyManager.getMaxTicket=()=>17;for(const k of ["board","schematic","sheet","pcb","panel","symbol"])PROJECT[k].getStructure=()=>({result:{}});globalThis.ve={SCH:1,BOARD:2,PCB:3,SCH_PAGE:4,SYMBOL:5,PANEL:6};globalThis.De={META:1,DELETE_DOC:2};globalThis.Re={getInstance:()=>({project:{setProfile:async packet=>{globalThis.SYNTHETIC_PACKET=packet;return {success:true};}}})};globalThis.et=()=>{};`);
-  observing = true; return { fixture, runner, lease };
+  observing = true; return { fixture, runner, lease, loseTransport: (): void => { fixture.lose(); assert.ok(lostEvent); lostEvent(); } };
+}
+
+for (const earlierFailure of [false, true]) {
+  void test(`transport loss precedes listener failure while preserving earlier cause: ${String(earlierFailure)}`, { timeout: 30_000 }, async context => {
+    const { fixture, runner, lease, loseTransport } = await original(context, earlierFailure ? "pause" : "none");
+    const observer = new CurrentProjectStructureWorkerObserver(lease); await observer.arm();
+    if (earlierFailure) {
+      await fixture.syntheticEvaluate("PROJECT.uploadStructure(ve.SCH,De.META,false);true");
+      await assert.rejects(observer.observation());
+    }
+    const before = runner.status().firstFailure;
+    assert.equal(before?.code ?? null, earlierFailure ? "STRUCTURE_OBSERVER_FAILED" : null);
+    loseTransport();
+    assert.equal(runner.status().firstFailure?.code, earlierFailure ? "STRUCTURE_OBSERVER_FAILED" : "OWNER_LOST");
+    if (earlierFailure) { assert.equal(runner.status().firstFailure, before); }
+    assert.equal(observer.retained().failed, true);
+    const commands = fixture.commands.length;
+    await assert.rejects(observer.arm()); assert.equal(fixture.commands.length, commands);
+    await observer.cleanup(); await runner.release();
+  });
 }
 
 void test("original209 worker events retain packet/task/serial promises through both real Nd finalizers", { timeout: 30_000 }, async context => {
