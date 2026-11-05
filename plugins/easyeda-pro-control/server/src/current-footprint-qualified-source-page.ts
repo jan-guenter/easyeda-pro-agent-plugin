@@ -28,6 +28,9 @@ export const currentFootprintQualifiedSourcePageDataSchema = z.object({
   endOfPacket: z.boolean(),
 }).strict();
 export type CurrentFootprintQualifiedSourcePageBounds = z.infer<typeof currentFootprintQualifiedSourcePageBoundsSchema>;
+/** Validate the bounded frozen packet graph using own data descriptors only.
+ * Proxies, accessors, repeated references and unsupported values cannot reach
+ * canonical byte paging. Lifecycle checks retain original packet ownership. */
 function requireFrozenData(packet: unknown): void {
   const pending: unknown[] = [packet], seen = new Set<object>();
   while (pending.length > 0) {

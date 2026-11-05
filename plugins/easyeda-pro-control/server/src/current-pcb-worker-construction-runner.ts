@@ -82,6 +82,8 @@ import { CURRENT_PROJECT_STRUCTURE_WORKER_CALLS } from "./current-project-struct
 import type { CurrentProjectStructureWorkerBinding, CurrentProjectStructureWorkerEvents, CurrentProjectStructureWorkerLease } from "./current-project-structure-worker-lease.ts";
 
 const structureLeases = new WeakMap<CurrentProjectStructureWorkerLease, CurrentProjectStructureWorkerBinding>();
+/** Require this construction owner's original worker lease and recheck cleanup
+ * custody. Copied tokens and released owners cannot expose retained handles. */
 export function requireCurrentProjectStructureWorkerLease(lease: CurrentProjectStructureWorkerLease): CurrentProjectStructureWorkerBinding {
   const binding = structureLeases.get(lease);
   if (binding === undefined) { throw new Error("PROJECT_STRUCTURE_ORIGINAL_WORKER_LEASE"); }

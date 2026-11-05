@@ -63,6 +63,9 @@ export interface CurrentProjectStructureWorkerRetained {
 }
 const observations = new WeakMap<CurrentProjectStructureWorkerObservation, CurrentProjectStructureWorkerRetained>();
 const consumed = new WeakSet<CurrentProjectStructureWorkerLease>();
+/** Return an original worker observation only while its retained lease passes
+ * cleanup checks. Its handles grant no normal execution or current completion
+ * authority. */
 export function requireCurrentProjectStructureWorkerObservation(observation: CurrentProjectStructureWorkerObservation): CurrentProjectStructureWorkerRetained {
   const original = observations.get(observation); if (original === undefined) { throw fail("ORIGINAL_OBSERVATION"); }
   requireCurrentProjectStructureWorkerLease(original.lease).assertCleanup(); return original;
