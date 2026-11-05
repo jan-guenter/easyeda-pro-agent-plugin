@@ -3549,19 +3549,22 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     if (parsed.action === "worker-startup") { return runStartup(parsed.request); }
     if (parsed.action === "schematic-page-open") {
       if (parsed.request.action === "inspect") { return { result: await inspectCurrentSchematicPageOpening(parsed.request.operationId) }; }
-      if (schematicPageOpening === undefined) {
-        const runtime = ordinaryLaunchRuntime;
-        if (runtime === undefined || windowsRuntime !== runtime) { throw new Error("Schematic page opening requires this facade's original retained ordinary launch."); }
-        const assertOriginalLaunch = (): void => {
-          if (ordinaryLaunchRuntime !== runtime || windowsRuntime !== runtime) { throw new Error("Schematic page opening original launch changed."); }
-        };
-        schematicPageOpening = new CurrentSchematicPageOpeningCoordinator(engine, assertOriginalLaunch);
-      }
-      const owner = schematicPageOpening;
-      return bridgeGate.run(async () => ({ result: await owner.run(parsed.request, parsed.expectedFingerprint) }));
+      return bridgeGate.run(() => upstream.withAuthenticatedBridgeDispatchScope(async () => {
+        if (schematicPageOpening === undefined) {
+          const runtime = ordinaryLaunchRuntime;
+          if (runtime === undefined || windowsRuntime !== runtime) { throw new Error("Schematic page opening requires this facade's original retained ordinary launch."); }
+          const assertOriginalLaunch = (): void => {
+            if (ordinaryLaunchRuntime !== runtime || windowsRuntime !== runtime) { throw new Error("Schematic page opening original launch changed."); }
+          };
+          schematicPageOpening = new CurrentSchematicPageOpeningCoordinator(engine, assertOriginalLaunch);
+        }
+        return { result: await schematicPageOpening.run(parsed.request, parsed.expectedFingerprint) };
+      }));
     }
     if (parsed.action === "schematic-page-read") {
-      return bridgeGate.run(async () => ({ result: await readCurrentSchematicPage(engine, parsed.request, parsed.expectedFingerprint) }));
+      return bridgeGate.run(() => upstream.withAuthenticatedBridgeDispatchScope(async () => ({
+        result: await readCurrentSchematicPage(engine, parsed.request, parsed.expectedFingerprint),
+      })));
     }
     const ordinary = parsed.action === "ordinary", spatial = parsed.action === "spatial", visual = parsed.action === "visual";
     const request = parsed.action === "ordinary" || parsed.action === "visual" || parsed.action === "spatial" ? parsed.request : parsed;

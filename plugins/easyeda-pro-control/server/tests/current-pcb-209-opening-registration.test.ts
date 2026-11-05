@@ -10,6 +10,8 @@ import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
 import { CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintForwardPrewriteLifecycle, CurrentFootprintMainLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbOrdinaryReadLifecycle, CurrentPcbSpatialLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { inMemoryAuthenticatedUpstream } from "./helpers/in-memory-authenticated-upstream.ts";
+import type { CurrentSchematicPageOpeningEngine } from "../src/current-schematic-page-opening-runtime.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
 import { currentPcbDiagnosticToolRequestSchema } from "../src/current-pcb-diagnostic-validation.ts";
@@ -59,7 +61,7 @@ void test("209 public opening and startup callbacks select original lifecycles a
   assert.equal(Object.hasOwn(Selected209Lifecycle.prototype, "run"), false);
   assert.equal(Object.hasOwn(CurrentPcb209DiagnosticLifecycle.prototype, "run"), false);
   const environment = { EASYEDA_ASSETS_ROOT: "/mnt/c/Reviewed/EasyEDA/resources/app/assets", WSL_DISTRO_NAME: "Ubuntu" };
-  const authority = {}, facadePromise = Promise.resolve({ sha256: "a".repeat(64) }), upstream = {};
+  const authority = {}, facadePromise = Promise.resolve({ sha256: "a".repeat(64) }), upstream = inMemoryAuthenticatedUpstream({ content: [] }).upstream;
   const engine = { upstream, executionAuthorityValidator: authority, controlFingerprintPromise: facadePromise,
     assertDiagnosticLaunchOtherOperationsSettled: async (): Promise<void> => {
       checks += 1; if (blocked) { throw new Error("synthetic unresolved engine journal"); }
@@ -324,6 +326,33 @@ void test("209 public opening and startup callbacks select original lifecycles a
     confirmOrdinaryProject: true, acceptNormalOpenEffects: true }, expectedFingerprint: {} } };
   assert.equal(ordinaryRegistration.inputSchema.safeParse(pageOpen).success, true);
   const beforePageOpen = counts(); await assert.rejects(ordinaryRegistration.invoke(pageOpen), /original retained ordinary launch/u);
-  assert.equal(counts().gateCalls, beforePageOpen.gateCalls); assert.equal(allocations, 1);
+  assert.equal(counts().gateCalls, beforePageOpen.gateCalls + 1); assert.equal(allocations, 1);
+
+  // Exercise the actual production AsyncLocalStorage scope issuer and callTool
+  // Requirement. This in-memory gateway owns no socket or native process.
+  const authenticated = inMemoryAuthenticatedUpstream({ content: [], structuredContent: { ok: true, result: "scoped" } });
+  await assert.rejects(authenticated.upstream.callTool("easyeda_execute", {}), /requires a dispatch scope/u);
+  assert.equal(authenticated.calls(), 0);
+  let pageConstructed = 0;
+  function ScopedPageOpening(input: CurrentSchematicPageOpeningEngine, assertLaunch: () => void): CurrentSchematicPageOpeningCoordinator {
+    assert.equal(input.upstream, authenticated.upstream); assert.ok(authenticated.upstream.currentAuthenticatedBridgeDispatchBinding());
+    assertLaunch(); pageConstructed += 1; return new CurrentSchematicPageOpeningCoordinator(input, assertLaunch);
+  }
+  const originalLaunch = {};
+  registrations.clear();
+  const authenticatedScope = vm.createContext({ ...scope, upstream: authenticated.upstream,
+    engine: { ...engine, upstream: authenticated.upstream }, ordinaryLaunchRuntime: originalLaunch, windowsRuntime: originalLaunch,
+    CurrentSchematicPageOpeningCoordinator: ScopedPageOpening,
+    readCurrentSchematicPage: async (): Promise<Record<string, unknown>> => {
+      assert.ok(authenticated.upstream.currentAuthenticatedBridgeDispatchBinding());
+      await authenticated.upstream.callTool("easyeda_execute", {}); return { authenticatedScopeObserved: true };
+    },
+  });
+  vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), authenticatedScope);
+  const authenticatedRegistration = registrations.get("easyeda_control_pcb209_opening"); assert.ok(authenticatedRegistration);
+  const scopedRead = await authenticatedRegistration.invoke(pageRead);
+  assert.match(JSON.stringify(scopedRead), /authenticatedScopeObserved/u); assert.equal(authenticated.calls(), 1);
+  await assert.rejects(authenticatedRegistration.invoke(pageOpen)); assert.equal(pageConstructed, 1);
+  assert.equal(authenticated.upstream.currentAuthenticatedBridgeDispatchBinding(), undefined);
 
 });

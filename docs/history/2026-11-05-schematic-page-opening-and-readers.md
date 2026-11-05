@@ -80,3 +80,15 @@ rewriting the old disposable routes. New page routes cite their actual schemas,
 source and regression tests. Generated coverage, bundles and compatibility
 projections are left to the composed payload. No installation, connected
 admission, live effect, saved/reopened proof or publication is claimed here.
+
+## Authentication-scope correction
+
+Before any live test or installation, follow-up review found both schematic
+wrappers needed the same explicit authenticated dispatch scope used by
+`serializedLiveGuarded`. Both now enter the production upstream scope issuer;
+the ordinary launch allocation guard executes inside that scope. A regression
+uses the actual `UpstreamEasyedaClient` AsyncLocalStorage scope and `callTool`
+lease check with an in-memory gateway. An unscoped call refuses before the
+client sees it, while the registered read callback receives the original binding
+and the opening constructor sees that same authenticated scope. No socket,
+controller, native owner or application is allocated by the regression.
