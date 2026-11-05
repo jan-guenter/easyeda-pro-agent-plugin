@@ -245,3 +245,74 @@ the 80% target. It supplied no missing-function list. Three changed helpers
 with qualifying branches now document serial pause custody, once-only removal
 and release quiescence. The correction changes comments only. A new bot result
 must establish its coverage score; no threshold was relaxed.
+
+## Exact 845 CI and complete review, 2026-11-05
+
+The frozen payload `845eae3bec028195c5ec80f182bf0738b0aac02b` passed
+all eleven required CI jobs. [CI run 41962430169](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/41962430169)
+reported 14,201 facade tests in 65 suites: 14,196 passed, five supported
+platform skips and no failures, cancellations or todos. The bridge passed
+all 424 tests in 28 files. [Windows run 41962430239](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/41962430239)
+also passed, including the generated C# request-ID boundary smoke. Complete
+workflow archives, actual checkout trees and source/runtime projections were
+retained and matched that frozen payload.
+
+The automatic review at this head skipped the source and history changes as
+similar to earlier changes and retained the earlier 75.44% documentation
+warning. A requested full review was initially rate limited and supplied no
+new coverage. After the stated wait, the authorized full review
+[5779895067](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/168#pullrequestreview-5779895067)
+completed against the full range from merged main
+`4bd261cb3579c09769509756a0fbde95f383c77e` through `845eae3`.
+It selected 91 files and excluded three generated distribution files.
+
+That complete review reported three further items: missing prototype identity
+pins for the forward source-page and closed-baseline methods, missing spaces
+before Node/npm versions in the controller guide, and history index entries
+without their recorded commit or payload. All three were accepted for
+correction in the same unpublished `0.3.0+codex.20261105000443` batch. Its
+documentation check was **inconclusive**, reporting 75.00% across 56 functions
+in 47 files, with 44 skipped: 21 unsupported, three too large and 20 over its
+file limit. It supplied no missing-function list. This result does not clear
+the 80% target or establish a passing documentation score. The correction
+payload's final checks, exact-head CI, publication and installation remain
+pending at this append.
+
+The forward list now pins both inherited methods. The maintained registration
+callback regression rejects prototype replacements for source reads, sealing
+and closed-baseline requests before the replacement or downstream coordinator
+runs. That focused check, full types and zero-warning strict lint passed.
+The intermediate `4dd2cf2` CI run was superseded by `845eae3`; its canceled
+shard and dependent aggregate failure remain retained, without a passing claim.
+
+## Connected capture and original cleanup, 2026-11-05
+
+The same frozen `845eae3` payload was separately admitted for one disposable,
+read-only native qualification before publication. Main construction, browser,
+frame and UI-source observations passed. Its original capture completed with
+30 requests and 30 replies, four pauses resumed, two namespaces completed,
+no first failure, no pending allocations and no uncertain allocation. Two
+original allocation identities remained retained for cleanup. This is connected
+capture evidence for the corrected cache path.
+
+The later footprint-route attempt was consumed and refused at clock
+registration with `FOOTPRINT_COPY_CLOCK_REGISTRATION_SOURCE`. It was not
+replayed, and its rejected raw clock reply was not exported. Route and source
+qualification therefore did not pass. A source-only trace identifies an
+unsupported mixed preload/registration origin as a candidate cause; the
+available retained summary does not prove the exact rejected value.
+
+The original owner then completed normal close, observed its original root
+exit and empty Job, and acknowledged helper release. The release record read
+back as `released`. Supported facade retirement released the lease, and the
+original child closed through EOF with exit code zero and no signal. The
+closed disposable file remained byte-for-byte identical to its registered
+baseline. The retained connected receipt has SHA-256
+`34406e2b5f1e16b12eb2b34db6304df4dc6b863605edc32d607f4b3ae67a2b9d`.
+
+These observations supply neither successful route/source qualification,
+source sealing, an owned closed-baseline proof nor a saved copy. No writer or
+explicit Save was executed; `executionAuthorized` and `saveAuthorized` remained
+false. The earlier historical recovery and
+unknown outcomes above retain their separate scope. This successful capture
+does not retroactively complete them or claim general forward execution.

@@ -19,7 +19,7 @@ connection offline afterward. A stale or conflict connection cannot retry the
 lease or take over control.
 
 Use a zero soft core limit. The packaged entry reexecutes the machine
-profile's descriptor-verified Node24.18.0 before starting its original manager.
+profile's descriptor-verified Node 24.18.0 before starting its original manager.
 It preserves the PID and stdio. The profile must already be configured. No npm
 command or dependency installation is needed at runtime.
 
@@ -35,7 +35,7 @@ before launch, and pass the target plugin root explicitly. Keep that frontend
 frozen through the original manager's lifetime. Copying static code before
 startup transfers no native owner or admission.
 
-Use pinned Node24.18.0 with `--frontend-identity` to observe the frontend file's
+Use pinned Node 24.18.0 with `--frontend-identity` to observe the frontend file's
 actual path, bytes, SHA256, build commitment and bundled SDK version. This starts
 no SDK client or facade. Compare those observations with the trusted build or
 release bytes; the file's own reported hash grants no authority. This frontend
@@ -43,8 +43,8 @@ is a separate artifact. The selected facade still requires its original
 three-file runtime identity, complete package and actual process/native
 admission. Its native graph cannot be replaced with the frontend's build ID.
 
-A source checkout remains a development option with pinned Node24.18.0,
-npm11.16.0 and its reviewed dependencies installed. Its original command is
+A source checkout remains a development option with pinned Node 24.18.0,
+npm 11.16.0 and its reviewed dependencies installed. Its original command is
 `node scripts/control-session-manager.ts --plugin-root /absolute/verified/plugin`.
 Older packages without the standalone entry require that source path. A new
 file on disk cannot update an already-running frontend.

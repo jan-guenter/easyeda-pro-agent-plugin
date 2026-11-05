@@ -2,19 +2,19 @@
 
 - [2026-11-05 PR168 review fixes](2026-11-05-pr168-review-fixes.md). Both complete reviews, original failed CI, allocation custody and native parser corrections, focused checks and remaining native/API work against base `0ebd4c498a37148e61a9e69f7695126ab794b77e`.
 
-- [2026-11-05 forward capture recovery and source fixes](2026-11-05-forward-capture-recovery-and-source-fixes.md). Observed cache-arm stall, authorized terminal physical closure, exact versioned producer adapters and pending typed historical recovery.
+- [2026-11-05 forward capture recovery and source fixes](2026-11-05-forward-capture-recovery-and-source-fixes.md). Observed cache-arm stall, authorized terminal physical closure, exact versioned producer adapters and pending typed historical recovery. Original frozen payload `15dc1cc6fed3bb90cfebfff3e3ea3bf3cd45da8c`; terminal recovery payload `0ebd4c498a37148e61a9e69f7695126ab794b77e`.
 
-- [2026-11-05 packaged foreground manager source](2026-11-05-packaged-foreground-manager.md). Separate dependency-free frontend, pinned launcher and actual isolated CLI retirement, with native admission unchanged.
+- [2026-11-05 packaged foreground manager source](2026-11-05-packaged-foreground-manager.md). Separate dependency-free frontend, pinned launcher and actual isolated CLI retirement, with native admission unchanged. Source base `15dc1cc6fed3bb90cfebfff3e3ea3bf3cd45da8c` plus packaging patch SHA-256 `31b29a3bb5fcade4a14a8166cc51a0a4ff5cb8ee2f47ddd31e2447d2a99dcf8c`; reproduced frontend in `0ebd4c498a37148e61a9e69f7695126ab794b77e`.
 
-- [2026-11-05 forward cache envelope and bounded arm](2026-11-05-forward-cache-envelope-and-arm.md). Fixed codec envelope ordering, retained unknown allocation custody and source-only regression evidence.
+- [2026-11-05 forward cache envelope and bounded arm](2026-11-05-forward-cache-envelope-and-arm.md). Fixed codec envelope ordering, retained unknown allocation custody and source-only regression evidence. No standalone commit is stated in this source-leaf record; its native helper payload has SHA-256 `ad8a44744791fdba1c30c07554455cb7c271d1125a378edd4f6fa4566cb979c6`.
 
-- [2026-11-04 PR167 controller release and installation](2026-11-04-pr167-controller-release.md). Protected merge, honest bot/final-delta review scope, exact PR/main CI, official installed payload and the genuine installed-to-frozen facade handoff.
+- [2026-11-04 PR167 controller release and installation](2026-11-04-pr167-controller-release.md). Protected merge, honest bot/final-delta review scope, exact PR/main CI, official installed payload and the genuine installed-to-frozen facade handoff. Reviewed payload `4cabf969ac7c4f7bb93906e0b1e75ba14ba1df94`; merged main `4bd261cb3579c09769509756a0fbde95f383c77e`.
 
-- [2026-11-04 original pending capture control](2026-11-04-manager-in-flight-original-control.md). Bounded same-client inspection and once-confirmed abort, separate parent/side outcomes and publication-inclusive cleanup custody, with source-only evidence.
+- [2026-11-04 original pending capture control](2026-11-04-manager-in-flight-original-control.md). Bounded same-client inspection and once-confirmed abort, separate parent/side outcomes and publication-inclusive cleanup custody, with source-only evidence. Source base `15dc1cc6fed3bb90cfebfff3e3ea3bf3cd45da8c`.
 
 - [2026-11-04 project structure observer source](2026-11-04-project-structure-observer-source.md). Original worker/main promise and packet custody, synthetic source checks and explicit native mounting gaps. Source base `15dc1cc6fed3bb90cfebfff3e3ea3bf3cd45da8c`; composed observer payload `0ebd4c498a37148e61a9e69f7695126ab794b77e`.
 
-- [2026-11-04 composed source and launch recovery](2026-11-04-next-composed-source-and-launch-recovery.md). Original source pages/seal/closed baseline, private input custody and same-client interrupted-launch cleanup composed on the final review fixes.
+- [2026-11-04 composed source and launch recovery](2026-11-04-next-composed-source-and-launch-recovery.md). Original source pages/seal/closed baseline, private input custody and same-client interrupted-launch cleanup composed on the final review fixes. Source base `4cabf969ac7c4f7bb93906e0b1e75ba14ba1df94`.
 
 - [2026-11-04 host deadline and review completion](2026-11-04-host-deadline-and-review-completion.md). Direct MCP lifetime bound, combined-error retention and all five inline/outside-diff/test review corrections.
 

@@ -3146,7 +3146,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
           ...(footprintPurpose ? ["prepareWorkerStartupFootprintBindings", "prepareStartupFootprintCopyBindings", "observeWorkerStartupFootprintUi", "observeStartupFootprintCopyUi", "prepareWorkerStartupFootprintDependencies", "prepareStartupFootprintCopyDependencies", "observeWorkerStartupFootprintManagerRoute", "observeStartupFootprintCopyManagerRoute"] : []),
           ...((routePurpose || combinedPurpose || forwardPurpose) ? ["observeWorkerStartupFootprintRoute", "observeStartupFootprintRoute"] : []),
           ...(combinedPurpose ? ["runMainAction", "runSavedCacheNative", "runSavedCacheAccessor", "runCombinedAbort", "requireCombinedMainPublished", "assertCombinedNormal", "hasAttemptedNativeOwnerAllocation"] : []),
-          ...(forwardPurpose ? ["runMainAction", "runForwardAbort", "requireCombinedMainPublished", "assertCombinedNormal", "hasAttemptedNativeOwnerAllocation", "qualifyWorkerStartupFootprintSource", "qualifyStartupFootprintSource"] : []),
+          ...(forwardPurpose ? ["runMainAction", "runForwardAbort", "readForwardQualifiedSource", "runForwardBaseline", "requireCombinedMainPublished", "assertCombinedNormal", "hasAttemptedNativeOwnerAllocation", "qualifyWorkerStartupFootprintSource", "qualifyStartupFootprintSource"] : []),
           ...(emptyPurpose ? ["observeWorkerStartupEmpty", "observeStartupEmpty", "prepareWorkerStartupEmpty", "prepareStartupEmpty"] : []),
           ...(ratlinePurpose ? ["observeWorkerStartupRatline", "observeStartupRatline"] : []),
           ...(continuationPurpose ? ["observeWorkerStartupRatlineContinuation", "observeStartupRatlineContinuation"] : [])]

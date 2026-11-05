@@ -36,7 +36,7 @@ const wrap = (request: unknown): Readonly<{ action: "worker-startup"; request: u
 const wrapCombined = (request: unknown): { request: { action: "footprint-combined"; request: unknown } } => ({ request: { action: "footprint-combined", request } });
 const wrapForward = (request: unknown): { request: unknown } => ({ request: { action: "footprint-forward-prewrite", request } });
 
-void test("registered forward qualification binds its own method and abort remains available through an occupied gate", { timeout: 5000 }, async () => {
+void test("registered forward methods reject prototype replacement and abort remains available through an occupied gate", { timeout: 5000 }, async () => {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
   const start = source.indexOf('if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation") ||');
   const end = source.indexOf('registerFacadeTool(\n  "easyeda_control_launch",', start + 1);
@@ -107,6 +107,20 @@ void test("registered forward qualification binds its own method and abort remai
   await invoke(wrapForward({ action: "read-qualified-source", operationId: id, expectedBindingSha256,
     expectedSourcePacketSha256: "c".repeat(64), offsetBytes: 0, lengthBytes: 65_536 }));
   const original = owners[0]; assert.ok(original);
+  let replacements = 0;
+  const replacement = (): never => { replacements += 1; throw new Error("substituted forward method called"); };
+  for (const { method, request } of [
+    { method: "readForwardQualifiedSource", request: { action: "read-qualified-source", operationId: id, expectedBindingSha256,
+      expectedSourcePacketSha256: "c".repeat(64), offsetBytes: 0, lengthBytes: 65_536 } },
+    { method: "runForwardBaseline", request: { action: "seal-footprint-source", operationId: id, expectedBindingSha256 } },
+    { method: "runForwardBaseline", request: { action: "prove-closed-baseline", operationId: id, expectedBindingSha256 } },
+  ]) {
+    assert.equal(Object.hasOwn(Coordinator.prototype, method), false); const before = calls.length;
+    Object.defineProperty(Coordinator.prototype, method, { configurable: true, value: replacement });
+    try { await assert.rejects(invoke(wrapForward(request)), /original index owner/u); }
+    finally { assert.equal(Reflect.deleteProperty(Coordinator.prototype, method), true); }
+    assert.equal(calls.length, before); assert.equal(replacements, 0);
+  }
   const qualification = { action: "qualify-footprint-source", operationId: id, expectedBindingSha256, footprintUuid: "b".repeat(32) };
   Object.defineProperty(original, "qualifyWorkerStartupFootprintSource", { configurable: true, value: (): never => { throw new Error("substituted qualification called"); } });
   try { await assert.rejects(invoke(wrapForward(qualification)), /original index owner/u); }
