@@ -1,7 +1,7 @@
 # Disposable PCB point and region identities
 
 Use this reference for the separate `spatial` development/validation purpose on
-the reviewed EasyEDA 3.2.209 installation. It supports a restricted Via scene,
+the reviewed EasyEDA 3.2.209 installation. It supports restricted Via or Line/Via scenes,
 not point picking on an ordinary populated user board. For general object
 observations, use [the opening reader](current-pcb209-opening.md).
 
@@ -54,6 +54,14 @@ qualification is shared. A failed or lost observation consumes that stage.
 Inspect its retained result and finish cleanup; do not submit it again under
 the same operation or infer that an absent response means no dispatch.
 
+For a scene containing native Tracks and Vias, choose `observe-spatial-lines`
+instead, with the same scratch-effect acceptance and one to fifteen queries.
+Native Track identities are returned with family `Line`, matching the SDK's
+Line meaning. This is a separate mixed-family result contract. It consumes the
+same observation slot as the Via batch; a failure never permits switching to
+the other action. The256-callee qualification and fifteen-query limit fit the
+existing384-request purpose, including original group release.
+
 ## Supported scene and effects
 
 The initial scene contains only standalone, unlocked, visible through vias in
@@ -62,6 +70,15 @@ camera/filter state, smart mode off and no dialog or expansion mode. Pending,
 empty/stale tree leaves, other primitive families and contradictory ownership
 refuse. A region query refuses any Via box crossing its boundary. This avoids
 claiming unsupported boundary-intersection semantics.
+
+The mixed action additionally admits standalone unlocked nondegenerate Tracks
+on copper layer1 or2 with width at least0.05 native units. Their complete ready
+octagon indexes, original model bounds, reciprocal model/view and shared
+layer/width/lock/net fields must agree. Lazy geometry, maintenance queues and
+region border crossings refuse before the native hit. The256-object ceiling
+applies across both families and all admitted layers. Arcs, graphical native
+Line models, components, pads and other families remain unsupported. Neither
+action is a general populated-board picker.
 
 Each query returns bounded ordered Via identities from two matching native
 samples, together with the ordered selected IDs and retained-descriptor checks.

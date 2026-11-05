@@ -111,6 +111,19 @@ function fixture(context: TestContext, id: string): SpatialFixture {
         allowedExistingStateEffect: "D0.code;vMe.boxCache;Jdt-local-bbox-scratch;BLe.JJ", scope: "standalone-via-ready-bbox-scene-no-region-border-crossings",
         nativeFunctionGraphVerified: false, nativeIntrinsicsVerified: false, sourceMembershipVerified: false, persistenceVerified: false }));
     },
+    observeSpatialTrack209: async (target, input) => {
+      assert.deepEqual(target, SEALED);
+      const raw = await readFile(join(directory(id), "spatial209-intent.json"), "utf8");
+      const intent = diagnosticLifecycleRecordSchemas["spatial209-intent.json"].parse(JSON.parse(raw) as unknown);
+      assert.equal(intent.schema, "easyeda-pro-control.pcb209-spatial-line-via-observation-intent.v1");
+      assert.deepEqual(intent.queries, input); calls.push("spatial-lines");
+      return intent.queries.map(query => ({ schema: "easyeda-pro-control.pcb209-spatial-line-via-read.v1",
+        documentUuid: TARGET.documentUuid, query, identities: [{ primitiveId: "track", family: "Line" }],
+        sceneViaCount: 0, sceneLineCount: 1, selectedPrimitiveIds: [], samples: 2, nativeOrderingPreserved: true,
+        retainedSceneDescriptorsUnchanged: true, selectionUnchanged: true,
+        allowedExistingStateEffect: "D0.code;vMe.boxCache;Jdt-local-bbox-scratch;BLe.JJ", scope: "standalone-line-via-ready-bbox-scene-no-region-border-crossings",
+        nativeFunctionGraphVerified: false, nativeIntrinsicsVerified: false, sourceMembershipVerified: false, persistenceVerified: false }));
+    },
   };
   const options: CurrentPcbDiagnosticLifecycleOptions = { pluginRoot: "/mnt/c/Reviewed/Plugin", assetsRoot: "/mnt/c/Reviewed/EasyEDA/resources/app/assets",
     powershellSha256: "d".repeat(64), powershellBytes: 123, assertLocalAllowed: (): void => {
@@ -148,6 +161,19 @@ async function ready(value: ReturnType<typeof fixture>, id: string): Promise<voi
   await value.request("open-project", { target: TARGET, confirmDisposableProject: true, acceptNormalOpenEffects: true });
   await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
 }
+void test("mixed native batch retains a distinct immutable result and consumes the shared Via slot", async context => {
+  const id = "pcb209-spatial-test-mixed", value = fixture(context, id);
+  await ready(value, id);
+  await value.request("observe-spatial-lines", { queries: QUERIES, acceptNativeScratchEffects: true });
+  assert.equal(value.calls.filter(call => call === "spatial-lines").length, 1);
+  assert.equal(value.calls.includes("spatial"), false);
+  const raw = await readFile(join(directory(id), "spatial209-result.json"), "utf8");
+  const result = diagnosticLifecycleRecordSchemas["spatial209-result.json"].parse(JSON.parse(raw) as unknown);
+  assert.equal(result.schema, "easyeda-pro-control.pcb209-spatial-line-via-observation-result.v1");
+  assert.equal(result.result.results[0]?.identities[0]?.family, "Line");
+  await assert.rejects(value.request("observe-spatial", { queries: QUERIES, acceptNativeScratchEffects: true }), /OBSERVATION_CONSUMED/u);
+  await assert.rejects(value.request("observe-spatial-lines", { queries: QUERIES, acceptNativeScratchEffects: true }), /OBSERVATION_CONSUMED/u);
+});
 void test("spatial grammar preserves purpose, query limits and explicit scratch-effect acceptance", async context => {
   const id = "pcb209-spatial-test-contract", value = fixture(context, id);
   const binding = "a".repeat(64);

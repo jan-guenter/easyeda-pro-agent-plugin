@@ -7,7 +7,7 @@ import { currentRendererCaptureResult, decodeCurrentRendererCapture, publishCurr
 import { currentWindowCaptureResult, publishCurrentWindowCapture, requireCurrentWindowCaptureResult } from "./current-pcb-diagnostic-window-capture.ts";
 import { currentPcb209VisualRequestSchema } from "./current-pcb-209-visual-validation.ts";
 import { CURRENT_PCB_SPATIAL_OPERATION_PREFIX, currentPcbSpatialObservation, currentPcbSpatialObservationSchema,
-  currentPcbSpatialRequestSchema, requireCurrentPcbSpatialObservation,currentPcbSpatialTrackObservation,requireCurrentPcbSpatialTrackObservation } from "./current-pcb-spatial-validation.ts";
+  currentPcbSpatialRequestSchema, currentPcbSpatialTrackObservation,requireCurrentPcbSpatialObservation,requireCurrentPcbSpatialTrackObservation } from "./current-pcb-spatial-validation.ts";
 import type { CurrentPcbSpatialRequest } from "./current-pcb-spatial-validation.ts";
 import type { CurrentPcb209VisualRequest } from "./current-pcb-209-visual-validation.ts";
 import { CURRENT_PCB_209_VISUAL_RESULT_BYTES, requireCurrentPcb209VisualResult } from "./current-pcb-209-visual-actions.ts";

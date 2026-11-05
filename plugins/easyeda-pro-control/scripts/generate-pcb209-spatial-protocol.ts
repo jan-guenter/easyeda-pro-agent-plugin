@@ -145,6 +145,12 @@ const native = String.raw`
     bool foreign=false;try{owner.SpatialSequence(21,"foreign","release",empty);}catch{foreign=true;}if(!foreign)throw Error("spatial209-session-smoke");
     owner.SpatialSequence(384,"s","release",empty);
     bool replay=false;try{owner.SpatialSequence(384,"s","release",empty);}catch{replay=true;}if(!replay)throw Error("spatial209-release-once-smoke");
+    EasyedaDiagnosticOwner mixed=CreateSpatial209();mixed.spatialParentSession="s";mixed.spatialPcbSession="s";mixed.spatialSourceSession="s";
+    mixed.SpatialSequence(1,"s","wrapper",context);mixed.SpatialSequence(2,"s","handler",empty);mixed.SpatialSequence(3,"s","bindings-track",empty);mixed.SpatialSequence(4,"s","functions",empty);
+    bool wrongVariant=false;try{mixed.SpatialSequence(5,"s","read",fields);}catch{wrongVariant=true;}if(!wrongVariant)throw Error("spatial209-track-variant-smoke");
+    for(int index=0;index<15;index++){Spatial209ProtocolMessage(5+index,"Runtime.callFunctionOn","s","read-track",fields);mixed.SpatialSequence(5+index,"s","read-track",fields);}
+    bool mixedLimit=false;try{mixed.SpatialSequence(20,"s","read-track",fields);}catch{mixedLimit=true;}if(!mixedLimit)throw Error("spatial209-track-limit-smoke");
+    mixed.SpatialSequence(384,"s","release",empty);
   }
 `;
 
@@ -189,7 +195,8 @@ if (numericStart === -1 || numericStop < numericStart || next.includes(numericBe
   throw new Error("Spatial numeric smoke markers must occur once");
 }
 next = `${next.slice(0, numericStart)}${numericBegin}\n${numericSmoke}${numericEnd}${next.slice(numericStop + numericEnd.length)}`;
-if (Buffer.byteLength(next) > CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES || CURRENT_PCB_SPATIAL_REQUEST_DERIVATION.headroom < 0) {
+if (Buffer.byteLength(next) > CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES || CURRENT_PCB_SPATIAL_REQUEST_DERIVATION.headroom < 0 ||
+    CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION.headroom < 0) {
   throw new Error("Spatial fixed helper source or complete-workflow reservation exceeds its fixed ceiling");
 }
 // oxlint-disable-next-line node/no-top-level-await -- Explicit generation writes only the reviewed bounded marker region.

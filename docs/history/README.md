@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-05 mixed Line/Via spatial implementation](2026-11-05-spatial-line-via-implementation.md). Separate immutable mixed-family batch, complete supported ready-index guards, compact fixed rosters,256 qualified vendor callees and15 queries within the unchanged384-ID purpose. Offline source-path evidence; connected fixture validation remains pending.
+
 - [2026-11-05 PR170 publication and installation](2026-11-05-pr170-publication-and-installation.md). Protected main `b16fb1e6`, exact installed `0.3.0+codex.20261105182454`, all review issues addressed, complete CI with retained infrastructure retry, and two-generation facade replacement without a Codex restart. Connected spatial and broader API limits remain explicit.
 
 - [2026-11-05 ordinary PCB read owner](2026-11-05-ordinary-pcb-read-owner.md). Separate ordinary-project grammar and immutable journals, eight unchanged fixed209 readers, original cleanup and 117 passing offline regressions. No writer, explicit Save or connected-validation claim.
