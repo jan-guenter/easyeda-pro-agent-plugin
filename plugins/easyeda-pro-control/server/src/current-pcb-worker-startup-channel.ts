@@ -16,7 +16,7 @@ import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_FRAME_BYTES } from "./current-footprint-copy-source-command.ts";
 import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentFootprintCombinedStartupWire, currentFootprintCopyExecutionStartupWire, currentFootprintCopyForwardStartupWire, currentFootprintCopyHeldSavedStartupWire, currentFootprintCopyPreparationWire, currentFootprintCopySavedStartupWire,
-  currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
+  currentFootprintForwardExecutionStartupWire, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
 import { currentFootprintCopyManagerRouteWire } from "./current-footprint-copy-manager-route-wire.ts";
 import type { CurrentFootprintCopyManagerRouteCommand } from "./current-footprint-copy-manager-route-command.ts";
 import { currentFootprintCopyClockRegistrationWire } from "./current-footprint-copy-clock-registration-wire.ts";
@@ -28,6 +28,8 @@ import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
 import { CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE } from "./current-footprint-copy-combined-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE } from "./current-footprint-copy-forward-profile.ts";
+import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_RENDERER_PROFILE } from "./current-footprint-forward-execution-profile.ts";
+import { CurrentFootprintForwardAllocatedCreateClockBudget } from "./current-footprint-forward-allocated-create-clock-budget.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE } from "./current-footprint-copy-held-saved-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_HELD_SAVED_CAPACITY } from "./current-footprint-copy-held-saved-capacity.ts";
@@ -156,7 +158,7 @@ function clockWire(raw: unknown, id: number): ReturnType<typeof currentFootprint
   return currentFootprintCopyTransactionClockWire(command, id, sessionId);
 }
 type PendingCommand = ChannelCommand | CurrentFootprintCopyClockRpcCommand | CurrentFootprintCopyNativeCreateCommand;
-type FootprintProfile = typeof CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE | typeof CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE | typeof CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE;
+type FootprintProfile = typeof CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE | typeof CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE | typeof CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE | typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_RENDERER_PROFILE;
 function replyFrameLimit(command: PendingCommand, nativeCreate = false, heldSavedCleanup = false): number {
   if (heldSavedCleanup) { return CURRENT_FOOTPRINT_COPY_HELD_SAVED_CAPACITY.renderer.cleanupReplyFrameBytes; }
   if (nativeCreate) { return CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_LIMITS.responseFrameBytes; }
@@ -196,7 +198,7 @@ function cleanupCommand(command: PendingCommand): boolean {
 interface ClockRpcState {
   readonly workerSessionId: string;
   readonly uiSessionId: string;
-  readonly budget: CurrentFootprintCopyClockRpcBudget | CurrentFootprintCopyCreateClockBudget | CurrentFootprintCopyAllocatedCreateClockBudget;
+  readonly budget: CurrentFootprintCopyClockRpcBudget | CurrentFootprintCopyCreateClockBudget | CurrentFootprintCopyAllocatedCreateClockBudget | CurrentFootprintForwardAllocatedCreateClockBudget;
   readonly create: CreateClockState | null;
   readonly events: CurrentFootprintCopyClockRpcOriginEvent[];
   begun: boolean;
@@ -368,13 +370,14 @@ class CurrentPcbWorkerStartupChannelCore {
     heldSavedBinding: CurrentFootprintCopyHeldSavedChannelBinding | null = null) {
     if (internal !== INTERNAL_PROFILE) { throw fail("INTERNAL_PROFILE"); } this.#wire = wire; this.#createClockPurpose = createClockPurpose; this.#allocationPurpose = allocationPurpose;
     if (typeof accountedSavedPurpose !== "boolean" || accountedSavedPurpose && wire !== currentFootprintCopySavedStartupWire ||
-        (wire === currentFootprintCopyForwardStartupWire || accountedSavedPurpose || wire === currentFootprintCopyHeldSavedStartupWire) !== (forwardEventBytes !== null) ||
+        (wire === currentFootprintCopyForwardStartupWire || wire === currentFootprintForwardExecutionStartupWire || accountedSavedPurpose || wire === currentFootprintCopyHeldSavedStartupWire) !== (forwardEventBytes !== null) ||
         forwardEventBytes !== null && typeof forwardEventBytes !== "function") { throw fail("FORWARD_ACCOUNTING"); }
     this.#forwardEventBytes = forwardEventBytes; this.#forwardSavedObservation = accountedSavedPurpose;
     if ((wire === currentFootprintCopyHeldSavedStartupWire) !== (heldSavedBinding !== null)) { throw fail("HELD_SAVED_BINDING"); }
     this.#heldSavedBinding = heldSavedBinding === null ? null : freezeDeep(heldSavedBindingSchema.parse(captureCurrentPcbStringClockReply(heldSavedBinding).value));
     if (allocationPurpose && !createClockPurpose) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
-    this.#executionPurpose = wire === currentFootprintCopyExecutionStartupWire || wire === currentFootprintCombinedStartupWire || wire === currentFootprintCopyForwardStartupWire;
+    if (wire === currentFootprintForwardExecutionStartupWire && (!allocationPurpose || !createClockPurpose)) { throw fail("FORWARD_EXECUTION_BIRTH"); }
+    this.#executionPurpose = wire === currentFootprintCopyExecutionStartupWire || wire === currentFootprintCombinedStartupWire || wire === currentFootprintCopyForwardStartupWire || wire === currentFootprintForwardExecutionStartupWire;
     this.#savedPurpose = wire === currentFootprintCopySavedStartupWire || wire === currentFootprintCopyHeldSavedStartupWire;
     this.#footprintPurpose = this.#executionPurpose || this.#savedPurpose || wire === currentFootprintCopyPreparationWire;
     const writerProfile = this.#executionPurpose ? CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE : CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE;
@@ -382,6 +385,7 @@ class CurrentPcbWorkerStartupChannelCore {
     if (this.#savedPurpose) { footprintProfile = CURRENT_FOOTPRINT_COPY_SAVED_PROFILE; }
     if (wire === currentFootprintCombinedStartupWire) { footprintProfile = CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE; }
     if (wire === currentFootprintCopyForwardStartupWire) { footprintProfile = CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE; }
+    if (wire === currentFootprintForwardExecutionStartupWire) { footprintProfile = CURRENT_FOOTPRINT_FORWARD_EXECUTION_RENDERER_PROFILE; }
     if (wire === currentFootprintCopyHeldSavedStartupWire) { footprintProfile = CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE; }
     this.#footprintProfile = footprintProfile;
     this.#requestLimit = this.#footprintPurpose ? this.#footprintProfile.requestLimit : CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT;
@@ -829,7 +833,7 @@ class CurrentPcbWorkerStartupChannelCore {
   }
   async #prepareClockRpc(dependency: CurrentPcbWorkerStartupDependency, workerSessionId: string,
     create: CreateClockState | null): Promise<CurrentFootprintCopyClockRpcChannelReservation> {
-    if (this.#wire !== currentFootprintCombinedStartupWire || executionDependencies.get(dependency) !== this || this.#clockRpcAttempted ||
+    if ((this.#wire !== currentFootprintCombinedStartupWire && this.#wire !== currentFootprintForwardExecutionStartupWire) || executionDependencies.get(dependency) !== this || this.#clockRpcAttempted ||
         (create !== null) !== this.#createClockPurpose) { throw fail("FOOTPRINT_RPC_PURPOSE"); }
     this.#clockRpcAttempted = true; this.#clockRpcHandoffPending = true;
     if (this.#pollTimer !== null) { clearTimeout(this.#pollTimer); this.#pollTimer = null; }
@@ -844,7 +848,8 @@ class CurrentPcbWorkerStartupChannelCore {
         }
         let budget: ClockRpcState["budget"];
         if (create === null) { budget = new CurrentFootprintCopyClockRpcBudget(this.#nextId); }
-        else if (create.allocation) { budget = new CurrentFootprintCopyAllocatedCreateClockBudget(this.#nextId); }
+        else if (create.allocation) { budget = this.#wire === currentFootprintForwardExecutionStartupWire ?
+          new CurrentFootprintForwardAllocatedCreateClockBudget(this.#nextId) : new CurrentFootprintCopyAllocatedCreateClockBudget(this.#nextId); }
         else { budget = new CurrentFootprintCopyCreateClockBudget(this.#nextId); }
         this.#clockRpcPreparedState = { workerSessionId, uiSessionId: this.#parent.sessionId,
           budget,
@@ -938,7 +943,7 @@ class CurrentPcbWorkerStartupChannelCore {
     this.#sameClockRpc(state, cleanup);
     const captured = captureCurrentPcbStringClockReply(input).value;
     const allocation = z.object({ phase: z.string() }).loose().parse(captured).phase.startsWith("allocation-");
-    if (allocation && !(state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget)) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
+    if (allocation && !(state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardAllocatedCreateClockBudget)) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
     const { id: _validationId, ...command } = (allocation ? currentFootprintCopyAllocationWire(captured, 1, state.workerSessionId) :
       currentFootprintCopyClockRpcWire(captured, 1, state.workerSessionId, state.uiSessionId)).command;
     if (typeof cleanup !== "boolean" || cleanup !== cleanupCommand(command) || state.budget.snapshot().failed) { throw fail("FOOTPRINT_RPC_CLASS"); }
@@ -953,7 +958,7 @@ class CurrentPcbWorkerStartupChannelCore {
         const wire = allocation ? currentFootprintCopyAllocationWire(command, this.#nextId, state.workerSessionId) :
           currentFootprintCopyClockRpcWire(command, this.#nextId, state.workerSessionId, state.uiSessionId);
         if (allocation) {
-          if (!(state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget)) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
+          if (!(state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardAllocatedCreateClockBudget)) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
           state.budget.consumeAllocation(this.#nextId, String(wire.request["phase"]), cleanup);
         } else { state.budget.consume(this.#nextId, cleanup); }
         this.#nextId += 1;
@@ -981,7 +986,7 @@ class CurrentPcbWorkerStartupChannelCore {
   }
   async #dispatchCreate(state: ClockRpcState): Promise<CurrentFootprintCopyPendingCreate> {
     const create = this.#samePendingCreate(state);
-    if (state.retired || create.dispatchAttempted || !(state.budget instanceof CurrentFootprintCopyCreateClockBudget || state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget)) {
+    if (state.retired || create.dispatchAttempted || !(state.budget instanceof CurrentFootprintCopyCreateClockBudget || state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardAllocatedCreateClockBudget)) {
       throw fail("FOOTPRINT_CREATE_CONSUMED");
     }
     // Consume synchronously before entering the queue. A lost native ACK never
@@ -996,7 +1001,7 @@ class CurrentPcbWorkerStartupChannelCore {
     await this.#queue(async (): Promise<void> => {
       let pending: Pending | null = null;
       try {
-        if (this.#samePendingCreate(state) !== create || state.retired || !(state.budget instanceof CurrentFootprintCopyCreateClockBudget || state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget)) {
+        if (this.#samePendingCreate(state) !== create || state.retired || !(state.budget instanceof CurrentFootprintCopyCreateClockBudget || state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardAllocatedCreateClockBudget)) {
           throw fail("FOOTPRINT_CREATE_ORIGINAL");
         }
         if (this.#samePendingCreate(state) !== create) { throw fail("FOOTPRINT_CREATE_ORIGINAL"); }
@@ -1316,6 +1321,14 @@ export class CurrentFootprintCombinedStartupChannel extends CurrentPcbWorkerStar
 export class CurrentFootprintCopyForwardStartupChannel extends CurrentPcbWorkerStartupChannelCore {
   public constructor(native: CurrentPcbWorkerStartupNativeDependency, observeEventBytes: (bytes: number) => void, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
     super(INTERNAL_PROFILE, native, currentFootprintCopyForwardStartupWire, priorUsage, false, false, observeEventBytes);
+  }
+}
+/** Distinct allocation/create channel, constructed only for a future original
+ * writer-v2 birth. Existing observation channels cannot acquire these roles. */
+export class CurrentFootprintForwardExecutionStartupChannel extends CurrentPcbWorkerStartupChannelCore {
+  public constructor(native: CurrentPcbWorkerStartupNativeDependency, observeEventBytes: (bytes: number) => void,
+    priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
+    super(INTERNAL_PROFILE, native, currentFootprintForwardExecutionStartupWire, priorUsage, true, true, observeEventBytes);
   }
 }
 /** Unmounted future writer birth. No diagnostic owner constructs this class;

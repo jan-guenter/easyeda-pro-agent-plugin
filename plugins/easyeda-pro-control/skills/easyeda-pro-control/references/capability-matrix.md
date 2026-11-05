@@ -164,6 +164,13 @@ snapshot after acknowledged normal close and observed original root/empty-Job
 termination. They preserve the v1 result and keep helper release separate.
 Current head age, atomic prewrite queues, document clocks, complete writer
 capacity, create/scheduler/execution ownership and Save remain unavailable.
+The separate [disposable v2 source-validation route](current-footprint-forward-source-validation.md)
+uses a fresh original native birth, main/browser/frame/UI capture and complete
+checkpoint/SQL before its once-only source read, preparation and seal. Its
+managed opening journal retains original close/abort, root/whole-Job termination,
+helper release and publication settlement. It does not promote a v1 owner or
+qualify clocks, current head/lock/frontier, complete writer capacity, create,
+explicit Save or a saved/closed baseline; all authority fields remain false.
 A separate bounded `read-qualified-source` action returns the original published
 packet as base64 byte pages of complete canonical UTF-8 JSON, including exact
 source content and packet/source hashes. Every page checks original private

@@ -93,7 +93,7 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; scope: vm.Context;
     CURRENT_PCB_DIAGNOSTIC_PROFILE: { powershell: { sha256: digest, bytes: 1 } }, engine, upstream, bridgeGate: gate,
     windowsRuntime: undefined, ordinaryLaunchRuntime: undefined, ordinaryLaunchCoordinator: undefined,
     currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined,
-    currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined,
+    currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, currentFootprintForwardSourceValidation: undefined, hasForwardSourceCustody: (): boolean => false,
     currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
     closedSymbolIndexReservation: undefined, closedSymbolUnreservedFailure: { observed: false }, scheduledShutdown: undefined,
     currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined,

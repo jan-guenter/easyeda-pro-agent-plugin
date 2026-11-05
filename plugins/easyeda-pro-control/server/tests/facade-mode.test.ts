@@ -72,7 +72,7 @@ void test("exact209 selectors expose eighteen scoped tools without inheriting un
   assert.equal(Object.hasOwn(capabilities, "projectSymbolMetadata"), false);
   assert.deepEqual(capabilities["disposableWorkerStartup"], { tool: "easyeda_control_pcb209_worker_startup", validationOnly: true, connectedValidation: false,
     runtimeAdmissionRequired: true, debuggerPauseAcceptanceRequired: true, startupCompletionVerified: false,
-    scope: "separate-project-worker-constructor-footprint-copy-preparation-and-route-preparation-forward-prewrite-qualification-combined-main-renderer-empty-baseline-ratline-held-import-and-continuation-purposes;no-complete-startup-or-writer-authority",
+    scope: "separate-project-worker-constructor-footprint-copy-preparation-and-route-preparation-forward-prewrite-qualification-and-v2-source-validation-combined-main-renderer-empty-baseline-ratline-held-import-and-continuation-purposes;no-complete-startup-or-writer-authority",
     completeLiveBaselineVerified: false, serverClockProvenanceVerified: false, cadAuthority: false });
   assert.deepEqual(capabilities["save"], { enabled: false }); assert.deepEqual(capabilities["recovery"], { enabled: false });
   assert.deepEqual(capabilities["nativeAdapters"], { enabled: true,

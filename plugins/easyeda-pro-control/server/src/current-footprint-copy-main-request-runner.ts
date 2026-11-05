@@ -31,6 +31,15 @@ import type { CurrentFootprintCopyMainRequestReservation } from "./current-footp
 import type { CurrentFootprintCopyClockRpcObservation } from "./current-footprint-copy-clock-rpc-runner.ts";
 import type { CurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
 
+// oxlint-disable-next-line import/no-cycle -- The original backend owns issuance and synchronous held transfer; no getter runs during module initialization.
+import { isCurrentFootprintForwardMainRequestOrigin, requireCurrentFootprintForwardMainRequestOrigin } from "./current-footprint-copy-main-backend-runner.ts";
+import type { CurrentFootprintForwardMainRequestOrigin, CurrentFootprintForwardMainRequestOriginBindings } from "./current-footprint-forward-execution-main-origin.ts";
+
+import { captureCurrentFootprintForwardExecutionPrototypes, requireCurrentFootprintForwardExecutionPrototypes } from "./current-footprint-forward-execution-opening-identity.ts";
+
+const FORWARD_INTERNAL = Symbol("original-forward-main-request-engine");
+const forwardEngines = new WeakSet<object>();
+type RequestOrigin = CurrentFootprintCopyMainRequestOrigin | CurrentFootprintForwardMainRequestOrigin;
 type Origin = ReturnType<typeof requireCurrentFootprintCopyMainRequestOrigin>;
 type Plan = Readonly<z.infer<typeof currentFootprintCopyMainRequestPlanSchema>>;
 type Actor = ReturnType<typeof decodeCurrentFootprintCopyMainRequestValue>;
@@ -93,7 +102,8 @@ const eventSchema = z.discriminatedUnion("method", [
   z.object({ method: z.literal("Debugger.resumed"), params: z.object({}).strict() }).strict(),
 ]);
 export class CurrentFootprintCopyMainRequestRunner {
-  readonly #token: CurrentFootprintCopyMainRequestOrigin;
+  readonly #token: RequestOrigin;
+  readonly #forwardOrigin: CurrentFootprintForwardMainRequestOriginBindings | null;
   readonly #origin: Origin;
   #plan: Plan | null;
   readonly #latePlan: CurrentFootprintCopyMainRequestReservation | null;
@@ -127,8 +137,14 @@ export class CurrentFootprintCopyMainRequestRunner {
   #firstFailure: CollectionFailure | null = null;
   #idle: Promise<null> = Promise.resolve(null);
   #resolveIdle: (() => void) | null = null;
-  public constructor(origin: CurrentFootprintCopyMainRequestOrigin, suppliedPlan: unknown) {
-    this.#origin = requireCurrentFootprintCopyMainRequestOrigin(origin); this.#token = origin;
+  public constructor(origin: CurrentFootprintCopyMainRequestOrigin, suppliedPlan: unknown);
+  public constructor(internal: typeof FORWARD_INTERNAL, origin: CurrentFootprintForwardMainRequestOrigin, suppliedPlan: unknown);
+  public constructor(first: CurrentFootprintCopyMainRequestOrigin | typeof FORWARD_INTERNAL, second: unknown, third?: unknown) {
+    if (first === FORWARD_INTERNAL) {
+      need(isCurrentFootprintForwardMainRequestOrigin(second), "FORWARD_ORIGINAL_ORIGIN");
+      this.#forwardOrigin = requireCurrentFootprintForwardMainRequestOrigin(second); this.#origin = this.#forwardOrigin; this.#token = second;
+    } else { this.#forwardOrigin = null; this.#origin = requireCurrentFootprintCopyMainRequestOrigin(first); this.#token = first; }
+    const suppliedPlan = first === FORWARD_INTERNAL ? third : second;
     this.#latePlan = isCurrentFootprintCopyMainRequestReservation(suppliedPlan) ? suppliedPlan : null;
     this.#plan = this.#latePlan === null ? freezeDeep(currentFootprintCopyMainRequestPlanSchema.parse(captureCurrentPcbStringClockReply(suppliedPlan).value)) : null;
     // Refuse oversized source/escaping before allocating any breakpoint. The
@@ -141,6 +157,7 @@ export class CurrentFootprintCopyMainRequestRunner {
   /** No native request runs here. The same combined scheduler must separately
    * join the main and clock origins before supplying this original packet. */
   public async bindObservedClocks(origin: CurrentFootprintCopyClockRpcOrigin, packet: CurrentFootprintCopyClockRpcObservation): Promise<void> {
+    need(this.#token.profile === "private.current-footprint-copy-main-request-origin.v1", "ORIGINAL_CLOCK_ORIGIN");
     need(this.#latePlan !== null && !this.#latePlanAttempted && this.#plan === null && this.#phase === "invocation-consumed", "LATE_PLAN_CONSUMED");
     this.#begin(); this.#latePlanAttempted = true;
     try {
@@ -150,7 +167,8 @@ export class CurrentFootprintCopyMainRequestRunner {
     } catch (error) { this.#refuse(error); throw error; } finally { this.#end(); }
   }
   #same(cleanup = false): void {
-    need(!this.#retired && !this.#generationEnded && requireCurrentFootprintCopyMainRequestOrigin(this.#token) === this.#origin, "ORIGINAL_OWNER");
+    if (this.#forwardOrigin !== null) { requireForwardEngine(this); }
+    need(!this.#retired && !this.#generationEnded && (this.#token.profile === "private.current-footprint-forward-main-request-origin.v2" ? requireCurrentFootprintForwardMainRequestOrigin(this.#token) : requireCurrentFootprintCopyMainRequestOrigin(this.#token)) === this.#origin, "ORIGINAL_OWNER");
     requireCurrentFootprintCopyMainRequestSource(this.#origin.qualifiedSource);
     need(cleanup || this.#phase !== "failed" && !this.#cleanupAttempted && !this.#ending, "FAILED");
     need(cleanup || this.#started === 0 || performance.now() - this.#started < LIMIT_MS, "DEADLINE");
@@ -166,6 +184,12 @@ export class CurrentFootprintCopyMainRequestRunner {
     this.#firstFailure ??= Object.freeze({ code: error instanceof Error ? failures.get(error) ?? "ORIGINAL_CHANNEL_OR_REPLY" : "ORIGINAL_CHANNEL_OR_REPLY",
       phase: this.#phase, normalRequests: this.#normal, cleanupRequests: this.#cleanup, replies: this.#raw.length });
     this.#phase = "failed";
+    if (this.#forwardOrigin !== null) {
+      try { this.#forwardOrigin.fail(error); }
+      catch {
+        // Revocation cannot mask the original refusal.
+      }
+    }
   }
   #drain(): void {
     for (let count = 0; count < 32; count += 1) {
@@ -194,11 +218,18 @@ export class CurrentFootprintCopyMainRequestRunner {
     currentFootprintCopyMainRequestWire(command, 2_147_483_647);
     if (cleanup) { this.#cleanup += 1; } else { this.#normal += 1; }
     if (allocation !== undefined) { this.#allocationUncertain = true; }
-    const raw = captureCurrentPcbStringClockReply(await this.#origin.request(command, cleanup)).value; this.#raw.push(raw);
-    if (allocation !== undefined) {
-      const id = currentFootprintCopyMainRequestAllocatedId(raw);
-      if (id !== null && !this.#points.some(value => value.id === id)) { this.#points.push({ stage: allocation, id, removeAttempted: false, removed: false }); this.#allocationUncertain = false; }
-    }
+    const retain = (reply: unknown): void => {
+      const raw = captureCurrentPcbStringClockReply(reply).value; this.#raw.push(raw);
+      if (allocation !== undefined) {
+        const id = currentFootprintCopyMainRequestAllocatedId(raw);
+        if (id !== null && !this.#points.some(value => value.id === id)) { this.#points.push({ stage: allocation, id, removeAttempted: false, removed: false }); this.#allocationUncertain = false; }
+        else { this.#allocationUncertain = true; }
+      }
+    };
+    const result = this.#forwardOrigin !== null && allocation !== undefined ?
+      await this.#forwardOrigin.request(command, cleanup, retain) : await this.#origin.request(command, cleanup);
+    const raw = captureCurrentPcbStringClockReply(result).value;
+    if (this.#forwardOrigin === null || allocation === undefined) { retain(raw); }
     await this.#current(cleanup); this.#drain(); return raw;
   }
   async #wait(predicate: () => boolean): Promise<void> {
@@ -339,6 +370,14 @@ export class CurrentFootprintCopyMainRequestRunner {
    * their authority before the completion origin can issue its first command. */
   public transferHeldFinalPb(packet: CurrentFootprintCopyMainRequestHeldFinalPb,
     originalOrigin: CurrentFootprintCopyMainRequestOrigin): CurrentFootprintCopyMainRequestHeldFinalPbBindings {
+    need(originalOrigin === this.#token, "ORIGINAL_TRANSFER_ORIGIN");
+    requireCurrentFootprintCopyMainRequestOrigin(originalOrigin); return this.#transferHeld(packet, originalOrigin);
+  }
+  public transferForwardHeldFinalPb(packet: CurrentFootprintCopyMainRequestHeldFinalPb,
+    originalOrigin: CurrentFootprintForwardMainRequestOrigin): CurrentFootprintCopyMainRequestHeldFinalPbBindings {
+    requireCurrentFootprintForwardMainRequestOrigin(originalOrigin); return this.#transferHeld(packet, originalOrigin);
+  }
+  #transferHeld(packet: CurrentFootprintCopyMainRequestHeldFinalPb, originalOrigin: RequestOrigin): CurrentFootprintCopyMainRequestHeldFinalPbBindings {
     need(originalOrigin === this.#token, "ORIGINAL_TRANSFER_ORIGIN"); this.#assertHeld(packet);
     const bindings = requireCurrentFootprintCopyMainRequestHeldFinalPb(packet);
     this.#phase = "completion-transferred"; held.delete(packet); return bindings;
@@ -358,6 +397,7 @@ export class CurrentFootprintCopyMainRequestRunner {
     need(!this.#cleanupAttempted, "CLEANUP_CONSUMED"); this.#begin(); this.#cleanupAttempted = true;
     try {
       const errors: unknown[] = [];
+      if (this.#forwardOrigin !== null) { try { await this.#forwardOrigin.settleAllocation(); } catch (error) { errors.push(error); } }
       for (const point of this.#points) { try { await this.#remove(point); } catch (error) { errors.push(error); } }
       // A refused capture may be paused immediately before native SQL. Cleanup
       // Never resumes it to make a failed observation complete.
@@ -394,4 +434,30 @@ export function transferCurrentFootprintCopyMainRequestHeldFinalPb(packet: Curre
   origin: CurrentFootprintCopyMainRequestOrigin): CurrentFootprintCopyMainRequestHeldFinalPbBindings {
   const original = held.get(packet); need(original !== undefined, "ORIGINAL_HELD_PACKET");
   return original.owner.transferHeldFinalPb(packet, origin);
+}
+
+/** Construct the shared actual request collector only from the new original
+ * v2 registry. The module-private selector is never supplied by a caller. */
+export function createCurrentFootprintForwardMainRequestRunner(origin: CurrentFootprintForwardMainRequestOrigin,
+  plan: unknown): CurrentFootprintCopyMainRequestRunner {
+  requireCurrentFootprintForwardMainRequestOrigin(origin);
+  requireForwardEnginePrototype();
+  need(!forwardEngines.has(origin), "FORWARD_ENGINE_CONSUMED"); forwardEngines.add(origin);
+  const runner = new CurrentFootprintCopyMainRequestRunner(FORWARD_INTERNAL, origin, plan); Object.freeze(runner); return runner;
+}
+// oxlint-disable-next-line typescript/unbound-method -- The exact private-field collector owns this original synchronous transfer.
+const originalForwardHeldTransfer = CurrentFootprintCopyMainRequestRunner.prototype.transferForwardHeldFinalPb;
+export function transferCurrentFootprintForwardMainRequestHeldFinalPb(packet: CurrentFootprintCopyMainRequestHeldFinalPb,
+  origin: CurrentFootprintForwardMainRequestOrigin): CurrentFootprintCopyMainRequestHeldFinalPbBindings {
+  requireCurrentFootprintForwardMainRequestOrigin(origin);
+  const original = held.get(packet); need(original !== undefined, "ORIGINAL_HELD_PACKET");
+  need(CurrentFootprintCopyMainRequestRunner.prototype.transferForwardHeldFinalPb === originalForwardHeldTransfer, "ORIGINAL_TRANSFER_METHOD");
+  return originalForwardHeldTransfer.call(original.owner, packet, origin);
+}
+
+const forwardEnginePrototypes = captureCurrentFootprintForwardExecutionPrototypes(CurrentFootprintCopyMainRequestRunner.prototype);
+function requireForwardEnginePrototype(): void { requireCurrentFootprintForwardExecutionPrototypes(forwardEnginePrototypes); }
+function requireForwardEngine(runner: CurrentFootprintCopyMainRequestRunner): void {
+  requireForwardEnginePrototype();
+  need(Object.getPrototypeOf(runner) === CurrentFootprintCopyMainRequestRunner.prototype && Reflect.ownKeys(runner).length === 0, "FORWARD_ORIGINAL_ENGINE");
 }

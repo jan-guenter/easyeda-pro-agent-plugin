@@ -131,13 +131,13 @@ await server.connect(new StdioServerTransport());`;
 
 /** Hold an actual SDK request through its timeout. Only the fixed same-owner
  * cleanup protocol can settle this synthetic native reservation and its records. */
-function interruptedForwardPeer(largeInspection = false, failPendingInspection = false): string {
+function interruptedForwardPeer(largeInspection = false, failPendingInspection = false, sourceFamily = false): string {
   return `import {Server} from ${sdkModule("server/index.js")};
 import {StdioServerTransport} from ${sdkModule("server/stdio.js")};
 import {CallToolRequestSchema,ListToolsRequestSchema,McpError} from ${sdkModule("types.js")};
 const server=new Server({name:'synthetic-interrupted-forward',version:'1.0.0'},{capabilities:{tools:{}}});
-const op='footprint-copy-qualify-timeout',binding='a'.repeat(64),intent='b'.repeat(64),gate=Promise.withResolvers(),calls=[];
-let active=0,aborted=false,released=false,settled=false,captures=0,inspectionFailed=false;
+const op=${JSON.stringify(sourceFamily ? 'footprint-forward-execution-timeout' : 'footprint-copy-qualify-timeout')},binding='a'.repeat(64),intent='b'.repeat(64),gate=Promise.withResolvers(),calls=[];
+let active=0,aborted=false,released=false,releaseObserved=${JSON.stringify(!sourceFamily)},settled=false,captures=0,inspectionFailed=false;
 const result=value=>({content:[{type:'text',text:JSON.stringify(value)}],structuredContent:value});
 const refused=()=>({isError:true,content:[{type:'text',text:'synthetic-original-owner-refusal'}]});
 server.setRequestHandler(ListToolsRequestSchema,async()=>({tools:['easyeda_control_api','easyeda_control_session','easyeda_control_pcb209_worker_startup'].map(name=>({name,inputSchema:{type:'object'}}))}));
@@ -146,21 +146,22 @@ server.setRequestHandler(CallToolRequestSchema,async({params})=>{
  if(params.name==='easyeda_control_api'&&outer?.action==='loaded-facade')return result({offline:true,result:{schema:'easyeda-pro-control.loaded-facade.v1',pid:process.pid,moduleUrl:import.meta.url,nodeVersion:process.version,admissionGranted:false}});
  if(params.name==='easyeda_control_session'){
   calls.push({tool:params.name,action:outer?.action});
-  if(outer?.action==='retire'&&(active!==0||!released||!settled))return refused();
+  if(outer?.action==='retire'&&(active!==0||!released||!releaseObserved||!settled))return refused();
   const retired=outer?.action==='retire';
   return result({result:{schema:'easyeda-pro-control.session-retirement.v1',state:retired?'retired':'active',activeCalls:active,liveAdmissionOpen:!retired,leaseReleaseAcknowledged:retired,replacementConnectionRequired:retired}});
  }
  const request=outer?.request;
  calls.push({tool:params.name,action:request?.action,operationId:request?.operationId,binding:request?.expectedBindingSha256});
- if(params.name!=='easyeda_control_pcb209_worker_startup'||outer?.action!=='footprint-forward-prewrite'||request?.operationId!==op)return refused();
+ if(params.name!=='easyeda_control_pcb209_worker_startup'||outer?.action!==${JSON.stringify(sourceFamily ? 'footprint-forward-source-validation' : 'footprint-forward-prewrite')}||request?.operationId!==op)return refused();
  if(request.action==='inspect'&&${JSON.stringify(failPendingInspection)}&&!inspectionFailed&&active>0){inspectionFailed=true;gate.resolve();throw new McpError(-32603,'synthetic-side-inspection-failure');}
- if(request.action==='inspect')return result({result:{operationId:op,bindingSha256:binding,intentSha256:intent,active,captures,aborted,released,settled,calls,...(${JSON.stringify(largeInspection)}?{padding:'x'.repeat(1048576)}:{})}});
- if(request.action==='settle-records'){if(active!==0||request.expectedIntentSha256!==intent)return refused();settled=true;return result({result:{operationId:op,settled:true}});}
+ if(request.action==='inspect')return result({result:{operationId:op,bindingSha256:binding,intentSha256:intent,active,captures,aborted,released,releaseObserved,settled,calls,...(${JSON.stringify(largeInspection)}?{padding:'x'.repeat(1048576)}:{})}});
+ if(request.action==='settle-records'){if(active!==0||(!${JSON.stringify(sourceFamily)}&&request.expectedIntentSha256!==intent))return refused();settled=true;return result({result:{operationId:op,settled:true}});}
  if(request.expectedBindingSha256!==binding)return refused();
- if(request.action==='capture-project'){captures++;active++;await gate.promise;active--;return result({result:{operationId:op,lateCapture:true}});}
+ if(request.action===${JSON.stringify(sourceFamily ? 'capture-source' : 'capture-project')}){captures++;active++;await gate.promise;active--;return result({result:{operationId:op,lateCapture:true}});}
  if(request.action==='abort-generation'){if(aborted||request.confirmAbortOriginalForwardJob!==true)return refused();aborted=true;gate.resolve();return result({result:{operationId:op,terminationDispatched:true}});}
  if(request.action==='observe-termination')return result({result:{operationId:op,terminated:aborted&&active===0}});
- if(request.action==='release-closed'){if(!aborted||active!==0||released)return refused();released=true;return result({result:{operationId:op,state:'released'}});}
+ if(request.action==='release-closed'){if(!aborted||active!==0||released)return refused();released=true;if(${JSON.stringify(sourceFamily)})return refused();return result({result:{operationId:op,state:'released'}});}
+ if(request.action==='observe-release'&&${JSON.stringify(sourceFamily)}&&released){releaseObserved=true;return result({result:{operationId:op,state:'released'}});}
  return refused();
 });
 // A failed regression still lets this inert peer finish naturally. Passing
@@ -219,6 +220,33 @@ server.setRequestHandler(CallToolRequestSchema,async({params})=>{
 // An unsuccessful regression releases only this inert SDK peer at its deadline.
 setTimeout(()=>{gate.resolve();void server.close();},15000).unref();
 await server.connect(new StdioServerTransport());`;
+}
+
+/** Reject one v2 launch before allocation, then acknowledge only its original
+ * no-allocation cleanup. This peer owns no application or native handles. */
+function rejectedSourceLaunchPeer(): string {
+  return `import {Server} from ${sdkModule("server/index.js")};
+import {StdioServerTransport} from ${sdkModule("server/stdio.js")};
+import {CallToolRequestSchema,ListToolsRequestSchema,McpError} from ${sdkModule("types.js")};
+const server=new Server({name:'synthetic-source-preallocation',version:'1.0.0'},{capabilities:{tools:{}}});
+const op='footprint-forward-execution-preallocation';let attempted=false,cleaned=false;
+const result=value=>({content:[{type:'text',text:JSON.stringify(value)}],structuredContent:value});
+const refused=()=>({isError:true,content:[{type:'text',text:'synthetic-original-preallocation-refusal'}]});
+server.setRequestHandler(ListToolsRequestSchema,async()=>({tools:['easyeda_control_api','easyeda_control_session','easyeda_control_pcb209_worker_startup'].map(name=>({name,inputSchema:{type:'object'}}))}));
+server.setRequestHandler(CallToolRequestSchema,async({params})=>{
+ const outer=params.arguments?.request;
+ if(params.name==='easyeda_control_api'&&outer?.action==='loaded-facade')return result({offline:true,result:{schema:'easyeda-pro-control.loaded-facade.v1',pid:process.pid,moduleUrl:import.meta.url,nodeVersion:process.version,admissionGranted:false}});
+ if(params.name==='easyeda_control_session'){
+  if(outer?.action==='retire'&&!cleaned)return refused();const retired=outer?.action==='retire';
+  return result({result:{schema:'easyeda-pro-control.session-retirement.v1',state:retired?'retired':'active',activeCalls:0,liveAdmissionOpen:!retired,leaseReleaseAcknowledged:retired,replacementConnectionRequired:retired}});
+ }
+ const input=outer?.request;
+ if(params.name!=='easyeda_control_pcb209_worker_startup'||outer?.action!=='footprint-forward-source-validation'||input?.operationId!==op)return refused();
+ if(input.action==='launch'&&!attempted){attempted=true;throw new McpError(-32603,'synthetic-preallocation-guard-failed');}
+ if(input.action==='cleanup-before-launch'&&attempted&&!cleaned){cleaned=true;return result({result:{schema:'easyeda-pro-control.footprint-forward-source-validation-step.v1',operationId:op,action:input.action,result:{cleanupCompleted:true},executionReady:false,executionAuthorized:false,saveAuthorized:false}});}
+ return refused();
+});
+setTimeout(()=>{void server.close();},15000).unref();await server.connect(new StdioServerTransport());`;
 }
 
 /** Poll retained child exit/close evidence and fail if no observation becomes
@@ -348,6 +376,7 @@ void test("actual manager preserves ambiguous capture and permits only same-owne
       request({ id: "foreign-generation", action: "cleanup-original", generation: 2, interruptedRequestId: "interrupted-capture", request: { action: "inspect" } }),
       cleanup("foreign-operation", "inspect", { operationId: "footprint-copy-qualify-foreign" }),
       cleanup("foreign-binding", "observe-termination", { expectedBindingSha256: "f".repeat(64) }),
+      cleanup("legacy-release-observer", "observe-release"),
       cleanup("blocked-cleanup-replay", "capture-project"),
     ]) {
       await manager.handle(rejected); assert.equal(manager.inspect()["stage"], "blocked"); assert.equal(manager.inspect()["facadePid"], originalPid);
@@ -1016,5 +1045,93 @@ void test("rejected in-flight inspection retains its exact side provenance while
     assert.equal(calls.filter(call => call["action"] === "capture-project").length, 1);
     assert.equal(calls.filter(call => call["action"] === "abort-generation").length, 1);
     assert.equal(final["released"], true); assert.equal(record(rows.find(row => row["id"] === "retained-retire")?.["closure"])["pid"], pid);
+  });
+});
+
+void test("v2 source capture timeout retains the exact family and child through fixed original cleanup and retirement", { timeout: 22_000 }, async context => {
+  const selected = await fixture(interruptedForwardPeer(false, false, true)); const outputs: unknown[] = [];
+  await selectedProfile(selected.profilePath, async () => {
+    const manager = new ForegroundSessionManager(async value => { outputs.push(value); await Promise.resolve(); });
+    context.after(async () => {
+      if (manager.inspect()["stage"] === "closed") { return; }
+      const deadline = Date.now() + 16_000;
+      while (manager.inspect()["closure"] === null && Date.now() < deadline) { await wait(10); }
+      await manager.handle(request({ id: "v2-fixture-final-shutdown", action: "shutdown" }));
+    });
+    await manager.initialize(selected.root);
+    const pid = manager.inspect()["facadePid"]; const operationId = "footprint-forward-execution-timeout"; const expectedBindingSha256 = "a".repeat(64);
+    const capture = { id: "v2-original-capture", tool: "easyeda_control_pcb209_worker_startup", timeoutMs: 1000,
+      arguments: { request: { action: "footprint-forward-source-validation", request: { action: "capture-source", operationId, expectedBindingSha256 } } } };
+    const cleanup = (id: string, action: string, extra: object = {}): string => request({ id, action: "cleanup-original", generation: 1,
+      interruptedRequestId: capture.id, request: { action, ...extra } });
+    const pending = manager.handle(request(capture));
+    await managerProgress(() => manager.hasInFlightCapture());
+    await manager.handleInFlight(request({ id: "v2-pending-inspection", action: "in-flight-original", generation: 1,
+      originalRequestId: capture.id, request: { action: "inspect" } }));
+    await pending;
+    assert.equal(manager.inspect()["stage"], "blocked"); assert.equal(manager.inspect()["facadePid"], pid);
+    assert.equal(record(manager.inspect()["interruptedRequest"])["outcome"], "unknown");
+    for (const rejected of [request({ ...capture, id: "v2-replay", cleanup: true }), loaded("v2-normal"),
+      cleanup("v2-foreign-operation", "inspect", { operationId: "footprint-forward-execution-foreign" }),
+      cleanup("v2-capture-not-prelaunch", "cleanup-before-launch"),
+      request({ id: "v2-replace", action: "start", afterGeneration: 1, pluginRoot: selected.root })]) {
+      await manager.handle(rejected); assert.equal(record(outputs.at(-1))["dispatched"], false);
+    }
+    for (const [id, action, extra] of [["v2-abort", "abort-generation", { confirmAbortOriginalForwardJob: true }],
+      ["v2-exit", "observe-termination", {}], ["v2-records", "settle-records", {}]] as const) {
+      await manager.handle(cleanup(id, action, extra));
+      const output = record(outputs.at(-1)); assert.notEqual(record(output["result"])["isError"], true);
+    }
+    await manager.handle(cleanup("v2-release-publication-failed", "release-closed"));
+    const failedRelease = record(outputs.at(-1)); assert.equal(record(failedRelease["result"])["isError"], true);
+    assert.equal(manager.inspect()["stage"], "blocked"); assert.equal(manager.inspect()["facadePid"], pid);
+    await manager.handle(cleanup("v2-observe-foreign-binding", "observe-release", { expectedBindingSha256: "f".repeat(64) }));
+    assert.equal(record(outputs.at(-1))["dispatched"], false);
+    await manager.handle(cleanup("v2-observe-original-release", "observe-release"));
+    const observedRelease = record(outputs.at(-1)); assert.notEqual(record(observedRelease["result"])["isError"], true);
+    await manager.handle(cleanup("v2-inspect", "inspect"));
+    const output = record(outputs.at(-1)); const result = record(output["result"]); const structured = record(result["structuredContent"]); const final = record(structured["result"]);
+    const calls = z.array(z.record(z.string(), z.unknown())).parse(final["calls"]);
+    assert.equal(final["captures"], 1); assert.equal(final["released"], true); assert.equal(final["releaseObserved"], true); assert.equal(final["settled"], true);
+    assert.equal(calls.filter(call => call["action"] === "capture-source").length, 1);
+    assert.equal(calls.filter(call => call["action"] === "abort-generation").length, 1);
+    assert.equal(calls.filter(call => call["action"] === "release-closed").length, 1);
+    const observed = calls.filter(call => call["action"] === "observe-release"); assert.equal(observed.length, 1);
+    assert.equal(observed[0]?.["binding"], expectedBindingSha256);
+    assert.equal(record(manager.inspect()["interruptedRequest"])["outcome"], "unknown");
+    assert.ok(calls.every(call => call["tool"] !== "easyeda_control_pcb209_worker_startup" || call["operationId"] === operationId));
+    await manager.handle(retire("v2-original-retire", 1));
+    assert.equal(manager.inspect()["stage"], "between-facades"); assert.equal(record(manager.inspect()["closure"])["pid"], pid);
+    await manager.handle(request({ id: "v2-original-shutdown", action: "shutdown" }));
+    assert.equal(manager.inspect()["stage"], "closed");
+  });
+});
+
+void test("v2 rejected preallocation launch retires only after its exact same-client no-allocation cleanup", { timeout: 20_000 }, async context => {
+  const selected = await fixture(rejectedSourceLaunchPeer()); const outputs: unknown[] = [];
+  await selectedProfile(selected.profilePath, async () => {
+    const manager = new ForegroundSessionManager(async value => { outputs.push(value); await Promise.resolve(); });
+    context.after(async () => {
+      if (manager.inspect()["stage"] === "closed") { return; }
+      const deadline = Date.now() + 16_000;
+      while (manager.inspect()["closure"] === null && Date.now() < deadline) { await wait(10); }
+      await manager.handle(request({ id: "preallocation-fixture-shutdown", action: "shutdown" }));
+    });
+    await manager.initialize(selected.root);
+    const rawWindowsPath = String.raw`C:\Disposable\source-validation.eprj2`; const operationId = "footprint-forward-execution-preallocation";
+    const original = { id: "v2-preallocation-launch", tool: "easyeda_control_pcb209_worker_startup",
+      arguments: { request: { action: "footprint-forward-source-validation", request: { action: "launch", operationId,
+        target: { rawWindowsPath, projectUuid: hash(Buffer.from(rawWindowsPath)), documentUuid: "c".repeat(16), expectedSourceSha256: "d".repeat(64) },
+        footprintUuid: "e".repeat(16), confirmDisposableProject: true, acceptExistingProfileEffects: true, acceptNormalOpenEffects: true,
+        acceptDebuggerPauseEffects: true, confirmValidationOnly: true, confirmDiagnosticLaunch: true } } } };
+    const cleanup = (id: string, action: string): string => request({ id, action: "cleanup-original", generation: 1,
+      interruptedRequestId: original.id, request: { action } });
+    await manager.handle(request(original)); assert.equal(manager.inspect()["stage"], "blocked");
+    assert.equal(record(manager.inspect()["interruptedRequest"])["forward"], null);
+    await manager.handle(retire("preallocation-no-proof", 1)); assert.equal(record(outputs.at(-1))["dispatched"], false);
+    await manager.handle(cleanup("preallocation-original-cleanup", "cleanup-before-launch"));
+    const output = record(outputs.at(-1)); assert.notEqual(record(output["result"])["isError"], true);
+    await manager.handle(retire("preallocation-retire", 1)); assert.equal(manager.inspect()["stage"], "between-facades");
+    await manager.handle(request({ id: "preallocation-shutdown", action: "shutdown" })); assert.equal(manager.inspect()["stage"], "closed");
   });
 });

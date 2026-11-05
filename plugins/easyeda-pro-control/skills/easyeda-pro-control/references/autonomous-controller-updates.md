@@ -244,6 +244,32 @@ request ordinary manager retirement. Only its genuine facade retirement and
 observed original child closure permit replacement; the interrupted request's
 unknown outcome remains retained even after separate cleanup succeeds.
 
+### Separate disposable v2 source-validation family
+
+The strict `footprint-forward-source-validation` wrapper uses the same manager
+protocol for its once-only `capture-source`. The private original request also
+retains its exact family; a caller cannot choose another wrapper during cleanup.
+Pending capture accepts only original inspection and the explicitly confirmed
+`abort-generation`. Despite its historical `confirmAbortOriginalForwardJob`
+name, that confirmation targets the actual original v2 Job.
+
+A new-family interrupted launch may settle its original private journal before
+a binding has published. `cleanup-before-launch` and `cleanup-no-process` are
+additional fixed selectors only for that same interrupted new-family launch.
+The original provider must prove its own allocation/launch outcome and closure;
+no journal, owner or receipt is adopted. A successful acknowledgment only lets
+the manager attempt genuine facade retirement; it is not termination or native
+ownership proof. Old `footprint-forward-prewrite` requests refuse these selectors.
+
+New-family launch binding learning requires its exact inspection schema,
+matching operation, retained original owner/lease, settled publication and the
+published original binding record. A failed launch may retain cleanup custody
+without a successful launch acknowledgment. This grants cleanup data only;
+normal work, replay and replacement remain blocked. Unlike the old-family
+intent-bound selector, new-family `settle-records` selects only that exact
+original private provider/journal and sends no native request. Read
+[the source-validation workflow](current-footprint-forward-source-validation.md).
+
 ## Finish the original workflow
 
 Diagnostic and ordinary-launch owners use their own existing release actions.

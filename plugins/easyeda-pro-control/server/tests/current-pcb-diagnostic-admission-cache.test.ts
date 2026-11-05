@@ -28,8 +28,8 @@ void test("launch gate reuses only parsing after every current record byte is ch
   await assertNoUnresolvedCurrentPcbDiagnosticLaunches(); assert.equal(parses.length, 3);
   parses.length = 0;
   await assertNoUnresolvedCurrentPcbDiagnosticLaunches(); assert.equal(parses.length, 0);
-  // Rich historical inspection still performs every schema/chain check and
-  // Returns complete records instead of consuming the gate-only digest.
+  // Rich historical inspection owns its complete records and cold schema parse,
+  // Rather than consuming the separate gate-only digest.
   const inspected = await readCurrentPcbDiagnosticLifecycles(); assert.equal(parses.length, 3);
   assert.deepEqual(inspected[0]?.records["not-dispatched.json"], terminal);
 

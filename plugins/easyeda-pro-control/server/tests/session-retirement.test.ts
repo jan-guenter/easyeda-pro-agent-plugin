@@ -195,7 +195,21 @@ void test("actual index native guard refuses every retained runtime and native r
   const diagnostics = ["currentPcbDiagnosticLifecycle", "currentPcbStringPrecreateLifecycle", "currentPcbWorkerStartupLifecycle",
     "currentFootprintMainLifecycle", "currentFootprintHeldCacheValidation", "currentFootprintHeadAgeValidation"];
   const scope = vm.createContext(Object.fromEntries([...names, ...diagnostics].map(name => [name, undefined])));
+  class SourceController {
+    readonly #reserved: boolean;
+    readonly #owned: boolean;
+    public constructor(reserved: boolean, owned: boolean) { this.#reserved = reserved; this.#owned = owned; Object.freeze(this); }
+    public hasActiveReservation(): boolean { return this.#reserved; }
+    public hasOwnedAllocation(): boolean { return this.#owned; }
+    public hasAttemptedNativeOwnerAllocation(): boolean { return this.#owned; }
+  }
+  scope["CurrentFootprintForwardSourceValidation"] = SourceController;
+  scope["currentFootprintForwardSourceValidation"] = undefined;
   scope["closedSymbolUnreservedFailure"] = { observed: false };
+  const custodyStart = source.indexOf("const forwardSourceCustodyMethods =");
+  const custodyEnd = source.indexOf("function ownedWindowsRuntime(", custodyStart);
+  assert.ok(custodyStart > 0 && custodyEnd > custodyStart && custodyEnd - custodyStart < 2500);
+  vm.runInContext(source.slice(custodyStart, custodyEnd), scope);
   vm.runInContext(source.slice(start, end), scope);
   const check = (): unknown => vm.runInContext("assertSessionRetirementNativeOwnersSettled()", scope);
   check();
@@ -220,6 +234,17 @@ void test("actual index native guard refuses every retained runtime and native r
     scope[name] = { hasActiveReservation: (): boolean => false, hasOwnedAllocation: (): boolean => true };
     assert.throws(check, /every diagnostic reservation/u); scope[name] = undefined;
   }
+  for (const [reserved, owned] of [[true, false], [false, true]] as const) {
+    scope["currentFootprintForwardSourceValidation"] = new SourceController(reserved, owned);
+    assert.throws(check, /every diagnostic reservation/u);
+  }
+  scope["currentFootprintForwardSourceValidation"] = new SourceController(false, false); check();
+  const descriptor = Object.getOwnPropertyDescriptor(SourceController.prototype, "hasOwnedAllocation"); assert.ok(descriptor);
+  let replacements = 0;
+  Object.defineProperty(SourceController.prototype, "hasOwnedAllocation", { ...descriptor, value: (): boolean => { replacements += 1; return false; } });
+  try { assert.throws(check, /custody observers changed/u); assert.equal(replacements, 0); }
+  finally { Object.defineProperty(SourceController.prototype, "hasOwnedAllocation", descriptor); }
+  scope["currentFootprintForwardSourceValidation"] = undefined;
   check();
 });
 

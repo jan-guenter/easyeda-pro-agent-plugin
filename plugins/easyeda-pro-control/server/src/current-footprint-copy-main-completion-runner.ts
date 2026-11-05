@@ -22,6 +22,14 @@ import { CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_FLAGS as FLAGS, CURRENT_FOOTPRIN
   requireCurrentFootprintCopyMainCompletionEmpty, validateCurrentFootprintCopyMainCompletionCommand } from "./current-footprint-copy-main-completion-protocol.ts";
 import type { CurrentFootprintCopyMainCompletionCommand as Command } from "./current-footprint-copy-main-completion-protocol.ts";
 
+import { isCurrentFootprintForwardMainCompletionOrigin, requireCurrentFootprintForwardMainCompletionOrigin } from "./current-footprint-copy-main-backend-runner.ts";
+import type { CurrentFootprintForwardMainCompletionOrigin, CurrentFootprintForwardMainCompletionOriginBindings } from "./current-footprint-forward-execution-main-origin.ts";
+
+import { captureCurrentFootprintForwardExecutionPrototypes, requireCurrentFootprintForwardExecutionPrototypes } from "./current-footprint-forward-execution-opening-identity.ts";
+
+const FORWARD_INTERNAL = Symbol("original-forward-main-completion-engine");
+const forwardEngines = new WeakSet<object>();
+type CompletionOrigin = CurrentFootprintCopyMainCompletionOrigin | CurrentFootprintForwardMainCompletionOrigin;
 type Origin = ReturnType<typeof requireCurrentFootprintCopyMainCompletionOrigin>;
 type Held = CurrentFootprintCopyMainRequestHeldFinalPbBindings;
 type Value = ReturnType<typeof decodeCurrentFootprintCopyMainCompletionValue>;
@@ -48,7 +56,9 @@ const events = z.discriminatedUnion("method", [z.object({ method: z.literal("Deb
   z.object({ method: z.literal("Debugger.resumed"), params: z.object({}).strict() }).strict()]);
 function need(value: boolean, detail: string): asserts value { if (!value) { throw new Error(`FOOTPRINT_MAIN_COMPLETION_${detail}`); } }
 export class CurrentFootprintCopyMainCompletionRunner {
-  readonly #token: CurrentFootprintCopyMainCompletionOrigin;
+  readonly #token: CompletionOrigin;
+  readonly #forwardOrigin: CurrentFootprintForwardMainCompletionOriginBindings | null;
+  readonly #allocationReplies: unknown[] = [];
   readonly #origin: Origin;
   readonly #held: Held;
   readonly #points: Point[] = [];
@@ -75,14 +85,20 @@ export class CurrentFootprintCopyMainCompletionRunner {
   #firstFailure: Failure | null = null;
   #idle: Promise<null> = Promise.resolve(null);
   #resolveIdle: (() => void) | null = null;
-  public constructor(token: CurrentFootprintCopyMainCompletionOrigin) {
-    this.#origin = requireCurrentFootprintCopyMainCompletionOrigin(token); this.#token = token;
+  public constructor(token: CurrentFootprintCopyMainCompletionOrigin);
+  public constructor(internal: typeof FORWARD_INTERNAL, token: CurrentFootprintForwardMainCompletionOrigin);
+  public constructor(first: CurrentFootprintCopyMainCompletionOrigin | typeof FORWARD_INTERNAL, second?: unknown) {
+    if (first === FORWARD_INTERNAL) {
+      need(isCurrentFootprintForwardMainCompletionOrigin(second), "FORWARD_ORIGINAL_ORIGIN");
+      this.#forwardOrigin = requireCurrentFootprintForwardMainCompletionOrigin(second); this.#origin = this.#forwardOrigin; this.#token = second;
+    } else { this.#forwardOrigin = null; this.#origin = requireCurrentFootprintCopyMainCompletionOrigin(first); this.#token = first; }
     this.#held = this.#origin.transferredHeld;
     need(this.#held.scriptId === this.#origin.scriptId, "ORIGINAL_SCRIPT"); requireCurrentFootprintCopyMainCompletionSource(this.#origin.source);
     this.#originalPause = { stage: "original-final-pb", frameId: this.#held.finalPbFrameId, callerFrameId: null, attempted: false, resumed: false };
   }
   #same(cleanup = false): void {
-    need(!this.#retired && !this.#generationEnded && requireCurrentFootprintCopyMainCompletionOrigin(this.#token) === this.#origin, "ORIGINAL_OWNER");
+    if (this.#forwardOrigin !== null) { requireForwardEngine(this); }
+    need(!this.#retired && !this.#generationEnded && (this.#token.profile === "private.current-footprint-forward-main-completion-origin.v2" ? requireCurrentFootprintForwardMainCompletionOrigin(this.#token) : requireCurrentFootprintCopyMainCompletionOrigin(this.#token)) === this.#origin, "ORIGINAL_OWNER");
     requireCurrentFootprintCopyMainCompletionSource(this.#origin.source);
     need(cleanup || !this.#cleanupAttempted && !this.#ending && this.#phase !== "failed", "FAILED");
     need(cleanup || this.#started === 0 || performance.now() - this.#started < 300_000, "DEADLINE");
@@ -129,11 +145,19 @@ export class CurrentFootprintCopyMainCompletionRunner {
     await this.#current(cleanup); this.#drain(); need(cleanup ? this.#cleanup < REQUESTS.cleanup : this.#normal < REQUESTS.normal, "REQUEST_BOUND");
     const command = validateCurrentFootprintCopyMainCompletionCommand(input); currentFootprintCopyMainCompletionNativeCommand(command, 2_147_483_647);
     if (cleanup) { this.#cleanup += 1; } else { this.#normal += 1; } if (allocation !== undefined) { this.#allocationUncertain = true; }
-    const reply = captureCurrentPcbStringClockReply(await this.#origin.request(command, cleanup)).value; this.#replies += 1;
-    if (allocation !== undefined) {
-      const id = currentFootprintCopyMainCompletionAllocatedId(reply);
-      if (id !== null && !this.#points.some(value => value.id === id)) { this.#points.push({ stage: allocation, id, attempted: false, removed: false }); this.#allocationUncertain = false; }
-    }
+    const retain = (raw: unknown): void => {
+      const reply = captureCurrentPcbStringClockReply(raw).value; this.#replies += 1;
+      if (allocation !== undefined) {
+        if (this.#forwardOrigin !== null) { this.#allocationReplies.push(reply); }
+        const id = currentFootprintCopyMainCompletionAllocatedId(reply);
+        if (id !== null && !this.#points.some(value => value.id === id)) { this.#points.push({ stage: allocation, id, attempted: false, removed: false }); this.#allocationUncertain = false; }
+        else { this.#allocationUncertain = true; }
+      }
+    };
+    const raw = this.#forwardOrigin !== null && allocation !== undefined ?
+      await this.#forwardOrigin.request(command, cleanup, retain) : await this.#origin.request(command, cleanup);
+    const reply = captureCurrentPcbStringClockReply(raw).value;
+    if (this.#forwardOrigin === null || allocation === undefined) { retain(reply); }
     await this.#current(cleanup); this.#drain(); return reply;
   }
   async #wait(predicate: () => boolean): Promise<void> {
@@ -217,7 +241,9 @@ export class CurrentFootprintCopyMainCompletionRunner {
   public async cleanup(): Promise<void> {
     need(!this.#cleanupAttempted, "CLEANUP_CONSUMED"); this.#begin(); this.#cleanupAttempted = true;
     try {
-      const errors: unknown[] = []; for (const point of this.#points) { try { await this.#remove(point); } catch (error) { errors.push(error); } }
+      const errors: unknown[] = [];
+      if (this.#forwardOrigin !== null) { try { await this.#forwardOrigin.settleAllocation(); } catch (error) { errors.push(error); } }
+      for (const point of this.#points) { try { await this.#remove(point); } catch (error) { errors.push(error); } }
       need(errors.length === 0 && !this.#allocationUncertain && !this.#unknownPause && this.#resuming === null &&
         this.#originalPause.resumed && this.#pauses.every(pause => pause.resumed), "GENERATION_CLOSURE_REQUIRED");
       need(!this.#groupAttempted, "RELEASE_CONSUMED"); this.#groupAttempted = true;
@@ -241,4 +267,20 @@ export class CurrentFootprintCopyMainCompletionRunner {
       originalFinalPbResumeAttempted: this.#originalPause.attempted, unknownPause: this.#unknownPause, uncertainAllocation: this.#allocationUncertain,
       groupReleased: this.#groupReleased, retired: this.#retired, originalGenerationEnded: this.#generationEnded, firstFailure: this.#firstFailure });
   }
+}
+
+/** Enter the same completion sequencer through the actual new native issuer;
+ * no exported selector or callback table can promote a legacy origin. */
+export function createCurrentFootprintForwardMainCompletionRunner(origin: CurrentFootprintForwardMainCompletionOrigin): CurrentFootprintCopyMainCompletionRunner {
+  requireCurrentFootprintForwardMainCompletionOrigin(origin);
+  requireForwardEnginePrototype();
+  need(!forwardEngines.has(origin), "FORWARD_ENGINE_CONSUMED"); forwardEngines.add(origin);
+  const runner = new CurrentFootprintCopyMainCompletionRunner(FORWARD_INTERNAL, origin); Object.freeze(runner); return runner;
+}
+
+const forwardEnginePrototypes = captureCurrentFootprintForwardExecutionPrototypes(CurrentFootprintCopyMainCompletionRunner.prototype);
+function requireForwardEnginePrototype(): void { requireCurrentFootprintForwardExecutionPrototypes(forwardEnginePrototypes); }
+function requireForwardEngine(runner: CurrentFootprintCopyMainCompletionRunner): void {
+  requireForwardEnginePrototype();
+  need(Object.getPrototypeOf(runner) === CurrentFootprintCopyMainCompletionRunner.prototype && Reflect.ownKeys(runner).length === 0, "FORWARD_ORIGINAL_ENGINE");
 }

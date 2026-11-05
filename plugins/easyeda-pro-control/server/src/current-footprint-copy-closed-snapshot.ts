@@ -7,9 +7,12 @@ import { createCheckpoint, verifyCheckpoint } from "./checkpoint.ts";
 import type { CheckpointReceipt } from "./checkpoint.ts";
 import { canonicalJson, isRecord } from "./core.ts";
 import type { Inventory } from "./closed-sql-equality.ts";
-// oxlint-disable-next-line import/no-cycle -- Snapshot issuance requires the actual original native owner; the owner later consumes this same registry entry.
-import { assertOriginalCurrentFootprintCopyNativeOwner, assertOriginalCurrentFootprintCopyNativeTermination, originalCurrentFootprintCopyNativeTarget } from "./current-pcb-diagnostic-owner.ts";
-import type { CurrentFootprintCopyGenerationOwner } from "./current-pcb-diagnostic-owner.ts";
+/* oxlint-disable import/no-cycle -- Original native guards and the owner's snapshot reader resolve their private references only after construction; module initialization issues no authority. */
+import { assertOriginalCurrentFootprintCopyNativeOwner, assertOriginalCurrentFootprintCopyNativeTermination,
+  assertOriginalCurrentFootprintForwardExecutionNativeOwner, assertOriginalCurrentFootprintForwardExecutionNativeTermination,
+  originalCurrentFootprintCopyNativeTarget, originalCurrentFootprintForwardExecutionNativeTarget } from "./current-pcb-diagnostic-owner.ts";
+import type { CurrentFootprintCopyGenerationOwner, CurrentFootprintForwardExecutionNativeOwner } from "./current-pcb-diagnostic-owner.ts";
+/* oxlint-enable import/no-cycle */
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { readExactSqlInventory, readerCompletion } from "./sqlite-inventory.ts";
 
@@ -23,8 +26,10 @@ export interface CurrentFootprintCopyClosedSnapshot {
   readonly sourceIdentity: CurrentFootprintCopyClosedSourceIdentity;
   readonly inventory: Inventory;
 }
+type OriginalOwner = Readonly<{ kind: "copy"; owner: CurrentFootprintCopyGenerationOwner }> |
+  Readonly<{ kind: "forward-execution"; owner: CurrentFootprintForwardExecutionNativeOwner }>;
 interface Retained {
-  readonly owner: CurrentFootprintCopyGenerationOwner;
+  readonly binding: OriginalOwner;
   readonly termination: object;
   readonly origin: ReturnType<typeof originalCurrentFootprintCopyNativeTarget>;
   readonly originText: string;
@@ -36,30 +41,65 @@ const attempted = new WeakSet<object>(), snapshots = new WeakMap<Inventory, Reta
 function need(condition: boolean, detail: string): asserts condition {
   if (!condition) { throw new Error(`FOOTPRINT_COPY_CLOSED_SNAPSHOT_${detail}`); }
 }
+function assertOwner(binding: OriginalOwner): void {
+  if (binding.kind === "copy") { assertOriginalCurrentFootprintCopyNativeOwner(binding.owner); }
+  else { assertOriginalCurrentFootprintForwardExecutionNativeOwner(binding.owner); }
+}
+function originalTarget(binding: OriginalOwner): ReturnType<typeof originalCurrentFootprintCopyNativeTarget> {
+  if (binding.kind === "copy") {
+    assertOriginalCurrentFootprintCopyNativeOwner(binding.owner); return originalCurrentFootprintCopyNativeTarget(binding.owner);
+  }
+  assertOriginalCurrentFootprintForwardExecutionNativeOwner(binding.owner); return originalCurrentFootprintForwardExecutionNativeTarget(binding.owner);
+}
+function requireTermination(binding: OriginalOwner, original: object): void {
+  if (binding.kind === "copy") { assertOriginalCurrentFootprintCopyNativeTermination(binding.owner, original); }
+  else { assertOriginalCurrentFootprintForwardExecutionNativeTermination(binding.owner, original); }
+}
 /** Historical retrieval preserves original reference identity after release.
  * It does not reissue a live owner or permit another application launch. */
 export function requireCurrentFootprintCopyClosedSnapshot(owner: CurrentFootprintCopyGenerationOwner,
   inventory: Inventory): CurrentFootprintCopyClosedSnapshot {
+  return requireSnapshot({ kind: "copy", owner }, inventory);
+}
+/** Retrieve only the new factory's own closed snapshot. Historical v1 owners
+ * and snapshots retain their original entry points and cannot be promoted. */
+export function requireCurrentFootprintForwardExecutionClosedSnapshot(owner: CurrentFootprintForwardExecutionNativeOwner,
+  inventory: Inventory): CurrentFootprintCopyClosedSnapshot {
+  return requireSnapshot({ kind: "forward-execution", owner }, inventory);
+}
+function requireSnapshot(binding: OriginalOwner, inventory: Inventory): CurrentFootprintCopyClosedSnapshot {
   const held = snapshots.get(inventory);
-  need(held !== undefined && held.owner === owner && held.snapshot.inventory === inventory, "ORIGINAL_SNAPSHOT");
-  assertOriginalCurrentFootprintCopyNativeOwner(owner);
-  assertOriginalCurrentFootprintCopyNativeTermination(owner, held.termination);
-  need(originalCurrentFootprintCopyNativeTarget(owner) === held.origin && canonicalJson({ ...held.origin, before: undefined }) === held.originText &&
+  need(held !== undefined && held.binding.kind === binding.kind && held.binding.owner === binding.owner &&
+    held.snapshot.inventory === inventory, "ORIGINAL_SNAPSHOT");
+  assertOwner(binding);
+  requireTermination(binding, held.termination);
+  need(originalTarget(binding) === held.origin && canonicalJson({ ...held.origin, before: undefined }) === held.originText &&
     readerCompletion(inventory) === held.completion && canonicalJson({ checkpoint: held.snapshot.checkpoint, sourceIdentity: held.snapshot.sourceIdentity }) === held.snapshotText, "ORIGINAL_BINDING");
   return held.snapshot;
 }
 /** Capture once after the actual retained root and whole Job have exited. The
  * checkpoint reader scans every SQL table; its child must finish before issue. */
-export async function captureCurrentFootprintCopyClosedSnapshot(owner: CurrentFootprintCopyGenerationOwner,
+export function captureCurrentFootprintCopyClosedSnapshot(owner: CurrentFootprintCopyGenerationOwner,
   termination: object): Promise<Inventory> {
-  assertOriginalCurrentFootprintCopyNativeOwner(owner);
-  assertOriginalCurrentFootprintCopyNativeTermination(owner, termination);
-  need(!attempted.has(owner), "ATTEMPT_CONSUMED"); attempted.add(owner);
-  const origin = originalCurrentFootprintCopyNativeTarget(owner), originText = canonicalJson({ ...origin, before: undefined });
+  return captureSnapshot({ kind: "copy", owner }, termination);
+}
+/** Scan complete SQL only after this new writer's original root and entire
+ * Job have exited. No source path, supplied verifier or termination JSON can
+ * replace the factory-issued owner and its retained termination reference. */
+export function captureCurrentFootprintForwardExecutionClosedSnapshot(owner: CurrentFootprintForwardExecutionNativeOwner,
+  termination: object): Promise<Inventory> {
+  return captureSnapshot({ kind: "forward-execution", owner }, termination);
+}
+async function captureSnapshot(binding: OriginalOwner, termination: object): Promise<Inventory> {
+  assertOwner(binding);
+  requireTermination(binding, termination);
+  need(!attempted.has(binding.owner), "ATTEMPT_CONSUMED"); attempted.add(binding.owner);
+  const origin = originalTarget(binding);
+  const originText = canonicalJson({ ...origin, before: undefined });
   const current = (): void => {
-    assertOriginalCurrentFootprintCopyNativeOwner(owner);
-    assertOriginalCurrentFootprintCopyNativeTermination(owner, termination);
-    need(originalCurrentFootprintCopyNativeTarget(owner) === origin && canonicalJson({ ...origin, before: undefined }) === originText, "ORIGINAL_TARGET");
+    assertOwner(binding);
+    requireTermination(binding, termination);
+    need(originalTarget(binding) === origin && canonicalJson({ ...origin, before: undefined }) === originText, "ORIGINAL_TARGET");
   };
   current(); const root = await controlRootCapability(); current();
   const outputDir = join(controlDataDirectory(), "checkpoints");
@@ -91,6 +131,6 @@ export async function captureCurrentFootprintCopyClosedSnapshot(owner: CurrentFo
     mtimeNs: stat.mtimeNs.toString(), ctimeNs: stat.ctimeNs.toString(), birthtimeNs: stat.birthtimeNs.toString(),
     mode: stat.mode.toString(), uid: stat.uid.toString(), gid: stat.gid.toString(), links: stat.nlink.toString() });
   const snapshot = Object.freeze({ checkpoint, sourceIdentity, inventory });
-  snapshots.set(inventory, { owner, termination, origin, originText, snapshot, snapshotText: canonicalJson({ checkpoint, sourceIdentity }), completion });
-  requireCurrentFootprintCopyClosedSnapshot(owner, inventory); return inventory;
+  snapshots.set(inventory, { binding, termination, origin, originText, snapshot, snapshotText: canonicalJson({ checkpoint, sourceIdentity }), completion });
+  requireSnapshot(binding, inventory); return inventory;
 }

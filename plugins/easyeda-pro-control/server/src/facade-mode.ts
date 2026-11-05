@@ -51,7 +51,7 @@ export function publicUtilitiesOnlyCapabilities(): Record<string, unknown> {
       historicalQuery: "digest-bound-published-snapshot;no-live-rpc-owner-adoption-or-current-state-proof" },
     disposableWorkerStartup: { tool: "easyeda_control_pcb209_worker_startup", validationOnly: true, connectedValidation: false,
       runtimeAdmissionRequired: true, debuggerPauseAcceptanceRequired: true, startupCompletionVerified: false,
-      scope: "separate-project-worker-constructor-footprint-copy-preparation-and-route-preparation-forward-prewrite-qualification-combined-main-renderer-empty-baseline-ratline-held-import-and-continuation-purposes;no-complete-startup-or-writer-authority",
+      scope: "separate-project-worker-constructor-footprint-copy-preparation-and-route-preparation-forward-prewrite-qualification-and-v2-source-validation-combined-main-renderer-empty-baseline-ratline-held-import-and-continuation-purposes;no-complete-startup-or-writer-authority",
       completeLiveBaselineVerified: false, serverClockProvenanceVerified: false, cadAuthority: false },
     designAccess: { enabled: false, scope: "general-geometry-and-writers;disposable-bounded-observations-and-historical-queries-only" }, navigation: { enabled: true, scope: "original-owner-disposable209-opening-and-seven-project-startup-purposes-only" },
     save: { enabled: false }, recovery: { enabled: false }, nativeAdapters: { enabled: true, scope: "identity-and-disposable209-opening-layer-primitive-selection-relations;project-worker-constructor-footprint-copy-preparation-and-route-preparation-empty-baseline-held-ratline-import-and-ratline-continuation-observations-only" },

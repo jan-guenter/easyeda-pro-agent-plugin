@@ -194,6 +194,12 @@ const required = [
   "scripts/windows-authority.ps1",
   "scripts/main-reference/owner-command.ps1",
   "scripts/main-reference/stdin-decoder.ps1",
+  "scripts/footprint-forward-execution/owner.ps1",
+  "scripts/footprint-forward-execution/native-core.cs",
+  "scripts/footprint-forward-execution/native-phase.cs",
+  "scripts/footprint-forward-execution-smoke.ps1",
+  "scripts/check-footprint-forward-native-graph.ts",
+  "scripts/generate-footprint-forward-native-graph.ts",
   "scripts/main-reference/OwnedSyntheticJob.cs",
   "scripts/main-reference/EasyedaClockObservation.cs",
   "scripts/main-reference/owner-command-v3.ps1",
@@ -553,10 +559,12 @@ check(
   pluginPackageManifest.scripts?.["sanitizer:build"] ===
     "node scripts/build-descriptor-sanitizer.ts --write" &&
     pluginPackageManifest.scripts?.["native:helper:check"] === "node scripts/check-diagnostic-helper-identity.ts" &&
+    pluginPackageManifest.scripts?.["native:forward:check"] === "node scripts/check-footprint-forward-native-graph.ts" &&
+    pluginPackageManifest.scripts?.["native:forward:source:check"] === "node scripts/generate-footprint-forward-native-graph.ts --check" &&
     pluginPackageManifest.scripts?.["sanitizer:check"] ===
       "node scripts/build-descriptor-sanitizer.ts --check" &&
     pluginPackageManifest.scripts?.["build"] ===
-      "npm run native:helper:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && node scripts/build-server.ts && node scripts/build-control-manager.ts" &&
+      "npm run native:helper:check && npm run native:forward:check && npm run native:forward:source:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && node scripts/build-server.ts && node scripts/build-control-manager.ts" &&
     pluginPackageManifest.scripts?.["pcb:models:check"] === "node scripts/generate-pcb-model-programs.ts --check" &&
     pluginPackageManifest.scripts?.["pcb:models:update"] === "node scripts/generate-pcb-model-programs.ts --write" &&
     pluginPackageManifest.scripts?.["pcb209:image-shapes:check"] === "node scripts/generate-pcb209-image-shapes-protocol.ts --check" &&

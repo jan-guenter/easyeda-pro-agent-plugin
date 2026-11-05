@@ -1307,11 +1307,11 @@ void test("every coverage input-discovery request resolves to an actual strict a
     assert.ok(isRecord(request));
     const result = queryOfflineApi(apiRequestSchema.parse(request)).result;
     assert.ok(isRecord(result));
-    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "netlist-files", "library-files"].includes(String(request["action"]))) {
+    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files"].includes(String(request["action"]))) {
       assert.ok(isRecord(result["inputSchema"]));
       // The ordinary SCH and 209 opening routes expose their lifecycle union at the root;
       // Existing routes still promise a separate phase schema as well.
-      if (!["project-schematic-operation", "pcb209-opening", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "netlist-files", "library-files"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
+      if (!["project-schematic-operation", "pcb209-opening", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
       assert.equal(result["executionAuthorized"], false);
     } else {
       const entries = result["entries"];
@@ -1412,8 +1412,8 @@ void test("footprint source coverage is a scoped cache equivalent despite the ab
   const row = inventoryExtensionApiCoverage().find(entry => entry.path === "eda.lib_Footprint.getDocumentSource");
   assert.ok(row); assert.equal(row.status, "implemented-native-equivalent");
   assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
-  assert.equal(row.routes.length, 3);
-  assert.deepEqual(row.routes.map(route => route.selector).toSorted(), ["footprint-forward-prewrite/qualify-footprint-source", "footprint-forward-prewrite/read-qualified-source", "observe-footprint-source"]);
+  assert.equal(row.routes.length, 4);
+  assert.deepEqual(row.routes.map(route => route.selector).toSorted(), ["footprint-forward-prewrite/qualify-footprint-source", "footprint-forward-prewrite/read-qualified-source", "footprint-forward-source-validation/capture-source", "observe-footprint-source"]);
   const route = row.routes.find(value => value.selector === "observe-footprint-source"); assert.ok(route);
   assert.equal(route.tool, "easyeda_control_pcb209_worker_startup"); assert.equal(route.selector, "observe-footprint-source");
   assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [4]);
@@ -1440,5 +1440,8 @@ void test("footprint source coverage is a scoped cache equivalent despite the ab
   assert.match(reader.scope, /Bounded base64 byte pages/u); assert.match(reader.scope, /calls no native method/u);
   assert.match(reader.scope, /proves no current or saved state/u); assert.match(reader.scope, /qualifier v1 result remains hash-only/u);
   assert.ok(reader.source.includes("current-footprint-qualified-source-page.ts"));
+  const sourceValidation = row.routes.find(value => value.selector === "footprint-forward-source-validation/capture-source"); assert.ok(sourceValidation);
+  assert.match(sourceValidation.scope, /No old v1 owner is promoted/u); assert.match(sourceValidation.scope, /wholeWriterReserved:false/u);
+  assert.match(sourceValidation.scope, /root\/whole-Job termination/u);
 
 });

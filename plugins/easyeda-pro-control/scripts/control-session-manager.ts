@@ -23,6 +23,7 @@ import { createPrivateTemporaryDirectory } from "./private-temporary-directory.t
 import type { PrivateTemporaryDirectory } from "./private-temporary-directory.ts";
 import { sessionRetirementOutputSchema } from "../server/src/session-retirement.ts";
 import { currentFootprintForwardPrewriteValidationRequestSchema } from "../server/src/current-footprint-forward-prewrite-validation.ts";
+import { currentFootprintForwardSourceValidationInspectionSchema, currentFootprintForwardSourceValidationRequestSchema } from "../server/src/current-footprint-forward-source-validation-schema.ts";
 import { diagnosticLifecycleBindingSchema } from "../server/src/current-pcb-diagnostic-binding-schema.ts";
 
 const requestId = z.union([z.string().min(1).max(128), z.number().int()]);
@@ -34,7 +35,10 @@ const originalCleanupSchema = z.discriminatedUnion("action", [
   z.strictObject({ action: z.literal("abort-generation"), confirmAbortOriginalForwardJob: z.literal(true) }),
   z.strictObject({ action: z.literal("observe-termination") }),
   z.strictObject({ action: z.literal("release-closed") }),
+  z.strictObject({ action: z.literal("observe-release") }),
   z.strictObject({ action: z.literal("settle-records") }),
+  z.strictObject({ action: z.literal("cleanup-before-launch") }),
+  z.strictObject({ action: z.literal("cleanup-no-process") }),
 ]);
 const inFlightControlSchema = z.discriminatedUnion("action", [
   z.strictObject({ action: z.literal("inspect") }),
@@ -179,10 +183,12 @@ interface InterruptedCall {
   readonly generation: number;
   readonly requestId: string | number;
   readonly tool: string;
+  readonly forwardFamily: "footprint-forward-prewrite" | "footprint-forward-source-validation" | null;
   readonly forward: ForwardCleanupBinding | null;
   readonly forwardLaunchOperationId: string | null;
   readonly forwardCapture: boolean;
   inspectedLaunchBinding?: ForwardCleanupBinding;
+  prelaunchCleanupAcknowledged?: true;
   intentSha256?: string;
   readonly forwardAction: string | null;
   readonly originalCaptureRequestId?: string | number;
@@ -206,6 +212,17 @@ interface RetainedRecord {
   readonly sha256?: string;
   readonly unpublishedValue?: unknown;
 }
+
+/** The private original family selects one fixed registered grammar. Caller
+ * cleanup JSON supplies no wrapper, tool, operation or binding override. */
+function originalForwardArguments(interrupted: InterruptedCall, input: Record<string, unknown>): CallRequest["arguments"] {
+  if (interrupted.forwardFamily === "footprint-forward-source-validation") {
+    return { request: { action: interrupted.forwardFamily, request: currentFootprintForwardSourceValidationRequestSchema.parse(input) } };
+  }
+  if (interrupted.forwardFamily !== "footprint-forward-prewrite") { throw new Error("manager-original-family-required"); }
+  return { request: { action: interrupted.forwardFamily, request: currentFootprintForwardPrewriteValidationRequestSchema.parse(input) } };
+}
+
 
 /** One in-memory owner, never reconstructible from caller JSON. Generation is
  * a freshness check only; replacement requires the exact retained retired child
@@ -417,7 +434,7 @@ export class ForegroundSessionManager {
     if (this.evidenceFault || this.publicationFault || this.records.some(row => Object.hasOwn(row, "unpublishedValue"))) { throw new Error("manager-evidence-unsettled"); }
     if (this.stage === "active") { return this.requireActive(); }
     const connection = this.connection, interrupted = this.interrupted ?? this.controlledCapture?.original;
-    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.inspectedLaunchBinding === undefined || connection === undefined ||
+    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.inspectedLaunchBinding === undefined && interrupted.prelaunchCleanupAcknowledged !== true || connection === undefined ||
         interrupted.connection !== connection || interrupted.generation !== this.generation ||
         connection.client.transport !== connection.transport || !connection.transport.hasUnclosedChild()) {
       throw new Error("manager-original-connection-required");
@@ -428,14 +445,19 @@ export class ForegroundSessionManager {
   /** Capture only strict registered forward arguments before caller dispatch.
    * Reparsed JSON is comparison data; the retained Connection supplies custody. */
   private interruptedCall(connection: Connection, request: ManagerCallRequest): InterruptedCall {
-    const outer = z.strictObject({ request: z.strictObject({ action: z.literal("footprint-forward-prewrite"),
-      request: currentFootprintForwardPrewriteValidationRequestSchema }) }).safeParse(request.arguments);
+    const family = z.discriminatedUnion("action", [
+      z.strictObject({ action: z.literal("footprint-forward-prewrite"), request: currentFootprintForwardPrewriteValidationRequestSchema }),
+      z.strictObject({ action: z.literal("footprint-forward-source-validation"), request: currentFootprintForwardSourceValidationRequestSchema }),
+    ]);
+    const outer = z.strictObject({ request: family }).safeParse(request.arguments);
     const selected = outer.success ? outer.data.request.request : null;
     const forward = request.tool === "easyeda_control_pcb209_worker_startup" && selected !== null &&
       "expectedBindingSha256" in selected ? Object.freeze({ operationId: selected.operationId, bindingSha256: selected.expectedBindingSha256 }) : null;
     const forwardLaunchOperationId = request.tool === "easyeda_control_pcb209_worker_startup" && selected?.action === "launch" ? selected.operationId : null;
-    return { connection, generation: this.generation, requestId: request.id, tool: request.tool, forward, forwardLaunchOperationId,
-      forwardCapture: selected?.action === "capture-project", forwardAction: selected?.action ?? null, abortReservation: { attempted: false } };
+    return { connection, generation: this.generation, requestId: request.id, tool: request.tool,
+      forwardFamily: outer.success && request.tool === "easyeda_control_pcb209_worker_startup" ? outer.data.request.action : null,
+      forward, forwardLaunchOperationId, forwardCapture: selected?.action === "capture-project" || selected?.action === "capture-source",
+      forwardAction: selected?.action ?? null, abortReservation: { attempted: false } };
   }
 
   /** This is a private in-process scheduling fact, never caller JSON or a
@@ -485,13 +507,12 @@ export class ForegroundSessionManager {
       const binding = current.original.forward; if (binding === null) { throw new Error("manager-in-flight-original-not-authorized"); }
       const input = request.request.action === "inspect" ? { action: "inspect" as const, operationId: binding.operationId } : {
         action: "abort-generation" as const, operationId: binding.operationId, expectedBindingSha256: binding.bindingSha256, confirmAbortOriginalForwardJob: true as const };
-      const nested = currentFootprintForwardPrewriteValidationRequestSchema.parse(input);
       const call: CallRequest = { id, tool: "easyeda_control_pcb209_worker_startup", timeoutMs: 120_000,
-        arguments: { request: { action: "footprint-forward-prewrite", request: nested } },
+        arguments: originalForwardArguments(current.original, input),
         ...(request.responseFile === undefined ? {} : { responseFile: request.responseFile }) };
       reservation = true;
       await this.retain("in-flight-control-intent", { id, originalRequestId: current.original.requestId,
-        generation: current.original.generation, tool: call.tool, request: nested }, "cleanup");
+        generation: current.original.generation, tool: call.tool, request: input, wrapperAction: current.original.forwardFamily }, "cleanup");
       // Publication may outlast the parent SDK request. A no-longer-pending
       // Parent refuses before dispatch and consumes no abort attempt.
       if (this.requireInFlightControl(request, current) !== current) { throw new Error("manager-in-flight-original-not-authorized"); }
@@ -539,10 +560,19 @@ export class ForegroundSessionManager {
     }
     const binding = interrupted.forward ?? interrupted.inspectedLaunchBinding;
     const operationId = binding?.operationId ?? interrupted.forwardLaunchOperationId;
-    if (operationId === null || binding === undefined && request.request.action !== "inspect") {
+    const sourceLaunch = interrupted.forwardFamily === "footprint-forward-source-validation" && interrupted.forwardLaunchOperationId !== null;
+    if (request.request.action === "observe-release" && interrupted.forwardFamily !== "footprint-forward-source-validation") {
+      throw new Error("manager-original-family-required");
+    }
+    const localSourceCleanup = interrupted.forwardFamily === "footprint-forward-source-validation" && request.request.action === "settle-records" ||
+      sourceLaunch && (request.request.action === "cleanup-before-launch" || request.request.action === "cleanup-no-process");
+    if ((request.request.action === "cleanup-before-launch" || request.request.action === "cleanup-no-process") && !sourceLaunch) {
+      throw new Error("manager-original-family-required");
+    }
+    if (operationId === null || binding === undefined && request.request.action !== "inspect" && !localSourceCleanup) {
       throw new Error("manager-original-launch-inspection-required");
     }
-    if (request.request.action === "settle-records" && interrupted.intentSha256 === undefined) {
+    if (request.request.action === "settle-records" && interrupted.forwardFamily !== "footprint-forward-source-validation" && interrupted.intentSha256 === undefined) {
       throw new Error("manager-original-intent-inspection-required");
     }
     if (request.request.action === "abort-generation" && interrupted.abortReservation.attempted) {
@@ -561,6 +591,16 @@ export class ForegroundSessionManager {
       throw new Error("manager-original-launch-inspection-required");
     }
     if (interrupted.forwardLaunchOperationId !== operationId || interrupted.inspectedLaunchBinding !== undefined) { return; }
+    if (interrupted.forwardFamily === "footprint-forward-source-validation") {
+      const captured = z.looseObject({ ok: z.literal(true).optional(), result: currentFootprintForwardSourceValidationInspectionSchema }).safeParse(envelope.structuredContent);
+      if (!captured.success) { return; }
+      const inspected = captured.data.result;
+      if (inspected.operationId !== operationId || !inspected.originalBindingRetained || !inspected.publicationSettlementAvailable ||
+        inspected.publicationPending || inspected.binding === null || inspected.binding.rootCreated === "0" || inspected.bindingSha256 === null) { return; }
+      interrupted.inspectedLaunchBinding = Object.freeze({ operationId, bindingSha256: inspected.bindingSha256 });
+      if (inspected.intentSha256 !== null) { interrupted.intentSha256 = inspected.intentSha256; }
+      return;
+    }
     const inspected = z.looseObject({ ok: z.literal(true).optional(), result: z.looseObject({ ok: z.literal(true).optional(),
       operationId: z.literal(operationId), state: z.literal("launched"),
       launchAcknowledged: z.literal(true), publicationSettlementAvailable: z.literal(true),
@@ -579,21 +619,30 @@ export class ForegroundSessionManager {
     const { binding, connection, interrupted, operationId } = this.requireOriginalCleanup(request);
     const selected = request.request;
     const input: Record<string, unknown> = { ...selected, operationId };
-    if (selected.action === "settle-records") { input["expectedIntentSha256"] = interrupted.intentSha256; }
-    else if (selected.action !== "inspect") {
+    if (selected.action === "settle-records" && interrupted.forwardFamily !== "footprint-forward-source-validation") { input["expectedIntentSha256"] = interrupted.intentSha256; }
+    else if (selected.action !== "inspect" && selected.action !== "settle-records" && selected.action !== "cleanup-before-launch" && selected.action !== "cleanup-no-process") {
       if (binding === undefined) { throw new Error("manager-original-launch-inspection-required"); }
       input["expectedBindingSha256"] = binding.bindingSha256;
     }
-    const nested = currentFootprintForwardPrewriteValidationRequestSchema.parse(input);
     const call: CallRequest = { id: request.id, tool: "easyeda_control_pcb209_worker_startup", timeoutMs: SESSION_CALL_TIMEOUT_MS,
-      arguments: { request: { action: "footprint-forward-prewrite", request: nested } },
+      arguments: originalForwardArguments(interrupted, input),
       ...(request.responseFile === undefined ? {} : { responseFile: request.responseFile }) };
     await this.retain("original-cleanup-intent", { id: request.id, interruptedRequestId: interrupted.requestId,
-      generation: this.generation, tool: call.tool, request: nested }, "cleanup");
+      generation: this.generation, tool: call.tool, request: input, wrapperAction: interrupted.forwardFamily }, "cleanup");
     if (selected.action === "abort-generation") { interrupted.abortReservation.attempted = true; }
     const result = await connection.client.callTool({ name: call.tool, arguments: call.arguments }, undefined, { timeout: call.timeoutMs });
     const evidence = await this.retain("original-cleanup-result", { id: request.id, result }, "cleanup");
     const envelope = toolResultSchema.parse(result);
+    if ((selected.action === "cleanup-before-launch" || selected.action === "cleanup-no-process") &&
+        interrupted.forwardFamily === "footprint-forward-source-validation" && envelope.isError !== true && envelope["ok"] !== false) {
+      const cleanupResult = z.strictObject({ cleanupCompleted: z.literal(true) });
+      const acknowledged = z.looseObject({ ok: z.literal(true).optional(), result: z.strictObject({
+        schema: z.literal("easyeda-pro-control.footprint-forward-source-validation-step.v1"), operationId: z.literal(operationId),
+        action: z.literal(selected.action), result: cleanupResult,
+        executionReady: z.literal(false), executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
+      }) }).safeParse(envelope.structuredContent);
+      if (acknowledged.success) { interrupted.prelaunchCleanupAcknowledged = true; }
+    }
     if (selected.action === "inspect" && envelope.isError !== true && envelope["ok"] !== false) {
       this.requireOriginalCleanup(request);
       if (binding === undefined) { this.learnOriginalLaunchBinding(interrupted, operationId, envelope); }

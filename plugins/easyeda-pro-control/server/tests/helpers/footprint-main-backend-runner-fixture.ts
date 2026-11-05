@@ -8,17 +8,30 @@ import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_SOURCE as SOURCE } from "../../src/
 import type { CurrentFootprintCopyMainBackendRole as Role } from "../../src/current-footprint-copy-main-backend-source.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REGISTRATION_BREAKPOINT_ID as REGISTRATION_ID } from "../../src/current-footprint-copy-main-backend-contract.ts";
 import type { CurrentFootprintCopyMainBackendCommand as Command } from "../../src/current-footprint-copy-main-backend-contract.ts";
-import type { CurrentFootprintCopyMainBackendRunner, CurrentFootprintCopyMainBackendTransport, requireCurrentFootprintCopyMainCompletionOrigin, requireCurrentFootprintCopyMainRequestOrigin, requireCurrentProjectStructureMainLease } from "../../src/current-footprint-copy-main-backend-runner.ts";
+import type { CurrentFootprintCopyMainBackendRunner, CurrentFootprintCopyMainBackendTransport, requireCurrentFootprintCopyMainCompletionOrigin, requireCurrentFootprintCopyMainRequestOrigin, requireCurrentFootprintForwardMainCursor, requireCurrentFootprintForwardMainUploadSettlement, requireCurrentProjectStructureMainLease } from "../../src/current-footprint-copy-main-backend-runner.ts";
 import { mainBackendFragments as fragments } from "./footprint-main-backend-fragments.ts";
 import { CONTEXT_SOURCE, CURRENT_FOOTPRINT_HEAD_AGE_DATE_METHODS } from "./footprint-head-age-backend-data.ts";
 
 type Data = Record<string, unknown>;
 const qualified = Object.freeze({ profile: "private.current-footprint-copy-main-backend-source.v1", sha256: SOURCE.sha256, runtimeBound: false, executionAuthorized: false });
+type MainBackendModule = Readonly<{
+  Constructor: typeof CurrentFootprintCopyMainBackendRunner; requireRequest: typeof requireCurrentFootprintCopyMainRequestOrigin;
+  requireCompletion: typeof requireCurrentFootprintCopyMainCompletionOrigin; requireStructure: typeof requireCurrentProjectStructureMainLease;
+  requireCursor: typeof requireCurrentFootprintForwardMainCursor; requireUploadSettlement: typeof requireCurrentFootprintForwardMainUploadSettlement;
+  injectRetirementPause: (runner: CurrentFootprintCopyMainBackendRunner) => void;
+}>;
 /** Load the maintained runner with explicit test-local module replacements. */
-export async function mainBackendModule(overrides: Readonly<Record<string, unknown>> = {}): Promise<Readonly<{ Constructor: typeof CurrentFootprintCopyMainBackendRunner; requireRequest: typeof requireCurrentFootprintCopyMainRequestOrigin; requireCompletion: typeof requireCurrentFootprintCopyMainCompletionOrigin; requireStructure: typeof requireCurrentProjectStructureMainLease }>> {
+export async function mainBackendModule(overrides: Readonly<Record<string, unknown>> = {}, retirementEventProbe = false): Promise<MainBackendModule> {
   const path = new URL("../../src/current-footprint-copy-main-backend-runner.ts", import.meta.url);
   const loaded: { exports: Record<string, unknown> } = { exports: {} }, originalRequire = createRequire(path);
-  const output = await transform(await readFile(path, "utf8"), { loader: "ts", format: "cjs", target: "node24" });
+  let sourceText = await readFile(path, "utf8");
+  if (retirementEventProbe) {
+    // Feed the original parser/event handler during an actual held retire
+    // Await. This synthetic inbound event changes no guard or private registry.
+    sourceText = sourceText.replace("  public retained():", `  public syntheticRetirementPauseForTest(): void { this.#message(JSON.stringify({method:"Debugger.paused",params:{}})); }
+      public retained():`);
+  }
+  const output = await transform(sourceText, { loader: "ts", format: "cjs", target: "node24" });
   const evaluate: unknown = vm.runInThisContext(`(function(require,module,exports){${output.code}\n})`); assert.ok(typeof evaluate === "function");
   const source: unknown = originalRequire("./current-footprint-copy-main-backend-source.ts"); assert.ok(source !== null && typeof source === "object");
   Reflect.apply(evaluate, undefined, [(specifier: string): unknown => {
@@ -29,10 +42,17 @@ export async function mainBackendModule(overrides: Readonly<Record<string, unkno
     return originalRequire(specifier) as unknown;
   }, loaded, loaded.exports]);
   const result = loaded.exports["CurrentFootprintCopyMainBackendRunner"]; assert.equal(typeof result, "function");
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The original class is loaded with one explicitly synthetic full-source issuer and identity checker.
-  const Constructor = result as typeof CurrentFootprintCopyMainBackendRunner;
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The actual evaluated module exports are checked by each test through their genuine private maps.
-  return { Constructor, requireRequest: loaded.exports["requireCurrentFootprintCopyMainRequestOrigin"] as typeof requireCurrentFootprintCopyMainRequestOrigin, requireCompletion: loaded.exports["requireCurrentFootprintCopyMainCompletionOrigin"] as typeof requireCurrentFootprintCopyMainCompletionOrigin, requireStructure: loaded.exports["requireCurrentProjectStructureMainLease"] as typeof requireCurrentProjectStructureMainLease };
+  const bound = { Constructor: result, requireRequest: loaded.exports["requireCurrentFootprintCopyMainRequestOrigin"],
+    requireCompletion: loaded.exports["requireCurrentFootprintCopyMainCompletionOrigin"], requireStructure: loaded.exports["requireCurrentProjectStructureMainLease"],
+    requireCursor: loaded.exports["requireCurrentFootprintForwardMainCursor"], requireUploadSettlement: loaded.exports["requireCurrentFootprintForwardMainUploadSettlement"],
+    injectRetirementPause: (runner: CurrentFootprintCopyMainBackendRunner): void => {
+      assert.equal(retirementEventProbe, true);
+      const inject: unknown = Reflect.get(runner, "syntheticRetirementPauseForTest"); assert.equal(typeof inject, "function");
+      assert.ok(typeof inject === "function"); Reflect.apply(inject, runner, []);
+    } };
+  assert.ok(Object.values(bound).every(value => typeof value === "function"));
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- These checked VM exports are the original class/getters with actual private registries; only the named source/transport dependencies are synthetic.
+  return bound as MainBackendModule;
 }
 function property(name: string, value: Data, writable = false, enumerable = false, configurable = true): Data { return { name, value, writable, enumerable, configurable, isOwn: true }; }
 function internal(native: boolean, async = false): Data[] {
