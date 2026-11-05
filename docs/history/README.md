@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-05 API backlog priorities](2026-11-05-api-backlog-priorities.md). Complete 835-method inventory, grouped reasons for 481 omissions and the shared blocker behind 79 implemented entries; five next implementation batches and the separate Line geometry/transport prerequisites. This planning assessment grants no execution authority.
+
 - [2026-11-05 PCB spatial transport limits](2026-11-05-pcb-spatial-transport-limits.md). Separate fixed 384-request birth, original-source binding and strict native reconstruction, 2 MiB exact-pinned helper source allowance, unchanged old request/frame/session ceilings and source-only verification against main `f06279f1c13f25812e4a68e5ccfd10c133233dd0`.
 
 - [2026-11-05 PCB spatial reader implementation](2026-11-05-pcb-spatial-reader-implementation.md). Unpublished private capture, function/scope qualification and restricted Via reader work from main `f06279f1c13f25812e4a68e5ccfd10c133233dd0`; native scratch effects, separate purpose/budget and remaining integration gates are explicit.

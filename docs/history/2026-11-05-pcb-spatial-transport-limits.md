@@ -204,3 +204,13 @@ the tagged and native read requests occupy at most 64,113 and 64,091 bytes.
 Both fit the unchanged 65,536-byte command limit. The helper identity check,
 both affected generator checks and eleven focused transport/migration tests
 pass. No connected query or new final-head CI result is claimed here.
+
+The complete first-run CI audit identified two further stale fixture locations:
+all four worker-startup registration VM scopes now provide the real spatial
+schema/controller, and protocol-adapter assertions distinguish the new
+383 normal requests from 384 total while preserving the older purpose limits.
+Both affected files pass focused tests and strict lint. These test-only fixes
+leave the sealed source/runtime projections unchanged. All ten initial Linux
+leaf failures and the Windows constructor failure have concrete dispositions;
+the aggregate CI failure follows those failed shards. The failed runs remain
+retained, without rerun or manual cancellation.
