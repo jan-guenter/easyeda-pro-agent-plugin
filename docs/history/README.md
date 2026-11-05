@@ -8,6 +8,8 @@
 - [2026-11-05 schematic page opening and readers](2026-11-05-schematic-page-opening-and-readers.md). Checkpoint-bound tracked ordinary type-1 page opener, separately pinned Text/Wire/Bus and supported-selection DTOs, truthful automatic-persistence effects and original no-replay authority. Source and offline evidence only.
 
 - [2026-11-05 ordinary PCB read owner](2026-11-05-ordinary-pcb-read-owner.md). Separate ordinary-project grammar and immutable journals, eight unchanged fixed209 readers, original cleanup and 117 passing offline regressions. No writer, explicit Save or connected-validation claim.
+- [2026-11-05 original native structure owner](2026-11-05-structure-native-owner.md). Dedicated original native purpose, derived worker/main/helper capacities, original paired observer workflow, cooperative cancellation and historical-result release semantics; offline verification and fresh-import INSERT limits remain explicit.
+
 - [2026-11-05 structure observer cold arm and native codebook](2026-11-05-structure-observer-native-codebook.md). Original Nd/QA pre-arm exclusion, a finite 42-shape main codec with shared exact descriptor guards, synthetic V8/C# verification and the remaining owner, native-purpose, frontier and durability dependencies. Source base `b16fb1e`.
 - [2026-11-05 generated PCB fixture archives](2026-11-05-generated-pcb-fixture-archives.md). Maintained new-data Via-only and Line+Via `.epro2` generation, exact source templates, actual pinned codec methods exercised offline with synthetic constructors, and separate original eager-facade closure. Native import and registration remain pending.
 

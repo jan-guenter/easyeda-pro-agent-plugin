@@ -61,38 +61,52 @@ import { assertCurrentFootprintForwardExecutionMainCompletionCapacity, beginCurr
 import type { CurrentFootprintForwardExecutionMainCapability } from "./current-footprint-forward-execution-main-capability.ts";
 
 import { captureCurrentFootprintForwardExecutionPrototypes, requireCurrentFootprintForwardExecutionPrototypes } from "./current-footprint-forward-execution-opening-identity.ts";
+/* oxlint-disable import/no-cycle -- Only the original dedicated native factory issues this capability after both constructors exist; an injectable registration hook would lose original-owner authority. */
+import { currentProjectStructureMainGenerationExited, isCurrentProjectStructureMainCapability, requireCurrentProjectStructureMainCapability,
+  requireCurrentProjectStructureMainCleanup, sendCurrentProjectStructureMainCommand } from "./current-project-structure-main-capability.ts";
+/* oxlint-enable import/no-cycle */
+import type { CurrentProjectStructureMainCapability } from "./current-project-structure-main-capability.ts";
 
-type MainCapability = CurrentFootprintCombinedMainCapability | CurrentFootprintForwardExecutionMainCapability;
+type MainCapability = CurrentFootprintCombinedMainCapability | CurrentFootprintForwardExecutionMainCapability | CurrentProjectStructureMainCapability;
 function mainCapability(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
-  if (isCurrentFootprintForwardExecutionMainCapability(capability)) { requireCurrentFootprintForwardExecutionMainCapability(capability, runner); }
+  if (isCurrentProjectStructureMainCapability(capability)) { requireCurrentProjectStructureMainCapability(capability, runner); }
+  else if (isCurrentFootprintForwardExecutionMainCapability(capability)) { requireCurrentFootprintForwardExecutionMainCapability(capability, runner); }
   else { requireCurrentFootprintCombinedMainCapability(capability, runner); }
 }
 function mainCleanup(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
-  if (isCurrentFootprintForwardExecutionMainCapability(capability)) { requireCurrentFootprintForwardExecutionMainCleanup(capability, runner); }
+  if (isCurrentProjectStructureMainCapability(capability)) { requireCurrentProjectStructureMainCleanup(capability, runner); }
+  else if (isCurrentFootprintForwardExecutionMainCapability(capability)) { requireCurrentFootprintForwardExecutionMainCleanup(capability, runner); }
   else { requireCurrentFootprintCombinedMainCleanup(capability, runner); }
 }
 function mainExited(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): boolean {
+  if (isCurrentProjectStructureMainCapability(capability)) { return currentProjectStructureMainGenerationExited(capability, runner); }
   return isCurrentFootprintForwardExecutionMainCapability(capability) ? currentFootprintForwardExecutionMainGenerationExited(capability, runner) : currentFootprintCombinedMainGenerationExited(capability, runner);
 }
 async function mainCommand(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner,
   command: CurrentFootprintCopyMainRequestCollectCommand | CurrentProjectStructureMainCommand, id: number): Promise<void> {
+  if (isCurrentProjectStructureMainCapability(capability)) { await sendCurrentProjectStructureMainCommand(capability, runner, validateCurrentProjectStructureMainCommand(command), id); return; }
   await (isCurrentFootprintForwardExecutionMainCapability(capability) ? sendCurrentFootprintForwardExecutionMainCommand(capability, runner, validateCurrentFootprintCopyMainRequestCollectCommand(command), id) : sendCurrentFootprintCombinedMainCommand(capability, runner, command, id));
 }
 function mainCompletionCapacity(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner, first: number): void {
+  need(!isCurrentProjectStructureMainCapability(capability), "STRUCTURE_COMPLETION_ROLE_UNAVAILABLE");
   if (isCurrentFootprintForwardExecutionMainCapability(capability)) { assertCurrentFootprintForwardExecutionMainCompletionCapacity(capability, runner, first); }
   else { assertCurrentFootprintCombinedMainCompletionCapacity(capability, runner, first); }
 }
 async function mainCompletionBegin(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner, first: number): Promise<void> {
+  need(!isCurrentProjectStructureMainCapability(capability), "STRUCTURE_COMPLETION_ROLE_UNAVAILABLE");
   await (isCurrentFootprintForwardExecutionMainCapability(capability) ? beginCurrentFootprintForwardExecutionMainCompletion(capability, runner, first) : beginCurrentFootprintCombinedMainCompletion(capability, runner, first));
 }
 async function mainCompletionCommand(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner,
   command: CurrentFootprintCopyMainCompletionCommand, id: number): Promise<void> {
+  need(!isCurrentProjectStructureMainCapability(capability), "STRUCTURE_COMPLETION_ROLE_UNAVAILABLE");
   await (isCurrentFootprintForwardExecutionMainCapability(capability) ? sendCurrentFootprintForwardExecutionMainCompletion(capability, runner, command, id) : sendCurrentFootprintCombinedMainCompletion(capability, runner, command, id));
 }
 async function mainCompletionRetire(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): Promise<void> {
+  need(!isCurrentProjectStructureMainCapability(capability), "STRUCTURE_COMPLETION_ROLE_UNAVAILABLE");
   await (isCurrentFootprintForwardExecutionMainCapability(capability) ? retireCurrentFootprintForwardExecutionMainCompletion(capability, runner) : retireCurrentFootprintCombinedMainCompletion(capability, runner));
 }
 function mainCompletionFail(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
+  if (isCurrentProjectStructureMainCapability(capability)) { return; }
   if (isCurrentFootprintForwardExecutionMainCapability(capability)) { failCurrentFootprintForwardExecutionMainCompletion(capability, runner); }
   else { failCurrentFootprintCombinedMainCompletion(capability, runner); }
 }
@@ -187,7 +201,7 @@ export function requireCurrentFootprintCopyMainRequestOrigin(token: CurrentFootp
 export function requireCurrentFootprintCopyMainRequestClockOrigin(token: CurrentFootprintCopyMainRequestOrigin,
   clock: CurrentFootprintCopyClockRpcOrigin): void {
   const entry = requestOrigins.get(token); need(entry !== undefined && entry.kind === "combined", "REQUEST_ORIGINAL_LEASE_REQUIRED");
-  entry.assertOriginalEntry(); need(!isCurrentFootprintForwardExecutionMainCapability(entry.capability), "REQUEST_ORIGINAL_LEASE_REQUIRED");
+  entry.assertOriginalEntry(); need(!isCurrentFootprintForwardExecutionMainCapability(entry.capability) && !isCurrentProjectStructureMainCapability(entry.capability), "REQUEST_ORIGINAL_LEASE_REQUIRED");
   requireCurrentFootprintCombinedPairedSchedule(entry.capability, entry.runner, clock);
 }
 
@@ -751,29 +765,46 @@ export class CurrentFootprintCopyMainBackendRunner {
       !this.#originPauseActive && !this.#originResumeExpected && !this.#originUncertain && this.#originBreakpoints.size === 0 &&
       this.#originEvents.length === 0 && this.#released === released && (!released || this.#releaseAttempted), "NORMAL_CLOSE_QUIESCENCE");
   }
+  /** Dedicated observer cleanup may close after a semantic refusal only when
+   * every original pause, allocation, response and group has settled. No
+   * normal work or generic historical owner receives this cleanup exception. */
+  #structureCloseQuiescence(released: boolean): void {
+    const capability = this.#originCapability; need(isCurrentProjectStructureMainCapability(capability), "STRUCTURE_CLOSE_OWNER");
+    mainCleanup(capability, this);
+    need(methods(this.#transport).every((value, index) => value === this.#methods[index]) && this.#packet !== null &&
+      !this.#busy && this.#pendingId === null && this.#text === "" && this.#decoderPendingContinuations === 0 && this.#removed &&
+      this.#pause !== null && this.#pause.resumed && this.#structureAttempted && !this.#structureActive && !this.#originAttempted &&
+      !this.#completionAttempted && !this.#originPauseActive && !this.#originResumeExpected && !this.#originUncertain &&
+      !this.#structureAllocationUncertain && this.#structureAllocation === null && this.#originBreakpoints.size === 0 &&
+      this.#originEvents.length === 0 && (this.#structureLease === null || this.#originGroupReleased) &&
+      this.#released === released && (!released || this.#releaseAttempted), "STRUCTURE_CLOSE_QUIESCENCE");
+  }
   /** No resume is dispatched here. A complete original observation, settled
    * origins and the acknowledged registration resume precede the existing
    * object-group release. A failed release consumes this cleanup attempt. */
   public async prepareNormalClose(): Promise<void> {
     need(!this.#normalCloseAttempted, "NORMAL_CLOSE_CONSUMED"); this.#normalCloseAttempted = true;
-    this.#normalCloseQuiescence(this.#released);
+    const structure = isCurrentProjectStructureMainCapability(this.#originCapability);
+    if (structure) { this.#structureCloseQuiescence(this.#released); } else { this.#normalCloseQuiescence(this.#released); }
     if (!this.#released) { await this.#release(); }
-    this.#normalCloseQuiescence(true);
+    if (structure) { this.#structureCloseQuiescence(true); } else { this.#normalCloseQuiescence(true); }
   }
   public requireNormalClosePrepared(): void {
-    need(this.#normalCloseAttempted, "NORMAL_CLOSE_REQUIRED"); this.#normalCloseQuiescence(true);
+    need(this.#normalCloseAttempted, "NORMAL_CLOSE_REQUIRED");
+    if (isCurrentProjectStructureMainCapability(this.#originCapability)) { this.#structureCloseQuiescence(true); } else { this.#normalCloseQuiescence(true); }
   }
   /** Transfer this original construction cursor once to the fixed structure
-   * observer. Its source commands remain absent from the native vocabulary;
-   * this token neither upgrades the purpose nor reserves extra native budget. */
-  public async issueStructureLease(capability: CurrentFootprintCombinedMainCapability,
+   * observer. Only its dedicated original native birth carries the new fixed
+   * vocabulary; a token cannot upgrade another purpose or its native budget. */
+  public async issueStructureLease(capability: CurrentFootprintCombinedMainCapability | CurrentProjectStructureMainCapability,
     packet: unknown): Promise<CurrentProjectStructureMainLease> {
     need(!this.#structureAttempted && !this.#originAttempted && !this.#busy && this.#packet !== null && packet === this.#packet && issued.get(this.#packet) === this &&
       this.#appScriptId !== null && this.#appSource !== null && this.#retainedArray !== null, "STRUCTURE_ORIGINAL_CONSTRUCTION_REQUIRED");
-    requireCurrentFootprintCombinedMainCapability(capability, this); this.#same(false);
+    mainCapability(capability, this); this.#same(false);
     this.#structureAttempted = true; this.#busy = true;
+    if (isCurrentProjectStructureMainCapability(capability)) { this.#originCapability = capability; }
     try {
-      await this.#reprove(); requireCurrentFootprintCombinedMainCapability(capability, this); this.#same(false);
+      await this.#reprove(); mainCapability(capability, this); this.#same(false);
       this.#structureSource = qualifyCurrentProjectStructureMainSource(this.#appSource);
       this.#originCapability = capability;
       const token = Object.freeze({ profile: "private.current-project-structure-main-lease.v1" as const });

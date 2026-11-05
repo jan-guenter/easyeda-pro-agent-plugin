@@ -2,6 +2,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES } from "../server/src/current-pcb-diagnostic-helper-source-profile.ts";
 import { currentPcbDiagnosticFixedTableNativeSource } from "../server/src/current-pcb-diagnostic-fixed-table-native.ts";
+import { applyCurrentProjectStructureNativeFragment } from "../server/src/current-project-structure-native-fragment.ts";
 import { compactGeneratedCSharpIndentation } from "./csharp-generated-indentation.ts";
 import { currentFootprintCopyManagerRouteNativeSource } from "../server/src/current-footprint-copy-manager-route-native.ts";
 import { currentFootprintCopyUiNativeSource } from "../server/src/current-footprint-copy-ui-native.ts";
@@ -110,6 +111,7 @@ async function main(): Promise<void> {
     throw new Error("Native combined readiness markers must occur once");
   }
   next = next.slice(0, readyStart) + currentFootprintCombinedReadyNativeSource() + next.slice(readyStop + readyEnd.length);
+  next = applyCurrentProjectStructureNativeFragment(next);
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
   assertCurrentFootprintCopyForwardNativeRequestIds(next);
   if (Buffer.byteLength(next) > CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES) {

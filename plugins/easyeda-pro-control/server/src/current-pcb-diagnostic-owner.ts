@@ -73,8 +73,8 @@ import { CurrentRendererCaptureTransportBudget } from "./current-pcb-diagnostic-
 import { CURRENT_WINDOW_CAPTURE_LIMITS, decodeCurrentWindowCapture } from "./current-pcb-diagnostic-window-capture.ts";
 import type { CurrentPcbStringNativeClockObservation, CurrentPcbStringNativeClockPhase } from "./current-pcb-string-native-clock.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
-import { CurrentFootprintCombinedStartupChannel, CurrentFootprintCopyExecutionChannel, CurrentFootprintCopyForwardSavedStartupChannel, CurrentFootprintCopyForwardStartupChannel, CurrentFootprintCopyHeldSavedStartupChannel, CurrentFootprintCopyPreparationChannel, CurrentFootprintCopySavedChannel, CurrentFootprintForwardExecutionStartupChannel, CurrentPcb209WorkerStartupChannel, CurrentPcbWorkerStartupChannel,
-  beginCurrentFootprintCopyClockRpcChannel, prepareCurrentFootprintCopyClockRpcChannel } from "./current-pcb-worker-startup-channel.ts";
+import { CurrentFootprintCombinedStartupChannel, CurrentFootprintCopyExecutionChannel, CurrentFootprintCopyForwardSavedStartupChannel, CurrentFootprintCopyForwardStartupChannel, CurrentFootprintCopyHeldSavedStartupChannel, CurrentFootprintCopyPreparationChannel, CurrentFootprintCopySavedChannel, CurrentFootprintForwardExecutionStartupChannel, CurrentPcb209WorkerStartupChannel, CurrentPcbWorkerStartupChannel, CurrentProjectStructureStartupChannel,
+  beginCurrentFootprintCopyClockRpcChannel, prepareCurrentFootprintCopyClockRpcChannel, requireOriginalProjectStructurePrefixCapacity } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupParent } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
 import { CurrentPcbWorkerStartupOpening } from "./current-pcb-worker-startup-opening.ts";
@@ -207,9 +207,16 @@ import type { CurrentFootprintCopyClockRpcOriginBindings } from "./current-footp
 
 import { CURRENT_FOOTPRINT_COPY_MAIN_TRANSPORT } from "./current-footprint-copy-main-transport-contract.ts";
 // oxlint-disable-next-line import/no-cycle -- This owner constructs the sole main runner; the runner invokes original factory guards only after construction. No owner class or guard is read at module initialization.
-import { CurrentFootprintCopyMainBackendRunner, requireOriginalCurrentFootprintForwardMainPollRetainer } from "./current-footprint-copy-main-backend-runner.ts";
+import { CurrentFootprintCopyMainBackendRunner, requireOriginalCurrentFootprintForwardMainPollRetainer, requireOriginalCurrentFootprintForwardMainRunner } from "./current-footprint-copy-main-backend-runner.ts";
 import { CURRENT_FOOTPRINT_FORWARD_NATIVE_MAIN_LIMITS } from "./current-footprint-forward-native-limits.ts";
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
+import { CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE, CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE } from "./current-project-structure-native-profile.ts";
+import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS as STRUCTURE_MAIN_CONSTRUCTION } from "./current-footprint-copy-main-backend-budget.ts";
+import { currentProjectStructureMainWire } from "./current-project-structure-main-wire.ts";
+import type { CurrentProjectStructureMainCapability } from "./current-project-structure-main-capability.ts";
+import { requireCurrentProjectStructureWorkerLease } from "./current-project-structure-worker-lease.ts";
+import type { CurrentProjectStructureWorkerLease } from "./current-project-structure-worker-lease.ts";
+import type { CurrentProjectStructureObservationWorkflow as StructureWorkflow } from "./current-project-structure-observation-workflow.ts";
 
 
 const HELPER_SHA256 = "e809283e6ec24998ddc67de6180b58edb784371cbfc0be88377633dbb0181c95";
@@ -248,12 +255,12 @@ const forwardExecutionChannelStatus = CurrentFootprintForwardExecutionStartupCha
 
 
 type RecordValue = Record<string, unknown>;
-type OwnerPurpose = "pcb-spatial209" | "footprint-head-age209" | "footprint-held-cache209" | "worker-startup-footprint-held-saved209" | "visual209" | "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-footprint-saved209" | "worker-startup-footprint-main209" | typeof CURRENT_FOOTPRINT_COMBINED_PURPOSE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE | typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
+type OwnerPurpose = "pcb-spatial209" | "footprint-head-age209" | "footprint-held-cache209" | "worker-startup-footprint-held-saved209" | "visual209" | "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-footprint-saved209" | "worker-startup-footprint-main209" | typeof CURRENT_FOOTPRINT_COMBINED_PURPOSE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE | typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE | typeof CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
 function heldCachePurpose(purpose: OwnerPurpose): boolean {
   return purpose === "worker-startup-footprint-held-saved209" || purpose === "footprint-held-cache209";
 }
 function bornFootprintTransport(purpose: OwnerPurpose): boolean {
-  return purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE || forwardBirthPurpose(purpose);
+  return purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE || purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE || forwardBirthPurpose(purpose);
 }
 function forwardBirthPurpose(purpose: OwnerPurpose): boolean {
   return purpose === CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE || purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE;
@@ -286,7 +293,7 @@ export interface CurrentPcbDiagnosticNoProcessRelease {
   readonly processCreated: false; readonly released: true;
 }
 interface NoProcessProof { readonly creationState: "not-entered" | "returned-false"; readonly createProcessError?: number }
-const mainNativeActions = ["head-age-main", "head-age-abort", "main-attach", "main-reprove", "main-send", "main-request-send", "main-completion-begin", "main-completion-send", "main-completion-retire", "main-poll", "main-close-detach", "main-terminate", "combined-abort"] as const;
+const mainNativeActions = ["head-age-main", "head-age-abort", "main-attach", "main-reprove", "main-send", "structure-main-send", "main-request-send", "main-completion-begin", "main-completion-send", "main-completion-retire", "main-poll", "main-close-detach", "main-terminate", "combined-abort"] as const;
 type MainNativeAction = typeof mainNativeActions[number];
 interface ForwardExecutionMainRequest {
   readonly capability: CurrentFootprintForwardExecutionMainCapability;
@@ -413,6 +420,8 @@ export interface CurrentFootprintCombinedAbortReservation {
   readonly executionAuthorized: false;
 }
 const footprintCombinedFactories = new WeakMap<object, CurrentPcbDiagnosticInstallation>();
+const structureFactories = new WeakMap<object, CurrentPcbDiagnosticInstallation>();
+const structureFactoryFailures = new WeakMap<object, Readonly<{ options: CurrentPcbDiagnosticInstallationOptions; owner: CurrentProjectStructureNativeOwner }>>();
 const footprintForwardFactories = new WeakMap<object, CurrentPcbDiagnosticInstallation>();
 const footprintForwardExecutionFactories = new WeakMap<object, CurrentPcbDiagnosticInstallation>();
 type ForwardExecutionReleaseKind = "closed" | "unlaunched" | "no-process";
@@ -474,6 +483,7 @@ const forwardSavedAllocations = new WeakMap<CurrentFootprintCopyForwardNativeOwn
 const forwardSavedAllocationAttempts = new WeakSet<CurrentFootprintCopyForwardNativeOwner>();
 const forwardSavedAllocationStates = new WeakMap<CurrentFootprintCopyForwardNativeOwner, "pending" | "no-resource" | "unresolved">();
 const footprintCombinedCapabilities = new WeakMap<CurrentFootprintCombinedMainCapability, CurrentPcbRetainedOwnerCore>();
+const structureCapabilities = new WeakMap<object, CurrentPcbRetainedOwnerCore>();
 interface CombinedFactoryFailure {
   readonly options: CurrentPcbDiagnosticInstallationOptions;
   readonly owner: CurrentFootprintCombinedNativeOwner;
@@ -720,6 +730,10 @@ class CurrentPcbRetainedOwnerCore {
   #headAgeInspectorBytes = Buffer.alloc(0);
   #headAgeBracket: Readonly<{ before: unknown; after: unknown }> | null = null;
   #combinedMainCapability: CurrentFootprintCombinedMainCapability | null = null;
+  #structureMainCapability: CurrentProjectStructureMainCapability | null = null;
+  #structureMainConstruction: CurrentFootprintCopyMainBackendObservation | null = null;
+  #structureNormalControls = 0;
+  #structureCleanupControls = 0;
   readonly #forwardExecutionMainReplies: unknown[] = [];
   #forwardExecutionMainPoll: ForwardExecutionMainPoll | null = null;
   readonly #footprintSavedQueueReplies: unknown[] = [];
@@ -805,7 +819,7 @@ class CurrentPcbRetainedOwnerCore {
     else if (this.#purpose === "footprint-held-cache209") { this.#pipe = new CurrentFootprintHeldCacheDiagnosticPipe(this.#input, this.#output, (bytes): void => { this.#heldSavedEventBytes(bytes); }); }
     else if (forwardBirthPurpose(this.#purpose)) { this.#pipe = new CurrentFootprintCopyForwardDiscoveryPipe(this.#input, this.#output, (bytes): void => { this.#forwardRendererEvent(bytes); }); }
     else if (saved !== null) { this.#pipe = new CurrentFootprintCopyForwardSavedDiscoveryPipe(this.#input, this.#output, (bytes): void => { this.#forwardRendererEvent(bytes); }); }
-    else if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) { this.#pipe = new CurrentFootprintCombinedDiscoveryPipe(this.#input, this.#output); }
+    else if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE || this.#purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE) { this.#pipe = new CurrentFootprintCombinedDiscoveryPipe(this.#input, this.#output); }
     else if (this.#startupPurpose) { this.#pipe = new CurrentPcbWorkerStartupDiscoveryPipe(this.#input, this.#output); }
     else { this.#pipe = this.#stringPurpose ? new CurrentPcbStringPrecreatePipe(this.#input, this.#output) : new CurrentPcbDiagnosticPipe(this.#input, this.#output); }
     if (saved !== null && this.#forwardLedger !== null && this.#forwardLedgerMethods !== null) {
@@ -2145,6 +2159,8 @@ class CurrentPcbRetainedOwnerCore {
         channel = new CurrentFootprintForwardExecutionStartupChannel(native, (bytes): void => { this.#forwardRendererEvent(bytes); }, priorUsage);
       } else if (this.#purpose === CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE) {
         channel = new CurrentFootprintCopyForwardStartupChannel(native, (bytes): void => { this.#forwardRendererEvent(bytes); }, priorUsage);
+      } else if (this.#purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE) {
+        channel = new CurrentProjectStructureStartupChannel(native, priorUsage);
       } else if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) {
         channel = new CurrentFootprintCombinedStartupChannel(native, priorUsage);
       } else if ((this.#purpose === "worker-startup-footprint209" || this.#purpose === "worker-startup-footprint-copy209")) {
@@ -3467,6 +3483,9 @@ class CurrentPcbRetainedOwnerCore {
     } else if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) {
       maximumNormal = CURRENT_FOOTPRINT_COMBINED_PROFILE.main.normalRequestLimit;
       maximumCleanup = CURRENT_FOOTPRINT_COMBINED_PROFILE.main.cleanupRequestLimit;
+    } else if (this.#purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE) {
+      maximumNormal = CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.main.normal;
+      maximumCleanup = CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.main.cleanup;
     } else if (this.#purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE) {
       maximumNormal = CURRENT_FOOTPRINT_FORWARD_NATIVE_MAIN_LIMITS.normalRequestLimit;
       maximumCleanup = CURRENT_FOOTPRINT_FORWARD_NATIVE_MAIN_LIMITS.cleanupRequestLimit;
@@ -3903,7 +3922,10 @@ class CurrentPcbRetainedOwnerCore {
       } }));
     }
     runner = new CurrentFootprintCopyMainBackendRunner(transport, bootstrap);
-    this.#mainRunner = runner; return runner.observe();
+    this.#mainRunner = runner;
+    const packet = await runner.observe();
+    if (this.#purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE) { this.#structureMainConstruction = packet; }
+    return packet;
   }
   /** Observe original native descriptors before opening. No native roster,
    * CacheStorage invocation or saved-generation replay authority is inferred. */
@@ -4020,6 +4042,77 @@ class CurrentPcbRetainedOwnerCore {
   }
   public retainedFootprintMainConstruction(): ReturnType<CurrentFootprintCopyMainBackendRunner["retained"]> | null {
     return this.#mainRunner?.retained() ?? null;
+  }
+
+  /** Join the real native allocation's own startup dependency to the original
+   * constructor lease. Genuine leases from another native owner still refuse. */
+  public structureObservationInput(lease: CurrentProjectStructureWorkerLease, cleanup: boolean): Readonly<{
+    main: CurrentFootprintCopyMainBackendRunner; capability: CurrentProjectStructureMainCapability; target: CurrentDisposableOpenSealedTarget;
+    construction: CurrentFootprintCopyMainBackendObservation;
+  }> {
+    const handoff = this.#startupHandoff, main = this.#mainRunner, target = this.#projectOpeningTarget;
+    if (main === null || handoff === null || target === null || this.#structureMainConstruction === null) { throw error("STRUCTURE_ORIGINAL_CONSTRUCTORS_REQUIRED"); }
+    this.requireOriginalProjectStructureMainRunner(main, cleanup ? "cleanup" : "normal");
+    requireCurrentProjectStructureWorkerLease(lease).requireNativeDependency(handoff.dependency);
+    if (this.#structureMainCapability === null) {
+      if (cleanup) { throw error("STRUCTURE_ORIGINAL_CAPABILITY_REQUIRED"); }
+      requireOriginalProjectStructurePrefixCapacity(handoff.dependency);
+      if (this.#mainNormalRequests > STRUCTURE_MAIN_CONSTRUCTION.observeNormal || this.#mainCleanupRequests > STRUCTURE_MAIN_CONSTRUCTION.observeCleanup ||
+        this.#mainRequestId !== this.#mainNormalRequests + this.#mainCleanupRequests || this.#mainRequestId > STRUCTURE_MAIN_CONSTRUCTION.maximumObserve) {
+        throw error("STRUCTURE_ORIGINAL_CAPACITY_REQUIRED");
+      }
+      this.#structureMainCapability = Object.freeze({ profile: "private.current-project-structure-main-capability.v1" as const });
+      structureCapabilities.set(this.#structureMainCapability, this);
+    }
+    return Object.freeze({ main, capability: this.#structureMainCapability, target, construction: this.#structureMainConstruction });
+  }
+  /** Reach the paired observer only through this actual factory allocation.
+   * Its caller retains the durable operation intent; no writer is invoked. */
+  public async createStructureObservation(lease: CurrentProjectStructureWorkerLease, plan: unknown): Promise<StructureWorkflow> {
+    const owner = originalStructureOwner(this);
+    const { CurrentProjectStructureObservationWorkflow } = await import("./current-project-structure-observation-workflow.ts");
+    if (originalStructureOwner(this) !== owner) { throw error("STRUCTURE_NATIVE_OWNER"); }
+    return new CurrentProjectStructureObservationWorkflow(owner, lease, plan);
+  }
+  /** Cleanup keeps the original child/Job/connection and never reopens the
+   * normal lane after a semantic observer refusal or consumed dispatch. */
+  public requireOriginalProjectStructureMainRunner(runner: CurrentFootprintCopyMainBackendRunner, mode: "normal" | "cleanup" | "exited"): boolean {
+    requireOriginalCurrentFootprintForwardMainRunner(runner);
+    if (this.#purpose !== CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE || !structureFactories.has(this) ||
+      structureFactories.get(this) !== this.#installation || this.#mainRunner !== runner || this.#binding === null || !this.#launchSucceeded) {
+      throw error("STRUCTURE_ORIGINAL_MAIN_OWNER");
+    }
+    if (mode === "normal") {
+      this.#requireFootprintMain(true);
+      if (!runner.retained().completed || runner.retained().failed) { throw error("STRUCTURE_NORMAL_ENDED"); }
+    } else if (mode === "cleanup") {
+      if (!retainedOwners.has(this) || this.#releaseConsumed || this.#released || this.#childClosed) { throw error("STRUCTURE_CLEANUP_ENDED"); }
+    } else if (mode !== "exited") { throw error("STRUCTURE_OWNER_MODE"); }
+    return this.#terminationObserved && this.#terminationObservation?.originalRootExited === true && this.#terminationObservation.originalJobEmpty === true;
+  }
+  /** Send only the newly born observer's finite grammar. The old main/request
+   * vocabulary cannot acquire the structure role by matching a packet. */
+  public async sendProjectStructureMain(command: CurrentProjectStructureMainCommand, requestId: number): Promise<void> {
+    const runner = this.#mainRunner;
+    if (runner === null || this.#structureMainCapability === null) { throw error("STRUCTURE_ORIGINAL_MAIN_OWNER"); }
+    const cleanup = ["structure-main-remove", "structure-main-resume", "structure-main-release"].includes(command.phase);
+    const current = (): void => {
+      this.requireOriginalProjectStructureMainRunner(runner, cleanup ? "cleanup" : "normal");
+      if (!this.#mainAttached || this.#mainCloseDetached || this.#mainTerminateAttempted || this.#terminationObserved || this.#closeConsumed) {
+        throw error("STRUCTURE_MAIN_CONNECTION_ENDED");
+      }
+    };
+    current(); const wire = currentProjectStructureMainWire(command, requestId);
+    if (requestId !== this.#mainRequestId + 1 || (cleanup ? this.#mainCleanupRequests >= CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.main.cleanup :
+      this.#mainNormalRequests >= CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.main.normal)) { throw error("STRUCTURE_MAIN_REQUEST_BOUND"); }
+    this.#enterFootprintMain(); this.#mainRequestId += 1;
+    if (cleanup) { this.#mainCleanupRequests += 1; } else { this.#mainNormalRequests += 1; }
+    try {
+      await this.#verify(); current();
+      const reply = await this.#request({ ...wire.request });
+      if (!exact(reply, ["written"]) || reply["written"] !== true) { throw error("STRUCTURE_MAIN_WRITE_REPLY"); }
+      await this.#verify(); current();
+    } finally { this.#leaveFootprintMain(); }
   }
 
   /** Only the actual new factory and its own private runner issue a lease.
@@ -4437,6 +4530,17 @@ class CurrentPcbRetainedOwnerCore {
     if (request["action"] === "main-poll" && this.#forwardExecutionMainPoll !== null && !this.#forwardExecutionMainPoll.delivered) { throw error("FORWARD_EXECUTION_MAIN_POLL_UNSETTLED"); }
     this.#available();
     if (this.#pending !== null) { throw error("REQUEST_PENDING"); }
+    if (this.#purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE) {
+      const action = String(request["action"]);
+      if (!["identity", "launch", "version", "targets", "send", "poll", "window", "normal-close", "termination", "release", "release-unlaunched",
+        "no-process-proof", "release-no-process", "worker-startup-send", "worker-startup-parent", "worker-startup-reprove", "structure-worker-send",
+        "structure-main-send", "main-attach", "main-reprove", "main-send", "main-poll", "main-close-detach"].includes(action)) { throw error("STRUCTURE_ACTION_PURPOSE"); }
+      const cleanup = ["identity", "window", "normal-close", "termination", "release", "release-unlaunched", "no-process-proof", "release-no-process", "main-close-detach"].includes(action) ||
+        ["Debugger.removeBreakpoint", "Debugger.resume", "Runtime.releaseObjectGroup"].includes(String(request["method"])) || action === "main-poll" && request["cleanup"] === true;
+      const limits = CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.controls;
+      if (cleanup) { if (this.#structureCleanupControls >= limits.cleanup) { throw error("STRUCTURE_CLEANUP_CONTROL_BOUND"); } this.#structureCleanupControls += 1; }
+      else { if (this.#structureNormalControls >= limits.normal) { throw error("STRUCTURE_NORMAL_CONTROL_BOUND"); } this.#structureNormalControls += 1; }
+    } else if (request["action"] === "structure-main-send" || request["action"] === "structure-worker-send") { throw error("STRUCTURE_ACTION_PURPOSE"); }
     if (this.#purpose === "footprint-head-age209") {
       const action = String(request["action"]), cleanup = ["identity", "window", "normal-close", "termination", "release", "release-unlaunched", "release-no-process", "no-process-proof", "head-age-abort", "main-close-detach"].includes(action) || action === "main-poll" && request["cleanup"] === true || action === "main-send" && ["release", "remove", "resume"].includes(String(request["phase"]));
       if (!["identity", "launch", "window", "normal-close", "termination", "release", "release-unlaunched", "release-no-process", "no-process-proof", "main-attach", "main-reprove", "main-send", "main-poll", "main-close-detach", "head-age-main", "head-age-abort"].includes(action) || this.#headAgeAbortAttempted && !["identity", "termination", "release", "head-age-abort"].includes(action)) { throw error("HEAD_AGE_ACTION_PURPOSE"); }
@@ -4524,7 +4628,7 @@ class CurrentPcbRetainedOwnerCore {
       forwardCleanup: forward.cleanup, forwardPollWaiting: forward.waiting, forwardMainPoll,
       send: request["action"] === "saved-cache-held" || request["action"] === "footprint-held-saved-worker" || request["action"] === "renderer-viewport-send" || request["action"] === "send" || request["action"] === "worker-startup-send" || request["action"] === "worker-startup-parent" ||
         request["action"] === "worker-startup-empty-common" || request["action"] === "worker-startup-empty-root" ||
-        request["action"] === "worker-startup-ratline" || request["action"] === "worker-startup-ratline-continuation" || request["action"] === "main-send" || request["action"] === "main-request-send" ||
+        request["action"] === "worker-startup-ratline" || request["action"] === "worker-startup-ratline-continuation" || request["action"] === "main-send" || request["action"] === "main-request-send" || request["action"] === "structure-worker-send" || request["action"] === "structure-main-send" ||
         request["action"] === "footprint-clock-rpc-send" || request["action"] === "main-completion-send" || request["action"] === "head-age-main", written: false, reply: null,
       timer: setTimeout(() => { this.#fail("HELPER_DEADLINE"); }, 15_000) };
     this.#pending = pending;
@@ -4537,7 +4641,7 @@ class CurrentPcbRetainedOwnerCore {
       }
       const data = `${JSON.stringify({ ...this.#binding, ...request, ...heldAccounting, id })}\n`;
       const combinedRequest = bornFootprintTransport(this.#purpose) &&
-        (request["action"] === "main-request-send" || request["action"] === "footprint-clock-rpc-send" || request["action"] === "main-completion-send");
+        (request["action"] === "main-request-send" || request["action"] === "footprint-clock-rpc-send" || request["action"] === "main-completion-send" || request["action"] === "structure-worker-send" || request["action"] === "structure-main-send");
       const maximum = combinedRequest || request["method"] === "Runtime.callFunctionOn" && (request["action"] === "worker-startup-parent" &&
         (request["parentPhase"] === "preflight" || request["parentPhase"] === "open-project" ||
           request["parentPhase"] === "pcb-preflight" || request["parentPhase"] === "pcb-open-document" || request["parentPhase"] === "pcb-observe") || request["action"] === "send" &&
@@ -4843,6 +4947,17 @@ export class CurrentFootprintCombinedNativeOwner extends CurrentPcbRetainedOwner
     super(child, verify, installation, verifyInstallation, CURRENT_FOOTPRINT_COMBINED_PURPOSE, verifyStartupFacade, actorClockSource, null, null, null, readyChallenge);
   }
 }
+/** Dedicated observer allocation. It cannot issue any footprint writer or
+ * Combined capability and is never inferred from a later source snapshot. */
+export class CurrentProjectStructureNativeOwner extends CurrentPcbRetainedOwnerCore {
+  public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
+    actorClockSource: CurrentPcb209ActorClockSourceQualification, installation: CurrentPcbDiagnosticInstallation | null = null,
+    verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve(), verifyStartupFacade: () => Promise<void> = verifyInstallation,
+    readyChallenge = randomBytes(16).toString("hex")) {
+    super(child, verify, installation, verifyInstallation, CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE, verifyStartupFacade, actorClockSource, null, null, null, readyChallenge);
+  }
+}
+const structureOwnerDescriptors = Object.getOwnPropertyDescriptors(CurrentProjectStructureNativeOwner.prototype);
 
 /** Born forward observation purpose. Its private original ledger starts before
  * helper output, and its helper rejects create/clock/completion commands. */
@@ -4972,6 +5087,54 @@ function originalCombinedCapabilityOwner(capability: CurrentFootprintCombinedMai
     Object.getPrototypeOf(CurrentFootprintCombinedNativeOwner.prototype) !== CurrentPcbRetainedOwnerCore.prototype ||
     !originalFootprintDescriptors(CurrentPcbRetainedOwnerCore.prototype, footprintCoreDescriptors)) { throw error("COMBINED_MAIN_CAPABILITY"); }
   combinedOwnershipMethods.require.call(owner, runner, mode); return owner;
+}
+/** Original factory lookup plus unmodified private-field prototypes. Neither a
+ * caller object, subclass nor overridden instance method can issue this lane. */
+function originalStructureOwner(owner: unknown): CurrentProjectStructureNativeOwner {
+  if (owner === null || typeof owner !== "object" || types.isProxy(owner) || !structureFactories.has(owner) ||
+    Object.getPrototypeOf(owner) !== CurrentProjectStructureNativeOwner.prototype || Reflect.ownKeys(owner).length > 0 ||
+    !originalFootprintDescriptors(CurrentProjectStructureNativeOwner.prototype, structureOwnerDescriptors) ||
+    Object.getPrototypeOf(CurrentProjectStructureNativeOwner.prototype) !== CurrentPcbRetainedOwnerCore.prototype ||
+    !originalFootprintDescriptors(CurrentPcbRetainedOwnerCore.prototype, footprintCoreDescriptors) || !(owner instanceof CurrentProjectStructureNativeOwner)) {
+    throw error("STRUCTURE_NATIVE_OWNER");
+  }
+  return owner;
+}
+export function requireOriginalProjectStructureObservationInput(owner: CurrentProjectStructureNativeOwner,
+  lease: CurrentProjectStructureWorkerLease, cleanup = false): ReturnType<CurrentProjectStructureNativeOwner["structureObservationInput"]> {
+  return CurrentPcbRetainedOwnerCore.prototype.structureObservationInput.call(originalStructureOwner(owner), lease, cleanup);
+}
+/** A rejected readiness wait retains its actual original child and zero-input
+ * closure outcome. Matching diagnostics cannot adopt another helper. */
+export function currentProjectStructureFactoryFailureDiagnostics(failure: unknown,
+  options: CurrentPcbDiagnosticInstallationOptions): CurrentFootprintCombinedFactoryFailureDiagnostics | null {
+  if (failure === null || typeof failure !== "object" || types.isProxy(failure)) { return null; }
+  const held = structureFactoryFailures.get(failure); if (held === undefined || held.options !== options) { return null; }
+  return CurrentPcbRetainedOwnerCore.prototype.combinedFactoryFailureDiagnostics.call(originalStructureOwner(held.owner));
+}
+export function isCurrentProjectStructureMainCapability(value: unknown): value is CurrentProjectStructureMainCapability {
+  return value !== null && typeof value === "object" && !types.isProxy(value) && structureCapabilities.has(value);
+}
+function originalStructureCapability(capability: CurrentProjectStructureMainCapability, runner: CurrentFootprintCopyMainBackendRunner,
+  mode: "normal" | "cleanup" | "exited"): CurrentPcbRetainedOwnerCore {
+  const owner = structureCapabilities.get(capability); if (owner === undefined) { throw error("STRUCTURE_MAIN_CAPABILITY"); }
+  const original = originalStructureOwner(owner);
+  CurrentPcbRetainedOwnerCore.prototype.requireOriginalProjectStructureMainRunner.call(original, runner, mode); return original;
+}
+export function requireCurrentProjectStructureMainCapability(capability: CurrentProjectStructureMainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
+  originalStructureCapability(capability, runner, "normal");
+}
+export function requireCurrentProjectStructureMainCleanup(capability: CurrentProjectStructureMainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
+  originalStructureCapability(capability, runner, "cleanup");
+}
+export function currentProjectStructureMainGenerationExited(capability: CurrentProjectStructureMainCapability, runner: CurrentFootprintCopyMainBackendRunner): boolean {
+  return CurrentPcbRetainedOwnerCore.prototype.requireOriginalProjectStructureMainRunner.call(originalStructureCapability(capability, runner, "exited"), runner, "exited");
+}
+export async function sendCurrentProjectStructureMainCommand(capability: CurrentProjectStructureMainCapability,
+  runner: CurrentFootprintCopyMainBackendRunner, command: CurrentProjectStructureMainCommand, id: number): Promise<void> {
+  const mode = ["structure-main-remove", "structure-main-resume", "structure-main-release"].includes(command.phase) ? "cleanup" : "normal";
+  const owner = originalStructureCapability(capability, runner, mode);
+  await CurrentPcbRetainedOwnerCore.prototype.sendProjectStructureMain.call(owner, command, id); originalStructureCapability(capability, runner, mode);
 }
 /** Original cross-process identity only. It reserves no writer/native budget
  * and cannot upgrade a validation generation or mint a new clock origin. */
@@ -5294,6 +5457,20 @@ export async function startCurrentFootprintCombinedNativeOwner(options: CurrentP
     try { await owner.closeFootprintCombinedBeforeLaunch(); } catch {
       // Original child closure is still unresolved. The private diagnostics
       // Getter retains this owner; no terminal proof is issued while it lives.
+    }
+    throw failure;
+  }
+}
+/** Actual read-only native allocation. Source/build installation must contain
+ * the dedicated generated switch before this can enter the ready handshake. */
+export async function startCurrentProjectStructureNativeOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentProjectStructureNativeOwner> {
+  const owner = await startFixedOwner(options, CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE, "209-startup");
+  if (!(owner instanceof CurrentProjectStructureNativeOwner)) { throw error("STRUCTURE_FACTORY_OWNER"); }
+  try { await owner.waitFootprintCombinedReady(); return owner; }
+  catch {
+    const failure = error("STRUCTURE_FACTORY_READY_FAILED"); structureFactoryFailures.set(failure, Object.freeze({ options, owner }));
+    try { await owner.closeFootprintCombinedBeforeLaunch(); } catch {
+      // Retain original unresolved child custody. No replacement is allocated.
     }
     throw failure;
   }
@@ -5695,6 +5872,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE) { purposeSwitch = ` ${CURRENT_FOOTPRINT_FORWARD_EXECUTION_BIRTH_PROFILE.nativeSwitch} -CombinedReadyChallenge '${readyChallenge ?? ""}'`; }
   else if (purpose === CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE) { purposeSwitch = ` ${CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE.nativeSwitch} -CombinedReadyChallenge '${readyChallenge ?? ""}'`; }
   else if (purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) { purposeSwitch = ` ${CURRENT_FOOTPRINT_COMBINED_PROFILE.nativeSwitch} -CombinedReadyChallenge '${readyChallenge ?? ""}'`; }
+  else if (purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE) { purposeSwitch = ` ${CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.nativeSwitch} -CombinedReadyChallenge '${readyChallenge ?? ""}'`; }
   else if (purpose === "footprint-head-age209") { purposeSwitch = " -FootprintHeadAge209"; }
   else if (purpose === "worker-startup-footprint-main209") { purposeSwitch = " -WorkerStartupFootprintMain209"; }
   else if (purpose === "worker-startup-footprint-held-saved209") { purposeSwitch = " -WorkerStartupFootprintHeldSaved209"; }
@@ -5774,6 +5952,11 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
     if (readyChallenge === null) { throw error("COMBINED_READY_CHALLENGE_PROFILE"); }
     owner = new CurrentFootprintCombinedNativeOwner(child, verify, actorClockSource, installation, verifyInstallation, verifyStartupFacade, readyChallenge);
     footprintCombinedFactories.set(owner, installation);
+  }
+  else if (purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE) {
+    if (actorClockSource === null || readyChallenge === null) { throw error("STRUCTURE_FACTORY_PROFILE"); }
+    owner = new CurrentProjectStructureNativeOwner(child, verify, actorClockSource, installation, verifyInstallation, verifyStartupFacade, readyChallenge);
+    structureFactories.set(owner, installation);
   }
   else if (purpose === "worker-startup-footprint-main209") {
     if (actorClockSource === null) { throw error("STARTUP209_ACTOR_SOURCE"); }

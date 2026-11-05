@@ -4,7 +4,7 @@
  * create/Save and writer permits remain outside this class. */
 import { z } from "zod";
 // oxlint-disable-next-line import/no-cycle -- Retain the genuine construction issuer and original startup transport; no initialization work crosses the cycle.
-import { isOriginalFootprintExecutionConstructionTransport, isOriginalFootprintHeldSavedConstructionTransport, isOriginalFootprintPreparationConstructionTransport, isOriginalFootprintSavedConstructionTransport, originalFootprintExecutionConstructionProjectUuid, requestFootprintExecutionConstructionCache } from "./current-footprint-copy-construction-purpose.ts";
+import { isOriginalFootprintExecutionConstructionTransport, isOriginalFootprintHeldSavedConstructionTransport, isOriginalFootprintPreparationConstructionTransport, isOriginalFootprintSavedConstructionTransport, originalFootprintExecutionConstructionProjectUuid, requestFootprintExecutionConstructionCache, requireOriginalProjectStructureConstructionDependency } from "./current-footprint-copy-construction-purpose.ts";
 import { CurrentFootprintCopyCacheConstructionRunner } from "./current-footprint-copy-cache-construction-runner.ts";
 import type { CurrentFootprintCopyCacheConstructionObservation, CurrentFootprintCopyCacheConstructionTransport } from "./current-footprint-copy-cache-construction-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
@@ -870,6 +870,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     const lease = Object.freeze({ profile: "private.current-project-structure-worker-lease.v1" as const });
     structureLeases.set(lease, Object.freeze({ issuer: this, scriptId: this.#scriptId, project,
       uploadCallback: upload, structureCallback: structure, debounce, assertCleanup: same,
+      requireNativeDependency: (dependency: Parameters<typeof requireOriginalProjectStructureConstructionDependency>[1]): void => { same(); requireOriginalProjectStructureConstructionDependency(this.#transport, dependency); same(); },
       fail: (): void => { if (this.#structureLease === lease && !this.#releaseConsumed) { this.#fail("STRUCTURE_OBSERVER_FAILED"); } },
       assertOriginal: async (): Promise<void> => { same(); await this.#requireCurrentAssignments(packet, assignments); same(); },
       request: async (command: CurrentPcbWorkerConstructionCommand, cleanup = false, retainAllocationReply?: (reply: unknown) => void): Promise<unknown> => {

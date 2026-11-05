@@ -7,7 +7,7 @@
 import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { bindFootprintPreparationConstructionTransport } from "./current-footprint-copy-construction-purpose.ts";
-import { isOriginalFootprintExecutionDependency, isOriginalFootprintHeldSavedDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency,
+import { isOriginalFootprintExecutionDependency, isOriginalFootprintHeldSavedDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency, isOriginalProjectStructureDependency,
   requestCurrentFootprintCopyParent, requestCurrentFootprintCopyTransactionClock, subscribeCurrentFootprintCopyParentEvents } from "./current-pcb-worker-startup-channel.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
@@ -26,6 +26,7 @@ import { bindCurrentFootprintCopyClockRoute, consumeCurrentFootprintCopyClockRpc
 import type { CurrentFootprintCopyClockRpcConstructionLease } from "./current-footprint-copy-clock-rpc-leases.ts";
 import type { CurrentFootprintCopyTransactionClockCommand } from "./current-footprint-copy-transaction-clock.ts";
 import { z } from "zod";
+import { CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE } from "./current-project-structure-native-profile.ts";
 import { CURRENT_PCB_209_STARTUP_TIMING, currentPcbStartupMonotonicMs, currentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
 import type { CurrentPcbStartupWindow, CurrentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
 import { CURRENT_PCB_209_WORKER_STARTUP_SOURCE } from "./current-pcb-209-worker-startup-profile.ts";
@@ -295,8 +296,13 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     const writerBudget = execution209 ? CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE : CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE;
     const savedBudget = heldSaved209 ? CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE : CURRENT_FOOTPRINT_COPY_SAVED_PROFILE;
     const budget = saved209 || heldSaved209 ? savedBudget : writerBudget;
-    this.#normalRequestLimit = footprint ? budget.normalRequestLimit : 224;
-    this.#requestLimit = footprint ? budget.requestLimit : 256;
+    if (isOriginalProjectStructureDependency(dependency)) {
+      this.#normalRequestLimit = CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.worker.normal;
+      this.#requestLimit = CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.worker.total;
+    } else {
+      this.#normalRequestLimit = footprint ? budget.normalRequestLimit : 224;
+      this.#requestLimit = footprint ? budget.requestLimit : 256;
+    }
     this.#parentSession = sessionToken.parse(dependency.parentSessionId); this.#parentTarget = sessionToken.parse(dependency.parentTargetId);
     this.#send = dependency.request; this.#assertOwner = dependency.assertOriginalOwner;
     this.#assertTermination = dependency.assertOriginalTermination; this.#subscribe = dependency.subscribe;

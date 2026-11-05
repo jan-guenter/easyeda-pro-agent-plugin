@@ -27,6 +27,8 @@ import type { CurrentFootprintCopyUiCommand } from "./current-footprint-copy-ui-
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
 import { CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE } from "./current-footprint-copy-combined-profile.ts";
+import { currentProjectStructureWorkerWire } from "./current-project-structure-worker-wire.ts";
+import { CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE } from "./current-project-structure-native-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE } from "./current-footprint-copy-forward-profile.ts";
 import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_RENDERER_PROFILE } from "./current-footprint-forward-execution-profile.ts";
 import { CurrentFootprintForwardAllocatedCreateClockBudget } from "./current-footprint-forward-allocated-create-clock-budget.ts";
@@ -94,6 +96,13 @@ export interface CurrentFootprintCopyHeldSavedChannelBinding {
 }
 const INTERNAL_PROFILE = Symbol("fixed-worker-startup-channel-wire");
 const footprintDependencies = new WeakSet<CurrentPcbWorkerStartupDependency>();
+const structureDependencies = new WeakMap<CurrentPcbWorkerStartupDependency, () => void>();
+/** Identity only. Copies cannot enlarge the construction/observation budget. */
+export function isOriginalProjectStructureDependency(dependency: CurrentPcbWorkerStartupDependency): boolean { return structureDependencies.has(dependency); }
+/** Preserve the unspent observer suffix before either observer is armed. */
+export function requireOriginalProjectStructurePrefixCapacity(dependency: CurrentPcbWorkerStartupDependency): void {
+  const requirePrefix = structureDependencies.get(dependency); if (requirePrefix === undefined) { throw fail("STRUCTURE_ORIGINAL_DEPENDENCY"); } requirePrefix();
+}
 const savedDependencies = new WeakSet<CurrentPcbWorkerStartupDependency>();
 const heldSavedDependencies = new WeakSet<CurrentPcbWorkerStartupDependency>();
 const executionDependencies = new WeakMap<CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupChannelCore>();
@@ -275,6 +284,7 @@ async function observe(work: Promise<unknown>): Promise<void> {
 
 class CurrentPcbWorkerStartupChannelCore {
   readonly #wire: typeof currentPcbWorkerStartupWire;
+  readonly #structurePurpose: boolean;
   readonly #footprintPurpose: boolean;
   readonly #executionPurpose: boolean;
   readonly #createClockPurpose: boolean;
@@ -369,6 +379,7 @@ class CurrentPcbWorkerStartupChannelCore {
     forwardEventBytes: ((bytes: number) => void) | null = null, accountedSavedPurpose = false,
     heldSavedBinding: CurrentFootprintCopyHeldSavedChannelBinding | null = null) {
     if (internal !== INTERNAL_PROFILE) { throw fail("INTERNAL_PROFILE"); } this.#wire = wire; this.#createClockPurpose = createClockPurpose; this.#allocationPurpose = allocationPurpose;
+    this.#structurePurpose = wire === currentProjectStructureWorkerWire;
     if (typeof accountedSavedPurpose !== "boolean" || accountedSavedPurpose && wire !== currentFootprintCopySavedStartupWire ||
         (wire === currentFootprintCopyForwardStartupWire || wire === currentFootprintForwardExecutionStartupWire || accountedSavedPurpose || wire === currentFootprintCopyHeldSavedStartupWire) !== (forwardEventBytes !== null) ||
         forwardEventBytes !== null && typeof forwardEventBytes !== "function") { throw fail("FORWARD_ACCOUNTING"); }
@@ -388,7 +399,9 @@ class CurrentPcbWorkerStartupChannelCore {
     if (wire === currentFootprintForwardExecutionStartupWire) { footprintProfile = CURRENT_FOOTPRINT_FORWARD_EXECUTION_RENDERER_PROFILE; }
     if (wire === currentFootprintCopyHeldSavedStartupWire) { footprintProfile = CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE; }
     this.#footprintProfile = footprintProfile;
-    this.#requestLimit = this.#footprintPurpose ? this.#footprintProfile.requestLimit : CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT;
+    let requestLimit = this.#footprintPurpose ? this.#footprintProfile.requestLimit : CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT;
+    if (this.#structurePurpose) { requestLimit = CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.worker.total; }
+    this.#requestLimit = requestLimit;
     this.#members = members(native); this.#native = native;
     this.#parentMethod = native.requireOriginalParent; this.#terminate = native.assertOriginalTermination;
     this.#parentEvent = native.observeOriginalParentEvent; this.#exchange = native.exchange;
@@ -424,8 +437,10 @@ class CurrentPcbWorkerStartupChannelCore {
   }
   #withinLifetime(cleanup = false): void {
     const age = monotonicNow() - this.#created;
-    const normal = this.#footprintPurpose ? this.#footprintProfile.normalMilliseconds : LIFETIME_MS;
-    const total = normal + (this.#footprintPurpose ? this.#footprintProfile.cleanupMilliseconds : 0);
+    let normal = this.#footprintPurpose ? this.#footprintProfile.normalMilliseconds : LIFETIME_MS;
+    let cleanupMilliseconds = this.#footprintPurpose ? this.#footprintProfile.cleanupMilliseconds : 0;
+    if (this.#structurePurpose) { normal = CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.normalMilliseconds; cleanupMilliseconds = CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.cleanupMilliseconds; }
+    const total = normal + cleanupMilliseconds;
     if (age < 0n || age >= BigInt(total) * 1_000_000n) {
       this.#poison("LIFETIME", true); throw this.#failure ?? fail("LIFETIME");
     }
@@ -458,7 +473,7 @@ class CurrentPcbWorkerStartupChannelCore {
       this.#sameMethods(); const original = await this.#parentMethod.call(this.#native); this.#sameMethods();
       this.#withinLifetime();
       if (!record(original) || types.isProxy(original) || !Object.isFrozen(original)) { throw fail("PARENT"); }
-      const parent = (this.#footprintPurpose ? parentSchema.extend({ nextRequestId: z.number().int().min(1).max(this.#requestLimit) }) : parentSchema)
+      const parent = (this.#footprintPurpose || this.#structurePurpose ? parentSchema.extend({ nextRequestId: z.number().int().min(1).max(this.#requestLimit) }) : parentSchema)
         .parse(captureCurrentPcbStringClockReply(original).value);
       if (this.#heldSavedBinding !== null) {
         if (parent.sessionId !== this.#heldSavedBinding.sessionId || parent.nextRequestId - 1 > CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE.normalRequestLimit) { throw fail("HELD_SAVED_PARENT"); }
@@ -480,6 +495,11 @@ class CurrentPcbWorkerStartupChannelCore {
       },
     });
     if (this.#footprintPurpose && !this.#savedPurpose) { footprintDependencies.add(dependency); }
+    if (this.#structurePurpose) { structureDependencies.set(dependency, (): void => {
+      this.#sameMethods(); this.#withinLifetime();
+      if (this.#released || this.#releaseRequested || this.#terminationVerified || this.#failure !== null || this.#pending.size > 0 ||
+        this.#queuedRequests !== 0 || this.#nextId - 1 > CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.worker.derivation.startupNormal) { throw fail("STRUCTURE_PREFIX_CAPACITY"); }
+    }); }
     if (this.#savedPurpose && !this.#forwardSavedObservation && this.#heldSavedBinding === null) { savedDependencies.add(dependency); }
     if (this.#heldSavedBinding !== null) { heldSavedDependencies.add(dependency); }
     if (this.#executionPurpose) { markCurrentFootprintExecutionDependency(dependency); executionDependencies.set(dependency, this); }
@@ -663,7 +683,8 @@ class CurrentPcbWorkerStartupChannelCore {
         this.#attributed(command, manager, clock, parentKind, registration);
         this.#withinLifetime(cleanupCommand(command));
         const cleanup = cleanupCommand(command);
-        const limit = this.#heldSavedBinding === null && this.#footprintPurpose && !cleanup ? this.#footprintProfile.normalRequestLimit : this.#requestLimit;
+        let limit = this.#heldSavedBinding === null && this.#footprintPurpose && !cleanup ? this.#footprintProfile.normalRequestLimit : this.#requestLimit;
+        if (this.#structurePurpose && !cleanup) { limit = CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.worker.normal; }
         if (this.#fatal || this.#released || this.#nextId > limit) { throw fail("REQUEST_BUDGET"); }
         if (this.#heldSavedBinding !== null && (cleanup ? this.#heldSavedCleanup >= CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE.cleanupRequestLimit :
           this.#heldSavedNormal >= CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE.normalRequestLimit)) { throw fail("HELD_SAVED_REQUEST_CLASS"); }
@@ -1314,6 +1335,13 @@ export class CurrentFootprintCopyExecutionChannel extends CurrentPcbWorkerStartu
 export class CurrentFootprintCombinedStartupChannel extends CurrentPcbWorkerStartupChannelCore {
   public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
     super(INTERNAL_PROFILE, native, currentFootprintCombinedStartupWire, priorUsage);
+  }
+}
+/** Separate cold-project observer birth. It receives no footprint execution,
+ * create, clock, saved or manager-route dependency marker. */
+export class CurrentProjectStructureStartupChannel extends CurrentPcbWorkerStartupChannelCore {
+  public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
+    super(INTERNAL_PROFILE, native, currentProjectStructureWorkerWire, priorUsage);
   }
 }
 /** Distinct forward observation grammar and counters. Its allocation/create

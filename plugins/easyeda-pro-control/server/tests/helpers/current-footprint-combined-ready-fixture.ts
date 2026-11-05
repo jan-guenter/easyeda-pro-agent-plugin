@@ -18,7 +18,8 @@ import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintCopyForwardNa
   assertOriginalCurrentFootprintCopyForwardSavedNativeOwner, assertOriginalCurrentFootprintForwardExecutionNativeOwner, currentFootprintCombinedFactoryFailureDiagnostics,
   currentFootprintCopyForwardFactoryFailureDiagnostics, currentFootprintCopyForwardSavedObservationAllocationOutcome,
   currentFootprintForwardExecutionBirthAllocationOutcome, currentFootprintForwardExecutionBirthFailureDiagnostics,
-  requireCurrentFootprintCombinedUnlaunchedFactoryFailure, requireCurrentFootprintCopyForwardUnlaunchedFactoryFailure, requireCurrentFootprintForwardExecutionInputs, startCurrentFootprintCopySavedNativeOwner } from "../../src/current-pcb-diagnostic-owner.ts";
+  currentProjectStructureFactoryFailureDiagnostics, requireCurrentFootprintCombinedUnlaunchedFactoryFailure, requireCurrentFootprintCopyForwardUnlaunchedFactoryFailure,
+  requireCurrentFootprintForwardExecutionInputs, startCurrentFootprintCopySavedNativeOwner, startCurrentProjectStructureNativeOwner } from "../../src/current-pcb-diagnostic-owner.ts";
 
 type Mode = "ready" | "stderr-close" | "malformed" | "wrong-challenge" | "oversize-no-newline" | "stderr-delayed-close" | "resource-traffic" | "saved-admission-failure" | "saved-spawn-refusal" | "execution-inputs";
 export interface SyntheticForwardFactoryOwner extends CurrentFootprintCopyForwardNativeOwner {
@@ -40,6 +41,8 @@ export interface SyntheticForwardExecutionFactoryOwner extends CurrentFootprintF
   syntheticForwardMainUiForTest: (opening: object, result: object) => void;
 }
 interface Module {
+  readonly startCurrentProjectStructureNativeOwner: typeof startCurrentProjectStructureNativeOwner;
+  readonly currentProjectStructureFactoryFailureDiagnostics: typeof currentProjectStructureFactoryFailureDiagnostics;
   readonly startCurrentFootprintCombinedNativeOwner: (options: CurrentPcbDiagnosticInstallationOptions) => Promise<CurrentFootprintCombinedNativeOwner>;
   readonly currentFootprintCombinedFactoryFailureDiagnostics: typeof currentFootprintCombinedFactoryFailureDiagnostics;
   readonly requireCurrentFootprintCombinedUnlaunchedFactoryFailure: typeof requireCurrentFootprintCombinedUnlaunchedFactoryFailure;
@@ -64,7 +67,7 @@ interface Module {
  * Callers must retain the returned child through cleanup; the fixture issues
  * no native application ownership, real closed-SQL proof or writer authority.
  */
-export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined" | "forward" | "forward-execution" = "combined", savedObservation = false,
+export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined" | "forward" | "forward-execution" | "structure" = "combined", savedObservation = false,
   supplied: Readonly<{ modules?: Readonly<Record<string, unknown>>; childProgram?: string;
     launchTarget?: Readonly<{ windowsPath: string; sha256: string }> }> = {}): Promise<Readonly<{
   api: Module; options: CurrentPcbDiagnosticInstallationOptions; child: () => ChildProcessWithoutNullStreams;
@@ -206,6 +209,7 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
       assert.equal(bootstrap.includes(" -WorkerStartupFootprintForward209 "), !saved && purpose === "forward");
       assert.equal(bootstrap.includes(" -WorkerStartupFootprintForwardExecution209 "), !saved && purpose === "forward-execution");
       assert.equal(bootstrap.includes(" -WorkerStartupFootprintCombined209 "), !saved && purpose === "combined");
+      assert.equal(bootstrap.includes(" -ProjectStructure209 "), !saved && purpose === "structure");
       if (saved && mode === "saved-spawn-refusal") { throw new Error("Synthetic saved spawn unresolved"); }
       const packet = { challenge: match?.[1] ?? "", schema: CURRENT_FOOTPRINT_COMBINED_READY.schema, helperInstance: "b".repeat(32), jobId: "c".repeat(32),
         creationState: "not-entered", processCreated: false, emptyJob: true, pipesChecked: true };
@@ -239,8 +243,9 @@ input.on('close',()=>{if(mode==='stderr-delayed-close')setTimeout(()=>process.ex
       return child;
     } };
   }, loaded, loaded.exports]);
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The actual maintained module exports these named functions; only installation/child fixtures are substituted, never its private registries.
+  /* oxlint-disable typescript/no-unsafe-type-assertion -- The actual maintained module exports these named functions; only installation/child fixtures are substituted, never its private registries. */
   const api = loaded.exports as unknown as Module;
+  /* oxlint-enable typescript/no-unsafe-type-assertion */
   return { api, options, state, executionInputs, child: (): ChildProcessWithoutNullStreams => { assert.ok(original !== null); return original; },
     seedSyntheticClosedSnapshot: (writer, after): void => {
       assert.equal(savedObservation, true); api.assertOriginalCurrentFootprintCopyForwardNativeOwner(writer);

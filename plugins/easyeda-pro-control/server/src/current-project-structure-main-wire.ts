@@ -1,7 +1,8 @@
 /** Finite structure observer projection. Original transport ownership remains
  * required; this codec grants neither a native purpose nor writer eligibility. */
 import { freezeDeep } from "./sqlite-inventory-core.ts";
-import { validateCurrentProjectStructureMainCommand } from "./current-project-structure-main-protocol.ts";
+import { CURRENT_PROJECT_STRUCTURE_MAIN_FLAGS, validateCurrentProjectStructureMainCommand, validateCurrentProjectStructureMainPlan } from "./current-project-structure-main-protocol.ts";
+import { CURRENT_PROJECT_STRUCTURE_MAIN_PROGRAMS } from "./current-project-structure-main-programs.ts";
 import type { CurrentProjectStructureMainCommand as Command } from "./current-project-structure-main-protocol.ts";
 
 /** Project only variable data. Programs, expressions, locations, flags and
@@ -33,4 +34,12 @@ export function currentProjectStructureMainWire(input: unknown, id: number): Rea
     throw new Error("PROJECT_STRUCTURE_MAIN_WIRE_BYTES");
   }
   return freezeDeep({ command: { ...command, id }, request });
+}
+/** Reserve the comparison body's worst-case handle/ID envelope before arming.
+ * These inert capacity fields are never dispatched and confer no ownership. */
+export function requireCurrentProjectStructureMainPlanTransportCapacity(input: unknown): void {
+  const objectId = "f".repeat(256), value = validateCurrentProjectStructureMainPlan(input);
+  currentProjectStructureMainWire({ phase: "structure-main-join", stage: "controller", method: "Runtime.callFunctionOn", params: {
+    ...CURRENT_PROJECT_STRUCTURE_MAIN_FLAGS, objectId, functionDeclaration: CURRENT_PROJECT_STRUCTURE_MAIN_PROGRAMS.controller,
+    arguments: [{ objectId }, { objectId }, { value }], returnByValue: false } }, 2_147_483_647);
 }
