@@ -299,3 +299,118 @@ A first offline probe refused the dependency-bearing development checkout
 before creating a child. Clean-package offline verification, exact-head CI,
 CodeRabbit review, original-process cleanup, historical receipt qualification,
 publication and installation remain separate pending steps.
+
+
+## Exact-head CI and second full review
+
+Commit `5c972481f611b2a47ba7ec18c715b2e444d97153` completed CI with 14,272
+facade tests: 14,263 passed, four failed and five supported platform skips,
+with no cancellation. All four failures came from an omitted historical-state
+declaration in the VM extractor used by `current-pcb-startup-index-switch.test.ts`.
+The production dispatcher already declares that state. The fixture now extracts
+it too; its four focused cases and strict targeted lint pass. Seven facade
+shards, the build, all 424 bridge cases and Windows compilation passed. The
+failed shard and dependent aggregate remain failed evidence, not a qualifying
+complete-suite result.
+
+All ten checkout jobs used the same merge tree as that head, with the expected
+base and head parents. CI source/runtime pin objects match the committed and
+normalized frozen package. Both raw log archives pass CRC checks, and the
+uploaded package artifact matches all 2,631 files, 43 directories and 53,533,835
+bytes, including exact modes and roster. Complete CI proof SHA-256:
+`dffca3457a8119b1b7174b3165d2b91bc60731d37b5314943c20aa321ca839ea`.
+The first local archive preserved group-write modes; its comparison refusal is
+retained. Explicit tar permission normalization produced the exact passing
+snapshot. Its offline probe completed 75 queries and 77 requests, with child
+stdin EOF, observed close and exit 0. That probe remains synthetic-profile
+catalog verification, separate from connected execution.
+
+CodeRabbit review `5784300000` covers `5c97248` and reports two Major issues
+and one Trivial fixture nit. All are accepted. Operation-only Source cleanup
+timeouts lose the original operation ID needed for same-client inspection and
+settlement. Failed first receipt publication can leave an empty managed
+directory that prevents the original pending intent from settling. The main
+publication fixture also needs an exact anchor assertion so formatting drift
+fails immediately. The follow-up preserves original-owner and unknown-outcome
+boundaries while addressing these failures. It does not enable a writer.
+
+The actual review selected 121 files and filtered three generated bundles.
+`native-core.cs` changes were unavailable, so the provider explicitly reports
+incomplete coverage despite a successful check. Its 30.41% docstring metric is
+inconclusive: 148 functions across 50 files, with 70 skips comprising 16
+unsupported and 54 at the file limit. Complete review and disposition proof
+SHA-256 is
+`5e16633c0432a10e8dbcfae83dcfc1419da102f43d07506cf643939cf166b80a`.
+A final-head review and complete green CI remain required.
+
+For clarity, the application launch above used the existing EasyEDA profile
+with a disposable project selected in the request. The refusal predates its
+explicit project-opening dispatch; this observation does not establish
+isolation from automatic startup effects.
+
+
+The manager correction preserves a separate original Source operation ID for
+operation-only timeouts. Completed cleanup with no retained binding stays on
+inspection and local bookkeeping. When an application owner remains active,
+only the existing complete same-facade inspection can recover its actual
+published binding for original cleanup. The active-owner regression initially
+reproduced that remaining gap; its final eight-case selection, strict lint and
+types pass. Independent review proof SHA-256:
+`d2d6b164a36c7ca5eaa571a6abf4c7bf66ddfdfb2a4b8f34cc69442f17ed7339`.
+
+The first-intent publication regression reproduces the empty-directory failure
+with the actual managed publisher. The reader now returns no receipt only after
+rechecking the empty directory and original snapshot. Startup remains blocked;
+the original private pending token and bytes can finish without recollection.
+Ten focused cases and strict lint pass, with malformed, partial, result-only
+and extra-leaf refusals preserved. Validation proof SHA-256:
+`2f6cfb25a8d89c2b71862ce947ec6fc64ceb39a39fc788191285b65e3333969f`;
+independent review proof:
+`512dd5e8cf1ed453bc37559064c3e6c104626d3c2f1febe8f08d880f57a18911`.
+
+Further review found the analogous SDK-timeout trap in the new historical
+metadata wrapper. A separate `settle-unknown-source-opening` action now accepts
+only original retained pending bytes or a verified complete matching receipt.
+It refuses before new nonce, installation, process-absence or source/SQL proof
+collection when neither exists. Existing collection behavior and persisted
+intent/result schemas remain unchanged. Thirteen focused cases and strict lint
+pass; validation proof SHA-256:
+`888615a896cdd5f618de89234ac890e7dd7a8236761d4711e7190858a7bf0c46`.
+Independent review proof:
+`9a65630ac033b043ad4d8ef96219f6bb2a2791ab7895f0d844092f57384db24e`.
+
+The manager's `settle-historical-metadata` selector reconstructs that request
+only from its private original call, on the same client, transport, generation
+and interrupted request. It checks the strict receipt, operation and four
+original digests, retains the unknown original outcome and keeps normal/native
+calls blocked. Busy, missing-pending and contradictory replies grant no
+settlement. Closure still requires the original facade's retirement preflight
+and actual original child EOF/exit. Its eighteen-case focused selection and
+strict lint pass; validation proof SHA-256:
+`a6b0b6549879a4eca1894ec6bfda97241b77ae6d2298dbf579bdcdb435f1ff8b`.
+Independent review proof:
+`e4145cbae87c3d6f0c71c67e57475919a95bc1c2ff49950ae4f2e8dd8dfbe32c`.
+
+Final combined strict types and type-aware lint pass with zero warnings. The
+moving-cut unused-fixture-helper type failure is retained separately and grants
+no pass. Offline discovery now includes settlement argument validation: 76
+queries and 78 requests, with no additional MCP tool or native launch purpose.
+These remain synthetic/source results, with no live historical receipt,
+connected source seal, helper cleanup or writer claim. The candidate plugin
+version remains unchanged while this follow-up is batched for final CI/review.
+
+
+The batched corrections pass the build, compatibility, repository/privacy,
+plugin and skill validators. Source, runtime and frontend rebuilds preserve all
+3,039 repository file bytes and modes; proof SHA-256:
+`94e43b5fcd61ad77a5b0e11f23cb11d784b1bb5adf5de074fee320fd1d96d65c`.
+Only facade projections and review time changed. The final 1,049-source-file
+projection is
+`c951eb4076957eda646be2586fd587689ff04be991eec33814308843ce7394d6`;
+the three-file runtime projection is
+`0ad9c591597852927db4cde2703674b2f3cd9f1f05ac64675a91a715bc5a592b`.
+External pins and the original retained payload remain unchanged. Final clean
+package verification, complete green exact-head CI and another actual
+CodeRabbit review remain publication gates. No original-process signal,
+historical resolver or new connected Source attempt has been performed by this
+follow-up.

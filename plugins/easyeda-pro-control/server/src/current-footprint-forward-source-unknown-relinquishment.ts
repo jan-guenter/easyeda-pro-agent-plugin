@@ -89,6 +89,11 @@ export class CurrentFootprintForwardSourceUnknownRelinquishment {
         need(this.#pending === null || canonicalJson(receipt.result) === canonicalJson(this.#pending.result), "RESULT_PUBLICATION_CHANGED");
         this.#pending = null; return structuredClone(receipt.result);
       }
+      if (request.action === "settle-unknown-source-opening") {
+        // This lane can publish only the privately retained observation plan.
+        // Missing pending bytes never authorize new collectors or a new nonce.
+        need(this.#pending !== null, "RETAINED_METADATA_REQUIRED");
+      }
       if (this.#pending === null) {
         const installation = await this.#verify(this.#options); await this.#current(original);
         const nonce = randomBytes(32).toString("hex");

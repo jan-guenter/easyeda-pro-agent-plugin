@@ -389,3 +389,10 @@ unchanged source, SQL and history checks. Its original capture, termination and
 helper-release outcomes remain unknown. Keep its same metadata coordinator
 through a pending receipt acknowledgment; retire it normally before a new
 native validation generation. Read the [exact historical contract](current-footprint-forward-source-relinquishment.md).
+
+After an SDK timeout in historical Source metadata work, use only the original
+manager's `cleanup-original` selector `settle-historical-metadata`. It sends a
+settlement-only request reconstructed from the private original call. No caller
+payload, new observation or native cleanup is admitted. Busy or missing pending
+evidence refuses; the original outcome remains unknown. Only the original
+facade's retirement preflight can authorize closure and a later generation.

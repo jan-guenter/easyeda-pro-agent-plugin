@@ -146,6 +146,12 @@ export async function readCurrentFootprintForwardSourceRelinquishment(token: Cur
   const directory = join(controlDataDirectory(), DIRECTORY, original.operationId);
   const slot = await readSlot(directory, ["intent.json", "relinquished.json"], "subset", true);
   if (slot === null) { return null; }
+  if (slot.files.size === 0) {
+    // Failed publication may leave an empty directory after removing its file.
+    // No receipt or admission follows; retained pending metadata can settle.
+    need(sameSlot(slot, await readSlot(directory, ["intent.json", "relinquished.json"], "subset")), "SIDECAR_CHANGED");
+    await assertCurrentFootprintForwardSourceHistoricalSnapshot(token); return null;
+  }
   const intentBytes = slot.files.get("intent.json")?.bytes; need(intentBytes !== undefined, "INTENT_REQUIRED");
   const intent = currentFootprintForwardSourceRelinquishmentIntentSchema.parse(parseBytes(intentBytes)); need(matches(intent, original), "INTENT_BINDING");
   const bytes = slot.files.get("relinquished.json")?.bytes;

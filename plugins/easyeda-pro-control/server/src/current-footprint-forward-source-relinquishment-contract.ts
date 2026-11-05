@@ -29,7 +29,7 @@ export const CURRENT_FOOTPRINT_FORWARD_SOURCE_HISTORICAL_KINDS = Object.freeze([
 const digest = z.string().regex(/^[a-f\d]{64}$(?![\s\S])/u);
 const operationId = currentFootprintForwardExecutionOpeningIdSchema;
 export const currentFootprintForwardSourceRelinquishmentRequestSchema = z.object({
-  action: z.literal("relinquish-unknown-source-opening"), operationId,
+  action: z.enum(["relinquish-unknown-source-opening", "settle-unknown-source-opening"]), operationId,
   expectedManifestSha256: digest, expectedRosterSha256: digest, expectedIntentSha256: digest, expectedBindingSha256: digest,
   confirmRelinquishUnknownSourceOpening: z.literal(true), acceptUnknownCaptureOutcome: z.literal(true),
 }).strict();
@@ -72,10 +72,11 @@ export type CurrentFootprintForwardSourceRelinquishmentResult = z.infer<typeof c
 
 /** Describe the separate historical path without observing processes or changing history. */
 export function queryCurrentFootprintForwardSourceRelinquishment(includeSchemas: boolean): Record<string, unknown> {
-  return { wrapperAction: "footprint-forward-source-relinquishment", actions: ["relinquish-unknown-source-opening"],
+  return { wrapperAction: "footprint-forward-source-relinquishment", actions: ["relinquish-unknown-source-opening", "settle-unknown-source-opening"],
     validationOnly: true, executionReady: false, executionAuthorized: false, saveAuthorized: false,
     limitations: ["Only one externally reviewed exact 23-record Source v2 roster qualifies; its old journal contains no producer digest.",
       "Fresh global Linux/Windows absence and complete unchanged raw/prepared SQL/history proofs relinquish only its historical startup blocker.",
+      "Settlement accepts only this coordinator's retained pending metadata or a complete matching receipt; it never recollects observations or file proofs.",
       "Original capture, termination and helper release remain unknown. No owner, replay, restoration, writer or Save authority follows."],
     ...(includeSchemas ? { inputSchema: z.toJSONSchema(currentFootprintForwardSourceRelinquishmentRequestSchema),
       resultSchema: z.toJSONSchema(currentFootprintForwardSourceRelinquishmentResultSchema) } : {}) };

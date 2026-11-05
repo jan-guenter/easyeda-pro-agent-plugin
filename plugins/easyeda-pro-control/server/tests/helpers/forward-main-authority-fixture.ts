@@ -88,7 +88,9 @@ export async function forwardMainAuthorityFixture(context: TestContext, suffix: 
       }
       public constructor(input: CurrentPcbDiagnosticLifecycleOptions)`);
       source = `import {wait as syntheticPublicationWaitForTest} from './synthetic-publication-gate-for-test';\n${source}`;
-      source = source.replace("await this.#journalRequired().assertCurrent(); this.#current();\n    const owner =", "await this.#journalRequired().assertCurrent(); await syntheticPublicationWaitForTest(); this.#current();\n    const owner =");
+      const publicationAnchor = "await this.#journalRequired().assertCurrent(); this.#current();\n    const owner =";
+      assert.equal(source.split(publicationAnchor).length, 2, "Expected exactly one original publication gate anchor.");
+      source = source.replace(publicationAnchor, "await this.#journalRequired().assertCurrent(); await syntheticPublicationWaitForTest(); this.#current();\n    const owner =");
     }
     const output = await transform(source, { loader: "ts", format: "cjs", target: "node24", supported: { "dynamic-import": false } }); outputs.set(`./${name}`, output.code);
   }

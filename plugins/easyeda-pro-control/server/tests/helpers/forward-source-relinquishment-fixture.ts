@@ -10,8 +10,8 @@ import { basename, join } from "node:path";
 import { runInThisContext } from "node:vm";
 import type { TestContext } from "node:test";
 import { transform } from "esbuild";
-import { controlDataDirectory, createOperation, operationPath, writePhaseArtifact } from "../../src/artifacts.ts";
-import { OPERATION_SCHEMA, buildPlanHash, sha256Json, sha256Text } from "../../src/core.ts";
+import { controlDataDirectory, createOperation, operationPath, publishManagedAttachmentExclusive, writePhaseArtifact } from "../../src/artifacts.ts";
+import { OPERATION_SCHEMA, buildPlanHash, isRecord, sha256Json, sha256Text } from "../../src/core.ts";
 import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_BUDGET, CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_PROFILE,
   currentFootprintForwardExecutionOpeningRequestSchema } from "../../src/current-footprint-forward-execution-opening-contract.ts";
 import type { CurrentFootprintForwardExecutionOpeningRecord } from "../../src/current-footprint-forward-execution-opening-contract.ts";
@@ -44,7 +44,8 @@ export async function forwardSourceRelinquishmentFixture(context: TestContext, s
   historical: HistoricalApi; contract: ContractApi; source: SourceApi; admission: AdmissionApi;
   engine: EasyedaControlEngine;
   owner: CurrentFootprintForwardSourceUnknownRelinquishment;
-  state: { linux: number; windows: number; files: number; otherLinux: boolean; windowsPresent: boolean; fileMismatch: boolean; loseResultAck: boolean;
+  state: { installation: number; linux: number; windows: number; files: number; otherLinux: boolean; windowsPresent: boolean; fileMismatch: boolean; loseResultAck: boolean;
+    failIntentPublication: boolean; intentSnapshots: object[]; intentValues: unknown[];
     hold: boolean; entered: PromiseWithResolvers<null>; release: PromiseWithResolvers<null> };
   restart: () => CurrentFootprintForwardSourceUnknownRelinquishment;
 }>> {
@@ -91,6 +92,9 @@ export async function forwardSourceRelinquishmentFixture(context: TestContext, s
   const names = ["current-footprint-forward-source-relinquishment-contract.ts", "current-footprint-forward-source-relinquishment-journal.ts",
     "current-footprint-forward-source-unknown-relinquishment.ts", "current-footprint-forward-execution-opening-journal.ts",
     "current-pcb-diagnostic-lifecycle-journal.ts", "closed-symbol-terminal-admission.ts", "engine.ts"];
+  const state = { installation: 0, linux: 0, windows: 0, files: 0, otherLinux: false, windowsPresent: false, fileMismatch: false, loseResultAck: false,
+    failIntentPublication: false, intentSnapshots: [] as object[], intentValues: [] as unknown[],
+    hold: false, entered: Promise.withResolvers<null>(), release: Promise.withResolvers<null>() };
   const outputs = new Map<string, string>(); const cache = new Map<string, { exports: Record<string, unknown> }>();
   for (const name of names) {
     let source = await readFile(new URL(`../../src/${name}`, import.meta.url), "utf8");
@@ -106,12 +110,32 @@ export async function forwardSourceRelinquishmentFixture(context: TestContext, s
     outputs.set(`./${name}`, transformed.code);
   }
   const sourceRequire = createRequire(new URL("../../src/engine.ts", import.meta.url));
+  const sourceArtifactsRaw: unknown = sourceRequire("./artifacts.ts"); assert.ok(isRecord(sourceArtifactsRaw));
+  const sourceArtifacts = { ...sourceArtifactsRaw,
+    publishManagedAttachmentExclusive: (...args: Parameters<typeof publishManagedAttachmentExclusive>): ReturnType<typeof publishManagedAttachmentExclusive> => {
+      const [attachmentPath, label, bytes, kind, beforePathRevalidation] = args;
+      if (state.failIntentPublication && attachmentPath === join(controlDataDirectory(), "footprint-forward-source-relinquishments-v1", operationId, "intent.json")) {
+        state.failIntentPublication = false;
+        // Fail inside the actual publisher after it creates the file and parent.
+        // Its real cleanup removes the failed file and leaves the empty slot.
+        return publishManagedAttachmentExclusive(attachmentPath, label, bytes, kind, async () => {
+          await beforePathRevalidation?.(); throw new Error("Synthetic failed first intent publication");
+        });
+      }
+      return publishManagedAttachmentExclusive(...args);
+    },
+  };
+  function requireSource(specifier: string): unknown {
+    if (outputs.has(specifier)) { return load(specifier); }
+    if (specifier === "./artifacts.ts") { return sourceArtifacts; }
+    return sourceRequire(specifier) as unknown;
+  }
   function load(name: string): Record<string, unknown> {
     const cached = cache.get(name); if (cached !== undefined) { return cached.exports; }
     const output = outputs.get(name); assert.ok(output !== undefined);
     const loaded = { exports: {} }; cache.set(name, loaded);
     const evaluate: unknown = runInThisContext(`(function(require,module,exports){${output}\n})`); assert.ok(typeof evaluate === "function");
-    Reflect.apply(evaluate, undefined, [(specifier: string): unknown => outputs.has(specifier) ? load(specifier) : sourceRequire(specifier) as unknown, loaded, loaded.exports]);
+    Reflect.apply(evaluate, undefined, [requireSource, loaded, loaded.exports]);
     return loaded.exports;
   }
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Actual VM modules retain their private maps; only the synthetic fixed hash profile is replaced above.
@@ -128,8 +152,6 @@ export async function forwardSourceRelinquishmentFixture(context: TestContext, s
   const engineApi = load("./engine.ts") as unknown as EngineApi;
   const engine = new engineApi.EasyedaControlEngine({ callTool: (): Promise<never> => Promise.reject(new Error("No live call is allowed.")) });
   await engine.controlFingerprintPromise;
-  const state = { linux: 0, windows: 0, files: 0, otherLinux: false, windowsPresent: false, fileMismatch: false, loseResultAck: false,
-    hold: false, entered: Promise.withResolvers<null>(), release: Promise.withResolvers<null>() };
   const options: CurrentFootprintForwardSourceUnknownRelinquishmentOptions = { pluginRoot: "/synthetic/plugin", assetsRoot: "/mnt/c/Synthetic/resources/app/assets",
     wslDistribution: "Synthetic", powershellBytes: 1, powershellSha256: digest,
     assertLocalAllowed: (): void => {
@@ -148,8 +170,9 @@ export async function forwardSourceRelinquishmentFixture(context: TestContext, s
     rawSourceSha256: digest, oldHistorySemanticSha256: digest, freshHistorySemanticSha256: digest,
     fullSqlEqual: true, historyEqual: true, sidecarsAbsent: true, executionAuthorized: false, writerAuthority: false, restored: false });
   const deps: CurrentFootprintForwardSourceUnknownRelinquishmentDependencies = {
-    verifyInstallation: (): Promise<ReturnType<typeof createCurrentPcb209DiagnosticInstallationPlan> & { facadeSha256: string }> =>
-      Promise.resolve({ ...createCurrentPcb209DiagnosticInstallationPlan(options), facadeSha256: digest }),
+    verifyInstallation: (): Promise<ReturnType<typeof createCurrentPcb209DiagnosticInstallationPlan> & { facadeSha256: string }> => {
+      state.installation += 1; return Promise.resolve({ ...createCurrentPcb209DiagnosticInstallationPlan(options), facadeSha256: digest });
+    },
     observeLinux: (): Promise<boolean> => { state.linux += 1; return Promise.resolve(state.otherLinux); },
     observeWindows: (): Promise<{ schema: "easyeda-pro-control.ordinary-launch-recovery-observation.v1"; samples: 2; otherPowerShellPresent: boolean; sameNameProcessPresent: boolean; helperSha256: typeof ORDINARY_LAUNCH_RECOVERY_HELPER.sha256 }> => {
       state.windows += 1; return Promise.resolve({ schema: "easyeda-pro-control.ordinary-launch-recovery-observation.v1", samples: 2,
@@ -157,6 +180,7 @@ export async function forwardSourceRelinquishmentFixture(context: TestContext, s
     },
     collectFileProof: async (_input, current) => { state.files += 1; await current(); assert.equal(state.fileMismatch, false, "Synthetic complete-file proof refusal"); return fileProof; },
     publishRecord: async (snapshot, name, value): Promise<void> => {
+      if (name === "intent.json") { state.intentSnapshots.push(snapshot); state.intentValues.push(value); }
       await historical.publishCurrentFootprintForwardSourceRelinquishment(snapshot, name, value);
       if (name === "relinquished.json" && state.loseResultAck) { state.loseResultAck = false; throw new Error("Synthetic lost sidecar ACK"); }
     },
