@@ -18,7 +18,7 @@ import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_OBSERVATION_LIMITS, currentPcbWorker
 import type { CurrentPcbWorkerStartupChannelPacket } from "../src/current-pcb-worker-startup-channel-observation.ts";
 import { createCurrentPcb209DiagnosticInstallationPlan, createCurrentPcbDiagnosticInstallationPlan } from "../src/current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation } from "../src/current-pcb-diagnostic-installation.ts";
-import { CurrentPcb209DiagnosticLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentPcb209DiagnosticLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbOrdinaryReadLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_209_OPENING_SCRIPTS } from "../src/current-pcb-209-opening-profile.ts";
 import { decodeCurrentPcb209PrimitivesReply } from "../src/current-pcb-209-primitives.ts";
 import { decodeCurrentPcb209ArcShapesReply } from "../src/current-pcb-209-arc-shapes.ts";
@@ -139,11 +139,11 @@ function historicalObservationFixture(stage: "primitives209" | "extended-primiti
 
 function directory(id: string): string {
   const root = process.env["EASYEDA_CONTROL_DATA_DIR"];
-  assert.ok(root !== undefined && root.includes("easyeda-test-control-")); assert.match(id, /^(?:diagnostic-test|pcb209-test|string-precreate-test|worker-startup-test)-[a-z0-9-]+$/u);
+  assert.ok(root !== undefined && root.includes("easyeda-test-control-")); assert.match(id, /^(?:diagnostic-test|pcb209-test|pcb209-ordinary-test|string-precreate-test|worker-startup-test)-[a-z0-9-]+$/u);
   return join(root, "pcb-diagnostic-lifecycle-v1", id);
 }
 function launch(id: string): Record<string, unknown> {
-  return { action: "launch", operationId: id, confirmValidationOnly: true, confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true };
+  return { action: "launch", operationId: id, ...(id.startsWith("pcb209-ordinary-") ? { confirmOrdinaryReadOnly: true } : { confirmValidationOnly: true }), confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true };
 }
 type FixtureDependencies = CurrentPcbDiagnosticLifecycleDependencies & Pick<CurrentPcbWorkerStartupLifecycleDependencies, "createStartupOpening">;
 function fixture(context: TestContext, id: string, dependencies: FixtureDependencies = {}, sharedAdmission?: () => Promise<void>): {
@@ -167,6 +167,7 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
   });
   const stringPurpose = id.startsWith("string-precreate-");
   const startupPurpose = id.startsWith("worker-startup-");
+  const ordinary209 = id.startsWith("pcb209-ordinary-");
   const opening209 = id.startsWith("pcb209-");
   let ownerPurpose: "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" = "diagnostic";
   if (stringPurpose) { ownerPurpose = "string-precreate"; }
@@ -189,7 +190,7 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
     launch: async () => {
       calls.push("launch");
       const intent = await readFile(join(directory(id), "intent.json"), "utf8");
-      assert.match(intent, { diagnostic: /diagnostic-launch-intent/u, diagnostic209: /diagnostic-launch-intent/u, "string-precreate": /string-precreate-launch-intent/u,
+      assert.match(intent, { diagnostic: /diagnostic-launch-intent/u, diagnostic209: ordinary209 ? /ordinary-read-launch-intent/u : /diagnostic-launch-intent/u, "string-precreate": /string-precreate-launch-intent/u,
         "worker-startup": /worker-startup-launch-intent/u }[ownerPurpose]);
       if (state.rootless !== null) { throw new Error("synthetic settled rootless refusal"); }
       state.bound = true;
@@ -280,7 +281,7 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
       calls.push("open-preflight");
       assert.deepEqual(target, { ...OPEN_TARGET, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid });
       const intent = await readFile(join(directory(id), "project-opening-intent.json"), "utf8");
-      assert.match(intent, /diagnostic-project-opening-intent/u);
+      assert.match(intent, ordinary209 ? /ordinary-project-opening-intent/u : /diagnostic-project-opening-intent/u);
       await reverify(); calls.push("open-dispatch", "native-opening-reply");
       return structuredClone(OPEN_RESULT);
     },
@@ -392,7 +393,8 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
     ...dependencies,
   };
   let coordinator: CurrentPcbDiagnosticLifecycle = new CurrentPcbDiagnosticLifecycle(options, commonDependencies);
-  if (opening209) { coordinator = new CurrentPcb209DiagnosticLifecycle(options, commonDependencies); }
+  if (ordinary209) { coordinator = new CurrentPcbOrdinaryReadLifecycle(options, commonDependencies); }
+  else if (opening209) { coordinator = new CurrentPcb209DiagnosticLifecycle(options, commonDependencies); }
   else if (stringPurpose) { coordinator = new CurrentPcbStringPrecreateLifecycle(options, { ...commonDependencies,
     readCommonInventory: (prepared): ReturnType<NonNullable<CurrentPcbStringPrecreateLifecycleDependencies["readCommonInventory"]>> => {
       calls.push("common-inventory"); assert.equal(prepared, originalCheckpoint); assert.ok(originalInventory); return Promise.resolve(originalInventory);
@@ -2490,4 +2492,57 @@ void test("209 Arc and Poured retain original method identity and settle bounded
     await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
     value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
   }
+});
+
+void test("ordinary PCB owner journals truthful authority and reuses all fixed reader stages without opening writer gates", async context => {
+  const id = "pcb209-ordinary-test-all-readers", value = fixture(context, id);
+  await readyForOpening(id, value);
+  const launched = await value.coordinator.run({ action: "inspect", operationId: id });
+  assert.equal(launched["ordinaryProjectReadOnly"], true); assert.equal(launched["validationOnly"], false);
+  assert.equal(launched["saveAuthorized"], false);
+  const launchRecord = await readFile(join(directory(id), "intent.json"), "utf8");
+  assert.match(launchRecord, /pcb209-ordinary-read-launch-intent/u);
+  assert.doesNotMatch(launchRecord, /confirmValidationOnly|confirmDisposableProject/u);
+  await value.request("open-project", { target: OPEN_TARGET, confirmOrdinaryProject: true, acceptNormalOpenEffects: true });
+  const opening = await readFile(join(directory(id), "project-opening-intent.json"), "utf8");
+  assert.match(opening, /confirmOrdinaryProject/u); assert.doesNotMatch(opening, /confirmDisposableProject/u);
+  await assert.rejects(value.request("open-project", { target: OPEN_TARGET, confirmOrdinaryProject: true, acceptNormalOpenEffects: true }), /CONSUMED/u);
+  await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
+  const actions = ["observe-layers", "observe-primitives", "observe-extended-primitives", "observe-selection-relations",
+    "observe-pad-shapes", "observe-image-shapes", "observe-arc-shapes", "observe-poured-shapes"];
+  for (const action of actions) {
+    const read = await value.request(action);
+    assert.equal(read["ordinaryProjectReadOnly"], true); assert.equal(read["executionAuthorized"], false);
+    await assert.rejects(value.request(action), /CONSUMED/u);
+  }
+  for (const action of ["inspect-workers", "observe-model-state", "observe-common-baseline", "perform-visual", "observe-spatial", "save"]) {
+    await assert.rejects(value.request(action));
+  }
+  const disposable = new CurrentPcb209DiagnosticLifecycle(value.options);
+  await assert.rejects(disposable.run({ action: "inspect", operationId: id }), /GENERATION_MISMATCH/u);
+  const beforeClose = value.calls.length;
+  await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+  value.state.terminated = true; await value.request("observe-termination");
+  await value.request("release-closed");
+  assert.deepEqual(value.calls.slice(beforeClose), ["window", "close", "termination", "release"]);
+  assert.equal(value.coordinator.hasActiveReservation(), false);
+});
+
+void test("ordinary PCB requests cannot substitute disposable attestation or change original callbacks", async context => {
+  const id = "pcb209-ordinary-test-no-upgrade", value = fixture(context, id);
+  await assert.rejects(value.coordinator.run({ action: "launch", operationId: id,
+    confirmValidationOnly: true, confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true }));
+  assert.equal(value.calls.length, 0);
+  await readyForOpening(id, value);
+  await assert.rejects(value.request("open-project", OPEN_INPUT));
+  assert.equal(value.calls.includes("prepare-checkpoint"), false);
+  await value.request("open-project", { target: OPEN_TARGET, confirmOrdinaryProject: true, acceptNormalOpenEffects: true });
+  await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
+  const original = value.owner.observeLayers209; assert.ok(original);
+  value.owner.observeLayers209 = (): Promise<Readonly<Record<string, unknown>>> => Promise.resolve({ unowned: true });
+  await assert.rejects(value.request("observe-layers"), /OWNER_PURPOSE_CHANGED/u);
+  assert.equal(value.calls.includes("layers209"), false);
+  // Restore only the synthetic callback for fixture cleanup. Native production
+  // Ownership cannot be repaired or reconstructed this way.
+  value.owner.observeLayers209 = original;
 });

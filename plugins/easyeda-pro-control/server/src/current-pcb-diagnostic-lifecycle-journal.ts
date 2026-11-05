@@ -9,6 +9,7 @@ import type { CurrentFootprintForwardSourceHistoricalSnapshot } from "./current-
 import { currentWindowResizeResultSchema, requireCurrentWindowResizeResult } from "./current-pcb-diagnostic-window-resize.ts";
 import { CURRENT_RENDERER_CAPTURE_LIMITS, currentRendererCaptureResultSchema, requireCurrentRendererCaptureResult } from "./current-pcb-diagnostic-renderer-capture.ts";
 import { currentWindowCaptureResultSchema, requireCurrentWindowCaptureResult } from "./current-pcb-diagnostic-window-capture.ts";
+import { CURRENT_PCB_ORDINARY_READ_PREFIX, currentPcbOrdinaryReadIdSchema } from "./current-pcb-ordinary-read-validation.ts";
 import { currentPcb209VisualIdSchema } from "./current-pcb-209-visual-validation.ts";
 import { CURRENT_PCB_SPATIAL_OPERATION_PREFIX, CURRENT_PCB_SPATIAL_RESULT_MAX_BYTES, currentPcbSpatialIdSchema,
   currentPcbSpatialObservationSchema, currentPcbSpatialQueriesSchema, currentPcbSpatialTrackObservationSchema,
@@ -138,6 +139,10 @@ const diagnosticIntentSchema = z.object({ schema: z.literal("easyeda-pro-control
   facadeSha256: diagnosticLifecycleDigestSchema, installationSha256: diagnosticLifecycleDigestSchema,
   confirmValidationOnly: z.literal(true), confirmDiagnosticLaunch: z.literal(true), acceptExistingProfileEffects: z.literal(true),
 }).strict();
+const ordinaryReadIntentSchema = diagnosticIntentSchema.omit({ confirmValidationOnly: true }).extend({
+  schema: z.literal("easyeda-pro-control.pcb209-ordinary-read-launch-intent.v1"), operationId: currentPcbOrdinaryReadIdSchema,
+  confirmOrdinaryReadOnly: z.literal(true),
+});
 const spatialIntentSchema = diagnosticIntentSchema.extend({
   schema: z.literal("easyeda-pro-control.pcb209-spatial-launch-intent.v1"), operationId: currentPcbSpatialIdSchema,
 });
@@ -278,7 +283,7 @@ const footprintStartupId = z.union([currentPcb209WorkerStartupLifecycleIdSchema,
 const legacyStartupId = z.union([currentPcbWorkerStartupLifecycleIdSchema, footprintStartupId]);
 const startupId = z.union([legacyStartupId, footprintRouteId]);
 const startupOpeningId = z.union([startupId, currentPcb209EmptyStartupIdSchema, currentPcb209RatlineStartupIdSchema, currentPcb209RatlineContinuationIdSchema]);
-const intentSchema = z.discriminatedUnion("schema", [diagnosticIntentSchema, spatialIntentSchema, visualIntentSchema, stringIntentSchema, workerStartupIntentSchema,
+const intentSchema = z.discriminatedUnion("schema", [diagnosticIntentSchema, ordinaryReadIntentSchema, spatialIntentSchema, visualIntentSchema, stringIntentSchema, workerStartupIntentSchema,
   workerStartup209IntentSchema, workerStartupEmpty209IntentSchema, workerStartupRatline209IntentSchema, workerStartupContinuation209IntentSchema, workerStartupFootprint209IntentSchema, workerStartupFootprintRoute209IntentSchema, mainIntentSchema, combinedIntentSchema, combinedReadyIntentSchema, forwardIntentSchema]);
 const workerStartupHandoffIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-worker-startup-handoff-intent.v1"), ...base,
   operationId: startupOpeningId, bindingSha256: diagnosticLifecycleDigestSchema,
@@ -535,7 +540,7 @@ const observationFailureSchema = z.object({ schema: z.literal("easyeda-pro-contr
   stage: z.enum(["model-state", "string-precreate"]), intentSha256: diagnosticLifecycleDigestSchema,
   failure: currentPcbObservationFailureSchema, executionAuthorized: z.literal(false),
 }).strict().refine(value => (value.stage === "string-precreate") === (value.failure.family === "STRING_PRECREATE"));
-const projectOpeningIntentSchema = z.object({
+const disposableProjectOpeningIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-diagnostic-project-opening-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, scriptResultSha256: diagnosticLifecycleDigestSchema,
   target: currentDisposableOpenSealedTargetSchema, preparationCheckpoint: currentDisposableOpenPreparationCheckpointSchema,
@@ -543,6 +548,11 @@ const projectOpeningIntentSchema = z.object({
   commonBeforeSqlSha256: diagnosticLifecycleDigestSchema.optional(),
   confirmDisposableProject: z.literal(true), acceptNormalOpenEffects: z.literal(true),
 }).strict();
+const ordinaryProjectOpeningIntentSchema = disposableProjectOpeningIntentSchema.omit({ confirmDisposableProject: true }).extend({
+  schema: z.literal("easyeda-pro-control.pcb209-ordinary-project-opening-intent.v1"), operationId: currentPcbOrdinaryReadIdSchema,
+  confirmOrdinaryProject: z.literal(true),
+});
+const projectOpeningIntentSchema = z.discriminatedUnion("schema", [disposableProjectOpeningIntentSchema, ordinaryProjectOpeningIntentSchema]);
 const projectOpeningResultSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-diagnostic-project-opening-result.v1"), ...base,
   intentSha256: diagnosticLifecycleDigestSchema, result: z.record(z.string(), z.unknown()), executionAuthorized: z.literal(false),
@@ -1085,6 +1095,21 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   const release = records["release-intent.json"], released = records["released.json"];
   const notDispatched = records["not-dispatched.json"], unlaunched = records["unlaunched-release-intent.json"];
   const noProcess = records["no-process-release-intent.json"], noProcessReleased = records["no-process-released.json"];
+  const ordinaryPurpose = intent?.schema === "easyeda-pro-control.pcb209-ordinary-read-launch-intent.v1";
+  requireValue(!ordinaryPurpose || operation.operationId.startsWith(CURRENT_PCB_ORDINARY_READ_PREFIX), "ORDINARY_PURPOSE_ID");
+  if (ordinaryPurpose) {
+    const allowed = new Set(["intent.json", "binding.json", "close-intent.json", "close-acknowledged.json", "terminated.json",
+      "release-intent.json", "released.json", "unlaunched-release-intent.json", "not-dispatched.json", "no-process-release-intent.json",
+      "no-process-released.json", "browser-intent.json", "browser-result.json", "frames-intent.json", "frames-result.json", "script-intent.json",
+      "script-result.json", "project-opening-intent.json", "project-opening-result.json", "pcb-open-intent.json", "pcb-open-result.json",
+      "pcb-opening-intent.json", "pcb-opening-result.json", "observation-failure.json", ...[
+        "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209",
+      ].flatMap(stage => [`${stage}-intent.json`, `${stage}-result.json`])]);
+    for (const name of Object.keys(records)) { requireValue(allowed.has(name), "ORDINARY_STAGE_PURPOSE"); }
+    const opening = records["project-opening-intent.json"];
+    requireValue(opening === undefined || opening.schema === "easyeda-pro-control.pcb209-ordinary-project-opening-intent.v1" &&
+      opening.commonBeforeSqlSha256 === undefined, "ORDINARY_OPENING_PURPOSE");
+  }
   const spatialPurpose = intent?.schema === "easyeda-pro-control.pcb209-spatial-launch-intent.v1";
   // Preserve legacy diagnostic IDs that admitted this prefix before the spatial purpose existed.
   requireValue(!spatialPurpose || operation.operationId.startsWith(CURRENT_PCB_SPATIAL_OPERATION_PREFIX), "SPATIAL_PURPOSE_ID");
@@ -1413,6 +1438,7 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(records["worker-script-intent.json"] === undefined || records["workers-result.json"] !== undefined, "WORKER_SCRIPT_CHAIN");
   requireValue(records["worker-state-intent.json"] === undefined || records["worker-script-result.json"] !== undefined, "WORKER_STATE_CHAIN");
   const opened = records["project-opening-result.json"], opening = records["project-opening-intent.json"], script = records["script-result.json"];
+  requireValue(opening === undefined || (opening.schema === "easyeda-pro-control.pcb209-ordinary-project-opening-intent.v1") === ordinaryPurpose, "PROJECT_OPENING_PURPOSE");
   const pcbObserved = records["pcb-opening-result.json"], pcbOpen = records["pcb-open-intent.json"], pcbOpened = records["pcb-open-result.json"];
   const windowRestore = records["window-restore209-intent.json"]; const restoredWindow = records["window-restore209-result.json"];
   requireValue(windowRestore === undefined || visualPurpose && opening !== undefined && pcbObserved !== undefined &&

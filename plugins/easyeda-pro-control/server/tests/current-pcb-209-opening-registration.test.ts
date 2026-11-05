@@ -9,10 +9,11 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintForwardPrewriteLifecycle, CurrentFootprintMainLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbSpatialLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintForwardPrewriteLifecycle, CurrentFootprintMainLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbOrdinaryReadLifecycle, CurrentPcbSpatialLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
 import { currentPcbDiagnosticToolRequestSchema } from "../src/current-pcb-diagnostic-validation.ts";
+import { currentPcbOrdinaryReadRequestSchema } from "../src/current-pcb-ordinary-read-validation.ts";
 import { currentPcb209OpeningRequestSchema } from "../src/current-pcb-209-opening-validation.ts";
 import { currentPcb209VisualRequestSchema } from "../src/current-pcb-209-visual-validation.ts";
 import { currentPcbSpatialRequestSchema } from "../src/current-pcb-spatial-validation.ts";
@@ -23,6 +24,7 @@ import { facadeToolRegistered } from "../src/facade-mode.ts";
 function forbiddenLegacyLifecycle(): never { assert.fail("209 registration selected a legacy diagnostic or worker-startup lifecycle"); }
 function wrapRatline(request: unknown): { request: unknown } { return { request: { action: "ratline-held-import", request } }; }
 function mainWrap(request: unknown): { request: unknown } { return { request: { action: "footprint-main", request } }; }
+function ordinaryWrap(request: unknown): { request: unknown } { return { request: { action: "ordinary", request } }; }
 function visualWrap(request: unknown): { request: unknown } { return { request: { action: "visual", request } }; }
 
 void test("209 public opening and startup callbacks select original lifecycles and reject wider/caller-selected routes before allocation", async () => {
@@ -59,7 +61,7 @@ void test("209 public opening and startup callbacks select original lifecycles a
       checks += 1; if (blocked) { throw new Error("synthetic unresolved engine journal"); }
       if (pendingAdmission !== undefined) { await pendingAdmission; }
     } };
-  const scope = vm.createContext({ z, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupToolRequestSchema,
+  const scope = vm.createContext({ z, currentPcbOrdinaryReadRequestSchema, CurrentPcbOrdinaryReadLifecycle, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupToolRequestSchema,
     CURRENT_PCB_DIAGNOSTIC_PROFILE, CurrentPcb209DiagnosticLifecycle: Selected209Lifecycle,
     CurrentPcb209VisualLifecycle: Selected209VisualLifecycle, CurrentPcbSpatialLifecycle,
     CurrentPcb209WorkerStartupLifecycle: Selected209StartupLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle,
@@ -282,4 +284,25 @@ void test("209 public opening and startup callbacks select original lifecycles a
   assert.equal(checks, beforeVisual.checks + 1); assert.equal(gateCalls, beforeVisual.gateCalls + 2);
   await assert.rejects(visualRegistration.invoke({ request: { action: "inspect", operationId } }), /purpose cannot change/u);
   assert.equal(visualAllocations, 1);
+  // The actual ordinary wrapper allocates its own generation and refuses
+  // Changing to a disposable/visual purpose even before native allocation.
+  registrations.clear();
+  const ordinaryScope = vm.createContext({ ...scope, currentPcbDiagnosticLifecycle: undefined });
+  vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), ordinaryScope);
+  const ordinaryRegistration = registrations.get("easyeda_control_pcb209_opening"); assert.ok(ordinaryRegistration);
+  const ordinaryId = "pcb209-ordinary-registration";
+  const ordinaryInspected = await ordinaryRegistration.invoke(ordinaryWrap({ action: "inspect", operationId: ordinaryId }));
+  assert.match(JSON.stringify(ordinaryInspected), /not-found/u);
+  assert.ok(ordinaryScope["currentPcbDiagnosticLifecycle"] instanceof CurrentPcbOrdinaryReadLifecycle);
+  const ordinaryLaunch = { action: "launch", operationId: ordinaryId, confirmOrdinaryReadOnly: true,
+    confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true };
+  assert.equal(ordinaryRegistration.inputSchema.safeParse(ordinaryWrap(ordinaryLaunch)).success, true);
+  await assert.rejects(ordinaryRegistration.invoke(ordinaryWrap(ordinaryLaunch)), /unresolved engine journal/u);
+  await assert.rejects(ordinaryRegistration.invoke({ request: { action: "inspect", operationId } }), /purpose cannot change/u);
+  for (const request of [{ ...launch, operationId: ordinaryId },
+    { action: "observe-model-state", operationId: ordinaryId, expectedBindingSha256 },
+    { action: "perform-visual", operationId: ordinaryId, expectedBindingSha256 }]) {
+    assert.equal(ordinaryRegistration.inputSchema.safeParse(ordinaryWrap(request)).success, false);
+  }
+
 });

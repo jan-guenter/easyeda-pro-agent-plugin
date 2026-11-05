@@ -36,7 +36,11 @@ It admits the source-reviewed fixed16Math and18Unit/Environment subsets through
 their own exact runtime checks. Two utility argument sets passed on the prior
 installed release; that does not validate every method or this source payload.
 None of the older native/private design-content, project-opening or metadata-writing routes
-below is registered there. Its separate [209 opening route](current-pcb209-opening.md)
+below is registered there. The separate [ordinary PCB read owner](current-pcb209-ordinary-read.md)
+uses its own launch-sealed namespace and truthful ordinary-project intent. It
+reuses all eight fixed209 reader stages and original cleanup; normal opening
+and closure effects can persist application data. It grants no writer or explicit
+Save authority and has no connected validation. Its separate [209 opening route](current-pcb209-opening.md)
 uses its own restricted original-owner lifecycle and source pins; it can trigger
 ordinary automatic persistence, but offers no explicit Save or writer. Its
 one-shot `observe-layers` stage provides two matching native layer samples,
