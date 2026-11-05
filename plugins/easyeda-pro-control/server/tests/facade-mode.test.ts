@@ -65,8 +65,8 @@ void test("exact209 selectors expose eighteen scoped tools without inheriting un
   assert.deepEqual(capabilities["publicReaders"], { tool: "easyeda_control_public_readers", runtimeAdmissionRequired: true, connectedValidation: false,
     batch: { maximumMethods: 7, sharedDeadlineMilliseconds: 10_000, atomicSnapshot: false, partialSuccess: false },
     scope: "supported-and-sdk-resolved-languages-api-page-viewport-theme-toolbar-unit-and-fixed-system-library-id" });
-  assert.deepEqual(capabilities["navigation"], { enabled: true, scope: "original-owner-disposable209-opening-and-scoped-project-startup-purposes-only" });
-  assert.deepEqual(capabilities["designAccess"], { enabled: false, scope: "general-geometry-and-writers;disposable-bounded-observations-and-historical-queries-only" });
+  assert.deepEqual(capabilities["navigation"], { enabled: true, scope: "original-owner-ordinary-and-disposable209-PCB-opening;tracked-checkpoint-bound-ordinary-schematic-page-opening;scoped-project-startup-purposes" });
+  assert.deepEqual(capabilities["designAccess"], { enabled: false, scope: "general-geometry-and-writers-blocked;scoped-ordinary-PCB-and-schematic-page-observations-plus-disposable-and-historical-readers" });
   const opening = capabilities["disposableOpening"]; assert.ok(typeof opening === "object" && opening !== null && "layerObservation" in opening);
   assert.equal(opening.layerObservation, "double-sampled-metadata-and-copper-count");
   assert.equal(Object.hasOwn(capabilities, "projectSymbolMetadata"), false);
@@ -76,7 +76,7 @@ void test("exact209 selectors expose eighteen scoped tools without inheriting un
     completeLiveBaselineVerified: false, serverClockProvenanceVerified: false, cadAuthority: false });
   assert.deepEqual(capabilities["save"], { enabled: false }); assert.deepEqual(capabilities["recovery"], { enabled: false });
   assert.deepEqual(capabilities["nativeAdapters"], { enabled: true,
-    scope: "identity-and-disposable209-opening-layer-primitive-selection-relations;project-worker-constructor-footprint-copy-preparation-and-route-preparation-empty-baseline-held-ratline-import-and-ratline-continuation-observations-only" });
+    scope: "identity-and-ordinary-or-disposable209-PCB-layer-primitive-selection-relations;ordinary-type1-page-open-and-Text-Wire-Bus-read;project-worker-constructor-footprint-copy-preparation-and-route-preparation-empty-baseline-held-ratline-import-and-ratline-continuation-observations-only" });
   assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /twelve distinct disposable launch purposes/u);
   assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /footprint-forward-source-validation purpose.*result flags remain false/u);
   assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /empty-baseline purpose joins fixed common data to the original completed SQL checkpoint/u);

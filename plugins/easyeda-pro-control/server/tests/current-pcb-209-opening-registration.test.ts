@@ -13,6 +13,10 @@ import { CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePrep
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
 import { currentPcbDiagnosticToolRequestSchema } from "../src/current-pcb-diagnostic-validation.ts";
+import { currentSchematicPageOpeningRequestSchema } from "../src/current-schematic-page-opening.ts";
+import { CurrentSchematicPageOpeningCoordinator, inspectCurrentSchematicPageOpening } from "../src/current-schematic-page-opening-runtime.ts";
+import { currentSchematicPageReadRequestSchema } from "../src/current-schematic-page-read.ts";
+import { readCurrentSchematicPage } from "../src/current-schematic-page-read-runtime.ts";
 import { currentPcbOrdinaryReadRequestSchema } from "../src/current-pcb-ordinary-read-validation.ts";
 import { currentPcb209OpeningRequestSchema } from "../src/current-pcb-209-opening-validation.ts";
 import { currentPcb209VisualRequestSchema } from "../src/current-pcb-209-visual-validation.ts";
@@ -61,7 +65,7 @@ void test("209 public opening and startup callbacks select original lifecycles a
       checks += 1; if (blocked) { throw new Error("synthetic unresolved engine journal"); }
       if (pendingAdmission !== undefined) { await pendingAdmission; }
     } };
-  const scope = vm.createContext({ z, currentPcbOrdinaryReadRequestSchema, CurrentPcbOrdinaryReadLifecycle, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupToolRequestSchema,
+  const scope = vm.createContext({ z, CurrentSchematicPageOpeningCoordinator, inspectCurrentSchematicPageOpening, currentSchematicPageOpeningRequestSchema, privateFingerprintSchema: z.record(z.string(), z.unknown()), currentSchematicPageReadRequestSchema, readCurrentSchematicPage, currentPcbOrdinaryReadRequestSchema, CurrentPcbOrdinaryReadLifecycle, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupToolRequestSchema,
     CURRENT_PCB_DIAGNOSTIC_PROFILE, CurrentPcb209DiagnosticLifecycle: Selected209Lifecycle,
     CurrentPcb209VisualLifecycle: Selected209VisualLifecycle, CurrentPcbSpatialLifecycle,
     CurrentPcb209WorkerStartupLifecycle: Selected209StartupLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle,
@@ -304,5 +308,22 @@ void test("209 public opening and startup callbacks select original lifecycles a
     { action: "perform-visual", operationId: ordinaryId, expectedBindingSha256 }]) {
     assert.equal(ordinaryRegistration.inputSchema.safeParse(ordinaryWrap(request)).success, false);
   }
+
+  const pageTarget = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
+    schematicUuid: "d".repeat(16), tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
+  const pageRead = { request: { action: "schematic-page-read", request: { target: pageTarget,
+    operation: { method: "eda.sch_PrimitiveText.getAll", arguments: {} } }, expectedFingerprint: {} } };
+  assert.equal(ordinaryRegistration.inputSchema.safeParse(pageRead).success, true);
+  const beforePageRead = counts();
+  await assert.rejects(ordinaryRegistration.invoke(pageRead));
+  assert.equal(counts().gateCalls, beforePageRead.gateCalls + 1); assert.equal(allocations, 1);
+  const pageWindowsPath = String.raw`C:\Fixtures\schematic-registration.eprj2`;
+  const pageOpen = { request: { action: "schematic-page-open", request: { action: "open", operationId: "sch209-open-registration",
+    target: { rawWindowsPath: pageWindowsPath, projectUuid: sha256Text(pageWindowsPath), branchUuid: pageTarget.branchUuid,
+      documentUuid: pageTarget.documentUuid, schematicUuid: pageTarget.schematicUuid, expectedSourceSha256: "e".repeat(64) },
+    confirmOrdinaryProject: true, acceptNormalOpenEffects: true }, expectedFingerprint: {} } };
+  assert.equal(ordinaryRegistration.inputSchema.safeParse(pageOpen).success, true);
+  const beforePageOpen = counts(); await assert.rejects(ordinaryRegistration.invoke(pageOpen), /original retained ordinary launch/u);
+  assert.equal(counts().gateCalls, beforePageOpen.gateCalls); assert.equal(allocations, 1);
 
 });

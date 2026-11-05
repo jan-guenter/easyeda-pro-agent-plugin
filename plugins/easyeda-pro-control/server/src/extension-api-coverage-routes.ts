@@ -699,6 +699,40 @@ add("dmt_SelectControl", ["getCurrentDocumentInfo"], "easyeda_control_context", 
 add("dmt_EditorControl", ["getSplitScreenTree"], "easyeda_control_context", "context/editor ownership", "public-method", "Bounded editor tab ownership and exclusivity checks, not navigation authority.", ["editor-tabs.ts", "runtime-scripts.ts"], ["editor-tabs.test.ts", "runtime-scripts.test.ts"]);
 add("dmt_Project", ["openProject"], "easyeda_control_runtime", "open-existing", "native-task-equivalent", "Existing saved checkpoint-member project only in empty editor; no repeated navigation or implicit Save/discard.", ["project-open-execution.ts"], ["project-open-execution.test.ts"]);
 
+// Ordinary read eligibility has its own launch/open intent and never upgrades
+// The existing disposable, visual, spatial, worker or writer owner.
+const ordinaryPcbSelectors = new Set(["open-project", "open-pcb", "observe-layers", "observe-primitives", "observe-extended-primitives",
+  "observe-selection-relations", "observe-pad-shapes", "observe-image-shapes", "observe-arc-shapes", "observe-poured-shapes"]);
+const ordinaryPcbGroups = groups.filter(group => group.route.tool === "easyeda_control_pcb209_opening" && ordinaryPcbSelectors.has(group.route.selector));
+for (const group of ordinaryPcbGroups) {
+  groups.push({ namespace: group.namespace, methods: [...group.methods], route: {
+    ...structuredClone(group.route), selector: `ordinary/${group.route.selector}`,
+    scope: `Separate launch-sealed ordinary-project reader, using pcb209-ordinary-* and truthful ordinary-project launch/open records. No disposable attestation or writer/explicit Save authority. ${
+      group.route.scope.replaceAll("disposable", "ordinary").replaceAll("validation-only", "ordinary-read-only").replaceAll("pcb209-*", "pcb209-ordinary-*")}`,
+    source: [...new Set([...group.route.source, "current-pcb-ordinary-read-validation.ts", "current-pcb-diagnostic-lifecycle.ts", "current-pcb-diagnostic-lifecycle-journal.ts"])],
+    tests: [...new Set([...group.route.tests, "current-pcb-ordinary-read.test.ts", "current-pcb-209-opening-registration.test.ts", "current-pcb-diagnostic-lifecycle.test.ts"])],
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb209-ordinary-read", query: { includeSchemas: true } } } },
+  } });
+}
+groups.push({ namespace: "dmt_EditorControl", methods: ["openDocument"], route: {
+  tool: "easyeda_control_pcb209_opening", selector: "schematic-page-open/open", implementation: "native-task-equivalent", documentTypes: [1],
+  scope: "Separately pinned installed209 ordinary SCH_PAGE opening from an already-loaded matching local project with no editor tabs or PCB iframes. Exact raw registered path, complete original file checkpoint, default-branch page/parent source membership and branch bind one consumed navigation journal. Captures the original parent UI/window/registry/public-open receivers, rechecks after every await and uses the maintained tracked dispatcher for physical process authority, authenticated bridge scope and global ambiguity quarantine. One public openDocument acknowledgment is not page readiness, startup completion, complete source or persistence proof. Drawing initialization, partition/title updates, cache replay, shared state changes and automatic persistence/Save are accepted normal-opening effects. Inspect after uncertainty without retry; no different project, caller code, explicit Save, CAD edit, prompt choice, discard or writer authority. Original application cleanup remains with its retained launch owner.",
+  source: ["current-schematic-page-opening.ts", "current-schematic-page-opening-program.ts", "current-schematic-page-opening-checkpoint.ts", "current-schematic-page-opening-runtime.ts", "current-schematic-page-read-profile.ts"],
+  tests: ["current-schematic-page-opening.test.ts", "current-schematic-page-opening-runtime.test.ts", "current-pcb-209-opening-registration.test.ts"],
+  validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+  inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "schematic-page-opening", query: { includeSchemas: true } } } },
+} });
+for (const namespace of ["sch_PrimitiveText", "sch_PrimitiveWire", "sch_PrimitiveBus", "sch_SelectControl"]) {
+  groups.push({ namespace, methods: namespace === "sch_SelectControl" ? ["getSelectedPrimitives"] : ["get", "getAll"], route: {
+    tool: "easyeda_control_pcb209_opening", selector: "schematic-page-read", implementation: "native-task-equivalent", documentTypes: [1],
+    scope: "Separately pinned installed209 ordinary already-active type-1 page only, with explicit project/branch/page/parent-schematic/tab identity and original parent-realm SCH receivers. Reuses existing complete Text/Wire/Bus root-family DTO compilers, reciprocal connected tree, ID/source-ID membership, collection and scalar double checks. Selection resolves only the complete supported mixed DTO roster under one page, preserves native ordering and promotes observed Wire/Bus line children to their parent group. Unknown, inherited, missing or unsupported selected families refuse whole. Source-ID membership is unchanged, but full raw source, connectivity, saved membership, assets and persistence are not proved. Native schematic units/Y and nullable style fields remain raw. At most256 DTOs/2MiB with existing family/tree bounds; malformed strings and signed-zero numeric transport refuse. No page opening, public family getter, compiler, serializer, source export, network, CAD edit, selection mutation or Save is invoked. Placed-component pins/symbols and arbitrary annotations remain excluded; no later writer authority follows.",
+    source: ["current-schematic-page-read.ts", "current-schematic-page-read-program.ts", "current-schematic-page-read-profile.ts", "current-schematic-page-read-runtime.ts", "schematic-text-read.ts", "schematic-netgroup-read.ts", "schematic-primitive-read.ts"],
+    tests: ["current-schematic-page-read.test.ts", "current-pcb-209-opening-registration.test.ts"],
+    validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "schematic-page-read", query: { includeSchemas: true } } } },
+  } });
+}
+
 export function maintainedApiCoverageRoutes(): ReadonlyMap<string, readonly ApiCoverageRoute[]> {
   const result = new Map<string, ApiCoverageRoute[]>();
   for (const group of groups) {
