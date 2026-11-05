@@ -77,6 +77,7 @@ const reviewedJavaScriptPaths = new Set([
   "plugins/easyeda-pro-control/easyeda-bridge-extension/scripts/package.mjs",
   "plugins/easyeda-pro-control/server/dist/server.mjs",
   "plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs",
+  "plugins/easyeda-pro-control/server/dist/control-session-manager.mjs",
 ]);
 
 // Parse repository metadata before inspecting it. JSON.parse returns any; these

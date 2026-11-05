@@ -3,7 +3,8 @@
 import { CURRENT_FOOTPRINT_COPY_ALLOCATED_CREATE_CLOCK_BUDGET as ALLOCATION } from "./current-footprint-copy-allocated-create-clock-budget.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE as PREPARATION } from "./current-footprint-copy-execution-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_KNOWN_CAPACITY as MAIN } from "./current-footprint-copy-main-capacity.ts";
-import { CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS as SOURCE_PREPARATION } from "./current-footprint-copy-preparation.ts";
+import { CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS as SOURCE_PREPARATION,
+  CURRENT_FOOTPRINT_COPY_SOURCE_SEAL_REQUESTS as SOURCE_SEAL } from "./current-footprint-copy-preparation.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS as SOURCE } from "./current-footprint-copy-source-stage-budget.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_LIMITS as COORDINATOR } from "./current-footprint-copy-execution.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_TRANSPORT as MAIN_STREAM } from "./current-footprint-copy-main-transport-contract.ts";
@@ -11,7 +12,7 @@ import { CURRENT_PCB_WORKER_STARTUP_STREAM_LIMITS as STREAM } from "./current-pc
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE = "worker-startup-footprint-forward209";
-const normal = PREPARATION.normalRequestLimit - PREPARATION.requests.transactionClock + ALLOCATION.normal + SOURCE + SOURCE_PREPARATION;
+const normal = PREPARATION.normalRequestLimit - PREPARATION.requests.transactionClock + ALLOCATION.normal + SOURCE + SOURCE_PREPARATION + SOURCE_SEAL;
 const cleanup = PREPARATION.requests.cleanup - 5 + ALLOCATION.cleanup;
 const requests = normal + cleanup;
 // Every parent proof performs two worker-startup-reprove exchanges. A normal
@@ -24,7 +25,8 @@ const controlsPerParentProof = 2, parentProofsPerRendererRequest = 16;
 const wrapperStages = Object.freeze(["launch-discovery", "capture-parent", "capture-opening", "capture-constructors", "capture-worker",
   "assignments", "actor", "cache-construction", "state", "producers", "dependencies", "callbacks", "destinations", "ui", "ui-reproof",
   "registration", "manager", "peer", "route-reproof", "windows-clock", "registration-sample", "source-plan", "source", "source-reproof",
-  "preparation-reproof-first", "preparation-reproof-second", "preparation-reproof-third", "owned-preparation-reproof"]);
+  "preparation-reproof-first", "preparation-reproof-second", "preparation-reproof-third", "owned-preparation-reproof",
+  "source-seal-opening-first", "source-seal-preparation-first", "source-seal-opening-second", "source-seal-preparation-second"]);
 // A stage can bracket its native commands with up to32 opening checks, each
 // Containing two original-parent callbacks. The command-associated callbacks
 // Above are additional. Reserve the same wrapper allowance for interrupted
@@ -78,5 +80,19 @@ export const CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE = freezeDeep({
  * and execution purpose limits are not widened or replaced. */
 export function currentFootprintCopyForwardNativeLimits(): string {
   const profile = CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE;
-  return `public static class EasyedaFootprintForwardLimits { public const int MainNormal=${String(profile.main.normalRequestLimit)}; public const int MainCleanup=${String(profile.main.cleanupRequestLimit)}; public const int MainRequests=${String(profile.main.requestLimit)}; public const int Requests=${String(profile.renderer.requestLimit)}; public const int NormalRequests=${String(profile.renderer.normalRequestLimit)}; public const int NormalClass=${String(profile.renderer.normalClassLimit)}; public const int CleanupClass=${String(profile.renderer.cleanupClassLimit)}; public const long NormalMilliseconds=${String(profile.normalMilliseconds)}L; public const long TotalMilliseconds=${String(profile.normalMilliseconds + profile.cleanupMilliseconds)}L; }`;
+  return `public static class EasyedaFootprintForwardLimits { public const int MainNormal=${String(profile.main.normalRequestLimit)}; public const int MainCleanup=${String(profile.main.cleanupRequestLimit)}; public const int MainRequests=${String(profile.main.requestLimit)}; public const int Requests=${String(profile.renderer.requestLimit)}; public const int NormalRequests=${String(profile.renderer.normalRequestLimit)}; public const int NormalClass=${String(profile.renderer.normalClassLimit)}; public const int CleanupClass=${String(profile.renderer.cleanupClassLimit)}; public const long NormalMilliseconds=${String(profile.normalMilliseconds)}L; public const long TotalMilliseconds=${String(profile.normalMilliseconds + profile.cleanupMilliseconds)}L;
+public static bool AllowsExecutionRequestId(long id,bool forwardPurpose,bool workerCommand){return id>=1&&id<=(forwardPurpose?Requests:workerCommand?EasyedaFootprintExecutionLimits.NormalRequests:EasyedaFootprintExecutionLimits.Requests);}
+public static void VerifyExecutionRequestIdsSmoke(){bool valid=true;foreach(bool worker in new bool[]{false,true})valid=valid&&AllowsExecutionRequestId(${String(profile.renderer.requestLimit)},true,worker)&&!AllowsExecutionRequestId(${String(profile.renderer.requestLimit + 1)},true,worker)&&!AllowsExecutionRequestId(0,true,worker);valid=valid&&AllowsExecutionRequestId(${String(PREPARATION.normalRequestLimit)},false,true)&&!AllowsExecutionRequestId(${String(PREPARATION.normalRequestLimit + 1)},false,true)&&AllowsExecutionRequestId(${String(PREPARATION.requestLimit)},false,false)&&!AllowsExecutionRequestId(${String(PREPARATION.requestLimit + 1)},false,false)&&!AllowsExecutionRequestId(0,false,true)&&!AllowsExecutionRequestId(0,false,false);if(!valid)throw new System.InvalidOperationException("footprint-forward-request-id-smoke");}
+}`;
+}
+
+/** Keep each dedicated parser on the same native ID policy, selected only by
+ * its original launch purpose. Request-class accounting remains independent. */
+export function assertCurrentFootprintCopyForwardNativeRequestIds(source: string): void {
+  for (const [action, worker] of [["footprint-copy-parent", false], ["footprint-copy-worker", true], ["footprint-cache-construction", false]] as const) {
+    const start = source.indexOf(`        '${action}' {`);
+    const end = source.indexOf("\n        '", start + 1);
+    const guard = `-not [EasyedaFootprintForwardLimits]::AllowsExecutionRequestId([long]$request.requestId,$WorkerStartupFootprintForward209.IsPresent,$${String(worker)})`;
+    if (start === -1 || end <= start || source.slice(start, end).split(guard).length !== 2) { throw new Error("FOOTPRINT_FORWARD_NATIVE_REQUEST_ID_GUARD"); }
+  }
 }

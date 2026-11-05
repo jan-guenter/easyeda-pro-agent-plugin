@@ -4,6 +4,9 @@ import { z } from "zod";
 // Three original-source checks inside preparation and one after it. Each
 // Reproves project identity and current assignments with two native requests.
 export const CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS = 8;
+// Two explicit original-opening reproofs use one project-identity read each.
+// Two owned-preparation reproofs add project identity and assignments, two each.
+export const CURRENT_FOOTPRINT_COPY_SOURCE_SEAL_REQUESTS = 2 * 1 + 2 * 2;
 const digest = z.string().regex(/^[a-f0-9]{64}$/u);
 export const currentFootprintCopyPreparationSchema = z.object({
   profile: z.literal("private.current-footprint-copy-owned-preparation.v1"),

@@ -20,8 +20,8 @@ void test("forward birth derives separate ID and class ceilings without widening
   assert.equal(SOURCE, 65); assert.equal(REEXPORTED_SOURCE, SOURCE);
   assert.equal(PROFILE.purpose, "worker-startup-footprint-forward209");
   assert.equal(PROFILE.nativeSwitch, "-WorkerStartupFootprintForward209");
-  assert.equal(RENDERER.requestLimit, 996); assert.equal(RENDERER.normalRequestLimit, 996);
-  assert.equal(RENDERER.normalClassLimit, 935); assert.equal(RENDERER.cleanupClassLimit, 61);
+  assert.equal(RENDERER.requestLimit, 1002); assert.equal(RENDERER.normalRequestLimit, 1002);
+  assert.equal(RENDERER.normalClassLimit, 941); assert.equal(RENDERER.cleanupClassLimit, 61);
   assert.equal(RENDERER.normalClassLimit + RENDERER.cleanupClassLimit, RENDERER.requestLimit);
   assert.equal(RENDERER.requestLimit, CAPACITY.writer.renderer.requestLimit);
   assert.equal(RENDERER.normalClassLimit, CAPACITY.writer.renderer.normalClassLimit);
@@ -34,8 +34,8 @@ void test("forward birth derives separate ID and class ceilings without widening
   assert.equal(RENDERER.executionAuthorized, false); assert.equal(RENDERER.saveAuthorized, false);
   assert.ok(Object.isFrozen(PROFILE) && Object.isFrozen(RENDERER) && Object.isFrozen(RENDERER.requests));
   const native = currentFootprintCopyForwardNativeLimits();
-  for (const declaration of ["MainNormal=87;", "MainCleanup=41;", "MainRequests=128;", "Requests=996;",
-    "NormalRequests=996;", "NormalClass=935;", "CleanupClass=61;", "NormalMilliseconds=3600000L;", "TotalMilliseconds=3660000L;"]) {
+  for (const declaration of ["MainNormal=87;", "MainCleanup=41;", "MainRequests=128;", "Requests=1002;",
+    "NormalRequests=1002;", "NormalClass=941;", "CleanupClass=61;", "NormalMilliseconds=3600000L;", "TotalMilliseconds=3660000L;"]) {
     assert.ok(native.includes(declaration));
   }
 });
@@ -45,14 +45,14 @@ void test("forward wire retains fixed observation programs and its own final ID 
     ...currentFootprintCopyExecutionWorkerNativeCases()];
   assert.ok(cases.length > 10);
   for (const command of cases) {
-    const result = currentFootprintCopyForwardStartupWire(command, 996);
-    assert.deepEqual(result.command, { ...command, id: 996 });
-    assert.equal(result.request["requestId"], 996);
+    const result = currentFootprintCopyForwardStartupWire(command, 1002);
+    assert.deepEqual(result.command, { ...command, id: 1002 });
+    assert.equal(result.request["requestId"], 1002);
     assert.equal(Object.hasOwn(result.request, "functionDeclaration"), false);
     assert.throws(() => currentFootprintCombinedStartupWire(command, 857));
     assert.doesNotThrow(() => currentFootprintCombinedStartupWire(command, 856));
     assert.throws(() => currentFootprintCopyForwardStartupWire({ ...command, extra: true }, 1));
-    for (const id of [0, -0, -1, 997, 1.1, Number.NaN, Number.POSITIVE_INFINITY]) {
+    for (const id of [0, -0, -1, 1003, 1.1, Number.NaN, Number.POSITIVE_INFINITY]) {
       assert.throws(() => currentFootprintCopyForwardStartupWire(command, id));
     }
   }

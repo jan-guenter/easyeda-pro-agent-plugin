@@ -179,11 +179,13 @@ import type { CurrentFootprintCopyMainCompletionCommand } from "./current-footpr
 import { CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS } from "./current-footprint-copy-main-completion-protocol.ts";
 import { requireCurrentFootprintCopyMainCompletionHeadroom } from "./current-footprint-copy-main-capacity.ts";
 import type { CurrentFootprintCopyMainRequestCollectCommand } from "./current-footprint-copy-main-request-protocol.ts";
+import type { CurrentProjectStructureMainCommand } from "./current-project-structure-main-protocol.ts";
 import { CURRENT_FOOTPRINT_COMBINED_PROFILE, CURRENT_FOOTPRINT_COMBINED_PURPOSE } from "./current-footprint-copy-combined-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE, CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE } from "./current-footprint-copy-forward-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY, CurrentFootprintCopyForwardResourceLedger, requireOriginalForwardLedgerBinding } from "./current-footprint-copy-forward-capacity.ts";
 import type { CurrentFootprintCopyForwardRole } from "./current-footprint-copy-forward-capacity.ts";
 import { CurrentFootprintCopyForwardMainAccounting } from "./current-footprint-copy-forward-main-accounting.ts";
+import type { CurrentFootprintForwardExecutionInputOrigin, CurrentFootprintForwardExecutionInputs } from "./current-footprint-forward-execution-origin.ts";
 import { CURRENT_FOOTPRINT_COMBINED_READY, decodeCurrentFootprintCombinedReady } from "./current-footprint-combined-ready.ts";
 import type { CurrentFootprintCombinedBeforeLaunchFailureProof, CurrentFootprintCombinedFactoryFailureDiagnostics, CurrentFootprintCombinedReadyPacket } from "./current-footprint-combined-ready.ts";
 import type { CurrentFootprintCopyClockRpcOriginBindings } from "./current-footprint-copy-clock-rpc-origin.ts";
@@ -194,8 +196,8 @@ import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "c751ba35fe05f56b8ff24ec333b26468959f955475050a8e1784f1effbbbed8d";
-const HELPER_BYTES = 1_041_544;
+const HELPER_SHA256 = "58f681b7c896069fd748b957fe925e39ed4b8990f88de3483fbda781a65dccee";
+const HELPER_BYTES = 1_042_994;
 const heldRunnerDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintSavedCacheHeldRunner.prototype);
 /* oxlint-disable typescript/unbound-method -- Retain fixed methods and invoke them only on the original private-field runner. */
 const heldRunnerMethods = Object.freeze({ prepare: CurrentFootprintSavedCacheHeldRunner.prototype.prepare,
@@ -399,6 +401,20 @@ interface ForwardSavedObservationHandoff extends ForwardResources {
   owner: CurrentFootprintCopyForwardSavedNativeOwner | null;
 }
 const forwardResourceBirths = new WeakMap<object, ForwardResources>();
+interface ForwardSourceInputs {
+  readonly opening: CurrentFootprintCopyOpeningOwner;
+  readonly result: CurrentFootprintCopyOpeningResult;
+  readonly preparation: CurrentFootprintCopyPreparation;
+  readonly owned: Awaited<ReturnType<typeof requireCurrentFootprintCopyOwned>>;
+  readonly main: CurrentFootprintCopyMainBackendRunner | null;
+  readonly mainRetained: CurrentFootprintCopyMainBackendRunner["retained"] | null;
+  readonly resources: ForwardResources | undefined;
+  readonly binding: Binding | null;
+}
+const forwardExecutionInputOrigins = new WeakMap<CurrentFootprintForwardExecutionInputOrigin, Readonly<{
+  owner: CurrentFootprintCopyForwardNativeOwner;
+  requireInputs: (mode: "normal" | "retained") => CurrentFootprintForwardExecutionInputs;
+}>>();
 const forwardSavedHandoffs = new WeakMap<object, ForwardSavedObservationHandoff>();
 const forwardSavedOwnerHandoffs = new WeakMap<object, ForwardSavedObservationHandoff>();
 const forwardSavedAllocations = new WeakMap<CurrentFootprintCopyForwardNativeOwner, CurrentFootprintCopyForwardSavedNativeOwner>();
@@ -589,6 +605,8 @@ class CurrentPcbRetainedOwnerCore {
   #footprintSourceBinding: CurrentFootprintCopyNativeTarget | null = null;
   #footprintSourceBindingText: string | null = null;
   #footprintSourceSealAttempted = false;
+  #forwardSourceInputs: ForwardSourceInputs | null = null;
+  #forwardExecutionInputOrigin: CurrentFootprintForwardExecutionInputOrigin | null = null;
   #footprintSavedStartAttempted = false;
   #footprintSavedOpenAttempted = false;
   #footprintSavedOpening: CurrentFootprintCopySavedStartupOpening | null = null;
@@ -2573,6 +2591,9 @@ class CurrentPcbRetainedOwnerCore {
     if ((this.#purpose !== "worker-startup-footprint-copy209" && this.#purpose !== CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE) || handoff === null || target === null || this.#footprintSourceSealAttempted ||
       !/^footprint-copy-[a-z\d][a-z\d-]{0,95}$(?![\s\S])/u.test(operationId)) { throw error("FOOTPRINT_SOURCE_SEAL_CONSUMED"); }
     this.#footprintSourceSealAttempted = true;
+    const binding = this.#binding, main = this.#mainRunner, resources = forwardResourceBirths.get(this);
+    // oxlint-disable-next-line typescript/unbound-method -- Retain the original method identity and call it only with this exact main receiver.
+    const mainRetained = main?.retained ?? null;
     await requireCurrentFootprintCopyOpening(opening, result, handoff.dependency);
     const prepared = await requireCurrentFootprintCopyOwned(preparation, opening);
     const source = `/mnt/${target.rawWindowsPath[0]?.toLowerCase()}/${target.rawWindowsPath.slice(3).replaceAll("\\", "/")}`;
@@ -2583,7 +2604,11 @@ class CurrentPcbRetainedOwnerCore {
       artifactRoots: [join(controlDataDirectory(), "checkpoints")], controlRoot: root, maximumSourceBytes: 268_435_456 });
     await requireCurrentFootprintCopyOpening(opening, result, handoff.dependency);
     const rechecked = await requireCurrentFootprintCopyOwned(preparation, opening);
-    if (this.#projectOpeningTarget !== target || rechecked.before !== prepared.before || canonicalJson(checkpoint) !== text ||
+    // oxlint-disable-next-line typescript/unbound-method -- Compare the captured original method; do not invoke an unbound replacement.
+    if (this.#projectOpeningTarget !== target || this.#mainRunner !== main || (main?.retained ?? null) !== mainRetained || this.#binding !== binding ||
+      forwardResourceBirths.get(this) !== resources || rechecked.before !== prepared.before || rechecked.copyPlan !== prepared.copyPlan ||
+      rechecked.sourcePlan !== prepared.sourcePlan || rechecked.nativeArguments !== prepared.nativeArguments ||
+      rechecked.headReference !== prepared.headReference || rechecked.sourceAssets !== prepared.sourceAssets || canonicalJson(checkpoint) !== text ||
       !verified.ok || verified.sourceChanged || !verified.sourceMatchesReceipt || !verified.checkpointMatchesReceipt ||
       !verified.sourceEqualsCheckpoint || verified.sourceSha256 !== checkpoint.sourceSha256 || verified.checkpointSha256 !== checkpoint.checkpointSha256) {
       throw error("FOOTPRINT_SOURCE_SEAL_DRIFT");
@@ -2591,6 +2616,47 @@ class CurrentPcbRetainedOwnerCore {
     this.#footprintSourceBinding = Object.freeze({ operationId, target, source, runtime: Object.freeze({ ...runtime }),
       checkpoint: freezeDeep(checkpoint), before: prepared.before });
     this.#footprintSourceBindingText = canonicalJson({ ...this.#footprintSourceBinding, before: undefined });
+    if (this.#purpose === CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE) {
+      this.#forwardSourceInputs = Object.freeze({ opening, result, preparation, owned: rechecked, main, mainRetained, resources, binding });
+    }
+  }
+  /** Retain actual sealed inputs for a future factory, without admitting any
+   * writer command, changing launch purpose or proving settled publication. */
+  public issueFootprintForwardExecutionInputOrigin(): CurrentFootprintForwardExecutionInputOrigin {
+    assertOriginalCurrentFootprintCopyForwardNativeOwner(this);
+    const held = this.#forwardSourceInputs, source = this.#footprintSourceBinding;
+    if (held === null || source === null || held.main === null || held.mainRetained === null || held.resources === undefined || held.binding === null) {
+      throw error("FORWARD_EXECUTION_INPUTS_UNSEALED");
+    }
+    const { main, mainRetained, resources, binding } = held;
+    const requireInputs = (mode: "normal" | "retained"): CurrentFootprintForwardExecutionInputs => {
+      assertOriginalCurrentFootprintCopyForwardNativeOwner(this);
+      if (this.#forwardSourceInputs !== held || this.#footprintSourceBinding !== source || this.#mainRunner !== main ||
+        this.#binding !== binding || forwardResourceBirths.get(this) !== resources || this.#forwardLedger !== resources.ledger ||
+        this.#forwardLedgerMethods !== resources.methods || requireOriginalForwardLedgerBinding(resources.ledger) !== resources.methods ||
+        main.retained !== mainRetained || held.owned.before !== source.before || source.checkpoint !== this.originalFootprintSourceBinding().checkpoint) {
+        throw error("FORWARD_EXECUTION_INPUTS_CHANGED");
+      }
+      const generation = resources.methods.generationStatus.call(resources.ledger, "forward-writer", this);
+      if (mode === "normal") {
+        this.#requireFootprintMain(true);
+        if (generation.failed || this.#combinedAbortAttempted || this.#combinedOutputCleanupOnly || this.#forwardCleanupOnly || this.#mainCloseCleanupActive) {
+          throw error("FORWARD_EXECUTION_INPUTS_CLEANUP_ONLY");
+        }
+        const observed = mainRetained.call(main);
+        if (!observed.completed || observed.failed || observed.pendingReplies !== 0 || observed.requestOriginIssued || observed.releaseAttempted || observed.released || !observed.sourceQualified) {
+          throw error("FORWARD_EXECUTION_INPUTS_MAIN_UNAVAILABLE");
+        }
+      } else if (mode !== "retained") { throw error("FORWARD_EXECUTION_INPUTS_MODE"); }
+      return Object.freeze({ owner: this, main, source, opening: held.opening, result: held.result, preparation: held.preparation,
+        owned: held.owned, ledger: resources.ledger, ledgerMethods: resources.methods });
+    };
+    requireInputs("normal");
+    if (this.#forwardExecutionInputOrigin === null) {
+      this.#forwardExecutionInputOrigin = Object.freeze({ profile: "private.current-footprint-forward-execution-input-origin.v1", executionAuthorized: false });
+      forwardExecutionInputOrigins.set(this.#forwardExecutionInputOrigin, Object.freeze({ owner: this, requireInputs }));
+    }
+    return this.#forwardExecutionInputOrigin;
   }
   public bindFootprintSavedSource(writer: CurrentFootprintCopyNativeOwner | CurrentFootprintCopyForwardNativeOwner,
     after: Awaited<ReturnType<typeof readExactSqlInventory>>): void {
@@ -3161,7 +3227,7 @@ class CurrentPcbRetainedOwnerCore {
   }
   /** Internal fixed vocabulary only. The native helper chooses the original
    * connection and independently checks its own counters before each write. */
-  public async sendFootprintMain(command: CurrentFootprintCopyMainBackendCommand | CurrentFootprintCopyMainRequestCollectCommand, requestId: number): Promise<void> {
+  public async sendFootprintMain(command: CurrentFootprintCopyMainBackendCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentProjectStructureMainCommand, requestId: number): Promise<void> {
     const original = this.#requireFootprintMain(true);
     if (this.#mainCloseCleanupActive && command.phase !== "release") { throw error("MAIN_CLOSE_CLEANUP_ONLY"); }
     if (this.#mainCompletionState !== "unused" && !(this.#mainCompletionState === "retired" && command.phase === "release")) {
@@ -4444,7 +4510,7 @@ export function currentFootprintCombinedMainGenerationExited(capability: Current
   const owner = originalCombinedCapabilityOwner(capability, runner, "exited"); return combinedOwnershipMethods.require.call(owner, runner, "exited");
 }
 export async function sendCurrentFootprintCombinedMainCommand(capability: CurrentFootprintCombinedMainCapability,
-  runner: CurrentFootprintCopyMainBackendRunner, command: CurrentFootprintCopyMainRequestCollectCommand, id: number): Promise<void> {
+  runner: CurrentFootprintCopyMainBackendRunner, command: CurrentFootprintCopyMainRequestCollectCommand | CurrentProjectStructureMainCommand, id: number): Promise<void> {
   const owner = originalCombinedCapabilityOwner(capability, runner, "normal");
   await combinedOwnershipMethods.send.call(owner, command, id);
   originalCombinedCapabilityOwner(capability, runner, "normal");
@@ -4494,6 +4560,16 @@ export function assertOriginalCurrentFootprintCopyNativeOwner(owner: CurrentFoot
     owner.originalFootprintSourceBinding !== footprintOwnershipMethods.target || owner.originalFootprintTermination !== footprintOwnershipMethods.termination ||
     owner.requireFootprintTermination !== footprintOwnershipMethods.requireTermination) { throw error("FOOTPRINT_ORIGINAL_OWNER"); }
   footprintOwnershipMethods.assert.call(owner);
+}
+/** Normal access proves the original input owners remain available. Retained
+ * access after cleanup returns only historical references, never a send lease. */
+export function requireCurrentFootprintForwardExecutionInputs(owner: CurrentFootprintCopyForwardNativeOwner,
+  origin: CurrentFootprintForwardExecutionInputOrigin, mode: "normal" | "retained" = "normal"): CurrentFootprintForwardExecutionInputs {
+  assertOriginalCurrentFootprintCopyForwardNativeOwner(owner);
+  if (origin === null || typeof origin !== "object" || types.isProxy(origin)) { throw error("FORWARD_EXECUTION_INPUTS_ORIGINAL"); }
+  const held = forwardExecutionInputOrigins.get(origin);
+  if (held === undefined || held.owner !== owner) { throw error("FORWARD_EXECUTION_INPUTS_ORIGINAL"); }
+  return held.requireInputs(mode);
 }
 export function assertOriginalCurrentFootprintCopyForwardNativeOwner(owner: CurrentFootprintCopyForwardNativeOwner): void {
   if (types.isProxy(owner) || Object.getPrototypeOf(owner) !== CurrentFootprintCopyForwardNativeOwner.prototype ||

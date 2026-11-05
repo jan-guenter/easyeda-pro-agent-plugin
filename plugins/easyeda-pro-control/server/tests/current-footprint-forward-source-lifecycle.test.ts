@@ -9,7 +9,7 @@ import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
-import { sha256Json, sha256Text } from "../src/core.ts";
+import { canonicalJson, sha256Json, sha256Text } from "../src/core.ts";
 import { controlDataDirectory } from "../src/artifacts.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS } from "../src/current-footprint-copy-source-read.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY, CurrentFootprintCopyForwardResourceLedger } from "../src/current-footprint-copy-forward-capacity.ts";
@@ -26,7 +26,9 @@ import { currentFootprintCopyRouteObservationSchema } from "../src/current-footp
 import { CurrentPcbWorkerStartupChannel } from "../src/current-pcb-worker-startup-channel.ts";
 import { CURRENT_FOOTPRINT_FORWARD_PREWRITE_FAILURE_MAX_BYTES, CURRENT_FOOTPRINT_FORWARD_PREWRITE_RESULT_MAX_BYTES, diagnosticLifecycleRecordSchemas,
   publishCurrentPcbDiagnosticLifecycleRecord, readCurrentPcbDiagnosticLifecycles } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
-import type { CurrentFootprintForwardPrewriteLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentFootprintForwardPrewriteLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { freezeDeep } from "../src/sqlite-inventory-core.ts";
 import type { CurrentFootprintCopyStartupOpeningResult } from "../src/current-pcb-209-worker-startup-opening.ts";
 import type { readExactSqlInventory } from "../src/sqlite-inventory.ts";
 
@@ -34,6 +36,7 @@ type Row = Record<string, unknown>;
 interface Fixture {
   readonly coordinator: CurrentFootprintForwardPrewriteLifecycle;
   readonly owner: Row;
+  readonly options: CurrentPcbDiagnosticLifecycleOptions;
   readonly state: { terminated: boolean };
 }
 interface Module {
@@ -128,12 +131,13 @@ function recordBytes(value: unknown): Buffer { return Buffer.from(`${JSON.string
 
 /** Exercise the genuine mounted stage and original-reference joins. Native
  * inspection and plan leaves are synthetic; all lifecycle/journal guards run. */
-async function fixture(context: TestContext, mode: "success" | "capacity" | "source-failure" | "checkpoint-failure" | "publication" | "method-drift" | "unsupported" | "unicode-failure" | "route-capacity" | "result-bound" | "failure-chain" | "failure-publication", routeHeadroom: "exact" | "short" = "short"):
-Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[]; errors: Readonly<{ qualification: Error; publication: Error }>;
-  qualify: () => Promise<Row>; next: () => number; route: () => Promise<Row>; routeStarted: () => boolean; normal: () => number }>> {
+type BaselineMode = "success" | "seal-capacity" | "seal-failure" | "seal-publication" | "closed-failure" | "closed-publication" | "seal-failure-publication" | "closed-failure-publication";
+async function fixture(context: TestContext, mode: "success" | "capacity" | "source-failure" | "checkpoint-failure" | "publication" | "method-drift" | "unsupported" | "unicode-failure" | "route-capacity" | "result-bound" | "failure-chain" | "failure-publication" | "source-page", routeHeadroom: "exact" | "short" = "short", baselineMode?: BaselineMode):
+Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[]; errors: Readonly<{ qualification: Error; publication: Error; seal: Error; closed: Error }>; qualify: () => Promise<Row>; next: () => number; route: () => Promise<Row>; routeStarted: () => boolean; normal: () => number; packetHash: () => string }>> {
   const calls: string[] = [];
-  const errors = Object.freeze({ qualification: new Error("synthetic source failure"), publication: new Error("synthetic failure record publication failure") });
-  let id = `footprint-copy-qualify-test-${mode}`;
+  const errors = Object.freeze({ qualification: new Error("synthetic source failure"), publication: new Error("synthetic failure record publication failure"),
+    seal: new Error("synthetic source seal failure"), closed: new Error("synthetic closed SQL difference") });
+  let id = `footprint-copy-qualify-test-${mode}${baselineMode === undefined ? "" : `-${baselineMode}`}`;
   if (mode === "unicode-failure") { id = id.padEnd(80, "x"); }
   if (mode === "route-capacity") { id += `-${routeHeadroom}`; }
   let module: Module | null = null, result: CurrentFootprintCopyStartupOpeningResult | null = null;
@@ -143,6 +147,10 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
   let actor: ReturnType<typeof currentPcb209WorkerStartupActorPacketSchema.parse> | null = null;
   let before: Awaited<ReturnType<typeof readExactSqlInventory>> | null = null, plan: Row | null = null;
   let failFailurePublication = mode === "failure-publication", failPublication = mode === "publication", routeStarted = false, sourceStarted = false;
+  let baselineFailurePublicationFailed = false, baselinePublicationFailed = false, originalSeal: Row | null = null;
+  let baselineOwner: Row | null = null;
+  let baselineState: Fixture["state"] | null = null;
+  let consumeNormal: ((count: number) => void) | null = null;
   const packets = routeEvidence({ helperInstance: "b".repeat(32), jobId: "c".repeat(32), rootPid: 123, rootCreated: "123456789012345" });
   const assignments = Object.freeze({ profile: "private.current-pcb-worker-construction-assignments.v1", callbackKinds: ["uploadStructure", "structure", "cooperation", "upload"],
     originalConstructionCallbacksMatched: true, originalCallbackReceiversVerified: true, currentProjectWrapperRelationsVerified: true,
@@ -170,7 +178,7 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
       assert.ok(module && result && source); assert.equal(selected, result); assert.equal(assigned, assignments); assert.equal(observed, state); assert.equal(selectedPlan, plan);
       const intentPath = join(module.directory(id), "forward-prewrite-intent.json");
       assert.match(await readFile(intentPath, "utf8"), /footprint-forward-prewrite-intent/u);
-      sourceStarted = true; calls.push("source-after-intent");
+      sourceStarted = true; calls.push("source-after-intent"); assert.ok(consumeNormal); consumeNormal(65);
       if (mode === "source-failure" || mode === "failure-publication") { throw errors.qualification; }
       if (mode === "method-drift") { this.requireFootprintSource = unused; }
       return source;
@@ -204,6 +212,7 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
           const opening = input["opening"]; assert.ok(opening instanceof Opening);
           await opening.requireFootprintSource(result, assignments, state, plan, source);
         }
+        assert.ok(consumeNormal); consumeNormal(6);
         preparation = currentFootprintCopyPreparationSchema.parse({ profile: "private.current-footprint-copy-owned-preparation.v1", beforeCheckpointSha256: before.checkpointSha256,
           beforeSqlSha256: before.logicalSha256, sourcePlanSha256: sha256Json(plan), sourcePacketSha256: sha256Json(source), copyPlanSha256: "a".repeat(64),
           nativeArgumentsSha256: "b".repeat(64), originalOpeningRetained: true, originalSourceObservationRetained: true, lifecyclePublicationVerified: false,
@@ -211,12 +220,33 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
         return preparation;
       },
       requireCurrentFootprintCopyOwned: async (selected: unknown, opening: unknown): Promise<Row> => {
-        assert.equal(selected, preparation); assert.ok(opening instanceof Opening);
+        assert.equal(selected, preparation); assert.ok(opening instanceof Opening); assert.ok(consumeNormal); consumeNormal(2);
         await opening.requireFootprintSource(result, assignments, state, plan, source);
         if (mode === "unicode-failure") { throw new Error("\u0000\uD800".repeat(2048)); }
         return { before, sourcePlan: plan, sourceAssets: Object.freeze({ status: mode === "unsupported" || mode === "failure-chain" ? "unsupported" : "qualified" }), headReference: Object.freeze({ ageVerified: false }) };
       },
-    }]]);
+    }], ["./current-footprint-forward-source-seal.ts", {
+    sealCurrentFootprintForwardSource: async (owner: unknown, operationId: string, opening: unknown, actualResult: unknown,
+      actualPreparation: unknown, checkpoint: Row): Promise<Row> => {
+      assert.ok(module && before); assert.equal(owner, baselineOwner); assert.equal(operationId, id);
+      assert.ok(opening instanceof Opening); assert.equal(actualResult, result); assert.equal(actualPreparation, preparation);
+      assert.equal(checkpoint["checkpointSha256"], before.checkpointSha256);
+      const intentPath = join(module.directory(id), "forward-source-seal-intent.json");
+      assert.match(await readFile(intentPath, "utf8"), /source-seal-intent/u);
+      calls.push("seal-after-intent"); assert.ok(consumeNormal); consumeNormal(6);
+      if (baselineMode === "seal-failure" || baselineMode === "seal-failure-publication") { throw errors.seal; }
+      originalSeal = Object.freeze({ beforeCheckpointSha256: before.checkpointSha256, beforeSqlSha256: before.logicalSha256, sourceBindingSha256: "a".repeat(64) });
+      return originalSeal;
+    },
+    proveCurrentFootprintForwardClosedBaseline: async (seal: unknown): Promise<Row> => {
+      assert.ok(module && before && originalSeal); assert.equal(seal, originalSeal); assert.equal(baselineState?.terminated, true);
+      const intentPath = join(module.directory(id), "forward-closed-baseline-intent.json");
+      assert.match(await readFile(intentPath, "utf8"), /closed-baseline-intent/u);
+      calls.push("closed-after-intent");
+      if (baselineMode === "closed-failure" || baselineMode === "closed-failure-publication") { throw errors.closed; }
+      return { before, after: before, closedCheckpointSha256: "c".repeat(64), closedSqlSha256: before.logicalSha256 };
+    },
+  }]]);
   const adapterPath = new URL("../src/current-pcb-worker-startup-lifecycle-adapter.ts", import.meta.url);
   classes.set("./current-pcb-worker-startup-lifecycle-adapter.ts", await load(adapterPath, await readFile(adapterPath, "utf8"), classes));
   const lifecyclePath = new URL("../src/current-pcb-diagnostic-lifecycle.ts", import.meta.url);
@@ -225,8 +255,17 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
     publishRecord: async (...args: Parameters<typeof publishCurrentPcbDiagnosticLifecycleRecord>): Promise<void> => {
       if (args[1] === "forward-prewrite-result.json" && failPublication) { failPublication = false; throw new Error("synthetic qualification publication failure"); }
       if (args[1] === "forward-prewrite-failure.json" && failFailurePublication) { failFailurePublication = false; throw errors.publication; }
+      if (args[1] === "forward-baseline-failure.json" && !baselineFailurePublicationFailed &&
+        (baselineMode === "seal-failure-publication" || baselineMode === "closed-failure-publication")) {
+        baselineFailurePublicationFailed = true; throw errors.publication;
+      }
+      if (!baselinePublicationFailed && (args[1] === "forward-source-seal-result.json" && baselineMode === "seal-publication" ||
+        args[1] === "forward-closed-baseline-result.json" && baselineMode === "closed-publication")) {
+        baselinePublicationFailed = true; throw new Error("synthetic baseline publication failure");
+      }
       await publishCurrentPcbDiagnosticLifecycleRecord(...args);
     } });
+  baselineOwner = value.owner; baselineState = value.state;
   result = Object.freeze({ opening: module.OPEN_RESULT, construction: Object.freeze({ profile: "private.current-footprint-copy-construction.v1", pauses: 11,
     originalConstructorAndFactoryEventsRetained: true, originalProjectReceiverMatched: true, channelNativeIntrinsicAndPeerOwnershipVerified: false,
     wrapperAssignmentRelationVerified: false, nativeStartupIntegrationVerified: false, writeDestinationsContained: false, executionAuthorized: false }),
@@ -234,12 +273,14 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
     ancillaryFrame: null, executionAuthorized: false, persistenceVerified: false });
   state = currentFootprintCopyStatePacketSchema.parse({ profile: "private.current-footprint-copy-state.v1", identity: result.workerIdentity, client: "1234567890abcdef", maximumTicket: 100,
     capturedUser: "own-undefined", samples: 2, originalConstructorManagerMatched: true, atomicSnapshotVerified: false, cacheBranchObserved: false, executionAuthorized: false, persistenceVerified: false });
-  const content = mode === "unicode-failure" ? "\u0000".repeat(CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.contentBytes) : "synthetic source";
-  source = currentFootprintSourceReadPacketSchema.parse({ profile: "private.current-footprint-source-read.v1", request: { identity: result.workerIdentity, footprintUuid: "1234567890abcdef", client: state.client, maximumTicket: 100 },
+  let content = "synthetic source";
+  if (mode === "unicode-failure") { content = "\u0000".repeat(CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.contentBytes); }
+  else if (mode === "source-page") { content = "\uFEFF中🧪é\r\n\u0000\\\"".repeat(6000); }
+  source = freezeDeep(currentFootprintSourceReadPacketSchema.parse({ profile: "private.current-footprint-source-read.v1", request: { identity: result.workerIdentity, footprintUuid: "1234567890abcdef", client: state.client, maximumTicket: 100 },
     content, sourceSha256: sha256Text(content), sourceSamples: 2, stateSamples: 4, route: "native-cache-equivalent", sourceGetterDispatched: false,
     cacheRead: { keys: 1, bytes: 100, atoms: 1 }, cacheWrites: 0, networkRequests: 0, exactKeyedSourceVerified: true, comparison: "complete-checkpoint-records-native-order",
     checkpointByteOrderMatched: false, nativeOrderStable: true, keyedRecordsSha256: "a".repeat(64), observedOrderSha256: "b".repeat(64), canvasRecords: 1, tombstones: 0,
-    cacheEffectsPossible: false, cacheBranchObserved: false, producerBindingVerified: false, executionAuthorized: false, persistenceVerified: false });
+    cacheEffectsPossible: false, cacheBranchObserved: false, producerBindingVerified: false, executionAuthorized: false, persistenceVerified: false }));
   const user = { uuid: "c".repeat(32), nickname: "Synthetic", username: "synthetic", avatar: "" };
   const stamp = { milliseconds: 1_700_000_000_000, iso: "2023-11-14T22:13:20.000Z", timezoneOffsetMinutes: 0 };
   const sample = (phase: "ui" | "worker"): unknown => ({ result: { type: "string", value: JSON.stringify({ schema: "easyeda-pro-control.pcb-worker-startup-actor.v1", phase,
@@ -258,6 +299,7 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
     while (usage().rendererCleanupRequests < cleanup) { ledger.consumeRequest("forward-writer", value.owner, "renderer", usage().rendererRequests + 1, true); }
     while (usage().rendererNormalRequests < normal) { ledger.consumeRequest("forward-writer", value.owner, "renderer", usage().rendererRequests + 1, false); }
   };
+  consumeNormal = (count: number): void => { advance(usage().rendererNormalRequests + count); };
   advance(99);
   const status = value.owner["status"]; assert.ok(typeof status === "function");
   Object.assign(value.owner, {
@@ -296,11 +338,12 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
     advance(CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.normalClassLimit - requests + (routeHeadroom === "short" ? 1 : 0));
   } else {
     await route();
-    advance(CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.normalClassLimit - 73 + (mode === "capacity" ? 1 : 0),
-      mode === "capacity" ? 0 : CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.cleanupClassLimit);
+    advance(CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.normalClassLimit - 73 + (mode === "capacity" ? 1 : 0) -
+      (baselineMode !== undefined && baselineMode !== "seal-capacity" ? 6 : 0),
+      mode === "capacity" || baselineMode === "seal-capacity" ? 0 : CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.cleanupClassLimit);
   }
   return { value, id, binding, calls, errors, next: (): number => usage().rendererRequests + 1, route, routeStarted: (): boolean => routeStarted,
-    normal: (): number => usage().rendererNormalRequests,
+    normal: (): number => usage().rendererNormalRequests, packetHash: (): string => sha256Json(source),
     qualify: () => value.coordinator.qualifyWorkerStartupFootprintSource(id, binding, { footprintUuid: "1234567890abcdef" }) };
 }
 
@@ -535,3 +578,147 @@ for (const mode of ["success", "capacity", "source-failure", "checkpoint-failure
     assert.equal(f.value.coordinator.hasActiveReservation(), false);
   });
 }
+
+for (const mode of ["success", "seal-capacity", "seal-failure", "seal-publication", "closed-failure", "closed-publication"] as const) {
+  void test(`forward source sealing and closed baseline retain once-only original cleanup: ${mode}`, async context => {
+    const f = await fixture(context, "success", "short", mode);
+    const bound = { operationId: f.id, expectedBindingSha256: f.binding };
+    const closed = { action: "prove-closed-baseline", ...bound }, seal = { action: "seal-footprint-source", ...bound };
+    await assert.rejects(f.value.coordinator.run(seal), /ORIGINAL_FORWARD_BASELINE_REQUIRED/u);
+    await f.qualify();
+    if (mode === "seal-capacity") {
+      assert.equal(f.normal(), CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.normalClassLimit);
+      assert.ok(f.next() + 6 - 1 <= CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.normalIdCeiling);
+    }
+    await assert.rejects(f.value.coordinator.run({ ...seal, expectedBindingSha256: "f".repeat(64) }), /ORIGINAL_FORWARD_BASELINE_REQUIRED/u);
+    if (mode === "seal-capacity" || mode === "seal-failure" || mode === "seal-publication") {
+      await assert.rejects(f.value.coordinator.run(seal), /SOURCE_SEAL_CAPACITY|source seal failure|publication failure/u);
+    } else {
+      const sealed = await f.value.coordinator.run(seal); assert.equal(sealed["executionReady"], false);
+      assert.equal(sealed["baselineStagePublished"], true);
+    }
+    await assert.rejects(f.value.coordinator.run(seal), /SOURCE_SEAL_CONSUMED/u);
+    if (mode === "seal-publication") {
+      const inspect = await f.value.coordinator.run({ action: "inspect", operationId: f.id });
+      await f.value.coordinator.run({ action: "settle-records", operationId: f.id, expectedIntentSha256: inspect["intentSha256"] });
+    }
+    await assert.rejects(f.value.coordinator.run(closed), /CLOSED_BASELINE_UNAVAILABLE/u);
+    await f.value.coordinator.run({ action: "normal-close", ...bound, hwnd: "12345", confirmNormalClose: true });
+    f.value.state.terminated = true; await f.value.coordinator.run({ action: "observe-termination", ...bound });
+    if (mode === "seal-capacity" || mode === "seal-failure") {
+      await assert.rejects(f.value.coordinator.run(closed), /CLOSED_BASELINE_UNAVAILABLE/u);
+      assert.equal(f.calls.includes("closed-after-intent"), false);
+    } else {
+      if (mode === "closed-failure" || mode === "closed-publication") { await assert.rejects(f.value.coordinator.run(closed), /closed SQL difference|publication failure/u); }
+      else { const result = await f.value.coordinator.run(closed); assert.equal(result["executionReady"], false); }
+      await assert.rejects(f.value.coordinator.run(closed), /CLOSED_BASELINE_UNAVAILABLE/u);
+      if (mode === "closed-publication") {
+        const inspect = await f.value.coordinator.run({ action: "inspect", operationId: f.id });
+        await f.value.coordinator.run({ action: "settle-records", operationId: f.id, expectedIntentSha256: inspect["intentSha256"] });
+      }
+    }
+    const inspect = await f.value.coordinator.run({ action: "inspect", operationId: f.id });
+    const original = inspect["forwardQualificationResult"]; assert.ok(original !== null && typeof original === "object");
+    assert.equal(Reflect.get(original, "sourceSealedForClosedSnapshot"), false);
+    if (mode === "seal-capacity") { assert.equal(f.calls.includes("seal-after-intent"), false); }
+    assert.ok(f.calls.filter(call => call === "seal-after-intent").length <= 1);
+    assert.ok(f.calls.filter(call => call === "closed-after-intent").length <= 1);
+    await f.value.coordinator.run({ action: "release-closed", ...bound });
+    assert.equal(f.value.coordinator.hasActiveReservation(), false);
+  });
+}
+
+for (const stage of ["seal", "closed"] as const) {
+  void test(`forward baseline retains original ${stage} error across failure-publication failure and settlement`, async context => {
+    const f = await fixture(context, "success", "short", `${stage}-failure-publication`);
+    const bound = { operationId: f.id, expectedBindingSha256: f.binding };
+    const seal = { action: "seal-footprint-source", ...bound };
+    const close = async (): Promise<void> => {
+      await f.value.coordinator.run({ action: "normal-close", ...bound, hwnd: "12345", confirmNormalClose: true });
+      f.value.state.terminated = true;
+      await f.value.coordinator.run({ action: "observe-termination", ...bound });
+    };
+    await f.qualify();
+    if (stage === "closed") { await f.value.coordinator.run(seal); await close(); }
+    const request = stage === "seal" ? seal : { action: "prove-closed-baseline", ...bound };
+    await assert.rejects(f.value.coordinator.run(request), (error: unknown): boolean => {
+      assert.ok(error instanceof AggregateError);
+      assert.equal(error.message, "FORWARD_BASELINE_FAILURE_PUBLICATION");
+      assert.equal(error.cause, f.errors[stage]);
+      assert.deepEqual(error.errors, [f.errors[stage], f.errors.publication]);
+      return true;
+    });
+    const failurePath = join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", f.id, "forward-baseline-failure.json");
+    await assert.rejects(readFile(failurePath), { code: "ENOENT" });
+    const inspect = await f.value.coordinator.run({ action: "inspect", operationId: f.id });
+    await f.value.coordinator.run({ action: "settle-records", operationId: f.id, expectedIntentSha256: inspect["intentSha256"] });
+    const failure = diagnosticLifecycleRecordSchemas["forward-baseline-failure.json"].parse(JSON.parse(await readFile(failurePath, "utf8")) as unknown);
+    assert.equal(failure.error, f.errors[stage].message);
+    assert.equal(failure.failedStage, stage === "seal" ? "source-seal" : "closed-baseline");
+    await assert.rejects(f.value.coordinator.run(request), /SOURCE_SEAL_CONSUMED|CLOSED_BASELINE_UNAVAILABLE/u);
+    if (stage === "seal") { await close(); }
+    await f.value.coordinator.run({ action: "release-closed", ...bound });
+    assert.equal(f.value.coordinator.hasActiveReservation(), false);
+    assert.equal(f.calls.filter(call => call === `${stage}-after-intent`).length, 1);
+  });
+}
+
+void test("published source packet pages require this original private packet and make no native calls", async context => {
+  const f = await fixture(context, "source-page");
+  const bound = { operationId: f.id, expectedBindingSha256: f.binding };
+  const read = { action: "read-qualified-source", ...bound, expectedSourcePacketSha256: "a".repeat(64), offsetBytes: 0, lengthBytes: 65_536 };
+  await assert.rejects(f.value.coordinator.run(read), /ORIGINAL_PUBLISHED_FORWARD_PACKET_REQUIRED/u);
+  const qualified = await f.qualify(); const result = qualified["result"]; assert.ok(result !== null && typeof result === "object");
+  const expectedSourcePacketSha256: unknown = Reflect.get(result, "sourcePacketSha256"); assert.ok(typeof expectedSourcePacketSha256 === "string");
+  const request = { ...read, expectedSourcePacketSha256 };
+  const path = join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", f.id, "forward-prewrite-result.json");
+  const originalBytes = await readFile(path), record = diagnosticLifecycleRecordSchemas["forward-prewrite-result.json"].parse(JSON.parse(originalBytes.toString("utf8")) as unknown);
+  const nativeCalls = [...f.calls], nativeNext = f.next(); const pages: Buffer[] = [];
+  let offsetBytes = 0;
+  for (;;) {
+    const page = await f.value.coordinator.run({ ...request, offsetBytes });
+    assert.equal(page["format"], "canonical-json-utf8"); assert.equal(page["encoding"], "base64"); assert.equal(page["pointInTime"], true);
+    for (const key of ["currentStateVerified", "savedStateVerified", "executionReady", "executionAuthorized", "saveAuthorized"]) { assert.equal(page[key], false); }
+    assert.equal(page["nativeCalls"], 0); assert.equal(page["sourcePacketSha256"], expectedSourcePacketSha256);
+    const base64 = page["pageBase64"]; assert.ok(typeof base64 === "string"); pages.push(Buffer.from(base64, "base64"));
+    const next = page["nextOffsetBytes"]; assert.ok(typeof next === "number"); offsetBytes = next;
+    if (page["endOfPacket"] === true) { break; }
+  }
+  const complete = Buffer.concat(pages), decoded = currentFootprintSourceReadPacketSchema.parse(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(complete)) as unknown);
+  assert.deepEqual(decoded, record.source); assert.equal(sha256Json(decoded), expectedSourcePacketSha256);
+  assert.equal(complete.toString("utf8"), canonicalJson(record.source)); assert.deepEqual(f.calls, nativeCalls); assert.equal(f.next(), nativeNext);
+  const copiedOwner = new CurrentFootprintForwardPrewriteLifecycle(f.value.options);
+  await assert.rejects(copiedOwner.run(request), /ORIGINAL_PUBLISHED_FORWARD_PACKET_REQUIRED/u);
+  await assert.rejects(f.value.coordinator.run({ ...request, sourcePacket: record.source }));
+  await assert.rejects(f.value.coordinator.run({ ...request, expectedBindingSha256: "f".repeat(64) }), /ORIGINAL_PUBLISHED_FORWARD_PACKET_REQUIRED/u);
+  const changed = currentFootprintSourceReadPacketSchema.parse({ ...record.source, content: "different", sourceSha256: sha256Text("different") });
+  const changedHash = sha256Json(changed);
+  const drifted = { ...record, source: changed, preparation: { ...record.preparation, sourcePacketSha256: changedHash },
+    result: { ...record.result, sourcePacketSha256: changedHash } };
+  try {
+    await writeFile(path, `${JSON.stringify(drifted)}\n`);
+    const driftedOperations = await readCurrentPcbDiagnosticLifecycles();
+    assert.ok(driftedOperations.find(value => value.operationId === f.id)?.records["forward-prewrite-result.json"]);
+    await assert.rejects(f.value.coordinator.run(request), /ORIGINAL_PUBLISHED_FORWARD_PACKET_REQUIRED/u);
+  } finally { await writeFile(path, originalBytes); }
+  await f.value.coordinator.run({ action: "normal-close", ...bound, hwnd: "12345", confirmNormalClose: true });
+  f.value.state.terminated = true; await f.value.coordinator.run({ action: "observe-termination", ...bound });
+  await f.value.coordinator.run({ action: "release-closed", ...bound });
+  const afterCleanup = await f.value.coordinator.run(request); assert.equal(afterCleanup["sourcePacketSha256"], expectedSourcePacketSha256);
+  assert.equal(f.value.coordinator.hasActiveReservation(), false);
+});
+void test("unpublished qualification source cannot be paged until exact record settlement", async context => {
+  const f = await fixture(context, "publication");
+  const bound = { operationId: f.id, expectedBindingSha256: f.binding };
+  await assert.rejects(f.qualify(), /publication failure/u);
+  const path = join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", f.id, "forward-prewrite-intent.json");
+  const intentBytes = await readFile(path); assert.ok(intentBytes.length > 0);
+  const request = { action: "read-qualified-source", ...bound, expectedSourcePacketSha256: f.packetHash(), offsetBytes: 0, lengthBytes: 1024 };
+  await assert.rejects(f.value.coordinator.run(request), /ORIGINAL_PUBLISHED_FORWARD_PACKET_REQUIRED/u);
+  const inspect = await f.value.coordinator.run({ action: "inspect", operationId: f.id });
+  await f.value.coordinator.run({ action: "settle-records", operationId: f.id, expectedIntentSha256: inspect["intentSha256"] });
+  const operations = await readCurrentPcbDiagnosticLifecycles();
+  const saved = operations.find(value => value.operationId === f.id)?.records["forward-prewrite-result.json"]; assert.ok(saved);
+  const page = await f.value.coordinator.run({ ...request, expectedSourcePacketSha256: saved.result.sourcePacketSha256 });
+  assert.equal(page["nativeCalls"], 0); assert.equal(page["sourceSha256"], saved.source.sourceSha256);
+});

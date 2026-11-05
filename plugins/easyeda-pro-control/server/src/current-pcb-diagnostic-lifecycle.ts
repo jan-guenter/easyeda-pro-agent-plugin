@@ -64,7 +64,7 @@ import type { CurrentFootprintCopyBindings } from "./current-footprint-copy-bind
 import { prepareCurrentFootprintCopyBindingsOwned, retainedCurrentFootprintCopyBindingsProducers } from "./current-footprint-copy-bindings-runtime.ts";
 import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_OWNER_REQUESTS } from "./current-footprint-copy-dependency-runner.ts";
 import type { CurrentFootprintCopyDependencyObservation } from "./current-footprint-copy-dependency-runner.ts";
-import { CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS } from "./current-footprint-copy-preparation.ts";
+import { CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS, CURRENT_FOOTPRINT_COPY_SOURCE_SEAL_REQUESTS } from "./current-footprint-copy-preparation.ts";
 import type { CurrentFootprintCopyPreparation } from "./current-footprint-copy-preparation.ts";
 import { prepareCurrentFootprintCopyOwned, requireCurrentFootprintCopyOwned } from "./current-footprint-copy-preparation-runtime.ts";
 import type { CurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
@@ -110,9 +110,13 @@ import { CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX, currentFootprintCombinedId
   currentFootprintCombinedValidationRequestSchema } from "./current-footprint-combined-validation.ts";
 import { currentFootprintCombinedFactoryFailureDiagnosticsSchema } from "./current-footprint-combined-ready.ts";
 import type { CurrentFootprintCombinedBeforeLaunchFailureProof, CurrentFootprintCombinedFactoryFailureDiagnostics } from "./current-footprint-combined-ready.ts";
-import { CURRENT_FOOTPRINT_FORWARD_PREWRITE_OPERATION_PREFIX, currentFootprintForwardPrewriteIdSchema,
-  currentFootprintForwardPrewriteLifecycleRequestSchema, currentFootprintForwardPrewriteResultSchema,
-  currentFootprintForwardPrewriteValidationRequestSchema } from "./current-footprint-forward-prewrite-validation.ts";
+import { CURRENT_FOOTPRINT_FORWARD_PREWRITE_OPERATION_PREFIX, currentFootprintForwardClosedBaselineResultSchema,
+  currentFootprintForwardPrewriteIdSchema, currentFootprintForwardPrewriteLifecycleRequestSchema,
+  currentFootprintForwardPrewriteResultSchema, currentFootprintForwardPrewriteValidationRequestSchema,
+  currentFootprintForwardSourcePageResultSchema, currentFootprintForwardSourceSealResultSchema } from "./current-footprint-forward-prewrite-validation.ts";
+import { pageCurrentFootprintQualifiedSource } from "./current-footprint-qualified-source-page.ts";
+import { proveCurrentFootprintForwardClosedBaseline, sealCurrentFootprintForwardSource } from "./current-footprint-forward-source-seal.ts";
+import type { CurrentFootprintForwardSourceSeal } from "./current-footprint-forward-source-seal.ts";
 import type { CurrentFootprintForwardPrewriteValidationRequest } from "./current-footprint-forward-prewrite-validation.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY } from "./current-footprint-copy-forward-capacity.ts";
 import type { CurrentFootprintCombinedValidationRequest } from "./current-footprint-combined-validation.ts";
@@ -464,6 +468,9 @@ class CurrentPcbLifecycleCore {
   #forwardSourcePlan: CurrentFootprintSourcePlan | null = null;
   #forwardSourcePacket: CurrentFootprintSourceReadPacket | null = null;
   #forwardPreparation: CurrentFootprintCopyPreparation | null = null;
+  #forwardSourceSealAttempted = false;
+  #forwardSourceSeal: CurrentFootprintForwardSourceSeal | null = null;
+  #forwardClosedBaselineAttempted = false;
   #forwardFactoryError: unknown = null;
   #forwardFactoryFailure: CurrentFootprintCombinedBeforeLaunchFailureProof | null = null;
   #forwardFactoryDiagnostics: CurrentFootprintCombinedFactoryFailureDiagnostics | null = null;
@@ -751,6 +758,11 @@ class CurrentPcbLifecycleCore {
         forwardQualificationAttemptConsumed: operation?.records["forward-prewrite-intent.json"] !== undefined || original && this.#forwardQualificationAttempted,
         forwardQualificationResult: operation?.records["forward-prewrite-result.json"]?.result ?? null,
         forwardQualificationFailure: operation?.records["forward-prewrite-failure.json"]?.error ?? null,
+        forwardSourceSealAttemptConsumed: operation?.records["forward-source-seal-intent.json"] !== undefined || original && this.#forwardSourceSealAttempted,
+        forwardSourceSealResult: operation?.records["forward-source-seal-result.json"]?.result ?? null,
+        forwardClosedBaselineAttemptConsumed: operation?.records["forward-closed-baseline-intent.json"] !== undefined || original && this.#forwardClosedBaselineAttempted,
+        forwardClosedBaselineResult: operation?.records["forward-closed-baseline-result.json"]?.result ?? null,
+        forwardBaselineFailure: operation?.records["forward-baseline-failure.json"] ?? null,
         forwardSourcePlanRetained: original && this.#forwardSourcePlan !== null,
         forwardSourcePacketRetained: original && this.#forwardSourcePacket !== null,
         forwardPreparationRetained: original && this.#forwardPreparation !== null,
@@ -1993,6 +2005,155 @@ class CurrentPcbLifecycleCore {
           catch (publicationError) {
             // oxlint-disable-next-line eslint/preserve-caught-error -- Keep the original qualification as cause; both errors remain in the aggregate.
             throw new AggregateError([error, publicationError], "FORWARD_PREWRITE_FAILURE_PUBLICATION", { cause: error });
+          }
+        }
+        throw error;
+      }
+    } finally { this.#busy = false; }
+  }
+
+  /** Original point-in-time packet retrieval. Retained local references remain
+   * readable after helper cleanup; this calls no native owner or opening method. */
+  protected async readForwardQualifiedSource(request: Extract<CurrentFootprintForwardPrewriteValidationRequest,
+    { action: "read-qualified-source" }>): Promise<Record<string, unknown>> {
+    this.#options.assertLocalAllowed();
+    requireValue(this.#generation === "209-startup-footprint-forward" && !this.#busy, "FORWARD_SOURCE_PAGE_BUSY");
+    this.#busy = true;
+    try {
+      const packet = this.#forwardSourcePacket, preparation = this.#forwardPreparation, retained = this.#retained;
+      const bindingText = this.#pending.get("binding.json"), publishedText = this.#pending.get("forward-prewrite-result.json");
+      requireValue(retained !== null && retained.operationId === request.operationId && packet !== null && preparation !== null &&
+        publishedText !== undefined && bindingText !== undefined && sha256Text(bindingText) === request.expectedBindingSha256 &&
+        sha256Json(packet) === request.expectedSourcePacketSha256, "ORIGINAL_PUBLISHED_FORWARD_PACKET_REQUIRED");
+      const current = (): void => {
+        this.#options.assertLocalAllowed();
+        requireValue(this.#retained === retained && this.#forwardSourcePacket === packet && this.#forwardPreparation === preparation &&
+          this.#pending.get("forward-prewrite-result.json") === publishedText && this.#pending.get("binding.json") === bindingText,
+        "FORWARD_SOURCE_PAGE_ORIGINAL_CHANGED");
+      };
+      current();
+      const operations = await readCurrentPcbDiagnosticLifecycles(); current();
+      const operation = operations.find(value => value.operationId === request.operationId);
+      this.#assertPurpose(request.operationId, operation);
+      const binding = operation?.records["binding.json"], record = operation?.records["forward-prewrite-result.json"];
+      requireValue(record !== undefined && binding !== undefined && canonicalJson(record) === publishedText && canonicalJson(binding) === bindingText &&
+        record.result.sourcePacketSha256 === request.expectedSourcePacketSha256 && canonicalJson(record.source) === canonicalJson(packet) &&
+        canonicalJson(record.preparation) === canonicalJson(preparation), "ORIGINAL_PUBLISHED_FORWARD_PACKET_REQUIRED");
+      const { action: _action, operationId: _operation, expectedBindingSha256: _binding, ...bounds } = request;
+      const page = pageCurrentFootprintQualifiedSource(packet, bounds, Buffer.byteLength(publishedText));
+      const result = currentFootprintForwardSourcePageResultSchema.parse({ ...page,
+        schema: "easyeda-pro-control.footprint-qualified-source-page.v1", operationId: request.operationId,
+        bindingSha256: request.expectedBindingSha256, qualificationResultRecordSha256: sha256Text(publishedText),
+        pointInTime: true, currentStateVerified: false, savedStateVerified: false, nativeCalls: 0,
+        executionReady: false, executionAuthorized: false, saveAuthorized: false });
+      await assertSnapshot(operations); current(); return result;
+    } finally { this.#busy = false; }
+  }
+
+  /** Separate once-only baseline stages retain the original forward owner.
+   * Closed SQL equality grants no native write, saved copy or helper release. */
+  protected async runForwardBaseline(request: Extract<CurrentFootprintForwardPrewriteValidationRequest,
+    { action: "seal-footprint-source" | "prove-closed-baseline" }>): Promise<Record<string, unknown>> {
+    this.#options.assertLocalAllowed();
+    requireValue(this.#generation === "209-startup-footprint-forward" && !this.#busy, "FORWARD_BASELINE_BUSY");
+    this.assertCombinedNormal(); this.#busy = true;
+    try {
+      const operations = await readCurrentPcbDiagnosticLifecycles();
+      const operation = operations.find(value => value.operationId === request.operationId), retained = this.#retained;
+      this.#assertPurpose(request.operationId, operation);
+      const qualification = operation?.records["forward-prewrite-result.json"], route = this.#forwardRoute;
+      const checkpoint = this.#projectPreparation, preparation = this.#forwardPreparation;
+      requireValue(operation !== undefined && retained !== null && retained.operationId === request.operationId && qualification !== undefined &&
+        this.#pending.get("forward-prewrite-result.json") === canonicalJson(qualification) && route !== null && preparation !== null && checkpoint !== null &&
+        checkpoint.commonInventory !== null &&
+        canonicalJson(qualification.preparation) === canonicalJson(preparation) &&
+        sha256Json(operation.records["binding.json"]) === request.expectedBindingSha256 && !this.#releaseAttempted &&
+        operation.records["release-intent.json"] === undefined && operation.records["released.json"] === undefined,
+      "ORIGINAL_FORWARD_BASELINE_REQUIRED");
+      const current = (): void => {
+        this.#assertNormalOwner(retained);
+        requireValue(this.#forwardRoute === route && this.#forwardPreparation === preparation && this.#projectPreparation === checkpoint &&
+          canonicalJson(checkpoint.prepared) === checkpoint.preparedText, "FORWARD_BASELINE_INPUT_CHANGED");
+      };
+      current();
+      const sealing = request.action === "seal-footprint-source";
+      const sourceSealRecord = operation.records["forward-source-seal-result.json"], termination = operation.records["terminated.json"];
+      if (sealing) {
+        requireValue(!this.#forwardSourceSealAttempted && operation.records["forward-source-seal-intent.json"] === undefined &&
+          !this.#closeAttempted && operation.records["close-intent.json"] === undefined && termination === undefined && !this.#startupOpeningReleased,
+        "FORWARD_SOURCE_SEAL_CONSUMED");
+        this.#forwardSourceSealAttempted = true;
+      } else {
+        requireValue(!this.#forwardClosedBaselineAttempted && operation.records["forward-closed-baseline-intent.json"] === undefined &&
+          this.#forwardSourceSeal !== null && sourceSealRecord !== undefined && termination !== undefined &&
+          operation.records["close-acknowledged.json"] !== undefined &&
+          this.#pending.get("forward-source-seal-result.json") === canonicalJson(sourceSealRecord) &&
+          this.#pending.get("terminated.json") === canonicalJson(termination), "FORWARD_CLOSED_BASELINE_UNAVAILABLE");
+        this.#forwardClosedBaselineAttempted = true;
+      }
+      await this.#installation(retained); current(); await assertSnapshot(operations); current();
+      const intentName = sealing ? "forward-source-seal-intent.json" : "forward-closed-baseline-intent.json";
+      const resultName = sealing ? "forward-source-seal-result.json" : "forward-closed-baseline-result.json";
+      const intent = sealing ? diagnosticLifecycleRecordSchemas["forward-source-seal-intent.json"].parse({
+        schema: "easyeda-pro-control.footprint-forward-source-seal-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+        bindingSha256: request.expectedBindingSha256, qualificationResultSha256: sha256Json(qualification),
+      }) : diagnosticLifecycleRecordSchemas["forward-closed-baseline-intent.json"].parse({
+        schema: "easyeda-pro-control.footprint-forward-closed-baseline-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+        bindingSha256: request.expectedBindingSha256, sourceSealResultSha256: sha256Json(sourceSealRecord), terminationSha256: sha256Json(termination),
+      });
+      await this.#record(request.operationId, intentName, intent); current();
+      const updated = { ...operation, records: { ...operation.records, [intentName]: intent } };
+      const expected = operations.map(value => value.operationId === request.operationId ? updated : value);
+      await assertSnapshot(expected); current();
+      try {
+        let record: NonNullable<DiagnosticLifecycleRecords["forward-source-seal-result.json"] | DiagnosticLifecycleRecords["forward-closed-baseline-result.json"]>;
+        if (sealing) {
+          const ownerStatus = retained.methods.status.call(retained.owner);
+          const channel = ownerStatus.workerStartupChannel;
+          requireValue(channel !== undefined && channel !== null && channel.started && !channel.failed && !channel.released && channel.pendingReplies === 0 &&
+            Number.isSafeInteger(channel.nextRequestId) && channel.nextRequestId >= 1 &&
+            channel.nextRequestId + CURRENT_FOOTPRINT_COPY_SOURCE_SEAL_REQUESTS - 1 <= CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.normalIdCeiling &&
+            this.#forwardRendererHeadroom(ownerStatus, channel.nextRequestId, CURRENT_FOOTPRINT_COPY_SOURCE_SEAL_REQUESTS),
+          "FORWARD_SOURCE_SEAL_CAPACITY");
+          const seal = await sealCurrentFootprintForwardSource(retained.owner, request.operationId, route.opening, route.result, preparation, checkpoint.prepared.checkpoint);
+          this.#forwardSourceSeal = seal; current();
+          const result = currentFootprintForwardSourceSealResultSchema.parse({ profile: "private.current-footprint-forward-source-seal.v1",
+            ...seal, qualificationResultSha256: sha256Json(qualification), originalForwardOwnerRetained: true, sourceSealedForClosedSnapshot: true,
+            headAgeVerified: false, atomicPrewriteQueuesVerified: false, documentClocksArmed: false, backendPublicationVerified: false,
+            wholeFourGenerationBudgetReserved: false, executionReady: false, executionAuthorized: false, saveAuthorized: false });
+          record = diagnosticLifecycleRecordSchemas["forward-source-seal-result.json"].parse({
+            schema: "easyeda-pro-control.footprint-forward-source-seal-result.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+            intentSha256: sha256Json(intent), result });
+        } else {
+          const seal = this.#forwardSourceSeal; requireValue(seal !== null, "FORWARD_SOURCE_SEAL_REQUIRED");
+          const baseline = await proveCurrentFootprintForwardClosedBaseline(seal); current();
+          requireValue(baseline.before === checkpoint.commonInventory, "FORWARD_CLOSED_BASELINE_ORIGINAL_READER");
+          const result = currentFootprintForwardClosedBaselineResultSchema.parse({ profile: "private.current-footprint-forward-closed-baseline.v1",
+            sourceSealResultSha256: sha256Json(sourceSealRecord), beforeCheckpointSha256: seal.beforeCheckpointSha256, beforeSqlSha256: seal.beforeSqlSha256,
+            closedCheckpointSha256: baseline.closedCheckpointSha256, closedSqlSha256: baseline.closedSqlSha256,
+            exactLogicalSqlUnchanged: true, originalRootExited: true, originalJobEmpty: true, helperReleaseProved: false, savedCopyVerified: false,
+            executionReady: false, executionAuthorized: false, saveAuthorized: false });
+          record = diagnosticLifecycleRecordSchemas["forward-closed-baseline-result.json"].parse({
+            schema: "easyeda-pro-control.footprint-forward-closed-baseline-result.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+            intentSha256: sha256Json(intent), result });
+        }
+        this.#retainRecord(resultName, record);
+        await assertSnapshot(expected); current(); await this.#publish(request.operationId, resultName, record); current();
+        const completed = { ...updated, records: { ...updated.records, [resultName]: record } };
+        await assertSnapshot(expected.map(value => value.operationId === request.operationId ? completed : value)); current();
+        return { operationId: request.operationId, result: structuredClone(record.result), baselineStagePublished: true,
+          validationOnly: true, executionReady: false, executionAuthorized: false, saveAuthorized: false };
+      } catch (error) {
+        if (!this.#pending.has(resultName)) {
+          const failure = diagnosticLifecycleRecordSchemas["forward-baseline-failure.json"].parse({
+            schema: "easyeda-pro-control.footprint-forward-baseline-failure.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+            intentSha256: sha256Json(intent), failedStage: sealing ? "source-seal" : "closed-baseline",
+            error: (error instanceof Error ? error.message : String(error)).slice(0, 4096), executionReady: false, executionAuthorized: false, saveAuthorized: false });
+          this.#retainRecord("forward-baseline-failure.json", failure);
+          try { await assertSnapshot(expected); current(); await this.#publish(request.operationId, "forward-baseline-failure.json", failure); }
+          catch (publicationError) {
+            // oxlint-disable-next-line eslint/preserve-caught-error -- Preserve the original baseline failure as cause and retain both errors for diagnosis.
+            throw new AggregateError([error, publicationError], "FORWARD_BASELINE_FAILURE_PUBLICATION", { cause: error });
           }
         }
         throw error;
@@ -3892,7 +4053,7 @@ export class CurrentFootprintCombinedLifecycle extends CurrentPcbLifecycleCore {
     try {
       const request = currentFootprintCombinedValidationRequestSchema.parse(input);
     if (request.action === "abort-generation") { return this.runCombinedAbort(request); }
-    if (!["inspect", "observe-termination", "release-closed", "settle-records", "cleanup-unlaunched", "cleanup-no-process"].includes(request.action)) { this.assertCombinedNormal(); }
+      if (!["inspect", "observe-termination", "release-closed", "settle-records", "cleanup-unlaunched", "cleanup-no-process"].includes(request.action)) { this.assertCombinedNormal(); }
       if (request.action === "observe-main-construction") { return this.runMainAction(request); }
       if (request.action === "observe-saved-cache-native") { return this.runSavedCacheNative(request); }
       if (request.action === "observe-saved-cache-accessor") { return this.runSavedCacheAccessor(request); }
@@ -3936,10 +4097,12 @@ export class CurrentFootprintForwardPrewriteLifecycle extends CurrentPcbLifecycl
   public override run(input: unknown): Promise<Record<string, unknown>> {
     try {
       const request = currentFootprintForwardPrewriteValidationRequestSchema.parse(input);
-    if (request.action === "abort-generation") { return this.runForwardAbort(request); }
-    if (!["inspect", "observe-termination", "release-closed", "settle-records", "cleanup-unlaunched", "cleanup-no-process"].includes(request.action)) { this.assertCombinedNormal(); }
+      if (request.action === "abort-generation") { return this.runForwardAbort(request); }
+      if (request.action === "read-qualified-source") { return this.readForwardQualifiedSource(request); }
+      if (!["inspect", "observe-termination", "release-closed", "settle-records", "cleanup-unlaunched", "cleanup-no-process"].includes(request.action)) { this.assertCombinedNormal(); }
       if (request.action === "observe-main-construction") { return this.runMainAction(request); }
       if (request.action === "qualify-footprint-source") { return this.qualifyWorkerStartupFootprintSource(request.operationId, request.expectedBindingSha256, { footprintUuid: request.footprintUuid }); }
+      if (request.action === "seal-footprint-source" || request.action === "prove-closed-baseline") { return this.runForwardBaseline(request); }
       return super.run(request);
     } catch (error) { return Promise.reject(error instanceof Error ? error : new Error("FORWARD_REQUEST_REFUSED")); }
   }

@@ -1117,6 +1117,8 @@ export class CurrentDisposableOpenCoordinator {
     const copyBaselineRequestSchema = z.object({ operationId: currentSymbolBaselineRequestSchema.shape.operationId,
       source: currentOwnedSymbolCopyRequestSchema, confirmNormalClose: z.literal(true) }).strict();
     const parsed = purpose === "disposable-symbol-copy" ? copyBaselineRequestSchema.parse(input) : currentSymbolBaselineRequestSchema.parse(input);
+    // Reject unmanaged IDs before any owner access while preserving the broad parser contract.
+    operationPath(parsed.operationId);
     const request = { operationId: parsed.operationId, preparation: "source" in parsed ? parsed.source : parsed.preparation };
     requireValue(request.operationId !== openingOperationId && !this.busy && !this.baselines.has(request.operationId),
       "Current symbol baseline needs a distinct unused operation.");

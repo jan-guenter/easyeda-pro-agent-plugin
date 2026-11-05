@@ -8,14 +8,14 @@ import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_SOURCE as SOURCE } from "../../src/
 import type { CurrentFootprintCopyMainBackendRole as Role } from "../../src/current-footprint-copy-main-backend-source.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REGISTRATION_BREAKPOINT_ID as REGISTRATION_ID } from "../../src/current-footprint-copy-main-backend-contract.ts";
 import type { CurrentFootprintCopyMainBackendCommand as Command } from "../../src/current-footprint-copy-main-backend-contract.ts";
-import type { CurrentFootprintCopyMainBackendRunner, CurrentFootprintCopyMainBackendTransport, requireCurrentFootprintCopyMainCompletionOrigin, requireCurrentFootprintCopyMainRequestOrigin } from "../../src/current-footprint-copy-main-backend-runner.ts";
+import type { CurrentFootprintCopyMainBackendRunner, CurrentFootprintCopyMainBackendTransport, requireCurrentFootprintCopyMainCompletionOrigin, requireCurrentFootprintCopyMainRequestOrigin, requireCurrentProjectStructureMainLease } from "../../src/current-footprint-copy-main-backend-runner.ts";
 import { mainBackendFragments as fragments } from "./footprint-main-backend-fragments.ts";
 import { CONTEXT_SOURCE, CURRENT_FOOTPRINT_HEAD_AGE_DATE_METHODS } from "./footprint-head-age-backend-data.ts";
 
 type Data = Record<string, unknown>;
 const qualified = Object.freeze({ profile: "private.current-footprint-copy-main-backend-source.v1", sha256: SOURCE.sha256, runtimeBound: false, executionAuthorized: false });
 /** Load the maintained runner with explicit test-local module replacements. */
-export async function mainBackendModule(overrides: Readonly<Record<string, unknown>> = {}): Promise<Readonly<{ Constructor: typeof CurrentFootprintCopyMainBackendRunner; requireRequest: typeof requireCurrentFootprintCopyMainRequestOrigin; requireCompletion: typeof requireCurrentFootprintCopyMainCompletionOrigin }>> {
+export async function mainBackendModule(overrides: Readonly<Record<string, unknown>> = {}): Promise<Readonly<{ Constructor: typeof CurrentFootprintCopyMainBackendRunner; requireRequest: typeof requireCurrentFootprintCopyMainRequestOrigin; requireCompletion: typeof requireCurrentFootprintCopyMainCompletionOrigin; requireStructure: typeof requireCurrentProjectStructureMainLease }>> {
   const path = new URL("../../src/current-footprint-copy-main-backend-runner.ts", import.meta.url);
   const loaded: { exports: Record<string, unknown> } = { exports: {} }, originalRequire = createRequire(path);
   const output = await transform(await readFile(path, "utf8"), { loader: "ts", format: "cjs", target: "node24" });
@@ -32,7 +32,7 @@ export async function mainBackendModule(overrides: Readonly<Record<string, unkno
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The original class is loaded with one explicitly synthetic full-source issuer and identity checker.
   const Constructor = result as typeof CurrentFootprintCopyMainBackendRunner;
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The actual evaluated module exports are checked by each test through their genuine private maps.
-  return { Constructor, requireRequest: loaded.exports["requireCurrentFootprintCopyMainRequestOrigin"] as typeof requireCurrentFootprintCopyMainRequestOrigin, requireCompletion: loaded.exports["requireCurrentFootprintCopyMainCompletionOrigin"] as typeof requireCurrentFootprintCopyMainCompletionOrigin };
+  return { Constructor, requireRequest: loaded.exports["requireCurrentFootprintCopyMainRequestOrigin"] as typeof requireCurrentFootprintCopyMainRequestOrigin, requireCompletion: loaded.exports["requireCurrentFootprintCopyMainCompletionOrigin"] as typeof requireCurrentFootprintCopyMainCompletionOrigin, requireStructure: loaded.exports["requireCurrentProjectStructureMainLease"] as typeof requireCurrentProjectStructureMainLease };
 }
 function property(name: string, value: Data, writable = false, enumerable = false, configurable = true): Data { return { name, value, writable, enumerable, configurable, isOwn: true }; }
 function internal(native: boolean, async = false): Data[] {

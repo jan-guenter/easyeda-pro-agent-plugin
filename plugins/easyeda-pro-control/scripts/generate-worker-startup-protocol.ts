@@ -20,7 +20,7 @@ import { currentFootprintCopyMainBackendNativeSource } from "../server/src/curre
 import { currentFootprintCopyMainRequestNativeSource } from "../server/src/current-footprint-copy-main-request-native.ts";
 import { currentFootprintCopyMainCompletionNativeSource } from "../server/src/current-footprint-copy-main-completion-native.ts";
 import { currentFootprintCombinedNativeLimits } from "../server/src/current-footprint-copy-combined-profile.ts";
-import { currentFootprintCopyForwardNativeLimits } from "../server/src/current-footprint-copy-forward-profile.ts";
+import { assertCurrentFootprintCopyForwardNativeRequestIds, currentFootprintCopyForwardNativeLimits } from "../server/src/current-footprint-copy-forward-profile.ts";
 import { currentFootprintCombinedReadyNativeSource } from "../server/src/current-footprint-combined-ready.ts";
 import { currentFootprintSavedCacheNativeSource } from "../server/src/current-footprint-saved-cache-native.ts";
 import { currentFootprintSavedCacheAccessorNativeSource } from "../server/src/current-footprint-saved-cache-accessor-native.ts";
@@ -110,6 +110,7 @@ async function main(): Promise<void> {
   }
   next = next.slice(0, readyStart) + currentFootprintCombinedReadyNativeSource() + next.slice(readyStop + readyEnd.length);
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
+  assertCurrentFootprintCopyForwardNativeRequestIds(next);
   if (Buffer.byteLength(next) > 1_048_576) { throw new Error(`Native startup helper exceeds its fixed byte bound: ${String(Buffer.byteLength(next))} >1048576`); }
   if (action === "--write") { await writeFile(path, next); }
   else if (next !== source) { throw new Error("Generated native startup protocol differs"); }

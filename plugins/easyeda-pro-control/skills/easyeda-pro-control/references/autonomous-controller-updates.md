@@ -4,7 +4,9 @@ Use the maintained foreground manager for development and repeated disposable
 validation. It can retire its own facade, keep the manager alive during an
 official plugin installation, and start the verified replacement. Codex stays
 running. This is a developer client, not another bridge or native-owner adoption
-path. It requires a trusted checkout with the pinned dependencies installed.
+path. Packages that ship `server/dist/control-session-manager.mjs` can run it
+without a source checkout or npm dependencies. Its frontend must still come
+from a trusted verified package or frozen build.
 
 ## Establish one controller
 
@@ -16,14 +18,36 @@ retirement while its original package still exists. Require `state:"retired"`,
 connection offline afterward. A stale or conflict connection cannot retry the
 lease or take over control.
 
-Run the client from the trusted checkout's `plugins/easyeda-pro-control`
-directory, with Node24.18.0, npm11.16.0 and zero soft core limit. The relative
-script path below belongs to that checkout; `--plugin-root` selects a canonical
-verified installed package or trusted frozen build:
+Use a zero soft core limit. The packaged entry reexecutes the machine
+profile's descriptor-verified Node 24.18.0 before starting its original manager.
+It preserves the PID and stdio. The profile must already be configured. No npm
+command or dependency installation is needed at runtime.
 
 ```bash
-node scripts/control-session-manager.ts --plugin-root /absolute/verified/plugin
+node /absolute/verified/frontend/server/dist/control-session-manager.mjs --plugin-root /absolute/verified/plugin
 ```
+
+With no arguments, the packaged entry selects its own plugin root. An explicit
+`--plugin-root` can select a different canonical verified installed package or
+trusted frozen build. For an update that may prune the frontend's original
+package, retain a verified copy of the one frontend file outside that cache
+before launch, and pass the target plugin root explicitly. Keep that frontend
+frozen through the original manager's lifetime. Copying static code before
+startup transfers no native owner or admission.
+
+Use pinned Node 24.18.0 with `--frontend-identity` to observe the frontend file's
+actual path, bytes, SHA256, build commitment and bundled SDK version. This starts
+no SDK client or facade. Compare those observations with the trusted build or
+release bytes; the file's own reported hash grants no authority. This frontend
+is a separate artifact. The selected facade still requires its original
+three-file runtime identity, complete package and actual process/native
+admission. Its native graph cannot be replaced with the frontend's build ID.
+
+A source checkout remains a development option with pinned Node 24.18.0,
+npm 11.16.0 and its reviewed dependencies installed. Its original command is
+`node scripts/control-session-manager.ts --plugin-root /absolute/verified/plugin`.
+Older packages without the standalone entry require that source path. A new
+file on disk cannot update an already-running frontend.
 
 Keep stdin open. For a foreground PTY, use `stty -icanon -echo` before launch;
 canonical terminal input can truncate long JSON requests. The manager publishes
@@ -46,8 +70,10 @@ Ordinary tool requests retain the existing foreground-client grammar:
 ```
 
 Use a fresh `responseFile` in a canonical owner-only directory for large results.
-The manager serializes calls through publication. It writes private exclusive
-evidence before proceeding and never retries a tool, navigation, close or Save.
+Normal calls remain serial through publication. The bounded pending-capture
+control below is the only concurrent exception. The manager writes private
+exclusive evidence before proceeding and never retries a tool, navigation, close
+or Save.
 Semantic tool errors preserve the original connection for explicitly requested
 inspection and supported cleanup. Transport or publication ambiguity blocks
 replacement; inspect the retained original evidence rather than starting another
@@ -78,11 +104,122 @@ The packaged direct MCP connection separately uses 3,720 seconds for its host
 tool timeout. A foreground caller's deadline cannot change a direct host's
 limit, and neither setting extends the original native owner's budgets.
 
+## Inspect or abort an original pending capture
+
+The manager CLI can keep reading stdin while one strict registered
+`footprint-forward-prewrite` `capture-project` call awaits its SDK result. The
+capture must use the normal bookkeeping budget, with no top-level
+`cleanup:true`. Other tool requests, including launch, keep the serial input
+path. This route requires a manager process that loaded this implementation at
+startup. Editing the checkout cannot hotpatch an already-running serial manager
+or add this route to an earlier pending capture. Keep that original owner on its
+own supported completion and cleanup path.
+
+Use a fresh side-request ID and the exact original manager generation and
+capture request ID:
+
+```json
+{"id":"inspect-pending-1","action":"in-flight-original","generation":1,"originalRequestId":"capture-1","request":{"action":"inspect"}}
+{"id":"abort-pending-1","action":"in-flight-original","generation":1,"originalRequestId":"capture-1","request":{"action":"abort-generation","confirmAbortOriginalForwardJob":true}}
+```
+
+These are the only two side selectors. The outer object requires `id`,
+`action`, `generation`, `originalRequestId` and `request`; its only optional field
+is an absolute `responseFile`. The inspection request contains only `action`.
+Abort also requires the literal confirmation `true`. IDs are strings of 1 to
+128 characters or integers, and generation is a positive safe integer. A side
+ID must differ from the capture ID and every earlier dispatched side ID for
+that capture. Unknown fields refuse before dispatch. Callers cannot supply a
+tool, operation, binding, intent, timeout, code or replacement root.
+
+The retained original Connection, SDK client and transport supply ownership.
+Generation and request ID only select that private in-memory capture. The
+manager generates the operation and binding arguments from its strict original
+capture request and validates the generated forward call. The original facade
+still checks its private native owner. Copied status or historical JSON cannot
+create this route or transfer an owner.
+
+Only send confirmed abort after the user has authorized forced termination of
+that original EasyEDA Job. The literal confirmation records existing approval;
+it does not authorize host-gateway termination or prove unchanged saved state.
+The manager consumes one shared private abort reservation immediately before
+SDK dispatch. It remains consumed after a semantic refusal, SDK rejection or
+timeout, including through later derived cleanup contexts. Never repeat abort
+to obtain a better acknowledgment.
+
+The bounds are fixed:
+
+| Scope | Bound |
+| --- | --- |
+| Concurrent work | One original capture and one serialized side-input slot |
+| Side SDK calls | At most 16 per capture, including inspection and abort |
+| Side SDK deadline | 120,000 milliseconds per call, with no caller override |
+| Abort | At most one dispatch for the retained capture resource |
+| Evidence reservation | Three cleanup records and 64 MiB plus 64 KiB of cleanup bytes before dispatch |
+
+The existing 128-record, 128 MiB cleanup reserve and 65,536-byte input-frame
+limit still apply. The side deadline does not cancel native work or extend any
+native budget. Exhausted cleanup capacity, evidence/output faults, ambiguous
+retirement or loss of the original connection refuse the route. If the parent
+SDK request settles while the side intent is being published, the manager
+refuses that side call before dispatch and consumes no abort attempt.
+
+`{"id":"manager-pending","action":"inspect"}` reports bounded local manager
+state while the capture is pending. `inFlightRequest` distinguishes an SDK
+request still pending from side work still publishing. All side inputs,
+including local inspection and rejected commands, hold the parent settlement
+until their output settles. Evidence files and stdout publication are
+serialized; each result uses its own retained evidence receipt. Correlate each
+response by ID. A side response does not complete the parent capture.
+
+While the parent or side publication remains pending, ordinary tools, replay,
+`cleanup-original`, termination observation, helper release, record settlement,
+retirement, startup, shutdown and replacement refuse before dispatch. Wait for
+both calls and their publications to settle before those cleanup stages.
+
+Keep the outcomes separate:
+
+- A returned parent result, including a semantic error, remains its exact
+  retained result. Side inspection or abort cannot convert it into success.
+- A rejected or timed-out parent SDK request retains its unknown outcome under
+  its original request ID. The SDK-rejection recovery contract below still
+  applies.
+- A rejected side SDK request has its own unknown ID and action, with
+  `originalCaptureRequestId` recording its parent. A later known parent result
+  stays known. Use the actual `interruptedRequest.id` for subsequent
+  `cleanup-original` correlation.
+- Dispatching confirmed abort blocks ordinary calls permanently for that
+  capture. `controlledCapture.parentOutcome` preserves `pending`, `returned`
+  or `unknown` separately. If no SDK request was rejected, the retained cleanup
+  context is `controlledCapture.id`; use that ID in the existing
+  `cleanup-original.interruptedRequestId` field. The
+  parent outcome remains known.
+
+After both calls settle, finish original inspection, actual original-root and
+empty-Job termination, record settlement and acknowledged helper release through
+the supported five-action cleanup route. Its inspection must supply the exact
+intent before `settle-records`. A successful side abort alone proves none of
+these later steps. Only genuine facade retirement followed by observed original
+child EOF, code-zero exit and stdio closure permits replacement. Closing stdin
+while an owner remains never performs that cleanup.
+
+## Recover after an SDK rejection
+
 After an RPC rejection or timeout of a bound `footprint-forward-prewrite`
 request, `inspect` reports
 the privately retained interrupted request ID and generation. Normal calls,
 replay and replacement stay blocked. The manager's separate `cleanup-original`
 command uses that exact original client and transport.
+
+A strict interrupted `launch` has no binding in its original arguments. Until
+the manager learns it, only `cleanup-original` with `request:{action:"inspect"}`
+is available. The same original client must return a complete matching private
+attempt inspection: `state:"launched"`, acknowledged launch, full binding,
+intent/binding digests and `publicationSettlementAvailable:true`. Incomplete or
+historical inspections leave cleanup restricted to inspection. The learned data
+cannot recreate a native owner; every cleanup action still passes the original
+facade's private owner guards. Result-publication failures cannot create this
+launch-recovery context.
 
 Use `abort-generation` only when the user has authorized forced termination of
 that original EasyEDA Job. The confirmation below records that authority; it
@@ -95,8 +232,8 @@ does not grant it or prove unchanged saved state.
 
 Only `inspect`, explicitly confirmed `abort-generation`, `observe-termination`,
 `release-closed` and `settle-records` are accepted. The manager injects the
-original operation and binding from its interrupted arguments and validates the
-generated call with the maintained forward schema. Callers cannot supply a tool,
+original operation and binding from its interrupted arguments or qualifying
+same-client private launch inspection, and validates the generated call with the maintained forward schema. Callers cannot supply a tool,
 operation, binding, code or intent hash. `settle-records` requires the intent hash
 from an earlier same-operation, same-binding original inspection. These calls
 consume the bounded cleanup reserve and never retry automatically. A refused or

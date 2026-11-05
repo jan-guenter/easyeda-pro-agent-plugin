@@ -58,14 +58,15 @@ import { CURRENT_PCB_209_PAD_SHAPES_RESULT_BYTES } from "./current-pcb-209-pad-s
 import { CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES, currentPcb209SelectionRelationsComponentIdsSchema } from "./current-pcb-209-selection-relations.ts";
 import { assertNoUnresolvedCurrentPcbStringLedgers } from "./current-pcb-string-ledger-exclusion.ts";
 import { CURRENT_FOOTPRINT_MAIN_OPERATION_PREFIX, currentFootprintMainIdSchema } from "./current-footprint-main-validation.ts";
-import { CURRENT_FOOTPRINT_FORWARD_PREWRITE_OPERATION_PREFIX, currentFootprintForwardPrewriteIdSchema,
-  currentFootprintForwardPrewriteResultSchema } from "./current-footprint-forward-prewrite-validation.ts";
+import { CURRENT_FOOTPRINT_FORWARD_PREWRITE_OPERATION_PREFIX, currentFootprintForwardClosedBaselineResultSchema,
+  currentFootprintForwardPrewriteIdSchema, currentFootprintForwardPrewriteResultSchema,
+  currentFootprintForwardSourceSealResultSchema } from "./current-footprint-forward-prewrite-validation.ts";
 import { CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX, currentFootprintCombinedIdSchema } from "./current-footprint-combined-validation.ts";
 import { currentFootprintCombinedHistoricalIntentSchema } from "./current-footprint-combined-abandonment-contract.ts";
 import { assertCurrentFootprintCombinedHistoricalSnapshot, readCurrentFootprintCombinedAbandonment,
   readCurrentFootprintCombinedHistoricalSnapshot, requireCurrentFootprintCombinedHistoricalSnapshot } from "./current-footprint-combined-abandonment-journal.ts";
 import type { CurrentFootprintCombinedHistoricalSnapshot } from "./current-footprint-combined-abandonment-journal.ts";
-import { currentFootprintForwardOpeningHistoricalIntentSchema } from "./current-footprint-forward-opening-relinquishment-contract.ts";
+import { currentFootprintForwardOpeningKnownHistoricalIntentSchema } from "./current-footprint-forward-opening-relinquishment-contract.ts";
 /* oxlint-disable import/no-cycle -- The separate receipt reader calls this maintained parser only lazily; no initialization path can admit or reconstruct an owner. */
 import { assertCurrentFootprintForwardOpeningHistoricalSnapshot, readCurrentFootprintForwardOpeningHistoricalSnapshot,
   readCurrentFootprintForwardOpeningRelinquishment, requireCurrentFootprintForwardOpeningHistoricalSnapshot } from "./current-footprint-forward-opening-relinquishment-journal.ts";
@@ -246,6 +247,22 @@ const forwardPrewriteFailureSchema = z.object({ ...base, operationId: currentFoo
   schema: z.literal("easyeda-pro-control.footprint-forward-prewrite-failure.v1"), intentSha256: diagnosticLifecycleDigestSchema,
   failedStage: z.enum(["source", "preparation", "source-assets"]), error: z.string().max(FORWARD_PREWRITE_ERROR_MAX_UNITS),
   source: currentFootprintSourceReadPacketSchema.nullable(), preparation: currentFootprintCopyPreparationSchema.nullable(),
+  executionReady: z.literal(false), executionAuthorized: z.literal(false), saveAuthorized: z.literal(false) }).strict();
+const forwardSourceSealIntentSchema = z.object({ ...base, operationId: currentFootprintForwardPrewriteIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-forward-source-seal-intent.v1"), bindingSha256: diagnosticLifecycleDigestSchema,
+  qualificationResultSha256: diagnosticLifecycleDigestSchema }).strict();
+const forwardSourceSealResultSchema = z.object({ ...base, operationId: currentFootprintForwardPrewriteIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-forward-source-seal-result.v1"), intentSha256: diagnosticLifecycleDigestSchema,
+  result: currentFootprintForwardSourceSealResultSchema }).strict();
+const forwardClosedBaselineIntentSchema = z.object({ ...base, operationId: currentFootprintForwardPrewriteIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-forward-closed-baseline-intent.v1"), bindingSha256: diagnosticLifecycleDigestSchema,
+  sourceSealResultSha256: diagnosticLifecycleDigestSchema, terminationSha256: diagnosticLifecycleDigestSchema }).strict();
+const forwardClosedBaselineResultSchema = z.object({ ...base, operationId: currentFootprintForwardPrewriteIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-forward-closed-baseline-result.v1"), intentSha256: diagnosticLifecycleDigestSchema,
+  result: currentFootprintForwardClosedBaselineResultSchema }).strict();
+const forwardBaselineFailureSchema = z.object({ ...base, operationId: currentFootprintForwardPrewriteIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-forward-baseline-failure.v1"), intentSha256: diagnosticLifecycleDigestSchema,
+  failedStage: z.enum(["source-seal", "closed-baseline"]), error: z.string().max(FORWARD_PREWRITE_ERROR_MAX_UNITS),
   executionReady: z.literal(false), executionAuthorized: z.literal(false), saveAuthorized: z.literal(false) }).strict();
 const footprintRouteId = z.union([currentFootprintCopyRoutePreparationIdSchema, currentFootprintCombinedIdSchema, currentFootprintForwardPrewriteIdSchema]);
 const footprintStartupId = z.union([currentPcb209WorkerStartupLifecycleIdSchema, currentFootprintCopyPreparationIdSchema]);
@@ -811,6 +828,11 @@ export const diagnosticLifecycleRecordSchemas = {
   "forward-prewrite-intent.json": forwardPrewriteIntentSchema,
   "forward-prewrite-result.json": forwardPrewriteResultSchema,
   "forward-prewrite-failure.json": forwardPrewriteFailureSchema,
+  "forward-source-seal-intent.json": forwardSourceSealIntentSchema,
+  "forward-source-seal-result.json": forwardSourceSealResultSchema,
+  "forward-closed-baseline-intent.json": forwardClosedBaselineIntentSchema,
+  "forward-closed-baseline-result.json": forwardClosedBaselineResultSchema,
+  "forward-baseline-failure.json": forwardBaselineFailureSchema,
   "combined-factory-before-launch.json": combinedFactoryBeforeLaunchSchema,
   "combined-abort-intent.json": combinedAbortIntentSchema,
   "combined-abort-acknowledged.json": combinedAbortAckSchema,
@@ -855,6 +877,7 @@ function recordBound(name: RecordName): number {
   if (name === "footprint-copy-route-result.json" || name === "footprint-copy-route-failure.json") { return CURRENT_FOOTPRINT_COPY_ROUTE_RESULT_MAX_BYTES + MAX_BYTES; }
   if (name === "forward-prewrite-result.json") { return CURRENT_FOOTPRINT_FORWARD_PREWRITE_RESULT_MAX_BYTES; }
   if (name === "forward-prewrite-failure.json") { return CURRENT_FOOTPRINT_FORWARD_PREWRITE_FAILURE_MAX_BYTES; }
+  if (name === "forward-baseline-failure.json") { return 6 * FORWARD_PREWRITE_ERROR_MAX_UNITS + MAX_BYTES; }
   if (name === "worker-startup-footprint-source-result.json") { return FOOTPRINT_SOURCE_RESULT_MAX_BYTES; }
   if (name === "worker-startup-ratline-result.json") { return CURRENT_PCB_209_RATLINE_STARTUP_RESULT_MAX_BYTES; }
   if (name === "worker-startup-empty-result.json") { return CURRENT_PCB_209_EMPTY_STARTUP_RESULT_MAX_BYTES; }
@@ -921,7 +944,7 @@ function settled(operation: DiagnosticLifecycleOperation): boolean {
     operation.records["no-process-released.json"] !== undefined || operation.records["combined-factory-before-launch.json"] !== undefined || operation.records["forward-factory-before-launch.json"] !== undefined;
 }
 async function recordedHistoricalRelinquishment(operation: DiagnosticLifecycleOperation): Promise<boolean> {
-  if (currentFootprintForwardOpeningHistoricalIntentSchema.safeParse(operation.records["intent.json"]).success) {
+  if (currentFootprintForwardOpeningKnownHistoricalIntentSchema.safeParse(operation.records["intent.json"]).success) {
     const snapshot = await readCurrentFootprintForwardOpeningHistoricalSnapshot(operation.operationId);
     const receipt = await readCurrentFootprintForwardOpeningRelinquishment(snapshot);
     return receipt !== null && receipt.result !== null;
@@ -984,6 +1007,17 @@ async function requireSettledOperation(directory: ControlRootDirectory, operatio
  * it cannot reconstruct process handles or authorize another native dispatch.
  */
 function validateChain(operation: DiagnosticLifecycleOperation): void {
+  // Both private callers supply freshly parsed schema-owned JSON. This validator
+  // Never awaits, invokes caller code or mutates those objects. Retain only lazy
+  // Digests until this invocation returns; every later read validates afresh.
+  const digests = new WeakMap<object, string>();
+  const predecessorDigest = (value: unknown): string => {
+    if (value === null || typeof value !== "object") { return sha256Json(value); }
+    const retained = digests.get(value);
+    if (retained !== undefined) { return retained; }
+    const digest = sha256Json(value);
+    digests.set(value, digest); return digest;
+  };
   const records = operation.records;
   for (const record of Object.values(records)) { requireValue(record.operationId === operation.operationId, "RECORD_OPERATION"); }
   const binding = records["binding.json"], close = records["close-intent.json"], intent = records["intent.json"];
@@ -994,8 +1028,8 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   const visualPurpose = intent?.schema === "easyeda-pro-control.pcb209-visual-launch-intent.v1";
   requireValue(intent === undefined || visualPurpose === operation.operationId.startsWith("pcb209-visual-"), "VISUAL_PURPOSE_ID");
   const visualAbort = records["visual-abort-intent.json"], visualAck = records["visual-abort-acknowledged.json"];
-  requireValue(visualAbort === undefined || visualPurpose && binding !== undefined && visualAbort.bindingSha256 === sha256Json(binding), "VISUAL_ABORT_CHAIN");
-  requireValue(visualAck === undefined || visualAbort !== undefined && visualAck.intentSha256 === sha256Json(visualAbort), "VISUAL_ABORT_ACK_CHAIN");
+  requireValue(visualAbort === undefined || visualPurpose && binding !== undefined && visualAbort.bindingSha256 === predecessorDigest(binding), "VISUAL_ABORT_CHAIN");
+  requireValue(visualAck === undefined || visualAbort !== undefined && visualAck.intentSha256 === predecessorDigest(visualAbort), "VISUAL_ABORT_ACK_CHAIN");
   if (visualAbort !== undefined) {
     const cleanup = new Set(["visual-abort-intent.json", "visual-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"]);
     for (const [name, record] of Object.entries(records)) {
@@ -1012,12 +1046,12 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(intent === undefined || forwardPurpose || !operation.operationId.startsWith(CURRENT_FOOTPRINT_FORWARD_PREWRITE_OPERATION_PREFIX), "RESERVED_FORWARD_PURPOSE_ID");
   const forwardFactory = records["forward-factory-before-launch.json"];
   requireValue(forwardFactory === undefined || forwardPurpose && intent.dispatchProtocol === "challenge-ready-before-launch.v1" &&
-    forwardFactory.intentSha256 === sha256Json(intent) && Object.keys(records).length === 2, "FORWARD_FACTORY_BEFORE_LAUNCH_CHAIN");
+    forwardFactory.intentSha256 === predecessorDigest(intent) && Object.keys(records).length === 2, "FORWARD_FACTORY_BEFORE_LAUNCH_CHAIN");
   const combinedReadyPurpose = intent?.schema === "easyeda-pro-control.footprint-combined-launch-intent.v2";
   const combinedPurpose = combinedReadyPurpose || intent?.schema === "easyeda-pro-control.footprint-combined-launch-intent.v1";
   const factoryBeforeLaunch = records["combined-factory-before-launch.json"];
   requireValue(factoryBeforeLaunch === undefined || combinedReadyPurpose && intent.dispatchProtocol === "challenge-ready-before-launch.v1" &&
-    factoryBeforeLaunch.intentSha256 === sha256Json(intent) && Object.keys(records).length === 2, "COMBINED_FACTORY_BEFORE_LAUNCH_CHAIN");
+    factoryBeforeLaunch.intentSha256 === predecessorDigest(intent) && Object.keys(records).length === 2, "COMBINED_FACTORY_BEFORE_LAUNCH_CHAIN");
   requireValue(!combinedPurpose || operation.operationId.startsWith(CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX), "COMBINED_PURPOSE_ID");
   requireValue(intent === undefined || combinedPurpose || !operation.operationId.startsWith(CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX), "RESERVED_COMBINED_PURPOSE_ID");
   const mainPurpose = intent?.schema === "easyeda-pro-control.footprint-main-launch-intent.v1";
@@ -1028,43 +1062,43 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(savedCacheNative === undefined || combinedPurpose && binding !== undefined && mainResult !== undefined &&
     records["browser-result.json"] !== undefined && records["script-result.json"] !== undefined && records["script-intent.json"]?.family === "ui" &&
     records["script-result.json"].result["sourceVerified"] === true && records["script-result.json"].result["family"] === "ui" &&
-    savedCacheNative.bindingSha256 === sha256Json(binding) && savedCacheNative.mainResultSha256 === sha256Json(mainResult) &&
-    savedCacheNative.browserResultSha256 === sha256Json(records["browser-result.json"]) &&
-    savedCacheNative.scriptResultSha256 === sha256Json(records["script-result.json"]), "SAVED_CACHE_NATIVE_CHAIN");
+    savedCacheNative.bindingSha256 === predecessorDigest(binding) && savedCacheNative.mainResultSha256 === predecessorDigest(mainResult) &&
+    savedCacheNative.browserResultSha256 === predecessorDigest(records["browser-result.json"]) &&
+    savedCacheNative.scriptResultSha256 === predecessorDigest(records["script-result.json"]), "SAVED_CACHE_NATIVE_CHAIN");
   requireValue(savedCacheNativeResult === undefined || savedCacheNative !== undefined &&
-    savedCacheNativeResult.intentSha256 === sha256Json(savedCacheNative) &&
+    savedCacheNativeResult.intentSha256 === predecessorDigest(savedCacheNative) &&
     canonicalJson(savedCacheNativeResult.result.engine) === canonicalJson(records["browser-result.json"]?.result["version"]), "SAVED_CACHE_NATIVE_RESULT_CHAIN");
   const savedCacheAccessor = records["saved-cache-accessor-intent.json"], savedCacheAccessorResult = records["saved-cache-accessor-result.json"];
   requireValue(savedCacheAccessor === undefined || combinedPurpose && binding !== undefined && mainResult !== undefined &&
     records["browser-result.json"] !== undefined && records["script-result.json"] !== undefined && records["script-intent.json"]?.family === "ui" &&
     records["script-result.json"].result["sourceVerified"] === true && records["script-result.json"].result["family"] === "ui" &&
-    savedCacheAccessor.bindingSha256 === sha256Json(binding) && savedCacheAccessor.mainResultSha256 === sha256Json(mainResult) &&
-    savedCacheAccessor.browserResultSha256 === sha256Json(records["browser-result.json"]) &&
-    savedCacheAccessor.scriptResultSha256 === sha256Json(records["script-result.json"]), "SAVED_CACHE_ACCESSOR_CHAIN");
+    savedCacheAccessor.bindingSha256 === predecessorDigest(binding) && savedCacheAccessor.mainResultSha256 === predecessorDigest(mainResult) &&
+    savedCacheAccessor.browserResultSha256 === predecessorDigest(records["browser-result.json"]) &&
+    savedCacheAccessor.scriptResultSha256 === predecessorDigest(records["script-result.json"]), "SAVED_CACHE_ACCESSOR_CHAIN");
   requireValue(savedCacheAccessorResult === undefined || savedCacheAccessor !== undefined &&
-    savedCacheAccessorResult.intentSha256 === sha256Json(savedCacheAccessor) &&
+    savedCacheAccessorResult.intentSha256 === predecessorDigest(savedCacheAccessor) &&
     canonicalJson(savedCacheAccessorResult.result.engine) === canonicalJson(records["browser-result.json"]?.result["version"]), "SAVED_CACHE_ACCESSOR_RESULT_CHAIN");
   const mainAck = records["main-terminate-acknowledged.json"], mainTerminate = records["main-terminate-intent.json"];
-  requireValue(mainObservation === undefined || (mainPurpose || combinedPurpose || forwardPurpose) && binding !== undefined && binding.launchAcknowledged && mainObservation.bindingSha256 === sha256Json(binding), "MAIN_CONSTRUCTION_CHAIN");
-  requireValue(mainResult === undefined || mainObservation !== undefined && mainResult.intentSha256 === sha256Json(mainObservation), "MAIN_CONSTRUCTION_RESULT_CHAIN");
-  requireValue(mainTerminate === undefined || mainPurpose && binding !== undefined && mainTerminate.bindingSha256 === sha256Json(binding) && close === undefined, "MAIN_TERMINATE_CHAIN");
-  requireValue(mainAck === undefined || mainTerminate !== undefined && mainAck.intentSha256 === sha256Json(mainTerminate), "MAIN_TERMINATE_ACK_CHAIN");
+  requireValue(mainObservation === undefined || (mainPurpose || combinedPurpose || forwardPurpose) && binding !== undefined && binding.launchAcknowledged && mainObservation.bindingSha256 === predecessorDigest(binding), "MAIN_CONSTRUCTION_CHAIN");
+  requireValue(mainResult === undefined || mainObservation !== undefined && mainResult.intentSha256 === predecessorDigest(mainObservation), "MAIN_CONSTRUCTION_RESULT_CHAIN");
+  requireValue(mainTerminate === undefined || mainPurpose && binding !== undefined && mainTerminate.bindingSha256 === predecessorDigest(binding) && close === undefined, "MAIN_TERMINATE_CHAIN");
+  requireValue(mainAck === undefined || mainTerminate !== undefined && mainAck.intentSha256 === predecessorDigest(mainTerminate), "MAIN_TERMINATE_ACK_CHAIN");
   const combinedAbort = records["combined-abort-intent.json"], combinedAck = records["combined-abort-acknowledged.json"];
   requireValue(combinedAbort === undefined || combinedPurpose && binding !== undefined &&
-    combinedAbort.bindingSha256 === sha256Json(binding), "COMBINED_ABORT_CHAIN");
-  requireValue(combinedAck === undefined || combinedAbort !== undefined && combinedAck.intentSha256 === sha256Json(combinedAbort), "COMBINED_ABORT_ACK_CHAIN");
+    combinedAbort.bindingSha256 === predecessorDigest(binding), "COMBINED_ABORT_CHAIN");
+  requireValue(combinedAck === undefined || combinedAbort !== undefined && combinedAck.intentSha256 === predecessorDigest(combinedAbort), "COMBINED_ABORT_ACK_CHAIN");
   if (combinedAbort !== undefined) {
     const laterCleanup = new Set(["combined-abort-intent.json", "combined-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"]);
     const beforeAbort = Object.fromEntries(Object.entries(records).filter(([name]) => !laterCleanup.has(name)));
-    requireValue(sha256Json(beforeAbort) === combinedAbort.previousRecordsSha256, "COMBINED_ABORT_PREFIX_CHANGED");
+    requireValue(predecessorDigest(beforeAbort) === combinedAbort.previousRecordsSha256, "COMBINED_ABORT_PREFIX_CHANGED");
   }
   const forwardAbort = records["forward-abort-intent.json"], forwardAck = records["forward-abort-acknowledged.json"];
-  requireValue(forwardAbort === undefined || forwardPurpose && binding !== undefined && forwardAbort.bindingSha256 === sha256Json(binding), "FORWARD_ABORT_CHAIN");
-  requireValue(forwardAck === undefined || forwardAbort !== undefined && forwardAck.intentSha256 === sha256Json(forwardAbort), "FORWARD_ABORT_ACK_CHAIN");
+  requireValue(forwardAbort === undefined || forwardPurpose && binding !== undefined && forwardAbort.bindingSha256 === predecessorDigest(binding), "FORWARD_ABORT_CHAIN");
+  requireValue(forwardAck === undefined || forwardAbort !== undefined && forwardAck.intentSha256 === predecessorDigest(forwardAbort), "FORWARD_ABORT_ACK_CHAIN");
   if (forwardAbort !== undefined) {
     const laterCleanup = new Set(["forward-abort-intent.json", "forward-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"]);
     const beforeAbort = Object.fromEntries(Object.entries(records).filter(([name]) => !laterCleanup.has(name)));
-    requireValue(sha256Json(beforeAbort) === forwardAbort.previousRecordsSha256, "FORWARD_ABORT_PREFIX_CHANGED");
+    requireValue(predecessorDigest(beforeAbort) === forwardAbort.previousRecordsSha256, "FORWARD_ABORT_PREFIX_CHANGED");
   }
   const startupFootprintRoute209 = intent?.schema === "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1";
   const startupFootprint209 = intent?.schema === "easyeda-pro-control.footprint-copy-preparation-launch-intent.v1";
@@ -1112,10 +1146,10 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     qualifiedUi.result["sourceBytes"] === CURRENT_PCB_209_OPENING_SCRIPTS.ui.scriptBytes &&
     qualifiedUi.result["relativePath"] === CURRENT_PCB_209_OPENING_SCRIPTS.ui.relativePath, "WORKER_STARTUP209_UI_SOURCE");
   requireValue(handoff === undefined || startupPurpose && binding !== undefined && binding.launchAcknowledged &&
-    binding.binding.rootCreated !== "0" && handoff.bindingSha256 === sha256Json(binding) && qualifiedUi !== undefined &&
-    handoff.scriptResultSha256 === sha256Json(qualifiedUi) && records["script-intent.json"]?.family === "ui" &&
+    binding.binding.rootCreated !== "0" && handoff.bindingSha256 === predecessorDigest(binding) && qualifiedUi !== undefined &&
+    handoff.scriptResultSha256 === predecessorDigest(qualifiedUi) && records["script-intent.json"]?.family === "ui" &&
     qualifiedUi.result["family"] === "ui" && qualifiedUi.result["sourceVerified"] === true, "WORKER_STARTUP_HANDOFF_CHAIN");
-  requireValue(handedOff === undefined || handoff !== undefined && handedOff.intentSha256 === sha256Json(handoff), "WORKER_STARTUP_HANDOFF_RESULT_CHAIN");
+  requireValue(handedOff === undefined || handoff !== undefined && handedOff.intentSha256 === predecessorDigest(handoff), "WORKER_STARTUP_HANDOFF_RESULT_CHAIN");
   const startupOpened = records["worker-startup-opening-result.json"], startupOpening = records["worker-startup-opening-intent.json"];
   let expectedConstruction = startup209 ? "private.current-pcb209-worker-construction.v1" : "private.current-pcb-worker-construction.v1";
   if (startupFootprintRoute209 || combinedPurpose || forwardPurpose) { expectedConstruction = "private.current-footprint-copy-construction.v1"; }
@@ -1123,8 +1157,8 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     "WORKER_STARTUP_CONSTRUCTION_GENERATION");
   requireValue(!(combinedPurpose || forwardPurpose) || startupOpening === undefined || mainResult !== undefined, "COMBINED_MAIN_BEFORE_PROJECT");
   requireValue(startupOpening === undefined || startupPurpose && handedOff !== undefined && binding !== undefined &&
-    startupOpening.handoffResultSha256 === sha256Json(handedOff) && startupOpening.bindingSha256 === sha256Json(binding), "WORKER_STARTUP_OPENING_CHAIN");
-  requireValue(startupOpened === undefined || startupOpening !== undefined && startupOpened.intentSha256 === sha256Json(startupOpening) &&
+    startupOpening.handoffResultSha256 === predecessorDigest(handedOff) && startupOpening.bindingSha256 === predecessorDigest(binding), "WORKER_STARTUP_OPENING_CHAIN");
+  requireValue(startupOpened === undefined || startupOpening !== undefined && startupOpened.intentSha256 === predecessorDigest(startupOpening) &&
     startupOpened.result.opening.projectUuid === startupOpening.target.projectUuid &&
     startupOpened.result.opening.branchUuid === startupOpening.target.branchUuid &&
     startupOpened.result.opening.documentUuid === startupOpening.target.documentUuid &&
@@ -1133,11 +1167,11 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     startupOpened.result.workerIdentity.windowTabId === startupOpened.result.opening.observation.windowTabId, "WORKER_STARTUP_OPENING_RESULT_CHAIN");
   const empty = records["worker-startup-empty-intent.json"], emptyResult = records["worker-startup-empty-result.json"];
   requireValue(empty === undefined || startupEmpty209 && binding !== undefined && startupOpening !== undefined && startupOpened !== undefined &&
-    empty.bindingSha256 === sha256Json(binding) && empty.openingIntentSha256 === sha256Json(startupOpening) &&
-    empty.openingResultSha256 === sha256Json(startupOpened), "WORKER_STARTUP_EMPTY209_CHAIN");
+    empty.bindingSha256 === predecessorDigest(binding) && empty.openingIntentSha256 === predecessorDigest(startupOpening) &&
+    empty.openingResultSha256 === predecessorDigest(startupOpened), "WORKER_STARTUP_EMPTY209_CHAIN");
   requireValue(emptyResult === undefined || empty !== undefined && startupOpening !== undefined && startupOpened !== undefined &&
-    emptyResult.intentSha256 === sha256Json(empty) && emptyResult.pcb.targetSha256 === sha256Json(startupOpening.target) &&
-    emptyResult.pcb.constructionPacketSha256 === sha256Json(startupOpened.result.construction) &&
+    emptyResult.intentSha256 === predecessorDigest(empty) && emptyResult.pcb.targetSha256 === predecessorDigest(startupOpening.target) &&
+    emptyResult.pcb.constructionPacketSha256 === predecessorDigest(startupOpened.result.construction) &&
     emptyResult.pcb.openingObservation.projectUuid === startupOpening.target.projectUuid &&
     emptyResult.pcb.openingObservation.branchUuid === startupOpening.target.branchUuid &&
     emptyResult.pcb.openingObservation.documentUuid === startupOpening.target.documentUuid &&
@@ -1147,81 +1181,101 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   "WORKER_STARTUP_EMPTY209_RESULT_CHAIN");
   const ratline = records["worker-startup-ratline-intent.json"], ratlineResult = records["worker-startup-ratline-result.json"];
   requireValue(ratline === undefined || startupRatline209 && binding !== undefined && startupOpening !== undefined && startupOpened !== undefined &&
-    ratline.bindingSha256 === sha256Json(binding) && ratline.openingIntentSha256 === sha256Json(startupOpening) &&
-    ratline.openingResultSha256 === sha256Json(startupOpened), "WORKER_STARTUP_RATLINE209_CHAIN");
+    ratline.bindingSha256 === predecessorDigest(binding) && ratline.openingIntentSha256 === predecessorDigest(startupOpening) &&
+    ratline.openingResultSha256 === predecessorDigest(startupOpened), "WORKER_STARTUP_RATLINE209_CHAIN");
   requireValue(ratlineResult === undefined || ratline !== undefined && startupOpening !== undefined && startupOpened !== undefined &&
-    ratlineResult.intentSha256 === sha256Json(ratline) && ratlineResult.result.targetSha256 === sha256Json(startupOpening.target) &&
-    ratlineResult.result.originalProjectConstructionSha256 === sha256Json(startupOpened.result.construction), "WORKER_STARTUP_RATLINE209_RESULT_CHAIN");
+    ratlineResult.intentSha256 === predecessorDigest(ratline) && ratlineResult.result.targetSha256 === predecessorDigest(startupOpening.target) &&
+    ratlineResult.result.originalProjectConstructionSha256 === predecessorDigest(startupOpened.result.construction), "WORKER_STARTUP_RATLINE209_RESULT_CHAIN");
   const continuation = records["worker-startup-continuation-intent.json"], continuationResult = records["worker-startup-continuation-result.json"];
   requireValue(continuation === undefined || startupContinuation209 && binding !== undefined && startupOpening !== undefined && startupOpened !== undefined &&
-    continuation.bindingSha256 === sha256Json(binding) && continuation.openingIntentSha256 === sha256Json(startupOpening) &&
-    continuation.openingResultSha256 === sha256Json(startupOpened), "WORKER_STARTUP_CONTINUATION209_CHAIN");
+    continuation.bindingSha256 === predecessorDigest(binding) && continuation.openingIntentSha256 === predecessorDigest(startupOpening) &&
+    continuation.openingResultSha256 === predecessorDigest(startupOpened), "WORKER_STARTUP_CONTINUATION209_CHAIN");
   requireValue(continuationResult === undefined || continuation !== undefined && startupOpening !== undefined && startupOpened !== undefined &&
-    continuationResult.intentSha256 === sha256Json(continuation) && continuationResult.result.targetSha256 === sha256Json(startupOpening.target) &&
-    continuationResult.result.originalProjectConstructionSha256 === sha256Json(startupOpened.result.construction), "WORKER_STARTUP_CONTINUATION209_RESULT_CHAIN");
+    continuationResult.intentSha256 === predecessorDigest(continuation) && continuationResult.result.targetSha256 === predecessorDigest(startupOpening.target) &&
+    continuationResult.result.originalProjectConstructionSha256 === predecessorDigest(startupOpened.result.construction), "WORKER_STARTUP_CONTINUATION209_RESULT_CHAIN");
   const assigned = records["worker-startup-assignments-result.json"], assignments = records["worker-startup-assignments-intent.json"];
   requireValue(assignments === undefined || startupPurpose && startupOpened !== undefined && binding !== undefined &&
-    assignments.openingResultSha256 === sha256Json(startupOpened) && assignments.bindingSha256 === sha256Json(binding), "WORKER_STARTUP_ASSIGNMENTS_CHAIN");
-  requireValue(assigned === undefined || assignments !== undefined && assigned.intentSha256 === sha256Json(assignments),
+    assignments.openingResultSha256 === predecessorDigest(startupOpened) && assignments.bindingSha256 === predecessorDigest(binding), "WORKER_STARTUP_ASSIGNMENTS_CHAIN");
+  requireValue(assigned === undefined || assignments !== undefined && assigned.intentSha256 === predecessorDigest(assignments),
     "WORKER_STARTUP_ASSIGNMENTS_RESULT_CHAIN");
   const actor = records["worker-startup-actor-intent.json"], actorResult = records["worker-startup-actor-result.json"];
   requireValue(actorResult === undefined || (actorResult.result.profile === "private.current-pcb209-worker-startup-actor.v1") === startup209,
     "WORKER_STARTUP_ACTOR_GENERATION");
   requireValue(actor === undefined || startupPurpose && assigned !== undefined && binding !== undefined &&
-    actor.assignmentsResultSha256 === sha256Json(assigned) && actor.bindingSha256 === sha256Json(binding), "WORKER_STARTUP_ACTOR_CHAIN");
-  requireValue(actorResult === undefined || actor !== undefined && startupOpened !== undefined && actorResult.intentSha256 === sha256Json(actor) &&
+    actor.assignmentsResultSha256 === predecessorDigest(assigned) && actor.bindingSha256 === predecessorDigest(binding), "WORKER_STARTUP_ACTOR_CHAIN");
+  requireValue(actorResult === undefined || actor !== undefined && startupOpened !== undefined && actorResult.intentSha256 === predecessorDigest(actor) &&
     canonicalJson(actorResult.result.profile === "private.current-pcb209-worker-startup-actor.v1" ? actorResult.result.originalActorPacket.identity : actorResult.result.identity) === canonicalJson(startupOpened.result.workerIdentity), "WORKER_STARTUP_ACTOR_RESULT_CHAIN");
   const footprint = records["worker-startup-footprint-intent.json"], footprintResult = records["worker-startup-footprint-result.json"];
   requireValue(footprint === undefined || startup209 && startupPurpose && assigned !== undefined && binding !== undefined &&
-    footprint.assignmentsResultSha256 === sha256Json(assigned) && footprint.bindingSha256 === sha256Json(binding), "WORKER_STARTUP_FOOTPRINT_CHAIN");
+    footprint.assignmentsResultSha256 === predecessorDigest(assigned) && footprint.bindingSha256 === predecessorDigest(binding), "WORKER_STARTUP_FOOTPRINT_CHAIN");
   requireValue(footprintResult === undefined || footprint !== undefined && startupOpened !== undefined &&
-    footprintResult.intentSha256 === sha256Json(footprint) && canonicalJson(footprintResult.result.identity) === canonicalJson(startupOpened.result.workerIdentity),
+    footprintResult.intentSha256 === predecessorDigest(footprint) && canonicalJson(footprintResult.result.identity) === canonicalJson(startupOpened.result.workerIdentity),
   "WORKER_STARTUP_FOOTPRINT_RESULT_CHAIN");
   const footprintRoute = records["footprint-copy-route-intent.json"], footprintRouteFailure = records["footprint-copy-route-failure.json"], footprintRouteResult = records["footprint-copy-route-result.json"];
   requireValue(footprintRoute === undefined || (startupFootprintRoute209 || combinedPurpose || forwardPurpose) && binding !== undefined && assigned !== undefined && actorResult !== undefined &&
-    footprintRoute.bindingSha256 === sha256Json(binding) && footprintRoute.assignmentsResultSha256 === sha256Json(assigned) && footprintRoute.actorResultSha256 === sha256Json(actorResult), "FOOTPRINT_ROUTE_CHAIN");
+    footprintRoute.bindingSha256 === predecessorDigest(binding) && footprintRoute.assignmentsResultSha256 === predecessorDigest(assigned) && footprintRoute.actorResultSha256 === predecessorDigest(actorResult), "FOOTPRINT_ROUTE_CHAIN");
   requireValue(footprintRouteResult === undefined || footprintRoute !== undefined && binding !== undefined && startupOpened !== undefined &&
-    footprintRouteResult.intentSha256 === sha256Json(footprintRoute) && canonicalJson(footprintRouteResult.result.state.identity) === canonicalJson(startupOpened.result.workerIdentity) &&
+    footprintRouteResult.intentSha256 === predecessorDigest(footprintRoute) && canonicalJson(footprintRouteResult.result.state.identity) === canonicalJson(startupOpened.result.workerIdentity) &&
     canonicalJson(footprintRouteResult.result.windowsClock.binding) === canonicalJson(binding.binding), "FOOTPRINT_ROUTE_RESULT_CHAIN");
-  requireValue(footprintRouteFailure === undefined || footprintRoute !== undefined && footprintRouteFailure.intentSha256 === sha256Json(footprintRoute) && footprintRouteResult === undefined, "FOOTPRINT_ROUTE_FAILURE_CHAIN");
+  requireValue(footprintRouteFailure === undefined || footprintRoute !== undefined && footprintRouteFailure.intentSha256 === predecessorDigest(footprintRoute) && footprintRouteResult === undefined, "FOOTPRINT_ROUTE_FAILURE_CHAIN");
   const forwardPrewrite = records["forward-prewrite-intent.json"], forwardPrewriteFailure = records["forward-prewrite-failure.json"], forwardPrewriteResult = records["forward-prewrite-result.json"];
   requireValue(forwardPrewrite === undefined || forwardPurpose && binding !== undefined && mainResult !== undefined && footprintRouteResult !== undefined && startupOpening !== undefined &&
-    forwardPrewrite.bindingSha256 === sha256Json(binding) && forwardPrewrite.mainResultSha256 === sha256Json(mainResult) &&
-    forwardPrewrite.routeResultSha256 === sha256Json(footprintRouteResult) && forwardPrewrite.beforeSqlSha256 === startupOpening.beforeSqlSha256 &&
+    forwardPrewrite.bindingSha256 === predecessorDigest(binding) && forwardPrewrite.mainResultSha256 === predecessorDigest(mainResult) &&
+    forwardPrewrite.routeResultSha256 === predecessorDigest(footprintRouteResult) && forwardPrewrite.beforeSqlSha256 === startupOpening.beforeSqlSha256 &&
     forwardPrewrite.checkpointSha256 === startupOpening.preparationCheckpoint.sha256, "FORWARD_PREWRITE_CHAIN");
   requireValue(forwardPrewriteResult === undefined || forwardPrewrite !== undefined && footprintRouteResult !== undefined &&
-    forwardPrewriteResult.intentSha256 === sha256Json(forwardPrewrite) && forwardPrewriteResult.source.request.footprintUuid === forwardPrewrite.footprintUuid &&
+    forwardPrewriteResult.intentSha256 === predecessorDigest(forwardPrewrite) && forwardPrewriteResult.source.request.footprintUuid === forwardPrewrite.footprintUuid &&
     forwardPrewriteResult.source.request.client === footprintRouteResult.result.state.client &&
     forwardPrewriteResult.source.request.maximumTicket === footprintRouteResult.result.state.maximumTicket &&
     canonicalJson(forwardPrewriteResult.source.request.identity) === canonicalJson(footprintRouteResult.result.state.identity) &&
-    forwardPrewriteResult.preparation.sourcePacketSha256 === sha256Json(forwardPrewriteResult.source) &&
+    forwardPrewriteResult.preparation.sourcePacketSha256 === predecessorDigest(forwardPrewriteResult.source) &&
     forwardPrewriteResult.preparation.sourcePlanSha256 === forwardPrewrite.sourcePlanSha256 &&
     forwardPrewriteResult.preparation.beforeCheckpointSha256 === forwardPrewrite.checkpointSha256 &&
     forwardPrewriteResult.preparation.beforeSqlSha256 === forwardPrewrite.beforeSqlSha256 &&
     forwardPrewriteResult.result.mainResultSha256 === forwardPrewrite.mainResultSha256 && forwardPrewriteResult.result.routeResultSha256 === forwardPrewrite.routeResultSha256 &&
     forwardPrewriteResult.result.beforeCheckpointSha256 === forwardPrewrite.checkpointSha256 && forwardPrewriteResult.result.beforeSqlSha256 === forwardPrewrite.beforeSqlSha256 &&
-    forwardPrewriteResult.result.sourcePlanSha256 === forwardPrewrite.sourcePlanSha256 && forwardPrewriteResult.result.sourcePacketSha256 === sha256Json(forwardPrewriteResult.source) &&
+    forwardPrewriteResult.result.sourcePlanSha256 === forwardPrewrite.sourcePlanSha256 && forwardPrewriteResult.result.sourcePacketSha256 === predecessorDigest(forwardPrewriteResult.source) &&
     forwardPrewriteResult.result.copyPlanSha256 === forwardPrewriteResult.preparation.copyPlanSha256 &&
     forwardPrewriteResult.result.nativeArgumentsSha256 === forwardPrewriteResult.preparation.nativeArgumentsSha256, "FORWARD_PREWRITE_RESULT_CHAIN");
   requireValue(forwardPrewriteFailure === undefined || forwardPrewrite !== undefined && forwardPrewriteResult === undefined &&
-    forwardPrewriteFailure.intentSha256 === sha256Json(forwardPrewrite) && footprintRouteResult !== undefined &&
+    forwardPrewriteFailure.intentSha256 === predecessorDigest(forwardPrewrite) && footprintRouteResult !== undefined &&
     (forwardPrewriteFailure.source === null || forwardPrewriteFailure.source.request.footprintUuid === forwardPrewrite.footprintUuid &&
       forwardPrewriteFailure.source.request.client === footprintRouteResult.result.state.client &&
       forwardPrewriteFailure.source.request.maximumTicket === footprintRouteResult.result.state.maximumTicket &&
       canonicalJson(forwardPrewriteFailure.source.request.identity) === canonicalJson(footprintRouteResult.result.state.identity)) &&
     (forwardPrewriteFailure.preparation === null || forwardPrewriteFailure.source !== null &&
-      forwardPrewriteFailure.preparation.sourcePacketSha256 === sha256Json(forwardPrewriteFailure.source) &&
+      forwardPrewriteFailure.preparation.sourcePacketSha256 === predecessorDigest(forwardPrewriteFailure.source) &&
       forwardPrewriteFailure.preparation.sourcePlanSha256 === forwardPrewrite.sourcePlanSha256 &&
       forwardPrewriteFailure.preparation.beforeCheckpointSha256 === forwardPrewrite.checkpointSha256 &&
       forwardPrewriteFailure.preparation.beforeSqlSha256 === forwardPrewrite.beforeSqlSha256), "FORWARD_PREWRITE_FAILURE_CHAIN");
+  const forwardSeal = records["forward-source-seal-intent.json"], forwardSealed = records["forward-source-seal-result.json"];
+  const forwardClosed = records["forward-closed-baseline-intent.json"], forwardClosedResult = records["forward-closed-baseline-result.json"];
+  const forwardBaselineFailure = records["forward-baseline-failure.json"];
+  requireValue(forwardSeal === undefined || forwardPurpose && binding !== undefined && forwardPrewriteResult !== undefined &&
+    forwardSeal.bindingSha256 === predecessorDigest(binding) && forwardSeal.qualificationResultSha256 === predecessorDigest(forwardPrewriteResult), "FORWARD_SOURCE_SEAL_CHAIN");
+  requireValue(forwardSealed === undefined || forwardSeal !== undefined && forwardPrewriteResult !== undefined &&
+    forwardSealed.intentSha256 === predecessorDigest(forwardSeal) && forwardSealed.result.qualificationResultSha256 === predecessorDigest(forwardPrewriteResult) &&
+    forwardSealed.result.beforeCheckpointSha256 === forwardPrewriteResult.result.beforeCheckpointSha256 &&
+    forwardSealed.result.beforeSqlSha256 === forwardPrewriteResult.result.beforeSqlSha256, "FORWARD_SOURCE_SEAL_RESULT_CHAIN");
+  requireValue(forwardClosed === undefined || forwardPurpose && binding !== undefined && forwardSealed !== undefined && records["terminated.json"] !== undefined &&
+    records["close-acknowledged.json"] !== undefined && forwardClosed.bindingSha256 === predecessorDigest(binding) &&
+    forwardClosed.sourceSealResultSha256 === predecessorDigest(forwardSealed) && forwardClosed.terminationSha256 === predecessorDigest(records["terminated.json"]), "FORWARD_CLOSED_BASELINE_CHAIN");
+  requireValue(forwardClosedResult === undefined || forwardClosed !== undefined && forwardSealed !== undefined &&
+    forwardClosedResult.intentSha256 === predecessorDigest(forwardClosed) && forwardClosedResult.result.sourceSealResultSha256 === predecessorDigest(forwardSealed) &&
+    forwardClosedResult.result.beforeCheckpointSha256 === forwardSealed.result.beforeCheckpointSha256 &&
+    forwardClosedResult.result.beforeSqlSha256 === forwardSealed.result.beforeSqlSha256 &&
+    forwardClosedResult.result.closedSqlSha256 === forwardSealed.result.beforeSqlSha256, "FORWARD_CLOSED_BASELINE_RESULT_CHAIN");
+  requireValue(forwardBaselineFailure === undefined || (forwardBaselineFailure.failedStage === "source-seal" ?
+    forwardSeal !== undefined && forwardSealed === undefined && forwardBaselineFailure.intentSha256 === predecessorDigest(forwardSeal) :
+    forwardClosed !== undefined && forwardClosedResult === undefined && forwardBaselineFailure.intentSha256 === predecessorDigest(forwardClosed)), "FORWARD_BASELINE_FAILURE_CHAIN");
   const footprintSource = records["worker-startup-footprint-source-intent.json"], footprintSourceResult = records["worker-startup-footprint-source-result.json"];
   requireValue(footprintSource === undefined || startup209 && startupPurpose && footprintResult !== undefined &&
-    binding !== undefined && startupOpening !== undefined && footprintSource.bindingSha256 === sha256Json(binding) &&
-    footprintSource.stateResultSha256 === sha256Json(footprintResult) &&
+    binding !== undefined && startupOpening !== undefined && footprintSource.bindingSha256 === predecessorDigest(binding) &&
+    footprintSource.stateResultSha256 === predecessorDigest(footprintResult) &&
     footprintSource.beforeSqlSha256 === startupOpening.beforeSqlSha256 &&
     footprintSource.checkpointSha256 === startupOpening.preparationCheckpoint.sha256, "WORKER_STARTUP_FOOTPRINT_SOURCE_CHAIN");
   requireValue(footprintSourceResult === undefined || footprintSource !== undefined && footprintResult !== undefined &&
-    footprintSourceResult.intentSha256 === sha256Json(footprintSource) &&
+    footprintSourceResult.intentSha256 === predecessorDigest(footprintSource) &&
     footprintSourceResult.result.comparison === footprintSource.comparison &&
     footprintSourceResult.result.request.footprintUuid === footprintSource.footprintUuid &&
     footprintSourceResult.result.request.client === footprintResult.result.client &&
@@ -1231,55 +1285,55 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   const footprintPreparation = records["worker-startup-footprint-preparation-intent.json"];
   const footprintPrepared = records["worker-startup-footprint-preparation-result.json"];
   requireValue(footprintPreparation === undefined || (startupLegacy209 || startupFootprint209) &&
-    binding !== undefined && footprintSourceResult !== undefined && footprintPreparation.bindingSha256 === sha256Json(binding) &&
-    footprintPreparation.sourceResultSha256 === sha256Json(footprintSourceResult), "WORKER_STARTUP_FOOTPRINT_PREPARATION_CHAIN");
+    binding !== undefined && footprintSourceResult !== undefined && footprintPreparation.bindingSha256 === predecessorDigest(binding) &&
+    footprintPreparation.sourceResultSha256 === predecessorDigest(footprintSourceResult), "WORKER_STARTUP_FOOTPRINT_PREPARATION_CHAIN");
   requireValue(footprintPrepared === undefined || footprintPreparation !== undefined && footprintSource !== undefined && footprintSourceResult !== undefined &&
-    footprintPrepared.intentSha256 === sha256Json(footprintPreparation) &&
+    footprintPrepared.intentSha256 === predecessorDigest(footprintPreparation) &&
     footprintPrepared.result.beforeCheckpointSha256 === footprintSource.checkpointSha256 &&
     footprintPrepared.result.beforeSqlSha256 === footprintSource.beforeSqlSha256 &&
     footprintPrepared.result.sourcePlanSha256 === footprintSource.sourcePlanSha256 &&
-    footprintPrepared.result.sourcePacketSha256 === sha256Json(footprintSourceResult.result), "WORKER_STARTUP_FOOTPRINT_PREPARATION_RESULT_CHAIN");
+    footprintPrepared.result.sourcePacketSha256 === predecessorDigest(footprintSourceResult.result), "WORKER_STARTUP_FOOTPRINT_PREPARATION_RESULT_CHAIN");
   const bindings = records["footprint-copy-bindings-intent.json"], bindingsResult = records["footprint-copy-bindings-result.json"];
   requireValue(bindings === undefined || startupFootprint209 && binding !== undefined && footprintPrepared !== undefined && actorResult !== undefined &&
-    bindings.bindingSha256 === sha256Json(binding) && bindings.preparationResultSha256 === sha256Json(footprintPrepared) &&
-    bindings.actorResultSha256 === sha256Json(actorResult), "FOOTPRINT_BINDINGS_CHAIN");
+    bindings.bindingSha256 === predecessorDigest(binding) && bindings.preparationResultSha256 === predecessorDigest(footprintPrepared) &&
+    bindings.actorResultSha256 === predecessorDigest(actorResult), "FOOTPRINT_BINDINGS_CHAIN");
   requireValue(bindingsResult === undefined || bindings !== undefined && footprintPrepared !== undefined && actorResult !== undefined &&
-    bindingsResult.intentSha256 === sha256Json(bindings) && bindingsResult.result.sourcePreparationSha256 === sha256Json(footprintPrepared.result) &&
-    bindingsResult.result.actorPacketSha256 === sha256Json(actorResult.result) &&
+    bindingsResult.intentSha256 === predecessorDigest(bindings) && bindingsResult.result.sourcePreparationSha256 === predecessorDigest(footprintPrepared.result) &&
+    bindingsResult.result.actorPacketSha256 === predecessorDigest(actorResult.result) &&
     bindingsResult.result.beforeSqlSha256 === footprintPrepared.result.beforeSqlSha256, "FOOTPRINT_BINDINGS_RESULT_CHAIN");
   const footprintUi = records["footprint-copy-ui-intent.json"], footprintUiResult = records["footprint-copy-ui-result.json"];
   requireValue(footprintUi === undefined || startupFootprint209 && binding !== undefined && bindingsResult !== undefined &&
-    footprintUi.bindingSha256 === sha256Json(binding) && footprintUi.bindingsResultSha256 === sha256Json(bindingsResult), "FOOTPRINT_UI_CHAIN");
-  requireValue(footprintUiResult === undefined || footprintUi !== undefined && footprintUiResult.intentSha256 === sha256Json(footprintUi),
+    footprintUi.bindingSha256 === predecessorDigest(binding) && footprintUi.bindingsResultSha256 === predecessorDigest(bindingsResult), "FOOTPRINT_UI_CHAIN");
+  requireValue(footprintUiResult === undefined || footprintUi !== undefined && footprintUiResult.intentSha256 === predecessorDigest(footprintUi),
     "FOOTPRINT_UI_RESULT_CHAIN");
   const dependencies = records["footprint-copy-dependencies-intent.json"], dependenciesResult = records["footprint-copy-dependencies-result.json"];
   requireValue(dependencies === undefined || startupFootprint209 && binding !== undefined && bindingsResult !== undefined && footprintUiResult !== undefined &&
-    dependencies.bindingSha256 === sha256Json(binding) && dependencies.bindingsResultSha256 === sha256Json(bindingsResult) &&
-    dependencies.uiResultSha256 === sha256Json(footprintUiResult), "FOOTPRINT_DEPENDENCIES_CHAIN");
-  requireValue(dependenciesResult === undefined || dependencies !== undefined && dependenciesResult.intentSha256 === sha256Json(dependencies),
+    dependencies.bindingSha256 === predecessorDigest(binding) && dependencies.bindingsResultSha256 === predecessorDigest(bindingsResult) &&
+    dependencies.uiResultSha256 === predecessorDigest(footprintUiResult), "FOOTPRINT_DEPENDENCIES_CHAIN");
+  requireValue(dependenciesResult === undefined || dependencies !== undefined && dependenciesResult.intentSha256 === predecessorDigest(dependencies),
     "FOOTPRINT_DEPENDENCIES_RESULT_CHAIN");
   const managerRoute = records["footprint-copy-manager-route-intent.json"], managerRouteResult = records["footprint-copy-manager-route-result.json"];
   requireValue(managerRoute === undefined || startupFootprint209 && binding !== undefined && dependenciesResult !== undefined && footprintUiResult !== undefined &&
-    managerRoute.bindingSha256 === sha256Json(binding) && managerRoute.dependenciesResultSha256 === sha256Json(dependenciesResult) &&
-    managerRoute.uiResultSha256 === sha256Json(footprintUiResult), "FOOTPRINT_MANAGER_ROUTE_CHAIN");
-  requireValue(managerRouteResult === undefined || managerRoute !== undefined && managerRouteResult.intentSha256 === sha256Json(managerRoute),
+    managerRoute.bindingSha256 === predecessorDigest(binding) && managerRoute.dependenciesResultSha256 === predecessorDigest(dependenciesResult) &&
+    managerRoute.uiResultSha256 === predecessorDigest(footprintUiResult), "FOOTPRINT_MANAGER_ROUTE_CHAIN");
+  requireValue(managerRouteResult === undefined || managerRoute !== undefined && managerRouteResult.intentSha256 === predecessorDigest(managerRoute),
     "FOOTPRINT_MANAGER_ROUTE_RESULT_CHAIN");
   const channel = records["worker-startup-channel-intent.json"], channelResult = records["worker-startup-channel-result.json"];
   requireValue(channel === undefined || startupPurpose && assigned !== undefined && binding !== undefined &&
-    channel.assignmentsResultSha256 === sha256Json(assigned) && channel.bindingSha256 === sha256Json(binding), "WORKER_STARTUP_CHANNEL_CHAIN");
-  requireValue(channelResult === undefined || channel !== undefined && startupOpened !== undefined && channelResult.intentSha256 === sha256Json(channel) &&
+    channel.assignmentsResultSha256 === predecessorDigest(assigned) && channel.bindingSha256 === predecessorDigest(binding), "WORKER_STARTUP_CHANNEL_CHAIN");
+  requireValue(channelResult === undefined || channel !== undefined && startupOpened !== undefined && channelResult.intentSha256 === predecessorDigest(channel) &&
     canonicalJson(channelResult.result.identity) === canonicalJson(startupOpened.result.workerIdentity), "WORKER_STARTUP_CHANNEL_RESULT_CHAIN");
   for (const stage of lifecycleObservationStages) {
     const observation = records[`${stage}-intent.json`], result = records[`${stage}-result.json`];
     requireValue(observation === undefined || binding !== undefined && observation.stage === stage &&
-      observation.bindingSha256 === sha256Json(binding) && binding.launchAcknowledged && binding.binding.rootCreated !== "0", "OBSERVATION_CHAIN");
-    requireValue(result === undefined || observation !== undefined && result.stage === stage && result.intentSha256 === sha256Json(observation), "OBSERVATION_RESULT_CHAIN");
+      observation.bindingSha256 === predecessorDigest(binding) && binding.launchAcknowledged && binding.binding.rootCreated !== "0", "OBSERVATION_CHAIN");
+    requireValue(result === undefined || observation !== undefined && result.stage === stage && result.intentSha256 === predecessorDigest(observation), "OBSERVATION_RESULT_CHAIN");
   }
   const observationFailure = records["observation-failure.json"];
   if (observationFailure !== undefined) {
     const stage = observationFailure.stage;
     const observation = records[`${stage}-intent.json`];
-    requireValue(observation !== undefined && observationFailure.intentSha256 === sha256Json(observation) &&
+    requireValue(observation !== undefined && observationFailure.intentSha256 === predecessorDigest(observation) &&
       records[`${stage}-result.json`] === undefined && (stage === "string-precreate") === stringPurpose, "OBSERVATION_FAILURE_CHAIN");
   }
   requireValue(records["frames-intent.json"] === undefined || records["browser-result.json"] !== undefined, "FRAMES_CHAIN");
@@ -1300,7 +1354,7 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   for (const stage of ["window-resize209", "window-capture209"] as const) {
     const followupIntent = records[`${stage}-intent.json`];
     requireValue(followupIntent === undefined || (windowRestore === undefined ? followupIntent.restoreResultSha256 === undefined && followupIntent.postRestoreStateObserved === undefined :
-      restoredWindow !== undefined && followupIntent.restoreResultSha256 === sha256Json(restoredWindow) && followupIntent.postRestoreStateObserved === true), "WINDOW_RESTORE209_FOLLOWUP_CHAIN");
+      restoredWindow !== undefined && followupIntent.restoreResultSha256 === predecessorDigest(restoredWindow) && followupIntent.postRestoreStateObserved === true), "WINDOW_RESTORE209_FOLLOWUP_CHAIN");
   }
   const windowResize = records["window-resize209-intent.json"]; const resizedWindow = records["window-resize209-result.json"];
   requireValue(windowResize === undefined || visualPurpose && opening !== undefined && pcbObserved !== undefined &&
@@ -1327,7 +1381,7 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     records["workers-intent.json"] === undefined && records["model-state-intent.json"] === undefined, "WINDOW_CAPTURE209_CHAIN");
   if (windowCapture !== undefined) {
     requireValue(windowResize === undefined ? windowCapture.resizeResultSha256 === undefined && windowCapture.postResizeGeometryObserved === undefined :
-      resizedWindow !== undefined && windowCapture.resizeResultSha256 === sha256Json(resizedWindow) && windowCapture.postResizeGeometryObserved === true,
+      resizedWindow !== undefined && windowCapture.resizeResultSha256 === predecessorDigest(resizedWindow) && windowCapture.postResizeGeometryObserved === true,
     "WINDOW_CAPTURE209_RESIZE_CHAIN");
   }
   if (windowImage !== undefined) {
@@ -1374,12 +1428,12 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   "SELECTION_RELATIONS209_CHAIN");
   requireValue(selectionResult === undefined || selectionIntent !== undefined && Array.isArray(selectionResult.result["requestedComponentIds"]) &&
     canonicalJson(selectionResult.result["requestedComponentIds"]) === canonicalJson(selectionIntent.componentIds), "SELECTION_RELATIONS209_REQUEST");
-  requireValue(pcbOpen === undefined || binding !== undefined && pcbOpen.bindingSha256 === sha256Json(binding) &&
-    opening !== undefined && pcbOpen.projectOpeningIntentSha256 === sha256Json(opening) && opened !== undefined &&
-    pcbOpen.projectOpeningResultSha256 === sha256Json(opened) && opened.result["ok"] === true &&
+  requireValue(pcbOpen === undefined || binding !== undefined && pcbOpen.bindingSha256 === predecessorDigest(binding) &&
+    opening !== undefined && pcbOpen.projectOpeningIntentSha256 === predecessorDigest(opening) && opened !== undefined &&
+    pcbOpen.projectOpeningResultSha256 === predecessorDigest(opened) && opened.result["ok"] === true &&
     opened.result["status"] === "opened-prefix-observed" && opened.result["failure"] === null &&
     (stringPurpose || records["workers-intent.json"] === undefined), "PCB_OPEN_CHAIN");
-  requireValue(pcbOpened === undefined || pcbOpen !== undefined && pcbOpened.intentSha256 === sha256Json(pcbOpen), "PCB_OPEN_RESULT_CHAIN");
+  requireValue(pcbOpened === undefined || pcbOpen !== undefined && pcbOpened.intentSha256 === predecessorDigest(pcbOpen), "PCB_OPEN_RESULT_CHAIN");
   requireValue(records["pcb-opening-intent.json"] === undefined || pcbOpened !== undefined &&
     pcbOpened.result["ok"] === true && pcbOpened.result["status"] === "opened" && pcbOpened.result["failure"] === null, "PCB_OPEN_OBSERVATION_CHAIN");
   requireValue(!stringPurpose || records["workers-intent.json"] === undefined ||
@@ -1388,8 +1442,8 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   const commonObservation = records["common-baseline-intent.json"], commonResult = records["common-baseline-result.json"];
   const commonFailure = records["common-baseline-failure.json"];
   requireValue(commonObservation === undefined || stringPurpose && pcbObserved !== undefined && opening !== undefined &&
-    diagnosticPcbOpeningSourceAccepted(pcbObserved.result, opening.target) && commonObservation.pcbOpeningResultSha256 === sha256Json(pcbObserved) &&
-    workerScript !== undefined && workerScript.result["sourceVerified"] === true && commonObservation.workerScriptResultSha256 === sha256Json(workerScript) &&
+    diagnosticPcbOpeningSourceAccepted(pcbObserved.result, opening.target) && commonObservation.pcbOpeningResultSha256 === predecessorDigest(pcbObserved) &&
+    workerScript !== undefined && workerScript.result["sourceVerified"] === true && commonObservation.workerScriptResultSha256 === predecessorDigest(workerScript) &&
     commonObservation.beforeSqlSha256 === opening.commonBeforeSqlSha256 && commonObservation.checkpointSha256 === opening.preparationCheckpoint.sha256,
   "COMMON_BASELINE_SOURCE_CHAIN");
   requireValue(commonResult === undefined || commonObservation !== undefined && opening !== undefined &&
@@ -1397,7 +1451,7 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
       documentUuid: opening.target.documentUuid }) && commonResult.result.beforeSqlSha256 === commonObservation.beforeSqlSha256 &&
     commonResult.result.checkpointSha256 === commonObservation.checkpointSha256, "COMMON_BASELINE_TARGET_CHAIN");
   requireValue(commonFailure === undefined || commonObservation !== undefined && opening !== undefined &&
-    commonFailure.intentSha256 === sha256Json(commonObservation) && canonicalJson(commonFailure.failure.identity) === canonicalJson({
+    commonFailure.intentSha256 === predecessorDigest(commonObservation) && canonicalJson(commonFailure.failure.identity) === canonicalJson({
       projectUuid: opening.target.projectUuid, branchUuid: opening.target.branchUuid, documentUuid: opening.target.documentUuid }) &&
     (commonFailure.failure.historicalHeader === null || commonFailure.failure.historicalHeader.beforeSqlSha256 === commonObservation.beforeSqlSha256 &&
       commonFailure.failure.historicalHeader.checkpointSha256 === commonObservation.checkpointSha256), "COMMON_BASELINE_FAILURE_CHAIN");
@@ -1413,8 +1467,8 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     "COMMON_BASELINE_PRECREATE_ORDER");
   requireValue(stringObservation === undefined || stringPurpose && pcbObserved !== undefined && opening !== undefined &&
     diagnosticPcbOpeningSourceAccepted(pcbObserved.result, opening.target) &&
-    stringObservation.pcbOpeningResultSha256 === sha256Json(pcbObserved) && workerScript !== undefined &&
-    workerScript.result["sourceVerified"] === true && stringObservation.workerScriptResultSha256 === sha256Json(workerScript), "STRING_PRECREATE_SOURCE_CHAIN");
+    stringObservation.pcbOpeningResultSha256 === predecessorDigest(pcbObserved) && workerScript !== undefined &&
+    workerScript.result["sourceVerified"] === true && stringObservation.workerScriptResultSha256 === predecessorDigest(workerScript), "STRING_PRECREATE_SOURCE_CHAIN");
   const stringResult = records["string-precreate-result.json"];
   requireValue(stringResult === undefined || opening !== undefined && stringPrecreateTargetMatches(stringResult.result, opening.target,
     opened?.result, pcbObserved?.result), "STRING_PRECREATE_TARGET_CHAIN");
@@ -1423,24 +1477,24 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
       records["script-intent.json"]?.family === "pcb" ||
     pcbObserved !== undefined && opening !== undefined && diagnosticPcbOpeningSourceAccepted(pcbObserved.result, opening.target), "MODEL_STATE_SOURCE_CHAIN");
   requireValue(opening === undefined || binding !== undefined && binding.launchAcknowledged && binding.binding.rootCreated !== "0" &&
-    opening.bindingSha256 === sha256Json(binding) && script !== undefined &&
-    opening.scriptResultSha256 === sha256Json(script) && script.result["family"] === "ui" && script.result["sourceVerified"] === true &&
+    opening.bindingSha256 === predecessorDigest(binding) && script !== undefined &&
+    opening.scriptResultSha256 === predecessorDigest(script) && script.result["family"] === "ui" && script.result["sourceVerified"] === true &&
     records["script-intent.json"]?.family === "ui", "PROJECT_OPENING_CHAIN");
-  requireValue(opened === undefined || opening !== undefined && opened.intentSha256 === sha256Json(opening), "PROJECT_OPENING_RESULT_CHAIN");
-  requireValue(binding === undefined || intent !== undefined && binding.intentSha256 === sha256Json(intent), "BINDING_CHAIN");
-  requireValue(close === undefined || binding !== undefined && close.bindingSha256 === sha256Json(binding), "CLOSE_CHAIN");
-  requireValue(acknowledgment === undefined || close !== undefined && acknowledgment.closeIntentSha256 === sha256Json(close), "CLOSE_ACK_CHAIN");
-  requireValue(termination === undefined || binding !== undefined && termination.bindingSha256 === sha256Json(binding), "TERMINATION_CHAIN");
-  requireValue(release === undefined || termination !== undefined && release.terminationSha256 === sha256Json(termination), "RELEASE_CHAIN");
-  requireValue(released === undefined || release !== undefined && released.releaseIntentSha256 === sha256Json(release), "RELEASE_ACK_CHAIN");
-  requireValue(unlaunched === undefined || intent !== undefined && unlaunched.intentSha256 === sha256Json(intent) &&
+  requireValue(opened === undefined || opening !== undefined && opened.intentSha256 === predecessorDigest(opening), "PROJECT_OPENING_RESULT_CHAIN");
+  requireValue(binding === undefined || intent !== undefined && binding.intentSha256 === predecessorDigest(intent), "BINDING_CHAIN");
+  requireValue(close === undefined || binding !== undefined && close.bindingSha256 === predecessorDigest(binding), "CLOSE_CHAIN");
+  requireValue(acknowledgment === undefined || close !== undefined && acknowledgment.closeIntentSha256 === predecessorDigest(close), "CLOSE_ACK_CHAIN");
+  requireValue(termination === undefined || binding !== undefined && termination.bindingSha256 === predecessorDigest(binding), "TERMINATION_CHAIN");
+  requireValue(release === undefined || termination !== undefined && release.terminationSha256 === predecessorDigest(termination), "RELEASE_CHAIN");
+  requireValue(released === undefined || release !== undefined && released.releaseIntentSha256 === predecessorDigest(release), "RELEASE_ACK_CHAIN");
+  requireValue(unlaunched === undefined || intent !== undefined && unlaunched.intentSha256 === predecessorDigest(intent) &&
     binding === undefined && close === undefined && acknowledgment === undefined && termination === undefined && release === undefined && released === undefined, "UNLAUNCHED_CHAIN");
-  requireValue(notDispatched === undefined || unlaunched !== undefined && notDispatched.unlaunchedReleaseIntentSha256 === sha256Json(unlaunched) &&
+  requireValue(notDispatched === undefined || unlaunched !== undefined && notDispatched.unlaunchedReleaseIntentSha256 === predecessorDigest(unlaunched) &&
     notDispatched.helperReleased === unlaunched.helperAllocated, "NONDISPATCH_CHAIN");
-  requireValue(noProcess === undefined || intent !== undefined && noProcess.intentSha256 === sha256Json(intent) && binding === undefined &&
+  requireValue(noProcess === undefined || intent !== undefined && noProcess.intentSha256 === predecessorDigest(intent) && binding === undefined &&
     unlaunched === undefined && notDispatched === undefined && close === undefined && acknowledgment === undefined &&
     termination === undefined && release === undefined && released === undefined, "NO_PROCESS_CHAIN");
-  requireValue(noProcessReleased === undefined || noProcess !== undefined && noProcessReleased.noProcessReleaseIntentSha256 === sha256Json(noProcess), "NO_PROCESS_RELEASE_CHAIN");
+  requireValue(noProcessReleased === undefined || noProcess !== undefined && noProcessReleased.noProcessReleaseIntentSha256 === predecessorDigest(noProcess), "NO_PROCESS_RELEASE_CHAIN");
 }
 
 /** Missing root/parent means no records. Anything else unknown, partial or

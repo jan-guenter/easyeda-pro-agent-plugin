@@ -65,6 +65,25 @@ void test("forward prewrite wrapper and discovery preserve a separate qualificat
   assert.ok(query !== null && typeof query === "object" && "executionReady" in query && "inputSchema" in query && "actions" in query);
   assert.equal(query.executionReady, false); assert.notEqual(query.inputSchema, undefined);
   assert.ok(Array.isArray(query.actions) && query.actions.includes("qualify-footprint-source") && query.actions.includes("abort-generation"));
+  for (const action of ["seal-footprint-source", "prove-closed-baseline"]) {
+    const request = { action, operationId: id, expectedBindingSha256: digest };
+    assert.equal(currentFootprintForwardPrewriteValidationRequestSchema.safeParse(request).success, true);
+    assert.equal(currentPcb209WorkerStartupToolRequestSchema.safeParse({ action: "footprint-forward-prewrite", request }).success, true);
+    for (const change of [{ footprintUuid: "b".repeat(32) }, { checkpoint: {} }, { nativeOwner: {} }, { result: {} }, { executionReady: true }, { saveAuthorized: true }]) {
+      assert.equal(currentFootprintForwardPrewriteValidationRequestSchema.safeParse({ ...request, ...change }).success, false);
+    }
+    assert.ok(Array.isArray(query.actions) && query.actions.includes(action));
+  }
+  const page = { action: "read-qualified-source", operationId: id, expectedBindingSha256: digest,
+    expectedSourcePacketSha256: "c".repeat(64), offsetBytes: 0, lengthBytes: 65_536 };
+  assert.equal(currentFootprintForwardPrewriteValidationRequestSchema.safeParse(page).success, true);
+  assert.equal(currentPcb209WorkerStartupToolRequestSchema.safeParse({ action: "footprint-forward-prewrite", request: page }).success, true);
+  assert.ok(Array.isArray(query.actions) && query.actions.includes("read-qualified-source"));
+  for (const change of [{ path: "caller.json" }, { packet: {} }, { nativeOwner: {} }, { code: "caller" },
+    { expectedSourcePacketSha256: "invalid" }, { offsetBytes: -1 }, { offsetBytes: -0 }, { offsetBytes: 0.5 },
+    { lengthBytes: 0 }, { lengthBytes: 65_537 }, { executionReady: true }, { saveAuthorized: true }]) {
+    assert.equal(currentFootprintForwardPrewriteValidationRequestSchema.safeParse({ ...page, ...change }).success, false);
+  }
   const validated = queryOfflineApi(apiRequestSchema.parse({ action: "footprint-forward-prewrite-validate", query: { request: qualify } })).result;
   assert.ok(validated !== null && typeof validated === "object" && "valid" in validated && "executionReady" in validated);
   assert.equal(validated.valid, true); assert.equal(validated.executionReady, false);

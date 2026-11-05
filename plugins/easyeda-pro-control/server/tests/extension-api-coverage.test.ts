@@ -1412,8 +1412,8 @@ void test("footprint source coverage is a scoped cache equivalent despite the ab
   const row = inventoryExtensionApiCoverage().find(entry => entry.path === "eda.lib_Footprint.getDocumentSource");
   assert.ok(row); assert.equal(row.status, "implemented-native-equivalent");
   assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
-  assert.equal(row.routes.length, 2);
-  assert.deepEqual(row.routes.map(route => route.selector).toSorted(), ["footprint-forward-prewrite/qualify-footprint-source", "observe-footprint-source"]);
+  assert.equal(row.routes.length, 3);
+  assert.deepEqual(row.routes.map(route => route.selector).toSorted(), ["footprint-forward-prewrite/qualify-footprint-source", "footprint-forward-prewrite/read-qualified-source", "observe-footprint-source"]);
   const route = row.routes.find(value => value.selector === "observe-footprint-source"); assert.ok(route);
   assert.equal(route.tool, "easyeda_control_pcb209_worker_startup"); assert.equal(route.selector, "observe-footprint-source");
   assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [4]);
@@ -1429,5 +1429,16 @@ void test("footprint source coverage is a scoped cache equivalent despite the ab
   assert.match(forward.scope, /executionReady:false/u); assert.match(forward.scope, /No public SDK wrapper, create, scheduler, copy\/delete or Save call/u);
   assert.deepEqual(forward.inputDiscovery, { tool: "easyeda_control_api", arguments: { request: { action: "footprint-forward-prewrite", query: { includeSchemas: true } } } });
   assert.ok(forward.source.includes("current-footprint-forward-prewrite-validation.ts"));
+  assert.ok(forward.source.includes("current-footprint-forward-source-seal.ts"));
+  assert.match(forward.scope, /complete closed SQL baseline equality/u);
+  assert.match(forward.scope, /Helper release remains separate/u);
   assert.ok(forward.tests.includes("current-footprint-forward-source-lifecycle.test.ts"));
+  assert.match(forward.scope, /MCP result contains qualification hashes and flags, not raw source text/u);
+  assert.match(forward.scope, /complete source packet is retained in the managed forward-prewrite-result.json/u);
+  const reader = row.routes.find(value => value.selector === "footprint-forward-prewrite/read-qualified-source"); assert.ok(reader);
+  assert.equal(reader.implementation, "native-task-equivalent"); assert.equal(reader.executionState, "available-with-runtime-guards");
+  assert.match(reader.scope, /Bounded base64 byte pages/u); assert.match(reader.scope, /calls no native method/u);
+  assert.match(reader.scope, /proves no current or saved state/u); assert.match(reader.scope, /qualifier v1 result remains hash-only/u);
+  assert.ok(reader.source.includes("current-footprint-qualified-source-page.ts"));
+
 });

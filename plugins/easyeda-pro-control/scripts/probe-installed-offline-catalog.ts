@@ -22,7 +22,7 @@ const NODE_VERSION = "24.18.0";
 const MAX_REPLY_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
-const CATALOG_QUERY_COUNT = 59;
+const CATALOG_QUERY_COUNT = 71;
 // Initialize and tool discovery plus the fixed catalog requests below.
 const REQUEST_LIMIT = 2 + CATALOG_QUERY_COUNT;
 const EXPECTED_TOOLS = [
@@ -454,7 +454,7 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
   requireCheck(forward["wrapperAction"] === "footprint-forward-prewrite" && forward["toolWrapperAction"] === "footprint-forward-prewrite" &&
     forward["validationOnly"] === true && forward["executionReady"] === false && forward["executionAuthorized"] === false &&
     forward["saveAuthorized"] === false && forward["connectedValidation"] === false && Array.isArray(forwardActions) &&
-    ["observe-main-construction", "capture-project", "observe-footprint-route", "qualify-footprint-source", "abort-generation", "release-closed"].every(action => forwardActions.includes(action)) &&
+    ["observe-main-construction", "capture-project", "observe-footprint-route", "qualify-footprint-source", "seal-footprint-source", "prove-closed-baseline", "read-qualified-source", "abort-generation", "release-closed"].every(action => forwardActions.includes(action)) &&
     !["create", "copy", "delete", "save", "execute", "schedule"].some(action => forwardActions.includes(action)) &&
     Array.isArray(record(forward["inputSchema"])["oneOf"]), "Forward prewrite discovery lost its separate qualification-only boundary.");
   const forwardRequest = { action: "qualify-footprint-source", operationId: "footprint-copy-qualify-offline-catalog",
@@ -466,6 +466,58 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
     Object.keys(validatedForwardRequest).length === Object.keys(forwardRequest).length &&
     Object.entries(forwardRequest).every(([key, value]) => validatedForwardRequest[key] === value),
   "Forward prewrite validation changed its exact source arguments or implied execution authority.");
+  const forwardResults = record(forward["resultSchemas"]);
+  for (const name of ["qualification", "sourceSeal", "closedBaseline", "sourcePage"]) {
+    const schema = record(forwardResults[name]);
+    const properties = record(schema["properties"]), required = schema["required"];
+    requireCheck(schema["type"] === "object" && schema["additionalProperties"] === false && Array.isArray(required) &&
+      ["executionReady", "executionAuthorized", "saveAuthorized"].every(key => required.includes(key) && record(properties[key])["const"] === false),
+    "A forward result schema lost its strict false authority boundary.");
+    if (name === "qualification") {
+      requireCheck(record(properties["sourceSealedForClosedSnapshot"])["const"] === false,
+        "The original qualification result was changed by the later source seal.");
+    } else if (name === "sourceSeal") {
+      requireCheck(record(properties["sourceSealedForClosedSnapshot"])["const"] === true &&
+        ["headAgeVerified", "atomicPrewriteQueuesVerified", "documentClocksArmed", "backendPublicationVerified", "wholeFourGenerationBudgetReserved"]
+          .every(key => record(properties[key])["const"] === false), "Source sealing implied missing writer eligibility proof.");
+    } else if (name === "sourcePage") {
+      requireCheck(record(properties["pointInTime"])["const"] === true && record(properties["nativeCalls"])["const"] === 0 &&
+        ["currentStateVerified", "savedStateVerified"].every(key => record(properties[key])["const"] === false) &&
+        record(properties["format"])["const"] === "canonical-json-utf8" && record(properties["encoding"])["const"] === "base64",
+      "Source packet pages implied native calls or current/saved state proof.");
+    } else {
+      requireCheck(["exactLogicalSqlUnchanged", "originalRootExited", "originalJobEmpty"].every(key => record(properties[key])["const"] === true) &&
+        ["helperReleaseProved", "savedCopyVerified"].every(key => record(properties[key])["const"] === false),
+      "Closed baseline equality implied helper release or a saved copy.");
+    }
+  }
+  for (const action of ["seal-footprint-source", "prove-closed-baseline"]) {
+    const selected = { action, operationId: forwardRequest.operationId, expectedBindingSha256: forwardRequest.expectedBindingSha256 };
+    for (const [request, valid] of [[selected, true], [{ ...selected, nativeOwner: {} }, false],
+      [{ ...selected, executionReady: true }, false], [{ ...selected, saveAuthorized: true }, false]] as const) {
+      const result = await offlineApi(child, { action: "footprint-forward-prewrite-validate", query: { request } });
+      requireCheck(result["valid"] === valid && result["validationOnly"] === true && result["executionReady"] === false && result["executionAuthorized"] === false,
+        "Forward baseline validation accepted caller authority or implied execution readiness.");
+      if (valid) {
+        const exact = record(result["request"]);
+        requireCheck(Object.keys(exact).length === Object.keys(selected).length && Object.entries(selected).every(([key, value]) => exact[key] === value),
+          "Forward baseline validation changed its exact bound arguments.");
+      }
+    }
+  }
+  const sourcePage = { action: "read-qualified-source", operationId: forwardRequest.operationId,
+    expectedBindingSha256: forwardRequest.expectedBindingSha256, expectedSourcePacketSha256: "c".repeat(64), offsetBytes: 0, lengthBytes: 65_536 };
+  for (const [request, valid] of [[sourcePage, true], [{ ...sourcePage, path: "caller.json" }, false],
+    [{ ...sourcePage, packet: {} }, false], [{ ...sourcePage, lengthBytes: 65_537 }, false]] as const) {
+    const result = await offlineApi(child, { action: "footprint-forward-prewrite-validate", query: { request } });
+    requireCheck(result["valid"] === valid && result["validationOnly"] === true && result["executionReady"] === false && result["executionAuthorized"] === false,
+      "Source packet page validation accepted caller data or unbounded pages.");
+    if (valid) {
+      const exact = record(result["request"]);
+      requireCheck(Object.keys(exact).length === Object.keys(sourcePage).length && Object.entries(sourcePage).every(([key, value]) => exact[key] === value),
+        "Source packet page validation changed its exact original-bound arguments.");
+    }
+  }
   const combined = await offlineApi(child, { action: "footprint-combined", query: { includeSchemas: true } });
   requireCheck(combined["toolWrapperAction"] === "footprint-combined" && combined["executionAuthorized"] === false &&
     combined["saveAuthorized"] === false && combined["connectedValidation"] === false &&

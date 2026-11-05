@@ -9,7 +9,6 @@ import process from "node:process";
 import { types } from "node:util";
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { z } from "zod";
 
 import { assertSelfSoftCoreLimitZero } from "../server/src/soft-core-limit.ts";
@@ -367,6 +366,8 @@ async function main(): Promise<void> {
   // The facade retains its own atomic lease. Never create another data root to
   // Evading an existing owner or spawning the upstream directly is prohibited.
   sessionPhase = "transport-create";
+  // Keep this legacy-only SDK transport out of the separately bundled manager.
+  const { StdioClientTransport } = await import("@modelcontextprotocol/sdk/client/stdio.js");
   const transport = new StdioClientTransport({
     command: definition.command,
     args: definition.args,

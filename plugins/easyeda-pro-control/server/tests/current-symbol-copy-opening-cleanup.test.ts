@@ -7,11 +7,12 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { z } from "zod";
+import { operationPath } from "../src/artifacts.ts";
 import { currentSymbolBaselineRequestSchema } from "../src/current-symbol-baseline-runtime.ts";
 import { OPERATION_SCHEMA, buildPlanHash, canonicalJson, isRecord, sha256Text } from "../src/core.ts";
 import { currentDisposableOpenSealedTargetSchema, parseCurrentDisposableOpenRequest } from "../src/current-disposable-open.ts";
+// oxlint-disable-next-line import/max-dependencies -- The original opener VM needs both the real managed-path guard and shared baseline schema; duplicating either would conceal preflight drift.
 import { CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION } from "../src/current-disposable-open-profile.ts";
-// oxlint-disable-next-line import/max-dependencies -- The original opener VM also needs its real shared baseline schema; duplicating that parser would conceal producer/release grammar drift.
 import { CURRENT_SYMBOL_COPY_OPERATION_PURPOSE, parseCurrentSymbolCopyOperationRequest } from "../src/current-symbol-copy-operation.ts";
 
 type Bag = Record<string, unknown>;
@@ -77,7 +78,7 @@ async function fixture(failure: Failure = "none"): Promise<{
   }
   const program = stripTypeScriptTypes(await readFile(new URL("../src/current-disposable-open-runtime.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
-  const context = createContext({ z, Object, Reflect, Promise, structuredClone, canonicalJson, buildPlanHash, isRecord, sha256Text, OPERATION_SCHEMA,
+  const context = createContext({ z, Object, Reflect, Promise, structuredClone, canonicalJson, buildPlanHash, isRecord, sha256Text, OPERATION_SCHEMA, operationPath,
     CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION, CURRENT_SYMBOL_COPY_OPERATION_PURPOSE, parseCurrentSymbolCopyOperationRequest,
     currentDisposableOpenSealedTargetSchema, parseCurrentDisposableOpenRequest,
     CURRENT_SYMBOL_OPERATION_PURPOSE: "ordinary-symbol-metadata", EasyedaControlEngine: Object, WindowsControlRuntime: Object,

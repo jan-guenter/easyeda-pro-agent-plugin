@@ -6,7 +6,7 @@ import { CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY as CAPACITY,
   CurrentFootprintCopyForwardResourceLedger as Ledger,
   requireOriginalForwardLedgerBinding } from "../src/current-footprint-copy-forward-capacity.ts";
 import { CURRENT_FOOTPRINT_COPY_ALLOCATED_CREATE_CLOCK_BUDGET as ALLOCATION } from "../src/current-footprint-copy-allocated-create-clock-budget.ts";
-import { CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS as SOURCE_PREPARATION } from "../src/current-footprint-copy-preparation.ts";
+import { CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS as SOURCE_PREPARATION, CURRENT_FOOTPRINT_COPY_SOURCE_SEAL_REQUESTS as SOURCE_SEAL } from "../src/current-footprint-copy-preparation.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS as SOURCE } from "../src/current-footprint-copy-source-read-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE as EXISTING } from "../src/current-footprint-copy-execution-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_KNOWN_CAPACITY as MAIN } from "../src/current-footprint-copy-main-capacity.ts";
@@ -15,13 +15,13 @@ import { CURRENT_PCB_WORKER_STARTUP_STREAM_LIMITS as STREAM } from "../src/curre
 
 void test("forward ceiling separates two generations, normal classes and global IDs", () => {
   assert.deepEqual(CAPACITY.generations, ["forward-writer", "forward-saved-readback"]);
-  assert.equal(CAPACITY.writer.renderer.normalClassLimit, 935);
+  assert.equal(CAPACITY.writer.renderer.normalClassLimit, 941);
   assert.equal(CAPACITY.writer.renderer.cleanupClassLimit, 61);
   assert.equal(CAPACITY.writer.renderer.normalClassLimit, EXISTING.normalRequestLimit - EXISTING.requests.transactionClock +
-    ALLOCATION.normal + SOURCE + SOURCE_PREPARATION);
+    ALLOCATION.normal + SOURCE + SOURCE_PREPARATION + SOURCE_SEAL);
   assert.equal(CAPACITY.writer.renderer.cleanupClassLimit, EXISTING.requests.cleanup - 5 + ALLOCATION.cleanup);
-  assert.equal(CAPACITY.writer.renderer.requestLimit, 996);
-  assert.equal(CAPACITY.writer.renderer.normalIdCeiling, 996);
+  assert.equal(CAPACITY.writer.renderer.requestLimit, 1002);
+  assert.equal(CAPACITY.writer.renderer.normalIdCeiling, 1002);
   assert.equal(CAPACITY.writer.renderer.stages.allocatedCreateClockTotal, 78);
   assert.equal(CAPACITY.writer.main.requestLimit, MAIN.minimumTotal);
   assert.equal(CAPACITY.writer.main.requestLimit, 128);
@@ -30,7 +30,7 @@ void test("forward ceiling separates two generations, normal classes and global 
   assert.equal(CAPACITY.wholeFourGenerationBudgetReserved, false); assert.equal(CAPACITY.executionAuthorized, false);
   const writerMinimumStdout = 4 * Math.ceil((STREAM.receivedBytes + MAIN_STREAM.totalReceivedBytes) / 3) +
     4 * (CAPACITY.writer.renderer.polls + MAIN_STREAM.totalPolls) +
-    (CAPACITY.writer.renderer.polls + MAIN_STREAM.totalPolls + 996 + 128 + CAPACITY.controls.writer.total) * CAPACITY.controls.replyHeaderBytes;
+    (CAPACITY.writer.renderer.polls + MAIN_STREAM.totalPolls + 1002 + 128 + CAPACITY.controls.writer.total) * CAPACITY.controls.replyHeaderBytes;
   assert.ok(CAPACITY.writer.helperStdoutBytes >= writerMinimumStdout);
   assert.ok(CAPACITY.controls.writer.total > CAPACITY.controls.terminationObservationsPerGeneration +
     CAPACITY.controls.releaseObservationsPerGeneration + CAPACITY.controls.normalCloseAttemptsPerGeneration + 1);
@@ -45,11 +45,11 @@ void test("normal request IDs remain usable after reserved interleaved cleanup",
   for (let id = 1; id <= CAPACITY.writer.renderer.cleanupClassLimit; id += 1) {
     ledger.consumeRequest("forward-writer", owner, "renderer", id, true);
   }
-  for (let id = 62; id <= 996; id += 1) { ledger.consumeRequest("forward-writer", owner, "renderer", id, false); }
-  assert.equal(ledger.status().rendererRequests, 996); assert.equal(ledger.status().failed, false);
-  assert.equal(ledger.generationStatus("forward-writer", owner).rendererNormalRequests, 935);
+  for (let id = 62; id <= 1002; id += 1) { ledger.consumeRequest("forward-writer", owner, "renderer", id, false); }
+  assert.equal(ledger.status().rendererRequests, 1002); assert.equal(ledger.status().failed, false);
+  assert.equal(ledger.generationStatus("forward-writer", owner).rendererNormalRequests, 941);
   assert.equal(ledger.generationStatus("forward-writer", owner).rendererCleanupRequests, 61);
-  assert.throws(() =>{  ledger.consumeRequest("forward-writer", owner, "renderer", 997, false); }, /RENDERER_REQUEST/u);
+  assert.throws(() =>{  ledger.consumeRequest("forward-writer", owner, "renderer", 1003, false); }, /RENDERER_REQUEST/u);
   assert.equal(ledger.status().failed, true);
   assert.throws(() =>{  ledger.consumeRequest("forward-saved-readback", saved, "renderer", 1, false); }, /REQUEST_CLASS/u);
   ledger.consumeRequest("forward-saved-readback", saved, "renderer", 1, true);
