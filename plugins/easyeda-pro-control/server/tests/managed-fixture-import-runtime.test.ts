@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { z } from "zod";
-import { loadOperation, updateOperation } from "../src/artifacts.ts";
+import { loadOperation, updateOperation, writePhaseArtifact } from "../src/artifacts.ts";
 import { canonicalJson } from "../src/core.ts";
 import type { TrackedDispatchOperationJournal } from "../src/engine.ts";
 import { encodeExactReadEnvelope } from "../src/exact-readers.ts";
@@ -11,11 +11,12 @@ import type { ManagedFixtureImportOptions } from "../src/managed-fixture-import-
 
 const targetSchema = z.object({ operationId: z.string(), nonce: z.string(), archiveSha256: z.string(), qualificationSha256: z.string(),
   expectedProjectUuid: z.string(), manifestTitle: z.string() });
-function fixture(id: string, lostReply = false, lostEnvironment = false, watchChanged = false): { owner: ManagedFixtureImportCoordinator; calls: string[]; request: Record<string, unknown>; expected: Record<string, unknown> } {
+function fixture(id: string, lostReply = false, lostEnvironment = false, watchChanged = false, publicationFailure?: "sdk-artifact" | "sdk-journal"): { owner: ManagedFixtureImportCoordinator; calls: string[]; request: Record<string, unknown>; expected: Record<string, unknown> } {
   const calls: string[] = [], expected = { synthetic: "original-fingerprint" };
   const launch = { jobId: "1".repeat(32), helperInstance: "2".repeat(32), root: { pid: 123, role: "easyeda-main" as const,
     startIdentity: `win32:123456789012345678:job:${"1".repeat(32)}` } };
   let originalJournal: TrackedDispatchOperationJournal | undefined;
+  let publicationFailed = false;
   const engine: ManagedFixtureImportOptions["engine"] = {
     assertBridgeDispatchAllowed: () => { calls.push("guard"); return Promise.resolve(true); },
     status: () => { calls.push("status"); return Promise.resolve({ stableFingerprint: expected }); },
@@ -23,7 +24,7 @@ function fixture(id: string, lostReply = false, lostEnvironment = false, watchCh
       calls.push("tracked"); assert.equal(journal, originalJournal); assert.equal(phase, "managed-fixture-import"); assert.equal(name, "easyeda_execute");
       assert.equal(canonicalJson(await loadOperation(journal.operationId)), canonicalJson(journal));
       journal.orphanedCallPossible = true; journal.orphanedCallPhase = phase; await updateOperation(journal);
-      await before?.();
+      try { await before?.(); } catch (error) { journal.orphanedCallPossible = false; await updateOperation(journal); throw error; }
       if (journal.operationId.endsWith("-environment")) {
         calls.push("environment");
         if (lostEnvironment) { throw new Error("Synthetic lost environment reply"); }
@@ -55,6 +56,16 @@ function fixture(id: string, lostReply = false, lostEnvironment = false, watchCh
     cleanup: { retain: (journal) => { calls.push("retain-cleanup"); originalJournal = journal; }, inspect: () => ({ cleanupAvailable: true }),
       run: () => Promise.resolve({ cleanupComplete: true }) },
   }, { assertFingerprint: (input) => { assert.deepEqual(input, expected); }, verifySources: () => Promise.resolve(),
+    writeArtifact: async (operation, sequence, phase, payload) => {
+      const artifact = await writePhaseArtifact(operation, sequence, phase, payload);
+      if (!publicationFailed && publicationFailure === "sdk-artifact" && phase === "original-sdk-settlement") { publicationFailed = true; throw new Error("Synthetic lost original SDK artifact acknowledgment"); }
+      return artifact;
+    },
+    updateJournal: async (journal) => {
+      const path = await updateOperation(journal);
+      if (!publicationFailed && publicationFailure === "sdk-journal" && journal["state"] === "managed-fixture-sdk-settled-unverified") { publicationFailed = true; throw new Error("Synthetic lost original SDK journal acknowledgment"); }
+      return path;
+    },
     destination: (options) => {
       const observation = { schema: "easyeda-pro-control.fixture-destination-owner.v1" as const, nonce: options.nonce,
         ownerId: "5".repeat(32), windowsDirectory: `C:\\SyntheticTemp\\CodexEasyedaFixture_${"5".repeat(32)}`,
@@ -95,6 +106,7 @@ void test("a library watch completion before dispatch retains the destination an
   await assert.rejects(value.owner.execute(value.request, value.expected));
   assert.equal(value.calls.includes("import"), false); assert.equal(value.owner.hasRetainedDestination(), true);
   const journal = await loadOperation("managed-import-watch-changed"); assert.equal(journal["mutationMayHaveOccurred"], false);
+  assert.equal(journal["state"], "completed"); assert.equal(journal["hardStop"], false);
 });
 
 void test("ambiguous native import retains the original tracked orphan and destination while inspect cannot redispatch", async () => {
@@ -113,5 +125,19 @@ void test("import schema accepts only fixed generated scenarios and explicit par
   for (const change of [{ path: "C:\\UserProject" }, { archive: "supplied.epro2" }, { code: "arbitrary" }, { geometry: {} },
     { confirmNativeImport: false }, { acceptPartialImportRetention: false }, { fixtureKind: "arbitrary" }]) {
     assert.equal(managedFixtureImportRequestSchema.safeParse({ ...value.request, ...change }).success, false);
+  }
+});
+
+void test("lost local SDK evidence acknowledgments settle only retained exact candidates without redispatch", async () => {
+  for (const failure of ["sdk-artifact", "sdk-journal"] as const) {
+    const id = `managed-import-publication-${failure}`, value = fixture(id, false, false, false, failure);
+    await assert.rejects(value.owner.execute(value.request, value.expected));
+    const pending = value.owner.inspect(id); assert.equal(pending["publicationPending"], true);
+    const calls = value.calls.filter((call) => call === "import").length; assert.equal(calls, 1);
+    const settled = await value.owner.execute({ action: "settle-import-records", operationId: id });
+    assert.equal(settled["publicationPending"], false); assert.equal(settled["importedFixtureAccepted"], false);
+    const journal = await loadOperation(id); assert.equal(journal["hardStop"], true); assert.equal(journal["orphanedCallPossible"], true);
+    await assert.rejects(value.owner.execute(value.request, value.expected));
+    assert.equal(value.calls.filter((call) => call === "import").length, 1);
   }
 });

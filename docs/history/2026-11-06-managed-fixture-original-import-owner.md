@@ -2,7 +2,7 @@
 
 Source implementation only. No EasyEDA process, native helper, MCP writer,
 user project, SQLite project or registry was opened or changed by this work.
-excluded production design remains outside the route. Connected native import is not claimed.
+The excluded production project remains outside the route. Connected native import is not claimed.
 
 The dedicated `ManagedFixtureImportCoordinator` now performs a concrete fixed
 local import instead of treating archive qualification as import automation.
@@ -35,6 +35,16 @@ evidence, and never replays navigation/import, Save, or force termination.
 Directory release separately requires original root/Job exit, drains the
 original watcher operations, observes original helper transport closure, and
 preserves every generated/partial file. No file deletion authority exists.
+
+Import-side phase publication now keeps the original mutable journal unchanged
+until its exact candidate is durable. `settle-import-records` may finish only
+that retained local artifact/journal candidate after a lost acknowledgment; it
+cannot dispatch import, close, release, Save, or clear an orphan. Exact bytes and
+both allowed journal states are rechecked before publication. A known refusal
+before the importer call, after the maintained engine cleared its unused
+capture, becomes a terminal `import-not-dispatched` record so the settled
+environment owner can close the original ordinary launch. An actual ambiguous
+dispatcher remains quarantined and retains all native effects as unknown.
 
 ## Detached system-library branch exclusion
 
@@ -90,7 +100,7 @@ Register the strict exported request union as `easyeda_control_fixture_import`.
 The import action requires an exact expected fingerprint and must execute inside
 `upstream.withAuthenticatedBridgeDispatchScope` and the global serialized bridge
 gate. Do not call raw upstream without that scope. Local `inspect` needs no live
-call. The four cleanup actions execute under the gate **outside** authenticated
+call. Local record settlement performs no native dispatch. The four cleanup actions execute under the gate **outside** authenticated
 dispatch scopes, as required by the existing cleanup owner. Destination
 inspection/release is original local helper I/O; release must precede ordinary
 runtime/helper release. Native allocations and controller retirement must refuse
