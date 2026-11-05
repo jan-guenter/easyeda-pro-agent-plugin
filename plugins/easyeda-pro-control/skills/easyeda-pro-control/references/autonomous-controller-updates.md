@@ -8,6 +8,28 @@ path. Packages that ship `server/dist/control-session-manager.mjs` can run it
 without a source checkout or npm dependencies. Its frontend must still come
 from a trusted verified package or frozen build.
 
+A fresh subagent may also receive an automatically started host MCP connection.
+When the foreground manager owns the lease, that connection can be a metadata-only
+ownership-conflict stub. The conservative Linux absence probe counts it as another
+facade. Close the subagent's own stub before it returns or waits through recovery:
+inspect that original connection once, require the returned PID's startup-only
+conflict state with no lease, live admission or native resources, retain its
+original pidfd, then send `close-conflict` with `confirmCloseConflict:true` on the
+same connection once. Observe exit separately. The reported `observedOwnerPid`
+is a startup snapshot and is never the close target.
+
+Do not retry a closed transport, repeat an uncertain close or start another agent
+to adopt a lost connection. A resumed agent can receive a different connection.
+Preserve the original PID/start and package evidence for an authorized cleanup
+path; never infer native closure or writer authority from an idle stub's exit.
+
+An unused facade that performed only validated source references and the exact
+historical Source metadata workflow can retire after that original coordinator
+fully settles. Its private callback history, original references, zero active
+calls and no-allocation proof must all remain valid. Foreign historical blockers
+stay intact and later live admission still checks them. This exception is not a
+way to retire an attempted native owner or turn unknown publication into release.
+
 ## Establish one controller
 
 First query the current Codex connection's offline `loaded-facade`. Finish its
@@ -244,6 +266,32 @@ request ordinary manager retirement. Only its genuine facade retirement and
 observed original child closure permit replacement; the interrupted request's
 unknown outcome remains retained even after separate cleanup succeeds.
 
+### Separate disposable v2 source-validation family
+
+The strict `footprint-forward-source-validation` wrapper uses the same manager
+protocol for its once-only `capture-source`. The private original request also
+retains its exact family; a caller cannot choose another wrapper during cleanup.
+Pending capture accepts only original inspection and the explicitly confirmed
+`abort-generation`. Despite its historical `confirmAbortOriginalForwardJob`
+name, that confirmation targets the actual original v2 Job.
+
+A new-family interrupted launch may settle its original private journal before
+a binding has published. `cleanup-before-launch` and `cleanup-no-process` are
+additional fixed selectors only for that same interrupted new-family launch.
+The original provider must prove its own allocation/launch outcome and closure;
+no journal, owner or receipt is adopted. A successful acknowledgment only lets
+the manager attempt genuine facade retirement; it is not termination or native
+ownership proof. Old `footprint-forward-prewrite` requests refuse these selectors.
+
+New-family launch binding learning requires its exact inspection schema,
+matching operation, retained original owner/lease, settled publication and the
+published original binding record. A failed launch may retain cleanup custody
+without a successful launch acknowledgment. This grants cleanup data only;
+normal work, replay and replacement remain blocked. Unlike the old-family
+intent-bound selector, new-family `settle-records` selects only that exact
+original private provider/journal and sends no native request. Read
+[the source-validation workflow](current-footprint-forward-source-validation.md).
+
 ## Finish the original workflow
 
 Diagnostic and ordinary-launch owners use their own existing release actions.
@@ -353,3 +401,20 @@ This workflow removes routine Codex restarts and manual EasyEDA closing from
 supported lifecycles. It does not unlock a Windows desktop, answer credentials
 or unknown prompts, repair unsupported native failures, or transfer unfinished
 native ownership to another process.
+
+### Historical Source v2 metadata recovery
+
+The separate `footprint-forward-source-relinquishment` wrapper creates no native
+owner. After original process cleanup, a fresh facade may qualify only the fixed
+externally reviewed history with global Linux/Windows absence and complete
+unchanged source, SQL and history checks. Its original capture, termination and
+helper-release outcomes remain unknown. Keep its same metadata coordinator
+through a pending receipt acknowledgment; retire it normally before a new
+native validation generation. Read the [exact historical contract](current-footprint-forward-source-relinquishment.md).
+
+After an SDK timeout in historical Source metadata work, use only the original
+manager's `cleanup-original` selector `settle-historical-metadata`. It sends a
+settlement-only request reconstructed from the private original call. No caller
+payload, new observation or native cleanup is admitted. Busy or missing pending
+evidence refuses; the original outcome remains unknown. Only the original
+facade's retirement preflight can authorize closure and a later generation.

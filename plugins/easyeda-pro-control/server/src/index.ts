@@ -144,6 +144,9 @@ import type { CurrentFootprintCombinedValidationRequest } from "./current-footpr
 import type { CurrentFootprintForwardPrewriteValidationRequest } from "./current-footprint-forward-prewrite-validation.ts";
 import { CurrentFootprintCombinedUnknownAbandonment } from "./current-footprint-combined-unknown-abandonment.ts";
 import { CurrentFootprintForwardOpeningUnknownRelinquishment } from "./current-footprint-forward-opening-unknown-relinquishment.ts";
+import { CurrentFootprintForwardSourceUnknownRelinquishment } from "./current-footprint-forward-source-unknown-relinquishment.ts";
+import type { CurrentFootprintForwardSourceRelinquishmentRequest } from "./current-footprint-forward-source-relinquishment-contract.ts";
+import type { CurrentFootprintForwardSourceHistoricalSnapshot } from "./current-footprint-forward-source-relinquishment-journal.ts";
 import type { CurrentFootprintForwardOpeningRelinquishmentRequest } from "./current-footprint-forward-opening-relinquishment-contract.ts";
 import { currentPcb209WorkerStartupToolRequestSchema } from "./current-pcb-209-empty-startup-validation.ts";
 import type { CurrentPcb209RatlineContinuationValidationRequest } from "./current-pcb-209-ratline-continuation-validation.ts";
@@ -154,6 +157,8 @@ import { currentPcbStringPrecreateRequestSchema } from "./current-pcb-string-pre
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "./current-pcb-diagnostic-profile.ts";
 import { assertNoUnresolvedCurrentPcbDiagnosticLaunches } from "./current-pcb-diagnostic-lifecycle-journal.ts";
 import { CurrentFootprintHeldCacheValidation } from "./current-footprint-held-cache-validation.ts";
+import { CurrentFootprintForwardSourceValidation } from "./current-footprint-forward-source-validation.ts";
+import type { CurrentFootprintForwardSourceValidationRequest } from "./current-footprint-forward-source-validation-schema.ts";
 import { CurrentFootprintHeadAgeValidation } from "./current-footprint-head-age-validation.ts";
 import type { CurrentFootprintHeadAgeValidationRequest } from "./current-footprint-head-age-validation-schema.ts";
 import type { CurrentFootprintHeldCacheValidationRequest } from "./current-footprint-held-cache-validation-schema.ts";
@@ -228,11 +233,33 @@ let currentPcbStringPrecreateLifecycle: CurrentPcbStringPrecreateLifecycle | und
 let currentFootprintMainLifecycle: CurrentFootprintMainLifecycle | undefined;
 let currentFootprintHeldCacheValidation: CurrentFootprintHeldCacheValidation | undefined;
 let currentFootprintHeadAgeValidation: CurrentFootprintHeadAgeValidation | undefined;
-let currentPcbWorkerStartupLifecycle: CurrentFootprintCombinedLifecycle | CurrentFootprintForwardPrewriteLifecycle | CurrentFootprintCombinedUnknownAbandonment | CurrentFootprintForwardOpeningUnknownRelinquishment | CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle | CurrentFootprintCopyPreparationLifecycle | CurrentFootprintCopyRoutePreparationLifecycle | CurrentPcb209EmptyStartupLifecycle | CurrentPcb209RatlineStartupLifecycle | CurrentPcb209RatlineContinuationLifecycle | undefined;
+let currentFootprintForwardSourceValidation: CurrentFootprintForwardSourceValidation | undefined;
+let currentPcbWorkerStartupLifecycle: CurrentFootprintCombinedLifecycle | CurrentFootprintForwardPrewriteLifecycle | CurrentFootprintCombinedUnknownAbandonment | CurrentFootprintForwardOpeningUnknownRelinquishment | CurrentFootprintForwardSourceUnknownRelinquishment | CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle | CurrentFootprintCopyPreparationLifecycle | CurrentFootprintCopyRoutePreparationLifecycle | CurrentPcb209EmptyStartupLifecycle | CurrentPcb209RatlineStartupLifecycle | CurrentPcb209RatlineContinuationLifecycle | undefined;
 let currentDisposableOpenCoordinator: CurrentDisposableOpenCoordinator | undefined;
 let currentPcbRenameOperationCoordinator: CurrentPcbRenameOperationCoordinator | undefined;
 let currentSchematicRenameOperationCoordinator: CurrentSchematicRenameOperationCoordinator | undefined;
 let scheduledShutdown: Promise<void> | undefined;
+let assertUnusedForwardSourceHistoricalRetirement: (() => void) | undefined;
+/* oxlint-disable typescript/unbound-method -- Invoke these captured observers only on their original private-field controller, never through a replaceable property. */
+const forwardSourceCustodyMethods = Object.freeze({
+  reserved: CurrentFootprintForwardSourceValidation.prototype.hasActiveReservation,
+  owned: CurrentFootprintForwardSourceValidation.prototype.hasOwnedAllocation,
+  attempted: CurrentFootprintForwardSourceValidation.prototype.hasAttemptedNativeOwnerAllocation,
+});
+/* oxlint-enable typescript/unbound-method */
+/** A source-only workflow still retains its original helper and startup lease.
+ * Retirement and competing allocations must use original custody observers. */
+function hasForwardSourceCustody(): boolean {
+  const owner = currentFootprintForwardSourceValidation;
+  if (owner === undefined) { return false; }
+  if (CurrentFootprintForwardSourceValidation.prototype.hasActiveReservation !== forwardSourceCustodyMethods.reserved ||
+      CurrentFootprintForwardSourceValidation.prototype.hasOwnedAllocation !== forwardSourceCustodyMethods.owned ||
+      CurrentFootprintForwardSourceValidation.prototype.hasAttemptedNativeOwnerAllocation !== forwardSourceCustodyMethods.attempted ||
+      Object.getPrototypeOf(owner) !== CurrentFootprintForwardSourceValidation.prototype || Reflect.ownKeys(owner).length > 0) {
+    throw new Error("Original forward source custody observers changed.");
+  }
+  return forwardSourceCustodyMethods.reserved.call(owner) || forwardSourceCustodyMethods.owned.call(owner);
+}
 function ownedWindowsRuntime(): WindowsControlRuntime {
   if (windowsRuntime === undefined) { throw new Error("Use easyeda_control_runtime launch-contained before guarded design editing."); }
   return windowsRuntime;
@@ -247,6 +274,11 @@ const facadeSession = new FacadeSessionRetirement({
   assertQuiescent: async (): Promise<void> => {
     assertSessionRetirementNativeOwnersSettled();
     if (facadeSession.isSourceReferenceOnly()) { return; }
+    if (facadeSession.isUnusedSourceMetadataOnly() && assertUnusedForwardSourceHistoricalRetirement !== undefined) {
+      assertUnusedForwardSourceHistoricalRetirement();
+      assertSessionRetirementNativeOwnersSettled();
+      return;
+    }
     await engine.assertBridgeAndNativeUiEditingAdmission();
     assertSessionRetirementNativeOwnersSettled();
     await assertNoUnresolvedOrdinaryLaunches();
@@ -301,7 +333,7 @@ function assertSessionRetirementNativeOwnersSettled(): void {
   const diagnostics = [currentPcbDiagnosticLifecycle, currentPcbStringPrecreateLifecycle,
     currentPcbWorkerStartupLifecycle, currentFootprintMainLifecycle, currentFootprintHeldCacheValidation, currentFootprintHeadAgeValidation];
   if (diagnostics.some(owner => owner?.hasActiveReservation() === true) ||
-      currentFootprintHeldCacheValidation?.hasOwnedAllocation() === true || currentFootprintHeadAgeValidation?.hasOwnedAllocation() === true) {
+      currentFootprintHeldCacheValidation?.hasOwnedAllocation() === true || currentFootprintHeadAgeValidation?.hasOwnedAllocation() === true || hasForwardSourceCustody()) {
     throw new Error("EasyEDA retirement requires every diagnostic reservation and native allocation to be released by its original owner.");
   }
 }
@@ -316,7 +348,7 @@ function completeTerminalRuntimeRelease(runtime: WindowsControlRuntime): void {
   const diagnostics = [currentPcbDiagnosticLifecycle, currentPcbStringPrecreateLifecycle,
     currentPcbWorkerStartupLifecycle, currentFootprintMainLifecycle, currentFootprintHeldCacheValidation, currentFootprintHeadAgeValidation];
   if (diagnostics.some(owner => owner?.hasActiveReservation() === true) ||
-      currentFootprintHeldCacheValidation?.hasOwnedAllocation() === true || currentFootprintHeadAgeValidation?.hasOwnedAllocation() === true) {
+      currentFootprintHeldCacheValidation?.hasOwnedAllocation() === true || currentFootprintHeadAgeValidation?.hasOwnedAllocation() === true || hasForwardSourceCustody()) {
     throw new Error("Native cleanup cannot clear a runtime while another diagnostic owner remains allocated.");
   }
   windowsRuntime = undefined;
@@ -399,7 +431,7 @@ function disposableConstructedMethods(runtime: WindowsControlRuntime, nativeUi: 
 /** Reserve ordinary startup against every active diagnostic purpose and consumed
  * closed-symbol attempt. Read-only diagnostics still own their app allocation. */
 function assertOrdinaryRuntimeAllocationAllowed(): void {
-  if (currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true || currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true || currentFootprintMainLifecycle?.hasActiveReservation() === true || currentFootprintHeldCacheValidation?.hasActiveReservation() === true || currentFootprintHeadAgeValidation?.hasActiveReservation() === true) {
+  if (currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true || currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true || currentFootprintMainLifecycle?.hasActiveReservation() === true || currentFootprintHeldCacheValidation?.hasActiveReservation() === true || currentFootprintHeadAgeValidation?.hasActiveReservation() === true || hasForwardSourceCustody()) {
     throw new Error("An original diagnostic lifecycle reserves application startup.");
   }
   if (closedSymbolIndexReservation !== undefined) { throw new Error("The Windows runtime is reserved by a consumed closed-symbol attempt."); }
@@ -422,7 +454,7 @@ async function runClosedSymbolTool(input: unknown, mode: "validation" | "ordinar
     const requestText = canonicalJson(parsed.request);
     phase = "reservation"; reason = "attempt-unavailable";
     if (closedSymbolIndexReservation !== undefined || windowsRuntime !== undefined || scheduledShutdown !== undefined ||
-        currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true || currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true || currentFootprintMainLifecycle?.hasActiveReservation() === true || currentFootprintHeldCacheValidation?.hasActiveReservation() === true || currentFootprintHeadAgeValidation?.hasActiveReservation() === true) {
+        currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true || currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true || currentFootprintMainLifecycle?.hasActiveReservation() === true || currentFootprintHeldCacheValidation?.hasActiveReservation() === true || currentFootprintHeadAgeValidation?.hasActiveReservation() === true || hasForwardSourceCustody()) {
       throw new Error("Disposable index attempt is unavailable.");
     }
     if (disposableOwnData(engine, "upstream") !== upstream) { throw new Error("Disposable index engine owner differs."); }
@@ -2108,7 +2140,7 @@ registerFacadeTool(
   "easyeda_control_session",
   {
     title: "Inspect, retire or close this EasyEDA control connection",
-    description: "Cooperatively retire this original facade after every tool call, queued operation, journal and native owner has settled. retire requires confirmRetire:true. It refuses retained runtime/project/writer owners and active diagnostic reservations or allocations; complete original native cleanup first. It closes only its own upstream and authenticated gateway, then releases its own control lease. It never terminates EasyEDA, chooses Save/Discard, rebinds an owner or retries cleanup. Successful retirement permanently refuses every tool except this local state endpoint and source/reference easyeda_control_api queries. Managed-file preparation and SQL analysis refuse after retirement. Only after acknowledged retired state may a fresh MCP connection or fresh-context subagent start; an ownership-conflict connection never retries and loaded-facade/process admission must prove the replacement snapshot. Cleanup failure consumes retirement, keeps live admission closed and retains the lease after authority close failure. After successful retirement and no active calls, close-retired with confirmCloseRetired:true consumes one local closure request and schedules the normal facade shutdown on the next event-loop turn. Its separate close-scheduled result proves neither response delivery nor process exit; it never closes native owners or transfers authority. Older installed facades lack these routes.",
+    description: "Cooperatively retire this original facade after its own tool calls, queued operations, journals and native owners settle. A facade whose validated callback history contains only source references and this exact local historical metadata workflow may retire after its original coordinator settles, while preserving foreign historical blockers and granting no live admission. retire requires confirmRetire:true. It refuses retained runtime/project/writer owners and active diagnostic reservations or allocations; complete original native cleanup first. It closes only its own upstream and authenticated gateway, then releases its own control lease. It never terminates EasyEDA, chooses Save/Discard, rebinds an owner or retries cleanup. Successful retirement permanently refuses every tool except this local state endpoint and source/reference easyeda_control_api queries. Managed-file preparation and SQL analysis refuse after retirement. Only after acknowledged retired state may a fresh MCP connection or fresh-context subagent start; an ownership-conflict connection never retries and loaded-facade/process admission must prove the replacement snapshot. Cleanup failure consumes retirement, keeps live admission closed and retains the lease after authority close failure. After successful retirement and no active calls, close-retired with confirmCloseRetired:true consumes one local closure request and schedules the normal facade shutdown on the next event-loop turn. Its separate close-scheduled result proves neither response delivery nor process exit; it never closes native owners or transfers authority. Older installed facades lack these routes.",
     inputSchema: { request: sessionRetirementRequestSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   },
@@ -2668,7 +2700,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_string_precreate_valid
         if (assetsRoot === undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined ||
             currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
             currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
-            closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true || currentFootprintMainLifecycle?.hasActiveReservation() === true || currentFootprintHeldCacheValidation?.hasActiveReservation() === true || currentFootprintHeadAgeValidation?.hasActiveReservation() === true) {
+            closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true || currentFootprintMainLifecycle?.hasActiveReservation() === true || currentFootprintHeldCacheValidation?.hasActiveReservation() === true || currentFootprintHeadAgeValidation?.hasActiveReservation() === true || hasForwardSourceCustody()) {
           throw new Error("String precreate launch requires no retained ordinary, project, closed-symbol, diagnostic or replacement owner and no shutdown.");
         }
       };
@@ -2748,7 +2780,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
             currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined || currentSchematicRenameOperationCoordinator !== undefined ||
             closedSymbolIndexReservation !== undefined || closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined ||
             currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true ||
-            currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true || currentFootprintMainLifecycle?.hasActiveReservation() === true || currentFootprintHeadAgeValidation?.hasActiveReservation() === true) {
+            currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true || currentFootprintMainLifecycle?.hasActiveReservation() === true || currentFootprintHeadAgeValidation?.hasActiveReservation() === true || hasForwardSourceCustody()) {
           throw new Error("Held-cache launch requires no other application owner or shutdown.");
         }
       };
@@ -2777,6 +2809,81 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       const pending = request.action === "inspect" || request.action === "abort" ? run() : bridgeGate.run(run);
       return pending.finally(() => { heldCacheCalls -= 1; });
     } catch (error) { heldCacheCalls -= 1; throw error; }
+  };
+  let forwardSourceOriginal: { readonly owner: CurrentFootprintForwardSourceValidation; readonly run: CurrentFootprintForwardSourceValidation["run"];
+    readonly assertLocal: () => void } | undefined;
+  let forwardSourceCalls = 0;
+  /** Route the sealed read-only purpose through its original controller. Replace
+   * a retired controller only after both reservations and actual allocations end. */
+  const runForwardSource = (request: CurrentFootprintForwardSourceValidationRequest): Promise<{ result: Readonly<Record<string, unknown>> }> => {
+    if (!diagnostic209) { throw new Error("Forward-source qualification requires the current209 route."); }
+    if (forwardSourceOriginal !== undefined && request.action === "launch" && forwardSourceCalls === 0) {
+      forwardSourceOriginal.assertLocal();
+      if (!forwardSourceOriginal.owner.hasActiveReservation() && !forwardSourceOriginal.owner.hasOwnedAllocation()) {
+        currentFootprintForwardSourceValidation = undefined; forwardSourceOriginal = undefined;
+      }
+    }
+    if (forwardSourceOriginal === undefined) {
+      const environment = process.env;
+      const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
+      const originalEngine = engine, originalGate = bridgeGate, originalUpstream = upstream;
+      const authority = disposableOwnData(engine, "executionAuthorityValidator"), facadePromise = disposableOwnData(engine, "controlFingerprintPromise");
+      const controlPath = retainedControlRoot.path, pluginRoot = resolve(import.meta.dirname, "../..");
+      const methods = (): readonly unknown[] => [disposableOwnerMethod(bridgeGate, "run"),
+        disposableOwnerMethod(engine, "assertDiagnosticLaunchOtherOperationsSettled"),
+        ...["run", "hasActiveReservation", "hasOwnedAllocation", "hasAttemptedNativeOwnerAllocation"].map(key => disposableOwnerMethod(CurrentFootprintForwardSourceValidation.prototype, key))];
+      const captured = methods();
+      /** Recheck captured methods, environment, root and controller identity at
+       * each await boundary without treating a status reply as native custody. */
+      const assertLocal = (): void => {
+        const current = methods();
+        if (engine !== originalEngine || bridgeGate !== originalGate || upstream !== originalUpstream ||
+            disposableOwnData(engine, "upstream") !== originalUpstream ||
+            disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise || disposableOwnData(engine, "executionAuthorityValidator") !== authority ||
+            process.env !== environment || environment["EASYEDA_ASSETS_ROOT"] !== assetsRoot || environment["WSL_DISTRO_NAME"] !== wslDistribution ||
+            controlDataDirectory() !== controlPath || retainedControlRoot.path !== controlPath || resolve(import.meta.dirname, "../..") !== pluginRoot ||
+            captured.some((method, index) => method !== current[index]) || forwardSourceOriginal !== undefined &&
+            (currentFootprintForwardSourceValidation !== forwardSourceOriginal.owner || forwardSourceOriginal.owner.run !== forwardSourceOriginal.run)) {
+          throw new Error("Original forward-source controller, environment or methods changed.");
+        }
+      };
+      /** Refuse competing app owners before the diagnostic can reserve a helper;
+       * the controller retains its own reservation separately during cleanup. */
+      const assertUnreserved = (): void => {
+        assertLocal();
+        if (assetsRoot === undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined ||
+            currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined || currentSchematicRenameOperationCoordinator !== undefined ||
+            closedSymbolIndexReservation !== undefined || closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined ||
+            currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true ||
+            currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true || currentFootprintMainLifecycle?.hasActiveReservation() === true || currentFootprintHeadAgeValidation?.hasActiveReservation() === true || currentFootprintHeldCacheValidation?.hasActiveReservation() === true) {
+          throw new Error("Forward-source launch requires no other application owner or shutdown.");
+        }
+      };
+      /** Scan other engine operations between local identity checks. The new
+       * controller separately scans diagnostic history before its own intent. */
+      const assertAllowed = async (): Promise<void> => {
+        assertUnreserved(); await engine.assertDiagnosticLaunchOtherOperationsSettled(); assertUnreserved();
+      };
+      resettableDiagnosticOwnerAllocated = true;
+      const owner = new CurrentFootprintForwardSourceValidation({ pluginRoot, assetsRoot: assetsRoot ?? "",
+        ...(wslDistribution === undefined ? {} : { wslDistribution }), powershellSha256: CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.sha256,
+        powershellBytes: CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.bytes, assertLocalAllowed: assertLocal,
+        assertAllowed, assertOtherLaunchesSettled: assertAllowed });
+      currentFootprintForwardSourceValidation = owner;
+      // oxlint-disable-next-line typescript/unbound-method -- Invoke this captured method only on its retained private-field controller.
+      forwardSourceOriginal = { owner, run: owner.run, assertLocal };
+    }
+    const retained = forwardSourceOriginal; retained.assertLocal();
+    /** Invoke the retained method on its private-field receiver and recheck the
+     * same identity after completion, including inspect and concurrent abort. */
+    const run = async (): Promise<{ result: Readonly<Record<string, unknown>> }> => {
+      retained.assertLocal(); const result = await retained.run.call(retained.owner, request); retained.assertLocal(); return { result };
+    };
+    forwardSourceCalls += 1;
+    try {
+      const pending = request.action === "inspect" || request.action === "abort-generation" ? run() : bridgeGate.run(run);
+      return pending.finally(() => { forwardSourceCalls -= 1; });
+    } catch (error) { forwardSourceCalls -= 1; throw error; }
   };
   let headAgeOriginal: { readonly owner: CurrentFootprintHeadAgeValidation; readonly run: CurrentFootprintHeadAgeValidation["run"];
     readonly assertLocal: () => void } | undefined;
@@ -2823,7 +2930,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
             currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined || currentSchematicRenameOperationCoordinator !== undefined ||
             closedSymbolIndexReservation !== undefined || closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined ||
             currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true ||
-            currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true || currentFootprintMainLifecycle?.hasActiveReservation() === true || currentFootprintHeldCacheValidation?.hasActiveReservation() === true) {
+            currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true || currentFootprintMainLifecycle?.hasActiveReservation() === true || currentFootprintHeldCacheValidation?.hasActiveReservation() === true || hasForwardSourceCustody()) {
           throw new Error("Head-age launch requires no other application owner or shutdown.");
         }
       };
@@ -2887,7 +2994,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
             currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
             closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined ||
             currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true ||
-            currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true) {
+            currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true || hasForwardSourceCustody()) {
           throw new Error("Original main startup requires no other retained application owner or shutdown.");
         }
       };
@@ -2964,7 +3071,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
             currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
             currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
             closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || currentPcbDiagnosticLifecycle !== undefined ||
-            currentPcbStringPrecreateLifecycle !== undefined || currentFootprintMainLifecycle !== undefined || currentFootprintHeldCacheValidation !== undefined || currentFootprintHeadAgeValidation !== undefined ||
+            currentPcbStringPrecreateLifecycle !== undefined || currentFootprintMainLifecycle !== undefined || currentFootprintHeldCacheValidation !== undefined || currentFootprintHeadAgeValidation !== undefined || currentFootprintForwardSourceValidation !== undefined ||
             currentPcbWorkerStartupLifecycle !== undefined && currentPcbWorkerStartupLifecycle !== ownerReference.current ||
             mainOriginal !== undefined || startupOriginal !== undefined || startupCalls !== 0) {
           throw new Error("Combined historical relinquishment requires a fresh facade with no application-owner allocation or reservation.");
@@ -3038,7 +3145,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
             currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
             currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
             closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || currentPcbDiagnosticLifecycle !== undefined ||
-            currentPcbStringPrecreateLifecycle !== undefined || currentFootprintMainLifecycle !== undefined || currentFootprintHeldCacheValidation !== undefined || currentFootprintHeadAgeValidation !== undefined ||
+            currentPcbStringPrecreateLifecycle !== undefined || currentFootprintMainLifecycle !== undefined || currentFootprintHeldCacheValidation !== undefined || currentFootprintHeadAgeValidation !== undefined || currentFootprintForwardSourceValidation !== undefined ||
             currentPcbWorkerStartupLifecycle !== undefined && currentPcbWorkerStartupLifecycle !== ownerReference.current ||
             resettableDiagnosticOwnerAllocated || heldCacheOriginal !== undefined || headAgeOriginal !== undefined ||
             heldCacheCalls !== 0 || headAgeCalls !== 0 || combinedHistoricalOriginal !== undefined ||
@@ -3071,6 +3178,97 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       }
     });
   };
+  let forwardSourceHistoricalOriginal: { readonly owner: CurrentFootprintForwardSourceUnknownRelinquishment;
+    readonly run: CurrentFootprintForwardSourceUnknownRelinquishment["run"];
+    readonly reserved: CurrentFootprintForwardSourceUnknownRelinquishment["hasActiveReservation"]; readonly assertLocal: () => void;
+    readonly assertFreshNoOwnedAllocations: () => void; runSettled: boolean } | undefined;
+  /** Retain one fresh historical coordinator without recreating the lost native
+   * owner. Its fixed method graph and no-allocation guards survive every await. */
+  const runForwardSourceHistorical = (request: CurrentFootprintForwardSourceRelinquishmentRequest): Promise<{ result: Record<string, unknown> }> => {
+    if (!diagnostic209) { throw new Error("Forward source historical relinquishment requires the209 route."); }
+    if (forwardSourceHistoricalOriginal === undefined) {
+      const environment = process.env;
+      const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
+      const originalEngine = engine, originalGate = bridgeGate, originalUpstream = upstream;
+      const authority = disposableOwnData(engine, "executionAuthorityValidator"), facadePromise = disposableOwnData(engine, "controlFingerprintPromise");
+      const controlPath = retainedControlRoot.path, pluginRoot = resolve(import.meta.dirname, "../..");
+      /** Pin the historical collector and serialization graph before creating
+       * its coordinator; later property replacement cannot supply custody. */
+      const methodIdentities = (): readonly unknown[] => [disposableOwnerMethod(bridgeGate, "run"),
+        disposableOwnerMethod(engine, "assertForwardSourceRelinquishmentOtherOperationsSettled"),
+        disposableOwnerMethod(CurrentFootprintForwardSourceUnknownRelinquishment.prototype, "run"),
+        disposableOwnerMethod(CurrentFootprintForwardSourceUnknownRelinquishment.prototype, "hasActiveReservation")];
+      const capturedMethods = methodIdentities();
+      const ownerReference: { current: CurrentFootprintForwardSourceUnknownRelinquishment | undefined } = { current: undefined };
+      /** Recheck the exact process-local receiver, roots and method identities
+       * across awaits; historical JSON cannot establish any of these owners. */
+      const assertLocal = (): void => {
+        const methodsNow = methodIdentities();
+        if (engine !== originalEngine || bridgeGate !== originalGate || upstream !== originalUpstream ||
+            disposableOwnData(engine, "upstream") !== originalUpstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise ||
+            disposableOwnData(engine, "executionAuthorityValidator") !== authority || process.env !== environment ||
+            environment["EASYEDA_ASSETS_ROOT"] !== assetsRoot || environment["WSL_DISTRO_NAME"] !== wslDistribution ||
+            retainedControlRoot.path !== controlPath || controlDataDirectory() !== controlPath || resolve(import.meta.dirname, "../..") !== pluginRoot ||
+            methodsNow.length !== capturedMethods.length || methodsNow.some((method, index) => method !== capturedMethods[index]) ||
+            ownerReference.current !== undefined && (currentPcbWorkerStartupLifecycle !== undefined && currentPcbWorkerStartupLifecycle !== ownerReference.current ||
+              disposableOwnerMethod(ownerReference.current, "run") !== capturedMethods[2] ||
+              disposableOwnerMethod(ownerReference.current, "hasActiveReservation") !== capturedMethods[3])) {
+          throw new Error("Forward source historical relinquishment coordinator changed.");
+        }
+      };
+      /** Require an unused facade even after resettable controllers cleared;
+       * the historical coordinator itself owns no reconstructed native handle. */
+      const assertFreshNoOwnedAllocations = (): void => {
+        assertLocal();
+        if (windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined || ordinaryLaunchCoordinator !== undefined ||
+            currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
+            currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
+            closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || currentPcbDiagnosticLifecycle !== undefined ||
+            currentPcbStringPrecreateLifecycle !== undefined || currentFootprintMainLifecycle !== undefined || currentFootprintHeldCacheValidation !== undefined || currentFootprintHeadAgeValidation !== undefined || currentFootprintForwardSourceValidation !== undefined ||
+            currentPcbWorkerStartupLifecycle !== undefined && currentPcbWorkerStartupLifecycle !== ownerReference.current ||
+            resettableDiagnosticOwnerAllocated || heldCacheOriginal !== undefined || headAgeOriginal !== undefined ||
+            heldCacheCalls !== 0 || headAgeCalls !== 0 || combinedHistoricalOriginal !== undefined ||
+            mainOriginal !== undefined || startupOriginal !== undefined || startupCalls !== 0) {
+          throw new Error("Forward source historical relinquishment requires a fresh facade with no application-owner allocation or reservation.");
+        }
+      };
+      /** Bracket the other-operation scan with fresh-facade checks so an await
+       * cannot admit a competing application owner into this isolated route. */
+      const assertOtherLaunchesSettled = async (snapshot: CurrentFootprintForwardSourceHistoricalSnapshot): Promise<void> => {
+        assertFreshNoOwnedAllocations(); await engine.assertForwardSourceRelinquishmentOtherOperationsSettled(snapshot); assertFreshNoOwnedAllocations();
+      };
+      assertFreshNoOwnedAllocations();
+      const owner = new CurrentFootprintForwardSourceUnknownRelinquishment({ pluginRoot, assetsRoot: assetsRoot ?? "",
+        ...(wslDistribution === undefined ? {} : { wslDistribution }), powershellSha256: CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.sha256,
+        powershellBytes: CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.bytes, assertLocalAllowed: assertLocal,
+        assertOtherLaunchesSettled, assertFreshNoOwnedAllocations });
+      ownerReference.current = owner;
+      // oxlint-disable-next-line typescript/unbound-method -- Dispatch supplies this exact retained historical coordinator as receiver.
+      const metadataOriginal = { owner, run: owner.run, reserved: owner.hasActiveReservation, assertLocal, assertFreshNoOwnedAllocations, runSettled: false };
+      forwardSourceHistoricalOriginal = metadataOriginal;
+      const assertRetirement = (): void => {
+        if (forwardSourceHistoricalOriginal !== metadataOriginal || assertUnusedForwardSourceHistoricalRetirement !== assertRetirement ||
+            metadataOriginal.owner !== owner || metadataOriginal.run !== capturedMethods[2] || metadataOriginal.reserved !== capturedMethods[3] ||
+            metadataOriginal.assertLocal !== assertLocal || metadataOriginal.assertFreshNoOwnedAllocations !== assertFreshNoOwnedAllocations ||
+            !metadataOriginal.runSettled || metadataOriginal.reserved.call(metadataOriginal.owner)) {
+          throw new Error("Retirement requires the original finished unused Source metadata coordinator.");
+        }
+        assertFreshNoOwnedAllocations();
+      };
+      assertUnusedForwardSourceHistoricalRetirement = assertRetirement;
+    }
+    const retained = forwardSourceHistoricalOriginal; retained.assertLocal();
+    return bridgeGate.run(async () => {
+      retained.assertLocal();
+      if (forwardSourceHistoricalOriginal !== retained) { throw new Error("Forward source historical relinquishment owner changed."); }
+      currentPcbWorkerStartupLifecycle = retained.owner;
+      try { const result = await retained.run.call(retained.owner, request); retained.assertLocal(); return { result }; }
+      finally {
+        retained.runSettled = true;
+        if (currentPcbWorkerStartupLifecycle === retained.owner && !retained.reserved.call(retained.owner)) { currentPcbWorkerStartupLifecycle = undefined; }
+      }
+    });
+  };
   /** Route startup requests through one original purpose-sealed coordinator.
    * Retain queued calls and native reservations through uncertainty/cleanup, and allow
    * replacement only after the original lease is released. Fixed route flags select reviewed
@@ -3082,6 +3280,9 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     }
     if (forwardOpeningHistoricalOriginal !== undefined && currentPcbWorkerStartupLifecycle === forwardOpeningHistoricalOriginal.owner) {
       throw new Error("Forward opening historical relinquishment reserves this facade.");
+    }
+    if (forwardSourceHistoricalOriginal !== undefined && currentPcbWorkerStartupLifecycle === forwardSourceHistoricalOriginal.owner) {
+      throw new Error("Forward source historical relinquishment reserves this facade.");
     }
     let StartupLifecycle: typeof CurrentPcbWorkerStartupLifecycle | typeof CurrentPcb209WorkerStartupLifecycle | typeof CurrentFootprintCopyPreparationLifecycle | typeof CurrentFootprintCopyRoutePreparationLifecycle | typeof CurrentFootprintCombinedLifecycle | typeof CurrentFootprintForwardPrewriteLifecycle | typeof CurrentPcb209EmptyStartupLifecycle | typeof CurrentPcb209RatlineStartupLifecycle | typeof CurrentPcb209RatlineContinuationLifecycle = diagnostic209 ? CurrentPcb209WorkerStartupLifecycle : CurrentPcbWorkerStartupLifecycle;
     if (Number(emptyPurpose) + Number(ratlinePurpose) + Number(continuationPurpose) + Number(footprintPurpose) + Number(routePurpose) + Number(combinedPurpose) + Number(forwardPurpose) > 1) { throw new Error("A launch has one fixed startup purpose."); }
@@ -3189,7 +3390,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
             currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
             closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined ||
             currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true ||
-            currentFootprintMainLifecycle?.hasActiveReservation() === true || currentFootprintHeldCacheValidation?.hasActiveReservation() === true || currentFootprintHeadAgeValidation?.hasActiveReservation() === true) {
+            currentFootprintMainLifecycle?.hasActiveReservation() === true || currentFootprintHeldCacheValidation?.hasActiveReservation() === true || currentFootprintHeadAgeValidation?.hasActiveReservation() === true || hasForwardSourceCustody()) {
           throw new Error("Worker startup requires no retained ordinary, project, closed-symbol, diagnostic or String owner and no shutdown.");
         }
       };
@@ -3303,12 +3504,13 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     const startupSchema = z.object({ request: z.unknown().pipe(currentPcb209WorkerStartupToolRequestSchema) }).strict();
     server.registerTool("easyeda_control_pcb209_worker_startup", {
       title: "Validate a disposable EasyEDA 3.2.209 session",
-      description: "Disposable EasyEDA 3.2.209 startup validation with eleven separate launch purposes. The footprint-forward-prewrite wrapper creates a distinct footprint-copy-qualify-* born-forward qualification owner. It requires published original main construction before project capture and a published worker/actor/route before qualify-footprint-source. Its strict v1 result retains executionReady:false. Separate once-only seal-footprint-source and prove-closed-baseline actions retain the original preparation/checkpoint, source seal and complete closed SQL equality after acknowledged normal close and original root/empty-Job termination. Helper release remains separate. Explicit read-qualified-source returns bounded base64 byte pages of the original published canonical UTF-8 JSON packet, with exact private packet/binding/journal checks and packet/source hashes. Retrieval makes no native call and proves no current or saved state; the original qualifier v1 return stays hash-only. No create, scheduler, writer, execution owner or Save action is mounted. It cannot upgrade another owner. Query footprint-forward-prewrite/-validate first; confirmed abort-generation can target only its original forward Job. The separate footprint-forward-opening-relinquishment wrapper accepts only the reviewed unknown opening roster through a fresh facade with no previous application-owner allocation. Exact original digests, independent Linux/Windows absence and complete unchanged raw/SQL/history proof relinquish only its historical startup blocker. Capture, original termination and helper release stay unknown; no owner, replay, writer or Save authority is reconstructed. Query footprint-forward-opening-relinquishment/-validate first. The footprint-head-age wrapper seals an independent read-only original main owner after exact closed disposable checkpoint, default-branch and complete SQL preparation. One observe-head-age action qualifies the original app-main Date/now/parser against an owner-issued Windows UTC/QPC/zone bracket. No project-open, copy/delete, Save, later dispatch-age or writer authority follows. Keep its owner through original close or explicitly confirmed original-Job abort, observed root/Job exit and helper release. Query footprint-head-age/-validate first. The footprint-held-cache wrapper is a distinct read-only qualification purpose with an exact checkpoint-selected disposable target. Launch captures the original UI realm; observe-first and observe-fresh separately check both upload-cache namespaces through one held, qualified native getter/match tuple. It dispatches no project-open, worker, copy/delete, clock, main-process or Save operation. Inspect and settle retained evidence after uncertainty, then close or explicitly abort only its original Job, observe root/Job exit and release. Source implementation and offline/native-code compilation are separate from connected validation. The footprint-combined wrapper seals an original main/renderer owner before launch, requires published main construction before disposable project capture, and supports the existing exact worker/actor/route observations. Its separate optional observe-saved-cache-accessor action retains the original caches accessor/getter with constructor/prototype/match and rechecks their identities without invoking them or issuing qualification/replay authority. Its optional observe-saved-cache-native action runs once before opening, after published browser and source-qualified UI observations, retaining bounded original CacheStorage constructor/prototype/match metadata and engine identity without invoking caches/match, qualifying a native roster or issuing replay authority. A private challenge-matched helper-ready packet precedes launch input. Original-factory closed/zero-input failure proof is distinct from native-resource release. Its separate historical abandon-unknown-launch action requires a fresh facade before any owner allocation, exact reviewed223950 intent-only bytes and bounded process-absence checks; it preserves an unknown outcome and grants no termination or design proof. It enables no request collector, copy/delete or Save; query footprint-combined/-validate first. Its confirmed abort-generation targets only its original Job and blocks subsequent normal work while retaining termination/release. The footprint-main wrapper launches an original main inspector with owned stderr and a root/Job/TCP-bound connection, captures fixed original protocol registration owners and offers explicit once-only termination of that diagnostic Job. Query footprint-main/-validate first. It opens no project and offers no writer or Save. The footprint-copy-route-preparation wrapper uses its own footprint-route-* launch to qualify original Worker identity and callback/destination routes without copy, transaction-clock arming or Save; query footprint-copy-route-preparation/-validate first. The footprint-copy-preparation wrapper uses a separately bounded original launch to retain source, producer, actor, 64 dependency functions and the original Nd-wrapped structure callback and initialized UI/manager route bindings; query footprint-copy-preparation/-validate first. It grants no copy or Save authority. Query the matching offline catalog and argument validator first: pcb209-worker-startup/-validate, pcb209-empty-baseline/-validate, pcb209-ratline-held-import/-validate, or pcb209-ratline-continuation/-validate. Each purpose launches its own original owner; an existing owner cannot be upgraded. Launch, qualify browser/frame/UI source, then capture-project once against the exact disposable checkpoint. The default pcb209-startup-* purpose can subsequently observe current assignments, channel relations, a sequential UI/worker actor-clock bracket and original footprint-manager state. The footprint-state stage reads its captured user/client/ticket. After its published result, observe-footprint-source reconstructs one checkpoint-member footprint from original live consistency entries and existing native Cache chunks, checking every keyed record and generated header against the complete checkpoint while two matching source samples retain observed native order. It is a bounded native equivalent, not a GET_STR dispatch; a cache miss refuses without fetch, parser replay, cache writes or network fallback. Its source-only profile accepts ordinary record families, repeated fragments and tombstones, needs 65 remaining normal requests and grants no copy/delete or persistence authority. After the source result, prepare-footprint-copy journals original-owned plan/argument hashes using eight remaining normal requests. Preparation cannot upgrade launch purpose or enable native create, Save or saved verification. The empty-baseline wrapper uses pcb209-empty-* and joins fixed common data with the original completed SQL checkpoint, bracketed by empty raw-manager samples; populated targets refuse. The ratline-held-import wrapper uses pcb209-ratline-* with the original cumulative budget and complete source leases. After capture-project, observe-ratline-held-import journals intent before the sole PCB navigation, qualifies 29 PCB source stages, captures original construction and holds the first ratline child at its seventh qualified source import. It stops before worker continuation, callback return and full startup or baseline completion. The ratline-continuation wrapper uses pcb209-continuation-* and a separately sealed native budget. After its durable intent, known physical PCB records in the original checkpoint refuse before PCB navigation; passing this negative filter proves no empty live baseline. Native queues must remain exactly empty, including no serialized [] job. After capture-project, observe-ratline-continuation qualifies the original PCB, first worker and subordinate sources, continues their fixed imports and observes original PCB/worker capture checkpoints and callback returnsites. Callback completion, publication completion and native Worker-object/target identity remain unproved. These sequential observations grant no native channel-peer, server-clock, contained-destination, writer or durability proof. Explicit debugger-pause acceptance is required. Launch/open may restore tabs, migrate, replay caches, use the network and automatically persist files. Every stage is consumed once. Inspect after uncertainty and retain the original owner through abort, normal close, original root/Job termination, helper release and record settlement. No caller JavaScript, CDP commands, explicit Save, CAD writer, historical-owner adoption, navigation retry or Save/Discard choice. Forced termination is limited to the explicitly confirmed original footprint-main, footprint-combined, footprint-forward-prewrite, footprint-held-cache or footprint-head-age Job.",
+      description: "Disposable EasyEDA 3.2.209 startup validation with twelve separate launch purposes. The footprint-forward-source-validation wrapper launches a fresh separately branded v2 source owner, publishes its exact disposable checkpoint and completed SQL reader, then exposes bounded main/browser/frame/UI qualification and a single source/preparation/seal capture. Its separate v2 result keeps executionReady, wholeWriterReserved, routeAndClocksQualified, executionAuthorized and saveAuthorized false. Query footprint-forward-source-validation/-validate first. Inspect or confirm abort-generation on only that same original owner during a pending capture; observe-window, normal-close, original root/whole-Job termination, helper release and record settlement remain separate cleanup actions. It exposes no clock invocation, main-request collector, create, write or Save. The footprint-forward-prewrite wrapper creates a distinct footprint-copy-qualify-* born-forward qualification owner. It requires published original main construction before project capture and a published worker/actor/route before qualify-footprint-source. Its strict v1 result retains executionReady:false. Separate once-only seal-footprint-source and prove-closed-baseline actions retain the original preparation/checkpoint, source seal and complete closed SQL equality after acknowledged normal close and original root/empty-Job termination. Helper release remains separate. Explicit read-qualified-source returns bounded base64 byte pages of the original published canonical UTF-8 JSON packet, with exact private packet/binding/journal checks and packet/source hashes. Retrieval makes no native call and proves no current or saved state; the original qualifier v1 return stays hash-only. No create, scheduler, writer, execution owner or Save action is mounted. It cannot upgrade another owner. Query footprint-forward-prewrite/-validate first; confirmed abort-generation can target only its original forward Job. The separate footprint-forward-opening-relinquishment wrapper accepts only the reviewed unknown opening roster through a fresh facade with no previous application-owner allocation. Exact original digests, independent Linux/Windows absence and complete unchanged raw/SQL/history proof relinquish only its historical startup blocker. Capture, original termination and helper release stay unknown; no owner, replay, writer or Save authority is reconstructed. Query footprint-forward-opening-relinquishment/-validate first. The footprint-head-age wrapper seals an independent read-only original main owner after exact closed disposable checkpoint, default-branch and complete SQL preparation. One observe-head-age action qualifies the original app-main Date/now/parser against an owner-issued Windows UTC/QPC/zone bracket. No project-open, copy/delete, Save, later dispatch-age or writer authority follows. Keep its owner through original close or explicitly confirmed original-Job abort, observed root/Job exit and helper release. Query footprint-head-age/-validate first. The footprint-held-cache wrapper is a distinct read-only qualification purpose with an exact checkpoint-selected disposable target. Launch captures the original UI realm; observe-first and observe-fresh separately check both upload-cache namespaces through one held, qualified native getter/match tuple. It dispatches no project-open, worker, copy/delete, clock, main-process or Save operation. Inspect and settle retained evidence after uncertainty, then close or explicitly abort only its original Job, observe root/Job exit and release. Source implementation and offline/native-code compilation are separate from connected validation. The footprint-combined wrapper seals an original main/renderer owner before launch, requires published main construction before disposable project capture, and supports the existing exact worker/actor/route observations. Its separate optional observe-saved-cache-accessor action retains the original caches accessor/getter with constructor/prototype/match and rechecks their identities without invoking them or issuing qualification/replay authority. Its optional observe-saved-cache-native action runs once before opening, after published browser and source-qualified UI observations, retaining bounded original CacheStorage constructor/prototype/match metadata and engine identity without invoking caches/match, qualifying a native roster or issuing replay authority. A private challenge-matched helper-ready packet precedes launch input. Original-factory closed/zero-input failure proof is distinct from native-resource release. Its separate historical abandon-unknown-launch action requires a fresh facade before any owner allocation, exact reviewed223950 intent-only bytes and bounded process-absence checks; it preserves an unknown outcome and grants no termination or design proof. It enables no request collector, copy/delete or Save; query footprint-combined/-validate first. Its confirmed abort-generation targets only its original Job and blocks subsequent normal work while retaining termination/release. The footprint-main wrapper launches an original main inspector with owned stderr and a root/Job/TCP-bound connection, captures fixed original protocol registration owners and offers explicit once-only termination of that diagnostic Job. Query footprint-main/-validate first. It opens no project and offers no writer or Save. The separate footprint-forward-source-relinquishment wrapper only relinquishes the exact externally reviewed historical Source-v2 startup blocker after fresh process absence and complete unchanged file/SQL/history proofs; original capture, termination and helper-release outcomes remain unknown and all authority flags stay false. It creates no native owner and supplies no process-control or journal-rewrite action. The separate settle-unknown-source-opening action reuses only retained pending metadata or a complete matching receipt, without new proof collection. The footprint-copy-route-preparation wrapper uses its own footprint-route-* launch to qualify original Worker identity and callback/destination routes without copy, transaction-clock arming or Save; query footprint-copy-route-preparation/-validate first. The footprint-copy-preparation wrapper uses a separately bounded original launch to retain source, producer, actor, 64 dependency functions and the original Nd-wrapped structure callback and initialized UI/manager route bindings; query footprint-copy-preparation/-validate first. It grants no copy or Save authority. Query the matching offline catalog and argument validator first: pcb209-worker-startup/-validate, pcb209-empty-baseline/-validate, pcb209-ratline-held-import/-validate, or pcb209-ratline-continuation/-validate. Each purpose launches its own original owner; an existing owner cannot be upgraded. Launch, qualify browser/frame/UI source, then capture-project once against the exact disposable checkpoint. The default pcb209-startup-* purpose can subsequently observe current assignments, channel relations, a sequential UI/worker actor-clock bracket and original footprint-manager state. The footprint-state stage reads its captured user/client/ticket. After its published result, observe-footprint-source reconstructs one checkpoint-member footprint from original live consistency entries and existing native Cache chunks, checking every keyed record and generated header against the complete checkpoint while two matching source samples retain observed native order. It is a bounded native equivalent, not a GET_STR dispatch; a cache miss refuses without fetch, parser replay, cache writes or network fallback. Its source-only profile accepts ordinary record families, repeated fragments and tombstones, needs 65 remaining normal requests and grants no copy/delete or persistence authority. After the source result, prepare-footprint-copy journals original-owned plan/argument hashes using eight remaining normal requests. Preparation cannot upgrade launch purpose or enable native create, Save or saved verification. The empty-baseline wrapper uses pcb209-empty-* and joins fixed common data with the original completed SQL checkpoint, bracketed by empty raw-manager samples; populated targets refuse. The ratline-held-import wrapper uses pcb209-ratline-* with the original cumulative budget and complete source leases. After capture-project, observe-ratline-held-import journals intent before the sole PCB navigation, qualifies 29 PCB source stages, captures original construction and holds the first ratline child at its seventh qualified source import. It stops before worker continuation, callback return and full startup or baseline completion. The ratline-continuation wrapper uses pcb209-continuation-* and a separately sealed native budget. After its durable intent, known physical PCB records in the original checkpoint refuse before PCB navigation; passing this negative filter proves no empty live baseline. Native queues must remain exactly empty, including no serialized [] job. After capture-project, observe-ratline-continuation qualifies the original PCB, first worker and subordinate sources, continues their fixed imports and observes original PCB/worker capture checkpoints and callback returnsites. Callback completion, publication completion and native Worker-object/target identity remain unproved. These sequential observations grant no native channel-peer, server-clock, contained-destination, writer or durability proof. Explicit debugger-pause acceptance is required. Launch/open may restore tabs, migrate, replay caches, use the network and automatically persist files. Every stage is consumed once. Inspect after uncertainty and retain the original owner through abort, normal close, original root/Job termination, helper release and record settlement. No caller JavaScript, CDP commands, explicit Save, CAD writer, historical-owner adoption, navigation retry or Save/Discard choice. Forced termination is limited to the explicitly confirmed original footprint-main, footprint-combined, footprint-forward-prewrite, footprint-forward-source-validation, footprint-held-cache or footprint-head-age Job.",
       inputSchema: startupSchema, outputSchema: currentSymbolOperationToolOutputSchema,
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
     }, guarded((input: z.infer<typeof startupSchema>) => {
       const request = startupSchema.parse(input).request;
       if (request.action === "footprint-held-cache") { return runHeldCache(request.request); }
+      if (request.action === "footprint-forward-source-validation") { return runForwardSource(request.request); }
       if (request.action === "footprint-head-age") { return runHeadAge(request.request); }
       if (request.action === "footprint-main") { return runMain(request.request); }
       if (request.action === "footprint-combined") {
@@ -3316,6 +3518,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       }
       if (request.action === "footprint-forward-prewrite") { return runStartup(request.request, false, false, false, false, false, false, true); }
       if (request.action === "footprint-forward-opening-relinquishment") { return runForwardOpeningHistorical(request.request); }
+      if (request.action === "footprint-forward-source-relinquishment") { return runForwardSourceHistorical(request.request); }
       if (request.action === "footprint-copy-route-preparation") { return runStartup(request.request, false, false, false, false, true); }
       if (request.action === "footprint-copy-preparation") { return runStartup(request.request, false, false, false, true); }
       if (request.action === "ratline-held-import") { return runStartup(request.request, false, true); }
@@ -3370,7 +3573,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
         if (assetsRoot === undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined ||
             currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
             currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
-            closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true || currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true || currentFootprintMainLifecycle?.hasActiveReservation() === true || currentFootprintHeldCacheValidation?.hasActiveReservation() === true || currentFootprintHeadAgeValidation?.hasActiveReservation() === true) {
+            closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true || currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true || currentFootprintMainLifecycle?.hasActiveReservation() === true || currentFootprintHeldCacheValidation?.hasActiveReservation() === true || currentFootprintHeadAgeValidation?.hasActiveReservation() === true || hasForwardSourceCustody()) {
           throw new Error("Diagnostic launch requires no retained ordinary, project, closed-symbol or replacement owner and no shutdown.");
         }
       };
@@ -3411,7 +3614,7 @@ registerFacadeTool(
       const diagnosticReserved = CurrentPcbDiagnosticLifecycle.prototype.hasActiveReservation;
       // oxlint-disable-next-line typescript/unbound-method -- This monotonic observer distinguishes never-allocated owners from completed or failed allocations.
       const diagnosticAllocated = CurrentPcbDiagnosticLifecycle.prototype.hasAttemptedNativeOwnerAllocation;
-      let releaseDiagnostics: readonly (CurrentPcbDiagnosticLifecycle | CurrentPcbStringPrecreateLifecycle | CurrentPcbWorkerStartupLifecycle | CurrentFootprintCombinedUnknownAbandonment | CurrentFootprintForwardOpeningUnknownRelinquishment | undefined)[] | undefined;
+      let releaseDiagnostics: readonly (CurrentPcbDiagnosticLifecycle | CurrentPcbStringPrecreateLifecycle | CurrentPcbWorkerStartupLifecycle | CurrentFootprintCombinedUnknownAbandonment | CurrentFootprintForwardOpeningUnknownRelinquishment | CurrentFootprintForwardSourceUnknownRelinquishment | undefined)[] | undefined;
       const assertLocalAllowed = (): void => {
         if (closedSymbolIndexReservation !== undefined || scheduledShutdown !== undefined ||
             windowsRuntime !== ordinaryLaunchRuntime || process.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
@@ -3423,6 +3626,7 @@ registerFacadeTool(
         if (runtime !== ordinaryLaunchRuntime || runtime !== windowsRuntime || currentDisposableOpenCoordinator !== undefined ||
             currentPcbRenameOperationCoordinator !== undefined || currentSchematicRenameOperationCoordinator !== undefined ||
             closedSymbolIndexReservation !== undefined || closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined ||
+            hasForwardSourceCustody() ||
             disposableOwnerMethod(CurrentPcbDiagnosticLifecycle.prototype, "hasActiveReservation") !== diagnosticReserved ||
             disposableOwnerMethod(CurrentPcbDiagnosticLifecycle.prototype, "hasAttemptedNativeOwnerAllocation") !== diagnosticAllocated) {
           throw new Error("Ordinary runtime release is reserved by another owner or its observer changed.");
@@ -4927,7 +5131,11 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_project_schematic_rename")
 const transport = new StdioServerTransport();
 const shutdown = createSerializedShutdown(
   server,
-  [upstream, { close: async (): Promise<void> => { await windowsRuntime?.release(); } }],
+  [upstream, { close: async (): Promise<void> => { await windowsRuntime?.release(); } },
+    { close: (): Promise<void> => {
+      if (hasForwardSourceCustody()) { return Promise.reject(new Error("Forward source cleanup must finish before shutdown releases its facade lease.")); }
+      return Promise.resolve();
+    } }],
   facadeLease,
   bridgeGate,
 );

@@ -27,7 +27,7 @@ function startupRegistration(source: string): string {
     statement.type === "IfStatement" && statement.consequent.type === "BlockStatement" && statement.consequent.body.some(node =>
       node.type === "VariableDeclaration" && node.declarations.some(declaration => declaration.id.type === "Identifier" && declaration.id.name === "runStartup")) ? [statement.consequent] : []);
   assert.equal(blocks.length, 1); const block = blocks[0]; assert.ok(block);
-  const declarations = ["startupOriginal", "startupCalls", "combinedHistoricalOriginal", "forwardOpeningHistoricalOriginal", "runStartup"].map(name => {
+  const declarations = ["startupOriginal", "startupCalls", "combinedHistoricalOriginal", "forwardOpeningHistoricalOriginal", "forwardSourceHistoricalOriginal", "runStartup"].map(name => {
     const matches = block.body.filter(node => node.type === "VariableDeclaration" && node.declarations.length === 1 &&
       node.declarations[0]?.id.type === "Identifier" && node.declarations[0].id.name === name);
     assert.equal(matches.length, 1); const node = matches[0]; assert.ok(node?.type === "VariableDeclaration");
@@ -129,7 +129,7 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; calls: readonly Ro
     process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "synthetic" } },
     resolve: (): string => "/synthetic/plugin", retainedControlRoot: { path: "/synthetic/control" }, controlDataDirectory: (): string => "/synthetic/control",
     CURRENT_PCB_DIAGNOSTIC_PROFILE: { powershell: { sha256: "a".repeat(64), bytes: 1 } }, engine, upstream, bridgeGate: gate,
-    windowsRuntime: undefined, ordinaryLaunchRuntime: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined,
+    windowsRuntime: undefined, ordinaryLaunchRuntime: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, currentFootprintForwardSourceValidation: undefined, hasForwardSourceCustody: (): boolean => false,
     currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
     closedSymbolIndexReservation: undefined, closedSymbolUnreservedFailure: { observed: false }, scheduledShutdown: undefined,
     currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined,

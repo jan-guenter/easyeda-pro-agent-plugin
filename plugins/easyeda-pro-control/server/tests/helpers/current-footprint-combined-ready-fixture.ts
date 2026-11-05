@@ -14,9 +14,10 @@ import { transform } from "esbuild";
 import { CURRENT_FOOTPRINT_COMBINED_READY, decodeCurrentFootprintCombinedReady } from "../../src/current-footprint-combined-ready.ts";
 import type { CurrentFootprintCopyWindowsClockIssuer } from "../../src/current-footprint-copy-windows-clock.ts";
 import type { CurrentPcbDiagnosticInstallationOptions } from "../../src/current-pcb-diagnostic-installation.ts";
-import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintCopyForwardNativeOwner, CurrentFootprintCopyForwardSavedNativeOwner, CurrentFootprintCopyNativeTarget, assertOriginalCurrentFootprintCopyForwardNativeOwner,
-  assertOriginalCurrentFootprintCopyForwardSavedNativeOwner, currentFootprintCombinedFactoryFailureDiagnostics,
+import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintCopyForwardNativeOwner, CurrentFootprintCopyForwardSavedNativeOwner, CurrentFootprintCopyNativeTarget, CurrentFootprintForwardExecutionNativeOwner, assertOriginalCurrentFootprintCopyForwardNativeOwner,
+  assertOriginalCurrentFootprintCopyForwardSavedNativeOwner, assertOriginalCurrentFootprintForwardExecutionNativeOwner, currentFootprintCombinedFactoryFailureDiagnostics,
   currentFootprintCopyForwardFactoryFailureDiagnostics, currentFootprintCopyForwardSavedObservationAllocationOutcome,
+  currentFootprintForwardExecutionBirthAllocationOutcome, currentFootprintForwardExecutionBirthFailureDiagnostics,
   requireCurrentFootprintCombinedUnlaunchedFactoryFailure, requireCurrentFootprintCopyForwardUnlaunchedFactoryFailure, requireCurrentFootprintForwardExecutionInputs, startCurrentFootprintCopySavedNativeOwner } from "../../src/current-pcb-diagnostic-owner.ts";
 
 type Mode = "ready" | "stderr-close" | "malformed" | "wrong-challenge" | "oversize-no-newline" | "stderr-delayed-close" | "resource-traffic" | "saved-admission-failure" | "saved-spawn-refusal" | "execution-inputs";
@@ -33,6 +34,11 @@ export interface SyntheticForwardSavedFactoryOwner extends CurrentFootprintCopyF
   syntheticForwardRequestForTest: (request: Readonly<Record<string, unknown>>) => Promise<Readonly<Record<string, unknown>>>;
   syntheticForwardFrameForTest: (frame: Buffer) => Promise<void>;
 }
+export interface SyntheticForwardExecutionFactoryOwner extends CurrentFootprintForwardExecutionNativeOwner {
+  syntheticForwardRequestForTest: (request: Readonly<Record<string, unknown>>) => Promise<Readonly<Record<string, unknown>>>;
+  syntheticForwardExecutionSetupForTest: (target: object, main: object) => void;
+  syntheticForwardMainUiForTest: (opening: object, result: object) => void;
+}
 interface Module {
   readonly startCurrentFootprintCombinedNativeOwner: (options: CurrentPcbDiagnosticInstallationOptions) => Promise<CurrentFootprintCombinedNativeOwner>;
   readonly currentFootprintCombinedFactoryFailureDiagnostics: typeof currentFootprintCombinedFactoryFailureDiagnostics;
@@ -47,6 +53,10 @@ interface Module {
   readonly assertOriginalCurrentFootprintCopyForwardSavedNativeOwner: typeof assertOriginalCurrentFootprintCopyForwardSavedNativeOwner;
   readonly currentFootprintCopyForwardSavedObservationAllocationOutcome: typeof currentFootprintCopyForwardSavedObservationAllocationOutcome;
   readonly requireCurrentFootprintForwardExecutionInputs: typeof requireCurrentFootprintForwardExecutionInputs;
+  readonly startCurrentFootprintForwardExecutionNativeOwner: (options: CurrentPcbDiagnosticInstallationOptions) => Promise<SyntheticForwardExecutionFactoryOwner>;
+  readonly assertOriginalCurrentFootprintForwardExecutionNativeOwner: typeof assertOriginalCurrentFootprintForwardExecutionNativeOwner;
+  readonly currentFootprintForwardExecutionBirthAllocationOutcome: typeof currentFootprintForwardExecutionBirthAllocationOutcome;
+  readonly currentFootprintForwardExecutionBirthFailureDiagnostics: typeof currentFootprintForwardExecutionBirthFailureDiagnostics;
 }
 /** Exercise the real owner factories, private registries and transport counters
  * with synthetic installation/SQL seams and an inert Node child. Fixed modes
@@ -54,7 +64,7 @@ interface Module {
  * Callers must retain the returned child through cleanup; the fixture issues
  * no native application ownership, real closed-SQL proof or writer authority.
  */
-export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined" | "forward" = "combined", savedObservation = false,
+export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined" | "forward" | "forward-execution" = "combined", savedObservation = false,
   supplied: Readonly<{ modules?: Readonly<Record<string, unknown>>; childProgram?: string;
     launchTarget?: Readonly<{ windowsPath: string; sha256: string }> }> = {}): Promise<Readonly<{
   api: Module; options: CurrentPcbDiagnosticInstallationOptions; child: () => ChildProcessWithoutNullStreams;
@@ -67,7 +77,7 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
   const pluginRoot = fileURLToPath(new URL("../..", path)).replace(/\/$/u, "");
   const helper = await readFile(new URL("../../../scripts/pcb-diagnostic-owner.ps1", import.meta.url));
   let ownerSource = await readFile(path, "utf8");
-  if (purpose === "forward") {
+  if (purpose === "forward" || purpose === "forward-execution") {
     // An explicit synthetic command seam reaches actual original counters and
     // Pipe callbacks. It proves no Windows handle, app launch or writer route.
     ownerSource = ownerSource.replace("  public status():", "  public syntheticForwardRequestForTest(request: RecordValue): Promise<RecordValue> { return this.#request(request); }\n" +
@@ -90,6 +100,11 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
       else if(mode==='source'){this.#footprintSourceBinding={...this.#footprintSourceBinding} as never;this.#footprintSourceBindingText=canonicalJson({...this.#footprintSourceBinding,before:undefined});}
       else if(mode==='main')this.#mainRunner={...this.#mainRunner} as never;
       else throw new Error('Unknown synthetic transition');
+    }
+    // Synthetic external UI collector evidence only. Production still requires
+    // its actual original route/source/reproof issuer before source publication.
+    public syntheticForwardMainUiForTest(opening: object, result: object): void {
+      this.#footprintUiOpening=opening as never;this.#footprintUiOpeningResult=result as never;this.#forwardExecutionUiReproofSucceeded=true;
     }
     public status():`);
   }
@@ -133,6 +148,15 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${output.code}\n})`); assert.ok(typeof evaluate === "function");
   Reflect.apply(evaluate, undefined, [(name: string): unknown => {
     if (supplied.modules !== undefined && Object.hasOwn(supplied.modules, name)) { return supplied.modules[name]; }
+    if (purpose === "forward-execution" && name === "./current-footprint-forward-native-graph.ts") { return {
+      // This inert-child fixture exercises real factory/counter custody. The
+      // Separate graph tests exercise actual descriptor/hash/role selection.
+      captureCurrentFootprintForwardNativeGraph: (distribution: unknown, challenge: unknown): Promise<object> => {
+        assert.equal(distribution, "Synthetic"); assert.equal(typeof challenge, "string"); assert.match(String(challenge), /^[a-f\d]{32}$/u);
+        return Promise.resolve(Object.freeze({ verify: (): Promise<void> => Promise.resolve(),
+          bootstrap: `$ErrorActionPreference='Stop';# synthetic fixed graph, never executed\n& {} -WorkerStartupFootprintForwardExecution209 -CombinedReadyChallenge '${String(challenge)}'` }));
+      },
+    }; }
     if (name === "./current-footprint-copy-forward-main-accounting.ts") { return mainAccountingLoaded.exports; }
     if (name === "./current-footprint-copy-forward-capacity.ts") { return capacityLoaded.exports; }
     if (name === "./current-pcb-diagnostic-installation.ts") { return {
@@ -180,6 +204,7 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
       if (saved) { assert.equal(savedObservation, true); assert.ok(original !== null); assert.equal(original.exitCode, 0); assert.equal(match, null); }
       else { assert.equal(original, null); assert.ok(match?.[1] !== undefined); }
       assert.equal(bootstrap.includes(" -WorkerStartupFootprintForward209 "), !saved && purpose === "forward");
+      assert.equal(bootstrap.includes(" -WorkerStartupFootprintForwardExecution209 "), !saved && purpose === "forward-execution");
       assert.equal(bootstrap.includes(" -WorkerStartupFootprintCombined209 "), !saved && purpose === "combined");
       if (saved && mode === "saved-spawn-refusal") { throw new Error("Synthetic saved spawn unresolved"); }
       const packet = { challenge: match?.[1] ?? "", schema: CURRENT_FOOTPRINT_COMBINED_READY.schema, helperInstance: "b".repeat(32), jobId: "c".repeat(32),

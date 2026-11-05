@@ -22,7 +22,7 @@ function startupDeclarations(source: string): string {
     statement.type === "IfStatement" && statement.consequent.type === "BlockStatement" && statement.consequent.body.some(node =>
       node.type === "VariableDeclaration" && node.declarations.some(declaration => declaration.id.type === "Identifier" && declaration.id.name === "runStartup")) ? [statement.consequent] : []);
   assert.equal(blocks.length, 1); const block = blocks[0]; assert.ok(block);
-  const selected = ["startupOriginal", "startupCalls", "combinedHistoricalOriginal", "forwardOpeningHistoricalOriginal", "runStartup"].map(name => {
+  const selected = ["startupOriginal", "startupCalls", "combinedHistoricalOriginal", "forwardOpeningHistoricalOriginal", "forwardSourceHistoricalOriginal", "runStartup"].map(name => {
     const matches = block.body.filter(node => node.type === "VariableDeclaration" && node.declarations.length === 1 &&
       node.declarations[0]?.id.type === "Identifier" && node.declarations[0].id.name === name);
     assert.equal(matches.length, 1); const node = matches[0]; assert.ok(node?.type === "VariableDeclaration");
@@ -141,7 +141,7 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
     resolve: (): string => "/synthetic/plugin", controlDataDirectory: (): string => "/synthetic/control", retainedControlRoot: { path: "/synthetic/control" },
     CURRENT_PCB_DIAGNOSTIC_PROFILE: { powershell: { sha256: "a".repeat(64), bytes: 1 } },
     ordinaryLaunchCoordinator: undefined, ordinaryLaunchRuntime: undefined, windowsRuntime: undefined,
-    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined,
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, currentFootprintForwardSourceValidation: undefined, hasForwardSourceCustody: (): boolean => false,
     currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
     closedSymbolIndexReservation: undefined, closedSymbolUnreservedFailure: { observed: false }, scheduledShutdown: undefined,
     serializedGuarded: (handler: Invoke): Invoke => handler,

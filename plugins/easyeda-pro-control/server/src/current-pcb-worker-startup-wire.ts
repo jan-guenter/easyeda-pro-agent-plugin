@@ -291,6 +291,11 @@ export function currentFootprintCopyForwardStartupWire(raw: unknown, id: number)
   return Object.freeze({ command: Object.freeze({ ...original.command, id }),
     request: Object.freeze({ ...original.request, requestId: id }) });
 }
+/** Separate writer-born identity for fixed preparation traffic. Allocation,
+ * create and clocks still use their own closed grammars and original leases. */
+export function currentFootprintForwardExecutionStartupWire(raw: unknown, id: number): ReturnType<typeof startupWire> {
+  return currentFootprintCopyForwardStartupWire(raw, id);
+}
 /** The saved owner admits only construction and native-cache observation.
  * Parser registration capture is shared fixed code, not execution authority. */
 export function currentFootprintCopySavedStartupWire(raw: unknown, id: number): ReturnType<typeof startupWire> {

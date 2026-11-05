@@ -1,0 +1,747 @@
+# Forward source validation and execution-provider source
+
+This unpublished 2026-11-05 batch is based on protected main
+`4bdd63f5fdeb9d74975bf18565209942f6e39ff0`. It adds a separately born v2
+footprint source-validation lifecycle and private execution-provider components.
+It is source and focused-test evidence, with no release commit or installed
+payload for this batch. The [PR168 publication record](2026-11-05-pr168-publication-and-installation.md)
+remains the installation record; its connected results are not validation of
+these changes.
+
+The new `footprint-forward-source-validation` wrapper uses the existing startup
+tool and an explicitly selected disposable checkpoint. It prepares the whole
+checkpoint and completed SQL baseline before allocation, retains the original
+main/browser/frame/UI and worker construction, and captures source,
+preparation and the same-owner seal once. Its separate v2 result keeps
+`executionReady`, `executionAuthorized`, `saveAuthorized`, `wholeWriterReserved`
+and `routeAndClocksQualified` false. Released v1 results and owner guards remain
+unchanged. The [maintained reference](../../plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-footprint-forward-source-validation.md)
+describes its exact actions and effects.
+
+The managed opening journal reserves normal and cleanup capacity separately:
+518 records include the complete allowance for 240 original termination
+observations. Unknown publication, allocation or window outcomes stay consumed.
+Known preallocation refusal can release only this provider's original exclusion;
+uncertain journal creation must settle on its original reservation and cannot
+adopt an existing journal or become no-resource proof.
+Confirmed abort cuts off normal work before joining an already-active original
+publication. Manager cleanup selects the original family, connection,
+generation, request and operation privately, including exact retained binding
+evidence after an interrupted launch. It grants no replay or replacement owner.
+
+Private main capability/origin issuance now joins the genuine v2 native owner,
+settled opening publication and original construction cursor. Each new origin
+can construct one sequencer. The new native profile has a separate cumulative
+main allowance of 87 normal and 41 cleanup commands: completion occupies IDs
+53 through 127, leaving ID 128 for the construction group release. An exact
+pending allocation receives its original reply bytes before output accounting
+or later guards. A helper deadline retains that receiver for the actual late
+reply and blocks replacement polling. Retirement retains its actual ACK
+separately from sequencer settlement; a late pause or incomplete UTF-8 frame
+preserves cleanup custody until original root/whole-Job exit.
+
+The native source is split into three fixed captured roles: driver, core and
+phase. Their recorded sizes are 93,261, 945,293 and 30,558 ASCII bytes;
+the compiled core-plus-phase source is 975,852 bytes. Each file and compiled
+source retain the 1 MiB bound, with separate tighter role and aggregate limits.
+The released single-file helper remains byte-identical, SHA-256
+`58f681b7c896069fd748b957fe925e39ed4b8990f88de3483fbda781a65dccee`.
+The new mixed-registration/RPC source retains distinct preload-wrapper and
+ws-service callback identities. Its local 942-normal/61-cleanup/1,003-ID floor
+is not a complete writer reservation, and no genuine UI/native paired-clock
+issuer is joined yet.
+
+The composed diagnostic-reader change memoizes only successful pure record
+parsing. Every lookup still freshly reads and verifies complete file bytes;
+chain, owner, sidecar and settlement checks remain fresh. No measured speedup
+or cached admission is claimed.
+
+Recorded focused selections include 12 opening/parse cases, nine mixed-clock
+cases, four final native-graph cases, 20 distinct main-custody/engine cases and
+32 source-controller/opening/manager cases. These are scoped cuts with
+overlapping tests and reruns, not an aggregate suite total. The main evidence
+retains the earlier cleanup failure and its corrected positive case, plus the
+actual 15-second helper-deadline/late-reply case through an inert Linux child.
+The existing shared engine's 128-command regression passes; a complete
+128-command run through the genuine new native owner is not established.
+Scoped strict types and type-aware lint passed for the retained cuts.
+
+Private evidence remains outside the repository. SHA-256 identities for the
+principal records are:
+
+| Evidence cut | Proof SHA-256 |
+| --- | --- |
+| Main-port opening/preallocation correction | `fcae5ab9632da2264e9ae788404476f2feea91527f3528c4a3e6c51f7fa1c049` |
+| Mixed registration/RPC retirement source | `85785caa69f8c718eb2735350db789d7c2d6f0730592ddd62c8ad3de6279427c` |
+| Native main source | `9429598305c14fd95c74ede2dfc7c197c800dd5b867584478675735590c4d2f5` |
+| Main origin/engine custody | `25bc91cf3e10f1210d5dc64d5c2ec618d85b42feabdb5fbfee725fe3e1c6195e` |
+| Source validation and manager selection | `0908c37767b5c0bffe8da09ad7f9e6b7f5070007e34606aa2a68e8cdd12859bf` |
+
+No C# compilation, PowerShell/Windows execution, connected source qualification,
+saved/reopened result, build, reproducible bundle or exact-head CI result is
+claimed for this batch. Inert peers and synthetic source/inspector collectors
+do not establish those outcomes. The full writer remains blocked by the
+[current head/lock and complete producer-frontier eligibility gap](2026-11-05-forward-execution-eligibility-research.md),
+genuine paired clocks, the complete native/output/cleanup budget, saved-source
+and upload-replay exclusion, full SQL lifecycle and supported inverse execution.
+No public main-request collector, create, writer or explicit Save is enabled.
+
+## Same-day composed verification and correction
+
+The candidate is now stamped `0.3.0+codex.20261105085316`. Review after the
+32-case cut found two prelaunch cleanup problems: a lost terminal-publication
+acknowledgment could resend a consumed helper release or append the terminal
+record twice. The correction retains the original release promise and proven
+cleanup kind, settles the exact original terminal, and releases only its own
+exclusion. A rejected original release remains unknown and cannot be resent.
+The added actual-provider regression uses a genuine private factory with an
+inert Linux child, real journal publication failure and a byte-identical retry;
+it also covers the no-allocation terminal branch. The affected 12-case rerun
+passes. This adds one distinct test to the earlier 32, not 12 additional cases.
+The final source proof has SHA-256
+`8ce40898956c29d65153c1c5ee5d9992d63a546b8b934a27927b783d7a409b06`;
+the independent correction review has SHA-256
+`f42f1c6eea25fd95e411e361c694eba94230f6ef0844722786409fd879852986`.
+The earlier no-blocker review and its explicit finding correction remain retained.
+
+The composed 55-case index/retirement/closed-snapshot selection initially
+passed 54 cases and failed the new wrapper fixture because its synthetic
+guard propagated a synchronous refusal. The fixture now retains the existing
+async guard semantics; the final affected six-case selection passes. The
+production refusal and prototype guards were not relaxed. Full strict
+type-aware lint, bridge types/lint, dependency tree, moderate audit and all
+151 registry signatures plus 42 attestations pass. The complete build,
+including native source generation checks and sanitizer reproduction, passes.
+The final fixture index-signature correction is type-only; the original type
+failure is retained, and the final complete type check passes after correction.
+
+Before replacement, the original manager's generation 4 facade acknowledged
+cooperative retirement and lease release with zero active calls. Its original
+stdin EOF, process exit and close were observed with exit code 0. The now
+resourceless old manager then acknowledged shutdown and exited 0. No signal,
+lease deletion, native allocation or Codex restart was used. Private retirement
+proof SHA-256 is
+`60b7729fed6db14cbb142f99c4e8ba96ee3eccc6a381bded7f2e5aa7e3557600`.
+This permits loading an updated frontend; it does not transfer a native owner
+or validate the new source workflow on Windows.
+
+The same publication boundary also required no-process and bound postlaunch
+recovery. No-process cleanup now retains its original release promise and uses
+the same selector to settle the exact terminal without resend. The manager
+admits `observe-release` only for this new source family with its original
+retained binding; old-family and caller-supplied binding substitutions remain
+refused. The final affected opening/source/manager selection passes all 34
+cases, including the two new cleanup cases. Its source proof has SHA-256
+`6bef344a17cc50befd7e911222f58c13b139dfa2fc497fb3235858f16f0205fb`.
+Complete types, strict lint and the build pass again on that source cut.
+The previous source and validation cuts remain preserved separately.
+
+## PR169 initial Windows failure
+
+Initial PR head `a496c11c40133c1f63724a3e151ffd69e4770415` passed the GitHub
+build and bridge suites. Windows run `42000257635` passed the existing helper's
+14-purpose compilation step, then failed the new graph smoke. Its child output
+was hidden, so that run establishes no exact child error or new-graph native
+success. The complete failed log remains retained.
+
+Source inspection found that sequential bracket substitutions corrupted the
+generated C# array initializer into `new string[}{`. The generator now emits
+the fixed initializer directly. The existing graph regression checks it, and
+the new CI step reports bounded JSON-escaped child diagnostics. Core and legacy
+helper bytes remain unchanged; driver and phase pins follow the regenerated
+source. Four focused graph cases, scoped strict types/lint and graph/legacy
+identity checks pass. Corrected Windows compilation and final exact-head CI
+remain required before publication. The source correction proof has SHA-256
+`b0032bce6203b61ea816b9cb46cfea1f0cd7d83bade0070a54291b700b6b4f17`.
+
+## Full review and Linux follow-up
+
+CodeRabbit full review `5782501597` covers initial head `a496c11`, with 108
+selected files, three generated bundles ignored and `native-core.cs`
+unavailable. It reported four inline findings and one outside-diff finding.
+The source corrections shorten plugin metadata to 2,821 characters, require
+both source and inspection discovery schemas, correct the generated C#,
+repair the legacy parser fixture, and describe twelve launch purposes with the
+v2 authority flags false. The fixture now tests the immutable legacy switch
+rather than changing that released helper to accept a newer selector.
+The findings are accepted; that fixture correction addresses the same reported
+failure while preserving the released boundary.
+
+The bot check succeeded, but its docstring metric was 29.71% and inconclusive,
+with 138 functions across 50 files and 57 skips: 15 unsupported and 42 at the
+file limit. That metric is not a documentation-coverage pass or an exhaustive
+review of the unchanged repository. Complete review bodies, outside-diff
+comments and limits remain retained privately.
+
+Initial Linux CI completed 14,260 facade tests: 14,251 passed, four failed and
+five explicitly skipped, across 65 suites. Seven shards and all 424 bridge
+tests passed. The failed shard exposed the legacy parser fixture and three
+old admission expectations after the new source-owner scanner was added.
+Both source-owner and generic admission scans remain fresh and separate.
+A bounded private memo now shares only successful JSON computation after
+complete current-byte reads; schema, artifact, path and admission checks still
+run in place. Parser/receiver/context and exact raw bytes select independent
+private clones. The memo retains at most 128 entries and 8 MiB of charged raw,
+serialized and key data, bypassing inputs above 1 MiB or entries above 2 MiB.
+Malformed JSON is not cached. The existing 20-case admission selection passes,
+retaining the one-parse expectation and explicitly testing two fresh scans,
+clone mutation, parser replacement and malformed/restored input. Its source
+proof has SHA-256
+`662dbc1ad7ea3054e4794c2ed43c9a84a096288c2648db0cdd850118da32ffff`.
+The initial failed CI remains nonqualifying; final exact-head CI is pending.
+
+The corrected `2aa8af6069567c9855918de8bc39f92fe1b802d5` cut passed Windows
+compilation, the build, bridge tests and seven facade shards. Its one remaining
+failure measured 262 JSON parses where an older compact-projection test
+expected 390. The preceding rich scans had already warmed the new bounded
+JSON memo; the compact projection itself was still cold. The test now permits
+zero through 390 cold parses while retaining exactly zero additional warm
+parses, all 390 results and every fresh corruption/artifact/path check. The
+affected test passes, as do scoped types/lint. Production code and bundles are
+unchanged. Test-only correction proof SHA-256:
+`11aa8b5f1e345d1c48b60cd2a42a226940b5e97b92397413ec1bb7aa16069504`.
+The `2aa8af6` totals remain recorded as 14,254 passes, one failure and five
+platform skips, with 424 bridge passes; they do not qualify the new test cut.
+
+
+## Actual source-validation attempt and follow-up
+
+The immutable `2aa8af6069567c9855918de8bc39f92fe1b802d5` payload was admitted
+from a fresh context with complete packaged bytes/modes and original process
+checks. Its separate v2 owner launched the disposable application and completed
+main, browser, frames and UI qualification. The single `capture-source` call
+then failed with `FORWARD_EXECUTION_ORIGINAL_METHODS_CHANGED` before the
+project-opening dispatch. No source packet, preparation seal, writer or Save
+result followed. This is failed connected validation, not a source-workflow pass.
+
+Source review found a captured method key that does not exist on the actual
+opening prototype. The new key list is constrained by that actual class type.
+The wrapper also retains a monotonic opening-invocation bit. After genuine
+original root termination and an empty whole Job, cleanup may skip only a
+never-invoked original opening whose complete status remains idle, unconsumed
+and transport-free. Every invoked or ambiguous opening retains its existing
+release guard. The actual-prototype regression exercises this distinction;
+15 affected cases and scoped types/lint pass. Source-fix proof SHA-256:
+`30ea0c806dcf06a84062da6a4a5916b26a37f80daef3675e4b31e073caedc13a`.
+These source tests do not establish connected cleanup success.
+
+The original failed attempt observed its window, requested normal close once,
+and then proved original root exit and an empty whole Job. Its separate
+`release-closed` failed with `PCB209_WORKER_STARTUP_OPENING_RELEASE_STATE`:
+the original unstarted wrapper cannot satisfy that released guard. The facade
+and original helper therefore remained retained while separately authorized
+cleanup was prepared. Physical process closure alone cannot settle the Source
+journal, acknowledge helper release or permit replay. No repeated capture,
+project navigation, Save or owner reconstruction was used.
+
+New Source allocation intents also include a separately versioned producer
+subobject derived from the already verified installation. It records facade
+and installation digests without extra awaits or native calls. Existing request,
+record and result declarations remain unchanged. The old failed journal has no
+such producer fields; its provenance must remain explicitly external. The
+15 affected cases and scoped types/lint pass for this leaf; proof SHA-256:
+`fb85c17b6bd758be672dc6830e6e3d23d48133cf19bcc0c64fb1905c3d91589a`.
+
+The follow-up adds a separate historical Source-v2 metadata contract for only
+that externally reviewed exact raw manifest and complete 23-record/artifact
+roster. A private reader-issued snapshot selects its sole isolation exception.
+Fresh global Linux/Windows absence, unchanged registered raw source, full
+completed SQL readers and complete history equality are required before separate
+exclusive sidecars can relinquish its historical startup blocker. The original
+journal is preserved. Original capture, termination and helper release stay
+unknown; all execution, restoration, replay and Save authority remain false.
+This contract creates no native owner or process-control route. Focused source
+validation, final exact-head CI, review and any actual receipt remain pending.
+
+
+The historical resolver's focused selection passes eight cases, including
+changed file proof, Linux/Windows process presence, active pre-lease custody,
+unknown publication acknowledgment and same-owner settlement. These use an
+isolated synthetic reviewed profile and the actual managed chain/admission
+readers; they do not invoke the live historical resolver. The shared legacy
+file-proof selection also passes three generated SQLite/history cases.
+Four registration files passed 14 cases with the actual index registration and
+an inert coordinator; a subsequent equivalent test-extractor lint correction
+was checked by lint. Final exact-head CI remains the complete final-source test
+proof. Registration review proof SHA-256:
+`8a8c2bd042e9a239b02ea830d2e64284517c90f84339b94bfb88fe47a7cfd9a1`.
+
+The independent eight-file runtime review found no additional semantic defect.
+Strict lint separately exposed a new runtime import cycle. The contract now
+uses the equivalent pure strict absence schema with the same fixed helper hash,
+removing the runtime edge. The bounded corrected-cut review passes; proof
+SHA-256 is
+`d0be9ad7d9224fecf51b6f115e6b16e179c125babb82430d69a95e540ed80942`.
+Complete strict types and type-aware lint pass with zero warnings. Bridge types
+and lint, API coverage, and all seven installed skill-creator validations pass.
+The catalog gains two metadata-only queries, for 75 queries and 77 total
+requests, without another MCP tool or native launch purpose. These checks grant
+no historical receipt, source seal, connected cleanup or writer authority.
+
+Historical resolver implementation proof SHA-256:
+`95b2095bdb6b4a6603895d33848f874ffda17074148808d732d4e4a42aa86c68`.
+The first synthetic run's missing generic plan hash and the initial lint
+failures remain retained separately; neither is reported as a passing cut.
+
+
+The batched follow-up passes the complete local non-suite checks, build and
+sanitizer/protocol identity checks. Rebuilding the server, supervisor and manager
+preserves all 3,039 repository file bytes and modes. Reproducibility proof
+SHA-256 is
+`17da8004bfc13a1e74359a699cceb913212d1572930da7a5187fa6222d5dfe29`.
+Only facade source/bundle projections and review time changed in compatibility;
+external runtime, upstream, installed-bundle and bridge/key pins remain intact.
+The new source projection has 1,049 files and SHA-256
+`e11f18bd8bb2820ebdb4ea57a04a4ce9d87837900eb985ddd6166a10ccac3054`;
+the three-file runtime projection is
+`99e07318986de0f688165012adc626fb45ff50354a62aff61abd657dce03b978`.
+A first offline probe refused the dependency-bearing development checkout
+before creating a child. Clean-package offline verification, exact-head CI,
+CodeRabbit review, original-process cleanup, historical receipt qualification,
+publication and installation remain separate pending steps.
+
+
+## Exact-head CI and second full review
+
+Commit `5c972481f611b2a47ba7ec18c715b2e444d97153` completed CI with 14,272
+facade tests: 14,263 passed, four failed and five supported platform skips,
+with no cancellation. All four failures came from an omitted historical-state
+declaration in the VM extractor used by `current-pcb-startup-index-switch.test.ts`.
+The production dispatcher already declares that state. The fixture now extracts
+it too; its four focused cases and strict targeted lint pass. Seven facade
+shards, the build, all 424 bridge cases and Windows compilation passed. The
+failed shard and dependent aggregate remain failed evidence, not a qualifying
+complete-suite result.
+
+All ten checkout jobs used the same merge tree as that head, with the expected
+base and head parents. CI source/runtime pin objects match the committed and
+normalized frozen package. Both raw log archives pass CRC checks, and the
+uploaded package artifact matches all 2,631 files, 43 directories and 53,533,835
+bytes, including exact modes and roster. Complete CI proof SHA-256:
+`dffca3457a8119b1b7174b3165d2b91bc60731d37b5314943c20aa321ca839ea`.
+The first local archive preserved group-write modes; its comparison refusal is
+retained. Explicit tar permission normalization produced the exact passing
+snapshot. Its offline probe completed 75 queries and 77 requests, with child
+stdin EOF, observed close and exit 0. That probe remains synthetic-profile
+catalog verification, separate from connected execution.
+
+CodeRabbit review `5784300000` covers `5c97248` and reports two Major issues
+and one Trivial fixture nit. All are accepted. Operation-only Source cleanup
+timeouts lose the original operation ID needed for same-client inspection and
+settlement. Failed first receipt publication can leave an empty managed
+directory that prevents the original pending intent from settling. The main
+publication fixture also needs an exact anchor assertion so formatting drift
+fails immediately. The follow-up preserves original-owner and unknown-outcome
+boundaries while addressing these failures. It does not enable a writer.
+
+The actual review selected 121 files and filtered three generated bundles.
+`native-core.cs` changes were unavailable, so the provider explicitly reports
+incomplete coverage despite a successful check. Its 30.41% docstring metric is
+inconclusive: 148 functions across 50 files, with 70 skips comprising 16
+unsupported and 54 at the file limit. Complete review and disposition proof
+SHA-256 is
+`5e16633c0432a10e8dbcfae83dcfc1419da102f43d07506cf643939cf166b80a`.
+A final-head review and complete green CI remain required.
+
+For clarity, the application launch above used the existing EasyEDA profile
+with a disposable project selected in the request. The refusal predates its
+explicit project-opening dispatch; this observation does not establish
+isolation from automatic startup effects.
+
+
+The manager correction preserves a separate original Source operation ID for
+operation-only timeouts. Completed cleanup with no retained binding stays on
+inspection and local bookkeeping. When an application owner remains active,
+only the existing complete same-facade inspection can recover its actual
+published binding for original cleanup. The active-owner regression initially
+reproduced that remaining gap; its final eight-case selection, strict lint and
+types pass. Independent review proof SHA-256:
+`d2d6b164a36c7ca5eaa571a6abf4c7bf66ddfdfb2a4b8f34cc69442f17ed7339`.
+
+The first-intent publication regression reproduces the empty-directory failure
+with the actual managed publisher. The reader now returns no receipt only after
+rechecking the empty directory and original snapshot. Startup remains blocked;
+the original private pending token and bytes can finish without recollection.
+Ten focused cases and strict lint pass, with malformed, partial, result-only
+and extra-leaf refusals preserved. Validation proof SHA-256:
+`2f6cfb25a8d89c2b71862ce947ec6fc64ceb39a39fc788191285b65e3333969f`;
+independent review proof:
+`512dd5e8cf1ed453bc37559064c3e6c104626d3c2f1febe8f08d880f57a18911`.
+
+Further review found the analogous SDK-timeout trap in the new historical
+metadata wrapper. A separate `settle-unknown-source-opening` action now accepts
+only original retained pending bytes or a verified complete matching receipt.
+It refuses before new nonce, installation, process-absence or source/SQL proof
+collection when neither exists. Existing collection behavior and persisted
+intent/result schemas remain unchanged. Thirteen focused cases and strict lint
+pass; validation proof SHA-256:
+`888615a896cdd5f618de89234ac890e7dd7a8236761d4711e7190858a7bf0c46`.
+Independent review proof:
+`9a65630ac033b043ad4d8ef96219f6bb2a2791ab7895f0d844092f57384db24e`.
+
+The manager's `settle-historical-metadata` selector reconstructs that request
+only from its private original call, on the same client, transport, generation
+and interrupted request. It checks the strict receipt, operation and four
+original digests, retains the unknown original outcome and keeps normal/native
+calls blocked. Busy, missing-pending and contradictory replies grant no
+settlement. Closure still requires the original facade's retirement preflight
+and actual original child EOF/exit. Its focused selection of eighteen cases and
+strict lint pass; validation proof SHA-256:
+`a6b0b6549879a4eca1894ec6bfda97241b77ae6d2298dbf579bdcdb435f1ff8b`.
+Independent review proof:
+`e4145cbae87c3d6f0c71c67e57475919a95bc1c2ff49950ae4f2e8dd8dfbe32c`.
+
+Final combined strict types and type-aware lint pass with zero warnings. The
+moving-cut unused-fixture-helper type failure is retained separately and grants
+no pass. Offline discovery now includes settlement argument validation: 76
+queries and 78 requests, with no additional MCP tool or native launch purpose.
+These remain synthetic/source results, with no live historical receipt,
+connected source seal, helper cleanup or writer claim. The candidate plugin
+version remains unchanged while this follow-up is batched for final CI/review.
+
+
+The batched corrections pass the build, compatibility, repository/privacy,
+plugin and skill validators. Source, runtime and frontend rebuilds preserve all
+3,039 repository file bytes and modes; proof SHA-256:
+`94e43b5fcd61ad77a5b0e11f23cb11d784b1bb5adf5de074fee320fd1d96d65c`.
+Only facade projections and review time changed. The final 1,049-source-file
+projection is
+`c951eb4076957eda646be2586fd587689ff04be991eec33814308843ce7394d6`;
+the three-file runtime projection is
+`0ad9c591597852927db4cde2703674b2f3cd9f1f05ac64675a91a715bc5a592b`.
+External pins and the original retained payload remain unchanged. Final clean
+package verification, complete green exact-head CI and another actual
+CodeRabbit review remain publication gates. No original-process signal,
+historical resolver or new connected Source attempt has been performed by this
+follow-up.
+
+
+## Launch/publication boundary corrections
+
+Commit `a0d39c8a6881cc8fb7b52948516dc5e4bee83fbb` passed all eleven required
+CI checks: 14,287 facade passes, five supported skips, zero failures across
+65 suites, and all 424 bridge cases. Every checkout, full source/runtime pin
+object, raw log archive and uploaded package matched the frozen local payload.
+The artifact contained 2,631 files, 43 directories and 53,630,021 bytes with
+exact modes. Complete CI proof SHA-256:
+`ee2916cf28f26e5f9334388d980d714faa8e61dffed095ca2d8d1dbde738a292`.
+This is a passing exact-head source/test result, not a live Source lifecycle.
+
+CodeRabbit review `5785024704` reported one Major cleanup issue, one Minor
+history-label correction and two explicitly unverified wording suggestions.
+All were addressed. The history index now identifies the replacement facade
+in the retained manager's generation 4, matching the linked installation note;
+the two prose edits preserve the recorded meaning. The provider's Major gap
+occurs after a launch intent is stored but before native launch is invoked.
+The original helper can close, yet the old terminal refuses that record prefix.
+Review proof SHA-256:
+`22474348a60e2175cf3550a0c714c6088f7a2faf9cca3dc9e0326d3180e3c13b`.
+The provider again reported incomplete native-core coverage and the same
+inconclusive documentation metric; successful checks do not remove those limits.
+
+The additive `cleanup-unlaunched-owner` terminal records actual original helper
+closure, never-invoked launch and acknowledged original unlaunched release.
+It covers a ready original owner before or after the launch intent, including
+failure before allocation-result publication. Old zero-input diagnostics,
+budget, request/result schemas and the exact historical 23-record profile stay
+unchanged. A genuine pending launch-intent acknowledgment regression first
+reproduced the reported refusal; that failed cut remains retained.
+
+The adjacent review also found that ready-owner prelaunch cleanup had reported
+zero total stdin despite issuing the helper's cleanup command. The new terminal
+uses truthful lifecycle facts; the old zero-input terminal remains limited to
+its original factory diagnostics. Another preserved first-failure case covers
+that evidence correction.
+
+The remaining adjacent defect was a release rejected during local preflight.
+The native v2 owner now classifies only the exact original error, release kind,
+latest invocation and native activity, with a one-use private proof. A sticky
+per-owner marker is set before any release termination, helper or channel work.
+Queued/concurrent work, helper failure, stale or forged errors and any started
+release pipeline refuse a reset. Existing termination observations outside the
+release pipeline do not supply or consume this proof. Legacy profiles and all
+Windows helper bytes/commands remain unchanged.
+
+Only a positive original proof can clear the provider's rejected cleanup
+attempt or promise. It performs no automatic resend and does not reopen normal
+work. Any later explicit cleanup rechecks that same original owner. Unknown
+or partial native release work stays consumed. The provider preserves the
+original error when classification refuses or throws.
+
+Final frozen checks pass: 25 provider/controller cases, two historical cases,
+ten new genuine-factory synthetic native cases, fourteen relevant existing
+native cases, targeted strict lint and the final combined type/lint checks.
+No full local suites were repeated. Provider proof SHA-256:
+`777f0a8c4cacb3531ec6b1742e38a5f694630b03fd0620712e7833f86748096e`.
+Native proof SHA-256:
+`f19e550f98e43d88ae24af29d34e9ef0c5804902cf6f46bf1bafb81a999bbc5c`.
+
+Independent native review proof:
+`f61caa3c732295f9e7348e259ca400c63045f071277ce0d1b744c183a42582b4`;
+combined provider review proof:
+`899e0b7df7ecf12edd7359ba526acd682e337c2efc6595ded11ce698d4d1f1e1`.
+These are source/synthetic results. Final package, exact-head CI and CodeRabbit
+review remain required; no new native application attempt, explicit Save or
+original-process signal occurred during these corrections.
+
+
+The launch/release correction cut passes the complete combined types, strict
+lint, build, sanitizer/protocol checks, compatibility, repository/privacy,
+plugin, skill and API coverage validation. Rebuilding preserves all 3,040
+repository file bytes and modes; proof SHA-256:
+`28af97f84cae0bd073399f48bb283a81463f6b658c200188eac276e5f2cb3870`.
+The final 1,049-source-file projection is
+`a05b9dcc7dd3784ff4af9e4fe559aa37ca898b09cdc29a244c97cc07524318c4`;
+the three-file runtime projection is
+`f4fedac1116895c1ff2f3e62f0ee9f62c19b4c5eca27d56137f6d93094c48edd`.
+Only facade projections and review time changed; external pins, the bridge/key
+epoch, native helper programs and the retained original package stay intact.
+Clean package checks, exact-head CI and another actual full PR review remain
+required before publication. The plugin version remains the same unpublished
+candidate, with no new session or native-owner adoption.
+
+
+## Renderer completion and private clock cleanup
+
+Commit `43b0f1ecd48df37b16ae5401125091d61e5960f4` passed all eleven required
+CI checks: 14,307 facade passes, five supported skips and zero failures across
+65 suites, plus all 424 bridge cases. Checkout ancestry, full source/runtime
+pins, raw log CRCs and the uploaded package matched the frozen payload. Its
+2,632 files, 43 directories and 53,673,220 bytes matched exact modes and roster.
+Complete CI proof SHA-256:
+`bf87a9911f58e9e1ff7576d733a66c5a6fa3901de0000a5ac35b73c630bad2ec`.
+
+CodeRabbit review `5785792524` reported one Major, two Minor, one Trivial and
+one explicitly unverified wording item. All are accepted. The new preflight
+idle check incorrectly used the presence of the retained renderer send promise,
+which remains assigned after discovery completes. The private clock issuer's
+normal guard also prevented cleanup after sampling failure or release start.
+Its allocated v2 budget still used the old forward profile's 1,002-ID bound.
+The other items request an early canonical-profile selection and a precise
+client/embedded-worker label in the history index. Complete review proof:
+`3671ad8b3f65d7ed9ddd3543fc0f96d5289fedba9be33048695cd82bec633358`.
+Actual coverage selected 122 files and filtered three generated bundles;
+native-core remained unavailable. The documentation metric stayed inconclusive
+at 30.41%, with 148 functions across 50 files and 71 skips: 16 unsupported and
+55 at the file limit. A successful review check is not complete coverage.
+
+Actual browser discovery followed by a release preflight refusal reproduced
+the Major defect. Active v2 frame tokens now span the real callback through
+settlement; the existing send promise assignment and serialization remain
+unchanged. Active callbacks, queued native work and the existing sticky release
+and identity checks still refuse a proof. Twelve v2 release and five existing
+discovery cases pass, as do strict lint and type checks. Author proof SHA-256:
+`e5a0dc535f4a5d7f4e39991ec2b13a81fd0d725acd1d60db122c1945ec027501`.
+
+Independent review proof:
+`a5eb7bc246cf5e6e6c5631385f66d5465e2a69d70aac5b78be7659cf045c6c52`.
+
+The clock registry now distinguishes normal retention from cleanup retention.
+Normal synchronous invocation still refuses before its phase advances after
+issuer failure or release; only the existing cleanup grammar selects the
+reference-only guard. Original source, transport and captured references stay
+pinned, and cleanup sends only its retained breakpoint/group removal commands.
+The v2 budget imports its authoritative native 1,003-ID limit. The legacy
+1,002 limit, old units and class headroom/safe-integer checks remain unchanged.
+Both original failure cases are preserved. Twenty focused cases and strict
+six-file lint pass; author proof:
+`69807a0df083af31f512c2f7998fd6d53ab98714e2b627b7bb15df7489a37f84`.
+Independent final review:
+`7b81aae278b392d37b7868b7e79ec1c5fa875ab8b4c3bf77c300245e5d9ea461`.
+These are private source/synthetic checks and grant no genuine paired clock or
+writer authority.
+
+The admission selector now compares the fresh candidate's canonical manifest
+hash to the fixed historical profile before asking its full history reader.
+Only an exact candidate reaches that still-authoritative inspector. Unrelated
+prepared Source operations retain their legacy state and unfinished editing
+blocker, avoiding spurious historical-reader quarantine. The first regression
+failed before correction; it and the two exact-profile/isolation cases pass
+with strict lint afterward. The history index now explicitly distinguishes the
+3.2.209 client profile from its embedded 3.2.185 worker.
+
+Final combined strict types and type-aware lint pass at zero warnings. Package,
+rebuild and new exact-head CI/full review remain required. No native application,
+Source recovery, explicit Save, process signal or new plugin version occurred
+while addressing these findings.
+
+
+The combined renderer/clock correction cut passes types, strict lint, build,
+compatibility, API coverage, repository/privacy, plugin and all-skill checks.
+The reproducible rebuild preserves all 3,040 file bytes and modes; proof:
+`d06b7a225bbd9b2deb6cbf4bd8c210bb91c4f743b8836d28c485ee2f198f14cc`.
+Its 1,049-source-file projection is
+`8a67b151bb2d89e6664cbefaab5d3259d29de0a682382d0cd72afc25287d68a7`;
+the three-file runtime projection is
+`28d3b068569792210117683b042255fca241b6237de3aa912982012f25925bd0`.
+Only facade projections and review time changed. Complete local check proof:
+`d7d922c75663581d2ed9acf77d3ff88c4c20b03733acbfb3fcfb9eb3a956eeec`.
+Clean package checks, exact new-head CI and another actual CodeRabbit review
+remain required. The unpublished candidate version is unchanged.
+
+
+## Original process closure and release-intent corrections
+
+Commit `560a6d657fd2c43f1ec7c76d8eb238b706d38460` passed all eleven required
+CI checks: 14,314 facade passes, five supported platform skips and zero failures
+across 14,319 tests, plus all 424 bridge cases. Every checkout job used the
+verified base/head merge tree. Complete source/runtime projections, both raw
+log ZIP CRCs and the uploaded package match the frozen payload. CI proof:
+`b58e16f765f23819d92f63d0dc62ec0dd8be48efc1dda53e05e6be1c1db5313c`.
+The clean package has 2,632 files, 43 directories and 53,685,298 bytes with exact
+committed modes. It passes 76 offline queries/78 requests, followed by its own
+child EOF, closure and code-zero exit. These are synthetic/offline results,
+not process admission or connected validation. Clean frozen package proof:
+`a8a89963c46380040e7226cab0d68db8a988841e4c29e15ac60bdbeb7d3828f9`.
+
+After actual application-root and whole-Job termination, the user specifically
+authorized one normal SIGTERM to the original stalled facade. The reviewed
+observer retained original handles and observed both facade and original helper
+exit. It signalled neither helper nor manager; the facade removed its own
+lease. The resource-free original manager then closed through input EOF with
+exit1 and its retained-owner diagnostic. This is physical closure, not
+acknowledged helper release or cooperative retirement. Original journals remain
+unchanged. Physical closure proof:
+`bb3e3002468ee4ad27c11c5fb50f8c58c53f359ee4b12eec131c5f31712205b8`.
+A fresh-context subagent passed actual process and complete source/package
+admission for the frozen `560a` payload and dispatched its historical metadata
+route once on an unused facade. Its original call is still pending. A passive
+13-minute observation found CPU-active global historical checks, with no new
+checkpoint yet observed and no native application owner. This is a recorded cold
+latency concern, not a speedup claim or permission to retry the call.
+
+Actual full CodeRabbit review `5786698570` reports three issues: an Opening
+release that can redispatch after rejection, installation identity missing from
+reused incomplete intents, and ambiguous `strict lint/types` wording. All three
+are accepted. The review retains all seventeen previous issue dispositions.
+It selected 122 files, filtered three generated bundles and could not inspect
+native-core. Its docstring metric remains inconclusive at 30.41% against 80%,
+with 148 functions across 50 files and 71 skips: 16 unsupported and 55 at the
+file limit. The generic request for missing docstrings remains retained; this
+is not complete codebase or documentation coverage. Full review proof:
+`cf246944b2a6de62be2c479551e1f8f1c397ce1c8a2929c05d1e6463d3ddd7d8`.
+
+The provider now stores the original Opening release promise before awaiting
+it. A rejection stays consumed and a later cleanup cannot call it again, even
+if that callback would subsequently succeed. The Opening exposes no positive
+native no-dispatch proof. The separate native owner's exact preflight-proof
+retry policy remains unchanged. The unsafe old replay reproduced before the
+fix. Thirty-five focused Opening/provider/native release checks pass. A final
+rerun of the two new regressions also checks that both real wrapper classes
+inherit the same release method. Targeted strict lint passes. Source/synthetic proof:
+`fecbc16a8867cdaf012c1e96baa5fb8921b7dae482467283f42ddf6392b87721`.
+
+Reusing an incomplete historical intent now requires its recorded facade and
+installation hashes to match the first fresh installation verification, before
+collecting a new nonce or Linux/Windows/file observations. The final installation
+recheck still applies. Both drift regressions failed unsafe old source; five
+selected drift, matching-restart and original metadata-settlement checks pass
+after correction, with strict lint at zero warnings. Existing pending bytes and
+complete receipts keep their original settlement behavior. Proof:
+`dc38b19a2604b3df3e9c790427f0e8cd13b29666e8e46a001a3e3f4526107235`.
+The wording now says `strict lint and type checks`. No persisted result schema,
+native helper, external pin, original live package or candidate version changed
+in this source cut. Final combined package checks, exact-head CI and a new actual
+CodeRabbit review remain required before publication.
+
+
+Independent review accepts all three fixes without a remaining source blocker:
+`9ef1f8fa264143dad2c8c0f1222b6d01fe1f51d8e3bf4c73aa79732dc480f191`.
+Combined strict types, full type-aware lint, build, compatibility, API coverage,
+repository/privacy, plugin and all-skill checks pass. The reproducible build
+preserves all 3,041 repository file bytes and modes; proof:
+`82f875730a0d155d1a3b90981fa4e6d25cf9e9b12fca77b011b8cd0a9d9ed488`.
+The 1,049-source-file projection is
+`9db80f597aa2df3109c395809088c35f35ad2be87a120c41581fc8e7e5b991f4`;
+the three-file runtime projection is
+`b0b4c86fea02dfab3cbd912c64224756df77f9393fd389dc5e2e0a2d99ea0137`.
+Only facade projections and review time changed. Complete local proof:
+`f731b9a2153d647a1eee06a22d05d99c41ac7007caa4b9504bfe43cc331e3fcc`.
+The retained original metadata call runs on its unchanged frozen package.
+No new Source capture, explicit writer/Save or plugin installation occurred.
+
+
+## Metadata-only retirement and recovery cost
+
+The original historical metadata attempt returned a known semantic
+`FORWARD_SOURCE_RELINQUISHMENT_OTHER_LINUX_FACADE` refusal after
+2,998.909 seconds, before either Windows observation or the file collector.
+It created no receipt, checkpoint or native application owner. The three other
+host connections were startup-only conflict stubs. Each closed once through
+its own supported connection, with its original pidfd exit observed; none was
+signalled. The operating reference now requires subagents to finish this own
+connection cleanup before returning or waiting through another recovery.
+
+The old facade's local metadata call made its reference-only flag false, while
+its retirement gate still required unrelated historical journals to settle.
+The user explicitly expanded bounded idle cleanup to proven metadata-only
+facades with no native allocation ever, no pending work and no usable supported
+retirement. The independently reviewed one-shot observer sent one SIGTERM to
+that exact original facade. Its original manager reported child exit0 and
+stdio closure; the resource-free manager then exited1 through canonical EOF,
+with its truthful retained-owner diagnostic. No helper/manager signal,
+SIGKILL, retry, lease edit or retirement acknowledgment occurred. Original
+history and disposable bytes remain exact, with no new capture or Save.
+Terminal physical proof:
+`cf397d839185b892810e63e892d0c9efda892c7a68a35c4963d826eda51b14b2`.
+The historical startup blocker remains unresolved.
+
+The new normal retirement exception retains a monotonic validated callback
+history. Only source references, session commands and this exact local
+historical workflow qualify. Every other admitted callback permanently
+invalidates eligibility, including actions that subsequently refuse. The same
+original coordinator must have finished with no reservation or allocation;
+active calls must be zero and the original native-owner/fresh-allocation checks
+must still pass. This skips only foreign journal admission during retirement.
+It neither edits those journals nor changes any later live guard. Twenty focused
+retirement/default-wrapper checks pass; later narrow repeats cover the private
+entry, method drift and queued-call cases. Strict targeted lint passes. Source
+proof:
+`10382b64e7a2665f380d02f3e12d18464770634288bb2c1c6692039b58cafac0`.
+Independent review:
+`fe2d694df5092d4e31b8173c60734dd982f6910dc71a60b45b14f1f31b1058b6`.
+
+The metadata resolver now performs its first of two Linux samples before the
+expensive foreign-history gate. Original/local checks remain fresh across each
+file await; a new plan runs the full foreign-operation gate once before receipt
+publication. Its original completed SQL-reader objects and old/fresh/raw files
+are revalidated afterward, followed by fresh final process observations and
+another file check. The private validator requires the original proof object;
+a JSON copy cannot reproduce it. Raw sidecars refuse before SQLite verification.
+Complete receipts and original pending-byte settlement do not recollect proof.
+This is a deliberate metadata-only phase policy, with no continuous global
+exclusion, cached quarantine clearance or live-writer permission. A foreign
+journal created after the point gate remains a blocker at later fresh live
+admission. No connected speedup is claimed.
+
+The first 22-case selection passed 21 and rejected the late sidecar through
+read-only SQLite before the expected explicit check. The correction checks
+sidecars first; all three real checkpoint/reader cases pass afterward. All 19
+Source schema/history/settlement cases passed, including early foreign-facade
+refusal before global/Windows/file collection and file drift during the global
+gate refusing before publication. Types and strict targeted lint pass. Source
+cut proof:
+`1b78f2e72e0cd4b0203f0911e78b0b1a1bd83ba1942401ac1383413c742f9292`.
+Independent policy and original-reference review:
+`2359735414c38dcd89143a90081998fc6c1a51433d90a45c41f9957a57e72fe5`.
+The tool description and operating references state the narrow retirement and
+point-gate limits; independent wording review:
+`7ed28db3e06478a9635e3be5b26ec58e3335141c9918e8399d094e2ea6f347b9`.
+All seven packaged skills pass the installed quick validator. The candidate
+version is unchanged. Final rebuilt package, exact-head CI and an actual new
+CodeRabbit review remain required before release; new connected Source and
+full writer lifecycles remain pending.
+
+
+The final autonomous-metadata cut passes combined types, strict type-aware lint,
+build, compatibility, API coverage, repository/privacy, plugin and all-skill
+checks. Rebuilding preserves all 3,041 file bytes and modes; proof:
+`ee7f581aa3cc03486eea466a94ad27011ab13cb7837a0bff33170f724d4e6dcf`.
+The final 1,049-source-file projection is
+`fd6931b93596009635c06db62a877555597fcbfd6d74d1e4268a953a667e274d`;
+the three-file runtime projection is
+`5d60390e32aa1938088645daef5dae4bb6c5b04df47cb85bafb69a31b68248a5`.
+Only facade projections and review time changed. Complete local proof:
+`e8cd74e797b60b97050cee2157bee458f64af936df60d70453d137b8041ecab5`.
+All original controller and observer resources have ended. New connected
+recovery/Source validation, exact-head CI and actual full review remain pending.

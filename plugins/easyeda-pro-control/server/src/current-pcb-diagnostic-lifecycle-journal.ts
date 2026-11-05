@@ -4,6 +4,8 @@
 import { currentWindowRestoreResultSchema, requireCurrentWindowRestoreResult } from "./current-pcb-diagnostic-window-restore.ts";
 import { assertNoUnresolvedFootprintHeadAgeValidation } from "./current-footprint-head-age-validation-journal.ts";
 import { assertNoUnresolvedFootprintHeldCacheValidation } from "./current-footprint-held-cache-validation-journal.ts";
+import { assertNoUnresolvedCurrentFootprintForwardExecutionOpenings } from "./current-footprint-forward-execution-opening-journal.ts";
+import type { CurrentFootprintForwardSourceHistoricalSnapshot } from "./current-footprint-forward-source-relinquishment-journal.ts";
 import { currentWindowResizeResultSchema, requireCurrentWindowResizeResult } from "./current-pcb-diagnostic-window-resize.ts";
 import { CURRENT_RENDERER_CAPTURE_LIMITS, currentRendererCaptureResultSchema, requireCurrentRendererCaptureResult } from "./current-pcb-diagnostic-renderer-capture.ts";
 import { currentWindowCaptureResultSchema, requireCurrentWindowCaptureResult } from "./current-pcb-diagnostic-window-capture.ts";
@@ -843,6 +845,13 @@ export interface DiagnosticLifecycleOperation { readonly operationId: string; re
 export type DiagnosticLifecycleBinding = z.infer<typeof diagnosticLifecycleBindingSchema>;
 export type DiagnosticLifecycleRecordName = keyof typeof diagnosticLifecycleRecordSchemas;
 type RecordName = DiagnosticLifecycleRecordName;
+type ParsedRecord = NonNullable<DiagnosticLifecycleRecords[RecordName]>;
+const MAX_PARSED_RECORD_BYTES = 8 * 1024 * 1024, MAX_PARSED_RECORD_ENTRIES = 512;
+// These fixed schemas only inspect their JSON input. Retain private copies, never
+// Returned records or authority. A full cache declines new entries without churn.
+const parsedRecords = new Map<string, Readonly<{ schema: (typeof diagnosticLifecycleRecordSchemas)[RecordName];
+  parse: unknown; source: Buffer; value: ParsedRecord; bytes: number }>>();
+let parsedRecordBytes = 0;
 export interface CurrentPcbDiagnosticLaunchLease { readonly profile: "private.pcb-diagnostic-launch-exclusion.v1" }
 let launchLease: CurrentPcbDiagnosticLaunchLease | null = null;
 function requireValue(condition: boolean, message: string): asserts condition {
@@ -933,8 +942,29 @@ async function readRecordBytes(directory: ControlRootDirectory, name: RecordName
     return bytes.subarray(0, count);
   } finally { await handle.close(); }
 }
-async function readRecord(directory: ControlRootDirectory, name: RecordName): Promise<unknown> {
-  return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(await readRecordBytes(directory, name))) as unknown;
+/** Reuse only successful pure JSON/schema computation after a complete fresh
+ * descriptor/path-checked read. Neither the retained graph nor its source bytes
+ * escape; callers receive independently owned records on both cold and warm reads.
+ */
+async function readRecord(directory: ControlRootDirectory, name: RecordName): Promise<ParsedRecord> {
+  const bytes = await readRecordBytes(directory, name), schema = diagnosticLifecycleRecordSchemas[name];
+  const key = JSON.stringify([directory.absolute, String(directory.info.dev), String(directory.info.ino), name]);
+  const previous = parsedRecords.get(key);
+  if (previous !== undefined && previous.schema === schema && previous.parse === schema.parse && previous.source.equals(bytes)) {
+    return structuredClone(previous.value);
+  }
+  if (previous !== undefined) { parsedRecords.delete(key); parsedRecordBytes -= previous.bytes; }
+  const input: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+  const value = schema.parse(input);
+  // Charge both raw bytes and the JSON projection's encoding against the budget.
+  // These schemas have no transforms/defaults that could expand the parsed graph.
+  const retainedBytes = Buffer.byteLength(key) + bytes.length * 2;
+  if (parsedRecords.size < MAX_PARSED_RECORD_ENTRIES && parsedRecordBytes + retainedBytes <= MAX_PARSED_RECORD_BYTES) {
+    // oxlint-disable-next-line typescript/unbound-method -- Zod's bound parse closure is retained only for identity comparison, never called without its receiver.
+    parsedRecords.set(key, Object.freeze({ schema, parse: schema.parse, source: bytes, value: structuredClone(value), bytes: retainedBytes }));
+    parsedRecordBytes += retainedBytes;
+  }
+  return value;
 }
 function hashRecord(hash: Hash, name: RecordName, bytes: Buffer): void {
   hash.update(`${name}\0${String(bytes.length)}\0`); hash.update(bytes); hash.update("\0");
@@ -1007,7 +1037,7 @@ async function requireSettledOperation(directory: ControlRootDirectory, operatio
  * it cannot reconstruct process handles or authorize another native dispatch.
  */
 function validateChain(operation: DiagnosticLifecycleOperation): void {
-  // Both private callers supply freshly parsed schema-owned JSON. This validator
+  // Both private callers supply schema-owned JSON from complete fresh reads. This validator
   // Never awaits, invokes caller code or mutates those objects. Retain only lazy
   // Digests until this invocation returns; every later read validates afresh.
   const digests = new WeakMap<object, string>();
@@ -1516,7 +1546,7 @@ export async function readCurrentPcbDiagnosticLifecycles(): Promise<readonly Dia
         for (const record of await entries(slot, Object.keys(diagnosticLifecycleRecordSchemas).length)) {
           requireValue(record.isFile() && recordName(record.name), "UNKNOWN_RECORD");
           const name = record.name;
-          Object.defineProperty(records, name, { enumerable: true, value: diagnosticLifecycleRecordSchemas[name].parse(await readRecord(slot, name)) });
+          Object.defineProperty(records, name, { enumerable: true, value: await readRecord(slot, name) });
         }
         const operation = { operationId: entry.name, records };
         validateChain(operation); operations.push(operation);
@@ -1529,6 +1559,7 @@ export async function readCurrentPcbDiagnosticLifecycles(): Promise<readonly Dia
 /** Dedicated read-only recovery isolation. The exception is one reader-issued
  * historical snapshot, never an operation ID/boolean accepted by normal guards. */
 export async function assertCurrentFootprintCombinedAbandonmentIsolated(snapshot: CurrentFootprintCombinedHistoricalSnapshot): Promise<void> {
+  await assertNoUnresolvedCurrentFootprintForwardExecutionOpenings();
   await assertNoUnresolvedFootprintHeldCacheValidation();
   await assertNoUnresolvedFootprintHeadAgeValidation();
   const original = requireCurrentFootprintCombinedHistoricalSnapshot(snapshot);
@@ -1546,6 +1577,7 @@ export async function assertCurrentFootprintCombinedAbandonmentIsolated(snapshot
 /** Only this descriptor-issued full opening snapshot is exempt during its
  * separate resolver. No ID, copied JSON or normal caller can select an exception. */
 export async function assertCurrentFootprintForwardOpeningRelinquishmentIsolated(snapshot: CurrentFootprintForwardOpeningHistoricalSnapshot): Promise<void> {
+  await assertNoUnresolvedCurrentFootprintForwardExecutionOpenings();
   await assertNoUnresolvedFootprintHeldCacheValidation(); await assertNoUnresolvedFootprintHeadAgeValidation();
   await assertNoUnresolvedCurrentPcbStringLedgers();
   const original = requireCurrentFootprintForwardOpeningHistoricalSnapshot(snapshot);
@@ -1560,6 +1592,7 @@ export async function assertCurrentFootprintForwardOpeningRelinquishmentIsolated
 }
 
 export async function assertNoUnresolvedCurrentPcbDiagnosticLaunches(): Promise<void> {
+  await assertNoUnresolvedCurrentFootprintForwardExecutionOpenings();
   await assertNoUnresolvedFootprintHeldCacheValidation();
   await assertNoUnresolvedFootprintHeadAgeValidation();
   await assertNoUnresolvedCurrentPcbStringLedgers();
@@ -1587,6 +1620,24 @@ export async function assertNoUnresolvedCurrentPcbDiagnosticLaunches(): Promise<
     finally { await current.handle.close(); }
     await root.assertCurrent();
   } finally { await parent.handle.close(); }
+}
+
+/** Historical Source isolation exempts only its reader-issued exact snapshot.
+ * Existing diagnostic, held/head/string and every other Source history remain
+ * independently settled; no operation-ID or normal-launch bypass is exposed. */
+export async function assertCurrentFootprintForwardSourceRelinquishmentIsolated(
+  snapshot: CurrentFootprintForwardSourceHistoricalSnapshot,
+): Promise<void> {
+  const { assertCurrentFootprintForwardSourceHistoricalSnapshot } = await import("./current-footprint-forward-source-relinquishment-journal.ts");
+  const { assertCurrentFootprintForwardSourceHistoricalIsolation } = await import("./current-footprint-forward-execution-opening-journal.ts");
+  await assertCurrentFootprintForwardSourceHistoricalSnapshot(snapshot);
+  await assertCurrentFootprintForwardSourceHistoricalIsolation(snapshot);
+  await assertNoUnresolvedFootprintHeldCacheValidation(); await assertNoUnresolvedFootprintHeadAgeValidation();
+  await assertNoUnresolvedCurrentPcbStringLedgers();
+  for (const operation of await readCurrentPcbDiagnosticLifecycles()) {
+    requireValue(settled(operation) || await recordedHistoricalRelinquishment(operation), "UNRESOLVED_LAUNCH");
+  }
+  await assertCurrentFootprintForwardSourceHistoricalSnapshot(snapshot);
 }
 export async function reserveCurrentPcbDiagnosticLifecycle(operationId: string): Promise<void> {
   diagnosticLifecycleIdSchema.parse(operationId);

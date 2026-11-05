@@ -1,5 +1,10 @@
 import { z } from "zod";
 import { shutdownBeforeLeaseRelease } from "./shutdown.ts";
+import { currentFootprintForwardSourceRelinquishmentRequestSchema } from "./current-footprint-forward-source-relinquishment-contract.ts";
+
+const historicalSourceMetadataInputSchema = z.object({ request: z.object({
+  action: z.literal("footprint-forward-source-relinquishment"), request: currentFootprintForwardSourceRelinquishmentRequestSchema,
+}).strict() }).strict();
 
 export const sessionRetirementRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("inspect") }).strict(),
@@ -56,6 +61,7 @@ export class FacadeSessionRetirement {
   private state: z.infer<typeof sessionRetirementOutputSchema>["state"] = "active";
   private activeCalls = 0;
   #sourceReferenceOnly = true;
+  #unusedSourceMetadataOnly = true;
   #retiredCloseAttempted = false;
   private readonly dependencies: RetirementDependencies;
 
@@ -72,10 +78,14 @@ export class FacadeSessionRetirement {
   /** Retain a monotonic local history, never a caller assertion about past use. */
   public isSourceReferenceOnly(): boolean { return this.#sourceReferenceOnly; }
 
+  /** This history grants no native or journal authority. Retirement additionally
+   * requires the original completed metadata coordinator's allocation proof. */
+  public isUnusedSourceMetadataOnly(): boolean { return this.#unusedSourceMetadataOnly && this.activeCalls === 0; }
+
   /** Admit and count a callback before another gate. Only the fixed SDK wrapper
    * supplies the already-validated reference classification; no request schema
    * exposes it, and a later reference call cannot undo prior non-reference use. */
-  public async run<Result>(name: string, task: () => Result | Promise<Result>, sourceReferenceApi = false): Promise<Result> {
+  public async run<Result>(name: string, task: () => Result | Promise<Result>, sourceReferenceApi = false, validatedInput?: unknown): Promise<Result> {
     // This local state endpoint cannot dispatch work. After final retirement,
     // The API callback separately selects only synchronous reference queries.
     if (this.#retiredCloseAttempted) { throw new Error("This retired EasyEDA facade has consumed its connection-close request; no further metadata work or retry is admitted."); }
@@ -83,6 +93,10 @@ export class FacadeSessionRetirement {
     const retiredApi = name === "easyeda_control_api" && (this.state === "retired" || this.state === "retirement-failed");
     if (this.state !== "active" && !retiredApi) { throw new Error("This EasyEDA facade has closed live admission for retirement. Use a fresh connection after acknowledged retirement."); }
     if (name !== "easyeda_control_api" || !sourceReferenceApi) { this.#sourceReferenceOnly = false; }
+    if (!(name === "easyeda_control_api" && sourceReferenceApi) &&
+        !(name === "easyeda_control_pcb209_worker_startup" && historicalSourceMetadataInputSchema.safeParse(validatedInput).success)) {
+      this.#unusedSourceMetadataOnly = false;
+    }
     this.activeCalls += 1;
     try { return await task(); }
     finally { this.activeCalls -= 1; }

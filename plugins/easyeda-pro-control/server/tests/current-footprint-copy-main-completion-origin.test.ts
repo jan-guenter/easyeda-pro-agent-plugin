@@ -74,3 +74,22 @@ void test("actual held collector settles failed-begin lost retirement after orig
   await f.collector.observeOriginalGenerationEnded(); assert.equal(f.collector.diagnostics().retired, true); assert.equal(f.native.retireCount, 1);
   assert.deepEqual(f.collector.diagnostics().firstFailure, failure); await assert.rejects(f.collector.observeOriginalGenerationEnded());
 });
+void test("a late original pause during held retirement preserves the actual ACK and cleanup origin until original exit", async () => {
+  const gate = Promise.withResolvers<null>();
+  const awaitRetirement = async (): Promise<void> => { await gate.promise; };
+  const f = await unarmedMainCompletionOriginFixture(awaitRetirement(), true);
+  const cursor = f.backend.issueForwardMainCursor();
+  await f.collector.armForCompletion(); f.collector.consumeBeforeInvocation(); f.requestState.invoked = true;
+  const held = await f.collector.collectToHeldFinalPb(), origin = await f.backend.issueCompletionOrigin(f.capability, held);
+  const runner = new f.Completion(origin); await runner.arm(); await runner.collect();
+  const refused = assert.rejects(runner.cleanup(), /COMPLETION_ORIGINAL_CLEANUP_INCOMPLETE/u);
+  await f.retirementEntered; f.injectRetirementPause(); gate.resolve(null); await refused;
+  assert.equal(f.native.retireCount, 1); assert.equal(runner.diagnostics().retired, false);
+  const state = f.module.requireCursor(cursor, f.backend);
+  assert.equal(state.uploadRetirementAcknowledged, true); assert.equal(state.phase, "failed");
+  const bound = f.module.requireCompletion(origin), failure = runner.diagnostics().firstFailure;
+  await assert.rejects(bound.retire()); assert.equal(f.native.retireCount, 1);
+  f.native.exited = true; await runner.observeOriginalGenerationEnded();
+  assert.equal(runner.diagnostics().retired, true); assert.equal(f.native.retireCount, 1);
+  assert.deepEqual(runner.diagnostics().firstFailure, failure);
+});

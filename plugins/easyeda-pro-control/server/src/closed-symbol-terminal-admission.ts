@@ -43,6 +43,7 @@ interface DetailedScanCandidate {
   readonly classification: "legacy" | "incomplete" | "invalid" | "terminal" | "current-baseline";
   readonly terminal: TerminalCandidate | null;
   readonly incomplete: IncompleteCandidate | null;
+  readonly historicalSource?: IncompleteCandidate | null;
 }
 interface CompletedLegacyCandidate {
   readonly compact: true;
@@ -100,6 +101,14 @@ function project(operation: UnknownRecord): ScanCandidate {
   }
   const summary = operationSummary(asOperationJournal(operation));
   const base = { compact: false as const, bridgeBlocking, unfinished, summary };
+  if (family === "private.current-footprint-forward-execution-opening.v2") {
+    const operationId = operation["operationId"], storedJournalSha256 = operation["journalSha256"];
+    const historicalSource = typeof operationId === "string" && typeof storedJournalSha256 === "string" && HASH.test(storedJournalSha256)
+      ? { operationId, storedJournalSha256, entireStoredJournalSha256: sha256Json(operation) } : null;
+    // Keep the released diagnostic classification/count shape. Only this
+    // Source candidate receives a separate fresh historical receipt check.
+    return { ...base, classification: "legacy", terminal: null, incomplete: null, historicalSource };
+  }
   if (family === "easyeda-pro-control.current-symbol-closed-baseline.v1") {
     const operationId = operation["operationId"], storedJournalSha256 = operation["journalSha256"];
     const incomplete = typeof operationId === "string" && typeof storedJournalSha256 === "string" && HASH.test(storedJournalSha256)
@@ -202,6 +211,32 @@ async function qualifyCurrentBaselineAbandonment(candidate: DetailedScanCandidat
     return observation(candidate, failureClass(error) === "terminal-evidence-invalid" ? "abandonment-evidence-invalid" : "abandonment-evidence-unavailable");
   }
 }
+
+/** Requalify the separate exact-byte Source receipt, preserving its prepared
+ * recorded state and every false native completion/authority/replay boundary. */
+async function qualifySourceRelinquishment(candidate: DetailedScanCandidate): Promise<QualifiedAdmissionOperation> {
+  const expected = candidate.historicalSource;
+  if (expected === undefined || expected === null) { return observation(candidate, "abandonment-evidence-invalid"); }
+  try {
+    const { CURRENT_FOOTPRINT_FORWARD_SOURCE_HISTORICAL_PROFILE } = await import("./current-footprint-forward-source-relinquishment-contract.ts");
+    if (expected.entireStoredJournalSha256 !== CURRENT_FOOTPRINT_FORWARD_SOURCE_HISTORICAL_PROFILE.canonicalManifestSha256) {
+      return observation(candidate, "legacy");
+    }
+    const { inspectCurrentFootprintForwardSourceRelinquishment } = await import("./current-footprint-forward-source-relinquishment-journal.ts");
+    const inspected = await inspectCurrentFootprintForwardSourceRelinquishment(expected.operationId);
+    if (inspected === null) { return observation(candidate, "legacy"); }
+    const result: unknown = inspected.result;
+    if (inspected.originalStoredJournalSha256 !== expected.storedJournalSha256 ||
+        inspected.originalCanonicalManifestSha256 !== expected.entireStoredJournalSha256 ||
+        !isRecord(result) || result["historicalCompletionVerified"] !== false || result["authorityRestored"] !== false ||
+        result["executionAuthorized"] !== false || result["replayAllowed"] !== false) {
+      return observation(candidate, "abandonment-evidence-invalid");
+    }
+    return { ...observation(candidate, "historical-abandonment-verified"), bridgeBlocking: false, unfinished: false };
+  } catch (error) {
+    return observation(candidate, failureClass(error) === "terminal-evidence-invalid" ? "abandonment-evidence-invalid" : "abandonment-evidence-unavailable");
+  }
+}
 async function qualifyTerminal(candidate: DetailedScanCandidate, runtime: MachineProfile["runtime"], lease: CurrentProcessSqlRuntimeLease): Promise<QualifiedAdmissionOperation | undefined> {
   const expected = candidate.terminal;
   if (expected === null) { return observation(candidate, "terminal-evidence-invalid"); }
@@ -244,7 +279,7 @@ async function qualifiedCandidates(): Promise<QualifiedStateScan> {
       } else {
         let result: QualifiedAdmissionOperation | undefined;
         if (candidate.classification === "legacy") {
-          result = observation(candidate, "legacy");
+          result = Object.hasOwn(candidate, "historicalSource") ? await qualifySourceRelinquishment(candidate) : observation(candidate, "legacy");
         } else if (candidate.classification === "current-baseline") {
           result = await qualifyCurrentBaselineAbandonment(candidate);
         } else if (candidate.classification === "incomplete") {

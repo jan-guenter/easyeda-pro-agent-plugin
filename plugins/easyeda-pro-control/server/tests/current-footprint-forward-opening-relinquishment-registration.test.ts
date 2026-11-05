@@ -28,7 +28,7 @@ function registrationSource(source: string): string {
   assert.equal(blocks.length, 1); const block = blocks[0]; assert.ok(block);
   const names = ["mainOriginal", "heldCacheOriginal", "resettableDiagnosticOwnerAllocated", "heldCacheCalls", "runHeldCache",
     "headAgeOriginal", "headAgeCalls", "startupOriginal", "startupCalls", "combinedHistoricalOriginal",
-    "forwardOpeningHistoricalOriginal", "runForwardOpeningHistorical", "runStartup"];
+    "forwardOpeningHistoricalOriginal", "forwardSourceHistoricalOriginal", "runForwardOpeningHistorical", "runStartup"];
   const selected = names.map(name => {
     const nodes = block.body.filter(node => node.type === "VariableDeclaration" && node.declarations.length === 1 &&
       node.declarations[0]?.id.type === "Identifier" && node.declarations[0].id.name === name);
@@ -93,7 +93,7 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; scope: vm.Context;
     CURRENT_PCB_DIAGNOSTIC_PROFILE: { powershell: { sha256: digest, bytes: 1 } }, engine, upstream, bridgeGate: gate,
     windowsRuntime: undefined, ordinaryLaunchRuntime: undefined, ordinaryLaunchCoordinator: undefined,
     currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined,
-    currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined,
+    currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, currentFootprintForwardSourceValidation: undefined, hasForwardSourceCustody: (): boolean => false,
     currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
     closedSymbolIndexReservation: undefined, closedSymbolUnreservedFailure: { observed: false }, scheduledShutdown: undefined,
     currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined,

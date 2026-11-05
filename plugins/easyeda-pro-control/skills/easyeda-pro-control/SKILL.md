@@ -27,6 +27,14 @@ workflow's original helper release before retiring; supported project and
 metadata workflows expose separate `easyeda_control_native_release` cleanup.
 The manager preserves exact errors and original cleanup access without replay.
 
+For disposable validation of the separately born v2 footprint owner, read
+[the source-validation workflow](references/current-footprint-forward-source-validation.md).
+It retains original capture, checkpoint and source sealing through its own
+cleanup; all execution and Save authority remains false.
+For the one supported unfinished Source v2 history, use the separate
+[historical startup-blocker receipt](references/current-footprint-forward-source-relinquishment.md)
+only after original cleanup. It preserves unknown original outcomes.
+
 For a user-requested update handoff to a fresh-context subagent, read the
 [cooperative retirement workflow](references/connection-and-context.md#cooperative-retirement-and-update-handoff).
 Finish original native cleanup and retire while the original package still

@@ -11,17 +11,18 @@ import vm from "node:vm";
 import { yieldProofEventLoop } from "../src/cooperative-proof.ts";
 import type { CurrentFootprintCopyClosedSnapshot } from "../src/current-footprint-copy-closed-snapshot.ts";
 import type { Inventory } from "../src/closed-sql-equality.ts";
-import type { verifyCurrentFootprintCopyPosteditPreopenSource } from "../src/current-footprint-copy-preopen-source.ts";
-import type { CurrentFootprintCopyGenerationOwner } from "../src/current-pcb-diagnostic-owner.ts";
+import type { verifyCurrentFootprintCopyPosteditPreopenSource, verifyCurrentFootprintForwardExecutionPosteditPreopenSource } from "../src/current-footprint-copy-preopen-source.ts";
+import type { CurrentFootprintCopyGenerationOwner, CurrentFootprintForwardExecutionNativeOwner } from "../src/current-pcb-diagnostic-owner.ts";
 
 interface Fixture {
   readonly source: string;
   readonly bytes: Buffer;
   readonly copy: CurrentFootprintCopyClosedSnapshot;
-  readonly owner: CurrentFootprintCopyGenerationOwner;
+  readonly owner: CurrentFootprintCopyGenerationOwner & CurrentFootprintForwardExecutionNativeOwner;
   readonly inventory: Inventory;
   readonly state: { owned: boolean; yields: number; afterYield?: () => Promise<void> };
   readonly run: typeof verifyCurrentFootprintCopyPosteditPreopenSource;
+  readonly runForward: typeof verifyCurrentFootprintForwardExecutionPosteditPreopenSource;
 }
 async function sourceBinding(source: string, bytes: Buffer): Promise<CurrentFootprintCopyClosedSnapshot> {
   const sha256 = createHash("sha256").update(bytes).digest("hex"), stat = await lstat(source, { bigint: true });
@@ -31,14 +32,14 @@ async function sourceBinding(source: string, bytes: Buffer): Promise<CurrentFoot
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only fields consumed by the maintained raw-file reader are supplied to this private issuer fixture.
   return binding as CurrentFootprintCopyClosedSnapshot;
 }
-async function fixture(oversized = false): Promise<Fixture> {
+async function fixture(oversized = false, family: "copy" | "forward-execution" = "copy"): Promise<Fixture> {
   const root = await mkdtemp(join(tmpdir(), "easyeda-footprint-preopen-source-")), source = join(root, "fixture.eprj2");
   const bytes = Buffer.alloc(1_048_607, 0x31);
   await writeFile(source, bytes, { mode: 0o600, flag: "wx" });
   if (oversized) { await truncate(source, 268_435_457); }
   const copy = await sourceBinding(source, bytes);
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Identity-only engine sentinel for the private VM issuer, not an injectable production verifier.
-  const owner = {} as CurrentFootprintCopyGenerationOwner;
+  const owner = {} as CurrentFootprintCopyGenerationOwner & CurrentFootprintForwardExecutionNativeOwner;
   const inventory = copy.inventory;
   const state: Fixture["state"] = { owned: true, yields: 0 }, text = JSON.stringify(copy);
   const program = stripTypeScriptTypes(await readFile(new URL("../src/current-footprint-copy-preopen-source.ts", import.meta.url), "utf8"))
@@ -46,17 +47,23 @@ async function fixture(oversized = false): Promise<Fixture> {
   const scope = vm.createContext({ createHash, constants, lstat, open, basename, dirname, isAbsolute, resolve, process, Buffer,
     Error, AggregateError, Object, Number, Promise,
     requireCurrentFootprintCopyClosedSnapshot(selectedOwner: unknown, value: unknown): CurrentFootprintCopyClosedSnapshot {
+      assert.equal(family, "copy", "wrong original owner family");
       assert.equal(value, inventory); assert.equal(selectedOwner, owner); assert.equal(state.owned, true, "original copy lost"); assert.equal(JSON.stringify(copy), text); return copy;
+    },
+    requireCurrentFootprintForwardExecutionClosedSnapshot(selectedOwner: unknown, value: unknown): CurrentFootprintCopyClosedSnapshot {
+      assert.equal(family, "forward-execution", "wrong original owner family");
+      assert.equal(value, inventory); assert.equal(selectedOwner, owner); assert.equal(state.owned, true, "original v2 copy lost"); assert.equal(JSON.stringify(copy), text); return copy;
     },
     async yieldProofEventLoop(): Promise<void> {
       state.yields += 1; await yieldProofEventLoop();
       if (state.yields === 1) { await state.afterYield?.(); }
     },
   });
-  const loaded: unknown = vm.runInContext(`${program}\n({run:verifyCurrentFootprintCopyPosteditPreopenSource});`, scope);
-  assert.ok(typeof loaded === "object" && loaded !== null && "run" in loaded && typeof loaded.run === "function");
+  const loaded: unknown = vm.runInContext(`${program}\n({run:verifyCurrentFootprintCopyPosteditPreopenSource,runForward:verifyCurrentFootprintForwardExecutionPosteditPreopenSource});`, scope);
+  assert.ok(typeof loaded === "object" && loaded !== null && "run" in loaded && typeof loaded.run === "function" &&
+    "runForward" in loaded && typeof loaded.runForward === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Maintained source function is evaluated only in this private fixture realm.
-  const readers = loaded as Pick<Fixture, "run">;
+  const readers = loaded as Pick<Fixture, "run" | "runForward">;
   return { source, bytes, copy, owner, inventory, state, ...readers };
 }
 function refused(error: unknown, text: RegExp): boolean {
@@ -98,4 +105,23 @@ void test("Footprint preopen source detects changes and original-copy loss acros
     };
     await assert.rejects(f.run(f.owner, f.inventory), (error: unknown) => refused(error, /hash differs|descriptor or path changed|sidecar|original copy lost/u));
   }
+});
+
+void test("Forward execution preopen source keeps original v2 issuance separate and detects loss across real file reads", async () => {
+  const legacy = await fixture();
+  await assert.rejects(legacy.runForward(legacy.owner, legacy.inventory), /wrong original owner family/u);
+  assert.equal(legacy.state.yields, 0);
+  const f = await fixture(false, "forward-execution");
+  await assert.rejects(f.run(f.owner, f.inventory), /wrong original owner family/u);
+  assert.equal(f.state.yields, 0);
+  const result = await f.runForward(f.owner, f.inventory);
+  assert.equal(result.profile, "private.current-footprint-forward-execution-preopen-source.v1");
+  assert.equal(result.sourceSha256, f.copy.checkpoint.sourceSha256);
+  assert.equal(result.bytes, f.bytes.length); assert.equal(f.state.yields, 2);
+  assert.equal(result.ongoingSourceContinuity, false); assert.equal(result.startupQualified, false);
+  assert.equal(result.writerAuthority, false); assert.equal(result.executionAuthorized, false);
+  await assert.rejects(f.runForward(f.owner, structuredClone(f.inventory)), /reference-equal/u);
+  const lost = await fixture(false, "forward-execution");
+  lost.state.afterYield = (): Promise<void> => { lost.state.owned = false; return Promise.resolve(); };
+  await assert.rejects(lost.runForward(lost.owner, lost.inventory), (error: unknown) => refused(error, /original v2 copy lost/u));
 });

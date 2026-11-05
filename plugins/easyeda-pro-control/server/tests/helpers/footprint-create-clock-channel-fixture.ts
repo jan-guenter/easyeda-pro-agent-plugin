@@ -43,7 +43,8 @@ function createCommand(): object {
     objectGroup: "easyeda-pro-control-worker-construction-v1", silent: true, returnByValue: true,
     generatePreview: false, throwOnSideEffect: false, awaitPromise: true, userGesture: false } };
 }
-export async function createClockChannelFixture(early: boolean, clockLease: object, hooks: CreateClockNativeHooks, allocation = false): Promise<Readonly<{
+export async function createClockChannelFixture(early: boolean, clockLease: object, hooks: CreateClockNativeHooks, allocation = false,
+  forward = false, firstRequestId = 100): Promise<Readonly<{
   channel: Channel; dependency: Dependency; reservation: CurrentFootprintCopyClockRpcChannelReservation;
   requireRoute: typeof requireCurrentFootprintCopyCreateClockChannelRoute;
   state: { exited: boolean; lostWrite: boolean; createFrame: object | null; frames: object[]; sent: Record<string, unknown>[]; consumed: number };
@@ -62,11 +63,14 @@ export async function createClockChannelFixture(early: boolean, clockLease: obje
   const loaded: { exports: Record<string, unknown> } = { exports: {} }, output = await transform(source, { loader: "ts", format: "cjs", target: "node24" });
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${output.code}\n})`); assert.ok(typeof evaluate === "function");
   Reflect.apply(evaluate, undefined, [createRequire(url), loaded, loaded.exports]);
-  const candidate = loaded.exports[allocation ? "CurrentFootprintCopyAllocatedCreateClockStartupChannel" : "CurrentFootprintCopyCreateClockStartupChannel"]; assert.ok(typeof candidate === "function");
+  assert.ok(!forward || allocation);
+  let className = allocation ? "CurrentFootprintCopyAllocatedCreateClockStartupChannel" : "CurrentFootprintCopyCreateClockStartupChannel";
+  if (forward) { className = "CurrentFootprintForwardExecutionStartupChannel"; }
+  const candidate = loaded.exports[className]; assert.ok(typeof candidate === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- VM adds only the explicitly synthetic prerequisite seed to the actual retained channel implementation.
-  const Constructor = candidate as new (native: object) => Channel;
+  const Constructor = candidate as new (native: object, observeEventBytes?: (bytes: number) => void) => Channel;
   const state = { exited: false, lostWrite: false, createFrame: null as object | null, frames: [] as object[], sent: [] as Record<string, unknown>[], consumed: 0 };
-  const parent = Object.freeze({ targetId: "parent", sessionId: "ui", nextRequestId: 100 });
+  const parent = Object.freeze({ targetId: "parent", sessionId: "ui", nextRequestId: firstRequestId });
   const channel = new Constructor(Object.freeze({ requireOriginalParent: (): Promise<typeof parent> => Promise.resolve(parent),
     assertOriginalTermination: (): Promise<void> => state.exited ? Promise.resolve() : Promise.reject(new Error("synthetic original still live")),
     observeOriginalParentEvent: (): void => { throw new Error("event reached retired construction observer"); },
@@ -88,7 +92,9 @@ export async function createClockChannelFixture(early: boolean, clockLease: obje
       assert.equal(request["action"], "poll"); await hooks.pump();
       for (let event = hooks.takeEvent(); event !== null; event = hooks.takeEvent()) { state.frames.push(event); }
       return { bytes: Buffer.from(state.frames.splice(0).map(frame => `${JSON.stringify(frame)}\0`).join("")).toString("base64") };
-    } }));
+    } }), forward ? (): void => {
+      // Synthetic event accounting is not original native-owner custody.
+    } : undefined);
   const dependency = await channel.start(); dependency.subscribe(() => { throw new Error("post-clock event reached old observer"); });
   const reservation = await channel.seedCreateForTest(dependency, createCommand(), clockLease);
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This lookup belongs to the same VM-loaded real route registry, with explicit synthetic construction/native prerequisites.

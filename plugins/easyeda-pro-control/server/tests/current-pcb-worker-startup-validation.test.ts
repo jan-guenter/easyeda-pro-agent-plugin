@@ -18,6 +18,7 @@ import { currentPcb209OpeningRequestSchema } from "../src/current-pcb-209-openin
 import { currentPcb209VisualRequestSchema } from "../src/current-pcb-209-visual-validation.ts";
 import { currentFootprintCombinedValidationRequestSchema } from "../src/current-footprint-combined-validation.ts";
 import { currentFootprintForwardPrewriteValidationRequestSchema } from "../src/current-footprint-forward-prewrite-validation.ts";
+import { currentFootprintForwardSourceValidationRequestSchema } from "../src/current-footprint-forward-source-validation-schema.ts";
 import { currentPcb209WorkerStartupToolRequestSchema } from "../src/current-pcb-209-empty-startup-validation.ts";
 import { SerializedGate } from "../src/engine.ts";
 import { facadeToolRegistered } from "../src/facade-mode.ts";
@@ -35,6 +36,76 @@ const capture = { action: "capture-project", operationId, expectedBindingSha256,
 const wrap = (request: unknown): Readonly<{ action: "worker-startup"; request: unknown }> => ({ action: "worker-startup", request });
 const wrapCombined = (request: unknown): { request: { action: "footprint-combined"; request: unknown } } => ({ request: { action: "footprint-combined", request } });
 const wrapForward = (request: unknown): { request: unknown } => ({ request: { action: "footprint-forward-prewrite", request } });
+
+void test("registered v2 source wrapper keeps its original methods and aborts through an occupied capture gate", { timeout: 5000 }, async () => {
+  const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
+  const start = source.indexOf('if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation") ||');
+  const end = source.indexOf('registerFacadeTool(\n  "easyeda_control_launch",', start + 1);
+  const helpers = source.slice(source.indexOf("function disposableOwnData("), source.indexOf("function disposableIndexMethods("));
+  const custody = source.slice(source.indexOf("const forwardSourceCustodyMethods ="), source.indexOf("function ownedWindowsRuntime("));
+  assert.ok(start > 0 && end > start && custody.length < 2500);
+  const entered = Promise.withResolvers<null>(), finish = Promise.withResolvers<null>();
+  const events: string[] = []; let allocations = 0, gateCalls = 0, replacements = 0;
+  class Controller {
+    readonly #options: CurrentPcbDiagnosticLifecycleOptions;
+    #reserved = false;
+    #owned = false;
+    #attempted = false;
+    #revoked = false;
+    public constructor(options: CurrentPcbDiagnosticLifecycleOptions) { this.#options = options; allocations += 1; Object.freeze(this); }
+    /** Synthetic resource state joins the actual registered callback and gate.
+     * It starts no helper and cannot supply native or saved-state evidence. */
+    public async run(input: unknown): Promise<Record<string, unknown>> {
+      const request = currentFootprintForwardSourceValidationRequestSchema.parse(input); this.#options.assertLocalAllowed();
+      if (request.action === "launch") { await this.#options.assertAllowed(); this.#reserved = true; this.#owned = true; this.#attempted = true; }
+      events.push(request.action);
+      if (request.action === "capture-source") { entered.resolve(null); await finish.promise; this.#options.assertLocalAllowed(); assert.equal(this.#revoked, true); throw new Error("synthetic source capture cutoff"); }
+      if (request.action === "abort-generation") { this.#revoked = true; }
+      if (request.action === "release-closed") { this.#reserved = false; this.#owned = false; }
+      return { synthetic: true, executionAuthorized: false, saveAuthorized: false };
+    }
+    public hasActiveReservation(): boolean { return this.#reserved; }
+    public hasOwnedAllocation(): boolean { return this.#owned; }
+    public hasAttemptedNativeOwnerAllocation(): boolean { return this.#attempted; }
+  }
+  const gate = new SerializedGate(), upstream = {};
+  const engine = { upstream, executionAuthorityValidator: {}, controlFingerprintPromise: Promise.resolve({ sha256: expectedBindingSha256 }),
+    assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
+  let invoke: ((input: { request: unknown }) => Promise<unknown>) | undefined;
+  const scope = vm.createContext({ z, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema,
+    currentPcb209WorkerStartupToolRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE, CurrentFootprintForwardSourceValidation: Controller,
+    ordinaryLaunchCoordinator: undefined, currentPcbWorkerStartupLifecycle: undefined, currentPcbDiagnosticLifecycle: undefined,
+    currentPcbStringPrecreateLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined,
+    currentFootprintHeadAgeValidation: undefined, currentFootprintForwardSourceValidation: undefined,
+    process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets" } }, engine, upstream, facadeMode: "public-utilities-only", facadeToolRegistered,
+    bridgeGate: { run: (handler: () => Promise<unknown>): Promise<unknown> => { gateCalls += 1; return gate.run(handler); } },
+    retainedControlRoot: { path: "/synthetic/control" }, controlDataDirectory: (): string => "/synthetic/control", resolve: (): string => "/synthetic/plugin",
+    currentSymbolOperationToolOutputSchema: z.object({ result: z.unknown() }), windowsRuntime: undefined, ordinaryLaunchRuntime: undefined,
+    currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
+    closedSymbolIndexReservation: undefined, closedSymbolUnreservedFailure: { observed: false }, scheduledShutdown: undefined,
+    guarded: (handler: NonNullable<typeof invoke>): NonNullable<typeof invoke> => async input => { const result = await handler(input); return result; },
+    server: { registerTool: (name: string, _configuration: unknown, handler: typeof invoke): void => { if (name === "easyeda_control_pcb209_worker_startup") { invoke = handler; } } },
+  });
+  vm.runInContext(stripTypeScriptTypes(`${helpers}\n${custody}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
+  assert.ok(invoke);
+  const call = (request: unknown): Promise<unknown> => { assert.ok(invoke); return invoke({ request: { action: "footprint-forward-source-validation", request } }); };
+  const id = "footprint-forward-execution-registration";
+  await call({ ...launch, operationId: id, target: capture.target, footprintUuid: "b".repeat(32), confirmDisposableProject: true,
+    acceptNormalOpenEffects: true, acceptDebuggerPauseEffects: true });
+  const descriptor = Object.getOwnPropertyDescriptor(Controller.prototype, "run"); assert.ok(descriptor);
+  Object.defineProperty(Controller.prototype, "run", { ...descriptor, value: (): never => { replacements += 1; throw new Error("replacement called"); } });
+  try { await assert.rejects(call({ action: "inspect", operationId: id }), /Original forward-source controller/u); assert.equal(replacements, 0); }
+  finally { Object.defineProperty(Controller.prototype, "run", descriptor); }
+  const capturePending = call({ action: "capture-source", operationId: id, expectedBindingSha256 });
+  const stopped = assert.rejects(capturePending, /synthetic source capture cutoff/u); await entered.promise;
+  const before = gateCalls;
+  await call({ action: "inspect", operationId: id });
+  await call({ action: "abort-generation", operationId: id, expectedBindingSha256, confirmAbortOriginalForwardJob: true });
+  assert.equal(gateCalls, before); finish.resolve(null); await stopped;
+  await call({ action: "release-closed", operationId: id, expectedBindingSha256 });
+  assert.equal(allocations, 1); assert.deepEqual(events, ["launch", "capture-source", "inspect", "abort-generation", "release-closed"]);
+  assert.equal(vm.runInContext("hasForwardSourceCustody()", scope), false);
+});
 
 void test("registered forward methods reject prototype replacement and abort remains available through an occupied gate", { timeout: 5000 }, async () => {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
@@ -83,7 +154,7 @@ void test("registered forward methods reject prototype replacement and abort rem
     CurrentFootprintForwardPrewriteLifecycle: Coordinator, CurrentPcbWorkerStartupLifecycle,
     ordinaryLaunchCoordinator: undefined, currentPcbWorkerStartupLifecycle: undefined, currentPcbDiagnosticLifecycle: undefined,
     currentPcbStringPrecreateLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined,
-    currentFootprintHeadAgeValidation: undefined, process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets" } },
+    currentFootprintHeadAgeValidation: undefined, currentFootprintForwardSourceValidation: undefined, hasForwardSourceCustody: (): boolean => false, process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets" } },
     engine, upstream, facadeMode: "public-utilities-only", facadeToolRegistered,
     bridgeGate: { run: (handler: () => Promise<unknown>): Promise<unknown> => { gateCalls += 1; return gate.run(handler); } },
     retainedControlRoot: { path: "/synthetic/control" }, controlDataDirectory: (): string => "/synthetic/control", resolve: (): string => "/synthetic/plugin",
@@ -225,7 +296,7 @@ void test("startup public registration binds the actual inherited methods, fixed
     CurrentPcbDiagnosticLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209WorkerStartupLifecycle,
     CurrentFootprintForwardPrewriteLifecycle, CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle,
     CurrentPcbWorkerStartupLifecycle: Coordinator, currentPcbWorkerStartupLifecycle: undefined,
-    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined,
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, currentFootprintForwardSourceValidation: undefined, hasForwardSourceCustody: (): boolean => false,
     process: { env: environment }, engine, upstream,
     facadeMode: "calculation-only", facadeToolRegistered,
     bridgeGate: { run: (handler: () => Promise<unknown>): Promise<unknown> => { gateCalls += 1; return handler(); } },
@@ -353,7 +424,7 @@ void test("registered combined wrapper retains its lifecycle and confirmed abort
     CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintForwardPrewriteLifecycle, CurrentFootprintCombinedLifecycle: Coordinator, CurrentPcbWorkerStartupLifecycle,
     CurrentFootprintCombinedUnknownAbandonment: HistoricalCoordinator, ordinaryLaunchCoordinator: undefined,
     currentPcbWorkerStartupLifecycle: undefined, currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined,
-    currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "Ubuntu" } },
+    currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, currentFootprintForwardSourceValidation: undefined, hasForwardSourceCustody: (): boolean => false, process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "Ubuntu" } },
     engine, upstream, facadeMode: "public-utilities-only", facadeToolRegistered,
     bridgeGate: { run: (handler: () => Promise<unknown>): Promise<unknown> => { gateCalls += 1; return gate.run(handler); } },
     retainedControlRoot: { path: "/synthetic/control" }, controlDataDirectory: (): string => "/synthetic/control",

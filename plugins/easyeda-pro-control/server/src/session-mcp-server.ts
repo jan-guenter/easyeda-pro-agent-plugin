@@ -36,7 +36,7 @@ export class SessionRetirementMcpServer extends McpServer {
         const reference = request !== undefined && "value" in request && isStaticOfflineApiReference(request.value);
         return await this.retirement.run(name, () =>
           // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The SDK's validated ToolCallback supplies this exact result union; Reflect.apply preserves its conditional argument tuple.
-          Reflect.apply(handler, undefined, args) as CallToolResult | Promise<CallToolResult>, reference);
+          Reflect.apply(handler, undefined, args) as CallToolResult | Promise<CallToolResult>, reference, input);
       } catch (error) { return this.refusal(error); }
     };
     // The SDK conditionally selects a raw-shape, full-schema or zero-argument

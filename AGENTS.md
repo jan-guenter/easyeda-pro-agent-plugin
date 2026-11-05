@@ -76,6 +76,12 @@ Open questions are not requirements.
    The user has authorized normal SIGTERM only for verified idle legacy EasyEDA
    MCP servers whose version lacks a usable shutdown command. They must be
    retired, reference-only or ownership-conflict servers with no native owner.
+   The user also permits the same bounded cleanup for verified metadata-only
+   facades of any version when supported retirement is unusable, no native
+   allocation has ever occurred and every call and pending publication has
+   settled. Require complete verified callback history and original allocation
+   evidence; an empty child list alone is insufficient. Send at most one normal
+   SIGTERM for that original attempt and retain its pidfd through observed exit.
    Verify the original PID/start identity, executable, module and lack of owned
    resources immediately before signaling; retain a pidfd through observed exit.
    Never use SIGKILL, signal unrelated services, remove a lease manually or treat
@@ -211,6 +217,15 @@ are build/check dependencies only.
   acknowledged helper release, retire the original facade before installation,
   observe its exit, then select and admit the verified replacement. Manager
   generations and historical receipts cannot transfer unfinished native owners.
+- When a subagent receives a startup-only ownership-conflict MCP connection,
+  close that subagent's own idle stub through its supported `close-conflict`
+  action before returning or waiting through another controller's recovery.
+  Inspect the original connection once, verify its returned PID and zero owned
+  resources, retain a pidfd, and observe that original process exit. Never close
+  the recorded owner PID or adopt a different connection. A closed transport
+  cannot be retried. Starting or resuming another subagent is not a way to close
+  a lost connection. Preserve its evidence and use only an already-authorized
+  cleanup path. Conservative Linux recovery probes count these stubs too.
 
 ## Maintaining documentation and history
 

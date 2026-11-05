@@ -29,7 +29,7 @@ import { CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS, currentFootprintCopyMa
 import type { CurrentFootprintCopyMainCompletionCommand } from "./current-footprint-copy-main-completion-protocol.ts";
 import type { CurrentFootprintCopyMainCompletionOrigin, CurrentFootprintCopyMainCompletionOriginBindings } from "./current-footprint-copy-main-completion-origin.ts";
 // oxlint-disable-next-line import/no-cycle -- The collector's issuer getter returns here; transfer is invoked only after both original owners exist, never during initialization.
-import { requireCurrentFootprintCopyMainRequestHeldFinalPb, transferCurrentFootprintCopyMainRequestHeldFinalPb } from "./current-footprint-copy-main-request-runner.ts";
+import { requireCurrentFootprintCopyMainRequestHeldFinalPb, transferCurrentFootprintCopyMainRequestHeldFinalPb, transferCurrentFootprintForwardMainRequestHeldFinalPb } from "./current-footprint-copy-main-request-runner.ts";
 import type { CurrentFootprintCopyMainRequestHeldFinalPb } from "./current-footprint-copy-main-request-runner.ts";
 // oxlint-disable-next-line import/no-cycle -- The native owner constructs this runner; its original private-factory guards are invoked only after that construction, never at module initialization. A callback registration seam would weaken this authority check.
 import { assertCurrentFootprintCombinedMainCompletionCapacity, beginCurrentFootprintCombinedMainCompletion, currentFootprintCombinedMainGenerationExited, failCurrentFootprintCombinedMainCompletion, requireCurrentFootprintCombinedMainCapability, requireCurrentFootprintCombinedMainCleanup, requireCurrentFootprintCombinedPairedSchedule, requireCurrentFootprintHeadAgeBootstrapCapability, retireCurrentFootprintCombinedMainCompletion, sendCurrentFootprintCombinedMainCommand, sendCurrentFootprintCombinedMainCompletion } from "./current-pcb-diagnostic-owner.ts";
@@ -47,6 +47,55 @@ import { qualifyCurrentProjectStructureMainSource, requireCurrentProjectStructur
 import { CURRENT_PROJECT_STRUCTURE_MAIN_REQUESTS, validateCurrentProjectStructureMainCommand } from "./current-project-structure-main-protocol.ts";
 import type { CurrentProjectStructureMainCommand } from "./current-project-structure-main-protocol.ts";
 import type { CurrentProjectStructureMainBinding, CurrentProjectStructureMainLease } from "./current-project-structure-main-lease.ts";
+import type { CurrentFootprintForwardMainCursor, CurrentFootprintForwardMainCursorSnapshot } from "./current-footprint-forward-main-cursor.ts";
+
+/* oxlint-disable import/no-cycle -- Both issuers resolve original private registries only after construction; initialization issues no capability or native request. */
+import { assertCurrentFootprintForwardExecutionMainCompletionCapacity, beginCurrentFootprintForwardExecutionMainCompletion,
+  currentFootprintForwardExecutionMainGenerationExited, failCurrentFootprintForwardExecutionMainCompletion,
+  isCurrentFootprintForwardExecutionMainCapability, pollCurrentFootprintForwardExecutionMain,
+  reproveCurrentFootprintForwardExecutionMainPublication,
+  requireCurrentFootprintForwardExecutionMainCapability, requireCurrentFootprintForwardExecutionMainCleanup,
+  retireCurrentFootprintForwardExecutionMainCompletion, sendCurrentFootprintForwardExecutionMainCommand,
+  sendCurrentFootprintForwardExecutionMainCompletion } from "./current-footprint-forward-execution-main-capability.ts";
+/* oxlint-enable import/no-cycle */
+import type { CurrentFootprintForwardExecutionMainCapability } from "./current-footprint-forward-execution-main-capability.ts";
+
+import { captureCurrentFootprintForwardExecutionPrototypes, requireCurrentFootprintForwardExecutionPrototypes } from "./current-footprint-forward-execution-opening-identity.ts";
+
+type MainCapability = CurrentFootprintCombinedMainCapability | CurrentFootprintForwardExecutionMainCapability;
+function mainCapability(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
+  if (isCurrentFootprintForwardExecutionMainCapability(capability)) { requireCurrentFootprintForwardExecutionMainCapability(capability, runner); }
+  else { requireCurrentFootprintCombinedMainCapability(capability, runner); }
+}
+function mainCleanup(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
+  if (isCurrentFootprintForwardExecutionMainCapability(capability)) { requireCurrentFootprintForwardExecutionMainCleanup(capability, runner); }
+  else { requireCurrentFootprintCombinedMainCleanup(capability, runner); }
+}
+function mainExited(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): boolean {
+  return isCurrentFootprintForwardExecutionMainCapability(capability) ? currentFootprintForwardExecutionMainGenerationExited(capability, runner) : currentFootprintCombinedMainGenerationExited(capability, runner);
+}
+async function mainCommand(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner,
+  command: CurrentFootprintCopyMainRequestCollectCommand | CurrentProjectStructureMainCommand, id: number): Promise<void> {
+  await (isCurrentFootprintForwardExecutionMainCapability(capability) ? sendCurrentFootprintForwardExecutionMainCommand(capability, runner, validateCurrentFootprintCopyMainRequestCollectCommand(command), id) : sendCurrentFootprintCombinedMainCommand(capability, runner, command, id));
+}
+function mainCompletionCapacity(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner, first: number): void {
+  if (isCurrentFootprintForwardExecutionMainCapability(capability)) { assertCurrentFootprintForwardExecutionMainCompletionCapacity(capability, runner, first); }
+  else { assertCurrentFootprintCombinedMainCompletionCapacity(capability, runner, first); }
+}
+async function mainCompletionBegin(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner, first: number): Promise<void> {
+  await (isCurrentFootprintForwardExecutionMainCapability(capability) ? beginCurrentFootprintForwardExecutionMainCompletion(capability, runner, first) : beginCurrentFootprintCombinedMainCompletion(capability, runner, first));
+}
+async function mainCompletionCommand(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner,
+  command: CurrentFootprintCopyMainCompletionCommand, id: number): Promise<void> {
+  await (isCurrentFootprintForwardExecutionMainCapability(capability) ? sendCurrentFootprintForwardExecutionMainCompletion(capability, runner, command, id) : sendCurrentFootprintCombinedMainCompletion(capability, runner, command, id));
+}
+async function mainCompletionRetire(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): Promise<void> {
+  await (isCurrentFootprintForwardExecutionMainCapability(capability) ? retireCurrentFootprintForwardExecutionMainCompletion(capability, runner) : retireCurrentFootprintCombinedMainCompletion(capability, runner));
+}
+function mainCompletionFail(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
+  if (isCurrentFootprintForwardExecutionMainCapability(capability)) { failCurrentFootprintForwardExecutionMainCompletion(capability, runner); }
+  else { failCurrentFootprintCombinedMainCompletion(capability, runner); }
+}
 
 export { currentFootprintCopyMainBackendObservationSchema } from "./current-footprint-copy-main-backend-observation.ts";
 export type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-observation.ts";
@@ -74,15 +123,51 @@ export interface CurrentFootprintCopyMainRequestOriginBindings {
   readonly takeEvent: () => CurrentFootprintCopyMainRequestOriginEvent | null;
   readonly retire: () => Promise<void>;
 }
-interface OriginEntry { readonly assertOriginalEntry: () => void; readonly bindings: CurrentFootprintCopyMainRequestOriginBindings;
-  readonly capability: CurrentFootprintCombinedMainCapability; readonly runner: CurrentFootprintCopyMainBackendRunner }
-const requestOrigins = new WeakMap<CurrentFootprintCopyMainRequestOrigin, OriginEntry>();
-const completionOrigins = new WeakMap<CurrentFootprintCopyMainCompletionOrigin, Readonly<{
-  assertOriginalEntry: () => void; bindings: CurrentFootprintCopyMainCompletionOriginBindings;
+export interface CurrentFootprintForwardMainRequestOrigin {
+  readonly profile: "private.current-footprint-forward-main-request-origin.v2"; readonly executionAuthorized: false;
+}
+export interface CurrentFootprintForwardMainCompletionOrigin {
+  readonly profile: "private.current-footprint-forward-main-completion-origin.v2"; readonly executionAuthorized: false;
+}
+export interface CurrentFootprintForwardMainRequestOriginBindings extends CurrentFootprintCopyMainRequestOriginBindings {
+  readonly fail: (error: unknown) => void;
+  readonly request: (command: CurrentFootprintCopyMainRequestCollectCommand, cleanup: boolean, retainAllocation?: (reply: unknown) => void) => Promise<unknown>;
+  readonly settleAllocation: () => Promise<void>;
+}
+export interface CurrentFootprintForwardMainCompletionOriginBindings extends CurrentFootprintCopyMainCompletionOriginBindings {
+  readonly request: (command: CurrentFootprintCopyMainCompletionCommand, cleanup: boolean, retainAllocation?: (reply: unknown) => void) => Promise<unknown>;
+  readonly settleAllocation: () => Promise<void>;
+}
+type MainRequestOrigin = CurrentFootprintCopyMainRequestOrigin | CurrentFootprintForwardMainRequestOrigin;
+type MainCompletionOrigin = CurrentFootprintCopyMainCompletionOrigin | CurrentFootprintForwardMainCompletionOrigin;
+interface OriginEntry { readonly kind: "combined" | "forward"; readonly assertOriginalEntry: () => void; readonly bindings: CurrentFootprintForwardMainRequestOriginBindings;
+  readonly capability: MainCapability; readonly runner: CurrentFootprintCopyMainBackendRunner }
+const requestOrigins = new WeakMap<object, OriginEntry>();
+const completionOrigins = new WeakMap<object, Readonly<{
+  kind: "combined" | "forward"; assertOriginalEntry: () => void; bindings: CurrentFootprintForwardMainCompletionOriginBindings;
 }>>();
 const structureLeases = new WeakMap<CurrentProjectStructureMainLease, Readonly<{
   assertOriginalEntry: () => void; binding: CurrentProjectStructureMainBinding;
 }>>();
+const forwardMainCursors = new WeakMap<CurrentFootprintForwardMainCursor, Readonly<{
+  runner: CurrentFootprintCopyMainBackendRunner;
+  snapshot: () => CurrentFootprintForwardMainCursorSnapshot;
+}>>();
+/** Original cursor observations carry no send permission. The future writer
+ * issuer must independently bind this exact runner to its own v2 generation. */
+export function requireCurrentFootprintForwardMainCursor(token: CurrentFootprintForwardMainCursor,
+  runner: CurrentFootprintCopyMainBackendRunner): CurrentFootprintForwardMainCursorSnapshot {
+  const held = forwardMainCursors.get(token); need(held !== undefined && held.runner === runner, "FORWARD_CURSOR_ORIGINAL"); return held.snapshot();
+}
+/** Sequential handoff requires an acknowledged original upload retirement,
+ * with every reply, event, pause and capture settled. This proof neither
+ * issues a structure lease nor relaxes the old mutually exclusive purposes. */
+export function requireCurrentFootprintForwardMainUploadSettlement(token: CurrentFootprintForwardMainCursor,
+  runner: CurrentFootprintCopyMainBackendRunner): CurrentFootprintForwardMainCursorSnapshot {
+  const snapshot = requireCurrentFootprintForwardMainCursor(token, runner);
+  need(snapshot.phase === "upload-settled" && !snapshot.busy && !snapshot.incompleteFrame && snapshot.pendingReplies === 0 && snapshot.pendingEvents === 0 &&
+    !snapshot.paused, "FORWARD_CURSOR_UPLOAD_UNSETTLED"); return snapshot;
+}
 /** Require the construction runner's exact token; caller JSON cannot issue a
  * structure request lease or replace its original transport and event cursor. */
 export function requireCurrentProjectStructureMainLease(token: CurrentProjectStructureMainLease): CurrentProjectStructureMainBinding {
@@ -90,19 +175,36 @@ export function requireCurrentProjectStructureMainLease(token: CurrentProjectStr
   entry.assertOriginalEntry(); return entry.binding;
 }
 export function requireCurrentFootprintCopyMainCompletionOrigin(token: CurrentFootprintCopyMainCompletionOrigin): CurrentFootprintCopyMainCompletionOriginBindings {
-  const entry = completionOrigins.get(token); need(entry !== undefined, "COMPLETION_ORIGINAL_LEASE_REQUIRED");
+  const entry = completionOrigins.get(token); need(entry !== undefined && entry.kind === "combined", "COMPLETION_ORIGINAL_LEASE_REQUIRED");
   entry.assertOriginalEntry(); return entry.bindings;
 }
 export function requireCurrentFootprintCopyMainRequestOrigin(token: CurrentFootprintCopyMainRequestOrigin): CurrentFootprintCopyMainRequestOriginBindings {
-  const entry = requestOrigins.get(token); need(entry !== undefined, "REQUEST_ORIGINAL_LEASE_REQUIRED");
+  const entry = requestOrigins.get(token); need(entry !== undefined && entry.kind === "combined", "REQUEST_ORIGINAL_LEASE_REQUIRED");
   entry.assertOriginalEntry(); return entry.bindings;
 }
 /** The actual native issuer joins both origins through the same retained
  * combined core. Equal plan bytes or a foreign genuine clock packet fail. */
 export function requireCurrentFootprintCopyMainRequestClockOrigin(token: CurrentFootprintCopyMainRequestOrigin,
   clock: CurrentFootprintCopyClockRpcOrigin): void {
-  const entry = requestOrigins.get(token); need(entry !== undefined, "REQUEST_ORIGINAL_LEASE_REQUIRED");
-  entry.assertOriginalEntry(); requireCurrentFootprintCombinedPairedSchedule(entry.capability, entry.runner, clock);
+  const entry = requestOrigins.get(token); need(entry !== undefined && entry.kind === "combined", "REQUEST_ORIGINAL_LEASE_REQUIRED");
+  entry.assertOriginalEntry(); need(!isCurrentFootprintForwardExecutionMainCapability(entry.capability), "REQUEST_ORIGINAL_LEASE_REQUIRED");
+  requireCurrentFootprintCombinedPairedSchedule(entry.capability, entry.runner, clock);
+}
+
+export function isCurrentFootprintForwardMainRequestOrigin(value: unknown): value is CurrentFootprintForwardMainRequestOrigin {
+  return value !== null && typeof value === "object" && !types.isProxy(value) && requestOrigins.get(value)?.kind === "forward";
+}
+export function isCurrentFootprintForwardMainCompletionOrigin(value: unknown): value is CurrentFootprintForwardMainCompletionOrigin {
+  return value !== null && typeof value === "object" && !types.isProxy(value) && completionOrigins.get(value)?.kind === "forward";
+}
+/** Separate genuine-v2 getters never accept the legacy Combined origins. */
+export function requireCurrentFootprintForwardMainRequestOrigin(token: CurrentFootprintForwardMainRequestOrigin): CurrentFootprintForwardMainRequestOriginBindings {
+  const entry = requestOrigins.get(token); need(entry !== undefined && entry.kind === "forward", "FORWARD_REQUEST_ORIGINAL_LEASE_REQUIRED");
+  entry.assertOriginalEntry(); return entry.bindings;
+}
+export function requireCurrentFootprintForwardMainCompletionOrigin(token: CurrentFootprintForwardMainCompletionOrigin): CurrentFootprintForwardMainCompletionOriginBindings {
+  const entry = completionOrigins.get(token); need(entry !== undefined && entry.kind === "forward", "FORWARD_COMPLETION_ORIGINAL_LEASE_REQUIRED");
+  entry.assertOriginalEntry(); return entry.bindings;
 }
 
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
@@ -116,6 +218,13 @@ const objectReply = z.object({ result: z.object({ type: z.literal("object"), sub
 interface Pause { readonly frameId: string; readonly location: z.infer<typeof location>; readonly registration: boolean; resumeAttempted: boolean; resumed: boolean }
 interface Resolved { readonly breakpointId: string; readonly location: z.infer<typeof location> }
 interface StructureAllocation { readonly id: number; readonly retain: (reply: unknown) => void; seen: boolean; stopped: boolean }
+interface ForwardPoll {
+  readonly allocation: StructureAllocation;
+  readonly retain: (chunk: string) => void;
+  delivered: boolean;
+  settled: boolean;
+  chunk: string | null;
+}
 interface RegistrationLocationFailure {
   readonly lineNumber: number;
   readonly columnNumber: number;
@@ -147,10 +256,12 @@ function methods(transport: CurrentFootprintCopyMainBackendTransport): readonly 
   return methodNames.map(name => { const entry = Object.getOwnPropertyDescriptor(transport, name); need(entry !== undefined && Object.hasOwn(entry, "value") && typeof entry.value === "function", "TRANSPORT"); return entry.value as unknown; });
 }
 const issued = new WeakMap<CurrentFootprintCopyMainBackendObservation, CurrentFootprintCopyMainBackendRunner>();
+const forwardPollRetainers = new WeakMap<(chunk: string) => void, Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; requireOriginal: () => void }>>();
 export class CurrentFootprintCopyMainBackendRunner {
   readonly #transport: CurrentFootprintCopyMainBackendTransport;
   readonly #methods: readonly unknown[];
   readonly #decoder = new TextDecoder("utf-8", { fatal: true });
+  #decoderPendingContinuations = 0;
   readonly #scripts = new Map<string, number>();
   readonly #headAgeBootstrapCapture: boolean;
   readonly #headAgeBootstrapCapability: CurrentFootprintHeadAgeBootstrapCapability | null;
@@ -173,6 +284,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   #pendingId: number | null = null;
   #reply: unknown = null;
   #replySeen = false;
+  #forwardPoll: ForwardPoll | null = null;
   #breakpoint: string | null = null;
   #removeAttempted = false;
   #removed = false;
@@ -191,10 +303,11 @@ export class CurrentFootprintCopyMainBackendRunner {
   #registrationLocationFailure: RegistrationLocationFailure | null = null;
   #metadataRole: MetadataRole | null = null;
   #schemaIssues: readonly SchemaIssue[] | null = null;
+  #forwardMainCursor: CurrentFootprintForwardMainCursor | null = null;
   #originAttempted = false;
   #originActive = false;
-  #originCapability: CurrentFootprintCombinedMainCapability | null = null;
-  #originToken: CurrentFootprintCopyMainRequestOrigin | null = null;
+  #originCapability: MainCapability | null = null;
+  #originToken: MainRequestOrigin | null = null;
   #structureAttempted = false;
   #structureActive = false;
   #structureLease: CurrentProjectStructureMainLease | null = null;
@@ -214,12 +327,13 @@ export class CurrentFootprintCopyMainBackendRunner {
   #completionBeginAttempted = false;
   #completionActive = false;
   #completionFailed = false;
-  #completionToken: CurrentFootprintCopyMainCompletionOrigin | null = null;
+  #completionToken: MainCompletionOrigin | null = null;
   #completionSource: CurrentFootprintCopyMainCompletionSource | null = null;
   #completionNormal = 0;
   #completionCleanup = 0;
   #completionFinalResumeAttempted = false;
   #completionRetireAttempted = false;
+  #completionRetirementAcknowledged = false;
   #headAgePreparationAttempted = false;
   #headAgeArray: string | null = null;
   #headAgeContextSource: CurrentFootprintHeadAgeContextSource | null = null;
@@ -230,6 +344,53 @@ export class CurrentFootprintCopyMainBackendRunner {
     if (headAgeBootstrap !== undefined) { requireCurrentFootprintHeadAgeBootstrapCapability(headAgeBootstrap, transport); }
     this.#headAgeBootstrapCapture = headAgeBootstrap !== undefined; this.#headAgeBootstrapCapability = headAgeBootstrap ?? null;
     this.#methods = methods(transport); this.#transport = transport;
+  }
+  /** Capture this actual construction's cursor without issuing a request or
+   * transferring its native capability. Repeated reads preserve one token. */
+  public issueForwardMainCursor(): CurrentFootprintForwardMainCursor {
+    need(!this.#busy && this.#packet !== null && issued.get(this.#packet) === this && this.#source !== null &&
+      this.#appScriptId !== null && this.#retainedArray !== null, "FORWARD_CURSOR_CONSTRUCTION_REQUIRED");
+    if (this.#forwardMainCursor === null) {
+      const token = Object.freeze({ profile: "private.current-footprint-forward-main-cursor.v1" as const, executionAuthorized: false as const });
+      this.#forwardMainCursor = token;
+      forwardMainCursors.set(token, Object.freeze({ runner: this, snapshot: (): CurrentFootprintForwardMainCursorSnapshot => this.#forwardCursorSnapshot(token) }));
+    }
+    this.#forwardCursorSnapshot(this.#forwardMainCursor); return this.#forwardMainCursor;
+  }
+  /** Derive each phase from original private transition fields. A retirement
+   * attempt, matching JSON or actual generation exit alone cannot claim a
+   * successful upload handoff. Historical reads grant no native freshness. */
+  #forwardCursorSnapshot(token: CurrentFootprintForwardMainCursor): CurrentFootprintForwardMainCursorSnapshot {
+    need(token === this.#forwardMainCursor && this.#packet !== null && issued.get(this.#packet) === this && this.#source !== null &&
+      methods(this.#transport).every((value, index) => value === this.#methods[index]), "FORWARD_CURSOR_ORIGINAL");
+    requireCurrentFootprintCopyMainBackendSource(this.#source);
+    need(this.#requests === this.#normalRequests + this.#cleanupRequests &&
+      !(this.#structureAttempted && this.#originAttempted) && (!this.#completionAttempted || this.#originAttempted), "FORWARD_CURSOR_TRANSITION");
+    // Admission may retain an exact v2 allocation before its original send.
+    // Observed, stopped or detached uncertainty cannot use this in-flight
+    // State to revive normal work.
+    const pendingForwardAllocation = isCurrentFootprintForwardExecutionMainCapability(this.#originCapability) &&
+      this.#structureAllocation !== null && !this.#structureAllocation.stopped && !this.#structureAllocation.seen &&
+      this.#pendingId === this.#structureAllocation.id;
+    const failed = this.#failed || this.#originUncertain || this.#structureAllocationUncertain && !pendingForwardAllocation || this.#completionFailed;
+    const paused = this.#originPauseActive || this.#originResumeExpected || this.#pause !== null && !this.#pause.resumed;
+    const settled = this.#completionRetirementAcknowledged && !this.#completionActive && !this.#originActive && !failed &&
+      this.#completionNormal === CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS.normal &&
+      this.#completionCleanup === CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS.cleanup && this.#originGroupReleased &&
+      this.#originBreakpoints.size === 0 && !paused && this.#pendingId === null && this.#originEvents.length === 0 &&
+      this.#text === "" && this.#decoderPendingContinuations === 0;
+    let phase: CurrentFootprintForwardMainCursorSnapshot["phase"] = "construction";
+    if (this.#originAttempted) { phase = this.#completionAttempted ? "completion" : "request"; }
+    if (this.#structureAttempted) { phase = "structure"; }
+    if (settled) { phase = "upload-settled"; }
+    if (this.#released) { phase = "released"; }
+    if (failed) { phase = "failed"; }
+    return Object.freeze({ issuer: this, construction: this.#packet, phase,
+      normalRequests: this.#normalRequests, cleanupRequests: this.#cleanupRequests,
+      pendingReplies: this.#pendingId === null ? 0 : 1, pendingEvents: this.#originEvents.length,
+      incompleteFrame: this.#text !== "" || this.#decoderPendingContinuations !== 0,
+      paused, busy: this.#busy, uploadRetirementAcknowledged: this.#completionRetirementAcknowledged,
+      sequentialStructureAdmissionAvailable: false, executionAuthorized: false });
   }
   /** Reprove transport, bootstrap custody, source and the active deadline.
    * Cleanup retains its separate lifetime without reopening normal work. */
@@ -315,6 +476,9 @@ export class CurrentFootprintCopyMainBackendRunner {
   async #pump(cleanup = false): Promise<void> {
     await this.#current(cleanup);
     if (this.#structureAllocation !== null) {
+      if (isCurrentFootprintForwardExecutionMainCapability(this.#originCapability)) {
+        await this.#pumpForwardAllocation(this.#originCapability, this.#structureAllocation, cleanup); return;
+      }
       // Only original allocation replies gain custody before the post-poll
       // Guard. Late settlement never restores normal work or clears other
       // Pause/channel uncertainty, and no replacement request is dispatched.
@@ -323,7 +487,34 @@ export class CurrentFootprintCopyMainBackendRunner {
       }, (error: unknown) => { this.#originUncertain = true; throw error; });
       await this.#current(cleanup); if (raw === "") { await delay(10); } return;
     }
-    const raw = await this.#transport.poll(cleanup); await this.#current(cleanup); this.#chunk(raw); if (raw === "") { await delay(10); }
+    const raw = isCurrentFootprintForwardExecutionMainCapability(this.#originCapability) ?
+      await pollCurrentFootprintForwardExecutionMain(this.#originCapability, this, cleanup) : await this.#transport.poll(cleanup);
+    await this.#current(cleanup); this.#chunk(raw); if (raw === "") { await delay(10); }
+  }
+  /** Register only this pending allocation's original byte receiver. A lost
+   * native poll retains its callback until the actual late reply; another poll
+   * cannot replace that custody. Native accounting still runs independently. */
+  async #pumpForwardAllocation(capability: CurrentFootprintForwardExecutionMainCapability, allocation: StructureAllocation, cleanup: boolean): Promise<void> {
+    const previous = this.#forwardPoll;
+    need(previous === null || previous.settled && previous.delivered, "FORWARD_ORIGINAL_POLL_PENDING");
+    const poll: ForwardPoll = { allocation, delivered: false, settled: false, chunk: null,
+      retain: (chunk: string): void => {
+        requireOriginalCurrentFootprintForwardMainPollRetainer(this, poll.retain);
+        poll.delivered = true; poll.chunk = chunk;
+        try { this.#chunk(chunk); }
+        catch (error) { this.#originUncertain = true; throw error; }
+      } };
+    this.#forwardPoll = poll;
+    forwardPollRetainers.set(poll.retain, Object.freeze({ runner: this, requireOriginal: (): void => {
+      need(this.#forwardPoll === poll && !poll.delivered && this.#structureAllocation === allocation && this.#pendingId === allocation.id,
+        "FORWARD_ORIGINAL_POLL_RETAINER");
+    } }));
+    try {
+      const raw = await pollCurrentFootprintForwardExecutionMain(capability, this, cleanup, poll.retain);
+      need(poll.delivered && poll.chunk === raw, "FORWARD_ORIGINAL_POLL_REPLY");
+      await this.#current(cleanup); if (raw === "") { await delay(10); }
+    } catch (error) { this.#originUncertain = true; throw error; }
+    finally { poll.settled = true; }
   }
   /** Decode only original bounded transport chunks. The allocation path uses
    * this same parser and pending ID instead of accepting caller transcripts. */
@@ -331,10 +522,22 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(typeof raw === "string" && raw.length <= 43_692 && /^(?:[A-Za-z\d+/]{4})*(?:[A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/u.test(raw), "CHUNK_GRAMMAR");
     if (raw === "") { return; }
     const bytes = Buffer.from(raw, "base64"); need(bytes.length <= 32_768 && bytes.toString("base64") === raw, "CHUNK_BOUND");
-    this.#received += bytes.length; need(this.#received <= 64 * 1024 * 1024, "RECEIVED_BOUND"); this.#text += this.#decoder.decode(bytes, { stream: true });
+    this.#received += bytes.length; need(this.#received <= 64 * 1024 * 1024, "RECEIVED_BOUND");
+    const text = this.#decoder.decode(bytes, { stream: true }); this.#trackDecoderBoundary(bytes); this.#text += text;
     let boundary = this.#text.indexOf("\0");
     while (boundary !== -1) { const message = this.#text.slice(0, boundary); need(message.length > 0 && Buffer.byteLength(message) <= 4 * 1024 * 1024, "MESSAGE_BOUND"); this.#text = this.#text.slice(boundary + 1); this.#message(message); boundary = this.#text.indexOf("\0"); }
     need(Buffer.byteLength(this.#text) <= 4 * 1024 * 1024, "PARTIAL_MESSAGE_BOUND");
+  }
+  /** The original fatal decoder validates bytes first. Count its remaining
+   * continuation bytes without flushing or replacing that streaming decoder;
+   * an empty text buffer alone cannot prove a complete inspector frame. */
+  #trackDecoderBoundary(bytes: Buffer): void {
+    for (const byte of bytes) {
+      if (this.#decoderPendingContinuations !== 0) { this.#decoderPendingContinuations -= 1; }
+      else if (byte >= 0xF0) { this.#decoderPendingContinuations = 3; }
+      else if (byte >= 0xE0) { this.#decoderPendingContinuations = 2; }
+      else if (byte >= 0xC2) { this.#decoderPendingContinuations = 1; }
+    }
   }
   /** A stopped original request may retire its reply slot only after that
    * exact response was captured. This does not acknowledge native cleanup. */
@@ -354,7 +557,10 @@ export class CurrentFootprintCopyMainBackendRunner {
     const collection = input.phase.startsWith("request-");
     const completion = input.phase.startsWith("completion-");
     const structure = input.phase.startsWith("structure-main-");
-    need(retainAllocationReply === undefined || structure && input.phase === "structure-main-arm" && !cleanup, "STRUCTURE_ALLOCATION_CALLBACK");
+    const forwardAllocation = isCurrentFootprintForwardExecutionMainCapability(this.#originCapability) &&
+      (collection && (input.phase === "request-driver-arm" || input.phase === "request-site-arm") ||
+        completion && (input.phase === "completion-source-arm" || input.phase === "completion-callback-arm"));
+    need(retainAllocationReply === undefined || !cleanup && (structure && input.phase === "structure-main-arm" || forwardAllocation), "STRUCTURE_ALLOCATION_CALLBACK");
     let cleanupCommand: boolean;
     if (completion || structure) { cleanupCommand = ["Debugger.resume", "Debugger.removeBreakpoint", "Runtime.releaseObjectGroup"].includes(input.method); }
     else if (collection) { cleanupCommand = (CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_CLEANUP_PHASES as readonly string[]).includes(input.phase); }
@@ -374,13 +580,13 @@ export class CurrentFootprintCopyMainBackendRunner {
       need(this.#originCapability !== null && this.#structureActive, "STRUCTURE_ORIGINAL_LEASE_REQUIRED");
       // The same native owner still rejects this new vocabulary. No native
       // Purpose, encoder or capacity is enabled by this source-only route.
-      await sendCurrentFootprintCombinedMainCommand(this.#originCapability, this, validateCurrentProjectStructureMainCommand(input), id);
+      await mainCommand(this.#originCapability, this, validateCurrentProjectStructureMainCommand(input), id);
     } else if (completion) {
       need(this.#originCapability !== null && this.#completionActive, "COMPLETION_ORIGINAL_LEASE_REQUIRED");
-      await sendCurrentFootprintCombinedMainCompletion(this.#originCapability, this, validateCurrentFootprintCopyMainCompletionCommand(input), id);
+      await mainCompletionCommand(this.#originCapability, this, validateCurrentFootprintCopyMainCompletionCommand(input), id);
     } else if (collection) {
       need(this.#originCapability !== null && this.#originActive, "REQUEST_ORIGINAL_LEASE_REQUIRED");
-      await sendCurrentFootprintCombinedMainCommand(this.#originCapability, this, validateCurrentFootprintCopyMainRequestCollectCommand(input), id);
+      await mainCommand(this.#originCapability, this, validateCurrentFootprintCopyMainRequestCollectCommand(input), id);
     } else { await this.#transport.send(validateCurrentFootprintCopyMainBackendCommand(input), id); }
     await this.#current(cleanup); await this.#wait(() => this.#replySeen, cleanup);
     const result = this.#reply;
@@ -579,7 +785,7 @@ export class CurrentFootprintCopyMainBackendRunner {
           if (!this.#structureActive || this.#structureLease !== token) { return; }
           this.#fail(failure);
         },
-        assertGenerationExited: (): void => { this.#structureCheck(token, true); need(currentFootprintCombinedMainGenerationExited(capability, this), "STRUCTURE_GENERATION_LIVE"); },
+        assertGenerationExited: (): void => { this.#structureCheck(token, true); need(mainExited(capability, this), "STRUCTURE_GENERATION_LIVE"); },
         request: (command: CurrentProjectStructureMainCommand, cleanup: boolean, retainAllocationReply?: (reply: unknown) => void): Promise<unknown> =>
           this.#structureRequest(token, command, cleanup, retainAllocationReply),
         settleAllocation: async (): Promise<void> => {
@@ -595,7 +801,7 @@ export class CurrentFootprintCopyMainBackendRunner {
         },
         takeEvent: (): CurrentFootprintCopyMainRequestOriginEvent | null => { this.#structureCheck(token, true); return this.#originEvents.shift() ?? null; },
         retire: (): void => {
-          this.#structureCheck(token, true); need(!this.#busy && (currentFootprintCombinedMainGenerationExited(capability, this) ||
+          this.#structureCheck(token, true); need(!this.#busy && (mainExited(capability, this) ||
             this.#originGroupReleased && this.#originBreakpoints.size === 0 && !this.#originPauseActive && !this.#originResumeExpected &&
             !this.#originUncertain && !this.#structureAllocationUncertain && this.#structureAllocation === null &&
             this.#pendingId === null && this.#originEvents.length === 0), "STRUCTURE_CLEANUP_INCOMPLETE");
@@ -613,11 +819,11 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(this.#structureActive && this.#structureLease === token && this.#originCapability !== null && this.#structureSource !== null,
       "STRUCTURE_ORIGINAL_LEASE_REQUIRED");
     requireCurrentProjectStructureMainSource(this.#structureSource);
-    if (cleanup && currentFootprintCombinedMainGenerationExited(this.#originCapability, this)) {
+    if (cleanup && mainExited(this.#originCapability, this)) {
       need(methods(this.#transport).every((value, index) => value === this.#methods[index]) && !this.#released, "OWNER"); return;
     }
-    if (cleanup) { requireCurrentFootprintCombinedMainCleanup(this.#originCapability, this); }
-    else { requireCurrentFootprintCombinedMainCapability(this.#originCapability, this); need(!this.#originUncertain, "STRUCTURE_FAILED"); }
+    if (cleanup) { mainCleanup(this.#originCapability, this); }
+    else { mainCapability(this.#originCapability, this); need(!this.#originUncertain, "STRUCTURE_FAILED"); }
     this.#same(cleanup);
   }
   /** Preserve the original request allocator and pause acknowledgments. A
@@ -660,38 +866,55 @@ export class CurrentFootprintCopyMainBackendRunner {
    * No caller-supplied scheduler, handles, flags or serialized packet is issued. */
   public async issueRequestOrigin(capability: CurrentFootprintCombinedMainCapability,
     packet: CurrentFootprintCopyMainBackendObservation): Promise<CurrentFootprintCopyMainRequestOrigin> {
+    requireCurrentFootprintCombinedMainCapability(capability, this);
+    const token = await this.#issueRequestOrigin(capability, packet);
+    need(token.profile === "private.current-footprint-copy-main-request-origin.v1", "REQUEST_ORIGINAL_OWNER"); return token;
+  }
+  /** Consume the same original main cursor using only the separately issued
+   * writer-v2 capability. This does not qualify clocks or enable a writer. */
+  public async issueForwardExecutionRequestOrigin(capability: CurrentFootprintForwardExecutionMainCapability,
+    packet: CurrentFootprintCopyMainBackendObservation): Promise<CurrentFootprintForwardMainRequestOrigin> {
+    requireCurrentFootprintForwardExecutionMainCapability(capability, this);
+    const token = await this.#issueRequestOrigin(capability, packet);
+    need(token.profile === "private.current-footprint-forward-main-request-origin.v2", "FORWARD_REQUEST_ORIGINAL_OWNER"); return token;
+  }
+  async #issueRequestOrigin(capability: MainCapability, packet: CurrentFootprintCopyMainBackendObservation): Promise<MainRequestOrigin> {
     need(!this.#originAttempted && !this.#structureAttempted && !this.#busy && packet === this.#packet && issued.get(packet) === this &&
       this.#appScriptId !== null && this.#appSource !== null && this.#retainedArray !== null && this.#driverCallbackObjectId !== null,
     "REQUEST_ORIGINAL_CONSTRUCTION_REQUIRED");
-    requireCurrentFootprintCombinedMainCapability(capability, this);
+    mainCapability(capability, this);
     this.#originAttempted = true; this.#busy = true;
     try {
-      await this.#reprove(); requireCurrentFootprintCombinedMainCapability(capability, this); this.#same(false);
+      await this.#reprove(); mainCapability(capability, this); this.#same(false);
       this.#originSource = qualifyCurrentFootprintCopyMainRequestSource(this.#appSource);
-      const token = Object.freeze({ profile: "private.current-footprint-copy-main-request-origin.v1" as const, executionAuthorized: false as const });
-      const bindings: CurrentFootprintCopyMainRequestOriginBindings = Object.freeze({ scriptId: this.#appScriptId,
+      const forward = isCurrentFootprintForwardExecutionMainCapability(capability);
+      const token = forward ? Object.freeze({ profile: "private.current-footprint-forward-main-request-origin.v2" as const, executionAuthorized: false as const }) :
+        Object.freeze({ profile: "private.current-footprint-copy-main-request-origin.v1" as const, executionAuthorized: false as const });
+      const bindings: CurrentFootprintForwardMainRequestOriginBindings = Object.freeze({ scriptId: this.#appScriptId,
+        fail: (error: unknown): void => { if (forward && this.#originToken === token) { this.#fail(error); } },
         retainedArrayObjectId: this.#retainedArray, driverCallbackObjectId: this.#driverCallbackObjectId, qualifiedSource: this.#originSource,
         assertOriginal: (): Promise<void> => this.#originCurrent(token),
         assertCleanup: (): Promise<void> => { this.#originCheck(token, true); return Promise.resolve(); },
         assertOriginalGenerationExited: (): Promise<void> => {
-          this.#originCheck(token, true); need(currentFootprintCombinedMainGenerationExited(capability, this), "REQUEST_ORIGINAL_GENERATION_LIVE"); return Promise.resolve();
+          this.#originCheck(token, true); need(mainExited(capability, this), "REQUEST_ORIGINAL_GENERATION_LIVE"); return Promise.resolve();
         },
-        request: (command: CurrentFootprintCopyMainRequestCollectCommand, cleanup: boolean): Promise<unknown> => this.#originRequest(token, command, cleanup),
+        request: (command: CurrentFootprintCopyMainRequestCollectCommand, cleanup: boolean, retainAllocation?: (reply: unknown) => void): Promise<unknown> => this.#originRequest(token, command, cleanup, retainAllocation),
+        settleAllocation: (): Promise<void> => this.#settleOriginAllocation(token, false),
         pump: (cleanup: boolean): Promise<void> => this.#originPump(token, cleanup),
         takeEvent: (): CurrentFootprintCopyMainRequestOriginEvent | null => { this.#originCheck(token, true); return this.#originEvents.shift() ?? null; },
         retire: (): Promise<void> => {
-          this.#originCheck(token, true); need(!this.#busy && (currentFootprintCombinedMainGenerationExited(capability, this) ||
+          this.#originCheck(token, true); need(!this.#busy && (mainExited(capability, this) ||
             this.#originGroupReleased && this.#originBreakpoints.size === 0 && !this.#originPauseActive && !this.#originResumeExpected &&
-            !this.#originUncertain && this.#pendingId === null && this.#originEvents.length === 0), "REQUEST_ORIGINAL_CLEANUP_INCOMPLETE");
+            !this.#originUncertain && this.#pendingId === null && this.#structureAllocation === null && !this.#structureAllocationUncertain && this.#originEvents.length === 0), "REQUEST_ORIGINAL_CLEANUP_INCOMPLETE");
           if (this.#completionAttempted) {
-            need(currentFootprintCombinedMainGenerationExited(capability, this), "COMPLETION_ORIGINAL_GENERATION_LIVE");
+            need(mainExited(capability, this), "COMPLETION_ORIGINAL_GENERATION_LIVE");
             return this.#retireFailedCompletionTransfer(capability);
           }
           this.#originActive = false; return Promise.resolve();
         },
       });
       this.#originCapability = capability; this.#originToken = token; this.#originActive = true;
-      requestOrigins.set(token, Object.freeze({ assertOriginalEntry: (): void => { this.#originCheck(token, true); }, bindings, capability, runner: this })); return token;
+      requestOrigins.set(token, Object.freeze({ kind: forward ? "forward" : "combined", assertOriginalEntry: (): void => { this.#originCheck(token, true); }, bindings, capability, runner: this })); return token;
     } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
   }
   /** Synchronous identity join before any create. Equal receipts or an origin
@@ -701,36 +924,59 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(capability === this.#originCapability && token === this.#originToken, "REQUEST_ORIGINAL_OWNER");
     this.#originCheck(token, false);
   }
+  public requireForwardExecutionRequestOrigin(capability: CurrentFootprintForwardExecutionMainCapability, token: CurrentFootprintForwardMainRequestOrigin): void {
+    requireCurrentFootprintForwardExecutionMainCapability(capability, this);
+    need(capability === this.#originCapability && token === this.#originToken, "FORWARD_REQUEST_ORIGINAL_OWNER"); this.#originCheck(token, false);
+  }
   /** Private original-owner handoff. Capacity refuses before either the old
    * lease or a native phase is consumed. A dispatched begin is one-shot; only
    * actual original exit can settle a lost acknowledgment. No writer starts. */
   public async issueCompletionOrigin(capability: CurrentFootprintCombinedMainCapability,
     packet: CurrentFootprintCopyMainRequestHeldFinalPb): Promise<CurrentFootprintCopyMainCompletionOrigin> {
+    requireCurrentFootprintCombinedMainCapability(capability, this);
+    const token = await this.#issueCompletionOrigin(capability, packet);
+    need(token.profile === "private.current-footprint-copy-main-completion-origin.v1", "COMPLETION_ORIGINAL_OWNER"); return token;
+  }
+  /** Transfer the actual held PB on this same v2 main cursor after exact native
+   * completion headroom, retaining failed/unknown begin custody without retry. */
+  public async issueForwardExecutionCompletionOrigin(capability: CurrentFootprintForwardExecutionMainCapability,
+    packet: CurrentFootprintCopyMainRequestHeldFinalPb): Promise<CurrentFootprintForwardMainCompletionOrigin> {
+    requireCurrentFootprintForwardExecutionMainCapability(capability, this);
+    const token = await this.#issueCompletionOrigin(capability, packet);
+    need(token.profile === "private.current-footprint-forward-main-completion-origin.v2", "FORWARD_COMPLETION_ORIGINAL_OWNER"); return token;
+  }
+  async #issueCompletionOrigin(capability: MainCapability, packet: CurrentFootprintCopyMainRequestHeldFinalPb): Promise<MainCompletionOrigin> {
     need(!this.#completionAttempted && !this.#busy && this.#originToken !== null && capability === this.#originCapability &&
       this.#appSource !== null && this.#appScriptId !== null && this.#originSource !== null, "COMPLETION_ORIGINAL_CONSTRUCTION_REQUIRED");
+    const forward = isCurrentFootprintForwardExecutionMainCapability(capability);
     const held = requireCurrentFootprintCopyMainRequestHeldFinalPb(packet), originalToken = this.#originToken;
     need(held.qualifiedSource === this.#originSource && held.scriptId === this.#appScriptId &&
       held.retainedArrayObjectId === this.#retainedArray, "COMPLETION_ORIGINAL_HELD_OWNER");
     this.#originCheck(originalToken, false);
-    assertCurrentFootprintCombinedMainCompletionCapacity(capability, this, this.#requests + 1);
+    mainCompletionCapacity(capability, this, this.#requests + 1);
     const source = qualifyCurrentFootprintCopyMainCompletionSource(this.#appSource);
     this.#completionAttempted = true; this.#busy = true;
     try {
       await held.assertOriginal(); this.#originCheck(originalToken, false);
       need(requireCurrentFootprintCopyMainRequestHeldFinalPb(packet) === held && this.#pendingId === null && this.#text === "" &&
+        (!forward || this.#decoderPendingContinuations === 0 && this.#structureAllocation === null && !this.#structureAllocationUncertain) &&
         this.#originEvents.length === 0 && this.#originBreakpoints.size === 0 && this.#originPauseActive &&
         !this.#originResumeExpected && !this.#originUncertain && !this.#originGroupReleased, "COMPLETION_ORIGINAL_CURSOR");
-      this.#completionBeginAttempted = true; await beginCurrentFootprintCombinedMainCompletion(capability, this, this.#requests + 1);
+      this.#completionBeginAttempted = true; await mainCompletionBegin(capability, this, this.#requests + 1);
       this.#originCheck(originalToken, false);
-      need(this.#pendingId === null && this.#text === "" && this.#originEvents.length === 0 && this.#originPauseActive &&
+      need(this.#pendingId === null && this.#text === "" &&
+        (!forward || this.#decoderPendingContinuations === 0 && this.#structureAllocation === null && !this.#structureAllocationUncertain && this.#originBreakpoints.size === 0) &&
+        this.#originEvents.length === 0 && this.#originPauseActive &&
         !this.#originResumeExpected && !this.#originUncertain && !this.#originGroupReleased, "COMPLETION_ORIGINAL_CURSOR");
       // No await between consuming the exact old held lease and installing its
       // Sole new origin. The old collector cannot resume, release or retire it.
-      const transferredHeld = transferCurrentFootprintCopyMainRequestHeldFinalPb(packet, originalToken);
+      const transferredHeld = originalToken.profile === "private.current-footprint-forward-main-request-origin.v2" ?
+        transferCurrentFootprintForwardMainRequestHeldFinalPb(packet, originalToken) : transferCurrentFootprintCopyMainRequestHeldFinalPb(packet, originalToken);
       need(transferredHeld === held, "COMPLETION_TRANSFER_IDENTITY");
-      const token = Object.freeze({ profile: "private.current-footprint-copy-main-completion-origin.v1" as const, executionAuthorized: false as const });
+      const token = forward ? Object.freeze({ profile: "private.current-footprint-forward-main-completion-origin.v2" as const, executionAuthorized: false as const }) :
+        Object.freeze({ profile: "private.current-footprint-copy-main-completion-origin.v1" as const, executionAuthorized: false as const });
       this.#completionSource = source; this.#completionToken = token; this.#completionActive = true;
-      const bindings: CurrentFootprintCopyMainCompletionOriginBindings = Object.freeze({ heldFinalPb: packet, transferredHeld,
+      const bindings: CurrentFootprintForwardMainCompletionOriginBindings = Object.freeze({ heldFinalPb: packet, transferredHeld,
         source, scriptId: held.scriptId,
         assertOriginal: (): Promise<void> => this.#completionCurrent(token),
         assertCleanup: (): Promise<void> => { this.#completionCheck(token, true); return Promise.resolve(); },
@@ -739,42 +985,61 @@ export class CurrentFootprintCopyMainBackendRunner {
             !this.#completionFinalResumeAttempted && this.#originEvents.length === 0, "COMPLETION_ORIGINAL_PB_ADVANCED"); return Promise.resolve();
         },
         assertOriginalGenerationExited: (): Promise<void> => {
-          this.#completionCheck(token, true); need(currentFootprintCombinedMainGenerationExited(capability, this), "COMPLETION_ORIGINAL_GENERATION_LIVE");
+          this.#completionCheck(token, true); need(mainExited(capability, this), "COMPLETION_ORIGINAL_GENERATION_LIVE");
           // Only observed retained-root exit and empty Job permit abandoned
           // Inspector replies/events to settle without pretending they replied.
           this.#originEvents.length = 0; return Promise.resolve();
         },
         fail: (): void => {
-          if (this.#completionToken === token) { this.#completionFailed = true; failCurrentFootprintCombinedMainCompletion(capability, this); }
+          if (this.#completionToken === token) { this.#completionFailed = true; mainCompletionFail(capability, this); }
         },
-        request: (command: CurrentFootprintCopyMainCompletionCommand, cleanup: boolean): Promise<unknown> => this.#completionRequest(token, command, cleanup),
+        request: (command: CurrentFootprintCopyMainCompletionCommand, cleanup: boolean, retainAllocation?: (reply: unknown) => void): Promise<unknown> => this.#completionRequest(token, command, cleanup, retainAllocation),
+        settleAllocation: (): Promise<void> => this.#settleOriginAllocation(token, true),
         pump: (cleanup: boolean): Promise<void> => this.#completionPump(token, cleanup),
         takeEvent: (): CurrentFootprintCopyMainRequestOriginEvent | null => { this.#completionCheck(token, true); return this.#originEvents.shift() ?? null; },
         retire: (): Promise<void> => this.#completionRetire(token),
       });
-      completionOrigins.set(token, Object.freeze({ assertOriginalEntry: (): void => { this.#completionCheck(token, true); }, bindings })); return token;
+      completionOrigins.set(token, Object.freeze({ kind: forward ? "forward" : "combined", assertOriginalEntry: (): void => { this.#completionCheck(token, true); }, bindings })); return token;
     } catch (error) { this.#completionFailed = true; this.#fail(error); throw error; } finally { this.#busy = false; }
   }
-  #completionCheck(token: CurrentFootprintCopyMainCompletionOrigin, cleanup: boolean): void {
+  /** Poll only the retained original allocation once after its caller has
+   * stopped. A late ID enters both original cleanup owners before any guard;
+   * uncertainty never becomes normal eligibility or a replacement allocation. */
+  async #settleOriginAllocation(token: MainRequestOrigin | MainCompletionOrigin, completion: boolean): Promise<void> {
+    need(isCurrentFootprintForwardExecutionMainCapability(this.#originCapability), "FORWARD_ALLOCATION_ORIGINAL");
+    const current = (): void => {
+      if (token.profile === "private.current-footprint-forward-main-completion-origin.v2") { need(completion, "FORWARD_ALLOCATION_ORIGINAL"); this.#completionCheck(token, true); }
+      else { need(!completion && token.profile === "private.current-footprint-forward-main-request-origin.v2", "FORWARD_ALLOCATION_ORIGINAL"); this.#originCheck(token, true); }
+    };
+    current(); const allocation = this.#structureAllocation;
+    if (allocation === null) { return; }
+    need(!this.#busy && allocation.stopped && this.#pendingId === allocation.id, "STRUCTURE_ALLOCATION_PENDING"); this.#busy = true;
+    try { await this.#pump(true); current(); }
+    finally { this.#busy = false; }
+  }
+  #completionCheck(token: MainCompletionOrigin, cleanup: boolean): void {
     need(this.#completionActive && token === this.#completionToken && this.#originCapability !== null && this.#completionSource !== null,
       "COMPLETION_ORIGINAL_LEASE_REQUIRED");
     requireCurrentFootprintCopyMainCompletionSource(this.#completionSource);
-    if (cleanup && currentFootprintCombinedMainGenerationExited(this.#originCapability, this)) {
+    if (cleanup && mainExited(this.#originCapability, this)) {
       need(methods(this.#transport).every((value, index) => value === this.#methods[index]) && !this.#released, "OWNER"); return;
     }
-    if (cleanup) { requireCurrentFootprintCombinedMainCleanup(this.#originCapability, this); }
-    else { need(!this.#completionFailed && !this.#originUncertain, "COMPLETION_FAILED"); requireCurrentFootprintCombinedMainCapability(this.#originCapability, this); }
+    if (cleanup) { mainCleanup(this.#originCapability, this); }
+    else { need(!this.#completionFailed && !this.#originUncertain, "COMPLETION_FAILED"); mainCapability(this.#originCapability, this); }
     this.#same(cleanup);
   }
-  async #completionCurrent(token: CurrentFootprintCopyMainCompletionOrigin): Promise<void> {
-    this.#completionCheck(token, false); await this.#current(); this.#completionCheck(token, false);
+  async #completionCurrent(token: MainCompletionOrigin): Promise<void> {
+    this.#completionCheck(token, false);
+    if (this.#originCapability !== null && isCurrentFootprintForwardExecutionMainCapability(this.#originCapability)) { await reproveCurrentFootprintForwardExecutionMainPublication(this.#originCapability, this); this.#completionCheck(token, false); }
+    await this.#current(); this.#completionCheck(token, false);
   }
-  async #completionPump(token: CurrentFootprintCopyMainCompletionOrigin, cleanup: boolean): Promise<void> {
+  async #completionPump(token: MainCompletionOrigin, cleanup: boolean): Promise<void> {
     need(typeof cleanup === "boolean" && !this.#busy, "COMPLETION_ORIGINAL_BUSY"); this.#completionCheck(token, cleanup); this.#busy = true;
     try { await this.#pump(cleanup); this.#completionCheck(token, cleanup); }
     catch (error) { this.#completionFailed = true; this.#fail(error); throw error; } finally { this.#busy = false; }
   }
-  async #completionRequest(token: CurrentFootprintCopyMainCompletionOrigin, input: CurrentFootprintCopyMainCompletionCommand, cleanup: boolean): Promise<unknown> {
+  async #completionRequest(token: MainCompletionOrigin, input: CurrentFootprintCopyMainCompletionCommand, cleanup: boolean,
+    retainAllocationReply?: (reply: unknown) => void): Promise<unknown> {
     need(typeof cleanup === "boolean" && !this.#busy, "COMPLETION_ORIGINAL_BUSY"); this.#completionCheck(token, cleanup);
     const command = validateCurrentFootprintCopyMainCompletionCommand(input);
     const actualCleanup = ["completion-remove", "completion-resume", "completion-resume-final-pb", "completion-release"].includes(command.phase);
@@ -790,43 +1055,67 @@ export class CurrentFootprintCopyMainBackendRunner {
       if (command.phase === "completion-resume-final-pb") { this.#completionFinalResumeAttempted = true; }
       this.#originResumeExpected = true;
     }
+    const allocation = command.phase === "completion-source-arm" || command.phase === "completion-callback-arm";
+    const forward = token.profile === "private.current-footprint-forward-main-completion-origin.v2";
+    need(retainAllocationReply === undefined || forward && allocation && !cleanup, "FORWARD_ALLOCATION_CALLBACK");
     this.#busy = true; if (cleanup) { this.#completionCleanup += 1; } else { this.#completionNormal += 1; }
+    const retain = forward && allocation ? (reply: unknown): void => {
+      const id = currentFootprintCopyMainCompletionAllocatedId(reply);
+      if (id !== null && !this.#originBreakpoints.has(id)) { this.#originBreakpoints.add(id); this.#structureAllocationUncertain = false; }
+      else { this.#structureAllocationUncertain = true; }
+      retainAllocationReply?.(reply);
+    } : undefined;
+    if (retain !== undefined) { this.#structureAllocationUncertain = true; }
     try {
-      const result = await this.#request(command, cleanup); this.#completionCheck(token, cleanup);
+      const result = await this.#request(command, cleanup, retain); this.#completionCheck(token, cleanup);
       if (command.phase === "completion-source-arm" || command.phase === "completion-callback-arm") {
         const allocated = currentFootprintCopyMainCompletionAllocatedId(result);
-        need(allocated !== null && !this.#originBreakpoints.has(allocated), "COMPLETION_BREAKPOINT_ALLOCATION"); this.#originBreakpoints.add(allocated);
+        if (forward) { need(allocated !== null && this.#originBreakpoints.has(allocated) && !this.#structureAllocationUncertain, "COMPLETION_BREAKPOINT_ALLOCATION"); }
+        else { need(allocated !== null && !this.#originBreakpoints.has(allocated), "COMPLETION_BREAKPOINT_ALLOCATION"); this.#originBreakpoints.add(allocated); }
       } else if (command.phase === "completion-remove") { empty.parse(result); this.#originBreakpoints.delete(command.params.breakpointId); }
       else if (command.method === "Debugger.resume") { empty.parse(result); }
       else if (command.phase === "completion-release") { empty.parse(result); this.#originGroupReleased = true; }
       return result;
     } catch (error) { this.#completionFailed = true; this.#originUncertain = true; this.#fail(error); throw error; } finally { this.#busy = false; }
   }
-  async #completionRetire(token: CurrentFootprintCopyMainCompletionOrigin): Promise<void> {
-    this.#completionCheck(token, true); need(!this.#busy && this.#originCapability !== null, "COMPLETION_ORIGINAL_BUSY");
-    const exited = currentFootprintCombinedMainGenerationExited(this.#originCapability, this);
-    need(exited || !this.#completionFailed && this.#completionNormal === CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS.normal &&
+  /** Native retirement acknowledgment does not settle inspector custody.
+   * Recheck the original cursor after its await, retaining cleanup ownership
+   * and the actual acknowledgment if a late event/frame requires root exit. */
+  #completionRetireQuiescence(): void {
+    need(!this.#completionFailed && this.#completionNormal === CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS.normal &&
       this.#completionCleanup === CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS.cleanup && this.#originGroupReleased &&
       this.#originBreakpoints.size === 0 && !this.#originPauseActive && !this.#originResumeExpected && !this.#originUncertain &&
-      this.#pendingId === null && this.#originEvents.length === 0, "COMPLETION_ORIGINAL_CLEANUP_INCOMPLETE");
+      this.#pendingId === null && this.#structureAllocation === null && !this.#structureAllocationUncertain && this.#originEvents.length === 0 &&
+      this.#text === "" && this.#decoderPendingContinuations === 0 &&
+      (this.#forwardPoll === null || this.#forwardPoll.settled && this.#forwardPoll.delivered), "COMPLETION_ORIGINAL_CLEANUP_INCOMPLETE");
+  }
+  async #completionRetire(token: MainCompletionOrigin): Promise<void> {
+    this.#completionCheck(token, true); need(!this.#busy && this.#originCapability !== null, "COMPLETION_ORIGINAL_BUSY");
+    const exited = mainExited(this.#originCapability, this);
+    if (!exited) { this.#completionRetireQuiescence(); }
     // A lost native retirement acknowledgement is never replayed. After actual
     // Exit the retained phase may be released locally without another request.
     if (this.#completionRetireAttempted) { need(exited, "COMPLETION_RETIRE_CONSUMED"); this.#completionActive = false; this.#originActive = false; return; }
     this.#completionRetireAttempted = true; this.#busy = true;
-    try { await retireCurrentFootprintCombinedMainCompletion(this.#originCapability, this); this.#completionActive = false; this.#originActive = false; }
+    try {
+      await mainCompletionRetire(this.#originCapability, this); this.#completionRetirementAcknowledged = true;
+      this.#completionCheck(token, true);
+      if (!mainExited(this.#originCapability, this)) { this.#completionRetireQuiescence(); }
+      this.#completionActive = false; this.#originActive = false;
+    }
     catch (error) { this.#completionFailed = true; this.#fail(error); throw error; } finally { this.#busy = false; }
   }
-  async #retireFailedCompletionTransfer(capability: CurrentFootprintCombinedMainCapability): Promise<void> {
+  async #retireFailedCompletionTransfer(capability: MainCapability): Promise<void> {
     if (this.#completionBeginAttempted && !this.#completionRetireAttempted) {
-      this.#completionRetireAttempted = true; await retireCurrentFootprintCombinedMainCompletion(capability, this);
+      this.#completionRetireAttempted = true; await mainCompletionRetire(capability, this);
     }
     this.#originActive = false;
   }
-  #originCheck(token: CurrentFootprintCopyMainRequestOrigin, cleanup: boolean): void {
+  #originCheck(token: MainRequestOrigin, cleanup: boolean): void {
     need(!this.#completionActive, "COMPLETION_OWNS_MAIN");
     need(this.#originActive && token === this.#originToken && this.#originCapability !== null && this.#originSource !== null,
       "REQUEST_ORIGINAL_LEASE_REQUIRED");
-    if (cleanup && currentFootprintCombinedMainGenerationExited(this.#originCapability, this)) {
+    if (cleanup && mainExited(this.#originCapability, this)) {
       // Actual original-root exit and empty Job settle the retained lease even
       // After inspector budgets expire. This path cannot revive native I/O.
       need(methods(this.#transport).every((value, index) => value === this.#methods[index]) && !this.#released, "OWNER");
@@ -834,32 +1123,51 @@ export class CurrentFootprintCopyMainBackendRunner {
       if (this.#source !== null) { requireCurrentFootprintCopyMainBackendSource(this.#source); }
       return;
     }
-    if (cleanup) { requireCurrentFootprintCombinedMainCleanup(this.#originCapability, this); }
-    else { requireCurrentFootprintCombinedMainCapability(this.#originCapability, this); }
+    if (cleanup) { mainCleanup(this.#originCapability, this); }
+    else { mainCapability(this.#originCapability, this); }
     requireCurrentFootprintCopyMainRequestSource(this.#originSource); this.#same(cleanup);
   }
-  async #originCurrent(token: CurrentFootprintCopyMainRequestOrigin): Promise<void> {
-    this.#originCheck(token, false); await this.#current(); this.#originCheck(token, false);
+  async #originCurrent(token: MainRequestOrigin): Promise<void> {
+    this.#originCheck(token, false);
+    if (this.#originCapability !== null && isCurrentFootprintForwardExecutionMainCapability(this.#originCapability)) { await reproveCurrentFootprintForwardExecutionMainPublication(this.#originCapability, this); this.#originCheck(token, false); }
+    await this.#current(); this.#originCheck(token, false);
   }
-  async #originPump(token: CurrentFootprintCopyMainRequestOrigin, cleanup: boolean): Promise<void> {
+  async #originPump(token: MainRequestOrigin, cleanup: boolean): Promise<void> {
     need(!this.#completionAttempted, "COMPLETION_TRANSFER_CONSUMED");
     need(typeof cleanup === "boolean" && !this.#busy, "REQUEST_ORIGINAL_BUSY"); this.#originCheck(token, cleanup); this.#busy = true;
     try { await this.#pump(cleanup); this.#originCheck(token, cleanup); }
     catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
   }
-  async #originRequest(token: CurrentFootprintCopyMainRequestOrigin, input: CurrentFootprintCopyMainRequestCollectCommand, cleanup: boolean): Promise<unknown> {
+  async #originRequest(token: MainRequestOrigin, input: CurrentFootprintCopyMainRequestCollectCommand, cleanup: boolean,
+    retainAllocationReply?: (reply: unknown) => void): Promise<unknown> {
     need(!this.#completionAttempted, "COMPLETION_TRANSFER_CONSUMED");
     need(typeof cleanup === "boolean" && !this.#busy, "REQUEST_ORIGINAL_BUSY"); this.#originCheck(token, cleanup);
     const command = validateCurrentFootprintCopyMainRequestCollectCommand(input);
     if (command.phase === "request-remove") { need(this.#originBreakpoints.has(command.params.breakpointId), "REQUEST_BREAKPOINT_OWNER"); }
-    if (command.phase === "request-resume") { need(this.#originPauseActive && !this.#originResumeExpected, "REQUEST_ORIGINAL_RESUME_CONSUMED"); this.#originResumeExpected = true; }
+    if (command.phase === "request-resume") {
+      // Although charged to cleanup, resume advances the original SQL path.
+      // A v2 semantic refusal can retain removal custody, never resume it.
+      if (token.profile === "private.current-footprint-forward-main-request-origin.v2") { this.#originCheck(token, false); }
+      need(this.#originPauseActive && !this.#originResumeExpected, "REQUEST_ORIGINAL_RESUME_CONSUMED"); this.#originResumeExpected = true;
+    }
+    const allocation = command.phase === "request-driver-arm" || command.phase === "request-site-arm";
+    const forward = token.profile === "private.current-footprint-forward-main-request-origin.v2";
+    need(retainAllocationReply === undefined || forward && allocation && !cleanup, "FORWARD_ALLOCATION_CALLBACK");
     this.#busy = true;
+    const retain = forward && allocation ? (reply: unknown): void => {
+      const id = currentFootprintCopyMainRequestAllocatedId(reply);
+      if (id !== null && !this.#originBreakpoints.has(id)) { this.#originBreakpoints.add(id); this.#structureAllocationUncertain = false; }
+      else { this.#structureAllocationUncertain = true; }
+      retainAllocationReply?.(reply);
+    } : undefined;
+    if (retain !== undefined) { this.#structureAllocationUncertain = true; }
     const mutation = ["request-driver-arm", "request-site-arm", ...CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_CLEANUP_PHASES].includes(command.phase);
     try {
-      const result = await this.#request(command, cleanup); this.#originCheck(token, cleanup);
+      const result = await this.#request(command, cleanup, retain); this.#originCheck(token, cleanup);
       if (command.phase === "request-driver-arm" || command.phase === "request-site-arm") {
         const allocated = currentFootprintCopyMainRequestAllocatedId(result);
-        need(allocated !== null && !this.#originBreakpoints.has(allocated), "REQUEST_BREAKPOINT_ALLOCATION"); this.#originBreakpoints.add(allocated);
+        if (forward) { need(allocated !== null && this.#originBreakpoints.has(allocated) && !this.#structureAllocationUncertain, "REQUEST_BREAKPOINT_ALLOCATION"); }
+        else { need(allocated !== null && !this.#originBreakpoints.has(allocated), "REQUEST_BREAKPOINT_ALLOCATION"); this.#originBreakpoints.add(allocated); }
       } else if (command.phase === "request-remove") { empty.parse(result); this.#originBreakpoints.delete(command.params.breakpointId); }
       else if (command.phase === "request-resume") { empty.parse(result); }
       else if (command.phase === "request-release") { empty.parse(result); this.#originGroupReleased = true; }
@@ -877,4 +1185,33 @@ export class CurrentFootprintCopyMainBackendRunner {
       registrationLocationFailure: this.#registrationLocationFailure, metadataRole: this.#metadataRole, schemaIssues: this.#schemaIssues,
       requestOriginIssued: this.#originAttempted, requestOriginActive: this.#originActive });
   }
+}
+
+// oxlint-disable-next-line typescript/unbound-method -- Invoke only on the same original private-field runner, after genuine native-owner admission.
+const originalForwardMainCursor = CurrentFootprintCopyMainBackendRunner.prototype.issueForwardMainCursor;
+/** The native v2 issuer captures the original cursor method rather than an
+ * instance/prototype replacement. This issues no send or whole-writer role. */
+export function captureOriginalCurrentFootprintForwardMainCursor(runner: CurrentFootprintCopyMainBackendRunner): CurrentFootprintForwardMainCursor {
+  requireOriginalCurrentFootprintForwardMainRunner(runner);
+  need(CurrentFootprintCopyMainBackendRunner.prototype.issueForwardMainCursor === originalForwardMainCursor, "FORWARD_CURSOR_ORIGINAL");
+  return originalForwardMainCursor.call(runner);
+}
+
+const forwardMainPrototypes = captureCurrentFootprintForwardExecutionPrototypes(CurrentFootprintCopyMainBackendRunner.prototype);
+/** Recheck complete original method descriptors and actual receiver resolution.
+ * Native factory membership and cursor/source admission are separate proofs. */
+export function requireOriginalCurrentFootprintForwardMainRunner(runner: CurrentFootprintCopyMainBackendRunner): void {
+  requireCurrentFootprintForwardExecutionPrototypes(forwardMainPrototypes);
+  need(runner !== null && typeof runner === "object" && !types.isProxy(runner) &&
+    Object.getPrototypeOf(runner) === CurrentFootprintCopyMainBackendRunner.prototype && Reflect.ownKeys(runner).length === 0, "FORWARD_CURSOR_ORIGINAL");
+}
+/** Authenticate the exact original allocation receiver, never a caller's
+ * replacement callback. This membership check grants no native send or retry
+ * and remains valid for a real late reply after the original caller stopped. */
+export function requireOriginalCurrentFootprintForwardMainPollRetainer(runner: CurrentFootprintCopyMainBackendRunner,
+  retain: (chunk: string) => void): void {
+  requireOriginalCurrentFootprintForwardMainRunner(runner);
+  need(typeof retain === "function" && !types.isProxy(retain), "FORWARD_ORIGINAL_POLL_RETAINER");
+  const original = forwardPollRetainers.get(retain);
+  need(original !== undefined && original.runner === runner, "FORWARD_ORIGINAL_POLL_RETAINER"); original.requireOriginal();
 }

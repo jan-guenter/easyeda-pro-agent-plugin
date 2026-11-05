@@ -18,7 +18,7 @@ void test("generated native parser ID policy and actual C# smoke retain forward1
   assert.match(source, /class EasyedaFootprintExecutionLimits \{ public const int Requests=856; public const int NormalRequests=811;/u);
 });
 
-void test("each dedicated parser selects the original forward purpose and refuses stale or caller-selected ID guards", async () => {
+void test("each legacy dedicated parser selects its original forward switch and refuses stale or caller-selected ID guards", async () => {
   const source = await readFile(helper, "utf8");
   assert.doesNotThrow(() => { assertCurrentFootprintCopyForwardNativeRequestIds(source); });
   for (const [action, worker] of [["footprint-copy-parent", false], ["footprint-copy-worker", true], ["footprint-cache-construction", false]] as const) {
@@ -34,4 +34,6 @@ void test("each dedicated parser selects the original forward purpose and refuse
       assert.throws(() => { assertCurrentFootprintCopyForwardNativeRequestIds(source.slice(0, start) + block.replace(guard, replacement) + source.slice(end)); }, /NATIVE_REQUEST_ID_GUARD/u);
     }
   }
+  assert.match(source, /\[switch\]\$WorkerStartupFootprintForward209/u);
+  assert.doesNotMatch(source, /\$forwardFamily|\$WorkerStartupFootprintForwardExecution209/iu);
 });

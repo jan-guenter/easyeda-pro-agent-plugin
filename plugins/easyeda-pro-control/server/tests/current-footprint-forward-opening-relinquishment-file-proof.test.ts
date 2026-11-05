@@ -11,7 +11,7 @@ import { gzipSync } from "node:zlib";
 import { compareCompleteClosedSql } from "../src/closed-sql-equality.ts";
 import { sha256Json, sha256Text } from "../src/core.ts";
 import { prepareCurrentDisposableOpenCheckpoint } from "../src/current-disposable-open-checkpoint.ts";
-import { collectCurrentFootprintForwardOpeningFileProof, currentFootprintForwardOpeningFileProofSchema } from "../src/current-footprint-forward-opening-relinquishment-file-proof.ts";
+import { collectCurrentFootprintForwardOpeningFileProof, currentFootprintForwardOpeningFileProofSchema, revalidateCurrentFootprintForwardOpeningFileProof } from "../src/current-footprint-forward-opening-relinquishment-file-proof.ts";
 import type { DiagnosticLifecycleRecords } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 import { readExactSqlInventory } from "../src/sqlite-inventory.ts";
 import { syntheticSqlRoot, syntheticSqlRuntime } from "./helpers/sqlite-inventory-fixture.ts";
@@ -99,6 +99,11 @@ void test("historical opening file proof compares actual like-for-like prepared 
   assert.equal(result.oldHistorySemanticSha256, result.freshHistorySemanticSha256);
   assert.equal(result.fullSqlEqual, true); assert.equal(result.historyEqual, true); assert.equal(result.sidecarsAbsent, true);
   assert.equal(result.executionAuthorized, false); assert.equal(result.restored, false); assert.ok(currentChecks > 20);
+  await revalidateCurrentFootprintForwardOpeningFileProof(result);
+  await assert.rejects(revalidateCurrentFootprintForwardOpeningFileProof({ ...result }), /Original completed file-proof validator/u);
+  await writeFile(`${f.source}-journal`, "Synthetic late sidecar", { mode: 0o600 });
+  await assert.rejects(revalidateCurrentFootprintForwardOpeningFileProof(result), /sidecar|changed|malformed|refused|CHECKPOINT/u);
+  assert.equal(hash(await readFile(f.source)), f.opening.target.expectedSourceSha256);
 });
 
 void test("historical opening file proof rejects changed original SQL binding before accepting a new preparation", async context => {

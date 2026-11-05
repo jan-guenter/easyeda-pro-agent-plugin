@@ -48,7 +48,7 @@ async function completionRunner(module: Awaited<ReturnType<typeof mainBackendMod
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The actual sequencer uses the real issuer's private map and explicitly synthetic complete source.
   return loaded.exports["CurrentFootprintCopyMainCompletionRunner"] as typeof CurrentFootprintCopyMainCompletionRunner;
 }
-export async function unarmedMainCompletionOriginFixture(): Promise<Readonly<{
+export async function unarmedMainCompletionOriginFixture(retirementGate: Promise<void> = Promise.resolve(), retirementEventProbe = false): Promise<Readonly<{
   module: Awaited<ReturnType<typeof mainBackendModule>>;
   backend: InstanceType<Awaited<ReturnType<typeof mainBackendModule>>["Constructor"]>;
   collector: CurrentFootprintCopyMainRequestRunner;
@@ -57,11 +57,15 @@ export async function unarmedMainCompletionOriginFixture(): Promise<Readonly<{
   oldOrigin: CurrentFootprintCopyMainRequestOrigin;
   Completion: typeof CurrentFootprintCopyMainCompletionRunner;
   capability: Readonly<{ profile: "private.current-footprint-combined-main-capability.v1"; executionAuthorized: false }>;
-  native: { capacity: boolean; beginCount: number; sends: number; retireCount: number; tailReleases: number; exited: boolean; lostBegin: boolean; lostRetire: boolean };
+  retirementEntered: Promise<null>;
+  injectRetirementPause: () => void;
+  native: { capacity: boolean; beginCount: number; sends: number; retireCount: number; tailReleases: number; exited: boolean; lostBegin: boolean; lostRetire: boolean; incompleteUtf8Release: boolean };
 }>> {
   const base = mainBackendTransportFixture(), completion = mainCompletionRunnerFixture(), request = requestCollectorFixture();
-  const native = { capacity: true, beginCount: 0, sends: 0, retireCount: 0, tailReleases: 0, exited: false, lostBegin: false, lostRetire: false };
+  const native = { capacity: true, beginCount: 0, sends: 0, retireCount: 0, tailReleases: 0, exited: false, lostBegin: false, lostRetire: false, incompleteUtf8Release: false };
+  const retirementEntered = Promise.withResolvers<null>();
   const queue: string[] = [];
+  let incompleteReplyId: number | null = null;
   const capability = Object.freeze({ profile: "private.current-footprint-combined-main-capability.v1", executionAuthorized: false } as const);
   let loaded: Awaited<ReturnType<typeof mainBackendModule>> | null = null;
   const collector = await collectorModule(token => { assert.ok(loaded !== null); return loaded.requireRequest(token); });
@@ -79,7 +83,13 @@ export async function unarmedMainCompletionOriginFixture(): Promise<Readonly<{
         for (let next = request.bindings.takeEvent(); next !== null; next = request.bindings.takeEvent()) { queue.push(`${JSON.stringify(next)}\0`); }
       }
       for (let next = completion.bindings.takeEvent(); next !== null; next = completion.bindings.takeEvent()) { queue.push(`${JSON.stringify(next)}\0`); }
-      return queue.length > 0 ? Buffer.from(queue.shift() ?? "").toString("base64") : base.transport.poll(cleanup);
+      if (queue.length === 0) { return base.transport.poll(cleanup); }
+      const text = queue.shift() ?? "";
+      const bytes = Buffer.from(text);
+      if (incompleteReplyId !== null && text.startsWith(`{"id":${String(incompleteReplyId)},`)) {
+        incompleteReplyId = null; return Buffer.concat([bytes, Buffer.from([0xC2])]).toString("base64");
+      }
+      return bytes.toString("base64");
     },
   });
   loaded = await mainBackendModule({
@@ -108,15 +118,18 @@ export async function unarmedMainCompletionOriginFixture(): Promise<Readonly<{
       sendCurrentFootprintCombinedMainCompletion: async (token: unknown, _owner: unknown, command: CurrentFootprintCopyMainCompletionCommand, id: number): Promise<void> => {
         assert.equal(token, capability); native.sends += 1;
         queue.push(`${JSON.stringify({ id, result: await completion.bindings.request(command, false) })}\0`);
+        if (native.incompleteUtf8Release && command.phase === "completion-release") { incompleteReplyId = id; }
       },
       retireCurrentFootprintCombinedMainCompletion: (): Promise<void> => {
-        native.retireCount += 1; return native.lostRetire ? Promise.reject(new Error("lost original retirement ack")) : Promise.resolve();
+        native.retireCount += 1; retirementEntered.resolve(null);
+        return native.lostRetire ? Promise.reject(new Error("lost original retirement ack")) : retirementGate;
       },
     },
-  });
+  }, retirementEventProbe);
   const backend = new loaded.Constructor(transport), construction = await backend.observe();
   const oldOrigin = await backend.issueRequestOrigin(capability, construction);
   const owner = new collector.CurrentFootprintCopyMainRequestRunner(oldOrigin, syntheticRequestPlan);
   return { module: loaded, backend, collector: owner, collectorModule: collector, requestState: request.state,
-    oldOrigin, capability, native, Completion: await completionRunner(loaded, completion) };
+    oldOrigin, capability, native, Completion: await completionRunner(loaded, completion), retirementEntered: retirementEntered.promise,
+    injectRetirementPause: (): void => { assert.ok(loaded !== null); loaded.injectRetirementPause(backend); } };
 }
