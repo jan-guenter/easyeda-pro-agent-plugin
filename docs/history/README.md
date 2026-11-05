@@ -9,6 +9,8 @@
 
 - [2026-11-05 ordinary PCB read owner](2026-11-05-ordinary-pcb-read-owner.md). Separate ordinary-project grammar and immutable journals, eight unchanged fixed209 readers, original cleanup and 117 passing offline regressions. No writer, explicit Save or connected-validation claim.
 - [2026-11-05 structure observer cold arm and native codebook](2026-11-05-structure-observer-native-codebook.md). Original Nd/QA pre-arm exclusion, a finite 42-shape main codec with shared exact descriptor guards, synthetic V8/C# verification and the remaining owner, native-purpose, frontier and durability dependencies. Source base `b16fb1e`.
+- [2026-11-05 generated PCB fixture archives](2026-11-05-generated-pcb-fixture-archives.md). Maintained new-data Via-only and Line+Via `.epro2` generation, exact source templates, actual pinned codec methods exercised offline with synthetic constructors, and separate original eager-facade closure. Native import and registration remain pending.
+
 - [2026-11-05 managed fixture archive preparation](2026-11-05-managed-fixture-archive-preparation.md). Reachable exact-archive staging with complete supplied rosters, retained directory custody and partial preparation; pinned local importer research and dormant original-Promise capture keep native import, registration, SQL and closure unproved.
 
 - [2026-11-05 API backlog priorities](2026-11-05-api-backlog-priorities.md). Complete 835-method inventory, grouped reasons for 481 omissions and the shared blocker behind 79 implemented entries; five next implementation batches and the separate Line geometry/transport prerequisites. This planning assessment grants no execution authority.

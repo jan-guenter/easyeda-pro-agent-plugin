@@ -3,7 +3,7 @@ import { lstat, mkdir, readdir } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { controlDataDirectory, controlRootCapability, ensureManagedDirectory, publishManagedAttachmentExclusive, readExactBinaryArtifact } from "./artifacts.ts";
 import { MANAGED_LIBRARY_FILES_MAX_RESULT_BYTES, decodeManagedLibraryBase64, decodeManagedProjectArchive, extractManagedLibraryMetadata, extractManagedProjectMetadata,
-  managedFixtureArchivePrepareRequestSchema,
+  managedFixtureArchiveGenerateRequestSchema, managedFixtureArchivePrepareRequestSchema,
   managedLibraryArchiveSourceListRequestSchema, managedLibraryArchiveSourceReadRequestSchema, managedLibraryArchiveSourcesRequestSchema,
   managedLibraryExtractRequestSchema, managedLibraryFileSchema, managedLibraryFilesRequestSchema, managedLibraryMetadataSchema,
   managedLibraryPrepareRequestSchema, managedPcbStackRulesRequestSchema, managedProjectDocumentSourceListRequestSchema, managedProjectDocumentSourceReadRequestSchema,
@@ -27,6 +27,7 @@ import { inspectManagedPcbStackRules } from "./managed-pcb-stack-rules.ts";
 import { collectManagedLibraryArchiveSources, encodeManagedLibraryArchiveSourceIndex, pageManagedLibraryArchiveRoster, pageManagedLibraryArchiveSource } from "./managed-library-archive-sources.ts";
 import type { ManagedLibraryArchiveSourceSet } from "./managed-library-archive-sources.ts";
 import { qualifyManagedFixtureArchive } from "./managed-fixture-archive.ts";
+import { generateManagedFixtureArchiveData } from "./managed-fixture-generator.ts";
 
 /** Resolve the sole prepared-input directory from the control root, never from caller paths. */
 function inputsDirectory(): string { return join(controlDataDirectory(), "artifacts", "library-file-inputs"); }
@@ -111,6 +112,18 @@ export async function prepareManagedFixtureArchive(input: unknown): Promise<Reco
   } catch (error) {
     throw new Error(`Fixture archive preparation is incomplete; retain its intent and partial package at ${directory}. No native import was dispatched.`, { cause: error });
   } finally { await heldParent.handle.close(); }
+}
+
+/** Generate a fixed new-data scenario, then use both normal maintained artifact
+ * preparation stages. No existing project, SQLite file or application is read. */
+export async function generateManagedFixtureArchive(input: unknown): Promise<Record<string, unknown>> {
+  const request = managedFixtureArchiveGenerateRequestSchema.parse(input); const generated = generateManagedFixtureArchiveData(request.fixtureKind);
+  const prepared = await prepareManagedLibraryFile({ action: "prepare-file", name: generated.name,
+    base64: generated.bytes.toString("base64"), confirmLocalArtifact: true });
+  const file = managedLibraryFileSchema.parse(prepared["file"]);
+  const staged = await prepareManagedFixtureArchive({ action: "prepare-fixture-archive", file,
+    confirmDisposableFixture: true, confirmLocalArtifact: true });
+  return result({ ...staged, action: request.action, input: file, generated: generated.metadata }, false);
 }
 
 /** Combine validated standalone metadata from distinct prepared filenames.
@@ -337,6 +350,7 @@ export async function executeManagedLibraryFiles(input: unknown): Promise<Record
   const request = managedLibraryFilesRequestSchema.parse(input);
   const routes = { "prepare-file": prepareManagedLibraryFile, "extract-library-info": extractManagedLibraryFiles,
     "prepare-fixture-archive": prepareManagedFixtureArchive,
+    "generate-fixture-archive": generateManagedFixtureArchive,
     "extract-project-info": extractManagedProjectFile, "extract-project-footprint-sources": extractManagedProjectFootprintSources,
     "list-project-footprint-sources": listManagedProjectFootprintSources,
     "read-project-footprint-source": readManagedProjectFootprintSource, "extract-symbol-sources": extractManagedSymbolSources,

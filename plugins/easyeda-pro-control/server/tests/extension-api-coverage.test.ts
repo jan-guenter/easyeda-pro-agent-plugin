@@ -9,6 +9,14 @@ import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
 import { isRecord } from "../src/core.ts";
 import { DESIGN_STRUCTURE_LIFECYCLE_REFUSAL } from "../src/design-execution-lifecycle.ts";
 
+void test("generated fixture archives and dormant Promise capture do not promote the public native importer", () => {
+  const row = inventoryExtensionApiCoverage().find(entry => entry.path === "eda.sys_FileManager.importProjectByProjectFile"); assert.ok(row);
+  assert.equal(row.status, "omitted"); assert.equal(row.routes.length, 0);
+  assert.equal(row.omission?.code, "managed-file-contract-needed");
+  assert.match(row.omission?.reason ?? "", /invokes no SDK importer/u);
+  assert.match(row.omission?.nextRequirement ?? "", /exclusively reserved Windows destination/u);
+});
+
 void test("supplied footprint archive coverage distinguishes exact offline source reads from current-document SDK export", () => {
   const row = inventoryExtensionApiCoverage().find(entry => entry.path === "eda.sys_FileManager.getDocumentFootprintSources"); assert.ok(row);
   assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
