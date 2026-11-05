@@ -7,12 +7,14 @@ import { currentPcb209WorkerStartupWire } from "./current-pcb-worker-startup-wir
 import { CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE as PROFILE } from "./current-project-structure-native-profile.ts";
 import { CURRENT_PROJECT_STRUCTURE_WORKER_SITES as SITES } from "./current-project-structure-worker-profile.ts";
 import { CURRENT_PROJECT_STRUCTURE_WORKER_CALLS as CALLS } from "./current-project-structure-worker-programs.ts";
+import { CURRENT_FOOTPRINT_COLD_PRODUCER_CALLS as COLD } from "./current-footprint-cold-producer-roster.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 const handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const argument = z.object({ objectId: handle }).strict();
 const group = CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group;
-const programNames = Object.keys(CALLS);
+const programs = Object.freeze({ ...CALLS, "cold-project": COLD.project, "cold-stream": COLD.stream, "cold-cooperation": COLD.cooperation });
+const programNames = Object.keys(programs);
 /* oxlint-disable unicorn/max-nested-calls -- Keep each strict fixed inspector shape together; parsed objects are copied before entering the schema. */
 const schema = z.discriminatedUnion("method", [
   z.object({ sessionId: handle.max(128), method: z.literal("Debugger.setBreakpoint"), params: z.object({ location: z.object({
@@ -36,13 +38,14 @@ export function currentProjectStructureWorkerWire(input: unknown, id: number): R
       if (site !== undefined) { request["phase"] = `site-${site[0]}`; request["scriptId"] = command.params.location.scriptId;
         return freezeDeep({ command: { ...command, id }, request }); }
     } else {
-      const selected = programNames.find(name => Reflect.get(CALLS, name) === command.params.functionDeclaration);
+      const selected = programNames.find(name => Reflect.get(programs, name) === command.params.functionDeclaration);
       if (selected !== undefined) {
         let count = 0;
         if (selected === "pristine") { count = 7; }
+        else if (selected === "cold-stream" || selected === "cold-cooperation") { count = 3; }
         else if (["packet", "debounce", "taskRemoved", "callbackKind"].includes(selected)) { count = 2; }
         else if (["same", "serial"].includes(selected)) { count = 1; }
-        const byValue = ["pristine", "same", "success", "taskRemoved", "packetText", "callbackKind"].includes(selected);
+        const byValue = ["pristine", "same", "success", "taskRemoved", "packetText", "callbackKind", "cold-project", "cold-stream", "cold-cooperation"].includes(selected);
         if (command.params.arguments.length !== count || command.params.returnByValue !== byValue) { throw new Error("PROJECT_STRUCTURE_WORKER_WIRE_SHAPE"); }
         request["phase"] = `call-${selected}`; request["objectId"] = command.params.objectId;
         for (const [index, arg] of command.params.arguments.entries()) { request[`argument${String(index)}`] = arg.objectId; }

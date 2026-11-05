@@ -7,10 +7,12 @@ import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-f
 import { CURRENT_PROJECT_STRUCTURE_WORKER_SITES as SITES } from "./current-project-structure-worker-profile.ts";
 import { CURRENT_PROJECT_STRUCTURE_WORKER_CALLS as CALLS } from "./current-project-structure-worker-programs.ts";
 import { currentProjectStructureWorkerWire } from "./current-project-structure-worker-wire.ts";
+import { CURRENT_FOOTPRINT_COLD_PRODUCER_CALLS as COLD } from "./current-footprint-cold-producer-roster.ts";
 import type { CurrentPcbWorkerStartupCommand as Command } from "./current-pcb-worker-startup-contract.ts";
 
 const literal = (value: string): string => `@"${value.replaceAll('"', '""')}"`;
-const programs = ["retain", "pristine", "serial", "debounce", "callbackKind", "packet", "taskSet", "data", "taskRemoved", "same", "packetText", "success"] as const;
+const calls = Object.freeze({ ...CALLS, "cold-project": COLD.project, "cold-stream": COLD.stream, "cold-cooperation": COLD.cooperation });
+const programs = ["retain", "pristine", "serial", "debounce", "callbackKind", "packet", "taskSet", "data", "taskRemoved", "same", "packetText", "success", "cold-project", "cold-stream", "cold-cooperation"] as const;
 /** Complete independent sample roster for native encoding and refusal smoke. */
 export function currentProjectStructureWorkerNativeCases(): readonly Command[] {
   return Object.freeze([
@@ -19,11 +21,12 @@ export function currentProjectStructureWorkerNativeCases(): readonly Command[] {
     ...programs.map(name => {
       let count = 0;
       if (name === "pristine") { count = 7; }
+      else if (name === "cold-stream" || name === "cold-cooperation") { count = 3; }
       else if (["debounce", "callbackKind", "packet", "taskRemoved"].includes(name)) { count = 2; }
       else if (["same", "serial"].includes(name)) { count = 1; }
-      return { method: "Runtime.callFunctionOn", sessionId: "structure_sessionId", params: { objectId: "structure_objectId", functionDeclaration: CALLS[name],
+      return { method: "Runtime.callFunctionOn", sessionId: "structure_sessionId", params: { objectId: "structure_objectId", functionDeclaration: calls[name],
         arguments: Array.from({ length: count }, (_, index) => ({ objectId: `structure_argument${String(index)}` })),
-        objectGroup: CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group, returnByValue: ["pristine", "callbackKind", "taskRemoved", "same", "packetText", "success"].includes(name),
+        objectGroup: CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group, returnByValue: ["pristine", "callbackKind", "taskRemoved", "same", "packetText", "success", "cold-project", "cold-stream", "cold-cooperation"].includes(name),
         silent: true, generatePreview: false, throwOnSideEffect: true, awaitPromise: false, userGesture: false } } as const;
     }),
   ] satisfies Command[]);

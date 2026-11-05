@@ -4,7 +4,7 @@
  * create/Save and writer permits remain outside this class. */
 import { z } from "zod";
 // oxlint-disable-next-line import/no-cycle -- Retain the genuine construction issuer and original startup transport; no initialization work crosses the cycle.
-import { isOriginalFootprintExecutionConstructionTransport, isOriginalFootprintHeldSavedConstructionTransport, isOriginalFootprintPreparationConstructionTransport, isOriginalFootprintSavedConstructionTransport, originalFootprintExecutionConstructionProjectUuid, requestFootprintExecutionConstructionCache, requireOriginalProjectStructureConstructionDependency } from "./current-footprint-copy-construction-purpose.ts";
+import { isOriginalFootprintExecutionConstructionTransport, isOriginalFootprintHeldSavedConstructionTransport, isOriginalFootprintPreparationConstructionTransport, isOriginalFootprintSavedConstructionTransport, isOriginalProjectStructureConstructionTransport, originalFootprintExecutionConstructionProjectUuid, requestFootprintExecutionConstructionCache, requireOriginalProjectStructureConstructionDependency } from "./current-footprint-copy-construction-purpose.ts";
 import { CurrentFootprintCopyCacheConstructionRunner } from "./current-footprint-copy-cache-construction-runner.ts";
 import type { CurrentFootprintCopyCacheConstructionObservation, CurrentFootprintCopyCacheConstructionTransport } from "./current-footprint-copy-cache-construction-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
@@ -80,6 +80,8 @@ import type { CurrentFootprintCopyCreateInvocationBinding, CurrentFootprintCopyC
 import { captureCurrentProjectStructureCompletionReply } from "./current-project-structure-completion-protocol.ts";
 import { CURRENT_PROJECT_STRUCTURE_WORKER_CALLS } from "./current-project-structure-worker-programs.ts";
 import type { CurrentProjectStructureWorkerBinding, CurrentProjectStructureWorkerEvents, CurrentProjectStructureWorkerLease } from "./current-project-structure-worker-lease.ts";
+import { CURRENT_FOOTPRINT_COLD_PRODUCER_CALLS, CURRENT_FOOTPRINT_COLD_PRODUCER_REQUESTS } from "./current-footprint-cold-producer-roster.ts";
+import type { CurrentFootprintColdProducerRoster } from "./current-footprint-cold-producer-roster.ts";
 
 const structureLeases = new WeakMap<CurrentProjectStructureWorkerLease, CurrentProjectStructureWorkerBinding>();
 /** Require this construction owner's original worker lease and recheck cleanup
@@ -256,6 +258,8 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     sha256: string; bytes: number; value: unknown }> | null = null;
   #assignments: CurrentPcbWorkerConstructionAssignments | null = null;
   #assignedWrappers: Readonly<Record<CurrentPcbWorkerConstructionAssignment, string>> | null = null;
+  #coldProducerRoster: CurrentFootprintColdProducerRoster | null = null;
+  #coldProducerWrappers: Readonly<Record<CurrentPcbWorkerConstructionAssignment, string>> | null = null;
   #projectIdentityConsumed = false;
   #projectIdentity: CurrentPcbWorkerConstructionProjectIdentity | null = null;
   #actorSampleAttempts = 0;
@@ -444,6 +448,9 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     let limitMs: number = CURRENT_PCB_209_STARTUP_TIMING.legacyPauseMs;
     if (this.#profile === "private.current-footprint-copy-construction.v1") { limitMs = CURRENT_FOOTPRINT_COPY_CONSTRUCTION_TIMING.pauseMs[index] ?? limitMs; }
     else if (this.#current209) { limitMs = CURRENT_PCB_209_STARTUP_TIMING.constructionPauseMs[index] ?? limitMs; }
+    if (this.#sequence[index] === "bootstrap" && isOriginalProjectStructureConstructionTransport(this.#transport)) {
+      limitMs += CURRENT_FOOTPRINT_COLD_PRODUCER_REQUESTS * 3 * CURRENT_PCB_209_STARTUP_TIMING.requestMs;
+    }
     const window = Object.freeze({ startedAtMs: currentPcbStartupMonotonicMs(), limitMs });
     const paused: RetainedPause = { raw, captureError, index, window, resumeOrigin: null,
       resumed: Promise.withResolvers(), resumeConsumed: false, resumeObserved: false, resumeResult: null,
@@ -567,6 +574,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       const bus = this.#identities.channelBus, original = this.#identities.project;
       if (original === undefined || bus === undefined) { throw fail("MISSING_OWNER"); }
       await this.#same(original, bus, true);
+      if (isOriginalProjectStructureConstructionTransport(this.#transport)) { await this.#captureColdProducerRoster(); }
       if (this.#profile === "private.current-footprint-copy-construction.v1" && isOriginalFootprintExecutionConstructionTransport(this.#transport)) {
         await this.#armFootprintCacheConstruction(original);
       }
@@ -792,6 +800,59 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     wrappers: Readonly<Record<CurrentPcbWorkerConstructionAssignment, string>>, assignmentStep?: string): Promise<void> {
     resultBoolean.parse(await this.#assignmentCall(original.project, CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_RECHECK,
       [original.channelBus, wrappers.uploadStructure, wrappers.structure, wrappers.cooperation, wrappers.upload], true, undefined, assignmentStep));
+  }
+  /** Runs in the original bootstrap frame before EP registers an RPC service.
+   * Scopes are read only while that same frame remains paused; the roster
+   * retains wrapper identities, never a stale lexical-scope value snapshot. */
+  async #captureColdProducerRoster(): Promise<void> {
+    if (this.#coldProducerRoster !== null || this.#pause?.resumeConsumed !== false || this.#sequence[this.#pause.index] !== "bootstrap" ||
+        !isOriginalProjectStructureConstructionTransport(this.#transport)) { throw fail("COLD_PRODUCER_BOOTSTRAP"); }
+    const original = Object.freeze(z.object({ project: token, channelBus: token, channel: token, onmessage: token,
+      upload: token, cooperation: token, uploadStructure: token, structure: token, structureDebounce: token }).strict().parse(this.#identities));
+    const wrappers: Partial<Record<CurrentPcbWorkerConstructionAssignment, string>> = {};
+    let debounceParameters: string | undefined, debounceScope: string | undefined, structureScope: string | undefined, uploadScope: string | undefined;
+    resultBoolean.parse(await this.#assignmentCall(original.project, CURRENT_FOOTPRINT_COLD_PRODUCER_CALLS.project, []));
+    for (const field of ["uploadStructure", "structure", "cooperation", "upload"] as const) {
+      const kind = field === "uploadStructure" || field === "structure" ? "serial" : field;
+      const wrapper = this.#decoders.producerFunction(await this.#assignmentCall(original.project,
+        CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_SELECTORS[field], [], false), kind);
+      const scopes = await this.#assignmentScopes(wrapper, kind, field);
+      const scope = scopes[0];
+      if (scope === undefined) { throw fail("COLD_PRODUCER_SCOPE"); }
+      const callback = field === "structure" ? original.structureDebounce : original[field];
+      resultBoolean.parse(await this.#assignmentCall(scope, CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_RELATIONS[field], [original.project, wrapper, callback]));
+      if (field === "structure") {
+        const debounce = await this.#assignmentScopes(original.structureDebounce, "debounce", "debounce");
+        debounceScope = debounce[0]; debounceParameters = debounce[1]; structureScope = scope;
+        if (debounceParameters === undefined) { throw fail("COLD_PRODUCER_SCOPE"); }
+        resultBoolean.parse(await this.#assignmentCall(debounceParameters, CURRENT_PCB_WORKER_CONSTRUCTION_DEBOUNCE_RELATION,
+          [original.project, wrapper, scope, original.structureDebounce, original.structure]));
+      } else if (field === "uploadStructure") { uploadScope = scope; }
+      else { resultBoolean.parse(await this.#assignmentCall(scope, CURRENT_FOOTPRINT_COLD_PRODUCER_CALLS[field === "upload" ? "stream" : "cooperation"],
+        [original.project, wrapper, callback])); }
+      wrappers[field] = wrapper;
+    }
+    if (uploadScope === undefined || structureScope === undefined || debounceScope === undefined || debounceParameters === undefined) { throw fail("COLD_PRODUCER_SCOPE"); }
+    resultBoolean.parse(await this.#assignmentCall(original.project, CURRENT_PROJECT_STRUCTURE_WORKER_CALLS.pristine,
+      [uploadScope, structureScope, debounceScope, debounceParameters, original.uploadStructure, original.structureDebounce, original.structure]));
+    const complete = Object.freeze(z.object({ uploadStructure: token, structure: token, cooperation: token, upload: token }).strict().parse(wrappers));
+    await this.#assignmentRecheck(original, complete);
+    this.#coldProducerWrappers = complete;
+    this.#coldProducerRoster = Object.freeze({ profile: "private.current-footprint-cold-producer-roster.v1",
+      originalBootstrapBeforeRpcRegistrationObserved: true, originalFourWrappersAndCallbacksRetained: true,
+      originalSerialDebounceBufferedAndPublishDormancyObserved: true, projectCachesUnassignedAtBootstrapObserved: true,
+      continuousProducerExclusionVerified: false, detachedCacheAndRetryOutcomesVerified: false, completeUploadFrontierVerified: false, executionAuthorized: false });
+  }
+  /** Reprove the original construction and current assignment membership.
+   * Dormancy is a historical bootstrap fact, never a cached frontier grant. */
+  public async originalColdProducerRoster(packet: ConstructionPacket<P>): Promise<CurrentFootprintColdProducerRoster> {
+    const original = await this.#requireOriginal(packet), roster = this.#coldProducerRoster, wrappers = this.#coldProducerWrappers;
+    if (roster === null || wrappers === null || !isOriginalProjectStructureConstructionTransport(this.#transport)) { throw fail("COLD_PRODUCER_ORIGINAL_ROSTER"); }
+    try {
+      await this.#assignmentRecheck(original, wrappers); await this.#requireOriginal(packet);
+      if (this.#coldProducerRoster !== roster || this.#coldProducerWrappers !== wrappers) { throw fail("COLD_PRODUCER_ORIGINAL_ROSTER"); }
+      return roster;
+    } catch (error) { this.#fail("COLD_PRODUCER_CHANGED"); throw error; }
   }
   /** This original-event continuation is not a supplied-data projection. Every
    * callback argument comes from the retained constructor pauses. Current

@@ -6,13 +6,14 @@ import { CURRENT_PCB_WORKER_STARTUP_STREAM_LIMITS as STREAM } from "./current-pc
 import { CURRENT_PROJECT_STRUCTURE_MAIN_REQUESTS as STRUCTURE } from "./current-project-structure-main-protocol.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_PROJECT_STRUCTURE_WORKER_REQUESTS } from "./current-project-structure-worker-profile.ts";
+import { CURRENT_FOOTPRINT_COLD_PRODUCER_REQUESTS } from "./current-footprint-cold-producer-roster.ts";
 
 export const CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE = "project-structure209";
 // Every observer normal request rechecks assignments before and after its own
 // Command. Each freshScopes additionally needs one recheck and six metadata
 // Reads. Arm and final observation each have one standalone owner recheck.
-const requestsPerObserver = 3, requestsPerScopes = 7, standaloneRechecks = 2, startup = 256, startupNormal = 224;
-const startupCleanup = startup - startupNormal;
+const originalStartupNormal = 224, requestsPerObserver = 3, requestsPerScopes = 7, standaloneRechecks = 2, startup = 256;
+const startupCleanup = startup - originalStartupNormal, startupNormal = originalStartupNormal + CURRENT_FOOTPRINT_COLD_PRODUCER_REQUESTS;
 const workerNormal = startupNormal + CURRENT_PROJECT_STRUCTURE_WORKER_REQUESTS.normal * requestsPerObserver +
   CURRENT_PROJECT_STRUCTURE_WORKER_REQUESTS.scopes * requestsPerScopes + standaloneRechecks;
 const workerCleanup = startupCleanup + CURRENT_PROJECT_STRUCTURE_WORKER_REQUESTS.cleanup;
@@ -27,7 +28,8 @@ const cleanupControls = reproofControls * (workerCleanup * parentProofs + mainCl
 export const CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE = freezeDeep({
   purpose: CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE, nativeSwitch: "-ProjectStructure209",
   worker: { normal: workerNormal, cleanup: workerCleanup, total: workerNormal + workerCleanup,
-    derivation: { startup, startupNormal, startupCleanup, requestsPerObserver, requestsPerScopes, standaloneRechecks } },
+    derivation: { startup, startupNormal, startupCleanup, originalStartupNormal, coldProducerRequests: CURRENT_FOOTPRINT_COLD_PRODUCER_REQUESTS,
+      requestsPerObserver, requestsPerScopes, standaloneRechecks } },
   main: { normal: mainNormal, cleanup: mainCleanup, total: mainNormal + mainCleanup },
   controls: { normal: normalControls, cleanup: cleanupControls, total: normalControls + cleanupControls,
     derivation: { parentProofs, reproofControls, mainNormalPolls: MAIN_STREAM.normalPolls, mainTotalPolls: MAIN_STREAM.totalPolls,

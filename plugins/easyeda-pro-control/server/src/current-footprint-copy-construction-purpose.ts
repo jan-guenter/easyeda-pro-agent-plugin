@@ -32,6 +32,12 @@ export function requireOriginalProjectStructureConstructionDependency(transport:
     throw new Error("PROJECT_STRUCTURE_CONSTRUCTION_ORIGINAL_DEPENDENCY");
   }
 }
+/** Only the original dedicated startup binding enables the early bootstrap
+ * roster. Caller transport fields and another native purpose cannot select it. */
+export function isOriginalProjectStructureConstructionTransport(transport: CurrentPcbWorkerConstructionTransport): boolean {
+  const dependency = structureOriginals.get(transport);
+  return dependency !== undefined && isOriginalProjectStructureDependency(dependency);
+}
 export function isOriginalFootprintSavedConstructionTransport(transport: CurrentPcbWorkerConstructionTransport): boolean { return savedOriginals.has(transport); }
 /** Distinct held-saved state-read marker; old saved and writer markers are not
  * inferred from this transport's shape or its separately retained identity.
