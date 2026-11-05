@@ -12,12 +12,14 @@ import { sha256Json } from "../../src/core.ts";
 import { CurrentFootprintForwardExecutionOpeningJournal } from "../../src/current-footprint-forward-execution-opening-journal.ts";
 import type { CurrentFootprintForwardExecutionOpeningProvider } from "../../src/current-footprint-forward-execution-opening.ts";
 import type { CurrentFootprintForwardExecutionOpeningRequest } from "../../src/current-footprint-forward-execution-opening-contract.ts";
+import type { CurrentPcb209WorkerStartupOpening } from "../../src/current-pcb-209-worker-startup-opening.ts";
 import { forwardExecutionOpeningJournalFixture } from "./forward-execution-opening-journal-fixture.ts";
 import { combinedReadyFactoryFixture } from "./current-footprint-combined-ready-fixture.ts";
 
 export async function forwardExecutionOpeningProviderFixture(request: CurrentFootprintForwardExecutionOpeningRequest,
   mode?: "prepared-publication" | "prelaunch-cleanup-ack" | "no-allocation-cleanup-ack" | "no-process-cleanup-ack" | "no-process-preflight" | "launched" | "allocation-current" | "launch-intent-ack" | "launch-intent-cleanup-ack" | "launch-current" | "launch-current-cleanup-ack" | "ensure-storage" | "held-storage" | "create-ack" | "create-conflict",
-  supplied: Readonly<{ verifyNativeGraph?: () => Promise<void>; childProgram?: string; launchTarget?: Readonly<{ windowsPath: string; sha256: string }> }> = {}): Promise<Readonly<{
+  supplied: Readonly<{ verifyNativeGraph?: () => Promise<void>; childProgram?: string; launchTarget?: Readonly<{ windowsPath: string; sha256: string }>;
+    openingForRelease?: Readonly<{ Constructor: typeof CurrentPcb209WorkerStartupOpening; opening: CurrentPcb209WorkerStartupOpening }> }> = {}): Promise<Readonly<{
   provider: CurrentFootprintForwardExecutionOpeningProvider;
   factory: Awaited<ReturnType<typeof combinedReadyFactoryFixture>>;
   state: { allocations: number; checkpointReads: number; sqlReads: number; preparedWasPublished: boolean; producerWasPublished: boolean; installationChecks: number; currentFailures: number };
@@ -44,7 +46,13 @@ export async function forwardExecutionOpeningProviderFixture(request: CurrentFoo
   const factory = await combinedReadyFactoryFixture(mode === "prelaunch-cleanup-ack" || noProcess || mode === "launched" || mode === "allocation-current" || postIntent ? "ready" : "wrong-challenge", "forward-execution", false,
     { modules, ...(childProgram === undefined ? {} : { childProgram }), ...(supplied.launchTarget === undefined ? {} : { launchTarget: supplied.launchTarget }) });
   const source = new URL("../../src/current-footprint-forward-execution-opening.ts", import.meta.url); const require = createRequire(source);
-  const output = await transform(await readFile(source, "utf8"), { loader: "ts", format: "cjs", target: "node24" });
+  let providerSource = await readFile(source, "utf8");
+  if (supplied.openingForRelease !== undefined) {
+    // Attach a genuine settled StartupOpening inside the transformed test module.
+    // Native owner allocation, termination and release stay original.
+    providerSource = providerSource.replace("  public async release(): Promise<void> {", "  public syntheticOpeningForReleaseForTest(opening: CurrentFootprintCopyStartupOpening): void { need(this.#opening === null && opening.status().settled, 'SYNTHETIC_SETTLED_OPENING'); this.#opening = opening; this.#openingInvoked = true; }\n  public async release(): Promise<void> {");
+  }
+  const output = await transform(providerSource, { loader: "ts", format: "cjs", target: "node24" });
   const loaded = { exports: {} }, state = { allocations: 0, checkpointReads: 0, sqlReads: 0, preparedWasPublished: false, producerWasPublished: false, installationChecks: 0, currentFailures: 0 };
   const installationFile = Object.freeze({ windowsPath: "C:\\Synthetic\\easyeda-pro.exe", bytes: 1, sha256: "e".repeat(64) });
   const installationPlan = Object.freeze({ schema: "easyeda-pro-control.pcb-diagnostic-installation.v1", files: Object.freeze([installationFile]) });
@@ -69,6 +77,9 @@ export async function forwardExecutionOpeningProviderFixture(request: CurrentFoo
   }
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${output.code}\n})`); assert.ok(typeof evaluate === "function");
   Reflect.apply(evaluate, undefined, [(name: string): unknown => {
+    if (name === "./current-pcb-209-worker-startup-opening.ts" && supplied.openingForRelease !== undefined) {
+      return { CurrentFootprintCopyStartupOpening: supplied.openingForRelease.Constructor };
+    }
     if (name === "./current-footprint-forward-execution-opening-journal.ts") { return { CurrentFootprintForwardExecutionOpeningJournal: InterruptedJournal }; }
     if (name === "./current-pcb-diagnostic-owner.ts") {
       const actual: unknown = require("./current-pcb-diagnostic-owner.ts"); assert.ok(actual !== null && typeof actual === "object");
@@ -112,5 +123,10 @@ export async function forwardExecutionOpeningProviderFixture(request: CurrentFoo
     if (failCurrent) { failCurrent = false; state.currentFailures += 1; throw new Error(`synthetic ${mode === "allocation-current" ? "post-allocation" : "post-launch-intent"} current check failed`); }
   },
     assertAllowed: (): Promise<void> => Promise.resolve(), assertOtherLaunchesSettled: (): Promise<void> => Promise.resolve() }));
+  if (supplied.openingForRelease !== undefined) {
+    assert.ok(supplied.openingForRelease.opening instanceof supplied.openingForRelease.Constructor);
+    const attach: unknown = Reflect.get(provider, "syntheticOpeningForReleaseForTest"); assert.ok(typeof attach === "function");
+    Reflect.apply(attach, provider, [supplied.openingForRelease.opening]);
+  }
   return Object.freeze({ provider, factory, state, journalFixture });
 }

@@ -41,6 +41,15 @@ whole-SQL readers, and complete materialized history equality. It also excludes
 other unfinished operations. Refusal or changed data grants no retry of the
 original capture and no permission to alter a journal or lease.
 
+The first Linux absence sample precedes expensive global history scans, so an
+idle conflict stub refuses before Windows or file collection. Exact original
+history and local unused-owner checks remain fresh across every file await.
+The complete foreign-operation gate runs before new receipt publication. Its
+completed readers and original old/fresh/raw files are revalidated afterward,
+then the final Windows/Linux observations and file recheck complete. A copied
+file-proof JSON object cannot supply that retained validator. This changes no
+live admission guard and caches no quarantine clearance.
+
 Publication appends separate exclusive receipt files and preserves the original
 journal. After an uncertain response, retain this same resolver. The separate
 `settle-unknown-source-opening` action takes the same expected digests and
@@ -68,3 +77,9 @@ The metadata reservation persists while an observation or publication is active.
 A receipt never proves that the original source capture completed, that a helper
 released, or that a later writer can run. Retire the resourceless facade normally
 before selecting a fresh generation for a new disposable validation operation.
+The retirement exception requires a permanently restricted validated callback
+history, the same finished original metadata coordinator, no reservation or
+allocation, zero active calls and the original native-owner checks. It preserves
+foreign historical blockers. Admitting a status, discovery, calculation or
+other non-reference callback disqualifies this exception; a caller cannot select
+it with a flag. Older installed facades can lack this unused-metadata cleanup.

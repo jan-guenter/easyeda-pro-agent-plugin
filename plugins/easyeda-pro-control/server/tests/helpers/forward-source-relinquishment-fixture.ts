@@ -46,6 +46,7 @@ export async function forwardSourceRelinquishmentFixture(context: TestContext, s
   owner: CurrentFootprintForwardSourceUnknownRelinquishment;
   state: { installation: number; linux: number; windows: number; files: number; otherLinux: boolean; windowsPresent: boolean; fileMismatch: boolean; loseResultAck: boolean;
     failIntentPublication: boolean; intentSnapshots: object[]; intentValues: unknown[];
+    globalChecks: number; revalidations: number; changeFileAfterGlobal: boolean;
     hold: boolean; entered: PromiseWithResolvers<null>; release: PromiseWithResolvers<null> };
   restart: () => CurrentFootprintForwardSourceUnknownRelinquishment;
 }>> {
@@ -94,6 +95,7 @@ export async function forwardSourceRelinquishmentFixture(context: TestContext, s
     "current-pcb-diagnostic-lifecycle-journal.ts", "closed-symbol-terminal-admission.ts", "engine.ts"];
   const state = { installation: 0, linux: 0, windows: 0, files: 0, otherLinux: false, windowsPresent: false, fileMismatch: false, loseResultAck: false,
     failIntentPublication: false, intentSnapshots: [] as object[], intentValues: [] as unknown[],
+    globalChecks: 0, revalidations: 0, changeFileAfterGlobal: false,
     hold: false, entered: Promise.withResolvers<null>(), release: Promise.withResolvers<null>() };
   const outputs = new Map<string, string>(); const cache = new Map<string, { exports: Record<string, unknown> }>();
   for (const name of names) {
@@ -161,14 +163,17 @@ export async function forwardSourceRelinquishmentFixture(context: TestContext, s
       // No fixture creates an application owner.
     },
     assertOtherLaunchesSettled: async (snapshot): Promise<void> => {
+      state.globalChecks += 1;
       if (state.hold) { state.entered.resolve(null); await state.release.promise; }
       await engine.assertForwardSourceRelinquishmentOtherOperationsSettled(snapshot);
+      if (state.changeFileAfterGlobal) { state.fileMismatch = true; }
     } };
   const fileProof = currentFootprintForwardOpeningFileProofSchema.parse({ profile: "private.current-footprint-forward-opening-file-proof.v1",
     projectUuid: target.projectUuid, branchUuid: "b".repeat(32), documentUuid: target.documentUuid, oldCheckpointSha256: digest, freshCheckpointSha256: digest,
     oldCheckpointReceiptSha256: sha256Json(checkpoint.checkpoint), freshCheckpointReceiptSha256: digest, beforeSqlSha256: digest, freshSqlSha256: digest,
     rawSourceSha256: digest, oldHistorySemanticSha256: digest, freshHistorySemanticSha256: digest,
     fullSqlEqual: true, historyEqual: true, sidecarsAbsent: true, executionAuthorized: false, writerAuthority: false, restored: false });
+  let fileCurrent: (() => Promise<void>) | null = null;
   const deps: CurrentFootprintForwardSourceUnknownRelinquishmentDependencies = {
     verifyInstallation: (): Promise<ReturnType<typeof createCurrentPcb209DiagnosticInstallationPlan> & { facadeSha256: string }> => {
       state.installation += 1; return Promise.resolve({ ...createCurrentPcb209DiagnosticInstallationPlan(options), facadeSha256: digest });
@@ -178,7 +183,12 @@ export async function forwardSourceRelinquishmentFixture(context: TestContext, s
       state.windows += 1; return Promise.resolve({ schema: "easyeda-pro-control.ordinary-launch-recovery-observation.v1", samples: 2,
         otherPowerShellPresent: state.windowsPresent, sameNameProcessPresent: state.windowsPresent, helperSha256: ORDINARY_LAUNCH_RECOVERY_HELPER.sha256 });
     },
-    collectFileProof: async (_input, current) => { state.files += 1; await current(); assert.equal(state.fileMismatch, false, "Synthetic complete-file proof refusal"); return fileProof; },
+    collectFileProof: async (_input, current) => { state.files += 1; fileCurrent = current; await current(); assert.equal(state.fileMismatch, false, "Synthetic complete-file proof refusal"); return fileProof; },
+    revalidateFileProof: async proof => {
+      assert.equal(proof, fileProof); assert.ok(fileCurrent !== null);
+      state.revalidations += 1; await fileCurrent();
+      assert.equal(state.fileMismatch, false, "Synthetic completed-file revalidation refusal");
+    },
     publishRecord: async (snapshot, name, value): Promise<void> => {
       if (name === "intent.json") { state.intentSnapshots.push(snapshot); state.intentValues.push(value); }
       await historical.publishCurrentFootprintForwardSourceRelinquishment(snapshot, name, value);

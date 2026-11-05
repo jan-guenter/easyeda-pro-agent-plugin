@@ -17,7 +17,7 @@ import { assertNoUnresolvedOrdinaryLaunches } from "./ordinary-launch.ts";
 import { verifyCurrentPcb209DiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
 import { observeOrdinaryLaunchRecovery } from "./ordinary-launch-recovery.ts";
 import { observeOtherCurrentFootprintCombinedLinuxFacade } from "./current-footprint-combined-linux-facade-observation.ts";
-import { collectCurrentFootprintForwardOpeningFileProofInput } from "./current-footprint-forward-opening-relinquishment-file-proof.ts";
+import { collectCurrentFootprintForwardOpeningFileProofInput, revalidateCurrentFootprintForwardOpeningFileProof } from "./current-footprint-forward-opening-relinquishment-file-proof.ts";
 
 export type CurrentFootprintForwardSourceUnknownRelinquishmentOptions = Omit<CurrentPcbDiagnosticLifecycleOptions, "assertOtherLaunchesSettled" | "assertAllowed"> & Readonly<{
   assertFreshNoOwnedAllocations: () => void;
@@ -30,6 +30,7 @@ export interface CurrentFootprintForwardSourceUnknownRelinquishmentDependencies 
   readonly observeLinux?: typeof observeOtherCurrentFootprintCombinedLinuxFacade;
   readonly publishRecord?: typeof publishCurrentFootprintForwardSourceRelinquishment;
   readonly collectFileProof?: typeof collectCurrentFootprintForwardOpeningFileProofInput;
+  readonly revalidateFileProof?: typeof revalidateCurrentFootprintForwardOpeningFileProof;
 }
 interface Pending { readonly token: object; readonly original: CurrentFootprintForwardSourceHistoricalSnapshot; readonly intent: Intent; readonly result: Result }
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`FORWARD_SOURCE_RELINQUISHMENT_${code}`); } }
@@ -43,6 +44,7 @@ export class CurrentFootprintForwardSourceUnknownRelinquishment {
   readonly #linux: typeof observeOtherCurrentFootprintCombinedLinuxFacade;
   readonly #publish: typeof publishCurrentFootprintForwardSourceRelinquishment;
   readonly #files: typeof collectCurrentFootprintForwardOpeningFileProofInput;
+  readonly #revalidateFiles: typeof revalidateCurrentFootprintForwardOpeningFileProof;
   readonly #observations = new WeakMap<object, Readonly<{ original: CurrentFootprintForwardSourceHistoricalSnapshot; nonceSha256: string; text: string }>>();
   #lease: CurrentPcbDiagnosticLaunchLease | null = null;
   #pending: Pending | null = null;
@@ -55,6 +57,7 @@ export class CurrentFootprintForwardSourceUnknownRelinquishment {
     this.#linux = dependencies.observeLinux ?? observeOtherCurrentFootprintCombinedLinuxFacade;
     this.#publish = dependencies.publishRecord ?? publishCurrentFootprintForwardSourceRelinquishment;
     this.#files = dependencies.collectFileProof ?? collectCurrentFootprintForwardOpeningFileProofInput;
+    this.#revalidateFiles = dependencies.revalidateFileProof ?? revalidateCurrentFootprintForwardOpeningFileProof;
   }
   /** Unknown publication acknowledgments retain this metadata reservation until
    * the same original pending bytes are settled. It owns no native resources. */
@@ -63,13 +66,19 @@ export class CurrentFootprintForwardSourceUnknownRelinquishment {
     this.#options.assertLocalAllowed(); this.#options.assertFreshNoOwnedAllocations();
     if (this.#lease !== null) { assertCurrentPcbDiagnosticLaunchExclusion(this.#lease); }
   }
-  /** Recheck original bytes and every other launch after each proof await. The
-   * only selected exception is this exact private reader-issued snapshot. */
+  /** Keep the original immutable history and unused coordinator current at
+   * every file await. This metadata-only path allocates no application owner. */
   async #current(original: CurrentFootprintForwardSourceHistoricalSnapshot): Promise<void> {
     this.#local(); await assertCurrentFootprintForwardSourceHistoricalSnapshot(original); this.#local();
-    await this.#options.assertOtherLaunchesSettled(original); this.#local();
-    await assertNoUnresolvedOrdinaryLaunches(); this.#local();
-    await assertCurrentFootprintForwardSourceRelinquishmentIsolated(original); this.#local();
+  }
+  /** Recheck every foreign operation before producing new receipt bytes.
+   * Process and completed-file observations are refreshed after this potentially
+   * expensive read. This gate grants no live or cached quarantine clearance. */
+  async #publicationGate(original: CurrentFootprintForwardSourceHistoricalSnapshot): Promise<void> {
+    await this.#current(original);
+    await this.#options.assertOtherLaunchesSettled(original); await this.#current(original);
+    await assertNoUnresolvedOrdinaryLaunches(); await this.#current(original);
+    await assertCurrentFootprintForwardSourceRelinquishmentIsolated(original); await this.#current(original);
   }
   /** Collect one lexical observation plan and publish only separate sidecars.
    * Repeated calls settle original pending bytes; no application work is replayed. */
@@ -96,14 +105,21 @@ export class CurrentFootprintForwardSourceUnknownRelinquishment {
       }
       if (this.#pending === null) {
         const installation = await this.#verify(this.#options); await this.#current(original);
-        const nonce = randomBytes(32).toString("hex");
+        if (receipt !== null) {
+          need(receipt.intent.installationSha256 === sha256Json(installation) &&
+            receipt.intent.facadeSha256 === installation.facadeSha256, "INTENT_INSTALLATION_CHANGED");
+        }
         need(!await this.#linux(), "OTHER_LINUX_FACADE"); await this.#current(original);
+        const nonce = randomBytes(32).toString("hex");
         const observationBefore = await this.#windows(this.#options); await this.#current(original); windowsAbsent(observationBefore);
         const fileProof = await this.#files(source.fileInput, () => this.#current(original)); await this.#current(original);
-        const observation = await this.#windows(this.#options); await this.#current(original); windowsAbsent(observation);
-        need(!await this.#linux(), "OTHER_LINUX_FACADE"); await this.#current(original);
+        await this.#publicationGate(original);
+        await this.#revalidateFiles(fileProof); await this.#current(original);
         const finalInstallation = await this.#verify(this.#options); await this.#current(original);
         need(canonicalJson(finalInstallation) === canonicalJson(installation), "INSTALLATION_CHANGED");
+        const observation = await this.#windows(this.#options); await this.#current(original); windowsAbsent(observation);
+        need(!await this.#linux(), "OTHER_LINUX_FACADE"); await this.#current(original);
+        await this.#revalidateFiles(fileProof); await this.#current(original);
         const { fileInput: _input, historySemanticSha256: _history, ...fields } = source;
         const intent = receipt?.intent ?? currentFootprintForwardSourceRelinquishmentIntentSchema.parse({
           schema: "easyeda-pro-control.footprint-forward-source-relinquishment-intent.v1", ...fields,
@@ -121,7 +137,7 @@ export class CurrentFootprintForwardSourceUnknownRelinquishment {
         const token = Object.freeze({ profile: "private.forward-source-relinquishment-observation.v1" });
         this.#observations.set(token, Object.freeze({ original, nonceSha256: sha256Text(nonce), text: canonicalJson({ observationBefore, observation, fileProof }) }));
         this.#pending = Object.freeze({ token, original, intent: Object.freeze(intent), result: Object.freeze(result) });
-      }
+      } else { await this.#publicationGate(original); }
       const pending = this.#pending; await this.#current(original);
       const issued = this.#observations.get(pending.token);
       need(pending.original === original && issued !== undefined && issued.original === original && issued.nonceSha256 === pending.result.observationNonceSha256 &&

@@ -59,8 +59,29 @@ void test("Source historical isolation rejects copied snapshots, wrong digests a
   await createOperation({ schema: OPERATION_SCHEMA, operationId: other, plan: {}, planHash: buildPlanHash({}), state: "prepared", artifacts: [] });
   context.after(() => rm(operationPath(other), { force: true }));
   await assert.rejects(f.owner.run(f.request), /before native UI edits/u);
-  assert.equal(f.state.linux, 0); assert.equal(f.state.files, 0); assert.equal(f.owner.hasActiveReservation(), false);
+  assert.equal(f.state.linux, 1); assert.equal(f.state.files, 1); assert.equal(f.state.globalChecks, 1);
+  assert.equal(f.owner.hasActiveReservation(), false);
+  const current = await f.historical.readCurrentFootprintForwardSourceHistoricalSnapshot(f.operationId);
+  assert.equal(await f.historical.readCurrentFootprintForwardSourceRelinquishment(current), null);
   assert.deepEqual(await readFile(f.path), f.originalBytes);
+});
+
+void test("Source historical foreign facade refuses before global history or Windows/file collectors", async context => {
+  const f = await forwardSourceRelinquishmentFixture(context, "early-foreign-facade"); f.state.otherLinux = true;
+  await assert.rejects(f.owner.run(f.request), /OTHER_LINUX_FACADE/u);
+  assert.deepEqual({ global: f.state.globalChecks, linux: f.state.linux, windows: f.state.windows, files: f.state.files },
+    { global: 0, linux: 1, windows: 0, files: 0 });
+  assert.equal(f.owner.hasActiveReservation(), false); assert.deepEqual(await readFile(f.path), f.originalBytes);
+});
+
+void test("Source historical file drift during the global gate refuses before fresh absence and publication", async context => {
+  const f = await forwardSourceRelinquishmentFixture(context, "global-file-drift"); f.state.changeFileAfterGlobal = true;
+  await assert.rejects(f.owner.run(f.request), /completed-file revalidation refusal/u);
+  assert.deepEqual({ global: f.state.globalChecks, linux: f.state.linux, windows: f.state.windows, files: f.state.files, revalidated: f.state.revalidations },
+    { global: 1, linux: 1, windows: 1, files: 1, revalidated: 1 });
+  const original = await f.historical.readCurrentFootprintForwardSourceHistoricalSnapshot(f.operationId);
+  assert.equal(await f.historical.readCurrentFootprintForwardSourceRelinquishment(original), null);
+  assert.equal(f.owner.hasActiveReservation(), false); assert.deepEqual(await readFile(f.path), f.originalBytes);
 });
 
 for (const category of ["linux", "windows", "files"] as const) {
@@ -154,6 +175,40 @@ void test("Source historical settlement reuses a complete receipt but refuses in
   assert.deepEqual({ installation: f.state.installation, linux: f.state.linux, windows: f.state.windows, files: f.state.files }, counts);
   await assert.rejects(f.source.assertNoUnresolvedCurrentFootprintForwardExecutionOpenings(), /UNRESOLVED_OWNER/u);
   assert.deepEqual(await readFile(f.path), f.originalBytes);
+});
+
+for (const field of ["installationSha256", "facadeSha256"] as const) {
+  void test(`Source historical restarted collection refuses a reused intent with changed ${field}`, async context => {
+    const f = await forwardSourceRelinquishmentFixture(context, `intent-installation-${field.toLowerCase()}`);
+    await f.owner.run(f.request);
+    const directory = join(controlDataDirectory(), "footprint-forward-source-relinquishments-v1", f.operationId);
+    const intentPath = join(directory, "intent.json"), resultPath = join(directory, "relinquished.json");
+    await unlink(resultPath);
+    const intent: unknown = JSON.parse(await readFile(intentPath, "utf8")); assert.ok(isRecord(intent));
+    intent[field] = "c".repeat(64);
+    const changed = Buffer.from(`${JSON.stringify(intent)}\n`); await writeFile(intentPath, changed, { mode: 0o600 });
+    const before = { installation: f.state.installation, linux: f.state.linux, windows: f.state.windows, files: f.state.files };
+    const restarted = f.restart();
+    await assert.rejects(restarted.run(f.request), /INTENT_INSTALLATION_CHANGED/u);
+    assert.equal(restarted.hasActiveReservation(), false);
+    assert.deepEqual({ installation: f.state.installation, linux: f.state.linux, windows: f.state.windows, files: f.state.files },
+      { ...before, installation: before.installation + 1 });
+    await assert.rejects(readFile(resultPath), { code: "ENOENT" });
+    assert.deepEqual(await readFile(intentPath), changed); assert.deepEqual(await readFile(f.path), f.originalBytes);
+  });
+}
+
+void test("Source historical restarted collection retains a matching installation intent", async context => {
+  const f = await forwardSourceRelinquishmentFixture(context, "intent-installation-matching");
+  await f.owner.run(f.request);
+  const directory = join(controlDataDirectory(), "footprint-forward-source-relinquishments-v1", f.operationId);
+  const intentPath = join(directory, "intent.json"); const originalIntent = await readFile(intentPath);
+  await unlink(join(directory, "relinquished.json"));
+  const restarted = f.restart();
+  const result = f.contract.currentFootprintForwardSourceRelinquishmentResultSchema.parse(await restarted.run(f.request));
+  assert.equal(result.startupBlockerRelinquished, true); assert.equal(result.executionAuthorized, false); assert.equal(result.saveAuthorized, false);
+  assert.equal(restarted.hasActiveReservation(), false); assert.equal(f.state.files, 2);
+  assert.deepEqual(await readFile(intentPath), originalIntent); assert.deepEqual(await readFile(f.path), f.originalBytes);
 });
 
 void test("Source historical settlement retains failed publication custody after changed digests or original bytes", async context => {

@@ -8,6 +8,28 @@ path. Packages that ship `server/dist/control-session-manager.mjs` can run it
 without a source checkout or npm dependencies. Its frontend must still come
 from a trusted verified package or frozen build.
 
+A fresh subagent may also receive an automatically started host MCP connection.
+When the foreground manager owns the lease, that connection can be a metadata-only
+ownership-conflict stub. The conservative Linux absence probe counts it as another
+facade. Close the subagent's own stub before it returns or waits through recovery:
+inspect that original connection once, require the returned PID's startup-only
+conflict state with no lease, live admission or native resources, retain its
+original pidfd, then send `close-conflict` with `confirmCloseConflict:true` on the
+same connection once. Observe exit separately. The reported `observedOwnerPid`
+is a startup snapshot and is never the close target.
+
+Do not retry a closed transport, repeat an uncertain close or start another agent
+to adopt a lost connection. A resumed agent can receive a different connection.
+Preserve the original PID/start and package evidence for an authorized cleanup
+path; never infer native closure or writer authority from an idle stub's exit.
+
+An unused facade that performed only validated source references and the exact
+historical Source metadata workflow can retire after that original coordinator
+fully settles. Its private callback history, original references, zero active
+calls and no-allocation proof must all remain valid. Foreign historical blockers
+stay intact and later live admission still checks them. This exception is not a
+way to retire an attempted native owner or turn unknown publication into release.
+
 ## Establish one controller
 
 First query the current Codex connection's offline `loaded-facade`. Finish its

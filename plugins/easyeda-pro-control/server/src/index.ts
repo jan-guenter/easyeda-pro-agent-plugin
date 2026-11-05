@@ -239,6 +239,7 @@ let currentDisposableOpenCoordinator: CurrentDisposableOpenCoordinator | undefin
 let currentPcbRenameOperationCoordinator: CurrentPcbRenameOperationCoordinator | undefined;
 let currentSchematicRenameOperationCoordinator: CurrentSchematicRenameOperationCoordinator | undefined;
 let scheduledShutdown: Promise<void> | undefined;
+let assertUnusedForwardSourceHistoricalRetirement: (() => void) | undefined;
 /* oxlint-disable typescript/unbound-method -- Invoke these captured observers only on their original private-field controller, never through a replaceable property. */
 const forwardSourceCustodyMethods = Object.freeze({
   reserved: CurrentFootprintForwardSourceValidation.prototype.hasActiveReservation,
@@ -273,6 +274,11 @@ const facadeSession = new FacadeSessionRetirement({
   assertQuiescent: async (): Promise<void> => {
     assertSessionRetirementNativeOwnersSettled();
     if (facadeSession.isSourceReferenceOnly()) { return; }
+    if (facadeSession.isUnusedSourceMetadataOnly() && assertUnusedForwardSourceHistoricalRetirement !== undefined) {
+      assertUnusedForwardSourceHistoricalRetirement();
+      assertSessionRetirementNativeOwnersSettled();
+      return;
+    }
     await engine.assertBridgeAndNativeUiEditingAdmission();
     assertSessionRetirementNativeOwnersSettled();
     await assertNoUnresolvedOrdinaryLaunches();
@@ -2134,7 +2140,7 @@ registerFacadeTool(
   "easyeda_control_session",
   {
     title: "Inspect, retire or close this EasyEDA control connection",
-    description: "Cooperatively retire this original facade after every tool call, queued operation, journal and native owner has settled. retire requires confirmRetire:true. It refuses retained runtime/project/writer owners and active diagnostic reservations or allocations; complete original native cleanup first. It closes only its own upstream and authenticated gateway, then releases its own control lease. It never terminates EasyEDA, chooses Save/Discard, rebinds an owner or retries cleanup. Successful retirement permanently refuses every tool except this local state endpoint and source/reference easyeda_control_api queries. Managed-file preparation and SQL analysis refuse after retirement. Only after acknowledged retired state may a fresh MCP connection or fresh-context subagent start; an ownership-conflict connection never retries and loaded-facade/process admission must prove the replacement snapshot. Cleanup failure consumes retirement, keeps live admission closed and retains the lease after authority close failure. After successful retirement and no active calls, close-retired with confirmCloseRetired:true consumes one local closure request and schedules the normal facade shutdown on the next event-loop turn. Its separate close-scheduled result proves neither response delivery nor process exit; it never closes native owners or transfers authority. Older installed facades lack these routes.",
+    description: "Cooperatively retire this original facade after its own tool calls, queued operations, journals and native owners settle. A facade whose validated callback history contains only source references and this exact local historical metadata workflow may retire after its original coordinator settles, while preserving foreign historical blockers and granting no live admission. retire requires confirmRetire:true. It refuses retained runtime/project/writer owners and active diagnostic reservations or allocations; complete original native cleanup first. It closes only its own upstream and authenticated gateway, then releases its own control lease. It never terminates EasyEDA, chooses Save/Discard, rebinds an owner or retries cleanup. Successful retirement permanently refuses every tool except this local state endpoint and source/reference easyeda_control_api queries. Managed-file preparation and SQL analysis refuse after retirement. Only after acknowledged retired state may a fresh MCP connection or fresh-context subagent start; an ownership-conflict connection never retries and loaded-facade/process admission must prove the replacement snapshot. Cleanup failure consumes retirement, keeps live admission closed and retains the lease after authority close failure. After successful retirement and no active calls, close-retired with confirmCloseRetired:true consumes one local closure request and schedules the normal facade shutdown on the next event-loop turn. Its separate close-scheduled result proves neither response delivery nor process exit; it never closes native owners or transfers authority. Older installed facades lack these routes.",
     inputSchema: { request: sessionRetirementRequestSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   },
@@ -3174,7 +3180,8 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
   };
   let forwardSourceHistoricalOriginal: { readonly owner: CurrentFootprintForwardSourceUnknownRelinquishment;
     readonly run: CurrentFootprintForwardSourceUnknownRelinquishment["run"];
-    readonly reserved: CurrentFootprintForwardSourceUnknownRelinquishment["hasActiveReservation"]; readonly assertLocal: () => void } | undefined;
+    readonly reserved: CurrentFootprintForwardSourceUnknownRelinquishment["hasActiveReservation"]; readonly assertLocal: () => void;
+    readonly assertFreshNoOwnedAllocations: () => void; runSettled: boolean } | undefined;
   /** Retain one fresh historical coordinator without recreating the lost native
    * owner. Its fixed method graph and no-allocation guards survive every await. */
   const runForwardSourceHistorical = (request: CurrentFootprintForwardSourceRelinquishmentRequest): Promise<{ result: Record<string, unknown> }> => {
@@ -3237,7 +3244,18 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
         assertOtherLaunchesSettled, assertFreshNoOwnedAllocations });
       ownerReference.current = owner;
       // oxlint-disable-next-line typescript/unbound-method -- Dispatch supplies this exact retained historical coordinator as receiver.
-      forwardSourceHistoricalOriginal = { owner, run: owner.run, reserved: owner.hasActiveReservation, assertLocal };
+      const metadataOriginal = { owner, run: owner.run, reserved: owner.hasActiveReservation, assertLocal, assertFreshNoOwnedAllocations, runSettled: false };
+      forwardSourceHistoricalOriginal = metadataOriginal;
+      const assertRetirement = (): void => {
+        if (forwardSourceHistoricalOriginal !== metadataOriginal || assertUnusedForwardSourceHistoricalRetirement !== assertRetirement ||
+            metadataOriginal.owner !== owner || metadataOriginal.run !== capturedMethods[2] || metadataOriginal.reserved !== capturedMethods[3] ||
+            metadataOriginal.assertLocal !== assertLocal || metadataOriginal.assertFreshNoOwnedAllocations !== assertFreshNoOwnedAllocations ||
+            !metadataOriginal.runSettled || metadataOriginal.reserved.call(metadataOriginal.owner)) {
+          throw new Error("Retirement requires the original finished unused Source metadata coordinator.");
+        }
+        assertFreshNoOwnedAllocations();
+      };
+      assertUnusedForwardSourceHistoricalRetirement = assertRetirement;
     }
     const retained = forwardSourceHistoricalOriginal; retained.assertLocal();
     return bridgeGate.run(async () => {
@@ -3246,6 +3264,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       currentPcbWorkerStartupLifecycle = retained.owner;
       try { const result = await retained.run.call(retained.owner, request); retained.assertLocal(); return { result }; }
       finally {
+        retained.runSettled = true;
         if (currentPcbWorkerStartupLifecycle === retained.owner && !retained.reserved.call(retained.owner)) { currentPcbWorkerStartupLifecycle = undefined; }
       }
     });

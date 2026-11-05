@@ -53,7 +53,8 @@ function registrationSource(source: string): string {
 /** Exercise the real gate and retained method identities around a delayed
  * publication acknowledgment. This coordinator never receives native custody. */
 async function fixture(): Promise<Readonly<{ invoke: Handler; scope: vm.Context; entered: Promise<null>;
-  release: () => void; allocations: () => number; collections: () => number; scans: () => number; replaceMethod: () => void }>> {
+  release: () => void; allocations: () => number; collections: () => number; scans: () => number; replaceMethod: () => void;
+  assertRetirement: () => void }>> {
   const entered = Promise.withResolvers<null>(), release = Promise.withResolvers<null>();
   let allocations = 0, collections = 0, scans = 0;
   interface Options {
@@ -103,6 +104,7 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; scope: vm.Context;
     hasForwardSourceCustody: (): boolean => false,
     currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
     closedSymbolIndexReservation: undefined, closedSymbolUnreservedFailure: { observed: false }, scheduledShutdown: undefined,
+    assertUnusedForwardSourceHistoricalRetirement: undefined,
     currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined,
     guarded: (registered: Handler): Handler => async input => { const result = await registered(input); return result; },
     server: { registerTool: (name: string, _config: unknown, registered: Handler): void => {
@@ -120,6 +122,7 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; scope: vm.Context;
   assert.ok(handler);
   return { invoke: handler, scope, entered: entered.promise, release: (): void => { release.resolve(null); },
     allocations: (): number => allocations, collections: (): number => collections, scans: (): number => scans,
+    assertRetirement: (): void => { vm.runInContext("assertUnusedForwardSourceHistoricalRetirement()", scope); },
     replaceMethod: (): void => { Object.defineProperty(Historical.prototype, "run", { value: (): never => assert.fail("Replacement must not run") }); } };
 }
 
@@ -132,10 +135,12 @@ void test("Source historical registration retains unknown publication and settle
   assert.equal(f.allocations(), 0); assert.equal(f.collections(), 0); assert.equal(f.scans(), 0);
   const pending = f.invoke(wrap(historical)); await f.entered;
   try {
+    assert.throws(() => { f.assertRetirement(); }, /original finished unused/u);
     await assert.rejects(f.invoke({ request: { action: "footprint-forward-prewrite", request: { action: "inspect", operationId: "footprint-copy-qualify-registration" } } }), /source historical relinquishment reserves/u);
     assert.equal(f.allocations(), 1); assert.equal(f.collections(), 1); assert.equal(f.scans(), 1);
   } finally { f.release(); }
   await assert.rejects(pending, /publication acknowledgment unknown/u);
+  assert.throws(() => { f.assertRetirement(); }, /original finished unused/u);
   assert.equal(vm.runInContext("currentPcbWorkerStartupLifecycle === forwardSourceHistoricalOriginal.owner", f.scope), true);
   await assert.rejects(f.invoke({ request: { action: "footprint-forward-prewrite", request: { action: "inspect", operationId: "footprint-copy-qualify-registration" } } }), /source historical relinquishment reserves/u);
   const settled = await f.invoke(wrap(historical));
@@ -144,9 +149,23 @@ void test("Source historical registration retains unknown publication and settle
     captureOutcome: "unknown", terminationOutcome: "unknown", helperReleaseOutcome: "unknown" });
   assert.equal(f.allocations(), 1); assert.equal(f.collections(), 1); assert.equal(f.scans(), 2);
   assert.equal(vm.runInContext("currentPcbWorkerStartupLifecycle === undefined", f.scope), true);
+  assert.doesNotThrow(() => { f.assertRetirement(); });
   f.replaceMethod();
+  assert.throws(() => { f.assertRetirement(); }, /coordinator changed/u);
   await assert.rejects(f.invoke(wrap(historical)), /coordinator changed/u);
   assert.equal(f.scans(), 2);
+});
+
+void test("unused metadata retirement retains the exact fresh-allocation assertion and monotonic native-allocation flag", async () => {
+  for (const mutation of ["resettableDiagnosticOwnerAllocated = true", "forwardSourceHistoricalOriginal.assertFreshNoOwnedAllocations = () => {}",
+    "forwardSourceHistoricalOriginal.reserved = () => false", "forwardSourceHistoricalOriginal.run = async () => ({})",
+    "forwardSourceHistoricalOriginal.owner = {}"] as const) {
+    const f = await fixture(), pending = f.invoke(wrap(historical)); await f.entered; f.release();
+    await assert.rejects(pending, /publication acknowledgment unknown/u); await f.invoke(wrap(historical));
+    assert.doesNotThrow(() => { f.assertRetirement(); });
+    vm.runInContext(mutation, f.scope);
+    assert.throws(() => { f.assertRetirement(); }, /fresh facade|original finished unused/u);
+  }
 });
 
 void test("Source historical registration refuses prior owner allocation before creating its coordinator", async () => {

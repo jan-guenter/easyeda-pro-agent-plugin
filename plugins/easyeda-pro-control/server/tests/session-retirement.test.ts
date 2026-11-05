@@ -30,9 +30,10 @@ function fixture(check: () => Promise<void> = (): Promise<void> => Promise.resol
 
 /** Start only the real index in this test's private control root. Missing
  * upstream/assets prevent the fixture from acquiring application authority. */
-async function connectIsolatedIndex(root: string, context: TestContext): Promise<{ client: Client; transport: StdioClientTransport }> {
+async function connectIsolatedIndex(root: string, context: TestContext, current209 = false): Promise<{ client: Client; transport: StdioClientTransport }> {
   const transport = new StdioClientTransport({ command: process.execPath, args: [resolve("server/src/index.ts")], stderr: "pipe",
-    env: { EASYEDA_CONTROL_DATA_DIR: root, EASYEDA_UPSTREAM_ROOT: join(root, "absent-upstream"), EASYEDA_ASSETS_ROOT: join(root, "absent-assets") } });
+    env: { EASYEDA_CONTROL_DATA_DIR: root, EASYEDA_UPSTREAM_ROOT: join(root, "absent-upstream"), EASYEDA_ASSETS_ROOT: join(root, "absent-assets"),
+      ...(current209 ? { EASYEDA_PCB_BUNDLE_VERSION: "3.2.195.6b67774e", EASYEDA_PUBLIC_API_BUNDLE_VERSION: "0.3.59.1ca9efb5" } : {}) } });
   const client = new Client({ name: "source-reference-retirement-regression", version: "1.0.0" }, { capabilities: {} });
   context.after(async () => { await client.close(); }); await client.connect(transport, { timeout: 15_000 }); return { client, transport };
 }
@@ -66,6 +67,71 @@ void test("offline session discovery and validation use the mounted strict gramm
   const refusal = validateSessionRetirementArguments(oversized);
   assert.equal(refusal["valid"], false);
   assert.ok(JSON.stringify(refusal["issues"]).length <= 1024);
+});
+
+/** A strict metadata request whose missing managed history refuses locally.
+ * No process collector, installation verifier or native owner can be reached. */
+function historicalSourceInput(): { request: Record<string, unknown> } {
+  return { request: { action: "footprint-forward-source-relinquishment", request: {
+    action: "relinquish-unknown-source-opening", operationId: "footprint-forward-execution-retirement-missing-history",
+    expectedManifestSha256: "a".repeat(64), expectedRosterSha256: "b".repeat(64), expectedIntentSha256: "c".repeat(64), expectedBindingSha256: "d".repeat(64),
+    confirmRelinquishUnknownSourceOpening: true, acceptUnknownCaptureOutcome: true,
+  } } };
+}
+
+void test("unused historical metadata classification is strict, monotonic and excludes a pending original callback", async () => {
+  const { session } = fixture(), held = Promise.withResolvers<null>();
+  const pending = session.run("easyeda_control_pcb209_worker_startup", () => held.promise, false, historicalSourceInput());
+  assert.equal(session.isSourceReferenceOnly(), false); assert.equal(session.isUnusedSourceMetadataOnly(), false);
+  await assert.rejects(session.retire(), /every admitted tool call/u);
+  held.resolve(null); await pending; assert.equal(session.isUnusedSourceMetadataOnly(), true);
+  for (const name of ["easyeda_control_calculate", "easyeda_control_discover", "easyeda_control_status", "easyeda_control_design"]) {
+    const other = fixture().session;
+    await other.run(name, () => "refused-without-allocation", false, historicalSourceInput());
+    await other.run("easyeda_control_pcb209_worker_startup", () => "finished-metadata", false, historicalSourceInput());
+    await other.run("easyeda_control_api", () => "static-reference", true);
+    assert.equal(other.isUnusedSourceMetadataOnly(), false, name);
+  }
+  const malformed = fixture().session;
+  await malformed.run("easyeda_control_pcb209_worker_startup", () => "unsupported", false,
+    { ...historicalSourceInput(), callerRetirementAllowed: true });
+  await malformed.run("easyeda_control_pcb209_worker_startup", () => "finished-metadata", false, historicalSourceInput());
+  assert.equal(malformed.isUnusedSourceMetadataOnly(), false);
+});
+
+void test("actual default MCP callback retires a finished unused metadata facade without clearing a foreign journal", { timeout: 30_000 }, async context => {
+  const root = await createTestTemporaryDirectory("easyeda-unused-source-metadata-retirement-");
+  const journal = await futureDiagnosticJournal(root), { client } = await connectIsolatedIndex(root, context, true);
+  for (const action of ["loaded-facade", "session", "loaded-facade"]) {
+    const reference = await client.callTool({ name: "easyeda_control_api", arguments: { request: { action } } });
+    assert.notEqual(reference.isError, true);
+  }
+  const refused = await client.callTool({ name: "easyeda_control_pcb209_worker_startup", arguments: historicalSourceInput() });
+  assert.equal(refused.isError, true); assert.match(JSON.stringify(refused), /ENOENT|no such file/u);
+  const inspected = await client.callTool({ name: "easyeda_control_session", arguments: { request: { action: "inspect" } } });
+  assert.match(JSON.stringify(inspected.structuredContent), /"activeCalls":0/u);
+  const retired = await client.callTool({ name: "easyeda_control_session", arguments: { request: { action: "retire", confirmRetire: true } } });
+  assert.notEqual(retired.isError, true); assert.match(JSON.stringify(retired.structuredContent), /"state":"retired"/u);
+  assert.deepEqual(await readFile(journal.path), journal.bytes);
+  await assert.rejects(lstat(join(root, "facade.lock")), { code: "ENOENT" });
+  for (const name of ["absent-upstream", "absent-assets"]) { await assert.rejects(lstat(join(root, name)), { code: "ENOENT" }); }
+});
+
+void test("actual default MCP callback history cannot regain unused retirement after refused status or upstream discovery", { timeout: 30_000 }, async context => {
+  for (const call of [{ name: "easyeda_control_status", arguments: {} },
+    { name: "easyeda_control_discover", arguments: { source: "live" } }]) {
+    const root = await createTestTemporaryDirectory("easyeda-used-source-metadata-retirement-");
+    const journal = await futureDiagnosticJournal(root), { client } = await connectIsolatedIndex(root, context, true);
+    const metadata = await client.callTool({ name: "easyeda_control_pcb209_worker_startup", arguments: historicalSourceInput() });
+    assert.equal(metadata.isError, true);
+    const refused = await client.callTool(call); assert.equal(refused.isError, true);
+    const lease = await readFile(join(root, "facade.lock"));
+    await client.callTool({ name: "easyeda_control_api", arguments: { request: { action: "loaded-facade" } } });
+    const retired = await client.callTool({ name: "easyeda_control_session", arguments: { request: { action: "retire", confirmRetire: true } } });
+    assert.equal(retired.isError, true, call.name);
+    assert.deepEqual(await readFile(join(root, "facade.lock")), lease); assert.deepEqual(await readFile(journal.path), journal.bytes);
+    await client.close();
+  }
 });
 
 void test("retirement excludes active callbacks and work queued in the real bridge gate", async () => {

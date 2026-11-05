@@ -111,6 +111,7 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
   #noProcessRelease = false;
   #noProcessReleasePending: ReturnType<CurrentFootprintForwardExecutionNativeOwner["releaseNoProcess"]> | null = null;
   #openingReleased = false;
+  #openingReleasePending: Promise<void> | null = null;
   #terminationPending: { ordinal: number; dispatched: boolean; result: boolean | null } | null = null;
   #windowAttempted = false;
   #windowObservation: string | null = null;
@@ -433,7 +434,12 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
       if (this.#opening !== null && !this.#openingReleased) {
         this.#openingCurrent ??= captureCurrentFootprintForwardExecutionReceiver(this.#opening, openingPrototypes, openingMethods);
         this.#openingCurrent();
-        if (this.#openingInvoked) { await this.#opening.releaseAfterTermination(); }
+        if (this.#openingInvoked) {
+          // Retain the original promise before awaiting it.
+          // Rejection has no native no-dispatch proof and cannot authorize another call.
+          this.#openingReleasePending ??= this.#opening.releaseAfterTermination();
+          await this.#openingReleasePending;
+        }
         else {
           const opening = this.#opening.status(), transport = opening.transport;
           need(this.#openingResult === null && !opening.consumed && !opening.settled && !opening.openingAttempted &&

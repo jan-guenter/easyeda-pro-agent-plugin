@@ -19,6 +19,16 @@ import { noSidecars } from "./sqlite-inventory-core.ts";
 import { readExactSqlInventory, readerCompletion } from "./sqlite-inventory.ts";
 import type { ReaderCompletion } from "./sqlite-inventory.ts";
 
+const finalRevalidations = new WeakMap<object, () => Promise<void>>();
+
+/** Revalidate only the original completed readers and their exact files.
+ * A copied or serialized proof cannot reconstruct the retained validator. */
+export async function revalidateCurrentFootprintForwardOpeningFileProof(proof: CurrentFootprintForwardOpeningFileProof): Promise<void> {
+  const revalidate = finalRevalidations.get(proof);
+  need(revalidate !== undefined, "Original completed file-proof validator is required.");
+  await revalidate();
+}
+
 const digest = z.string().regex(/^[a-f0-9]{64}$/u);
 const identity = z.strictObject({ birthtimeNs: z.string(), ctimeNs: z.string(), dev: z.string(), ino: z.string() });
 const receiptSchema = z.looseObject({ schema: z.literal("easyeda-pro-control.checkpoint.v2"), createdAt: z.iso.datetime(),
@@ -159,7 +169,7 @@ export async function collectCurrentFootprintForwardOpeningFileProofInput(input:
     freshHistory.branchUuid === branch, "HISTORY_CHANGED");
   await work(() => noSidecars(prepared.checkpoint.source));
   unchanged();
-  return Object.freeze(currentFootprintForwardOpeningFileProofSchema.parse({
+  const proof = Object.freeze(currentFootprintForwardOpeningFileProofSchema.parse({
     profile: "private.current-footprint-forward-opening-file-proof.v1", projectUuid: target.projectUuid, branchUuid: branch, documentUuid: target.documentUuid,
     oldCheckpointSha256: descriptor.sha256, freshCheckpointSha256: prepared.checkpoint.checkpointSha256,
     oldCheckpointReceiptSha256: opening.checkpointReceiptSha256, freshCheckpointReceiptSha256: sha256Json(prepared.checkpoint),
@@ -167,4 +177,11 @@ export async function collectCurrentFootprintForwardOpeningFileProofInput(input:
     oldHistorySemanticSha256: history.semanticSha256, freshHistorySemanticSha256: freshHistory.semanticSha256,
     fullSqlEqual: true, historyEqual: true, sidecarsAbsent: true, executionAuthorized: false, writerAuthority: false, restored: false,
   }));
+  finalRevalidations.set(proof, async (): Promise<void> => {
+    await checked(() => noSidecars(prepared.checkpoint.source));
+    await revalidate();
+    await checked(() => noSidecars(prepared.checkpoint.source));
+    unchanged();
+  });
+  return proof;
 }
