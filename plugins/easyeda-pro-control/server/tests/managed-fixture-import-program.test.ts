@@ -1,18 +1,23 @@
 import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
 import { test } from "node:test";
+import { setImmediate as waitImmediate } from "node:timers/promises";
 import { createContext, runInContext } from "node:vm";
 import { buildManagedFixtureImportPrograms, managedFixtureImportJobObservationSchema, validateManagedFixtureImportJobObservation } from "../src/managed-fixture-import-program.ts";
 import { managedProjectFootprintArchive } from "./helpers/managed-project-footprint-archive.ts";
 
 // Golden SHA-256 of the literal Windows path C:\PrivateFixtures\original\Fixture.eprj2.
 const UUID = "bbd7e0ad75800669f5a66d2b188d835a3eafef02da50da748f58dd6cac5bda3d", plan = { operationId: "fixture-import-synthetic", nonce: "2".repeat(64),
-  archiveName: "Fixture.epro2", destinationWindowsDirectory: "C:\\PrivateFixtures\\original" };
+  archiveName: "Fixture.epro2", destinationWindowsDirectory: "C:\\PrivateFixtures\\original", libraryWindowsDirectories: [String.raw`C:\SyntheticLibraries`] };
 const PROJECT = { itemType: "Project", uuid: UUID, friendlyName: "Fixture", folderUuid: undefined, teamUuid: "synthetic-owner" };
 const archive = managedProjectFootprintArchive([{ name: "project2.json", content: '{"title":"Fixture"}' },
   { name: "Fixture.epru", content: '{"type":"DOCHEAD"}||{"uuid":"1234567890abcdef","docType":"PCB"}|\n{"type":"META","id":"META"}||{"title":"Fixture"}|\n' }]);
 const programs = buildManagedFixtureImportPrograms(plan, archive);
-function fixture(options: Readonly<{ throwSynchronously?: boolean; wrongReturn?: boolean }> = {}): Readonly<{
+function fetchConfig(): Promise<Response> {
+    const response = Response.json({ success: true, result: { systemLib: plan.libraryWindowsDirectories, reuseBlock: plan.libraryWindowsDirectories, platform: "win32" } });
+    Object.defineProperty(response, "url", { value: "https://client/api/client/config" }); return Promise.resolve(response);
+}
+function fixture(options: Readonly<{ throwSynchronously?: boolean; wrongReturn?: boolean; extraTab?: boolean; iframe?: boolean }> = {}): Readonly<{
   run: (program: string) => Promise<unknown>; calls: () => number; args: () => readonly unknown[];
   resolve: (value: unknown) => void; reject: (error: Error) => void; changeOwner: () => void;
 }> {
@@ -25,11 +30,17 @@ function fixture(options: Readonly<{ throwSynchronously?: boolean; wrongReturn?:
   } };
   const location = { href: "https://client/editor?cll=debug", origin: "https://client" };
   const host = { currentProject: null as unknown };
-  const root: Record<string, unknown> = { atob, crypto: webcrypto, File, Promise, location, gVars: host,
-    UI: { gVars: host }, PRO_EDITOR_MODE: "CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM",
+  const root: Record<string, unknown> = { atob, crypto: webcrypto, File, Promise, Response, fetch: fetchConfig, location, gVars: host,
+    UI: { gVars: host }, PRO_EDITOR_MODE: "CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM",
     eda: { extensionUuid: "7e06d286b1ac846ef7eab9c7f2a9ee40", sys_FileManager: manager } };
   const context = createContext(root);
-  runInContext("globalThis.top=globalThis;globalThis.window=globalThis;globalThis.document={defaultView:globalThis,nodeType:9,URL:location.href};", context);
+  runInContext(`globalThis.top=globalThis;globalThis.window=globalThis;globalThis.document={defaultView:globalThis,nodeType:9,URL:location.href,querySelectorAll(selector){if(selector!=='iframe')throw new Error('selector');return {length:${options.iframe === true ? 1 : 0}};}};
+gVars.currentProject={branchUuid:''};gVars.isHistoryMode=false;
+globalThis.start={tabId:'tab_page1',isAbleDelete:false,group:'start_blank',draggable:true,data:{doctype:-1},isDisplayNone:false};
+globalThis.container={id:'editor-window-main',belong:'editor-window-main',tabs:[start],activeTabId:'tab_page1'};
+class Tabs { static getActiveTab(){return this.currentTabId;} static getContainerInfo(id){if(id!==container.id)throw new Error('container');return container;} }
+Tabs.currentTabId='tab_page1';Tabs.belongContainer='editor-window-main';Tabs.containerIds=['editor-window-main'];Tabs.containerTree={id:'editor-window-main'};UI.tabBar=Tabs;
+${options.extraTab === true ? "container.tabs.push({tabId:'unexpected-document'});" : ""}`, context);
   return { run: async (program) => { const result: unknown = runInContext(`(async function(){${program}})()`, context); return await result; },
     calls: () => count, args: () => captured, resolve: (value) => {
       root["syntheticValue"] = value;
@@ -73,9 +84,30 @@ void test("synthetic rejection and missing or unexpected native returns preserve
     await Promise.resolve();
     const result = observation(await native.run(programs.observe));
     assert.equal(result.sdkOutcome, outcome);
+    assert.equal(result.originalPromiseRetained, outcome !== "synchronous-throw" && outcome !== "fulfilled-other");
     assert.equal(result.nativeEffectsMayHaveOccurred, true); assert.equal(result.retryAllowed, false);
     await assert.rejects(native.run(programs.launch)); assert.equal(native.calls(), 1);
   }
+});
+
+void test("tracked launch remains outstanding through the original Promise and reports settlement without replay", async () => {
+  for (const rejected of [false, true]) {
+    const native = fixture(); let transportReturned = false;
+    const tracked = (async (): Promise<ReturnType<typeof observation>> => { const value = await native.run(programs.launchAndWait); transportReturned = true; return observation(value); })();
+    // Digest is asynchronous; wait for the original import dispatch, then
+    // Independently observe its retained pending state through the fixed slot.
+    for (let index = 0; native.calls() === 0 && index < 100; index += 1) { await waitImmediate(); }
+    assert.equal(native.calls(), 1); assert.equal(transportReturned, false);
+    assert.equal(observation(await native.run(programs.observe)).state, "pending");
+    if (rejected) { native.reject(new Error("Synthetic original job rejection")); } else { native.resolve(PROJECT); }
+    const result = await tracked;
+    assert.equal(result.sdkOutcome, rejected ? "rejected" : "fulfilled-project");
+    assert.equal(result.originalPromiseRetained, true); assert.equal(native.calls(), 1);
+    await assert.rejects(native.run(programs.launchAndWait), /REFUSED/u);
+  }
+  const unexpected = fixture({ wrongReturn: true });
+  const result = observation(await unexpected.run(programs.launchAndWait));
+  assert.equal(result.sdkOutcome, "fulfilled-other"); assert.equal(result.originalPromiseRetained, false);
 });
 
 void test("synthetic owner drift retains the original acknowledgment while blocking any completion claim", async () => {
@@ -92,6 +124,14 @@ void test("internal program grammar rejects path substitution and contradictory 
     assert.throws(() => buildManagedFixtureImportPrograms({ ...plan, destinationWindowsDirectory }, archive));
   }
   assert.throws(() => managedFixtureImportJobObservationSchema.parse({ schema: "easyeda-pro-control.managed-fixture-import-job-observation.v1" }));
+});
+
+void test("import requires the original exact empty StartPage before its only dispatch", async () => {
+  for (const options of [{ extraTab: true }, { iframe: true }]) {
+    const native = fixture(options);
+    await assert.rejects(native.run(programs.launchAndWait), /EDITOR_SHELL_READ_FAILED/u);
+    assert.equal(native.calls(), 0);
+  }
 });
 
 void test("serialized observations cannot substitute another archive or operation", async () => {

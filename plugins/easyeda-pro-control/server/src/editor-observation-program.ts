@@ -30,7 +30,7 @@ const contextProjection = `
 /** Fixed native shell traversal shared by two compiled metadata projections.
  * Mode is selected by maintained callers, never by a public tool argument.
  */
-export function buildEditorObservationProgram(mode: "shell" | "context"): string {
+export function buildEditorObservationProgram(mode: "shell" | "context" | "empty-start-page-guard"): string {
   const context = mode === "context";
   const error = context ? "EDITOR_CONTEXT_READ_FAILED" : "EDITOR_SHELL_READ_FAILED";
   return `try{
@@ -93,10 +93,19 @@ const sample=()=>{
 ${context ? contextProjection : ""}
  return {owners,identity:JSON.stringify([names,treeProjection,containerProjection,current${context ? ",contextIdentity" : ""}]),value:${context ? "contextValue" : "{ok:true,kind:'editor-shell-observation',action:'observe-editor-shell',containerCount:n,tabCount:total,startPagePresent:start===1,startPageActive:current==='tab_page1',activeTabPresent:currentCount===1,placeholderTabCount:placeholder,otherTabCount:other,visibilityVerified:false,restorationCompletionVerified:false,projectClosureVerified:false,startupQualified:false,cadAuthority:false,persistenceVerified:false}"}};
 };
+${mode === "empty-start-page-guard" ? `
+const frameChain=[];let frameOwner=document,frameQuery;
+for(let i=0;frameOwner!==null&&i<8;i++){const descriptor=Object.getOwnPropertyDescriptor(frameOwner,'querySelectorAll');frameChain.push({owner:frameOwner,descriptor});if(frameQuery===undefined&&descriptor){if(!Object.hasOwn(descriptor,'value')||typeof descriptor.value!=='function')bad();frameQuery=descriptor.value;}frameOwner=Object.getPrototypeOf(frameOwner);}
+if(frameOwner!==null||frameQuery===undefined)bad();
+const assertNoFrames=()=>{for(let i=0;i<frameChain.length;i++){const item=frameChain[i],descriptor=Object.getOwnPropertyDescriptor(item.owner,'querySelectorAll');if(Object.getPrototypeOf(item.owner)!==(frameChain[i+1]?.owner??null)||descriptor?.value!==item.descriptor?.value||descriptor?.get!==item.descriptor?.get||descriptor?.set!==item.descriptor?.set)bad();}if(apply(frameQuery,document,['iframe']).length!==0)bad();check();};
+assertNoFrames();` : ""}
 const first=sample();await Promise.resolve();check();const second=sample();
 if(first.identity!==second.identity||first.owners.length!==second.owners.length||first.owners.some((owner,index)=>owner!==second.owners[index])||JSON.stringify(first.value)!==JSON.stringify(second.value))bad();check();
+${mode === "empty-start-page-guard" ? `
+const assertEmpty=()=>{assertNoFrames();const current=sample();if(current.identity!==first.identity||current.owners.length!==first.owners.length||current.owners.some((owner,index)=>owner!==first.owners[index])||current.value.startPagePresent!==true||current.value.startPageActive!==true||current.value.activeTabPresent!==true||current.value.otherTabCount!==0||current.value.tabCount!==1+current.value.placeholderTabCount)bad();check();};
+assertEmpty();return Object.freeze({assertCurrent:assertEmpty});` : `
 const json=JSON.stringify(first.value),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
-if(utf8Bytes>${EDITOR_OBSERVATION_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${EDITOR_OBSERVATION_MAX_BYTES})bad();return envelope;
+if(utf8Bytes>${EDITOR_OBSERVATION_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${EDITOR_OBSERVATION_MAX_BYTES})bad();return envelope;`}
 }catch{throw new Error(${JSON.stringify(error)});}`;
 }
 

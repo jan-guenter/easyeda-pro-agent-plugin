@@ -2,6 +2,9 @@ import { createHash } from "node:crypto";
 import { win32 } from "node:path";
 import { z } from "zod";
 import { qualifyManagedFixtureArchive } from "./managed-fixture-archive.ts";
+import { buildEditorObservationProgram } from "./editor-observation-program.ts";
+import { buildManagedFixtureEnvironmentProgram } from "./managed-fixture-environment-program.ts";
+import { managedFixtureLibraryDirectoriesSchema } from "./managed-fixture-destination.ts";
 
 export const MANAGED_FIXTURE_IMPORT_PROGRAM_MAX_BYTES = 65_536;
 export const MANAGED_FIXTURE_IMPORT_INLINE_ARCHIVE_MAX_BYTES = 32_768;
@@ -17,6 +20,7 @@ const planSchema = z.object({ operationId: z.string().regex(/^[a-z0-9][a-z0-9-]{
   destinationWindowsDirectory: z.string().min(8).max(1024).regex(/^[A-Z]:\\(?:[A-Za-z0-9_ -]+\\)*[A-Za-z0-9_-]+$/u)
     .refine((value) => value.slice(3).split("\\").every((part) => part.trim() === part &&
       !/^(?:con|prn|aux|nul|com[0-9]|lpt[0-9])$/iu.test(part)), "Windows path aliases are unsupported."),
+  libraryWindowsDirectories: managedFixtureLibraryDirectoriesSchema,
 }).strict();
 export const managedFixtureImportJobObservationSchema = z.object({
   schema: z.literal("easyeda-pro-control.managed-fixture-import-job-observation.v1"), operationId: z.string(), nonce: hex,
@@ -31,7 +35,7 @@ export const managedFixtureImportJobObservationSchema = z.object({
   (value.returnedProject === null) === (value.returnedUuid === null) &&
   (value.returnedProject === null || value.returnedProject.uuid === value.returnedUuid) &&
   (!value.expectedIdentityMatched || value.returnedUuid === value.expectedProjectUuid) &&
-  (value.sdkOutcome === "synchronous-throw" || value.originalPromiseRetained), "Contradictory original-job observation.");
+  (value.sdkOutcome === "synchronous-throw" || value.sdkOutcome === "fulfilled-other" || value.originalPromiseRetained), "Contradictory original-job observation.");
 
 /** Bind serialized observation to the original supplied plan and archive. This
  * is comparison only. It issues no native owner or registration authority. */
@@ -53,7 +57,7 @@ export function validateManagedFixtureImportJobObservation(raw: unknown, input: 
  * registration completion. A retained native Job/destination/closure owner is
  * still required before a runtime route may call these programs. */
 export function buildManagedFixtureImportPrograms(input: unknown, archive: Buffer): Readonly<{
-  launch: string; observe: string; archiveSha256: string; qualificationSha256: string;
+  launch: string; launchAndWait: string; observe: string; archiveSha256: string; qualificationSha256: string;
 }> {
   const plan = planSchema.parse(input), qualification = qualifyManagedFixtureArchive(archive);
   if (archive.length > MANAGED_FIXTURE_IMPORT_INLINE_ARCHIVE_MAX_BYTES) { throw new Error("Fixture archive exceeds the fixed inline import-program byte budget."); }
@@ -72,37 +76,46 @@ const retain=(value,key)=>{const chain=[];let node=value,method;
   if(!current||current.value!==before.value||current.get!==before.get||current.set!==before.set||current.writable!==before.writable||current.enumerable!==before.enumerable||current.configurable!==before.configurable)bad();}}};};
 if(Object.hasOwn(root,slot))bad();
 const edaOwner=eda,host=own(root,'gVars'),ui=own(root,'UI'),mode=own(root,'PRO_EDITOR_MODE'),location=root.location,document=root.document,href=location?.href;
+const emptyProject=own(host,'currentProject'),optional=(value,key)=>{const d=Object.getOwnPropertyDescriptor(value,key);if(d){if(!Object.hasOwn(d,'value'))bad();return d.value;}if(key in value)bad();return undefined;};
 const manager=own(edaOwner,'sys_FileManager'),importer=retain(manager,'importProjectByProjectFile'),fn=importer.method,FileClass=own(root,'File'),decode=own(root,'atob');
 const cryptoOwner=root.crypto,subtle=cryptoOwner?.subtle,hasher=retain(subtle,'digest'),digest=hasher.method,apply=Reflect.apply;
 const check=()=>{if(root.top!==root||root.window!==root||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||root.location!==location||location?.href!==href||location?.origin!=='https://client')bad();
  if(typeof href!=='string'||!new RegExp('^https://client/editor[?]cll=(?:trace|debug|info|warn|error)#?$').test(href))bad();
- if(own(root,'gVars')!==host||own(root,'UI')!==ui||own(ui,'gVars')!==host||own(host,'currentProject')!=null||own(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'))bad();
+ if(own(root,'gVars')!==host||own(root,'UI')!==ui||own(ui,'gVars')!==host||own(host,'currentProject')!==emptyProject||!emptyProject||Object.getPrototypeOf(emptyProject)!==Object.prototype||optional(emptyProject,'projectId')!==undefined||![undefined,''].includes(optional(emptyProject,'branchUuid'))||own(host,'isHistoryMode')!==false||own(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'))bad();
  if(eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40'||own(edaOwner,'sys_FileManager')!==manager||own(root,'File')!==FileClass||own(root,'atob')!==decode||root.crypto!==cryptoOwner||cryptoOwner.subtle!==subtle||typeof FileClass!=='function'||typeof decode!=='function')bad();importer.check();hasher.check();};
-check();const raw=apply(decode,root,[${JSON.stringify(archive.toString("base64"))}]),bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
+check();const emptyShell=await(async()=>{${buildEditorObservationProgram("empty-start-page-guard")}})();
+const environment=await(async()=>{${buildManagedFixtureEnvironmentProgram()}})();check();emptyShell.assertCurrent();
+if(JSON.stringify(environment.libraryWindowsDirectories)!==JSON.stringify(target.libraryWindowsDirectories))bad();
+const raw=apply(decode,root,[${JSON.stringify(archive.toString("base64"))}]),bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
 const hash=new Uint8Array(await apply(digest,subtle,['SHA-256',bytes]));check();
+emptyShell.assertCurrent();
 if(Array.from(hash,c=>c.toString(16).padStart(2,'0')).join('')!==target.archiveSha256)bad();
 const file=new FileClass([bytes],target.archiveName,{type:'application/zip',lastModified:0});
 if(file.name!==target.archiveName||file.size!==${archive.length}||file.type!=='application/zip')bad();
-let state='pending',sdkOutcome='pending',returnedUuid=null,returnedProject=null,ownerIntact=true,promise;
+let state='pending',sdkOutcome='pending',returnedUuid=null,returnedProject=null,ownerIntact=true,promise,settlement,originalPromiseRetained=false;
 const projectItem=value=>{try{if(!value||typeof value!=='object'||Object.getPrototypeOf(value)!==Object.prototype) return null;
  const keys=Reflect.ownKeys(value);if(keys.length<4||keys.length>5||!keys.every(key=>['itemType','uuid','friendlyName','teamUuid','folderUuid'].includes(key)))return null;
  const itemType=own(value,'itemType'),uuid=own(value,'uuid'),friendlyName=own(value,'friendlyName'),teamUuid=own(value,'teamUuid'),folderUuid=Object.hasOwn(value,'folderUuid')?own(value,'folderUuid'):undefined;
  if(itemType!=='Project'||typeof uuid!=='string'||!/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/.test(uuid)||typeof friendlyName!=='string'||friendlyName.length<1||friendlyName.length>96||typeof teamUuid!=='string'||!/^[A-Za-z0-9_-]{1,128}$/.test(teamUuid)||folderUuid!==undefined&&(typeof folderUuid!=='string'||!/^[A-Za-z0-9_-]{1,128}$/.test(folderUuid)))return null;
  return {itemType,uuid,friendlyName,teamUuid,folderUuid:folderUuid??null,folderUuidWasUndefined:folderUuid===undefined};}catch{return null;}};
-const snapshot=()=>({schema:'easyeda-pro-control.managed-fixture-import-job-observation.v1',operationId:target.operationId,nonce:target.nonce,archiveSha256:target.archiveSha256,qualificationSha256:target.qualificationSha256,expectedProjectUuid:target.expectedProjectUuid,expectedIdentityMatched:returnedProject!==null&&returnedProject.uuid===target.expectedProjectUuid&&returnedProject.friendlyName===target.manifestTitle,state,sdkOutcome,returnedUuid,returnedProject,ownerIntact,originalPromiseRetained:promise!==undefined,dispatchAttempted:true,nativeEffectsMayHaveOccurred:true,retryAllowed:false,delayedNativeJobsCompleted:false,registrationVerified:false,closedSqlVerified:false,originalClosureVerified:false,executionAuthorized:false});
+const snapshot=()=>({schema:'easyeda-pro-control.managed-fixture-import-job-observation.v1',operationId:target.operationId,nonce:target.nonce,archiveSha256:target.archiveSha256,qualificationSha256:target.qualificationSha256,expectedProjectUuid:target.expectedProjectUuid,expectedIdentityMatched:returnedProject!==null&&returnedProject.uuid===target.expectedProjectUuid&&returnedProject.friendlyName===target.manifestTitle,state,sdkOutcome,returnedUuid,returnedProject,ownerIntact,originalPromiseRetained,dispatchAttempted:true,nativeEffectsMayHaveOccurred:true,retryAllowed:false,delayedNativeJobsCompleted:false,registrationVerified:false,closedSqlVerified:false,originalClosureVerified:false,executionAuthorized:false});
 const observe=()=>{try{check();}catch{ownerIntact=false;}return snapshot();};
 const job=Object.freeze({operationId:target.operationId,nonce:target.nonce,archiveSha256:target.archiveSha256,qualificationSha256:target.qualificationSha256,observe});
 Object.defineProperty(root,slot,{value:job,writable:false,configurable:false,enumerable:false});
-try{check();promise=apply(fn,manager,[file,'EasyEDA Pro',{importOption:'ImportDocument'},{operation:'Offline Client Local Path',folderPath:target.destinationWindowsDirectory}]);
- if(!(promise instanceof Promise)){state='sdk-settled';sdkOutcome='fulfilled-other';promise=Promise.resolve(promise);}
- else promise.then(value=>{state='sdk-settled';returnedProject=projectItem(value);if(returnedProject!==null){returnedUuid=returnedProject.uuid;sdkOutcome='fulfilled-project';}else sdkOutcome=value===undefined?'fulfilled-undefined':'fulfilled-other';try{check();}catch{ownerIntact=false;}},()=>{state='sdk-settled';sdkOutcome='rejected';try{check();}catch{ownerIntact=false;}});
+try{check();emptyShell.assertCurrent();promise=apply(fn,manager,[file,'EasyEDA Pro',{importOption:'ImportDocument'},{operation:'Offline Client Local Path',folderPath:target.destinationWindowsDirectory}]);
+ if(!(promise instanceof Promise)){state='sdk-settled';sdkOutcome='fulfilled-other';}
+ else {originalPromiseRetained=true;settlement=promise.then(value=>{state='sdk-settled';returnedProject=projectItem(value);if(returnedProject!==null){returnedUuid=returnedProject.uuid;sdkOutcome='fulfilled-project';}else sdkOutcome=value===undefined?'fulfilled-undefined':'fulfilled-other';try{check();}catch{ownerIntact=false;}},()=>{state='sdk-settled';sdkOutcome='rejected';try{check();}catch{ownerIntact=false;}});}
 }catch{state='sdk-settled';sdkOutcome='synchronous-throw';}
 return snapshot();`;
+  // The tracked transport must remain outstanding until the original public
+  // Promise settles. Returning the pending snapshot would prematurely release
+  // Its process-tree/orphan custody. The observing program never redispatches.
+  const launchAndWait = launch.replace(/return snapshot\(\);$/u, "if(settlement!==undefined)await settlement;return observe();");
   const observe = `const target=${JSON.stringify(target)},d=Object.getOwnPropertyDescriptor(globalThis,${JSON.stringify(slot)});
 if(!d||!Object.hasOwn(d,'value')||d.configurable!==false||d.writable!==false||d.enumerable!==false)throw new Error('MANAGED_FIXTURE_IMPORT_ORIGINAL_JOB_MISSING');
 const job=d.value;if(!job||job.operationId!==target.operationId||job.nonce!==target.nonce||job.archiveSha256!==target.archiveSha256||job.qualificationSha256!==target.qualificationSha256||typeof job.observe!=='function'||!Object.isFrozen(job))throw new Error('MANAGED_FIXTURE_IMPORT_ORIGINAL_JOB_DIFFERENT');return job.observe();`;
-  if ([launch, observe].some((value) => Buffer.byteLength(value, "utf8") > MANAGED_FIXTURE_IMPORT_PROGRAM_MAX_BYTES)) {
+  if ([launch, launchAndWait, observe].some((value) => Buffer.byteLength(value, "utf8") > MANAGED_FIXTURE_IMPORT_PROGRAM_MAX_BYTES)) {
     throw new Error("Fixture import program exceeds its complete transport byte budget.");
   }
-  return Object.freeze({ launch, observe, archiveSha256: qualification.archiveSha256, qualificationSha256: qualification.qualificationSha256 });
+  return Object.freeze({ launch, launchAndWait, observe, archiveSha256: qualification.archiveSha256, qualificationSha256: qualification.qualificationSha256 });
 }
