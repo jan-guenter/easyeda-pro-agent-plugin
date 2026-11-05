@@ -1,5 +1,8 @@
 # Project history
 
+- [2026-11-06 generic supported PCB object lookup](2026-11-06-generic-pcb-object-lookup.md). Native equivalents for installed empty generic getters, complete supported-family compound samples and caller-order DTO lookup, without selection or persistence claims.
+- [2026-11-06 original tracked-open cleanup](2026-11-06-ordinary-tracked-open-cleanup.md). Retained original dispatch, process and HMAC cleanup, normal close once, exact local publication settlement and no navigation replay.
+
 - [2026-11-05 backlog implementation loop](2026-11-05-backlog-implementation-loop.md). Integrated source increments, remaining cross-family dependencies and batched release work after PR170. No installation or connected-validation claim.
 
 - [2026-11-05 mixed Line/Via spatial implementation](2026-11-05-spatial-line-via-implementation.md). Separate immutable mixed-family batch, complete supported ready-index guards, compact fixed rosters,256 qualified vendor callees and15 queries within the unchanged384-ID purpose. Offline source-path evidence; connected fixture validation remains pending.
