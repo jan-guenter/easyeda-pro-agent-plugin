@@ -440,6 +440,25 @@ export interface TrackedDispatchOperationJournal extends UnknownRecord {
   artifacts: ArtifactDescriptor[];
 }
 
+/** Internal original-object proof for no-replay cleanup after a settled
+ * tracked call. Serialized journals cannot recreate this capability. */
+export interface OriginalSettledTrackedDispatch {
+  readonly operationId: string;
+  readonly phase: string;
+  readonly nonce: string;
+  readonly challengeAttempt: number;
+  readonly orphanRiskAtIssue: boolean;
+  readonly authority: ExecutionAuthorityEvidence;
+  readonly bridgeSession: AuthenticatedBridgeSessionIdentity;
+  readonly bridgeDispatch: AuthenticatedBridgeDispatchBinding;
+  readonly runtimeIdentity: RuntimeIdentity;
+  readonly validator: RuntimeExecutionAuthorityValidator;
+  /** Retained identity reproof only, including after nonce consumption. */
+  readonly assertRetainedOwner: () => void;
+  readonly assertCurrent: () => void;
+  readonly consume: () => void;
+}
+
 export interface DispatchOperationJournal extends TrackedDispatchOperationJournal {
   context: ExpectedContext;
   runtimeStatus?: unknown;
@@ -2072,11 +2091,13 @@ export class EasyedaControlEngine {
     readonly operationId: string; readonly phase: string; readonly original: ExecutionAuthorityEvidence;
     readonly snapshot: string; readonly validator: RuntimeExecutionAuthorityValidator;
     readonly runtimeSnapshot: string; readonly sessionSnapshot: string; readonly challengeAttempt: number;
-    readonly dispatchSnapshot: string;
+    readonly dispatchSnapshot: string; readonly planHash: string; readonly planSnapshot: string;
     readonly clockMethod: RuntimeExecutionAuthorityValidator["observeCurrentClock"];
     readonly sessionMethod: UpstreamClient["bridgeSessionLifecycle"];
     readonly dispatchMethod: UpstreamClient["currentAuthenticatedBridgeDispatchBinding"];
   }>();
+  private readonly trackedDispatchSettlements = new WeakMap<TrackedDispatchOperationJournal, { readonly phase: string; settled: boolean }>();
+  private readonly originalTrackedCleanupSources = new WeakMap<TrackedDispatchOperationJournal, OriginalSettledTrackedDispatch>();
   public readonly upstream: UpstreamClient;
   public readonly privateComponentWriterValidated: boolean;
   public readonly semanticPersistenceValidator:
@@ -2332,6 +2353,7 @@ export class EasyedaControlEngine {
     phase: string,
     beforeClear?: () => Promise<void>,
   ): Promise<OperationBridgeDispatch> {
+    const planHash = operation.planHash, planSnapshot = canonicalJson(operation.plan);
     const validator = this.executionAuthorityValidator;
     if (validator === undefined) {
       throw new Error(
@@ -2393,7 +2415,7 @@ export class EasyedaControlEngine {
       const executionAuthority = executionAuthorityPayload(originalExecutionAuthority, bindingSha256);
       this.trackedClockCaptures.set(operation, { operationId: operation.operationId, phase, original: originalExecutionAuthority,
         snapshot: canonicalJson(executionAuthority), validator, challengeAttempt, clockMethod, dispatchMethod, sessionMethod,
-        dispatchSnapshot: canonicalJson(bridgeDispatch),
+        dispatchSnapshot: canonicalJson(bridgeDispatch), planHash, planSnapshot,
         runtimeSnapshot: canonicalJson(runtimeIdentity), sessionSnapshot: canonicalJson(bridgeSession) });
       capturedAuthority = executionAuthority;
       operation.runtimeIdentityBeforeOrphan = runtimeIdentity;
@@ -2514,6 +2536,26 @@ export class EasyedaControlEngine {
     retainSettledResult?: (result: unknown) => Promise<void>,
     beforeClear?: () => Promise<void>,
   ): Promise<unknown> {
+    if (this.trackedDispatchSettlements.get(operation)?.settled === false) {
+      throw new Error("A tracked dispatch is already pending for this original journal.");
+    }
+    const settlement = { phase, settled: false };
+    this.trackedDispatchSettlements.set(operation, settlement);
+    try {
+      return await this.dispatchWithOrphanTrackingCore(operation, phase, name, args, timeoutMs, beforeDispatch, retainSettledResult, beforeClear);
+    } finally { settlement.settled = true; }
+  }
+
+  private async dispatchWithOrphanTrackingCore(
+    operation: TrackedDispatchOperationJournal,
+    phase: string,
+    name: string,
+    args: UnknownRecord,
+    timeoutMs: number,
+    beforeDispatch?: () => Promise<void>,
+    retainSettledResult?: (result: unknown) => Promise<void>,
+    beforeClear?: () => Promise<void>,
+  ): Promise<unknown> {
     const dispatch = await this.markOrphanedCallRisk(operation, phase, beforeClear);
     if (beforeDispatch !== undefined) {
       try { await beforeDispatch(); }
@@ -2576,6 +2618,55 @@ export class EasyedaControlEngine {
       }
       throw error;
     }
+  }
+
+  /** Observe only the actual engine's retained journal/capture and the
+   * settlement of its original dispatcher Promise. This supplies no native
+   * close, historical adoption or quarantine-clear action by itself. */
+  public originalSettledTrackedDispatch(operation: TrackedDispatchOperationJournal): OriginalSettledTrackedDispatch {
+    const existing = this.originalTrackedCleanupSources.get(operation);
+    if (existing !== undefined) { existing.assertCurrent(); return existing; }
+    const captured = this.trackedClockCaptures.get(operation), settlement = this.trackedDispatchSettlements.get(operation);
+    const upstream = this.upstream, validator = this.executionAuthorityValidator;
+    const orphanRiskAtIssue = operationHasOrphanedCallRisk(operation);
+    const nonce = orphanRiskAtIssue ? operation.runtimeRestartChallenge : `EASYEDA_ORIGINAL_TRACKED_CLEANUP:${operation.operationId}:${captured?.phase ?? "unavailable"}:${String(captured?.challengeAttempt ?? 0)}:${randomUUID()}`;
+    const dispatchReader = upstream.currentAuthenticatedBridgeDispatchBinding;
+    if (captured === undefined || settlement === undefined || !settlement.settled || settlement.phase !== captured.phase ||
+        validator === undefined || captured.validator !== validator || typeof nonce !== "string" || nonce.length === 0 ||
+        typeof dispatchReader !== "function" || dispatchReader !== captured.dispatchMethod || dispatchReader.call(upstream) !== undefined || !orphanRiskAtIssue && isTerminalOperation(operation)) {
+      throw new Error("Original settled tracked-dispatch cleanup authority is unavailable.");
+    }
+    const authority = operation.executionAuthorityBeforeOrphan, bridgeDispatch = operation.bridgeDispatchBeforeOrphan,
+      bridgeSession = operation.bridgeSessionBeforeOrphan, runtimeIdentity = operation.runtimeIdentityBeforeOrphan;
+    if (authority === undefined || bridgeSession === undefined || bridgeDispatch === undefined || runtimeIdentity === undefined) {
+      throw new Error("Original tracked-dispatch cleanup lacks its pre-dispatch authority.");
+    }
+    let consumed = false;
+    const retained = (): void => {
+      if (this.trackedClockCaptures.get(operation) !== captured ||
+          this.trackedDispatchSettlements.get(operation) !== settlement || !settlement.settled ||
+          this.executionAuthorityValidator !== validator || this.upstream !== upstream || captured.operationId !== operation.operationId ||
+          operation.orphanedCallPhase !== captured.phase || operation.runtimeRestartChallengeAttempt !== captured.challengeAttempt ||
+          operation.planHash !== captured.planHash || canonicalJson(operation.plan) !== captured.planSnapshot ||
+          (orphanRiskAtIssue ? operation.runtimeRestartChallenge !== nonce : operation.runtimeRestartChallenge !== undefined) || operationHasOrphanedCallRisk(operation) !== orphanRiskAtIssue ||
+          canonicalJson(operation.executionAuthorityBeforeOrphan) !== captured.snapshot || canonicalJson(authority) !== captured.snapshot ||
+          canonicalJson(operation.bridgeSessionBeforeOrphan) !== captured.sessionSnapshot || canonicalJson(bridgeSession) !== captured.sessionSnapshot ||
+          canonicalJson(operation.bridgeDispatchBeforeOrphan) !== captured.dispatchSnapshot || canonicalJson(bridgeDispatch) !== captured.dispatchSnapshot ||
+          canonicalJson(operation.runtimeIdentityBeforeOrphan) !== captured.runtimeSnapshot || canonicalJson(runtimeIdentity) !== captured.runtimeSnapshot ||
+          upstream.currentAuthenticatedBridgeDispatchBinding !== dispatchReader || dispatchReader.call(upstream) !== undefined ||
+          upstream.bridgeSessionLifecycle !== captured.sessionMethod || validator.observeCurrentClock !== captured.clockMethod) {
+        throw new Error("Original tracked-dispatch cleanup authority changed.");
+      }
+    };
+    const current = (): void => {
+      if (consumed) { throw new Error("Original tracked-dispatch cleanup authority was consumed."); }
+      retained();
+    };
+    const source: OriginalSettledTrackedDispatch = Object.freeze({ operationId: operation.operationId, phase: captured.phase, nonce, challengeAttempt: captured.challengeAttempt, orphanRiskAtIssue,
+      authority, bridgeSession, bridgeDispatch, runtimeIdentity, validator, assertRetainedOwner: retained, assertCurrent: current,
+      consume: (): void => { current(); consumed = true; },
+    });
+    this.originalTrackedCleanupSources.set(operation, source); current(); return source;
   }
 
   public async ensureRuntimeRestartChallenge(

@@ -10,6 +10,8 @@ import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
 import { CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintForwardPrewriteLifecycle, CurrentFootprintMainLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbOrdinaryReadLifecycle, CurrentPcbSpatialLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { WindowsControlRuntime } from "../src/windows-runtime.ts";
+import { OrdinaryTrackedOpenCleanup } from "../src/ordinary-tracked-open-cleanup.ts";
 import { inMemoryAuthenticatedUpstream } from "./helpers/in-memory-authenticated-upstream.ts";
 import type { CurrentSchematicPageOpeningEngine } from "../src/current-schematic-page-opening-runtime.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
@@ -67,7 +69,7 @@ void test("209 public opening and startup callbacks select original lifecycles a
       checks += 1; if (blocked) { throw new Error("synthetic unresolved engine journal"); }
       if (pendingAdmission !== undefined) { await pendingAdmission; }
     } };
-  const scope = vm.createContext({ z, CurrentSchematicPageOpeningCoordinator, inspectCurrentSchematicPageOpening, currentSchematicPageOpeningRequestSchema, privateFingerprintSchema: z.record(z.string(), z.unknown()), currentSchematicPageReadRequestSchema, readCurrentSchematicPage, currentPcbOrdinaryReadRequestSchema, CurrentPcbOrdinaryReadLifecycle, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupToolRequestSchema,
+  const scope = vm.createContext({ z, OrdinaryTrackedOpenCleanup, CurrentSchematicPageOpeningCoordinator, inspectCurrentSchematicPageOpening, currentSchematicPageOpeningRequestSchema, privateFingerprintSchema: z.record(z.string(), z.unknown()), currentSchematicPageReadRequestSchema, readCurrentSchematicPage, currentPcbOrdinaryReadRequestSchema, CurrentPcbOrdinaryReadLifecycle, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupToolRequestSchema,
     CURRENT_PCB_DIAGNOSTIC_PROFILE, CurrentPcb209DiagnosticLifecycle: Selected209Lifecycle,
     CurrentPcb209VisualLifecycle: Selected209VisualLifecycle, CurrentPcbSpatialLifecycle,
     CurrentPcb209WorkerStartupLifecycle: Selected209StartupLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle,
@@ -336,9 +338,20 @@ void test("209 public opening and startup callbacks select original lifecycles a
   let pageConstructed = 0;
   function ScopedPageOpening(input: CurrentSchematicPageOpeningEngine, assertLaunch: () => void): CurrentSchematicPageOpeningCoordinator {
     assert.equal(input.upstream, authenticated.upstream); assert.ok(authenticated.upstream.currentAuthenticatedBridgeDispatchBinding());
-    assertLaunch(); pageConstructed += 1; return new CurrentSchematicPageOpeningCoordinator(input, assertLaunch);
+    assertLaunch(); pageConstructed += 1;
+    const owner = new CurrentSchematicPageOpeningCoordinator(input, assertLaunch);
+    const originalRun = owner.run.bind(owner);
+    Object.defineProperty(owner, "run", { value: (request: { action: string }, expected?: Record<string, unknown>): Promise<Record<string, unknown>> => {
+      if (request.action === "settle-cleanup-records") {
+        assert.equal(authenticated.upstream.currentAuthenticatedBridgeDispatchBinding(), undefined);
+        return Promise.resolve({ retainedCleanupObserved: true });
+      }
+      return originalRun(request, expected);
+    } });
+    return owner;
   }
-  const originalLaunch = {};
+  const originalLaunch = new WindowsControlRuntime({ upstream: authenticated.upstream, pluginRoot: "/opt/synthetic-control",
+    assetsRoot: "/mnt/c/Synthetic/resources/app/assets", wslDistribution: "SyntheticReview", reviewedExecutionScopeSha256: "a".repeat(64) });
   registrations.clear();
   const authenticatedScope = vm.createContext({ ...scope, upstream: authenticated.upstream,
     engine: { ...engine, upstream: authenticated.upstream }, ordinaryLaunchRuntime: originalLaunch, windowsRuntime: originalLaunch,
@@ -354,5 +367,11 @@ void test("209 public opening and startup callbacks select original lifecycles a
   assert.match(JSON.stringify(scopedRead), /authenticatedScopeObserved/u); assert.equal(authenticated.calls(), 1);
   await assert.rejects(authenticatedRegistration.invoke(pageOpen)); assert.equal(pageConstructed, 1);
   assert.equal(authenticated.upstream.currentAuthenticatedBridgeDispatchBinding(), undefined);
-
+  const beforeCleanup = counts();
+  const cleanupResult = await authenticatedRegistration.invoke({ request: { action: "schematic-page-open", request: {
+    action: "settle-cleanup-records", operationId: "sch209-open-registration", cleanupNonce: "technical-original-nonce".repeat(3),
+  } } });
+  assert.match(JSON.stringify(cleanupResult), /retainedCleanupObserved/u);
+  assert.equal(counts().gateCalls, beforeCleanup.gateCalls + 1); assert.equal(pageConstructed, 1);
+  assert.equal(authenticated.calls(), 1);
 });

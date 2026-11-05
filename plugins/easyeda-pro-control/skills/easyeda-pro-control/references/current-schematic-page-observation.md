@@ -63,3 +63,32 @@ journal without live admission and never recreates the original owner, clears
 quarantine or repeats navigation. Never reuse that operation ID. After a
 successful open/read, finish the original application launch's supported normal
 close, observed termination and helper release.
+
+If the original dispatcher has settled and this facade still holds its actual
+ordinary runtime and journal object, inspection offers a technical
+`cleanupNonce`. This is separate from admission and design-state evidence.
+Use the same opening wrapper with the original operation ID and nonce:
+
+1. `request-cleanup-close`, `confirmNormalClose:true` and
+   `acceptUnknownFileEffects:true` consume one original normal-close request.
+   The intent is durable before native close. A close can automatically persist
+   data; acknowledgment proves neither process exit nor saved contents. No prompt
+   choice or force quit is offered.
+2. `observe-cleanup-termination` reads retained original root and Job handles.
+   Original root exit and a complete empty Job are mandatory. An existing
+   independently observed original termination can skip the close request.
+3. `finish-cleanup` reobserves that termination and requires the exact old HMAC
+   session closed with no active authenticated context or dispatch lease. Only
+   then can it consume the original technical nonce and clear global quarantine.
+   The terminal record explicitly retains unknown navigation/storage effects,
+   `mutationMayHaveOccurred:true`, `saved:false` and `reopened:false`.
+4. `settle-cleanup-records` publishes only an exact artifact or journal candidate
+   already retained by this original cleanup owner after a local publication
+   failure. It does not repeat native close or navigation. If close was requested
+   but never dispatched, it can proceed to the first close after durable intent
+   and a fresh exact same-window observation. Changed bytes refuse settlement.
+
+These actions do not create a replacement renderer or adopt a historical
+journal. A still-pending original dispatcher cannot enter cleanup. After cleanup
+completion, finish the original launch's termination record and helper release.
+No saved-content, unchanged-storage, replay, Save or writer authority follows.

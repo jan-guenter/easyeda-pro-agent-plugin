@@ -8,8 +8,14 @@ export const currentSchematicPageOpeningTargetSchema = currentDisposableOpenSeal
 });
 const openRequestSchema = z.strictObject({ action: z.literal("open"), operationId: currentSchematicPageOpeningIdSchema,
   target: currentSchematicPageOpeningTargetSchema, confirmOrdinaryProject: z.literal(true), acceptNormalOpenEffects: z.literal(true) });
+const cleanupBase = { operationId: currentSchematicPageOpeningIdSchema, cleanupNonce: z.string().min(32).max(512) };
 export const currentSchematicPageOpeningRequestSchema = z.discriminatedUnion("action", [openRequestSchema,
-  z.strictObject({ action: z.literal("inspect"), operationId: currentSchematicPageOpeningIdSchema })]);
+  z.strictObject({ action: z.literal("inspect"), operationId: currentSchematicPageOpeningIdSchema }),
+  z.strictObject({ action: z.literal("request-cleanup-close"), ...cleanupBase, confirmNormalClose: z.literal(true), acceptUnknownFileEffects: z.literal(true) }),
+  z.strictObject({ action: z.literal("observe-cleanup-termination"), ...cleanupBase }),
+  z.strictObject({ action: z.literal("finish-cleanup"), ...cleanupBase }),
+  z.strictObject({ action: z.literal("settle-cleanup-records"), ...cleanupBase }),
+]);
 export type CurrentSchematicPageOpeningRequest = z.infer<typeof currentSchematicPageOpeningRequestSchema>;
 export type CurrentSchematicPageOpeningTarget = z.infer<typeof currentSchematicPageOpeningTargetSchema>;
 export const currentSchematicPageOpeningResultSchema = z.strictObject({
@@ -29,8 +35,10 @@ export function queryCurrentSchematicPageOpening(input: unknown = {}): Record<st
     limitations: [
       "One existing ordinary SCH_PAGE and parent in the default branch of an already-loaded matching registered local project. Requires no editor tabs/PCB iframes before opening. Exact file hash, complete managed checkpoint, parent/page source membership, branch, registry path and native project/window receivers are mandatory. No different project is opened.",
       "The once-only public openDocument path can initialize drawings, update partition/title metadata, replay caches, contact services, change shared state and automatically persist or Save. confirmOrdinaryProject:true and acceptNormalOpenEffects:true acknowledge those effects. No unchanged-storage, passive-navigation or startup-completion promise is made.",
+      "The original cleanup actions require this facade's retained ordinary runtime, actual original journal object, settled original dispatcher Promise and technical cleanup nonce. They submit at most one normal close, separately observe original root/empty-Job termination, and require the exact original HMAC session closed with its dispatch lease released before consuming quarantine. No replacement renderer, replay, Save, discard, force quit or no-effects claim is introduced.",
+      "settle-cleanup-records can publish only an exact pending record retained by that same cleanup owner. A consumed close request can reach its first native dispatch after durable intent and fresh same-window observation. An already dispatched native close is never repeated. Unknown or changed journal/artifact bytes refuse settlement.",
       "The maintained tracked dispatcher captures original process-tree execution authority and authenticated bridge scope before native dispatch. A durable consumed navigation journal precedes the call. Lost/timeout acknowledgments retain quarantine and cannot replay. Historical JSON cannot supply original ownership; use schematic-page-opening-inspect for local evidence only.",
-      "Successful public acknowledgment and exact active target tab do not prove page-canvas readiness, full source, electrical connectivity or saved state. Use the separate schematic-page-read route afterward. There is no explicit Save, CAD edit, close/discard, prompt choice, restoration, generic UI command or writer action. Original application launch cleanup remains with its retained launch owner.",
+      "Successful public acknowledgment and exact active target tab do not prove page-canvas readiness, full source, electrical connectivity or saved state. Use the separate schematic-page-read route afterward. There is no explicit Save, CAD edit, prompt choice, discard, restoration, generic UI command or writer action. Original application launch termination records and helper release remain with their retained launch owner.",
     ], ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(currentSchematicPageOpeningRequestSchema) } : {}) };
 }
 export function validateCurrentSchematicPageOpeningArguments(input: unknown): Record<string, unknown> {

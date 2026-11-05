@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- The original page owner composes fixed source/checkpoint programs, tracked execution authority and its separate no-replay cleanup owner. */
 import { createOperation, listOperationIds, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "./artifacts.ts";
 import { OPERATION_SCHEMA, assertExpectedFingerprint, assertSubset, assertUpstreamReplySettled, buildPlanHash, canonicalJson, extractToolPayload, sha256Json, sha256Text } from "./core.ts";
 import type { EasyedaControlEngine, TrackedDispatchOperationJournal } from "./engine.ts";
@@ -8,6 +9,7 @@ import type { CurrentSchematicPageOpeningRequest, CurrentSchematicPageOpeningTar
 import { prepareCurrentSchematicPageOpeningCheckpoint, verifyCurrentSchematicPageOpeningCheckpoint } from "./current-schematic-page-opening-checkpoint.ts";
 import { buildCurrentSchematicPageOpeningProgram } from "./current-schematic-page-opening-program.ts";
 import { verifyCurrentSchematicPageOpeningImplementation } from "./current-schematic-page-read-profile.ts";
+import type { OrdinaryTrackedOpenCleanup } from "./ordinary-tracked-open-cleanup.ts";
 import type { SdkLocalEngine } from "./sdk-local-runtime.ts";
 import { validateSdkPublicReadersFingerprint } from "./sdk-public-readers-runtime.ts";
 
@@ -50,19 +52,21 @@ export async function inspectCurrentSchematicPageOpening(operationId: string): P
 export class CurrentSchematicPageOpeningCoordinator {
   readonly #engine: Engine;
   readonly #assertOriginalLaunch: () => void;
+  readonly #cleanup: OrdinaryTrackedOpenCleanup | undefined;
   readonly #prepare: typeof prepareCurrentSchematicPageOpeningCheckpoint;
   readonly #verify: typeof verifyCurrentSchematicPageOpeningCheckpoint;
   readonly #implementation: typeof verifyCurrentSchematicPageOpeningImplementation;
   readonly #attempts = new Set<string>();
   #busy = false;
-  public constructor(engine: Engine, assertOriginalLaunch: () => void, dependencies: CurrentSchematicPageOpeningDependencies = {}) {
-    this.#engine = engine; this.#assertOriginalLaunch = assertOriginalLaunch; this.#prepare = dependencies.prepareCheckpoint ?? prepareCurrentSchematicPageOpeningCheckpoint;
+  public constructor(engine: Engine, assertOriginalLaunch: () => void, dependencies: CurrentSchematicPageOpeningDependencies = {}, cleanup?: OrdinaryTrackedOpenCleanup) {
+    this.#engine = engine; this.#assertOriginalLaunch = assertOriginalLaunch; this.#cleanup = cleanup; this.#prepare = dependencies.prepareCheckpoint ?? prepareCurrentSchematicPageOpeningCheckpoint;
     this.#verify = dependencies.verifyCheckpoint ?? verifyCurrentSchematicPageOpeningCheckpoint;
     this.#implementation = dependencies.verifyImplementation ?? verifyCurrentSchematicPageOpeningImplementation;
   }
   public async run(input: unknown, expectedFingerprint?: Record<string, unknown>): Promise<Record<string, unknown>> {
     const request = currentSchematicPageOpeningRequestSchema.parse(input);
-    if (request.action === "inspect") { return inspectCurrentSchematicPageOpening(request.operationId); }
+    if (request.action === "inspect") { return { ...await inspectCurrentSchematicPageOpening(request.operationId), ...this.#cleanup?.inspect(request.operationId) }; }
+    if (request.action !== "open") { need(!this.#busy && this.#cleanup !== undefined); return this.#cleanup.run(request); }
     this.#assertOriginalLaunch(); need(!this.#busy && this.#attempts.size < 4096 && !this.#attempts.has(request.operationId));
     this.#attempts.add(request.operationId); this.#busy = true;
     try { return await this.#open(request, expectedFingerprint); } finally { this.#busy = false; }
@@ -97,7 +101,7 @@ export class CurrentSchematicPageOpeningCoordinator {
       planHash: buildPlanHash(plan), state: "prepared", mutationState: "navigation-intent", saved: false, reopened: false,
       orphanedCallPossible: false, hardStop: true, mutationMayHaveOccurred: true, sequence: 0, artifacts: [], createdAt: timestamp, updatedAt: timestamp,
       nextSafeAction: "Await this one original page opening. Inspect local evidence after a lost reply; never repeat navigation or Save." };
-    await createOperation(journal); current();
+    await createOperation(journal); current(); this.#cleanup?.retain(journal);
     const revalidate = async (): Promise<void> => { current(); need(canonicalJson(await loadOperation(request.operationId)) === canonicalJson(journal)); current(); };
     let retained: NativeResult | undefined;
     const raw = await dispatch.call(engine, journal, "schematic-page-open209", "easyeda_execute", { code, timeoutMs: 60_000, confirmWrite: true }, 70_000,

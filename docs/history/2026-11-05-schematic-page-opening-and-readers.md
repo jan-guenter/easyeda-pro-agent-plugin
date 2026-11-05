@@ -20,8 +20,10 @@ Opening can initialize drawings, update partition/title metadata, replay caches,
 contact services, change shared state and automatically persist or Save. These
 are disclosed normal-opening effects. The route promises neither passive
 navigation nor unchanged storage. Original application cleanup stays with the
-retained launch owner. Local journal inspection grants no historical ownership
-or quarantine-clear authority.
+retained launch owner. Local journal inspection grants no historical ownership.
+The [Nov 6 follow-up](2026-11-06-ordinary-tracked-open-cleanup.md) adds separate
+original-only tracked-call cleanup and exact pending-record settlement; no
+serialized journal can recreate that capability.
 
 `schematic-page-read` is a separate authenticated already-active type-1 read.
 It supports Text/Wire/Bus `get`/`getAll` and supported selected DTOs. Existing
