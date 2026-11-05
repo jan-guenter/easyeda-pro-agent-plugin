@@ -1,24 +1,25 @@
 /** Real v2 factory/private allocation registry and managed journal with one
  * inert Linux helper. Checkpoint, complete-SQL and installation collectors
  * are explicit synthetic seams; no native/source equivalence is proved. */
+/* oxlint-disable import/max-dependencies -- The actual factory fixture joins managed records, their digests and separate synthetic collectors without replacing private ownership guards. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { loadOperation } from "../../src/artifacts.ts";
+import { sha256Json } from "../../src/core.ts";
 import { CurrentFootprintForwardExecutionOpeningJournal } from "../../src/current-footprint-forward-execution-opening-journal.ts";
 import type { CurrentFootprintForwardExecutionOpeningProvider } from "../../src/current-footprint-forward-execution-opening.ts";
 import type { CurrentFootprintForwardExecutionOpeningRequest } from "../../src/current-footprint-forward-execution-opening-contract.ts";
 import { forwardExecutionOpeningJournalFixture } from "./forward-execution-opening-journal-fixture.ts";
-// oxlint-disable-next-line import/max-dependencies -- Join the real private factory and real managed journal through separate, explicitly synthetic external collector seams.
 import { combinedReadyFactoryFixture } from "./current-footprint-combined-ready-fixture.ts";
 
 export async function forwardExecutionOpeningProviderFixture(request: CurrentFootprintForwardExecutionOpeningRequest,
   mode?: "prepared-publication" | "prelaunch-cleanup-ack" | "no-allocation-cleanup-ack" | "no-process-cleanup-ack" | "ensure-storage" | "held-storage" | "create-ack" | "create-conflict"): Promise<Readonly<{
   provider: CurrentFootprintForwardExecutionOpeningProvider;
   factory: Awaited<ReturnType<typeof combinedReadyFactoryFixture>>;
-  state: { allocations: number; checkpointReads: number; sqlReads: number; preparedWasPublished: boolean };
+  state: { allocations: number; checkpointReads: number; sqlReads: number; preparedWasPublished: boolean; producerWasPublished: boolean; installationChecks: number };
   journalFixture: Awaited<ReturnType<typeof forwardExecutionOpeningJournalFixture>> | null;
 }>> {
   const factory = await combinedReadyFactoryFixture(mode === "prelaunch-cleanup-ack" || mode === "no-process-cleanup-ack" ? "ready" : "wrong-challenge", "forward-execution", false,
@@ -30,7 +31,10 @@ export async function forwardExecutionOpeningProviderFixture(request: CurrentFoo
     ` } : {});
   const source = new URL("../../src/current-footprint-forward-execution-opening.ts", import.meta.url); const require = createRequire(source);
   const output = await transform(await readFile(source, "utf8"), { loader: "ts", format: "cjs", target: "node24" });
-  const loaded = { exports: {} }, state = { allocations: 0, checkpointReads: 0, sqlReads: 0, preparedWasPublished: false };
+  const loaded = { exports: {} }, state = { allocations: 0, checkpointReads: 0, sqlReads: 0, preparedWasPublished: false, producerWasPublished: false, installationChecks: 0 };
+  const installationFile = Object.freeze({ windowsPath: "C:\\Synthetic\\easyeda-pro.exe", bytes: 1, sha256: "e".repeat(64) });
+  const installationPlan = Object.freeze({ schema: "easyeda-pro-control.pcb-diagnostic-installation.v1", files: Object.freeze([installationFile]) });
+  const installation = Object.freeze({ paths: Object.freeze({ syntheticVerifiedPaths: true }), facadeSha256: "f".repeat(64), plan: installationPlan });
   const checkpoint = Object.freeze({ profile: "easyeda-pro-control.current-disposable-open-checkpoint.v1", checkpoint: Object.freeze({ checkpointSha256: "a".repeat(64) }),
     targetEvidence: Object.freeze({ projectUuid: request.target.projectUuid, documentUuid: request.target.documentUuid, branchUuid: "b".repeat(32), docType: "PCB", sourceSha256: request.target.expectedSourceSha256 }) });
   const before = Object.freeze({ checkpointSha256: "a".repeat(64), logicalSha256: "c".repeat(64) });
@@ -57,6 +61,12 @@ export async function forwardExecutionOpeningProviderFixture(request: CurrentFoo
         assert.ok(Array.isArray(operation["records"])); state.preparedWasPublished = operation["records"].some((value: unknown) =>
           value !== null && typeof value === "object" && "kind" in value && value.kind === "prepare-result");
         assert.equal(state.preparedWasPublished, true); assert.equal(state.checkpointReads, 1); assert.equal(state.sqlReads, 1);
+        const intent: unknown = operation["records"].find((value: unknown) => value !== null && typeof value === "object" && "kind" in value && value.kind === "allocation-intent");
+        assert.ok(intent !== null && typeof intent === "object" && "evidence" in intent && intent.evidence !== null && typeof intent.evidence === "object");
+        assert.ok("producer" in intent.evidence);
+        assert.deepEqual(intent.evidence.producer, { schema: "easyeda-pro-control.footprint-forward-execution-opening-producer.v1",
+          source: "verifyCurrentPcb209DiagnosticInstallation", facadeSha256: installation.facadeSha256, installationSha256: sha256Json(installation) });
+        assert.equal(state.installationChecks, 1); state.producerWasPublished = true;
         return factory.api.startCurrentFootprintForwardExecutionNativeOwner(input);
       } };
     }
@@ -70,7 +80,9 @@ export async function forwardExecutionOpeningProviderFixture(request: CurrentFoo
       readerCompletion: (value: unknown): object => { assert.equal(value, before); return completion; },
     }; }
     if (name === "./machine-profile.ts") { return { loadRuntimeMachineProfile: (): Promise<object> => Promise.resolve({ profile: { runtime: { nodeExecutable: "/synthetic-unused/node", nodeVersion: "24.18.0", nodeSha256: "d".repeat(64) } } }) }; }
-    if (name === "./current-pcb-diagnostic-installation.ts") { return { verifyCurrentPcb209DiagnosticInstallation: (): Promise<object> => Promise.resolve({ plan: { files: [{ windowsPath: "C:\\Synthetic\\easyeda-pro.exe", sha256: "e".repeat(64) }] } }) }; }
+    if (name === "./current-pcb-diagnostic-installation.ts") { return { verifyCurrentPcb209DiagnosticInstallation: (): Promise<object> => {
+      state.installationChecks += 1; return Promise.resolve(installation);
+    } }; }
     // oxlint-disable-next-line import/no-dynamic-require -- Forward unchanged imports while naming every synthetic external collector above.
     return require(name) as unknown;
   }, loaded, loaded.exports]);

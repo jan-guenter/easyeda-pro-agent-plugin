@@ -171,6 +171,13 @@ managed opening journal retains original close/abort, root/whole-Job termination
 helper release and publication settlement. It does not promote a v1 owner or
 qualify clocks, current head/lock/frontier, complete writer capacity, create,
 explicit Save or a saved/closed baseline; all authority fields remain false.
+The first connected attempt stopped before project opening; complete source,
+seal and helper-cleanup execution remains unvalidated. See the [recorded attempt](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-05-forward-source-validation-batch.md).
+The separate [historical Source v2 receipt](current-footprint-forward-source-relinquishment.md)
+qualifies only one exact externally reviewed roster after fresh global process
+absence and unchanged raw/prepared SQL/history proofs. It removes that historical
+startup blocker while keeping capture, termination and helper release unknown.
+It reconstructs no owner and grants no execution, replay or Save authority.
 A separate bounded `read-qualified-source` action returns the original published
 packet as base64 byte pages of complete canonical UTF-8 JSON, including exact
 source content and packet/source hashes. Every page checks original private

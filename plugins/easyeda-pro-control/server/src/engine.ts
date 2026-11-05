@@ -2,6 +2,7 @@
 import { asOperationJournal, operationSummary } from "./engine-operation-summary.ts";
 import { observeQualifiedAdmissionOperations, scanQualifiedAdmissionOperations } from "./closed-symbol-terminal-admission.ts";
 import type { AdmissionScanDiagnostics } from "./closed-symbol-terminal-admission.ts";
+import type { CurrentFootprintForwardSourceHistoricalSnapshot } from "./current-footprint-forward-source-relinquishment-journal.ts";
 import { assertNoUnresolvedCurrentPcbDiagnosticLaunches } from "./current-pcb-diagnostic-lifecycle-journal.ts";
 import { assertCurrentIssuedWindowsClockObservation, windowsClockObservationForResult } from "./windows-authority.ts";
 import type { IssuedCurrentWindowsClockObservation, IssuedWindowsClockObservation } from "./windows-authority.ts";
@@ -2929,6 +2930,23 @@ export class EasyedaControlEngine {
     const operations = await scanQualifiedAdmissionOperations();
     assertNoBridgeBlockingOperations(operations.filter((entry) => entry.bridgeBlocking).map((entry) => entry.summary));
     return assertNoNativeUiEditingOperations(operations.map((entry) => entry.summary));
+  }
+
+  /** Historical Source resolution may exempt only its exact reader-issued
+   * original snapshot. Recheck it around the full fresh generic admission scan;
+   * no operation ID or supplied boolean can grant this exception to a launch. */
+  public async assertForwardSourceRelinquishmentOtherOperationsSettled(
+    snapshot: CurrentFootprintForwardSourceHistoricalSnapshot,
+  ): Promise<true> {
+    const { requireCurrentFootprintForwardSourceHistoricalSnapshot, assertCurrentFootprintForwardSourceHistoricalSnapshot } =
+      await import("./current-footprint-forward-source-relinquishment-journal.ts");
+    const original = requireCurrentFootprintForwardSourceHistoricalSnapshot(snapshot);
+    await assertCurrentFootprintForwardSourceHistoricalSnapshot(snapshot);
+    const observed = await scanQualifiedAdmissionOperations();
+    const operations = observed.filter(entry => entry.summary.operationId !== original.operationId);
+    await assertCurrentFootprintForwardSourceHistoricalSnapshot(snapshot);
+    assertNoBridgeBlockingOperations(operations.filter(entry => entry.bridgeBlocking).map(entry => entry.summary));
+    return assertNoNativeUiEditingOperations(operations.map(entry => entry.summary));
   }
 
   /** Native editing must exclude both unfinished transactions and terminal

@@ -28,7 +28,7 @@ function registrationSource(source: string): string {
   assert.equal(blocks.length, 1); const block = blocks[0]; assert.ok(block);
   const names = ["mainOriginal", "heldCacheOriginal", "resettableDiagnosticOwnerAllocated", "heldCacheCalls", "runHeldCache",
     "headAgeOriginal", "headAgeCalls", "startupOriginal", "startupCalls", "combinedHistoricalOriginal",
-    "forwardOpeningHistoricalOriginal", "runForwardOpeningHistorical", "runStartup"];
+    "forwardOpeningHistoricalOriginal", "forwardSourceHistoricalOriginal", "runForwardOpeningHistorical", "runStartup"];
   const selected = names.map(name => {
     const nodes = block.body.filter(node => node.type === "VariableDeclaration" && node.declarations.length === 1 &&
       node.declarations[0]?.id.type === "Identifier" && node.declarations[0].id.name === name);

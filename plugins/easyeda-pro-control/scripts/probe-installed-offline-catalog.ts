@@ -22,7 +22,7 @@ const NODE_VERSION = "24.18.0";
 const MAX_REPLY_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
-const CATALOG_QUERY_COUNT = 73;
+const CATALOG_QUERY_COUNT = 75;
 // Initialize and tool discovery plus the fixed catalog requests below.
 const REQUEST_LIMIT = 2 + CATALOG_QUERY_COUNT;
 const EXPECTED_TOOLS = [
@@ -279,7 +279,7 @@ async function offlineApi(child: OfflineChild, request: Record<string, unknown>)
  * its original synthetic child. Exact positive and negative argument checks
  * dispatch no live action; catalog conformance grants no runtime admission.
  */
-async function catalogChecks(child: OfflineChild, root: string, sample: () => Promise<void>): Promise<{ readonly tools: number; readonly queries: number; readonly loadedFacadeChecked: true; readonly ratlineContinuationDiscoveryChecked: true; readonly footprintCopyPreparationDiscoveryChecked: true; readonly footprintCopyRoutePreparationDiscoveryChecked: true; readonly footprintMainDiscoveryChecked: true; readonly footprintCombinedDiscoveryChecked: true; readonly footprintForwardPrewriteDiscoveryChecked: true; readonly footprintForwardSourceValidationDiscoveryChecked: true; readonly footprintCombinedUnknownAbandonmentDiscoveryChecked: true; readonly rendererCaptureDiscoveryChecked: true; readonly footprintHeldCacheDiscoveryChecked: true; readonly footprintHeadAgeDiscoveryChecked: true }> {
+async function catalogChecks(child: OfflineChild, root: string, sample: () => Promise<void>): Promise<{ readonly tools: number; readonly queries: number; readonly loadedFacadeChecked: true; readonly ratlineContinuationDiscoveryChecked: true; readonly footprintCopyPreparationDiscoveryChecked: true; readonly footprintCopyRoutePreparationDiscoveryChecked: true; readonly footprintMainDiscoveryChecked: true; readonly footprintCombinedDiscoveryChecked: true; readonly footprintForwardPrewriteDiscoveryChecked: true; readonly footprintForwardSourceValidationDiscoveryChecked: true; readonly footprintForwardSourceRelinquishmentDiscoveryChecked: true; readonly footprintCombinedUnknownAbandonmentDiscoveryChecked: true; readonly rendererCaptureDiscoveryChecked: true; readonly footprintHeldCacheDiscoveryChecked: true; readonly footprintHeadAgeDiscoveryChecked: true }> {
   const initialized = await child.request("initialize", {
     protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "easyeda-installed-offline-probe", version: "1.0.0" },
   });
@@ -470,6 +470,29 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
     requireCheck(output["additionalProperties"] === false && Array.isArray(required) && ["executionReady", "executionAuthorized", "saveAuthorized"].every(key =>
       required.includes(key) && record(properties[key])["const"] === false), "Disposable source result schemas must retain false execution and Save boundaries.");
   }
+  const sourceHistorical = await offlineApi(child, { action: "footprint-forward-source-relinquishment", query: { includeSchemas: true } });
+  requireCheck(sourceHistorical["wrapperAction"] === "footprint-forward-source-relinquishment" && sourceHistorical["executionReady"] === false &&
+    sourceHistorical["executionAuthorized"] === false && sourceHistorical["saveAuthorized"] === false &&
+    Array.isArray(sourceHistorical["actions"]) && sourceHistorical["actions"].length === 1 &&
+    sourceHistorical["actions"][0] === "relinquish-unknown-source-opening" && record(sourceHistorical["inputSchema"])["additionalProperties"] === false,
+    "Historical Source discovery changed its exact receipt-only scope.");
+  const historicalSchema = record(sourceHistorical["resultSchema"]);
+  const historicalProperties = record(historicalSchema["properties"]);
+  const historicalRequired = historicalSchema["required"];
+  requireCheck(historicalSchema["additionalProperties"] === false && Array.isArray(historicalRequired) &&
+    ["executionReady", "executionAuthorized", "saveAuthorized", "terminationProved", "nativeResourcesReleased", "helperReleaseAcknowledged"].every(key =>
+      historicalRequired.includes(key) && record(historicalProperties[key])["const"] === false) &&
+    ["captureOutcome", "terminationOutcome", "helperReleaseOutcome"].every(key =>
+      historicalRequired.includes(key) && record(historicalProperties[key])["const"] === "unknown"),
+    "Historical Source result must preserve unknown native outcomes and false authority.");
+  const historicalRequest = { action: "relinquish-unknown-source-opening", operationId: "footprint-forward-execution-offline-catalog",
+    expectedManifestSha256: "a".repeat(64), expectedRosterSha256: "b".repeat(64), expectedIntentSha256: "c".repeat(64), expectedBindingSha256: "d".repeat(64),
+    confirmRelinquishUnknownSourceOpening: true, acceptUnknownCaptureOutcome: true };
+  const historicalValid = await offlineApi(child, { action: "footprint-forward-source-relinquishment-validate", query: { request: historicalRequest } });
+  const historicalParsed = record(historicalValid["request"]);
+  requireCheck(historicalValid["valid"] === true && historicalValid["executionAuthorized"] === false && historicalValid["saveAuthorized"] === false &&
+    Object.keys(historicalParsed).length === Object.keys(historicalRequest).length && Object.entries(historicalRequest).every(([key, value]) => historicalParsed[key] === value),
+    "Historical Source validation changed its exact request or admitted native authority.");
   const forward = await offlineApi(child, { action: "footprint-forward-prewrite", query: { includeSchemas: true } });
   const forwardActions = forward["actions"];
   requireCheck(forward["wrapperAction"] === "footprint-forward-prewrite" && forward["toolWrapperAction"] === "footprint-forward-prewrite" &&
@@ -629,7 +652,7 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
   requireCheck(fileValidation["valid"] === true && fileValidation["executionAuthorized"] === false &&
     record(fileValidation["requestSummary"])["base64Echoed"] === false && !Object.hasOwn(fileValidation, "request"),
   "Managed library-file validation echoed source or implied execution authority.");
-  return { tools: tools.length, queries: CATALOG_QUERY_COUNT, loadedFacadeChecked: true, footprintForwardSourceValidationDiscoveryChecked: true, footprintMainDiscoveryChecked: true, footprintCombinedDiscoveryChecked: true, footprintForwardPrewriteDiscoveryChecked: true, footprintCombinedUnknownAbandonmentDiscoveryChecked: true, rendererCaptureDiscoveryChecked: true, footprintHeldCacheDiscoveryChecked: true, footprintHeadAgeDiscoveryChecked: true, ratlineContinuationDiscoveryChecked: true, footprintCopyPreparationDiscoveryChecked: true, footprintCopyRoutePreparationDiscoveryChecked: true };
+  return { tools: tools.length, queries: CATALOG_QUERY_COUNT, loadedFacadeChecked: true, footprintForwardSourceValidationDiscoveryChecked: true, footprintForwardSourceRelinquishmentDiscoveryChecked: true, footprintMainDiscoveryChecked: true, footprintCombinedDiscoveryChecked: true, footprintForwardPrewriteDiscoveryChecked: true, footprintCombinedUnknownAbandonmentDiscoveryChecked: true, rendererCaptureDiscoveryChecked: true, footprintHeldCacheDiscoveryChecked: true, footprintHeadAgeDiscoveryChecked: true, ratlineContinuationDiscoveryChecked: true, footprintCopyPreparationDiscoveryChecked: true, footprintCopyRoutePreparationDiscoveryChecked: true };
 }
 
 export async function probeInstalledOfflineCatalog(installedRoot: string): Promise<Record<string, unknown>> {

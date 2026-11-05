@@ -189,3 +189,113 @@ clone mutation, parser replacement and malformed/restored input. Its source
 proof has SHA-256
 `662dbc1ad7ea3054e4794c2ed43c9a84a096288c2648db0cdd850118da32ffff`.
 The initial failed CI remains nonqualifying; final exact-head CI is pending.
+
+The corrected `2aa8af6069567c9855918de8bc39f92fe1b802d5` cut passed Windows
+compilation, the build, bridge tests and seven facade shards. Its one remaining
+failure measured 262 JSON parses where an older compact-projection test
+expected 390. The preceding rich scans had already warmed the new bounded
+JSON memo; the compact projection itself was still cold. The test now permits
+zero through 390 cold parses while retaining exactly zero additional warm
+parses, all 390 results and every fresh corruption/artifact/path check. The
+affected test passes, as do scoped types/lint. Production code and bundles are
+unchanged. Test-only correction proof SHA-256:
+`11aa8b5f1e345d1c48b60cd2a42a226940b5e97b92397413ec1bb7aa16069504`.
+The `2aa8af6` totals remain recorded as 14,254 passes, one failure and five
+platform skips, with 424 bridge passes; they do not qualify the new test cut.
+
+
+## Actual source-validation attempt and follow-up
+
+The immutable `2aa8af6069567c9855918de8bc39f92fe1b802d5` payload was admitted
+from a fresh context with complete packaged bytes/modes and original process
+checks. Its separate v2 owner launched the disposable application and completed
+main, browser, frames and UI qualification. The single `capture-source` call
+then failed with `FORWARD_EXECUTION_ORIGINAL_METHODS_CHANGED` before the
+project-opening dispatch. No source packet, preparation seal, writer or Save
+result followed. This is failed connected validation, not a source-workflow pass.
+
+Source review found a captured method key that does not exist on the actual
+opening prototype. The new key list is constrained by that actual class type.
+The wrapper also retains a monotonic opening-invocation bit. After genuine
+original root termination and an empty whole Job, cleanup may skip only a
+never-invoked original opening whose complete status remains idle, unconsumed
+and transport-free. Every invoked or ambiguous opening retains its existing
+release guard. The actual-prototype regression exercises this distinction;
+15 affected cases and scoped types/lint pass. Source-fix proof SHA-256:
+`30ea0c806dcf06a84062da6a4a5916b26a37f80daef3675e4b31e073caedc13a`.
+These source tests do not establish connected cleanup success.
+
+The original failed attempt observed its window, requested normal close once,
+and then proved original root exit and an empty whole Job. Its separate
+`release-closed` failed with `PCB209_WORKER_STARTUP_OPENING_RELEASE_STATE`:
+the original unstarted wrapper cannot satisfy that released guard. The facade
+and original helper therefore remained retained while separately authorized
+cleanup was prepared. Physical process closure alone cannot settle the Source
+journal, acknowledge helper release or permit replay. No repeated capture,
+project navigation, Save or owner reconstruction was used.
+
+New Source allocation intents also include a separately versioned producer
+subobject derived from the already verified installation. It records facade
+and installation digests without extra awaits or native calls. Existing request,
+record and result declarations remain unchanged. The old failed journal has no
+such producer fields; its provenance must remain explicitly external. The
+15 affected cases and scoped types/lint pass for this leaf; proof SHA-256:
+`fb85c17b6bd758be672dc6830e6e3d23d48133cf19bcc0c64fb1905c3d91589a`.
+
+The follow-up adds a separate historical Source-v2 metadata contract for only
+that externally reviewed exact raw manifest and complete 23-record/artifact
+roster. A private reader-issued snapshot selects its sole isolation exception.
+Fresh global Linux/Windows absence, unchanged registered raw source, full
+completed SQL readers and complete history equality are required before separate
+exclusive sidecars can relinquish its historical startup blocker. The original
+journal is preserved. Original capture, termination and helper release stay
+unknown; all execution, restoration, replay and Save authority remain false.
+This contract creates no native owner or process-control route. Focused source
+validation, final exact-head CI, review and any actual receipt remain pending.
+
+
+The historical resolver's focused selection passes eight cases, including
+changed file proof, Linux/Windows process presence, active pre-lease custody,
+unknown publication acknowledgment and same-owner settlement. These use an
+isolated synthetic reviewed profile and the actual managed chain/admission
+readers; they do not invoke the live historical resolver. The shared legacy
+file-proof selection also passes three generated SQLite/history cases.
+Four registration files passed 14 cases with the actual index registration and
+an inert coordinator; a subsequent equivalent test-extractor lint correction
+was checked by lint. Final exact-head CI remains the complete final-source test
+proof. Registration review proof SHA-256:
+`8a8c2bd042e9a239b02ea830d2e64284517c90f84339b94bfb88fe47a7cfd9a1`.
+
+The independent eight-file runtime review found no additional semantic defect.
+Strict lint separately exposed a new runtime import cycle. The contract now
+uses the equivalent pure strict absence schema with the same fixed helper hash,
+removing the runtime edge. The bounded corrected-cut review passes; proof
+SHA-256 is
+`d0be9ad7d9224fecf51b6f115e6b16e179c125babb82430d69a95e540ed80942`.
+Complete strict types and type-aware lint pass with zero warnings. Bridge types
+and lint, API coverage, and all seven installed skill-creator validations pass.
+The catalog gains two metadata-only queries, for 75 queries and 77 total
+requests, without another MCP tool or native launch purpose. These checks grant
+no historical receipt, source seal, connected cleanup or writer authority.
+
+Historical resolver implementation proof SHA-256:
+`95b2095bdb6b4a6603895d33848f874ffda17074148808d732d4e4a42aa86c68`.
+The first synthetic run's missing generic plan hash and the initial lint
+failures remain retained separately; neither is reported as a passing cut.
+
+
+The batched follow-up passes the complete local non-suite checks, build and
+sanitizer/protocol identity checks. Rebuilding the server, supervisor and manager
+preserves all 3,039 repository file bytes and modes. Reproducibility proof
+SHA-256 is
+`17da8004bfc13a1e74359a699cceb913212d1572930da7a5187fa6222d5dfe29`.
+Only facade source/bundle projections and review time changed in compatibility;
+external runtime, upstream, installed-bundle and bridge/key pins remain intact.
+The new source projection has 1,049 files and SHA-256
+`e11f18bd8bb2820ebdb4ea57a04a4ce9d87837900eb985ddd6166a10ccac3054`;
+the three-file runtime projection is
+`99e07318986de0f688165012adc626fb45ff50354a62aff61abd657dce03b978`.
+A first offline probe refused the dependency-bearing development checkout
+before creating a child. Clean-package offline verification, exact-head CI,
+CodeRabbit review, original-process cleanup, historical receipt qualification,
+publication and installation remain separate pending steps.

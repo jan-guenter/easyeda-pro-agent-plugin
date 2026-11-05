@@ -16,6 +16,9 @@ import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
 import { forwardExecutionOpeningJournalFixture } from "./helpers/forward-execution-opening-journal-fixture.ts";
 import type { CurrentFootprintForwardExecutionOpeningProvider } from "../src/current-footprint-forward-execution-opening.ts";
 import { currentFootprintForwardExecutionOpeningRequestSchema } from "../src/current-footprint-forward-execution-opening-contract.ts";
+import { markCurrentFootprintExecutionDependency } from "../src/current-footprint-copy-execution-purpose.ts";
+import { acquireCurrentPcbDiagnosticLaunchExclusion, releaseCurrentPcbDiagnosticLaunchExclusion } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
+import type { CurrentFootprintCopyStartupOpening } from "../src/current-pcb-209-worker-startup-opening.ts";
 
 const operationId = "footprint-forward-execution-source-validation";
 const rawWindowsPath = String.raw`C:\Synthetic\validation.eprj2`;
@@ -23,6 +26,20 @@ const launch = { action: "launch", operationId,
   target: { rawWindowsPath, projectUuid: sha256Text(rawWindowsPath), documentUuid: "c".repeat(16), expectedSourceSha256: "d".repeat(64) },
   footprintUuid: "e".repeat(16), confirmDisposableProject: true, acceptExistingProfileEffects: true,
   acceptNormalOpenEffects: true, acceptDebuggerPauseEffects: true, confirmValidationOnly: true, confirmDiagnosticLaunch: true };
+
+function unstartedOpeningWorkRefused(): never { return assert.fail("An unstarted original wrapper must issue no native or opening work"); }
+/** Keep the original class/private transport code while naming each synthetic
+ * source/native collector dependency; this never constructs an application. */
+async function loadOriginalOpeningTestModule(url: URL, text: string, replacements: ReadonlyMap<string, unknown>): Promise<Record<string, unknown>> {
+  const require = createRequire(url); const output = await transform(text, { loader: "ts", format: "cjs", target: "node24" });
+  const loaded: { exports: Record<string, unknown> } = { exports: {} };
+  const evaluate: unknown = runInThisContext(`(function(require,module,exports){${output.code}\n})`); assert.ok(typeof evaluate === "function");
+  Reflect.apply(evaluate, undefined, [(name: string): unknown => {
+    if (replacements.has(name)) { return replacements.get(name); }
+    // oxlint-disable-next-line import/no-dynamic-require -- Actual class/transport imports stay unchanged outside the named source/native collector seams.
+    return require(name) as unknown;
+  }, loaded, loaded.exports]); return loaded.exports;
+}
 
 void test("offline discovery validates the separate strict source route without promoting v1 or accepting authority injection", () => {
   const discovered = queryOfflineApi(apiRequestSchema.parse({ action: "footprint-forward-source-validation", query: { includeSchemas: true } })).result;
@@ -119,4 +136,69 @@ ${anchor}`);
   // Close only this data-only journal fixture; no native exit is asserted.
   await journal.append("termination-intent", { ordinal: 1 }); await journal.append("termination-result", { ordinal: 1, terminated: true });
   await journal.append("release-intent", {}); await journal.append("release-result", { released: true });
+});
+
+void test("terminated original cleanup skips only its genuine never-invoked opening without navigation or wrapper settlement", async () => {
+  const sourceQualification = Object.freeze({ syntheticSourceIssuer: true });
+  const state = { requests: 0, subscriptions: 0, helperReleases: 0, terminationProved: false };
+  const dependency = Object.freeze({ parentTargetId: "synthetic-parent", parentSessionId: "synthetic-session",
+    request: (): Promise<never> => { state.requests += 1; return Promise.reject(new Error("Unexpected native request")); },
+    subscribe: (): (() => void) => { state.subscriptions += 1; return unstartedOpeningWorkRefused; },
+    assertOriginalOwner: (): Promise<void> => Promise.resolve(),
+    assertOriginalTermination: (): Promise<void> => { assert.equal(state.terminationProved, true); return Promise.resolve(); } });
+  markCurrentFootprintExecutionDependency(dependency);
+  const binding = Object.freeze({ context: unstartedOpeningWorkRefused, reprove: unstartedOpeningWorkRefused, begin: unstartedOpeningWorkRefused, finish: unstartedOpeningWorkRefused,
+    observeParent: unstartedOpeningWorkRefused, ancillaryFrame: unstartedOpeningWorkRefused, observeAncillary: unstartedOpeningWorkRefused, ancillaryObservation: unstartedOpeningWorkRefused });
+  const openingUrl = new URL("../src/current-pcb-209-worker-startup-opening.ts", import.meta.url);
+  const providerUrl = new URL("../src/current-footprint-forward-execution-opening.ts", import.meta.url);
+  const openingModule = await loadOriginalOpeningTestModule(openingUrl, await readFile(openingUrl, "utf8"), new Map([["./current-pcb-209-actor-clock-source.ts", {
+    requireCurrentPcb209ActorClockSourceQualification: (actual: unknown): void => { assert.equal(actual, sourceQualification); },
+  }]]));
+  const actualOpening = openingModule["CurrentFootprintCopyStartupOpening"]; assert.ok(typeof actualOpening === "function");
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Actual original opening/private core and transport; only complete-source qualification above is synthetic.
+  const Opening = actualOpening as typeof CurrentFootprintCopyStartupOpening;
+  const opening: unknown = Reflect.construct(Opening, [{ dependency, opening: binding, actorClockSourceQualification: sourceQualification }]);
+  assert.ok(opening instanceof Opening);
+  await assert.rejects(opening.releaseAfterTermination(), /RELEASE_STATE/u);
+  const held = await forwardExecutionOpeningJournalFixture("held-main-result");
+  const selected = currentFootprintForwardExecutionOpeningRequestSchema.parse({ operationId: `${operationId}-unstarted`, target: launch.target,
+    footprintUuid: launch.footprintUuid, confirmDisposableProject: true, acceptExistingProfileEffects: true,
+    acceptNormalOpenEffects: true, acceptDebuggerPauseEffects: true });
+  const journal = new held.Journal(selected); await journal.reserve();
+  for (const stage of ["prepare", "allocation", "launch"] as const) {
+    await journal.append(`${stage}-intent`, {}); await journal.append(stage === "launch" ? "binding" : `${stage}-result`, {});
+  }
+  await journal.append("close-intent", { hwnd: "123" }); await journal.append("close-result", { requested: true });
+  await journal.append("termination-intent", { ordinal: 1 }); await journal.append("termination-result", { ordinal: 1, terminated: true });
+  const owner = Object.freeze({ releaseClosed: (): Promise<void> => { assert.equal(state.terminationProved, true); state.helperReleases += 1; return Promise.resolve(); } });
+  let providerText = await readFile(providerUrl, "utf8");
+  const anchor = "  public constructor(input: CurrentPcbDiagnosticLifecycleOptions)"; assert.equal(providerText.split(anchor).length, 2);
+  providerText = providerText.replace(anchor, `  public seedUnstartedOpeningForTest(owner: object, opening: object, journal: object, request: object, lease: object): void {
+    this.#owner=owner as never;this.#opening=opening as never;this.#journal=journal as never;this.#request=request as never;this.#lease=lease as never;
+    this.#failed=new Error('synthetic receiver capture failure');this.#stage='ui-source';this.#launchAttempted=true;this.#cleanupKind='close';
+    this.#journalCurrent=captureCurrentFootprintForwardExecutionReceiver(journal,journalPrototypes,['reserve','append','settle','waitForCurrentPublication','assertCurrent','retained','reservationOutcome']);
+  }
+  public retainSyntheticOriginalTerminationForTest(): void {this.#terminated=true;}
+${anchor}`);
+  const providerModule = await loadOriginalOpeningTestModule(providerUrl, providerText, new Map<string, unknown>([
+    ["./current-pcb-209-worker-startup-opening.ts", openingModule],
+    ["./current-footprint-forward-execution-opening-journal.ts", { CurrentFootprintForwardExecutionOpeningJournal: held.Journal }],
+    ["./current-pcb-diagnostic-owner.ts", { assertOriginalCurrentFootprintForwardExecutionNativeOwner: (actual: unknown): void => { assert.equal(actual, owner); } }],
+  ]));
+  const actualProvider = providerModule["CurrentFootprintForwardExecutionOpeningProvider"]; assert.ok(typeof actualProvider === "function");
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Original provider/private cleanup over the actual opening; native termination/helper callbacks are explicit synthetic seams.
+  const Provider = actualProvider as typeof CurrentFootprintForwardExecutionOpeningProvider;
+  const provider = new Provider(Object.freeze({ pluginRoot: "/synthetic-unused", assetsRoot: "/synthetic-unused", powershellSha256: "a".repeat(64), powershellBytes: 1,
+    assertLocalAllowed: (): void => undefined, assertAllowed: (): Promise<void> => Promise.resolve(), assertOtherLaunchesSettled: (): Promise<void> => Promise.resolve() }));
+  const seed: unknown = Reflect.get(provider, "seedUnstartedOpeningForTest"); assert.ok(typeof seed === "function");
+  Reflect.apply(seed, provider, [owner, opening, journal, selected, acquireCurrentPcbDiagnosticLaunchExclusion()]);
+  await assert.rejects(provider.release(), /RELEASE_UNAVAILABLE/u); assert.equal(state.helperReleases, 0);
+  state.terminationProved = true;
+  const terminated: unknown = Reflect.get(provider, "retainSyntheticOriginalTerminationForTest"); assert.ok(typeof terminated === "function"); Reflect.apply(terminated, provider, []);
+  await provider.release(); assert.equal(state.helperReleases, 1);
+  const observed = opening.status(); assert.equal(observed.consumed, false); assert.equal(observed.settled, false); assert.equal(observed.openingAttempted, false);
+  assert.equal(observed.transport.started, false); assert.equal(observed.transport.requests, 0);
+  assert.equal(state.requests, 0); assert.equal(state.subscriptions, 0); assert.equal(journal.retained().records.at(-1)?.kind, "release-result");
+  await assert.rejects(provider.release(), /RELEASE_UNAVAILABLE/u); assert.equal(state.helperReleases, 1);
+  const lease = acquireCurrentPcbDiagnosticLaunchExclusion(); releaseCurrentPcbDiagnosticLaunchExclusion(lease);
 });

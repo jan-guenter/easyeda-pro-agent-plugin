@@ -38,6 +38,12 @@ export const currentFootprintForwardOpeningFileProofSchema = z.strictObject({
 });
 export type CurrentFootprintForwardOpeningFileProof = Readonly<z.infer<typeof currentFootprintForwardOpeningFileProofSchema>>;
 type Opening = NonNullable<DiagnosticLifecycleRecords["worker-startup-opening-intent.json"]>;
+export const currentFootprintForwardOpeningFileProofInputSchema = z.object({
+  target: currentDisposableOpenSealedTargetSchema,
+  preparationCheckpoint: currentDisposableOpenPreparationCheckpointSchema,
+  checkpointReceiptSha256: digest, beforeSqlSha256: digest,
+}).strict();
+export type CurrentFootprintForwardOpeningFileProofInput = Readonly<z.infer<typeof currentFootprintForwardOpeningFileProofInputSchema>>;
 
 function need(value: boolean, message: string): asserts value {
   if (!value) { throw new Error(`FORWARD_OPENING_FILE_PROOF_${message}`); }
@@ -61,6 +67,21 @@ function comparableHistory(history: NativeHistorySnapshot): string {
 export async function collectCurrentFootprintForwardOpeningFileProof(opening: Opening,
   current: () => Promise<void>): Promise<CurrentFootprintForwardOpeningFileProof> {
   const captured = canonicalJson(opening);
+  const proof = await collectCurrentFootprintForwardOpeningFileProofInput({ target: opening.target,
+    preparationCheckpoint: opening.preparationCheckpoint, checkpointReceiptSha256: opening.checkpointReceiptSha256,
+    beforeSqlSha256: opening.beforeSqlSha256 }, async () => {
+    need(canonicalJson(opening) === captured, "OPENING_CHANGED");
+    await current(); need(canonicalJson(opening) === captured, "OPENING_CHANGED");
+  });
+  need(canonicalJson(opening) === captured, "OPENING_CHANGED"); return proof;
+}
+
+/** Reuse the same file-only proof for a reader-issued Source history without
+ * fabricating a legacy opening packet or granting any native authority. */
+export async function collectCurrentFootprintForwardOpeningFileProofInput(input: CurrentFootprintForwardOpeningFileProofInput,
+  current: () => Promise<void>): Promise<CurrentFootprintForwardOpeningFileProof> {
+  const captured = canonicalJson(input), opening = currentFootprintForwardOpeningFileProofInputSchema.parse(input);
+  const parsedText = canonicalJson(opening);
   const target = currentDisposableOpenSealedTargetSchema.parse(opening.target);
   const { branchUuid: branch, ...originalTarget } = target;
   const descriptor = currentDisposableOpenPreparationCheckpointSchema.parse(opening.preparationCheckpoint);
@@ -69,7 +90,7 @@ export async function collectCurrentFootprintForwardOpeningFileProof(opening: Op
   const readers: { readonly inventory: Inventory; readonly completion: ReaderCompletion }[] = [];
   /** Preserve the original opening and all already completed reader objects. */
   const unchanged = (): void => {
-    need(canonicalJson(opening) === captured, "OPENING_CHANGED");
+    need(canonicalJson(input) === captured && canonicalJson(opening) === parsedText, "OPENING_CHANGED");
     for (const item of readers) { completed(item.inventory, item.completion); }
   };
   /** Bracket one maintained operation with the caller's current global premise

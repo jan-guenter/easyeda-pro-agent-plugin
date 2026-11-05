@@ -31,7 +31,7 @@ import { readExactSqlInventory, readerCompletion } from "./sqlite-inventory.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE } from "./current-footprint-forward-execution-contract.ts";
-import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_BUDGET, currentFootprintForwardExecutionOpeningRequestSchema, currentFootprintForwardExecutionOpeningResultSchema } from "./current-footprint-forward-execution-opening-contract.ts";
+import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_BUDGET, currentFootprintForwardExecutionOpeningProducerEvidenceSchema, currentFootprintForwardExecutionOpeningRequestSchema, currentFootprintForwardExecutionOpeningResultSchema } from "./current-footprint-forward-execution-opening-contract.ts";
 import type { CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_NORMAL_STAGES, CurrentFootprintForwardExecutionOpeningRequest as Request,
   CurrentFootprintForwardExecutionOpeningResult as Result } from "./current-footprint-forward-execution-opening-contract.ts";
 import { CurrentFootprintForwardExecutionOpeningJournal } from "./current-footprint-forward-execution-opening-journal.ts";
@@ -41,7 +41,7 @@ import { captureCurrentFootprintForwardExecutionPrototypes, captureCurrentFootpr
 const token = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$(?![\s\S])/u);
 const openingPrototypes = captureCurrentFootprintForwardExecutionPrototypes(CurrentFootprintCopyStartupOpening.prototype);
 const journalPrototypes = captureCurrentFootprintForwardExecutionPrototypes(CurrentFootprintForwardExecutionOpeningJournal.prototype);
-const openingMethods = ["open", "requireOriginal", "proveCurrentAssignments", "observeFootprintState", "observeFootprintSource", "requireFootprintSource", "releaseAfterTermination", "assertOriginalMethodsCurrent"] as const;
+const openingMethods = ["open", "requireOriginal", "proveCurrentAssignments", "observeFootprintState", "observeFootprintSource", "requireFootprintSource", "releaseAfterTermination", "status"] as const satisfies readonly (keyof CurrentFootprintCopyStartupOpening)[];
 const nativeMethods = ["launch", "status", "observeFootprintMainConstruction", "browserObservation", "inspectFrames", "inspectScript", "handoffWorkerStartup",
   "observeFootprintCopyUi", "requireFootprintCopyUi", "assertFootprintForwardExecutionSourceCapacity", "sealFootprintForwardExecutionSource", "originalFootprintForwardExecutionSource", "requestNormalClose",
   "observeApplicationWindow",
@@ -87,6 +87,7 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
   #opening: CurrentFootprintCopyStartupOpening | null = null;
   #openingCurrent: (() => void) | null = null;
   #openingResult: CurrentFootprintCopyStartupOpeningResult | null = null;
+  #openingInvoked = false;
   #result: Result | null = null;
   #bindingSha256: string | null = null;
   #stage: "new" | "launched" | "main" | "browser" | "frames" | "ui-source" | "sealed" = "new";
@@ -215,7 +216,9 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
       await journal.append("prepare-result", { checkpoint, beforeSqlSha256: before.logicalSha256, originalSqlReaderCompleted: true }); this.#current();
       const installation = await verifyCurrentPcb209DiagnosticInstallation(this.#birthOptions); this.#current();
       const executable = installation.plan.files[0]; need(executable !== undefined, "EXECUTABLE_REQUIRED");
-      await this.#preparedCurrent(true); await journal.append("allocation-intent", { purpose: CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE }); this.#current();
+      await this.#preparedCurrent(true); await journal.append("allocation-intent", { purpose: CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE,
+        producer: currentFootprintForwardExecutionOpeningProducerEvidenceSchema.parse({ schema: "easyeda-pro-control.footprint-forward-execution-opening-producer.v1",
+          source: "verifyCurrentPcb209DiagnosticInstallation", facadeSha256: installation.facadeSha256, installationSha256: sha256Json(installation) }) }); this.#current();
       this.#factoryInvoked = true;
       try { this.#owner = await startCurrentFootprintForwardExecutionNativeOwner(this.#birthOptions); }
       catch (error) {
@@ -300,9 +303,12 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
       requireCurrentFootprintForwardExecutionPrototypes(openingPrototypes);
       const opening = new CurrentFootprintCopyStartupOpening(handoff); this.#opening = opening;
       this.#openingCurrent = captureCurrentFootprintForwardExecutionReceiver(opening, openingPrototypes, openingMethods);
-      const result = await this.#stageCall("opening", { target: prepared.sealedTarget }, () => opening.open(prepared.sealedTarget, async () => {
-        await this.#preparedCurrent(true); await this.#journalRequired().assertCurrent(); this.#current();
-      }), value => { this.#openingResult = value; });
+      const result = await this.#stageCall("opening", { target: prepared.sealedTarget }, () => {
+        this.#openingInvoked = true;
+        return opening.open(prepared.sealedTarget, async () => {
+          await this.#preparedCurrent(true); await this.#journalRequired().assertCurrent(); this.#current();
+        });
+      }, value => { this.#openingResult = value; });
       const assignments = await this.#stageCall("assignments", {}, () => opening.proveCurrentAssignments(result));
       await this.#stageCall("ui", {}, async () => { const packet = await owner.observeFootprintCopyUi(opening, result); this.#current(); await owner.requireFootprintCopyUi(packet); return packet; });
       const state = await this.#stageCall("state", {}, () => opening.observeFootprintState(result, assignments));
@@ -407,7 +413,25 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
     try {
       const journal = this.#journalRequired(); await journal.settle();
       if (!journal.retained().records.some(record => record.kind === "release-intent")) { await journal.append("release-intent", {}); }
-      if (this.#opening !== null && !this.#openingReleased) { await this.#opening.releaseAfterTermination(); this.#openingReleased = true; }
+      if (this.#opening !== null && !this.#openingReleased) {
+        this.#openingCurrent ??= captureCurrentFootprintForwardExecutionReceiver(this.#opening, openingPrototypes, openingMethods);
+        this.#openingCurrent();
+        if (this.#openingInvoked) { await this.#opening.releaseAfterTermination(); }
+        else {
+          const opening = this.#opening.status(), transport = opening.transport;
+          need(this.#openingResult === null && !opening.consumed && !opening.settled && !opening.openingAttempted &&
+            !opening.openingDispatchSettled && !opening.openingResultRetained && !opening.constructionRetained && !opening.completed &&
+            opening.diagnostics.stage === "idle" && opening.diagnostics.step === "idle" && opening.diagnostics.failure === null &&
+            !transport.started && !transport.settled && !transport.failed && transport.requests === 0 &&
+            !transport.initialPauseSeen && !transport.initialResumeAttempted && !transport.initialResumeSeen &&
+            !transport.unresolvedInstrumentation && transport.attachedWorkers === 0 && !transport.existingWorkersBound &&
+            transport.existingWorkersObserved === 0 && transport.existingWorkersAttached === 0 &&
+            transport.parentConstruction === null && transport.parentPeer === null && transport.constructionAssignments === null &&
+            transport.bootstrapStages.every(stage => !stage.parsed && !stage.pauseSeen && !stage.resumeAttempted && !stage.resumeSeen),
+          "ORIGINAL_UNSTARTED_OPENING_REQUIRED");
+        }
+        this.#openingReleased = true;
+      }
       this.#releaseAttempted = true;
       await this.#ownerRequired().releaseClosed(); this.#releaseObserved = true;
       await this.#journalRequired().append("release-result", { released: true }); this.#releaseLease();

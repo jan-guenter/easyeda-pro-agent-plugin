@@ -1,5 +1,6 @@
 /** Managed publication and original-provider admission regressions only.
  * These checks launch no EasyEDA/Windows process or writer. */
+/* oxlint-disable import/max-dependencies -- Integration checks compare actual opening prototypes, journal bytes, shared exclusion custody and the genuine factory without replacing their guards. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFile } from "node:fs/promises";
@@ -7,12 +8,12 @@ import { sha256Json, sha256Text } from "../src/core.ts";
 import { acquireCurrentPcbDiagnosticLaunchExclusion, releaseCurrentPcbDiagnosticLaunchExclusion } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 import { loadOperation, operationPath } from "../src/artifacts.ts";
 import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_BUDGET as BUDGET, CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_NORMAL_STAGES as NORMAL,
-  currentFootprintForwardExecutionOpeningRecordSchema, currentFootprintForwardExecutionOpeningRequestSchema } from "../src/current-footprint-forward-execution-opening-contract.ts";
+  currentFootprintForwardExecutionOpeningProducerEvidenceSchema, currentFootprintForwardExecutionOpeningRecordSchema, currentFootprintForwardExecutionOpeningRequestSchema } from "../src/current-footprint-forward-execution-opening-contract.ts";
 import type { CurrentFootprintForwardExecutionOpeningRecord as Entry, CurrentFootprintForwardExecutionOpeningPhase as Phase } from "../src/current-footprint-forward-execution-opening-contract.ts";
 import { CurrentFootprintForwardExecutionOpeningJournal, assertCurrentFootprintForwardExecutionOpeningChain, assertNoUnresolvedCurrentFootprintForwardExecutionOpenings } from "../src/current-footprint-forward-execution-opening-journal.ts";
 import { CurrentFootprintForwardExecutionOpeningProvider } from "../src/current-footprint-forward-execution-opening.ts";
+import { CurrentFootprintCopyStartupOpening } from "../src/current-pcb-209-worker-startup-opening.ts";
 import { forwardExecutionOpeningJournalFixture } from "./helpers/forward-execution-opening-journal-fixture.ts";
-// oxlint-disable-next-line import/max-dependencies -- These integration regressions compare actual journal bytes, shared exclusion custody and the genuine factory without replacing their guards.
 import { forwardExecutionOpeningProviderFixture } from "./helpers/forward-execution-opening-provider-fixture.ts";
 
 function request(suffix: string): ReturnType<typeof currentFootprintForwardExecutionOpeningRequestSchema.parse> {
@@ -21,6 +22,16 @@ function request(suffix: string): ReturnType<typeof currentFootprintForwardExecu
     target: { rawWindowsPath, projectUuid: sha256Text(rawWindowsPath), documentUuid: "c".repeat(16), expectedSourceSha256: "d".repeat(64) },
     footprintUuid: "e".repeat(16), confirmDisposableProject: true, acceptExistingProfileEffects: true, acceptNormalOpenEffects: true, acceptDebuggerPauseEffects: true });
 }
+
+void test("the provider captures only methods on the actual inherited startup opening prototype", async () => {
+  const source = await readFile(new URL("../src/current-footprint-forward-execution-opening.ts", import.meta.url), "utf8");
+  const matched = /const openingMethods = (\[[^\]]+\])/u.exec(source); assert.ok(matched?.[1] !== undefined);
+  const names: unknown = JSON.parse(matched[1]); assert.ok(Array.isArray(names)); assert.ok(names.length > 0);
+  for (const name of names as unknown[]) {
+    assert.equal(typeof name, "string"); assert.ok(typeof name === "string");
+    assert.equal(typeof Reflect.get(CurrentFootprintCopyStartupOpening.prototype, name), "function", `Missing actual startup opening method: ${name}`);
+  }
+});
 
 void test("managed v2 reservation blocks another launch until original no-allocation cleanup is published", async () => {
   const journal = new CurrentFootprintForwardExecutionOpeningJournal(request("managed-chain")); await journal.reserve();
@@ -110,6 +121,15 @@ void test("managed preparation is published before the actual v2 factory and its
   const selected = request("actual-factory"); const f = await forwardExecutionOpeningProviderFixture(selected);
   await assert.rejects(f.provider.launch(selected), /FORWARD_EXECUTION_FACTORY_READY_FAILED/u);
   assert.equal(f.state.allocations, 1); assert.equal(f.state.preparedWasPublished, true); assert.equal(f.factory.state.writes, 0);
+  assert.equal(f.state.producerWasPublished, true); assert.equal(f.state.installationChecks, 1);
+  const operation = await loadOperation(selected.operationId); assert.ok(Array.isArray(operation["records"]));
+  const allocation: unknown = operation["records"].find((value: unknown) => value !== null && typeof value === "object" && "kind" in value && value.kind === "allocation-intent");
+  assert.ok(allocation !== null && typeof allocation === "object" && "evidence" in allocation && allocation.evidence !== null && typeof allocation.evidence === "object" && "producer" in allocation.evidence);
+  const producer = currentFootprintForwardExecutionOpeningProducerEvidenceSchema.parse(allocation.evidence.producer);
+  assert.equal(producer.facadeSha256, "f".repeat(64));
+  assert.equal(currentFootprintForwardExecutionOpeningProducerEvidenceSchema.safeParse({ ...producer, callerProfile: true }).success, false);
+  assert.equal(currentFootprintForwardExecutionOpeningProducerEvidenceSchema.safeParse({ ...producer, schema: "easyeda-pro-control.footprint-forward-execution-opening-record.v2" }).success, false);
+  assert.equal(currentFootprintForwardExecutionOpeningProducerEvidenceSchema.safeParse({ ...producer, installationSha256: "not-a-digest" }).success, false);
   assert.equal(f.provider.retained().originalOwner, true); assert.equal(f.provider.retained().failed, true);
   await f.provider.cleanupBeforeLaunch(); assert.equal(f.factory.child().exitCode, 0);
   await assertNoUnresolvedCurrentFootprintForwardExecutionOpenings();

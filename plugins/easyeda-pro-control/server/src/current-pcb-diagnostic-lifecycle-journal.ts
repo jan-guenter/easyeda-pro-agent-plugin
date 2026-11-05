@@ -5,6 +5,7 @@ import { currentWindowRestoreResultSchema, requireCurrentWindowRestoreResult } f
 import { assertNoUnresolvedFootprintHeadAgeValidation } from "./current-footprint-head-age-validation-journal.ts";
 import { assertNoUnresolvedFootprintHeldCacheValidation } from "./current-footprint-held-cache-validation-journal.ts";
 import { assertNoUnresolvedCurrentFootprintForwardExecutionOpenings } from "./current-footprint-forward-execution-opening-journal.ts";
+import type { CurrentFootprintForwardSourceHistoricalSnapshot } from "./current-footprint-forward-source-relinquishment-journal.ts";
 import { currentWindowResizeResultSchema, requireCurrentWindowResizeResult } from "./current-pcb-diagnostic-window-resize.ts";
 import { CURRENT_RENDERER_CAPTURE_LIMITS, currentRendererCaptureResultSchema, requireCurrentRendererCaptureResult } from "./current-pcb-diagnostic-renderer-capture.ts";
 import { currentWindowCaptureResultSchema, requireCurrentWindowCaptureResult } from "./current-pcb-diagnostic-window-capture.ts";
@@ -1619,6 +1620,24 @@ export async function assertNoUnresolvedCurrentPcbDiagnosticLaunches(): Promise<
     finally { await current.handle.close(); }
     await root.assertCurrent();
   } finally { await parent.handle.close(); }
+}
+
+/** Historical Source isolation exempts only its reader-issued exact snapshot.
+ * Existing diagnostic, held/head/string and every other Source history remain
+ * independently settled; no operation-ID or normal-launch bypass is exposed. */
+export async function assertCurrentFootprintForwardSourceRelinquishmentIsolated(
+  snapshot: CurrentFootprintForwardSourceHistoricalSnapshot,
+): Promise<void> {
+  const { assertCurrentFootprintForwardSourceHistoricalSnapshot } = await import("./current-footprint-forward-source-relinquishment-journal.ts");
+  const { assertCurrentFootprintForwardSourceHistoricalIsolation } = await import("./current-footprint-forward-execution-opening-journal.ts");
+  await assertCurrentFootprintForwardSourceHistoricalSnapshot(snapshot);
+  await assertCurrentFootprintForwardSourceHistoricalIsolation(snapshot);
+  await assertNoUnresolvedFootprintHeldCacheValidation(); await assertNoUnresolvedFootprintHeadAgeValidation();
+  await assertNoUnresolvedCurrentPcbStringLedgers();
+  for (const operation of await readCurrentPcbDiagnosticLifecycles()) {
+    requireValue(settled(operation) || await recordedHistoricalRelinquishment(operation), "UNRESOLVED_LAUNCH");
+  }
+  await assertCurrentFootprintForwardSourceHistoricalSnapshot(snapshot);
 }
 export async function reserveCurrentPcbDiagnosticLifecycle(operationId: string): Promise<void> {
   diagnosticLifecycleIdSchema.parse(operationId);

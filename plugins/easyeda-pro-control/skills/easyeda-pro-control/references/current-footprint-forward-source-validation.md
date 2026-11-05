@@ -97,3 +97,14 @@ cooperative retirement and observed EOF/process closure before replacement.
 Read [autonomous controller updates](autonomous-controller-updates.md) for the
 manager protocol. Local schemas, synthetic regressions and native compilation
 remain separate from connected qualification.
+
+A capture wrapper that never invoked its original opening can release only after
+actual original root/whole-Job termination and a complete idle/unconsumed state
+check. This does not settle an opening that ran or returned ambiguously. Keep
+release and journal settlement separate. New allocations retain a separately
+versioned producer subobject from the verified installation; that evidence does
+not change old persisted result contracts.
+
+For the single supported historical Source v2 cleanup failure, consult the
+[historical startup-blocker receipt](current-footprint-forward-source-relinquishment.md).
+It requires original process cleanup first and does not resume that capture.

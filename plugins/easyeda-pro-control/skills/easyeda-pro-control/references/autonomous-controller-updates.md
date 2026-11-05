@@ -379,3 +379,13 @@ This workflow removes routine Codex restarts and manual EasyEDA closing from
 supported lifecycles. It does not unlock a Windows desktop, answer credentials
 or unknown prompts, repair unsupported native failures, or transfer unfinished
 native ownership to another process.
+
+### Historical Source v2 metadata recovery
+
+The separate `footprint-forward-source-relinquishment` wrapper creates no native
+owner. After original process cleanup, a fresh facade may qualify only the fixed
+externally reviewed history with global Linux/Windows absence and complete
+unchanged source, SQL and history checks. Its original capture, termination and
+helper-release outcomes remain unknown. Keep its same metadata coordinator
+through a pending receipt acknowledgment; retire it normally before a new
+native validation generation. Read the [exact historical contract](current-footprint-forward-source-relinquishment.md).

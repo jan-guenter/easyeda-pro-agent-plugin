@@ -15,6 +15,7 @@ import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_BUDGET as BUDGET,
   currentFootprintForwardExecutionOpeningRequestSchema } from "./current-footprint-forward-execution-opening-contract.ts";
 import type { CurrentFootprintForwardExecutionOpeningRecord as Entry, CurrentFootprintForwardExecutionOpeningPhase as Phase,
   CurrentFootprintForwardExecutionOpeningRequest as Request } from "./current-footprint-forward-execution-opening-contract.ts";
+import type { CurrentFootprintForwardSourceHistoricalSnapshot } from "./current-footprint-forward-source-relinquishment-journal.ts";
 
 const PREFIX = "footprint-forward-execution-";
 const MAX_RECORDS = BUDGET.records;
@@ -149,6 +150,15 @@ function artifact(operationId: string, entry: Entry): ArtifactDescriptor {
   const text = `${JSON.stringify(entry)}\n`;
   return { path: join(dirname(operationPath(operationId)), operationId, `${String(entry.sequence).padStart(2, "0")}-${entry.kind}.json`), bytes: Buffer.byteLength(text), sha256: sha256Text(text) };
 }
+/** Read the maintained full chain and freshly verified artifacts without
+ * constructing a publisher, native owner or resumable opening lifecycle. */
+export async function readCurrentFootprintForwardExecutionOpeningHistory(operationId: string): Promise<Readonly<{
+  operation: OperationJournal; records: readonly Entry[];
+}>> {
+  currentFootprintForwardExecutionOpeningIdSchema.parse(operationId);
+  const operation = await loadOperation(operationId), records = parse(operation);
+  return freezeDeep({ operation, records });
+}
 const scan = createOperationScanner((operation): Readonly<{ operationId: string; settled: boolean }> | undefined => {
   const id = operation["operationId"], plan = operation["plan"];
   if (!(typeof id === "string" && id.startsWith(PREFIX)) && !(isRecord(plan) && plan["profile"] === PROFILE)) { return undefined; }
@@ -158,7 +168,29 @@ const scan = createOperationScanner((operation): Readonly<{ operationId: string;
 });
 /** Every empty, partial or failed v2 journal blocks another native launch. */
 export async function assertNoUnresolvedCurrentFootprintForwardExecutionOpenings(): Promise<void> {
-  for (const operation of await scan()) { need(operation.settled, "UNRESOLVED_OWNER"); }
+  for (const operation of await scan()) {
+    if (!operation.settled) {
+      const { inspectCurrentFootprintForwardSourceRelinquishment } = await import("./current-footprint-forward-source-relinquishment-journal.ts");
+      need(await inspectCurrentFootprintForwardSourceRelinquishment(operation.operationId) !== null, "UNRESOLVED_OWNER");
+    }
+  }
+}
+
+/** Exempt only one exact private historical snapshot during its resolver.
+ * Every other Source opening still needs its original terminal or receipt. */
+export async function assertCurrentFootprintForwardSourceHistoricalIsolation(
+  snapshot: CurrentFootprintForwardSourceHistoricalSnapshot,
+): Promise<void> {
+  const { requireCurrentFootprintForwardSourceHistoricalSnapshot, assertCurrentFootprintForwardSourceHistoricalSnapshot,
+    inspectCurrentFootprintForwardSourceRelinquishment } = await import("./current-footprint-forward-source-relinquishment-journal.ts");
+  const original = requireCurrentFootprintForwardSourceHistoricalSnapshot(snapshot);
+  await assertCurrentFootprintForwardSourceHistoricalSnapshot(snapshot);
+  let selected = false;
+  for (const operation of await scan()) {
+    if (operation.operationId === original.operationId) { selected = true; }
+    else if (!operation.settled) { need(await inspectCurrentFootprintForwardSourceRelinquishment(operation.operationId) !== null, "UNRESOLVED_OWNER"); }
+  }
+  need(selected, "HISTORICAL_ORIGINAL_MISSING"); await assertCurrentFootprintForwardSourceHistoricalSnapshot(snapshot);
 }
 
 /** Retain pending bytes before either publication await. Settlement writes only

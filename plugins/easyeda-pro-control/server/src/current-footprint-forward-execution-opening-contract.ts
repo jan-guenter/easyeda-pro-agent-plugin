@@ -45,6 +45,15 @@ export const CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_PHASES = [
 ] as const;
 export type CurrentFootprintForwardExecutionOpeningPhase = typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_PHASES[number];
 const digest = z.string().regex(/^[a-f\d]{64}$(?![\s\S])/u);
+/** Optional producer evidence in newly written allocation intents. Its own
+ * version describes the completed installation verifier, never native custody
+ * or permission to reinterpret older records that omitted this subobject. */
+export const currentFootprintForwardExecutionOpeningProducerEvidenceSchema = z.object({
+  schema: z.literal("easyeda-pro-control.footprint-forward-execution-opening-producer.v1"),
+  source: z.literal("verifyCurrentPcb209DiagnosticInstallation"),
+  facadeSha256: digest, installationSha256: digest,
+}).strict();
+export type CurrentFootprintForwardExecutionOpeningProducerEvidence = Readonly<z.infer<typeof currentFootprintForwardExecutionOpeningProducerEvidenceSchema>>;
 export const currentFootprintForwardExecutionOpeningRecordSchema = z.object({
   schema: z.literal("easyeda-pro-control.footprint-forward-execution-opening-record.v2"),
   operationId: currentFootprintForwardExecutionOpeningIdSchema, sequence: z.number().int().min(0).max(CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_BUDGET.records - 1),
