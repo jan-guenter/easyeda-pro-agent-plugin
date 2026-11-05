@@ -9,6 +9,7 @@ import type { CurrentFootprintCacheConstructionChannelCommand } from "./current-
 
 const marker = (name: string): string => name === "projectUuid" ? "a".repeat(64) : `__cacheconstruction_${name}__`;
 const literal = (value: string): string => `@"${value.replaceAll('"', '""')}"`;
+const FORWARD_ENVELOPE_SMOKE = String.raw`string forwarded=Encode(137,row[0],row[1],session,fields);Need(forwarded.StartsWith("{\"id\":137,\"method\":\""+row[1]+"\"",System.StringComparison.Ordinal));`;
 export function currentFootprintCacheConstructionNativeCases(): readonly CurrentFootprintCacheConstructionChannelCommand[] {
   const call = (role: keyof typeof CALLS, args: readonly Readonly<{ objectId: string } | { value: string | number | null }>[]): CurrentFootprintCacheConstructionCommand => ({
     method: "Runtime.callFunctionOn", params: { objectId: marker("objectId"), functionDeclaration: CALLS[role].program,
@@ -33,6 +34,16 @@ export function currentFootprintCacheConstructionNativeCases(): readonly Current
   for (const command of commands) { result.push(Object.freeze({ ...command, phase: "cache-construction", sessionId: marker("sessionId") })); }
   return Object.freeze(result);
 }
+/** Keep the fixed renderer envelope identical to the other forward codecs.
+ * Schema parsing orders sessionId first; that is not the native writer format. */
+function nativeCommand(sample: CurrentFootprintCacheConstructionChannelCommand): Readonly<{
+  method: CurrentFootprintCacheConstructionCommand["method"];
+  params: CurrentFootprintCacheConstructionCommand["params"];
+  sessionId: string;
+}> {
+  const parsed = currentFootprintCacheConstructionWire(sample, 1).command;
+  return Object.freeze({ method: parsed.method, params: parsed.params, sessionId: parsed.sessionId });
+}
 /** Generate the cache-construction codec from reviewed owner/namespace cases.
  * Validate every dynamic placeholder and the 16 KiB row/64 KiB table bounds before
  * packing; source generation neither opens caches nor adopts native handles.
@@ -40,7 +51,7 @@ export function currentFootprintCacheConstructionNativeCases(): readonly Current
 export function currentFootprintCacheConstructionNativeSource(): string {
   const rows = currentFootprintCacheConstructionNativeCases().map(sample => {
     const wire = currentFootprintCacheConstructionWire(sample, 1);
-    const { id: _id, phase: _phase, ...command } = wire.command;
+    const command = nativeCommand(sample);
     const fields = Object.keys(wire.request).filter(key => !["action", "requestId", "method", "cachePhase"].includes(key));
     let template = JSON.stringify(command);
     for (const field of fields) {
@@ -55,7 +66,7 @@ export function currentFootprintCacheConstructionNativeSource(): string {
   // oxlint-disable-next-line node/no-sync -- Deterministic in-memory packing of fourteen fixed native command templates during source generation.
   const packed = gzipSync(bytes, { level: 9 });
   const smokeHashes = currentFootprintCacheConstructionNativeCases().map(sample => {
-    const { id: _id, phase: _phase, ...command } = currentFootprintCacheConstructionWire(sample, 1).command;
+    const command = nativeCommand(sample);
     return createHash("sha256").update(`${JSON.stringify({ id: 1, ...command })}\0`).digest("hex");
   });
   return `public static class EasyedaFootprintCacheConstructionProtocol {
@@ -67,6 +78,7 @@ public static string Encode(int id,string phase,string method,string originalWor
 foreach(System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(template,"\\"__cacheconstruction_([A-Za-z0-9]+)__\\"")){string name=match.Groups[1].Value;output.Append(template,previous,match.Index-previous);output.Append('"');output.Append(name=="sessionId"?session:Field(name,fields[name]));output.Append('"');previous=match.Index+match.Length;}output.Append(template,previous,template.Length-previous);string text=output.ToString();Need(text.Length>1&&text[0]=='{'&&System.Text.Encoding.UTF8.GetByteCount(text)<=16384);return "{\\"id\\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+","+text.Substring(1)+"\\0";}
 static void Reject(System.Action action){bool refused=false;try{action();}catch(System.InvalidOperationException){refused=true;}Need(refused);}
 public static void VerifySmoke(){string[] hashes=${literal(smokeHashes.join(","))}.Split(',');Need(hashes.Length==Cases.Length);for(int i=0;i<Cases.Length;i++){string[] row=Cases[i],names=row[2].Length==0?new string[0]:row[2].Split(',');var fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);foreach(string name in names)fields.Add(name,name=="projectUuid"?new string('a',64):"__cacheconstruction_"+name+"__");string session="__cacheconstruction_sessionId__";
+${FORWARD_ENVELOPE_SMOKE}
 using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(Encode(1,row[0],row[1],session,fields)))).Replace("-","").ToLowerInvariant()==hashes[i]);
 Reject(()=>Encode(0,row[0],row[1],session,fields));Reject(()=>Encode(1,"unknown",row[1],session,fields));Reject(()=>Encode(1,row[0],"Runtime.evaluate",session,fields));Reject(()=>Encode(1,row[0],row[1],session+"\\n",fields));fields.Add("sessionId","foreign");Reject(()=>Encode(1,row[0],row[1],session,fields));fields.Remove("sessionId");foreach(string name in names){object original=fields[name];fields[name]=(string)original+"\\n";Reject(()=>Encode(1,row[0],row[1],session,fields));fields[name]=original;}}}
 }`;

@@ -33,6 +33,8 @@ import { currentPcb209StartupSourceTransfer } from "./current-pcb-209-startup-so
 import { CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES, CURRENT_PCB_209_WORKER_PRELOAD_LOG, currentPcb209PreloadCopyCaller,
   currentPcb209StartupScriptRole, isCurrentPcb209BootstrapTargetUrl, qualifyCurrentPcb209PreloadCopyCreator,
   qualifyCurrentPcb209PreloadCopyPause, qualifyCurrentPcb209StartupScriptSource } from "./current-pcb-209-worker-bootstrap-source.ts";
+import { captureCurrentProjectStructureCompletionReply } from "./current-project-structure-completion-protocol.ts";
+import { CURRENT_PROJECT_STRUCTURE_WORKER_CALLS } from "./current-project-structure-worker-programs.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS } from "./current-footprint-copy-source-read.ts";
 import { CurrentFootprintSourceReplyCapture } from "./current-footprint-source-reply-capture.ts";
@@ -489,7 +491,10 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     const raw = await bounded(this.#sendOriginal(command), sourceRead ? CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.hostTimeoutMs : REQUEST_MS);
     // This transport is the earliest strict source-envelope boundary. Retain
     // A bounded rejected reply here before the construction reader can see it.
-    const result = sourceRead ? this.#footprintSourceCapture.capture(raw) : captureCurrentPcbStringClockReply(raw).value;
+    const structureRead = command.method === "Runtime.callFunctionOn" && "objectId" in command.params &&
+      command.params.functionDeclaration === CURRENT_PROJECT_STRUCTURE_WORKER_CALLS.packetText;
+    const captured = structureRead ? captureCurrentProjectStructureCompletionReply : captureCurrentPcbStringClockReply;
+    const result = sourceRead ? this.#footprintSourceCapture.capture(raw) : captured(raw).value;
     if (!cleanup) { await this.#current(); }
     return result;
   }

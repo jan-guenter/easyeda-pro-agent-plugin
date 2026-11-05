@@ -1,5 +1,17 @@
 # Project history
 
+- [2026-11-05 forward capture recovery and source fixes](2026-11-05-forward-capture-recovery-and-source-fixes.md). Observed cache-arm stall, authorized terminal physical closure, exact versioned producer adapters and pending typed historical recovery.
+
+- [2026-11-05 packaged foreground manager source](2026-11-05-packaged-foreground-manager.md). Separate dependency-free frontend, pinned launcher and actual isolated CLI retirement, with native admission unchanged.
+
+- [2026-11-05 forward cache envelope and bounded arm](2026-11-05-forward-cache-envelope-and-arm.md). Fixed codec envelope ordering, retained unknown allocation custody and source-only regression evidence.
+
+- [2026-11-04 PR167 controller release and installation](2026-11-04-pr167-controller-release.md). Protected merge, honest bot/final-delta review scope, exact PR/main CI, official installed payload and the genuine installed-to-frozen facade handoff.
+
+- [2026-11-04 original pending capture control](2026-11-04-manager-in-flight-original-control.md). Bounded same-client inspection and once-confirmed abort, separate parent/side outcomes and publication-inclusive cleanup custody, with source-only evidence.
+
+- [2026-11-04 project structure observer source](2026-11-04-project-structure-observer-source.md). Original worker/main promise and packet custody, synthetic source checks and explicit native mounting gaps.
+
 - [2026-11-04 composed source and launch recovery](2026-11-04-next-composed-source-and-launch-recovery.md). Original source pages/seal/closed baseline, private input custody and same-client interrupted-launch cleanup composed on the final review fixes.
 
 - [2026-11-04 host deadline and review completion](2026-11-04-host-deadline-and-review-completion.md). Direct MCP lifetime bound, combined-error retention and all five inline/outside-diff/test review corrections.

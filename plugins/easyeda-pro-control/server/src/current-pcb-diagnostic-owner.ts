@@ -179,6 +179,7 @@ import type { CurrentFootprintCopyMainCompletionCommand } from "./current-footpr
 import { CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS } from "./current-footprint-copy-main-completion-protocol.ts";
 import { requireCurrentFootprintCopyMainCompletionHeadroom } from "./current-footprint-copy-main-capacity.ts";
 import type { CurrentFootprintCopyMainRequestCollectCommand } from "./current-footprint-copy-main-request-protocol.ts";
+import type { CurrentProjectStructureMainCommand } from "./current-project-structure-main-protocol.ts";
 import { CURRENT_FOOTPRINT_COMBINED_PROFILE, CURRENT_FOOTPRINT_COMBINED_PURPOSE } from "./current-footprint-copy-combined-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE, CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE } from "./current-footprint-copy-forward-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY, CurrentFootprintCopyForwardResourceLedger, requireOriginalForwardLedgerBinding } from "./current-footprint-copy-forward-capacity.ts";
@@ -195,8 +196,8 @@ import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "6fd9f265072ac61e81b992b68eba4e65c5a69e3d82312c36f7922a2269549911";
-const HELPER_BYTES = 1_041_783;
+const HELPER_SHA256 = "ad8a44744791fdba1c30c07554455cb7c271d1125a378edd4f6fa4566cb979c6";
+const HELPER_BYTES = 1_041_942;
 const heldRunnerDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintSavedCacheHeldRunner.prototype);
 /* oxlint-disable typescript/unbound-method -- Retain fixed methods and invoke them only on the original private-field runner. */
 const heldRunnerMethods = Object.freeze({ prepare: CurrentFootprintSavedCacheHeldRunner.prototype.prepare,
@@ -3226,7 +3227,7 @@ class CurrentPcbRetainedOwnerCore {
   }
   /** Internal fixed vocabulary only. The native helper chooses the original
    * connection and independently checks its own counters before each write. */
-  public async sendFootprintMain(command: CurrentFootprintCopyMainBackendCommand | CurrentFootprintCopyMainRequestCollectCommand, requestId: number): Promise<void> {
+  public async sendFootprintMain(command: CurrentFootprintCopyMainBackendCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentProjectStructureMainCommand, requestId: number): Promise<void> {
     const original = this.#requireFootprintMain(true);
     if (this.#mainCloseCleanupActive && command.phase !== "release") { throw error("MAIN_CLOSE_CLEANUP_ONLY"); }
     if (this.#mainCompletionState !== "unused" && !(this.#mainCompletionState === "retired" && command.phase === "release")) {
@@ -4509,7 +4510,7 @@ export function currentFootprintCombinedMainGenerationExited(capability: Current
   const owner = originalCombinedCapabilityOwner(capability, runner, "exited"); return combinedOwnershipMethods.require.call(owner, runner, "exited");
 }
 export async function sendCurrentFootprintCombinedMainCommand(capability: CurrentFootprintCombinedMainCapability,
-  runner: CurrentFootprintCopyMainBackendRunner, command: CurrentFootprintCopyMainRequestCollectCommand, id: number): Promise<void> {
+  runner: CurrentFootprintCopyMainBackendRunner, command: CurrentFootprintCopyMainRequestCollectCommand | CurrentProjectStructureMainCommand, id: number): Promise<void> {
   const owner = originalCombinedCapabilityOwner(capability, runner, "normal");
   await combinedOwnershipMethods.send.call(owner, command, id);
   originalCombinedCapabilityOwner(capability, runner, "normal");

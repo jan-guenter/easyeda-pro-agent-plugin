@@ -131,13 +131,13 @@ await server.connect(new StdioServerTransport());`;
 
 /** Hold an actual SDK request through its timeout. Only the fixed same-owner
  * cleanup protocol can settle this synthetic native reservation and its records. */
-function interruptedForwardPeer(largeInspection = false): string {
+function interruptedForwardPeer(largeInspection = false, failPendingInspection = false): string {
   return `import {Server} from ${sdkModule("server/index.js")};
 import {StdioServerTransport} from ${sdkModule("server/stdio.js")};
-import {CallToolRequestSchema,ListToolsRequestSchema} from ${sdkModule("types.js")};
+import {CallToolRequestSchema,ListToolsRequestSchema,McpError} from ${sdkModule("types.js")};
 const server=new Server({name:'synthetic-interrupted-forward',version:'1.0.0'},{capabilities:{tools:{}}});
 const op='footprint-copy-qualify-timeout',binding='a'.repeat(64),intent='b'.repeat(64),gate=Promise.withResolvers(),calls=[];
-let active=0,aborted=false,released=false,settled=false,captures=0;
+let active=0,aborted=false,released=false,settled=false,captures=0,inspectionFailed=false;
 const result=value=>({content:[{type:'text',text:JSON.stringify(value)}],structuredContent:value});
 const refused=()=>({isError:true,content:[{type:'text',text:'synthetic-original-owner-refusal'}]});
 server.setRequestHandler(ListToolsRequestSchema,async()=>({tools:['easyeda_control_api','easyeda_control_session','easyeda_control_pcb209_worker_startup'].map(name=>({name,inputSchema:{type:'object'}}))}));
@@ -153,6 +153,7 @@ server.setRequestHandler(CallToolRequestSchema,async({params})=>{
  const request=outer?.request;
  calls.push({tool:params.name,action:request?.action,operationId:request?.operationId,binding:request?.expectedBindingSha256});
  if(params.name!=='easyeda_control_pcb209_worker_startup'||outer?.action!=='footprint-forward-prewrite'||request?.operationId!==op)return refused();
+ if(request.action==='inspect'&&${JSON.stringify(failPendingInspection)}&&!inspectionFailed&&active>0){inspectionFailed=true;gate.resolve();throw new McpError(-32603,'synthetic-side-inspection-failure');}
  if(request.action==='inspect')return result({result:{operationId:op,bindingSha256:binding,intentSha256:intent,active,captures,aborted,released,settled,calls,...(${JSON.stringify(largeInspection)}?{padding:'x'.repeat(1048576)}:{})}});
  if(request.action==='settle-records'){if(active!==0||request.expectedIntentSha256!==intent)return refused();settled=true;return result({result:{operationId:op,settled:true}});}
  if(request.expectedBindingSha256!==binding)return refused();
@@ -301,9 +302,14 @@ void test("manager grammar refuses executable hooks, generic retirement and reco
 
 void test("actual manager preserves ambiguous capture and permits only same-owner cleanup before real retirement and closure", { timeout: 12_000 }, async () => {
   const outputs: unknown[] = [], selected = await fixture(interruptedForwardPeer());
+  const inspectionEntered = Promise.withResolvers<null>(); const inspectionAllowed = Promise.withResolvers<null>();
   const expectedBindingSha256 = "a".repeat(64), operationId = "footprint-copy-qualify-timeout";
   await selectedProfile(selected.profilePath, async () => {
-    const manager = new ForegroundSessionManager(async value => { outputs.push(value); await Promise.resolve(); });
+    const manager = new ForegroundSessionManager(async value => {
+      outputs.push(value);
+      if (record(value)["id"] === "local-timeout-inspect") { inspectionEntered.resolve(null); await inspectionAllowed.promise; }
+      await Promise.resolve();
+    });
     await manager.initialize(selected.root);
     const originalPid = manager.inspect()["facadePid"];
     const output = (): Record<string, unknown> => record(outputs.at(-1));
@@ -320,7 +326,14 @@ void test("actual manager preserves ambiguous capture and permits only same-owne
       arguments: { request: { action: "footprint-forward-prewrite", request: { action: "capture-project", operationId, expectedBindingSha256,
         target: { rawWindowsPath, projectUuid: hash(Buffer.from(rawWindowsPath)), documentUuid: "c".repeat(32), expectedSourceSha256: "d".repeat(64) },
         confirmDisposableProject: true, acceptNormalOpenEffects: true, acceptDebuggerPauseEffects: true } } } };
-    await manager.handle(request(capture));
+    const pendingCapture = manager.handle(request(capture));
+    await managerProgress(() => manager.inspect()["inFlightRequest"] !== null && record(manager.inspect()["inFlightRequest"])["rpcPending"] === true);
+    const localInspection = manager.handleInFlight(request({ id: "local-timeout-inspect", action: "inspect" }));
+    await inspectionEntered.promise;
+    await managerProgress(() => record(manager.inspect()["inFlightRequest"])["rpcPending"] === false);
+    assert.equal(manager.inspect()["requestPending"], true);
+    await assert.rejects(manager.handle(retire("backpressured-local-inspect-retire", 1)), /manager-request-pending/u);
+    inspectionAllowed.resolve(null); await localInspection; await pendingCapture;
     assert.equal(output()["error"], "manager-blocked");
     assert.equal(record(output()["diagnostic"])["reason"], "request-timeout");
     assert.equal(manager.inspect()["stage"], "blocked"); assert.equal(manager.inspect()["closure"], null);
@@ -883,4 +896,125 @@ void test("rejected RPC and contradictory retirement acknowledgement freeze repl
       assert.equal(manager.inspect()["stage"], "closed");
     });
   }
+});
+
+/** Await bounded fixture progress without invoking a new facade or tool. */
+async function managerProgress(predicate: () => boolean): Promise<void> {
+  for (let count = 0; count < 400; count += 1) { if (predicate()) { return; } await wait(5); }
+  assert.fail("manager fixture progress deadline");
+}
+
+void test("CLI pending capture admits only original inspect and once-confirmed abort while retaining both publications", { timeout: 20_000 }, async () => {
+  const selected = await fixture(interruptedForwardPeer()); const outputs: unknown[] = [];
+  const expectedBindingSha256 = "a".repeat(64), operationId = "footprint-copy-qualify-timeout";
+  const parentPublication = Promise.withResolvers<null>(); const allowParent = Promise.withResolvers<null>();
+  await selectedProfile(selected.profilePath, async () => {
+    const manager = new ForegroundSessionManager(async value => {
+      outputs.push(value);
+      if (record(value)["id"] === "pending-capture" && Object.hasOwn(record(value), "result")) {
+        parentPublication.resolve(null); await allowParent.promise;
+      }
+    });
+    await manager.initialize(selected.root); const pid = manager.inspect()["facadePid"];
+    const capture = { id: "pending-capture", tool: "easyeda_control_pcb209_worker_startup", timeoutMs: 10_000,
+      arguments: { request: { action: "footprint-forward-prewrite", request: { action: "capture-project", operationId, expectedBindingSha256,
+        target: { rawWindowsPath: String.raw`C:\Disposable\fixture.eprj2`, projectUuid: hash(Buffer.from(String.raw`C:\Disposable\fixture.eprj2`)), documentUuid: "c".repeat(32), expectedSourceSha256: "d".repeat(64) },
+        confirmDisposableProject: true, acceptNormalOpenEffects: true, acceptDebuggerPauseEffects: true } } } };
+    const parentId = "pending-capture";
+    const side = (id: string, action: string, extra: object = {}): string => request({ id, action: "in-flight-original", generation: 1,
+      originalRequestId: parentId, request: { action, ...extra } });
+    const cleanup = (id: string, action: string, extra: object = {}): string => request({ id, action: "cleanup-original", generation: 1,
+      interruptedRequestId: parentId, request: { action, ...extra } });
+    const seen = (id: string): boolean => outputs.some(value => record(value)["id"] === id);
+    async function* input(): AsyncGenerator<Buffer> {
+      yield Buffer.from(`${request(capture)}\n`);
+      await managerProgress(() => manager.inspect()["inFlightRequest"] !== null && record(manager.inspect()["inFlightRequest"])["rpcPending"] === true);
+      for (const line of [request({ id: "local-pending", action: "inspect" }), loaded("normal-denied"), request({ ...capture, id: "replay-denied" }),
+        retire("retire-denied", 1), request({ id: "start-denied", action: "start", afterGeneration: 1, pluginRoot: selected.root }),
+        request({ id: "shutdown-denied", action: "shutdown" }), side("termination-denied", "observe-termination"),
+        side("foreign-operation-denied", "inspect", { operationId: "foreign" }),
+        request({ id: "foreign-parent-denied", action: "in-flight-original", generation: 1, originalRequestId: "foreign", request: { action: "inspect" } }),
+        side("native-pending", "inspect"), side("abort-pending", "abort-generation", { confirmAbortOriginalForwardJob: true })]) {
+        yield Buffer.from(`${line}\n`);
+      }
+      await managerProgress(() => seen("abort-pending") && manager.inspect()["requestPending"] === false);
+      assert.equal(manager.inspect()["stage"], "blocked");
+      assert.equal(record(manager.inspect()["controlledCapture"])["parentOutcome"], "returned");
+      assert.equal(manager.inspect()["interruptedRequest"], null);
+      yield Buffer.from(`${cleanup("no-repeat-abort", "abort-generation", { confirmAbortOriginalForwardJob: true })}\n`);
+      yield Buffer.from(`${retire("before-helper-release", 1)}\n`);
+      for (const [id, action] of [["exit-proof", "observe-termination"], ["intent-proof", "inspect"], ["records-proof", "settle-records"], ["helper-proof", "release-closed"], ["final-inspect", "inspect"]] as const) {
+        yield Buffer.from(`${cleanup(id, action)}\n`);
+      }
+      yield Buffer.from(`${retire("retired-original", 1)}\n${request({ id: "shutdown-original", action: "shutdown" })}\n`);
+    }
+    const running = runManagerInput(manager, input());
+    await parentPublication.promise;
+    assert.equal(manager.inspect()["requestPending"], true); assert.equal(manager.inspect()["facadePid"], pid); assert.equal(manager.inspect()["closure"], null);
+    await assert.rejects(manager.handle(retire("direct-retire-denied", 1)), /manager-request-pending/u);
+    allowParent.resolve(null); assert.equal(await running, "closed");
+    const rows = outputs.map(value => record(value));
+    for (const id of ["normal-denied", "replay-denied", "retire-denied", "start-denied", "shutdown-denied", "termination-denied", "foreign-operation-denied", "foreign-parent-denied", "no-repeat-abort"]) {
+      const denied = rows.find(row => row["id"] === id); assert.equal(denied?.["dispatched"], false, id);
+    }
+    const finalEnvelope = record(rows.find(row => row["id"] === "final-inspect")?.["result"]);
+    const inspected = record(record(finalEnvelope["structuredContent"])["result"]);
+    const calls = z.array(z.record(z.string(), z.unknown())).parse(inspected["calls"]);
+    assert.equal(calls.filter(call => call["action"] === "capture-project").length, 1);
+    assert.equal(calls.filter(call => call["action"] === "abort-generation").length, 1);
+    assert.equal(inspected["released"], true); assert.equal(inspected["settled"], true);
+    assert.equal(rows.find(row => row["id"] === "before-helper-release")?.["retirementRefused"], true);
+    const closed = rows.find(row => row["id"] === "retired-original"); assert.equal(closed?.["retired"], true);
+    assert.equal(record(closed?.["closure"])["pid"], pid); assert.equal(record(closed?.["closure"])["stdinEof"], true);
+    const evidence = String(manager.inspect()["evidenceDirectory"]); const names = await readdir(evidence);
+    const records = await Promise.all(names.toSorted().map(async name => {
+      const text = await readFile(join(evidence, name), "utf8"); return record(JSON.parse(text));
+    }));
+    assert.deepEqual(records.map(row => row["sequence"]), records.map((_row, index) => index + 1));
+    assert.equal(records.filter(row => row["kind"] === "in-flight-control-result").length, 2);
+  });
+});
+
+void test("rejected in-flight inspection retains its exact side provenance while the parent returns a known terminal result", { timeout: 15_000 }, async () => {
+  const outputs: unknown[] = [], selected = await fixture(interruptedForwardPeer(false, true));
+  const operationId = "footprint-copy-qualify-timeout"; const expectedBindingSha256 = "a".repeat(64); const rawWindowsPath = String.raw`C:\Disposable\fixture.eprj2`;
+  await selectedProfile(selected.profilePath, async () => {
+    const manager = new ForegroundSessionManager(async value => { outputs.push(value); await Promise.resolve(); });
+    await manager.initialize(selected.root); const pid = manager.inspect()["facadePid"];
+    const capture = { id: "known-parent", tool: "easyeda_control_pcb209_worker_startup", timeoutMs: 10_000,
+      arguments: { request: { action: "footprint-forward-prewrite", request: { action: "capture-project", operationId, expectedBindingSha256,
+        target: { rawWindowsPath, projectUuid: hash(Buffer.from(rawWindowsPath)), documentUuid: "c".repeat(32), expectedSourceSha256: "d".repeat(64) },
+        confirmDisposableProject: true, acceptNormalOpenEffects: true, acceptDebuggerPauseEffects: true } } } };
+    const rejectedId = "unknown-side-inspect";
+    const cleanup = (id: string, action: string, extra: object = {}): string => request({ id, action: "cleanup-original", generation: 1,
+      interruptedRequestId: rejectedId, request: { action, ...extra } });
+    async function* input(): AsyncGenerator<Buffer> {
+      yield Buffer.from(`${request(capture)}\n`);
+      await managerProgress(() => manager.inspect()["inFlightRequest"] !== null && record(manager.inspect()["inFlightRequest"])["rpcPending"] === true);
+      yield Buffer.from(`${request({ id: "unknown-side-inspect", action: "in-flight-original", generation: 1, originalRequestId: "known-parent", request: { action: "inspect" } })}\n`);
+      await managerProgress(() => manager.inspect()["requestPending"] === false);
+      const interrupted = record(manager.inspect()["interruptedRequest"]);
+      assert.equal(interrupted["id"], "unknown-side-inspect"); assert.equal(interrupted["action"], "inspect");
+      assert.equal(interrupted["originalCaptureRequestId"], "known-parent"); assert.equal(interrupted["outcome"], "unknown");
+      assert.equal(manager.inspect()["controlledCapture"], null); assert.equal(manager.inspect()["stage"], "blocked");
+      yield Buffer.from(`${cleanup("retained-inspect", "inspect")}\n${cleanup("retained-abort", "abort-generation", { confirmAbortOriginalForwardJob: true })}\n`);
+      yield Buffer.from(`${cleanup("retained-second-abort", "abort-generation", { confirmAbortOriginalForwardJob: true })}\n`);
+      for (const [id, action] of [["retained-exit", "observe-termination"], ["retained-records", "settle-records"], ["retained-release", "release-closed"], ["retained-final-inspect", "inspect"]] as const) {
+        yield Buffer.from(`${cleanup(id, action)}\n`);
+      }
+      yield Buffer.from(`${retire("retained-retire", 1)}\n${request({ id: "retained-shutdown", action: "shutdown" })}\n`);
+    }
+    assert.equal(await runManagerInput(manager, input()), "closed");
+    const rows = outputs.map(value => record(value));
+    const parent = record(record(rows.find(row => row["id"] === "known-parent")?.["result"])["structuredContent"]);
+    assert.equal(record(parent["result"])["lateCapture"], true);
+    assert.equal(rows.find(row => row["id"] === "unknown-side-inspect")?.["error"], "manager-blocked");
+    assert.equal(rows.find(row => row["id"] === "retained-second-abort")?.["dispatched"], false);
+    const finalEnvelope = record(rows.find(row => row["id"] === "retained-final-inspect")?.["result"]);
+    const final = record(record(finalEnvelope["structuredContent"])["result"]);
+    const calls = z.array(z.record(z.string(), z.unknown())).parse(final["calls"]);
+    assert.equal(calls.filter(call => call["action"] === "capture-project").length, 1);
+    assert.equal(calls.filter(call => call["action"] === "abort-generation").length, 1);
+    assert.equal(final["released"], true); assert.equal(record(rows.find(row => row["id"] === "retained-retire")?.["closure"])["pid"], pid);
+  });
 });

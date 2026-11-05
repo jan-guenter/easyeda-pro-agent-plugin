@@ -157,6 +157,7 @@ void describe("repository release validation", () => {
       `${prefix}server/src/core.ts`,
       `${prefix}server/dist/server.mjs`,
       `${prefix}server/dist/upstream-supervisor.mjs`,
+      `${prefix}server/dist/control-session-manager.mjs`,
       `${prefix}easyeda-bridge-extension/scripts/build.mjs`,
       `${prefix}easyeda-bridge-extension/scripts/dev-watch.mjs`,
       `${prefix}easyeda-bridge-extension/scripts/package.mjs`,

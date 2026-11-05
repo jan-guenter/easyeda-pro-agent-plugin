@@ -50,6 +50,39 @@ export const currentFootprintForwardOpeningRelinquishmentResultSchema = z.object
 export type CurrentFootprintForwardOpeningRelinquishmentIntent = z.infer<typeof currentFootprintForwardOpeningRelinquishmentIntentSchema>;
 export type CurrentFootprintForwardOpeningRelinquishmentResult = z.infer<typeof currentFootprintForwardOpeningRelinquishmentResultSchema>;
 
+// The released v1 profile above remains unchanged.
+// This second reviewed producer emitted the same thirteen-record opening prefix.
+// No source or seal stage belongs to either admitted roster.
+export const CURRENT_FOOTPRINT_FORWARD_OPENING_190023_PRODUCER = "bf9650e7c9b85c698e23fcbf08833dff71aef42f39f1da599e36d1ec5198f1a5";
+export const CURRENT_FOOTPRINT_FORWARD_OPENING_190023_INSTALLATION = "4c593053fa7991e49ec0fc7af317a769ee9aa6454d48ea01c31219464eb907d4";
+export const currentFootprintForwardOpening190023HistoricalIntentSchema = currentFootprintForwardOpeningHistoricalIntentSchema.extend({
+  facadeSha256: z.literal(CURRENT_FOOTPRINT_FORWARD_OPENING_190023_PRODUCER),
+  installationSha256: z.literal(CURRENT_FOOTPRINT_FORWARD_OPENING_190023_INSTALLATION),
+});
+const original190023 = {
+  originalProducerFacadeSha256: z.literal(CURRENT_FOOTPRINT_FORWARD_OPENING_190023_PRODUCER),
+  originalInstallationSha256: z.literal(CURRENT_FOOTPRINT_FORWARD_OPENING_190023_INSTALLATION),
+};
+export const currentFootprintForwardOpening190023RelinquishmentIntentSchema = currentFootprintForwardOpeningRelinquishmentIntentSchema.extend({
+  schema: z.literal("easyeda-pro-control.footprint-forward-opening-relinquishment-intent.v2"), ...original190023,
+});
+export const currentFootprintForwardOpening190023RelinquishmentResultSchema = currentFootprintForwardOpeningRelinquishmentResultSchema.extend({
+  schema: z.literal("easyeda-pro-control.footprint-forward-opening-relinquished.v2"), ...original190023,
+});
+// Whole-object alternatives preserve the exact producer/installation pairs.
+// Independent digest enums would also admit unreviewed mixed tuples.
+export const currentFootprintForwardOpeningKnownHistoricalIntentSchema = z.union([
+  currentFootprintForwardOpeningHistoricalIntentSchema, currentFootprintForwardOpening190023HistoricalIntentSchema,
+]);
+export const currentFootprintForwardOpeningKnownRelinquishmentIntentSchema = z.discriminatedUnion("schema", [
+  currentFootprintForwardOpeningRelinquishmentIntentSchema, currentFootprintForwardOpening190023RelinquishmentIntentSchema,
+]);
+export const currentFootprintForwardOpeningKnownRelinquishmentResultSchema = z.discriminatedUnion("schema", [
+  currentFootprintForwardOpeningRelinquishmentResultSchema, currentFootprintForwardOpening190023RelinquishmentResultSchema,
+]);
+export type CurrentFootprintForwardOpeningKnownRelinquishmentIntent = z.infer<typeof currentFootprintForwardOpeningKnownRelinquishmentIntentSchema>;
+export type CurrentFootprintForwardOpeningKnownRelinquishmentResult = z.infer<typeof currentFootprintForwardOpeningKnownRelinquishmentResultSchema>;
+
 /** Discover the separate historical path without collecting observations or granting launch authority. */
 export function queryCurrentFootprintForwardOpeningRelinquishment(includeSchemas: boolean): Record<string, unknown> {
   return { wrapperAction: "footprint-forward-opening-relinquishment", actions: ["relinquish-unknown-opening"],
@@ -58,7 +91,7 @@ export function queryCurrentFootprintForwardOpeningRelinquishment(includeSchemas
       "Fresh global Linux facade exclusion, Windows process absence and complete unchanged raw/prepared SQL/history proofs relinquish only the historical startup blocker.",
       "Capture, original Job termination and helper release remain unknown. No owner adoption, replay, writer or Save authority follows."],
     ...(includeSchemas ? { inputSchema: z.toJSONSchema(currentFootprintForwardOpeningRelinquishmentRequestSchema),
-      resultSchema: z.toJSONSchema(currentFootprintForwardOpeningRelinquishmentResultSchema) } : {}) };
+      resultSchema: z.toJSONSchema(currentFootprintForwardOpeningKnownRelinquishmentResultSchema) } : {}) };
 }
 /** Validate caller confirmations and digest expectations; supplied data cannot establish history or observations. */
 export function validateCurrentFootprintForwardOpeningRelinquishment(input: unknown): Record<string, unknown> {

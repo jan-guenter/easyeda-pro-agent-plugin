@@ -2,8 +2,10 @@
 /* oxlint-disable import/max-dependencies -- Compose the independent managed-history, process-observer, installation and global exclusion boundaries without a caller-selectable recovery bypass. */
 import { randomBytes } from "node:crypto";
 import { canonicalJson, sha256Json, sha256Text } from "./core.ts";
-import { currentFootprintForwardOpeningRelinquishmentIntentSchema,currentFootprintForwardOpeningRelinquishmentRequestSchema,currentFootprintForwardOpeningRelinquishmentResultSchema } from "./current-footprint-forward-opening-relinquishment-contract.ts";
-import type { CurrentFootprintForwardOpeningRelinquishmentIntent, CurrentFootprintForwardOpeningRelinquishmentResult } from "./current-footprint-forward-opening-relinquishment-contract.ts";
+import { currentFootprintForwardOpening190023RelinquishmentIntentSchema, currentFootprintForwardOpening190023RelinquishmentResultSchema,
+  currentFootprintForwardOpeningRelinquishmentIntentSchema, currentFootprintForwardOpeningRelinquishmentRequestSchema,
+  currentFootprintForwardOpeningRelinquishmentResultSchema } from "./current-footprint-forward-opening-relinquishment-contract.ts";
+import type { CurrentFootprintForwardOpeningKnownRelinquishmentIntent, CurrentFootprintForwardOpeningKnownRelinquishmentResult } from "./current-footprint-forward-opening-relinquishment-contract.ts";
 import { assertCurrentFootprintForwardOpeningHistoricalSnapshot, publishCurrentFootprintForwardOpeningRelinquishment,
   readCurrentFootprintForwardOpeningHistoricalSnapshot, readCurrentFootprintForwardOpeningRelinquishment,
   requireCurrentFootprintForwardOpeningHistoricalSnapshot } from "./current-footprint-forward-opening-relinquishment-journal.ts";
@@ -32,8 +34,8 @@ export interface CurrentFootprintForwardOpeningUnknownRelinquishmentDependencies
 interface Pending {
   readonly observationToken: object;
   readonly original: CurrentFootprintForwardOpeningHistoricalSnapshot;
-  readonly intent: CurrentFootprintForwardOpeningRelinquishmentIntent;
-  readonly result: CurrentFootprintForwardOpeningRelinquishmentResult;
+  readonly intent: CurrentFootprintForwardOpeningKnownRelinquishmentIntent;
+  readonly result: CurrentFootprintForwardOpeningKnownRelinquishmentResult;
 }
 /** Refuse a missing invariant before it can produce a relinquishment record. */
 function need(value: boolean, reason: string): asserts value { if (!value) { throw new Error(`FORWARD_OPENING_RELINQUISHMENT_${reason}`); } }
@@ -50,7 +52,7 @@ function requireWindowsAbsence(observation: Awaited<ReturnType<typeof observeOrd
   }) });
   throw error;
 }
-function publicResult(result: CurrentFootprintForwardOpeningRelinquishmentResult): Record<string, unknown> {
+function publicResult(result: CurrentFootprintForwardOpeningKnownRelinquishmentResult): Record<string, unknown> {
   return { ...structuredClone(result), state: "unknown-opening-relinquished", startupBlockerRelinquished: true, executionAuthorized: false };
 }
 export class CurrentFootprintForwardOpeningUnknownRelinquishment {
@@ -93,6 +95,10 @@ export class CurrentFootprintForwardOpeningUnknownRelinquishment {
     try {
       const original = this.#pending?.original ?? await readCurrentFootprintForwardOpeningHistoricalSnapshot(request.operationId);
       const source = requireCurrentFootprintForwardOpeningHistoricalSnapshot(original);
+      // Select solely from this private snapshot's exact producer pair.
+      // Caller JSON cannot select or widen a historical profile.
+      const intentSchema = source.relinquishmentVersion === 1 ? currentFootprintForwardOpeningRelinquishmentIntentSchema : currentFootprintForwardOpening190023RelinquishmentIntentSchema;
+      const resultSchema = source.relinquishmentVersion === 1 ? currentFootprintForwardOpeningRelinquishmentResultSchema : currentFootprintForwardOpening190023RelinquishmentResultSchema;
       need(source.operationId === request.operationId && source.originalIntentSha256 === request.expectedIntentSha256 &&
         source.originalBindingSha256 === request.expectedBindingSha256 && source.originalOpeningIntentSha256 === request.expectedOpeningIntentSha256, "ORIGINAL_DIGEST");
       await this.#current(original);
@@ -122,8 +128,8 @@ export class CurrentFootprintForwardOpeningUnknownRelinquishment {
           originalBindingSha256: source.originalBindingSha256, originalOpeningIntentSha256: source.originalOpeningIntentSha256,
           originalRosterSha256: source.originalRosterSha256, originalIdentitySha256: source.originalIdentitySha256,
           originalProducerFacadeSha256: source.originalProducerFacadeSha256, originalInstallationSha256: source.originalInstallationSha256 };
-        const intent = receipt?.intent ?? currentFootprintForwardOpeningRelinquishmentIntentSchema.parse({
-          schema: "easyeda-pro-control.footprint-forward-opening-relinquishment-intent.v1", ...fields,
+        const intent = receipt?.intent ?? intentSchema.parse({
+          schema: intentSchema.shape.schema.value, ...fields,
           createdAt: new Date().toISOString(), facadeSha256: installation.facadeSha256, installationSha256: sha256Json(installation),
           confirmRelinquishUnknownOpening: true, acceptUnknownCaptureOutcome: true,
         });
@@ -132,8 +138,8 @@ export class CurrentFootprintForwardOpeningUnknownRelinquishment {
         if (receipt === null) {
           need(intent.facadeSha256 === installation.facadeSha256 && intent.installationSha256 === sha256Json(installation), "RECOVERY_PRODUCER_CHANGED");
         }
-        const result = currentFootprintForwardOpeningRelinquishmentResultSchema.parse({
-          schema: "easyeda-pro-control.footprint-forward-opening-relinquished.v1", ...fields,
+        const result = resultSchema.parse({
+          schema: resultSchema.shape.schema.value, ...fields,
           createdAt: new Date().toISOString(), relinquishmentIntentSha256: sha256Json(intent), observationNonceSha256: sha256Text(nonce),
           observationBefore, observation, fileProof, otherLinuxFacadePresent: false, linuxFacadeSamples: 2, captureOutcome: "unknown",
           terminationOutcome: "unknown", helperReleaseOutcome: "unknown", terminationProved: false, nativeResourcesReleased: false, helperReleaseAcknowledged: false, originalLaunchIdentityVerified: false, retainedLaunchAuthority: false,

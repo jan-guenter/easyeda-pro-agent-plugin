@@ -9,6 +9,7 @@ import { CURRENT_FOOTPRINT_COPY_CACHE_CONSTRUCTION_CALLS as CALLS, CURRENT_FOOTP
 import type { CurrentFootprintCacheConstructionCommand as Command } from "./current-footprint-copy-cache-construction-contract.ts";
 import { decodeCurrentFootprintCopyDependencyFunction } from "./current-footprint-copy-dependency-bindings.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { CURRENT_PCB_209_STARTUP_TIMING } from "./current-pcb-209-worker-startup-timing.ts";
 
 export interface CurrentFootprintCopyCacheConstructionTransport {
   readonly assertOriginalWorker: () => Promise<void>;
@@ -32,10 +33,11 @@ export interface CurrentFootprintCopyCacheConstructionObservation {
 }
 interface Breakpoint { readonly id: string; readonly site: number; attempted: boolean; removed: boolean }
 interface Pause { readonly ordinal: number; readonly frame: string; resumeAttempted: boolean; resumed: boolean }
+interface Allocation { reply: Promise<void> | null; settled: boolean; idRetained: boolean }
 type Step = "not-started" | "arm" | "frame" | "before" | "metadata" | "bind" | "after" | "remove" | "resume" | "join" | "capture-wait" | "release" | "cleanup";
 interface Failure { readonly step: Step; readonly code: string; readonly requests: number; readonly replies: number; readonly pauses: number; readonly metadataIndex: number | null }
 const failures = new WeakMap<Error, string>();
-function fail(code: "OWNER" | "DEADLINE" | "CLEANUP" | "CHANNEL_LOST"): Error {
+function fail(code: "OWNER" | "DEADLINE" | "CLEANUP" | "CHANNEL_LOST" | "RETAIN_UNKNOWN_ALLOCATION"): Error {
   const error = new Error(`FOOTPRINT_CACHE_CONSTRUCTION_${code}`); failures.set(error, code); return error;
 }
 const fields = ["assertOriginalWorker", "assertCleanup", "request", "subscribe"] as const;
@@ -63,6 +65,9 @@ export class CurrentFootprintCopyCacheConstructionRunner {
   readonly #pauses: Pause[] = [];
   readonly #completed: string[] = [];
   readonly #completion = Promise.withResolvers<null>();
+  readonly #stopped = Promise.withResolvers<null>();
+  readonly #allocations: Allocation[] = [];
+  #allocationUncertain = false;
   #unsubscribe: (() => void) | null = null;
   #chain: Promise<void> = Promise.resolve();
   #resumeSignal: (() => void) | null = null;
@@ -90,13 +95,15 @@ export class CurrentFootprintCopyCacheConstructionRunner {
     this.#path = z.string().length(64).regex(/^[a-f\d]{64}$/u).parse(binding.projectUuid);
   }
   #same(): void { need(members(this.#transport).every((value, index) => value === this.#members[index])); }
-  async #current(): Promise<void> { need(!this.#failed && !this.#releaseAttempted); this.#same(); await this.#transport.assertOriginalWorker(); this.#same(); }
+  async #current(): Promise<void> { need(!this.#failed && !this.#releaseAttempted); this.#same(); await this.#transport.assertOriginalWorker(); this.#same(); need(!this.#failed && !this.#releaseAttempted); }
   #stop(error: unknown): void {
     if (!this.#failed) {
       this.#firstFailure = Object.freeze({ step: this.#step, code: error instanceof Error ? failures.get(error) ?? "DEPENDENCY_OR_REPLY" : "DEPENDENCY_OR_REPLY",
         requests: this.#requests, replies: this.#replies, pauses: this.#pauses.length, metadataIndex: this.#metadataIndex });
       this.#failed = true; this.#error = error;
+      if (this.#allocations.some(allocation => !allocation.settled)) { this.#allocationUncertain = true; }
     }
+    this.#stopped.resolve(null);
     this.#completion.resolve(null);
   }
   async #send(command: Command, cleanup = false): Promise<unknown> {
@@ -150,6 +157,14 @@ export class CurrentFootprintCopyCacheConstructionRunner {
   static async #deadline(milliseconds: number, signal: AbortSignal): Promise<never> {
     await delay(milliseconds, undefined, { signal }); throw fail("DEADLINE");
   }
+  /** Stop the caller's arming wait without settling its original allocation.
+   * Late replies remain privately retained; uncertainty permits no continuation. */
+  async #awaitAllocation(work: Promise<void>): Promise<void> {
+    const timeout = new AbortController();
+    const stopped = (async (): Promise<never> => { await this.#stopped.promise; throw this.#error; })();
+    try { await Promise.race([work, stopped, CurrentFootprintCopyCacheConstructionRunner.#deadline(CURRENT_PCB_209_STARTUP_TIMING.requestMs, timeout.signal)]); }
+    finally { timeout.abort(); }
+  }
   /** Called while the original bootstrap constructor pause is held. This
    * allocates no process, invokes no open, and never resumes that outer pause. */
   public async arm(): Promise<void> {
@@ -162,18 +177,29 @@ export class CurrentFootprintCopyCacheConstructionRunner {
       need(typeof this.#unsubscribe === "function");
       for (const [index, site] of SITES.entries()) {
         await this.#current(); need(this.#requests < REQUESTS.arm); this.#requests += 1;
-        const raw = captureCurrentPcbStringClockReply(await this.#transport.request({ method: "Debugger.setBreakpoint", params: {
-          location: { scriptId: this.#scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } } })).value;
-        this.#raw.push(raw); this.#replies += 1;
-        const allocated = z.looseObject({ breakpointId: handle }).safeParse(raw);
-        if (allocated.success && !this.#breakpoints.some(point => point.id === allocated.data.breakpointId)) {
-          this.#breakpoints.push({ id: allocated.data.breakpointId, site: index, attempted: false, removed: false });
-        }
-        await this.#current(); const reply = z.object({ breakpointId: handle, actualLocation: location }).strict().parse(raw);
-        need(this.#breakpoints.length === index + 1 && reply.actualLocation.scriptId === this.#scriptId && reply.actualLocation.lineNumber === site.lineNumber && reply.actualLocation.columnNumber === site.columnNumber);
+        const allocation: Allocation = { reply: null, settled: false, idRetained: false }; this.#allocations.push(allocation);
+        const work = (async (): Promise<void> => {
+          try {
+            const raw = captureCurrentPcbStringClockReply(await this.#transport.request({ method: "Debugger.setBreakpoint", params: {
+              location: { scriptId: this.#scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } } })).value;
+            this.#raw.push(raw); this.#replies += 1;
+            const allocated = z.looseObject({ breakpointId: handle }).safeParse(raw);
+            if (allocated.success) {
+              if (!this.#breakpoints.some(point => point.id === allocated.data.breakpointId)) {
+                this.#breakpoints.push({ id: allocated.data.breakpointId, site: index, attempted: false, removed: false });
+              }
+              allocation.idRetained = this.#breakpoints.some(point => point.id === allocated.data.breakpointId && point.site === index);
+            }
+            if (this.#failed) { return; }
+            await this.#current(); const reply = z.object({ breakpointId: handle, actualLocation: location }).strict().parse(raw);
+            need(this.#breakpoints.length === index + 1 && reply.actualLocation.scriptId === this.#scriptId && reply.actualLocation.lineNumber === site.lineNumber && reply.actualLocation.columnNumber === site.columnNumber);
+          } catch (error) { if (!allocation.idRetained) { this.#allocationUncertain = true; } throw error; }
+          finally { allocation.settled = true; }
+        })();
+        allocation.reply = work; await this.#awaitAllocation(work);
       }
       this.#armed = true;
-    } catch (error) { this.#stop(error); throw error; }
+    } catch (error) { this.#stop(error); throw this.#error; }
   }
   async #remove(point: Breakpoint): Promise<void> {
     if (point.removed) { return; } need(!point.attempted); point.attempted = true;
@@ -264,12 +290,14 @@ export class CurrentFootprintCopyCacheConstructionRunner {
     try { await this.#join(); } catch (error) { this.#stop(error); throw error; }
   }
   public async release(): Promise<void> {
-    need(!this.#releaseAttempted && (this.#packet !== null || this.#failed)); this.#releaseAttempted = true;
+    need(!this.#allocationUncertain && !this.#releaseAttempted && (this.#packet !== null || this.#failed)); this.#releaseAttempted = true;
     empty.parse(await this.#send({ method: "Runtime.releaseObjectGroup", params: { objectGroup: GROUP } }, true));
     this.#unsubscribe?.(); this.#unsubscribe = null; this.#released = true;
   }
   public async cleanup(): Promise<void> {
-    this.#step = "cleanup"; this.#stop(fail("CLEANUP")); await this.#chain;
+    this.#step = "cleanup"; this.#stop(fail("CLEANUP"));
+    if (this.#allocationUncertain) { throw new AggregateError([this.#error, fail("RETAIN_UNKNOWN_ALLOCATION")], "FOOTPRINT_CACHE_CONSTRUCTION_CLEANUP_FAILED", { cause: this.#error }); }
+    await this.#chain;
     const errors: unknown[] = [];
     for (const point of this.#breakpoints) { try { await this.#remove(point); } catch (error) { errors.push(error); } }
     const held = this.#pauses.at(-1);
@@ -286,10 +314,12 @@ export class CurrentFootprintCopyCacheConstructionRunner {
   }
   public diagnostics(): Readonly<{ armAttempted: boolean; armed: boolean; failed: boolean; requests: number; replies: number;
     pauseCount: number; resumedPauses: number; completedNamespaces: number; captureComplete: boolean; waitAttempted: boolean;
-    step: Step; metadataIndex: number | null; firstFailure: Failure | null; released: boolean }> {
+    step: Step; metadataIndex: number | null; firstFailure: Failure | null; released: boolean; allocationUncertain: boolean; pendingAllocations: number; retainedAllocationIds: number }> {
     return Object.freeze({ armAttempted: this.#armAttempted, armed: this.#armed, failed: this.#failed, requests: this.#requests, replies: this.#replies,
       pauseCount: this.#pauses.length, resumedPauses: this.#pauses.filter(pause => pause.resumed).length, completedNamespaces: this.#completed.length,
       captureComplete: this.#captureComplete, waitAttempted: this.#waitAttempted, step: this.#step, metadataIndex: this.#metadataIndex,
-      firstFailure: this.#firstFailure, released: this.#released });
+      firstFailure: this.#firstFailure, released: this.#released, allocationUncertain: this.#allocationUncertain,
+      pendingAllocations: this.#allocations.filter(allocation => !allocation.settled).length,
+      retainedAllocationIds: this.#allocations.filter(allocation => allocation.idRetained).length });
   }
 }

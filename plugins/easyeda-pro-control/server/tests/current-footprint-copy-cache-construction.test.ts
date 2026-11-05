@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { Session } from "node:inspector/promises";
 import { test } from "node:test";
+import { setTimeout as delay, setImmediate as nextTurn } from "node:timers/promises";
 import vm from "node:vm";
 import { isRecord } from "../src/core.ts";
 import { CURRENT_FOOTPRINT_COPY_CACHE_CONSTRUCTION_CALLS as CALLS, CURRENT_FOOTPRINT_COPY_CACHE_CONSTRUCTION_NATIVE_PROFILES as NATIVES,
@@ -12,6 +13,7 @@ import { CurrentFootprintCopyCacheConstructionRunner } from "../src/current-foot
 import type { CurrentFootprintCopyCacheConstructionTransport } from "../src/current-footprint-copy-cache-construction-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_BACKEND_CACHE_PROFILES as WRAPPERS } from "../src/current-footprint-copy-backend-cache-profiles.ts";
 import { CURRENT_FOOTPRINT_COPY_BACKEND_CACHE_FIXTURE as SOURCES } from "./helpers/current-footprint-copy-backend-cache-fixture.ts";
+// oxlint-disable-next-line import/max-dependencies -- The bounded held-allocation regression also needs builtin timers; original event/program fixtures remain independent.
 import { fixture as peerFixture } from "./helpers/current-footprint-parent-worker-fixture.ts";
 
 type Data = Record<string, unknown>;
@@ -68,14 +70,15 @@ function arrayProperties(size: number, namespace: number): Data {
   result.push(property("length", { type: "number", value: size }, true, false, false));
   return { result, internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", description: "Array(0)", objectId: "array-prototype" } }] };
 }
-function fixture(mode: "success" | "resume-lost" | "release-lost" | "unsubscribe-failed" | "relocated" | "settlement-held" = "success"): Readonly<{
+function fixture(mode: "success" | "resume-lost" | "release-lost" | "unsubscribe-failed" | "relocated" | "settlement-held" | "arm-held" = "success"): Readonly<{
   runner: CurrentFootprintCopyCacheConstructionRunner; calls: Command[]; emit: (ordinal: number) => void; lost: () => void;
-  unblockMetadata: () => void; metadataEntered: Promise<null>;
+  unblockMetadata: () => void; metadataEntered: Promise<null>; unblockAllocation: () => void;
 }> {
   let listener: Parameters<CurrentFootprintCopyCacheConstructionTransport["subscribe"]>[0] | null = null;
   let arrayCount = 0, ordinal = 0, resumes = 0;
   const arrays = new Map<string, Data>(), calls: Command[] = [], removed = new Set<string>();
   const entered = Promise.withResolvers<null>(), metadataGate = Promise.withResolvers<null>();
+  const allocation = Promise.withResolvers<unknown>();
   const emit = (index: number): void => {
     ordinal = index; const site = SITES[index % 2]; assert.ok(site !== undefined && listener !== null);
     listener.paused({ reason: "other", hitBreakpoints: [`point-${String(index % 2)}`], callFrames: [{ callFrameId: `frame-${String(index)}`, functionName: "open",
@@ -86,6 +89,7 @@ function fixture(mode: "success" | "resume-lost" | "release-lost" | "unsubscribe
     await Promise.resolve(); calls.push(command);
     if (command.method === "Debugger.setBreakpoint") {
       const index = calls.filter(item => item.method === "Debugger.setBreakpoint").length - 1;
+      if (mode === "arm-held") { entered.resolve(null); return allocation.promise; }
       return { breakpointId: `point-${String(index)}`, actualLocation: { ...command.params.location, ...(mode === "relocated" ? { columnNumber: command.params.location.columnNumber + 1 } : {}) } };
     }
     if (command.method === "Debugger.evaluateOnCallFrame") { return { result: { type: "object", className: "bb", description: "bb", objectId: `wrapper-${String(Math.floor(ordinal / 2))}` } }; }
@@ -125,6 +129,8 @@ function fixture(mode: "success" | "resume-lost" | "release-lost" | "unsubscribe
   });
   return { runner: new CurrentFootprintCopyCacheConstructionRunner(transport, { scriptId: "script", projectObjectId: "project", projectUuid: "a".repeat(64) }), calls, emit,
     unblockMetadata: (): void => { metadataGate.resolve(null); }, metadataEntered: entered.promise,
+    unblockAllocation: (): void => { const site = SITES[0]; assert.ok(site !== undefined);
+      allocation.resolve({ breakpointId: "point-0", actualLocation: { scriptId: "script", lineNumber: site.lineNumber, columnNumber: site.columnNumber } }); },
     lost: (): void => { assert.ok(listener !== null); listener.lost(); } };
 }
 
@@ -156,6 +162,38 @@ void test("relocated allocation retains its original breakpoint and cleanup neve
   const f = fixture("relocated"); await assert.rejects(f.runner.arm()); await f.runner.cleanup();
   assert.deepEqual(f.calls.map(call => call.method), ["Debugger.setBreakpoint", "Debugger.removeBreakpoint", "Runtime.releaseObjectGroup"]);
   await assert.rejects(f.runner.arm());
+});
+void test("lost or expired cache arm settles its caller while retaining unknown allocation and late original ID", { timeout: 12_000 }, async () => {
+  for (const mode of ["lost", "deadline"] as const) {
+    const f = fixture("arm-held");
+    const arming = f.runner.arm(), expiry = new AbortController();
+    try {
+      await f.metadataEntered;
+      if (mode === "lost") { f.lost(); }
+      const failure = await Promise.race([arming.catch((error: unknown) => error), delay(5000, null, { signal: expiry.signal })]);
+      assert.ok(failure instanceof Error, "arm must reject without waiting for its retained allocation");
+      assert.match(failure.message, mode === "lost" ? /CHANNEL_LOST/u : /DEADLINE/u);
+      const firstFailure = f.runner.diagnostics().firstFailure;
+      assert.equal(firstFailure?.code, mode === "lost" ? "CHANNEL_LOST" : "DEADLINE");
+      assert.equal(f.runner.diagnostics().pendingAllocations, 1);
+      assert.equal(f.runner.diagnostics().allocationUncertain, true);
+      assert.equal(f.runner.diagnostics().armed, false);
+      await assert.rejects(f.runner.cleanup(), (error: unknown) => error instanceof AggregateError && error.cause === failure && error.errors[0] === failure);
+      await assert.rejects(f.runner.arm()); await assert.rejects(f.runner.result()); await assert.rejects(f.runner.release());
+      assert.deepEqual(f.calls.map(call => call.method), ["Debugger.setBreakpoint"]);
+      f.unblockAllocation(); await nextTurn();
+      assert.equal(f.runner.diagnostics().pendingAllocations, 0);
+      assert.equal(f.runner.diagnostics().retainedAllocationIds, 1);
+      assert.equal(f.runner.diagnostics().allocationUncertain, true);
+      assert.equal(f.runner.diagnostics().firstFailure, firstFailure);
+      assert.equal(f.runner.retained()["released"], false);
+      await assert.rejects(f.runner.cleanup());
+      assert.deepEqual(f.calls.map(call => call.method), ["Debugger.setBreakpoint"]);
+    } finally {
+      expiry.abort();
+      f.unblockAllocation(); await Promise.allSettled([arming]);
+    }
+  }
 });
 void test("cache pause routing uses only retained breakpoint IDs and never evaluates caller accessors", async () => {
   const f = fixture();

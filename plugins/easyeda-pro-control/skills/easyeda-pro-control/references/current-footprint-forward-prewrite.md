@@ -152,8 +152,21 @@ historical resolver. Its live wrapper has the same name and accepts only
 intent/binding/opening digests, plus `confirmRelinquishUnknownOpening:true` and
 `acceptUnknownCaptureOutcome:true`.
 
-Only the exact reviewed producer, installation and complete opening-intent
-roster qualify. The resolver must run in a fresh facade before any application
+Only these two exact reviewed producer/installation pairs qualify:
+
+| Original profile | Facade SHA-256 | Installation SHA-256 | Receipt version |
+| --- | --- | --- | --- |
+| Earlier reviewed opening | `c4da74d20c67fdbba80919e4ad1ff3aed13004aeeb8d4db3f2f21eefdc9cb6cd` | `d5c5727996398d24f60e48439484a88ca1dacacddc6660a7e0723dadd622ea89` | v1 |
+| Frozen 190023 opening | `bf9650e7c9b85c698e23fcbf08833dff71aef42f39f1da599e36d1ec5198f1a5` | `4c593053fa7991e49ec0fc7af317a769ee9aa6454d48ea01c31219464eb907d4` | v2 |
+
+The profile comes only from the original managed intent. No caller profile,
+producer override, unknown hash or mixed pair is accepted. Both require the
+complete thirteen-record opening-intent roster, with no source, route, seal or
+later cleanup stage. Released v1 schemas stay unchanged; the second pair uses
+separate v2 intent/result markers. The source/offline adapter tests do not
+establish a completed live recovery for the second pair.
+
+The resolver must run in a fresh facade before any application
 owner allocation. Other recognized Linux facades, including retired and
 ownership-conflict processes, block it. Use their supported normal lifecycle;
 do not signal another server without explicit user authority. The resolver
@@ -165,3 +178,6 @@ They keep capture, termination and helper-release outcomes unknown and
 `originalLaunchIdentityVerified:false`. They grant no original owner, replay,
 writer, Save or qualification authority. Preserve the failed case and its
 original records after successful relinquishment.
+
+An external process-exit receipt cannot replace the resolver's fresh evidence
+or grant normal-close baseline authority.

@@ -1,6 +1,7 @@
 /** Finite supplied-observation grammar for Nd/QA and the structure request.
  * Remote IDs in this protocol are comparison strings. Parsing them cannot
  * construct original handles, an event subscription or a native lease. */
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import { types } from "node:util";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -75,7 +76,7 @@ function capture(input: unknown): unknown {
     if (prototype !== Object.prototype && prototype !== null || keys.length > 16) { return bad(); }
     const result: Record<string, unknown> = {};
     for (const key of keys) {
-      if (typeof key !== "string" || key.length > 64) { return bad(); }
+      if (typeof key !== "string" || key.length > 64 || !key.isWellFormed()) { return bad(); }
       Object.defineProperty(result, key, { value: copy(own(key), depth + 1), enumerable: true });
     }
     return Object.freeze(result);
@@ -91,4 +92,15 @@ export function validateCurrentProjectStructureCompletionPlan(input: unknown): C
  * malformed identities and unsupported outcomes cannot enter the transcript. */
 export function validateCurrentProjectStructureCompletionEvent(input: unknown): CurrentProjectStructureCompletionEvent {
   return freezeDeep(event.parse(capture(input)));
+}
+
+/** Retain bounded structure metadata replies without the unrelated clock
+ * copier's16KiB string ceiling. This copies own data only and grants no event,
+ * connection or original packet custody. Existing transcript schemas remain
+ * unchanged. Fixed structure readers select this explicitly. */
+export function captureCurrentProjectStructureCompletionReply(input: unknown): Readonly<{ value: unknown; text: string; sha256: string }> {
+  const value = capture(input);
+  const text = JSON.stringify(value);
+  if (Buffer.byteLength(text) > 8_388_608) { return bad(); }
+  return Object.freeze({ value, text, sha256: createHash("sha256").update(text).digest("hex") });
 }

@@ -60,6 +60,16 @@ const DISABLED_NATIVE_FILTER = /^(bufferutil|utf-8-validate)$/;
 // oxlint-disable-next-line require-unicode-regexp -- Esbuild compiles this filter with RE2, which has no Unicode flag.
 const ALL_ESBUILD_PATHS_FILTER = /.*/;
 const EXACT_OUTPUT_NAMES = ["server.mjs", "upstream-supervisor.mjs"] as const;
+const MANAGER_OUTPUT_NAME = "control-session-manager.mjs";
+const MANAGER_BUILD_PLACEHOLDER = "__EASYEDA_FOREGROUND_MANAGER_BUILD_ID_PLACEHOLDER_________________";
+const MANAGER_FORBIDDEN_INPUTS = new Set([
+  "server/src/main.ts", "server/src/index.ts", "server/src/offline-control.ts", "server/src/windows-runtime.ts",
+  "server/src/current-pcb-diagnostic-owner.ts", "server/src/upstream-supervisor.ts",
+]);
+const MANAGER_SCRIPT_INPUTS = new Set([
+  "scripts/control-session-manager-main.ts", "scripts/control-session-manager.ts",
+  "scripts/control-session.ts", "scripts/control-session-transport.ts", "scripts/private-temporary-directory.ts",
+]);
 const sha256Schema = z.string().regex(/^[a-f0-9]{64}$/u);
 const bootIdSchema = z.string().regex(
   /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/u,
@@ -482,6 +492,7 @@ async function captureResolutionMetadata(
 function capturePlugin(
   pluginRoot: string,
   captures: Map<string, CapturedContainedRegularFile>,
+  manager = false,
 ): Plugin {
   const sourceRoot = join(pluginRoot, "server", "src");
   const nodeModulesRoot = join(pluginRoot, "node_modules");
@@ -517,9 +528,14 @@ function capturePlugin(
       );
       buildApi.onLoad({ filter: ALL_ESBUILD_PATHS_FILTER, namespace: "file" }, async (arguments_) => {
         const absolutePath = resolve(arguments_.path);
+        if (manager && MANAGER_FORBIDDEN_INPUTS.has(relative(pluginRoot, absolutePath))) {
+          throw new Error("The frontend bundle cannot import a facade/native owner entrypoint.");
+        }
         let admittedRoot: string | undefined;
         if (isWithin(sourceRoot, absolutePath)) {
           admittedRoot = sourceRoot;
+        } else if (manager && MANAGER_SCRIPT_INPUTS.has(relative(pluginRoot, absolutePath))) {
+          admittedRoot = join(pluginRoot, "scripts");
         } else if (isWithin(nodeModulesRoot, absolutePath)) {
           admittedRoot = nodeModulesRoot;
         }
@@ -590,6 +606,7 @@ async function validateBundledNotices(
   metafile: Metafile,
   pluginRoot: string,
   captures: ReadonlyMap<string, CapturedContainedRegularFile>,
+  manager = false,
 ): Promise<readonly CapturedContainedRegularFile[]> {
   const licensesRoot = join(pluginRoot, "licenses");
   const inventoryPath = join(licensesRoot, "bundled-runtime.json");
@@ -610,11 +627,17 @@ async function validateBundledNotices(
     }
     await captured.assertCurrent();
   }
+  const contributed = new Set(Object.values(metafile.outputs).flatMap(output => Object.entries(output.inputs)
+    .filter(([_path, contribution]) => contribution.bytesInOutput > 0).map(([path]) => resolve(pluginRoot, path))));
   const actual = await bundledPackages(
-    inputs.map((path) => relative(pluginRoot, path)),
+    inputs.filter(path => !manager || contributed.has(path)).map(path => relative(pluginRoot, path)).filter(path => !manager || !MANAGER_SCRIPT_INPUTS.has(path)),
     pluginRoot,
   );
-  const declared = [...inventory.dependencies].toSorted((left, right) =>
+  if (manager && actual.find(dependency => dependency.name === "@modelcontextprotocol/sdk")?.version !== "1.32.1") {
+    throw new Error("The foreground manager must bundle the pinned SDK1.32.1.");
+  }
+  const actualNames = new Set(actual.map(dependency => dependency.name));
+  const declared = inventory.dependencies.filter(dependency => !manager || actualNames.has(dependency.name)).toSorted((left, right) =>
     left.name.localeCompare(right.name),
   );
   const actualCoordinates = actual.map(
@@ -689,6 +712,77 @@ async function validateBundledNotices(
     }
   }
   return complianceCaptures;
+}
+
+export interface ForegroundManagerBundle {
+  readonly bytes: Uint8Array;
+  readonly buildId: string;
+  readonly sha256: string;
+  readonly inputCount: number;
+  readonly assertCurrent: () => Promise<void>;
+}
+const foregroundManagerBundles = new WeakSet<ForegroundManagerBundle>();
+/** A public artifact description cannot substitute for a descriptor-captured
+ * build. Mutable byte views must still match their original fixed digest. */
+export function requireForegroundManagerBundle(input: ForegroundManagerBundle): void {
+  if (!foregroundManagerBundles.has(input) || input.bytes.length > 16_777_216 || sha256(input.bytes) !== input.sha256) {
+    throw new Error("Foreground manager requires its original sealed build.");
+  }
+}
+
+/** Build the frontend separately from the historical facade pair. The same
+ * descriptor-captured inputs, resolution seals, license proofs and builtin-only
+ * runtime boundary apply; no native runtime-file projection changes. */
+export async function buildForegroundManagerBundle(pluginRoot: string): Promise<ForegroundManagerBundle> {
+  const buildHost = await assertBuildHost();
+  const captures = new Map<string, CapturedContainedRegularFile>();
+  const resolutionMetadata = await captureResolutionMetadata(pluginRoot);
+  const outputPath = join(pluginRoot, "server", "dist", MANAGER_OUTPUT_NAME);
+  const banner = `import {builtinModules as __easyedaManagerBuiltins,createRequire as __easyedaManagerCreateRequire} from "node:module";
+const __easyedaManagerSpecifiers=new Set(__easyedaManagerBuiltins.flatMap(name=>[name,name.startsWith("node:")?name.slice(5):"node:"+name]));
+const __easyedaManagerRawRequire=__easyedaManagerCreateRequire(import.meta.url);
+const require=specifier=>{if(typeof specifier!=="string"||!__easyedaManagerSpecifiers.has(specifier))throw new Error("The foreground bundle blocked a non-builtin runtime require.");return __easyedaManagerRawRequire(specifier);};
+const easyedaForegroundManagerBuildId = "${MANAGER_BUILD_PLACEHOLDER}";`;
+  const result = await build({
+    absWorkingDir: pluginRoot, banner: { js: banner }, bundle: true,
+    define: { "import.meta.main": "false" },
+    entryPoints: [join(pluginRoot, "scripts", "control-session-manager-main.ts")],
+    format: "esm", legalComments: "eof", metafile: true, minifyWhitespace: true,
+    nodePaths: [join(pluginRoot, "node_modules")], outfile: outputPath, platform: "node",
+    plugins: [capturePlugin(pluginRoot, captures, true)], sourcemap: false, target: ["node24"],
+    tsconfigRaw: ESBUILD_TSCONFIG_RAW, write: false,
+  });
+  await resolutionMetadata.assertCurrent();
+  await assertExactCapturedInputs(result.metafile, pluginRoot, captures);
+  const compliance = await validateBundledNotices(result.metafile, pluginRoot, captures, true);
+  for (const output of Object.values(result.metafile.outputs)) {
+    if (output.imports.some(imported => imported.external !== true || !builtinSpecifiers.has(imported.path))) {
+      throw new Error("Foreground manager retained an external runtime dependency.");
+    }
+  }
+  const output = result.outputFiles[0];
+  if (result.outputFiles.length !== 1 || output === undefined || resolve(output.path) !== outputPath || output.contents.length > 16_777_216) {
+    throw new Error("Foreground manager must emit exactly one bounded frontend file.");
+  }
+  const hash = createHash("sha256");
+  hash.update(`easyeda-pro-control.foreground-build.v1\0${JSON.stringify({ buildHost, esbuildVersion, sdkVersion: "1.32.1",
+    bundle: true, define: { "import.meta.main": "false" }, format: "esm", legalComments: "eof", minifyWhitespace: true,
+    platform: "node", sourcemap: false, target: ["node24"], tsconfigRaw: ESBUILD_TSCONFIG_RAW })}\0`);
+  for (const captured of [...captures.values(), ...compliance].toSorted((left, right) => left.path.localeCompare(right.path))) {
+    hash.update(`${relative(pluginRoot, captured.path)}\0${captured.bytes.length}\0${captured.sha256}\n`);
+  }
+  hash.update(output.contents); const buildId = hash.digest("hex");
+  const raw = Buffer.from(output.contents).toString("utf8");
+  if (raw.split(MANAGER_BUILD_PLACEHOLDER).length !== 2) { throw new Error("Foreground manager build marker differs from its fixed banner."); }
+  const bytes = Buffer.from(raw.replace(MANAGER_BUILD_PLACEHOLDER, buildId));
+  assertNoUnreviewedRuntimeRequires(bytes, MANAGER_OUTPUT_NAME);
+  const assertCurrent = async (): Promise<void> => {
+    await resolutionMetadata.assertCurrent(); await assertExactCapturedInputs(result.metafile, pluginRoot, captures);
+    for (const captured of compliance) { await captured.assertCurrent(); }
+  };
+  await assertCurrent();
+  const bundle = Object.freeze({ bytes, buildId, sha256: sha256(bytes), inputCount: captures.size, assertCurrent });
+  foregroundManagerBundles.add(bundle); return bundle;
 }
 
 function pairIdentity(

@@ -231,8 +231,8 @@ jobs:
           git diff --exit-code -- plugins/easyeda-pro-control/server/bin/Easyeda.CurrentMainReference.dll plugins/easyeda-pro-control/server/bin/Easyeda.CurrentMainReference.build.json plugins/easyeda-pro-control/server/src/current-main-reference-helper-identity.ts
           test -z "$(git status --porcelain --untracked-files=all -- plugins/easyeda-pro-control/server/bin/Easyeda.CurrentMainReference.dll plugins/easyeda-pro-control/server/bin/Easyeda.CurrentMainReference.build.json plugins/easyeda-pro-control/server/src/current-main-reference-helper-identity.ts)"
           test "$(git ls-tree HEAD plugins/easyeda-pro-control/server/bin/Easyeda.CurrentMainReference.dll | awk '{print $1}')" = "100644"
-          git diff --exit-code -- plugins/easyeda-pro-control/server/bin/easyeda-fd-sanitizer plugins/easyeda-pro-control/server/dist/server.mjs plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs
-          test -z "$(git status --porcelain --untracked-files=all -- plugins/easyeda-pro-control/server/bin/easyeda-fd-sanitizer plugins/easyeda-pro-control/server/dist/server.mjs plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs)"
+          git diff --exit-code -- plugins/easyeda-pro-control/server/bin/easyeda-fd-sanitizer plugins/easyeda-pro-control/server/dist/server.mjs plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs plugins/easyeda-pro-control/server/dist/control-session-manager.mjs
+          test -z "$(git status --porcelain --untracked-files=all -- plugins/easyeda-pro-control/server/bin/easyeda-fd-sanitizer plugins/easyeda-pro-control/server/dist/server.mjs plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs plugins/easyeda-pro-control/server/dist/control-session-manager.mjs)"
           test "$(git ls-tree HEAD plugins/easyeda-pro-control/server/bin/easyeda-fd-sanitizer | awk '{print $1}')" = "100755"
 
       - name: Package plugin artifact

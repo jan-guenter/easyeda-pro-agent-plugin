@@ -36,6 +36,10 @@ const originalCleanupSchema = z.discriminatedUnion("action", [
   z.strictObject({ action: z.literal("release-closed") }),
   z.strictObject({ action: z.literal("settle-records") }),
 ]);
+const inFlightControlSchema = z.discriminatedUnion("action", [
+  z.strictObject({ action: z.literal("inspect") }),
+  z.strictObject({ action: z.literal("abort-generation"), confirmAbortOriginalForwardJob: z.literal(true) }),
+]);
 const commandSchema = z.discriminatedUnion("action", [
   z.strictObject({ id: requestId, action: z.literal("inspect") }),
   z.strictObject({ id: requestId, action: z.literal("retire"), generation: generationSchema, confirmRetire: z.literal(true) }),
@@ -46,10 +50,14 @@ const commandSchema = z.discriminatedUnion("action", [
   z.strictObject({ id: requestId, action: z.literal("cleanup-original"), generation: generationSchema,
     interruptedRequestId: requestId, request: originalCleanupSchema,
     responseFile: z.string().refine(isAbsolute).optional() }),
+  z.strictObject({ id: requestId, action: z.literal("in-flight-original"), generation: generationSchema,
+    originalRequestId: requestId, request: inFlightControlSchema,
+    responseFile: z.string().refine(isAbsolute).optional() }),
 ]);
 type ManagerCallRequest = CallRequest & { readonly cleanup?: true };
 type ManagerRequest = z.infer<typeof commandSchema> | ManagerCallRequest;
 type OriginalCleanupRequest = Extract<z.infer<typeof commandSchema>, { action: "cleanup-original" }>;
+type InFlightControlRequest = Extract<z.infer<typeof commandSchema>, { action: "in-flight-original" }>;
 type Emitter = (value: unknown) => Promise<void>;
 type Stage = "new" | "starting" | "active" | "retiring" | "closing" | "between-facades" | "blocked" | "closed";
 const toolResultSchema = z.looseObject({ isError: z.boolean().optional(), structuredContent: z.unknown().optional() });
@@ -173,8 +181,20 @@ interface InterruptedCall {
   readonly tool: string;
   readonly forward: ForwardCleanupBinding | null;
   readonly forwardLaunchOperationId: string | null;
+  readonly forwardCapture: boolean;
   inspectedLaunchBinding?: ForwardCleanupBinding;
   intentSha256?: string;
+  readonly forwardAction: string | null;
+  readonly originalCaptureRequestId?: string | number;
+  readonly abortReservation: { attempted: boolean };
+}
+interface InFlightCapture {
+  readonly original: InterruptedCall;
+  readonly controls: Set<string | number>;
+  rpcPending: boolean;
+  parentOutcome: "pending" | "returned" | "unknown";
+  sidePending: boolean;
+  sideIdle: Promise<null>;
 }
 interface RetainedRecord {
   readonly sequence: number;
@@ -202,6 +222,10 @@ export class ForegroundSessionManager {
   private requestPending = false;
   private replacementFrom: Connection | undefined;
   private interrupted: InterruptedCall | undefined;
+  private inFlight: InFlightCapture | undefined;
+  private controlledCapture: InFlightCapture | undefined;
+  private evidenceTail: Promise<null> = Promise.resolve(null);
+  private publicationTail: Promise<null> = Promise.resolve(null);
   private retirementUncertain = false;
   private evidence: PrivateTemporaryDirectory | undefined;
   private evidenceBytes = 0;
@@ -219,7 +243,16 @@ export class ForegroundSessionManager {
   /** Publish immutable evidence through the retained private directory handle.
    * Keep the full value in memory until file and directory sync complete, then
    * retain only its bounded path, size and hash summary. */
-  private async retain(kind: string, value: unknown, budget: RecordBudget = "control"): Promise<void> {
+  private async retain(kind: string, value: unknown, budget: RecordBudget = "control"): Promise<RetainedRecord> {
+    const previous = this.evidenceTail; const done = Promise.withResolvers<null>(); this.evidenceTail = done.promise;
+    await previous;
+    try { return await this.retainRecord(kind, value, budget); }
+    finally { done.resolve(null); }
+  }
+
+  /** Serialize exclusive files, sequence numbers and byte accounting across
+   * the parent result and its one bounded original side-control lane. */
+  private async retainRecord(kind: string, value: unknown, budget: RecordBudget): Promise<RetainedRecord> {
     if (this.evidenceFault) { throw new Error("manager-evidence-unavailable"); }
     const record = Object.freeze({ sequence: this.records.length + 1, generation: this.generation, kind, budget, value });
     // Keep the original in memory before any evidence/publication await. A failed
@@ -242,8 +275,9 @@ export class ForegroundSessionManager {
     } catch (error) { this.evidenceFault = true; this.stage = "blocked"; throw error; }
     this.evidenceBytes += bytes.length;
     this.byteCounts[budget] += bytes.length;
-    this.records[record.sequence - 1] = Object.freeze({ sequence: record.sequence, generation: record.generation, kind, budget,
+    const receipt = Object.freeze({ sequence: record.sequence, generation: record.generation, kind, budget,
       evidenceFile: join(evidence.path, name), bytes: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") });
+    this.records[record.sequence - 1] = receipt; return receipt;
   }
 
   /** Keep the original owner inspectable when evidence writing itself fails.
@@ -271,8 +305,15 @@ export class ForegroundSessionManager {
       finalRetirementAttemptConsumed: this.retirementReservation.finalAttemptConsumed(),
       startupCleanupAttempted: this.startupCleanupAttempted,
       callerToolDispatchStarted: observed === undefined ? false : this.callerToolDispatches.has(observed.transport),
+      inFlightRequest: this.inFlight === undefined ? null : { id: this.inFlight.original.requestId,
+        generation: this.inFlight.original.generation, tool: this.inFlight.original.tool, forward: this.inFlight.original.forward,
+        rpcPending: this.inFlight.rpcPending, sidePending: this.inFlight.sidePending, controlCalls: this.inFlight.controls.size,
+        abortAttempted: this.inFlight.original.abortReservation.attempted },
+      controlledCapture: this.controlledCapture === undefined ? null : { id: this.controlledCapture.original.requestId,
+        generation: this.controlledCapture.original.generation, forward: this.controlledCapture.original.forward, parentOutcome: this.controlledCapture.parentOutcome },
       interruptedRequest: this.interrupted === undefined ? null : { id: this.interrupted.requestId,
-        generation: this.interrupted.generation, tool: this.interrupted.tool,
+        generation: this.interrupted.generation, tool: this.interrupted.tool, action: this.interrupted.forwardAction,
+        ...(this.interrupted.originalCaptureRequestId === undefined ? {} : { originalCaptureRequestId: this.interrupted.originalCaptureRequestId }),
         forward: this.interrupted.forward ?? this.interrupted.inspectedLaunchBinding ?? null, outcome: "unknown", cleanupAvailable: this.stage === "blocked" &&
           !this.retirementUncertain && (this.interrupted.forward !== null || this.interrupted.forwardLaunchOperationId !== null) &&
           this.interrupted.connection === this.connection && this.connection.client.transport === this.connection.transport &&
@@ -287,8 +328,11 @@ export class ForegroundSessionManager {
   /** Include response publication in request settlement. An output failure
    * blocks replacement and retains a fixed diagnostic before propagating. */
   private async publish(value: unknown): Promise<void> {
+    const previous = this.publicationTail; const done = Promise.withResolvers<null>(); this.publicationTail = done.promise;
+    await previous;
     try { await this.emit(value); }
     catch (error) { this.publicationFault = true; this.stage = "blocked"; await this.retainFailure("publication-failed", { privateDiagnosticsWithheld: true }); throw error; }
+    finally { done.resolve(null); }
   }
 
   /** Initial selection is separate from replacements and is reserved once. */
@@ -352,7 +396,7 @@ export class ForegroundSessionManager {
     await this.retain("ready", ready);
     await this.publish(ready);
     this.connection = { pluginRoot, transport, client, tools: new Set(names), loadedFacade };
-    this.interrupted = undefined;
+    this.interrupted = undefined; this.controlledCapture = undefined;
     this.retirementUncertain = false;
     this.startingConnection = undefined;
     this.stage = "active";
@@ -372,7 +416,7 @@ export class ForegroundSessionManager {
     if (this.retirementUncertain) { throw new Error("manager-retirement-outcome-unknown"); }
     if (this.evidenceFault || this.publicationFault || this.records.some(row => Object.hasOwn(row, "unpublishedValue"))) { throw new Error("manager-evidence-unsettled"); }
     if (this.stage === "active") { return this.requireActive(); }
-    const connection = this.connection, interrupted = this.interrupted;
+    const connection = this.connection, interrupted = this.interrupted ?? this.controlledCapture?.original;
     if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.inspectedLaunchBinding === undefined || connection === undefined ||
         interrupted.connection !== connection || interrupted.generation !== this.generation ||
         connection.client.transport !== connection.transport || !connection.transport.hasUnclosedChild()) {
@@ -390,7 +434,94 @@ export class ForegroundSessionManager {
     const forward = request.tool === "easyeda_control_pcb209_worker_startup" && selected !== null &&
       "expectedBindingSha256" in selected ? Object.freeze({ operationId: selected.operationId, bindingSha256: selected.expectedBindingSha256 }) : null;
     const forwardLaunchOperationId = request.tool === "easyeda_control_pcb209_worker_startup" && selected?.action === "launch" ? selected.operationId : null;
-    return { connection, generation: this.generation, requestId: request.id, tool: request.tool, forward, forwardLaunchOperationId };
+    return { connection, generation: this.generation, requestId: request.id, tool: request.tool, forward, forwardLaunchOperationId,
+      forwardCapture: selected?.action === "capture-project", forwardAction: selected?.action ?? null, abortReservation: { attempted: false } };
+  }
+
+  /** This is a private in-process scheduling fact, never caller JSON or a
+   * status-derived owner. Only the CLI driver uses it to retain one parent task. */
+  public hasInFlightCapture(): boolean { return this.requestPending && this.inFlight !== undefined; }
+
+  /** Admit only this exact original capture while its SDK request is pending.
+   * Every other action remains on the existing serial owner path. */
+  private requireInFlightControl(request: InFlightControlRequest, held?: InFlightCapture): InFlightCapture {
+    const current = this.inFlight; const connection = this.connection;
+    if (!this.requestPending || current === undefined || !current.rpcPending || current.sidePending && current !== held || connection === undefined ||
+        current.original.connection !== connection || current.original.generation !== this.generation || request.generation !== this.generation ||
+        request.originalRequestId !== current.original.requestId || request.id === current.original.requestId || current.controls.has(request.id) ||
+        current.controls.size >= 16 || current.original.forward === null || !current.original.forwardCapture ||
+        connection.client.transport !== connection.transport || !connection.transport.hasUnclosedChild() ||
+        !connection.tools.has("easyeda_control_pcb209_worker_startup") || this.retirementUncertain || this.evidenceFault || this.publicationFault ||
+        this.records.some(row => Object.hasOwn(row, "unpublishedValue")) ||
+        request.request.action === "abort-generation" && current.original.abortReservation.attempted) {
+      throw new Error("manager-in-flight-original-not-authorized");
+    }
+    return current;
+  }
+
+  /** Generate one fixed inspect/confirmed-abort call on the original client.
+   * A side result never resolves the parent capture or grants replacement. */
+  public async handleInFlight(line: string | InputRejection): Promise<void> {
+    const current = this.inFlight;
+    if (!this.requestPending || current === undefined || current.sidePending) { throw new Error("manager-in-flight-side-pending"); }
+    // Claim the one side slot synchronously, including local inspection and
+    // Refusal publication. The parent cannot settle around backpressured output.
+    const idle = Promise.withResolvers<null>(); current.sidePending = true; current.sideIdle = idle.promise;
+    let id: string | number | undefined;
+    let dispatched = false;
+    let reservation = false;
+    try {
+      if (typeof line !== "string") { throw new TypeError("manager-input-rejected"); }
+      if (Buffer.byteLength(line) > MAXIMUM_REQUEST_BYTES) { throw new Error("request-too-large"); }
+      // Correlation is data only; the complete strict selector below still
+      // Decides admission, and no caller field supplies resource ownership.
+      const correlation = z.looseObject({ id: requestId }).safeParse(JSON.parse(line));
+      if (correlation.success) { id = correlation.data.id; }
+      const request = parseSessionManagerRequest(line); id = request.id;
+      if (!("tool" in request) && request.action === "inspect") { await this.publish({ id, manager: this.inspect() }); return; }
+      if ("tool" in request || request.action !== "in-flight-original") { throw new Error("manager-in-flight-command-required"); }
+      if (this.requireInFlightControl(request, current) !== current) { throw new Error("manager-in-flight-original-not-authorized"); }
+      if (!sessionManagerCallBudgetAvailable(true, this.recordCounts.cleanup + 1, this.byteCounts.cleanup)) { throw new Error("manager-cleanup-reserve-required"); }
+      const binding = current.original.forward; if (binding === null) { throw new Error("manager-in-flight-original-not-authorized"); }
+      const input = request.request.action === "inspect" ? { action: "inspect" as const, operationId: binding.operationId } : {
+        action: "abort-generation" as const, operationId: binding.operationId, expectedBindingSha256: binding.bindingSha256, confirmAbortOriginalForwardJob: true as const };
+      const nested = currentFootprintForwardPrewriteValidationRequestSchema.parse(input);
+      const call: CallRequest = { id, tool: "easyeda_control_pcb209_worker_startup", timeoutMs: 120_000,
+        arguments: { request: { action: "footprint-forward-prewrite", request: nested } },
+        ...(request.responseFile === undefined ? {} : { responseFile: request.responseFile }) };
+      reservation = true;
+      await this.retain("in-flight-control-intent", { id, originalRequestId: current.original.requestId,
+        generation: current.original.generation, tool: call.tool, request: nested }, "cleanup");
+      // Publication may outlast the parent SDK request. A no-longer-pending
+      // Parent refuses before dispatch and consumes no abort attempt.
+      if (this.requireInFlightControl(request, current) !== current) { throw new Error("manager-in-flight-original-not-authorized"); }
+      current.controls.add(id);
+      if (request.request.action === "abort-generation") {
+        current.original.abortReservation.attempted = true; this.controlledCapture = current; this.stage = "blocked";
+      }
+      let result: unknown;
+      dispatched = true;
+      try { result = await current.original.connection.client.callTool({ name: call.tool, arguments: call.arguments }, undefined, { timeout: call.timeoutMs }); }
+      catch (error) {
+        // This is the actual rejected side request, not an invented timeout of
+        // The parent. Its same-owner binding remains available after settlement.
+        this.interrupted = { ...this.interruptedCall(current.original.connection, call), forward: binding,
+          originalCaptureRequestId: current.original.requestId, abortReservation: current.original.abortReservation };
+        this.stage = "blocked"; throw error;
+      }
+      const evidence = await this.retain("in-flight-control-result", { id, originalRequestId: current.original.requestId, result }, "cleanup");
+      toolResultSchema.parse(result); await this.publishCallResult(call, result, evidence);
+    } catch (error) {
+      if (dispatched || this.evidenceFault || this.publicationFault) { this.stage = "blocked"; this.replacementFrom = undefined; }
+      const failure = { ...(id === undefined ? {} : { id }), error: dispatched ? "manager-blocked" : "manager-request-rejected", generation: this.generation,
+        diagnostic: sessionFailureDiagnostic("requests", error), retryAllowed: false, dispatched, originalOwnerRetained: true };
+      if (reservation) { await this.retainFailure("in-flight-control-failure", failure, "cleanup"); }
+      await this.publish(failure);
+    } finally {
+      // The parent holds normal admission until both native requests and their
+      // Exact evidence/output publications have settled.
+      current.sidePending = false; idle.resolve(null);
+    }
   }
 
   /** Reject foreign, disconnected or unpublished original state before any
@@ -398,7 +529,7 @@ export class ForegroundSessionManager {
   private requireOriginalCleanup(request: OriginalCleanupRequest): Readonly<{
     connection: Connection; interrupted: InterruptedCall; operationId: string; binding: ForwardCleanupBinding | undefined;
   }> {
-    const connection = this.connection, interrupted = this.interrupted;
+    const connection = this.connection, interrupted = this.interrupted ?? this.controlledCapture?.original;
     if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.forwardLaunchOperationId === null || connection === undefined ||
         this.retirementUncertain || this.evidenceFault || this.publicationFault || this.records.some(row => Object.hasOwn(row, "unpublishedValue")) ||
         interrupted.connection !== connection || interrupted.generation !== this.generation || request.generation !== this.generation ||
@@ -413,6 +544,9 @@ export class ForegroundSessionManager {
     }
     if (request.request.action === "settle-records" && interrupted.intentSha256 === undefined) {
       throw new Error("manager-original-intent-inspection-required");
+    }
+    if (request.request.action === "abort-generation" && interrupted.abortReservation.attempted) {
+      throw new Error("manager-original-abort-consumed");
     }
     return { connection, interrupted, operationId, binding };
   }
@@ -456,8 +590,9 @@ export class ForegroundSessionManager {
       ...(request.responseFile === undefined ? {} : { responseFile: request.responseFile }) };
     await this.retain("original-cleanup-intent", { id: request.id, interruptedRequestId: interrupted.requestId,
       generation: this.generation, tool: call.tool, request: nested }, "cleanup");
+    if (selected.action === "abort-generation") { interrupted.abortReservation.attempted = true; }
     const result = await connection.client.callTool({ name: call.tool, arguments: call.arguments }, undefined, { timeout: call.timeoutMs });
-    await this.retain("original-cleanup-result", { id: request.id, result }, "cleanup");
+    const evidence = await this.retain("original-cleanup-result", { id: request.id, result }, "cleanup");
     const envelope = toolResultSchema.parse(result);
     if (selected.action === "inspect" && envelope.isError !== true && envelope["ok"] !== false) {
       this.requireOriginalCleanup(request);
@@ -473,7 +608,7 @@ export class ForegroundSessionManager {
         interrupted.intentSha256 = inspected.data.result.intentSha256;
       }
     }
-    await this.publishCallResult(call, result);
+    await this.publishCallResult(call, result, evidence);
   }
 
   /** Consume explicit cleanup before this startup child has served caller tools.
@@ -508,7 +643,7 @@ export class ForegroundSessionManager {
    * cleanup access; uncertain results never authorize a replacement. */
   private async retire(id: string | number, generation: number, reservation: "ordinary" | "final"): Promise<void> {
     const connection = this.requireRetirable();
-    const interrupted = this.interrupted;
+    const interrupted = this.interrupted ?? this.controlledCapture?.original;
     if (generation !== this.generation) { throw new Error("manager-generation-mismatch"); }
     const firstRecord = this.records.length;
     this.stage = "retiring";
@@ -572,7 +707,7 @@ export class ForegroundSessionManager {
   /** Mark the exact child before caller dispatch and retain its result before
    * output publication. The cleanup marker selects bookkeeping capacity only;
    * facade admission and operation guards still govern the call. */
-  private async call(request: ManagerCallRequest): Promise<void> {
+  private async call(request: ManagerCallRequest, interrupted: InterruptedCall): Promise<void> {
     const connection = this.requireActive();
     if (!connection.tools.has(request.tool)) { throw new Error("manager-tool-not-admitted"); }
     // Settlement includes the original call result and durable response/evidence
@@ -580,27 +715,34 @@ export class ForegroundSessionManager {
     const budget = request.cleanup === true ? "cleanup" : "normal";
     await this.retain("call-intent", { id: request.id, tool: request.tool }, budget);
     this.callerToolDispatches.add(connection.transport);
-    const interrupted = this.interruptedCall(connection, request);
     let result: unknown;
-    try { result = await connection.client.callTool({ name: request.tool, arguments: request.arguments }, undefined, { timeout: request.timeoutMs }); }
-    catch (error) { this.interrupted = interrupted; this.stage = "blocked"; throw error; }
+    const current = this.inFlight?.original === interrupted ? this.inFlight : undefined;
+    if (current !== undefined) { current.rpcPending = true; }
+    try {
+      result = await connection.client.callTool({ name: request.tool, arguments: request.arguments }, undefined, { timeout: request.timeoutMs });
+      if (current !== undefined) { current.parentOutcome = "returned"; }
+    }
+    catch (error) {
+      if (current !== undefined) { current.parentOutcome = "unknown"; }
+      this.interrupted = interrupted; this.stage = "blocked"; throw error;
+    }
+    finally { if (current !== undefined) { current.rpcPending = false; } }
     // A returned result with failed retention/publication keeps the earlier
     // Strict evidence freeze. It cannot mint timeout-cleanup authority.
-    await this.retain("call-result", { id: request.id, result }, budget);
+    const evidence = await this.retain("call-result", { id: request.id, result }, budget);
     toolResultSchema.parse(result);
-    await this.publishCallResult(request, result);
+    await this.publishCallResult(request, result, evidence);
   }
 
   /** A complete retained result can refuse delivery before any file or output
    * write. Report its exact evidence without replaying the facade operation;
    * actual publication failures preserve the existing custody freeze. */
-  private async publishCallResult(request: CallRequest, result: unknown): Promise<void> {
-    const evidence = this.records.at(-1);
+  private async publishCallResult(request: CallRequest, result: unknown, evidence: RetainedRecord): Promise<void> {
     try {
       const outcome = await publishSessionResult(request, result, value => this.publish(value));
       if (outcome === "published") { return; }
       if (evidence?.generation !== this.generation ||
-          !["call-result", "original-cleanup-result"].includes(evidence.kind) ||
+          !["call-result", "original-cleanup-result", "in-flight-control-result"].includes(evidence.kind) ||
           evidence.evidenceFile === undefined || evidence.sha256 === undefined || evidence.bytes === undefined ||
           Object.hasOwn(evidence, "unpublishedValue")) { throw new Error("manager-result-evidence-unsettled"); }
       await this.publish({ id: request.id, error: "result-publication-refused", dispatched: true, reason: outcome,
@@ -633,9 +775,14 @@ export class ForegroundSessionManager {
           throw new Error("manager-cleanup-reserve-required");
         }
         reserved = true;
-        await this.call(request); return;
+        const interrupted = this.interruptedCall(connection, request);
+        if (request.cleanup !== true && interrupted.forwardCapture && interrupted.forward !== null) {
+          this.inFlight = { original: interrupted, controls: new Set(), rpcPending: false, parentOutcome: "pending", sidePending: false, sideIdle: Promise.resolve(null) };
+        }
+        await this.call(request, interrupted); return;
       }
       if (request.action === "inspect") { await this.publish({ id, manager: this.inspect() }); return; }
+      if (request.action === "in-flight-original") { throw new Error("manager-in-flight-original-not-authorized"); }
       if (request.action === "cleanup-original") {
         this.requireOriginalCleanup(request);
         // Reserve intent, largest possible result and a failure record without
@@ -692,17 +839,39 @@ export class ForegroundSessionManager {
         dispatched: reserved, originalOwnerRetained: true };
       if (reserved) { await this.retainFailure("failure", failure, failureBudget); }
       await this.publish(failure);
-    } finally { this.requestPending = false; }
+    } finally {
+      const current = this.inFlight;
+      if (current !== undefined) { while (current.sidePending) { await current.sideIdle; } this.inFlight = undefined; }
+      this.requestPending = false;
+    }
   }
 }
 
-/** Run the CLI's original manager and owned child through one serialized input
- * channel. Returning at EOF does not close, retire or replace that owner. */
+/** Retain one original capture task while reading only its fixed bounded
+ * side-control lane. Every other owner operation keeps serial CLI admission;
+ * returning at EOF never closes, retires or replaces the retained child. */
 export async function runManagerInput(manager: ForegroundSessionManager, chunks: AsyncIterable<Buffer>): Promise<"closed" | "input-closed"> {
+  let parent: Promise<void> | undefined;
+  let parentFailed = false;
+  let parentError: unknown;
+  /** Observe only the original task; this watcher never admits another call. */
+  const observeParent = async (pending: Promise<void>): Promise<void> => {
+    try { await pending; }
+    catch (error) { parentFailed = true; parentError = error; }
+    finally { if (parent === pending) { parent = undefined; } }
+  };
   for await (const line of managerInputLines(chunks)) {
-    await manager.handle(line);
+    if (parentFailed) { throw parentError; }
+    if (parent !== undefined && !manager.hasInFlightCapture()) { await parent; parent = undefined; }
+    if (parent === undefined) {
+      const pending = manager.handle(line);
+      if (manager.hasInFlightCapture()) { parent = pending; void observeParent(pending); }
+      else { await pending; }
+    } else { await manager.handleInFlight(line); }
     if (manager.inspect()["stage"] === "closed") { return "closed"; }
   }
+  await parent;
+  if (parentFailed) { throw parentError; }
   return "input-closed";
 }
 
@@ -756,20 +925,25 @@ async function main(emitJson: Emitter): Promise<void> {
   }
 }
 
-if (import.meta.main) {
+/** The source CLI and standalone frontend enter this same original manager
+ * runner. Bundling disables imported main guards before calling it explicitly. */
+export async function runForegroundManagerCli(): Promise<void> {
   const emitJson = createManagerOutputPublisher(process.stdout);
   try {
-    // oxlint-disable-next-line node/no-top-level-await -- This executable owns one foreground manager; imports never enter its main loop.
     await main(emitJson);
   } catch (error) {
     process.exitCode = 1;
     // The original child remains referenced when output has become unusable.
     // The same failed channel cannot publish another diagnostic or recover.
     try {
-      // oxlint-disable-next-line node/no-top-level-await -- The executable handles diagnostic failure before returning to the owned child's event loop.
       await emitJson(sessionFailureDiagnostic("requests", error));
     } catch {
       // The persistent output failure is already retained.
     }
   }
+}
+
+if (import.meta.main) {
+  // oxlint-disable-next-line node/no-top-level-await -- The executable owns the original frontend; importing its class or runner starts no connection.
+  await runForegroundManagerCli();
 }

@@ -11,8 +11,8 @@
   "packageManager": "npm@11.16.0",
   "type": "module",
   "scripts": {
-    "control:manage": "node scripts/control-session-manager.ts",
-    "build": "npm run native:helper:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && node scripts/build-server.ts",
+    "control:manage": "node server/dist/control-session-manager.mjs",
+    "build": "npm run native:helper:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && node scripts/build-server.ts && node scripts/build-control-manager.ts",
     "bridge:build": "node scripts/build-authenticated-bridge.ts",
     "bridge:lint": "oxlint --config .oxlintrc.bridge.json --type-aware --deny-warnings easyeda-bridge-extension/src easyeda-bridge-extension/tests easyeda-bridge-extension/scripts easyeda-bridge-extension/vitest.config.ts",
     "bridge:provision": "node scripts/provision-bridge-token.ts",

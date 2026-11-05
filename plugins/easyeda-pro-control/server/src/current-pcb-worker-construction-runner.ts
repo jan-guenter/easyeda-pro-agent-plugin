@@ -77,6 +77,17 @@ import type { CurrentFootprintCopyClockRpcConstructionBinding, CurrentFootprintC
 
 import type { CurrentFootprintCopyCreateInvocationBinding, CurrentFootprintCopyCreateInvocationLease } from "./current-footprint-copy-create-invocation-lease.ts";
 
+import { captureCurrentProjectStructureCompletionReply } from "./current-project-structure-completion-protocol.ts";
+import { CURRENT_PROJECT_STRUCTURE_WORKER_CALLS } from "./current-project-structure-worker-programs.ts";
+import type { CurrentProjectStructureWorkerBinding, CurrentProjectStructureWorkerEvents, CurrentProjectStructureWorkerLease } from "./current-project-structure-worker-lease.ts";
+
+const structureLeases = new WeakMap<CurrentProjectStructureWorkerLease, CurrentProjectStructureWorkerBinding>();
+export function requireCurrentProjectStructureWorkerLease(lease: CurrentProjectStructureWorkerLease): CurrentProjectStructureWorkerBinding {
+  const binding = structureLeases.get(lease);
+  if (binding === undefined) { throw new Error("PROJECT_STRUCTURE_ORIGINAL_WORKER_LEASE"); }
+  binding.assertCleanup(); return binding;
+}
+
 const createInvocationLeases = new WeakMap<CurrentFootprintCopyCreateInvocationLease, CurrentFootprintCopyCreateInvocationBinding>();
 // oxlint-disable-next-line typescript/unbound-method -- Invoke only on the construction core's original private-field runner.
 const originalAsyncPrewriteHandles = CurrentFootprintCopyAsyncRunner.prototype.prewriteHandles;
@@ -229,6 +240,10 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   #armingWindow: CurrentPcbStartupWindow | null = null;
   #armingWatchdog: ReturnType<typeof setTimeout> | undefined;
   #lastCommand: CurrentPcbWorkerConstructionCommand["method"] | null = null;
+  #structureLeaseAttempted = false;
+  #structureLease: CurrentProjectStructureWorkerLease | null = null;
+  #structureListener: CurrentProjectStructureWorkerEvents | null = null;
+  #structurePauseActive = false;
   #released = false;
   #releaseConsumed = false;
   #packet: ConstructionPacket<P> | null = null;
@@ -381,11 +396,12 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     this.#checkWindow();
     if (this.#releaseConsumed) { throw fail("OWNER_CHANGED"); }
   }
-  async #request(command: CurrentPcbWorkerConstructionCommand, retained?: unknown[], assignmentStep?: string): Promise<unknown> {
+  async #request(command: CurrentPcbWorkerConstructionCommand, retained?: unknown[], assignmentStep?: string,
+    captureReply: typeof captureCurrentPcbStringClockReply = captureCurrentPcbStringClockReply): Promise<unknown> {
     if (assignmentStep !== undefined) { this.#assignmentStep = assignmentStep; this.#step = assignmentStep; }
     if (!this.#settled) { this.#step = "pause-read-owner-before"; } await this.#current();
     if (!this.#settled) { this.#step = "pause-read-request"; }
-    const captured = captureCurrentPcbStringClockReply(await bounded(this.#sendOriginal(command)));
+    const captured = captureReply(await bounded(this.#sendOriginal(command)));
     retained?.push(captured.value);
     // Keep the bounded original reply before decoding or an awaited owner
     // Reproof. A refusal must remain diagnosable without resending the probe.
@@ -397,6 +413,12 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (!this.#settled) { this.#step = "pause-read-owner-after"; } await this.#current(); return captured.value;
   }
   readonly #onPaused = (input: unknown): void => {
+    if (this.#structureListener?.acceptsPause(input) === true) {
+      if (this.#structurePauseActive || this.#footprintCachePauseActive || this.#pause !== null && !this.#pause.resumeObserved) {
+        this.#fail("STRUCTURE_PAUSE_ROUTE"); this.#structureListener.lost(); return;
+      }
+      this.#structurePauseActive = true; this.#structureListener.paused(input); return;
+    }
     if (this.#footprintCacheConstruction?.acceptsPause(input) === true) {
       if (this.#footprintCacheListener === null || this.#footprintCachePauseActive || this.#pause !== null && !this.#pause.resumeObserved) {
         this.#fail("CACHE_CONSTRUCTION_PAUSE_ROUTE"); return;
@@ -424,6 +446,9 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (this.#settled) { this.#fail("EXTRA_PAUSE"); void observeRejection(this.#cleanupPause(paused)); }
   };
   readonly #onResumed = (): void => {
+    if (this.#structurePauseActive) {
+      this.#structurePauseActive = false; this.#structureListener?.resumed(); return;
+    }
     if (this.#footprintCachePauseActive) {
       if (this.#footprintCacheListener === null) { this.#fail("CACHE_CONSTRUCTION_RESUME_ROUTE"); return; }
       this.#footprintCachePauseActive = false; this.#footprintCacheListener.resumed(); return;
@@ -434,7 +459,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (currentPcbStartupMonotonicMs() - paused.window.startedAtMs >= paused.window.limitMs) { this.#fail("PAUSE_DEADLINE"); }
     paused.resumeObserved = true; clearTimeout(paused.watchdog); paused.resumed.resolve(null);
   };
-  readonly #onLost = (): void => { this.#footprintCacheListener?.lost(); this.#fail("OWNER_LOST"); this.#waiting.reject(this.#failed); };
+  readonly #onLost = (): void => { this.#structureListener?.lost(); this.#footprintCacheListener?.lost(); this.#fail("OWNER_LOST"); this.#waiting.reject(this.#failed); };
   #resume(paused: RetainedPause, origin: ResumeOrigin = "normal"): Promise<void> {
     if (paused.resumeResult !== null) { return paused.resumeResult; }
     if (origin === "normal") { this.#checkWindow(); }
@@ -710,7 +735,10 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       throw errors.length === 1 ? error : new AggregateError(errors, "PCB_WORKER_CONSTRUCTION_FAILED", { cause: error });
     } finally { clearTimeout(this.#armingWatchdog); this.#armingWindow = null; this.#settled = true; }
   }
-  public async requireOriginal(packet: ConstructionPacket<P>): Promise<Readonly<CurrentPcbWorkerConstructionIdentities>> {
+  public requireOriginal(packet: ConstructionPacket<P>): Promise<Readonly<CurrentPcbWorkerConstructionIdentities>> {
+    return this.#requireOriginal(packet);
+  }
+  async #requireOriginal(packet: ConstructionPacket<P>): Promise<Readonly<CurrentPcbWorkerConstructionIdentities>> {
     if (packet !== this.#packet || issued.get(packet) !== this) { throw fail("ORIGINAL_PACKET"); }
     await this.#current();
     return Object.freeze(z.object({ project: token, channelBus: token, channel: token, onmessage: token,
@@ -802,12 +830,65 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
    * from the pinned wrapper source in proveCurrentAssignments. */
   public async requireCurrentAssignments(packet: ConstructionPacket<P>,
     assignments: CurrentPcbWorkerConstructionAssignments): Promise<void> {
+    await this.#requireCurrentAssignments(packet, assignments);
+  }
+  async #requireCurrentAssignments(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments): Promise<void> {
     if (assignments !== this.#assignments || assignmentsIssued.get(assignments) !== this || this.#assignedWrappers === null) {
       throw fail("ORIGINAL_ASSIGNMENTS");
     }
-    const original = await this.requireOriginal(packet);
+    const original = await this.#requireOriginal(packet);
     try { await this.#assignmentRecheck(original, this.#assignedWrappers); }
     catch (error) { this.#fail("ASSIGNMENTS_CHANGED"); throw error; }
+  }
+  /** Issue input/event custody from this exact construction and assignment
+   * continuation. No owner purpose, native grammar or queue permit is changed. */
+  public async issueStructureObservationLease(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments): Promise<CurrentProjectStructureWorkerLease> {
+    if (!this.#current209 || this.#structureLeaseAttempted || this.#constructionSubscriptionStopped ||
+        this.#clockRpcHandoffAttempted || this.#footprintCacheConstruction !== null) { throw fail("STRUCTURE_LEASE_UNAVAILABLE"); }
+    this.#structureLeaseAttempted = true;
+    await this.#requireCurrentAssignments(packet, assignments);
+    const original = this.#identities, wrappers = this.#assignedWrappers;
+    const debounce = original.structureDebounce, project = original.project, structure = original.structure, upload = original.uploadStructure;
+    if (wrappers === null || project === undefined || upload === undefined || structure === undefined || debounce === undefined ||
+        this.#structureLease !== null) { throw fail("STRUCTURE_ORIGINAL_INPUTS"); }
+    const same = (): void => {
+      this.#sameTransport();
+      if (this.#releaseConsumed || this.#packet !== packet || this.#assignments !== assignments || this.#assignedWrappers !== wrappers ||
+          this.#identities.project !== project || this.#identities.uploadStructure !== upload || this.#identities.structure !== structure ||
+          this.#identities.structureDebounce !== debounce || this.#constructionSubscriptionStopped || this.#clockRpcHandoffAttempted ||
+          this.#footprintCacheConstruction !== null) { throw fail("STRUCTURE_ORIGINAL_INPUTS_CHANGED"); }
+    };
+    same();
+    const lease = Object.freeze({ profile: "private.current-project-structure-worker-lease.v1" as const });
+    structureLeases.set(lease, Object.freeze({ issuer: this, scriptId: this.#scriptId, project,
+      uploadCallback: upload, structureCallback: structure, debounce, assertCleanup: same,
+      fail: (): void => { if (this.#structureLease === lease && !this.#releaseConsumed) { this.#fail("STRUCTURE_OBSERVER_FAILED"); } },
+      assertOriginal: async (): Promise<void> => { same(); await this.#requireCurrentAssignments(packet, assignments); same(); },
+      request: async (command: CurrentPcbWorkerConstructionCommand, cleanup = false): Promise<unknown> => {
+        same();
+        if (!cleanup) {
+          const capture = command.method === "Runtime.callFunctionOn" && command.params.functionDeclaration === CURRENT_PROJECT_STRUCTURE_WORKER_CALLS.packetText
+            ? captureCurrentProjectStructureCompletionReply : captureCurrentPcbStringClockReply;
+          const reply = await this.#request(command, undefined, undefined, capture); same(); return reply;
+        }
+        if (command.method !== "Debugger.resume" && command.method !== "Debugger.removeBreakpoint") { throw fail("STRUCTURE_CLEANUP_COMMAND"); }
+        const reply = captureCurrentPcbStringClockReply(await bounded(this.#sendOriginal(command))).value; same(); return reply;
+      },
+      freshScopes: async (): Promise<Readonly<{ upload: string; structure: string; debounce: string; debounceParameters: string }>> => {
+        same(); await this.#requireCurrentAssignments(packet, assignments);
+        const a = await this.#assignmentScopes(wrappers.uploadStructure, "serial", "uploadStructure");
+        const b = await this.#assignmentScopes(wrappers.structure, "serial", "structure");
+        const d = await this.#assignmentScopes(debounce, "debounce", "debounce"); same();
+        if (a[0] === undefined || b[0] === undefined || d[0] === undefined || d[1] === undefined) { throw fail("STRUCTURE_SCOPES"); }
+        return Object.freeze({ upload: a[0], structure: b[0], debounce: d[0], debounceParameters: d[1] });
+      },
+      subscribe: (events: CurrentProjectStructureWorkerEvents): (() => void) => {
+        same(); if (this.#structureListener !== null) { throw fail("STRUCTURE_LISTENER_CONSUMED"); }
+        this.#structureListener = events;
+        return (): void => { same(); if (this.#structurePauseActive || this.#structureListener !== events) { throw fail("STRUCTURE_RETAIN_PAUSE"); } this.#structureListener = null; };
+      },
+    }));
+    this.#structureLease = lease; return lease;
   }
   public retainedFootprintState(): Readonly<Record<string, unknown>> {
     return Object.freeze({ attempted: this.#footprintAttempted, completed: this.#footprintPacket !== null,
@@ -1510,6 +1591,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   public async release(): Promise<void> {
     if (this.#releaseConsumed) { throw fail("RELEASE_CONSUMED"); }
     if (!this.#settled || this.#uncertainBreakpoint) { throw fail("RETAIN_PENDING_OWNER"); }
+    if (this.#structureListener !== null || this.#structurePauseActive) { throw fail("STRUCTURE_RETAIN_OBSERVER"); }
     if (this.#pause !== null && !this.#pause.resumeObserved) { throw fail("RETAIN_PAUSED_OWNER"); }
     if (this.#footprintCacheConstruction !== null && !this.#footprintCacheConstructionReleased) {
       await this.#footprintCacheConstruction.cleanup();
