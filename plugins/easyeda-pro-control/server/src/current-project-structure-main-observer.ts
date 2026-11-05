@@ -73,6 +73,7 @@ export class CurrentProjectStructureMainObserver {
   #armed = false;
   #busy = false;
   #failed = false;
+  #error: unknown;
   #uncertain = false;
   #unknownPause = false;
   #normal = 0;
@@ -93,7 +94,7 @@ export class CurrentProjectStructureMainObserver {
     need(!this.#released && requireCurrentProjectStructureMainLease(this.#lease) === this.#binding, "ORIGINAL_OWNER");
     requireCurrentProjectStructureMainSource(this.#binding.source);
     if (cleanup) { this.#binding.assertCleanup(); }
-    else { need(!this.#failed && !this.#cleanupAttempted && (this.#started === 0 || performance.now() - this.#started < 15_000), "FAILED"); await this.#binding.assertOriginal(); }
+    else { if (this.#failed) { throw this.#error; } need(!this.#cleanupAttempted && (this.#started === 0 || performance.now() - this.#started < 15_000), "FAILED"); await this.#binding.assertOriginal(); }
     need(requireCurrentProjectStructureMainLease(this.#lease) === this.#binding, "ORIGINAL_OWNER");
   }
   /** Consume only the expected fixed pause and the acknowledgment of our own
@@ -116,10 +117,16 @@ export class CurrentProjectStructureMainObserver {
     this.#unknownPause = true; throw new Error("PROJECT_STRUCTURE_MAIN_EVENT_BOUND");
   }
   /** Preserve separate fixed normal and cleanup counters before dispatch. */
-  async #send(input: Command, cleanup = false): Promise<unknown> {
+  async #send(input: Command, cleanup = false, retainAllocationReply?: (reply: unknown) => void): Promise<unknown> {
     await this.#current(cleanup); this.#drain(); need(cleanup ? this.#cleanup < REQUESTS.cleanup : this.#normal < REQUESTS.normal, "REQUEST_BOUND");
     const command = validateCurrentProjectStructureMainCommand(input); if (cleanup) { this.#cleanup += 1; } else { this.#normal += 1; }
-    const result = capture(await this.#binding.request(command, cleanup)); await this.#current(cleanup); this.#drain(); return result;
+    const result = capture(await this.#binding.request(command, cleanup, retainAllocationReply)); await this.#current(cleanup); this.#drain(); return result;
+  }
+  /** Late allocation custody cannot restore normal work or replace the first
+   * failure. The original issuer retains its own independent uncertainty. */
+  #stop(error: unknown): void {
+    if (!this.#failed) { this.#error = error; this.#failed = true; }
+    this.#binding.fail(error);
   }
   /** Capture a fixed frame expression directly into the retained object group. */
   async #frame(stage: keyof typeof EXPRESSIONS, frameId: string): Promise<string> {
@@ -160,26 +167,31 @@ export class CurrentProjectStructureMainObserver {
   /** Arm before an independently authorized structure operation; no application
    * callback, queue, upload or SQL operation is started by this method. */
   public async arm(): Promise<void> {
+    if (this.#failed) { throw this.#error; }
     need(!this.#busy && !this.#attempted, "CONSUMED"); this.#attempted = true; this.#busy = true;
     try {
       for (const stage of ORDER) {
         const site = SITES[stage]; this.#uncertain = true;
+        let retained = false;
+        const retain = (reply: unknown): void => {
+          const allocated = z.looseObject({ breakpointId: handle }).safeParse(capture(reply));
+          if (allocated.success && !this.#points.some(value => value.id === allocated.data.breakpointId)) {
+            this.#points.push({ stage, id: allocated.data.breakpointId, attempted: false, removed: false }); this.#uncertain = false; retained = true;
+          }
+        };
         const raw = await this.#send({ phase: "structure-main-arm", stage, method: "Debugger.setBreakpoint", params: {
-          location: { scriptId: this.#binding.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } } });
-        const allocated = z.looseObject({ breakpointId: handle }).safeParse(raw);
-        if (allocated.success && !this.#points.some(value => value.id === allocated.data.breakpointId)) {
-          this.#points.push({ stage, id: allocated.data.breakpointId, attempted: false, removed: false }); this.#uncertain = false;
-        }
+          location: { scriptId: this.#binding.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } } }, false, retain);
         const reply = z.object({ breakpointId: handle, actualLocation: z.object({ scriptId: handle, lineNumber: z.number(), columnNumber: z.number() }).strict() }).strict().parse(raw);
-        need(this.#points.at(-1)?.id === reply.breakpointId && reply.actualLocation.scriptId === this.#binding.scriptId &&
+        need(retained && this.#points.at(-1)?.id === reply.breakpointId && reply.actualLocation.scriptId === this.#binding.scriptId &&
           reply.actualLocation.lineNumber === site.lineNumber && reply.actualLocation.columnNumber === site.columnNumber, "BREAKPOINT_LOCATION");
       }
       this.#armed = true;
-    } catch (error) { this.#failed = true; this.#binding.fail(); throw error; } finally { this.#busy = false; }
+    } catch (error) { this.#stop(error); throw error; } finally { this.#busy = false; }
   }
   /** Retain the complete ordered source chain. This proves neither cross-realm
    * same-owner joining nor response delivery or independent complete SQL. */
   public async observation(): Promise<CurrentProjectStructureMainObservation> {
+    if (this.#failed) { throw this.#error; }
     need(this.#armed && !this.#busy && !this.#cleanupAttempted, "NOT_ARMED"); this.#busy = true;
     try {
       if (this.#packet !== null) { await this.#current(false); return this.#packet; }
@@ -215,13 +227,18 @@ export class CurrentProjectStructureMainObserver {
         originalRequestConnectionAndResponseRetained: true, lowerTicketBranchWideUpdateReturnObserved: true,
         nativeTransportIntegrationVerified: false, workerSameOwnerJoinVerified: false, mainPublicationVerified: false, completeSqlEffectVerified: false, executionAuthorized: false });
       observations.set(value, Object.freeze({ issuer: this.#binding.issuer, lease: this.#lease, packet })); this.#packet = value; return value;
-    } catch (error) { this.#failed = true; this.#binding.fail(); throw error; } finally { this.#busy = false; }
+    } catch (error) { this.#stop(error); throw error; } finally { this.#busy = false; }
   }
   /** Remove only acknowledged original allocations and resume only a known
    * pause once. Unknown pause/allocation or lost acknowledgments retain custody. */
   public async cleanup(): Promise<void> {
-    need(!this.#busy && !this.#cleanupAttempted, "CLEANUP_CONSUMED"); this.#cleanupAttempted = true; this.#busy = true;
+    need(!this.#busy && !this.#cleanupAttempted, "CLEANUP_CONSUMED"); this.#busy = true;
     try {
+      await this.#current(true);
+      // Only the original pending reply can resolve unknown allocation. This
+      // Performs no new command and cannot restore normal observation.
+      if (this.#uncertain) { await this.#binding.settleAllocation(); this.#drain(); }
+      need(!this.#uncertain && !this.#unknownPause, "CLEANUP_INCOMPLETE"); this.#cleanupAttempted = true;
       for (const point of this.#points) {
         need(!point.attempted, "REMOVE_CONSUMED"); point.attempted = true;
         empty.parse(await this.#send({ phase: "structure-main-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: point.id } }, true)); point.removed = true;

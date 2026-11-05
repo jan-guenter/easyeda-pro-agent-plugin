@@ -2150,7 +2150,11 @@ class CurrentPcbLifecycleCore {
             intentSha256: sha256Json(intent), failedStage: sealing ? "source-seal" : "closed-baseline",
             error: (error instanceof Error ? error.message : String(error)).slice(0, 4096), executionReady: false, executionAuthorized: false, saveAuthorized: false });
           this.#retainRecord("forward-baseline-failure.json", failure);
-          await assertSnapshot(expected); current(); await this.#publish(request.operationId, "forward-baseline-failure.json", failure);
+          try { await assertSnapshot(expected); current(); await this.#publish(request.operationId, "forward-baseline-failure.json", failure); }
+          catch (publicationError) {
+            // oxlint-disable-next-line eslint/preserve-caught-error -- Preserve the original baseline failure as cause and retain both errors for diagnosis.
+            throw new AggregateError([error, publicationError], "FORWARD_BASELINE_FAILURE_PUBLICATION", { cause: error });
+          }
         }
         throw error;
       }

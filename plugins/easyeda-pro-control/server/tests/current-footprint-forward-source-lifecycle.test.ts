@@ -131,11 +131,12 @@ function recordBytes(value: unknown): Buffer { return Buffer.from(`${JSON.string
 
 /** Exercise the genuine mounted stage and original-reference joins. Native
  * inspection and plan leaves are synthetic; all lifecycle/journal guards run. */
-type BaselineMode = "success" | "seal-capacity" | "seal-failure" | "seal-publication" | "closed-failure" | "closed-publication";
+type BaselineMode = "success" | "seal-capacity" | "seal-failure" | "seal-publication" | "closed-failure" | "closed-publication" | "seal-failure-publication" | "closed-failure-publication";
 async function fixture(context: TestContext, mode: "success" | "capacity" | "source-failure" | "checkpoint-failure" | "publication" | "method-drift" | "unsupported" | "unicode-failure" | "route-capacity" | "result-bound" | "failure-chain" | "failure-publication" | "source-page", routeHeadroom: "exact" | "short" = "short", baselineMode?: BaselineMode):
-Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[]; errors: Readonly<{ qualification: Error; publication: Error }>; qualify: () => Promise<Row>; next: () => number; route: () => Promise<Row>; routeStarted: () => boolean; normal: () => number; packetHash: () => string }>> {
+Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[]; errors: Readonly<{ qualification: Error; publication: Error; seal: Error; closed: Error }>; qualify: () => Promise<Row>; next: () => number; route: () => Promise<Row>; routeStarted: () => boolean; normal: () => number; packetHash: () => string }>> {
   const calls: string[] = [];
-  const errors = Object.freeze({ qualification: new Error("synthetic source failure"), publication: new Error("synthetic failure record publication failure") });
+  const errors = Object.freeze({ qualification: new Error("synthetic source failure"), publication: new Error("synthetic failure record publication failure"),
+    seal: new Error("synthetic source seal failure"), closed: new Error("synthetic closed SQL difference") });
   let id = `footprint-copy-qualify-test-${mode}${baselineMode === undefined ? "" : `-${baselineMode}`}`;
   if (mode === "unicode-failure") { id = id.padEnd(80, "x"); }
   if (mode === "route-capacity") { id += `-${routeHeadroom}`; }
@@ -146,7 +147,7 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
   let actor: ReturnType<typeof currentPcb209WorkerStartupActorPacketSchema.parse> | null = null;
   let before: Awaited<ReturnType<typeof readExactSqlInventory>> | null = null, plan: Row | null = null;
   let failFailurePublication = mode === "failure-publication", failPublication = mode === "publication", routeStarted = false, sourceStarted = false;
-  let baselinePublicationFailed = false, originalSeal: Row | null = null;
+  let baselineFailurePublicationFailed = false, baselinePublicationFailed = false, originalSeal: Row | null = null;
   let baselineOwner: Row | null = null;
   let baselineState: Fixture["state"] | null = null;
   let consumeNormal: ((count: number) => void) | null = null;
@@ -233,7 +234,7 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
       const intentPath = join(module.directory(id), "forward-source-seal-intent.json");
       assert.match(await readFile(intentPath, "utf8"), /source-seal-intent/u);
       calls.push("seal-after-intent"); assert.ok(consumeNormal); consumeNormal(6);
-      if (baselineMode === "seal-failure") { throw new Error("synthetic source seal failure"); }
+      if (baselineMode === "seal-failure" || baselineMode === "seal-failure-publication") { throw errors.seal; }
       originalSeal = Object.freeze({ beforeCheckpointSha256: before.checkpointSha256, beforeSqlSha256: before.logicalSha256, sourceBindingSha256: "a".repeat(64) });
       return originalSeal;
     },
@@ -242,7 +243,7 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
       const intentPath = join(module.directory(id), "forward-closed-baseline-intent.json");
       assert.match(await readFile(intentPath, "utf8"), /closed-baseline-intent/u);
       calls.push("closed-after-intent");
-      if (baselineMode === "closed-failure") { throw new Error("synthetic closed SQL difference"); }
+      if (baselineMode === "closed-failure" || baselineMode === "closed-failure-publication") { throw errors.closed; }
       return { before, after: before, closedCheckpointSha256: "c".repeat(64), closedSqlSha256: before.logicalSha256 };
     },
   }]]);
@@ -254,6 +255,10 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
     publishRecord: async (...args: Parameters<typeof publishCurrentPcbDiagnosticLifecycleRecord>): Promise<void> => {
       if (args[1] === "forward-prewrite-result.json" && failPublication) { failPublication = false; throw new Error("synthetic qualification publication failure"); }
       if (args[1] === "forward-prewrite-failure.json" && failFailurePublication) { failFailurePublication = false; throw errors.publication; }
+      if (args[1] === "forward-baseline-failure.json" && !baselineFailurePublicationFailed &&
+        (baselineMode === "seal-failure-publication" || baselineMode === "closed-failure-publication")) {
+        baselineFailurePublicationFailed = true; throw errors.publication;
+      }
       if (!baselinePublicationFailed && (args[1] === "forward-source-seal-result.json" && baselineMode === "seal-publication" ||
         args[1] === "forward-closed-baseline-result.json" && baselineMode === "closed-publication")) {
         baselinePublicationFailed = true; throw new Error("synthetic baseline publication failure");
@@ -620,6 +625,41 @@ for (const mode of ["success", "seal-capacity", "seal-failure", "seal-publicatio
     assert.ok(f.calls.filter(call => call === "closed-after-intent").length <= 1);
     await f.value.coordinator.run({ action: "release-closed", ...bound });
     assert.equal(f.value.coordinator.hasActiveReservation(), false);
+  });
+}
+
+for (const stage of ["seal", "closed"] as const) {
+  void test(`forward baseline retains original ${stage} error across failure-publication failure and settlement`, async context => {
+    const f = await fixture(context, "success", "short", `${stage}-failure-publication`);
+    const bound = { operationId: f.id, expectedBindingSha256: f.binding };
+    const seal = { action: "seal-footprint-source", ...bound };
+    const close = async (): Promise<void> => {
+      await f.value.coordinator.run({ action: "normal-close", ...bound, hwnd: "12345", confirmNormalClose: true });
+      f.value.state.terminated = true;
+      await f.value.coordinator.run({ action: "observe-termination", ...bound });
+    };
+    await f.qualify();
+    if (stage === "closed") { await f.value.coordinator.run(seal); await close(); }
+    const request = stage === "seal" ? seal : { action: "prove-closed-baseline", ...bound };
+    await assert.rejects(f.value.coordinator.run(request), (error: unknown): boolean => {
+      assert.ok(error instanceof AggregateError);
+      assert.equal(error.message, "FORWARD_BASELINE_FAILURE_PUBLICATION");
+      assert.equal(error.cause, f.errors[stage]);
+      assert.deepEqual(error.errors, [f.errors[stage], f.errors.publication]);
+      return true;
+    });
+    const failurePath = join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", f.id, "forward-baseline-failure.json");
+    await assert.rejects(readFile(failurePath), { code: "ENOENT" });
+    const inspect = await f.value.coordinator.run({ action: "inspect", operationId: f.id });
+    await f.value.coordinator.run({ action: "settle-records", operationId: f.id, expectedIntentSha256: inspect["intentSha256"] });
+    const failure = diagnosticLifecycleRecordSchemas["forward-baseline-failure.json"].parse(JSON.parse(await readFile(failurePath, "utf8")) as unknown);
+    assert.equal(failure.error, f.errors[stage].message);
+    assert.equal(failure.failedStage, stage === "seal" ? "source-seal" : "closed-baseline");
+    await assert.rejects(f.value.coordinator.run(request), /SOURCE_SEAL_CONSUMED|CLOSED_BASELINE_UNAVAILABLE/u);
+    if (stage === "seal") { await close(); }
+    await f.value.coordinator.run({ action: "release-closed", ...bound });
+    assert.equal(f.value.coordinator.hasActiveReservation(), false);
+    assert.equal(f.calls.filter(call => call === `${stage}-after-intent`).length, 1);
   });
 }
 

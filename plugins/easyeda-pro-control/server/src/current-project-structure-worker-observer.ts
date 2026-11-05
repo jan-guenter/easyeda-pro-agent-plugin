@@ -116,16 +116,19 @@ export class CurrentProjectStructureWorkerObserver {
     }
     this.#finished.resolve(null);
   }
-  async #send(command: CurrentPcbWorkerConstructionCommand, cleanup = false): Promise<unknown> {
+  async #send(command: CurrentPcbWorkerConstructionCommand, cleanup = false, retainAllocationReply?: (reply: unknown) => void): Promise<unknown> {
     this.#binding.assertCleanup();
     if (!cleanup) { need(!this.#failed && !this.#cleanupStarted); await this.#binding.assertOriginal(); }
     if (cleanup) { need(this.#cleanupRequests < 6); this.#cleanupRequests += 1; }
     else { need(this.#normalRequests < 160); this.#normalRequests += 1; }
     this.#requests += 1;
-    const reply = await bounded(this.#binding.request(command, cleanup));
     const capture = command.method === "Runtime.callFunctionOn" && command.params.functionDeclaration === CALLS.packetText
       ? captureCurrentProjectStructureCompletionReply : captureCurrentPcbStringClockReply;
-    const raw = capture(reply).value; this.#raw.push(raw);
+    const retain = retainAllocationReply === undefined ? undefined : (reply: unknown): void => {
+      const raw = capture(reply).value; this.#raw.push(raw); retainAllocationReply(raw);
+    };
+    const reply = await bounded(this.#binding.request(command, cleanup, retain));
+    const raw = capture(reply).value; if (retain === undefined) { this.#raw.push(raw); }
     if (!cleanup) { await this.#binding.assertOriginal(); }
     this.#binding.assertCleanup(); return raw;
   }
@@ -271,12 +274,17 @@ export class CurrentProjectStructureWorkerObserver {
       for (const site of ["packet", "response", "callbackReturn", "initialFinally", "queuedFinally"] as const) {
         const value = CURRENT_PROJECT_STRUCTURE_WORKER_SITES[site];
         this.#uncertainBreakpoint = true;
+        let retained = false;
+        const retain = (raw: unknown): void => {
+          const allocated = z.looseObject({ breakpointId: handle }).safeParse(raw);
+          if (allocated.success && !this.#breakpoints.some(p => p.id === allocated.data.breakpointId)) {
+            this.#breakpoints.push({ id: allocated.data.breakpointId, site, attempted: false, removed: false }); this.#uncertainBreakpoint = false; retained = true;
+          }
+        };
         const raw = await this.#send({ method: "Debugger.setBreakpoint", params: { location: { scriptId: this.#binding.scriptId,
-          lineNumber: value.lineNumber, columnNumber: value.columnNumber } } });
-        const allocated = z.looseObject({ breakpointId: handle }).safeParse(raw);
-        if (allocated.success && !this.#breakpoints.some(p => p.id === allocated.data.breakpointId)) { this.#breakpoints.push({ id: allocated.data.breakpointId, site, attempted: false, removed: false }); this.#uncertainBreakpoint = false; }
+          lineNumber: value.lineNumber, columnNumber: value.columnNumber } } }, false, retain);
         const result = z.object({ breakpointId: handle, actualLocation: location }).strict().parse(raw);
-        need(this.#breakpoints.at(-1)?.id === result.breakpointId && result.actualLocation.scriptId === this.#binding.scriptId &&
+        need(retained && this.#breakpoints.at(-1)?.id === result.breakpointId && result.actualLocation.scriptId === this.#binding.scriptId &&
           result.actualLocation.lineNumber === value.lineNumber && result.actualLocation.columnNumber === value.columnNumber);
       }
     } catch (error) { this.#stop(error); throw error; }

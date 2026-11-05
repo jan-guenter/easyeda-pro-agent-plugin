@@ -397,11 +397,17 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (this.#releaseConsumed) { throw fail("OWNER_CHANGED"); }
   }
   async #request(command: CurrentPcbWorkerConstructionCommand, retained?: unknown[], assignmentStep?: string,
-    captureReply: typeof captureCurrentPcbStringClockReply = captureCurrentPcbStringClockReply): Promise<unknown> {
+    captureReply: typeof captureCurrentPcbStringClockReply = captureCurrentPcbStringClockReply,
+    retainAllocationReply?: (reply: unknown) => void): Promise<unknown> {
     if (assignmentStep !== undefined) { this.#assignmentStep = assignmentStep; this.#step = assignmentStep; }
     if (!this.#settled) { this.#step = "pause-read-owner-before"; } await this.#current();
     if (!this.#settled) { this.#step = "pause-read-request"; }
-    const captured = captureReply(await bounded(this.#sendOriginal(command)));
+    const pending = this.#sendOriginal(command);
+    // Retain on the original allocation Promise, including a reply after our deadline.
+    // This custody precedes owner reproof and grants no continuation or ownership.
+    const captured = retainAllocationReply === undefined ? captureReply(await bounded(pending)) : await bounded(pending.then(reply => {
+      const value = captureReply(reply); retainAllocationReply(value.value); return value;
+    }));
     retained?.push(captured.value);
     // Keep the bounded original reply before decoding or an awaited owner
     // Reproof. A refusal must remain diagnosable without resending the probe.
@@ -864,12 +870,13 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       uploadCallback: upload, structureCallback: structure, debounce, assertCleanup: same,
       fail: (): void => { if (this.#structureLease === lease && !this.#releaseConsumed) { this.#fail("STRUCTURE_OBSERVER_FAILED"); } },
       assertOriginal: async (): Promise<void> => { same(); await this.#requireCurrentAssignments(packet, assignments); same(); },
-      request: async (command: CurrentPcbWorkerConstructionCommand, cleanup = false): Promise<unknown> => {
+      request: async (command: CurrentPcbWorkerConstructionCommand, cleanup = false, retainAllocationReply?: (reply: unknown) => void): Promise<unknown> => {
         same();
+        if (retainAllocationReply !== undefined && (cleanup || command.method !== "Debugger.setBreakpoint")) { throw fail("STRUCTURE_ALLOCATION_REPLY"); }
         if (!cleanup) {
           const capture = command.method === "Runtime.callFunctionOn" && command.params.functionDeclaration === CURRENT_PROJECT_STRUCTURE_WORKER_CALLS.packetText
             ? captureCurrentProjectStructureCompletionReply : captureCurrentPcbStringClockReply;
-          const reply = await this.#request(command, undefined, undefined, capture); same(); return reply;
+          const reply = await this.#request(command, undefined, undefined, capture, retainAllocationReply); same(); return reply;
         }
         if (command.method !== "Debugger.resume" && command.method !== "Debugger.removeBreakpoint") { throw fail("STRUCTURE_CLEANUP_COMMAND"); }
         const reply = captureCurrentPcbStringClockReply(await bounded(this.#sendOriginal(command))).value; same(); return reply;

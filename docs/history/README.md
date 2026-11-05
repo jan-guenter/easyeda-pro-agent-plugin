@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-05 PR168 review fixes](2026-11-05-pr168-review-fixes.md). Both complete reviews, original failed CI, allocation custody and native parser corrections, focused checks and remaining native/API work against base `0ebd4c498a37148e61a9e69f7695126ab794b77e`.
+
 - [2026-11-05 forward capture recovery and source fixes](2026-11-05-forward-capture-recovery-and-source-fixes.md). Observed cache-arm stall, authorized terminal physical closure, exact versioned producer adapters and pending typed historical recovery.
 
 - [2026-11-05 packaged foreground manager source](2026-11-05-packaged-foreground-manager.md). Separate dependency-free frontend, pinned launcher and actual isolated CLI retirement, with native admission unchanged.
@@ -10,7 +12,7 @@
 
 - [2026-11-04 original pending capture control](2026-11-04-manager-in-flight-original-control.md). Bounded same-client inspection and once-confirmed abort, separate parent/side outcomes and publication-inclusive cleanup custody, with source-only evidence.
 
-- [2026-11-04 project structure observer source](2026-11-04-project-structure-observer-source.md). Original worker/main promise and packet custody, synthetic source checks and explicit native mounting gaps.
+- [2026-11-04 project structure observer source](2026-11-04-project-structure-observer-source.md). Original worker/main promise and packet custody, synthetic source checks and explicit native mounting gaps. Source base `15dc1cc6fed3bb90cfebfff3e3ea3bf3cd45da8c`; composed observer payload `0ebd4c498a37148e61a9e69f7695126ab794b77e`.
 
 - [2026-11-04 composed source and launch recovery](2026-11-04-next-composed-source-and-launch-recovery.md). Original source pages/seal/closed baseline, private input custody and same-client interrupted-launch cleanup composed on the final review fixes.
 

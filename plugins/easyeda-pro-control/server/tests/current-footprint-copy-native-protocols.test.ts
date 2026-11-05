@@ -19,9 +19,11 @@ void test("cache construction native table retains every exact case and never ca
   const { rows } = await decodeFixedNativeTable(source, 14, 4);
   for (const [index, sample] of currentFootprintCacheConstructionNativeCases().entries()) {
     const row = rows[index]?.split("\t"), wire = currentFootprintCacheConstructionWire(sample, 1); assert.ok(row !== undefined);
-    const { id: _id, phase: _phase, ...command } = wire.command;
-    const expected = JSON.stringify(command).replaceAll(JSON.stringify("a".repeat(64)), JSON.stringify("__cacheconstruction_projectUuid__"));
-    assert.equal(row[0], wire.request["cachePhase"]); assert.equal(row[1], command.method); assert.equal(row[3], expected);
+    const expected = JSON.stringify({ id: 1, method: sample.method, params: sample.params, sessionId: sample.sessionId })
+      .replaceAll(JSON.stringify("a".repeat(64)), JSON.stringify("__cacheconstruction_projectUuid__"));
+    const template = row[3]; assert.ok(template !== undefined && template.startsWith('{"method":'));
+    assert.equal(row[0], wire.request["cachePhase"]); assert.equal(row[1], sample.method);
+    assert.equal(`{"id":1,${template.slice(1)}`, expected);
     assert.equal(Object.hasOwn(wire.request, "sessionId"), false);
     assert.throws(() => currentFootprintCopySavedStartupWire(sample, 1));
     assert.throws(() => currentFootprintCacheConstructionWire({ ...sample, extra: true }, 1));

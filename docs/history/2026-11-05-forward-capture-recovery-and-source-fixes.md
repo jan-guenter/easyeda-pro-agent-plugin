@@ -52,3 +52,43 @@ Typed live historical recovery remains pending. No new recovery call, marker pub
 A stable trusted-producer capsule is future design work only. It could bind the original emitted contract, committed payload manifest and expected roster before launch, but would require authenticated pre-admitted payload provenance and original publication custody. Caller-supplied capsules or hashes would remain insufficient, and all fresh recovery guards would remain. This adapter implements only the two explicitly reviewed producer pairs.
 
 The originating [PR167 release record](2026-11-04-pr167-controller-release.md) retains its earlier pending native checkpoint and links this continuation. The [operating reference](../../plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-footprint-forward-prewrite.md#historical-opening-without-its-original-owner) describes the strict recovery boundary.
+
+## Typed historical recovery completed, 2026-11-05
+
+The exact v2 resolver completed on the frozen, unpublished candidate at commit
+`0ebd4c498a37148e61a9e69f7695126ab794b77e`, version
+`0.3.0+codex.20261105000443`. The standalone frontend and its actual original
+facade were independently admitted before dispatch. Complete Git comparison
+covered all 2,568 packaged files, 51,376,133 bytes and committed modes. The
+selected package stayed unchanged through recovery and retirement.
+
+The resolver collected its own fresh Linux exclusions, both Windows absence
+observations, completed independent SQLite readers and full materialized
+history. Raw source, complete logical SQL and history matched the original
+baseline, with no SQLite sidecars. Its versioned result relinquished the
+historical startup blocker. The original thirteen records were independently
+rechecked with identical bytes, modes, descriptor/path identities and roster.
+The persisted result matched the returned result and its intent linkage;
+the result's canonical SHA-256 is
+`59062c35d81c8b0afd464d99d12fe3df7cb9ab4ac4d69820a8d65857d0453876`.
+
+Capture, termination and helper-release outcomes remain `unknown`.
+Termination proof, native resource release, original launch authority and all
+execution, design and Save authority fields remain false. No original owner
+was adopted, failed capture replayed, project restored or Save dispatched.
+The earlier external process closure remains separate from formal native
+termination and helper-release acknowledgment.
+
+The fresh recovery facade then acknowledged cooperative retirement with zero
+active calls, closed live admission and released its lease. Its original stdin
+EOF, process exit with code zero, absence of a signal and stdio closure were
+observed. The standalone manager remains between facades for the verified
+installation/replacement sequence; retirement of this fresh facade supplies no
+missing acknowledgment from the earlier lost producer.
+
+This run took about 34 minutes between the retained call-intent timestamp and
+response-file publication. That interval includes validation and publication
+and is not a performance benchmark or duration guarantee. Repeated full-journal
+validation is a concrete performance backlog item. The source fixes, later PR
+corrections and fresh forward qualification retain their own validation scope;
+this recovery does not establish connected coverage for them.

@@ -20,8 +20,8 @@ const route = (request: object): { request: object } => ({ request: { action: "f
 const launch = { action: "launch", operationId, confirmValidationOnly: true, confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true };
 const bound = (action: string): object => ({ action, operationId, expectedBindingSha256 });
 
-/** Select the actual startup state, dispatcher and registration independently
- * of unrelated historical dispatchers and their erased type padding. */
+/** Select the actual startup state, dispatcher, schemas and callback.
+ * Static description prose is excluded from this bounded routing fixture. */
 function startupRegistration(source: string): string {
   const blocks = parse(source, { ecmaVersion: "latest", sourceType: "module" }).body.flatMap(statement =>
     statement.type === "IfStatement" && statement.consequent.type === "BlockStatement" && statement.consequent.body.some(node =>
@@ -57,7 +57,17 @@ function startupRegistration(source: string): string {
       statement.expression.arguments[0].value === "easyeda_control_pcb209_worker_startup"));
   assert.equal(registrations.length, 1); const registration = registrations[0]; assert.ok(registration);
   assert.ok(registration.end > registration.start && registration.end - registration.start < 16_000);
-  return [...declarations, source.slice(registration.start, registration.end)].join("\n");
+  assert.ok(registration.type === "IfStatement" && registration.consequent.type === "BlockStatement");
+  const calls = registration.consequent.body.flatMap(statement => statement.type === "ExpressionStatement" &&
+    statement.expression.type === "CallExpression" ? [statement.expression] : []);
+  assert.equal(calls.length, 1); const config = calls[0]?.arguments[1]; assert.ok(config?.type === "ObjectExpression");
+  const descriptions = config.properties.filter(property => property.type === "Property" &&
+    property.key.type === "Identifier" && property.key.name === "description");
+  assert.equal(descriptions.length, 1); const description = descriptions[0];
+  assert.ok(description?.type === "Property" && !description.computed && !description.method && description.kind === "init" &&
+    description.value.type === "Literal" && typeof description.value.value === "string");
+  const selected = `${source.slice(registration.start, description.value.start)}""${source.slice(description.value.end, registration.end)}`;
+  return [...declarations, selected].join("\n");
 }
 
 /** Capture the real registered callback with strict schemas and inert purpose

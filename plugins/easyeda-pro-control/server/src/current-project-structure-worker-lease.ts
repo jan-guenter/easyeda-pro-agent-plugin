@@ -23,7 +23,9 @@ export interface CurrentProjectStructureWorkerBinding {
   readonly assertOriginal: () => Promise<void>;
   readonly assertCleanup: () => void;
   readonly fail: () => void;
-  readonly request: (command: CurrentPcbWorkerConstructionCommand, cleanup?: boolean) => Promise<unknown>;
+  /** Allocation custody runs on the original reply before caller deadlines or
+   * post-reply reproof; it grants neither normal continuation nor owner reuse. */
+  readonly request: (command: CurrentPcbWorkerConstructionCommand, cleanup?: boolean, retainAllocationReply?: (reply: unknown) => void) => Promise<unknown>;
   readonly freshScopes: () => Promise<Readonly<{ upload: string; structure: string; debounce: string; debounceParameters: string }>>;
   readonly subscribe: (events: CurrentProjectStructureWorkerEvents) => () => void;
 }

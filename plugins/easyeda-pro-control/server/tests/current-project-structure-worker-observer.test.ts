@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
+import { setImmediate as nextTurn } from "node:timers/promises";
 import { z } from "zod";
 import { CURRENT_PROJECT_STRUCTURE_WORKER_CALLS } from "../src/current-project-structure-worker-programs.ts";
 import { CurrentPcb209WorkerConstructionRunner } from "../src/current-pcb-worker-construction-runner.ts";
@@ -8,13 +9,18 @@ import { requireCurrentProjectStructureWorkerLease } from "../src/current-projec
 import { CurrentProjectStructureWorkerObserver, requireCurrentProjectStructureWorkerObservation } from "../src/current-project-structure-worker-observer.ts";
 import { construction209Inspector } from "./helpers/current-pcb-worker-construction-inspector.ts";
 
-async function original(context: TestContext, fault: "none" | "owner" | "pause" = "none"): Promise<Readonly<{ fixture: Awaited<ReturnType<typeof construction209Inspector>>;
+/** Faults intercept only replies from this original inert V8 inspector, after
+ * the real allocation; they never replace the opaque construction lease. */
+async function original(context: TestContext, fault: "none" | "owner" | "pause" = "none",
+  allocation?: Readonly<{ reply: (raw: unknown, lose: () => void) => Promise<unknown>; removed: (id: string) => void }>): Promise<Readonly<{ fixture: Awaited<ReturnType<typeof construction209Inspector>>;
   runner: CurrentPcb209WorkerConstructionRunner; lease: Awaited<ReturnType<CurrentPcb209WorkerConstructionRunner["issueStructureObservationLease"]>> }>> {
   const fixture = await construction209Inspector(context);
   let observing = false;
   const runner = new CurrentPcb209WorkerConstructionRunner({ ...fixture.transport,
     request: async (command): Promise<unknown> => {
+      if (observing && command.method === "Debugger.removeBreakpoint") { allocation?.removed(command.params.breakpointId); }
       const reply = await fixture.transport.request(command);
+      if (observing && command.method === "Debugger.setBreakpoint" && allocation !== undefined) { return allocation.reply(reply, fixture.lose); }
       if (observing && fault === "owner" && command.method === "Runtime.callFunctionOn" && command.params.functionDeclaration === CURRENT_PROJECT_STRUCTURE_WORKER_CALLS.success) { fixture.lose(); }
       return reply;
     },
@@ -115,3 +121,77 @@ void test("a malformed owned pause remains retained for one original cleanup res
   await runner.release();
 });
 
+void test("original allocation reply is retained before a core post-reply owner refusal", { timeout: 30_000 }, async context => {
+  const removed: string[] = []; let allocated = "";
+  const { fixture, runner, lease } = await original(context, "none", {
+    reply: (raw, lose): Promise<unknown> => { allocated = z.looseObject({ breakpointId: z.string() }).parse(raw).breakpointId; lose(); return Promise.resolve(raw); },
+    removed: id => { removed.push(id); },
+  });
+  const observer = new CurrentProjectStructureWorkerObserver(lease);
+  await assert.rejects(observer.arm()); const failure = observer.retained().error;
+  assert.equal(observer.retained().failed, true); assert.equal(observer.retained().replies.length, 1);
+  assert.equal(z.looseObject({ breakpointId: z.string() }).parse(observer.retained().replies[0]).breakpointId, allocated);
+  const commands = fixture.commands.length;
+  await assert.rejects(observer.arm()); await assert.rejects(requireCurrentProjectStructureWorkerLease(lease).assertOriginal());
+  assert.equal(fixture.commands.length, commands);
+  await observer.cleanup(); assert.deepEqual(removed, [allocated]); assert.equal(observer.retained().unresolvedBreakpoints, false);
+  assert.equal(observer.retained().failed, true); assert.equal(observer.retained().error, failure);
+  await observer.cleanup(); assert.deepEqual(removed, [allocated]); await runner.release();
+});
+
+void test("late original allocation survives both caller deadlines without reviving normal work", { timeout: 30_000 }, async context => {
+  const arrived = Promise.withResolvers<unknown>(), release = Promise.withResolvers<null>(), removed: string[] = [];
+  const { fixture, runner, lease } = await original(context, "none", {
+    reply: async raw => { arrived.resolve(raw); await release.promise; return raw; }, removed: id => { removed.push(id); },
+  });
+  const observer = new CurrentProjectStructureWorkerObserver(lease), rejected = assert.rejects(observer.arm(), /DEADLINE/u);
+  const allocated = z.looseObject({ breakpointId: z.string() }).parse(await arrived.promise).breakpointId;
+  await rejected; const failure = observer.retained().error;
+  assert.equal(observer.retained().replies.length, 0); assert.equal(observer.retained().unresolvedBreakpoints, true);
+  await assert.rejects(observer.cleanup()); assert.deepEqual(removed, []);
+  await assert.rejects(runner.release(), /STRUCTURE_RETAIN_OBSERVER/u);
+  const commands = fixture.commands.length; release.resolve(null);
+  await nextTurn();
+  assert.equal(observer.retained().replies.length, 1); assert.equal(fixture.commands.length, commands);
+  assert.equal(observer.retained().failed, true); assert.equal(observer.retained().error, failure);
+  await assert.rejects(observer.arm()); await assert.rejects(requireCurrentProjectStructureWorkerLease(lease).assertOriginal());
+  await observer.cleanup(); assert.deepEqual(removed, [allocated]); assert.equal(observer.retained().unresolvedBreakpoints, false);
+  await observer.cleanup(); assert.deepEqual(removed, [allocated]); await runner.release();
+});
+
+void test("malformed allocation location still retains only the original removable ID", { timeout: 30_000 }, async context => {
+  const removed: string[] = []; let allocated = "";
+  const { runner, lease } = await original(context, "none", {
+    reply: raw => { allocated = z.looseObject({ breakpointId: z.string() }).parse(raw).breakpointId; return Promise.resolve({ breakpointId: allocated, actualLocation: null }); },
+    removed: id => { removed.push(id); },
+  });
+  const observer = new CurrentProjectStructureWorkerObserver(lease); await assert.rejects(observer.arm());
+  assert.equal(observer.retained().failed, true); await observer.cleanup(); assert.deepEqual(removed, [allocated]);
+  assert.equal(observer.retained().unresolvedBreakpoints, false); await runner.release();
+});
+
+void test("duplicate allocation ID cannot settle the second original uncertain allocation", { timeout: 30_000 }, async context => {
+  const removed: string[] = []; let allocations = 0, first = "";
+  const { runner, lease } = await original(context, "none", {
+    reply: raw => { const reply = z.looseObject({ breakpointId: z.string(), actualLocation: z.unknown() }).parse(raw); allocations += 1;
+      if (allocations === 1) { first = reply.breakpointId; return Promise.resolve(raw); }
+      assert.notEqual(reply.breakpointId, first); return Promise.resolve({ breakpointId: first, actualLocation: reply.actualLocation }); },
+    removed: id => { removed.push(id); },
+  });
+  const observer = new CurrentProjectStructureWorkerObserver(lease); await assert.rejects(observer.arm());
+  assert.equal(allocations, 2); await assert.rejects(observer.cleanup()); assert.deepEqual(removed, [first]);
+  assert.equal(observer.retained().unresolvedBreakpoints, true); await assert.rejects(runner.release(), /STRUCTURE_RETAIN_OBSERVER/u);
+});
+
+void test("malformed allocation ID keeps original custody and reply callbacks refuse other commands", { timeout: 30_000 }, async context => {
+  const removed: string[] = [];
+  const { fixture, runner, lease } = await original(context, "none", {
+    reply: (): Promise<unknown> => Promise.resolve({ breakpointId: "invalid ID", actualLocation: null }), removed: id => { removed.push(id); },
+  });
+  const before = fixture.commands.length, binding = requireCurrentProjectStructureWorkerLease(lease);
+  await assert.rejects(binding.request({ method: "Debugger.resume", params: {} }, true, () => assert.fail("No allocation callback")), /STRUCTURE_ALLOCATION_REPLY/u);
+  assert.equal(fixture.commands.length, before);
+  const observer = new CurrentProjectStructureWorkerObserver(lease); await assert.rejects(observer.arm());
+  await assert.rejects(observer.cleanup()); assert.deepEqual(removed, []); assert.equal(observer.retained().unresolvedBreakpoints, true);
+  await assert.rejects(runner.release(), /STRUCTURE_RETAIN_OBSERVER/u);
+});

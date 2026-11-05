@@ -76,3 +76,21 @@ pending capture was changed. The new frontend cannot hotpatch an already-running
 manager. The [pending-call source record](2026-11-04-manager-in-flight-original-control.md)
 and [cache envelope/arm record](2026-11-05-forward-cache-envelope-and-arm.md) retain
 their separate implementation and validation limits.
+
+## Provenance clarification, 2026-11-05
+
+The original three-test packaging checkpoint used source base
+`15dc1cc6fed3bb90cfebfff3e3ea3bf3cd45da8c` and the retained thirteen-file
+packaging patch SHA-256
+`31b29a3bb5fcade4a14a8166cc51a0a4ff5cb8ee2f47ddd31e2447d2a99dcf8c`.
+That patch records captured preimages for the already prepared manager features;
+the base commit alone did not contain the new packaging implementation.
+The measured fixture frontend's build ID is
+`bf312b9c43d8a9cb83f33ffca271453f8536aa1ca3290448e9f0a36d085fc600`.
+
+The later composed commit `0ebd4c498a37148e61a9e69f7695126ab794b77e`
+reproduced the identical 1,360,586-byte frontend, SHA-256
+`5d124ccc7a683fe19b3d1b83b89e08efdef1124688573436e6567fb358bbf0ee`,
+with that same build ID. This later reproduction preserves the original fixture
+measurement and test attribution; it does not redate the focused tests or grant
+facade/native admission.

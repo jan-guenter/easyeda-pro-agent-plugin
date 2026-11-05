@@ -14,6 +14,7 @@ import { CURRENT_PROJECT_STRUCTURE_MAIN_PROGRAMS as PROGRAMS, CURRENT_PROJECT_ST
 import { CURRENT_PROJECT_STRUCTURE_MAIN_FLAGS as FLAGS, decodeCurrentProjectStructureMainPause as decodePause,
   validateCurrentProjectStructureMainCommand as validate, validateCurrentProjectStructureMainPlan } from "../src/current-project-structure-main-protocol.ts";
 import { CURRENT_PROJECT_STRUCTURE_MAIN_FUNCTIONS as FUNCTIONS, CURRENT_PROJECT_STRUCTURE_MAIN_SITES as SITES } from "../src/current-project-structure-main-source.ts";
+import { mainStructureOriginalFixture } from "./helpers/project-structure-main-original-fixture.ts";
 
 /** Allocate actual shared references and failing application methods. A fixed
  * selector may retain these objects but must never invoke an application API. */
@@ -103,4 +104,48 @@ void test("pause grammar pins exact original function/caller sites and compariso
   assert.equal(validateCurrentProjectStructureMainPlan(large).structureText.length, 1_048_576);
   assert.throws(() => validateCurrentProjectStructureMainPlan({ ...large, structureText: "\u0000".repeat(1_048_576) }));
   let getters = 0; assert.throws(() => validateCurrentProjectStructureMainPlan({ get projectUuid(): string { getters += 1; return "a".repeat(64); } })); assert.equal(getters, 0);
+});
+
+for (const mode of ["core-post", "observer-post", "location"] as const) {
+  void test(`original main allocation survives ${mode} failure before cleanup without reviving normal work`, async context => {
+    const f = await mainStructureOriginalFixture(mode); context.after(f.dispose);
+    let original: unknown;
+    await assert.rejects(f.observer.arm(), (error: unknown): boolean => { original = error; if (mode !== "location") { assert.equal(error, f.failure); } return true; });
+    await assert.rejects(f.observer.arm(), (error: unknown): boolean => { assert.equal(error, original); return true; });
+    await assert.rejects(f.observer.observation(), (error: unknown): boolean => { assert.equal(error, original); return true; });
+    await assert.rejects(f.core.release(), /RELEASE_CONSUMED/u);
+    await f.observer.cleanup(); assert.deepEqual(f.removed, ["structure-1"]);
+    await f.observer.release(); assert.equal(f.core.retained().pendingReplies, 0);
+    await assert.rejects(f.observer.arm(), (error: unknown): boolean => { assert.equal(error, original); return true; });
+    await assert.rejects(f.observer.cleanup(), /CLEANUP_CONSUMED/u); assert.deepEqual(f.removed, ["structure-1"]);
+  });
+}
+for (const mode of ["duplicate", "malformed"] as const) {
+  void test(`original main ${mode} allocation retains uncertainty until original generation exit`, async context => {
+    const f = await mainStructureOriginalFixture(mode); context.after(f.dispose);
+    await assert.rejects(f.observer.arm());
+    await assert.rejects(f.observer.cleanup(), /CLEANUP_INCOMPLETE/u); assert.deepEqual(f.removed, []);
+    await assert.rejects(f.observer.release()); assert.throws(() => { f.observer.settleGenerationExit(); }, /GENERATION_LIVE/u);
+    assert.equal(await f.owner.observeTermination(), true); f.observer.settleGenerationExit();
+    await assert.rejects(f.observer.arm()); assert.deepEqual(f.removed, []);
+  });
+}
+void test("only the original stopped main allocation reply permits later cleanup after early unknown refusal", async context => {
+  const f = await mainStructureOriginalFixture("late"); context.after(f.dispose);
+  await assert.rejects(f.observer.arm(), (error: unknown): boolean => { assert.equal(error, f.failure); return true; });
+  assert.equal(f.core.retained().pendingReplies, 1);
+  await assert.rejects(f.observer.cleanup(), /CLEANUP_INCOMPLETE/u); assert.deepEqual(f.removed, []);
+  await f.observer.cleanup(); assert.deepEqual(f.removed, ["structure-1"]);
+  assert.equal(f.core.retained().pendingReplies, 0); await f.observer.release();
+  await assert.rejects(f.observer.arm(), (error: unknown): boolean => { assert.equal(error, f.failure); return true; });
+  assert.deepEqual(f.removed, ["structure-1"]);
+});
+void test("known main allocation never clears independent original channel uncertainty", async context => {
+  const f = await mainStructureOriginalFixture("channel"); context.after(f.dispose);
+  await assert.rejects(f.observer.arm(), /STRUCTURE_FAILED/u);
+  await assert.rejects(f.observer.cleanup(), /UNEXPECTED_RESUME/u); assert.deepEqual(f.removed, []);
+  await assert.rejects(f.observer.cleanup(), /CLEANUP_CONSUMED/u); assert.deepEqual(f.removed, []);
+  await assert.rejects(f.observer.release(), /RELEASE_CONSUMED/u);
+  assert.equal(await f.owner.observeTermination(), true); f.observer.settleGenerationExit();
+  await assert.rejects(f.observer.arm(), /STRUCTURE_FAILED/u);
 });

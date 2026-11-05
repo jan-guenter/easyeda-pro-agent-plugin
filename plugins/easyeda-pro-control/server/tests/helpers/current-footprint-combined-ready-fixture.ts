@@ -54,7 +54,9 @@ interface Module {
  * Callers must retain the returned child through cleanup; the fixture issues
  * no native application ownership, real closed-SQL proof or writer authority.
  */
-export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined" | "forward" = "combined", savedObservation = false): Promise<Readonly<{
+export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined" | "forward" = "combined", savedObservation = false,
+  supplied: Readonly<{ modules?: Readonly<Record<string, unknown>>; childProgram?: string;
+    launchTarget?: Readonly<{ windowsPath: string; sha256: string }> }> = {}): Promise<Readonly<{
   api: Module; options: CurrentPcbDiagnosticInstallationOptions; child: () => ChildProcessWithoutNullStreams;
   state: { writes: number; bytes: number; readySent: boolean; actions: string[] };
   executionInputs: Readonly<{ opening: object; result: object; preparation: object; owned: object; checkpoint: object; runtime: object; target: object; main: object }>;
@@ -98,7 +100,7 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
   const loaded: { exports: Record<string, unknown> } = { exports: {} }, sourceOnly = Object.freeze({ syntheticSourceOnly: true });
   const options = Object.freeze({ pluginRoot, assetsRoot: "/synthetic-unused-assets", powershellSha256: "a".repeat(64), powershellBytes: 1, wslDistribution: "Synthetic" });
   const installation = Object.freeze({ paths: { powershellExecutable: "synthetic-inert-node-only" },
-    plan: { schema: "easyeda-pro-control.pcb-diagnostic-installation.v1", files: [] }, facadeSha256: "a".repeat(64) });
+    plan: { schema: "easyeda-pro-control.pcb-diagnostic-installation.v1", files: supplied.launchTarget === undefined ? [] : [{ ...supplied.launchTarget, bytes: 1 }] }, facadeSha256: "a".repeat(64) });
   let original: ChildProcessWithoutNullStreams | null = null;
   let selectedAfter: object | null = null, selectedWriter: SyntheticForwardFactoryOwner | null = null;
   const checkpoint = Object.freeze({ sourceSha256: "d".repeat(64) });
@@ -130,6 +132,7 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
     mainAccountingLoaded, mainAccountingLoaded.exports]);
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${output.code}\n})`); assert.ok(typeof evaluate === "function");
   Reflect.apply(evaluate, undefined, [(name: string): unknown => {
+    if (supplied.modules !== undefined && Object.hasOwn(supplied.modules, name)) { return supplied.modules[name]; }
     if (name === "./current-footprint-copy-forward-main-accounting.ts") { return mainAccountingLoaded.exports; }
     if (name === "./current-footprint-copy-forward-capacity.ts") { return capacityLoaded.exports; }
     if (name === "./current-pcb-diagnostic-installation.ts") { return {
@@ -181,7 +184,7 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
       if (saved && mode === "saved-spawn-refusal") { throw new Error("Synthetic saved spawn unresolved"); }
       const packet = { challenge: match?.[1] ?? "", schema: CURRENT_FOOTPRINT_COMBINED_READY.schema, helperInstance: "b".repeat(32), jobId: "c".repeat(32),
         creationState: "not-entered", processCreated: false, emptyJob: true, pipesChecked: true };
-      const child = spawn(process.execPath, ["-e", `
+      const child = spawn(process.execPath, ["-e", supplied.childProgram === undefined ? `
 const mode=${JSON.stringify(mode)},packet=${JSON.stringify(packet)},saved=${JSON.stringify(saved)};const readline=require('node:readline');
 const input=readline.createInterface({input:process.stdin});let rendererId=1,rendererSession;
 if(mode.startsWith('stderr'))process.stderr.write('private-synthetic-diagnostic');
@@ -196,7 +199,7 @@ else if(mode==='resource-traffic'&&['termination','window','normal-close','main-
 else throw Error('Unexpected inert request');
 process.stdout.write(JSON.stringify({id:q.id,ok:true,result})+'\\n');});
 input.on('close',()=>{if(mode==='stderr-delayed-close')setTimeout(()=>process.exit(1),1000);});
-`], { stdio: ["pipe", "pipe", "pipe"] });
+` : `const packet=${JSON.stringify(packet)};${supplied.childProgram}`], { stdio: ["pipe", "pipe", "pipe"] });
       original = child;
       child.stdout.on("data", () => { state.readySent = true; });
       const write = child.stdin.write.bind(child.stdin);

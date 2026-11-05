@@ -115,6 +115,7 @@ const objectReply = z.object({ result: z.object({ type: z.literal("object"), sub
   description: z.string().max(32), objectId: handle }).strict() }).strict();
 interface Pause { readonly frameId: string; readonly location: z.infer<typeof location>; readonly registration: boolean; resumeAttempted: boolean; resumed: boolean }
 interface Resolved { readonly breakpointId: string; readonly location: z.infer<typeof location> }
+interface StructureAllocation { readonly id: number; readonly retain: (reply: unknown) => void; seen: boolean; stopped: boolean }
 interface RegistrationLocationFailure {
   readonly lineNumber: number;
   readonly columnNumber: number;
@@ -200,6 +201,8 @@ export class CurrentFootprintCopyMainBackendRunner {
   #structureSource: ReturnType<typeof qualifyCurrentProjectStructureMainSource> | null = null;
   #structureNormal = 0;
   #structureCleanup = 0;
+  #structureAllocationUncertain = false;
+  #structureAllocation: StructureAllocation | null = null;
   #originSource: CurrentFootprintCopyMainRequestSource | null = null;
   readonly #originEvents: CurrentFootprintCopyMainRequestOriginEvent[] = [];
   readonly #originBreakpoints = new Set<string>();
@@ -299,19 +302,45 @@ export class CurrentFootprintCopyMainBackendRunner {
     const response = z.object({ id: z.number().int().positive(), result: z.unknown().optional(), error: z.unknown().optional() }).strict().safeParse(value);
     if (response.success) {
       need(this.#pendingId !== null && response.data.id === this.#pendingId && !this.#replySeen && !Object.hasOwn(response.data, "error") && Object.hasOwn(response.data, "result"), "REPLY_ID_OR_ERROR");
-      this.#reply = response.data.result; this.#replySeen = true; this.#replies.push(response.data.result); return;
+      this.#reply = response.data.result; this.#replySeen = true; this.#replies.push(response.data.result);
+      const allocation = this.#structureAllocation;
+      if (allocation !== null && allocation.id === response.data.id) {
+        allocation.seen = true; allocation.retain(response.data.result);
+        if (allocation.stopped) { this.#settleStructureAllocation(allocation); }
+      }
+      return;
     }
     const event = z.object({ method: z.string().max(128), params: z.unknown() }).strict().parse(value); this.#event(event.method, event.params);
   }
   async #pump(cleanup = false): Promise<void> {
-    await this.#current(cleanup); const raw = await this.#transport.poll(cleanup); await this.#current(cleanup);
+    await this.#current(cleanup);
+    if (this.#structureAllocation !== null) {
+      // Only original allocation replies gain custody before the post-poll
+      // Guard. Late settlement never restores normal work or clears other
+      // Pause/channel uncertainty, and no replacement request is dispatched.
+      const raw = await this.#transport.poll(cleanup).then(chunk => {
+        try { this.#chunk(chunk); return chunk; } catch (error) { this.#originUncertain = true; throw error; }
+      }, (error: unknown) => { this.#originUncertain = true; throw error; });
+      await this.#current(cleanup); if (raw === "") { await delay(10); } return;
+    }
+    const raw = await this.#transport.poll(cleanup); await this.#current(cleanup); this.#chunk(raw); if (raw === "") { await delay(10); }
+  }
+  /** Decode only original bounded transport chunks. The allocation path uses
+   * this same parser and pending ID instead of accepting caller transcripts. */
+  #chunk(raw: string): void {
     need(typeof raw === "string" && raw.length <= 43_692 && /^(?:[A-Za-z\d+/]{4})*(?:[A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/u.test(raw), "CHUNK_GRAMMAR");
-    if (raw === "") { await delay(10); return; }
+    if (raw === "") { return; }
     const bytes = Buffer.from(raw, "base64"); need(bytes.length <= 32_768 && bytes.toString("base64") === raw, "CHUNK_BOUND");
     this.#received += bytes.length; need(this.#received <= 64 * 1024 * 1024, "RECEIVED_BOUND"); this.#text += this.#decoder.decode(bytes, { stream: true });
     let boundary = this.#text.indexOf("\0");
     while (boundary !== -1) { const message = this.#text.slice(0, boundary); need(message.length > 0 && Buffer.byteLength(message) <= 4 * 1024 * 1024, "MESSAGE_BOUND"); this.#text = this.#text.slice(boundary + 1); this.#message(message); boundary = this.#text.indexOf("\0"); }
     need(Buffer.byteLength(this.#text) <= 4 * 1024 * 1024, "PARTIAL_MESSAGE_BOUND");
+  }
+  /** A stopped original request may retire its reply slot only after that
+   * exact response was captured. This does not acknowledge native cleanup. */
+  #settleStructureAllocation(allocation: StructureAllocation): void {
+    need(this.#structureAllocation === allocation && allocation.seen && this.#pendingId === allocation.id, "STRUCTURE_ALLOCATION_PENDING");
+    this.#pendingId = null; this.#reply = null; this.#replySeen = false; this.#structureAllocation = null;
   }
   async #wait(predicate: () => boolean, cleanup = false): Promise<void> {
     const started = performance.now(); while (!predicate()) { need(performance.now() - started < 20_000, "REPLY_DEADLINE"); await this.#pump(cleanup); }
@@ -319,11 +348,13 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Consume one fixed request number and retain its sole pending reply.
    * Head-age exceptions are captured before success decoding; cleanup keeps
    * its own counter and cannot repeat a consumed normal request. */
-  async #request(input: Command | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand | CurrentProjectStructureMainCommand, cleanup = false): Promise<unknown> {
+  async #request(input: Command | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand | CurrentProjectStructureMainCommand,
+    cleanup = false, retainAllocationReply?: (reply: unknown) => void): Promise<unknown> {
     this.#phase = input.phase; await this.#current(cleanup);
     const collection = input.phase.startsWith("request-");
     const completion = input.phase.startsWith("completion-");
     const structure = input.phase.startsWith("structure-main-");
+    need(retainAllocationReply === undefined || structure && input.phase === "structure-main-arm" && !cleanup, "STRUCTURE_ALLOCATION_CALLBACK");
     let cleanupCommand: boolean;
     if (completion || structure) { cleanupCommand = ["Debugger.resume", "Debugger.removeBreakpoint", "Runtime.releaseObjectGroup"].includes(input.method); }
     else if (collection) { cleanupCommand = (CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_CLEANUP_PHASES as readonly string[]).includes(input.phase); }
@@ -336,6 +367,9 @@ export class CurrentFootprintCopyMainBackendRunner {
       (cleanupCommand ? this.#cleanupRequests < cleanupMaximum : this.#normalRequests < normalMaximum) : this.#requests < (cleanup ? 72 : 64)), "REQUEST_BOUND");
     this.#requests += 1; if (cleanupCommand) { this.#cleanupRequests += 1; } else { this.#normalRequests += 1; }
     const id = this.#requests; this.#pendingId = id; this.#replySeen = false; this.#reply = null;
+    const allocation = retainAllocationReply === undefined ? null : { id, retain: retainAllocationReply, seen: false, stopped: false };
+    if (allocation !== null) { need(this.#structureAllocation === null, "STRUCTURE_ALLOCATION_PENDING"); this.#structureAllocation = allocation; }
+    try {
     if (structure) {
       need(this.#originCapability !== null && this.#structureActive, "STRUCTURE_ORIGINAL_LEASE_REQUIRED");
       // The same native owner still rejects this new vocabulary. No native
@@ -349,9 +383,17 @@ export class CurrentFootprintCopyMainBackendRunner {
       await sendCurrentFootprintCombinedMainCommand(this.#originCapability, this, validateCurrentFootprintCopyMainRequestCollectCommand(input), id);
     } else { await this.#transport.send(validateCurrentFootprintCopyMainBackendCommand(input), id); }
     await this.#current(cleanup); await this.#wait(() => this.#replySeen, cleanup);
-    const result = this.#reply; this.#pendingId = null; this.#reply = null; this.#replySeen = false;
+    const result = this.#reply;
+    if (allocation === null) { this.#pendingId = null; this.#reply = null; this.#replySeen = false; }
+    else { this.#settleStructureAllocation(allocation); }
     if (isCurrentFootprintHeadAgeCdpPhase(input.phase)) { rejectCurrentFootprintHeadAgeCdpException(result, input.phase); }
     return result;
+    } catch (error) {
+      if (allocation !== null && this.#structureAllocation === allocation) {
+        allocation.stopped = true; if (allocation.seen) { this.#settleStructureAllocation(allocation); }
+      }
+      throw error;
+    }
   }
   #properties(objectId: string, role: MetadataRole): Promise<unknown> {
     this.#metadataRole = role;
@@ -533,13 +575,20 @@ export class CurrentFootprintCopyMainBackendRunner {
         construction: this.#retainedArray, source: this.#structureSource,
         assertOriginal: async (): Promise<void> => { this.#structureCheck(token, false); await this.#current(); this.#structureCheck(token, false); },
         assertCleanup: (): void => { this.#structureCheck(token, true); },
-        fail: (): void => {
+        fail: (failure: unknown): void => {
           if (!this.#structureActive || this.#structureLease !== token) { return; }
-          this.#originUncertain = true;
-          const failure = new Error("PROJECT_STRUCTURE_MAIN_OBSERVER_FAILED"); issuedFailures.set(failure, "STRUCTURE_OBSERVER_FAILED"); this.#fail(failure);
+          this.#fail(failure);
         },
         assertGenerationExited: (): void => { this.#structureCheck(token, true); need(currentFootprintCombinedMainGenerationExited(capability, this), "STRUCTURE_GENERATION_LIVE"); },
-        request: (command: CurrentProjectStructureMainCommand, cleanup: boolean): Promise<unknown> => this.#structureRequest(token, command, cleanup),
+        request: (command: CurrentProjectStructureMainCommand, cleanup: boolean, retainAllocationReply?: (reply: unknown) => void): Promise<unknown> =>
+          this.#structureRequest(token, command, cleanup, retainAllocationReply),
+        settleAllocation: async (): Promise<void> => {
+          this.#structureCheck(token, true);
+          const allocation = this.#structureAllocation;
+          if (allocation === null) { return; }
+          need(!this.#busy && allocation.stopped && this.#pendingId === allocation.id, "STRUCTURE_ALLOCATION_PENDING"); this.#busy = true;
+          try { await this.#pump(true); this.#structureCheck(token, true); } finally { this.#busy = false; }
+        },
         pump: async (cleanup: boolean): Promise<void> => {
           this.#structureCheck(token, cleanup); need(!this.#busy, "STRUCTURE_BUSY"); this.#busy = true;
           try { await this.#pump(cleanup); this.#structureCheck(token, cleanup); } finally { this.#busy = false; }
@@ -548,7 +597,8 @@ export class CurrentFootprintCopyMainBackendRunner {
         retire: (): void => {
           this.#structureCheck(token, true); need(!this.#busy && (currentFootprintCombinedMainGenerationExited(capability, this) ||
             this.#originGroupReleased && this.#originBreakpoints.size === 0 && !this.#originPauseActive && !this.#originResumeExpected &&
-            !this.#originUncertain && this.#pendingId === null && this.#originEvents.length === 0), "STRUCTURE_CLEANUP_INCOMPLETE");
+            !this.#originUncertain && !this.#structureAllocationUncertain && this.#structureAllocation === null &&
+            this.#pendingId === null && this.#originEvents.length === 0), "STRUCTURE_CLEANUP_INCOMPLETE");
           this.#structureActive = false;
         },
       });
@@ -572,9 +622,11 @@ export class CurrentFootprintCopyMainBackendRunner {
   }
   /** Preserve the original request allocator and pause acknowledgments. A
    * rejected allocation/dispatch remains consumed and cannot be retried. */
-  async #structureRequest(token: CurrentProjectStructureMainLease, input: CurrentProjectStructureMainCommand, cleanup: boolean): Promise<unknown> {
+  async #structureRequest(token: CurrentProjectStructureMainLease, input: CurrentProjectStructureMainCommand, cleanup: boolean,
+    retainAllocationReply?: (reply: unknown) => void): Promise<unknown> {
     need(typeof cleanup === "boolean" && !this.#busy, "STRUCTURE_BUSY"); this.#structureCheck(token, cleanup);
     const command = validateCurrentProjectStructureMainCommand(input);
+    need(retainAllocationReply === undefined || command.phase === "structure-main-arm" && !cleanup, "STRUCTURE_ALLOCATION_CALLBACK");
     const isCleanup = ["structure-main-remove", "structure-main-resume", "structure-main-release"].includes(command.phase);
     need(cleanup === isCleanup && (cleanup ? this.#structureCleanup < CURRENT_PROJECT_STRUCTURE_MAIN_REQUESTS.cleanup :
       this.#structureNormal < CURRENT_PROJECT_STRUCTURE_MAIN_REQUESTS.normal), "STRUCTURE_REQUEST_BOUND");
@@ -585,16 +637,24 @@ export class CurrentFootprintCopyMainBackendRunner {
     if (cleanup) { this.#structureCleanup += 1; } else { this.#structureNormal += 1; }
     this.#busy = true;
     try {
-      const result = await this.#request(command, cleanup); this.#structureCheck(token, cleanup);
+      let allocated: string | null = null;
+      let retain: ((reply: unknown) => void) | undefined;
+      if (command.phase === "structure-main-arm") { retain = (reply: unknown): void => {
+        const known = z.looseObject({ breakpointId: handle }).safeParse(reply);
+        if (known.success && !this.#originBreakpoints.has(known.data.breakpointId)) {
+          allocated = known.data.breakpointId; this.#originBreakpoints.add(allocated);
+        } else { this.#structureAllocationUncertain = true; }
+        retainAllocationReply?.(reply);
+      }; }
+      const result = await this.#request(command, cleanup, retain); this.#structureCheck(token, cleanup);
       if (command.phase === "structure-main-arm") {
         const reply = z.object({ breakpointId: handle, actualLocation: location }).strict().parse(result);
-        need(!this.#originBreakpoints.has(reply.breakpointId) && reply.actualLocation.scriptId === command.params.location.scriptId && reply.actualLocation.lineNumber === command.params.location.lineNumber && reply.actualLocation.columnNumber === command.params.location.columnNumber, "STRUCTURE_BREAKPOINT_ALLOCATION");
-        this.#originBreakpoints.add(reply.breakpointId);
+        need(allocated === reply.breakpointId && reply.actualLocation.scriptId === command.params.location.scriptId && reply.actualLocation.lineNumber === command.params.location.lineNumber && reply.actualLocation.columnNumber === command.params.location.columnNumber, "STRUCTURE_BREAKPOINT_ALLOCATION");
       } else if (command.phase === "structure-main-remove") { empty.parse(result); this.#originBreakpoints.delete(command.params.breakpointId); }
       else if (command.phase === "structure-main-resume") { empty.parse(result); }
       else if (command.phase === "structure-main-release") { empty.parse(result); this.#originGroupReleased = true; }
       return result;
-    } catch (error) { this.#originUncertain = true; this.#fail(error); throw error; } finally { this.#busy = false; }
+    } catch (error) { if (command.phase !== "structure-main-arm") { this.#originUncertain = true; } this.#fail(error); throw error; } finally { this.#busy = false; }
   }
   /** Only the actual new combined native owner can join this original runner.
    * No caller-supplied scheduler, handles, flags or serialized packet is issued. */

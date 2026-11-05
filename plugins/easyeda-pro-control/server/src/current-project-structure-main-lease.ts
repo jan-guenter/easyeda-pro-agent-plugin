@@ -12,9 +12,11 @@ export interface CurrentProjectStructureMainBinding {
   readonly source: CurrentProjectStructureMainSource;
   readonly assertOriginal: () => Promise<void>;
   readonly assertCleanup: () => void;
-  readonly fail: () => void;
+  readonly fail: (error: unknown) => void;
   readonly assertGenerationExited: () => void;
-  readonly request: (command: CurrentProjectStructureMainCommand, cleanup: boolean) => Promise<unknown>;
+  readonly request: (command: CurrentProjectStructureMainCommand, cleanup: boolean,
+    retainAllocationReply?: (reply: unknown) => void) => Promise<unknown>;
+  readonly settleAllocation: () => Promise<void>;
   readonly pump: (cleanup: boolean) => Promise<void>;
   readonly takeEvent: () => Readonly<{ method: "Debugger.paused" | "Debugger.resumed"; params: unknown }> | null;
   readonly retire: () => void;

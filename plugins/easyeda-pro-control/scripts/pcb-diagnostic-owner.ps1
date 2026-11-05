@@ -1432,7 +1432,10 @@ string[] result=new string[count];for(int i=0;i<count;i++)result[i]=System.BitCo
 }
 public static class EasyedaFootprintCombinedLimits { public const int MainNormal=42; public const int MainCleanup=13; public const int MainRequests=55; public const int Requests=856; public const int NormalRequests=811; public const long NormalMilliseconds=3600000L; public const long TotalMilliseconds=3660000L; }
 // BEGIN GENERATED FOOTPRINT FORWARD LIMITS
-public static class EasyedaFootprintForwardLimits { public const int MainNormal=87; public const int MainCleanup=41; public const int MainRequests=128; public const int Requests=1002; public const int NormalRequests=1002; public const int NormalClass=941; public const int CleanupClass=61; public const long NormalMilliseconds=3600000L; public const long TotalMilliseconds=3660000L; }
+public static class EasyedaFootprintForwardLimits { public const int MainNormal=87; public const int MainCleanup=41; public const int MainRequests=128; public const int Requests=1002; public const int NormalRequests=1002; public const int NormalClass=941; public const int CleanupClass=61; public const long NormalMilliseconds=3600000L; public const long TotalMilliseconds=3660000L;
+public static bool AllowsExecutionRequestId(long id,bool forwardPurpose,bool workerCommand){return id>=1&&id<=(forwardPurpose?Requests:workerCommand?EasyedaFootprintExecutionLimits.NormalRequests:EasyedaFootprintExecutionLimits.Requests);}
+public static void VerifyExecutionRequestIdsSmoke(){bool valid=true;foreach(bool worker in new bool[]{false,true})valid=valid&&AllowsExecutionRequestId(1002,true,worker)&&!AllowsExecutionRequestId(1003,true,worker)&&!AllowsExecutionRequestId(0,true,worker);valid=valid&&AllowsExecutionRequestId(811,false,true)&&!AllowsExecutionRequestId(812,false,true)&&AllowsExecutionRequestId(856,false,false)&&!AllowsExecutionRequestId(857,false,false)&&!AllowsExecutionRequestId(0,false,true)&&!AllowsExecutionRequestId(0,false,false);if(!valid)throw new System.InvalidOperationException("footprint-forward-request-id-smoke");}
+}
 // END GENERATED FOOTPRINT FORWARD LIMITS
 internal sealed class EasyedaOriginalMainTransport {
 [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)] struct SA { public int length; public System.IntPtr descriptor; [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)] public bool inherit; }
@@ -5643,6 +5646,7 @@ try {
     [EasyedaDiagnosticOwner]::VerifySavedCacheAccessorProbePurposeSmoke()
     [EasyedaDiagnosticOwner]::VerifyFootprintCombinedSmoke()
     [EasyedaDiagnosticOwner]::VerifyFootprintForwardSmoke()
+    [EasyedaFootprintForwardLimits]::VerifyExecutionRequestIdsSmoke()
     [EasyedaDiagnosticOwner]::VerifyHeldSavedSmoke()
     [EasyedaDiagnosticOwner]::VerifyMainCompletionPurposeSmoke()
     [EasyedaFootprintCopyMainRequestProtocol]::VerifySmoke()
@@ -6037,7 +6041,7 @@ try {
         'footprint-copy-parent' {
           if (-not $footprintExecutionPurpose -or -not $launched -or $request.method -isnot [string] -or $request.parentStage -isnot [string] -or
               $request.realm -isnot [string] -or @('parent','child') -cnotcontains $request.realm -or
-              ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt [EasyedaFootprintExecutionLimits]::Requests) {throw 'pcb-diagnostic-footprint-copy-parent-fields'}
+              ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or -not [EasyedaFootprintForwardLimits]::AllowsExecutionRequestId([long]$request.requestId,$WorkerStartupFootprintForward209.IsPresent,$false)) {throw 'pcb-diagnostic-footprint-copy-parent-fields'}
           $parentFields=New-Object 'System.Collections.Hashtable' ([StringComparer]::Ordinal)
           foreach ($property in $request.PSObject.Properties) {
             if (@('id','action','helperInstance','jobId','rootPid','rootCreated','requestId','method','parentStage','realm') -cnotcontains $property.Name) {
@@ -6050,7 +6054,7 @@ try {
         }
         'footprint-copy-worker' {
           if (-not $footprintExecutionPurpose -or -not $launched -or $request.method -isnot [string] -or $request.executionPhase -isnot [string] -or
-              ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt [EasyedaFootprintExecutionLimits]::NormalRequests) {throw 'pcb-diagnostic-footprint-copy-worker-fields'}
+              ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or -not [EasyedaFootprintForwardLimits]::AllowsExecutionRequestId([long]$request.requestId,$WorkerStartupFootprintForward209.IsPresent,$true)) {throw 'pcb-diagnostic-footprint-copy-worker-fields'}
           $workerFields=New-Object 'System.Collections.Hashtable' ([StringComparer]::Ordinal)
           foreach ($property in $request.PSObject.Properties) {
             if (@('id','action','helperInstance','jobId','rootPid','rootCreated','requestId','method','executionPhase') -cnotcontains $property.Name) {
@@ -6088,7 +6092,7 @@ try {
         }
         'footprint-cache-construction' {
           if (-not $footprintExecutionPurpose -or -not $launched -or $request.method -isnot [string] -or $request.cachePhase -isnot [string] -or
-              ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt [EasyedaFootprintExecutionLimits]::Requests) {throw 'pcb-diagnostic-footprint-cache-fields'}
+              ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or -not [EasyedaFootprintForwardLimits]::AllowsExecutionRequestId([long]$request.requestId,$WorkerStartupFootprintForward209.IsPresent,$false)) {throw 'pcb-diagnostic-footprint-cache-fields'}
           $cacheFields=New-Object 'System.Collections.Hashtable' ([StringComparer]::Ordinal)
           foreach ($property in $request.PSObject.Properties) {
             if (@('id','action','helperInstance','jobId','rootPid','rootCreated','requestId','method','cachePhase') -cnotcontains $property.Name) {

@@ -8,6 +8,7 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { z } from "zod";
+import { operationPath } from "../src/artifacts.ts";
 import { OPERATION_SCHEMA, assertSubset, buildPlanHash, canonicalJson, isRecord, sha256Text } from "../src/core.ts";
 import { currentDisposableOpenSealedTargetSchema, parseCurrentDisposableOpenRequest } from "../src/current-disposable-open.ts";
 import { CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION } from "../src/current-disposable-open-profile.ts";
@@ -101,7 +102,7 @@ async function fixture(options: Readonly<{ scopeFailure?: boolean; holdUnused?: 
     CURRENT_SYMBOL_OPERATION_PURPOSE: "ordinary-symbol-metadata", EasyedaControlEngine: Object, WindowsControlRuntime: Object,
     CURRENT_SCHEMATIC_OPERATION_PURPOSE: "ordinary-schematic-rename",
     currentSchematicOperationOpeningRequestSchema, currentSchematicOpeningExpectationSchema, currentSymbolStartupExpectationSchema,
-    currentSymbolBaselineRequestSchema, currentOwnedSymbolCopyRequestSchema,
+    currentSymbolBaselineRequestSchema, currentOwnedSymbolCopyRequestSchema, operationPath,
     CurrentSymbolBaselineCoordinator: class { public readonly syntheticBoundary = true; },
     prepareCurrentOwnedSymbolMetadata: (): never => { throw new Error("Synthetic symbol source-preparation stop"); },
     createOperation: (): never => forbidden("create-operation"), updateOperation: (): never => forbidden("update-operation"),
