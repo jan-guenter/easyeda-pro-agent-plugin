@@ -157,6 +157,7 @@ function startupWire(raw: unknown, id: number,
       fields = { startupPhase: "breakpoint", site, scriptId: parsed.params.location.scriptId }; break;
     }
     case "Debugger.evaluateOnCallFrame": {
+      if (parsed.params.expression === "[this,l,t,f]") { return fail(); }
       if (parsed.params.expression === CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION && sites !== CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES) { return fail(); }
       const selector = { [CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION]: "footprint-constructors", this: "receiver", e: "argument-e", t: "argument-t", "this.bc": "channel", "this.bc.onmessage": "onmessage" }[parsed.params.expression];
       fields = { startupPhase: "select", selector, callFrameId: parsed.params.callFrameId }; break;

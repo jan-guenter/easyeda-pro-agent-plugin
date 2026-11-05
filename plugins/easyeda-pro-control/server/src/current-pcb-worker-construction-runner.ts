@@ -82,6 +82,17 @@ import { CURRENT_PROJECT_STRUCTURE_WORKER_CALLS } from "./current-project-struct
 import type { CurrentProjectStructureWorkerBinding, CurrentProjectStructureWorkerEvents, CurrentProjectStructureWorkerLease } from "./current-project-structure-worker-lease.ts";
 import { CURRENT_FOOTPRINT_COLD_PRODUCER_CALLS, CURRENT_FOOTPRINT_COLD_PRODUCER_REQUESTS } from "./current-footprint-cold-producer-roster.ts";
 import type { CurrentFootprintColdProducerRoster } from "./current-footprint-cold-producer-roster.ts";
+// oxlint-disable-next-line import/no-cycle -- The core privately issues the original lease before instantiating this observer; the observer cannot register or replace its native binding.
+import { CurrentFootprintDetachedCacheObserver } from "./current-footprint-detached-cache-observer.ts";
+import { CURRENT_FOOTPRINT_DETACHED_CACHE_REQUESTS } from "./current-footprint-detached-cache-profile.ts";
+import type { CurrentFootprintDetachedCacheBinding, CurrentFootprintDetachedCacheEvents, CurrentFootprintDetachedCacheLease } from "./current-footprint-detached-cache-lease.ts";
+import type { CurrentFootprintDetachedCacheObservation } from "./current-footprint-detached-cache-observer.ts";
+
+const detachedCacheLeases = new WeakMap<CurrentFootprintDetachedCacheLease, CurrentFootprintDetachedCacheBinding>();
+export function requireCurrentFootprintDetachedCacheLease(lease: CurrentFootprintDetachedCacheLease): CurrentFootprintDetachedCacheBinding {
+  const binding = detachedCacheLeases.get(lease); if (binding === undefined) { throw fail("DETACHED_CACHE_ORIGINAL_LEASE"); }
+  binding.assertCleanup(); return binding;
+}
 
 const structureLeases = new WeakMap<CurrentProjectStructureWorkerLease, CurrentProjectStructureWorkerBinding>();
 /** Require this construction owner's original worker lease and recheck cleanup
@@ -260,6 +271,9 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   #assignedWrappers: Readonly<Record<CurrentPcbWorkerConstructionAssignment, string>> | null = null;
   #coldProducerRoster: CurrentFootprintColdProducerRoster | null = null;
   #coldProducerWrappers: Readonly<Record<CurrentPcbWorkerConstructionAssignment, string>> | null = null;
+  #detachedCacheObserver: CurrentFootprintDetachedCacheObserver | null = null;
+  #detachedCacheListener: CurrentFootprintDetachedCacheEvents | null = null;
+  #detachedCachePauseActive = false;
   #projectIdentityConsumed = false;
   #projectIdentity: CurrentPcbWorkerConstructionProjectIdentity | null = null;
   #actorSampleAttempts = 0;
@@ -425,6 +439,12 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (!this.#settled) { this.#step = "pause-read-owner-after"; } await this.#current(); return captured.value;
   }
   readonly #onPaused = (input: unknown): void => {
+    if (this.#detachedCacheObserver?.acceptsPause(input) === true) {
+      if (this.#detachedCacheListener === null || this.#detachedCachePauseActive || this.#structurePauseActive || this.#footprintCachePauseActive || this.#pause !== null && !this.#pause.resumeObserved) {
+        this.#fail("DETACHED_CACHE_PAUSE_ROUTE"); return;
+      }
+      this.#detachedCachePauseActive = true; this.#detachedCacheListener.paused(input); return;
+    }
     if (this.#structureListener?.acceptsPause(input) === true) {
       if (this.#structurePauseActive || this.#footprintCachePauseActive || this.#pause !== null && !this.#pause.resumeObserved) {
         this.#fail("STRUCTURE_PAUSE_ROUTE"); this.#structureListener.lost(); return;
@@ -449,7 +469,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (this.#profile === "private.current-footprint-copy-construction.v1") { limitMs = CURRENT_FOOTPRINT_COPY_CONSTRUCTION_TIMING.pauseMs[index] ?? limitMs; }
     else if (this.#current209) { limitMs = CURRENT_PCB_209_STARTUP_TIMING.constructionPauseMs[index] ?? limitMs; }
     if (this.#sequence[index] === "bootstrap" && isOriginalProjectStructureConstructionTransport(this.#transport)) {
-      limitMs += CURRENT_FOOTPRINT_COLD_PRODUCER_REQUESTS * 3 * CURRENT_PCB_209_STARTUP_TIMING.requestMs;
+      limitMs += (CURRENT_FOOTPRINT_COLD_PRODUCER_REQUESTS + CURRENT_FOOTPRINT_DETACHED_CACHE_REQUESTS.arm) * 3 * CURRENT_PCB_209_STARTUP_TIMING.requestMs;
     }
     const window = Object.freeze({ startedAtMs: currentPcbStartupMonotonicMs(), limitMs });
     const paused: RetainedPause = { raw, captureError, index, window, resumeOrigin: null,
@@ -461,6 +481,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (this.#settled) { this.#fail("EXTRA_PAUSE"); void observeRejection(this.#cleanupPause(paused)); }
   };
   readonly #onResumed = (): void => {
+    if (this.#detachedCachePauseActive) { this.#detachedCachePauseActive = false; this.#detachedCacheListener?.resumed(); return; }
     if (this.#structurePauseActive) {
       this.#structurePauseActive = false; this.#structureListener?.resumed(); return;
     }
@@ -474,7 +495,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (currentPcbStartupMonotonicMs() - paused.window.startedAtMs >= paused.window.limitMs) { this.#fail("PAUSE_DEADLINE"); }
     paused.resumeObserved = true; clearTimeout(paused.watchdog); paused.resumed.resolve(null);
   };
-  readonly #onLost = (): void => { this.#fail("OWNER_LOST"); this.#structureListener?.lost(); this.#footprintCacheListener?.lost(); this.#waiting.reject(this.#failed); };
+  readonly #onLost = (): void => { this.#fail("OWNER_LOST"); this.#detachedCacheListener?.lost(); this.#structureListener?.lost(); this.#footprintCacheListener?.lost(); this.#waiting.reject(this.#failed); };
   #resume(paused: RetainedPause, origin: ResumeOrigin = "normal"): Promise<void> {
     if (paused.resumeResult !== null) { return paused.resumeResult; }
     if (origin === "normal") { this.#checkWindow(); }
@@ -574,7 +595,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       const bus = this.#identities.channelBus, original = this.#identities.project;
       if (original === undefined || bus === undefined) { throw fail("MISSING_OWNER"); }
       await this.#same(original, bus, true);
-      if (isOriginalProjectStructureConstructionTransport(this.#transport)) { await this.#captureColdProducerRoster(); }
+      if (isOriginalProjectStructureConstructionTransport(this.#transport)) { await this.#captureColdProducerRoster(); await this.#armDetachedCacheObserver(); }
       if (this.#profile === "private.current-footprint-copy-construction.v1" && isOriginalFootprintExecutionConstructionTransport(this.#transport)) {
         await this.#armFootprintCacheConstruction(original);
       }
@@ -746,6 +767,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
           this.#footprintCacheConstructionReleased = true; }
         catch (cleanupError) { errors.push(cleanupError); }
       }
+      if (this.#detachedCacheObserver !== null) { try { await this.#detachedCacheObserver.cleanup(); } catch (cleanupError) { errors.push(cleanupError); } }
       try { await this.#removeBreakpoints(); } catch (cleanupError) { errors.push(cleanupError); }
       if (this.#pause !== null && !this.#pause.resumeObserved) { try { await this.#resume(this.#pause, "cleanup"); } catch (cleanupError) { errors.push(cleanupError); } }
       throw errors.length === 1 ? error : new AggregateError(errors, "PCB_WORKER_CONSTRUCTION_FAILED", { cause: error });
@@ -853,6 +875,38 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       if (this.#coldProducerRoster !== roster || this.#coldProducerWrappers !== wrappers) { throw fail("COLD_PRODUCER_ORIGINAL_ROSTER"); }
       return roster;
     } catch (error) { this.#fail("COLD_PRODUCER_CHANGED"); throw error; }
+  }
+  async #armDetachedCacheObserver(): Promise<void> {
+    const project = this.#identities.project;
+    if (this.#detachedCacheObserver !== null || project === undefined || this.#coldProducerRoster === null ||
+        !isOriginalProjectStructureConstructionTransport(this.#transport)) { throw fail("DETACHED_CACHE_BOOTSTRAP"); }
+    const same = (): void => {
+      this.#sameTransport();
+      if (this.#releaseConsumed || this.#identities.project !== project || !isOriginalProjectStructureConstructionTransport(this.#transport)) { throw fail("DETACHED_CACHE_ORIGINAL_OWNER"); }
+    };
+    const lease = Object.freeze({ profile: "private.current-footprint-detached-cache-lease.v1" as const });
+    detachedCacheLeases.set(lease, Object.freeze({ issuer: this, scriptId: this.#scriptId, project,
+      assertOriginal: async (): Promise<void> => { same(); await this.#current(); same(); }, assertCleanup: same,
+      fail: (): void => { same(); this.#fail("DETACHED_CACHE_OBSERVER_FAILED"); },
+      request: async (command: CurrentPcbWorkerConstructionCommand, cleanup: boolean, retain?: (reply: unknown) => void): Promise<unknown> => {
+        same();
+        if (retain !== undefined && (cleanup || command.method !== "Debugger.setBreakpoint")) { throw fail("DETACHED_CACHE_ALLOCATION_REPLY"); }
+        if (!cleanup) { const reply = await this.#request(command, undefined, undefined, captureCurrentPcbStringClockReply, retain); same(); return reply; }
+        if (command.method !== "Debugger.resume" && command.method !== "Debugger.removeBreakpoint" && command.method !== "Runtime.releaseObjectGroup") { throw fail("DETACHED_CACHE_CLEANUP_COMMAND"); }
+        const reply = captureCurrentPcbStringClockReply(await bounded(this.#sendOriginal(command))).value; same(); return reply;
+      },
+      subscribe: (listener: CurrentFootprintDetachedCacheEvents): (() => void) => {
+        same(); if (this.#detachedCacheListener !== null || this.#unsubscribe === null) { throw fail("DETACHED_CACHE_SUBSCRIBER"); }
+        this.#detachedCacheListener = listener;
+        return (): void => { same(); if (this.#detachedCacheListener !== listener || this.#detachedCachePauseActive) { throw fail("DETACHED_CACHE_RETAIN_SUBSCRIBER"); } this.#detachedCacheListener = null; };
+      },
+    }));
+    const observer = new CurrentFootprintDetachedCacheObserver(lease); this.#detachedCacheObserver = observer; await observer.arm();
+  }
+  public async closeOriginalDetachedCacheProducer(packet: ConstructionPacket<P>): Promise<CurrentFootprintDetachedCacheObservation> {
+    await this.#requireOriginal(packet); const observer = this.#detachedCacheObserver;
+    if (observer === null || !isOriginalProjectStructureConstructionTransport(this.#transport)) { throw fail("DETACHED_CACHE_ORIGINAL_OWNER"); }
+    const result = await observer.closeAndObserve(); await this.#requireOriginal(packet); return result;
   }
   /** This original-event continuation is not a supplied-data projection. Every
    * callback argument comes from the retained constructor pauses. Current
@@ -1669,6 +1723,8 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       if (this.#footprintCacheConstruction.retained()["released"] !== true) { throw fail("CACHE_CONSTRUCTION_RETAIN_RELEASE"); }
       this.#footprintCacheConstructionReleased = true;
     }
+    if (this.#detachedCacheObserver !== null) { await this.#detachedCacheObserver.cleanup(); }
+    if (this.#detachedCacheListener !== null || this.#detachedCachePauseActive) { throw fail("DETACHED_CACHE_RETAIN_OBSERVER"); }
     this.#releaseConsumed = true;
     try {
       await this.#removeBreakpoints(); await this.#settleLatePause();

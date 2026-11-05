@@ -8,27 +8,35 @@ import { CURRENT_PROJECT_STRUCTURE_WORKER_SITES as SITES } from "./current-proje
 import { CURRENT_PROJECT_STRUCTURE_WORKER_CALLS as CALLS } from "./current-project-structure-worker-programs.ts";
 import { currentProjectStructureWorkerWire } from "./current-project-structure-worker-wire.ts";
 import { CURRENT_FOOTPRINT_COLD_PRODUCER_CALLS as COLD } from "./current-footprint-cold-producer-roster.ts";
+import { CURRENT_FOOTPRINT_DETACHED_CACHE_SITES, CURRENT_FOOTPRINT_DETACHED_CACHE_CALLS as DETACHED,
+  CURRENT_FOOTPRINT_DETACHED_CACHE_GROUP as DETACHED_GROUP, CURRENT_FOOTPRINT_DETACHED_CACHE_EXPRESSION as EXPRESSION } from "./current-footprint-detached-cache-profile.ts";
 import type { CurrentPcbWorkerStartupCommand as Command } from "./current-pcb-worker-startup-contract.ts";
 
 const literal = (value: string): string => `@"${value.replaceAll('"', '""')}"`;
-const calls = Object.freeze({ ...CALLS, "cold-project": COLD.project, "cold-stream": COLD.stream, "cold-cooperation": COLD.cooperation });
-const programs = ["retain", "pristine", "serial", "debounce", "callbackKind", "packet", "taskSet", "data", "taskRemoved", "same", "packetText", "success", "cold-project", "cold-stream", "cold-cooperation"] as const;
+const calls = Object.freeze({ ...CALLS, "cold-project": COLD.project, "cold-stream": COLD.stream, "cold-cooperation": COLD.cooperation,
+  "detached-admit": DETACHED.admit, "detached-matches": DETACHED.matches });
+const programs = ["retain", "pristine", "serial", "debounce", "callbackKind", "packet", "taskSet", "data", "taskRemoved", "same", "packetText", "success", "cold-project", "cold-stream", "cold-cooperation", "detached-admit", "detached-matches"] as const;
 /** Complete independent sample roster for native encoding and refusal smoke. */
 export function currentProjectStructureWorkerNativeCases(): readonly Command[] {
   return Object.freeze([
-    ...Object.values(SITES).map(site => ({ method: "Debugger.setBreakpoint", sessionId: "structure_sessionId", params: {
+    ...[...Object.values(SITES), ...Object.values(CURRENT_FOOTPRINT_DETACHED_CACHE_SITES)].map(site => ({ method: "Debugger.setBreakpoint", sessionId: "structure_sessionId", params: {
       location: { scriptId: "structure_scriptId", lineNumber: site.lineNumber, columnNumber: site.columnNumber } } }) as const),
     ...programs.map(name => {
       let count = 0;
       if (name === "pristine") { count = 7; }
+      else if (name === "detached-admit") { count = 1; }
+      else if (name === "detached-matches") { count = 2; }
       else if (name === "cold-stream" || name === "cold-cooperation") { count = 3; }
       else if (["debounce", "callbackKind", "packet", "taskRemoved"].includes(name)) { count = 2; }
       else if (["same", "serial"].includes(name)) { count = 1; }
       return { method: "Runtime.callFunctionOn", sessionId: "structure_sessionId", params: { objectId: "structure_objectId", functionDeclaration: calls[name],
         arguments: Array.from({ length: count }, (_, index) => ({ objectId: `structure_argument${String(index)}` })),
-        objectGroup: CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group, returnByValue: ["pristine", "callbackKind", "taskRemoved", "same", "packetText", "success", "cold-project", "cold-stream", "cold-cooperation"].includes(name),
+        objectGroup: name.startsWith("detached-") ? DETACHED_GROUP : CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group, returnByValue: ["pristine", "callbackKind", "taskRemoved", "same", "packetText", "success", "cold-project", "cold-stream", "cold-cooperation", "detached-admit", "detached-matches"].includes(name),
         silent: true, generatePreview: false, throwOnSideEffect: true, awaitPromise: false, userGesture: false } } as const;
     }),
+    { method: "Debugger.evaluateOnCallFrame", sessionId: "structure_sessionId", params: { callFrameId: "structure_callFrameId", expression: EXPRESSION,
+      objectGroup: DETACHED_GROUP, silent: true, returnByValue: false, generatePreview: false, throwOnSideEffect: true, includeCommandLineAPI: false } },
+    { method: "Runtime.releaseObjectGroup", sessionId: "structure_sessionId", params: { objectGroup: DETACHED_GROUP } },
   ] satisfies Command[]);
 }
 /** Build the finite table once. The native decoder rechecks packed and decoded

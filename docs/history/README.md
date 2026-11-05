@@ -13,6 +13,8 @@
 - [2026-11-05 schematic page opening and readers](2026-11-05-schematic-page-opening-and-readers.md). Checkpoint-bound tracked ordinary type-1 page opener, separately pinned Text/Wire/Bus and supported-selection DTOs, truthful automatic-persistence effects and original no-replay authority. Source and offline evidence only.
 
 - [2026-11-05 ordinary PCB read owner](2026-11-05-ordinary-pcb-read-owner.md). Separate ordinary-project grammar and immutable journals, eight unchanged fixed209 readers, original cleanup and 117 passing offline regressions. No writer, explicit Save or connected-validation claim.
+- [2026-11-06 detached cache-maintenance return capture](2026-11-06-detached-cache-return-capture.md). Automatic pre-RPC entry/return observation, actual awaited put/delete completion, retained late allocation, no-resume failure fence and the smaller FOOTPRINT/local/locked-head provider obligations.
+
 - [2026-11-06 original cold producer roster](2026-11-06-cold-producer-roster.md). Automatic original bootstrap capture before RPC registration, four wrapper/callback relations, serial/debounce/buffer/cooperation and publish dormancy, derived dedicated capacity and explicit remaining continuous-frontier dependencies.
 
 - [2026-11-05 original native structure owner](2026-11-05-structure-native-owner.md). Dedicated original native purpose, derived worker/main/helper capacities, original paired observer workflow, cooperative cancellation and historical-result release semantics; offline verification and fresh-import INSERT limits remain explicit.
