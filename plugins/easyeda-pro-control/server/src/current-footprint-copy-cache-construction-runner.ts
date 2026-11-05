@@ -155,6 +155,8 @@ export class CurrentFootprintCopyCacheConstructionRunner {
     this.#pendingEvents += 1;
     this.#chain = this.#queued(this.#chain, raw);
   }
+  /** Serialize original owned pauses. If validation fails before retaining a
+   * frame, preserve unknown pause custody until the original owner closes. */
   async #queued(previous: Promise<void>, raw: unknown): Promise<void> {
     let recognized = false;
     try {
@@ -217,6 +219,8 @@ export class CurrentFootprintCopyCacheConstructionRunner {
       this.#armed = true;
     } catch (error) { this.#stop(error); throw this.#error; }
   }
+  /** Dispatch each retained ID's removal once. A caller deadline keeps the
+   * original promise and late acknowledgment; it grants no resend. */
   async #remove(point: Breakpoint, bounded = false): Promise<void> {
     if (point.removed) { return; }
     if (point.attempted) { throw point.removalFailure === null ? fail("RETAIN_UNKNOWN_REMOVAL") : point.removalFailure.error; }
@@ -313,6 +317,8 @@ export class CurrentFootprintCopyCacheConstructionRunner {
     need(packet === this.#packet && this.#packet !== null && !this.#reproofAttempted); this.#reproofAttempted = true;
     try { await this.#join(); } catch (error) { this.#stop(error); throw error; }
   }
+  /** Release requires acknowledged removals and a settled, resumed cursor.
+   * Unknown allocations or owned pauses retain the original subscription. */
   #cleanupSettled(): boolean {
     const held = this.#pauses.at(-1);
     return !this.#allocationUncertain && !this.#unknownPause && this.#pendingEvents === 0 && this.#breakpoints.every(point => point.removed) && (held === undefined || held.resumed);

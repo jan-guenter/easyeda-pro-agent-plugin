@@ -234,3 +234,14 @@ arriving during release and malformed owned pauses. Full types and strict
 type-aware lint passed with zero warnings. These are isolated transport tests;
 connected qualification, final-head CI, review disposition and publication
 remain separate gates. The batch version remains unchanged.
+
+## Documentation warning from the cache review, 2026-11-05
+
+The automatic review of `4dd2cf23ad8fb2392906bfae022cb4d62ca93e29`
+[5779472061](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/168#pullrequestreview-5779472061)
+reported no further actionable code issue. Its premerge documentation check
+warned that 43 of 57 qualifying functions were documented, or 75.44%, below
+the 80% target. It supplied no missing-function list. Three changed helpers
+with qualifying branches now document serial pause custody, once-only removal
+and release quiescence. The correction changes comments only. A new bot result
+must establish its coverage score; no threshold was relaxed.
