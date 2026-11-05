@@ -9,11 +9,13 @@
  */
 import { CURRENT_PCB_209_SPATIAL_CLASS_RELATIONS, CURRENT_PCB_209_SPATIAL_FUNCTION_PLANS } from "./current-pcb-209-spatial-source-profile.ts";
 import { CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_PLANS, CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_RELATIONS } from "./current-pcb-209-spatial-track-source-profile.ts";
+import { CURRENT_PCB_209_SPATIAL_ARC_EXTRA_PLANS, CURRENT_PCB_209_SPATIAL_ARC_EXTRA_RELATIONS } from "./current-pcb-209-spatial-arc-source-profile.ts";
 
 // Encode only module-owned identifier rosters. Splitting a fixed delimiter keeps
 // The native command below its existing 64KiB bound without dropping a check.
-function encodedClassRelations(track: boolean): unknown[] {
-  const relations = { ...CURRENT_PCB_209_SPATIAL_CLASS_RELATIONS, ...(track ? CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_RELATIONS : {}) };
+function encodedClassRelations(track: boolean, arc: boolean): unknown[] {
+  const relations = { ...CURRENT_PCB_209_SPATIAL_CLASS_RELATIONS, ...(track ? CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_RELATIONS : {}),
+    ...(arc ? CURRENT_PCB_209_SPATIAL_ARC_EXTRA_RELATIONS : {}) };
   return Object.entries(relations).map(([key, profile]) => {
   if (profile.prototypeKeys.some(name => name.includes("|"))) { throw new Error("PCB209_SPATIAL_RELATION_ENCODING"); }
   return [key, profile.parent, profile.prototypeKeys.join("|")];
@@ -22,10 +24,11 @@ function encodedClassRelations(track: boolean): unknown[] {
 
 /** Constructors used only in initializers may be elided from the V8 closure.
  * Follow their one fixed original receiver/prototype association instead. */
-function bindingCollector(track: boolean): string { return `const collectBindings=scope=>{
+function bindingCollector(track: boolean, arc = false): string { return `const collectBindings=scope=>{
 const names=["Hr","Ke","zi","wl","x","mx","vD","Nd","BI","D0","qs","Ve","Qg","ki","M2","WA","Ff","sy","GN","Ud","g0","at","E","M","pe","Rut","Ys","ln","e0","vMe","Re","Ne","Le","Ue","si","Zi","In","yr","lr","ft","xt","je","Ba","qn","Ms","lt","_r","tb","BLe","CQ","E2e","Fi","Rr","j1","Ll","YP","qt","a4","Me","Ht","G_e","ye","Sr","St","Jdt","Em","N4","Wj","M0"];
 const bindings={};for(const name of names)Object.defineProperty(bindings,name,{value:own(scope,name),enumerable:true});
 ${track ? 'for(const name of ["xr","qr","bR","V0","iy","yh","bC","oie"])Object.defineProperty(bindings,name,{value:own(scope,name),enumerable:true});' : ""}
+${arc ? 'for(const name of ["Oi","vi","tF","le","Fr"])Object.defineProperty(bindings,name,{value:own(scope,name),enumerable:true});' : ""}
 const constructor=o=>{const p=Object.getPrototypeOf(object(o)),c=own(p,"constructor");if(typeof c!=="function"||own(c,"prototype")!==p)bad();return c;},parent=c=>constructor(own(c,"prototype"));
 const derived={LH:constructor(bindings.qt),Ni:parent(bindings.zi),n3:parent(bindings.qs),iV:constructor(bindings.Ht),
 V_e:constructor(bindings.G_e),Ude:constructor(bindings.ye),It:parent(bindings.Qg),cP:parent(bindings.ki),_oe:parent(bindings.vD),
@@ -33,15 +36,17 @@ l8:parent(bindings.Ff),UD:parent(bindings.Ud),yl:parent(bindings.M),Zdt:construc
 qme:constructor(bindings.Me),StClass:constructor(bindings.St),ls:parent(bindings.Ve),k0:parent(bindings.Zi),p0:parent(bindings.qn)};
 ${track ? 'derived.mt=parent(bindings.qr);derived.lEe=constructor(bindings.yh);' : ""}
 for(const [key,value]of Object.entries(derived)){if(typeof value!=="function")bad();Object.defineProperty(bindings,key,{value,enumerable:true});}
-for(const [key,parentName,encodedKeys]of ${JSON.stringify(encodedClassRelations(track))}){
+for(const [key,parentName,encodedKeys]of ${JSON.stringify(encodedClassRelations(track, arc))}){
 const prototypeKeys=encodedKeys.split("|"),c=own(bindings,key),p=own(c,"prototype"),expected=parentName===null?null:own(bindings,parentName),keys=Reflect.ownKeys(p);
 if(typeof c!=="function"||own(p,"constructor")!==c||Object.getPrototypeOf(p)!==(expected===null?Object.prototype:own(expected,"prototype"))||Object.getPrototypeOf(c)!==(expected===null?Function.prototype:expected)||keys.length!==prototypeKeys.length||keys.some(k=>!prototypeKeys.includes(k))||Reflect.ownKeys(c).some(k=>typeof k!=="string"))bad();}
 return Object.freeze(bindings);};`; }
 export const CURRENT_PCB_209_SPATIAL_BINDING_COLLECTOR = bindingCollector(false);
 export const CURRENT_PCB_209_SPATIAL_TRACK_BINDING_COLLECTOR = bindingCollector(true);
+export const CURRENT_PCB_209_SPATIAL_ARC_BINDING_COLLECTOR = bindingCollector(true, true);
 
-function functionCollector(track: boolean): string {
-  const plans = [...CURRENT_PCB_209_SPATIAL_FUNCTION_PLANS, ...(track ? CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_PLANS : [])];
+function functionCollector(track: boolean, arc = false): string {
+  const plans = [...CURRENT_PCB_209_SPATIAL_FUNCTION_PLANS, ...(track ? CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_PLANS : []),
+    ...(arc ? CURRENT_PCB_209_SPATIAL_ARC_EXTRA_PLANS : [])];
   const functionPaths = plans.map(plan => [
   plan.role, ["class", "function", "field", "prototype", "static"].indexOf(plan.target),
   "property" in plan ? plan.property : null, "getter" in plan && plan.getter ? 1 : 0,
@@ -57,6 +62,7 @@ if(typeof value!=="function")bad();result.push(value);}return Object.freeze(resu
 }
 export const CURRENT_PCB_209_SPATIAL_FUNCTION_COLLECTOR = functionCollector(false);
 export const CURRENT_PCB_209_SPATIAL_TRACK_FUNCTION_COLLECTOR = functionCollector(true);
+export const CURRENT_PCB_209_SPATIAL_ARC_FUNCTION_COLLECTOR = functionCollector(true, true);
 
 const guards = `"use strict";
 const bad=()=>{throw new Error("PCB209_SPATIAL_CAPTURE_REFUSED");};
@@ -84,10 +90,10 @@ const handler=own(object(own(this,"object")),"t");if(typeof handler!=="function"
  * selected by the fixed scope decoder. It proves no complete geometry graph.
  * The returned object stays private in the original object group.
  */
-function bindingsFunction(track: boolean): string { return `function(originalCallback){${guards}
+function bindingsFunction(track: boolean, arc = false): string { return `function(originalCallback){${guards}
 if((${CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION})!==originalCallback)bad();
-${bindingCollector(track)}
-${functionCollector(track)}
+${bindingCollector(track, arc)}
+${functionCollector(track, arc)}
 const scope=object(own(this,"object")),bindings=collectBindings(scope);
 if(typeof bindings.Hr!=="function"||typeof bindings.LH!=="function"||Object.getPrototypeOf(bindings.qt)!==own(bindings.LH,"prototype"))bad();
 if(own(bindings.Me,"_smartMode")!==false||typeof bindings.Fi!=="function"||bindings.a4===null||typeof bindings.a4!=="object")bad();
@@ -98,6 +104,7 @@ return Object.freeze({scope,originalCallback,bindings,functions:collectFunctions
 }`; }
 export const CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION = bindingsFunction(false);
 export const CURRENT_PCB_209_SPATIAL_TRACK_BINDINGS_FUNCTION = bindingsFunction(true);
+export const CURRENT_PCB_209_SPATIAL_ARC_BINDINGS_FUNCTION = bindingsFunction(true, true);
 
 /** Return the same frozen original tuple created by the binding capture.
  * The runner qualifies every original function before the read kernel runs. */

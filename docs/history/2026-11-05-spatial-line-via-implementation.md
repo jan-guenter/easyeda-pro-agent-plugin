@@ -39,4 +39,4 @@ Actual Windows compilation and complete suites remain batch-release checks.
 The route retains false claims for full native graph/intrinsic qualification,
 source membership and persistence. Positive connected validation still needs a
 registered Line/Via-only disposable fixture. This work does not enable ordinary
-populated-board spatial queries, writing or Save, and does not change excluded production design.
+populated-board spatial queries, writing or Save, and does not change the excluded production project.

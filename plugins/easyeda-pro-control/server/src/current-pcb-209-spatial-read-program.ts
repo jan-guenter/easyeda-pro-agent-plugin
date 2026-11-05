@@ -3,23 +3,29 @@
  * Standard ECMAScript renderer intrinsics are trusted, as in the fixed readers.
  * This private synchronous kernel has no public SDK or selection dispatch.
  */
-import { CURRENT_PCB_209_SPATIAL_BINDING_COLLECTOR, CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION,
+import { CURRENT_PCB_209_SPATIAL_ARC_BINDING_COLLECTOR, CURRENT_PCB_209_SPATIAL_ARC_FUNCTION_COLLECTOR, CURRENT_PCB_209_SPATIAL_BINDING_COLLECTOR, CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION,
   CURRENT_PCB_209_SPATIAL_FUNCTION_COLLECTOR, CURRENT_PCB_209_SPATIAL_TRACK_BINDING_COLLECTOR,
   CURRENT_PCB_209_SPATIAL_TRACK_FUNCTION_COLLECTOR } from "./current-pcb-209-spatial-capture-program.ts";
 import { CURRENT_PCB_209_SPATIAL_TRACK_GUARDS } from "./current-pcb-209-spatial-track-kernel.ts";
+import { CURRENT_PCB_209_SPATIAL_ARC_GUARDS } from "./current-pcb-209-spatial-arc-kernel.ts";
 import { CURRENT_PCB_209_SPATIAL_MAX_BYTES, CURRENT_PCB_209_SPATIAL_MAX_COORDINATE,
   CURRENT_PCB_209_SPATIAL_MAX_HITS } from "./current-pcb-209-spatial-read.ts";
 import { CURRENT_PCB_209_SPATIAL_FAMILY_ORDER } from "./current-pcb-209-spatial-source-profile.ts";
 
-/** Select only one of the two module-owned fixed programs at build/import time. */
-function readFunction(track: boolean): string { return `function(query){
+/** Select only a module-owned fixed program at build/import time. */
+function readFunction(track: boolean, arc = false): string {
+  let bindings = CURRENT_PCB_209_SPATIAL_BINDING_COLLECTOR, functions = CURRENT_PCB_209_SPATIAL_FUNCTION_COLLECTOR,
+    groups = 1, variant = "via";
+  if (track) { bindings = CURRENT_PCB_209_SPATIAL_TRACK_BINDING_COLLECTOR; functions = CURRENT_PCB_209_SPATIAL_TRACK_FUNCTION_COLLECTOR; groups = 2; variant = "line-via"; }
+  if (arc) { bindings = CURRENT_PCB_209_SPATIAL_ARC_BINDING_COLLECTOR; functions = CURRENT_PCB_209_SPATIAL_ARC_FUNCTION_COLLECTOR; groups = 3; variant = "arc-line-via"; }
+  return `function(query){
 "use strict";
 const bad=()=>{throw new Error("PCB209_SPATIAL_READ_REFUSED");};
 const apply=Reflect.apply,objects=[],objectSet=new Set,collections=[];
 const object=o=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();return o;};
 const own=(o,k)=>{object(o);const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();return d.value;};
-${track ? CURRENT_PCB_209_SPATIAL_TRACK_BINDING_COLLECTOR : CURRENT_PCB_209_SPATIAL_BINDING_COLLECTOR}
-${track ? CURRENT_PCB_209_SPATIAL_TRACK_FUNCTION_COLLECTOR : CURRENT_PCB_209_SPATIAL_FUNCTION_COLLECTOR}
+${bindings}
+${functions}
 const absent=(o,k)=>{let p=o;for(let i=0;i<8;i++){if(p===null)return;const d=Object.getOwnPropertyDescriptor(p,k);if(d){if(p!==o||!Object.hasOwn(d,"value")||d.value!==undefined)bad();return;}p=Object.getPrototypeOf(p);}bad();};
 const num=v=>{if(typeof v!=="number"||!Number.isFinite(v)||Object.is(v,-0)||Math.abs(v)>${CURRENT_PCB_209_SPATIAL_MAX_COORDINATE})bad();return v;};
 const uint=v=>{if(!Number.isSafeInteger(v)||Object.is(v,-0)||v<0||v>2147483647)bad();return v;};
@@ -47,7 +53,7 @@ retain(query);
 record(this,["scope","originalCallback","bindings","functions"]);retain(this);const scope=own(this,"scope"),bindings=retain(own(this,"bindings")),callback=own(this,"originalCallback"),functions=own(this,"functions");
 if((${CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION})!==callback)bad();
 const bindingsCurrent=()=>{const current=collectBindings(scope),expected=Reflect.ownKeys(bindings),keys=Reflect.ownKeys(current);if(keys.length!==expected.length||keys.some((key,i)=>key!==expected[i]||own(current,key)!==own(bindings,key)))bad();
-const currentFunctions=collectFunctions(current);if(!Object.isFrozen(functions)||list(functions,256)!==currentFunctions.length)bad();for(let i=0;i<currentFunctions.length;i++)if(own(functions,String(i))!==currentFunctions[i])bad();};
+const currentFunctions=collectFunctions(current);if(!Object.isFrozen(functions)||list(functions,${arc ? 265 : 256})!==currentFunctions.length)bad();for(let i=0;i<currentFunctions.length;i++)if(own(functions,String(i))!==currentFunctions[i])bad();};
 bindingsCurrent();
 const get=k=>own(bindings,k),klass=k=>{const c=get(k);if(typeof c!=="function")bad();return c;};
 for(const [key,expected]of Object.entries(${JSON.stringify(CURRENT_PCB_209_SPATIAL_FAMILY_ORDER)})){const value=get(key);if(list(value,32)!==expected.length||expected.some((v,i)=>own(value,String(i))!==v))bad();}
@@ -86,7 +92,7 @@ const scratchShape=(o,keys)=>{const actual=Reflect.ownKeys(o);if(actual.length!=
 const calculatorShape=scratchShape(calculator,["fac","length","box","pt","i"]),factoryShape=scratchShape(factory,["minX","maxX","minY","maxY"]);
 const spatial=instance(get("Ht"),"iV");
 if(size(own(spatial,"otherMap"),Map.prototype,0)!==0||size(own(spatial,"ratlineMap"),Map.prototype,0)!==0)bad();
-const groups=entries(own(spatial,"map"),${track ? 2 : 1}),scene=[],ids=new Set,treeNodes=new Set;
+const groups=entries(own(spatial,"map"),${groups}),scene=[],ids=new Set,treeNodes=new Set;
 let regionBounds=null;if(kind==="region"){
 const cx=(query.leftMil+query.rightMil)/2,cy=(query.topMil+query.bottomMil)/2,hx=Math.abs(query.leftMil-query.rightMil)/2,hy=Math.abs(query.topMil-query.bottomMil)/2;
 regionBounds=new (klass("at"))(cx/10-hx/10,cx/10+hx/10,cy/10-hy/10,cy/10+hy/10);}
@@ -115,9 +121,10 @@ const box=own(model,"_bbox");if(own(value,"_bbox")!==box)bad();const [a,b,c,d]=b
 if(regionBounds){const [l,r,bottom,top]=bbox(regionBounds),inside=a>=l&&b<=r&&c>=bottom&&d<=top,outside=b<l||a>r||d<bottom||c>top;if(!inside&&!outside)bad();}
 scene.push({value,model,primitiveId,family:"Via"});};
 ${track ? CURRENT_PCB_209_SPATIAL_TRACK_GUARDS : ""}
-for(const [family,layerGroups]of groups){${track ? 'if(family==="Track"){for(const [layer,tree]of entries(layerGroups,2)){if(![1,2].includes(layer)||!Object.hasOwn(layerMap,String(layer)))bad();trackTree(tree,layer);}continue;}' : ""}if(family!=="Via")bad();for(const [layer,tree]of entries(layerGroups,1)){if(layer!==12)bad();instance(tree,"Nd");
+${arc ? CURRENT_PCB_209_SPATIAL_ARC_GUARDS : ""}
+for(const [family,layerGroups]of groups){${track ? 'if(family==="Track"){for(const [layer,tree]of entries(layerGroups,2)){if(![1,2].includes(layer)||!Object.hasOwn(layerMap,String(layer)))bad();trackTree(tree,layer);}continue;}' : ""}if(family!=="Via"${arc ? '&&family!=="ArcTrack"' : ""})bad();for(const [layer,tree]of entries(layerGroups,${arc ? 'family==="ArcTrack"?2:1' : 1})){if(${arc ? 'family==="ArcTrack"?(![1,2].includes(layer)||!Object.hasOwn(layerMap,String(layer))):' : ""}layer!==12)bad();instance(tree,"Nd");
 if(size(own(tree,"changeList"),Set.prototype,0)!==0||size(own(tree,"deadList"),Set.prototype,0)!==0)bad();
-const items=values(own(tree,"items"),${CURRENT_PCB_209_SPATIAL_MAX_HITS});for(const item of items)via(item);
+const items=values(own(tree,"items"),${CURRENT_PCB_209_SPATIAL_MAX_HITS});for(const item of items)${arc ? 'family==="ArcTrack"?arc(item,layer):' : ""}via(item);
 const seenLeaves=new Set,walk=(node,parent,depth)=>{if(depth>16||treeNodes.has(node)||treeNodes.size>=1024)bad();treeNodes.add(node);instance(node,"BI");if(own(node,"parent")!==parent)bad();
 const children=own(node,"childs"),n=list(children);if(n===0){if(parent!==null||items.length!==0||own(node,"_bbox")!==null)bad();return;}
 bbox(own(node,"_bbox"));for(let i=0;i<n;i++){const child=own(children,String(i));if(Object.getPrototypeOf(child)===own(klass("BI"),"prototype"))walk(child,node,depth+1);else{if(!items.includes(child)||seenLeaves.has(child))bad();seenLeaves.add(child);}}};
@@ -135,8 +142,9 @@ const raw=apply(own(Hr,method),Hr,[rectangle,{boxChoose:true,isBBox:true}]),filt
 result=query.mode==="inside"?Array.from(filtered):apply(get("YP"),undefined,[filtered]);}
 const rows=project(result);mathScratch();assertCurrent();return rows;};
 const first=read(),second=read();if(JSON.stringify(first)!==JSON.stringify(second))bad();assertCurrent();
-const result=JSON.stringify({schema:"easyeda-pro-control.pcb209-spatial-${track ? "line-via" : "via"}-read.v1",documentUuid,query,identities:first,sceneViaCount:${track ? 'scene.filter(row=>row.family==="Via").length,sceneLineCount:scene.filter(row=>row.family==="Line").length' : "scene.length"},selectedPrimitiveIds,samples:2,nativeOrderingPreserved:true,retainedSceneDescriptorsUnchanged:true,selectionUnchanged:true,allowedExistingStateEffect:"D0.code;vMe.boxCache;Jdt-local-bbox-scratch;BLe.JJ",scope:"standalone-${track ? "line-via" : "via"}-ready-bbox-scene-no-region-border-crossings",nativeFunctionGraphVerified:false,nativeIntrinsicsVerified:false,sourceMembershipVerified:false,persistenceVerified:false});
+const result=JSON.stringify({schema:"easyeda-pro-control.pcb209-spatial-${variant}-read.v1",documentUuid,query,identities:first,sceneViaCount:${track ? 'scene.filter(row=>row.family==="Via").length,sceneLineCount:scene.filter(row=>row.family==="Line").length' : "scene.length"}${arc ? ',sceneArcCount:scene.filter(row=>row.family==="Arc").length' : ""},selectedPrimitiveIds,samples:2,nativeOrderingPreserved:true,retainedSceneDescriptorsUnchanged:true,selectionUnchanged:true,allowedExistingStateEffect:"D0.code;vMe.boxCache;Jdt-local-bbox-scratch;BLe.JJ",scope:"standalone-${variant}-ready-bbox-scene-no-region-border-crossings",nativeFunctionGraphVerified:false,nativeIntrinsicsVerified:false,sourceMembershipVerified:false,persistenceVerified:false});
 if(new TextEncoder().encode(result).byteLength>${CURRENT_PCB_209_SPATIAL_MAX_BYTES})bad();return result;
 }`; }
 export const CURRENT_PCB_209_SPATIAL_READ_FUNCTION = readFunction(false);
 export const CURRENT_PCB_209_SPATIAL_TRACK_READ_FUNCTION = readFunction(true);
+export const CURRENT_PCB_209_SPATIAL_ARC_READ_FUNCTION = readFunction(true, true);

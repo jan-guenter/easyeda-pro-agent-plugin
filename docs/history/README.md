@@ -493,3 +493,4 @@ layout. The connected ledger retains its generation and case anchors.
 | [2026-10-23 selected geometry and startup-PCB batch](2026-10-23-selected-geometry-startup-pcb-batch.md) | Selected-object DTO reader, background metadata initialization and private same-owner PCB continuation |
 
 - [2026-10-28 footprint clock integration](2026-10-28-footprint-clock-integration.md)
+- [2026-11-06 Arc/Line/Via spatial implementation](2026-11-06-spatial-arc-line-via-implementation.md)

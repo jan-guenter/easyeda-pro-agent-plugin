@@ -44,6 +44,8 @@ async function decoder(selectedProfiles: readonly FixtureProfile[]): Promise<Dec
   const replaced = original.replace(anchor, `const CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES = Object.freeze(${JSON.stringify(selectedProfiles)}.map(Object.freeze));`)
     .replace('from "./current-pcb-209-spatial-track-source-profile.ts"',
       `from ${JSON.stringify(new URL("../src/current-pcb-209-spatial-track-source-profile.ts", import.meta.url).href)}`)
+    .replace('from "./current-pcb-209-spatial-arc-source-profile.ts"',
+      `from ${JSON.stringify(new URL("../src/current-pcb-209-spatial-arc-source-profile.ts", import.meta.url).href)}`)
     .replace('from "zod"', `from ${JSON.stringify(import.meta.resolve("zod"))}`);
   const code = `${stripTypeScriptTypes(replaced, { mode: "strip" })}\n//# sourceURL=pcb-spatial-function-source-test.mjs`;
   const loaded: unknown = await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);

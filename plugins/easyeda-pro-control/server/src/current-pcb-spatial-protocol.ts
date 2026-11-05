@@ -1,9 +1,9 @@
 /** Closed private spatial grammar. Qualification and mounting remain the owner's
  * responsibility; native requests contain selectors and values, never code. */
 import { z } from "zod";
-import { CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION, CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION,
+import { CURRENT_PCB_209_SPATIAL_ARC_BINDINGS_FUNCTION, CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION, CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION,
   CURRENT_PCB_209_SPATIAL_FUNCTIONS_FUNCTION, CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION, CURRENT_PCB_209_SPATIAL_TRACK_BINDINGS_FUNCTION } from "./current-pcb-209-spatial-capture-program.ts";
-import { CURRENT_PCB_209_SPATIAL_READ_FUNCTION, CURRENT_PCB_209_SPATIAL_TRACK_READ_FUNCTION } from "./current-pcb-209-spatial-read-program.ts";
+import { CURRENT_PCB_209_SPATIAL_ARC_READ_FUNCTION, CURRENT_PCB_209_SPATIAL_READ_FUNCTION, CURRENT_PCB_209_SPATIAL_TRACK_READ_FUNCTION } from "./current-pcb-209-spatial-read-program.ts";
 import { currentPcb209SpatialQuerySchema } from "./current-pcb-209-spatial-read.ts";
 import { CURRENT_PCB_SPATIAL_OBJECT_GROUP } from "./current-pcb-spatial-capture-runner.ts";
 import type { CurrentPcbSpatialCaptureCommand } from "./current-pcb-spatial-capture-runner.ts";
@@ -32,6 +32,8 @@ const readParams = z.strictObject({ ...effects, throwOnSideEffect: z.literal(fal
 const releaseParams = z.strictObject({ objectGroup: group });
 const trackBindingParams = bindingParams.extend({ functionDeclaration: z.literal(CURRENT_PCB_209_SPATIAL_TRACK_BINDINGS_FUNCTION) });
 const trackReadParams = readParams.extend({ functionDeclaration: z.literal(CURRENT_PCB_209_SPATIAL_TRACK_READ_FUNCTION) });
+const arcBindingParams = bindingParams.extend({ functionDeclaration: z.literal(CURRENT_PCB_209_SPATIAL_ARC_BINDINGS_FUNCTION) });
+const arcReadParams = readParams.extend({ functionDeclaration: z.literal(CURRENT_PCB_209_SPATIAL_ARC_READ_FUNCTION) });
 const schema = z.discriminatedUnion("spatialPhase", [
   z.strictObject({ spatialPhase: z.literal("wrapper"), method: z.literal("Runtime.evaluate"), params: wrapperParams }),
   z.strictObject({ spatialPhase: z.literal("properties"), method: z.literal("Runtime.getProperties"), params: propertyParams }),
@@ -40,9 +42,11 @@ const schema = z.discriminatedUnion("spatialPhase", [
   z.strictObject({ spatialPhase: z.literal("bindings"), method: z.literal("Runtime.callFunctionOn"), params: bindingParams }),
   z.strictObject({ spatialPhase: z.literal("bindings-track"), method: z.literal("Runtime.callFunctionOn"),
     params: trackBindingParams }),
+  z.strictObject({ spatialPhase: z.literal("bindings-arc"), method: z.literal("Runtime.callFunctionOn"), params: arcBindingParams }),
   z.strictObject({ spatialPhase: z.literal("read"), method: z.literal("Runtime.callFunctionOn"), params: readParams }),
   z.strictObject({ spatialPhase: z.literal("read-track"), method: z.literal("Runtime.callFunctionOn"),
     params: trackReadParams }),
+  z.strictObject({ spatialPhase: z.literal("read-arc"), method: z.literal("Runtime.callFunctionOn"), params: arcReadParams }),
   z.strictObject({ spatialPhase: z.literal("release"), method: z.literal("Runtime.releaseObjectGroup"), params: releaseParams }),
 ]);
 export type CurrentPcbSpatialWireCommand = CurrentPcbSpatialCaptureCommand & Readonly<{ id: number; sessionId: string }>;
@@ -63,8 +67,8 @@ export function currentPcbSpatialWire(input: unknown, id: number, sessionId: str
     action: "spatial209", requestId: id, method: command.method, sessionId: selectedSession, spatialPhase: command.spatialPhase,
     ...("uniqueContextId" in command.params ? { uniqueContextId: command.params.uniqueContextId } : {}),
     ...("objectId" in command.params ? { objectId: command.params.objectId } : {}),
-    ...(command.spatialPhase === "bindings" || command.spatialPhase === "bindings-track" ? { callbackObjectId: command.params.arguments[0].objectId } : {}),
-    ...(command.spatialPhase === "read" || command.spatialPhase === "read-track" ? { queryKind: command.params.arguments[0].value.kind,
+    ...(command.spatialPhase === "bindings" || command.spatialPhase === "bindings-track" || command.spatialPhase === "bindings-arc" ? { callbackObjectId: command.params.arguments[0].objectId } : {}),
+    ...(command.spatialPhase === "read" || command.spatialPhase === "read-track" || command.spatialPhase === "read-arc" ? { queryKind: command.params.arguments[0].value.kind,
       ...(command.params.arguments[0].value.kind === "point" ? { xMil: command.params.arguments[0].value.xMil, yMil: command.params.arguments[0].value.yMil } :
         { queryMode: command.params.arguments[0].value.mode, leftMil: command.params.arguments[0].value.leftMil,
           rightMil: command.params.arguments[0].value.rightMil, bottomMil: command.params.arguments[0].value.bottomMil, topMil: command.params.arguments[0].value.topMil }) } : {}),

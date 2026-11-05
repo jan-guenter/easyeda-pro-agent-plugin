@@ -41,10 +41,17 @@ function data(value: unknown, keys: readonly string[]): Record<string, unknown> 
 /** A complete bounded CDP string only; parsing creates no owner or provenance. */
 export function decodeCurrentPcb209SpatialTrackReply(input: unknown): CurrentPcb209SpatialTrackResult {
   try {
+    const decoded = decodeCurrentPcb209SpatialResultData(input);
+    return freezeDeep(currentPcb209SpatialTrackResultSchema.parse(decoded));
+  } catch { throw new Error("PCB209_SPATIAL_TRACK_REPLY"); }
+}
+/** Share only the inert bounded wire decoder across distinct result schemas.
+ * This returns data, never a geometry, runtime or ownership qualification. */
+export function decodeCurrentPcb209SpatialResultData(input: unknown): unknown {
+  try {
     const outer = data(input, ["result"]), remote = data(outer["result"], ["type", "value"]), value = remote["value"];
     if (remote["type"] !== "string" || typeof value !== "string" || !value.isWellFormed() ||
         Buffer.byteLength(value) > CURRENT_PCB_209_SPATIAL_MAX_BYTES) { throw new Error("SPATIAL_TRACK_REPLY"); }
-    const decoded = decodeCurrentPcbDiagnosticJson(Buffer.from(value));
-    return freezeDeep(currentPcb209SpatialTrackResultSchema.parse(decoded));
+    return decodeCurrentPcbDiagnosticJson(Buffer.from(value));
   } catch { throw new Error("PCB209_SPATIAL_TRACK_REPLY"); }
 }

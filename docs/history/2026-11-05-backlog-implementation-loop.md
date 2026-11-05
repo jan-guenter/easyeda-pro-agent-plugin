@@ -4,7 +4,7 @@ The user requested implementation of the nine remaining backlog groups after
 the completed PR170 release. Work starts from protected main `b16fb1e6` on
 `feature/backlog-implementation-20261105` in the canonical repository. This is
 an implementation batch, not an installed release or connected validation.
-excluded production design must remain unopened and unchanged.
+the excluded production project must remain unopened and unchanged.
 
 ## Initial integrated increments
 
@@ -82,3 +82,13 @@ made. The corresponding requirement is now in `AGENTS.md` (`fb03a35`).
 One redundant parent session inspection returned `Transport closed`; that old
 connection remains closed and must never be retried. A fresh manager connection
 is the later live-validation route. Original cleanup evidence stays private.
+
+## 2026-11-06 source continuation
+
+`66aa1f6` supplies the schematic callback authentication correction described
+above. Its regression uses the production upstream dispatch scope and an
+in-memory authenticated transport; it is not a live application proof.
+
+The [Arc/Line/Via extension](2026-11-06-spatial-arc-line-via-implementation.md)
+adds a third once-only spatial variant without enlarging native limits. The
+combined native helper and final payload are still pending integration.

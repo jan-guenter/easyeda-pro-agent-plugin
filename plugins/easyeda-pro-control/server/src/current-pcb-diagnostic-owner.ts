@@ -19,11 +19,12 @@ import { ORDINARY_LAUNCH_209_PROFILE } from "./ordinary-launch-209-profile.ts";
 import { CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentFootprintCopyForwardSavedDiscoveryPipe, CurrentFootprintHeldCacheDiagnosticPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbWorkerStartupDiscoveryPipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
 import type { CurrentPcbDiagnosticFailureObservation } from "./current-pcb-diagnostic-pipe.ts";
 import { CurrentPcbSpatialPipe, spatialDiagnosticNativeRequest } from "./current-pcb-spatial-pipe.ts";
-import { CURRENT_PCB_SPATIAL_PROFILE, CURRENT_PCB_SPATIAL_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION } from "./current-pcb-spatial-profile.ts";
+import { CURRENT_PCB_SPATIAL_ARC_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_PROFILE, CURRENT_PCB_SPATIAL_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION } from "./current-pcb-spatial-profile.ts";
 import { CURRENT_PCB_209_SPATIAL_SOURCE_PROFILE } from "./current-pcb-209-spatial-source-profile.ts";
 import { CurrentPcbSpatialCaptureRunner } from "./current-pcb-spatial-capture-runner.ts";
 import type { CurrentPcb209SpatialResult } from "./current-pcb-209-spatial-read.ts";
 import type { CurrentPcb209SpatialTrackResult } from "./current-pcb-209-spatial-track-read.ts";
+import type { CurrentPcb209SpatialArcResult } from "./current-pcb-209-spatial-arc-read.ts";
 import { DIAGNOSTIC_REQUEST_LIMIT, combinedDiagnosticNativeRequest, diagnosticNativeRequest, heldCacheDiagnosticNativeRequest, stringPrecreateNativeRequest, visualDiagnosticNativeRequest } from "./current-pcb-diagnostic-protocol.ts";
 import { CurrentPcbDiagnosticContext, diagnosticBoundedObservation, diagnosticTargetInventory, diagnosticTargetSummary,
   validateDiagnosticFrameExpectation, validateDiagnosticScriptProfile } from "./current-pcb-diagnostic-context.ts";
@@ -1269,6 +1270,10 @@ class CurrentPcbRetainedOwnerCore {
    * original one-shot reservation, so a failed read cannot select a fallback. */
   public observeSpatialTrack209(input: CurrentDisposableOpenSealedTarget, queries: unknown): Promise<readonly CurrentPcb209SpatialTrackResult[]> {
     return this.#observeSpatial209(input, runner => runner.readTrackBatch(queries), CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION.spatialStage);
+  }
+  /** Circular ArcTrack, Track and Via share the same consumed original slot. */
+  public observeSpatialArc209(input: CurrentDisposableOpenSealedTarget, queries: unknown): Promise<readonly CurrentPcb209SpatialArcResult[]> {
+    return this.#observeSpatial209(input, runner => runner.readArcBatch(queries), CURRENT_PCB_SPATIAL_ARC_REQUEST_DERIVATION.spatialStage);
   }
   /** Keep all ownership, source and cleanup checks identical for both fixed
    * internal variants; the caller supplies neither a program nor a transport. */

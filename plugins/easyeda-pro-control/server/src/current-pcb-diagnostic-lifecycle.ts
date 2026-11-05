@@ -1,13 +1,13 @@
 /** Original-owner validation lifecycle with one checkpoint-bound disposable
  * opening. No generic debugger command, CAD writer or historical owner recreation. */
 /* oxlint-disable max-classes-per-file, import/max-dependencies -- Fixed facades share one private cleanup/journal core; keeping the purpose selector unexported prevents a caller-selectable upgrade API. */
+import { CURRENT_PCB_SPATIAL_OPERATION_PREFIX, currentPcbSpatialArcObservation, currentPcbSpatialObservation, currentPcbSpatialObservationSchema, currentPcbSpatialRequestSchema,
+  currentPcbSpatialTrackObservation, requireCurrentPcbSpatialArcObservation, requireCurrentPcbSpatialObservation, requireCurrentPcbSpatialTrackObservation } from "./current-pcb-spatial-validation.ts";
 import { CURRENT_WINDOW_RESTORE_LIMITS, currentWindowRestoreResult, requireCurrentWindowRestoreResult } from "./current-pcb-diagnostic-window-restore.ts";
 import { CURRENT_WINDOW_RESIZE_LIMITS, currentWindowResizeResult, requireCurrentWindowResizeResult } from "./current-pcb-diagnostic-window-resize.ts";
 import { currentRendererCaptureResult, decodeCurrentRendererCapture, publishCurrentRendererCapture, requireCurrentRendererCaptureResult } from "./current-pcb-diagnostic-renderer-capture.ts";
 import { currentWindowCaptureResult, publishCurrentWindowCapture, requireCurrentWindowCaptureResult } from "./current-pcb-diagnostic-window-capture.ts";
 import { currentPcb209VisualRequestSchema } from "./current-pcb-209-visual-validation.ts";
-import { CURRENT_PCB_SPATIAL_OPERATION_PREFIX, currentPcbSpatialObservation, currentPcbSpatialObservationSchema,
-  currentPcbSpatialRequestSchema, currentPcbSpatialTrackObservation,requireCurrentPcbSpatialObservation,requireCurrentPcbSpatialTrackObservation } from "./current-pcb-spatial-validation.ts";
 import type { CurrentPcbSpatialRequest } from "./current-pcb-spatial-validation.ts";
 import type { CurrentPcb209VisualRequest } from "./current-pcb-209-visual-validation.ts";
 import { CURRENT_PCB_209_VISUAL_RESULT_BYTES, requireCurrentPcb209VisualResult } from "./current-pcb-209-visual-actions.ts";
@@ -213,7 +213,7 @@ const methods = ["launch", "status", "observeApplicationWindow", "requestNormalC
   "releaseNoProcess", "browserObservation", "inspectFrames", "inspectScript", "inspectWorkers", "inspectWorkerScript", "observeWorkerState", "observeModelState", "openProject",
   "openPcb", "observePcbOpening"] as const;
 export type CurrentPcbDiagnosticLifecycleOwner = Pick<CurrentPcbDiagnosticOwner, (typeof methods)[number]> &
-  Partial<Pick<CurrentPcbDiagnosticOwner, "observeSpatial209" | "observeSpatialTrack209" | "observeLayers209" | "observePrimitives209" | "observeExtendedPrimitives209" | "observeSelectionRelations209" | "observePadShapes209" | "observeImageShapes209" | "observeArcShapes209" | "observePouredShapes209" | "performVisual209" | "captureRendererViewport209" | "rendererCaptureSession209" | "captureWindow209" | "observeWindowCaptureReadiness209" | "resizeWindowForCapture209" | "restoreWindowForCapture209" | "terminateVisualJob">>;
+  Partial<Pick<CurrentPcbDiagnosticOwner, "observeSpatial209" | "observeSpatialTrack209" | "observeSpatialArc209" | "observeLayers209" | "observePrimitives209" | "observeExtendedPrimitives209" | "observeSelectionRelations209" | "observePadShapes209" | "observeImageShapes209" | "observeArcShapes209" | "observePouredShapes209" | "performVisual209" | "captureRendererViewport209" | "rendererCaptureSession209" | "captureWindow209" | "observeWindowCaptureReadiness209" | "resizeWindowForCapture209" | "restoreWindowForCapture209" | "terminateVisualJob">>;
 type StringOwnerMethods = Pick<CurrentPcbStringPrecreateOwner, "observeStringPrecreate" | "observeCommonBaseline" | "retainedCommonBaselineFailure">;
 type StartupOwnerMethods = Pick<CurrentPcbWorkerStartupOwner, "handoffWorkerStartup">;
 type StartupContinuationOwnerMethods = Pick<CurrentPcb209RatlineContinuationOwner, "prepareWorkerStartupRatlineContinuationSession209">;
@@ -2699,7 +2699,8 @@ class CurrentPcbLifecycleCore {
     requireValue(status.profile === expectedProfile &&
       (this.#generation !== "209-spatial" || typeof retained.methods.observeSpatial209 === "function" &&
         retained.owner.observeSpatial209 === retained.methods.observeSpatial209 &&
-        retained.owner.observeSpatialTrack209 === retained.methods.observeSpatialTrack209) &&
+        retained.owner.observeSpatialTrack209 === retained.methods.observeSpatialTrack209 &&
+        retained.owner.observeSpatialArc209 === retained.methods.observeSpatialArc209) &&
       (this.#generation !== "209-visual" || typeof retained.methods.restoreWindowForCapture209 === "function" && retained.owner.restoreWindowForCapture209 === retained.methods.restoreWindowForCapture209 &&
         typeof retained.methods.resizeWindowForCapture209 === "function" && retained.owner.resizeWindowForCapture209 === retained.methods.resizeWindowForCapture209 &&
         typeof retained.methods.observeWindowCaptureReadiness209 === "function" && retained.owner.observeWindowCaptureReadiness209 === retained.methods.observeWindowCaptureReadiness209 &&
@@ -3062,7 +3063,7 @@ class CurrentPcbLifecycleCore {
       observeModelState: owner.observeModelState, openProject: owner.openProject,
       openPcb: owner.openPcb, observePcbOpening: owner.observePcbOpening,
       ...(this.#generation === "209-visual" ? { performVisual209: owner.performVisual209, captureRendererViewport209: owner.captureRendererViewport209, rendererCaptureSession209: owner.rendererCaptureSession209, captureWindow209: owner.captureWindow209, observeWindowCaptureReadiness209: owner.observeWindowCaptureReadiness209, resizeWindowForCapture209: owner.resizeWindowForCapture209, restoreWindowForCapture209: owner.restoreWindowForCapture209, terminateVisualJob: owner.terminateVisualJob } : {}),
-      ...(this.#generation === "209-spatial" ? { observeSpatial209: owner.observeSpatial209, observeSpatialTrack209: owner.observeSpatialTrack209 } : {}),
+      ...(this.#generation === "209-spatial" ? { observeSpatial209: owner.observeSpatial209, observeSpatialTrack209: owner.observeSpatialTrack209, observeSpatialArc209: owner.observeSpatialArc209 } : {}),
       ...(opening209(this.#generation) && this.#generation !== "209-spatial" ? { observeLayers209: owner.observeLayers209, observePrimitives209: owner.observePrimitives209,
         observeExtendedPrimitives209: owner.observeExtendedPrimitives209, observeSelectionRelations209: owner.observeSelectionRelations209,
         observePadShapes209: owner.observePadShapes209, observeImageShapes209: owner.observeImageShapes209, observeArcShapes209: owner.observeArcShapes209, observePouredShapes209: owner.observePouredShapes209 } : {}),
@@ -3168,7 +3169,7 @@ class CurrentPcbLifecycleCore {
     if (request.action === "open-project") { return this.#openProject(request, operation, operations, retained); }
     if (request.action === "open-pcb") { return this.#openPcb(request, operation, operations, retained); }
     if (request.action === "observe-common-baseline") { return this.#observeCommonBaseline(request, operation, operations, retained); }
-    if (request.action === "observe-spatial" || request.action === "observe-spatial-lines") { return this.#observeSpatial(request, operation, operations, retained); }
+    if (request.action === "observe-spatial" || request.action === "observe-spatial-lines" || request.action === "observe-spatial-arcs") { return this.#observeSpatial(request, operation, operations, retained); }
     if (request.action === "browser-observation" || request.action === "inspect-frames" || request.action === "inspect-script" ||
         request.action === "inspect-workers" || request.action === "inspect-worker-script" || request.action === "observe-worker-state" ||
         request.action === "capture-renderer-viewport" || request.action === "restore-window-for-capture" || request.action === "resize-window-for-capture" || request.action === "capture-window" || request.action === "perform-visual" || request.action === "observe-model-state" || request.action === "observe-pcb-opening" || request.action === "observe-string-precreate" || request.action === "observe-layers" || request.action === "observe-primitives" || request.action === "observe-extended-primitives" || request.action === "observe-selection-relations" || request.action === "observe-pad-shapes" || request.action === "observe-image-shapes" || request.action === "observe-arc-shapes" || request.action === "observe-poured-shapes") {
@@ -3252,10 +3253,10 @@ class CurrentPcbLifecycleCore {
   }
   /** Consume one fixed query batch before native dispatch. Original results
    * remain retained if validation or publication later refuses settlement. */
-  async #observeSpatial(request: Extract<CurrentPcbSpatialRequest, { action: "observe-spatial" | "observe-spatial-lines" }>, operation: DiagnosticLifecycleOperation,
+  async #observeSpatial(request: Extract<CurrentPcbSpatialRequest, { action: "observe-spatial" | "observe-spatial-lines" | "observe-spatial-arcs" }>, operation: DiagnosticLifecycleOperation,
     operations: readonly DiagnosticLifecycleOperation[], retained: Retained): Promise<Record<string, unknown>> {
-    const mixed = request.action === "observe-spatial-lines";
-    const observe = mixed ? retained.methods.observeSpatialTrack209 : retained.methods.observeSpatial209;
+    const arcs = request.action === "observe-spatial-arcs", mixed = request.action === "observe-spatial-lines";
+    const observe = { "observe-spatial-arcs": retained.methods.observeSpatialArc209, "observe-spatial-lines": retained.methods.observeSpatialTrack209, "observe-spatial": retained.methods.observeSpatial209 }[request.action];
     requireValue(this.#generation === "209-spatial" && observe !== undefined && operation.records["binding.json"]?.launchAcknowledged === true &&
       retained.binding?.rootCreated !== "0" && operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined,
     "SPATIAL209_PURPOSE");
@@ -3263,7 +3264,7 @@ class CurrentPcbLifecycleCore {
     const preparation = this.#originalProjectOpening(operation); this.#originalPcbSource(operation);
     await this.#installation(retained); await assertSnapshot(operations); this.#assertNormalOwner(retained);
     const intent: NonNullable<DiagnosticLifecycleRecords["spatial209-intent.json"]> = {
-      schema: mixed ? "easyeda-pro-control.pcb209-spatial-line-via-observation-intent.v1" : "easyeda-pro-control.pcb209-spatial-observation-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+      schema: ({ "observe-spatial-arcs": "easyeda-pro-control.pcb209-spatial-arc-line-via-observation-intent.v1", "observe-spatial-lines": "easyeda-pro-control.pcb209-spatial-line-via-observation-intent.v1", "observe-spatial": "easyeda-pro-control.pcb209-spatial-observation-intent.v1" } as const)[request.action], operationId: request.operationId, createdAt: new Date().toISOString(),
       stage: "spatial209", bindingSha256: request.expectedBindingSha256,
       pcbOpeningResultSha256: sha256Json(operation.records["pcb-opening-result.json"]), queries: structuredClone(request.queries), acceptNativeScratchEffects: true,
     };
@@ -3272,12 +3273,13 @@ class CurrentPcbLifecycleCore {
     const expected = operations.map(value => value.operationId === operation.operationId ? updated : value);
     await assertSnapshot(expected); this.#assertNormalOwner(retained); this.#originalPcbSource(updated);
     const raw = await Reflect.apply(observe, retained.owner, [preparation.sealedTarget, request.queries]) as unknown;
-    const result = mixed ? currentPcbSpatialTrackObservation(raw) : currentPcbSpatialObservation(raw); this.#observations.set("spatial209", result);
+    const result = { "observe-spatial-arcs": currentPcbSpatialArcObservation, "observe-spatial-lines": currentPcbSpatialTrackObservation, "observe-spatial": currentPcbSpatialObservation }[request.action](raw); this.#observations.set("spatial209", result);
     this.#assertNormalOwner(retained);
-    if (mixed) { requireCurrentPcbSpatialTrackObservation(result, preparation.sealedTarget, request.queries); }
+    if (arcs) { requireCurrentPcbSpatialArcObservation(result, preparation.sealedTarget, request.queries); }
+    else if (mixed) { requireCurrentPcbSpatialTrackObservation(result, preparation.sealedTarget, request.queries); }
     else { requireCurrentPcbSpatialObservation(result, preparation.sealedTarget, request.queries); }
     const record = diagnosticLifecycleRecordSchemas["spatial209-result.json"].parse({
-      schema: mixed ? "easyeda-pro-control.pcb209-spatial-line-via-observation-result.v1" : "easyeda-pro-control.pcb209-spatial-observation-result.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+      schema: ({ "observe-spatial-arcs": "easyeda-pro-control.pcb209-spatial-arc-line-via-observation-result.v1", "observe-spatial-lines": "easyeda-pro-control.pcb209-spatial-line-via-observation-result.v1", "observe-spatial": "easyeda-pro-control.pcb209-spatial-observation-result.v1" } as const)[request.action], operationId: request.operationId, createdAt: new Date().toISOString(),
       stage: "spatial209", intentSha256: sha256Json(intent), result: structuredClone(result), executionAuthorized: false, saveAuthorized: false,
     });
     this.#retainRecord("spatial209-result.json", record);

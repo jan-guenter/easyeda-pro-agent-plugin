@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- The single original capture/release coordinator shares the three immutable result readers and fixed variant programs; splitting it would duplicate original-handle cleanup. */
 /** Original-context point callback capture. The fixed programs inspect the
  * source-admitted registry and lexical bindings without calling a hit handler.
  * No remote handle, code selector or source profile is accepted from a tool.
@@ -5,15 +6,17 @@
 import { types } from "node:util";
 import { z } from "zod";
 import { canonicalJson } from "./core.ts";
-import { CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION, CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION, CURRENT_PCB_209_SPATIAL_FUNCTIONS_FUNCTION,
-  CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION, CURRENT_PCB_209_SPATIAL_TRACK_BINDINGS_FUNCTION } from "./current-pcb-209-spatial-capture-program.ts";
+import { CURRENT_PCB_209_SPATIAL_ARC_BINDINGS_FUNCTION, CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION, CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION,
+  CURRENT_PCB_209_SPATIAL_FUNCTIONS_FUNCTION, CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION, CURRENT_PCB_209_SPATIAL_TRACK_BINDINGS_FUNCTION } from "./current-pcb-209-spatial-capture-program.ts";
 import { decodeCurrentPcbSpatialFunction, decodeCurrentPcbSpatialFunctionScope,
   decodeCurrentPcbSpatialFunctionScopeList } from "./current-pcb-spatial-function-scope.ts";
-import { CURRENT_PCB_209_SPATIAL_READ_FUNCTION, CURRENT_PCB_209_SPATIAL_TRACK_READ_FUNCTION } from "./current-pcb-209-spatial-read-program.ts";
+import { CURRENT_PCB_209_SPATIAL_ARC_READ_FUNCTION, CURRENT_PCB_209_SPATIAL_READ_FUNCTION, CURRENT_PCB_209_SPATIAL_TRACK_READ_FUNCTION } from "./current-pcb-209-spatial-read-program.ts";
 import { currentPcb209SpatialQuerySchema, decodeCurrentPcb209SpatialReply } from "./current-pcb-209-spatial-read.ts";
 import type { CurrentPcb209SpatialQuery, CurrentPcb209SpatialResult } from "./current-pcb-209-spatial-read.ts";
 import { currentPcb209SpatialTrackQueriesSchema, decodeCurrentPcb209SpatialTrackReply } from "./current-pcb-209-spatial-track-read.ts";
 import type { CurrentPcb209SpatialTrackResult } from "./current-pcb-209-spatial-track-read.ts";
+import { currentPcb209SpatialArcQueriesSchema, decodeCurrentPcb209SpatialArcReply } from "./current-pcb-209-spatial-arc-read.ts";
+import type { CurrentPcb209SpatialArcResult } from "./current-pcb-209-spatial-arc-read.ts";
 import type { CurrentPcbSpatialVariant } from "./current-pcb-spatial-function-source.ts";
 import { decodeCurrentPcbSpatialFunctionSourceArray, decodeCurrentPcbSpatialFunctionSourceMetadata,
   decodeCurrentPcbSpatialFunctionSourceTuple } from "./current-pcb-spatial-function-source.ts";
@@ -35,13 +38,13 @@ export type CurrentPcbSpatialCaptureCommand =
     objectId: string; functionDeclaration: typeof CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION;
     objectGroup: typeof CURRENT_PCB_SPATIAL_OBJECT_GROUP; returnByValue: false;
   }> }>
-  | Readonly<{ spatialPhase: "bindings" | "bindings-track"; method: "Runtime.callFunctionOn"; params: Omit<typeof EFFECTS, "throwOnSideEffect"> & Readonly<{
+  | Readonly<{ spatialPhase: "bindings" | "bindings-track" | "bindings-arc"; method: "Runtime.callFunctionOn"; params: Omit<typeof EFFECTS, "throwOnSideEffect"> & Readonly<{
     throwOnSideEffect: false;
     objectId: string; functionDeclaration: typeof CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION;
     objectGroup: typeof CURRENT_PCB_SPATIAL_OBJECT_GROUP; returnByValue: false;
     arguments: readonly [Readonly<{ objectId: string }>];
   }> }>
-  | Readonly<{ spatialPhase: "read" | "read-track"; method: "Runtime.callFunctionOn"; params: Omit<typeof EFFECTS, "throwOnSideEffect"> & Readonly<{
+  | Readonly<{ spatialPhase: "read" | "read-track" | "read-arc"; method: "Runtime.callFunctionOn"; params: Omit<typeof EFFECTS, "throwOnSideEffect"> & Readonly<{
     throwOnSideEffect: false; objectId: string; functionDeclaration: typeof CURRENT_PCB_209_SPATIAL_READ_FUNCTION;
     objectGroup: typeof CURRENT_PCB_SPATIAL_OBJECT_GROUP; returnByValue: true;
     arguments: readonly [Readonly<{ value: CurrentPcb209SpatialQuery }>];
@@ -165,11 +168,11 @@ export class CurrentPcbSpatialCaptureRunner {
       } }, input => decodeCurrentPcbSpatialFunction(input, "point-handler"));
       const handlerScopes = await this.#properties(handler, input => decodeCurrentPcbSpatialFunctionScopeList(input, this.#scriptId, "point-handler"));
       const handlerScope = await this.#properties(handlerScopes, input => decodeCurrentPcbSpatialFunctionScope(input, "point-handler"));
-      const bundle = await this.#request({ spatialPhase: variant === "via" ? "bindings" : "bindings-track", method: "Runtime.callFunctionOn", params: {
+      const bundle = await this.#request({ spatialPhase: ({ via: "bindings", "line-via": "bindings-track", "arc-line-via": "bindings-arc" } as const)[variant], method: "Runtime.callFunctionOn", params: {
         // The fixed bindings program only allocates and seals private containers.
         // V8 refuses its defineProperty/freeze calls under the side-effect flag.
         // No vendor getter, callback or hit method runs or app object changes.
-        ...EFFECTS, throwOnSideEffect: false, objectId: handlerScope, functionDeclaration: variant === "via" ? CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION : CURRENT_PCB_209_SPATIAL_TRACK_BINDINGS_FUNCTION,
+        ...EFFECTS, throwOnSideEffect: false, objectId: handlerScope, functionDeclaration: { via: CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION, "line-via": CURRENT_PCB_209_SPATIAL_TRACK_BINDINGS_FUNCTION, "arc-line-via": CURRENT_PCB_209_SPATIAL_ARC_BINDINGS_FUNCTION }[variant],
         objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP, returnByValue: false, arguments: [{ objectId: wrapper }],
       } }, bundleHandle);
       if (qualify) {
@@ -251,5 +254,24 @@ export class CurrentPcbSpatialCaptureRunner {
       }
       return Object.freeze(results);
     }, true, "line-via");
+  }
+  /** Six queries share the265-callee Arc/Line/Via qualification and the same
+   * one-shot original capture. No earlier variant is a fallback after failure. */
+  public readArcBatch(input: unknown): Promise<readonly CurrentPcb209SpatialArcResult[]> {
+    const queries = freezeDeep(currentPcb209SpatialArcQueriesSchema.parse(input));
+    return this.#run(async bundle => {
+      const results: CurrentPcb209SpatialArcResult[] = [];
+      for (const query of queries) {
+        results.push(await this.#request({ spatialPhase: "read-arc", method: "Runtime.callFunctionOn", params: {
+          ...EFFECTS, throwOnSideEffect: false, objectId: bundle, functionDeclaration: CURRENT_PCB_209_SPATIAL_ARC_READ_FUNCTION,
+          objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP, returnByValue: true, arguments: [{ value: query }],
+        } }, reply => {
+          const result = decodeCurrentPcb209SpatialArcReply(reply);
+          if (result.documentUuid !== this.#documentUuid || canonicalJson(result.query) !== canonicalJson(query)) { return refuse(); }
+          return result;
+        }));
+      }
+      return Object.freeze(results);
+    }, true, "arc-line-via");
   }
 }

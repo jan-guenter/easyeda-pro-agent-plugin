@@ -11,10 +11,10 @@ import { CurrentPcbSpatialPipe } from "../src/current-pcb-spatial-pipe.ts";
 import { CURRENT_PCB_SPATIAL_PROFILE, CURRENT_PCB_SPATIAL_REQUEST_DERIVATION } from "../src/current-pcb-spatial-profile.ts";
 import { currentPcbSpatialWire, spatialDiagnosticNativeRequest } from "../src/current-pcb-spatial-protocol.ts";
 import { CURRENT_PCB_SPATIAL_OBJECT_GROUP } from "../src/current-pcb-spatial-capture-runner.ts";
-import { CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION, CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION,
-  CURRENT_PCB_209_SPATIAL_FUNCTIONS_FUNCTION, CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION,CURRENT_PCB_209_SPATIAL_TRACK_BINDINGS_FUNCTION } from "../src/current-pcb-209-spatial-capture-program.ts";
+import { CURRENT_PCB_209_SPATIAL_ARC_BINDINGS_FUNCTION, CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION, CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION,
+  CURRENT_PCB_209_SPATIAL_FUNCTIONS_FUNCTION, CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION, CURRENT_PCB_209_SPATIAL_TRACK_BINDINGS_FUNCTION } from "../src/current-pcb-209-spatial-capture-program.ts";
 import { CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES } from "../src/current-pcb-209-spatial-source-profile.ts";
-import { CURRENT_PCB_209_SPATIAL_READ_FUNCTION,CURRENT_PCB_209_SPATIAL_TRACK_READ_FUNCTION } from "../src/current-pcb-209-spatial-read-program.ts";
+import { CURRENT_PCB_209_SPATIAL_ARC_READ_FUNCTION, CURRENT_PCB_209_SPATIAL_READ_FUNCTION, CURRENT_PCB_209_SPATIAL_TRACK_READ_FUNCTION } from "../src/current-pcb-209-spatial-read-program.ts";
 
 const effects = { throwOnSideEffect: true, silent: true, awaitPromise: false, generatePreview: false, userGesture: false } as const;
 const wrapper = { spatialPhase: "wrapper", method: "Runtime.evaluate", params: { ...effects,
@@ -70,6 +70,30 @@ void test("mixed native grammar pins its program, forbids variant switching and 
   for (let i = 0; i < 15; i += 1) { await pipe.observeSpatial(trackRead); }
   await assert.rejects(pipe.observeSpatial(trackRead), /READ_SEQUENCE/u);
   await pipe.observeSpatial(release);
+});
+
+void test("Arc native grammar retains its six-query limit, fixed program and original release", async context => {
+  const { pipe, sent } = fixture(context, true); assert.ok(pipe instanceof CurrentPcbSpatialPipe);
+  await pipe.attachTarget("original-target", () => { assert.fail("Unexpected event"); });
+  await pipe.getScriptSource("original-script");
+  pipe.bindSpatial({ uniqueContextId: "original-context", scriptId: "original-script" });
+  await pipe.observeSpatial(wrapper);
+  await pipe.observeSpatial({ spatialPhase: "handler", method: "Runtime.callFunctionOn", params: { ...effects, objectId: "scope",
+    functionDeclaration: CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION, objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP, returnByValue: false } });
+  await pipe.observeSpatial({ spatialPhase: "bindings-arc", method: "Runtime.callFunctionOn", params: { ...effects, throwOnSideEffect: false,
+    objectId: "scope", functionDeclaration: CURRENT_PCB_209_SPATIAL_ARC_BINDINGS_FUNCTION, objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP,
+    returnByValue: false, arguments: [{ objectId: "wrapper" }] } });
+  await pipe.observeSpatial({ spatialPhase: "functions", method: "Runtime.callFunctionOn", params: { ...effects, objectId: "bundle",
+    functionDeclaration: CURRENT_PCB_209_SPATIAL_FUNCTIONS_FUNCTION, objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP, returnByValue: false } });
+  const read = { ...trackRead, spatialPhase: "read-arc", params: { ...trackRead.params, functionDeclaration: CURRENT_PCB_209_SPATIAL_ARC_READ_FUNCTION } } as const;
+  const fixed = currentPcbSpatialWire(read, 383, "s");
+  assert.equal(spatialDiagnosticNativeRequest(bytes(fixed.command))["spatialPhase"], "read-arc");
+  assert.throws(() => currentPcbSpatialWire({ ...read, params: trackRead.params }, 10, "s"));
+  await assert.rejects(pipe.observeSpatial(trackRead), /READ_SEQUENCE/u);
+  for (let i = 0; i < 6; i += 1) { await pipe.observeSpatial(read); }
+  const used = sent.length;
+  await assert.rejects(pipe.observeSpatial(read), /READ_SEQUENCE/u); assert.equal(sent.length, used);
+  await pipe.observeSpatial(release); assert.equal(sent.length, used + 1);
 });
 
 void test("spatial purpose derives its fixed complete-workflow cap from the function catalog", context => {

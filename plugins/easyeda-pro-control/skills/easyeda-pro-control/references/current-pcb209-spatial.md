@@ -1,7 +1,8 @@
 # Disposable PCB point and region identities
 
 Use this reference for the separate `spatial` development/validation purpose on
-the reviewed EasyEDA 3.2.209 installation. It supports restricted Via or Line/Via scenes,
+the reviewed EasyEDA 3.2.209 installation. It supports restricted Via, Line/Via or
+Arc/Line/Via scenes,
 not point picking on an ordinary populated user board. For general object
 observations, use [the opening reader](current-pcb209-opening.md).
 
@@ -62,6 +63,13 @@ same observation slot as the Via batch; a failure never permits switching to
 the other action. The256-callee qualification and fifteen-query limit fit the
 existing384-request purpose, including original group release.
 
+For circular ArcTrack models, choose `observe-spatial-arcs` with one to six
+queries. It admits the same Line/Via subset and projects native ArcTrack as SDK
+family `Arc`. It qualifies265 original application functions, keeping the same
+384-request cap and original release reserve. It uses a third immutable result
+schema and consumes the same observation slot; no variant can follow another
+variant's completed or failed attempt.
+
 ## Supported scene and effects
 
 The initial scene contains only standalone, unlocked, visible through vias in
@@ -76,11 +84,14 @@ on copper layer1 or2 with width at least0.05 native units. Their complete ready
 octagon indexes, original model bounds, reciprocal model/view and shared
 layer/width/lock/net fields must agree. Lazy geometry, maintenance queues and
 region border crossings refuse before the native hit. The256-object ceiling
-applies across both families and all admitted layers. Arcs, graphical native
-Line models, components, pads and other families remain unsupported. Neither
-action is a general populated-board picker.
+applies across admitted families and layers. The Arc action additionally
+requires a finite positive circular radius, bounded start/end angles, an exact
+clockwise/counterclockwise enum, arcType1, width at least0.05 native units and
+copper layer1 or2. It requires the original ready model/view/index and cached
+bounds. Graphical native Arc/Line models, components, pads and other families
+remain unsupported. These actions are not general populated-board pickers.
 
-Each query returns bounded ordered Via identities from two matching native
+Each query returns bounded ordered supported identities from two matching native
 samples, together with the ordered selected IDs and retained-descriptor checks.
 It executes neither the lossy public point mapper nor the selection-changing
 public region handler. It does not select a later supported hit after an

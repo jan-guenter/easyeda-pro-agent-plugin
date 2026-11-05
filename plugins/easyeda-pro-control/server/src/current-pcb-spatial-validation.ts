@@ -7,6 +7,7 @@ import { CURRENT_PCB_209_SPATIAL_MAX_BYTES, currentPcb209SpatialQuerySchema,
   currentPcb209SpatialResultSchema } from "./current-pcb-209-spatial-read.ts";
 import type { CurrentPcb209SpatialQuery } from "./current-pcb-209-spatial-read.ts";
 import { currentPcb209SpatialTrackQueriesSchema, currentPcb209SpatialTrackResultSchema } from "./current-pcb-209-spatial-track-read.ts";
+import { currentPcb209SpatialArcQueriesSchema, currentPcb209SpatialArcResultSchema } from "./current-pcb-209-spatial-arc-read.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_PCB_SPATIAL_OPERATION_PREFIX = "pcb209-spatial-";
@@ -36,6 +37,8 @@ export const currentPcbSpatialRequestSchema = z.discriminatedUnion("action", [
     acceptNativeScratchEffects: z.literal(true) }),
   z.strictObject({ action: z.literal("observe-spatial-lines"), ...bound, queries: currentPcb209SpatialTrackQueriesSchema,
     acceptNativeScratchEffects: z.literal(true) }),
+  z.strictObject({ action: z.literal("observe-spatial-arcs"), ...bound, queries: currentPcb209SpatialArcQueriesSchema,
+    acceptNativeScratchEffects: z.literal(true) }),
   z.strictObject({ action: z.literal("observe-window"), ...bound }),
   z.strictObject({ action: z.literal("normal-close"), ...bound, hwnd: z.string().regex(/^[1-9]\d{0,18}$/u), confirmNormalClose: z.literal(true) }),
   z.strictObject({ action: z.literal("observe-termination"), ...bound }),
@@ -51,6 +54,12 @@ export const currentPcbSpatialObservationSchema = z.strictObject({
 export const currentPcbSpatialTrackObservationSchema = z.strictObject({
   schema: z.literal("easyeda-pro-control.pcb209-spatial-line-via-observation.v1"),
   results: z.array(currentPcb209SpatialTrackResultSchema).min(1).max(15),
+  executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
+}).refine(value => value.results.every(row => Buffer.byteLength(canonicalJson(row)) <= CURRENT_PCB_209_SPATIAL_MAX_BYTES) &&
+  Buffer.byteLength(canonicalJson(value)) <= CURRENT_PCB_SPATIAL_RESULT_MAX_BYTES);
+export const currentPcbSpatialArcObservationSchema = z.strictObject({
+  schema: z.literal("easyeda-pro-control.pcb209-spatial-arc-line-via-observation.v1"),
+  results: z.array(currentPcb209SpatialArcResultSchema).min(1).max(6),
   executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
 }).refine(value => value.results.every(row => Buffer.byteLength(canonicalJson(row)) <= CURRENT_PCB_209_SPATIAL_MAX_BYTES) &&
   Buffer.byteLength(canonicalJson(value)) <= CURRENT_PCB_SPATIAL_RESULT_MAX_BYTES);
@@ -75,6 +84,18 @@ export function currentPcbSpatialTrackObservation(input: unknown): Readonly<z.in
   return freezeDeep(currentPcbSpatialTrackObservationSchema.parse({ schema: "easyeda-pro-control.pcb209-spatial-line-via-observation.v1",
     results: input, executionAuthorized: false, saveAuthorized: false }));
 }
+/** Preserve the third geometry contract with its own schema and six-query cap. */
+export function currentPcbSpatialArcObservation(input: unknown): Readonly<z.infer<typeof currentPcbSpatialArcObservationSchema>> {
+  return freezeDeep(currentPcbSpatialArcObservationSchema.parse({ schema: "easyeda-pro-control.pcb209-spatial-arc-line-via-observation.v1",
+    results: input, executionAuthorized: false, saveAuthorized: false }));
+}
+/** Compare a complete Arc/Line/Via batch to its original target and requests. */
+export function requireCurrentPcbSpatialArcObservation(input: unknown, target: CurrentDisposableOpenSealedTarget,
+  queries: readonly CurrentPcb209SpatialQuery[]): void {
+  const result = currentPcbSpatialArcObservationSchema.parse(input);
+  if (result.results.length !== queries.length || result.results.some((row, index) => row.documentUuid !== target.documentUuid ||
+      canonicalJson(row.query) !== canonicalJson(queries[index]))) { throw new Error("PCB_SPATIAL_ARC_OBSERVATION_BINDING"); }
+}
 /** Bind every mixed query and document to the original consumed batch. */
 export function requireCurrentPcbSpatialTrackObservation(input: unknown, target: CurrentDisposableOpenSealedTarget,
   queries: readonly CurrentPcb209SpatialQuery[]): void {
@@ -94,6 +115,7 @@ export function queryCurrentPcbSpatial(input: unknown = {}): Record<string, unkn
       "Launch a separate pcb209-spatial-* original owner. Existing opening, visual, worker and model owners cannot upgrade into it.",
       "Only one ordered batch of 1-16 strict Via queries is admitted after the original disposable project/PCB opening and source qualification. Native hit ordering and each query are preserved; source membership and persistence remain unproved.",
       "The alternative observe-spatial-lines consumes that same batch slot for1-15 queries on ready standalone Line/Track and Via scenes. It qualifies256 original callees and keeps the384-ID transport ceiling, including original group release. Other object families and region border crossings refuse before native hit; connected mixed-family validation is pending.",
+      "observe-spatial-arcs is a third mutually exclusive batch for1-6 queries over ordinary circular ArcTrack (SDK Arc), Track (SDK Line) and Via scenes. It qualifies265 original callees within the same384 IDs. Copper1/2, unlocked ready standalone models and no region border crossings remain required. Graphical native Arc and other families remain unsupported; connected validation is pending.",
       "observe-spatial requires acceptNativeScratchEffects:true for the exact documented native math scratch effects. No selection, geometry writer, explicit Save or production scope is enabled.",
       "Fixed application callees require full original source descriptions, script locations and same-reference rechecks before each native sample. Standard ECMAScript intrinsics in the admitted renderer are assumed, not identity-verified; this route is not a hostile-page JavaScript sandbox. Unsupported replacement hooks and source/state changes refuse.",
       "Large batches return a bounded journal summary. The complete original ordered result remains in the referenced record rather than exceeding the response envelope.",
