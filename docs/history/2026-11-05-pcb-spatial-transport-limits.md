@@ -186,3 +186,21 @@ generated bundles filtered and the large source-profile file unavailable. Its
 full-review command reviewed the PR changes, not every unchanged repository
 file. The complete review and skipped-file evidence remain private. Final-head
 CI and review remain separate release gates.
+
+The final source audit added the promised unlocked-Via guard. The fixed read
+program now requires the Via model's own `_locked` descriptor value to be
+exactly false. The generated helper is 1,099,796 bytes, SHA-256
+`e809283e6ec24998ddc67de6180b58edb784371cbfc0be88377633dbb0181c95`.
+Its separately pinned forward projection removes the exact spatial protocol
+and numeric smoke blocks, proves the released `58f681` source, then applies the
+unchanged migration. The preceding `a45801f6`, `c5124f15` and `6ec843c4` input
+shapes remain admitted by their existing exact pins. Released forward output
+bytes are unchanged.
+
+The lock guard adds no request. The complete fixed workflow still needs at
+most 355 of 384 requests, leaving 29. With maximum-length original object and
+session handles and a conservative 25-character bound for each coordinate,
+the tagged and native read requests occupy at most 64,113 and 64,091 bytes.
+Both fit the unchanged 65,536-byte command limit. The helper identity check,
+both affected generator checks and eleven focused transport/migration tests
+pass. No connected query or new final-head CI result is claimed here.

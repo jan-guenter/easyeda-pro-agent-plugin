@@ -98,7 +98,7 @@ const length=Object.getOwnPropertyDescriptor(boxCache,"length");if(Object.getPro
 for(let i=0;i<4;i++)if(own(boxCache,String(i))!==[l,l,b,t][i])bad();};
 const bbox=o=>{instance(o,"at");const a=num(own(o,"minX")),b=num(own(o,"maxX")),c=num(own(o,"minY")),d=num(own(o,"maxY"));if(a>b||c>d)bad();return [a,b,c,d];};
 const via=value=>{instance(value,"Ve");const model=instance(own(value,"model"),"Qg");retainData(model);
-if(own(model,"_stateWatcher")!==value||own(model,"modelType")!=="Via"||(uint(own(model,"_dataState"))&6)!==0||own(model,"_type")!==0)bad();
+if(own(model,"_stateWatcher")!==value||own(model,"modelType")!=="Via"||(uint(own(model,"_dataState"))&6)!==0||own(model,"_type")!==0||own(model,"_locked")!==false)bad();
 if((uint(own(value,"_dataState"))&4)!==0)bad();const parent=Object.getOwnPropertyDescriptor(value,"_parent");if(parent&&(!Object.hasOwn(parent,"value")||(parent.value!==undefined&&parent.value!==null)))bad();
 const modelParent=Object.getOwnPropertyDescriptor(model,"_parent");if(modelParent&&(!Object.hasOwn(modelParent,"value")||(modelParent.value!==undefined&&modelParent.value!==null)))bad();
 const partition=Object.getOwnPropertyDescriptor(model,"_partition");if(partition&&(!Object.hasOwn(partition,"value")||(partition.value!==undefined&&partition.value!=="")))bad();

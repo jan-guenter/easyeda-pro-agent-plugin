@@ -12,7 +12,7 @@ import { sha256Text } from "../src/core.ts";
 import { currentFootprintForwardNativeOutputs, currentFootprintForwardNativePins, currentFootprintForwardNativeSmoke } from "../src/current-footprint-forward-native-graph-source.ts";
 import { CURRENT_FOOTPRINT_FORWARD_NATIVE_GRAPH as GRAPH } from "../src/current-footprint-forward-native-graph-pins.ts";
 import { CURRENT_FOOTPRINT_FORWARD_NATIVE_GRAPH_LIMITS as LIMITS } from "../src/current-footprint-forward-native-limits.ts";
-import { FORWARD_NATIVE_LEGACY, FORWARD_NATIVE_NUMERIC_SPATIAL_SHARED_HELPER, FORWARD_NATIVE_PREDECESSOR,
+import { FORWARD_NATIVE_LEGACY, FORWARD_NATIVE_PREDECESSOR, FORWARD_NATIVE_UNLOCKED_SPATIAL_SHARED_HELPER,
   migrateForwardNativePredecessor, normalizeForwardNativeLegacySource } from "../src/current-footprint-forward-native-migration.ts";
 import { captureCurrentFootprintForwardNativeGraph } from "../src/current-footprint-forward-native-graph.ts";
 import { currentFootprintCopyClockRegistrationV2NativeCases } from "../src/current-footprint-copy-clock-registration-v2-native.ts";
@@ -21,7 +21,7 @@ import { currentFootprintCopyClockRpcV2NativeCases } from "../src/current-footpr
 
 void test("the exact current helper preserves all released forward graph bytes through a separately pinned spatial projection", async () => {
   const shared = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
-  assert.equal(Buffer.byteLength(shared), FORWARD_NATIVE_NUMERIC_SPATIAL_SHARED_HELPER.bytes); assert.equal(sha256Text(shared), FORWARD_NATIVE_NUMERIC_SPATIAL_SHARED_HELPER.sha256);
+  assert.equal(Buffer.byteLength(shared), FORWARD_NATIVE_UNLOCKED_SPATIAL_SHARED_HELPER.bytes); assert.equal(sha256Text(shared), FORWARD_NATIVE_UNLOCKED_SPATIAL_SHARED_HELPER.sha256);
   const legacy = normalizeForwardNativeLegacySource(shared);
   assert.equal(Buffer.byteLength(legacy), FORWARD_NATIVE_LEGACY.bytes); assert.equal(sha256Text(legacy), FORWARD_NATIVE_LEGACY.sha256);
   assert.equal(normalizeForwardNativeLegacySource(legacy), legacy);

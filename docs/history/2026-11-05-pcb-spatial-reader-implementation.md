@@ -195,3 +195,25 @@ gap. Positive connected spatial validation therefore remains pending for a
 concrete fixture reason. The next fixture work must supply an explicitly
 disposable Via-only PCB through a reviewed creation lifecycle. No path guard,
 fixture, general writer or ordinary-project scope was changed to force a pass.
+
+## Unlocked-scene contract correction
+
+Follow-up source inspection found that the original lock filter can admit locked
+Vias. The private whole-scene guard now independently requires an own
+`_locked:false` data field for every admitted Via. True, nonboolean and absent
+values refuse before either native sample. Six focused reader tests and strict
+two-file lint passed. This enforces the documented initial scene instead of
+broadening its scope. The unchanged callee graph needs no additional native
+requests; its generated read program is now 57,081 bytes, SHA-256
+`f03a6cce15d5c70988f657a0659db5a314f8f20dad640516c285ecb81d67bb04`.
+
+The intermediate `fc879998` frozen package passed the 79-query/81-request
+dependency-free probe and complete package comparison. Its later mutable
+reproduction check overlapped the newly authorized lock correction and correctly
+rejected changed bundles. That result is incomplete; final unchanged-payload
+reproduction must be established separately after the correction is frozen.
+
+CodeRabbit's automatic check for `fc879998` was neutral because of its hourly
+review allowance, with analysis and feedback skipped. It is not a current-head
+review. The prior `5a2a1e2` findings and documentation metric remain historical.
+Final review will be requested after the provider's retry window.

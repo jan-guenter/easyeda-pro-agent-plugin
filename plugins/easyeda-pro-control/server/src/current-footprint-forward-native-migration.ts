@@ -12,6 +12,10 @@ export const FORWARD_NATIVE_CURRENT_SHARED_HELPER = Object.freeze({ bytes: 1_097
 export const FORWARD_NATIVE_TYPED_SPATIAL_SHARED_HELPER = Object.freeze({ bytes: 1_097_388, sha256: "c5124f154b7c111e71cb2ff956a5371cc1d4aef8bdf14ac74d6a062bf5ec134f" });
 /** PowerShell decimal/G17 correction has a separate exact input identity. */
 export const FORWARD_NATIVE_NUMERIC_SPATIAL_SHARED_HELPER = Object.freeze({ bytes: 1_099_788, sha256: "a45801f6f5053d966ac738f824c83e49759f45a165bc3b2fe963f0d9039346f8" });
+/** The published scope's unlocked-Via guard has its own exact helper input.
+ * This independent spatial profile is removed as one pinned block from the
+ * forward-only graph; all previous admitted source shapes remain unchanged. */
+export const FORWARD_NATIVE_UNLOCKED_SPATIAL_SHARED_HELPER = Object.freeze({ bytes: 1_099_796, sha256: "e809283e6ec24998ddc67de6180b58edb784371cbfc0be88377633dbb0181c95" });
 /** Exact numeric-decoder/serialization correction, normalized only after
  * admission of its independent complete helper pin. */
 const numericSpatialProjection = [
@@ -217,6 +221,27 @@ const hash = (value: string): string => createHash("sha256").update(value).diges
  * source, changed additions and every collateral byte still fail closed. */
 export function normalizeForwardNativeLegacySource(input: string): string {
   if (Buffer.byteLength(input) === FORWARD_NATIVE_LEGACY.bytes && hash(input) === FORWARD_NATIVE_LEGACY.sha256) { return input; }
+  if (Buffer.byteLength(input) === FORWARD_NATIVE_UNLOCKED_SPATIAL_SHARED_HELPER.bytes && hash(input) === FORWARD_NATIVE_UNLOCKED_SPATIAL_SHARED_HELPER.sha256) {
+    let source = input;
+    for (const [index, projection] of sharedSpatialProjection.entries()) {
+      if (source.split(projection.before).length !== 2) { throw new Error(`FORWARD_NATIVE_UNLOCKED_SPATIAL_PROJECTION_${String(index)}`); }
+      source = source.replace(projection.before, projection.after);
+    }
+    for (const section of [
+      { begin: "  enum Spatial209Birth { SourceQualified }\n", end: "  // END GENERATED PCB209 SPATIAL PROTOCOL\n",
+        bytes: 51_182, sha256: "5a4787da2cfa7e2c523838e0fc204f3e2c694c797b95d93958d63ab894fca5a6" },
+      { begin: "    # BEGIN GENERATED PCB209 SPATIAL NUMBER SMOKE\n", end: "    # END GENERATED PCB209 SPATIAL NUMBER SMOKE\n",
+        bytes: 2241, sha256: "e614d34b2ba4932fe24a5b638bfcff759a3099d4c516970491621decc2d1a074" },
+    ] as const) {
+      if (source.split(section.begin).length !== 2 || source.split(section.end).length !== 2) { throw new Error("FORWARD_NATIVE_UNLOCKED_SPATIAL_SECTION"); }
+      const start = source.indexOf(section.begin), stop = source.indexOf(section.end) + section.end.length;
+      const removed = source.slice(start, stop);
+      if (stop <= start || Buffer.byteLength(removed) !== section.bytes || hash(removed) !== section.sha256) { throw new Error("FORWARD_NATIVE_UNLOCKED_SPATIAL_SECTION"); }
+      source = source.slice(0, start) + source.slice(stop);
+    }
+    if (Buffer.byteLength(source) !== FORWARD_NATIVE_LEGACY.bytes || hash(source) !== FORWARD_NATIVE_LEGACY.sha256) { throw new Error("FORWARD_NATIVE_UNLOCKED_LEGACY_PROOF"); }
+    return source;
+  }
   let reviewed = input;
   if (Buffer.byteLength(reviewed) === FORWARD_NATIVE_NUMERIC_SPATIAL_SHARED_HELPER.bytes && hash(reviewed) === FORWARD_NATIVE_NUMERIC_SPATIAL_SHARED_HELPER.sha256) {
     for (const [index, projection] of numericSpatialProjection.entries()) {

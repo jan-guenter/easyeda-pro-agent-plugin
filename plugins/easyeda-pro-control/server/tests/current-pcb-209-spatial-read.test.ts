@@ -32,7 +32,7 @@ const ye={modelManager:Ke.manager,grayIndex:0,_layerMap:{12:{model:{status:{stat
 const box=new at(-1,1,-1,1);
 const model=Object.assign(new Qg,{_dataState:0,_globalIndex:"via-one",_type:0,modelType:"Via",_center:{x:0,y:0},
 _viaBaseInfo:{startLayer:1,endLayer:2,radius:1,holeRadius:.5},_viaExpansion:{topExpansion:0,bottomExpansion:0},
-_unusedInnerLayers:[],_bbox:box,_net:"GND"});
+_unusedInnerLayers:[],_bbox:box,_net:"GND",_locked:false});
 const view=Object.assign(new Ve,{model,_dataState:1,_bbox:box});model._stateWatcher=view;
 const tree=Object.assign(new Nd,{items:new Set([view]),changeList:new Set,deadList:new Set,
 root:Object.assign(new BI,{parent:null,childs:[view],_bbox:box})});
@@ -93,6 +93,7 @@ void test("unsupported index families, stale leaves, pending maintenance and bor
   for (const setup of [
     'Ht.map=new Map([["Track",new Map([[1,tree]])]])',
     "tree.deadList.add(view)", "tree.changeList.add(view)", "model._dataState=4", "view._dataState=4",
+    "model._locked=true", "model._locked=0", "delete model._locked",
     "tree.root.childs.push(view)", "tree.root.childs=[]", "tree.items=new Set(Array.from({length:257},()=>({})))",
     "model._parent={}", "Me._smartMode=true", "qt.dialog={}", "Hr.validType=[]",
     "zi.manager.map.get(7)._pick=true", "zi.manager.map.get(8)._pick=true", "zi.manager.map.get(12)._pick=true",
