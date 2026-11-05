@@ -8,7 +8,7 @@ export const CURRENT_FOOTPRINT_FORWARD_NATIVE_GRAPH = Object.freeze({
     "role": "driver",
     "relativePath": "scripts/footprint-forward-execution/owner.ps1",
     "bytes": 93261,
-    "sha256": "5b19ca8b226dc13ac602136d6d3e93b58b0c50cd11d54d97b64124d90c2d05b0",
+    "sha256": "3be2c39e827bc554b193c4d01df50a1289a357c8044b3ef2545523c341fac7ea",
     "maximumBytes": 131072
   },
   {
@@ -22,7 +22,7 @@ export const CURRENT_FOOTPRINT_FORWARD_NATIVE_GRAPH = Object.freeze({
     "role": "phase",
     "relativePath": "scripts/footprint-forward-execution/native-phase.cs",
     "bytes": 30558,
-    "sha256": "7c8a85d8521763ba9c934786986e5992d291d36547eb76fbacfde3b218e76ded",
+    "sha256": "f70a5207436f132f780ebbffddae05cf5c05019d4ef10d204c9eec517d595368",
     "maximumBytes": 65536
   }
 ].map(value => Object.freeze(value))),

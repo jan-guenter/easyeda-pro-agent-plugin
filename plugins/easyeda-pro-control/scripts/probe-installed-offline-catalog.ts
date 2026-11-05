@@ -463,7 +463,9 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
   requireCheck(sourceValid["valid"] === true && sourceValid["validationOnly"] === true && sourceValid["executionAuthorized"] === false && sourceValid["saveAuthorized"] === false &&
     Object.keys(sourceParsed).length === Object.keys(sourceRequest).length && Object.entries(sourceRequest).every(([key, value]) => sourceParsed[key] === value),
     "Disposable v2 source validation changed its exact request.");
-  for (const schema of Object.values(record(sourceValidation["resultSchemas"]))) {
+  const sourceSchemas = record(sourceValidation["resultSchemas"]);
+  requireCheck(["source", "inspection"].every(key => Object.hasOwn(sourceSchemas, key)), "Disposable source discovery requires its source and inspection result schemas.");
+  for (const schema of Object.values(sourceSchemas)) {
     const output = record(schema), properties = record(output["properties"]), required = output["required"];
     requireCheck(output["additionalProperties"] === false && Array.isArray(required) && ["executionReady", "executionAuthorized", "saveAuthorized"].every(key =>
       required.includes(key) && record(properties[key])["const"] === false), "Disposable source result schemas must retain false execution and Save boundaries.");

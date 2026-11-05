@@ -90,7 +90,7 @@ bool refused=false;try{old.RequireForwardExecutionUnallocated();}catch(InvalidOp
 foreach(string action in new[]{"footprint-clock-rpc-send","footprint-clock-rpc-begin","footprint-copy-clock"}){bool refused=false;try{born.AdmitForwardExecutionAction(action);}catch(InvalidOperationException){refused=true;}if(!refused)throw Error("forward-execution-graph-alias");}
 EasyedaOriginalMainTransport.VerifyForwardExecutionProfileSmoke();
 EasyedaFootprintCopyClockRegistrationV2Protocol.VerifySmoke();EasyedaFootprintCopyClockRpcV2Protocol.VerifySmoke();
-string[] phases=${JSON.stringify(ORDER).replace("[", "new string[]{").replace("]", "}")};
+string[] phases=new string[]{${ORDER.map(value => JSON.stringify(value)).join(",")}};
 var ledger=EasyedaFootprintCopyAllocatedCreateClockLedger.ForwardExecutionBirth(EasyedaFootprintForwardExecutionLimits.Requests-EasyedaFootprintCopyAllocatedCreateClockLedger.Requests+1);
 ledger.Allocation(ledger.Next,phases[0],false);for(int i=0;i<13;i++)ledger.Clock(ledger.Next,false);ledger.Create(ledger.Next);
 for(int i=1;i<9;i++)ledger.Allocation(ledger.Next,phases[i],i>=7);for(int i=13;i<EasyedaFootprintCopyAllocatedCreateClockLedger.ClockNormal;i++)ledger.Clock(ledger.Next,false);

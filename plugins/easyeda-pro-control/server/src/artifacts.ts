@@ -12,6 +12,7 @@ import {
 import type { FileHandle } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import process from "node:process";
+import { deserialize, serialize } from "node:v8";
 import {
   OPERATION_SCHEMA,
   buildPlanHash,
@@ -63,6 +64,10 @@ const EVIDENCE_INTEGRITY_MODEL =
 const MAX_MANAGED_JSON_BYTES = 64 * 1024 * 1024;
 const MAX_OPERATION_CACHE_ENTRIES = 512;
 const MAX_OPERATION_PROOF_CACHE_BYTES = 4 * 1024 * 1024;
+const MAX_OPERATION_JSON_MEMO_ENTRIES = 128;
+const MAX_OPERATION_JSON_MEMO_BYTES = 8 * 1024 * 1024;
+const MAX_OPERATION_JSON_INPUT_BYTES = 1024 * 1024;
+const MAX_OPERATION_JSON_ENTRY_BYTES = 2 * 1024 * 1024;
 const MAX_OPERATION_PROJECTION_CACHE_BYTES = 1024 * 1024;
 const MAX_OPERATION_PROJECTION_BYTES = 32 * 1024;
 const MAX_OPERATION_HASH_STREAMS = OPERATION_HASH_STREAMS;
@@ -76,10 +81,24 @@ interface ValidatedOperationBytes {
   readonly cacheBytes: number;
 }
 
-// Only derived validation and small projections survive a scan. Every use still
-// Reads the complete current journal and all referenced phase-artifact bytes.
+// Derived validation/projections and a separate bounded pure JSON memo survive
+// A scan. Every use reads complete current journal and phase-artifact bytes.
 const validatedOperationBytes = new Map<string, ValidatedOperationBytes>();
 let validatedOperationCacheBytes = 0;
+
+interface OperationJsonMemo {
+  readonly context: string;
+  readonly parser: typeof JSON.parse;
+  readonly receiver: typeof JSON;
+  readonly raw: Buffer;
+  readonly encoded: Buffer;
+  readonly chargedBytes: number;
+}
+// Exact input bytes and parser/context identity select only private data. No
+// Validation, artifact proof, projection or admission verdict is retained here.
+const operationJsonMemo = new Map<string, OperationJsonMemo>();
+let operationJsonMemoBytes = 0;
+
 
 interface OperationProjection<T> {
   readonly bytesSha256: string;
@@ -2048,7 +2067,14 @@ function parseOperationJournal(
   bytes: Buffer,
   previouslyValidated: boolean,
 ): OperationJournal {
-  const value: unknown = JSON.parse(bytes.toString("utf8"));
+  const parser = JSON.parse, receiver = JSON;
+  let memo = operationJsonMemo.get(operationId);
+  if (memo !== undefined && (memo.context !== OPERATIONS_DIR || memo.parser !== parser || memo.receiver !== receiver || !memo.raw.equals(bytes))) {
+    operationJsonMemoBytes -= memo.chargedBytes; operationJsonMemo.delete(operationId); memo = undefined;
+  }
+  // A hit returns a fresh private clone. A miss still invokes the current JSON
+  // Parser with its original receiver, and every guard below runs in place.
+  const value: unknown = memo === undefined ? Reflect.apply(parser, receiver, [bytes.toString("utf8")]) as unknown : deserialize(memo.encoded) as unknown;
   if (!isRecord(value)) {
     throw new Error(`Operation journal ${operationId} must be an object.`);
   }
@@ -2102,6 +2128,20 @@ function parseOperationJournal(
       bytes: descriptor["bytes"],
       sha256: descriptor["sha256"],
     });
+  }
+  if (memo === undefined && bytes.length <= MAX_OPERATION_JSON_INPUT_BYTES && operationJsonMemo.size < MAX_OPERATION_JSON_MEMO_ENTRIES) {
+    try {
+      // Serialize only after successful pure parsing/validation. The raw input
+      // Is copied too; no returned object or file-read buffer can poison hits.
+      const encoded = serialize(value);
+      const chargedBytes = bytes.length + encoded.length + Buffer.byteLength(operationId) + Buffer.byteLength(OPERATIONS_DIR) + 128;
+      if (chargedBytes <= MAX_OPERATION_JSON_ENTRY_BYTES && operationJsonMemoBytes + chargedBytes <= MAX_OPERATION_JSON_MEMO_BYTES) {
+        operationJsonMemo.set(operationId, { context: OPERATIONS_DIR, parser, receiver, raw: Buffer.from(bytes), encoded, chargedBytes });
+        operationJsonMemoBytes += chargedBytes;
+      }
+    } catch {
+      // Optional clone/encoding failure changes no parse or validation result.
+    }
   }
   return {
     ...parsed,

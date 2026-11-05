@@ -18,23 +18,22 @@ void test("generated native parser ID policy and actual C# smoke retain forward1
   assert.match(source, /class EasyedaFootprintExecutionLimits \{ public const int Requests=856; public const int NormalRequests=811;/u);
 });
 
-void test("each dedicated parser selects the original forward purpose and refuses stale or caller-selected ID guards", async () => {
+void test("each legacy dedicated parser selects its original forward switch and refuses stale or caller-selected ID guards", async () => {
   const source = await readFile(helper, "utf8");
   assert.doesNotThrow(() => { assertCurrentFootprintCopyForwardNativeRequestIds(source); });
   for (const [action, worker] of [["footprint-copy-parent", false], ["footprint-copy-worker", true], ["footprint-cache-construction", false]] as const) {
     const start = source.indexOf(`        '${action}' {`);
     const end = source.indexOf("\n        '", start + 1);
     const block = source.slice(start, end);
-    const guard = `-not [EasyedaFootprintForwardLimits]::AllowsExecutionRequestId([long]$request.requestId,([bool]$forwardFamily),$${String(worker)})`;
+    const guard = `-not [EasyedaFootprintForwardLimits]::AllowsExecutionRequestId([long]$request.requestId,$WorkerStartupFootprintForward209.IsPresent,$${String(worker)})`;
     assert.ok(block.includes("($request.requestId -isnot [int] -and $request.requestId -isnot [long])"));
     assert.equal(block.split(guard).length, 2);
     for (const replacement of ["$request.requestId -gt [EasyedaFootprintExecutionLimits]::Requests",
-      guard.replace("([bool]$forwardFamily)", "$request.forwardPurpose"),
+      guard.replace("$WorkerStartupFootprintForward209.IsPresent", "$request.forwardPurpose"),
       guard.replace(`,$${String(worker)})`, `,$${String(!worker)})`)]) {
       assert.throws(() => { assertCurrentFootprintCopyForwardNativeRequestIds(source.slice(0, start) + block.replace(guard, replacement) + source.slice(end)); }, /NATIVE_REQUEST_ID_GUARD/u);
     }
   }
-  const selected = "$forwardFamily=$WorkerStartupFootprintForward209 -or $WorkerStartupFootprintForwardExecution209";
-  assert.throws(() => { assertCurrentFootprintCopyForwardNativeRequestIds(source.replace(selected, "$forwardFamily=$request.forwardPurpose")); }, /NATIVE_PURPOSE_SELECTION/u);
-  assert.throws(() => { assertCurrentFootprintCopyForwardNativeRequestIds(`${source}\n$FORWARDFAMILY=$true\n`); }, /NATIVE_PURPOSE_SELECTION/u);
+  assert.match(source, /\[switch\]\$WorkerStartupFootprintForward209/u);
+  assert.doesNotMatch(source, /\$forwardFamily|\$WorkerStartupFootprintForwardExecution209/iu);
 });

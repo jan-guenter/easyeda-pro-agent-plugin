@@ -152,14 +152,33 @@ jobs:
           $child.StartInfo.CreateNoWindow = $true
           $child.StartInfo.RedirectStandardOutput = $true
           $child.StartInfo.RedirectStandardError = $true
+          $stdout = $null
+          $stderr = $null
+          $started = $false
+          # Fixed bounded excerpts identify child failures without flooding CI.
+          function Write-ForwardGraphFailure([string]$stage) {
+            $out = if ($null -ne $stdout -and $stdout.Status -eq [Threading.Tasks.TaskStatus]::RanToCompletion) {$stdout.Result} else {$null}
+            $err = if ($null -ne $stderr -and $stderr.Status -eq [Threading.Tasks.TaskStatus]::RanToCompletion) {$stderr.Result} else {$null}
+            $exitCode = if ($started -and $child.HasExited) {$child.ExitCode} else {$null}
+            $diagnostic = @{
+              stage=$stage; exitCode=$exitCode; childExited=($started -and $child.HasExited)
+              stdoutChars=$(if ($null -ne $out) {$out.Length} else {$null})
+              stderrChars=$(if ($null -ne $err) {$err.Length} else {$null})
+              stdoutPrefix=$(if ($null -ne $out) {$out.Substring(0,[Math]::Min(4096,$out.Length))} else {$null})
+              stderrPrefix=$(if ($null -ne $err) {$err.Substring(0,[Math]::Min(8192,$err.Length))} else {$null})
+            }
+            Write-Output ('Forward graph child diagnostic ' + ($diagnostic | ConvertTo-Json -Compress))
+          }
           try {
-            if (-not $child.Start()) {throw 'Forward graph smoke did not start.'}
+            if (-not $child.Start()) {Write-ForwardGraphFailure 'start'; throw 'Forward graph smoke did not start.'}
+            $started = $true
             $stdout = $child.StandardOutput.ReadToEndAsync()
             $stderr = $child.StandardError.ReadToEndAsync()
-            if (-not $child.WaitForExit(30000) -or -not [Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($stdout,$stderr),5000)) {throw 'Forward graph smoke did not settle.'}
-            if ($child.ExitCode -ne 0 -or $stderr.Result.Length -ne 0 -or $stdout.Result.Length -gt 4096 -or $stdout.Result -cnotmatch '\A[^\r\n]+\r?\n\z') {throw 'Forward graph smoke failed.'}
-            $result = $stdout.Result | ConvertFrom-Json
-            if ((@($result.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'compiled,emptyJob,executionAuthorized,pipesChecked,processLaunched,schema' -or $result.schema -cne 'easyeda-pro-control.footprint-forward-execution-compile.v2' -or $result.compiled -cne $true -or $result.emptyJob -cne $true -or $result.pipesChecked -cne $true -or $result.processLaunched -cne $false -or $result.executionAuthorized -cne $false) {throw 'Forward graph smoke output refused.'}
+            if (-not $child.WaitForExit(30000)) {Write-ForwardGraphFailure 'exit-deadline'; throw 'Forward graph smoke did not exit.'}
+            if (-not [Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($stdout,$stderr),5000)) {Write-ForwardGraphFailure 'output-deadline'; throw 'Forward graph smoke output did not close.'}
+            if ($child.ExitCode -ne 0 -or $stderr.Result.Length -ne 0 -or $stdout.Result.Length -gt 4096 -or $stdout.Result -cnotmatch '\A[^\r\n]+\r?\n\z') {Write-ForwardGraphFailure 'child-result'; throw 'Forward graph smoke failed.'}
+            try {$result = $stdout.Result | ConvertFrom-Json} catch {Write-ForwardGraphFailure 'json-output'; throw}
+            if ((@($result.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'compiled,emptyJob,executionAuthorized,pipesChecked,processLaunched,schema' -or $result.schema -cne 'easyeda-pro-control.footprint-forward-execution-compile.v2' -or $result.compiled -cne $true -or $result.emptyJob -cne $true -or $result.pipesChecked -cne $true -or $result.processLaunched -cne $false -or $result.executionAuthorized -cne $false) {Write-ForwardGraphFailure 'output-schema'; throw 'Forward graph smoke output refused.'}
           } finally {$child.Dispose()}
 
       - name: Verify combined readiness and empty-input closure without an application

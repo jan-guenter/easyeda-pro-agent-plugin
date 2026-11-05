@@ -54,7 +54,7 @@ if ($graphDigest -cne '7c940543bf2ede0ea1c026d7804f3ab97dad36d71320894fe026fbeb5
 if ($forwardExecutionPhaseBytes -isnot [byte[]] -or $forwardExecutionPhaseBytes.Length -ne 30558) {throw 'forward-graph-phase-size'}
 $graphHasher=[Security.Cryptography.SHA256]::Create()
 try {$graphDigest=([BitConverter]::ToString($graphHasher.ComputeHash($forwardExecutionPhaseBytes))).Replace('-','').ToLowerInvariant()} finally {$graphHasher.Dispose()}
-if ($graphDigest -cne '7c8a85d8521763ba9c934786986e5992d291d36547eb76fbacfde3b218e76ded') {throw 'forward-graph-phase-source'}
+if ($graphDigest -cne 'f70a5207436f132f780ebbffddae05cf5c05019d4ef10d204c9eec517d595368') {throw 'forward-graph-phase-source'}
 $graphDecoder=[Text.Encoding]::GetEncoding(20127,[Text.EncoderFallback]::ExceptionFallback,[Text.DecoderFallback]::ExceptionFallback)
 $graphNative=$graphDecoder.GetString($forwardExecutionCoreBytes)+"`n"+$graphDecoder.GetString($forwardExecutionPhaseBytes)
 if ([Text.Encoding]::UTF8.GetByteCount($graphNative) -ne 975852 -or [Text.Encoding]::UTF8.GetByteCount($graphNative) -gt 1048576) {throw 'forward-graph-compiled-size'}

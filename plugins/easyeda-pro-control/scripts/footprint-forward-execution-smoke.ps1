@@ -4,9 +4,9 @@ Set-StrictMode -Version Latest
 [Console]::OutputEncoding=New-Object Text.UTF8Encoding($false)
 if ($args.Count -ne 0 -or [Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT -or [IntPtr]::Size -ne 8 -or $PSVersionTable.PSVersion.Major -ne 5 -or $PSVersionTable.PSVersion.Minor -ne 1) {throw 'forward-graph-smoke-platform'}
 $specs=@(
-  @{role='driver';path='scripts/footprint-forward-execution/owner.ps1';bytes=93261;maximum=131072;sha256='5b19ca8b226dc13ac602136d6d3e93b58b0c50cd11d54d97b64124d90c2d05b0'},
+  @{role='driver';path='scripts/footprint-forward-execution/owner.ps1';bytes=93261;maximum=131072;sha256='3be2c39e827bc554b193c4d01df50a1289a357c8044b3ef2545523c341fac7ea'},
   @{role='core';path='scripts/footprint-forward-execution/native-core.cs';bytes=945293;maximum=1048576;sha256='7c940543bf2ede0ea1c026d7804f3ab97dad36d71320894fe026fbeb52984656'},
-  @{role='phase';path='scripts/footprint-forward-execution/native-phase.cs';bytes=30558;maximum=65536;sha256='7c8a85d8521763ba9c934786986e5992d291d36547eb76fbacfde3b218e76ded'}
+  @{role='phase';path='scripts/footprint-forward-execution/native-phase.cs';bytes=30558;maximum=65536;sha256='f70a5207436f132f780ebbffddae05cf5c05019d4ef10d204c9eec517d595368'}
 )
 $files=New-Object 'System.Collections.Generic.List[System.IO.FileStream]'
 $buffers=New-Object 'System.Collections.Generic.List[byte[]]'

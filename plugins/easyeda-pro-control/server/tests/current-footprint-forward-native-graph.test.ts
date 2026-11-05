@@ -47,6 +47,8 @@ void test("three exact generated roles preserve the 73-line native birth predece
   assert.ok(core.includes("internal sealed partial class EasyedaOriginalMainTransport"));
   assert.ok(phase.includes("EasyedaOriginalMainTransport.ForwardExecutionMainBirth.V2,footprintElapsed"));
   assert.ok(phase.includes("MainNormal=87,MainCleanup=41,MainRequests=128"));
+  assert.ok(phase.includes('string[] phases=new string[]{"allocation-arm",'));
+  assert.ok(!phase.includes("new string[}{"));
   assert.ok(core.includes("id>(forwardExecution?EasyedaFootprintForwardExecutionLimits.MainRequests:EasyedaFootprintCombinedLimits.MainRequests)"));
   assert.ok(driver.includes("$largeMainRequest=$WorkerStartupFootprintForwardExecution209 -and"));
   assert.ok(phase.includes('case "main-completion-begin":case "main-completion-send":case "main-completion-retire"'));

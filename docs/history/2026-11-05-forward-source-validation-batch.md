@@ -135,3 +135,57 @@ cases, including the two new cleanup cases. Its source proof has SHA-256
 `6bef344a17cc50befd7e911222f58c13b139dfa2fc497fb3235858f16f0205fb`.
 Complete types, strict lint and the build pass again on that source cut.
 The previous source and validation cuts remain preserved separately.
+
+## PR169 initial Windows failure
+
+Initial PR head `a496c11c40133c1f63724a3e151ffd69e4770415` passed the GitHub
+build and bridge suites. Windows run `42000257635` passed the existing helper's
+14-purpose compilation step, then failed the new graph smoke. Its child output
+was hidden, so that run establishes no exact child error or new-graph native
+success. The complete failed log remains retained.
+
+Source inspection found that sequential bracket substitutions corrupted the
+generated C# array initializer into `new string[}{`. The generator now emits
+the fixed initializer directly. The existing graph regression checks it, and
+the new CI step reports bounded JSON-escaped child diagnostics. Core and legacy
+helper bytes remain unchanged; driver and phase pins follow the regenerated
+source. Four focused graph cases, scoped strict types/lint and graph/legacy
+identity checks pass. Corrected Windows compilation and final exact-head CI
+remain required before publication. The source correction proof has SHA-256
+`b0032bce6203b61ea816b9cb46cfea1f0cd7d83bade0070a54291b700b6b4f17`.
+
+## Full review and Linux follow-up
+
+CodeRabbit full review `5782501597` covers initial head `a496c11`, with 108
+selected files, three generated bundles ignored and `native-core.cs`
+unavailable. It reported four inline findings and one outside-diff finding.
+The source corrections shorten plugin metadata to 2,821 characters, require
+both source and inspection discovery schemas, correct the generated C#,
+repair the legacy parser fixture, and describe twelve launch purposes with the
+v2 authority flags false. The fixture now tests the immutable legacy switch
+rather than changing that released helper to accept a newer selector.
+The findings are accepted; that fixture correction addresses the same reported
+failure while preserving the released boundary.
+
+The bot check succeeded, but its docstring metric was 29.71% and inconclusive,
+with 138 functions across 50 files and 57 skips: 15 unsupported and 42 at the
+file limit. That metric is not a documentation-coverage pass or an exhaustive
+review of the unchanged repository. Complete review bodies, outside-diff
+comments and limits remain retained privately.
+
+Initial Linux CI completed 14,260 facade tests: 14,251 passed, four failed and
+five explicitly skipped, across 65 suites. Seven shards and all 424 bridge
+tests passed. The failed shard exposed the legacy parser fixture and three
+old admission expectations after the new source-owner scanner was added.
+Both source-owner and generic admission scans remain fresh and separate.
+A bounded private memo now shares only successful JSON computation after
+complete current-byte reads; schema, artifact, path and admission checks still
+run in place. Parser/receiver/context and exact raw bytes select independent
+private clones. The memo retains at most 128 entries and 8 MiB of charged raw,
+serialized and key data, bypassing inputs above 1 MiB or entries above 2 MiB.
+Malformed JSON is not cached. The existing 20-case admission selection passes,
+retaining the one-parse expectation and explicitly testing two fresh scans,
+clone mutation, parser replacement and malformed/restored input. Its source
+proof has SHA-256
+`662dbc1ad7ea3054e4794c2ed43c9a84a096288c2648db0cdd850118da32ffff`.
+The initial failed CI remains nonqualifying; final exact-head CI is pending.

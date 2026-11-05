@@ -104,23 +104,39 @@ for (const claim of terminalClaims) {
 }
 
 void test("bridge, recovery and reporting share identical-byte projections without reparsing full journals", async () => {
-  const { engine, id } = await fixture({ payload: "synthetic ".repeat(8192) });
+  const { engine, id, journal } = await fixture({ payload: "synthetic ".repeat(8192) });
   const parse = JSON.parse;
   let journalParses = 0;
   mock.method(JSON, "parse", (...args: Parameters<typeof JSON.parse>): unknown => {
     if (args[0].includes(`"operationId": "${id}"`)) { journalParses += 1; }
     const result: unknown = Reflect.apply(parse, JSON, args); return result;
   });
+  const cold = await artifacts.loadOperation(id); cold["payload"] = "cold caller mutation"; cold.plan["synthetic"] = "cold nested mutation";
   assert.equal(await engine.assertBridgeDispatchAllowed(), true);
+  assert.equal(journalParses, 1);
+  const first = await artifacts.loadOperation(id); first["payload"] = "caller mutation";
+  const second = await artifacts.loadOperation(id); assert.notEqual(first, second); assert.equal(second["payload"], journal["payload"]); assert.deepEqual(second.plan, journal["plan"]);
   assert.equal(journalParses, 1);
   assert.deepEqual(await engine.recover(), []);
   assert.equal(await engine.assertRecoveryOperationIsolated("other"), true);
   assert.equal(await engine.assertNativeUiEditingAllowed(), true);
   assert.equal(await engine.assertBridgeDispatchAllowed(), true);
   assert.equal(journalParses, 1);
+  let replacementParses = 0;
+  mock.method(JSON, "parse", (...args: Parameters<typeof JSON.parse>): unknown => {
+    if (args[0].includes(`"operationId": "${id}"`)) { replacementParses += 1; }
+    const result: unknown = Reflect.apply(parse, JSON, args); return result;
+  });
+  await artifacts.loadOperation(id); await artifacts.loadOperation(id); assert.equal(replacementParses, 1);
+  const path = artifacts.operationPath(id);
+  const original = await readFile(path);
+  await writeFile(path, original.subarray(0, -2));
+  await assert.rejects(artifacts.loadOperation(id)); await assert.rejects(artifacts.loadOperation(id)); assert.equal(replacementParses, 3);
+  await writeFile(path, original); const restored = await artifacts.loadOperation(id);
+  assert.equal(restored["payload"], journal["payload"]); assert.equal(replacementParses, 4);
 });
 
-void test("combined admission makes one fresh scan and preserves bridge-first isolation failures", async () => {
+void test("combined admission keeps two separate fresh scans and preserves bridge-first isolation failures", async () => {
   const { engine, id, journal } = await fixture({ state: "library-needs-review", orphanedCallPossible: false });
   const readDirectory = fsPromises.readdir;
   let scans = 0;
@@ -134,17 +150,18 @@ void test("combined admission makes one fresh scan and preserves bridge-first is
   mock.method(engine, "assertBridgeDispatchAllowed", (): never => { throw new Error("Do not scan the bridge predicate separately."); });
   mock.method(engine, "assertRecoveryOperationIsolated", (): never => { throw new Error("Do not scan the recovery predicate separately."); });
   assert.equal(await engine.assertBridgeAndRecoveryAdmission(id), true);
-  assert.equal(scans, 1);
-  await assert.rejects(engine.assertBridgeAndRecoveryAdmission("other"), /not isolated/u);
+  // One fresh v2 owner-exclusion scan precedes the one shared generic scan.
   assert.equal(scans, 2);
+  await assert.rejects(engine.assertBridgeAndRecoveryAdmission("other"), /not isolated/u);
+  assert.equal(scans, 4);
   await artifacts.updateOperation({ ...journal, orphanedCallPossible: true });
   await assert.rejects(engine.assertBridgeAndRecoveryAdmission(id), /dispatch is quarantined/u);
-  assert.equal(scans, 3);
+  assert.equal(scans, 6);
   await assert.rejects(engine.assertBridgeAndRecoveryAdmission("other"), /dispatch is quarantined/u);
-  assert.equal(scans, 4);
+  assert.equal(scans, 8);
 });
 
-void test("combined bridge/native editing admission scans once and preserves exact bridge-first refusals", async () => {
+void test("combined bridge/native admission keeps separate owner exclusion and evidence scans with exact bridge-first refusals", async () => {
   const { engine, journal } = await fixture();
   const readDirectory = fsPromises.readdir;
   let scans = 0;
@@ -158,7 +175,8 @@ void test("combined bridge/native editing admission scans once and preserves exa
   mock.method(engine, "assertBridgeDispatchAllowed", (): never => { throw new Error("Do not scan the bridge predicate separately."); });
   mock.method(engine, "assertNativeUiEditingAllowed", (): never => { throw new Error("Do not scan the native-edit predicate separately."); });
   assert.equal(await engine.assertBridgeAndNativeUiEditingAdmission(), true);
-  assert.equal(scans, 1);
+  // One fresh v2 owner-exclusion scan precedes the one shared generic scan.
+  assert.equal(scans, 2);
   for (const orphanedCallPossible of [false, true]) {
     await artifacts.updateOperation({ ...journal, state: "library-needs-review", orphanedCallPossible });
     const originalGuard = orphanedCallPossible
@@ -174,7 +192,7 @@ void test("combined bridge/native editing admission scans once and preserves exa
       assert.deepEqual(error.blockingOperations, original.blockingOperations);
       return true;
     });
-    assert.equal(scans, scansBefore + 1);
+    assert.equal(scans, scansBefore + 2);
   }
 });
 
