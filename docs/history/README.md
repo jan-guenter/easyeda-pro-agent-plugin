@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 import tool and native integration](2026-11-06-import-tool-and-native-integration.md). Reachable original import owner, strict scope/custody registration, unchanged released forward graph and Windows5.1 compilation; production composition and connected acceptance remain pending.
+
 - [2026-11-06 generic supported PCB object lookup](2026-11-06-generic-pcb-object-lookup.md). Native equivalents for installed empty generic getters, complete supported-family compound samples and caller-order DTO lookup, without selection or persistence claims.
 - [2026-11-06 original tracked-open cleanup](2026-11-06-ordinary-tracked-open-cleanup.md). Retained original dispatch, process and HMAC cleanup, normal close once, exact local publication settlement and no navigation replay.
 

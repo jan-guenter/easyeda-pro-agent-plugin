@@ -1,6 +1,7 @@
 /** Exact 73-line native birth predecessor, captured before graph migration.
  * Build-time source transformation only; it is never a runtime program input. */
 import { createHash } from "node:crypto";
+import { projectIndependentForwardSharedHelper } from "./current-footprint-forward-independent-shared-projection.ts";
 
 export const FORWARD_NATIVE_LEGACY = Object.freeze({ bytes: 1_042_994, sha256: "58f681b7c896069fd748b957fe925e39ed4b8990f88de3483fbda781a65dccee" });
 export const FORWARD_NATIVE_PREDECESSOR = Object.freeze({ bytes: 1_046_915, sha256: "438199ce665e55ca5256c2310768fc2c24c672e81f49cad26145186744b1943b" });
@@ -221,6 +222,11 @@ const hash = (value: string): string => createHash("sha256").update(value).diges
  * source, changed additions and every collateral byte still fail closed. */
 export function normalizeForwardNativeLegacySource(input: string): string {
   if (Buffer.byteLength(input) === FORWARD_NATIVE_LEGACY.bytes && hash(input) === FORWARD_NATIVE_LEGACY.sha256) { return input; }
+  const independent = projectIndependentForwardSharedHelper(input);
+  if (independent !== null) {
+    if (Buffer.byteLength(independent) !== FORWARD_NATIVE_LEGACY.bytes || hash(independent) !== FORWARD_NATIVE_LEGACY.sha256) { throw new Error("FORWARD_NATIVE_INDEPENDENT_LEGACY_PROOF"); }
+    return independent;
+  }
   if (Buffer.byteLength(input) === FORWARD_NATIVE_UNLOCKED_SPATIAL_SHARED_HELPER.bytes && hash(input) === FORWARD_NATIVE_UNLOCKED_SPATIAL_SHARED_HELPER.sha256) {
     let source = input;
     for (const [index, projection] of sharedSpatialProjection.entries()) {

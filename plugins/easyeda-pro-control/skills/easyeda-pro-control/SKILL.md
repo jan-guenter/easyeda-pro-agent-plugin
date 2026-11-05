@@ -31,6 +31,10 @@ For disposable validation of the separately born v2 footprint owner, read
 [the source-validation workflow](references/current-footprint-forward-source-validation.md).
 It retains original capture, checkpoint and source sealing through its own
 cleanup; all execution and Save authority remains false.
+For new fixed Via or Line/Via validation projects, read
+[generated fixture import](references/managed-fixture-import.md). Import uses
+the original ordinary launch, exclusive native destination and tracked Promise;
+its partial SDK result does not accept closed SQL or registration.
 For the one supported unfinished Source v2 history, use the separate
 [historical startup-blocker receipt](references/current-footprint-forward-source-relinquishment.md)
 only after original cleanup. It preserves unknown original outcomes.

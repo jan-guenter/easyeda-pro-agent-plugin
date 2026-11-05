@@ -27,6 +27,18 @@ interface RouteGroup {
 const groups: RouteGroup[] = [];
 const topologyBlock = "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.";
 
+groups.push({ namespace: "sys_FileManager", methods: ["importProjectByProjectFile"], route: {
+  tool: "easyeda_control_fixture_import", selector: "import-generated-fixture", implementation: "public-method",
+  scope: "Narrow generated disposable validation subset only. One new fixed Via-only or Line/Via format2 archive, private managed staging, exact empty StartPage and same original ordinary209 launch; no caller file/path/geometry/code/SQL. A separately tracked actual-config getter and original no-.elib directory watches exclude the detached system-library seed branch only after original application termination and drained cancellation. Original public SDK File/local-folder import Promise is invoked once with autoOpenfalse and retained through settlement. Returned SDK identity is intermediate evidence; importedFixtureAccepted, complete closed SQL/source membership and persistent registration remain false. Original journal/runtime/session cleanup, one normal close, root/empty Job, original destination/watch release and explicit owner release are required before ordinary helper release or controller replacement. Unknown effects, pending publications and partial outputs are retained; exact local record settlement never repeats import. No deletion, explicit Save, prompt choice, force termination, historical ownership or general file import contract. Source/offline checks and helper compilation are not connected validation.",
+  source: ["managed-fixture-generator.ts", "managed-fixture-archive.ts", "managed-fixture-import-runtime.ts", "managed-fixture-import-program.ts",
+    "managed-fixture-import-profile.ts", "managed-fixture-environment-program.ts", "managed-fixture-destination.ts", "ordinary-tracked-open-cleanup.ts",
+    "../../scripts/managed-fixture-destination.ps1"],
+  tests: ["managed-fixture-generator.test.ts", "managed-fixture-import-program.test.ts", "managed-fixture-import-runtime.test.ts",
+    "managed-fixture-destination.test.ts", "managed-fixture-import-registration.test.ts", "ordinary-tracked-open-cleanup.test.ts"],
+  validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+  inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "fixture-import", query: { includeSchemas: true } } } },
+} });
+
 for (const method of ["getPrimitiveByPrimitiveId", "getPrimitivesByPrimitiveId"]) {
   groups.push({ namespace: "pcb_Primitive", methods: [method], route: {
     tool: "easyeda_control_pcb_geometry", selector: `eda.pcb_Primitive.${method}`, implementation: "native-task-equivalent",

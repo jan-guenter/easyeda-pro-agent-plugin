@@ -1,5 +1,6 @@
 /* oxlint-disable import/max-dependencies -- This fixed offline router imports each capability's own validator; an intermediary would only hide those dependencies. */
 import { z } from "zod";
+import { queryManagedFixtureImport, validateManagedFixtureImportArguments } from "./managed-fixture-import-runtime.ts";
 import { queryCurrentSchematicPageOpening, validateCurrentSchematicPageOpeningArguments } from "./current-schematic-page-opening.ts";
 import { queryCurrentSchematicPageRead, validateCurrentSchematicPageReadArguments } from "./current-schematic-page-read.ts";
 import { queryCurrentPcbOrdinaryRead, validateCurrentPcbOrdinaryReadArguments } from "./current-pcb-ordinary-read-validation.ts";
@@ -87,6 +88,8 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("netlist-files-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("library-files"), query: managedLibraryFilesCatalogQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("library-files-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("fixture-import"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("fixture-import-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("catalog-footprint"), query: publicSystemFootprintQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("catalog-footprint-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("catalog-components"), query: publicSystemCatalogQuerySchema.optional() }).strict(),
@@ -282,6 +285,8 @@ export function queryOfflineApi(request: ApiRequest): { offline: true; result: u
     case "netlist-files-validate": { result = validateNetlistFilesArguments(request.query.request); break; }
     case "library-files": { result = queryManagedLibraryFiles(request.query ?? {}); break; }
     case "library-files-validate": { result = validateManagedLibraryFilesArguments(request.query.request); break; }
+    case "fixture-import": { result = queryManagedFixtureImport(request.query ?? {}); break; }
+    case "fixture-import-validate": { result = validateManagedFixtureImportArguments(request.query.request); break; }
     case "catalog-footprint": { result = queryPublicSystemFootprint(request.query ?? {}); break; }
     case "catalog-footprint-validate": { result = validatePublicSystemFootprintArguments(request.query.request); break; }
     case "catalog-components": { result = queryPublicSystemCatalog(request.query ?? {}); break; }

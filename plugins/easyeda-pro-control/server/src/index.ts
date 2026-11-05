@@ -199,6 +199,7 @@ import { readCurrentSymbolMetadata } from "./current-symbol-metadata-runtime.ts"
 import { currentProjectOnlySymbolPreflightRequestSchema } from "./current-project-only-symbol-preflight.ts";
 import { readCurrentProjectOnlySymbolPreflight } from "./current-project-only-symbol-runtime.ts";
 import { historicalAbandonmentRequestSchema, runHistoricalAbandonment } from "./historical-abandonment.ts";
+import { ManagedFixtureImportCoordinator, managedFixtureImportRequestSchema } from "./managed-fixture-import-runtime.ts";
 
 const facadeMode = configuredFacadeMode(process.env);
 
@@ -235,6 +236,18 @@ const upstream = new UpstreamEasyedaClient({
 let windowsRuntime: WindowsControlRuntime | undefined;
 let ordinaryLaunchCoordinator: OrdinaryLaunchCoordinator | undefined;
 let ordinaryLaunchRuntime: WindowsControlRuntime | undefined;
+let fixtureImportCoordinator: ManagedFixtureImportCoordinator | undefined;
+// oxlint-disable-next-line typescript/unbound-method -- Invoke the captured custody observer only on its original coordinator.
+const fixtureImportReservation = ManagedFixtureImportCoordinator.prototype.hasActiveReservation;
+function hasFixtureImportCustody(): boolean {
+  const owner = fixtureImportCoordinator;
+  if (owner === undefined) { return false; }
+  if (Object.getPrototypeOf(owner) !== ManagedFixtureImportCoordinator.prototype ||
+      ManagedFixtureImportCoordinator.prototype.hasActiveReservation !== fixtureImportReservation || owner.hasActiveReservation !== fixtureImportReservation) {
+    throw new Error("Original fixture import custody observer changed.");
+  }
+  return fixtureImportReservation.call(owner);
+}
 let currentPcbDiagnosticLifecycle: CurrentPcbDiagnosticLifecycle | CurrentPcb209DiagnosticLifecycle | CurrentPcbOrdinaryReadLifecycle | CurrentPcb209VisualLifecycle | CurrentPcbSpatialLifecycle | undefined;
 let currentPcbStringPrecreateLifecycle: CurrentPcbStringPrecreateLifecycle | undefined;
 let currentFootprintMainLifecycle: CurrentFootprintMainLifecycle | undefined;
@@ -330,7 +343,7 @@ const closedSymbolUnreservedFailure: { observed: boolean; original: unknown } = 
 /** Retirement requires each original native workflow to have completed its
  * own cleanup. It never releases, adopts or terminates a native owner. */
 function assertSessionRetirementNativeOwnersSettled(): void {
-  if (scheduledShutdown !== undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined ||
+  if (scheduledShutdown !== undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined || hasFixtureImportCustody() ||
       closedSymbolIndexReservation !== undefined && closedSymbolIndexReservation.entry?.isRuntimeDisposed() !== true || closedSymbolUnreservedFailure.observed ||
       currentDisposableOpenCoordinator !== undefined && !currentDisposableOpenCoordinator.isRuntimeDisposed() ||
       currentPcbRenameOperationCoordinator !== undefined && !currentPcbRenameOperationCoordinator.isRuntimeDisposed() ||
@@ -438,6 +451,7 @@ function disposableConstructedMethods(runtime: WindowsControlRuntime, nativeUi: 
 /** Reserve ordinary startup against every active diagnostic purpose and consumed
  * closed-symbol attempt. Read-only diagnostics still own their app allocation. */
 function assertOrdinaryRuntimeAllocationAllowed(): void {
+  if (hasFixtureImportCustody()) { throw new Error("The original fixture import owner reserves application startup."); }
   if (currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true || currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true || currentFootprintMainLifecycle?.hasActiveReservation() === true || currentFootprintHeldCacheValidation?.hasActiveReservation() === true || currentFootprintHeadAgeValidation?.hasActiveReservation() === true || hasForwardSourceCustody()) {
     throw new Error("An original diagnostic lifecycle reserves application startup.");
   }
@@ -2062,6 +2076,7 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_public_readers: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_netlist_files: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_library_files: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_fixture_import: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_catalog_footprint: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_catalog_components: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_extensions: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -3666,7 +3681,7 @@ registerFacadeTool(
         if (runtime !== ordinaryLaunchRuntime || runtime !== windowsRuntime || currentDisposableOpenCoordinator !== undefined ||
             currentPcbRenameOperationCoordinator !== undefined || currentSchematicRenameOperationCoordinator !== undefined ||
             closedSymbolIndexReservation !== undefined || closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined ||
-            hasForwardSourceCustody() ||
+            hasForwardSourceCustody() || hasFixtureImportCustody() ||
             disposableOwnerMethod(CurrentPcbDiagnosticLifecycle.prototype, "hasActiveReservation") !== diagnosticReserved ||
             disposableOwnerMethod(CurrentPcbDiagnosticLifecycle.prototype, "hasAttemptedNativeOwnerAllocation") !== diagnosticAllocated) {
           throw new Error("Ordinary runtime release is reserved by another owner or its observer changed.");
@@ -3702,7 +3717,7 @@ registerFacadeTool(
         assertReleaseAllowed,
         completeRuntimeRelease: (runtime): void => {
           assertReleaseAllowed(runtime);
-          windowsRuntime = undefined; ordinaryLaunchRuntime = undefined; releaseDiagnostics = undefined;
+          windowsRuntime = undefined; ordinaryLaunchRuntime = undefined; releaseDiagnostics = undefined; fixtureImportCoordinator = undefined;
         },
       });
     }
@@ -5167,6 +5182,50 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_project_schematic_rename")
     });
   }));
 }
+
+registerFacadeTool(
+  "easyeda_control_fixture_import",
+  {
+    title: "Import a generated disposable validation fixture",
+    description: "Generate and import a fresh fixed Via-only or Line/Via project into an exclusively held private Windows destination. Requires this facade's current original ordinary launch, exact empty Start Page, pinned209 SDK/UI/manager/main sources, explicit disposable/import confirmations and authenticated expected fingerprint. Actual config directories have a separate tracked preflight journal; HALF_OFFLINE plus original complete no-.elib directory rosters and retained native watches exclude detached system-library seeding only after original termination and drained watch cancellation. The original import Promise is dispatched once and retained through settlement. SDK settlement is partial evidence: closed SQLite, source membership and persistent registration acceptance remain separate. Inspect original outcomes without replay. Cleanup uses the retained original journal/runtime/session after dispatch settles; request one normal close, observe original root/empty Job and exact old HMAC session closure, finish cleanup, then release the original destination and use release-owner before ordinary runtime/helper release. settle-import-records and settle-cleanup-records publish only exact retained local candidates. Preserve all partial files. No caller files, paths, IDs, geometry, SQL, code, deletion, explicit Save, prompt choice, force termination or historical-owner adoption. Query fixture-import/fixture-import-validate first.",
+    inputSchema: { request: z.unknown().pipe(managedFixtureImportRequestSchema), expectedFingerprint: privateFingerprintSchema.optional() },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
+  },
+  serializedGuarded(async ({ request, expectedFingerprint }) => {
+    if (request.action === "inspect") {
+      return { result: fixtureImportCoordinator?.inspect(request.operationId) ?? { originalOwnerRetained: false, importedFixtureAccepted: false, replayAllowed: false } };
+    }
+    if (request.action !== "import-generated-fixture") {
+      if (fixtureImportCoordinator === undefined) { throw new Error("Fixture cleanup requires this facade's retained original import owner."); }
+      return { result: await fixtureImportCoordinator.execute(request) };
+    }
+    return upstream.withAuthenticatedBridgeDispatchScope(async () => {
+      if (fixtureImportCoordinator === undefined) {
+        const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"], runtime = ordinaryLaunchRuntime;
+        if (assetsRoot === undefined || runtime === undefined || windowsRuntime !== runtime || currentDisposableOpenCoordinator !== undefined ||
+            currentPcbRenameOperationCoordinator !== undefined || currentSchematicRenameOperationCoordinator !== undefined ||
+            closedSymbolIndexReservation !== undefined || scheduledShutdown !== undefined || hasForwardSourceCustody()) {
+          throw new Error("Fixture import requires this facade's unreserved original ordinary launch.");
+        }
+        let allocated = false;
+        // oxlint-disable-next-line eslint/prefer-const -- The constructor calls the identity guard synchronously before this bounded original allocation is assigned.
+        let owner: ManagedFixtureImportCoordinator | undefined;
+        const assertOriginalOwner = (): void => {
+          if (ordinaryLaunchRuntime !== runtime || windowsRuntime !== runtime || runtime.status().state !== "owned" ||
+              process.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot || (allocated ? fixtureImportCoordinator !== owner : fixtureImportCoordinator !== undefined)) {
+            throw new Error("Fixture import original index/runtime allocation changed.");
+          }
+        };
+        const cleanup = new OrdinaryTrackedOpenCleanup(engine, runtime, assertOriginalOwner);
+        owner = new ManagedFixtureImportCoordinator({ pluginRoot: resolve(import.meta.dirname, "../.."), assetsRoot,
+          engine, runtime, assertOriginalOwner, cleanup });
+        fixtureImportCoordinator = owner; allocated = true; assertOriginalOwner();
+      }
+      return { result: await fixtureImportCoordinator.execute(request, expectedFingerprint) };
+    });
+  }, { allowDuringOrphanRisk: true }),
+);
+
 
 const transport = new StdioServerTransport();
 const shutdown = createSerializedShutdown(
