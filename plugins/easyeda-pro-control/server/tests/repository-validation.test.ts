@@ -33,7 +33,7 @@ const execFileAsync = promisify(execFile);
 void describe("repository release validation", () => {
   void it("admits a larger facade only at its exact path and reviewed bytes/hash, retaining other file bounds", () => {
     const digest = "a".repeat(64), path = "plugins/easyeda-pro-control/server/dist/server.mjs";
-    const bundleLimit = 12 * 1024 * 1024, regularLimit = 8 * 1024 * 1024;
+    const bundleLimit = 16 * 1024 * 1024, regularLimit = 8 * 1024 * 1024;
     assert.equal(repositoryFileByteLimit(path), bundleLimit);
     for (const alias of ["server.mjs", `${path}.bak`, path.toUpperCase(), `./${path}`, "plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs"]) {
       assert.equal(repositoryFileByteLimit(alias), regularLimit);

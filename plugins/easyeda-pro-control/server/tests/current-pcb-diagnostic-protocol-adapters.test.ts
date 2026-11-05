@@ -255,10 +255,10 @@ void test("native adapter embeds and private fields match TS programs without na
   }
   assert.ok(source.includes(String.raw`string target="{\"rawWindowsPath\":"+JsonString(path)+",\"projectUuid\":"+JsonString(project)+`));
   assert.ok(source.includes(String.raw`",\"documentUuid\":"+JsonString(document)+",\"expectedSourceSha256\":"+JsonString(source)+",\"branchUuid\":"+JsonString(branch)+"}";`));
-  assert.ok(source.includes("$requestLimit=if ($StringPrecreate) {3309} else {103}"));
+  assert.ok(source.includes("$requestLimit=if ($Spatial209) {383} elseif ($StringPrecreate) {3309} else {103}"));
   assert.ok(source.includes("$request.requestId -gt $requestLimit"));
   assert.ok(source.includes("id!=nextRequest || id>EffectiveRequestLimit"));
-  assert.ok(source.includes("int RequestLimit { get { return workerStartup?256:stringPrecreate?3309:103; } }"));
+  assert.ok(source.includes("int RequestLimit { get { return spatial209?384:workerStartup?256:stringPrecreate?3309:103; } }"));
   // New held purposes choose their fixed physical-ID ceilings before the
   // Unchanged legacy route chain. Normal/cleanup classes are counted separately.
   const heldLimitPrefix = "footprintHeldCache209?HeldCacheRequests:workerStartupFootprintHeldSaved209?HeldSavedRequests:";

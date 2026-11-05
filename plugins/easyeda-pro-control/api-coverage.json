@@ -8,14 +8,14 @@
     "installed209DistinctMethods": 811,
     "statuses": {
       "implemented-public-subset": 216,
-      "implemented-native-equivalent": 44,
+      "implemented-native-equivalent": 46,
       "implemented-vendor-http-equivalent": 13,
       "internal-lifecycle-only": 0,
       "implemented-but-blocked": 79,
-      "omitted": 483
+      "omitted": 481
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 412,
+      "available-with-runtime-guards": 414,
       "available-with-network-guards": 16,
       "available-with-managed-file-guards": 3,
       "blocked": 94,
@@ -42,7 +42,6 @@
       "installed-209-library-routing-unqualified": 1,
       "installed-209-raytracer-backend-absent": 5,
       "installed-209-readiness-backend-absent": 4,
-      "installed-209-region-selection-side-effects": 1,
       "installed-209-selection-flushes-design-services": 2,
       "installed-209-source-backend-absent": 29,
       "installed-209-symbol-source-runtime-contract-unqualified": 1,
@@ -54,7 +53,6 @@
       "library-archive-panel-framing-and-worker-ownership": 1,
       "library-archive-partial-source-and-worker-ownership": 2,
       "library-render-resource-and-failure-lifecycle": 2,
-      "lossy-heterogeneous-primitive-projection": 1,
       "lossy-logging-selection-reader": 1,
       "managed-file-contract-needed": 24,
       "multi-object-electrical-effect": 7,
@@ -10997,17 +10995,56 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "lossy-heterogeneous-primitive-projection",
-        "reason": "The installed wrapper skips Text and unknown native hit types before returning the first mapped primitive. The pinned209 native RPC already applies Hr.pointSelect, qt.filter and filterPartiton, then removes every item without a toJSON function before Ey serialization. Reading this RPC cannot recover discarded native hit identities or establish whether its first serializable hit was the original first hit.",
-        "nextRequirement": "Capture a separately reviewed complete native hit-identity sequence before serialization loss, with explicit display-filter, partition and hit-order semantics and supported family mapping. Refuse unknown hits rather than selecting a later supported primitive; do not relabel the existing lossy RPC as a complete hit reader.",
-        "evidence": [
-          "assets/pro-pcb/3.2.195.6b67774e/js/pcb.js@sha256:a84059304d32d4f0feb768d6c5baf00d72a954643ac62299f2c46c08fa68fd0b;utf16:10305245..10305479",
-          "docs/history/2026-10-10-api-execution-feasibility.md"
-        ]
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "spatial/observe-spatial",
+          "implementation": "native-task-equivalent",
+          "scope": "Separate fresh pcb209-spatial-* disposable native purpose, not public SDK execution or instance parity. The installed point wrapper drops native families before selecting its first mapped hit; the public region getter selects and can flush design work. This adapter calls neither public handler. After the same original owner's checkpoint-bound project/PCB opening and full UI/PCB source qualification, it captures the original point RPC lexical bindings and fixed callable references. Full CDP source descriptions and original script/function locations qualify every cataloged application callee; actual dispatch paths are rechecked synchronously before each sample. Standard ECMAScript renderer intrinsics are trusted, not independently identity-qualified. One consumed stage amortizes qualification over one to sixteen ordered point or inside/intersects queries, with two complete matching samples per query. The initial subset requires an initialized camera/filter environment, smart mode off, no dialog/expansion mode, only standalone unlocked visible through Via models in complete ready supported native trees, and no region boundary-crossing boxes. At most 256 scene/hit identities, bounded data-origin mil coordinates and 65536 native result bytes per query; unknown/duplicate/unsupported geometry or pending indexes refuse whole. Native ordering, selected IDs and retained scene descriptors are checked; full native/SQL source membership, continuous observation, physical intersection for boundary cases, complete-board semantics, connectivity, persistence and writer/Save authority are not supplied. Numeric bit-mask and explicitly modeled geometry/lexical scratch effects are admitted; no selection restoration, arbitrary source/protocol, fallback hit skipping or cache clearing. The dedicated 384-request purpose reserves original release and cannot upgrade an existing 103-request owner. Original normal close, observed root/empty-Job termination, helper release and record settlement remain required. Source-shaped actual-function offline tests are not connected execution validation.",
+          "source": [
+            "current-pcb-spatial-validation.ts",
+            "current-pcb-spatial-capture-runner.ts",
+            "current-pcb-spatial-function-scope.ts",
+            "current-pcb-spatial-function-source.ts",
+            "current-pcb-209-spatial-source-profile.ts",
+            "current-pcb-209-spatial-capture-program.ts",
+            "current-pcb-209-spatial-read-program.ts",
+            "current-pcb-209-spatial-read.ts",
+            "current-pcb-spatial-profile.ts",
+            "current-pcb-spatial-protocol.ts",
+            "current-pcb-diagnostic-pipe.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "current-pcb-diagnostic-lifecycle.ts",
+            "current-pcb-diagnostic-lifecycle-journal.ts",
+            "../../scripts/pcb-diagnostic-owner.ps1"
+          ],
+          "tests": [
+            "current-pcb-spatial-function-scope.test.ts",
+            "current-pcb-spatial-capture-runner.test.ts",
+            "current-pcb-spatial-function-source.test.ts",
+            "current-pcb-209-spatial-read.test.ts",
+            "current-pcb-spatial-pipe.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-spatial",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -11041,17 +11078,56 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "installed-209-region-selection-side-effects",
-        "reason": "The pinned209 native region handler calls t.getItemsByBBox, which calls boxSelect and select. It changes selection and invokes the design-service modify path, which can flush native uploads; selection restoration does not prove collateral invariance. The public wrapper also skips Text and unknown hit types, so its returned array is incomplete.",
-        "nextRequirement": "Implement a separately source-qualified nonmutating region-membership adapter with explicit direction/boundary semantics, complete supported identities and selection/source invariants on disposable geometry. Do not execute or relabel the selection-service getter as a harmless read, or recover omitted identities through generic JSON projection.",
-        "evidence": [
-          "assets/pro-pcb/3.2.195.6b67774e/js/pcb.js@sha256:a84059304d32d4f0feb768d6c5baf00d72a954643ac62299f2c46c08fa68fd0b;utf16:10304939..10305263,7881974..7882035,7843579..7844096,7849566..7851391",
-          "docs/history/2026-10-10-api-execution-feasibility.md"
-        ]
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "spatial/observe-spatial",
+          "implementation": "native-task-equivalent",
+          "scope": "Separate fresh pcb209-spatial-* disposable native purpose, not public SDK execution or instance parity. The installed point wrapper drops native families before selecting its first mapped hit; the public region getter selects and can flush design work. This adapter calls neither public handler. After the same original owner's checkpoint-bound project/PCB opening and full UI/PCB source qualification, it captures the original point RPC lexical bindings and fixed callable references. Full CDP source descriptions and original script/function locations qualify every cataloged application callee; actual dispatch paths are rechecked synchronously before each sample. Standard ECMAScript renderer intrinsics are trusted, not independently identity-qualified. One consumed stage amortizes qualification over one to sixteen ordered point or inside/intersects queries, with two complete matching samples per query. The initial subset requires an initialized camera/filter environment, smart mode off, no dialog/expansion mode, only standalone unlocked visible through Via models in complete ready supported native trees, and no region boundary-crossing boxes. At most 256 scene/hit identities, bounded data-origin mil coordinates and 65536 native result bytes per query; unknown/duplicate/unsupported geometry or pending indexes refuse whole. Native ordering, selected IDs and retained scene descriptors are checked; full native/SQL source membership, continuous observation, physical intersection for boundary cases, complete-board semantics, connectivity, persistence and writer/Save authority are not supplied. Numeric bit-mask and explicitly modeled geometry/lexical scratch effects are admitted; no selection restoration, arbitrary source/protocol, fallback hit skipping or cache clearing. The dedicated 384-request purpose reserves original release and cannot upgrade an existing 103-request owner. Original normal close, observed root/empty-Job termination, helper release and record settlement remain required. Source-shaped actual-function offline tests are not connected execution validation.",
+          "source": [
+            "current-pcb-spatial-validation.ts",
+            "current-pcb-spatial-capture-runner.ts",
+            "current-pcb-spatial-function-scope.ts",
+            "current-pcb-spatial-function-source.ts",
+            "current-pcb-209-spatial-source-profile.ts",
+            "current-pcb-209-spatial-capture-program.ts",
+            "current-pcb-209-spatial-read-program.ts",
+            "current-pcb-209-spatial-read.ts",
+            "current-pcb-spatial-profile.ts",
+            "current-pcb-spatial-protocol.ts",
+            "current-pcb-diagnostic-pipe.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "current-pcb-diagnostic-lifecycle.ts",
+            "current-pcb-diagnostic-lifecycle-journal.ts",
+            "../../scripts/pcb-diagnostic-owner.ps1"
+          ],
+          "tests": [
+            "current-pcb-spatial-function-scope.test.ts",
+            "current-pcb-spatial-capture-runner.test.ts",
+            "current-pcb-spatial-function-source.test.ts",
+            "current-pcb-209-spatial-read.test.ts",
+            "current-pcb-spatial-pipe.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-spatial",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"

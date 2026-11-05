@@ -265,7 +265,9 @@ The execution transport now transfers its same already-qualified complete
 project-source string to the exact new construction runner before capture.
 It adds no fetch, request or await; successful and failed handoff clear the raw
 transport reference. This does not grant invocation authority. The fixed native
-clock encoder is embedded under the unchanged1MiB helper cap. Additional existing
+clock encoder remains embedded in the exact-pinned helper. The helper source-file
+ceiling is2MiB after adding the separate spatial programs; the original runtime
+request, response, clock and session budgets are unchanged. Additional existing
 fixed programs use the maintained strict packing decoder with byte-exact source
 parity. The preceding installed helper passed actual Windows combined-flag
 CompileOnly without an application launch; the new fixed codecs and native phase

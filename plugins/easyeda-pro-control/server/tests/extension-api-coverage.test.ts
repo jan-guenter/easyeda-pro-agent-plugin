@@ -562,7 +562,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 216, "implemented-native-equivalent": 44, "implemented-vendor-http-equivalent": 13, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 483,
+    "implemented-public-subset": 216, "implemented-native-equivalent": 46, "implemented-vendor-http-equivalent": 13, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 481,
   });
 });
 
@@ -1124,26 +1124,26 @@ void test("iframe existence remains omitted because the installed wrapper return
   assert.match(row.omission.reason, /literal false/u); assert.match(row.omission.nextRequirement, /not evidence of absence/u);
 });
 
-void test("omitted geometric getters retain projection defects and the region selection-service effects", () => {
+void test("spatial coverage separates the restricted native reader from the lossy or selecting public getters", () => {
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
   for (const path of ["eda.pcb_Document.getPrimitiveAtPoint", "eda.pcb_Document.getPrimitivesInRegion"]) {
     const row = rows.get(path);
     assert.ok(row);
-    assert.equal(row.status, "omitted");
-    assert.equal(row.omission?.code, path.endsWith("getPrimitivesInRegion") ? "installed-209-region-selection-side-effects" : "lossy-heterogeneous-primitive-projection");
-    assert.match(row.omission.reason, /Text/u);
-    assert.equal(row.routes.length, 0);
+    assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
+    assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+    assert.equal(row.routes.length, 1);
+    const route = row.routes[0]; assert.ok(route);
+    assert.equal(route.tool, "easyeda_control_pcb209_opening"); assert.equal(route.selector, "spatial/observe-spatial");
+    assert.deepEqual(route.documentTypes, [3]);
+    for (const text of ["drops native families", "public region getter selects", "calls neither public handler", "standalone unlocked visible through Via",
+      "region boundary-crossing", "sixteen", "original script/function locations", "intrinsics are trusted", "not independently identity-qualified",
+      "scratch effects", "connected execution validation"]) {
+      // Preserve concrete limits on the narrow native task.
+      // Schema presence grants neither full SDK parity nor a connected result.
+      assert.ok(route.scope.includes(text));
+    }
+    assert.equal(route.inputDiscovery?.arguments["request"] !== undefined, true);
   }
-  const region = rows.get("eda.pcb_Document.getPrimitivesInRegion"); assert.ok(region?.omission);
-  for (const text of ["getItemsByBBox", "boxSelect", "select", "native uploads", "selection restoration"]) {
-    assert.ok(region.omission.reason.includes(text));
-  }
-  assert.match(region.omission.nextRequirement, /nonmutating region-membership/u);
-  const point = rows.get("eda.pcb_Document.getPrimitiveAtPoint"); assert.ok(point?.omission);
-  for (const text of ["Hr.pointSelect", "qt.filter", "filterPartiton", "toJSON", "Ey serialization"]) {
-    assert.ok(point.omission.reason.includes(text));
-  }
-  assert.match(point.omission.nextRequirement, /before serialization loss/u);
 });
 
 void test("outline fitting exposes only the disposable fixed-topic submission route without geometry fallback", () => {
@@ -1307,11 +1307,11 @@ void test("every coverage input-discovery request resolves to an actual strict a
     assert.ok(isRecord(request));
     const result = queryOfflineApi(apiRequestSchema.parse(request)).result;
     assert.ok(isRecord(result));
-    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files"].includes(String(request["action"]))) {
+    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files"].includes(String(request["action"]))) {
       assert.ok(isRecord(result["inputSchema"]));
       // The ordinary SCH and 209 opening routes expose their lifecycle union at the root;
       // Existing routes still promise a separate phase schema as well.
-      if (!["project-schematic-operation", "pcb209-opening", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
+      if (!["project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
       assert.equal(result["executionAuthorized"], false);
     } else {
       const entries = result["entries"];

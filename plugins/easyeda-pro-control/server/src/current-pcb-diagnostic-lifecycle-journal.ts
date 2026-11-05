@@ -10,6 +10,8 @@ import { currentWindowResizeResultSchema, requireCurrentWindowResizeResult } fro
 import { CURRENT_RENDERER_CAPTURE_LIMITS, currentRendererCaptureResultSchema, requireCurrentRendererCaptureResult } from "./current-pcb-diagnostic-renderer-capture.ts";
 import { currentWindowCaptureResultSchema, requireCurrentWindowCaptureResult } from "./current-pcb-diagnostic-window-capture.ts";
 import { currentPcb209VisualIdSchema } from "./current-pcb-209-visual-validation.ts";
+import { CURRENT_PCB_SPATIAL_OPERATION_PREFIX, CURRENT_PCB_SPATIAL_RESULT_MAX_BYTES, currentPcbSpatialIdSchema,
+  currentPcbSpatialObservationSchema, currentPcbSpatialQueriesSchema, requireCurrentPcbSpatialObservation } from "./current-pcb-spatial-validation.ts";
 import { CURRENT_PCB_209_VISUAL_OPERATION_BYTES, CURRENT_PCB_209_VISUAL_RESULT_BYTES, currentPcb209VisualOperationSchema,
   requireCurrentPcb209VisualResult } from "./current-pcb-209-visual-actions.ts";
 import { constants } from "node:fs";
@@ -134,6 +136,9 @@ const diagnosticIntentSchema = z.object({ schema: z.literal("easyeda-pro-control
   facadeSha256: diagnosticLifecycleDigestSchema, installationSha256: diagnosticLifecycleDigestSchema,
   confirmValidationOnly: z.literal(true), confirmDiagnosticLaunch: z.literal(true), acceptExistingProfileEffects: z.literal(true),
 }).strict();
+const spatialIntentSchema = diagnosticIntentSchema.extend({
+  schema: z.literal("easyeda-pro-control.pcb209-spatial-launch-intent.v1"), operationId: currentPcbSpatialIdSchema,
+});
 const visualIntentSchema = diagnosticIntentSchema.extend({
   schema: z.literal("easyeda-pro-control.pcb209-visual-launch-intent.v1"), operationId: currentPcb209VisualIdSchema,
   acceptVisualStateChanges: z.literal(true),
@@ -271,7 +276,7 @@ const footprintStartupId = z.union([currentPcb209WorkerStartupLifecycleIdSchema,
 const legacyStartupId = z.union([currentPcbWorkerStartupLifecycleIdSchema, footprintStartupId]);
 const startupId = z.union([legacyStartupId, footprintRouteId]);
 const startupOpeningId = z.union([startupId, currentPcb209EmptyStartupIdSchema, currentPcb209RatlineStartupIdSchema, currentPcb209RatlineContinuationIdSchema]);
-const intentSchema = z.discriminatedUnion("schema", [diagnosticIntentSchema, visualIntentSchema, stringIntentSchema, workerStartupIntentSchema,
+const intentSchema = z.discriminatedUnion("schema", [diagnosticIntentSchema, spatialIntentSchema, visualIntentSchema, stringIntentSchema, workerStartupIntentSchema,
   workerStartup209IntentSchema, workerStartupEmpty209IntentSchema, workerStartupRatline209IntentSchema, workerStartupContinuation209IntentSchema, workerStartupFootprint209IntentSchema, workerStartupFootprintRoute209IntentSchema, mainIntentSchema, combinedIntentSchema, combinedReadyIntentSchema, forwardIntentSchema]);
 const workerStartupHandoffIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-worker-startup-handoff-intent.v1"), ...base,
   operationId: startupOpeningId, bindingSha256: diagnosticLifecycleDigestSchema,
@@ -322,7 +327,7 @@ const noProcessReleasedSchema = z.object({ schema: z.literal("easyeda-pro-contro
 }).strict();
 export const diagnosticObservationStageSchema = z.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state", "pcb-opening", "model-state"]);
 const extendedObservationStageSchema = z.enum([...diagnosticObservationStageSchema.options, "window-restore209", "window-resize209", "window-capture209", "renderer-capture209", "visual-viewport209", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"]);
-export const lifecycleObservationStages = [...extendedObservationStageSchema.options, "common-baseline", "string-precreate"] as const;
+export const lifecycleObservationStages = [...extendedObservationStageSchema.options, "common-baseline", "string-precreate", "spatial209"] as const;
 const observationIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-observation-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, stage: extendedObservationStageSchema,
   targetId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(), frameId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(),
@@ -399,6 +404,17 @@ const observationResultSchema = z.object({ schema: z.literal("easyeda-pro-contro
   return Buffer.byteLength(canonicalJson(value.result)) <=
     (value.stage === "selection-relations209" ? CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES : limit);
 }, "Observation result exceeds its bound.");
+const spatialObservationIntentSchema = z.strictObject({
+  schema: z.literal("easyeda-pro-control.pcb209-spatial-observation-intent.v1"), ...base,
+  operationId: currentPcbSpatialIdSchema, stage: z.literal("spatial209"), bindingSha256: diagnosticLifecycleDigestSchema,
+  pcbOpeningResultSha256: diagnosticLifecycleDigestSchema, queries: currentPcbSpatialQueriesSchema,
+  acceptNativeScratchEffects: z.literal(true),
+});
+const spatialObservationResultSchema = z.strictObject({
+  schema: z.literal("easyeda-pro-control.pcb209-spatial-observation-result.v1"), ...base,
+  operationId: currentPcbSpatialIdSchema, stage: z.literal("spatial209"), intentSha256: diagnosticLifecycleDigestSchema,
+  result: currentPcbSpatialObservationSchema, executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
+});
 const stringPrecreateIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-string-precreate-observation-intent.v1"), ...base,
   operationId: currentPcbStringPrecreateIdSchema, stage: z.literal("string-precreate"),
@@ -780,6 +796,7 @@ export const diagnosticLifecycleRecordSchemas = {
   "image-shapes209-intent.json": observationIntentSchema, "image-shapes209-result.json": observationResultSchema,
   "arc-shapes209-intent.json": observationIntentSchema, "arc-shapes209-result.json": observationResultSchema,
   "poured-shapes209-intent.json": observationIntentSchema, "poured-shapes209-result.json": observationResultSchema,
+  "spatial209-intent.json": spatialObservationIntentSchema, "spatial209-result.json": spatialObservationResultSchema,
   "string-precreate-intent.json": stringPrecreateIntentSchema, "string-precreate-result.json": stringPrecreateResultSchema,
   "common-baseline-intent.json": commonBaselineIntentSchema, "common-baseline-result.json": commonBaselineResultSchema,
   "common-baseline-failure.json": commonBaselineFailureSchema,
@@ -867,6 +884,8 @@ function recordBound(name: RecordName): number {
   // Six JSON bytes per UTF-16 code unit covers control-character escapes in16 IDs.
   if (name === "saved-cache-native-result.json") { return MAX_BYTES + CURRENT_FOOTPRINT_SAVED_CACHE_PROBE_LIMITS.resultBytes; }
   if (name === "saved-cache-accessor-result.json") { return MAX_BYTES + CURRENT_FOOTPRINT_SAVED_CACHE_ACCESSOR_PROBE_LIMITS.resultBytes; }
+  if (name === "spatial209-result.json") { return MAX_BYTES + CURRENT_PCB_SPATIAL_RESULT_MAX_BYTES; }
+  if (name === "spatial209-intent.json") { return MAX_BYTES + 16_384; }
   if (name === "visual-viewport209-intent.json") { return MAX_BYTES + CURRENT_PCB_209_VISUAL_OPERATION_BYTES; }
   if (name === "visual-viewport209-result.json") { return MAX_BYTES + CURRENT_PCB_209_VISUAL_RESULT_BYTES; }
   if (name === "selection-relations209-intent.json") { return MAX_BYTES + 16 * 256 * 6; }
@@ -1055,6 +1074,17 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   const release = records["release-intent.json"], released = records["released.json"];
   const notDispatched = records["not-dispatched.json"], unlaunched = records["unlaunched-release-intent.json"];
   const noProcess = records["no-process-release-intent.json"], noProcessReleased = records["no-process-released.json"];
+  const spatialPurpose = intent?.schema === "easyeda-pro-control.pcb209-spatial-launch-intent.v1";
+  // Preserve legacy diagnostic IDs that admitted this prefix before the spatial purpose existed.
+  requireValue(!spatialPurpose || operation.operationId.startsWith(CURRENT_PCB_SPATIAL_OPERATION_PREFIX), "SPATIAL_PURPOSE_ID");
+  if (spatialPurpose) {
+    const allowed = new Set(["intent.json", "binding.json", "close-intent.json", "close-acknowledged.json", "terminated.json",
+      "release-intent.json", "released.json", "unlaunched-release-intent.json", "not-dispatched.json", "no-process-release-intent.json",
+      "no-process-released.json", "browser-intent.json", "browser-result.json", "frames-intent.json", "frames-result.json", "script-intent.json",
+      "script-result.json", "project-opening-intent.json", "project-opening-result.json", "pcb-open-intent.json", "pcb-open-result.json",
+      "pcb-opening-intent.json", "pcb-opening-result.json", "spatial209-intent.json", "spatial209-result.json"]);
+    for (const name of Object.keys(records)) { requireValue(allowed.has(name), "SPATIAL_STAGE_PURPOSE"); }
+  }
   const visualPurpose = intent?.schema === "easyeda-pro-control.pcb209-visual-launch-intent.v1";
   requireValue(intent === undefined || visualPurpose === operation.operationId.startsWith("pcb209-visual-"), "VISUAL_PURPOSE_ID");
   const visualAbort = records["visual-abort-intent.json"], visualAck = records["visual-abort-acknowledged.json"];
@@ -1417,6 +1447,14 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   if (windowImage !== undefined) {
     requireValue(opening !== undefined && windowCapture?.captureHwnd !== undefined, "WINDOW_CAPTURE209_TARGET_CHAIN");
     requireCurrentWindowCaptureResult(windowImage.result, opening.target, operation.operationId, windowCapture.bindingSha256, windowCapture.captureHwnd);
+  }
+  const spatial = records["spatial209-intent.json"], spatialResult = records["spatial209-result.json"];
+  requireValue(spatial === undefined || spatialPurpose && opening !== undefined && pcbObserved !== undefined &&
+    spatial.pcbOpeningResultSha256 === predecessorDigest(pcbObserved) && diagnosticPcbOpeningSourceAccepted(pcbObserved.result, opening.target),
+  "SPATIAL209_CHAIN");
+  if (spatialResult !== undefined) {
+    requireValue(spatial !== undefined && opening !== undefined, "SPATIAL209_TARGET_CHAIN");
+    requireCurrentPcbSpatialObservation(spatialResult.result, opening.target, spatial.queries);
   }
   for (const stage of ["visual-viewport209"] as const) {
     const result = records[`${stage}-result.json`], visual = records[`${stage}-intent.json`];

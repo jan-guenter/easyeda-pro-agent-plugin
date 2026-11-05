@@ -1,5 +1,13 @@
 # Project history
 
+- [2026-11-05 API backlog priorities](2026-11-05-api-backlog-priorities.md). Complete 835-method inventory, grouped reasons for 481 omissions and the shared blocker behind 79 implemented entries; five next implementation batches and the separate Line geometry/transport prerequisites. This planning assessment grants no execution authority.
+
+- [2026-11-05 PCB spatial transport limits](2026-11-05-pcb-spatial-transport-limits.md). Separate fixed 384-request birth, original-source binding and strict native reconstruction, 2 MiB exact-pinned helper source allowance, unchanged old request/frame/session ceilings and source-only verification against main `f06279f1c13f25812e4a68e5ccfd10c133233dd0`.
+
+- [2026-11-05 PCB spatial reader implementation](2026-11-05-pcb-spatial-reader-implementation.md). Unpublished private capture, function/scope qualification and restricted Via reader work from main `f06279f1c13f25812e4a68e5ccfd10c133233dd0`; native scratch effects, separate purpose/budget and remaining integration gates are explicit.
+
+- [2026-11-05 PR169 publication and autonomous handoff](2026-11-05-pr169-publication-and-autonomous-handoff.md). Protected main `f06279f1c13f25812e4a68e5ccfd10c133233dd0`, exact installed `0.3.0+codex.20261105085316`, completed full review, disposable Source seal and normal two-generation closure without a Codex restart. Writer and broader API limits remain explicit.
+
 - [2026-11-05 forward source validation batch](2026-11-05-forward-source-validation-batch.md). Unpublished source and focused-test cuts on protected main `4bdd63f5fdeb9d74975bf18565209942f6e39ff0`: managed v2 source validation, original cleanup/publication custody, fixed native main profile and explicit writer prerequisites; exact evidence digests are recorded in the note.
 
 - [2026-11-05 forward execution eligibility research](2026-11-05-forward-execution-eligibility-research.md). Source findings for the EasyEDA Pro 3.2.209 client profile, including its embedded 3.2.185 worker and main process, missing head/frontier/continuation custody, official CLI version limits and prior catalog text retained verbatim. Repository basis `4bdd63f5fdeb9d74975bf18565209942f6e39ff0`; worker/main hashes and source spans are recorded in the note.

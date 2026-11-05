@@ -6,6 +6,9 @@ import { CURRENT_WINDOW_RESIZE_LIMITS, currentWindowResizeResult, requireCurrent
 import { currentRendererCaptureResult, decodeCurrentRendererCapture, publishCurrentRendererCapture, requireCurrentRendererCaptureResult } from "./current-pcb-diagnostic-renderer-capture.ts";
 import { currentWindowCaptureResult, publishCurrentWindowCapture, requireCurrentWindowCaptureResult } from "./current-pcb-diagnostic-window-capture.ts";
 import { currentPcb209VisualRequestSchema } from "./current-pcb-209-visual-validation.ts";
+import { CURRENT_PCB_SPATIAL_OPERATION_PREFIX, currentPcbSpatialObservation, currentPcbSpatialObservationSchema,
+  currentPcbSpatialRequestSchema, requireCurrentPcbSpatialObservation } from "./current-pcb-spatial-validation.ts";
+import type { CurrentPcbSpatialRequest } from "./current-pcb-spatial-validation.ts";
 import type { CurrentPcb209VisualRequest } from "./current-pcb-209-visual-validation.ts";
 import { CURRENT_PCB_209_VISUAL_RESULT_BYTES, requireCurrentPcb209VisualResult } from "./current-pcb-209-visual-actions.ts";
 import { publicCurrentFootprintRouteSummary } from "./current-footprint-route-summary.ts";
@@ -18,7 +21,7 @@ import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-ope
 import { prepareCurrentDisposableOpenCheckpoint, readCurrentPcbCommonOpenInventory, verifyCurrentDisposableOpenCheckpoint, verifyHistoricalCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import { assertNoUnresolvedOrdinaryLaunches } from "./ordinary-launch.ts";
-import { currentFootprintCombinedFactoryFailureDiagnostics, currentFootprintCopyForwardFactoryFailureDiagnostics, requireCurrentFootprintCombinedUnlaunchedFactoryFailure, requireCurrentFootprintCopyForwardUnlaunchedFactoryFailure, startCurrentFootprintCombinedNativeOwner, startCurrentFootprintCopyForwardNativeOwner, startCurrentFootprintCopyNativeOwner, startCurrentFootprintCopyPreparationOwner, startCurrentFootprintMainNativeOwner, startCurrentPcb209DiagnosticOwner, startCurrentPcb209EmptyStartupOwner, startCurrentPcb209RatlineContinuationOwner, startCurrentPcb209RatlineStartupOwner, startCurrentPcb209VisualOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
+import { currentFootprintCombinedFactoryFailureDiagnostics, currentFootprintCopyForwardFactoryFailureDiagnostics, requireCurrentFootprintCombinedUnlaunchedFactoryFailure, requireCurrentFootprintCopyForwardUnlaunchedFactoryFailure, startCurrentFootprintCombinedNativeOwner, startCurrentFootprintCopyForwardNativeOwner, startCurrentFootprintCopyNativeOwner, startCurrentFootprintCopyPreparationOwner, startCurrentFootprintMainNativeOwner, startCurrentPcb209DiagnosticOwner, startCurrentPcb209EmptyStartupOwner, startCurrentPcb209RatlineContinuationOwner, startCurrentPcb209RatlineStartupOwner, startCurrentPcb209VisualOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbSpatialOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintCopyNativeOwner, CurrentFootprintCopyPreparationOwner, CurrentFootprintMainNativeOwner, CurrentPcb209RatlineContinuationOwner, CurrentPcb209RatlineStartupOwner, CurrentPcb209WorkerStartupOwner, CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner, CurrentPcbWorkerStartupHandoff, CurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
 import { verifyCurrentPcb209DiagnosticInstallation, verifyCurrentPcb209RatlineInstallation, verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation, CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
@@ -123,9 +126,11 @@ import type { CurrentFootprintCombinedValidationRequest } from "./current-footpr
 
 export type { CurrentPcbWorkerStartupOpeningCoordinator } from "./current-pcb-worker-startup-lifecycle-adapter.ts";
 
-type LifecycleRequest = Request | CurrentPcbStringPrecreateRequest | CurrentPcb209OpeningRequest | CurrentPcb209VisualRequest;
-type LifecycleGeneration = "209-startup-footprint-forward" | "209-visual" | "209-startup-footprint-combined" | "209-startup-footprint-main" | "209-startup-footprint-route" | "206" | "209-opening" | "209-startup" | "209-startup-footprint" | "209-startup-empty" | "209-startup-ratline" | "209-startup-ratline-continuation";
-function opening209(generation: LifecycleGeneration): boolean { return generation === "209-opening" || generation === "209-visual"; }
+type LifecycleRequest = Request | CurrentPcbStringPrecreateRequest | CurrentPcb209OpeningRequest | CurrentPcb209VisualRequest | CurrentPcbSpatialRequest;
+type LifecycleGeneration = "209-spatial" | "209-startup-footprint-forward" | "209-visual" | "209-startup-footprint-combined" | "209-startup-footprint-main" | "209-startup-footprint-route" | "206" | "209-opening" | "209-startup" | "209-startup-footprint" | "209-startup-empty" | "209-startup-ratline" | "209-startup-ratline-continuation";
+/** Identify generations that share the fixed disposable project/PCB opening
+ * Admission, without sharing their later spatial, visual or object stages. */
+function opening209(generation: LifecycleGeneration): boolean { return generation === "209-spatial" || generation === "209-opening" || generation === "209-visual"; }
 function routeStartup209(generation: LifecycleGeneration): boolean { return generation === "209-startup-footprint-forward" || generation === "209-startup-footprint-route" || generation === "209-startup-footprint-combined"; }
 function startup209(generation: LifecycleGeneration): boolean { return generation === "209-startup-footprint-forward" || generation === "209-startup-footprint-combined" || generation === "209-startup-footprint-route" || generation === "209-startup-footprint" || generation === "209-startup" || generation === "209-startup-empty" || generation === "209-startup-ratline" || generation === "209-startup-ratline-continuation"; }
 const startupStages = ["browser", "frames", "script"] as const;
@@ -134,8 +139,10 @@ const launchPurposeFields = {
   "string-precreate": { schema: "easyeda-pro-control.pcb-string-precreate-launch-intent.v1", purpose: "string-precreate" },
   "worker-startup": { schema: "easyeda-pro-control.pcb-worker-startup-launch-intent.v1", purpose: "worker-startup" },
 } as const;
+/** Select the immutable launch-record schema for the construction-time purpose.
+ * Historical schema parsing never upgrades its owner to a newer generation. */
 function launchFields(purpose: CurrentPcbDiagnosticLifecyclePurpose, generation: LifecycleGeneration):
-  typeof launchPurposeFields[CurrentPcbDiagnosticLifecyclePurpose] | Readonly<{ schema: "easyeda-pro-control.pcb209-visual-launch-intent.v1" }> | Readonly<{ schema: "easyeda-pro-control.footprint-forward-prewrite-launch-intent.v1" | "easyeda-pro-control.footprint-combined-launch-intent.v2" | "easyeda-pro-control.footprint-main-launch-intent.v1" | "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1" | "easyeda-pro-control.footprint-copy-preparation-launch-intent.v1" | "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-empty-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-continuation-launch-intent.v1"; purpose: "worker-startup" }> {
+  typeof launchPurposeFields[CurrentPcbDiagnosticLifecyclePurpose] | Readonly<{ schema: "easyeda-pro-control.pcb209-visual-launch-intent.v1" | "easyeda-pro-control.pcb209-spatial-launch-intent.v1" }> | Readonly<{ schema: "easyeda-pro-control.footprint-forward-prewrite-launch-intent.v1" | "easyeda-pro-control.footprint-combined-launch-intent.v2" | "easyeda-pro-control.footprint-main-launch-intent.v1" | "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1" | "easyeda-pro-control.footprint-copy-preparation-launch-intent.v1" | "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-empty-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-continuation-launch-intent.v1"; purpose: "worker-startup" }> {
   if (generation === "209-startup-footprint-forward") { return { schema: "easyeda-pro-control.footprint-forward-prewrite-launch-intent.v1", purpose: "worker-startup" }; }
   if (generation === "209-startup-footprint-combined") { return { schema: "easyeda-pro-control.footprint-combined-launch-intent.v2", purpose: "worker-startup" }; }
   if (generation === "209-startup-footprint-main") { return { schema: "easyeda-pro-control.footprint-main-launch-intent.v1", purpose: "worker-startup" }; }
@@ -145,6 +152,7 @@ function launchFields(purpose: CurrentPcbDiagnosticLifecyclePurpose, generation:
   if (generation === "209-startup-ratline") { return { schema: "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1", purpose: "worker-startup" }; }
   if (generation === "209-startup-empty") { return { schema: "easyeda-pro-control.pcb209-empty-startup-launch-intent.v1", purpose: "worker-startup" }; }
   if (generation === "209-startup") { return { schema: "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1", purpose: "worker-startup" }; }
+  if (generation === "209-spatial") { return { schema: "easyeda-pro-control.pcb209-spatial-launch-intent.v1" }; }
   if (generation === "209-visual") { return { schema: "easyeda-pro-control.pcb209-visual-launch-intent.v1" }; }
   return launchPurposeFields[purpose];
 }
@@ -197,12 +205,12 @@ const continuationSessionMethods = Object.freeze({ capture: CurrentPcb209Ratline
 
 type CleanupRequest = Exclude<LifecycleRequest, { action: "launch" | "inspect" | "query-observation" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
 type ObservationRequest = Extract<LifecycleRequest, { action: "capture-renderer-viewport" | "restore-window-for-capture" | "resize-window-for-capture" | "capture-window" | "perform-visual" | "browser-observation" | "inspect-frames" | "inspect-script" | "inspect-workers" | "inspect-worker-script" | "observe-worker-state" | "observe-model-state" | "observe-pcb-opening" | "observe-string-precreate" | "observe-layers" | "observe-primitives" | "observe-extended-primitives" | "observe-selection-relations" | "observe-pad-shapes" | "observe-image-shapes" | "observe-arc-shapes" | "observe-poured-shapes" }>;
-type ObservationStage = "renderer-capture209" | "window-restore209" | "window-resize209" | "window-capture209" | "visual-viewport209" | z.infer<typeof diagnosticObservationStageSchema> | "common-baseline" | "string-precreate" | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209";
+type ObservationStage = "spatial209" | "renderer-capture209" | "window-restore209" | "window-resize209" | "window-capture209" | "visual-viewport209" | z.infer<typeof diagnosticObservationStageSchema> | "common-baseline" | "string-precreate" | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209";
 const methods = ["launch", "status", "observeApplicationWindow", "requestNormalClose", "observeTermination", "releaseClosed", "releaseUnlaunched",
   "releaseNoProcess", "browserObservation", "inspectFrames", "inspectScript", "inspectWorkers", "inspectWorkerScript", "observeWorkerState", "observeModelState", "openProject",
   "openPcb", "observePcbOpening"] as const;
 export type CurrentPcbDiagnosticLifecycleOwner = Pick<CurrentPcbDiagnosticOwner, (typeof methods)[number]> &
-  Partial<Pick<CurrentPcbDiagnosticOwner, "observeLayers209" | "observePrimitives209" | "observeExtendedPrimitives209" | "observeSelectionRelations209" | "observePadShapes209" | "observeImageShapes209" | "observeArcShapes209" | "observePouredShapes209" | "performVisual209" | "captureRendererViewport209" | "rendererCaptureSession209" | "captureWindow209" | "observeWindowCaptureReadiness209" | "resizeWindowForCapture209" | "restoreWindowForCapture209" | "terminateVisualJob">>;
+  Partial<Pick<CurrentPcbDiagnosticOwner, "observeSpatial209" | "observeLayers209" | "observePrimitives209" | "observeExtendedPrimitives209" | "observeSelectionRelations209" | "observePadShapes209" | "observeImageShapes209" | "observeArcShapes209" | "observePouredShapes209" | "performVisual209" | "captureRendererViewport209" | "rendererCaptureSession209" | "captureWindow209" | "observeWindowCaptureReadiness209" | "resizeWindowForCapture209" | "restoreWindowForCapture209" | "terminateVisualJob">>;
 type StringOwnerMethods = Pick<CurrentPcbStringPrecreateOwner, "observeStringPrecreate" | "observeCommonBaseline" | "retainedCommonBaselineFailure">;
 type StartupOwnerMethods = Pick<CurrentPcbWorkerStartupOwner, "handoffWorkerStartup">;
 type StartupContinuationOwnerMethods = Pick<CurrentPcb209RatlineContinuationOwner, "prepareWorkerStartupRatlineContinuationSession209">;
@@ -338,6 +346,14 @@ function describe(operationId: string, operation: DiagnosticLifecycleOperation |
  * below the facade512KiB envelope; the complete original record is unchanged. */
 function publicObservationResult(operationId: string, stage: ObservationStage,
   result: Readonly<Record<string, unknown>> | undefined, published: boolean): Readonly<Record<string, unknown>> | undefined {
+  if (stage === "spatial209" && result !== undefined && Buffer.byteLength(canonicalJson(result)) > DIAGNOSTIC_OBSERVATION_MAX_BYTES) {
+    const value = currentPcbSpatialObservationSchema.parse(result);
+    return { schema: "easyeda-pro-control.pcb209-spatial-summary.v1", observationSchema: value.schema, summaryOnly: true,
+      queries: value.results.map(row => ({ documentUuid: row.documentUuid, query: row.query, identityCount: row.identities.length })),
+      record: { path: join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", operationId, "spatial209-result.json"),
+        published, resultSha256: sha256Json(value), resultBytes: Buffer.byteLength(canonicalJson(value)) },
+      sourceMembershipVerified: false, persistenceVerified: false, executionAuthorized: false, saveAuthorized: false };
+  }
   if (stage !== "string-precreate" || result?.["schema"] !== "easyeda-pro-control.pcb-string-precreate-observation.v2" &&
       result?.["schema"] !== "easyeda-pro-control.pcb-string-precreate-observation.v3") { return result; }
   const value = stringPrecreateObservationResultSchema.parse(result);
@@ -501,6 +517,8 @@ class CurrentPcbLifecycleCore {
   #startupContinuationCleanupFailed = false;
   #startupContinuationReleased = false;
 
+  /** Seal the stage roster, installation verifier and allocator for one purpose.
+   * Merely constructing the coordinator allocates no helper or application. */
   public constructor(options: CurrentPcbDiagnosticLifecycleOptions,
     dependencies: CurrentPcbDiagnosticLifecycleDependencies | CurrentPcbStringPrecreateLifecycleDependencies | CurrentPcbWorkerStartupLifecycleDependencies | CurrentPcb209WorkerStartupLifecycleDependencies,
     purpose: CurrentPcbDiagnosticLifecyclePurpose, generation: LifecycleGeneration = "206") {
@@ -509,9 +527,10 @@ class CurrentPcbLifecycleCore {
     this.#generation = generation;
     this.#purpose = purpose;
     this.#stringPurpose = stringPurpose;
-    this.#stages = opening209(generation) ? [...(generation === "209-visual" ? ["visual-viewport209" as const, "window-restore209" as const, "window-resize209" as const, "window-capture209" as const, "renderer-capture209" as const] : []), "browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"] :
+    if (generation === "209-spatial") { this.#stages = ["browser", "frames", "script", "pcb-opening", "spatial209"]; }
+    else { this.#stages = opening209(generation) ? [...(generation === "209-visual" ? ["visual-viewport209" as const, "window-restore209" as const, "window-resize209" as const, "window-capture209" as const, "renderer-capture209" as const] : []), "browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"] :
       { diagnostic: diagnosticObservationStageSchema.options, "string-precreate": currentPcbStringPrecreateStages,
-        "worker-startup": startupStages }[purpose];
+        "worker-startup": startupStages }[purpose]; }
     this.#options = Object.freeze({ ...options });
     let verify = generation === "206" ? verifyCurrentPcbDiagnosticInstallation : verifyCurrentPcb209DiagnosticInstallation;
     if (generation === "209-startup-ratline" || generation === "209-startup-ratline-continuation") { verify = verifyCurrentPcb209RatlineInstallation; }
@@ -527,6 +546,7 @@ class CurrentPcbLifecycleCore {
     else if (routeStartup209(generation)) { allocate = startCurrentFootprintCopyNativeOwner; }
     else if (generation === "209-startup-footprint") { allocate = startCurrentFootprintCopyPreparationOwner; }
     else if (generation === "209-startup") { allocate = startCurrentPcb209WorkerStartupOwner; }
+    else if (generation === "209-spatial") { allocate = startCurrentPcbSpatialOwner; }
     else if (generation === "209-visual") { allocate = startCurrentPcb209VisualOwner; }
     else if (generation === "209-opening") { allocate = startCurrentPcb209DiagnosticOwner; }
     this.#allocate = dependencies.allocateOwner ?? allocate;
@@ -582,6 +602,7 @@ class CurrentPcbLifecycleCore {
     else if (this.#generation === "209-startup-ratline") { request = currentPcb209RatlineStartupLifecycleRequestSchema.parse(input); }
     else if (this.#generation === "209-startup-empty") { request = currentPcb209EmptyStartupLifecycleRequestSchema.parse(input); }
     else if (this.#generation === "209-startup") { request = currentPcb209WorkerStartupLifecycleRequestSchema.parse(input); }
+    else if (this.#generation === "209-spatial") { request = currentPcbSpatialRequestSchema.parse(input); }
     else if (this.#generation === "209-visual") { request = currentPcb209VisualRequestSchema.parse(input); }
     else if (this.#generation === "209-opening") { request = currentPcb209OpeningRequestSchema.parse(input); }
     else { request = { diagnostic: currentPcbDiagnosticValidationRequestSchema, "string-precreate": currentPcbStringPrecreateRequestSchema,
@@ -2538,11 +2559,17 @@ class CurrentPcbLifecycleCore {
     else if (this.#generation === "209-startup") { currentPcb209WorkerStartupLifecycleIdSchema.parse(operationId); }
     else { currentPcbWorkerStartupLifecycleIdSchema.parse(operationId); }
   }
+  /** Match the request namespace and retained launch schema to this generation.
+   * Older broad-prefix journals keep their original purpose without spatial access. */
   #assertPurpose(operationId: string, operation?: DiagnosticLifecycleOperation): void {
     const intent = operation?.records["intent.json"];
     let idPurpose: CurrentPcbDiagnosticLifecyclePurpose = "diagnostic";
     const continuation209 = operationId.startsWith(CURRENT_PCB_209_RATLINE_CONTINUATION_OPERATION_PREFIX);
     const empty209 = operationId.startsWith(CURRENT_PCB_209_EMPTY_STARTUP_OPERATION_PREFIX), ratline209 = operationId.startsWith(CURRENT_PCB_209_RATLINE_STARTUP_OPERATION_PREFIX);
+    const spatial209 = operationId.startsWith(CURRENT_PCB_SPATIAL_OPERATION_PREFIX);
+    // Reserve new allocations. Historical broad pcb209-* IDs keep their original generation.
+    const spatialNamespaceMatches = intent === undefined ? spatial209 === (this.#generation === "209-spatial") :
+      (intent.schema === "easyeda-pro-control.pcb209-spatial-launch-intent.v1") === (this.#generation === "209-spatial");
     const visual209 = operationId.startsWith("pcb209-visual-");
     const forward209 = operationId.startsWith(CURRENT_FOOTPRINT_FORWARD_PREWRITE_OPERATION_PREFIX);
     const combined209 = operationId.startsWith(CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX);
@@ -2553,7 +2580,7 @@ class CurrentPcbLifecycleCore {
     if (operationId.startsWith(CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX)) { idPurpose = "string-precreate"; }
     else if (operationId.startsWith(CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX) || project209 || empty209 || ratline209 || continuation209 || footprint209 || footprintRoute209 || main209 || combined209 || forward209) { idPurpose = "worker-startup"; }
     const expectedSchema = launchFields(this.#purpose, this.#generation).schema;
-    requireValue(forward209 === (this.#generation === "209-startup-footprint-forward") && visual209 === (this.#generation === "209-visual") && combined209 === (this.#generation === "209-startup-footprint-combined") && main209 === (this.#generation === "209-startup-footprint-main") && footprintRoute209 === (this.#generation === "209-startup-footprint-route") && footprint209 === (this.#generation === "209-startup-footprint") && continuation209 === (this.#generation === "209-startup-ratline-continuation") && ratline209 === (this.#generation === "209-startup-ratline") && project209 === (this.#generation === "209-startup") && empty209 === (this.#generation === "209-startup-empty") &&
+    requireValue(spatialNamespaceMatches && forward209 === (this.#generation === "209-startup-footprint-forward") && visual209 === (this.#generation === "209-visual") && combined209 === (this.#generation === "209-startup-footprint-combined") && main209 === (this.#generation === "209-startup-footprint-main") && footprintRoute209 === (this.#generation === "209-startup-footprint-route") && footprint209 === (this.#generation === "209-startup-footprint") && continuation209 === (this.#generation === "209-startup-ratline-continuation") && ratline209 === (this.#generation === "209-startup-ratline") && project209 === (this.#generation === "209-startup") && empty209 === (this.#generation === "209-startup-empty") &&
       (operationId.startsWith(CURRENT_PCB_209_OPENING_PROFILE.operationPrefix) && !project209 && !empty209 && !ratline209 && !continuation209) === (opening209(this.#generation)), "GENERATION_MISMATCH");
     requireValue(idPurpose === this.#purpose && (intent === undefined || intent.schema === expectedSchema || combined209 && intent.schema === "easyeda-pro-control.footprint-combined-launch-intent.v1"), "PURPOSE_MISMATCH");
   }
@@ -2653,13 +2680,17 @@ class CurrentPcbLifecycleCore {
     requireValue(!this.#visualAbortAttempted || ["visual-abort-intent.json", "visual-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"].includes(name), "VISUAL_GENERATION_ABORTED");
     requireValue(!this.#combinedAbortAttempted || ["combined-abort-intent.json", "combined-abort-acknowledged.json", "forward-abort-intent.json", "forward-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"].includes(name), "COMBINED_GENERATION_ABORTED");
   }
+  /** Reprove the original launch lease, owner, profile and captured method set.
+   * Optional startup sessions also retain their original callback identities. */
   #assertOwner(retained: Retained): void {
     this.#options.assertLocalAllowed();
     requireValue(this.#lease !== null, "ORIGINAL_LEASE_REQUIRED"); assertCurrentPcbDiagnosticLaunchExclusion(this.#lease);
     requireValue(this.#retained === retained && methods.every(name => retained.owner[name] === retained.methods[name]), "OWNER_CHANGED");
     const status = retained.methods.status.call(retained.owner);
-    const expectedProfile = this.#generation === "206" ? this.#purpose : { "209-startup-footprint-forward": "worker-startup-footprint-forward209", "209-startup-footprint-combined": "worker-startup-footprint-combined209", "209-startup-footprint-main": "worker-startup-footprint-main209", "209-startup-footprint-route": "worker-startup-footprint-copy209", "209-startup-footprint": "worker-startup-footprint209", "209-startup": "worker-startup209", "209-startup-empty": "worker-startup-empty209", "209-startup-ratline": "worker-startup-ratline209", "209-startup-ratline-continuation": "worker-startup-ratline-continuation209", "209-visual": "visual209", "209-opening": "diagnostic209" }[this.#generation];
+    const expectedProfile = this.#generation === "206" ? this.#purpose : { "209-startup-footprint-forward": "worker-startup-footprint-forward209", "209-startup-footprint-combined": "worker-startup-footprint-combined209", "209-startup-footprint-main": "worker-startup-footprint-main209", "209-startup-footprint-route": "worker-startup-footprint-copy209", "209-startup-footprint": "worker-startup-footprint209", "209-startup": "worker-startup209", "209-startup-empty": "worker-startup-empty209", "209-startup-ratline": "worker-startup-ratline209", "209-startup-ratline-continuation": "worker-startup-ratline-continuation209", "209-spatial": "pcb-spatial209", "209-visual": "visual209", "209-opening": "diagnostic209" }[this.#generation];
     requireValue(status.profile === expectedProfile &&
+      (this.#generation !== "209-spatial" || typeof retained.methods.observeSpatial209 === "function" &&
+        retained.owner.observeSpatial209 === retained.methods.observeSpatial209) &&
       (this.#generation !== "209-visual" || typeof retained.methods.restoreWindowForCapture209 === "function" && retained.owner.restoreWindowForCapture209 === retained.methods.restoreWindowForCapture209 &&
         typeof retained.methods.resizeWindowForCapture209 === "function" && retained.owner.resizeWindowForCapture209 === retained.methods.resizeWindowForCapture209 &&
         typeof retained.methods.observeWindowCaptureReadiness209 === "function" && retained.owner.observeWindowCaptureReadiness209 === retained.methods.observeWindowCaptureReadiness209 &&
@@ -3021,7 +3052,8 @@ class CurrentPcbLifecycleCore {
       observeModelState: owner.observeModelState, openProject: owner.openProject,
       openPcb: owner.openPcb, observePcbOpening: owner.observePcbOpening,
       ...(this.#generation === "209-visual" ? { performVisual209: owner.performVisual209, captureRendererViewport209: owner.captureRendererViewport209, rendererCaptureSession209: owner.rendererCaptureSession209, captureWindow209: owner.captureWindow209, observeWindowCaptureReadiness209: owner.observeWindowCaptureReadiness209, resizeWindowForCapture209: owner.resizeWindowForCapture209, restoreWindowForCapture209: owner.restoreWindowForCapture209, terminateVisualJob: owner.terminateVisualJob } : {}),
-      ...(opening209(this.#generation) ? { observeLayers209: owner.observeLayers209, observePrimitives209: owner.observePrimitives209,
+      ...(this.#generation === "209-spatial" ? { observeSpatial209: owner.observeSpatial209 } : {}),
+      ...(opening209(this.#generation) && this.#generation !== "209-spatial" ? { observeLayers209: owner.observeLayers209, observePrimitives209: owner.observePrimitives209,
         observeExtendedPrimitives209: owner.observeExtendedPrimitives209, observeSelectionRelations209: owner.observeSelectionRelations209,
         observePadShapes209: owner.observePadShapes209, observeImageShapes209: owner.observeImageShapes209, observeArcShapes209: owner.observeArcShapes209, observePouredShapes209: owner.observePouredShapes209 } : {}),
       ...(this.#stringPurpose ? { observeStringPrecreate: owner.observeStringPrecreate, observeCommonBaseline: owner.observeCommonBaseline,
@@ -3107,6 +3139,8 @@ class CurrentPcbLifecycleCore {
     return { ...describe(request.operationId, updated), terminationDispatched: true, terminationProved: false, saveAuthorized: false };
   }
 
+  /** Route actions only through the retained owner after exact binding and
+   * Journal-snapshot checks. Closure does not depend on renewed startup admission. */
   async #cleanup(request: CleanupRequest): Promise<Record<string, unknown>> {
     const operations = await readCurrentPcbDiagnosticLifecycles();
     const operation = operations.find(value => value.operationId === request.operationId);
@@ -3124,6 +3158,7 @@ class CurrentPcbLifecycleCore {
     if (request.action === "open-project") { return this.#openProject(request, operation, operations, retained); }
     if (request.action === "open-pcb") { return this.#openPcb(request, operation, operations, retained); }
     if (request.action === "observe-common-baseline") { return this.#observeCommonBaseline(request, operation, operations, retained); }
+    if (request.action === "observe-spatial") { return this.#observeSpatial(request, operation, operations, retained); }
     if (request.action === "browser-observation" || request.action === "inspect-frames" || request.action === "inspect-script" ||
         request.action === "inspect-workers" || request.action === "inspect-worker-script" || request.action === "observe-worker-state" ||
         request.action === "capture-renderer-viewport" || request.action === "restore-window-for-capture" || request.action === "resize-window-for-capture" || request.action === "capture-window" || request.action === "perform-visual" || request.action === "observe-model-state" || request.action === "observe-pcb-opening" || request.action === "observe-string-precreate" || request.action === "observe-layers" || request.action === "observe-primitives" || request.action === "observe-extended-primitives" || request.action === "observe-selection-relations" || request.action === "observe-pad-shapes" || request.action === "observe-image-shapes" || request.action === "observe-arc-shapes" || request.action === "observe-poured-shapes") {
@@ -3204,6 +3239,40 @@ class CurrentPcbLifecycleCore {
     };
     await this.#record(request.operationId, "close-acknowledged.json", acknowledged);
     return describe(request.operationId, { ...updated, records: { ...updated.records, "close-acknowledged.json": acknowledged } });
+  }
+  /** Consume one fixed query batch before native dispatch. Original results
+   * remain retained if validation or publication later refuses settlement. */
+  async #observeSpatial(request: Extract<CurrentPcbSpatialRequest, { action: "observe-spatial" }>, operation: DiagnosticLifecycleOperation,
+    operations: readonly DiagnosticLifecycleOperation[], retained: Retained): Promise<Record<string, unknown>> {
+    const observe = retained.methods.observeSpatial209;
+    requireValue(this.#generation === "209-spatial" && observe !== undefined && operation.records["binding.json"]?.launchAcknowledged === true &&
+      retained.binding?.rootCreated !== "0" && operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined,
+    "SPATIAL209_PURPOSE");
+    requireValue(!this.#observationConsumed.has("spatial209") && operation.records["spatial209-intent.json"] === undefined, "OBSERVATION_CONSUMED");
+    const preparation = this.#originalProjectOpening(operation); this.#originalPcbSource(operation);
+    await this.#installation(retained); await assertSnapshot(operations); this.#assertNormalOwner(retained);
+    const intent: NonNullable<DiagnosticLifecycleRecords["spatial209-intent.json"]> = {
+      schema: "easyeda-pro-control.pcb209-spatial-observation-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+      stage: "spatial209", bindingSha256: request.expectedBindingSha256,
+      pcbOpeningResultSha256: sha256Json(operation.records["pcb-opening-result.json"]), queries: structuredClone(request.queries), acceptNativeScratchEffects: true,
+    };
+    this.#observationConsumed.add("spatial209"); await this.#record(request.operationId, "spatial209-intent.json", intent);
+    const updated = { ...operation, records: { ...operation.records, "spatial209-intent.json": intent } };
+    const expected = operations.map(value => value.operationId === operation.operationId ? updated : value);
+    await assertSnapshot(expected); this.#assertNormalOwner(retained); this.#originalPcbSource(updated);
+    const raw = await observe.call(retained.owner, preparation.sealedTarget, request.queries);
+    const result = currentPcbSpatialObservation(raw); this.#observations.set("spatial209", result);
+    this.#assertNormalOwner(retained); requireCurrentPcbSpatialObservation(result, preparation.sealedTarget, request.queries);
+    const record: NonNullable<DiagnosticLifecycleRecords["spatial209-result.json"]> = {
+      schema: "easyeda-pro-control.pcb209-spatial-observation-result.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+      stage: "spatial209", intentSha256: sha256Json(intent), result: structuredClone(result), executionAuthorized: false, saveAuthorized: false,
+    };
+    this.#retainRecord("spatial209-result.json", record);
+    await assertSnapshot(expected); this.#assertNormalOwner(retained); this.#originalPcbSource(updated);
+    await this.#publish(request.operationId, "spatial209-result.json", record);
+    const completed = { ...updated, records: { ...updated.records, "spatial209-result.json": record } };
+    await assertSnapshot(expected.map(value => value.operationId === request.operationId ? completed : value)); this.#assertNormalOwner(retained);
+    return { ...describe(request.operationId, completed), stage: "spatial209", result: publicObservationResult(request.operationId, "spatial209", record.result, true) };
   }
   async #observe(request: ObservationRequest, operation: DiagnosticLifecycleOperation, operations: readonly DiagnosticLifecycleOperation[],
     retained: Retained): Promise<Record<string, unknown>> {
@@ -3851,6 +3920,15 @@ export class CurrentPcbDiagnosticLifecycle extends CurrentPcbLifecycleCore {
 export class CurrentPcb209DiagnosticLifecycle extends CurrentPcbLifecycleCore {
   public constructor(options: CurrentPcbDiagnosticLifecycleOptions, dependencies: CurrentPcbDiagnosticLifecycleDependencies = {}) {
     super(options, dependencies, "diagnostic", "209-opening");
+  }
+}
+
+/** Separate launch-sealed disposable spatial reader. Old model, worker and
+ * visual stages are absent from its grammar and retained stage roster. */
+export class CurrentPcbSpatialLifecycle extends CurrentPcbLifecycleCore {
+  /** Fix the spatial generation before any allocation or journaled launch. */
+  public constructor(options: CurrentPcbDiagnosticLifecycleOptions, dependencies: CurrentPcbDiagnosticLifecycleDependencies = {}) {
+    super(options, dependencies, "diagnostic", "209-spatial");
   }
 }
 

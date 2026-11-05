@@ -6,12 +6,13 @@ import { test } from "node:test";
 import { CURRENT_FOOTPRINT_COPY_CLOCK_RPC_REQUESTS } from "../src/current-footprint-copy-clock-rpc-protocol.ts";
 import { currentFootprintCopyClockRpcNativeCases, currentFootprintCopyClockRpcNativeSource } from "../src/current-footprint-copy-clock-rpc-native.ts";
 import { currentFootprintCopyClockRpcWire } from "../src/current-footprint-copy-clock-rpc-wire.ts";
+import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES } from "../src/current-pcb-diagnostic-helper-source-profile.ts";
 
 const worker = "clockrpc_worker"; const ui = "clockrpc_ui";
-void test("the fixed clock RPC encoder fits the unchanged cap behind its original combined-owner reservation", async () => {
+void test("the fixed clock RPC encoder fits the helper-source ceiling behind its original combined-owner reservation", async () => {
   const helper = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   const source = currentFootprintCopyClockRpcNativeSource();
-  assert.ok(Buffer.byteLength(helper) <= 1_048_576);
+  assert.ok(Buffer.byteLength(helper) <= CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES);
   assert.equal(helper.split(source).length, 2);
   assert.equal(helper.split("EasyedaFootprintCopyClockRpcProtocol.Encode(").length, 2);
   assert.ok(helper.includes("if(!workerStartupFootprintCombined209 || footprintClockRpcBegun || footprintCreateClockBegun || mainCompletionBegun)"));

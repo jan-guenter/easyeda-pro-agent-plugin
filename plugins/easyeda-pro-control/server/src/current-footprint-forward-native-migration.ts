@@ -4,6 +4,98 @@ import { createHash } from "node:crypto";
 
 export const FORWARD_NATIVE_LEGACY = Object.freeze({ bytes: 1_042_994, sha256: "58f681b7c896069fd748b957fe925e39ed4b8990f88de3483fbda781a65dccee" });
 export const FORWARD_NATIVE_PREDECESSOR = Object.freeze({ bytes: 1_046_915, sha256: "438199ce665e55ca5256c2310768fc2c24c672e81f49cad26145186744b1943b" });
+/** Exact later shared helper. Its separate spatial birth is not part of the
+ * released forward-only graph and grants no upgrade to that graph's purpose. */
+export const FORWARD_NATIVE_CURRENT_SHARED_HELPER = Object.freeze({ bytes: 1_097_306, sha256: "6ec843c4d7b40dde941b2b01691536ce8a944a4a8c33fc121bc3b418d508743a" });
+/** Distinct spatial constructor type fixes the C# string-overload collision.
+ * The preceding exact shared-helper input remains a separately retained shape. */
+export const FORWARD_NATIVE_TYPED_SPATIAL_SHARED_HELPER = Object.freeze({ bytes: 1_097_388, sha256: "c5124f154b7c111e71cb2ff956a5371cc1d4aef8bdf14ac74d6a062bf5ec134f" });
+/** PowerShell decimal/G17 correction has a separate exact input identity. */
+export const FORWARD_NATIVE_NUMERIC_SPATIAL_SHARED_HELPER = Object.freeze({ bytes: 1_099_788, sha256: "a45801f6f5053d966ac738f824c83e49759f45a165bc3b2fe963f0d9039346f8" });
+/** The published scope's unlocked-Via guard has its own exact helper input.
+ * This independent spatial profile is removed as one pinned block from the
+ * forward-only graph; all previous admitted source shapes remain unchanged. */
+export const FORWARD_NATIVE_UNLOCKED_SPATIAL_SHARED_HELPER = Object.freeze({ bytes: 1_099_796, sha256: "e809283e6ec24998ddc67de6180b58edb784371cbfc0be88377633dbb0181c95" });
+/** Exact numeric-decoder/serialization correction, normalized only after
+ * admission of its independent complete helper pin. */
+const numericSpatialProjection = [
+  {
+    "before": "    object value=fields[key];if(!(value is int)&&!(value is long)&&!(value is double)&&!(value is decimal))throw Error(\"spatial209-number\");\n",
+    "after": "    object value=fields[key];if(!(value is int)&&!(value is long)&&!(value is double))throw Error(\"spatial209-number\");\n"
+  },
+  {
+    "before": "      return \"{\\\"kind\\\":\\\"point\\\",\\\"xMil\\\":\"+SpatialNumber(fields,\"xMil\").ToString(\"G17\",CultureInfo.InvariantCulture)+\",\\\"yMil\\\":\"+SpatialNumber(fields,\"yMil\").ToString(\"G17\",CultureInfo.InvariantCulture)+\"}\";\n",
+    "after": "      return \"{\\\"kind\\\":\\\"point\\\",\\\"xMil\\\":\"+SpatialNumber(fields,\"xMil\").ToString(\"R\",CultureInfo.InvariantCulture)+\",\\\"yMil\\\":\"+SpatialNumber(fields,\"yMil\").ToString(\"R\",CultureInfo.InvariantCulture)+\"}\";\n"
+  },
+  {
+    "before": "    return \"{\\\"kind\\\":\\\"region\\\",\\\"mode\\\":\"+JsonString(mode)+\",\\\"leftMil\\\":\"+left.ToString(\"G17\",CultureInfo.InvariantCulture)+\",\\\"rightMil\\\":\"+right.ToString(\"G17\",CultureInfo.InvariantCulture)+\",\\\"bottomMil\\\":\"+bottom.ToString(\"G17\",CultureInfo.InvariantCulture)+\",\\\"topMil\\\":\"+top.ToString(\"G17\",CultureInfo.InvariantCulture)+\"}\";\n",
+    "after": "    return \"{\\\"kind\\\":\\\"region\\\",\\\"mode\\\":\"+JsonString(mode)+\",\\\"leftMil\\\":\"+left.ToString(\"R\",CultureInfo.InvariantCulture)+\",\\\"rightMil\\\":\"+right.ToString(\"R\",CultureInfo.InvariantCulture)+\",\\\"bottomMil\\\":\"+bottom.ToString(\"R\",CultureInfo.InvariantCulture)+\",\\\"topMil\\\":\"+top.ToString(\"R\",CultureInfo.InvariantCulture)+\"}\";\n"
+  },
+  {
+    "before": "    fields[\"xMil\"]=0.1m;fields[\"yMil\"]=-0.25m;\n    Spatial209ProtocolMessage(383,\"Runtime.callFunctionOn\",\"s\",\"read\",fields);\n",
+    "after": ""
+  },
+  {
+    "before": "    # BEGIN GENERATED PCB209 SPATIAL NUMBER SMOKE\n    # Exercise the actual PowerShell5.1 JSON decoder and .NET numeric binder.\n    # Decimal fractions remain numbers; all six coordinates round-trip as doubles.\n    foreach ($spatialNumberSmokeJson in @(\n      '{\"queryKind\":\"point\",\"xMil\":0.1,\"yMil\":0.84551240822557006}',\n      '{\"queryKind\":\"region\",\"queryMode\":\"intersects\",\"leftMil\":-0.1,\"rightMil\":0.1,\"bottomMil\":-0.84551240822557006,\"topMil\":0.84551240822557006}'\n    )) {\n      $spatialNumberSmokeRequest=ConvertFrom-Json -InputObject $spatialNumberSmokeJson\n      $spatialNumberSmokeFields=New-Object 'System.Collections.Hashtable' ([StringComparer]::Ordinal)\n      $spatialNumberSmokeFields.Add('objectId','original-bundle')\n      foreach ($property in $spatialNumberSmokeRequest.PSObject.Properties) {$spatialNumberSmokeFields.Add($property.Name,$property.Value)}\n      $spatialNumberSmokeMessage=[EasyedaDiagnosticOwner]::Spatial209ProtocolMessage(383,'Runtime.callFunctionOn','s','read',$spatialNumberSmokeFields)\n      if ($spatialNumberSmokeMessage[$spatialNumberSmokeMessage.Length-1] -ne [char]0) {throw 'pcb-diagnostic-spatial209-number-smoke-envelope'}\n      $spatialNumberSmokeDecoded=ConvertFrom-Json -InputObject $spatialNumberSmokeMessage.Substring(0,$spatialNumberSmokeMessage.Length-1)\n      $spatialNumberSmokeQuery=$spatialNumberSmokeDecoded.params.arguments[0].value\n      if ($spatialNumberSmokeQuery.kind -cne $spatialNumberSmokeRequest.queryKind) {throw 'pcb-diagnostic-spatial209-number-smoke-kind'}\n      foreach ($field in @('xMil','yMil','leftMil','rightMil','bottomMil','topMil')) {\n        if ($null -ne $spatialNumberSmokeRequest.PSObject.Properties[$field]) {\n          $spatialNumberSmokeBefore=[Convert]::ToDouble($spatialNumberSmokeRequest.$field,[Globalization.CultureInfo]::InvariantCulture)\n          $spatialNumberSmokeAfter=[Convert]::ToDouble($spatialNumberSmokeQuery.$field,[Globalization.CultureInfo]::InvariantCulture)\n          if ([BitConverter]::DoubleToInt64Bits($spatialNumberSmokeBefore) -ne [BitConverter]::DoubleToInt64Bits($spatialNumberSmokeAfter)) {throw 'pcb-diagnostic-spatial209-number-smoke-roundtrip'}\n        }\n      }\n    }\n    # END GENERATED PCB209 SPATIAL NUMBER SMOKE\n",
+    "after": ""
+  }
+] as const;
+/** Exact reviewed spatial-only source projection. These build-time strings
+ * are not runtime commands or a generic removal rule. */
+const sharedSpatialProjection = [
+  {
+    "before": "param([switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup,[switch]$Layers209,[switch]$Visual209,[switch]$Spatial209,[switch]$WorkerStartup209,[switch]$WorkerStartupEmpty209,[switch]$WorkerStartupRatline209,[switch]$WorkerStartupRatlineContinuation209,[switch]$WorkerStartupFootprint209,[switch]$WorkerStartupFootprintCopy209,[switch]$WorkerStartupFootprintSaved209,[switch]$WorkerStartupFootprintHeldSaved209,[switch]$FootprintHeldCache209,[switch]$FootprintHeadAge209,[switch]$WorkerStartupFootprintMain209,[switch]$WorkerStartupFootprintCombined209,[switch]$WorkerStartupFootprintForward209,[string]$CombinedReadyChallenge)\n",
+    "after": "param([switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup,[switch]$Layers209,[switch]$Visual209,[switch]$WorkerStartup209,[switch]$WorkerStartupEmpty209,[switch]$WorkerStartupRatline209,[switch]$WorkerStartupRatlineContinuation209,[switch]$WorkerStartupFootprint209,[switch]$WorkerStartupFootprintCopy209,[switch]$WorkerStartupFootprintSaved209,[switch]$WorkerStartupFootprintHeldSaved209,[switch]$FootprintHeldCache209,[switch]$FootprintHeadAge209,[switch]$WorkerStartupFootprintMain209,[switch]$WorkerStartupFootprintCombined209,[switch]$WorkerStartupFootprintForward209,[string]$CombinedReadyChallenge)\n"
+  },
+  {
+    "before": "if ($Spatial209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $Visual209 -or $WorkerStartup209 -or $WorkerStartupEmpty209 -or $WorkerStartupRatline209 -or $WorkerStartupRatlineContinuation209 -or $WorkerStartupFootprint209 -or $WorkerStartupFootprintCopy209 -or $WorkerStartupFootprintSaved209 -or $WorkerStartupFootprintHeldSaved209 -or $FootprintHeldCache209 -or $FootprintHeadAge209 -or $WorkerStartupFootprintMain209 -or $WorkerStartupFootprintCombined209 -or $WorkerStartupFootprintForward209)) {throw 'pcb-diagnostic-conflicting-spatial-purpose'}\n",
+    "after": ""
+  },
+  {
+    "before": "  readonly bool layers209,visual209,spatial209;\n",
+    "after": "  readonly bool layers209,visual209;\n"
+  },
+  {
+    "before": "  int RequestLimit { get { return spatial209?384:workerStartup?256:stringPrecreate?3309:103; } }\n",
+    "after": "  int RequestLimit { get { return workerStartup?256:stringPrecreate?3309:103; } }\n"
+  },
+  {
+    "before": "    string encoded=DomProtocolMessageCore(spatial209?1:id,method,sessionId,frameId,backendNodeId,stringPrecreate);\n    if(spatial209)SpatialDiscovery(method,sessionId);\n    SendMessage(id,spatial209?SpatialOriginalId(id,encoded):encoded);\n",
+    "after": "    SendMessage(id,DomProtocolMessageCore(id,method,sessionId,frameId,backendNodeId,stringPrecreate));\n"
+  },
+  {
+    "before": "    string message=ProtocolMessageCore(spatial209?1:id,method,OptionalText(targetId),OptionalText(sessionId),OptionalText(scriptId),OptionalText(uniqueContextId),stringPrecreate);\n    if(spatial209) {SpatialDiscovery(method,OptionalText(sessionId));message=SpatialOriginalId(id,message);}\n",
+    "after": "    string message=ProtocolMessageCore(id,method,OptionalText(targetId),OptionalText(sessionId),OptionalText(scriptId),OptionalText(uniqueContextId),stringPrecreate);\n"
+  },
+  {
+    "before": "    string encoded=OpeningProtocolMessageCore(false,spatial209?1:id,sessionId,uniqueContextId,phase,path,project,branch,document,source,stringPrecreate);\n    if(spatial209) {SpatialSession(sessionId);if(spatialStage>0)throw Error(\"spatial209-navigation-consumed\");}\n    SendMessage(id,spatial209?SpatialOriginalId(id,encoded):encoded);\n",
+    "after": "    SendMessage(id,OpeningProtocolMessageCore(false,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,stringPrecreate));\n"
+  },
+  {
+    "before": "    string encoded=OpeningProtocolMessageCore(true,spatial209?1:id,sessionId,uniqueContextId,phase,path,project,branch,document,source,stringPrecreate);\n    if(spatial209) {SpatialSession(sessionId);if(spatialStage>0 && phase!=\"observe\")throw Error(\"spatial209-navigation-consumed\");if(phase==\"observe\") {if(spatialPcbSession!=null && spatialPcbSession!=sessionId)throw Error(\"spatial209-original-pcb\");spatialPcbSession=sessionId;}}\n    SendMessage(id,spatial209?SpatialOriginalId(id,encoded):encoded);\n",
+    "after": "    SendMessage(id,OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,stringPrecreate));\n"
+  },
+  {
+    "before": "$owner=if ($Spatial209) {[EasyedaDiagnosticOwner]::CreateSpatial209()} elseif ($FootprintHeadAge209) {[EasyedaDiagnosticOwner]::CreateFootprintHeadAge209()} elseif ($FootprintHeldCache209) {[EasyedaDiagnosticOwner]::CreateFootprintHeldCache209()} elseif ($WorkerStartupFootprintHeldSaved209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintHeldSaved209()} elseif ($Visual209) {[EasyedaDiagnosticOwner]::CreateVisual209()} elseif ($WorkerStartupFootprintForward209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintForward209()} elseif ($WorkerStartupFootprintCombined209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintCombined209()} elseif ($WorkerStartupFootprintMain209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintMain209()} elseif ($WorkerStartupFootprintSaved209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintSaved209()} elseif ($WorkerStartupFootprintCopy209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintCopy209()} elseif ($WorkerStartupFootprint209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprint209()} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatlineContinuation209()} elseif ($WorkerStartupRatline209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatline209()} elseif ($WorkerStartupEmpty209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupEmpty209()} elseif ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()} elseif ($WorkerStartup) {[EasyedaDiagnosticOwner]::CreateWorkerStartup()} elseif ($StringPrecreate) {[EasyedaDiagnosticOwner]::CreateStringPrecreate()} elseif ($Layers209) {[EasyedaDiagnosticOwner]::CreateLayers209()} else {New-Object EasyedaDiagnosticOwner}\n",
+    "after": "$owner=if ($FootprintHeadAge209) {[EasyedaDiagnosticOwner]::CreateFootprintHeadAge209()} elseif ($FootprintHeldCache209) {[EasyedaDiagnosticOwner]::CreateFootprintHeldCache209()} elseif ($WorkerStartupFootprintHeldSaved209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintHeldSaved209()} elseif ($Visual209) {[EasyedaDiagnosticOwner]::CreateVisual209()} elseif ($WorkerStartupFootprintForward209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintForward209()} elseif ($WorkerStartupFootprintCombined209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintCombined209()} elseif ($WorkerStartupFootprintMain209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintMain209()} elseif ($WorkerStartupFootprintSaved209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintSaved209()} elseif ($WorkerStartupFootprintCopy209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintCopy209()} elseif ($WorkerStartupFootprint209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprint209()} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatlineContinuation209()} elseif ($WorkerStartupRatline209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatline209()} elseif ($WorkerStartupEmpty209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupEmpty209()} elseif ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()} elseif ($WorkerStartup) {[EasyedaDiagnosticOwner]::CreateWorkerStartup()} elseif ($StringPrecreate) {[EasyedaDiagnosticOwner]::CreateStringPrecreate()} elseif ($Layers209) {[EasyedaDiagnosticOwner]::CreateLayers209()} else {New-Object EasyedaDiagnosticOwner}\n"
+  },
+  {
+    "before": "    [EasyedaDiagnosticOwner]::VerifySpatial209Smoke()\n",
+    "after": ""
+  },
+  {
+    "before": "      if ($Spatial209) {$owner.AdmitSpatialAction($request.action)}\n",
+    "after": ""
+  },
+  {
+    "before": "        'spatial209' {\n          if (-not $Spatial209 -or -not $launched -or $request.method -isnot [string] -or $request.sessionId -isnot [string] -or $request.spatialPhase -isnot [string] -or\n              ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt 384) {throw 'pcb-diagnostic-spatial209-fields'}\n          $spatialBase=@('action','helperInstance','id','jobId','method','requestId','rootCreated','rootPid','sessionId','spatialPhase')\n          $spatialFields=@{}\n          foreach ($property in $request.PSObject.Properties) {\n            if ($spatialBase -cnotcontains $property.Name) {$spatialFields[$property.Name]=$property.Value}\n          }\n          foreach ($field in $spatialBase) {if (@($request.PSObject.Properties.Name) -cnotcontains $field) {throw 'pcb-diagnostic-spatial209-field'}}\n          $owner.SendSpatial209([int]$request.requestId,$request.method,$request.sessionId,$request.spatialPhase,$spatialFields)\n          $result=@{written=$true}\n        }\n",
+    "after": ""
+  },
+  {
+    "before": "          $requestLimit=if ($Spatial209) {383} elseif ($StringPrecreate) {3309} else {103}\n          if ($Spatial209 -and ($null -ne $request.modelPhase -or $null -ne $request.stringPhase -or $null -ne $request.commonPhase -or $null -ne $request.workerProducerPhase -or $null -ne $request.movePhase -or $null -ne $request.actorClockPhase -or (@('Browser.getVersion','Target.getTargets','Target.attachToTarget','Page.enable','Page.getFrameTree','Runtime.enable','Debugger.enable','Debugger.getScriptSource','DOM.getFrameOwner','DOM.describeNode') -cnotcontains $request.method -and -not ($request.method -ceq 'Runtime.callFunctionOn' -and ($null -ne $request.openingPhase -or $null -ne $request.pcbOpeningPhase))))) {throw 'pcb-diagnostic-spatial209-discovery-only'}\n",
+    "after": "          $requestLimit=if ($StringPrecreate) {3309} else {103}\n"
+  }
+] as const;
 const transforms = [
   {
     "label": "future-birth-group-01",
@@ -124,9 +216,75 @@ const transforms = [
 /** Reconstruct all 45 added/28 removed predecessor lines from the exact legacy
  * source; missing/duplicate anchors or any unrelated input drift refuse. */
 const hash = (value: string): string => createHash("sha256").update(value).digest("hex");
+/** Normalize only the separately pinned current shared helper into the exact
+ * released legacy bytes before any existing forward transformation. Unknown
+ * source, changed additions and every collateral byte still fail closed. */
+export function normalizeForwardNativeLegacySource(input: string): string {
+  if (Buffer.byteLength(input) === FORWARD_NATIVE_LEGACY.bytes && hash(input) === FORWARD_NATIVE_LEGACY.sha256) { return input; }
+  if (Buffer.byteLength(input) === FORWARD_NATIVE_UNLOCKED_SPATIAL_SHARED_HELPER.bytes && hash(input) === FORWARD_NATIVE_UNLOCKED_SPATIAL_SHARED_HELPER.sha256) {
+    let source = input;
+    for (const [index, projection] of sharedSpatialProjection.entries()) {
+      if (source.split(projection.before).length !== 2) { throw new Error(`FORWARD_NATIVE_UNLOCKED_SPATIAL_PROJECTION_${String(index)}`); }
+      source = source.replace(projection.before, projection.after);
+    }
+    for (const section of [
+      { begin: "  enum Spatial209Birth { SourceQualified }\n", end: "  // END GENERATED PCB209 SPATIAL PROTOCOL\n",
+        bytes: 51_182, sha256: "5a4787da2cfa7e2c523838e0fc204f3e2c694c797b95d93958d63ab894fca5a6" },
+      { begin: "    # BEGIN GENERATED PCB209 SPATIAL NUMBER SMOKE\n", end: "    # END GENERATED PCB209 SPATIAL NUMBER SMOKE\n",
+        bytes: 2241, sha256: "e614d34b2ba4932fe24a5b638bfcff759a3099d4c516970491621decc2d1a074" },
+    ] as const) {
+      if (source.split(section.begin).length !== 2 || source.split(section.end).length !== 2) { throw new Error("FORWARD_NATIVE_UNLOCKED_SPATIAL_SECTION"); }
+      const start = source.indexOf(section.begin), stop = source.indexOf(section.end) + section.end.length;
+      const removed = source.slice(start, stop);
+      if (stop <= start || Buffer.byteLength(removed) !== section.bytes || hash(removed) !== section.sha256) { throw new Error("FORWARD_NATIVE_UNLOCKED_SPATIAL_SECTION"); }
+      source = source.slice(0, start) + source.slice(stop);
+    }
+    if (Buffer.byteLength(source) !== FORWARD_NATIVE_LEGACY.bytes || hash(source) !== FORWARD_NATIVE_LEGACY.sha256) { throw new Error("FORWARD_NATIVE_UNLOCKED_LEGACY_PROOF"); }
+    return source;
+  }
+  let reviewed = input;
+  if (Buffer.byteLength(reviewed) === FORWARD_NATIVE_NUMERIC_SPATIAL_SHARED_HELPER.bytes && hash(reviewed) === FORWARD_NATIVE_NUMERIC_SPATIAL_SHARED_HELPER.sha256) {
+    for (const [index, projection] of numericSpatialProjection.entries()) {
+      if (reviewed.split(projection.before).length !== 2) { throw new Error(`FORWARD_NATIVE_NUMERIC_SPATIAL_PROJECTION_${String(index)}`); }
+      reviewed = reviewed.replace(projection.before, projection.after);
+    }
+    if (Buffer.byteLength(reviewed) !== FORWARD_NATIVE_TYPED_SPATIAL_SHARED_HELPER.bytes || hash(reviewed) !== FORWARD_NATIVE_TYPED_SPATIAL_SHARED_HELPER.sha256) {
+      throw new Error("FORWARD_NATIVE_NUMERIC_TYPED_PROOF");
+    }
+  }
+  if (Buffer.byteLength(reviewed) === FORWARD_NATIVE_TYPED_SPATIAL_SHARED_HELPER.bytes && hash(reviewed) === FORWARD_NATIVE_TYPED_SPATIAL_SHARED_HELPER.sha256) {
+    const before = '  enum Spatial209Birth { SourceQualified }\n' +
+      '  EasyedaDiagnosticOwner(Spatial209Birth purpose) { if(purpose!=Spatial209Birth.SourceQualified)throw Error("spatial209-birth");spatial209=true; }\n' +
+      '  public static EasyedaDiagnosticOwner CreateSpatial209() { return new EasyedaDiagnosticOwner(Spatial209Birth.SourceQualified); }\n';
+    const after = '  EasyedaDiagnosticOwner(string purpose) { if(purpose!="pcb-spatial209")throw Error("spatial209-birth");spatial209=true; }\n' +
+      '  public static EasyedaDiagnosticOwner CreateSpatial209() { return new EasyedaDiagnosticOwner("pcb-spatial209"); }\n';
+    if (reviewed.split(before).length !== 2) { throw new Error("FORWARD_NATIVE_TYPED_SPATIAL_PROJECTION"); }
+    reviewed = reviewed.replace(before, after);
+  }
+  if (Buffer.byteLength(reviewed) !== FORWARD_NATIVE_CURRENT_SHARED_HELPER.bytes || hash(reviewed) !== FORWARD_NATIVE_CURRENT_SHARED_HELPER.sha256) {
+    throw new Error("FORWARD_NATIVE_LEGACY_SOURCE");
+  }
+  let source = reviewed;
+  for (const [index, projection] of sharedSpatialProjection.entries()) {
+    if (source.split(projection.before).length !== 2) { throw new Error(`FORWARD_NATIVE_CURRENT_PROJECTION_${String(index)}`); }
+    source = source.replace(projection.before, projection.after);
+  }
+  const begin = '  EasyedaDiagnosticOwner(string purpose) { if(purpose!="pcb-spatial209")throw Error("spatial209-birth");spatial209=true; }\n';
+  const end = "  // END GENERATED PCB209 SPATIAL PROTOCOL\n";
+  if (source.split(begin).length !== 2 || source.split(end).length !== 2) { throw new Error("FORWARD_NATIVE_CURRENT_SPATIAL_SECTION"); }
+  const start = source.indexOf(begin), stop = source.indexOf(end) + end.length;
+  const removed = source.slice(start, stop);
+  if (Buffer.byteLength(removed) !== 50_933 || hash(removed) !== "4c982098e757ca9f6134ef66a43f50ed5d19037ef6b21c3b5293d4f29818b3f8") {
+    throw new Error("FORWARD_NATIVE_CURRENT_SPATIAL_SECTION");
+  }
+  source = source.slice(0, start) + source.slice(stop);
+  if (Buffer.byteLength(source) !== FORWARD_NATIVE_LEGACY.bytes || hash(source) !== FORWARD_NATIVE_LEGACY.sha256) {
+    throw new Error("FORWARD_NATIVE_CURRENT_LEGACY_PROOF");
+  }
+  return source;
+}
 export function migrateForwardNativePredecessor(input: string): string {
-  if (Buffer.byteLength(input) !== FORWARD_NATIVE_LEGACY.bytes || hash(input) !== FORWARD_NATIVE_LEGACY.sha256) { throw new Error("FORWARD_NATIVE_LEGACY_SOURCE"); }
-  let source = input;
+  let source = normalizeForwardNativeLegacySource(input);
   for (const transform of transforms) {
     if (source.split(transform.before).length !== 2) { throw new Error(`FORWARD_NATIVE_MIGRATION_${transform.label}`); }
     source = source.replace(transform.before, transform.after);

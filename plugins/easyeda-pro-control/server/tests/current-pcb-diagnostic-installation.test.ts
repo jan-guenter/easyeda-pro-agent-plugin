@@ -150,7 +150,7 @@ void test("native DOS creation verifies the retained original image before one p
   const visualBegin = source.indexOf("public void TerminateVisual(){"), visualEnd = source.indexOf("\n  public void SendVisual209", visualBegin);
   assert.ok(visualBegin > mainEnd && visualEnd > visualBegin);
   const visual = source.slice(visualBegin, visualEnd);
-  assert.ok(source.includes("readonly bool layers209,visual209;"));
+  assert.ok(source.includes("readonly bool layers209,visual209,spatial209;"));
   const once = visual.indexOf('if(!visual209||visual209AbortAttempted||released||root==IntPtr.Zero||job==IntPtr.Zero)throw Error("visual209-termination-owner");visual209AbortAttempted=true;');
   const identity = visual.indexOf("GetProcessId(root)!=rootPid||rootCreated==0||!GetProcessTimes(root,out created,out exited,out kernel,out user)||created!=rootCreated||!IsProcessInJob(root,job,out member)||!member");
   const terminate = visual.indexOf("Native(TerminateJobObject(job,0x45444156))");

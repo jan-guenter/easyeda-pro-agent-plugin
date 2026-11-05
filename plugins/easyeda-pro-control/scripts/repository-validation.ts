@@ -6,7 +6,7 @@ import { portableMcpLaunchSchema } from "./plugin-contract.ts";
 const stringSchema = z.string();
 const DEFAULT_REPOSITORY_FILE_BYTES = 8 * 1024 * 1024;
 const FACADE_BUNDLE_PATH = "plugins/easyeda-pro-control/server/dist/server.mjs";
-const FACADE_BUNDLE_BYTES = 12 * 1024 * 1024;
+const FACADE_BUNDLE_BYTES = 16 * 1024 * 1024;
 const reviewedBundleFileSchema = z.object({ relativePath: z.string(), bytes: z.int().nonnegative(), sha256: z.string().regex(/^[a-f0-9]{64}$/u) });
 const reviewedBundleFilesSchema = z.array(reviewedBundleFileSchema);
 

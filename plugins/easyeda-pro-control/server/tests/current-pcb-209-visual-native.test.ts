@@ -4,13 +4,14 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { CURRENT_PCB_209_VISUAL_FUNCTION } from "../src/current-pcb-209-visual-actions.ts";
 import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
+import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES } from "../src/current-pcb-diagnostic-helper-source-profile.ts";
 
 void test("native visual program is exact, packed and independently constrained to its six viewport operations", async () => {
   const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   assert.equal(readPackedNativeProgram(source, "Visual209Function"), CURRENT_PCB_209_VISUAL_FUNCTION);
   assert.equal(/const string Visual209FunctionSha256="([a-f0-9]{64})";/u.exec(source)?.[1],
     createHash("sha256").update(CURRENT_PCB_209_VISUAL_FUNCTION).digest("hex"));
-  assert.ok(Buffer.byteLength(source) <= 1024 * 1024);
+  assert.ok(Buffer.byteLength(source) <= CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES);
   assert.equal(Buffer.from(source).some((byte) => byte > 0x7F), false);
   for (const guard of ["CreateVisual209()", "if(!visual209 || !layers209 || stringPrecreate || workerStartup)",
     'if(visual209Attempted)throw Error("visual209-consumed");visual209Attempted=true;SendMessage',
@@ -26,7 +27,7 @@ void test("native visual program is exact, packed and independently constrained 
   assert.equal(source.includes("$request.arguments"), false);
 });
 
-void test("independent Windows launch smoke binds exact helper length, digest and C# fragment under the unchanged cap", async () => {
+void test("independent Windows launch smoke binds exact helper length, digest and C# fragment under the fixed source cap", async () => {
   const [bytes, consumer] = await Promise.all([
     readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url)),
     readFile(new URL("../../scripts/pcb-diagnostic-launch-smoke.ps1", import.meta.url), "utf8"),
@@ -34,8 +35,8 @@ void test("independent Windows launch smoke binds exact helper length, digest an
   const actualHash = createHash("sha256").update(bytes).digest("hex");
   const source = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   const verify = (program: string): void => {
-    assert.equal(Number(/\$bytes = Read-BoundedFile \$helper ([0-9]+)/u.exec(program)?.[1]), 1024 * 1024);
-    assert.ok(bytes.length > 0 && bytes.length <= 1024 * 1024);
+    assert.equal(Number(/\$bytes = Read-BoundedFile \$helper ([0-9]+)/u.exec(program)?.[1]), CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES);
+    assert.ok(bytes.length > 0 && bytes.length <= CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES);
     assert.equal(Number(/if \(\$bytes\.Length -ne ([0-9]+)\)/u.exec(program)?.[1]), bytes.length);
     assert.equal(/if \(\$helperHash -cne '([a-f0-9]{64})'\)/u.exec(program)?.[1], actualHash);
     const beginLiteral = /^\$begin = "([^"\r\n]+)"$/mu.exec(program)?.[1];
@@ -55,6 +56,7 @@ void test("independent Windows launch smoke binds exact helper length, digest an
   // Without changing the helper, Windows smoke or its actual source artifact.
   assert.throws(() => { verify(consumer.replace(/\$bytes\.Length -ne [0-9]+/u, `$bytes.Length -ne ${bytes.length - 1}`)); });
   assert.throws(() => { verify(consumer.replace(actualHash, "0".repeat(64))); });
-  assert.throws(() => { verify(consumer.replace("Read-BoundedFile $helper 1048576", "Read-BoundedFile $helper 1048577")); });
+  assert.throws(() => { verify(consumer.replace(`Read-BoundedFile $helper ${CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES}`,
+    `Read-BoundedFile $helper ${CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES + 1}`)); });
   assert.throws(() => { verify(consumer.replace("$stop-$start-$begin.Length", "$stop-$start")); });
 });
