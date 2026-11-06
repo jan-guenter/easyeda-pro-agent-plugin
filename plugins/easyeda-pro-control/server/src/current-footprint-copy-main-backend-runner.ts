@@ -35,7 +35,7 @@ import { requireCurrentFootprintCopyMainRequestHeldFinalPb, transferCurrentFootp
 import type { CurrentFootprintCopyMainRequestHeldFinalPb } from "./current-footprint-copy-main-request-runner.ts";
 // oxlint-disable-next-line import/no-cycle -- The native owner constructs this runner; its original private-factory guards are invoked only after that construction, never at module initialization. A callback registration seam would weaken this authority check.
 import { assertCurrentFootprintCombinedMainCompletionCapacity, beginCurrentFootprintCombinedMainCompletion, currentFootprintCombinedMainGenerationExited, failCurrentFootprintCombinedMainCompletion, requireCurrentFootprintCombinedMainCapability, requireCurrentFootprintCombinedMainCleanup, requireCurrentFootprintCombinedPairedSchedule, requireCurrentFootprintHeadAgeBootstrapCapability, retireCurrentFootprintCombinedMainCompletion, sendCurrentFootprintCombinedMainCommand, sendCurrentFootprintCombinedMainCompletion } from "./current-pcb-diagnostic-owner.ts";
-import type { CurrentFootprintCombinedMainCapability } from "./current-pcb-diagnostic-owner.ts";
+import type { CurrentFootprintCombinedMainCapability, requireOriginalCurrentSavedProjectRegistrationIntent as RequireSavedRegistration } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_FOOTPRINT_HEAD_AGE_CONTEXT_BIND_PROGRAM, CURRENT_FOOTPRINT_HEAD_AGE_CONTEXT_CAPTURE_PROGRAM, decodeCurrentFootprintHeadAgeContextAccessor, decodeCurrentFootprintHeadAgeContextArray, decodeCurrentFootprintHeadAgeContextScopes, qualifyCurrentFootprintHeadAgeContextSource, requireCurrentFootprintHeadAgeContextSource } from "./current-footprint-head-age-context.ts";
@@ -113,6 +113,8 @@ import { currentFootprintCopyMainRequestPlanSchema, decodeCurrentFootprintCopyMa
 import { CURRENT_MAIN_STARTUP_CONFIG_CALLS as STARTUP_CALLS } from "./current-main-startup-config-programs.ts";
 import { qualifyCurrentMainStartupConfigSource } from "./current-main-startup-config-sql.ts";
 import { CurrentMainStartupConfigProgress, currentMainStartupConfigSelectionSchema } from "./current-main-startup-config-progress.ts";
+import type { CurrentSavedProjectRegistrationBindings, CurrentSavedProjectRegistrationIntent } from "./current-saved-project-registration-origin.ts";
+import { qualifyCurrentSavedProjectRegistrationConfigSource } from "./current-saved-project-registration-config-source.ts";
 
 type MainCapability = CurrentFootprintCombinedMainCapability | CurrentFootprintForwardExecutionMainCapability | CurrentProjectStructureMainCapability;
 function mainCapability(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
@@ -283,6 +285,11 @@ const sqlConfigurationReply = z.object({ result: sqlConfigurationRemote }).stric
 const objectReply = z.object({ result: z.object({ type: z.literal("object"), subtype: z.literal("array"), className: z.literal("Array"),
   description: z.string().max(32), objectId: handle }).strict() }).strict();
 interface Pause { readonly frameId: string; readonly location: z.infer<typeof location>; readonly registration: boolean; readonly sqlSite?: CurrentSelectedFileMainSqlFenceSite; resumeAttempted: boolean; resumed: boolean }
+interface SavedProjectRegistrationEnrollment {
+  readonly intent: CurrentSavedProjectRegistrationIntent; readonly bindings: CurrentSavedProjectRegistrationBindings;
+  readonly ownerModule: Readonly<{ requireOriginalCurrentSavedProjectRegistrationIntent: typeof RequireSavedRegistration }>;
+  readonly requireOriginal: typeof RequireSavedRegistration;
+}
 interface Resolved { readonly breakpointId: string; readonly location: z.infer<typeof location> }
 interface StructureAllocation { readonly id: number; readonly retain: (reply: unknown) => void; seen: boolean; stopped: boolean }
 interface ForwardPoll {
@@ -423,6 +430,8 @@ export class CurrentFootprintCopyMainBackendRunner {
   #pause: Pause | null = null;
   #initialContinuationCount: 0 | 1 = 0;
   #registrationSeen = false;
+  #savedRegistrationEnrollmentAttempted = false;
+  #savedRegistrationEnrollment: SavedProjectRegistrationEnrollment | null = null;
   #source: QualifiedSource | null = null;
   #appSource: string | null = null;
   #appScriptId: string | null = null;
@@ -950,6 +959,43 @@ export class CurrentFootprintCopyMainBackendRunner {
         objectId: selectedFrame.result.objectId, functionDeclaration: SQL_CONFIGURATION, arguments: [{ objectId: this.#sqlCapture }, { value: stage }], returnByValue: true } }));
     need(reply.result.value.stage === stage && reply.result.value.selectedFile === (reply.result.value.path === this.#selectedSqlPath), "SELECTED_SQL_INITIALIZER_BINDING");
     this.#sqlConfigurationRecords.push(Object.freeze(reply.result.value)); this.#sqlApprovedConfigurations.add(pause); await this.#sqlResume(pause);
+  }
+  /** Enroll only the original saved Core's durable, pre-dispatch intent. This
+   * cannot continue SQL. The later actual callback must separately prove that
+   * same Core's once-consumed registration pipe Promise is still pending. */
+  public async enrollSavedProjectRegistrationIntent(intent: CurrentSavedProjectRegistrationIntent): Promise<void> {
+    this.#same(false);
+    need(!this.#busy && !this.#savedRegistrationEnrollmentAttempted && this.#savedRegistrationEnrollment === null &&
+      this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#sqlCapture !== null && this.#selectedSqlPath !== null &&
+      this.#packet !== null && issued.get(this.#packet) === this && this.#appSource !== null && !this.#originActive && !this.#structureActive,
+    "SAVED_REGISTRATION_ENROLLMENT_UNAVAILABLE");
+    this.#savedRegistrationEnrollmentAttempted = true; this.#busy = true;
+    try {
+      qualifyCurrentSavedProjectRegistrationConfigSource(this.#appSource);
+      // Literal lazy import avoids Core -> runner -> Core eager initialization.
+      // The original private registry accessor is retained, never injected.
+      const ownerModule = await import("./current-pcb-diagnostic-owner.ts"); await this.#current();
+      const requireOriginal = ownerModule.requireOriginalCurrentSavedProjectRegistrationIntent;
+      const bindings = requireOriginal(intent, this);
+      need(bindings.target.rawWindowsPath === this.#selectedSqlPath && bindings.target.rawWindowsPath === bindings.prepared.target.rawWindowsPath &&
+        bindings.target.expectedSourceSha256 === bindings.prepared.target.sourceSha256, "SAVED_REGISTRATION_SELECTED_TARGET");
+      await bindings.assertCurrent(); await this.#current();
+      need(ownerModule.requireOriginalCurrentSavedProjectRegistrationIntent === requireOriginal && requireOriginal(intent, this) === bindings &&
+        bindings.target.rawWindowsPath === this.#selectedSqlPath, "SAVED_REGISTRATION_ENROLLMENT_CHANGED");
+      this.#savedRegistrationEnrollment = Object.freeze({ intent, bindings, ownerModule, requireOriginal });
+    } catch (caughtError) { this.#fail(caughtError); throw caughtError; }
+    finally { this.#busy = false; }
+  }
+  /** Original source/owner plus a genuinely attempted unsettled pipe dispatch.
+   * Data-only SQL matching will never replace this native continuation gate. */
+  public async assertOriginalSavedProjectRegistrationPending(): Promise<void> {
+    this.#same(false); const original = this.#savedRegistrationEnrollment;
+    need(original !== null && original.ownerModule.requireOriginalCurrentSavedProjectRegistrationIntent === original.requireOriginal &&
+      original.requireOriginal(original.intent, this) === original.bindings, "SAVED_REGISTRATION_ENROLLMENT_REQUIRED");
+    original.bindings.assertOriginalDispatchPending(); await original.bindings.assertCurrent(); this.#same(false);
+    need(this.#savedRegistrationEnrollment === original && original.ownerModule.requireOriginalCurrentSavedProjectRegistrationIntent === original.requireOriginal &&
+      original.requireOriginal(original.intent, this) === original.bindings, "SAVED_REGISTRATION_ENROLLMENT_CHANGED");
+    original.bindings.assertOriginalDispatchPending();
   }
   async #configureStartupSql(pause: Pause): Promise<boolean> {
     const site = pause.sqlSite;
