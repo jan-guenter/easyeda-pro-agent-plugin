@@ -161,6 +161,9 @@ export class CurrentPcbViaSavedCacheLedger {
     if (method !== "Storage.cacheStorageListUpdated" && method !== "Storage.cacheStorageContentUpdated") { return false; }
     this.#failed = true; throw new Error("SAVED_READBACK_CACHE_CHANGED");
   }
+  /** The native sampler must follow this exact original CDP round, including
+   * both selected namespaces and the combined complete body budget. */
+  public requireMetadataRound(round: "backup" | "verify"): void { need(!this.#failed && !this.#untracked && this.#tracked && this.#pending === null); this.#roundBodies(round); }
   public requireOriginalSnapshot(snapshot: CurrentPcbViaSavedCacheSnapshot): void { need(this.#snapshots.has(snapshot)); }
   public requireOriginalPacket(packet: CurrentPcbViaSavedCachePacket): void { need(this.#packets.has(packet)); }
   public status(): Readonly<{ failed: boolean; pending: boolean; tracked: boolean; completeRepeatedCdpData: boolean; packets: number;

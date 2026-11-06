@@ -8,6 +8,10 @@
 import { CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_ARRAY_LENGTH, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_PROFILES, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_CALLS as PRODUCER_INTRINSICS, decodeCurrentNativeCacheResponseIntrinsic } from "./current-native-cache-response-intrinsics.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS, CURRENT_PROJECT_SAVE_PRODUCER_ROLES, CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS, validateCurrentProjectSaveProducerCommand } from "./current-project-save-producer-protocol.ts";
 import type { CurrentProjectSaveProducerBindings, CurrentProjectSaveProducerHeldCall, CurrentProjectSaveProducerOrigin } from "./current-project-save-producer-origin.ts";
+import { CurrentPcbViaSavedCacheMetadataLedger } from "./current-pcb-via-saved-cache-metadata-ledger.ts";
+import type { CurrentPcbViaSavedCacheMetadataPacket, CurrentPcbViaSavedCacheMetadataPlan, CurrentPcbViaSavedCacheMetadataSnapshot } from "./current-pcb-via-saved-cache-metadata-ledger.ts";
+import type { CurrentPcbViaSavedCacheMetadataCommand } from "./current-pcb-via-saved-cache-metadata-protocol.ts";
+import { currentPcbViaSavedCacheMetadataNativeFrame } from "./current-pcb-via-saved-cache-metadata-wire.ts";
 import { CurrentPcbViaSavedCacheLedger } from "./current-pcb-via-saved-cache-ledger.ts";
 import type { CurrentPcbViaSavedCachePacket, CurrentPcbViaSavedCachePlan, CurrentPcbViaSavedCacheSnapshot } from "./current-pcb-via-saved-cache-ledger.ts";
 import type { CurrentPcbViaSavedCacheCommand } from "./current-pcb-via-saved-cache-protocol.ts";
@@ -695,11 +699,12 @@ const pcbViaSavedReadbackFactories = new WeakMap<object, Readonly<{ allocation: 
 const pcbViaSavedReadbackTerminations = new WeakMap<object, Readonly<{ token: object; binding: Binding }>>();
 interface SavedReadbackCacheHeld {
   readonly origin: CurrentPcbViaSavedCacheOrigin; readonly prepared: CurrentPcbViaWriteClosedCheckpoint;
-  readonly owner: CurrentPcbRetainedOwnerCore; readonly ledger: CurrentPcbViaSavedCacheLedger;
+  readonly owner: CurrentPcbRetainedOwnerCore; readonly ledger: CurrentPcbViaSavedCacheLedger; readonly metadata: CurrentPcbViaSavedCacheMetadataLedger;
   readonly context: CurrentPcbDiagnosticContext; readonly selected: ReturnType<CurrentPcbDiagnosticContext["savedReadbackCacheContext"]>;
   readonly bindings: CurrentPcbViaSavedCacheBindings;
 }
 const savedReadbackCaches = new WeakMap<object, SavedReadbackCacheHeld>();
+const savedReadbackMetadataLedgerDescriptors = Object.getOwnPropertyDescriptors(CurrentPcbViaSavedCacheMetadataLedger.prototype);
 const savedReadbackCacheLedgerDescriptors = Object.getOwnPropertyDescriptors(CurrentPcbViaSavedCacheLedger.prototype);
 
 function requireSavedReadbackPreparation(allocation: PcbViaSavedReadbackAllocation): void {
@@ -1355,6 +1360,7 @@ class CurrentPcbRetainedOwnerCore {
   readonly #savedReadbackPrepared: CurrentPcbViaWriteClosedCheckpoint | null;
   #savedReadbackStarted = false; #savedReadbackAborted = false;
   #savedReadbackCacheAttempted = false; #savedReadbackPreflightPending = false; #savedReadbackParentPending = false; #savedReadbackParentArmed = false;
+  #savedReadbackMetadataPlan: CurrentPcbViaSavedCacheMetadataPlan | null = null;
   #savedReadbackCache: SavedReadbackCacheHeld | null = null; #savedReadbackCachePlan: CurrentPcbViaSavedCachePlan | null = null;
 
   #generatedFixtureQualification: QualifiedGeneratedFixtureTarget | QualifiedGeneratedComponentFixtureTarget | null = null;
@@ -3750,7 +3756,7 @@ class CurrentPcbRetainedOwnerCore {
     let sessionId: string | null = null;
     await this.#transfer(async () => {
       sessionId = await this.#pipe.attachTarget(targetId, event => {
-        if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#viaWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE && this.#schematicWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#savedReadbackCache?.ledger.observeOriginalEvent(event.method) === true) { return; } context.observeEvent(event); });
+        if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#viaWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE && this.#schematicWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#savedReadbackCache?.ledger.observeOriginalEvent(event.method) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#savedReadbackCache?.metadata.observeOriginalEvent(event) === true) { return; } context.observeEvent(event); });
       return { sessionId };
     });
     if (sessionId === null) { throw error("ATTACH_REPLY"); }
@@ -5629,7 +5635,7 @@ class CurrentPcbRetainedOwnerCore {
     this.#available(); assertOriginalCurrentPcbViaSavedReadbackOwner(this);
     if (Object.getPrototypeOf(held.ledger) !== CurrentPcbViaSavedCacheLedger.prototype || Reflect.ownKeys(held.ledger).length > 0 || !originalFootprintDescriptors(CurrentPcbViaSavedCacheLedger.prototype, savedReadbackCacheLedgerDescriptors) || this.#savedReadbackCache !== held || savedReadbackCaches.get(held.origin) !== held || this.#savedReadbackPrepared !== held.prepared ||
       this.#stagedContext !== held.context || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true || this.#closeConsumed || this.#savedReadbackAborted ||
-      this.#terminationObserved || this.#releaseConsumed || !this.#savedReadbackParentArmed || held.ledger.status().failed || canonicalJson(held.context.savedReadbackCacheContext()) !== canonicalJson(held.selected)) { throw error("SAVED_READBACK_CACHE_ORIGINAL_CONTEXT"); }
+      this.#terminationObserved || this.#releaseConsumed || !this.#savedReadbackParentArmed || held.ledger.status().failed || Object.getPrototypeOf(held.metadata) !== CurrentPcbViaSavedCacheMetadataLedger.prototype || Reflect.ownKeys(held.metadata).length > 0 || !originalFootprintDescriptors(CurrentPcbViaSavedCacheMetadataLedger.prototype, savedReadbackMetadataLedgerDescriptors) || held.metadata.status().failed || canonicalJson(held.context.savedReadbackCacheContext()) !== canonicalJson(held.selected)) { throw error("SAVED_READBACK_CACHE_ORIGINAL_CONTEXT"); }
   }
   #createSavedReadbackCacheBindings(ledger: CurrentPcbViaSavedCacheLedger, origin: CurrentPcbViaSavedCacheOrigin, pipe: CurrentPcbViaSavedReadbackPipe, prepared: CurrentPcbViaWriteClosedCheckpoint): CurrentPcbViaSavedCacheBindings {
     return Object.freeze({ prepared,
@@ -5642,6 +5648,21 @@ class CurrentPcbRetainedOwnerCore {
           } catch (caughtError) { if (plan !== null) { ledger.failOriginalDispatch(plan); } this.#input.emit("error", error("SAVED_READBACK_CACHE_FAILED")); throw caughtError; }
           finally { this.#savedReadbackCachePlan = null; this.#busy = false; }
         },
+        metadataRequest: async (command: CurrentPcbViaSavedCacheMetadataCommand): Promise<CurrentPcbViaSavedCacheMetadataPacket> => {
+          const held = savedReadbackCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); }
+          this.#savedReadbackCacheCurrent(held); this.#enter(true); let plan: CurrentPcbViaSavedCacheMetadataPlan | null = null;
+          try {
+            const reserved = held.metadata.prepare(command); plan = reserved;
+            if (reserved.command.phase === "saved-cache-native-observe") { ledger.requireMetadataRound(reserved.command.round); }
+            this.#savedReadbackMetadataPlan = reserved;
+            const raw = await this.#transfer(() => pipe.observeSavedReadbackMetadata(reserved)); this.#savedReadbackCacheCurrent(held);
+            return held.metadata.accept(reserved, raw);
+          } catch (caughtError) { if (plan !== null) { held.metadata.failOriginalDispatch(plan); } this.#input.emit("error", error("SAVED_READBACK_METADATA_FAILED")); throw caughtError; }
+          finally { this.#savedReadbackMetadataPlan = null; this.#busy = false; }
+        },
+        metadataSnapshot: (): CurrentPcbViaSavedCacheMetadataSnapshot => { const held = savedReadbackCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); } this.#savedReadbackCacheCurrent(held); return held.metadata.snapshot(); },
+        requireMetadataSnapshot: (snapshot: CurrentPcbViaSavedCacheMetadataSnapshot): void => { const held = savedReadbackCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); } this.#savedReadbackCacheCurrent(held); held.metadata.requireOriginalSnapshot(snapshot); },
+        requireMetadataPacket: (packet: CurrentPcbViaSavedCacheMetadataPacket): void => { const held = savedReadbackCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); } this.#savedReadbackCacheCurrent(held); held.metadata.requireOriginalPacket(packet); },
         assertCurrent: async (): Promise<void> => { const held = savedReadbackCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); }
           this.#savedReadbackCacheCurrent(held); await this.#verify(); this.#savedReadbackCacheCurrent(held); },
         snapshot: (): ReturnType<CurrentPcbViaSavedCacheLedger["snapshot"]> => { const held = savedReadbackCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); } this.#savedReadbackCacheCurrent(held); return ledger.snapshot(); },
@@ -5685,7 +5706,10 @@ class CurrentPcbRetainedOwnerCore {
       const ledger = new CurrentPcbViaSavedCacheLedger(Object.freeze({ frameId: selected.frameId, sessionId: selected.sessionId, securityOrigin: selected.securityOrigin, projectUuid: allocation.prepared.target.projectUuid }));
       const origin: CurrentPcbViaSavedCacheOrigin = Object.freeze({ profile: "private.current-pcb-via-saved-cache-origin.v1" });
       const bindings = this.#createSavedReadbackCacheBindings(ledger, origin, pipe, allocation.prepared);
-      const held: SavedReadbackCacheHeld = Object.freeze({ origin, prepared: allocation.prepared, owner: this, ledger, context, selected, bindings });
+      const executionContextId = context.script().context["id"];
+      if (typeof executionContextId !== "number" || !Number.isSafeInteger(executionContextId) || executionContextId <= 0) { throw error("SAVED_READBACK_METADATA_CONTEXT"); }
+      const metadata = new CurrentPcbViaSavedCacheMetadataLedger(Object.freeze({ sessionId: selected.sessionId, uniqueContextId: selected.uniqueContextId, executionContextId, projectUuid: allocation.prepared.target.projectUuid }));
+      const held: SavedReadbackCacheHeld = Object.freeze({ origin, prepared: allocation.prepared, owner: this, ledger, metadata, context, selected, bindings });
       this.#savedReadbackCache = held; savedReadbackCaches.set(origin, held); current(); return origin;
     } catch (caughtError) { this.#input.emit("error", error("SAVED_READBACK_CACHE_PREFLIGHT_FAILED")); throw caughtError; }
     finally { this.#savedReadbackPreflightPending = false; this.#savedReadbackParentPending = false; this.#busy = false; }
@@ -6417,6 +6441,7 @@ class CurrentPcbRetainedOwnerCore {
       else if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { nativeRequest = currentSchematicDisplayWriteNativeRequest; }
       let encoded: Readonly<Record<string, unknown>>;
       if (this.#savedReadbackParentPending && this.#stagedAttachment !== null) { encoded = currentPcbViaSavedReadbackParentNativeFrame(chunk, this.#stagedAttachment.sessionId); }
+      else if (this.#savedReadbackMetadataPlan !== null && this.#savedReadbackCache !== null) { this.#savedReadbackCacheCurrent(this.#savedReadbackCache); encoded = currentPcbViaSavedCacheMetadataNativeFrame(chunk, this.#savedReadbackMetadataPlan, this.#savedReadbackCache.selected.sessionId); }
       else if (this.#savedReadbackCachePlan !== null && this.#savedReadbackCache !== null) { encoded = currentPcbViaSavedCacheNativeFrame(chunk, this.#savedReadbackCachePlan, this.#savedReadbackCache.selected.sessionId); }
       else { encoded = this.#stringPurpose ? stringPrecreateNativeRequest(chunk) : nativeRequest(chunk); }
       if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) {
