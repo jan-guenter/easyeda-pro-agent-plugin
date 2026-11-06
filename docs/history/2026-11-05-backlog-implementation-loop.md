@@ -150,3 +150,17 @@ The nine groups remain distinct:
 No PR or release was published by these development cases. The last official
 installation remains the completed PR170 payload. No user project was selected
 for these disposable preparations.
+
+## 2026-11-06 combined reader, fixture and writer checkpoint
+
+The original manager completed two more frozen-payload generations and shut down normally after original native cleanup, facade lease release and observed EOF/exit0. No native owner remains. The official installed release is unchanged; no PR, publication or installation occurred in this continuation.
+
+1. Generated PCB and schematic import plus complete initial closed-data qualification now have actual connected evidence. The generated SCH project/page opened with separate readiness proof. Its consumed Text/Wire/Bus batch refused an exact child-membership guard; a distinct explicit-Relevance fixture is in development. The existing fixture and refusal remain intact.
+2. The per-original-runtime engine fix is live exercised by that successful SCH opening. Full accepted Text/Wire/Bus/electrical observations, connectivity and saved writer results remain pending.
+3. Both writer worker cursors now retain the actual shared Save/structure source. Via main body/context/actor/Date ownership and the original native BEGIN callback/await are implemented. Full history/cipher/head/lock/frontier SQL completion, delayed publication, one durable Save and closed/reopened acceptance remain work.
+4. Original SCH effect issuance, same-worker/UI clock observation and captured Save-body joins are implemented in source. Accessor/action callback completion and persistence are still being implemented. Connectivity-qualified wiring follows those prerequisites.
+5. Arc source/class corrections reached a later metadata decode refusal in the second consumed live case. Private bounded failure evidence now replaces guesswork for the next frozen case. A separate circular SMT Pad-only point route and matching generated import/closed qualification/staging are implemented in source, with connected Pad acceptance pending. Component cache lineage, transforms and its static scratch effect remain concrete unsupported prerequisites.
+6. The separate footprint/library four-generation writer, saved/reopened result, inverse and recovery remain incomplete. Existing source codecs or qualification owners do not enable those writes.
+7. No positive anonymous system-owned CBB witness has been obtained. No absence response or shipped empty library is promoted to positive validation.
+8. The Pad point-only route, exact selector rosters, current discovery schemas and operating reference are reflected in the exhaustive 835-method inventory. Counts and offline checks grant no runtime authority. Final cross-family coverage/omission and skill reconciliation remain required after the remaining source settles.
+9. Combined helper/pins/bundles, required final local checks, exact final CI, CodeRabbit full review including all reported legacy issues, protected merge, publication and official installation remain pending. The source checkout's MCP catalog validator currently catches its stale bundle, which must be regenerated rather than changing the expected catalog.

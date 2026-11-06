@@ -18,6 +18,7 @@ import { currentPcb209SpatialResultSchema } from "../src/current-pcb-209-spatial
 import type { CurrentPcb209SpatialQuery } from "../src/current-pcb-209-spatial-read.ts";
 import { currentPcbSpatialObservation, currentPcbSpatialRequestSchema, queryCurrentPcbSpatial,
   validateCurrentPcbSpatialArguments } from "../src/current-pcb-spatial-validation.ts";
+import { CurrentPcbSpatialCaptureRunner } from "../src/current-pcb-spatial-capture-runner.ts";
 
 const PATH = String.raw`C:\Fixtures\Spatial.eprj2`;
 const TARGET = { rawWindowsPath: PATH, projectUuid: sha256Text(PATH), documentUuid: "b".repeat(16), expectedSourceSha256: "a".repeat(64) };
@@ -65,11 +66,11 @@ interface SpatialFixture {
   readonly options: CurrentPcbDiagnosticLifecycleOptions;
   readonly owner: CurrentPcbDiagnosticLifecycleOwner;
   readonly request: (action: string, extra?: Record<string, unknown>) => Promise<Record<string, unknown>>;
-  readonly state: { bound: boolean; terminated: boolean; released: boolean; nativeLoss: boolean; publicationLoss: boolean; wrongTarget: boolean };
+  readonly state: { bound: boolean; terminated: boolean; released: boolean; nativeLoss: boolean; publicationLoss: boolean; wrongTarget: boolean; decodeFailure: unknown };
 }
 function fixture(context: TestContext, id: string): SpatialFixture {
   const calls: string[] = [];
-  const state = { bound: false, terminated: false, released: false, nativeLoss: false, publicationLoss: false, wrongTarget: false };
+  const state = { bound: false, terminated: false, released: false, nativeLoss: false, publicationLoss: false, wrongTarget: false, decodeFailure: null as unknown };
   const binding = { helperInstance: "b".repeat(32), jobId: "c".repeat(32), rootPid: 123, rootCreated: "123456789012345" };
   const owner: CurrentPcbDiagnosticLifecycleOwner = {
     status: () => ({ profile: "pcb-spatial209", stringPrecreateConsumed: false, helperPid: 456, binding: state.bound ? binding : null,
@@ -105,6 +106,7 @@ function fixture(context: TestContext, id: string): SpatialFixture {
       const intent = diagnosticLifecycleRecordSchemas["spatial209-intent.json"].parse(parsed);
       assert.deepEqual(intent.queries, input); assert.equal(intent.acceptNativeScratchEffects, true); calls.push("spatial");
       if (state.nativeLoss) { throw new Error("synthetic lost native spatial reply"); }
+      if (state.decodeFailure instanceof Error) { throw state.decodeFailure; }
       return intent.queries.map(query => currentPcb209SpatialResultSchema.parse({ schema: "easyeda-pro-control.pcb209-spatial-via-read.v1",
         documentUuid: state.wrongTarget ? "f".repeat(16) : TARGET.documentUuid, query, identities: [], sceneViaCount: 0,
         selectedPrimitiveIds: [], samples: 2, nativeOrderingPreserved: true, retainedSceneDescriptorsUnchanged: true, selectionUnchanged: true,
@@ -187,6 +189,26 @@ async function ready(value: ReturnType<typeof fixture>, id: string): Promise<voi
   await value.request("open-project", { target: TARGET, confirmDisposableProject: true, acceptNormalOpenEffects: true });
   await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
 }
+void test("the real journal retains failed inspector data privately and offers no observation replay", async context => {
+  const id = "pcb209-spatial-test-private-failure", value = fixture(context, id);
+  const runner = new CurrentPcbSpatialCaptureRunner({ assertCurrent(): void {
+    // Stable synthetic inspector.
+  },
+    request: (command): Promise<unknown> => Promise.resolve(command.spatialPhase === "release" ? {} : { exceptionDetails: { text: "private-inspector-marker" } }),
+  }, "original-script", "original-context", TARGET.documentUuid);
+  try { await runner.observe(); } catch (error) { value.state.decodeFailure = error; }
+  assert.ok(value.state.decodeFailure instanceof AggregateError);
+  await ready(value, id);
+  await assert.rejects(value.request("observe-spatial", { queries: QUERIES, acceptNativeScratchEffects: true }), /PCB_SPATIAL_CAPTURE/u);
+  const path = join(directory(id), "spatial209-failure.json"), source = await readFile(path, "utf8");
+  const record = diagnosticLifecycleRecordSchemas["spatial209-failure.json"].parse(JSON.parse(source) as unknown);
+  assert.equal(record.observationAccepted, false); assert.equal(record.replayAllowed, false);
+  assert.match(record.diagnostic.replyJson ?? "", /private-inspector-marker/u);
+  const observed = await value.lifecycle.run({ action: "inspect", operationId: id }); assert.equal(JSON.stringify(observed).includes("private-inspector-marker"), false);
+  assert.equal(JSON.stringify(observed).includes("spatial209-failure.json"), true);
+  await assert.rejects(value.request("observe-spatial", { queries: QUERIES, acceptNativeScratchEffects: true }), /OBSERVATION_CONSUMED/u);
+  assert.equal(value.calls.filter(call => call === "spatial").length, 1);
+});
 void test("mixed native batch retains a distinct immutable result and consumes the shared Via slot", async context => {
   const id = "pcb209-spatial-test-mixed", value = fixture(context, id);
   await ready(value, id);

@@ -31,6 +31,7 @@ import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintCopyNativeOwn
 import { verifyCurrentPcb209DiagnosticInstallation, verifyCurrentPcb209RatlineInstallation, verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation, CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
 import { CURRENT_PCB_DIAGNOSTIC_SCRIPTS } from "./current-pcb-diagnostic-profile.ts";
+import { currentPcbSpatialDecodeFailure } from "./current-pcb-spatial-capture-runner.ts";
 import { CURRENT_PCB_209_OPENING_PROFILE, CURRENT_PCB_209_OPENING_SCRIPTS } from "./current-pcb-209-opening-profile.ts";
 import { CURRENT_PCB_ORDINARY_READ_PREFIX, currentPcbOrdinaryReadRequestSchema } from "./current-pcb-ordinary-read-validation.ts";
 import type { CurrentPcbOrdinaryReadRequest } from "./current-pcb-ordinary-read-validation.ts";
@@ -353,6 +354,12 @@ function describe(operationId: string, operation: DiagnosticLifecycleOperation |
     workerStartupChannelAttemptConsumed: records?.["worker-startup-channel-intent.json"] !== undefined,
     workerStartupChannelResultPublished: records?.["worker-startup-channel-result.json"] !== undefined,
     ...(binding === undefined ? {} : { binding: binding.binding, bindingSha256: sha256Json(binding), launchAcknowledged: binding.launchAcknowledged }),
+    ...(records?.["spatial209-failure.json"] === undefined ? {} : { spatialDecodeFailure: {
+      step: records["spatial209-failure.json"].diagnostic.step,
+      replyCaptureRefused: records["spatial209-failure.json"].diagnostic.replyCaptureRefused,
+      path: join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", operationId, "spatial209-failure.json"),
+      contentSha256: sha256Json(records["spatial209-failure.json"]), privateReplyWithheld: true,
+    } }),
     ...claims, ...(records?.["intent.json"]?.schema === "easyeda-pro-control.pcb209-ordinary-read-launch-intent.v1"
       ? { validationOnly: false, ordinaryProjectReadOnly: true, saveAuthorized: false } : {}) };
 }
@@ -3301,7 +3308,22 @@ class CurrentPcbLifecycleCore {
     const updated = { ...operation, records: { ...operation.records, "spatial209-intent.json": intent } };
     const expected = operations.map(value => value.operationId === operation.operationId ? updated : value);
     await assertSnapshot(expected); this.#assertNormalOwner(retained); this.#originalPcbSource(updated);
-    const raw = await Reflect.apply(observe, retained.owner, [preparation.sealedTarget, request.queries]) as unknown;
+    let raw: unknown;
+    try { raw = await Reflect.apply(observe, retained.owner, [preparation.sealedTarget, request.queries]) as unknown; }
+    catch (error) {
+      const diagnostic = currentPcbSpatialDecodeFailure(error);
+      if (diagnostic !== undefined) {
+        const record = diagnosticLifecycleRecordSchemas["spatial209-failure.json"].parse({
+          schema: "easyeda-pro-control.pcb209-spatial-decode-failure.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+          stage: "spatial209", intentSha256: sha256Json(intent), diagnostic, replyEncoding: "bounded-normalized-inspector-json",
+          observationAccepted: false, replayAllowed: false, executionAuthorized: false, saveAuthorized: false,
+        });
+        this.#retainRecord("spatial209-failure.json", record);
+        try { await assertSnapshot(expected); this.#assertNormalOwner(retained); await this.#publish(request.operationId, "spatial209-failure.json", record); }
+        catch (publicationError) { throw new AggregateError([error, publicationError], "PCB_SPATIAL_FAILURE_PUBLICATION", { cause: publicationError }); }
+      }
+      throw error;
+    }
     const result = { "observe-spatial-pads": currentPcbSpatialPadObservation, "observe-spatial-arcs": currentPcbSpatialArcObservation, "observe-spatial-lines": currentPcbSpatialTrackObservation, "observe-spatial": currentPcbSpatialObservation }[request.action](raw); this.#observations.set("spatial209", result);
     this.#assertNormalOwner(retained);
     if (pads) { requireCurrentPcbSpatialPadObservation(result, preparation.sealedTarget, request.queries); }

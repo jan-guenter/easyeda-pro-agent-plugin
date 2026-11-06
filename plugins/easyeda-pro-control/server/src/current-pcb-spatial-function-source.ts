@@ -35,6 +35,7 @@ export const CURRENT_PCB_SPATIAL_FUNCTION_SOURCE_COUNT = CURRENT_PCB_209_SPATIAL
 const MAX_FUNCTIONS = 512;
 const MAX_DESCRIPTION_BYTES = 262_144;
 const MAX_REPLY_BYTES = 4 * 1024 * 1024;
+export const CURRENT_PCB_SPATIAL_FAILURE_REPLY_BYTES = MAX_REPLY_BYTES;
 const handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const text = z.string().max(MAX_DESCRIPTION_BYTES).refine(value => value.isWellFormed() && !value.includes("\0"));
 const extent = z.number().int().nonnegative().refine(value => !Object.is(value, -0));
@@ -60,6 +61,13 @@ function refuse(): never { throw new Error("PCB_SPATIAL_FUNCTION_SOURCE"); }
  * independently bounds and rejects duplicate keys in the raw protocol JSON.
  */
 function data(input: unknown): unknown { return copy(input, 0, { nodes: 0, bytes: 0 }); }
+/** Diagnostic data only. Preserve unknown JSON fields without invoking getters
+ * or accepting this failed packet as source, owner or execution evidence. */
+export function captureCurrentPcbSpatialFailureReply(input: unknown): string {
+  const encoded = JSON.stringify(data(input));
+  if (Buffer.byteLength(encoded) > MAX_REPLY_BYTES) { return refuse(); }
+  return encoded;
+}
 /** Rebuild dense arrays and plain own data within one shared depth/node/byte
  * Budget. Accessors, proxies and malformed strings refuse before schema reads. */
 function copy(input: unknown, depth: number, budget: { nodes: number; bytes: number }): unknown {

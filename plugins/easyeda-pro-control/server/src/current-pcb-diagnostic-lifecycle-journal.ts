@@ -17,6 +17,7 @@ import { CURRENT_PCB_SPATIAL_OPERATION_PREFIX, CURRENT_PCB_SPATIAL_RESULT_MAX_BY
 import { currentPcb209SpatialTrackQueriesSchema } from "./current-pcb-209-spatial-track-read.ts";
 import { currentPcb209SpatialArcQueriesSchema } from "./current-pcb-209-spatial-arc-read.ts";
 import { currentPcb209SpatialPadQueriesSchema } from "./current-pcb-209-spatial-pad-read.ts";
+import { CURRENT_PCB_SPATIAL_FAILURE_REPLY_BYTES, currentPcbSpatialDecodeFailureSchema } from "./current-pcb-spatial-failure.ts";
 import { CURRENT_PCB_209_VISUAL_OPERATION_BYTES, CURRENT_PCB_209_VISUAL_RESULT_BYTES, currentPcb209VisualOperationSchema,
   requireCurrentPcb209VisualResult } from "./current-pcb-209-visual-actions.ts";
 import { constants } from "node:fs";
@@ -850,6 +851,12 @@ export const diagnosticLifecycleRecordSchemas = {
   "poured-shapes209-intent.json": observationIntentSchema, "poured-shapes209-result.json": observationResultSchema,
   "spatial209-intent.json": z.union([spatialObservationIntentSchema, spatialTrackObservationIntentSchema, spatialArcObservationIntentSchema, spatialPadObservationIntentSchema]),
   "spatial209-result.json": z.union([spatialObservationResultSchema, spatialTrackObservationResultSchema, spatialArcObservationResultSchema, spatialPadObservationResultSchema]),
+  "spatial209-failure.json": z.strictObject({
+    schema: z.literal("easyeda-pro-control.pcb209-spatial-decode-failure.v1"), ...base,
+    operationId: currentPcbSpatialIdSchema, stage: z.literal("spatial209"), intentSha256: diagnosticLifecycleDigestSchema,
+    diagnostic: currentPcbSpatialDecodeFailureSchema, replyEncoding: z.literal("bounded-normalized-inspector-json"),
+    observationAccepted: z.literal(false), replayAllowed: z.literal(false), executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
+  }),
   "string-precreate-intent.json": stringPrecreateIntentSchema, "string-precreate-result.json": stringPrecreateResultSchema,
   "common-baseline-intent.json": commonBaselineIntentSchema, "common-baseline-result.json": commonBaselineResultSchema,
   "common-baseline-failure.json": commonBaselineFailureSchema,
@@ -939,6 +946,8 @@ function recordBound(name: RecordName): number {
   if (name === "saved-cache-accessor-result.json") { return MAX_BYTES + CURRENT_FOOTPRINT_SAVED_CACHE_ACCESSOR_PROBE_LIMITS.resultBytes; }
   if (name === "spatial209-result.json") { return MAX_BYTES + CURRENT_PCB_SPATIAL_RESULT_MAX_BYTES; }
   if (name === "spatial209-intent.json") { return MAX_BYTES + 16_384; }
+  // A JSON string can double its UTF-8 bytes when embedded in the outer record.
+  if (name === "spatial209-failure.json") { return MAX_BYTES + 2 * CURRENT_PCB_SPATIAL_FAILURE_REPLY_BYTES; }
   if (name === "visual-viewport209-intent.json") { return MAX_BYTES + CURRENT_PCB_209_VISUAL_OPERATION_BYTES; }
   if (name === "visual-viewport209-result.json") { return MAX_BYTES + CURRENT_PCB_209_VISUAL_RESULT_BYTES; }
   if (name === "selection-relations209-intent.json") { return MAX_BYTES + 16 * 256 * 6; }
@@ -1152,7 +1161,7 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
       "generated-closed-capture-intent.json", "generated-closed-capture-result.json",
       "no-process-released.json", "browser-intent.json", "browser-result.json", "frames-intent.json", "frames-result.json", "script-intent.json",
       "script-result.json", "project-opening-intent.json", "project-opening-result.json", "pcb-open-intent.json", "pcb-open-result.json",
-      "pcb-opening-intent.json", "pcb-opening-result.json", "spatial209-intent.json", "spatial209-result.json"]);
+      "pcb-opening-intent.json", "pcb-opening-result.json", "spatial209-intent.json", "spatial209-result.json", "spatial209-failure.json"]);
     for (const name of Object.keys(records)) { requireValue(allowed.has(name), "SPATIAL_STAGE_PURPOSE"); }
   }
   const visualPurpose = intent?.schema === "easyeda-pro-control.pcb209-visual-launch-intent.v1";
@@ -1520,9 +1529,12 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     requireCurrentWindowCaptureResult(windowImage.result, opening.target, operation.operationId, windowCapture.bindingSha256, windowCapture.captureHwnd);
   }
   const spatial = records["spatial209-intent.json"], spatialResult = records["spatial209-result.json"];
+  const spatialFailure = records["spatial209-failure.json"];
   requireValue(spatial === undefined || spatialPurpose && opening !== undefined && pcbObserved !== undefined &&
     spatial.pcbOpeningResultSha256 === predecessorDigest(pcbObserved) && diagnosticPcbOpeningSourceAccepted(pcbObserved.result, opening.target),
   "SPATIAL209_CHAIN");
+  requireValue(spatialFailure === undefined || spatial !== undefined && spatialResult === undefined &&
+    spatialFailure.intentSha256 === predecessorDigest(spatial), "SPATIAL209_FAILURE_CHAIN");
   if (spatialResult !== undefined) {
     requireValue(spatial !== undefined && opening !== undefined, "SPATIAL209_TARGET_CHAIN");
     const mixed = spatial.schema === "easyeda-pro-control.pcb209-spatial-line-via-observation-intent.v1";

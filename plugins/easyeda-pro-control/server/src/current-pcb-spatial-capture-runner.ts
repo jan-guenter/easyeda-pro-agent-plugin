@@ -22,7 +22,7 @@ import { CURRENT_PCB_209_SPATIAL_PAD_READ_FUNCTION } from "./current-pcb-209-spa
 import { currentPcb209SpatialPadQueriesSchema, decodeCurrentPcb209SpatialPadReply } from "./current-pcb-209-spatial-pad-read.ts";
 import type { CurrentPcb209SpatialPadResult } from "./current-pcb-209-spatial-pad-read.ts";
 import type { CurrentPcbSpatialVariant } from "./current-pcb-spatial-function-source.ts";
-import { decodeCurrentPcbSpatialFunctionSourceArray, decodeCurrentPcbSpatialFunctionSourceMetadata,
+import { captureCurrentPcbSpatialFailureReply, decodeCurrentPcbSpatialFunctionSourceArray, decodeCurrentPcbSpatialFunctionSourceMetadata,
   decodeCurrentPcbSpatialFunctionSourceTuple } from "./current-pcb-spatial-function-source.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
@@ -30,6 +30,17 @@ export const CURRENT_PCB_SPATIAL_OBJECT_GROUP = "easyeda-pro-control-pcb209-spat
 const EFFECTS = Object.freeze({ throwOnSideEffect: true, silent: true, awaitPromise: false,
   generatePreview: false, userGesture: false } as const);
 const failureSteps = new WeakMap<object, string>();
+export interface CurrentPcbSpatialDecodeFailure {
+  readonly step: string;
+  readonly replyJson: string | null;
+  readonly replyCaptureRefused: boolean;
+}
+const decodeFailures = new WeakMap<object, Readonly<CurrentPcbSpatialDecodeFailure>>();
+/** Private diagnostics only. A copied error or historical JSON cannot recover
+ * this retained packet, and no returned data grants a native continuation. */
+export function currentPcbSpatialDecodeFailure(input: unknown): Readonly<CurrentPcbSpatialDecodeFailure> | undefined {
+  return input !== null && typeof input === "object" && !types.isProxy(input) ? decodeFailures.get(input) : undefined;
+}
 export type CurrentPcbSpatialCaptureCommand =
   | Readonly<{ spatialPhase: "wrapper"; method: "Runtime.evaluate"; params: typeof EFFECTS & Readonly<{
     expression: typeof CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION; uniqueContextId: string;
@@ -135,28 +146,37 @@ export class CurrentPcbSpatialCaptureRunner {
   }
   /** Dispatch through the original receiver, decode before hooks can change
    * Reply aliases, then reprove the same retained context after the await. */
-  async #request<T>(command: CurrentPcbSpatialCaptureCommand, decode: (input: unknown) => T): Promise<T> {
+  async #request<T>(command: CurrentPcbSpatialCaptureCommand, decode: (input: unknown) => T, detail?: string): Promise<T> {
     let step: "owner-before" | "request" | "decode" | "owner-after" = "owner-before";
+    let arrived: unknown;
     try {
       this.#current(); step = "request";
-      const arrived = await this.#requestCallback.call(this.#transport, freezeDeep(command));
+      arrived = await this.#requestCallback.call(this.#transport, freezeDeep(command));
       // Decode before an owner hook can alter aliases to the reply envelope.
       step = "decode"; const result = decode(arrived);
       step = "owner-after"; this.#current(); return result;
     } catch (error) {
       // Fixed local labels only. The original cause stays private; renderer
       // Exception text and opaque handles never enter the public diagnostic.
-      const label = `${command.spatialPhase}:${step}`;
+      const label = `${command.spatialPhase}:${step}${detail === undefined ? "" : `:${detail}`}`;
       const failure = new Error(`PCB_SPATIAL_CAPTURE:${label}`, { cause: error });
+      if (step === "decode") {
+        let replyJson: string | null = null;
+        try { replyJson = captureCurrentPcbSpatialFailureReply(arrived); }
+        catch {
+          // Preserve the original refusal when unsafe/oversized data cannot be retained.
+        }
+        decodeFailures.set(failure, Object.freeze({ step: label, replyJson, replyCaptureRefused: replyJson === null }));
+      }
       failureSteps.set(failure, label); throw failure;
     }
   }
   /** Read only own descriptors of an original group handle through the same
    * Guarded request path; no getter or new target is selected. */
-  #properties<T>(objectId: string, decode: (input: unknown) => T): Promise<T> {
+  #properties<T>(objectId: string, decode: (input: unknown) => T, detail: string): Promise<T> {
     return this.#request({ spatialPhase: "properties", method: "Runtime.getProperties", params: {
       objectId: token(objectId), ownProperties: true, accessorPropertiesOnly: false, generatePreview: false,
-    } }, decode);
+    } }, decode, detail);
   }
   /** Consume capture once and retain all handles inside its original group.
    * After any started attempt, release uses the original callback even on drift;
@@ -175,14 +195,14 @@ export class CurrentPcbSpatialCaptureRunner {
         objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP, returnByValue: false, timeout: 1000,
         includeCommandLineAPI: false, allowUnsafeEvalBlockedByCSP: false,
       } }, input => decodeCurrentPcbSpatialFunction(input, "rpc-wrapper"));
-      const wrapperScopes = await this.#properties(wrapper, input => decodeCurrentPcbSpatialFunctionScopeList(input, this.#scriptId, "rpc-wrapper"));
-      const wrapperScope = await this.#properties(wrapperScopes, input => decodeCurrentPcbSpatialFunctionScope(input, "rpc-wrapper"));
+      const wrapperScopes = await this.#properties(wrapper, input => decodeCurrentPcbSpatialFunctionScopeList(input, this.#scriptId, "rpc-wrapper"), "wrapper-scopes");
+      const wrapperScope = await this.#properties(wrapperScopes, input => decodeCurrentPcbSpatialFunctionScope(input, "rpc-wrapper"), "wrapper-closure");
       const handler = await this.#request({ spatialPhase: "handler", method: "Runtime.callFunctionOn", params: {
         ...EFFECTS, objectId: wrapperScope, functionDeclaration: CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION,
         objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP, returnByValue: false,
       } }, input => decodeCurrentPcbSpatialFunction(input, "point-handler"));
-      const handlerScopes = await this.#properties(handler, input => decodeCurrentPcbSpatialFunctionScopeList(input, this.#scriptId, "point-handler"));
-      const handlerScope = await this.#properties(handlerScopes, input => decodeCurrentPcbSpatialFunctionScope(input, "point-handler"));
+      const handlerScopes = await this.#properties(handler, input => decodeCurrentPcbSpatialFunctionScopeList(input, this.#scriptId, "point-handler"), "handler-scopes");
+      const handlerScope = await this.#properties(handlerScopes, input => decodeCurrentPcbSpatialFunctionScope(input, "point-handler"), "handler-closure");
       const bundle = await this.#request({ spatialPhase: ({ via: "bindings", "line-via": "bindings-track", "arc-line-via": "bindings-arc", "pad-point": "bindings-pad" } as const)[variant], method: "Runtime.callFunctionOn", params: {
         // The fixed bindings program only allocates and seals private containers.
         // V8 refuses its defineProperty/freeze calls under the side-effect flag.
@@ -195,9 +215,9 @@ export class CurrentPcbSpatialCaptureRunner {
           ...EFFECTS, objectId: bundle, functionDeclaration: CURRENT_PCB_209_SPATIAL_FUNCTIONS_FUNCTION,
           objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP, returnByValue: false,
         } }, input => decodeCurrentPcbSpatialFunctionSourceArray(input, variant));
-        const references = await this.#properties(functions, input => decodeCurrentPcbSpatialFunctionSourceTuple(input, variant));
+        const references = await this.#properties(functions, input => decodeCurrentPcbSpatialFunctionSourceTuple(input, variant), "callee-tuple");
         for (const reference of references) {
-          await this.#properties(reference.objectId, reply => decodeCurrentPcbSpatialFunctionSourceMetadata(reply, this.#scriptId, reference.key, variant));
+          await this.#properties(reference.objectId, reply => decodeCurrentPcbSpatialFunctionSourceMetadata(reply, this.#scriptId, reference.key, variant), `callee-${reference.key}`);
         }
       }
       result = await consume(bundle);
@@ -214,7 +234,12 @@ export class CurrentPcbSpatialCaptureRunner {
     if (failures.length === 0) {
       try { this.#current(); } catch (caughtError) { failures.push(caughtError); failedSteps.push("complete:owner"); }
     }
-    if (failures.length > 0) { throw new AggregateError(failures, `PCB_SPATIAL_CAPTURE:${failedSteps.join(",")}`); }
+    if (failures.length > 0) {
+      const failure = new AggregateError(failures, `PCB_SPATIAL_CAPTURE:${failedSteps.join(",")}`);
+      const diagnostic = failures.map(value => currentPcbSpatialDecodeFailure(value)).find(value => value !== undefined);
+      if (diagnostic !== undefined) { decodeFailures.set(failure, diagnostic); }
+      throw failure;
+    }
     if (result === undefined) { return refuse(); }
     return result;
   }
