@@ -108,6 +108,36 @@ export interface CurrentPcbViaWriteDispatch { readonly profile: "private.current
 interface Dispatch { readonly journal: CurrentPcbViaWriteJournal; readonly owner: object; readonly plan: CurrentPcbViaWritePlan;
   readonly stage: "create" | "save"; readonly sequence: number; consumed: boolean; enrolled: boolean }
 const dispatches = new WeakMap<CurrentPcbViaWriteDispatch, Dispatch>();
+export interface CurrentPcbViaPollingCancellationIntent { readonly profile: "private.current-pcb-via-polling-cancellation-intent.v1" }
+interface PollingIntent { readonly journal: CurrentPcbViaWriteJournal; readonly owner: object; readonly plan: CurrentPcbViaWritePlan;
+  readonly sequence: number; consumed: boolean; enrolled: boolean }
+const pollingIntents = new WeakMap<CurrentPcbViaPollingCancellationIntent, PollingIntent>();
+export interface CurrentPcbViaPollingCancellationEnrollment {
+  readonly assertCurrent: () => void; readonly assertBeforeAttempt: () => void;
+  readonly assertOriginalAttempted: () => void; readonly assertPublished: () => Promise<void>;
+}
+/** Arming retains the original opening intent without spending the distinct
+ * effectful cancellation. Its target timer is never a caller argument. */
+export function enrollCurrentPcbViaPollingCancellationIntent(token: CurrentPcbViaPollingCancellationIntent, owner: object,
+  plan: CurrentPcbViaWritePlan): CurrentPcbViaPollingCancellationEnrollment {
+  const original = pollingIntents.get(token);
+  need(original !== undefined && original.owner === owner && original.plan === plan && !original.consumed && !original.enrolled, "ORIGINAL_POLLING_ENROLLMENT");
+  const before = (): void => { need(pollingIntents.get(token) === original && !original.consumed, "POLLING_BEFORE_ATTEMPT"); requireOriginalCurrentPcbViaWritePlan(plan); original.journal.requireDispatchIntent("opening", original.sequence); };
+  before(); original.enrolled = true;
+  const current = (): void => { need(pollingIntents.get(token) === original && original.enrolled, "ORIGINAL_POLLING_ENROLLMENT"); requireOriginalCurrentPcbViaWritePlan(plan); original.journal.requireRetainedDispatchIntent("opening", original.sequence); };
+  return Object.freeze({ assertCurrent: current, assertBeforeAttempt: before,
+    assertOriginalAttempted: (): void => { current(); need(original.consumed, "POLLING_ORIGINAL_ATTEMPT_REQUIRED"); },
+    assertPublished: async (): Promise<void> => { current(); await original.journal.assertCurrent(); current(); } });
+}
+/** Only the actual effect request consumes this slot, synchronously before its
+ * first await. Missing acknowledgment can never refund or replace the marker. */
+export function consumeCurrentPcbViaPollingCancellationIntent(token: CurrentPcbViaPollingCancellationIntent, owner: object,
+  plan: CurrentPcbViaWritePlan): Readonly<{ assertPublished: () => Promise<void> }> {
+  const original = pollingIntents.get(token);
+  need(original !== undefined && original.owner === owner && original.plan === plan && original.enrolled && !original.consumed, "ORIGINAL_POLLING_DISPATCH");
+  original.journal.requireDispatchIntent("opening", original.sequence); requireOriginalCurrentPcbViaWritePlan(plan); original.consumed = true;
+  return Object.freeze({ assertPublished: (): Promise<void> => original.journal.assertCurrent() });
+}
 const journals = new WeakMap<CurrentPcbViaWriteJournal, CurrentPcbViaWritePlan>();
 /** Fixed nested workflows share only this original operation's publication
  * journal. Equal JSON, another genuine plan and a copied instance refuse. */
@@ -175,6 +205,7 @@ export class CurrentPcbViaWriteJournal {
   #idle: Promise<null> = Promise.resolve(null);
   #pending: Readonly<{ entry: Entry; descriptor: ArtifactDescriptor; next: OperationJournal }> | null = null;
   readonly #dispatchTokens = new Map<"create" | "save", CurrentPcbViaWriteDispatch>();
+  #pollingIntent: CurrentPcbViaPollingCancellationIntent | null = null;
   public constructor(plan: CurrentPcbViaWritePlan) {
     requireOriginalCurrentPcbViaWritePlan(plan); this.#plan = plan;
     const data = { profile, plan, nonce: randomBytes(32).toString("hex") };
@@ -232,6 +263,20 @@ export class CurrentPcbViaWriteJournal {
     dispatches.set(token, { journal: this, owner, plan: this.#plan, stage, sequence, consumed: false, enrolled: false }); this.#dispatchTokens.set(stage, token);
     await this.append(`${stage}-intent`, evidence); return this.retainedDispatchIntent(stage);
   }
+  /** Reserve the entire fixed opening and this temporary first-timer action.
+   * No timer ID, expression, callback, receiver or caller program is accepted. */
+  public async appendPollingCancellationIntent(owner: object): Promise<CurrentPcbViaPollingCancellationIntent> {
+    need(this.#owner === owner && !this.#busy && this.#pending === null && this.#pollingIntent === null, "POLLING_ORIGINAL_WRITER");
+    const sequence = entries(this.#operation).length, token: CurrentPcbViaPollingCancellationIntent = Object.freeze({ profile: "private.current-pcb-via-polling-cancellation-intent.v1" });
+    pollingIntents.set(token, { journal: this, owner, plan: this.#plan, sequence, consumed: false, enrolled: false }); this.#pollingIntent = token;
+    await this.append("opening-intent", { temporarySessionMutation: true, scope: "original-first-checkProject-timer-only", arbitraryTimerSelection: false,
+      firstOriginalEntryAndReturnRequired: true, originalNativeClearTimeoutRequired: true, generationExitEndsTemporaryScope: true });
+    return this.retainedPollingCancellationIntent();
+  }
+  public retainedPollingCancellationIntent(): CurrentPcbViaPollingCancellationIntent {
+    const token = this.#pollingIntent; const original = token === null ? undefined : pollingIntents.get(token);
+    need(token !== null && original !== undefined && !original.consumed, "ORIGINAL_POLLING_DISPATCH"); this.requireDispatchIntent("opening", original.sequence); return token;
+  }
   /** Publication settlement can return the same original unconsumed marker.
    * It never allocates a replacement marker or repeats a native attempt. */
   public retainedDispatchIntent(stage: "create" | "save"): CurrentPcbViaWriteDispatch {
@@ -240,13 +285,13 @@ export class CurrentPcbViaWriteJournal {
     need(token !== undefined && original !== undefined && !original.consumed, "ORIGINAL_DISPATCH");
     this.requireDispatchIntent(stage, original.sequence); return token;
   }
-  public requireDispatchIntent(stage: "create" | "save", sequence: number): void {
+  public requireDispatchIntent(stage: "create" | "save" | "opening", sequence: number): void {
     need(!this.#busy && this.#pending === null && this.#reserved, "PUBLICATION_PENDING"); const last = entries(this.#operation).at(-1);
     need(last?.kind === `${stage}-intent` && last.sequence === sequence, "CURRENT_DISPATCH_INTENT");
   }
   /** Original marker remains historical evidence after its one dispatch or
    * later journal stages. It cannot become an unconsumed marker again. */
-  public requireRetainedDispatchIntent(stage: "create" | "save", sequence: number): void {
+  public requireRetainedDispatchIntent(stage: "create" | "save" | "opening", sequence: number): void {
     need(!this.#busy && this.#pending === null && this.#reserved, "PUBLICATION_PENDING");
     const record = entries(this.#operation)[sequence]; need(record?.kind === `${stage}-intent` && record.sequence === sequence, "RETAINED_DISPATCH_INTENT");
   }

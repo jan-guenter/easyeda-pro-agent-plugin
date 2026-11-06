@@ -13,12 +13,14 @@ import { assertCurrentPcbViaWriteJournalChain } from "../src/current-pcb-via-wri
 import type { CurrentPcbViaWriteNoResourceProof } from "../src/current-pcb-via-write-owner.ts";
 import { assertOperationIdUnused, createOperation, createOperationScanner, ensureOperationStorage, loadOperation, operationPath,
   updateOperation, verifyExactManagedArtifact, writePhaseArtifact } from "../src/artifacts.ts";
-import type { CurrentPcbViaCreateIntentEnrollment, CurrentPcbViaSaveIntentEnrollment, CurrentPcbViaWriteDispatch, CurrentPcbViaWriteJournal } from "../src/current-pcb-via-write-journal.ts";
+import type { CurrentPcbViaCreateIntentEnrollment, CurrentPcbViaPollingCancellationEnrollment, CurrentPcbViaPollingCancellationIntent, CurrentPcbViaSaveIntentEnrollment, CurrentPcbViaWriteDispatch, CurrentPcbViaWriteJournal } from "../src/current-pcb-via-write-journal.ts";
 import { CURRENT_PCB_VIA_WRITE_ABORT_ACKNOWLEDGEMENTS, CURRENT_PCB_VIA_WRITE_EXECUTE_ACKNOWLEDGEMENTS,
   currentPcbViaWriteActionSchema, currentPcbViaWriteResultSchema } from "../src/current-pcb-via-write-contract.ts";
 
-async function fixture(loseCreateIntent = false, allocationRefusal = false): Promise<Readonly<{
+async function fixture(loseCreateIntent = false, allocationRefusal = false, polling = false): Promise<Readonly<{
   noResource: CurrentPcbViaWriteNoResourceProof;
+  enrollPolling: (token: CurrentPcbViaPollingCancellationIntent, owner: object) => CurrentPcbViaPollingCancellationEnrollment;
+  consumePolling: (token: CurrentPcbViaPollingCancellationIntent, owner: object) => Readonly<{ assertPublished: () => Promise<void> }>;
   enrollSave: (token: CurrentPcbViaWriteDispatch, owner: object) => CurrentPcbViaSaveIntentEnrollment;
   enroll: (token: CurrentPcbViaWriteDispatch, owner: object) => CurrentPcbViaCreateIntentEnrollment; journal: CurrentPcbViaWriteJournal; owner: object; operationId: string; publications: () => number;
   consume: (token: CurrentPcbViaWriteDispatch, stage: "create" | "save", owner: object) => Readonly<{ assertPublished: () => Promise<void> }>;
@@ -53,16 +55,28 @@ async function fixture(loseCreateIntent = false, allocationRefusal = false): Pro
     return sourceRequire(name) as unknown;
   }, loaded, loaded.exports]);
   const Constructor = loaded.exports["CurrentPcbViaWriteJournal"], consume = loaded.exports["consumeCurrentPcbViaWriteDispatch"]; const enroll = loaded.exports["enrollCurrentPcbViaWriteCreateIntent"], enrollSave = loaded.exports["enrollCurrentPcbViaWriteSaveIntent"];
+  const consumePolling = loaded.exports["consumeCurrentPcbViaPollingCancellationIntent"], enrollPolling = loaded.exports["enrollCurrentPcbViaPollingCancellationIntent"];
   assert.ok(typeof Constructor === "function" && typeof consume === "function" && typeof enroll === "function" && typeof enrollSave === "function");
+  assert.ok(typeof consumePolling === "function" && typeof enrollPolling === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The real class is VM-loaded with the one explicit original-plan seam and actual private artifact publisher.
   const journal = Reflect.construct(Constructor, [plan]) as CurrentPcbViaWriteJournal;
   await journal.reserve(); journal.bindWriter(owner);
   const stages = allocationRefusal ? ["baseline"] as const : ["baseline", "allocation", "launch", "main", "opening", "sdk", "preflight", "native-before", "scene-before"] as const;
   for (const stage of stages) {
+    if (polling && stage === "opening") { break; }
     await journal.append(`${stage}-intent`, {}); await journal.append(`${stage}-result`, {});
   }
   if (allocationRefusal) { await journal.append("allocation-intent", {}); await journal.append("failure", { stage: "allocation" }); }
-  return { journal, noResource, owner, operationId, enrollSave: (token, actor): CurrentPcbViaSaveIntentEnrollment => {
+  return { journal, noResource, owner, operationId,
+    enrollPolling: (token, actor): CurrentPcbViaPollingCancellationEnrollment => {
+      const result: unknown = Reflect.apply(enrollPolling, undefined, [token, actor, plan]); assert.ok(result !== null && typeof result === "object");
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This is the VM's real private token registry with only the explicit original-plan seam.
+      return result as CurrentPcbViaPollingCancellationEnrollment;
+    }, consumePolling: (token, actor): Readonly<{ assertPublished: () => Promise<void> }> => {
+      const result: unknown = Reflect.apply(consumePolling, undefined, [token, actor, plan]);
+      assert.ok(result !== null && typeof result === "object" && "assertPublished" in result && typeof result.assertPublished === "function");
+      const original = result.assertPublished; return { assertPublished: async (): Promise<void> => { await Reflect.apply(original, result, []); } };
+    }, enrollSave: (token, actor): CurrentPcbViaSaveIntentEnrollment => {
       const result: unknown = Reflect.apply(enrollSave, undefined, [token, actor, plan]); assert.ok(result !== null && typeof result === "object");
       for (const key of ["assertCurrent", "assertBeforeAttempt", "assertOriginalAttempted", "assertPublished"]) { assert.equal(typeof Reflect.get(result,key), "function"); }
       // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The real private Save registry is loaded with only the explicit original-plan seam.
@@ -80,6 +94,21 @@ async function fixture(loseCreateIntent = false, allocationRefusal = false): Pro
       return { assertPublished: async (): Promise<void> => { await Reflect.apply(assertPublished, result, []); } };
     } };
 }
+
+void test("the separate opening timer intent arms without spending and authorizes one original cancellation only", async () => {
+  const f = await fixture(false, false, true); const token = await f.journal.appendPollingCancellationIntent(f.owner);
+  assert.throws(() => f.consumePolling(token, f.owner), /ORIGINAL_POLLING_DISPATCH/u);
+  assert.throws(() => f.enrollPolling({ ...token }, f.owner), /ORIGINAL_POLLING_ENROLLMENT/u);
+  assert.throws(() => f.enrollPolling(token, {}), /ORIGINAL_POLLING_ENROLLMENT/u);
+  const enrolled = f.enrollPolling(token, f.owner); enrolled.assertBeforeAttempt(); await enrolled.assertPublished();
+  assert.throws(enrolled.assertOriginalAttempted, /POLLING_ORIGINAL_ATTEMPT_REQUIRED/u);
+  assert.throws(() => f.enrollPolling(token, f.owner), /ORIGINAL_POLLING_ENROLLMENT/u);
+  const intent = f.consumePolling(token, f.owner); await intent.assertPublished(); enrolled.assertOriginalAttempted();
+  assert.throws(() => f.consumePolling(token, f.owner), /ORIGINAL_POLLING_DISPATCH/u); assert.throws(() => f.journal.retainedPollingCancellationIntent(), /ORIGINAL_POLLING_DISPATCH/u);
+  await f.journal.append("opening-result", {}); enrolled.assertCurrent(); enrolled.assertOriginalAttempted();
+  assert.throws(enrolled.assertBeforeAttempt, /POLLING_BEFORE_ATTEMPT/u);
+  const opening = f.journal.retained().records.find(row => row.kind === "opening-intent"); assert.equal(opening?.evidence["arbitraryTimerSelection"], false);
+});
 
 void test("v2 closes an original never-allocated factory refusal without claiming process exit", async () => {
   const f = await fixture(false, true);

@@ -27,3 +27,21 @@ once-only consumption and unchanged v1 parsing alongside the existing dispatch,
 Save and publication cases. Separate real owner-boundary checks reject fabricated
 plan/proof metadata. These source changes grant no native allocation, create,
 Save, recovery adoption or persisted design proof.
+
+## Separate temporary polling intent
+
+The same v2 journal now reserves the fixed project opening and a separate
+temporary first-`checkProject` timer cancellation. This token accepts no timer,
+callback, receiver or code argument. It binds the original writer and plan.
+Arming enrolls it without spending the effectful slot. Only the actual original
+cancellation request consumes it, before its first await and only while the
+published opening intent is current. Unknown acknowledgment cannot refund it.
+The original intent remains historical evidence after opening completes.
+
+This is an explicit disposable-session action, not a read-only observation.
+The native adapter still needs the actual first call/return, original timer and
+native `clearTimeout` qualification and acknowledgment. The token alone proves
+no cancellation. No callback is rearmed; the original generation's eventual
+exit ends the temporary session scope. The shared readonly sync programs remain
+unchanged. A focused real-publication test checks copied/wrong-owner rejection,
+arming without spending, one consumption and retained historical enrollment.
