@@ -1,5 +1,7 @@
 # Project history
 
+- [Project cache startup source audit](2026-11-06-project-cache-startup-source-audit.md)
+
 - [Component original Job abort](2026-11-06-component-original-job-abort.md)
 
 - [2026-11-06 spatial manager original cleanup](2026-11-06-spatial-manager-original-cleanup.md). Strict original spatial/Component classification, same-client window/close/termination/release and private receipt joins; no native owner adoption or force-abort.
