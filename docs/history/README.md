@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 spatial manager original cleanup](2026-11-06-spatial-manager-original-cleanup.md). Strict original spatial/Component classification, same-client window/close/termination/release and private receipt joins; no native owner adoption or force-abort.
+
 - [2026-11-06 Component spatial native mount](2026-11-06-component-spatial-native-mount.md). Separate419-ID original birth, strict genuine Component staging/registration/point route and retained cleanup; Linux/source checks only. Includes the preserved synthetic test-intent incident and early isolation fix.
 
 - [2026-11-06 complete Component point kernel](2026-11-06-component-point-complete-kernel.md). Required hidden ATTR index members, actual290-callee/419-request composition, exact cache/parent/kernel guards and bounded frame; native birth and index mount remain separate.

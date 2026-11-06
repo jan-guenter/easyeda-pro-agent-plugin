@@ -418,3 +418,38 @@ settlement-only request reconstructed from the private original call. No caller
 payload, new observation or native cleanup is admitted. Busy or missing pending
 evidence refuses; the original outcome remains unknown. Only the original
 facade's retirement preflight can authorize closure and a later generation.
+
+## Original spatial cleanup
+
+The maintained frontend also classifies strict `spatial` and
+`component-spatial` requests under `easyeda_control_pcb209_opening`. The latter
+uses only its separate `pcb209-spatial-component-*` purpose. These are data
+classifications; the facade retains the actual native owner.
+
+While one original spatial call is pending, `in-flight-original` admits only
+`inspect` on that same operation/client. It offers no navigation, point replay,
+normal close or force-abort side action. After a timeout/rejection, use the
+returned original request ID and generation with `cleanup-original`:
+
+```json
+{"id":"spatial-inspect","action":"cleanup-original","generation":1,"interruptedRequestId":"original-spatial-call","request":{"action":"inspect"}}
+{"id":"spatial-window","action":"cleanup-original","generation":1,"interruptedRequestId":"original-spatial-call","request":{"action":"observe-window"}}
+{"id":"spatial-close","action":"cleanup-original","generation":1,"interruptedRequestId":"original-spatial-call","request":{"action":"normal-close","confirmNormalClose":true}}
+{"id":"spatial-terminated","action":"cleanup-original","generation":1,"interruptedRequestId":"original-spatial-call","request":{"action":"observe-termination"}}
+{"id":"spatial-release","action":"cleanup-original","generation":1,"interruptedRequestId":"original-spatial-call","request":{"action":"release-closed"}}
+```
+
+A fresh same-client private-attempt inspection must supply the exact intent and
+original binding, and report that the original call is no longer busy. The
+manager obtains the HWND only from its own `observe-window` result and injects
+the operation, binding, wrapper and HWND. Caller substitutions refuse. Close and
+release consume their attempts before the original SDK call; a lost reply does
+not permit replay. The facade independently rechecks its real window/root/Job
+and cleanup state. `settle-records` publishes only that facade's retained local
+records. Prelaunch `cleanup-before-launch` maps to `cleanup-unlaunched`, and
+`cleanup-no-process` requires the corresponding fresh original inspection data.
+
+This path creates no owner from historical JSON, signals no PID, answers no
+Save/Discard prompt and grants no persistence or replacement proof. Complete
+actual original termination and helper release before normal manager retirement.
+Source/synthetic recovery checks do not establish a connected Component case.

@@ -1565,3 +1565,66 @@ void test("Via original manager cleanup binds timeout and in-flight abort to the
     });
   }
 });
+
+/** This peer has only synthetic lifecycle state; it launches no app/helper. */
+function interruptedSpatialPeer(family: "spatial" | "component-spatial"): string {
+  const operationId = family === "spatial" ? "pcb209-spatial-manager-original" : "pcb209-spatial-component-manager-original";
+  return `import {Server} from ${sdkModule("server/index.js")};
+import {StdioServerTransport} from ${sdkModule("server/stdio.js")};
+import {CallToolRequestSchema,ListToolsRequestSchema} from ${sdkModule("types.js")};
+const server=new Server({name:'synthetic-original-spatial',version:'1.0.0'},{capabilities:{tools:{}}});
+const op=${JSON.stringify(operationId)},family=${JSON.stringify(family)},calls=[];let active=0,reads=0,closed=false,released=false;
+const result=value=>({content:[{type:'text',text:JSON.stringify(value)}],structuredContent:value});
+const refused=()=>({isError:true,content:[{type:'text',text:'synthetic-original-spatial-refusal'}]});
+const bindingSha256='b'.repeat(64),intentSha256='a'.repeat(64),binding={helperInstance:'c'.repeat(32),jobId:'d'.repeat(32),rootPid:123,rootCreated:'123456789012345'};
+const base=()=>({operationId:op,state:released?'released':closed?'terminated':'launched',bindingSha256,intentSha256,binding,launchAcknowledged:true});
+server.setRequestHandler(ListToolsRequestSchema,async()=>({tools:['easyeda_control_api','easyeda_control_session','easyeda_control_pcb209_opening'].map(name=>({name,inputSchema:{type:'object'}}))}));
+server.setRequestHandler(CallToolRequestSchema,async({params})=>{
+const wrapped=params.arguments?.request,q=wrapped?.request;
+if(params.name==='easyeda_control_api'&&wrapped?.action==='loaded-facade')return result({offline:true,result:{schema:'easyeda-pro-control.loaded-facade.v1',pid:process.pid,moduleUrl:import.meta.url,nodeVersion:process.version,admissionGranted:false}});
+if(params.name==='easyeda_control_session'){if(wrapped?.action==='retire'&&(active!==0||!released))return refused();const retired=wrapped?.action==='retire';return result({result:{schema:'easyeda-pro-control.session-retirement.v1',state:retired?'retired':'active',activeCalls:active,liveAdmissionOpen:!retired,leaseReleaseAcknowledged:retired,replacementConnectionRequired:retired}});}
+if(params.name!=='easyeda_control_pcb209_opening'||wrapped?.action!==family||q?.operationId!==op)return refused();calls.push(q);
+if(q.action==='observe-spatial'||q.action==='observe-components'){if(++reads!==1)return refused();active++;await new Promise(resolve=>setTimeout(resolve,1250));active--;return result({result:{...base(),readReturned:true}});}
+if(q.action==='inspect')return result({result:{...base(),busy:active!==0,publicationSettlementAvailable:!released,closeAttemptConsumed:closed,releaseAttemptConsumed:released,unlaunchedCleanupAvailable:false,noProcessCleanupAvailable:false,calls,reads}});
+if(active||q.expectedBindingSha256!==bindingSha256)return refused();
+if(q.action==='observe-window')return result({result:{...base(),hwnd:'123'}});
+if(q.action==='normal-close'){if(closed||q.hwnd!=='123'||q.confirmNormalClose!==true)return refused();closed=true;return result({result:{...base(),closeAcknowledged:true}});}
+if(q.action==='observe-termination')return result({result:{...base(),terminated:closed}});
+if(q.action==='release-closed'){if(!closed||released)return refused();released=true;return result({result:{...base(),released:true}});}return refused();
+});setTimeout(()=>{void server.close();},18000).unref();await server.connect(new StdioServerTransport());`;
+}
+void test("spatial and Component manager timeout recovery keeps the original wrapper, window and once-only cleanup", { timeout: 25_000 }, async context => {
+  for (const family of ["spatial", "component-spatial"] as const) {
+    const outputs: unknown[] = []; const selected = await fixture(interruptedSpatialPeer(family));
+    await selectedProfile(selected.profilePath, async () => {
+      const manager = new ForegroundSessionManager(value => { outputs.push(value); return Promise.resolve(); });
+      context.after(async () => {
+        if (manager.inspect()["stage"] === "closed") { return; }
+        const deadline = Date.now() + 19_000; while (manager.inspect()["closure"] === null && Date.now() < deadline) { await wait(10); }
+        await manager.handle(request({ id: `${family}-finally`, action: "shutdown" }));
+      });
+      await manager.initialize(selected.root); const operationId = family === "spatial" ? "pcb209-spatial-manager-original" : "pcb209-spatial-component-manager-original";
+      const originalId = `${family}-read`; const action = family === "spatial" ? "observe-spatial" : "observe-components";
+      const pending = manager.handle(request({ id: originalId, tool: "easyeda_control_pcb209_opening", timeoutMs: 1000,
+        arguments: { request: { action: family, request: { action, operationId, expectedBindingSha256: "b".repeat(64), queries: [{ kind: "point", xMil: 0, yMil: 0 }], acceptNativeScratchEffects: true } } } }));
+      await managerProgress(() => manager.inspect()["inFlightRequest"] !== null && record(manager.inspect()["inFlightRequest"])["rpcPending"] === true);
+      await manager.handleInFlight(request({ id: `${family}-side-inspect`, action: "in-flight-original", generation: 1, originalRequestId: originalId, request: { action: "inspect" } }));
+      await pending; assert.equal(manager.inspect()["stage"], "blocked");
+      const cleanup = (id: string, control: object): string => request({ id, action: "cleanup-original", generation: 1, interruptedRequestId: originalId, request: control });
+      for (const control of [{ action: "normal-close", confirmNormalClose: true, hwnd: "123" }, { action: "inspect", operationId: "foreign" }, { action: "abort" }]) {
+        await manager.handle(cleanup(`${family}-refused-${String(outputs.length)}`, control)); assert.equal(record(outputs.at(-1))["dispatched"], false);
+      }
+      await wait(300);
+      await manager.handle(cleanup(`${family}-inspect`, { action: "inspect" }));
+      await manager.handle(cleanup(`${family}-no-window`, { action: "normal-close", confirmNormalClose: true })); assert.equal(record(outputs.at(-1))["dispatched"], false);
+      await manager.handle(cleanup(`${family}-window`, { action: "observe-window" }));
+      await manager.handle(cleanup(`${family}-close`, { action: "normal-close", confirmNormalClose: true }));
+      await manager.handle(cleanup(`${family}-close-again`, { action: "normal-close", confirmNormalClose: true })); assert.equal(record(outputs.at(-1))["dispatched"], false);
+      await manager.handle(cleanup(`${family}-termination`, { action: "observe-termination" }));
+      await manager.handle(cleanup(`${family}-release`, { action: "release-closed" }));
+      await manager.handle(cleanup(`${family}-release-again`, { action: "release-closed" })); assert.equal(record(outputs.at(-1))["dispatched"], false);
+      await manager.handle(retire(`${family}-retire`, 1)); assert.equal(manager.inspect()["stage"], "between-facades");
+      await manager.handle(request({ id: `${family}-shutdown`, action: "shutdown" })); assert.equal(manager.inspect()["stage"], "closed");
+    });
+  }
+});

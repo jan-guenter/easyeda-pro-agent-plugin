@@ -68,7 +68,7 @@ const MANAGER_FORBIDDEN_INPUTS = new Set([
 ]);
 const MANAGER_SCRIPT_INPUTS = new Set([
   "scripts/control-session-manager-main.ts", "scripts/control-session-manager.ts",
-  "scripts/control-session-via-adapter.ts",
+  "scripts/control-session-via-adapter.ts", "scripts/control-session-spatial-adapter.ts",
   "scripts/control-session.ts", "scripts/control-session-transport.ts", "scripts/private-temporary-directory.ts",
 ]);
 const sha256Schema = z.string().regex(/^[a-f0-9]{64}$/u);
