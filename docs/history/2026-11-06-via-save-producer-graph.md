@@ -268,3 +268,20 @@ extra/changed records and tickets, plus the real private issuer with explicit
 native/body/clock seams. Strict types and zero-warning type-aware lint pass.
 Native main/structure enrollment and saved-source reopening remain incomplete;
 the unconditional Save gates remain intact.
+
+## Actual inherited format accessor correction
+
+The pinned classic worker defines isV2Format on Gd.prototype, with own backing
+field _isV2Format. The earlier Via selector required an own isV2Format data field
+and would have refused the actual worker. The fixed selector now joins the
+original Lg/Gd prototype/constructor chain, exact getter and setter descriptors
+and source, then reads only the own _isV2Format:false backing value. It never
+invokes either accessor and rechecks those descriptors before returning.
+
+The inert fragments in current-project-canvas-pending-programs.ts are shared
+with a later distinct schematic observer without transferring any origin,
+operation plan, body proof or writer grant. The regression fixture now uses the
+actual inherited accessor shape. Own-property shadowing, changed backing state
+and replaced getters refuse with zero application/getter calls. Sixteen focused
+Save/clock/native-boundary cases, strict types and zero-warning type-aware lint
+pass. The fixed codebook changed; root still owns final helper/pin regeneration.

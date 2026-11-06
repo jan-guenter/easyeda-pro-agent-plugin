@@ -12,9 +12,9 @@ import { CURRENT_PCB_VIA_SAVE_REQUESTS, currentPcbViaSaveNativeCases, validateCu
 
 function fixture(): ReturnType<typeof createContext> {
   const context = createContext({});
-  runInContext(`globalThis.calls=0;globalThis.PROJECT={uuid:"${"b".repeat(64)}",isV2Format:false,isReady:true,isHistoryBack:false,
+  runInContext(`globalThis.calls=0;class Gd {get isV2Format(){return this._isV2Format}set isV2Format(t){this._isV2Format=t,this._projectDetails&&(this._projectDetails.isV2Format=t)}}class Lg extends Gd{};globalThis.Gd=Gd;globalThis.PROJECT=Object.assign(new Lg(),{uuid:"${"b".repeat(64)}",_isV2Format:false,isReady:true,isHistoryBack:false,
 consistencyManager:{asyncCompressFull(){calls++;throw Error("forbidden");},getMaxTicket(){calls++;throw Error("forbidden");},setMaxTicket(){calls++;throw Error("forbidden");}},
-wsBus:{rpcCall(){calls++;throw Error("forbidden");}},pcb:{},user:undefined,saveCanvas:({${CURRENT_PCB_VIA_SAVE_METHOD_SOURCE}}).saveCanvas};
+wsBus:{rpcCall(){calls++;throw Error("forbidden");}},pcb:{},user:undefined,saveCanvas:({${CURRENT_PCB_VIA_SAVE_METHOD_SOURCE}}).saveCanvas});
 globalThis.arg={uuid:"${"a".repeat(32)}",path:"${"b".repeat(64)}",docIds:["${"a".repeat(32)}","BLOB","FONT"],uniqueId:"original-compiler",client:"original-client"};
 globalThis.entryFrame=[PROJECT,arg,PROJECT.consistencyManager];
 globalThis.original=(${CALLS.entry}).call(entryFrame,"${"a".repeat(32)}","${"b".repeat(64)}");
@@ -36,7 +36,7 @@ void test("actual Save-shaped frame joins retain the same uniqueId, clock, ticke
 });
 void test("copied retained roots, another compiler, changed clocks or tickets and accessors refuse before any application method", () => {
   for (const alteration of ["original=[...original]", "arg.uniqueId='foreign'", "bodyFrame[3]++", "bodyFrame[4]++", "bodyFrame[1]={...arg}",
-    "Object.defineProperty(PROJECT,'wsBus',{get(){calls++;throw Error('getter');}})"]) {
+    "Object.defineProperty(PROJECT,'wsBus',{get(){calls++;throw Error('getter');}})", "Object.defineProperty(PROJECT,'isV2Format',{value:false})", "PROJECT._isV2Format=true", "Object.defineProperty(Gd.prototype,'isV2Format',{get(){calls++;return false;}})"]) {
     const context = fixture(); runInContext(alteration, context);
     assert.throws(() => runInContext(`(${CALLS.body}).call(bodyFrame,original,compress)`, context));
     assert.equal(runInContext("calls", context), 0);
