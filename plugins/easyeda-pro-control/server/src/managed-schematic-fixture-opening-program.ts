@@ -4,7 +4,7 @@ import { canonicalJson } from "./core.ts";
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "./current-pcb-diagnostic-opening.ts";
 import { buildCurrentProjectUrlGuard } from "./current-project-url.ts";
 import { buildCurrentSchematicPageOpeningProgram } from "./current-schematic-page-opening-program.ts";
-import { currentSchematicPageOpeningResultSchema } from "./current-schematic-page-opening.ts";
+import { currentSchematicPageOpeningResultSchema, currentSchematicPageOpeningTargetSchema } from "./current-schematic-page-opening.ts";
 import { buildCurrentSchematicPageReadProgram } from "./current-schematic-page-read-program.ts";
 import { validateCurrentSchematicPageReadResult } from "./current-schematic-page-read.ts";
 import { GENERATED_FIXTURE_REGISTRATION_FUNCTION, generatedFixtureRegistrationResultSchema } from "./managed-fixture-registration-program.ts";
@@ -30,6 +30,7 @@ function projectFunction(): string {
   return one(source, 'schema:"easyeda-pro-control.pcb-diagnostic-opening.v1"', 'schema:"easyeda-pro-control.generated-schematic-project-opening.v1"');
 }
 const registration = registrationFunction(); const projectOpening = projectFunction();
+export const GENERATED_SCHEMATIC_PROJECT_OPENING_FUNCTION = projectOpening;
 const opaque = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/u); const hex = z.string().regex(/^[a-f0-9]{64}$/u); const uuid = z.string().regex(/^[a-f0-9]{32}$/u);
 const failure = z.strictObject({ stage: z.string().min(1).max(64), code: z.string().min(1).max(64), substage: z.string().min(1).max(64).optional() });
 const observedTab = z.string().min(1).max(128), observedTitle = z.string().min(1).max(512);
@@ -55,14 +56,10 @@ export const generatedSchematicNavigationResultSchema = z.strictObject({ schema:
   originalContextIntact: z.boolean(), replayAllowed: z.literal(false), persistentRegistrationVerified: z.literal(false), completeSourceVerified: z.literal(false), persistenceVerified: z.literal(false),
   connectivityVerified: z.literal(false), executionAuthorized: z.literal(false), explicitSaveDispatched: z.literal(false) });
 
-function pageTarget(qualified: QualifiedGeneratedSchematicFixtureTarget): Readonly<{ rawWindowsPath: string; projectUuid: string; branchUuid: string; documentUuid: string; schematicUuid: string; expectedSourceSha256: string }> {
-  assertOriginalGeneratedSchematicFixtureTarget(qualified); const target = qualified.target;
-  return { rawWindowsPath: target.rawWindowsPath, projectUuid: target.projectUuid, branchUuid: target.branchUuid, documentUuid: target.pageUuid, schematicUuid: target.schematicUuid, expectedSourceSha256: target.expectedSourceSha256 };
-}
 /** Independent parent/page identity and readiness sample after awaited opening.
  * It calls no family getter, source serializer, compiler, navigation or writer. */
-function identityProgram(target: QualifiedGeneratedSchematicFixtureTarget["target"], expectedWindowTabId?: string): string {
-  return `const target=${JSON.stringify(target)},root=globalThis,bad=()=>{throw new Error('GENERATED_SCHEMATIC_PAGE_IDENTITY');};
+function identityProgram(target: QualifiedGeneratedSchematicFixtureTarget["target"], expectedWindowTabId?: string, targetExpression = JSON.stringify(target)): string {
+  return `const target=${targetExpression},root=globalThis,bad=()=>{throw new Error('GENERATED_SCHEMATIC_PAGE_IDENTITY');};
 ${buildCurrentProjectUrlGuard()}
 const ui=root.UI,sch=root.SCH,host=root.gVars,metadata=host?.currentProject,tabs=ui?.tabBar,manager=sch?.docMemoryManager;
 const active=manager?.getActiveDoc,activeTab=tabs?.getActiveTab,getTab=tabs?.getTabById,doc=root.document,href=root.location?.href,windowTabId=root._TAB_ID_;
@@ -74,12 +71,14 @@ if(root.UI!==ui||root.SCH!==sch||root.gVars!==host||ui.gVars!==host||host.curren
 if(sch.docMemoryManager!==manager||manager.getActiveDoc!==active||Reflect.apply(active,manager,[])!==page||page?.uuid!==target.pageUuid||page.project_uuid!==target.projectUuid||page.tabId!==tabId||page.docType!==1||page.schematicUuid!==target.schematicUuid||page.isSchSheetDoc?.()!==true||page.isBlockSymbolInstancePage!==false||page.source!==''||page.projectMgr!==project||project?.uuid!==target.projectUuid||page.consistencyImpl!==consistency||consistency?.decodeAndRealTimeSyncHandler!==handler||consistency.handler!==handler||handler?.docManager!==page||handler.consistencyImpl!==consistency||consistency.state!=='initialized'||page.shapeManager?.actionRunner?.running!==false)bad();};
 check();check();return {schema:'easyeda-pro-control.generated-schematic-page-identity.v1',projectUuid:target.projectUuid,branchUuid:target.branchUuid,schematicUuid:target.schematicUuid,pageUuid:target.pageUuid,tabId,windowTabId,samples:2,originalPageRechecked:true,nativePageReadinessObserved:true,persistenceVerified:false,connectivityVerified:false};`;
 }
-export function buildGeneratedSchematicNavigationProgram(qualified: QualifiedGeneratedSchematicFixtureTarget): string {
-  const target = generatedSchematicTargetSchema.parse(qualified.target); assertOriginalGeneratedSchematicFixtureTarget(qualified);
-  const page = pageTarget(qualified); const marker = "SCH_GENERATED_ORIGINAL_WINDOW"; const literal = JSON.stringify(marker);
+function navigationProgram(target: QualifiedGeneratedSchematicFixtureTarget["target"], targetExpression = JSON.stringify(target), pageExpression?: string): string {
+  const page = currentSchematicPageOpeningTargetSchema.parse({ rawWindowsPath: target.rawWindowsPath, projectUuid: target.projectUuid, branchUuid: target.branchUuid,
+    documentUuid: target.pageUuid, schematicUuid: target.schematicUuid, expectedSourceSha256: target.expectedSourceSha256 });
+  const marker = "SCH_GENERATED_ORIGINAL_WINDOW"; const literal = JSON.stringify(marker);
   const open = buildCurrentSchematicPageOpeningProgram(page, "open", marker); need(open.split(literal).length === 3);
-  const pageOpen = one(open.replaceAll(literal, "expectedWindowTabId"), ',phase="open",root=globalThis', ",root=globalThis");
-  const code = `const target=${JSON.stringify(target)},root=globalThis,ui=root.UI,host=root.gVars,document=root.document,windowTabId=root._TAB_ID_;let loaded;
+  let pageOpen = one(open.replaceAll(literal, "expectedWindowTabId"), ',phase="open",root=globalThis', ",root=globalThis");
+  if (pageExpression !== undefined) { pageOpen = one(pageOpen, `const target=${JSON.stringify(page)}`, `const target=${pageExpression}`); }
+  const code = `const target=${targetExpression},root=globalThis,ui=root.UI,host=root.gVars,document=root.document,windowTabId=root._TAB_ID_;let loaded;
 const bad=()=>{throw new Error('GENERATED_SCHEMATIC_NAVIGATION');};const current=()=>{if(globalThis!==root||root.UI!==ui||root.gVars!==host||root.document!==document||root._TAB_ID_!==windowTabId||loaded!==undefined&&host.currentProject!==loaded)bad();};
 const decode=envelope=>{if(!envelope||envelope.schema!=='easyeda-pro-control.exact-json.v1'||typeof envelope.json!=='string'||new TextEncoder().encode(envelope.json).byteLength!==envelope.utf8Bytes||envelope.utf8Bytes>49152)bad();return JSON.parse(envelope.json);};
 const state={schema:'easyeda-pro-control.generated-schematic-navigation.v1',target,state:'settled',outcome:'partial-or-refused',attempted:[],failedStage:null,registration:null,projectPreflight:null,project:null,pagePreflight:null,page:null,identity:null,originalContextIntact:true,replayAllowed:false,persistentRegistrationVerified:false,completeSourceVerified:false,persistenceVerified:false,connectivityVerified:false,executionAuthorized:false,explicitSaveDispatched:false};
@@ -90,9 +89,18 @@ attempt('project-preflight');state.projectPreflight=JSON.parse(await projectOpen
 attempt('project-open');state.project=JSON.parse(await projectOpen(target,'open-project'));current();if(!state.project.ok||state.project.status!=='opened-prefix-observed')bad();loaded=host.currentProject;
 attempt('page-preflight');state.pagePreflight=decode(await pageOpen('preflight',null));current();
 attempt('page-open');state.page=decode(await pageOpen('open',state.pagePreflight.windowTabId));current();
-attempt('page-identity');state.identity=await(async()=>{${identityProgram(target)}})();current();state.outcome='opened-ready';state.failedStage=null;
+attempt('page-identity');state.identity=await(async()=>{${identityProgram(target, undefined, targetExpression)}})();current();state.outcome='opened-ready';state.failedStage=null;
 }catch{try{current();}catch{state.originalContextIntact=false;}}const json=JSON.stringify(state),utf8Bytes=new TextEncoder().encode(json).byteLength;if(utf8Bytes>${MAX})bad();return {schema:'easyeda-pro-control.exact-json.v1',utf8Bytes,json};`;
   need(Buffer.byteLength(code) <= MAX); return code;
+}
+/** Same fixed six-stage program with target data supplied by value. This
+ * emitter issues no qualification, native ownership or navigation intent. */
+const fixedNavigationTarget = generatedSchematicTargetSchema.parse({ rawWindowsPath: String.raw`C:\Synthetic\CodexEasyedaFixture_${"a".repeat(32)}\Codex_schematic_${"b".repeat(16)}.eprj2`,
+  projectUuid: "3919da8423517ee46d2db9cacee04d58d4d101de21799478fa398dc8e3b40604", branchUuid: "d".repeat(32), schematicUuid: "e".repeat(32), pageUuid: "f".repeat(32), expectedSourceSha256: "1".repeat(64) });
+export const GENERATED_SCHEMATIC_NAVIGATION_FUNCTION = `async function(boundTarget){"use strict";${navigationProgram(fixedNavigationTarget, "boundTarget",
+  "{rawWindowsPath:boundTarget.rawWindowsPath,projectUuid:boundTarget.projectUuid,branchUuid:boundTarget.branchUuid,documentUuid:boundTarget.pageUuid,schematicUuid:boundTarget.schematicUuid,expectedSourceSha256:boundTarget.expectedSourceSha256}")}}`;
+export function buildGeneratedSchematicNavigationProgram(qualified: QualifiedGeneratedSchematicFixtureTarget): string {
+  const target = generatedSchematicTargetSchema.parse(qualified.target); assertOriginalGeneratedSchematicFixtureTarget(qualified); return navigationProgram(target);
 }
 export function validateGeneratedSchematicNavigation(value: unknown, qualified: QualifiedGeneratedSchematicFixtureTarget): z.infer<typeof generatedSchematicNavigationResultSchema> {
   assertOriginalGeneratedSchematicFixtureTarget(qualified); const result = generatedSchematicNavigationResultSchema.parse(value), target = qualified.target;
