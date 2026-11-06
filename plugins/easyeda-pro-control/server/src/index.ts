@@ -141,6 +141,7 @@ import { CurrentSchematicPageOpeningCoordinator, inspectCurrentSchematicPageOpen
 import { currentSchematicPageReadRequestSchema } from "./current-schematic-page-read.ts";
 import { generatedSchematicOpeningRequestSchema } from "./managed-schematic-fixture-opening.ts";
 import { GeneratedSchematicOpeningCoordinator } from "./managed-schematic-fixture-opening-runtime.ts";
+import { createOriginalWindowsRuntimeEngine } from "./original-windows-runtime-engine.ts";
 import type { ManagedSchematicFixtureOpeningSource } from "./managed-schematic-fixture-opening-source.ts";
 import { readCurrentSchematicPage } from "./current-schematic-page-read-runtime.ts";
 import { currentPcbOrdinaryReadRequestSchema } from "./current-pcb-ordinary-read-validation.ts";
@@ -3661,8 +3662,9 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
             if (owner !== undefined) { assertGeneratedSchematicMethods(owner); }
           };
           try {
-            const cleanup = new OrdinaryTrackedOpenCleanup(engine, runtime, assertOriginalOwner);
-            owner = new GeneratedSchematicOpeningCoordinator({ operationId: request.operationId, source, engine, runtime, assetsRoot, assertOriginalOwner, cleanup });
+            const openingEngine = createOriginalWindowsRuntimeEngine(upstream, runtime, assertOriginalOwner);
+            const cleanup = new OrdinaryTrackedOpenCleanup(openingEngine, runtime, assertOriginalOwner);
+            owner = new GeneratedSchematicOpeningCoordinator({ operationId: request.operationId, source, engine: openingEngine, runtime, assetsRoot, assertOriginalOwner, cleanup });
             generatedSchematicOpening = owner;
           } finally {
             // The data slot stays consumed even if this purely synchronous

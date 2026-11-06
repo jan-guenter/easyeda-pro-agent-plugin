@@ -573,3 +573,4 @@ layout. The connected ledger retains its generation and case anchors.
 - [2026-11-06 Via original main cursor](2026-11-06-via-original-main-cursor.md)
 - [2026-11-06 generated PCB spatial live case](2026-11-06-generated-pcb-spatial-live-case.md)
 - [2026-11-06 Save structure custody](2026-11-06-save-structure-custody.md)
+- [2026-11-06 generated schematic import and runtime binding](2026-11-06-generated-schematic-import-and-runtime-binding.md)
