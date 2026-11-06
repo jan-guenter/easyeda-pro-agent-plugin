@@ -68,3 +68,21 @@ No EasyEDA CBB SDK, catalog request, archive download or module mutation was
 performed for this follow-up.
 [Pinned CBB source](https://github.com/easyeda/eext-ai-reuse-block-placement/blob/c24c7228b022c53e509788ef375e1bf81bd82966/src/cbb.ts),
 [pinned module test](https://github.com/easyeda/eext-ai-reuse-block-placement/blob/c24c7228b022c53e509788ef375e1bf81bd82966/tests/create-module.test.cjs).
+
+## Further bounded English documentation search
+
+A later three-query public web search covered the official guide, official
+EasyEDA GitHub material and the public Pro domain. It surfaced an official API
+quick reference and reuse-block creation documentation, with no concrete
+system-owner/project/branch witness in the returned results. This describes
+only those results, not the catalog's contents.
+[Official API quick reference](https://github.com/easyeda/easyeda-api-skill/blob/main/references/_quick-reference.md).
+
+The inspected English creation page explains generated related schematic and
+block documents, but publishes no particular system-owned module tuple in its
+text. The English file-manager page again derives its module ID through a
+runtime search and requires module-download permission. Neither observation
+supplies the missing positive witness. No creation, library-mode change, SDK
+call, account request, archive download or vendor catalog probe was performed.
+[Create Reuse Block](https://prodocs.easyeda.com/en/reuse-block/file-new-reuse-block/),
+[file-manager contract](https://prodocs.easyeda.com/en/api/reference/pro-api.sys_filemanager.getcbbfilebycbbuuid.html).
