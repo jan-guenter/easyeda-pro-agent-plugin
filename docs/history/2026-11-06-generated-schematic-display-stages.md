@@ -100,3 +100,28 @@ setter-only function is 16,827 UTF-8 bytes with SHA256
 Both TypeScript projects and strict type-aware lint pass. No persisted result
 shape or explanatory field changed. New native integration
 and connected acceptance remain pending.
+
+## Original accessor metadata and closure projection
+
+The separate `generated-schematic-display-accessor-*` leaves qualify both full
+SCH scripts and 30 function spans in each. A fixed descriptor-only projection
+selects the actual Text/BaseText constructors, ten getter/setter pairs and four
+monitor functions from the original Array2 holder. It calls no application
+getter, setter, constructor, factory, action or Save. Native ownership must
+still join these handles to the actual inspector replies before mutation.
+
+The eight decorated setters use the same pinned 45-byte wrapper. Its actual
+`a`, `i` and `t` lexical scopes must identify the raw descriptor, decorator and
+selected field; they need not inhabit the same scope object. The decorator's
+own setter must retain an undefined validator `e`. The raw getter equals the
+public getter, and the raw setter differs from the wrapper. Active monitor
+closures must retain the same watched monitor instance. The fixed source
+roster records UTF16 FunctionLocation, function name/arity and exact bytes/hash;
+bounded decoders retain the real non-strict wrapper's caller/arguments/prototype
+descriptors and inspect only lexical scope metadata, never Global/Script data.
+
+Three additional synthetic graph/packet regressions pass. The maintained
+installed-source checker independently qualifies all 60 spans and their exact
+parameter locations. Both TypeScript projects and strict type-aware lint pass.
+This source/data foundation issues no original native handle or write grant;
+actual callee/closure custody and connected writer acceptance remain pending.

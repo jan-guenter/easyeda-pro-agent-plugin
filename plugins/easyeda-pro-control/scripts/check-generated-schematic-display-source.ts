@@ -8,6 +8,8 @@ import { runInNewContext } from "node:vm";
 import { canonicalJson } from "../server/src/core.ts";
 import { GENERATED_SCHEMATIC_DISPLAY_TEXT_SOURCE, projectGeneratedSchematicInitialNativeTextBody } from "../server/src/generated-schematic-display-source.ts";
 import { MANAGED_SCHEMATIC_FIXTURE_TEXT } from "../server/src/managed-schematic-fixture-generator.ts";
+import { qualifyGeneratedSchematicDisplayAccessorSource } from "../server/src/generated-schematic-display-accessor-replies.ts";
+import { GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_CALLEES, GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE } from "../server/src/generated-schematic-display-accessor-source.ts";
 
 async function main(): Promise<void> {
   const assetsRoot = process.argv[2] ?? "/mnt/c/Program Files/easyeda-pro/resources/app/assets";
@@ -28,7 +30,18 @@ shapeManager:{isSymbolShapeManager:()=>false},getAlignConsistencyValue:()=>input
 JSON.parse(JSON.stringify(methods.getConsistencyData.call(receiver)));`, {}, { timeout: 1000 });
     assert.equal(canonicalJson(projected), canonicalJson(projectGeneratedSchematicInitialNativeTextBody(fixture)));
   }
-  process.stdout.write(`${JSON.stringify({ ok: true, sourceFiles: 2, serializerMethods: 4, accessorAndDecoratorSpans: 4, syntaxAndDataOnly: true, nativeExecutionVerified: false, writerAuthority: false })}\n`);
+  for (const [index, profile] of GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE.entries()) {
+    const source = await readFile(join(assetsRoot, profile.relativePath), "utf8");
+    assert.equal(qualifyGeneratedSchematicDisplayAccessorSource({ scriptSource: source }), index);
+    for (const role of [...GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_CALLEES, "decoratedSetter", "decoratorSetter", "decoratorAccessor", "monitorAst"] as const) {
+      const method = profile.methods[role];
+      const body = source.slice(method.start, method.end);
+      const parameterOffset = method.kind === "arrow" ? 0 : body.indexOf("(", method.kind === "class" ? body.indexOf("constructor") : 0);
+      assert.ok(parameterOffset >= 0); const before = source.slice(0, method.start + parameterOffset); const lines = before.split("\n");
+      assert.equal(method.lineNumber, lines.length - 1); assert.equal(method.columnNumber, lines.at(-1)?.length);
+    }
+  }
+  process.stdout.write(`${JSON.stringify({ ok: true, sourceFiles: 2, serializerMethods: 4, accessorAndDecoratorSpans: 4, accessorFunctionSpans: 60, syntaxAndDataOnly: true, nativeExecutionVerified: false, writerAuthority: false })}\n`);
 }
 // oxlint-disable-next-line node/no-top-level-await -- The offline CLI must await its own syntax/data checks.
 await main();
