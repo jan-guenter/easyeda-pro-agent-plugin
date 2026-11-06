@@ -101,3 +101,12 @@ nonce, and close requires its two existing confirmations. `release-owner`
 requires `confirmReleaseGeneratedSchematicOwner:true`. Source/schema work grants
 no Save, writer, electrical or persistent-effect acceptance. No native helper
 fragment, released graph, generated bundle or helper pin changes in this increment.
+
+The separate `consumeManagedSchematicFixtureSourceForFreshNativePreparation`
+export consumes the same private staged data once before checkpoint preparation
+for a genuinely new native writer birth. It returns only the issued SCH data
+qualification and copied archive, with no runtime, launch or authority callback.
+It cannot upgrade the ordinary reader/importing runtime. The index must consume
+and reserve the source before preparation; the distinct native factory must
+independently prove its original no-existing-app birth and dedicated purpose.
+Reader consumption keeps its existing fresh ordinary-runtime comparison.

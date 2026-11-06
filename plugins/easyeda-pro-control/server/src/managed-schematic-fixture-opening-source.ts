@@ -41,3 +41,14 @@ export function consumeManagedSchematicFixtureOpeningSource(source: ManagedSchem
   assertOriginalGeneratedSchematicFixtureTarget(original.qualification); issued.delete(source);
   return Object.freeze({ qualification: original.qualification, archive: Buffer.from(original.archive) });
 }
+
+/** Data-only once transfer before a fresh native birth/checkpoint preparation.
+ * This supplies no runtime status or caller authority callback. The distinct
+ * native factory must independently own its new no-existing-app process/Job;
+ * an ordinary importing/reader runtime cannot be upgraded through this token. */
+export function consumeManagedSchematicFixtureSourceForFreshNativePreparation(source: ManagedSchematicFixtureOpeningSource): Readonly<{ qualification: QualifiedGeneratedSchematicFixtureTarget; archive: Buffer }> {
+  const original = issued.get(source);
+  if (original === undefined || original.text !== canonicalJson(source)) { throw new Error("Original unconsumed schematic data source is required for native preparation."); }
+  assertOriginalGeneratedSchematicFixtureTarget(original.qualification); issued.delete(source);
+  return Object.freeze({ qualification: original.qualification, archive: Buffer.from(original.archive) });
+}

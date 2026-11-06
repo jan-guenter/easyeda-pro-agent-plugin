@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { assertOriginalGeneratedFixtureTarget, qualifyGeneratedFixtureInitialSql } from "../src/managed-fixture-initial-sql.ts";
 import { compareGeneratedFixtureClosedSources, compareGeneratedSchematicFixtureClosedSources } from "../src/managed-fixture-closed-snapshot.ts";
 import { assertOriginalGeneratedSchematicFixtureTarget, originalGeneratedSchematicFixtureInventory, qualifyGeneratedSchematicFixtureInitialSql } from "../src/managed-schematic-fixture-initial-sql.ts";
-import { consumeManagedSchematicFixtureOpeningSource, stageManagedSchematicFixtureOpeningSource, stageRequalifiedManagedSchematicFixtureOpeningSource } from "../src/managed-schematic-fixture-opening-source.ts";
+import { consumeManagedSchematicFixtureOpeningSource, consumeManagedSchematicFixtureSourceForFreshNativePreparation, stageManagedSchematicFixtureOpeningSource, stageRequalifiedManagedSchematicFixtureOpeningSource } from "../src/managed-schematic-fixture-opening-source.ts";
 import { managedFixtureInitialSqlFixture } from "./helpers/managed-fixture-initial-sql.ts";
 import { managedSchematicFixtureInitialSqlFixture } from "./helpers/managed-schematic-fixture-initial-sql.ts";
 import type { WindowsControlRuntimeStatus } from "../src/windows-runtime.ts";
@@ -55,4 +55,15 @@ void test("new requalified schematic data stages once without inventing an impor
   assert.throws(() => consumeManagedSchematicFixtureOpeningSource(structuredClone(staged), fresh));
   assert.equal(consumeManagedSchematicFixtureOpeningSource(staged, fresh).qualification, result.qualification);
   assert.throws(() => consumeManagedSchematicFixtureOpeningSource(staged, fresh));
+});
+
+void test("native preparation consumes private schematic data once before launch without inventing runtime ownership", async () => {
+  const input = await managedSchematicFixtureInitialSqlFixture(); const result = await qualifyGeneratedSchematicFixtureInitialSql(input);
+  const staged = stageRequalifiedManagedSchematicFixtureOpeningSource({ qualification: result.qualification, archive: input.archive });
+  assert.throws(() => consumeManagedSchematicFixtureSourceForFreshNativePreparation(structuredClone(staged)));
+  const nativeData = consumeManagedSchematicFixtureSourceForFreshNativePreparation(staged); assert.equal(nativeData.qualification, result.qualification);
+  assert.notEqual(nativeData.archive, input.archive); assert.deepEqual(nativeData.archive, input.archive);
+  assert.equal(Object.hasOwn(nativeData, "runtime"), false); assert.equal(Object.hasOwn(nativeData, "launch"), false);
+  assert.throws(() => consumeManagedSchematicFixtureSourceForFreshNativePreparation(staged));
+  assert.throws(() => consumeManagedSchematicFixtureOpeningSource(staged, originalRuntime("b")));
 });
