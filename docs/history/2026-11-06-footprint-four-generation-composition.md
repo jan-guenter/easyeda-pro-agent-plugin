@@ -276,3 +276,46 @@ generated bundle, compatibility pin, Windows process, native allocation or MCP
 call changed. The inverse birth/clock/main completion and final saved-absence
 owner remain to be composed; complete four-generation producer/head admission
 is still false.
+
+## Observed worker encoding through complete inverse SQL and saved absence
+
+The inverse now preserves the old v1 plan/effect/saved schemas while adding
+separate v2 data routes for the captured worker header encoding. The shared
+complete SQL verifier still checks every schema entry, PRAGMA, table, row,
+cell, original encrypted history prefix and retained peer document. Only its
+fixed tombstone encoder is selected by a private version-specific plan record.
+The old entry points reject a v2 plan even when its header happens to contain
+3.2.209; a new profile cannot silently enter a historical verifier.
+
+`prepareCurrentFootprintDeleteObservedSqlPlan` captures the three bounded
+worker-version fields before asynchronous work. It chooses the target only
+from the original completed copy/full-SQL relation, retains the existing
+locked/aged-head requirement, exact actor/client/ticket/time windows and zero
+structure-change projection, and reserves the actual encoded header size.
+`verifyCurrentFootprintDeleteObservedSqlEffect` emits the distinct
+`private.current-footprint-delete-full-sql-effect.v2`. Missing editVersion,
+own-undefined and a bounded nonempty version string are each retained in the
+plan; no version, actor or clock is inferred from the renderer build number.
+These remain supplied encoding data until an original native observer joins
+them; all native provenance and execution flags remain false.
+
+The new observed saved projection/absence verifier has its own private registry
+and v2 profiles. A separate completed reader must exactly match the closed
+delete effect, including the retained tombstone and every raw history record.
+The observed five-reader lifecycle joins the original source, copy closure,
+copy saved baseline, delete closure and final saved data. It proves the initial
+visible document roster is restored while both append records and the created
+copy's retained history remain present. It does not claim database restoration,
+manager absence, actual reopen or runtime ownership.
+
+Seven focused real synthetic SQLite/crypto/serializer cases pass, including
+all four encoding variants, old-v1 acceptance/refusal boundaries, complete
+five-reader history/visibility equality, copied-token refusal, frozen encoding
+capture before awaits, zero accessor calls, mismatched body refusal and a
+collateral cell refusal. One fixture initially attempted its INSERT helper
+twice and correctly hit a unique constraint; it now changes only that
+self-created synthetic test row for the second negative observation. No real
+control record or user design was involved. Full types and strict changed-file
+lint pass. This removes the hardcoded-version data blocker; the original
+inverse native birth/clock/main route, final native absence reader and complete
+producer/head admission remain required before any writer is mounted.

@@ -5,6 +5,18 @@ import { sha256Text } from "./core.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 
 const integer = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER - 1).refine(value => !Object.is(value, -0));
+const encodingFields = {
+  workerEditorVersionPresent: z.boolean(), workerEditorVersionUndefined: z.boolean(),
+  workerEditorVersion: z.string().min(1).max(64).refine(value => value.isWellFormed()).nullable(),
+};
+const encodingSchema = z.object(encodingFields).strict().refine(value =>
+  value.workerEditorVersionUndefined === (value.workerEditorVersion === null) && (value.workerEditorVersionPresent || value.workerEditorVersionUndefined));
+export type CurrentFootprintDeleteWorkerEncoding = Readonly<z.infer<typeof encodingSchema>>;
+/** Bounded own-data encoding only. Native origin and clock provenance remain
+ * the original owner's separate obligation. No caller attestation grants it. */
+export function captureCurrentFootprintDeleteWorkerEncoding(input: unknown): CurrentFootprintDeleteWorkerEncoding {
+  return Object.freeze(encodingSchema.parse(captureCurrentPcbStringClockReply(input).value));
+}
 const inputSchema = z.object({
   targetUuid: z.string().regex(/^(?:[a-f\d]{16}|[a-f\d]{32})$(?![\s\S])/u),
   client: z.string().regex(/^[a-f\d]{16}$(?![\s\S])/u),
@@ -12,9 +24,7 @@ const inputSchema = z.object({
   maximumTicketAfterClock: integer,
   documentClock: integer.positive().max(8_640_000_000_000_000),
   managerUserAbsent: z.literal(true),
-  workerEditorVersionPresent: z.boolean(),
-  workerEditorVersionUndefined: z.boolean(),
-  workerEditorVersion: z.string().min(1).max(64).refine(value => value.isWellFormed()).nullable(),
+  ...encodingFields,
 }).strict().refine(value => value.maximumTicketBeforeClock === value.maximumTicketAfterClock &&
   (value.workerEditorVersionUndefined === (value.workerEditorVersion === null)) &&
   (value.workerEditorVersionPresent || value.workerEditorVersionUndefined));
