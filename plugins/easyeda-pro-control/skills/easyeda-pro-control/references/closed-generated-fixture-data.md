@@ -49,17 +49,22 @@ fresh resource closure and settled records, call `release-owner` with
 `confirmReleaseClosedDataOwner:true`. Do not replace or retire a coordinator
 with pending resources or publication.
 
-Before any ordinary application launch, use exactly one local staging action
+Before any application launch, use exactly one local staging action
 with `confirmStageRequalifiedData:true`:
 
 - `stage-for-fresh-opening` for qualified PCB data.
 - `stage-schematic-for-fresh-opening` for the distinct SCH data.
 
-The existing generated PCB or [schematic route](generated-schematic-opening.md)
-consumes that source once after its new ordinary launch. Staging transfers data,
-not a native owner. A historical capture cannot itself stage a target. Keep the
-current facade through this handoff. Complete original reader cleanup before
-any later controller replacement.
+For PCB data, select the `ordinary` or `spatial` purpose of
+`easyeda_control_pcb209_opening` before its fresh diagnostic launch. That owner
+consumes the staged token. Do not start a separate ordinary launcher first;
+the PCB reader requires no retained ordinary runtime. For SCH data, use the
+new ordinary launch required by the separate
+[schematic route](generated-schematic-opening.md).
+
+Staging transfers data and creates no native owner. A historical capture cannot
+itself stage a target. Keep the current facade through this handoff. Complete
+original reader cleanup before any later controller replacement.
 
 This route offers no app launch, design modification, Save, deletion, signal,
 historical owner adoption or production writer authority. Source and synthetic
