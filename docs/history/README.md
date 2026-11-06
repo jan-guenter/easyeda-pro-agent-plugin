@@ -6,6 +6,8 @@
 - [2026-11-06 separate Relevance display data](2026-11-06-relevance-display-data-profile.md). Genuine seven-row checkpoint arguments, exact ATTR/native root permutation, separate fixed stages/effect/pending body and explicit normalized baseline; original native writer/SQL/persistence grants remain closed.
 
 - [2026-11-06 Component point source/cost](2026-11-06-component-point-source-cost.md). Complete cached/stored-box and owned Pad paths, actual identity/scratch checks and393/408 prospective requests; existing384-ID purposes and Component admission remain unchanged.
+- [2026-11-06 original pre-action producer guards](2026-11-06-original-preaction-producer-guards.md). Ten same-worker refusal points and original prefix enrollment before SDK action; planned producer continuation, complete upload frontier and Save remain gated.
+
 - [2026-11-06 original bootstrap transport mode](2026-11-06-original-bootstrap-transport-mode.md). Actual pre-EP lexical mode capture and independent central/native custody reject PRIVATE before SDK actions; continuous producer and writer grants remain pending.
 
 - [2026-11-06 prehistory structure observation](2026-11-06-prehistory-structure-observer.md). Distinct once-consumed body and actual publication joins through original task/serial completion; old history contracts and writer/frontier refusal remain.

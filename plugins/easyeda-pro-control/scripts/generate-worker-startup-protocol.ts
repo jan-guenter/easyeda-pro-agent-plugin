@@ -1,3 +1,4 @@
+import { applyCurrentProjectSaveProducerGuardNativeFragment } from "../server/src/current-project-save-producer-guard-native-fragment.ts";
 import { applyCurrentProjectStructureTransportNativeFragment } from "../server/src/current-project-structure-transport-native-fragment.ts";
 /* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
 import { readFile, writeFile } from "node:fs/promises";
@@ -118,6 +119,7 @@ async function main(): Promise<void> {
   next = applyCurrentProjectStructureNativeFragment(next);
   next = applyManagedFixtureRegistrationNativeFragment(next);
   next = applyCurrentProjectStructureTransportNativeFragment(applyCurrentSchematicDisplayWriteNativeFragment(applyCurrentPcbViaWriteNativeFragment(next)));
+  next = applyCurrentProjectSaveProducerGuardNativeFragment(next);
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
   assertCurrentFootprintCopyForwardNativeRequestIds(next);
   if (Buffer.byteLength(next) > CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES) {

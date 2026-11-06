@@ -39,8 +39,8 @@ void test("all16 transport calls substitute original native context and keep bot
 void test("the full transport fragment stays idempotent across adjacent dispatcher movement and cap predecessors", async () => {
   const original = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"), source = compose(original);
   assert.equal(compose(source), source); assert.equal(transport(source), source);
-  const prior = source.replace("if(schematicDisplayWrite209)return 765;", "if(schematicDisplayWrite209)return 747;").replace("$requestLimit=765", "$requestLimit=747")
-    .replace("return pcbViaWrite209?1167:", "return pcbViaWrite209?1149:").replace("$requestLimit=if ($PcbViaWrite209) {1167}", "$requestLimit=if ($PcbViaWrite209) {1149}");
+  const prior = source.replace("if(schematicDisplayWrite209)return 775;", "if(schematicDisplayWrite209)return 747;").replace("$requestLimit=775", "$requestLimit=747")
+    .replace("return pcbViaWrite209?1177:", "return pcbViaWrite209?1149:").replace("$requestLimit=if ($PcbViaWrite209) {1177}", "$requestLimit=if ($PcbViaWrite209) {1149}");
   assert.equal(compose(prior), source);
   for (const marker of ["pcb-via-structure-transport-bind", "pcb-via-structure-transport", "schematic-display-structure-transport-bind", "schematic-display-structure-transport"]) {
     assert.equal(source.split(`        '${marker}' {`).length, 2);

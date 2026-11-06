@@ -5,8 +5,8 @@ import type { CurrentProjectStructureTransportRole } from "./current-project-str
  * its private native origin. No debugger continuation is attempted on failure. */
 import { CurrentPcbViaEventRouter } from "./current-pcb-via-event-router.ts";
 import type { CurrentPcbViaEventPoint, CurrentPcbViaRoutedEvent, DiagnosticEvent } from "./current-pcb-via-event-router.ts";
-import { CURRENT_PROJECT_SAVE_STRUCTURE_SITES as STRUCTURE_SITES } from "./current-project-save-structure-protocol.ts";
-import type { CurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
+import { CURRENT_PROJECT_SAVE_PRODUCER_GUARD_SITES as GUARD_SITES, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as STRUCTURE_SITES } from "./current-project-save-structure-protocol.ts";
+import type { CurrentProjectSaveProducerGuardRole, CurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import { performance } from "node:perf_hooks";
 import { types } from "node:util";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -36,6 +36,8 @@ export class CurrentPcbViaWorkerController {
   readonly #bindings: CurrentPcbViaWorkerControllerBindings;
   readonly #events: CurrentPcbViaWorkerBootstrapEvent[] = [];
   readonly #savePoints = new Map<CurrentPcbViaSaveSite, string>();
+  readonly #producerGuardPoints = new Map<CurrentProjectSaveProducerGuardRole, string>();
+  #producerGuardHeld: CurrentProjectSaveProducerGuardRole | null = null;
   readonly #transportPoints = new Map<CurrentProjectStructureTransportRole, string>();
   readonly #structurePoints = new Map<Extract<CurrentProjectSaveStructureCommand, { phase: "project-save-structure-arm" }>["role"], string>();
   readonly #background = new Set<string>();
@@ -88,9 +90,16 @@ export class CurrentPcbViaWorkerController {
   public bindStructureTransportBreakpoint(source: CurrentPcbViaProjectSourceHeld, role: CurrentProjectStructureTransportRole, breakpointId: string): void {
     need(this.#source === source && this.#result === null && !this.#transportPoints.has(role) && ![...this.#transportPoints.values(), ...this.#structurePoints.values(), ...this.#savePoints.values()].includes(breakpointId) && token(breakpointId)); this.#transportPoints.set(role, breakpointId);
   }
+  public bindProducerGuardBreakpoint(source: CurrentPcbViaProjectSourceHeld, role: CurrentProjectSaveProducerGuardRole, breakpointId: string): void {
+    need(this.#source === source && this.#result === null && !this.#producerGuardPoints.has(role) && ![...this.#producerGuardPoints.values(), ...this.#transportPoints.values(), ...this.#structurePoints.values(), ...this.#savePoints.values()].includes(breakpointId) && token(breakpointId)); this.#producerGuardPoints.set(role, breakpointId);
+  }
+  public requireProducerGuardsArmed(source: CurrentPcbViaProjectSourceHeld): void { need(this.#source === source && this.#producerGuardPoints.size === 10 && this.#producerGuardHeld === null && !this.#failed); }
   public requireStructureTransportArmed(source: CurrentPcbViaProjectSourceHeld): void { need(this.#source === source && this.#transportPoints.size === 3); }
   public requireStructureArmed(source: CurrentPcbViaProjectSourceHeld): void { need(this.#source === source && this.#structurePoints.size === 14); }
   #resolution(event: CurrentPcbViaWorkerBootstrapEvent): boolean {
+    if (event.method === "Debugger.breakpointResolved" && record(event.params)) { const params = event.params; const guard = [...this.#producerGuardPoints].find(([_role, id]) => id === params["breakpointId"]);
+      if (guard !== undefined) { const location = event.params["location"], site = GUARD_SITES[guard[0]]; need(this.#source !== null && record(location) && Reflect.ownKeys(event.params).length === 2 && Reflect.ownKeys(location).length === 3 && location["scriptId"] === this.#source.scriptId && location["lineNumber"] === site.lineNumber && location["columnNumber"] === site.columnNumber); return true; }
+    }
     if (this.#result !== null) { return false; }
     if (event.method !== "Debugger.breakpointResolved") { return false; }
     need(this.#source !== null && record(event.params) && record(event.params["location"]));
@@ -128,6 +137,10 @@ export class CurrentPcbViaWorkerController {
     }
     if (typeof event.sessionId === "string" && this.#background.has(event.sessionId)) { return; }
     need(this.#child !== null && event.sessionId === this.#child.sessionId && this.#events.length < 256);
+    if (event.method === "Debugger.paused" && record(event.params) && Array.isArray(event.params["hitBreakpoints"])) {
+      const hits: readonly unknown[] = event.params["hitBreakpoints"]; const guard = [...this.#producerGuardPoints].find(([_role, id]) => hits.includes(id));
+      if (guard !== undefined) { this.#producerGuardHeld = guard[0]; throw new Error("PROJECT_SAVE_PRODUCER_GUARD_HELD"); }
+    }
     this.#events.push(freezeDeep(structuredClone({ method: event.method, sessionId: event.sessionId, params: event.params })));
   }
   async #current(): Promise<void> { need(!this.#failed); await this.#bindings.assertCurrent(); need(!this.#failed); }

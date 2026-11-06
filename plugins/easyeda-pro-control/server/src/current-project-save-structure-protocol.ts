@@ -6,6 +6,9 @@ import { CURRENT_PROJECT_SAVE_STRUCTURE_CALLS as CALLS } from "./current-project
 import { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES, CURRENT_PROJECT_SAVE_STRUCTURE_STARTUP_CONDITION as STARTUP_CONDITION } from "./current-project-save-structure-source.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
+export { CURRENT_PROJECT_SAVE_PRODUCER_GUARD_REQUESTS } from "./current-project-save-producer-guard-protocol.ts";
+export { CURRENT_PROJECT_SAVE_PRODUCER_GUARD_SITES } from "./current-project-save-producer-guard-source.ts";
+export type { CurrentProjectSaveProducerGuardRole } from "./current-project-save-producer-guard-source.ts";
 export { CURRENT_PROJECT_SAVE_STRUCTURE_CALLS } from "./current-project-save-structure-programs.ts";
 export { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES, CURRENT_PROJECT_SAVE_STRUCTURE_STARTUP_CONDITION, qualifyCurrentProjectSaveStructureSource } from "./current-project-save-structure-source.ts";
 export type { CurrentProjectSaveStructureSite } from "./current-project-save-structure-source.ts";

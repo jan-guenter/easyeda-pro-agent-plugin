@@ -10,7 +10,7 @@ import { CURRENT_PCB_VIA_WORKER_BOOTSTRAP_REQUESTS as BOOTSTRAP } from "./curren
 import { CURRENT_PCB_VIA_SAVE_REQUESTS as SAVE } from "./current-pcb-via-save-protocol.ts";
 import { CURRENT_PCB_VIA_MAIN_STEP_REQUESTS as STEPS } from "./current-pcb-via-main-step-protocol.ts";
 import { CURRENT_PCB_VIA_MAIN_REQUESTS as MAIN } from "./current-pcb-via-main-protocol.ts";
-import { CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as STRUCTURE } from "./current-project-save-structure-protocol.ts";
+import { CURRENT_PROJECT_SAVE_PRODUCER_GUARD_REQUESTS as GUARD, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as STRUCTURE } from "./current-project-save-structure-protocol.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUESTS as FENCE } from "./current-selected-file-main-sql-fence-protocol.ts";
 
 export const CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE = "pcb-via-write209";
@@ -19,7 +19,7 @@ export const CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE = Object.freeze({
   nativeSwitch: "-PcbViaWrite209",
   main: Object.freeze({ normal: 64 + FENCE.normal + MAIN.normal + STEPS.normal + BEGIN.normal + HISTORY.normal + STRUCTURE_MAIN.normal, cleanup: 8 + MAIN.cleanup + BEGIN.cleanup + HISTORY.cleanup + STRUCTURE_MAIN.cleanup, total: 64 + FENCE.normal + MAIN.total + STEPS.total + BEGIN.total + HISTORY.total + STRUCTURE_MAIN.total + 8 }),
   renderer: Object.freeze({ opening: 103, sceneObservations: 2, sceneRequests: 267, dtoObservations: 2, dtoRequests: 9,
-    fixedStages: 5, bracketsPerStage: 8, workerBootstrap: BOOTSTRAP.total, saveObservation: SAVE.total, structureObservation: STRUCTURE.cdpRequests, structureTransport: TRANSPORT.cdpRequests, structureTransportBindingControls: 1, clockObservation: CLOCK.total,
-    total: 103 + 2 * 267 + 2 * 9 + 5 * (8 + 1) + BOOTSTRAP.total + SAVE.total + STRUCTURE.cdpRequests + TRANSPORT.cdpRequests + CLOCK.total }),
+    fixedStages: 5, bracketsPerStage: 8, workerBootstrap: BOOTSTRAP.total, saveObservation: SAVE.total, structureObservation: STRUCTURE.cdpRequests, producerGuards: GUARD.cdpRequests, producerEnrollmentControls: GUARD.enrollmentControls, structureTransport: TRANSPORT.cdpRequests, structureTransportBindingControls: 1, clockObservation: CLOCK.total,
+    total: 103 + 2 * 267 + 2 * 9 + 5 * (8 + 1) + BOOTSTRAP.total + SAVE.total + STRUCTURE.cdpRequests + TRANSPORT.cdpRequests + GUARD.cdpRequests + CLOCK.total }),
   executionAuthorized: false, saveAuthorized: false, persistenceVerified: false,
 });

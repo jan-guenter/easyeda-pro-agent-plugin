@@ -1,7 +1,7 @@
 /** Production cursor + production seven-source runner, with only full imported
  * source bytes replaced at the explicit VM seam. No native origin is issued. */
 /* oxlint-disable import/max-dependencies -- Exercise the two actual state machines and their independent source/Save contracts. */
-import { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as STRUCTURE } from "../src/current-project-save-structure-protocol.ts";
+import { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_PRODUCER_GUARD_SITES as GUARDS, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as STRUCTURE } from "../src/current-project-save-structure-protocol.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
@@ -38,7 +38,7 @@ async function constructor(): Promise<typeof CurrentPcbViaWorkerController> {
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Runtime checked production class; only pinned full-source bytes have the stated seam.
   return result as typeof CurrentPcbViaWorkerController;
 }
-async function fixture(failSetup = false, holdPoll = false, structure = false): Promise<Readonly<{ controller: CurrentPcbViaWorkerController; bindings: CurrentPcbViaWorkerControllerBindings;
+async function fixture(failSetup = false, holdPoll = false, structure = false, producerGuards = false): Promise<Readonly<{ controller: CurrentPcbViaWorkerController; bindings: CurrentPcbViaWorkerControllerBindings;
   commands: CurrentPcbViaWorkerCommand[]; incoming: DiagnosticEvent[]; state: { failed: boolean; held: number; released: number; resumed: boolean; bound: number }; releasePoll: () => void; pollStarted: Promise<true> }>> {
   const Constructor = await constructor(), projectUuid = "a".repeat(64), windowTabId = "original-window";
   const targetUrl = "https://client/editor?entry=mgr-project-worker.js&cll=&debugOpen=0", title = `project_${projectUuid}_${windowTabId}`;
@@ -72,6 +72,13 @@ async function fixture(failSetup = false, holdPoll = false, structure = false): 
         controller.bindSaveBreakpoint(source, role, `save-${role}`);
         event("Debugger.breakpointResolved", { breakpointId: `save-${role}`, location: { scriptId: source.scriptId, lineNumber: SITES[role].lineNumber, columnNumber: SITES[role].columnNumber } });
       }
+      if (producerGuards) { for (const [role, site] of Object.entries(GUARDS)) {
+        assert.ok(role in GUARDS);
+        // The fixed data roster supplies every role; no native handle/source is caller-selected.
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Object.entries loses the keys of this frozen fixed source roster.
+        controller.bindProducerGuardBreakpoint(source, role as keyof typeof GUARDS, `producer-${role}`);
+        event("Debugger.breakpointResolved", { breakpointId: `producer-${role}`, location: { scriptId: source.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } });
+      } controller.requireProducerGuardsArmed(source); }
       if (structure) { for (const role of [...CONSTRUCTORS, "startupEntry", "startupReturn", "bootstrap", "packet", "response", "callbackReturn", "initialFinally", "queuedFinally"] as const) {
         controller.bindStructureBreakpoint(source, role, `structure-${role}`); const site = STRUCTURE[role];
         event("Debugger.breakpointResolved", { breakpointId: `structure-${role}`, location: { scriptId: source.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } });
@@ -142,4 +149,13 @@ void test("original construction collector starts before navigation settles and 
   const f = await fixture(false, false, true); const constructed = f.controller.nextStructureEvent();
   await f.controller.pump(); const event = await constructed;
   assert.equal(event.method, "Debugger.paused"); assert.equal(f.controller.status().pumping, false); assert.equal(f.commands.length, 20);
+});
+
+void test("original producer guards remain held and never become a Save or structure continuation", async () => {
+  for (const role of ["historyCloud", "localIngress", "pendingCache"] as const) {
+    const f = await fixture(false, false, false, true); await f.controller.pump(); const count = f.commands.length, site = GUARDS[role];
+    f.incoming.push({ method: "Debugger.paused", sessionId: "original-worker", params: { hitBreakpoints: [`producer-${role}`], callFrames: [{ location: { scriptId: "script-project", lineNumber: site.lineNumber, columnNumber: site.columnNumber } }] } });
+    await assert.rejects(f.controller.nextSaveEvent(), /PRODUCER_GUARD_HELD/u); assert.equal(f.state.failed, true); assert.equal(f.commands.length, count);
+    assert.throws(() => Reflect.apply(f.controller.reserveSaveResume.bind(f.controller), f.controller, [{}, "entry"])); await assert.rejects(f.controller.pump()); assert.equal(f.commands.length, count);
+  }
 });

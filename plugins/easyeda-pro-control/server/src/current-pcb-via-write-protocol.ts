@@ -1,3 +1,4 @@
+import { currentProjectSaveProducerGuardWire } from "./current-project-save-producer-guard-wire.ts";
 import { currentProjectStructureTransportWire } from "./current-project-structure-transport-wire.ts";
 /** Finite Via renderer vocabulary. Only this new birth can select these fixed
  * programs; no caller JavaScript, SDK receiver or pipe handle is accepted. */
@@ -53,6 +54,12 @@ export function currentPcbViaWriteNativeRequest(chunk: Buffer): Readonly<Record<
     raw["id"] < 1 || raw["id"] > PROFILE.renderer.total || !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("PCB_VIA_WIRE"); }
   const { id, sessionId, ...input } = raw;
   if (typeof sessionId !== "string" && Object.hasOwn(raw, "viaWritePhase")) { throw new Error("PCB_VIA_SESSION"); }
+  if (Object.hasOwn(raw, "producerGuardCommand")) {
+    const { id: guardId, sessionId: guardSession, producerGuardCommand, ...guardInput } = raw;
+    if (producerGuardCommand !== true || typeof guardSession !== "string") { throw new Error("PROJECT_SAVE_PRODUCER_GUARD_WIRE"); }
+    const fixed = currentProjectSaveProducerGuardWire(guardInput, guardId, "via");
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id: guardId, ...fixed.command, producerGuardCommand: true, sessionId: guardSession })}\0`))) { throw new Error("PROJECT_SAVE_PRODUCER_GUARD_WIRE"); } return fixed.request;
+  }
   if (Object.hasOwn(raw, "structureTransportCommand")) {
     const { structureTransportCommand, ...command } = input;
     if (structureTransportCommand !== true || typeof sessionId !== "string") { throw new Error("PCB_VIA_STRUCTURE_TRANSPORT_WIRE"); }
