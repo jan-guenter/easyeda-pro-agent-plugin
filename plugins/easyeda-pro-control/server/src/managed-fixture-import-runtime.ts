@@ -16,6 +16,9 @@ import { prepareManagedFixtureArchive, prepareManagedLibraryFile } from "./manag
 import { managedLibraryFileSchema } from "./managed-library-files.ts";
 import type { WindowsControlRuntime } from "./windows-runtime.ts";
 import { buildManagedFixtureEnvironmentProgram, managedFixtureEnvironmentObservationSchema } from "./managed-fixture-environment-program.ts";
+import { captureManagedFixtureClosedSnapshot } from "./managed-fixture-closed-snapshot.ts";
+import { assertOriginalGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
+import type { QualifiedGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
 
 const operationId = z.string().regex(/^[a-z0-9][a-z0-9-]{7,95}$/u);
 export const managedFixtureImportRequestSchema = z.discriminatedUnion("action", [
@@ -31,6 +34,7 @@ export const managedFixtureImportRequestSchema = z.discriminatedUnion("action", 
   z.object({ action: z.literal("settle-cleanup-records"), operationId, cleanupNonce: z.string().min(32).max(512) }).strict(),
   z.object({ action: z.literal("settle-import-records"), operationId }).strict(),
   z.object({ action: z.literal("release-owner"), operationId, confirmReleaseFixtureOwner: z.literal(true) }).strict(),
+  z.object({ action: z.literal("capture-closed-import"), operationId, confirmReadClosedFixture: z.literal(true) }).strict(),
 ]);
 export type ManagedFixtureImportRequest = z.infer<typeof managedFixtureImportRequestSchema>;
 type Observation = z.infer<typeof managedFixtureImportJobObservationSchema>;
@@ -40,7 +44,7 @@ export const MANAGED_FIXTURE_IMPORT_DISPATCH_PHASE = "managed-fixture-import";
 export function queryManagedFixtureImport(input: unknown = {}): Record<string, unknown> {
   const request = z.object({ includeSchemas: z.boolean().default(false) }).strict().parse(input);
   return { tool: "easyeda_control_fixture_import", profile: MANAGED_FIXTURE_IMPORT_PROFILE,
-    actions: ["import-generated-fixture", "inspect", "settle-import-records", "inspect-destination", "request-cleanup-close", "observe-cleanup-termination", "finish-cleanup", "settle-cleanup-records", "release-destination", "release-owner"],
+    actions: ["import-generated-fixture", "inspect", "settle-import-records", "inspect-destination", "request-cleanup-close", "observe-cleanup-termination", "finish-cleanup", "settle-cleanup-records", "capture-closed-import", "release-destination", "release-owner"],
     effect: "fresh-managed-disposable-native-import", nativeImportLiveValidation: "not-recorded", importedFixtureAccepted: false,
     retryAllowed: false, deletionAuthorized: false, designExecutionAuthorized: false,
     limitations: ["Requires the same original ordinary 209 launch, exact empty StartPage, current SDK/UI/manager/main pins and authenticated tracked dispatch.",
@@ -125,6 +129,9 @@ export class ManagedFixtureImportCoordinator {
   private busy = false;
   private attemptedOperationId: string | undefined;
   private lastNativeJournal: TrackedDispatchOperationJournal | undefined;
+  private generatedArchive: Buffer | undefined;
+  private closedCaptureAttempted = false;
+  private closedCapture: Awaited<ReturnType<typeof captureManagedFixtureClosedSnapshot>> | undefined;
   private destination: ReturnType<NonNullable<ManagedFixtureImportDependencies["destination"]>> | undefined;
   private destinationReleased = false;
   private migrationExclusionVerified = false;
@@ -205,6 +212,7 @@ export class ManagedFixtureImportCoordinator {
       environment: this.environmentObservation, environmentOperationId: this.environmentOperation?.operationId,
       publicationPending: this.pendingPublication?.operation.operationId === id, originalJournalRetained: true,
       ownerReservation: this.reservation, operationInFlight: this.busy,
+      closedSnapshot: this.closedCapture?.report ?? null,
       destinationReleased: this.destinationReleased, lastError: this.error,
       libraryMigrationExcluded: this.migrationExclusionVerified,
       nativeImportMayHaveBeenDispatched: operation.mutationMayHaveOccurred, retryAllowed: false, filesDeleted: false,
@@ -229,6 +237,16 @@ export class ManagedFixtureImportCoordinator {
    */
   public hasActiveReservation(): boolean { return this.reservation === "reserved" || this.busy; }
   public hasPendingWork(): boolean { return this.hasActiveReservation(); }
+  /** Internal immutable data transfer only, after original owner release.
+   * A fresh opening owner still needs its own original runtime/HMAC custody
+   * and must recheck the source/checkpoint. Serialized report JSON cannot pass.
+   */
+  public qualifiedSourceForFreshOpening(): Readonly<{ qualification: QualifiedGeneratedFixtureTarget; archive: Buffer }> {
+    const qualification = this.closedCapture?.qualifiedTarget;
+    if (this.reservation !== "released" || this.busy || qualification === null || qualification === undefined || this.generatedArchive === undefined) { throw new Error("Original closed generated fixture has no released issued opening source."); }
+    assertOriginalGeneratedFixtureTarget(qualification);
+    return Object.freeze({ qualification, archive: Buffer.from(this.generatedArchive) });
+  }
   private retainDispatcherStatus(journal: TrackedDispatchOperationJournal): boolean {
     this.current(); const status = this.options.engine.originalTrackedDispatchStatus(journal);
     if (status === undefined) { return false; }
@@ -313,6 +331,22 @@ export class ManagedFixtureImportCoordinator {
       return this.inspect(request.operationId);
     }
     if (this.pendingPublication !== undefined) { throw new Error("Settle only the retained original fixture publication before further native or cleanup actions."); }
+    if (request.action === "capture-closed-import") {
+      this.originalJournalForCleanup(request.operationId);
+      const destination = this.destination; const archive = this.generatedArchive; const last = this.lastNativeJournal;
+      if (this.closedCaptureAttempted || destination === undefined || this.destinationReleased || archive === undefined || last === undefined ||
+          this.options.cleanup.inspect(last.operationId)["cleanupComplete"] !== true) { throw new Error("Closed fixture capture requires its original completed cleanup and retained unopened destination."); }
+      const held = this.destinationObservation ?? destination.snapshot(); if (held === null) { throw new Error("Original fixture directory identity is unavailable."); }
+      await this.artifact("closed-import-capture-intent", { source: destination.snapshot(), nativeRootAndJobCleanupComplete: true, readOnly: true });
+      this.closedCaptureAttempted = true;
+      this.closedCapture = await this.checked(() => captureManagedFixtureClosedSnapshot({ archive, destination: held,
+        assertOriginalOwner: () => { this.current(); },
+        observeOriginalTermination: async () => {
+          const termination = await this.checked(() => this.options.runtime.observeLaunchTermination());
+          if (!termination.terminated) { throw new Error("Original import root/Job is no longer proven terminated."); }
+        }, inspectOriginalDestination: () => this.checked(() => destination.inspect()) }));
+      await this.artifact("closed-import-capture", this.closedCapture.report); return this.inspect(request.operationId);
+    }
     if (request.action === "request-cleanup-close" || request.action === "observe-cleanup-termination" || request.action === "finish-cleanup" || request.action === "settle-cleanup-records") {
       this.originalJournalForCleanup(request.operationId);
       return this.checked(() => this.options.cleanup.run(request));
@@ -347,6 +381,7 @@ export class ManagedFixtureImportCoordinator {
     await this.checked(() => (this.dependencies.verifySources ?? verifyManagedFixtureImportSources)(this.options.assetsRoot));
     const environment = await this.observeEnvironment(request.operationId, initial);
     const generated = generateManagedFixtureArchiveData(request.fixtureKind), nonce = randomBytes(32).toString("hex");
+    this.generatedArchive = Buffer.from(generated.bytes);
     const plan = { name: request.operationId, profile: MANAGED_FIXTURE_IMPORT_TRACKED_PROFILE,
       intent: "Import one fresh fixed generated disposable fixture into a new exclusive private Windows directory; retain all partial effects and never replay.",
       expectedFingerprint: initial, launchSha256: sha256Json(JSON.parse(this.launchText) as unknown),

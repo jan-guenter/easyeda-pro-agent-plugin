@@ -43,6 +43,9 @@ export type ManagedFixtureGeneratorKind = z.infer<typeof kindSchema>;
 export const MANAGED_FIXTURE_VIA_FIELDS = Object.freeze(["partitionId", "groupId", "netName", "ruleName", "centerX", "centerY",
   "holeDiameter", "viaDiameter", "viaType", "topSolderExpansion", "bottomSolderExpansion", "locked", "unusedInnerLayers", "zIndex"]);
 export const MANAGED_FIXTURE_LINE_FIELDS = Object.freeze(["partitionId", "groupId", "netName", "layerId", "startX", "startY", "endX", "endY", "width", "locked", "zIndex"]);
+export const MANAGED_FIXTURE_VIA_BODY = Object.freeze({ partitionId: "", groupId: 0, netName: "", ruleName: "", centerX: 0, centerY: 0, holeDiameter: 100,
+  viaDiameter: 200, viaType: "NORMAL", topSolderExpansion: 0, bottomSolderExpansion: 0, locked: false, unusedInnerLayers: Object.freeze([]), zIndex: null });
+export const MANAGED_FIXTURE_LINE_BODY = Object.freeze({ partitionId: "", groupId: 0, netName: "", layerId: 1, startX: 500, startY: 0, endX: 1500, endY: 0, width: 100, locked: false, zIndex: null });
 
 /** New ZIP32 data only. The two member names and format are fixed here; no
  * supplied archive, design, SQLite file or extraction destination is edited. */
@@ -85,9 +88,8 @@ export function generateManagedFixtureArchiveData(kindInput: unknown): Readonly<
   if (!Number.isSafeInteger(generatedAtEpochMs) || generatedAtEpochMs < 1 || new Set([client, documentUuid, viaId, lineId]).size !== 4) {
     throw new Error("Fresh fixture identities or creation clock are invalid.");
   }
-  const via = { partitionId: "", groupId: 0, netName: "", ruleName: "", centerX: 0, centerY: 0, holeDiameter: 100,
-    viaDiameter: 200, viaType: "NORMAL", topSolderExpansion: 0, bottomSolderExpansion: 0, locked: false, unusedInnerLayers: [], zIndex: null };
-  const line = { partitionId: "", groupId: 0, netName: "", layerId: 1, startX: 500, startY: 0, endX: 1500, endY: 0, width: 100, locked: false, zIndex: null };
+  const via = { ...MANAGED_FIXTURE_VIA_BODY, unusedInnerLayers: [] };
+  const line = { ...MANAGED_FIXTURE_LINE_BODY };
   if (JSON.stringify(Object.keys(via)) !== JSON.stringify(MANAGED_FIXTURE_VIA_FIELDS) || JSON.stringify(Object.keys(line)) !== JSON.stringify(MANAGED_FIXTURE_LINE_FIELDS)) {
     throw new Error("Fixed fixture geometry differs from the reviewed native field rosters.");
   }
