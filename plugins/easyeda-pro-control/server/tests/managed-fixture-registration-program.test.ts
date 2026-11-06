@@ -3,7 +3,9 @@ import { webcrypto } from "node:crypto";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { qualifyGeneratedFixtureInitialSql } from "../src/managed-fixture-initial-sql.ts";
-import type { QualifiedGeneratedFixtureTarget } from "../src/managed-fixture-initial-sql.ts";
+import type { QualifiedGeneratedPcbReadTarget as QualifiedGeneratedFixtureTarget } from "../src/managed-pcb-fixture-read-target.ts";
+import { qualifyGeneratedPadFixtureInitialSql } from "../src/managed-pad-fixture-initial-sql.ts";
+import { MANAGED_PAD_FIXTURE_KIND } from "../src/managed-pad-fixture-generator.ts";
 import { buildGeneratedFixtureRegistrationProgram, generatedFixtureRegistrationResultSchema } from "../src/managed-fixture-registration-program.ts";
 import { managedFixtureInitialSqlFixture } from "./helpers/managed-fixture-initial-sql.ts";
 
@@ -51,4 +53,11 @@ void test("registration refuses loaded state before dispatch, wrong selected pat
     const native = environment(result.qualification, options); await assert.rejects(native.run());
     assert.equal(native.registrations(), options.loadedProject === true ? 0 : 1);
   }
+});
+void test("a genuine separate Pad initial target uses the same exact native-path registration prefix", async () => {
+  const result = await qualifyGeneratedPadFixtureInitialSql(await managedFixtureInitialSqlFixture(undefined, MANAGED_PAD_FIXTURE_KIND));
+  const native = environment(result.qualification), value = generatedFixtureRegistrationResultSchema.parse(await native.run());
+  assert.equal(native.registrations(), 1); assert.equal(value.rawWindowsPath, result.qualification.target.rawWindowsPath);
+  assert.equal(value.exactOtherRegistrationRosterUnchanged, true); assert.equal(value.persistentRegistrationVerified, false);
+  assert.throws(() => buildGeneratedFixtureRegistrationProgram(structuredClone(result.qualification)));
 });

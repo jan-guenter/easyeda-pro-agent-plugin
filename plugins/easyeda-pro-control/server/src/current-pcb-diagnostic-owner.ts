@@ -76,8 +76,8 @@ import type { GeneratedFixtureOpenCheckpoint } from "./managed-fixture-generated
 import { spawn } from "node:child_process";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { assertOriginalGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
-import type { QualifiedGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
+import { assertOriginalGeneratedPcbReadTarget as assertOriginalGeneratedFixtureTarget } from "./managed-pcb-fixture-read-target.ts";
+import type { QualifiedGeneratedPcbReadTarget as QualifiedGeneratedFixtureTarget } from "./managed-pcb-fixture-read-target.ts";
 import { decodeGeneratedFixtureRegistrationReply } from "./managed-fixture-registration-program.ts";
 import { lstat, readFile, realpath } from "node:fs/promises";
 import process from "node:process";

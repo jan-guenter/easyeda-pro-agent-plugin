@@ -20,15 +20,18 @@ import type { QualifiedGeneratedFixtureTarget } from "./managed-fixture-initial-
 import { qualifyGeneratedSchematicFixtureInitialSql } from "./managed-schematic-fixture-initial-sql.ts";
 import type { QualifiedGeneratedSchematicFixtureTarget } from "./managed-schematic-fixture-initial-sql.ts";
 
+import { qualifyGeneratedPadFixtureInitialSql } from "./managed-pad-fixture-initial-sql.ts";
+import type { QualifiedGeneratedPadFixtureTarget } from "./managed-pad-fixture-initial-sql.ts";
+
 const row = z.object({ header: z.looseObject({ type: z.string(), id: z.string().optional() }), body: z.record(z.string(), z.unknown()) });
-function expectedProjection(archive: Buffer): Readonly<Record<string, unknown>> {
+function expectedProjection(archive: Buffer, pad = false): Readonly<Record<string, unknown>> {
   const qualification = qualifyManagedFixtureArchive(archive), source = readManagedLibraryZip(archive).get(qualification.source.member);
   if (source === undefined || qualification.documents.length !== 1 || qualification.documents[0]?.documentType !== "PCB") { throw new Error("Closed fixture comparison requires the sole generated root PCB source."); }
   const rows = source.toString("utf8").slice(0, -2).split("|\n").map((text) => {
     const boundary = text.indexOf("||"); return row.parse({ header: JSON.parse(text.slice(0, boundary)) as unknown, body: JSON.parse(text.slice(boundary + 2)) as unknown });
   });
   const head = rows[0], meta = rows[1];
-  if (head?.header.type !== "DOCHEAD" || meta?.header.type !== "META" || rows.slice(2).some((entry) => !["VIA", "LINE", "ARC"].includes(entry.header.type) || entry.header.id === undefined)) { throw new Error("Closed fixture comparison refuses an unexpected source family."); }
+  if (head?.header.type !== "DOCHEAD" || meta?.header.type !== "META" || rows.slice(2).some((entry) => !(pad ? ["PAD"] : ["VIA", "LINE", "ARC"]).includes(entry.header.type) || entry.header.id === undefined)) { throw new Error("Closed fixture comparison refuses an unexpected source family."); }
   return { documents: [{ uuid: qualification.documents[0].uuid, docType: "PCB", metadata: head.body,
     records: rows.slice(1).map((entry) => ({ id: entry.header.id, type: entry.header.type, body: entry.body })).toSorted((left, right) => String(left.id).localeCompare(String(right.id))) }] };
 }
@@ -40,6 +43,14 @@ export function compareGeneratedFixtureClosedSources(archive: Buffer, history: N
   const expected = expectedProjection(archive); const actual = { documents: history.documents.map((document) => ({ uuid: document.uuid, docType: document.docType,
     metadata: document.metadata, records: document.records.map((entry) => ({ id: entry.id, type: entry.type, body: entry.body })).toSorted((left, right) => left.id.localeCompare(right.id)) })) };
   return { schema: "easyeda-pro-control.generated-fixture-closed-source-comparison.v1", expectedSha256: sha256Json(expected), actualSha256: sha256Json(actual),
+    completeDocumentAndBodyRosterMatched: canonicalJson(expected) === canonicalJson(actual), documentCount: history.documents.length,
+    docHeadClocksAccepted: false, uploadTicketsAccepted: false, completeSqlEffectsAccepted: false, registrationVerified: false,
+    importedFixtureAccepted: false, designExecutionAuthorized: false };
+}
+export function compareGeneratedPadFixtureClosedSources(archive: Buffer, history: NativeHistorySnapshot): Readonly<Record<string, unknown>> {
+  const expected = expectedProjection(archive, true); const actual = { documents: history.documents.map((document) => ({ uuid: document.uuid, docType: document.docType,
+    metadata: document.metadata, records: document.records.map((entry) => ({ id: entry.id, type: entry.type, body: entry.body })).toSorted((left, right) => left.id.localeCompare(right.id)) })) };
+  return { schema: "easyeda-pro-control.generated-pad-fixture-closed-source-comparison.v1", expectedSha256: sha256Json(expected), actualSha256: sha256Json(actual),
     completeDocumentAndBodyRosterMatched: canonicalJson(expected) === canonicalJson(actual), documentCount: history.documents.length,
     docHeadClocksAccepted: false, uploadTicketsAccepted: false, completeSqlEffectsAccepted: false, registrationVerified: false,
     importedFixtureAccepted: false, designExecutionAuthorized: false };
@@ -135,8 +146,15 @@ export async function captureManagedFixtureClosedSnapshotWithWindowsMetadata(inp
 export async function captureManagedSchematicFixtureClosedSnapshotWithWindowsMetadata(input: ManagedFixtureWindowsClosedSnapshotOptions): ReturnType<typeof captureManagedSchematicFixtureClosedSnapshot> {
   const retained = windowsOptions(input); const result = await captureClosedSnapshot(retained.options, "schematic", retained.metadata); return { report: result.report, qualifiedSchematicTarget: result.qualifiedSchematicTarget };
 }
-async function captureClosedSnapshot(options: ManagedFixtureClosedSnapshotOptions, kind: "pcb" | "schematic", metadata?: WindowsMetadataCapture): Promise<Readonly<{
-  report: Record<string, unknown>; qualifiedTarget: QualifiedGeneratedFixtureTarget | null; qualifiedSchematicTarget: QualifiedGeneratedSchematicFixtureTarget | null;
+/** Separate Pad initial model, with original Windows metadata and no old v1
+ * source-family/schema substitution. This retains the same original handles. */
+export async function captureManagedPadFixtureClosedSnapshotWithWindowsMetadata(input: ManagedFixtureWindowsClosedSnapshotOptions): Promise<Readonly<{
+  report: Record<string, unknown>; qualifiedPadTarget: QualifiedGeneratedPadFixtureTarget | null;
+}>> {
+  const retained = windowsOptions(input); const result = await captureClosedSnapshot(retained.options, "pad", retained.metadata); return { report: result.report, qualifiedPadTarget: result.qualifiedPadTarget };
+}
+async function captureClosedSnapshot(options: ManagedFixtureClosedSnapshotOptions, kind: "pcb" | "schematic" | "pad", metadata?: WindowsMetadataCapture): Promise<Readonly<{
+  report: Record<string, unknown>; qualifiedTarget: QualifiedGeneratedFixtureTarget | null; qualifiedSchematicTarget: QualifiedGeneratedSchematicFixtureTarget | null; qualifiedPadTarget: QualifiedGeneratedPadFixtureTarget | null;
 }>> {
   const destination = managedFixtureDestinationObservationSchema.parse(options.destination), qualification = qualifyManagedFixtureArchive(options.archive);
   if (destination.state !== "held" || destination.expectedBasename !== qualification.expectedDestinationBasename) { throw new Error("Closed fixture destination differs from the original generated archive."); }
@@ -187,9 +205,9 @@ async function captureClosedSnapshot(options: ManagedFixtureClosedSnapshotOption
     const runtime = await currentProcessSqlRuntime(); options.assertOriginalOwner();
     const inventory = await readExactSqlInventory({ checkpointPath: snapshot.path, expectedSha256: snapshot.sha256, runtime }); options.assertOriginalOwner();
     const sql = await publishManagedAttachmentExclusive(join(directory, `${id}.sql.json`), "Complete closed fixture SQL inventory", Buffer.from(JSON.stringify(inventory), "utf8"), "closed-fixture-sql", reprove);
-    let qualified: Awaited<ReturnType<typeof qualifyGeneratedFixtureInitialSql>> | Awaited<ReturnType<typeof qualifyGeneratedSchematicFixtureInitialSql>> | undefined; let qualificationFailure: string | null = null;
+    let qualified: Awaited<ReturnType<typeof qualifyGeneratedFixtureInitialSql>> | Awaited<ReturnType<typeof qualifyGeneratedSchematicFixtureInitialSql>> | Awaited<ReturnType<typeof qualifyGeneratedPadFixtureInitialSql>> | undefined; let qualificationFailure: string | null = null;
     try {
-      qualified = await (kind === "pcb" ? qualifyGeneratedFixtureInitialSql : qualifyGeneratedSchematicFixtureInitialSql)({ archive: options.archive, inventory, rawWindowsPath: windowsPath,
+      qualified = await ({ pcb: qualifyGeneratedFixtureInitialSql, schematic: qualifyGeneratedSchematicFixtureInitialSql, pad: qualifyGeneratedPadFixtureInitialSql }[kind])({ archive: options.archive, inventory, rawWindowsPath: windowsPath,
         sourceCreatedEpochMs: windowsFile?.file.createdEpochMs ?? Number(before.birthtimeMs), sourceModifiedEpochMs: windowsFile?.file.modifiedEpochMs ?? Number(before.mtimeMs) }); options.assertOriginalOwner();
     } catch (error) { qualificationFailure = error instanceof Error ? error.message : "Initial SQL/source profile refused."; }
     const decoded = qualified === undefined ? null : await publishManagedAttachmentExclusive(join(directory, `${id}.history.json`), "Complete closed fixture decoded native history",
@@ -206,7 +224,11 @@ async function captureClosedSnapshot(options: ManagedFixtureClosedSnapshotOption
     const target = qualified?.qualification;
     let schema = kind === "pcb" ? "easyeda-pro-control.managed-fixture-closed-snapshot.v1" : "easyeda-pro-control.managed-schematic-fixture-closed-snapshot.v1";
     if (windowsFile !== undefined) { schema = kind === "pcb" ? "easyeda-pro-control.managed-fixture-closed-snapshot.v2" : "easyeda-pro-control.managed-schematic-fixture-closed-snapshot.v2"; }
-    return { qualifiedTarget: target?.schema === "easyeda-pro-control.qualified-generated-fixture-target.v1" ? target : null,
+    if (kind === "pad") { schema = "easyeda-pro-control.managed-pad-fixture-closed-snapshot.v1"; }
+    let targetFields: Record<string, unknown> = { issuedReadOpenTarget: target ?? null };
+    if (kind === "pad") { targetFields = { issuedPadReadOpenTarget: target ?? null }; }
+    else if (kind === "schematic") { targetFields = { issuedSchematicDataTarget: target ?? null, nativePageReadinessVerified: false, electricalConnectivityVerified: false }; }
+    return { qualifiedPadTarget: target?.schema === "easyeda-pro-control.qualified-generated-pad-fixture-target.v1" ? target : null, qualifiedTarget: target?.schema === "easyeda-pro-control.qualified-generated-fixture-target.v1" ? target : null,
       qualifiedSchematicTarget: target?.schema === "easyeda-pro-control.qualified-generated-schematic-fixture-target.v1" ? target : null,
       report: { schema, projectUuid, branchUuid: qualified?.history.branchUuid ?? null,
       ...(windowsFile === undefined ? {} : { sourceClockSource: "original-destination-windows-filetime", windowsClosedFileMetadata: windowsFile }),
@@ -214,8 +236,8 @@ async function captureClosedSnapshot(options: ManagedFixtureClosedSnapshotOption
       sqlReaderCompletion: readerCompletion(inventory), completeInitialSqlRowsQualified: qualified !== undefined, qualificationFailure,
       tableRoster: inventory.tables.map((table) => ({ name: table.name, rowCount: table.rows.length, sha256: table.sha256 })),
       historySemanticSha256: qualified?.history.semanticSha256 ?? null, sourceComparison: qualified === undefined ? null :
-        (kind === "pcb" ? compareGeneratedFixtureClosedSources : compareGeneratedSchematicFixtureClosedSources)(options.archive, qualified.history),
-      ...(kind === "pcb" ? { issuedReadOpenTarget: target ?? null } : { issuedSchematicDataTarget: target ?? null, nativePageReadinessVerified: false, electricalConnectivityVerified: false }), originalRootAndJobReobservedClosed: true,
+        ({ pcb: compareGeneratedFixtureClosedSources, schematic: compareGeneratedSchematicFixtureClosedSources, pad: compareGeneratedPadFixtureClosedSources }[kind])(options.archive, qualified.history),
+      ...targetFields, originalRootAndJobReobservedClosed: true,
       registrationVerified: false, completeSqlEffectsAccepted: false, importedFixtureAccepted: false, designExecutionAuthorized: false,
       sourceFileModified: false, sqliteSourceAttached: false, filesDeleted: false } };
   } finally { await source.close(); }

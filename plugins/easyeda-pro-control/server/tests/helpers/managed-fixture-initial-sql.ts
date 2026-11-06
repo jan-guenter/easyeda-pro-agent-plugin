@@ -6,6 +6,7 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { SQLInputValue } from "node:sqlite";
+import { MANAGED_PAD_FIXTURE_KIND, generateManagedPadFixtureArchiveData } from "../../src/managed-pad-fixture-generator.ts";
 import { generateManagedFixtureArchiveData } from "../../src/managed-fixture-generator.ts";
 import type { ManagedFixtureGeneratorKind } from "../../src/managed-fixture-generator.ts";
 import { MANAGED_FIXTURE_INITIAL_BASE_SQL_ROWS } from "../../src/managed-fixture-initial-sql.ts";
@@ -18,15 +19,16 @@ import { syntheticSqlRoot, syntheticSqlRuntime } from "./sqlite-inventory-fixtur
 
 const actor = "4".repeat(32), branch = "3".repeat(32), headId = "5".repeat(32), key = "6".repeat(32), start = "2".repeat(32);
 const directoryWindows = `C:\\SyntheticTemp\\CodexEasyedaFixture_${"1".repeat(32)}`;
-type Patch = "extra-empty-table-row" | "changed-seed" | "extra-history" | "changed-header" | "bad-sequence" | "changed-arc" | undefined;
-export async function managedFixtureInitialSqlFixture(patch?: Patch, kind: ManagedFixtureGeneratorKind = "line-and-via", syntheticDirectory = directoryWindows): Promise<Parameters<typeof qualifyGeneratedFixtureInitialSql>[0] & { syntheticDatabasePath: string }> {
-  const generated = generateManagedFixtureArchiveData(kind), source = readManagedLibraryZip(generated.bytes).get("Fixture.epru"); assert.ok(source !== undefined);
+type Patch = "extra-empty-table-row" | "changed-seed" | "extra-history" | "changed-header" | "bad-sequence" | "changed-arc" | "changed-pad" | undefined;
+export async function managedFixtureInitialSqlFixture(patch?: Patch, kind: ManagedFixtureGeneratorKind | typeof MANAGED_PAD_FIXTURE_KIND = "line-and-via", syntheticDirectory = directoryWindows): Promise<Parameters<typeof qualifyGeneratedFixtureInitialSql>[0] & { syntheticDatabasePath: string }> {
+  const generated = kind === MANAGED_PAD_FIXTURE_KIND ? generateManagedPadFixtureArchiveData() : generateManagedFixtureArchiveData(kind), source = readManagedLibraryZip(generated.bytes).get("Fixture.epru"); assert.ok(source !== undefined);
   const rawWindowsPath = `${syntheticDirectory}\\${generated.name.replace(/\.epro2$/u, ".eprj2")}`; const project = createHash("sha256").update(rawWindowsPath).digest("hex");
   const documentUuid = String(generated.metadata["documentUuid"]), generatedAt = Number(generated.metadata["generatedAtEpochMs"]);
   const when = Math.ceil(Date.now() / 1000) * 1000 + 1000; const utc = new Date(when).toISOString().slice(0, 19).replace("T", " ");
   const local = new Date(when + 60 * 60_000).toISOString().slice(0, 19).replace("T", " ");
   let sourceText = source.toString("utf8");
   if (patch === "changed-header") { sourceText = sourceText.replace('"type":"DOCHEAD"', '"type":"DOCHEAD","ticket":0'); }
+  if (patch === "changed-pad") { sourceText = sourceText.replace('"width":200', '"width":201'); }
   if (patch === "changed-arc") { sourceText = sourceText.replace('"angle":90', '"angle":91'); }
   const plaintext = `{"type":"EDIT_HEAD"}||${JSON.stringify({ uuid: actor, username: "", nickname: "", updateTime: when })}|\n${sourceText}`;
   const structure = { boards: {}, schematics: {}, sheets: {}, pcbs: { [documentUuid]: { uuid: documentUuid, title: "PCB1", board: "", zIndex: null,

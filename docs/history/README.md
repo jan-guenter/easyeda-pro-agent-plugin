@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 generated standalone circular Pad fixture](2026-11-06-generated-circular-pad-fixture.md). Separate fixed PAD archive, complete initial SQL issuer/checkpoint/staging and actual importer/reader integration; native positive validation and later historical reuse remain separate.
+
 - [2026-11-06 standalone circular Pad point reader](2026-11-06-pad-point-spatial-source.md). Distinct Pad-only point schemas, exact source geometry and344-of384 request derivation; Component cache/transform and positive fixture prerequisites remain explicit.
 
 - [2026-11-06 integrated reader native batch](2026-11-06-integrated-reader-native-batch.md). Combined generated helper, exact released/cold forward preservation, actual Windows compilation and distinct remaining live read/write proof.

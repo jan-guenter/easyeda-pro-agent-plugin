@@ -1,7 +1,7 @@
 import { buildEditorObservationProgram } from "./editor-observation-program.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
-import { assertOriginalGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
-import type { QualifiedGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
+import { assertOriginalGeneratedPcbReadTarget as assertOriginalGeneratedFixtureTarget } from "./managed-pcb-fixture-read-target.ts";
+import type { QualifiedGeneratedPcbReadTarget as QualifiedGeneratedFixtureTarget } from "./managed-pcb-fixture-read-target.ts";
 import { z } from "zod";
 
 export const generatedFixtureRegistrationResultSchema = z.object({
@@ -27,7 +27,7 @@ const root=globalThis,bad=()=>{throw new Error('GENERATED_FIXTURE_PATH_REGISTRAT
 const own=(value,key)=>{const descriptor=Object.getOwnPropertyDescriptor(value,key);if(!descriptor||!Object.hasOwn(descriptor,'value'))bad();return descriptor.value;};
 if(!target||typeof target!=='object'||Array.isArray(target)||Object.getPrototypeOf(target)!==Object.prototype||Reflect.ownKeys(target).length!==5)bad();
 for(const key of ['rawWindowsPath','projectUuid','branchUuid','documentUuid','expectedSourceSha256'])if(typeof own(target,key)!=='string')bad();
-if(!/^[a-f0-9]{64}$/.test(target.projectUuid)||!/^[a-f0-9]{32}$/.test(target.branchUuid)||!/^[a-f0-9]{32}$/.test(target.documentUuid)||!/^[a-f0-9]{64}$/.test(target.expectedSourceSha256)||!/^Codex_(?:via_only|line_and_via|arc_line_and_via)_[a-f0-9]{16}\\.eprj2$/.test(target.rawWindowsPath.slice(target.rawWindowsPath.lastIndexOf('\\\\')+1)))bad();
+if(!/^[a-f0-9]{64}$/.test(target.projectUuid)||!/^[a-f0-9]{32}$/.test(target.branchUuid)||!/^[a-f0-9]{32}$/.test(target.documentUuid)||!/^[a-f0-9]{64}$/.test(target.expectedSourceSha256)||!/^Codex_(?:via_only|line_and_via|arc_line_and_via|circular_smt_pad)_[a-f0-9]{16}\\.eprj2$/.test(target.rawWindowsPath.slice(target.rawWindowsPath.lastIndexOf('\\\\')+1)))bad();
 const method=(owner,key)=>{const chain=[];let node=owner;for(let i=0;i<4;i++){if(node===null||(typeof node!=='object'&&typeof node!=='function'))bad();chain.push(node);const d=Object.getOwnPropertyDescriptor(node,key);if(d){if(!Object.hasOwn(d,'value')||typeof d.value!=='function')bad();return{owner,key,chain,fn:d.value};}node=Object.getPrototypeOf(node);}bad();};
 const methodCheck=binding=>{for(let i=0;i<binding.chain.length;i++){const node=binding.chain[i];if(i>0&&Object.getPrototypeOf(binding.chain[i-1])!==node)bad();if(i===binding.chain.length-1){if(own(node,binding.key)!==binding.fn)bad();}else if(Object.hasOwn(node,binding.key))bad();}};
 const ui=own(root,'UI'),host=own(root,'gVars'),bus=own(host,'messageBus'),call=method(bus,'rpcCall'),mode=own(root,'PRO_EDITOR_MODE'),crypto=root.crypto,subtle=crypto.subtle,digest=method(subtle,'digest'),Encoder=root.TextEncoder;

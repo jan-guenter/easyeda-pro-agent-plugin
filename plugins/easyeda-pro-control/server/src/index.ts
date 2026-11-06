@@ -204,7 +204,7 @@ import { currentProjectOnlySymbolPreflightRequestSchema } from "./current-projec
 import { readCurrentProjectOnlySymbolPreflight } from "./current-project-only-symbol-runtime.ts";
 import { historicalAbandonmentRequestSchema, runHistoricalAbandonment } from "./historical-abandonment.ts";
 import { ManagedFixtureImportCoordinator, managedFixtureImportRequestSchema } from "./managed-fixture-import-runtime.ts";
-import type { ManagedFixtureOpeningSource } from "./managed-fixture-opening-source.ts";
+import type { ManagedPcbFixtureReadOpeningSource as ManagedFixtureOpeningSource } from "./managed-pcb-fixture-read-source.ts";
 import { ClosedGeneratedFixtureDataCoordinator } from "./closed-generated-fixture-runtime.ts";
 import { closedGeneratedFixtureDataRequestSchema } from "./closed-generated-fixture-data.ts";
 import { ORDINARY_LAUNCH_209_PROFILE } from "./ordinary-launch-209-profile.ts";

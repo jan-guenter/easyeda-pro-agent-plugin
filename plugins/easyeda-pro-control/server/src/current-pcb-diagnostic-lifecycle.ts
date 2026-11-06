@@ -20,10 +20,10 @@ import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpen
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
 import { prepareCurrentDisposableOpenCheckpoint, readCurrentPcbCommonOpenInventory, verifyCurrentDisposableOpenCheckpoint, verifyHistoricalCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
-import { consumeManagedFixtureOpeningSource } from "./managed-fixture-opening-source.ts";
-import type { ManagedFixtureOpeningSource } from "./managed-fixture-opening-source.ts";
-import { generatedFixtureDiagnosticCheckpoint, prepareGeneratedFixtureOpenCheckpoint, verifyGeneratedFixtureOpenCheckpoint, verifyHistoricalGeneratedFixtureOpenCheckpoint } from "./managed-fixture-generated-open-checkpoint.ts";
-import type { GeneratedFixtureOpenCheckpoint } from "./managed-fixture-generated-open-checkpoint.ts";
+import { consumeManagedPcbReadOpeningSource as consumeManagedFixtureOpeningSource, generatedPcbReadDiagnosticCheckpoint as generatedFixtureDiagnosticCheckpoint,
+  prepareGeneratedPcbReadOpenCheckpoint as prepareGeneratedFixtureOpenCheckpoint, verifyGeneratedPcbReadOpenCheckpoint as verifyGeneratedFixtureOpenCheckpoint,
+  verifyHistoricalGeneratedPcbReadOpenCheckpoint as verifyHistoricalGeneratedFixtureOpenCheckpoint } from "./managed-pcb-fixture-read-source.ts";
+import type { GeneratedPcbReadOpenCheckpoint as GeneratedFixtureOpenCheckpoint, ManagedPcbFixtureReadOpeningSource as ManagedFixtureOpeningSource } from "./managed-pcb-fixture-read-source.ts";
 import { captureGeneratedReaderClosedSnapshot } from "./managed-fixture-reader-closed-snapshot.ts";
 import { assertNoUnresolvedOrdinaryLaunches } from "./ordinary-launch.ts";
 import { currentFootprintCombinedFactoryFailureDiagnostics, currentFootprintCopyForwardFactoryFailureDiagnostics, requireCurrentFootprintCombinedUnlaunchedFactoryFailure, requireCurrentFootprintCopyForwardUnlaunchedFactoryFailure, startCurrentFootprintCombinedNativeOwner, startCurrentFootprintCopyForwardNativeOwner, startCurrentFootprintCopyNativeOwner, startCurrentFootprintCopyPreparationOwner, startCurrentFootprintMainNativeOwner, startCurrentGeneratedFixture209DiagnosticOwner, startCurrentGeneratedFixtureSpatial209Owner, startCurrentPcb209DiagnosticOwner, startCurrentPcb209EmptyStartupOwner, startCurrentPcb209RatlineContinuationOwner, startCurrentPcb209RatlineStartupOwner, startCurrentPcb209VisualOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbSpatialOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";

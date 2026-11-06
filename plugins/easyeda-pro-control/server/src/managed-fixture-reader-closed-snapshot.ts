@@ -8,8 +8,10 @@ import { basename, dirname, join, win32 } from "node:path";
 import { types } from "node:util";
 import { controlDataDirectory, ensureManagedDirectory, publishManagedAttachmentExclusive } from "./artifacts.ts";
 import { normalizeEasyedaProjectPath, sha256Json } from "./core.ts";
-import { assertOriginalGeneratedFixtureTarget, qualifyGeneratedFixtureInitialSql } from "./managed-fixture-initial-sql.ts";
-import type { QualifiedGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
+import { qualifyGeneratedFixtureInitialSql } from "./managed-fixture-initial-sql.ts";
+import { qualifyGeneratedPadFixtureInitialSql } from "./managed-pad-fixture-initial-sql.ts";
+import { assertOriginalGeneratedPcbReadTarget as assertOriginalGeneratedFixtureTarget } from "./managed-pcb-fixture-read-target.ts";
+import type { QualifiedGeneratedPcbReadTarget as QualifiedGeneratedFixtureTarget } from "./managed-pcb-fixture-read-target.ts";
 import { currentProcessSqlRuntime } from "./machine-profile.ts";
 import { decodeNativeHistoryChunk, readNativeHistoryCheckpoint } from "./native-history.ts";
 import { readExactSqlInventory, readerCompletion } from "./sqlite-inventory.ts";
@@ -144,12 +146,12 @@ export async function captureGeneratedReaderClosedSnapshot(options: GeneratedRea
     catch { current(); rawHistoryFailure = "complete-raw-history-profile-refused"; }
     try { const history = await readNativeHistoryCheckpoint({ checkpointPath: snapshot.path, expectedSha256: snapshot.sha256, projectUuid: qualification.target.projectUuid, libraryAtomHeaders: "preserve" });
       current(); decodedHistory = await publish("history.json", Buffer.from(JSON.stringify(history), "utf8")); } catch { current(); genericHistoryFailure = "generic-native-history-profile-refused"; }
-    try { const result = await qualifyGeneratedFixtureInitialSql({ archive, inventory, rawWindowsPath: raw, sourceCreatedEpochMs: Number(before.birthtimeMs), sourceModifiedEpochMs: Number(before.mtimeMs) });
+    try { const qualify = qualification.schema === "easyeda-pro-control.qualified-generated-pad-fixture-target.v1" ? qualifyGeneratedPadFixtureInitialSql : qualifyGeneratedFixtureInitialSql; const result = await qualify({ archive, inventory, rawWindowsPath: raw, sourceCreatedEpochMs: Number(before.birthtimeMs), sourceModifiedEpochMs: Number(before.mtimeMs) });
       current(); initialQualification = structuredClone(result.qualification); } catch (error) { current(); initialQualificationFailure = error instanceof Error ? error.message.slice(0, 512) : "initial-generated-profile-refused"; }
     await reprove(); await closed(); const finalHash = createHash("sha256"); let total = 0;
     for await (const chunk of original.createReadStream({ autoClose: false, start: 0, highWaterMark: 1_048_576 })) { current(); need(Buffer.isBuffer(chunk), "binary final source"); total += chunk.length; need(BigInt(total) <= before.size, "final bounded file"); finalHash.update(chunk); }
     need(total === bytes.length && finalHash.digest("hex") === hash, "complete final source hash"); await reprove(); await closed();
-    return { schema: "easyeda-pro-control.generated-reader-closed-snapshot.v1", projectUuid: qualification.target.projectUuid, originalQualificationSha256: sha256Json(qualification),
+    return { schema: qualification.schema === "easyeda-pro-control.qualified-generated-pad-fixture-target.v1" ? "easyeda-pro-control.generated-pad-reader-closed-snapshot.v1" : "easyeda-pro-control.generated-reader-closed-snapshot.v1", projectUuid: qualification.target.projectUuid, originalQualificationSha256: sha256Json(qualification),
       rawWindowsPath: raw, snapshot, sql, rawHistory, decodedHistory, rawHistoryFailure, genericHistoryFailure, initialQualificationFailure,
       sourceIdentity: { device: before.dev.toString(), inode: before.ino.toString(), bytes: before.size.toString(), links: before.nlink.toString(),
         birthtimeNs: before.birthtimeNs.toString(), mtimeNs: before.mtimeNs.toString(), ctimeNs: before.ctimeNs.toString(),
