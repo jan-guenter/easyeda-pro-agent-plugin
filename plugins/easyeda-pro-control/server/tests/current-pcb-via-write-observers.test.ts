@@ -8,14 +8,16 @@ import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { CurrentPcbViaWriteObservers } from "../src/current-pcb-via-write-observers.ts";
 import type { CurrentPcbViaWriteDispatch } from "../src/current-pcb-via-write-journal.ts";
+import type { CurrentPcbViaPollingCancellationIntent } from "../src/current-pcb-via-polling-cancellation-intent.ts";
 
 async function fixture(failBefore = false): Promise<Readonly<{
-  group: CurrentPcbViaWriteObservers; activate: () => Promise<void>; dispatch: CurrentPcbViaWriteDispatch;
+  group: CurrentPcbViaWriteObservers; activate: () => Promise<void>; dispatch: CurrentPcbViaWriteDispatch; polling: CurrentPcbViaPollingCancellationIntent;
   calls: string[]; pendingReads: () => number; closeRead: () => void; effect: unknown;
 }>> {
   const calls: string[] = [], setup = new Map<string, (origin: unknown) => Promise<void>>();
   const prepared = Object.freeze({ inertCheckpoint: true }); const plan = Object.freeze({ prepared });
   const dispatch: CurrentPcbViaWriteDispatch = Object.freeze({ profile: "private.current-pcb-via-write-dispatch.v1" });
+  const polling: CurrentPcbViaPollingCancellationIntent = Object.freeze({ profile: "private.current-pcb-via-polling-cancellation-intent.v1" });
   const effect = Object.freeze({ inertEffect: true });
   const before = Object.freeze({ beforeNative: true }), beforeScene = Object.freeze({ beforeScene: true });
   const after = Object.freeze({ afterNative: true }), afterScene = Object.freeze({ afterScene: true });
@@ -25,6 +27,8 @@ async function fixture(failBefore = false): Promise<Readonly<{
   const held = Object.freeze({ profile: "private.current-project-save-producer-held-call.v1" });
   const read = Promise.withResolvers<typeof held>(); let reads = 0;
   const owner = Object.freeze({
+    armViaProjectSyncQuiesce: (_p: unknown, token: unknown, install: (origin: unknown) => Promise<void>): void => { assert.equal(token, polling); setup.set("quiesce", install); },
+    requireOriginalViaProjectSyncQuiesced: (): void => { calls.push("original-quiescence-required"); },
     armViaSaveWorker: (_p: unknown, install: (origin: unknown) => Promise<void>): void => { setup.set("save", install); },
     armViaSaveStructureWorker: (_p: unknown, install: (origin: unknown) => Promise<void>): void => { setup.set("structure", install); },
     armViaStructureTransportWorker: (_p: unknown, install: (origin: unknown) => Promise<void>): void => { setup.set("transport", install); },
@@ -46,6 +50,8 @@ async function fixture(failBefore = false): Promise<Readonly<{
     readonly #progress = Object.freeze({ initialCache: { completed: true }, initialSync: { completed: true }, periodicSync: null });
     public arm(): Promise<void> { this.#calls.push("observer-arm"); return Promise.resolve(); }
     public observeConstruction(): Promise<void> { this.#calls.push("construction"); return Promise.resolve(); }
+    public observeFirstTimer(): Promise<object> { this.#calls.push("original-first-timer"); return Promise.resolve(Object.freeze({ inertOriginalQuiescence: true })); }
+    public requireOriginal(): Promise<void> { this.#calls.push("original-quiescence-joined"); return Promise.resolve(); }
     public startupProgress(): unknown { return this.#progress; }
     public observeHeldCall(): Promise<typeof held> { reads += 1; return this.#read.promise; }
   }
@@ -62,6 +68,7 @@ async function fixture(failBefore = false): Promise<Readonly<{
       assert.equal(observations.createAcknowledgement, acknowledgement); calls.push("effect-qualified"); return effect;
     } },
     "./current-pcb-via-save-observer.ts": { CurrentPcbViaSaveObserver: InertObserver },
+    "./current-project-sync-quiesce-observer.ts": { CurrentProjectSyncQuiesceObserver: InertObserver },
     "./current-project-save-structure-observer.ts": { CurrentProjectSaveStructureObserver: InertObserver },
     "./current-project-structure-transport-observer.ts": { CurrentProjectStructureTransportObserver: InertObserver },
     "./current-project-save-producer-observer.ts": { CurrentProjectSaveProducerObserver: InertObserver,
@@ -77,8 +84,8 @@ async function fixture(failBefore = false): Promise<Readonly<{
   const Constructor = loaded.exports["CurrentPcbViaWriteObservers"]; assert.ok(typeof Constructor === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only the explicit inert registry and child-observer seams above differ; the production coordinator's private state and scheduling run unchanged.
   const group = Reflect.construct(Constructor, [owner, plan]) as CurrentPcbViaWriteObservers;
-  return Object.freeze({ group, dispatch, calls, effect, pendingReads: (): number => reads, closeRead: (): void => { read.resolve(held); },
-    activate: async (): Promise<void> => { for (const name of ["save", "structure", "transport", "producer"]) { const install = setup.get(name); assert.ok(install !== undefined); await install(Object.freeze({ inertSourceOrigin: name })); } } });
+  return Object.freeze({ group, dispatch, polling, calls, effect, pendingReads: (): number => reads, closeRead: (): void => { read.resolve(held); },
+    activate: async (): Promise<void> => { for (const name of ["quiesce", "save", "structure", "transport", "producer"]) { const install = setup.get(name); assert.ok(install !== undefined); await install(Object.freeze({ inertSourceOrigin: name })); } } });
 }
 
 void test("real original registry refuses an equal-looking observer-group owner", () => {
@@ -86,7 +93,7 @@ void test("real original registry refuses an equal-looking observer-group owner"
   assert.throws(() => Reflect.construct(CurrentPcbViaWriteObservers, [{}, {}]), /ORIGINAL_FACTORY/u);
 });
 void test("one producer read spans startup and create and the original SDK acknowledgment reaches effect qualification", async () => {
-  const f = await fixture(); f.group.armBeforeNavigation(); await f.activate(); await f.group.waitForStartupObservations();
+  const f = await fixture(); f.group.armBeforeNavigation(f.polling); await f.activate(); await f.group.waitForStartupObservations();
   assert.equal(f.pendingReads(), 1); assert.equal(f.group.status().originalProducerReadPending, true);
   await f.group.observeBeforeNative(); await f.group.observeBeforeScene();
   assert.equal(await f.group.create(f.dispatch), f.effect); assert.equal(f.pendingReads(), 1);
@@ -97,7 +104,7 @@ void test("one producer read spans startup and create and the original SDK ackno
   f.group.cancel(); f.closeRead(); await assert.rejects(f.group.originalProducerAfterAction(), /CANCELLED/u);
 });
 void test("failed original read consumes its observation and prevents a later create", async () => {
-  const f = await fixture(true); f.group.armBeforeNavigation(); await f.activate(); await f.group.waitForStartupObservations();
+  const f = await fixture(true); f.group.armBeforeNavigation(f.polling); await f.activate(); await f.group.waitForStartupObservations();
   await assert.rejects(f.group.observeBeforeNative(), /original native read refused/u); await assert.rejects(f.group.observeBeforeNative(), /original native read refused/u);
   await assert.rejects(f.group.create(f.dispatch), /original native read refused/u); assert.equal(f.calls.filter(call => call === "native-before").length, 1);
   assert.equal(f.calls.includes("sdk-create"), false); assert.equal(f.group.status().failed, true); f.closeRead();

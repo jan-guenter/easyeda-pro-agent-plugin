@@ -1,11 +1,14 @@
 /** Fixed original Via choreography. The enclosing journal publishes allocation,
  * opening, create and Save intents; this group supplies no public writer grant. */
 /* oxlint-disable import/max-dependencies -- One fixed coordinator joins the independently qualified worker, clock, main SQL and XHR observers without accepting a caller function table. */
-import { assertOriginalCurrentPcbViaWriteOwner, originalCurrentPcbViaWriteTarget } from "./current-pcb-via-write-owner.ts";
+import { assertOriginalCurrentPcbViaWriteOwner, originalCurrentPcbViaWriteTarget, originalCurrentPcbViaWriteTermination } from "./current-pcb-via-write-owner.ts";
 import type { CurrentPcbViaWriteOwner } from "./current-pcb-via-write-owner.ts";
 import { requireOriginalCurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
 import type { CurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
 import type { CurrentPcbViaWriteDispatch } from "./current-pcb-via-write-journal.ts";
+import type { CurrentPcbViaPollingCancellationIntent } from "./current-pcb-via-polling-cancellation-intent.ts";
+import { CurrentProjectSyncQuiesceObserver } from "./current-project-sync-quiesce-observer.ts";
+import type { CurrentProjectSyncQuiesceCompletion } from "./current-project-sync-quiesce-observer.ts";
 import { currentPcbViaWriteStageResultSchema } from "./current-pcb-via-write-contract.ts";
 import type { CurrentPcbViaWriteStageResult } from "./current-pcb-via-write-contract.ts";
 import { qualifyOriginalCurrentPcbViaWriteEffect } from "./current-pcb-via-write-effect.ts";
@@ -41,6 +44,7 @@ export class CurrentPcbViaWriteObservers {
   #save: CurrentPcbViaSaveObserver | null = null; #structure: CurrentProjectSaveStructureObserver | null = null;
   #transport: CurrentProjectStructureTransportObserver | null = null; #producer: CurrentProjectSaveProducerObserver | null = null;
   #construction: Promise<Outcome<void>> | null = null; #collector: Promise<Outcome<void>> | null = null;
+  #quiesce: CurrentProjectSyncQuiesceObserver | null = null; #quiescence: Promise<Outcome<CurrentProjectSyncQuiesceCompletion>> | null = null;
   #originalPendingProducer: Promise<CurrentProjectSaveProducerHeldCall> | null = null;
   #main: CurrentPcbViaMainOrigin | null = null; #mainRequest: CurrentPcbViaMainRequestObserver | null = null;
   #mainBegin: CurrentPcbViaMainBeginObserver | null = null; #mainHistory: CurrentPcbViaMainHistoryObserver | null = null;
@@ -70,9 +74,17 @@ export class CurrentPcbViaWriteObservers {
   }
   /** Fixed callbacks run only against original source-held origins issued by
    * this same owner. Pending construction/producer promises remain retained. */
-  public armBeforeNavigation(): void {
+  public armBeforeNavigation(pollingIntent: CurrentPcbViaPollingCancellationIntent): void {
     this.#current(); need(!this.#armAttempted, "ARM_CONSUMED"); this.#armAttempted = true;
     try {
+      this.#owner.armViaProjectSyncQuiesce(this.#plan, pollingIntent, async origin => {
+        this.#current(); need(this.#quiesce === null && this.#quiescence === null, "ORIGINAL_QUIESCE_CONSUMED");
+        const observer = new CurrentProjectSyncQuiesceObserver(origin, this.#owner, this.#plan); this.#quiesce = observer;
+        await observer.arm(); this.#current();
+        // Source-held setup must return before the original first checkProject
+        // Entry can execute. Retain its collector on its own router lane.
+        this.#quiescence = this.#retain(observer.observeFirstTimer());
+      });
       this.#owner.armViaSaveWorker(this.#plan, async origin => {
         this.#current(); need(this.#save === null, "SAVE_OBSERVER_CONSUMED"); const observer = new CurrentPcbViaSaveObserver(origin, this.#owner, this.#plan);
         this.#save = observer; await observer.arm(); this.#current();
@@ -134,7 +146,12 @@ export class CurrentPcbViaWriteObservers {
   }
   /** This joins the same collector started before navigation. It never starts
    * another poll, claims a drained frontier or abandons a pending native read. */
-  public async waitForStartupObservations(): Promise<void> { result(await this.#startupReady.promise); this.#current(); }
+  public async waitForStartupObservations(): Promise<void> {
+    result(await this.#startupReady.promise); this.#current();
+    need(this.#quiesce !== null && this.#quiescence !== null, "ORIGINAL_QUIESCE_REQUIRED");
+    const completion = result(await this.#quiescence); this.#current(); await this.#quiesce.requireOriginal(completion); this.#current();
+    this.#owner.requireOriginalViaProjectSyncQuiesced(this.#plan); this.#current();
+  }
   public async observeBeforeNative(): Promise<NativeObservation> {
     this.#current(); need(!this.#beforeAttempted && !this.#createAttempted, "BEFORE_NATIVE_CONSUMED"); this.#beforeAttempted = true;
     try { const value = await this.#owner.observeViaPrimitives(this.#plan, "before"); this.#current(); this.#before = value; return value; }
@@ -265,6 +282,20 @@ export class CurrentPcbViaWriteObservers {
   public retainedCreateState(): Readonly<{ requestGenerationEntered: boolean; originalAcknowledgement: CurrentPcbViaWriteStageResult | null }> {
     assertOriginalCurrentPcbViaWriteOwner(this.#owner); need(originalCurrentPcbViaWriteTarget(this.#owner) === this.#prepared, "ORIGINAL_CHANGED");
     return Object.freeze({ requestGenerationEntered: this.#sdkCreateAttempted, originalAcknowledgement: this.#createAcknowledgement });
+  }
+  /** After the original root and Job have exited, join each retained original
+   * collector. This does not recreate a read or clear any observer failure. */
+  public async settleOriginalCallsAfterExit(): Promise<void> {
+    const current = (): void => {
+      assertOriginalCurrentPcbViaWriteOwner(this.#owner); originalCurrentPcbViaWriteTermination(this.#owner);
+      need(originalCurrentPcbViaWriteTarget(this.#owner) === this.#prepared, "ORIGINAL_CHANGED");
+    };
+    current(); const pending: Promise<unknown>[] = [];
+    if (this.#construction !== null) { pending.push(this.#construction); }
+    if (this.#quiescence !== null) { pending.push(this.#quiescence); }
+    if (this.#collector !== null) { pending.push(this.#collector); }
+    if (this.#originalPendingProducer !== null) { pending.push(this.#originalPendingProducer); }
+    await Promise.allSettled(pending); current();
   }
   /** Revoke only this orchestration. The original native owner and every
    * pending read remain retained for separately authorized original cleanup. */

@@ -2,6 +2,8 @@
  * newly constructed generated-fixture209 owner, never an existing birth. */
 /* oxlint-disable no-useless-escape -- Nested C# JSON string literals retain explicit quote escaping; the emitted source is compiled and native-parity checked. */
 import { GENERATED_FIXTURE_REGISTRATION_FUNCTION } from "./managed-fixture-registration-program.ts";
+import { createHash } from "node:crypto";
+import { gzipSync } from "node:zlib";
 
 const begin = "// BEGIN GENERATED FIXTURE PATH REGISTRATION";
 const end = "// END GENERATED FIXTURE PATH REGISTRATION";
@@ -11,11 +13,16 @@ function one(source: string, before: string, after: string): string {
   return source.replace(before, after);
 }
 function native(): string {
-  const functionLiteral = GENERATED_FIXTURE_REGISTRATION_FUNCTION.replaceAll('"', '""');
+  const original = Buffer.from(GENERATED_FIXTURE_REGISTRATION_FUNCTION);
+  if (original.length === 0 || original.length > 65_536) { throw new Error("GENERATED_FIXTURE_FIXED_PROGRAM_BOUND"); }
+  // oxlint-disable-next-line node/no-sync -- Deterministic build-only packing uses the existing bounded native decoder and preserves the exact registration program.
+  const compressed = gzipSync(original, { level: 9 }), hash = createHash("sha256").update(original).digest("hex");
+  const packed = `UnpackFixedProgram(@"${compressed.toString("base64")}",${String(original.length)},@"${hash}",@"${createHash("sha256").update(compressed).digest("hex")}")`;
   return `${begin}
 public sealed partial class EasyedaDiagnosticOwner {
 bool generatedFixture209,generatedFixtureRegistrationConsumed;string generatedFixtureTuple;
-static readonly string GeneratedFixtureRegistrationFunction=@"${functionLiteral}";
+static readonly string GeneratedFixtureRegistrationFunction=${packed};
+public static void VerifyGeneratedFixtureRegistrationProgramSmoke(){using(var sha=System.Security.Cryptography.SHA256.Create())if(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(GeneratedFixtureRegistrationFunction))).Replace("-","").ToLowerInvariant()!=@"${hash}")throw Error("generated-registration-packed-program");}
 public static EasyedaDiagnosticOwner CreateGeneratedFixture209(){var owner=CreateLayers209();owner.generatedFixture209=true;return owner;}
 public static EasyedaDiagnosticOwner CreateGeneratedFixtureSpatial209(){var owner=CreateSpatial209();owner.generatedFixture209=true;return owner;}
 static string GeneratedFixtureTuple(string session,string context,string path,string project,string branch,string document,string source){return String.Join("\\n",new[]{session,context,path,project,branch,document,source});}
@@ -36,6 +43,7 @@ void RequireGeneratedFixtureOpening(string session,string context,string path,st
 if(generatedFixture209&&(!generatedFixtureRegistrationConsumed||generatedFixtureTuple!=GeneratedFixtureTuple(session,context,path,project,branch,document,source)))throw Error("generated-registration-original-opening");
 }
 public static void VerifyGeneratedFixtureRegistrationSmoke(){
+VerifyGeneratedFixtureRegistrationProgramSmoke();
 string path=@"C:\\SyntheticTemp\\CodexEasyedaFixture_11111111111111111111111111111111\\Codex_line_and_via_2222222222222222.eprj2",project;
 using(SHA256 hash=SHA256.Create()){project=BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(path))).Replace("-","").ToLowerInvariant();}
 string message=GeneratedFixtureRegistrationProtocolMessage(103,"parent","original","register-generated-fixture",path,project,new string('a',32),new string('b',32),new string('c',64));

@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 combined writer choreography](2026-11-07-combined-writer-choreography.md). Join genuine timer startup and original collector closure, preserve exact fixed programs within the helper limit, and retain the full producer-drain requirement before writer exposure.
+
 - [2026-11-07 CBB reader omission decision](2026-11-07-cbb-omission-decision.md). Close the anonymous CBB implementation group with concrete retained routing/data limitations and exact reopening conditions; no new absence probes or online-absence claim.
 
 - [2026-11-07 writer startup and metadata packing](2026-11-07-writer-startup-and-metadata-packing.md). Separate bounded original writer page wait and exact fixed metadata restoration recover helper headroom; native-owner and application execution remain unvalidated.

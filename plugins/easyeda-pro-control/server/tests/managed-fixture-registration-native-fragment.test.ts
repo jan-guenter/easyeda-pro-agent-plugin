@@ -1,5 +1,8 @@
+/* oxlint-disable import/max-dependencies -- This boundary test checks exact packed source and both independent old native grammars directly. */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { gunzip } from "node:zlib";
+import { promisify } from "node:util";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { diagnosticGeneratedFixtureRegistrationParams, diagnosticNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
@@ -15,8 +18,11 @@ void test("maintained native fragment embeds the complete fixed program and isol
   const generated = applyManagedFixtureRegistrationNativeFragment(original);
   assert.equal(applyManagedFixtureRegistrationNativeFragment(generated), generated);
   assert.equal(applyManagedFixtureRegistrationNativeFragment(applyCurrentProjectStructureNativeFragment(generated)), generated);
-  const match = /static readonly string GeneratedFixtureRegistrationFunction=@"((?:[^"]|"")*)";/u.exec(generated);
-  assert.equal(match?.[1]?.replaceAll('""', '"'), GENERATED_FIXTURE_REGISTRATION_FUNCTION);
+  const match = /static readonly string GeneratedFixtureRegistrationFunction=UnpackFixedProgram\(@"([A-Za-z\d+/=]+)",(\d+),@"([a-f\d]{64})",@"([a-f\d]{64})"\);/u.exec(generated);
+  assert.ok(match?.[1] !== undefined && match[2] !== undefined && match[3] !== undefined && match[4] !== undefined);
+  const compressed = Buffer.from(match[1], "base64"), plain = await promisify(gunzip)(compressed);
+  assert.equal(plain.toString("utf8"), GENERATED_FIXTURE_REGISTRATION_FUNCTION); assert.equal(plain.length, Number(match[2]));
+  assert.equal(createHash("sha256").update(plain).digest("hex"), match[3]); assert.equal(createHash("sha256").update(compressed).digest("hex"), match[4]);
   for (const clause of ["CreateGeneratedFixture209()", "generatedFixtureRegistrationConsumed=true", "RequireGeneratedFixtureOpening(sessionId,uniqueContextId,path,project,branch,document,source);",
     "pcb-diagnostic-conflicting-generated-fixture-purpose", "VerifyGeneratedFixtureRegistrationSmoke()", "generated-registration-old-birth-smoke"] ) { assert.ok(generated.includes(clause)); }
   assert.ok(generated.includes("$request.generatedFixtureRegistrationPhase -isnot [string]"));

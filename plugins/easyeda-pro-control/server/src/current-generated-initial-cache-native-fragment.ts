@@ -1,6 +1,7 @@
 /** Separate startup-only cache continuations on the two original writer
  * births. No SDK stage, SQL, timer, retry or post-action producer is allowed. */
 import { createHash } from "node:crypto";
+import { gzipSync } from "node:zlib";
 import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
 import { currentGeneratedInitialCacheTemplates } from "./current-generated-initial-cache-wire.ts";
 import { CURRENT_GENERATED_INITIAL_CACHE_REQUESTS as REQUESTS } from "./current-generated-initial-cache-protocol.ts";
@@ -13,11 +14,26 @@ const quote = String.raw`static string Quote(string value){var b=new System.Text
 function protocol(): string {
   const cases = currentGeneratedInitialCacheTemplates();
   const hashes = cases.map(row => { const template = row.template.replaceAll(/"__initial_cache_([A-Za-z\d]+)__"/gu, (_match, name: string) => { if (name === "key") { return JSON.stringify(`https://client/index/v1/${"a".repeat(32)}`); } return JSON.stringify(name === "body" ? "original\n\"body" : "original_handle"); }); return createHash("sha256").update(`{"id":79,${template.slice(1, -1)},"sessionId":"original_worker"}\0`).digest("hex"); });
-  const rows = cases.map(row => `new string[]{${[row.phase, row.method, row.fields.join(","), row.template].map(value => literal(value)).join(",")}}`).join(",\n");
+  const groups: string[][] = [[]];
+  for (const row of cases) {
+    const fields = [row.phase, row.method, row.fields.join(","), row.template];
+    if (fields.some(value => value.includes("\0") || value.includes("\t"))) { throw new Error("INITIAL_CACHE_TABLE_SEPARATOR"); }
+    const text = fields.join("\t"); let group = groups.at(-1);
+    if (group === undefined || Buffer.byteLength(text) > 60_000) { throw new Error("INITIAL_CACHE_TABLE_BOUND"); }
+    if (Buffer.byteLength([...group, text].join("\0")) > 60_000) { group = []; groups.push(group); }
+    group.push(text);
+  }
+  const loaders = groups.map(group => {
+    const bytes = Buffer.from(group.join("\0"));
+    // oxlint-disable-next-line node/no-sync -- Build-only exact fixed tables use the existing bounded decoder; original row order and all message hashes are unchanged.
+    const packed = gzipSync(bytes, { level: 9 });
+    return `result.AddRange(EasyedaDiagnosticFixedTable.Load(${literal(packed.toString("base64"))},${String(bytes.length)},${literal(createHash("sha256").update(bytes).digest("hex"))},${literal(createHash("sha256").update(packed).digest("hex"))},${String(group.length)},4));`;
+  }).join("\n");
   return `public static class EasyedaGeneratedInitialCacheProtocol {
 static void Need(bool value){if(!value)throw new System.InvalidOperationException("generated-initial-cache-protocol");}
 ${quote}
-static readonly string[][] Rows=new string[][]{${rows}};
+static string[][] Load(){var result=new System.Collections.Generic.List<string[]>();${loaders}return result.ToArray();}
+static readonly string[][] Rows=Load();
 static string Handle(object value){string s=value as string;Need(s!=null&&System.Text.RegularExpressions.Regex.IsMatch(s,@"\\A[A-Za-z0-9_.:-]{1,256}\\z"));return s;}
 public static string Encode(int id,string session,string phase,string method,System.Collections.IDictionary fields){Need(id>0&&fields!=null);Handle(session);string[] row=null;foreach(var r in Rows)if(r[0]==phase){Need(row==null);row=r;}Need(row!=null&&row[1]==method);string[] names=row[2].Length==0?new string[0]:row[2].Split(',');Need(fields.Count==names.Length);var data=new System.Collections.Generic.Dictionary<string,string>(System.StringComparer.Ordinal);foreach(string name in names){Need(fields.Contains(name));string v=fields[name] as string;Need(v!=null);if(name=="key")Need(System.Text.RegularExpressions.Regex.IsMatch(v,@"\\Ahttps://client/(?:dataStr/[a-f0-9]{32}-[a-f0-9]{32}|index/v1/[a-f0-9]{32})\\z"));else if(name=="body")Need(v.Length>0&&v.Length<=16384&&System.Text.Encoding.UTF8.GetByteCount(v)<=16384);else Handle(v);data.Add(name,v);}string text=System.Text.RegularExpressions.Regex.Replace(row[3],"\\"__initial_cache_([A-Za-z0-9]+)__\\"",m=>{string v;Need(data.TryGetValue(m.Groups[1].Value,out v));return Quote(v);});string encoded="{\\"id\\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+","+text.Substring(1,text.Length-2)+",\\"sessionId\\":"+Quote(session)+"}\\0";Need(System.Text.Encoding.UTF8.GetByteCount(encoded)<=65536);return encoded;}
 public static void VerifySmoke(){string[] hashes=${currentPcbDiagnosticNativeHashVector(hashes)};int index=0;foreach(var row in Rows){var fields=new System.Collections.Hashtable();foreach(string name in row[2].Length==0?new string[0]:row[2].Split(','))fields.Add(name,name=="key"?"https://client/index/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa":name=="body"?"original\\n\\"body":"original_handle");string encoded=Encode(79,"original_worker",row[0],row[1],fields);using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(encoded))).Replace("-","").ToLowerInvariant()==hashes[index++]);bool refused=false;try{Encode(79,"original_worker",row[0],"Runtime.evaluate",fields);}catch(System.InvalidOperationException){refused=true;}Need(refused);}}
