@@ -345,3 +345,11 @@ for(const loseBegin of [false,true]){void test(`the original Via controller, act
   await beginSend("via-main-begin-join","returned",{objectId:returnedFrame,arguments:[{objectId:callback}]});const result=original.bindings.originalBeginResult();assert.equal(result.originalBeginAwaitCompleted,true);assert.equal(result.historySqlCompleted,false);
   await assert.rejects(beginSend("via-main-begin-step","run"));
 });}
+
+void test("the old Via request cleanup cannot remove source points owned by the new native BEGIN enrollment",async()=>{
+  const f=await fixture();await f.runner.observe();const original=await f.runner.beginViaMainObservation();
+  for(const command of currentPcbViaMainBeginNativeCases().filter(item=>item.phase==="via-main-begin-arm")){await original.bindings.beginRequest({...command,params:{...command.params,location:{...command.params.location,scriptId:"app"}}},false);}
+  original.bindings.requireBeginArmed();
+  await assert.rejects(original.bindings.request(validateCurrentPcbViaMainCommand({phase:"via-main-request-remove",method:"Debugger.removeBreakpoint",params:{breakpointId:"begin-callback"}}),true),/VIA_MAIN_PERSISTENT_POINT/u);
+  original.bindings.requireBeginArmed();assert.equal(f.phases.includes("via-main-request-remove"),false);
+});

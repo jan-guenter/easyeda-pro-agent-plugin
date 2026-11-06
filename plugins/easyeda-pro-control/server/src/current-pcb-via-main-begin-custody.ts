@@ -25,6 +25,7 @@ export interface CurrentPcbViaMainBeginHost {
   readonly send: (command: Command, cleanup: boolean) => Promise<unknown>;
   readonly resume: (pause: object, command: Command) => Promise<unknown>;
   readonly registerPoint: (id: string, location: z.infer<typeof point>) => void;
+  readonly pointCurrent: (id: string) => boolean;
   readonly removePoint: (id: string) => void;
 }
 const resultReply = z.strictObject({ result: z.strictObject({ type: z.literal("object"), value: currentPcbViaMainBeginResultSchema }) });
@@ -38,7 +39,8 @@ export class CurrentPcbViaMainBeginCustody {
   #consumed = false; #result: CurrentPcbViaMainBeginResult | null = null;
   public constructor(host: CurrentPcbViaMainBeginHost) { this.#host = host; Object.freeze(this); }
   #same(): void { need(!this.#failed, "FAILED"); this.#host.assertCurrent(); }
-  public requireArmed(): void { this.#same(); need(this.#points.size === 4 && this.#step === 0 && this.#normal === 4 && this.#cleanup === 0, "PRE_SAVE_ENROLLMENT"); }
+  #pointsCurrent(): void { need([...this.#points.values()].every(id => this.#host.pointCurrent(id)), "CURRENT_SOURCE_POINTS"); }
+  public requireArmed(): void { this.#same(); this.#pointsCurrent(); need(this.#points.size === 4 && this.#step === 0 && this.#normal === 4 && this.#cleanup === 0, "PRE_SAVE_ENROLLMENT"); }
   #held(role: Call): CurrentPcbViaMainBeginPause {
     const held = this.#host.pause(); const raw = pauseValue.parse(captureCurrentPcbStringClockReply(held.raw).value); const first = raw.callFrames[0];
     need(first !== undefined && held.pendingEvents === 0 && !held.resumed && !held.resumeAttempted && first.callFrameId === held.frameId && first.location.scriptId === this.#host.scriptId, "LIVE_DELIVERED_PAUSE");
@@ -74,14 +76,14 @@ export class CurrentPcbViaMainBeginCustody {
   }
   #packet(role: Call): string { const value = this.#packets.get(role); need(value !== undefined, "PRIOR_PACKET"); return value; }
   async #advance(command: Extract<Command, { phase: "via-main-begin-step" }>): Promise<unknown> {
-    need(this.#pending === null && command.role === STEPS[this.#step], "STEP_CONSUMED"); let held: CurrentPcbViaMainBeginPause;
+    this.#pointsCurrent(); need(this.#pending === null && command.role === STEPS[this.#step], "STEP_CONSUMED"); let held: CurrentPcbViaMainBeginPause;
     if (command.role === "actor") { need(this.#points.size === 4 && this.#normal === 5, "PRE_SAVE_POINTS_REQUIRED"); this.#actor = this.#host.actorSql(); held = this.#host.pause(); need(!held.resumed && !held.resumeAttempted && held.pendingEvents === 0, "ORIGINAL_PB_HELD"); }
     else { this.#packet(command.role); held = this.#held(command.role); }
     need(this.#actor !== null, "ACTOR_REQUIRED"); this.#step += 1; this.#pending = Object.freeze({ pause: held.identity, role: command.role, dataStr: this.#actor.dataStr }); this.#consumed = false;
     const reply = await this.#host.resume(held.identity, command); this.#same(); need(this.#consumed, "NATIVE_GRANT_NOT_CONSUMED"); z.strictObject({}).parse(reply); this.#pending = null; return reply;
   }
   public consume(command: Command, requestId: number): Readonly<{ origin: CurrentPcbViaMainOrigin; dataStr: string; nativeSql: boolean }> {
-    this.#same(); const pending = this.#pending; const held = this.#host.pause();
+    this.#same(); this.#pointsCurrent(); const pending = this.#pending; const held = this.#host.pause();
     need(command.phase === "via-main-begin-step" && pending !== null && !this.#consumed && this.#host.busy() && this.#host.pendingRequestId() === requestId && command.role === pending.role && held.identity === pending.pause && held.resumeAttempted && !held.resumed, "ORIGINAL_PENDING_NATIVE_GRANT");
     this.#consumed = true; return Object.freeze({ origin: this.#host.origin, dataStr: pending.dataStr, nativeSql: command.role === "run" });
   }

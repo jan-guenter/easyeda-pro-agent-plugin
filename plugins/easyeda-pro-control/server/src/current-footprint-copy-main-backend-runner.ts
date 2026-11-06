@@ -366,6 +366,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   #viaMainContextStepConsumed = false;
   readonly #viaMainEvents: CurrentPcbViaMainEvent[] = [];
   readonly #viaMainPoints = new Map<string, z.infer<typeof location>>();
+  readonly #viaMainRequestPoints = new Set<string>();
   readonly #viaMainOriginalPoints = new Map<string, z.infer<typeof location>>();
   #viaMainArming: z.infer<typeof location> | null = null;
   #viaMainPoll: Promise<void> | null = null;
@@ -1080,6 +1081,7 @@ export class CurrentFootprintCopyMainBackendRunner {
         pendingRequestId: (): number | null => this.#pendingId, busy: (): boolean => this.#busy,
         send: (command, cleanup): Promise<unknown> => this.#request(command, cleanup),
         registerPoint: (id, pointLocation): void => { need(!this.#viaMainPoints.has(id) && !this.#sqlBreakpoints.has(id), "VIA_BEGIN_POINT_ALIAS"); this.#viaMainPoints.set(id, pointLocation); this.#viaMainOriginalPoints.set(id, pointLocation); },
+        pointCurrent: (id): boolean => this.#viaMainPoints.has(id),
         removePoint: (id): void => { need(this.#viaMainPoints.delete(id), "VIA_BEGIN_POINT_REMOVED"); },
         resume: async (identity, command): Promise<unknown> => {
           const pause = this.#pause; need(pause !== null && pause === identity && pause === this.#viaMainDeliveredPause && !pause.resumeAttempted && !pause.resumed && this.#viaMainEvents.length === 0, "VIA_BEGIN_RESUME_OWNER");
@@ -1163,7 +1165,7 @@ export class CurrentFootprintCopyMainBackendRunner {
             need(this.#viaMainCleanup <= VIA_REQUESTS.cleanup && (pause === null || pause.resumed || joinedContext), "VIA_MAIN_CLEANUP_HELD"); }
           else { this.#viaMainNormal += 1; need(this.#viaMainNormal <= VIA_REQUESTS.normal, "VIA_MAIN_NORMAL_BOUND"); }
           if (command.method === "Debugger.evaluateOnCallFrame") { need(typeof command.params["callFrameId"] === "string" && this.#viaMainFrames.has(command.params["callFrameId"]) && this.#pause?.resumed === false, "VIA_MAIN_FRAME_OWNER"); }
-          if (removing) { need(typeof command.params["breakpointId"] === "string" && this.#viaMainPoints.has(command.params["breakpointId"]), "VIA_MAIN_PERSISTENT_POINT"); }
+          if (removing) { need(typeof command.params["breakpointId"] === "string" && this.#viaMainRequestPoints.has(command.params["breakpointId"]) && this.#viaMainPoints.has(command.params["breakpointId"]), "VIA_MAIN_PERSISTENT_POINT"); }
           let arming: z.infer<typeof location> | null = null;
           if (command.method === "Debugger.setBreakpoint") { arming = location.parse(command.params["location"]); need(arming.scriptId === this.#appScriptId, "VIA_MAIN_SOURCE_SCRIPT"); }
           this.#busy = true; this.#viaMainArming = arming;
@@ -1171,7 +1173,7 @@ export class CurrentFootprintCopyMainBackendRunner {
             const raw = await this.#request(command, cleanup); const reply = captureCurrentPcbStringClockReply(raw).value;
             this.#retainViaRequestReply(command, reply);
             if (arming !== null) { const allocated = z.object({ breakpointId: handle, actualLocation: location }).strict().parse(reply);
-              need(canonicalJson(allocated.actualLocation) === canonicalJson(arming) && !this.#sqlBreakpoints.has(allocated.breakpointId) && !this.#viaMainPoints.has(allocated.breakpointId), "VIA_MAIN_ARM_REPLY"); this.#viaMainPoints.set(allocated.breakpointId, arming); this.#viaMainOriginalPoints.set(allocated.breakpointId, arming); }
+              need(canonicalJson(allocated.actualLocation) === canonicalJson(arming) && !this.#sqlBreakpoints.has(allocated.breakpointId) && !this.#viaMainPoints.has(allocated.breakpointId), "VIA_MAIN_ARM_REPLY"); this.#viaMainPoints.set(allocated.breakpointId, arming); this.#viaMainRequestPoints.add(allocated.breakpointId); this.#viaMainOriginalPoints.set(allocated.breakpointId, arming); }
             if (removing) { empty.parse(reply); need(typeof command.params["breakpointId"] === "string", "VIA_MAIN_POINT"); this.#viaMainPoints.delete(command.params["breakpointId"]); }
             if (releasing) { empty.parse(reply); } same(); if (releasing) { this.#viaMainGroupReleased = true; } return reply;
           } catch (error) { this.#fail(error); throw error; } finally { this.#viaMainArming = null; this.#busy = false; }
