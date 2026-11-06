@@ -1,5 +1,13 @@
 # Original common producer construction
 
+The root integration first refused generation from its earlier unpublished
+950-request Via / 548-request SCH helper. The generator accepted older exact
+reservation values but lacked these two intermediate values. That failure
+occurred before a helper write. The two explicit predecessor values are now
+recognized for build-time migration to the new derived capacities; arbitrary
+limits and the released 103/384 reservations remain unchanged. Complete
+generation and actual Windows compilation remain separate combined checks.
+
 The existing original Via and SCH worker cursors now capture the four producer
 arrows at their actual constructor call sites before PROJECT initialization.
 This replaces no vendor callback, timer or SQLite method and issues no SQL grant.
