@@ -7,6 +7,11 @@
 /* oxlint-disable max-classes-per-file -- Four fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
 import { CURRENT_PROJECT_SAVE_PRODUCER_ROLES, CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS, validateCurrentProjectSaveProducerCommand } from "./current-project-save-producer-protocol.ts";
 import type { CurrentProjectSaveProducerBindings, CurrentProjectSaveProducerHeldCall, CurrentProjectSaveProducerOrigin } from "./current-project-save-producer-origin.ts";
+import { CurrentPcbViaSavedCacheLedger } from "./current-pcb-via-saved-cache-ledger.ts";
+import type { CurrentPcbViaSavedCachePacket, CurrentPcbViaSavedCachePlan, CurrentPcbViaSavedCacheSnapshot } from "./current-pcb-via-saved-cache-ledger.ts";
+import type { CurrentPcbViaSavedCacheCommand } from "./current-pcb-via-saved-cache-protocol.ts";
+import type { CurrentPcbViaSavedCacheBindings, CurrentPcbViaSavedCacheOrigin } from "./current-pcb-via-saved-cache-origin.ts";
+import { currentPcbViaSavedCacheNativeFrame } from "./current-pcb-via-saved-cache-wire.ts";
 import { CURRENT_PCB_VIA_SAVED_READBACK_PROFILE, CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE } from "./current-pcb-via-saved-readback-profile.ts";
 import type { CurrentPcbViaWriteClosedCheckpoint, requireOriginalCurrentPcbViaWriteClosedCheckpoint as RequireSavedReadbackCheckpoint, verifyCurrentPcbViaWriteClosedCheckpoint as VerifySavedReadbackCheckpoint } from "./current-pcb-via-write-closed-checkpoint.ts";
 import { currentProjectSaveProducerGuardCases } from "./current-project-save-producer-guard-protocol.ts";
@@ -687,6 +692,15 @@ interface PcbViaSavedReadbackAllocation {
 const pcbViaSavedReadbackAllocations = new WeakMap<CurrentPcbViaWriteClosedCheckpoint, PcbViaSavedReadbackAllocation>();
 const pcbViaSavedReadbackFactories = new WeakMap<object, Readonly<{ allocation: PcbViaSavedReadbackAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
 const pcbViaSavedReadbackTerminations = new WeakMap<object, Readonly<{ token: object; binding: Binding }>>();
+interface SavedReadbackCacheHeld {
+  readonly origin: CurrentPcbViaSavedCacheOrigin; readonly prepared: CurrentPcbViaWriteClosedCheckpoint;
+  readonly owner: CurrentPcbRetainedOwnerCore; readonly ledger: CurrentPcbViaSavedCacheLedger;
+  readonly context: CurrentPcbDiagnosticContext; readonly selected: ReturnType<CurrentPcbDiagnosticContext["savedReadbackCacheContext"]>;
+  readonly bindings: CurrentPcbViaSavedCacheBindings;
+}
+const savedReadbackCaches = new WeakMap<object, SavedReadbackCacheHeld>();
+const savedReadbackCacheLedgerDescriptors = Object.getOwnPropertyDescriptors(CurrentPcbViaSavedCacheLedger.prototype);
+
 function requireSavedReadbackPreparation(allocation: PcbViaSavedReadbackAllocation): void {
   if (allocation.checkpointModule.requireOriginalCurrentPcbViaWriteClosedCheckpoint !== allocation.requireCheckpoint ||
     allocation.checkpointModule.verifyCurrentPcbViaWriteClosedCheckpoint !== allocation.verifyPrepared ||
@@ -1337,6 +1351,9 @@ class CurrentPcbRetainedOwnerCore {
   readonly #componentPrepared: GeneratedComponentFixtureOpenCheckpoint | null;
   readonly #savedReadbackPrepared: CurrentPcbViaWriteClosedCheckpoint | null;
   #savedReadbackStarted = false; #savedReadbackAborted = false;
+  #savedReadbackCacheAttempted = false; #savedReadbackPreflightPending = false;
+  #savedReadbackCache: SavedReadbackCacheHeld | null = null; #savedReadbackCachePlan: CurrentPcbViaSavedCachePlan | null = null;
+
   #generatedFixtureQualification: QualifiedGeneratedFixtureTarget | QualifiedGeneratedComponentFixtureTarget | null = null;
   #generatedFixtureRegistration: Readonly<Record<string, unknown>> | null = null;
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
@@ -1699,6 +1716,7 @@ class CurrentPcbRetainedOwnerCore {
   public async inspectScript(frameId: string, input: DiagnosticScriptProfile): Promise<Readonly<RecordValue>> {
     const context = this.#stagedContext, profile = validateDiagnosticScriptProfile(input);
     if (this.#startupPurpose && profile.family !== "ui") { throw error("STARTUP_UI_SOURCE_ONLY"); }
+    if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && canonicalJson(profile) !== canonicalJson(CURRENT_PCB_209_OPENING_SCRIPTS.ui)) { throw error("SAVED_READBACK_ORIGINAL_UI_SOURCE"); }
     if (this.#scriptConsumed || context === null || !this.#framesConsumed || this.#inspectionConsumed) { throw error("SCRIPT_INSPECTION_UNAVAILABLE"); }
     this.#enter(true); this.#scriptConsumed = true;
     try {
@@ -3674,6 +3692,7 @@ class CurrentPcbRetainedOwnerCore {
     context.assertCurrent();
     const targets = await this.#transfer(() => this.#pipe.getTargets());
     context.observeTarget(targets);
+    if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && diagnosticTargetInventory(targets).some(item => item["type"] === "worker" && typeof item["url"] === "string" && item["url"].includes("/project-worker.js"))) { throw error("SAVED_READBACK_PROJECT_WORKER_ALREADY_EXISTS"); }
     context.observeFrames(await this.#transfer(() => this.#pipe.getFrameTree()));
     context.assertCurrent(); this.#workerContext?.assertCurrent();
     if (this.#stringPurpose) { this.#workerContext?.observeTargets(targets); }
@@ -3700,7 +3719,7 @@ class CurrentPcbRetainedOwnerCore {
     let sessionId: string | null = null;
     await this.#transfer(async () => {
       sessionId = await this.#pipe.attachTarget(targetId, event => {
-        if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#viaWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE && this.#schematicWorkerController?.observeUiEvent(event) === true) { return; } context.observeEvent(event); });
+        if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#viaWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE && this.#schematicWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#savedReadbackCache?.ledger.observeOriginalEvent(event.method) === true) { return; } context.observeEvent(event); });
       return { sessionId };
     });
     if (sessionId === null) { throw error("ATTACH_REPLY"); }
@@ -5574,6 +5593,68 @@ class CurrentPcbRetainedOwnerCore {
     } finally { this.#busy = false; }
   }
 
+  /** Reprove the same live original owner, source context and private ledger. */
+  #savedReadbackCacheCurrent(held: SavedReadbackCacheHeld): void {
+    this.#available(); assertOriginalCurrentPcbViaSavedReadbackOwner(this);
+    if (Object.getPrototypeOf(held.ledger) !== CurrentPcbViaSavedCacheLedger.prototype || Reflect.ownKeys(held.ledger).length > 0 || !originalFootprintDescriptors(CurrentPcbViaSavedCacheLedger.prototype, savedReadbackCacheLedgerDescriptors) || this.#savedReadbackCache !== held || savedReadbackCaches.get(held.origin) !== held || this.#savedReadbackPrepared !== held.prepared ||
+      this.#stagedContext !== held.context || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true || this.#closeConsumed || this.#savedReadbackAborted ||
+      this.#terminationObserved || this.#releaseConsumed || held.ledger.status().failed || canonicalJson(held.context.savedReadbackCacheContext()) !== canonicalJson(held.selected)) { throw error("SAVED_READBACK_CACHE_ORIGINAL_CONTEXT"); }
+  }
+  #createSavedReadbackCacheBindings(ledger: CurrentPcbViaSavedCacheLedger, origin: CurrentPcbViaSavedCacheOrigin, pipe: CurrentPcbViaSavedReadbackPipe, prepared: CurrentPcbViaWriteClosedCheckpoint): CurrentPcbViaSavedCacheBindings {
+    return Object.freeze({ prepared,
+        request: async (command: CurrentPcbViaSavedCacheCommand): Promise<ReturnType<CurrentPcbViaSavedCacheLedger["accept"]>> => {
+          const held = savedReadbackCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); }
+          this.#savedReadbackCacheCurrent(held); this.#enter(true); let plan: CurrentPcbViaSavedCachePlan | null = null;
+          try { const reserved = ledger.prepare(command); plan = reserved; this.#savedReadbackCachePlan = reserved;
+            const value = await this.#transfer(() => pipe.observeSavedReadbackCache(reserved)); this.#savedReadbackCacheCurrent(held);
+            return ledger.accept(plan, value);
+          } catch (caughtError) { if (plan !== null) { ledger.failOriginalDispatch(plan); } this.#input.emit("error", error("SAVED_READBACK_CACHE_FAILED")); throw caughtError; }
+          finally { this.#savedReadbackCachePlan = null; this.#busy = false; }
+        },
+        assertCurrent: async (): Promise<void> => { const held = savedReadbackCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); }
+          this.#savedReadbackCacheCurrent(held); await this.#verify(); this.#savedReadbackCacheCurrent(held); },
+        snapshot: (): ReturnType<CurrentPcbViaSavedCacheLedger["snapshot"]> => { const held = savedReadbackCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); } this.#savedReadbackCacheCurrent(held); return ledger.snapshot(); },
+        requireSnapshot: (snapshot: CurrentPcbViaSavedCacheSnapshot): void => { const held = savedReadbackCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); } this.#savedReadbackCacheCurrent(held); ledger.requireOriginalSnapshot(snapshot); },
+        requirePacket: (packet: CurrentPcbViaSavedCachePacket): void => { const held = savedReadbackCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); } this.#savedReadbackCacheCurrent(held); ledger.requireOriginalPacket(packet); },
+      });
+  }
+  public originalSavedReadbackCacheBindings(origin: CurrentPcbViaSavedCacheOrigin, prepared: CurrentPcbViaWriteClosedCheckpoint): CurrentPcbViaSavedCacheBindings {
+    const held = savedReadbackCaches.get(origin);
+    if (held === undefined || held.owner !== this || held.prepared !== prepared || held.origin !== origin) { throw error("SAVED_READBACK_CACHE_ORIGIN"); }
+    this.#savedReadbackCacheCurrent(held); return held.bindings;
+  }
+  /** One original Start Page/source/main-fence join before the first cache
+   * query. The nine CDP requests are two parent/ancillary brackets and one
+   * fixed empty-project preflight; no registration or navigation is attempted. */
+  public async createSavedReadbackCacheOrigin(): Promise<CurrentPcbViaSavedCacheOrigin> {
+    assertOriginalCurrentPcbViaSavedReadbackOwner(this);
+    const allocation = pcbViaSavedReadbackFactories.get(this)?.allocation, context = this.#stagedContext, pipe = this.#pipe;
+    if (allocation === undefined || context === null || !(pipe instanceof CurrentPcbViaSavedReadbackPipe) || !this.#scriptConsumed || this.#inspectionConsumed ||
+      this.#savedReadbackCacheAttempted || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true) { throw error("SAVED_READBACK_CACHE_UNAVAILABLE"); }
+    this.#enter(true); this.#savedReadbackCacheAttempted = true;
+    const current = (): void => { this.#available(); assertOriginalCurrentPcbViaSavedReadbackOwner(this);
+      if (this.#stagedContext !== context || this.#pipe !== pipe || this.#closeConsumed || this.#savedReadbackAborted || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true) { throw error("SAVED_READBACK_CACHE_ORIGINAL_CONTEXT"); } };
+    try {
+      await this.#verifyInstallation(); current(); await allocation.verifyPrepared(allocation.prepared); current();
+      await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current();
+      const selected = context.savedReadbackCacheContext();
+      const target = Object.freeze(currentDisposableOpenSealedTargetSchema.parse({ rawWindowsPath: allocation.prepared.target.rawWindowsPath, projectUuid: allocation.prepared.target.projectUuid, branchUuid: allocation.prepared.target.branchUuid, documentUuid: allocation.prepared.target.documentUuid, expectedSourceSha256: allocation.prepared.target.sourceSha256 }));
+      // Preserve the original post-Save source hash in the exact five-field target.
+      this.#savedReadbackPreflightPending = true;
+      const raw = await this.#transfer(() => pipe.observeProjectOpening(selected.uniqueContextId, target, "preflight")); current();
+      this.#savedReadbackPreflightPending = false;
+      const preflight = decodeCurrentPcbDiagnosticOpeningReply(raw, target, "preflight");
+      if (!preflight.ok || preflight.status !== "ready" || preflight.dispatchAttempted || preflight.observation?.projectPresent !== false) { throw error("SAVED_READBACK_EMPTY_UI_REFUSED"); }
+      await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current();
+      if (canonicalJson(context.savedReadbackCacheContext()) !== canonicalJson(selected)) { throw error("SAVED_READBACK_CACHE_CONTEXT_CHANGED"); }
+      const ledger = new CurrentPcbViaSavedCacheLedger(Object.freeze({ frameId: selected.frameId, sessionId: selected.sessionId, securityOrigin: selected.securityOrigin, projectUuid: allocation.prepared.target.projectUuid }));
+      const origin: CurrentPcbViaSavedCacheOrigin = Object.freeze({ profile: "private.current-pcb-via-saved-cache-origin.v1" });
+      const bindings = this.#createSavedReadbackCacheBindings(ledger, origin, pipe, allocation.prepared);
+      const held: SavedReadbackCacheHeld = Object.freeze({ origin, prepared: allocation.prepared, owner: this, ledger, context, selected, bindings });
+      this.#savedReadbackCache = held; savedReadbackCaches.set(origin, held); current(); return origin;
+    } catch (caughtError) { this.#input.emit("error", error("SAVED_READBACK_CACHE_PREFLIGHT_FAILED")); throw caughtError; }
+    finally { this.#savedReadbackPreflightPending = false; this.#busy = false; }
+  }
   /** Launch only this fresh born-before-file reader, using its original
    * installed executable and newly verified complete closed checkpoint. */
   public async startSavedReadbackGeneration(): Promise<void> {
@@ -6299,7 +6380,17 @@ class CurrentPcbRetainedOwnerCore {
       else if (this.#purpose === "pcb-component-spatial209") { nativeRequest = componentSpatialDiagnosticNativeRequest; }
       else if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { nativeRequest = currentPcbViaWriteNativeRequest; }
       else if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { nativeRequest = currentSchematicDisplayWriteNativeRequest; }
-      const result = await this.#request(this.#stringPurpose ? stringPrecreateNativeRequest(chunk) : nativeRequest(chunk));
+      let encoded: Readonly<Record<string, unknown>>;
+      if (this.#savedReadbackCachePlan !== null && this.#savedReadbackCache !== null) { encoded = currentPcbViaSavedCacheNativeFrame(chunk, this.#savedReadbackCachePlan, this.#savedReadbackCache.selected.sessionId); }
+      else { encoded = this.#stringPurpose ? stringPrecreateNativeRequest(chunk) : nativeRequest(chunk); }
+      if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) {
+        if (this.#savedReadbackCachePlan !== null && this.#savedReadbackCache !== null) { this.#savedReadbackCacheCurrent(this.#savedReadbackCache); }
+        else if (this.#savedReadbackPreflightPending) {
+          if (encoded["openingPhase"] !== "preflight" || encoded["method"] !== "Runtime.callFunctionOn") { throw error("SAVED_READBACK_PREFLIGHT_WIRE"); }
+          encoded = { ...encoded, action: "saved-readback-preflight" };
+        }
+      }
+      const result = await this.#request(encoded);
       if (!exact(result, ["written"]) || result["written"] !== true) { throw error("WRITE_ACK"); }
       // oxlint-disable-next-line promise/prefer-await-to-callbacks, eslint/no-useless-return -- Writable completion must be the terminal branch operation.
       callback(); return;
@@ -7559,6 +7650,9 @@ export function currentPcbViaSavedReadbackAllocationOutcome(prepared: CurrentPcb
   const original = pcbViaSavedReadbackAllocations.get(prepared);
   if (original === undefined) { return Object.freeze({ state: "not-attempted", owner: null }); } requireSavedReadbackPreparation(original);
   if (original.owner !== null) { assertOriginalCurrentPcbViaSavedReadbackOwner(original.owner); } return Object.freeze({ state: original.state, owner: original.owner });
+}
+export function requireOriginalCurrentPcbViaSavedCacheOrigin(origin: CurrentPcbViaSavedCacheOrigin, owner: CurrentPcbViaSavedReadbackOwner, prepared: CurrentPcbViaWriteClosedCheckpoint): CurrentPcbViaSavedCacheBindings {
+  assertOriginalCurrentPcbViaSavedReadbackOwner(owner); return owner.originalSavedReadbackCacheBindings(origin, prepared);
 }
 export function originalCurrentPcbViaSavedReadbackTarget(owner: CurrentPcbViaSavedReadbackOwner): CurrentPcbViaWriteClosedCheckpoint {
   assertOriginalCurrentPcbViaSavedReadbackOwner(owner); const original = pcbViaSavedReadbackFactories.get(owner);

@@ -382,6 +382,14 @@ export class CurrentPcbDiagnosticContext {
     if (this.#target["url"] !== `${base}${fragment}`) { return this.#refuse(); }
     return selected;
   }
+  /** Original pre-project cache selector only. The native owner additionally
+   * proves its empty UI preflight before issuing any CacheStorage request. */
+  public savedReadbackCacheContext(): Readonly<{ sessionId: string; uniqueContextId: string; frameId: string; securityOrigin: string }> {
+    const selected = this.savedCacheMetadataContext();
+    const frame = this.#frame;
+    if (frame === null || !diagnosticToken(frame["id"]) || typeof frame["securityOrigin"] !== "string" || frame["securityOrigin"].length === 0 || frame["securityOrigin"].length > 8192) { return this.#refuse(); }
+    return Object.freeze({ ...selected, frameId: frame["id"], securityOrigin: frame["securityOrigin"] });
+  }
   /** Fixed model observer only, after the existing PCB frame's complete source
    * was admitted. UI opening and model inspection are intentionally disjoint;
    * a worker-only opening never upgrades its context into a PCB compiler. */

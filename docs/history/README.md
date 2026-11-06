@@ -1,5 +1,6 @@
 # Project history
 
+- [Original saved-reader cache ledger](2026-11-06-via-saved-cache-original-ledger.md)
 - [Fresh saved Via readback birth](2026-11-06-via-saved-readback-native-birth.md)
 
 - [Project cache startup source audit](2026-11-06-project-cache-startup-source-audit.md)

@@ -10,6 +10,8 @@
 /* oxlint-disable import/max-dependencies -- Fixed transport composes independent model/common/worker/actor grammars without merging their source or authority boundaries. */
 import { currentProjectSaveProducerWire } from "./current-project-save-producer-wire.ts";
 import type { CurrentProjectSaveProducerCommand } from "./current-project-save-producer-protocol.ts";
+import { currentPcbViaSavedCacheWire } from "./current-pcb-via-saved-cache-wire.ts";
+import type { CurrentPcbViaSavedCachePlan } from "./current-pcb-via-saved-cache-ledger.ts";
 import { CURRENT_PCB_VIA_SAVED_READBACK_PROFILE } from "./current-pcb-via-saved-readback-profile.ts";
 import { currentProjectSaveProducerGuardWire } from "./current-project-save-producer-guard-wire.ts";
 import type { CurrentProjectSaveProducerGuardCommand } from "./current-project-save-producer-guard-protocol.ts";
@@ -105,7 +107,8 @@ type SchematicWorkerParentCommand = Readonly<{ schematicWorkerParentPhase: "arm"
 type ProducerObserveWireCommand = CurrentProjectSaveProducerCommand & Readonly<{ producerObserveCommand: true }>;
 type ProducerGuardWireCommand = CurrentProjectSaveProducerGuardCommand & Readonly<{ producerGuardCommand: true }>;
 type StructureTransportWireCommand = CurrentProjectStructureTransportCommand & Readonly<{ structureTransportCommand: true }>;
-type RequestPhase = "producer-observe" | "producer-guard" | "structure-transport" | "schematic-accessor" | "schematic-clock" | "schematic-worker" | "schematic-parent-arm" | "schematic-parent-running" | `schematic-display-${CurrentSchematicDisplayNativePhase}` | "via-clock" | "via-worker" | "via-parent-arm" | "via-parent-running" | "generated-fixture-register" | "renderer-capture209" | "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
+type SavedReadbackCacheWire = ReturnType<typeof currentPcbViaSavedCacheWire>;
+type RequestPhase = "saved-readback-cache" | "producer-observe" | "producer-guard" | "structure-transport" | "schematic-accessor" | "schematic-clock" | "schematic-worker" | "schematic-parent-arm" | "schematic-parent-running" | `schematic-display-${CurrentSchematicDisplayNativePhase}` | "via-clock" | "via-worker" | "via-parent-arm" | "via-parent-running" | "generated-fixture-register" | "renderer-capture209" | "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
   `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "visual209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209" |
   `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}` |
   `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}` | `worker-producer-${CurrentPcbStringWorkerProducerCommand["workerProducerPhase"]}` |
@@ -272,6 +275,7 @@ class CurrentPcbFixedPipeCore {
   #sessionId: string | null = null;
   #event: ((event: DiagnosticEvent) => void) | null = null;
   readonly #savedReadbackPurpose: boolean;
+  #savedReadbackDiscovery = 0; #savedReadbackPreflight = 0; #savedReadbackCache = 0;
   #eventCount = 0;
   #eventBytes = 0;
   #workerEvent: ((event: DiagnosticEvent) => void) | null = null;
@@ -837,6 +841,11 @@ class CurrentPcbFixedPipeCore {
     return this.#request({ id: this.#nextId, method, params: {}, sessionId: this.#sessionId });
   }
 
+  public observeSavedReadbackCache(plan: CurrentPcbViaSavedCachePlan): Promise<Reply> {
+    if (!this.#savedReadbackPurpose || this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("SAVED_READBACK_CACHE_PURPOSE")); }
+    return this.#request(currentPcbViaSavedCacheWire(plan, this.#nextId, this.#sessionId), "saved-readback-cache");
+  }
+
   public status(): Readonly<{ started: boolean; failure: Failure | null; failureObservation: CurrentPcbDiagnosticFailureObservation | null; pendingRequestId: number | null;
     requestCount: number; receivedBytes: number; inputEnded: boolean; inputClosed: boolean;
     outputClosed: boolean; listenersReleased: boolean; nativeOwnerVerified: false; executionAuthorized: false }> {
@@ -868,10 +877,18 @@ class CurrentPcbFixedPipeCore {
    * write ambiguity fails the pipe and never grants an automatic resend.
    */
   // oxlint-disable-next-line eslint/require-await -- Async converts pre-dispatch guards to rejected promises; native completion is callback-based.
-  async #request(command: (ProducerObserveWireCommand & Readonly<{ id: number; sessionId: string }>) | (ProducerGuardWireCommand & Readonly<{ id: number; sessionId: string }>) | (StructureTransportWireCommand & Readonly<{ id: number; sessionId: string }>) | ((CurrentSchematicDisplayAccessorCommand & Readonly<{ schematicAccessorCommand: true }>) & Readonly<{ id: number; sessionId: string }>) | ((CurrentSchematicDisplayClockCommand & Readonly<{ schematicClockCommand: true; schematicClockRealm: CurrentSchematicDisplayClockRealm }>) & Readonly<{ id: number; sessionId: string }>) | ((SchematicWorkerParentCommand | (CurrentSchematicDisplayWorkerCommand & Readonly<{ schematicWorkerCommand: true }>)) & Readonly<{ id: number; sessionId: string }>) | (CurrentSchematicDisplayNativeCommand & Readonly<{ id: number; sessionId: string }>) | DiagnosticCommand | CurrentPcbSpatialWireCommand | ((CurrentPcbViaWriteCommand | CurrentPcbViaSpatialCommand | CurrentPcbViaSdkPropertiesCommand | ViaWorkerParentCommand | ViaClockWireCommand | (CurrentPcbViaWorkerCommand & Readonly<{ viaWorkerCommand: true }>)) & Readonly<{ id: number; sessionId: string }>) | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheHeldCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
+  async #request(command: SavedReadbackCacheWire | (ProducerObserveWireCommand & Readonly<{ id: number; sessionId: string }>) | (ProducerGuardWireCommand & Readonly<{ id: number; sessionId: string }>) | (StructureTransportWireCommand & Readonly<{ id: number; sessionId: string }>) | ((CurrentSchematicDisplayAccessorCommand & Readonly<{ schematicAccessorCommand: true }>) & Readonly<{ id: number; sessionId: string }>) | ((CurrentSchematicDisplayClockCommand & Readonly<{ schematicClockCommand: true; schematicClockRealm: CurrentSchematicDisplayClockRealm }>) & Readonly<{ id: number; sessionId: string }>) | ((SchematicWorkerParentCommand | (CurrentSchematicDisplayWorkerCommand & Readonly<{ schematicWorkerCommand: true }>)) & Readonly<{ id: number; sessionId: string }>) | (CurrentSchematicDisplayNativeCommand & Readonly<{ id: number; sessionId: string }>) | DiagnosticCommand | CurrentPcbSpatialWireCommand | ((CurrentPcbViaWriteCommand | CurrentPcbViaSpatialCommand | CurrentPcbViaSdkPropertiesCommand | ViaWorkerParentCommand | ViaClockWireCommand | (CurrentPcbViaWorkerCommand & Readonly<{ viaWorkerCommand: true }>)) & Readonly<{ id: number; sessionId: string }>) | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheHeldCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
     Readonly<{ id: number; sessionId: string }>), phase: RequestPhase = "discovery"): Promise<Reply> {
     if (!this.#started || this.#released || this.#handedOff) { throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED"); }
-    if (this.#savedReadbackPurpose && (phase !== "discovery" && phase !== "frame-owner" || !CURRENT_PCB_SPATIAL_DISCOVERY_METHODS.some(method => method === command.method))) { throw new Error("SAVED_READBACK_DISCOVERY_ONLY"); }
+    if (this.#savedReadbackPurpose) {
+      const cache = phase === "saved-readback-cache" && "savedReadbackCache" in command && command.savedReadbackCache;
+      const preflight = phase === "project-preflight" && command.method === "Runtime.callFunctionOn";
+      const discovery = (phase === "discovery" || phase === "frame-owner") && CURRENT_PCB_SPATIAL_DISCOVERY_METHODS.some(method => method === command.method);
+      if (!cache && !preflight && !discovery) { throw new Error("SAVED_READBACK_DISCOVERY_ONLY"); }
+      if (cache) { if (this.#savedReadbackCache >= 36) { throw new Error("SAVED_READBACK_CACHE_BUDGET"); } this.#savedReadbackCache += 1; }
+      else if (preflight) { if (this.#savedReadbackPreflight !== 0) { throw new Error("SAVED_READBACK_PREFLIGHT_CONSUMED"); } this.#savedReadbackPreflight += 1; }
+      else { if (this.#savedReadbackDiscovery >= 24) { throw new Error("SAVED_READBACK_DISCOVERY_BUDGET"); } this.#savedReadbackDiscovery += 1; }
+    } else if ("savedReadbackCache" in command) { throw new Error("SAVED_READBACK_CACHE_PURPOSE"); }
     const spatial = (this.#spatialPurpose || this.#componentSpatialPurpose) && "spatialPhase" in command && phase.startsWith("spatial-");
     if ((this.#spatialPurpose || this.#componentSpatialPurpose) && !(spatial && command.method === "Runtime.releaseObjectGroup") &&
       this.#nextId > (this.#componentSpatialPurpose ? CURRENT_PCB_COMPONENT_SPATIAL_PROFILE.normalRequestLimit : CURRENT_PCB_SPATIAL_PROFILE.normalRequestLimit)) { throw new Error("PCB_SPATIAL_PIPE_CLEANUP_RESERVE"); }
@@ -901,7 +918,7 @@ class CurrentPcbFixedPipeCore {
     if (this.#heldCacheDiagnosticPurpose) { limit = HELD_DIAGNOSTIC.requestLimit; }
     if (this.#spatialPurpose) { limit = CURRENT_PCB_SPATIAL_PROFILE.requestLimit; }
     if (this.#componentSpatialPurpose) { limit = CURRENT_PCB_COMPONENT_SPATIAL_PROFILE.requestLimit; }
-    if (this.#savedReadbackPurpose) { limit = CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.enabledDiscovery; }
+    if (this.#savedReadbackPurpose) { limit = CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeReadOnly; }
     if (this.#viaPurpose) { limit = CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.renderer.total; }
     if (this.#schematicDisplayPurpose) { limit = CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE.renderer.total; }
     const heldCleanup = heldCache && command.method === "Runtime.releaseObjectGroup";
@@ -917,7 +934,7 @@ class CurrentPcbFixedPipeCore {
     const deferred = Promise.withResolvers<Reply>();
     let deadline = DEADLINE_MS;
     if (command.method === "Debugger.getScriptSource") { deadline = 30_000; }
-    else if (command.method === "Runtime.callFunctionOn" && command.params.awaitPromise) { deadline = 60_000; }
+    else if (command.method === "Runtime.callFunctionOn" && "awaitPromise" in command.params && command.params.awaitPromise) { deadline = 60_000; }
     if (heldCache) { deadline = CURRENT_FOOTPRINT_SAVED_CACHE_HELD_LIMITS.requestMilliseconds; }
     const pending: Pending = { id, resolve: deferred.resolve, reject: deferred.reject,
       timer: setTimeout(() => { this.#fail("deadline"); }, deadline), written: false, reply: null,
