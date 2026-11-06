@@ -667,6 +667,9 @@ export type CurrentPcbViaMainSetup = (origin: CurrentPcbViaMainOrigin) => Promis
 export interface CurrentPcbViaNativeObservation { readonly schema: "private.current-pcb-via-native-observation.v1"; readonly phase: CurrentPcbViaObservationPhase; readonly observations: Readonly<Record<string, unknown>> }
 export interface CurrentPcbViaSceneObservation { readonly schema: "private.current-pcb-via-scene-observation.v1"; readonly phase: CurrentPcbViaObservationPhase; readonly observation: CurrentPcb209SpatialTrackResult }
 const pcbViaPackets = new WeakMap<object, Readonly<{ owner: object; plan: CurrentPcbViaWritePlan; phase: string; kind: "native" | "scene" | "stage" }>>();
+function originalProducerArgument(args: readonly unknown[], index: number): string {
+  const argument = args[index]; if (!record(argument) || !exact(argument, ["objectId"]) || typeof argument["objectId"] !== "string" || !/^[A-Za-z\d_.:-]{1,256}$/u.test(argument["objectId"])) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_ARGUMENT"); } return argument["objectId"];
+}
 function requireViaPlan(owner: object, plan: CurrentPcbViaWritePlan): void {
   const original = pcbViaWriteFactories.get(owner), preparation = requireOriginalCurrentPcbViaWritePlan(plan).prepared;
   if (original === undefined || original.allocation.prepared !== preparation || original.allocation.owner !== owner || original.allocation.state !== "retained") { throw error("PCB_VIA_ORIGINAL_PLAN"); }
@@ -1037,6 +1040,9 @@ class CurrentPcbRetainedOwnerCore {
   #schematicProducerGuardReproof: (() => void) | null = null;
   #schematicProducerEnrollmentAttempted = false;
   #schematicProducerPrefix: CurrentSchematicDisplaySaveProducerPrefix | null = null;
+  #schematicProducerRelationAttempted = false; #schematicProducerEntryAttempted = false; #schematicProducerBodyAttempted = false;
+  #schematicProducerOriginalUploadWrapper: string | null = null; #schematicProducerOriginalUploadCallback: string | null = null;
+  #schematicProducerOriginalSaveEntry: string | null = null; #schematicProducerOriginalSaveBody: string | null = null;
   #schematicProducerModeArray: string | null = null; #schematicProducerModeVerified = false;
   #schematicTransportCapture: string | null = null;
   #schematicTransportCaptureAttempted = false;
@@ -1089,6 +1095,9 @@ class CurrentPcbRetainedOwnerCore {
   #viaProducerGuardReproof: (() => void) | null = null;
   #viaProducerEnrollmentAttempted = false;
   #viaProducerPrefix: CurrentPcbViaSaveProducerPrefix | null = null;
+  #viaProducerRelationAttempted = false; #viaProducerEntryAttempted = false; #viaProducerBodyAttempted = false;
+  #viaProducerOriginalUploadWrapper: string | null = null; #viaProducerOriginalUploadCallback: string | null = null;
+  #viaProducerOriginalSaveEntry: string | null = null; #viaProducerOriginalSaveBody: string | null = null;
   #viaProducerModeArray: string | null = null; #viaProducerModeVerified = false;
   #viaTransportCapture: string | null = null;
   #viaTransportCaptureAttempted = false;
@@ -2017,7 +2026,7 @@ class CurrentPcbRetainedOwnerCore {
   }
   public async enrollSchematicDisplayProducerPrefix(argumentsValue: GeneratedSchematicDisplayNativeArguments): Promise<CurrentSchematicDisplaySaveProducerPrefix> {
     requireSchematicArguments(this, argumentsValue); const reproof = this.#schematicProducerGuardReproof, worker = this.#schematicWorkerController;
-    if (this.#schematicProducerEnrollmentAttempted || this.#schematicProducerGuardOperation !== argumentsValue || !this.#schematicProducerModeVerified || reproof === null || worker === null || !worker.status().ready || !this.#schematicStages.has("preflight") || this.#schematicStages.has("modify") || this.#schematicStages.has("save")) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_UNAVAILABLE"); }
+    if (this.#schematicProducerEnrollmentAttempted || this.#schematicProducerGuardOperation !== argumentsValue || this.#schematicProducerOriginalUploadWrapper === null || this.#schematicProducerOriginalUploadCallback === null || !this.#schematicProducerModeVerified || reproof === null || worker === null || !worker.status().ready || !this.#schematicStages.has("preflight") || this.#schematicStages.has("modify") || this.#schematicStages.has("save")) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_UNAVAILABLE"); }
     this.#schematicProducerEnrollmentAttempted = true; this.#enter(true);
     const original = (): void => { requireSchematicArguments(this, argumentsValue); reproof(); if (this.#schematicProducerGuardReproof !== reproof || this.#schematicWorkerController !== worker || !worker.status().ready || !this.#schematicProducerModeVerified) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_CHANGED"); } };
     try { original(); await this.#verify(); original(); const reply = await this.#request({ action: "schematic-display-producer-prefix-enroll" }); original();
@@ -2094,9 +2103,13 @@ class CurrentPcbRetainedOwnerCore {
         const bindings: CurrentSchematicDisplaySaveWorkerBindings = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId, uniqueContextId: source.uniqueContextId, source: sourceToken,
           request: async (command: CurrentSchematicDisplaySaveCommand): Promise<unknown> => {
             original(); const reply = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { original();
+              if (command.phase === "schematic-save-entry") { if (this.#schematicProducerEntryAttempted) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_ENTRY_CONSUMED"); } this.#schematicProducerEntryAttempted = true; }
+              if (command.phase === "schematic-save-body") { if (this.#schematicProducerBodyAttempted || this.#schematicProducerOriginalSaveEntry === null || originalProducerArgument(command.params.arguments, 0) !== this.#schematicProducerOriginalSaveEntry) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_BODY_CONSUMED"); } this.#schematicProducerBodyAttempted = true; }
               if (command.phase === "schematic-save-value") { if (this.#schematicSaveBodyCaptureAttempted) { throw error("SCHEMATIC_DISPLAY_SAVE_BODY_CAPTURE_CONSUMED"); } this.#schematicSaveBodyCaptureAttempted = true; }
               if (command.phase === "schematic-save-resume") { selected.reserveSaveResume(source); }
               return pipe.observeSchematicDisplayWorker(command); }));
+            if (command.phase === "schematic-save-entry") { if (this.#schematicProducerOriginalSaveEntry !== null) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_ENTRY_ONCE"); } this.#schematicProducerOriginalSaveEntry = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, 13); }
+            else if (command.phase === "schematic-save-body") { if (this.#schematicProducerOriginalSaveEntry === null || this.#schematicProducerOriginalSaveBody !== null || originalProducerArgument(command.params.arguments, 0) !== this.#schematicProducerOriginalSaveEntry) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_BODY_ONCE"); } this.#schematicProducerOriginalSaveBody = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, 6); }
             if (command.phase === "schematic-save-value") { this.#schematicSaveCapturedBody = decodeCurrentSchematicDisplaySaveBodyValue(reply); }
             if (command.phase === "schematic-save-arm") { selected.bindSaveBreakpoint(source, command.role, decodeCurrentSchematicDisplaySaveBreakpoint(reply, command.role, source.scriptId)); }
             original(); return reply;
@@ -2126,10 +2139,15 @@ class CurrentPcbRetainedOwnerCore {
               const historyGrant = command.phase === "project-save-structure-resume" ? originalProjectStructureContinuation(structureOrigin, command.role, this.#schematicStages.has("save")) : null;
               if (historyGrant === undefined) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_REQUIRED"); }
               const assertHistory = (): void => { if (historyGrant !== null) { if (command.phase !== "project-save-structure-resume" || originalProjectStructureContinuation(structureOrigin, command.role, this.#schematicStages.has("save")) !== historyGrant) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_CHANGED"); } historyGrant.assertCurrent(); } }; assertHistory();
+              if (command.phase === "project-save-structure-uploadRelation") { if (this.#schematicProducerRelationAttempted) { throw error("PROJECT_SAVE_PRODUCER_CONSTRUCTOR_RELATION_CONSUMED"); } this.#schematicProducerRelationAttempted = true; }
               if (retain !== undefined && (typeof retain !== "function" || types.isProxy(retain))) { throw error("PROJECT_SAVE_STRUCTURE_RETAIN_CALLBACK"); }
               const reply = await this.#serializeSchematicDisplayObserver(() => this.#transfer(async () => { original(); assertStructureOriginal();
                 if (command.phase === "project-save-structure-resume") { assertHistory(); if (command.role === "bootstrap" && !this.#schematicProducerModeVerified) { throw error("PROJECT_SAVE_PRODUCER_NONPRIVATE_MODE_REQUIRED"); } selected.reserveStructureResume(source, command.role); }
                 const actual = await pipe.observeSchematicDisplayWorker(command);
+                if (command.phase === "project-save-structure-uploadRelation") {
+                  if (this.#schematicProducerOriginalUploadWrapper !== null || this.#schematicProducerOriginalUploadCallback !== null || !exact(actual, ["result"]) || !record(actual["result"]) || !exact(actual["result"], ["type", "value"]) || actual["result"]["type"] !== "boolean" || actual["result"]["value"] !== true) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_CONSTRUCTOR_RELATION"); }
+                  this.#schematicProducerOriginalUploadWrapper = originalProducerArgument(command.params.arguments, 1); this.#schematicProducerOriginalUploadCallback = originalProducerArgument(command.params.arguments, 2);
+                }
                 if (command.phase === "project-save-structure-frame" && command.role === "mode") { if (this.#schematicProducerModeArray !== null) { throw error("PROJECT_SAVE_PRODUCER_MODE_ONCE"); } this.#schematicProducerModeArray = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(actual, 1); }
                 else if (command.phase === "project-save-structure-properties" && command.params.objectId === this.#schematicProducerModeArray) { decodeCurrentProjectSaveProducerNonprivateMode(actual); this.#schematicProducerModeVerified = true; }
                 if (retain !== undefined) { Reflect.apply(retain, undefined, [actual]); }
@@ -2233,7 +2251,7 @@ class CurrentPcbRetainedOwnerCore {
   }
   public async enrollViaProducerPrefix(plan: CurrentPcbViaWritePlan): Promise<CurrentPcbViaSaveProducerPrefix> {
     requireViaPlan(this, plan); const reproof = this.#viaProducerGuardReproof, worker = this.#viaWorkerController;
-    if (this.#viaProducerEnrollmentAttempted || this.#viaProducerGuardOperation !== plan || !this.#viaProducerModeVerified || reproof === null || worker === null || !worker.status().ready || !this.#viaSdkPhases.has("preflight") || this.#viaSdkPhases.has("create") || this.#viaSdkPhases.has("save")) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_UNAVAILABLE"); }
+    if (this.#viaProducerEnrollmentAttempted || this.#viaProducerGuardOperation !== plan || this.#viaProducerOriginalUploadWrapper === null || this.#viaProducerOriginalUploadCallback === null || !this.#viaProducerModeVerified || reproof === null || worker === null || !worker.status().ready || !this.#viaSdkPhases.has("preflight") || this.#viaSdkPhases.has("create") || this.#viaSdkPhases.has("save")) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_UNAVAILABLE"); }
     this.#viaProducerEnrollmentAttempted = true; this.#enter(true);
     const original = (): void => { requireViaPlan(this, plan); reproof(); if (this.#viaProducerGuardReproof !== reproof || this.#viaWorkerController !== worker || !worker.status().ready || !this.#viaProducerModeVerified) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_CHANGED"); } };
     try { original(); await this.#verify(); original(); const reply = await this.#request({ action: "pcb-via-producer-prefix-enroll" }); original();
@@ -2308,9 +2326,13 @@ class CurrentPcbRetainedOwnerCore {
         const bindings: CurrentPcbViaSaveWorkerBindings = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId, uniqueContextId: source.uniqueContextId, source: sourceToken,
           request: async (command: CurrentPcbViaSaveCommand): Promise<unknown> => {
             original(); const reply = await this.#serializeViaObserver(() => this.#transfer(() => { original();
+              if (command.phase === "via-save-entry") { if (this.#viaProducerEntryAttempted) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_ENTRY_CONSUMED"); } this.#viaProducerEntryAttempted = true; }
+              if (command.phase === "via-save-body") { if (this.#viaProducerBodyAttempted || this.#viaProducerOriginalSaveEntry === null || originalProducerArgument(command.params.arguments, 0) !== this.#viaProducerOriginalSaveEntry) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_BODY_CONSUMED"); } this.#viaProducerBodyAttempted = true; }
               if (command.phase === "via-save-value") { if (this.#viaSaveBodyCaptureAttempted) { throw error("PCB_VIA_SAVE_BODY_CAPTURE_CONSUMED"); } this.#viaSaveBodyCaptureAttempted = true; }
               if (command.phase === "via-save-resume") { selected.reserveSaveResume(source); }
               return pipe.observeViaWorker(command); }));
+            if (command.phase === "via-save-entry") { if (this.#viaProducerOriginalSaveEntry !== null) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_ENTRY_ONCE"); } this.#viaProducerOriginalSaveEntry = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, 13); }
+            else if (command.phase === "via-save-body") { if (this.#viaProducerOriginalSaveEntry === null || this.#viaProducerOriginalSaveBody !== null || originalProducerArgument(command.params.arguments, 0) !== this.#viaProducerOriginalSaveEntry) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_BODY_ONCE"); } this.#viaProducerOriginalSaveBody = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, 6); }
             if (command.phase === "via-save-value") { this.#viaSaveCapturedBody = decodeCurrentPcbViaSavePendingBodyValue(reply); }
             if (command.phase === "via-save-arm") { selected.bindSaveBreakpoint(source, command.role, decodeCurrentPcbViaSaveBreakpoint(reply, command.role, source.scriptId)); }
             original(); return reply;
@@ -2340,10 +2362,15 @@ class CurrentPcbRetainedOwnerCore {
               const historyGrant = command.phase === "project-save-structure-resume" ? originalProjectStructureContinuation(structureOrigin, command.role, this.#viaSdkPhases.has("save")) : null;
               if (historyGrant === undefined) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_REQUIRED"); }
               const assertHistory = (): void => { if (historyGrant !== null) { if (command.phase !== "project-save-structure-resume" || originalProjectStructureContinuation(structureOrigin, command.role, this.#viaSdkPhases.has("save")) !== historyGrant) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_CHANGED"); } historyGrant.assertCurrent(); } }; assertHistory();
+              if (command.phase === "project-save-structure-uploadRelation") { if (this.#viaProducerRelationAttempted) { throw error("PROJECT_SAVE_PRODUCER_CONSTRUCTOR_RELATION_CONSUMED"); } this.#viaProducerRelationAttempted = true; }
               if (retain !== undefined && (typeof retain !== "function" || types.isProxy(retain))) { throw error("PROJECT_SAVE_STRUCTURE_RETAIN_CALLBACK"); }
               const reply = await this.#serializeViaObserver(() => this.#transfer(async () => { original(); assertStructureOriginal();
                 if (command.phase === "project-save-structure-resume") { assertHistory(); if (command.role === "bootstrap" && !this.#viaProducerModeVerified) { throw error("PROJECT_SAVE_PRODUCER_NONPRIVATE_MODE_REQUIRED"); } selected.reserveStructureResume(source, command.role); }
                 const actual = await pipe.observeViaWorker(command);
+                if (command.phase === "project-save-structure-uploadRelation") {
+                  if (this.#viaProducerOriginalUploadWrapper !== null || this.#viaProducerOriginalUploadCallback !== null || !exact(actual, ["result"]) || !record(actual["result"]) || !exact(actual["result"], ["type", "value"]) || actual["result"]["type"] !== "boolean" || actual["result"]["value"] !== true) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_CONSTRUCTOR_RELATION"); }
+                  this.#viaProducerOriginalUploadWrapper = originalProducerArgument(command.params.arguments, 1); this.#viaProducerOriginalUploadCallback = originalProducerArgument(command.params.arguments, 2);
+                }
                 if (command.phase === "project-save-structure-frame" && command.role === "mode") { if (this.#viaProducerModeArray !== null) { throw error("PROJECT_SAVE_PRODUCER_MODE_ONCE"); } this.#viaProducerModeArray = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(actual, 1); }
                 else if (command.phase === "project-save-structure-properties" && command.params.objectId === this.#viaProducerModeArray) { decodeCurrentProjectSaveProducerNonprivateMode(actual); this.#viaProducerModeVerified = true; }
                 if (retain !== undefined) { Reflect.apply(retain, undefined, [actual]); }

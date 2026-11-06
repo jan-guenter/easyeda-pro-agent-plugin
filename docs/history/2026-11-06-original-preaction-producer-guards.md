@@ -30,6 +30,13 @@ the original durable create intent is still consumed before dispatch awaits.
 that exact already-issued token, for prospective main enrollment without a
 caller-supplied prefix. They issue nothing and refuse before enrollment.
 
+The central owner also retains the original upload wrapper/callback only after
+the fixed constructor relation returned true, and now requires those actual
+references for prefix enrollment. Its original Save entry/body captures retain
+their actual remote arrays privately for the later uploader join. Each capture
+attempt is consumed before dispatch; false or lost replies cannot issue another
+capture or a prefix. These references carry no continuation authority.
+
 This token establishes guard coverage before action. It explicitly leaves
 planned producer continuation and the complete upload frontier false. An SDK
 create or Save that enters a guarded producer remains held; release cannot
