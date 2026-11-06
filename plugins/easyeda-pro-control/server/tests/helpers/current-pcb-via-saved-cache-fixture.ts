@@ -70,3 +70,42 @@ export function completeSyntheticSavedCacheFixture(existed = false): Readonly<{ 
     target: Object.freeze({ rawWindowsPath, projectUuid, branchUuid: "3".repeat(32), documentUuid: "4".repeat(32), sourceSha256: "5".repeat(64) }), preparationCheckpoint: Object.freeze({ sha256: "6".repeat(64) }), vacuumProjection: Object.freeze({ sourceLogicalSha256: "7".repeat(64) }) });
   return Object.freeze({ prepared, ledger: cdp, metadata: ledger });
 }
+
+/** Fresh actual ledgers for the automatic driver; all Inspector/CDP data are
+ * inert synthetic replies, never a native origin or checkpoint issuer. */
+export function freshSyntheticSavedCacheDriver(excessEntries = false): Readonly<{
+  prepared: Readonly<Record<string, unknown>>; metadata: CurrentPcbViaSavedCacheMetadataLedger; ledger: CurrentPcbViaSavedCacheLedger;
+  metadataRequest: (command: CurrentPcbViaSavedCacheMetadataCommand) => Promise<ReturnType<CurrentPcbViaSavedCacheMetadataLedger["accept"]>>;
+  request: (command: Parameters<CurrentPcbViaSavedCacheLedger["prepare"]>[0]) => Promise<ReturnType<CurrentPcbViaSavedCacheLedger["accept"]>>;
+  commands: string[];
+}> {
+  const projectUuid = "a".repeat(64); const frame = Object.freeze({ sessionId: "session", uniqueContextId: "context", executionContextId: 7, projectUuid });
+  const metadata = new CurrentPcbViaSavedCacheMetadataLedger(frame); const ledger = new CurrentPcbViaSavedCacheLedger(Object.freeze({ frameId: "frame", sessionId: frame.sessionId, securityOrigin: "https://client", projectUuid }));
+  const prepared = Object.freeze({ target: Object.freeze({ projectUuid }) }); const commands: string[] = []; let script = 0;
+  const caches = excessEntries ? [0, 1].map(ordinal => ({ cacheId: `cache-${String(ordinal)}`, cacheName: ordinal === 0 ? `project_${projectUuid}_v6` : `localProject_${projectUuid}_v1`, securityOrigin: "https://client", storageKey: "https://client/" })) : [];
+  return { prepared, metadata, ledger, commands,
+    metadataRequest: async command => {
+      await Promise.resolve(); const plan = metadata.prepare(command); commands.push(command.phase); let reply: unknown;
+      if (command.phase === "saved-cache-native-helper-source") { reply = { scriptSource: `(${HELPERS[command.helper].program})` }; }
+      else if (command.phase === "saved-cache-native-constructors" || command.phase === "saved-cache-native-members") { let count = 4; if (command.phase === "saved-cache-native-members") { count = command.kind === "request" ? 27 : 28; } reply = capture(`${command.kind}-${command.phase}`, count); }
+      else if (command.phase === "saved-cache-native-references") { let count = 4; if (command.stage === "members") { count = command.kind === "request" ? 27 : 28; } reply = array(command.kind, count); }
+      else if (command.phase === "saved-cache-native-function") { const profile = (command.kind === "cache-response" ? CACHE : REQUEST).find(value => value.index === command.slot); assert.ok(profile !== undefined); reply = native(profile); }
+      else if (command.phase === "saved-cache-native-catalogue") { reply = { result: { type: "object", value: REQUEST } }; }
+      else if (command.phase === "saved-cache-native-reprove") { reply = { result: { type: "boolean", value: true } }; }
+      else if (command.phase === "saved-cache-native-bind") { reply = capture("state", 4); }
+      else if (command.phase === "saved-cache-native-observe") { reply = { result: { type: "object", value: { schema: "private.pcb-via-saved-cache-metadata.v1", ordinal: command.ordinal, existed: false, requestGetterNames: GETTERS, entries: [], completeNativeFetchMetadataCaptured: true, executionAuthorized: false } } }; }
+      else { throw new Error("unexpected synthetic metadata command"); }
+      if (plan.helper !== null) { script += 1; metadata.observeOriginalEvent({ method: "Debugger.scriptParsed", sessionId: frame.sessionId, params: { url: "", scriptId: `helper-${String(script)}`, executionContextId: 7 } }); }
+      return metadata.accept(plan, reply);
+    },
+    request: async command => {
+      await Promise.resolve(); const plan = ledger.prepare(command); commands.push(command.phase); let reply: unknown;
+      if (command.phase === "saved-cache-key") { reply = { storageKey: "https://client/" }; }
+      else if (command.phase === "saved-cache-names") { reply = { caches }; }
+      else if (command.phase === "saved-cache-track") { reply = {}; }
+      else if (command.phase === "saved-cache-entries") { const count = command.ordinal === 0 ? 5 : 4; reply = { returnCount: count, cacheDataEntries: Array.from({ length: count }, (_, index) => ({ requestURL: `https://client/dataStr/${String(index)}`, requestMethod: "GET", requestHeaders: [], responseTime: 0, responseStatus: 200, responseStatusText: "", responseType: "default", responseHeaders: [{ name: "content-type", value: "application/json" }] })) }; }
+      else { throw new Error("unexpected synthetic cache command"); }
+      return ledger.accept(plan, reply);
+    },
+  };
+}
