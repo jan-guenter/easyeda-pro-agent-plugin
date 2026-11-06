@@ -206,6 +206,9 @@ class CurrentPcbFixedPipeCore {
   #failureObservation: CurrentPcbDiagnosticFailureObservation | null = null;
   #lastRequest: RequestObservation | null = null;
   #pending: Pending | null = null;
+  // Only the new Via birth may retain its sole opening/SDK Save response while one
+  // Fixed observer request uses the same original stream and ID allocator.
+  #viaRetainedPending: Pending | null = null;
   #nextId = 1;
   #receivedBytes = 0;
   #buffer = Buffer.alloc(4096);
@@ -651,7 +654,7 @@ class CurrentPcbFixedPipeCore {
   public status(): Readonly<{ started: boolean; failure: Failure | null; failureObservation: CurrentPcbDiagnosticFailureObservation | null; pendingRequestId: number | null;
     requestCount: number; receivedBytes: number; inputEnded: boolean; inputClosed: boolean;
     outputClosed: boolean; listenersReleased: boolean; nativeOwnerVerified: false; executionAuthorized: false }> {
-    return Object.freeze({ started: this.#started, failure: this.#failure, failureObservation: this.#failureObservation, pendingRequestId: this.#pending?.id ?? null,
+    return Object.freeze({ started: this.#started, failure: this.#failure, failureObservation: this.#failureObservation, pendingRequestId: this.#pending?.id ?? this.#viaRetainedPending?.id ?? null,
       requestCount: this.#nextId - 1, receivedBytes: this.#receivedBytes, inputEnded: this.#inputEnded,
       inputClosed: this.#inputClosed, outputClosed: this.#outputClosed, listenersReleased: this.#released,
       nativeOwnerVerified: false, executionAuthorized: false });
@@ -661,7 +664,7 @@ class CurrentPcbFixedPipeCore {
    * This observes transport closure, not original EasyEDA/Job termination.
    * It does not close a stream or authorize a fresh launch. */
   public releaseClosedListeners(): void {
-    if (!this.#inputClosed || !this.#outputClosed || this.#pending !== null) {
+    if (!this.#inputClosed || !this.#outputClosed || this.#pending !== null || this.#viaRetainedPending !== null) {
       throw new Error("PCB_DIAGNOSTIC_PIPE_RETAIN_ORIGINAL_STREAMS");
     }
     this.#input.removeListener("data", this.#data);
@@ -703,6 +706,8 @@ class CurrentPcbFixedPipeCore {
       throw new Error("PCB_DIAGNOSTIC_PIPE_STARTUP_DISCOVERY_ONLY");
     }
     if (this.#failure !== null) { throw failureError(this.#failure); }
+    const viaRetained = this.#viaPurpose && ["via-sdk-save", "project-open-project", "pcb-open-document"].includes(phase);
+    if (this.#viaRetainedPending !== null && (viaRetained || phase !== "discovery" || command.method !== "Debugger.getScriptSource")) { throw new Error("PCB_VIA_RETAINED_PENDING_SCOPE"); }
     if (this.#pending !== null) { throw new Error("PCB_DIAGNOSTIC_PIPE_REQUEST_PENDING"); }
     let limit = this.#stringPurpose ? CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT : DIAGNOSTIC_REQUEST_LIMIT;
     if (this.#heldCacheDiagnosticPurpose) { limit = HELD_DIAGNOSTIC.requestLimit; }
@@ -727,14 +732,14 @@ class CurrentPcbFixedPipeCore {
       timer: setTimeout(() => { this.#fail("deadline"); }, deadline), written: false, reply: null,
       sessionId: "sessionId" in command ? command.sessionId : null, source: command.method === "Debugger.getScriptSource",
       common: ["common-packet-read", "common-packet-result", "common-assets", "common-metadata"].includes(phase), heldCache };
-    this.#pending = pending;
+    if (viaRetained) { this.#viaRetainedPending = pending; } else { this.#pending = pending; }
     // Reserve before write, including synchronous throw and synchronous peer
     // Reply. A callback error still defeats an earlier received response.
     try {
       // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Writable completion is callback-based; an ACK does not replace the write callback.
       this.#output.write(Buffer.from(`${JSON.stringify(command)}\0`), (error): void => {
         if (error !== null && error !== undefined) { this.#fail("output"); }
-        else if (this.#pending === pending && this.#failure === null) { pending.written = true; this.#complete(); }
+        else if ((this.#pending === pending || this.#viaRetainedPending === pending) && this.#failure === null) { pending.written = true; this.#complete(); }
       });
     } catch { this.#fail("output"); }
     return deferred.promise;
@@ -745,33 +750,37 @@ class CurrentPcbFixedPipeCore {
     // Fixed method/phase/event labels carry no received params or private text.
     this.#failureObservation ??= Object.freeze({
       schema: "easyeda-pro-control.pcb-diagnostic-pipe-failure.v1", code, reason, request: this.#lastRequest,
-      requestPending: this.#pending !== null, eventKind: rejectedEvent,
+      requestPending: this.#pending !== null || this.#viaRetainedPending !== null, eventKind: rejectedEvent,
       executionAuthorized: false, dispatchAbsenceVerified: false,
     });
     this.#failure ??= code;
     this.#used = 0;
-    const pending = this.#pending;
-    this.#pending = null;
-    if (pending !== null) { clearTimeout(pending.timer); pending.reject(failureError(this.#failure)); }
+    const pending = this.#pending, savePending = this.#viaRetainedPending;
+    this.#pending = null; this.#viaRetainedPending = null;
+    for (const original of [pending, savePending]) { if (original !== null) { clearTimeout(original.timer); original.reject(failureError(this.#failure)); } }
   }
 
   #complete(): void {
-    const pending = this.#pending;
-    if (this.#failure === null && pending !== null && pending.written && pending.reply !== null && this.#used === 0) {
-      if (this.#heldCacheDiagnosticPurpose && pending.source && typeof pending.reply["scriptSource"] === "string") { this.#heldCacheSourceSeen = true; }
-      this.#pending = null; clearTimeout(pending.timer); pending.resolve(pending.reply);
+    for (const pending of [this.#pending, this.#viaRetainedPending]) {
+      if (this.#failure === null && pending !== null && pending.written && pending.reply !== null && this.#used === 0) {
+        if (this.#heldCacheDiagnosticPurpose && pending.source && typeof pending.reply["scriptSource"] === "string") { this.#heldCacheSourceSeen = true; }
+        if (this.#pending === pending) { this.#pending = null; } else { this.#viaRetainedPending = null; }
+        clearTimeout(pending.timer); pending.resolve(pending.reply);
+      }
     }
   }
 
   #frame(bytes: Buffer): void {
-    const pending = this.#pending;
     if (bytes.length === 0) { this.#fail("reply", "empty-frame"); return; }
     let decoded: unknown;
     try { decoded = decodeCurrentPcbDiagnosticJson(bytes); }
     catch { this.#fail("framing"); return; }
     if (!record(decoded)) { this.#fail("reply", "nonobject-frame"); return; }
     if (Object.hasOwn(decoded, "method")) { this.#receiveEvent(decoded, bytes.length); return; }
+    const pending = this.#viaRetainedPending?.id === decoded["id"] ? this.#viaRetainedPending : this.#pending;
     if (pending === null) { this.#fail("reply", "reply-unsolicited"); return; }
+    let maximum = MAX_FRAME_BYTES; if (pending.source) { maximum = DIAGNOSTIC_SOURCE_FRAME_BYTES; } else if (pending.common) { maximum = COMMON_FRAME_BYTES; }
+    if (bytes.length > maximum) { this.#fail("framing"); return; }
     if (pending.heldCache && bytes.length > HELD_DIAGNOSTIC.maximumHeldReplyFrameBytes) { this.#fail("framing"); return; }
     if (pending.reply !== null) { this.#fail("reply", "reply-duplicate"); return; }
     if (!Object.is(decoded["id"], pending.id)) { this.#fail("reply", "reply-id"); return; }

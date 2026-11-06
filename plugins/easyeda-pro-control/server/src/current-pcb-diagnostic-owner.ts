@@ -4517,11 +4517,12 @@ class CurrentPcbRetainedOwnerCore {
       await this.#verify(); this.#available();
       const reply = request();
       // Attach rejection before any await, including the native write callback.
+      let settled = false;
       const observed = (async (): Promise<{ value: RecordValue } | { cause: unknown }> => {
-        try { return { value: await reply }; } catch (caughtError) { return { cause: caughtError }; }
+        try { return { value: await reply }; } catch (caughtError) { return { cause: caughtError }; } finally { settled = true; }
       })();
       await this.#send;
-      while (this.#pipe.status().pendingRequestId !== null) {
+      while (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE ? !settled : this.#pipe.status().pendingRequestId !== null) {
         if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#mainRunner !== null) { await this.#mainRunner.pumpSelectedSqlFence(); }
         this.#available(); const chunk = await this.#request({ action: "poll" });
         if (!exact(chunk, ["bytes"]) || typeof chunk["bytes"] !== "string" || chunk["bytes"].length > TRANSPORT.maximumNativePollBase64Units ||
