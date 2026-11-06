@@ -1484,3 +1484,84 @@ void test("historical Source timeout retains only original metadata settlement a
     });
   }
 });
+
+/** Inert SDK peer for the exact Via family, with a genuinely pending execute
+ * Promise and independently acknowledged original abort/exit/release stages. */
+function interruptedViaPeer(): string {
+  return `import {Server} from ${sdkModule("server/index.js")};
+import {StdioServerTransport} from ${sdkModule("server/stdio.js")};
+import {CallToolRequestSchema,ListToolsRequestSchema} from ${sdkModule("types.js")};
+const server=new Server({name:'synthetic-original-via',version:'1.0.0'},{capabilities:{tools:{}}});
+const op='pcb209-via-write-manager-original',gate=Promise.withResolvers(),calls=[];let active=0,executes=0,aborted=false,released=false,settled=false;
+const result=value=>({content:[{type:'text',text:JSON.stringify(value)}],structuredContent:value});
+const refused=()=>({isError:true,content:[{type:'text',text:'synthetic-original-via-refusal'}]});
+server.setRequestHandler(ListToolsRequestSchema,async()=>({tools:['easyeda_control_api','easyeda_control_session','easyeda_control_current_pcb_via_write'].map(name=>({name,inputSchema:{type:'object'}}))}));
+server.setRequestHandler(CallToolRequestSchema,async({params})=>{
+const q=params.arguments?.request;
+if(params.name==='easyeda_control_api'&&q?.action==='loaded-facade')return result({offline:true,result:{schema:'easyeda-pro-control.loaded-facade.v1',pid:process.pid,moduleUrl:import.meta.url,nodeVersion:process.version,admissionGranted:false}});
+if(params.name==='easyeda_control_session'){
+ if(q?.action==='retire'&&(active!==0||!released||!settled))return refused();const retired=q?.action==='retire';
+ return result({result:{schema:'easyeda-pro-control.session-retirement.v1',state:retired?'retired':'active',activeCalls:active,liveAdmissionOpen:!retired,leaseReleaseAcknowledged:retired,replacementConnectionRequired:retired}});
+}
+calls.push({tool:params.name,...q});if(params.name!=='easyeda_control_current_pcb_via_write'||q?.operationId!==op)return refused();
+if(q.action==='execute'){if(++executes!==1||!['confirmDisposableViaWrite','confirmOneSave','confirmForwardOnly','confirmNormalOpenEffects'].every(k=>q[k]===true))return refused();active++;await gate.promise;active--;return result({result:{operationId:op,action:q.action,originalReturned:true}});}
+if(q.action==='abort'){if(aborted||q.confirmOriginalJobOnly!==true||Object.keys(q).length!==3)return refused();aborted=true;setTimeout(()=>gate.resolve(),125);return result({result:{operationId:op,action:q.action,terminationDispatched:true}});}
+if(q.action==='observe-termination')return result({result:{operationId:op,action:q.action,terminated:aborted&&active===0}});
+if(q.action==='release'){if(!aborted||active!==0||released)return refused();released=true;return result({result:{operationId:op,action:q.action,released:true}});}
+if(q.action==='settle-publication'){settled=true;return result({result:{operationId:op,action:q.action,settled:true}});}
+if(q.action==='inspect')return result({result:{operationId:op,action:q.action,active,executes,aborted,released,settled,calls}});return refused();
+});
+setTimeout(()=>{gate.resolve();void server.close();},18000).unref();await server.connect(new StdioServerTransport());`;
+}
+void test("Via original manager cleanup binds timeout and in-flight abort to the same retained request/client through facade retirement", { timeout: 25_000 }, async context => {
+  for (const mode of ["timeout", "in-flight"] as const) {
+    const selected = await fixture(interruptedViaPeer()); const outputs: unknown[] = [];
+    await selectedProfile(selected.profilePath, async () => {
+      const manager = new ForegroundSessionManager(async value => { outputs.push(value); await Promise.resolve(); });
+      context.after(async () => {
+        if (manager.inspect()["stage"] === "closed") { return; }
+        const deadline = Date.now() + 19_000;
+        while (manager.inspect()["closure"] === null && Date.now() < deadline) { await wait(10); }
+        await manager.handle(request({ id: `${mode}-fixture-shutdown`, action: "shutdown" }));
+      });
+      await manager.initialize(selected.root); const pid = manager.inspect()["facadePid"];
+      const execute = { id: `${mode}-original-execute`, tool: "easyeda_control_current_pcb_via_write", timeoutMs: mode === "timeout" ? 1000 : 10_000,
+        arguments: { request: { action: "execute", operationId: "pcb209-via-write-manager-original", confirmDisposableViaWrite: true, confirmOneSave: true, confirmForwardOnly: true, confirmNormalOpenEffects: true } } };
+      const cleanup = (id: string, action: string, extra: object = {}): string => request({ id, action: "cleanup-original", generation: 1,
+        interruptedRequestId: execute.id, request: { action, ...extra } });
+      const side = (id: string, action: string, extra: object = {}): string => request({ id, action: "in-flight-original", generation: 1,
+        originalRequestId: execute.id, request: { action, ...extra } });
+      let parentSettled = false;
+      const pending = (async (): Promise<void> => { try { await manager.handle(request(execute)); } finally { parentSettled = true; } })();
+      await managerProgress(() => record(manager.inspect()["inFlightRequest"])["rpcPending"] === true);
+      if (mode === "in-flight") {
+        await manager.handleInFlight(side("foreign-via-operation", "inspect", { operationId: "pcb209-via-write-foreign" })); assert.equal(record(outputs.at(-1))["dispatched"], false);
+        await manager.handleInFlight(side("original-via-inspect", "inspect"));
+        await manager.handleInFlight(side("original-via-abort", "abort"));
+        assert.equal(parentSettled, false); assert.equal(manager.hasInFlightCapture(), true); assert.equal(manager.inspect()["stage"], "blocked");
+      }
+      await pending; assert.equal(manager.inspect()["stage"], "blocked"); assert.equal(manager.inspect()["facadePid"], pid);
+      for (const rejected of [request({ ...execute, id: `${mode}-replay`, cleanup: true }), loaded(`${mode}-ordinary-refused`),
+        cleanup(`${mode}-foreign-operation`, "inspect", { operationId: "pcb209-via-write-foreign" }), cleanup(`${mode}-caller-confirm`, "abort", { confirmOriginalJobOnly: true }), cleanup(`${mode}-wrong-family`, "release-closed"),
+        request({ id: `${mode}-foreign-request`, action: "cleanup-original", generation: 1, interruptedRequestId: "foreign", request: { action: "inspect" } })]) {
+        await manager.handle(rejected); assert.equal(record(outputs.at(-1))["dispatched"], false);
+      }
+      if (mode === "timeout") {
+        await manager.handle(retire("timeout-via-premature-retire", 1)); assert.equal(manager.inspect()["stage"], "blocked"); assert.equal(record(outputs.at(-1))["retirementRefused"], true);
+        await manager.handle(cleanup("timeout-via-abort", "abort")); await wait(150);
+      }
+      for (const [id, action] of [[`${mode}-via-exit`, "observe-termination"], [`${mode}-via-release`, "release"], [`${mode}-via-publish`, "settle-publication"], [`${mode}-via-inspect`, "inspect"]] as const) {
+        await manager.handle(cleanup(id, action)); const output = record(outputs.at(-1)); assert.notEqual(record(output["result"])["isError"], true);
+      }
+      const finalOutput = record(outputs.at(-1)); const envelope = record(finalOutput["result"]); const content = record(envelope["structuredContent"]); const inspected = record(content["result"]);
+      const calls = z.array(z.record(z.string(), z.unknown())).parse(inspected["calls"]);
+      assert.equal(inspected["executes"], 1); assert.equal(inspected["released"], true); assert.equal(inspected["settled"], true);
+      const aborts = calls.filter(call => call["action"] === "abort"); assert.equal(aborts.length, 1); assert.equal(aborts[0]?.["confirmOriginalJobOnly"], true);
+      assert.ok(calls.every(call => call["operationId"] === execute.arguments.request.operationId && call["tool"] === execute.tool));
+      await manager.handle(cleanup(`${mode}-abort-replay`, "abort")); assert.equal(record(outputs.at(-1))["dispatched"], false);
+      await manager.handle(retire(`${mode}-via-final-retire`, 1)); assert.equal(manager.inspect()["stage"], "between-facades");
+      assert.equal(record(manager.inspect()["closure"])["pid"], pid); await manager.handle(request({ id: `${mode}-via-shutdown`, action: "shutdown" }));
+      assert.equal(manager.inspect()["stage"], "closed");
+    });
+  }
+});

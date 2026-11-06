@@ -18,6 +18,8 @@ import {
   selectSessionLaunch, sessionFailureDiagnostic, sessionTransportEnvironment,
 } from "./control-session.ts";
 import type { CallRequest } from "./control-session.ts";
+import { captureOriginalViaManagerRequest, isOriginalViaManagerControl, originalViaManagerControl } from "./control-session-via-adapter.ts";
+import type { OriginalViaManagerRequest } from "./control-session-via-adapter.ts";
 import { ForegroundSessionTransport } from "./control-session-transport.ts";
 import { createPrivateTemporaryDirectory } from "./private-temporary-directory.ts";
 import type { PrivateTemporaryDirectory } from "./private-temporary-directory.ts";
@@ -41,9 +43,13 @@ const originalCleanupSchema = z.discriminatedUnion("action", [
   z.strictObject({ action: z.literal("cleanup-before-launch") }),
   z.strictObject({ action: z.literal("cleanup-no-process") }),
   z.strictObject({ action: z.literal("settle-historical-metadata") }),
+  z.strictObject({ action: z.literal("abort") }),
+  z.strictObject({ action: z.literal("release") }),
+  z.strictObject({ action: z.literal("settle-publication") }),
 ]);
 const inFlightControlSchema = z.discriminatedUnion("action", [
   z.strictObject({ action: z.literal("inspect") }),
+  z.strictObject({ action: z.literal("abort") }),
   z.strictObject({ action: z.literal("abort-generation"), confirmAbortOriginalForwardJob: z.literal(true) }),
 ]);
 const commandSchema = z.discriminatedUnion("action", [
@@ -186,6 +192,7 @@ interface InterruptedCall {
   readonly generation: number;
   readonly requestId: string | number;
   readonly tool: string;
+  readonly via: OriginalViaManagerRequest | null;
   readonly forwardFamily: "footprint-forward-prewrite" | "footprint-forward-source-validation" | null;
   readonly forward: ForwardCleanupBinding | null;
   readonly forwardLaunchOperationId: string | null;
@@ -328,16 +335,16 @@ export class ForegroundSessionManager {
       startupCleanupAttempted: this.startupCleanupAttempted,
       callerToolDispatchStarted: observed === undefined ? false : this.callerToolDispatches.has(observed.transport),
       inFlightRequest: this.inFlight === undefined ? null : { id: this.inFlight.original.requestId,
-        generation: this.inFlight.original.generation, tool: this.inFlight.original.tool, forward: this.inFlight.original.forward,
+        generation: this.inFlight.original.generation, tool: this.inFlight.original.tool, forward: this.inFlight.original.forward, via: this.inFlight.original.via,
         rpcPending: this.inFlight.rpcPending, sidePending: this.inFlight.sidePending, controlCalls: this.inFlight.controls.size,
         abortAttempted: this.inFlight.original.abortReservation.attempted },
       controlledCapture: this.controlledCapture === undefined ? null : { id: this.controlledCapture.original.requestId,
         generation: this.controlledCapture.original.generation, forward: this.controlledCapture.original.forward, parentOutcome: this.controlledCapture.parentOutcome },
       interruptedRequest: this.interrupted === undefined ? null : { id: this.interrupted.requestId,
-        generation: this.interrupted.generation, tool: this.interrupted.tool, action: this.interrupted.forwardAction,
+        generation: this.interrupted.generation, tool: this.interrupted.tool, action: this.interrupted.via?.action ?? this.interrupted.forwardAction, via: this.interrupted.via,
         ...(this.interrupted.originalCaptureRequestId === undefined ? {} : { originalCaptureRequestId: this.interrupted.originalCaptureRequestId }),
         forward: this.interrupted.forward ?? this.interrupted.inspectedLaunchBinding ?? null, outcome: "unknown", cleanupAvailable: this.stage === "blocked" &&
-          !this.retirementUncertain && (this.interrupted.forward !== null || this.interrupted.forwardLaunchOperationId !== null || this.interrupted.forwardSourceOperationId !== null || this.interrupted.sourceHistoricalRequest !== null) &&
+          !this.retirementUncertain && (this.interrupted.forward !== null || this.interrupted.forwardLaunchOperationId !== null || this.interrupted.forwardSourceOperationId !== null || this.interrupted.sourceHistoricalRequest !== null || this.interrupted.via !== null) &&
           this.interrupted.connection === this.connection && this.connection.client.transport === this.connection.transport &&
           this.connection.transport.hasUnclosedChild() && !this.evidenceFault && !this.publicationFault &&
           !this.records.some(row => Object.hasOwn(row, "unpublishedValue")) },
@@ -439,7 +446,7 @@ export class ForegroundSessionManager {
     if (this.evidenceFault || this.publicationFault || this.records.some(row => Object.hasOwn(row, "unpublishedValue"))) { throw new Error("manager-evidence-unsettled"); }
     if (this.stage === "active") { return this.requireActive(); }
     const connection = this.connection, interrupted = this.interrupted ?? this.controlledCapture?.original;
-    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.inspectedLaunchBinding === undefined && interrupted.prelaunchCleanupAcknowledged !== true && interrupted.forwardSourceOperationId === null && interrupted.sourceHistoricalRequest === null || connection === undefined ||
+    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.inspectedLaunchBinding === undefined && interrupted.prelaunchCleanupAcknowledged !== true && interrupted.forwardSourceOperationId === null && interrupted.sourceHistoricalRequest === null && interrupted.via === null || connection === undefined ||
         interrupted.connection !== connection || interrupted.generation !== this.generation ||
         connection.client.transport !== connection.transport || !connection.transport.hasUnclosedChild()) {
       throw new Error("manager-original-connection-required");
@@ -468,7 +475,7 @@ export class ForegroundSessionManager {
     const historical = z.strictObject({ request: z.strictObject({ action: z.literal("footprint-forward-source-relinquishment"),
       request: currentFootprintForwardSourceRelinquishmentRequestSchema }) }).safeParse(request.arguments);
     const sourceHistoricalRequest = request.tool === "easyeda_control_pcb209_worker_startup" && historical.success ? Object.freeze(historical.data.request.request) : null;
-    return { connection, generation: this.generation, requestId: request.id, tool: request.tool,
+    return { connection, generation: this.generation, requestId: request.id, tool: request.tool, via: captureOriginalViaManagerRequest(request.tool, request.arguments),
       forwardFamily: outer.success && request.tool === "easyeda_control_pcb209_worker_startup" ? outer.data.request.action : null,
       forward, forwardLaunchOperationId, forwardSourceOperationId, forwardCapture: selected?.action === "capture-project" || selected?.action === "capture-source", sourceHistoricalRequest,
       forwardAction: selected?.action ?? null, abortReservation: { attempted: false } };
@@ -485,11 +492,12 @@ export class ForegroundSessionManager {
     if (!this.requestPending || current === undefined || !current.rpcPending || current.sidePending && current !== held || connection === undefined ||
         current.original.connection !== connection || current.original.generation !== this.generation || request.generation !== this.generation ||
         request.originalRequestId !== current.original.requestId || request.id === current.original.requestId || current.controls.has(request.id) ||
-        current.controls.size >= 16 || current.original.forward === null || !current.original.forwardCapture ||
+        current.controls.size >= 16 || (current.original.via === null ? current.original.forward === null || !current.original.forwardCapture ||
+          request.request.action !== "inspect" && request.request.action !== "abort-generation" : current.original.via.action !== "execute" || !isOriginalViaManagerControl(request.request.action, true)) ||
         connection.client.transport !== connection.transport || !connection.transport.hasUnclosedChild() ||
-        !connection.tools.has("easyeda_control_pcb209_worker_startup") || this.retirementUncertain || this.evidenceFault || this.publicationFault ||
+        !connection.tools.has(current.original.via === null ? "easyeda_control_pcb209_worker_startup" : "easyeda_control_current_pcb_via_write") || this.retirementUncertain || this.evidenceFault || this.publicationFault ||
         this.records.some(row => Object.hasOwn(row, "unpublishedValue")) ||
-        request.request.action === "abort-generation" && current.original.abortReservation.attempted) {
+        (request.request.action === "abort-generation" || request.request.action === "abort") && current.original.abortReservation.attempted) {
       throw new Error("manager-in-flight-original-not-authorized");
     }
     return current;
@@ -518,11 +526,13 @@ export class ForegroundSessionManager {
       if ("tool" in request || request.action !== "in-flight-original") { throw new Error("manager-in-flight-command-required"); }
       if (this.requireInFlightControl(request, current) !== current) { throw new Error("manager-in-flight-original-not-authorized"); }
       if (!sessionManagerCallBudgetAvailable(true, this.recordCounts.cleanup + 1, this.byteCounts.cleanup)) { throw new Error("manager-cleanup-reserve-required"); }
-      const binding = current.original.forward; if (binding === null) { throw new Error("manager-in-flight-original-not-authorized"); }
-      const input = request.request.action === "inspect" ? { action: "inspect" as const, operationId: binding.operationId } : {
-        action: "abort-generation" as const, operationId: binding.operationId, expectedBindingSha256: binding.bindingSha256, confirmAbortOriginalForwardJob: true as const };
-      const call: CallRequest = { id, tool: "easyeda_control_pcb209_worker_startup", timeoutMs: 120_000,
-        arguments: originalForwardArguments(current.original, input),
+      const binding = current.original.forward, via = current.original.via;
+      if (binding === null && via === null) { throw new Error("manager-in-flight-original-not-authorized"); }
+      const selectedVia = via === null ? null : originalViaManagerControl(via, request.request.action);
+      const input = selectedVia?.arguments.request ?? (request.request.action === "inspect" ? { action: "inspect" as const, operationId: binding?.operationId } : {
+        action: "abort-generation" as const, operationId: binding?.operationId, expectedBindingSha256: binding?.bindingSha256, confirmAbortOriginalForwardJob: true as const });
+      const call: CallRequest = { id, tool: selectedVia?.tool ?? "easyeda_control_pcb209_worker_startup", timeoutMs: 120_000,
+        arguments: selectedVia?.arguments ?? originalForwardArguments(current.original, input),
         ...(request.responseFile === undefined ? {} : { responseFile: request.responseFile }) };
       reservation = true;
       await this.retain("in-flight-control-intent", { id, originalRequestId: current.original.requestId,
@@ -531,7 +541,7 @@ export class ForegroundSessionManager {
       // Parent refuses before dispatch and consumes no abort attempt.
       if (this.requireInFlightControl(request, current) !== current) { throw new Error("manager-in-flight-original-not-authorized"); }
       current.controls.add(id);
-      if (request.request.action === "abort-generation") {
+      if (request.request.action === "abort-generation" || request.request.action === "abort") {
         current.original.abortReservation.attempted = true; this.controlledCapture = current; this.stage = "blocked";
       }
       let result: unknown;
@@ -541,7 +551,7 @@ export class ForegroundSessionManager {
         // This is the actual rejected side request, not an invented timeout of
         // The parent. Its same-owner binding remains available after settlement.
         this.interrupted = { ...this.interruptedCall(current.original.connection, call), forward: binding,
-          originalCaptureRequestId: current.original.requestId, abortReservation: current.original.abortReservation };
+          originalCaptureRequestId: current.original.requestId, abortReservation: current.original.abortReservation, via: current.original.via };
         this.stage = "blocked"; throw error;
       }
       const evidence = await this.retain("in-flight-control-result", { id, originalRequestId: current.original.requestId, result }, "cleanup");
@@ -566,13 +576,18 @@ export class ForegroundSessionManager {
   }> {
     if (request.request.action === "settle-historical-metadata") { throw new Error("manager-original-family-required"); }
     const connection = this.connection, interrupted = this.interrupted ?? this.controlledCapture?.original;
-    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.forwardLaunchOperationId === null && interrupted.forwardSourceOperationId === null || connection === undefined ||
+    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.forwardLaunchOperationId === null && interrupted.forwardSourceOperationId === null && interrupted.via === null || connection === undefined ||
         this.retirementUncertain || this.evidenceFault || this.publicationFault || this.records.some(row => Object.hasOwn(row, "unpublishedValue")) ||
         interrupted.connection !== connection || interrupted.generation !== this.generation || request.generation !== this.generation ||
         request.interruptedRequestId !== interrupted.requestId || connection.client.transport !== connection.transport ||
-        !connection.transport.hasUnclosedChild() || !connection.tools.has("easyeda_control_pcb209_worker_startup")) {
+        !connection.transport.hasUnclosedChild() || !connection.tools.has(interrupted.via === null ? "easyeda_control_pcb209_worker_startup" : "easyeda_control_current_pcb_via_write")) {
       throw new Error("manager-original-cleanup-not-authorized");
     }
+    if (interrupted.via !== null) {
+      if (!isOriginalViaManagerControl(request.request.action) || request.request.action === "abort" && interrupted.abortReservation.attempted) { throw new Error("manager-original-via-control-refused"); }
+      return { connection, interrupted, operationId: interrupted.via.operationId, binding: undefined };
+    }
+    if (request.request.action === "abort" || request.request.action === "release" || request.request.action === "settle-publication") { throw new Error("manager-original-family-required"); }
     const binding = interrupted.forward ?? interrupted.inspectedLaunchBinding;
     const operationId = binding?.operationId ?? interrupted.forwardLaunchOperationId ?? interrupted.forwardSourceOperationId;
     const unboundSource = interrupted.forwardFamily === "footprint-forward-source-validation" &&
@@ -676,6 +691,18 @@ export class ForegroundSessionManager {
   private async cleanupOriginal(request: OriginalCleanupRequest): Promise<void> {
     const { binding, connection, interrupted, operationId } = this.requireOriginalCleanup(request);
     const selected = request.request;
+    if (interrupted.via !== null) {
+      const command = originalViaManagerControl(interrupted.via, selected.action);
+      const call: CallRequest = { id: request.id, tool: command.tool, arguments: command.arguments, timeoutMs: SESSION_CALL_TIMEOUT_MS,
+        ...(request.responseFile === undefined ? {} : { responseFile: request.responseFile }) };
+      await this.retain("original-cleanup-intent", { id: request.id, interruptedRequestId: interrupted.requestId,
+        generation: this.generation, tool: call.tool, request: command.arguments.request }, "cleanup");
+      this.requireOriginalCleanup(request);
+      if (selected.action === "abort") { interrupted.abortReservation.attempted = true; }
+      const result = await connection.client.callTool({ name: call.tool, arguments: call.arguments }, undefined, { timeout: call.timeoutMs });
+      const evidence = await this.retain("original-cleanup-result", { id: request.id, result }, "cleanup");
+      toolResultSchema.parse(result); await this.publishCallResult(call, result, evidence); return;
+    }
     const input: Record<string, unknown> = { ...selected, operationId };
     if (selected.action === "settle-records" && interrupted.forwardFamily !== "footprint-forward-source-validation") { input["expectedIntentSha256"] = interrupted.intentSha256; }
     else if (selected.action !== "inspect" && selected.action !== "settle-records" && selected.action !== "cleanup-before-launch" && selected.action !== "cleanup-no-process") {
@@ -883,7 +910,7 @@ export class ForegroundSessionManager {
         }
         reserved = true;
         const interrupted = this.interruptedCall(connection, request);
-        if (request.cleanup !== true && interrupted.forwardCapture && interrupted.forward !== null) {
+        if (request.cleanup !== true && (interrupted.forwardCapture && interrupted.forward !== null || interrupted.via?.action === "execute")) {
           this.inFlight = { original: interrupted, controls: new Set(), rpcPending: false, parentOutcome: "pending", sidePending: false, sideIdle: Promise.resolve(null) };
         }
         await this.call(request, interrupted); return;
