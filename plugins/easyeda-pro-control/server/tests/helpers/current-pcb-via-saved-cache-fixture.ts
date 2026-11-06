@@ -27,7 +27,7 @@ function native(profile: CurrentNativeFunctionProfile): unknown {
   return { result: fields, internalProperties: [{ name: "[[Prototype]]", value: { type: "function", className: "Function", description: profile.name === "AbortSignal" ? "function EventTarget() { [native code] }" : "function () { [native code] }", objectId: "function-prototype" } },
     { name: "[[Scopes]]", value: { type: "object", className: "Array", subtype: "internal#scopeList", description: "Scopes[0]", objectId: "empty-native-scopes" } }] };
 }
-export function completeSyntheticSavedCacheFixture(): Readonly<{ prepared: Readonly<Record<string, unknown>>; ledger: CurrentPcbViaSavedCacheLedger; metadata: CurrentPcbViaSavedCacheMetadataLedger }> {
+export function completeSyntheticSavedCacheFixture(existed = false): Readonly<{ prepared: Readonly<Record<string, unknown>>; ledger: CurrentPcbViaSavedCacheLedger; metadata: CurrentPcbViaSavedCacheMetadataLedger }> {
   const rawWindowsPath = `C:\\Synthetic\\CodexEasyedaFixture_${"1".repeat(32)}\\Codex_line_and_via_${"2".repeat(16)}.eprj2`; const projectUuid = sha256Text(rawWindowsPath);
   const frame = Object.freeze({ sessionId: "synthetic-session", uniqueContextId: "synthetic-context", executionContextId: 7, projectUuid });
   const ledger = new CurrentPcbViaSavedCacheMetadataLedger(frame); let script = 0;
@@ -56,13 +56,16 @@ export function completeSyntheticSavedCacheFixture(): Readonly<{ prepared: Reado
   }
   run({ phase: "saved-cache-native-bind" }, capture("original-state", 4));
   for (const round of ["backup", "verify"] as const) { for (const ordinal of [0, 1] as const) {
-    run({ phase: "saved-cache-native-observe", round, ordinal }, { result: { type: "object", value: { schema: "private.pcb-via-saved-cache-metadata.v1", ordinal, existed: false, requestGetterNames: GETTERS, entries: [], completeNativeFetchMetadataCaptured: true, executionAuthorized: false } } });
+    run({ phase: "saved-cache-native-observe", round, ordinal }, { result: { type: "object", value: { schema: "private.pcb-via-saved-cache-metadata.v1", ordinal, existed, requestGetterNames: GETTERS, entries: [], completeNativeFetchMetadataCaptured: true, executionAuthorized: false } } });
   } }
   const cdp = new CurrentPcbViaSavedCacheLedger(Object.freeze({ frameId: "synthetic-frame", sessionId: frame.sessionId, securityOrigin: "https://client", projectUuid }));
   const accept = (command: Parameters<CurrentPcbViaSavedCacheLedger["prepare"]>[0], reply: unknown): void => { cdp.accept(cdp.prepare(command), reply); };
   const storageKey = "https://client/"; const caches = [{ cacheId: "peer", cacheName: "peer", securityOrigin: "https://client", storageKey }];
+  if (existed) { for (const ordinal of [0, 1] as const) { caches.push({ cacheId: `cache-${String(ordinal)}`, cacheName: ordinal === 0 ? `project_${projectUuid}_v6` : `localProject_${projectUuid}_v1`, securityOrigin: "https://client", storageKey }); } }
   accept({ phase: "saved-cache-key", step: "initial" }, { storageKey }); accept({ phase: "saved-cache-track" }, {});
-  accept({ phase: "saved-cache-names", step: "before" }, { caches }); accept({ phase: "saved-cache-names", step: "after-backup" }, { caches });
+  accept({ phase: "saved-cache-names", step: "before" }, { caches });
+  if (existed) { for (const round of ["backup", "verify"] as const) { for (const ordinal of [0, 1] as const) { accept({ phase: "saved-cache-entries", round, ordinal }, { cacheDataEntries: [], returnCount: 0 }); } } }
+  accept({ phase: "saved-cache-names", step: "after-backup" }, { caches });
   const prepared = Object.freeze({ profile: "private.current-pcb-via-write-closed-checkpoint.v1", operationId: "pcb209-via-write-cache-owner-fixture", completeOriginalClosedSqlVerified: true,
     target: Object.freeze({ rawWindowsPath, projectUuid, branchUuid: "3".repeat(32), documentUuid: "4".repeat(32), sourceSha256: "5".repeat(64) }), preparationCheckpoint: Object.freeze({ sha256: "6".repeat(64) }), vacuumProjection: Object.freeze({ sourceLogicalSha256: "7".repeat(64) }) });
   return Object.freeze({ prepared, ledger: cdp, metadata: ledger });

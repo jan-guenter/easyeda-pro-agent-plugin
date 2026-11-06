@@ -3,8 +3,16 @@
  * authorize deletion, opening or a replacement owner. */
 import type { CurrentPcbViaSavedCacheBackupData, CurrentPcbViaSavedCachePublishedData } from "./current-pcb-via-saved-cache-backup.ts";
 import type { CurrentPcbViaSavedCacheOrigin } from "./current-pcb-via-saved-cache-origin.ts";
+import type { CurrentPcbViaSavedCacheAbsenceData } from "./current-pcb-via-saved-cache-invalidation-ledger.ts";
 
 export interface CurrentPcbViaSavedCacheBackupGrant { readonly profile: "private.current-pcb-via-saved-cache-backup-grant.v1" }
+export interface CurrentPcbViaSavedCacheAbsence { readonly profile: "private.current-pcb-via-saved-cache-absence.v1" }
+export interface CurrentPcbViaSavedCacheAbsenceBindings {
+  readonly backup: CurrentPcbViaSavedCacheBackupGrant;
+  readonly data: CurrentPcbViaSavedCacheAbsenceData;
+  readonly assertCurrent: () => Promise<void>;
+  readonly freshLoadingVerified: false;
+}
 export interface CurrentPcbViaSavedCacheBackupBindings {
   readonly origin: CurrentPcbViaSavedCacheOrigin;
   readonly data: CurrentPcbViaSavedCacheBackupData;

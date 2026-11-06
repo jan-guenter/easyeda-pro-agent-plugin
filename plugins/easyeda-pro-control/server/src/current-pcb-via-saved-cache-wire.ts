@@ -10,7 +10,7 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 export function currentPcbViaSavedCacheWire(plan: CurrentPcbViaSavedCachePlan, id: number, sessionId: string): Readonly<{
   id: number; method: CurrentPcbViaSavedCachePlan["method"]; params: CurrentPcbViaSavedCachePlan["params"]; sessionId: string; savedReadbackCache: true;
 }> {
-  if (!Number.isSafeInteger(id) || id < 1 || id > PROFILE.renderer.activeReadOnly || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId) || plan.command.phase === "saved-cache-delete") { throw new Error("SAVED_READBACK_CACHE_WIRE"); }
+  if (!Number.isSafeInteger(id) || id < 1 || id > PROFILE.renderer.activeReadOnly || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SAVED_READBACK_CACHE_WIRE"); }
   return freezeDeep({ id, method: plan.method, params: plan.params, sessionId, savedReadbackCache: true });
 }
 export function currentPcbViaSavedCacheNativeFrame(chunk: Buffer, plan: CurrentPcbViaSavedCachePlan, sessionId: string): Readonly<Record<string, unknown>> {

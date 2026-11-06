@@ -16,8 +16,8 @@ export const CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE = "pcb-via-saved-readback209
 export const CURRENT_PCB_VIA_SAVED_READBACK_PROFILE = Object.freeze({
   purpose: CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE, nativeSwitch: "-PcbViaSavedReadback209",
   main: Object.freeze({ constructionNormal: 64, fenceNormal: FENCE.normal, normal: 64 + FENCE.normal, cleanup: 8, total: 64 + FENCE.normal + 8 }),
-  renderer: Object.freeze({ enabledDiscovery: 16, preCacheGuard: 9, earlyWorkerParent: 1, activeReadOnly: 16 + 9 + 1 + CACHE.total + METADATA.total, nativeMetadata: METADATA.total, opening: 103, workerBootstrap: BOOTSTRAP.total, cache: CACHE.total,
-    normal: 9 + 103 + BOOTSTRAP.parent + BOOTSTRAP.inventory + BOOTSTRAP.workerNormal + CACHE.normal + METADATA.normal,
-    cleanup: BOOTSTRAP.workerCleanup + CACHE.cleanup + METADATA.cleanup, total: 9 + 103 + BOOTSTRAP.total + CACHE.total + METADATA.total }),
+  renderer: Object.freeze({ enabledDiscovery: 16, preCacheGuard: 9, preDeleteGuards: 2 * (9 + 1), earlyWorkerParent: 1, activeReadOnly: 16 + 9 + 1 + CACHE.total + METADATA.total + 2 * (9 + 1), nativeMetadata: METADATA.total, opening: 103, workerBootstrap: BOOTSTRAP.total, cache: CACHE.total,
+    normal: 9 + 103 + BOOTSTRAP.parent + BOOTSTRAP.inventory + BOOTSTRAP.workerNormal + CACHE.normal + METADATA.normal + 2 * (9 + 1),
+    cleanup: BOOTSTRAP.workerCleanup + CACHE.cleanup + METADATA.cleanup, total: 9 + 103 + BOOTSTRAP.total + CACHE.total + METADATA.total + 2 * (9 + 1) }),
   cacheDeletionAuthorized: false, executionAuthorized: false, saveAuthorized: false, reopenedVerified: false,
 });

@@ -489,3 +489,34 @@ Focused production-Core/synthetic-child cases exercise successful complete
 publication, retained failed publication, grant-copy refusal, complete backup
 corruption and original Job-only cleanup. These contain explicit inert
 checkpoint/native-data seams and are not connected Cache API validation.
+
+The same original saved reader now mounts `invalidateSavedCaches()` after its
+private durable backup grant. One retained Promise consumes the operation;
+original CDP-derived IDs select only the two checkpoint-derived namespaces.
+The helper independently retains one backup enrollment and two guard/delete
+slots, with original session/context/complete target equality. Each current
+empty-UI guard has before/after parent and ancillary brackets plus its own
+correlated helper declaration and exact source read. This adds20 CDP requests
+(two times9+1), yielding active161 and prospective270. The readonly seven-source
+bootstrap remains23; writer helper reads are not borrowed.
+
+Before each delete, the reader rechecks full backup bytes, the actual storage
+key and complete namespace roster. After each original reply and at final
+absence it compares every peer descriptor and the expected selected removal.
+Already absent selected namespaces consume no delete. A lost response consumes
+its slot and routes only original Job cleanup; no replay or peer namespace is
+selected. Storage content events and unplanned/foreign list events refuse;
+only at most one same-storage list notification per attempted own delete is
+admitted, with complete subsequent peer-roster comparisons. Parent wait=true,
+fresh worker inventory and current empty-UI/source custody remain installed.
+No atomic lifetime claim is made about name-derived CDP cache IDs.
+
+The original absence token stays bound to the same live empty opener, backup,
+ordered native packets and complete peer roster. Its lookup and data keep fresh
+loading false. Project registration/open and cold loading remain separately
+closed; no design/SQL edit, Save, restore or persistence claim follows.
+Focused production Core/real synthetic-child cases cover both actual native
+request sequences and a held original delete reply settled through original
+Job abort; parent/frame inventory and native checkpoint inputs are explicit
+inert test seams. Pure emitted C# codec/birth/once-enrollment smoke checks run
+without an application or Windows handle. No connected cache validation ran.
