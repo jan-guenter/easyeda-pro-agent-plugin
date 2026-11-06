@@ -49,3 +49,17 @@ reopen was exercised. Generated helpers, pins, bundles and coverage were unchang
 The root combined candidate refused startup generation before writing its helper. The new Via BEGIN smoke call could sit between the older schematic smoke and Via-clock smoke, so a pair-based insertion duplicated the schematic call and the next worker fragment correctly refused the ambiguous anchor. The original failed generation log is retained.
 
 The schematic base, worker, clock and accessor fragments plus Via BEGIN now normalize only their own exact CompileOnly call before a unique fixed anchor. Unknown formatting, duplicate calls and missing anchors still refuse. Interleaving another fragment no longer duplicates a call. Five focused hook/command/protocol cases and strict targeted lint pass. Complete combined generation and Windows compilation remain separate checks for the next frozen payload.
+
+The next combined startup write succeeded, but its check found a second
+composition defect. The schematic worker and Via BEGIN dispatch insertions
+assumed that their blocks stayed adjacent to an anchor. Another fragment could
+move between them, causing a later generation to insert a duplicate. Both
+generated files and their exact difference are retained privately. No candidate
+with duplicate branches was selected or used to control EasyEDA.
+
+Both insertions now remove only their exact complete owned block and place it
+once at their unique anchor. Missing individual branches, changed block content,
+duplicate branches and ambiguous anchors refuse. Four focused compile-hook and
+dispatcher composition checks pass, with strict targeted lint. Full generation
+idempotence and actual Windows compilation remain pending for the combined
+candidate.

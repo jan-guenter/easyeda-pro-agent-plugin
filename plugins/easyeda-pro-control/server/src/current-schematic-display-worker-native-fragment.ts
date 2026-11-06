@@ -1,6 +1,7 @@
 /** Original schematic-only worker binding/observation. This adds no Save or SQL grant
  * and never upgrades a released worker-startup purpose. */
 import { installNativeCompileOnlyHook } from "./native-compile-only-hook.ts";
+import { installOwnedNativeDispatch } from "./native-owned-dispatch.ts";
 import { currentProjectSaveStructureNativeGuard } from "./current-project-save-structure-native-guard.ts";
 import { currentSchematicDisplayWorkerNativeSource } from "./current-schematic-display-worker-native.ts";
 import { CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES as ROLES } from "./current-pcb-209-worker-bootstrap-source.ts";
@@ -80,7 +81,7 @@ const dispatch = String.raw`        'schematic-display-worker-prepare' {
 `;
 export function applyCurrentSchematicDisplayWorkerNativeFragment(input: string): string {
   let source = one(input, 'case "schematic-display-native":break;', 'case "schematic-display-worker-prepare":case "schematic-display-worker-bind":case "schematic-display-worker-parent":case "schematic-display-worker":case "schematic-display-native":break;');
-  source = one(source, "        'schematic-display-native' {", `${dispatch}        'schematic-display-native' {`);
+  source = installOwnedNativeDispatch(source, dispatch, "        'schematic-display-native' {");
   source = installNativeCompileOnlyHook(source, "    [EasyedaDiagnosticOwner]::VerifySchematicDisplayWorkerSmoke()", "    [EasyedaDiagnosticOwner]::VerifySchematicDisplaySmoke()");
   const start = source.indexOf(begin), stop = source.indexOf(end);
   if (start !== -1 || stop !== -1) { if (start === -1 || stop < start || source.includes(begin, start + begin.length) || source.includes(end, stop + end.length)) { throw new Error("SCHEMATIC_DISPLAY_WORKER_NATIVE_MARKERS"); } source = source.slice(0, start) + native() + source.slice(stop + end.length); }
