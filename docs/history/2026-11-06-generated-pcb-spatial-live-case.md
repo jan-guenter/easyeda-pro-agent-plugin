@@ -72,3 +72,58 @@ The original facade retired with lease-release acknowledgment. Its manager obser
 The next source increment gives each property decode its fixed wrapper, handler, callee-tuple or callee-key role. It retains one bounded normalized inspector reply privately on failure, including unknown fields, through the original error's private registry. A separate immutable `spatial209-failure.json` record links to the consumed original intent. Normal inspection returns only the fixed failed step and private record locator/hash; opaque handles and renderer text stay out of the response. Unsafe, Proxy or oversized packets record capture refusal instead. This diagnostic grants no source acceptance, successful observation, retry, native continuation or Save authority, and cannot recover the missing packet from the completed case.
 
 Focused production-runner/journal checks cover private packet retention, public withholding, Proxy trap avoidance and consumed observations through cleanup. All 20 focused cases pass; full types and strict targeted lint pass. One initial test used the request helper's binding field with the unbound inspect grammar and refused before dispatch; that failed test log remains retained and the corrected test uses the exact inspect contract. The source changes have not yet entered a frozen native payload or a release.
+
+## Frozen5af wrapper-scope diagnostic
+
+`pcb209-spatial-generated-arcs-20261106c` used frozen development payload
+`5af1a7adb37d69bbe55015c23c15e288ab44e8a4`, version
+`0.3.0+codex.20261106101806`, in generation2 of the retained manager. Fresh
+closed-data qualification and its original resource release completed before
+staging. Original launch, complete UI source, generated registration/project
+and PCB opening, and full PCB source/DOM/identity observations passed. The
+separate six-query Arc batch ran once and refused at
+`PCB_SPATIAL_CAPTURE:properties:decode:wrapper-scopes`. No spatial hit or
+partial successful query was accepted, and the consumed batch was not replayed.
+
+This payload retained the complete bounded original metadata packet privately.
+Its function name, arity, prototype and pinned script/location matched the
+wrapper contract. The packet reported `Scopes[4]`, while the decoder allowed
+only two or three scopes. The packet did not contain the four scope labels,
+because this metadata check stopped before their collection. Their exact
+installed shape therefore remains unobserved; an extra Script scope is not
+promoted from an inference to connected evidence.
+
+A new local Node24 VM/inspector regression independently produces
+`Closure (rZe)`, `Closure`, `Script`, `Global`, at the exact synthetic point
+handler location. It reproduces the old decoder refusal. The corrected source
+allows only an optional Script tail immediately before Global and selects the
+same exact named registration/module closures as before. It reads neither
+Script nor Global bindings. Repeated or misordered Script entries, unknown
+private/Local scopes, aliases, descriptor changes, proxies and accessors still
+refuse. Complete installed source/callee identity remains independently
+required. No request allowance, native birth or writer gate changes.
+
+Ten focused real-inspector/capture checks, both TypeScript projects and strict
+zero-warning targeted lint pass. The original failing regression and first
+lint refusal remain retained. Independent source review found no blocking
+concern and confirmed unchanged closure selection and excluded binding reads.
+This is a source correction, not positive native Arc validation; it must enter
+a later frozen build and new consumed case.
+
+The original window closed normally once and original root/empty-Job
+termination was observed. One closed capture again produced the exact
+372,736-byte raw file and 62,672-byte complete35-table SQL inventory with the
+same SHA256 values recorded above. The older zero-WSL-birthtime qualification
+refusal and generic-history refusal remain in that capture, without weakening
+their parsers. Raw/logical equality independently establishes invariance.
+Original helper release and facade retirement are still pending at this
+checkpoint; a terminal continuation will be appended. No explicit Save,
+discard, forced termination, user-project edit or publication occurred.
+
+The terminal continuation completed original helper release and normal facade
+retirement with zero active calls and acknowledged lease release. The same
+manager observed that original facade's stdin EOF, process exit and stdio
+closure with exit0 and no signal. No native owner remains from this case.
+The manager retains only its permit to select a separately verified next
+payload; no controller or native owner is adopted. Private descriptor/hash
+checks independently repeated both complete raw and SQL artifact digests.

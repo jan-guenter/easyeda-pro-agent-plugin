@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { Session } from "node:inspector/promises";
+import { runInNewContext } from "node:vm";
 import test from "node:test";
 import { CURRENT_PCB_SPATIAL_FUNCTION_LOCATIONS, decodeCurrentPcbSpatialFunction,
   decodeCurrentPcbSpatialFunctionScope, decodeCurrentPcbSpatialFunctionScopeList } from "../src/current-pcb-spatial-function-scope.ts";
@@ -7,10 +8,10 @@ import { CURRENT_PCB_SPATIAL_FUNCTION_LOCATIONS, decodeCurrentPcbSpatialFunction
 /** A same-engine synthetic registration pattern, never the installed asset.
  * The sibling closure deliberately retains rZe, matching its real source shape.
  */
-function fixture(): string {
+function fixture(scriptBinding = false): string {
   const point = CURRENT_PCB_SPATIAL_FUNCTION_LOCATIONS["point-handler"];
   const prefix = '(()=>{const Hr={},qt={};class Oet{rpcService(o,t){this.handler=t}}function rZe(o,t){o.rpcService("region",async e=>t(e));o.rpcService("point",';
-  return `${prefix}${"\n".repeat(point.lineNumber)}${" ".repeat(point.columnNumber)}async e=>({Hr,qt,e}));return o.handler}globalThis.__easyedaSpatialScopeFixture=rZe(new Oet(),()=>null)})()`;
+  return `${scriptBinding ? "let __spatialScriptBinding=1;" : ""}${prefix}${"\n".repeat(point.lineNumber)}${" ".repeat(point.columnNumber)}async e=>({Hr,qt,e${scriptBinding ? ",__spatialScriptBinding" : ""}}));return o.handler}globalThis.__easyedaSpatialScopeFixture=rZe(new Oet(),()=>null)})()`;
 }
 
 void test("real inspector retains the synthetic point handler's outer closure and exact function metadata", async () => {
@@ -45,6 +46,30 @@ void test("real inspector retains the synthetic point handler's outer closure an
   }
 });
 
+void test("real inspector exposes a Script tail without changing the selected original registration/module closures", async () => {
+  const session = new Session(); session.connect();
+  const sandbox: Record<string, unknown> = {};
+  runInNewContext(fixture(true), sandbox, { filename: "spatial-script-scope-fixture.js" });
+  Object.defineProperty(globalThis, "__easyedaSpatialScriptScopeSandbox", { value: sandbox, configurable: true });
+  try {
+    const remote = await session.post("Runtime.evaluate", { expression: "globalThis.__easyedaSpatialScriptScopeSandbox.__easyedaSpatialScopeFixture", objectGroup: "spatial-script-scope-fixture" });
+    const functionId = decodeCurrentPcbSpatialFunction(remote, "point-handler");
+    const properties = await session.post("Runtime.getProperties", { objectId: functionId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false });
+    const location = properties.internalProperties?.find(item => item.name === "[[FunctionLocation]]")?.value?.value as unknown;
+    assert.ok(location !== null && typeof location === "object" && "scriptId" in location && typeof location.scriptId === "string");
+    const list = properties.internalProperties?.find(item => item.name === "[[Scopes]]")?.value;
+    assert.ok(list !== undefined && typeof list.objectId === "string"); assert.equal(list.description, "Scopes[4]");
+    const scopes = await session.post("Runtime.getProperties", { objectId: list.objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false });
+    assert.deepEqual(scopes.result.map(item => item.value?.description), ["Closure (rZe)", "Closure", "Script", "Global"]);
+    assert.equal(decodeCurrentPcbSpatialFunctionScopeList(properties, location.scriptId, "point-handler"), list.objectId);
+    assert.equal(decodeCurrentPcbSpatialFunctionScope(scopes, "point-handler"), scopes.result[1]?.value?.objectId);
+  } finally {
+    Reflect.deleteProperty(globalThis, "__easyedaSpatialScriptScopeSandbox");
+    await session.post("Runtime.releaseObjectGroup", { objectGroup: "spatial-script-scope-fixture" });
+    session.disconnect();
+  }
+});
+
 const scope = (index: number, label: string, objectId = `scope-${index}`): Record<string, unknown> => ({
   name: String(index), value: { type: "object", subtype: "internal#scope", className: "Object", description: label, objectId },
   writable: true, configurable: true, enumerable: true, isOwn: true,
@@ -52,10 +77,14 @@ const scope = (index: number, label: string, objectId = `scope-${index}`): Recor
 void test("fixed scope selectors reject extra/private scopes, aliases and descriptor drift", () => {
   const wrapper = { result: [scope(0, "Closure (rpcService)"), scope(1, "Closure"), scope(2, "Global")] };
   assert.equal(decodeCurrentPcbSpatialFunctionScope(wrapper, "rpc-wrapper"), "scope-0");
+  assert.equal(decodeCurrentPcbSpatialFunctionScope({ result: [scope(0, "Closure (rpcService)"), scope(1, "Closure"), scope(2, "Script"), scope(3, "Global")] }, "rpc-wrapper"), "scope-0");
+  assert.equal(decodeCurrentPcbSpatialFunctionScope({ result: [scope(0, "Closure"), scope(1, "Script"), scope(2, "Global")] }, "point-handler"), "scope-0");
   assert.equal(decodeCurrentPcbSpatialFunctionScope({ result: [scope(0, "Closure"), scope(1, "Global")] }, "point-handler"), "scope-0");
   for (const result of [
     [scope(0, "Closure (other)"), scope(1, "Closure"), scope(2, "Global")],
-    [scope(0, "Closure (rZe)"), scope(1, "Closure"), scope(2, "Script"), scope(3, "Global")],
+    [scope(0, "Closure (rZe)"), scope(1, "Script"), scope(2, "Closure"), scope(3, "Global")],
+    [scope(0, "Closure"), scope(1, "Script"), scope(2, "Script"), scope(3, "Global")],
+    [scope(0, "Closure"), scope(1, "Local"), scope(2, "Global")],
     [scope(0, "Closure"), scope(1, "Global", "scope-0")],
     [scope(1, "Closure"), scope(0, "Global")],
     [scope(0, "Closure"), { ...scope(1, "Global"), enumerable: false }],

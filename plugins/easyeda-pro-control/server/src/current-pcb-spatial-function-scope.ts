@@ -94,29 +94,32 @@ export function decodeCurrentPcbSpatialFunctionScopeList(input: unknown, scriptI
         prototype.className !== (kind === "rpc-wrapper" ? "Function" : "AsyncFunction") ||
         prototype.objectId === undefined || prototype.value !== undefined ||
         scopes?.type !== "object" || scopes.subtype !== "internal#scopeList" || scopes.className !== "Array" ||
-        scopes.value !== undefined || scopes.objectId === undefined || !/^Scopes\[[2-3]\]$/u.test(scopes.description ?? "")) { return refuse(); }
+        scopes.value !== undefined || scopes.objectId === undefined || !/^Scopes\[[2-4]\]$/u.test(scopes.description ?? "")) { return refuse(); }
     return scopes.objectId;
   } catch { return refuse(); }
 }
 
 /** Follow only fixed lexical labels, never a caller-selected scope or Global.
  * The point handler may retain its enclosing registration closure before the
- * anonymous module closure. Both exact shapes select the same source bindings.
+ * anonymous module closure. A trailing Script scope is metadata only, just like
+ * Global: neither is selected or read for bindings. Exact closure shapes still
+ * select the same original source bindings.
  */
 export function decodeCurrentPcbSpatialFunctionScope(input: unknown, kind: CurrentPcbSpatialFunctionKind): string {
   try {
-    const { result } = z.strictObject({ result: z.array(property).min(2).max(3) }).parse(data(input));
+    const { result } = z.strictObject({ result: z.array(property).min(2).max(4) }).parse(data(input));
     for (const [index, item] of result.entries()) {
       if (item.name !== String(index) || item.value.type !== "object" || item.value.subtype !== "internal#scope" ||
           item.value.className !== "Object" || item.value.objectId === undefined || item.value.value !== undefined ||
           !item.writable || !item.configurable || !item.enumerable) { return refuse(); }
     }
     if (new Set(result.map(item => item.value.objectId)).size !== result.length || result.at(-1)?.value.description !== "Global") { return refuse(); }
-    const labels = result.map(item => item.value.description);
+    const labels = result.slice(0, result.at(-2)?.value.description === "Script" ? -2 : -1).map(item => item.value.description);
+    if (labels.length === 0 || labels.length > 2) { return refuse(); }
     let selected = 0;
     if (kind === "rpc-wrapper") {
-      if (labels[0] !== "Closure (rpcService)" || labels.length === 3 && labels[1] !== "Closure") { return refuse(); }
-    } else if (labels.length === 3) {
+      if (labels[0] !== "Closure (rpcService)" || labels.length === 2 && labels[1] !== "Closure") { return refuse(); }
+    } else if (labels.length === 2) {
       if (labels[0] !== "Closure (rZe)" || labels[1] !== "Closure") { return refuse(); }
       selected = 1;
     } else if (labels[0] !== "Closure") { return refuse(); }
