@@ -54,6 +54,24 @@ qualification is shared. A failed or lost observation consumes that stage.
 Inspect its retained result and finish cleanup; do not submit it again under
 the same operation or infer that an absent response means no dispatch.
 
+After a refusal, inspect the original operation with the inner request
+`{action:"inspect",operationId,observation:"spatial209"}`. This inspection takes
+no binding digest and does not collect another native sample. The usual outer
+tool wrapper remains `{request:{action:"spatial",request:innerRequest}}`.
+A metadata decode failure can retain `spatialDecodeFailure` with its fixed
+failed step, private record locator and content digest. The bounded normalized
+inspector packet stays private because it contains original remote handles.
+Its labels or handles cannot recreate an owner, qualify a function or authorize
+another query. An earlier payload may have retained no packet; preserve that
+unknown outcome instead of inferring its cause from a later case.
+
+When fixing the adapter, develop in a separate checkout while the selected
+payload stays frozen. Finish original normal close, observed root/empty-Job
+exit, closed capture and helper release before retiring its facade. Then use
+the retained manager to select and admit a verified replacement. A new consumed
+case still needs fresh fixture-data qualification. Neither an in-place package
+edit nor switching query variants completes the failed case.
+
 For a scene containing native Tracks and Vias, choose `observe-spatial-lines`
 instead, with the same scratch-effect acceptance and one to fifteen queries.
 Native Track identities are returned with family `Line`, matching the SDK's
