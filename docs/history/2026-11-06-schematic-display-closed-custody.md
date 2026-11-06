@@ -63,3 +63,24 @@ closure does not accept unknown file effects. Two focused production artifact
 tests cover exact dispatch binding and a real durable publication whose
 acknowledgement is deliberately lost. Original native stage integration remains
 required before a dispatch can execute.
+
+## Actual pending Text Save body v2
+
+The separate `generatedSchematicDisplayPendingSaveBodyValueSchema` and
+`compareGeneratedSchematicDisplayPendingSaveDelta` preserve the existing v1
+schema and comparator. The v2 input retains the actual worker pending snapshot:
+sole TEXT node, real page UUID, raw data/ticket/client, pre-Save maximum ticket,
+own worker editVersion, prior header version and prior user. The head ticket is
+exactly the observed maximum plus one; the Text ticket may have a gap from the
+initial archive. No initial-max-plus-two or renderer-version substitution is
+used. Effective DOCHEAD user is supplied by the original observer's actual
+PROJECT.user-or-prior-header selection, preserving its own key order.
+
+The pure comparison matches the entire raw DOCHEAD/TEXT body, exact fixed Text
+display plan and real SCH parent/page relation. Empty/absent worker editVersion
+is omitted exactly; it is not guessed from the renderer. Its data-match flag
+does not confer original pending-node, clock, effect, SQL or persistence
+provenance. Two additional synthetic data cases cover the positive relation,
+borrowed page, changed ticket/max/data and reordered effective actor. Original
+native worker/body/clock and closed SQL joins remain required.
+

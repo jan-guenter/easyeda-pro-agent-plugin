@@ -2,11 +2,11 @@
  * issuer, SQL continuation or persistence authority is constructed. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { compareGeneratedSchematicDisplaySaveDelta } from "../src/generated-schematic-display-save-delta.ts";
+import { compareGeneratedSchematicDisplayPendingSaveDelta, compareGeneratedSchematicDisplaySaveDelta } from "../src/generated-schematic-display-save-delta.ts";
 import { prepareGeneratedSchematicDisplayBodyPlan } from "../src/generated-schematic-display-source.ts";
 import type { GeneratedSchematicDisplayNativeArguments } from "../src/generated-schematic-display-source.ts";
 import type { NativeHistorySnapshot } from "../src/native-history.ts";
-import type { GeneratedSchematicDisplaySaveBodyValue } from "../src/generated-schematic-display-save-delta.ts";
+import type { GeneratedSchematicDisplayPendingSaveBodyValue, GeneratedSchematicDisplaySaveBodyValue } from "../src/generated-schematic-display-save-delta.ts";
 
 function record(id: string, type: string, ticket: number, body: Record<string, unknown>): NativeHistorySnapshot["documents"][number]["records"][number] {
   return { id, type, ticket, client: "7".repeat(16), body };
@@ -42,4 +42,30 @@ void test("unexpected pending records, stale tickets, duplicate keys and altered
   assert.throws(() => { compare(input.value.body.replace('"type":"TEXT"', '"type":"WIRE","type":"TEXT"')); });
   assert.throws(() => { compare(input.value.body.replace("Disposable schematic fixture", "Different literal")); });
   assert.throws(() => { compare(`${input.value.body}|\n`); });
+});
+function pendingFixture(): ReturnType<typeof fixture> & { pendingValue: GeneratedSchematicDisplayPendingSaveBodyValue } {
+  const input = fixture(), value = input.value;
+  const pendingValue: GeneratedSchematicDisplayPendingSaveBodyValue = { ...value, schema: "private.generated-schematic-display-save-body-value.v2",
+    pending: { maximumTicket: 19, primitiveId: input.argumentsValue.operation.textId, ticket: 13, client: value.client, dataType: "TEXT",
+      data: JSON.stringify(input.argumentsValue.operation.afterBody), canvasUuid: value.documentUuid, workerEditVersion: null, priorVersion: "retained-prior-version",
+      priorUserUndefined: false, priorUserJson: '{"nickname":"N","uuid":"original-actor","username":"U"}' },
+    userUndefined: false, userJson: '{"nickname":"N","uuid":"original-actor","username":"U"}' };
+  const head = { docType: "SCH_PAGE", client: value.client, uuid: value.documentUuid, updateTime: value.clock, version: String(value.clock),
+    user: { nickname: "N", uuid: "original-actor", username: "U" } };
+  pendingValue.body = `${JSON.stringify({ type: "DOCHEAD", ticket: 20 })}||${JSON.stringify(head)}|\n${JSON.stringify({ type: "TEXT", ticket: 13, id: pendingValue.pending.primitiveId })}||${pendingValue.pending.data}`;
+  return { ...input, pendingValue };
+}
+void test("v2 matches actual pending tickets, absent worker version and effective prior user in original key order", () => {
+  const input = pendingFixture(); const delta = compareGeneratedSchematicDisplayPendingSaveDelta(input.argumentsValue, input.history, input.pendingValue);
+  assert.equal(delta.schema, "private.generated-schematic-display-save-delta.v2"); assert.equal(delta.textTicket, 13); assert.equal(delta.maximumTicketBeforeSave, 19);
+  assert.equal(delta.workerEditVersion, null); assert.equal(delta.actualPendingDataMatched, true); assert.equal(delta.originalPendingNodeProvenanceVerified, false);
+  assert.equal(delta.selectedSqlAuthorized, false); assert.equal(delta.persistenceVerified, false);
+});
+void test("v2 refuses a borrowed pending document, altered data/ticket and reordered effective actor", () => {
+  const input = pendingFixture(); const compare = (value: GeneratedSchematicDisplayPendingSaveBodyValue): void => { compareGeneratedSchematicDisplayPendingSaveDelta(input.argumentsValue, input.history, value); };
+  assert.throws(() => { compare({ ...input.pendingValue, pending: { ...input.pendingValue.pending, canvasUuid: input.argumentsValue.target.schematicUuid } }); });
+  assert.throws(() => { compare({ ...input.pendingValue, pending: { ...input.pendingValue.pending, ticket: 12 } }); });
+  assert.throws(() => { compare({ ...input.pendingValue, pending: { ...input.pendingValue.pending, maximumTicket: 20 } }); });
+  assert.throws(() => { compare({ ...input.pendingValue, pending: { ...input.pendingValue.pending, data: input.pendingValue.pending.data.replace('"x":10', '"x":11') } }); });
+  assert.throws(() => { compare({ ...input.pendingValue, userJson: '{"uuid":"original-actor","username":"U","nickname":"N"}' }); });
 });

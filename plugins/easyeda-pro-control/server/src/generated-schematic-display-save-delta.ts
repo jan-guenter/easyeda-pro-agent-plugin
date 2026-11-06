@@ -6,6 +6,7 @@ import { canonicalJson, sha256Text } from "./core.ts";
 import { parseNativeRecords } from "./native-history.ts";
 import type { NativeHistorySnapshot } from "./native-history.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
+import { currentProjectCanvasPendingValueSchema } from "./current-project-canvas-pending-value.ts";
 import type { GeneratedSchematicDisplayNativeArguments } from "./generated-schematic-display-source.ts";
 
 const identifier = z.string().min(1).max(128).refine(value => value.isWellFormed());
@@ -63,4 +64,51 @@ export function compareGeneratedSchematicDisplaySaveDelta(argumentsValue: Genera
     textTicket, headTicket: value.headTicket, body: value.body, bodySha256: sha256Text(value.body), workerEditVersion,
     exactSoleTextBodyVerified: true, originalClockProvenanceVerified: false, originalEffectProvenanceVerified: false,
     selectedSqlAuthorized: false, persistenceVerified: false });
+}
+
+/** Separate current proof shape. userJson describes the effective DOCHEAD
+ * actor selected by the original worker as PROJECT.user || prior header user;
+ * the independent pending snapshot also retains the raw prior value. */
+export const generatedSchematicDisplayPendingSaveBodyValueSchema = generatedSchematicDisplaySaveBodyValueSchema.extend({
+  schema: z.literal("private.generated-schematic-display-save-body-value.v2"), pending: currentProjectCanvasPendingValueSchema,
+}).refine(value => value.userUndefined === (value.userJson === null) && value.headTicket === value.pending.maximumTicket + 1);
+export type GeneratedSchematicDisplayPendingSaveBodyValue = z.infer<typeof generatedSchematicDisplayPendingSaveBodyValueSchema>;
+export interface GeneratedSchematicDisplayPendingSaveDelta extends Omit<GeneratedSchematicDisplaySaveDelta, "schema" | "workerEditVersion"> {
+  readonly schema: "private.generated-schematic-display-save-delta.v2";
+  readonly maximumTicketBeforeSave: number; readonly workerEditVersion: string | null;
+  readonly actualPendingDataMatched: true; readonly originalPendingNodeProvenanceVerified: false;
+}
+/** Compare actual pending Text data and tickets. The native owner must join
+ * the original pending-node, effective-user, clock and effect objects. These
+ * inert values cannot establish that join or release an original SQL hold. */
+export function compareGeneratedSchematicDisplayPendingSaveDelta(argumentsValue: GeneratedSchematicDisplayNativeArguments,
+  history: NativeHistorySnapshot, input: GeneratedSchematicDisplayPendingSaveBodyValue): GeneratedSchematicDisplayPendingSaveDelta {
+  const value = generatedSchematicDisplayPendingSaveBodyValueSchema.parse(input); const { target, operation } = argumentsValue; const pending = value.pending;
+  need(value.documentUuid === target.pageUuid && value.projectUuid === target.projectUuid && history.projectUuid === target.projectUuid &&
+    history.branchUuid === target.branchUuid && history.documents.length === 2, "IDENTITY");
+  const page = history.documents.find(document => document.uuid === target.pageUuid), parent = history.documents.find(document => document.uuid === target.schematicUuid);
+  need(parent?.docType === "SCH" && page?.docType === "SCH_PAGE" && parent.records.length === 1 && parent.records[0]?.type === "META" &&
+    page.records.length === 6 && page.records.filter(record => record.id === operation.textId && record.type === "TEXT").length === 1 &&
+    page.records.some(record => record.id === "META" && record.type === "META" && record.body["schematic"] === target.schematicUuid), "PAIRED_BASELINE");
+  const maximum = Math.max(...page.records.map(record => record.ticket));
+  need(Number.isSafeInteger(maximum) && maximum > 0 && pending.maximumTicket >= maximum && pending.ticket > maximum && pending.ticket <= pending.maximumTicket &&
+    pending.canvasUuid === target.pageUuid && pending.primitiveId === operation.textId && pending.dataType === "TEXT", "ACTUAL_PENDING_NODE");
+  need(value.body.isWellFormed() && Buffer.byteLength(value.body) <= 16_384 && !value.body.endsWith("|\n"), "BODY_ENCODING");
+  const rows = parseNativeRecords(value.body), [head, text] = rows;
+  need(rows.length === 2 && head !== undefined && text !== undefined && canonicalJson(head.header) === canonicalJson({ type: "DOCHEAD", ticket: value.headTicket }) &&
+    canonicalJson(text.header) === canonicalJson({ type: "TEXT", ticket: pending.ticket, id: operation.textId }), "EXACT_HEADERS");
+  const dataRows = parseNativeRecords(`${JSON.stringify({ type: "TEXT", ticket: pending.ticket, id: operation.textId })}||${pending.data}`);
+  need(dataRows.length === 1 && canonicalJson(dataRows[0]?.body) === canonicalJson(operation.afterBody) &&
+    canonicalJson(text.body) === canonicalJson(operation.afterBody) && operation.beforeBody["value"] === "Disposable schematic fixture" &&
+    operation.afterBody["value"] === operation.beforeBody["value"] && operation.beforeBody["locked"] === false && operation.afterBody["locked"] === false, "COMPLETE_TEXT");
+  let user: unknown;
+  if (!value.userUndefined) { need(value.userJson !== null, "EFFECTIVE_USER"); const parsed: unknown = JSON.parse(value.userJson); actor.parse(parsed); user = parsed; }
+  const expectedHead = { docType: "SCH_PAGE", client: value.client, uuid: target.pageUuid, updateTime: value.clock, version: String(value.clock),
+    ...(pending.workerEditVersion !== null && pending.workerEditVersion.length > 0 ? { editVersion: pending.workerEditVersion } : {}), ...(user === undefined ? {} : { user }) };
+  const expected = `${JSON.stringify({ type: "DOCHEAD", ticket: value.headTicket })}||${JSON.stringify(expectedHead)}|\n${JSON.stringify({ type: "TEXT", ticket: pending.ticket, id: operation.textId })}||${pending.data}`;
+  need(value.body === expected, "RAW_BODY");
+  return freezeDeep({ schema: "private.generated-schematic-display-save-delta.v2", documentUuid: target.pageUuid, textId: operation.textId, textTicket: pending.ticket,
+    headTicket: value.headTicket, maximumTicketBeforeSave: pending.maximumTicket, body: value.body, bodySha256: sha256Text(value.body), workerEditVersion: pending.workerEditVersion,
+    actualPendingDataMatched: true, originalPendingNodeProvenanceVerified: false, exactSoleTextBodyVerified: true, originalClockProvenanceVerified: false,
+    originalEffectProvenanceVerified: false, selectedSqlAuthorized: false, persistenceVerified: false });
 }
