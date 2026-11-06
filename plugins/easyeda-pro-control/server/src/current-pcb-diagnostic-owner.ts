@@ -159,8 +159,8 @@ import { currentPcbViaWriteNativeRequest } from "./current-pcb-via-write-protoco
 import type { CurrentPcbViaObservationPhase } from "./current-pcb-via-write-protocol.ts";
 import { requireOriginalCurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
 import type { CurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
-import { consumeCurrentPcbViaWriteDispatch, enrollCurrentPcbViaWriteCreateIntent } from "./current-pcb-via-write-journal.ts";
-import type { CurrentPcbViaCreateIntentEnrollment, CurrentPcbViaWriteDispatch } from "./current-pcb-via-write-journal.ts";
+import { consumeCurrentPcbViaWriteDispatch, enrollCurrentPcbViaWriteCreateIntent, enrollCurrentPcbViaWriteSaveIntent } from "./current-pcb-via-write-journal.ts";
+import type { CurrentPcbViaCreateIntentEnrollment, CurrentPcbViaSaveIntentEnrollment, CurrentPcbViaWriteDispatch } from "./current-pcb-via-write-journal.ts";
 import type { CurrentPcbViaWriteStage } from "./current-pcb-via-write-program.ts";
 import { currentPcbViaWriteStageResultSchema } from "./current-pcb-via-write-contract.ts";
 import type { CurrentPcbViaWriteStageResult } from "./current-pcb-via-write-contract.ts";
@@ -1429,6 +1429,9 @@ class CurrentPcbRetainedOwnerCore {
   #viaMainBoundBody: CurrentPcbViaPendingSaveDelta | null = null;
   #viaMainAttempted = false;
   #viaMainCreateEnrollment: CurrentPcbViaCreateIntentEnrollment | null = null;
+  #viaSaveEnrollment: CurrentPcbViaSaveIntentEnrollment | null = null;
+  #viaSaveDispatch: CurrentPcbViaWriteDispatch | null = null;
+  #viaSaveReady = false;
   #viaMainCreateDispatch: CurrentPcbViaWriteDispatch | null = null;
   #viaMainCreatePrefix: CurrentPcbViaSaveProducerPrefix | null = null;
   #viaMainPrecreateReady = false;
@@ -2930,7 +2933,10 @@ class CurrentPcbRetainedOwnerCore {
               if (command.phase === "via-save-entry") { if (this.#viaProducerEntryAttempted) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_ENTRY_CONSUMED"); } this.#viaProducerEntryAttempted = true; }
               if (command.phase === "via-save-body") { if (this.#viaProducerBodyAttempted || this.#viaProducerOriginalSaveEntry === null || originalProducerArgument(command.params.arguments, 0) !== this.#viaProducerOriginalSaveEntry) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_BODY_CONSUMED"); } this.#viaProducerBodyAttempted = true; }
               if (command.phase === "via-save-value") { if (this.#viaSaveBodyCaptureAttempted) { throw error("PCB_VIA_SAVE_BODY_CAPTURE_CONSUMED"); } this.#viaSaveBodyCaptureAttempted = true; }
-              if (command.phase === "via-save-resume") { selected.reserveSaveResume(source); }
+              if (command.phase === "via-save-resume") {
+                if (this.#viaProducerOriginalSaveBody !== null && (this.#viaSaveCapturedBody === null || this.#viaMainBoundBody === null || this.#viaStructureBodyReservation === null || this.#viaClockValue !== this.#viaSaveCapturedBody.clock)) { throw error("PCB_VIA_SAVE_BODY_ORIGINAL_RESERVATION_REQUIRED"); }
+                selected.reserveSaveResume(source);
+              }
               return pipe.observeViaWorker(command); }));
             if (command.phase === "via-save-entry") { if (this.#viaProducerOriginalSaveEntry !== null) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_ENTRY_ONCE"); } this.#viaProducerOriginalSaveEntry = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, 13); }
             else if (command.phase === "via-save-body") { if (this.#viaProducerOriginalSaveEntry === null || this.#viaProducerOriginalSaveBody !== null || originalProducerArgument(command.params.arguments, 0) !== this.#viaProducerOriginalSaveEntry) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_BODY_ONCE"); } this.#viaProducerOriginalSaveBody = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, 6); }
@@ -3433,6 +3439,48 @@ class CurrentPcbRetainedOwnerCore {
     if (!this.#viaMainPrecreateReady || !this.#viaMainSetupReady || this.#viaMainOrigin !== origin || enrollment === null || this.#viaMainBoundEffect !== null || !this.#viaSdkPhases.has("create") || this.#viaSdkPhases.has("save") || this.#busy) { throw error("PCB_VIA_MAIN_ORIGINAL_EFFECT_UNAVAILABLE"); }
     enrollment.assertOriginalAttempted(); requireOriginalCurrentPcbViaWriteEffect(effect, this, plan); this.#viaMainBoundEffect = effect;
   }
+  /** Before SDK Save, the original prospective main arms must already own
+   * every later source/native boundary. This does not require the future
+   * worker body or completed SQL, which Save itself has yet to produce. */
+  public requireViaProspectiveSaveMainReady(plan: CurrentPcbViaWritePlan, effect: CurrentPcbViaWriteEffect): CurrentPcbViaMainOrigin {
+    requireViaPlan(this, plan); const enrollment = this.#viaMainCreateEnrollment, origin = this.#viaMainOrigin, runner = this.#mainRunner;
+    if (origin === null || runner === null || enrollment === null || !this.#viaMainPrecreateReady || !this.#viaMainSetupReady || this.#viaMainBoundEffect !== effect ||
+      !this.#viaSdkPhases.has("create") || !this.#viaSdkPhases.has("observe") || this.#viaSdkPhases.has("save") || this.#viaMainBoundBody !== null || this.#viaFailed || this.#viaCleanupOnly || this.requireViaProducerPrefixReady(plan) !== this.#viaMainCreatePrefix) { throw error("PCB_VIA_PROSPECTIVE_SAVE_MAIN_REQUIRED"); }
+    enrollment.assertOriginalAttempted(); requireOriginalCurrentPcbViaWriteEffect(effect, this, plan);
+    const bindings = requireOriginalCurrentPcbViaMainOrigin(origin, this, plan); runner.requireViaMainObservationArmed(origin);
+    bindings.requireBeginArmed(); bindings.requireHistoryArmed(); bindings.requireStructureArmed(); return origin;
+  }
+  /** Retain the exact durable unspent Save intent before generating the
+   * original Save request. Unknown publication or dispatch never reissues it. */
+  public async prepareViaSaveGeneration(plan: CurrentPcbViaWritePlan, effect: CurrentPcbViaWriteEffect, dispatch: CurrentPcbViaWriteDispatch): Promise<void> {
+    const selected = this.#viaReadContext(plan); const main = this.requireViaProspectiveSaveMainReady(plan, effect);
+    if (this.#viaSaveEnrollment !== null || this.#viaSaveDispatch !== null || this.#viaSaveReady) { throw error("PCB_VIA_SAVE_ENROLLMENT_CONSUMED"); }
+    this.#requireViaSaveObservers(plan); const enrollment = enrollCurrentPcbViaWriteSaveIntent(dispatch, this, plan);
+    this.#viaSaveEnrollment = enrollment; this.#viaSaveDispatch = dispatch; this.#enter(true);
+    const current = (): void => { selected.current(); enrollment.assertBeforeAttempt(); if (this.requireViaProspectiveSaveMainReady(plan, effect) !== main || this.#viaSaveEnrollment !== enrollment || this.#viaSaveDispatch !== dispatch) { throw error("PCB_VIA_SAVE_ENROLLMENT_CHANGED"); } this.#requireViaSaveObservers(plan); };
+    try { current(); await enrollment.assertPublished(); current(); await requireOriginalCurrentProjectSaveProducerPrefix(this.requireViaProducerPrefixReady(plan), this, plan).assertCurrent(); current(); await this.#verify(); current(); this.#viaSaveReady = true; }
+    catch (caughtError) { this.#viaFailed = true; throw caughtError; } finally { this.#busy = false; }
+  }
+  #requireViaSaveObservers(plan: CurrentPcbViaWritePlan): void {
+    const clockOrigin = this.#viaClockOrigin, structureOrigin = this.#viaStructureOrigin, workerOrigin = this.#viaWorkerOrigin;
+    if (workerOrigin === null || clockOrigin === null || structureOrigin === null || this.#viaWorkerPlan !== plan || this.#viaWorkerController === null || !this.#viaWorkerController.status().ready ||
+      !this.#viaClockSetupSettled || this.#viaClockArmAttempts.size !== 5 || this.#viaClockArmedPoints.size !== 5 || this.#viaClockRemoveAttempts.size > 0 || this.#viaSaveBodyCaptureAttempted || this.#viaSaveCapturedBody !== null) { throw error("PCB_VIA_SAVE_ORIGINAL_OBSERVERS_REQUIRED"); }
+    requireOriginalCurrentPcbViaSaveWorkerOrigin(workerOrigin, this, plan); requireOriginalCurrentPcbViaClockOrigin(clockOrigin, this, plan);
+    requireOriginalCurrentProjectSaveStructureOrigin(structureOrigin, this, plan); this.requireViaStructureTransportReady(plan); this.requireViaProducerPrefixReady(plan);
+  }
+  #requireViaSaveGeneration(plan: CurrentPcbViaWritePlan, dispatch: CurrentPcbViaWriteDispatch | undefined, attempted: boolean): void {
+    const effect = this.#viaMainBoundEffect, enrollment = this.#viaSaveEnrollment;
+    if (!this.#viaSaveReady || enrollment === null || effect === null || dispatch === undefined || dispatch !== this.#viaSaveDispatch || this.#viaFailed || this.#viaCleanupOnly) { throw error("PCB_VIA_SAVE_GENERATION_REQUIRED"); }
+    if (attempted) { enrollment.assertOriginalAttempted(); } else { enrollment.assertBeforeAttempt(); }
+    // Once the SDK stage is marked attempted, inspect the same original main
+    // And effect refs without applying the pre-attempt Save exclusion again.
+    if (attempted) {
+      const origin = this.#viaMainOrigin; if (origin === null || !this.#viaMainPrecreateReady || this.#viaMainBoundBody !== null) { throw error("PCB_VIA_SAVE_MAIN_CHANGED"); }
+      requireOriginalCurrentPcbViaWriteEffect(effect, this, plan); this.requireViaMainObservationReady(plan, origin);
+      const bindings = requireOriginalCurrentPcbViaMainOrigin(origin, this, plan); bindings.requireBeginArmed(); bindings.requireHistoryArmed(); bindings.requireStructureArmed();
+    } else { this.requireViaProspectiveSaveMainReady(plan, effect); }
+    this.#requireViaSaveObservers(plan);
+  }
   /** Original Via main cursor only. This setup installs fixed observation
    * points and retains the SQL fence; it grants neither Save nor a resume. */
   public async createViaMainObservationOrigin(plan: CurrentPcbViaWritePlan, effect: CurrentPcbViaWriteEffect, setup: CurrentPcbViaMainSetup): Promise<CurrentPcbViaMainOrigin> {
@@ -3580,15 +3628,15 @@ class CurrentPcbRetainedOwnerCore {
       pcbViaPackets.set(packet, Object.freeze({ owner: this, plan, phase, kind: "scene" })); return packet;
     } finally { this.#busy = false; }
   }
-  /** Fixed original SDK binding only. Save remains denied until the separate
-   * original effect and selected-SQL request grants have been implemented. */
+  /** One fixed original SDK attempt. Save request generation owns no later
+   * SQL, transport-publication or producer-drain continuation by itself. */
   public async executeViaStage(stage: CurrentPcbViaWriteStage, plan: CurrentPcbViaWritePlan, dispatch?: CurrentPcbViaWriteDispatch): Promise<CurrentPcbViaWriteStageResult | Readonly<{ captured: true }>> {
     const selected = this.#viaReadContext(plan);
-    if (stage === "save") { throw error("PCB_VIA_SAVE_EFFECT_AND_SQL_REQUIRED"); }
+    if (stage === "save") { this.#requireViaSaveGeneration(plan, dispatch, false); }
     if (stage === "create") { this.#requireViaMainPrecreate(plan, dispatch, false); }
-    const intent = stage === "create" && dispatch !== undefined ? consumeCurrentPcbViaWriteDispatch(dispatch, stage, this, plan) : null;
+    const intent = (stage === "create" || stage === "save") && dispatch !== undefined ? consumeCurrentPcbViaWriteDispatch(dispatch, stage, this, plan) : null;
     if (stage === "create" && this.#viaProducerPrefix === null) { throw error("PCB_VIA_ORIGINAL_PRODUCER_PREFIX_REQUIRED"); }
-    if (stage === "create" && intent === null || this.#viaSdkPhases.has(stage) || stage !== "capture" && (this.#viaSdkBinding === null || !this.#viaSdkQualified)) { throw error("PCB_VIA_SDK_CONSUMED"); }
+    if ((stage === "create" || stage === "save") && intent === null || this.#viaSdkPhases.has(stage) || stage !== "capture" && (this.#viaSdkBinding === null || !this.#viaSdkQualified)) { throw error("PCB_VIA_SDK_CONSUMED"); }
     this.#enter(true); this.#viaSdkPhases.add(stage);
     try {
       if (intent !== null) { await intent.assertPublished(); selected.current(); const prefix = this.#viaProducerPrefix; if (prefix === null) { throw error("PCB_VIA_ORIGINAL_PRODUCER_PREFIX_REQUIRED"); } await requireOriginalCurrentProjectSaveProducerPrefix(prefix, this, plan).assertCurrent(); selected.current(); }
@@ -3596,7 +3644,8 @@ class CurrentPcbRetainedOwnerCore {
       const binding = stage === "capture" ? selected.ui.uniqueContextId : this.#viaSdkBinding;
       if (binding === null) { throw error("PCB_VIA_SDK_BINDING"); }
       if (stage === "create") { this.#requireViaMainPrecreate(plan, dispatch, true); }
-      const raw = await this.#transfer(() => { if (stage === "create") { this.#requireViaMainPrecreate(plan, dispatch, true); } return selected.pipe.observeViaStage(stage, binding, plan); }); selected.current();
+      if (stage === "save") { this.#requireViaSaveGeneration(plan, dispatch, true); }
+      const raw = await this.#transfer(() => { if (stage === "create") { this.#requireViaMainPrecreate(plan, dispatch, true); } if (stage === "save") { this.#requireViaSaveGeneration(plan, dispatch, true); } return selected.pipe.observeViaStage(stage, binding, plan); }); selected.current();
       if (stage === "capture") {
         if (!exact(raw, ["result"]) || !record(raw["result"]) || !exact(raw["result"], ["type", "subtype", "className", "description", "objectId"]) || raw["result"]["type"] !== "object" ||
           raw["result"]["subtype"] !== "array" || raw["result"]["className"] !== "Array" || raw["result"]["description"] !== "Array(9)" ||

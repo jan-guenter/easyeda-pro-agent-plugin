@@ -128,6 +128,25 @@ export function enrollCurrentPcbViaWriteCreateIntent(token: CurrentPcbViaWriteDi
     assertOriginalAttempted: (): void => { current(); need(original.consumed, "CREATE_ENROLLMENT_ORIGINAL_ATTEMPT_REQUIRED"); },
     assertPublished: async (): Promise<void> => { current(); await original.journal.assertCurrent(); current(); } });
 }
+/** Separate prospective custody for the one published Save marker. It does
+ * not stand in for an effect, observer arm, SQL grant or native attempt. */
+export interface CurrentPcbViaSaveIntentEnrollment {
+  readonly assertCurrent: () => void;
+  readonly assertBeforeAttempt: () => void;
+  readonly assertOriginalAttempted: () => void;
+  readonly assertPublished: () => Promise<void>;
+}
+export function enrollCurrentPcbViaWriteSaveIntent(token: CurrentPcbViaWriteDispatch, owner: object,
+  plan: CurrentPcbViaWritePlan): CurrentPcbViaSaveIntentEnrollment {
+  const original = dispatches.get(token);
+  need(original !== undefined && original.owner === owner && original.plan === plan && original.stage === "save" && !original.consumed && !original.enrolled, "ORIGINAL_SAVE_ENROLLMENT");
+  const before = (): void => { need(dispatches.get(token) === original && !original.consumed, "SAVE_ENROLLMENT_BEFORE_ATTEMPT"); requireOriginalCurrentPcbViaWritePlan(plan); original.journal.requireDispatchIntent("save", original.sequence); };
+  before(); original.enrolled = true;
+  const current = (): void => { need(dispatches.get(token) === original && original.enrolled, "ORIGINAL_SAVE_ENROLLMENT"); requireOriginalCurrentPcbViaWritePlan(plan); original.journal.requireRetainedDispatchIntent("save", original.sequence); };
+  return Object.freeze({ assertCurrent: current, assertBeforeAttempt: before,
+    assertOriginalAttempted: (): void => { current(); need(original.consumed, "SAVE_ENROLLMENT_ORIGINAL_ATTEMPT_REQUIRED"); },
+    assertPublished: async (): Promise<void> => { current(); await original.journal.assertCurrent(); current(); } });
+}
 /** Failed journals stay unresolved after resource cleanup. Closing a process
  * cannot turn an unknown Save into a completed design operation. */
 export class CurrentPcbViaWriteJournal {

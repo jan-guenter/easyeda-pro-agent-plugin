@@ -9,11 +9,12 @@ import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { assertOperationIdUnused, createOperation, createOperationScanner, ensureOperationStorage, loadOperation, operationPath,
   updateOperation, verifyExactManagedArtifact, writePhaseArtifact } from "../src/artifacts.ts";
-import type { CurrentPcbViaCreateIntentEnrollment, CurrentPcbViaWriteDispatch, CurrentPcbViaWriteJournal } from "../src/current-pcb-via-write-journal.ts";
+import type { CurrentPcbViaCreateIntentEnrollment, CurrentPcbViaSaveIntentEnrollment, CurrentPcbViaWriteDispatch, CurrentPcbViaWriteJournal } from "../src/current-pcb-via-write-journal.ts";
 import { CURRENT_PCB_VIA_WRITE_ABORT_ACKNOWLEDGEMENTS, CURRENT_PCB_VIA_WRITE_EXECUTE_ACKNOWLEDGEMENTS,
   currentPcbViaWriteActionSchema, currentPcbViaWriteResultSchema } from "../src/current-pcb-via-write-contract.ts";
 
 async function fixture(loseCreateIntent = false): Promise<Readonly<{
+  enrollSave: (token: CurrentPcbViaWriteDispatch, owner: object) => CurrentPcbViaSaveIntentEnrollment;
   enroll: (token: CurrentPcbViaWriteDispatch, owner: object) => CurrentPcbViaCreateIntentEnrollment; journal: CurrentPcbViaWriteJournal; owner: object; operationId: string; publications: () => number;
   consume: (token: CurrentPcbViaWriteDispatch, stage: "create" | "save", owner: object) => Readonly<{ assertPublished: () => Promise<void> }>;
 }>> {
@@ -37,15 +38,20 @@ async function fixture(loseCreateIntent = false): Promise<Readonly<{
     }, verifyExactManagedArtifact, writePhaseArtifact }; }
     return sourceRequire(name) as unknown;
   }, loaded, loaded.exports]);
-  const Constructor = loaded.exports["CurrentPcbViaWriteJournal"], consume = loaded.exports["consumeCurrentPcbViaWriteDispatch"]; const enroll = loaded.exports["enrollCurrentPcbViaWriteCreateIntent"];
-  assert.ok(typeof Constructor === "function" && typeof consume === "function" && typeof enroll === "function");
+  const Constructor = loaded.exports["CurrentPcbViaWriteJournal"], consume = loaded.exports["consumeCurrentPcbViaWriteDispatch"]; const enroll = loaded.exports["enrollCurrentPcbViaWriteCreateIntent"], enrollSave = loaded.exports["enrollCurrentPcbViaWriteSaveIntent"];
+  assert.ok(typeof Constructor === "function" && typeof consume === "function" && typeof enroll === "function" && typeof enrollSave === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The real class is VM-loaded with the one explicit original-plan seam and actual private artifact publisher.
   const journal = Reflect.construct(Constructor, [plan]) as CurrentPcbViaWriteJournal;
   await journal.reserve(); journal.bindWriter(owner);
   for (const stage of ["baseline", "allocation", "launch", "main", "opening", "sdk", "preflight", "native-before", "scene-before"] as const) {
     await journal.append(`${stage}-intent`, {}); await journal.append(`${stage}-result`, {});
   }
-  return { journal, owner, operationId, enroll: (token, actor): CurrentPcbViaCreateIntentEnrollment => {
+  return { journal, owner, operationId, enrollSave: (token, actor): CurrentPcbViaSaveIntentEnrollment => {
+      const result: unknown = Reflect.apply(enrollSave, undefined, [token, actor, plan]); assert.ok(result !== null && typeof result === "object");
+      for (const key of ["assertCurrent", "assertBeforeAttempt", "assertOriginalAttempted", "assertPublished"]) { assert.equal(typeof Reflect.get(result,key), "function"); }
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The real private Save registry is loaded with only the explicit original-plan seam.
+      return result as CurrentPcbViaSaveIntentEnrollment;
+    }, enroll: (token, actor): CurrentPcbViaCreateIntentEnrollment => {
       const result: unknown = Reflect.apply(enroll, undefined, [token, actor, plan]); assert.ok(result !== null && typeof result === "object");
       for (const key of ["assertCurrent", "assertBeforeAttempt", "assertOriginalAttempted", "assertPublished"]) { assert.equal(typeof Reflect.get(result,key), "function"); }
       // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only the actual checked VM export with private original dispatch registry returns this object.
@@ -124,4 +130,20 @@ void test("prospective enrollment cannot claim an unpublished or altered origina
   const f=await fixture(true);await assert.rejects(f.journal.appendIntent("create",{},f.owner));await f.journal.settlePublication();const token=f.journal.retainedDispatchIntent("create");
   const enrollment=f.enroll(token,f.owner);const op=await loadOperation(f.operationId);const artifact=op.artifacts?.at(-1);assert.ok(artifact!==undefined);await writeFile(artifact.path,"altered original intent\n");
   await assert.rejects(enrollment.assertPublished());assert.equal(f.journal.retainedDispatchIntent("create"),token);assert.throws(() => f.enroll(token,f.owner),/ORIGINAL_CREATE_ENROLLMENT/u);
+});
+
+void test("the separate Save enrollment retains only its own published original marker through one actual attempt", async () => {
+  const f = await fixture(); const create = await f.journal.appendIntent("create", {}, f.owner);
+  assert.throws(() => f.enrollSave(create, f.owner), /ORIGINAL_SAVE_ENROLLMENT/u); f.consume(create, "create", f.owner);
+  await f.journal.append("create-result", {schema:"easyeda-pro-control.pcb209-via-write-stage.v1",stage:"create",ok:true,dispatchAttempted:true,originalPromiseAcknowledged:true,primitiveId:"explicit-synthetic-id",createAttempted:true,createAcknowledged:true,saveAttempted:false,saveAcknowledged:false,inverseAvailable:false,persistenceVerified:false});
+  for (const stage of ["native-after", "scene-after", "effect"] as const) { await f.journal.append(`${stage}-intent`, {}); await f.journal.append(`${stage}-result`, {}); }
+  const token = await f.journal.appendIntent("save", {}, f.owner);
+  assert.throws(() => f.enrollSave({...token}, f.owner), /ORIGINAL_SAVE_ENROLLMENT/u); assert.throws(() => f.enrollSave(token, {}), /ORIGINAL_SAVE_ENROLLMENT/u);
+  const enrollment = f.enrollSave(token, f.owner); enrollment.assertBeforeAttempt(); await enrollment.assertPublished();
+  assert.equal(f.journal.retainedDispatchIntent("save"), token); assert.throws(() => { enrollment.assertOriginalAttempted(); }, /ATTEMPT_REQUIRED/u);
+  assert.throws(() => f.enroll(token, f.owner), /ORIGINAL_CREATE_ENROLLMENT/u); assert.throws(() => f.enrollSave(token, f.owner), /ORIGINAL_SAVE_ENROLLMENT/u);
+  const dispatch = f.consume(token, "save", f.owner); await dispatch.assertPublished(); enrollment.assertOriginalAttempted();
+  assert.throws(() => { enrollment.assertBeforeAttempt(); }, /BEFORE_ATTEMPT/u); assert.throws(() => f.consume(token, "save", f.owner), /ORIGINAL_DISPATCH/u);
+  await f.journal.append("failure", {originalSaveOutcome:"unknown"}); enrollment.assertCurrent(); await enrollment.assertPublished();
+  assert.throws(() => f.journal.retainedDispatchIntent("save"), /ORIGINAL_DISPATCH/u); assert.throws(() => f.enrollSave(token, f.owner), /ORIGINAL_SAVE_ENROLLMENT/u);
 });
