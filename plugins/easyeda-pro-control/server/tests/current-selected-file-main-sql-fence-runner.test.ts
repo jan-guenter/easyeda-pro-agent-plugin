@@ -134,6 +134,7 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
   const viaArrays = new Map<string, number>();
   const module = await mainBackendModule({
     "./current-selected-file-main-request-reader.ts": { CurrentSelectedFileMainRequestReader: RequestReader },
+    "./current-pcb-via-main-live-history-source.ts": { qualifyCurrentPcbViaMainLiveHistorySource: (source: unknown): void => { assert.equal(source, "synthetic-complete-app-source"); } },
     "./current-main-startup-config-sql.ts": { qualifyCurrentMainStartupConfigSource: (source: unknown): void => { assert.equal(source, "synthetic-complete-app-source"); } },
     "./current-footprint-copy-main-request-source.ts": {
       qualifyCurrentFootprintCopyMainRequestSource: (source: unknown): unknown => { assert.equal(source, "synthetic-complete-app-source"); return capability; },

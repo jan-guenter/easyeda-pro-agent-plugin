@@ -10,6 +10,8 @@
 
 - [2026-11-06 original structure transport observer](2026-11-06-original-structure-transport-observer.md). Fixed XHR send/return custody, original body and main-publication grants, failure retention, and checkpoint-bound Via generation launch; connected writer completion remains pending.
 
+- [2026-11-07 original Via live history read](2026-11-07-via-original-live-history-read.md). Same original Main/SQLite return supplies actual history timestamps for the pending live cache projection; no clock, SQL or producer grant.
+
 - [2026-11-07 saved-reader journal and no-root cleanup](2026-11-07-saved-reader-journal-cleanup.md). Original reopen/effect/exit/fullSQL publications and honest writer/readback helper cleanup; unreproved publication holds controls and failed proof remains false.
 
 - [2026-11-06 saved-reader bounded exit settlement](2026-11-06-saved-reader-bounded-exit-settlement.md). One private exhausted-cleanup state admits one further original read-only exit wait; controls never replay and failed persistence stays false.

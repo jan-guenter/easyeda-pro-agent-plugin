@@ -1,3 +1,8 @@
+import { CurrentPcbViaMainLiveHistoryCustody } from "./current-pcb-via-main-live-history-custody.ts";
+import type { CurrentPcbViaMainLiveHistoryRows } from "./current-pcb-via-main-live-history-custody.ts";
+import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_REQUESTS as VIA_LIVE_HISTORY, validateCurrentPcbViaMainLiveHistoryCommand } from "./current-pcb-via-main-live-history-protocol.ts";
+import type { CurrentPcbViaMainLiveHistoryCommand } from "./current-pcb-via-main-live-history-protocol.ts";
+import { qualifyCurrentPcbViaMainLiveHistorySource } from "./current-pcb-via-main-live-history-source.ts";
 /** One original-main startup continuation and construction capture. This runner
  * never opens a project, invokes an application callback, samples a clock or
  * grants a writer. The native transport retains root/Job/socket ownership. */
@@ -73,7 +78,7 @@ import { currentProjectStructureMainGenerationExited, isCurrentProjectStructureM
 import type { CurrentProjectStructureMainCapability } from "./current-project-structure-main-capability.ts";
 
 // oxlint-disable-next-line import/no-cycle -- The actual selected-file native factory creates this runner; no capability issues during module initialization.
-import { prepareOriginalCurrentSelectedFileStartupActors, requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentPcbViaMainBegin, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainHistory, sendOriginalCurrentPcbViaMainStep, sendOriginalCurrentPcbViaMainStructure } from "./current-selected-file-main-sql-fence-bootstrap.ts";
+import { prepareOriginalCurrentSelectedFileStartupActors, requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentPcbViaMainBegin, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainHistory, sendOriginalCurrentPcbViaMainLiveHistory, sendOriginalCurrentPcbViaMainStep, sendOriginalCurrentPcbViaMainStructure } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import type { CurrentSelectedFileMainSqlFenceBootstrap } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SQL_SOURCE, qualifyCurrentSelectedFileMainSqlFenceSource } from "./current-selected-file-main-sql-fence-source.ts";
 import type { CurrentSelectedFileMainSqlFenceSite } from "./current-selected-file-main-sql-fence-source.ts";
@@ -381,6 +386,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   #viaBeginCustody: CurrentPcbViaMainBeginCustody | null = null;
   #viaStructureCustody: CurrentPcbViaMainStructureCustody | null = null;
   #viaStructureExpected: CurrentPcbViaMainStructureExpected | null = null;
+  #viaLiveHistoryCustody: CurrentPcbViaMainLiveHistoryCustody | null = null;
   #viaHistoryCustody: CurrentPcbViaMainHistoryCustody | null = null;
   #viaInitialHistoryBaseline: CurrentGeneratedProjectHistorySqlBaseline | null = null;
   #viaMainDeliveredPause: Pause | null = null;
@@ -773,7 +779,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Consume one fixed request number and retain its sole pending reply.
    * Head-age exceptions are captured before success decoding; cleanup keeps
    * its own counter and cannot repeat a consumed normal request. */
-  async #request(input: Command | CurrentSelectedFileMainSqlFenceCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand | CurrentProjectStructureMainCommand | CurrentPcbViaMainCommand | CurrentPcbViaMainStepCommand | CurrentPcbViaMainBeginCommand | CurrentPcbViaMainHistoryCommand | CurrentPcbViaMainStructureCommand,
+  async #request(input: Command | CurrentSelectedFileMainSqlFenceCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand | CurrentProjectStructureMainCommand | CurrentPcbViaMainCommand | CurrentPcbViaMainStepCommand | CurrentPcbViaMainBeginCommand | CurrentPcbViaMainHistoryCommand | CurrentPcbViaMainStructureCommand | CurrentPcbViaMainLiveHistoryCommand,
     cleanup = false, retainAllocationReply?: (reply: unknown) => void): Promise<unknown> {
     this.#phase = input.phase; await this.#current(cleanup);
     if (this.#viaMainOrigin !== null && this.#viaMainPoll !== null) { await this.#viaMainPoll; await this.#current(cleanup); }
@@ -798,7 +804,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     const initialMaximum = this.#selectedSqlBootstrap === null ? 64 : 72 + SQL_REQUESTS.normal + (this.#savedRegistrationEnrollment === null ? 0 : SAVED_CONFIG_REQUESTS);
     const requestMaximum = cleanup && this.#selectedSqlBootstrap === null ? 72 : initialMaximum;
     let withinBound: boolean;
-    if (via) { withinBound = this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null && this.#requests < initialMaximum + VIA_REQUESTS.total + VIA_STEPS.total + VIA_BEGIN.total + VIA_HISTORY.total + VIA_STRUCTURE.total; }
+    if (via) { withinBound = this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null && this.#requests < initialMaximum + VIA_REQUESTS.total + VIA_STEPS.total + VIA_BEGIN.total + VIA_HISTORY.total + VIA_STRUCTURE.total + VIA_LIVE_HISTORY.total; }
     else if (this.#originAttempted || this.#structureAttempted) { withinBound = this.#requests < normalMaximum + cleanupMaximum && (cleanupCommand ? this.#cleanupRequests < cleanupMaximum : this.#normalRequests < normalMaximum); }
     else { withinBound = this.#requests < requestMaximum; }
     need(this.#pendingId === null && withinBound, "REQUEST_BOUND");
@@ -812,6 +818,7 @@ export class CurrentFootprintCopyMainBackendRunner {
       if (input.phase.startsWith("via-main-structure-")) { const command = validateCurrentPcbViaMainStructureCommand(input), window = await sendOriginalCurrentPcbViaMainStructure(this.#selectedSqlBootstrap, this, command, id);
         if (command.phase === "via-main-structure-step") { need(this.#viaStructureCustody !== null, "VIA_STRUCTURE_ORIGINAL_CUSTODY"); this.#viaStructureCustody.acknowledge(command, id, window); }
       }
+      else if (input.phase.startsWith("via-main-live-")) { await sendOriginalCurrentPcbViaMainLiveHistory(this.#selectedSqlBootstrap, this, validateCurrentPcbViaMainLiveHistoryCommand(input), id); }
       else if (input.phase.startsWith("via-main-history-")) { const command = validateCurrentPcbViaMainHistoryCommand(input), window = await sendOriginalCurrentPcbViaMainHistory(this.#selectedSqlBootstrap, this, command, id);
         if (command.phase === "via-main-history-step") { need(this.#viaHistoryCustody !== null, "VIA_HISTORY_ORIGINAL_CUSTODY"); this.#viaHistoryCustody.acknowledge(command, id, window); }
       }
@@ -1292,6 +1299,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     const driver = [...this.#sqlBreakpoints].find(([, site]) => site === "driver")?.[0]; need(driver !== undefined, "VIA_MAIN_PERSISTENT_DRIVER");
     this.#busy = true;
     try {
+      qualifyCurrentPcbViaMainLiveHistorySource(this.#appSource);
       const source = qualifyCurrentFootprintCopyMainRequestSource(this.#appSource);
       const origin: CurrentPcbViaMainOrigin = Object.freeze({ profile: "private.current-pcb-via-main-origin.v1" }); this.#viaMainOrigin = origin; this.#viaMainNormal = 1;
       const reproof = await this.#request({ phase: "via-main-construction-require", method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: this.#sourceArray,
@@ -1346,6 +1354,19 @@ export class CurrentFootprintCopyMainBackendRunner {
           const resumed = this.#viaMainEvents.shift(); need(resumed?.method === "Debugger.resumed", "VIA_HISTORY_ORIGINAL_RESUMED"); empty.parse(resumed.params);
           this.#viaMainDeliveredPause = null; if (this.#sqlHeld === pause) { this.#sqlHeld = null; } return reply;
         } }); this.#viaHistoryCustody = history;
+      const liveHistory = new CurrentPcbViaMainLiveHistoryCustody({ scriptId: this.#appScriptId, sqlCaptureObjectId: this.#sqlCapture,
+        originalSqlObjectId: (): string => { same(); need(this.#viaMainSqlPacket !== null, "VIA_LIVE_ORIGINAL_SQL_PACKET"); return this.#viaMainSqlPacket; }, assertCurrent: same,
+        effects: (): CurrentProjectHistorySqlEffects => { same(); return history.result(); },
+        pause: (): CurrentPcbViaMainBeginPause => { same(); const pause = this.#pause; need(pause !== null && pause === this.#viaMainDeliveredPause, "VIA_LIVE_ORIGINAL_PAUSE"); return Object.freeze({ identity: pause, frameId: pause.frameId, raw: this.#viaMainDeliveredEvent, sqlSite: pause.sqlSite ?? null, pendingEvents: this.#viaMainEvents.length, resumed: pause.resumed, resumeAttempted: pause.resumeAttempted }); },
+        pendingRequestId: (): number | null => this.#pendingId, busy: (): boolean => this.#busy,
+        send: (command, cleanup): Promise<unknown> => this.#request(command, cleanup),
+        registerPoint: (id, pointLocation): void => { need(!this.#viaMainPoints.has(id) && !this.#sqlBreakpoints.has(id), "VIA_LIVE_POINT_ALIAS"); this.#viaMainPoints.set(id, pointLocation); this.#viaMainOriginalPoints.set(id, pointLocation); },
+        pointCurrent: (id): boolean => this.#viaMainPoints.has(id), removePoint: (id): void => { need(this.#viaMainPoints.delete(id), "VIA_LIVE_POINT_REMOVED"); },
+        resume: async (identity, command): Promise<unknown> => {
+          const pause = this.#pause; need(pause !== null && pause === identity && pause === this.#viaMainDeliveredPause && !pause.resumeAttempted && !pause.resumed && this.#viaMainEvents.length === 0 && this.#sqlHeld === null, "VIA_LIVE_RESUME_OWNER");
+          pause.resumeAttempted = true; const reply = await this.#request(command); await this.#wait(() => pause.resumed); same();
+          const resumed = this.#viaMainEvents.shift(); need(resumed?.method === "Debugger.resumed", "VIA_LIVE_ORIGINAL_RESUMED"); empty.parse(resumed.params); this.#viaMainDeliveredPause = null; return reply;
+        } }); this.#viaLiveHistoryCustody = liveHistory;
       const bindings: CurrentPcbViaMainBackendBindings = Object.freeze({ scriptId: this.#appScriptId, constructionObjectId: this.#retainedArray, source, persistentDriverBreakpointId: driver, sqlCaptureObjectId: this.#sqlCapture,
         structureRequest: async (input: CurrentPcbViaMainStructureCommand, cleanup: boolean): Promise<unknown> => {
           same(); if (this.#viaMainReadonlyService !== null) { await this.#viaMainReadonlyService; same(); } need(!this.#busy, "VIA_STRUCTURE_BUSY"); const command = validateCurrentPcbViaMainStructureCommand(input);
@@ -1356,6 +1377,11 @@ export class CurrentFootprintCopyMainBackendRunner {
         startStructure: (request: CurrentSelectedFileMainRequestObservation): void => { same(); need(!this.#busy, "VIA_STRUCTURE_START_BUSY"); structure.start(request); },
         structureExpected: (): CurrentPcbViaMainStructureExpected => { same(); need(this.#viaStructureExpected !== null, "VIA_STRUCTURE_EXPECTED_BODY_REQUIRED"); return this.#viaStructureExpected; },
         originalStructureEffects: (): CurrentProjectStructureSqlEffects => { same(); return structure.result(); },
+        liveHistoryRequest: async (input: CurrentPcbViaMainLiveHistoryCommand, cleanup: boolean): Promise<unknown> => {
+          same(); if (this.#viaMainReadonlyService !== null) { await this.#viaMainReadonlyService; same(); } need(!this.#busy, "VIA_LIVE_BUSY"); const command = validateCurrentPcbViaMainLiveHistoryCommand(input);
+          if (command.phase === "via-main-live-arm") { this.#viaMainArming = command.params.location; }
+          this.#busy = true; try { return await liveHistory.request(command, cleanup); } catch (error) { this.#fail(error); throw error; } finally { this.#viaMainArming = null; this.#busy = false; }
+        }, originalLiveHistorySqlObjectId: (): string => { same(); history.result(); need(this.#viaMainSqlPacket !== null, "VIA_LIVE_ORIGINAL_SQL"); return this.#viaMainSqlPacket; }, originalLiveHistoryRows: (): CurrentPcbViaMainLiveHistoryRows => { same(); return liveHistory.result(); },
         historyRequest: async (input: CurrentPcbViaMainHistoryCommand, cleanup: boolean): Promise<unknown> => {
           same(); if (this.#viaMainReadonlyService !== null) { await this.#viaMainReadonlyService; same(); } need(!this.#busy, "VIA_HISTORY_BUSY"); const command = validateCurrentPcbViaMainHistoryCommand(input);
           if (command.phase === "via-main-history-arm") { need(this.#viaExpectedBody === null, "VIA_HISTORY_PRE_SAVE_ARM_REQUIRED"); this.#viaMainArming = command.params.location; }
@@ -1527,6 +1553,12 @@ export class CurrentFootprintCopyMainBackendRunner {
     this.#same(false); need(origin === this.#viaMainOrigin && this.#viaStructureCustody !== null && this.#viaStructureExpected === null && this.#viaExpectedBody !== null && !this.#busy && this.#viaInitialHistoryBaseline !== null, "VIA_STRUCTURE_BODY_BIND_ONCE"); this.#viaStructureCustody.requireArmed();
     const expected = currentPcbViaMainStructureExpectedSchema.parse(input); need(expected.projectUuid === this.#viaExpectedBody.projectUuid && expected.branchUuid === this.#viaExpectedBody.branchUuid && expected.ticket > this.#viaInitialHistoryBaseline.structure.ticket, "VIA_STRUCTURE_ORIGINAL_SCOPE"); this.#viaStructureExpected = freezeDeep(expected);
   }
+  public consumeOriginalViaMainLiveHistory(command: CurrentPcbViaMainLiveHistoryCommand, requestId: number): void {
+    this.#same(false); need(this.#viaLiveHistoryCustody !== null && this.#sqlReady && this.#sqlBreakpoints.size === SQL_SITES.length + 2 && SQL_SITES.every(site => [...this.#sqlBreakpoints.values()].includes(site)), "VIA_LIVE_ORIGINAL_CUSTODY"); this.#viaLiveHistoryCustody.consume(command, requestId);
+  }
+  public requireViaLiveHistoryRows(origin: CurrentPcbViaMainOrigin): CurrentPcbViaMainLiveHistoryRows {
+    this.#same(false); need(origin === this.#viaMainOrigin && this.#viaLiveHistoryCustody !== null && this.#sqlReady && this.#sqlBreakpoints.size === SQL_SITES.length + 2 && SQL_SITES.every(site => [...this.#sqlBreakpoints.values()].includes(site)), "VIA_LIVE_ORIGINAL_COMPLETION"); return this.#viaLiveHistoryCustody.result();
+  }
   public consumeOriginalViaMainHistory(command: CurrentPcbViaMainHistoryCommand, requestId: number): Readonly<{ origin: CurrentPcbViaMainOrigin; dataStr: string; role: CurrentPcbViaMainHistoryStep }> {
     need(this.#viaHistoryCustody !== null && this.#sqlReady && this.#sqlBreakpoints.size === SQL_SITES.length + 2 && SQL_SITES.every(site => [...this.#sqlBreakpoints.values()].includes(site)), "VIA_HISTORY_ORIGINAL_CUSTODY"); return this.#viaHistoryCustody.consume(command, requestId);
   }
@@ -1565,7 +1597,7 @@ export class CurrentFootprintCopyMainBackendRunner {
       [...this.#viaMainPoints.values()].some(point => point.scriptId === this.#appScriptId && point.lineNumber === expected.lineNumber && point.columnNumber === expected.columnNumber), "VIA_MAIN_NEXT_POINT_REQUIRED");
   }
   public requireViaMainObservationArmed(origin: CurrentPcbViaMainOrigin): void {
-    need(this.#viaMainOrigin === origin && !this.#busy && !this.#failed && !this.#viaMainGroupReleased && (this.#viaMainPoints.size >= 2 && this.#viaMainPoints.size <= VIA_REQUESTS.ownPointRemovals + VIA_BEGIN.sourceArms + VIA_HISTORY.sourceArms + VIA_HISTORY.originalCallbackArm + VIA_STRUCTURE.arms + VIA_STRUCTURE.originalFinalArm) && this.#viaMainArming === null, "VIA_MAIN_SETUP_UNSETTLED");
+    need(this.#viaMainOrigin === origin && !this.#busy && !this.#failed && !this.#viaMainGroupReleased && (this.#viaMainPoints.size >= 2 && this.#viaMainPoints.size <= VIA_REQUESTS.ownPointRemovals + VIA_BEGIN.sourceArms + VIA_HISTORY.sourceArms + VIA_HISTORY.originalCallbackArm + VIA_STRUCTURE.arms + VIA_STRUCTURE.originalFinalArm + VIA_LIVE_HISTORY.arms) && this.#viaMainArming === null, "VIA_MAIN_SETUP_UNSETTLED");
     for (const role of ["controller", "editHead"] as const) {
       const expected = CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_SITES[role]; need([...this.#viaMainPoints.values()].some(point => point.scriptId === this.#appScriptId && point.lineNumber === expected.lineNumber && point.columnNumber === expected.columnNumber), "VIA_MAIN_SETUP_POINTS");
     }

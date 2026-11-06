@@ -9,6 +9,9 @@ import type { CurrentPcbViaPollingCancellationEnrollment,CurrentPcbViaPollingCan
 import { CURRENT_PROJECT_SYNC_QUIESCE_CAPTURE_LENGTH,currentProjectSyncQuiesceNativeCases,validateCurrentProjectSyncQuiesceCommand } from "./current-project-sync-quiesce-protocol.ts";
 import type { CurrentProjectSyncQuiesceCommand } from "./current-project-sync-quiesce-protocol.ts";
 import type { CurrentPcbViaProjectSyncQuiesceOrigin,CurrentProjectSyncQuiesceBindings,CurrentProjectSyncQuiesceOrigin } from "./current-project-sync-quiesce-origin.ts";
+import type { CurrentPcbViaMainLiveHistoryRows } from "./current-pcb-via-main-live-history-custody.ts";
+import type { CurrentPcbViaMainLiveHistoryCommand } from "./current-pcb-via-main-live-history-protocol.ts";
+import { currentPcbViaMainLiveHistoryWire } from "./current-pcb-via-main-live-history-wire.ts";
 import { CurrentPcbViaLocalUploadCursor } from "./current-pcb-via-local-upload-cursor.ts";
 import type { CurrentPcbViaLocalUploadHeld } from "./current-pcb-via-local-upload-cursor.ts";
 import type { CurrentPcbViaLocalUploadCommand } from "./current-pcb-via-local-upload-protocol.ts";
@@ -1108,6 +1111,13 @@ export async function sendOriginalCurrentPcbViaMainStructure(capability: Current
   // oxlint-disable-next-line eslint/no-use-before-define -- An actual completed original factory alone issues this bootstrap.
   if (original === undefined || original.runner() !== runner || !(original.owner instanceof CurrentPcbViaWriteOwner)) { throw error("PCB_VIA_MAIN_STRUCTURE_ORIGINAL_OWNER"); }
   assertOriginalCurrentPcbViaWriteOwner(original.owner); original.reprove(); const window = await original.owner.sendViaMainStructure(capability, runner, command, id); original.reprove(); return window;
+}
+export async function sendOriginalCurrentPcbViaMainLiveHistory(capability: CurrentSelectedFileMainSqlFenceBootstrap,
+  runner: CurrentFootprintCopyMainBackendRunner, command: CurrentPcbViaMainLiveHistoryCommand, id: number): Promise<void> {
+  const original = selectedSqlFenceBootstraps.get(capability);
+  // oxlint-disable-next-line eslint/no-use-before-define -- Only the initialized original Via factory can own this selected cursor.
+  if (original === undefined || original.runner() !== runner || !(original.owner instanceof CurrentPcbViaWriteOwner)) { throw error("PCB_VIA_LIVE_ORIGINAL_OWNER"); }
+  assertOriginalCurrentPcbViaWriteOwner(original.owner); original.reprove(); await original.owner.sendViaMainLiveHistory(capability, runner, command, id); original.reprove();
 }
 export async function sendOriginalCurrentPcbViaMainHistory(capability: CurrentSelectedFileMainSqlFenceBootstrap,
   runner: CurrentFootprintCopyMainBackendRunner, command: CurrentPcbViaMainHistoryCommand, id: number): Promise<CurrentPcbViaMainHistoryNativeWindow | null> {
@@ -3788,6 +3798,12 @@ class CurrentPcbRetainedOwnerCore {
   }
   /** Data-only input for the original live post-history cache projection.
    * It retains the actual body/value refs and supplies no worker resume. */
+  public requireViaLiveHistoryRows(plan: CurrentPcbViaWritePlan): CurrentPcbViaMainLiveHistoryRows {
+    const effects = this.requireViaHistorySqlEffects(plan), origin = this.#viaMainOrigin, runner = this.#mainRunner;
+    if (origin === null || runner === null) { throw error("PCB_VIA_LIVE_ORIGINAL_MAIN"); }
+    const rows = runner.requireViaLiveHistoryRows(origin);
+    if (rows.projectUuid !== effects.projectUuid || rows.branchUuid !== effects.branchUuid || rows.historyUuid !== effects.historyUuid) { throw error("PCB_VIA_LIVE_ORIGINAL_SCOPE"); } return rows;
+  }
   public requireViaLiveHistoryBody(plan: CurrentPcbViaWritePlan): Readonly<{ delta: CurrentPcbViaPendingSaveDelta; workerValue: CurrentPcbViaSavePendingBodyValue; clock: number }> {
     const effects=this.requireViaHistorySqlEffects(plan);const delta=this.#viaMainBoundBody;const workerValue=this.#viaSaveCapturedBody;const clock=this.#viaClockValue;
     if(delta===null||workerValue===null||clock===null||workerValue.clock!==clock||effects.bodySha256!==delta.bodySha256||delta.dataStr!==workerValue.body||delta.headTicket!==workerValue.headTicket) { throw error("PCB_VIA_LIVE_HISTORY_ORIGINAL_BODY"); }
@@ -6327,6 +6343,21 @@ class CurrentPcbRetainedOwnerCore {
     held.reprove(); const wire = currentPcbViaMainStructureWire(command, requestId); this.#enterFootprintMain(); this.#mainRequestId += 1; if (cleanup) { this.#mainCleanupRequests += 1; } else { this.#mainNormalRequests += 1; }
     try { await this.#verify(); held.reprove(); const reply = await this.#request({ ...wire.request }); const window = decodeCurrentPcbViaMainStructureNativeAck(reply, command); if (this.#requireFootprintMain(true) !== original) { throw error("PCB_VIA_STRUCTURE_WRITE_OWNER"); } await this.#verify(); held.reprove(); return window; }
     finally { this.#leaveFootprintMain(); }
+  }
+  public async sendViaMainLiveHistory(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner,
+    command: CurrentPcbViaMainLiveHistoryCommand, requestId: number): Promise<void> {
+    const held = selectedSqlFenceBootstraps.get(capability), original = this.#requireFootprintMain(true); const cleanup = command.phase === "via-main-live-remove" || command.phase === "via-main-live-release";
+    if (this.#purpose !== CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE || held?.owner !== this || held.runner() !== runner || this.#mainRunner !== runner || this.#viaMainOrigin === null ||
+      !this.#viaSdkPhases.has("save") || this.#viaMainBoundBody === null || requestId !== this.#mainRequestId + 1 ||
+      (cleanup ? this.#mainCleanupRequests >= CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.main.cleanup : this.#mainNormalRequests >= CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.main.normal)) { throw error("PCB_VIA_LIVE_ORIGINAL_SENDER"); }
+    const effects = runner.requireViaHistoryCompleted(this.#viaMainOrigin);
+    if (effects.bodySha256 !== this.#viaMainBoundBody.bodySha256) { throw error("PCB_VIA_LIVE_ORIGINAL_BODY"); }
+    runner.consumeOriginalViaMainLiveHistory(command, requestId); held.reprove(); const wire = currentPcbViaMainLiveHistoryWire(command, requestId);
+    this.#enterFootprintMain(); this.#mainRequestId += 1; if (cleanup) { this.#mainCleanupRequests += 1; } else { this.#mainNormalRequests += 1; }
+    try { await this.#verify(); held.reprove(); const reply = await this.#request({ ...wire });
+      if (!exact(reply, ["written"]) || reply["written"] !== true || this.#requireFootprintMain(true) !== original || runner.requireViaHistoryCompleted(this.#viaMainOrigin) !== effects) { throw error("PCB_VIA_LIVE_ORIGINAL_ACK"); }
+      await this.#verify(); held.reprove();
+    } finally { this.#leaveFootprintMain(); }
   }
   public async sendViaMainHistory(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner,
     command: CurrentPcbViaMainHistoryCommand, requestId: number): Promise<CurrentPcbViaMainHistoryNativeWindow | null> {

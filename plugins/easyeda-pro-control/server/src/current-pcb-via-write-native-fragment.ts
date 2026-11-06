@@ -1,3 +1,4 @@
+import { applyCurrentPcbViaMainLiveHistoryNativeFragment } from "./current-pcb-via-main-live-history-native-fragment.ts";
 /* oxlint-disable import/max-dependencies -- Build the separate original Via protocols and pack only its fixed SDK bytes without changing their runtime encoding. */
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
@@ -130,5 +131,5 @@ export function applyCurrentPcbViaWriteNativeFragment(input: string): string {
   const worker = applyCurrentPcbViaWorkerNativeFragment(source); const clock = applyCurrentPcbViaClockNativeFragment(worker);
   const main = applyCurrentPcbViaMainStepNativeFragment(applyCurrentPcbViaMainNativeFragment(clock));
   const history = applyCurrentPcbViaMainHistoryNativeFragment(applyCurrentPcbViaMainBeginNativeFragment(main));
-  return applyCurrentPcbViaMainStructureNativeFragment(history);
+  return applyCurrentPcbViaMainLiveHistoryNativeFragment(applyCurrentPcbViaMainStructureNativeFragment(history));
 }

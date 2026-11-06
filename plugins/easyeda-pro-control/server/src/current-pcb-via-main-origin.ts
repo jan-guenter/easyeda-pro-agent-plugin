@@ -1,3 +1,6 @@
+/* oxlint-disable import/max-dependencies -- The original main binding keeps separate fixed observation grammars and genuine readonly-row data; no caller implementation is accepted. */
+import type { CurrentPcbViaMainLiveHistoryCommand } from "./current-pcb-via-main-live-history-protocol.ts";
+import type { CurrentPcbViaMainLiveHistoryRows } from "./current-pcb-via-main-live-history-custody.ts";
 /** Visible fields issue no main cursor. Only the retained original selected
  * backend can populate the private registry used by the Via native owner. */
 import type { CurrentPcbViaMainStructureCommand, CurrentPcbViaMainStructureExpected } from "./current-pcb-via-main-structure-protocol.ts";
@@ -20,6 +23,9 @@ export interface CurrentPcbViaMainBackendBindings {
   readonly startStructure: (request: CurrentSelectedFileMainRequestObservation) => void;
   readonly structureExpected: () => CurrentPcbViaMainStructureExpected;
   readonly originalStructureEffects: () => CurrentProjectStructureSqlEffects;
+  readonly liveHistoryRequest: (command: CurrentPcbViaMainLiveHistoryCommand, cleanup: boolean) => Promise<unknown>;
+  readonly originalLiveHistorySqlObjectId: () => string;
+  readonly originalLiveHistoryRows: () => CurrentPcbViaMainLiveHistoryRows;
   readonly historyRequest: (command: CurrentPcbViaMainHistoryCommand, cleanup: boolean) => Promise<unknown>;
   readonly requireHistoryArmed: () => void;
   readonly startHistory: () => Readonly<{ transactionObjectId: string; callbackBreakpointId: string }>;
