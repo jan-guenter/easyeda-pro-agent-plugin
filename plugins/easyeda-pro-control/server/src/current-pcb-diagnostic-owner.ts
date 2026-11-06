@@ -4264,7 +4264,10 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#purpose !== CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE || held?.owner !== this || held.runner() !== runner || this.#mainRunner !== runner ||
       this.#viaMainBoundBody === null || this.#viaMainOrigin === null || !this.#viaSdkPhases.has("save") || !this.#viaMainSetupReady ||
       requestId !== this.#mainRequestId + 1 || this.#mainNormalRequests >= CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.main.normal) { throw error("PCB_VIA_MAIN_DRIVER_GRANT_REQUIRED"); }
-    const grant = command.phase === "via-main-driver-step" ? runner.consumeOriginalViaMainDriverStep(command, requestId) : runner.consumeOriginalViaMainContextStep(command, requestId);
+    let grant: Readonly<{ origin: CurrentPcbViaMainOrigin; dataStr: string }>;
+    if (command.phase === "via-main-driver-step") { grant = runner.consumeOriginalViaMainDriverStep(command, requestId); }
+    else if (command.phase === "via-main-context-step") { grant = runner.consumeOriginalViaMainContextStep(command, requestId); }
+    else { grant = runner.consumeOriginalViaMainControllerStep(command, requestId); }
     if (grant.origin !== this.#viaMainOrigin || grant.dataStr !== this.#viaMainBoundBody.dataStr) { throw error("PCB_VIA_MAIN_DRIVER_BODY_CHANGED"); }
     held.reprove(); const wire = currentPcbViaMainStepWire(command, requestId); this.#enterFootprintMain(); this.#mainRequestId += 1; this.#mainNormalRequests += 1;
     try { await this.#verify(); held.reprove(); const reply = await this.#request({ ...wire });

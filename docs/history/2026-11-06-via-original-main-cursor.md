@@ -165,3 +165,20 @@ after the selected context is removed, then requires the exact original body at
 the controller. Twelve cursor/observer regressions, full TypeScript and strict
 type-aware lint passed. Budgets and the immutable observation/shared SQL resume
 grammars are unchanged. Save, actor-clock and SQL completion remain unqualified.
+
+The original controller can now advance once to its exact PB/L3 pause after
+qualifying the retained PB function metadata against the pinned main script.
+The fixed actor selector joins the original request body, selected project user
+row, original Date/now references and the actual L3-created modify timestamp.
+V8's fulfilled PromiseResult joins that request's ctx.db Promise to its original
+yo instance, Z2 wrapper and native SQLite database. The cursor independently
+retains each actual capture/property reply; matching caller JSON cannot satisfy
+those joins. The original PB call remains paused before history SQL.
+
+The new actor packet proves this live held lineage only. It grants no SQL
+continuation or persistence result. A pending database Promise fails before the
+SQL selector, and actor/controller stage attempts cannot be replayed. The fixed
+main codebook and existing derived request limits are unchanged: the actor
+selectors and one controller continuation were already reserved. Thirteen
+focused observer/cursor cases, full types and strict lint pass. No application
+or native helper was launched, and no helper/pin/bundle was regenerated.

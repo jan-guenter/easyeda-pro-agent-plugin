@@ -1,6 +1,8 @@
 /** Production runner scheduling against a deliberately synthetic CDP peer.
  * Only source/transport issuance are substituted; actual cursor, decoders,
  * ordering, predicates, counters and mutation-hold logic run unchanged. */
+/* oxlint-disable import/max-dependencies -- Exercise the real source cursor with explicit synthetic transport/source peers and the actual actor decoders. */
+import { viaMainActorProperties, viaMainActorValue } from "./helpers/via-main-actor-replies.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
@@ -34,7 +36,7 @@ function nativeMetadata(id: string): Data {
 }
 const configPacket = (role: "jb" | "dc", site: "run" | "prepare" | "prepared", sql: string, transactionDepth: 0 | 1): Data => ({ recognized: true, role, site, sql, transactionDepth, parametersEmpty: true, designWriteGrant: false, nativeCompletionProven: false });
 async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = null): Promise<Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; phases: string[]; transport: CurrentFootprintCopyMainBackendTransport;
-  injectViaPoint: (role: "context" | "controller") => void; loseNextDriverStep: () => void; injectRequest: (method: string, foreign?: boolean, sourceDelta?: number, history?: boolean) => void; injectMutation: () => void; injectDriver: () => void; resumes: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
+  injectViaPoint: (role: "context" | "controller" | "editHead") => void; loseNextDriverStep: () => void; injectRequest: (method: string, foreign?: boolean, sourceDelta?: number, history?: boolean) => void; injectMutation: () => void; injectDriver: () => void; resumes: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
   const base = mainBackendTransportFixture();
   const ids = new Map<number, number>(), phases: string[] = [], queue: Data[] = [], retainedRegistration: Data[] = [];
   let currentRequest = { method: "GET", url: "", delta: 0, pathHeader:"f".repeat(64) }, fetchScriptSeen = false;
@@ -115,6 +117,7 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
     },
   });
   const RequestReader = await selectedRequestReaderConstructor();
+  const viaArrays = new Map<string, number>();
   const module = await mainBackendModule({
     "./current-selected-file-main-request-reader.ts": { CurrentSelectedFileMainRequestReader: RequestReader },
     "./current-main-startup-config-sql.ts": { qualifyCurrentMainStartupConfigSource: (source: unknown): void => { assert.equal(source, "synthetic-complete-app-source"); } },
@@ -130,8 +133,8 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
         assert.equal(token, capability); assert.equal(original, runner); return sqlSend(command, id);
       },
       sendOriginalCurrentPcbViaMainStep: (token: unknown, original: unknown, command: CurrentPcbViaMainStepCommand, id: number): Promise<void> => {
-        assert.equal(token, capability); assert.equal(original, runner); assert.ok(command.phase==="via-main-driver-step"||command.phase==="via-main-context-step"); assert.ok(runner !== null);
-        const grant=command.phase==="via-main-driver-step"?runner.consumeOriginalViaMainDriverStep(command,id):runner.consumeOriginalViaMainContextStep(command,id);assert.ok(typeof grant.dataStr==="string"); phases.push(command.phase);
+        assert.equal(token, capability); assert.equal(original, runner); assert.ok(command.phase==="via-main-driver-step"||command.phase==="via-main-context-step"||command.phase==="via-main-controller-step"); assert.ok(runner !== null);
+        let dataStr:string;if(command.phase==="via-main-driver-step"){dataStr=runner.consumeOriginalViaMainDriverStep(command,id).dataStr;}else if(command.phase==="via-main-context-step"){dataStr=runner.consumeOriginalViaMainContextStep(command,id).dataStr;}else{dataStr=runner.consumeOriginalViaMainControllerStep(command,id).dataStr;}assert.ok(typeof dataStr==="string"); phases.push(command.phase);
         if(loseDriverStep){return Promise.reject(new Error("original-driver-step-ack-lost"));}
         plannedResumes += 1;event("Debugger.resumed",{});queue.push({id,result:{}});return Promise.resolve();
       },
@@ -140,18 +143,24 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
         let result: unknown = command.phase === "via-main-construction-require" ? { result: { type: "boolean", value: true } } : { result: [] };
         if (command.method === "Debugger.setBreakpoint") { const point = command.params["location"]; assert.ok(point !== null && typeof point === "object"); result = { breakpointId: `via-${String(Reflect.get(point, "columnNumber"))}`, actualLocation: point }; if(Reflect.get(point,"columnNumber")===2540){contextPointActive=true;} }
         if(command.method==="Debugger.removeBreakpoint"&&command.params["breakpointId"]==="via-2540"){contextPointActive=false;result={};}
-        if(command.phase==="via-main-request-invocation-frame"||command.phase==="via-main-request-frame"||command.phase==="via-main-request-invocation"||command.phase==="via-main-request-context"||command.phase==="via-main-request-controller"){
-          const frame=command.method==="Debugger.evaluateOnCallFrame";let length=6;if(frame){if(command.phase==="via-main-request-invocation-frame"){length=3;}else if(command.params["callFrameId"]==="frame-context"){length=4;}else{length=8;}}else if(command.phase==="via-main-request-controller"){length=12;}
-          result={result:{type:"object",subtype:"array",className:"Array",description:`Array(${String(length)})`,objectId:`via-array-${String(id)}`}};
+        if(command.phase==="via-main-request-invocation-frame"||command.phase==="via-main-request-frame"||command.phase==="via-main-request-invocation"||command.phase==="via-main-request-context"||command.phase==="via-main-request-controller"||command.phase==="via-main-request-actor"||command.phase==="via-main-request-sql"){
+          const frame=command.method==="Debugger.evaluateOnCallFrame";let length=6;if(frame){if(command.phase==="via-main-request-invocation-frame"){length=3;}else if(command.params["callFrameId"]==="frame-context"){length=4;}else if(command.params["expression"]==="[t]"){length=1;}else if(command.params["expression"]==="[t,e,r,i,c,Date,Date.now,yo,Z2]"){length=9;}else{length=8;}}else if(command.phase==="via-main-request-controller"){length=12;}else if(command.phase==="via-main-request-actor"){length=10;}else if(command.phase==="via-main-request-sql"){length=7;}
+          viaArrays.set(`via-array-${String(id)}`,length);result={result:{type:"object",subtype:"array",className:"Array",description:`Array(${String(length)})`,objectId:`via-array-${String(id)}`}};
+        }else if(command.phase==="via-main-request-properties"){
+          const target=String(command.params["objectId"]);const length=viaArrays.get(target);const byLength:Readonly<Record<string,"controller"|"actor"|"sql">>={12:"controller",10:"actor",7:"sql"};const byId:Readonly<Record<string,"PB"|"queryOne"|"promise">>={"native-PB":"PB","native-queryOne":"queryOne","native-dbPromise":"promise"};const role=byLength[String(length)]??byId[target]??null;
+          if(role!==null){result=viaMainActorProperties(role);}
+        }else if(command.phase==="via-main-request-value"){result={result:{type:"object",value:viaMainActorValue}};
         }else if(command.phase==="via-main-request-context-join"){result={result:{type:"boolean",value:true}};}
         queue.push({ id, result }); return Promise.resolve();
       },
     },
   });
   runner = new module.Constructor(transport, undefined, capability);
-  return { runner, phases, transport, injectViaPoint:(role:"context"|"controller"):void=>{
-    const site=role==="context"?{lineNumber:1164,columnNumber:2540}:{lineNumber:8573,columnNumber:1663};
-    event("Debugger.paused",{reason:"other",hitBreakpoints:[`via-${String(site.columnNumber)}`],callFrames:[{callFrameId:`frame-${role}`,location:{scriptId:"app",...site}}]});
+  return { runner, phases, transport, injectViaPoint:(role:"context"|"controller"|"editHead"):void=>{
+    const site={context:{lineNumber:1164,columnNumber:2540},controller:{lineNumber:8573,columnNumber:1663},editHead:{lineNumber:8572,columnNumber:27_776}}[role];
+    const name={context:"",controller:"createProjectHistory",editHead:"PB"}[role];const column={context:2434,controller:1648,editHead:27_772}[role];
+    const caller=role==="context"?{callFrameId:"frame-parent",functionName:"interceptHttpProtocol",location:{scriptId:"app",lineNumber:1164,columnNumber:51_414},functionLocation:{scriptId:"app",lineNumber:1164,columnNumber:51_072}}:{callFrameId:"frame-actor",functionName:"L3",location:{scriptId:"app",lineNumber:8573,columnNumber:267},functionLocation:{scriptId:"app",lineNumber:8573,columnNumber:31}};
+    event("Debugger.paused",{reason:"other",hitBreakpoints:[`via-${String(site.columnNumber)}`],callFrames:[{callFrameId:`frame-${role}`,functionName:name,location:{scriptId:"app",...site},functionLocation:{scriptId:"app",lineNumber:site.lineNumber,columnNumber:column}},...(role==="controller"?[]:[caller])]});
   }, loseNextDriverStep: ():void=>{loseDriverStep=true;}, injectRequest: (method: string, foreign = false, sourceDelta = 0, history=false): void => {
     const project = foreign ? "d".repeat(64) : createHash("sha256").update(String.raw`C:\Synthetic\fixture.eprj2`).digest("hex"); currentRequest = { method, url: `/api/v4/projects/${project}/branches${history?`/${"b".repeat(32)}/histories`:""}`, delta: sourceDelta, pathHeader:project };
     if (!fetchScriptSeen) { event("Debugger.scriptParsed", { scriptId: "builtin-fetch", url: "node:internal/deps/undici/undici", executionContextId: 1, startLine: 0, startColumn: 0, endLine: 17_434, endColumn: 0, length: 745_782, isLiveEdit: false, hasSourceURL: false, isModule: false, scriptLanguage: "JavaScript" }); fetchScriptSeen = true; }
@@ -287,7 +296,16 @@ void test("the original context join and exact held body are required before a s
   await original.bindings.continuePlannedContext();f.injectRequest("GET");await original.bindings.nextEvent();const read=await original.bindings.observeRequest();const beforeLaterRead=f.resumes();await original.bindings.continueReadonlyRequest(read);assert.equal(f.resumes(),beforeLaterRead+1);
   f.injectViaPoint("controller");await original.bindings.nextEvent();
   const controllerFrame=captureArrayId(await send("via-main-request-frame",{callFrameId:"frame-controller"},"[this,this.ctx,this.service,this.path,L3,PB,Date,Date.now]"));
-  await send("via-main-request-controller",{objectId:controllerFrame,arguments:[{objectId:context},{value:expected}]});
+  const controller=captureArrayId(await send("via-main-request-controller",{objectId:controllerFrame,arguments:[{objectId:context},{value:expected}]}));
   original.bindings.requireOriginalControllerBody();assert.equal(f.runner.selectedSqlFenceState()["selectedProjectMutationsResumed"],0);
   await assert.rejects(original.bindings.continuePlannedContext());
+  await assert.rejects(original.bindings.continuePlannedController(),/ORIGINAL_JOINED_CONTROLLER/u);
+  await send("via-main-request-properties",{objectId:controller});await send("via-main-request-properties",{objectId:"native-PB"});
+  await original.bindings.continuePlannedController();f.injectViaPoint("editHead");await original.bindings.nextEvent();
+  const editFrame=captureArrayId(await send("via-main-request-frame",{callFrameId:"frame-editHead"},"[t]"));const actorFrame=captureArrayId(await send("via-main-request-frame",{callFrameId:"frame-actor"},"[t,e,r,i,c,Date,Date.now,yo,Z2]"));
+  const actor=captureArrayId(await send("via-main-request-actor",{objectId:editFrame,arguments:[{objectId:actorFrame},{objectId:controller}]}));
+  await send("via-main-request-properties",{objectId:actor});await send("via-main-request-properties",{objectId:"native-dbPromise"});
+  const sql=captureArrayId(await send("via-main-request-sql",{objectId:actor,arguments:[{objectId:"native-yo"}]}));
+  await send("via-main-request-properties",{objectId:sql});await send("via-main-request-properties",{objectId:"native-queryOne"});await send("via-main-request-value",{objectId:actor,arguments:[]});
+  original.bindings.requireOriginalActorSql();assert.equal(f.runner.selectedSqlFenceState()["selectedProjectMutationsResumed"],0);await assert.rejects(original.bindings.continuePlannedController());
 });

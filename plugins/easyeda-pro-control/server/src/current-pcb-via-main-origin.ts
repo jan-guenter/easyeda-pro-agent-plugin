@@ -14,6 +14,8 @@ export interface CurrentPcbViaMainBackendBindings {
   readonly observeRequest: () => Promise<CurrentSelectedFileMainRequestObservation>;
   readonly requireOriginalRequest: (packet: CurrentSelectedFileMainRequestObservation) => void;
   readonly requireOriginalControllerBody: () => void;
+  readonly requireOriginalActorSql: () => void;
+  readonly continuePlannedController: () => Promise<void>;
   readonly continuePlannedContext: () => Promise<void>;
   readonly continuePlannedDriver: (packet: CurrentSelectedFileMainRequestObservation) => Promise<void>;
   readonly continueReadonlyRequest: (packet: CurrentSelectedFileMainRequestObservation) => Promise<void>;

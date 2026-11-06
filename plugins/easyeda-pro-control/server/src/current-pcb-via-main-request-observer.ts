@@ -7,9 +7,10 @@ import type { CurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
 import type { CurrentPcbViaMainBindings, CurrentPcbViaMainOrigin } from "./current-pcb-via-main-origin.ts";
 import { validateCurrentPcbViaMainCommand } from "./current-pcb-via-main-protocol.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_SITES as SITES, decodeCurrentFootprintCopyMainRequestAllocation as decodeAllocation,
-  decodeCurrentFootprintCopyMainRequestArrayCapture as decodeArray, decodeCurrentFootprintCopyMainRequestCollectionPause as decodePause } from "./current-footprint-copy-main-request-protocol.ts";
+  decodeCurrentFootprintCopyMainRequestArrayCapture as decodeArray, decodeCurrentFootprintCopyMainRequestCollectedFunction as decodeFunction,
+  decodeCurrentFootprintCopyMainRequestArrayMember as decodeMember, decodeCurrentFootprintCopyMainRequestCollectionPause as decodePause } from "./current-footprint-copy-main-request-protocol.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_INVOCATION_EXPRESSIONS as EXPRESSIONS, CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_INVOCATION_PROGRAMS as PROGRAMS } from "./current-footprint-copy-main-request-collect-programs.ts";
-import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_FLAGS as FLAGS } from "./current-footprint-copy-main-request-contract.ts";
+import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_FLAGS as FLAGS, decodeCurrentFootprintCopyMainRequestPromise as decodePromise, decodeCurrentFootprintCopyMainRequestValue as decodeValue } from "./current-footprint-copy-main-request-contract.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_GROUP as GROUP, CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_CALLS as SOURCE_CALLS, CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_EXPRESSIONS as SOURCE_FRAMES } from "./current-footprint-copy-main-request-programs.ts";
 import { requireCurrentFootprintCopyMainRequestSource } from "./current-footprint-copy-main-request-source.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
@@ -35,6 +36,12 @@ export interface CurrentPcbViaHeldMainController {
   readonly originalDriverContextJoined: true; readonly actualRequestBodyJoined: true; readonly mainActorClockVerified: false; readonly selectedSqlAuthorized: false;
 }
 const controllers = new WeakMap<CurrentPcbViaHeldMainController, Readonly<{ observer: CurrentPcbViaMainRequestObserver; controller: string }>>();
+export interface CurrentPcbViaHeldMainActor {
+  readonly schema: "private.current-pcb-via-held-main-actor.v1"; readonly actualRequestBodyJoined: true;
+  readonly originalL3ActorAndDateClockJoined: true; readonly originalFulfilledDatabasePromiseJoined: true;
+  readonly originalSelectedNativeDatabaseJoined: true; readonly selectedSqlAuthorized: false;
+}
+const actors = new WeakMap<CurrentPcbViaHeldMainActor, Readonly<{ observer: CurrentPcbViaMainRequestObserver; actor: string; sql: string; value: ReturnType<typeof decodeValue> }>>();
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PCB_VIA_MAIN_OBSERVER_${code}`); } }
 export class CurrentPcbViaMainRequestObserver {
   readonly #origin: CurrentPcbViaMainOrigin; readonly #owner: CurrentPcbViaWriteOwner; readonly #plan: CurrentPcbViaWritePlan; readonly #bindings: CurrentPcbViaMainBindings;
@@ -42,6 +49,7 @@ export class CurrentPcbViaMainRequestObserver {
   #projection: CurrentPcbViaSaveProjection | null = null;
   readonly #points = new Map<"context" | "controller" | "editHead", string>();
   #contextAttempted = false; #context: CurrentPcbViaHeldMainContext | null = null;
+  #controllerAdvanced = false; #actorAttempted = false; #actor: CurrentPcbViaHeldMainActor | null = null;
   #contextAdvanced = false; #controllerAttempted = false; #controller: CurrentPcbViaHeldMainController | null = null;
   public constructor(origin: CurrentPcbViaMainOrigin, owner: CurrentPcbViaWriteOwner, plan: CurrentPcbViaWritePlan) {
     this.#origin = origin; this.#owner = owner; this.#plan = plan; this.#bindings = requireOriginalCurrentPcbViaMainOrigin(origin, owner, plan); Object.freeze(this);
@@ -65,7 +73,7 @@ export class CurrentPcbViaMainRequestObserver {
     try { for (const role of ["controller", "editHead"] as const) { await this.#arm(role); } }
     catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
   }
-  async #nextPoint(role: "context" | "controller"): Promise<ReturnType<typeof decodePause>> {
+  async #nextPoint(role: "context" | "controller" | "editHead"): Promise<ReturnType<typeof decodePause>> {
     for (let index = 0; index < 64; index += 1) {
       const raw = captureCurrentPcbStringClockReply(await this.#bindings.nextEvent()).value;
       const event = z.strictObject({ method: z.literal("Debugger.paused"), params: z.unknown() }).parse(raw); await this.#current(true);
@@ -170,7 +178,44 @@ export class CurrentPcbViaMainRequestObserver {
       this.#controller = held; controllers.set(held, Object.freeze({ observer: this, controller })); return held;
     } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
   }
+  #properties(objectId: string): Promise<unknown> {
+    return this.#send({ phase: "via-main-request-properties", method: "Runtime.getProperties", params: { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }, true);
+  }
+  async #sourceFrame(frameId: string, role: "editHead" | "actor"): Promise<string> {
+    return decodeArray(await this.#send({ phase: "via-main-request-frame", method: "Debugger.evaluateOnCallFrame", params: { callFrameId: frameId,
+      expression: SOURCE_FRAMES[role], objectGroup: GROUP, silent: true, returnByValue: false, generatePreview: false, throwOnSideEffect: true, includeCommandLineAPI: false } }, true), role === "editHead" ? 1 : 9);
+  }
+  /** Continue the exact held controller to its original PB/L3 frame. The
+   * original Date/now, actor row, fulfilled ctx.db Promise and selected native
+   * database are joined while PB remains paused before history SQL. */
+  public async continueToActor(packet: CurrentPcbViaHeldMainController): Promise<CurrentPcbViaHeldMainActor> {
+    need(!this.#busy && !this.#actorAttempted, "ACTOR_CONSUMED"); this.#actorAttempted = true; this.#busy = true;
+    try {
+      await this.requireOriginalController(packet); const original = controllers.get(packet); need(original !== undefined, "ORIGINAL_CONTROLLER");
+      const pb = decodeMember(await this.#properties(original.controller), 12, 8, "editHead");
+      decodeFunction(await this.#properties(pb), "editHead", this.#bindings.scriptId);
+      this.#controllerAdvanced = true; await this.#bindings.continuePlannedController(); await this.#current(true);
+      const pause = await this.#nextPoint("editHead"); need(pause.callerFrameId !== null, "ACTOR_CALLER");
+      const selected = await this.#sourceFrame(pause.frameId, "editHead"); const caller = await this.#sourceFrame(pause.callerFrameId, "actor");
+      const actor = decodeArray(await this.#send({ phase: "via-main-request-actor", method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: selected,
+        functionDeclaration: SOURCE_CALLS.actor.program, arguments: [{ objectId: caller }, { objectId: original.controller }], returnByValue: false } }, true), 10);
+      const promise = decodeMember(await this.#properties(actor), 10, 6, "promise");
+      const sqlOwner = decodePromise(await this.#properties(promise));
+      const sql = decodeArray(await this.#send({ phase: "via-main-request-sql", method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: actor,
+        functionDeclaration: SOURCE_CALLS.sql.program, arguments: [{ objectId: sqlOwner }], returnByValue: false } }, true), 7);
+      const query = decodeMember(await this.#properties(sql), 7, 6, "sqlQueryOne"); decodeFunction(await this.#properties(query), "sqlQueryOne", this.#bindings.scriptId);
+      const value = decodeValue(await this.#send({ phase: "via-main-request-value", method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: actor,
+        functionDeclaration: SOURCE_CALLS.value.program, arguments: [], returnByValue: true } }, true));
+      this.#bindings.requireOriginalActorSql(); await this.#current(true);
+      const held: CurrentPcbViaHeldMainActor = Object.freeze({ schema: "private.current-pcb-via-held-main-actor.v1", actualRequestBodyJoined: true,
+        originalL3ActorAndDateClockJoined: true, originalFulfilledDatabasePromiseJoined: true, originalSelectedNativeDatabaseJoined: true, selectedSqlAuthorized: false });
+      this.#actor = held; actors.set(held, Object.freeze({ observer: this, actor, sql, value })); return held;
+    } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
+  }
+  public async requireOriginalActor(packet: CurrentPcbViaHeldMainActor): Promise<void> {
+    need(this.#actor === packet && actors.get(packet)?.observer === this, "ORIGINAL_ACTOR"); this.#bindings.requireOriginalActorSql(); await this.#current(true);
+  }
   public async requireOriginalController(packet: CurrentPcbViaHeldMainController): Promise<void> {
-    need(this.#controller === packet && controllers.get(packet)?.observer === this, "ORIGINAL_CONTROLLER"); this.#bindings.requireOriginalControllerBody(); await this.#current(true);
+    need(!this.#controllerAdvanced && this.#controller === packet && controllers.get(packet)?.observer === this, "ORIGINAL_CONTROLLER"); this.#bindings.requireOriginalControllerBody(); await this.#current(true);
   }
 }
