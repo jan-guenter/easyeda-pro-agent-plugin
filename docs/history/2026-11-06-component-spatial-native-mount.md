@@ -82,3 +82,10 @@ uses a new fake HOME, no EasyEDA overrides and no preload: it proves this exact
 fixture refuses before a default namespace or journal is created. Subsequent
 focused tests use the maintained preload. Runtime admission, recovery and journal
 guards were not weakened.
+
+A follow-up moves the one-shot Component checkpoint preparation before durable
+launch/native allocation admission. A local source/checkpoint refusal therefore
+leaves no unknown helper allocation or launch reservation. Inspection retains
+its consumed preparation state; the same preparation cannot replay. A genuine
+staged-data regression proves an absent synthetic source refuses with zero native
+factory calls, no native-allocation flag or reservation, and no journal record.

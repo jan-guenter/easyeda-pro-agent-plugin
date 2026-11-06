@@ -450,6 +450,7 @@ function publicStartupEmptyResult(operationId: string,
 class CurrentPcbLifecycleCore {
   readonly #generatedSource: ReturnType<typeof consumeManagedFixtureOpeningSource> | ReturnType<typeof consumeManagedComponentFixtureOpeningSource> | null;
   #componentPrepared: GeneratedComponentFixtureOpenCheckpoint | null = null;
+  #componentPreparationAttempted = false;
   readonly #captureGeneratedClosedData: typeof captureGeneratedReaderClosedSnapshot;
   #generatedClosedCaptureAttempted = false;
   #generatedClosedCaptureResult: DiagnosticLifecycleRecords["generated-closed-capture-result.json"] | null = null;
@@ -592,11 +593,9 @@ class CurrentPcbLifecycleCore {
     else if (routeStartup209(generation)) { allocate = startCurrentFootprintCopyNativeOwner; }
     else if (generation === "209-startup-footprint") { allocate = startCurrentFootprintCopyPreparationOwner; }
     else if (generation === "209-startup") { allocate = startCurrentPcb209WorkerStartupOwner; }
-    else if (generation === "209-component-spatial") { allocate = async (allocationOptions): Promise<CurrentPcbDiagnosticOwner> => {
-      const source = this.#generatedSource;
-      requireValue(source !== null && source.qualification.schema === "easyeda-pro-control.qualified-generated-component-fixture-target.v1", "COMPONENT_SOURCE_REQUIRED");
-      const prepared = await prepareGeneratedComponentFixtureOpenCheckpoint({ qualification: source.qualification, archive: source.archive }); this.#componentPrepared = prepared;
-      return startCurrentPcbComponentSpatialOwner(allocationOptions, prepared);
+    else if (generation === "209-component-spatial") { allocate = (allocationOptions): Promise<CurrentPcbDiagnosticOwner> => {
+      requireValue(this.#componentPrepared !== null, "COMPONENT_PREPARATION_REQUIRED");
+      return startCurrentPcbComponentSpatialOwner(allocationOptions, this.#componentPrepared);
     }; }
     else if (generation === "209-spatial") { allocate = this.#generatedSource === null ? startCurrentPcbSpatialOwner : startCurrentGeneratedFixtureSpatial209Owner; }
     else if (generation === "209-visual") { allocate = startCurrentPcb209VisualOwner; }
@@ -750,6 +749,8 @@ class CurrentPcbLifecycleCore {
         combinedAbortDispatchAttempted: native.combinedAbortDispatchAttempted, combinedOutputCleanupOnly: native.combinedOutputCleanupOnly,
       }) : { combinedAbortDispatchAttempted: null, combinedOutputCleanupOnly: null };
       return { ...describe(request.operationId, operation), busy: this.#busy, observations, noProcessCleanupAvailable,
+        ...(this.#generation === "209-component-spatial" ? { componentPreparationAttemptConsumed: this.#componentPreparationAttempted,
+          componentPreparationCompleted: this.#componentPrepared !== null } : {}),
         ...combinedNativeState,
         combinedFactoryBeforeLaunchPublished: operation?.records["combined-factory-before-launch.json"] !== undefined,
         combinedFactoryBeforeLaunchRetained: this.#attempt?.operationId === request.operationId && this.#combinedFactoryFailure !== null,
@@ -3075,6 +3076,16 @@ class CurrentPcbLifecycleCore {
     const executable = installation.plan.files[0]; requireValue(executable !== undefined, "EXECUTABLE_MISSING");
     const installationText = canonicalJson(installation);
     await assertSnapshot(before); await this.#otherLaunches();
+    if (this.#generation === "209-component-spatial") {
+      requireValue(!this.#componentPreparationAttempted && this.#componentPrepared === null, "COMPONENT_PREPARATION_CONSUMED");
+      const source = this.#generatedSource;
+      requireValue(source !== null && source.qualification.schema === "easyeda-pro-control.qualified-generated-component-fixture-target.v1", "COMPONENT_SOURCE_REQUIRED");
+      // Local closed-data work precedes the launch/native-allocation journal.
+      // A failed checkpoint is consumed but cannot masquerade as an unknown helper.
+      this.#componentPreparationAttempted = true;
+      this.#componentPrepared = await prepareGeneratedComponentFixtureOpenCheckpoint({ qualification: source.qualification, archive: source.archive });
+      await assertSnapshot(before); await this.#otherLaunches();
+    }
     // Reserve before helper allocation. Even failure creating/syncing the intent
     // Can leave a durable reservation and never permits another attempt.
     this.#launchAttempted = true;
