@@ -13,6 +13,12 @@ import { prepareManagedFixtureArchive, prepareManagedLibraryFile } from "../src/
 import { managedLibraryFileSchema } from "../src/managed-library-files.ts";
 import { managedFixtureInitialSqlFixture } from "./helpers/managed-fixture-initial-sql.ts";
 
+function destinationData(path: string, entries: string[]): Record<string, unknown> {
+  return { schema: "easyeda-pro-control.fixture-destination-owner.v1", nonce: "a".repeat(64), ownerId: "1".repeat(32), windowsDirectory: win32.dirname(path),
+    directoryIdentity: `${"b".repeat(8)}:${"c".repeat(16)}`, expectedBasename: win32.basename(path), entries, state: "held", deletionAuthorized: false,
+    libraries: [{ windowsDirectory: "C:\\SyntheticLibraries", directoryIdentity: `${"b".repeat(8)}:${"d".repeat(16)}`, names: [], watchState: "pending" }] };
+}
+
 void test("managed receipt IDs re-read complete old SQL and issue a new data qualification without adopting historical owner flags", async () => {
   const input = await managedFixtureInitialSqlFixture(undefined, "arc-line-and-via"), old = await qualifyGeneratedFixtureInitialSql(input);
   const prepared = await prepareManagedLibraryFile({ action: "prepare-file", name: input.rawWindowsPath.slice(input.rawWindowsPath.lastIndexOf("\\") + 1).replace(/\.eprj2$/u, ".epro2"),
@@ -37,6 +43,22 @@ void test("managed receipt IDs re-read complete old SQL and issue a new data qua
   await assert.rejects(loadClosedGeneratedFixtureData({ ...request, closedCaptureArtifactSha256: "a".repeat(64) }, () => { assert.equal(request.confirmReadClosedGeneratedFixture, true); }), /exact closed-import-capture artifact ID/u);
   assert.equal(validateClosedGeneratedFixtureDataArguments({ ...request, rawWindowsPath: input.rawWindowsPath })["valid"], false);
   assert.equal(validateClosedGeneratedFixtureDataArguments({ ...request, oldRuntime: { pid: 123 } })["valid"], false);
+  const nativeId = "synthetic-native-clock-data", nativeJournal = { ...journal, operationId: nativeId, artifacts: [] as typeof journal.artifacts };
+  await createOperation(nativeJournal);
+  const nativeGenerated = await writePhaseArtifact(nativeId, 1, "generated-archive", { generated: {}, prepared, staged });
+  const nativeCapture = await writePhaseArtifact(nativeId, 2, "closed-import-capture", { schema: "easyeda-pro-control.managed-fixture-closed-snapshot.v2", snapshot,
+    originalSourceSha256: snapshot.sha256, completeInitialSqlRowsQualified: true, issuedReadOpenTarget: structuredClone(old.qualification),
+    sourceClockSource: "original-destination-windows-filetime", windowsClosedFileMetadata: { schema: "easyeda-pro-control.fixture-closed-file-metadata.v1",
+      destination: destinationData(input.rawWindowsPath, [win32.basename(input.rawWindowsPath)]), file: { windowsPath: input.rawWindowsPath,
+        fileIdentity: `${"b".repeat(8)}:${"e".repeat(16)}`, sha256: snapshot.sha256, bytes: snapshot.bytes,
+        createdFileTime: String(116_444_736_000_000_000n + BigInt(input.sourceCreatedEpochMs) * 10_000n),
+        modifiedFileTime: String(116_444_736_000_000_000n + BigInt(input.sourceModifiedEpochMs) * 10_000n),
+        createdEpochMs: input.sourceCreatedEpochMs, modifiedEpochMs: input.sourceModifiedEpochMs, watchState: "pending", readOnlyFileLease: true } } });
+  nativeJournal.artifacts.push(nativeGenerated, nativeCapture); await updateOperation(nativeJournal);
+  const nativeLoaded = await loadClosedGeneratedFixtureData({ ...request, importOperationId: nativeId,
+    generatedArchiveArtifactSha256: nativeGenerated.sha256, closedCaptureArtifactSha256: nativeCapture.sha256 }, () => { assert.equal(nativeJournal.state, "completed"); });
+  assert.ok(nativeLoaded.oldQualification); assert.equal(nativeLoaded.oldQualification.sourceCreatedEpochMs, input.sourceCreatedEpochMs);
+  assert.equal(nativeLoaded.oldQualification.inventoryLogicalSha256, old.qualification.inventoryLogicalSha256);
 });
 
 void test("a released clock-refused capture locates only data and requires fresh native clocks to qualify every initial SQL row", async () => {
@@ -51,11 +73,7 @@ void test("a released clock-refused capture locates only data and requires fresh
   const journal = { schema: OPERATION_SCHEMA, operationId: importOperationId, plan, planHash: buildPlanHash(plan), state: "completed", artifacts: [] as Awaited<ReturnType<typeof writePhaseArtifact>>[] };
   await createOperation(journal);
   const generated = await writePhaseArtifact(importOperationId, 1, "generated-archive", { generated: {}, prepared, staged });
-  const destination = await writePhaseArtifact(importOperationId, 2, "destination-held", {
-    schema: "easyeda-pro-control.fixture-destination-owner.v1", nonce: "a".repeat(64), ownerId: "1".repeat(32), windowsDirectory: win32.dirname(input.rawWindowsPath),
-    directoryIdentity: `${"b".repeat(8)}:${"c".repeat(16)}`, expectedBasename: win32.basename(input.rawWindowsPath), entries: [], state: "held", deletionAuthorized: false,
-    libraries: [{ windowsDirectory: "C:\\SyntheticLibraries", directoryIdentity: `${"b".repeat(8)}:${"d".repeat(16)}`, names: [], watchState: "pending" }],
-  });
+  const destination = await writePhaseArtifact(importOperationId, 2, "destination-held", destinationData(input.rawWindowsPath, []));
   const capture = await writePhaseArtifact(importOperationId, 3, "closed-import-capture", { schema: "easyeda-pro-control.managed-fixture-closed-snapshot.v1", snapshot,
     originalSourceSha256: snapshot.sha256, completeInitialSqlRowsQualified: false, completeSqlInventoryCaptured: true, issuedReadOpenTarget: null, decoded: null, sourceComparison: null,
     qualificationFailure: "Generated fixture initial SQL refused: bounded fresh native file clock interval." });

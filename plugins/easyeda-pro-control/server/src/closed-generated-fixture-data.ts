@@ -6,7 +6,7 @@ import type { ArtifactDescriptor } from "./artifacts.ts";
 import { canonicalJson } from "./core.ts";
 import { generatedWindowsPath } from "./closed-generated-fixture-file.ts";
 import { qualifyManagedFixtureArchive } from "./managed-fixture-archive.ts";
-import { managedFixtureDestinationObservationSchema } from "./managed-fixture-destination.ts";
+import { managedFixtureClosedFileMetadataSchema, managedFixtureDestinationObservationSchema } from "./managed-fixture-destination.ts";
 import { qualifyGeneratedFixtureInitialSql } from "./managed-fixture-initial-sql.ts";
 import type { QualifiedGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
 import { qualifyGeneratedSchematicFixtureInitialSql } from "./managed-schematic-fixture-initial-sql.ts";
@@ -51,6 +51,10 @@ const oldTarget = z.object({ target: z.object({ rawWindowsPath: generatedWindows
 const capture = z.object({ schema: z.enum(["easyeda-pro-control.managed-fixture-closed-snapshot.v1", "easyeda-pro-control.managed-schematic-fixture-closed-snapshot.v1"]),
   snapshot: descriptor, originalSourceSha256: sha, completeInitialSqlRowsQualified: z.literal(true),
   issuedReadOpenTarget: oldTarget.nullable().optional(), issuedSchematicDataTarget: oldTarget.nullable().optional() }).loose();
+const nativeClockCapture = capture.extend({
+  schema: z.enum(["easyeda-pro-control.managed-fixture-closed-snapshot.v2", "easyeda-pro-control.managed-schematic-fixture-closed-snapshot.v2"]),
+  sourceClockSource: z.literal("original-destination-windows-filetime"), windowsClosedFileMetadata: managedFixtureClosedFileMetadataSchema,
+});
 /** Released captures can retain valid complete data when DrvFS reports no
  * birth time. This historical refusal grants no initial-model qualification;
  * the new native file lease must supply both genuine Windows file clocks. */
@@ -95,13 +99,19 @@ export async function loadClosedGeneratedFixtureData(request: ClosedGeneratedFix
   const archiveBytes = await checked(() => readExactBinaryArtifact(archiveDescriptor)); const archive = archiveBytes.content; const archiveData = qualifyManagedFixtureArchive(archive);
   need(basename(archiveDescriptor.path) === `${archiveData.manifest.title}.epro2`, "archive exact generated title");
   const capturedBytes = await checked(() => readExactUtf8Artifact(captureDescriptor));
-  const closed = z.union([capture, clockRefusedCapture]).parse(JSON.parse(capturedBytes.text) as unknown);
-  const kind = closed.schema === "easyeda-pro-control.managed-fixture-closed-snapshot.v1" ? "pcb" : "schematic";
+  const closed = z.union([capture, nativeClockCapture, clockRefusedCapture]).parse(JSON.parse(capturedBytes.text) as unknown);
+  const kind = closed.schema === "easyeda-pro-control.managed-fixture-closed-snapshot.v1" || closed.schema === "easyeda-pro-control.managed-fixture-closed-snapshot.v2" ? "pcb" : "schematic";
   const old = kind === "pcb" ? closed.issuedReadOpenTarget : closed.issuedSchematicDataTarget;
   need((kind === "pcb" ? closed.issuedSchematicDataTarget === undefined : closed.issuedReadOpenTarget === undefined) &&
     (closed.completeInitialSqlRowsQualified ? old !== undefined && old !== null : old === null), "distinct initial data target");
   need(dirname(closed.snapshot.path) === join(controlDataDirectory(), "artifacts", "fixture-import-closed") && /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}\.eprj2$/u.test(basename(closed.snapshot.path)) &&
     closed.originalSourceSha256 === closed.snapshot.sha256, "exact managed closed snapshot");
+  if (closed.schema === "easyeda-pro-control.managed-fixture-closed-snapshot.v2" || closed.schema === "easyeda-pro-control.managed-schematic-fixture-closed-snapshot.v2") {
+    const native = closed.windowsClosedFileMetadata.file;
+    need(old !== undefined && old !== null && old.target.rawWindowsPath === native.windowsPath && native.sha256 === closed.snapshot.sha256 &&
+      native.bytes === closed.snapshot.bytes && old.sourceCreatedEpochMs === native.createdEpochMs && old.sourceModifiedEpochMs === native.modifiedEpochMs,
+    "v2 complete snapshot and original native file-clock binding");
+  }
   let rawWindowsPath: string;
   if (old !== undefined && old !== null) { rawWindowsPath = old.target.rawWindowsPath; }
   else {
