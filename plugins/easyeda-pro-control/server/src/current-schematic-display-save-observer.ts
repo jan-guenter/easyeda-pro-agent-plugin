@@ -145,3 +145,12 @@ export async function requireOriginalCurrentSchematicDisplaySaveBody(packet: Cur
   const original = bodies.get(packet); need(original !== undefined && original.owner === owner && original.argumentsValue === argumentsValue, "ORIGINAL_BODY");
   await original.observer.requireOriginal(packet);
 }
+
+/** Historical captured data only, including after original Job exit/release.
+ * The original packet/owner/arguments identities remain mandatory; this does
+ * not revalidate live source custody, resume a pause or grant another Save. */
+export function requireOriginalCurrentSchematicDisplaySaveBodyData(packet: CurrentSchematicDisplaySaveBodyObservation, owner: CurrentSchematicDisplayWriteOwner,
+  argumentsValue: GeneratedSchematicDisplayNativeArguments): CurrentSchematicDisplaySaveBodyValue {
+  const original = bodies.get(packet); need(original !== undefined && original.owner === owner && original.argumentsValue === argumentsValue && original.text === canonicalJson(packet) && packet.bodySha256 === sha256Text(packet.value.body), "ORIGINAL_BODY_DATA");
+  return packet.value;
+}

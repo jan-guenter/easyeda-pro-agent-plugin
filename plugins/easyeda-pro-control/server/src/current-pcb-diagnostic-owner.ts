@@ -8,6 +8,9 @@
 import { CURRENT_PROJECT_SAVE_STRUCTURE_SITES } from "./current-project-save-structure-source.ts";
 import { validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import type { CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
+import type { CurrentSchematicDisplayClockBindings, CurrentSchematicDisplayClockOrigin, CurrentSchematicDisplayClockRealm } from "./current-schematic-display-clock-origin.ts";
+import { CURRENT_SCHEMATIC_DISPLAY_CLOCK_SITES, validateCurrentSchematicDisplayClockCommand } from "./current-schematic-display-clock-protocol.ts";
+import type { CurrentSchematicDisplayClockCommand } from "./current-schematic-display-clock-protocol.ts";
 import { compareGeneratedSchematicDisplayEffect } from "./generated-schematic-display-effect-data.ts";
 import type { GeneratedSchematicDisplayEffect } from "./generated-schematic-display-effect-data.ts";
 import { CurrentSchematicDisplayWorkerController } from "./current-schematic-display-worker-controller.ts";
@@ -514,6 +517,12 @@ export function requireOriginalGeneratedSchematicDisplayEffect(effect: Generated
   const original = schematicDisplayEffects.get(effect);
   if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue || original.text !== canonicalJson(effect) || canonicalJson(compareOriginalSchematicDisplayEffect(original)) !== original.text) { throw error("SCHEMATIC_DISPLAY_EFFECT_ORIGINAL_EFFECT"); }
 }
+export type CurrentSchematicDisplayClockSetup = (origin: CurrentSchematicDisplayClockOrigin) => Promise<void>;
+const schematicDisplayClocks = new WeakMap<CurrentSchematicDisplayClockOrigin, Readonly<{ owner: CurrentSchematicDisplayWriteOwner; argumentsValue: GeneratedSchematicDisplayNativeArguments; bindings: CurrentSchematicDisplayClockBindings; assertOriginal: () => void }>>();
+export function requireOriginalCurrentSchematicDisplayClockOrigin(origin: CurrentSchematicDisplayClockOrigin, owner: CurrentSchematicDisplayWriteOwner, argumentsValue: GeneratedSchematicDisplayNativeArguments): CurrentSchematicDisplayClockBindings {
+  const original = schematicDisplayClocks.get(origin); if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue) { throw error("SCHEMATIC_DISPLAY_CLOCK_ORIGINAL"); }
+  requireSchematicArguments(owner, argumentsValue); original.assertOriginal(); return original.bindings;
+}
 export type CurrentSchematicDisplaySaveWorkerSetup = (origin: CurrentSchematicDisplaySaveWorkerOrigin) => Promise<void>;
 const schematicDisplaySaveWorkers = new WeakMap<CurrentSchematicDisplaySaveWorkerOrigin, Readonly<{ owner: CurrentSchematicDisplayWriteOwner; argumentsValue: GeneratedSchematicDisplayNativeArguments;
   bindings: CurrentSchematicDisplaySaveWorkerBindings; source: CurrentSchematicDisplayProjectSourceHeld; controller: CurrentSchematicDisplayWorkerController; child: CurrentSchematicDisplayWorkerChild; assertOriginal: () => void }>>();
@@ -889,6 +898,15 @@ class CurrentPcbRetainedOwnerCore {
   #schematicStructureOrigin: CurrentProjectSaveStructureOrigin | null = null;
   #schematicWorkerController: CurrentSchematicDisplayWorkerController | null = null;
   #schematicWorkerOrigin: CurrentSchematicDisplaySaveWorkerOrigin | null = null;
+  #schematicClockAttempted = false;
+  #schematicClockSetup: CurrentSchematicDisplayClockSetup | null = null;
+  #schematicClockOrigin: CurrentSchematicDisplayClockOrigin | null = null;
+  readonly #schematicClockArmAttempts = new Set<string>();
+  readonly #schematicClockArmedPoints = new Set<string>();
+  readonly #schematicClockRemoveAttempts = new Set<string>();
+  readonly #schematicClockRemovedPoints = new Set<string>();
+  #schematicClockResultArray: string | null = null;
+  #schematicClockValue: number | null = null;
   #schematicObserverTail: Promise<void> = Promise.resolve();
   #schematicFailed = false;
   #schematicSaveBodyCaptureAttempted = false;
@@ -1991,6 +2009,62 @@ class CurrentPcbRetainedOwnerCore {
       if (!this.#viaProjectNavigationDispatchAttempted && event.method === "Target.attachedToTarget" && record(targetInfo) && targetInfo["title"] === `project_${plan.target.projectUuid}_${windowTabId}`) { controller.fail(); return; }
       controller.observeEvent(event); }));
     if (!exact(reply, [])) { throw error("PCB_VIA_WORKER_PARENT_ARM_REPLY"); } original();
+  }
+  /** Exact acknowledged Text effect and same original page/worker only.
+   * This issues observation custody and no Save or selected SQL grant. */
+  public async createSchematicDisplayClockOrigin(plan: GeneratedSchematicDisplayNativeArguments, effect: GeneratedSchematicDisplayEffect, setup: CurrentSchematicDisplayClockSetup): Promise<CurrentSchematicDisplayClockOrigin> {
+    // oxlint-disable-next-line eslint/no-use-before-define -- The fixed public facade is initialized before an original factory can call this method.
+    if (!(this instanceof CurrentSchematicDisplayWriteOwner)) { throw error("SCHEMATIC_DISPLAY_CLOCK_OWNER"); }
+    requireOriginalGeneratedSchematicDisplayEffect(effect, this, plan); const selected = this.#schematicReadContext(plan);
+    const sdk = this.#schematicSdkBinding, windowTabId = this.#schematicWindowTabId, workerOrigin = this.#schematicWorkerOrigin;
+    const worker = workerOrigin === null ? undefined : schematicDisplaySaveWorkers.get(workerOrigin);
+    if (typeof setup !== "function" || types.isProxy(setup) || this.#schematicClockAttempted || sdk === null  || !this.#schematicStages.has("modify") || worker === undefined || worker.owner !== this || worker.argumentsValue !== plan ||
+      worker.controller !== this.#schematicWorkerController || !worker.controller.status().ready || typeof windowTabId !== "string") { throw error("SCHEMATIC_DISPLAY_CLOCK_UNAVAILABLE"); }
+    this.#enter(true); this.#schematicClockAttempted = true; this.#schematicClockSetup = setup;
+    const current = (): void => { selected.current(); requireOriginalGeneratedSchematicDisplayEffect(effect, this, plan); worker.assertOriginal();
+      if (this.#schematicFailed || this.#schematicDisplayCleanupOnly || this.#schematicClockSetup !== setup || this.#schematicSdkBinding !== sdk || this.#schematicWorkerOrigin !== workerOrigin || this.#schematicWindowTabId !== windowTabId) { throw error("SCHEMATIC_DISPLAY_CLOCK_CHANGED"); } };
+    try {
+      await this.#verifyInstallation(); current(); await this.#verify(); current();
+      const reply = await this.#request({ action: "schematic-display-clock-bind", workerContext: worker.bindings.uniqueContextId, uiSdkObject: sdk });
+      if (!exact(reply, ["bound"]) || reply["bound"] !== true) { throw error("SCHEMATIC_DISPLAY_CLOCK_BIND_REPLY"); } current();
+      selected.pipe.bindSchematicDisplayClock(worker.bindings.uniqueContextId, sdk);
+      const origin: CurrentSchematicDisplayClockOrigin = Object.freeze({ profile: "private.current-schematic-display-clock-origin.v1" });
+      const bindings: CurrentSchematicDisplayClockBindings = Object.freeze({ workerSessionId: worker.bindings.sessionId, uiSessionId: selected.context.openingContext().sessionId,
+        workerScriptId: worker.bindings.scriptId, workerUniqueContextId: worker.bindings.uniqueContextId, uiSdkObjectId: sdk, windowTabId, workerSource: worker.bindings.source,
+        request: async (input: CurrentSchematicDisplayClockCommand, realm: CurrentSchematicDisplayClockRealm): Promise<unknown> => {
+          current(); const command = validateCurrentSchematicDisplayClockCommand(input);
+          const raw = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { current();
+            if (command.phase === "schematic-clock-registration" && (command.params.objectId !== sdk || canonicalJson(command.params.arguments) !== canonicalJson([{ value: plan.target.projectUuid }, { value: plan.target.branchUuid }, { value: windowTabId }])) ||
+              command.phase === "schematic-clock-worker" && (command.params.uniqueContextId !== worker.bindings.uniqueContextId || canonicalJson(command.params.arguments) !== canonicalJson([{ value: plan.target.projectUuid }, { value: windowTabId }]))) { throw error("SCHEMATIC_DISPLAY_CLOCK_INITIAL_RECEIVER"); }
+            if (command.phase === "schematic-clock-arm") { if (this.#schematicClockArmAttempts.has(command.role)) { throw error("SCHEMATIC_DISPLAY_CLOCK_ARM_CONSUMED"); } this.#schematicClockArmAttempts.add(command.role); }
+            if (command.phase === "schematic-clock-remove") { if (this.#schematicClockRemoveAttempts.has(command.role)) { throw error("SCHEMATIC_DISPLAY_CLOCK_REMOVE_CONSUMED"); } this.#schematicClockRemoveAttempts.add(command.role); }
+            if (command.phase === "schematic-clock-resume") { worker.controller.reserveClockResume(worker.source, realm, command.role); }
+            return selected.pipe.observeSchematicDisplayClock(command, realm); }));
+          if (command.phase === "schematic-clock-arm") {
+            const value = captureCurrentPcbStringClockReply(raw).value; const point = command.params.location, site = CURRENT_SCHEMATIC_DISPLAY_CLOCK_SITES[command.role];
+            if (!record(value) || !exact(value, ["breakpointId", "actualLocation"]) || typeof value["breakpointId"] !== "string" || !record(value["actualLocation"]) ||
+              !exact(value["actualLocation"], ["scriptId", "lineNumber", "columnNumber"]) || canonicalJson(value["actualLocation"]) !== canonicalJson(point) || site.realm !== realm) { throw error("SCHEMATIC_DISPLAY_CLOCK_ARM_REPLY"); }
+            worker.controller.bindClockBreakpoint(worker.source, { sessionId: realm === "worker" ? worker.bindings.sessionId : selected.context.openingContext().sessionId, scriptId: point.scriptId,
+              breakpointId: value["breakpointId"], lineNumber: point.lineNumber, columnNumber: point.columnNumber, role: command.role }); this.#schematicClockArmedPoints.add(command.role);
+          }
+          if (command.phase === "schematic-clock-result") { if (this.#schematicClockResultArray !== null) { throw error("SCHEMATIC_DISPLAY_CLOCK_RESULT_CONSUMED"); } this.#schematicClockResultArray = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(raw, 8); }
+          if (command.phase === "schematic-clock-properties" && command.params.objectId === this.#schematicClockResultArray) {
+            const value = currentFootprintCopyClockRpcV2ArrayValue(decodeCurrentFootprintCopyClockRpcV2Array(raw, 8), 3);
+            if (this.#schematicClockValue !== null || typeof value !== "number" || value < 1 || value > 8_640_000_000_000_000) { throw error("SCHEMATIC_DISPLAY_CLOCK_RESULT_VALUE"); } this.#schematicClockValue = value;
+          }
+          if (command.phase === "schematic-clock-remove") { if (!exact(raw, [])) { throw error("SCHEMATIC_DISPLAY_CLOCK_REMOVE_REPLY"); } this.#schematicClockRemovedPoints.add(command.role); }
+          current(); return raw;
+        }, nextEvent: () => worker.controller.nextClockEvent(), assertCurrent: async (): Promise<void> => { current(); await this.#verify(); current(); },
+        assertSaveAttempt: (): void => { current(); worker.bindings.assertSaveAttempt(); }, assertOriginalGenerationExited: (): Promise<void> => worker.bindings.assertOriginalGenerationExited(),
+        fail: (): void => { worker.controller.fail(); } });
+      schematicDisplayClocks.set(origin, Object.freeze({ owner: this, argumentsValue: plan, bindings, assertOriginal: (): void => { worker.assertOriginal();
+        if (this.#schematicClockOrigin !== origin || this.#schematicClockSetup !== setup || this.#schematicSdkBinding !== sdk || this.#schematicWorkerOrigin !== workerOrigin) { throw error("SCHEMATIC_DISPLAY_CLOCK_CUSTODY_CHANGED"); } } })); this.#schematicClockOrigin = origin;
+      // Exact trusted Node setup only, absent from MCP input. Source/metadata
+      // Qualification and all arms settle while the SDK entry remains busy.
+      await Reflect.apply(setup, undefined, [origin]); current();
+      if (this.#schematicClockArmAttempts.size !== 5 || this.#schematicClockArmedPoints.size !== 5) { throw error("SCHEMATIC_DISPLAY_CLOCK_SETUP_INCOMPLETE"); }
+      await this.#verify(); current(); return origin;
+    } catch (caughtError) { this.#schematicFailed = true; throw caughtError; } finally { this.#busy = false; }
   }
   /** Actual original effect + SDK ACK + pre-project worker only. This creates
    * clock observation custody, never Save or SQL authority. */

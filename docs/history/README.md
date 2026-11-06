@@ -577,3 +577,4 @@ layout. The connected ledger retains its generation and case anchors.
 - [2026-11-06 original schematic worker Save custody](2026-11-06-original-schematic-worker-save-custody.md)
 - [2026-11-06 shared original Save structure custody](2026-11-06-shared-original-save-structure-custody.md)
 - [2026-11-06 central schematic display effect](2026-11-06-central-schematic-display-effect.md)
+- [2026-11-06 original schematic clock and captured body custody](2026-11-06-original-schematic-clock-body-custody.md)

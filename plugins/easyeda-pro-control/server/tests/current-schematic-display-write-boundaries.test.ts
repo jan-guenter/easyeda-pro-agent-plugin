@@ -14,14 +14,14 @@ import { CurrentSchematicDisplayWriteOwner, assertOriginalCurrentSchematicDispla
 function wire(value: unknown): Buffer { return Buffer.from(`${JSON.stringify(value)}\0`); }
 function compose(source: string): string { const prepared = registration(structure(source)); return schematic(via(prepared)); }
 void test("distinct schematic discovery has a bounded vocabulary and no worker, PCB, script or Save command", () => {
-  assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total, PROFILE.renderer.total], [901, 8, 909, 242]);
+  assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total, PROFILE.renderer.total], [901, 8, 909, 313]);
   assert.equal(PROFILE.workerOwnershipIssued, false); assert.equal(PROFILE.executionAuthorized, false); assert.equal(PROFILE.saveAuthorized, false);
   const request = { id: 16, method: "Target.getTargets" };
   assert.equal(currentSchematicDisplayWriteNativeRequest(wire(request))["requestId"], 16);
   for (const method of ["Runtime.evaluate", "Runtime.callFunctionOn", "Debugger.resume", "Target.setAutoAttach", "PCB_Document.save"]) {
     assert.throws(() => currentSchematicDisplayWriteNativeRequest(wire({ ...request, method })));
   }
-  for (const id of [0, 243, 837]) { assert.throws(() => currentSchematicDisplayWriteNativeRequest(wire({ ...request, id }))); }
+  for (const id of [0, 314, 837]) { assert.throws(() => currentSchematicDisplayWriteNativeRequest(wire({ ...request, id }))); }
   assert.throws(() => currentSchematicDisplayWriteNativeRequest(wire({ ...request, foreign: true })));
 });
 void test("matching schematic/PCB checkpoint JSON and constructed facades cannot issue native ownership", async () => {
@@ -35,7 +35,7 @@ void test("separate schematic fragment composes twice without changing prior Via
   const original = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"), source = compose(original);
   assert.equal(compose(source), source);
   for (const fragment of ["CreateSchematicDisplayWrite209()", "EasyedaSchematicDisplayBirth", "schematic-display-old-purpose-smoke", "schematic-display-foreign-refusal-smoke",
-    "if(schematicDisplayWrite209)return 242; return pcbViaWrite209?950:spatial209?384:", "schematic-display-retain-main-until-exit", "schematic-display-main-construction-consumed"]) { assert.ok(source.includes(fragment), fragment); }
+    "if(schematicDisplayWrite209)return 313; return pcbViaWrite209?950:spatial209?384:", "schematic-display-retain-main-until-exit", "schematic-display-main-construction-consumed"]) { assert.ok(source.includes(fragment), fragment); }
   assert.equal(source.includes('sqlite3.Database='), false);
   assert.throws(() => schematic(original), /SHARED_READONLY_SQL_DATA_REQUIRED/u);
   assert.throws(() => compose(original.replace("[switch]$StringPrecreate,", "[switch]$CallerPurpose,")), /ANCHOR/u);

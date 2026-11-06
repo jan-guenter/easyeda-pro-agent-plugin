@@ -16,7 +16,7 @@ type GeneratedSchematicDisplayNativeArguments = Parameters<CurrentSchematicDispl
 
 function missingBootstrap(): never { throw new Error("Bootstrap not issued"); }
 async function fixture(context: TestContext, malformed = false, main = false, stages = false, workers = false, earlyWorker = false): Promise<Readonly<{ owner: CurrentSchematicDisplayWriteOwner; actions: string[]; pollEntered: Promise<true>; reproveBootstrap: () => string;
-  target: () => object; termination: () => object; requireTermination: (value: object) => void; argumentsValue: GeneratedSchematicDisplayNativeArguments; requireStage: (packet: object) => void; runWorker: () => Promise<unknown>; createObserver: (origin: object) => { arm: () => Promise<void>; observeBody: () => Promise<unknown> }; requireWorker: (origin: object) => object; createStructureObserver: (origin: object) => { arm: () => Promise<void>; cleanup: () => Promise<void> }; requireStructure: (origin: object) => object; qualifyEffect: (copyPacket?: boolean) => object; requireEffect: (effect: object) => void }>> {
+  target: () => object; termination: () => object; requireTermination: (value: object) => void; argumentsValue: GeneratedSchematicDisplayNativeArguments; requireStage: (packet: object) => void; runWorker: () => Promise<unknown>; createObserver: (origin: object) => { arm: () => Promise<void>; observeBody: () => Promise<unknown> }; requireWorker: (origin: object) => object; createStructureObserver: (origin: object) => { arm: () => Promise<void>; cleanup: () => Promise<void> }; requireStructure: (origin: object) => object; qualifyEffect: (copyPacket?: boolean) => object; requireEffect: (effect: object) => void; issueClock: (effect: object) => Promise<object>; requireClock: (origin: object) => object }>> {
   const url = new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url); const sourceRequire = createRequire(url);
   const targetData = Object.freeze({ rawWindowsPath: String.raw`C:\Synthetic\Codex_schematic_1111111111111111.eprj2`, projectUuid: "c".repeat(64), branchUuid: "d".repeat(32), schematicUuid: "e".repeat(32), pageUuid: "f".repeat(32), expectedSourceSha256: "1".repeat(64) });
   const prepared = Object.freeze({ syntheticCheckpoint: true, qualification: Object.freeze({ target: targetData }) });
@@ -35,6 +35,7 @@ this.#stagedContext={openingContext:()=>Object.freeze({sessionId:"original-sessi
 this.#mainRunner={selectedSqlFenceState:()=>Object.freeze({ready:true}),pumpSelectedSqlFence:()=>Promise.resolve()};
 await this.#transfer(async()=>({sessionId:await this.#pipe.attachTarget("original-target",()=>{})}));
 }
+public seedSyntheticSchematicAcknowledgedModify(){this.#schematicStages.add("modify");}
 public async runSyntheticSchematicWorker(){this.#enter(true);try{const p=this.#stagedContext.openingContext();await this.#transfer(()=>this.#pipe.observeSchematicDisplay("start",p.uniqueContextId));await this.#prepareSchematicDisplayWorkerParent("original-window");return await this.#transfer(()=>{this.#schematicNavigationDispatchAttempted=true;return this.#pipe.observeSchematicDisplay("navigate",p.uniqueContextId,this.#schematicArguments.target);});}finally{this.#busy=false;}}
   public armViaSaveWorker(`) : source;
   const compiled = await transform(stageSource, { loader: "ts", format: "cjs", target: "node24", logLevel: "silent" });
@@ -63,12 +64,13 @@ public async runSyntheticSchematicWorker(){this.#enter(true);try{const p=this.#s
       // Explicit construction/source-pause seam only. The production owner,
       // Pipe, fixed codecs, observer, callback and original registry run unchanged.
       const factory: unknown = runInThisContext(`(source=>class {
-constructor(bindings){this.bindings=bindings;this.source=null;this.child=null;this.busy=false;this.ready=false;this.failed=false;this.points=new Set();this.structurePoints=new Set();}
+constructor(bindings){this.bindings=bindings;this.source=null;this.child=null;this.busy=false;this.ready=false;this.failed=false;this.points=new Set();this.structurePoints=new Set();this.clockPoints=new Set();}
 status(){return{ready:this.ready,pumping:this.busy,failed:this.failed,projectSourceHeld:this.source!==null,originalWorkerSelected:this.child!==null};}
 observeEvent(e){if(e.method!=="Target.attachedToTarget")throw Error("unexpected peer event");this.child=Object.freeze({sessionId:e.params.sessionId,targetId:e.params.targetInfo.targetId,url:e.params.targetInfo.url,title:e.params.targetInfo.title});}
 observeUiEvent(){return false;}requireHeld(s){if(s!==this.source)throw Error("held");return this.child;}requireOriginal(s,c){if(s!==this.source||c!==this.child)throw Error("original");}
 bindSaveBreakpoint(s,r,id){this.requireHeld(s);if(this.points.has(r))throw Error("point");this.points.add(r);}
 bindStructureBreakpoint(s,r,id){this.requireHeld(s);if(this.structurePoints.has(r))throw Error("structure point");this.structurePoints.add(r);}
+bindClockBreakpoint(s,p){this.requireHeld(s);if(this.clockPoints.has(p.role))throw Error("clock point");this.clockPoints.add(p.role);}
 requireStructureArmed(s){this.requireHeld(s);if(this.structurePoints.size!==6)throw Error("structure arm");}
 async pump(){if(this.ready||this.busy||this.child===null)return;this.busy=true;try{await this.bindings.bindWorker(this.child);this.source=Object.freeze({scriptId:"project-script",uniqueContextId:"worker-context",executionContextId:7,source});await this.bindings.projectSourceHeld(this.source,this);if(this.points.size!==6)throw Error("missing actual arms");await this.bindings.releaseParentWait();this.ready=true;}catch(e){this.fail();throw e;}finally{this.busy=false;}}
 fail(){this.failed=true;this.bindings.fail();}nextSaveEvent(){throw Error("Save attempt required");}reserveSaveResume(){throw Error("no Save");}
@@ -84,12 +86,16 @@ fail(){this.failed=true;this.bindings.fail();}nextSaveEvent(){throw Error("Save 
   }, loaded, loaded.exports]);
   const Constructor = loaded.exports["CurrentSchematicDisplayWriteOwner"], seed = loaded.exports["seedSyntheticSchematicAbortOwner"];
   assert.ok(typeof Constructor === "function" && typeof seed === "function");
+  const clockModule: unknown = sourceRequire("./current-schematic-display-clock-protocol.ts"); assert.ok(clockModule !== null && typeof clockModule === "object");
+  const clockSites: unknown = Reflect.get(clockModule, "CURRENT_SCHEMATIC_DISPLAY_CLOCK_SITES"); assert.ok(clockSites !== null && typeof clockSites === "object");
   const script = `const readline=require('node:readline'),input=readline.createInterface({input:process.stdin});let terminated=false;const queue=[];let navigation=null,pendingBytes=Buffer.alloc(0);const fs=require("node:fs"),sourceFile="/mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-mgr/3.2.185.bf63a159/js/project-worker.js";
 const send=(q,result)=>process.stdout.write(JSON.stringify({id:q.id,ok:true,result})+'\\n');
 input.on('line',line=>{const q=JSON.parse(line);
 if(q.action==='launch')send(q,{helperInstance:'b'.repeat(32),jobId:'c'.repeat(32),rootPid:123,rootCreated:'123456789012345'});
 else if(q.action==='main-attach')send(q,{attached:true});
 else if(q.action==='send'){if(${String(stages)})queue.push({id:q.requestId,result:q.method==='Target.attachToTarget'?{sessionId:'original-session'}:q.method==='Target.getTargets'?{targetInfos:[{targetId:'original-target',type:'page',title:'Start',url:'https://client/editor?cll=warn#',attached:true}]}:{},...(q.sessionId?{sessionId:q.sessionId}:{})});send(q,{written:true});}
+else if(q.action==='schematic-display-clock-bind')send(q,{bound:true});
+else if(q.action==='schematic-display-clock'){const role=q.phase.slice('schematic-clock-arm-'.length),site=(${JSON.stringify(clockSites)})[role];if(q.method!=='Debugger.setBreakpoint'||!site)throw Error('clock command');queue.push({id:q.requestId,sessionId:q.realm==='worker'?'original-worker':'original-session',result:{breakpointId:'clock-'+role,actualLocation:{scriptId:q.scriptId,lineNumber:site.lineNumber,columnNumber:site.columnNumber}}});send(q,{written:true});}
 else if(q.action==='schematic-display-worker-prepare')send(q,{prepared:true});
 else if(q.action==='schematic-display-worker-bind')send(q,{bound:true});
 else if(q.action==='schematic-display-worker-parent'){queue.push({id:q.requestId,sessionId:q.sessionId,result:{}});if(${String(earlyWorker)}&&q.phase==='arm')queue.push({method:'Target.attachedToTarget',sessionId:q.sessionId,params:{sessionId:'original-worker',waitingForDebugger:true,targetInfo:{targetId:'worker-target',type:'worker',attached:true,url:'https://client/editor?entry=mgr-project-worker.js&cll=&debugOpen=0',title:'project_'+'c'.repeat(64)+'_original-window'}}});if(q.phase==='running'){if(navigation===null)throw Error('navigation not retained');queue.push({id:navigation.id,sessionId:navigation.session,result:{result:{type:'object',value:{completed:true}}}});navigation=null;}send(q,{written:true});}
@@ -146,7 +152,23 @@ else if(q.action==='release')send(q,{released:true});else throw Error('unexpecte
     qualifyEffect: (copyPacket = false): object => { const seedPackets = loaded.exports["seedSyntheticSchematicEffectPackets"]; const qualify = loaded.exports["qualifyOriginalGeneratedSchematicDisplayEffect"]; assert.ok(typeof seedPackets === "function" && typeof qualify === "function");
       const packets: unknown = Reflect.apply(seedPackets, undefined, [owner, argumentsValue]); assert.ok(Array.isArray(packets) && packets.length === 3);
       const effect: unknown = Reflect.apply(qualify, undefined, [owner, argumentsValue, copyPacket ? structuredClone(packets[0]) : packets[0], packets[1], packets[2]]); assert.ok(effect !== null && typeof effect === "object"); return effect; },
-    requireEffect: (effect: object): void => { const requireEffect = loaded.exports["requireOriginalGeneratedSchematicDisplayEffect"]; assert.ok(typeof requireEffect === "function"); Reflect.apply(requireEffect, undefined, [effect, owner, argumentsValue]); } };
+    requireEffect: (effect: object): void => { const requireEffect = loaded.exports["requireOriginalGeneratedSchematicDisplayEffect"]; assert.ok(typeof requireEffect === "function"); Reflect.apply(requireEffect, undefined, [effect, owner, argumentsValue]); },
+    issueClock: async (effect: object): Promise<object> => {
+      const ready: unknown = Reflect.get(owner, "seedSyntheticSchematicAcknowledgedModify"); assert.ok(typeof ready === "function"); Reflect.apply(ready, owner, []);
+      const cases: unknown = Reflect.get(clockModule, "currentSchematicDisplayClockNativeCases"); const lookup = loaded.exports["requireOriginalCurrentSchematicDisplayClockOrigin"]; assert.ok(typeof cases === "function" && typeof lookup === "function");
+      const commands: unknown = Reflect.apply(cases, undefined, []); assert.ok(Array.isArray(commands));
+      const run: unknown = Reflect.get(owner, "createSchematicDisplayClockOrigin"); assert.ok(typeof run === "function");
+      const result: unknown = await Reflect.apply(run, owner, [argumentsValue, effect, async (origin: object): Promise<void> => {
+        const bindings: unknown = Reflect.apply(lookup, undefined, [origin, owner, argumentsValue]); assert.ok(bindings !== null && typeof bindings === "object"); const request: unknown = Reflect.get(bindings, "request"); assert.ok(typeof request === "function");
+        for (const raw of commands) { const command: unknown = raw;
+          if (command !== null && typeof command === "object" && "phase" in command && command.phase === "schematic-clock-arm") {
+            assert.ok("role" in command && typeof command.role === "string"); const site: unknown = Reflect.get(clockSites, command.role); assert.ok(site !== null && typeof site === "object");
+            await Reflect.apply(request, undefined, [command, Reflect.get(site, "realm"), false]);
+          }
+        }
+      }]); assert.ok(result !== null && typeof result === "object"); return result;
+    },
+    requireClock: (origin: object): object => { const lookup = loaded.exports["requireOriginalCurrentSchematicDisplayClockOrigin"]; assert.ok(typeof lookup === "function"); const result: unknown = Reflect.apply(lookup, undefined, [origin, owner, argumentsValue]); assert.ok(result !== null && typeof result === "object"); return result; } };
 }
 void test("Schematic original abort waits for pending native poll and settles the original busy renderer call without replay", async context => {
   const f = await fixture(context); const original = f.owner.getTargets(), refused = assert.rejects(original);
@@ -230,4 +252,14 @@ void test("central SCH effect issuance uses its original factory and packet regi
   assert.equal(Reflect.get(effect, "originalNativeStageProvenanceVerified"), true); assert.throws(() => { f.requireEffect(structuredClone(effect)); }, /ORIGINAL_EFFECT/u);
   assert.throws(() => f.qualifyEffect(), /ORIGINAL_ISSUE_CONSUMED/u);
   const copied = await fixture(context, false, false, true); assert.throws(() => copied.qualifyEffect(true), /ORIGINAL_STAGE/u);
+});
+
+void test("actual SCH clock issuer binds its original effect, page holder and suspended-source worker; copied origins cannot join", async context => {
+  const f = await fixture(context, false, false, true, true);
+  f.owner.armSchematicDisplaySaveWorker(f.argumentsValue, async origin => { await f.createObserver(origin).arm(); }); await f.runWorker();
+  await f.owner.executeSchematicDisplayStage("capture", f.argumentsValue); const effect = f.qualifyEffect(); const origin = await f.issueClock(effect); const bindings = f.requireClock(origin);
+  assert.equal(Object.isFrozen(bindings), true); assert.equal(Reflect.get(bindings, "uiSdkObjectId"), "original-holder"); assert.equal(Reflect.get(bindings, "workerSessionId"), "original-worker");
+  assert.throws(() => f.requireClock(structuredClone(origin)), /CLOCK_ORIGINAL/u); await assert.rejects(f.issueClock(effect), /CLOCK_UNAVAILABLE/u);
+  assert.equal(f.actions.filter(action => action === "schematic-display-clock").length, 5); assert.equal(f.actions.filter(action => action === "schematic-display-clock-bind").length, 1);
+  await f.owner.abortSchematicDisplayWrite(); assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
 });

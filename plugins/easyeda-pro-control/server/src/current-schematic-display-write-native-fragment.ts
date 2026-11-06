@@ -1,3 +1,4 @@
+import { applyCurrentSchematicDisplayClockNativeFragment } from "./current-schematic-display-clock-native-fragment.ts";
 /** New schematic birth after shared fixed SQL data and prior fragments. This
  * fragment never upgrades an ordinary runtime or enables a PCB purpose. */
 import { applyCurrentSchematicDisplayWorkerNativeFragment } from "./current-schematic-display-worker-native-fragment.ts";
@@ -64,7 +65,7 @@ const dispatch = String.raw`        'schematic-display-native' {
 `;
 export function applyCurrentSchematicDisplayWriteNativeFragment(input: string): string {
   if (!input.includes("public static class EasyedaSelectedFileMainSqlFenceProtocol")) { throw new Error("SCHEMATIC_DISPLAY_SHARED_READONLY_SQL_DATA_REQUIRED"); }
-  const current = input.replace(/if\(schematicDisplayWrite209\)return (?:16|63|129);/u, `if(schematicDisplayWrite209)return ${String(PROFILE.renderer.total)};`).replace(/if \(\$SchematicDisplayWrite209\) \{\$requestLimit=(?:16|63|129)\}/u, `if ($SchematicDisplayWrite209) {$requestLimit=${String(PROFILE.renderer.total)}}`);
+  const current = input.replace(/if\(schematicDisplayWrite209\)return (?:16|63|129|242);/u, `if(schematicDisplayWrite209)return ${String(PROFILE.renderer.total)};`).replace(/if \(\$SchematicDisplayWrite209\) \{\$requestLimit=(?:16|63|129|242)\}/u, `if ($SchematicDisplayWrite209) {$requestLimit=${String(PROFILE.renderer.total)}}`);
   let source = one(current, "[switch]$PcbViaWrite209,[switch]$StringPrecreate,", "[switch]$SchematicDisplayWrite209,[switch]$PcbViaWrite209,[switch]$StringPrecreate,");
   const switches = [...source.slice(0, source.indexOf("\n")).matchAll(/\[switch\]\$(\w+)/gu)].map(match => match[1]).filter(name => name !== undefined && name !== "CompileOnly" && name !== "SchematicDisplayWrite209");
   const conflict = `if ($SchematicDisplayWrite209 -and (${switches.map(name => `$${name}`).join(" -or ")})) {throw 'pcb-diagnostic-conflicting-schematic-display-purpose'}\n`;
@@ -92,5 +93,5 @@ export function applyCurrentSchematicDisplayWriteNativeFragment(input: string): 
   source = one(source, "    [EasyedaDiagnosticOwner]::VerifyPcbViaClockSmoke()", "    [EasyedaDiagnosticOwner]::VerifySchematicDisplaySmoke()\n    [EasyedaDiagnosticOwner]::VerifyPcbViaClockSmoke()");
   const start = source.indexOf(begin), stop = source.indexOf(end);
   if (start !== -1 || stop !== -1) { if (start === -1 || stop < start || source.includes(begin, start + begin.length) || source.includes(end, stop + end.length)) { throw new Error("SCHEMATIC_DISPLAY_NATIVE_MARKERS"); } source = source.slice(0, start) + native() + source.slice(stop + end.length); }
-  else { source = one(source, "\n'@\n", `\n${native()}\n'@\n`); } return applyCurrentSchematicDisplayWorkerNativeFragment(source);
+  else { source = one(source, "\n'@\n", `\n${native()}\n'@\n`); } return applyCurrentSchematicDisplayClockNativeFragment(applyCurrentSchematicDisplayWorkerNativeFragment(source));
 }
