@@ -37,6 +37,7 @@ export const managedFixtureImportRequestSchema = z.discriminatedUnion("action", 
   z.object({ action: z.literal("settle-import-records"), operationId }).strict(),
   z.object({ action: z.literal("release-owner"), operationId, confirmReleaseFixtureOwner: z.literal(true) }).strict(),
   z.object({ action: z.literal("capture-closed-import"), operationId, confirmReadClosedFixture: z.literal(true) }).strict(),
+  z.object({ action: z.literal("stage-for-fresh-opening"), operationId, confirmStageClosedFixture: z.literal(true) }).strict(),
 ]);
 export type ManagedFixtureImportRequest = z.infer<typeof managedFixtureImportRequestSchema>;
 type Observation = z.infer<typeof managedFixtureImportJobObservationSchema>;
@@ -46,7 +47,7 @@ export const MANAGED_FIXTURE_IMPORT_DISPATCH_PHASE = "managed-fixture-import";
 export function queryManagedFixtureImport(input: unknown = {}): Record<string, unknown> {
   const request = z.object({ includeSchemas: z.boolean().default(false) }).strict().parse(input);
   return { tool: "easyeda_control_fixture_import", profile: MANAGED_FIXTURE_IMPORT_PROFILE,
-    actions: ["import-generated-fixture", "inspect", "settle-import-records", "inspect-destination", "request-cleanup-close", "observe-cleanup-termination", "finish-cleanup", "settle-cleanup-records", "capture-closed-import", "release-destination", "release-owner"],
+    actions: ["import-generated-fixture", "inspect", "settle-import-records", "inspect-destination", "request-cleanup-close", "observe-cleanup-termination", "finish-cleanup", "settle-cleanup-records", "capture-closed-import", "release-destination", "release-owner", "stage-for-fresh-opening"],
     effect: "fresh-managed-disposable-native-import", nativeImportLiveValidation: "not-recorded", importedFixtureAccepted: false,
     retryAllowed: false, deletionAuthorized: false, designExecutionAuthorized: false,
     limitations: ["Requires the same original ordinary 209 launch, exact empty StartPage, current SDK/UI/manager/main pins and authenticated tracked dispatch.",
@@ -244,14 +245,16 @@ export class ManagedFixtureImportCoordinator {
    * and must recheck the source/checkpoint. Serialized report JSON cannot pass.
    */
   public qualifiedSourceForFreshOpening(): Readonly<{ qualification: QualifiedGeneratedFixtureTarget; archive: Buffer }> {
+    this.current();
     const qualification = this.closedCapture?.qualifiedTarget;
-    if (this.reservation !== "released" || this.busy || qualification === null || qualification === undefined || this.generatedArchive === undefined) { throw new Error("Original closed generated fixture has no released issued opening source."); }
+    if (this.reservation !== "released" || this.busy || !this.migrationExclusionVerified || qualification === null || qualification === undefined || this.generatedArchive === undefined) { throw new Error("Original closed generated fixture has no released issued opening source with its library migration excluded."); }
     assertOriginalGeneratedFixtureTarget(qualification);
     return Object.freeze({ qualification, archive: Buffer.from(this.generatedArchive) });
   }
   /** Stage before index releases this coordinator slot. The distinct staged
    * token survives that local slot release only in this original facade. */
-  public stageSourceForFreshOpening(): ManagedFixtureOpeningSource {
+  public stageSourceForFreshOpening(operationIdInput: string): ManagedFixtureOpeningSource {
+    if (operationId.parse(operationIdInput) !== this.attemptedOperationId) { throw new Error("Staging requires the original base import operation."); }
     return stageManagedFixtureOpeningSource(this.qualifiedSourceForFreshOpening());
   }
   private retainDispatcherStatus(journal: TrackedDispatchOperationJournal): boolean {
@@ -313,6 +316,7 @@ export class ManagedFixtureImportCoordinator {
   private async run(input: unknown, expectedFingerprint?: Record<string, unknown>): Promise<Record<string, unknown>> {
     const request = managedFixtureImportRequestSchema.parse(input);
     if (request.action === "inspect") { return this.inspect(request.operationId); }
+    if (request.action === "stage-for-fresh-opening") { throw new Error("Staging is a separate local index handoff after original owner release, never a destination cleanup action."); }
     this.current();
     if (request.action === "release-owner") {
       if (request.operationId !== this.attemptedOperationId || this.pendingPublication !== undefined || this.hasRetainedDestination() || this.refusedBeforeDispatch.size > 0 ||

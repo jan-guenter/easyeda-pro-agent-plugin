@@ -16,14 +16,19 @@ void test("actual fixture registration retains one original index owner, authent
   const authenticated = inMemoryAuthenticatedUpstream({ content: [] });
   const runtime = { status: (): unknown => ({ state: "owned" }) };
   let allocations = 0, cleanups = 0;
+  const sourceToken = Object.freeze({ projectUuid: "1".repeat(64), originalSourceSha256: "2".repeat(64) });
   type Invoke = (input: { request: unknown; expectedFingerprint?: Record<string, unknown> }) => Promise<unknown>;
   let invoke: Invoke | undefined;
   class Owner {
     readonly #assertOriginal: () => void;
+    #released = false;
     public constructor(options: { assertOriginalOwner: () => void }) {
       options.assertOriginalOwner(); this.#assertOriginal = options.assertOriginalOwner; allocations += 1;
     }
     public inspect(): Record<string, unknown> { this.#assertOriginal(); return { originalOwnerRetained: true }; }
+    public stageSourceForFreshOpening(id: string): typeof sourceToken {
+      this.#assertOriginal(); assert.equal(this.#released, true); assert.equal(id, "fixture-import-registration"); return sourceToken;
+    }
     public async execute(input: unknown): Promise<Record<string, unknown>> {
       this.#assertOriginal(); const request = managedFixtureImportRequestSchema.parse(input);
       if (request.action === "import-generated-fixture") {
@@ -31,6 +36,7 @@ void test("actual fixture registration retains one original index owner, authent
       } else {
         await assert.rejects(authenticated.upstream.callTool("easyeda_execute", {}, 1000), /requires a dispatch scope or its exact binding/u);
         cleanups += 1;
+        if (request.action === "release-owner") { this.#released = true; }
       }
       this.#assertOriginal(); return { synthetic: true };
     }
@@ -40,7 +46,7 @@ void test("actual fixture registration retains one original index owner, authent
     // oxlint-disable-next-line typescript/no-extraneous-class -- The real registration constructs this separate cleanup role; this test checks only its owner's allocation and scope.
     ManagedFixtureImportCoordinator: Owner, OrdinaryTrackedOpenCleanup: class {},
     upstream: authenticated.upstream, engine: {}, ordinaryLaunchRuntime: runtime, windowsRuntime: runtime,
-    fixtureImportCoordinator: undefined, currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined,
+    fixtureImportCoordinator: undefined, stagedFixtureOpeningSource: undefined, currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined,
     currentSchematicRenameOperationCoordinator: undefined, closedSymbolIndexReservation: undefined, scheduledShutdown: undefined,
     hasForwardSourceCustody: (): boolean => false,
     serializedGuarded: (handler: Invoke, options: { allowDuringOrphanRisk: boolean }): Invoke => {
@@ -58,6 +64,9 @@ void test("actual fixture registration retains one original index owner, authent
   assert.equal(allocations, 1); assert.equal(authenticated.calls(), 1);
   await invoke({ request: { action: "release-owner", operationId: "fixture-import-registration", confirmReleaseFixtureOwner: true } });
   assert.equal(cleanups, 1); assert.equal(authenticated.calls(), 1);
+  await invoke({ request: { action: "stage-for-fresh-opening", operationId: "fixture-import-registration", confirmStageClosedFixture: true } });
+  assert.equal(context["stagedFixtureOpeningSource"], sourceToken); assert.equal(authenticated.calls(), 1); assert.equal(cleanups, 1);
+  await assert.rejects(invoke({ request: { action: "stage-for-fresh-opening", operationId: "fixture-import-registration", confirmStageClosedFixture: true } }), /once before its ordinary runtime release/u);
   context["ordinaryLaunchRuntime"] = { ...runtime };
   await assert.rejects(invoke({ request: { action: "release-owner", operationId: "fixture-import-registration", confirmReleaseFixtureOwner: true } }), /original index\/runtime allocation changed/u);
   assert.equal(cleanups, 1); assert.equal(allocations, 1);

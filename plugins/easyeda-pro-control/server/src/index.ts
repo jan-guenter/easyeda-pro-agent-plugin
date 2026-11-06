@@ -200,6 +200,7 @@ import { currentProjectOnlySymbolPreflightRequestSchema } from "./current-projec
 import { readCurrentProjectOnlySymbolPreflight } from "./current-project-only-symbol-runtime.ts";
 import { historicalAbandonmentRequestSchema, runHistoricalAbandonment } from "./historical-abandonment.ts";
 import { ManagedFixtureImportCoordinator, managedFixtureImportRequestSchema } from "./managed-fixture-import-runtime.ts";
+import type { ManagedFixtureOpeningSource } from "./managed-fixture-opening-source.ts";
 
 const facadeMode = configuredFacadeMode(process.env);
 
@@ -237,6 +238,8 @@ let windowsRuntime: WindowsControlRuntime | undefined;
 let ordinaryLaunchCoordinator: OrdinaryLaunchCoordinator | undefined;
 let ordinaryLaunchRuntime: WindowsControlRuntime | undefined;
 let fixtureImportCoordinator: ManagedFixtureImportCoordinator | undefined;
+// Closed generated data only. This slot transfers no native owner or handle.
+let stagedFixtureOpeningSource: ManagedFixtureOpeningSource | undefined;
 // oxlint-disable-next-line typescript/unbound-method -- Invoke the captured custody observer only on its original coordinator.
 const fixtureImportReservation = ManagedFixtureImportCoordinator.prototype.hasActiveReservation;
 function hasFixtureImportCustody(): boolean {
@@ -3635,7 +3638,14 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       const assertOtherLaunchesSettled = async (): Promise<void> => {
         assertUnreserved(); await engine.assertDiagnosticLaunchOtherOperationsSettled(); assertUnreserved();
       };
+      const generatedFixtureSource = stagedFixtureOpeningSource;
+      if (generatedFixtureSource !== undefined && !ordinary && !spatial) { throw new Error("The staged generated fixture requires its separate ordinary or spatial reader purpose."); }
+      if (generatedFixtureSource !== undefined) { assertUnreserved(); }
+      // Consume the index slot before construction. The constructor consumes its
+      // Original private token; a failed construction cannot retry that transfer.
+      stagedFixtureOpeningSource = undefined;
       const owner = new DiagnosticLifecycle({ pluginRoot, assetsRoot: assetsRoot ?? "", ...(wslDistribution === undefined ? {} : { wslDistribution }),
+        ...(generatedFixtureSource === undefined ? {} : { generatedFixtureSource }),
         powershellSha256: CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.sha256, powershellBytes: CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.bytes,
         assertLocalAllowed: assertLocal, assertAllowed: assertOtherLaunchesSettled, assertOtherLaunchesSettled });
       currentPcbDiagnosticLifecycle = owner;
@@ -5187,13 +5197,22 @@ registerFacadeTool(
   "easyeda_control_fixture_import",
   {
     title: "Import a generated disposable validation fixture",
-    description: "Generate and import a fresh fixed Via-only or Line/Via project into an exclusively held private Windows destination. Requires this facade's current original ordinary launch, exact empty Start Page, pinned209 SDK/UI/manager/main sources, explicit disposable/import confirmations and authenticated expected fingerprint. Actual config directories have a separate tracked preflight journal; HALF_OFFLINE plus original complete no-.elib directory rosters and retained native watches exclude detached system-library seeding only after original termination and drained watch cancellation. The original import Promise is dispatched once and retained through settlement. SDK settlement is partial evidence: closed SQLite, source membership and persistent registration acceptance remain separate. Inspect original outcomes without replay. Cleanup uses the retained original journal/runtime/session after dispatch settles; request one normal close, observe original root/empty Job and exact old HMAC session closure, finish cleanup, then release the original destination and use release-owner before ordinary runtime/helper release. settle-import-records and settle-cleanup-records publish only exact retained local candidates. Preserve all partial files. No caller files, paths, IDs, geometry, SQL, code, deletion, explicit Save, prompt choice, force termination or historical-owner adoption. Query fixture-import/fixture-import-validate first.",
+    description: "Generate and import a fresh fixed Via-only or Line/Via project into an exclusively held private Windows destination. Requires this facade's current original ordinary launch, exact empty Start Page, pinned209 SDK/UI/manager/main sources, explicit disposable/import confirmations and authenticated expected fingerprint. Actual config directories have a separate tracked preflight journal; HALF_OFFLINE plus original complete no-.elib directory rosters and retained native watches exclude detached system-library seeding only after original termination and drained watch cancellation. The original import Promise is dispatched once and retained through settlement. SDK settlement is partial evidence: closed SQLite, source membership and persistent registration acceptance remain separate. Inspect original outcomes without replay. Cleanup uses the retained original journal/runtime/session after dispatch settles; request one normal close, observe original root/empty Job and exact old HMAC session closure, finish cleanup, capture-closed-import retains complete SQL/source only after that cleanup. Release the original destination and owner, then optionally stage-for-fresh-opening with confirmStageClosedFixture:true before ordinary runtime/helper release. The same facade retains only the qualified data token for a fresh generated reader birth; it transfers no native owner and accepts no target JSON. settle-import-records and settle-cleanup-records publish only exact retained local candidates. Preserve all partial files. No caller files, paths, IDs, geometry, SQL, code, deletion, explicit Save, prompt choice, force termination or historical-owner adoption. Query fixture-import/fixture-import-validate first.",
     inputSchema: { request: z.unknown().pipe(managedFixtureImportRequestSchema), expectedFingerprint: privateFingerprintSchema.optional() },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
   },
   serializedGuarded(async ({ request, expectedFingerprint }) => {
     if (request.action === "inspect") {
       return { result: fixtureImportCoordinator?.inspect(request.operationId) ?? { originalOwnerRetained: false, importedFixtureAccepted: false, replayAllowed: false } };
+    }
+    if (request.action === "stage-for-fresh-opening") {
+      if (fixtureImportCoordinator === undefined || stagedFixtureOpeningSource !== undefined) { throw new Error("Stage only this facade's released original closed fixture once before its ordinary runtime release."); }
+      const source = fixtureImportCoordinator.stageSourceForFreshOpening(request.operationId);
+      stagedFixtureOpeningSource = source;
+      return { result: { schema: "easyeda-pro-control.managed-fixture-opening-staged.v1", operationId: request.operationId,
+        projectUuid: source.projectUuid, originalSourceSha256: source.originalSourceSha256,
+        sameFacadeDataTransferOnly: true, nativeOwnerTransferred: false, applicationStarted: false,
+        registrationVerified: false, importedFixtureAccepted: false, designExecutionAuthorized: false } };
     }
     if (request.action !== "import-generated-fixture") {
       if (fixtureImportCoordinator === undefined) { throw new Error("Fixture cleanup requires this facade's retained original import owner."); }
@@ -5202,7 +5221,7 @@ registerFacadeTool(
     return upstream.withAuthenticatedBridgeDispatchScope(async () => {
       if (fixtureImportCoordinator === undefined) {
         const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"], runtime = ordinaryLaunchRuntime;
-        if (assetsRoot === undefined || runtime === undefined || windowsRuntime !== runtime || currentDisposableOpenCoordinator !== undefined ||
+        if (assetsRoot === undefined || runtime === undefined || windowsRuntime !== runtime || stagedFixtureOpeningSource !== undefined || currentDisposableOpenCoordinator !== undefined ||
             currentPcbRenameOperationCoordinator !== undefined || currentSchematicRenameOperationCoordinator !== undefined ||
             closedSymbolIndexReservation !== undefined || scheduledShutdown !== undefined || hasForwardSourceCustody()) {
           throw new Error("Fixture import requires this facade's unreserved original ordinary launch.");

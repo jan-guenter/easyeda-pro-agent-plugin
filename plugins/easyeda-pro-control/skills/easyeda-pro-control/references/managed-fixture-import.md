@@ -50,11 +50,24 @@ normal close. Original root exit, empty Job and exact closed HMAC session are
 separate required observations. Leave Save/Discard prompts unanswered.
 `settle-cleanup-records` completes only retained local publication.
 
+After original cleanup completes, `capture-closed-import` with
+`confirmReadClosedFixture:true` retains the complete initial SQL and raw native
+source while the original destination handles remain held. A failed
+qualification preserves its report and partial file; it permits no replay.
+
 Then use `release-destination` with `confirmReleaseRetainedDirectory:true`.
 It drains the exact original watches and closes directory handles after proved
 application termination. It deletes no files. Use `release-owner` with the
-base import ID and `confirmReleaseFixtureOwner:true`, then complete the
-ordinary launch's termination record and original helper release. No new
+base import ID and `confirmReleaseFixtureOwner:true`. If complete closed
+qualification and the drained no-library migration proof passed, use
+`stage-for-fresh-opening` with that base ID and
+`confirmStageClosedFixture:true` before ordinary helper release. This once-only
+local action retains an opaque data token in the same facade. It starts no app
+and transfers no process, Job, helper or HMAC owner. A copied report cannot
+stage a target. Then complete the ordinary launch's termination record and
+original helper release. The next separately constructed generated reader
+owner consumes the token; use its `open-generated-fixture` action without a
+caller target or path. Stay on this facade through that handoff. No new
 controller, historical JSON, process-presence sample or restart can replace
 these original owners. Follow
 [the manager workflow](autonomous-controller-updates.md) for replacement.

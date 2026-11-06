@@ -113,6 +113,18 @@ void test("actual import coordinator stages a fresh archive, seals destination a
   await assert.rejects(value.owner.execute(value.request, value.expected)); assert.equal(value.owner.hasActiveReservation(), false);
 });
 
+void test("local opening staging cannot fall through to original destination release", async () => {
+  const value = fixture("managed-import-stage-not-cleanup");
+  await value.owner.execute(value.request, value.expected);
+  const count = value.calls.length;
+  await assert.rejects(value.owner.execute({ action: "stage-for-fresh-opening", operationId: "managed-import-stage-not-cleanup",
+    confirmStageClosedFixture: true }), /separate local index handoff/u);
+  assert.equal(value.calls.length, count); assert.equal(value.calls.includes("release-directory"), false);
+  assert.equal(value.owner.hasRetainedDestination(), true); assert.equal(value.owner.hasActiveReservation(), true);
+  assert.equal(managedFixtureImportRequestSchema.safeParse({ action: "stage-for-fresh-opening", operationId: "managed-import-stage-not-cleanup",
+    confirmStageClosedFixture: false }).success, false);
+});
+
 void test("ambiguous environment preserves its own original journal and cannot allocate a destination or importer", async () => {
   const value = fixture("managed-import-environment-ambiguous", false, true);
   await assert.rejects(value.owner.execute(value.request, value.expected), /environment-ambiguous-environment/u);

@@ -1,7 +1,11 @@
 # Project history
 
+- [2026-11-06 generated fixture tool handoff](2026-11-06-generated-fixture-tool-handoff.md). Reachable explicit staging after closed qualification, original base-ID/runtime checks, drained migration exclusion and one private data transfer through ordinary helper release.
+- [2026-11-06 original post-clock cold continuation](2026-11-06-original-post-clock-cold-continuation.md). Same worker observer survives the clock handoff, reserves its actual remaining requests, and rejoins original termination without a queue deadlock.
+- [2026-11-06 forward cold native mount](2026-11-06-forward-cold-native-mount.md). Dedicated original v2 construction, fixed native commands and derived budgets; source integration does not establish writer eligibility.
+
 - [2026-11-06 first manager native cleanup](2026-11-06-first-manager-native-cleanup.md). Actual frozen development controller, ordinary launch, normal close, original root/Job termination, helper release and facade EOF/exit; no import or design operation.
-- [2026-11-06 generated fixture closed baseline](2026-11-06-generated-fixture-closed-baseline.md). Complete initial SQL/raw source qualification, original issued target, narrow checkpoint preparation and exact VACUUM schema-version projection; connected import remains pending.
+- [2026-11-06 generated fixture closed baseline](2026-11-06-generated-fixture-closed-baseline.md). Complete fresh SQL/history qualification, unticked native DOCHEAD, exact VACUUM projection, same-facade issued source staging and dedicated fresh registration/open owner; connected acceptance remains unproved.
 
 - [2026-11-06 first disposable batch freeze](2026-11-06-first-disposable-batch-freeze.md). Local01437 payload, exact1101-source/runtime hashes, reproduced bundles, required non-suite checks and remaining connected/release work.
 - [2026-11-06 real Engine import composition](2026-11-06-fixture-real-engine-composition.md). Actual dispatcher-entry tracking, narrow successful-environment cleanup and real technical nonce grammar, verified through genuine test HMAC sessions.
@@ -32,7 +36,6 @@
 
 - [2026-11-05 structure observer cold arm and native codebook](2026-11-05-structure-observer-native-codebook.md). Original Nd/QA pre-arm exclusion, a finite 42-shape main codec with shared exact descriptor guards, synthetic V8/C# verification and the remaining owner, native-purpose, frontier and durability dependencies. Source base `b16fb1e`.
 - [2026-11-06 managed fixture original import owner](2026-11-06-managed-fixture-original-import-owner.md). Fixed tracked environment/import journals, fresh exclusive native destination, retained no-candidate library watches, original Promise settlement and cleanup integration; connected import and closed SQL/registration acceptance remain unproved.
-- [2026-11-06 generated fixture closed baseline](2026-11-06-generated-fixture-closed-baseline.md). Complete fresh SQL/history qualification, unticked native DOCHEAD, exact VACUUM projection, same-facade issued source staging and dedicated fresh registration/open owner; connected acceptance remains unproved.
 
 - [2026-11-05 generated PCB fixture archives](2026-11-05-generated-pcb-fixture-archives.md). Maintained new-data Via-only and Line+Via `.epro2` generation, exact source templates, actual pinned codec methods exercised offline with synthetic constructors, and separate original eager-facade closure. Native import and registration remain pending.
 
