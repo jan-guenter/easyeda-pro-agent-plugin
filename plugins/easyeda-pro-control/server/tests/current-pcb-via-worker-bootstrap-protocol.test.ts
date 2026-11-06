@@ -5,7 +5,7 @@ import { CURRENT_PCB_VIA_WORKER_PARENT_PARAMS, CURRENT_PCB_VIA_WORKER_RUNNING_PA
   currentPcbViaWorkerBootstrapNativeCases, validateCurrentPcbViaWorkerBootstrapCommand } from "../src/current-pcb-via-worker-bootstrap-protocol.ts";
 
 void test("cold Via bootstrap has a finite seven-source instrumentation vocabulary and derived request reservation", () => {
-  const cases = currentPcbViaWorkerBootstrapNativeCases(); assert.equal(cases.length, 20);
+  const cases = currentPcbViaWorkerBootstrapNativeCases(); assert.equal(cases.length, 21);
   for (const command of cases) {
     assert.deepEqual(validateCurrentPcbViaWorkerBootstrapCommand(command), command);
     for (const field of ["sessionId", "url", "expression", "targetId", "purpose", "requestLimit"]) {
@@ -13,7 +13,7 @@ void test("cold Via bootstrap has a finite seven-source instrumentation vocabula
     }
   }
   assert.deepEqual(cases.filter(command => command.phase === "via-worker-source").map(command => command.role), CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES);
-  assert.equal(REQUESTS.workerNormal, 12); assert.equal(REQUESTS.workerCleanup, 8); assert.equal(REQUESTS.total, 23);
+  assert.equal(REQUESTS.setupHelpers, 5); assert.equal(REQUESTS.workerNormal, 17); assert.equal(REQUESTS.workerCleanup, 8); assert.equal(REQUESTS.total, 28);
   assert.deepEqual(CURRENT_PCB_VIA_WORKER_RUNNING_PARAMS, { ...CURRENT_PCB_VIA_WORKER_PARENT_PARAMS, waitForDebuggerOnStart: false });
   assert.equal(CURRENT_PCB_VIA_WORKER_RUNNING_PARAMS.autoAttach, true);
 });

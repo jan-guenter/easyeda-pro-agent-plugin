@@ -695,3 +695,5 @@ layout. The connected ledger retains its generation and case anchors.
 - [2026-11-06 original schematic clock and captured body custody](2026-11-06-original-schematic-clock-body-custody.md)
 - [2026-11-06 generated schematic reader live case](2026-11-06-generated-schematic-reader-live-case.md)
 - [2026-11-06 original schematic accessor observation](2026-11-06-original-schematic-accessor-observation.md)
+
+- [Original project polling cancellation](2026-11-07-original-project-polling-cancellation.md) — separately journaled first-timer effect, exact original worker/native custody, and preserved held-call refusal.

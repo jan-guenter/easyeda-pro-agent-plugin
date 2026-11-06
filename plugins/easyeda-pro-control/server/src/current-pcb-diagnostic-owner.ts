@@ -3,6 +3,12 @@
 import type { CurrentFootprintInverseCacheBackupModule as FootprintInverseCacheBackupModule } from "./current-footprint-inverse-cache-backup.ts";
 import type { CurrentFootprintInverseCacheBackupGrant, CurrentFootprintInverseCacheBindings, CurrentFootprintInverseCacheOrigin } from "./current-footprint-inverse-cache-origin.ts";
 import { currentFootprintInverseCacheMetadataNativeFrame, currentFootprintInverseCacheNativeFrame } from "./current-footprint-inverse-cache-wire.ts";
+import { decodeCurrentProjectSyncQuiesceArray } from "./current-project-sync-quiesce-replies.ts";
+import { consumeCurrentPcbViaPollingCancellationIntent,enrollCurrentPcbViaPollingCancellationIntent } from "./current-pcb-via-polling-cancellation-intent.ts";
+import type { CurrentPcbViaPollingCancellationEnrollment,CurrentPcbViaPollingCancellationIntent } from "./current-pcb-via-polling-cancellation-intent.ts";
+import { CURRENT_PROJECT_SYNC_QUIESCE_CAPTURE_LENGTH,currentProjectSyncQuiesceNativeCases,validateCurrentProjectSyncQuiesceCommand } from "./current-project-sync-quiesce-protocol.ts";
+import type { CurrentProjectSyncQuiesceCommand } from "./current-project-sync-quiesce-protocol.ts";
+import type { CurrentPcbViaProjectSyncQuiesceOrigin,CurrentProjectSyncQuiesceBindings,CurrentProjectSyncQuiesceOrigin } from "./current-project-sync-quiesce-origin.ts";
 import { CurrentPcbViaLocalUploadCursor } from "./current-pcb-via-local-upload-cursor.ts";
 import type { CurrentPcbViaLocalUploadHeld } from "./current-pcb-via-local-upload-cursor.ts";
 import type { CurrentPcbViaLocalUploadCommand } from "./current-pcb-via-local-upload-protocol.ts";
@@ -657,6 +663,9 @@ export function requireOriginalCurrentSchematicDisplaySaveWorkerOrigin(origin: C
   const original = schematicDisplaySaveWorkers.get(origin); if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue) { throw error("SCHEMATIC_DISPLAY_ORIGINAL_SAVE_WORKER"); }
   requireSchematicArguments(owner, argumentsValue); original.assertOriginal(); return original.bindings;
 }
+export type CurrentProjectSyncQuiesceSetup=(origin:CurrentProjectSyncQuiesceOrigin)=>Promise<void>;
+const projectSyncQuiesceOrigins=new WeakMap<CurrentProjectSyncQuiesceOrigin,Readonly<{owner:object;operation:object;bindings:CurrentProjectSyncQuiesceBindings;assertOriginal:()=>void}>>();
+export function requireOriginalCurrentProjectSyncQuiesceOrigin(origin:CurrentProjectSyncQuiesceOrigin,owner:object,operation:object):CurrentProjectSyncQuiesceBindings {const original=projectSyncQuiesceOrigins.get(origin);if(original===undefined||original.owner!==owner||original.operation!==operation){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_ORIGIN");}original.assertOriginal();return original.bindings;}
 export type CurrentProjectSaveProducerSetup = (origin: CurrentProjectSaveProducerOrigin) => Promise<void>;
 const originalProducerStartupProgress = new WeakMap<CurrentProjectSaveProducerOrigin, Readonly<{ owner: object; operation: object; read: () => CurrentGeneratedStartupProgress }>>();
 export function originalCurrentProjectSaveProducerStartupProgress(origin: CurrentProjectSaveProducerOrigin, owner: object, operation: object): CurrentGeneratedStartupProgress {
@@ -1423,6 +1432,13 @@ class CurrentPcbRetainedOwnerCore {
   #schematicSdkBinding: string | null = null;
   readonly #schematicStages = new Set<GeneratedSchematicDisplayStageResult["stage"]>();
   #viaProjectNavigationDispatchAttempted = false;
+  #viaSyncQuiescePlan:CurrentPcbViaWritePlan|null=null;
+  #viaSyncQuiesceIntent:CurrentPcbViaPollingCancellationIntent|null=null;
+  #viaSyncQuiesceEnrollment:CurrentPcbViaPollingCancellationEnrollment|null=null;
+  #viaSyncQuiesceSetup:CurrentProjectSyncQuiesceSetup|null=null;
+  #viaSyncQuiesceOrigin:CurrentPcbViaProjectSyncQuiesceOrigin|null=null;
+  #viaSyncQuiesceCancelAttempted=false;
+  #viaSyncQuiesceCompleted=false;
   #viaSdkBinding: string | null = null;
   #viaSdkQualified = false;
   #viaFailed = false;
@@ -2961,11 +2977,11 @@ class CurrentPcbRetainedOwnerCore {
     this.#viaTransportOperation = plan; this.#viaTransportSetup = setup;
   }
   public requireViaProducerPrefixReady(plan: CurrentPcbViaWritePlan): CurrentPcbViaSaveProducerPrefix {
-    requireViaPlan(this, plan); const token = this.#viaProducerPrefix; if (token === null) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_READY_REQUIRED"); }
+    this.requireOriginalViaProjectSyncQuiesced(plan); requireViaPlan(this, plan); const token = this.#viaProducerPrefix; if (token === null) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_READY_REQUIRED"); }
     requireOriginalCurrentProjectSaveProducerPrefix(token, this, plan); return token;
   }
   public async enrollViaProducerPrefix(plan: CurrentPcbViaWritePlan): Promise<CurrentPcbViaSaveProducerPrefix> {
-    requireViaPlan(this, plan); const reproof = this.#viaProducerGuardReproof, worker = this.#viaWorkerController;
+    this.requireOriginalViaProjectSyncQuiesced(plan); requireViaPlan(this, plan); const reproof = this.#viaProducerGuardReproof, worker = this.#viaWorkerController;
     if (this.#viaProducerEnrollmentAttempted || this.#viaProducerGuardOperation !== plan || this.#viaProducerOriginalUploadWrapper === null || this.#viaProducerOriginalUploadCallback === null || !this.#viaProducerModeVerified || reproof === null || worker === null || !worker.status().ready || !this.#viaSdkPhases.has("preflight") || this.#viaSdkPhases.has("create") || this.#viaSdkPhases.has("save")) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_UNAVAILABLE"); }
     const initialCursor = this.#viaProducerObservationOrigin === null ? undefined : originalInitialCacheCursors.get(this.#viaProducerObservationOrigin);
     if (initialCursor === undefined || initialCursor.owner !== this || initialCursor.operation !== plan) { throw error("INITIAL_CACHE_ORIGINAL_COMPLETION_REQUIRED"); } initialCursor.cursor().requireCompleted();
@@ -2974,7 +2990,7 @@ class CurrentPcbRetainedOwnerCore {
     const periodic = this.#viaProducerObservationOrigin === null ? undefined : originalPeriodicSyncCursors.get(this.#viaProducerObservationOrigin);
     if (periodic === undefined || periodic.owner !== this || periodic.operation !== plan) { throw error("PERIODIC_SYNC_ORIGINAL_CURSOR_REQUIRED"); } periodic.cursor().requireIdle();
     this.#viaProducerEnrollmentAttempted = true; this.#enter(true);
-    const original = (): void => { requireViaPlan(this, plan); reproof(); if (this.#viaProducerGuardReproof !== reproof || this.#viaWorkerController !== worker || !worker.status().ready || !this.#viaProducerModeVerified) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_CHANGED"); } };
+    const original = (): void => { this.requireOriginalViaProjectSyncQuiesced(plan); requireViaPlan(this, plan); reproof(); if (this.#viaProducerGuardReproof !== reproof || this.#viaWorkerController !== worker || !worker.status().ready || !this.#viaProducerModeVerified) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_CHANGED"); } };
     try { original(); await this.#verify(); original(); const reply = await this.#request({ action: "pcb-via-producer-prefix-enroll" }); original();
       if (!exact(reply, ["enrolled"]) || reply["enrolled"] !== true) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_NATIVE_ACK"); }
       await this.#verify(); original(); const token: CurrentPcbViaSaveProducerPrefix = Object.freeze({ profile: "private.current-pcb-via-save-producer-prefix.v1" });
@@ -2994,6 +3010,13 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#busy || this.#viaStructureSetup !== null || this.#projectOpeningConsumed || this.#viaWorkerController !== null || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true || typeof setup !== "function" || types.isProxy(setup)) { throw error("PROJECT_SAVE_STRUCTURE_ARM_UNAVAILABLE"); }
     this.#viaStructureSetup = setup;
   }
+  /** Deliberate first-timer cancellation. Journal custody predates navigation;
+   * arming does not consume the separate actual native effect attempt. */
+  public armViaProjectSyncQuiesce(plan:CurrentPcbViaWritePlan,intent:CurrentPcbViaPollingCancellationIntent,setup:CurrentProjectSyncQuiesceSetup):void {
+    requireViaPlan(this,plan);this.#available();if(this.#busy||this.#projectOpeningConsumed||this.#viaWorkerController!==null||this.#viaWorkerPlan!==plan||this.#viaStructureSetup===null||this.#viaProducerObservationSetup===null||this.#viaSyncQuiesceSetup!==null||typeof setup!=="function"||types.isProxy(setup)){throw error("PROJECT_SYNC_QUIESCE_ARM_UNAVAILABLE");}
+    const enrollment=enrollCurrentPcbViaPollingCancellationIntent(intent,this,plan);this.#viaSyncQuiescePlan=plan;this.#viaSyncQuiesceIntent=intent;this.#viaSyncQuiesceEnrollment=enrollment;this.#viaSyncQuiesceSetup=setup;
+  }
+  public requireOriginalViaProjectSyncQuiesced(plan:CurrentPcbViaWritePlan):void {requireViaPlan(this,plan);const origin=this.#viaSyncQuiesceOrigin;if(origin===null||!this.#viaSyncQuiesceCompleted){throw error("PROJECT_SYNC_QUIESCE_COMPLETION_REQUIRED");}requireOriginalCurrentProjectSyncQuiesceOrigin(origin,this,plan);}
   public armViaSaveWorker(plan: CurrentPcbViaWritePlan, setup: CurrentPcbViaSaveWorkerSetup): void {
     requireViaPlan(this, plan);
     if (this.#viaWorkerPlan !== null || this.#projectOpeningConsumed || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true ||
@@ -3414,6 +3437,38 @@ class CurrentPcbRetainedOwnerCore {
           originalProducerStartupProgress.set(producerOrigin, Object.freeze({ owner: this, operation: plan, read: (): CurrentGeneratedStartupProgress => { original(); assertProducerOriginal(); return Object.freeze({ initialCache: initialCacheCursor?.startupProgress() ?? null, initialSync: initialSyncCursor?.startupProgress() ?? null, periodicSync: periodicSyncCursor?.startupProgress() ?? null, executionAuthorized: false }); } }));
           await Reflect.apply(producerSetup, undefined, [producerOrigin]); original(); assertProducerOriginal();
           for (const role of CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS) { selected.bindProducerObservationBreakpoint(source, role, selected.originalProducerGuardBreakpoint(source, role)); } selected.sealProducerObservation(source); selected.requireProducerObservationArmed(source);
+        }
+        const quiesceSetup=this.#viaSyncQuiesceSetup;
+        if(quiesceSetup!==null){const intent=this.#viaSyncQuiesceIntent;const enrollment=this.#viaSyncQuiesceEnrollment;if(this.#viaSyncQuiescePlan!==plan||intent===null||enrollment===null||this.#viaSyncQuiesceOrigin!==null||this.#viaProducerObservationOrigin===null){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_ARM");}
+          enrollment.assertBeforeAttempt();const bound=await this.#request({action:"pcb-via-sync-quiesce-bind",context:source.uniqueContextId});original();if(!exact(bound,["bound"])||bound["bound"]!==true){throw error("PROJECT_SYNC_QUIESCE_BIND_ACK");}
+          const quiesceOrigin:CurrentPcbViaProjectSyncQuiesceOrigin=Object.freeze({profile:"private.current-pcb-via-project-sync-quiesce-origin.v1"});
+          let capture:string|null=null,entry:string|null=null,entryMethod:string|null=null,returned:string|null=null,step=0;const natives=new Map<number,string>();const frames=new Map<string,string>();const points=new Map<string,string>();let heldFrame:string|null=null,heldRole:"entry"|"returned"|null=null;
+          const cases=currentProjectSyncQuiesceNativeCases();
+          const quiesceOriginal=():void=>{original();selected.requireOriginal(source,child);enrollment.assertCurrent();if(this.#viaSyncQuiescePlan!==plan||this.#viaSyncQuiesceIntent!==intent||this.#viaSyncQuiesceEnrollment!==enrollment||this.#viaSyncQuiesceSetup!==quiesceSetup||this.#viaSyncQuiesceOrigin!==quiesceOrigin){throw error("PROJECT_SYNC_QUIESCE_CUSTODY_CHANGED");}if(this.#viaSyncQuiesceCancelAttempted){enrollment.assertOriginalAttempted();}else{enrollment.assertBeforeAttempt();}};
+          const quiesceBindings:CurrentProjectSyncQuiesceBindings=Object.freeze({sessionId:child.sessionId,scriptId:source.scriptId,uniqueContextId:source.uniqueContextId,source:source.source,
+            originalProject:():string=>{quiesceOriginal();const project=this.#viaProducerOriginalProject;if(project===null){throw error("PROJECT_SYNC_QUIESCE_CONSTRUCTOR_REQUIRED");}return project;},
+            request:async(input:CurrentProjectSyncQuiesceCommand):Promise<unknown>=>{quiesceOriginal();const command=validateCurrentProjectSyncQuiesceCommand(input),expected=cases[step];if(expected===undefined||command.phase!==expected.phase||("role" in command?command.role:null)!==("role" in expected?expected.role:null)||("index" in command?command.index:null)!==("index" in expected?expected.index:null)){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_SEQUENCE");}
+              if(command.phase==="sync-quiesce-capture"){if(command.params.uniqueContextId!==source.uniqueContextId){throw error("PROJECT_SYNC_QUIESCE_CONTEXT");}selected.expectSetupHelper(source,command.params.functionDeclaration);}
+              if(command.phase==="sync-quiesce-arm"&&command.params.location.scriptId!==source.scriptId){throw error("PROJECT_SYNC_QUIESCE_SCRIPT");}
+              if(command.phase==="sync-quiesce-properties"){let expectedObject=returned;if(command.role==="capture"){expectedObject=capture;}else if(command.role==="entry"){expectedObject=entry;}if(command.params.objectId!==expectedObject){throw error("PROJECT_SYNC_QUIESCE_PROPERTIES");}}
+              if(command.phase==="sync-quiesce-native"&&command.params.objectId!==natives.get(command.index)||command.phase==="sync-quiesce-callee"&&command.params.objectId!==entryMethod){throw error("PROJECT_SYNC_QUIESCE_CALLEE");}
+              if(command.phase==="sync-quiesce-frame"&&(heldRole!==command.role||heldFrame!==command.params.callFrameId)){throw error("PROJECT_SYNC_QUIESCE_FRAME");}
+              if(command.phase==="sync-quiesce-entry"&&(command.params.objectId!==frames.get("entry")||command.params.arguments[0].objectId!==this.#viaProducerOriginalProject||command.params.arguments[1].objectId!==capture)||command.phase==="sync-quiesce-returned"&&(command.params.objectId!==frames.get("returned")||command.params.arguments[0].objectId!==entry)||command.phase==="sync-quiesce-cancel"&&command.params.objectId!==returned){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_JOIN");}
+              if(command.phase==="sync-quiesce-remove-returned"&&command.params.breakpointId!==points.get("returned")){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_POINT");}
+              if(command.phase==="sync-quiesce-resume"&&heldRole!==command.role){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_RESUME");}
+              step+=1;
+              if(command.phase==="sync-quiesce-cancel"){const dispatch=consumeCurrentPcbViaPollingCancellationIntent(intent,this,plan);this.#viaSyncQuiesceCancelAttempted=true;await dispatch.assertPublished();quiesceOriginal();}
+              const raw=await this.#serializeViaObserver(()=>this.#transfer(()=>{quiesceOriginal();if(command.phase==="sync-quiesce-resume"){selected.reserveSyncQuiesceResume(source,command.role);}return pipe.observeViaSyncQuiesce(command);}));quiesceOriginal();
+              if(command.phase==="sync-quiesce-capture"){capture=decodeCurrentFootprintCopyClockRpcV2ArrayCapture(raw,CURRENT_PROJECT_SYNC_QUIESCE_CAPTURE_LENGTH);}
+              else if(command.phase==="sync-quiesce-properties"){let expectedLength=3;if(command.role==="capture"){expectedLength=CURRENT_PROJECT_SYNC_QUIESCE_CAPTURE_LENGTH;}else if(command.role==="entry"){expectedLength=5;}const fields=decodeCurrentProjectSyncQuiesceArray(raw,expectedLength);if(command.role==="capture"){for(let index=1;index<=13;index+=1){natives.set(index,currentFootprintCopyClockRpcV2ArrayObject(fields,index));}}else if(command.role==="entry"){entryMethod=currentFootprintCopyClockRpcV2ArrayObject(fields,1);}else if(currentFootprintCopyClockRpcV2ArrayObject(fields,0)!==entry){throw error("PROJECT_SYNC_QUIESCE_RETURNED_REFERENCE");}}
+              else if(command.phase==="sync-quiesce-frame"){frames.set(command.role,decodeCurrentFootprintCopyClockRpcV2ArrayCapture(raw,1));}
+              else if(command.phase==="sync-quiesce-entry"){entry=decodeCurrentFootprintCopyClockRpcV2ArrayCapture(raw,5);}else if(command.phase==="sync-quiesce-returned"){returned=decodeCurrentFootprintCopyClockRpcV2ArrayCapture(raw,3);}
+              else if(command.phase==="sync-quiesce-arm"){if(!record(raw)||typeof raw["breakpointId"]!=="string"){throw error("PROJECT_SYNC_QUIESCE_POINT_REPLY");}points.set(command.role,raw["breakpointId"]);selected.bindSyncQuiesceBreakpoint(source,command.role,raw["breakpointId"]);}
+              return raw;
+            },nextEvent:async()=>{quiesceOriginal();const event=await selected.nextSyncQuiesceEvent();quiesceOriginal();if(event.method==="Debugger.paused"){if(heldRole!==null||!record(event.params)||!Array.isArray(event.params["hitBreakpoints"])||!Array.isArray(event.params["callFrames"])){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_EVENT");}const top:unknown=event.params["callFrames"][0];let role:"entry"|"returned"|null=null;if(event.params["hitBreakpoints"][0]===points.get("entry")){role="entry";}else if(event.params["hitBreakpoints"][0]===points.get("returned")){role="returned";}if(role===null||!record(top)||typeof top["callFrameId"]!=="string"){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_EVENT");}heldRole=role;heldFrame=top["callFrameId"];}else{heldRole=null;heldFrame=null;}return event;},
+            assertCurrent:async()=>{quiesceOriginal();await this.#verify();quiesceOriginal();},complete:async()=>{quiesceOriginal();if(step!==cases.length||!this.#viaSyncQuiesceCancelAttempted||heldRole!==null){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_COMPLETION");}const result=await this.#request({action:"pcb-via-sync-quiesce-complete"});quiesceOriginal();if(!exact(result,["completed"])||result["completed"]!==true){throw error("PROJECT_SYNC_QUIESCE_COMPLETE_ACK");}selected.completeSyncQuiesce(source);this.#viaSyncQuiesceCompleted=true;},
+            assertOriginalGenerationExited:():Promise<void>=>{requireViaPlan(this,plan);if(!this.#terminationObserved||this.#terminationObservation?.terminated!==true){return Promise.reject(error("PROJECT_SYNC_QUIESCE_EXIT_REQUIRED"));}return Promise.resolve();},fail:()=>{ selected.fail(); }});
+          projectSyncQuiesceOrigins.set(quiesceOrigin,Object.freeze({owner:this,operation:plan,bindings:quiesceBindings,assertOriginal:quiesceOriginal}));this.#viaSyncQuiesceOrigin=quiesceOrigin;await Reflect.apply(quiesceSetup,undefined,[quiesceOrigin]);quiesceOriginal();if(step!==17||points.size!==2){throw error("PROJECT_SYNC_QUIESCE_SETUP_INCOMPLETE");}
         }
       }, releaseParentWait: async () => { original(); const reply = await this.#transfer(() => pipe.configureViaWorkerRunning());
         if (!exact(reply, [])) { throw error("PCB_VIA_WORKER_PARENT_RUNNING_REPLY"); } original(); },

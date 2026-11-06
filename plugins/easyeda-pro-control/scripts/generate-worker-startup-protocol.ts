@@ -1,3 +1,5 @@
+/* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
+import { applyCurrentProjectSyncQuiesceNativeFragment } from "../server/src/current-project-sync-quiesce-native-fragment.ts";
 import { applyCurrentPcbViaLocalUploadNativeFragment } from "../server/src/current-pcb-via-local-upload-native-fragment.ts";
 import { applyCurrentPcbViaSaveGenerationNativeFragment } from "../server/src/current-pcb-via-save-generation-native-fragment.ts";
 import { applyCurrentGeneratedPeriodicSyncNativeFragment } from "../server/src/current-generated-periodic-sync-native-fragment.ts";
@@ -9,7 +11,6 @@ import { applyCurrentProjectSaveProducerGuardNativeFragment } from "../server/sr
 import { applyCurrentPcbViaSavedReadbackNativeFragment, prepareCurrentPcbViaSavedReadbackNativeSwitch } from "../server/src/current-pcb-via-saved-readback-native-fragment.ts";
 import { applyCurrentPcbComponentSpatialNativeFragment, prepareCurrentPcbComponentSpatialNativeSwitch } from "../server/src/current-pcb-component-spatial-native-fragment.ts";
 import { applyCurrentProjectStructureTransportNativeFragment } from "../server/src/current-project-structure-transport-native-fragment.ts";
-/* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
 import { readFile, writeFile } from "node:fs/promises";
 import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES } from "../server/src/current-pcb-diagnostic-helper-source-profile.ts";
 import { currentPcbDiagnosticFixedTableNativeSource } from "../server/src/current-pcb-diagnostic-fixed-table-native.ts";
@@ -136,7 +137,10 @@ export function generateWorkerStartupProtocol(source: string): string {
   next = applyCurrentProjectStructureTransportNativeFragment(applyCurrentSchematicDisplayWriteNativeFragment(applyCurrentPcbViaWriteNativeFragment(next)));
   next = applyCurrentGeneratedInitialCacheNativeFragment(applyCurrentProjectSaveProducerNativeFragment(applyCurrentProjectSaveProducerGuardNativeFragment(next)));
   next = applyCurrentGeneratedInitialSyncNativeFragment(next);
-  next = applyCurrentPcbViaLocalUploadNativeFragment(applyCurrentPcbViaSaveGenerationNativeFragment(applyCurrentGeneratedPeriodicSyncNativeFragment(next)));
+  next = applyCurrentGeneratedPeriodicSyncNativeFragment(next);
+  next = applyCurrentPcbViaSaveGenerationNativeFragment(next);
+  next = applyCurrentPcbViaLocalUploadNativeFragment(next);
+  next = applyCurrentProjectSyncQuiesceNativeFragment(next);
   next = applyCurrentPcbComponentSpatialNativeFragment(next);
   next = applyCurrentPcbViaSavedReadbackNativeFragment(next);
   next = applyCurrentFootprintInverseNativeFragment(next);

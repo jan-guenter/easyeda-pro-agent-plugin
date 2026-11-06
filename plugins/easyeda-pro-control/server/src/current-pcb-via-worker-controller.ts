@@ -1,5 +1,5 @@
 /* oxlint-disable import/max-dependencies -- One original cursor joins independent bootstrap, Save, clock, structure, transport and producer source grammars. */
-import { CURRENT_PROJECT_WORKER_SETUP_HELPER_REQUESTS, qualifyCurrentProjectWorkerSetupHelperSource, requireCurrentProjectWorkerSetupHelper } from "./current-project-worker-setup-helpers.ts";
+import { CURRENT_PCB_VIA_WORKER_SETUP_HELPER_REQUESTS as CURRENT_PROJECT_WORKER_SETUP_HELPER_REQUESTS, qualifyCurrentPcbViaWorkerSetupHelperSource as qualifyCurrentProjectWorkerSetupHelperSource, requireCurrentPcbViaWorkerSetupHelper as requireCurrentProjectWorkerSetupHelper } from "./current-pcb-via-worker-setup-helpers.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_ROLES, CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS } from "./current-project-save-producer-protocol.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_SITES as PRODUCER_SITES } from "./current-project-save-producer-source.ts";
 import type { CurrentProjectSaveProducerRole } from "./current-project-save-producer-source.ts";
@@ -42,6 +42,7 @@ export class CurrentPcbViaWorkerController {
   readonly #setupHelpers: string[] = []; readonly #setupHelperScripts = new Set<string>();
   readonly #events: CurrentPcbViaWorkerBootstrapEvent[] = [];
   readonly #savePoints = new Map<CurrentPcbViaSaveSite, string>();
+  readonly #syncQuiescePoints=new Map<"entry"|"returned",string>(); #syncQuiesceComplete=false;
   readonly #producerGuardPoints = new Map<CurrentProjectSaveProducerGuardRole, string>();
   readonly #producerPoints = new Map<CurrentProjectSaveProducerRole, string>();
   #producerObservationArmed = false;
@@ -174,7 +175,8 @@ export class CurrentPcbViaWorkerController {
     if (typeof event.sessionId === "string" && this.#background.has(event.sessionId)) { return; }
     need(this.#child !== null && event.sessionId === this.#child.sessionId && this.#events.length < 256);
     if (event.method === "Debugger.paused" && record(event.params) && Array.isArray(event.params["hitBreakpoints"])) {
-      const hits: readonly unknown[] = event.params["hitBreakpoints"]; const guard = [...this.#producerGuardPoints].find(([_role, id]) => hits.includes(id));
+      const hits: readonly unknown[] = event.params["hitBreakpoints"];
+      if(this.#syncQuiesceComplete&&hits.includes(this.#syncQuiescePoints.get("entry"))){this.fail();return;} const guard = [...this.#producerGuardPoints].find(([_role, id]) => hits.includes(id));
       if (guard !== undefined && !(this.#producerObservationArmed && CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS.some(role => role === guard[0]))) { this.#producerGuardHeld = guard[0]; throw new Error("PROJECT_SAVE_PRODUCER_GUARD_HELD"); }
     }
     this.#events.push(freezeDeep(structuredClone({ method: event.method, sessionId: event.sessionId, params: event.params })));
@@ -217,6 +219,10 @@ export class CurrentPcbViaWorkerController {
   /** Pure retained barrier. It never infers completion from elapsed time or
    * starts another native poll; the original abort/failure settles false. */
   public async whenOriginalSourceResumed(): Promise<void> { const resumed = await this.#sourceResumed.promise; need(resumed && !this.#failed && this.#result !== null && this.#router !== null); }
+  public bindSyncQuiesceBreakpoint(source:CurrentPcbViaProjectSourceHeld,role:"entry"|"returned",breakpointId:string):void {need(this.#source===source&&this.#result===null&&!this.#syncQuiescePoints.has(role)&&token(breakpointId));this.#syncQuiescePoints.set(role,breakpointId);}
+  public async nextSyncQuiesceEvent():Promise<CurrentPcbViaRoutedEvent>{await this.whenOriginalSourceResumed();return this.#eventRouter().next("quiesce");}
+  public reserveSyncQuiesceResume(source:CurrentPcbViaProjectSourceHeld,role:"entry"|"returned"):void{need(this.#source===source&&this.#child!==null);this.#eventRouter().reserveResume("quiesce",this.#child.sessionId,role);}
+  public completeSyncQuiesce(source:CurrentPcbViaProjectSourceHeld):void{need(this.#source===source&&this.#result!==null&&!this.#syncQuiesceComplete&&this.#syncQuiescePoints.size===2);this.#syncQuiesceComplete=true;}
   public async nextProducerEvent(): Promise<CurrentPcbViaRoutedEvent> { await this.whenOriginalSourceResumed(); return this.#eventRouter().next("producer"); }
   public reserveInitialCacheResume(source: CurrentPcbViaProjectSourceHeld, event: CurrentPcbViaRoutedEvent, role: "headEntry" | "headPromise" | "headSuccess"): void {
     need(this.#source === source && this.#child !== null); this.#eventRouter().reserveInitialCacheResume(event, role);
@@ -272,6 +278,7 @@ export class CurrentPcbViaWorkerController {
     for (const [role, breakpointId] of this.#transportPoints) { const site = TRANSPORT_SITES[role]; router.register("structureTransport", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
     for (const [role, breakpointId] of this.#producerPoints) { const site = PRODUCER_SITES[role]; router.register("producer", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
     this.#router = router;
+    for(const[role,breakpointId]of this.#syncQuiescePoints){router.register("quiesce",{sessionId:child.sessionId,scriptId:this.#source.scriptId,breakpointId,lineNumber:110,columnNumber:role==="entry"?112_810:112_997,role});}
   }
   /** The outer original renderer call drives this, including its still-pending
    * project-open Promise. Nested observer transfers never start a second pump. */

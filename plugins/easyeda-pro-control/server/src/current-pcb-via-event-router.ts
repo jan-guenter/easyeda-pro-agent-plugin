@@ -9,7 +9,7 @@ import type { CurrentPcbViaSaveWorkerEvent } from "./current-pcb-via-save-origin
 
 export type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 export type CurrentPcbViaRoutedEvent = CurrentPcbViaSaveWorkerEvent;
-export type CurrentPcbViaEventLane = "save" | "clock" | "structure" | "structureTransport" | "producer";
+export type CurrentPcbViaEventLane = "quiesce" | "save" | "clock" | "structure" | "structureTransport" | "producer";
 export interface CurrentPcbViaEventPoint { readonly sessionId: string; readonly scriptId: string; readonly breakpointId: string;
   readonly lineNumber: number; readonly columnNumber: number; readonly role: string }
 export interface CurrentPcbViaEventRouterBindings {
@@ -30,8 +30,8 @@ export class CurrentPcbViaEventRouter {
   readonly #points = new Map<string, Readonly<{ lane: CurrentPcbViaEventLane; point: CurrentPcbViaEventPoint }>>();
   readonly #paused = new Map<string, OriginalPausedDelivery>();
   readonly #pauseEvents = new WeakMap<CurrentPcbViaSaveWorkerEvent, OriginalPausedDelivery>();
-  readonly #queues: Record<CurrentPcbViaEventLane, CurrentPcbViaSaveWorkerEvent[]> = { save: [], clock: [], structure: [], structureTransport: [], producer: [] };
-  readonly #reading = { save: false, clock: false, structure: false, structureTransport: false, producer: false };
+  readonly #queues: Record<CurrentPcbViaEventLane, CurrentPcbViaSaveWorkerEvent[]> = { quiesce: [], save: [], clock: [], structure: [], structureTransport: [], producer: [] };
+  readonly #reading = { quiesce: false, save: false, clock: false, structure: false, structureTransport: false, producer: false };
   readonly #resumeRoles = new WeakMap<CurrentPcbViaSaveWorkerEvent, Readonly<{ lane: CurrentPcbViaEventLane; role: string }>>();
   readonly #completedClock = new Set<string>();
   #poll: Promise<boolean> | null = null; #failed = false; #clockUiPending = false; #changed = Promise.withResolvers<true>();
@@ -42,8 +42,8 @@ export class CurrentPcbViaEventRouter {
     handle.parse(bindings.workerSessionId); handle.parse(bindings.uiSessionId); need(bindings.workerSessionId !== bindings.uiSessionId); this.#bindings = bindings; Object.freeze(this);
   }
   public register(lane: CurrentPcbViaEventLane, input: CurrentPcbViaEventPoint): void {
-    need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport" || lane === "producer")); const point = Object.freeze(pointSchema.parse(captureCurrentPcbStringClockReply(input).value));
-    need((point.sessionId === this.#bindings.workerSessionId || lane === "clock" && point.sessionId === this.#bindings.uiSessionId) && this.#points.size < 59);
+    need(!this.#failed && (lane === "quiesce" || lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport" || lane === "producer")); const point = Object.freeze(pointSchema.parse(captureCurrentPcbStringClockReply(input).value));
+    need((point.sessionId === this.#bindings.workerSessionId || lane === "clock" && point.sessionId === this.#bindings.uiSessionId) && this.#points.size < 61);
     const key = `${point.sessionId}\0${point.breakpointId}`;
     need(!this.#points.has(key) && ![...this.#points.values()].some(value => value.point.sessionId === point.sessionId && value.point.scriptId === point.scriptId &&
       value.point.lineNumber === point.lineNumber && value.point.columnNumber === point.columnNumber));
@@ -131,7 +131,7 @@ export class CurrentPcbViaEventRouter {
     if (lane === "clock") { need(!this.#completedClock.has(resumed.role)); this.#completedClock.add(resumed.role); }
   }
   public async next(lane: CurrentPcbViaEventLane): Promise<CurrentPcbViaSaveWorkerEvent> {
-    need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport" || lane === "producer") && !this.#reading[lane]); this.#reading[lane] = true;
+    need(!this.#failed && (lane === "quiesce" || lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport" || lane === "producer") && !this.#reading[lane]); this.#reading[lane] = true;
     try { for (;;) { need(!this.#failed); const event = this.#queues[lane].shift(); if (event !== undefined) { await this.#bindings.assertCurrent(); need(!this.#failed);
       this.#delivered(lane, event); return event; }
       const changed = this.#changed.promise; const allowNativePoll = this.#canPoll(lane); this.#poll ??= this.#pump(allowNativePoll); const dispatched = await this.#poll;

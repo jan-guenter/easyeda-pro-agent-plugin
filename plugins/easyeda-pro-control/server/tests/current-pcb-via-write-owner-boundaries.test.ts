@@ -41,7 +41,7 @@ void test("new SDK wire contains fixed scalars only and cannot be spent by relea
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, functionDeclaration: `${CURRENT_PCB_VIA_WRITE_FUNCTION}\n` } })));
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, awaitPromise: false } })));
   }
-  assert.equal(PROFILE.renderer.total, 3111); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [1109, 41, 1150]);
+  assert.equal(PROFILE.renderer.total, 3140); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [1109, 41, 1150]);
 });
 void test("fixed Via SDK retains its reviewed large-program schema and identical packed bytes", async () => {
   assert.ok(CURRENT_PCB_VIA_WRITE_FUNCTION.length > 16_384); assert.throws(() => captureCurrentPcbStringClockReply({ program: CURRENT_PCB_VIA_WRITE_FUNCTION }));
@@ -87,6 +87,7 @@ void test("matching bootstrap and owner JSON cannot mint original native ownersh
   assert.throws(() => requireCurrentSelectedFileMainSqlFenceBootstrap({ profile: "private.selected-file-main-sql-fence-bootstrap.v1", executionAuthorized: false }, {}));
   const owner = await import("../src/current-pcb-via-write-owner.ts");
   const central = await import("../src/current-pcb-diagnostic-owner.ts");
+  assert.throws(() => central.requireOriginalCurrentProjectSyncQuiesceOrigin({profile:"private.current-pcb-via-project-sync-quiesce-origin.v1"},{},{}), /ORIGINAL/u);
   assert.throws(() => Reflect.apply(central.requireOriginalCurrentPcbViaSaveWorkerOrigin, undefined, [{ profile: "private.current-pcb-via-save-worker-origin.v1" }, {}, {}]), /SAVE_WORKER_ORIGINAL/u);
   assert.throws(() => central.consumeOriginalCurrentProjectStructureBodyReservation({profile:"private.current-project-structure-body-reservation.v1"},{},{}), /ORIGINAL_RESERVATION/u);
   assert.throws(() => central.consumeOriginalCurrentProjectStructureMainPublication({profile:"private.current-project-structure-main-publication.v1"},{},{}), /PUBLICATION_ORIGINAL/u);

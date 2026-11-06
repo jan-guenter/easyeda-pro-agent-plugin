@@ -1,4 +1,4 @@
-import { CURRENT_PROJECT_WORKER_SETUP_HELPER_REQUESTS as SETUP_HELPERS } from "./current-project-worker-setup-helpers.ts";
+import { CURRENT_PCB_VIA_WORKER_SETUP_HELPER_REQUESTS as SETUP_HELPERS } from "./current-pcb-via-worker-setup-helpers.ts";
 /** Fixed cold worker bootstrap vocabulary for the distinct original Via birth.
  * Pure source qualifiers are shared; no existing worker lease is transferable. */
 import { z } from "zod";
