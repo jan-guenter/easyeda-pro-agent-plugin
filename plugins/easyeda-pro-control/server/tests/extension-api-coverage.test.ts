@@ -553,7 +553,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
       assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
       assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
       assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
-      assert.deepEqual(row.routes.map(route => `${route.tool}/${route.selector}`).toSorted(), [`easyeda_control_pcb209_opening/schematic-page-read`, `easyeda_control_sdk_read/${path}`].toSorted());
+      assert.deepEqual(row.routes.map(route => `${route.tool}/${route.selector}`).toSorted(), ["easyeda_control_pcb209_opening/schematic-page-read", `easyeda_control_sdk_read/${path}`, ...(method === "getAll" ? ["easyeda_control_pcb209_opening/generated-schematic/observe-text-wire-bus"] : [])].toSorted());
       const route = row.routes.find(candidate => candidate.tool === "easyeda_control_sdk_read"); assert.ok(route);
       assert.equal(route.tool, "easyeda_control_sdk_read"); assert.equal(route.selector, path);
       assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [1]);
@@ -1325,11 +1325,11 @@ void test("every coverage input-discovery request resolves to an actual strict a
     assert.ok(isRecord(result));
     if (request["action"] === "fixture-import") {
       assert.ok(isRecord(result["requestSchema"])); assert.equal(result["designExecutionAuthorized"], false);
-    } else if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files", "pcb209-ordinary-read", "schematic-page-opening", "schematic-page-read"].includes(String(request["action"]))) {
+    } else if (["generated-schematic-opening", "project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files", "pcb209-ordinary-read", "schematic-page-opening", "schematic-page-read"].includes(String(request["action"]))) {
       assert.ok(isRecord(result["inputSchema"]));
       // The ordinary SCH and 209 opening routes expose their lifecycle union at the root;
       // Existing routes still promise a separate phase schema as well.
-      if (!["project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files", "pcb209-ordinary-read", "schematic-page-opening", "schematic-page-read"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
+      if (!["generated-schematic-opening", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files", "pcb209-ordinary-read", "schematic-page-opening", "schematic-page-read"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
       assert.equal(result["executionAuthorized"], false);
     } else {
       const entries = result["entries"];
