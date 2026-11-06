@@ -122,7 +122,7 @@ type ProducerObserveWireCommand = CurrentProjectSaveProducerCommand & Readonly<{
 type ProducerGuardWireCommand = CurrentProjectSaveProducerGuardCommand & Readonly<{ producerGuardCommand: true }>;
 type StructureTransportWireCommand = CurrentProjectStructureTransportCommand & Readonly<{ structureTransportCommand: true }>;
 type SavedReadbackCacheWire = CurrentPcbViaSavedEarlyActorWire | ReturnType<typeof currentPcbViaSavedReadbackActorWire> | ReturnType<typeof currentPcbViaSavedCacheMetadataWire> | ReturnType<typeof currentPcbViaSavedCacheWire> | ReturnType<typeof currentPcbViaSavedReadbackParentWire>;
-type RequestPhase = "inverse-preflight" | "inverse-register" | "saved-readback-early-actors" | "saved-readback-register" | "initial-sync" | "initial-cache" | "saved-readback-worker" | "saved-readback-load-guard" | "saved-readback-actors" | "saved-readback-cache-guard" | "saved-readback-metadata" | "saved-readback-parent" | "saved-readback-cache" | "producer-observe" | "producer-guard" | "structure-transport" | "schematic-accessor" | "schematic-clock" | "schematic-worker" | "schematic-parent-arm" | "schematic-parent-running" | `schematic-display-${CurrentSchematicDisplayNativePhase}` | "via-clock" | "via-worker" | "via-parent-arm" | "via-parent-running" | "generated-fixture-register" | "renderer-capture209" | "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
+type RequestPhase = "saved-readback-project-preflight" | "saved-readback-open-project" | "inverse-preflight" | "inverse-register" | "saved-readback-early-actors" | "saved-readback-register" | "initial-sync" | "initial-cache" | "saved-readback-worker" | "saved-readback-load-guard" | "saved-readback-actors" | "saved-readback-cache-guard" | "saved-readback-metadata" | "saved-readback-parent" | "saved-readback-cache" | "producer-observe" | "producer-guard" | "structure-transport" | "schematic-accessor" | "schematic-clock" | "schematic-worker" | "schematic-parent-arm" | "schematic-parent-running" | `schematic-display-${CurrentSchematicDisplayNativePhase}` | "via-clock" | "via-worker" | "via-parent-arm" | "via-parent-running" | "generated-fixture-register" | "renderer-capture209" | "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
   `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "visual209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209" |
   `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}` |
   `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}` | `worker-producer-${CurrentPcbStringWorkerProducerCommand["workerProducerPhase"]}` |
@@ -140,7 +140,7 @@ const REQUEST_METHODS = [
 const REQUEST_PHASES = ["inverse-preflight", "inverse-register",
   "spatial-bindings-component", "spatial-read-component",
   "renderer-capture209",
-  "discovery", "frame-owner", "worker-discovery", "worker-state", "project-preflight", "project-open-project", "generated-fixture-register", "saved-readback-register",
+  "discovery", "frame-owner", "worker-discovery", "worker-state", "project-preflight", "project-open-project", "generated-fixture-register", "saved-readback-register", "saved-readback-project-preflight", "saved-readback-open-project",
   "pcb-preflight", "pcb-open-document", "pcb-observe", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "visual209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209", "model-wrapper", "model-properties", "model-handler",
   "model-constructors-diagnostic", "model-constructors-precreate",
   "model-teardrop-callbacks", "model-teardrop-owner",
@@ -300,6 +300,7 @@ class CurrentPcbFixedPipeCore {
   #inverseOriginalSettled = false;
   #savedReadbackLoadEvent: ((event: DiagnosticEvent) => void) | null = null;
   #savedReadbackObservation = false; #savedReadbackRegistrationAttempted = false; #savedReadbackRegistrationPromise: Promise<Reply> | null = null; #savedReadbackRegistrationSlot: Pending | null = null;
+  #savedReadbackOpening = false; readonly #savedReadbackOpeningPhases = new Set<CurrentPcbDiagnosticOpeningPhase>();
   #savedReadbackLoadPair: CurrentPcbViaSavedLoadWorkerPair | null = null; readonly #savedReadbackLoadSlots = new Set<string>();
   #savedReadbackActors = false; #savedReadbackLoadingGuard = false; #savedReadbackGuard = 0; #savedReadbackDiscovery = 0; #savedReadbackPreflight = 0; #savedReadbackCache = 0; #savedReadbackMetadata = 0; #savedReadbackParent = false;
   #savedReadbackEarlyActorStep = 0;
@@ -741,6 +742,18 @@ class CurrentPcbFixedPipeCore {
     this.#savedReadbackRegistrationAttempted = true;
     return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn", params: diagnosticGeneratedFixtureRegistrationParams(uniqueContextId, target), sessionId: this.#sessionId }, "saved-readback-register", retain);
   }
+  public bindSavedReadbackOpening(): void {
+    if (!this.#savedReadbackPurpose || this.#savedReadbackOpening || this.#savedReadbackRegistrationSlot === null || this.#pending !== null || this.#savedReadbackLoadPair !== null || this.#failure !== null) { throw new Error("SAVED_READBACK_OPENING_ONCE"); }
+    this.#savedReadbackOpening = true;
+  }
+  public observeSavedReadbackOpening(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget, phase: CurrentPcbDiagnosticOpeningPhase): Promise<Reply> {
+    if (!this.#savedReadbackPurpose || !this.#savedReadbackOpening || this.#sessionId === null || this.#savedReadbackOpeningPhases.has(phase) || phase === "open-project" && !this.#savedReadbackOpeningPhases.has("preflight")) { throw new Error("SAVED_READBACK_OPENING_ORDER"); }
+    this.#savedReadbackOpeningPhases.add(phase);
+    return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn", params: diagnosticOpeningParams(uniqueContextId, target, phase), sessionId: this.#sessionId }, phase === "preflight" ? "saved-readback-project-preflight" : "saved-readback-open-project");
+  }
+  public requireOriginalSavedReadbackOpeningPending(): void {
+    if (!this.#savedReadbackPurpose || !this.#savedReadbackOpening || !this.#savedReadbackOpeningPhases.has("open-project") || this.#viaRetainedPending === null || this.#failure !== null) { throw new Error("SAVED_READBACK_ORIGINAL_OPENING_PENDING"); }
+  }
   public requireOriginalSavedReadbackRegistrationPending(pending: Promise<unknown>): void {
     if (!this.#savedReadbackPurpose || this.#failure !== null || pending !== this.#savedReadbackRegistrationPromise || this.#savedReadbackRegistrationSlot === null || this.#pending !== this.#savedReadbackRegistrationSlot && this.#viaRetainedPending !== this.#savedReadbackRegistrationSlot) { throw new Error("SAVED_READBACK_ORIGINAL_REGISTRATION_PENDING"); }
   }
@@ -1021,6 +1034,7 @@ class CurrentPcbFixedPipeCore {
       if (!discovery && !opening) { throw new Error("FOOTPRINT_INVERSE_FINITE_PIPE_ONLY"); }
     }
     if (this.#savedReadbackPurpose) {
+      const opening = this.#savedReadbackOpening && (phase === "saved-readback-project-preflight" || phase === "saved-readback-open-project") && command.method === "Runtime.callFunctionOn";
       const registration = phase === "saved-readback-register" && command.method === "Runtime.callFunctionOn";
       const worker = phase === "saved-readback-worker" && "savedReadbackWorker" in command && command.savedReadbackWorker;
       const cache = phase === "saved-readback-cache" && "savedReadbackCache" in command && command.savedReadbackCache;
@@ -1031,14 +1045,14 @@ class CurrentPcbFixedPipeCore {
       const preflight = phase === "project-preflight" && command.method === "Runtime.callFunctionOn";
       const discovery = (phase === "discovery" || phase === "frame-owner") && CURRENT_PCB_SPATIAL_DISCOVERY_METHODS.some(method => method === command.method);
       const early = phase === "saved-readback-early-actors" && "savedReadbackEarlyActors" in command && this.#savedReadbackEarlyActorEvent !== null && this.#sessionId === null;
-      if (!early && !registration && !worker && !cache && !metadata && !parent && !preflight && !guard && !loadGuard && !discovery) { throw new Error("SAVED_READBACK_DISCOVERY_ONLY"); }
+      if (!early && !opening && !registration && !worker && !cache && !metadata && !parent && !preflight && !guard && !loadGuard && !discovery) { throw new Error("SAVED_READBACK_DISCOVERY_ONLY"); }
       if (worker) { if (this.#savedReadbackLoadSlots.size > 22 + CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.loadingObservation) { throw new Error("SAVED_READBACK_LOAD_WORKER_BUDGET"); } }
       else if (metadata) { if (this.#savedReadbackMetadata >= CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.nativeMetadata) { throw new Error("SAVED_READBACK_METADATA_BUDGET"); } this.#savedReadbackMetadata += 1; }
       else if (cache) { if (this.#savedReadbackCache >= 36) { throw new Error("SAVED_READBACK_CACHE_BUDGET"); } this.#savedReadbackCache += 1; }
       else if (loadGuard) { if (this.#savedReadbackLoadingGuard) { throw new Error("SAVED_READBACK_LOAD_GUARD_CONSUMED"); } this.#savedReadbackLoadingGuard = true; }
       else if (guard) { if (this.#savedReadbackGuard >= 2) { throw new Error("SAVED_READBACK_GUARD_CONSUMED"); } this.#savedReadbackGuard += 1; }
       else if (preflight) { if (this.#savedReadbackPreflight !== 0) { throw new Error("SAVED_READBACK_PREFLIGHT_CONSUMED"); } this.#savedReadbackPreflight += 1; }
-      else if (!parent && !registration && !early) { if (this.#savedReadbackDiscovery >= 24 + 3 * (8 + 1)) { throw new Error("SAVED_READBACK_DISCOVERY_BUDGET"); } this.#savedReadbackDiscovery += 1; }
+      else if (!parent && !registration && !early && !opening) { if (this.#savedReadbackDiscovery >= 24 + 3 * (8 + 1) + (this.#savedReadbackOpening ? 12 : 0)) { throw new Error("SAVED_READBACK_DISCOVERY_BUDGET"); } this.#savedReadbackDiscovery += 1; }
     } else if ("savedReadbackCache" in command) { throw new Error("SAVED_READBACK_CACHE_PURPOSE"); }
     const spatial = (this.#spatialPurpose || this.#componentSpatialPurpose) && "spatialPhase" in command && phase.startsWith("spatial-");
     if ((this.#spatialPurpose || this.#componentSpatialPurpose) && !(spatial && command.method === "Runtime.releaseObjectGroup") &&
@@ -1062,8 +1076,8 @@ class CurrentPcbFixedPipeCore {
     }
     if (this.#schematicDisplayPurpose && !("schematicDisplayPhase" in command && phase === `schematic-display-${command.schematicDisplayPhase}` || "schematicWorkerParentPhase" in command && ["schematic-parent-arm", "schematic-parent-running"].includes(phase) || "schematicWorkerCommand" in command && phase === "schematic-worker" || "schematicClockCommand" in command && phase === "schematic-clock" || "schematicAccessorCommand" in command && phase === "schematic-accessor" || "structureTransportCommand" in command && phase === "structure-transport" || "initialSyncCommand" in command && phase === "initial-sync" || "initialCacheCommand" in command && phase === "initial-cache" || "producerObserveCommand" in command && phase === "producer-observe" || "producerGuardCommand" in command && phase === "producer-guard") && !CURRENT_SCHEMATIC_DISPLAY_DISCOVERY_METHODS.includes(command.method)) { throw new Error("SCHEMATIC_DISPLAY_DISCOVERY_ONLY"); }
     if (this.#failure !== null) { throw failureError(this.#failure); }
-    const viaRetained = this.#viaPurpose && ["via-sdk-save", "project-open-project", "pcb-open-document"].includes(phase) || this.#schematicDisplayPurpose && ["schematic-display-navigate", "schematic-display-save"].includes(phase);
-    if (this.#viaRetainedPending !== null && (viaRetained || !(this.#viaPurpose && ["via-clock", "via-worker", "via-parent-running", "structure-transport", "initial-sync", "initial-cache", "producer-observe", "producer-guard"].includes(phase) || this.#schematicDisplayPurpose && ["schematic-worker", "schematic-clock", "schematic-parent-running", "structure-transport", "initial-sync", "initial-cache", "producer-observe", "producer-guard"].includes(phase) || phase === "discovery" && command.method === "Debugger.getScriptSource"))) { throw new Error("PCB_VIA_RETAINED_PENDING_SCOPE"); }
+    const viaRetained = this.#savedReadbackPurpose && phase === "saved-readback-open-project" || this.#viaPurpose && ["via-sdk-save", "project-open-project", "pcb-open-document"].includes(phase) || this.#schematicDisplayPurpose && ["schematic-display-navigate", "schematic-display-save"].includes(phase);
+    if (this.#viaRetainedPending !== null && (viaRetained || !(this.#viaPurpose && ["via-clock", "via-worker", "via-parent-running", "structure-transport", "initial-sync", "initial-cache", "producer-observe", "producer-guard"].includes(phase) || this.#schematicDisplayPurpose && ["schematic-worker", "schematic-clock", "schematic-parent-running", "structure-transport", "initial-sync", "initial-cache", "producer-observe", "producer-guard"].includes(phase) || this.#savedReadbackPurpose && phase === "saved-readback-worker" || phase === "discovery" && command.method === "Debugger.getScriptSource"))) { throw new Error("PCB_VIA_RETAINED_PENDING_SCOPE"); }
     if (this.#pending !== null) { throw new Error("PCB_DIAGNOSTIC_PIPE_REQUEST_PENDING"); }
     let limit = this.#stringPurpose ? CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT : DIAGNOSTIC_REQUEST_LIMIT;
     if (this.#heldCacheDiagnosticPurpose) { limit = HELD_DIAGNOSTIC.requestLimit; }
@@ -1071,6 +1085,7 @@ class CurrentPcbFixedPipeCore {
     if (this.#componentSpatialPurpose) { limit = CURRENT_PCB_COMPONENT_SPATIAL_PROFILE.requestLimit; }
     if (this.#savedReadbackPurpose) {
       if (this.#savedReadbackObservation) { limit = CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeLoadObservation; }
+      else if (this.#savedReadbackOpening && this.#savedReadbackLoadPair === null) { limit = CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeOpening; }
       else if (this.#savedReadbackLoadPair === null) { limit = this.#savedReadbackRegistrationAttempted ? CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeRegistration : CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeReadOnly; }
       else { limit = CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeLoadBootstrap; }
     }

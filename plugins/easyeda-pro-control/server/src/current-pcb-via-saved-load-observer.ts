@@ -5,6 +5,7 @@ import { z } from "zod";
 import { CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_PROFILES as CACHE_PROFILES, decodeCurrentNativeCacheResponseIntrinsic } from "./current-native-cache-response-intrinsics.ts";
 import { CURRENT_NATIVE_FETCH_BYTES_PROFILES as BYTES_PROFILES, decodeCurrentNativeFetchBytesIntrinsic } from "./current-native-fetch-bytes-intrinsics.ts";
 import { decodeCurrentFootprintCopyClockRpcV2ArrayCapture as captureArray, decodeCurrentFootprintCopyClockRpcV2Array as decodeArray, currentFootprintCopyClockRpcV2ArrayObject as reference } from "./current-footprint-copy-clock-rpc-v2-protocol.ts";
+import { captureCurrentPcbViaSavedLoadData } from "./current-pcb-via-saved-load-capture.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_PCB_VIA_SAVED_LOAD_CALL_FLAGS as FLAGS, CURRENT_PCB_VIA_SAVED_LOAD_FRAME_FLAGS as FRAME_FLAGS,
   CURRENT_PCB_VIA_SAVED_LOAD_INTRINSIC_CALLS as INTRINSICS, CURRENT_PCB_VIA_SAVED_LOAD_ARRAY_LENGTHS as LENGTHS, CURRENT_PCB_VIA_SAVED_LOAD_OBSERVATION_REQUESTS as REQUESTS, validateCurrentPcbViaSavedLoadObservationCommand } from "./current-pcb-via-saved-load-observation-protocol.ts";
@@ -64,7 +65,7 @@ export class CurrentPcbViaSavedLoadObserver {
     await this.#current(); validateCurrentPcbViaSavedLoadObservationCommand(command);
     if (command.phase === "saved-observe-resume" || command.phase === "saved-observe-start-project") { this.#continuation += 1; need(this.#continuation <= REQUESTS.continuation); }
     else { this.#normal += 1; need(this.#normal + this.#helpers <= REQUESTS.normal); }
-    const reply = captureCurrentPcbStringClockReply(await this.#bindings.request(command)).value; await this.#current();
+    const reply = captureCurrentPcbViaSavedLoadData(await this.#bindings.request(command)); await this.#current();
     if (command.method === "Runtime.callFunctionOn" || command.method === "Debugger.evaluateOnCallFrame") {
       const source = command.method === "Runtime.callFunctionOn" ? `(${command.params.functionDeclaration})` : command.params.expression;
       await this.#bindings.helper(source); await this.#current(); this.#helpers += 1; need(this.#helpers <= REQUESTS.helperSources && this.#normal + this.#helpers <= REQUESTS.normal);

@@ -14,6 +14,8 @@ import type { CurrentNativeFunctionProfile } from "../src/current-native-functio
 import { CURRENT_PCB_VIA_SAVED_LOAD_OBSERVATION_REQUESTS as BUDGET, currentPcbViaSavedLoadObservationCases, validateCurrentPcbViaSavedLoadObservationCommand } from "../src/current-pcb-via-saved-load-observation-protocol.ts";
 import type { CurrentPcbViaSavedLoadObservationCommand } from "../src/current-pcb-via-saved-load-observation-protocol.ts";
 import type { CurrentPcbViaSavedLoadObserver, CurrentPcbViaSavedLoadObserverBindings } from "../src/current-pcb-via-saved-load-observer.ts";
+import { captureCurrentPcbStringClockReply } from "../src/current-pcb-string-clock-reply.ts";
+import { captureCurrentPcbViaSavedLoadData } from "../src/current-pcb-via-saved-load-capture.ts";
 import { CURRENT_PCB_VIA_SAVED_LOAD_CALLS as PROGRAMS } from "../src/current-pcb-via-saved-load-programs.ts";
 import type { CurrentPcbViaSavedLoadData } from "../src/current-pcb-via-saved-load-plan.ts";
 import { CURRENT_PCB_VIA_SAVED_LOAD_FLOW_METHODS as FLOW, CURRENT_PCB_VIA_SAVED_LOAD_SITES as SITES } from "../src/current-pcb-via-saved-load-source.ts";
@@ -26,7 +28,7 @@ function fixtureData(): CurrentPcbViaSavedLoadData {
   const documentUuid = "d".repeat(32), historyUuid = "e".repeat(32), projectUuid = "a".repeat(64);
   return freezeDeep({ projectUuid, branchUuid: "b".repeat(32), documentUuid, headHistoryUuid: historyUuid, sourceSha256: hash("source"), logicalSha256: hash("logical"), projectionSourceSha256: hash("projection"),
     histories: [{ uuid: historyUuid, num: 1, key: "0".repeat(32), iv: historyUuid, dataStrUrl: `/api/v4/histories/dataStr?path=${projectUuid}&uuid=${historyUuid}` }],
-    chunks: ([0, 1] as const).map(ordinal => { const cipher = Buffer.from(`cipher-${String(ordinal)}`), dataUuid = ordinal === 0 ? historyUuid : `${historyUuid}-1`;
+    chunks: ([0, 1] as const).map(ordinal => { const cipher = Buffer.from(`cipher-${String(ordinal)}`.repeat(128)), dataUuid = ordinal === 0 ? historyUuid : `${historyUuid}-1`;
       const plaintext = `{"type":"EDIT_HEAD"}||{"actor":"synthetic-${String(ordinal)}"}|\n{"type":"DOCHEAD"}||{"uuid":"${documentUuid}","docType":"PCB"}|\n{"type":"VIA"}||{"id":"${String(ordinal)}"}|\n`;
       return { historyUuid, ordinal, dataUuid, fetchUrl: `/api/v4/histories/dataStr?path=${projectUuid}&uuid=${dataUuid}`, keyHex: "0".repeat(32), dataBase64: cipher.toString("base64"), cipherSha256: hash(cipher), plaintext, plaintextSha256: hash(plaintext) }; }),
     nativeLoadingVerified: false, cacheExclusionVerified: false, reopenedVerified: false });
@@ -138,4 +140,13 @@ const response=Object.create(Response.prototype),buffer=new Uint8Array([0,255,42
   assert.equal(runInContext("invoked", context), 0);
   runInContext('Object.defineProperty(PROJECT,"uuid",{get:function(){invoked++;throw Error("application")},configurable:true})', context);
   assert.throws(() => runInContext(`(${PROGRAMS.branch}).call([PROJECT,"branch","head"],cache,bytes,PROJECT)`, context)); assert.equal(runInContext("invoked", context), 0);
+});
+
+void test("saved cipher-array capture keeps clock limits intact and rejects oversized arrays, getters and Proxy traps", () => {
+  const packet = { result: { type: "object", value: { bytes: Array.from({ length: 8192 }, () => 1) } } };
+  assert.doesNotThrow(() => captureCurrentPcbViaSavedLoadData(packet)); assert.throws(() => captureCurrentPcbStringClockReply(packet));
+  assert.throws(() => captureCurrentPcbViaSavedLoadData({ bytes: Array.from({ length: 8193 }, () => 1) }));
+  let invoked = 0; const getter = Object.defineProperty({}, "result", { enumerable: true, get: (): unknown => { invoked += 1; return {}; } });
+  assert.throws(() => captureCurrentPcbViaSavedLoadData(getter));
+  assert.throws(() => captureCurrentPcbViaSavedLoadData({ result: new Proxy({}, { ownKeys: (): string[] => { invoked += 1; return []; } }) })); assert.equal(invoked, 0);
 });

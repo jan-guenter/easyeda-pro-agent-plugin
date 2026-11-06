@@ -3,7 +3,7 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { canonicalJson } from "./core.ts";
-import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { captureCurrentPcbViaSavedLoadData } from "./current-pcb-via-saved-load-capture.ts";
 import type { CurrentPcbViaSavedLoadData } from "./current-pcb-via-saved-load-plan.ts";
 import { CURRENT_PCB_VIA_SAVED_LOAD_SITES as SITES } from "./current-pcb-via-saved-load-source.ts";
 import type { CurrentPcbViaSavedLoadRole } from "./current-pcb-via-saved-load-source.ts";
@@ -54,7 +54,7 @@ export class CurrentPcbViaSavedLoadProgress {
     need(!this.#failed);
     try {
       const count = (this.#counts.get(role) ?? 0) + 1; need(count <= SITES[role].count); this.#counts.set(role, count);
-      const reply = object(captureCurrentPcbStringClockReply(input).value); exact(reply, ["result"]); const remote = object(reply["result"]); exact(remote, ["type", "value"]); need(remote["type"] === "object"); const value = object(remote["value"]);
+      const reply = object(captureCurrentPcbViaSavedLoadData(input)); exact(reply, ["result"]); const remote = object(reply["result"]); exact(remote, ["type", "value"]); need(remote["type"] === "object"); const value = object(remote["value"]);
       if (role === "branch") { need(this.#stage === "branch"); exact(value, ["project", "branchUuid", "historyUuid"]); this.#project(value["project"], role); need(value["branchUuid"] === this.#data.branchUuid && value["historyUuid"] === this.#data.headHistoryUuid); this.#stage = "cold"; return; }
       if (role === "cold") { need(this.#stage === "cold"); exact(value, ["project", "emptyLocalIndex"]); this.#project(value["project"], role); need(value["emptyLocalIndex"] === true); this.#stage = "histories"; return; }
       if (role === "histories" || role === "parsed") {

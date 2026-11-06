@@ -764,3 +764,45 @@ The synthetic main seam supplies no actual SQL or connected proof. Final combine
 native compilation remains with the parent's complete source integration.
 Initial actors and actual UI project opening/runtime comparison still block a
 saved/reopened result; no live registration, cache invalidation or Save occurred.
+
+
+The original saved reader now offers one fixed UI project opening after its own
+registration completes. The SDK Promise remains in its own original pipe slot
+while a second serialized slot services the same fresh worker's seven-source
+bootstrap, intrinsic qualification and cold-loading observation. The same owner
+pumps both; no writer controller, new event reader or replacement worker is used.
+Native worker binding additionally requires that original UI dispatch. Its source
+and body observations must finish before the opening result can be retained.
+
+Opening reserves sixteen CDP calls: twelve original parent/ancillary reads, two
+fixed SDK calls and their two exact helper sources. Before the later early-actor
+prefix, the saved renderer bounds are190 through opening admission,212 through
+source hold,347 through loading and437 total. Initial actors, runtime DTO/full
+scene comparison and final original-owner closed proof remain separate gates.
+
+Integration refused two incompatible reused clock bounds before any live call:
+the existing opening program is17003 bytes and cipher arrays can exceed256
+entries. Saved native wire JSON now uses its own fixed64KiB frame comparison;
+a new saved-load-only capture admits at most8192 array entries/16384 cells and
+131072 serialized bytes. The smaller original clock capture is unchanged. The
+production collector test now carries1024-byte cipher chunks. A first synthetic
+opening test run failed its generated path identity, then waited on an unreachable
+fixture notification; that own synthetic test worker was normally canceled.
+The corrected bounded race and final25-case production-owner/pipe/collector run
+passed, including original SDK/worker out-of-order replies, lost write ACK, and
+original Job abort during a pending fresh-worker opening. New capture boundary
+regressions separately reject oversized arrays, getters and Proxy traps.
+
+Native observation generation now derives its pre-resume arm roster from the
+same immutable packed codebook and proves the sum of all one-use slot maxima is
+135. Per-slot limits plus that exact completed count replace a redundant second
+literal roster; encoded CDP messages and old-purpose limits are unchanged.
+Types and strict changed-file lint pass. Combined C# compilation and live timing
+remain the parent's later source freeze obligations; no native app was launched.
+
+
+Measured against the registration checkpoint7245213a on the same generator
+inputs, the complete emitted helper changes from1963670 to1963465 bytes: a net
+reduction of205 bytes after adding the opening hooks and sharing the fixed
+observation roster. Repeat generation is byte-identical. This measurement is
+separate from the parent's combined early-actor/inverse/periodic source graph.
