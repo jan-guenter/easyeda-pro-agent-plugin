@@ -1,5 +1,6 @@
 /** Private saved/reopened workflow. Constructor data cannot supply an owner,
  * function table, session, target selector or replacement generation. */
+import { canonicalJson } from "./core.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { setTimeout as delay } from "node:timers/promises";
 import { selectCurrentPcb209StartPage, selectCurrentPcb209StartPageFrame } from "./current-pcb-209-start-page-selection.ts";
@@ -30,7 +31,8 @@ export class CurrentPcbViaSavedReadbackWorkflow {
   #owner: CurrentPcbViaSavedReadbackOwner | null = null;
   #factory: Promise<CurrentPcbViaSavedReadbackOwner> | null = null; #factorySettled = false;
   #execution: Promise<CurrentPcbViaSavedReadbackWorkflowResult> | null = null;
-  #cleanup: Promise<void> | null = null; #abort: Promise<void> | null = null; #release: Promise<void> | null = null;
+  #cleanup: Promise<void> | null = null; #cleanupSettled = false; #cleanupExitWaitExhausted = false;
+  #cleanupBinding: string | null = null; #settlement: Promise<void> | null = null; #abort: Promise<void> | null = null; #release: Promise<void> | null = null;
   #pending: Promise<unknown> | null = null; #stage = "prepared"; #failed = false; #aborted = false;
   #closed = false; #normalClose = false; #cleanupComplete = false;
   #capture: CurrentPcbViaSavedReadbackClosedCapture | null = null;
@@ -43,7 +45,7 @@ export class CurrentPcbViaSavedReadbackWorkflow {
   public inspect(): Readonly<Record<string, unknown>> {
     return Object.freeze({ schema: "private.current-pcb-via-saved-readback-workflow-status.v1", operationId: this.#prepared.operationId,
       stage: this.#stage, started: this.#execution !== null, pending: this.#pending !== null || this.#factory !== null && !this.#factorySettled, failed: this.#failed, abortAttempted: this.#abort !== null,
-      originalClosureObserved: this.#closed, normalCloseAttempted: this.#normalClose, cleanupComplete: this.#cleanupComplete,
+      originalClosureObserved: this.#closed, cleanupSettled: this.#cleanupSettled, cleanupExitWaitExhausted: this.#cleanupExitWaitExhausted, settlementAttempted: this.#settlement !== null, normalCloseAttempted: this.#normalClose, cleanupComplete: this.#cleanupComplete,
       allocation: currentPcbViaSavedReadbackAllocationOutcome(this.#prepared).state,
       owner: this.#owner?.status() ?? null, capture: this.#capture?.status() ?? null,
       persistenceVerified: this.#result !== null, reopenedVerified: this.#result !== null, executionAuthorized: false });
@@ -66,6 +68,7 @@ export class CurrentPcbViaSavedReadbackWorkflow {
       if (terminated) { this.#current(owner, cleanup); originalCurrentPcbViaSavedReadbackTermination(owner); this.#closed = true; return; }
       this.#current(owner, cleanup); if (index + 1 < EXIT.observations) { await delay(EXIT.delayMilliseconds); }
     }
+    if (cleanup) { this.#cleanupExitWaitExhausted = true; }
     throw new Error("SAVED_WORKFLOW_ORIGINAL_EXIT_NOT_OBSERVED");
   }
   async #releaseClosed(owner: CurrentPcbViaSavedReadbackOwner): Promise<void> {
@@ -163,6 +166,9 @@ export class CurrentPcbViaSavedReadbackWorkflow {
           this.#cleanupComplete = true; return;
         }
       }
+      const binding = owner.status().binding;
+      if (binding === null || this.#cleanupBinding !== null && this.#cleanupBinding !== canonicalJson(binding)) { throw new Error("SAVED_WORKFLOW_ORIGINAL_CLEANUP_BINDING"); }
+      this.#cleanupBinding = canonicalJson(binding);
       if (!this.#closed) {
         if (this.#abort === null) { this.#aborted = true; this.#abort = owner.abortSavedReadback(true); }
         await this.#abort;
@@ -176,12 +182,13 @@ export class CurrentPcbViaSavedReadbackWorkflow {
         // Join every original operation before releasing its helper.
       } }
       await this.#releaseClosed(owner);
-    })(); this.#cleanup = cleanup; return cleanup;
+    })();
+    const retained = (async (): Promise<void> => { try { await cleanup; } finally { this.#cleanupSettled = true; } })(); this.#cleanup = retained; return retained;
   }
   public abort(confirmOriginalJobOnly: true): Promise<void> {
     // oxlint-disable-next-line typescript/no-unnecessary-boolean-literal-compare -- The runtime caller must explicitly confirm this original Job-only cleanup.
     if (confirmOriginalJobOnly !== true) { throw new Error("SAVED_WORKFLOW_ORIGINAL_JOB_CONFIRMATION"); }
-    this.#aborted = true; return this.#cleanupOriginal();
+    this.#aborted = true; return this.#settlement ?? this.#cleanupOriginal();
   }
   public requireOriginalResult(result: CurrentPcbViaSavedReadbackWorkflowResult): CurrentPcbViaSavedReadbackWorkflowResult {
     const owner = this.#owner;
@@ -189,8 +196,26 @@ export class CurrentPcbViaSavedReadbackWorkflow {
     this.#current(owner, true); requireOriginalCurrentPcbViaSavedReadbackClosedProof(result.proof, owner, result.model);
     if (!owner.status().released || !owner.status().helperClosed) { throw new Error("SAVED_WORKFLOW_ORIGINAL_HELPER_NOT_CLOSED"); } return result;
   }
-  /** Rejoins original cleanup; no control, release or opening action is retried. */
-  public settleCleanup(): Promise<void> { return this.#cleanup ?? Promise.reject(new Error("SAVED_WORKFLOW_CLEANUP_NOT_SUBMITTED")); }
+  /** Only a privately recorded exhausted cleanup wait admits one further
+   * bounded read-only round. Consumed controls are never reconstructed. */
+  public settleCleanup(): Promise<void> {
+    const cleanup = this.#cleanup;
+    if (cleanup === null) { return Promise.reject(new Error("SAVED_WORKFLOW_CLEANUP_NOT_SUBMITTED")); }
+    if (this.#settlement !== null) { return this.#settlement; }
+    if (!this.#cleanupSettled || !this.#cleanupExitWaitExhausted) { return cleanup; }
+    const binding = this.#cleanupBinding, owner = this.#owner;
+    if (owner === null || binding === null) { return Promise.reject(new Error("SAVED_WORKFLOW_ORIGINAL_SETTLEMENT_BINDING")); }
+    const settlement = (async (): Promise<void> => {
+      try { await cleanup; } catch {
+        // Preserve the original failed operation and its exhausted wait.
+      }
+      const current = (): void => { this.#current(owner, true);
+        if (this.#owner !== owner || this.#cleanupBinding !== binding || canonicalJson(owner.status().binding) !== binding) { throw new Error("SAVED_WORKFLOW_ORIGINAL_SETTLEMENT_BINDING"); } };
+      current(); await this.#observeExit(owner, true); current();
+      await this.#releaseClosed(owner); current();
+      // No result or data proof is issued from cleanup settlement.
+    })(); this.#settlement = settlement; return settlement;
+  }
 }
 export function requireOriginalCurrentPcbViaSavedReadbackWorkflowResult(result: CurrentPcbViaSavedReadbackWorkflowResult,
   workflow: CurrentPcbViaSavedReadbackWorkflow): CurrentPcbViaSavedReadbackWorkflowResult {
