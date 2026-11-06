@@ -1,5 +1,6 @@
 /** Fixed clock extension of the existing original SCH birth only. */
 import { installNativeCompileOnlyHook } from "./native-compile-only-hook.ts";
+import { installOwnedNativeDispatch } from "./native-owned-dispatch.ts";
 import { currentSchematicDisplayClockNativeSource } from "./current-schematic-display-clock-native.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_CLOCK_REQUESTS as REQUESTS } from "./current-schematic-display-clock-protocol.ts";
 
@@ -40,7 +41,7 @@ const dispatch = String.raw`        'schematic-display-clock-bind' {
 `;
 export function applyCurrentSchematicDisplayClockNativeFragment(input: string): string {
   let source = one(input, 'case "schematic-display-worker-prepare":case "schematic-display-worker-bind":case "schematic-display-worker-parent":case "schematic-display-worker":case "schematic-display-native":', 'case "schematic-display-clock-bind":case "schematic-display-clock":case "schematic-display-worker-prepare":case "schematic-display-worker-bind":case "schematic-display-worker-parent":case "schematic-display-worker":case "schematic-display-native":');
-  source = one(source, "        'schematic-display-worker-prepare' {", `${dispatch}        'schematic-display-worker-prepare' {`);
+  source = installOwnedNativeDispatch(source, dispatch, "        'schematic-display-worker-prepare' {");
   source = installNativeCompileOnlyHook(source, "    [EasyedaDiagnosticOwner]::VerifySchematicDisplayClockSmoke()", "    [EasyedaDiagnosticOwner]::VerifySchematicDisplayWorkerSmoke()");
   const start = source.indexOf(begin), stop = source.indexOf(end);
   if (start !== -1 || stop !== -1) { if (start === -1 || stop < start || source.includes(begin, start + begin.length) || source.includes(end, stop + end.length)) { throw new Error("SCHEMATIC_DISPLAY_CLOCK_NATIVE_MARKERS"); } source = source.slice(0, start) + native() + source.slice(stop + end.length); }

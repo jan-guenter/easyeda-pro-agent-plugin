@@ -63,3 +63,8 @@ duplicate branches and ambiguous anchors refuse. Four focused compile-hook and
 dispatcher composition checks pass, with strict targeted lint. Full generation
 idempotence and actual Windows compilation remain pending for the combined
 candidate.
+
+The full next check found the same adjacency assumption in the clock and
+accessor dispatchers. Its exact generated difference is retained separately.
+Those two insertions now use the same exact-block composition helper. No failed
+candidate was selected, and the observed failures grant no runtime authority.
