@@ -64,7 +64,8 @@ After original cleanup completes, `capture-closed-import` with
 `confirmReadClosedFixture:true` retains the complete initial SQL and raw native
 source while the original destination handles remain held. A failed
 qualification preserves its report and partial file; it permits no replay.
-The schematic scenario uses its own complete initial SQL/source qualification
+Follow [the generated schematic workflow](generated-schematic-opening.md) for
+the distinct SCH route. The schematic scenario uses its own complete initial SQL/source qualification
 and target with separate schematic/page identities. Its target cannot enter
 the PCB opening route. Its separate `stage-schematic-for-fresh-opening` action
 retains the original data token for a new original ordinary runtime. The

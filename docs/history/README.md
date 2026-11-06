@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 generated schematic index mount](2026-11-06-generated-schematic-index-mount.md). Reachable separate SCH token and original ordinary-runtime route, source/API queries, exclusive custody and cleanup gates; connected acceptance pending.
+
 - [2026-11-06 current Node paired hash](2026-11-06-current-node-paired-hash.md). Removes one redundant full executable read while preserving fresh before/after version hashes, original paired descriptors and path/permission checks.
 - [2026-11-06 original Via owner and main SQL fence](2026-11-06-original-via-owner-main-sql-fence.md). New original Via birth with early fixed selected-file mutation stops; no Save or database write grant.
 
