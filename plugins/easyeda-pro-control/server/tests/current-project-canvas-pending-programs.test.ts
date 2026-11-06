@@ -60,3 +60,14 @@ void test("missing worker version remains observed absence, and inherited applic
   const context = fixture(); runInContext('delete r.docHead.document.version;Object.setPrototypeOf(r.docHead.document,{version:"inherited"});', context);
   assert.throws(() => runInContext('read(null,"entry")', context)); assert.equal(runInContext("calls", context), 0);
 });
+
+void test("prior header user is captured without toJSON and keeps original key order through compression", () => {
+  const context = fixture();
+  runInContext('r.docHead.document.user={nickname:"N",uuid:"u",username:"U"};snapshot=read(null,"entry");', context);
+  assert.equal(runInContext("snapshot.priorUserJson", context), '{"nickname":"N","uuid":"u","username":"U"}');
+  runInContext('r.docHead.document.user.nickname="foreign";', context);
+  assert.throws(() => runInContext('read(snapshot,"entry")', context)); assert.equal(runInContext("calls", context), 0);
+  const hooked = fixture();
+  runInContext('r.docHead.document.user={uuid:"u",username:"U",nickname:"N",toJSON(){calls++;throw Error("forbidden");}};', hooked);
+  assert.throws(() => runInContext('read(null,"entry")', hooked)); assert.equal(runInContext("calls", hooked), 0);
+});
