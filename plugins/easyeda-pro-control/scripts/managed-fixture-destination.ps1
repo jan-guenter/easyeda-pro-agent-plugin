@@ -1,6 +1,32 @@
-param([string]$Nonce, [string]$ProjectBasename, [string]$LibraryDirectoriesBase64, [switch]$CompileOnly)
+param([string]$Nonce, [string]$ProjectBasename, [string]$LibraryDirectoriesBase64, [switch]$CompileOnly, [switch]$ParseLibraryDirectoriesOnly)
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+# The supported host is Windows PowerShell5.1. Its ConvertFrom-Json sends
+# a JSON array as ONE pipeline object. Capture it directly, never inside @(...),
+# then validate the actual array and every string before native allocation.
+function Read-ManagedFixtureLibraryDirectories([string]$Encoded) {
+  if ($Encoded.Length -lt 1 -or $Encoded.Length -gt 8192) { throw 'fixture-library-directory-input-bound' }
+  $json = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($Encoded))
+  $parsed = ConvertFrom-Json -InputObject $json
+  if ($parsed -isnot [object[]]) { throw 'fixture-library-directory-array-type' }
+  if ($parsed.Count -lt 1 -or $parsed.Count -gt 4) { throw 'fixture-library-directory-count' }
+  $seen = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+  foreach ($entry in $parsed) {
+    if ($entry -isnot [string]) { throw 'fixture-library-directory-type' }
+    if ($entry.Length -lt 4 -or $entry.Length -gt 1024 -or $entry -cnotmatch '^[A-Z]:\\(?:[A-Za-z0-9_ -]+\\)*[A-Za-z0-9_-]+$') { throw 'fixture-library-directory-path' }
+    foreach ($part in $entry.Substring(3).Split('\')) {
+      if ($part.Trim() -cne $part -or $part -match '^(con|prn|aux|nul|com[0-9]|lpt[0-9])$') { throw 'fixture-library-directory-component' }
+    }
+    if (-not $seen.Add($entry)) { throw 'fixture-library-directory-duplicate' }
+  }
+  # Preserve the one array object through this function's output too.
+  return ,$parsed
+}
+if ($ParseLibraryDirectoriesOnly) {
+  $parsedDirectories = Read-ManagedFixtureLibraryDirectories $LibraryDirectoriesBase64
+  @{schema='easyeda-pro-control.fixture-library-parser-only.v1'; directories=$parsedDirectories; count=$parsedDirectories.Count; nativeAllocated=$false; csharpCompiled=$false} | ConvertTo-Json -Compress -Depth 3 | ForEach-Object { [Console]::WriteLine($_) }
+  return
+}
 # A fresh private directory only. No existing destination, deletion, SQLite
 # write, app launch, PID adoption, or arbitrary command is supported.
 Add-Type @'
@@ -199,9 +225,8 @@ if ($Nonce -cnotmatch '^[a-f0-9]{64}$' -or $ProjectBasename -cnotmatch '^Codex_(
 $owner = $null
 $guards = @()
 try {
-  $directories = @([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($LibraryDirectoriesBase64)) | ConvertFrom-Json)
-  if ($directories.Count -lt 1 -or $directories.Count -gt 4) { throw 'fixture-library-directory-count' }
-  foreach ($directory in $directories) { if ($directory -isnot [string]) { throw 'fixture-library-directory-type' }; $guards += New-Object ManagedFixtureLibraryGuard($directory) }
+  $directories = Read-ManagedFixtureLibraryDirectories $LibraryDirectoriesBase64
+  foreach ($directory in $directories) { $guards += New-Object ManagedFixtureLibraryGuard($directory) }
   $owner = New-Object ManagedFixtureDestination
   @{schema='easyeda-pro-control.fixture-destination-owner.v1'; nonce=$Nonce; ownerId=$owner.Id; windowsDirectory=$owner.Path; directoryIdentity=$owner.Identity; expectedBasename=$ProjectBasename; entries=@($owner.Entries()); libraries=@($guards | ForEach-Object { $_.Check() }); state='held'; deletionAuthorized=$false} | ConvertTo-Json -Compress -Depth 5 | ForEach-Object { [Console]::WriteLine($_) }
   $last = 0

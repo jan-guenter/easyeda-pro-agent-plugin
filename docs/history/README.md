@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 Windows fixture library parser](2026-11-06-fixture-library-parser.md). Exact5.1 JSON-array capture correction, scalar/path guards and maintained parser-only regression before native allocation; original lost-stderr cause remains unproved.
+
 - [2026-11-06 generated import destination refusal](2026-11-06-generated-import-destination-refusal.md). Fourth original controller passed actual config preflight and stopped before importer dispatch on unavailable helper stderr; new bounded diagnostic retention and pending original cleanup remain explicit.
 
 - [2026-11-06 closed generated data index mount](2026-11-06-closed-generated-data-index-mount.md). Fresh independent proof runtime, opaque reader staging, exclusive callback/queued-gate custody, source queries and operating reference; connected native reuse remains pending.

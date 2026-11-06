@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { z } from "zod";
 import { deriveWindowsRuntimePaths } from "./windows-runtime.ts";
 
-export const MANAGED_FIXTURE_DESTINATION_HELPER_SHA256 = "9f5deef9309c2f9a876279dca79562087eaa816ebd42fcc759118246f52d6501";
+export const MANAGED_FIXTURE_DESTINATION_HELPER_SHA256 = "c53171987cda0e2b4986a4e6f5df432f3063199b825b050753124cbcaf973e16";
 const basename = z.string().regex(/^Codex_(?:via_only|line_and_via|arc_line_and_via|schematic)_[a-f0-9]{16}\.eprj2$/u);
 export const managedFixtureLibraryDirectoriesSchema = z.array(z.string().min(4).max(1024).regex(/^[A-Z]:\\(?:[A-Za-z0-9_ -]+\\)*[A-Za-z0-9_-]+$/u)
   .refine((value) => value.slice(3).split("\\").every((part) => part.trim() === part && !/^(?:con|prn|aux|nul|com[0-9]|lpt[0-9])$/iu.test(part))))
