@@ -90,6 +90,9 @@ import { CurrentSelectedFileMainRequestReader } from "./current-selected-file-ma
 import type { CurrentSelectedFileMainRequestObservation } from "./current-selected-file-main-request-reader.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { currentFootprintCopyMainRequestPlanSchema } from "./current-footprint-copy-main-request-contract.ts";
+import { CURRENT_MAIN_STARTUP_CONFIG_CALLS as STARTUP_CALLS } from "./current-main-startup-config-programs.ts";
+import { qualifyCurrentMainStartupConfigSource } from "./current-main-startup-config-sql.ts";
+import { CurrentMainStartupConfigProgress, currentMainStartupConfigSelectionSchema } from "./current-main-startup-config-progress.ts";
 
 type MainCapability = CurrentFootprintCombinedMainCapability | CurrentFootprintForwardExecutionMainCapability | CurrentProjectStructureMainCapability;
 function mainCapability(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
@@ -324,6 +327,10 @@ export class CurrentFootprintCopyMainBackendRunner {
   #sqlArming: CurrentSelectedFileMainSqlFenceSite | null = null;
   #sqlCapture: string | null = null;
   #sqlReady = false;
+  #startupConfigTracker: string | null = null;
+  #startupSqlContinuations = 0;
+  #startupMetadataContinuations = 0;
+  readonly #startupConfigProgress = new CurrentMainStartupConfigProgress();
   #sqlHeld: Pause | null = null;
   #viaMainOrigin: CurrentPcbViaMainOrigin | null = null;
   #viaMainDeliveredPause: Pause | null = null;
@@ -838,7 +845,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   }
   async #startSelectedSqlFence(): Promise<void> {
     const initial = this.#pause; need(initial?.sqlSite === "import" && this.#selectedSqlPath !== null, "SELECTED_SQL_BEFORE_IMPORT_REQUIRED");
-    await this.#qualify(initial.location.scriptId); need(this.#appSource !== null, "SELECTED_SQL_FULL_SOURCE"); qualifyCurrentSelectedFileMainSqlFenceSource(this.#appSource);
+    await this.#qualify(initial.location.scriptId); need(this.#appSource !== null, "SELECTED_SQL_FULL_SOURCE"); qualifyCurrentSelectedFileMainSqlFenceSource(this.#appSource); qualifyCurrentMainStartupConfigSource(this.#appSource);
     await this.#armSelectedSql("afterImports"); for (const site of SQL_SITES) { await this.#armSelectedSql(site); }
     await this.#sqlResume(initial); await this.#wait(() => this.#pause !== initial);
     const after = this.#pause; need(after?.sqlSite === "afterImports", "SELECTED_SQL_AFTER_IMPORTS_REQUIRED");
@@ -846,20 +853,26 @@ export class CurrentFootprintCopyMainBackendRunner {
       ...SQL_FRAME, callFrameId: after.frameId, expression: SQL_SOURCE.sites.afterImports.expression } })); need(selected.result.description === "Array(4)", "SELECTED_SQL_MODULE_FRAME");
     const captured = objectReply.parse(await this.#request({ phase: "sql-fence-capture", method: "Runtime.callFunctionOn", params: {
       ...SQL_CALL, objectId: selected.result.objectId, functionDeclaration: SQL_CAPTURE, arguments: [{ value: this.#selectedSqlPath }], returnByValue: false } }));
-    need(captured.result.description === "Array(9)", "SELECTED_SQL_ORIGINAL_CAPTURE"); this.#sqlCapture = captured.result.objectId;
+    need(captured.result.description === "Array(11)", "SELECTED_SQL_ORIGINAL_CAPTURE"); this.#sqlCapture = captured.result.objectId;
     const natives = objectReply.parse(await this.#request({ phase: "sql-fence-native-frame", method: "Debugger.evaluateOnCallFrame", params: {
-      ...SQL_FRAME, callFrameId: after.frameId, expression: SQL_NATIVE_EXPRESSION } })); need(natives.result.description === "Array(3)", "SELECTED_SQL_NATIVE_FRAME");
+      ...SQL_FRAME, callFrameId: after.frameId, expression: SQL_NATIVE_EXPRESSION } })); need(natives.result.description === "Array(5)", "SELECTED_SQL_NATIVE_FRAME");
     const ids = decodeCurrentSelectedFileMainSqlFenceNativeArray(await this.#request({ phase: "sql-fence-properties", method: "Runtime.getProperties", params: {
       objectId: natives.result.objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }));
     for (const [index, role] of [[0, "Database"], [1, "Statement"], [2, "proxy"]] as const) {
       const id = ids[index]; need(id !== undefined, "SELECTED_SQL_NATIVE_REQUIRED"); decodeCurrentSelectedFileMainSqlFenceNative(await this.#request({ phase: "sql-fence-properties", method: "Runtime.getProperties", params: {
         objectId: id, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }), role);
     }
+    for (const [index, role] of [[3, "Date"], [4, "now"]] as const) {
+      const id = ids[index]; need(id !== undefined, "SELECTED_SQL_NATIVE_DATE_REQUIRED"); decodeCurrentFootprintCopyMainBackendNative(await this.#request({ phase: "sql-fence-properties", method: "Runtime.getProperties", params: {
+        objectId: id, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }), role);
+    }
     await this.#requireSelectedSqlCapture(); this.#sqlReady = true; await this.#sqlResume(after);
     await this.#wait(() => this.#pause !== after);
-    while (this.#pause?.sqlSite === "initializerSerialize" || this.#pause?.sqlSite === "initializerPragma") {
-      const configuration = this.#pause; await this.#configureSelectedSqlInitializer(configuration); await this.#wait(() => this.#pause !== configuration);
+    while (this.#pause !== null && !this.#pause.registration) {
+      const configuration = this.#pause; need(await this.#configureStartupSql(configuration), "SELECTED_SQL_UNQUALIFIED_STARTUP_MUTATION");
+      await this.#wait(() => this.#pause !== configuration);
     }
+    this.#startupConfigProgress.complete();
     // Every mutation stays paused until a distinct original request/SQL issuer
     // Proves that exact current call. This bootstrap publishes no such grant.
     need(this.#pause?.registration === true, "SELECTED_SQL_MUTATION_BEFORE_REGISTRATION");
@@ -880,6 +893,47 @@ export class CurrentFootprintCopyMainBackendRunner {
         objectId: selectedFrame.result.objectId, functionDeclaration: SQL_CONFIGURATION, arguments: [{ objectId: this.#sqlCapture }, { value: stage }], returnByValue: true } }));
     need(reply.result.value.stage === stage && reply.result.value.selectedFile === (reply.result.value.path === this.#selectedSqlPath), "SELECTED_SQL_INITIALIZER_BINDING");
     this.#sqlConfigurationRecords.push(Object.freeze(reply.result.value)); this.#sqlApprovedConfigurations.add(pause); await this.#sqlResume(pause);
+  }
+  async #configureStartupSql(pause: Pause): Promise<boolean> {
+    const site = pause.sqlSite;
+    need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && this.#sqlCapture !== null && this.#sqlReady, "STARTUP_CONFIG_ORIGINAL_PAUSE");
+    if (site === "initializerSerialize" || site === "initializerPragma") { await this.#configureSelectedSqlInitializer(pause); return true; }
+    if (site === "startupVersion" || site === "startupJB" || site === "startupDC") {
+      const selected = objectReply.parse(await this.#request({ phase: "sql-fence-frame", site, method: "Debugger.evaluateOnCallFrame", params: {
+        ...SQL_FRAME, callFrameId: pause.frameId, expression: SQL_SOURCE.sites[site].expression } }));
+      let size = 11; if (site === "startupVersion") { size = 13; } else if (site === "startupJB") { size = 12; }
+      need(selected.result.description === `Array(${String(size)})`, "STARTUP_CONFIG_SOURCE_FRAME");
+      if (site === "startupVersion") {
+        need(this.#startupConfigTracker === null, "STARTUP_CONFIG_VERSION_CONSUMED");
+        const captured = objectReply.parse(await this.#request({ phase: "sql-fence-startup-version", method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false,
+          objectId: selected.result.objectId, functionDeclaration: STARTUP_CALLS.version, arguments: [{ objectId: this.#sqlCapture }], returnByValue: false } }));
+        need(captured.result.description === "Array(6)", "STARTUP_CONFIG_ORIGINAL_TRACKER"); this.#startupConfigTracker = captured.result.objectId; this.#startupConfigProgress.version();
+      } else {
+        need(this.#startupConfigTracker !== null, "STARTUP_CONFIG_VERSION_REQUIRED");
+        if (site === "startupJB") {
+          sqlTrueReply.parse(await this.#request({ phase: "sql-fence-startup-jb", method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false,
+            objectId: selected.result.objectId, functionDeclaration: STARTUP_CALLS.bindJB, arguments: [{ objectId: this.#startupConfigTracker }], returnByValue: true } }));
+          this.#startupConfigProgress.bind("jb");
+        } else {
+          sqlTrueReply.parse(await this.#request({ phase: "sql-fence-startup-dc", method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false,
+            objectId: selected.result.objectId, functionDeclaration: STARTUP_CALLS.bindDC, arguments: [{ objectId: this.#startupConfigTracker }], returnByValue: true } }));
+          this.#startupConfigProgress.bind("dc");
+        }
+      }
+    } else if (site === "run" || site === "prepare" || site === "prepared" || site === "statementRun" || site === "finalize") {
+      if (this.#startupConfigTracker === null || site === "statementRun" || site === "finalize") { return false; }
+      const selected = objectReply.parse(await this.#request({ phase: "sql-fence-frame", site, method: "Debugger.evaluateOnCallFrame", params: {
+        ...SQL_FRAME, callFrameId: pause.frameId, expression: SQL_SOURCE.sites[site].expression } }));
+      let size = 5; if (site === "prepare") { size = 6; } else if (site === "prepared") { size = 7; }
+      need(selected.result.description === `Array(${String(size)})`, "STARTUP_CONFIG_NATIVE_FRAME");
+      const reply = z.object({ result: z.object({ type: z.literal("object"), value: currentMainStartupConfigSelectionSchema }).strict() }).strict().parse(
+        await this.#request({ phase: "sql-fence-startup-select", site, method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false,
+          objectId: selected.result.objectId, functionDeclaration: STARTUP_CALLS.select, arguments: [{ objectId: this.#startupConfigTracker }, { value: site }], returnByValue: true } }));
+      if (!this.#startupConfigProgress.consume(reply.result.value)) { return false; }
+    } else { return false; }
+    await this.#requireSelectedSqlCapture(); this.#sqlApprovedConfigurations.add(pause); await this.#sqlResume(pause);
+    if (site === "startupVersion" || site === "startupJB" || site === "startupDC") { this.#startupMetadataContinuations += 1; } else { this.#startupSqlContinuations += 1; }
+    return true;
   }
   #requireSelectedRequestPause(pause: Pause): void {
     this.#same(false); need(this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#packet !== null && issued.get(this.#packet) === this && this.#sqlCapture !== null &&
@@ -933,17 +987,17 @@ export class CurrentFootprintCopyMainBackendRunner {
       await this.#current(); if (this.#sqlHeld !== null) { return; } await this.#pump();
       const pause = this.#pause;
       if (pause !== null && !pause.resumed && pause.sqlSite !== undefined) {
-        if (pause.sqlSite === "initializerSerialize" || pause.sqlSite === "initializerPragma") { await this.#configureSelectedSqlInitializer(pause); }
-        else if (pause.sqlSite === "driver") { const request = await this.#observeSelectedMainRequest(pause); if (this.#selectedReadonlyRequest(request)) { await this.#continueSelectedReadonlyRequest(request); } else { this.#sqlHeld = pause; } }
-        else { this.#sqlMutationPauses += 1; need(this.#sqlMutationPauses <= 64, "SELECTED_SQL_MUTATION_BOUND"); this.#sqlHeld = pause; await this.#requireSelectedSqlCapture(); }
+        if (pause.sqlSite === "driver") { const request = await this.#observeSelectedMainRequest(pause); if (this.#selectedReadonlyRequest(request)) { await this.#continueSelectedReadonlyRequest(request); } else { this.#sqlHeld = pause; } }
+        else if (!await this.#configureStartupSql(pause)) { this.#sqlMutationPauses += 1; need(this.#sqlMutationPauses <= 64, "SELECTED_SQL_MUTATION_BOUND"); this.#sqlHeld = pause; await this.#requireSelectedSqlCapture(); }
       }
     } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
   }
   public selectedSqlFenceState(): Readonly<Record<string, unknown>> {
     return Object.freeze({ profile: "private.selected-file-main-sql-fence.v1", originalBootstrapRetained: this.#selectedSqlBootstrap !== null,
       ready: this.#sqlReady, conditionalBreakpoints: Math.max(0, this.#sqlBreakpoints.size - 2), nativePrimitivesReplaced: false,
-      heldSite: this.#sqlHeld?.sqlSite ?? null, readonlyRequestContinuations: this.#selectedReadonlyContinuations, mutationsResumed: 0, mutationGrantAvailable: false,
-      initializerConfigurations: Object.freeze([...this.#sqlConfigurationRecords]), initializerConfigurationAutomaticallyAdmitted: true, completeSqlEffectProven: false, executionAuthorized: false, saveAuthorized: false });
+      heldSite: this.#sqlHeld?.sqlSite ?? null, readonlyRequestContinuations: this.#selectedReadonlyContinuations, selectedProjectMutationsResumed: 0, mutationGrantAvailable: false,
+      profileSqlContinuationsAcknowledged: this.#startupSqlContinuations, profileMetadataContinuationsAcknowledged: this.#startupMetadataContinuations,
+      startupProfileBookkeeping: this.#startupConfigProgress.snapshot(), initializerConfigurations: Object.freeze([...this.#sqlConfigurationRecords]), initializerConfigurationAutomaticallyAdmitted: true, completeSqlEffectProven: false, executionAuthorized: false, saveAuthorized: false });
   }
 
   /** Transfer this original selected-file cursor into a Via-only observer.

@@ -9,12 +9,14 @@ import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM as CAPTURE, CURREN
   CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_GROUP as GROUP, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUIRE_PROGRAM as REQUIRE,
   CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SELECT_PROGRAM as SELECT } from "./current-selected-file-main-sql-fence-programs.ts";
 
+import { CURRENT_MAIN_STARTUP_CONFIG_CALLS as STARTUP } from "./current-main-startup-config-programs.ts";
+
 import { CURRENT_SELECTED_FILE_MAIN_REQUEST_CALLS as REQUEST, CURRENT_SELECTED_FILE_MAIN_REQUEST_FRAME as REQUEST_FRAME } from "./current-selected-file-main-request-programs.ts";
 
 export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES = Object.freeze(["keeperBirth", "keeperBound", "contextBirth", "contextBound", "initializerBirth", "initializerBound",
-  "queryAll", "queryOne", "run", "finalize", "statementEach", "statementRun", "prepare", "prepared", "wrapClose", "keeperClose", "initializerSerialize", "initializerPragma", "initializerClose", "driver"] as const);
+  "queryAll", "queryOne", "run", "finalize", "statementEach", "statementRun", "prepare", "prepared", "wrapClose", "keeperClose", "initializerSerialize", "initializerPragma", "initializerClose", "startupVersion", "startupJB", "startupDC", "driver"] as const);
 export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_EARLY_ID = `2:${String(SOURCE.sites.import.lineNumber)}:${String(SOURCE.sites.import.breakpointColumnNumber)}:${URL}`;
-export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_NATIVE_EXPRESSION = "[sc.Database,sc.Statement,F5.types.isProxy]";
+export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_NATIVE_EXPRESSION = "[sc.Database,sc.Statement,F5.types.isProxy,Date,Date.now]";
 const empty = z.object({}).strict(), handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const location = z.object({ scriptId: handle, lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() }).strict();
 const ref = z.object({ objectId: handle }).strict();
@@ -48,7 +50,17 @@ const configStageArgument = z.object({ value: configStage }).strict();
 const configArguments = z.tuple([ref, configStageArgument]);
 const configParams = z.object({ ...callFlags, throwOnSideEffect: z.literal(false), objectId: handle, functionDeclaration: z.literal(CONFIGURATION), arguments: configArguments, returnByValue: z.literal(true) }).strict();
 const configSite = z.enum(["initializerSerialize", "initializerPragma"]);
+const startupSelectSites = z.enum(["run", "prepare", "prepared", "statementRun", "finalize"]);
+const startupSelectParams = z.object({ ...callFlags, throwOnSideEffect: z.literal(false), objectId: handle, functionDeclaration: z.literal(STARTUP.select),
+  arguments: z.tuple([ref, z.object({ value: startupSelectSites }).strict()]), returnByValue: z.literal(true) }).strict();
+const startupVersionParams = z.object({ ...callFlags, throwOnSideEffect: z.literal(false), objectId: handle, functionDeclaration: z.literal(STARTUP.version), arguments: selectArguments, returnByValue: z.literal(false) }).strict();
+const startupJBParams = z.object({ ...callFlags, throwOnSideEffect: z.literal(false), objectId: handle, functionDeclaration: z.literal(STARTUP.bindJB), arguments: selectArguments, returnByValue: z.literal(true) }).strict();
+const startupDCParams = z.object({ ...callFlags, throwOnSideEffect: z.literal(false), objectId: handle, functionDeclaration: z.literal(STARTUP.bindDC), arguments: selectArguments, returnByValue: z.literal(true) }).strict();
 const command = z.discriminatedUnion("phase", [
+  z.object({ phase: z.literal("sql-fence-startup-version"), method: z.literal("Runtime.callFunctionOn"), params: startupVersionParams }).strict(),
+  z.object({ phase: z.literal("sql-fence-startup-jb"), method: z.literal("Runtime.callFunctionOn"), params: startupJBParams }).strict(),
+  z.object({ phase: z.literal("sql-fence-startup-dc"), method: z.literal("Runtime.callFunctionOn"), params: startupDCParams }).strict(),
+  z.object({ phase: z.literal("sql-fence-startup-select"), site: startupSelectSites, method: z.literal("Runtime.callFunctionOn"), params: startupSelectParams }).strict(),
   z.object({ phase: z.literal("sql-fence-early-arm"), method: z.literal("Debugger.setBreakpointByUrl"), params: earlyParams }).strict(),
   z.object({ phase: z.literal("sql-fence-after-imports-arm"), method: z.literal("Debugger.setBreakpoint"), params: afterImportsParams }).strict(),
   z.object({ phase: z.literal("sql-fence-arm"), site: sites, method: z.literal("Debugger.setBreakpoint"), params: armParams }).strict(),
@@ -72,7 +84,9 @@ export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_FRAME_FLAGS = Object.freeze({ 
 export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CALL_FLAGS = Object.freeze({ objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true, awaitPromise: false, userGesture: false } as const);
 export function validateCurrentSelectedFileMainSqlFenceCommand(input: unknown): CurrentSelectedFileMainSqlFenceCommand {
   const captured = command.parse(captureCurrentPcbStringClockReply(input).value);
-  if (captured.phase === "sql-fence-arm") {
+  if (captured.phase === "sql-fence-startup-select" && captured.params.arguments[1].value !== captured.site) {
+    throw new Error("SELECTED_FILE_MAIN_SQL_FENCE_FIXED_STARTUP_SITE");
+  } else if (captured.phase === "sql-fence-arm") {
     const actual = captured.params.location, expected = SOURCE.sites[captured.site];
     if (actual.lineNumber !== expected.lineNumber || actual.columnNumber !== expected.breakpointColumnNumber || captured.params.condition !== CONDITIONS[captured.site]) {
       throw new Error("SELECTED_FILE_MAIN_SQL_FENCE_FIXED_CONDITION");
@@ -88,8 +102,9 @@ export function validateCurrentSelectedFileMainSqlFenceCommand(input: unknown): 
  * completion budgets remain separate, and no mutation-resume grant exists. */
 export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUESTS = Object.freeze({
   earlyAndAfterImports: 2, conditionalArms: CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES.length,
-  captureAndNativeMetadata: 8, startupResumes: 2, mutationPauses: 64, perMutationMaximum: 3,
+  captureAndNativeMetadata: 10, startupResumes: 2, mutationPauses: 64, perMutationMaximum: 3,
   originalFetchSourceAndScopeProof: 20, readonlyRequestPauses: 64, perReadonlyRequestMaximum: 6,
-  normal: 2 + CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES.length + 8 + 2 + 64 * 3 + 20 + 64 * 6,
+  startupContexts: 3, startupNativeCalls: 48, perStartupPauseMaximum: 4,
+  normal: (3 + 48) * 4 + 2 + CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES.length + 10 + 2 + 64 * 3 + 20 + 64 * 6,
   cleanup: 0, executionAuthorized: false,
 });

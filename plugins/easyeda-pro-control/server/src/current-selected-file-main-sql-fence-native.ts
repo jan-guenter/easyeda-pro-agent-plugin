@@ -13,6 +13,8 @@ import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CALL_FLAGS as CALL, CURRENT_SELECT
   validateCurrentSelectedFileMainSqlFenceCommand } from "./current-selected-file-main-sql-fence-protocol.ts";
 import type { CurrentSelectedFileMainSqlFenceCommand as Command } from "./current-selected-file-main-sql-fence-protocol.ts";
 
+import { CURRENT_MAIN_STARTUP_CONFIG_CALLS as STARTUP } from "./current-main-startup-config-programs.ts";
+
 import { CURRENT_SELECTED_FILE_MAIN_REQUEST_CALLS as REQUEST, CURRENT_SELECTED_FILE_MAIN_REQUEST_FRAME as REQUEST_FRAME } from "./current-selected-file-main-request-programs.ts";
 
 const smoke = (name: string): string => name === "path" ? String.raw`C:\Synthetic\fixture.eprj2` : "main_handle";
@@ -31,7 +33,7 @@ export function currentSelectedFileMainSqlFenceWire(input: unknown, id: number):
     else if (command.phase === "sql-fence-request-capture" || command.phase === "sql-fence-request-bind" || command.phase === "sql-fence-request-rebind") {
       for (const [index, argument] of command.params.arguments.entries()) { request[`argument${String(index)}`] = argument.objectId; }
     }
-    else if (command.phase === "sql-fence-select" || command.phase === "sql-fence-configure") { request["argument0"] = command.params.arguments[0].objectId; }
+    else if (command.phase === "sql-fence-select" || command.phase === "sql-fence-configure" || command.phase === "sql-fence-startup-version" || command.phase === "sql-fence-startup-jb" || command.phase === "sql-fence-startup-dc" || command.phase === "sql-fence-startup-select") { request["argument0"] = command.params.arguments[0].objectId; }
   }
   return freezeDeep({ command: { ...command, id }, request });
 }
@@ -58,6 +60,12 @@ export function currentSelectedFileMainSqlFenceNativeCases(): readonly Command[]
   ];
   for (const [site, stage] of [["initializerSerialize", "serialize"], ["initializerPragma", "pragma"]] as const) {
     rows.push({ phase: "sql-fence-configure", site, method: "Runtime.callFunctionOn", params: { ...CALL, throwOnSideEffect: false, objectId, functionDeclaration: CONFIGURATION, arguments: [{ objectId: marker("argument0") }, { value: stage }], returnByValue: true } });
+  }
+  rows.push({ phase: "sql-fence-startup-version", method: "Runtime.callFunctionOn", params: { ...CALL, throwOnSideEffect: false, objectId, functionDeclaration: STARTUP.version, arguments: [{ objectId: marker("argument0") }], returnByValue: false } },
+    { phase: "sql-fence-startup-jb", method: "Runtime.callFunctionOn", params: { ...CALL, throwOnSideEffect: false, objectId, functionDeclaration: STARTUP.bindJB, arguments: [{ objectId: marker("argument0") }], returnByValue: true } },
+    { phase: "sql-fence-startup-dc", method: "Runtime.callFunctionOn", params: { ...CALL, throwOnSideEffect: false, objectId, functionDeclaration: STARTUP.bindDC, arguments: [{ objectId: marker("argument0") }], returnByValue: true } });
+  for (const site of ["run", "prepare", "prepared", "statementRun", "finalize"] as const) {
+    rows.push({ phase: "sql-fence-startup-select", site, method: "Runtime.callFunctionOn", params: { ...CALL, throwOnSideEffect: false, objectId, functionDeclaration: STARTUP.select, arguments: [{ objectId: marker("argument0") }, { value: site }], returnByValue: true } });
   }
   for (const site of SITES) {
     rows.push({ phase: "sql-fence-arm", site, method: "Debugger.setBreakpoint", params: { location: { scriptId,

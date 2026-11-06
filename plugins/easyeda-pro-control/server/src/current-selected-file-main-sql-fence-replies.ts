@@ -10,11 +10,11 @@ const property = z.object({ name: z.string(), value: remote, writable: z.boolean
 const internal = z.object({ name: z.string(), value: remote }).strict();
 function need(value: boolean): asserts value { if (!value) { throw new Error("SELECTED_FILE_MAIN_SQL_FENCE_NATIVE_METADATA"); } }
 export function decodeCurrentSelectedFileMainSqlFenceNativeArray(input: unknown): readonly string[] {
-  const reply = z.object({ result: z.array(property).length(4), internalProperties: z.array(internal).length(1) }).strict().parse(captureCurrentPcbStringClockReply(input).value);
+  const reply = z.object({ result: z.array(property).length(6), internalProperties: z.array(internal).length(1) }).strict().parse(captureCurrentPcbStringClockReply(input).value);
   const fields = new Map(reply.result.map(item => [item.name, item])), length = fields.get("length");
-  need(fields.size === 4 && length?.value.type === "number" && length.value.value === 3 && length.value.objectId === undefined && length.writable && !length.enumerable && !length.configurable);
+  need(fields.size === 6 && length?.value.type === "number" && length.value.value === 5 && length.value.objectId === undefined && length.writable && !length.enumerable && !length.configurable);
   const parent = reply.internalProperties[0]; need(parent?.name === "[[Prototype]]" && parent.value.type === "object" && parent.value.subtype === "array" && parent.value.className === "Array" && parent.value.objectId !== undefined);
-  return Object.freeze(["Database", "Statement", ""].map((name, index) => {
+  return Object.freeze(["Database", "Statement", "", "Date", "now"].map((name, index) => {
     const field = fields.get(String(index)); need(field !== undefined && field.writable && field.enumerable && field.configurable && field.value.type === "function" &&
       field.value.className === "Function" && field.value.subtype === undefined && field.value.objectId !== undefined && field.value.value === undefined &&
       field.value.description === `function ${name}() { [native code] }`); return field.value.objectId;

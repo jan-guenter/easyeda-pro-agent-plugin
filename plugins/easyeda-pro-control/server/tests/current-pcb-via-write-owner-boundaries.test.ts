@@ -39,7 +39,7 @@ void test("new SDK wire contains fixed scalars only and cannot be spent by relea
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, functionDeclaration: `${CURRENT_PCB_VIA_WRITE_FUNCTION}\n` } })));
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, awaitPromise: false } })));
   }
-  assert.equal(PROFILE.renderer.total, 837); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [715, 12, 727]);
+  assert.equal(PROFILE.renderer.total, 837); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [924, 12, 936]);
 });
 void test("retained SDK methods require exact original installed function locations, names and arity", () => {
   for (const kind of ["create", "save"] as const) { assert.equal(decodeCurrentPcbViaSdkMethod(metadata(kind), kind), "api"); }
@@ -60,7 +60,7 @@ void test("full API pin refuses small sources, proxies and getters before touchi
   assert.throws(() => { qualifyCurrentPcbViaSdkSource(new Proxy({}, { ownKeys: rejected, getPrototypeOf: rejected })); }); assert.equal(calls, 0);
 });
 void test("early fence vocabulary retains fixed source sites and admits no arbitrary conditions, SQL or caller programs", () => {
-  const cases = currentSelectedFileMainSqlFenceNativeCases(); assert.equal(cases.length, 57);
+  const cases = currentSelectedFileMainSqlFenceNativeCases(); assert.equal(cases.length, 71);
   for (const command of cases) {
     const wire = currentSelectedFileMainSqlFenceWire(command, PROFILE.main.total); assert.equal(wire.request["action"], "main-send");
     for (const field of ["condition", "lineNumber", "functionDeclaration", "sql", "sessionId"]) { assert.equal(Object.hasOwn(wire.request, field), false); }

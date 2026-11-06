@@ -14,7 +14,7 @@ import { CurrentSchematicDisplayWriteOwner, assertOriginalCurrentSchematicDispla
 function wire(value: unknown): Buffer { return Buffer.from(`${JSON.stringify(value)}\0`); }
 function compose(source: string): string { const prepared = registration(structure(source)); return schematic(via(prepared)); }
 void test("distinct schematic discovery has a bounded vocabulary and no worker, PCB, script or Save command", () => {
-  assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total, PROFILE.renderer.total], [692, 8, 700, 16]);
+  assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total, PROFILE.renderer.total], [901, 8, 909, 16]);
   assert.equal(PROFILE.workerOwnershipIssued, false); assert.equal(PROFILE.executionAuthorized, false); assert.equal(PROFILE.saveAuthorized, false);
   const request = { id: 16, method: "Target.getTargets" };
   assert.equal(currentSchematicDisplayWriteNativeRequest(wire(request))["requestId"], 16);
