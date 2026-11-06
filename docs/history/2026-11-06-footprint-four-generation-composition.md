@@ -571,3 +571,17 @@ reused as authority. Producer roots, startup/cache/sync completion, loaded copie
 model eligibility, the actual single-clock delete/main SQL wave and fourth
 fresh absence generation remain required. Continuous producer exclusion,
 complete frontier, delete, Save and four-generation acceptance remain false.
+
+The cache backup comparison now has an origin-free data leaf,
+`current-scoped-cache-backup-data.ts`. It retains the exact project/CDP/native
+metadata references, complete two-round entry/body and native Fetch metadata
+joins, peer roster fingerprint and existing combined8-entry/8KiB-per-body/32KiB
+body limits. It issues no checkpoint, native owner, publication or delete grant.
+The existing Via wrapper keeps its exact scope/schema, prepared/CDP/metadata
+three-reference check, independent durable publication and actual owner grant.
+Its public data has the same fields and values after extraction. Copies and
+cross-project packets refuse. Three focused supplied-data/real-artifact checks,
+full types and strict changed-file lint pass. No native/helper changes occurred.
+This permits a separate inverse issuer to reuse data checks. That issuer and
+its actual original cache/metadata stream still need implementation; no Via
+checkpoint or cache origin can be passed to the inverse owner.

@@ -10,6 +10,8 @@ import { decodeCurrentPcbViaSavedCacheMetadata } from "../src/current-pcb-via-sa
 import { buildCurrentPcbViaSavedCacheBackupData, publishCurrentPcbViaSavedCacheBackupData, requireCurrentPcbViaSavedCacheBackupData, verifyCurrentPcbViaSavedCachePublishedData } from "../src/current-pcb-via-saved-cache-backup.ts";
 import type { CurrentPcbViaSavedCacheMetadataDataSnapshot } from "../src/current-pcb-via-saved-cache-backup.ts";
 
+import { compareCurrentScopedCacheBackupData, requireCurrentScopedCacheBackupData } from "../src/current-scoped-cache-backup-data.ts";
+
 const origin = "https://client", rawWindowsPath = `C:\\Synthetic\\CodexEasyedaFixture_${"1".repeat(32)}\\Codex_line_and_via_${"2".repeat(16)}.eprj2`, storageKey = `${origin}/`;
 function fixture(): Readonly<{ prepared: object; cdp: ReturnType<CurrentPcbViaSavedCacheLedger["snapshot"]>; metadata: CurrentPcbViaSavedCacheMetadataDataSnapshot }> {
   const projectUuid = sha256Text(rawWindowsPath); const ledger = new CurrentPcbViaSavedCacheLedger(Object.freeze({ frameId: "frame", sessionId: "session", securityOrigin: origin, projectUuid }));
@@ -50,4 +52,22 @@ void test("missing native keys, changed repeated data and forged body bytes cann
   const second = changed.rounds.verify[1]; assert.ok(second !== undefined);
   const altered = { ...changed, rounds: { ...changed.rounds, verify: [{ entries: changed.rounds.verify[0]?.entries ?? null, bodies: [corrupt] }, second] } };
   assert.throws(() => buildCurrentPcbViaSavedCacheBackupData(f.prepared, altered, f.metadata));
+});
+
+void test("origin-free comparison retains exact project/CDP/metadata refs without a checkpoint or publication grant", () => {
+  const f = fixture(), projectUuid = f.cdp.frame.projectUuid;
+  const compared = compareCurrentScopedCacheBackupData(projectUuid, f.cdp, f.metadata);
+  requireCurrentScopedCacheBackupData(compared, projectUuid, f.cdp, f.metadata);
+  const via = buildCurrentPcbViaSavedCacheBackupData(f.prepared, f.cdp, f.metadata);
+  const { schema, scope, ...priorPayload } = via;
+  assert.equal(schema, "private.pcb-via-saved-cache-backup-data.v1");
+  assert.equal(scope.projectUuid, projectUuid); assert.deepEqual(compared, priorPayload);
+  assert.deepEqual(Object.keys(compared).filter(key => /scope|schema|checkpoint|publication/iu.test(key)), []);
+  assert.equal(compared.nativeProvenanceVerified, false); assert.equal(compared.cacheDeletionAuthorized, false);
+  assert.throws(() => { requireCurrentScopedCacheBackupData(compared, "0".repeat(64), f.cdp, f.metadata); });
+  assert.throws(() => { requireCurrentScopedCacheBackupData(structuredClone(compared), projectUuid, f.cdp, f.metadata); });
+  assert.throws(() => { requireCurrentScopedCacheBackupData(compared, projectUuid, structuredClone(f.cdp), f.metadata); });
+  assert.throws(() => { requireCurrentScopedCacheBackupData(compared, projectUuid, f.cdp, structuredClone(f.metadata)); });
+  assert.throws(() => compareCurrentScopedCacheBackupData("0".repeat(64), f.cdp, f.metadata));
+  assert.throws(() => publishCurrentPcbViaSavedCacheBackupData({ schema, scope, ...compared }));
 });
