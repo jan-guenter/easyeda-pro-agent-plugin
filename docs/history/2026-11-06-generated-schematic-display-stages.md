@@ -95,8 +95,8 @@ failed Save and post-mutation window drift. VM
 objects are explicitly synthetic; no real EasyEDA constructor, worker, native
 process, source issuer or SQL result is implied. Four actual vendor serializer
 source/data checks and four accessor/decorator span checks pass. The fixed
-setter-only function is 16,827 UTF-8 bytes with SHA256
-`7d6b8ff8dcfa59cd5e815702185880537555c0d5907dd184d97b54468d292561`.
+setter-only function before the retained-guard increment was 16,827 UTF-8 bytes
+with SHA256 `7d6b8ff8dcfa59cd5e815702185880537555c0d5907dd184d97b54468d292561`.
 Both TypeScript projects and strict type-aware lint pass. No persisted result
 shape or explanatory field changed. New native integration
 and connected acceptance remain pending.
@@ -125,3 +125,14 @@ installed-source checker independently qualifies all 60 spans and their exact
 parameter locations. Both TypeScript projects and strict type-aware lint pass.
 This source/data foundation issues no original native handle or write grant;
 actual callee/closure custody and connected writer acceptance remain pending.
+
+The capture now stores its original synchronous context check as `state.guard`
+exactly once with a non-writable, non-configurable own data descriptor. Later
+stages prove that descriptor and retain the original function; they do not
+replace it with their local check. The original function is suitable for the
+distinct clock owner's idle post-modify context reproof. It still checks the
+original UI/page/project/runner, setters and Save holder and refuses after drift
+or a failed stage. Three existing stage regressions now also prove the retained
+guard's identity/descriptor and its refusal after window drift. Result schemas
+and explanatory fields are unchanged. The new function is 17,341 UTF-8 bytes,
+SHA256 `44357156ef0852e84f39ae6a7f3c39ee7f1f378999eed4a6b4a836c181c34862`.

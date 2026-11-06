@@ -11,7 +11,7 @@ import { prepareGeneratedSchematicDisplayBodyPlan } from "../src/generated-schem
 import type { GeneratedSchematicDisplayPatch } from "../src/generated-schematic-display.ts";
 
 const defaultPatch = Object.freeze({ x: 25, bold: true });
-function fixture(mode: "success" | "save-refused" | "window-drift" | "read-only" = "success", patch: GeneratedSchematicDisplayPatch = defaultPatch): { call: (stage: GeneratedSchematicDisplayStage) => Promise<unknown>; counts: () => Record<string, number> } {
+function fixture(mode: "success" | "save-refused" | "window-drift" | "read-only" = "success", patch: GeneratedSchematicDisplayPatch = defaultPatch): { call: (stage: GeneratedSchematicDisplayStage) => Promise<unknown>; counts: () => Record<string, number>; guard: () => unknown; sameGuard: () => unknown } {
   const body = prepareGeneratedSchematicDisplayBodyPlan(patch);
   const target = { rawWindowsPath: `C:\\SyntheticTemp\\CodexEasyedaFixture_${"1".repeat(32)}\\Codex_schematic_${"2".repeat(16)}.eprj2`,
     projectUuid: "3".repeat(64), branchUuid: "4".repeat(32), schematicUuid: "5".repeat(32), pageUuid: "6".repeat(32), expectedSourceSha256: "7".repeat(64) };
@@ -42,15 +42,17 @@ const tab={data:{doctype:1,pid:t.projectUuid}},tabs={getActiveTab(){return tabId
 const T={extensionApiMessageBus2:{async rpcCall(){counters.save++;return{success:mode!=="save-refused"};}}};globalThis._EXTAPI_ROOT_={sch_Document:{${GENERATED_SCHEMATIC_DISPLAY_SAVE_SOURCE}}};globalThis.holder=null;
 `, context);
   return { call: async stage => {
-    const value: unknown = await runInContext(stage === "capture" ? `(async()=>holder=await (${GENERATED_SCHEMATIC_DISPLAY_FUNCTION}).call(globalThis,target,"capture",operation))()` :
+    const value: unknown = await runInContext(stage === "capture" ? `(async()=>{holder=await (${GENERATED_SCHEMATIC_DISPLAY_FUNCTION}).call(globalThis,target,"capture",operation);globalThis.originalGuard=holder[1]?.guard;return holder;})()` :
       `(${GENERATED_SCHEMATIC_DISPLAY_FUNCTION}).call(holder,target,${JSON.stringify(stage)},operation)`, context);
     return value;
-  }, counts: (): Record<string, number> => { const raw: unknown = JSON.parse(String(runInContext("JSON.stringify(counters)", context))); return z.record(z.string(), z.number().int().nonnegative()).parse(raw); } };
+  }, counts: (): Record<string, number> => { const raw: unknown = JSON.parse(String(runInContext("JSON.stringify(counters)", context))); return z.record(z.string(), z.number().int().nonnegative()).parse(raw); },
+  guard: (): unknown => runInContext("holder[1].guard()", context), sameGuard: (): unknown => runInContext(`holder[1].guard===originalGuard&&Object.getOwnPropertyDescriptor(holder[1],"guard").writable===false&&Object.getOwnPropertyDescriptor(holder[1],"guard").configurable===false`, context) };
 }
 void test("fixed native stage logic changes one literal Text body and consumes one original Save with no acceptance claims", async () => {
   const native = fixture(); await native.call("capture"); await native.call("preflight"); const modified = await native.call("modify");
   assert.ok(modified !== null && typeof modified === "object" && "modifyAcknowledged" in modified && modified.modifyAcknowledged === true);
   await native.call("observe"); const saved = generatedSchematicDisplayStageResultSchema.parse(await native.call("save")); assert.equal(saved.saveAcknowledged, true);
+  assert.equal(native.sameGuard(), true); assert.doesNotThrow(() => { native.guard(); });
   assert.equal(generatedSchematicDisplayStageResultSchema.safeParse({ ...saved, originalPromiseSettled: false }).success, false);
   assert.equal(generatedSchematicDisplayStageResultSchema.safeParse({ ...saved, saveAcknowledged: false }).success, false);
   assert.equal("persistenceVerified" in saved && saved.persistenceVerified, false); assert.equal("structureCompletionVerified" in saved && saved.structureCompletionVerified, false);
@@ -65,6 +67,7 @@ void test("a refused Save stays consumed and a post-mutation window drift return
   const drift = fixture("window-drift"); await drift.call("capture"); const partial = await drift.call("modify");
   assert.ok(partial !== null && typeof partial === "object" && "ok" in partial && partial.ok === false); assert.equal("source" in partial && partial.source, null);
   assert.equal("modifyAttempted" in partial && partial.modifyAttempted, true); assert.equal(drift.counts()["setSource"], 0); assert.equal(drift.counts()["setters"], 1); assert.equal(drift.counts()["save"], 0);
+  assert.equal(drift.sameGuard(), true); assert.throws(() => { drift.guard(); });
 });
 void test("original setters accept zero and independent alignment axes while preserving false; read-only capture reaches no transaction", async () => {
   const native = fixture("success", { y: 0, bold: false, alignMode: 9 });
