@@ -50,6 +50,10 @@ export async function prepareCurrentPcbViaWritePlan(prepared: GeneratedFixtureOp
   const inventory = originalGeneratedFixtureInventory(qualification); readerCompletion(inventory);
   if (prepared.history.documents.length !== 1 || prepared.history.documents[0]?.uuid !== qualification.target.documentUuid ||
       prepared.history.documents[0].docType !== "PCB") { throw new Error("PCB_VIA_WRITE_GENERATED_ROOT_REQUIRED"); }
+  const baseline = prepared.history.documents[0].records;
+  if (baseline.filter(record => record.type === "VIA").length !== 1 || baseline.filter(record => record.type === "LINE").length > 1 ||
+      baseline.filter(record => record.type === "META" && record.id === "META").length !== 1 || baseline.length !== 2 + baseline.filter(record => record.type === "LINE").length ||
+      baseline.some(record => !["META", "VIA", "LINE"].includes(record.type))) { throw new Error("PCB_VIA_WRITE_INITIAL_LINE_VIA_ROSTER_REQUIRED"); }
   await verifyGeneratedFixtureOpenCheckpoint(prepared); assertOriginalGeneratedFixtureOpenCheckpoint(prepared);
   const v = request.via;
   const plan: CurrentPcbViaWritePlan = freezeDeep({ schema: "private.current-pcb-via-write-plan.v1", operationId: request.operationId,

@@ -86,3 +86,11 @@ guard needs no owner/effect runtime cycle or separately configurable issuer.
 Save remains refused until independent actual serializer/request/SQL authority
 exists. Nine focused effect/native-owner boundary tests pass; strict types and
 type-aware lint pass. No generated helper or native pin changed.
+
+## Pre-allocation baseline refusal
+
+The plan now rejects any generated initial PCB source outside the one VIA,
+optional LINE and sole META roster before native allocation. Generated Arc and
+other fixture families remain useful readers, but cannot reach this Via writer's
+create stage and discover its unsupported effect encoding afterward. The later
+complete native/scene/source comparison remains mandatory.
