@@ -95,7 +95,8 @@ Pads must use the supported Mi view and tE model, copper layer 1 or 2, rotation
 zero and padType zero, with no parent or smart Pad state. Mixed families,
 placed or polygon Pads and every region query refuse before native hits.
 The existing Via/Line/Arc generated fixtures cannot establish positive Pad
-validation. A matching generated Pad fixture and connected acceptance remain
+validation. A matching generated Pad fixture has separate maintained archive,
+import, closed-data and staging routes. Its positive connected reading remains
 pending.
 
 ## Supported scene and effects
@@ -116,7 +117,8 @@ applies across admitted families and layers. The Arc action additionally
 requires a finite positive circular radius, bounded start/end angles, an exact
 clockwise/counterclockwise enum, arcType1, width at least0.05 native units and
 copper layer1 or2. It requires the original ready model/view/index and cached
-bounds. Graphical native Arc/Line models and components remain unsupported.
+bounds. Graphical native Arc/Line models and components remain unsupported in
+these mixed-family actions.
 The Pad-only alternative does not extend those mixed-family scenes. Component
 point prefiltering needs qualified footprint-cache lineage, the yqe/Ae transform
 chain and its iE._modify scratch effect; region filtering also needs Gs.

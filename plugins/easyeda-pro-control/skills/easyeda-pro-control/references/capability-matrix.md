@@ -50,6 +50,18 @@ ordinary automatic persistence, but offers no explicit Save or writer. Its
 one-shot `observe-layers` stage provides two matching native layer samples,
 the public layer projection and enabled copper count; it does not establish
 physical stackup, complete startup or a saved baseline.
+The separate [spatial identity workflow](current-pcb209-spatial.md) offers one
+consumed Via-only, Line/Via or Arc/Line/Via point/region batch and a separate
+standalone circular SMT Pad point batch. Its older native purpose retains384
+requests. The generated Component point workflow uses a distinct419-request
+birth with genuine footprint/cache/attribute custody; it cannot upgrade an
+existing owner or accept an ordinary populated board. Both workflows qualify
+original application functions and explicitly accept bounded math scratch
+effects. They return native identities rather than complete SDK objects and
+grant no writer, selection, connectivity or persistence authority. Their
+source implementations and offline checks remain separate from positive
+connected acceptance. Component-only original-Job abort and the manager's
+retained cleanup adapter do not transfer ownership or replay a failed read.
 The separate `observe-primitives` stage returns two matching Line/Arc/Via and
 parentless String loaded-view projections with ordered IDs. Its256-row per-family
 and384KiB aggregate bounds refuse excess output. It does not include raw models
