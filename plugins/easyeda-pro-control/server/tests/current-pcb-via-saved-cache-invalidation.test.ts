@@ -97,3 +97,21 @@ void test("unscoped, foreign-session and late list notifications cannot be credi
   ledger.accept(ledger.prepare({ phase: "saved-cache-names", step: "after-delete-0" }), { caches: [selected[1], peer] });
   assert.throws(() => ledger.observeOriginalEvent({ method: "Storage.cacheStorageListUpdated", sessionId: frame.sessionId, params: { origin, storageKey, bucketId: "1" } }));
 });
+
+void test("acknowledged untrack closes notification authority before the fresh loader can recreate namespaces", () => {
+  for (const method of ["Storage.cacheStorageListUpdated", "Storage.cacheStorageContentUpdated"]) {
+    const ledger = new CurrentPcbViaSavedCacheInvalidationLedger(before(true));
+    const run = (command: CurrentPcbViaSavedCacheCommand, reply: unknown): void => { ledger.accept(ledger.prepare(command), reply); };
+    for (const ordinal of [0, 1] as const) {
+      run({ phase: "saved-cache-key", step: ordinal === 0 ? "before-delete-0" : "before-delete-1" }, { storageKey });
+      run({ phase: "saved-cache-names", step: ordinal === 0 ? "before-delete-0" : "before-delete-1" }, { caches: [peer] });
+      run({ phase: "saved-cache-names", step: ordinal === 0 ? "after-delete-0" : "after-delete-1" }, { caches: [peer] });
+    }
+    run({ phase: "saved-cache-names", step: "absence" }, { caches: [peer] });
+    run({ phase: "saved-cache-key", step: "loading" }, { storageKey }); run({ phase: "saved-cache-names", step: "loading" }, { caches: [peer] });
+    run({ phase: "saved-cache-untrack" }, {}); assert.throws(() => ledger.prepare({ phase: "saved-cache-untrack" }));
+    assert.equal(ledger.observeOriginalEvent({ method: "Network.dataReceived", sessionId: frame.sessionId, params: {} }), false);
+    assert.throws(() => ledger.observeOriginalEvent({ method, sessionId: frame.sessionId, params: { origin, storageKey, bucketId: "1" } }));
+    assert.equal(ledger.status().failed, true);
+  }
+});

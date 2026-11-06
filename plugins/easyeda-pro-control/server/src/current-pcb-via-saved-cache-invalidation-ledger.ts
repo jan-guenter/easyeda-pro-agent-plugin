@@ -79,12 +79,14 @@ export class CurrentPcbViaSavedCacheInvalidationLedger {
   }
   /** Notifications do not identify a deletion. Accept one original-session
    * list anomaly in the current delete interval only, then close that interval
-   * before another guard. Complete peer rosters prove the actual absence. */
+   * before another guard. Complete peer rosters prove the actual absence.
+   * After the acknowledged untrack, every later Storage notification refuses;
+   * expected cold-loader cache creation has no notification exception. */
   public observeOriginalEvent(event: DiagnosticEvent): boolean {
     if (event.method !== "Storage.cacheStorageListUpdated" && event.method !== "Storage.cacheStorageContentUpdated") { return false; }
     try {
       const captured = captureCurrentPcbStringClockReply(event).value;
-      need(!this.#failed && event.sessionId === this.#before.frame.sessionId && event.method === "Storage.cacheStorageListUpdated" && captured !== null && typeof captured === "object" && "params" in captured &&
+      need(!this.#failed && !this.#untracked && event.sessionId === this.#before.frame.sessionId && event.method === "Storage.cacheStorageListUpdated" && captured !== null && typeof captured === "object" && "params" in captured &&
         captured.params !== null && typeof captured.params === "object" && "storageKey" in captured.params && captured.params.storageKey === this.#before.storageKey &&
         "origin" in captured.params && captured.params.origin === this.#before.frame.securityOrigin && Reflect.ownKeys(captured.params).length === 3 &&
         "bucketId" in captured.params && typeof captured.params.bucketId === "string" && /^[1-9]\d{0,19}$/u.test(captured.params.bucketId) &&

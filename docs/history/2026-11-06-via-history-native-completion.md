@@ -806,3 +806,19 @@ inputs, the complete emitted helper changes from1963670 to1963465 bytes: a net
 reduction of205 bytes after adding the opening hooks and sharing the fixed
 observation roster. Repeat generation is byte-identical. This measurement is
 separate from the parent's combined early-actor/inverse/periodic source graph.
+
+
+The post-loading watcher audit confirms that the original UI Storage subscription
+is untracked and its acknowledgment retained before any project worker is bound.
+No future namespace event gains credit from an earlier delete: the current delete
+interval is already closed, and acknowledged untrack now appears explicitly in
+the refusal predicate. A focused test proves both later list/content events fail
+the ledger, including exact original-session/key events. There is no blanket
+exception for the loader recreating its selected namespaces. Missing or queued
+late notifications can therefore refuse progress; they cannot authorize it.
+
+A source follow-up also corrects a research note: getUploadedData callers at
+2130787/2131140/2131544 belong to getLocalHistory/flowGetLocalHistory, including
+the histories/export RPC, rather than a nonexistent getDoc method. The actual
+PCB document-open caller must be traced independently before introducing any
+empty-pending continuation. The original pending-cache refusal is unchanged.
