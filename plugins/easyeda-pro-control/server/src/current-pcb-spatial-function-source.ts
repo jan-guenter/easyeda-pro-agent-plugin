@@ -12,10 +12,12 @@ import { CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_PROFILES } from "./current-pcb-209-
 import { CURRENT_PCB_209_SPATIAL_ARC_EXTRA_PROFILES } from "./current-pcb-209-spatial-arc-source-profile.ts";
 import { CURRENT_PCB_209_SPATIAL_PAD_FUNCTION_PROFILES } from "./current-pcb-209-spatial-pad-source-profile.ts";
 
+import { CURRENT_PCB_209_COMPONENT_COMPLETE_POINT_FUNCTION_PROFILES } from "./current-pcb-209-component-point-complete-source-profile.ts";
+
 const trackProfiles = Object.freeze([...CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES, ...CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_PROFILES]);
 const arcProfiles = Object.freeze([...trackProfiles, ...CURRENT_PCB_209_SPATIAL_ARC_EXTRA_PROFILES]);
-export type CurrentPcbSpatialVariant = "via" | "line-via" | "arc-line-via" | "pad-point";
-type FixedProfile = (typeof arcProfiles)[number] | (typeof CURRENT_PCB_209_SPATIAL_PAD_FUNCTION_PROFILES)[number];
+export type CurrentPcbSpatialVariant = "via" | "line-via" | "arc-line-via" | "pad-point" | "component-point";
+type FixedProfile = (typeof arcProfiles)[number] | (typeof CURRENT_PCB_209_SPATIAL_PAD_FUNCTION_PROFILES)[number] | (typeof CURRENT_PCB_209_COMPONENT_COMPLETE_POINT_FUNCTION_PROFILES)[number];
 export type CurrentPcbSpatialFunctionSourceKey = FixedProfile["key"];
 type Profile = Readonly<{ key: CurrentPcbSpatialFunctionSourceKey;
   kind: "class" | "method" | "getter" | "function" | "arrow";
@@ -104,7 +106,7 @@ function copy(input: unknown, depth: number, budget: { nodes: number; bytes: num
 /** Require the fixed catalog to remain nonempty, bounded and uniquely keyed.
  * A caller cannot replace this module-owned source qualification roster. */
 function profiles(variant: CurrentPcbSpatialVariant): readonly Profile[] {
-  const selected: readonly Profile[] = { "arc-line-via": arcProfiles, "line-via": trackProfiles, via: CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES, "pad-point": CURRENT_PCB_209_SPATIAL_PAD_FUNCTION_PROFILES }[variant];
+  const selected: readonly Profile[] = { "arc-line-via": arcProfiles, "line-via": trackProfiles, via: CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES, "pad-point": CURRENT_PCB_209_SPATIAL_PAD_FUNCTION_PROFILES, "component-point": CURRENT_PCB_209_COMPONENT_COMPLETE_POINT_FUNCTION_PROFILES }[variant];
   if (selected.length === 0 || selected.length > MAX_FUNCTIONS || new Set(selected.map(item => item.key)).size !== selected.length) { return refuse(); }
   return selected;
 }

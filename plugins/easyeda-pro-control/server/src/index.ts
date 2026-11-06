@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import { CurrentFootprintCombinedLifecycle, CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintForwardPrewriteLifecycle, CurrentFootprintMainLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbComponentSpatialLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbOrdinaryReadLifecycle, CurrentPcbSpatialLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "./current-pcb-diagnostic-lifecycle.ts";
+import { currentPcbComponentSpatialRequestSchema } from "./current-pcb-component-spatial-validation.ts";
+import type { ManagedComponentFixtureOpeningSource } from "./managed-component-fixture-opening-source.ts";
 import { currentPcb209VisualRequestSchema } from "./current-pcb-209-visual-validation.ts";
 import { createHash } from "node:crypto";
 import {
@@ -133,7 +136,6 @@ import { editorContextRequestSchema } from "./editor-context.ts";
 import { readEditorContext, readEditorShell } from "./editor-shell-runtime.ts";
 import { OrdinaryLaunchCoordinator, assertNoUnresolvedOrdinaryLaunches, ordinaryLaunchRequestSchema } from "./ordinary-launch.ts";
 import type { OrdinaryLaunchRuntime } from "./ordinary-launch.ts";
-import { CurrentFootprintCombinedLifecycle, CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintForwardPrewriteLifecycle, CurrentFootprintMainLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbOrdinaryReadLifecycle, CurrentPcbSpatialLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "./current-pcb-diagnostic-lifecycle.ts";
 import { currentPcbDiagnosticToolRequestSchema } from "./current-pcb-diagnostic-validation.ts";
 import { currentSchematicPageOpeningRequestSchema } from "./current-schematic-page-opening.ts";
 import { OrdinaryTrackedOpenCleanup } from "./ordinary-tracked-open-cleanup.ts";
@@ -267,6 +269,7 @@ function hasClosedGeneratedDataCustody(): boolean {
   assertClosedGeneratedDataMethods(owner); return closedGeneratedDataMethods.hasPendingWork.call(owner);
 }
 // Closed generated data only. This slot transfers no native owner or handle.
+let stagedComponentOpeningSource: ManagedComponentFixtureOpeningSource | undefined;
 let stagedFixtureOpeningSource: ManagedFixtureOpeningSource | undefined;
 let stagedSchematicOpeningSource: ManagedSchematicFixtureOpeningSource | undefined;
 let generatedSchematicOpening: GeneratedSchematicOpeningCoordinator | undefined;
@@ -288,6 +291,8 @@ function hasGeneratedSchematicCustody(): boolean {
   const owner = generatedSchematicOpening; if (owner === undefined) { return false; }
   assertGeneratedSchematicMethods(owner); return generatedSchematicMethods.hasPendingWork.call(owner);
 }
+// oxlint-disable-next-line typescript/unbound-method -- Pin only; invoke with the original coordinator receiver.
+const fixtureComponentStage = ManagedFixtureImportCoordinator.prototype.stageComponentSourceForFreshOpening;
 // oxlint-disable-next-line typescript/unbound-method -- Invoke the captured custody observer only on its original coordinator.
 const fixtureImportReservation = ManagedFixtureImportCoordinator.prototype.hasActiveReservation;
 function hasFixtureImportCustody(): boolean {
@@ -299,7 +304,7 @@ function hasFixtureImportCustody(): boolean {
   }
   return fixtureImportReservation.call(owner);
 }
-let currentPcbDiagnosticLifecycle: CurrentPcbDiagnosticLifecycle | CurrentPcb209DiagnosticLifecycle | CurrentPcbOrdinaryReadLifecycle | CurrentPcb209VisualLifecycle | CurrentPcbSpatialLifecycle | undefined;
+let currentPcbDiagnosticLifecycle: CurrentPcbDiagnosticLifecycle | CurrentPcb209DiagnosticLifecycle | CurrentPcbOrdinaryReadLifecycle | CurrentPcb209VisualLifecycle | CurrentPcbSpatialLifecycle | CurrentPcbComponentSpatialLifecycle | undefined;
 let currentPcbStringPrecreateLifecycle: CurrentPcbStringPrecreateLifecycle | undefined;
 let currentFootprintMainLifecycle: CurrentFootprintMainLifecycle | undefined;
 let currentFootprintHeldCacheValidation: CurrentFootprintHeldCacheValidation | undefined;
@@ -512,6 +517,7 @@ function disposableConstructedMethods(runtime: WindowsControlRuntime, nativeUi: 
 /** Reserve ordinary startup against every active diagnostic purpose and consumed
  * closed-symbol attempt. Read-only diagnostics still own their app allocation. */
 function assertOrdinaryRuntimeAllocationAllowed(): void {
+  if (stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its dedicated native reader birth."); }
   if (hasClosedGeneratedDataCustody()) { throw new Error("Complete the original closed generated-data resources and records before application startup."); }
   if (hasFixtureImportCustody()) { throw new Error("The original fixture import owner reserves application startup."); }
   if (hasGeneratedSchematicCustody()) { throw new Error("The original generated schematic owner reserves application startup."); }
@@ -524,6 +530,7 @@ function assertOrdinaryRuntimeAllocationAllowed(): void {
 
 /** No outer gate/authenticated scope. The exact retained entry owns its one gate admission. */
 async function runClosedSymbolTool(input: unknown, mode: "validation" | "ordinary"): Promise<CallToolResult> {
+  if (stagedComponentOpeningSource !== undefined) { return failure(new Error("Staged Component data reserves its separate reader purpose.")); }
   if (hasClosedGeneratedDataCustody()) { return failure(new Error("The original closed generated-data owner reserves native allocation.")); }
   let phase: ClosedSymbolIndexPhase = "request";
   let reason: ClosedSymbolIndexReason = "invalid-request";
@@ -2763,6 +2770,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_string_precreate_valid
   }, guarded((input: z.infer<typeof inputSchema>) => {
     const { request } = inputSchema.parse(input);
     if (original === undefined) {
+      if (stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its dedicated original Component reader birth."); }
       const environment = process.env;
       const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
       const originalEngine = engine, originalGate = bridgeGate, originalUpstream = upstream;
@@ -2789,6 +2797,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_string_precreate_valid
       };
       const assertUnreserved = (): void => {
         assertLocal();
+        if (stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its separate reader purpose."); }
         if (assetsRoot === undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined ||
             currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
             currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
@@ -2825,10 +2834,11 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     .refine(value => !["open-generated-schematic", "observe-text-wire-bus"].includes(value.request.action) || value.expectedFingerprint !== undefined,
       "Generated schematic navigation and reads require the complete expected runtime fingerprint.");
   const ordinaryWrapper = z.strictObject({ action: z.literal("ordinary"), request: currentPcbOrdinaryReadRequestSchema });
+  const componentSpatialWrapper = z.strictObject({ action: z.literal("component-spatial"), request: currentPcbComponentSpatialRequestSchema });
   const spatialWrapper = z.strictObject({ action: z.literal("spatial"), request: currentPcbSpatialRequestSchema });
-  const diagnosticSchema = diagnostic209 ? z.union([currentPcb209OpeningRequestSchema, ordinaryWrapper, schematicPageReadWrapper, schematicPageOpenWrapper, generatedSchematicWrapper, visualWrapper, spatialWrapper]) : currentPcbDiagnosticToolRequestSchema;
+  const diagnosticSchema = diagnostic209 ? z.union([currentPcb209OpeningRequestSchema, ordinaryWrapper, schematicPageReadWrapper, schematicPageOpenWrapper, generatedSchematicWrapper, visualWrapper, spatialWrapper, componentSpatialWrapper]) : currentPcbDiagnosticToolRequestSchema;
   const inputSchema = z.object({ request: z.unknown().pipe(diagnosticSchema) }).strict();
-  let original: { readonly owner: CurrentPcbDiagnosticLifecycle | CurrentPcb209DiagnosticLifecycle | CurrentPcbOrdinaryReadLifecycle | CurrentPcb209VisualLifecycle | CurrentPcbSpatialLifecycle; readonly run: CurrentPcbDiagnosticLifecycle["run"];
+  let original: { readonly owner: CurrentPcbDiagnosticLifecycle | CurrentPcb209DiagnosticLifecycle | CurrentPcbOrdinaryReadLifecycle | CurrentPcb209VisualLifecycle | CurrentPcbSpatialLifecycle | CurrentPcbComponentSpatialLifecycle; readonly run: CurrentPcbDiagnosticLifecycle["run"];
     readonly assertLocal: () => void } | undefined;
   let mainOriginal: { readonly owner: CurrentFootprintMainLifecycle; readonly run: CurrentFootprintMainLifecycle["run"];
     readonly assertLocal: () => void } | undefined;
@@ -2849,6 +2859,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       }
     }
     if (heldCacheOriginal === undefined) {
+      if (stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its dedicated original Component reader birth."); }
       const environment = process.env;
       const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
       const originalEngine = engine, originalGate = bridgeGate, originalUpstream = upstream;
@@ -2876,6 +2887,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
        * the controller retains its own reservation separately during cleanup. */
       const assertUnreserved = (): void => {
         assertLocal();
+        if (stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its separate reader purpose."); }
         if (assetsRoot === undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined ||
             currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined || currentSchematicRenameOperationCoordinator !== undefined ||
             closedSymbolIndexReservation !== undefined || closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined ||
@@ -2924,6 +2936,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       }
     }
     if (forwardSourceOriginal === undefined) {
+      if (stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its dedicated original Component reader birth."); }
       const environment = process.env;
       const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
       const originalEngine = engine, originalGate = bridgeGate, originalUpstream = upstream;
@@ -2951,6 +2964,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
        * the controller retains its own reservation separately during cleanup. */
       const assertUnreserved = (): void => {
         assertLocal();
+        if (stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its separate reader purpose."); }
         if (assetsRoot === undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined ||
             currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined || currentSchematicRenameOperationCoordinator !== undefined ||
             closedSymbolIndexReservation !== undefined || closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined ||
@@ -2999,6 +3013,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       }
     }
     if (headAgeOriginal === undefined) {
+      if (stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its dedicated original Component reader birth."); }
       const environment = process.env;
       const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
       const originalEngine = engine, originalGate = bridgeGate, originalUpstream = upstream;
@@ -3026,6 +3041,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
        * the controller retains its own reservation separately during cleanup. */
       const assertUnreserved = (): void => {
         assertLocal();
+        if (stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its separate reader purpose."); }
         if (assetsRoot === undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined ||
             currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined || currentSchematicRenameOperationCoordinator !== undefined ||
             closedSymbolIndexReservation !== undefined || closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined ||
@@ -3063,6 +3079,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
   const runMain = (request: CurrentFootprintMainValidationRequest): Promise<{ result: Record<string, unknown> }> => {
     if (!diagnostic209) { throw new Error("Original main observation requires the209 route."); }
     if (mainOriginal === undefined) {
+      if (stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its dedicated original Component reader birth."); }
       const environment = process.env;
       const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
       const originalEngine = engine, originalGate = bridgeGate, originalUpstream = upstream;
@@ -3089,6 +3106,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       };
       const assertUnreserved = (): void => {
         assertLocal();
+        if (stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its separate reader purpose."); }
         if (assetsRoot === undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined ||
             currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
             currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
@@ -3140,6 +3158,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
   const runCombinedHistorical = (request: Extract<CurrentFootprintCombinedValidationRequest, { action: "abandon-unknown-launch" }>): Promise<{ result: Record<string, unknown> }> => {
     if (!diagnostic209) { throw new Error("Combined historical relinquishment requires the209 route."); }
     if (combinedHistoricalOriginal === undefined) {
+      if (stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its dedicated original Component reader birth."); }
       const environment = process.env;
       const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
       const originalEngine = engine, originalGate = bridgeGate, originalUpstream = upstream;
@@ -3208,6 +3227,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
   const runForwardOpeningHistorical = (request: CurrentFootprintForwardOpeningRelinquishmentRequest): Promise<{ result: Record<string, unknown> }> => {
     if (!diagnostic209) { throw new Error("Forward opening historical relinquishment requires the209 route."); }
     if (forwardOpeningHistoricalOriginal === undefined) {
+      if (stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its dedicated original Component reader birth."); }
       const environment = process.env;
       const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
       const originalEngine = engine, originalGate = bridgeGate, originalUpstream = upstream;
@@ -3287,6 +3307,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
   const runForwardSourceHistorical = (request: CurrentFootprintForwardSourceRelinquishmentRequest): Promise<{ result: Record<string, unknown> }> => {
     if (!diagnostic209) { throw new Error("Forward source historical relinquishment requires the209 route."); }
     if (forwardSourceHistoricalOriginal === undefined) {
+      if (stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its dedicated original Component reader birth."); }
       const environment = process.env;
       const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
       const originalEngine = engine, originalGate = bridgeGate, originalUpstream = upstream;
@@ -3426,6 +3447,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
           startupOriginal.attempted?.call(startupOriginal.owner) === true) { startupOriginal = undefined; }
     }
     if (startupOriginal === undefined) {
+      if (stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its dedicated original Component reader birth."); }
       const environment = process.env;
       const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
       const originalEngine = engine, originalGate = bridgeGate, originalUpstream = upstream;
@@ -3485,6 +3507,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       };
       const assertUnreserved = (): void => {
         assertLocal();
+        if (stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its separate reader purpose."); }
         if (assetsRoot === undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined ||
             currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
             currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
@@ -3642,7 +3665,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
         if (generatedSchematicOpening === undefined) {
           const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"], runtime = ordinaryLaunchRuntime, source = stagedSchematicOpeningSource;
           if (request.action !== "open-generated-schematic" || source === undefined || runtime === undefined || windowsRuntime !== runtime ||
-            assetsRoot === undefined || generatedSchematicAllocation !== undefined || stagedFixtureOpeningSource !== undefined || hasFixtureImportCustody() ||
+            assetsRoot === undefined || generatedSchematicAllocation !== undefined || stagedFixtureOpeningSource !== undefined || stagedComponentOpeningSource !== undefined || hasFixtureImportCustody() ||
             currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined || currentSchematicRenameOperationCoordinator !== undefined ||
             currentPcbDiagnosticLifecycle !== undefined || currentPcbStringPrecreateLifecycle !== undefined || currentPcbWorkerStartupLifecycle !== undefined ||
             currentFootprintMainLifecycle !== undefined || currentFootprintHeldCacheValidation !== undefined || currentFootprintHeadAgeValidation !== undefined ||
@@ -3708,12 +3731,13 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
         result: await readCurrentSchematicPage(engine, parsed.request, parsed.expectedFingerprint),
       })));
     }
-    const ordinary = parsed.action === "ordinary", spatial = parsed.action === "spatial", visual = parsed.action === "visual";
-    const request = parsed.action === "ordinary" || parsed.action === "visual" || parsed.action === "spatial" ? parsed.request : parsed;
+    const componentSpatial = parsed.action === "component-spatial", ordinary = parsed.action === "ordinary", spatial = parsed.action === "spatial", visual = parsed.action === "visual";
+    const request = parsed.action === "component-spatial" || parsed.action === "ordinary" || parsed.action === "visual" || parsed.action === "spatial" ? parsed.request : parsed;
     let DiagnosticLifecycle = diagnostic209 ? CurrentPcb209DiagnosticLifecycle : CurrentPcbDiagnosticLifecycle;
     if (ordinary) { DiagnosticLifecycle = CurrentPcbOrdinaryReadLifecycle; }
     if (visual) { DiagnosticLifecycle = CurrentPcb209VisualLifecycle; }
     if (spatial) { DiagnosticLifecycle = CurrentPcbSpatialLifecycle; }
+    if (componentSpatial) { DiagnosticLifecycle = CurrentPcbComponentSpatialLifecycle; }
     if (original !== undefined && !(original.owner instanceof DiagnosticLifecycle)) {
       throw new Error("The original diagnostic purpose cannot change after allocation.");
     }
@@ -3744,6 +3768,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       };
       const assertUnreserved = (): void => {
         assertLocal();
+        if (stagedComponentOpeningSource !== undefined && !componentSpatial) { throw new Error("Staged Component data requires its separate reader purpose."); }
         if (assetsRoot === undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined ||
             currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
             currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
@@ -3754,15 +3779,17 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       const assertOtherLaunchesSettled = async (): Promise<void> => {
         assertUnreserved(); await engine.assertDiagnosticLaunchOtherOperationsSettled(); assertUnreserved();
       };
-      const generatedFixtureSource = stagedFixtureOpeningSource;
+      const generatedComponentSource = stagedComponentOpeningSource, generatedFixtureSource = stagedFixtureOpeningSource;
       if (stagedSchematicOpeningSource !== undefined) { throw new Error("Staged schematic data requires a fresh ordinary launch and its generated-schematic route."); }
+      if (componentSpatial !== (generatedComponentSource !== undefined) || componentSpatial && generatedFixtureSource !== undefined) { throw new Error("Component spatial requires its separate original staged Component data and fresh purpose."); }
       if (generatedFixtureSource !== undefined && !ordinary && !spatial) { throw new Error("The staged generated fixture requires its separate ordinary or spatial reader purpose."); }
-      if (generatedFixtureSource !== undefined) { assertUnreserved(); }
+      if (generatedFixtureSource !== undefined || generatedComponentSource !== undefined) { assertUnreserved(); }
       // Consume the index slot before construction. The constructor consumes its
       // Original private token; a failed construction cannot retry that transfer.
-      stagedFixtureOpeningSource = undefined;
+      stagedFixtureOpeningSource = undefined; stagedComponentOpeningSource = undefined;
       const owner = new DiagnosticLifecycle({ pluginRoot, assetsRoot: assetsRoot ?? "", ...(wslDistribution === undefined ? {} : { wslDistribution }),
         ...(generatedFixtureSource === undefined ? {} : { generatedFixtureSource }),
+        ...(generatedComponentSource === undefined ? {} : { generatedComponentSource }),
         powershellSha256: CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.sha256, powershellBytes: CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.bytes,
         assertLocalAllowed: assertLocal, assertAllowed: assertOtherLaunchesSettled, assertOtherLaunchesSettled });
       currentPcbDiagnosticLifecycle = owner;
@@ -3788,6 +3815,7 @@ registerFacadeTool(
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   },
   serializedGuarded(async ({ request }) => {
+    if (request.action === "launch" && stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its dedicated native reader birth."); }
     if (request.action !== "inspect" && hasGeneratedSchematicCustody()) { throw new Error("Finish the original generated schematic cleanup before ordinary launch control."); }
     if (ordinaryLaunchCoordinator === undefined) {
       const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"];
@@ -5316,7 +5344,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_project_schematic_rename")
  * fresh file/proof-helper reservation. */
 function assertFreshClosedGeneratedDataEnvironment(): void {
   if (scheduledShutdown !== undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined || ordinaryLaunchCoordinator !== undefined ||
-    fixtureImportCoordinator !== undefined || stagedFixtureOpeningSource !== undefined || stagedSchematicOpeningSource !== undefined ||
+    fixtureImportCoordinator !== undefined || stagedFixtureOpeningSource !== undefined || stagedSchematicOpeningSource !== undefined || stagedComponentOpeningSource !== undefined ||
     generatedSchematicOpening !== undefined || generatedSchematicAllocation !== undefined || closedSymbolIndexReservation !== undefined || closedSymbolUnreservedFailure.observed ||
     currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined || currentSchematicRenameOperationCoordinator !== undefined ||
     [currentPcbDiagnosticLifecycle, currentPcbStringPrecreateLifecycle, currentFootprintMainLifecycle, currentFootprintHeldCacheValidation,
@@ -5394,7 +5422,7 @@ registerFacadeTool(
   "easyeda_control_fixture_import",
   {
     title: "Import a generated disposable validation fixture",
-    description: "Generate and import a fresh fixed Via-only, Line/Via, Arc/Line/Via or separate SCH/SCH_PAGE Text/Wire/Bus project into an exclusively held private Windows destination. Requires this facade's current original ordinary launch, exact empty Start Page, pinned209 SDK/UI/manager/main sources, explicit disposable/import confirmations and authenticated expected fingerprint. Actual config directories have a separate tracked preflight journal; HALF_OFFLINE plus original complete no-.elib directory rosters and retained native watches exclude detached system-library seeding only after original termination and drained watch cancellation. The original import Promise is dispatched once and retained through settlement. SDK settlement is partial evidence: closed SQLite, source membership and persistent registration acceptance remain separate. Inspect original outcomes without replay. Cleanup uses the retained original journal/runtime/session after dispatch settles; request one normal close, observe original root/empty Job and exact old HMAC session closure, finish cleanup. capture-closed-import retains complete SQL/source only after that cleanup. Release the original destination and owner, then optionally stage-for-fresh-opening for PCB data or stage-schematic-for-fresh-opening for SCH data, with confirmStageClosedFixture:true before ordinary runtime/helper release. The same facade retains only the qualified data token for a fresh generated reader birth; it transfers no native owner and accepts no target JSON. settle-import-records and settle-cleanup-records publish only exact retained local candidates. Preserve all partial files. No caller files, paths, IDs, geometry, SQL, code, deletion, explicit Save, prompt choice, force termination or historical-owner adoption. Query fixture-import/fixture-import-validate first.",
+    description: "Generate and import a fresh fixed Via-only, Line/Via, Arc/Line/Via, standalone circular SMT Pad, Component with a local circular Pad footprint, or separate SCH/SCH_PAGE Text/Wire/Bus project (including explicit Relevance) into an exclusively held private Windows destination. Requires this facade's current original ordinary launch, exact empty Start Page, pinned209 SDK/UI/manager/main sources, explicit disposable/import confirmations and authenticated expected fingerprint. Actual config directories have a separate tracked preflight journal; HALF_OFFLINE plus original complete no-.elib directory rosters and retained native watches exclude detached system-library seeding only after original termination and drained watch cancellation. The original import Promise is dispatched once and retained through settlement. SDK settlement is partial evidence: closed SQLite, source membership and persistent registration acceptance remain separate. Inspect original outcomes without replay. Cleanup uses the retained original journal/runtime/session after dispatch settles; request one normal close, observe original root/empty Job and exact old HMAC session closure, finish cleanup. capture-closed-import retains complete SQL/source only after that cleanup. Release the original destination and owner, then optionally stage-for-fresh-opening for PCB/standalone Pad data, stage-component-for-fresh-opening for Component data, or stage-schematic-for-fresh-opening for SCH data, with confirmStageClosedFixture:true before ordinary runtime/helper release. The same facade retains only the qualified data token for a fresh generated reader birth; it transfers no native owner and accepts no target JSON. settle-import-records and settle-cleanup-records publish only exact retained local candidates. Preserve all partial files. No caller files, paths, IDs, geometry, SQL, code, deletion, explicit Save, prompt choice, force termination or historical-owner adoption. Query fixture-import/fixture-import-validate first.",
     inputSchema: { request: z.unknown().pipe(managedFixtureImportRequestSchema), expectedFingerprint: privateFingerprintSchema.optional() },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
   },
@@ -5402,8 +5430,16 @@ registerFacadeTool(
     if (request.action === "inspect") {
       return { result: fixtureImportCoordinator?.inspect(request.operationId) ?? { originalOwnerRetained: false, importedFixtureAccepted: false, replayAllowed: false } };
     }
+    if (request.action === "stage-component-for-fresh-opening") {
+      const owner = fixtureImportCoordinator;
+      if (owner === undefined || stagedFixtureOpeningSource !== undefined || stagedSchematicOpeningSource !== undefined || stagedComponentOpeningSource !== undefined || hasGeneratedSchematicCustody() || Object.getPrototypeOf(owner) !== ManagedFixtureImportCoordinator.prototype || owner.stageComponentSourceForFreshOpening !== fixtureComponentStage || ManagedFixtureImportCoordinator.prototype.stageComponentSourceForFreshOpening !== fixtureComponentStage) { throw new Error("Stage only this facade's released original Component fixture once before ordinary helper release."); }
+      const source = fixtureComponentStage.call(owner, request.operationId); stagedComponentOpeningSource = source;
+      return { result: { schema: "easyeda-pro-control.managed-component-fixture-opening-staged.v1", operationId: request.operationId,
+        projectUuid: source.projectUuid, originalSourceSha256: source.originalSourceSha256, sameFacadeDataTransferOnly: true,
+        nativeOwnerTransferred: false, applicationStarted: false, registrationVerified: false, importedFixtureAccepted: false, designExecutionAuthorized: false } };
+    }
     if (request.action === "stage-schematic-for-fresh-opening") {
-      if (fixtureImportCoordinator === undefined || stagedSchematicOpeningSource !== undefined || stagedFixtureOpeningSource !== undefined || hasGeneratedSchematicCustody()) {
+      if (fixtureImportCoordinator === undefined || stagedSchematicOpeningSource !== undefined || stagedComponentOpeningSource !== undefined || stagedFixtureOpeningSource !== undefined || hasGeneratedSchematicCustody()) {
         throw new Error("Stage only this facade's released original schematic data once before its ordinary helper release.");
       }
       const source = fixtureImportCoordinator.stageSchematicSourceForFreshOpening(request.operationId);
@@ -5414,7 +5450,7 @@ registerFacadeTool(
         registrationVerified: false, importedFixtureAccepted: false, designExecutionAuthorized: false } };
     }
     if (request.action === "stage-for-fresh-opening") {
-      if (fixtureImportCoordinator === undefined || stagedFixtureOpeningSource !== undefined || stagedSchematicOpeningSource !== undefined || hasGeneratedSchematicCustody()) { throw new Error("Stage only this facade's released original closed fixture once before its ordinary runtime release."); }
+      if (fixtureImportCoordinator === undefined || stagedFixtureOpeningSource !== undefined || stagedSchematicOpeningSource !== undefined || stagedComponentOpeningSource !== undefined || hasGeneratedSchematicCustody()) { throw new Error("Stage only this facade's released original closed fixture once before its ordinary runtime release."); }
       const source = fixtureImportCoordinator.stageSourceForFreshOpening(request.operationId);
       stagedFixtureOpeningSource = source;
       return { result: { schema: "easyeda-pro-control.managed-fixture-opening-staged.v1", operationId: request.operationId,
@@ -5429,7 +5465,7 @@ registerFacadeTool(
     return upstream.withAuthenticatedBridgeDispatchScope(async () => {
       if (fixtureImportCoordinator === undefined) {
         const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"], runtime = ordinaryLaunchRuntime;
-        if (assetsRoot === undefined || runtime === undefined || windowsRuntime !== runtime || stagedFixtureOpeningSource !== undefined || stagedSchematicOpeningSource !== undefined || hasGeneratedSchematicCustody() || currentDisposableOpenCoordinator !== undefined ||
+        if (assetsRoot === undefined || runtime === undefined || windowsRuntime !== runtime || stagedFixtureOpeningSource !== undefined || stagedSchematicOpeningSource !== undefined || stagedComponentOpeningSource !== undefined || hasGeneratedSchematicCustody() || currentDisposableOpenCoordinator !== undefined ||
             currentPcbRenameOperationCoordinator !== undefined || currentSchematicRenameOperationCoordinator !== undefined ||
             closedSymbolIndexReservation !== undefined || scheduledShutdown !== undefined || hasForwardSourceCustody()) {
           throw new Error("Fixture import requires this facade's unreserved original ordinary launch.");

@@ -10,6 +10,11 @@
 /* oxlint-disable import/max-dependencies -- Fixed transport composes independent model/common/worker/actor grammars without merging their source or authority boundaries. */
 import { currentProjectSaveProducerGuardWire } from "./current-project-save-producer-guard-wire.ts";
 import type { CurrentProjectSaveProducerGuardCommand } from "./current-project-save-producer-guard-protocol.ts";
+import { CURRENT_PCB_COMPONENT_SPATIAL_PROFILE } from "./current-pcb-component-spatial-profile.ts";
+import { currentPcbComponentSpatialWire } from "./current-pcb-component-spatial-protocol.ts";
+import { assertOriginalGeneratedComponentFixtureTarget } from "./managed-component-fixture-initial-sql.ts";
+import type { QualifiedGeneratedComponentFixtureTarget } from "./managed-component-fixture-initial-sql.ts";
+import { GENERATED_COMPONENT_FIXTURE_REGISTRATION_FUNCTION } from "./managed-component-fixture-registration-program.ts";
 import { currentProjectStructureTransportWire } from "./current-project-structure-transport-wire.ts";
 import type { CurrentProjectStructureTransportPurpose } from "./current-project-structure-transport-wire.ts";
 import type { CurrentProjectStructureTransportCommand } from "./current-project-structure-transport-protocol.ts";
@@ -112,6 +117,7 @@ const REQUEST_METHODS = [
   "Runtime.evaluate", "Runtime.callFunctionOn", "Runtime.getProperties", "Runtime.releaseObjectGroup",
 ] as const satisfies readonly DiagnosticCommand["method"][];
 const REQUEST_PHASES = [
+  "spatial-bindings-component", "spatial-read-component",
   "renderer-capture209",
   "discovery", "frame-owner", "worker-discovery", "worker-state", "project-preflight", "project-open-project", "generated-fixture-register",
   "pcb-preflight", "pcb-open-document", "pcb-observe", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "visual209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209", "model-wrapper", "model-properties", "model-handler",
@@ -219,6 +225,7 @@ class CurrentPcbFixedPipeCore {
   readonly #viaWaitingWorkers = new Set<string>();
   readonly #viaStages = new Set<CurrentPcbViaWriteStage>();
   readonly #spatialPurpose: boolean;
+  readonly #componentSpatialPurpose: boolean;
   readonly #spatialSources = new Set<string>();
   #spatialBinding: CurrentPcbSpatialBinding | null = null;
   #spatialStage = 0;
@@ -267,7 +274,7 @@ class CurrentPcbFixedPipeCore {
   #workerDiscoverySettled = false;
   #selectedWorkerSession: string | null = null;
 
-  public constructor(input: Readable, output: Writable, purpose: "diagnostic" | "string-precreate" | "worker-startup" | "combined-discovery" | "forward-discovery" | "forward-saved-discovery" | "held-cache-diagnostic" | "pcb-spatial209" | "pcb-via-write209" | "schematic-display-write209",
+  public constructor(input: Readable, output: Writable, purpose: "diagnostic" | "string-precreate" | "worker-startup" | "combined-discovery" | "forward-discovery" | "forward-saved-discovery" | "held-cache-diagnostic" | "pcb-spatial209" | "pcb-component-spatial209" | "pcb-via-write209" | "schematic-display-write209",
     observeEventBytes: ((bytes: number) => void) | null = null) {
     if ((purpose === "forward-discovery" || purpose === "forward-saved-discovery" || purpose === "held-cache-diagnostic") !== (observeEventBytes !== null) || observeEventBytes !== null && typeof observeEventBytes !== "function") { throw new Error("PCB_DIAGNOSTIC_FORWARD_ACCOUNTING"); }
     this.#observeEventBytes = observeEventBytes;
@@ -275,6 +282,7 @@ class CurrentPcbFixedPipeCore {
     this.#startupPurpose = purpose === "worker-startup" || purpose === "combined-discovery" || purpose === "forward-discovery" || purpose === "forward-saved-discovery";
     this.#combinedPurpose = purpose === "combined-discovery" || purpose === "forward-discovery";
     this.#heldCacheDiagnosticPurpose = purpose === "held-cache-diagnostic";
+    this.#componentSpatialPurpose = purpose === "pcb-component-spatial209";
     this.#spatialPurpose = purpose === "pcb-spatial209"; this.#viaPurpose = purpose === "pcb-via-write209"; this.#schematicDisplayPurpose = purpose === "schematic-display-write209";
   }
 
@@ -401,13 +409,13 @@ class CurrentPcbFixedPipeCore {
   public async getScriptSource(scriptId: string): Promise<Reply> {
     if (this.#sessionId === null || !diagnosticToken(scriptId)) { throw new Error("PCB_DIAGNOSTIC_PIPE_SCRIPT_INPUT"); }
     const result = await this.#request({ id: this.#nextId, method: "Debugger.getScriptSource", params: { scriptId }, sessionId: this.#sessionId });
-    if ((this.#spatialPurpose || this.#viaPurpose) && typeof result["scriptSource"] === "string") { this.#spatialSources.add(scriptId); }
+    if ((this.#spatialPurpose || this.#componentSpatialPurpose || this.#viaPurpose) && typeof result["scriptSource"] === "string") { this.#spatialSources.add(scriptId); }
     return result;
   }
   /** Only the new birth can seal its already observed original PCB realm.
    * The owner must separately qualify complete source and reprove every await. */
   protected bindSpatialCommand(input: CurrentPcbSpatialBinding): void {
-    if (!this.#spatialPurpose || !this.#started || this.#released || this.#handedOff || this.#failure !== null ||
+    if (!(this.#spatialPurpose || this.#componentSpatialPurpose) || !this.#started || this.#released || this.#handedOff || this.#failure !== null ||
       this.#sessionId === null || this.#workerEvent !== null || this.#pending !== null || this.#used !== 0 || this.#spatialBinding !== null) {
       throw new Error("PCB_SPATIAL_PIPE_BINDING");
     }
@@ -416,7 +424,7 @@ class CurrentPcbFixedPipeCore {
     this.#spatialBinding = binding;
   }
   protected assertSpatialWorkflowCapacity(): void {
-    if (!this.#spatialPurpose || !this.#started || this.#released || this.#handedOff || this.#failure !== null || this.#pending !== null ||
+    if (!(this.#spatialPurpose || this.#componentSpatialPurpose) || !this.#started || this.#released || this.#handedOff || this.#failure !== null || this.#pending !== null ||
       this.#spatialBinding !== null || this.#spatialStage !== 0 || this.#nextId !== 1) { throw new Error("PCB_SPATIAL_PIPE_WORKFLOW_CAPACITY"); }
     if (CURRENT_PCB_SPATIAL_PROFILE.requestLimit < CURRENT_PCB_SPATIAL_REQUEST_DERIVATION.fullWorkflow) { throw new Error("PCB_SPATIAL_PIPE_WORKFLOW_BUDGET"); }
   }
@@ -450,6 +458,28 @@ class CurrentPcbFixedPipeCore {
         if (phase === "bindings-track") { this.#spatialVariant = "line-via"; }
         if (phase === "bindings-arc") { this.#spatialVariant = "arc-line-via"; }
         if (phase === "bindings-pad") { this.#spatialVariant = "pad-point"; }
+        this.#spatialStage += 1;
+      }
+    }
+    return this.#request(fixed.command, `spatial-${phase}`);
+  }
+  /** Component birth has its own finite phase grammar and419-ID allocator. */
+  // oxlint-disable-next-line eslint/require-await -- Preserve exact request Promise and convert pre-dispatch guards to rejections.
+  protected async observeComponentSpatialCommand(input: CurrentPcbSpatialCaptureCommand): Promise<Reply> {
+    const binding = this.#spatialBinding;
+    if (!this.#componentSpatialPurpose || binding === null || this.#sessionId === null || this.#spatialReleaseAttempted || this.#workerEvent !== null) { throw new Error("PCB_COMPONENT_PIPE_PURPOSE"); }
+    const fixed = currentPcbComponentSpatialWire(input, this.#nextId, this.#sessionId), phase = fixed.command.spatialPhase;
+    if (phase === "release") {
+      if (this.#spatialStage === 0) { throw new Error("PCB_COMPONENT_PIPE_SEQUENCE"); } this.#spatialReleaseAttempted = true;
+    } else {
+      if (this.#nextId > CURRENT_PCB_COMPONENT_SPATIAL_PROFILE.normalRequestLimit) { throw new Error("PCB_COMPONENT_PIPE_CLEANUP_RESERVE"); }
+      if (phase === "properties") { if (this.#spatialStage < 1 || this.#spatialStage > 4) { throw new Error("PCB_COMPONENT_PIPE_SEQUENCE"); } }
+      else if (phase === "read-component") {
+        if (this.#spatialStage < 4 || this.#spatialStage > 5 || this.#spatialReads >= 16) { throw new Error("PCB_COMPONENT_PIPE_READ_SEQUENCE"); }
+        this.#spatialReads += 1; this.#spatialStage = 5;
+      } else {
+        if (["wrapper", "handler", "bindings-component", "functions"][this.#spatialStage] !== phase) { throw new Error("PCB_COMPONENT_PIPE_SEQUENCE"); }
+        if (phase === "wrapper" && fixed.command.params.uniqueContextId !== binding.uniqueContextId) { throw new Error("PCB_COMPONENT_PIPE_CONTEXT"); }
         this.#spatialStage += 1;
       }
     }
@@ -642,10 +672,18 @@ class CurrentPcbFixedPipeCore {
       params: diagnosticOpeningParams(uniqueContextId, target, phase), sessionId: this.#sessionId }, `project-${phase}`);
   }
   public registerGeneratedFixture(uniqueContextId: string, qualified: QualifiedGeneratedFixtureTarget): Promise<Reply> {
+    if (this.#componentSpatialPurpose) { return Promise.reject(new Error("PCB_COMPONENT_OLD_REGISTRATION_REFUSED")); }
     assertOriginalGeneratedFixtureTarget(qualified);
     if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_GENERATED_REGISTRATION_INPUT")); }
     return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn",
       params: diagnosticGeneratedFixtureRegistrationParams(uniqueContextId, qualified.target), sessionId: this.#sessionId }, "generated-fixture-register");
+  }
+  public registerGeneratedComponentFixture(uniqueContextId: string, qualified: QualifiedGeneratedComponentFixtureTarget): Promise<Reply> {
+    assertOriginalGeneratedComponentFixtureTarget(qualified);
+    if (!this.#componentSpatialPurpose || this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB_COMPONENT_REGISTRATION_PURPOSE")); }
+    return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn", params: {
+      ...diagnosticGeneratedFixtureRegistrationParams(uniqueContextId, qualified.target), functionDeclaration: GENERATED_COMPONENT_FIXTURE_REGISTRATION_FUNCTION,
+    }, sessionId: this.#sessionId }, "generated-fixture-register");
   }
   public observeModel(command: CurrentPcbDiagnosticModelCommand): Promise<Reply> {
     if (this.#sessionId === null || this.#workerEvent !== null && !this.#stringPurpose) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_MODEL_INPUT")); }
@@ -821,13 +859,13 @@ class CurrentPcbFixedPipeCore {
   async #request(command: (ProducerGuardWireCommand & Readonly<{ id: number; sessionId: string }>) | (StructureTransportWireCommand & Readonly<{ id: number; sessionId: string }>) | ((CurrentSchematicDisplayAccessorCommand & Readonly<{ schematicAccessorCommand: true }>) & Readonly<{ id: number; sessionId: string }>) | ((CurrentSchematicDisplayClockCommand & Readonly<{ schematicClockCommand: true; schematicClockRealm: CurrentSchematicDisplayClockRealm }>) & Readonly<{ id: number; sessionId: string }>) | ((SchematicWorkerParentCommand | (CurrentSchematicDisplayWorkerCommand & Readonly<{ schematicWorkerCommand: true }>)) & Readonly<{ id: number; sessionId: string }>) | (CurrentSchematicDisplayNativeCommand & Readonly<{ id: number; sessionId: string }>) | DiagnosticCommand | CurrentPcbSpatialWireCommand | ((CurrentPcbViaWriteCommand | CurrentPcbViaSpatialCommand | CurrentPcbViaSdkPropertiesCommand | ViaWorkerParentCommand | ViaClockWireCommand | (CurrentPcbViaWorkerCommand & Readonly<{ viaWorkerCommand: true }>)) & Readonly<{ id: number; sessionId: string }>) | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheHeldCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
     Readonly<{ id: number; sessionId: string }>), phase: RequestPhase = "discovery"): Promise<Reply> {
     if (!this.#started || this.#released || this.#handedOff) { throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED"); }
-    const spatial = this.#spatialPurpose && "spatialPhase" in command && phase.startsWith("spatial-");
-    if (this.#spatialPurpose && !(spatial && command.method === "Runtime.releaseObjectGroup") &&
-      this.#nextId > CURRENT_PCB_SPATIAL_PROFILE.normalRequestLimit) { throw new Error("PCB_SPATIAL_PIPE_CLEANUP_RESERVE"); }
+    const spatial = (this.#spatialPurpose || this.#componentSpatialPurpose) && "spatialPhase" in command && phase.startsWith("spatial-");
+    if ((this.#spatialPurpose || this.#componentSpatialPurpose) && !(spatial && command.method === "Runtime.releaseObjectGroup") &&
+      this.#nextId > (this.#componentSpatialPurpose ? CURRENT_PCB_COMPONENT_SPATIAL_PROFILE.normalRequestLimit : CURRENT_PCB_SPATIAL_PROFILE.normalRequestLimit)) { throw new Error("PCB_SPATIAL_PIPE_CLEANUP_RESERVE"); }
     const spatialDiscovery = (phase === "discovery" || phase === "frame-owner") &&
       CURRENT_PCB_SPATIAL_DISCOVERY_METHODS.some(method => method === command.method);
     const spatialOpening = phase.startsWith("project-") || phase.startsWith("pcb-") || phase === "generated-fixture-register";
-    if (this.#spatialPurpose && !spatial && (!spatialDiscovery && !spatialOpening ||
+    if ((this.#spatialPurpose || this.#componentSpatialPurpose) && !spatial && (!spatialDiscovery && !spatialOpening ||
       this.#spatialBinding !== null && !spatialDiscovery && phase !== "pcb-observe")) {
       throw new Error("PCB_SPATIAL_PIPE_DISCOVERY_ONLY");
     }
@@ -849,6 +887,7 @@ class CurrentPcbFixedPipeCore {
     let limit = this.#stringPurpose ? CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT : DIAGNOSTIC_REQUEST_LIMIT;
     if (this.#heldCacheDiagnosticPurpose) { limit = HELD_DIAGNOSTIC.requestLimit; }
     if (this.#spatialPurpose) { limit = CURRENT_PCB_SPATIAL_PROFILE.requestLimit; }
+    if (this.#componentSpatialPurpose) { limit = CURRENT_PCB_COMPONENT_SPATIAL_PROFILE.requestLimit; }
     if (this.#viaPurpose) { limit = CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.renderer.total; }
     if (this.#schematicDisplayPurpose) { limit = CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE.renderer.total; }
     const heldCleanup = heldCache && command.method === "Runtime.releaseObjectGroup";
@@ -1024,6 +1063,13 @@ export class CurrentPcbSpatialPipe extends CurrentPcbFixedPipeCore {
   public assertSpatialCapacity(): void { this.assertSpatialWorkflowCapacity(); }
   public bindSpatial(binding: CurrentPcbSpatialBinding): void { this.bindSpatialCommand(binding); }
   public observeSpatial(command: CurrentPcbSpatialCaptureCommand): Promise<Reply> { return this.observeSpatialCommand(command); }
+}
+/** Original generated Component-only birth. No old owner can upgrade. */
+export class CurrentPcbComponentSpatialPipe extends CurrentPcbFixedPipeCore {
+  public constructor(input: Readable, output: Writable) { super(input, output, "pcb-component-spatial209"); }
+  public assertSpatialCapacity(): void { this.assertSpatialWorkflowCapacity(); }
+  public bindSpatial(binding: CurrentPcbSpatialBinding): void { this.bindSpatialCommand(binding); }
+  public observeComponentSpatial(command: CurrentPcbSpatialCaptureCommand): Promise<Reply> { return this.observeComponentSpatialCommand(command); }
 }
 /** Distinct original schematic navigation/source stages. The separate native
  * worker and writer grammars require their original source issuance. */

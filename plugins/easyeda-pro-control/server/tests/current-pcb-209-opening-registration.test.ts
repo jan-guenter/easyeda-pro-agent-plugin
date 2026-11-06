@@ -69,7 +69,7 @@ void test("209 public opening and startup callbacks select original lifecycles a
       checks += 1; if (blocked) { throw new Error("synthetic unresolved engine journal"); }
       if (pendingAdmission !== undefined) { await pendingAdmission; }
     } };
-  const scope = vm.createContext({ z, OrdinaryTrackedOpenCleanup, CurrentSchematicPageOpeningCoordinator, inspectCurrentSchematicPageOpening, currentSchematicPageOpeningRequestSchema, privateFingerprintSchema: z.record(z.string(), z.unknown()), currentSchematicPageReadRequestSchema, readCurrentSchematicPage, currentPcbOrdinaryReadRequestSchema, CurrentPcbOrdinaryReadLifecycle, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupToolRequestSchema,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, OrdinaryTrackedOpenCleanup, CurrentSchematicPageOpeningCoordinator, inspectCurrentSchematicPageOpening, currentSchematicPageOpeningRequestSchema, privateFingerprintSchema: z.record(z.string(), z.unknown()), currentSchematicPageReadRequestSchema, readCurrentSchematicPage, currentPcbOrdinaryReadRequestSchema, CurrentPcbOrdinaryReadLifecycle, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupToolRequestSchema,
     CURRENT_PCB_DIAGNOSTIC_PROFILE, CurrentPcb209DiagnosticLifecycle: Selected209Lifecycle,
     CurrentPcb209VisualLifecycle: Selected209VisualLifecycle, CurrentPcbSpatialLifecycle,
     CurrentPcb209WorkerStartupLifecycle: Selected209StartupLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle,
@@ -271,7 +271,7 @@ void test("209 public opening and startup callbacks select original lifecycles a
   // A fresh registration chooses the actual visual subclass before any owner
   // Exists. It cannot upgrade that choice to ordinary diagnostics afterward.
   registrations.clear();
-  const visualScope = vm.createContext({ ...scope, currentPcbDiagnosticLifecycle: undefined });
+  const visualScope = vm.createContext({ stagedComponentOpeningSource: undefined, ...scope, currentPcbDiagnosticLifecycle: undefined });
   vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), visualScope);
   const visualRegistration = registrations.get("easyeda_control_pcb209_opening"); assert.ok(visualRegistration);
   const visualId = "pcb209-visual-registration";
@@ -295,7 +295,7 @@ void test("209 public opening and startup callbacks select original lifecycles a
   // The actual ordinary wrapper allocates its own generation and refuses
   // Changing to a disposable/visual purpose even before native allocation.
   registrations.clear();
-  const ordinaryScope = vm.createContext({ ...scope, currentPcbDiagnosticLifecycle: undefined });
+  const ordinaryScope = vm.createContext({ stagedComponentOpeningSource: undefined, ...scope, currentPcbDiagnosticLifecycle: undefined });
   vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), ordinaryScope);
   const ordinaryRegistration = registrations.get("easyeda_control_pcb209_opening"); assert.ok(ordinaryRegistration);
   const ordinaryId = "pcb209-ordinary-registration";
@@ -353,7 +353,7 @@ void test("209 public opening and startup callbacks select original lifecycles a
   const originalLaunch = new WindowsControlRuntime({ upstream: authenticated.upstream, pluginRoot: "/opt/synthetic-control",
     assetsRoot: "/mnt/c/Synthetic/resources/app/assets", wslDistribution: "SyntheticReview", reviewedExecutionScopeSha256: "a".repeat(64) });
   registrations.clear();
-  const authenticatedScope = vm.createContext({ ...scope, upstream: authenticated.upstream,
+  const authenticatedScope = vm.createContext({ stagedComponentOpeningSource: undefined, ...scope, upstream: authenticated.upstream,
     engine: { ...engine, upstream: authenticated.upstream }, ordinaryLaunchRuntime: originalLaunch, windowsRuntime: originalLaunch,
     CurrentSchematicPageOpeningCoordinator: ScopedPageOpening,
     readCurrentSchematicPage: async (): Promise<Record<string, unknown>> => {

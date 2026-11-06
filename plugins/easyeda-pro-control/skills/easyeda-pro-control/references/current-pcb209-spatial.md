@@ -141,6 +141,36 @@ existing-object mutation or claim complete native/SQL source membership,
 connectivity, a continuous snapshot, full SDK instance parity or persistence.
 Source and synthetic tests do not establish connected validation.
 
+## Separate generated Component point birth
+
+Query `pcb209-component-spatial` and `pcb209-component-spatial-validate`.
+The public opening wrapper is `component-spatial`, with
+`pcb209-spatial-component-*` IDs. This is a separate original native birth with
+419 requests (418 normal and one cleanup reserve); every older spatial purpose
+keeps its384 ceiling. It accepts only this facade's genuinely issued staged
+`component-circular-smt-pad` data. Existing owners cannot upgrade, and callers
+cannot supply paths, target DTOs or geometry.
+
+After original import cleanup/full initial SQL qualification, release the
+original destination and fixture owner, call `stage-component-for-fresh-opening`
+with the base import operation ID and `confirmStageClosedFixture:true`, then
+complete original ordinary helper release. The independent data token survives
+that release and is consumed by the new Component lifecycle before allocation.
+Use its fixed browser/frame/UI-source stages, `open-generated-fixture`,
+`open-pcb`, `observe-pcb-opening`, then one `observe-components` batch of1–16
+points with `acceptNativeScratchEffects:true`. Missing replies consume their
+original attempts; record settlement never repeats native work.
+
+The ready scene must contain exactly the generated top-layer, origin-zero,
+rotation-zero Component, its original local circular SMT Pad footprint and two
+hidden indexed attributes. The290-callee graph retains the real footprint cache,
+transforms, stored bounds, parent chains and attribute refusal path. Every region,
+other family, transformed/unready object or changed cache/index refuses before
+hits. Two matching samples preserve native Component/Pad ordering and empty
+selection. Source membership, persistence, writer and connected acceptance stay
+false. The old `capture-generated-closed` and historical reuse profiles do not
+accept this new Component target; close and release the original reader normally.
+
 ## Closure
 
 Finish with the original observed window's one normal close, separately observed

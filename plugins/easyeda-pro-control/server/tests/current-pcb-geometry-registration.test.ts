@@ -17,7 +17,7 @@ void test("PCB geometry registration preserves strict target requests and the se
   const engine = Object.freeze({ synthetic: true }), expectedFingerprint = Object.freeze({ synthetic: true });
   const calls: unknown[] = [];
   const observed = Object.freeze({ value: [], cadAuthority: false, persistenceVerified: false, sourceMembershipVerified: false });
-  const scope = vm.createContext({ z, currentPcbGeometryRequestSchema, engine, privateFingerprintSchema: z.unknown(),
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, currentPcbGeometryRequestSchema, engine, privateFingerprintSchema: z.unknown(),
     readCurrentPcbGeometry: (actualEngine: unknown, request: unknown, fingerprint: unknown): Promise<typeof observed> => {
       assert.equal(actualEngine, engine); assert.equal(fingerprint, expectedFingerprint);
       calls.push(request); return Promise.resolve(observed);

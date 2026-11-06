@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 Component spatial native mount](2026-11-06-component-spatial-native-mount.md). Separate419-ID original birth, strict genuine Component staging/registration/point route and retained cleanup; Linux/source checks only. Includes the preserved synthetic test-intent incident and early isolation fix.
+
 - [2026-11-06 complete Component point kernel](2026-11-06-component-point-complete-kernel.md). Required hidden ATTR index members, actual290-callee/419-request composition, exact cache/parent/kernel guards and bounded frame; native birth and index mount remain separate.
 
 - [2026-11-06 generated Component fixture](2026-11-06-generated-component-fixture.md). New complete local FOOTPRINT/PCB archive with explicit hidden attributes, strict initial SQL/checkpoint/staging and original import/Windows closed capture; new408-purpose cache/index and positive native proof remain separate.

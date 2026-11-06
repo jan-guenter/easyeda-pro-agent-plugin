@@ -41,7 +41,7 @@ void test("actual fixture registration retains one original index owner, authent
       this.#assertOriginal(); return { synthetic: true };
     }
   }
-  const context = vm.createContext({ z, resolve, process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets" } },
+  const context = vm.createContext({ stagedComponentOpeningSource: undefined, z, resolve, process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets" } },
     privateFingerprintSchema: z.record(z.string(), z.unknown()), managedFixtureImportRequestSchema,
     // oxlint-disable-next-line typescript/no-extraneous-class -- The real registration constructs this separate cleanup role; this test checks only its owner's allocation and scope.
     ManagedFixtureImportCoordinator: Owner, OrdinaryTrackedOpenCleanup: class {},

@@ -131,7 +131,7 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
     // Stable inert authority owner.
   },
     assertBridgeDispatchAllowed: (): Promise<void> => Promise.resolve(), assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
-  const scope = vm.createContext({ z, ordinaryLaunchRequestSchema, OrdinaryLaunchCoordinator: Coordinator, WindowsControlRuntime: Runtime,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, ordinaryLaunchRequestSchema, OrdinaryLaunchCoordinator: Coordinator, WindowsControlRuntime: Runtime,
     CurrentPcbDiagnosticLifecycle: Diagnostic, CurrentPcbWorkerStartupLifecycle: Diagnostic, CurrentPcb209WorkerStartupLifecycle: Diagnostic,
     CurrentPcb209EmptyStartupLifecycle: Diagnostic, CurrentPcb209RatlineStartupLifecycle: Diagnostic,
     CurrentPcb209RatlineContinuationLifecycle: Diagnostic, CurrentFootprintCopyPreparationLifecycle: Diagnostic,

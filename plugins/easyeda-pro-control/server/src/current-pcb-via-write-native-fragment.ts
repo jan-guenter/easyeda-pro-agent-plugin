@@ -71,7 +71,9 @@ export function applyCurrentPcbViaWriteNativeFragment(input: string): string {
   let source = one(currentInput, "[switch]$StringPrecreate,", "[switch]$PcbViaWrite209,[switch]$StringPrecreate,");
   const switches = [...source.slice(0, source.indexOf("\n")).matchAll(/\[switch\]\$(\w+)/gu)].map(match => match[1]).filter(name => name !== undefined && name !== "CompileOnly" && name !== "PcbViaWrite209" && name !== "SchematicDisplayWrite209");
   const conflict = `if ($PcbViaWrite209 -and (${switches.map(name => `$${name}`).join(" -or ")})) {throw 'pcb-diagnostic-conflicting-via-purpose'}\n`;
-  source = one(source, "$ErrorActionPreference = 'Stop'\n", `$ErrorActionPreference = 'Stop'\n${conflict}`);
+  const priorConflict = source.split("\n").filter(line => line.startsWith("if ($PcbViaWrite209 -and ("));
+  if (priorConflict.length > 1) { throw new Error("PCB_VIA_NATIVE_CONFLICT_DUPLICATE"); }
+  source = priorConflict[0] === undefined ? one(source, "$ErrorActionPreference = 'Stop'\n", `$ErrorActionPreference = 'Stop'\n${conflict}`) : source.replace(`${priorConflict[0]}\n`, conflict);
   source = one(source, "if ($GeneratedFixture209 -and ($GeneratedFixtureSpatial209 -or ", "if ($GeneratedFixture209 -and ($GeneratedFixtureSpatial209 -or $PcbViaWrite209 -or ");
   source = one(source, "$footprintMainPurpose=$ProjectStructure209 -or ", "$footprintMainPurpose=$ProjectStructure209 -or $PcbViaWrite209 -or ");
   source = one(source, "$startupPurpose=", "if ($PcbViaWrite209) {$Layers209=$true;$GeneratedFixture209=$true}\n$startupPurpose=");

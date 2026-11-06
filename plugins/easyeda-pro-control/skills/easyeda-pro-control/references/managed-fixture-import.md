@@ -147,3 +147,13 @@ neither authorizes another import or proves whether a directory was allocated.
 After original application termination, release the original destination
 transport through its supported action, including after failed initialization.
 Do not delete unknown partial directories or reconstruct an owner from paths.
+
+The separate `component-circular-smt-pad` generator includes a real project-local
+FOOTPRINT document, one owned circular SMT Pad, the placed Component and all four
+explicit hidden attributes. Its complete initial SQL/checkpoint and private
+opening token have separate schemas. After the acknowledged original destination
+and fixture-owner releases, `stage-component-for-fresh-opening` transfers only
+that original qualified data to the separate `component-spatial` native birth.
+Use its [Component point contract](current-pcb209-spatial.md#separate-generated-component-point-birth).
+Older PCB/Pad owners, old reader closed capture and historical data loaders refuse
+this target. No positive connected Component import/cache/point case is recorded.

@@ -85,7 +85,7 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; scope: vm.Context;
   const engine = { upstream, controlFingerprintPromise: Promise.resolve(), executionAuthorityValidator: (): void => undefined,
     assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
   let handler: Handler | undefined;
-  const scope = vm.createContext({ z, currentPcb209WorkerStartupToolRequestSchema, currentSymbolOperationToolOutputSchema: z.unknown(),
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, currentPcb209WorkerStartupToolRequestSchema, currentSymbolOperationToolOutputSchema: z.unknown(),
     CurrentFootprintForwardOpeningUnknownRelinquishment: Historical, CurrentFootprintHeldCacheValidation: FailedReplacement,
     diagnostic209: true, facadeMode: "public-utilities-only", facadeToolRegistered: (): boolean => true,
     process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "synthetic" } },

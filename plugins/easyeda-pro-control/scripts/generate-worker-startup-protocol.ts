@@ -1,4 +1,5 @@
 import { applyCurrentProjectSaveProducerGuardNativeFragment } from "../server/src/current-project-save-producer-guard-native-fragment.ts";
+import { applyCurrentPcbComponentSpatialNativeFragment, prepareCurrentPcbComponentSpatialNativeSwitch } from "../server/src/current-pcb-component-spatial-native-fragment.ts";
 import { applyCurrentProjectStructureTransportNativeFragment } from "../server/src/current-project-structure-transport-native-fragment.ts";
 /* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
 import { readFile, writeFile } from "node:fs/promises";
@@ -96,7 +97,13 @@ async function main(): Promise<void> {
   if (process.argv.length !== 3 || action !== "--write" && action !== "--check") { throw new Error("Expected --write or --check"); }
   const path = new URL("pcb-diagnostic-owner.ps1", import.meta.url);
   const source = await readFile(path, "utf8");
-  let next = source;
+  const next = generateWorkerStartupProtocol(source);
+  if (action === "--write") { await writeFile(path, next); }
+  else if (next !== source) { throw new Error("Generated native startup protocol differs"); }
+}
+/** Pure complete composition, used by repeated-generation regressions without writing a helper. */
+export function generateWorkerStartupProtocol(source: string): string {
+  let next = prepareCurrentPcbComponentSpatialNativeSwitch(source);
   for (const [name, generated] of [["WORKER STARTUP", currentPcbWorkerStartupNativeSource()],
     ["WORKER STARTUP EMPTY209", currentPcb209EmptyNativeSource()],
     ["WORKER STARTUP RATLINE209", ratlineSource()],
@@ -120,13 +127,13 @@ async function main(): Promise<void> {
   next = applyManagedFixtureRegistrationNativeFragment(next);
   next = applyCurrentProjectStructureTransportNativeFragment(applyCurrentSchematicDisplayWriteNativeFragment(applyCurrentPcbViaWriteNativeFragment(next)));
   next = applyCurrentProjectSaveProducerGuardNativeFragment(next);
+  next = applyCurrentPcbComponentSpatialNativeFragment(next);
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
   assertCurrentFootprintCopyForwardNativeRequestIds(next);
   if (Buffer.byteLength(next) > CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES) {
     throw new Error(`Native startup helper exceeds its fixed byte bound: ${String(Buffer.byteLength(next))} >${String(CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES)}`);
   }
-  if (action === "--write") { await writeFile(path, next); }
-  else if (next !== source) { throw new Error("Generated native startup protocol differs"); }
+  return next;
 }
 function continuationSource(): string {
   const limits = { RequestLimit: continuation.requestLimit, NormalRequestLimit: continuation.normalRequestLimit, CleanupRequestLimit: continuation.cleanupRequests,
@@ -161,4 +168,4 @@ function footprintMainSource(): string {
     "// END GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL";
 }
 // oxlint-disable-next-line node/no-top-level-await -- ESM-only build command; never loaded by require().
-await main();
+if (import.meta.main) { await main(); }

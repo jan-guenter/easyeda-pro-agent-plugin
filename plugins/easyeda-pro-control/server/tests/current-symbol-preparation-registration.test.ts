@@ -38,7 +38,7 @@ void test("project-symbol tool routes both strict read shapes through the authen
   const reader = (name: string) => (received: unknown): Promise<{ route: string }> => {
     assert.equal(received, engine); calls.push(name); return Promise.resolve({ route: name });
   };
-  const scope = vm.createContext({ z, currentSymbolMetadataRequestSchema, currentProjectOnlySymbolPreflightRequestSchema,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, currentSymbolMetadataRequestSchema, currentProjectOnlySymbolPreflightRequestSchema,
     privateFingerprintSchema: z.record(z.string(), z.unknown()), engine,
     readCurrentSymbolMetadata: reader("pcb"), readCurrentProjectOnlySymbolPreflight: reader("project-only"),
     serializedLiveGuarded: (handler: Callback): Callback => { wrappers += 1; return handler; },
@@ -95,7 +95,7 @@ void test(`${entry} registers asynchronous preparation without allocating a live
     assert.equal(config.inputSchema, offlineApiToolConfiguration.inputSchema);
     invoke = handler;
   };
-  const scope = vm.createContext({ offlineApiToolConfiguration, outputSchema: {},
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, offlineApiToolConfiguration, outputSchema: {},
     facadeSession: { inspect: (): { state: string } => ({ state: "active" }) }, queryOfflineApi,
     guarded: (handler: Callback): Callback => handler,
     offlineGuard: (handler: Callback): Callback => handler,

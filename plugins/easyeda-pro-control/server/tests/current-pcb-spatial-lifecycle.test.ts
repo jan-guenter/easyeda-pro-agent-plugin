@@ -69,6 +69,8 @@ interface SpatialFixture {
   readonly state: { bound: boolean; terminated: boolean; released: boolean; nativeLoss: boolean; publicationLoss: boolean; wrongTarget: boolean; decodeFailure: unknown };
 }
 function fixture(context: TestContext, id: string): SpatialFixture {
+  // Refuse an omitted preload before constructing a lifecycle or registering cleanup.
+  directory(id);
   const calls: string[] = [];
   const state = { bound: false, terminated: false, released: false, nativeLoss: false, publicationLoss: false, wrongTarget: false, decodeFailure: null as unknown };
   const binding = { helperInstance: "b".repeat(32), jobId: "c".repeat(32), rootPid: 123, rootCreated: "123456789012345" };

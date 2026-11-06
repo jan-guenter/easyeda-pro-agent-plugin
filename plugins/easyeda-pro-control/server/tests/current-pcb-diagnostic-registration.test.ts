@@ -1,3 +1,9 @@
+import { currentSchematicPageOpeningRequestSchema } from "../src/current-schematic-page-opening.ts";
+import { currentSchematicPageReadRequestSchema } from "../src/current-schematic-page-read.ts";
+import { generatedSchematicOpeningRequestSchema } from "../src/managed-schematic-fixture-opening.ts";
+import { currentPcbOrdinaryReadRequestSchema } from "../src/current-pcb-ordinary-read-validation.ts";
+import { CurrentPcb209DiagnosticLifecycle, CurrentPcb209VisualLifecycle, CurrentPcbComponentSpatialLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbSpatialLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { currentPcbComponentSpatialRequestSchema } from "../src/current-pcb-component-spatial-validation.ts";
 /* oxlint-disable import/max-dependencies -- Registration uses the actual purpose classes, strict schemas and facade mode selection instead of permissive stand-ins. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -5,7 +11,6 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { CurrentPcb209DiagnosticLifecycle, CurrentPcb209VisualLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbSpatialLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
 import { currentPcbDiagnosticToolRequestSchema, currentPcbDiagnosticValidationRequestSchema } from "../src/current-pcb-diagnostic-validation.ts";
@@ -51,11 +56,13 @@ void test(`public ${stringPurpose ? "String precreate" : "diagnostic"} registrat
       checks += 1; if (blocked) { throw new Error("synthetic unresolved engine journal"); }
       if (pendingAdmission !== undefined) { await pendingAdmission; }
     } };
-  const scope = vm.createContext({ z, currentPcbDiagnosticToolRequestSchema, currentPcbDiagnosticValidationRequestSchema,
-    currentPcbStringPrecreateRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
-    CurrentPcbDiagnosticLifecycle: Coordinator, CurrentPcb209DiagnosticLifecycle, CurrentPcb209VisualLifecycle, CurrentPcbSpatialLifecycle, CurrentPcbStringPrecreateLifecycle: Coordinator,
+  const scope = vm.createContext({ z, currentSchematicPageOpeningRequestSchema, currentSchematicPageReadRequestSchema, generatedSchematicOpeningRequestSchema, currentPcbOrdinaryReadRequestSchema,
+    privateFingerprintSchema: z.never(), stagedFixtureOpeningSource: undefined, stagedSchematicOpeningSource: undefined, stagedComponentOpeningSource: undefined,
+    runFacadeGate: (handler: () => Promise<unknown>): Promise<unknown> => { gateCalls += 1; return handler(); }, currentPcbDiagnosticToolRequestSchema, currentPcbDiagnosticValidationRequestSchema,
+    currentPcbStringPrecreateRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema, currentPcbComponentSpatialRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
+    CurrentPcbDiagnosticLifecycle: Coordinator, CurrentPcb209DiagnosticLifecycle, CurrentPcb209VisualLifecycle, CurrentPcbSpatialLifecycle, CurrentPcbComponentSpatialLifecycle, CurrentPcbStringPrecreateLifecycle: Coordinator,
     CurrentPcbWorkerStartupLifecycle,
-    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, currentFootprintForwardSourceValidation: undefined, hasForwardSourceCustody: (): boolean => false,
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, currentFootprintForwardSourceValidation: undefined, hasForwardSourceCustody: (): boolean => false, hasGeneratedSchematicCustody: (): boolean => false, hasFixtureImportCustody: (): boolean => false,
     process: { env: environment }, engine, upstream,
     facadeMode: "calculation-only", facadeToolRegistered,
     bridgeGate: { run: (handler: () => Promise<unknown>): Promise<unknown> => { gateCalls += 1; return handler(); } },
@@ -103,6 +110,10 @@ void test(`public ${stringPurpose ? "String precreate" : "diagnostic"} registrat
   const waiting = Promise.withResolvers<null>(); pendingAdmission = waiting.promise;
   const check = options.assertOtherLaunchesSettled(); scope["windowsRuntime"] = {}; waiting.resolve(null);
   await assert.rejects(check, /requires no retained/u); scope["windowsRuntime"] = undefined; pendingAdmission = undefined;
+  await options.assertOtherLaunchesSettled();
+  scope["stagedComponentOpeningSource"] = {};
+  await assert.rejects(options.assertOtherLaunchesSettled(), /Staged Component data/u);
+  scope["stagedComponentOpeningSource"] = undefined;
   await options.assertOtherLaunchesSettled();
   const originalMethod = engine.assertDiagnosticLaunchOtherOperationsSettled;
   engine.assertDiagnosticLaunchOtherOperationsSettled = (): Promise<void> => Promise.resolve();

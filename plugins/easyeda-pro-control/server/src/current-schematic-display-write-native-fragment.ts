@@ -72,7 +72,9 @@ export function applyCurrentSchematicDisplayWriteNativeFragment(input: string): 
   const switches = [...source.slice(0, source.indexOf("\n")).matchAll(/\[switch\]\$(\w+)/gu)].map(match => match[1]).filter(name => name !== undefined && name !== "CompileOnly" && name !== "SchematicDisplayWrite209");
   const conflict = `if ($SchematicDisplayWrite209 -and (${switches.map(name => `$${name}`).join(" -or ")})) {throw 'pcb-diagnostic-conflicting-schematic-display-purpose'}\n`;
   source = one(source, "$footprintMainPurpose=$ProjectStructure209 -or $PcbViaWrite209 -or ", "$footprintMainPurpose=$ProjectStructure209 -or $PcbViaWrite209 -or $SchematicDisplayWrite209 -or ");
-  source = one(source, "$ErrorActionPreference = 'Stop'\n", `${conflict}$ErrorActionPreference = 'Stop'\n`);
+  const priorConflict = source.split("\n").filter(line => line.startsWith("if ($SchematicDisplayWrite209 -and ("));
+  if (priorConflict.length > 1) { throw new Error("SCHEMATIC_DISPLAY_NATIVE_CONFLICT_DUPLICATE"); }
+  source = priorConflict[0] === undefined ? one(source, "$ErrorActionPreference = 'Stop'\n", `$ErrorActionPreference = 'Stop'\n${conflict}`) : source.replace(`${priorConflict[0]}\n`, conflict);
   source = one(source, "elseif ($PcbViaWrite209)", "elseif ($SchematicDisplayWrite209) {[EasyedaDiagnosticOwner]::CreateSchematicDisplayWrite209()} elseif ($PcbViaWrite209)");
   source = one(source, "int RequestLimit { get {", `int RequestLimit { get { if(schematicDisplayWrite209)return ${String(PROFILE.renderer.total)};`);
   source = one(source, "if(pcbViaWrite209)throw Error(\"via-retain-main-until-exit\");", "if(pcbViaWrite209)throw Error(\"via-retain-main-until-exit\");\n    if(schematicDisplayWrite209)throw Error(\"schematic-display-retain-main-until-exit\");");

@@ -29,7 +29,7 @@ void test("ordinary launcher registration keeps quarantine and exact shared runt
     public hasAttemptedNativeOwnerAllocation(): boolean { return this.unused; }
   }
   const environment = { EASYEDA_ASSETS_ROOT: "/mnt/d/Apps/EasyEDA/resources/app/assets" };
-  const scope = vm.createContext({ z, ordinaryLaunchRequestSchema, OrdinaryLaunchCoordinator: Coordinator, WindowsControlRuntime: Runtime,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, ordinaryLaunchRequestSchema, OrdinaryLaunchCoordinator: Coordinator, WindowsControlRuntime: Runtime,
     CurrentPcbDiagnosticLifecycle: Diagnostic,
     disposableOwnerMethod: (owner: object, key: string): unknown => Reflect.get(owner, key) as unknown,
     process: { env: environment }, resolve: (): string => "/synthetic/plugin", upstream: {},
