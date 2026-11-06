@@ -1,5 +1,8 @@
 # Project history
 
+- [2026-11-06 first disposable batch freeze](2026-11-06-first-disposable-batch-freeze.md). Local01437 payload, exact1101-source/runtime hashes, reproduced bundles, required non-suite checks and remaining connected/release work.
+- [2026-11-06 real Engine import composition](2026-11-06-fixture-real-engine-composition.md). Actual dispatcher-entry tracking, narrow successful-environment cleanup and real technical nonce grammar, verified through genuine test HMAC sessions.
+
 - [2026-11-06 public CBB source follow-up](2026-11-06-public-cbb-source-follow-up.md). Official SDK example and version-qualified vendor extension catalog research; neither supplies the missing positive anonymous system-owned witness.
 - [2026-11-06 schematic electrical observation](2026-11-06-schematic-electrical-observation.md). Current209 raw components, pins, attributes and existing contact-cache memberships without compiled topology or Save.
 
