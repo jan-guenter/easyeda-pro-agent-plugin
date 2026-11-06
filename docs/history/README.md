@@ -576,3 +576,4 @@ layout. The connected ledger retains its generation and case anchors.
 - [2026-11-06 generated schematic import and runtime binding](2026-11-06-generated-schematic-import-and-runtime-binding.md)
 - [2026-11-06 original schematic worker Save custody](2026-11-06-original-schematic-worker-save-custody.md)
 - [2026-11-06 shared original Save structure custody](2026-11-06-shared-original-save-structure-custody.md)
+- [2026-11-06 central schematic display effect](2026-11-06-central-schematic-display-effect.md)
