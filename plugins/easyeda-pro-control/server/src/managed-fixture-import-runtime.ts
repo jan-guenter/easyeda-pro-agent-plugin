@@ -15,7 +15,8 @@ import { MANAGED_FIXTURE_IMPORT_PROFILE, assertManagedFixtureImportFingerprint, 
 import { prepareManagedFixtureArchive, prepareManagedLibraryFile } from "./managed-library-files-runtime.ts";
 import { managedLibraryFileSchema } from "./managed-library-files.ts";
 import type { WindowsControlRuntime } from "./windows-runtime.ts";
-import { buildManagedFixtureEnvironmentProgram, managedFixtureEnvironmentObservationSchema } from "./managed-fixture-environment-program.ts";
+import { buildManagedFixtureEnvironmentProgram, managedFixtureEnvironmentObservationSchema, managedFixtureEnvironmentRefusalSchema } from "./managed-fixture-environment-program.ts";
+import { captureManagedFixtureDispatchReply } from "./managed-fixture-dispatch-reply.ts";
 import { captureManagedFixtureClosedSnapshot, captureManagedSchematicFixtureClosedSnapshot } from "./managed-fixture-closed-snapshot.ts";
 import { assertOriginalGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
 import type { QualifiedGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
@@ -113,6 +114,9 @@ interface PendingPublication {
 function journalContent(value: Readonly<Record<string, unknown>>): string {
   const { journalSha256: _selfHash, ...body } = value; return canonicalJson(body);
 }
+function dispatchReplyEvidence(reply: ReturnType<typeof captureManagedFixtureDispatchReply> | undefined): Record<string, unknown> | undefined {
+  return reply === undefined ? undefined : { bytes: Buffer.byteLength(reply.text), sha256: reply.sha256, value: reply.value };
+}
 
 /** Actual single-dispatch import owner. The server must mount its mutating
  * action inside the ordinary launch's authenticated dispatch scope and global
@@ -133,6 +137,9 @@ export class ManagedFixtureImportCoordinator {
   private operation: TrackedDispatchOperationJournal | undefined;
   private environmentOperation: TrackedDispatchOperationJournal | undefined;
   private environmentObservation: z.infer<typeof managedFixtureEnvironmentObservationSchema> | undefined;
+  private environmentRefusal: z.infer<typeof managedFixtureEnvironmentRefusalSchema> | undefined;
+  private environmentReply: ReturnType<typeof captureManagedFixtureDispatchReply> | undefined;
+  private importReply: ReturnType<typeof captureManagedFixtureDispatchReply> | undefined;
   private pendingPublication: PendingPublication | undefined;
   private readonly refusedBeforeDispatch = new Set<TrackedDispatchOperationJournal>();
   private reservation: "reserved" | "released" = "reserved";
@@ -218,19 +225,25 @@ export class ManagedFixtureImportCoordinator {
   }
   public inspect(operationIdInput: string): Record<string, unknown> {
     const id = operationId.parse(operationIdInput), operation = this.operation?.operationId === id ? this.operation : this.environmentOperation;
-    if (operation === undefined || operation.operationId !== id) { throw new Error("Only the retained original fixture import can be inspected in this coordinator."); }
-    return { schema: "easyeda-pro-control.managed-fixture-import-result.v1", operationId: id, phase: this.phase,
+    const originalBasePreflight = id === this.attemptedOperationId && operation === this.environmentOperation;
+    if (operation === undefined || operation.operationId !== id && !originalBasePreflight) { throw new Error("Only the retained original fixture import can be inspected in this coordinator."); }
+    return { schema: "easyeda-pro-control.managed-fixture-import-result.v1", operationId: operation.operationId,
+      ...(id === operation.operationId ? {} : { requestedOperationId: id }), phase: this.phase,
       operation: structuredClone(operation), sdkObservation: this.observation, destination: this.destinationObservation,
       environment: this.environmentObservation, environmentOperationId: this.environmentOperation?.operationId,
-      publicationPending: this.pendingPublication?.operation.operationId === id, originalJournalRetained: true,
+      environmentRefusal: this.environmentRefusal,
+      originalEnvironmentReply: dispatchReplyEvidence(this.environmentReply),
+      originalImportReply: dispatchReplyEvidence(this.importReply),
+      publicationPending: this.pendingPublication?.operation === operation, originalJournalRetained: true,
       ownerReservation: this.reservation, operationInFlight: this.busy,
       closedSnapshot: this.closedCapture?.report ?? this.closedSchematicCapture?.report ?? null,
       destinationReleased: this.destinationReleased, lastError: this.error,
       libraryMigrationExcluded: this.migrationExclusionVerified,
-      nativeImportMayHaveBeenDispatched: operation.mutationMayHaveOccurred, retryAllowed: false, filesDeleted: false,
+      nativeImportMayHaveBeenDispatched: this.operation !== this.environmentOperation && this.operation?.mutationMayHaveOccurred === true,
+      nativeEnvironmentMayHaveBeenDispatched: this.environmentOperation?.mutationMayHaveOccurred === true, retryAllowed: false, filesDeleted: false,
       importedFixtureAccepted: false, registrationVerified: false, closedSqlVerified: false, delayedNativeJobsCompleted: false,
       originalClosureVerified: false, designExecutionAuthorized: false, liveValidation: "not-recorded",
-      originalCleanup: this.options.cleanup.inspect(id) };
+      originalCleanup: this.options.cleanup.inspect(operation.operationId) };
   }
   /** Internal composition only: returns this actual mutable journal, never a
    * clone or loaded record. The tracked-cleanup issuer must still validate its
@@ -307,9 +320,16 @@ export class ManagedFixtureImportCoordinator {
       await this.checked(() => this.options.engine.dispatchWithOrphanTracking(journal, MANAGED_FIXTURE_IMPORT_DISPATCH_PHASE, "easyeda_execute", { code, timeoutMs: 60_000, confirmWrite: true }, 70_000,
         async () => { await revalidate(); await this.checked(() => (this.dependencies.verifySources ?? verifyManagedFixtureImportSources)(this.options.assetsRoot)); await revalidate(); },
         async (raw) => {
-          this.current(); const envelope = extractToolPayload(raw);
+          this.current(); this.environmentReply = captureManagedFixtureDispatchReply(raw);
+          await this.artifact("original-environment-dispatch-reply", this.environmentReply.value);
+          const envelope = extractToolPayload(this.environmentReply.value);
           if (Buffer.byteLength(JSON.stringify(envelope), "utf8") > 32_768) { throw new Error("Fixture environment response exceeds its bounded exact transport."); }
-          this.environmentObservation = managedFixtureEnvironmentObservationSchema.parse(decodeExactReadEnvelope(envelope));
+          const decoded = decodeExactReadEnvelope(envelope), refusal = managedFixtureEnvironmentRefusalSchema.safeParse(decoded);
+          if (refusal.success) {
+            this.environmentRefusal = refusal.data; await this.artifact("original-environment-refusal", refusal.data);
+            throw new Error(`Fixture environment refused at ${refusal.data.stage} (${refusal.data.reason}); native effects remain unknown.`);
+          }
+          this.environmentObservation = managedFixtureEnvironmentObservationSchema.parse(decoded);
           await this.artifact("original-environment-observation", this.environmentObservation);
         }, revalidate));
       this.retainDispatcherStatus(journal);
@@ -468,7 +488,9 @@ export class ManagedFixtureImportCoordinator {
           await revalidate();
         },
         async (raw) => {
-          this.current(); const envelope = extractToolPayload(raw);
+          this.current(); this.importReply = captureManagedFixtureDispatchReply(raw);
+          await this.artifact("original-import-dispatch-reply", this.importReply.value);
+          const envelope = extractToolPayload(this.importReply.value);
           if (Buffer.byteLength(JSON.stringify(envelope), "utf8") > 32_768) { throw new Error("Fixture import return exceeds its complete output budget."); }
           const decoded = decodeExactReadEnvelope(envelope);
           this.observation = validateManagedFixtureImportJobObservation(decoded, importPlan, generated.bytes);

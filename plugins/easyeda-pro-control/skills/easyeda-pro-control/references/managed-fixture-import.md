@@ -86,3 +86,15 @@ caller target or path. Stay on this facade through that handoff. No new
 controller, historical JSON, process-presence sample or restart can replace
 these original owners. Follow
 [the manager workflow](autonomous-controller-updates.md) for replacement.
+
+Preflight inspection may return `environmentRefusal` with a fixed stage and
+bounded response classification. `originalEnvironmentReply` and
+`originalImportReply` retain the actual complete bounded upstream reply and its
+digest; their raw managed artifacts are recorded in the journal. A native
+refusal, malformed result or failed publication accepts no partial fixture.
+When only preflight exists, inspecting the original base request reports the
+actual environment operation ID. Use that actual ID and its original technical
+nonce for cleanup. `nativeEnvironmentMayHaveBeenDispatched` is distinct from
+`nativeImportMayHaveBeenDispatched`. Do not infer safe retry from either a
+refusal stage or an unallocated importer. Preserve the original case and finish
+its cleanup before considering any independently identified later case.

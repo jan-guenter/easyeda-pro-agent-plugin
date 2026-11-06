@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { z } from "zod";
-import { loadOperation, updateOperation, writePhaseArtifact } from "../src/artifacts.ts";
+import { loadOperation, readArtifact, updateOperation, writePhaseArtifact } from "../src/artifacts.ts";
 import { canonicalJson } from "../src/core.ts";
 import type { TrackedDispatchOperationJournal } from "../src/engine.ts";
 import { encodeExactReadEnvelope } from "../src/exact-readers.ts";
@@ -11,7 +11,7 @@ import type { ManagedFixtureImportOptions } from "../src/managed-fixture-import-
 
 const targetSchema = z.object({ operationId: z.string(), nonce: z.string(), archiveSha256: z.string(), qualificationSha256: z.string(),
   expectedProjectUuid: z.string(), manifestTitle: z.string() });
-function fixture(id: string, lostReply = false, lostEnvironment = false, watchChanged = false, publicationFailure?: "sdk-artifact" | "sdk-journal"): { owner: ManagedFixtureImportCoordinator; calls: string[]; request: Record<string, unknown>; expected: Record<string, unknown> } {
+function fixture(id: string, lostReply = false, lostEnvironment = false, watchChanged = false, publicationFailure?: "sdk-artifact" | "sdk-journal", environmentReply?: unknown): { owner: ManagedFixtureImportCoordinator; calls: string[]; request: Record<string, unknown>; expected: Record<string, unknown> } {
   const calls: string[] = [], expected = { synthetic: "original-fingerprint" };
   const launch = { jobId: "1".repeat(32), helperInstance: "2".repeat(32), root: { pid: 123, role: "easyeda-main" as const,
     startIdentity: `win32:123456789012345678:job:${"1".repeat(32)}` } };
@@ -34,6 +34,7 @@ function fixture(id: string, lostReply = false, lostEnvironment = false, watchCh
       if (journal.operationId.endsWith("-environment")) {
         calls.push("environment");
         if (lostEnvironment) { throw new Error("Synthetic lost environment reply"); }
+        if (environmentReply !== undefined) { await retain?.(environmentReply); throw new Error("Unexpected successful synthetic environment refusal retention"); }
         const payload = { schema: "easyeda-pro-control.fixture-import-environment.v1", mode: "HALF_OFFLINE", libraryWindowsDirectories: [String.raw`C:\SyntheticLibraries`],
           candidatePredicate: "exclude-all-immediate-elib-names", actualMainConfigDirectories: true, systemLibNameAssumed: false, libraryContentsRead: false, libraryMigrationExcluded: false };
         const raw = { content: [], structuredContent: { ok: true, result: encodeExactReadEnvelope(payload) } };
@@ -144,6 +145,42 @@ void test("ambiguous environment preserves its own original journal and cannot a
   await assert.rejects(value.owner.execute({ action: "release-owner", operationId: "managed-import-environment-ambiguous", confirmReleaseFixtureOwner: true }));
   const journal = await loadOperation("managed-import-environment-ambiguous-environment"); assert.equal(journal["orphanedCallPossible"], true);
   assert.equal(value.calls.includes("import"), false); await assert.rejects(value.owner.execute(value.request, value.expected));
+});
+
+void test("original failed environment replies survive extraction and base-ID inspection without importer retry", async () => {
+  const refusal = { schema: "easyeda-pro-control.fixture-import-environment-refusal.v1", stage: "response-metadata", reason: "predicate-refused",
+    configGetAttempted: true, responseReceived: true, responseTextAttempted: false, responseStatus: 200, responseUrl: "empty", effectsUnknown: true, retryAllowed: false };
+  const failures = [
+    { kind: "upstream", raw: { content: [], structuredContent: { ok: false, error: `Synthetic native refusal ${"x".repeat(24_000)}` } } },
+    { kind: "refusal", raw: { content: [], structuredContent: { ok: true, result: encodeExactReadEnvelope(refusal) } } },
+  ];
+  for (const failure of failures) {
+    const id = `managed-import-environment-evidence-${failure.kind}`, value = fixture(id, false, false, false, undefined, failure.raw);
+    await assert.rejects(value.owner.execute(value.request, value.expected), /is incomplete/u);
+    const inspected = value.owner.inspect(id);
+    assert.equal(inspected["operationId"], `${id}-environment`); assert.equal(inspected["requestedOperationId"], id);
+    assert.equal(inspected["nativeImportMayHaveBeenDispatched"], false); assert.equal(inspected["nativeEnvironmentMayHaveBeenDispatched"], true);
+    const reply = z.object({ bytes: z.number(), sha256: z.string(), value: z.unknown() }).parse(inspected["originalEnvironmentReply"]);
+    assert.equal(canonicalJson(reply.value), canonicalJson(failure.raw));
+    const journal = await loadOperation(`${id}-environment`); assert.ok(journal.artifacts !== undefined);
+    const artifact = journal.artifacts.find(item => item.path.endsWith("-original-environment-dispatch-reply.json"));
+    assert.ok(artifact !== undefined); const retainedArtifact = await readArtifact(artifact.path);
+    const retainedValue: unknown = JSON.parse(retainedArtifact.text);
+    assert.equal(canonicalJson(retainedValue), canonicalJson(failure.raw));
+    if (failure.kind === "refusal") { assert.deepEqual(inspected["environmentRefusal"], refusal); }
+    assert.equal(journal["orphanedCallPossible"], true); assert.equal(value.owner.hasRetainedDestination(), false);
+    assert.equal(value.calls.includes("import"), false); await assert.rejects(value.owner.execute(value.request, value.expected));
+    assert.equal(value.calls.filter(call => call === "environment").length, 1);
+  }
+});
+
+void test("hostile reply getters are refused before extraction without losing original cleanup custody", async () => {
+  let reads = 0;
+  const raw = Object.defineProperty({}, "structuredContent", { enumerable: true, get: (): never => { reads += 1; throw new Error("foreign getter"); } });
+  const id = "managed-import-environment-foreign-reply", value = fixture(id, false, false, false, undefined, raw);
+  await assert.rejects(value.owner.execute(value.request, value.expected)); assert.equal(reads, 0);
+  assert.equal(value.calls.includes("import"), false); assert.equal(value.owner.hasRetainedDestination(), false);
+  assert.equal(value.owner.inspect(id)["originalJournalRetained"], true);
 });
 
 void test("a library watch completion before dispatch retains the destination and prevents import", async () => {

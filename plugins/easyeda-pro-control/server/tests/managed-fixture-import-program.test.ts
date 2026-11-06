@@ -5,6 +5,7 @@ import { setImmediate as waitImmediate } from "node:timers/promises";
 import { createContext, runInContext } from "node:vm";
 import { buildManagedFixtureImportPrograms, managedFixtureImportJobObservationSchema, validateManagedFixtureImportJobObservation } from "../src/managed-fixture-import-program.ts";
 import { managedProjectFootprintArchive } from "./helpers/managed-project-footprint-archive.ts";
+import { buildManagedFixtureEnvironmentProgram, managedFixtureEnvironmentRefusalSchema } from "../src/managed-fixture-environment-program.ts";
 
 // Golden SHA-256 of the literal Windows path C:\PrivateFixtures\original\Fixture.eprj2.
 const UUID = "bbd7e0ad75800669f5a66d2b188d835a3eafef02da50da748f58dd6cac5bda3d", plan = { operationId: "fixture-import-synthetic", nonce: "2".repeat(64),
@@ -13,11 +14,11 @@ const PROJECT = { itemType: "Project", uuid: UUID, friendlyName: "Fixture", fold
 const archive = managedProjectFootprintArchive([{ name: "project2.json", content: '{"title":"Fixture"}' },
   { name: "Fixture.epru", content: '{"type":"DOCHEAD"}||{"uuid":"1234567890abcdef","docType":"PCB"}|\n{"type":"META","id":"META"}||{"title":"Fixture"}|\n' }]);
 const programs = buildManagedFixtureImportPrograms(plan, archive);
-function fetchConfig(): Promise<Response> {
+function fetchConfig(responseUrl = "https://client/api/client/config"): Promise<Response> {
     const response = Response.json({ success: true, result: { systemLib: plan.libraryWindowsDirectories, reuseBlock: plan.libraryWindowsDirectories, platform: "win32" } });
-    Object.defineProperty(response, "url", { value: "https://client/api/client/config" }); return Promise.resolve(response);
+    Object.defineProperty(response, "url", { value: responseUrl }); return Promise.resolve(response);
 }
-function fixture(options: Readonly<{ throwSynchronously?: boolean; wrongReturn?: boolean; extraTab?: boolean; iframe?: boolean }> = {}): Readonly<{
+function fixture(options: Readonly<{ throwSynchronously?: boolean; wrongReturn?: boolean; extraTab?: boolean; iframe?: boolean; responseUrl?: string }> = {}): Readonly<{
   run: (program: string) => Promise<unknown>; calls: () => number; args: () => readonly unknown[];
   resolve: (value: unknown) => void; reject: (error: Error) => void; changeOwner: () => void;
 }> {
@@ -30,7 +31,7 @@ function fixture(options: Readonly<{ throwSynchronously?: boolean; wrongReturn?:
   } };
   const location = { href: "https://client/editor?cll=debug", origin: "https://client" };
   const host = { currentProject: null as unknown };
-  const root: Record<string, unknown> = { atob, crypto: webcrypto, File, Promise, Response, fetch: fetchConfig, location, gVars: host,
+  const root: Record<string, unknown> = { atob, crypto: webcrypto, File, Promise, Response, fetch: () => fetchConfig(options.responseUrl), location, gVars: host,
     UI: { gVars: host }, PRO_EDITOR_MODE: "CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM",
     eda: { extensionUuid: "7e06d286b1ac846ef7eab9c7f2a9ee40", sys_FileManager: manager } };
   const context = createContext(root);
@@ -52,6 +53,19 @@ ${options.extraTab === true ? "container.tabs.push({tabId:'unexpected-document'}
 function observation(value: unknown): ReturnType<typeof managedFixtureImportJobObservationSchema.parse> {
   return managedFixtureImportJobObservationSchema.parse(value);
 }
+
+void test("environment refusals retain the exact failed stage without importer dispatch or config values", async () => {
+  const shell = fixture({ extraTab: true });
+  const beforeFetch = managedFixtureEnvironmentRefusalSchema.parse(await shell.run(buildManagedFixtureEnvironmentProgram()));
+  assert.equal(beforeFetch.stage, "empty-start-page"); assert.equal(beforeFetch.configGetAttempted, false);
+  assert.equal(beforeFetch.reason, "empty-start-page-refused"); assert.equal(shell.calls(), 0);
+  const metadata = fixture({ responseUrl: "" });
+  const afterFetch = managedFixtureEnvironmentRefusalSchema.parse(await metadata.run(buildManagedFixtureEnvironmentProgram()));
+  assert.equal(afterFetch.stage, "response-metadata"); assert.equal(afterFetch.configGetAttempted, true);
+  assert.equal(afterFetch.responseReceived, true); assert.equal(afterFetch.responseTextAttempted, false);
+  assert.equal(afterFetch.responseStatus, 200); assert.equal(afterFetch.responseUrl, "empty");
+  assert.equal(metadata.calls(), 0); assert.equal(afterFetch.effectsUnknown, true); assert.equal(afterFetch.retryAllowed, false);
+});
 
 void test("synthetic original import Promise remains pending across repeated observations and is never redispatched", async () => {
   const native = fixture(); const first = observation(await native.run(programs.launch));
