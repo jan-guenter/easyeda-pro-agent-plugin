@@ -57,3 +57,22 @@ void test("paused data is captured before post-read owner awaits can replace the
   const result = await pending; assert.equal(JSON.stringify(result.params), JSON.stringify({ hitBreakpoints: [save.breakpointId], callFrames: [{ location: { scriptId: save.scriptId, lineNumber: save.lineNumber, columnNumber: save.columnNumber } }] }));
   assert.equal(Object.isFrozen(result.params), true);
 });
+void test("only five delivered original clock resumes together with the unconsumed delivered Save body pass native custody", async () => {
+  const f = fixture(); const body = { ...save, breakpointId: "save-body", role: "body", columnNumber: 131_307 }; f.router.register("save", body);
+  const points: CurrentPcbViaEventPoint[] = [clock];
+  for (const [index, role] of ["push", "dispatch", "reply", "complete"].entries()) {
+    const ui = role === "complete"; const point = { sessionId: ui ? clock.sessionId : save.sessionId, scriptId: ui ? clock.scriptId : save.scriptId,
+      breakpointId: `clock-${role}`, role, lineNumber: ui ? 1 : 0, columnNumber: ui ? 86_798 : 100 + index };
+    points.push(point); f.router.register("clock", point);
+  }
+  assert.throws(() => { f.router.requireClockCompletionWithHeldSaveBody(); });
+  for (const role of ["push", "dispatch", "result", "reply", "complete"]) {
+    const point = points.find(value => value.role === role); assert.ok(point !== undefined);
+    const pause = f.router.next("clock"); await f.entered(); f.deliver(paused(point)); await pause;
+    f.router.reserveResume("clock", point.sessionId, role); const resumed = f.router.next("clock"); await f.entered();
+    f.deliver({ method: "Debugger.resumed", sessionId: point.sessionId, params: {} }); await resumed;
+    assert.throws(() => { f.router.requireClockCompletionWithHeldSaveBody(); });
+  }
+  const held = f.router.next("save"); await f.entered(); f.deliver(paused(body)); await held; f.router.requireClockCompletionWithHeldSaveBody();
+  f.router.reserveResume("save", save.sessionId, "body"); assert.throws(() => { f.router.requireClockCompletionWithHeldSaveBody(); });
+});

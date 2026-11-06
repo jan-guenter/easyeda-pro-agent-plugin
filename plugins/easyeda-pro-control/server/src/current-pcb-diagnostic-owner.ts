@@ -23,7 +23,11 @@ import type { CurrentPcbViaWorkerCommand } from "./current-pcb-via-worker-wire.t
 import type { CurrentPcbViaSaveCommand } from "./current-pcb-via-save-protocol.ts";
 import { CurrentPcbViaWorkerController } from "./current-pcb-via-worker-controller.ts";
 import type { CurrentPcbViaProjectSourceHeld } from "./current-pcb-via-worker-bootstrap.ts";
-import { decodeCurrentPcbViaSaveBreakpoint } from "./current-pcb-via-save-replies.ts";
+import { decodeCurrentPcbViaSaveBodyValue, decodeCurrentPcbViaSaveBreakpoint } from "./current-pcb-via-save-replies.ts";
+import type { CurrentPcbViaSaveBodyValue } from "./current-pcb-via-save-replies.ts";
+import { compareCurrentPcbViaSaveDelta } from "./current-pcb-via-save-delta.ts";
+import type { CurrentPcbViaSaveDelta } from "./current-pcb-via-save-delta.ts";
+import { currentFootprintCopyClockRpcV2ArrayValue, decodeCurrentFootprintCopyClockRpcV2Array, decodeCurrentFootprintCopyClockRpcV2ArrayCapture } from "./current-footprint-copy-clock-rpc-v2-protocol.ts";
 import { qualifyCurrentPcbViaSaveSource } from "./current-pcb-via-save-source.ts";
 import type { CurrentPcbViaSaveWorkerBindings, CurrentPcbViaSaveWorkerEvent, CurrentPcbViaSaveWorkerOrigin } from "./current-pcb-via-save-origin.ts";
 import { currentPcbViaWriteNativeRequest } from "./current-pcb-via-write-protocol.ts";
@@ -558,7 +562,7 @@ export async function sendOriginalCurrentPcbViaMainCommand(capability: CurrentSe
   assertOriginalCurrentPcbViaWriteOwner(original.owner);
   original.reprove(); await original.owner.sendViaMainObservation(capability, runner, command, id); original.reprove();
 }
-const pcbViaMainOrigins = new WeakMap<CurrentPcbViaMainOrigin, Readonly<{ owner: CurrentPcbViaWriteOwner; plan: CurrentPcbViaWritePlan; bindings: CurrentPcbViaMainBindings; assertOriginal: () => void }>>();
+const pcbViaMainOrigins = new WeakMap<CurrentPcbViaMainOrigin, Readonly<{ owner: CurrentPcbViaWriteOwner; plan: CurrentPcbViaWritePlan; effect: CurrentPcbViaWriteEffect; bindings: CurrentPcbViaMainBindings; assertOriginal: () => void }>>();
 export function requireOriginalCurrentPcbViaMainOrigin(origin: CurrentPcbViaMainOrigin, owner: CurrentPcbViaWriteOwner, plan: CurrentPcbViaWritePlan): CurrentPcbViaMainBindings {
   const original = pcbViaMainOrigins.get(origin); if (original === undefined || original.owner !== owner || original.plan !== plan) { throw error("PCB_VIA_MAIN_ORIGINAL"); }
   requireViaPlan(owner, plan); original.assertOriginal(); return original.bindings;
@@ -807,6 +811,13 @@ class CurrentPcbRetainedOwnerCore {
   #viaClockOrigin: CurrentPcbViaClockOrigin | null = null;
   readonly #viaClockArmAttempts = new Set<string>();
   readonly #viaClockArmedPoints = new Set<string>();
+  readonly #viaClockRemoveAttempts = new Set<string>();
+  readonly #viaClockRemovedPoints = new Set<string>();
+  #viaClockResultArray: string | null = null;
+  #viaClockValue: number | null = null;
+  #viaSaveBodyCaptureAttempted = false;
+  #viaSaveCapturedBody: CurrentPcbViaSaveBodyValue | null = null;
+  #viaMainBoundBody: CurrentPcbViaSaveDelta | null = null;
   #viaMainAttempted = false;
   #viaMainOrigin: CurrentPcbViaMainOrigin | null = null;
   #viaMainSetupReady = false;
@@ -1611,8 +1622,10 @@ class CurrentPcbRetainedOwnerCore {
         const bindings: CurrentPcbViaSaveWorkerBindings = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId, uniqueContextId: source.uniqueContextId, source: sourceToken,
           request: async (command: CurrentPcbViaSaveCommand): Promise<unknown> => {
             original(); const reply = await this.#serializeViaObserver(() => this.#transfer(() => { original();
+              if (command.phase === "via-save-value") { if (this.#viaSaveBodyCaptureAttempted) { throw error("PCB_VIA_SAVE_BODY_CAPTURE_CONSUMED"); } this.#viaSaveBodyCaptureAttempted = true; }
               if (command.phase === "via-save-resume") { selected.reserveSaveResume(source); }
               return pipe.observeViaWorker(command); }));
+            if (command.phase === "via-save-value") { this.#viaSaveCapturedBody = decodeCurrentPcbViaSaveBodyValue(reply); }
             if (command.phase === "via-save-arm") { selected.bindSaveBreakpoint(source, command.role, decodeCurrentPcbViaSaveBreakpoint(reply, command.role, source.scriptId)); }
             original(); return reply;
           },
@@ -1662,6 +1675,7 @@ class CurrentPcbRetainedOwnerCore {
             if (command.phase === "via-clock-registration" && (command.params.objectId !== sdk || canonicalJson(command.params.arguments) !== canonicalJson([{ value: plan.target.projectUuid }, { value: plan.target.branchUuid }, { value: windowTabId }])) ||
               command.phase === "via-clock-worker" && (command.params.uniqueContextId !== worker.bindings.uniqueContextId || canonicalJson(command.params.arguments) !== canonicalJson([{ value: plan.target.projectUuid }, { value: windowTabId }]))) { throw error("PCB_VIA_CLOCK_INITIAL_RECEIVER"); }
             if (command.phase === "via-clock-arm") { if (this.#viaClockArmAttempts.has(command.role)) { throw error("PCB_VIA_CLOCK_ARM_CONSUMED"); } this.#viaClockArmAttempts.add(command.role); }
+            if (command.phase === "via-clock-remove") { if (this.#viaClockRemoveAttempts.has(command.role)) { throw error("PCB_VIA_CLOCK_REMOVE_CONSUMED"); } this.#viaClockRemoveAttempts.add(command.role); }
             if (command.phase === "via-clock-resume") { worker.controller.reserveClockResume(worker.source, realm, command.role); }
             return selected.pipe.observeViaClock(command, realm); }));
           if (command.phase === "via-clock-arm") {
@@ -1671,6 +1685,12 @@ class CurrentPcbRetainedOwnerCore {
             worker.controller.bindClockBreakpoint(worker.source, { sessionId: realm === "worker" ? worker.bindings.sessionId : selected.ui.sessionId, scriptId: point.scriptId,
               breakpointId: value["breakpointId"], lineNumber: point.lineNumber, columnNumber: point.columnNumber, role: command.role }); this.#viaClockArmedPoints.add(command.role);
           }
+          if (command.phase === "via-clock-result") { if (this.#viaClockResultArray !== null) { throw error("PCB_VIA_CLOCK_RESULT_CONSUMED"); } this.#viaClockResultArray = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(raw, 8); }
+          if (command.phase === "via-clock-properties" && command.params.objectId === this.#viaClockResultArray) {
+            const value = currentFootprintCopyClockRpcV2ArrayValue(decodeCurrentFootprintCopyClockRpcV2Array(raw, 8), 3);
+            if (this.#viaClockValue !== null || typeof value !== "number" || value < 1 || value > 8_640_000_000_000_000) { throw error("PCB_VIA_CLOCK_RESULT_VALUE"); } this.#viaClockValue = value;
+          }
+          if (command.phase === "via-clock-remove") { if (!exact(raw, [])) { throw error("PCB_VIA_CLOCK_REMOVE_REPLY"); } this.#viaClockRemovedPoints.add(command.role); }
           current(); return raw;
         }, nextEvent: () => worker.controller.nextClockEvent(), assertCurrent: async (): Promise<void> => { current(); await this.#verify(); current(); },
         assertSaveAttempt: (): void => { current(); worker.bindings.assertSaveAttempt(); }, assertOriginalGenerationExited: (): Promise<void> => worker.bindings.assertOriginalGenerationExited(),
@@ -1697,7 +1717,7 @@ class CurrentPcbRetainedOwnerCore {
       const original = (): void => { selected.current(); requireOriginalCurrentPcbViaWriteEffect(effect, this, plan);
         if (this.#mainRunner !== runner || this.#viaMainOrigin !== origin || this.#viaFailed || this.#viaCleanupOnly) { throw error("PCB_VIA_MAIN_CHANGED"); } };
       const bindings: CurrentPcbViaMainBindings = Object.freeze({ ...captured.bindings, assertSaveAttempt: (): void => { original(); if (!this.#viaSdkPhases.has("save")) { throw error("PCB_VIA_MAIN_ORIGINAL_SAVE_ATTEMPT"); } } });
-      this.#viaMainOrigin = origin; pcbViaMainOrigins.set(origin, Object.freeze({ owner: this, plan, bindings, assertOriginal: original }));
+      this.#viaMainOrigin = origin; pcbViaMainOrigins.set(origin, Object.freeze({ owner: this, plan, effect, bindings, assertOriginal: original }));
       await Reflect.apply(setup, undefined, [origin]); original(); runner.requireViaMainObservationArmed(origin); await this.#verify(); original(); this.#viaMainSetupReady = true; return origin;
     } catch (caughtError) { this.#viaFailed = true; throw caughtError; } finally { this.#busy = false; }
   }
@@ -1705,6 +1725,22 @@ class CurrentPcbRetainedOwnerCore {
     requireOriginalCurrentPcbViaMainOrigin(origin, this, plan);
     if (!this.#viaMainSetupReady || this.#mainRunner === null) { throw error("PCB_VIA_MAIN_SETUP_NOT_READY"); }
     this.#mainRunner.requireViaMainObservationArmed(origin);
+  }
+  /** This operation's native value reply and delivered clock/body pauses are
+   * retained privately. Caller JSON or a copied Node observation supplies none
+   * of these inputs. Binding still grants no native SQL continuation. */
+  public bindViaMainOriginalBody(plan: CurrentPcbViaWritePlan, origin: CurrentPcbViaMainOrigin): CurrentPcbViaSaveDelta {
+    this.requireViaMainObservationReady(plan, origin); const actual = pcbViaMainOrigins.get(origin), workerOrigin = this.#viaWorkerOrigin;
+    const worker = workerOrigin === null ? undefined : pcbViaSaveWorkers.get(workerOrigin);
+    if (actual === undefined || actual.owner !== this || actual.plan !== plan || this.#mainRunner === null || this.#viaMainBoundBody !== null ||
+      worker === undefined || worker.owner !== this || worker.plan !== plan || !this.#viaClockSetupSettled || this.#viaClockRemovedPoints.size !== 5 ||
+      this.#viaSaveCapturedBody === null || this.#viaClockValue === null || this.#viaSaveCapturedBody.clock !== this.#viaClockValue || !this.#viaSdkPhases.has("save")) { throw error("PCB_VIA_MAIN_BODY_UNAVAILABLE"); }
+    actual.assertOriginal(); worker.assertOriginal(); worker.controller.requireClockCompletionWithHeldSaveBody(worker.source);
+    const original = requireOriginalCurrentPcbViaWritePlan(plan); const effect = requireOriginalCurrentPcbViaWriteEffect(actual.effect, this, plan);
+    const delta = compareCurrentPcbViaSaveDelta(plan, original.history, effect, this.#viaSaveCapturedBody);
+    this.#mainRunner.bindViaExpectedHistoryBody(origin, { projectUuid: plan.target.projectUuid, branchUuid: plan.target.branchUuid,
+      projectKey: plan.target.projectUuid, path: plan.target.rawWindowsPath, dataStr: delta.dataStr });
+    actual.assertOriginal(); worker.assertOriginal(); this.#viaMainBoundBody = delta; return delta;
   }
   #viaReadContext(plan: CurrentPcbViaWritePlan): Readonly<{ context: CurrentPcbDiagnosticContext; pipe: CurrentPcbViaWritePipe; pcb: ReturnType<CurrentPcbDiagnosticContext["modelContext"]>; ui: ReturnType<CurrentPcbDiagnosticContext["pcbOpeningContext"]>; current: () => void }> {
     requireViaPlan(this, plan); const context = this.#stagedContext, pipe = this.#pipe, profile = this.#pcbSourceProfile;

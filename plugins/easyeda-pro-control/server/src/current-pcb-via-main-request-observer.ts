@@ -27,6 +27,7 @@ function need(value: boolean, code: string): asserts value { if (!value) { throw
 export class CurrentPcbViaMainRequestObserver {
   readonly #origin: CurrentPcbViaMainOrigin; readonly #owner: CurrentPcbViaWriteOwner; readonly #plan: CurrentPcbViaWritePlan; readonly #bindings: CurrentPcbViaMainBindings;
   #attempted = false; #armed = false; #busy = false; #failed = false; #packet: CurrentPcbViaHeldMainDriver | null = null;
+  #projection: CurrentPcbViaSaveProjection | null = null;
   public constructor(origin: CurrentPcbViaMainOrigin, owner: CurrentPcbViaWriteOwner, plan: CurrentPcbViaWritePlan) {
     this.#origin = origin; this.#owner = owner; this.#plan = plan; this.#bindings = requireOriginalCurrentPcbViaMainOrigin(origin, owner, plan); Object.freeze(this);
   }
@@ -49,10 +50,18 @@ export class CurrentPcbViaMainRequestObserver {
     return decodeArray(await this.#send({ phase: "via-main-request-invocation-frame", method: "Debugger.evaluateOnCallFrame", params: { callFrameId, expression, objectGroup: GROUP,
       silent: true, returnByValue: false, generatePreview: false, throwOnSideEffect: true, includeCommandLineAPI: false } }, true), 3);
   }
+  public async bindOriginalBody(projection: CurrentPcbViaSaveProjection): Promise<void> {
+    need(this.#armed && !this.#busy && this.#projection === null && !this.#attempted, "BODY_BIND_CONSUMED"); this.#busy = true;
+    try { await requireOriginalCurrentPcbViaSaveProjection(projection, this.#owner, this.#plan); await this.#current(true);
+      const delta = this.#owner.bindViaMainOriginalBody(this.#plan, this.#origin);
+      need(delta.bodySha256 === projection.bodySha256 && delta.primitiveId === projection.primitiveId, "NATIVE_BODY_PROJECTION");
+      await requireOriginalCurrentPcbViaSaveProjection(projection, this.#owner, this.#plan); await this.#current(true); this.#projection = projection;
+    } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
+  }
   /** This captures only the physical original invocation/caller. It does not
    * read the request body, claim causality by matching JSON or release SQL. */
   public async captureDriver(projection: CurrentPcbViaSaveProjection): Promise<CurrentPcbViaHeldMainDriver> {
-    need(this.#armed && !this.#busy && !this.#attempted, "DRIVER_CONSUMED"); this.#attempted = true; this.#busy = true;
+    need(this.#armed && !this.#busy && !this.#attempted && this.#projection === projection, "DRIVER_CONSUMED"); this.#attempted = true; this.#busy = true;
     try {
       await requireOriginalCurrentPcbViaSaveProjection(projection, this.#owner, this.#plan); await this.#current(true);
       const raw = captureCurrentPcbStringClockReply(await this.#bindings.nextEvent()).value;

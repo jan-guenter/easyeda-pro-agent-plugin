@@ -29,6 +29,8 @@ export class CurrentPcbViaEventRouter {
   readonly #paused = new Map<string, { lane: CurrentPcbViaEventLane; point: CurrentPcbViaEventPoint; delivered: boolean; resumeAttempted: boolean }>();
   readonly #queues: Record<CurrentPcbViaEventLane, CurrentPcbViaSaveWorkerEvent[]> = { save: [], clock: [] };
   readonly #reading = { save: false, clock: false };
+  readonly #resumeRoles = new WeakMap<CurrentPcbViaSaveWorkerEvent, Readonly<{ lane: CurrentPcbViaEventLane; role: string }>>();
+  readonly #completedClock = new Set<string>();
   #poll: Promise<void> | null = null; #failed = false;
   public constructor(bindings: CurrentPcbViaEventRouterBindings) {
     need(bindings !== null && typeof bindings === "object" && !types.isProxy(bindings) && Object.getPrototypeOf(bindings) === Object.prototype && Object.isFrozen(bindings));
@@ -50,13 +52,21 @@ export class CurrentPcbViaEventRouter {
     const pause = this.#paused.get(sessionId); need(!this.#failed && pause !== undefined && pause.lane === lane && pause.delivered && !pause.resumeAttempted && (role === undefined || pause.point.role === role)); pause.resumeAttempted = true;
   }
   public fail(): void { this.#failed = true; this.#bindings.fail(); }
+  /** Five delivered original clock resumes and the original still-held body
+   * are required together. Descriptive counts or copied events do not pass. */
+  public requireClockCompletionWithHeldSaveBody(): void {
+    const body = this.#paused.get(this.#bindings.workerSessionId);
+    need(!this.#failed && !this.#reading.clock && this.#queues.clock.length === 0 && this.#completedClock.size === 5 &&
+      ["push", "dispatch", "result", "reply", "complete"].every(role => this.#completedClock.has(role)) && !this.#paused.has(this.#bindings.uiSessionId) &&
+      body?.lane === "save" && body.point.role === "body" && body.delivered && !body.resumeAttempted);
+  }
   #dispatch(event: DiagnosticEvent): void {
     const session = event.sessionId; need(typeof session === "string" && (session === this.#bindings.workerSessionId || session === this.#bindings.uiSessionId));
     if (event.method === "Debugger.breakpointResolved") {
       const value = resolved.parse(event.params); const known = this.#points.get(`${session}\0${value.breakpointId}`); need(known !== undefined);
       need(value.location.scriptId === known.point.scriptId && value.location.lineNumber === known.point.lineNumber && value.location.columnNumber === known.point.columnNumber); return;
     }
-    let lane: CurrentPcbViaEventLane;
+    let lane: CurrentPcbViaEventLane; let resumeRole: string | null = null;
     if (event.method === "Debugger.paused") {
       const value = paused.parse(event.params); const id = value.hitBreakpoints[0]; const selected = this.#points.get(`${session}\0${id}`), top = value.callFrames[0];
       need(selected !== undefined && top !== undefined && !this.#paused.has(session)); const point = selected.point;
@@ -64,9 +74,11 @@ export class CurrentPcbViaEventRouter {
       lane = selected.lane; this.#paused.set(session, { lane, point, delivered: false, resumeAttempted: false });
     } else {
       need(event.method === "Debugger.resumed"); empty.parse(event.params); const previous = this.#paused.get(session);
-      need(previous !== undefined && previous.resumeAttempted); lane = previous.lane; this.#paused.delete(session);
+      need(previous !== undefined && previous.resumeAttempted); lane = previous.lane; resumeRole = previous.point.role; this.#paused.delete(session);
     }
-    need(this.#queues[lane].length < 32); this.#queues[lane].push(Object.freeze({ method: event.method, sessionId: session, params: event.params }));
+    const queued = Object.freeze({ method: event.method, sessionId: session, params: event.params });
+    if (resumeRole !== null) { this.#resumeRoles.set(queued, Object.freeze({ lane, role: resumeRole })); }
+    need(this.#queues[lane].length < 32); this.#queues[lane].push(queued);
   }
   async #pump(): Promise<void> {
     try { need(!this.#failed); await this.#bindings.assertCurrent(); need(!this.#failed);
@@ -74,10 +86,15 @@ export class CurrentPcbViaEventRouter {
       this.#dispatch(Object.freeze(event)); await this.#bindings.assertCurrent(); need(!this.#failed);
     } catch (error) { this.fail(); throw error; } finally { this.#poll = null; }
   }
+  #delivered(lane: CurrentPcbViaEventLane, event: CurrentPcbViaSaveWorkerEvent): void {
+    if (event.method === "Debugger.paused") { const pause = this.#paused.get(event.sessionId); need(pause !== undefined && pause.lane === lane && !pause.delivered); pause.delivered = true; return; }
+    const resumed = this.#resumeRoles.get(event); need(resumed !== undefined && resumed.lane === lane);
+    if (lane === "clock") { need(!this.#completedClock.has(resumed.role)); this.#completedClock.add(resumed.role); }
+  }
   public async next(lane: CurrentPcbViaEventLane): Promise<CurrentPcbViaSaveWorkerEvent> {
     need(!this.#failed && (lane === "save" || lane === "clock") && !this.#reading[lane]); this.#reading[lane] = true;
     try { for (;;) { need(!this.#failed); const event = this.#queues[lane].shift(); if (event !== undefined) { await this.#bindings.assertCurrent(); need(!this.#failed);
-      if (event.method === "Debugger.paused") { const pause = this.#paused.get(event.sessionId); need(pause !== undefined && pause.lane === lane && !pause.delivered); pause.delivered = true; } return event; }
+      this.#delivered(lane, event); return event; }
       this.#poll ??= this.#pump(); await this.#poll;
     } } finally { this.#reading[lane] = false; }
   }

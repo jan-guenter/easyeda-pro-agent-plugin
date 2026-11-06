@@ -20,8 +20,9 @@ void test("Via main codebook keeps fixed request selectors separate and cannot e
   assert.throws(() => validateCurrentPcbViaMainCommand({ phase: "via-main-request-driver-arm", method: "Debugger.setBreakpointOnFunctionCall", params: { objectId: "foreign" } }), /DRIVER_ARM/u);
 });
 void test("actual observer setup and driver capture retain exact source frames without attributing the unread body or resuming it", async () => {
-  const owner = Object.freeze({ explicitOwnerSeam: true }); const origin = Object.freeze({ explicitOriginSeam: true }); const plan = Object.freeze({ explicitPlanSeam: true });
+  const origin = Object.freeze({ explicitOriginSeam: true }); const plan = Object.freeze({ explicitPlanSeam: true });
   const source = Object.freeze({ explicitSourceSeam: true }); const projection = Object.freeze({ schema: "private.current-pcb-via-save-projection.v1" as const, bodySha256: "d".repeat(64), primitiveId: "3".repeat(16), exactOriginalUniqueIdDeltaVerified: true as const, originalClockBodyJoinVerified: true as const, selectedSqlAuthorized: false as const, persistenceVerified: false as const });
+  const owner = Object.freeze({ bindViaMainOriginalBody: (p: unknown, o: unknown): unknown => { assert.equal(p, plan); assert.equal(o, origin); return { bodySha256: projection.bodySha256, primitiveId: projection.primitiveId }; } });
   const commands: CurrentPcbViaMainCommand[] = []; let delivered = false, failed = false, saveAttempted = false;
   const event = { method: "Debugger.paused", params: { reason: "other", hitBreakpoints: ["sql-driver"], callFrames: [
     { callFrameId: "driver", functionName: "", location: { scriptId: "app", lineNumber: 1164, columnNumber: 2453 }, functionLocation: { scriptId: "app", lineNumber: 1164, columnNumber: 2434 } },
@@ -51,6 +52,7 @@ void test("actual observer setup and driver capture retain exact source frames w
   const observer = Reflect.construct(Constructor, [origin, owner, plan]) as CurrentPcbViaMainRequestObserver;
   await observer.arm(); assert.equal(commands.length, 3); saveAttempted = true;
   const body = projection;
+  await observer.bindOriginalBody(body); await assert.rejects(observer.bindOriginalBody(body), /BODY_BIND_CONSUMED/u);
   const packet = await observer.captureDriver(body); assert.equal(commands.length, 6); assert.equal(packet.actualRequestBodyJoined, false); assert.equal(packet.nativeMutationResumed, false);
   await observer.requireOriginal(packet); await assert.rejects(observer.requireOriginal({ ...packet }), /ORIGINAL_PACKET/u); await assert.rejects(observer.captureDriver(body), /DRIVER_CONSUMED/u);
   assert.equal(commands.some(command => command.method === "Debugger.resume"), false); assert.equal(failed, false);

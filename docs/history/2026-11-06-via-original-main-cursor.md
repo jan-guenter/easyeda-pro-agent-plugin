@@ -62,3 +62,32 @@ must bind those collectors and the closed/reopened persistence obligations
 before the SDK/native Save refusals can change. Complete closed SQL, a distinct
 saved-source readback capability, selected persistent-cache exclusion, fresh
 native/source checks and unchanged reopened SQL remain separate obligations.
+
+## Native body custody follow-up
+
+The actual Via owner now retains its once-only native Save value reply and the
+actual selected clock result array/value. Clock point removals are consumed
+before dispatch and retained only after their original acknowledgments. The
+event router separately records each original resumed event when the clock
+collector actually receives it. A private guard requires all five roles, no
+pending clock event, and the original delivered Save body pause with its resume
+still unconsumed. JSON counts and a reserved resume cannot satisfy this guard.
+
+`bindViaMainOriginalBody` uses those private native values, the original effect
+and complete initial history to derive the exact delta itself. It binds the
+original backend's one expected body while the worker remains paused before
+uploadLocal. `CurrentPcbViaMainRequestObserver.bindOriginalBody` also requires its
+live opaque projection, checks the native result's hash/primitive identity, and
+finishes reproof before allowing driver capture. No owner-to-observer runtime
+import or callback table was added. Another body, owner, clock value, released
+body pause or second binding refuses. No SQL continuation or Save gate changed.
+
+Focused tests use the real event router for all five original pause/resume
+pairs and the held body, and the actual main runner for one body binding and
+copied-origin refusal. The initial observer test retains explicit original
+native/source/body seams. These remain offline proofs, not connected validation.
+
+Thirteen focused event, initial-main, delta and production fence cases pass for
+this follow-up. Strict types, zero-warning type-aware lint, repository,
+MCP-contract and all-skill validation pass. No native helper code or capacity,
+payload/pin, facade bundle, installed package or connected process changed.

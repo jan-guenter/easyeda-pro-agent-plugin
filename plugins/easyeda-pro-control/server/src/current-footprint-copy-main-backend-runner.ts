@@ -85,6 +85,7 @@ import { CURRENT_PCB_VIA_MAIN_REQUESTS as VIA_REQUESTS, validateCurrentPcbViaMai
 import type { CurrentPcbViaMainCommand } from "./current-pcb-via-main-protocol.ts";
 import type { CurrentPcbViaMainBackendBindings, CurrentPcbViaMainEvent, CurrentPcbViaMainOrigin } from "./current-pcb-via-main-origin.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { currentFootprintCopyMainRequestPlanSchema } from "./current-footprint-copy-main-request-contract.ts";
 
 type MainCapability = CurrentFootprintCombinedMainCapability | CurrentFootprintForwardExecutionMainCapability | CurrentProjectStructureMainCapability;
 function mainCapability(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
@@ -318,6 +319,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   #viaMainNormal = 0;
   #viaMainCleanup = 0;
   #viaMainGroupReleased = false;
+  #viaExpectedBody: Readonly<z.infer<typeof currentFootprintCopyMainRequestPlanSchema>> | null = null;
   readonly #viaMainFrames = new Set<string>();
   #sqlMutationPauses = 0;
   readonly #sqlApprovedConfigurations = new WeakSet<Pause>();
@@ -929,6 +931,15 @@ export class CurrentFootprintCopyMainBackendRunner {
     for (const role of ["context", "controller", "editHead"] as const) {
       const expected = CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_SITES[role]; need([...this.#viaMainPoints.values()].some(point => point.scriptId === this.#appScriptId && point.lineNumber === expected.lineNumber && point.columnNumber === expected.columnNumber), "VIA_MAIN_SETUP_POINTS");
     }
+  }
+  public bindViaExpectedHistoryBody(origin: CurrentPcbViaMainOrigin, input: unknown): void {
+    this.requireViaMainObservationArmed(origin); this.#same(false);
+    need(this.#viaExpectedBody === null && this.#sqlHeld === null && this.#pause?.resumed === true, "VIA_MAIN_BODY_BIND_CONSUMED");
+    const plan = freezeDeep(currentFootprintCopyMainRequestPlanSchema.parse(captureCurrentPcbStringClockReply(input).value));
+    need(plan.path === this.#selectedSqlPath && plan.projectUuid === plan.projectKey, "VIA_MAIN_BODY_SCOPE"); this.#viaExpectedBody = plan;
+  }
+  public requireViaExpectedHistoryBody(origin: CurrentPcbViaMainOrigin): Readonly<z.infer<typeof currentFootprintCopyMainRequestPlanSchema>> {
+    need(this.#viaMainOrigin === origin && this.#viaExpectedBody !== null && !this.#viaMainGroupReleased, "VIA_MAIN_ORIGINAL_BODY"); this.#same(false); return this.#viaExpectedBody;
   }
 
   async #reprove(): Promise<void> {

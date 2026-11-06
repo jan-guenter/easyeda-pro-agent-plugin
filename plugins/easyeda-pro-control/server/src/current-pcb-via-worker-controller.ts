@@ -155,6 +155,9 @@ export class CurrentPcbViaWorkerController {
   public reserveClockResume(source: CurrentPcbViaProjectSourceHeld, realm: "worker" | "ui", role: string): void {
     need(this.#source === source && this.#child !== null); this.#eventRouter().reserveResume("clock", realm === "worker" ? this.#child.sessionId : this.#bindings.parentSessionId, role);
   }
+  public requireClockCompletionWithHeldSaveBody(source: CurrentPcbViaProjectSourceHeld): void {
+    need(this.#source === source && this.#child !== null); this.requireOriginal(source, this.#child); this.#eventRouter().requireClockCompletionWithHeldSaveBody();
+  }
   async #start(): Promise<void> {
     const child = this.#child; need(child !== null && this.#runner === null);
     await this.#current(); await this.#bindings.bindWorker(child); await this.#current();
