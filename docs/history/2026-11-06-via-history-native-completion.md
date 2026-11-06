@@ -365,3 +365,24 @@ supplied-data comparisons only, not original packet tokens or cache mutation
 permission. Five focused combined-wire/data cases cover over-budget rosters,
 truncated pages, foreign scope, duplicate IDs, unsupported metadata, noncanonical
 base64, changed repeated data and accessors; types and strict lint pass.
+
+### Shared inert native cache/Response descriptors
+
+`current-native-cache-response-intrinsics.ts` provides an origin-free fixed
+capture/reproof leaf for independent producer and saved-readback owners. The
+first four-slot tuple contains only the original global and three constructor
+candidates. Those constructors must pass actual native metadata qualification
+before the owner inspects their prototypes. The28-slot member tuple then binds
+Cache/CacheStorage/Response prototypes, ten methods, every ordinary Response
+accessor and the original caches accessor. Capture/reproof invokes none of
+those constructors, methods or getters and requires throwOnSideEffect:true.
+
+All23 callable slots have fixed name/arity profiles. The strict native metadata
+decoder rejects a FunctionLocation, nonempty/application scopes, unknown own
+properties, descriptor drift and copied application-style metadata. That
+validation is data only: the caller must retain each actual correlated original
+getProperties reply for the exact function slot. Matching descriptions supplied
+by another caller cannot qualify native provenance. Separate original owners
+must retain their own tuple, source/context, event cursor and continuation
+permission; this leaf transfers none. The three focused descriptor/data cases,
+full types and strict lint pass without browser/native cache or Response use.
