@@ -585,3 +585,32 @@ full types and strict changed-file lint pass. No native/helper changes occurred.
 This permits a separate inverse issuer to reuse data checks. That issuer and
 its actual original cache/metadata stream still need implementation; no Via
 checkpoint or cache origin can be passed to the inverse owner.
+
+The original inverse factory now issues its own cache origin before project
+navigation. `createFootprintInverseCacheOrigin()` requires the same genuine
+saved checkpoint, original main readonly fence, completed original registration
+and browser-wide all-worker hold. It performs a fresh fixed empty-UI check,
+qualifies the actual emitted helper source and binds the original parent realm.
+`observeOriginalCurrentFootprintInverseCaches()` drives that origin's private
+CDP and native metadata ledgers through both complete rounds. The ledgers retain
+actual correlated packets, helper events and sources; copied origins, foreign
+frames, replacement programs and the ninth combined entry refuse. The two
+exact project namespaces may be read only under the existing supported Fetch
+profile and byte limits. The native inverse codebook explicitly refuses delete.
+It shares static fixed encoders, never a Via owner, origin or checkpoint.
+
+This adds114 renderer commands:24 cache reads plus1 cleanup,78 metadata reads
+plus1 cleanup, and10 fresh empty-UI/helper-source checks. The inverse renderer
+ceiling is793, generic discovery36, with separate per-action and aggregate
+limits. Older purposes keep their limits. Repeated whole generation, complete
+C#5/.NET10 Linux compilation and fixed-codec smokes pass; emitted helper2,094,200
+bytes and C#1,902,133 bytes stay under the unchanged2MiB bounds. Seventeen focused
+factory/stream/Inspector/driver/wire checks, full types and strict changed-file
+lint pass. No tracked helper/pins/bundles or Windows/app/MCP calls changed.
+The small remaining helper margin must be measured before more native code.
+
+The cache data still needs inverse-specific durable publication and a private
+backup grant, fresh per-delete guards, original once-only invalidation and
+absence before the cold project route can rely on it. No cache deletion,
+complete producer frontier, delete invocation, Save or four-generation
+acceptance is granted by this observation increment.

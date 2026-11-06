@@ -103,6 +103,8 @@ void test("an original inverse factory cannot adopt a copied source or construct
   assert.ok(typeof arm === "function" && typeof lookup === "function"); const attempt: unknown = Reflect.apply(arm, owner, [copiedSource]); assert.ok(attempt instanceof Promise);
   await assert.rejects(attempt, /FOOTPRINT_INVERSE_WORKER_ORIGINAL/u);
   assert.throws(() => { Reflect.apply(lookup, undefined, [Object.freeze({ profile: "private.current-footprint-inverse-construction.v1" }), owner, token]); }, /FOOTPRINT_INVERSE_CONSTRUCTION_ORIGINAL/u);
+  const cache: unknown = Reflect.get(f.api, "requireOriginalCurrentFootprintInverseCacheOrigin"); assert.ok(typeof cache === "function");
+  assert.throws(() => { Reflect.apply(cache, undefined, [Object.freeze({ profile: "private.current-footprint-inverse-cache-origin.v1" }), owner, token]); }, /FOOTPRINT_INVERSE_CACHE_ORIGINAL_ORIGIN/u);
   assert.equal(owner.status().busy, false); await owner.releaseUnlaunched();
   assert.deepEqual(f.state.actions, ["release-unlaunched", "release-unlaunched", "release-unlaunched"]);
 });

@@ -26,7 +26,7 @@ void test("inverse finite frames retain the original pair and refuse final proje
     assert.throws(() => currentFootprintInverseWorkerNativeFrame(bytes({ ...frame, savedReadbackWorker: true }), command, pair));
   }
   assert.throws(() => currentFootprintInverseWorkerWire({ phase: "saved-load-resume", role: "project", method: "Debugger.resume", params: {} }, 40, pair));
-  assert.equal(PROFILE.renderer.sourceHeldPrefix, 64); assert.equal(PROFILE.renderer.generic, 35);
+  assert.equal(PROFILE.renderer.sourceHeldPrefix, 64); assert.equal(PROFILE.renderer.generic, 36);
   assert.equal(PROFILE.controls, Object.values(ACTIONS).reduce((sum, count) => sum + count, 0));
   assert.equal(ACTIONS["main-reprove"], 2 * PROFILE.main.total + 2 * PROFILE.main.fenceNormal + 2 * PROFILE.main.polls + PROFILE.renderer.polls + PROFILE.renderer.total + 7);
   assert.equal(PROFILE.deleteInvocationAuthorized, false);
