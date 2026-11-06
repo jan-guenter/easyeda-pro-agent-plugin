@@ -78,6 +78,11 @@ export class ManagedFixtureDestinationOwner {
   private pending: { resolve: (value: unknown) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout> } | undefined;
   private closed: Promise<{ code: number | null; signal: NodeJS.Signals | null }> | undefined;
   private failed: Error | undefined;
+  private readonly stderrPrefix = Buffer.alloc(65_536);
+  private stderrCapturedBytes = 0;
+  private stderrObservedBytes = 0;
+  private stderrEnded = false;
+  private transportCloseObserved = false;
   private readonly options: ManagedFixtureDestinationOptions;
   private readonly dependencies: ManagedFixtureDestinationDependencies;
   public constructor(options: ManagedFixtureDestinationOptions, dependencies: ManagedFixtureDestinationDependencies = {}) {
@@ -124,12 +129,18 @@ export class ManagedFixtureDestinationOwner {
     } catch (error) { this.fail(error instanceof Error ? error : new Error("Fixture destination helper spawn failed.")); await first; throw error; }
     this.child = child;
     // oxlint-disable-next-line promise/avoid-new -- Observe the original spawned transport's close event; no PID reopening or signaling.
-    this.closed = new Promise((resolve) => { child.once("close", (code, signal) => { this.fail(new Error("Original fixture destination helper transport closed.")); resolve({ code, signal }); }); });
+    this.closed = new Promise((resolve) => { child.once("close", (code, signal) => { this.transportCloseObserved = true; this.fail(new Error("Original fixture destination helper transport closed.")); resolve({ code, signal }); }); });
     child.once("error", (error) => { this.fail(error); });
     child.stdin.on("error", (error) => { this.fail(error); });
     child.stdout.on("error", (error) => { this.fail(error); });
     child.stderr.on("error", (error) => { this.fail(error); });
-    child.stderr.on("data", (chunk: Buffer) => { if (chunk.length > 0) { this.fail(new Error("Original fixture destination helper reported an error; output retained only as a bounded failure.")); } });
+    child.stderr.once("end", () => { this.stderrEnded = true; });
+    child.stderr.on("data", (chunk: Buffer) => {
+      this.stderrObservedBytes += chunk.length;
+      const copied = chunk.copy(this.stderrPrefix, this.stderrCapturedBytes, 0, Math.min(chunk.length, this.stderrPrefix.length - this.stderrCapturedBytes));
+      this.stderrCapturedBytes += copied;
+      if (chunk.length > 0) { this.fail(new Error("Original fixture destination helper reported an error; retain its bounded diagnostic artifact and original cleanup.")); }
+    });
     child.stdout.on("data", (chunk: Buffer) => {
       this.outputBytes += chunk.length;
       if (this.outputBytes > 1_048_576) { this.fail(new Error("Fixture destination helper exceeded its complete output budget.")); return; }
@@ -156,6 +167,18 @@ export class ManagedFixtureDestinationOwner {
     return this.accept(await response, this.sequence);
   }
   public snapshot(): ManagedFixtureDestinationObservation | null { return this.current === undefined ? null : structuredClone(this.current); }
+  /** Original raw bytes only. A prefix or close event never proves directory
+   * allocation, original app termination, migration exclusion or safe replay. */
+  public failureObservation(): Readonly<Record<string, unknown>> | null {
+    if (this.failed === undefined) { return null; }
+    const prefix = this.stderrPrefix.subarray(0, this.stderrCapturedBytes);
+    return { schema: "easyeda-pro-control.fixture-destination-helper-failure.v1", failure: this.failed.message,
+      stderr: { observedBytes: this.stderrObservedBytes, capturedBytes: prefix.length, base64: prefix.toString("base64"),
+        capturedPrefixSha256: createHash("sha256").update(prefix).digest("hex"), streamEnded: this.stderrEnded,
+        truncated: this.stderrObservedBytes > prefix.length, complete: this.stderrEnded && this.stderrObservedBytes === prefix.length },
+      originalTransportAllocated: this.child !== undefined, originalTransportCloseObserved: this.transportCloseObserved,
+      nativeApplicationTerminationProved: false, directoryAllocationProved: false, replayAllowed: false };
+  }
   public async release(): Promise<Readonly<{ originalTransportClosed: true; filesDeleted: false; migrationExclusionHeldUntilRelease: boolean;
     finalObservation: ManagedFixtureDestinationObservation | null; exitCode: number | null; signal: NodeJS.Signals | null }>> {
     if (this.releaseAttempted) { throw new Error("Fixture destination release cannot be repeated or reconstructed."); }

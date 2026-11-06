@@ -114,3 +114,12 @@ For unchanged generated data after a completed controller replacement, use the
 separate [closed fixture requalification route](closed-generated-fixture-data.md).
 It acquires new read-only resources and verifies the entire initial source/SQL.
 It accepts no earlier runtime authority and refuses any post-open file change.
+
+A destination preparation failure can follow a completed environment getter.
+Inspect the explicit environment operation even when base import inspection
+reports no cleanup owner for the import itself. Preserve any original helper
+failure artifacts. A complete stderr record and a truncated prefix are distinct;
+neither authorizes another import or proves whether a directory was allocated.
+After original application termination, release the original destination
+transport through its supported action, including after failed initialization.
+Do not delete unknown partial directories or reconstruct an owner from paths.

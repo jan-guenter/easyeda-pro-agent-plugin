@@ -5,7 +5,9 @@ const ownerId = "1".repeat(32), windowsDirectory = `C:\\SyntheticTemp\\CodexEasy
 const base = { schema: "easyeda-pro-control.fixture-destination-owner.v1", nonce, ownerId, windowsDirectory,
   directoryIdentity: "12345678:0000000012345678", expectedBasename, entries: [], state: "held", deletionAuthorized: false,
   libraries: [{ windowsDirectory: "C:\\SyntheticLibraries", directoryIdentity: "12345678:1111111111111111", names: ["asset.step"], watchState: "pending" }] };
-process.stdout.write(`${JSON.stringify(base)}\n`);
+if (mode === "stderr-init" || mode === "stderr-overflow") {
+  process.stderr.write(mode === "stderr-init" ? "Synthetic destination startup failure\n" : "x".repeat(70_000));
+} else { process.stdout.write(`${JSON.stringify(base)}\n`); }
 const input = createInterface({ input: process.stdin });
 input.on("line", (line) => {
   const request: unknown = JSON.parse(line);

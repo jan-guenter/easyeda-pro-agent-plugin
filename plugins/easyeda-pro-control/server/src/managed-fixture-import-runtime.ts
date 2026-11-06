@@ -97,7 +97,7 @@ export interface ManagedFixtureImportOptions {
 }
 /** Internal offline-test seams; production never accepts dependency overrides. */
 export interface ManagedFixtureImportDependencies {
-  readonly destination?: (options: ConstructorParameters<typeof ManagedFixtureDestinationOwner>[0]) => Pick<ManagedFixtureDestinationOwner, "initialize" | "inspect" | "snapshot" | "release">;
+  readonly destination?: (options: ConstructorParameters<typeof ManagedFixtureDestinationOwner>[0]) => Pick<ManagedFixtureDestinationOwner, "initialize" | "inspect" | "snapshot" | "release" | "failureObservation">;
   readonly verifySources?: typeof verifyManagedFixtureImportSources;
   readonly assertFingerprint?: typeof assertManagedFixtureImportFingerprint;
   readonly prepareInput?: typeof prepareManagedLibraryFile;
@@ -154,6 +154,7 @@ export class ManagedFixtureImportCoordinator {
   private closedSchematicCapture: Awaited<ReturnType<typeof captureManagedSchematicFixtureClosedSnapshot>> | undefined;
   private destination: ReturnType<NonNullable<ManagedFixtureImportDependencies["destination"]>> | undefined;
   private destinationReleased = false;
+  private destinationPreparationFailed = false;
   private migrationExclusionVerified = false;
   private observation: Observation | null = null;
   private destinationObservation: ManagedFixtureDestinationObservation | null = null;
@@ -423,6 +424,10 @@ export class ManagedFixtureImportCoordinator {
       await this.artifact("destination-release-intent", { operationId: operation.operationId, termination, filesDeleted: false });
       const released = await this.checked(() => destination.release());
       this.destinationReleased = true; this.migrationExclusionVerified = released.migrationExclusionHeldUntilRelease;
+      if (this.destinationPreparationFailed) {
+        const diagnostic = destination.failureObservation();
+        if (diagnostic !== null) { await this.artifact("destination-helper-final-diagnostics", diagnostic); }
+      }
       this.destinationObservation = released.finalObservation ?? this.destinationObservation;
       this.phase = this.migrationExclusionVerified ? "destination-released-unverified" : "destination-released-migration-unproved";
       await this.artifact("destination-released", released); return this.inspect(request.operationId);
@@ -463,7 +468,13 @@ export class ManagedFixtureImportCoordinator {
       const destination = (this.dependencies.destination ?? ((options): ManagedFixtureDestinationOwner => new ManagedFixtureDestinationOwner(options)))({ pluginRoot: this.options.pluginRoot,
         assetsRoot: this.options.assetsRoot, nonce, expectedBasename: generated.name.replace(/\.epro2$/u, ".eprj2"), libraryWindowsDirectories: environment.libraryWindowsDirectories });
       this.destination = destination;
-      this.destinationObservation = await this.checked(() => destination.initialize());
+      try { this.destinationObservation = await this.checked(() => destination.initialize()); }
+      catch (error) {
+        this.destinationPreparationFailed = true;
+        const diagnostic = destination.failureObservation();
+        if (diagnostic !== null) { await this.artifact("destination-preparation-failure", diagnostic); }
+        throw error;
+      }
       await this.artifact("destination-held", this.destinationObservation);
       const importPlan = { operationId: request.operationId, nonce, archiveName: generated.name, destinationWindowsDirectory: this.destinationObservation.windowsDirectory,
         libraryWindowsDirectories: environment.libraryWindowsDirectories };

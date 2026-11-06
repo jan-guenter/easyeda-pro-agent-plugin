@@ -46,7 +46,8 @@ void test("actual fixture registration retains one original index owner, authent
     // oxlint-disable-next-line typescript/no-extraneous-class -- The real registration constructs this separate cleanup role; this test checks only its owner's allocation and scope.
     ManagedFixtureImportCoordinator: Owner, OrdinaryTrackedOpenCleanup: class {},
     upstream: authenticated.upstream, engine: {}, ordinaryLaunchRuntime: runtime, windowsRuntime: runtime,
-    fixtureImportCoordinator: undefined, stagedFixtureOpeningSource: undefined, currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined,
+    fixtureImportCoordinator: undefined, stagedFixtureOpeningSource: undefined, stagedSchematicOpeningSource: undefined,
+    hasGeneratedSchematicCustody: (): boolean => false, currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined,
     currentSchematicRenameOperationCoordinator: undefined, closedSymbolIndexReservation: undefined, scheduledShutdown: undefined,
     hasForwardSourceCustody: (): boolean => false,
     serializedGuarded: (handler: Invoke, options: { allowDuringOrphanRisk: boolean }): Invoke => {

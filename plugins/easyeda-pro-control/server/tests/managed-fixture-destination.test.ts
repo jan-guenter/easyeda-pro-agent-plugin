@@ -41,3 +41,22 @@ void test("fixed destination and original watcher source retains its separately 
   const source = await readFile(new URL("../../scripts/managed-fixture-destination.ps1", import.meta.url));
   assert.equal(createHash("sha256").update(source).digest("hex"), MANAGED_FIXTURE_DESTINATION_HELPER_SHA256);
 });
+
+void test("failed original helper retains complete bounded stderr or an explicitly truncated prefix through EOF release", async () => {
+  for (const mode of ["stderr-init", "stderr-overflow"]) {
+    const native = owner(mode);
+    await assert.rejects(native.initialize(), /reported an error/u);
+    const initial = native.failureObservation(); assert.ok(initial); assert.equal(initial["replayAllowed"], false);
+    const released = await native.release(); assert.equal(released.originalTransportClosed, true);
+    assert.equal(released.migrationExclusionHeldUntilRelease, false);
+    const final = native.failureObservation(); assert.ok(final); assert.equal(final["originalTransportCloseObserved"], true);
+    const stderr = final["stderr"]; assert.ok(stderr !== null && typeof stderr === "object" && "base64" in stderr && typeof stderr.base64 === "string");
+    const bytes = Buffer.from(stderr.base64, "base64");
+    assert.ok("capturedBytes" in stderr && stderr.capturedBytes === bytes.length && "capturedPrefixSha256" in stderr);
+    assert.equal(stderr.capturedPrefixSha256, createHash("sha256").update(bytes).digest("hex"));
+    assert.ok("complete" in stderr && "truncated" in stderr && "observedBytes" in stderr);
+    assert.equal(stderr.complete, mode === "stderr-init"); assert.equal(stderr.truncated, mode === "stderr-overflow");
+    assert.equal(stderr.observedBytes, mode === "stderr-init" ? 38 : 70_000);
+    assert.equal(bytes.length, mode === "stderr-init" ? 38 : 65_536);
+  }
+});

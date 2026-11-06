@@ -86,7 +86,7 @@ function fixture(id: string, lostReply = false, lostEnvironment = false, watchCh
         ownerId: "5".repeat(32), windowsDirectory: `C:\\SyntheticTemp\\CodexEasyedaFixture_${"5".repeat(32)}`,
         directoryIdentity: "12345678:1234567812345678", expectedBasename: options.expectedBasename, entries: [], state: "held" as const, deletionAuthorized: false as const,
         libraries: [{ windowsDirectory: "C:\\SyntheticLibraries", directoryIdentity: "12345678:1111111111111111", names: ["asset.step"], watchState: "pending" as const }] };
-      return { initialize: () => Promise.resolve(observation), inspect: () => watchChanged ? Promise.reject(new Error("Synthetic original library watch completion")) : Promise.resolve(observation), snapshot: () => observation,
+      return { initialize: () => Promise.resolve(observation), inspect: () => watchChanged ? Promise.reject(new Error("Synthetic original library watch completion")) : Promise.resolve(observation), snapshot: () => observation, failureObservation: () => null,
         release: () => { calls.push("release-directory"); return Promise.resolve({ originalTransportClosed: true, filesDeleted: false,
           migrationExclusionHeldUntilRelease: true, finalObservation: { ...observation, state: "released" as const, libraries: observation.libraries.map((entry) => ({ windowsDirectory: entry.windowsDirectory, directoryIdentity: entry.directoryIdentity, names: entry.names, watchState: "cancelled-no-changes" as const })) }, exitCode: 0, signal: null }); } };
     } });

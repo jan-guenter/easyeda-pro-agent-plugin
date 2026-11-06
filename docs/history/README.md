@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 generated import destination refusal](2026-11-06-generated-import-destination-refusal.md). Fourth original controller passed actual config preflight and stopped before importer dispatch on unavailable helper stderr; new bounded diagnostic retention and pending original cleanup remain explicit.
+
 - [2026-11-06 closed generated data index mount](2026-11-06-closed-generated-data-index-mount.md). Fresh independent proof runtime, opaque reader staging, exclusive callback/queued-gate custody, source queries and operating reference; connected native reuse remains pending.
 
 - [2026-11-06 closed generated data requalification](2026-11-06-closed-generated-data-requalification.md). New read-only file/proof leases, full initial SQL and fixed source equality, current-facade data token issuance without historical runtime adoption, and exact index/manager mount requirements.

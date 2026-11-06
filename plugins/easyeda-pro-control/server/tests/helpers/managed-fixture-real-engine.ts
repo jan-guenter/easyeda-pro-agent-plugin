@@ -102,7 +102,7 @@ export async function managedFixtureRealEngine(context: TestContext, id: string,
         windowsDirectory: `C:\\SyntheticTemp\\CodexEasyedaFixture_${"5".repeat(32)}`, directoryIdentity: "12345678:1234567812345678",
         expectedBasename: settings.expectedBasename, entries: [], state: "held" as const, deletionAuthorized: false as const,
         libraries: [{ windowsDirectory: "C:\\SyntheticLibraries", directoryIdentity: "12345678:1111111111111111", names: ["asset.step"], watchState: "pending" as const }] };
-      return { initialize: (): Promise<typeof observation> => Promise.resolve(observation), snapshot: (): typeof observation => observation,
+      return { initialize: (): Promise<typeof observation> => Promise.resolve(observation), snapshot: (): typeof observation => observation, failureObservation: () => null,
         inspect: (): Promise<typeof observation> => {
           behavior.destinationChecks += 1;
           if (options.watchFailure === true) { return Promise.reject(new Error("Synthetic retained watch refused before SDK client entry")); }
