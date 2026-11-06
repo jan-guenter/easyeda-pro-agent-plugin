@@ -79,7 +79,7 @@ interface Module {
  * no native application ownership, real closed-SQL proof or writer authority.
  */
 export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined" | "forward" | "forward-execution" | "structure" = "combined", savedObservation = false,
-  supplied: Readonly<{ modules?: Readonly<Record<string, unknown>>; childProgram?: string;
+  supplied: Readonly<{ modules?: Readonly<Record<string, unknown>>; childProgram?: string; inverseSourceRefusal?: true;
     launchTarget?: Readonly<{ windowsPath: string; sha256: string }> }> = {}): Promise<Readonly<{
   api: Module; options: CurrentPcbDiagnosticInstallationOptions; child: () => ChildProcessWithoutNullStreams;
   state: { writes: number; bytes: number; readySent: boolean; actions: string[] };
@@ -121,6 +121,11 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
       this.#footprintUiOpening=opening as never;this.#footprintUiOpeningResult=result as never;this.#forwardExecutionUiReproofSucceeded=true;
     }
     public status():`);
+  }
+  if (supplied.inverseSourceRefusal === true) {
+    // This test-only state reaches the source-prerequisite guard without an
+    // Application launch, native root or source/SQL qualification.
+    ownerSource = ownerSource.replace("  public status():", "  public syntheticInverseSourceRefusalForTest(): void { this.#launchSucceeded=true; }\n  public status():");
   }
   const raw = ownerSource.replaceAll("import.meta.url", JSON.stringify(path.href))
     // Explicit external checkpoint seam; production keeps its literal lazy import.

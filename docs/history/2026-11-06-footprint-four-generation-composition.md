@@ -441,3 +441,70 @@ provides the genuine issuer and fixed data/native-frame codec for the shared
 main enrollment integration. The inverse native registration action and budget,
 source-held worker, producer frontier and delete invocation are still unmounted;
 no helper, pin, app, Windows process or MCP call changed.
+
+### Original inverse registration and source-held worker prefix
+
+The distinct inverse owner now dispatches the fixed empty-UI preflight and
+raw-path registration on its own native purpose. Its original fixed helper
+script is correlated to the actual parent session/context and its complete
+source is checked after each call. The retained main runner enrolls the genuine
+durable inverse intent before dispatch, then requires its actual awaited SQL
+continuation or its genuine no-dispatch result. Source/intent failures consume
+the original attempt; the original unlaunched cleanup remains reachable after
+a prerequisite refusal. A lost registration reply does not allow a new call.
+
+The main startup source pause arms an inverse-only three-request browser
+inventory/hold/inventory prefix before the original app-main continuation.
+Previously running workers refuse. The shared early-actor class supplies only
+inert bookkeeping: this owner has its own instance and only its actual original
+pipe events enter it. Background actors remain suspended. The actual empty-UI
+parent/window tab then selects one browser/page attachment pair for the new
+project worker. Its two sessions must name the same original waiting target.
+No saved-reader controller, origin or cache token is reused.
+
+`armFootprintInverseWorker(setup)` arms the own parent wait before navigation.
+`openFootprintInverseProject()` retains one original navigation Promise;
+`observeFootprintInverseWorkerSource()` waits the same controller without
+starting a second poller. The original worker receives the fixed seven-source
+22-command bootstrap through a separate inverse action and strict native stage
+order. Its actual project source remains paused. The private
+`requireOriginalCurrentFootprintInverseWorkerOrigin(origin, owner, prepared)`
+lookup binds the actual owner, original completed saved checkpoint, same pair,
+source/context and live original closure. Matching JSON cannot issue it. There
+is no final project-source resume, producer permission, delete, clock or Save
+authority in this prefix.
+
+The new purpose reserves 941 main requests (64 construction +837 readonly
+fence +32 exact recent-path registration +8 cleanup), 64 renderer commands and
+24,000 polls per original main/renderer lane. The renderer count is16 discovery,
+10 empty-UI/source proof,2 registration/source proof,3 early browser requests,
+1 parent wait,22 source-held bootstrap and10 project opening/source proof.
+Generic discovery/source reads have a separate35 maximum. Main reproof75,627
+is derived from two per main request, two extra around the readonly-request
+reader subset, two per main poll, one per renderer service iteration plus one
+failed iteration per renderer command, and the seven fixed construction/
+registration guards. Every action has its own counter and the aggregate sum is
+125,124. Attempts consume counters before dispatch. Separate normal-close,
+original-Job abort, window/termination and final release counters keep cleanup
+available if a normal action reaches its own ceiling. The earlier50,820 and
+52,356 prospective aggregate formulas above are historical; they omitted actual
+main reproof callbacks and are not the current reservation. Older purposes and
+limits are unchanged.
+
+The initial full composition correctly refused at2,102,321 bytes. Applying the
+existing lossless Via SDK packing prerequisite recovered the existing source
+headroom; this prefix's twice-idempotent emitted helper is2,088,669 bytes under
+the unchanged2,097,152 bound. The complete emitted C#5/.NET10 Linux smoke checks
+exact registration-frame bytes and all22 worker-frame bytes, rejects project
+resume, and proves that an exhausted normal reproof counter cannot consume the
+separate abort/termination/release counters. Focused factory, actual Node-stream,
+finite grammar and wrong/running-worker tests are source-only. Full types and
+strict changed-file lint pass. No Windows/compiler/app/MCP/native owner was
+started, and no tracked helper, bundle or pins were changed.
+
+Remaining joins are concrete: inverse-specific pre-PROJECT producer/structure
+and single-clock hooks, exact loaded copied model/source qualification, the
+complete source-owned producer/head frontier, the actual delete/main request
+and native SQL completion, and the fourth fresh absence/readback owner. All
+writer/persistence/reopen acceptance remains false until those original joins
+and full closed-file SQL proofs complete.

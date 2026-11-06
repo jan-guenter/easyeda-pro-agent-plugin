@@ -5,7 +5,7 @@ import { z } from "zod";
 import { canonicalJson } from "./core.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
-import { diagnosticGeneratedFixtureRegistrationParams } from "./current-pcb-diagnostic-protocol.ts";
+import { diagnosticGeneratedFixtureRegistrationParams, diagnosticOpeningParams } from "./current-pcb-diagnostic-protocol.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { GENERATED_FIXTURE_REGISTRATION_FUNCTION as PCB, generatedFixtureRegistrationResultSchema } from "./managed-fixture-registration-program.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -45,4 +45,27 @@ export function currentFootprintInverseRegistrationNativeFrame(chunk: Buffer, se
   const expected = { id: value.id, method: "Runtime.callFunctionOn", params: currentFootprintInverseRegistrationParams(context, target), sessionId };
   if (canonicalJson(value) !== canonicalJson(expected) || chunk.toString("utf8") !== `${JSON.stringify(expected)}\0`) { throw new Error("FOOTPRINT_INVERSE_REGISTRATION_FRAME"); }
   return Object.freeze({ action: "footprint-inverse-register", requestId: value.id, sessionId, uniqueContextId: context });
+}
+
+/** The original Core supplies the exact sealed tuple and original UI realm. */
+export function currentFootprintInversePreflightNativeFrame(chunk: Buffer, sessionId: string, context: string, target: CurrentDisposableOpenSealedTarget): Readonly<Record<string, string | number>> {
+  const sealed = currentDisposableOpenSealedTargetSchema.parse(captureCurrentPcbStringClockReply(target).value);
+  if (chunk.length > 65_536 || chunk.at(-1) !== 0) { throw new Error("FOOTPRINT_INVERSE_PREFLIGHT_FRAME"); }
+  const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(chunk.subarray(0, -1))), value = captureCurrentPcbStringClockReply(raw).value;
+  if (value === null || typeof value !== "object" || !("id" in value) || typeof value.id !== "number" || !Number.isSafeInteger(value.id) || value.id < 1) { throw new Error("FOOTPRINT_INVERSE_PREFLIGHT_FRAME"); }
+  const expected = { id: value.id, method: "Runtime.callFunctionOn", params: diagnosticOpeningParams(context, sealed, "preflight"), sessionId };
+  if (canonicalJson(value) !== canonicalJson(expected) || chunk.toString("utf8") !== `${JSON.stringify(expected)}\0`) { throw new Error("FOOTPRINT_INVERSE_PREFLIGHT_FRAME"); }
+  return Object.freeze({ action: "footprint-inverse-preflight", requestId: value.id, sessionId, uniqueContextId: context, targetRawWindowsPath: sealed.rawWindowsPath,
+    targetProjectUuid: sealed.projectUuid, targetBranchUuid: sealed.branchUuid, targetDocumentUuid: sealed.documentUuid, targetExpectedSourceSha256: sealed.expectedSourceSha256 });
+}
+
+/** Fixed once-only navigation following the original raw-path registration. */
+export function currentFootprintInverseProjectNativeFrame(chunk: Buffer, sessionId: string, context: string, target: CurrentDisposableOpenSealedTarget): Readonly<Record<string, string | number>> {
+  const sealed = currentDisposableOpenSealedTargetSchema.parse(captureCurrentPcbStringClockReply(target).value);
+  if (chunk.length > 65_536 || chunk.at(-1) !== 0) { throw new Error("FOOTPRINT_INVERSE_PROJECT_FRAME"); }
+  const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(chunk.subarray(0, -1))), value = captureCurrentPcbStringClockReply(raw).value;
+  if (value === null || typeof value !== "object" || !("id" in value) || typeof value.id !== "number" || !Number.isSafeInteger(value.id) || value.id < 1) { throw new Error("FOOTPRINT_INVERSE_PROJECT_FRAME"); }
+  const expected = { id: value.id, method: "Runtime.callFunctionOn", params: diagnosticOpeningParams(context, sealed, "open-project"), sessionId };
+  if (canonicalJson(value) !== canonicalJson(expected) || chunk.toString("utf8") !== `${JSON.stringify(expected)}\0`) { throw new Error("FOOTPRINT_INVERSE_PROJECT_FRAME"); }
+  return Object.freeze({ action: "footprint-inverse-project", requestId: value.id, sessionId, uniqueContextId: context });
 }

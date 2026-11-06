@@ -13,12 +13,12 @@ function pending(method: unknown, args: readonly unknown[]): Promise<unknown> {
   const result: unknown = Reflect.apply(method, undefined, args); assert.ok(result instanceof Promise); return result;
 }
 interface CheckpointModule { requireOriginalCurrentFootprintForwardSavedCheckpoint: (input: unknown) => object; verifyCurrentFootprintForwardSavedCheckpoint: (input: unknown) => Promise<void> }
-async function prepared(verify: () => Promise<void> = (): Promise<void> => Promise.resolve()): Promise<Readonly<{ f: Awaited<ReturnType<typeof combinedReadyFactoryFixture>>; token: object; module: CheckpointModule }>> {
+async function prepared(verify: () => Promise<void> = (): Promise<void> => Promise.resolve(), inverseSourceRefusal = false): Promise<Readonly<{ f: Awaited<ReturnType<typeof combinedReadyFactoryFixture>>; token: object; module: CheckpointModule }>> {
   const held: { prior?: object } = {}, token = Object.freeze({ syntheticDataToken: true });
   const module: CheckpointModule = { requireOriginalCurrentFootprintForwardSavedCheckpoint: (input: unknown): object => {
     assert.equal(input, token); assert.ok(held.prior !== undefined); return held.prior;
   }, verifyCurrentFootprintForwardSavedCheckpoint: (input: unknown): Promise<void> => { assert.equal(input, token); return verify(); } };
-  const f = await combinedReadyFactoryFixture("ready", "forward-execution", true, { modules: { "./current-footprint-copy-held-saved-generation.ts": module } });
+  const f = await combinedReadyFactoryFixture("ready", "forward-execution", true, { modules: { "./current-footprint-copy-held-saved-generation.ts": module }, ...(inverseSourceRefusal ? { inverseSourceRefusal: true } : {}) });
   const after = Object.freeze({}), writer = await f.api.startCurrentFootprintForwardExecutionNativeOwner(f.options);
   f.seedSyntheticClosedSnapshot(writer, after); await writer.releaseUnlaunched();
   const saved = await pending(f.api.startCurrentFootprintForwardHeldSavedNativeOwner, [writer, after]);
@@ -71,6 +71,16 @@ void test("postspawn inverse source refusal retains only the original helper thr
   assert.ok(outcome !== null && typeof outcome === "object" && "owner" in outcome && outcome.owner instanceof f.api.CurrentFootprintInverseNativeOwner);
   assert.equal(outcome.owner.status().helperClosed, true);
   assert.deepEqual(f.state.actions, ["release-unlaunched", "release-unlaunched"]);
+});
+
+void test("failed inverse source prerequisite clears busy custody before original unlaunched cleanup", async context => {
+  const { f, token } = await prepared(undefined, true);
+  context.after(async () => { if (f.child().exitCode === null) { const closed = once(f.child(), "close"); f.child().stdin.end(); await closed; } });
+  const owner = await pending(f.api.startCurrentFootprintInverseNativeOwner, [token]); assert.ok(owner instanceof f.api.CurrentFootprintInverseNativeOwner);
+  const setup: unknown = Reflect.get(owner, "syntheticInverseSourceRefusalForTest"); assert.equal(typeof setup, "function"); assert.ok(typeof setup === "function"); Reflect.apply(setup, owner, []);
+  await assert.rejects(owner.prepareFootprintInverseUi()); assert.equal(owner.status().busy, false);
+  await owner.releaseUnlaunched(); assert.equal(f.child().exitCode, 0); assert.equal(owner.status().helperClosed, true);
+  assert.deepEqual(f.state.actions, ["release-unlaunched", "release-unlaunched", "release-unlaunched"]);
 });
 
 void test("whole native composition is idempotent with original inverse limits and no writer grant", async () => {

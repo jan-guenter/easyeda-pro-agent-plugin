@@ -1,22 +1,40 @@
-/** Separate third-generation birth. Only original discovery/main bootstrap is
- * admitted here; single-clock/delete/producer and whole-lifecycle grants stay
- * closed until their exact original inverse composition is installed. */
+/** Separate third-generation source-held prefix. Original registration and
+ * discovery are admitted; producer/delete/Save continuations remain closed. */
+import { CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_REQUESTS as REGISTRATION, CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITE_NAMES as REGISTRATION_SITES } from "./current-saved-project-registration-config-protocol.ts";
+import { CURRENT_PCB_VIA_SAVED_LOAD_BOOTSTRAP_REQUESTS as WORKER } from "./current-pcb-via-saved-load-bootstrap-protocol.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUESTS as FENCE } from "./current-selected-file-main-sql-fence-protocol.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_TRANSPORT as MAIN } from "./current-footprint-copy-main-transport-contract.ts";
-import { CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_REQUESTS as REGISTRATION } from "./current-saved-project-registration-config-protocol.ts";
 
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE = "footprint-inverse209";
 const mainCleanup = MAIN.cleanupRequests, mainNormal = MAIN.normalRequests + FENCE.normal + REGISTRATION;
-const discovery = 16;
-// Every request and poll has at most two original native reproof callbacks.
-// Include the same audited16-parent-proof upper envelope for each renderer
-// Discovery, plus one close/abort and240 termination/release observations each.
-const controls = 2 * (mainNormal + mainCleanup + MAIN.totalPolls) + 32 * discovery + 1 + 1 + 240 + 240 + 8;
+const discovery = 16, emptyGuard = 9 + 1, parent = 3 + 1, projectOpening = 9 + 1, registration = 2;
+const generic = discovery + 2 * 8 + 3;
+const renderer = discovery + emptyGuard + registration + parent + WORKER.totalUntilProjectHeld + projectOpening;
+// One finite renderer poll lane, paired with the existing original-main poll
+// Envelope. A consumed failure does not replenish this reservation.
+const rendererPolls = MAIN.totalPolls;
+// MainRunner.#request has two reproofs per command; the fixed selected request
+// Reader adds two around its subset of FENCE commands. #pumpOriginal adds two
+// Per main poll. pumpSelectedSqlFence adds one per renderer polling iteration;
+// A failed iteration may precede its poll, bounded by the renderer command IDs.
+// Two post-construction guards and registration's lazy-import/initial/three-site
+// Guards are the only additional reachable native reproofs in this prefix.
+const mainReproofs = 2 * (mainNormal + mainCleanup) + 2 * FENCE.normal + 2 * MAIN.totalPolls + rendererPolls + renderer + 2 + 2 + REGISTRATION_SITES.length;
+export const CURRENT_FOOTPRINT_INVERSE_ACTION_LIMITS = Object.freeze({
+  identity: 2, launch: 1, send: generic, poll: rendererPolls, window: 240, termination: 240,
+  "normal-close": 1, release: 1, "release-unlaunched": 1, "no-process-proof": 1, "release-no-process": 1,
+  "main-attach": 1, "main-reprove": mainReproofs, "main-send": mainNormal + mainCleanup, "main-poll": MAIN.totalPolls,
+  "footprint-inverse-abort": 1, "footprint-inverse-preflight": 1, "footprint-inverse-register": 1,
+  "footprint-inverse-actors": 3, "footprint-inverse-parent": 1, "footprint-inverse-worker-bind": 1,
+  "footprint-inverse-worker": WORKER.totalUntilProjectHeld, "footprint-inverse-source-bind": 1, "footprint-inverse-project": 1,
+});
+const controls = Object.values(CURRENT_FOOTPRINT_INVERSE_ACTION_LIMITS).reduce((sum, limit) => sum + limit, 0);
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE = Object.freeze({
   purpose: CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE, nativeSwitch: "-FootprintInverse209",
-  main: Object.freeze({ constructionNormal: MAIN.normalRequests, fenceNormal: FENCE.normal, registrationNormal: REGISTRATION,
-    normal: mainNormal, cleanup: mainCleanup, total: mainNormal + mainCleanup }),
-  renderer: Object.freeze({ discovery, total: discovery }), controls,
+  main: Object.freeze({ constructionNormal: MAIN.normalRequests, fenceNormal: FENCE.normal,
+    registrationNormal: REGISTRATION, normal: mainNormal, cleanup: mainCleanup, total: mainNormal + mainCleanup,
+    reproofs: mainReproofs, polls: MAIN.totalPolls }),
+  renderer: Object.freeze({ discovery, emptyGuard, generic, registration, parent, projectOpening, sourceHeldBootstrap: WORKER.totalUntilProjectHeld, total: renderer, polls: rendererPolls }), controls,
   completeInverseReserved: false, deleteInvocationAuthorized: false, executionAuthorized: false, saveAuthorized: false,
 });
 export const CURRENT_FOOTPRINT_INVERSE_DISCOVERY_METHODS = Object.freeze(["Browser.getVersion", "Target.getTargets", "Target.attachToTarget", "Page.enable", "Page.getFrameTree",

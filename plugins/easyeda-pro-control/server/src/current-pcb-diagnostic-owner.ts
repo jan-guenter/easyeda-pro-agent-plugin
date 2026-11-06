@@ -14,6 +14,13 @@ import type { CurrentGeneratedInitialBranchDataPlan } from "./current-generated-
  * Browser discovery grants no frame, worker, script or CAD execution authority. */
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import type { CurrentPcbViaSavedLoadBootstrapCommand } from "./current-pcb-via-saved-load-bootstrap-protocol.ts";
+import { CurrentFootprintInverseWorkerController } from "./current-footprint-inverse-worker-controller.ts";
+import type { CurrentFootprintInverseWorkerHeld, CurrentFootprintInverseWorkerPair } from "./current-footprint-inverse-worker-controller.ts";
+import type { CurrentFootprintInverseWorkerBindings, CurrentFootprintInverseWorkerOrigin } from "./current-footprint-inverse-worker-origin.ts";
+import { currentFootprintInverseActorNativeFrame, currentFootprintInverseParentNativeFrame, currentFootprintInverseWorkerNativeFrame } from "./current-footprint-inverse-worker-wire.ts";
+import type { CurrentFootprintInverseActorStage } from "./current-footprint-inverse-worker-wire.ts";
+import { CURRENT_FOOTPRINT_INVERSE_REGISTRATION_FUNCTION, currentFootprintInversePreflightNativeFrame, currentFootprintInverseProjectNativeFrame, currentFootprintInverseRegistrationNativeFrame, decodeCurrentFootprintInverseRegistrationReply } from "./current-footprint-inverse-registration.ts";
 import type { CurrentFootprintInverseRegistrationBindings, CurrentFootprintInverseRegistrationIntent } from "./current-footprint-inverse-registration-origin.ts";
 import { CurrentGeneratedInitialSyncCursor } from "./current-generated-initial-sync-cursor.ts";
 import type { CurrentGeneratedInitialSyncHeld } from "./current-generated-initial-sync-cursor.ts";
@@ -989,6 +996,12 @@ export function requireOriginalCurrentPcbViaSaveWorkerOrigin(origin: CurrentPcbV
   if (original === undefined || original.owner !== owner || original.plan !== plan) { throw error("PCB_VIA_SAVE_WORKER_ORIGINAL"); }
   requireViaPlan(owner, plan); original.assertOriginal(); return original.bindings;
 }
+const footprintInverseWorkers = new WeakMap<CurrentFootprintInverseWorkerOrigin, Readonly<{ owner: CurrentFootprintInverseNativeOwner; prepared: CurrentFootprintForwardSavedCheckpoint; bindings: CurrentFootprintInverseWorkerBindings; original: () => void }>>();
+export function requireOriginalCurrentFootprintInverseWorkerOrigin(origin: CurrentFootprintInverseWorkerOrigin, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): CurrentFootprintInverseWorkerBindings {
+  const held = footprintInverseWorkers.get(origin);
+  if (held === undefined || held.owner !== owner || held.prepared !== prepared) { throw error("FOOTPRINT_INVERSE_WORKER_ORIGINAL"); }
+  assertOriginalCurrentFootprintInverseNativeOwner(owner); held.original(); return held.bindings;
+}
 const selectedSqlFenceBootstraps = new WeakMap<object, Readonly<{ transport: object; runner: () => CurrentFootprintCopyMainBackendRunner | null; owner: CurrentFootprintInverseNativeOwner | CurrentPcbViaWriteOwner | CurrentSchematicDisplayWriteOwner | CurrentPcbViaSavedReadbackOwner; path: string; reprove: () => void }>>();
 /** Only the original selected bootstrap can arm its saved-reader actor hold. */
 export async function prepareOriginalCurrentSelectedFileStartupActors(capability: CurrentSelectedFileMainSqlFenceBootstrap,
@@ -998,6 +1011,8 @@ export async function prepareOriginalCurrentSelectedFileStartupActors(capability
   original.reprove(); runner.requireOriginalStartupActorPause(capability);
   // oxlint-disable-next-line eslint/no-use-before-define -- Called after the actual native factory creates its dedicated owner and runner.
   if (original.owner instanceof CurrentPcbViaSavedReadbackOwner) { await original.owner.prepareSavedReadbackEarlyActors(capability, runner); }
+  // oxlint-disable-next-line eslint/no-use-before-define -- This distinct native factory exists before its original main bootstrap resumes.
+  else if (original.owner instanceof CurrentFootprintInverseNativeOwner) { await original.owner.prepareFootprintInverseEarlyActors(capability, runner); }
   original.reprove(); runner.requireOriginalStartupActorPause(capability);
 }
 export function requireCurrentSelectedFileMainSqlFenceBootstrap(capability: CurrentSelectedFileMainSqlFenceBootstrap, transport: object): string {
@@ -1574,6 +1589,15 @@ class CurrentPcbRetainedOwnerCore {
   #savedReadbackBackup: SavedReadbackCacheBackupHeld | null = null;
   #savedReadbackInvalidationPromise: Promise<CurrentPcbViaSavedCacheAbsence> | null = null;
   #savedReadbackInvalidation: CurrentPcbViaSavedCacheInvalidationLedger | null = null;
+  #inverseEarlyActors: CurrentPcbViaSavedEarlyActors | null = null; #inverseActorStage: CurrentFootprintInverseActorStage | null = null; #inverseActorAttempted = false;
+  #inverseParentPending = false; #inverseWorkerController: CurrentFootprintInverseWorkerController | null = null; #inverseWorkerPair: CurrentFootprintInverseWorkerPair | null = null;
+  #inverseWorkerCommand: CurrentPcbViaSavedLoadBootstrapCommand | null = null; #inverseProjectDispatch: Promise<RecordValue> | null = null;
+  #inverseUiPreflightAttempted = false;
+  #inverseUiReady: Readonly<{ source: CurrentFootprintCopyNativeTarget; context: CurrentPcbDiagnosticContext; pipe: CurrentFootprintInversePipe; selected: ReturnType<CurrentPcbDiagnosticContext["openingContext"]>; windowTabId: string }> | null = null;
+  #inverseFrame: Readonly<{ phase: "preflight" | "register" | "open-project"; session: string; context: string; target: CurrentDisposableOpenSealedTarget }> | null = null;
+  #inverseHelper: { phase: "preflight" | "register" | "open-project"; scriptId: string | null } | null = null;
+  #inverseRegistrationResult: ReturnType<typeof decodeCurrentFootprintInverseRegistrationReply> | null = null;
+  #inverseRegistrationDispatch: Promise<ReturnType<typeof decodeCurrentFootprintInverseRegistrationReply>> | null = null;
   #inverseRegistrationPromise: Promise<CurrentFootprintInverseRegistrationIntent> | null = null;
   #inverseRegistrationIntent: CurrentFootprintInverseRegistrationIntent | null = null;
   #savedReadbackRegistrationPromise: Promise<CurrentSavedProjectRegistrationIntent> | null = null;
@@ -4265,6 +4289,9 @@ class CurrentPcbRetainedOwnerCore {
       if (this.#savedReadbackEarlyActors === null) { throw error("SAVED_READBACK_EARLY_ACTORS_REQUIRED"); }
       this.#savedReadbackEarlyActors.inventory(targets);
     }
+    if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE) {
+      if (this.#inverseEarlyActors === null) { throw error("FOOTPRINT_INVERSE_EARLY_ACTORS_REQUIRED"); } this.#inverseEarlyActors.inventory(targets);
+    }
     context.observeFrames(await this.#transfer(() => this.#pipe.getFrameTree()));
     context.assertCurrent(); this.#workerContext?.assertCurrent();
     if (this.#stringPurpose) { this.#workerContext?.observeTargets(targets); }
@@ -4291,7 +4318,7 @@ class CurrentPcbRetainedOwnerCore {
     let sessionId: string | null = null;
     await this.#transfer(async () => {
       sessionId = await this.#pipe.attachTarget(targetId, event => {
-        if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#viaWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE && this.#schematicWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && (this.#savedReadbackInvalidation === null ? this.#savedReadbackCache?.ledger.observeOriginalEvent(event.method) : this.#savedReadbackInvalidation.observeOriginalEvent(event)) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#observeSavedReadbackGuardHelper(event)) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#savedReadbackCache?.metadata.observeOriginalEvent(event) === true) { return; } context.observeEvent(event); });
+        if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#viaWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE && this.#schematicWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && (this.#savedReadbackInvalidation === null ? this.#savedReadbackCache?.ledger.observeOriginalEvent(event.method) : this.#savedReadbackInvalidation.observeOriginalEvent(event)) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#observeSavedReadbackGuardHelper(event)) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#savedReadbackCache?.metadata.observeOriginalEvent(event) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseHelper(event)) { return; } context.observeEvent(event); });
       return { sessionId };
     });
     if (sessionId === null) { throw error("ATTACH_REPLY"); }
@@ -6644,8 +6671,131 @@ class CurrentPcbRetainedOwnerCore {
       finally { if (ownsBusy) { this.#busy = false; } }
     })(); this.#savedReadbackLoadCompletion = promise; return promise;
   }
-  /** Durable inverse-only intent. A published artifact alone cannot grant the
-   * recent-path SQL: bindings require this exact original written UI call. */
+  /** Correlate only a dispatched fixed helper in the original parent realm. */
+  #observeFootprintInverseHelper(event: DiagnosticEvent): boolean {
+    if (event.method !== "Debugger.scriptParsed" || event.params["url"] !== "") { return false; }
+    const attachment = this.#stagedAttachment, context = this.#stagedContext, helper = this.#inverseHelper, params = event.params;
+    if (helper === null || helper.scriptId !== null || context === null || attachment === null || event.sessionId !== attachment.sessionId ||
+      params["executionContextId"] !== context.script().context["id"] || !diagnosticToken(params["scriptId"])) { throw error("FOOTPRINT_INVERSE_HELPER_SOURCE_EVENT"); }
+    helper.scriptId = params["scriptId"]; return true;
+  }
+  public async prepareFootprintInverseUi(): Promise<void> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); this.#enter(true);
+    if (this.#inverseUiPreflightAttempted) { this.#busy = false; throw error("FOOTPRINT_INVERSE_UI_CONSUMED"); } this.#inverseUiPreflightAttempted = true;
+    try {
+      const context = this.#stagedContext, pipe = this.#pipe, source = originalCurrentFootprintInverseNativeSource(this);
+      if (context === null || !(pipe instanceof CurrentFootprintInversePipe) || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true) { this.#busy = false; throw error("FOOTPRINT_INVERSE_UI_PREREQUISITE"); }
+      const selected = context.openingContext(), target = source.target;
+      const current = (): void => { assertOriginalCurrentFootprintInverseNativeOwner(this); assertOriginalCurrentFootprintInversePipe(pipe); this.#available();
+        if (this.#pipe !== pipe || this.#stagedContext !== context || originalCurrentFootprintInverseNativeSource(this) !== source || this.#mainTerminateAttempted || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed ||
+          this.#mainRunner?.selectedSqlFenceState()["ready"] !== true || canonicalJson(context.openingContext()) !== canonicalJson(selected)) { throw error("FOOTPRINT_INVERSE_UI_OWNER_CHANGED"); } };
+      await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current();
+      this.#inverseHelper = { phase: "preflight", scriptId: null }; this.#inverseFrame = { phase: "preflight", session: selected.sessionId, context: selected.uniqueContextId, target };
+      const raw = await this.#transfer(() => pipe.preflightInverseProject(selected.uniqueContextId, target)); current(); this.#inverseFrame = null;
+      const helper = this.#inverseHelper;
+      if (helper?.phase !== "preflight" || helper.scriptId === null) { throw error("FOOTPRINT_INVERSE_UI_HELPER_REQUIRED"); }
+      const scriptId = helper.scriptId;
+      const body = await this.#transfer(() => pipe.getScriptSource(scriptId)); current();
+      if (!exact(body, ["scriptSource"]) || body["scriptSource"] !== `(${CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION})` || this.#inverseHelper !== helper) { throw error("FOOTPRINT_INVERSE_UI_HELPER_SOURCE"); }
+      this.#inverseHelper = null;
+      const result = decodeCurrentPcbDiagnosticOpeningReply(raw, target, "preflight");
+      if (!result.ok || result.status !== "ready" || result.dispatchAttempted || result.observation?.projectPresent !== false || !diagnosticToken(result.observation.windowTabId)) { throw error("FOOTPRINT_INVERSE_EMPTY_UI_REQUIRED"); }
+      await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current();
+      const actors = this.#inverseEarlyActors; if (actors === null) { throw error("FOOTPRINT_INVERSE_ACTORS_REQUIRED"); }
+      actors.assertSealed(); actors.parent(selected.sessionId); actors.expectProject(result.observation.windowTabId);
+      this.#inverseUiReady = Object.freeze({ source, context, pipe, selected, windowTabId: result.observation.windowTabId });
+    } finally { this.#inverseFrame = null; this.#inverseHelper = null; this.#busy = false; }
+  }
+  /** A new original inverse worker. The callback runs while the actual
+   * seven-source project script is paused; there is no project resume here. */
+  public async armFootprintInverseWorker(setup: (origin: CurrentFootprintInverseWorkerOrigin) => Promise<void>): Promise<void> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); const intent = this.#inverseRegistrationIntent, ready = this.#inverseUiReady, runner = this.#mainRunner;
+    if (ready === null || intent === null || runner === null || this.#inverseWorkerController !== null || typeof setup !== "function" || types.isProxy(setup)) { throw error("FOOTPRINT_INVERSE_WORKER_PREREQUISITE"); }
+    const registration = footprintInverseRegistrationIntents.get(intent);
+    if (registration === undefined || this.#inverseRegistrationResult === null || registration.owner !== this) { throw error("FOOTPRINT_INVERSE_REGISTRATION_RESULT_REQUIRED"); }
+    const pipe = ready.pipe, prepared = originalCurrentFootprintInverseTarget(this); this.#enter(true);
+    let controller: CurrentFootprintInverseWorkerController | null = null;
+    const original = (): CurrentFootprintInverseWorkerController => { assertOriginalCurrentFootprintInverseNativeOwner(this); assertOriginalCurrentFootprintInversePipe(pipe); this.#available();
+      if (controller === null || this.#inverseWorkerController !== controller || this.#inverseUiReady !== ready || this.#pipe !== pipe || this.#mainRunner !== runner ||
+        this.#mainTerminateAttempted || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed || originalCurrentFootprintInverseTarget(this) !== prepared) { throw error("FOOTPRINT_INVERSE_WORKER_OWNER_CHANGED"); } return controller; };
+    try {
+      controller = new CurrentFootprintInverseWorkerController(Object.freeze({ parentSessionId: ready.selected.sessionId, projectUuid: ready.source.target.projectUuid, windowTabId: ready.windowTabId,
+        bindWorker: async (pair: CurrentFootprintInverseWorkerPair): Promise<void> => { original(); if (this.#inverseWorkerPair !== null) { throw error("FOOTPRINT_INVERSE_PAIR_CONSUMED"); }
+          pipe.bindInverseWorker(pair); this.#inverseWorkerPair = pair;
+          const reply = await this.#request({ action: "footprint-inverse-worker-bind", targetId: pair.targetId, browserSessionId: pair.browserSessionId, pageSessionId: pair.pageSessionId,
+            projectUuid: ready.source.target.projectUuid, windowTabId: ready.windowTabId }); original(); if (!exact(reply, ["bound"]) || reply["bound"] !== true) { throw error("FOOTPRINT_INVERSE_NATIVE_PAIR"); }
+        }, request: async (command: CurrentPcbViaSavedLoadBootstrapCommand): Promise<unknown> => { original(); if (this.#inverseWorkerCommand !== null) { throw error("FOOTPRINT_INVERSE_WORKER_PENDING"); } this.#inverseWorkerCommand = command;
+          try { const reply = await this.#transfer(() => pipe.observeInverseWorker(command)); original(); return reply; } finally { this.#inverseWorkerCommand = null; }
+        }, poll: async (): Promise<void> => { original(); await runner.pumpSelectedSqlFence(); original(); await this.#pollRenderer(); original(); },
+        assertCurrent: async (): Promise<void> => { original(); await this.#verify(); original(); },
+        projectSourceHeld: async (source: CurrentPcbViaSavedLoadProjectSourceHeld, selected: CurrentFootprintInverseWorkerController): Promise<void> => {
+          if (original() !== selected) { throw error("FOOTPRINT_INVERSE_ORIGINAL_SOURCE"); } const pair = selected.requireHeld(source);
+          const reply = await this.#request({ action: "footprint-inverse-source-bind", scriptId: source.scriptId, uniqueContextId: source.uniqueContextId }); original();
+          if (!exact(reply, ["bound"]) || reply["bound"] !== true) { throw error("FOOTPRINT_INVERSE_NATIVE_SOURCE"); }
+          const origin: CurrentFootprintInverseWorkerOrigin = Object.freeze({ profile: "private.current-footprint-inverse-worker-origin.v1" });
+          const same = (): void => { original(); if (selected.requireHeld(source) !== pair) { throw error("FOOTPRINT_INVERSE_ORIGINAL_SOURCE"); } };
+          const bindings: CurrentFootprintInverseWorkerBindings = Object.freeze({ prepared, pair, source, projectInitialSourceRemainsPaused: true,
+            assertCurrent: async (): Promise<void> => { same(); await this.#verify(); same(); }, deleteInvocationAuthorized: false, executionAuthorized: false });
+          footprintInverseWorkers.set(origin, Object.freeze({ owner: this, prepared, bindings, original: same }));
+          await Reflect.apply(setup, undefined, [origin]); same();
+        }, fail: (): void => { this.#input.emit("error", error("FOOTPRINT_INVERSE_WORKER_FAILED")); } }));
+      this.#inverseWorkerController = controller; this.#inverseParentPending = true;
+      const reply = await this.#transfer(() => pipe.armInverseParent((event: DiagnosticEvent): void => { original().observeEvent(event); })); original();
+      if (!exact(reply, [])) { throw error("FOOTPRINT_INVERSE_PARENT_ACK"); }
+    } catch (caughtError) { controller?.fail(); throw caughtError; } finally { this.#inverseParentPending = false; this.#busy = false; }
+  }
+  /** Retains the one original navigation Promise. Its fulfillment never grants
+   * a delete or Save; the worker stays source-held until a later genuine stage. */
+  public openFootprintInverseProject(): Promise<RecordValue> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); if (this.#inverseProjectDispatch !== null) { return this.#inverseProjectDispatch; }
+    const controller = this.#inverseWorkerController, ready = this.#inverseUiReady;
+    if (ready === null || controller === null || this.#inverseRegistrationDispatch === null) { throw error("FOOTPRINT_INVERSE_PROJECT_PREREQUISITE"); }
+    this.#enter(true);
+    const work = (async (): Promise<RecordValue> => { try {
+      const target = ready.source.target; this.#inverseHelper = { phase: "open-project", scriptId: null }; this.#inverseFrame = { phase: "open-project", session: ready.selected.sessionId, context: ready.selected.uniqueContextId, target };
+      const reply = await this.#transfer(() => ready.pipe.openInverseProject(ready.selected.uniqueContextId, target));
+      assertOriginalCurrentFootprintInverseNativeOwner(this); if (this.#inverseWorkerController !== controller || this.#inverseUiReady !== ready) { throw error("FOOTPRINT_INVERSE_PROJECT_OWNER_CHANGED"); }
+      this.#inverseFrame = null; const helper = this.#inverseHelper;
+      if (helper?.phase !== "open-project" || helper.scriptId === null) { throw error("FOOTPRINT_INVERSE_PROJECT_HELPER"); }
+      const body = await this.#transfer(() => ready.pipe.getScriptSource(helper.scriptId ?? ""));
+      if (!exact(body, ["scriptSource"]) || body["scriptSource"] !== `(${CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION})` || this.#inverseHelper !== helper) { throw error("FOOTPRINT_INVERSE_PROJECT_HELPER_SOURCE"); }
+      return freezeDeep({ ...reply });
+    } catch (caughtError) { controller.fail(); throw caughtError; } finally { this.#inverseFrame = null; this.#inverseHelper = null; this.#busy = false; } })();
+    this.#inverseProjectDispatch = work; return work;
+  }
+  public observeFootprintInverseWorkerSource(): Promise<CurrentFootprintInverseWorkerHeld> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); const controller = this.#inverseWorkerController;
+    if (controller === null || this.#inverseProjectDispatch === null) { throw error("FOOTPRINT_INVERSE_PROJECT_NOT_DISPATCHED"); } return controller.whenSourceHeld();
+  }
+  public registerFootprintInverseProject(): Promise<ReturnType<typeof decodeCurrentFootprintInverseRegistrationReply>> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this);
+    if (this.#inverseRegistrationDispatch !== null) { return this.#inverseRegistrationDispatch; }
+    const work = (async (): Promise<ReturnType<typeof decodeCurrentFootprintInverseRegistrationReply>> => {
+      const intent = await this.prepareFootprintInverseRegistrationIntent();
+      const ready = this.#inverseUiReady, runner = this.#mainRunner;
+      if (ready === null || runner === null) { throw error("FOOTPRINT_INVERSE_REGISTRATION_UI_REQUIRED"); }
+      const bindings = requireOriginalCurrentFootprintInverseRegistrationIntentForRunner(intent, runner), target = bindings.target;
+      const current = (): void => { assertOriginalCurrentFootprintInverseNativeOwner(this); assertOriginalCurrentFootprintInversePipe(ready.pipe); this.#available();
+        if (this.#inverseUiReady !== ready || this.#mainRunner !== runner || this.#pipe !== ready.pipe || this.#stagedContext !== ready.context || this.#mainTerminateAttempted || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed ||
+          canonicalJson(ready.context.openingContext()) !== canonicalJson(ready.selected)) { throw error("FOOTPRINT_INVERSE_REGISTRATION_OWNER_CHANGED"); } };
+      this.#enter(true);
+      try {
+        await bindings.assertCurrent(); current(); await runner.enrollFootprintInverseRegistrationIntent(intent); current();
+        this.#inverseHelper = { phase: "register", scriptId: null }; this.#inverseFrame = { phase: "register", session: ready.selected.sessionId, context: ready.selected.uniqueContextId, target };
+        // Transfer owns the one original main/renderer polling lane.
+        const raw = await this.#transfer(() => ready.pipe.dispatchInverseRegistration(ready.selected.uniqueContextId, target)); current();
+        this.#inverseFrame = null;
+        const helper = this.#inverseHelper;
+        if (helper?.phase !== "register" || helper.scriptId === null) { throw error("FOOTPRINT_INVERSE_REGISTRATION_HELPER_REQUIRED"); }
+        const scriptId = helper.scriptId;
+        const body = await this.#transfer(() => ready.pipe.getScriptSource(scriptId)); current();
+        if (!exact(body, ["scriptSource"]) || body["scriptSource"] !== `(${CURRENT_FOOTPRINT_INVERSE_REGISTRATION_FUNCTION})` || this.#inverseHelper !== helper) { throw error("FOOTPRINT_INVERSE_REGISTRATION_HELPER_SOURCE"); }
+        this.#inverseHelper = null; const result = decodeCurrentFootprintInverseRegistrationReply(raw, target);
+        if (result.registrationDispatched) { runner.requireOriginalFootprintInverseRegistrationAwaited(intent); } else { runner.requireOriginalFootprintInverseRegistrationSkipped(intent); }
+        current(); this.#inverseRegistrationResult = result; return result;
+      } finally { this.#inverseFrame = null; this.#inverseHelper = null; this.#busy = false; }
+    })(); this.#inverseRegistrationDispatch = work; return work;
+  }
   public prepareFootprintInverseRegistrationIntent(): Promise<CurrentFootprintInverseRegistrationIntent> {
     assertOriginalCurrentFootprintInverseNativeOwner(this);
     if (this.#inverseRegistrationPromise !== null) { return this.#inverseRegistrationPromise; }
@@ -6653,13 +6803,13 @@ class CurrentPcbRetainedOwnerCore {
     const promise = (async (): Promise<CurrentFootprintInverseRegistrationIntent> => {
       try {
         const context = this.#stagedContext, pipe = this.#pipe, runner = this.#mainRunner, source = originalCurrentFootprintInverseNativeSource(this);
-        if (!(pipe instanceof CurrentFootprintInversePipe) || context === null || runner?.selectedSqlFenceState()["ready"] !== true) { throw error("FOOTPRINT_INVERSE_REGISTRATION_PREREQUISITE"); }
+        if (!(pipe instanceof CurrentFootprintInversePipe) || context === null || runner?.selectedSqlFenceState()["ready"] !== true || this.#inverseUiReady?.pipe !== pipe) { throw error("FOOTPRINT_INVERSE_REGISTRATION_PREREQUISITE"); }
         const allocation = footprintInverseFactories.get(this)?.allocation;
         if (allocation === undefined) { throw error("FOOTPRINT_INVERSE_REGISTRATION_ORIGINAL_FACTORY"); }
         const parent = context.openingContext(), prepared = originalCurrentFootprintInverseTarget(this);
         const target = Object.freeze(currentDisposableOpenSealedTargetSchema.parse(source.target));
         const current = (): void => { assertOriginalCurrentFootprintInverseNativeOwner(this); assertOriginalCurrentFootprintInversePipe(pipe); this.#available();
-          if (this.#pipe !== pipe || this.#stagedContext !== context || this.#mainRunner !== runner || originalCurrentFootprintInverseNativeSource(this) !== source || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed ||
+          if (this.#pipe !== pipe || this.#stagedContext !== context || this.#mainRunner !== runner || originalCurrentFootprintInverseNativeSource(this) !== source || this.#mainTerminateAttempted || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed ||
             this.#mainRunner?.selectedSqlFenceState()["ready"] !== true || canonicalJson(context.openingContext()) !== canonicalJson(parent)) { throw error("FOOTPRINT_INVERSE_REGISTRATION_OWNER_CHANGED"); }
         };
         current(); await allocation.verifyPrepared(prepared); current();
@@ -7317,6 +7467,33 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE) { this.#structureMainConstruction = packet; }
     return packet;
   }
+  /** Distinct inverse startup actor hold, before the original main startup
+   * continuation. No existing running worker or saved-purpose cursor is adopted. */
+  public async prepareFootprintInverseEarlyActors(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner): Promise<void> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this);
+    const allocation = footprintInverseFactories.get(this)?.allocation, original = selectedSqlFenceBootstraps.get(capability), pipe = this.#pipe;
+    if (original?.owner !== this || original.runner() !== runner || this.#mainRunner !== runner || allocation === undefined || !(pipe instanceof CurrentFootprintInversePipe) ||
+      this.#inverseActorAttempted || this.#inverseEarlyActors !== null || this.#browserObservationConsumed || this.#framesConsumed || this.#stagedContext !== null) { throw error("FOOTPRINT_INVERSE_EARLY_ACTORS_UNAVAILABLE"); }
+    runner.requireOriginalStartupActorPause(capability); this.#enter(true); this.#inverseActorAttempted = true;
+    const ledger = new CurrentPcbViaSavedEarlyActors(originalCurrentFootprintInverseNativeSource(this).target.projectUuid); this.#inverseEarlyActors = ledger;
+    const current = (): void => { this.#available(); assertOriginalCurrentFootprintInverseNativeOwner(this); original.reprove(); runner.requireOriginalStartupActorPause(capability);
+      if (this.#mainRunner !== runner || this.#pipe !== pipe || this.#inverseEarlyActors !== ledger || this.#mainTerminateAttempted || this.#closeConsumed) { throw error("FOOTPRINT_INVERSE_EARLY_ACTORS_CHANGED"); } };
+    pipe.retainInverseActorEvents(event => { this.#available(); assertOriginalCurrentFootprintInverseNativeOwner(this);
+      if (this.#pipe !== pipe || this.#inverseEarlyActors !== ledger || this.#mainTerminateAttempted || this.#closeConsumed) { throw error("FOOTPRINT_INVERSE_EARLY_ACTOR_EVENT_OWNER"); }
+      return ledger.attachment(event); });
+    try {
+      for (const stage of ["before", "arm", "after"] as const) {
+        current(); this.#inverseActorStage = stage; if (stage === "arm") { ledger.beginArm(); }
+        const reply = await this.#transfer(() => pipe.observeInverseActors(stage)); current();
+        if (stage === "before") { ledger.before(reply); }
+        else if (stage === "arm") { if (!exact(reply, [])) { throw error("FOOTPRINT_INVERSE_EARLY_ACTOR_ACK"); } ledger.acknowledgeArm(); }
+        else { ledger.after(reply); }
+        this.#inverseActorStage = null;
+      }
+      ledger.assertSealed(); current();
+    } catch (caughtError) { this.#input.emit("error", error("FOOTPRINT_INVERSE_EARLY_ACTORS_FAILED")); throw caughtError; }
+    finally { this.#inverseActorStage = null; this.#busy = false; }
+  }
   /** Finite browser hold before the original app-main startup pause resumes.
    * Existing running workers refuse; later background workers never resume. */
   public async prepareSavedReadbackEarlyActors(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner): Promise<void> {
@@ -7737,10 +7914,11 @@ class CurrentPcbRetainedOwnerCore {
       })();
       await this.#send;
       while (selectedFileMainPurpose(this.#purpose) ? !settled : this.#pipe.status().pendingRequestId !== null) {
-        if (selectedFileMainPurpose(this.#purpose) && this.#mainRunner !== null && this.#savedReadbackEarlyActorStage === null) { await this.#mainRunner.pumpSelectedSqlFence(); }
+        if (selectedFileMainPurpose(this.#purpose) && this.#mainRunner !== null && this.#savedReadbackEarlyActorStage === null && this.#inverseActorStage === null) { await this.#mainRunner.pumpSelectedSqlFence(); }
         if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#savedReadbackProjectNavigationPending && this.#savedReadbackLoadData === null && !this.#savedReadbackOpeningPumpRunning) { await this.#pumpSavedReadbackOpening(); }
         if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#viaProjectNavigationDispatchAttempted && this.#viaWorkerController !== null && !this.#viaWorkerController.status().pumping) { await this.#viaWorkerController.pump(); }
         if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE && this.#schematicNavigationDispatchAttempted && this.#schematicWorkerController !== null && !this.#schematicWorkerController.status().pumping) { await this.#schematicWorkerController.pump(); }
+        if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#inverseProjectDispatch !== null && this.#inverseWorkerController !== null && !this.#inverseWorkerController.status().pumping) { await this.#inverseWorkerController.pump(); }
         await this.#pollRenderer();
       }
       const result = await observed;
@@ -7780,12 +7958,20 @@ class CurrentPcbRetainedOwnerCore {
       else if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { nativeRequest = currentPcbViaWriteNativeRequest; }
       else if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { nativeRequest = currentSchematicDisplayWriteNativeRequest; }
       let encoded: Readonly<Record<string, unknown>>;
-      if (this.#savedReadbackEarlyActorStage !== null) { encoded = currentPcbViaSavedEarlyActorNativeFrame(chunk, this.#savedReadbackEarlyActorStage); }
+      if (this.#inverseActorStage !== null) { encoded = currentFootprintInverseActorNativeFrame(chunk, this.#inverseActorStage); }
+      else if (this.#inverseParentPending && this.#inverseUiReady !== null) { encoded = currentFootprintInverseParentNativeFrame(chunk, this.#inverseUiReady.selected.sessionId); }
+      else if (this.#inverseWorkerCommand !== null && this.#inverseWorkerPair !== null) { encoded = currentFootprintInverseWorkerNativeFrame(chunk, this.#inverseWorkerCommand, this.#inverseWorkerPair); }
+      else if (this.#savedReadbackEarlyActorStage !== null) { encoded = currentPcbViaSavedEarlyActorNativeFrame(chunk, this.#savedReadbackEarlyActorStage); }
       else if (this.#savedReadbackRegistrationFrame && this.#savedReadbackCache !== null) {
         const intent = this.#savedReadbackRegistrationIntent; const held = intent === null ? undefined : savedProjectRegistrationIntents.get(intent);
         if (held === undefined || held.owner !== this || held.pending === null || held.settled || !(this.#pipe instanceof CurrentPcbViaSavedReadbackPipe)) { throw error("SAVED_READBACK_REGISTRATION_WIRE_ORIGINAL"); }
         this.#pipe.requireOriginalSavedReadbackRegistrationPending(held.pending);
         encoded = currentPcbViaSavedRegistrationNativeFrame(chunk, this.#savedReadbackCache.selected.sessionId, this.#savedReadbackCache.selected.uniqueContextId, held.target);
+      }
+      else if (this.#inverseFrame !== null) { const inverse = this.#inverseFrame;
+        if (inverse.phase === "preflight") { encoded = currentFootprintInversePreflightNativeFrame(chunk, inverse.session, inverse.context, inverse.target); }
+        else if (inverse.phase === "open-project") { encoded = currentFootprintInverseProjectNativeFrame(chunk, inverse.session, inverse.context, inverse.target); }
+        else { encoded = currentFootprintInverseRegistrationNativeFrame(chunk, inverse.session, inverse.context, inverse.target); }
       }
       else if (this.#savedReadbackLoadCommand !== null && this.#savedReadbackLoadPair !== null) { encoded = currentPcbViaSavedLoadWorkerNativeFrame(chunk, this.#savedReadbackLoadCommand, this.#savedReadbackLoadPair); }
       else if (this.#savedReadbackSceneFrame && this.#savedReadbackSceneContext !== null && this.#savedReadbackCache !== null) {
