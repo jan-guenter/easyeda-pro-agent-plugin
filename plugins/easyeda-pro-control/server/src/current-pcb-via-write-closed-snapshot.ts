@@ -28,6 +28,7 @@ export interface CurrentPcbViaWriteClosedSnapshot {
 interface Original {
   readonly plan: CurrentPcbViaWritePlan; readonly capture: CurrentPcbViaWriteClosedCapture; readonly owner: CurrentPcbViaWriteOwner; readonly termination: object;
   readonly prepared: ReturnType<typeof originalCurrentPcbViaWriteTarget>; readonly inventory: NativeSqlInventory;
+  readonly sourceSnapshot: Attachment;
   readonly rawHistory: Readonly<Record<string, unknown>> | null; readonly text: string;
 }
 const issued = new WeakMap<CurrentPcbViaWriteClosedSnapshot, Original>();
@@ -130,7 +131,7 @@ export class CurrentPcbViaWriteClosedCapture {
       const token: CurrentPcbViaWriteClosedSnapshot = freezeDeep({ schema: "private.current-pcb-via-write-closed-snapshot.v1", sourceSha256,
         inventoryLogicalSha256: inventory.logicalSha256, report, originalRootAndJobReobservedClosed: true, completeSqlInventoryCaptured: true,
         completeSqlEffectsAccepted: false, persistenceVerified: false, reopenedVerified: false });
-      issued.set(token, { plan: this.#plan, capture: this, owner: this.#owner, termination: this.#termination, prepared: this.#prepared, inventory, rawHistory, text: canonicalJson(token) }); return token;
+      issued.set(token, { plan: this.#plan, capture: this, owner: this.#owner, termination: this.#termination, prepared: this.#prepared, sourceSnapshot: snapshot, inventory, rawHistory, text: canonicalJson(token) }); return token;
     } finally { this.#release = this.#close(); try { await this.#release; } finally { this.#settled = true; } }
   }
 }
@@ -138,10 +139,10 @@ export class CurrentPcbViaWriteClosedCapture {
 /** Historical data retrieval only; never reconstructs a native owner from the
  * attached report or issues a new opening target after a write. */
 export function requireOriginalCurrentPcbViaWriteClosedSnapshot(value: CurrentPcbViaWriteClosedSnapshot, owner: CurrentPcbViaWriteOwner, plan: CurrentPcbViaWritePlan): Readonly<{
-  inventory: NativeSqlInventory; rawHistory: Readonly<Record<string, unknown>> | null;
+  inventory: NativeSqlInventory; rawHistory: Readonly<Record<string, unknown>> | null; sourceSnapshot: Attachment;
 }> {
   const original = issued.get(value); need(original !== undefined && original.owner === owner && original.plan === plan && original.text === canonicalJson(value) && original.capture.isReleaseAcknowledged(), "ORIGINAL_SNAPSHOT");
   assertOriginalCurrentPcbViaWriteOwner(owner); assertOriginalCurrentPcbViaWriteTermination(owner, original.termination);
   need(originalCurrentPcbViaWriteTarget(owner) === original.prepared && requireOriginalCurrentPcbViaWritePlan(plan).prepared === original.prepared && readerCompletion(original.inventory).exitCode === 0, "ORIGINAL_CAPTURE_BINDING");
-  return Object.freeze({ inventory: original.inventory, rawHistory: original.rawHistory });
+  return Object.freeze({ inventory: original.inventory, rawHistory: original.rawHistory, sourceSnapshot: original.sourceSnapshot });
 }

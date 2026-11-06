@@ -287,3 +287,35 @@ writer will cause refusal; no supported per-project ignore-cache option was
 found in the pinned path. Saved checkpoint issuance and that fresh native
 loading integration remain required. Five focused source/program cases and
 full types/strict changed-file lint pass; no browser cache or app was used.
+
+### Distinct closed checkpoint for disposable cache backup/readback
+
+The authorized follow-up is a separate disposable-only cache backup and
+invalidation purpose. It must derive exactly the two selected namespace names
+from an original closed checkpoint, finish complete bounded backups before
+either once-only delete, dispatch no operation on peer caches, then prove
+absence under the original new opener before loading. The read-only cache
+purposes above stay unchanged.
+
+`prepareCurrentPcbViaWriteClosedCheckpoint` now creates the required distinct
+historical data checkpoint from the original closed snapshot and original
+closed-SQL proof. It verifies the original managed source snapshot, exact
+source path/hash, complete checkpoint receipt, and complete SQL VACUUM
+projection. It retains the original preparation Promise, including rejection,
+and copied plans or checkpoint objects cannot create a replacement attempt.
+The original capture lookup exposes its actual managed byte-snapshot reference
+rather than promoting a report field into authority.
+
+This object does not reuse the initial generated-fixture qualifier. Its target
+retains the same original raw path and project/branch/document identities, with
+the actual closed hash. It explicitly grants neither cache mutation nor fresh
+opening. The later distinct native birth must verify this checkpoint again,
+perform its own fresh no-app/source/worker admission, back up both namespaces,
+consume deletes once, and own the actual source-loading joins. Historical root
+closure and a checkpoint do not assert that a later process is absent.
+
+Two focused cases exercise actual managed artifacts, SQLite checkpoint creation,
+receipt verification and the complete SQL projection with explicit historical
+issuer seams. They also check retained Promise/copy refusal and changed-source
+refusal. The two existing actual closed-capture cases pass; full types and
+strict changed-file lint pass. No native purpose, browser cache or app was used.
