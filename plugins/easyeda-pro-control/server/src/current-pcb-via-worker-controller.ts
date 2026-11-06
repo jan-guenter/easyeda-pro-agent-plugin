@@ -71,7 +71,7 @@ export class CurrentPcbViaWorkerController {
   public status(): Readonly<{ ready: boolean; pumping: boolean; failed: boolean; projectSourceHeld: boolean; originalWorkerSelected: boolean }> {
     return Object.freeze({ ready: this.#result !== null, pumping: this.#pumping, failed: this.#failed, projectSourceHeld: this.#source !== null, originalWorkerSelected: this.#child !== null });
   }
-  public fail(): void { this.#failed = true; this.#sourceResumed.resolve(false); this.#bindings.fail(); }
+  public fail(): void { if (this.#failed) { return; } this.#failed = true; this.#sourceResumed.resolve(false); this.#router?.revoke(); this.#bindings.fail(); }
   /** Private original object identity, also usable for historical retirement. */
   public requireHeld(source: CurrentPcbViaProjectSourceHeld): CurrentPcbViaWorkerChild {
     need(this.#source === source && this.#child !== null && this.#runner !== null); return this.#child;
@@ -113,7 +113,7 @@ export class CurrentPcbViaWorkerController {
     need(Reflect.ownKeys(params).length === 2 && Reflect.ownKeys(location).length === 3 && location["scriptId"] === this.#source.scriptId && location["lineNumber"] === site.lineNumber && location["columnNumber"] === site.columnNumber); return true;
   }
   public observeEvent(event: DiagnosticEvent): void {
-    try { this.#accept(event); } catch (error) { this.fail(); throw error; }
+    try { this.#accept(event); this.#router?.notifyEvent(); } catch (error) { this.fail(); throw error; }
   }
   #accept(event: DiagnosticEvent): void {
     this.#eventCount += 1; need(!this.#failed && this.#eventCount <= 4096);
@@ -155,16 +155,19 @@ export class CurrentPcbViaWorkerController {
       }
     } catch (error) { this.fail(); throw error; } finally { this.#reading = false; }
   }
-  async #nextObservedEvent(): Promise<DiagnosticEvent> {
+  async #nextObservedEvent(allowNativePoll: boolean): Promise<DiagnosticEvent | null> {
     need(this.#result !== null && !this.#pumping && this.#child !== null);
     for (let count = 0; count < 128; count += 1) {
-      const event = await this.#next();
+      let event: CurrentPcbViaWorkerBootstrapEvent | null = null;
+      if (allowNativePoll) { event = await this.#next(); } else { await this.#current(); const queued = this.#events.shift(); if (queued === undefined) { return null; } if (!this.#resolution(queued)) { event = queued; } }
+      if (event !== null) {
       if (event.method === "Debugger.paused" || event.method === "Debugger.resumed" || event.method === "Debugger.breakpointResolved") { need(record(event.params)); return { method: event.method, sessionId: event.sessionId, params: event.params }; }
       need(record(event.params));
       if (event.method === "Inspector.workerScriptLoaded") { need(!this.#loaded && Reflect.ownKeys(event.params).length === 0); this.#loaded = true; }
       else if (event.method === "Debugger.scriptParsed") { need(event.params["url"] === "" && event.params["executionContextId"] === this.#source?.executionContextId); }
       else if (event.method === "Runtime.consoleAPICalled") { need(event.params["executionContextId"] === this.#source?.executionContextId); }
       else { this.fail(); throw new Error("PCB_VIA_WORKER_UNEXPECTED_EVENT"); }
+      }
     }
     this.fail(); throw new Error("PCB_VIA_WORKER_EVENT_CAPACITY");
   }
@@ -214,7 +217,7 @@ export class CurrentPcbViaWorkerController {
     need(this.#runner === runner && result.sessionId === child.sessionId && this.#source !== null && result.scriptId === this.#source.scriptId &&
       result.uniqueContextId === this.#source.uniqueContextId); this.#result = result;
     const router = new CurrentPcbViaEventRouter(Object.freeze({ workerSessionId: child.sessionId, uiSessionId: this.#bindings.parentSessionId,
-      nextEvent: (): Promise<DiagnosticEvent> => this.#nextObservedEvent(), assertCurrent: (): Promise<void> => this.#current(), fail: (): void => { this.fail(); } }));
+      nextEvent: (allowNativePoll: boolean): Promise<DiagnosticEvent | null> => this.#nextObservedEvent(allowNativePoll), assertCurrent: (): Promise<void> => this.#current(), fail: (): void => { this.fail(); } }));
     for (const [role, breakpointId] of this.#savePoints) { const site = CURRENT_PCB_VIA_SAVE_SITES[role]; router.register("save", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
     for (const [role, breakpointId] of this.#structurePoints) { const site = STRUCTURE_SITES[role]; router.register("structure", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
     for (const [role, breakpointId] of this.#transportPoints) { const site = TRANSPORT_SITES[role]; router.register("structureTransport", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }

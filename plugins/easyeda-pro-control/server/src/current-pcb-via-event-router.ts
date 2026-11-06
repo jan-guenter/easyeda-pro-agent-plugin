@@ -13,7 +13,7 @@ export type CurrentPcbViaEventLane = "save" | "clock" | "structure" | "structure
 export interface CurrentPcbViaEventPoint { readonly sessionId: string; readonly scriptId: string; readonly breakpointId: string;
   readonly lineNumber: number; readonly columnNumber: number; readonly role: string }
 export interface CurrentPcbViaEventRouterBindings {
-  readonly workerSessionId: string; readonly uiSessionId: string; readonly nextEvent: () => Promise<DiagnosticEvent>;
+  readonly workerSessionId: string; readonly uiSessionId: string; readonly nextEvent: (allowNativePoll: boolean) => Promise<DiagnosticEvent | null>;
   readonly assertCurrent: () => Promise<void>; readonly fail: () => void;
 }
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
@@ -32,7 +32,7 @@ export class CurrentPcbViaEventRouter {
   readonly #reading = { save: false, clock: false, structure: false, structureTransport: false };
   readonly #resumeRoles = new WeakMap<CurrentPcbViaSaveWorkerEvent, Readonly<{ lane: CurrentPcbViaEventLane; role: string }>>();
   readonly #completedClock = new Set<string>();
-  #poll: Promise<void> | null = null; #failed = false;
+  #poll: Promise<boolean> | null = null; #failed = false; #clockUiPending = false; #changed = Promise.withResolvers<true>();
   public constructor(bindings: CurrentPcbViaEventRouterBindings) {
     need(bindings !== null && typeof bindings === "object" && !types.isProxy(bindings) && Object.getPrototypeOf(bindings) === Object.prototype && Object.isFrozen(bindings));
     const fields = ["workerSessionId", "uiSessionId", "nextEvent", "assertCurrent", "fail"]; need(Reflect.ownKeys(bindings).length === fields.length);
@@ -50,9 +50,17 @@ export class CurrentPcbViaEventRouter {
   /** Consume only the original collector's current pause before dispatch. An
    * unknown acknowledgement never refunds this one continuation attempt. */
   public reserveResume(lane: CurrentPcbViaEventLane, sessionId: string, role?: string): void {
-    const pause = this.#paused.get(sessionId); need(!this.#failed && pause !== undefined && pause.lane === lane && pause.delivered && !pause.resumeAttempted && (role === undefined || pause.point.role === role)); pause.resumeAttempted = true;
+    const pause = this.#paused.get(sessionId); need(!this.#failed && pause !== undefined && pause.lane === lane && pause.delivered && !pause.resumeAttempted && (role === undefined || pause.point.role === role)); pause.resumeAttempted = true; if (lane === "clock" && sessionId === this.#bindings.workerSessionId && pause.point.role === "push") { this.#clockUiPending = true; } this.notifyEvent();
   }
-  public fail(): void { this.#failed = true; this.#bindings.fail(); }
+  /** Wake readers for an actual queued event or owned continuation. */
+  public notifyEvent(): void { const signal = this.#changed; this.#changed = Promise.withResolvers<true>(); signal.resolve(true); }
+  /** Revocation wakes parked readers without abandoning an in-flight poll. */
+  public revoke(): void { this.#failed = true; this.notifyEvent(); }
+  public fail(): void { this.revoke(); this.#bindings.fail(); }
+  #canPoll(lane: CurrentPcbViaEventLane): boolean {
+    const running = (sessionId: string): boolean => { const pause = this.#paused.get(sessionId); return pause === undefined || pause.resumeAttempted; };
+    return running(this.#bindings.workerSessionId) || lane === "clock" && this.#clockUiPending && running(this.#bindings.uiSessionId);
+  }
   /** Five delivered original clock resumes and the original still-held body
    * are required together. Descriptive counts or copied events do not pass. */
   public requireClockCompletionWithHeldSaveBody(): void {
@@ -75,16 +83,16 @@ export class CurrentPcbViaEventRouter {
       lane = selected.lane; this.#paused.set(session, { lane, point, delivered: false, resumeAttempted: false });
     } else {
       need(event.method === "Debugger.resumed"); empty.parse(event.params); const previous = this.#paused.get(session);
-      need(previous !== undefined && previous.resumeAttempted); lane = previous.lane; resumeRole = previous.point.role; this.#paused.delete(session);
+      need(previous !== undefined && previous.resumeAttempted); lane = previous.lane; resumeRole = previous.point.role; this.#paused.delete(session); if (lane === "clock" && session === this.#bindings.uiSessionId && resumeRole === "complete") { this.#clockUiPending = false; }
     }
     const queued = Object.freeze({ method: event.method, sessionId: session, params: event.params });
     if (resumeRole !== null) { this.#resumeRoles.set(queued, Object.freeze({ lane, role: resumeRole })); }
-    need(this.#queues[lane].length < 32); this.#queues[lane].push(queued);
+    need(this.#queues[lane].length < 32); this.#queues[lane].push(queued); this.notifyEvent();
   }
-  async #pump(): Promise<void> {
+  async #pump(allowNativePoll: boolean): Promise<boolean> {
     try { need(!this.#failed); await this.#bindings.assertCurrent(); need(!this.#failed);
-      const raw = await this.#bindings.nextEvent(); const event = eventSchema.parse(captureCurrentPcbStringClockReply(raw).value); Object.freeze(event.params);
-      this.#dispatch(Object.freeze(event)); await this.#bindings.assertCurrent(); need(!this.#failed);
+      const raw = await this.#bindings.nextEvent(allowNativePoll); if (raw === null) { need(!allowNativePoll); return false; } const event = eventSchema.parse(captureCurrentPcbStringClockReply(raw).value); Object.freeze(event.params);
+      this.#dispatch(Object.freeze(event)); await this.#bindings.assertCurrent(); need(!this.#failed); return true;
     } catch (error) { this.fail(); throw error; } finally { this.#poll = null; }
   }
   #delivered(lane: CurrentPcbViaEventLane, event: CurrentPcbViaSaveWorkerEvent): void {
@@ -96,7 +104,8 @@ export class CurrentPcbViaEventRouter {
     need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport") && !this.#reading[lane]); this.#reading[lane] = true;
     try { for (;;) { need(!this.#failed); const event = this.#queues[lane].shift(); if (event !== undefined) { await this.#bindings.assertCurrent(); need(!this.#failed);
       this.#delivered(lane, event); return event; }
-      this.#poll ??= this.#pump(); await this.#poll;
+      const changed = this.#changed.promise; const allowNativePoll = this.#canPoll(lane); this.#poll ??= this.#pump(allowNativePoll); const dispatched = await this.#poll;
+      if (!dispatched && !this.#canPoll(lane)) { await changed; }
     } } finally { this.#reading[lane] = false; }
   }
 }

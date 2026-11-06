@@ -39,12 +39,12 @@ async function constructor(): Promise<typeof CurrentSchematicDisplayWorkerContro
   return result as typeof CurrentSchematicDisplayWorkerController;
 }
 async function fixture(failSetup = false, holdPoll = false, structure = false, producerGuards = false): Promise<Readonly<{ controller: CurrentSchematicDisplayWorkerController; bindings: CurrentSchematicDisplayWorkerControllerBindings;
-  commands: CurrentSchematicDisplayWorkerCommand[]; incoming: DiagnosticEvent[]; state: { failed: boolean; held: number; released: number; resumed: boolean; bound: number }; releasePoll: () => void; pollStarted: Promise<true> }>> {
+  commands: CurrentSchematicDisplayWorkerCommand[]; incoming: DiagnosticEvent[]; state: { failed: boolean; held: number; released: number; resumed: boolean; bound: number }; releasePoll: () => void; pollStarted: Promise<true>; polls: { count: number } }>> {
   const Constructor = await constructor(), projectUuid = "a".repeat(64), windowTabId = "original-window";
   const targetUrl = "https://client/editor?entry=mgr-project-worker.js&cll=&debugOpen=0", title = `project_${projectUuid}_${windowTabId}`;
   const commands: CurrentSchematicDisplayWorkerCommand[] = [], incoming: DiagnosticEvent[] = [];
   const state = { failed: false, held: 0, released: 0, resumed: false, bound: 0 };
-  const pollGate = Promise.withResolvers<true>(), pollStarted = Promise.withResolvers<true>(); let firstPoll = true;
+  const pollGate = Promise.withResolvers<true>(), pollStarted = Promise.withResolvers<true>(), polls = { count: 0 }; let firstPoll = true;
   const event = (method: string, params: Record<string, unknown>): void => { incoming.push({ method, sessionId: "original-worker", params }); };
   const stage = (role: CurrentPcb209StartupScriptRole): void => {
     let url = ""; if (role === "bootstrap") { url = targetUrl; } else if (role === "preload") { url = PRELOAD; } else if (role === "project") { url = PROJECT; }
@@ -61,7 +61,7 @@ async function fixture(failSetup = false, holdPoll = false, structure = false, p
   let controller: CurrentSchematicDisplayWorkerController;
   const bindings = Object.freeze<CurrentSchematicDisplayWorkerControllerBindings>({ parentSessionId: "original-parent", projectUuid, windowTabId, existingWorkers: Object.freeze([]),
     bindWorker: worker => { assert.equal(worker.sessionId, "original-worker"); state.bound += 1; return Promise.resolve(); },
-    poll: async () => { if (firstPoll) { firstPoll = false; pollStarted.resolve(true); if (holdPoll) { await pollGate.promise; } }
+    poll: async () => { polls.count += 1; if (firstPoll) { firstPoll = false; pollStarted.resolve(true); if (holdPoll) { await pollGate.promise; } }
       const next = incoming.shift(); assert.ok(next !== undefined); controller.observeEvent(next); },
     assertCurrent: () => { assert.equal(state.failed, false); return Promise.resolve(); }, fail: () => { state.failed = true; },
     releaseParentWait: () => { assert.equal(state.held, 1); assert.equal(state.resumed, false); state.released += 1; return Promise.resolve(); },
@@ -106,7 +106,7 @@ async function fixture(failSetup = false, holdPoll = false, structure = false, p
   controller = new Constructor(bindings);
   controller.observeEvent({ method: "Target.attachedToTarget", sessionId: "original-parent", params: { sessionId: "original-worker", waitingForDebugger: true,
     targetInfo: { targetId: "original-target", type: "worker", attached: true, url: targetUrl, title } } });
-  return { controller, bindings, commands, incoming, state, releasePoll: (): void => { pollGate.resolve(true); }, pollStarted: pollStarted.promise };
+  return { controller, bindings, commands, incoming, state, releasePoll: (): void => { pollGate.resolve(true); }, pollStarted: pollStarted.promise, polls };
 }
 void test("actual cursor retains source setup and six exact Save resolutions before original final continuation", async () => {
   const f = await fixture(); const ready = f.controller.whenOriginalSourceResumed(); await f.controller.pump(); await ready;
@@ -159,4 +159,12 @@ void test("original producer guards remain held and never become a Save or struc
     await assert.rejects(f.controller.nextSaveEvent(), /PRODUCER_GUARD_HELD/u); assert.equal(f.state.failed, true); assert.equal(f.commands.length, count);
     assert.throws(() => Reflect.apply(f.controller.reserveSaveResume.bind(f.controller), f.controller, [{}, "entry"])); await assert.rejects(f.controller.pump()); assert.equal(f.commands.length, count);
   }
+});
+
+void test("original worker pause parks the other collector without another native poll, and original failure wakes it", async () => {
+  const f = await fixture(false, false, true); await f.controller.pump(); await f.controller.nextStructureEvent();
+  const count = f.polls.count, saving = assert.rejects(f.controller.nextSaveEvent());
+  for (let index = 0; index < 24; index += 1) { await Promise.resolve(); }
+  assert.equal(f.state.failed, false); assert.equal(f.polls.count, count); f.controller.fail(); await saving;
+  assert.equal(f.state.failed, true); assert.equal(f.polls.count, count);
 });

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { CurrentPcbViaEventRouter } from "../src/current-pcb-via-event-router.ts";
+import { CurrentSchematicDisplayEventRouter } from "../src/current-schematic-display-event-router.ts";
 import type { CurrentPcbViaEventPoint } from "../src/current-pcb-via-event-router.ts";
 import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
 
@@ -9,15 +10,16 @@ const clock: CurrentPcbViaEventPoint = Object.freeze({ sessionId: "original-ui",
 function paused(point: CurrentPcbViaEventPoint): DiagnosticEvent {
   return { method: "Debugger.paused", sessionId: point.sessionId, params: { hitBreakpoints: [point.breakpointId], callFrames: [{ location: { scriptId: point.scriptId, lineNumber: point.lineNumber, columnNumber: point.columnNumber } }] } };
 }
-function fixture(): Readonly<{ router: CurrentPcbViaEventRouter; reads: { count: number; failed: boolean }; deliver: (event: DiagnosticEvent) => void; entered: () => Promise<true> }> {
+function fixture(Constructor: typeof CurrentPcbViaEventRouter | typeof CurrentSchematicDisplayEventRouter = CurrentPcbViaEventRouter): Readonly<{ router: CurrentPcbViaEventRouter | CurrentSchematicDisplayEventRouter; reads: { count: number; failed: boolean }; deliver: (event: DiagnosticEvent) => void; entered: () => Promise<true> }> {
   const reads = { count: 0, failed: false }; let gate: ReturnType<typeof Promise.withResolvers<DiagnosticEvent>> | null = null;
-  let entered = Promise.withResolvers<true>();
-  const router = new CurrentPcbViaEventRouter(Object.freeze({ workerSessionId: save.sessionId, uiSessionId: clock.sessionId,
+  let entered = Promise.withResolvers<true>(); const queued: DiagnosticEvent[] = [];
+  const router = new Constructor(Object.freeze({ workerSessionId: save.sessionId, uiSessionId: clock.sessionId,
     assertCurrent: (): Promise<void> => Promise.resolve(), fail: (): void => { reads.failed = true; },
-    nextEvent: (): Promise<DiagnosticEvent> => { assert.equal(gate, null); reads.count += 1; gate = Promise.withResolvers<DiagnosticEvent>(); entered.resolve(true); return gate.promise; } }));
+    nextEvent: (allowNativePoll: boolean): Promise<DiagnosticEvent | null> => { const event = queued.shift(); if (event !== undefined) { return Promise.resolve(event); } if (!allowNativePoll) { return Promise.resolve(null); }
+      assert.equal(gate, null); reads.count += 1; gate = Promise.withResolvers<DiagnosticEvent>(); entered.resolve(true); return gate.promise; } }));
   router.register("save", save); router.register("clock", clock);
   return { router, reads, entered: (): Promise<true> => entered.promise, deliver: (event: DiagnosticEvent): void => {
-    assert.ok(gate !== null); const current = gate; gate = null; entered = Promise.withResolvers<true>(); current.resolve(event);
+    if (gate === null) { queued.push(event); router.notifyEvent(); return; } const current = gate; gate = null; entered = Promise.withResolvers<true>(); current.resolve(event);
   } };
 }
 void test("concurrent Save and clock collectors share one original poll and route each resumed event to its consumed pause", async () => {
@@ -32,6 +34,25 @@ void test("concurrent Save and clock collectors share one original poll and rout
   await f.entered(); f.deliver({ method: "Debugger.resumed", sessionId: clock.sessionId, params: {} }); const clockResult = await clockResumed; assert.equal(clockResult.method, "Debugger.resumed");
   assert.equal(f.reads.failed, false); assert.equal(f.reads.count, 4);
 });
+for (const Constructor of [CurrentPcbViaEventRouter, CurrentSchematicDisplayEventRouter]) {
+  void test(`${Constructor.name} parks another collector until the original held worker continuation`, async () => {
+    const f = fixture(Constructor), point = { ...save, breakpointId: "structure-bootstrap", role: "bootstrap", columnNumber: 162_932 };
+    f.router.register("structure", point); const constructing = f.router.next("structure"), saving = f.router.next("save");
+    await f.entered(); f.deliver(paused(point)); await constructing;
+    for (let index = 0; index < 20; index += 1) { await Promise.resolve(); }
+    assert.equal(f.reads.count, 1, "a held worker cannot produce another worker event");
+    f.router.reserveResume("structure", save.sessionId, "bootstrap"); const resumed = f.router.next("structure"); await f.entered();
+    f.deliver({ method: "Debugger.resumed", sessionId: save.sessionId, params: {} }); await resumed;
+    await f.entered(); f.deliver(paused(save)); await saving; assert.equal(f.reads.count, 3); assert.equal(f.reads.failed, false);
+  });
+  void test(`${Constructor.name} drains queued UI events while parked and revocation wakes the retained waiter`, async () => {
+    const f = fixture(Constructor), held = f.router.next("save"); await f.entered(); f.deliver(paused(save)); await held;
+    const clocking = f.router.next("clock"); for (let index = 0; index < 20; index += 1) { await Promise.resolve(); }
+    assert.equal(f.reads.count, 1); f.deliver(paused(clock)); await clocking; assert.equal(f.reads.count, 1);
+    const waiting = assert.rejects(f.router.next("structure"), /EVENT_ROUTE/u); for (let index = 0; index < 20; index += 1) { await Promise.resolve(); }
+    f.router.revoke(); await waiting; assert.equal(f.reads.count, 1); assert.equal(f.reads.failed, false);
+  });
+}
 void test("unknown IDs, overlapping sites and unreserved resumes refuse instead of choosing another collector", async () => {
   const f = fixture(); assert.throws(() => { f.router.register("clock", { ...save, breakpointId: "overlap" }); });
   const next = assert.rejects(f.router.next("clock")); await f.entered(); f.deliver({ method: "Debugger.resumed", sessionId: clock.sessionId, params: {} }); await next;
