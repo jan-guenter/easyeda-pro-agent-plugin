@@ -198,3 +198,28 @@ same completed main ledger for original worker response/head-index joins. It
 retains distinct head UUID and data-row key (the mutable branch uses `head-1`)
 and grants no continuation. A later closed-data consumer cannot treat that
 live lookup as a still-live lease after owner exit.
+
+### Complete closed SQL delta (data comparison only)
+
+`compareGeneratedProjectClosedSqlDelta` now compares the original source
+inventory with the actual closed-copy inventory using the two finished reader
+references. It admits only the observed new history-data row, selected mutable
+head num increment or one new head, selected branch head, projects timestamp/
+modifier, existing structure ticket/tree and history-data sequence increment.
+All other complete rows, rowids, column metadata, table roster, schema and
+persisted SQLite properties must match. The encrypted row must decrypt to the
+exact observed EDIT_HEAD actor plus supplied original Save body. Data/head UTC
+defaults must fall inside their own native callback windows; worker clocks are
+not substituted or unioned with those bounds.
+
+This is a pure shared comparison leaf for independently owned Via/SCH effects.
+Its output explicitly remains supplied-observations-only, with persistence,
+reopen and execution authorization false. The original operation must bind its
+own private effect/body references before using that result in any lifecycle.
+A caller's matching DTO cannot acquire such references from this comparator.
+
+Four focused cases use actual complete native-schema SQLite files and crypto
+for both append/mutable branches. Changed unrelated users, project g_ticket,
+head lock metadata, cipher bytes, persisted properties, mismatched body/key,
+wrong callback windows, copied inventories and input getters/proxies refuse.
+No app, native owner, Windows compiler or live project was opened for them.
