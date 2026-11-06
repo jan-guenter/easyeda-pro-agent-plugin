@@ -29,6 +29,17 @@ to64characters, and supply the complete observed `expectedFingerprint` object:
 }
 ```
 
+For offline validation, place that inner request directly in `query.request`:
+
+```json
+{"request":{"action":"fixture-import-validate","query":{"request":{"action":"import-generated-fixture","operationId":"fixture-import-example","fixtureKind":"via-only","confirmDisposableFixture":true,"confirmNativeImport":true,"acceptPartialImportRetention":true}}}}
+```
+
+Use the same direct inner-request shape for `launch-validate`. The execution
+tools have their own outer `request` wrapper. The fingerprint comes from the
+current status result's `upstream.stableFingerprint`; an offline validator does
+not obtain or admit one.
+
 `line-and-via` adds one disjoint top-layer line. `arc-line-and-via` adds a
 disjoint circular top-layer arc as well.
 `schematic-text-wire-bus` selects a separate schematic container and page with
