@@ -30,6 +30,8 @@ import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS, currentProjectSaveProducer
 import type { CurrentProjectSaveProducerCacheCaller } from "./current-project-save-producer-cache-source.ts";
 import { CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_ARRAY_LENGTH, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_PROFILES, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_CALLS as PRODUCER_INTRINSICS, decodeCurrentNativeCacheResponseIntrinsic } from "./current-native-cache-response-intrinsics.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS, CURRENT_PROJECT_SAVE_PRODUCER_ROLES, CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS, validateCurrentProjectSaveProducerCommand } from "./current-project-save-producer-protocol.ts";
+import { currentPcbViaSavedModelNativeFrame } from "./current-pcb-via-saved-model-protocol.ts";
+import type { CurrentPcbViaSavedModelPhase } from "./current-pcb-via-saved-model-protocol.ts";
 import type { CurrentSavedProjectRegistrationBindings, CurrentSavedProjectRegistrationIntent } from "./current-saved-project-registration-origin.ts";
 import { CurrentPcbViaSavedLoadController } from "./current-pcb-via-saved-load-controller.ts";
 import type { CurrentPcbViaSavedLoadWorkerPair } from "./current-pcb-via-saved-load-controller.ts";
@@ -200,7 +202,7 @@ import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION, currentPcbDiagnosticOpeningArg
 import type { CurrentPcbDiagnosticOpeningResult } from "./current-pcb-diagnostic-opening.ts";
 import { CurrentPcbDiagnosticModelRunner } from "./current-pcb-diagnostic-model-runner.ts";
 import type { CurrentPcbDiagnosticModelObservation } from "./current-pcb-diagnostic-model-runner.ts";
-import { currentPcbDiagnosticPcbOpeningArguments, decodeCurrentPcbDiagnosticPcbOpeningReply } from "./current-pcb-diagnostic-pcb-opening.ts";
+import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, currentPcbDiagnosticPcbOpeningArguments, decodeCurrentPcbDiagnosticPcbOpeningReply } from "./current-pcb-diagnostic-pcb-opening.ts";
 import type { CurrentPcbDiagnosticPcbOpeningResult } from "./current-pcb-diagnostic-pcb-opening.ts";
 import { CurrentPcbStringPrecreateRunner } from "./current-pcb-string-precreate-runner.ts";
 import { currentPcbObservationFailure, currentPcbObservationFailureDetail } from "./current-pcb-observation-failure.ts";
@@ -285,7 +287,7 @@ import { CurrentPcb209RatlineContinuationNativeSession } from "./current-pcb-209
 import { requireCurrentPcb209ActorClockSourceQualification } from "./current-pcb-209-actor-clock-source.ts";
 import type { CurrentPcb209ActorClockSourceQualification } from "./current-pcb-209-actor-clock-source.ts";
 import { decodeCurrentPcb209LayersReply } from "./current-pcb-209-layers.ts";
-import { decodeCurrentPcb209PrimitivesReply } from "./current-pcb-209-primitives.ts";
+import { CURRENT_PCB_209_PRIMITIVES_FUNCTION, decodeCurrentPcb209PrimitivesReply } from "./current-pcb-209-primitives.ts";
 import { decodeCurrentPcb209ExtendedPrimitivesReply } from "./current-pcb-209-extended-primitives.ts";
 import { decodeCurrentPcb209ImageShapesReply } from "./current-pcb-209-image-shapes.ts";
 import { decodeCurrentPcb209ArcShapesReply } from "./current-pcb-209-arc-shapes.ts";
@@ -1558,6 +1560,9 @@ class CurrentPcbRetainedOwnerCore {
   #savedReadbackRegistrationPromise: Promise<CurrentSavedProjectRegistrationIntent> | null = null;
   #savedReadbackRegistrationIntent: CurrentSavedProjectRegistrationIntent | null = null;
   #savedReadbackRegistrationDispatch: Promise<Readonly<RecordValue>> | null = null; #savedReadbackRegistrationResult: Readonly<RecordValue> | null = null;
+  #savedReadbackModelEnrolled = false; #savedReadbackModelRunning = false; #savedReadbackModelPhase: CurrentPcbViaSavedModelPhase | null = null;
+  #savedReadbackModelHelper: { scriptId: string | null } | null = null;
+  #savedReadbackPcbPromise: Promise<CurrentPcbDiagnosticPcbOpeningResult> | null = null; #savedReadbackPcbSourcePromise: Promise<Readonly<RecordValue>> | null = null; #savedReadbackPrimitivesPromise: Promise<Readonly<RecordValue>> | null = null;
   #savedReadbackOpeningPromise: Promise<CurrentPcbDiagnosticOpeningResult> | null = null; #savedReadbackOpeningFrame: "preflight" | "open-project" | null = null;
   #savedReadbackOpeningHelper: { scriptId: string | null } | null = null; #savedReadbackOpeningPumpRunning = false; #savedReadbackProjectNavigationPending = false;
   #savedReadbackRegistrationFrame = false; #savedReadbackRegistrationHelper: { scriptId: string | null } | null = null;
@@ -2014,6 +2019,7 @@ class CurrentPcbRetainedOwnerCore {
    * Even a refused preflight consumes this overall stage; cleanup stays usable. */
   public async openProject(input: CurrentDisposableOpenSealedTarget, reverify: () => Promise<void>): Promise<CurrentPcbDiagnosticOpeningResult> {
     if (this.#startupPurpose) { throw error("STARTUP_LEGACY_ROUTE"); }
+    if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && !this.#savedReadbackModelRunning) { throw error("SAVED_MODEL_ORIGINAL_ROUTE_REQUIRED"); }
     const context = this.#stagedContext, target = currentDisposableOpenSealedTargetSchema.parse(input);
     const generated = this.#generatedFixtureQualification;
     if (this.#generatedFixtureBirth !== (generated !== null) || generated !== null && canonicalJson(generated.target) !== canonicalJson(target)) { throw error("GENERATED_FIXTURE_ORIGINAL_TARGET"); }
@@ -2105,6 +2111,7 @@ class CurrentPcbRetainedOwnerCore {
    * Acknowledgment is retained before independent frame/source qualification. */
   public async openPcb(input: CurrentDisposableOpenSealedTarget, reverify: () => Promise<void>): Promise<CurrentPcbDiagnosticPcbOpeningResult> {
     if (this.#startupPurpose) { throw error("STARTUP_LEGACY_ROUTE"); }
+    if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && !this.#savedReadbackModelRunning) { throw error("SAVED_MODEL_ORIGINAL_ROUTE_REQUIRED"); }
     const context = this.#stagedContext, target = currentDisposableOpenSealedTargetSchema.parse(input);
     currentPcbDiagnosticPcbOpeningArguments(target, "preflight");
     if (context === null || !this.#scriptConsumed || this.#inspectionConsumed || this.#workersConsumed || this.#workerContext !== null ||
@@ -2117,7 +2124,7 @@ class CurrentPcbRetainedOwnerCore {
       const selected = context.openingContext();
       await this.#observeParent(); context.openingContext();
       const preflight = decodeCurrentPcbDiagnosticPcbOpeningReply(
-        await this.#transfer(() => this.#pipe.observePcbOpening(selected.uniqueContextId, target, "preflight")), target, "preflight");
+        await this.#transfer(() => this.#observePcbOpeningFrame(selected.uniqueContextId, target, "preflight")), target, "preflight");
       this.#pcbOpeningResult = preflight;
       context.openingContext(); await this.#verifyInstallation(); this.#available();
       if (!preflight.ok) { this.#input.emit("error", error("PCB_PREFLIGHT_REFUSED")); return preflight; }
@@ -2127,7 +2134,7 @@ class CurrentPcbRetainedOwnerCore {
       await this.#observeOpeningAncillary(); context.openingContext();
       const opening = context.beginPcbOpeningTransition(target.projectUuid, target.documentUuid);
       const result = decodeCurrentPcbDiagnosticPcbOpeningReply(
-        await this.#transfer(() => this.#pipe.observePcbOpening(opening.uniqueContextId, target, "open-document")), target, "open-document");
+        await this.#transfer(() => this.#observePcbOpeningFrame(opening.uniqueContextId, target, "open-document")), target, "open-document");
       this.#pcbOpeningResult = result;
       context.pcbOpeningContext();
       await this.#verifyInstallation(); await this.#verify(); this.#available(); context.pcbOpeningContext();
@@ -2140,6 +2147,7 @@ class CurrentPcbRetainedOwnerCore {
   /** Fixed UI/frame/DOM/source observations, never another navigation attempt. */
   public async observePcbOpening(input: CurrentDisposableOpenSealedTarget, inputProfile: DiagnosticScriptProfile): Promise<Readonly<RecordValue>> {
     if (this.#startupPurpose) { throw error("STARTUP_LEGACY_ROUTE"); }
+    if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && !this.#savedReadbackModelRunning) { throw error("SAVED_MODEL_ORIGINAL_ROUTE_REQUIRED"); }
     const context = this.#stagedContext, profile = validateDiagnosticScriptProfile(inputProfile);
     const target = currentDisposableOpenSealedTargetSchema.parse(input);
     if (context === null || this.#pcbObservationConsumed || this.#pcbOpeningResult?.ok !== true ||
@@ -2167,7 +2175,7 @@ class CurrentPcbRetainedOwnerCore {
       // The fixed UI observation invokes the child's identity RPC. Admit the
       // Exact child source first, not merely its URL or parent UI source.
       const observed = decodeCurrentPcbDiagnosticPcbOpeningReply(
-        await this.#transfer(() => this.#pipe.observePcbOpening(selected.uniqueContextId, target, "observe")), target, "observe");
+        await this.#transfer(() => this.#observePcbOpeningFrame(selected.uniqueContextId, target, "observe")), target, "observe");
       this.#pcbFrameObservation = observed; context.pcbOpeningContext(); context.pcbScript(profile);
       if (!observed.ok) { throw error("PCB_FRAME_REFUSED"); }
       await this.#observeParent(); context.pcbScript(profile);
@@ -3560,7 +3568,7 @@ class CurrentPcbRetainedOwnerCore {
    * This stage owns no model scope, source baseline, write or Save authority. */
   public async observePrimitives209(input: CurrentDisposableOpenSealedTarget): Promise<Readonly<RecordValue>> {
     const context = this.#stagedContext, profile = this.#pcbSourceProfile, target = currentDisposableOpenSealedTargetSchema.parse(input);
-    if (this.#purpose !== "diagnostic209" || context === null || this.#primitives209Consumed || !this.#pcbSourceQualified ||
+    if (this.#purpose !== "diagnostic209" && !(this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#savedReadbackModelRunning) || context === null || this.#primitives209Consumed || !this.#pcbSourceQualified ||
         profile === null || this.#pcbFrameObservation?.ok !== true || this.#workersConsumed || this.#modelConsumed ||
         JSON.stringify(target) !== JSON.stringify(this.#projectOpeningTarget)) { throw error("PRIMITIVES209_UNAVAILABLE"); }
     this.#enter(true); this.#primitives209Consumed = true;
@@ -3574,7 +3582,7 @@ class CurrentPcbRetainedOwnerCore {
       await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
       await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
       const result = decodeCurrentPcb209PrimitivesReply(
-        await this.#transfer(() => this.#pipe.observePrimitives209(selected.uniqueContextId, target)), target);
+        await this.#transfer(() => this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE ? this.#observeSavedReadbackModelFrame(selected.uniqueContextId, target, "primitives") : this.#pipe.observePrimitives209(selected.uniqueContextId, target)), target);
       reprove(); await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
       await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
       return result;
@@ -3823,7 +3831,7 @@ class CurrentPcbRetainedOwnerCore {
       };
       const identity = async (): Promise<void> => {
         const result = decodeCurrentPcbDiagnosticPcbOpeningReply(
-          await this.#transfer(() => this.#pipe.observePcbOpening(selected.uniqueContextId, target, "observe")), target, "observe");
+          await this.#transfer(() => this.#observePcbOpeningFrame(selected.uniqueContextId, target, "observe")), target, "observe");
         reprove();
         if (!result.ok || result.status !== "frame-observed" || !result.frameObserved ||
             result.windowTabId !== this.#projectOpeningResult?.observation?.windowTabId) { throw error("WINDOW_RESTORE209_ACTIVE_PCB"); }
@@ -3859,7 +3867,7 @@ class CurrentPcbRetainedOwnerCore {
       };
       const identity = async (): Promise<void> => {
         const result = decodeCurrentPcbDiagnosticPcbOpeningReply(
-          await this.#transfer(() => this.#pipe.observePcbOpening(selected.uniqueContextId, target, "observe")), target, "observe");
+          await this.#transfer(() => this.#observePcbOpeningFrame(selected.uniqueContextId, target, "observe")), target, "observe");
         reprove();
         if (!result.ok || result.status !== "frame-observed" || !result.frameObserved ||
             result.windowTabId !== this.#projectOpeningResult?.observation?.windowTabId) { throw error("WINDOW_RESIZE209_ACTIVE_PCB"); }
@@ -3901,7 +3909,7 @@ class CurrentPcbRetainedOwnerCore {
       };
       const identity = async (): Promise<void> => {
         const result = decodeCurrentPcbDiagnosticPcbOpeningReply(
-          await this.#transfer(() => this.#pipe.observePcbOpening(selected.uniqueContextId, target, "observe")), target, "observe");
+          await this.#transfer(() => this.#observePcbOpeningFrame(selected.uniqueContextId, target, "observe")), target, "observe");
         reprove();
         if (!result.ok || result.status !== "frame-observed" || !result.frameObserved ||
             result.windowTabId !== this.#projectOpeningResult?.observation?.windowTabId) { throw error("RENDERER_CAPTURE209_ACTIVE_PCB"); }
@@ -3950,7 +3958,7 @@ class CurrentPcbRetainedOwnerCore {
       };
       const identity = async (): Promise<void> => {
         const result = decodeCurrentPcbDiagnosticPcbOpeningReply(
-          await this.#transfer(() => this.#pipe.observePcbOpening(selected.uniqueContextId, target, "observe")), target, "observe");
+          await this.#transfer(() => this.#observePcbOpeningFrame(selected.uniqueContextId, target, "observe")), target, "observe");
         reprove();
         if (!result.ok || result.status !== "frame-observed" || !result.frameObserved ||
             result.windowTabId !== this.#projectOpeningResult?.observation?.windowTabId) { throw error("WINDOW_CAPTURE209_ACTIVE_PCB"); }
@@ -6322,7 +6330,7 @@ class CurrentPcbRetainedOwnerCore {
     const captured = captureCurrentPcbStringClockReply(event).value;
     if (captured === null || typeof captured !== "object" || !("params" in captured) || captured.params === null || typeof captured.params !== "object" || !("url" in captured.params) || captured.params.url !== "") { return false; }
     const held = this.#savedReadbackCache, helper = this.#savedReadbackGuardHelper, params = captured.params;
-    const registration = this.#savedReadbackRegistrationHelper ?? this.#savedReadbackOpeningHelper;
+    const registration = this.#savedReadbackRegistrationHelper ?? this.#savedReadbackOpeningHelper ?? this.#savedReadbackModelHelper;
     if (registration !== null) {
       if (held === null || registration.scriptId !== null || event.sessionId !== held.selected.sessionId || !("executionContextId" in params) || params.executionContextId !== held.context.script().context["id"] || !("scriptId" in params) || !diagnosticToken(params.scriptId) || "hasSourceURL" in params && params.hasSourceURL === true || "isLiveEdit" in params && params.isLiveEdit === true) { throw error("SAVED_READBACK_REGISTRATION_HELPER_EVENT"); }
       registration.scriptId = params.scriptId; return true;
@@ -6730,6 +6738,62 @@ class CurrentPcbRetainedOwnerCore {
       } catch (caughtError) { this.#input.emit("error", error("SAVED_READBACK_REGISTRATION_FAILED")); throw caughtError; }
       finally { this.#savedReadbackRegistrationFrame = false; this.#savedReadbackRegistrationHelper = null; this.#busy = false; }
     })(); this.#savedReadbackRegistrationDispatch = promise; return promise;
+  }
+  #requireSavedReadbackModel(): CurrentDisposableOpenSealedTarget {
+    assertOriginalCurrentPcbViaSavedReadbackOwner(this); this.#available();
+    const target = this.#projectOpeningTarget;
+    if (target === null || this.#projectOpeningResult?.ok !== true || this.#savedReadbackLoadData === null || this.#savedReadbackLoadObserver?.status().complete !== true ||
+      this.#savedReadbackAborted || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true || this.#savedReadbackLoadController?.status().failed !== false) { throw error("SAVED_MODEL_ORIGINAL_LOADING_REQUIRED"); }
+    return target;
+  }
+  #observePcbOpeningFrame(context: string, target: CurrentDisposableOpenSealedTarget, phase: "preflight" | "open-document" | "observe"): Promise<RecordValue> {
+    return this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE ? this.#observeSavedReadbackModelFrame(context, target, phase) : this.#pipe.observePcbOpening(context, target, phase);
+  }
+  async #observeSavedReadbackModelFrame(context: string, target: CurrentDisposableOpenSealedTarget, phase: CurrentPcbViaSavedModelPhase): Promise<RecordValue> {
+    const original = this.#requireSavedReadbackModel(), pipe = this.#pipe;
+    if (!(pipe instanceof CurrentPcbViaSavedReadbackPipe) || !this.#savedReadbackModelRunning || !this.#savedReadbackModelEnrolled || canonicalJson(target) !== canonicalJson(original) || this.#savedReadbackModelPhase !== null || this.#savedReadbackModelHelper !== null) { throw error("SAVED_MODEL_ORIGINAL_CALL"); }
+    const helper = { scriptId: null as string | null }; this.#savedReadbackModelHelper = helper; this.#savedReadbackModelPhase = phase;
+    try {
+      const raw = await pipe.observeSavedReadbackModel(context, original, phase); this.#requireSavedReadbackModel();
+      if (helper.scriptId === null || this.#savedReadbackModelHelper !== helper) { throw error("SAVED_MODEL_HELPER_REQUIRED"); }
+      // The outer transfer owns the same sole poll while the helper source is
+      // Read; no second observer pump or target is introduced.
+      this.#savedReadbackModelPhase = null;
+      const source = await pipe.getScriptSource(helper.scriptId); this.#requireSavedReadbackModel();
+      const program = phase === "primitives" ? CURRENT_PCB_209_PRIMITIVES_FUNCTION : CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION;
+      if (!exact(source, ["scriptSource"]) || source["scriptSource"] !== `(${program})` || this.#savedReadbackModelHelper !== helper) { throw error("SAVED_MODEL_HELPER_SOURCE"); }
+      return raw;
+    } finally { this.#savedReadbackModelPhase = null; this.#savedReadbackModelHelper = null; }
+  }
+  public openSavedReadbackPcb(): Promise<CurrentPcbDiagnosticPcbOpeningResult> {
+    if (this.#savedReadbackPcbPromise !== null) { return this.#savedReadbackPcbPromise; }
+    const pipe = this.#pipe, target = this.#requireSavedReadbackModel();
+    if (!(pipe instanceof CurrentPcbViaSavedReadbackPipe) || this.#savedReadbackModelRunning || this.#savedReadbackModelEnrolled) { throw error("SAVED_MODEL_ENROLL_ONCE"); }
+    this.#enter(true); this.#savedReadbackModelRunning = true;
+    const work = (async (): Promise<CurrentPcbDiagnosticPcbOpeningResult> => {
+      try {
+        const ack = await this.#request({ action: "saved-readback-model-enroll" }); this.#requireSavedReadbackModel();
+        if (!exact(ack, ["modelEnrolled"]) || ack["modelEnrolled"] !== true) { throw error("SAVED_MODEL_NATIVE_ENROLL"); }
+        this.#savedReadbackModelEnrolled = true; pipe.bindSavedReadbackModel();
+        this.#busy = false; return await this.openPcb(target, async (): Promise<void> => { this.#requireSavedReadbackModel(); await this.#verifyInstallation(); this.#requireSavedReadbackModel(); });
+      } finally { this.#savedReadbackModelRunning = false; this.#busy = false; }
+    })(); this.#savedReadbackPcbPromise = work; return work;
+  }
+  public observeSavedReadbackPcbOpening(): Promise<Readonly<RecordValue>> {
+    if (this.#savedReadbackPcbSourcePromise !== null) { return this.#savedReadbackPcbSourcePromise; }
+    const source = CURRENT_PCB_209_SPATIAL_SOURCE_PROFILE, target = this.#requireSavedReadbackModel();
+    if (!this.#savedReadbackModelEnrolled || this.#savedReadbackModelRunning || this.#pcbOpeningResult?.phase !== "open-document" || !this.#pcbOpeningResult.ok) { throw error("SAVED_MODEL_PCB_REQUIRED"); }
+    this.#savedReadbackModelRunning = true;
+    const work = (async (): Promise<Readonly<RecordValue>> => { try { return await this.observePcbOpening(target, { family: "pcb", relativePath: source.relativePath, scriptBytes: source.bytes, scriptSha256: source.sha256 }); } finally { this.#savedReadbackModelRunning = false; } })();
+    this.#savedReadbackPcbSourcePromise = work; return work;
+  }
+  public observeSavedReadbackPrimitives(): Promise<Readonly<RecordValue>> {
+    if (this.#savedReadbackPrimitivesPromise !== null) { return this.#savedReadbackPrimitivesPromise; }
+    const target = this.#requireSavedReadbackModel();
+    if (!this.#savedReadbackModelEnrolled || this.#savedReadbackModelRunning || !this.#pcbSourceQualified || this.#pcbFrameObservation?.ok !== true) { throw error("SAVED_MODEL_PCB_SOURCE_REQUIRED"); }
+    this.#savedReadbackModelRunning = true;
+    const work = (async (): Promise<Readonly<RecordValue>> => { try { return await this.observePrimitives209(target); } finally { this.#savedReadbackModelRunning = false; } })();
+    this.#savedReadbackPrimitivesPromise = work; return work;
   }
   /** The only UI project opening for this generation. Its original SDK
    * Promise and fixed worker observation share separate bounded pipe slots. */
@@ -7637,6 +7701,10 @@ class CurrentPcbRetainedOwnerCore {
         encoded = currentPcbViaSavedRegistrationNativeFrame(chunk, this.#savedReadbackCache.selected.sessionId, this.#savedReadbackCache.selected.uniqueContextId, held.target);
       }
       else if (this.#savedReadbackLoadCommand !== null && this.#savedReadbackLoadPair !== null) { encoded = currentPcbViaSavedLoadWorkerNativeFrame(chunk, this.#savedReadbackLoadCommand, this.#savedReadbackLoadPair); }
+      else if (this.#savedReadbackModelPhase !== null && this.#savedReadbackCache !== null && this.#projectOpeningTarget !== null) {
+        this.#requireSavedReadbackModel();
+        encoded = currentPcbViaSavedModelNativeFrame(chunk, this.#savedReadbackCache.selected.sessionId, this.#savedReadbackCache.selected.uniqueContextId, this.#projectOpeningTarget, this.#savedReadbackModelPhase);
+      }
       else if (this.#savedReadbackOpeningFrame !== null && this.#savedReadbackCache !== null) {
         const intent = this.#savedReadbackRegistrationIntent; const held = intent === null ? undefined : savedProjectRegistrationIntents.get(intent);
         if (held === undefined || held.owner !== this || !held.settled || this.#savedReadbackRegistrationResult === null) { throw error("SAVED_READBACK_OPENING_WIRE_ORIGINAL"); }

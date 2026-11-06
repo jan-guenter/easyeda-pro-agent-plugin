@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 saved-reader PCB model opening](2026-11-06-saved-reader-pcb-model-opening.md). Original loading-bound PCB opening, fixed source/frame observation and four-family DTO sequence; complete scene and reader-closed persistence remain pending.
+
 - [2026-11-06 saved-reader early worker hold](2026-11-06-saved-reader-early-worker-hold.md). Original pre-resume three-request browser prefix and suspended background bookkeeping; running actors still refuse and native startup timing remains unvalidated.
 
 - [2026-11-06 saved-reader project registration](2026-11-06-saved-reader-project-registration.md). Exact shared recent-project row SQL, separate original intent and native source/await continuations; one-run retry refusal, with actual saved-reader dispatch and connected proof still pending.
