@@ -104,3 +104,36 @@ Strict types and zero-warning type-aware lint pass against the real private
 central origin accessor. That accessor has no public issuer; its actual native
 pre-project bootstrap population is supplied by the dedicated Via hook, not by
 these tests or any serialized packet. No live/native execution is claimed.
+
+## Dedicated original worker bootstrap
+
+`current-pcb-via-worker-bootstrap.ts` implements the new Via birth's pure
+seven-stage source state machine against the finite bootstrap protocol. The
+actual native owner supplies its frozen plain descriptor-only dependency and
+owns target selection, direct waiting attachment, existing-worker inventory,
+process/installation custody and every original request/event. This runner
+issues no native origin or structural ownership capability.
+
+It requires the exact selected worker title and context, arms
+`beforeScriptExecution` instrumentation before run-waiting, and independently
+qualifies bootstrap, preload, four copied sorting functions and project source.
+The maintained copy creator/caller/pause and exact preload-log validators stay
+in force. ONLINE mode refuses before the bootstrap's first continuation.
+Each of seven original continuations requires its original empty command ACK
+and observed `Debugger.resumed`; foreign context/scripts/events refuse.
+
+The final original project source remains paused while the native owner's
+`projectSourceHeld` callback issues its private origin and arms its Save observer.
+Only after that callback settles does the runner remove its instrumentation,
+release the original parent wait while retaining auto-attach, and resume the
+original project source once. Its event cursor retains custody through that
+final resumed event before the native owner hands the tail to the Save observer.
+The runner consumes12 normal and8 cleanup worker commands; the parent inventory
+and two parent configurations remain separately reserved by the native owner.
+
+Four focused protocol/state-machine regressions pass, including the one explicit
+source-byte seam with real maintained creator/pause/log checks. ONLINE source,
+foreign copy creator, missing original preload log and missing resume observation
+all stop before project continuation or origin callback. Strict types and
+zero-warning type-aware lint pass. These are offline checks, with no connected
+worker, native origin, startup completion, selected clock responder or SQL grant.
