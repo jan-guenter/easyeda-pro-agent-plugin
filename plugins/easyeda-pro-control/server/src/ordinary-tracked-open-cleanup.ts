@@ -15,7 +15,7 @@ export interface OrdinaryTrackedOpenCleanupRequest {
   readonly confirmNormalClose?: true;
   readonly acceptUnknownFileEffects?: true;
 }
-type Engine = Pick<EasyedaControlEngine, "upstream" | "originalSettledTrackedDispatch" | "assertRecoveryOperationIsolated">;
+type Engine = Pick<EasyedaControlEngine, "upstream" | "originalSettledTrackedDispatch" | "originalSettledFixtureEnvironmentDispatch" | "assertRecoveryOperationIsolated">;
 export interface OrdinaryTrackedOpenCleanupDependencies {
   readonly loadOperation?: typeof loadOperation;
   readonly readArtifact?: typeof readArtifact;
@@ -69,7 +69,7 @@ function methods(runtime: WindowsControlRuntime): readonly unknown[] {
   return [runtime.status, runtime.normalClose, runtime.observeApplicationWindow, runtime.observeLaunchTermination, runtime.releaseCapture];
 }
 function engineMethods(engine: Engine): readonly unknown[] {
-  return [engine.originalSettledTrackedDispatch, engine.assertRecoveryOperationIsolated, engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased];
+  return [engine.originalSettledTrackedDispatch, engine.originalSettledFixtureEnvironmentDispatch, engine.assertRecoveryOperationIsolated, engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased];
 }
 
 /** Strict internal original-owner cleanup for two ordinary navigation families.
@@ -128,7 +128,8 @@ export class OrdinaryTrackedOpenCleanup {
   }
   #current(slot: Slot): OriginalSettledTrackedDispatch {
     this.#owner(slot); need(!slot.consumed);
-    const source = slot.source ?? this.#engine.originalSettledTrackedDispatch(slot.journal);
+    const source = slot.source ?? (slot.journal.plan["profile"] === "managed-fixture-import209-v1" && slot.journal.plan["phase"] === "actual-config-directory-preflight"
+        ? this.#engine.originalSettledFixtureEnvironmentDispatch(slot.journal) : this.#engine.originalSettledTrackedDispatch(slot.journal));
     need(profiles.get(String(slot.journal.plan["profile"])) === source.phase);
     source.assertCurrent(); assertWindowsRuntimeValidator(source.validator, this.#runtime);
     const roots = source.authority.processes.filter(process => process.role === "easyeda-main");
