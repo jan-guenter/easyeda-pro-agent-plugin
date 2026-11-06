@@ -6,6 +6,12 @@ import { assertOriginalGeneratedSchematicFixtureTarget, originalGeneratedSchemat
 import { consumeManagedSchematicFixtureOpeningSource, stageManagedSchematicFixtureOpeningSource } from "../src/managed-schematic-fixture-opening-source.ts";
 import { managedFixtureInitialSqlFixture } from "./helpers/managed-fixture-initial-sql.ts";
 import { managedSchematicFixtureInitialSqlFixture } from "./helpers/managed-schematic-fixture-initial-sql.ts";
+import type { WindowsControlRuntimeStatus } from "../src/windows-runtime.ts";
+
+function originalRuntime(id: string): { status: () => WindowsControlRuntimeStatus } {
+  return { status: () => ({ state: "owned", launch: { jobId: id.repeat(32), helperInstance: id.repeat(32), root: { pid: id === "a" ? 100 : 200, role: "easyeda-main",
+    startIdentity: `win32:123456789012345:job:${id.repeat(32)}` } }, executableSha256: "a".repeat(64), reviewedExecutionScopeSha256: "b".repeat(64) }) };
+}
 
 void test("complete fresh SCH/SCH_PAGE SQL and source issue a distinct original data target", async () => {
   const input = await managedSchematicFixtureInitialSqlFixture(), result = await qualifyGeneratedSchematicFixtureInitialSql(input);
@@ -18,11 +24,14 @@ void test("complete fresh SCH/SCH_PAGE SQL and source issue a distinct original 
   assert.throws(() => compareGeneratedFixtureClosedSources(input.archive, result.history));
   assert.throws(() => { assertOriginalGeneratedSchematicFixtureTarget(structuredClone(result.qualification)); });
   assert.throws(() => Reflect.apply(assertOriginalGeneratedFixtureTarget, undefined, [result.qualification]));
-  const staged = stageManagedSchematicFixtureOpeningSource({ qualification: result.qualification, archive: input.archive });
-  assert.throws(() => consumeManagedSchematicFixtureOpeningSource(structuredClone(staged)));
-  assert.equal(consumeManagedSchematicFixtureOpeningSource(staged).qualification, result.qualification);
-  assert.throws(() => consumeManagedSchematicFixtureOpeningSource(staged));
-  assert.throws(() => stageManagedSchematicFixtureOpeningSource({ qualification: result.qualification, archive: input.archive }));
+  const importingRuntime = originalRuntime("a"); const fresh = originalRuntime("b");
+  const staged = stageManagedSchematicFixtureOpeningSource({ qualification: result.qualification, archive: input.archive, importingRuntime });
+  assert.throws(() => consumeManagedSchematicFixtureOpeningSource(structuredClone(staged), fresh));
+  assert.throws(() => consumeManagedSchematicFixtureOpeningSource(staged, importingRuntime));
+  assert.throws(() => consumeManagedSchematicFixtureOpeningSource(staged, originalRuntime("a")));
+  assert.equal(consumeManagedSchematicFixtureOpeningSource(staged, fresh).qualification, result.qualification);
+  assert.throws(() => consumeManagedSchematicFixtureOpeningSource(staged, fresh));
+  assert.throws(() => stageManagedSchematicFixtureOpeningSource({ qualification: result.qualification, archive: input.archive, importingRuntime }));
   await assert.rejects(qualifyGeneratedFixtureInitialSql(input), /generated filename/u);
   await assert.rejects(qualifyGeneratedSchematicFixtureInitialSql(await managedFixtureInitialSqlFixture()), /schematic filename/u);
 });

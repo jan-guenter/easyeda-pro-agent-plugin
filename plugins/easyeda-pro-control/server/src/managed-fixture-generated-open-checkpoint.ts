@@ -8,8 +8,10 @@ import type { QualifiedGeneratedFixtureTarget } from "./managed-fixture-initial-
 import { currentProcessSqlRuntime } from "./machine-profile.ts";
 import type { NativeHistorySnapshot } from "./native-history.ts";
 import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
-import { readExactSqlInventory, readerCompletion } from "./sqlite-inventory.ts";
-import type { NativeSqlInventory } from "./sqlite-inventory-core.ts";
+import { readExactSqlInventory } from "./sqlite-inventory.ts";
+import { qualifyGeneratedFixtureVacuumProjection } from "./managed-fixture-vacuum-projection.ts";
+
+export { qualifyGeneratedFixtureVacuumProjection } from "./managed-fixture-vacuum-projection.ts";
 
 const profile = "easyeda-pro-control.generated-fixture-open-checkpoint.v1";
 export interface GeneratedFixtureOpenCheckpoint {
@@ -34,19 +36,6 @@ function sourcePath(qualification: QualifiedGeneratedFixtureTarget): string {
 }
 async function policy(source: string): Promise<CheckpointAccessPolicy> {
   return { expectedSource: source, controlRoot: await controlRootCapability(), artifactRoots: [join(controlDataDirectory(), "checkpoints")], maximumSourceBytes: 67_108_864 };
-}
-export function qualifyGeneratedFixtureVacuumProjection(source: NativeSqlInventory, checkpoint: NativeSqlInventory): GeneratedFixtureOpenCheckpoint["vacuumProjection"] {
-  readerCompletion(source); readerCompletion(checkpoint);
-  const sourceVersion = source.properties["schema_version"]; const checkpointVersion = checkpoint.properties["schema_version"];
-  const sourceProjection = { schema: source.schema, schemaSha256: source.schemaSha256, tables: source.tables, properties: source.properties };
-  const checkpointProjection = { schema: checkpoint.schema, schemaSha256: checkpoint.schemaSha256, tables: checkpoint.tables,
-    properties: { ...checkpoint.properties, schema_version: sourceVersion } };
-  if (typeof sourceVersion !== "number" || !Number.isSafeInteger(sourceVersion) || sourceVersion < 0 || sourceVersion >= 2_147_483_647 ||
-      checkpointVersion !== sourceVersion + 1 || canonicalJson(sourceProjection) !== canonicalJson(checkpointProjection)) {
-    throw new Error("Generated fixture VACUUM checkpoint differs beyond one exact schema_version increment.");
-  }
-  return Object.freeze({ sourceLogicalSha256: source.logicalSha256, checkpointLogicalSha256: checkpoint.logicalSha256,
-    sourceSchemaVersion: sourceVersion, checkpointSchemaVersion: checkpointVersion, onlySchemaVersionIncremented: true });
 }
 function sameQualification(actual: QualifiedGeneratedFixtureTarget, original: QualifiedGeneratedFixtureTarget): void {
   const normalized = { ...actual, inventoryLogicalSha256: original.inventoryLogicalSha256,

@@ -66,9 +66,11 @@ source while the original destination handles remain held. A failed
 qualification preserves its report and partial file; it permits no replay.
 The schematic scenario uses its own complete initial SQL/source qualification
 and target with separate schematic/page identities. Its target cannot enter
-the PCB opening route. A dedicated fresh schematic registration/page owner and
-its local token handoff remain implementation work; page readiness and electrical
-connectivity stay unproved.
+the PCB opening route. Its separate `stage-schematic-for-fresh-opening` action
+retains the original data token for a new original ordinary runtime. The
+`generated-schematic` wrapper opens that real project/page once, then optionally
+observes its Text/Wire/Bus through a separate one-shot action. Connected page
+readiness and electrical connectivity remain unproved.
 
 Then use `release-destination` with `confirmReleaseRetainedDirectory:true`.
 It drains the exact original watches and closes directory handles after proved

@@ -45,6 +45,7 @@ export const managedFixtureImportRequestSchema = z.discriminatedUnion("action", 
   z.object({ action: z.literal("release-owner"), operationId, confirmReleaseFixtureOwner: z.literal(true) }).strict(),
   z.object({ action: z.literal("capture-closed-import"), operationId, confirmReadClosedFixture: z.literal(true) }).strict(),
   z.object({ action: z.literal("stage-for-fresh-opening"), operationId, confirmStageClosedFixture: z.literal(true) }).strict(),
+  z.object({ action: z.literal("stage-schematic-for-fresh-opening"), operationId, confirmStageClosedFixture: z.literal(true) }).strict(),
 ]);
 export type ManagedFixtureImportRequest = z.infer<typeof managedFixtureImportRequestSchema>;
 type Observation = z.infer<typeof managedFixtureImportJobObservationSchema>;
@@ -54,7 +55,7 @@ export const MANAGED_FIXTURE_IMPORT_DISPATCH_PHASE = "managed-fixture-import";
 export function queryManagedFixtureImport(input: unknown = {}): Record<string, unknown> {
   const request = z.object({ includeSchemas: z.boolean().default(false) }).strict().parse(input);
   return { tool: "easyeda_control_fixture_import", profile: MANAGED_FIXTURE_IMPORT_PROFILE,
-    actions: ["import-generated-fixture", "inspect", "settle-import-records", "inspect-destination", "request-cleanup-close", "observe-cleanup-termination", "finish-cleanup", "settle-cleanup-records", "capture-closed-import", "release-destination", "release-owner", "stage-for-fresh-opening"],
+    actions: ["import-generated-fixture", "inspect", "settle-import-records", "inspect-destination", "request-cleanup-close", "observe-cleanup-termination", "finish-cleanup", "settle-cleanup-records", "capture-closed-import", "release-destination", "release-owner", "stage-for-fresh-opening", "stage-schematic-for-fresh-opening"],
     effect: "fresh-managed-disposable-native-import", nativeImportLiveValidation: "not-recorded", importedFixtureAccepted: false,
     retryAllowed: false, deletionAuthorized: false, designExecutionAuthorized: false,
     limitations: ["Requires the same original ordinary 209 launch, exact empty StartPage, current SDK/UI/manager/main pins and authenticated tracked dispatch.",
@@ -288,7 +289,7 @@ export class ManagedFixtureImportCoordinator {
   }
   public stageSchematicSourceForFreshOpening(operationIdInput: string): ManagedSchematicFixtureOpeningSource {
     if (operationId.parse(operationIdInput) !== this.attemptedOperationId) { throw new Error("Schematic staging requires the original base import operation."); }
-    return stageManagedSchematicFixtureOpeningSource(this.qualifiedSchematicSourceForFreshOpening());
+    return stageManagedSchematicFixtureOpeningSource({ ...this.qualifiedSchematicSourceForFreshOpening(), importingRuntime: this.options.runtime });
   }
   private retainDispatcherStatus(journal: TrackedDispatchOperationJournal): boolean {
     this.current(); const status = this.options.engine.originalTrackedDispatchStatus(journal);
@@ -356,7 +357,7 @@ export class ManagedFixtureImportCoordinator {
   private async run(input: unknown, expectedFingerprint?: Record<string, unknown>): Promise<Record<string, unknown>> {
     const request = managedFixtureImportRequestSchema.parse(input);
     if (request.action === "inspect") { return this.inspect(request.operationId); }
-    if (request.action === "stage-for-fresh-opening") { throw new Error("Staging is a separate local index handoff after original owner release, never a destination cleanup action."); }
+    if (request.action === "stage-for-fresh-opening" || request.action === "stage-schematic-for-fresh-opening") { throw new Error("Staging is a separate local index handoff after original owner release, never a destination cleanup action."); }
     this.current();
     if (request.action === "release-owner") {
       if (request.operationId !== this.attemptedOperationId || this.pendingPublication !== undefined || this.hasRetainedDestination() || this.refusedBeforeDispatch.size > 0 ||

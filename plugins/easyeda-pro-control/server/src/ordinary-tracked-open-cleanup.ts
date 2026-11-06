@@ -53,6 +53,7 @@ interface Slot {
 const profiles = new Map([
   ["easyeda-pro-control.current-schematic-page-opening.v1", "schematic-page-open209"],
   ["managed-fixture-import209-v1", "managed-fixture-import"],
+  ["generated-schematic-open209-v1", "generated-schematic-open"],
 ]);
 function need(value: boolean): asserts value { if (!value) { throw new Error("ORIGINAL_TRACKED_OPEN_CLEANUP_REFUSED"); } }
 function content(journal: Record<string, unknown>): string {
@@ -72,7 +73,7 @@ function engineMethods(engine: Engine): readonly unknown[] {
   return [engine.originalSettledTrackedDispatch, engine.originalSettledFixtureEnvironmentDispatch, engine.assertRecoveryOperationIsolated, engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased];
 }
 
-/** Strict internal original-owner cleanup for two ordinary navigation families.
+/** Strict internal original-owner cleanup for the fixed ordinary navigation families.
  * It never accepts loaded journals, caller proof objects, replacement owners,
  * new application sessions, native force termination or a design-state claim. */
 export class OrdinaryTrackedOpenCleanup {
