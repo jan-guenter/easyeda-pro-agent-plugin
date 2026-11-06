@@ -8,6 +8,7 @@
  * application-closure policy permits release. No TCP endpoint is supported. */
 /* oxlint-disable max-classes-per-file -- Three fixed-purpose facades share a private byte-transport core without exposing a caller-selectable purpose or budget. */
 /* oxlint-disable import/max-dependencies -- Fixed transport composes independent model/common/worker/actor grammars without merging their source or authority boundaries. */
+import { CURRENT_SCHEMATIC_DISPLAY_DISCOVERY_METHODS, CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE } from "./current-schematic-display-write-native-profile.ts";
 import { currentPcbViaClockWire } from "./current-pcb-via-clock-wire.ts";
 import type { CurrentPcbViaClockCommand } from "./current-pcb-via-clock-protocol.ts";
 import type { CurrentPcbViaClockRealm } from "./current-pcb-via-clock-origin.ts";
@@ -183,6 +184,7 @@ class CurrentPcbFixedPipeCore {
   readonly #combinedPurpose: boolean;
   readonly #heldCacheDiagnosticPurpose: boolean;
   readonly #viaPurpose: boolean;
+  readonly #schematicDisplayPurpose: boolean;
   readonly #viaSpatial = { before: { binding: null as CurrentPcbSpatialBinding | null, stage: 0, read: false, released: false }, after: { binding: null as CurrentPcbSpatialBinding | null, stage: 0, read: false, released: false } };
   #viaProperties = 0;
   #viaWorkerEvent: ((event: DiagnosticEvent) => void) | null = null;
@@ -240,7 +242,7 @@ class CurrentPcbFixedPipeCore {
   #workerDiscoverySettled = false;
   #selectedWorkerSession: string | null = null;
 
-  public constructor(input: Readable, output: Writable, purpose: "diagnostic" | "string-precreate" | "worker-startup" | "combined-discovery" | "forward-discovery" | "forward-saved-discovery" | "held-cache-diagnostic" | "pcb-spatial209" | "pcb-via-write209",
+  public constructor(input: Readable, output: Writable, purpose: "diagnostic" | "string-precreate" | "worker-startup" | "combined-discovery" | "forward-discovery" | "forward-saved-discovery" | "held-cache-diagnostic" | "pcb-spatial209" | "pcb-via-write209" | "schematic-display-write209",
     observeEventBytes: ((bytes: number) => void) | null = null) {
     if ((purpose === "forward-discovery" || purpose === "forward-saved-discovery" || purpose === "held-cache-diagnostic") !== (observeEventBytes !== null) || observeEventBytes !== null && typeof observeEventBytes !== "function") { throw new Error("PCB_DIAGNOSTIC_FORWARD_ACCOUNTING"); }
     this.#observeEventBytes = observeEventBytes;
@@ -248,7 +250,7 @@ class CurrentPcbFixedPipeCore {
     this.#startupPurpose = purpose === "worker-startup" || purpose === "combined-discovery" || purpose === "forward-discovery" || purpose === "forward-saved-discovery";
     this.#combinedPurpose = purpose === "combined-discovery" || purpose === "forward-discovery";
     this.#heldCacheDiagnosticPurpose = purpose === "held-cache-diagnostic";
-    this.#spatialPurpose = purpose === "pcb-spatial209"; this.#viaPurpose = purpose === "pcb-via-write209";
+    this.#spatialPurpose = purpose === "pcb-spatial209"; this.#viaPurpose = purpose === "pcb-via-write209"; this.#schematicDisplayPurpose = purpose === "schematic-display-write209";
   }
 
   /** One clean transfer of the original counter and receive budgets. Listeners
@@ -751,6 +753,7 @@ class CurrentPcbFixedPipeCore {
         command.method === "Target.setAutoAttach" || command.method === "Runtime.evaluate" || command.method === "Runtime.callFunctionOn")) {
       throw new Error("PCB_DIAGNOSTIC_PIPE_STARTUP_DISCOVERY_ONLY");
     }
+    if (this.#schematicDisplayPurpose && !CURRENT_SCHEMATIC_DISPLAY_DISCOVERY_METHODS.includes(command.method)) { throw new Error("SCHEMATIC_DISPLAY_DISCOVERY_ONLY"); }
     if (this.#failure !== null) { throw failureError(this.#failure); }
     const viaRetained = this.#viaPurpose && ["via-sdk-save", "project-open-project", "pcb-open-document"].includes(phase);
     if (this.#viaRetainedPending !== null && (viaRetained || !(phase === "via-clock" || phase === "via-worker" || phase === "via-parent-running" || phase === "discovery" && command.method === "Debugger.getScriptSource"))) { throw new Error("PCB_VIA_RETAINED_PENDING_SCOPE"); }
@@ -759,6 +762,7 @@ class CurrentPcbFixedPipeCore {
     if (this.#heldCacheDiagnosticPurpose) { limit = HELD_DIAGNOSTIC.requestLimit; }
     if (this.#spatialPurpose) { limit = CURRENT_PCB_SPATIAL_PROFILE.requestLimit; }
     if (this.#viaPurpose) { limit = CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.renderer.total; }
+    if (this.#schematicDisplayPurpose) { limit = CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE.renderer.total; }
     const heldCleanup = heldCache && command.method === "Runtime.releaseObjectGroup";
     if (this.#nextId > limit || this.#heldCacheDiagnosticPurpose && (heldCleanup ? this.#heldCacheCleanup >= HELD_DIAGNOSTIC.cleanupRequestLimit :
       this.#heldCacheNormal >= HELD_DIAGNOSTIC.normalRequestLimit)) {
@@ -928,6 +932,11 @@ export class CurrentPcbSpatialPipe extends CurrentPcbFixedPipeCore {
   public assertSpatialCapacity(): void { this.assertSpatialWorkflowCapacity(); }
   public bindSpatial(binding: CurrentPcbSpatialBinding): void { this.bindSpatialCommand(binding); }
   public observeSpatial(command: CurrentPcbSpatialCaptureCommand): Promise<Reply> { return this.observeSpatialCommand(command); }
+}
+/** Distinct schematic birth discovery. Writer/worker grammars are admitted
+ * separately after their original source and stage plans are implemented. */
+export class CurrentSchematicDisplayWritePipe extends CurrentPcbFixedPipeCore {
+  public constructor(input: Readable, output: Writable) { super(input, output, "schematic-display-write209"); }
 }
 /** Original Via birth only. Each whole-scene capture has its own immutable
  * ledger; no old spatial pipe is reset or transferred. */

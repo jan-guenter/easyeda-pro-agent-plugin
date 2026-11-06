@@ -64,7 +64,7 @@ export function applyCurrentPcbViaWriteNativeFragment(input: string): string {
   // Upgrade only earlier unpublished Via reservations. Released103/384 stay exact.
   const currentInput = input.replace(/return pcbViaWrite209\?(?:700|766):spatial209\?384:/u, `return pcbViaWrite209?${String(PROFILE.renderer.total)}:spatial209?384:`).replace(/\$requestLimit=if \(\$PcbViaWrite209\) \{(?:700|766)\}/u, `$requestLimit=if ($PcbViaWrite209) {${String(PROFILE.renderer.total)}}`);
   let source = one(currentInput, "[switch]$StringPrecreate,", "[switch]$PcbViaWrite209,[switch]$StringPrecreate,");
-  const switches = [...source.slice(0, source.indexOf("\n")).matchAll(/\[switch\]\$(\w+)/gu)].map(match => match[1]).filter(name => name !== undefined && name !== "CompileOnly" && name !== "PcbViaWrite209");
+  const switches = [...source.slice(0, source.indexOf("\n")).matchAll(/\[switch\]\$(\w+)/gu)].map(match => match[1]).filter(name => name !== undefined && name !== "CompileOnly" && name !== "PcbViaWrite209" && name !== "SchematicDisplayWrite209");
   const conflict = `if ($PcbViaWrite209 -and (${switches.map(name => `$${name}`).join(" -or ")})) {throw 'pcb-diagnostic-conflicting-via-purpose'}\n`;
   source = one(source, "$ErrorActionPreference = 'Stop'\n", `$ErrorActionPreference = 'Stop'\n${conflict}`);
   source = one(source, "if ($GeneratedFixture209 -and ($GeneratedFixtureSpatial209 -or ", "if ($GeneratedFixture209 -and ($GeneratedFixtureSpatial209 -or $PcbViaWrite209 -or ");

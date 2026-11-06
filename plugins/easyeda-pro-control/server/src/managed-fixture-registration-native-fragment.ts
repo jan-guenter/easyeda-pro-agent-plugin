@@ -55,7 +55,7 @@ export function applyManagedFixtureRegistrationNativeFragment(input: string): st
   let source = input.includes(oldParameters) && !input.includes(parameters) ? one(input, oldParameters, parameters) : input;
   source = one(source, "param([switch]$CompileOnly,", parameters);
   const switches = [...source.slice(0, source.indexOf("\n")).matchAll(/\[switch\]\$(\w+)/gu)]
-    .map(match => match[1]).filter(name => name !== undefined && name !== "GeneratedFixture209" && name !== "CompileOnly");
+    .map(match => match[1]).filter(name => name !== undefined && name !== "GeneratedFixture209" && name !== "CompileOnly" && name !== "SchematicDisplayWrite209");
   const conflict = `if ($GeneratedFixture209 -and (${switches.map(name => `$${name}`).join(" -or ")})) {throw 'pcb-diagnostic-conflicting-generated-fixture-purpose'}\n`;
   const previousConflict = source.split("\n").filter(line => line.startsWith("if ($GeneratedFixture209 -and (") && line.endsWith("pcb-diagnostic-conflicting-generated-fixture-purpose'}"));
   if (previousConflict.length > 1) { throw new Error("GENERATED_FIXTURE_NATIVE_CONFLICT_DUPLICATE"); }
