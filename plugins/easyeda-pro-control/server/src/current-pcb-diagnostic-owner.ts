@@ -5,6 +5,9 @@
  * Browser discovery grants no frame, worker, script or CAD execution authority. */
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Four fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import { CURRENT_PROJECT_STRUCTURE_TRANSPORT_SITES, qualifyCurrentProjectStructureTransportSource } from "./current-project-structure-transport-source.ts";
+import { CURRENT_PROJECT_STRUCTURE_TRANSPORT_NATIVE_CAPTURE_LENGTH, validateCurrentProjectStructureTransportCommand } from "./current-project-structure-transport-protocol.ts";
+import type { CurrentPcbViaStructureTransportOrigin, CurrentProjectStructureBodyReservation, CurrentProjectStructureBodyReservationValue, CurrentProjectStructureMainPublication, CurrentProjectStructureMainPublicationValue, CurrentProjectStructureTransportBindings, CurrentProjectStructureTransportOrigin, CurrentSchematicDisplayStructureTransportOrigin } from "./current-project-structure-transport-origin.ts";
 import type { CurrentSchematicDisplayAccessorBindings, CurrentSchematicDisplayAccessorOrigin } from "./current-schematic-display-accessor-origin.ts";
 import { validateCurrentSchematicDisplayAccessorCommand } from "./current-schematic-display-accessor-protocol.ts";
 import { currentGeneratedProjectHistorySqlBaseline } from "./current-generated-project-history-sql-baseline.ts";
@@ -547,6 +550,24 @@ export function requireOriginalCurrentSchematicDisplaySaveWorkerOrigin(origin: C
   const original = schematicDisplaySaveWorkers.get(origin); if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue) { throw error("SCHEMATIC_DISPLAY_ORIGINAL_SAVE_WORKER"); }
   requireSchematicArguments(owner, argumentsValue); original.assertOriginal(); return original.bindings;
 }
+export type CurrentProjectStructureTransportSetup = (origin: CurrentProjectStructureTransportOrigin) => Promise<void>;
+const projectStructureTransportOrigins = new WeakMap<CurrentProjectStructureTransportOrigin, Readonly<{ owner: object; operation: object; bindings: CurrentProjectStructureTransportBindings; assertOriginal: () => void }>>();
+// Only the genuine body/publication consumers populate these original maps.
+const projectStructureTransportBodyGrants = new WeakMap<CurrentProjectStructureTransportOrigin, Readonly<{ reservation: CurrentProjectStructureBodyReservation; value: CurrentProjectStructureBodyReservationValue; assertCurrent: () => void }>>();
+const projectStructureTransportPublicationGrants = new WeakMap<CurrentProjectStructureTransportOrigin, Readonly<{ publication: CurrentProjectStructureMainPublication; value: CurrentProjectStructureMainPublicationValue; assertCurrent: () => void }>>();
+const projectSaveStructureBodyGrants = new WeakMap<CurrentProjectSaveStructureOrigin, Readonly<{ reservation: CurrentProjectStructureBodyReservation; value: CurrentProjectStructureBodyReservationValue; transportOrigin: CurrentProjectStructureTransportOrigin; assertCurrent: () => void }>>();
+export function requireOriginalCurrentProjectStructureTransportOrigin(origin: CurrentProjectStructureTransportOrigin, owner: object, operation: object): CurrentProjectStructureTransportBindings {
+  const original = projectStructureTransportOrigins.get(origin); if (original === undefined || original.owner !== owner || original.operation !== operation) { throw error("PROJECT_STRUCTURE_TRANSPORT_ORIGINAL_ORIGIN"); }
+  original.assertOriginal(); return original.bindings;
+}
+export function requireOriginalCurrentProjectStructureTransportBodyReservation(token: CurrentProjectStructureBodyReservation, origin: CurrentProjectStructureTransportOrigin, owner: object, operation: object): CurrentProjectStructureBodyReservationValue {
+  requireOriginalCurrentProjectStructureTransportOrigin(origin, owner, operation); const original = projectStructureTransportBodyGrants.get(origin);
+  if (original === undefined || original.reservation !== token) { throw error("PROJECT_STRUCTURE_TRANSPORT_BODY_RESERVATION"); } original.assertCurrent(); return original.value;
+}
+export function requireOriginalCurrentProjectStructureTransportMainPublication(token: CurrentProjectStructureMainPublication, origin: CurrentProjectStructureTransportOrigin, owner: object, operation: object): CurrentProjectStructureMainPublicationValue {
+  requireOriginalCurrentProjectStructureTransportOrigin(origin, owner, operation); const original = projectStructureTransportPublicationGrants.get(origin);
+  if (original === undefined || original.publication !== token) { throw error("PROJECT_STRUCTURE_TRANSPORT_MAIN_PUBLICATION"); } original.assertCurrent(); return original.value;
+}
 export type CurrentProjectSaveStructureSetup = (origin: CurrentProjectSaveStructureOrigin) => Promise<void>;
 // Only the genuine same-owner history-SQL completion consumer populates this
 // Registry after every original native callback and service await completed.
@@ -554,6 +575,22 @@ const projectSaveStructureHistoryGrants = new WeakMap<CurrentProjectSaveStructur
 const projectSaveStructureOrigins = new WeakMap<CurrentProjectSaveStructureOrigin, Readonly<{ owner: object; operation: object; bindings: CurrentProjectSaveStructureBindings; assertOriginal: () => void }>>();
 interface OriginalProjectHistorySqlCompletion { readonly owner: object; readonly operation: object; readonly origin: CurrentProjectSaveStructureOrigin; readonly value: CurrentProjectHistorySqlCompletionValue; readonly assertCurrent: () => void; consumed: boolean }
 const projectHistorySqlCompletions = new WeakMap<CurrentProjectHistorySqlCompletion, OriginalProjectHistorySqlCompletion>();
+function originalProjectStructureContinuation(origin: CurrentProjectSaveStructureOrigin, role: string, saving: boolean): Readonly<{ assertCurrent: () => void }> | null | undefined {
+  if (role === "bootstrap" || role.startsWith("producer") || role.startsWith("startup") || !saving && (role === "initialFinally" || role === "queuedFinally")) { return null; }
+  const history = projectSaveStructureHistoryGrants.get(origin); if (history !== undefined) { return history; }
+  const body = projectSaveStructureBodyGrants.get(origin); if (role === "packet" || body === undefined) { return body; }
+  return projectStructureTransportPublicationGrants.get(body.transportOrigin);
+}
+export function requireOriginalCurrentProjectStructureBodyReservationForSharedOrigin(token: CurrentProjectStructureBodyReservation, origin: CurrentProjectSaveStructureOrigin, owner: object, operation: object): CurrentProjectStructureBodyReservationValue {
+  const grant = projectSaveStructureBodyGrants.get(origin), source = projectSaveStructureOrigins.get(origin);
+  if (source === undefined || source.owner !== owner || source.operation !== operation || grant === undefined || grant.reservation !== token) { throw error("PROJECT_STRUCTURE_ORIGINAL_SHARED_BODY"); }
+  source.assertOriginal(); grant.assertCurrent(); return grant.value;
+}
+export function requireOriginalCurrentProjectStructurePublicationForSharedOrigin(token: CurrentProjectStructureMainPublication, origin: CurrentProjectSaveStructureOrigin, owner: object, operation: object): CurrentProjectStructureMainPublicationValue {
+  const body = projectSaveStructureBodyGrants.get(origin), grant = body === undefined ? undefined : projectStructureTransportPublicationGrants.get(body.transportOrigin), source = projectSaveStructureOrigins.get(origin);
+  if (source === undefined || source.owner !== owner || source.operation !== operation || body === undefined || grant === undefined || grant.publication !== token) { throw error("PROJECT_STRUCTURE_ORIGINAL_SHARED_PUBLICATION"); }
+  source.assertOriginal(); body.assertCurrent(); grant.assertCurrent(); return grant.value;
+}
 /** Consumed synchronously before the original worker resume is even awaited.
  * This grants only that origin's structure continuation, never an SDK Save. */
 export function consumeOriginalCurrentProjectHistorySqlCompletion(token: CurrentProjectHistorySqlCompletion, owner: object, operation: object): CurrentProjectHistorySqlCompletionValue {
@@ -937,6 +974,14 @@ class CurrentPcbRetainedOwnerCore {
   #pcbSourceProfile: DiagnosticScriptProfile | null = null;
   #schematicWorkerArguments: GeneratedSchematicDisplayNativeArguments | null = null;
   #schematicWorkerSetup: CurrentSchematicDisplaySaveWorkerSetup | null = null;
+  #schematicTransportSetup: CurrentProjectStructureTransportSetup | null = null;
+  #schematicTransportOperation: GeneratedSchematicDisplayNativeArguments | null = null;
+  #schematicTransportOrigin: CurrentSchematicDisplayStructureTransportOrigin | null = null;
+  #schematicTransportCapture: string | null = null;
+  #schematicTransportCaptureAttempted = false;
+  #schematicTransportSendFrame: string | null = null;
+  #schematicTransportSendPacket: string | null = null;
+  #schematicTransportReturnedFrame: string | null = null;
   #schematicStructureSetup: CurrentProjectSaveStructureSetup | null = null;
   #schematicStructureOrigin: CurrentProjectSaveStructureOrigin | null = null;
   #schematicWorkerController: CurrentSchematicDisplayWorkerController | null = null;
@@ -974,6 +1019,14 @@ class CurrentPcbRetainedOwnerCore {
   #viaCleanupOnly = false;
   #viaWorkerPlan: CurrentPcbViaWritePlan | null = null;
   #viaWorkerSetup: CurrentPcbViaSaveWorkerSetup | null = null;
+  #viaTransportSetup: CurrentProjectStructureTransportSetup | null = null;
+  #viaTransportOperation: CurrentPcbViaWritePlan | null = null;
+  #viaTransportOrigin: CurrentPcbViaStructureTransportOrigin | null = null;
+  #viaTransportCapture: string | null = null;
+  #viaTransportCaptureAttempted = false;
+  #viaTransportSendFrame: string | null = null;
+  #viaTransportSendPacket: string | null = null;
+  #viaTransportReturnedFrame: string | null = null;
   #viaStructureSetup: CurrentProjectSaveStructureSetup | null = null;
   #viaStructureOrigin: CurrentProjectSaveStructureOrigin | null = null;
   #viaWorkerController: CurrentPcbViaWorkerController | null = null;
@@ -1814,6 +1867,16 @@ class CurrentPcbRetainedOwnerCore {
    * requires the fresh direct worker and all original imported source pauses. */
   /** Trusted arm callback only. It installs the fixed structure sites while
    * the same original project source is held; construction waits its resume. */
+  public armSchematicDisplayStructureTransportWorker(argumentsValue: GeneratedSchematicDisplayNativeArguments, setup: CurrentProjectStructureTransportSetup): void {
+    requireSchematicArguments(this, argumentsValue);
+    if (this.#busy || this.#schematicTransportSetup !== null || this.#schematicStructureSetup === null || this.#schematicWorkerController !== null || this.#projectOpeningConsumed || typeof setup !== "function" || types.isProxy(setup)) { throw error("PROJECT_STRUCTURE_TRANSPORT_ARM_UNAVAILABLE"); }
+    this.#schematicTransportOperation = argumentsValue; this.#schematicTransportSetup = setup;
+  }
+  public requireSchematicDisplayStructureTransportReady(argumentsValue: GeneratedSchematicDisplayNativeArguments): CurrentSchematicDisplayStructureTransportOrigin {
+    requireSchematicArguments(this, argumentsValue); const origin = this.#schematicTransportOrigin, worker = this.#schematicWorkerController;
+    if (origin === null || worker === null || this.#schematicTransportOperation !== argumentsValue || this.#schematicTransportCapture === null || !worker.status().ready) { throw error("PROJECT_STRUCTURE_TRANSPORT_READY_REQUIRED"); }
+    const original = projectStructureTransportOrigins.get(origin); if (original === undefined || original.owner !== this || original.operation !== argumentsValue) { throw error("PROJECT_STRUCTURE_TRANSPORT_ORIGINAL_READY"); } original.assertOriginal(); return origin;
+  }
   public armSchematicDisplaySaveStructureWorker(argumentsValue: GeneratedSchematicDisplayNativeArguments, setup: CurrentProjectSaveStructureSetup): void {
     requireSchematicArguments(this, argumentsValue);
     if (this.#busy || this.#schematicStructureSetup !== null || this.#projectOpeningConsumed || this.#schematicWorkerController !== null || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true || typeof setup !== "function" || types.isProxy(setup)) { throw error("PROJECT_SAVE_STRUCTURE_ARM_UNAVAILABLE"); }
@@ -1903,9 +1966,9 @@ class CurrentPcbRetainedOwnerCore {
             request: async (input: Parameters<CurrentProjectSaveStructureBindings["request"]>[0], cleanup: boolean, retain?: (reply: unknown) => void): Promise<unknown> => {
               const command = validateCurrentProjectSaveStructureCommand(input); original(); assertStructureOriginal();
               if (cleanup !== (command.phase === "project-save-structure-remove" || command.phase === "project-save-structure-release")) { throw error("PROJECT_SAVE_STRUCTURE_REQUEST_CLASS"); }
-              const historyGrant = command.phase === "project-save-structure-resume" && command.role !== "bootstrap" && !command.role.startsWith("producer") && !command.role.startsWith("startup") && (this.#schematicStages.has("save") || command.role !== "initialFinally" && command.role !== "queuedFinally") ? projectSaveStructureHistoryGrants.get(structureOrigin) : null;
+              const historyGrant = command.phase === "project-save-structure-resume" ? originalProjectStructureContinuation(structureOrigin, command.role, this.#schematicStages.has("save")) : null;
               if (historyGrant === undefined) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_REQUIRED"); }
-              const assertHistory = (): void => { if (historyGrant !== null) { if (projectSaveStructureHistoryGrants.get(structureOrigin) !== historyGrant) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_CHANGED"); } historyGrant.assertCurrent(); } }; assertHistory();
+              const assertHistory = (): void => { if (historyGrant !== null) { if (command.phase !== "project-save-structure-resume" || originalProjectStructureContinuation(structureOrigin, command.role, this.#schematicStages.has("save")) !== historyGrant) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_CHANGED"); } historyGrant.assertCurrent(); } }; assertHistory();
               if (retain !== undefined && (typeof retain !== "function" || types.isProxy(retain))) { throw error("PROJECT_SAVE_STRUCTURE_RETAIN_CALLBACK"); }
               const reply = await this.#serializeSchematicDisplayObserver(() => this.#transfer(async () => { original(); assertStructureOriginal();
                 if (command.phase === "project-save-structure-resume") { assertHistory(); selected.reserveStructureResume(source, command.role); }
@@ -1929,6 +1992,48 @@ class CurrentPcbRetainedOwnerCore {
           projectSaveStructureOrigins.set(structureOrigin, Object.freeze({ owner, operation: argumentsValue, bindings: structureBindings, assertOriginal: assertStructureOriginal }));
           this.#schematicStructureOrigin = structureOrigin; await Reflect.apply(structureSetup, undefined, [structureOrigin]); original(); assertStructureOriginal(); selected.requireStructureArmed(source);
         }
+        const transportSetup = this.#schematicTransportSetup;
+        if (transportSetup !== null) {
+          if (this.#schematicTransportOrigin !== null || this.#schematicTransportOperation !== argumentsValue || this.#schematicStructureOrigin === null) { throw error("PROJECT_STRUCTURE_TRANSPORT_SOURCE_CONSUMED"); }
+          qualifyCurrentProjectStructureTransportSource(source.source); selected.requireStructureArmed(source); pipe.bindSchematicDisplayStructureTransport(source.uniqueContextId);
+          const bound = await this.#request({ action: "schematic-display-structure-transport-bind", workerContext: source.uniqueContextId });
+          if (!exact(bound, ["bound"]) || bound["bound"] !== true) { throw error("PROJECT_STRUCTURE_TRANSPORT_NATIVE_BINDING"); } original(); selected.requireOriginal(source, child);
+          const transportPrepared = requireSchematicArguments(this, argumentsValue); const transportOrigin: CurrentSchematicDisplayStructureTransportOrigin = Object.freeze({ profile: "private.current-schematic-display-structure-transport-origin.v1" });
+          const assertTransportOriginal = (): void => { requireSchematicArguments(this, argumentsValue); selected.requireOriginal(source, child);
+            if (this.#schematicTransportOrigin !== transportOrigin || this.#schematicTransportSetup !== transportSetup || this.#schematicTransportOperation !== argumentsValue || this.#schematicWorkerController !== selected || this.#schematicWorkerOrigin !== origin) { throw error("PROJECT_STRUCTURE_TRANSPORT_CUSTODY_CHANGED"); } };
+          const transportBindings: CurrentProjectStructureTransportBindings = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId, uniqueContextId: source.uniqueContextId, prepared: transportPrepared,
+            request: async (input: Parameters<CurrentProjectStructureTransportBindings["request"]>[0], cleanup: boolean): Promise<unknown> => {
+              const command = validateCurrentProjectStructureTransportCommand(input); original(); assertTransportOriginal();
+              if (cleanup !== (command.phase === "project-structure-transport-remove" || command.phase === "project-structure-transport-release")) { throw error("PROJECT_STRUCTURE_TRANSPORT_REQUEST_CLASS"); }
+              if (command.phase === "project-structure-transport-capture") { if (this.#schematicTransportCaptureAttempted || command.params.uniqueContextId !== source.uniqueContextId) { throw error("PROJECT_STRUCTURE_TRANSPORT_CAPTURE_ONCE"); } this.#schematicTransportCaptureAttempted = true; }
+              if (command.phase === "project-structure-transport-arm" && command.params.location.scriptId !== source.scriptId) { throw error("PROJECT_STRUCTURE_TRANSPORT_SOURCE_SCRIPT"); }
+              if (command.phase === "project-structure-transport-send" && (this.#schematicTransportCapture === null || command.params.arguments[0].objectId !== this.#schematicTransportCapture || command.params.objectId !== this.#schematicTransportSendFrame || this.#schematicTransportSendPacket !== null)) { throw error("PROJECT_STRUCTURE_TRANSPORT_ORIGINAL_SEND"); }
+              if (command.phase === "project-structure-transport-value" && command.params.objectId !== this.#schematicTransportSendPacket || command.phase === "project-structure-transport-returned" && (command.params.arguments[0].objectId !== this.#schematicTransportSendPacket || command.params.objectId !== this.#schematicTransportReturnedFrame)) { throw error("PROJECT_STRUCTURE_TRANSPORT_ORIGINAL_PACKET"); }
+              let grant: Readonly<{ assertCurrent: () => void }> | null | undefined = null;
+              if (command.phase === "project-structure-transport-resume") { grant = command.role === "send" ? projectStructureTransportBodyGrants.get(transportOrigin) : projectStructureTransportPublicationGrants.get(transportOrigin); }
+              if (grant === undefined) { throw error("PROJECT_STRUCTURE_TRANSPORT_CONTINUATION_GRANT_REQUIRED"); }
+              const assertGrant = (): void => { if (grant !== null) { const activeGrant = command.phase === "project-structure-transport-resume" && command.role === "send" ? projectStructureTransportBodyGrants.get(transportOrigin) : projectStructureTransportPublicationGrants.get(transportOrigin); if (activeGrant !== grant) { throw error("PROJECT_STRUCTURE_TRANSPORT_GRANT_CHANGED"); } grant.assertCurrent(); } }; assertGrant();
+              const reply = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { original(); assertTransportOriginal(); assertGrant();
+                if (command.phase === "project-structure-transport-resume") { selected.reserveStructureTransportResume(source, command.role); }
+                return pipe.observeSchematicDisplayStructureTransport(command);
+              }));
+              if (command.phase === "project-structure-transport-capture") { this.#schematicTransportCapture = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, CURRENT_PROJECT_STRUCTURE_TRANSPORT_NATIVE_CAPTURE_LENGTH); }
+              else if (command.phase === "project-structure-transport-frame") {
+                const handle = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, CURRENT_PROJECT_STRUCTURE_TRANSPORT_SITES[command.role].length);
+                if (command.role === "send") { this.#schematicTransportSendFrame = handle; } else if (command.role === "returned") { this.#schematicTransportReturnedFrame = handle; }
+              } else if (command.phase === "project-structure-transport-send") { this.#schematicTransportSendPacket = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, 3); }
+              else if (command.phase === "project-structure-transport-arm") {
+                const site = CURRENT_PROJECT_STRUCTURE_TRANSPORT_SITES[command.role];
+                if (!record(reply) || !exact(reply, ["breakpointId", "actualLocation"]) || typeof reply["breakpointId"] !== "string" || !record(reply["actualLocation"]) || !exact(reply["actualLocation"], ["scriptId", "lineNumber", "columnNumber"]) || reply["actualLocation"]["scriptId"] !== source.scriptId || reply["actualLocation"]["lineNumber"] !== site.lineNumber || reply["actualLocation"]["columnNumber"] !== site.columnNumber) { throw error("PROJECT_STRUCTURE_TRANSPORT_ARM_REPLY"); }
+                selected.bindStructureTransportBreakpoint(source, command.role, reply["breakpointId"]);
+              }
+              original(); assertTransportOriginal(); assertGrant(); return reply;
+            }, nextEvent: () => selected.nextStructureTransportEvent(), assertCurrent: async (): Promise<void> => { original(); assertTransportOriginal(); await this.#verify(); original(); assertTransportOriginal(); },
+            assertOperationPending: (): void => { original(); assertTransportOriginal(); if (!(this.#schematicStages.has("save"))) { throw error("PROJECT_STRUCTURE_TRANSPORT_ORIGINAL_SAVE_REQUIRED"); } },
+            assertOriginalGenerationExited: (): Promise<void> => { assertTransportOriginal(); if (!this.#terminationObserved || this.#terminationObservation?.terminated !== true) { return Promise.reject(error("PROJECT_STRUCTURE_TRANSPORT_ORIGINAL_EXIT_REQUIRED")); } return Promise.resolve(); }, fail: (): void => { selected.fail(); } });
+          projectStructureTransportOrigins.set(transportOrigin, Object.freeze({ owner, operation: argumentsValue, bindings: transportBindings, assertOriginal: assertTransportOriginal })); this.#schematicTransportOrigin = transportOrigin;
+          await Reflect.apply(transportSetup, undefined, [transportOrigin]); original(); assertTransportOriginal(); selected.requireStructureTransportArmed(source); if (this.#schematicTransportCapture === null) { throw error("PROJECT_STRUCTURE_TRANSPORT_CAPTURE_REQUIRED"); }
+        }
       }, releaseParentWait: async () => { original(); const reply = await this.#transfer(() => pipe.configureSchematicDisplayWorkerRunning());
         if (!exact(reply, [])) { throw error("SCHEMATIC_DISPLAY_WORKER_PARENT_RUNNING_REPLY"); } original(); },
       fail: (): void => { this.#schematicFailed = true; } }));
@@ -1941,6 +2046,16 @@ class CurrentPcbRetainedOwnerCore {
   }
   /** Trusted arm callback only. It installs the fixed structure sites while
    * the same original project source is held; construction waits its resume. */
+  public armViaStructureTransportWorker(plan: CurrentPcbViaWritePlan, setup: CurrentProjectStructureTransportSetup): void {
+    requireViaPlan(this, plan);
+    if (this.#busy || this.#viaTransportSetup !== null || this.#viaStructureSetup === null || this.#viaWorkerController !== null || this.#projectOpeningConsumed || typeof setup !== "function" || types.isProxy(setup)) { throw error("PROJECT_STRUCTURE_TRANSPORT_ARM_UNAVAILABLE"); }
+    this.#viaTransportOperation = plan; this.#viaTransportSetup = setup;
+  }
+  public requireViaStructureTransportReady(plan: CurrentPcbViaWritePlan): CurrentPcbViaStructureTransportOrigin {
+    requireViaPlan(this, plan); const origin = this.#viaTransportOrigin, worker = this.#viaWorkerController;
+    if (origin === null || worker === null || this.#viaTransportOperation !== plan || this.#viaTransportCapture === null || !worker.status().ready) { throw error("PROJECT_STRUCTURE_TRANSPORT_READY_REQUIRED"); }
+    const original = projectStructureTransportOrigins.get(origin); if (original === undefined || original.owner !== this || original.operation !== plan) { throw error("PROJECT_STRUCTURE_TRANSPORT_ORIGINAL_READY"); } original.assertOriginal(); return origin;
+  }
   public armViaSaveStructureWorker(plan: CurrentPcbViaWritePlan, setup: CurrentProjectSaveStructureSetup): void {
     requireViaPlan(this, plan);
     if (this.#busy || this.#viaStructureSetup !== null || this.#projectOpeningConsumed || this.#viaWorkerController !== null || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true || typeof setup !== "function" || types.isProxy(setup)) { throw error("PROJECT_SAVE_STRUCTURE_ARM_UNAVAILABLE"); }
@@ -2028,9 +2143,9 @@ class CurrentPcbRetainedOwnerCore {
             request: async (input: Parameters<CurrentProjectSaveStructureBindings["request"]>[0], cleanup: boolean, retain?: (reply: unknown) => void): Promise<unknown> => {
               const command = validateCurrentProjectSaveStructureCommand(input); original(); assertStructureOriginal();
               if (cleanup !== (command.phase === "project-save-structure-remove" || command.phase === "project-save-structure-release")) { throw error("PROJECT_SAVE_STRUCTURE_REQUEST_CLASS"); }
-              const historyGrant = command.phase === "project-save-structure-resume" && command.role !== "bootstrap" && !command.role.startsWith("producer") && !command.role.startsWith("startup") && (this.#viaSdkPhases.has("save") || command.role !== "initialFinally" && command.role !== "queuedFinally") ? projectSaveStructureHistoryGrants.get(structureOrigin) : null;
+              const historyGrant = command.phase === "project-save-structure-resume" ? originalProjectStructureContinuation(structureOrigin, command.role, this.#viaSdkPhases.has("save")) : null;
               if (historyGrant === undefined) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_REQUIRED"); }
-              const assertHistory = (): void => { if (historyGrant !== null) { if (projectSaveStructureHistoryGrants.get(structureOrigin) !== historyGrant) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_CHANGED"); } historyGrant.assertCurrent(); } }; assertHistory();
+              const assertHistory = (): void => { if (historyGrant !== null) { if (command.phase !== "project-save-structure-resume" || originalProjectStructureContinuation(structureOrigin, command.role, this.#viaSdkPhases.has("save")) !== historyGrant) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_CHANGED"); } historyGrant.assertCurrent(); } }; assertHistory();
               if (retain !== undefined && (typeof retain !== "function" || types.isProxy(retain))) { throw error("PROJECT_SAVE_STRUCTURE_RETAIN_CALLBACK"); }
               const reply = await this.#serializeViaObserver(() => this.#transfer(async () => { original(); assertStructureOriginal();
                 if (command.phase === "project-save-structure-resume") { assertHistory(); selected.reserveStructureResume(source, command.role); }
@@ -2053,6 +2168,48 @@ class CurrentPcbRetainedOwnerCore {
             fail: (): void => { selected.fail(); } });
           projectSaveStructureOrigins.set(structureOrigin, Object.freeze({ owner, operation: plan, bindings: structureBindings, assertOriginal: assertStructureOriginal }));
           this.#viaStructureOrigin = structureOrigin; await Reflect.apply(structureSetup, undefined, [structureOrigin]); original(); assertStructureOriginal(); selected.requireStructureArmed(source);
+        }
+        const transportSetup = this.#viaTransportSetup;
+        if (transportSetup !== null) {
+          if (this.#viaTransportOrigin !== null || this.#viaTransportOperation !== plan || this.#viaStructureOrigin === null) { throw error("PROJECT_STRUCTURE_TRANSPORT_SOURCE_CONSUMED"); }
+          qualifyCurrentProjectStructureTransportSource(source.source); selected.requireStructureArmed(source); pipe.bindViaStructureTransport(source.uniqueContextId);
+          const bound = await this.#request({ action: "pcb-via-structure-transport-bind", workerContext: source.uniqueContextId });
+          if (!exact(bound, ["bound"]) || bound["bound"] !== true) { throw error("PROJECT_STRUCTURE_TRANSPORT_NATIVE_BINDING"); } original(); selected.requireOriginal(source, child);
+          const transportPrepared = requireOriginalCurrentPcbViaWritePlan(plan).prepared; const transportOrigin: CurrentPcbViaStructureTransportOrigin = Object.freeze({ profile: "private.current-pcb-via-structure-transport-origin.v1" });
+          const assertTransportOriginal = (): void => { requireViaPlan(this, plan); selected.requireOriginal(source, child);
+            if (this.#viaTransportOrigin !== transportOrigin || this.#viaTransportSetup !== transportSetup || this.#viaTransportOperation !== plan || this.#viaWorkerController !== selected || this.#viaWorkerOrigin !== origin) { throw error("PROJECT_STRUCTURE_TRANSPORT_CUSTODY_CHANGED"); } };
+          const transportBindings: CurrentProjectStructureTransportBindings = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId, uniqueContextId: source.uniqueContextId, prepared: transportPrepared,
+            request: async (input: Parameters<CurrentProjectStructureTransportBindings["request"]>[0], cleanup: boolean): Promise<unknown> => {
+              const command = validateCurrentProjectStructureTransportCommand(input); original(); assertTransportOriginal();
+              if (cleanup !== (command.phase === "project-structure-transport-remove" || command.phase === "project-structure-transport-release")) { throw error("PROJECT_STRUCTURE_TRANSPORT_REQUEST_CLASS"); }
+              if (command.phase === "project-structure-transport-capture") { if (this.#viaTransportCaptureAttempted || command.params.uniqueContextId !== source.uniqueContextId) { throw error("PROJECT_STRUCTURE_TRANSPORT_CAPTURE_ONCE"); } this.#viaTransportCaptureAttempted = true; }
+              if (command.phase === "project-structure-transport-arm" && command.params.location.scriptId !== source.scriptId) { throw error("PROJECT_STRUCTURE_TRANSPORT_SOURCE_SCRIPT"); }
+              if (command.phase === "project-structure-transport-send" && (this.#viaTransportCapture === null || command.params.arguments[0].objectId !== this.#viaTransportCapture || command.params.objectId !== this.#viaTransportSendFrame || this.#viaTransportSendPacket !== null)) { throw error("PROJECT_STRUCTURE_TRANSPORT_ORIGINAL_SEND"); }
+              if (command.phase === "project-structure-transport-value" && command.params.objectId !== this.#viaTransportSendPacket || command.phase === "project-structure-transport-returned" && (command.params.arguments[0].objectId !== this.#viaTransportSendPacket || command.params.objectId !== this.#viaTransportReturnedFrame)) { throw error("PROJECT_STRUCTURE_TRANSPORT_ORIGINAL_PACKET"); }
+              let grant: Readonly<{ assertCurrent: () => void }> | null | undefined = null;
+              if (command.phase === "project-structure-transport-resume") { grant = command.role === "send" ? projectStructureTransportBodyGrants.get(transportOrigin) : projectStructureTransportPublicationGrants.get(transportOrigin); }
+              if (grant === undefined) { throw error("PROJECT_STRUCTURE_TRANSPORT_CONTINUATION_GRANT_REQUIRED"); }
+              const assertGrant = (): void => { if (grant !== null) { const activeGrant = command.phase === "project-structure-transport-resume" && command.role === "send" ? projectStructureTransportBodyGrants.get(transportOrigin) : projectStructureTransportPublicationGrants.get(transportOrigin); if (activeGrant !== grant) { throw error("PROJECT_STRUCTURE_TRANSPORT_GRANT_CHANGED"); } grant.assertCurrent(); } }; assertGrant();
+              const reply = await this.#serializeViaObserver(() => this.#transfer(() => { original(); assertTransportOriginal(); assertGrant();
+                if (command.phase === "project-structure-transport-resume") { selected.reserveStructureTransportResume(source, command.role); }
+                return pipe.observeViaStructureTransport(command);
+              }));
+              if (command.phase === "project-structure-transport-capture") { this.#viaTransportCapture = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, CURRENT_PROJECT_STRUCTURE_TRANSPORT_NATIVE_CAPTURE_LENGTH); }
+              else if (command.phase === "project-structure-transport-frame") {
+                const handle = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, CURRENT_PROJECT_STRUCTURE_TRANSPORT_SITES[command.role].length);
+                if (command.role === "send") { this.#viaTransportSendFrame = handle; } else if (command.role === "returned") { this.#viaTransportReturnedFrame = handle; }
+              } else if (command.phase === "project-structure-transport-send") { this.#viaTransportSendPacket = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, 3); }
+              else if (command.phase === "project-structure-transport-arm") {
+                const site = CURRENT_PROJECT_STRUCTURE_TRANSPORT_SITES[command.role];
+                if (!record(reply) || !exact(reply, ["breakpointId", "actualLocation"]) || typeof reply["breakpointId"] !== "string" || !record(reply["actualLocation"]) || !exact(reply["actualLocation"], ["scriptId", "lineNumber", "columnNumber"]) || reply["actualLocation"]["scriptId"] !== source.scriptId || reply["actualLocation"]["lineNumber"] !== site.lineNumber || reply["actualLocation"]["columnNumber"] !== site.columnNumber) { throw error("PROJECT_STRUCTURE_TRANSPORT_ARM_REPLY"); }
+                selected.bindStructureTransportBreakpoint(source, command.role, reply["breakpointId"]);
+              }
+              original(); assertTransportOriginal(); assertGrant(); return reply;
+            }, nextEvent: () => selected.nextStructureTransportEvent(), assertCurrent: async (): Promise<void> => { original(); assertTransportOriginal(); await this.#verify(); original(); assertTransportOriginal(); },
+            assertOperationPending: (): void => { original(); assertTransportOriginal(); if (!(this.#viaSdkPhases.has("save"))) { throw error("PROJECT_STRUCTURE_TRANSPORT_ORIGINAL_SAVE_REQUIRED"); } },
+            assertOriginalGenerationExited: (): Promise<void> => { assertTransportOriginal(); if (!this.#terminationObserved || this.#terminationObservation?.terminated !== true) { return Promise.reject(error("PROJECT_STRUCTURE_TRANSPORT_ORIGINAL_EXIT_REQUIRED")); } return Promise.resolve(); }, fail: (): void => { selected.fail(); } });
+          projectStructureTransportOrigins.set(transportOrigin, Object.freeze({ owner, operation: plan, bindings: transportBindings, assertOriginal: assertTransportOriginal })); this.#viaTransportOrigin = transportOrigin;
+          await Reflect.apply(transportSetup, undefined, [transportOrigin]); original(); assertTransportOriginal(); selected.requireStructureTransportArmed(source); if (this.#viaTransportCapture === null) { throw error("PROJECT_STRUCTURE_TRANSPORT_CAPTURE_REQUIRED"); }
         }
       }, releaseParentWait: async () => { original(); const reply = await this.#transfer(() => pipe.configureViaWorkerRunning());
         if (!exact(reply, [])) { throw error("PCB_VIA_WORKER_PARENT_RUNNING_REPLY"); } original(); },

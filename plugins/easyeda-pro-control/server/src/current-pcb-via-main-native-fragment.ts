@@ -1,6 +1,7 @@
 /** Via-only main observation admission. Every inspector payload still comes
  * from the immutable existing request codebook; no native resume is admitted. */
 import { CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE as PROFILE } from "./current-pcb-via-write-native-profile.ts";
+import { installOwnedNativeDispatch } from "./native-owned-dispatch.ts";
 
 function one(source: string, before: string, after: string): string {
   if (source.includes(after)) { if (source.split(after).length !== 2) { throw new Error("PCB_VIA_MAIN_NATIVE_DUPLICATE"); } return source; }
@@ -21,7 +22,7 @@ export function applyCurrentPcbViaMainNativeFragment(input: string): string {
   const normalized = input.replace("$PcbViaWrite209 -and @('pcb-via-main-observe','pcb-via-main-step','pcb-via-main-begin','pcb-via-main-history') -ccontains $request.action", "$PcbViaWrite209 -and $request.action -ceq 'pcb-via-main-observe'").replace("$PcbViaWrite209 -and @('pcb-via-main-observe','pcb-via-main-step','pcb-via-main-begin') -ccontains $request.action", "$PcbViaWrite209 -and $request.action -ceq 'pcb-via-main-observe'").replace("$PcbViaWrite209 -and @('pcb-via-main-observe','pcb-via-main-step') -ccontains $request.action", "$PcbViaWrite209 -and $request.action -ceq 'pcb-via-main-observe'");
   let source = one(normalized, "internal enum EasyedaPcbViaWriteBirth { Original }", `${native}internal enum EasyedaPcbViaWriteBirth { Original }`);
   source = one(source, 'case "pcb-via-sdk":case "pcb-via-sdk-properties":', 'case "pcb-via-sdk":case "pcb-via-sdk-properties":case "pcb-via-main-observe":');
-  source = one(source, "        'pcb-via-clock-bind' {", `${dispatch}        'pcb-via-clock-bind' {`);
+  source = installOwnedNativeDispatch(source, dispatch, "        'pcb-via-clock-bind' {");
   source = one(source, "@('main-request-send','main-completion-send') -ccontains $request.action", "@('main-request-send','main-completion-send') -ccontains $request.action -or $PcbViaWrite209 -and $request.action -ceq 'pcb-via-main-observe'");
   return source;
 }

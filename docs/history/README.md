@@ -6,6 +6,7 @@
 - [2026-11-06 separate Relevance display data](2026-11-06-relevance-display-data-profile.md). Genuine seven-row checkpoint arguments, exact ATTR/native root permutation, separate fixed stages/effect/pending body and explicit normalized baseline; original native writer/SQL/persistence grants remain closed.
 
 - [2026-11-06 Component point source/cost](2026-11-06-component-point-source-cost.md). Complete cached/stored-box and owned Pad paths, actual identity/scratch checks and393/408 prospective requests; existing384-ID purposes and Component admission remain unchanged.
+- [2026-11-06 original structure transport custody](2026-11-06-original-structure-transport-custody.md). Same-worker send/return/catch collector, fixed native context binding and separate unissued body/publication gates; continuous pre-action producer custody and Save remain pending.
 
 - [2026-11-06 public CBB witness research](2026-11-06-cbb-public-witness-research.md). Official CBB/board/archive contracts clarify witness requirements; no explicit public system project/branch tuple was identified in the bounded sources, and positive validation remains pending.
 

@@ -7,8 +7,9 @@ import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-re
 import type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 import type { CurrentSchematicDisplaySaveWorkerEvent } from "./current-schematic-display-save-origin.ts";
 
+export type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 export type CurrentSchematicDisplayRoutedEvent = CurrentSchematicDisplaySaveWorkerEvent;
-export type CurrentSchematicDisplayEventLane = "save" | "clock" | "structure";
+export type CurrentSchematicDisplayEventLane = "save" | "clock" | "structure" | "structureTransport";
 export interface CurrentSchematicDisplayEventPoint { readonly sessionId: string; readonly scriptId: string; readonly breakpointId: string;
   readonly lineNumber: number; readonly columnNumber: number; readonly role: string }
 export interface CurrentSchematicDisplayEventRouterBindings {
@@ -27,8 +28,8 @@ export class CurrentSchematicDisplayEventRouter {
   readonly #bindings: CurrentSchematicDisplayEventRouterBindings;
   readonly #points = new Map<string, Readonly<{ lane: CurrentSchematicDisplayEventLane; point: CurrentSchematicDisplayEventPoint }>>();
   readonly #paused = new Map<string, { lane: CurrentSchematicDisplayEventLane; point: CurrentSchematicDisplayEventPoint; delivered: boolean; resumeAttempted: boolean }>();
-  readonly #queues: Record<CurrentSchematicDisplayEventLane, CurrentSchematicDisplaySaveWorkerEvent[]> = { save: [], clock: [], structure: [] };
-  readonly #reading = { save: false, clock: false, structure: false };
+  readonly #queues: Record<CurrentSchematicDisplayEventLane, CurrentSchematicDisplaySaveWorkerEvent[]> = { save: [], clock: [], structure: [], structureTransport: [] };
+  readonly #reading = { save: false, clock: false, structure: false, structureTransport: false };
   readonly #resumeRoles = new WeakMap<CurrentSchematicDisplaySaveWorkerEvent, Readonly<{ lane: CurrentSchematicDisplayEventLane; role: string }>>();
   readonly #completedClock = new Set<string>();
   #poll: Promise<void> | null = null; #failed = false;
@@ -39,8 +40,8 @@ export class CurrentSchematicDisplayEventRouter {
     handle.parse(bindings.workerSessionId); handle.parse(bindings.uiSessionId); need(bindings.workerSessionId !== bindings.uiSessionId); this.#bindings = bindings; Object.freeze(this);
   }
   public register(lane: CurrentSchematicDisplayEventLane, input: CurrentSchematicDisplayEventPoint): void {
-    need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure")); const point = Object.freeze(pointSchema.parse(captureCurrentPcbStringClockReply(input).value));
-    need((point.sessionId === this.#bindings.workerSessionId || lane === "clock" && point.sessionId === this.#bindings.uiSessionId) && this.#points.size < 25);
+    need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport")); const point = Object.freeze(pointSchema.parse(captureCurrentPcbStringClockReply(input).value));
+    need((point.sessionId === this.#bindings.workerSessionId || lane === "clock" && point.sessionId === this.#bindings.uiSessionId) && this.#points.size < 28);
     const key = `${point.sessionId}\0${point.breakpointId}`;
     need(!this.#points.has(key) && ![...this.#points.values()].some(value => value.point.sessionId === point.sessionId && value.point.scriptId === point.scriptId &&
       value.point.lineNumber === point.lineNumber && value.point.columnNumber === point.columnNumber));
@@ -92,7 +93,7 @@ export class CurrentSchematicDisplayEventRouter {
     if (lane === "clock") { need(!this.#completedClock.has(resumed.role)); this.#completedClock.add(resumed.role); }
   }
   public async next(lane: CurrentSchematicDisplayEventLane): Promise<CurrentSchematicDisplaySaveWorkerEvent> {
-    need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure") && !this.#reading[lane]); this.#reading[lane] = true;
+    need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport") && !this.#reading[lane]); this.#reading[lane] = true;
     try { for (;;) { need(!this.#failed); const event = this.#queues[lane].shift(); if (event !== undefined) { await this.#bindings.assertCurrent(); need(!this.#failed);
       this.#delivered(lane, event); return event; }
       this.#poll ??= this.#pump(); await this.#poll;

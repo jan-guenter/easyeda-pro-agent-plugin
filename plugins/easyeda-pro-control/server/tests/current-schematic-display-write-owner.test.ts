@@ -16,7 +16,7 @@ type GeneratedSchematicDisplayNativeArguments = Parameters<CurrentSchematicDispl
 
 function missingBootstrap(): never { throw new Error("Bootstrap not issued"); }
 async function fixture(context: TestContext, malformed = false, main = false, stages = false, workers = false, earlyWorker = false): Promise<Readonly<{ owner: CurrentSchematicDisplayWriteOwner; actions: string[]; pollEntered: Promise<true>; reproveBootstrap: () => string;
-  target: () => object; termination: () => object; requireTermination: (value: object) => void; argumentsValue: GeneratedSchematicDisplayNativeArguments; requireStage: (packet: object) => void; runWorker: () => Promise<unknown>; createObserver: (origin: object) => { arm: () => Promise<void>; observeBody: () => Promise<unknown> }; requireWorker: (origin: object) => object; createStructureObserver: (origin: object) => { arm: () => Promise<void>; cleanup: () => Promise<void> }; requireStructure: (origin: object) => object; qualifyEffect: (copyPacket?: boolean) => object; requireEffect: (effect: object) => void; issueClock: (effect: object) => Promise<object>; requireClock: (origin: object) => object; issueAccessor: () => Promise<object>; requireAccessor: (origin: object) => object }>> {
+  target: () => object; termination: () => object; requireTermination: (value: object) => void; argumentsValue: GeneratedSchematicDisplayNativeArguments; requireStage: (packet: object) => void; runWorker: () => Promise<unknown>; createObserver: (origin: object) => { arm: () => Promise<void>; observeBody: () => Promise<unknown> }; requireWorker: (origin: object) => object; createStructureObserver: (origin: object) => { arm: () => Promise<void>; cleanup: () => Promise<void> }; requireStructure: (origin: object) => object; requireTransport: (origin: object) => object; qualifyEffect: (copyPacket?: boolean) => object; requireEffect: (effect: object) => void; issueClock: (effect: object) => Promise<object>; requireClock: (origin: object) => object; issueAccessor: () => Promise<object>; requireAccessor: (origin: object) => object }>> {
   const url = new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url); const sourceRequire = createRequire(url);
   const targetData = Object.freeze({ rawWindowsPath: String.raw`C:\Synthetic\Codex_schematic_1111111111111111.eprj2`, projectUuid: "c".repeat(64), branchUuid: "d".repeat(32), schematicUuid: "e".repeat(32), pageUuid: "f".repeat(32), expectedSourceSha256: "1".repeat(64) });
   const prepared = Object.freeze({ syntheticCheckpoint: true, qualification: Object.freeze({ target: targetData }) });
@@ -64,12 +64,15 @@ public async runSyntheticSchematicWorker(){this.#enter(true);try{const p=this.#s
       // Explicit construction/source-pause seam only. The production owner,
       // Pipe, fixed codecs, observer, callback and original registry run unchanged.
       const factory: unknown = runInThisContext(`(source=>class {
-constructor(bindings){this.bindings=bindings;this.source=null;this.child=null;this.busy=false;this.ready=false;this.failed=false;this.points=new Set();this.structurePoints=new Set();this.clockPoints=new Set();}
+constructor(bindings){this.bindings=bindings;this.source=null;this.child=null;this.busy=false;this.ready=false;this.failed=false;this.points=new Set();this.structurePoints=new Set();this.transportPoints=new Set();this.clockPoints=new Set();}
 status(){return{ready:this.ready,pumping:this.busy,failed:this.failed,projectSourceHeld:this.source!==null,originalWorkerSelected:this.child!==null};}
 observeEvent(e){if(e.method!=="Target.attachedToTarget")throw Error("unexpected peer event");this.child=Object.freeze({sessionId:e.params.sessionId,targetId:e.params.targetInfo.targetId,url:e.params.targetInfo.url,title:e.params.targetInfo.title});}
 observeUiEvent(){return false;}requireHeld(s){if(s!==this.source)throw Error("held");return this.child;}requireOriginal(s,c){if(s!==this.source||c!==this.child)throw Error("original");}
 bindSaveBreakpoint(s,r,id){this.requireHeld(s);if(this.points.has(r))throw Error("point");this.points.add(r);}
 bindStructureBreakpoint(s,r,id){this.requireHeld(s);if(this.structurePoints.has(r))throw Error("structure point");this.structurePoints.add(r);}
+bindStructureTransportBreakpoint(s,r,id){this.requireHeld(s);if(this.transportPoints.has(r))throw Error("transport point");this.transportPoints.add(r);}
+requireStructureTransportArmed(s){this.requireHeld(s);if(this.transportPoints.size!==3)throw Error("transport arm");}
+nextStructureTransportEvent(){throw Error("no transport dispatch");}reserveStructureTransportResume(){throw Error("no transport grant");}
 bindClockBreakpoint(s,p){this.requireHeld(s);if(this.clockPoints.has(p.role))throw Error("clock point");this.clockPoints.add(p.role);}
 requireStructureArmed(s){this.requireHeld(s);if(this.structurePoints.size!==14)throw Error("structure arm");}
 async pump(){if(this.ready||this.busy||this.child===null)return;this.busy=true;try{await this.bindings.bindWorker(this.child);this.source=Object.freeze({scriptId:"project-script",uniqueContextId:"worker-context",executionContextId:7,source});await this.bindings.projectSourceHeld(this.source,this);if(this.points.size!==6)throw Error("missing actual arms");await this.bindings.releaseParentWait();this.ready=true;}catch(e){this.fail();throw e;}finally{this.busy=false;}}
@@ -95,6 +98,8 @@ if(q.action==='launch')send(q,{helperInstance:'b'.repeat(32),jobId:'c'.repeat(32
 else if(q.action==='main-attach')send(q,{attached:true});
 else if(q.action==='send'){if(${String(stages)})queue.push({id:q.requestId,result:q.method==='Target.attachToTarget'?{sessionId:'original-session'}:q.method==='Target.getTargets'?{targetInfos:[{targetId:'original-target',type:'page',title:'Start',url:'https://client/editor?cll=warn#',attached:true}]}:{},...(q.sessionId?{sessionId:q.sessionId}:{})});send(q,{written:true});}
 else if(q.action==='schematic-display-accessor'){if(q.phase!=='schematic-accessor-callees')throw Error('accessor command');queue.push({id:q.requestId,sessionId:'original-session',result:{result:{type:'object',subtype:'array',className:'Array',description:'Array(26)',objectId:'original-callees'}}});send(q,{written:true});}
+else if(q.action==='schematic-display-structure-transport-bind')send(q,{bound:true});
+else if(q.action==='schematic-display-structure-transport'){let result;if(q.phase==='project-structure-transport-capture')result={result:{type:'object',subtype:'array',className:'Array',description:'Array(7)',objectId:'original-transport-capture'}};else{const role=q.phase.slice('project-structure-transport-arm-'.length),cols={send:111729,returned:111827,failed:111748};if(q.method!=='Debugger.setBreakpoint'||!(role in cols))throw Error('transport command');result={breakpointId:'transport-'+role,actualLocation:{scriptId:'project-script',lineNumber:103,columnNumber:cols[role]}};}queue.push({id:q.requestId,sessionId:'original-worker',result});send(q,{written:true});}
 else if(q.action==='schematic-display-clock-bind')send(q,{bound:true});
 else if(q.action==='schematic-display-clock'){const role=q.phase.slice('schematic-clock-arm-'.length),site=(${JSON.stringify(clockSites)})[role];if(q.method!=='Debugger.setBreakpoint'||!site)throw Error('clock command');queue.push({id:q.requestId,sessionId:q.realm==='worker'?'original-worker':'original-session',result:{breakpointId:'clock-'+role,actualLocation:{scriptId:q.scriptId,lineNumber:site.lineNumber,columnNumber:site.columnNumber}}});send(q,{written:true});}
 else if(q.action==='schematic-display-worker-prepare')send(q,{prepared:true});
@@ -149,6 +154,7 @@ else if(q.action==='release')send(q,{released:true});else throw Error('unexpecte
     createStructureObserver: (origin: object) => { const Observer = structureModule.exports["CurrentProjectSaveStructureObserver"]; assert.ok(typeof Observer === "function");
       // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Production observer and real owner issuer, with the same explicit construction/source-pause seam above.
       return Reflect.construct(Observer, [origin, owner, argumentsValue]) as { arm: () => Promise<void>; cleanup: () => Promise<void> }; },
+    requireTransport: (origin: object): object => { const lookup = loaded.exports["requireOriginalCurrentProjectStructureTransportOrigin"]; assert.ok(typeof lookup === "function"); const value: unknown = Reflect.apply(lookup, undefined, [origin, owner, argumentsValue]); assert.ok(value !== null && typeof value === "object"); return value; },
     requireStructure: (origin: object): object => { const value: unknown = Reflect.apply(structureLookup, undefined, [origin, owner, argumentsValue]); assert.ok(value !== null && typeof value === "object"); return value; },
     qualifyEffect: (copyPacket = false): object => { const seedPackets = loaded.exports["seedSyntheticSchematicEffectPackets"]; const qualify = loaded.exports["qualifyOriginalGeneratedSchematicDisplayEffect"]; assert.ok(typeof seedPackets === "function" && typeof qualify === "function");
       const packets: unknown = Reflect.apply(seedPackets, undefined, [owner, argumentsValue]); assert.ok(Array.isArray(packets) && packets.length === 3);
@@ -282,5 +288,25 @@ void test("actual SCH accessor origin substitutes its original holder and target
   assert.throws(() => f.requireAccessor(structuredClone(origin)), /ACCESSOR_ORIGINAL/u); await assert.rejects(f.issueAccessor(), /ACCESSOR_UNAVAILABLE/u);
   assert.equal(f.actions.filter(action => action === "schematic-display-accessor").length, 1);
   await assert.rejects(f.owner.executeSchematicDisplayStage("modify", f.argumentsValue), /SOURCE_WORKER_AND_SQL/u);
+  await f.owner.abortSchematicDisplayWrite(); assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
+});
+
+void test("original SCH source callback captures its own transport context and three fixed points before source release", async context => {
+  const f = await fixture(context, false, false, true, true); let issued: object | null = null;
+  f.owner.armSchematicDisplaySaveWorker(f.argumentsValue, async origin => { await f.createObserver(origin).arm(); });
+  f.owner.armSchematicDisplaySaveStructureWorker(f.argumentsValue, async origin => { await f.createStructureObserver(origin).arm(); });
+  f.owner.armSchematicDisplayStructureTransportWorker(f.argumentsValue, async origin => {
+    issued = origin; const binding = f.requireTransport(origin); assert.equal(Object.isFrozen(binding), true); assert.equal(Reflect.get(binding, "prepared"), f.target());
+    const request: unknown = Reflect.get(binding, "request"), scriptId: unknown = Reflect.get(binding, "scriptId"), uniqueContextId: unknown = Reflect.get(binding, "uniqueContextId"); assert.ok(typeof request === "function" && typeof scriptId === "string" && typeof uniqueContextId === "string");
+    const protocol: unknown = createRequire(import.meta.url)("../src/current-project-structure-transport-protocol.ts"); assert.ok(protocol !== null && typeof protocol === "object"); const examples: unknown = Reflect.get(protocol, "currentProjectStructureTransportNativeCases"); assert.ok(typeof examples === "function"); const commands: unknown = Reflect.apply(examples, undefined, []); assert.ok(Array.isArray(commands));
+    for (const raw of commands) { const command: unknown = raw; assert.ok(command !== null && typeof command === "object" && "phase" in command && "params" in command && command.params !== null && typeof command.params === "object");
+      if (command.phase === "project-structure-transport-capture") { await Reflect.apply(request, undefined, [{ ...command, params: { ...command.params, uniqueContextId } }, false]); }
+      else if (command.phase === "project-structure-transport-arm") { assert.ok("location" in command.params && command.params.location !== null && typeof command.params.location === "object"); await Reflect.apply(request, undefined, [{ ...command, params: { ...command.params, location: { ...command.params.location, scriptId } } }, false]); }
+    }
+    await assert.rejects(() => { const result: unknown = Reflect.apply(request, undefined, [{ phase: "project-structure-transport-resume", role: "send", method: "Debugger.resume", params: {} }, false]); assert.ok(result instanceof Promise); return result; }, /GRANT_REQUIRED/u);
+    assert.throws(() => f.owner.requireSchematicDisplayStructureTransportReady(f.argumentsValue), /READY_REQUIRED/u);
+  });
+  await f.runWorker(); const original = issued; assert.ok(original !== null); assert.equal(f.owner.requireSchematicDisplayStructureTransportReady(f.argumentsValue), original); assert.throws(() => f.requireTransport(structuredClone(original)), /ORIGINAL_ORIGIN/u);
+  assert.equal(f.actions.filter(action => action === "schematic-display-structure-transport").length, 4);
   await f.owner.abortSchematicDisplayWrite(); assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
 });

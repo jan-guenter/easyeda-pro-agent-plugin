@@ -1,3 +1,4 @@
+import { currentProjectStructureTransportWire } from "./current-project-structure-transport-wire.ts";
 /** Finite Via renderer vocabulary. Only this new birth can select these fixed
  * programs; no caller JavaScript, SDK receiver or pipe handle is accepted. */
 /* oxlint-disable import/max-dependencies -- The original Via wire composes independent fixed SDK, cold bootstrap, worker observer, scene and legacy grammars while retaining their distinct validators. */
@@ -52,6 +53,12 @@ export function currentPcbViaWriteNativeRequest(chunk: Buffer): Readonly<Record<
     raw["id"] < 1 || raw["id"] > PROFILE.renderer.total || !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("PCB_VIA_WIRE"); }
   const { id, sessionId, ...input } = raw;
   if (typeof sessionId !== "string" && Object.hasOwn(raw, "viaWritePhase")) { throw new Error("PCB_VIA_SESSION"); }
+  if (Object.hasOwn(raw, "structureTransportCommand")) {
+    const { structureTransportCommand, ...command } = input;
+    if (structureTransportCommand !== true || typeof sessionId !== "string") { throw new Error("PCB_VIA_STRUCTURE_TRANSPORT_WIRE"); }
+    const fixed = currentProjectStructureTransportWire(command, id, "via");
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, structureTransportCommand: true, sessionId })}\0`))) { throw new Error("PCB_VIA_STRUCTURE_TRANSPORT_WIRE"); } return fixed.request;
+  }
   if (Object.hasOwn(raw, "viaClockCommand")) {
     const { viaClockCommand, viaClockRealm, ...command } = input;
     if (viaClockCommand !== true || typeof sessionId !== "string" || viaClockRealm !== "worker" && viaClockRealm !== "ui") { throw new Error("PCB_VIA_CLOCK_WIRE"); }

@@ -1,8 +1,10 @@
+import { CURRENT_PROJECT_STRUCTURE_TRANSPORT_SITES as TRANSPORT_SITES } from "./current-project-structure-transport-source.ts";
+import type { CurrentProjectStructureTransportRole } from "./current-project-structure-transport-source.ts";
 /** Original-event cursor for one fresh Via worker. Structural transports prove
  * no ownership; only the actual central owner's held-source callback can issue
  * its private native origin. No debugger continuation is attempted on failure. */
 import { CurrentPcbViaEventRouter } from "./current-pcb-via-event-router.ts";
-import type { CurrentPcbViaEventPoint, CurrentPcbViaRoutedEvent } from "./current-pcb-via-event-router.ts";
+import type { CurrentPcbViaEventPoint, CurrentPcbViaRoutedEvent, DiagnosticEvent } from "./current-pcb-via-event-router.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_SITES as STRUCTURE_SITES } from "./current-project-save-structure-protocol.ts";
 import type { CurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import { performance } from "node:perf_hooks";
@@ -14,7 +16,6 @@ import { isCurrentPcb209BootstrapTargetUrl } from "./current-pcb-209-worker-boot
 import { CurrentPcbViaWorkerBootstrap } from "./current-pcb-via-worker-bootstrap.ts";
 import type { CurrentPcbViaProjectSourceHeld, CurrentPcbViaWorkerBootstrapEvent, CurrentPcbViaWorkerBootstrapResult } from "./current-pcb-via-worker-bootstrap.ts";
 import type { CurrentPcbViaWorkerBootstrapCommand, CurrentPcbViaWorkerCommand } from "./current-pcb-via-worker-wire.ts";
-import type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 
 export interface CurrentPcbViaWorkerChild { readonly sessionId: string; readonly targetId: string; readonly url: string; readonly title: string }
 export interface CurrentPcbViaWorkerControllerBindings {
@@ -35,6 +36,7 @@ export class CurrentPcbViaWorkerController {
   readonly #bindings: CurrentPcbViaWorkerControllerBindings;
   readonly #events: CurrentPcbViaWorkerBootstrapEvent[] = [];
   readonly #savePoints = new Map<CurrentPcbViaSaveSite, string>();
+  readonly #transportPoints = new Map<CurrentProjectStructureTransportRole, string>();
   readonly #structurePoints = new Map<Extract<CurrentProjectSaveStructureCommand, { phase: "project-save-structure-arm" }>["role"], string>();
   readonly #background = new Set<string>();
   #child: CurrentPcbViaWorkerChild | null = null;
@@ -83,6 +85,10 @@ export class CurrentPcbViaWorkerController {
     need(this.#source === source && this.#result === null && !this.#structurePoints.has(role) && ![...this.#structurePoints.values(), ...this.#savePoints.values()].includes(breakpointId) && token(breakpointId));
     this.#structurePoints.set(role, breakpointId);
   }
+  public bindStructureTransportBreakpoint(source: CurrentPcbViaProjectSourceHeld, role: CurrentProjectStructureTransportRole, breakpointId: string): void {
+    need(this.#source === source && this.#result === null && !this.#transportPoints.has(role) && ![...this.#transportPoints.values(), ...this.#structurePoints.values(), ...this.#savePoints.values()].includes(breakpointId) && token(breakpointId)); this.#transportPoints.set(role, breakpointId);
+  }
+  public requireStructureTransportArmed(source: CurrentPcbViaProjectSourceHeld): void { need(this.#source === source && this.#transportPoints.size === 3); }
   public requireStructureArmed(source: CurrentPcbViaProjectSourceHeld): void { need(this.#source === source && this.#structurePoints.size === 14); }
   #resolution(event: CurrentPcbViaWorkerBootstrapEvent): boolean {
     if (this.#result !== null) { return false; }
@@ -90,8 +96,11 @@ export class CurrentPcbViaWorkerController {
     need(this.#source !== null && record(event.params) && record(event.params["location"]));
     const location = event.params["location"], params = event.params;
     const match = [...this.#savePoints].find(([_role, id]) => id === params["breakpointId"]);
-    const structure = [...this.#structurePoints].find(([_role, id]) => id === params["breakpointId"]); need(match !== undefined || structure !== undefined);
-    const site = match === undefined ? STRUCTURE_SITES[structure?.[0] ?? "bootstrap"] : CURRENT_PCB_VIA_SAVE_SITES[match[0]];
+    const structure = [...this.#structurePoints].find(([_role, id]) => id === params["breakpointId"]); const transport = [...this.#transportPoints].find(([_role, id]) => id === params["breakpointId"]); need(match !== undefined || structure !== undefined || transport !== undefined);
+    let site: Readonly<{ lineNumber: number; columnNumber: number }>;
+    if (match === undefined) {
+      if (structure === undefined) { need(transport !== undefined); site = TRANSPORT_SITES[transport[0]]; } else { site = STRUCTURE_SITES[structure[0]]; }
+    } else { site = CURRENT_PCB_VIA_SAVE_SITES[match[0]]; }
     need(Reflect.ownKeys(params).length === 2 && Reflect.ownKeys(location).length === 3 && location["scriptId"] === this.#source.scriptId && location["lineNumber"] === site.lineNumber && location["columnNumber"] === site.columnNumber); return true;
   }
   public observeEvent(event: DiagnosticEvent): void {
@@ -156,6 +165,10 @@ export class CurrentPcbViaWorkerController {
   /** Pure retained barrier. It never infers completion from elapsed time or
    * starts another native poll; the original abort/failure settles false. */
   public async whenOriginalSourceResumed(): Promise<void> { const resumed = await this.#sourceResumed.promise; need(resumed && !this.#failed && this.#result !== null && this.#router !== null); }
+  public async nextStructureTransportEvent(): Promise<CurrentPcbViaRoutedEvent> { await this.whenOriginalSourceResumed(); return this.#eventRouter().next("structureTransport"); }
+  public reserveStructureTransportResume(source: CurrentPcbViaProjectSourceHeld, role: "send" | "returned"): void {
+    need(this.#source === source && this.#child !== null); this.#eventRouter().reserveResume("structureTransport", this.#child.sessionId, role);
+  }
   public async nextStructureEvent(): Promise<CurrentPcbViaRoutedEvent> { await this.whenOriginalSourceResumed(); return this.#eventRouter().next("structure"); }
   public reserveStructureResume(source: CurrentPcbViaProjectSourceHeld, role: Extract<CurrentProjectSaveStructureCommand, { phase: "project-save-structure-resume" }>["role"]): void {
     need(this.#source === source && this.#child !== null); this.#eventRouter().reserveResume("structure", this.#child.sessionId, role);
@@ -191,6 +204,7 @@ export class CurrentPcbViaWorkerController {
       nextEvent: (): Promise<DiagnosticEvent> => this.#nextObservedEvent(), assertCurrent: (): Promise<void> => this.#current(), fail: (): void => { this.fail(); } }));
     for (const [role, breakpointId] of this.#savePoints) { const site = CURRENT_PCB_VIA_SAVE_SITES[role]; router.register("save", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
     for (const [role, breakpointId] of this.#structurePoints) { const site = STRUCTURE_SITES[role]; router.register("structure", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
+    for (const [role, breakpointId] of this.#transportPoints) { const site = TRANSPORT_SITES[role]; router.register("structureTransport", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
     this.#router = router;
   }
   /** The outer original renderer call drives this, including its still-pending

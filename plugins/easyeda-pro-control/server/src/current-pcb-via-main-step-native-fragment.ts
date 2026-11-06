@@ -2,6 +2,7 @@
  * unable to resume. Root owns generated helper and installation pin refresh. */
 import { CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE as PROFILE } from "./current-pcb-via-write-native-profile.ts";
 import { CURRENT_PCB_VIA_MAIN_STEP_PHASES as PHASES } from "./current-pcb-via-main-step-protocol.ts";
+import { installOwnedNativeDispatch } from "./native-owned-dispatch.ts";
 
 function one(source: string, before: string, after: string): string {
   if (source.includes(after)) { if (source.split(after).length !== 2) { throw new Error("PCB_VIA_MAIN_STEP_NATIVE_DUPLICATE"); } return source; }
@@ -21,12 +22,7 @@ export function applyCurrentPcbViaMainStepNativeFragment(input: string): string 
   if (start === -1) { source = one(input, anchor, `${native}${anchor}`); }
   else { if (stop <= start || input.includes("int viaMainStep;", start + 1) || !input.slice(start, stop).includes("public void SendViaMainStep(")) { throw new Error("PCB_VIA_MAIN_STEP_NATIVE_EXISTING_BLOCK"); } source = input.slice(0, start) + native + input.slice(stop); }
   source = one(source, 'case "pcb-via-main-observe":', 'case "pcb-via-main-observe":case "pcb-via-main-step":');
-  const ownDispatch = "        'pcb-via-main-step' {";
-  if (source.includes(ownDispatch)) {
-    if (source.split(ownDispatch).length !== 2 || source.split(dispatch).length !== 2) { throw new Error("PCB_VIA_MAIN_STEP_NATIVE_DISPATCH_CHANGED"); }
-    source = source.replace(dispatch, "");
-  }
-  source = one(source, "        'pcb-via-main-observe' {", `${dispatch}        'pcb-via-main-observe' {`);
+  source = installOwnedNativeDispatch(source, dispatch, "        'pcb-via-main-observe' {");
   source = one(source, "$PcbViaWrite209 -and $request.action -ceq 'pcb-via-main-observe'", "$PcbViaWrite209 -and @('pcb-via-main-observe','pcb-via-main-step') -ccontains $request.action");
   return source;
 }
