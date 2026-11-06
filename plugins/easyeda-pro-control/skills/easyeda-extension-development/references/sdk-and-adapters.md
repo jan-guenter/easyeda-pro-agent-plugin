@@ -35,6 +35,17 @@ before evaluating that backend in a genuinely isolated environment.
 
 ## Package and runtime
 
+CBB `get` reads a project and branch structure, then assembles schematic/PCB
+boards. It does not share the component metadata contract used for symbols or
+footprints. The inspected desktop search also refreshes local project paths.
+The anonymous system-only replacement remains a concrete omission: retained
+requests returned HTTP403, the shipped library supplied no project/board rows,
+and inspected examples supplied no positive anonymous project/branch witness.
+Do not rerun those absence probes to finish a task or substitute private account
+data. A future adapter needs a positive witness, exact ownership and reciprocal
+board membership. Query each method's `coverage` entry for the evidence and
+reopening requirements. No claim is made that the online catalog is empty.
+
 `extension.json` binds UUID, entrypoint, activation events, editor compatibility,
 menus and dependencies. An SDK-built `.eext` is an import artifact; neither its
 manifest nor import acknowledgment proves runtime activation or authentication.

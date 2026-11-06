@@ -1217,6 +1217,12 @@ void test("model and panel metadata routes stay narrower than SDK contracts and 
   assert.match(cbbSearch?.omission?.reason ?? "", /positive project\/block ownership/u);
   assert.match(cbbGet?.omission?.reason ?? "", /project and its branch profile\/structure/u);
   assert.match(cbbGet?.omission?.nextRequirement ?? "", /before fetching the profile/u);
+  for (const row of [cbbGet, cbbSearch]) {
+    assert.match(row?.omission?.reason ?? "", /concrete omission/u);
+    assert.match(row?.omission?.reason ?? "", /HTTP403/u);
+    assert.equal(row?.omission?.evidence.includes("docs/history/2026-11-07-cbb-omission-decision.md"), true);
+    assert.equal(row?.routes.length, 0);
+  }
 });
 
 void test("selected PCB objects expose source DTOs without promoting the lossy public wrapper", () => {

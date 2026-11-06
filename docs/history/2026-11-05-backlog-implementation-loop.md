@@ -308,3 +308,12 @@ native helper/pins/bundles, required final checks, exact final CI, CodeRabbit fu
 review including legacy findings, protected merge, publication and official
 installation remain open. No PR or marketplace update has been published by
 this continuation. The production project remains unopened and unchanged.
+
+## 2026-11-07 concrete CBB disposition
+
+Group7 is closed for this implementation batch through the
+[documented omission decision](2026-11-07-cbb-omission-decision.md). Exact CBB
+get/search inventory entries and the extension engineering reference name the
+retained routing/data limitations and positive-witness reopening condition.
+No earlier HTTP403/empty result was replayed or promoted to online absence.
+The other implementation groups and final publication work remain active.

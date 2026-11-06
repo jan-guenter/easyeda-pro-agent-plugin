@@ -7366,10 +7366,14 @@
       "routes": [],
       "omission": {
         "code": "shared-asset-owner-projection-needed",
-        "reason": "The pinned CBB getInfo fetches a project and its branch profile/structure, then assembles boards from schematic and PCB references. This is not the generic component metadata GET used for symbols, footprints and panel libraries. Fixed public-system project ownership, branch membership and the bounded board projection remain unqualified.",
-        "nextRequirement": "Add an explicit anonymous public-project eligibility proof and complete bounded branch/board projection before fetching the profile. Do not infer missing boards as an empty array or follow a caller-selected private project/branch endpoint.",
+        "reason": "The pinned CBB getInfo fetches a project and its branch profile/structure, then assembles boards from schematic and PCB references. It cannot use the generic component metadata GET. The retained fixed anonymous requests returned HTTP403, and the inspected shipped system library has zero project and board rows. Official examples provide no literal positive public-system project/branch witness. Ownership, reciprocal board membership and complete projection therefore remain unqualified; these observations do not establish online absence. This is a concrete omission for the inspected runtime.",
+        "nextRequirement": "Reopen this omission only with a positively retrieved anonymous system-owned project and matching branch. Add explicit public-project eligibility and complete bounded reciprocal branch/board projection before fetching the profile. Do not infer missing boards as empty, replay absence probes as validation, use credentials or follow a caller-selected private project/branch endpoint.",
         "evidence": [
-          "assets/pro-ui/3.2.198.2800f583/js/ui.js@sha256:3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6;utf16:17383890..17385625"
+          "assets/pro-ui/3.2.198.2800f583/js/ui.js@sha256:3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6;utf16:17383890..17385625",
+          "docs/history/2026-11-04-cbb-and-pcb-hit-reader-feasibility.md",
+          "docs/history/2026-11-06-cbb-public-witness-research.md",
+          "docs/history/2026-11-06-public-cbb-source-follow-up.md",
+          "docs/history/2026-11-07-cbb-omission-decision.md"
         ]
       },
       "completeDeclaredContractSupported": false,
@@ -7560,10 +7564,14 @@
       "routes": [],
       "omission": {
         "code": "account-or-library-scope-needed",
-        "reason": "The pinned desktop CBB search invokes project-path discovery with refresh:yes before filtering. Its online manager can use component search docType17, but a fixed anonymous system-only sample returned no rows, leaving positive project/block ownership and metadata projection unqualified. Empty results prove neither absence nor routing parity.",
-        "nextRequirement": "Qualify a positive system-owned CBB search response and explicit project/block references without local project discovery, mutable classification state, credentials or a private-library fallback; preserve the separate CBB get/profile lifecycle.",
+        "reason": "The pinned desktop CBB search invokes project-path discovery with refresh:yes before filtering. Its online manager can use component search docType17, but the retained anonymous sample has no positive project/block ownership or complete metadata projection. Fixed anonymous HTTP403 results and the shipped system library's zero project/board rows supply no positive witness. Official and inspected extension sources do not supply a fixed accessible anonymous system CBB. This concrete omission does not claim that the online catalog is empty or that authenticated access fails.",
+        "nextRequirement": "Reopen this omission when a positive anonymous system-owned CBB response permits exact search/detail/project/branch and reciprocal board joins without local project discovery, mutable classification state, credentials or private-library fallback. Preserve the separate CBB get/profile lifecycle and fail on permission or malformed responses rather than returning an empty list.",
         "evidence": [
-          "assets/pro-ui/3.2.198.2800f583/js/ui.js@sha256:3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6;utf16:12192224..12194697,17386420..17387304"
+          "assets/pro-ui/3.2.198.2800f583/js/ui.js@sha256:3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6;utf16:12192224..12194697,17386420..17387304",
+          "docs/history/2026-11-04-cbb-and-pcb-hit-reader-feasibility.md",
+          "docs/history/2026-11-06-cbb-public-witness-research.md",
+          "docs/history/2026-11-06-public-cbb-source-follow-up.md",
+          "docs/history/2026-11-07-cbb-omission-decision.md"
         ]
       },
       "completeDeclaredContractSupported": false,

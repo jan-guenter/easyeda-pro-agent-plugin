@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 CBB reader omission decision](2026-11-07-cbb-omission-decision.md). Close the anonymous CBB implementation group with concrete retained routing/data limitations and exact reopening conditions; no new absence probes or online-absence claim.
+
 - [2026-11-07 writer startup and metadata packing](2026-11-07-writer-startup-and-metadata-packing.md). Separate bounded original writer page wait and exact fixed metadata restoration recover helper headroom; native-owner and application execution remain unvalidated.
 
 - [2026-11-06 Via unallocated-refusal journal](2026-11-06-via-unallocated-refusal-journal.md). Separate v2 terminal requires original factory proof of no native allocation, preserves v1 parsing and claims no process exit or owner transfer.
