@@ -44,6 +44,9 @@ import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-re
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_PCB_SPATIAL_DISCOVERY_METHODS, CURRENT_PCB_SPATIAL_PROFILE, CURRENT_PCB_SPATIAL_REQUEST_DERIVATION, currentPcbSpatialBindingSchema } from "./current-pcb-spatial-profile.ts";
 import type { CurrentPcbSpatialBinding } from "./current-pcb-spatial-profile.ts";
+import { currentPcbViaWorkerWire } from "./current-pcb-via-worker-wire.ts";
+import type { CurrentPcbViaWorkerCommand } from "./current-pcb-via-worker-wire.ts";
+import { CURRENT_PCB_VIA_WORKER_PARENT_PARAMS, CURRENT_PCB_VIA_WORKER_RUNNING_PARAMS } from "./current-pcb-via-worker-bootstrap-protocol.ts";
 import { currentPcbViaWriteCommand } from "./current-pcb-via-write-protocol.ts";
 import type { CurrentPcbViaObservationPhase, CurrentPcbViaSdkPropertiesCommand, CurrentPcbViaSpatialCommand, CurrentPcbViaWriteCommand } from "./current-pcb-via-write-protocol.ts";
 import type { CurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
@@ -68,7 +71,9 @@ type Failure = "attachment" | "input" | "output" | "eof" | "closed" | "framing" 
 type FailureReason = Failure | "empty-frame" | "nonobject-frame" | "reply-unsolicited" | "reply-duplicate" | "reply-id" | "reply-envelope" | "reply-result" |
   "event-budget-or-handler" | "event-envelope" | "event-session" | "worker-attachment" | "worker-handler" | "event-callback" | "unsolicited-data" |
   "trailing-reply-data" | "attachment-result" | "worker-discovery-result";
-type RequestPhase = "generated-fixture-register" | "renderer-capture209" | "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
+type ViaWorkerParentCommand = Readonly<{ viaWorkerParentPhase: "arm"; method: "Target.setAutoAttach"; params: typeof CURRENT_PCB_VIA_WORKER_PARENT_PARAMS }> |
+  Readonly<{ viaWorkerParentPhase: "running"; method: "Target.setAutoAttach"; params: typeof CURRENT_PCB_VIA_WORKER_RUNNING_PARAMS }>;
+type RequestPhase = "via-worker" | "via-parent-arm" | "via-parent-running" | "generated-fixture-register" | "renderer-capture209" | "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
   `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "visual209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209" |
   `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}` |
   `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}` | `worker-producer-${CurrentPcbStringWorkerProducerCommand["workerProducerPhase"]}` |
@@ -176,6 +181,10 @@ class CurrentPcbFixedPipeCore {
   readonly #viaPurpose: boolean;
   readonly #viaSpatial = { before: { binding: null as CurrentPcbSpatialBinding | null, stage: 0, read: false, released: false }, after: { binding: null as CurrentPcbSpatialBinding | null, stage: 0, read: false, released: false } };
   #viaProperties = 0;
+  #viaWorkerEvent: ((event: DiagnosticEvent) => void) | null = null;
+  #viaWorkerSession: string | null = null;
+  #viaParentRunning = false;
+  readonly #viaWaitingWorkers = new Set<string>();
   readonly #viaStages = new Set<CurrentPcbViaWriteStage>();
   readonly #spatialPurpose: boolean;
   readonly #spatialSources = new Set<string>();
@@ -437,6 +446,28 @@ class CurrentPcbFixedPipeCore {
     }
     return this.#request({ ...command, id: this.#nextId, viaObservationPhase: phase }, `via-spatial-${phase}-${step}`);
   }
+  protected enableViaWorkerDiscoveryCommand(event: (value: DiagnosticEvent) => void): Promise<Reply> {
+    if (!this.#viaPurpose || this.#sessionId === null || this.#viaWorkerEvent !== null || this.#workerEvent !== null || this.#pending !== null || this.#viaRetainedPending !== null) { throw new Error("PCB_VIA_PARENT_ARM"); }
+    this.#viaWorkerEvent = event;
+    return this.#request({ id: this.#nextId, viaWorkerParentPhase: "arm", method: "Target.setAutoAttach", params: CURRENT_PCB_VIA_WORKER_PARENT_PARAMS,
+      sessionId: this.#sessionId }, "via-parent-arm");
+  }
+  protected configureViaWorkerRunningCommand(): Promise<Reply> {
+    if (!this.#viaPurpose || this.#sessionId === null || this.#viaWorkerSession === null || this.#viaWorkerEvent === null || this.#viaParentRunning) { throw new Error("PCB_VIA_PARENT_RUNNING"); }
+    this.#viaParentRunning = true;
+    return this.#request({ id: this.#nextId, viaWorkerParentPhase: "running", method: "Target.setAutoAttach", params: CURRENT_PCB_VIA_WORKER_RUNNING_PARAMS,
+      sessionId: this.#sessionId }, "via-parent-running");
+  }
+  protected bindViaWorkerCommand(sessionId: string, targetId: string): void {
+    if (!this.#viaPurpose || this.#viaWorkerSession !== null || this.#viaWorkerEvent === null || this.#workerSessions.get(sessionId) !== targetId ||
+      !this.#viaWaitingWorkers.has(sessionId) || sessionId === this.#sessionId) { throw new Error("PCB_VIA_WORKER_ORIGINAL_ATTACHMENT"); }
+    this.#viaWorkerSession = sessionId;
+  }
+  protected observeViaWorkerCommand(input: CurrentPcbViaWorkerCommand): Promise<Reply> {
+    if (!this.#viaPurpose || this.#viaWorkerSession === null || this.#workerSessions.get(this.#viaWorkerSession) === undefined) { throw new Error("PCB_VIA_WORKER_ORIGINAL_SESSION"); }
+    const wire = currentPcbViaWorkerWire(input, this.#nextId);
+    return this.#request({ id: this.#nextId, ...wire.command, viaWorkerCommand: true, sessionId: this.#viaWorkerSession }, "via-worker");
+  }
   protected observeViaSdkPropertiesCommand(objectId: string): Promise<Reply> {
     if (!this.#viaPurpose || !this.#viaStages.has("capture") || this.#viaStages.size !== 1 || this.#viaProperties >= 3 || this.#sessionId === null || !diagnosticToken(objectId)) { throw new Error("PCB_VIA_SDK_PROPERTIES"); }
     this.#viaProperties += 1;
@@ -466,7 +497,7 @@ class CurrentPcbFixedPipeCore {
   /** One fixed direct-child discovery on the original page. No recursive
    * autoattachment, debugger waiting, detached adoption or caller target URL. */
   public async enableWorkerDiscovery(event: (value: DiagnosticEvent) => void): Promise<Reply> {
-    if (this.#sessionId === null || this.#workerEvent !== null || this.#pending !== null) {
+    if (this.#viaPurpose || this.#sessionId === null || this.#workerEvent !== null || this.#pending !== null) {
       throw new Error("PCB_DIAGNOSTIC_PIPE_WORKER_DISCOVERY_INPUT");
     }
     this.#workerEvent = event;
@@ -476,7 +507,7 @@ class CurrentPcbFixedPipeCore {
     this.#workerDiscoverySettled = true; return reply;
   }
   public selectWorkerSession(sessionId: string): void {
-    if (this.#failure !== null || !this.#workerDiscoverySettled || this.#selectedWorkerSession !== null ||
+    if (this.#viaPurpose || this.#failure !== null || !this.#workerDiscoverySettled || this.#selectedWorkerSession !== null ||
         !this.#workerSessions.has(sessionId) || this.#pending !== null) { throw new Error("PCB_DIAGNOSTIC_PIPE_WORKER_SELECTION"); }
     this.#selectedWorkerSession = sessionId;
   }
@@ -682,7 +713,7 @@ class CurrentPcbFixedPipeCore {
    * write ambiguity fails the pipe and never grants an automatic resend.
    */
   // oxlint-disable-next-line eslint/require-await -- Async converts pre-dispatch guards to rejected promises; native completion is callback-based.
-  async #request(command: DiagnosticCommand | CurrentPcbSpatialWireCommand | ((CurrentPcbViaWriteCommand | CurrentPcbViaSpatialCommand | CurrentPcbViaSdkPropertiesCommand) & Readonly<{ id: number; sessionId: string }>) | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheHeldCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
+  async #request(command: DiagnosticCommand | CurrentPcbSpatialWireCommand | ((CurrentPcbViaWriteCommand | CurrentPcbViaSpatialCommand | CurrentPcbViaSdkPropertiesCommand | ViaWorkerParentCommand | (CurrentPcbViaWorkerCommand & Readonly<{ viaWorkerCommand: true }>)) & Readonly<{ id: number; sessionId: string }>) | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheHeldCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
     Readonly<{ id: number; sessionId: string }>), phase: RequestPhase = "discovery"): Promise<Reply> {
     if (!this.#started || this.#released || this.#handedOff) { throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED"); }
     const spatial = this.#spatialPurpose && "spatialPhase" in command && phase.startsWith("spatial-");
@@ -707,7 +738,7 @@ class CurrentPcbFixedPipeCore {
     }
     if (this.#failure !== null) { throw failureError(this.#failure); }
     const viaRetained = this.#viaPurpose && ["via-sdk-save", "project-open-project", "pcb-open-document"].includes(phase);
-    if (this.#viaRetainedPending !== null && (viaRetained || phase !== "discovery" || command.method !== "Debugger.getScriptSource")) { throw new Error("PCB_VIA_RETAINED_PENDING_SCOPE"); }
+    if (this.#viaRetainedPending !== null && (viaRetained || !(phase === "via-worker" || phase === "via-parent-running" || phase === "discovery" && command.method === "Debugger.getScriptSource"))) { throw new Error("PCB_VIA_RETAINED_PENDING_SCOPE"); }
     if (this.#pending !== null) { throw new Error("PCB_DIAGNOSTIC_PIPE_REQUEST_PENDING"); }
     let limit = this.#stringPurpose ? CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT : DIAGNOSTIC_REQUEST_LIMIT;
     if (this.#heldCacheDiagnosticPurpose) { limit = HELD_DIAGNOSTIC.requestLimit; }
@@ -818,18 +849,21 @@ class CurrentPcbFixedPipeCore {
       const event = sessionId === undefined ? { method, params } : { method, params, sessionId };
       if (sessionId === this.#sessionId && method === "Target.attachedToTarget") {
         const child = params["targetInfo"], childSession = params["sessionId"];
-        if (this.#workerEvent === null || !diagnosticExact(params, ["sessionId", "targetInfo", "waitingForDebugger"]) ||
+        const observeChild = this.#viaPurpose ? this.#viaWorkerEvent : this.#workerEvent;
+        if (observeChild === null || !diagnosticExact(params, ["sessionId", "targetInfo", "waitingForDebugger"]) ||
             !record(child) || child["type"] !== "worker" || child["attached"] !== true || !diagnosticToken(child["targetId"]) ||
-            !diagnosticToken(childSession) || params["waitingForDebugger"] !== false || childSession === this.#sessionId ||
+            !diagnosticToken(childSession) || (this.#viaPurpose ? typeof params["waitingForDebugger"] !== "boolean" : params["waitingForDebugger"] !== false) || childSession === this.#sessionId ||
             this.#workerSessions.has(childSession) || [...this.#workerSessions.values()].includes(child["targetId"]) ||
             this.#workerSessions.size >= 16) { this.#fail("reply", "worker-attachment", eventKind(method)); return; }
         this.#workerSessions.set(childSession, child["targetId"]);
-        this.#workerEvent(event);
+        if (this.#viaPurpose && params["waitingForDebugger"] === true) { this.#viaWaitingWorkers.add(childSession); }
+        observeChild(event);
       } else if (typeof sessionId === "string" && this.#workerSessions.has(sessionId)) {
-        if (this.#workerEvent === null) { this.#fail("reply", "worker-handler", eventKind(method)); return; }
-        this.#workerEvent(event);
-      } else if (sessionId === this.#sessionId && method === "Target.detachedFromTarget" && this.#workerEvent !== null) {
-        this.#workerEvent(event);
+        const observeWorker = this.#viaPurpose ? this.#viaWorkerEvent : this.#workerEvent;
+        if (observeWorker === null) { this.#fail("reply", "worker-handler", eventKind(method)); return; }
+        observeWorker(event);
+      } else if (sessionId === this.#sessionId && method === "Target.detachedFromTarget" && (this.#workerEvent !== null || this.#viaWorkerEvent !== null)) {
+        const observeDetached = this.#viaPurpose ? this.#viaWorkerEvent : this.#workerEvent; if (observeDetached === null) { throw new Error("PCB_VIA_WORKER_HANDLER"); } observeDetached(event);
       } else { this.#event(event); }
     }
     catch { this.#fail("reply", "event-callback", eventKind(method)); }
@@ -886,6 +920,10 @@ export class CurrentPcbViaWritePipe extends CurrentPcbFixedPipeCore {
   public constructor(input: Readable, output: Writable) { super(input, output, "pcb-via-write209"); }
   public bindViaSpatial(phase: CurrentPcbViaObservationPhase, binding: CurrentPcbSpatialBinding): void { this.bindViaSpatialCommand(phase, binding); }
   public observeViaSpatial(phase: CurrentPcbViaObservationPhase, command: CurrentPcbSpatialCaptureCommand): Promise<Reply> { return this.observeViaSpatialCommand(phase, command); }
+  public enableViaWorkerDiscovery(event: (value: DiagnosticEvent) => void): Promise<Reply> { return this.enableViaWorkerDiscoveryCommand(event); }
+  public configureViaWorkerRunning(): Promise<Reply> { return this.configureViaWorkerRunningCommand(); }
+  public bindViaWorker(sessionId: string, targetId: string): void { this.bindViaWorkerCommand(sessionId, targetId); }
+  public observeViaWorker(command: CurrentPcbViaWorkerCommand): Promise<Reply> { return this.observeViaWorkerCommand(command); }
   public observeViaSdkProperties(objectId: string): Promise<Reply> { return this.observeViaSdkPropertiesCommand(objectId); }
   public observeViaStage(stage: CurrentPcbViaWriteStage, binding: string, plan: CurrentPcbViaWritePlan): Promise<Reply> { return this.observeViaStageCommand(stage, binding, plan); }
 }

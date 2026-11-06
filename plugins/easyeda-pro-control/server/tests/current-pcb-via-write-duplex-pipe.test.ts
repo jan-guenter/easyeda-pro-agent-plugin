@@ -13,6 +13,8 @@ import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { CurrentPcbDiagnosticPipe } from "../src/current-pcb-diagnostic-pipe.ts";
 import type { CurrentPcbViaWritePipe } from "../src/current-pcb-diagnostic-pipe.ts";
+import { currentPcbViaWriteNativeRequest } from "../src/current-pcb-via-write-protocol.ts";
+import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
 import type { CurrentPcbViaWritePlan } from "../src/current-pcb-via-write-plan.ts";
 import { sha256Text } from "../src/core.ts";
 
@@ -42,7 +44,7 @@ async function constructor(): Promise<typeof CurrentPcbViaWritePipe> {
   return result as typeof CurrentPcbViaWritePipe;
 }
 async function fixture(context: TestContext, holdSaveWrite = false): Promise<Readonly<{ pipe: CurrentPcbViaWritePipe; sent: Record<string, unknown>[];
-  replySave: () => void; acknowledgeSave: (error?: Error) => void }>> {
+  replySave: () => void; acknowledgeSave: (error?: Error) => void; emitEvent: (event: DiagnosticEvent) => void }>> {
   const Constructor = await constructor(), input = new PassThrough(), sent: Record<string, unknown>[] = [];
   let save: Record<string, unknown> | null = null, saveCallback: ((error?: Error | null) => void) | null = null;
   const reply = (command: Record<string, unknown>, result: unknown): void => { const text = `${JSON.stringify({ id: command["id"], result,
@@ -62,7 +64,7 @@ async function fixture(context: TestContext, holdSaveWrite = false): Promise<Rea
   const pipe = new Constructor(input, output); pipe.start();
   context.after(async () => { input.destroy(); output.destroy(); await Promise.all(closed); pipe.releaseClosedListeners(); });
   await pipe.attachTarget("original-target", () => { assert.fail("Unexpected event"); }); await pipe.observeViaStage("capture", "original-context", plan);
-  return { pipe, sent, replySave: (): void => { assert.ok(save !== null); reply(save, { result: { type: "boolean", value: true } }); },
+  return { pipe, sent, emitEvent: (event: DiagnosticEvent): void => { input.write(Buffer.from(`${JSON.stringify(event)}\0`)); }, replySave: (): void => { assert.ok(save !== null); reply(save, { result: { type: "boolean", value: true } }); },
     acknowledgeSave: (error?: Error): void => { assert.ok(saveCallback !== null); const original = saveCallback; saveCallback = null; original(error); } };
 }
 void test("Via retains one SDK Save while a fixed original source read settles out of order on the same ID stream", async context => {
@@ -86,4 +88,24 @@ void test("legacy diagnostic purpose keeps its original single pending request i
   context.after(async () => { const closed = [once(input, "close"), once(output, "close")]; input.destroy(); output.destroy(); await Promise.all(closed); pipe.releaseClosedListeners(); });
   const pending = pipe.getVersion(), refused = assert.rejects(pending); await assert.rejects(pipe.getTargets(), /REQUEST_PENDING/u);
   input.emit("error", new Error("synthetic original pipe stop")); await refused;
+});
+
+void test("actual Via pipe binds only its observed suspended child and keeps worker observations on the retained SDK stream", async context => {
+  const f = await fixture(context); const events: DiagnosticEvent[] = [];
+  await assert.rejects(f.pipe.enableWorkerDiscovery(() => { assert.fail("legacy worker callback"); }), /DISCOVERY_INPUT/u);
+  await f.pipe.enableViaWorkerDiscovery(event => { events.push(event); });
+  assert.throws(() => { f.pipe.bindViaWorker("unobserved", "unobserved"); }, /ORIGINAL_ATTACHMENT/u);
+  f.emitEvent({ method: "Target.attachedToTarget", sessionId: "original-session", params: { sessionId: "actual-worker", waitingForDebugger: true,
+    targetInfo: { targetId: "actual-target", type: "worker", attached: true, title: "original", url: "https://client/editor?entry=mgr-project-worker.js&cll=&debugOpen=0" } } });
+  assert.equal(events.length, 1); f.pipe.bindViaWorker("actual-worker", "actual-target");
+  assert.throws(() => { f.pipe.selectWorkerSession("actual-worker"); }, /WORKER_SELECTION/u);
+  assert.throws(() => { f.pipe.bindViaWorker("actual-worker", "actual-target"); }, /ORIGINAL_ATTACHMENT/u);
+  const saved = f.pipe.observeViaStage("save", "original-binding", plan);
+  await f.pipe.observeViaWorker({ phase: "via-worker-runtime", method: "Runtime.enable", params: {} });
+  const worker = f.sent.at(-1); assert.equal(worker?.["sessionId"], "actual-worker");
+  const native = currentPcbViaWriteNativeRequest(Buffer.from(`${JSON.stringify(worker)}\0`)); assert.equal(native["action"], "pcb-via-worker"); assert.equal(Object.hasOwn(native, "sessionId"), false);
+  await f.pipe.configureViaWorkerRunning();
+  const running = f.sent.at(-1); assert.ok(running !== undefined);
+  const parent = currentPcbViaWriteNativeRequest(Buffer.from(`${JSON.stringify(running)}\0`)); assert.equal(parent["phase"], "running");
+  assert.equal(f.pipe.status().pendingRequestId, 4); f.replySave(); await saved;
 });

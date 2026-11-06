@@ -14,6 +14,7 @@ import { diagnosticNativeRequest } from "../src/current-pcb-diagnostic-protocol.
 import { spatialDiagnosticNativeRequest } from "../src/current-pcb-spatial-protocol.ts";
 import { currentSelectedFileMainSqlFenceNativeCases, currentSelectedFileMainSqlFenceNativeSource, currentSelectedFileMainSqlFenceWire } from "../src/current-selected-file-main-sql-fence-native.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SOURCE, qualifyCurrentSelectedFileMainSqlFenceSource } from "../src/current-selected-file-main-sql-fence-source.ts";
+import { currentPcbViaWorkerNativeCases, currentPcbViaWorkerWire } from "../src/current-pcb-via-worker-wire.ts";
 import { requireCurrentSelectedFileMainSqlFenceBootstrap } from "../src/current-selected-file-main-sql-fence-bootstrap.ts";
 
 const rawWindowsPath = String.raw`C:\Synthetic\Codex_via_only_1111111111111111.eprj2`;
@@ -38,7 +39,7 @@ void test("new SDK wire contains fixed scalars only and cannot be spent by relea
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, functionDeclaration: `${CURRENT_PCB_VIA_WRITE_FUNCTION}\n` } })));
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, awaitPromise: false } })));
   }
-  assert.equal(PROFILE.renderer.total, 700); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [288, 8, 296]);
+  assert.equal(PROFILE.renderer.total, 766); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [288, 8, 296]);
 });
 void test("retained SDK methods require exact original installed function locations, names and arity", () => {
   for (const kind of ["create", "save"] as const) { assert.equal(decodeCurrentPcbViaSdkMethod(metadata(kind), kind), "api"); }
@@ -85,7 +86,20 @@ void test("composed native fragment is idempotent and keeps old births, caps and
   const original = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   const generated = compose(original); assert.equal(compose(generated), generated); assert.ok(Buffer.byteLength(generated) < 2 * 1024 * 1024);
   for (const text of ["EasyedaPcbViaWriteBirth", "CreatePcbViaWrite209()", "via-old-birth-smoke", "via-retain-main-until-exit", "viaConstructionComplete", "stage==\"save\"", "pcb-diagnostic-conflicting-via-purpose",
-    "return pcbViaWrite209?700:spatial209?384:workerStartup?256:stringPrecreate?3309:103", "viaSdkProperties>=3", "SendPcbViaSpatial"]) { assert.ok(generated.includes(text), text); }
+    "return pcbViaWrite209?766:spatial209?384:workerStartup?256:stringPrecreate?3309:103", "viaSdkProperties>=3", "SendPcbViaSpatial"]) { assert.ok(generated.includes(text), text); }
   assert.equal(generated.includes("sqlite3.Database="), false); assert.equal(generated.includes("Object.setPrototypeOf(sc.Database"), false);
   assert.throws(() => compose(original.replace("[switch]$StringPrecreate,", "[switch]$ForeignPurpose,")), /ANCHOR/u);
+});
+
+void test("all43 fixed worker cases retain native session custody and cannot cross released grammars", () => {
+  const cases = currentPcbViaWorkerNativeCases(); assert.equal(cases.length, 43);
+  for (const fixed of cases) {
+    const wire = currentPcbViaWorkerWire(fixed, PROFILE.renderer.total);
+    const encoded = bytes({ id: PROFILE.renderer.total, ...wire.command, viaWorkerCommand: true, sessionId: "original-worker" });
+    assert.deepEqual(currentPcbViaWriteNativeRequest(encoded), wire.request);
+    for (const key of ["sessionId", "code", "functionDeclaration", "condition", "lineNumber", "columnNumber", "sql", "topic"]) { assert.equal(Object.hasOwn(wire.request, key), false); }
+    assert.throws(() => diagnosticNativeRequest(encoded)); assert.throws(() => spatialDiagnosticNativeRequest(encoded));
+    assert.throws(() => currentPcbViaWorkerWire({ ...fixed, sessionId: "caller-worker" }, 1));
+    assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ id: 1, ...wire.command, viaWorkerCommand: true, sessionId: "original-worker", extra: true })));
+  }
 });

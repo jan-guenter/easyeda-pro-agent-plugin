@@ -8,7 +8,14 @@
 import { compareCurrentPcbViaProjectedEffect } from "./current-pcb-via-write-effect-data.ts";
 import type { CurrentPcbViaProjectedEffect } from "./current-pcb-via-write-effect-data.ts";
 import { decodeCurrentPcbViaSdkMethod, decodeCurrentPcbViaSdkTuple, qualifyCurrentPcbViaSdkSource } from "./current-pcb-via-write-sdk-source.ts";
-import type { CurrentPcbViaSaveWorkerBindings, CurrentPcbViaSaveWorkerOrigin } from "./current-pcb-via-save-origin.ts";
+import type { CurrentPcbViaWorkerChild } from "./current-pcb-via-worker-controller.ts";
+import type { CurrentPcbViaWorkerCommand } from "./current-pcb-via-worker-wire.ts";
+import type { CurrentPcbViaSaveCommand } from "./current-pcb-via-save-protocol.ts";
+import { CurrentPcbViaWorkerController } from "./current-pcb-via-worker-controller.ts";
+import type { CurrentPcbViaProjectSourceHeld } from "./current-pcb-via-worker-bootstrap.ts";
+import { decodeCurrentPcbViaSaveBreakpoint } from "./current-pcb-via-save-replies.ts";
+import { qualifyCurrentPcbViaSaveSource } from "./current-pcb-via-save-source.ts";
+import type { CurrentPcbViaSaveWorkerBindings, CurrentPcbViaSaveWorkerEvent, CurrentPcbViaSaveWorkerOrigin } from "./current-pcb-via-save-origin.ts";
 import { currentPcbViaWriteNativeRequest } from "./current-pcb-via-write-protocol.ts";
 import type { CurrentPcbViaObservationPhase } from "./current-pcb-via-write-protocol.ts";
 import { requireOriginalCurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
@@ -428,6 +435,7 @@ const headAgeValidationFactories = new WeakMap<CurrentFootprintHeadAgeValidation
 interface PcbViaWriteAllocation { readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: GeneratedFixtureOpenCheckpoint; state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentPcbViaWriteOwner | null; child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown }
 const pcbViaWriteAllocations = new WeakMap<GeneratedFixtureOpenCheckpoint, PcbViaWriteAllocation>();
 const pcbViaWriteFactories = new WeakMap<object, Readonly<{ allocation: PcbViaWriteAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
+export type CurrentPcbViaSaveWorkerSetup = (origin: CurrentPcbViaSaveWorkerOrigin) => Promise<void>;
 export interface CurrentPcbViaNativeObservation { readonly schema: "private.current-pcb-via-native-observation.v1"; readonly phase: CurrentPcbViaObservationPhase; readonly observations: Readonly<Record<string, unknown>> }
 export interface CurrentPcbViaSceneObservation { readonly schema: "private.current-pcb-via-scene-observation.v1"; readonly phase: CurrentPcbViaObservationPhase; readonly observation: CurrentPcb209SpatialTrackResult }
 const pcbViaPackets = new WeakMap<object, Readonly<{ owner: object; plan: CurrentPcbViaWritePlan; phase: string; kind: "native" | "scene" | "stage" }>>();
@@ -746,6 +754,10 @@ class CurrentPcbRetainedOwnerCore {
   #viaSdkBinding: string | null = null;
   #viaSdkQualified = false;
   #viaFailed = false;
+  #viaWorkerPlan: CurrentPcbViaWritePlan | null = null;
+  #viaWorkerSetup: CurrentPcbViaSaveWorkerSetup | null = null;
+  #viaWorkerController: CurrentPcbViaWorkerController | null = null;
+  #viaWorkerOrigin: CurrentPcbViaSaveWorkerOrigin | null = null;
   #viaPlan: CurrentPcbViaWritePlan | null = null;
   readonly #viaNativePhases = new Set<CurrentPcbViaObservationPhase>();
   readonly #viaScenePhases = new Set<CurrentPcbViaObservationPhase>();
@@ -1062,7 +1074,7 @@ class CurrentPcbRetainedOwnerCore {
       pcbOpeningConsumed: this.#pcbOpeningConsumed, pcbOpeningResult: this.#pcbOpeningResult,
       pcbObservationConsumed: this.#pcbObservationConsumed, pcbFrameObservation: this.#pcbFrameObservation, pcbSourceQualified: this.#pcbSourceQualified,
       stringPrecreateConsumed: this.#stringPrecreateConsumed, commonBaselineConsumed: this.#commonBaselineConsumed,
-      ...(this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE ? { selectedSqlFence: this.#mainRunner?.selectedSqlFenceState() ?? null } : {}),
+      ...(this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE ? { selectedSqlFence: this.#mainRunner?.selectedSqlFenceState() ?? null, originalViaWorker: this.#viaWorkerController?.status() ?? null } : {}),
       profile: this.#purpose, workerStartupHandoffConsumed: this.#startupHandoffConsumed,
       ...(this.#generatedFixtureBirth ? { generatedFixtureRegistrationPurpose: true as const, generatedFixtureRegistration: this.#generatedFixtureRegistration } : {}) });
   }
@@ -1273,6 +1285,10 @@ class CurrentPcbRetainedOwnerCore {
       context.openingContext();
       await this.#verifyInstallation(); this.#available();
       if (!preflight.ok) { this.#input.emit("error", error("PROJECT_PREFLIGHT_REFUSED")); return preflight; }
+      if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) {
+        if (preflight.observation === null) { throw error("PCB_VIA_PARENT_PREFLIGHT_REQUIRED"); }
+        await this.#prepareViaWorkerParent(preflight.observation.windowTabId); context.openingContext();
+      }
       await reverify(); context.openingContext();
       await this.#verifyInstallation(); await this.#verify(); this.#available();
       await this.#observeParent(); context.openingContext();
@@ -1481,6 +1497,74 @@ class CurrentPcbRetainedOwnerCore {
     finally { this.#busy = false; }
   }
 
+  /** Trusted coordinator setup only, absent from every MCP operation schema.
+   * Retain this exact callback before awaits; actual origin issuance still
+   * requires the fresh direct worker and all original imported source pauses. */
+  public armViaSaveWorker(plan: CurrentPcbViaWritePlan, setup: CurrentPcbViaSaveWorkerSetup): void {
+    requireViaPlan(this, plan);
+    if (this.#viaWorkerPlan !== null || this.#projectOpeningConsumed || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true ||
+      typeof setup !== "function" || types.isProxy(setup)) { throw error("PCB_VIA_WORKER_ARM_UNAVAILABLE"); }
+    this.#viaWorkerPlan = plan; this.#viaWorkerSetup = setup;
+  }
+  async #prepareViaWorkerParent(windowTabId: string): Promise<void> {
+    const attachment = this.#stagedAttachment, context = this.#stagedContext, pipe = this.#pipe, plan = this.#viaWorkerPlan, setup = this.#viaWorkerSetup;
+    if (plan === null || setup === null || context === null || attachment === null || !(pipe instanceof CurrentPcbViaWritePipe) || this.#viaWorkerController !== null ||
+      canonicalJson(plan.target) !== canonicalJson(this.#projectOpeningTarget)) { throw error("PCB_VIA_WORKER_ORIGINAL_OPENING"); }
+    requireViaPlan(this, plan); const parent = context.openingContext();
+    const current = (): void => {
+      this.#available(); requireViaPlan(this, plan);
+      if (this.#viaFailed || this.#viaWorkerPlan !== plan || this.#viaWorkerSetup !== setup || this.#stagedContext !== context || this.#stagedAttachment !== attachment ||
+        canonicalJson(this.#pcbSourceQualified ? context.pcbOpeningContext() : context.openingContext()) !== canonicalJson(parent)) { throw error("PCB_VIA_WORKER_PARENT_CHANGED"); }
+    };
+    const inventory = diagnosticTargetInventory(await this.#transfer(() => pipe.getTargets())); current();
+    const existingWorkers = inventory.filter(row => row["type"] === "worker").map(row => {
+      if (typeof row["targetId"] !== "string" || typeof row["url"] !== "string" || typeof row["title"] !== "string") { throw error("PCB_VIA_WORKER_INVENTORY"); }
+      return Object.freeze({ targetId: row["targetId"], url: row["url"], title: row["title"] });
+    });
+    let controller: CurrentPcbViaWorkerController | null = null;
+    const original = (): CurrentPcbViaWorkerController => {
+      current(); if (controller === null || this.#viaWorkerController !== controller) { throw error("PCB_VIA_WORKER_ORIGINAL_CURSOR"); } return controller;
+    };
+    controller = new CurrentPcbViaWorkerController(Object.freeze({ parentSessionId: parent.sessionId, projectUuid: plan.target.projectUuid, windowTabId,
+      existingWorkers: Object.freeze(existingWorkers),
+      bindWorker: async (worker: CurrentPcbViaWorkerChild): Promise<void> => {
+        original(); pipe.bindViaWorker(worker.sessionId, worker.targetId);
+        const bound = await this.#request({ action: "pcb-via-worker-bind", sessionId: worker.sessionId, targetId: worker.targetId, projectUuid: plan.target.projectUuid, windowTabId });
+        if (!exact(bound, ["bound"]) || bound["bound"] !== true) { throw error("PCB_VIA_WORKER_NATIVE_BINDING"); } original();
+      }, request: async (command: CurrentPcbViaWorkerCommand): Promise<unknown> => { original(); const reply = await this.#transfer(() => pipe.observeViaWorker(command)); original(); return reply; },
+      poll: async () => { original(); if (this.#mainRunner !== null) { await this.#mainRunner.pumpSelectedSqlFence(); } original(); await this.#pollRenderer(); original(); },
+      assertCurrent: async () => { original(); await this.#verify(); original(); },
+      projectSourceHeld: async (source: CurrentPcbViaProjectSourceHeld, selectedController: CurrentPcbViaWorkerController): Promise<void> => {
+        const selected = original(); if (selected !== selectedController || this.#viaWorkerOrigin !== null) { throw error("PCB_VIA_WORKER_SOURCE_CONSUMED"); }
+        const child = selected.requireHeld(source); const sourceToken = qualifyCurrentPcbViaSaveSource(source.source);
+        const owner = pcbViaWriteFactories.get(this)?.allocation.owner;
+        if (owner === undefined || owner === null || owner !== this) { throw error("PCB_VIA_WORKER_ORIGINAL_OWNER"); }
+        const origin: CurrentPcbViaSaveWorkerOrigin = Object.freeze({ profile: "private.current-pcb-via-save-worker-origin.v1" });
+        const bindings: CurrentPcbViaSaveWorkerBindings = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId, uniqueContextId: source.uniqueContextId, source: sourceToken,
+          request: async (command: CurrentPcbViaSaveCommand): Promise<unknown> => {
+            original(); const reply = await this.#transfer(() => pipe.observeViaWorker(command));
+            if (command.phase === "via-save-arm") { selected.bindSaveBreakpoint(source, command.role, decodeCurrentPcbViaSaveBreakpoint(reply, command.role, source.scriptId)); }
+            original(); return reply;
+          },
+          nextEvent: (): Promise<CurrentPcbViaSaveWorkerEvent> => selected.nextSaveEvent(),
+          assertCurrent: async (): Promise<void> => { original(); selected.requireOriginal(source, child); await this.#verify(); original(); },
+          assertSaveAttempt: (): void => { original(); if (!this.#viaSdkPhases.has("save")) { throw error("PCB_VIA_SAVE_ORIGINAL_ATTEMPT"); } },
+          assertOriginalGenerationExited: (): Promise<void> => {
+            requireViaPlan(this, plan); selected.requireOriginal(source, child);
+            if (!this.#terminationObserved || this.#terminationObservation?.terminated !== true) { return Promise.reject(error("PCB_VIA_ORIGINAL_GENERATION_EXIT_REQUIRED")); } return Promise.resolve();
+          }, fail: (): void => { selected.fail(); } });
+        pcbViaSaveWorkers.set(origin, Object.freeze({ owner, plan, bindings, assertOriginal: (): void => {
+          if (this.#viaWorkerOrigin !== origin || this.#viaWorkerController !== selected || this.#viaWorkerSetup !== setup || this.#viaWorkerPlan !== plan) { throw error("PCB_VIA_SAVE_WORKER_CUSTODY_CHANGED"); }
+          selected.requireOriginal(source, child);
+        } }));
+        this.#viaWorkerOrigin = origin; await Reflect.apply(setup, undefined, [origin]); original(); selected.requireOriginal(source, child);
+      }, releaseParentWait: async () => { original(); const reply = await this.#transfer(() => pipe.configureViaWorkerRunning());
+        if (!exact(reply, [])) { throw error("PCB_VIA_WORKER_PARENT_RUNNING_REPLY"); } original(); },
+      fail: (): void => { this.#viaFailed = true; } }));
+    this.#viaWorkerController = controller;
+    const reply = await this.#transfer(() => pipe.enableViaWorkerDiscovery(event => { if (controller === null) { throw error("PCB_VIA_WORKER_ORIGINAL_CURSOR"); } controller.observeEvent(event); }));
+    if (!exact(reply, [])) { throw error("PCB_VIA_WORKER_PARENT_ARM_REPLY"); } original();
+  }
   #viaReadContext(plan: CurrentPcbViaWritePlan): Readonly<{ context: CurrentPcbDiagnosticContext; pipe: CurrentPcbViaWritePipe; pcb: ReturnType<CurrentPcbDiagnosticContext["modelContext"]>; ui: ReturnType<CurrentPcbDiagnosticContext["pcbOpeningContext"]>; current: () => void }> {
     requireViaPlan(this, plan); const context = this.#stagedContext, pipe = this.#pipe, profile = this.#pcbSourceProfile;
     if (!(pipe instanceof CurrentPcbViaWritePipe) || context === null || profile === null || !this.#pcbSourceQualified || this.#pcbFrameObservation?.ok !== true ||
@@ -4569,6 +4653,14 @@ class CurrentPcbRetainedOwnerCore {
     try { return await this.#transfer(() => kind === "version" ? this.#pipe.getVersion() : this.#pipe.getTargets()); }
     finally { this.#busy = false; }
   }
+  async #pollRenderer(): Promise<void> {
+    this.#available(); const chunk = await this.#request({ action: "poll" });
+    if (!exact(chunk, ["bytes"]) || typeof chunk["bytes"] !== "string" || chunk["bytes"].length > TRANSPORT.maximumNativePollBase64Units ||
+      !/^(?:[A-Za-z\d+/]{4})*(?:[A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/u.test(chunk["bytes"])) { throw error("PIPE_CHUNK"); }
+    const bytes = Buffer.from(chunk["bytes"], "base64");
+    if (bytes.toString("base64") !== chunk["bytes"] || bytes.length > TRANSPORT.maximumNativePollBytes) { throw error("PIPE_CHUNK"); }
+    if (bytes.length > 0) { this.#input.write(bytes); } else { await delay(20); }
+  }
   async #transfer(request: () => Promise<RecordValue>): Promise<RecordValue> {
     if (this.#startupParent !== null) { throw error("STARTUP_LEGACY_TRANSFER_DISABLED"); }
     try {
@@ -4583,12 +4675,8 @@ class CurrentPcbRetainedOwnerCore {
       await this.#send;
       while (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE ? !settled : this.#pipe.status().pendingRequestId !== null) {
         if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#mainRunner !== null) { await this.#mainRunner.pumpSelectedSqlFence(); }
-        this.#available(); const chunk = await this.#request({ action: "poll" });
-        if (!exact(chunk, ["bytes"]) || typeof chunk["bytes"] !== "string" || chunk["bytes"].length > TRANSPORT.maximumNativePollBase64Units ||
-            !/^(?:[A-Za-z\d+/]{4})*(?:[A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/u.test(chunk["bytes"])) { throw error("PIPE_CHUNK"); }
-        const bytes = Buffer.from(chunk["bytes"], "base64");
-        if (bytes.toString("base64") !== chunk["bytes"] || bytes.length > TRANSPORT.maximumNativePollBytes) { throw error("PIPE_CHUNK"); }
-        if (bytes.length > 0) { this.#input.write(bytes); } else { await delay(20); }
+        if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#viaWorkerController !== null && !this.#viaWorkerController.status().pumping) { await this.#viaWorkerController.pump(); }
+        await this.#pollRenderer();
       }
       const result = await observed;
       if ("cause" in result) {

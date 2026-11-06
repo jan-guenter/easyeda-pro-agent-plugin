@@ -1,6 +1,9 @@
 /** Finite Via renderer vocabulary. Only this new birth can select these fixed
  * programs; no caller JavaScript, SDK receiver or pipe handle is accepted. */
+/* oxlint-disable import/max-dependencies -- The original Via wire composes independent fixed SDK, cold bootstrap, worker observer, scene and legacy grammars while retaining their distinct validators. */
 import { z } from "zod";
+import { currentPcbViaWorkerWire } from "./current-pcb-via-worker-wire.ts";
+import { CURRENT_PCB_VIA_WORKER_PARENT_PARAMS, CURRENT_PCB_VIA_WORKER_RUNNING_PARAMS } from "./current-pcb-via-worker-bootstrap-protocol.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import { diagnosticNativeRequest, diagnosticRecord } from "./current-pcb-diagnostic-protocol.ts";
 import { currentPcbSpatialWire } from "./current-pcb-spatial-protocol.ts";
@@ -48,6 +51,20 @@ export function currentPcbViaWriteNativeRequest(chunk: Buffer): Readonly<Record<
     raw["id"] < 1 || raw["id"] > PROFILE.renderer.total || !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("PCB_VIA_WIRE"); }
   const { id, sessionId, ...input } = raw;
   if (typeof sessionId !== "string" && Object.hasOwn(raw, "viaWritePhase")) { throw new Error("PCB_VIA_SESSION"); }
+  if (Object.hasOwn(raw, "viaWorkerCommand")) {
+    const { viaWorkerCommand, ...command } = input;
+    if (viaWorkerCommand !== true || typeof sessionId !== "string") { throw new Error("PCB_VIA_WORKER_WIRE"); }
+    const fixed = currentPcbViaWorkerWire(command, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, viaWorkerCommand: true, sessionId })}\0`))) { throw new Error("PCB_VIA_WORKER_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "viaWorkerParentPhase")) {
+    const selected = input["viaWorkerParentPhase"];
+    if ((selected !== "arm" && selected !== "running") || typeof sessionId !== "string") { throw new Error("PCB_VIA_PARENT_WIRE"); }
+    const params = selected === "arm" ? CURRENT_PCB_VIA_WORKER_PARENT_PARAMS : CURRENT_PCB_VIA_WORKER_RUNNING_PARAMS;
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, viaWorkerParentPhase: selected, method: "Target.setAutoAttach", params, sessionId })}\0`))) { throw new Error("PCB_VIA_PARENT_WIRE"); }
+    return freezeDeep({ action: "pcb-via-worker-parent", requestId: id, phase: selected, sessionId: handle.parse(sessionId) });
+  }
   if (Object.hasOwn(raw, "viaSdkProperties")) {
     const fixed = z.strictObject({ viaSdkProperties: z.literal(true), method: z.literal("Runtime.getProperties"), params: z.strictObject({ objectId: handle,
       ownProperties: z.literal(true), accessorPropertiesOnly: z.literal(false), generatePreview: z.literal(false) }) }).parse(input);

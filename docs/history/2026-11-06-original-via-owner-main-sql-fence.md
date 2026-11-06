@@ -15,3 +15,31 @@ Two independent before/after scene ledgers each qualify the maintained Track/Via
 **Save is explicitly refused in this increment.** The effect token being developed separately is not a SQL grant. Actual PCB saveCanvas getTime/asyncCompressFull return, request dataStr, young-head OB/locked-head branch and exact selected native SQL/completion joins are still required. A future reopened generation must consume a separately issued saved-source token; the initial unticked checkpoint cannot be reused. There is no connected writer, persistence, rollback or Save qualification claim here.
 
 Validation: focused readonly/config/SDK/native-grammar/ownership regressions; original main-backend and released spatial/registration regressions; strict types and zero-warning type-aware lint. Full composed C# compiled on .NET10 Linux and fixed native smoke passed, including old-birth refusals and every SQL codebook row. Complete installed app.js/api.js source qualification passed offline. These are source/synthetic checks, not EasyEDA execution. No app/native launch, MCP call, regenerated helper, bundle, coverage, compatibility, installed payload or private user project was changed. Root owns regeneration and connected validation after source integration.
+
+The Via birth now arms direct-worker waiting before its original project-open
+Promise. Its own event cursor binds only the freshly observed suspended worker,
+checks all seven imported sources and their actual creator/pause order, and
+retains the final project source pause. At that pause the central owner records
+an original worker origin and invokes the exact retained Node coordinator setup
+callback. That callback must arm the six fixed Save observation sites. Only the
+actual replies and source-bound breakpoint identities permit instrumentation
+removal, parent wait release and the final acknowledged/observed continuation.
+The callback is absent from MCP schemas; structural transport fixtures cannot
+issue the central origin.
+
+This adds20 fixed worker-bootstrap cases and23 fixed Save-observation cases to
+the separate Via native codebook. Its renderer reservation is766; the released
+103/384 graphs keep their existing limits. The original open/SDK Promise retains
+its own slot while a single fixed observation lane services that same child.
+There is no observer runtime import back into the central owner. A pending
+original poll remains retained through its actual settlement on failure.
+
+Focused source-byte-seam state tests exercise the production cursor and
+seven-source runner, including setup refusal, exact breakpoint resolutions,
+foreign/nonwaiting attachment refusal and pending-poll failure. Real inert Node
+streams exercise the production pipe and original child/session routing while
+an SDK Promise remains pending. Linux C# compilation and fixed-codec smoke tests
+cover the composed native graph. These checks do not establish connected worker
+startup, clock response, a Save invocation or persistence. Save and selected SQL
+mutation remain refused until the separate original UI clock/body/request and
+per-call SQL joins are complete.
