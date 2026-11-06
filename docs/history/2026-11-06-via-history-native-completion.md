@@ -567,3 +567,21 @@ or resume a foreign browser worker. A real pipe regression admits no cache query
 when a foreign service-worker attachment arrives; fixed-codec tests reject a
 page-scoped substitute for the browser-wide command. This is source and inert
 transport evidence, not a connected actor-fence or cache-invalidation result.
+
+`prepareCurrentPcbViaSavedLoadPlan` now prepares private expected histories and
+both native cipher/plaintext chunks from the genuine saved closed checkpoint.
+Original writer/helper closure, exact original completed source inventory and
+full saved checkpoint verification bracket decryption. It supports only the
+finite same-head second chunk or sole new-head shapes already covered by the
+original closed SQL proof, rejects snapshots/additional payloads, and preserves
+native history IDs, IV selection, keys and actual URL suffixes. Cipher SHA is
+computed over raw bytes. Key/cipher/plaintext values remain private, with native
+loading/cache exclusion/reopened flags false. No matching JSON can issue it.
+
+Two focused cases use actual complete synthetic SQLite files and independent
+native cipher construction for both history shapes. They verify all exact byte,
+URL and nonce expectations and reject inventory/checkpoint copies. The original
+saved checkpoint issuer and connected worker load are intentionally absent in
+these inert cases. This data must join the later genuinely suspended new
+worker, its own fixed source observer and cache-absence transfer; it grants no
+Native run-waiting or fetch continuation by itself.
