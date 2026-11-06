@@ -1,5 +1,8 @@
 # Project history
 
+- [2026-11-06 first manager native cleanup](2026-11-06-first-manager-native-cleanup.md). Actual frozen development controller, ordinary launch, normal close, original root/Job termination, helper release and facade EOF/exit; no import or design operation.
+- [2026-11-06 generated fixture closed baseline](2026-11-06-generated-fixture-closed-baseline.md). Complete initial SQL/raw source qualification, original issued target, narrow checkpoint preparation and exact VACUUM schema-version projection; connected import remains pending.
+
 - [2026-11-06 first disposable batch freeze](2026-11-06-first-disposable-batch-freeze.md). Local01437 payload, exact1101-source/runtime hashes, reproduced bundles, required non-suite checks and remaining connected/release work.
 - [2026-11-06 real Engine import composition](2026-11-06-fixture-real-engine-composition.md). Actual dispatcher-entry tracking, narrow successful-environment cleanup and real technical nonce grammar, verified through genuine test HMAC sessions.
 
