@@ -32,11 +32,16 @@ methods and constructs no native model, app or writer capability.
 The [official Text.modify signature](https://prodocs.easyeda.com/en/api/reference/pro-api.sch_primitivetext.modify.html)
 exposes display properties, but the actual pinned implementation uses truthy
 property checks and writes one alignment value into both native axes. The fixed
-stage therefore reuses the existing native display source-action route rather
-than that wrapper: one original actionRunner transaction and awaited
-consistencyImpl.setSourceCode, replacing only the complete captured Text body.
+stage therefore invokes the original captured Text accessor setters in one
+original actionRunner transaction. It handles zero, false and the two native
+alignment axes directly. It never calls consistencyImpl.setSourceCode: the
+pinned DocUpdateImpl.commitForApplySourceCode always invokes network visibility
+correction after applying source, which is outside this literal Text patch.
 The complete peer source roster and original tree/source-ID owners must match
-before and after. Unknown additional native source rows refuse this first
+before and after. Setter descriptor and receiver identities are rechecked
+before each field; read-only and authorization locks refuse before mutation.
+The two full files and four accessor/decorator spans are independently pinned.
+Unknown additional native source rows refuse this first
 profile; no initialization tolerance is guessed.
 
 ## Native join API
@@ -84,9 +89,14 @@ acceptance false.
 
 ## Validation
 
-Six focused schema/VM cases pass, including fixed stage sequencing, source/body
-mapping, one consumed Save, failed Save and post-mutation window drift. VM
+Seven focused schema/VM cases pass, including fixed stage sequencing, source/body
+mapping, zero coordinates, alignment, read-only refusal, one consumed Save,
+failed Save and post-mutation window drift. VM
 objects are explicitly synthetic; no real EasyEDA constructor, worker, native
 process, source issuer or SQL result is implied. Four actual vendor serializer
-source/data checks pass. Strict type-aware lint passes. New native integration
+source/data checks and four accessor/decorator span checks pass. The fixed
+setter-only function is 16,827 UTF-8 bytes with SHA256
+`7d6b8ff8dcfa59cd5e815702185880537555c0d5907dd184d97b54468d292561`.
+Both TypeScript projects and strict type-aware lint pass. No persisted result
+shape or explanatory field changed. New native integration
 and connected acceptance remain pending.

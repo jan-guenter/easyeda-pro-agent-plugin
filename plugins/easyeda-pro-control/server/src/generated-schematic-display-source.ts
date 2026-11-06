@@ -13,9 +13,13 @@ import type { GeneratedSchematicDisplayPatch } from "./generated-schematic-displ
  * UTF16 half-open, not byte offsets; no constructor or setter is executed here. */
 const sourceFiles = Object.freeze([
     Object.freeze({ relativePath: "pro-sch/3.2.193.5dbe8bb3/js/sch-main.js", bytes: 6_289_622,
-      sha256: "e7fdbc30cadd14fb87c5a50d2c5563241b4cf373d6eea8f7d0c9e7e59588d72c", text: Object.freeze({ start: 4_126_698, end: 4_127_069 }), common: Object.freeze({ start: 1_731_862, end: 1_732_248 }) }),
+      sha256: "e7fdbc30cadd14fb87c5a50d2c5563241b4cf373d6eea8f7d0c9e7e59588d72c", text: Object.freeze({ start: 4_126_698, end: 4_127_069 }), common: Object.freeze({ start: 1_731_862, end: 1_732_248 }),
+      accessors: Object.freeze({ start: 3_492_920, end: 3_495_716, sha256: "5a708c44324fac9042de60fd252b6962e077ada72f639c8948225a0159e5bc6d" }),
+      decorators: Object.freeze({ start: 3_498_228, end: 3_498_706, sha256: "f6e2e2e58d805cda80f9fa4edcac4a3f9e3a721d733d4635caa895204c3dca2e" }) }),
     Object.freeze({ relativePath: "pro-sch/3.2.193.5dbe8bb3/js/sch.js", bytes: 6_472_538,
-      sha256: "b88ad265bb2bc7febb90af92a6f37189b3f90be7cd1f1427522c8f2435dfb4bd", text: Object.freeze({ start: 4_331_870, end: 4_332_241 }), common: Object.freeze({ start: 1_928_416, end: 1_928_802 }) }),
+      sha256: "b88ad265bb2bc7febb90af92a6f37189b3f90be7cd1f1427522c8f2435dfb4bd", text: Object.freeze({ start: 4_331_870, end: 4_332_241 }), common: Object.freeze({ start: 1_928_416, end: 1_928_802 }),
+      accessors: Object.freeze({ start: 3_873_035, end: 3_875_831, sha256: "586665ca6252e6a41e3970cc53434aa6ce2e402c18bddd48287cd945d50d776d" }),
+      decorators: Object.freeze({ start: 3_878_343, end: 3_878_821, sha256: "44e98701671dc16ee18a31b2c0f9955a1ec88ffd946834a25c153e73a308f4d2" }) }),
 ]);
 export const GENERATED_SCHEMATIC_DISPLAY_TEXT_SOURCE = Object.freeze({
   files: sourceFiles,

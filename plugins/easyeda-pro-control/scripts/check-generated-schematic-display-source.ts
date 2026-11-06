@@ -17,6 +17,9 @@ async function main(): Promise<void> {
     const text = source.slice(profile.text.start, profile.text.end); const common = source.slice(profile.common.start, profile.common.end);
     assert.equal(createHash("sha256").update(text).digest("hex"), GENERATED_SCHEMATIC_DISPLAY_TEXT_SOURCE.textSha256);
     assert.equal(createHash("sha256").update(common).digest("hex"), GENERATED_SCHEMATIC_DISPLAY_TEXT_SOURCE.commonSha256);
+    for (const span of [profile.accessors, profile.decorators]) {
+      assert.equal(createHash("sha256").update(source.slice(span.start, span.end)).digest("hex"), span.sha256);
+    }
     const fixture = MANAGED_SCHEMATIC_FIXTURE_TEXT;
     const projected: unknown = runInNewContext(`const methods={${text},${common}}; const input=${JSON.stringify(fixture)};
 const receiver={_x:input.x,_y:input.y,_rotation:input.rotation,_color:input.color,_fontFamily:input.fontFamily,_fontSize:input.fontSize,
@@ -25,7 +28,7 @@ shapeManager:{isSymbolShapeManager:()=>false},getAlignConsistencyValue:()=>input
 JSON.parse(JSON.stringify(methods.getConsistencyData.call(receiver)));`, {}, { timeout: 1000 });
     assert.equal(canonicalJson(projected), canonicalJson(projectGeneratedSchematicInitialNativeTextBody(fixture)));
   }
-  process.stdout.write(`${JSON.stringify({ ok: true, sourceFiles: 2, serializerMethods: 4, syntaxAndDataOnly: true, nativeExecutionVerified: false, writerAuthority: false })}\n`);
+  process.stdout.write(`${JSON.stringify({ ok: true, sourceFiles: 2, serializerMethods: 4, accessorAndDecoratorSpans: 4, syntaxAndDataOnly: true, nativeExecutionVerified: false, writerAuthority: false })}\n`);
 }
 // oxlint-disable-next-line node/no-top-level-await -- The offline CLI must await its own syntax/data checks.
 await main();

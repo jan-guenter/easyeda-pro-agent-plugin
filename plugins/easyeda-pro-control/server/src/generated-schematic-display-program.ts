@@ -19,6 +19,8 @@ const keys=(o,names)=>{plain(o);const list=Reflect.ownKeys(o);if(list.length!==n
 const method=(o,key)=>{let at=o;for(let i=0;at&&i<12;i++,at=Object.getPrototypeOf(at)){const d=Object.getOwnPropertyDescriptor(at,key);if(d){if(!Object.hasOwn(d,"value")||typeof d.value!=="function")bad("METHOD");return{object:o,owner:at,key,fn:d.value};}}bad("METHOD");};
 const property=(o,key)=>{let at=o;for(let i=0;at&&i<12;i++,at=Object.getPrototypeOf(at)){const d=Object.getOwnPropertyDescriptor(at,key);if(d){if(Object.hasOwn(d,"value"))return{object:o,owner:at,key,kind:"data",value:d.value};if(typeof d.get!=="function"||d.set!==undefined)bad("PROPERTY");return{object:o,owner:at,key,kind:"getter",get:d.get};}}bad("PROPERTY");};
 const readProperty=p=>{const now=property(p.object,p.key);if(now.owner!==p.owner||now.kind!==p.kind||p.kind==="data"&&now.value!==p.value||p.kind==="getter"&&now.get!==p.get)bad("PROPERTY_DRIFT");return p.kind==="data"?p.value:apply(p.get,p.object,[]);};
+const setter=(o,key)=>{let at=o;for(let i=0;at&&i<12;i++,at=Object.getPrototypeOf(at)){const d=Object.getOwnPropertyDescriptor(at,key);if(d){if(Object.hasOwn(d,"value")||typeof d.set!=="function"||typeof d.get!=="function")bad("SETTER");return{object:o,owner:at,key,get:d.get,set:d.set};}}bad("SETTER");};
+const reproveSetter=s=>{const now=setter(s.object,s.key);if(now.owner!==s.owner||now.get!==s.get||now.set!==s.set)bad("SETTER_DRIFT");};
 const reprove=m=>{if(method(m.object,m.key).owner!==m.owner||method(m.object,m.key).fn!==m.fn)bad("METHOD_DRIFT");};
 const json=v=>JSON.stringify(v,(_key,value)=>value&&typeof value==="object"&&!Array.isArray(value)?Object.fromEntries(Object.keys(value).sort().map(key=>[key,value[key]])):value);
 const dense=(v,max)=>{if(!Array.isArray(v)||Object.getPrototypeOf(v)!==Array.prototype||v.length>max||Reflect.ownKeys(v).length!==v.length+1)bad("ARRAY");for(let i=0;i<v.length;i++)own(v,String(i));return v;};
@@ -38,11 +40,14 @@ if(stage==="capture"){
  if(this!==root)bad("CAPTURE_RECEIVER");
  const ui=own(root,"UI"),host=own(root,"gVars"),sch=own(root,"SCH"),tabs=own(ui,"tabBar"),managerProperty=property(sch,"docMemoryManager"),manager=readProperty(managerProperty),active=method(manager,"getActiveDoc"),activeTab=method(tabs,"getActiveTab"),getTab=method(tabs,"getTabById");
  const page=apply(active.fn,manager,[]),shapes=own(page,"shapeManager"),ids=own(page,"idManager"),index=own(ids,"idMap"),consistency=own(page,"consistencyImpl"),handler=own(consistency,"decodeAndRealTimeSyncHandler"),runnerProperty=property(shapes,"actionRunner"),runner=readProperty(runnerProperty);
- const getSource=method(consistency,"getSourceCode"),setSource=method(consistency,"setSourceCode"),sourceIds=method(handler,"getSourceCodeIdMap"),run=method(runner,"run");
+ const getSource=method(consistency,"getSourceCode"),sourceIds=method(handler,"getSourceCodeIdMap"),run=method(runner,"run");
+ const text=index.get(operation.textId);if(!text)bad("TEXT");
+ const setters=Object.fromEntries(["x","y","rotation","fontFamily","fontSize","fontWeight","italic","underline","hAlign","vAlign"].map(key=>[key,setter(text,key)]));
+ const permissionProperty=property(host,"isReadOnlyMode");
  const sdk=own(root,"_EXTAPI_ROOT_"),docApi=own(sdk,"sch_Document"),save=method(docApi,"save");
  if(apply(Function.prototype.toString,save.fn,[])!==${JSON.stringify(GENERATED_SCHEMATIC_DISPLAY_SAVE_SOURCE)})bad("SAVE_SOURCE");
  const document=root.document,href=root.location?.href,windowTabId=own(root,"_TAB_ID_"),metadata=own(host,"currentProject"),tab=apply(getTab.fn,tabs,[tabId]);
- b={ui,host,sch,tabs,managerProperty,runnerProperty,manager,active,activeTab,getTab,page,shapes,ids,index,consistency,handler,runner,getSource,setSource,sourceIds,run,sdk,docApi,save,document,href,windowTabId,metadata,tab};
+ b={ui,host,sch,tabs,managerProperty,runnerProperty,manager,active,activeTab,getTab,page,shapes,ids,index,consistency,handler,runner,getSource,sourceIds,run,setters,permissionProperty,sdk,docApi,save,document,href,windowTabId,metadata,tab};
  state={identity,owner:null,modifyAttempted:false,modifyAcknowledged:false,observed:false,saveAttempted:false,saveAcknowledged:false,savePromiseSettled:false,failed:false,before:null};tuple=[b,state];state.owner=tuple;
 }else{
  dense(tuple,2);if(tuple.length!==2)bad("HOLDER");b=own(tuple,"0");state=own(tuple,"1");plain(b);plain(state);
@@ -54,10 +59,10 @@ const check=()=>{
  if(root.window!==root||root.top!==root||root.document!==b.document||b.document?.defaultView!==root||b.document?.nodeType!==9||root.location?.origin!=="https://client"||root.location?.href!==b.href||b.document.URL!==b.href||own(root,"_TAB_ID_")!==b.windowTabId||typeof b.windowTabId!=="string")bad("WINDOW");
  if(own(root,"UI")!==b.ui||own(root,"gVars")!==b.host||own(root,"SCH")!==b.sch||own(b.ui,"gVars")!==b.host||own(b.host,"currentProject")!==b.metadata||own(b.metadata,"projectId")!==target.projectUuid||own(b.metadata,"branchUuid")!==target.branchUuid||own(b.metadata,"isV2Format")!==false||own(b.host,"isHistoryMode")!==false)bad("PROJECT");
  if(own(b.ui,"tabBar")!==b.tabs||readProperty(b.managerProperty)!==b.manager||apply(b.active.fn,b.manager,[])!==b.page||apply(b.activeTab.fn,b.tabs,[])!==tabId||apply(b.getTab.fn,b.tabs,[tabId])!==b.tab||b.tab?.data?.doctype!==1||b.tab.data.pid!==target.projectUuid||b.tab.parentLibraryUuid!==undefined)bad("PAGE");
- const p=b.page;if(p.uuid!==target.pageUuid||p.schematicUuid!==target.schematicUuid||p.project_uuid!==target.projectUuid||p.tabId!==tabId||p.docType!==1||p.source!==""||p.isBlockSymbolInstancePage!==false||p.isSchSheetDoc?.()!==true||p.projectMgr?.uuid!==target.projectUuid||p.shapeManager!==b.shapes||p.idManager!==b.ids||b.ids.idMap!==b.index||b.shapes.docManager!==p||b.shapes.idManager!==b.ids||p.consistencyImpl!==b.consistency||b.consistency.handler!==b.handler||b.consistency.decodeAndRealTimeSyncHandler!==b.handler||b.handler.docManager!==p||b.handler.consistencyImpl!==b.consistency||b.consistency.state!=="initialized"||readProperty(b.runnerProperty)!==b.runner)bad("OWNER");
+ const p=b.page;if(p.uuid!==target.pageUuid||p.schematicUuid!==target.schematicUuid||p.project_uuid!==target.projectUuid||p.tabId!==tabId||p.docType!==1||p.source!==""||p.isBlockSymbolInstancePage!==false||p.isSchSheetDoc?.()!==true||p.projectMgr?.uuid!==target.projectUuid||p.shapeManager!==b.shapes||p.idManager!==b.ids||b.ids.idMap!==b.index||b.shapes.docManager!==p||b.shapes.idManager!==b.ids||p.readonlyMode!==false||p.isLockedByAuth!==false||readProperty(b.permissionProperty)!==false||p.consistencyImpl!==b.consistency||b.consistency.handler!==b.handler||b.consistency.decodeAndRealTimeSyncHandler!==b.handler||b.handler.docManager!==p||b.handler.consistencyImpl!==b.consistency||b.consistency.state!=="initialized"||readProperty(b.runnerProperty)!==b.runner)bad("OWNER");
  if(ownedAction===null?b.runner.running!==false:b.runner.running!==true||b.runner.currentAction!==ownedAction||ownedAction.status!=="running")bad("ACTION");
  if(own(root,"_EXTAPI_ROOT_")!==b.sdk||own(b.sdk,"sch_Document")!==b.docApi||state.owner!==tuple||state.identity!==identity||state.failed||tuple[0]!==b||tuple[1]!==state)bad("DRIFT");
- for(const m of [b.active,b.activeTab,b.getTab,b.getSource,b.setSource,b.sourceIds,b.run,b.save])reprove(m);
+ for(const m of [b.active,b.activeTab,b.getTab,b.getSource,b.sourceIds,b.run,b.save])reprove(m);for(const binding of Object.values(b.setters))reproveSetter(binding);
 };
 const capture=expected=>{
  check();if(!(b.index instanceof Map)||b.index.size>64)bad("TREE");const rootModel=b.shapes.root;if(!rootModel||rootModel.modelType!=="Root"||rootModel.parent!=null||rootModel.shapeManager!==b.shapes||rootModel.isConnected!==true)bad("ROOT");
@@ -81,8 +86,11 @@ try{
  if(stage==="preflight"){if(state.modifyAttempted||state.saveAttempted)bad("CONSUMED");same(state.before,capture(operation.beforeBody));return receipt(true,capture(operation.beforeBody));}
  if(stage==="modify"){
   if(state.modifyAttempted||state.saveAttempted)bad("CONSUMED");state.modifyAttempted=true;const before=capture(operation.beforeBody);same(state.before,before);
-  const rows=before.rows.map(row=>({...row,body:row.id===operation.textId?operation.afterBody:row.body})),source=[before.head,...rows.map(row=>JSON.stringify(row.header)+"||"+JSON.stringify(row.body))].join("|\\n")+"|\\n";
-  dispatchAttempted=true;const original=apply(b.run.fn,b.runner,[async()=>{ownedAction=b.runner.currentAction;check();same(before,capture(operation.beforeBody));const changed=await apply(b.setSource.fn,b.consistency,[source]);check();if(changed!==true)bad("SOURCE_REJECTED");}]);
+  const changes=[];
+  for(const field of ["x","y","rotation","fontFamily","fontSize","fontWeight","italic","underline"]){if(json(operation.beforeBody[field])!==json(operation.afterBody[field]))changes.push([field,operation.afterBody[field]]);}
+  if(operation.beforeBody.align!==operation.afterBody.align){const labels=["LEFT_TOP","LEFT_MIDDLE","LEFT_BOTTOM","CENTER_TOP","CENTER_MIDDLE","CENTER_BOTTOM","RIGHT_TOP","RIGHT_MIDDLE","RIGHT_BOTTOM"],at=labels.indexOf(operation.afterBody.align);if(operation.afterBody.align!==null&&at<0)bad("ALIGN");changes.push(["hAlign",operation.afterBody.align===null?null:Math.floor(at/3)],["vAlign",operation.afterBody.align===null?null:at%3]);}
+  if(changes.length===0)bad("NO_CHANGE");
+  dispatchAttempted=true;const original=apply(b.run.fn,b.runner,[async()=>{ownedAction=b.runner.currentAction;check();same(before,capture(operation.beforeBody));for(const[field,value]of changes){check();const binding=b.setters[field];if(binding.object!==before.text)bad("TEXT_RECEIVER");reproveSetter(binding);apply(binding.set,before.text,[value]);}check();}]);
   if(Object.getPrototypeOf(original)!==Promise.prototype)bad("ACTION_PROMISE");const result=await original;ownedAction=null;originalPromiseSettled=true;if(result!==true)bad("ACTION_REJECTED");const after=capture(operation.afterBody);same(before,after);state.modifyAcknowledged=true;return receipt(true,after);
  }
  if(stage==="observe"){if(!state.modifyAcknowledged||state.saveAttempted)bad("ORDER");const after=capture(operation.afterBody);same(state.before,after);state.observed=true;return receipt(true,after);}
