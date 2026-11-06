@@ -754,6 +754,7 @@ class CurrentPcbRetainedOwnerCore {
   #viaSdkBinding: string | null = null;
   #viaSdkQualified = false;
   #viaFailed = false;
+  #viaObserverTail: Promise<void> = Promise.resolve();
   #viaCleanupOnly = false;
   #viaWorkerPlan: CurrentPcbViaWritePlan | null = null;
   #viaWorkerSetup: CurrentPcbViaSaveWorkerSetup | null = null;
@@ -1507,6 +1508,16 @@ class CurrentPcbRetainedOwnerCore {
       typeof setup !== "function" || types.isProxy(setup)) { throw error("PCB_VIA_WORKER_ARM_UNAVAILABLE"); }
     this.#viaWorkerPlan = plan; this.#viaWorkerSetup = setup;
   }
+  /** One fixed observer lane across the same original UI/worker sessions.
+   * The original opening/SDK Promise retains its separate transport slot. */
+  #serializeViaObserver(request: () => Promise<RecordValue>): Promise<RecordValue> {
+    const next = (async (): Promise<RecordValue> => { await this.#viaObserverTail;
+      if (this.#purpose !== CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE || this.#viaCleanupOnly || this.#viaFailed) { throw error("PCB_VIA_OBSERVER_CLEANUP_ONLY"); }
+      return request(); })();
+    this.#viaObserverTail = (async (): Promise<void> => { try { await next; } catch {
+      // The original collector retains its refusal.
+    } })(); return next;
+  }
   async #prepareViaWorkerParent(windowTabId: string): Promise<void> {
     const attachment = this.#stagedAttachment, context = this.#stagedContext, pipe = this.#pipe, plan = this.#viaWorkerPlan, setup = this.#viaWorkerSetup;
     if (plan === null || setup === null || context === null || attachment === null || !(pipe instanceof CurrentPcbViaWritePipe) || this.#viaWorkerController !== null ||
@@ -1532,7 +1543,7 @@ class CurrentPcbRetainedOwnerCore {
         original(); pipe.bindViaWorker(worker.sessionId, worker.targetId);
         const bound = await this.#request({ action: "pcb-via-worker-bind", sessionId: worker.sessionId, targetId: worker.targetId, projectUuid: plan.target.projectUuid, windowTabId });
         if (!exact(bound, ["bound"]) || bound["bound"] !== true) { throw error("PCB_VIA_WORKER_NATIVE_BINDING"); } original();
-      }, request: async (command: CurrentPcbViaWorkerCommand): Promise<unknown> => { original(); const reply = await this.#transfer(() => pipe.observeViaWorker(command)); original(); return reply; },
+      }, request: async (command: CurrentPcbViaWorkerCommand): Promise<unknown> => { original(); const reply = await this.#serializeViaObserver(() => this.#transfer(() => { original(); return pipe.observeViaWorker(command); })); original(); return reply; },
       poll: async () => { original(); if (this.#mainRunner !== null) { await this.#mainRunner.pumpSelectedSqlFence(); } original(); await this.#pollRenderer(); original(); },
       assertCurrent: async () => { original(); await this.#verify(); original(); },
       projectSourceHeld: async (source: CurrentPcbViaProjectSourceHeld, selectedController: CurrentPcbViaWorkerController): Promise<void> => {
@@ -1543,7 +1554,9 @@ class CurrentPcbRetainedOwnerCore {
         const origin: CurrentPcbViaSaveWorkerOrigin = Object.freeze({ profile: "private.current-pcb-via-save-worker-origin.v1" });
         const bindings: CurrentPcbViaSaveWorkerBindings = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId, uniqueContextId: source.uniqueContextId, source: sourceToken,
           request: async (command: CurrentPcbViaSaveCommand): Promise<unknown> => {
-            original(); const reply = await this.#transfer(() => pipe.observeViaWorker(command));
+            original(); const reply = await this.#serializeViaObserver(() => this.#transfer(() => { original();
+              if (command.phase === "via-save-resume") { selected.reserveSaveResume(source); }
+              return pipe.observeViaWorker(command); }));
             if (command.phase === "via-save-arm") { selected.bindSaveBreakpoint(source, command.role, decodeCurrentPcbViaSaveBreakpoint(reply, command.role, source.scriptId)); }
             original(); return reply;
           },
@@ -2338,7 +2351,8 @@ class CurrentPcbRetainedOwnerCore {
   async #attach(context: CurrentPcbDiagnosticContext, targetId: string): Promise<void> {
     let sessionId: string | null = null;
     await this.#transfer(async () => {
-      sessionId = await this.#pipe.attachTarget(targetId, event => { context.observeEvent(event); });
+      sessionId = await this.#pipe.attachTarget(targetId, event => {
+        if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#viaWorkerController?.observeUiEvent(event) === true) { return; } context.observeEvent(event); });
       return { sessionId };
     });
     if (sessionId === null) { throw error("ATTACH_REPLY"); }

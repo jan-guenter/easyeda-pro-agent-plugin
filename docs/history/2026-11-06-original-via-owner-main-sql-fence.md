@@ -53,3 +53,14 @@ observation and closed release survive this cutoff. Source-observer refusal is
 separate from malformed helper transport, which remains fail-closed. Actual
 original-owner methods over a synthetic Node child test delayed-poll cutoff,
 no replay, separate exit observation/release and malformed transport refusal.
+
+The original Via worker cursor now uses one event router for the Save observer
+and the forthcoming clock collector. The six actual Save breakpoint replies
+register their original session/script/line/column identities. Every pause has
+one collector and one consumed resume reservation; a resumed event must match
+that reservation. Both collectors share the same retained poll Promise, and UI
+and worker pauses can be retained independently. Reply/event data is captured
+before post-read owner awaits. Unknown/overlapping breakpoints, foreign
+locations, unreserved resumes and abandoned-reader attempts refuse. The central
+owner also serializes its fixed observer calls while retaining the separate
+opening/SDK Promise. No clock origin or Save/SQL grant is issued by this router.

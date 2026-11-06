@@ -1,6 +1,8 @@
 /** Original-event cursor for one fresh Via worker. Structural transports prove
  * no ownership; only the actual central owner's held-source callback can issue
  * its private native origin. No debugger continuation is attempted on failure. */
+import { CurrentPcbViaEventRouter } from "./current-pcb-via-event-router.ts";
+import type { CurrentPcbViaEventPoint, CurrentPcbViaRoutedEvent } from "./current-pcb-via-event-router.ts";
 import { performance } from "node:perf_hooks";
 import { types } from "node:util";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -11,7 +13,6 @@ import { CurrentPcbViaWorkerBootstrap } from "./current-pcb-via-worker-bootstrap
 import type { CurrentPcbViaProjectSourceHeld, CurrentPcbViaWorkerBootstrapEvent, CurrentPcbViaWorkerBootstrapResult } from "./current-pcb-via-worker-bootstrap.ts";
 import type { CurrentPcbViaWorkerBootstrapCommand } from "./current-pcb-via-worker-bootstrap-protocol.ts";
 import type { CurrentPcbViaWorkerCommand } from "./current-pcb-via-worker-wire.ts";
-import type { CurrentPcbViaSaveWorkerEvent } from "./current-pcb-via-save-origin.ts";
 import type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 
 export interface CurrentPcbViaWorkerChild { readonly sessionId: string; readonly targetId: string; readonly url: string; readonly title: string }
@@ -36,6 +37,7 @@ export class CurrentPcbViaWorkerController {
   readonly #background = new Set<string>();
   #child: CurrentPcbViaWorkerChild | null = null;
   #runner: CurrentPcbViaWorkerBootstrap | null = null;
+  #router: CurrentPcbViaEventRouter | null = null;
   #source: CurrentPcbViaProjectSourceHeld | null = null;
   #result: CurrentPcbViaWorkerBootstrapResult | null = null;
   #work: Promise<void> | null = null;
@@ -75,6 +77,7 @@ export class CurrentPcbViaWorkerController {
     this.#savePoints.set(role, breakpointId);
   }
   #resolution(event: CurrentPcbViaWorkerBootstrapEvent): boolean {
+    if (this.#result !== null) { return false; }
     if (event.method !== "Debugger.breakpointResolved") { return false; }
     need(this.#source !== null && record(event.params) && record(event.params["location"]));
     const location = event.params["location"], params = event.params;
@@ -102,6 +105,9 @@ export class CurrentPcbViaWorkerController {
       need(this.#child === null && params["waitingForDebugger"] && target["title"] === expected && isCurrentPcb209BootstrapTargetUrl(target["url"]));
       this.#child = freezeDeep({ sessionId, targetId: target["targetId"], url: target["url"], title: target["title"] }); return;
     }
+    if (event.sessionId === this.#bindings.parentSessionId && this.#result !== null && ["Debugger.paused", "Debugger.resumed", "Debugger.breakpointResolved"].includes(event.method)) {
+      need(this.#events.length < 256); this.#events.push(freezeDeep(structuredClone({ method: event.method, sessionId: event.sessionId, params: event.params }))); return;
+    }
     if (typeof event.sessionId === "string" && this.#background.has(event.sessionId)) { return; }
     need(this.#child !== null && event.sessionId === this.#child.sessionId && this.#events.length < 256);
     this.#events.push(freezeDeep(structuredClone({ method: event.method, sessionId: event.sessionId, params: event.params })));
@@ -118,11 +124,11 @@ export class CurrentPcbViaWorkerController {
       }
     } catch (error) { this.fail(); throw error; } finally { this.#reading = false; }
   }
-  public async nextSaveEvent(): Promise<CurrentPcbViaSaveWorkerEvent> {
+  async #nextObservedEvent(): Promise<DiagnosticEvent> {
     need(this.#result !== null && !this.#pumping && this.#child !== null);
     for (let count = 0; count < 128; count += 1) {
       const event = await this.#next();
-      if (event.method === "Debugger.paused" || event.method === "Debugger.resumed") { return { method: event.method, sessionId: event.sessionId, params: event.params }; }
+      if (event.method === "Debugger.paused" || event.method === "Debugger.resumed" || event.method === "Debugger.breakpointResolved") { need(record(event.params)); return { method: event.method, sessionId: event.sessionId, params: event.params }; }
       need(record(event.params));
       if (event.method === "Inspector.workerScriptLoaded") { need(!this.#loaded && Reflect.ownKeys(event.params).length === 0); this.#loaded = true; }
       else if (event.method === "Debugger.scriptParsed") { need(event.params["url"] === "" && event.params["executionContextId"] === this.#source?.executionContextId); }
@@ -130,6 +136,24 @@ export class CurrentPcbViaWorkerController {
       else { this.fail(); throw new Error("PCB_VIA_WORKER_UNEXPECTED_EVENT"); }
     }
     this.fail(); throw new Error("PCB_VIA_WORKER_EVENT_CAPACITY");
+  }
+  #eventRouter(): CurrentPcbViaEventRouter {
+    need(this.#router !== null && this.#result !== null && !this.#pumping); return this.#router;
+  }
+  public observeUiEvent(event: DiagnosticEvent): boolean {
+    if (event.sessionId !== this.#bindings.parentSessionId || this.#result === null || !["Debugger.paused", "Debugger.resumed", "Debugger.breakpointResolved"].includes(event.method)) { return false; }
+    this.observeEvent(event); return true;
+  }
+  public nextSaveEvent(): Promise<CurrentPcbViaRoutedEvent> { return this.#eventRouter().next("save"); }
+  public nextClockEvent(): Promise<CurrentPcbViaRoutedEvent> { return this.#eventRouter().next("clock"); }
+  public bindClockBreakpoint(source: CurrentPcbViaProjectSourceHeld, point: CurrentPcbViaEventPoint): void {
+    need(this.#source === source); this.#eventRouter().register("clock", point);
+  }
+  public reserveSaveResume(source: CurrentPcbViaProjectSourceHeld): void {
+    need(this.#source === source && this.#child !== null); this.#eventRouter().reserveResume("save", this.#child.sessionId);
+  }
+  public reserveClockResume(source: CurrentPcbViaProjectSourceHeld, realm: "worker" | "ui", role: string): void {
+    need(this.#source === source && this.#child !== null); this.#eventRouter().reserveResume("clock", realm === "worker" ? this.#child.sessionId : this.#bindings.parentSessionId, role);
   }
   async #start(): Promise<void> {
     const child = this.#child; need(child !== null && this.#runner === null);
@@ -144,6 +168,10 @@ export class CurrentPcbViaWorkerController {
     this.#runner = runner; const result = await runner.observe(); await this.#current();
     need(this.#runner === runner && result.sessionId === child.sessionId && this.#source !== null && result.scriptId === this.#source.scriptId &&
       result.uniqueContextId === this.#source.uniqueContextId); this.#result = result;
+    const router = new CurrentPcbViaEventRouter(Object.freeze({ workerSessionId: child.sessionId, uiSessionId: this.#bindings.parentSessionId,
+      nextEvent: (): Promise<DiagnosticEvent> => this.#nextObservedEvent(), assertCurrent: (): Promise<void> => this.#current(), fail: (): void => { this.fail(); } }));
+    for (const [role, breakpointId] of this.#savePoints) { const site = CURRENT_PCB_VIA_SAVE_SITES[role]; router.register("save", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
+    this.#router = router;
   }
   /** The outer original renderer call drives this, including its still-pending
    * project-open Promise. Nested observer transfers never start a second pump. */

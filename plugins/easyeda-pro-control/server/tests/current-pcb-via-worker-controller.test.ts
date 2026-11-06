@@ -99,7 +99,7 @@ void test("actual cursor retains source setup and six exact Save resolutions bef
   const f = await fixture(); await f.controller.pump();
   assert.deepEqual(f.state, { failed: false, held: 1, released: 1, resumed: true, bound: 1 }); assert.equal(f.commands.length, 20);
   assert.deepEqual(f.controller.status(), { ready: true, pumping: false, failed: false, projectSourceHeld: true, originalWorkerSelected: true });
-  f.incoming.push({ method: "Debugger.paused", sessionId: "original-worker", params: { hitBreakpoints: ["save-entry"] } });
+  f.incoming.push({ method: "Debugger.paused", sessionId: "original-worker", params: { hitBreakpoints: ["save-entry"], callFrames: [{ location: { scriptId: "script-project", lineNumber: SITES.entry.lineNumber, columnNumber: SITES.entry.columnNumber } }] } });
   const savedEvent = await f.controller.nextSaveEvent(); assert.equal(savedEvent.method, "Debugger.paused"); await f.controller.pump(); assert.equal(f.commands.length, 20);
 });
 void test("setup refusal leaves project pause held and never releases parent waiting or replays bootstrap", async () => {
@@ -111,7 +111,7 @@ void test("setup refusal leaves project pause held and never releases parent wai
 void test("foreign breakpoint resolutions and nonwaiting selected attachments refuse without adoption", async () => {
   const f = await fixture(); await f.controller.pump();
   f.incoming.push({ method: "Debugger.breakpointResolved", sessionId: "original-worker", params: { breakpointId: "foreign", location: { scriptId: "script-project", lineNumber: 110, columnNumber: 131_055 } } });
-  await assert.rejects(f.controller.nextSaveEvent(), /WORKER_CURSOR/u); assert.equal(f.state.failed, true);
+  await assert.rejects(f.controller.nextSaveEvent(), /EVENT_ROUTE/u); assert.equal(f.state.failed, true);
   const other = await fixture(); assert.throws(() => { other.controller.observeEvent({ method: "Target.attachedToTarget", sessionId: "original-parent", params: { sessionId: "unowned", waitingForDebugger: false,
     targetInfo: { targetId: "second", type: "worker", attached: true, url: "https://client/editor?entry=mgr-project-worker.js&cll=&debugOpen=0", title: "foreign" } } }); });
   assert.equal(other.commands.length, 0);
