@@ -606,3 +606,30 @@ Verification: 13 focused owner/load-plan cases, full TypeScript checks and
 changed-file strict type-aware lint pass. These are isolated synthetic-child,
 completed SQL and source checks. No saved-cache route or loading worker ran in
 EasyEDA; project opening remains denied.
+
+### Same-owner cache absence immediately before loading preparation
+
+The original saved reader now mounts `prepareSavedReadbackLoading()` after its
+own completed invalidation. It retains one original Promise, rechecks the full
+published backup and genuine closed checkpoint, qualifies another actual
+empty-UI preflight plus its correlated helper script source, and compares the
+same original windowTabId. It then consumes the two previously reserved loading
+storage-key and cache-name requests. Both exact namespaces must remain absent,
+the storage key must match, and every peer cache descriptor must remain exact.
+
+The returned reference is a private same-owner loading-preparation token. Copied
+references fail, ambiguous replies consume the original requests, and supported
+original-Job abort remains available. Its data explicitly leaves opening and
+fresh-loading authority false. The future worker observer still has to consume
+this handoff before the opening transition and prove the actual original
+request/decrypt/parse/model path. No project opening is enabled by this slice.
+
+The additional current preflight costs nine CDP calls plus one correlated helper
+source read. The derived active saved-reader bound is172 and its prospective
+complete bound is280. The readonly seven-source bootstrap remains23; no writer
+bootstrap helpers or execution grants are reused.
+
+Verification:14 focused ledger and production-Core/real-pipe synthetic-child
+cases, full types and changed-file strict lint pass. Two complete helper emissions
+are identical, and the composed Linux C# pure-codec/unallocated-constructor smoke
+passes. No Windows process, cache route, native owner or EasyEDA worker was run.

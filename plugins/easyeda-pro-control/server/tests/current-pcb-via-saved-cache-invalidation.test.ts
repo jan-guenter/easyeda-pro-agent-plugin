@@ -41,6 +41,11 @@ void test("ordered invalidation uses only retained two IDs, consumes each once a
   run({ phase: "saved-cache-names", step: "absence" }, { caches: [peer] }); const snapshot = ledger.snapshot();
   ledger.requireOriginalSnapshot(snapshot); assert.throws(() => { ledger.requireOriginalSnapshot({ ...snapshot }); });
   assert.deepEqual(snapshot.deleteOrdinals, [0, 1]); assert.equal(snapshot.freshLoadingVerified, false); assert.equal(ledger.status().complete, true);
+  assert.throws(() => ledger.loadingSnapshot(snapshot)); assert.throws(() => ledger.prepare({ phase: "saved-cache-names", step: "loading" }));
+  run({ phase: "saved-cache-key", step: "loading" }, { storageKey }); run({ phase: "saved-cache-names", step: "loading" }, { caches: [peer] });
+  const loading = ledger.loadingSnapshot(snapshot); ledger.requireOriginalLoadingSnapshot(loading); assert.throws(() => { ledger.requireOriginalLoadingSnapshot({ ...loading }); });
+  assert.equal(loading.originalAbsence, snapshot); assert.equal(loading.packets.length, 2); assert.equal(loading.freshLoadingVerified, false);
+  assert.throws(() => ledger.prepare({ phase: "saved-cache-key", step: "loading" })); assert.throws(() => ledger.prepare({ phase: "saved-cache-names", step: "loading" }));
 });
 void test("absent namespaces skip deletes; peer drift, lost reply and unexpected content event refuse", () => {
   const empty = new CurrentPcbViaSavedCacheInvalidationLedger(before(true));
@@ -59,4 +64,21 @@ void test("absent namespaces skip deletes; peer drift, lost reply and unexpected
   const foreign = new CurrentPcbViaSavedCacheInvalidationLedger(before());
   assert.throws(() => foreign.observeOriginalEvent({ method: "Storage.cacheStorageContentUpdated", sessionId: frame.sessionId, params: { origin, storageKey, cacheName: "unchanged-peer" } }));
   assert.equal(foreign.status().failed, true);
+});
+
+void test("loading rechecks exact storage key and complete peer roster after original absence", () => {
+  const complete = (): CurrentPcbViaSavedCacheInvalidationLedger => {
+    const ledger = new CurrentPcbViaSavedCacheInvalidationLedger(before(true));
+    for (const ordinal of [0, 1] as const) {
+      ledger.accept(ledger.prepare({ phase: "saved-cache-key", step: ordinal === 0 ? "before-delete-0" : "before-delete-1" }), { storageKey });
+      ledger.accept(ledger.prepare({ phase: "saved-cache-names", step: ordinal === 0 ? "before-delete-0" : "before-delete-1" }), { caches: [peer] });
+      ledger.accept(ledger.prepare({ phase: "saved-cache-names", step: ordinal === 0 ? "after-delete-0" : "after-delete-1" }), { caches: [peer] });
+    }
+    ledger.accept(ledger.prepare({ phase: "saved-cache-names", step: "absence" }), { caches: [peer] }); return ledger;
+  };
+  const foreignKey = complete(); assert.throws(() => foreignKey.accept(foreignKey.prepare({ phase: "saved-cache-key", step: "loading" }), { storageKey: "https://foreign/" }));
+  const recreated = complete(); recreated.accept(recreated.prepare({ phase: "saved-cache-key", step: "loading" }), { storageKey });
+  assert.throws(() => recreated.accept(recreated.prepare({ phase: "saved-cache-names", step: "loading" }), { caches: [peer, selected[0]] }));
+  const changedPeer = complete(); changedPeer.accept(changedPeer.prepare({ phase: "saved-cache-key", step: "loading" }), { storageKey });
+  assert.throws(() => changedPeer.accept(changedPeer.prepare({ phase: "saved-cache-names", step: "loading" }), { caches: [] }));
 });

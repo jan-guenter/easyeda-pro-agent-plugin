@@ -74,7 +74,7 @@ else if(q.action==='saved-readback-actors'){queued.push({id:q.requestId,result:{
 else if(q.action==='saved-readback-parent'){queued.push({id:q.requestId,result:{},sessionId:q.sessionId});send(q,{written:true});}
 else if(q.action==='saved-readback-metadata'){if(q.savedCacheMetadataPhase!=='saved-cache-native-constructors'||q.uniqueContextId!=='synthetic-context')throw Error('metadata-selector');send(q,{written:true});}
 else if(q.action==='saved-readback-backup-enroll')send(q,{backupEnrolled:true});
-else if(q.action==='saved-readback-cache-guard'){queued.push({method:'Debugger.scriptParsed',params:{scriptId:'guard-'+q.namespaceOrdinal,url:'',executionContextId:7},sessionId:q.sessionId});queued.push({id:q.requestId,result:{result:{type:'string',value:JSON.stringify(guardReply)}},sessionId:q.sessionId});send(q,{written:true});}
+else if(q.action==='saved-readback-cache-guard'||q.action==='saved-readback-load-guard'){queued.push({method:'Debugger.scriptParsed',params:{scriptId:'guard-'+q.namespaceOrdinal,url:'',executionContextId:7},sessionId:q.sessionId});queued.push({id:q.requestId,result:{result:{type:'string',value:JSON.stringify(guardReply)}},sessionId:q.sessionId});send(q,{written:true});}
 else if(q.action==='saved-readback-cache'){if(!${String(invalidation)}){if(q.savedCachePhase!=='saved-cache-key'||q.frameId!=='synthetic-frame')throw Error('selector');}else{let result;if(q.savedCachePhase==='saved-cache-key')result={storageKey:'https://client/'};else if(q.savedCachePhase==='saved-cache-names')result={caches:roster};else if(q.savedCachePhase==='saved-cache-delete'){if(q.cacheId!=='cache-'+q.namespaceOrdinal)throw Error('foreign-delete');const i=roster.findIndex(x=>x.cacheId===q.cacheId);if(i<0)throw Error('replay');roster.splice(i,1);result={};}else throw Error('cache-phase');if(!(${String(lostDelete)}&&q.savedCachePhase==='saved-cache-delete'))queued.push({id:q.requestId,result,sessionId:q.sessionId});}send(q,{written:true});}
 else if(q.action==='poll')setTimeout(()=>${malformed ? String.raw`process.stdout.write('malformed\n')` : String.raw`send(q,{bytes:attached&&queued.length?Buffer.from(JSON.stringify(queued.shift())+"\u0000").toString('base64'):''})`},50);
 else if(q.action==='saved-readback-abort'){if(q.confirmAbortOriginalSavedReadbackJob!==true)throw Error('confirmation');terminated=true;send(q,{terminationDispatched:true});}
@@ -109,11 +109,16 @@ void test("original durable backup drives two source-qualified guards and once-o
   const f = await fixture(context, false, true, false, true, true); await f.owner.publishSavedCacheBackup();
   const original = f.owner.invalidateSavedCaches(); assert.equal(f.owner.invalidateSavedCaches(), original);
   const absence = await original; assert.equal(absence.profile, "private.current-pcb-via-saved-cache-absence.v1");
+  const loadingPromise = f.owner.prepareSavedReadbackLoading(); assert.equal(f.owner.prepareSavedReadbackLoading(), loadingPromise);
+  const loading = await loadingPromise, ready = f.owner.originalSavedReadbackLoadPreparation(loading, f.prepared);
+  assert.equal(ready.projectOpeningAuthorized, false); assert.equal(ready.freshLoadingVerified, false); assert.equal(ready.data.bothExactNamespacesAbsent, true); await ready.assertCurrent();
+  assert.throws(() => f.owner.originalSavedReadbackLoadPreparation({ ...loading }, f.prepared));
+  assert.equal(f.actions.filter(action => action === "saved-readback-load-guard").length, 1);
   const proof = f.owner.originalSavedReadbackCacheAbsence(absence, f.prepared); assert.equal(proof.freshLoadingVerified, false); await proof.assertCurrent();
   assert.throws(() => f.owner.originalSavedReadbackCacheAbsence({ ...absence }, f.prepared));
   assert.equal(f.actions.filter(action => action === "saved-readback-backup-enroll").length, 1);
   assert.equal(f.actions.filter(action => action === "saved-readback-cache-guard").length, 2);
-  assert.equal(f.actions.filter(action => action === "saved-readback-cache").length, 9);
+  assert.equal(f.actions.filter(action => action === "saved-readback-cache").length, 11);
   assert.equal(f.owner.invalidateSavedCaches(), original); await f.owner.abortSavedReadback(true);
   assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
 });
@@ -179,10 +184,10 @@ void test("copied closed-checkpoint data refuses the real lazy factory before na
   assert.deepEqual(currentPcbViaSavedReadbackAllocationOutcome(copied), { state: "not-attempted", owner: null });
 });
 
-void test("fresh readback native composition repeats exactly and its current pipe preserves42 bounded discovery slots and no opening grant", async context => {
+void test("fresh readback native composition repeats exactly and its current pipe preserves51 bounded discovery slots and no opening grant", async context => {
   const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   const first = generateWorkerStartupProtocol(source); assert.equal(generateWorkerStartupProtocol(first), first);
-  const invalidationStart = first.indexOf("        'saved-readback-actors' {\n");
+  const invalidationStart = first.indexOf("        'saved-readback-load-guard' {\n");
   const metadataStart = first.indexOf("        'saved-readback-metadata' {\n");
   const parentStart = first.indexOf("        'saved-readback-parent' {\n");
   const preflightStart = first.indexOf("        'saved-readback-preflight' {\n");
@@ -198,17 +203,17 @@ void test("fresh readback native composition repeats exactly and its current pip
   const flags = first.slice(0, first.indexOf("\n")).match(/\[switch\]\$\w+/gu); assert.ok(flags !== null); assert.equal(flags.length, new Set(flags).size);
   assert.equal(first.split("        'saved-readback-abort' {").length - 1, 1);
   assert.ok(first.includes("spatial209?384:componentSpatial209?419:"));
-  assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.main.total, 909); assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.total, 270);
+  assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.main.total, 909); assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.total, 280);
   assert.deepEqual(CURRENT_PCB_VIA_SAVED_READBACK_BOOTSTRAP_REQUESTS, { parent: 2, inventory: 1, workerNormal: 12, workerCleanup: 8, total: 23 });
-  assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeReadOnly, 162);
+  assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeReadOnly, 172);
   assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.enabledDiscovery, 16); assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.cacheDeletionAuthorized, false);
   const input = new PassThrough(), output = new PassThrough(); let requests = 0;
   output.on("data", (bytes: Buffer): void => { const command: unknown = JSON.parse(bytes.subarray(0, -1).toString()); assert.ok(command !== null && typeof command === "object" && "id" in command && "method" in command);
     requests += 1; input.write(Buffer.from(`${JSON.stringify({ id: command.id, result: {} })}\0`)); });
   const pipe = new CurrentPcbViaSavedReadbackPipe(input, output); pipe.start();
   context.after(async () => { const closed = [once(input, "close"), once(output, "close")]; input.destroy(); output.destroy(); await Promise.all(closed); pipe.releaseClosedListeners(); });
-  for (let index = 0; index < 42; index += 1) { await pipe.getVersion(); }
-  await assert.rejects(pipe.getVersion(), /budget/iu); assert.equal(requests, 42);
+  for (let index = 0; index < 51; index += 1) { await pipe.getVersion(); }
+  await assert.rejects(pipe.getVersion(), /budget/iu); assert.equal(requests, 51);
 });
 
 void test("pending original cache request settles before original Job abort and is never replayed", async context => {

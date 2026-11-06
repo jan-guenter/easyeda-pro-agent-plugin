@@ -3,7 +3,7 @@
  * authorize deletion, opening or a replacement owner. */
 import type { CurrentPcbViaSavedCacheBackupData, CurrentPcbViaSavedCachePublishedData } from "./current-pcb-via-saved-cache-backup.ts";
 import type { CurrentPcbViaSavedCacheOrigin } from "./current-pcb-via-saved-cache-origin.ts";
-import type { CurrentPcbViaSavedCacheAbsenceData } from "./current-pcb-via-saved-cache-invalidation-ledger.ts";
+import type { CurrentPcbViaSavedCacheAbsenceData, CurrentPcbViaSavedCacheLoadingData } from "./current-pcb-via-saved-cache-invalidation-ledger.ts";
 
 export interface CurrentPcbViaSavedCacheBackupGrant { readonly profile: "private.current-pcb-via-saved-cache-backup-grant.v1" }
 export interface CurrentPcbViaSavedCacheAbsence { readonly profile: "private.current-pcb-via-saved-cache-absence.v1" }
@@ -22,4 +22,12 @@ export interface CurrentPcbViaSavedCacheBackupBindings {
   readonly assertCurrent: () => Promise<void>;
   readonly cacheDeletionAuthorized: false;
   readonly freshLoadingVerified: false;
+}
+
+/** The same fresh owner has rechecked its original empty UI, storage key and
+ * complete peer roster. A worker/load grant still needs actual source custody. */
+export interface CurrentPcbViaSavedLoadPreparation { readonly profile: "private.current-pcb-via-saved-load-preparation.v1" }
+export interface CurrentPcbViaSavedLoadPreparationBindings {
+  readonly absence: CurrentPcbViaSavedCacheAbsence; readonly data: CurrentPcbViaSavedCacheLoadingData;
+  readonly assertCurrent: () => Promise<void>; readonly freshLoadingVerified: false; readonly projectOpeningAuthorized: false;
 }

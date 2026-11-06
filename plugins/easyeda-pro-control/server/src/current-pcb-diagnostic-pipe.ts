@@ -113,7 +113,7 @@ type ProducerObserveWireCommand = CurrentProjectSaveProducerCommand & Readonly<{
 type ProducerGuardWireCommand = CurrentProjectSaveProducerGuardCommand & Readonly<{ producerGuardCommand: true }>;
 type StructureTransportWireCommand = CurrentProjectStructureTransportCommand & Readonly<{ structureTransportCommand: true }>;
 type SavedReadbackCacheWire = ReturnType<typeof currentPcbViaSavedReadbackActorWire> | ReturnType<typeof currentPcbViaSavedCacheMetadataWire> | ReturnType<typeof currentPcbViaSavedCacheWire> | ReturnType<typeof currentPcbViaSavedReadbackParentWire>;
-type RequestPhase = "initial-cache" | "saved-readback-actors" | "saved-readback-cache-guard" | "saved-readback-metadata" | "saved-readback-parent" | "saved-readback-cache" | "producer-observe" | "producer-guard" | "structure-transport" | "schematic-accessor" | "schematic-clock" | "schematic-worker" | "schematic-parent-arm" | "schematic-parent-running" | `schematic-display-${CurrentSchematicDisplayNativePhase}` | "via-clock" | "via-worker" | "via-parent-arm" | "via-parent-running" | "generated-fixture-register" | "renderer-capture209" | "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
+type RequestPhase = "initial-cache" | "saved-readback-load-guard" | "saved-readback-actors" | "saved-readback-cache-guard" | "saved-readback-metadata" | "saved-readback-parent" | "saved-readback-cache" | "producer-observe" | "producer-guard" | "structure-transport" | "schematic-accessor" | "schematic-clock" | "schematic-worker" | "schematic-parent-arm" | "schematic-parent-running" | `schematic-display-${CurrentSchematicDisplayNativePhase}` | "via-clock" | "via-worker" | "via-parent-arm" | "via-parent-running" | "generated-fixture-register" | "renderer-capture209" | "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
   `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "visual209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209" |
   `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}` |
   `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}` | `worker-producer-${CurrentPcbStringWorkerProducerCommand["workerProducerPhase"]}` |
@@ -281,7 +281,7 @@ class CurrentPcbFixedPipeCore {
   #sessionId: string | null = null;
   #event: ((event: DiagnosticEvent) => void) | null = null;
   readonly #savedReadbackPurpose: boolean;
-  #savedReadbackActors = false; #savedReadbackGuard = 0; #savedReadbackDiscovery = 0; #savedReadbackPreflight = 0; #savedReadbackCache = 0; #savedReadbackMetadata = 0; #savedReadbackParent = false;
+  #savedReadbackActors = false; #savedReadbackLoadingGuard = false; #savedReadbackGuard = 0; #savedReadbackDiscovery = 0; #savedReadbackPreflight = 0; #savedReadbackCache = 0; #savedReadbackMetadata = 0; #savedReadbackParent = false;
   #eventCount = 0;
   #eventBytes = 0;
   #workerEvent: ((event: DiagnosticEvent) => void) | null = null;
@@ -865,6 +865,11 @@ class CurrentPcbFixedPipeCore {
     return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn", params: diagnosticOpeningParams(uniqueContextId, target, "preflight"), sessionId: this.#sessionId }, "saved-readback-cache-guard");
   }
 
+  public observeSavedReadbackLoadingGuard(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget): Promise<Reply> {
+    if (!this.#savedReadbackPurpose || this.#sessionId === null || !this.#savedReadbackParent || this.#workerEvent !== null) { return Promise.reject(new Error("SAVED_READBACK_LOAD_GUARD_PURPOSE")); }
+    return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn", params: diagnosticOpeningParams(uniqueContextId, target, "preflight"), sessionId: this.#sessionId }, "saved-readback-load-guard");
+  }
+
   public observeSavedReadbackMetadata(plan: CurrentPcbViaSavedCacheMetadataPlan): Promise<Reply> {
     if (!this.#savedReadbackPurpose || this.#sessionId === null || !this.#savedReadbackParent || this.#workerEvent !== null) { return Promise.reject(new Error("SAVED_READBACK_METADATA_PURPOSE")); }
     return this.#request(currentPcbViaSavedCacheMetadataWire(plan, this.#nextId, this.#sessionId), "saved-readback-metadata");
@@ -923,14 +928,16 @@ class CurrentPcbFixedPipeCore {
       const metadata = phase === "saved-readback-metadata" && "savedReadbackMetadata" in command && command.savedReadbackMetadata;
       const parent = phase === "saved-readback-parent" && "savedReadbackParent" in command && command.savedReadbackParent === "arm" || phase === "saved-readback-actors" && "savedReadbackActors" in command && command.savedReadbackActors === "arm";
       const guard = phase === "saved-readback-cache-guard" && command.method === "Runtime.callFunctionOn";
+      const loadGuard = phase === "saved-readback-load-guard" && command.method === "Runtime.callFunctionOn";
       const preflight = phase === "project-preflight" && command.method === "Runtime.callFunctionOn";
       const discovery = (phase === "discovery" || phase === "frame-owner") && CURRENT_PCB_SPATIAL_DISCOVERY_METHODS.some(method => method === command.method);
-      if (!cache && !metadata && !parent && !preflight && !guard && !discovery) { throw new Error("SAVED_READBACK_DISCOVERY_ONLY"); }
+      if (!cache && !metadata && !parent && !preflight && !guard && !loadGuard && !discovery) { throw new Error("SAVED_READBACK_DISCOVERY_ONLY"); }
       if (metadata) { if (this.#savedReadbackMetadata >= CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.nativeMetadata) { throw new Error("SAVED_READBACK_METADATA_BUDGET"); } this.#savedReadbackMetadata += 1; }
       else if (cache) { if (this.#savedReadbackCache >= 36) { throw new Error("SAVED_READBACK_CACHE_BUDGET"); } this.#savedReadbackCache += 1; }
+      else if (loadGuard) { if (this.#savedReadbackLoadingGuard) { throw new Error("SAVED_READBACK_LOAD_GUARD_CONSUMED"); } this.#savedReadbackLoadingGuard = true; }
       else if (guard) { if (this.#savedReadbackGuard >= 2) { throw new Error("SAVED_READBACK_GUARD_CONSUMED"); } this.#savedReadbackGuard += 1; }
       else if (preflight) { if (this.#savedReadbackPreflight !== 0) { throw new Error("SAVED_READBACK_PREFLIGHT_CONSUMED"); } this.#savedReadbackPreflight += 1; }
-      else if (!parent) { if (this.#savedReadbackDiscovery >= 24 + 2 * (8 + 1)) { throw new Error("SAVED_READBACK_DISCOVERY_BUDGET"); } this.#savedReadbackDiscovery += 1; }
+      else if (!parent) { if (this.#savedReadbackDiscovery >= 24 + 3 * (8 + 1)) { throw new Error("SAVED_READBACK_DISCOVERY_BUDGET"); } this.#savedReadbackDiscovery += 1; }
     } else if ("savedReadbackCache" in command) { throw new Error("SAVED_READBACK_CACHE_PURPOSE"); }
     const spatial = (this.#spatialPurpose || this.#componentSpatialPurpose) && "spatialPhase" in command && phase.startsWith("spatial-");
     if ((this.#spatialPurpose || this.#componentSpatialPurpose) && !(spatial && command.method === "Runtime.releaseObjectGroup") &&

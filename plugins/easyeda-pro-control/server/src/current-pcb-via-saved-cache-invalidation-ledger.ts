@@ -17,6 +17,12 @@ export interface CurrentPcbViaSavedCacheAbsenceData {
   readonly deleteOrdinals: readonly (0 | 1)[]; readonly roster: CurrentPcbViaSavedCacheNames;
   readonly bothExactNamespacesAbsent: true; readonly nativeOwnershipVerified: false; readonly freshLoadingVerified: false;
 }
+export interface CurrentPcbViaSavedCacheLoadingData {
+  readonly schema: "private.current-pcb-via-saved-cache-loading-data.v1";
+  readonly originalAbsence: CurrentPcbViaSavedCacheAbsenceData; readonly packets: readonly CurrentPcbViaSavedCachePacket[];
+  readonly storageKey: string; readonly bothExactNamespacesAbsent: true; readonly peerRosterUnchanged: true;
+  readonly nativeOwnershipVerified: false; readonly freshLoadingVerified: false;
+}
 export class CurrentPcbViaSavedCacheInvalidationLedger {
   readonly #before: CurrentPcbViaSavedCacheSnapshot;
   readonly #attempted = new Set<string>(); readonly #packets = new Set<CurrentPcbViaSavedCachePacket>();
@@ -24,6 +30,7 @@ export class CurrentPcbViaSavedCacheInvalidationLedger {
   #ordinal: 0 | 1 = 0; #stage: "key" | "before" | "delete" | "after" | "absence" | "complete" = "key";
   #pending: CurrentPcbViaSavedCachePlan | null = null; #failed = false; #deleteEvents = 0; #deleteAttempts = 0;
   #roster: CurrentPcbViaSavedCacheNames | null = null;
+  #loading: 0 | 1 | 2 = 0; readonly #loadingPackets: CurrentPcbViaSavedCachePacket[] = []; readonly #loadingSnapshots = new WeakSet<CurrentPcbViaSavedCacheLoadingData>();
   public constructor(before: CurrentPcbViaSavedCacheSnapshot) { this.#before = before; Object.freeze(this); }
   #current(): void { need(!this.#failed && this.#pending === null); }
   #expected(): CurrentPcbViaSavedCacheNames {
@@ -35,11 +42,11 @@ export class CurrentPcbViaSavedCacheInvalidationLedger {
     need(!this.#attempted.has(slot)); let params: Readonly<Record<string, unknown>>;
     const ordinal = this.#ordinal, selected = this.#before.selected[ordinal];
     if (command.phase === "saved-cache-key") {
-      need(this.#stage === "key" && command.step === `before-delete-${String(ordinal)}`); params = { frameId: this.#before.frame.frameId };
+      need(this.#stage === "key" && command.step === `before-delete-${String(ordinal)}` || this.#stage === "complete" && this.#loading === 0 && command.step === "loading"); params = { frameId: this.#before.frame.frameId };
     } else if (command.phase === "saved-cache-names") {
       need(this.#stage === "before" && command.step === `before-delete-${String(ordinal)}` ||
         (this.#stage === "after" || this.#stage === "delete" && selected === null) && command.step === `after-delete-${String(ordinal)}` ||
-        this.#stage === "absence" && command.step === "absence"); params = { storageKey: this.#before.storageKey };
+        this.#stage === "absence" && command.step === "absence" || this.#stage === "complete" && this.#loading === 1 && command.step === "loading"); params = { storageKey: this.#before.storageKey };
     } else {
       need(command.phase === "saved-cache-delete" && command.ordinal === ordinal && this.#stage === "delete" && selected !== null && !this.#deleted.has(ordinal));
       params = { cacheId: selected.cacheId }; this.#deleteAttempts += 1;
@@ -50,18 +57,20 @@ export class CurrentPcbViaSavedCacheInvalidationLedger {
     need(!this.#failed && this.#pending === plan);
     try {
       const command = plan.command, reply = captureCurrentPcbStringClockReply(input).value;
-      if (command.phase === "saved-cache-key") { need(reply !== null && typeof reply === "object" && Reflect.ownKeys(reply).length === 1 && "storageKey" in reply && reply.storageKey === this.#before.storageKey); this.#stage = "before"; }
+      if (command.phase === "saved-cache-key") { need(reply !== null && typeof reply === "object" && Reflect.ownKeys(reply).length === 1 && "storageKey" in reply && reply.storageKey === this.#before.storageKey); if (command.step === "loading") { this.#loading = 1; } else { this.#stage = "before"; } }
       else if (command.phase === "saved-cache-delete") {
         need(reply !== null && typeof reply === "object" && Reflect.ownKeys(reply).length === 0); this.#deleted.add(command.ordinal); this.#stage = "after";
       } else {
         need(command.phase === "saved-cache-names"); const roster = decodeCurrentPcbViaSavedCacheNames(reply, this.#before.storageKey, this.#before.frame.securityOrigin);
         need(canonicalJson(roster) === canonicalJson(this.#expected())); this.#roster = roster;
-        if (this.#stage === "before") { this.#stage = "delete"; }
+        if (command.step === "loading") { need(this.#stage === "complete" && this.#loading === 1); this.#loading = 2; }
+        else if (this.#stage === "before") { this.#stage = "delete"; }
         else if (this.#stage === "absence") { this.#stage = "complete"; }
         else { need(this.#stage === "after" || this.#stage === "delete" && this.#before.selected[this.#ordinal] === null);
           if (this.#ordinal === 0) { this.#ordinal = 1; this.#stage = "key"; } else { this.#stage = "absence"; } }
       }
-      const packet: CurrentPcbViaSavedCachePacket = freezeDeep({ command, reply, nativeOwnershipVerified: false }); this.#packets.add(packet); this.#pending = null; return packet;
+      const packet: CurrentPcbViaSavedCachePacket = freezeDeep({ command, reply, nativeOwnershipVerified: false }); if ((command.phase === "saved-cache-key" || command.phase === "saved-cache-names") && command.step === "loading") { this.#loadingPackets.push(packet); }
+      this.#packets.add(packet); this.#pending = null; return packet;
     } catch (caughtError) { this.#failed = true; throw caughtError; }
   }
   /** Only a bounded same-storage list notification after an actual planned
@@ -83,6 +92,13 @@ export class CurrentPcbViaSavedCacheInvalidationLedger {
       packets: [...this.#packets], deleteOrdinals: [...this.#deleted], roster: this.#roster, bothExactNamespacesAbsent: true, nativeOwnershipVerified: false, freshLoadingVerified: false });
     this.#snapshots.add(output); return output;
   }
+  public loadingSnapshot(absence: CurrentPcbViaSavedCacheAbsenceData): CurrentPcbViaSavedCacheLoadingData {
+    this.#current(); this.requireOriginalSnapshot(absence); need(this.#stage === "complete" && this.#loading === 2 && this.#loadingPackets.length === 2);
+    const output: CurrentPcbViaSavedCacheLoadingData = freezeDeep({ schema: "private.current-pcb-via-saved-cache-loading-data.v1", originalAbsence: absence,
+      packets: [...this.#loadingPackets], storageKey: this.#before.storageKey, bothExactNamespacesAbsent: true, peerRosterUnchanged: true, nativeOwnershipVerified: false, freshLoadingVerified: false });
+    this.#loadingSnapshots.add(output); return output;
+  }
+  public requireOriginalLoadingSnapshot(snapshot: CurrentPcbViaSavedCacheLoadingData): void { need(this.#loadingSnapshots.has(snapshot)); }
   public failOriginalDispatch(plan: CurrentPcbViaSavedCachePlan): void { need(this.#pending === plan); this.#failed = true; }
   public requireOriginalSnapshot(snapshot: CurrentPcbViaSavedCacheAbsenceData): void { need(this.#snapshots.has(snapshot)); }
   public requireOriginalPacket(packet: CurrentPcbViaSavedCachePacket): void { need(this.#packets.has(packet)); }
