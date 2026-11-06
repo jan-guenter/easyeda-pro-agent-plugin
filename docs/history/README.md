@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 historical closed-reader relinquishment](2026-11-06-closed-reader-relinquishment.md). Exact frozen4500 Pad prefix, independent process absence and append-only metadata; missing native release acknowledgment remains false.
+
 - [2026-11-06 generated Pad point case](2026-11-06-generated-pad-spatial-live-case.md). Accepted five-point native results and complete closed raw/35-table SQL invariance; published Pad report exposed a journal-schema mismatch that blocked helper release. Original cleanup remains separately tracked.
 
 - [Original saved-reader native metadata custody](2026-11-06-saved-cache-native-metadata-custody.md)

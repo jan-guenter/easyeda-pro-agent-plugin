@@ -1,6 +1,7 @@
 /* oxlint-disable import/max-dependencies -- This fixed offline router imports each capability's own validator; an intermediary would only hide those dependencies. */
 import { queryCurrentPcbComponentSpatial, validateCurrentPcbComponentSpatialArguments } from "./current-pcb-component-spatial-validation.ts";
 import { z } from "zod";
+import { queryCurrentGeneratedReaderRelinquishment, validateCurrentGeneratedReaderRelinquishment } from "./current-generated-reader-relinquishment-contract.ts";
 import { queryManagedFixtureImport, validateManagedFixtureImportArguments } from "./managed-fixture-import-runtime.ts";
 import { queryCurrentSchematicPageOpening, validateCurrentSchematicPageOpeningArguments } from "./current-schematic-page-opening.ts";
 import { queryCurrentSchematicPageRead, validateCurrentSchematicPageReadArguments } from "./current-schematic-page-read.ts";
@@ -160,6 +161,8 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("pcb209-ordinary-read"), query: currentPcbDiagnosticValidationQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("pcb209-ordinary-read-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("pcb209-opening"), query: currentPcbDiagnosticValidationQuerySchema.optional() }).strict(),
+  z.strictObject({ action: z.literal("closed-reader-relinquishment"), query: currentPcbDiagnosticValidationQuerySchema.optional() }),
+  z.strictObject({ action: z.literal("closed-reader-relinquishment-validate"), query: publicSdkValidationQuerySchema }),
   z.object({ action: z.literal("pcb209-opening-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.strictObject({ action: z.literal("pcb209-component-spatial"), query: currentPcbDiagnosticValidationQuerySchema.optional() }),
   z.strictObject({ action: z.literal("pcb209-component-spatial-validate"), query: publicSdkValidationQuerySchema }),
@@ -249,6 +252,8 @@ export function queryOfflineApi(request: ApiRequest): { offline: true; result: u
     case "pcb209-ordinary-read": { result = queryCurrentPcbOrdinaryRead(request.query ?? {}); break; }
     case "pcb209-ordinary-read-validate": { result = validateCurrentPcbOrdinaryReadArguments(request.query.request); break; }
     case "pcb209-opening": { result = queryCurrentPcb209Opening(request.query ?? {}); break; }
+    case "closed-reader-relinquishment": { result = queryCurrentGeneratedReaderRelinquishment(request.query?.includeSchemas ?? false); break; }
+    case "closed-reader-relinquishment-validate": { result = validateCurrentGeneratedReaderRelinquishment(request.query.request); break; }
     case "pcb209-opening-validate": { result = validateCurrentPcb209OpeningArguments(request.query.request); break; }
     case "pcb209-component-spatial": { result = queryCurrentPcbComponentSpatial(); break; }
     case "pcb209-component-spatial-validate": { result = validateCurrentPcbComponentSpatialArguments(request.query.request); break; }

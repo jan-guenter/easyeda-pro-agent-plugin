@@ -155,6 +155,8 @@ import type { CurrentFootprintCopyRoutePreparationValidationRequest } from "./cu
 import type { CurrentFootprintMainValidationRequest } from "./current-footprint-main-validation.ts";
 import type { CurrentFootprintCombinedValidationRequest } from "./current-footprint-combined-validation.ts";
 import type { CurrentFootprintForwardPrewriteValidationRequest } from "./current-footprint-forward-prewrite-validation.ts";
+import { CurrentGeneratedReaderRelinquishment } from "./current-generated-reader-relinquishment.ts";
+import { currentGeneratedReaderRelinquishmentRequestSchema } from "./current-generated-reader-relinquishment-contract.ts";
 import { CurrentFootprintCombinedUnknownAbandonment } from "./current-footprint-combined-unknown-abandonment.ts";
 import { CurrentFootprintForwardOpeningUnknownRelinquishment } from "./current-footprint-forward-opening-unknown-relinquishment.ts";
 import { CurrentFootprintForwardSourceUnknownRelinquishment } from "./current-footprint-forward-source-unknown-relinquishment.ts";
@@ -310,7 +312,7 @@ let currentFootprintMainLifecycle: CurrentFootprintMainLifecycle | undefined;
 let currentFootprintHeldCacheValidation: CurrentFootprintHeldCacheValidation | undefined;
 let currentFootprintHeadAgeValidation: CurrentFootprintHeadAgeValidation | undefined;
 let currentFootprintForwardSourceValidation: CurrentFootprintForwardSourceValidation | undefined;
-let currentPcbWorkerStartupLifecycle: CurrentFootprintCombinedLifecycle | CurrentFootprintForwardPrewriteLifecycle | CurrentFootprintCombinedUnknownAbandonment | CurrentFootprintForwardOpeningUnknownRelinquishment | CurrentFootprintForwardSourceUnknownRelinquishment | CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle | CurrentFootprintCopyPreparationLifecycle | CurrentFootprintCopyRoutePreparationLifecycle | CurrentPcb209EmptyStartupLifecycle | CurrentPcb209RatlineStartupLifecycle | CurrentPcb209RatlineContinuationLifecycle | undefined;
+let currentPcbWorkerStartupLifecycle: CurrentGeneratedReaderRelinquishment | CurrentFootprintCombinedLifecycle | CurrentFootprintForwardPrewriteLifecycle | CurrentFootprintCombinedUnknownAbandonment | CurrentFootprintForwardOpeningUnknownRelinquishment | CurrentFootprintForwardSourceUnknownRelinquishment | CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle | CurrentFootprintCopyPreparationLifecycle | CurrentFootprintCopyRoutePreparationLifecycle | CurrentPcb209EmptyStartupLifecycle | CurrentPcb209RatlineStartupLifecycle | CurrentPcb209RatlineContinuationLifecycle | undefined;
 let currentDisposableOpenCoordinator: CurrentDisposableOpenCoordinator | undefined;
 let currentPcbRenameOperationCoordinator: CurrentPcbRenameOperationCoordinator | undefined;
 let currentSchematicRenameOperationCoordinator: CurrentSchematicRenameOperationCoordinator | undefined;
@@ -2836,7 +2838,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
   const ordinaryWrapper = z.strictObject({ action: z.literal("ordinary"), request: currentPcbOrdinaryReadRequestSchema });
   const componentSpatialWrapper = z.strictObject({ action: z.literal("component-spatial"), request: currentPcbComponentSpatialRequestSchema });
   const spatialWrapper = z.strictObject({ action: z.literal("spatial"), request: currentPcbSpatialRequestSchema });
-  const diagnosticSchema = diagnostic209 ? z.union([currentPcb209OpeningRequestSchema, ordinaryWrapper, schematicPageReadWrapper, schematicPageOpenWrapper, generatedSchematicWrapper, visualWrapper, spatialWrapper, componentSpatialWrapper]) : currentPcbDiagnosticToolRequestSchema;
+  const diagnosticSchema = diagnostic209 ? z.union([currentGeneratedReaderRelinquishmentRequestSchema, currentPcb209OpeningRequestSchema, ordinaryWrapper, schematicPageReadWrapper, schematicPageOpenWrapper, generatedSchematicWrapper, visualWrapper, spatialWrapper, componentSpatialWrapper]) : currentPcbDiagnosticToolRequestSchema;
   const inputSchema = z.object({ request: z.unknown().pipe(diagnosticSchema) }).strict();
   let original: { readonly owner: CurrentPcbDiagnosticLifecycle | CurrentPcb209DiagnosticLifecycle | CurrentPcbOrdinaryReadLifecycle | CurrentPcb209VisualLifecycle | CurrentPcbSpatialLifecycle | CurrentPcbComponentSpatialLifecycle; readonly run: CurrentPcbDiagnosticLifecycle["run"];
     readonly assertLocal: () => void } | undefined;
@@ -3152,6 +3154,74 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     readonly footprintPurpose: boolean; readonly footprintBindings: CurrentFootprintCopyPreparationLifecycle["prepareWorkerStartupFootprintBindings"] | undefined;
     readonly emptyPurpose: boolean; readonly ratlinePurpose: boolean; readonly continuationPurpose: boolean; readonly assertLocal: () => void } | undefined;
   let startupCalls = 0;
+  let generatedReaderHistoricalOriginal: { readonly owner: CurrentGeneratedReaderRelinquishment;
+    readonly run: CurrentGeneratedReaderRelinquishment["run"];
+    readonly reserved: CurrentGeneratedReaderRelinquishment["hasActiveReservation"]; readonly assertLocal: () => void } | undefined;
+  const runGeneratedReaderHistorical = (request: z.infer<typeof currentGeneratedReaderRelinquishmentRequestSchema>): Promise<{ result: Record<string, unknown> }> => {
+    if (!diagnostic209) { throw new Error("Closed-reader historical relinquishment requires the209 route."); }
+    if (generatedReaderHistoricalOriginal === undefined) {
+      if (stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its dedicated original Component reader birth."); }
+      const environment = process.env;
+      const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
+      const originalEngine = engine, originalGate = bridgeGate, originalUpstream = upstream;
+      const authority = disposableOwnData(engine, "executionAuthorityValidator"), facadePromise = disposableOwnData(engine, "controlFingerprintPromise");
+      const controlPath = retainedControlRoot.path, pluginRoot = resolve(import.meta.dirname, "../..");
+      const methodIdentities = (): readonly unknown[] => [disposableOwnerMethod(bridgeGate, "run"),
+        disposableOwnerMethod(engine, "assertDiagnosticLaunchOtherOperationsSettled"),
+        disposableOwnerMethod(CurrentGeneratedReaderRelinquishment.prototype, "run"),
+        disposableOwnerMethod(CurrentGeneratedReaderRelinquishment.prototype, "hasActiveReservation")];
+      const capturedMethods = methodIdentities();
+      const ownerReference: { current: CurrentGeneratedReaderRelinquishment | undefined } = { current: undefined };
+      const assertLocal = (): void => {
+        const methodsNow = methodIdentities();
+        if (engine !== originalEngine || bridgeGate !== originalGate || upstream !== originalUpstream ||
+            disposableOwnData(engine, "upstream") !== originalUpstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise ||
+            disposableOwnData(engine, "executionAuthorityValidator") !== authority || process.env !== environment ||
+            environment["EASYEDA_ASSETS_ROOT"] !== assetsRoot || environment["WSL_DISTRO_NAME"] !== wslDistribution ||
+            retainedControlRoot.path !== controlPath || resolve(import.meta.dirname, "../..") !== pluginRoot ||
+            methodsNow.length !== capturedMethods.length || methodsNow.some((method, index) => method !== capturedMethods[index]) ||
+            ownerReference.current !== undefined && (currentPcbWorkerStartupLifecycle !== undefined && currentPcbWorkerStartupLifecycle !== ownerReference.current ||
+              disposableOwnerMethod(ownerReference.current, "run") !== capturedMethods[2] ||
+              disposableOwnerMethod(ownerReference.current, "hasActiveReservation") !== capturedMethods[3])) {
+          throw new Error("Closed-reader historical relinquishment coordinator changed.");
+        }
+      };
+      const assertFreshNoOwnedAllocations = (): void => {
+        assertLocal();
+        if (windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined || ordinaryLaunchCoordinator !== undefined ||
+            currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
+            currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
+            closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || resettableDiagnosticOwnerAllocated || original !== undefined || currentPcbDiagnosticLifecycle !== undefined ||
+            currentPcbStringPrecreateLifecycle !== undefined || currentFootprintMainLifecycle !== undefined || currentFootprintHeldCacheValidation !== undefined || currentFootprintHeadAgeValidation !== undefined || currentFootprintForwardSourceValidation !== undefined ||
+            currentPcbWorkerStartupLifecycle !== undefined && currentPcbWorkerStartupLifecycle !== ownerReference.current ||
+            mainOriginal !== undefined || startupOriginal !== undefined || startupCalls !== 0 || fixtureImportCoordinator !== undefined || hasFixtureImportCustody() ||
+            stagedFixtureOpeningSource !== undefined || stagedSchematicOpeningSource !== undefined || stagedComponentOpeningSource !== undefined || generatedSchematicOpening !== undefined || generatedSchematicAllocation !== undefined) {
+          throw new Error("Closed-reader historical relinquishment requires a fresh facade with no application-owner allocation or reservation.");
+        }
+      };
+      const assertOtherLaunchesSettled = async (): Promise<void> => {
+        assertFreshNoOwnedAllocations(); await engine.assertDiagnosticLaunchOtherOperationsSettled(); assertFreshNoOwnedAllocations();
+      };
+      assertFreshNoOwnedAllocations();
+      const owner = new CurrentGeneratedReaderRelinquishment({ pluginRoot, assetsRoot: assetsRoot ?? "",
+        ...(wslDistribution === undefined ? {} : { wslDistribution }), powershellSha256: CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.sha256,
+        powershellBytes: CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.bytes, assertLocalAllowed: assertLocal,
+        assertAllowed: assertOtherLaunchesSettled, assertOtherLaunchesSettled, assertFreshNoOwnedAllocations });
+      ownerReference.current = owner;
+      // oxlint-disable-next-line typescript/unbound-method -- Dispatch supplies this exact retained historical coordinator as receiver.
+      generatedReaderHistoricalOriginal = { owner, run: owner.run, reserved: owner.hasActiveReservation, assertLocal };
+    }
+    const retained = generatedReaderHistoricalOriginal; retained.assertLocal();
+    return runFacadeGate(async () => {
+      retained.assertLocal();
+      if (generatedReaderHistoricalOriginal !== retained) { throw new Error("Closed-reader historical relinquishment owner changed."); }
+      currentPcbWorkerStartupLifecycle = retained.owner;
+      try { const result = await retained.run.call(retained.owner, request); retained.assertLocal(); return { result }; }
+      finally {
+        if (currentPcbWorkerStartupLifecycle === retained.owner && !retained.reserved.call(retained.owner)) { currentPcbWorkerStartupLifecycle = undefined; }
+      }
+    });
+  };
   let combinedHistoricalOriginal: { readonly owner: CurrentFootprintCombinedUnknownAbandonment;
     readonly run: CurrentFootprintCombinedUnknownAbandonment["run"];
     readonly reserved: CurrentFootprintCombinedUnknownAbandonment["hasActiveReservation"]; readonly assertLocal: () => void } | undefined;
@@ -3396,6 +3466,9 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
    * purposes; they cannot upgrade an allocated owner or replay consumed operation IDs.
    */
   const runStartup = (request: CurrentPcbWorkerStartupValidationRequest | CurrentPcb209WorkerStartupValidationRequest | CurrentPcb209EmptyStartupValidationRequest | CurrentPcb209RatlineStartupValidationRequest | CurrentPcb209RatlineContinuationValidationRequest | CurrentFootprintCopyPreparationValidationRequest | CurrentFootprintCopyRoutePreparationValidationRequest | CurrentFootprintCombinedValidationRequest | CurrentFootprintForwardPrewriteValidationRequest, emptyPurpose = false, ratlinePurpose = false, continuationPurpose = false, footprintPurpose = false, routePurpose = false, combinedPurpose = false, forwardPurpose = false): Promise<{ result: Record<string, unknown> }> => {
+    if (generatedReaderHistoricalOriginal !== undefined && currentPcbWorkerStartupLifecycle === generatedReaderHistoricalOriginal.owner) {
+      throw new Error("Closed-reader historical relinquishment reserves this facade.");
+    }
     if (combinedHistoricalOriginal !== undefined && currentPcbWorkerStartupLifecycle === combinedHistoricalOriginal.owner) {
       throw new Error("Combined historical relinquishment reserves this facade.");
     }
@@ -3659,6 +3732,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
   }, guarded(async (input: z.infer<typeof inputSchema>) => {
     const parsed = inputSchema.parse(input).request;
+    if (parsed.action === "relinquish-closed-reader") { return runGeneratedReaderHistorical(parsed); }
     if (parsed.action === "generated-schematic") {
       return runFacadeGate(() => {
         const request = parsed.request;
@@ -3827,7 +3901,7 @@ registerFacadeTool(
       const diagnosticReserved = CurrentPcbDiagnosticLifecycle.prototype.hasActiveReservation;
       // oxlint-disable-next-line typescript/unbound-method -- This monotonic observer distinguishes never-allocated owners from completed or failed allocations.
       const diagnosticAllocated = CurrentPcbDiagnosticLifecycle.prototype.hasAttemptedNativeOwnerAllocation;
-      let releaseDiagnostics: readonly (CurrentPcbDiagnosticLifecycle | CurrentPcbStringPrecreateLifecycle | CurrentPcbWorkerStartupLifecycle | CurrentFootprintCombinedUnknownAbandonment | CurrentFootprintForwardOpeningUnknownRelinquishment | CurrentFootprintForwardSourceUnknownRelinquishment | undefined)[] | undefined;
+      let releaseDiagnostics: readonly (CurrentGeneratedReaderRelinquishment | CurrentPcbDiagnosticLifecycle | CurrentPcbStringPrecreateLifecycle | CurrentPcbWorkerStartupLifecycle | CurrentFootprintCombinedUnknownAbandonment | CurrentFootprintForwardOpeningUnknownRelinquishment | CurrentFootprintForwardSourceUnknownRelinquishment | undefined)[] | undefined;
       const assertLocalAllowed = (): void => {
         if (closedSymbolIndexReservation !== undefined || scheduledShutdown !== undefined ||
             windowsRuntime !== ordinaryLaunchRuntime || process.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {

@@ -421,6 +421,12 @@ facade's retirement preflight can authorize closure and a later generation.
 
 ## Original spatial cleanup
 
+The exact frozen4500 terminated Pad report-chain failure has a separate
+[historical closed-reader relinquishment](closed-generated-reader-relinquishment.md)
+after independently completed original process cleanup. It appends metadata
+without claiming the missing helper-release acknowledgment or adopting an owner.
+Other interrupted spatial histories keep the original cleanup requirements below.
+
 The maintained frontend also classifies strict `spatial` and
 `component-spatial` requests under `easyeda_control_pcb209_opening`. The latter
 uses only its separate `pcb209-spatial-component-*` purpose. These are data

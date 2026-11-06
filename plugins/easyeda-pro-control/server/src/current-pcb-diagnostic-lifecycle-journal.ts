@@ -1,5 +1,9 @@
 import { currentPcbComponentSpatialIdSchema, currentPcbComponentSpatialObservationSchema, requireCurrentPcbComponentSpatialObservation } from "./current-pcb-component-spatial-validation.ts";
 import { currentPcb209ComponentPointQueriesSchema } from "./current-pcb-209-component-point-read.ts";
+import { GENERATED_READER_KNOWN_FACADE_SHA256 } from "./current-generated-reader-relinquishment-contract.ts";
+// oxlint-disable-next-line import/no-cycle -- Lazy historical receipt checks reuse this journal's full validator without initialization-time recursion.
+import { assertGeneratedReaderHistoricalSnapshot, readGeneratedReaderHistoricalSnapshot, readGeneratedReaderRelinquishment, requireGeneratedReaderHistoricalSnapshot } from "./current-generated-reader-relinquishment-journal.ts";
+import type { GeneratedReaderHistoricalSnapshot } from "./current-generated-reader-relinquishment-journal.ts";
 /** Private, append-only diagnostic lifecycle records. Historical JSON never
  * recreates a native owner. Partial reservations remain launch blockers. */
 /* oxlint-disable import/max-dependencies -- This shared journal validates distinct diagnostic, String and common evidence, including global String exclusion, without merging their authority. */
@@ -1068,6 +1072,12 @@ function settled(operation: DiagnosticLifecycleOperation): boolean {
     operation.records["no-process-released.json"] !== undefined || operation.records["combined-factory-before-launch.json"] !== undefined || operation.records["forward-factory-before-launch.json"] !== undefined;
 }
 async function recordedHistoricalRelinquishment(operation: DiagnosticLifecycleOperation): Promise<boolean> {
+  if (operation.records["intent.json"]?.facadeSha256 === GENERATED_READER_KNOWN_FACADE_SHA256 &&
+      operation.records["generated-closed-capture-result.json"]?.report?.["schema"] === "easyeda-pro-control.generated-pad-reader-closed-snapshot.v1" &&
+      operation.records["terminated.json"] !== undefined) {
+    const snapshot = await readGeneratedReaderHistoricalSnapshot(operation.operationId);
+    const receipt = await readGeneratedReaderRelinquishment(snapshot); return receipt !== null && receipt.result !== null;
+  }
   if (currentFootprintForwardOpeningKnownHistoricalIntentSchema.safeParse(operation.records["intent.json"]).success) {
     const snapshot = await readCurrentFootprintForwardOpeningHistoricalSnapshot(operation.operationId);
     const receipt = await readCurrentFootprintForwardOpeningRelinquishment(snapshot);
@@ -1722,6 +1732,22 @@ export async function readCurrentPcbDiagnosticLifecycles(): Promise<readonly Dia
     }
     await root.assertCurrent(); return operations;
   } finally { await parent.handle.close(); }
+}
+
+/** Only the complete descriptor-issued historical Pad prefix is exempt. The
+ * separate receipt preserves missing native release acknowledgment. */
+export async function assertGeneratedReaderRelinquishmentIsolated(snapshot: GeneratedReaderHistoricalSnapshot): Promise<void> {
+  await assertNoUnresolvedCurrentFootprintForwardExecutionOpenings();
+  await assertNoUnresolvedFootprintHeldCacheValidation(); await assertNoUnresolvedFootprintHeadAgeValidation();
+  await assertNoUnresolvedCurrentPcbStringLedgers();
+  const original = requireGeneratedReaderHistoricalSnapshot(snapshot); await assertGeneratedReaderHistoricalSnapshot(snapshot);
+  const operations = await readCurrentPcbDiagnosticLifecycles(); let selected = false;
+  for (const operation of operations) {
+    if (operation.operationId === original.operationId) {
+      requireValue(canonicalJson(operation.records) === canonicalJson(original.records), "GENERATED_READER_RELINQUISHMENT_ORIGINAL_CHANGED"); selected = true;
+    } else { requireValue(settled(operation) || await recordedHistoricalRelinquishment(operation), "UNRESOLVED_LAUNCH"); }
+  }
+  requireValue(selected, "GENERATED_READER_RELINQUISHMENT_ORIGINAL_MISSING"); await assertGeneratedReaderHistoricalSnapshot(snapshot);
 }
 
 /** Dedicated read-only recovery isolation. The exception is one reader-issued
