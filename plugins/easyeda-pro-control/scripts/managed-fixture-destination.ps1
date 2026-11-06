@@ -36,9 +36,15 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
+using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
+public sealed class ManagedFixtureClosedFileMetadata {
+  public string windowsPath, fileIdentity, sha256, createdFileTime, modifiedFileTime, watchState;
+  public long bytes, createdEpochMs, modifiedEpochMs;
+  public bool readOnlyFileLease;
+}
 public sealed class ManagedFixtureDestination : IDisposable {
   [StructLayout(LayoutKind.Sequential)] struct ATTRIBUTES { public int size; public IntPtr descriptor; public int inherit; }
   [StructLayout(LayoutKind.Sequential)] struct INFO {
@@ -49,7 +55,11 @@ public sealed class ManagedFixtureDestination : IDisposable {
   [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern SafeFileHandle CreateFileW(string name, uint access, uint share, IntPtr security, uint disposition, uint flags, IntPtr template);
   [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern uint GetFinalPathNameByHandleW(SafeFileHandle file, StringBuilder name, uint maximum, uint flags);
   [DllImport("kernel32.dll", SetLastError=true)] static extern bool GetFileInformationByHandle(SafeFileHandle file, out INFO info);
-  SafeFileHandle parent, directory;
+  SafeFileHandle parent, directory, metadataFile;
+  ManagedFixtureLibraryGuard metadataWatch;
+  INFO metadataInfo;
+  string metadataPath, metadataSha;
+  bool metadataAttempted, metadataFinished;
   readonly string original, parentOriginal, sid, securitySddl;
   readonly INFO originalInfo;
   public readonly string Id = Guid.NewGuid().ToString("N");
@@ -116,7 +126,58 @@ public sealed class ManagedFixtureDestination : IDisposable {
     }
     Array.Sort(result, StringComparer.Ordinal); Check(); return result;
   }
-  public void Dispose() { if (directory != null) directory.Dispose(); if (parent != null) parent.Dispose(); }
+  static string FileIdentity(INFO info) { return info.volume.ToString("x8") + ":" + info.indexHigh.ToString("x8") + info.indexLow.ToString("x8"); }
+  static long Size(INFO info) { return checked(((long)info.sizeHigh << 32) | info.sizeLow); }
+  static long FileTime(System.Runtime.InteropServices.ComTypes.FILETIME value) { return ((long)(uint)value.dwHighDateTime << 32) | (uint)value.dwLowDateTime; }
+  static long Epoch(System.Runtime.InteropServices.ComTypes.FILETIME value) { return checked((DateTime.FromFileTimeUtc(FileTime(value)).Ticks - 621355968000000000L) / 10000L); }
+  static bool SameFile(INFO left, INFO right) {
+    return left.attributes == right.attributes && left.volume == right.volume && left.indexHigh == right.indexHigh && left.indexLow == right.indexLow && left.links == right.links &&
+      Size(left) == Size(right) && FileTime(left.created) == FileTime(right.created) && FileTime(left.written) == FileTime(right.written);
+  }
+  string CanonicalFile() {
+    StringBuilder value = new StringBuilder(2048); uint count = GetFinalPathNameByHandleW(metadataFile, value, 2048, 0);
+    if (count == 0 || count >= 2048 || !value.ToString().StartsWith(@"\\?\") || value.ToString().StartsWith(@"\\?\UNC\")) throw new InvalidOperationException("fixture-closed-file-canonical");
+    return value.ToString().Substring(4);
+  }
+  INFO FileInformation() {
+    INFO info; if (metadataFile == null || metadataFile.IsClosed || !GetFileInformationByHandle(metadataFile, out info)) throw new InvalidOperationException("fixture-closed-file-original-handle"); return info;
+  }
+  string HashFile() {
+    bool retained = false; metadataFile.DangerousAddRef(ref retained);
+    try { using (SafeFileHandle borrowed = new SafeFileHandle(metadataFile.DangerousGetHandle(), false))
+      using (FileStream input = new FileStream(borrowed, FileAccess.Read, 1048576, false)) using (SHA256 hash = SHA256.Create()) {
+        input.Position = 0; if (input.Length != Size(metadataInfo)) throw new InvalidOperationException("fixture-closed-file-size");
+        return BitConverter.ToString(hash.ComputeHash(input)).Replace("-", "").ToLowerInvariant();
+      }
+    } finally { if (retained) metadataFile.DangerousRelease(); }
+  }
+  public ManagedFixtureClosedFileMetadata CaptureClosedFile(string basename) {
+    if (metadataAttempted) throw new InvalidOperationException("fixture-closed-file-capture-consumed"); metadataAttempted = true; Check();
+    if (basename == null || !System.Text.RegularExpressions.Regex.IsMatch(basename, @"\ACodex_(?:via_only|line_and_via|arc_line_and_via|schematic)_[a-f0-9]{16}\.eprj2\z")) throw new InvalidOperationException("fixture-closed-file-basename");
+    string[] entries = Entries(); if (entries.Length != 1 || entries[0] != basename) throw new InvalidOperationException("fixture-closed-file-complete-roster");
+    metadataWatch = new ManagedFixtureLibraryGuard(original); metadataPath = System.IO.Path.Combine(original, basename);
+    // READ sharing only denies existing/future writers and delete/rename. This
+    // original handle is acquired once after the app root and Job have exited.
+    metadataFile = CreateFileW(metadataPath, 0x80000000, 1, IntPtr.Zero, 3, 0x08200000, IntPtr.Zero);
+    if (metadataFile.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error()); metadataInfo = FileInformation();
+    if ((metadataInfo.attributes & (0x10 | 0x400)) != 0 || metadataInfo.links != 1 || Size(metadataInfo) < 512 || Size(metadataInfo) > 67108864 ||
+      Epoch(metadataInfo.created) < 1 || Epoch(metadataInfo.written) < 1 || CanonicalFile() != metadataPath) throw new InvalidOperationException("fixture-closed-file-identity");
+    metadataSha = HashFile(); return CheckClosedFile();
+  }
+  public ManagedFixtureClosedFileMetadata CheckClosedFile() {
+    Check(); if (!metadataAttempted || metadataFinished || metadataFile == null || CanonicalFile() != metadataPath || !SameFile(metadataInfo, FileInformation())) throw new InvalidOperationException("fixture-closed-file-owner-drift");
+    ManagedFixtureLibraryObservation watched = metadataWatch.Check(); string[] entries = Entries();
+    if (entries.Length != 1 || entries[0] != System.IO.Path.GetFileName(metadataPath) || watched.names.Length != 1 || watched.names[0] != entries[0]) throw new InvalidOperationException("fixture-closed-file-roster-drift");
+    string hash = HashFile(); if (hash != metadataSha || !SameFile(metadataInfo, FileInformation())) throw new InvalidOperationException("fixture-closed-file-content-drift"); metadataWatch.Check();
+    return new ManagedFixtureClosedFileMetadata { windowsPath = metadataPath, fileIdentity = FileIdentity(metadataInfo), bytes = Size(metadataInfo), sha256 = hash,
+      createdFileTime = FileTime(metadataInfo.created).ToString(System.Globalization.CultureInfo.InvariantCulture), modifiedFileTime = FileTime(metadataInfo.written).ToString(System.Globalization.CultureInfo.InvariantCulture),
+      createdEpochMs = Epoch(metadataInfo.created), modifiedEpochMs = Epoch(metadataInfo.written), watchState = "pending", readOnlyFileLease = true };
+  }
+  public void FinishClosedFile() {
+    if (metadataFile == null) return; CheckClosedFile(); metadataWatch.Finish();
+    if (!SameFile(metadataInfo, FileInformation()) || HashFile() != metadataSha || CanonicalFile() != metadataPath) throw new InvalidOperationException("fixture-closed-file-final-drift"); metadataFinished = true;
+  }
+  public void Dispose() { if (metadataWatch != null) metadataWatch.Dispose(); if (metadataFile != null) metadataFile.Dispose(); if (directory != null) directory.Dispose(); if (parent != null) parent.Dispose(); }
 }
 public sealed class ManagedFixtureLibraryObservation {
   public string windowsDirectory, directoryIdentity, watchState;
@@ -234,12 +295,18 @@ try {
   while ($null -ne ($line = [Console]::ReadLine())) {
     if ($line.Length -gt 256) { throw 'fixture-destination-request-budget' }
     $request = $line | ConvertFrom-Json
-    if (@($request.PSObject.Properties.Name).Count -ne 3 -or $request.nonce -cne $Nonce -or $request.id -isnot [int] -or $request.id -ne ($last + 1) -or $request.id -gt 16 -or ($request.action -cne 'inspect' -and $request.action -cne 'release')) { throw 'fixture-destination-request' }
+    if (@($request.PSObject.Properties.Name).Count -ne 3 -or $request.nonce -cne $Nonce -or $request.id -isnot [int] -or $request.id -ne ($last + 1) -or $request.id -gt 16 -or @('inspect','release','capture-closed-file','inspect-closed-file') -cnotcontains $request.action) { throw 'fixture-destination-request' }
     $last = $request.id
     $path = $owner.Path; $identity = $owner.Identity; $entries = @($owner.Entries())
     $libraries = @($guards | ForEach-Object { $_.Check() })
     $state = 'held'
-    if ($request.action -ceq 'release') { $libraries = @($guards | ForEach-Object { $_.Finish() }); $owner.Dispose(); $state = 'released' }
+    if ($request.action -ceq 'capture-closed-file' -or $request.action -ceq 'inspect-closed-file') {
+      $file = if ($request.action -ceq 'capture-closed-file') { $owner.CaptureClosedFile($ProjectBasename) } else { $owner.CheckClosedFile() }
+      $destination = @{schema='easyeda-pro-control.fixture-destination-owner.v1'; nonce=$Nonce; ownerId=$owner.Id; windowsDirectory=$path; directoryIdentity=$identity; expectedBasename=$ProjectBasename; entries=$entries; libraries=$libraries; state='held'; deletionAuthorized=$false; requestId=$last}
+      @{schema='easyeda-pro-control.fixture-closed-file-metadata.v1'; destination=$destination; file=$file} | ConvertTo-Json -Compress -Depth 8 | ForEach-Object { [Console]::WriteLine($_) }
+      continue
+    }
+    if ($request.action -ceq 'release') { $owner.FinishClosedFile(); $libraries = @($guards | ForEach-Object { $_.Finish() }); $owner.Dispose(); $state = 'released' }
     @{schema='easyeda-pro-control.fixture-destination-owner.v1'; nonce=$Nonce; ownerId=$owner.Id; windowsDirectory=$path; directoryIdentity=$identity; expectedBasename=$ProjectBasename; entries=$entries; libraries=$libraries; state=$state; deletionAuthorized=$false; requestId=$last} | ConvertTo-Json -Compress -Depth 5 | ForEach-Object { [Console]::WriteLine($_) }
     if ($state -ceq 'released') { break }
   }

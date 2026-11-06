@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { z } from "zod";
 import { deriveWindowsRuntimePaths } from "./windows-runtime.ts";
 
-export const MANAGED_FIXTURE_DESTINATION_HELPER_SHA256 = "c27d50a80f11676d5bc0ac5cb963a63d8ee9cae6d0c5fec2a92b11b5ba98ba6d";
+export const MANAGED_FIXTURE_DESTINATION_HELPER_SHA256 = "5729fc3300d31737b0ff7b5f4585f81cf620759cb1243b0ce54b15e1c528fe78";
 const basename = z.string().regex(/^Codex_(?:via_only|line_and_via|arc_line_and_via|schematic)_[a-f0-9]{16}\.eprj2$/u);
 export const managedFixtureLibraryDirectoriesSchema = z.array(z.string().min(4).max(1024).regex(/^[A-Z]:\\(?:[A-Za-z0-9_ -]+\\)*[A-Za-z0-9_-]+$/u)
   .refine((value) => value.slice(3).split("\\").every((part) => part.trim() === part && !/^(?:con|prn|aux|nul|com[0-9]|lpt[0-9])$/iu.test(part))))
@@ -32,6 +32,20 @@ export const managedFixtureDestinationObservationSchema = z.object({
   value.libraries.every((library) => library.watchState === (value.state === "held" ? "pending" : "cancelled-no-changes")),
 "The retained fixture destination has an unexpected complete child roster.");
 export type ManagedFixtureDestinationObservation = z.infer<typeof managedFixtureDestinationObservationSchema>;
+const fileTime = z.string().regex(/^[1-9][0-9]{0,18}$/u);
+export const managedFixtureClosedFileMetadataSchema = z.strictObject({
+  schema: z.literal("easyeda-pro-control.fixture-closed-file-metadata.v1"), destination: managedFixtureDestinationObservationSchema,
+  file: z.strictObject({ windowsPath: z.string().min(8).max(1152), fileIdentity: z.string().regex(/^[a-f0-9]{8}:[a-f0-9]{16}$/u),
+    sha256: z.string().regex(/^[a-f0-9]{64}$/u), bytes: z.number().int().min(512).max(67_108_864), createdFileTime: fileTime, modifiedFileTime: fileTime,
+    createdEpochMs: z.number().int().positive().max(8_640_000_000_000_000), modifiedEpochMs: z.number().int().positive().max(8_640_000_000_000_000),
+    watchState: z.literal("pending"), readOnlyFileLease: z.literal(true) }),
+}).refine(value => value.destination.state === "held" && value.destination.entries.length === 1 && value.destination.entries[0] === value.destination.expectedBasename &&
+  value.file.windowsPath === `${value.destination.windowsDirectory}\\${value.destination.expectedBasename}` && value.file.fileIdentity.slice(0, 8) === value.destination.directoryIdentity.slice(0, 8) &&
+  BigInt(value.file.createdFileTime) <= 2_650_467_743_999_999_999n && BigInt(value.file.modifiedFileTime) <= 2_650_467_743_999_999_999n &&
+  (BigInt(value.file.createdFileTime) - 116_444_736_000_000_000n) / 10_000n === BigInt(value.file.createdEpochMs) &&
+  (BigInt(value.file.modifiedFileTime) - 116_444_736_000_000_000n) / 10_000n === BigInt(value.file.modifiedEpochMs),
+"The original closed file path, complete roster or native FILETIME conversion differs.");
+export type ManagedFixtureClosedFileMetadata = z.infer<typeof managedFixtureClosedFileMetadataSchema>;
 
 export interface ManagedFixtureDestinationOptions {
   readonly pluginRoot: string; readonly assetsRoot: string; readonly nonce: string; readonly expectedBasename: string;
@@ -70,6 +84,8 @@ async function verifyHelper(path: string): Promise<void> {
 export class ManagedFixtureDestinationOwner {
   private child: ChildProcessWithoutNullStreams | undefined;
   private initializationAttempted = false;
+  private closedFileMetadataAttempted = false;
+  private closedFileMetadata: ManagedFixtureClosedFileMetadata | undefined;
   private releaseAttempted = false;
   private current: ManagedFixtureDestinationObservation | undefined;
   private sequence = 0;
@@ -167,6 +183,28 @@ export class ManagedFixtureDestinationOwner {
     return this.accept(await response, this.sequence);
   }
   public snapshot(): ManagedFixtureDestinationObservation | null { return this.current === undefined ? null : structuredClone(this.current); }
+  private acceptClosedFileMetadata(raw: unknown, requestId: number): ManagedFixtureClosedFileMetadata {
+    const value = managedFixtureClosedFileMetadataSchema.parse(raw); this.accept(value.destination, requestId);
+    if (this.closedFileMetadata !== undefined && JSON.stringify(value.file) !== JSON.stringify(this.closedFileMetadata.file)) {
+      throw new Error("Original retained Windows file handle, metadata or content changed.");
+    }
+    this.closedFileMetadata = value; return structuredClone(value);
+  }
+  /** The original coordinator must first prove its app root and empty Job.
+   * This one fixed action then retains a NEW Windows read-only file handle and
+   * name watcher through the existing original destination release. */
+  public async captureClosedFileMetadata(): Promise<ManagedFixtureClosedFileMetadata> {
+    if (this.closedFileMetadataAttempted || this.current === undefined || this.child === undefined || this.releaseAttempted || this.sequence >= 16) { throw new Error("Original closed Windows file metadata capture cannot be entered or repeated."); }
+    this.closedFileMetadataAttempted = true; this.sequence += 1; const response = this.next();
+    this.child.stdin.write(`${JSON.stringify({ nonce: this.options.nonce, id: this.sequence, action: "capture-closed-file" })}\n`);
+    return this.acceptClosedFileMetadata(await response, this.sequence);
+  }
+  public async inspectClosedFileMetadata(): Promise<ManagedFixtureClosedFileMetadata> {
+    if (this.closedFileMetadata === undefined || this.child === undefined || this.releaseAttempted || this.sequence >= 16) { throw new Error("Original closed Windows file handle is unavailable for metadata reproof."); }
+    this.sequence += 1; const response = this.next();
+    this.child.stdin.write(`${JSON.stringify({ nonce: this.options.nonce, id: this.sequence, action: "inspect-closed-file" })}\n`);
+    return this.acceptClosedFileMetadata(await response, this.sequence);
+  }
   /** Original raw bytes only. A prefix or close event never proves directory
    * allocation, original app termination, migration exclusion or safe replay. */
   public failureObservation(): Readonly<Record<string, unknown>> | null {

@@ -13,6 +13,15 @@ input.on("line", (line) => {
   const request: unknown = JSON.parse(line);
   if (request === null || typeof request !== "object" || !("id" in request)) { throw new Error("Invalid synthetic request."); }
   const released = "action" in request && request.action === "release";
+  if ("action" in request && ["capture-closed-file", "inspect-closed-file"].includes(String(request.action))) {
+    const createdEpochMs = 1_800_000_000_000, modifiedEpochMs = 1_800_000_000_100;
+    const createdFileTime = mode === "metadata-invalid-filetime" ? "1" : String(116_444_736_000_000_000n + BigInt(createdEpochMs) * 10_000n);
+    const modifiedFileTime = String(116_444_736_000_000_000n + BigInt(modifiedEpochMs) * 10_000n);
+    process.stdout.write(`${JSON.stringify({ schema: "easyeda-pro-control.fixture-closed-file-metadata.v1", destination: { ...base, entries: [expectedBasename], requestId: request.id },
+      file: { windowsPath: `${windowsDirectory}\\${expectedBasename}`, fileIdentity: "12345678:2222222222222222", bytes: 4096,
+        sha256: mode === "metadata-drift" && request.action === "inspect-closed-file" ? "b".repeat(64) : "a".repeat(64),
+        createdEpochMs, modifiedEpochMs, createdFileTime, modifiedFileTime, watchState: "pending", readOnlyFileLease: true } })}\n`); return;
+  }
   process.stdout.write(`${JSON.stringify({ ...base, ...(released ? { state: "released", libraries: base.libraries.map((entry) => ({ windowsDirectory: entry.windowsDirectory, directoryIdentity: entry.directoryIdentity, names: entry.names, watchState: "cancelled-no-changes" })) } : {}),
     ...(mode === "watch-completed" ? { libraries: [{ ...base.libraries[0], watchState: "notification-completed" }] } : {}),
     ...(mode === "substitute-owner" ? { directoryIdentity: "12345678:0000000099999999" } : {}),
