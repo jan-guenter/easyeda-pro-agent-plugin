@@ -101,9 +101,12 @@ export const CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY = freezeDeep({
 // Proofs and its own scalar reply envelope. Raw stream/event ceilings remain
 // Cumulative. The extra v2 source read also receives a command and proof slot.
 const v2CleanupExtra = FORWARD_V2.cleanupClass - cleanup, v2NormalExtra = FORWARD_V2.normalClass - normal;
-const v2Controls = Object.freeze({ normal: CONTROLS.normal + 32 * v2NormalExtra,
+// Tail activation owns two original-parent proofs and one consumed native
+// Begin control. It cannot renew either the clock or cold request allowance.
+const tailActivationControls = 5;
+const v2Controls = Object.freeze({ normal: CONTROLS.normal + 32 * v2NormalExtra + tailActivationControls,
   cleanup: CONTROLS.cleanup + 32 * v2CleanupExtra,
-  total: CONTROLS.total + 32 * (v2NormalExtra + v2CleanupExtra) });
+  total: CONTROLS.total + 32 * (v2NormalExtra + v2CleanupExtra) + tailActivationControls });
 const v2ReplyBytes = (v2NormalExtra + v2CleanupExtra + v2Controls.total - CONTROLS.total) * controlReplyBytes;
 export const CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY = freezeDeep({
   ...CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY,

@@ -26,6 +26,8 @@ export function currentFootprintForwardNativeCore(sharedHelper: string): Readonl
     '    if(forwardExecution){if(action=="footprint-copy-create-clock-begin"||action=="footprint-copy-clock"||action=="footprint-clock-rpc-begin"||action=="footprint-clock-rpc-retire"||action=="main-request-send"||action=="main-completion-begin"||action=="main-completion-send"||action=="main-completion-retire")throw Error("forward-execution-provider-unmounted");AdmitCombinedAction(action);return;}',
     '    if(forwardExecution){AdmitForwardExecutionAction(action);return;}');
   core = replace(core, '"footprint-copy-native-create","footprint-clock-rpc-send","footprint-copy-create-clock-retire"})value.AdmitForwardAction(action);', '"footprint-copy-native-create","footprint-clock-rpc-v2-send","footprint-copy-create-clock-retire"})value.AdmitForwardAction(action);');
+  core = replace(core, 'new string[]{"footprint-copy-allocated-create-clock-begin","footprint-copy-allocation-send","footprint-copy-native-create","footprint-clock-rpc-v2-send"',
+    'new string[]{"footprint-forward-allocated-clock-begin","footprint-copy-allocation-send","footprint-copy-native-create","footprint-clock-rpc-v2-send"');
   core = replace(core, 'value.FootprintRequestLimit!=EasyedaFootprintForwardLimits.Requests', 'value.FootprintRequestLimit!=EasyedaFootprintForwardExecutionLimits.Requests');
   core = replace(core,
     'public static EasyedaFootprintCopyAllocatedCreateClockLedger ForwardBirth(int first){return new EasyedaFootprintCopyAllocatedCreateClockLedger(first,1002);}',
@@ -45,6 +47,9 @@ export function currentFootprintForwardNativeCore(sharedHelper: string): Readonl
   ]) { core = replace(core, signature, `${signature}\n    if(forwardExecution)throw Error("forward-execution-v1-clock-refused");`); }
   core = replace(core, 'new string[]{"footprint-copy-create-clock-begin","footprint-clock-rpc-begin","main-request-send","main-completion-begin"})', 'new string[]{"footprint-copy-create-clock-begin","footprint-clock-rpc-begin"})');
   core = replace(core, "internal sealed class EasyedaOriginalMainTransport {", "internal sealed partial class EasyedaOriginalMainTransport {");
+  core = replace(core, "enum RendererWriteRole { Existing, ClockRpc, NativeCreate }", "enum RendererWriteRole { Existing, ClockRpc, NativeCreate, ForwardCold }");
+  core = replace(core, '    if(mainCompletionActive)throw Error("main-completion-exclusive");', '    if(mainCompletionActive&&role!=RendererWriteRole.ForwardCold)throw Error("main-completion-exclusive");');
+  core = replace(core, "    bool scoped=role!=RendererWriteRole.Existing;", "    bool coldTail=role==RendererWriteRole.ForwardCold;if(coldTail)RequireForwardColdTail();\n    bool scoped=!coldTail&&role!=RendererWriteRole.Existing;");
   core = replace(core, "readonly int normalLimit,cleanupLimit;", "readonly int normalLimit,cleanupLimit;readonly bool forwardExecutionMain;");
   core = replace(core, "footprintHeadAge209?EasyedaFootprintHeadAgeProtocol.MainRequests:workerStartupFootprintForward209?", "footprintHeadAge209?EasyedaFootprintHeadAgeProtocol.MainRequests:forwardExecution?EasyedaFootprintForwardExecutionLimits.MainRequests:workerStartupFootprintForward209?");
   // Each owner request/completion guard selects the new limit only on its direct typed birth.
@@ -119,12 +124,23 @@ ${driver.slice(compileEnd)}`;
 /** Scalar-only new phase cases. The original driver still checks its retained
  * helper/Job/root tuple before any action reaches the original owner instance. */
 function v2Dispatch(): string {
-  return `        'footprint-forward-cold-send' {
+  return `        'footprint-forward-allocated-clock-begin' {
+          if (-not $launched -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,coldCleanup,coldNormal,firstRequestId,helperInstance,id,jobId,rootCreated,rootPid') {throw 'forward-cold-clock-fields'}
+          foreach ($field in @('coldCleanup','coldNormal','firstRequestId')) {if (($request.$field -isnot [int] -and $request.$field -isnot [long]) -or $request.$field -lt 0 -or $request.$field -gt $startupRequestLimit) {throw 'forward-cold-clock-fields'}}
+          $owner.BeginForwardAllocatedClock([int]$request.firstRequestId,[int]$request.coldNormal,[int]$request.coldCleanup)
+          $result=@{begun=$true}
+        }
+        'footprint-forward-cold-begin' {
+          if (-not $launched -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,helperInstance,id,jobId,rootCreated,rootPid') {throw 'forward-cold-begin-fields'}
+          $owner.BeginForwardColdTail()
+          $result=@{begun=$true}
+        }
+        'footprint-forward-cold-send' {
           if (-not $launched -or $request.phase -isnot [string] -or $request.method -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt $startupRequestLimit) {throw 'forward-cold-fields'}
           $baseFields=@('id','action','helperInstance','jobId','rootPid','rootCreated','requestId','phase','method')
           foreach ($field in $baseFields) {if (@($request.PSObject.Properties.Name) -cnotcontains $field) {throw 'forward-cold-fields'}}
           $fields=New-Object 'System.Collections.Hashtable' ([StringComparer]::Ordinal)
-          foreach ($property in $request.PSObject.Properties) {if ($baseFields -cnotcontains $property.Name) {if (@('sessionId','scriptId','callFrameId','objectId','argument0','argument1','argument2','argument3','argument4','argument5','argument6') -cnotcontains $property.Name -or $property.Value -isnot [string]) {throw 'forward-cold-field'};$fields.Add($property.Name,$property.Value)}}
+          foreach ($property in $request.PSObject.Properties) {if ($baseFields -cnotcontains $property.Name) {if (@('sessionId','scriptId','callFrameId','objectId','breakpointId','argument0','argument1','argument2','argument3','argument4','argument5','argument6') -cnotcontains $property.Name -or $property.Value -isnot [string]) {throw 'forward-cold-field'};$fields.Add($property.Name,$property.Value)}}
           $owner.SendFootprintForwardCold([int]$request.requestId,$request.phase,$request.method,$fields)
           $result=@{written=$true}
         }

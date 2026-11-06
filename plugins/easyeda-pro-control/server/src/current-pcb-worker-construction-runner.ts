@@ -4,7 +4,7 @@
  * create/Save and writer permits remain outside this class. */
 import { z } from "zod";
 // oxlint-disable-next-line import/no-cycle -- Retain the genuine construction issuer and original startup transport; no initialization work crosses the cycle.
-import { isOriginalFootprintColdConstructionTransport, isOriginalFootprintExecutionConstructionTransport, isOriginalFootprintHeldSavedConstructionTransport, isOriginalFootprintPreparationConstructionTransport, isOriginalFootprintSavedConstructionTransport, originalFootprintExecutionConstructionProjectUuid, requestFootprintExecutionConstructionCache, requireOriginalProjectStructureConstructionDependency } from "./current-footprint-copy-construction-purpose.ts";
+import { isOriginalFootprintColdConstructionTransport, isOriginalFootprintExecutionConstructionTransport, isOriginalFootprintHeldSavedConstructionTransport, isOriginalFootprintPreparationConstructionTransport, isOriginalFootprintSavedConstructionTransport, originalFootprintExecutionConstructionProjectUuid, originalFootprintForwardExecutionConstructionDependency, requestFootprintExecutionConstructionCache, requireOriginalProjectStructureConstructionDependency } from "./current-footprint-copy-construction-purpose.ts";
 import { CurrentFootprintCopyCacheConstructionRunner } from "./current-footprint-copy-cache-construction-runner.ts";
 import type { CurrentFootprintCopyCacheConstructionObservation, CurrentFootprintCopyCacheConstructionTransport } from "./current-footprint-copy-cache-construction-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
@@ -82,6 +82,10 @@ import { CURRENT_PROJECT_STRUCTURE_WORKER_CALLS } from "./current-project-struct
 import type { CurrentProjectStructureWorkerBinding, CurrentProjectStructureWorkerEvents, CurrentProjectStructureWorkerLease } from "./current-project-structure-worker-lease.ts";
 import { CURRENT_FOOTPRINT_COLD_PRODUCER_CALLS, CURRENT_FOOTPRINT_COLD_PRODUCER_REQUESTS } from "./current-footprint-cold-producer-roster.ts";
 import type { CurrentFootprintColdProducerRoster } from "./current-footprint-cold-producer-roster.ts";
+import type { CurrentFootprintForwardColdContinuationBinding, CurrentFootprintForwardColdContinuationLease,
+  CurrentFootprintForwardColdTail, CurrentFootprintForwardColdTailBinding } from "./current-footprint-forward-cold-continuation.ts";
+// oxlint-disable-next-line import/no-cycle -- The original channel installs the original constructor's event lease synchronously before the construction subscription is consumed.
+import { requireCurrentFootprintForwardColdGenerationExited, requireCurrentFootprintForwardColdTail, suspendCurrentFootprintForwardColdContinuation } from "./current-pcb-worker-startup-channel.ts";
 // oxlint-disable-next-line import/no-cycle -- The core privately issues the original lease before instantiating this observer; the observer cannot register or replace its native binding.
 import { CurrentFootprintDetachedCacheObserver } from "./current-footprint-detached-cache-observer.ts";
 import { CURRENT_FOOTPRINT_DETACHED_CACHE_REQUESTS } from "./current-footprint-detached-cache-profile.ts";
@@ -89,6 +93,11 @@ import type { CurrentFootprintDetachedCacheBinding, CurrentFootprintDetachedCach
 import type { CurrentFootprintDetachedCacheObservationV2 } from "./current-footprint-detached-cache-observer.ts";
 
 const detachedCacheLeases = new WeakMap<CurrentFootprintDetachedCacheLease, CurrentFootprintDetachedCacheBinding>();
+const coldContinuationLeases = new WeakMap<CurrentFootprintForwardColdContinuationLease, CurrentFootprintForwardColdContinuationBinding>();
+export function requireCurrentFootprintForwardColdContinuationLease(lease: CurrentFootprintForwardColdContinuationLease): CurrentFootprintForwardColdContinuationBinding {
+  const binding = coldContinuationLeases.get(lease); if (binding === undefined) { throw fail("FORWARD_COLD_ORIGINAL_LEASE"); }
+  binding.assertCleanup(); return binding;
+}
 export function requireCurrentFootprintDetachedCacheLease(lease: CurrentFootprintDetachedCacheLease): CurrentFootprintDetachedCacheBinding {
   const binding = detachedCacheLeases.get(lease); if (binding === undefined) { throw fail("DETACHED_CACHE_ORIGINAL_LEASE"); }
   binding.assertCleanup(); return binding;
@@ -274,6 +283,9 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   #detachedCacheObserver: CurrentFootprintDetachedCacheObserver | null = null;
   #detachedCacheListener: CurrentFootprintDetachedCacheEvents | null = null;
   #detachedCachePauseActive = false;
+  #coldContinuationLease: CurrentFootprintForwardColdContinuationLease | null = null;
+  #coldTail: CurrentFootprintForwardColdTailBinding | null = null;
+  #coldOriginalExitObserved = false;
   #projectIdentityConsumed = false;
   #projectIdentity: CurrentPcbWorkerConstructionProjectIdentity | null = null;
   #actorSampleAttempts = 0;
@@ -890,6 +902,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       fail: (): void => { same(); this.#fail("DETACHED_CACHE_OBSERVER_FAILED"); },
       request: async (command: CurrentPcbWorkerConstructionCommand, cleanup: boolean, retain?: (reply: unknown) => void): Promise<unknown> => {
         same();
+        if (this.#coldTail !== null) { const reply = await this.#coldTail.request(command, cleanup, retain); same(); return reply; }
         if (retain !== undefined && (cleanup || command.method !== "Debugger.setBreakpoint")) { throw fail("DETACHED_CACHE_ALLOCATION_REPLY"); }
         if (!cleanup) { const reply = await this.#request(command, undefined, undefined, captureCurrentPcbStringClockReply, retain); same(); return reply; }
         if (command.method !== "Debugger.resume" && command.method !== "Debugger.removeBreakpoint" && command.method !== "Runtime.releaseObjectGroup") { throw fail("DETACHED_CACHE_CLEANUP_COMMAND"); }
@@ -907,6 +920,46 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     await this.#requireOriginal(packet); const observer = this.#detachedCacheObserver;
     if (observer === null || !isOriginalFootprintColdConstructionTransport(this.#transport)) { throw fail("DETACHED_CACHE_ORIGINAL_OWNER"); }
     const result = await observer.closeAndObserve(); await this.#requireOriginal(packet); return result;
+  }
+  /** Install the same original observer on the channel before construction's
+   * subscription is consumed. No supplied event receiver or request function. */
+  #suspendForwardColdContinuation(clockLease: CurrentFootprintCopyClockRpcConstructionLease): void {
+    const listener = this.#detachedCacheListener, observer = this.#detachedCacheObserver;
+    if (observer === null) { return; }
+    const dependency = originalFootprintForwardExecutionConstructionDependency(this.#transport);
+    if (listener === null || this.#detachedCachePauseActive || this.#coldContinuationLease !== null || this.#coldTail !== null ||
+        clockLease !== this.#clockRpcLease || this.#unsubscribe === null) { throw fail("FORWARD_COLD_HANDOFF"); }
+    const same = (): void => {
+      this.#sameTransport();
+      if (this.#releaseConsumed || this.#detachedCacheObserver !== observer || this.#detachedCacheListener !== listener ||
+          this.#clockRpcLease !== clockLease || originalFootprintForwardExecutionConstructionDependency(this.#transport) !== dependency) { throw fail("FORWARD_COLD_HANDOFF_CHANGED"); }
+    };
+    const lease = Object.freeze({ profile: "private.current-footprint-forward-cold-continuation.v1" as const });
+    coldContinuationLeases.set(lease, Object.freeze({ issuer: this, dependency, workerLease: clockLease, assertCleanup: same,
+      suspend: (): void => { same(); observer.suspendForClock(); }, acceptsPause: (input: unknown): boolean => { same(); return observer.acceptsPause(input); },
+      remainingRequests: (): Readonly<{ normal: number; cleanup: number; total: number }> => { same(); return observer.remainingClockContinuationRequests(); },
+      paused: (input: unknown): void => {
+        same(); if (this.#detachedCachePauseActive) { throw fail("FORWARD_COLD_DUPLICATE_PAUSE"); }
+        this.#detachedCachePauseActive = true; listener.paused(input);
+        if (observer.retained().failed) { throw fail("FORWARD_COLD_OBSERVER_FAILED"); }
+      },
+      resumed: (): void => { same(); if (!this.#detachedCachePauseActive) { throw fail("FORWARD_COLD_UNEXPECTED_RESUME"); } this.#detachedCachePauseActive = false; listener.resumed(); },
+      lost: (): void => { listener.lost(); },
+      attach: (tail: CurrentFootprintForwardColdTail): void => {
+        same(); const original = requireCurrentFootprintForwardColdTail(tail);
+        if (this.#coldTail !== null || original.continuation !== lease || original.dependency !== dependency || original.workerLease !== clockLease) { throw fail("FORWARD_COLD_TAIL_ORIGINAL"); }
+        this.#coldTail = original; observer.continueAfterClock();
+      },
+      observeExited: async (): Promise<void> => {
+        requireCurrentFootprintForwardColdGenerationExited(dependency, lease);
+        if (this.#coldOriginalExitObserved) { return; }
+        same(); this.#coldOriginalExitObserved = true;
+        this.#detachedCachePauseActive = false;
+        await observer.observeOriginalGenerationExited();
+      },
+    }));
+    this.#coldContinuationLease = lease;
+    suspendCurrentFootprintForwardColdContinuation(dependency, lease); same();
   }
   /** This original-event continuation is not a supplied-data projection. Every
    * callback argument comes from the retained constructor pauses. Current
@@ -1285,6 +1338,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       if (cache.retained()["released"] !== true) { throw fail("CLOCK_RPC_CACHE_RETAINED"); }
       this.#footprintCacheConstructionReleased = true;
     }
+    this.#suspendForwardColdContinuation(lease);
     this.stopConstructionPauseSubscription(this.#packet); binding.assertCleanup();
   }
   /** Compile only the fixed dependency capture/recheck with this construction's
@@ -1532,6 +1586,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     this.#checkWindow(); this.#sameTransport();
     if (this.#profile !== "private.current-footprint-copy-construction.v1" || packet !== this.#packet || issued.get(packet) !== this ||
       !this.#settled || this.#uncertainBreakpoint || this.#releaseConsumed || this.#constructionSubscriptionStopped ||
+      this.#detachedCacheObserver !== null && this.#coldContinuationLease === null ||
       this.#footprintCacheListener !== null || this.#footprintCachePauseActive || this.#footprintCacheConstruction !== null && !this.#footprintCacheConstructionReleased || this.#unsubscribe === null ||
       [...this.#breakpoints.values()].some(value => !value.removed) || this.#pause !== null && !this.#pause.resumeObserved) { throw fail("CONSTRUCTION_HANDOFF"); }
     this.#constructionSubscriptionStopped = true;

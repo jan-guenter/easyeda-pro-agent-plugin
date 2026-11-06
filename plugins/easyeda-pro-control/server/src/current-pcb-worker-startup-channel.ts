@@ -63,9 +63,14 @@ import { CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_LIMITS, captureCurrentFootprintCop
   currentFootprintCopyNativeCreateWire } from "./current-footprint-copy-native-create-wire.ts";
 import type { CurrentFootprintCopyNativeCreateCommand } from "./current-footprint-copy-native-create-wire.ts";
 // oxlint-disable-next-line import/no-cycle -- The original construction issuer is required instead of an injectable capability registry; no initialization calls cross this transport cycle.
-import { requireCurrentFootprintCopyCreateInvocationLease } from "./current-pcb-worker-construction-runner.ts";
+import { requireCurrentFootprintCopyCreateInvocationLease, requireCurrentFootprintForwardColdContinuationLease } from "./current-pcb-worker-construction-runner.ts";
 import type { CurrentFootprintCopyCreateInvocationBinding, CurrentFootprintCopyCreateInvocationLease } from "./current-footprint-copy-create-invocation-lease.ts";
 import type { CurrentFootprintCopyV2Plan } from "./current-footprint-copy-v2-plan.ts";
+import { CURRENT_FOOTPRINT_FORWARD_NATIVE_LIMITS as FORWARD_LIMITS } from "./current-footprint-forward-native-limits.ts";
+import type { CurrentPcbWorkerConstructionCommand } from "./current-pcb-worker-construction-contract.ts";
+import { currentFootprintForwardColdTailWire } from "./current-footprint-forward-cold-wire.ts";
+import type { CurrentFootprintForwardColdContinuationBinding, CurrentFootprintForwardColdContinuationLease,
+  CurrentFootprintForwardColdTail, CurrentFootprintForwardColdTailBinding } from "./current-footprint-forward-cold-continuation.ts";
 
 export interface CurrentPcbWorkerStartupParent {
   readonly targetId: string;
@@ -111,6 +116,26 @@ const forwardExecutionDependencies = new WeakSet<CurrentPcbWorkerStartupDependen
  * cannot acquire continuous cold-producer ownership from their receipt. */
 export function isOriginalFootprintForwardExecutionDependency(dependency: CurrentPcbWorkerStartupDependency): boolean {
   return forwardExecutionDependencies.has(dependency);
+}
+const coldTails = new WeakMap<CurrentFootprintForwardColdTail, CurrentFootprintForwardColdTailBinding>();
+export function requireCurrentFootprintForwardColdTail(tail: CurrentFootprintForwardColdTail): CurrentFootprintForwardColdTailBinding {
+  const binding = coldTails.get(tail); if (binding === undefined) { throw fail("FORWARD_COLD_TAIL_ORIGINAL"); }
+  binding.assertCleanup(); return binding;
+}
+export function suspendCurrentFootprintForwardColdContinuation(dependency: CurrentPcbWorkerStartupDependency, lease: CurrentFootprintForwardColdContinuationLease): void {
+  const channel = executionDependencies.get(dependency); if (channel === undefined) { throw fail("FORWARD_COLD_PURPOSE"); }
+  channel.suspendForwardColdContinuation(dependency, lease);
+}
+export function requireCurrentFootprintForwardColdGenerationExited(dependency: CurrentPcbWorkerStartupDependency, lease: CurrentFootprintForwardColdContinuationLease): void {
+  const channel = executionDependencies.get(dependency); if (channel === undefined) { throw fail("FORWARD_COLD_PURPOSE"); }
+  channel.requireForwardColdGenerationExited(dependency, lease);
+}
+/** The sole original create and retired clock cursor select this continuation.
+ * Its token proves ownership only; it grants no SQL or producer eligibility. */
+export function beginCurrentFootprintForwardColdTail(dependency: CurrentPcbWorkerStartupDependency,
+  pending: CurrentFootprintCopyPendingCreate): Promise<CurrentFootprintForwardColdTail> {
+  const channel = executionDependencies.get(dependency); if (channel === undefined) { return Promise.reject(fail("FORWARD_COLD_PURPOSE")); }
+  return channel.beginForwardColdTail(dependency, pending);
 }
 /** This marker is issued only by the separate channel, never by receipt data. */
 export function isOriginalFootprintPreparationDependency(dependency: CurrentPcbWorkerStartupDependency): boolean {
@@ -206,7 +231,7 @@ function fail(code: string): Error {
 }
 function record(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function exact(value: object, keys: readonly string[]): boolean { return Object.keys(value).toSorted().join(",") === [...keys].toSorted().join(","); }
-function cleanupCommand(command: PendingCommand): boolean {
+function cleanupCommand(command: Pick<PendingCommand, "method">): boolean {
   return command.method === "Debugger.removeBreakpoint" || command.method === "Debugger.resume" ||
     command.method === "Runtime.runIfWaitingForDebugger" || command.method === "Runtime.releaseObjectGroup";
 }
@@ -288,7 +313,17 @@ async function observe(work: Promise<unknown>): Promise<void> {
   }
 }
 
+interface ColdContinuationState {
+  readonly lease: CurrentFootprintForwardColdContinuationLease;
+  readonly binding: CurrentFootprintForwardColdContinuationBinding;
+  readonly dependency: CurrentPcbWorkerStartupDependency;
+  readonly workerSessionId: string;
+}
 class CurrentPcbWorkerStartupChannelCore {
+  #coldContinuation: ColdContinuationState | null = null;
+  #coldPause = false;
+  #coldTailAttempted = false;
+  #coldTail: CurrentFootprintForwardColdTail | null = null;
   readonly #wire: typeof currentPcbWorkerStartupWire;
   readonly #structurePurpose: boolean;
   readonly #footprintPurpose: boolean;
@@ -652,8 +687,9 @@ class CurrentPcbWorkerStartupChannelCore {
         (!this.#openingConsumed || this.#executionWorkerSession !== null)) { throw fail("EXECUTION_WORKER_RUNTIME"); }
   }
   // oxlint-disable-next-line eslint/require-await -- Return the original retained completion, with synchronous guards converted to rejection.
-  async #request(raw: ChannelCommand, manager = false, clock = false, parentKind?: CurrentFootprintParentCommandKind, registration = false, heldCache = false): Promise<unknown> {
-    if (this.#clockRpcHandoffPending || this.#clockRpc !== null && (!this.#clockRpc.retired || this.#clockRpc.create !== null)) { throw fail("FOOTPRINT_RPC_EXCLUSIVE"); }
+  async #request(raw: ChannelCommand, manager = false, clock = false, parentKind?: CurrentFootprintParentCommandKind, registration = false, heldCache = false, coldTail = false): Promise<unknown> {
+    if (coldTail) { this.#sameColdTail(true); }
+    else if (this.#clockRpcHandoffPending || this.#clockRpc !== null && (!this.#clockRpc.retired || this.#clockRpc.create !== null)) { throw fail("FOOTPRINT_RPC_EXCLUSIVE"); }
     // Select the fixed grammar only after rejecting prototype/proxy traps.
     if (!record(raw) || types.isProxy(raw) ||
       Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null) { throw fail("COMMAND"); }
@@ -661,6 +697,7 @@ class CurrentPcbWorkerStartupChannelCore {
       Object.getOwnPropertyDescriptor(raw, "phase")?.value !== "saved-upload-queue")) { throw fail("FOOTPRINT_UI_PURPOSE"); }
     const copyWire = manager ? currentFootprintCopyManagerRouteWire : currentFootprintCopyUiWire;
     const encode = (value: ChannelCommand, id: number): Readonly<{ command: ChannelCommand & Readonly<{ id: number }>; request: Readonly<Record<string, string | number>> }> => {
+      if (coldTail) { this.#sameColdTail(cleanupCommand(value)); return currentFootprintForwardColdTailWire(value, id); }
       if (heldCache) {
         if (this.#heldSavedBinding === null) { throw fail("HELD_CACHE_PURPOSE"); }
         return currentFootprintSavedCacheHeldWire(value, id);
@@ -859,6 +896,66 @@ class CurrentPcbWorkerStartupChannelCore {
       dispatchAttempted: false, pending: null, rejectedFrame: null };
     return this.#prepareClockRpc(dependency, workerSessionId, create);
   }
+  /** Called synchronously by the original constructor before unsubscribing.
+   * Events cannot fall between the old listener and the clock event owner. */
+  public suspendForwardColdContinuation(dependency: CurrentPcbWorkerStartupDependency, lease: CurrentFootprintForwardColdContinuationLease): void {
+    this.#sameMethods(); this.#withinLifetime();
+    const binding = requireCurrentFootprintForwardColdContinuationLease(lease);
+    if (this.#wire !== currentFootprintForwardExecutionStartupWire || executionDependencies.get(dependency) !== this ||
+        binding.dependency !== dependency || this.#coldContinuation !== null || this.#clockRpcAttempted || this.#listener === null ||
+        this.#executionWorkerSession === null || this.#failure !== null || this.#fatal || this.#released || this.#releaseRequested) { throw fail("FORWARD_COLD_HANDOFF"); }
+    binding.suspend();
+    this.#coldContinuation = Object.freeze({ lease, binding, dependency, workerSessionId: this.#executionWorkerSession });
+  }
+  public requireForwardColdGenerationExited(dependency: CurrentPcbWorkerStartupDependency, lease: CurrentFootprintForwardColdContinuationLease): void {
+    this.#sameMethods();
+    if (!this.#terminationVerified || this.#wire !== currentFootprintForwardExecutionStartupWire ||
+        this.#coldContinuation?.dependency !== dependency || this.#coldContinuation.lease !== lease) { throw fail("FORWARD_COLD_ORIGINAL_EXIT"); }
+  }
+  #sameColdTail(cleanup: boolean): ColdContinuationState {
+    this.#sameMethods(); this.#withinLifetime(cleanup);
+    const cold = this.#coldContinuation, rpc = this.#clockRpc;
+    if (this.#wire !== currentFootprintForwardExecutionStartupWire || cold === null || this.#coldTail === null ||
+        rpc === null || !rpc.retired || !rpc.retireAcknowledged || rpc.create === null || !rpc.create.dispatchAttempted ||
+        rpc.create.binding.clockLease !== cold.binding.workerLease || rpc.workerSessionId !== cold.workerSessionId ||
+        this.#released || this.#releaseRequested || this.#terminationVerified || this.#fatal || !cleanup && this.#failure !== null) { throw fail("FORWARD_COLD_TAIL_ORIGINAL"); }
+    cold.binding.assertCleanup(); return cold;
+  }
+  public async beginForwardColdTail(dependency: CurrentPcbWorkerStartupDependency, originalPending: CurrentFootprintCopyPendingCreate): Promise<CurrentFootprintForwardColdTail> {
+    const cold = this.#coldContinuation, rpc = this.#clockRpc;
+    if (rpc === null || cold === null || cold.dependency !== dependency || executionDependencies.get(dependency) !== this ||
+        this.#wire !== currentFootprintForwardExecutionStartupWire || this.#coldTailAttempted || !rpc.retired || !rpc.retireAcknowledged ||
+        this.#samePendingCreate(rpc).token !== originalPending || !this.#createRetirementQuiescent(rpc)) { throw fail("FORWARD_COLD_TAIL_UNAVAILABLE"); }
+    this.#coldTailAttempted = true;
+    try {
+      await this.#queue(async (): Promise<void> => {
+        this.#samePendingCreate(rpc); cold.binding.assertCleanup();
+        if (this.#queuedRequests !== 0 || this.#used !== 0 || rpc.events.length > 0 || !this.#createRetirementQuiescent(rpc)) { throw fail("FORWARD_COLD_TAIL_RETAIN"); }
+        const parent = await this.#parentMethod.call(this.#native);
+        if (parent !== this.#parent || this.#samePendingCreate(rpc).token !== originalPending) { throw fail("FORWARD_COLD_TAIL_PARENT"); }
+        const result = captureCurrentPcbStringClockReply(await this.#exchange.call(this.#native, { action: "footprint-forward-cold-begin" })).value;
+        if (!record(result) || !exact(result, ["begun"]) || result["begun"] !== true) { throw fail("FORWARD_COLD_TAIL_BEGIN_ACK"); }
+      });
+      const tailToken = Object.freeze({ profile: "private.current-footprint-forward-cold-tail.v1" as const });
+      this.#coldTail = tailToken;
+      coldTails.set(tailToken, Object.freeze({ continuation: cold.lease, dependency, workerLease: cold.binding.workerLease, workerSessionId: cold.workerSessionId,
+        assertCleanup: (): void => { this.#sameColdTail(true); },
+        assertOriginal: async (): Promise<void> => {
+          this.#sameColdTail(false);
+          await this.#queue(async (): Promise<void> => { const parent = await this.#parentMethod.call(this.#native);
+            if (parent !== this.#parent) { throw fail("FORWARD_COLD_TAIL_PARENT"); } this.#sameColdTail(false); });
+          this.#sameColdTail(false);
+        },
+        request: async (command: CurrentPcbWorkerConstructionCommand, cleanup: boolean, retain?: (reply: unknown) => void): Promise<unknown> => {
+          this.#sameColdTail(cleanup);
+          if (typeof cleanup !== "boolean" || cleanup !== cleanupCommand(command) || retain !== undefined) { throw fail("FORWARD_COLD_TAIL_COMMAND"); }
+          const reply = await this.#request({ ...command, sessionId: cold.workerSessionId }, false, false, undefined, false, false, true);
+          this.#sameColdTail(cleanup); return reply;
+        },
+      }));
+      cold.binding.attach(tailToken); this.#sameColdTail(false); return tailToken;
+    } catch (error) { this.#poison("FORWARD_COLD_TAIL_BEGIN"); throw error; }
+  }
   async #prepareClockRpc(dependency: CurrentPcbWorkerStartupDependency, workerSessionId: string,
     create: CreateClockState | null): Promise<CurrentFootprintCopyClockRpcChannelReservation> {
     if ((this.#wire !== currentFootprintCombinedStartupWire && this.#wire !== currentFootprintForwardExecutionStartupWire) || executionDependencies.get(dependency) !== this || this.#clockRpcAttempted ||
@@ -875,10 +972,18 @@ class CurrentPcbWorkerStartupChannelCore {
           throw fail("FOOTPRINT_RPC_QUIESCENCE");
         }
         let budget: ClockRpcState["budget"];
+        if (this.#wire === currentFootprintForwardExecutionStartupWire && (create === null || this.#coldContinuation === null ||
+            this.#coldContinuation.binding.workerLease !== create.binding.clockLease || this.#coldContinuation.workerSessionId !== workerSessionId)) {
+          throw fail("FORWARD_COLD_HANDOFF_REQUIRED");
+        }
         if (create === null) { budget = new CurrentFootprintCopyClockRpcBudget(this.#nextId); }
         else if (create.allocation) { budget = this.#wire === currentFootprintForwardExecutionStartupWire ?
           new CurrentFootprintForwardAllocatedCreateClockBudget(this.#nextId) : new CurrentFootprintCopyAllocatedCreateClockBudget(this.#nextId); }
         else { budget = new CurrentFootprintCopyCreateClockBudget(this.#nextId); }
+        if (this.#wire === currentFootprintForwardExecutionStartupWire) {
+          const remaining = this.#coldContinuation?.binding.remainingRequests();
+          if (remaining === undefined || budget.snapshot().lastReservedId + remaining.total > FORWARD_LIMITS.requestLimit) { throw fail("FORWARD_COLD_TAIL_HEADROOM"); }
+        }
         this.#clockRpcPreparedState = { workerSessionId, uiSessionId: this.#parent.sessionId,
           budget,
           create, events: [], begun: false, retired: false,
@@ -905,8 +1010,13 @@ class CurrentPcbWorkerStartupChannelCore {
         await this.#currentWithinQueue();
         let action = "footprint-clock-rpc-begin";
         if (state.create !== null) { action = state.create.allocation ? "footprint-copy-allocated-create-clock-begin" : "footprint-copy-create-clock-begin"; }
+        let coldReservation: Readonly<Record<string, number>> = {};
+        if (this.#wire === currentFootprintForwardExecutionStartupWire) {
+          const remaining = this.#coldContinuation?.binding.remainingRequests(); if (remaining === undefined) { throw fail("FORWARD_COLD_HANDOFF_REQUIRED"); }
+          action = "footprint-forward-allocated-clock-begin"; coldReservation = { coldNormal: remaining.normal, coldCleanup: remaining.cleanup };
+        }
         const result = captureCurrentPcbStringClockReply(await this.#exchange.call(this.#native,
-          { action, firstRequestId: this.#nextId })).value;
+          { action, firstRequestId: this.#nextId, ...coldReservation })).value;
         if (!record(result) || !exact(result, ["begun"]) || result["begun"] !== true) { throw fail("FOOTPRINT_RPC_BEGIN_ACK"); }
         state.begun = true;
       });
@@ -1240,6 +1350,16 @@ class CurrentPcbWorkerStartupChannelCore {
     const event = z.object({ method: z.string().min(1).max(128), params: z.record(z.string(), z.unknown()), sessionId: token }).strict()
       .parse(captureCurrentPcbStringClockReply(value).value);
     const rpc = this.#clockRpc;
+    const cold = this.#coldContinuation;
+    if (cold !== null && event.sessionId === cold.workerSessionId) {
+      if (event.method === "Debugger.paused" && cold.binding.acceptsPause(event.params)) {
+        if (this.#coldPause) { throw fail("FORWARD_COLD_DUPLICATE_PAUSE"); }
+        this.#coldPause = true; cold.binding.paused(event.params); return;
+      }
+      if (event.method === "Debugger.resumed" && this.#coldPause) {
+        this.#coldPause = false; cold.binding.resumed(); return;
+      }
+    }
     if (rpc?.create !== null && rpc?.create !== undefined && rpc.retired) { throw fail("FOOTPRINT_CREATE_POST_CLOCK_EVENT"); }
     if (rpc !== null && !rpc.retired && (event.sessionId === rpc.uiSessionId || event.sessionId === rpc.workerSessionId) &&
         (event.method === "Debugger.paused" || event.method === "Debugger.resumed")) {
@@ -1288,6 +1408,7 @@ class CurrentPcbWorkerStartupChannelCore {
     await this.#queue(async (): Promise<void> => {
       this.#sameMethods(); await this.#terminate.call(this.#native); this.#sameMethods();
       this.#terminationVerified = true;
+      this.#coldContinuation?.binding.lost();
       if (this.#pollTimer !== null) { clearTimeout(this.#pollTimer); this.#pollTimer = null; }
       if (this.#clockRpc !== null && (!this.#clockRpc.retired || this.#clockRpc.create !== null)) {
         // Only the retained root/whole-Job proof above ends ambiguous RPC
@@ -1298,6 +1419,9 @@ class CurrentPcbWorkerStartupChannelCore {
         this.#pending.clear(); this.#clockRpc.budget.fail(); this.#clockRpc.events.length = 0; this.#used = 0;
       }
     });
+    // The queue must be free while the original observer joins its own pending
+    // Owner checks. Its exit join sends no inspector command or application RPC.
+    await this.#coldContinuation?.binding.observeExited();
   }
   /** Original termination, not a timeout or caller flag, ends reply retention.
    * This releases local polling only; native pipe handles belong to the owner. */

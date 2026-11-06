@@ -5,6 +5,7 @@ import { currentFootprintCopyClockRpcV2NativeSource } from "./current-footprint-
 import { CURRENT_FOOTPRINT_FORWARD_NATIVE_LIMITS as LIMITS, CURRENT_FOOTPRINT_FORWARD_NATIVE_MAIN_LIMITS as MAIN } from "./current-footprint-forward-native-limits.ts";
 import { CURRENT_FOOTPRINT_COPY_ALLOCATION_NATIVE_ORDER as ORDER } from "./current-footprint-copy-allocated-create-clock-budget.ts";
 import { CURRENT_FOOTPRINT_FORWARD_COLD_PHASES, currentFootprintForwardColdNativeSource } from "./current-footprint-forward-cold-wire.ts";
+import { CURRENT_FOOTPRINT_DETACHED_CACHE_REQUESTS as DETACHED } from "./current-footprint-detached-cache-profile.ts";
 
 /** Compile in the same fixed source graph as the mechanically derived core.
  * Every owner field below belongs to this original partial instance. */
@@ -58,17 +59,37 @@ case "main-request-send":case "main-completion-begin":case "main-completion-send
 case "worker-startup-reprove":case "worker-startup-parent":case "footprint-copy-parent":case "footprint-copy-worker":case "footprint-cache-construction":case "worker-startup-send":case "send":case "poll":
 case "footprint-copy-windows-clock":case "window":case "normal-close":case "termination":case "combined-abort":case "saved-cache-native":case "saved-cache-accessor":
 case "restore-window-for-capture":case "resize-window-for-capture":case "window-capture-readiness":case "renderer-viewport-send":case "capture-window":
-case "footprint-copy-allocated-create-clock-begin":case "footprint-copy-allocation-send":case "footprint-copy-native-create":case "footprint-copy-create-clock-retire":
+case "footprint-copy-allocation-send":case "footprint-copy-native-create":case "footprint-copy-create-clock-retire":
 case "footprint-copy-clock-registration-v2":case "footprint-clock-rpc-v2-send":break;
-case "footprint-forward-cold-send":break;
+case "footprint-forward-cold-send":case "footprint-forward-cold-begin":case "footprint-forward-allocated-clock-begin":break;
 default:throw Error("forward-execution-provider-unmounted");}
 AdmitCombinedAction(action);
+}
+bool forwardColdTailBegun;
+public void BeginForwardAllocatedClock(int first,int coldNormal,int coldCleanup){
+if(!forwardExecution||coldNormal<0||coldNormal>${String(DETACHED.normal - DETACHED.arm)}||coldCleanup<0||coldCleanup>${String(DETACHED.cleanup)}||first<1||first>EasyedaFootprintForwardExecutionLimits.Requests||first+EasyedaFootprintCopyAllocatedCreateClockLedger.Requests-1+coldNormal+coldCleanup>EasyedaFootprintForwardExecutionLimits.Requests||
+forwardNormalRequests+EasyedaFootprintCopyAllocatedCreateClockLedger.ClockNormal+8+coldNormal>EasyedaFootprintForwardExecutionLimits.NormalClass||forwardCleanupRequests+EasyedaFootprintCopyAllocatedCreateClockLedger.ClockCleanup+3+coldCleanup>EasyedaFootprintForwardExecutionLimits.CleanupClass)throw Error("forward-cold-clock-reservation");
+BeginFootprintCopyAllocatedCreateClock(first);
+}
+void RequireForwardColdTail(){if(!forwardExecution||!forwardColdTailBegun||!footprintCreateClockBegun||!footprintCreateClockRetired||footprintCreateClockActive||footprintClockRpcActive||footprintCreateClockLedger==null||footprintCreateClockLedger.CreateId<1||footprintCreateClockLedger.Failed)throw Error("forward-cold-tail-original");}
+public void BeginForwardColdTail(){
+if(forwardColdTailBegun||!forwardExecution||!footprintCreateClockBegun||!footprintCreateClockRetired||footprintCreateClockActive||footprintCreateClockLedger==null||footprintCreateClockLedger.CreateId<1||footprintCreateClockLedger.Failed)throw Error("forward-cold-tail-begin");
+AssertLive();forwardColdTailBegun=true;RequireForwardColdTail();
+}
+static string ForwardColdField(System.Collections.IDictionary fields,string name){string value=fields[name] as string;if(value==null||!System.Text.RegularExpressions.Regex.IsMatch(value,@"\\A[A-Za-z0-9_.:-]{1,256}\\z"))throw Error("forward-cold-field");return "\\""+value+"\\"";}
+static string ForwardColdTailMessage(int id,string phase,string method,System.Collections.IDictionary fields){
+string selected=phase=="tail-properties"?"Runtime.getProperties":phase=="tail-remove"?"Debugger.removeBreakpoint":phase=="tail-resume"?"Debugger.resume":null;
+if(selected==null||method!=selected||fields==null||fields.Count!=(phase=="tail-resume"?1:2)||!fields.Contains("sessionId")||phase=="tail-properties"&&!fields.Contains("objectId")||phase=="tail-remove"&&!fields.Contains("breakpointId"))throw Error("forward-cold-tail-shape");
+string parameters=phase=="tail-properties"?"{\\"objectId\\":"+ForwardColdField(fields,"objectId")+",\\"ownProperties\\":true,\\"generatePreview\\":false}":phase=="tail-remove"?"{\\"breakpointId\\":"+ForwardColdField(fields,"breakpointId")+"}":"{}";
+return "{\\"id\\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+",\\"method\\":\\""+method+"\\",\\"sessionId\\":"+ForwardColdField(fields,"sessionId")+",\\"params\\":"+parameters+"}";
 }
 public void SendFootprintForwardCold(int id,string phase,string method,System.Collections.IDictionary fields){
 if(!forwardExecution||!workerStartupFootprintCopy209||footprintCopyWorkerSession==null||fields==null||fields["sessionId"] as string!=footprintCopyWorkerSession||footprintCreateClockActive)throw Error("forward-cold-original-worker");
 bool admitted=false;foreach(string value in new string[]{${CURRENT_FOOTPRINT_FORWARD_COLD_PHASES.map(value => JSON.stringify(value)).join(",")}})if(value==phase)admitted=true;
-if(!admitted)throw Error("forward-cold-phase");bool cleanup=phase=="detached-release";CheckFootprintWork(id,cleanup);
-string message=EasyedaFootprintForwardColdProtocol.Encode(id,phase,method,fields);SendMessage(id,message,cleanup);
+bool tail=phase=="tail-properties"||phase=="tail-remove"||phase=="tail-resume";if(!admitted&&!tail||tail&&!forwardColdTailBegun)throw Error("forward-cold-phase");
+bool cleanup=phase=="detached-release"||phase=="tail-remove"||phase=="tail-resume";CheckFootprintWork(id,cleanup);
+string message=tail?ForwardColdTailMessage(id,phase,method,fields):EasyedaFootprintForwardColdProtocol.Encode(id,phase,method,fields);
+SendMessage(id,message,cleanup,forwardColdTailBegun?RendererWriteRole.ForwardCold:RendererWriteRole.Existing);
 }
 bool registrationV2Started,registrationV2WrapperSource,registrationV2CallbackSource,registrationV2Callback,registrationV2Bindings,registrationV2Released;
 int registrationV2Requests,registrationV2Samples;
@@ -95,7 +116,7 @@ var born=CreateFootprintForwardExecution209();born.RequireForwardExecutionUnallo
 if(born.FootprintRequestLimit!=EasyedaFootprintForwardExecutionLimits.Requests||born.forwardNormalRequests!=0||born.forwardCleanupRequests!=0)throw Error("forward-execution-graph-birth");
 foreach(var old in new[]{new EasyedaDiagnosticOwner(),CreateWorkerStartupFootprintCombined209(),CreateWorkerStartupFootprintForward209()}){
 bool refused=false;try{old.RequireForwardExecutionUnallocated();}catch(InvalidOperationException){refused=true;}if(!refused||old.root!=IntPtr.Zero||old.job!=IntPtr.Zero||old.launchAttempted)throw Error("forward-execution-graph-old-birth");if(old.originalMain!=null)old.originalMain.Release();}
-foreach(string action in new[]{"footprint-clock-rpc-send","footprint-clock-rpc-begin","footprint-copy-clock"}){bool refused=false;try{born.AdmitForwardExecutionAction(action);}catch(InvalidOperationException){refused=true;}if(!refused)throw Error("forward-execution-graph-alias");}
+foreach(string action in new[]{"footprint-clock-rpc-send","footprint-clock-rpc-begin","footprint-copy-clock","footprint-copy-allocated-create-clock-begin"}){bool refused=false;try{born.AdmitForwardExecutionAction(action);}catch(InvalidOperationException){refused=true;}if(!refused)throw Error("forward-execution-graph-alias");}
 EasyedaOriginalMainTransport.VerifyForwardExecutionProfileSmoke();
 EasyedaFootprintCopyClockRegistrationV2Protocol.VerifySmoke();EasyedaFootprintCopyClockRpcV2Protocol.VerifySmoke();
 string[] phases=new string[]{${ORDER.map(value => JSON.stringify(value)).join(",")}};

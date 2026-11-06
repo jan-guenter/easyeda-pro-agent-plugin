@@ -4382,7 +4382,7 @@ class CurrentPcbRetainedOwnerCore {
     if (["footprint-copy-native-create", "footprint-copy-create-clock-begin", "footprint-copy-allocated-create-clock-begin",
       "footprint-copy-create-clock-retire", "footprint-copy-clock", "footprint-clock-rpc-begin", "footprint-clock-rpc-send",
       "footprint-clock-rpc-retire", "footprint-copy-clock-registration-v2", "footprint-clock-rpc-v2-send",
-      "main-request-send", "main-completion-begin", "main-completion-send", "main-completion-retire"].includes(String(action)) && !(mainLane && forwardMain !== undefined)) {
+      "footprint-forward-allocated-clock-begin", "main-request-send", "main-completion-begin", "main-completion-send", "main-completion-retire"].includes(String(action)) && !(mainLane && forwardMain !== undefined)) {
       throw error(this.#purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE ? "FORWARD_EXECUTION_QUALIFICATION_REQUIRED" : "FORWARD_WRITER_UNMOUNTED");
     }
     const channel = this.#startupChannel;

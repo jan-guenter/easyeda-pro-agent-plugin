@@ -12,7 +12,7 @@ import { transform } from "esbuild";
 import { z } from "zod";
 import { CURRENT_FOOTPRINT_COLD_PRODUCER_CALLS as CALLS, CURRENT_FOOTPRINT_COLD_PRODUCER_REQUESTS } from "../src/current-footprint-cold-producer-roster.ts";
 import type { CurrentPcb209WorkerConstructionRunner } from "../src/current-pcb-worker-construction-runner.ts";
-import type { CurrentFootprintDetachedCacheObservationV2 } from "../src/current-footprint-detached-cache-observer.ts";
+import type { CurrentFootprintDetachedCacheObservationV2, CurrentFootprintDetachedCacheObserver } from "../src/current-footprint-detached-cache-observer.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_RECHECK } from "../src/current-pcb-worker-construction-assignment.ts";
 import { CURRENT_FOOTPRINT_DETACHED_CACHE_CALLS as DETACHED, CURRENT_FOOTPRINT_DETACHED_CACHE_SITES as DETACHED_SITES,
   CURRENT_FOOTPRINT_HEAD_CACHE_CALLS as HEAD } from "../src/current-footprint-detached-cache-profile.ts";
@@ -23,12 +23,14 @@ import { detachedCacheConstructionInspector } from "./helpers/current-pcb-worker
 async function original(context: TestContext, warm: "task" | "publish" | null,
   late?: Readonly<{ arrived: () => void; release: Promise<null> }>): Promise<Readonly<{
   fixture: Awaited<ReturnType<typeof detachedCacheConstructionInspector>>;
-  runner: CurrentPcb209WorkerConstructionRunner; coldRequests: () => number;
+  runner: CurrentPcb209WorkerConstructionRunner; observer: () => CurrentFootprintDetachedCacheObserver; coldRequests: () => number;
   entry: Promise<null>; head: Promise<null>; requireDetached: (result: unknown) => Promise<void>;
 }>> {
   const fixture = await detachedCacheConstructionInspector(context);
   const path = new URL("../src/current-pcb-worker-construction-runner.ts", import.meta.url), sourceRequire = createRequire(path);
-  const compiled = await transform(await readFile(path, "utf8"), { loader: "ts", format: "cjs", target: "node24" });
+  const originalCoreSource = await readFile(path, "utf8");
+  const coreSource = originalCoreSource.replace("public status():", "public detachedCacheForTest(): CurrentFootprintDetachedCacheObserver { if(this.#detachedCacheObserver===null)throw new Error(\"synthetic observer missing\");return this.#detachedCacheObserver;}\n  public status():");
+  const compiled = await transform(coreSource, { loader: "ts", format: "cjs", target: "node24" });
   const loaded: { exports: Record<string, unknown> } = { exports: {} };
   const observerPath = new URL("../src/current-footprint-detached-cache-observer.ts", import.meta.url);
   const observerCompiled = await transform(await readFile(observerPath, "utf8"), { loader: "ts", format: "cjs", target: "node24" });
@@ -71,8 +73,8 @@ async function original(context: TestContext, warm: "task" | "publish" | null,
   } };
   const created: unknown = Reflect.construct(Constructor, [transport]);
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The maintained constructor is loaded with only its explicitly synthetic native marker; every constructor event and scope comes from this inert original V8 process.
-  const runner = created as CurrentPcb209WorkerConstructionRunner;
-  return { fixture, runner, coldRequests: (): number => requests, entry: entry.promise, head: headEntered.promise,
+  const runner = created as CurrentPcb209WorkerConstructionRunner & { detachedCacheForTest: () => CurrentFootprintDetachedCacheObserver };
+  return { fixture, runner, observer: (): CurrentFootprintDetachedCacheObserver => runner.detachedCacheForTest(), coldRequests: (): number => requests, entry: entry.promise, head: headEntered.promise,
     requireDetached: async (result: unknown): Promise<void> => {
       const lookup = observer.exports["requireCurrentFootprintDetachedCacheObservation"]; assert.ok(typeof lookup === "function");
       const pending: unknown = Reflect.apply(lookup, undefined, [result]); assert.ok(pending instanceof Promise); await pending;
@@ -109,6 +111,40 @@ void test("cold descriptor reads refuse an accessor without invoking its hook", 
 async function prepareMaintenance(f: Awaited<ReturnType<typeof original>>): Promise<void> {
   await f.fixture.syntheticEvaluate(`globalThis.SYNTHETIC_PUT=Promise.withResolvers();globalThis.SYNTHETIC_DELETE=Promise.withResolvers();globalThis.SYNTHETIC_PENDING=new Map([["first","data"]]);globalThis.SYNTHETIC_BATCH={url:["first"],data:["data"]};globalThis.SYNTHETIC_RESPONSE={success:true,result:"original-result"};globalThis.cg=value=>value;PROJECT.branchUuid="${"b".repeat(32)}";PROJECT.localCache={put:async()=>{await SYNTHETIC_PUT.promise;},delete:async()=>{await SYNTHETIC_DELETE.promise;return true;}};`);
 }
+function nextOriginalPause(f: Awaited<ReturnType<typeof original>>): Promise<null> {
+  const arrived = Promise.withResolvers<null>();
+  const unsubscribe = f.fixture.transport.subscribe({ paused: (): void => { unsubscribe(); arrived.resolve(null); },
+    resumed: (): void => {
+      // The original pause is the only awaited event here.
+    }, lost: (): void => { arrived.reject(new Error("Original synthetic worker lost")); } });
+  return arrived.promise;
+}
+void test("clock suspension retains an original cache entry until its original continuation opens", { timeout: 30_000 }, async context => {
+  const f = await original(context, null); const capture = f.runner.capture(); await f.runner.whenArmed();
+  const running = f.fixture.run(); const packet = await capture; await running; await prepareMaintenance(f);
+  const observer = f.observer(); observer.suspendForClock();
+  const remaining = observer.remainingClockContinuationRequests(); assert.equal(remaining.normal, 132); assert.equal(remaining.cleanup, 9);
+  assert.throws(() => { observer.suspendForClock(); });
+  const arrived = nextOriginalPause(f), before = f.fixture.counts().pauses, triggered = f.fixture.syntheticEvaluate("PROJECT.syntheticMaintenance();true");
+  await arrived;
+  assert.equal(f.fixture.counts().pauses, before + 1); assert.equal(observer.retained().pendingPause, true);
+  assert.deepEqual(observer.remainingClockContinuationRequests(), remaining);
+  observer.continueAfterClock(); await f.entry; await triggered;
+  await f.fixture.syntheticEvaluate("SYNTHETIC_PUT.resolve();SYNTHETIC_DELETE.resolve();true");
+  const result = await f.runner.closeOriginalDetachedCacheProducer(packet); assert.equal(result.returned, 1);
+  await f.runner.release();
+});
+void test("cleanup settles a suspended entry without resuming it into a cache write", { timeout: 30_000 }, async context => {
+  const f = await original(context, null); const capture = f.runner.capture(); await f.runner.whenArmed();
+  const running = f.fixture.run(); await capture; await running; await prepareMaintenance(f);
+  const observer = f.observer(); observer.suspendForClock();
+  const arrived = nextOriginalPause(f), triggered = f.fixture.syntheticEvaluate("PROJECT.syntheticMaintenance();true");
+  const settlement = assert.rejects(triggered); context.after(async (): Promise<void> => { await settlement; });
+  await arrived;
+  assert.equal(observer.retained().pendingPause, true); const resumes = f.fixture.counts().resumes;
+  await assert.rejects(observer.cleanup()); assert.equal(f.fixture.counts().resumes, resumes);
+  assert.equal(observer.retained().requiresGenerationExit, true);
+});
 void test("dropped maintenance completion waits its original put and delete, then closes live custody at cleanup", { timeout: 30_000 }, async context => {
   const f = await original(context, null); const capture = f.runner.capture(); await f.runner.whenArmed();
   const running = f.fixture.run(); const packet = await capture; await running; await prepareMaintenance(f);

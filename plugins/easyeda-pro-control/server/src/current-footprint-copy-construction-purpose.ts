@@ -43,6 +43,11 @@ export function isOriginalFootprintColdConstructionTransport(transport: CurrentP
   const held = executionOriginals.get(transport);
   return isOriginalProjectStructureConstructionTransport(transport) || held !== undefined && isOriginalFootprintForwardExecutionDependency(held.dependency);
 }
+export function originalFootprintForwardExecutionConstructionDependency(transport: CurrentPcbWorkerConstructionTransport): CurrentPcbWorkerStartupDependency {
+  const held = executionOriginals.get(transport);
+  if (held === undefined || !isOriginalFootprintForwardExecutionDependency(held.dependency)) { throw new Error("FOOTPRINT_FORWARD_EXECUTION_ORIGINAL_CONSTRUCTION"); }
+  return held.dependency;
+}
 export function isOriginalFootprintSavedConstructionTransport(transport: CurrentPcbWorkerConstructionTransport): boolean { return savedOriginals.has(transport); }
 /** Distinct held-saved state-read marker; old saved and writer markers are not
  * inferred from this transport's shape or its separately retained identity.

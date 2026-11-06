@@ -71,8 +71,12 @@ export class CurrentFootprintDetachedCacheObserver {
   #revocationFailed = false;
   #closed = false;
   #cleanupStarted = false;
+  #originalGenerationExited = false;
   #cleaned = false;
   #releaseAttempted = false;
+  #suspended = false;
+  #suspensionConsumed = false;
+  readonly #continuation = Promise.withResolvers<null>();
   #normal = 0;
   #cleanup = 0;
   public constructor(lease: CurrentFootprintDetachedCacheLease) { this.#lease = lease; this.#binding = requireCurrentFootprintDetachedCacheLease(lease); }
@@ -119,6 +123,9 @@ export class CurrentFootprintDetachedCacheObserver {
           caller.location.lineNumber === 110 && caller.location.columnNumber >= 19_357 && caller.location.columnNumber <= 19_452);
       }
       const previous = this.#chain;
+      if (this.#suspended && (point.stage === "cacheRetry" || point.stage === "historyRetry")) {
+        this.#unsafeToResume = true; this.#stop(new Error("FOOTPRINT_NARROW_RETRY_REFUSED")); return;
+      }
       this.#chain = (async (): Promise<void> => { await previous; try { await this.#process(pause); } catch (error) {
         if ((pause.stage === "entry" || pause.stage === "headEntry" || pause.stage === "cacheRetry" || pause.stage === "historyRetry") && !pause.attempted) { this.#unsafeToResume = true; } this.#stop(error);
       } })();
@@ -134,6 +141,7 @@ export class CurrentFootprintDetachedCacheObserver {
     empty.parse(await this.#send({ method: "Debugger.resume", params: {} }, cleanup)); await bounded(pause.signal.promise);
   }
   async #process(pause: Pause): Promise<void> {
+    if (this.#suspended) { await this.#continuation.promise; }
     need(!this.#failed && !this.#cleanupStarted);
     if (pause.stage === "cacheRetry" || pause.stage === "historyRetry") { throw new Error("FOOTPRINT_NARROW_RETRY_REFUSED"); }
     if (pause.stage === "headEntry" || pause.stage === "headPromise" || pause.stage === "headSuccess") { await this.#processHead(pause); return; }
@@ -148,6 +156,23 @@ export class CurrentFootprintDetachedCacheObserver {
       need(matched.length === 1); const job = matched[0]; need(job !== undefined && !job.returned); job.returned = true; job.done.resolve(null);
     }
     await this.#resume(pause);
+  }
+  /** The original clock handoff may retain an owned pause without servicing
+   * it through the clock request ledger. A retry branch still fails at once. */
+  public suspendForClock(): void {
+    need(this.#armed && !this.#closed && !this.#failed && !this.#cleanupStarted && !this.#suspensionConsumed &&
+      (this.#pause === null || this.#pause.resumed) && this.#jobs.every(job => job.returned) &&
+      this.#headJobs.every(job => job.success && job.promise !== null));
+    this.#suspensionConsumed = true; this.#suspended = true;
+  }
+  public continueAfterClock(): void {
+    need(this.#suspended && !this.#closed && !this.#failed && !this.#cleanupStarted);
+    this.#suspended = false; this.#continuation.resolve(null);
+  }
+  public remainingClockContinuationRequests(): Readonly<{ normal: number; cleanup: number; total: number }> {
+    need(this.#suspended && !this.#failed && !this.#cleanupStarted);
+    const cleanup = REQUESTS.cleanup - this.#cleanup, normal = REQUESTS.normal - this.#normal;
+    need(cleanup >= 0 && normal >= 0); return Object.freeze({ normal, cleanup, total: normal + cleanup });
   }
   async #processHead(pause: Pause): Promise<void> {
     if (pause.stage === "headEntry") { need(!this.#closed && this.#headJobs.length < REQUESTS.headEntries); }
@@ -226,13 +251,27 @@ export class CurrentFootprintDetachedCacheObserver {
     } catch (error) { this.#stop(error); throw error; }
   }
   public async cleanup(): Promise<void> {
-    if (this.#cleaned) { return; } this.#cleanupStarted = true; this.#closed = true; await this.#chain;
+    if (this.#cleaned) { return; } this.#cleanupStarted = true; this.#closed = true;
+    if (this.#suspended) {
+      if (this.#pause !== null && !this.#pause.resumed) { this.#unsafeToResume = true; }
+      this.#suspended = false; this.#continuation.resolve(null);
+    }
+    await this.#chain;
     for (const point of this.#points) { if (!point.removed) { need(!point.attempted); point.attempted = true;
       empty.parse(await this.#send({ method: "Debugger.removeBreakpoint", params: { breakpointId: point.id } }, true)); point.removed = true; } }
     need(!this.#uncertain && !this.#unknownPause && !this.#unsafeToResume);
     const pause = this.#pause; if (pause !== null && !pause.resumed) { await this.#resume(pause, true); }
     need((pause === null || pause.resumed) && !this.#releaseAttempted); this.#releaseAttempted = true;
     empty.parse(await this.#send({ method: "Runtime.releaseObjectGroup", params: { objectGroup: GROUP } }, true));
+    this.#unsubscribe?.(); this.#unsubscribe = null; this.#cleaned = true;
+  }
+  /** The original constructor first verifies the channel's retained whole-Job
+   * exit. Local waits end without inventing a resume or another native reply. */
+  public async observeOriginalGenerationExited(): Promise<void> {
+    if (this.#originalGenerationExited) { return; }
+    this.#originalGenerationExited = true; this.#cleanupStarted = true; this.#closed = true;
+    this.#stop(new Error("FOOTPRINT_DETACHED_CACHE_ORIGINAL_GENERATION_EXITED"));
+    this.#suspended = false; this.#continuation.resolve(null); await this.#chain;
     this.#unsubscribe?.(); this.#unsubscribe = null; this.#cleaned = true;
   }
   public retained(): Readonly<{ cleaned: boolean; uncertain: boolean; pendingPause: boolean; entered: number; returned: number; failed: boolean; revocationFailed: boolean; requiresGenerationExit: boolean }> {

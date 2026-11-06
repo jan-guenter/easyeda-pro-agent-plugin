@@ -27,6 +27,10 @@ async function constructionInspectorSource(context: TestContext, source: string,
   const socket = new WebSocket(await address.promise); await once(socket, "open");
   context.after(() => { socket.close(); });
   const pending = new Map<number, PromiseWithResolvers<unknown>>();
+  socket.once("close", (): void => {
+    for (const reply of pending.values()) { reply.reject(new Error("Original synthetic inspector closed")); }
+    pending.clear();
+  });
   const subscribers = new Set<Parameters<CurrentPcbWorkerConstructionTransport["subscribe"]>[0]>();
   let nextId = 1, ownerCurrent = true, pauses = 0, resumes = 0;
   const commands: string[] = [];
