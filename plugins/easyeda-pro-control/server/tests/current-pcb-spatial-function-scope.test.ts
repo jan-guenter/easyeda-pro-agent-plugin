@@ -1,9 +1,15 @@
 import assert from "node:assert/strict";
+import type { Runtime } from "node:inspector";
 import { Session } from "node:inspector/promises";
 import { runInNewContext } from "node:vm";
 import test from "node:test";
+import { CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION } from "../src/current-pcb-209-spatial-capture-program.ts";
 import { CURRENT_PCB_SPATIAL_FUNCTION_LOCATIONS, decodeCurrentPcbSpatialFunction,
   decodeCurrentPcbSpatialFunctionScope, decodeCurrentPcbSpatialFunctionScopeList } from "../src/current-pcb-spatial-function-scope.ts";
+
+// Node's protocol declarations omit this supported V8 flag.
+// The production accessor regression keeps it in the checked packet.
+type SideEffectFreeCall = Runtime.CallFunctionOnParameterType & { throwOnSideEffect: true };
 
 /** A same-engine synthetic registration pattern, never the installed asset.
  * The sibling closure deliberately retains rZe, matching its real source shape.
@@ -73,8 +79,9 @@ void test("real inspector exposes a Script tail without changing the selected or
 void test("real inspector preserves the wrapper handler binding before two anonymous enclosing closures", async () => {
   const point = CURRENT_PCB_SPATIAL_FUNCTION_LOCATIONS["rpc-wrapper"];
   const prefix = '(()=>{const outer={};return (()=>{const inner={};class Oet{rpcService(o,t){return (';
-  const expression = `${prefix}${"\n".repeat(point.lineNumber)}${" ".repeat(point.columnNumber)}(s,n,r)=>({s,n,r,t,inner,outer}));}}globalThis.__easyedaSpatialWrapperScopeFixture=new Oet().rpcService("point",()=>null)})()})()`;
+  const expression = `${prefix}${"\n".repeat(point.lineNumber)}${" ".repeat(point.columnNumber)}(s,n,r)=>({s,n,r,t,inner,outer}));}}globalThis.__easyedaSpatialWrapperScopeFixture=new Oet().rpcService("point",async e=>e)})()})()`;
   const session = new Session(); session.connect();
+  const postCall: (method: "Runtime.callFunctionOn", parameters: SideEffectFreeCall) => Promise<Runtime.CallFunctionOnReturnType> = session.post.bind(session);
   try {
     await session.post("Runtime.evaluate", { expression, objectGroup: "spatial-wrapper-scope-fixture" });
     const remote = await session.post("Runtime.evaluate", { expression: "globalThis.__easyedaSpatialWrapperScopeFixture", objectGroup: "spatial-wrapper-scope-fixture" });
@@ -89,7 +96,16 @@ void test("real inspector preserves the wrapper handler binding before two anony
     const selected = scopes.result[0]?.value?.objectId;
     assert.ok(selected !== undefined);
     const bindings = await session.post("Runtime.getProperties", { objectId: selected, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false });
-    assert.equal(bindings.result.some(item => item.name === "t" && item.value?.type === "function"), true);
+    const handlerId = bindings.result.find(item => item.name === "t" && item.value?.type === "function")?.value?.objectId;
+    assert.ok(handlerId !== undefined);
+    const captureParameters = { objectId: selected, functionDeclaration: CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION,
+      objectGroup: "spatial-wrapper-scope-fixture", returnByValue: false, throwOnSideEffect: true, silent: true, awaitPromise: false, generatePreview: false, userGesture: false } satisfies SideEffectFreeCall;
+    const captured = await postCall("Runtime.callFunctionOn", captureParameters);
+    const actualHandlerId = decodeCurrentPcbSpatialFunction(captured, "point-handler");
+    const identityParameters = { objectId: actualHandlerId, functionDeclaration: "function(original){return this===original}",
+      arguments: [{ objectId: handlerId }], returnByValue: true, throwOnSideEffect: true, silent: true } satisfies SideEffectFreeCall;
+    const identity = await postCall("Runtime.callFunctionOn", identityParameters);
+    assert.equal(identity.result.value, true);
     assert.throws(() => decodeCurrentPcbSpatialFunctionScope(scopes, "point-handler"), /PCB_SPATIAL_FUNCTION_SCOPE/u);
   } finally {
     await session.post("Runtime.evaluate", { expression: "delete globalThis.__easyedaSpatialWrapperScopeFixture" });
