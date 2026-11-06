@@ -68,7 +68,11 @@ const Me=retainData(get("Me"));if(own(Me,"_smartMode")!==false)bad();absent(qt,"
 instance(get("G_e"),"V_e");instance(get("St"),"StClass");
 const valid=Object.getOwnPropertyDescriptor(Hr,"validType");if(valid&&(!Object.hasOwn(valid,"value")||(valid.value!==null&&valid.value!==undefined)))bad();
 const camera=instance(get("a4"),"mx"),scale=num(own(camera,"scale"));if(scale<=0||typeof get("Fi")!=="function")bad();
-const env=instance(own(klass("x"),"env"),"x");if(own(env,"_doctype")!==3||own(env,"partitionId")!==""||own(env,"_envFlag")!==null)bad();
+const env=instance(own(klass("x"),"env"),"x"),preview=own(env,"_isPreview"),envFlag=own(env,"_envFlag");
+if(own(env,"_doctype")!==3)bad();
+if(own(env,"partitionId")!=="")bad();
+if(preview!==false&&preview!==undefined)bad();
+if(envFlag!==null&&envFlag!==undefined)bad();
 const documentUuid=own(env,"_id");if(typeof documentUuid!=="string"||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/.test(documentUuid))bad();
 const filterManager=instance(own(klass("zi"),"manager"),"zi"),filters=entries(own(filterManager,"map"),64);const filterMap=new Map;
 for(const [key,value]of filters){if(!Number.isInteger(key)||key<0||key>63)bad();instance(value,"wl");if(own(value,"type")!==key)bad();filterMap.set(key,{pick:bool(own(value,"_pick")),visible:bool(own(value,"_visible"))});}

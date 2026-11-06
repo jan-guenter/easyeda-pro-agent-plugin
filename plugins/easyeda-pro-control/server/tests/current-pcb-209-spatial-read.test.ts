@@ -37,6 +37,30 @@ void test("Via kernel preserves ordered identities and selected IDs over both na
   }
 });
 
+void test("ordinary environment optional flags permit both original normal initialization forms", () => {
+  for (const preview of [false, undefined]) {
+    for (const flag of [null, undefined]) {
+      const context = fixture(`x.env._isPreview=${String(preview)};x.env._envFlag=${String(flag)}`);
+      assert.equal(typeof invoke(context, { kind: "point", xMil: 0, yMil: 0 }), "string");
+      assert.equal(hits(context), 2);
+    }
+  }
+});
+
+void test("preview, partition and malformed environment states refuse before any native hit", () => {
+  for (const setup of [
+    "x.env._isPreview=true", "x.env._isPreview=0", "x.env._isPreview=null", "delete x.env._isPreview",
+    'x.env._envFlag="cnc-preview"', 'x.env._envFlag="silk-preview"', 'x.env._envFlag=""', "delete x.env._envFlag",
+    "x.env._doctype=4", 'x.env.partitionId="partition"',
+    'Object.defineProperty(x.env,"_envFlag",{get(){metrics.getters++;return null}})',
+  ]) {
+    const context = fixture(setup);
+    assert.throws(() => invoke(context, { kind: "point", xMil: 0, yMil: 0 }), /PCB209_SPATIAL_READ_REFUSED/u, setup);
+    assert.equal(hits(context), 0, setup);
+    assert.equal(runInContext("metrics.getters", context), 0);
+  }
+});
+
 void test("unsupported index families, stale leaves, pending maintenance and border crossings refuse before native hit", () => {
   const point = { kind: "point", xMil: 0, yMil: 0 } as const;
   for (const setup of [
@@ -76,6 +100,7 @@ void test("source, selection, method, index and extra scratch mutations stop bef
     "hook.run=()=>{LH.prototype.filter=()=>new Set}", "hook.run=()=>{D0.code=8}",
     "hook.run=()=>{D0.extra=true}", "hook.run=()=>{ye._layerMap[12].model.status.state=7}",
     "hook.run=()=>{scope.Jdt.fac.minX=123}", "hook.run=()=>{scope.vMe.instance.boxCache[0]=123}",
+    'hook.run=()=>{x.env._envFlag="cnc-preview"}', "hook.run=()=>{x.env._isPreview=true}",
   ]) {
     const context = fixture(setup);
     assert.throws(() => invoke(context, { kind: "point", xMil: 0, yMil: 0 }), /PCB209_SPATIAL_READ_REFUSED/u, setup);

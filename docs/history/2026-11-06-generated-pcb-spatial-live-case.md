@@ -187,3 +187,71 @@ EOF, process/stdio closure and exit0 without a signal were observed. The same
 manager remains idle with a permit for a separately verified replacement.
 No native owner remains, and no explicit Save, discard, forced termination,
 user-project change, official publication or cache edit occurred.
+
+## Frozen8629 read-environment refusal
+
+Frozen development payload `8629c474244b6f75ef7a91c5e230f112375e0a99`, version
+`0.3.0+codex.20261106133042`, contained3,585 exact tracked files and68,672,911
+bytes. Fresh dependency/signature/audit checks, all required local non-suite
+checks, seven skill quick validators and all three reproducible bundles passed.
+External compatibility pins stayed exact. Actual Windows5.1 compiled the
+1,752,275-byte helper's1,614,250-byte C# body and passed eight pure static
+protocol checks, including the new worker transport/producer and main
+BEGIN/history/STRUCTURE codebooks. No owner constructor or app ran for that
+compilation. It was selected as generation4 of the same retained manager.
+
+The [Component mount record](2026-11-06-component-spatial-native-mount.md)
+retains an intervening missing-test-preload incident and its exact preserved
+synthetic records. Native calls were held while root independently verified
+both intent-only files, their fake facade hashes, current nofollow descriptors,
+exclusive synthetic source and absent old paths. No native binding, target,
+PID or Job was present. Their pre-move descriptor identity was not sampled,
+which remains an explicit limitation. No record was deleted and no quarantine
+flag was edited. A fixture-entry isolation guard and a fake-HOME subprocess
+regression prevent that demonstrated path before journal creation. The
+subsequent fresh six-boundary no-app/complete-data qualification passed.
+
+Operation `pcb209-spatial-arcs-wrapper-20261106e` then passed original launch,
+UI source, generated registration/project opening, PCB opening and complete
+PCB source/DOM identity. Its one six-query Arc batch advanced through wrapper,
+handler, binding and all265 original callee qualifications. The first read
+refused at `PCB_SPATIAL_CAPTURE:read-arc:decode`; no hit or partial query result
+was accepted. The retained exception identifies generated line85, column130,
+in the three-field environment condition. It contains no environment values,
+so it does not identify which comparison failed. The batch was not replayed.
+
+Independent source inspection found a concrete invalid assumption in that
+condition. The pinned initializer `sue`, UTF16 range7062569..7062922, is353
+bytes with SHA256
+`9f6792a8fdb5c3b3a37ba2d86f2a8969932a1230da7cb5b7c3fe9a9d38e342fa`.
+It assigns optional preview/environment arguments directly; its two callers
+destructure them without defaults. The original setters retain those values.
+Executing that actual initializer against inert dependencies confirms omitted
+arguments take the normal PCB branch with undefined flags. Explicit false/null
+also takes that branch, while true preview and the CNC/silk flags choose the
+preview branch. No application model constructor ran. This is source-derived
+evidence of a valid ordinary state, not an observation of the failed live
+packet's values or proof of its sole cause.
+
+The shared Via/Line/Arc/Pad/Component kernel now accepts only own-data
+false-or-undefined preview and null-or-undefined environment flags, retaining
+PCB type3 and empty-partition checks. Each condition has a separate failure
+location. Missing/accessor fields, numeric/null preview values, named/empty
+string flags and preview modes refuse before a hit. Existing descriptor
+retention catches flag changes after the first sample. No source pin outside
+the facade, native allowance, writer or Save authority changes. Both new
+regressions fail the old code;22 correctly selected cross-family cases, both
+TypeScript projects and strict targeted lint pass. An earlier test selection
+covered only three existing files; that log is retained separately.
+
+Original normal close, root/empty-Job termination, one complete closed capture
+and helper release completed. Independent descriptor checks prove the exact
+372,736-byte raw file,62,672-byte/all35-table SQL inventory and raw history, with
+the same hashes as the prior cases. Older clock/history qualification refusals
+remain recorded. The facade acknowledged retirement and lease release; the
+original manager observed stdin EOF, process/stdio closure and exit0 without
+a signal. Its normal shutdown is the next step so a separately verified new
+frontend can include Component recovery. No native owner remains from this
+case. No explicit Save, discard, forced termination, user-project change or
+official publication occurred. The environment correction still needs a new
+frozen payload and positive connected read proof.

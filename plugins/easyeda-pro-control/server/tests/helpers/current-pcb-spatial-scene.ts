@@ -18,7 +18,7 @@ class zi{}class Ke{}class x{}
 const camera=new mx,qt=new LH,Me={_smartMode:false};
 zi.manager=Object.assign(new zi,{map:new Map([0,1,6,7,8,12,21,35,36,37].map(k=>[k,new wl(k,![7,8,12,35].includes(k))]))});
 Ke.manager=Object.assign(new Ke,{activeLayer:1});
-x.env=Object.assign(new x,{_doctype:3,partitionId:"",_envFlag:null,_id:"0123456789abcdef"});
+x.env=Object.assign(new x,{_doctype:3,partitionId:"",_envFlag:null,_isPreview:false,_id:"0123456789abcdef"});
 const ye={modelManager:Ke.manager,grayIndex:0,_layerMap:{12:{model:{status:{state:6}}}}};
 const box=new at(-1,1,-1,1);
 const model=Object.assign(new Qg,{_dataState:0,_globalIndex:"via-one",_type:0,modelType:"Via",_center:{x:0,y:0},
