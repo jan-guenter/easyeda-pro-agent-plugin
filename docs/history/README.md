@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 current schematic endpoint membership](2026-11-06-schematic-endpoint-membership.md). Independent exact integer-grid line/pin incidence comparison; raw reader contracts unchanged and no source, effective-net or writer authority issued.
+
 - [2026-11-06 footprint four-generation composition](2026-11-06-footprint-four-generation-composition.md). Concrete native/source/SQL/saved/inverse gaps and separate original forward-v2 paired handoff; no writer admission or connected execution claim.
 - [2026-11-06 historical closed-reader relinquishment](2026-11-06-closed-reader-relinquishment.md). Exact frozen4500 Pad prefix, independent process absence and append-only metadata; missing native release acknowledgment remains false.
 
