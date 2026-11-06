@@ -326,6 +326,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   #sqlReady = false;
   #sqlHeld: Pause | null = null;
   #viaMainOrigin: CurrentPcbViaMainOrigin | null = null;
+  #viaMainDeliveredPause: Pause | null = null;
   readonly #viaMainEvents: CurrentPcbViaMainEvent[] = [];
   readonly #viaMainPoints = new Map<string, z.infer<typeof location>>();
   #viaMainArming: z.infer<typeof location> | null = null;
@@ -963,6 +964,23 @@ export class CurrentFootprintCopyMainBackendRunner {
       const same = (): void => { need(this.#viaMainOrigin === origin && this.#selectedSqlBootstrap !== null && !this.#failed && !this.#viaMainGroupReleased, "VIA_MAIN_ORIGINAL"); requireCurrentFootprintCopyMainRequestSource(source); this.#same(false); };
       const bindings: CurrentPcbViaMainBackendBindings = Object.freeze({ scriptId: this.#appScriptId, constructionObjectId: this.#retainedArray, source, persistentDriverBreakpointId: driver,
         assertCurrent: async (): Promise<void> => { same(); await this.#current(); same(); }, fail: (): void => { this.#fail(new Error("VIA_MAIN_OBSERVER_FAILED")); },
+        observeRequest: async (): Promise<CurrentSelectedFileMainRequestObservation> => {
+          same(); this.requireViaMainObservationArmed(origin); const pause = this.#viaMainDeliveredPause;
+          need(pause !== null && this.#pause === pause && pause.sqlSite === "driver" && this.#viaMainEvents.length === 0, "VIA_MAIN_DELIVERED_DRIVER_REQUIRED"); this.#busy = true;
+          try { const packet = await this.#observeSelectedMainRequest(pause); same(); return packet; }
+          catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
+        }, requireOriginalRequest: (packet: CurrentSelectedFileMainRequestObservation): void => {
+          same(); this.requireOriginalSelectedMainRequest(packet); const actual = selectedRequestPackets.get(packet);
+          need(actual !== undefined && this.#viaMainDeliveredPause === actual.pause, "VIA_MAIN_ORIGINAL_DELIVERED_REQUEST");
+        }, continueReadonlyRequest: async (packet: CurrentSelectedFileMainRequestObservation): Promise<void> => {
+          same(); this.requireViaMainObservationArmed(origin); this.requireOriginalSelectedMainRequest(packet); const actual = selectedRequestPackets.get(packet);
+          need(actual !== undefined && this.#viaMainDeliveredPause === actual.pause && this.#viaMainEvents.length === 0, "VIA_MAIN_ORIGINAL_DELIVERED_REQUEST"); this.#busy = true;
+          try {
+            await this.#continueSelectedReadonlyRequest(packet); same(); const resumed = this.#viaMainEvents.shift();
+            need(actual.pause.resumeAttempted && actual.pause.resumed && resumed?.method === "Debugger.resumed", "VIA_MAIN_READONLY_ORIGINAL_RESUMED");
+            empty.parse(resumed.params); this.#viaMainDeliveredPause = null;
+          } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
+        },
         request: async (input: CurrentPcbViaMainCommand, cleanup: boolean): Promise<unknown> => {
           same(); need(!this.#busy, "VIA_MAIN_COMMAND_BUSY"); const command = validateCurrentPcbViaMainCommand(input);
           const removing = command.method === "Debugger.removeBreakpoint"; const releasing = command.method === "Runtime.releaseObjectGroup";
@@ -984,7 +1002,9 @@ export class CurrentFootprintCopyMainBackendRunner {
         }, nextEvent: async (): Promise<CurrentPcbViaMainEvent> => {
           same(); need(!this.#busy, "VIA_MAIN_EVENT_BUSY"); this.#busy = true; const started = performance.now();
           try { while (this.#viaMainEvents.length === 0) { need(performance.now() - started < 20_000, "VIA_MAIN_EVENT_DEADLINE"); await this.#pump(); same(); }
-            const event = this.#viaMainEvents.shift(); need(event !== undefined, "VIA_MAIN_EVENT"); return event;
+            const event = this.#viaMainEvents.shift(); need(event !== undefined, "VIA_MAIN_EVENT");
+            if (event.method === "Debugger.paused") { need(this.#pause !== null && !this.#pause.resumed && this.#viaMainDeliveredPause === null, "VIA_MAIN_DELIVERY_OVERLAP"); this.#viaMainDeliveredPause = this.#pause; }
+            return event;
           } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
         } });
       return Object.freeze({ origin, bindings });

@@ -20,7 +20,7 @@ void test("Via main codebook keeps fixed request selectors separate and cannot e
   assert.throws(() => validateCurrentPcbViaMainCommand({ phase: "via-main-request-driver-arm", method: "Debugger.setBreakpointOnFunctionCall", params: { objectId: "foreign" } }), /DRIVER_ARM/u);
 });
 void test("actual observer setup and driver capture retain exact source frames without attributing the unread body or resuming it", async () => {
-  const origin = Object.freeze({ explicitOriginSeam: true }); const plan = Object.freeze({ explicitPlanSeam: true });
+  const origin = Object.freeze({ explicitOriginSeam: true }); const plan = Object.freeze({ explicitPlanSeam: true, target:{projectUuid:"a".repeat(64),branchUuid:"b".repeat(32)} });
   const source = Object.freeze({ explicitSourceSeam: true }); const projection = Object.freeze({ schema: "private.current-pcb-via-save-projection.v2" as const, bodySha256: "d".repeat(64), primitiveId: "3".repeat(16), exactOriginalUniqueIdDeltaVerified: true as const, originalClockBodyJoinVerified: true as const, selectedSqlAuthorized: false as const, persistenceVerified: false as const });
   const owner = Object.freeze({ bindViaMainOriginalBody: (p: unknown, o: unknown): unknown => { assert.equal(p, plan); assert.equal(o, origin); return { bodySha256: projection.bodySha256, primitiveId: projection.primitiveId }; } });
   const commands: CurrentPcbViaMainCommand[] = []; let delivered = false, failed = false, saveAttempted = false;
@@ -28,9 +28,11 @@ void test("actual observer setup and driver capture retain exact source frames w
     { callFrameId: "driver", functionName: "", location: { scriptId: "app", lineNumber: 1164, columnNumber: 2453 }, functionLocation: { scriptId: "app", lineNumber: 1164, columnNumber: 2434 } },
     { callFrameId: "caller", functionName: "interceptHttpProtocol", location: { scriptId: "app", lineNumber: 1164, columnNumber: 51_414 }, functionLocation: { scriptId: "app", lineNumber: 1164, columnNumber: 51_072 } },
   ] } };
+  const request = Object.freeze({schema:"private.selected-file-main-request.v1",mode:"fetch",method:"POST",pureUrl:`/api/v4/projects/${plan.target.projectUuid}/branches/${plan.target.branchUuid}/histories`,pureQuery:"",pathHeader:plan.target.projectUuid,originalRequestVerified:true,readonlySql:false,executionAuthorized:false,saveAuthorized:false});
   const bindings = { scriptId: "app", constructionObjectId: "original-construction", persistentDriverBreakpointId: "sql-driver", source,
     assertCurrent: (): Promise<void> => { assert.equal(failed, false); if (delivered) { event.params.hitBreakpoints[0] = "foreign-after-capture"; } return Promise.resolve(); },
     assertSaveAttempt: (): void => { assert.equal(saveAttempted, true); }, fail: (): void => { failed = true; },
+    observeRequest: ():Promise<unknown>=>Promise.resolve(request), requireOriginalRequest:(packet:unknown):void=>{assert.equal(packet,request);},continueReadonlyRequest:():Promise<void>=>Promise.reject(new Error("unexpected readonly continuation")),
     nextEvent: (): Promise<unknown> => { delivered = true; return Promise.resolve(event); },
     request: (input: CurrentPcbViaMainCommand, cleanup: boolean): Promise<unknown> => {
       const command = validateCurrentPcbViaMainCommand(input); commands.push(command); assert.equal(cleanup, false);
@@ -53,7 +55,7 @@ void test("actual observer setup and driver capture retain exact source frames w
   await observer.arm(); assert.equal(commands.length, 3); saveAttempted = true;
   const body = projection;
   await observer.bindOriginalBody(body); await assert.rejects(observer.bindOriginalBody(body), /BODY_BIND_CONSUMED/u);
-  const packet = await observer.captureDriver(body); assert.equal(commands.length, 6); assert.equal(packet.actualRequestBodyJoined, false); assert.equal(packet.nativeMutationResumed, false);
+  const packet = await observer.captureDriver(body); assert.equal(commands.length, 6); assert.equal(packet.originalFetchPostRouteVerified,true); assert.equal(packet.actualRequestBodyJoined, false); assert.equal(packet.nativeMutationResumed, false);
   await observer.requireOriginal(packet); await assert.rejects(observer.requireOriginal({ ...packet }), /ORIGINAL_PACKET/u); await assert.rejects(observer.captureDriver(body), /DRIVER_CONSUMED/u);
   assert.equal(commands.some(command => command.method === "Debugger.resume"), false); assert.equal(failed, false);
 });

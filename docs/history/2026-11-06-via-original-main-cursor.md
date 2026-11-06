@@ -91,3 +91,24 @@ Thirteen focused event, initial-main, delta and production fence cases pass for
 this follow-up. Strict types, zero-warning type-aware lint, repository,
 MCP-contract and all-skill validation pass. No native helper code or capacity,
 payload/pin, facade bundle, installed package or connected process changed.
+
+## Original Fetch routing after the Via handoff
+
+The Via origin now exposes source-owned request observation, original packet
+lookup and read-only continuation closures over the same backend cursor. A
+request must correspond to the original delivered driver pause. Each admitted
+GET or HEAD consumes its own acknowledged resume and exact resumed event; a
+copied packet, stale pause or foreign project cannot acquire that continuation.
+The global SQL fence remains installed.
+
+The actual Via request observer uses those closures while waiting for the
+selected history request. Its new held-driver v2 packet requires the original
+Fetch POST, exact selected project/branch `/histories` route, empty query and
+original project path header, then retains the original driver/caller relation.
+It still claims no request-body join or selected SQL authorization and leaves
+the POST paused. The later operation continuation must join the controller's
+actual body before any native mutation grant.
+
+Nine focused real-cursor and observer tests passed, along with full TypeScript
+checks and strict type-aware lint. Existing shared Fetch reservations cover the
+read service. No native vocabulary, helper, pin or released forward graph changed.

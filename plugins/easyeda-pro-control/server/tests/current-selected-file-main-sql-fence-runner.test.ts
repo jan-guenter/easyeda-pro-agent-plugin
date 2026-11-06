@@ -177,3 +177,19 @@ void test("foreign-project GET and wrong original getter source location never a
     assert.equal(f.resumes(), initial);
   }
 });
+
+void test("after genuine Via cursor handoff the original Fetch GET is serviced and only its own resumed event is consumed", async () => {
+  const f = await fixture(); await f.runner.observe(); const original = await f.runner.beginViaMainObservation();
+  for (const [lineNumber, columnNumber] of [[1164, 2540], [8573, 1663], [8572, 27_776]]) {
+    await original.bindings.request(validateCurrentPcbViaMainCommand({ phase: "via-main-request-site-arm", method: "Debugger.setBreakpoint", params: { location: { scriptId: "app", lineNumber, columnNumber } } }), false);
+  }
+  f.injectRequest("GET"); const event = await original.bindings.nextEvent(); assert.equal(event.method, "Debugger.paused");
+  const packet = await original.bindings.observeRequest(); original.bindings.requireOriginalRequest(packet);
+  assert.throws(() => { original.bindings.requireOriginalRequest(structuredClone(packet)); });
+  const before = f.resumes(); await original.bindings.continueReadonlyRequest(packet); assert.equal(f.resumes(), before + 1);
+  assert.throws(() => { original.bindings.requireOriginalRequest(packet); });
+  f.injectRequest("POST"); const next = await original.bindings.nextEvent(); assert.equal(next.method, "Debugger.paused");
+  const held = await original.bindings.observeRequest(); assert.equal(held.method, "POST"); original.bindings.requireOriginalRequest(held);
+  assert.equal(f.runner.selectedSqlFenceState()["heldSite"], "driver"); assert.equal(f.runner.selectedSqlFenceState()["mutationsResumed"], 0);
+  await assert.rejects(original.bindings.continueReadonlyRequest(held), /NO_WRITE_GRANT/u); assert.equal(f.resumes(), before + 1);
+});

@@ -16,13 +16,15 @@ import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-re
 import { requireOriginalCurrentPcbViaSaveProjection } from "./current-pcb-via-save-projection.ts";
 import type { CurrentPcbViaSaveProjection } from "./current-pcb-via-save-projection.ts";
 import { z } from "zod";
+import type { CurrentSelectedFileMainRequestObservation } from "./current-selected-file-main-request-reader.ts";
 
 export interface CurrentPcbViaHeldMainDriver {
-  readonly schema: "private.current-pcb-via-held-main-driver.v1"; readonly originalDriverInvocationRetained: true;
+  readonly schema: "private.current-pcb-via-held-main-driver.v2"; readonly originalDriverInvocationRetained: true;
   readonly originalSaveAttemptRetained: true; readonly originalSaveProjectionRetained: true;
+  readonly originalFetchPostRouteVerified: true;
   readonly actualRequestBodyJoined: false; readonly nativeMutationResumed: false; readonly selectedSqlAuthorized: false;
 }
-const packets = new WeakMap<CurrentPcbViaHeldMainDriver, Readonly<{ observer: CurrentPcbViaMainRequestObserver; invocation: string }>>();
+const packets = new WeakMap<CurrentPcbViaHeldMainDriver, Readonly<{ observer: CurrentPcbViaMainRequestObserver; invocation: string; request: CurrentSelectedFileMainRequestObservation }>>();
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PCB_VIA_MAIN_OBSERVER_${code}`); } }
 export class CurrentPcbViaMainRequestObserver {
   readonly #origin: CurrentPcbViaMainOrigin; readonly #owner: CurrentPcbViaWriteOwner; readonly #plan: CurrentPcbViaWritePlan; readonly #bindings: CurrentPcbViaMainBindings;
@@ -64,17 +66,32 @@ export class CurrentPcbViaMainRequestObserver {
     need(this.#armed && !this.#busy && !this.#attempted && this.#projection === projection, "DRIVER_CONSUMED"); this.#attempted = true; this.#busy = true;
     try {
       await requireOriginalCurrentPcbViaSaveProjection(projection, this.#owner, this.#plan); await this.#current(true);
-      const raw = captureCurrentPcbStringClockReply(await this.#bindings.nextEvent()).value;
-      const event = z.strictObject({ method: z.literal("Debugger.paused"), params: z.unknown() }).parse(raw); await this.#current(true);
-      const pause = decodePause(event.params, "driver", this.#bindings.scriptId, this.#bindings.persistentDriverBreakpointId); need(pause.callerFrameId !== null, "DRIVER_CALLER");
+      let selected: Readonly<{ pause: ReturnType<typeof decodePause>; request: CurrentSelectedFileMainRequestObservation }> | null = null;
+      for (let index = 0; index < 64; index += 1) {
+        const raw = captureCurrentPcbStringClockReply(await this.#bindings.nextEvent()).value;
+        const event = z.strictObject({ method: z.literal("Debugger.paused"), params: z.unknown() }).parse(raw); await this.#current(true);
+        const pause = decodePause(event.params, "driver", this.#bindings.scriptId, this.#bindings.persistentDriverBreakpointId);
+        const request = await this.#bindings.observeRequest(); this.#bindings.requireOriginalRequest(request); await this.#current(true);
+        if (request.method === "GET" || request.method === "HEAD") { await this.#bindings.continueReadonlyRequest(request); await this.#current(true); }
+        else {
+          need(request.mode === "fetch" && request.method === "POST" && request.pureQuery === "" && request.pathHeader === this.#plan.target.projectUuid &&
+            request.pureUrl === `/api/v4/projects/${this.#plan.target.projectUuid}/branches/${this.#plan.target.branchUuid}/histories`, "ORIGINAL_POST_ROUTE");
+          selected = Object.freeze({ pause, request }); break;
+        }
+      }
+      need(selected !== null, "DRIVER_REQUEST_BOUND"); const { pause, request } = selected; need(pause.callerFrameId !== null, "DRIVER_CALLER");
       const top = await this.#frame(pause.frameId, EXPRESSIONS.driver); const caller = await this.#frame(pause.callerFrameId, EXPRESSIONS.driverCaller);
       const invocation = decodeArray(await this.#send({ phase: "via-main-request-invocation", method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: top,
         functionDeclaration: PROGRAMS.invocation, arguments: [{ objectId: this.#bindings.constructionObjectId }, { objectId: caller }], returnByValue: false } }, true), 6);
       await requireOriginalCurrentPcbViaSaveProjection(projection, this.#owner, this.#plan); await this.#current(true);
-      const packet: CurrentPcbViaHeldMainDriver = Object.freeze({ schema: "private.current-pcb-via-held-main-driver.v1", originalDriverInvocationRetained: true,
-        originalSaveAttemptRetained: true, originalSaveProjectionRetained: true, actualRequestBodyJoined: false, nativeMutationResumed: false, selectedSqlAuthorized: false });
-      this.#packet = packet; packets.set(packet, Object.freeze({ observer: this, invocation })); return packet;
+      this.#bindings.requireOriginalRequest(request);
+      const packet: CurrentPcbViaHeldMainDriver = Object.freeze({ schema: "private.current-pcb-via-held-main-driver.v2", originalDriverInvocationRetained: true,
+        originalSaveAttemptRetained: true, originalSaveProjectionRetained: true, originalFetchPostRouteVerified: true, actualRequestBodyJoined: false, nativeMutationResumed: false, selectedSqlAuthorized: false });
+      this.#packet = packet; packets.set(packet, Object.freeze({ observer: this, invocation, request })); return packet;
     } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
   }
-  public async requireOriginal(packet: CurrentPcbViaHeldMainDriver): Promise<void> { need(this.#packet === packet && packets.get(packet)?.observer === this, "ORIGINAL_PACKET"); await this.#current(true); }
+  public async requireOriginal(packet: CurrentPcbViaHeldMainDriver): Promise<void> {
+    const original = packets.get(packet); need(this.#packet === packet && original?.observer === this, "ORIGINAL_PACKET");
+    this.#bindings.requireOriginalRequest(original.request); await this.#current(true);
+  }
 }
