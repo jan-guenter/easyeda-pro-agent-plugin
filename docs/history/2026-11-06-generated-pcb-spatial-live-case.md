@@ -261,3 +261,44 @@ Its retained process and stdio closed with exit0, and independent process
 inspection confirmed that both that manager and the generation4 facade were
 absent. No signal was sent. A future live case requires a new verified frontend
 and a separately admitted facade; these terminal receipts grant no owner reuse.
+
+## Frozen8eff combined reader and recovery batch
+
+Development payload `8efff9bd76192339db5065dfed4e18fb4d3ffedb`, version
+`0.3.0+codex.20261106150313`, freezes3,623 tracked files and69,723,550 bytes.
+Complete Git-byte, exact644/755 mode and single-link checks passed. This batch
+combines the optional-environment correction, separate Component419 mount,
+original Component Job abort, manager spatial cleanup, genuine producer
+observation lane and distinct closed Via checkpoint input. None grants a
+general writer or saved-result authority.
+
+Fresh dependency installation, full tree, registry signatures and moderate
+audit passed against the unchanged lock. Both TypeScript projects, strict
+type-aware facade/bridge lint, coverage, build, compatibility, repository and
+MCP validators passed. The first skill validation refused a new history link
+escaping the installed skill package; its corrected repository URL passes all
+skill validation and all seven quick validators. The failed log is retained.
+All three bundles reproduce exactly. Only facade source/bundle projections
+and review time changed; external compatibility pins and the six released
+forward/cold artifacts remain exact.
+
+Actual Windows PowerShell5.1 compiled the1,836,477-byte helper's1,692,171-byte
+C# body and passed nine static protocol checks, including the new producer
+observer. No owner constructor or application ran during that compilation.
+The standalone frontend independently reports1,733,234 bytes, SHA256
+`d9b8454018123f7eeee887f95fb60d325147586eaa51ecb887d50ecacc7f1983`.
+A new retained manager selected the frozen payload as its first generation.
+Actual original process/executable/parent and package checks passed. A first
+manual command-path check refused its relative manager entrypoint before proof
+publication; resolving it against that original process's actual cwd proves
+the expected frozen file. No native identity was reconstructed from that check.
+
+New data operation `fixture-data209-arc-recovery-20261106f` passed fresh complete
+initial SQL/source qualification, six no-app boundary observations and original
+resource/owner release before local staging. Its new spatial operation is
+`pcb209-spatial-arcs-recovery-20261106f`. Launch and complete pinned UI source
+qualification passed. A pending-launch inspection raced the completed launch
+and was rejected before dispatch; it was not retried. Generated opening and
+the consumed Arc batch are still pending at this checkpoint. The frozen
+payload remains unchanged through original native cleanup. No new PR,
+publication, installation or user-project operation occurred.
