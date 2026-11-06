@@ -45,3 +45,21 @@ refuse. Actual ticket gaps and observed worker editVersion are retained instead
 of guessing an initial maximum plus two. Two focused data cases pass. Original
 worker pending-node/clock/body custody and exact selected SQL/structure grants
 remain separate required joins, with their acceptance fields false.
+
+## Original dispatch intent
+
+`GeneratedSchematicDisplayJournal` publishes a bounded hash-linked stage chain
+with exact managed phase artifacts before allocation and dispatch. Its argument
+object and checkpoint are original issued references. Modify and Save each
+receive one `GeneratedSchematicDisplayDispatch`, bound to that journal, native
+owner, exact argument reference, stage and sequence. The native owner consumes
+it synchronously, then awaits `assertPublished()` before application dispatch.
+Copies, a different owner, changed arguments and a second consumption refuse.
+
+Lost publication settlement reuses the retained exact journal candidate and the
+same unconsumed marker. It cannot allocate another marker or repeat mutation or
+Save. A failed write journal stays unresolved after resource cleanup; process
+closure does not accept unknown file effects. Two focused production artifact
+tests cover exact dispatch binding and a real durable publication whose
+acknowledgement is deliberately lost. Original native stage integration remains
+required before a dispatch can execute.
