@@ -7,6 +7,8 @@ import { buildCurrentSchematicPageOpeningProgram } from "./current-schematic-pag
 import { currentSchematicPageOpeningResultSchema, currentSchematicPageOpeningTargetSchema } from "./current-schematic-page-opening.ts";
 import { buildCurrentSchematicPageReadProgram } from "./current-schematic-page-read-program.ts";
 import { validateCurrentSchematicPageReadResult } from "./current-schematic-page-read.ts";
+import { SCHEMATIC_TEXT_GUARD_CODES } from "./schematic-text-read.ts";
+import { SCHEMATIC_NETGROUP_GUARD_CODES } from "./schematic-netgroup-read.ts";
 import { GENERATED_FIXTURE_REGISTRATION_FUNCTION, generatedFixtureRegistrationResultSchema } from "./managed-fixture-registration-program.ts";
 import { assertOriginalGeneratedSchematicFixtureTarget } from "./managed-schematic-fixture-initial-sql.ts";
 import type { QualifiedGeneratedSchematicFixtureTarget } from "./managed-schematic-fixture-initial-sql.ts";
@@ -136,8 +138,11 @@ function pageReadRequest(qualified: QualifiedGeneratedSchematicFixtureTarget, me
 export function buildGeneratedSchematicReadersProgram(qualified: QualifiedGeneratedSchematicFixtureTarget, expectedWindowTabId: string): string {
   opaque.parse(expectedWindowTabId);
   const batch = requests(qualified), target = qualified.target;
+  const failures = [...SCHEMATIC_TEXT_GUARD_CODES.map(code => `SCH_TEXT_${code}`), ...SCHEMATIC_NETGROUP_GUARD_CODES.map(code => `SCH_NETGROUP_${code}`), "SCH209_PAGE_READ_REFUSED"];
   const code = `const identity=await(async()=>{${identityProgram(target, expectedWindowTabId)}})();const values=[];
-${batch.map(request => `values.push(await(async()=>{${buildCurrentSchematicPageReadProgram(request)}})());`).join("\n")}
+const readFailures=${JSON.stringify(failures)};
+const readStage=async(stage,read)=>{try{return await read();}catch(error){let failure='NATIVE_FAILURE';try{const descriptor=Object.getOwnPropertyDescriptor(error,'message');if(descriptor&&Object.hasOwn(descriptor,'value')&&readFailures.includes(descriptor.value))failure=descriptor.value;}catch{}throw new Error('GENERATED_SCHEMATIC_READ_'+stage+'_'+failure,{cause:error});}};
+${batch.map((request, index) => `values.push(await readStage(${JSON.stringify(["TEXT", "WIRE", "BUS"][index])},async()=>{${buildCurrentSchematicPageReadProgram(request)}}));`).join("\n")}
 const after=await(async()=>{${identityProgram(target, expectedWindowTabId)}})();if(JSON.stringify(identity)!==JSON.stringify(after))throw new Error('GENERATED_SCHEMATIC_READ_IDENTITY_CHANGED');
 const json=JSON.stringify({schema:'easyeda-pro-control.generated-schematic-readers.v1',identity,values}),utf8Bytes=new TextEncoder().encode(json).byteLength;if(utf8Bytes>${MAX})throw new Error('GENERATED_SCHEMATIC_READ_BOUND');return {schema:'easyeda-pro-control.exact-json.v1',utf8Bytes,json};`;
   need(Buffer.byteLength(code) <= MAX); return code;

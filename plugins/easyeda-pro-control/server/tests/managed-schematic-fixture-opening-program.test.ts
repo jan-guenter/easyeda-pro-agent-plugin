@@ -35,6 +35,21 @@ void test("fixed native navigation accepts target data and preserves the same co
     assert.equal(opening.failedStage, failStage ?? null); assert.deepEqual(fixture.evaluate("[calls.registration,calls.project,calls.page]"), [1, 1, 1]);
   }
 });
+void test("generated reader failures retain the exact first family and bounded guard without admitting an unstored child", async () => {
+  const input = await managedSchematicFixtureInitialSqlFixture(), result = await qualifyGeneratedSchematicFixtureInitialSql(input);
+  const fixture = generatedSchematicOpeningVm(result.qualification, result.history);
+  await fixture.run(buildGeneratedSchematicNavigationProgram(result.qualification));
+  fixture.evaluate("const wire=[...groups].find(model=>model.type==='wire');const implicit=add(wire,{id:'implicit-relevance',modelType:'Attr',tagName:'Attr'});sourceIds.delete(implicit.id);");
+  await assert.rejects(fixture.run(buildGeneratedSchematicReadersProgram(result.qualification, "original-window")), /GENERATED_SCHEMATIC_READ_WIRE_SCH_NETGROUP_CHILDREN/u);
+  assert.deepEqual(fixture.evaluate("[calls.registration,calls.project,calls.page]"), [1, 1, 1]);
+});
+void test("generated reader errors do not publish unregistered native messages", async () => {
+  const input = await managedSchematicFixtureInitialSqlFixture(), result = await qualifyGeneratedSchematicFixtureInitialSql(input);
+  const fixture = generatedSchematicOpeningVm(result.qualification, result.history);
+  await fixture.run(buildGeneratedSchematicNavigationProgram(result.qualification));
+  fixture.evaluate("Object.defineProperty([...texts][0],'value',{get(){throw new Error('unregistered-native-detail');}});void 0;");
+  await assert.rejects(fixture.run(buildGeneratedSchematicReadersProgram(result.qualification, "original-window")), { message: "GENERATED_SCHEMATIC_READ_TEXT_NATIVE_FAILURE" });
+});
 void test("each consumed native prefix keeps only earlier receipts and never dispatches a later navigation stage", async () => {
   const input = await managedSchematicFixtureInitialSqlFixture(), result = await qualifyGeneratedSchematicFixtureInitialSql(input);
   const stages = ["registration", "project-preflight", "project-open", "page-preflight", "page-open", "page-identity"];
