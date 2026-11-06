@@ -10,7 +10,7 @@ export interface ManagedSchematicFixtureOpeningSource {
 }
 type Runtime = Pick<WindowsControlRuntime, "status">;
 const issued = new WeakMap<ManagedSchematicFixtureOpeningSource, Readonly<{ text: string; qualification: QualifiedGeneratedSchematicFixtureTarget; archive: Buffer;
-  importingRuntime: Runtime; importingLaunchText: string }>>();
+  origin: Readonly<{ kind: "import"; importingRuntime: Runtime; importingLaunchText: string }> | Readonly<{ kind: "fresh-closed-data" }> }>>();
 const transferred = new WeakSet<QualifiedGeneratedSchematicFixtureTarget>();
 /** Same-facade data staging only. No existing PCB owner can consume this token,
  * and it grants no native birth, path registration or page-open authority. */
@@ -21,13 +21,23 @@ export function stageManagedSchematicFixtureOpeningSource(input: Readonly<{ qual
   if (createHash("sha256").update(archive).digest("hex") !== qualification.archiveSha256 || transferred.has(qualification)) { throw new Error("Original schematic source archive changed or its staging was already consumed."); }
   const source = Object.freeze({ schema: "private.generated-schematic-fixture-opening-source.v1" as const, projectUuid: qualification.target.projectUuid,
     originalSourceSha256: qualification.target.expectedSourceSha256 });
-  issued.set(source, { text: canonicalJson(source), qualification, archive, importingRuntime, importingLaunchText: canonicalJson(importing.launch) }); transferred.add(qualification); return source;
+  issued.set(source, { text: canonicalJson(source), qualification, archive, origin: { kind: "import", importingRuntime, importingLaunchText: canonicalJson(importing.launch) } }); transferred.add(qualification); return source;
+}
+/** Internal new-data continuation, called only by the completed current-facade
+ * closed-data verifier after all of its fresh helpers/handles and records settle.
+ * The genuine qualification is NEW; no importing runtime or launch is invented. */
+export function stageRequalifiedManagedSchematicFixtureOpeningSource(input: Readonly<{ qualification: QualifiedGeneratedSchematicFixtureTarget; archive: Buffer }>): ManagedSchematicFixtureOpeningSource {
+  const qualification = input.qualification; const archive = Buffer.from(input.archive); assertOriginalGeneratedSchematicFixtureTarget(qualification);
+  if (createHash("sha256").update(archive).digest("hex") !== qualification.archiveSha256 || transferred.has(qualification)) { throw new Error("Fresh requalified schematic data was changed or already staged."); }
+  const source = Object.freeze({ schema: "private.generated-schematic-fixture-opening-source.v1" as const, projectUuid: qualification.target.projectUuid,
+    originalSourceSha256: qualification.target.expectedSourceSha256 });
+  issued.set(source, { text: canonicalJson(source), qualification, archive, origin: { kind: "fresh-closed-data" } }); transferred.add(qualification); return source;
 }
 export function consumeManagedSchematicFixtureOpeningSource(source: ManagedSchematicFixtureOpeningSource, freshRuntime: Runtime): Readonly<{ qualification: QualifiedGeneratedSchematicFixtureTarget; archive: Buffer }> {
   const original = issued.get(source);
   if (original === undefined || original.text !== canonicalJson(source)) { throw new Error("Original unconsumed schematic data source is required."); }
   const current = freshRuntime.status();
-  if (freshRuntime === original.importingRuntime || current.state !== "owned" || current.launch === null || canonicalJson(current.launch) === original.importingLaunchText) { throw new Error("Generated schematic opening requires a different fresh original ordinary runtime and launch."); }
+  if (current.state !== "owned" || current.launch === null || original.origin.kind === "import" && (freshRuntime === original.origin.importingRuntime || canonicalJson(current.launch) === original.origin.importingLaunchText)) { throw new Error("Generated schematic opening requires a different fresh original ordinary runtime and launch."); }
   assertOriginalGeneratedSchematicFixtureTarget(original.qualification); issued.delete(source);
   return Object.freeze({ qualification: original.qualification, archive: Buffer.from(original.archive) });
 }

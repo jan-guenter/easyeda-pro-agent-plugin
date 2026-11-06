@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { assertOriginalGeneratedFixtureTarget, qualifyGeneratedFixtureInitialSql } from "../src/managed-fixture-initial-sql.ts";
 import { compareGeneratedFixtureClosedSources, compareGeneratedSchematicFixtureClosedSources } from "../src/managed-fixture-closed-snapshot.ts";
 import { assertOriginalGeneratedSchematicFixtureTarget, originalGeneratedSchematicFixtureInventory, qualifyGeneratedSchematicFixtureInitialSql } from "../src/managed-schematic-fixture-initial-sql.ts";
-import { consumeManagedSchematicFixtureOpeningSource, stageManagedSchematicFixtureOpeningSource } from "../src/managed-schematic-fixture-opening-source.ts";
+import { consumeManagedSchematicFixtureOpeningSource, stageManagedSchematicFixtureOpeningSource, stageRequalifiedManagedSchematicFixtureOpeningSource } from "../src/managed-schematic-fixture-opening-source.ts";
 import { managedFixtureInitialSqlFixture } from "./helpers/managed-fixture-initial-sql.ts";
 import { managedSchematicFixtureInitialSqlFixture } from "./helpers/managed-schematic-fixture-initial-sql.ts";
 import type { WindowsControlRuntimeStatus } from "../src/windows-runtime.ts";
@@ -46,4 +46,13 @@ void test("SCH qualification snapshots its original archive/path/times before na
   const pending = qualifyGeneratedSchematicFixtureInitialSql(input); input.rawWindowsPath += "substituted"; input.sourceModifiedEpochMs += 120_000; input.archive.fill(0);
   const result = await pending; assert.equal(result.qualification.target.rawWindowsPath, original.rawWindowsPath);
   assert.equal(result.qualification.sourceModifiedEpochMs, original.sourceModifiedEpochMs); assertOriginalGeneratedSchematicFixtureTarget(result.qualification);
+});
+
+void test("new requalified schematic data stages once without inventing an importing launch and still refuses copied qualifications", async () => {
+  const input = await managedSchematicFixtureInitialSqlFixture(); const result = await qualifyGeneratedSchematicFixtureInitialSql(input);
+  assert.throws(() => stageRequalifiedManagedSchematicFixtureOpeningSource({ qualification: structuredClone(result.qualification), archive: input.archive }));
+  const staged = stageRequalifiedManagedSchematicFixtureOpeningSource({ qualification: result.qualification, archive: input.archive }); const fresh = originalRuntime("b");
+  assert.throws(() => consumeManagedSchematicFixtureOpeningSource(structuredClone(staged), fresh));
+  assert.equal(consumeManagedSchematicFixtureOpeningSource(staged, fresh).qualification, result.qualification);
+  assert.throws(() => consumeManagedSchematicFixtureOpeningSource(staged, fresh));
 });

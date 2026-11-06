@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 closed generated data requalification](2026-11-06-closed-generated-data-requalification.md). New read-only file/proof leases, full initial SQL and fixed source equality, current-facade data token issuance without historical runtime adoption, and exact index/manager mount requirements.
+
 - [2026-11-06 fixture browser-global capture](2026-11-06-fixture-browser-global-capture.md). Exact third-case pre-GET refusal, retained original reply and guarded fixed browser-global reads with a separate historical-compatible diagnostic schema; connected import remains pending.
 
 - [2026-11-06 generated schematic index mount](2026-11-06-generated-schematic-index-mount.md). Reachable separate SCH token and original ordinary-runtime route, source/API queries, exclusive custody and cleanup gates; connected acceptance pending.
