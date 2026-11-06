@@ -10,6 +10,7 @@ export { CURRENT_PROJECT_STRUCTURE_TRANSPORT_PROGRAMS } from "./current-project-
 export { CURRENT_PROJECT_STRUCTURE_TRANSPORT_CONDITION, CURRENT_PROJECT_STRUCTURE_TRANSPORT_SITES, qualifyCurrentProjectStructureTransportSource } from "./current-project-structure-transport-source.ts";
 export type { CurrentProjectStructureTransportRole } from "./current-project-structure-transport-source.ts";
 
+export const CURRENT_PROJECT_STRUCTURE_TRANSPORT_NATIVE_CAPTURE_LENGTH = 7;
 export const CURRENT_PROJECT_STRUCTURE_TRANSPORT_GROUP = "easyeda-project-structure-transport209-v1";
 export const CURRENT_PROJECT_STRUCTURE_TRANSPORT_REQUESTS = Object.freeze({ capture: 1, arms: 3, frames: 3, joins: 3, originalResumes: 2, normal: 12, cleanup: 4, cdpRequests: 16, events: 5 });
 const GROUP = CURRENT_PROJECT_STRUCTURE_TRANSPORT_GROUP;

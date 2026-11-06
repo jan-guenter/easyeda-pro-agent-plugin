@@ -78,3 +78,19 @@ requires the separate producer's original empty pre-Save timer/frontier join;
 it does not infer quiescence from the timer durations. The command/event counts
 are unchanged. A focused actual-source branch check confirms zero application
 RPC calls when the original flag is false.
+
+Correction to the ordering prerequisite above: a later empty pre-Save snapshot
+is insufficient. Continuous original producer enrollment must begin before the
+SDK create/action prefix and retain every actual serial/buffer/timer/cache/retry
+lineage through Save and publication. The local nonprivate microtask proof
+cannot exclude a timer made overdue during debugger pauses or an upload already
+scheduled by the original action. Neither a later SDK acknowledgment nor a
+consumed action can reconstruct that missing ownership. Those gates stay closed.
+
+Peer review found an inherited-toJSON risk in the transport comparison. The
+original native capture now retains JSON/stringify identities and descriptors;
+each comparison rejects Object.prototype.toJSON and validates the structure
+primitive before serialization. Focused synthetic browser-representation tests
+prove that inherited hooks, nested structure hooks and stringify replacement
+are refused without invoking them. Capture grows from five to seven retained
+members; request/event/codebook counts remain unchanged.

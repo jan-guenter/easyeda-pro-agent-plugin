@@ -49,3 +49,17 @@ void test("the original nonprivate liveness branch returns without yielding to a
   const pending: unknown = runInNewContext(`(function(qh){${liveness};return j6();})(false)`, { oo: forbidden, J1: forbidden, Ge: Object.freeze({ messageBus: Object.freeze({ rpcCall: forbidden }) }) });
   assert.equal(await pending, true); assert.equal(calls, 0); assert.equal(SITES.send.length, 17); assert.ok(SITES.send.expression.endsWith(",qh]"));
 });
+
+void test("added inherited toJSON and changed stringify refuse without invoking either application hook", () => {
+  for (const fault of ["toJSON", "stringify", "structure-toJSON"]) {
+    // Only DOM native-function representations are substituted in this Node
+    // Realm; the fixed programs and actual native JSON.stringify run unchanged.
+    const context: Record<string, unknown> = { programs: PROGRAMS, fault };
+    runInNewContext(`
+class XMLHttpRequest{};XMLHttpRequest.prototype.open=function open(){};XMLHttpRequest.prototype.send=function send(){};globalThis.XMLHttpRequest=XMLHttpRequest;
+const realToString=Function.prototype.toString,nativeReps=new Map([[XMLHttpRequest,"function XMLHttpRequest() { [native code] }"],[XMLHttpRequest.prototype.open,"function open() { [native code] }"],[XMLHttpRequest.prototype.send,"function send() { [native code] }"]]);Function.prototype.toString=function(){return nativeReps.get(this)||Reflect.apply(realToString,this,[])};
+const use=(name,receiver,args)=>Reflect.apply(eval("("+programs[name]+")"),receiver,args),native=use("capture",null,[]),project="a".repeat(64),branch="b".repeat(32),data={ticket:3,structure:"{}"},options={headers:{path:project,"Content-Type":"application/json"}},callback=()=>{throw Error("application callback")},request=new XMLHttpRequest,body=JSON.stringify(data),frame=["POST","/api/v4/projects/"+project+"/branches/"+branch+"/structures",data,options,false,callback,callback,0,3,callback,request,body,false,callback,XMLHttpRequest,10000,false];
+let hooks=0,refused=false;const hook=()=>{hooks++;throw Error("application hook")};if(fault==="structure-toJSON")data.structure={toJSON:hook};try{const sent=use("send",frame,[native]);if(fault==="toJSON")Object.defineProperty(Object.prototype,"toJSON",{value:hook,configurable:true});else if(fault==="stringify")JSON.stringify=hook;use("value",sent,[])}catch{refused=true}globalThis.report={hooks,refused};`, context);
+    assert.deepEqual(structuredClone(context["report"]), { hooks: 0, refused: true });
+  }
+});
