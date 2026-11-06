@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 generated Pad point case](2026-11-06-generated-pad-spatial-live-case.md). Accepted five-point native results and complete closed raw/35-table SQL invariance; published Pad report exposed a journal-schema mismatch that blocked helper release. Original cleanup remains separately tracked.
+
 - [Original saved-reader cache ledger](2026-11-06-via-saved-cache-original-ledger.md)
 - [Fresh saved Via readback birth](2026-11-06-via-saved-readback-native-birth.md)
 
