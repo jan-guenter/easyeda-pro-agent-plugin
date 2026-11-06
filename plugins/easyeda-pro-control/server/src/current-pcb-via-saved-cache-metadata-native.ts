@@ -1,14 +1,24 @@
 /** Build-time fixed metadata codebook for the new saved-reader purpose only. */
+import { createHash } from "node:crypto";
+import { gzipSync } from "node:zlib";
 import { CURRENT_PCB_VIA_SAVED_CACHE_METADATA_HELPERS as HELPERS } from "./current-pcb-via-saved-cache-metadata-programs.ts";
 import { CURRENT_PCB_VIA_SAVED_READBACK_PROFILE as PROFILE } from "./current-pcb-via-saved-readback-profile.ts";
 
 function literal(value: string): string { return `@"${value.replaceAll('"', '""')}"`; }
+function packed(value: string): string {
+  const bytes = Buffer.from(value); if (bytes.length === 0 || bytes.length > 65_536) { throw new Error("SAVED_METADATA_FIXED_PROGRAM_SIZE"); }
+  // oxlint-disable-next-line node/no-sync -- Build-only deterministic encoding of exact fixed source through the existing bounded native decoder.
+  const compressed = gzipSync(bytes, { level: 9 });
+  return `UnpackFixedProgram(${literal(compressed.toString("base64"))},${String(bytes.length)},${literal(createHash("sha256").update(bytes).digest("hex"))},${literal(createHash("sha256").update(compressed).digest("hex"))})`;
+}
 export function currentPcbViaSavedCacheMetadataNative(): string {
-  const helpers = Object.entries(HELPERS).map(([name, helper]) => `case ${literal(name)}:program=${literal(helper.program)};byValue=${String(helper.returnByValue).toLowerCase()};awaitPromise=${String(helper.awaitPromise).toLowerCase()};sideEffect=${String(helper.throwOnSideEffect).toLowerCase()};break;`).join("\n");
+  const helpers = Object.entries(HELPERS).map(([name, helper]) => `case ${literal(name)}:program=${packed(helper.program)};byValue=${String(helper.returnByValue).toLowerCase()};awaitPromise=${String(helper.awaitPromise).toLowerCase()};sideEffect=${String(helper.throwOnSideEffect).toLowerCase()};break;`).join("\n");
+  const parity = Object.entries(HELPERS).map(([name, helper]) => `{bool a,b,c;string program=SavedViaMetadataProgram(${literal(name)},out a,out b,out c);if(a!=${String(helper.returnByValue)}||b!=${String(helper.awaitPromise)}||c!=${String(helper.throwOnSideEffect)})throw Error("saved-metadata-packed-options");using(var sha=System.Security.Cryptography.SHA256.Create())if(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(program))).Replace("-","").ToLowerInvariant()!=${literal(createHash("sha256").update(helper.program).digest("hex"))})throw Error("saved-metadata-packed-program");}`).join("");
   return String.raw`
 readonly HashSet<string> savedViaMetadataSlots=new HashSet<string>(StringComparer.Ordinal);int savedViaMetadataCount;string savedViaReadbackContext,savedViaReadbackProject;
 static string SavedViaMetadataProgram(string role,out bool byValue,out bool awaitPromise,out bool sideEffect){string program;switch(role){${helpers}
 default:throw Error("saved-readback-metadata-helper");}return program;}
+public static void VerifySavedViaMetadataProgramsSmoke(){${parity}}
 static string SavedViaMetadataHelper(System.Collections.IDictionary fields,string phase){
 if(phase=="saved-cache-native-constructors"||phase=="saved-cache-native-members"||phase=="saved-cache-native-reprove"){string kind=SavedViaReadbackText(fields,"intrinsicKind",32);if(kind!="cache-response"&&kind!="request")throw Error("saved-readback-metadata-kind");string prefix=kind=="cache-response"?"cache":"request";return prefix+(phase=="saved-cache-native-constructors"?"-constructors":phase=="saved-cache-native-members"?"-members":"-reprove");}
 if(phase=="saved-cache-native-catalogue")return "request-catalogue";if(phase=="saved-cache-native-bind")return "bind";if(phase=="saved-cache-native-observe")return "observe";return null;}
@@ -31,7 +41,7 @@ if(savedViaMetadataSlots.Contains(slot))throw Error("saved-readback-metadata-con
 if(phase=="saved-cache-native-constructors"&&SavedViaReadbackText(fields,"uniqueContextId",256)!=savedViaReadbackContext||phase=="saved-cache-native-bind"&&SavedViaReadbackText(fields,"projectUuid",64)!=savedViaReadbackProject)throw Error("saved-readback-metadata-original-target");
 savedViaMetadataSlots.Add(slot);savedViaMetadataCount++;SendMessage(id,message);
 }
-public static void VerifySavedViaMetadataSmoke(){var fields=new System.Collections.Hashtable();fields["intrinsicKind"]="cache-response";fields["uniqueContextId"]="original";string message=SavedViaMetadataProtocolMessage(1,"session","saved-cache-native-constructors",fields);if(message.IndexOf("Runtime.callFunctionOn",StringComparison.Ordinal)<0||message.IndexOf("throwOnSideEffect\":true",StringComparison.Ordinal)<0)throw Error("saved-readback-metadata-codec-smoke");foreach(string phase in new[]{"saved-cache-delete","Runtime.evaluate","arbitrary"}){bool refused=false;try{SavedViaMetadataProtocolMessage(1,"session",phase,fields);}catch{refused=true;}if(!refused)throw Error("saved-readback-metadata-no-grant-smoke");}}
+public static void VerifySavedViaMetadataSmoke(){VerifySavedViaMetadataProgramsSmoke();var fields=new System.Collections.Hashtable();fields["intrinsicKind"]="cache-response";fields["uniqueContextId"]="original";string message=SavedViaMetadataProtocolMessage(1,"session","saved-cache-native-constructors",fields);if(message.IndexOf("Runtime.callFunctionOn",StringComparison.Ordinal)<0||message.IndexOf("throwOnSideEffect\":true",StringComparison.Ordinal)<0)throw Error("saved-readback-metadata-codec-smoke");foreach(string phase in new[]{"saved-cache-delete","Runtime.evaluate","arbitrary"}){bool refused=false;try{SavedViaMetadataProtocolMessage(1,"session",phase,fields);}catch{refused=true;}if(!refused)throw Error("saved-readback-metadata-no-grant-smoke");}}
 `;
 }
 export const CURRENT_PCB_VIA_SAVED_CACHE_METADATA_DISPATCH = String.raw`        'saved-readback-metadata' {

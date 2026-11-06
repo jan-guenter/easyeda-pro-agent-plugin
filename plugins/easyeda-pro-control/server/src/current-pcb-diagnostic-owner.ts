@@ -1483,6 +1483,7 @@ class CurrentPcbRetainedOwnerCore {
   #viaMainSetupReady = false;
   #viaPlan: CurrentPcbViaWritePlan | null = null;
   #viaStartAttempted = false;
+  #viaStartPagePromise: Promise<Readonly<RecordValue>> | null = null;
   readonly #viaNativePhases = new Set<CurrentPcbViaObservationPhase>();
   readonly #viaScenePhases = new Set<CurrentPcbViaObservationPhase>();
   readonly #viaSdkPhases = new Set<CurrentPcbViaWriteStage>();
@@ -1988,6 +1989,41 @@ class CurrentPcbRetainedOwnerCore {
         debuggerSocketAbsenceVerified: false, bridgeAuthentication: false, executionAuthorized: false });
     } catch (caughtError) { this.#input.emit("error", error("BROWSER_OBSERVATION_FAILED")); throw caughtError; }
     finally { this.#busy = false; }
+  }
+
+  /** One bounded original writer wait. It retains the first observed page and
+   * never repeats attachment, navigation, launch or a failed transport call. */
+  public observeViaWriteStartPage(plan: CurrentPcbViaWritePlan): Promise<Readonly<RecordValue>> {
+    assertOriginalCurrentPcbViaWriteOwner(this); requireViaPlan(this, plan);
+    if (this.#viaStartPagePromise !== null) { return this.#viaStartPagePromise; }
+    const binding = this.#binding, pipe = this.#pipe;
+    if (!(pipe instanceof CurrentPcbViaWritePipe) || binding === null || !this.#viaStartAttempted || !this.#launchSucceeded ||
+      this.#browserObservationConsumed || this.#framesConsumed || this.#inspectionConsumed || this.#projectOpeningConsumed ||
+      this.#mainRunner?.selectedSqlFenceState()["ready"] !== true) { throw error("PCB_VIA_START_PAGE_UNAVAILABLE"); }
+    this.#enter(true); this.#browserObservationConsumed = true;
+    const work = (async (): Promise<Readonly<RecordValue>> => {
+      const current = (): void => {
+        this.#available(); assertOriginalCurrentPcbViaWriteOwner(this); requireViaPlan(this, plan);
+        if (this.#pipe !== pipe || this.#binding !== binding || this.#viaFailed || this.#viaCleanupOnly || this.#closeConsumed ||
+          this.#framesConsumed || this.#projectOpeningConsumed || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true) { throw error("PCB_VIA_START_PAGE_ORIGINAL_GENERATION"); }
+      };
+      try {
+        current(); const version = await this.#transfer(() => pipe.getVersion()); current();
+        if (!exact(version, ["protocolVersion", "product", "revision", "userAgent", "jsVersion"]) ||
+          Object.values(version).some(value => typeof value !== "string" || value.length > 8192 || value.includes("\0"))) { throw error("BROWSER_VERSION_REPLY"); }
+        let targetId: string | null = null; const page = CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.renderer.startPage;
+        for (let index = 0; index < page.inventorySamples; index += 1) {
+          const rows = diagnosticTargetInventory(await this.#transfer(() => pipe.getTargets())); current();
+          const observation = { schema: "easyeda-pro-control.pcb-diagnostic-browser-observation.v1", version: structuredClone(version), targets: rows.map(value => diagnosticTargetSummary(value)),
+            projectFreeVerified: false, profileIsolated: false, debuggerSocketAbsenceVerified: false, bridgeAuthentication: false, executionAuthorized: false };
+          const candidate = observeCurrentPcb209StartPageCandidate(observation, targetId); targetId = candidate.targetId;
+          if (candidate.ready) { this.#browserTargets = rows; return diagnosticBoundedObservation({ ...observation, inventorySamples: index + 1, sourceQualified: false }); }
+          if (index + 1 < page.inventorySamples) { await delay(page.delayMilliseconds); current(); }
+        }
+        throw error("PCB_VIA_START_PAGE_NOT_OBSERVED");
+      } catch (caughtError) { this.#input.emit("error", error("PCB_VIA_START_PAGE_FAILED")); throw caughtError; }
+      finally { this.#busy = false; }
+    })(); this.#viaStartPagePromise = work; return work;
   }
 
   /** Separate saved-only bounded inventories. Blank observations grant no

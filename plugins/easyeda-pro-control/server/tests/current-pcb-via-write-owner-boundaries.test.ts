@@ -41,7 +41,7 @@ void test("new SDK wire contains fixed scalars only and cannot be spent by relea
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, functionDeclaration: `${CURRENT_PCB_VIA_WRITE_FUNCTION}\n` } })));
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, awaitPromise: false } })));
   }
-  assert.equal(PROFILE.renderer.total, 3104); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [1109, 41, 1150]);
+  assert.equal(PROFILE.renderer.total, 3111); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [1109, 41, 1150]);
 });
 void test("fixed Via SDK retains its reviewed large-program schema and identical packed bytes", async () => {
   assert.ok(CURRENT_PCB_VIA_WRITE_FUNCTION.length > 16_384); assert.throws(() => captureCurrentPcbStringClockReply({ program: CURRENT_PCB_VIA_WRITE_FUNCTION }));
@@ -99,6 +99,8 @@ void test("matching bootstrap and owner JSON cannot mint original native ownersh
   assert.throws(() => Reflect.apply(owner.requireOriginalCurrentPcbViaWriteNoResourceProof, undefined, [{ profile: "private.current-pcb-via-write-no-resource.v1" }, {}]), /ORIGINAL_PLAN/u);
   const start: unknown = Reflect.get(owner.CurrentPcbViaWriteOwner.prototype, "startViaWriteGeneration"); assert.ok(typeof start === "function");
   await assert.rejects(async (): Promise<void> => { const pending: unknown = Reflect.apply(start, forged, [{}]); assert.ok(pending instanceof Promise); await pending; }, /ORIGINAL_PLAN/u);
+  const page: unknown = Reflect.get(owner.CurrentPcbViaWriteOwner.prototype, "observeViaWriteStartPage"); assert.ok(typeof page === "function");
+  assert.throws(() => Reflect.apply(page, forged, [{}]), /ORIGINAL_FACTORY/u);
   for (const lookup of [owner.requireOriginalCurrentPcbViaNativeObservation, owner.requireOriginalCurrentPcbViaSceneObservation, owner.requireOriginalCurrentPcbViaWriteStage]) {
     assert.throws(() => Reflect.apply(lookup, undefined, [forged, {}, {}, "before"]));
   }
@@ -106,10 +108,10 @@ void test("matching bootstrap and owner JSON cannot mint original native ownersh
 void test("composed native fragment is idempotent and keeps old births, caps and primitive methods separate", async () => {
   const original = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   const generated = compose(original); assert.equal(compose(generated), generated);
-  const earlierVia = generated.replace("return pcbViaWrite209?3104:spatial209?384:", "return pcbViaWrite209?766:spatial209?384:").replace("$requestLimit=if ($PcbViaWrite209) {3104}", "$requestLimit=if ($PcbViaWrite209) {766}");
+  const earlierVia = generated.replace(`return pcbViaWrite209?${String(PROFILE.renderer.total)}:spatial209?384:`, "return pcbViaWrite209?766:spatial209?384:").replace(`$requestLimit=if ($PcbViaWrite209) {${String(PROFILE.renderer.total)}}`, "$requestLimit=if ($PcbViaWrite209) {766}");
   assert.equal(compose(earlierVia), generated); assert.ok(Buffer.byteLength(generated) < 2 * 1024 * 1024);
   for (const text of ["EasyedaPcbViaWriteBirth", "CreatePcbViaWrite209()", "via-old-birth-smoke", "via-retain-main-until-exit", "viaConstructionComplete", "stage==\"save\"", "pcb-diagnostic-conflicting-via-purpose",
-    "return pcbViaWrite209?3104:spatial209?384:componentSpatial209?419:workerStartup?256:stringPrecreate?3309:103", "viaSdkProperties>=3", "SendPcbViaSpatial", "via-main-precreate-required", "via-main-precreate-original-enrollment", "VerifyViaMainPrecreateSmoke", "viaBeginArms.Count!=4", "viaHistoryArms.Count!=9", "viaStructureMainArms.Count!=9"]) { assert.ok(generated.includes(text), text); }
+    `return pcbViaWrite209?${String(PROFILE.renderer.total)}:spatial209?384:componentSpatial209?419:workerStartup?256:stringPrecreate?3309:103`, "viaSdkProperties>=3", "SendPcbViaSpatial", "via-main-precreate-required", "via-main-precreate-original-enrollment", "VerifyViaMainPrecreateSmoke", "viaBeginArms.Count!=4", "viaHistoryArms.Count!=9", "viaStructureMainArms.Count!=9"]) { assert.ok(generated.includes(text), text); }
   assert.equal(generated.includes("sqlite3.Database="), false); assert.equal(generated.includes("Object.setPrototypeOf(sc.Database"), false);
   assert.throws(() => compose(original.replace("[switch]$StringPrecreate,", "[switch]$ForeignPurpose,")), /ANCHOR/u);
 });
