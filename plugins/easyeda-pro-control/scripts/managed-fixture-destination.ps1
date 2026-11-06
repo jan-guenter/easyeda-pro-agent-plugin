@@ -195,7 +195,7 @@ public sealed class ManagedFixtureLibraryGuard : IDisposable {
 }
 '@
 if ($CompileOnly) { exit 0 }
-if ($Nonce -cnotmatch '^[a-f0-9]{64}$' -or $ProjectBasename -cnotmatch '^Codex_(via_only|line_and_via|arc_line_and_via)_[a-f0-9]{16}\.eprj2$' -or $LibraryDirectoriesBase64.Length -gt 8192) { throw 'fixture-destination-input' }
+if ($Nonce -cnotmatch '^[a-f0-9]{64}$' -or $ProjectBasename -cnotmatch '^Codex_(via_only|line_and_via|arc_line_and_via|schematic)_[a-f0-9]{16}\.eprj2$' -or $LibraryDirectoriesBase64.Length -gt 8192) { throw 'fixture-destination-input' }
 $owner = $null
 $guards = @()
 try {

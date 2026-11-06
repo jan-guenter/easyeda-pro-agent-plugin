@@ -2,6 +2,8 @@ import { createHash, randomBytes } from "node:crypto";
 import { qualifyManagedFixtureArchive } from "./managed-fixture-archive.ts";
 import { packManagedFixtureArchive } from "./managed-fixture-zip.ts";
 
+export const MANAGED_SCHEMATIC_FIXTURE_KIND = "schematic-text-wire-bus";
+
 /** Exact installed manager serialization functions. Source generation does not
  * execute them in EasyEDA or qualify a native import, page or electrical net. */
 export const MANAGED_SCHEMATIC_FIXTURE_PROFILE = Object.freeze({
@@ -76,7 +78,7 @@ export function generateManagedSchematicFixtureArchiveData(): Readonly<{
       qualification.documents[1]?.documentType !== "SCH_PAGE") { throw new Error("Generated schematic document roster changed."); }
   const sourceTemplateProfileSha256 = createHash("sha256").update(JSON.stringify(MANAGED_SCHEMATIC_FIXTURE_PROFILE)).digest("hex");
   return Object.freeze({ name: `${title}.epro2`, bytes, metadata: Object.freeze({
-    schema: "easyeda-pro-control.generated-schematic-fixture-archive.v1", fixtureKind: "schematic-text-wire-bus", title,
+    schema: "easyeda-pro-control.generated-schematic-fixture-archive.v1", fixtureKind: MANAGED_SCHEMATIC_FIXTURE_KIND, title,
     client, schematicUuid, pageUuid, textId, wireId, wireLineId, busId, busLineId, generatedAtEpochMs,
     sourceTemplateProfile: MANAGED_SCHEMATIC_FIXTURE_PROFILE,
     sourceTemplateProfileSha256,

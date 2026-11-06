@@ -1,7 +1,7 @@
 # Generated disposable fixture import
 
-Use this development route to create a new fixed Via-only, Line/Via or
-Arc/Line/Via project.
+Use this development route to create a new fixed Via-only, Line/Via,
+Arc/Line/Via or separate SCH/SCH_PAGE Text/Wire/Bus project.
 It accepts no caller project, path, archive, ID, geometry, SQL or code. It never
 deletes a failed or partial output. Query `fixture-import` with
 `includeSchemas:true` and validate the assembled request using
@@ -30,8 +30,10 @@ to64characters, and supply the complete observed `expectedFingerprint` object:
 ```
 
 `line-and-via` adds one disjoint top-layer line. `arc-line-and-via` adds a
-disjoint circular top-layer arc as well. These templates are not validated
-circuits or manufacturing designs.
+disjoint circular top-layer arc as well.
+`schematic-text-wire-bus` selects a separate schematic container and page with
+fixed Text and disjoint one-segment Wire/Bus groups. These are disposable data,
+without validated electrical connectivity or manufacturing suitability.
 
 The original environment operation has the ID `<operationId>-environment`.
 It observes actual native config directories through a tracked getter that can
@@ -62,12 +64,17 @@ After original cleanup completes, `capture-closed-import` with
 `confirmReadClosedFixture:true` retains the complete initial SQL and raw native
 source while the original destination handles remain held. A failed
 qualification preserves its report and partial file; it permits no replay.
+The schematic scenario uses its own complete initial SQL/source qualification
+and target with separate schematic/page identities. Its target cannot enter
+the PCB opening route. A dedicated fresh schematic registration/page owner and
+its local token handoff remain implementation work; page readiness and electrical
+connectivity stay unproved.
 
 Then use `release-destination` with `confirmReleaseRetainedDirectory:true`.
 It drains the exact original watches and closes directory handles after proved
 application termination. It deletes no files. Use `release-owner` with the
 base import ID and `confirmReleaseFixtureOwner:true`. If complete closed
-qualification and the drained no-library migration proof passed, use
+PCB qualification and the drained no-library migration proof passed, use
 `stage-for-fresh-opening` with that base ID and
 `confirmStageClosedFixture:true` before ordinary helper release. This once-only
 local action retains an opaque data token in the same facade. It starts no app

@@ -11,6 +11,7 @@
 - [2026-11-06 cold forward graph separation](2026-11-06-cold-forward-graph-separation.md). Released native files and loader remain exact; the new cold graph has separate files, pins, loader, build checks and Windows compilation coverage.
 - [2026-11-06 current209 SDK Via write program](2026-11-06-current209-sdk-via-write-program.md). Original generated baseline, exact current argument order and sticky one-create/one-Save program; native owner and complete persistence eligibility remain separate.
 
+- [2026-11-06 schematic fixture initial qualification](2026-11-06-schematic-fixture-initial-qualification.md). Distinct two-document source/SQL data target and tracked import scenario, exact vendor structure projection, unchanged PCBv1 result and pending native SCH owner.
 - [2026-11-06 generated fixture tool handoff](2026-11-06-generated-fixture-tool-handoff.md). Reachable explicit staging after closed qualification, original base-ID/runtime checks, drained migration exclusion and one private data transfer through ordinary helper release.
 - [2026-11-06 original post-clock cold continuation](2026-11-06-original-post-clock-cold-continuation.md). Same worker observer survives the clock handoff, reserves its actual remaining requests, and rejoins original termination without a queue deadlock.
 - [2026-11-06 forward cold native mount](2026-11-06-forward-cold-native-mount.md). Dedicated original v2 construction, fixed native commands and derived budgets; source integration does not establish writer eligibility.

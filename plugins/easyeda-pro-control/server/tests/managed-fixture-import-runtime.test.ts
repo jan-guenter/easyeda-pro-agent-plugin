@@ -124,6 +124,16 @@ void test("local opening staging cannot fall through to original destination rel
   assert.equal(managedFixtureImportRequestSchema.safeParse({ action: "stage-for-fresh-opening", operationId: "managed-import-stage-not-cleanup",
     confirmStageClosedFixture: false }).success, false);
 });
+void test("schematic scenario reaches the original tracked importer with its own fixed generated archive", async () => {
+  const id = "managed-import-schematic-runtime", value = fixture(id);
+  const result = await value.owner.execute({ ...value.request, fixtureKind: "schematic-text-wire-bus" }, value.expected);
+  assert.equal(result["importedFixtureAccepted"], false); assert.equal(result["closedSqlVerified"], false);
+  const journal = await loadOperation(id); assert.equal(journal.plan["fixtureKind"], "schematic-text-wire-bus");
+  const destination = result["destination"]; assert.ok(destination !== null && typeof destination === "object" && "expectedBasename" in destination);
+  assert.match(String(destination.expectedBasename), /^Codex_schematic_[a-f0-9]{16}\.eprj2$/u);
+  assert.equal(value.calls.filter(call => call === "import").length, 1); await assert.rejects(value.owner.execute(value.request, value.expected));
+  assert.throws(() => value.owner.qualifiedSchematicSourceForFreshOpening()); assert.throws(() => value.owner.qualifiedSourceForFreshOpening());
+});
 
 void test("ambiguous environment preserves its own original journal and cannot allocate a destination or importer", async () => {
   const value = fixture("managed-import-environment-ambiguous", false, true);

@@ -16,15 +16,21 @@ import { prepareManagedFixtureArchive, prepareManagedLibraryFile } from "./manag
 import { managedLibraryFileSchema } from "./managed-library-files.ts";
 import type { WindowsControlRuntime } from "./windows-runtime.ts";
 import { buildManagedFixtureEnvironmentProgram, managedFixtureEnvironmentObservationSchema } from "./managed-fixture-environment-program.ts";
-import { captureManagedFixtureClosedSnapshot } from "./managed-fixture-closed-snapshot.ts";
+import { captureManagedFixtureClosedSnapshot, captureManagedSchematicFixtureClosedSnapshot } from "./managed-fixture-closed-snapshot.ts";
 import { assertOriginalGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
 import type { QualifiedGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
 import { stageManagedFixtureOpeningSource } from "./managed-fixture-opening-source.ts";
 import type { ManagedFixtureOpeningSource } from "./managed-fixture-opening-source.ts";
+import { MANAGED_SCHEMATIC_FIXTURE_KIND, generateManagedSchematicFixtureArchiveData } from "./managed-schematic-fixture-generator.ts";
+import { assertOriginalGeneratedSchematicFixtureTarget } from "./managed-schematic-fixture-initial-sql.ts";
+import type { QualifiedGeneratedSchematicFixtureTarget } from "./managed-schematic-fixture-initial-sql.ts";
+import { stageManagedSchematicFixtureOpeningSource } from "./managed-schematic-fixture-opening-source.ts";
+import type { ManagedSchematicFixtureOpeningSource } from "./managed-schematic-fixture-opening-source.ts";
 
 const operationId = z.string().regex(/^[a-z0-9][a-z0-9-]{7,95}$/u);
+export const MANAGED_FIXTURE_IMPORT_KINDS = [...MANAGED_FIXTURE_GENERATOR_KINDS, MANAGED_SCHEMATIC_FIXTURE_KIND] as const;
 export const managedFixtureImportRequestSchema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("import-generated-fixture"), operationId: operationId.max(64), fixtureKind: z.enum(MANAGED_FIXTURE_GENERATOR_KINDS),
+  z.object({ action: z.literal("import-generated-fixture"), operationId: operationId.max(64), fixtureKind: z.enum(MANAGED_FIXTURE_IMPORT_KINDS),
     confirmDisposableFixture: z.literal(true), confirmNativeImport: z.literal(true), acceptPartialImportRetention: z.literal(true) }).strict(),
   z.object({ action: z.literal("inspect"), operationId }).strict(),
   z.object({ action: z.literal("inspect-destination"), operationId }).strict(),
@@ -51,7 +57,8 @@ export function queryManagedFixtureImport(input: unknown = {}): Record<string, u
     effect: "fresh-managed-disposable-native-import", nativeImportLiveValidation: "not-recorded", importedFixtureAccepted: false,
     retryAllowed: false, deletionAuthorized: false, designExecutionAuthorized: false,
     limitations: ["Requires the same original ordinary 209 launch, exact empty StartPage, current SDK/UI/manager/main pins and authenticated tracked dispatch.",
-      "Generates a fresh fixed Via-only, Line+Via or Arc+Line+Via archive; no caller file, path, geometry, code, SQL or profile override is accepted.",
+      "Generates a fresh fixed Via-only, Line+Via, Arc+Line+Via or separate SCH/SCH_PAGE Text/Wire/Bus archive; no caller file, path, geometry, code, SQL or profile override is accepted.",
+      "The schematic initial data target has its own complete SQL/source profile and cannot satisfy PCB staging/opening. A dedicated fresh schematic registration/page owner remains required before native reading or writing.",
       "The separate environment journal binds actual native config directories; HALF_OFFLINE and retained complete no-.elib rosters/watches exclude detached system-library seeding only after original termination and drained original watch cancellation.",
       "SDK settlement is partial evidence. Complete fresh closed-file SQLite/source and persistent registration acceptance remain separate; no import replay, automatic cleanup/deletion, Save or force termination is available.",
       "Cleanup requires the retained original dispatcher journal/Promise/session/runtime; inspect never adopts historical JSON. Release-destination closes only original held directory/watch handles after original root/Job termination."],
@@ -133,8 +140,10 @@ export class ManagedFixtureImportCoordinator {
   private attemptedOperationId: string | undefined;
   private lastNativeJournal: TrackedDispatchOperationJournal | undefined;
   private generatedArchive: Buffer | undefined;
+  private generatedFixtureKind: typeof MANAGED_FIXTURE_IMPORT_KINDS[number] | undefined;
   private closedCaptureAttempted = false;
   private closedCapture: Awaited<ReturnType<typeof captureManagedFixtureClosedSnapshot>> | undefined;
+  private closedSchematicCapture: Awaited<ReturnType<typeof captureManagedSchematicFixtureClosedSnapshot>> | undefined;
   private destination: ReturnType<NonNullable<ManagedFixtureImportDependencies["destination"]>> | undefined;
   private destinationReleased = false;
   private migrationExclusionVerified = false;
@@ -215,7 +224,7 @@ export class ManagedFixtureImportCoordinator {
       environment: this.environmentObservation, environmentOperationId: this.environmentOperation?.operationId,
       publicationPending: this.pendingPublication?.operation.operationId === id, originalJournalRetained: true,
       ownerReservation: this.reservation, operationInFlight: this.busy,
-      closedSnapshot: this.closedCapture?.report ?? null,
+      closedSnapshot: this.closedCapture?.report ?? this.closedSchematicCapture?.report ?? null,
       destinationReleased: this.destinationReleased, lastError: this.error,
       libraryMigrationExcluded: this.migrationExclusionVerified,
       nativeImportMayHaveBeenDispatched: operation.mutationMayHaveOccurred, retryAllowed: false, filesDeleted: false,
@@ -256,6 +265,17 @@ export class ManagedFixtureImportCoordinator {
   public stageSourceForFreshOpening(operationIdInput: string): ManagedFixtureOpeningSource {
     if (operationId.parse(operationIdInput) !== this.attemptedOperationId) { throw new Error("Staging requires the original base import operation."); }
     return stageManagedFixtureOpeningSource(this.qualifiedSourceForFreshOpening());
+  }
+  /** Separate original data accessor. The existing PCB staging/open owner is
+   * intentionally unable to consume a generated schematic qualification. */
+  public qualifiedSchematicSourceForFreshOpening(): Readonly<{ qualification: QualifiedGeneratedSchematicFixtureTarget; archive: Buffer }> {
+    this.current(); const qualification = this.closedSchematicCapture?.qualifiedSchematicTarget;
+    if (this.reservation !== "released" || this.busy || !this.migrationExclusionVerified || qualification === null || qualification === undefined || this.generatedArchive === undefined) { throw new Error("Original closed schematic fixture has no released issued data source."); }
+    assertOriginalGeneratedSchematicFixtureTarget(qualification); return Object.freeze({ qualification, archive: Buffer.from(this.generatedArchive) });
+  }
+  public stageSchematicSourceForFreshOpening(operationIdInput: string): ManagedSchematicFixtureOpeningSource {
+    if (operationId.parse(operationIdInput) !== this.attemptedOperationId) { throw new Error("Schematic staging requires the original base import operation."); }
+    return stageManagedSchematicFixtureOpeningSource(this.qualifiedSchematicSourceForFreshOpening());
   }
   private retainDispatcherStatus(journal: TrackedDispatchOperationJournal): boolean {
     this.current(); const status = this.options.engine.originalTrackedDispatchStatus(journal);
@@ -350,13 +370,17 @@ export class ManagedFixtureImportCoordinator {
       const held = this.destinationObservation ?? destination.snapshot(); if (held === null) { throw new Error("Original fixture directory identity is unavailable."); }
       await this.artifact("closed-import-capture-intent", { source: destination.snapshot(), nativeRootAndJobCleanupComplete: true, readOnly: true });
       this.closedCaptureAttempted = true;
-      this.closedCapture = await this.checked(() => captureManagedFixtureClosedSnapshot({ archive, destination: held,
-        assertOriginalOwner: () => { this.current(); },
-        observeOriginalTermination: async () => {
+      const captureOptions = { archive, destination: held,
+        assertOriginalOwner: (): void => { this.current(); },
+        observeOriginalTermination: async (): Promise<void> => {
           const termination = await this.checked(() => this.options.runtime.observeLaunchTermination());
           if (!termination.terminated) { throw new Error("Original import root/Job is no longer proven terminated."); }
-        }, inspectOriginalDestination: () => this.checked(() => destination.inspect()) }));
-      await this.artifact("closed-import-capture", this.closedCapture.report); return this.inspect(request.operationId);
+        }, inspectOriginalDestination: (): Promise<ManagedFixtureDestinationObservation> => this.checked(() => destination.inspect()) };
+      if (this.generatedFixtureKind === MANAGED_SCHEMATIC_FIXTURE_KIND) { this.closedSchematicCapture = await this.checked(() => captureManagedSchematicFixtureClosedSnapshot(captureOptions)); }
+      else { this.closedCapture = await this.checked(() => captureManagedFixtureClosedSnapshot(captureOptions)); }
+      const report = this.closedCapture?.report ?? this.closedSchematicCapture?.report;
+      if (report === undefined) { throw new Error("Original closed import capture returned no retained data report."); }
+      await this.artifact("closed-import-capture", report); return this.inspect(request.operationId);
     }
     if (request.action === "request-cleanup-close" || request.action === "observe-cleanup-termination" || request.action === "finish-cleanup" || request.action === "settle-cleanup-records") {
       this.originalJournalForCleanup(request.operationId);
@@ -391,7 +415,8 @@ export class ManagedFixtureImportCoordinator {
     assertSubset(initial, expectedFingerprint, "Managed fixture import expected fingerprint");
     await this.checked(() => (this.dependencies.verifySources ?? verifyManagedFixtureImportSources)(this.options.assetsRoot));
     const environment = await this.observeEnvironment(request.operationId, initial);
-    const generated = generateManagedFixtureArchiveData(request.fixtureKind), nonce = randomBytes(32).toString("hex");
+    const generated = request.fixtureKind === MANAGED_SCHEMATIC_FIXTURE_KIND ? generateManagedSchematicFixtureArchiveData() : generateManagedFixtureArchiveData(request.fixtureKind);
+    const nonce = randomBytes(32).toString("hex"); this.generatedFixtureKind = request.fixtureKind;
     this.generatedArchive = Buffer.from(generated.bytes);
     const plan = { name: request.operationId, profile: MANAGED_FIXTURE_IMPORT_TRACKED_PROFILE,
       intent: "Import one fresh fixed generated disposable fixture into a new exclusive private Windows directory; retain all partial effects and never replay.",
