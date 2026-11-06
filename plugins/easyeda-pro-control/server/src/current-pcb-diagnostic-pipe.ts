@@ -8,6 +8,8 @@
  * application-closure policy permits release. No TCP endpoint is supported. */
 /* oxlint-disable max-classes-per-file -- Three fixed-purpose facades share a private byte-transport core without exposing a caller-selectable purpose or budget. */
 /* oxlint-disable import/max-dependencies -- Fixed transport composes independent model/common/worker/actor grammars without merging their source or authority boundaries. */
+import { currentFootprintInverseRegistrationParams, decodeCurrentFootprintInverseRegistrationReply } from "./current-footprint-inverse-registration.ts";
+import { types } from "node:util";
 import { currentGeneratedInitialSyncWire } from "./current-generated-initial-sync-wire.ts";
 import type { CurrentGeneratedInitialSyncCommand } from "./current-generated-initial-sync-protocol.ts";
 import { currentGeneratedInitialCacheWire } from "./current-generated-initial-cache-wire.ts";
@@ -120,7 +122,7 @@ type ProducerObserveWireCommand = CurrentProjectSaveProducerCommand & Readonly<{
 type ProducerGuardWireCommand = CurrentProjectSaveProducerGuardCommand & Readonly<{ producerGuardCommand: true }>;
 type StructureTransportWireCommand = CurrentProjectStructureTransportCommand & Readonly<{ structureTransportCommand: true }>;
 type SavedReadbackCacheWire = CurrentPcbViaSavedEarlyActorWire | ReturnType<typeof currentPcbViaSavedReadbackActorWire> | ReturnType<typeof currentPcbViaSavedCacheMetadataWire> | ReturnType<typeof currentPcbViaSavedCacheWire> | ReturnType<typeof currentPcbViaSavedReadbackParentWire>;
-type RequestPhase = "saved-readback-early-actors" | "saved-readback-register" | "initial-sync" | "initial-cache" | "saved-readback-worker" | "saved-readback-load-guard" | "saved-readback-actors" | "saved-readback-cache-guard" | "saved-readback-metadata" | "saved-readback-parent" | "saved-readback-cache" | "producer-observe" | "producer-guard" | "structure-transport" | "schematic-accessor" | "schematic-clock" | "schematic-worker" | "schematic-parent-arm" | "schematic-parent-running" | `schematic-display-${CurrentSchematicDisplayNativePhase}` | "via-clock" | "via-worker" | "via-parent-arm" | "via-parent-running" | "generated-fixture-register" | "renderer-capture209" | "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
+type RequestPhase = "inverse-preflight" | "inverse-register" | "saved-readback-early-actors" | "saved-readback-register" | "initial-sync" | "initial-cache" | "saved-readback-worker" | "saved-readback-load-guard" | "saved-readback-actors" | "saved-readback-cache-guard" | "saved-readback-metadata" | "saved-readback-parent" | "saved-readback-cache" | "producer-observe" | "producer-guard" | "structure-transport" | "schematic-accessor" | "schematic-clock" | "schematic-worker" | "schematic-parent-arm" | "schematic-parent-running" | `schematic-display-${CurrentSchematicDisplayNativePhase}` | "via-clock" | "via-worker" | "via-parent-arm" | "via-parent-running" | "generated-fixture-register" | "renderer-capture209" | "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
   `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "visual209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209" |
   `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}` |
   `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}` | `worker-producer-${CurrentPcbStringWorkerProducerCommand["workerProducerPhase"]}` |
@@ -135,7 +137,7 @@ const REQUEST_METHODS = [
   "Debugger.enable", "Debugger.getScriptSource", "DOM.getFrameOwner", "DOM.describeNode", "Target.setAutoAttach",
   "Runtime.evaluate", "Runtime.callFunctionOn", "Runtime.getProperties", "Runtime.releaseObjectGroup",
 ] as const satisfies readonly DiagnosticCommand["method"][];
-const REQUEST_PHASES = [
+const REQUEST_PHASES = ["inverse-preflight", "inverse-register",
   "spatial-bindings-component", "spatial-read-component",
   "renderer-capture209",
   "discovery", "frame-owner", "worker-discovery", "worker-state", "project-preflight", "project-open-project", "generated-fixture-register", "saved-readback-register",
@@ -288,6 +290,14 @@ class CurrentPcbFixedPipeCore {
   #sessionId: string | null = null;
   #event: ((event: DiagnosticEvent) => void) | null = null;
   readonly #savedReadbackPurpose: boolean;
+  readonly #inversePurpose: boolean;
+  #inverseTarget: string | null = null;
+  #inverseContext: string | null = null;
+  #inverseOpeningConsumed = false;
+  #inverseOriginalPending: Pending | null = null;
+  #inverseOriginalPromise: Promise<Reply> | null = null;
+  #inverseOriginalReply: Reply | null = null;
+  #inverseOriginalSettled = false;
   #savedReadbackLoadEvent: ((event: DiagnosticEvent) => void) | null = null;
   #savedReadbackObservation = false; #savedReadbackRegistrationAttempted = false; #savedReadbackRegistrationPromise: Promise<Reply> | null = null; #savedReadbackRegistrationSlot: Pending | null = null;
   #savedReadbackLoadPair: CurrentPcbViaSavedLoadWorkerPair | null = null; readonly #savedReadbackLoadSlots = new Set<string>();
@@ -301,7 +311,7 @@ class CurrentPcbFixedPipeCore {
   #workerDiscoverySettled = false;
   #selectedWorkerSession: string | null = null;
 
-  public constructor(input: Readable, output: Writable, purpose: "diagnostic" | "string-precreate" | "worker-startup" | "combined-discovery" | "forward-discovery" | "forward-saved-discovery" | "held-cache-diagnostic" | "pcb-spatial209" | "pcb-component-spatial209" | "pcb-via-write209" | "schematic-display-write209" | "pcb-via-saved-readback209",
+  public constructor(input: Readable, output: Writable, purpose: "diagnostic" | "string-precreate" | "worker-startup" | "combined-discovery" | "forward-discovery" | "forward-saved-discovery" | "held-cache-diagnostic" | "pcb-spatial209" | "pcb-component-spatial209" | "pcb-via-write209" | "schematic-display-write209" | "pcb-via-saved-readback209" | "footprint-inverse209",
     observeEventBytes: ((bytes: number) => void) | null = null) {
     if ((purpose === "forward-discovery" || purpose === "forward-saved-discovery" || purpose === "held-cache-diagnostic") !== (observeEventBytes !== null) || observeEventBytes !== null && typeof observeEventBytes !== "function") { throw new Error("PCB_DIAGNOSTIC_FORWARD_ACCOUNTING"); }
     this.#observeEventBytes = observeEventBytes;
@@ -310,6 +320,7 @@ class CurrentPcbFixedPipeCore {
     this.#combinedPurpose = purpose === "combined-discovery" || purpose === "forward-discovery";
     this.#heldCacheDiagnosticPurpose = purpose === "held-cache-diagnostic";
     this.#savedReadbackPurpose = purpose === "pcb-via-saved-readback209";
+    this.#inversePurpose = purpose === "footprint-inverse209";
     this.#componentSpatialPurpose = purpose === "pcb-component-spatial209";
     this.#spatialPurpose = purpose === "pcb-spatial209"; this.#viaPurpose = purpose === "pcb-via-write209"; this.#schematicDisplayPurpose = purpose === "schematic-display-write209";
   }
@@ -887,6 +898,29 @@ class CurrentPcbFixedPipeCore {
     return this.#request({ id: this.#nextId, method, params: {}, sessionId: this.#sessionId });
   }
 
+  protected observeInversePreflight(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget): Promise<Reply> {
+    if (!this.#inversePurpose || this.#sessionId === null || this.#inverseTarget !== null || this.#workerEvent !== null) { throw new Error("FOOTPRINT_INVERSE_PREFLIGHT_ONCE"); }
+    this.#inverseTarget = JSON.stringify(target); this.#inverseContext = uniqueContextId;
+    return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn", params: diagnosticOpeningParams(uniqueContextId, target, "preflight"), sessionId: this.#sessionId }, "inverse-preflight");
+  }
+  protected registerInverseProject(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget): Promise<Reply> {
+    if (!this.#inversePurpose || this.#sessionId === null || this.#inverseTarget !== JSON.stringify(target) || this.#inverseContext !== uniqueContextId || this.#inverseOpeningConsumed || this.#workerEvent !== null) { throw new Error("FOOTPRINT_INVERSE_OPEN_ONCE"); }
+    this.#inverseOpeningConsumed = true;
+    return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn", params: currentFootprintInverseRegistrationParams(uniqueContextId, target), sessionId: this.#sessionId }, "inverse-register");
+  }
+  protected requireInversePending(target: CurrentDisposableOpenSealedTarget): void {
+    const pending = this.#pending;
+    if (!this.#inversePurpose || !this.#inverseOpeningConsumed || this.#inverseTarget !== JSON.stringify(target) || pending === null || !pending.written ||
+      this.#failure !== null || this.#inputEnded || this.#inputClosed || this.#outputClosed || this.#inverseOriginalPending !== pending) { throw new Error("FOOTPRINT_INVERSE_ORIGINAL_OPEN_PENDING"); }
+  }
+  protected requireInverseNoDispatch(target: CurrentDisposableOpenSealedTarget): void {
+    const pending = this.#inverseOriginalPending, reply = this.#inverseOriginalReply;
+    if (!this.#inversePurpose || !this.#inverseOpeningConsumed || this.#inverseTarget !== JSON.stringify(target) || pending === null || !pending.written ||
+      !types.isPromise(this.#inverseOriginalPromise) || !this.#inverseOriginalSettled || reply === null || pending.reply !== reply || this.#pending === pending ||
+      this.#failure !== null || this.#inputEnded || this.#inputClosed || this.#outputClosed) { throw new Error("FOOTPRINT_INVERSE_ORIGINAL_NO_DISPATCH_RESULT"); }
+    const decoded = decodeCurrentFootprintInverseRegistrationReply(reply, target);
+    if (!decoded.priorRegistrationPresent || decoded.registrationDispatched) { throw new Error("FOOTPRINT_INVERSE_ACTUAL_NO_DISPATCH_REQUIRED"); }
+  }
   public observeSavedReadbackCacheGuard(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget): Promise<Reply> {
     if (!this.#savedReadbackPurpose || this.#sessionId === null || !this.#savedReadbackParent || this.#workerEvent !== null) { return Promise.reject(new Error("SAVED_READBACK_CACHE_GUARD_PURPOSE")); }
     return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn", params: diagnosticOpeningParams(uniqueContextId, target, "preflight"), sessionId: this.#sessionId }, "saved-readback-cache-guard");
@@ -981,6 +1015,11 @@ class CurrentPcbFixedPipeCore {
   async #request(command: (InitialSyncWireCommand & Readonly<{ id: number; sessionId: string }>) | (CurrentPcbViaSavedLoadWorkerCommand & Readonly<{ id: number; sessionId: string; savedReadbackWorker: true }>) | SavedReadbackCacheWire | (InitialCacheWireCommand & Readonly<{ id: number; sessionId: string }>) | (ProducerObserveWireCommand & Readonly<{ id: number; sessionId: string }>) | (ProducerGuardWireCommand & Readonly<{ id: number; sessionId: string }>) | (StructureTransportWireCommand & Readonly<{ id: number; sessionId: string }>) | ((CurrentSchematicDisplayAccessorCommand & Readonly<{ schematicAccessorCommand: true }>) & Readonly<{ id: number; sessionId: string }>) | ((CurrentSchematicDisplayClockCommand & Readonly<{ schematicClockCommand: true; schematicClockRealm: CurrentSchematicDisplayClockRealm }>) & Readonly<{ id: number; sessionId: string }>) | ((SchematicWorkerParentCommand | (CurrentSchematicDisplayWorkerCommand & Readonly<{ schematicWorkerCommand: true }>)) & Readonly<{ id: number; sessionId: string }>) | (CurrentSchematicDisplayNativeCommand & Readonly<{ id: number; sessionId: string }>) | DiagnosticCommand | CurrentPcbSpatialWireCommand | ((CurrentPcbViaWriteCommand | CurrentPcbViaSpatialCommand | CurrentPcbViaSdkPropertiesCommand | ViaWorkerParentCommand | ViaClockWireCommand | (CurrentPcbViaWorkerCommand & Readonly<{ viaWorkerCommand: true }>)) & Readonly<{ id: number; sessionId: string }>) | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheHeldCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
     Readonly<{ id: number; sessionId: string }>), phase: RequestPhase = "discovery", retainSavedRegistration?: (pending: Promise<Reply>) => void): Promise<Reply> {
     if (!this.#started || this.#released || this.#handedOff) { throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED"); }
+    if (this.#inversePurpose) {
+      const discovery = (phase === "discovery" || phase === "frame-owner") && CURRENT_PCB_SPATIAL_DISCOVERY_METHODS.some(method => method === command.method);
+      const opening = (phase === "inverse-preflight" || phase === "inverse-register") && command.method === "Runtime.callFunctionOn";
+      if (!discovery && !opening) { throw new Error("FOOTPRINT_INVERSE_FINITE_PIPE_ONLY"); }
+    }
     if (this.#savedReadbackPurpose) {
       const registration = phase === "saved-readback-register" && command.method === "Runtime.callFunctionOn";
       const worker = phase === "saved-readback-worker" && "savedReadbackWorker" in command && command.savedReadbackWorker;
@@ -1056,6 +1095,7 @@ class CurrentPcbFixedPipeCore {
       timer: setTimeout(() => { this.#fail("deadline"); }, deadline), written: false, reply: null,
       sessionId: "sessionId" in command ? command.sessionId : null, source: command.method === "Debugger.getScriptSource",
       common: ["common-packet-read", "common-packet-result", "common-assets", "common-metadata"].includes(phase), heldCache };
+    if (this.#inversePurpose && phase === "inverse-register") { if (this.#inverseOriginalPending !== null) { throw new Error("FOOTPRINT_INVERSE_ORIGINAL_DISPATCH_CONSUMED"); } this.#inverseOriginalPending = pending; this.#inverseOriginalPromise = deferred.promise; }
     if (viaRetained) { this.#viaRetainedPending = pending; } else { this.#pending = pending; }
     // Reserve before write, including synchronous throw and synchronous peer
     if (phase === "saved-readback-register") {
@@ -1093,6 +1133,7 @@ class CurrentPcbFixedPipeCore {
     for (const pending of [this.#pending, this.#viaRetainedPending]) {
       if (this.#failure === null && pending !== null && pending.written && pending.reply !== null && this.#used === 0) {
         if (this.#heldCacheDiagnosticPurpose && pending.source && typeof pending.reply["scriptSource"] === "string") { this.#heldCacheSourceSeen = true; }
+        if (this.#inverseOriginalPending === pending) { this.#inverseOriginalReply = freezeDeep(pending.reply); this.#inverseOriginalSettled = true; }
         if (this.#pending === pending) { this.#pending = null; } else { this.#viaRetainedPending = null; }
         clearTimeout(pending.timer); pending.resolve(pending.reply);
       }
@@ -1234,6 +1275,25 @@ export class CurrentPcbSpatialPipe extends CurrentPcbFixedPipeCore {
 /** Original generated Component-only birth. No old owner can upgrade. */
 /** Fresh saved-checkpoint pipe. Cache/opening phases require their own later
  * original grants; this initial birth admits only the fixed UI discovery. */
+const inversePipes = new WeakSet<object>();
+/** Distinct inverse pipe; no saved/cache/writer purpose bit is inherited. */
+export class CurrentFootprintInversePipe extends CurrentPcbFixedPipeCore {
+  public constructor(input: Readable, output: Writable) { super(input, output, "footprint-inverse209"); inversePipes.add(this); }
+  public preflightInverseProject(context: string, target: CurrentDisposableOpenSealedTarget): Promise<Reply> { return this.observeInversePreflight(context, target); }
+  public dispatchInverseRegistration(context: string, target: CurrentDisposableOpenSealedTarget): Promise<Reply> { return this.registerInverseProject(context, target); }
+  public requireOriginalInverseProjectOpeningPending(target: CurrentDisposableOpenSealedTarget): void { this.requireInversePending(target); }
+  public requireOriginalInverseNoDispatchResult(target: CurrentDisposableOpenSealedTarget): void { this.requireInverseNoDispatch(target); }
+}
+const inversePipeCoreDescriptors = Object.getOwnPropertyDescriptors(CurrentPcbFixedPipeCore.prototype), inversePipeDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintInversePipe.prototype);
+export function assertOriginalCurrentFootprintInversePipe(pipe: CurrentFootprintInversePipe): void {
+  if (pipe === null || typeof pipe !== "object" || types.isProxy(pipe) || Object.getPrototypeOf(pipe) !== CurrentFootprintInversePipe.prototype || !inversePipes.has(pipe)) { throw new Error("FOOTPRINT_INVERSE_ORIGINAL_PIPE"); }
+  for (const [prototype, original] of [[CurrentFootprintInversePipe.prototype, inversePipeDescriptors], [CurrentPcbFixedPipeCore.prototype, inversePipeCoreDescriptors]] as const) {
+    const observed = Object.getOwnPropertyDescriptors(prototype);
+    if (Reflect.ownKeys(observed).length !== Reflect.ownKeys(original).length || Object.entries(original).some(([name, descriptor]) => {
+      const current = observed[name]; return current === undefined || current.value !== descriptor.value || current.get !== descriptor.get || current.set !== descriptor.set || current.writable !== descriptor.writable || current.configurable !== descriptor.configurable || current.enumerable !== descriptor.enumerable;
+    })) { throw new Error("FOOTPRINT_INVERSE_PIPE_METHOD_CHANGED"); }
+  }
+}
 export class CurrentPcbViaSavedReadbackPipe extends CurrentPcbFixedPipeCore {
   public constructor(input: Readable, output: Writable) { super(input, output, "pcb-via-saved-readback209"); }
 }

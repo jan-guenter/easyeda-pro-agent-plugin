@@ -5,6 +5,7 @@
  * Browser discovery grants no frame, worker, script or CAD execution authority. */
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Four fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import type { CurrentFootprintInverseRegistrationBindings, CurrentFootprintInverseRegistrationIntent } from "./current-footprint-inverse-registration-origin.ts";
 import { CurrentGeneratedInitialSyncCursor } from "./current-generated-initial-sync-cursor.ts";
 import type { CurrentGeneratedInitialSyncHeld } from "./current-generated-initial-sync-cursor.ts";
 import type { CurrentGeneratedInitialSyncCommand } from "./current-generated-initial-sync-protocol.ts";
@@ -166,7 +167,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { canonicalJson, sha256Json, sha256Text } from "./core.ts";
 import { ORDINARY_LAUNCH_209_PROFILE } from "./ordinary-launch-209-profile.ts";
-import { CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentFootprintCopyForwardSavedDiscoveryPipe, CurrentFootprintHeldCacheDiagnosticPipe, CurrentPcbComponentSpatialPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbViaSavedReadbackPipe, CurrentPcbViaWritePipe, CurrentPcbWorkerStartupDiscoveryPipe, CurrentSchematicDisplayWritePipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
+import { CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentFootprintCopyForwardSavedDiscoveryPipe, CurrentFootprintHeldCacheDiagnosticPipe, CurrentFootprintInversePipe, CurrentPcbComponentSpatialPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbViaSavedReadbackPipe, CurrentPcbViaWritePipe, CurrentPcbWorkerStartupDiscoveryPipe, CurrentSchematicDisplayWritePipe, assertOriginalCurrentFootprintInversePipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
 import type { CurrentPcbDiagnosticFailureObservation } from "./current-pcb-diagnostic-pipe.ts";
 import { CurrentPcbSpatialPipe, spatialDiagnosticNativeRequest } from "./current-pcb-spatial-pipe.ts";
 import { CURRENT_PCB_SPATIAL_ARC_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_PAD_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_PROFILE, CURRENT_PCB_SPATIAL_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION } from "./current-pcb-spatial-profile.ts";
@@ -761,6 +762,11 @@ interface PcbViaSavedReadbackAllocation {
 }
 const pcbViaSavedReadbackAllocations = new WeakMap<CurrentPcbViaWriteClosedCheckpoint, PcbViaSavedReadbackAllocation>();
 const footprintForwardExecutionFactoryOptions = new WeakMap<object, CurrentPcbDiagnosticInstallationOptions>();
+interface FootprintInverseRegistrationHeld {
+  readonly owner: CurrentFootprintInverseNativeOwner; readonly runner: CurrentFootprintCopyMainBackendRunner; readonly bindings: CurrentFootprintInverseRegistrationBindings;
+  readonly source: CurrentFootprintCopyNativeTarget; readonly artifact: Awaited<ReturnType<typeof publishManagedAttachmentExclusive>>; readonly text: string;
+}
+const footprintInverseRegistrationIntents = new WeakMap<CurrentFootprintInverseRegistrationIntent, FootprintInverseRegistrationHeld>();
 type FootprintInverseCheckpointModule = Readonly<{ requireOriginalCurrentFootprintForwardSavedCheckpoint: typeof RequireFootprintForwardSavedCheckpoint;
   verifyCurrentFootprintForwardSavedCheckpoint: typeof VerifyFootprintForwardSavedCheckpoint }>;
 interface FootprintInverseAllocation {
@@ -1148,7 +1154,7 @@ class CurrentPcbRetainedOwnerCore {
   readonly #installation: CurrentPcbDiagnosticInstallation | null;
   readonly #input = new PassThrough({ autoDestroy: false });
   readonly #output: Writable;
-  readonly #pipe: CurrentPcbViaSavedReadbackPipe | CurrentPcbComponentSpatialPipe | CurrentSchematicDisplayWritePipe | CurrentPcbViaWritePipe | CurrentPcbDiagnosticPipe | CurrentPcbStringPrecreatePipe | CurrentPcbWorkerStartupDiscoveryPipe | CurrentFootprintCombinedDiscoveryPipe | CurrentFootprintCopyForwardDiscoveryPipe | CurrentFootprintCopyForwardSavedDiscoveryPipe | CurrentFootprintHeldCacheDiagnosticPipe;
+  readonly #pipe: CurrentPcbViaSavedReadbackPipe | CurrentPcbComponentSpatialPipe | CurrentSchematicDisplayWritePipe | CurrentPcbViaWritePipe | CurrentPcbDiagnosticPipe | CurrentPcbStringPrecreatePipe | CurrentPcbWorkerStartupDiscoveryPipe | CurrentFootprintInversePipe | CurrentFootprintCombinedDiscoveryPipe | CurrentFootprintCopyForwardDiscoveryPipe | CurrentFootprintCopyForwardSavedDiscoveryPipe | CurrentFootprintHeldCacheDiagnosticPipe;
   readonly #stringPurpose: boolean;
   readonly #startupPurpose: boolean;
   readonly #actorClockSource: CurrentPcb209ActorClockSourceQualification | null;
@@ -1528,6 +1534,8 @@ class CurrentPcbRetainedOwnerCore {
   #savedReadbackBackup: SavedReadbackCacheBackupHeld | null = null;
   #savedReadbackInvalidationPromise: Promise<CurrentPcbViaSavedCacheAbsence> | null = null;
   #savedReadbackInvalidation: CurrentPcbViaSavedCacheInvalidationLedger | null = null;
+  #inverseRegistrationPromise: Promise<CurrentFootprintInverseRegistrationIntent> | null = null;
+  #inverseRegistrationIntent: CurrentFootprintInverseRegistrationIntent | null = null;
   #savedReadbackRegistrationPromise: Promise<CurrentSavedProjectRegistrationIntent> | null = null;
   #savedReadbackRegistrationIntent: CurrentSavedProjectRegistrationIntent | null = null;
   #savedReadbackRegistrationDispatch: Promise<Readonly<RecordValue>> | null = null; #savedReadbackRegistrationResult: Readonly<RecordValue> | null = null;
@@ -1614,7 +1622,8 @@ class CurrentPcbRetainedOwnerCore {
     else if (this.#purpose === "footprint-held-cache209") { this.#pipe = new CurrentFootprintHeldCacheDiagnosticPipe(this.#input, this.#output, (bytes): void => { this.#heldSavedEventBytes(bytes); }); }
     else if (forwardBirthPurpose(this.#purpose)) { this.#pipe = new CurrentFootprintCopyForwardDiscoveryPipe(this.#input, this.#output, (bytes): void => { this.#forwardRendererEvent(bytes); }); }
     else if (saved !== null) { this.#pipe = new CurrentFootprintCopyForwardSavedDiscoveryPipe(this.#input, this.#output, (bytes): void => { this.#forwardRendererEvent(bytes); }); }
-    else if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE || this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE || this.#purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE) { this.#pipe = new CurrentFootprintCombinedDiscoveryPipe(this.#input, this.#output); }
+    else if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE) { this.#pipe = new CurrentFootprintInversePipe(this.#input, this.#output); }
+    else if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE || this.#purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE) { this.#pipe = new CurrentFootprintCombinedDiscoveryPipe(this.#input, this.#output); }
     else if (this.#startupPurpose) { this.#pipe = new CurrentPcbWorkerStartupDiscoveryPipe(this.#input, this.#output); }
     else { this.#pipe = this.#stringPurpose ? new CurrentPcbStringPrecreatePipe(this.#input, this.#output) : new CurrentPcbDiagnosticPipe(this.#input, this.#output); }
     if (saved !== null && this.#forwardLedger !== null && this.#forwardLedgerMethods !== null) {
@@ -6494,6 +6503,51 @@ class CurrentPcbRetainedOwnerCore {
       finally { this.#busy = false; }
     })(); this.#savedReadbackLoadCompletion = promise; return promise;
   }
+  /** Durable inverse-only intent. A published artifact alone cannot grant the
+   * recent-path SQL: bindings require this exact original written UI call. */
+  public prepareFootprintInverseRegistrationIntent(): Promise<CurrentFootprintInverseRegistrationIntent> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this);
+    if (this.#inverseRegistrationPromise !== null) { return this.#inverseRegistrationPromise; }
+    this.#enter(true);
+    const promise = (async (): Promise<CurrentFootprintInverseRegistrationIntent> => {
+      try {
+        const context = this.#stagedContext, pipe = this.#pipe, runner = this.#mainRunner, source = originalCurrentFootprintInverseNativeSource(this);
+        if (!(pipe instanceof CurrentFootprintInversePipe) || context === null || runner?.selectedSqlFenceState()["ready"] !== true) { throw error("FOOTPRINT_INVERSE_REGISTRATION_PREREQUISITE"); }
+        const allocation = footprintInverseFactories.get(this)?.allocation;
+        if (allocation === undefined) { throw error("FOOTPRINT_INVERSE_REGISTRATION_ORIGINAL_FACTORY"); }
+        const parent = context.openingContext(), prepared = originalCurrentFootprintInverseTarget(this);
+        const target = Object.freeze(currentDisposableOpenSealedTargetSchema.parse(source.target));
+        const current = (): void => { assertOriginalCurrentFootprintInverseNativeOwner(this); assertOriginalCurrentFootprintInversePipe(pipe); this.#available();
+          if (this.#pipe !== pipe || this.#stagedContext !== context || this.#mainRunner !== runner || originalCurrentFootprintInverseNativeSource(this) !== source || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed ||
+            this.#mainRunner?.selectedSqlFenceState()["ready"] !== true || canonicalJson(context.openingContext()) !== canonicalJson(parent)) { throw error("FOOTPRINT_INVERSE_REGISTRATION_OWNER_CHANGED"); }
+        };
+        current(); await allocation.verifyPrepared(prepared); current();
+        const text = `${canonicalJson({ schema: "private.current-footprint-inverse-registration-durable-intent.v1", originalOperationId: source.operationId, target,
+          recentPathRowsMaximum: 1, selectedDesignWritesAuthorized: false, saveAuthorized: false })}\n`;
+        const directory = await ensureManagedDirectory(join(controlDataDirectory(), "artifacts", "footprint-inverse-registration-intent")); current();
+        if (Buffer.byteLength(text) > 16_384) { throw error("FOOTPRINT_INVERSE_REGISTRATION_INTENT_BOUND"); }
+        const artifact = await publishManagedAttachmentExclusive(join(directory, `${randomBytes(16).toString("hex")}.json`), "Original disposable footprint inverse registration intent", Buffer.from(text), "footprint-inverse-registration-intent", (): Promise<void> => { current(); return Promise.resolve(); }); current();
+        const verify = async (): Promise<void> => { current(); await verifyExactManagedArtifact(artifact); current(); const raw = await readArtifact(artifact.path, 0, 16_384); current();
+          if (!raw.eof || raw.text !== text) { throw error("FOOTPRINT_INVERSE_REGISTRATION_INTENT_ARTIFACT"); } await verifyExactManagedArtifact(artifact); current(); };
+        await verify();
+        const token: CurrentFootprintInverseRegistrationIntent = Object.freeze({ profile: "private.current-footprint-inverse-registration-intent.v1" });
+        const bindings: CurrentFootprintInverseRegistrationBindings = Object.freeze({ prepared, target, assertCurrent: async (): Promise<void> => {
+          current(); await verify(); await this.#verify(); current();
+        }, assertOriginalDispatchPending: (): void => { current(); if (this.#inverseRegistrationIntent !== token) { throw error("FOOTPRINT_INVERSE_REGISTRATION_ORIGINAL_INTENT"); }
+          pipe.requireOriginalInverseProjectOpeningPending(target); current();
+        }, assertOriginalNoDispatchResult: (): void => { current(); if (this.#inverseRegistrationIntent !== token) { throw error("FOOTPRINT_INVERSE_REGISTRATION_ORIGINAL_INTENT"); }
+          pipe.requireOriginalInverseNoDispatchResult(target); current();
+        } });
+        footprintInverseRegistrationIntents.set(token, Object.freeze({ owner: this, runner, bindings, source, artifact, text })); this.#inverseRegistrationIntent = token; current(); return token;
+      } finally { this.#busy = false; }
+    })();
+    this.#inverseRegistrationPromise = promise; return promise;
+  }
+  public originalFootprintInverseRegistrationIntent(intent: CurrentFootprintInverseRegistrationIntent, runner: CurrentFootprintCopyMainBackendRunner): CurrentFootprintInverseRegistrationBindings {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); const held = footprintInverseRegistrationIntents.get(intent);
+    if (held === undefined || held.owner !== this || held.runner !== runner || this.#mainRunner !== runner || this.#inverseRegistrationIntent !== intent || held.source !== originalCurrentFootprintInverseNativeSource(this)) { throw error("FOOTPRINT_INVERSE_REGISTRATION_ORIGINAL_INTENT"); }
+    return held.bindings;
+  }
   /** Publish the one original registration intent before any registration
    * dispatch. Publication cannot manufacture a pending UI call or a SQL grant. */
   public prepareSavedReadbackRegistrationIntent(): Promise<CurrentSavedProjectRegistrationIntent> {
@@ -8906,6 +8960,14 @@ export function assertOriginalCurrentFootprintInverseNativeOwner(owner: CurrentF
   const original = footprintInverseFactories.get(owner);
   if (original === undefined || original.allocation.owner !== owner) { throw error("FOOTPRINT_INVERSE_ORIGINAL_FACTORY"); }
   requireFootprintInversePreparation(original.allocation);
+}
+export function requireOriginalCurrentFootprintInverseRegistrationIntent(intent: CurrentFootprintInverseRegistrationIntent, owner: CurrentFootprintInverseNativeOwner, runner: CurrentFootprintCopyMainBackendRunner): CurrentFootprintInverseRegistrationBindings {
+  assertOriginalCurrentFootprintInverseNativeOwner(owner); return owner.originalFootprintInverseRegistrationIntent(intent, runner);
+}
+export function requireOriginalCurrentFootprintInverseRegistrationIntentForRunner(intent: CurrentFootprintInverseRegistrationIntent, runner: CurrentFootprintCopyMainBackendRunner): CurrentFootprintInverseRegistrationBindings {
+  const held = footprintInverseRegistrationIntents.get(intent);
+  if (held === undefined || held.runner !== runner) { throw error("FOOTPRINT_INVERSE_REGISTRATION_ORIGINAL_RUNNER"); }
+  return requireOriginalCurrentFootprintInverseRegistrationIntent(intent, held.owner, runner);
 }
 export function originalCurrentFootprintInverseTarget(owner: CurrentFootprintInverseNativeOwner): CurrentFootprintForwardSavedCheckpoint {
   assertOriginalCurrentFootprintInverseNativeOwner(owner); const original = footprintInverseFactories.get(owner);

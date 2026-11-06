@@ -394,3 +394,50 @@ helper, pin, Windows process or application resource changed in this increment.
 The inverse original worker/opening, single-clock/main completion and producer
 frontier remain the next mutation prerequisites; the closed-data path does not
 stand in for them.
+
+## Distinct inverse registration intent and actual pending-call proof
+
+The inverse now issues its own original registration intent from the copied
+saved SQL target, current inverse main runner and original inspected UI. It
+rechecks the closed source before intent publication, writes an exclusive
+bounded private artifact and verifies its complete bytes before issuing the
+opaque token. The original Promise, including a failed publication, is retained;
+publication cannot imply registration dispatch or a main SQL grant.
+`requireOriginalCurrentFootprintInverseRegistrationIntentForRunner` resolves the
+owner from the private registry and requires that same actual main runner.
+The saved reader's intent brand and entry point remain separate.
+
+Its bindings expose two distinct synchronous proofs. Pending dispatch requires
+the original inverse pipe's actual private pending request, exact target and
+completed original write callback. The no-dispatch result requires that same
+original retained Promise/request to settle with its matched frozen SDK result,
+with an existing exact path and identical complete before/after registry hashes.
+Caller JSON, copied objects and a proposed no-dispatch flag cannot create either
+proof. Diagnostic phase labels supply no authority. A focused stream case first
+showed that immediate Writable scheduling is not write acknowledgment; the proof
+correctly refused until the actual callback. The private pending object now
+supplies custody independently of diagnostic labels.
+
+The old PCB registration function requires a generated PCB basename and a
+32-character document UUID. The new immutable inverse program keeps its exact
+registry/RPC and peer-roster behavior, while separately checking the original
+footprint target's canonical drive path, raw-path SHA256 project identity and
+16- or 32-character copied UUID. This operation keeps the existing result's
+1,024 UTF-16 path bound. The original disposable preparation has no generated
+basename rule; only its genuine closed data token selects the path here. Old
+PCB program/schema inputs are unchanged. The inverse result uses
+`easyeda-pro-control.footprint-inverse-path-registration.v1` and retains all
+persistence/writer flags false. Both branches are explicit: an already exact
+registration performs no write; a missing registration makes one exact normal
+openProject backend call and verifies every peer entry unchanged.
+
+Three focused actual VM/Node-stream cases pass for both branches, raw-path hash
+mismatch, loaded UI, wrong selected path, collateral registry changes, pending
+write acknowledgment, exact original result settlement and copied pipe refusal.
+The five original inverse factory/composition cases also pass; full types and
+strict changed-file lint are clean. These are synthetic collectors and inert
+streams, not connected registration or native SQL acceptance. This increment
+provides the genuine issuer and fixed data/native-frame codec for the shared
+main enrollment integration. The inverse native registration action and budget,
+source-held worker, producer frontier and delete invocation are still unmounted;
+no helper, pin, app, Windows process or MCP call changed.
