@@ -1,6 +1,7 @@
 /** Actual209 Save producer sites. Source qualification proves bytes and fixed
  * locations, never a suspended worker, invocation, clock or SQL authority. */
 import { createHash } from "node:crypto";
+import { types } from "node:util";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_PCB_VIA_SAVE_SOURCE = freezeDeep({ relativePath: "pro-mgr/3.2.185.bf63a159/js/project-worker.js",
@@ -41,4 +42,19 @@ export function qualifyCurrentPcbViaSaveSource(input: unknown): CurrentPcbViaSav
 }
 export function requireOriginalCurrentPcbViaSaveSource(token: CurrentPcbViaSaveSource): void {
   if (!issued.has(token)) { throw new Error("PCB_VIA_SAVE_ORIGINAL_SOURCE"); }
+}
+
+/** Exact own-data full-script envelope; no proxy/getter/prototype callback runs. */
+export function captureCurrentPcbViaSaveScriptReply(input: unknown): Readonly<{ scriptSource: string }> {
+  if (input === null || typeof input !== "object" || types.isProxy(input) || Array.isArray(input)) { throw new Error("PCB_VIA_SAVE_SCRIPT_REPLY"); }
+  const prototype: unknown = Object.getPrototypeOf(input); const keys = Reflect.ownKeys(input);
+  if (prototype !== Object.prototype && prototype !== null || keys.length !== 1 || keys[0] !== "scriptSource") { throw new Error("PCB_VIA_SAVE_SCRIPT_REPLY"); }
+  const descriptor = Object.getOwnPropertyDescriptor(input, "scriptSource");
+  if (descriptor === undefined || !Object.hasOwn(descriptor, "value")) { throw new Error("PCB_VIA_SAVE_SCRIPT_REPLY"); }
+  const source: unknown = descriptor.value;
+  if (typeof source !== "string" || !source.isWellFormed() || source.length > CURRENT_PCB_VIA_SAVE_SOURCE.bytes || Buffer.byteLength(source) !== CURRENT_PCB_VIA_SAVE_SOURCE.bytes) { throw new Error("PCB_VIA_SAVE_SCRIPT_REPLY"); }
+  return Object.freeze({ scriptSource: source });
+}
+export function qualifyCurrentPcbViaSaveScriptReply(input: unknown): CurrentPcbViaSaveSource {
+  return qualifyCurrentPcbViaSaveSource(captureCurrentPcbViaSaveScriptReply(input).scriptSource);
 }

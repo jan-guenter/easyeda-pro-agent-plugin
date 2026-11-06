@@ -51,3 +51,23 @@ export function decodeCurrentPcbViaSaveMethod(input: unknown, role: keyof typeof
   const at = point.parse(location?.value); need(entries.size === 3 && location?.type === "object" && location.subtype === "internal#location" && at.scriptId === scriptId &&
     at.lineNumber === expected.lineNumber && at.columnNumber === expected.columnNumber && scopes?.subtype === "internal#scopeList" && scopes.objectId !== undefined && entries.get("[[Prototype]]")?.type === "function");
 }
+
+/** Shared inert array decoding only; no footprint origin or runtime is used. */
+export { decodeCurrentFootprintCopyClockRpcArray as decodeCurrentPcbViaSaveArray,
+  currentFootprintCopyClockRpcArrayObject as currentPcbViaSaveArrayObject,
+  currentFootprintCopyClockRpcArrayValue as currentPcbViaSaveArrayValue } from "./current-footprint-copy-clock-rpc-protocol.ts";
+
+export function decodeCurrentPcbViaSaveBreakpoint(input: unknown, role: CurrentPcbViaSaveSite, scriptId: string): string {
+  const reply = z.strictObject({ breakpointId: handle, actualLocation: point }).parse(captureCurrentPcbStringClockReply(input).value); const expected = SITES[role];
+  need(reply.actualLocation.scriptId === scriptId && reply.actualLocation.lineNumber === expected.lineNumber && reply.actualLocation.columnNumber === expected.columnNumber);
+  return reply.breakpointId;
+}
+export function requireCurrentPcbViaSaveEmpty(input: unknown): void { z.strictObject({}).parse(captureCurrentPcbStringClockReply(input).value); }
+
+/** Capture immutable bounded non-source replies before owner reproof awaits. */
+export function captureCurrentPcbViaSaveReply(input: unknown): unknown { return captureCurrentPcbStringClockReply(input).value; }
+
+export function decodeCurrentPcbViaSaveEvent(input: unknown): Readonly<{ method: "Debugger.paused" | "Debugger.resumed"; sessionId: string; params: unknown }> {
+  const event = z.strictObject({ method: z.enum(["Debugger.paused", "Debugger.resumed"]), sessionId: handle, params: z.unknown() });
+  return freezeDeep(event.parse(captureCurrentPcbStringClockReply(input).value));
+}

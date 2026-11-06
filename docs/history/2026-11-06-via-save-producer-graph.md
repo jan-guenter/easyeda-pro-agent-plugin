@@ -69,3 +69,38 @@ and exact method/pause/body bounds. Strict types and type-aware lint pass with
 Node24.18.0/npm11.16.0/corelimit0. The fixtures issue no native owner, application
 call, Save, selected SQL grant or connected evidence. No shared native helper,
 pin, generated bundle or compatibility projection changes in this increment.
+
+## Original paused-body observer
+
+`current-pcb-via-save-observer.ts` now consumes only the actual native owner's
+private `CurrentPcbViaSaveWorkerOrigin` lookup. Its constructor has no structural
+transport or issuer option. It arms the six original source sites before worker
+release, qualifies the actual full worker and all five original method objects,
+then retains the original entry, clock, ticket, body and completion frames.
+Non-source replies and events are captured immutably before owner-reproof awaits;
+the complete source uses a separate bounded own-data envelope.
+
+`observeBody()` returns its private packet while the original worker remains
+paused before `uploadLocal`. `releaseBody(originalPacket)` resumes that same
+accepted pause once. A copied packet, repeated release or another original
+owner/plan refuses. The separate completion stage observes the real original
+upload return and resumes its original final pause once. Every source breakpoint
+stays installed through original generation exit. Failure never resumes an
+unsupported no-data branch, detaches the worker or refunds a consumed attempt.
+
+The original owner retains the SDK Save Promise separately from the finite
+observer lane. Original Job abort must settle a pending event/read before
+observer retirement; no timeout race abandons the original request. Retirement
+requires actual original generation exit and grants no helper-release, SQL or
+saved-file proof. Live body reproof is explicitly unavailable after retirement.
+The selected UI clock responder, exact actual main request/SQL calls, closed SQL
+and fresh reopened generation remain separate incomplete joins.
+
+Two focused actual observer callback/state tests pass with explicitly labelled
+native/source lookup seams: held-body copy/no-repeat/completion behavior, and a
+delayed original event that settles after original Job abort before retirement.
+Together with the four fixed-program/grammar cases, six focused tests pass.
+Strict types and zero-warning type-aware lint pass against the real private
+central origin accessor. That accessor has no public issuer; its actual native
+pre-project bootstrap population is supplied by the dedicated Via hook, not by
+these tests or any serialized packet. No live/native execution is claimed.
