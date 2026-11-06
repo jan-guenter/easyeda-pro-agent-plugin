@@ -6,10 +6,16 @@ import { currentPcbViaWriteRequestSchema } from "./current-pcb-via-write-plan.ts
 export const CURRENT_PCB_VIA_WRITE_PURPOSE = "pcb-via-write209";
 export const CURRENT_PCB_VIA_WRITE_TOOL = "easyeda_control_current_pcb_via_write";
 export const CURRENT_PCB_VIA_WRITE_CLEANUP_ACTIONS = ["inspect", "abort", "observe-termination", "release", "settle-publication"] as const;
+export const CURRENT_PCB_VIA_WRITE_EXECUTE_ACKNOWLEDGEMENTS = Object.freeze({ confirmDisposableViaWrite: true, confirmOneSave: true,
+  confirmForwardOnly: true, confirmNormalOpenEffects: true } as const);
+export const CURRENT_PCB_VIA_WRITE_ABORT_ACKNOWLEDGEMENTS = Object.freeze({ confirmOriginalJobOnly: true } as const);
 export const currentPcbViaWriteActionSchema = z.discriminatedUnion("action", [
   z.strictObject({ action: z.literal("prepare"), fixtureOperationId: z.string().regex(/^[a-z\d][a-z\d-]{7,95}$/u),
     operationId: currentPcbViaWriteRequestSchema.shape.operationId, via: currentPcbViaWriteRequestSchema.shape.via }),
-  z.strictObject({ action: z.enum(["execute", ...CURRENT_PCB_VIA_WRITE_CLEANUP_ACTIONS]), operationId: currentPcbViaWriteRequestSchema.shape.operationId }),
+  z.strictObject({ action: z.literal("execute"), operationId: currentPcbViaWriteRequestSchema.shape.operationId,
+    confirmDisposableViaWrite: z.literal(true), confirmOneSave: z.literal(true), confirmForwardOnly: z.literal(true), confirmNormalOpenEffects: z.literal(true) }),
+  z.strictObject({ action: z.literal("abort"), operationId: currentPcbViaWriteRequestSchema.shape.operationId, confirmOriginalJobOnly: z.literal(true) }),
+  z.strictObject({ action: z.enum(["inspect", "observe-termination", "release", "settle-publication"]), operationId: currentPcbViaWriteRequestSchema.shape.operationId }),
 ]);
 export type CurrentPcbViaWriteAction = z.infer<typeof currentPcbViaWriteActionSchema>;
 export const currentPcbViaWriteStageResultSchema = z.strictObject({

@@ -10,7 +10,8 @@ import { transform } from "esbuild";
 import { assertOperationIdUnused, createOperation, createOperationScanner, ensureOperationStorage, loadOperation, operationPath,
   updateOperation, verifyExactManagedArtifact, writePhaseArtifact } from "../src/artifacts.ts";
 import type { CurrentPcbViaWriteDispatch, CurrentPcbViaWriteJournal } from "../src/current-pcb-via-write-journal.ts";
-import { currentPcbViaWriteActionSchema } from "../src/current-pcb-via-write-contract.ts";
+import { CURRENT_PCB_VIA_WRITE_ABORT_ACKNOWLEDGEMENTS, CURRENT_PCB_VIA_WRITE_EXECUTE_ACKNOWLEDGEMENTS,
+  currentPcbViaWriteActionSchema } from "../src/current-pcb-via-write-contract.ts";
 
 async function fixture(loseCreateIntent = false): Promise<Readonly<{
   journal: CurrentPcbViaWriteJournal; owner: object; operationId: string; publications: () => number;
@@ -77,8 +78,13 @@ void test("artifact drift consumes no CAD call and cannot refund its original di
 void test("cleanup actions contain only the original operation identifier", () => {
   const operationId = "pcb209-via-write-synthetic";
   for (const action of ["inspect", "abort", "observe-termination", "release", "settle-publication"] as const) {
-    assert.equal(currentPcbViaWriteActionSchema.safeParse({ action, operationId }).success, true);
+    const acknowledgement = action === "abort" ? CURRENT_PCB_VIA_WRITE_ABORT_ACKNOWLEDGEMENTS : {};
+    assert.equal(currentPcbViaWriteActionSchema.safeParse({ action, operationId, ...acknowledgement }).success, true);
     assert.equal(currentPcbViaWriteActionSchema.safeParse({ action, operationId, code: "arbitrary" }).success, false);
     assert.equal(currentPcbViaWriteActionSchema.safeParse({ action, operationId, path: "C:\\Foreign.eprj2" }).success, false);
   }
+  assert.equal(currentPcbViaWriteActionSchema.safeParse({ action: "abort", operationId }).success, false);
+  assert.equal(currentPcbViaWriteActionSchema.safeParse({ action: "execute", operationId }).success, false);
+  assert.equal(currentPcbViaWriteActionSchema.safeParse({ action: "execute", operationId, ...CURRENT_PCB_VIA_WRITE_EXECUTE_ACKNOWLEDGEMENTS }).success, true);
+  assert.equal(currentPcbViaWriteActionSchema.safeParse({ action: "execute", operationId, ...CURRENT_PCB_VIA_WRITE_EXECUTE_ACKNOWLEDGEMENTS, confirmOneSave: false }).success, false);
 });
