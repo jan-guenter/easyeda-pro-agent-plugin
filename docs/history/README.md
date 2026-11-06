@@ -43,7 +43,7 @@
 
 - [2026-11-06 initial project cache source projection](2026-11-06-initial-project-cache-source.md). Exact histories API field order and raw document/head cache projection, verified on actual pinned inert methods; multiple pending puts and all original capability gates remain explicit.
 
-- [2026-11-06 original producer cache caller and Promise custody](2026-11-06-original-producer-cache-caller-promise.md). Exact six caller frames, separate selected cache namespaces and retained original async put Promises; unknown callers and every continuation remain held.
+- [2026-11-06 original producer cache caller and Promise custody](2026-11-06-original-producer-cache-caller-promise.md). Exact six caller frames, current209 inherited branch/prototype joins, separate selected cache namespaces and retained original async put Promises; unknown callers and every continuation remain held.
 
 - [2026-11-06 original producer Cache/Response intrinsics](2026-11-06-original-producer-cache-intrinsics.md). Actual source-held constructor/member metadata qualification before producer origin issuance; fixed context custody and no cache invocation or continuation authority.
 

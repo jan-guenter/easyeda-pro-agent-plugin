@@ -74,3 +74,36 @@ same retained Promise must still be joined before any startup or post-Save
 cache completion claim. Every producer resume, complete upload frontier,
 selected SQL grant, Save and saved/reopened claim remains blocked by its
 separate original-owner proof.
+
+## Current209 inherited branch identity correction
+
+The original cache-caller guard required an own branchUuid value. Actual
+current209 Gd defines an inherited pure getter over own _branchUuid. The
+preceding inert cache graph incorrectly supplied that own public value, so it
+did not expose this refusal. No connected writer used the preceding guard.
+
+Every fixed caller expression now retains its actual lexical Lg.prototype and
+Gd.prototype from the same source-qualified paused frame. The join checks both
+original parent identities, rejects branchUuid shadowing, and proves the exact
+pure getter/setter descriptors on that actual Gd prototype. It reads the own
+_branchUuid backing value without invoking either accessor. The existing
+selected UUID, namespace, key, cache and Response checks remain required. No
+caller-supplied prototype, path or accessor is admitted.
+
+The corrected inert fixture uses the actual inherited accessor form. It passes
+with zero getter calls and rejects substituted parents, shadowed accessors,
+changed base getter and an accessor backing field before invocation. A real
+Node Inspector regression evaluates the exact extended caller expression at
+the original source pause and proves both retained prototype identities.
+Six descriptor/Inspector cases and five native codec/composition cases pass.
+Six related production-Core/synthetic-child paths pass, including foreign
+caller/target refusal, Promise retention and original cleanup.
+
+Both TypeScript projects and strict type-aware lint pass. Full private helper
+emission remains idempotent and Linux .NET 10 passes the complete C# plus
+producer, initial-cache and both sync codec smoke checks. The helper grows by
+209 bytes to 1,889,244 bytes, SHA-256
+0cb753f35dff3838114f249c0756d8fb2e26b39e04ea445701a2a7c2520dc43e.
+No request/case ceiling, released-purpose graph, tracked helper, bundle or
+external pin changes. Repository/MCP/all-skill checks pass. No Windows or live
+native call runs; planned producer/Save completion remains pending.

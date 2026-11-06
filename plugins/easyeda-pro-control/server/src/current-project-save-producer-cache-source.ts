@@ -10,8 +10,8 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 export const CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS = freezeDeep({
   "flow": {
     "namespace": "project",
-    "expression": "[this,g,y,b,E,l,s,o]",
-    "length": 8,
+    "expression": "[this,g,y,b,E,l,s,o,Lg.prototype,Gd.prototype]",
+    "length": 10,
     "offset": 2_020_578,
     "end": 2_020_611,
     "callerOffset": 2_020_589,
@@ -27,8 +27,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS = freezeDeep({
   },
   "localSave": {
     "namespace": "local",
-    "expression": "[this,l,t,f,u,b]",
-    "length": 6,
+    "expression": "[this,l,t,f,u,b,Lg.prototype,Gd.prototype]",
+    "length": 8,
     "offset": 2_024_320,
     "end": 2_024_358,
     "callerOffset": 2_024_336,
@@ -44,8 +44,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS = freezeDeep({
   },
   "localUpload": {
     "namespace": "local",
-    "expression": "[this,t,s,r,i,n]",
-    "length": 6,
+    "expression": "[this,t,s,r,i,n,Lg.prototype,Gd.prototype]",
+    "length": 8,
     "offset": 2_031_391,
     "end": 2_031_429,
     "callerOffset": 2_031_407,
@@ -61,8 +61,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS = freezeDeep({
   },
   "syncHead": {
     "namespace": "project",
-    "expression": "[this,t,s,r,i,u,h,p,d,m,g]",
-    "length": 11,
+    "expression": "[this,t,s,r,i,u,h,p,d,m,g,Lg.prototype,Gd.prototype]",
+    "length": 13,
     "offset": 2_033_567,
     "end": 2_033_662,
     "callerOffset": 2_033_578,
@@ -78,8 +78,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS = freezeDeep({
   },
   "openLocalHead": {
     "namespace": "project",
-    "expression": "[this,s,r,i,n,a]",
-    "length": 6,
+    "expression": "[this,s,r,i,n,a,Lg.prototype,Gd.prototype]",
+    "length": 8,
     "offset": 2_128_959,
     "end": 2_129_054,
     "callerOffset": 2_128_970,
@@ -95,8 +95,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS = freezeDeep({
   },
   "openCloudHead": {
     "namespace": "project",
-    "expression": "[this,s,r,i,n,a,o]",
-    "length": 7,
+    "expression": "[this,s,r,i,n,a,o,Lg.prototype,Gd.prototype]",
+    "length": 9,
     "offset": 2_129_806,
     "end": 2_129_901,
     "callerOffset": 2_129_817,
