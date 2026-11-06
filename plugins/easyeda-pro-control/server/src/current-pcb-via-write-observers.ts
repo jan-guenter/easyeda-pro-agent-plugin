@@ -179,7 +179,12 @@ export class CurrentPcbViaWriteObservers {
       const projection = await qualifyOriginalCurrentPcbViaSaveProjection(this.#owner, this.#plan, this.#effect, body.value, joined); this.#current();
       await this.#mainRequest.bindOriginalBody(projection); this.#current();
       const reservation = await this.#owner.reserveViaStructurePublication(this.#plan, this.#main); this.#current();
-      await this.#save.releaseBody(body.value); this.#current(); const packet = await this.#structure.observePacket(); this.#current();
+      await this.#save.releaseBody(body.value); this.#current();
+      // The original Save result precedes the delayed structure/history timers.
+      // Resume it first while the separate planned local producer is serviced.
+      // Its SDK acknowledgment alone never completes this orchestration.
+      await this.#save.observeCompletion(); this.#current();
+      const packet = await this.#structure.observePacket(); this.#current();
       await this.#structure.releasePrehistoryPacket(packet, reservation); this.#current();
       const transport = await this.#transport.observeSend(); this.#current(); await this.#transport.releaseSend(transport, reservation); this.#current();
       await this.#transport.observeReturned(transport); this.#current(); await this.#mainStructure.observe(); this.#current();
@@ -188,7 +193,7 @@ export class CurrentPcbViaWriteObservers {
       const driver = await this.#mainRequest.captureDriver(projection); this.#current(); const context = await this.#mainRequest.continueToContext(driver); this.#current();
       const controller = await this.#mainRequest.continueToController(context); this.#current(); const actor = await this.#mainRequest.continueToActor(controller); this.#current();
       const begin = await this.#mainBegin.begin(actor); this.#current(); await this.#mainHistory.observe(begin); this.#current();
-      this.#owner.completeViaHistorySql(this.#plan); await this.#save.observeCompletion(); this.#current();
+      this.#owner.completeViaHistorySql(this.#plan); this.#current();
     } catch (error) { this.#stop(error); throw error; }
   }
   /** The first original post-action producer remains held. The eventual fixed

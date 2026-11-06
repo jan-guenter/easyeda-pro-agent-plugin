@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 packed schematic programs](2026-11-06-packed-schematic-programs.md). Exact fixed program restoration keeps the combined helper within its unchanged bound; complete Linux C# compilation and pure message parity, without a native owner or application.
+
 - [2026-11-06 original structure transport observer](2026-11-06-original-structure-transport-observer.md). Fixed XHR send/return custody, original body and main-publication grants, failure retention, and checkpoint-bound Via generation launch; connected writer completion remains pending.
 
 - [2026-11-06 saved-reader closed acceptance](2026-11-06-saved-reader-closed-acceptance.md). Genuine fresh model plus original reader root/Job closure, complete bytes and full saved SQL equality; helper cleanup remains separately owned.

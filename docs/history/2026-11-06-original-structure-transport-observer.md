@@ -59,3 +59,14 @@ verify one retained producer read, the original acknowledgment identity,
 pre-create main enrollment and refusal after a failed original baseline read.
 Types and changed strict lint pass. These are orchestration regressions, not
 an actual SDK create, Save or persistence proof.
+
+## Original Save result ordering correction
+
+Review against the pinned application source found that `saveCanvas` returns
+after local buffering and schedules the later structure/history timers. Its
+held result must resume before those timers can run. The group now services
+the original Save result immediately after the body/local producer path and
+before awaiting the structure packet. The early SDK acknowledgment remains
+insufficient for journal completion, full SQL or saved/reopened acceptance.
+The planned local producer still needs its separate genuine continuation.
+No live Save had exercised the earlier source ordering.

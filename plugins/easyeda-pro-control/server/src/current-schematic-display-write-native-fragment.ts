@@ -5,6 +5,7 @@ import { applyCurrentSchematicDisplayClockNativeFragment } from "./current-schem
  * fragment never upgrades an ordinary runtime or enables a PCB purpose. */
 import { applyCurrentSchematicDisplayWorkerNativeFragment } from "./current-schematic-display-worker-native-fragment.ts";
 import { createHash } from "node:crypto";
+import { gzipSync } from "node:zlib";
 import { currentSchematicDisplayNativeCommand } from "./current-schematic-display-native-command.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_NATIVE_GROUP as GROUP, CURRENT_SCHEMATIC_DISPLAY_NAVIGATION_FUNCTION as NAVIGATION, CURRENT_SCHEMATIC_DISPLAY_STAGE_FUNCTION as STAGE, CURRENT_SCHEMATIC_DISPLAY_START_FUNCTION as START } from "./current-schematic-display-write-programs.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_DISCOVERY_METHODS as METHODS, CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE as PROFILE } from "./current-schematic-display-write-native-profile.ts";
@@ -15,6 +16,12 @@ function one(source: string, before: string, after: string): string {
   if (source.split(before).length !== 2) { throw new Error(`SCHEMATIC_DISPLAY_NATIVE_ANCHOR:${before.slice(0, 64)}`); } return source.replace(before, after);
 }
 const quote = (value: string): string => `@"${value.replaceAll('"', '""')}"`;
+function packedProgram(program: string): string {
+  const bytes = Buffer.from(program); if (bytes.length === 0 || bytes.length > 65_536) { throw new Error("SCHEMATIC_DISPLAY_FIXED_PROGRAM_SIZE"); }
+  // oxlint-disable-next-line node/no-sync -- Build-only deterministic packing of fixed unpublished programs through the existing bounded native decoder.
+  const packed = gzipSync(bytes, { level: 9 });
+  return `UnpackFixedProgram(${quote(packed.toString("base64"))},${String(bytes.length)},${quote(createHash("sha256").update(bytes).digest("hex"))},${quote(createHash("sha256").update(packed).digest("hex"))})`;
+}
 function smoke(): string {
   const target = { rawWindowsPath: String.raw`C:\Synthetic\Codex_schematic_1111111111111111.eprj2`, projectUuid: "c".repeat(64), branchUuid: "d".repeat(32), schematicUuid: "e".repeat(32), pageUuid: "f".repeat(32), expectedSourceSha256: "1".repeat(64) };
   const operation = { operationId: "sch209-display-native-smoke", textId: "text-1", beforeBody: {}, afterBody: {}, peers: Array.from({ length: 5 }, (_, i) => ({ id: `peer${String(i)}`, type: "LINE", body: {} })) };
@@ -27,7 +34,7 @@ function smoke(): string {
     const message = `${JSON.stringify({ id: 63, method: command.method, params: command.params, sessionId: "original_session" })}\0`;
     return `{var fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);${Object.entries(fields).map(([name, value]) => `fields.Add(${quote(name)},${quote(value)});`).join("")}string encoded=SchematicDisplayProtocolMessage(63,"original_session",${quote(phase)},fields);using(var sha=System.Security.Cryptography.SHA256.Create())if(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(encoded))).Replace("-","").ToLowerInvariant()!=${quote(createHash("sha256").update(message).digest("hex"))})throw Error("schematic-display-wire-smoke");fields.Add("callerCode","void 0");bool refused=false;try{SchematicDisplayProtocolMessage(63,"original_session",${quote(phase)},fields);}catch(System.InvalidOperationException){refused=true;}if(!refused)throw Error("schematic-display-wire-fields-smoke");}`;
   });
-  return `static void VerifySchematicDisplayProtocolSmoke(){${rows.join("")}}`;
+  return `public static void VerifySchematicDisplayProtocolSmoke(){${rows.join("")}}`;
 }
 function native(): string { return `${begin}
 internal enum EasyedaSchematicDisplayBirth { Original }
@@ -36,9 +43,9 @@ internal EasyedaOriginalMainTransport(EasyedaSchematicDisplayBirth birth):this()
 }
 public sealed partial class EasyedaDiagnosticOwner {
 bool schematicDisplayWrite209,schematicDisplayAbort,schematicDisplayRegistrationRemoved,schematicDisplayConstructionComplete;int schematicDisplayControls;string schematicDisplaySession,schematicDisplayContext,schematicDisplayTarget,schematicDisplayOperation,schematicDisplayTuple;bool[] schematicDisplayStages=new bool[7];
-static readonly string SchematicDisplayStart=@"${START.replaceAll('"', '""')}";
-static readonly string SchematicDisplayNavigation=@"${NAVIGATION.replaceAll('"', '""')}";
-static readonly string SchematicDisplayStage=@"${STAGE.replaceAll('"', '""')}";
+static readonly string SchematicDisplayStart=${packedProgram(START)};
+static readonly string SchematicDisplayNavigation=${packedProgram(NAVIGATION)};
+static readonly string SchematicDisplayStage=${packedProgram(STAGE)};
 EasyedaDiagnosticOwner(EasyedaSchematicDisplayBirth birth):this(){if(birth!=EasyedaSchematicDisplayBirth.Original)throw Error("schematic-display-birth");schematicDisplayWrite209=true;workerStartupFootprintMain209=true;originalMain=new EasyedaOriginalMainTransport(EasyedaSchematicDisplayBirth.Original);}
 public static EasyedaDiagnosticOwner CreateSchematicDisplayWrite209(){return new EasyedaDiagnosticOwner(EasyedaSchematicDisplayBirth.Original);}
 public void AdmitSchematicDisplayAction(string action){if(!schematicDisplayWrite209||++schematicDisplayControls>30000)throw Error("schematic-display-purpose");if(schematicDisplayAbort&&action!="identity"&&action!="termination"&&action!="release")throw Error("schematic-display-cleanup-only");switch(action){case "identity":case "launch":case "send":case "poll":case "window":case "termination":case "normal-close":case "release":case "release-unlaunched":case "no-process-proof":case "release-no-process":case "main-attach":case "main-reprove":case "main-send":case "main-poll":case "schematic-display-abort":case "schematic-display-native":break;default:throw Error("schematic-display-action");}}
