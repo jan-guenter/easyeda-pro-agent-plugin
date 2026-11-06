@@ -136,3 +136,20 @@ directory and Linux .NET 10 passes the full C# compilation and all 45 sync
 hash vectors. No tracked generated artifact or Windows/native call is added.
 The unchanged 21 production-owner cases were not repeated for this metadata
 addition; their original cleanup/refusal path remains the separate evidence.
+
+## Branch accessor and selected identity correction
+
+The original getHistories method reads inherited branchUuid. The capture now
+qualifies its exact pure current209 getter and setter before retaining their
+identities. Every continuation rechecks those descriptors, rejects own
+shadowing, and compares the original own uuid and _branchUuid to the retained
+head-cache target. No getter or setter is called by this proof.
+
+A focused regression substitutes the base, parent and own accessors and both
+selected IDs. Each refuses before API access, model parsing or replacement
+hooks. All eight cursor/program cases pass. This changes fixed program bytes
+without changing the 45 ordered shapes, 47-request reserve or renderer caps.
+Both TypeScript projects and strict lint pass. The private full generator
+remains idempotent and the complete C# passes the producer, cache and all
+45 sync codec smoke checks under Linux .NET 10. No tracked helper, bundle,
+coverage, external pin or native runtime is changed.

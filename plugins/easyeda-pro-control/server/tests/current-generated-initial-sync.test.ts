@@ -27,8 +27,8 @@ function fixture(): Readonly<{ run: (source: string) => unknown; proof: (role: k
     `const api=${JSON.stringify(api)},head=${JSON.stringify(head)};`,
     declarations,
     "const Re={getInstance:()=>({projectHistory:{get:async()=>{requests++;return {success:true,result:[{...api}]};}}})};const du=()=>{modelParses++;throw Error('model parse forbidden')};",
-    `const gd={${CALLEES.slice(0, 7).map(row => row.source).join(",")},get isV2Format(){return this._isV2Format},set isV2Format(t){this._isV2Format=t,this._projectDetails&&(this._projectDetails.isV2Format=t)}};for(const key of Object.keys(gd)){const d=Object.getOwnPropertyDescriptor(gd,key);Object.defineProperty(gd,key,{...d,enumerable:false});}`,
-    'const lg=Object.create(gd),PROJECT=Object.assign(Object.create(lg),{historyIndex:head,task3:new Set,cachePromise:new Set,syncPendingNodeUuids:new Set,confirmedEmptyNodeUuids:new Set,warnedEmptyNodeUuids:new Set,isTemporary:false,isHistoryBack:false,_isV2Format:false,isUploadingCloud:false,pendingSyncCloud:false});globalThis.PROJECT=PROJECT;',
+    `const gd={${CALLEES.slice(0, 7).map(row => row.source).join(",")},get isV2Format(){return this._isV2Format},set isV2Format(t){this._isV2Format=t,this._projectDetails&&(this._projectDetails.isV2Format=t)},get branchUuid(){return this._branchUuid},set branchUuid(t){this._branchUuid=t,this._projectDetails&&(this._projectDetails.currentBranch=t)}};for(const key of Object.keys(gd)){const d=Object.getOwnPropertyDescriptor(gd,key);Object.defineProperty(gd,key,{...d,enumerable:false});}`,
+    'const lg=Object.create(gd),PROJECT=Object.assign(Object.create(lg),{uuid:"b".repeat(64),_branchUuid:"d".repeat(32),historyIndex:head,task3:new Set,cachePromise:new Set,syncPendingNodeUuids:new Set,confirmedEmptyNodeUuids:new Set,warnedEmptyNodeUuids:new Set,isTemporary:false,isHistoryBack:false,_isV2Format:false,isUploadingCloud:false,pendingSyncCloud:false});globalThis.PROJECT=PROJECT;',
     `const intrinsics=(${INTRINSICS.members.program}).call((${INTRINSICS.constructors.program})());`,
     `const wrapper={cache:Object.create(Cache.prototype)},response=Object.create(Response.prototype),key="https://client/index/v1/${"d".repeat(32)}";PROJECT.cache=wrapper;`,
     `const initial=[wrapper,key,response,undefined],cache=[initial,[],wrapper,wrapper.cache,response,intrinsics,key,head,"${  "b".repeat(64)  }","${  "d".repeat(32)  }"];`,
@@ -69,6 +69,16 @@ void test("original module/prototype/collection/task/ordinal drift refuses witho
   }
   const f = fixture(); f.run("PROJECT.notSyncCloud=true;PROJECT.task3.add(task);globalThis.historyFrame=[PROJECT,api.uuid,true,resolve,task,head[0],undefined,{success:true,result:[{...api}]},2]");
   assert.throws(() => f.proof("history", "historyFrame", "original,full,1"));
+});
+void test("original selected IDs and pure inherited branch accessor are reproved without invoking replacements", () => {
+  for (const mutation of [
+    "PROJECT.uuid='foreign'", "PROJECT._branchUuid='foreign'", "Object.defineProperty(PROJECT,'branchUuid',{get(){hooks++;throw Error('own getter')}})",
+    "Object.defineProperty(lg,'branchUuid',{get(){hooks++;throw Error('parent getter')}})",
+    "Object.defineProperty(gd,'branchUuid',{get(){hooks++;throw Error('base getter')},set(t){hooks++;},enumerable:false,configurable:true})"
+  ]) {
+    const f = fixture(); f.run("PROJECT.notSyncCloud=true"); f.run(mutation);
+    assert.throws(() => f.proof("full", "full", "original")); assert.equal(f.run("hooks"), 0); assert.equal(f.run("requests"), 0); assert.equal(f.run("modelParses"), 0);
+  }
 });
 void test("fixed metadata and vocabulary require actual current209 script/functions and exact response ordinal", () => {
   const cases = currentGeneratedInitialSyncNativeCases(); assert.equal(cases.length, 45);

@@ -20,16 +20,18 @@ const names=${JSON.stringify(CALLEES.slice(0, 7).map(row => row.name))};
 const helpers=[own(module,"3"),own(module,"4"),own(module,"5")];
 for(let j=0;j<7;j++){const f=own(gd,names[j]);descriptor(gd,names[j],f);if(typeof f!=="function")bad();methods.push(f);}
 for(let j=0;j<3;j++)if(typeof helpers[j]!=="function"||own(module,String(j+3))!==helpers[j])bad();
+const bf=Object.getOwnPropertyDescriptor(gd,"branchUuid");if(!bf||Object.hasOwn(bf,"value")||bf.enumerable!==false||bf.configurable!==true||Function.prototype.toString.call(bf.get)!=="get branchUuid(){return this._branchUuid}"||Function.prototype.toString.call(bf.set)!=="set branchUuid(t){this._branchUuid=t,this._projectDetails&&(this._projectDetails.currentBranch=t)}")bad();
 const retained=[];let nodes=0;const retain=(v,depth)=>{if(v===null||typeof v!=="object")return;if(++nodes>128||depth>7)bad();if(Object.getPrototypeOf(v)!==(Array.isArray(v)?Array.prototype:Object.prototype))bad();for(const k of Reflect.ownKeys(v)){const d=Object.getOwnPropertyDescriptor(v,k);if(!d||!Object.hasOwn(d,"value"))bad();retained.push([v,k,d]);retain(d.value,depth+1);}};retain(history,0);
 const promise=Promise,promiseProto=Promise.prototype,set=Set,setProto=Set.prototype,arrayProto=Array.prototype;
 const collectionNames=["task3","cachePromise","syncPendingNodeUuids","confirmedEmptyNodeUuids","warnedEmptyNodeUuids"],collections=collectionNames.map(k=>own(project,k));
 const guard=()=>{const p=own(module,"0");if(p!==project||own(globalThis,"PROJECT")!==project||Object.getPrototypeOf(project)!==lg||Object.getPrototypeOf(lg)!==gd||own(module,"1")!==lg||own(module,"2")!==gd||own(project,"historyIndex")!==history)bad();
 for(const[o,k,d]of retained){const q=Object.getOwnPropertyDescriptor(o,k);if(!q||!Object.hasOwn(q,"value")||!Object.is(q.value,d.value)||q.writable!==d.writable||q.enumerable!==d.enumerable||q.configurable!==d.configurable)bad();}
 array(module,6);array(entry,2);array(caller,2);if(own(entry,"0")!==project||own(caller,"0")!==project||own(entry,"1")!==own(caller,"1"))bad();
-for(const o of[project,lg])for(const k of[...names,"isV2Format"])if(Object.getOwnPropertyDescriptor(o,k)!==undefined)bad();
+for(const o of[project,lg])for(const k of[...names,"isV2Format","branchUuid"])if(Object.getOwnPropertyDescriptor(o,k)!==undefined)bad();
 for(let j=0;j<7;j++){descriptor(gd,names[j],methods[j]);}
 for(let j=0;j<3;j++)if(typeof helpers[j]!=="function"||own(module,String(j+3))!==helpers[j])bad();
 const vf=Object.getOwnPropertyDescriptor(gd,"isV2Format");if(!vf||Object.hasOwn(vf,"value")||vf.enumerable!==false||vf.configurable!==true||Function.prototype.toString.call(vf.get)!=="get isV2Format(){return this._isV2Format}"||Function.prototype.toString.call(vf.set)!=="set isV2Format(t){this._isV2Format=t,this._projectDetails&&(this._projectDetails.isV2Format=t)}")bad();
+const bd=Object.getOwnPropertyDescriptor(gd,"branchUuid");if(!bd||Object.hasOwn(bd,"value")||bd.get!==bf.get||bd.set!==bf.set||bd.enumerable!==false||bd.configurable!==true||own(project,"uuid")!==own(head,"8")||own(project,"_branchUuid")!==own(head,"9"))bad();
 for(const k of["isTemporary","isHistoryBack","_isV2Format","isUploadingCloud"])if(own(project,k)!==false)bad();
 if(Promise!==promise||Promise.prototype!==promiseProto||Set!==set||Set.prototype!==setProto||Array.prototype!==arrayProto)bad();native(promise,"Promise",1);native(set,"Set",0);
 for(const[k,n]of[["add",1],["delete",1],["has",1],["values",0]])native(own(setProto,k),k,n);
