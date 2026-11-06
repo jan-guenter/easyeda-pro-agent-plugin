@@ -10,38 +10,59 @@ import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { sha256Json } from "../src/core.ts";
 import { assertCurrentPcbViaWriteJournalChain } from "../src/current-pcb-via-write-journal.ts";
-import type { CurrentPcbViaWriteNoResourceProof } from "../src/current-pcb-via-write-owner.ts";
+import type { CurrentPcbViaSavedReadbackOwner } from "../src/current-pcb-via-saved-readback-owner.ts";
+import type { CurrentPcbViaWriteNoResourceProof, CurrentPcbViaWriteOwner } from "../src/current-pcb-via-write-owner.ts";
 import { assertOperationIdUnused, createOperation, createOperationScanner, ensureOperationStorage, loadOperation, operationPath,
   updateOperation, verifyExactManagedArtifact, writePhaseArtifact } from "../src/artifacts.ts";
 import type { CurrentPcbViaCreateIntentEnrollment, CurrentPcbViaPollingCancellationEnrollment, CurrentPcbViaPollingCancellationIntent, CurrentPcbViaSaveIntentEnrollment, CurrentPcbViaWriteDispatch, CurrentPcbViaWriteJournal } from "../src/current-pcb-via-write-journal.ts";
 import { CURRENT_PCB_VIA_WRITE_ABORT_ACKNOWLEDGEMENTS, CURRENT_PCB_VIA_WRITE_EXECUTE_ACKNOWLEDGEMENTS,
   currentPcbViaWriteActionSchema, currentPcbViaWriteResultSchema } from "../src/current-pcb-via-write-contract.ts";
 
-async function fixture(loseCreateIntent = false, allocationRefusal = false, polling = false): Promise<Readonly<{
-  noResource: CurrentPcbViaWriteNoResourceProof;
+async function fixture(loseCreateIntent = false, allocationRefusal = false, polling = false, readerRefused = false): Promise<Readonly<{
+  noResource: CurrentPcbViaWriteNoResourceProof; writer: CurrentPcbViaWriteOwner; releaseWriter: () => void; reader: CurrentPcbViaSavedReadbackOwner; releaseReader: () => void;
   enrollPolling: (token: CurrentPcbViaPollingCancellationIntent, owner: object) => CurrentPcbViaPollingCancellationEnrollment;
   consumePolling: (token: CurrentPcbViaPollingCancellationIntent, owner: object) => Readonly<{ assertPublished: () => Promise<void> }>;
   enrollSave: (token: CurrentPcbViaWriteDispatch, owner: object) => CurrentPcbViaSaveIntentEnrollment;
   enroll: (token: CurrentPcbViaWriteDispatch, owner: object) => CurrentPcbViaCreateIntentEnrollment; journal: CurrentPcbViaWriteJournal; owner: object; operationId: string; publications: () => number;
   consume: (token: CurrentPcbViaWriteDispatch, stage: "create" | "save", owner: object) => Readonly<{ assertPublished: () => Promise<void> }>;
 }>> {
-  const operationId = `pcb209-via-write-journal-${randomUUID()}`, owner = Object.freeze({});
+  let writerReleased = false;
+  const operationId = `pcb209-via-write-journal-${randomUUID()}`, owner = Object.freeze({ status: (): object => ({ binding: null, launchConsumed: readerRefused, noProcessCleanupAvailable: readerRefused && !writerReleased, released: writerReleased, helperClosed: writerReleased }) });
+  const writerPrepared = Object.freeze({ syntheticOriginalWriterPreparation: true });
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Explicit inert original writer factory seam; production retains its actual private allocation map.
+  const writer = owner as unknown as CurrentPcbViaWriteOwner;
   const plan = Object.freeze({ operationId, schema: "explicit-synthetic-plan-seam", inverseAvailable: false });
+  let readerReleased = false;
+  const readerObject = Object.freeze({ status: (): object => ({ binding: null, launchConsumed: readerRefused, noProcessCleanupAvailable: readerRefused && !readerReleased, released: readerReleased, helperClosed: readerReleased }) });
+  const prepared = Object.freeze({ syntheticOriginalReaderCheckpoint: true });
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only this explicit original factory seam owns the inert reader; production checks the actual private native factory map.
+  const reader = readerObject as unknown as CurrentPcbViaSavedReadbackOwner;
   const noResource: CurrentPcbViaWriteNoResourceProof = Object.freeze({ profile: "private.current-pcb-via-write-no-resource.v1" });
   const url = new URL("../src/current-pcb-via-write-journal.ts", import.meta.url);
   const sourceRequire = createRequire(url);
   const originalSource = await readFile(url, "utf8");
   // The literal lazy import resolves through this VM's explicit registry seam.
   // Production retains its real ESM module and original private allocation map.
-  const source = originalSource.replace('await import("./current-pcb-via-write-owner.ts")', 'await Promise.resolve(require("./current-pcb-via-write-owner.ts"))');
+  const source = originalSource.replaceAll('await import("./current-pcb-via-write-owner.ts")', 'await Promise.resolve(require("./current-pcb-via-write-owner.ts"))')
+    .replace('await import("./current-pcb-via-saved-readback-owner.ts")', 'await Promise.resolve(require("./current-pcb-via-saved-readback-owner.ts"))')
+    .replace('await import("./current-pcb-via-write-closed-checkpoint.ts")', 'await Promise.resolve(require("./current-pcb-via-write-closed-checkpoint.ts"))');
   assert.notEqual(source, originalSource);
   const output = await transform(source, { loader: "ts", format: "cjs", target: "node24" });
   let lost = false, publications = 0;
   const loaded: { exports: Record<string, unknown> } = { exports: {} };
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${output.code}\n})`); assert.ok(typeof evaluate === "function");
   Reflect.apply(evaluate, undefined, [(name: string): unknown => {
-    if (name === "./current-pcb-via-write-plan.ts") { return { requireOriginalCurrentPcbViaWritePlan: (candidate: unknown): void => { assert.equal(candidate, plan); } }; }
-    if (name === "./current-pcb-via-write-owner.ts") { return { requireOriginalCurrentPcbViaWriteNoResourceProof: (candidate: unknown, originalPlan: unknown): void => {
+    if (name === "./current-pcb-via-write-plan.ts") { return { requireOriginalCurrentPcbViaWritePlan: (candidate: unknown): object => { assert.equal(candidate, plan); return { prepared: writerPrepared }; } }; }
+    if (name === "./current-pcb-via-saved-readback-owner.ts") { return {
+      assertOriginalCurrentPcbViaSavedReadbackOwner: (candidate: unknown): void => { assert.equal(candidate, reader); },
+      originalCurrentPcbViaSavedReadbackTarget: (candidate: unknown): object => { assert.equal(candidate, reader); return prepared; },
+    }; }
+    if (name === "./current-pcb-via-write-closed-checkpoint.ts") { return { requireOriginalCurrentPcbViaWriteClosedCheckpoint: (candidate: unknown): object => { assert.equal(candidate, prepared); return { plan }; } }; }
+    if (name === "./current-pcb-via-write-owner.ts") { return {
+      assertOriginalCurrentPcbViaWriteOwner: (candidate: unknown): void => { assert.equal(candidate, writer); },
+      originalCurrentPcbViaWriteTarget: (candidate: unknown): object => { assert.equal(candidate, writer); return writerPrepared; },
+      currentPcbViaWriteAllocationOutcome: (candidate: unknown): object => { assert.equal(candidate, writerPrepared); return { owner: writer, state: "retained" }; },
+      requireOriginalCurrentPcbViaWriteNoResourceProof: (candidate: unknown, originalPlan: unknown): void => {
       assert.equal(allocationRefusal, true); assert.equal(candidate, noResource); assert.equal(originalPlan, plan);
     } }; }
     if (name === "./artifacts.ts") { return { assertOperationIdUnused, createOperation, createOperationScanner, ensureOperationStorage, loadOperation, operationPath,
@@ -67,7 +88,7 @@ async function fixture(loseCreateIntent = false, allocationRefusal = false, poll
     await journal.append(`${stage}-intent`, {}); await journal.append(`${stage}-result`, {});
   }
   if (allocationRefusal) { await journal.append("allocation-intent", {}); await journal.append("failure", { stage: "allocation" }); }
-  return { journal, noResource, owner, operationId,
+  return { journal, noResource, writer, releaseWriter: (): void => { writerReleased = true; }, reader, releaseReader: (): void => { readerReleased = true; }, owner, operationId,
     enrollPolling: (token, actor): CurrentPcbViaPollingCancellationEnrollment => {
       const result: unknown = Reflect.apply(enrollPolling, undefined, [token, actor, plan]); assert.ok(result !== null && typeof result === "object");
       // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This is the VM's real private token registry with only the explicit original-plan seam.
@@ -110,6 +131,39 @@ void test("the separate opening timer intent arms without spending and authorize
   const opening = f.journal.retained().records.find(row => row.kind === "opening-intent"); assert.equal(opening?.evidence["arbitraryTimerSelection"], false);
 });
 
+void test("v2 records genuine unlaunched/refused reader helper release without claiming root exit or operation completion", async () => {
+  for (const refused of [false, true]) {
+    const f = await fixture(false, false, false, refused); await f.journal.append("failure", { generation: "reader" });
+    await assert.rejects(f.journal.append("no-process-release-intent", {}), /ORIGINAL_NO_RESOURCE_PROOF_REQUIRED/u);
+    await f.journal.recordReaderNoProcessReleaseIntent(f.reader); f.journal.requireReaderNoProcessReleaseReady(f.reader);
+    await assert.rejects(f.journal.recordReaderNoProcessReleaseIntent(f.reader), /CONSUMED/u);
+    f.releaseReader(); await f.journal.recordReaderNoProcessReleaseResult(f.reader); await f.journal.assertCurrent();
+    const operation = await loadOperation(f.operationId); assert.equal(operation["state"], "prepared");
+    const result = f.journal.retained().records.at(-1); assert.equal(result?.kind, "no-process-release-result");
+    assert.equal(result?.evidence["rootNeverCreated"], true); assert.equal(result?.evidence["rootExited"], undefined);
+    assert.equal(result?.evidence["readbackCompletionClaimed"], false);
+    await assert.rejects(f.journal.append("termination-intent", {}), /CLEANUP_BEFORE_FAILURE/u);
+    await assert.rejects(f.journal.recordReaderNoProcessReleaseResult(f.reader), /CONSUMED/u);
+  }
+});
+void test("writer no-root release binds the actual journal writer and preparation while excluding a reader generation", async () => {
+  for (const refused of [false, true]) {
+    const f = await fixture(false, false, false, refused); await f.journal.append("failure", { generation: "writer" });
+    await f.journal.recordWriterNoProcessReleaseIntent(f.writer); f.journal.requireWriterNoProcessReleaseReady(f.writer);
+    await assert.rejects(f.journal.recordReaderNoProcessReleaseIntent(f.reader), /CONSUMED/u);
+    f.releaseWriter(); await f.journal.recordWriterNoProcessReleaseResult(f.writer); await f.journal.assertCurrent();
+    const result = f.journal.retained().records.at(-1); assert.equal(result?.kind, "no-process-release-result"); assert.equal(result?.evidence["generation"], "writer");
+    assert.equal(result?.evidence["rootExited"], undefined); assert.equal(result?.evidence["designCompletionClaimed"], false);
+    await assert.rejects(f.journal.recordWriterNoProcessReleaseResult(f.writer), /CONSUMED/u);
+  }
+});
+void test("copied reader metadata cannot issue no-process cleanup or refund its attempt", async () => {
+  const f = await fixture(); await f.journal.append("failure", {});
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Deliberately copied factory data must fail the actual private owner seam.
+  await assert.rejects(f.journal.recordReaderNoProcessReleaseIntent({ status: (): ReturnType<CurrentPcbViaSavedReadbackOwner["status"]> => f.reader.status() } as CurrentPcbViaSavedReadbackOwner));
+  await assert.rejects(f.journal.recordReaderNoProcessReleaseIntent(f.reader), /CONSUMED/u);
+  assert.equal(f.journal.retained().records.at(-1)?.kind, "failure");
+});
 void test("v2 closes an original never-allocated factory refusal without claiming process exit", async () => {
   const f = await fixture(false, true);
   await assert.rejects(f.journal.append("allocation-refused", {}), /ORIGINAL_NO_RESOURCE_PROOF_REQUIRED/u);
@@ -132,6 +186,7 @@ void test("immutable v1 refusal chains still parse and cannot acquire the v2 fac
   const terminal = { ...first, sequence: 2, previousSha256: sha256Json(failure), kind: "no-allocation", evidence: { allocationNeverEntered: true } } as const;
   assertCurrentPcbViaWriteJournalChain([first, failure, terminal]);
   assert.throws(() => { assertCurrentPcbViaWriteJournalChain([first, failure, { ...terminal, kind: "allocation-refused" }]); });
+  assert.throws(() => { assertCurrentPcbViaWriteJournalChain([first, failure, { ...terminal, kind: "no-process-release-intent", evidence: { generation: "readback", originalFactoryVerified: true, rootNeverCreated: true, jobEmpty: true, releaseOriginalHelperOnly: true } }]); });
   assert.throws(() => { assertCurrentPcbViaWriteJournalChain([first, { ...failure, schema: "easyeda-pro-control.pcb209-via-write-record.v2" }]); });
 });
 

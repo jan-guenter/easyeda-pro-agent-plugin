@@ -1,5 +1,6 @@
 /** Original operation publication and once-only create/Save intent. Artifact
  * JSON remains historical evidence and cannot recreate an owner or dispatch. */
+/* oxlint-disable import/max-dependencies -- Original reader no-root release adds its separately branded factory/checkpoint to the existing durable writer journal; lazy genuine module checks cannot be caller supplied. */
 import { dirname, join } from "node:path";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
@@ -11,16 +12,18 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { requireOriginalCurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
 import type { CurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
 import { currentPcbViaWriteStageResultSchema } from "./current-pcb-via-write-contract.ts";
-import type { CurrentPcbViaWriteNoResourceProof } from "./current-pcb-via-write-owner.ts";
+import type { requireOriginalCurrentPcbViaWriteClosedCheckpoint } from "./current-pcb-via-write-closed-checkpoint.ts";
+import type { CurrentPcbViaSavedReadbackOwner, assertOriginalCurrentPcbViaSavedReadbackOwner, originalCurrentPcbViaSavedReadbackTarget } from "./current-pcb-via-saved-readback-owner.ts";
+import type { CurrentPcbViaWriteNoResourceProof, CurrentPcbViaWriteOwner, assertOriginalCurrentPcbViaWriteOwner, currentPcbViaWriteAllocationOutcome, originalCurrentPcbViaWriteTarget } from "./current-pcb-via-write-owner.ts";
 
 export const CURRENT_PCB_VIA_WRITE_JOURNAL_STAGES = ["baseline", "allocation", "launch", "main", "opening", "sdk", "preflight",
   "native-before", "scene-before", "create", "native-after", "scene-after", "effect", "save", "close", "exit", "closed-sql",
   "reopen", "reopened-native", "reopened-scene", "reopen-close", "reopen-exit", "reopened-sql", "complete"] as const;
 export type CurrentPcbViaWriteJournalStage = typeof CURRENT_PCB_VIA_WRITE_JOURNAL_STAGES[number];
-type Kind = "operation-intent" | "failure" | "no-allocation" | "allocation-refused" | "abort-intent" | "abort-result" | "termination-intent" |
+type Kind = "no-process-release-intent" | "no-process-release-result" | "operation-intent" | "failure" | "no-allocation" | "allocation-refused" | "abort-intent" | "abort-result" | "termination-intent" |
   "termination-result" | "release-intent" | "release-result" | `${CurrentPcbViaWriteJournalStage}-${"intent" | "result"}`;
 const legacyProfile = "private.pcb209-via-write-journal.v1", maximumRecordBytes = 65_536, maximumRecords = 64, profile = "private.pcb209-via-write-journal.v2";
-const kinds = new Set<string>(["operation-intent", "failure", "no-allocation", "allocation-refused", "abort-intent", "abort-result", "termination-intent",
+const kinds = new Set<string>(["no-process-release-intent", "no-process-release-result", "operation-intent", "failure", "no-allocation", "allocation-refused", "abort-intent", "abort-result", "termination-intent",
   "termination-result", "release-intent", "release-result", ...CURRENT_PCB_VIA_WRITE_JOURNAL_STAGES.flatMap(stage => [`${stage}-intent`, `${stage}-result`])]);
 const hash = z.string().regex(/^[a-f\d]{64}$/u);
 const entrySchema = z.strictObject({ schema: z.enum(["easyeda-pro-control.pcb209-via-write-record.v1", "easyeda-pro-control.pcb209-via-write-record.v2"]),
@@ -29,12 +32,20 @@ const entrySchema = z.strictObject({ schema: z.enum(["easyeda-pro-control.pcb209
   kind: z.custom<Kind>((value): value is Kind => typeof value === "string" && kinds.has(value)),
   evidence: z.record(z.string(), z.unknown()), inverseAvailable: z.literal(false),
 }).refine(value => Buffer.byteLength(`${JSON.stringify(value)}\n`) <= maximumRecordBytes &&
-  (value.kind !== "allocation-refused" || value.schema === "easyeda-pro-control.pcb209-via-write-record.v2"));
+  (!["allocation-refused", "no-process-release-intent", "no-process-release-result"].includes(value.kind) || value.schema === "easyeda-pro-control.pcb209-via-write-record.v2"));
 type Entry = z.infer<typeof entrySchema>;
 const artifactSchema = z.strictObject({ path: z.string().max(4096), sha256: hash, bytes: z.number().int().positive().max(maximumRecordBytes) });
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PCB_VIA_WRITE_JOURNAL_${code}`); } }
 function terminal(kind: Kind | undefined): boolean { return kind === "complete-result" || kind === "no-allocation" || kind === "allocation-refused"; }
 function resultEvidence(entry: Entry): void {
+  if (entry.kind === "no-process-release-intent") {
+    z.strictObject({ generation: z.enum(["writer", "readback"]), originalFactoryVerified: z.literal(true), rootNeverCreated: z.literal(true), jobEmpty: z.literal(true),
+      releaseOriginalHelperOnly: z.literal(true) }).parse(entry.evidence);
+  }
+  if (entry.kind === "no-process-release-result") {
+    z.strictObject({ generation: z.enum(["writer", "readback"]), originalFactoryVerified: z.literal(true), rootNeverCreated: z.literal(true), jobEmpty: z.literal(true),
+      helperReleaseVerified: z.literal(true), designCompletionClaimed: z.literal(false), readbackCompletionClaimed: z.literal(false) }).parse(entry.evidence);
+  }
   if (entry.kind === "allocation-refused") {
     z.strictObject({ allocationIntentPublished: z.literal(true), nativeAllocationNeverEntered: z.literal(true), originalFactoryNoResourceVerified: z.literal(true),
       originalProcessExitClaimed: z.literal(false), nativeOwnershipTransferred: z.literal(false) }).parse(entry.evidence);
@@ -71,8 +82,13 @@ export function assertCurrentPcbViaWriteJournalChain(input: readonly Entry[]): v
       need(failed && !seen.has("allocation-intent") && entry.evidence["allocationNeverEntered"] === true, "NO_ALLOCATION");
     } else if (entry.kind === "allocation-refused") {
       need(failed && previous?.kind === "failure" && pending === "allocation" && seen.has("allocation-intent") && !seen.has("allocation-result") && !seen.has("launch-intent"), "ORIGINAL_FACTORY_REFUSAL");
+    } else if (entry.kind === "no-process-release-intent" || entry.kind === "no-process-release-result") {
+      need(failed && ![...seen].some(kind => /^(?:abort|termination|release)-/u.test(kind)), "NO_PROCESS_AFTER_FAILURE_ONLY");
+      if (entry.kind === "no-process-release-result") {
+        need(seen.has("no-process-release-intent") && previous?.kind === "no-process-release-intent" && previous.evidence["generation"] === entry.evidence["generation"], "NO_PROCESS_RELEASE_INTENT");
+      }
     } else if (entry.kind.startsWith("abort-") || entry.kind.startsWith("termination-") || entry.kind.startsWith("release-")) {
-      need(failed, "CLEANUP_BEFORE_FAILURE");
+      need(failed && !seen.has("no-process-release-intent") && !seen.has("no-process-release-result"), "CLEANUP_BEFORE_FAILURE");
       if (entry.kind.endsWith("-result")) { need(seen.has(entry.kind.replace(/-result$/u, "-intent")), "CLEANUP_INTENT"); }
       if (entry.kind === "termination-result") { need(entry.evidence["rootExited"] === true && entry.evidence["jobEmpty"] === true, "ORIGINAL_EXIT"); }
       if (entry.kind === "release-intent") { need(seen.has("termination-result"), "EXIT_BEFORE_RELEASE"); }
@@ -196,6 +212,25 @@ export function enrollCurrentPcbViaWriteSaveIntent(token: CurrentPcbViaWriteDisp
     assertOriginalAttempted: (): void => { current(); need(original.consumed, "SAVE_ENROLLMENT_ORIGINAL_ATTEMPT_REQUIRED"); },
     assertPublished: async (): Promise<void> => { current(); await original.journal.assertCurrent(); current(); } });
 }
+interface OriginalWriterNoProcessRelease {
+  readonly owner: CurrentPcbViaWriteOwner;
+  readonly native: Readonly<{ assertOriginalCurrentPcbViaWriteOwner: typeof assertOriginalCurrentPcbViaWriteOwner; currentPcbViaWriteAllocationOutcome: typeof currentPcbViaWriteAllocationOutcome; originalCurrentPcbViaWriteTarget: typeof originalCurrentPcbViaWriteTarget }>;
+  readonly assertOwner: typeof assertOriginalCurrentPcbViaWriteOwner;
+  readonly target: typeof originalCurrentPcbViaWriteTarget;
+  readonly allocation: typeof currentPcbViaWriteAllocationOutcome;
+  readonly prepared: ReturnType<typeof originalCurrentPcbViaWriteTarget>;
+  readonly mode: "unlaunched" | "native-refused"; resultAttempted: boolean;
+}
+interface OriginalReaderNoProcessRelease {
+  readonly owner: CurrentPcbViaSavedReadbackOwner;
+  readonly native: Readonly<{ assertOriginalCurrentPcbViaSavedReadbackOwner: typeof assertOriginalCurrentPcbViaSavedReadbackOwner; originalCurrentPcbViaSavedReadbackTarget: typeof originalCurrentPcbViaSavedReadbackTarget }>;
+  readonly checkpoint: Readonly<{ requireOriginalCurrentPcbViaWriteClosedCheckpoint: typeof requireOriginalCurrentPcbViaWriteClosedCheckpoint }>;
+  readonly assertOwner: typeof assertOriginalCurrentPcbViaSavedReadbackOwner;
+  readonly target: typeof originalCurrentPcbViaSavedReadbackTarget;
+  readonly requireCheckpoint: typeof requireOriginalCurrentPcbViaWriteClosedCheckpoint;
+  readonly prepared: ReturnType<typeof originalCurrentPcbViaSavedReadbackTarget>;
+  readonly mode: "unlaunched" | "native-refused"; resultAttempted: boolean;
+}
 /** Failed journals stay unresolved after resource cleanup. Closing a process
  * cannot turn an unknown Save into a completed design operation. */
 export class CurrentPcbViaWriteJournal {
@@ -206,6 +241,9 @@ export class CurrentPcbViaWriteJournal {
   #entered = false;
   #reserved = false;
   #allocationRefusalAttempted = false;
+  #readerNoProcess: OriginalReaderNoProcessRelease | null = null;
+  #noProcessGeneration: "writer" | "readback" | null = null;
+  #writerNoProcess: OriginalWriterNoProcessRelease | null = null;
   #busy = false;
   #idle: Promise<null> = Promise.resolve(null);
   #pending: Readonly<{ entry: Entry; descriptor: ArtifactDescriptor; next: OperationJournal }> | null = null;
@@ -246,7 +284,7 @@ export class CurrentPcbViaWriteJournal {
     entries(next); this.#pending = Object.freeze({ entry, descriptor, next });
   }
   public async append(kind: Kind, evidence: Readonly<Record<string, unknown>>): Promise<void> {
-    need(kind !== "allocation-refused", "ORIGINAL_NO_RESOURCE_PROOF_REQUIRED");
+    need(!["allocation-refused", "no-process-release-intent", "no-process-release-result"].includes(kind), "ORIGINAL_NO_RESOURCE_PROOF_REQUIRED");
     await this.#exclusive(async (): Promise<void> => { await this.#assertCurrent(); this.#queue(kind, evidence); await this.#settle(); });
   }
   /** This one new terminal differs from the immutable v1 pre-intent refusal.
@@ -261,6 +299,81 @@ export class CurrentPcbViaWriteJournal {
       this.#queue("allocation-refused", { allocationIntentPublished: true, nativeAllocationNeverEntered: true, originalFactoryNoResourceVerified: true,
         originalProcessExitClaimed: false, nativeOwnershipTransferred: false }); await this.#settle(); requireProof(proof, this.#plan);
     });
+  }
+  #requireWriterNoProcess(context: OriginalWriterNoProcessRelease, released: boolean): void {
+    need(this.#noProcessGeneration === "writer" && this.#writerNoProcess === context && this.#owner === context.owner &&
+      context.native.assertOriginalCurrentPcbViaWriteOwner === context.assertOwner && context.native.currentPcbViaWriteAllocationOutcome === context.allocation &&
+      context.native.originalCurrentPcbViaWriteTarget === context.target, "ORIGINAL_WRITER_MODULES");
+    context.assertOwner(context.owner); const allocation = context.allocation(context.prepared);
+    need(context.target(context.owner) === context.prepared && requireOriginalCurrentPcbViaWritePlan(this.#plan).prepared === context.prepared && allocation.owner === context.owner && allocation.state === "retained", "ORIGINAL_WRITER_TARGET");
+    const state = context.owner.status(); need(state.binding === null && state.launchConsumed === (context.mode === "native-refused"), "ORIGINAL_WRITER_NO_ROOT");
+    if (released) { need(state.released && state.helperClosed, "ORIGINAL_WRITER_RELEASE_ACK"); }
+    else { need(!state.released && !state.helperClosed && (context.mode === "unlaunched" || state.noProcessCleanupAvailable), "ORIGINAL_WRITER_NO_PROCESS"); }
+  }
+  public async recordWriterNoProcessReleaseIntent(owner: CurrentPcbViaWriteOwner): Promise<void> {
+    need(this.#noProcessGeneration === null && !this.#busy && this.#pending === null, "ORIGINAL_WRITER_RELEASE_CONSUMED"); this.#noProcessGeneration = "writer";
+    await this.#exclusive(async (): Promise<void> => {
+      const native = await import("./current-pcb-via-write-owner.ts"); native.assertOriginalCurrentPcbViaWriteOwner(owner);
+      const prepared = native.originalCurrentPcbViaWriteTarget(owner), state = owner.status();
+      need(this.#owner === owner && state.binding === null && !state.released && !state.helperClosed && (!state.launchConsumed || state.noProcessCleanupAvailable), "ORIGINAL_WRITER_NO_PROCESS");
+      const context: OriginalWriterNoProcessRelease = { owner, native, assertOwner: native.assertOriginalCurrentPcbViaWriteOwner,
+        target: native.originalCurrentPcbViaWriteTarget, allocation: native.currentPcbViaWriteAllocationOutcome, prepared,
+        mode: state.launchConsumed ? "native-refused" : "unlaunched", resultAttempted: false }; this.#writerNoProcess = context;
+      this.#requireWriterNoProcess(context, false); await this.#assertCurrent(); this.#requireWriterNoProcess(context, false);
+      this.#queue("no-process-release-intent", { generation: "writer", originalFactoryVerified: true, rootNeverCreated: true, jobEmpty: true, releaseOriginalHelperOnly: true });
+      await this.#settle(); this.#requireWriterNoProcess(context, false);
+    });
+  }
+  public requireWriterNoProcessReleaseReady(owner: CurrentPcbViaWriteOwner): void {
+    const context = this.#writerNoProcess;
+    need(context !== null && context.owner === owner && !context.resultAttempted && !this.#busy && this.#pending === null &&
+      entries(this.#operation).at(-1)?.kind === "no-process-release-intent", "ORIGINAL_WRITER_RELEASE_INTENT"); this.#requireWriterNoProcess(context, false);
+  }
+  public async recordWriterNoProcessReleaseResult(owner: CurrentPcbViaWriteOwner): Promise<void> {
+    const context = this.#writerNoProcess;
+    need(context !== null && context.owner === owner && !context.resultAttempted && !this.#busy && this.#pending === null, "ORIGINAL_WRITER_RELEASE_CONSUMED"); context.resultAttempted = true;
+    await this.#exclusive(async (): Promise<void> => { this.#requireWriterNoProcess(context, true); await this.#assertCurrent(); this.#requireWriterNoProcess(context, true);
+      this.#queue("no-process-release-result", { generation: "writer", originalFactoryVerified: true, rootNeverCreated: true, jobEmpty: true, helperReleaseVerified: true,
+        designCompletionClaimed: false, readbackCompletionClaimed: false }); await this.#settle(); this.#requireWriterNoProcess(context, true); });
+  }
+  #requireReaderNoProcess(context: OriginalReaderNoProcessRelease, released: boolean): void {
+    need(this.#noProcessGeneration === "readback" && this.#readerNoProcess === context && context.native.assertOriginalCurrentPcbViaSavedReadbackOwner === context.assertOwner &&
+      context.native.originalCurrentPcbViaSavedReadbackTarget === context.target && context.checkpoint.requireOriginalCurrentPcbViaWriteClosedCheckpoint === context.requireCheckpoint, "ORIGINAL_READER_MODULES");
+    context.assertOwner(context.owner); need(context.target(context.owner) === context.prepared && context.requireCheckpoint(context.prepared).plan === this.#plan, "ORIGINAL_READER_TARGET");
+    const state = context.owner.status(); need(state.binding === null && state.launchConsumed === (context.mode === "native-refused"), "ORIGINAL_READER_NO_ROOT");
+    if (released) { need(state.released && state.helperClosed, "ORIGINAL_READER_RELEASE_ACK"); }
+    else { need(!state.released && !state.helperClosed && (context.mode === "unlaunched" || state.noProcessCleanupAvailable), "ORIGINAL_READER_NO_PROCESS"); }
+  }
+  /** A separate v2 cleanup records absence of root creation honestly. It
+   * cannot borrow a terminated writer or manufacture rootExited evidence. */
+  public async recordReaderNoProcessReleaseIntent(owner: CurrentPcbViaSavedReadbackOwner): Promise<void> {
+    need(this.#noProcessGeneration === null && !this.#busy && this.#pending === null, "ORIGINAL_READER_RELEASE_CONSUMED"); this.#noProcessGeneration = "readback";
+    await this.#exclusive(async (): Promise<void> => {
+      const checkpoint = await import("./current-pcb-via-write-closed-checkpoint.ts"), native = await import("./current-pcb-via-saved-readback-owner.ts");
+      native.assertOriginalCurrentPcbViaSavedReadbackOwner(owner); const prepared = native.originalCurrentPcbViaSavedReadbackTarget(owner);
+      need(checkpoint.requireOriginalCurrentPcbViaWriteClosedCheckpoint(prepared).plan === this.#plan, "ORIGINAL_READER_TARGET");
+      const state = owner.status(); need(state.binding === null && !state.released && !state.helperClosed && (!state.launchConsumed || state.noProcessCleanupAvailable), "ORIGINAL_READER_NO_PROCESS");
+      const context: OriginalReaderNoProcessRelease = { owner, native, checkpoint, assertOwner: native.assertOriginalCurrentPcbViaSavedReadbackOwner,
+        target: native.originalCurrentPcbViaSavedReadbackTarget, requireCheckpoint: checkpoint.requireOriginalCurrentPcbViaWriteClosedCheckpoint, prepared,
+        mode: state.launchConsumed ? "native-refused" : "unlaunched", resultAttempted: false }; this.#readerNoProcess = context;
+      this.#requireReaderNoProcess(context, false); await this.#assertCurrent(); this.#requireReaderNoProcess(context, false);
+      this.#queue("no-process-release-intent", { generation: "readback", originalFactoryVerified: true, rootNeverCreated: true, jobEmpty: true, releaseOriginalHelperOnly: true });
+      await this.#settle(); this.#requireReaderNoProcess(context, false);
+    });
+  }
+  public requireReaderNoProcessReleaseReady(owner: CurrentPcbViaSavedReadbackOwner): void {
+    const context = this.#readerNoProcess;
+    need(context !== null && context.owner === owner && !context.resultAttempted && !this.#busy && this.#pending === null &&
+      entries(this.#operation).at(-1)?.kind === "no-process-release-intent", "ORIGINAL_READER_RELEASE_INTENT");
+    this.#requireReaderNoProcess(context, false);
+  }
+  public async recordReaderNoProcessReleaseResult(owner: CurrentPcbViaSavedReadbackOwner): Promise<void> {
+    const context = this.#readerNoProcess;
+    need(context !== null && context.owner === owner && !context.resultAttempted && !this.#busy && this.#pending === null, "ORIGINAL_READER_RELEASE_CONSUMED");
+    context.resultAttempted = true;
+    await this.#exclusive(async (): Promise<void> => { this.#requireReaderNoProcess(context, true); await this.#assertCurrent(); this.#requireReaderNoProcess(context, true);
+      this.#queue("no-process-release-result", { generation: "readback", originalFactoryVerified: true, rootNeverCreated: true, jobEmpty: true, helperReleaseVerified: true,
+        designCompletionClaimed: false, readbackCompletionClaimed: false }); await this.#settle(); this.#requireReaderNoProcess(context, true); });
   }
   public async appendIntent(stage: "create" | "save", evidence: Readonly<Record<string, unknown>>, owner: object): Promise<CurrentPcbViaWriteDispatch> {
     need(this.#owner === owner && !this.#busy && this.#pending === null && !this.#dispatchTokens.has(stage), "WRITER_BINDING");

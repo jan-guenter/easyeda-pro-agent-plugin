@@ -6,6 +6,8 @@
 
 - [2026-11-06 original structure transport observer](2026-11-06-original-structure-transport-observer.md). Fixed XHR send/return custody, original body and main-publication grants, failure retention, and checkpoint-bound Via generation launch; connected writer completion remains pending.
 
+- [2026-11-07 saved-reader journal and no-root cleanup](2026-11-07-saved-reader-journal-cleanup.md). Original reopen/effect/exit/fullSQL publications and honest writer/readback helper cleanup; unreproved publication holds controls and failed proof remains false.
+
 - [2026-11-06 saved-reader bounded exit settlement](2026-11-06-saved-reader-bounded-exit-settlement.md). One private exhausted-cleanup state admits one further original read-only exit wait; controls never replay and failed persistence stays false.
 
 - [2026-11-06 bounded saved-reader Start Page](2026-11-06-saved-reader-bounded-start-page.md). Same-generation eight-inventory wait pins the first page and refuses replacement/closure; observed metadata remains source-unqualified until the existing owner proof.
