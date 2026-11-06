@@ -30,10 +30,11 @@ export interface CurrentPcbViaMainBeginHost {
 }
 const resultReply = z.strictObject({ result: z.strictObject({ type: z.literal("object"), value: currentPcbViaMainBeginResultSchema }) });
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PCB_VIA_BEGIN_CUSTODY_${code}`); } }
+export interface CurrentPcbViaMainCallbackLoan { readonly identity: object; readonly breakpointId: string }
 export class CurrentPcbViaMainBeginCustody {
   readonly #host: CurrentPcbViaMainBeginHost;
   readonly #points = new Map<Role, string>(); readonly #frames = new Map<Call, string>(); readonly #packets = new Map<Call, string>();
-  #transferred = false;
+  #transferred = false; #callbackLoan: CurrentPcbViaMainCallbackLoan | null = null; #callbackLoanConsumed = false;
   #normal = 0; #cleanup = 0; #step = 0; #failed = false;
   #actor: ReturnType<CurrentPcbViaMainBeginHost["actorSql"]> | null = null;
   #pending: Readonly<{ pause: object; role: typeof STEPS[number]; dataStr: string }> | null = null;
@@ -41,7 +42,7 @@ export class CurrentPcbViaMainBeginCustody {
   public constructor(host: CurrentPcbViaMainBeginHost) { this.#host = host; Object.freeze(this); }
   #same(): void { need(!this.#failed, "FAILED"); this.#host.assertCurrent(); }
   #pointsCurrent(): void { need([...this.#points.values()].every(id => this.#host.pointCurrent(id)), "CURRENT_SOURCE_POINTS"); }
-  public requireArmed(): void { this.#same(); this.#pointsCurrent(); need(this.#points.size === 4 && this.#step === 0 && this.#normal === 4 && this.#cleanup === 0, "PRE_SAVE_ENROLLMENT"); }
+  public requireArmed(): void { this.#same(); this.#pointsCurrent(); need(this.#callbackLoan === null && this.#points.size === 4 && this.#step === 0 && this.#normal === 4 && this.#cleanup === 0, "PRE_SAVE_ENROLLMENT"); }
   #held(role: Call): CurrentPcbViaMainBeginPause {
     const held = this.#host.pause(); const raw = pauseValue.parse(captureCurrentPcbStringClockReply(held.raw).value); const first = raw.callFrames[0];
     need(first !== undefined && held.pendingEvents === 0 && !held.resumed && !held.resumeAttempted && first.callFrameId === held.frameId && first.location.scriptId === this.#host.scriptId, "LIVE_DELIVERED_PAUSE");
@@ -50,7 +51,7 @@ export class CurrentPcbViaMainBeginCustody {
     return held;
   }
   public async request(input: Command, cleanup: boolean): Promise<unknown> {
-    this.#same(); need(!this.#transferred, "HISTORY_TRANSFERRED"); const command = validateCurrentPcbViaMainBeginCommand(input);
+    this.#same(); need(!this.#transferred, "HISTORY_TRANSFERRED"); need(this.#callbackLoan === null, "STRUCTURE_CALLBACK_BORROWED"); const command = validateCurrentPcbViaMainBeginCommand(input);
     try {
       if (cleanup) { this.#cleanup += 1; need(command.phase === "via-main-begin-remove" && this.#cleanup <= LIMITS.cleanup && this.#result !== null, "CLEANUP"); }
       else { this.#normal += 1; need(command.phase !== "via-main-begin-remove" && this.#normal <= LIMITS.normal, "NORMAL_BOUND"); }
@@ -87,6 +88,15 @@ export class CurrentPcbViaMainBeginCustody {
     this.#same(); this.#pointsCurrent(); const pending = this.#pending; const held = this.#host.pause();
     need(command.phase === "via-main-begin-step" && pending !== null && !this.#consumed && this.#host.busy() && this.#host.pendingRequestId() === requestId && command.role === pending.role && held.identity === pending.pause && held.resumeAttempted && !held.resumed, "ORIGINAL_PENDING_NATIVE_GRANT");
     this.#consumed = true; return Object.freeze({ origin: this.#host.origin, dataStr: pending.dataStr, nativeSql: command.role === "run" });
+  }
+  /** One actual prehistory operation may temporarily use the same installed
+   * point. It must return this exact lease before BEGIN can enter any source. */
+  public lendOriginalCallbackBeforeBegin(): CurrentPcbViaMainCallbackLoan {
+    this.requireArmed(); need(!this.#callbackLoanConsumed, "STRUCTURE_CALLBACK_LOAN_CONSUMED"); const breakpointId = this.#points.get("callback"); need(breakpointId !== undefined, "ORIGINAL_CALLBACK_POINT");
+    this.#callbackLoanConsumed = true; this.#callbackLoan = Object.freeze({ identity: Object.freeze({}), breakpointId }); return this.#callbackLoan;
+  }
+  public returnOriginalCallbackBeforeBegin(loan: CurrentPcbViaMainCallbackLoan): void {
+    this.#same(); this.#pointsCurrent(); need(this.#callbackLoan === loan && this.#points.get("callback") === loan.breakpointId && this.#step === 0 && this.#normal === 4 && this.#pending === null && !this.#transferred, "STRUCTURE_CALLBACK_ORIGINAL_LOAN"); this.#callbackLoan = null;
   }
   /** Synchronous one-use transfer while the original begin return is still
    * held. Only this backend's successor ledger receives these retained IDs. */

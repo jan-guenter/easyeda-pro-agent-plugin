@@ -94,3 +94,43 @@ primitive before serialization. Focused synthetic browser-representation tests
 prove that inherited hooks, nested structure hooks and stringify replacement
 are refused without invoking them. Capture grows from five to seven retained
 members; request/event/codebook counts remain unchanged.
+
+### Original prehistory STRUCTURE SQL and response boundary
+
+The new Via main STRUCTURE ledger joins the actual held modern-Fetch POST,
+original controller/context and fulfilled selected connection to the complete
+initial structure row. It permits only the existing-row/lower-ticket UPDATE,
+with exact SQL, three parameters, native DB filename/prototypes, source caller,
+resolver/rejector and one error-null native Statement callback (`changes=1`).
+The existing original BEGIN callback breakpoint is loaned once and returned
+before BEGIN; no duplicate callback breakpoint or persistent mutation grant is
+installed. All other selected-file SQL remains under the original fence.
+
+The operation then follows the original service/controller await returns and
+same response's source-qualified own Writable `_final`. Its catch is refusal
+only. The original finalizer must return with the same callback/closure tuple,
+initialized response and status200. Temporary context and finalizer points are
+removed at their original held joins. Completion can remove this ledger's
+remaining points and object group while retaining the selected-file fence.
+
+`reserveViaStructurePublication` derives its exact metadata tree from the
+original generated checkpoint and actual held worker clock/body. An original,
+once-consumed body token joins both the shared packet and transport lanes;
+only the original completed native SQL/finalizer ledger issues the publication
+token. Copies, another owner/operation and repeated consumption cannot populate
+those registries. Native controller arguments substitute the privately enrolled
+expected body; caller wire fields contain only original handles.
+
+The finite main reservation adds74 normal and14 cleanup requests, with89 fixed
+codebook cases and31 bounded events. Focused checks run the production main
+cursor through GET → selected POST → one update/callback/finalizer → GET,
+including the same callback-point return to BEGIN, lost SQL acknowledgment,
+foreign callback and original finalizer catch. No application/native process
+was started, no generated helper was refreshed, and no durable Save is claimed.
+
+SDK Save remains denied. This boundary alone cannot establish the original
+producer prefix before create, admit planned producer roots/cache/drain, prove
+the complete closed SQL delta, or qualify a cache-excluded reopened result.
+These are explicit remaining prerequisites, not reconstructed from SDK ACKs
+or timer durations. The old effect-first main origin grants observation only;
+it does not establish prospective pre-create enrollment.

@@ -2,6 +2,9 @@
  * Only source/transport issuance are substituted; actual cursor, decoders,
  * ordering, predicates, counters and mutation-hold logic run unchanged. */
 /* oxlint-disable import/max-dependencies -- Exercise the real source cursor with explicit synthetic transport/source peers and the actual actor decoders. */
+import { currentPcbViaMainStructureFrame, currentPcbViaMainStructureNativeCases, validateCurrentPcbViaMainStructureCommand } from "../src/current-pcb-via-main-structure-protocol.ts";
+import type { CurrentPcbViaMainStructureCommand, CurrentPcbViaMainStructureFrameRole, CurrentPcbViaMainStructureProgramRole } from "../src/current-pcb-via-main-structure-protocol.ts";
+import { viaMainStructureReply, viaMainStructureWindow } from "./helpers/via-main-structure-replies.ts";
 import { currentPcbViaMainHistoryFrame, currentPcbViaMainHistoryNativeCases, validateCurrentPcbViaMainHistoryCommand } from "../src/current-pcb-via-main-history-protocol.ts";
 import type { CurrentPcbViaMainHistoryCommand, CurrentPcbViaMainHistoryFrameRole } from "../src/current-pcb-via-main-history-protocol.ts";
 import { historyBaseline, viaMainHistoryReply, viaMainHistoryWindow } from "./helpers/via-main-history-replies.ts";
@@ -24,6 +27,7 @@ import { currentPcbViaMainNativeCases, validateCurrentPcbViaMainCommand } from "
 
 type Data = Record<string, unknown>;
 type CurrentPcbViaMainStepCommand = Parameters<CurrentFootprintCopyMainBackendRunner["consumeOriginalViaMainDriverStep"]>[0];
+function structurePeerFrame(kind: CurrentPcbViaMainStructureFrameRole): Data { const fixed = currentPcbViaMainStructureFrame(kind); const column: unknown = Object.getOwnPropertyDescriptor(fixed,"columnNumber")?.value; let columnNumber = typeof column === "number" ? column : fixed.functionColumn; if(kind === "run") { columnNumber = 875; } return { callFrameId: `structure-frame-${kind}`, functionName: fixed.name, location:{scriptId:"app",lineNumber:fixed.lineNumber,columnNumber},functionLocation:{scriptId:"app",lineNumber:fixed.lineNumber,columnNumber:fixed.functionColumn} }; }
 const captureArrayId=(raw:unknown):string=>{assert.ok(raw!==null&&typeof raw==="object");const result:unknown=Reflect.get(raw,"result");assert.ok(result!==null&&typeof result==="object");const value:unknown=Reflect.get(result,"objectId");assert.ok(typeof value==="string");return value;};
 const capability = Object.freeze({ profile: "private.selected-file-main-sql-fence-bootstrap.v1" as const, executionAuthorized: false as const });
 function historyPeerFrame(kind: CurrentPcbViaMainHistoryFrameRole): Data {
@@ -46,7 +50,7 @@ function nativeMetadata(id: string): Data {
 }
 const configPacket = (role: "jb" | "dc", site: "run" | "prepare" | "prepared", sql: string, transactionDepth: 0 | 1): Data => ({ recognized: true, role, site, sql, transactionDepth, parametersEmpty: true, designWriteGrant: false, nativeCompletionProven: false });
 async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = null): Promise<Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; phases: string[]; transport: CurrentFootprintCopyMainBackendTransport;
-  injectHistoryPoint: (role: CurrentPcbViaMainHistoryFrameRole, caller?: CurrentPcbViaMainHistoryFrameRole) => void; injectBeginPoint: (role: "save" | "transaction" | "run" | "callback" | "returned") => void; injectViaPoint: (role: "context" | "controller" | "editHead") => void; loseNextDriverStep: () => void; injectRequest: (method: string, foreign?: boolean, sourceDelta?: number, history?: boolean) => void; injectMutation: () => void; injectDriver: () => void; resumes: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
+  injectStructurePoint: (role: CurrentPcbViaMainStructureFrameRole, caller?: CurrentPcbViaMainStructureFrameRole) => void; injectHistoryPoint: (role: CurrentPcbViaMainHistoryFrameRole, caller?: CurrentPcbViaMainHistoryFrameRole) => void; injectBeginPoint: (role: "save" | "transaction" | "run" | "callback" | "returned") => void; injectViaPoint: (role: "context" | "controller" | "editHead") => void; loseNextDriverStep: () => void; injectRequest: (method: string, foreign?: boolean, sourceDelta?: number, history?: boolean | "structure") => void; injectMutation: () => void; injectDriver: () => void; resumes: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
   const base = mainBackendTransportFixture();
   const ids = new Map<number, number>(), phases: string[] = [], queue: Data[] = [], retainedRegistration: Data[] = [];
   let currentRequest = { method: "GET", url: "", delta: 0, pathHeader:"f".repeat(64) }, fetchScriptSeen = false;
@@ -66,8 +70,8 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
   let heldPoll: Readonly<{ started: PromiseWithResolvers<null>; settle: PromiseWithResolvers<null> }> | null = null;
   const event = (method: string, params: Data): void => { queue.push({ method, params }); };
   const location = (site: keyof typeof SOURCE.sites): Data => ({ scriptId: "app", lineNumber: SOURCE.sites[site].lineNumber, columnNumber: SOURCE.sites[site].breakpointColumnNumber + (site === "import" ? delta : 0) });
-  const pause = (site: keyof typeof SOURCE.sites): void => { const frames:Data[]=[{callFrameId:`frame-${site}`,location:location(site)}];
-    if(site==="driver"){frames.push({callFrameId:"frame-caller",location:{scriptId:"app",lineNumber:1164,columnNumber:51_414}});}
+  const pause = (site: keyof typeof SOURCE.sites): void => { const frames:Data[]=[{callFrameId:`frame-${site}`,location:location(site),...(site==="driver"?{functionName:"",functionLocation:{scriptId:"app",lineNumber:1164,columnNumber:2434}}:{})}];
+    if(site==="driver"){frames.push({callFrameId:"frame-caller",functionName:"interceptHttpProtocol",functionLocation:{scriptId:"app",lineNumber:1164,columnNumber:51_072},location:{scriptId:"app",lineNumber:1164,columnNumber:51_414}});}
     event("Debugger.paused",{reason:"other",hitBreakpoints:[site==="import"?EARLY_ID:`sql-${site}`],callFrames:frames});
   };
   const sqlSend = (command: SqlCommand, id: number): Promise<void> => {
@@ -142,6 +146,12 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
       sendCurrentSelectedFileMainSqlFenceCommand: (token: unknown, original: unknown, command: SqlCommand, id: number): Promise<void> => {
         assert.equal(token, capability); assert.equal(original, runner); return sqlSend(command, id);
       },
+      sendOriginalCurrentPcbViaMainStructure: (token: unknown, original: unknown, command: CurrentPcbViaMainStructureCommand, id: number): Promise<ReturnType<typeof viaMainStructureWindow>> => {
+        assert.equal(token, capability); assert.equal(original, runner); assert.ok(runner !== null); phases.push("role" in command ? `${command.phase}-${command.role}` : command.phase);
+        const window = command.phase === "via-main-structure-step" ? viaMainStructureWindow(command.role) : null;
+        if (command.phase === "via-main-structure-step") { runner.consumeOriginalViaMainStructure(command, id); if (loseDriverStep) { return Promise.reject(new Error("original-structure-step-ack-lost")); } plannedResumes += 1; event("Debugger.resumed", {}); }
+        queue.push({ id, result: viaMainStructureReply(command, id, currentRequest.pathHeader) }); return Promise.resolve(window);
+      },
       sendOriginalCurrentPcbViaMainHistory: (token: unknown, original: unknown, command: CurrentPcbViaMainHistoryCommand, id: number): Promise<ReturnType<typeof viaMainHistoryWindow>> => {
         assert.equal(token, capability); assert.equal(original, runner); assert.ok(runner !== null); phases.push("role" in command ? `${command.phase}-${command.role}` : command.phase);
         const window = command.phase === "via-main-history-step" ? viaMainHistoryWindow(command.role) : null;
@@ -181,7 +191,10 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
     },
   });
   runner = new module.Constructor(transport, undefined, capability);
-  return { runner, phases, transport, injectHistoryPoint: (role: CurrentPcbViaMainHistoryFrameRole, caller?: CurrentPcbViaMainHistoryFrameRole): void => {
+  return { runner, phases, transport, injectStructurePoint: (role: CurrentPcbViaMainStructureFrameRole, caller?: CurrentPcbViaMainStructureFrameRole): void => {
+    let pointId = `structure-${role}`; if (role === "run") { pointId = "sql-run"; } else if (role === "callback") { pointId = "begin-callback"; }
+    event("Debugger.paused", { reason:"other",hitBreakpoints:[pointId],callFrames:[structurePeerFrame(role),...(caller===undefined?[]:[structurePeerFrame(caller)])] });
+  }, injectHistoryPoint: (role: CurrentPcbViaMainHistoryFrameRole, caller?: CurrentPcbViaMainHistoryFrameRole): void => {
     if (role === "sqlRun" && caller !== undefined) { const slots: Partial<Record<CurrentPcbViaMainHistoryFrameRole, string>> = { dataCaller: "data", headCallerAppend: "head", headCallerMutable: "head", branchCaller: "branch", commitCaller: "commit", projectCaller: "project" }; historySlot = slots[caller] ?? "data"; }
     let pointId = `history-${role}`; if (role === "sqlRun") { pointId = "sql-run"; } else if (role === "sqlCallback") { pointId = "begin-callback"; }
     event("Debugger.paused", { reason: "other", hitBreakpoints: [pointId], callFrames: [historyPeerFrame(role), ...(caller === undefined ? [] : [historyPeerFrame(caller)])] });
@@ -195,8 +208,8 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
     const name={context:"",controller:"createProjectHistory",editHead:"PB"}[role];const column={context:2434,controller:1648,editHead:27_772}[role];
     const caller=role==="context"?{callFrameId:"frame-parent",functionName:"interceptHttpProtocol",location:{scriptId:"app",lineNumber:1164,columnNumber:51_414},functionLocation:{scriptId:"app",lineNumber:1164,columnNumber:51_072}}:{callFrameId:"frame-actor",functionName:"L3",location:{scriptId:"app",lineNumber:8573,columnNumber:267},functionLocation:{scriptId:"app",lineNumber:8573,columnNumber:31}};
     event("Debugger.paused",{reason:"other",hitBreakpoints:[`via-${String(site.columnNumber)}`],callFrames:[{callFrameId:`frame-${role}`,functionName:name,location:{scriptId:"app",...site},functionLocation:{scriptId:"app",lineNumber:site.lineNumber,columnNumber:column}},...(role==="controller"?[]:[caller])]});
-  }, loseNextDriverStep: ():void=>{loseDriverStep=true;}, injectRequest: (method: string, foreign = false, sourceDelta = 0, history=false): void => {
-    const project = foreign ? "d".repeat(64) : createHash("sha256").update(String.raw`C:\Synthetic\fixture.eprj2`).digest("hex"); currentRequest = { method, url: `/api/v4/projects/${project}/branches${history?`/${"b".repeat(32)}/histories`:""}`, delta: sourceDelta, pathHeader:project };
+  }, loseNextDriverStep: ():void=>{loseDriverStep=true;}, injectRequest: (method: string, foreign = false, sourceDelta = 0, history: boolean | "structure"=false): void => {
+    const project = foreign ? "d".repeat(64) : createHash("sha256").update(String.raw`C:\Synthetic\fixture.eprj2`).digest("hex"); currentRequest = { method, url: `/api/v4/projects/${project}/branches${history===false?"":`/${"b".repeat(32)}/${history==="structure"?"structures":"histories"}`}`, delta: sourceDelta, pathHeader:project };
     if (!fetchScriptSeen) { event("Debugger.scriptParsed", { scriptId: "builtin-fetch", url: "node:internal/deps/undici/undici", executionContextId: 1, startLine: 0, startColumn: 0, endLine: 17_434, endColumn: 0, length: 745_782, isLiveEdit: false, hasSourceURL: false, isModule: false, scriptLanguage: "JavaScript" }); fetchScriptSeen = true; }
     pause("driver"); }, injectMutation: (): void => { pause("run"); }, injectDriver: (): void => { pause("driver"); }, resumes: (): number => normalResumes + sqlResumes + plannedResumes,
     deferPoll: () => { assert.equal(heldPoll, null); const original = { started: Promise.withResolvers<null>(), settle: Promise.withResolvers<null>() }; heldPoll = original;
@@ -408,3 +421,43 @@ void test("the old Via request cleanup cannot remove source points owned by the 
   await assert.rejects(original.bindings.request(validateCurrentPcbViaMainCommand({phase:"via-main-request-remove",method:"Debugger.removeBreakpoint",params:{breakpointId:"begin-callback"}}),true),/VIA_MAIN_PERSISTENT_POINT/u);
   original.bindings.requireBeginArmed();assert.equal(f.phases.includes("via-main-request-remove"),false);
 });
+
+for (const scenario of ["complete", "sql-ack-lost", "foreign-callback", "final-catch"] as const) { void test(`actual structure cursor loans one BEGIN callback and retains publication ordering (${scenario})`, async () => {
+  const f = await fixture(); await f.runner.observe(); const original = await f.runner.beginViaMainObservation();
+  const projectUuid = createHash("sha256").update(String.raw`C:\Synthetic\fixture.eprj2`).digest("hex"); f.runner.bindViaInitialHistoryBaseline(original.origin, { ...historyBaseline, projectUuid });
+  for (const [lineNumber, columnNumber] of [[8573, 1663], [8572, 27_776]]) { await original.bindings.request(validateCurrentPcbViaMainCommand({ phase:"via-main-request-site-arm",method:"Debugger.setBreakpoint",params:{location:{scriptId:"app",lineNumber,columnNumber}} }),false); }
+  for (const command of currentPcbViaMainBeginNativeCases().filter(item=>item.phase==="via-main-begin-arm")) { await original.bindings.beginRequest({...command,params:{...command.params,location:{...command.params.location,scriptId:"app"}}},false); }
+  const commands = currentPcbViaMainStructureNativeCases();
+  const send = (phase: string, role: string | null, params: Data = {}, cleanup = false): Promise<unknown> => { const sample = commands.find(item=>item.phase===phase&&(role===null||"role" in item&&item.role===role)); assert.ok(sample!==undefined); return original.bindings.structureRequest(validateCurrentPcbViaMainStructureCommand({...sample,params:{...sample.params,...params}}),cleanup); };
+  const arm = (role:string):Promise<unknown> => { const sample=commands.find(item=>item.phase==="via-main-structure-arm"&&item.role===role);assert.ok(sample?.phase==="via-main-structure-arm");return send(sample.phase,role,{...sample.params,location:{...sample.params.location,scriptId:"app"}}); };
+  for (const role of ["controller","query","selected","update","exec","updateReturned","serviceReturned","controllerReturned","response"]) { await arm(role); } original.bindings.requireStructureArmed();
+  f.runner.bindViaExpectedHistoryBody(original.origin,{projectUuid,branchUuid:"b".repeat(32),projectKey:projectUuid,path:String.raw`C:\Synthetic\fixture.eprj2`,dataStr:"original-held-body"});
+  const expected={projectUuid,branchUuid:"b".repeat(32),ticket:3,structureText:'{"saved":true}'}; f.runner.bindViaExpectedStructure(original.origin,expected);
+  const before=f.resumes(); f.injectRequest("GET");await original.bindings.nextEvent(); const read=await original.bindings.observeRequest();await original.bindings.continueReadonlyRequest(read);assert.equal(f.resumes(),before+1);
+  f.injectRequest("POST",false,0,"structure");await original.bindings.nextEvent();const request=await original.bindings.observeRequest();original.bindings.startStructure(request);
+  const frame=async(role:CurrentPcbViaMainStructureFrameRole):Promise<string>=>{let callFrameId=`structure-frame-${role}`;if(role==="driver"){callFrameId="frame-driver";}else if(role==="driverCaller"){callFrameId="frame-caller";}return captureArrayId(await send("via-main-structure-frame",role,{callFrameId}));};
+  const join=async(role: CurrentPcbViaMainStructureProgramRole,receiver:string,args:readonly string[]=[]):Promise<string>=>captureArrayId(await send("via-main-structure-join",role,{objectId:receiver,arguments:args.map(objectId=>({objectId}))}));
+  const value=(role:string,receiver:string):Promise<unknown>=>send("via-main-structure-join",role,{objectId:receiver,arguments:[]});
+  const step=(role:string):Promise<unknown>=>send("via-main-structure-step",role);
+  const capture=async(role:CurrentPcbViaMainStructureFrameRole,program:CurrentPcbViaMainStructureProgramRole,args:readonly string[]):Promise<string>=>{let caller:CurrentPcbViaMainStructureFrameRole|undefined;if(role==="query"){caller="queryCaller";}else if(role==="run"){caller="runCaller";}f.injectStructurePoint(role,caller);await original.bindings.nextEvent();return join(program,await frame(role),args);};
+  const remove=(role:string):Promise<unknown>=>send("via-main-structure-remove",role,{breakpointId:`structure-${role}`},true);
+  await arm("context");const driver=await frame("driver");const caller=await frame("driverCaller");const invocation=await join("invocation",driver,[original.bindings.constructionObjectId,caller]);await step("driver");
+  const context=await capture("context","context",[original.bindings.constructionObjectId]);await send("via-main-structure-join","contextJoin",{objectId:invocation,arguments:[{objectId:context}]});await remove("context");await step("context");
+  f.injectStructurePoint("controller");await original.bindings.nextEvent();const controller=captureArrayId(await send("via-main-structure-join","controller",{objectId:await frame("controller"),arguments:[{objectId:context},{objectId:invocation},{value:expected}]}));await step("controller");
+  f.injectStructurePoint("query","queryCaller");await original.bindings.nextEvent();const query=await join("query",await frame("query"),[controller,await frame("queryCaller")]);
+  await send("via-main-structure-properties","query",{objectId:query});await send("via-main-structure-properties","promise",{objectId:"structure-db-promise"});await send("via-main-structure-join","connection",{objectId:query,arguments:[{objectId:"structure-yo"}]});await step("query");
+  const selected=await capture("selected","selected",[query]);await value("selectedValue",selected);await step("selected");const update=await capture("update","update",[selected]);await value("rowsValue",update);await step("update");
+  const exec=await capture("exec","exec",[update]);await step("exec");f.injectStructurePoint("run","runCaller");await original.bindings.nextEvent();const run=await join("run",await frame("run"),[await frame("runCaller"),exec,original.bindings.sqlCaptureObjectId]);await value("runValue",run);
+  if(scenario==="sql-ack-lost"){f.loseNextDriverStep();const count=f.resumes();await assert.rejects(step("run"),/ack-lost/u);await assert.rejects(step("run"));assert.equal(f.resumes(),count);assert.equal(f.phases.filter(item=>item==="via-main-structure-step-run").length,1);assert.throws(()=>original.bindings.originalStructureEffects());return;}
+  await step("run");
+  if(scenario==="foreign-callback"){f.injectMutation();await original.bindings.nextEvent();const count=f.resumes();await assert.rejects(frame("callback"));assert.equal(f.resumes(),count);assert.throws(()=>original.bindings.originalStructureEffects());return;}
+  const callback=await capture("callback","callback",[run]);await value("callbackValue",callback);await step("callback");
+  const updateReturned=await capture("updateReturned","updateReturned",[exec]);await step("updateReturned");const service=await capture("serviceReturned","serviceReturned",[updateReturned]);await step("serviceReturned");const controllerReturned=await capture("controllerReturned","controllerReturned",[service]);await step("controllerReturned");
+  const response=await capture("response","response",[controllerReturned]);await value("responseValue",response);const final=await join("finalSelect",response);await send("via-main-structure-properties","final",{objectId:final});await send("via-main-structure-properties","finalFunction",{objectId:"structure-final-function"});await send("via-main-structure-final-arm",null,{objectId:"structure-final-function"});await step("response");
+  const entry=await capture("finalEntry","finalEntry",[final]);await arm("finalReturned");await arm("finalFailed");await step("finalEntry");
+  if(scenario==="final-catch"){f.injectStructurePoint("finalFailed");await original.bindings.nextEvent();const count=f.resumes();await assert.rejects(frame("finalReturned"));assert.equal(f.resumes(),count);assert.throws(()=>original.bindings.originalStructureEffects());return;}
+  const returned=await capture("finalReturned","finalReturned",[entry]);await value("finalValue",returned);for(const role of["finalEntry","finalReturned","finalFailed"]){await remove(role);}await step("finalReturned");
+  const effects=original.bindings.originalStructureEffects();assert.equal(effects.originalResponseFinalizerReturned,true);assert.equal(effects.structureText,expected.structureText);assert.equal(effects.nativeChanges,1);assert.equal(f.phases.filter(item=>item==="via-main-structure-arm-callback").length,0);original.bindings.requireBeginArmed();
+  for(const role of["controller","query","selected","update","exec","updateReturned","serviceReturned","controllerReturned","response"]){await remove(role);}await send("via-main-structure-release",null,{},true);
+  f.injectRequest("GET");await original.bindings.nextEvent();const after=await original.bindings.observeRequest();await original.bindings.continueReadonlyRequest(after);assert.equal(original.bindings.originalStructureEffects(),effects);assert.equal(f.phases.includes("via-main-structure-remove-callback"),false);
+}); }

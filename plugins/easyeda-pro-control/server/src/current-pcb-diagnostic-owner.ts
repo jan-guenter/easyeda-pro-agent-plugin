@@ -42,6 +42,12 @@ import type { CurrentPcbViaClockBindings, CurrentPcbViaClockOrigin, CurrentPcbVi
 import { CURRENT_PCB_VIA_CLOCK_SITES, validateCurrentPcbViaClockCommand } from "./current-pcb-via-clock-protocol.ts";
 import type { CurrentPcbViaClockCommand } from "./current-pcb-via-clock-protocol.ts";
 import type { CurrentPcbViaMainBindings, CurrentPcbViaMainOrigin } from "./current-pcb-via-main-origin.ts";
+import { expectedCurrentGeneratedProjectSaveStructure } from "./current-project-save-structure-expectation.ts";
+import { currentPcbViaMainStructureExpectedSchema } from "./current-pcb-via-main-structure-protocol.ts";
+import { currentPcbViaMainStructureWire } from "./current-pcb-via-main-structure-wire.ts";
+import type { CurrentPcbViaMainStructureCommand } from "./current-pcb-via-main-structure-protocol.ts";
+import { decodeCurrentPcbViaMainStructureNativeAck } from "./current-pcb-via-main-structure-ack.ts";
+import type { CurrentPcbViaMainStructureNativeWindow } from "./current-pcb-via-main-structure-ack.ts";
 import { currentPcbViaMainHistoryWire } from "./current-pcb-via-main-history-wire.ts";
 import type { CurrentPcbViaMainHistoryCommand } from "./current-pcb-via-main-history-protocol.ts";
 import { decodeCurrentPcbViaMainHistoryNativeAck } from "./current-pcb-via-main-history-ack.ts";
@@ -95,7 +101,7 @@ import { types } from "node:util";
 import { PassThrough, Writable } from "node:stream";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
-import { canonicalJson, sha256Json } from "./core.ts";
+import { canonicalJson, sha256Json, sha256Text } from "./core.ts";
 import { ORDINARY_LAUNCH_209_PROFILE } from "./ordinary-launch-209-profile.ts";
 import { CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentFootprintCopyForwardSavedDiscoveryPipe, CurrentFootprintHeldCacheDiagnosticPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbViaWritePipe, CurrentPcbWorkerStartupDiscoveryPipe, CurrentSchematicDisplayWritePipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
 import type { CurrentPcbDiagnosticFailureObservation } from "./current-pcb-diagnostic-pipe.ts";
@@ -556,6 +562,30 @@ const projectStructureTransportOrigins = new WeakMap<CurrentProjectStructureTran
 const projectStructureTransportBodyGrants = new WeakMap<CurrentProjectStructureTransportOrigin, Readonly<{ reservation: CurrentProjectStructureBodyReservation; value: CurrentProjectStructureBodyReservationValue; assertCurrent: () => void }>>();
 const projectStructureTransportPublicationGrants = new WeakMap<CurrentProjectStructureTransportOrigin, Readonly<{ publication: CurrentProjectStructureMainPublication; value: CurrentProjectStructureMainPublicationValue; assertCurrent: () => void }>>();
 const projectSaveStructureBodyGrants = new WeakMap<CurrentProjectSaveStructureOrigin, Readonly<{ reservation: CurrentProjectStructureBodyReservation; value: CurrentProjectStructureBodyReservationValue; transportOrigin: CurrentProjectStructureTransportOrigin; assertCurrent: () => void }>>();
+const projectSaveStructureHistoryGrants = new WeakMap<CurrentProjectSaveStructureOrigin, Readonly<{ completion: CurrentProjectHistorySqlCompletion; assertCurrent: () => void }>>();
+interface OriginalStructureBody { readonly owner: object; readonly operation: object; readonly transportOrigin: CurrentProjectStructureTransportOrigin; readonly sharedOrigin: CurrentProjectSaveStructureOrigin; readonly value: CurrentProjectStructureBodyReservationValue; readonly assertCurrent: () => void; consumed: boolean }
+interface OriginalStructurePublication { readonly owner: object; readonly operation: object; readonly transportOrigin: CurrentProjectStructureTransportOrigin; readonly sharedOrigin: CurrentProjectSaveStructureOrigin; readonly value: CurrentProjectStructureMainPublicationValue; readonly assertCurrent: () => void; consumed: boolean }
+const originalStructureBodies = new WeakMap<CurrentProjectStructureBodyReservation, OriginalStructureBody>();
+const originalStructurePublications = new WeakMap<CurrentProjectStructureMainPublication, OriginalStructurePublication>();
+/** One synchronous original packet-release enrollment. Copies, a different
+ * operation and a second release cannot recreate the original body authority. */
+export function consumeOriginalCurrentProjectStructureBodyReservation(token: CurrentProjectStructureBodyReservation, owner: object, operation: object): CurrentProjectStructureBodyReservationValue {
+  const original = originalStructureBodies.get(token);
+  if (original === undefined || original.owner !== owner || original.operation !== operation || original.consumed || projectStructureTransportBodyGrants.has(original.transportOrigin) || projectSaveStructureBodyGrants.has(original.sharedOrigin) || projectSaveStructureHistoryGrants.has(original.sharedOrigin)) { throw error("PROJECT_STRUCTURE_BODY_ORIGINAL_RESERVATION"); }
+  requireOriginalCurrentProjectStructureTransportOrigin(original.transportOrigin, owner, operation); requireOriginalCurrentProjectSaveStructureOrigin(original.sharedOrigin, owner, operation); original.assertCurrent(); original.consumed = true;
+  projectStructureTransportBodyGrants.set(original.transportOrigin, Object.freeze({ reservation: token, value: original.value, assertCurrent: original.assertCurrent }));
+  projectSaveStructureBodyGrants.set(original.sharedOrigin, Object.freeze({ reservation: token, value: original.value, transportOrigin: original.transportOrigin, assertCurrent: original.assertCurrent })); return original.value;
+}
+/** One actual original response-finalizer continuation, consumed before the
+ * held worker send-return task resumes. This never grants another SQL slot. */
+export function consumeOriginalCurrentProjectStructureMainPublication(token: CurrentProjectStructureMainPublication, owner: object, operation: object): CurrentProjectStructureMainPublicationValue {
+  const original = originalStructurePublications.get(token);
+  if (original === undefined || original.owner !== owner || original.operation !== operation || original.consumed || projectStructureTransportPublicationGrants.has(original.transportOrigin)) { throw error("PROJECT_STRUCTURE_PUBLICATION_ORIGINAL"); }
+  const body = projectSaveStructureBodyGrants.get(original.sharedOrigin); if (body === undefined || body.transportOrigin !== original.transportOrigin) { throw error("PROJECT_STRUCTURE_PUBLICATION_ORIGINAL_BODY"); }
+  requireOriginalCurrentProjectStructureTransportOrigin(original.transportOrigin, owner, operation); requireOriginalCurrentProjectSaveStructureOrigin(original.sharedOrigin, owner, operation); body.assertCurrent(); original.assertCurrent(); original.consumed = true;
+  projectStructureTransportPublicationGrants.set(original.transportOrigin, Object.freeze({ publication: token, value: original.value, assertCurrent: original.assertCurrent })); return original.value;
+}
+
 export function requireOriginalCurrentProjectStructureTransportOrigin(origin: CurrentProjectStructureTransportOrigin, owner: object, operation: object): CurrentProjectStructureTransportBindings {
   const original = projectStructureTransportOrigins.get(origin); if (original === undefined || original.owner !== owner || original.operation !== operation) { throw error("PROJECT_STRUCTURE_TRANSPORT_ORIGINAL_ORIGIN"); }
   original.assertOriginal(); return original.bindings;
@@ -571,7 +601,6 @@ export function requireOriginalCurrentProjectStructureTransportMainPublication(t
 export type CurrentProjectSaveStructureSetup = (origin: CurrentProjectSaveStructureOrigin) => Promise<void>;
 // Only the genuine same-owner history-SQL completion consumer populates this
 // Registry after every original native callback and service await completed.
-const projectSaveStructureHistoryGrants = new WeakMap<CurrentProjectSaveStructureOrigin, Readonly<{ completion: CurrentProjectHistorySqlCompletion; assertCurrent: () => void }>>();
 const projectSaveStructureOrigins = new WeakMap<CurrentProjectSaveStructureOrigin, Readonly<{ owner: object; operation: object; bindings: CurrentProjectSaveStructureBindings; assertOriginal: () => void }>>();
 interface OriginalProjectHistorySqlCompletion { readonly owner: object; readonly operation: object; readonly origin: CurrentProjectSaveStructureOrigin; readonly value: CurrentProjectHistorySqlCompletionValue; readonly assertCurrent: () => void; consumed: boolean }
 const projectHistorySqlCompletions = new WeakMap<CurrentProjectHistorySqlCompletion, OriginalProjectHistorySqlCompletion>();
@@ -717,6 +746,13 @@ export async function sendOriginalCurrentPcbViaMainCommand(capability: CurrentSe
   if (!(original.owner instanceof CurrentPcbViaWriteOwner)) { throw error("PCB_VIA_MAIN_ORIGINAL_OWNER"); }
   assertOriginalCurrentPcbViaWriteOwner(original.owner);
   original.reprove(); await original.owner.sendViaMainObservation(capability, runner, command, id); original.reprove();
+}
+export async function sendOriginalCurrentPcbViaMainStructure(capability: CurrentSelectedFileMainSqlFenceBootstrap,
+  runner: CurrentFootprintCopyMainBackendRunner, command: CurrentPcbViaMainStructureCommand, id: number): Promise<CurrentPcbViaMainStructureNativeWindow | null> {
+  const original = selectedSqlFenceBootstraps.get(capability);
+  // oxlint-disable-next-line eslint/no-use-before-define -- An actual completed original factory alone issues this bootstrap.
+  if (original === undefined || original.runner() !== runner || !(original.owner instanceof CurrentPcbViaWriteOwner)) { throw error("PCB_VIA_MAIN_STRUCTURE_ORIGINAL_OWNER"); }
+  assertOriginalCurrentPcbViaWriteOwner(original.owner); original.reprove(); const window = await original.owner.sendViaMainStructure(capability, runner, command, id); original.reprove(); return window;
 }
 export async function sendOriginalCurrentPcbViaMainHistory(capability: CurrentSelectedFileMainSqlFenceBootstrap,
   runner: CurrentFootprintCopyMainBackendRunner, command: CurrentPcbViaMainHistoryCommand, id: number): Promise<CurrentPcbViaMainHistoryNativeWindow | null> {
@@ -1045,6 +1081,9 @@ class CurrentPcbRetainedOwnerCore {
   #viaClockValue: number | null = null;
   #viaSaveBodyCaptureAttempted = false;
   #viaSaveCapturedBody: CurrentPcbViaSavePendingBodyValue | null = null;
+  #viaStructureBodyAttempted = false;
+  #viaStructureBodyReservation: CurrentProjectStructureBodyReservation | null = null;
+  #viaStructurePublication: CurrentProjectStructureMainPublication | null = null;
   #viaHistoryCompletion: CurrentProjectHistorySqlCompletion | null = null;
   #viaMainBoundBody: CurrentPcbViaPendingSaveDelta | null = null;
   #viaMainAttempted = false;
@@ -2405,6 +2444,37 @@ class CurrentPcbRetainedOwnerCore {
     this.#mainRunner.bindViaExpectedHistoryBody(origin, { projectUuid: plan.target.projectUuid, branchUuid: plan.target.branchUuid,
       projectKey: plan.target.projectUuid, path: plan.target.rawWindowsPath, dataStr: delta.dataStr });
     actual.assertOriginal(); worker.assertOriginal(); this.#viaMainBoundBody = delta; return delta;
+  }
+  /** Existing original Save/clock/body custody only. The SDK Save dispatcher
+   * remains closed until its earlier operation-owned action prefix is joined. */
+  public async reserveViaStructurePublication(plan: CurrentPcbViaWritePlan, origin: CurrentPcbViaMainOrigin): Promise<CurrentProjectStructureBodyReservation> {
+    this.requireViaMainObservationReady(plan, origin); const actual = pcbViaMainOrigins.get(origin), workerOrigin = this.#viaWorkerOrigin;
+    const worker = workerOrigin === null ? undefined : pcbViaSaveWorkers.get(workerOrigin); const transportOrigin = this.requireViaStructureTransportReady(plan); const sharedOrigin = this.#viaStructureOrigin;
+    if (this.#viaStructureBodyAttempted || actual === undefined || actual.owner !== this || actual.plan !== plan || worker === undefined || worker.owner !== this || worker.plan !== plan || sharedOrigin === null || this.#mainRunner === null || this.#viaMainBoundBody === null || this.#viaClockValue === null || this.#viaSaveCapturedBody?.clock !== this.#viaClockValue || !this.#viaSdkPhases.has("save") || this.#viaFailed || this.#viaCleanupOnly) { throw error("PCB_VIA_STRUCTURE_BODY_UNAVAILABLE"); }
+    actual.assertOriginal(); worker.assertOriginal(); worker.controller.requireClockCompletionWithHeldSaveBody(worker.source); this.#viaStructureBodyAttempted = true;
+    const runner = this.#mainRunner; const body = this.#viaMainBoundBody; const prepared = requireOriginalCurrentPcbViaWritePlan(plan).prepared;
+    const expected = currentPcbViaMainStructureExpectedSchema.parse({ projectUuid: plan.target.projectUuid, branchUuid: plan.target.branchUuid, ticket: body.headTicket, structureText: expectedCurrentGeneratedProjectSaveStructure(prepared, this.#viaClockValue) });
+    const value: CurrentProjectStructureBodyReservationValue = Object.freeze({ projectUuid: expected.projectUuid, branchUuid: expected.branchUuid, documentUuid: body.documentUuid, bodySha256: body.bodySha256, saveHeadTicket: expected.ticket, workerClock: this.#viaClockValue, expectedStructureText: expected.structureText });
+    const same = (): void => { requireViaPlan(this, plan); actual.assertOriginal(); worker.assertOriginal(); requireOriginalCurrentProjectSaveStructureOrigin(sharedOrigin, this, plan);
+      if (this.#viaFailed || this.#viaCleanupOnly || this.#mainRunner !== runner || this.#viaMainBoundBody !== body || this.#viaMainOrigin !== origin || this.#viaStructureOrigin !== sharedOrigin || this.requireViaStructureTransportReady(plan) !== transportOrigin) { throw error("PCB_VIA_STRUCTURE_BODY_CHANGED"); } };
+    try { await this.#verify(); same(); worker.controller.requireClockCompletionWithHeldSaveBody(worker.source);
+      const reply = await this.#request({ action: "pcb-via-structure-body-enroll", projectUuid: expected.projectUuid, branchUuid: expected.branchUuid, ticket: expected.ticket, structureText: expected.structureText });
+      if (!exact(reply, ["reserved"]) || reply["reserved"] !== true) { throw error("PCB_VIA_STRUCTURE_BODY_NATIVE_ACK"); } await this.#verify(); same(); worker.controller.requireClockCompletionWithHeldSaveBody(worker.source); runner.bindViaExpectedStructure(origin, expected);
+      const token: CurrentProjectStructureBodyReservation = Object.freeze({ profile: "private.current-project-structure-body-reservation.v1" });
+      const assertCurrent = (): void => { same(); if (this.#viaStructureBodyReservation !== token || canonicalJson(runner.requireViaExpectedStructure(origin)) !== canonicalJson(expected)) { throw error("PCB_VIA_STRUCTURE_BODY_ORIGINAL_CHANGED"); } };
+      this.#viaStructureBodyReservation = token; originalStructureBodies.set(token, { owner: this, operation: plan, transportOrigin, sharedOrigin, value, assertCurrent, consumed: false }); assertCurrent(); return token;
+    } catch (caughtError) { this.#viaFailed = true; throw caughtError; }
+  }
+  public completeViaStructurePublication(plan: CurrentPcbViaWritePlan): CurrentProjectStructureMainPublication {
+    requireViaPlan(this, plan); const origin = this.#viaMainOrigin, sharedOrigin = this.#viaStructureOrigin, transportOrigin = this.requireViaStructureTransportReady(plan);
+    const body = sharedOrigin === null ? undefined : projectSaveStructureBodyGrants.get(sharedOrigin);
+    if (origin === null || sharedOrigin === null || this.#mainRunner === null || body === undefined || body.transportOrigin !== transportOrigin || this.#viaStructurePublication !== null || this.#viaFailed || this.#viaCleanupOnly) { throw error("PCB_VIA_STRUCTURE_PUBLICATION_UNAVAILABLE"); }
+    body.assertCurrent(); const runner = this.#mainRunner; const effects = runner.requireViaStructureCompleted(origin);
+    if (effects.projectUuid !== body.value.projectUuid || effects.branchUuid !== body.value.branchUuid || effects.ticket !== body.value.saveHeadTicket || effects.structureText !== body.value.expectedStructureText) { throw error("PCB_VIA_STRUCTURE_PUBLICATION_EXPECTED"); }
+    const value: CurrentProjectStructureMainPublicationValue = Object.freeze({ projectUuid: effects.projectUuid, branchUuid: effects.branchUuid, ticket: effects.ticket, structureSha256: sha256Text(effects.structureText), nativeChanges: 1, nativeBeforeEpochMs: effects.nativeBeforeEpochMs, nativeAfterEpochMs: effects.nativeAfterEpochMs, originalResponsePublished: true, selectedSqlStillFenced: true });
+    const token: CurrentProjectStructureMainPublication = Object.freeze({ profile: "private.current-project-structure-main-publication.v1" });
+    const assertCurrent = (): void => { body.assertCurrent(); if (this.#viaStructurePublication !== token || this.#mainRunner !== runner || this.#viaMainOrigin !== origin || runner.requireViaStructureCompleted(origin) !== effects) { throw error("PCB_VIA_STRUCTURE_PUBLICATION_CHANGED"); } };
+    this.#viaStructurePublication = token; originalStructurePublications.set(token, { owner: this, operation: plan, transportOrigin, sharedOrigin, value, assertCurrent, consumed: false }); assertCurrent(); return token;
   }
   /** The original backend, original native callback ACKs and retained body
    * issue this completion. It records no structure publication or durability. */
@@ -4746,6 +4816,24 @@ class CurrentPcbRetainedOwnerCore {
       if (!exact(reply, ["written"]) || reply["written"] !== true || this.#requireFootprintMain(true) !== original) { throw error("PCB_VIA_MAIN_DRIVER_WRITE_REPLY"); }
       await this.#verify(); held.reprove();
     } finally { this.#leaveFootprintMain(); }
+  }
+  public async sendViaMainStructure(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner,
+    command: CurrentPcbViaMainStructureCommand, requestId: number): Promise<CurrentPcbViaMainStructureNativeWindow | null> {
+    const held = selectedSqlFenceBootstraps.get(capability), original = this.#requireFootprintMain(true); const cleanup = command.phase === "via-main-structure-remove" || command.phase === "via-main-structure-release";
+    if (this.#purpose !== CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE || held?.owner !== this || held.runner() !== runner || this.#mainRunner !== runner || this.#viaMainOrigin === null ||
+      requestId !== this.#mainRequestId + 1 || (cleanup ? this.#mainCleanupRequests >= CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.main.cleanup : this.#mainNormalRequests >= CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.main.normal)) { throw error("PCB_VIA_STRUCTURE_ORIGINAL_SENDER"); }
+    const beforeSaveArm = command.phase === "via-main-structure-arm" && command.role !== "context" && command.role !== "finalReturned" && command.role !== "finalFailed";
+    if (beforeSaveArm) { if (this.#viaSdkPhases.has("save")) { throw error("PCB_VIA_STRUCTURE_PRE_ACTION_ARM"); } }
+    else {
+      const source = this.#viaStructureOrigin, transport = this.#viaTransportOrigin; const grant = source === null ? undefined : projectSaveStructureBodyGrants.get(source);
+      if (grant === undefined || transport === null || grant.transportOrigin !== transport || !this.#viaSdkPhases.has("save") || !this.#viaMainSetupReady || this.#viaMainBoundBody === null) { throw error("PCB_VIA_STRUCTURE_ORIGINAL_BODY_RESERVATION"); }
+      grant.assertCurrent(); const expected = { projectUuid: grant.value.projectUuid, branchUuid: grant.value.branchUuid, ticket: grant.value.saveHeadTicket, structureText: grant.value.expectedStructureText };
+      if (canonicalJson(expected) !== canonicalJson(runner.requireViaExpectedStructure(this.#viaMainOrigin))) { throw error("PCB_VIA_STRUCTURE_ORIGINAL_EXPECTED_SCOPE"); }
+      if (command.phase === "via-main-structure-step") { const actual = runner.consumeOriginalViaMainStructure(command, requestId); if (actual.origin !== this.#viaMainOrigin || canonicalJson(actual.expected) !== canonicalJson(expected) || actual.role !== command.role) { throw error("PCB_VIA_STRUCTURE_ORIGINAL_PENDING_GRANT"); } }
+    }
+    held.reprove(); const wire = currentPcbViaMainStructureWire(command, requestId); this.#enterFootprintMain(); this.#mainRequestId += 1; if (cleanup) { this.#mainCleanupRequests += 1; } else { this.#mainNormalRequests += 1; }
+    try { await this.#verify(); held.reprove(); const reply = await this.#request({ ...wire.request }); const window = decodeCurrentPcbViaMainStructureNativeAck(reply, command); if (this.#requireFootprintMain(true) !== original) { throw error("PCB_VIA_STRUCTURE_WRITE_OWNER"); } await this.#verify(); held.reprove(); return window; }
+    finally { this.#leaveFootprintMain(); }
   }
   public async sendViaMainHistory(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner,
     command: CurrentPcbViaMainHistoryCommand, requestId: number): Promise<CurrentPcbViaMainHistoryNativeWindow | null> {

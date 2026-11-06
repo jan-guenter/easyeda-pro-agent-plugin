@@ -39,7 +39,7 @@ void test("new SDK wire contains fixed scalars only and cannot be spent by relea
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, functionDeclaration: `${CURRENT_PCB_VIA_WRITE_FUNCTION}\n` } })));
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, awaitPromise: false } })));
   }
-  assert.equal(PROFILE.renderer.total, 1167); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [1035, 27, 1062]);
+  assert.equal(PROFILE.renderer.total, 1167); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [1109, 41, 1150]);
 });
 void test("retained SDK methods require exact original installed function locations, names and arity", () => {
   for (const kind of ["create", "save"] as const) { assert.equal(decodeCurrentPcbViaSdkMethod(metadata(kind), kind), "api"); }
@@ -75,6 +75,8 @@ void test("matching bootstrap and owner JSON cannot mint original native ownersh
   const owner = await import("../src/current-pcb-via-write-owner.ts");
   const central = await import("../src/current-pcb-diagnostic-owner.ts");
   assert.throws(() => Reflect.apply(central.requireOriginalCurrentPcbViaSaveWorkerOrigin, undefined, [{ profile: "private.current-pcb-via-save-worker-origin.v1" }, {}, {}]), /SAVE_WORKER_ORIGINAL/u);
+  assert.throws(() => central.consumeOriginalCurrentProjectStructureBodyReservation({profile:"private.current-project-structure-body-reservation.v1"},{},{}), /ORIGINAL_RESERVATION/u);
+  assert.throws(() => central.consumeOriginalCurrentProjectStructureMainPublication({profile:"private.current-project-structure-main-publication.v1"},{},{}), /PUBLICATION_ORIGINAL/u);
   assert.throws(() => central.consumeOriginalCurrentProjectHistorySqlCompletion({ profile: "private.current-project-history-sql-completion.v1" }, {}, {}), /ORIGINAL_COMPLETION/u);
   assert.throws(() => Reflect.apply(central.requireOriginalCurrentPcbViaMainOrigin, undefined, [{ profile: "private.current-pcb-via-main-origin.v1" }, {}, {}]), /MAIN_ORIGINAL/u);
   const forged: unknown = Object.create(owner.CurrentPcbViaWriteOwner.prototype);
