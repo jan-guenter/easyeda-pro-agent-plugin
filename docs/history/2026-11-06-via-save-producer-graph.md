@@ -236,3 +236,35 @@ This increment was checked against the actual native origin dependency
 pass, along with strict types, zero-warning type-aware lint, repository,
 MCP-contract and all-skill validation under Node24.18.0/npm11.16.0 with core limit
 zero. No helper generation, pin refresh, app launch or connected Save occurred.
+
+## Exact uniqueId delta authority
+
+`current-pcb-via-save-delta.ts` derives the one-Via delta from the retained initial
+history, original create effect and actual Save value. It requires the sole
+create ticket immediately after the initial maximum and the Save DOCHEAD ticket
+immediately after that. It admits exactly DOCHEAD followed by the acknowledged
+new VIA, with no META, peer, trailing separator or additional record. The fixed
+worker xt/$e serializers determine header order and fields; any supported user
+triple comes from the original captured worker value and remains exact.
+
+The source Via encoder uses the native model arithmetic followed by
+Math.round(value*10000+1e-10)/10000. Negative zero becomes JSON zero. The PCB
+getVIA roster includes zIndex, but dC.getData has no case for it; feed assigns
+undefined and encodeVia's JSON.stringify omits the field. A guessed zIndex:null
+is rejected. Partition, group, rule, ordinary Via type, masks, lock and empty
+unused-layer roster are fixed by this narrow SDK path.
+
+`current-pcb-via-save-projection.ts` issues one private late body authority only
+after rechecking the exact genuine owner/plan/effect and original Save body and
+clock-body join around its awaits. Copies, changed generations and another
+issuance refuse. The returned dataStr is the exact captured body, now checked
+against the independently derived delta. This token still grants no native SQL
+slot and proves no full-source peer or persistence invariant. The native main
+request and delayed structure collectors must consume it through their own
+original framed continuations.
+
+Two focused offline regressions exercise source rounding, omitted zIndex,
+extra/changed records and tickets, plus the real private issuer with explicit
+native/body/clock seams. Strict types and zero-warning type-aware lint pass.
+Native main/structure enrollment and saved-source reopening remain incomplete;
+the unconditional Save gates remain intact.
