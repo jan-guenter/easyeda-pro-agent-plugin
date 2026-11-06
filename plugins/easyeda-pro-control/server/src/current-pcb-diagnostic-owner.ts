@@ -327,8 +327,8 @@ import type { CurrentProjectStructureWorkerLease } from "./current-project-struc
 import type { CurrentProjectStructureObservationWorkflow as StructureWorkflow } from "./current-project-structure-observation-workflow.ts";
 
 
-const HELPER_SHA256 = "07a1c0dde25c76751f65df4dab5dc54a94d15b562698752abae27d2f07811076";
-const HELPER_BYTES = 1_836_477;
+const HELPER_SHA256 = "c0217caec9f145a4b3abd865a8411578a132d75dd1765247f4640073f97878fa";
+const HELPER_BYTES = 1_844_759;
 const heldRunnerDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintSavedCacheHeldRunner.prototype);
 /* oxlint-disable typescript/unbound-method -- Retain fixed methods and invoke them only on the original private-field runner. */
 const heldRunnerMethods = Object.freeze({ prepare: CurrentFootprintSavedCacheHeldRunner.prototype.prepare,
