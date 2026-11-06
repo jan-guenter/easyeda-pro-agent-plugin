@@ -39,6 +39,8 @@ export const currentPcbOrdinaryReadRequestSchema = z.discriminatedUnion("action"
   z.object({ action: z.literal("inspect-script"), ...bound, frameId: token, family: z.literal("ui") }).strict(),
   z.object({ action: z.literal("open-project"), ...bound, target: currentDisposableOpenTargetSchema,
     confirmOrdinaryProject: z.literal(true), acceptNormalOpenEffects: z.literal(true) }).strict(),
+  z.object({ action: z.literal("open-generated-fixture"), ...bound,
+    confirmGeneratedDisposableFixture: z.literal(true), acceptRecentPathRegistration: z.literal(true), acceptNormalOpenEffects: z.literal(true) }).strict(),
   z.object({ action: z.literal("open-pcb"), ...bound, acceptNormalOpenEffects: z.literal(true) }).strict(),
   z.object({ action: z.literal("normal-close"), ...bound, hwnd: z.string().regex(/^[1-9]\d{0,18}$/u), confirmNormalClose: z.literal(true) }).strict(),
 ]);
@@ -54,6 +56,7 @@ export function queryCurrentPcbOrdinaryRead(input: unknown = {}): Record<string,
     actions: currentPcbOrdinaryReadRequestSchema.options.map(option => option.shape.action.value),
     limitations: [
       "One ordinary registered local project and one existing PCB, bound to an exact pre-open checkpoint, default branch and original native owner. Use pcb209-ordinary-* IDs. This does not admit a disposable writer, visual, spatial, compiler or worker purpose.",
+      "open-generated-fixture is available only to a separately constructed original owner holding the same facade's staged, complete closed import qualification. It accepts no target/path/source JSON, may upsert one exact recent-path row, and then uses the existing fixed project/PCB opening and reader stages. Ordinary owners cannot acquire that birth or reconstruct the staged source.",
       "Launch and normal public project/document opening can restore tabs, migrate files, replay caches, contact services, change shared settings and automatically persist or Save. Explicit existing-profile and normal-open effect confirmations are mandatory. Read-only describes the offered observations, not a zero-write promise for opening or normal closure.",
       "All eight fixed209 layer, object, selection and shape reader predicates, bounds and transport budgets are unchanged. Complete source, connectivity, physical stackup, assets, render freshness and saved membership remain unproved. There is no CAD edit, explicit Save, prompt choice, settings or arbitrary native-command action.",
       "Keep this original launch alive through one-shot project opening, PCB opening, source qualification, observations, normal close, separately observed original root/Job termination, helper release and receipt settlement. Lost replies consume their stages; historical JSON cannot recreate ownership or permit replay.",

@@ -143,6 +143,8 @@ const diagnosticIntentSchema = z.object({ schema: z.literal("easyeda-pro-control
 const ordinaryReadIntentSchema = diagnosticIntentSchema.omit({ confirmValidationOnly: true }).extend({
   schema: z.literal("easyeda-pro-control.pcb209-ordinary-read-launch-intent.v1"), operationId: currentPcbOrdinaryReadIdSchema,
   confirmOrdinaryReadOnly: z.literal(true),
+  generatedFixtureBirth: z.object({ originalSourceSha256: diagnosticLifecycleDigestSchema, archiveSha256: diagnosticLifecycleDigestSchema,
+    originalClosedInitialQualification: z.literal(true) }).strict().optional(),
 });
 const spatialIntentSchema = diagnosticIntentSchema.extend({
   schema: z.literal("easyeda-pro-control.pcb209-spatial-launch-intent.v1"), operationId: currentPcbSpatialIdSchema,
@@ -558,6 +560,8 @@ const disposableProjectOpeningIntentSchema = z.object({
 const ordinaryProjectOpeningIntentSchema = disposableProjectOpeningIntentSchema.omit({ confirmDisposableProject: true }).extend({
   schema: z.literal("easyeda-pro-control.pcb209-ordinary-project-opening-intent.v1"), operationId: currentPcbOrdinaryReadIdSchema,
   confirmOrdinaryProject: z.literal(true),
+  generatedFixtureSource: z.object({ archiveSha256: diagnosticLifecycleDigestSchema, originalInventoryLogicalSha256: diagnosticLifecycleDigestSchema,
+    exactInitialNativePayloadQualified: z.literal(true), untickedDocHeadQualified: z.literal(true), acceptRecentPathRegistration: z.literal(true) }).strict().optional(),
 });
 const projectOpeningIntentSchema = z.discriminatedUnion("schema", [disposableProjectOpeningIntentSchema, ordinaryProjectOpeningIntentSchema]);
 const projectOpeningResultSchema = z.object({

@@ -7,6 +7,7 @@ import { assertOriginalGeneratedFixtureTarget, originalGeneratedFixtureInventory
 import type { QualifiedGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
 import { currentProcessSqlRuntime } from "./machine-profile.ts";
 import type { NativeHistorySnapshot } from "./native-history.ts";
+import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import { readExactSqlInventory, readerCompletion } from "./sqlite-inventory.ts";
 import type { NativeSqlInventory } from "./sqlite-inventory-core.ts";
 
@@ -102,4 +103,33 @@ export async function verifyGeneratedFixtureOpenCheckpoint(prepared: GeneratedFi
   await unchanged(prepared); const qualified = await requalify(prepared.checkpoint, prepared.qualification, original.archive);
   if (canonicalJson(qualified.history) !== canonicalJson(prepared.history) || canonicalJson(qualified.vacuumProjection) !== canonicalJson(prepared.vacuumProjection)) { throw new Error("Generated fixture default-branch history changed."); }
   await unchanged(prepared); assertOriginalGeneratedFixtureOpenCheckpoint(prepared);
+}
+export function generatedFixtureDiagnosticCheckpoint(prepared: GeneratedFixtureOpenCheckpoint): CurrentDisposableOpenCheckpoint {
+  assertOriginalGeneratedFixtureOpenCheckpoint(prepared); const target = prepared.qualification.target; const history = prepared.history;
+  const document = history.documents[0];
+  if (document === undefined || history.documents.length !== 1 || document.uuid !== target.documentUuid || document.docType !== "PCB") { throw new Error("Original generated PCB membership changed."); }
+  // A DTO for the existing diagnostic journal, not a generic checkpoint proof.
+  // The enclosing lifecycle retains the original narrow issued object and uses
+  // Only its source-specific verification for every authorization boundary.
+  return Object.freeze({ profile: "easyeda-pro-control.current-disposable-open-checkpoint.v1", checkpoint: prepared.checkpoint,
+    preparationCheckpoint: prepared.preparationCheckpoint, targetEvidence: Object.freeze({ projectUuid: target.projectUuid, branchUuid: target.branchUuid,
+      documentUuid: target.documentUuid, docType: "PCB", sourceSha256: target.expectedSourceSha256, checkpointSha256: prepared.checkpoint.checkpointSha256,
+      documentSemanticSha256: document.semanticSha256, historySemanticSha256: history.semanticSha256, headHistoryUuid: history.headHistoryUuid }) });
+}
+/** After ordinary open, inspect only the original immutable managed backup.
+ * Never hash, attach, requalify or replace the now potentially changed source. */
+export async function verifyHistoricalGeneratedFixtureOpenCheckpoint(prepared: GeneratedFixtureOpenCheckpoint): Promise<void> {
+  assertOriginalGeneratedFixtureOpenCheckpoint(prepared); const original = issued.get(prepared);
+  if (original === undefined) { throw new Error("Original generated historical checkpoint is unavailable."); }
+  const raw = await readArtifact(prepared.checkpoint.receiptPath, 0, 65_536); const parsed: unknown = JSON.parse(raw.text);
+  const { receiptSha256, ...body } = prepared.checkpoint;
+  if (!raw.eof || canonicalJson(parsed) !== canonicalJson(prepared.checkpoint) || sha256Text(canonicalJson(body)) !== receiptSha256) {
+    throw new Error("Generated historical checkpoint receipt changed.");
+  }
+  await verifyExactManagedArtifact(prepared.preparationCheckpoint);
+  const qualified = await requalify(prepared.checkpoint, prepared.qualification, original.archive);
+  if (canonicalJson(qualified.history) !== canonicalJson(prepared.history) || canonicalJson(qualified.vacuumProjection) !== canonicalJson(prepared.vacuumProjection)) {
+    throw new Error("Generated historical complete SQL/source baseline changed.");
+  }
+  await verifyExactManagedArtifact(prepared.preparationCheckpoint); assertOriginalGeneratedFixtureOpenCheckpoint(prepared);
 }

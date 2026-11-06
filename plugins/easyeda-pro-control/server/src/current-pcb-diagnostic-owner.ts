@@ -8,6 +8,9 @@
 import { spawn } from "node:child_process";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
+import { assertOriginalGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
+import type { QualifiedGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
+import { decodeGeneratedFixtureRegistrationReply } from "./managed-fixture-registration-program.ts";
 import { lstat, readFile, realpath } from "node:fs/promises";
 import process from "node:process";
 import { types } from "node:util";
@@ -760,10 +763,16 @@ class CurrentPcbRetainedOwnerCore {
 
   /** Bind one original helper child to its fixed purpose and verification hooks.
    * Transport and resource-ledger selection happen before listeners or launch. */
+  readonly #generatedFixtureBirth: boolean;
+  #generatedFixtureQualification: QualifiedGeneratedFixtureTarget | null = null;
+  #generatedFixtureRegistration: Readonly<Record<string, unknown>> | null = null;
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     installation: CurrentPcbDiagnosticInstallation | null, verifyInstallation: () => Promise<void>, purpose: OwnerPurpose,
     verifyStartupFacade: () => Promise<void> = verifyInstallation, actorClockSource: CurrentPcb209ActorClockSourceQualification | null = null,
-    emptyAnchor: CurrentPcb209EmptyStartupBudgetAnchor | null = null, ratlineBudget: CurrentPcb209RatlineBudget | null = null, continuationBudget: CurrentPcb209RatlineContinuationBudget | null = null, readyChallenge: string | null = null, forwardSavedHandoff: object | null = null) {
+    emptyAnchor: CurrentPcb209EmptyStartupBudgetAnchor | null = null, ratlineBudget: CurrentPcb209RatlineBudget | null = null, continuationBudget: CurrentPcb209RatlineContinuationBudget | null = null, readyChallenge: string | null = null, forwardSavedHandoff: object | null = null,
+    generatedFixtureBirth = false) {
+    if (generatedFixtureBirth && purpose !== "diagnostic209") { throw error("GENERATED_FIXTURE_BIRTH_PURPOSE"); }
+    this.#generatedFixtureBirth = generatedFixtureBirth;
     const saved = forwardSavedHandoff === null ? null : requireForwardSavedObservationHandoff(forwardSavedHandoff);
     if (saved !== null && purpose !== "worker-startup-footprint-saved209") { throw error("FORWARD_SAVED_PURPOSE"); }
     let role: CurrentFootprintCopyForwardRole | null = null;
@@ -878,6 +887,7 @@ class CurrentPcbRetainedOwnerCore {
     observationFailure?: CurrentPcbObservationFailure | null;
     lastTerminationObservation?: Readonly<TerminationObservation> | null;
     projectOpeningConsumed: boolean; projectOpeningResult: CurrentPcbDiagnosticOpeningResult | null; modelObservationConsumed: boolean;
+    generatedFixtureRegistrationPurpose?: true; generatedFixtureRegistration?: Readonly<Record<string, unknown>> | null;
     pcbOpeningConsumed: boolean; pcbOpeningResult: CurrentPcbDiagnosticPcbOpeningResult | null;
     pcbObservationConsumed: boolean; pcbFrameObservation: CurrentPcbDiagnosticPcbOpeningResult | null; pcbSourceQualified: boolean;
     stringPrecreateConsumed: boolean; commonBaselineConsumed?: boolean; profile: OwnerPurpose; workerStartupHandoffConsumed?: boolean }> {
@@ -933,7 +943,8 @@ class CurrentPcbRetainedOwnerCore {
       pcbOpeningConsumed: this.#pcbOpeningConsumed, pcbOpeningResult: this.#pcbOpeningResult,
       pcbObservationConsumed: this.#pcbObservationConsumed, pcbFrameObservation: this.#pcbFrameObservation, pcbSourceQualified: this.#pcbSourceQualified,
       stringPrecreateConsumed: this.#stringPrecreateConsumed, commonBaselineConsumed: this.#commonBaselineConsumed,
-      profile: this.#purpose, workerStartupHandoffConsumed: this.#startupHandoffConsumed });
+      profile: this.#purpose, workerStartupHandoffConsumed: this.#startupHandoffConsumed,
+      ...(this.#generatedFixtureBirth ? { generatedFixtureRegistrationPurpose: true as const, generatedFixtureRegistration: this.#generatedFixtureRegistration } : {}) });
   }
 
   /** Genuine combined factory only waits for this original stdout packet.
@@ -1117,6 +1128,8 @@ class CurrentPcbRetainedOwnerCore {
   public async openProject(input: CurrentDisposableOpenSealedTarget, reverify: () => Promise<void>): Promise<CurrentPcbDiagnosticOpeningResult> {
     if (this.#startupPurpose) { throw error("STARTUP_LEGACY_ROUTE"); }
     const context = this.#stagedContext, target = currentDisposableOpenSealedTargetSchema.parse(input);
+    const generated = this.#generatedFixtureQualification;
+    if (this.#generatedFixtureBirth !== (generated !== null) || generated !== null && canonicalJson(generated.target) !== canonicalJson(target)) { throw error("GENERATED_FIXTURE_ORIGINAL_TARGET"); }
     currentPcbDiagnosticOpeningArguments(target, "preflight");
     if (this.#projectOpeningConsumed || context === null || !this.#scriptConsumed || this.#inspectionConsumed ||
         this.#workersConsumed || this.#workerContext !== null || this.#modelConsumed || typeof reverify !== "function") { throw error("PROJECT_OPENING_UNAVAILABLE"); }
@@ -1126,6 +1139,14 @@ class CurrentPcbRetainedOwnerCore {
       await this.#observeOpeningAncillary();
       const selected = context.openingContext();
       await this.#observeParent(); context.openingContext();
+      if (generated !== null) {
+        assertOriginalGeneratedFixtureTarget(generated);
+        await reverify(); context.openingContext(); this.#available();
+        const registration = decodeGeneratedFixtureRegistrationReply(
+          await this.#transfer(() => this.#pipe.registerGeneratedFixture(selected.uniqueContextId, generated)), generated);
+        this.#generatedFixtureRegistration = registration;
+        context.openingContext(); await this.#verifyInstallation(); await this.#verify(); this.#available();
+      }
       const preflight = decodeCurrentPcbDiagnosticOpeningReply(
         await this.#transfer(() => this.#pipe.observeProjectOpening(selected.uniqueContextId, target, "preflight")), target, "preflight");
       this.#projectOpeningResult = preflight;
@@ -1158,10 +1179,22 @@ class CurrentPcbRetainedOwnerCore {
       await this.#observeOpeningAncillary(); context.openingContext();
       await this.#verifyInstallation(); await this.#verify(); this.#available(); context.openingContext();
       const ancillaryFrame = context.ancillaryObservation();
-      this.#projectOpeningResult = ancillaryFrame === null ? result : Object.freeze({ ...result, ancillaryFrame });
+      this.#projectOpeningResult = Object.freeze({ ...result, ...(ancillaryFrame === null ? {} : { ancillaryFrame }),
+        ...(this.#generatedFixtureRegistration === null ? {} : { generatedPathRegistration: this.#generatedFixtureRegistration }) });
       return this.#projectOpeningResult;
     } catch (caughtError) { this.#input.emit("error", error("PROJECT_OPENING_FAILED")); throw caughtError; }
     finally { this.#busy = false; }
+  }
+  /** Separate fresh birth only; one exact qualified baseline, no caller path
+   * or reconstructed checkpoint. Overall opening consumption still applies. */
+  public openGeneratedFixtureProject(qualification: QualifiedGeneratedFixtureTarget, reverify: () => Promise<void>): Promise<CurrentPcbDiagnosticOpeningResult> {
+    assertOriginalGeneratedFixtureTarget(qualification);
+    if (!this.#generatedFixtureBirth || this.#generatedFixtureQualification !== null || this.#projectOpeningConsumed) { throw error("GENERATED_FIXTURE_OPENING_CONSUMED"); }
+    this.#generatedFixtureQualification = qualification;
+    return this.openProject(qualification.target, reverify);
+  }
+  public retainedGeneratedFixtureRegistration(): Readonly<Record<string, unknown>> | null {
+    return this.#generatedFixtureRegistration === null ? null : Object.freeze(structuredClone(this.#generatedFixtureRegistration));
   }
 
   /** Opens only the PCB sealed by this owner's original accepted project open.
@@ -4854,8 +4887,8 @@ export class CurrentPcb209VisualOwner extends CurrentPcbRetainedOwnerCore {
 /** Separate launch-sealed 209 navigation and layer metadata owner. */
 export class CurrentPcb209DiagnosticOwner extends CurrentPcbRetainedOwnerCore {
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
-    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve()) {
-    super(child, verify, installation, verifyInstallation, "diagnostic209");
+    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve(), generatedFixtureBirth = false) {
+    super(child, verify, installation, verifyInstallation, "diagnostic209", verifyInstallation, null, null, null, null, null, null, generatedFixtureBirth);
   }
 }
 
@@ -5418,6 +5451,9 @@ export function startCurrentPcb209VisualOwner(options: CurrentPcbDiagnosticInsta
 export function startCurrentPcb209DiagnosticOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcb209DiagnosticOwner> {
   return startFixedOwner(options, "diagnostic209", "209-opening");
 }
+export function startCurrentGeneratedFixture209DiagnosticOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcb209DiagnosticOwner> {
+  return startFixedOwner(options, "diagnostic209", "209-opening", undefined, null, null, null, null, true);
+}
 
 /** Private spatial factory only. No live route is registered by this export. */
 export function startCurrentPcbSpatialOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbSpatialOwner> {
@@ -5807,7 +5843,8 @@ export function currentFootprintHeadAgeValidationAllocationOutcome(binding: Curr
 async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, purpose: OwnerPurpose,
   generation: "206" | "209-opening" | "209-visual" | "209-spatial" | "209-startup" | "209-held-cache" = "206", savedWriter?: CurrentFootprintCopyNativeOwner,
   forwardSavedHandoff: object | null = null, heldValidation: HeldCacheValidationAllocation | null = null, headAgeValidation: HeadAgeValidationAllocation | null = null,
-  forwardExecutionBirth: ForwardExecutionBirthAllocation | null = null): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
+  forwardExecutionBirth: ForwardExecutionBirthAllocation | null = null, generatedFixtureBirth = false): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
+  if (generatedFixtureBirth && (purpose !== "diagnostic209" || generation !== "209-opening")) { throw error("GENERATED_FIXTURE_BIRTH_PURPOSE"); }
   if ((forwardExecutionBirth !== null) !== (purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE) || forwardExecutionBirth !== null &&
     (forwardExecutionBirth.options !== options || forwardExecutionBirthAllocations.get(options) !== forwardExecutionBirth || forwardExecutionBirth.state !== "pending")) {
     throw error("FORWARD_EXECUTION_ORIGINAL_ALLOCATION");
@@ -5886,7 +5923,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === "worker-startup") { purposeSwitch = " -WorkerStartup"; }
   else if (purpose === "string-precreate") { purposeSwitch = " -StringPrecreate"; }
   else if (purpose === "visual209") { purposeSwitch = " -Visual209"; }
-  else if (purpose === "diagnostic209") { purposeSwitch = " -Layers209"; }
+  else if (purpose === "diagnostic209") { purposeSwitch = generatedFixtureBirth ? " -GeneratedFixture209" : " -Layers209"; }
   else if (purpose === "pcb-spatial209") { purposeSwitch = " -Spatial209"; }
   else if (purpose === "footprint-held-cache209") { purposeSwitch = " -FootprintHeldCache209"; }
   const legacyBootstrap = `$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';` +
@@ -5989,7 +6026,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === "worker-startup") { owner = new CurrentPcbWorkerStartupOwner(child, verify, installation, verifyInstallation, verifyStartupFacade); }
   else if (purpose === "string-precreate") { owner = new CurrentPcbStringPrecreateOwner(child, verify, installation, verifyInstallation); }
   else if (purpose === "visual209") { owner = new CurrentPcb209VisualOwner(child, verify, installation, verifyInstallation); }
-  else if (purpose === "diagnostic209") { owner = new CurrentPcb209DiagnosticOwner(child, verify, installation, verifyInstallation); }
+  else if (purpose === "diagnostic209") { owner = new CurrentPcb209DiagnosticOwner(child, verify, installation, verifyInstallation, generatedFixtureBirth); }
   else if (purpose === "pcb-spatial209") { owner = new CurrentPcbSpatialOwner(child, verify, installation, verifyInstallation); }
   else { owner = new CurrentPcbDiagnosticOwner(child, verify, installation, verifyInstallation); }
   if (owner instanceof CurrentFootprintCopyNativeOwner || owner instanceof CurrentFootprintCopySavedNativeOwner || owner instanceof CurrentFootprintCopyHeldSavedNativeOwner || owner instanceof CurrentFootprintCopyForwardNativeOwner || owner instanceof CurrentFootprintCopyForwardSavedNativeOwner) {

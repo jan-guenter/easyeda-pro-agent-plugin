@@ -54,3 +54,52 @@ history, changed DOCHEAD, wrong sequences and substituted paths. Source-template
 reproduction and offline tests do not establish native import, persistent
 registration, completed delayed jobs, reader or writer acceptance. All connected
 acceptance fields remain false until their original lifecycle evidence exists.
+
+## Fresh original reader transfer
+
+The index must call the original import coordinator's synchronous
+`stageSourceForFreshOpening()` after `release-owner` completed, before discarding
+that coordinator during ordinary runtime release. Retain its opaque
+`ManagedFixtureOpeningSource` in the same facade. Construct a fresh
+`CurrentPcbOrdinaryReadLifecycle` with the internal option
+`generatedFixtureSource: stagedSource`; construction consumes that original
+token once. Clear the index staging slot only after successful construction.
+No manager retirement, serialized record adoption or historical-token recovery
+can cross this boundary. The staged data holds no old runtime, PID or handle.
+
+The fresh lifecycle selects a separate native `-GeneratedFixture209` birth. The
+new public action is `open-generated-fixture`, with its existing operation ID and
+binding hash plus `confirmGeneratedDisposableFixture:true`,
+`acceptRecentPathRegistration:true` and `acceptNormalOpenEffects:true`. It accepts
+no path, target, archive, source/hash override, code or SQL. Ordinary owners without
+the staged source cannot dispatch this action; generated owners refuse the
+caller-target `open-project` action.
+
+The lifecycle prepares the original generated checkpoint before durable opening
+intent. Its fresh native owner then repeats that proof, dispatches the fixed
+raw-path registration prefix once, runs the existing project preflight, repeats
+the same checkpoint proof, and invokes the existing public project opener.
+Registration retains a complete bounded registry projection before and after,
+proves every other entry unchanged, and returns only hashes/counts plus the exact
+generated selection. It allows an already registered exact target without
+dispatching the registration call. A lost response or changed source consumes
+the opening; original normal cleanup remains available. The original registration
+reply is retained even if a later source check fails.
+
+`open-pcb`, source qualification and the eight fixed209 reader stages reuse their
+existing implementation and limits. After navigation, generated historical
+verification reads only the original managed backup, never the live source.
+The fixed registration consumes one request from the existing103-request limit;
+it does not increase native, response or helper budgets. The native birth checks
+its consumed registration tuple before any project-opening call. Existing
+diagnostic, visual, worker and writer objects cannot acquire that birth.
+
+Native changes are maintained by
+`applyManagedFixtureRegistrationNativeFragment` in the worker-protocol generator.
+Root integration owns helper regeneration and exact pin updates. A full emitted
+C# build under .NET10, the fixed native birth-refusal smoke and byte-exact JS/native
+packet parity passed on Linux. The original-owner regression uses an independent
+synthetic helper process and proves prefix order, both source rechecks, consumed
+ambiguity, retained partial registration and original normal cleanup. These are
+source/synthetic results; actual Windows import and positive reader acceptance
+remain unrecorded.

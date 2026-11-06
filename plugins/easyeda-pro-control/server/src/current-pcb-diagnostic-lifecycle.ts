@@ -20,8 +20,12 @@ import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpen
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
 import { prepareCurrentDisposableOpenCheckpoint, readCurrentPcbCommonOpenInventory, verifyCurrentDisposableOpenCheckpoint, verifyHistoricalCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
+import { consumeManagedFixtureOpeningSource } from "./managed-fixture-opening-source.ts";
+import type { ManagedFixtureOpeningSource } from "./managed-fixture-opening-source.ts";
+import { generatedFixtureDiagnosticCheckpoint, prepareGeneratedFixtureOpenCheckpoint, verifyGeneratedFixtureOpenCheckpoint, verifyHistoricalGeneratedFixtureOpenCheckpoint } from "./managed-fixture-generated-open-checkpoint.ts";
+import type { GeneratedFixtureOpenCheckpoint } from "./managed-fixture-generated-open-checkpoint.ts";
 import { assertNoUnresolvedOrdinaryLaunches } from "./ordinary-launch.ts";
-import { currentFootprintCombinedFactoryFailureDiagnostics, currentFootprintCopyForwardFactoryFailureDiagnostics, requireCurrentFootprintCombinedUnlaunchedFactoryFailure, requireCurrentFootprintCopyForwardUnlaunchedFactoryFailure, startCurrentFootprintCombinedNativeOwner, startCurrentFootprintCopyForwardNativeOwner, startCurrentFootprintCopyNativeOwner, startCurrentFootprintCopyPreparationOwner, startCurrentFootprintMainNativeOwner, startCurrentPcb209DiagnosticOwner, startCurrentPcb209EmptyStartupOwner, startCurrentPcb209RatlineContinuationOwner, startCurrentPcb209RatlineStartupOwner, startCurrentPcb209VisualOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbSpatialOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
+import { currentFootprintCombinedFactoryFailureDiagnostics, currentFootprintCopyForwardFactoryFailureDiagnostics, requireCurrentFootprintCombinedUnlaunchedFactoryFailure, requireCurrentFootprintCopyForwardUnlaunchedFactoryFailure, startCurrentFootprintCombinedNativeOwner, startCurrentFootprintCopyForwardNativeOwner, startCurrentFootprintCopyNativeOwner, startCurrentFootprintCopyPreparationOwner, startCurrentFootprintMainNativeOwner, startCurrentGeneratedFixture209DiagnosticOwner, startCurrentPcb209DiagnosticOwner, startCurrentPcb209EmptyStartupOwner, startCurrentPcb209RatlineContinuationOwner, startCurrentPcb209RatlineStartupOwner, startCurrentPcb209VisualOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbSpatialOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintCopyNativeOwner, CurrentFootprintCopyPreparationOwner, CurrentFootprintMainNativeOwner, CurrentPcb209RatlineContinuationOwner, CurrentPcb209RatlineStartupOwner, CurrentPcb209WorkerStartupOwner, CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner, CurrentPcbWorkerStartupHandoff, CurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
 import { verifyCurrentPcb209DiagnosticInstallation, verifyCurrentPcb209RatlineInstallation, verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation, CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
@@ -227,7 +231,7 @@ type StartupFootprintRouteMethods = Pick<CurrentFootprintCopyNativeOwner, "obser
   "observeFootprintCopyClockRegistration" | "sampleFootprintCopyClockRegistration" | "retainedFootprintCopyClockRegistration" | "releaseFootprintCopyClockRegistration">;
 type MainOwnerMethods = Pick<CurrentFootprintMainNativeOwner, "observeFootprintMainConstruction" | "retainedFootprintMainConstruction" | "terminateFootprintMain">;
 type CombinedOwnerMethods = Pick<CurrentFootprintCombinedNativeOwner, "abortFootprintCombined" | "reserveFootprintCombinedAbort" | "dispatchFootprintCombinedAbort" | "observeSavedCacheNative" | "observeSavedCacheAccessor">;
-type LifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & Partial<CombinedOwnerMethods & MainOwnerMethods & StartupFootprintRouteMethods & StartupFootprintUiMethods & StringOwnerMethods & StartupOwnerMethods & StartupEmptyOwnerMethods & StartupRatlineOwnerMethods & StartupContinuationOwnerMethods>;
+type LifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & Partial<Pick<CurrentPcbDiagnosticOwner, "openGeneratedFixtureProject" | "retainedGeneratedFixtureRegistration"> & CombinedOwnerMethods & MainOwnerMethods & StartupFootprintRouteMethods & StartupFootprintUiMethods & StringOwnerMethods & StartupOwnerMethods & StartupEmptyOwnerMethods & StartupRatlineOwnerMethods & StartupContinuationOwnerMethods>;
 export interface CurrentPcb209StartupEmptyPreparation {
   /** The enclosing lifecycle must durably consume PCB navigation intent before
    * calling openAndQualify. This private preparation does not publish that intent. */
@@ -235,6 +239,9 @@ export interface CurrentPcb209StartupEmptyPreparation {
   readonly prepareEmpty: (packet: CurrentPcb209WorkerStartupPcbPacket) => CurrentPcb209WorkerStartupEmptySession;
 }
 export interface CurrentPcbDiagnosticLifecycleOptions extends CurrentPcbDiagnosticInstallationOptions {
+  /** Same-facade original issued import data, consumed at fresh construction.
+   * No caller schema or historical record can provide this token. */
+  readonly generatedFixtureSource?: ManagedFixtureOpeningSource;
   readonly assertAllowed: () => Promise<void>;
   /** Original local method/environment identity only. No bridge or full startup admission. */
   readonly assertLocalAllowed: () => void;
@@ -279,6 +286,7 @@ interface ProjectPreparation {
   readonly preparedText: string;
   readonly originalTarget: Extract<Request, { action: "open-project" }>["target"];
   readonly commonInventory: Awaited<ReturnType<typeof readExactSqlInventory>> | null;
+  readonly generatedCheckpoint?: GeneratedFixtureOpenCheckpoint;
 }
 const footprintAbortVariants = Object.freeze({
   combined: Object.freeze({ generation: "209-startup-footprint-combined", consumed: "COMBINED_ABORT_CONSUMED", unavailable: "COMBINED_ABORT_UNAVAILABLE",
@@ -416,6 +424,7 @@ function publicStartupEmptyResult(operationId: string,
 /** Shared cleanup and journal machinery. Only fixed exported facades
  * construct it; neither public requests nor dependency seams select purpose. */
 class CurrentPcbLifecycleCore {
+  readonly #generatedSource: ReturnType<typeof consumeManagedFixtureOpeningSource> | null;
   readonly #purpose: CurrentPcbDiagnosticLifecyclePurpose;
   readonly #generation: LifecycleGeneration;
   readonly #stringPurpose: boolean;
@@ -536,6 +545,8 @@ class CurrentPcbLifecycleCore {
       { diagnostic: diagnosticObservationStageSchema.options, "string-precreate": currentPcbStringPrecreateStages,
         "worker-startup": startupStages }[purpose]; }
     this.#options = Object.freeze({ ...options });
+    requireValue(options.generatedFixtureSource === undefined || generation === "209-ordinary", "GENERATED_FIXTURE_LIFECYCLE_PURPOSE");
+    this.#generatedSource = options.generatedFixtureSource === undefined ? null : consumeManagedFixtureOpeningSource(options.generatedFixtureSource);
     let verify = generation === "206" ? verifyCurrentPcbDiagnosticInstallation : verifyCurrentPcb209DiagnosticInstallation;
     if (generation === "209-startup-ratline" || generation === "209-startup-ratline-continuation") { verify = verifyCurrentPcb209RatlineInstallation; }
     this.#verify = dependencies.verifyInstallation ?? verify;
@@ -552,7 +563,7 @@ class CurrentPcbLifecycleCore {
     else if (generation === "209-startup") { allocate = startCurrentPcb209WorkerStartupOwner; }
     else if (generation === "209-spatial") { allocate = startCurrentPcbSpatialOwner; }
     else if (generation === "209-visual") { allocate = startCurrentPcb209VisualOwner; }
-    else if (generation === "209-opening" || generation === "209-ordinary") { allocate = startCurrentPcb209DiagnosticOwner; }
+    else if (generation === "209-opening" || generation === "209-ordinary") { allocate = this.#generatedSource === null ? startCurrentPcb209DiagnosticOwner : startCurrentGeneratedFixture209DiagnosticOwner; }
     this.#allocate = dependencies.allocateOwner ?? allocate;
     const publish = dependencies.publishRecord ?? publishCurrentPcbDiagnosticLifecycleRecord;
     this.#publish = (generation === "209-startup-footprint-combined" || generation === "209-startup-footprint-forward") ? (operationId, name, record): Promise<void> => {
@@ -672,6 +683,7 @@ class CurrentPcbLifecycleCore {
       // Or a publication plan that could authorize worker discovery.
       const nativeOpeningReply = original && openingConsumed && this.#openingResult === null
         ? native?.projectOpeningResult ?? null : null;
+      const nativeGeneratedRegistration = original && this.#generatedSource !== null ? native?.generatedFixtureRegistration ?? null : null;
       const nativePcbOpeningReply = original && this.#pcbOpeningAttempted && this.#pcbOpeningResult === null
         ? native?.pcbOpeningResult ?? null : null;
       const nativePcbFrameObservation = original && this.#observationConsumed.has("pcb-opening") && !this.#observations.has("pcb-opening")
@@ -867,6 +879,7 @@ class CurrentPcbLifecycleCore {
         ...(pcbOpeningResult === undefined ? {} : { pcbOpeningResult }),
         ...(openingResult === undefined ? {} : { projectOpeningResult: openingResult }),
         ...(nativeOpeningReply === null ? {} : { nativeOpeningReply, hostTransitionAccepted: false }),
+        ...(nativeGeneratedRegistration === null ? {} : { nativeGeneratedRegistration, persistentRegistrationVerified: false }),
         ...(nativePcbOpeningReply === null ? {} : { nativePcbOpeningReply, pcbHostTransitionAccepted: false }),
         ...(nativePcbFrameObservation === null ? {} : { nativePcbFrameObservation, pcbSourceAdmissionAccepted: false }),
         diagnosticFailureObservation: native?.diagnosticFailureObservation ?? null,
@@ -2694,7 +2707,12 @@ class CurrentPcbLifecycleCore {
     this.#options.assertLocalAllowed();
     requireValue(this.#lease !== null, "ORIGINAL_LEASE_REQUIRED"); assertCurrentPcbDiagnosticLaunchExclusion(this.#lease);
     requireValue(this.#retained === retained && methods.every(name => retained.owner[name] === retained.methods[name]), "OWNER_CHANGED");
+    requireValue(this.#generatedSource === null || typeof retained.methods.openGeneratedFixtureProject === "function" &&
+      retained.owner.openGeneratedFixtureProject === retained.methods.openGeneratedFixtureProject &&
+      typeof retained.methods.retainedGeneratedFixtureRegistration === "function" &&
+      retained.owner.retainedGeneratedFixtureRegistration === retained.methods.retainedGeneratedFixtureRegistration, "GENERATED_FIXTURE_OWNER_CHANGED");
     const status = retained.methods.status.call(retained.owner);
+    requireValue(this.#generatedSource === null || status.generatedFixtureRegistrationPurpose === true, "GENERATED_FIXTURE_BIRTH_CHANGED");
     const expectedProfile = this.#generation === "206" ? this.#purpose : { "209-startup-footprint-forward": "worker-startup-footprint-forward209", "209-startup-footprint-combined": "worker-startup-footprint-combined209", "209-startup-footprint-main": "worker-startup-footprint-main209", "209-startup-footprint-route": "worker-startup-footprint-copy209", "209-startup-footprint": "worker-startup-footprint209", "209-startup": "worker-startup209", "209-startup-empty": "worker-startup-empty209", "209-startup-ratline": "worker-startup-ratline209", "209-startup-ratline-continuation": "worker-startup-ratline-continuation209", "209-spatial": "pcb-spatial209", "209-visual": "visual209", "209-opening": "diagnostic209", "209-ordinary": "diagnostic209" }[this.#generation];
     requireValue(status.profile === expectedProfile &&
       (this.#generation !== "209-spatial" || typeof retained.methods.observeSpatial209 === "function" &&
@@ -3024,6 +3042,8 @@ class CurrentPcbLifecycleCore {
       ...launchFields(this.#purpose, this.#generation), operationId: request.operationId, createdAt: new Date().toISOString(),
       facadeSha256: installation.facadeSha256, installationSha256: sha256Json(installation),
       ...(this.#generation === "209-ordinary" ? { confirmOrdinaryReadOnly: true } : { confirmValidationOnly: true }),
+      ...(this.#generatedSource === null ? {} : { generatedFixtureBirth: { originalSourceSha256: this.#generatedSource.qualification.target.expectedSourceSha256,
+        archiveSha256: this.#generatedSource.qualification.archiveSha256, originalClosedInitialQualification: true as const } }),
       confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true,
       ...(this.#generation === "209-visual" ? { acceptVisualStateChanges: true as const } : {}),
       ...(this.#generation === "209-startup-footprint-forward" || this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined" ? { acceptDebuggerPauseEffects: true as const } : {}),
@@ -3061,6 +3081,7 @@ class CurrentPcbLifecycleCore {
       browserObservation: owner.browserObservation, inspectFrames: owner.inspectFrames, inspectScript: owner.inspectScript,
       inspectWorkers: owner.inspectWorkers, inspectWorkerScript: owner.inspectWorkerScript, observeWorkerState: owner.observeWorkerState,
       observeModelState: owner.observeModelState, openProject: owner.openProject,
+      ...(this.#generatedSource === null ? {} : { openGeneratedFixtureProject: owner.openGeneratedFixtureProject, retainedGeneratedFixtureRegistration: owner.retainedGeneratedFixtureRegistration }),
       openPcb: owner.openPcb, observePcbOpening: owner.observePcbOpening,
       ...(this.#generation === "209-visual" ? { performVisual209: owner.performVisual209, captureRendererViewport209: owner.captureRendererViewport209, rendererCaptureSession209: owner.rendererCaptureSession209, captureWindow209: owner.captureWindow209, observeWindowCaptureReadiness209: owner.observeWindowCaptureReadiness209, resizeWindowForCapture209: owner.resizeWindowForCapture209, restoreWindowForCapture209: owner.restoreWindowForCapture209, terminateVisualJob: owner.terminateVisualJob } : {}),
       ...(this.#generation === "209-spatial" ? { observeSpatial209: owner.observeSpatial209, observeSpatialTrack209: owner.observeSpatialTrack209, observeSpatialArc209: owner.observeSpatialArc209 } : {}),
@@ -3166,7 +3187,7 @@ class CurrentPcbLifecycleCore {
     await assertSnapshot(operations); this.#assertOwner(retained);
     if (request.action === "abort-visual") { return this.#abortVisual(request, operation, operations, retained); }
     if (this.#visualAbortAttempted) { requireValue(["observe-termination", "release-closed"].includes(request.action), "VISUAL_GENERATION_ABORTED"); }
-    if (request.action === "open-project") { return this.#openProject(request, operation, operations, retained); }
+    if (request.action === "open-project" || request.action === "open-generated-fixture") { return this.#openProject(request, operation, operations, retained); }
     if (request.action === "open-pcb") { return this.#openPcb(request, operation, operations, retained); }
     if (request.action === "observe-common-baseline") { return this.#observeCommonBaseline(request, operation, operations, retained); }
     if (request.action === "observe-spatial" || request.action === "observe-spatial-lines" || request.action === "observe-spatial-arcs") { return this.#observeSpatial(request, operation, operations, retained); }
@@ -3750,7 +3771,7 @@ class CurrentPcbLifecycleCore {
     return { ...describe(request.operationId, completed), stage: "common-baseline", result: parsed };
   }
 
-  async #openProject(request: Extract<CleanupRequest, { action: "open-project" }>, operation: DiagnosticLifecycleOperation,
+  async #openProject(request: Extract<CleanupRequest, { action: "open-project" | "open-generated-fixture" }>, operation: DiagnosticLifecycleOperation,
     operations: readonly DiagnosticLifecycleOperation[], retained: Retained): Promise<Record<string, unknown>> {
     requireValue(!this.#openingAttempted && operation.records["project-opening-intent.json"] === undefined, "PROJECT_OPENING_CONSUMED");
     requireValue(operation.records["binding.json"]?.launchAcknowledged === true && retained.binding?.rootCreated !== "0" &&
@@ -3764,8 +3785,15 @@ class CurrentPcbLifecycleCore {
     // Backup or an uncertain durable intent; neither grants a retry.
     this.#openingAttempted = true;
     await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
-    const target = Object.freeze(structuredClone(request.target));
-    const prepared = await this.#prepareCheckpoint(target);
+    const generated = request.action === "open-generated-fixture" ? this.#generatedSource : null;
+    requireValue((request.action === "open-generated-fixture") === (this.#generatedSource !== null) &&
+      (generated === null || this.#generation === "209-ordinary" && typeof retained.methods.openGeneratedFixtureProject === "function"), "ORIGINAL_GENERATED_FIXTURE_SOURCE_REQUIRED");
+    const target = Object.freeze(request.action === "open-project" ? structuredClone(request.target) : ((): CurrentDisposableOpenSealedTarget => {
+      requireValue(generated !== null, "ORIGINAL_GENERATED_FIXTURE_SOURCE_REQUIRED");
+      return generated.qualification.target;
+    })());
+    const generatedCheckpoint = generated === null ? undefined : await prepareGeneratedFixtureOpenCheckpoint(generated);
+    const prepared = generatedCheckpoint === undefined ? await this.#prepareCheckpoint(target) : generatedFixtureDiagnosticCheckpoint(generatedCheckpoint);
     const preparedText = canonicalJson(prepared);
     requireValue(prepared.targetEvidence.projectUuid === target.projectUuid && prepared.targetEvidence.documentUuid === target.documentUuid &&
       prepared.targetEvidence.docType === "PCB" && prepared.targetEvidence.sourceSha256 === target.expectedSourceSha256, "PROJECT_CHECKPOINT_BINDING");
@@ -3777,9 +3805,10 @@ class CurrentPcbLifecycleCore {
       requireValue(completion.observedChildClose && completion.exitCode === 0 && completion.exitSignal === null &&
         commonInventory.checkpointSha256 === prepared.checkpoint.checkpointSha256, "COMMON_ORIGINAL_SQL_REQUIRED");
     }
-    this.#projectPreparation = Object.freeze({ sealedTarget, prepared, preparedText, originalTarget: target, commonInventory });
+    this.#projectPreparation = Object.freeze({ sealedTarget, prepared, preparedText, originalTarget: target, commonInventory,
+      ...(generatedCheckpoint === undefined ? {} : { generatedCheckpoint }) });
     const preparationCheckpoint = currentDisposableOpenPreparationCheckpointSchema.parse(prepared.preparationCheckpoint);
-    await this.#verifyCheckpoint(prepared, target);
+    await (generatedCheckpoint === undefined ? this.#verifyCheckpoint(prepared, target) : verifyGeneratedFixtureOpenCheckpoint(generatedCheckpoint));
     requireValue(canonicalJson(prepared) === preparedText, "PROJECT_CHECKPOINT_CHANGED");
     await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
     const intent = diagnosticLifecycleRecordSchemas["project-opening-intent.json"].parse({
@@ -3788,22 +3817,28 @@ class CurrentPcbLifecycleCore {
       target: sealedTarget, preparationCheckpoint, checkpointReceiptSha256: sha256Json(prepared.checkpoint),
       ...(commonInventory === null ? {} : { commonBeforeSqlSha256: commonInventory.logicalSha256 }),
       ...(this.#generation === "209-ordinary" ? { confirmOrdinaryProject: true as const } : { confirmDisposableProject: true as const }),
+      ...(generated === null ? {} : { generatedFixtureSource: { archiveSha256: generated.qualification.archiveSha256,
+        originalInventoryLogicalSha256: generated.qualification.inventoryLogicalSha256, exactInitialNativePayloadQualified: true as const,
+        untickedDocHeadQualified: true as const, acceptRecentPathRegistration: true as const } }),
       acceptNormalOpenEffects: true,
     });
     await this.#record(request.operationId, "project-opening-intent.json", intent);
     const updated = { ...operation, records: { ...operation.records, "project-opening-intent.json": intent } };
     const expected = operations.map(value => value.operationId === operation.operationId ? updated : value);
     await assertSnapshot(expected); this.#assertOwner(retained);
-    let reverificationAttempted = false, reverified = false;
-    const result = await retained.methods.openProject.call(retained.owner, sealedTarget, async () => {
-      requireValue(!reverificationAttempted, "PROJECT_REVERIFICATION_CONSUMED"); reverificationAttempted = true;
+    let reverifications = 0, reverified = false;
+    const reverify = async (): Promise<void> => {
+      requireValue(reverifications < (generated === null ? 1 : 2), "PROJECT_REVERIFICATION_CONSUMED"); reverifications += 1;
       await this.#installation(retained); await assertSnapshot(expected); this.#assertOwner(retained);
       requireValue(canonicalJson(prepared) === preparedText, "PROJECT_CHECKPOINT_CHANGED");
-      await this.#verifyCheckpoint(prepared, target);
+      await (generatedCheckpoint === undefined ? this.#verifyCheckpoint(prepared, target) : verifyGeneratedFixtureOpenCheckpoint(generatedCheckpoint));
       requireValue(canonicalJson(prepared) === preparedText, "PROJECT_CHECKPOINT_CHANGED");
       await this.#installation(retained); await assertSnapshot(expected); this.#assertOwner(retained);
-      reverified = true;
-    });
+      reverified = reverifications === (generated === null ? 1 : 2);
+    };
+    const result = generated === null ? await retained.methods.openProject.call(retained.owner, sealedTarget, reverify) :
+      await retained.methods.openGeneratedFixtureProject?.call(retained.owner, generated.qualification, reverify);
+    requireValue(result !== undefined, "GENERATED_FIXTURE_OPENING_METHOD_REQUIRED");
     // Keep the exact decoded reply even when final owner checks or publication
     // Fail. This result is never a writer token or evidence of full restoration.
     this.#openingResult = result;
@@ -3862,7 +3897,8 @@ class CurrentPcbLifecycleCore {
       requireValue(!reverificationAttempted, "PCB_REVERIFICATION_CONSUMED"); reverificationAttempted = true;
       await this.#installation(retained); await assertSnapshot(expected); this.#assertOwner(retained);
       requireValue(this.#projectPreparation === preparation && canonicalJson(preparation.prepared) === preparation.preparedText, "PROJECT_CHECKPOINT_CHANGED");
-      await this.#verifyHistoricalCheckpoint(preparation.prepared, preparation.originalTarget);
+      await (preparation.generatedCheckpoint === undefined ? this.#verifyHistoricalCheckpoint(preparation.prepared, preparation.originalTarget) :
+        verifyHistoricalGeneratedFixtureOpenCheckpoint(preparation.generatedCheckpoint));
       requireValue(canonicalJson(preparation.prepared) === preparation.preparedText, "PROJECT_CHECKPOINT_CHANGED");
       await this.#installation(retained); await assertSnapshot(expected); this.#assertOwner(retained); reverified = true;
     });

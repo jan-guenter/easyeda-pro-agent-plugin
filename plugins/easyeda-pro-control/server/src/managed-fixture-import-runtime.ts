@@ -19,6 +19,8 @@ import { buildManagedFixtureEnvironmentProgram, managedFixtureEnvironmentObserva
 import { captureManagedFixtureClosedSnapshot } from "./managed-fixture-closed-snapshot.ts";
 import { assertOriginalGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
 import type { QualifiedGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
+import { stageManagedFixtureOpeningSource } from "./managed-fixture-opening-source.ts";
+import type { ManagedFixtureOpeningSource } from "./managed-fixture-opening-source.ts";
 
 const operationId = z.string().regex(/^[a-z0-9][a-z0-9-]{7,95}$/u);
 export const managedFixtureImportRequestSchema = z.discriminatedUnion("action", [
@@ -246,6 +248,11 @@ export class ManagedFixtureImportCoordinator {
     if (this.reservation !== "released" || this.busy || qualification === null || qualification === undefined || this.generatedArchive === undefined) { throw new Error("Original closed generated fixture has no released issued opening source."); }
     assertOriginalGeneratedFixtureTarget(qualification);
     return Object.freeze({ qualification, archive: Buffer.from(this.generatedArchive) });
+  }
+  /** Stage before index releases this coordinator slot. The distinct staged
+   * token survives that local slot release only in this original facade. */
+  public stageSourceForFreshOpening(): ManagedFixtureOpeningSource {
+    return stageManagedFixtureOpeningSource(this.qualifiedSourceForFreshOpening());
   }
   private retainDispatcherStatus(journal: TrackedDispatchOperationJournal): boolean {
     this.current(); const status = this.options.engine.originalTrackedDispatchStatus(journal);
