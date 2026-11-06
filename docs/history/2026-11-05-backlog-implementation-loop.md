@@ -92,3 +92,61 @@ in-memory authenticated transport; it is not a live application proof.
 The [Arc/Line/Via extension](2026-11-06-spatial-arc-line-via-implementation.md)
 adds a third once-only spatial variant without enlarging native limits. The
 combined native helper and final payload are still pending integration.
+
+## 2026-11-06 continued implementation and actual preflight
+
+The canonical unpublished batch now includes the original generated SCH index
+mount, a distinct fresh closed-data tool, original Via create/worker/clock/body
+and exact uniqueId-delta source joins, and retained destination-helper failure
+diagnostics. Development hashes in earlier records remain the original evidence
+identifiers. The two draft report identity references were removed from the
+unpublished canonical ancestry before any remote push; the final source tree
+was byte-identical after that selective rewrite. Private original refs and raw
+validation evidence must never be pushed.
+
+The same retained foreground manager completed generations1–3 through original
+native cleanup and observed facade EOF/exit0, without a Codex restart. The
+[fourth case](2026-11-06-generated-import-destination-refusal.md) passed the
+actual environment config preflight, then stopped before import during native
+destination preparation. Its lost stderr remains unknown. A separate pure
+Windows PowerShell5.1 parser observation confirms a wrapper array-conversion
+defect, with a maintained fix in progress. That observation neither replays the
+import nor establishes its original native error.
+
+The nine groups remain distinct:
+
+1. Fresh generator/import and closed qualification are implemented in source.
+   Actual config preflight now passes. Destination initialization, actual SDK
+   import/registration, complete initial SQL and positive spatial reading still
+   need the next disposable case after original cleanup.
+2. Generated current209 SCH opening and passive Text/Wire/Bus/electrical
+   observations are mounted in source. A distinct opaque SCH target cannot enter
+   the PCB route. Actual opening/read acceptance remains pending.
+3. The original Via source now binds create acknowledgement, exact native
+   worker, both clock realms, Save-body capture and uniqueId delta. Save remains
+   denied until the original main history and delayed structure tasks have
+   operation-specific enrollment, per-call SQL grants, completion and complete
+   closed/reopened proof. No footprint owner is substituted.
+4. A separate SCH display writer source/birth is being implemented. Real SDK
+   Text.modify truthiness/alignment defects and actual native Text normalization
+   require their own projection. Wiring remains dependent on exact contact and
+   persistence qualification.
+5. Arc/Line/Via spatial code has its own immutable result and derived graph
+   within the unchanged older request limits. Positive native Arc acceptance,
+   Component and Pad spatial graphs remain work.
+6. The independent cold footprint graph and original continuation work remain
+   source increments. Full head/lock/frontier/clock, saved/reopened generations,
+   inverse and recovery acceptance remain incomplete.
+7. No positive anonymous system-owned CBB witness has been found. The separately
+   inspected shipped system library had no projects or boards. This does not
+   establish online absence or qualify a user-owned/cloud CBB writer.
+8. Operating references now include generated SCH and fresh closed fixture
+   requalification. Exhaustive coverage and public descriptions still need the
+   final source/bundle inventory update after all mounted routes settle.
+9. Shared native helper generation/pins, combined bundles, required checks,
+   exact final GitHub CI, full CodeRabbit review including legacy findings,
+   protected merge, publication and official installation remain pending.
+
+No PR or release was published by these development cases. The last official
+installation remains the completed PR170 payload. No user project was selected
+for these disposable preparations.
