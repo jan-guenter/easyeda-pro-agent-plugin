@@ -164,3 +164,53 @@ The original manager completed two more frozen-payload generations and shut down
 7. No positive anonymous system-owned CBB witness has been obtained. No absence response or shipped empty library is promoted to positive validation.
 8. The Pad point-only route, exact selector rosters, current discovery schemas and operating reference are reflected in the exhaustive 835-method inventory. Counts and offline checks grant no runtime authority. Final cross-family coverage/omission and skill reconciliation remain required after the remaining source settles.
 9. Combined helper/pins/bundles, required final local checks, exact final CI, CodeRabbit full review including all reported legacy issues, protected merge, publication and official installation remain pending. The source checkout's MCP catalog validator currently catches its stale bundle, which must be regenerated rather than changing the expected catalog.
+
+## 2026-11-06 accepted schematic reads and isolated scope correction
+
+Frozen payload `5af1a7ad` completed two original manager generations through
+normal native cleanup, acknowledged helper closure, facade retirement and
+observed EOF/exit0. The retained manager can select the next frozen payload;
+no native owner remains. The official installation is still PR170. No new PR,
+publication, installation, process signal or Codex restart occurred.
+
+1. Actual explicit-Relevance import, original cleanup, complete35-table/two-document
+   initial qualification and same-facade data staging passed. Separate Pad and
+   Relevance historical closed-data reuse are implemented in source. Connected
+   Pad import/reading and new-profile historical reuse remain pending.
+2. The distinct generated schematic project/page opening and one repeated
+   Text/Wire/Bus getAll batch passed, with exact closed raw invariance preserving
+   complete initial SQL/source. The [case](2026-11-06-relevance-schematic-reader-live-case.md)
+   does not claim selected/explicit-ID or placed-component/pin reads, complete
+   connectivity, general ordinary-project opening, writing or persistence.
+3. Via source now joins all five main SQL slots, actual cipher/body/actor,
+   native callbacks and COMMIT/service completion. Continuous operation-owned
+   enrollment before create, every history/cache producer path, main STRUCTURE
+   publication, complete Save intent and saved/reopened/inverse recovery remain
+   under implementation. Later SDK acknowledgments cannot recreate the prefix.
+4. Original non-publishing startup callbacks can progress through exact original
+   serial scopes. Active action/history metadata leaves and a distinct Relevance
+   display args/body/effect profile are implemented. Native mounting, complete
+   pre-action producer/transport/action custody and durable display/wiring
+   transactions remain work; the older six-row contracts stay unchanged.
+5. The third consumed Arc case retained its exact four-scope wrapper metadata
+   before refusing. A separate Script-tail source correction and real inspector
+   regression pass, with all named closure and source checks preserved. Fresh
+   native Arc acceptance remains pending. The full Component source/cost
+   derivation needs393requests for one point or408 for16, exceeding the older384
+   purpose. A separately budgeted birth and genuine footprint/cache/child fixture
+   are being implemented; no old limit or Pad scene guard was relaxed.
+6. Footprint/library full writer, four-generation saved/reopened proof, inverse
+   and recovery remain incomplete. Existing v2 opening/source ownership is not
+   complete writer admission.
+7. Official CBB docs and pinned official extension source clarify relationships
+   but supply no retained positive anonymous system-owner/project/branch witness.
+   That prerequisite remains pending; no403/empty catalog probes were repeated.
+8. The835-method inventory now separately records the three accepted generated
+   getAll routes as scoped historical evidence. Its62 checks pass. Final
+   cross-family omission, capability and operating-skill reconciliation remains
+   required as the writer and Component implementations settle.
+9. Batch the coherent source into another frozen helper/pin/bundle build, perform
+   required local checks and focused actual cases, then exact final GitHub CI,
+   full CodeRabbit review including legacy findings, protected merge,
+   publication and official installation. No intermediate release is required
+   to run the next verified build through the existing manager.
