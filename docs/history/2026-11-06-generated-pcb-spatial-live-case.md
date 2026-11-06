@@ -255,3 +255,9 @@ frontend can include Component recovery. No native owner remains from this
 case. No explicit Save, discard, forced termination, user-project change or
 official publication occurred. The environment correction still needs a new
 frozen payload and positive connected read proof.
+
+The original foreground manager subsequently completed its normal shutdown.
+Its retained process and stdio closed with exit0, and independent process
+inspection confirmed that both that manager and the generation4 facade were
+absent. No signal was sent. A future live case requires a new verified frontend
+and a separately admitted facade; these terminal receipts grant no owner reuse.
