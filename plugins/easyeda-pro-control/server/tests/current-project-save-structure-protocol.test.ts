@@ -7,7 +7,7 @@ import { currentProjectSaveStructureNativeCases, validateCurrentProjectSaveStruc
 import { CURRENT_PROJECT_SAVE_STRUCTURE_SITES } from "../src/current-project-save-structure-source.ts";
 
 void test("structure vocabulary pins every exact stage, flags, expression and argument count", () => {
-  const cases = currentProjectSaveStructureNativeCases(); assert.equal(cases.length, 32);
+  const cases = currentProjectSaveStructureNativeCases(); assert.equal(cases.length, 38);
   for (const command of cases) { assert.deepEqual(validateCurrentProjectSaveStructureCommand(command), command); }
   const arm = cases.find(command => command.phase === "project-save-structure-arm"); assert.ok(arm?.method === "Debugger.setBreakpoint");
   assert.throws(() => validateCurrentProjectSaveStructureCommand({ ...arm, params: { location: { ...arm.params.location, columnNumber: arm.params.location.columnNumber + 1 } } }));
