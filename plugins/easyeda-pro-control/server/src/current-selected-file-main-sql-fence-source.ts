@@ -4,6 +4,7 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { qualifyCurrentFootprintCopyMainBackendSource } from "./current-footprint-copy-main-backend-source.ts";
 
 export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE = freezeDeep({
+  literalTableConstructor: ["attributes","block_symbol_attributes","branch_locks","branches","broadcast_messages","categories","component_fts_ids","component_fts_inv_idx","component_histories","components","coppers","db_paths","db_versions","device_fts_ids","device_fts_inv_idx","devices","documents","editor_bugs","editor_caches","history_data","notifications","project_histories","project_images","project_logs","project_members","project_structures","projects","resources","schematics","system_attributes","system_config","texts","users","web_cookies"],
   appSha256: "52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c",
   readRenderer: { start: 1_292_791, end: 1_299_105, bytes: 6314, sha256: "c3e085daa38ff281385c20e22c1faea33a4a5ad2052265a4ac56e9c6c158ddb9" },
   sites: {
@@ -74,6 +75,8 @@ export function qualifyCurrentSelectedFileMainSqlFenceSource(input: unknown): Cu
     need(Buffer.byteLength(text) === site.bytes && createHash("sha256").update(text).digest("hex") === site.sha256 &&
       prefix.split("\n").length - 1 === site.lineNumber && site.start - prefix.lastIndexOf("\n") - 1 === site.columnNumber);
   }
+  const tables = [...new Set([...input.matchAll(/new Q\("([a-zA-Z_]+)"/gu)].map(match => match[1] ?? ""))].toSorted((left, right) => left < right ? -1 : Number(left !== right));
+  need(JSON.stringify(tables) === JSON.stringify(CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE.literalTableConstructor));
   need(input.match(/require\("sqlite3"\)/gu)?.length === 1 && input.match(/new sc\.Database\(/gu)?.length === 3);
   const token = Object.freeze({ profile: "private.current-selected-file-main-sql-fence-source.v1" as const,
     allOriginalDatabaseBirthsPinned: true as const, rawAndPreparedSqlSitesPinned: true as const, runtimeBound: false as const, executionAuthorized: false as const });

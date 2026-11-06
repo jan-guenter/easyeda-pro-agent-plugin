@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { types } from "node:util";
 import { createContext, runInContext } from "node:vm";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM as CAPTURE,
-  CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CONFIGURATION_PROGRAM as CONFIGURE, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CONDITIONS as CONDITIONS, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUIRE_PROGRAM as REQUIRE,
+  CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CONDITIONS as CONDITIONS, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CONFIGURATION_PROGRAM as CONFIGURE, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUIRE_PROGRAM as REQUIRE,
   CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SELECT_PROGRAM as SELECT } from "../src/current-selected-file-main-sql-fence-programs.ts";
 
 type Site = keyof typeof CONDITIONS;
@@ -31,13 +31,14 @@ void test("source-known SELECT shapes pass without native/application calls or s
   const allowed: readonly (readonly [string, unknown[]])[] = [
     ['select t1."uuid" as "uuid" from projects t1 where t1."uuid" = ?', ["known"]],
     ['SELECT COUNT(*) AS cnt FROM sqlite_master WHERE type = \'table\' AND name = ?', ["projects"]],
+    ['select name from web_cookies where key=?', ["key"]],
     ['select count(1) as "cnt" from branches t1 where t1."uuid" IN (?,?)', ["a", "b"]],
     ['select max(t1."num") as "num" from project_history_0123456789abcdef0123456789abcdef t1 where t1."uuid" = ?', ["h"]],
   ];
   for (const [sql, params] of allowed) { const context = fixture(); query(context, sql, params); assert.equal(predicate(context, "queryOne"), false, sql); assert.equal(runInContext("calls", context), 0); assert.equal(runInContext(`(${REQUIRE}).call(captured)`, context), true); }
 });
 void test("every non-source SQL/function/table/parameter form pauses instead of failing open", () => {
-  const blocked = ['select 1', 'update projects set ticket=2', 'delete from history_data', 'begin immediate transaction', 'commit transaction', 'rollback transaction', 'vacuum', 'pragma user_version', 'pragma journal_mode=wal', 'pragma writable_schema=ON', 'select load_extension(?) from projects', 'select writefile(?,?) from projects', 'select eval(?) from projects', 'select arbitrary_function(?) from projects', 'select datetime(?) from projects', 'select * from pragma_wal_checkpoint(?)', 'select * from foreign_table', 'select 1 from projects;delete from projects', 'select 1 from projects--comment', 'select 1 from projects/*comment*/', 'WITH x AS(SELECT 1)DELETE FROM projects', 'explain select 1 from projects', 'select 1 into x from projects', 'select \'load_extension\'(?) from projects', 'select (1 from projects', 'select 1)from projects', 'select \u0000'];
+  const blocked = ['select 1', 'update projects set ticket=2', 'delete from history_data', 'begin immediate transaction', 'commit transaction', 'rollback transaction', 'vacuum', 'pragma user_version', 'pragma journal_mode=wal', 'pragma writable_schema=ON', 'select load_extension(?) from projects', 'select writefile(?,?) from projects', 'select eval(?) from projects', 'select arbitrary_function(?) from projects', 'select datetime(?) from projects', 'select * from pragma_wal_checkpoint(?)', 'select * from foreign_table', 'select * from component_fts_ids', 'select * from device_fts_inv_idx', 'select * from sessions', 'select * from backups', 'select 1 from projects;delete from projects', 'select 1 from projects--comment', 'select 1 from projects/*comment*/', 'WITH x AS(SELECT 1)DELETE FROM projects', 'explain select 1 from projects', 'select 1 into x from projects', 'select \'load_extension\'(?) from projects', 'select (1 from projects', 'select 1)from projects', 'select \u0000'];
   for (const sql of blocked) { const context = fixture(); query(context, sql); assert.equal(predicate(context, "queryOne"), true, sql); assert.equal(runInContext("calls", context), 0); }
   const context = fixture(); query(context, "select uuid from projects where uuid=?", []); assert.equal(predicate(context, "queryOne"), true);
   runInContext('e="select uuid from projects where uuid=?";r=[{valueOf:forbidden,toString:forbidden}];', context); assert.equal(predicate(context, "run"), true); assert.equal(runInContext("calls", context), 0);
@@ -72,10 +73,12 @@ void test("fixed predicates are bounded and exceptions from unknown lexical bind
 void test("original initializer configuration records each native DB/owner pair once without granting design SQL", () => {
   const context = fixture();
   runInContext('const owner=new Yo;owner.path=path;owner.db=db;owner.dbWrap=wrap;const cfgFrame=[path,db,owner,sc,F5];', context);
-  const first = runInContext(`(${CONFIGURE}).call(cfgFrame,captured,"serialize")`, context);
+  const first: unknown = runInContext(`(${CONFIGURE}).call(cfgFrame,captured,"serialize")`, context);
+  assert.ok(first !== null && typeof first === "object");
   assert.equal(Reflect.get(first, "designWriteGrant"), false); assert.equal(Reflect.get(first, "readonlySql"), false);
   assert.throws(() => runInContext(`(${CONFIGURE}).call(cfgFrame,captured,"serialize")`, context));
-  const second = runInContext(`(${CONFIGURE}).call(cfgFrame,captured,"pragma")`, context);
+  const second: unknown = runInContext(`(${CONFIGURE}).call(cfgFrame,captured,"pragma")`, context);
+  assert.ok(second !== null && typeof second === "object");
   assert.equal(Reflect.get(second, "selectedFile"), true); assert.equal(Reflect.get(second, "nativeCompletionProven"), false);
   assert.throws(() => runInContext(`(${CONFIGURE}).call(cfgFrame,captured,"pragma")`, context));
   assert.equal(runInContext("calls", context), 0);
