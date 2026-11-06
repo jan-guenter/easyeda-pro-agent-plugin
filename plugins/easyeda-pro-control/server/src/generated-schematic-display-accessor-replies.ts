@@ -49,21 +49,18 @@ export function requireGeneratedSchematicDisplayAccessorDescription(value: unkno
   const expected = SOURCES[source].methods[role]; need(typeof value === "string" && value.isWellFormed() && Buffer.byteLength(value) === expected.bytes && digest(value) === expected.sha256, "FUNCTION_DESCRIPTION");
 }
 /** Full original FunctionLocation, name/arity and own descriptor semantics.
- * Decorated ordinary functions have their real non-strict caller/arguments and
- * prototype properties; raw class accessors are method functions instead. */
+ * Current209's V8 has three regular own fields; caller/arguments remain on
+ * Function.prototype. Raw class accessors are method functions instead. */
 export function decodeGeneratedSchematicDisplayAccessorFunction(raw: unknown, source: 0 | 1, role: GeneratedSchematicDisplayAccessorRole, scriptId: string): Readonly<{ scopes: string; prototype: string | null }> {
   handle.parse(scriptId); const reply = properties.parse(captureCurrentPcbStringClockReply(raw).value); const expected = SOURCES[source].methods[role];
   const fields = new Map(reply.result.map(value => [value.name, value])); let names = ["length", "name"];
-  if (expected.kind === "regular") { names = ["length", "name", "arguments", "caller", "prototype"]; }
+  if (expected.kind === "regular") { names = ["length", "name", "prototype"]; }
   if (expected.kind === "class") { names = ["length", "name", "prototype"]; }
   need(fields.size === names.length && reply.result.length === fields.size && names.every(name => fields.has(name)), "FUNCTION_OWN_FIELDS");
   for (const [name, value] of [["name", expected.name], ["length", expected.arity]] as const) {
     const field = fields.get(name); need(field !== undefined && !field.writable && field.configurable && !field.enumerable && field.value.objectId === undefined && field.value.value === value &&
       field.value.type === (name === "name" ? "string" : "number"), "FUNCTION_NAME_ARITY");
   }
-  for (const name of ["arguments", "caller"]) { const field = fields.get(name); if (field !== undefined) {
-    need(!field.writable && !field.configurable && !field.enumerable && field.value.type === "object" && field.value.subtype === "null" && field.value.value === null && field.value.objectId === undefined, "NONSTRICT_WRAPPER_FIELDS");
-  } }
   const prototype = fields.get("prototype"); if (prototype !== undefined) { need(prototype.writable === (expected.kind === "regular") && !prototype.configurable && !prototype.enumerable &&
     prototype.value.type === "object" && prototype.value.objectId !== undefined && prototype.value.value === undefined, "FUNCTION_PROTOTYPE"); }
   const internals = new Map(reply.internalProperties?.map(value => [value.name, value.value]));

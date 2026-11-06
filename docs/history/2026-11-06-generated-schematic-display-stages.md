@@ -117,8 +117,10 @@ own setter must retain an undefined validator `e`. The raw getter equals the
 public getter, and the raw setter differs from the wrapper. Active monitor
 closures must retain the same watched monitor instance. The fixed source
 roster records UTF16 FunctionLocation, function name/arity and exact bytes/hash;
-bounded decoders retain the real non-strict wrapper's caller/arguments/prototype
-descriptors and inspect only lexical scope metadata, never Global/Script data.
+bounded decoders require current209's real length/name/prototype own fields
+(caller/arguments reside on Function.prototype in that V8 profile), and inspect
+only lexical scope metadata, never Global/Script data. Classic Node's five-own-
+field ordinary-function layout is not substituted for the installed209 profile.
 
 Three additional synthetic graph/packet regressions pass. The maintained
 installed-source checker independently qualifies all 60 spans and their exact

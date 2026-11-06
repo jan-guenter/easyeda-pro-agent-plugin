@@ -45,8 +45,7 @@ function functionPacket(role: "x.get" | "decoratedSetter"): { result: unknown[];
   const method = GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE[0].methods[role];
   const result = [field("length", { type: "number", value: method.arity }, false, false), field("name", { type: "string", value: method.name }, false, false)];
   if (role === "decoratedSetter") {
-    result.push(field("arguments", { type: "object", subtype: "null", value: null }, false, false, false), field("caller", { type: "object", subtype: "null", value: null }, false, false, false),
-      field("prototype", { type: "object", objectId: "wrapper.prototype" }, true, false, false));
+    result.push(field("prototype", { type: "object", objectId: "wrapper.prototype" }, true, false, false));
   }
   return { result, internalProperties: [
     { name: "[[FunctionLocation]]", value: { type: "object", subtype: "internal#location", value: { scriptId: "original.script", lineNumber: method.lineNumber, columnNumber: method.columnNumber } } },
@@ -54,12 +53,14 @@ function functionPacket(role: "x.get" | "decoratedSetter"): { result: unknown[];
     { name: "[[Scopes]]", value: { type: "object", subtype: "internal#scopeList", className: "Array", description: "Scopes[3]", objectId: "original.scopes" } }
   ] };
 }
-void test("function metadata requires exact original source locations and non-strict wrapper fields", () => {
+void test("function metadata requires exact original source locations and current209 wrapper fields", () => {
   assert.deepEqual(decodeGeneratedSchematicDisplayAccessorFunction(functionPacket("x.get"), 0, "x.get", "original.script"), { scopes: "original.scopes", prototype: null });
   assert.deepEqual(decodeGeneratedSchematicDisplayAccessorFunction(functionPacket("decoratedSetter"), 0, "decoratedSetter", "original.script"), { scopes: "original.scopes", prototype: "wrapper.prototype" });
   assert.throws(() => decodeGeneratedSchematicDisplayAccessorFunction(functionPacket("x.get"), 0, "x.get", "borrowed.script"));
-  const missing = functionPacket("decoratedSetter"); missing.result.splice(3, 1);
+  const missing = functionPacket("decoratedSetter"); missing.result.splice(2, 1);
   assert.throws(() => decodeGeneratedSchematicDisplayAccessorFunction(missing, 0, "decoratedSetter", "original.script"));
+  const legacy = functionPacket("decoratedSetter"); legacy.result.push(field("caller", { type: "object", subtype: "null", value: null }, false, false, false));
+  assert.throws(() => decodeGeneratedSchematicDisplayAccessorFunction(legacy, 0, "decoratedSetter", "original.script"));
   assert.equal(generatedSchematicDisplayPublicAccessorRole("rotation.set"), "decoratedSetter"); assert.equal(generatedSchematicDisplayPublicAccessorRole("x.set"), "x.set");
   requireGeneratedSchematicDisplayAccessorDescription("function(o){return i.setter.call(this,a,t,o)}", 0, "decoratedSetter");
   assert.throws(() => { requireGeneratedSchematicDisplayAccessorDescription("function(o){return i.setter.call(this,a,t,o);}", 0, "decoratedSetter"); });
