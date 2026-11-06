@@ -39,3 +39,29 @@ profile or generated-project data. No global unchanged-storage claim is made.
 The earlier [destination refusal](2026-11-06-generated-import-destination-refusal.md)
 and its lost stderr remain separate from this later successful SDK settlement.
 No PR, release or official installation was made for this snapshot.
+
+## Original fifth-generation terminal cleanup
+
+Original normal close was acknowledged. The retained root and complete Job
+terminated, and tracked cleanup verified exact closed session/dispatch release.
+The successful settled importer needed no orphan capture release. Complete raw
+and SQL capture then stopped only on the file-clock qualification described in
+the [Windows clock record](2026-11-06-generated-fixture-windows-file-clocks.md).
+Its refused target was never opened or staged.
+
+The destination's original directory/library watches drained unchanged and
+its handles closed. The fixture reservation and ordinary helper were separately
+released. The ordinary release acknowledged `helperTransportClosed:true` and
+`indexAllocationReleased:true`. Its response wrapper was6383bytes, SHA256
+`7b1b9dea2b1c51d45759140cea7575723a09e2eb601533299ff8c5b1e6ac9783`.
+The original termination digest was
+`07ca2473b6b77fe8277be2732292e612131f7e65b223ad5d0dfa589057ea9734`.
+
+The retained manager retired generation5 only after those releases, received
+the lease-release acknowledgment, delivered original stdin EOF and observed
+the original facade's process and stdio closure with exit0. It reported
+`replacementAllowed:true`. The manager remains alive with no selected facade;
+no signal, helper adoption, lease edit, cache patch or Codex restart occurred.
+The source snapshot was unchanged throughout this original lifecycle. The
+retained fixture and failed capture are data for a later fresh qualification,
+not a transferred native owner or original acceptance proof.

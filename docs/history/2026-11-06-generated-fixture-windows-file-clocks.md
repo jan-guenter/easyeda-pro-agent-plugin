@@ -41,3 +41,12 @@ offline evidence. No live fresh Windows-clock qualification, reader acceptance,
 bundle, CI, publication or installation is claimed by this source increment.
 Future direct-import capture also needs actual Windows file clocks, handled as
 a separate original-helper change.
+
+## Terminal cleanup and source review
+
+The ordinary helper release later completed, followed by acknowledged facade
+retirement, original EOF and process/stdio closure with exit0. The linked
+import record retains the exact terminal observations. No resource from that
+generation remains available for adoption. Independent source review of the
+clock-refused data path found no blocking issue and confirmed that both full
+initial models and the original fresh file/no-app boundaries remain required.
