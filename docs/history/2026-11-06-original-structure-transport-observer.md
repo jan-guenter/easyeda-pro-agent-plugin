@@ -36,3 +36,26 @@ Actual XHR observation, a consumed SDK Save, complete producer-frontier proof,
 closed/reopened verification and public writer mounting remain pending. This
 record supplies no connected write or durability claim. No user project was
 opened and no release or installation occurred.
+
+## Fixed writer observer composition
+
+The later `CurrentPcbViaWriteObservers` composition installs the actual Save,
+shared structure, XHR transport and producer observers before navigation. It
+retains the original construction Promise and one producer read across startup
+and create. Original cursor progress guides metadata settlement but grants no
+quiescence or frontier authority. The same collector handles original initial
+cache/sync and periodic calls. Its first post-action producer packet stays held
+for the separate planned writer continuation. No speculative poll is abandoned.
+
+The group retains both native and complete-scene baselines, arms all original
+main collectors before create, preserves the actual SDK acknowledgment object
+through effect qualification and binds that exact effect to the main owner.
+The prospective Save choreography joins clock/body before original structure
+and history processing. Actual producer continuation, durable outer journal
+composition and connected execution remain separate pending work.
+
+Three focused inert-owner/observer tests run the production coordinator. They
+verify one retained producer read, the original acknowledgment identity,
+pre-create main enrollment and refusal after a failed original baseline read.
+Types and changed strict lint pass. These are orchestration regressions, not
+an actual SDK create, Save or persistence proof.
