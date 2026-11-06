@@ -1,0 +1,60 @@
+# Original Via history native completion
+
+This source increment continues the actual current209 Via main cursor past the
+original BEGIN callback. It does not enable SDK Save or claim saved/reopened
+persistence. No application, MCP or native owner was allocated for this work.
+
+The original backend binds a generated checkpoint's completed initial inventory
+before exposing its Via origin. Its history ledger accepts only that initial
+selected branch, head and structure row. The source's actual head result selects
+either a new history row or one mutable-head append. Unsupported initial rows,
+missing heads, different counters and foreign selected writes refuse.
+
+The original BEGIN return transfers its retained native callback breakpoint
+once. History installs no duplicate at that source location. The fixed callback
+condition pauses every non-SELECT callback; it grants no continuation itself.
+Each of the five subsequent SQL slots requires its actual original raw native
+DB, exact SQL/parameters, source caller, resolver/rejector and successful native
+Statement callback. The slots are history-data UPSERT, new-head INSERT or
+head-counter UPDATE, branch-head UPDATE, COMMIT and project metadata UPDATE.
+The main SQL fence remains installed throughout.
+
+Before the first data slot, the original x4 entry and return retain the actual
+key, history/chunk IDs and cipher bytes. Independent AES/GCM decoding must equal
+the exact retained Save body prefixed by the actual main EDIT_HEAD actor. No
+observer executes a cipher, SQL driver or application callback. Actual COMMIT,
+project, service and controller await returns follow the five native callbacks.
+Windows helper clocks bracket each original native invocation and callback;
+caller clock fields are absent from the wire.
+
+The connected source route is `CurrentPcbViaMainHistoryObserver`: its pre-Save
+`arm()` records nine source acknowledgments, then `observe()` consumes the
+original held BEGIN result. The same native backend independently records every
+frame, fixed selector and pending continuation. It reserves 88 normal requests
+and 11 cleanup requests; the finite native codebook contains 82 cases. Shared
+helper generation and Windows compilation remain the integrating owner's work.
+
+`completeViaHistorySql(plan)` can issue the common structure completion token
+only from that same actual completed backend ledger and its retained original
+body/clock/structure origin. The common consumer is synchronous and once-only;
+JSON cannot recreate it. The native history flag changes only inside the last
+original native continuation after all five callback windows exist. This token
+proves history SQL completion and selected-fence custody, not structure
+publication, uploader quiescence, a closed-file comparison or persistence.
+
+The existing history-first structure release can deadlock: structure debounce
+is 300ms while the buffered uploader waits 500ms. The next required route is a
+separate body/clock/tree reservation before history, with original worker XHR
+send/return custody so the main structure request can finish while worker timer
+tasks remain suspended. Original producer construction and no-publication
+startup continuations are being mounted independently. SDK Save remains denied
+until that ordering, pre-Save enrollment, journal dispatch, full producer tail,
+structure SQL/publication, closed SQL and cache-excluded reopen are composed.
+
+Focused verification used Node24.18.0/npm11.16.0 with core dumps disabled. Thirty
+focused tests passed, including the actual production cursor through the whole
+transaction with GETs before/after the original POST, BEGIN/history lost ACKs,
+foreign SQL refusal, both head/cipher source paths and unchanged structure
+observer checks. Types, strict type-aware lint on changed TypeScript and
+repository validation passed. The source/transport peer in the cursor test is
+explicitly synthetic; this is not connected writer validation.

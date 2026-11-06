@@ -7,9 +7,10 @@
 /* oxlint-disable max-classes-per-file -- Four fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
 import type { CurrentSchematicDisplayAccessorBindings, CurrentSchematicDisplayAccessorOrigin } from "./current-schematic-display-accessor-origin.ts";
 import { validateCurrentSchematicDisplayAccessorCommand } from "./current-schematic-display-accessor-protocol.ts";
+import { currentGeneratedProjectHistorySqlBaseline } from "./current-generated-project-history-sql-baseline.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_SITES } from "./current-project-save-structure-source.ts";
 import { validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
-import type { CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
+import type { CurrentProjectHistorySqlCompletion, CurrentProjectHistorySqlCompletionValue, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
 import type { CurrentSchematicDisplayClockBindings, CurrentSchematicDisplayClockOrigin, CurrentSchematicDisplayClockRealm } from "./current-schematic-display-clock-origin.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_CLOCK_SITES, validateCurrentSchematicDisplayClockCommand } from "./current-schematic-display-clock-protocol.ts";
 import type { CurrentSchematicDisplayClockCommand } from "./current-schematic-display-clock-protocol.ts";
@@ -38,6 +39,10 @@ import type { CurrentPcbViaClockBindings, CurrentPcbViaClockOrigin, CurrentPcbVi
 import { CURRENT_PCB_VIA_CLOCK_SITES, validateCurrentPcbViaClockCommand } from "./current-pcb-via-clock-protocol.ts";
 import type { CurrentPcbViaClockCommand } from "./current-pcb-via-clock-protocol.ts";
 import type { CurrentPcbViaMainBindings, CurrentPcbViaMainOrigin } from "./current-pcb-via-main-origin.ts";
+import { currentPcbViaMainHistoryWire } from "./current-pcb-via-main-history-wire.ts";
+import type { CurrentPcbViaMainHistoryCommand } from "./current-pcb-via-main-history-protocol.ts";
+import { decodeCurrentPcbViaMainHistoryNativeAck } from "./current-pcb-via-main-history-ack.ts";
+import type { CurrentPcbViaMainHistoryNativeWindow } from "./current-pcb-via-main-history-ack.ts";
 import { currentPcbViaMainBeginWire } from "./current-pcb-via-main-begin-wire.ts";
 import type { CurrentPcbViaMainBeginCommand } from "./current-pcb-via-main-begin-protocol.ts";
 import { currentPcbViaMainStepWire } from "./current-pcb-via-main-step-protocol.ts";
@@ -543,10 +548,23 @@ export function requireOriginalCurrentSchematicDisplaySaveWorkerOrigin(origin: C
   requireSchematicArguments(owner, argumentsValue); original.assertOriginal(); return original.bindings;
 }
 export type CurrentProjectSaveStructureSetup = (origin: CurrentProjectSaveStructureOrigin) => Promise<void>;
-// Only the genuine central history-SQL completion consumer may populate this
-// Registry. It is intentionally empty until its actual callback join lands.
+// Only the genuine same-owner history-SQL completion consumer populates this
+// Registry after every original native callback and service await completed.
 const projectSaveStructureHistoryGrants = new WeakMap<CurrentProjectSaveStructureOrigin, Readonly<{ completion: CurrentProjectHistorySqlCompletion; assertCurrent: () => void }>>();
 const projectSaveStructureOrigins = new WeakMap<CurrentProjectSaveStructureOrigin, Readonly<{ owner: object; operation: object; bindings: CurrentProjectSaveStructureBindings; assertOriginal: () => void }>>();
+interface OriginalProjectHistorySqlCompletion { readonly owner: object; readonly operation: object; readonly origin: CurrentProjectSaveStructureOrigin; readonly value: CurrentProjectHistorySqlCompletionValue; readonly assertCurrent: () => void; consumed: boolean }
+const projectHistorySqlCompletions = new WeakMap<CurrentProjectHistorySqlCompletion, OriginalProjectHistorySqlCompletion>();
+/** Consumed synchronously before the original worker resume is even awaited.
+ * This grants only that origin's structure continuation, never an SDK Save. */
+export function consumeOriginalCurrentProjectHistorySqlCompletion(token: CurrentProjectHistorySqlCompletion, owner: object, operation: object): CurrentProjectHistorySqlCompletionValue {
+  const original = projectHistorySqlCompletions.get(token);
+  if (original === undefined || original.owner !== owner || original.operation !== operation || original.consumed || projectSaveStructureHistoryGrants.has(original.origin)) { throw error("PROJECT_HISTORY_SQL_ORIGINAL_COMPLETION"); }
+  const structure = projectSaveStructureOrigins.get(original.origin);
+  if (structure === undefined || structure.owner !== owner || structure.operation !== operation) { throw error("PROJECT_HISTORY_SQL_ORIGINAL_STRUCTURE"); }
+  original.assertCurrent(); structure.assertOriginal(); original.consumed = true;
+  projectSaveStructureHistoryGrants.set(original.origin, Object.freeze({ completion: token, assertCurrent: original.assertCurrent })); return original.value;
+}
+
 /** The actual source-held callback of the original native birth is the only
  * issuer. Matching targets, old worker leases and caller bindings cannot join. */
 export function requireOriginalCurrentProjectSaveStructureOrigin(origin: CurrentProjectSaveStructureOrigin, owner: object, operation: object): CurrentProjectSaveStructureBindings {
@@ -662,6 +680,13 @@ export async function sendOriginalCurrentPcbViaMainCommand(capability: CurrentSe
   if (!(original.owner instanceof CurrentPcbViaWriteOwner)) { throw error("PCB_VIA_MAIN_ORIGINAL_OWNER"); }
   assertOriginalCurrentPcbViaWriteOwner(original.owner);
   original.reprove(); await original.owner.sendViaMainObservation(capability, runner, command, id); original.reprove();
+}
+export async function sendOriginalCurrentPcbViaMainHistory(capability: CurrentSelectedFileMainSqlFenceBootstrap,
+  runner: CurrentFootprintCopyMainBackendRunner, command: CurrentPcbViaMainHistoryCommand, id: number): Promise<CurrentPcbViaMainHistoryNativeWindow | null> {
+  const original = selectedSqlFenceBootstraps.get(capability);
+  // oxlint-disable-next-line eslint/no-use-before-define -- Native requests require the already initialized genuine dedicated owner.
+  if (original === undefined || original.runner() !== runner || !(original.owner instanceof CurrentPcbViaWriteOwner)) { throw error("PCB_VIA_HISTORY_ORIGINAL_OWNER"); }
+  assertOriginalCurrentPcbViaWriteOwner(original.owner); original.reprove(); const window = await original.owner.sendViaMainHistory(capability, runner, command, id); original.reprove(); return window;
 }
 export async function sendOriginalCurrentPcbViaMainBegin(capability: CurrentSelectedFileMainSqlFenceBootstrap,
   runner: CurrentFootprintCopyMainBackendRunner, command: CurrentPcbViaMainBeginCommand, id: number): Promise<void> {
@@ -965,6 +990,7 @@ class CurrentPcbRetainedOwnerCore {
   #viaClockValue: number | null = null;
   #viaSaveBodyCaptureAttempted = false;
   #viaSaveCapturedBody: CurrentPcbViaSavePendingBodyValue | null = null;
+  #viaHistoryCompletion: CurrentProjectHistorySqlCompletion | null = null;
   #viaMainBoundBody: CurrentPcbViaPendingSaveDelta | null = null;
   #viaMainAttempted = false;
   #viaMainOrigin: CurrentPcbViaMainOrigin | null = null;
@@ -2186,6 +2212,7 @@ class CurrentPcbRetainedOwnerCore {
     try {
       await this.#verify(); selected.current(); const captured = await runner.beginViaMainObservation(); selected.current();
       const { origin } = captured;
+      runner.bindViaInitialHistoryBaseline(origin, currentGeneratedProjectHistorySqlBaseline(requireOriginalCurrentPcbViaWritePlan(plan).inventory, plan.target.projectUuid, plan.target.branchUuid));
       const original = (): void => { selected.current(); requireOriginalCurrentPcbViaWriteEffect(effect, this, plan);
         if (this.#mainRunner !== runner || this.#viaMainOrigin !== origin || this.#viaFailed || this.#viaCleanupOnly) { throw error("PCB_VIA_MAIN_CHANGED"); } };
       const bindings: CurrentPcbViaMainBindings = Object.freeze({ ...captured.bindings, assertSaveAttempt: (): void => { original(); if (!this.#viaSdkPhases.has("save")) { throw error("PCB_VIA_MAIN_ORIGINAL_SAVE_ATTEMPT"); } } });
@@ -2213,6 +2240,27 @@ class CurrentPcbRetainedOwnerCore {
     this.#mainRunner.bindViaExpectedHistoryBody(origin, { projectUuid: plan.target.projectUuid, branchUuid: plan.target.branchUuid,
       projectKey: plan.target.projectUuid, path: plan.target.rawWindowsPath, dataStr: delta.dataStr });
     actual.assertOriginal(); worker.assertOriginal(); this.#viaMainBoundBody = delta; return delta;
+  }
+  /** The original backend, original native callback ACKs and retained body
+   * issue this completion. It records no structure publication or durability. */
+  public completeViaHistorySql(plan: CurrentPcbViaWritePlan): CurrentProjectHistorySqlCompletion {
+    requireViaPlan(this, plan); const origin = this.#viaMainOrigin, structureOrigin = this.#viaStructureOrigin;
+    if (origin === null || structureOrigin === null || this.#mainRunner === null || this.#viaMainBoundBody === null || this.#viaHistoryCompletion !== null ||
+      this.#viaClockValue === null || this.#viaSaveCapturedBody === null || this.#viaSaveCapturedBody.clock !== this.#viaClockValue || !this.#viaSdkPhases.has("save") || this.#viaFailed || this.#viaCleanupOnly) { throw error("PCB_VIA_HISTORY_COMPLETION_UNAVAILABLE"); }
+    const actual = pcbViaMainOrigins.get(origin), structure = projectSaveStructureOrigins.get(structureOrigin);
+    if (actual === undefined || actual.owner !== this || actual.plan !== plan || structure === undefined || structure.owner !== this || structure.operation !== plan) { throw error("PCB_VIA_HISTORY_COMPLETION_ORIGINAL"); }
+    actual.assertOriginal(); structure.assertOriginal(); const runner = this.#mainRunner; const body = this.#viaMainBoundBody;
+    const effects = runner.requireViaHistoryCompleted(origin);
+    if (effects.projectUuid !== plan.target.projectUuid || effects.branchUuid !== plan.target.branchUuid || effects.bodySha256 !== body.bodySha256 ||
+      body.documentUuid !== plan.target.documentUuid || this.#viaSaveCapturedBody.headTicket !== body.headTicket) { throw error("PCB_VIA_HISTORY_COMPLETION_BODY"); }
+    const value: CurrentProjectHistorySqlCompletionValue = Object.freeze({ projectUuid: effects.projectUuid, branchUuid: effects.branchUuid, documentUuid: body.documentUuid,
+      bodySha256: effects.bodySha256, saveHeadTicket: body.headTicket, workerClock: this.#viaClockValue, workerEditVersion: body.workerEditVersion,
+      originalHistoryNativeCallbacksCompleted: true, selectedSqlStillFenced: true });
+    const token: CurrentProjectHistorySqlCompletion = Object.freeze({ profile: "private.current-project-history-sql-completion.v1" });
+    const assertCurrent = (): void => { requireViaPlan(this, plan); actual.assertOriginal(); structure.assertOriginal();
+      if (this.#viaHistoryCompletion !== token || this.#mainRunner !== runner || this.#viaMainBoundBody !== body || this.#viaMainOrigin !== origin || this.#viaStructureOrigin !== structureOrigin ||
+        this.#viaFailed || this.#viaCleanupOnly || runner.requireViaHistoryCompleted(origin) !== effects) { throw error("PCB_VIA_HISTORY_COMPLETION_CHANGED"); } };
+    this.#viaHistoryCompletion = token; projectHistorySqlCompletions.set(token, { owner: this, operation: plan, origin: structureOrigin, value, assertCurrent, consumed: false }); assertCurrent(); return token;
   }
   #viaReadContext(plan: CurrentPcbViaWritePlan): Readonly<{ context: CurrentPcbDiagnosticContext; pipe: CurrentPcbViaWritePipe; pcb: ReturnType<CurrentPcbDiagnosticContext["modelContext"]>; ui: ReturnType<CurrentPcbDiagnosticContext["pcbOpeningContext"]>; current: () => void }> {
     requireViaPlan(this, plan); const context = this.#stagedContext, pipe = this.#pipe, profile = this.#pcbSourceProfile;
@@ -4532,6 +4580,20 @@ class CurrentPcbRetainedOwnerCore {
     try { await this.#verify(); held.reprove(); const reply = await this.#request({ ...wire });
       if (!exact(reply, ["written"]) || reply["written"] !== true || this.#requireFootprintMain(true) !== original) { throw error("PCB_VIA_MAIN_DRIVER_WRITE_REPLY"); }
       await this.#verify(); held.reprove();
+    } finally { this.#leaveFootprintMain(); }
+  }
+  public async sendViaMainHistory(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner,
+    command: CurrentPcbViaMainHistoryCommand, requestId: number): Promise<CurrentPcbViaMainHistoryNativeWindow | null> {
+    const held = selectedSqlFenceBootstraps.get(capability), original = this.#requireFootprintMain(true); const cleanup = command.phase === "via-main-history-remove";
+    if (this.#purpose !== CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE || held?.owner !== this || held.runner() !== runner || this.#mainRunner !== runner || this.#viaMainOrigin === null ||
+      requestId !== this.#mainRequestId + 1 || (cleanup ? this.#mainCleanupRequests >= CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.main.cleanup : this.#mainNormalRequests >= CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.main.normal)) { throw error("PCB_VIA_HISTORY_ORIGINAL_SENDER"); }
+    if (command.phase === "via-main-history-arm") { if (this.#viaSdkPhases.has("save")) { throw error("PCB_VIA_HISTORY_PRE_SAVE_ARM"); } }
+    else { if (this.#viaMainBoundBody === null || !this.#viaSdkPhases.has("save") || !this.#viaMainSetupReady) { throw error("PCB_VIA_HISTORY_SAVE_BODY_REQUIRED"); }
+      if (command.phase === "via-main-history-step") { const grant = runner.consumeOriginalViaMainHistory(command, requestId); if (grant.origin !== this.#viaMainOrigin || grant.dataStr !== this.#viaMainBoundBody.dataStr || grant.role !== command.role) { throw error("PCB_VIA_HISTORY_ORIGINAL_BODY_GRANT"); } }
+    }
+    held.reprove(); const wire = currentPcbViaMainHistoryWire(command, requestId); this.#enterFootprintMain(); this.#mainRequestId += 1; if (cleanup) { this.#mainCleanupRequests += 1; } else { this.#mainNormalRequests += 1; }
+    try { await this.#verify(); held.reprove(); const reply = await this.#request({ ...wire.request }); const window = decodeCurrentPcbViaMainHistoryNativeAck(reply, command);
+      if (this.#requireFootprintMain(true) !== original) { throw error("PCB_VIA_HISTORY_WRITE_OWNER"); } await this.#verify(); held.reprove(); return window;
     } finally { this.#leaveFootprintMain(); }
   }
   public async sendViaMainBegin(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner,

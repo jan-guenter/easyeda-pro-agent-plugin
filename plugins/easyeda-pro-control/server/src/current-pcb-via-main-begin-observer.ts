@@ -24,7 +24,7 @@ export interface CurrentPcbViaHeldBeginResult {
   readonly originalNativeCallbackSucceeded: true; readonly originalBeginAwaitCompleted: true;
   readonly historySqlCompleted: false; readonly furtherSelectedSqlAuthorized: false; readonly persistenceVerified: false;
 }
-const issued = new WeakMap<CurrentPcbViaHeldBeginResult, Readonly<{ observer: CurrentPcbViaMainBeginObserver; result: CurrentPcbViaMainBeginResult }>>();
+const issued = new WeakMap<CurrentPcbViaHeldBeginResult, Readonly<{ observer: CurrentPcbViaMainBeginObserver; owner: CurrentPcbViaWriteOwner; plan: CurrentPcbViaWritePlan; origin: CurrentPcbViaMainOrigin; result: CurrentPcbViaMainBeginResult }>>();
 const eventFrame = z.looseObject({ callFrameId: z.string() }), frameList = z.array(eventFrame).min(1);
 const eventParams = z.looseObject({ hitBreakpoints: z.tuple([z.string()]), callFrames: frameList });
 const eventSchema = z.strictObject({ method: z.literal("Debugger.paused"), params: eventParams });
@@ -73,8 +73,13 @@ export class CurrentPcbViaMainBeginObserver {
       await this.#step("run"); const callback = await this.#capture("callback", [run]); need(callback !== null, "CALLBACK_PACKET");
       await this.#step("callback"); await this.#capture("returned", [callback]); const result = this.#bindings.originalBeginResult();
       this.#packet = Object.freeze({ schema: "private.current-pcb-via-held-begin-result.v1", originalNativeCallbackSucceeded: true, originalBeginAwaitCompleted: true, historySqlCompleted: false, furtherSelectedSqlAuthorized: false, persistenceVerified: false });
-      issued.set(this.#packet, Object.freeze({ observer: this, result })); return this.#packet;
+      issued.set(this.#packet, Object.freeze({ observer: this, owner: this.#owner, plan: this.#plan, origin: this.#origin, result })); return this.#packet;
     } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
   }
   public async requireOriginal(packet: CurrentPcbViaHeldBeginResult): Promise<void> { need(this.#packet === packet && issued.get(packet)?.observer === this, "ORIGINAL_PACKET"); await this.#current(true); need(this.#bindings.originalBeginResult() === issued.get(packet)?.result, "ORIGINAL_RESULT"); }
+}
+
+/** JSON and another original operation cannot transfer this held return. */
+export async function requireOriginalCurrentPcbViaHeldBeginResult(packet: CurrentPcbViaHeldBeginResult, owner: CurrentPcbViaWriteOwner, plan: CurrentPcbViaWritePlan): Promise<CurrentPcbViaMainOrigin> {
+  const original = issued.get(packet); need(original !== undefined && original.owner === owner && original.plan === plan, "ORIGINAL_OWNER_PLAN"); await original.observer.requireOriginal(packet); return original.origin;
 }

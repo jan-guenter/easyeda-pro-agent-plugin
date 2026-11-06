@@ -1,5 +1,7 @@
 /** Visible fields issue no main cursor. Only the retained original selected
  * backend can populate the private registry used by the Via native owner. */
+import type { CurrentPcbViaMainHistoryCommand } from "./current-pcb-via-main-history-protocol.ts";
+import type { CurrentProjectHistorySqlEffects } from "./current-project-history-sql-effects.ts";
 import type { CurrentPcbViaMainBeginCommand } from "./current-pcb-via-main-begin-protocol.ts";
 import type { CurrentPcbViaMainBeginResult } from "./current-pcb-via-main-begin-custody.ts";
 import type { CurrentPcbViaMainCommand } from "./current-pcb-via-main-protocol.ts";
@@ -11,6 +13,10 @@ export interface CurrentPcbViaMainEvent { readonly method: "Debugger.paused" | "
 export interface CurrentPcbViaMainBackendBindings {
   readonly scriptId: string; readonly constructionObjectId: string; readonly source: CurrentFootprintCopyMainRequestSource;
   readonly persistentDriverBreakpointId: string; readonly sqlCaptureObjectId: string;
+  readonly historyRequest: (command: CurrentPcbViaMainHistoryCommand, cleanup: boolean) => Promise<unknown>;
+  readonly requireHistoryArmed: () => void;
+  readonly startHistory: () => Readonly<{ transactionObjectId: string; callbackBreakpointId: string }>;
+  readonly originalHistoryEffects: () => CurrentProjectHistorySqlEffects;
   readonly beginRequest: (command: CurrentPcbViaMainBeginCommand, cleanup: boolean) => Promise<unknown>;
   readonly requireBeginArmed: () => void;
   readonly originalBeginResult: () => CurrentPcbViaMainBeginResult;

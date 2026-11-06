@@ -33,6 +33,7 @@ function need(value: boolean, code: string): asserts value { if (!value) { throw
 export class CurrentPcbViaMainBeginCustody {
   readonly #host: CurrentPcbViaMainBeginHost;
   readonly #points = new Map<Role, string>(); readonly #frames = new Map<Call, string>(); readonly #packets = new Map<Call, string>();
+  #transferred = false;
   #normal = 0; #cleanup = 0; #step = 0; #failed = false;
   #actor: ReturnType<CurrentPcbViaMainBeginHost["actorSql"]> | null = null;
   #pending: Readonly<{ pause: object; role: typeof STEPS[number]; dataStr: string }> | null = null;
@@ -49,7 +50,7 @@ export class CurrentPcbViaMainBeginCustody {
     return held;
   }
   public async request(input: Command, cleanup: boolean): Promise<unknown> {
-    this.#same(); const command = validateCurrentPcbViaMainBeginCommand(input);
+    this.#same(); need(!this.#transferred, "HISTORY_TRANSFERRED"); const command = validateCurrentPcbViaMainBeginCommand(input);
     try {
       if (cleanup) { this.#cleanup += 1; need(command.phase === "via-main-begin-remove" && this.#cleanup <= LIMITS.cleanup && this.#result !== null, "CLEANUP"); }
       else { this.#normal += 1; need(command.phase !== "via-main-begin-remove" && this.#normal <= LIMITS.normal, "NORMAL_BOUND"); }
@@ -87,6 +88,12 @@ export class CurrentPcbViaMainBeginCustody {
     need(command.phase === "via-main-begin-step" && pending !== null && !this.#consumed && this.#host.busy() && this.#host.pendingRequestId() === requestId && command.role === pending.role && held.identity === pending.pause && held.resumeAttempted && !held.resumed, "ORIGINAL_PENDING_NATIVE_GRANT");
     this.#consumed = true; return Object.freeze({ origin: this.#host.origin, dataStr: pending.dataStr, nativeSql: command.role === "run" });
   }
+  /** Synchronous one-use transfer while the original begin return is still
+   * held. Only this backend's successor ledger receives these retained IDs. */
+  public consumeHistoryHandoff(): Readonly<{ origin: CurrentPcbViaMainOrigin; actorObjectId: string; sqlObjectId: string; saveObjectId: string; transactionObjectId: string; callbackBreakpointId: string; dataStr: string }> {
+    need(this.#result !== null && this.#actor !== null && !this.#transferred, "HISTORY_TRANSFER_CONSUMED"); this.requireResult(this.#result); const callbackBreakpointId = this.#points.get("callback"); need(callbackBreakpointId !== undefined, "ORIGINAL_CALLBACK_POINT"); this.#transferred = true; this.#points.delete("callback");
+    return Object.freeze({ origin: this.#host.origin, actorObjectId: this.#actor.actorObjectId, sqlObjectId: this.#actor.sqlObjectId, saveObjectId: this.#packet("save"), transactionObjectId: this.#packet("transaction"), callbackBreakpointId, dataStr: this.#actor.dataStr });
+  }
   public result(): CurrentPcbViaMainBeginResult { need(this.#result !== null, "RESULT_REQUIRED"); this.requireResult(this.#result); return this.#result; }
-  public requireResult(packet: CurrentPcbViaMainBeginResult): void { this.#same(); need(this.#result === packet && this.#step === 5 && this.#pending === null && this.#normal === LIMITS.normal, "ORIGINAL_RESULT"); this.#held("returned"); }
+  public requireResult(packet: CurrentPcbViaMainBeginResult): void { this.#same(); need(!this.#transferred && this.#result === packet && this.#step === 5 && this.#pending === null && this.#normal === LIMITS.normal, "ORIGINAL_RESULT"); this.#held("returned"); }
 }

@@ -18,7 +18,7 @@ const dispatch = String.raw`        'pcb-via-main-observe' {
         }
 `;
 export function applyCurrentPcbViaMainNativeFragment(input: string): string {
-  const normalized = input.replace("$PcbViaWrite209 -and @('pcb-via-main-observe','pcb-via-main-step','pcb-via-main-begin') -ccontains $request.action", "$PcbViaWrite209 -and $request.action -ceq 'pcb-via-main-observe'").replace("$PcbViaWrite209 -and @('pcb-via-main-observe','pcb-via-main-step') -ccontains $request.action", "$PcbViaWrite209 -and $request.action -ceq 'pcb-via-main-observe'");
+  const normalized = input.replace("$PcbViaWrite209 -and @('pcb-via-main-observe','pcb-via-main-step','pcb-via-main-begin','pcb-via-main-history') -ccontains $request.action", "$PcbViaWrite209 -and $request.action -ceq 'pcb-via-main-observe'").replace("$PcbViaWrite209 -and @('pcb-via-main-observe','pcb-via-main-step','pcb-via-main-begin') -ccontains $request.action", "$PcbViaWrite209 -and $request.action -ceq 'pcb-via-main-observe'").replace("$PcbViaWrite209 -and @('pcb-via-main-observe','pcb-via-main-step') -ccontains $request.action", "$PcbViaWrite209 -and $request.action -ceq 'pcb-via-main-observe'");
   let source = one(normalized, "internal enum EasyedaPcbViaWriteBirth { Original }", `${native}internal enum EasyedaPcbViaWriteBirth { Original }`);
   source = one(source, 'case "pcb-via-sdk":case "pcb-via-sdk-properties":', 'case "pcb-via-sdk":case "pcb-via-sdk-properties":case "pcb-via-main-observe":');
   source = one(source, "        'pcb-via-clock-bind' {", `${dispatch}        'pcb-via-clock-bind' {`);

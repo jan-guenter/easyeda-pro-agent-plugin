@@ -15,7 +15,7 @@ export const CURRENT_PCB_VIA_MAIN_BEGIN_SITES = freezeDeep({
 export type CurrentPcbViaMainBeginRole = keyof typeof CURRENT_PCB_VIA_MAIN_BEGIN_SITES;
 export type CurrentPcbViaMainBeginCall = keyof typeof CALLS;
 export const CURRENT_PCB_VIA_MAIN_BEGIN_RUN_EXPRESSION = "[this,e,r,a,n,sc,F5]";
-export const CURRENT_PCB_VIA_MAIN_BEGIN_CALLBACK_CONDITION = '(function(){try{return e==="begin immediate transaction";}catch{return true;}})()';
+export const CURRENT_PCB_VIA_MAIN_BEGIN_CALLBACK_CONDITION = String.raw`(function(){try{return typeof e!=="string"||!/^select\b/i.test(e);}catch{return true;}})()`;
 export const CURRENT_PCB_VIA_MAIN_BEGIN_STEPS = ["actor", "save", "transaction", "run", "callback"] as const;
 export const CURRENT_PCB_VIA_MAIN_BEGIN_REQUESTS = Object.freeze({ sourceArms: 4, frames: 5, joins: 5, originalSteps: CURRENT_PCB_VIA_MAIN_BEGIN_STEPS.length,
   normal: 4 + 5 + 5 + CURRENT_PCB_VIA_MAIN_BEGIN_STEPS.length, cleanup: 4, total: 4 + 5 + 5 + CURRENT_PCB_VIA_MAIN_BEGIN_STEPS.length + 4 });
