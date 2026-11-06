@@ -60,7 +60,7 @@ void test("full API pin refuses small sources, proxies and getters before touchi
   assert.throws(() => { qualifyCurrentPcbViaSdkSource(new Proxy({}, { ownKeys: rejected, getPrototypeOf: rejected })); }); assert.equal(calls, 0);
 });
 void test("early fence vocabulary retains fixed source sites and admits no arbitrary conditions, SQL or caller programs", () => {
-  const cases = currentSelectedFileMainSqlFenceNativeCases(); assert.equal(cases.length, 71);
+  const cases = currentSelectedFileMainSqlFenceNativeCases(); assert.equal(cases.length, 81);
   for (const command of cases) {
     const wire = currentSelectedFileMainSqlFenceWire(command, PROFILE.main.total); assert.equal(wire.request["action"], "main-send");
     for (const field of ["condition", "lineNumber", "functionDeclaration", "sql", "sessionId"]) { assert.equal(Object.hasOwn(wire.request, field), false); }
@@ -82,6 +82,8 @@ void test("matching bootstrap and owner JSON cannot mint original native ownersh
   const forged: unknown = Object.create(owner.CurrentPcbViaWriteOwner.prototype);
   // Deliberate untyped runtime forgery; no constructor or native process runs.
   assert.throws(() => Reflect.apply(owner.assertOriginalCurrentPcbViaWriteOwner, undefined, [forged]));
+  const start: unknown = Reflect.get(owner.CurrentPcbViaWriteOwner.prototype, "startViaWriteGeneration"); assert.ok(typeof start === "function");
+  await assert.rejects(async (): Promise<void> => { const pending: unknown = Reflect.apply(start, forged, [{}]); assert.ok(pending instanceof Promise); await pending; }, /ORIGINAL_PLAN/u);
   for (const lookup of [owner.requireOriginalCurrentPcbViaNativeObservation, owner.requireOriginalCurrentPcbViaSceneObservation, owner.requireOriginalCurrentPcbViaWriteStage]) {
     assert.throws(() => Reflect.apply(lookup, undefined, [forged, {}, {}, "before"]));
   }
@@ -92,7 +94,7 @@ void test("composed native fragment is idempotent and keeps old births, caps and
   const earlierVia = generated.replace("return pcbViaWrite209?3088:spatial209?384:", "return pcbViaWrite209?766:spatial209?384:").replace("$requestLimit=if ($PcbViaWrite209) {3088}", "$requestLimit=if ($PcbViaWrite209) {766}");
   assert.equal(compose(earlierVia), generated); assert.ok(Buffer.byteLength(generated) < 2 * 1024 * 1024);
   for (const text of ["EasyedaPcbViaWriteBirth", "CreatePcbViaWrite209()", "via-old-birth-smoke", "via-retain-main-until-exit", "viaConstructionComplete", "stage==\"save\"", "pcb-diagnostic-conflicting-via-purpose",
-    "return pcbViaWrite209?3088:spatial209?384:workerStartup?256:stringPrecreate?3309:103", "viaSdkProperties>=3", "SendPcbViaSpatial", "via-main-precreate-required", "via-main-precreate-original-enrollment", "VerifyViaMainPrecreateSmoke", "viaBeginArms.Count!=4", "viaHistoryArms.Count!=9", "viaStructureMainArms.Count!=9"]) { assert.ok(generated.includes(text), text); }
+    "return pcbViaWrite209?3088:spatial209?384:componentSpatial209?419:workerStartup?256:stringPrecreate?3309:103", "viaSdkProperties>=3", "SendPcbViaSpatial", "via-main-precreate-required", "via-main-precreate-original-enrollment", "VerifyViaMainPrecreateSmoke", "viaBeginArms.Count!=4", "viaHistoryArms.Count!=9", "viaStructureMainArms.Count!=9"]) { assert.ok(generated.includes(text), text); }
   assert.equal(generated.includes("sqlite3.Database="), false); assert.equal(generated.includes("Object.setPrototypeOf(sc.Database"), false);
   assert.throws(() => compose(original.replace("[switch]$StringPrecreate,", "[switch]$ForeignPurpose,")), /ANCHOR/u);
 });

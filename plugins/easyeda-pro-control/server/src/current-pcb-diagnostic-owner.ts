@@ -1403,6 +1403,7 @@ class CurrentPcbRetainedOwnerCore {
   #viaMainOrigin: CurrentPcbViaMainOrigin | null = null;
   #viaMainSetupReady = false;
   #viaPlan: CurrentPcbViaWritePlan | null = null;
+  #viaStartAttempted = false;
   readonly #viaNativePhases = new Set<CurrentPcbViaObservationPhase>();
   readonly #viaScenePhases = new Set<CurrentPcbViaObservationPhase>();
   readonly #viaSdkPhases = new Set<CurrentPcbViaWriteStage>();
@@ -1828,6 +1829,11 @@ class CurrentPcbRetainedOwnerCore {
       if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) {
         const original = schematicDisplayFactories.get(this); if (original === undefined) { throw error("SCHEMATIC_DISPLAY_ORIGINAL_FACTORY"); }
         await verifyGeneratedSchematicFixtureOpenCheckpoint(original.allocation.prepared); this.#available();
+      }
+      if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) {
+        const original = pcbViaWriteFactories.get(this); if (original === undefined) { throw error("PCB_VIA_ORIGINAL_FACTORY"); }
+        await verifyGeneratedFixtureOpenCheckpoint(original.allocation.prepared); this.#available();
+        if (pcbViaWriteFactories.get(this) !== original || original.allocation.owner !== this || original.allocation.state !== "retained") { throw error("PCB_VIA_ORIGINAL_LAUNCH_CHANGED"); }
       }
       await this.#verifyInstallation(); await this.#verify(); this.#available();
       const nativeFile = this.#installation?.plan.files[0];
@@ -6894,6 +6900,20 @@ class CurrentPcbRetainedOwnerCore {
       this.#savedReadbackCache = held; savedReadbackCaches.set(origin, held); current(); return origin;
     } catch (caughtError) { this.#input.emit("error", error("SAVED_READBACK_CACHE_PREFLIGHT_FAILED")); throw caughtError; }
     finally { this.#savedReadbackActorsPending = false; this.#savedReadbackPreflightPending = false; this.#savedReadbackParentPending = false; this.#busy = false; }
+  }
+  /** The original Via factory selects its own executable. Reserve before the
+   * first await, so a failed checkpoint check cannot permit another attempt. */
+  public async startViaWriteGeneration(plan: CurrentPcbViaWritePlan): Promise<void> {
+    requireViaPlan(this, plan); this.#available(); const original = pcbViaWriteFactories.get(this)?.allocation;
+    if (original === undefined || this.#viaStartAttempted || this.#launchConsumed || this.#installation === null ||
+        requireOriginalCurrentPcbViaWritePlan(plan).prepared !== original.prepared) { throw error("PCB_VIA_START_CONSUMED"); }
+    this.#viaStartAttempted = true;
+    const current = (): void => { this.#available(); requireViaPlan(this, plan);
+      if (pcbViaWriteFactories.get(this)?.allocation !== original || original.owner !== this || original.state !== "retained" ||
+          requireOriginalCurrentPcbViaWritePlan(plan).prepared !== original.prepared) { throw error("PCB_VIA_ORIGINAL_START_CHANGED"); } };
+    current(); await verifyGeneratedFixtureOpenCheckpoint(original.prepared); current();
+    const executable = this.#installation.plan.files[0]; if (executable === undefined) { throw error("PCB_VIA_INSTALLATION"); }
+    await this.launch({ executable: executable.windowsPath, executableSha256: executable.sha256, confirmDiagnosticLaunch: true }); current();
   }
   /** Launch only this fresh born-before-file reader, using its original
    * installed executable and newly verified complete closed checkpoint. */
