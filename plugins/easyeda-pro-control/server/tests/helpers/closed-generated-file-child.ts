@@ -7,7 +7,7 @@ const observation = { leaseId: "a".repeat(32), windowsPath, parentDirectory: win
   createdEpochMs: 1000, modifiedEpochMs: 2000, watchState: "pending", privateDirectoryOwnerVerified: true, readOnlyFileLease: true, oldRuntimeAdopted: false };
 function reply(requestId?: number, released = false): void {
   let watchState = "pending"; if (released) { watchState = "cancelled-no-changes"; } else if (mode === "watch-failed" && requestId !== undefined) { watchState = "completed"; }
-  process.stdout.write(`${JSON.stringify({ schema: "easyeda-pro-control.closed-generated-file-lease.v1", nonce, state: released ? "released" : "held",
+  process.stdout.write(`${JSON.stringify({ schema: /\\Codex_(?:circular_smt_pad|schematic_relevance)_/u.test(windowsPath ?? "") && mode !== "wrong-schema" ? "easyeda-pro-control.closed-generated-alternative-file-lease.v1" : "easyeda-pro-control.closed-generated-file-lease.v1", nonce, state: released ? "released" : "held",
     observation: { ...observation, ...(mode === "identity-drift" && requestId !== undefined ? { fileIdentity: `${"1".repeat(8)}:${"4".repeat(16)}` } : {}),
       watchState },
     ...(requestId === undefined ? {} : { requestId }), originalHandlesClosed: released, filesDeleted: false })}\n`);

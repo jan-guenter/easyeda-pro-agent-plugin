@@ -123,9 +123,10 @@ For unchanged generated data after a completed controller replacement, use the
 separate [closed fixture requalification route](closed-generated-fixture-data.md).
 It acquires new read-only resources and verifies the entire initial source/SQL.
 It accepts no earlier runtime authority and refuses any post-open file change.
-The new Pad and explicit-Relevance closed reports currently require their first
-direct-import/staging workflow. Historical reuse for those distinct profiles
-is not yet available; do not send their reports through an older parser.
+Pad and explicit-Relevance reports use separate historical parser and initial
+qualification branches. Their fresh Windows lease has a distinct schema and
+accepts only their exact generated basenames. Use a facade containing those
+branches; an older parser must refuse their reports.
 
 A destination preparation failure can follow a completed environment getter.
 Inspect the explicit environment operation even when base import inspection

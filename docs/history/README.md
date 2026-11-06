@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 Pad/Relevance closed-data reuse](2026-11-06-pad-relevance-closed-data-reuse.md). Separate historical reports, fresh read-only Windows leases, full initial SQL/source qualification and new one-use reader data staging; old schemas and writer brands remain unchanged.
+
 - [2026-11-06 schematic fixture with explicit Relevance ATTR](2026-11-06-schematic-relevance-fixture.md). Separate seven-record initial SQL/checkpoint/staging profile, source-proved native default replacement and original ordinary Text/Wire/Bus reader route; earlier SCH/display profiles remain unchanged.
 
 - [2026-11-06 generated standalone circular Pad fixture](2026-11-06-generated-circular-pad-fixture.md). Separate fixed PAD archive, complete initial SQL issuer/checkpoint/staging and actual importer/reader integration; native positive validation and later historical reuse remain separate.

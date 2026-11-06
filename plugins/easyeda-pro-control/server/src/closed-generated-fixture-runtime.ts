@@ -11,9 +11,11 @@ import { GeneratedFixtureJournalPublication } from "./generated-fixture-journal-
 import type { GeneratedFixtureJournalPublicationDependencies } from "./generated-fixture-journal-publication.ts";
 import { verifyManagedFixtureImportSources } from "./managed-fixture-import-profile.ts";
 import { stageManagedFixtureOpeningSource } from "./managed-fixture-opening-source.ts";
-import type { ManagedFixtureOpeningSource } from "./managed-fixture-opening-source.ts";
+import type { ManagedPcbFixtureReadOpeningSource } from "./managed-pcb-fixture-read-source.ts";
+import { stageManagedPadFixtureOpeningSource } from "./managed-pad-fixture-opening-source.ts";
 import { stageRequalifiedManagedSchematicFixtureOpeningSource } from "./managed-schematic-fixture-opening-source.ts";
-import type { ManagedSchematicFixtureOpeningSource } from "./managed-schematic-fixture-opening-source.ts";
+import type { ManagedSchematicReadOpeningSource } from "./managed-schematic-fixture-read-source.ts";
+import { stageRequalifiedManagedSchematicRelevanceFixtureOpeningSource } from "./managed-schematic-relevance-fixture-opening-source.ts";
 import type { WindowsControlRuntime } from "./windows-runtime.ts";
 
 type ProofRuntime = Pick<WindowsControlRuntime, "status" | "observeExistingApplication" | "release" | "isReleaseAcknowledged">;
@@ -165,7 +167,10 @@ export class ClosedGeneratedFixtureDataCoordinator {
     try { await this.#releaseResources(); } catch (error) { failure ??= error; qualification = undefined; }
     if (qualification !== undefined && this.#fileRelease?.fileLeaseHeldUntilRelease === true && this.#resourcesClosed) { this.#qualification = qualification; }
     else if (qualification !== undefined) { this.#lastError ??= "Fresh original read-only file/watch release proof was not complete."; }
-    this.#terminal = Object.freeze({ schema: "easyeda-pro-control.closed-generated-data-result.v1", capture: report,
+    let schema = "easyeda-pro-control.closed-generated-data-result.v1";
+    if (this.#locator?.kind === "pad") { schema = "easyeda-pro-control.closed-generated-pad-data-result.v1"; }
+    else if (this.#locator?.kind === "schematic-relevance") { schema = "easyeda-pro-control.closed-generated-schematic-relevance-data-result.v1"; }
+    this.#terminal = Object.freeze({ schema, capture: report,
       freshFileRelease: this.#fileRelease ?? null, freshLinuxDescriptorsReleased: this.#copy?.isReleaseAcknowledged() ?? true, freshResourcesClosed: this.#resourcesClosed, freshProofHelperReleaseAcknowledged: this.#options.runtime.isReleaseAcknowledged(), freshNoApplicationBoundaryObservations: this.#noApplicationCount, continuousGlobalNoApplicationProofClaimed: false,
       exactInitialDataRequalified: this.#qualification !== undefined, qualificationFailure: this.#lastError, oldRuntimeAdopted: false, oldClosureAcceptedAsAuthority: false,
       newDataTokenAvailable: this.#qualification !== undefined, applicationLaunchDispatched: false, writerAuthority: false });
@@ -178,12 +183,20 @@ export class ClosedGeneratedFixtureDataCoordinator {
     need(!this.#reserved && !this.#busy && this.#terminalPublished && this.#resourcesClosed && this.#publication?.pending() === false && !this.#staged && this.#qualification !== undefined && this.#locator !== undefined, "NEW_COMPLETED_DATA_SOURCE_REQUIRED");
     return { qualification: this.#qualification, locator: this.#locator };
   }
-  public stageSourceForFreshOpening(operationId: string): ManagedFixtureOpeningSource {
-    const { qualification, locator } = this.#staging(operationId); need(qualification.schema === "easyeda-pro-control.qualified-generated-fixture-target.v1", "PCB_DATA_REQUIRED");
+  public stageSourceForFreshOpening(operationId: string): ManagedPcbFixtureReadOpeningSource {
+    const { qualification, locator } = this.#staging(operationId);
+    if (qualification.schema === "easyeda-pro-control.qualified-generated-pad-fixture-target.v1") {
+      const source = stageManagedPadFixtureOpeningSource({ qualification, archive: locator.archive }); this.#staged = true; return source;
+    }
+    need(qualification.schema === "easyeda-pro-control.qualified-generated-fixture-target.v1", "PCB_DATA_REQUIRED");
     const source = stageManagedFixtureOpeningSource({ qualification, archive: locator.archive }); this.#staged = true; return source;
   }
-  public stageSchematicSourceForFreshOpening(operationId: string): ManagedSchematicFixtureOpeningSource {
-    const { qualification, locator } = this.#staging(operationId); need(qualification.schema === "easyeda-pro-control.qualified-generated-schematic-fixture-target.v1", "SCHEMATIC_DATA_REQUIRED");
+  public stageSchematicSourceForFreshOpening(operationId: string): ManagedSchematicReadOpeningSource {
+    const { qualification, locator } = this.#staging(operationId);
+    if (qualification.schema === "easyeda-pro-control.qualified-generated-schematic-relevance-fixture-target.v1") {
+      const source = stageRequalifiedManagedSchematicRelevanceFixtureOpeningSource({ qualification, archive: locator.archive }); this.#staged = true; return source;
+    }
+    need(qualification.schema === "easyeda-pro-control.qualified-generated-schematic-fixture-target.v1", "SCHEMATIC_DATA_REQUIRED");
     const source = stageRequalifiedManagedSchematicFixtureOpeningSource({ qualification, archive: locator.archive }); this.#staged = true; return source;
   }
 }

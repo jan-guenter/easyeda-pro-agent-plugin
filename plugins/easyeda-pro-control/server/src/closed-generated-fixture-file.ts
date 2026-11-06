@@ -7,21 +7,33 @@ import { join, win32 } from "node:path";
 import { z } from "zod";
 import { deriveWindowsRuntimePaths } from "./windows-runtime.ts";
 
-export const CLOSED_GENERATED_FIXTURE_HELPER_SHA256 = "42e2395c6d04c972569a43a2f8f460b8b772db34340f475c9b4ce911c2369f17";
+export const CLOSED_GENERATED_FIXTURE_HELPER_SHA256 = "cd39dd22a32813674643778a3adc7ccb3e86347cca5ce36d53d894f905f55e2d";
 const sha = z.string().regex(/^[a-f0-9]{64}$/u);
 export const generatedWindowsPath = z.string().min(20).max(1024).regex(/^[A-Z]:\\(?:[A-Za-z0-9_ -]+\\)*CodexEasyedaFixture_[a-f0-9]{32}\\Codex_(?:via_only|line_and_via|arc_line_and_via|schematic)_[a-f0-9]{16}\.eprj2$/u);
-const nativeObservation = z.object({
+export const generatedPadWindowsPath = z.string().min(20).max(1024).regex(/^[A-Z]:\\(?:[A-Za-z0-9_ -]+\\)*CodexEasyedaFixture_[a-f0-9]{32}\\Codex_circular_smt_pad_[a-f0-9]{16}\.eprj2$/u);
+export const generatedSchematicRelevanceWindowsPath = z.string().min(20).max(1024).regex(/^[A-Z]:\\(?:[A-Za-z0-9_ -]+\\)*CodexEasyedaFixture_[a-f0-9]{32}\\Codex_schematic_relevance_[a-f0-9]{16}\.eprj2$/u);
+const alternativeWindowsPath = z.union([generatedPadWindowsPath, generatedSchematicRelevanceWindowsPath]);
+const supportedWindowsPath = z.union([generatedWindowsPath, alternativeWindowsPath]);
+const nativeObservationFields = z.object({
   leaseId: z.string().regex(/^[a-f0-9]{32}$/u), windowsPath: generatedWindowsPath,
   parentDirectory: z.string().min(8).max(1024), directoryIdentity: z.string().regex(/^[a-f0-9]{8}:[a-f0-9]{16}$/u),
   fileIdentity: z.string().regex(/^[a-f0-9]{8}:[a-f0-9]{16}$/u), sha256: sha, bytes: z.number().int().min(512).max(67_108_864),
   createdEpochMs: z.number().int().positive(), modifiedEpochMs: z.number().int().positive(), watchState: z.enum(["pending", "cancelled-no-changes"]),
   privateDirectoryOwnerVerified: z.literal(true), readOnlyFileLease: z.literal(true), oldRuntimeAdopted: z.literal(false),
-}).strict().refine(value => value.parentDirectory === win32.dirname(value.windowsPath));
-export const closedGeneratedFixtureFileObservationSchema = z.object({
+}).strict();
+const nativeObservation = nativeObservationFields.refine(value => value.parentDirectory === win32.dirname(value.windowsPath));
+const fileObservation = z.object({
   schema: z.literal("easyeda-pro-control.closed-generated-file-lease.v1"), nonce: sha, state: z.enum(["held", "released"]), observation: nativeObservation,
   requestId: z.number().int().min(1).max(16).optional(), originalHandlesClosed: z.boolean(), filesDeleted: z.literal(false),
-}).strict().refine(value => value.originalHandlesClosed === (value.state === "released") && value.observation.watchState === (value.state === "held" ? "pending" : "cancelled-no-changes"));
-export type ClosedGeneratedFixtureFileObservation = z.infer<typeof closedGeneratedFixtureFileObservationSchema>;
+}).strict();
+export const closedGeneratedFixtureFileObservationSchema = fileObservation.refine(value => value.originalHandlesClosed === (value.state === "released") && value.observation.watchState === (value.state === "held" ? "pending" : "cancelled-no-changes"));
+/** New fixed data profiles retain the released v1 path/schema unchanged. */
+export const closedGeneratedAlternativeFileObservationSchema = fileObservation.extend({
+  schema: z.literal("easyeda-pro-control.closed-generated-alternative-file-lease.v1"),
+  observation: nativeObservationFields.extend({ windowsPath: alternativeWindowsPath }).refine(value => value.parentDirectory === win32.dirname(value.windowsPath)),
+}).refine(value => value.originalHandlesClosed === (value.state === "released") && value.observation.watchState === (value.state === "held" ? "pending" : "cancelled-no-changes"));
+const supportedObservation = z.union([closedGeneratedFixtureFileObservationSchema, closedGeneratedAlternativeFileObservationSchema]);
+export type ClosedGeneratedFixtureFileObservation = z.infer<typeof supportedObservation>;
 export interface ClosedGeneratedFixtureFileOptions {
   readonly pluginRoot: string; readonly assetsRoot: string; readonly nonce: string; readonly windowsPath: string; readonly expectedSha256: string; readonly expectedBytes: number;
 }
@@ -70,7 +82,7 @@ export class ClosedGeneratedFixtureFileOwner {
   private readonly dependencies: ClosedGeneratedFixtureFileDependencies;
   public constructor(options: ClosedGeneratedFixtureFileOptions, dependencies: ClosedGeneratedFixtureFileDependencies = {}) {
     this.options = Object.freeze({ ...options }); this.dependencies = Object.freeze({ ...dependencies });
-    z.string().regex(/^[a-f0-9]{64}$/u).parse(options.nonce); generatedWindowsPath.parse(options.windowsPath);
+    z.string().regex(/^[a-f0-9]{64}$/u).parse(options.nonce); supportedWindowsPath.parse(options.windowsPath);
     sha.parse(options.expectedSha256); z.number().int().min(512).max(67_108_864).parse(options.expectedBytes);
   }
   private fail(error: Error): void {
@@ -87,12 +99,12 @@ export class ClosedGeneratedFixtureFileOwner {
     });
   }
   private accept(raw: unknown, requestId?: number, state: "held" | "released" = "held"): ClosedGeneratedFixtureFileObservation {
-    try { const value = closedGeneratedFixtureFileObservationSchema.parse(raw); const previous = this.current;
+    try { const value = supportedObservation.parse(raw); const previous = this.current;
     const previousData = previous?.observation;
     const { watchState: _watch, ...data } = value.observation;
     const previousRest = previousData === undefined ? undefined : { ...previousData, watchState: undefined };
     const comparable = { ...data, watchState: undefined };
-    if (value.nonce !== this.options.nonce || value.requestId !== requestId || value.state !== state ||
+    if (value.schema !== (generatedWindowsPath.safeParse(this.options.windowsPath).success ? "easyeda-pro-control.closed-generated-file-lease.v1" : "easyeda-pro-control.closed-generated-alternative-file-lease.v1") || value.nonce !== this.options.nonce || value.requestId !== requestId || value.state !== state ||
         value.observation.windowsPath !== this.options.windowsPath || value.observation.sha256 !== this.options.expectedSha256 || value.observation.bytes !== this.options.expectedBytes ||
         previousRest !== undefined && JSON.stringify(comparable) !== JSON.stringify(previousRest)) {
       throw new Error("Closed generated file reply differs from its original retained read-only lease.");

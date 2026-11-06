@@ -10,7 +10,8 @@ export interface ManagedPadFixtureOpeningSource {
 }
 const issued = new WeakMap<ManagedPadFixtureOpeningSource, Readonly<{ text: string; qualification: QualifiedGeneratedPadFixtureTarget; archive: Buffer }>>();
 const transferred = new WeakSet<QualifiedGeneratedPadFixtureTarget>();
-/** Called only by the released original import coordinator. This is immutable
+/** Called only by a released original import or fresh closed-data coordinator.
+ * This is immutable
  * data custody across original launch generations in the same facade, never
  * native PID/handle/session transfer or authority reconstructed from JSON.
  */

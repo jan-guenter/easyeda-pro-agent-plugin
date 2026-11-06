@@ -94,7 +94,10 @@ async function captureClosedGeneratedFixtureData(options: ClosedGeneratedFixture
       current(); need(Buffer.isBuffer(chunk), "binary final source"); reread += chunk.length; need(reread <= observed.bytes, "bounded final hash"); finalHash.update(chunk);
     }
     need(reread === observed.bytes && finalHash.digest("hex") === observed.sha256, "complete final source hash"); await reprove(); await boundary();
-    return { qualification, report: Object.freeze({ schema: "easyeda-pro-control.closed-generated-data-capture.v1", snapshot, sql,
+    let schema = "easyeda-pro-control.closed-generated-data-capture.v1";
+    if (locator.kind === "pad") { schema = "easyeda-pro-control.closed-generated-pad-data-capture.v1"; }
+    else if (locator.kind === "schematic-relevance") { schema = "easyeda-pro-control.closed-generated-schematic-relevance-data-capture.v1"; }
+    return { qualification, report: Object.freeze({ schema, snapshot, sql,
       sqlReaderCompletion: readerCompletion(inventory), tableRoster: inventory.tables.map(table => ({ name: table.name, rowCount: table.rows.length, sha256: table.sha256 })),
       currentQualification: structuredClone(qualification), exactInitialSqlAndSourceRequalified: true, initialSourceBytesUnchanged: true,
       sourceWindowsLeaseId: observed.leaseId, sourceWindowsFileIdentity: observed.fileIdentity, sourceWindowsDirectoryIdentity: observed.directoryIdentity,

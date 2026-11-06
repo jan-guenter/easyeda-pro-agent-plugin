@@ -17,9 +17,9 @@ import { syntheticSqlRoot, syntheticSqlRuntime } from "./sqlite-inventory-fixtur
 
 type Patch = "extra-auxiliary" | "wrong-structure-parent" | "changed-text" | "ticked-page-header" | "extra-history" | "changed-relevance" | undefined;
 /** Fixed synthetic SCH rows only. This is not execution of a native importer. */
-export async function managedSchematicFixtureInitialSqlFixture(patch?: Patch, kind: "original" | "relevance" = "original"): Promise<GeneratedFixtureInitialSqlInput & { syntheticDatabasePath: string }> {
+export async function managedSchematicFixtureInitialSqlFixture(patch?: Patch, kind: "original" | "relevance" = "original", syntheticDirectory = `C:\\SyntheticTemp\\CodexEasyedaFixture_${"1".repeat(32)}`): Promise<GeneratedFixtureInitialSqlInput & { syntheticDatabasePath: string }> {
   const generated = kind === "relevance" ? generateManagedSchematicRelevanceFixtureArchiveData() : generateManagedSchematicFixtureArchiveData(), source = readManagedLibraryZip(generated.bytes).get("Fixture.epru"); assert.ok(source !== undefined);
-  const directory = `C:\\SyntheticTemp\\CodexEasyedaFixture_${"1".repeat(32)}`, rawWindowsPath = `${directory}\\${generated.name.replace(/\.epro2$/u, ".eprj2")}`;
+  const directory = syntheticDirectory, rawWindowsPath = `${directory}\\${generated.name.replace(/\.epro2$/u, ".eprj2")}`;
   const project = createHash("sha256").update(rawWindowsPath).digest("hex"); const actor = "4".repeat(32), branch = "3".repeat(32), headId = "5".repeat(32), key = "6".repeat(32), start = "2".repeat(32);
   const schematicUuid = String(generated.metadata["schematicUuid"]); const pageUuid = String(generated.metadata["pageUuid"]); const generatedAt = Number(generated.metadata["generatedAtEpochMs"]);
   const when = Math.ceil(Date.now() / 1000) * 1000 + 1000; const utc = new Date(when).toISOString().slice(0, 19).replace("T", " "); const local = new Date(when + 60 * 60_000).toISOString().slice(0, 19).replace("T", " ");

@@ -4,14 +4,14 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { CLOSED_GENERATED_FIXTURE_HELPER_SHA256, ClosedGeneratedFixtureFileOwner } from "../src/closed-generated-fixture-file.ts";
+import { CLOSED_GENERATED_FIXTURE_HELPER_SHA256, ClosedGeneratedFixtureFileOwner, closedGeneratedFixtureFileObservationSchema } from "../src/closed-generated-fixture-file.ts";
 
 const windowsPath = `C:\\SyntheticTemp\\CodexEasyedaFixture_${"1".repeat(32)}\\Codex_via_only_${"2".repeat(16)}.eprj2`; const sha256 = "3".repeat(64);
-function owner(mode: string): ClosedGeneratedFixtureFileOwner {
+function owner(mode: string, selectedPath = windowsPath): ClosedGeneratedFixtureFileOwner {
   const nonce = "4".repeat(64);
   return new ClosedGeneratedFixtureFileOwner({ pluginRoot: "/mnt/c/synthetic-plugin", assetsRoot: "/mnt/c/synthetic-app/resources/app/assets", nonce,
-    windowsPath, expectedSha256: sha256, expectedBytes: 512 }, { verifyHelper: () => Promise.resolve(), spawnProcess: () =>
-    spawn(process.execPath, [fileURLToPath(new URL("helpers/closed-generated-file-child.ts", import.meta.url)), nonce, windowsPath, sha256, "512", mode], { stdio: ["pipe", "pipe", "pipe"] }) });
+    windowsPath: selectedPath, expectedSha256: sha256, expectedBytes: 512 }, { verifyHelper: () => Promise.resolve(), spawnProcess: () =>
+    spawn(process.execPath, [fileURLToPath(new URL("helpers/closed-generated-file-child.ts", import.meta.url)), nonce, selectedPath, sha256, "512", mode], { stdio: ["pipe", "pipe", "pipe"] }) });
 }
 void test("fresh file owner retains exact original transport, source identity and drained original release without source writes", async () => {
   const original = owner("success"); const held = await original.initialize(); assert.equal(held.observation.readOnlyFileLease, true); assert.equal(held.observation.oldRuntimeAdopted, false);
@@ -28,4 +28,16 @@ void test("changed identity/watch and lost release reply never issue a held-thro
 void test("fresh closed-data helper matches its separately admitted source hash", async () => {
   const bytes = await readFile(new URL("../../scripts/closed-generated-fixture-data.ps1", import.meta.url));
   assert.equal(createHash("sha256").update(bytes).digest("hex"), CLOSED_GENERATED_FIXTURE_HELPER_SHA256);
+});
+
+void test("Pad and Relevance paths require the distinct original lease schema and retained release", async () => {
+  for (const kind of ["circular_smt_pad", "schematic_relevance"]) {
+    const path = windowsPath.replace("Codex_via_only_", `Codex_${kind}_`); const original = owner("success", path);
+    const held = await original.initialize(); assert.equal(held.schema, "easyeda-pro-control.closed-generated-alternative-file-lease.v1");
+    assert.equal(closedGeneratedFixtureFileObservationSchema.safeParse(held).success, false);
+    const inspected = await original.inspect(); assert.deepEqual(inspected.observation, held.observation);
+    const released = await original.release(); assert.equal(released.fileLeaseHeldUntilRelease, true);
+    const wrong = owner("wrong-schema", path); await assert.rejects(wrong.initialize());
+    const refusedRelease = await wrong.release(); assert.equal(refusedRelease.fileLeaseHeldUntilRelease, false);
+  }
 });

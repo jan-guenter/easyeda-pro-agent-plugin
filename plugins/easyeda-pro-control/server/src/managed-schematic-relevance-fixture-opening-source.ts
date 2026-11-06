@@ -23,6 +23,15 @@ export function stageManagedSchematicRelevanceFixtureOpeningSource(input: Readon
     originalSourceSha256: qualification.target.expectedSourceSha256 });
   issued.set(source, { text: canonicalJson(source), qualification, archive, origin: { kind: "import", importingRuntime, importingLaunchText: canonicalJson(importing.launch) } }); transferred.add(qualification); return source;
 }
+/** A fresh data-only verifier issues a NEW qualification after its own file,
+ * watch, no-app helper and records settle. No historical runtime is adopted. */
+export function stageRequalifiedManagedSchematicRelevanceFixtureOpeningSource(input: Readonly<{ qualification: QualifiedGeneratedSchematicRelevanceFixtureTarget; archive: Buffer }>): ManagedSchematicRelevanceFixtureOpeningSource {
+  const qualification = input.qualification; const archive = Buffer.from(input.archive); assertOriginalGeneratedSchematicRelevanceFixtureTarget(qualification);
+  if (createHash("sha256").update(archive).digest("hex") !== qualification.archiveSha256 || transferred.has(qualification)) { throw new Error("Fresh requalified schematic Relevance data was changed or already staged."); }
+  const source = Object.freeze({ schema: "private.generated-schematic-relevance-fixture-opening-source.v1" as const, projectUuid: qualification.target.projectUuid,
+    originalSourceSha256: qualification.target.expectedSourceSha256 });
+  issued.set(source, { text: canonicalJson(source), qualification, archive, origin: { kind: "fresh-closed-data" } }); transferred.add(qualification); return source;
+}
 export function consumeManagedSchematicRelevanceFixtureOpeningSource(source: ManagedSchematicRelevanceFixtureOpeningSource, freshRuntime: Runtime): Readonly<{ qualification: QualifiedGeneratedSchematicRelevanceFixtureTarget; archive: Buffer }> {
   const original = issued.get(source);
   if (original === undefined || original.text !== canonicalJson(source)) { throw new Error("Original unconsumed schematic data source is required."); }

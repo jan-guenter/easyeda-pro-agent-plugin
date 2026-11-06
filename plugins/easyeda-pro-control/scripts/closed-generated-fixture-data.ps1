@@ -63,7 +63,7 @@ public sealed class ClosedGeneratedFixtureReadLease : IDisposable {
   public ClosedGeneratedFixtureReadLease(string path,string sha,long bytes){
     try{
       if(path==null||path.Length>1024||sha==null||!System.Text.RegularExpressions.Regex.IsMatch(sha,@"\A[a-f0-9]{64}\z")||bytes<512||bytes>67108864)throw new InvalidOperationException("closed-data-input");
-      if(!System.Text.RegularExpressions.Regex.IsMatch(path,@"\A[A-Z]:\\(?:[A-Za-z0-9_ -]+\\)*CodexEasyedaFixture_[a-f0-9]{32}\\Codex_(?:via_only|line_and_via|arc_line_and_via|schematic)_[a-f0-9]{16}\.eprj2\z"))throw new InvalidOperationException("closed-data-fixed-generated-path");
+      if(!System.Text.RegularExpressions.Regex.IsMatch(path,@"\A[A-Z]:\\(?:[A-Za-z0-9_ -]+\\)*CodexEasyedaFixture_[a-f0-9]{32}\\Codex_(?:via_only|line_and_via|arc_line_and_via|schematic|circular_smt_pad|schematic_relevance)_[a-f0-9]{16}\.eprj2\z"))throw new InvalidOperationException("closed-data-fixed-generated-path");
       temp=Open(System.IO.Path.GetTempPath().TrimEnd('\\'),true);tempPath=Canonical(temp);
       directoryPath=System.IO.Path.GetDirectoryName(path);
       if(System.IO.Path.GetDirectoryName(directoryPath)!=tempPath)throw new InvalidOperationException("closed-data-current-temp-parent");
@@ -196,9 +196,11 @@ if ($CompileOnly) { exit 0 }
 if ($Nonce -cnotmatch '^[a-f0-9]{64}$') { throw 'closed-data-nonce' }
 $owner=$null
 try {
+  $schema='easyeda-pro-control.closed-generated-file-lease.v1'
+  if ($SourceWindowsPath -cmatch '\\Codex_(?:circular_smt_pad|schematic_relevance)_[a-f0-9]{16}\.eprj2$') { $schema='easyeda-pro-control.closed-generated-alternative-file-lease.v1' }
   $owner=New-Object ClosedGeneratedFixtureReadLease($SourceWindowsPath,$ExpectedSha256,$ExpectedBytes)
   $data=$owner.Check()
-  @{schema='easyeda-pro-control.closed-generated-file-lease.v1';nonce=$Nonce;state='held';observation=$data;originalHandlesClosed=$false;filesDeleted=$false} | ConvertTo-Json -Compress -Depth 5 | ForEach-Object {[Console]::WriteLine($_)}
+  @{schema=$schema;nonce=$Nonce;state='held';observation=$data;originalHandlesClosed=$false;filesDeleted=$false} | ConvertTo-Json -Compress -Depth 5 | ForEach-Object {[Console]::WriteLine($_)}
   $previous=0
   while ($null -ne ($line=[Console]::ReadLine())) {
     if ($line.Length -gt 4096) { throw 'closed-data-request-bound' }
@@ -208,7 +210,7 @@ try {
     if ($request.action -ceq 'inspect') { $data=$owner.Check(); $state='held';$closed=$false }
     elseif ($request.action -ceq 'release') { $data=$owner.Finish();$owner.Dispose();$state='released';$closed=$owner.HandlesClosed;if(-not $closed){throw 'closed-data-handles-still-open'} }
     else { throw 'closed-data-action' }
-    @{schema='easyeda-pro-control.closed-generated-file-lease.v1';nonce=$Nonce;requestId=$previous;state=$state;observation=$data;originalHandlesClosed=$closed;filesDeleted=$false} | ConvertTo-Json -Compress -Depth 5 | ForEach-Object {[Console]::WriteLine($_)}
+    @{schema=$schema;nonce=$Nonce;requestId=$previous;state=$state;observation=$data;originalHandlesClosed=$closed;filesDeleted=$false} | ConvertTo-Json -Compress -Depth 5 | ForEach-Object {[Console]::WriteLine($_)}
     if ($state -ceq 'released') { break }
   }
 } finally { if ($null -ne $owner) { $owner.Dispose() } }

@@ -4,13 +4,17 @@ import { z } from "zod";
 import { controlDataDirectory, loadOperation, operationPath, readExactBinaryArtifact, readExactUtf8Artifact } from "./artifacts.ts";
 import type { ArtifactDescriptor } from "./artifacts.ts";
 import { canonicalJson } from "./core.ts";
-import { generatedWindowsPath } from "./closed-generated-fixture-file.ts";
+import { generatedPadWindowsPath, generatedSchematicRelevanceWindowsPath, generatedWindowsPath } from "./closed-generated-fixture-file.ts";
 import { qualifyManagedFixtureArchive } from "./managed-fixture-archive.ts";
 import { managedFixtureClosedFileMetadataSchema, managedFixtureDestinationObservationSchema } from "./managed-fixture-destination.ts";
 import { qualifyGeneratedFixtureInitialSql } from "./managed-fixture-initial-sql.ts";
 import type { QualifiedGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
 import { qualifyGeneratedSchematicFixtureInitialSql } from "./managed-schematic-fixture-initial-sql.ts";
 import type { QualifiedGeneratedSchematicFixtureTarget } from "./managed-schematic-fixture-initial-sql.ts";
+import { qualifyGeneratedPadFixtureInitialSql } from "./managed-pad-fixture-initial-sql.ts";
+import type { QualifiedGeneratedPadFixtureTarget } from "./managed-pad-fixture-initial-sql.ts";
+import { qualifyGeneratedSchematicRelevanceFixtureInitialSql } from "./managed-schematic-relevance-fixture-initial-sql.ts";
+import type { QualifiedGeneratedSchematicRelevanceFixtureTarget } from "./managed-schematic-relevance-fixture-initial-sql.ts";
 import { currentProcessSqlRuntime } from "./machine-profile.ts";
 import { readExactSqlInventory } from "./sqlite-inventory.ts";
 import type { NativeSqlInventory } from "./sqlite-inventory-core.ts";
@@ -64,10 +68,18 @@ const clockRefusedCapture = capture.omit({ completeInitialSqlRowsQualified: true
   issuedReadOpenTarget: z.null().optional(), issuedSchematicDataTarget: z.null().optional(),
   decoded: z.null(), sourceComparison: z.null(),
 });
-export type ClosedGeneratedDataQualification = QualifiedGeneratedFixtureTarget | QualifiedGeneratedSchematicFixtureTarget;
+const padTarget = oldTarget.extend({ schema: z.literal("easyeda-pro-control.qualified-generated-pad-fixture-target.v1"),
+  target: z.object({ rawWindowsPath: generatedPadWindowsPath }).loose() });
+const relevanceTarget = oldTarget.extend({ schema: z.literal("easyeda-pro-control.qualified-generated-schematic-relevance-fixture-target.v1"),
+  target: z.object({ rawWindowsPath: generatedSchematicRelevanceWindowsPath }).loose() });
+const alternativeCapture = nativeClockCapture.omit({ schema: true, issuedReadOpenTarget: true, issuedSchematicDataTarget: true });
+const padCapture = alternativeCapture.extend({ schema: z.literal("easyeda-pro-control.managed-pad-fixture-closed-snapshot.v1"), issuedPadReadOpenTarget: padTarget });
+const relevanceCapture = alternativeCapture.extend({ schema: z.literal("easyeda-pro-control.managed-schematic-relevance-fixture-closed-snapshot.v1"), issuedSchematicRelevanceDataTarget: relevanceTarget });
+export type ClosedGeneratedDataQualification = QualifiedGeneratedFixtureTarget | QualifiedGeneratedSchematicFixtureTarget | QualifiedGeneratedPadFixtureTarget | QualifiedGeneratedSchematicRelevanceFixtureTarget;
+export type ClosedGeneratedFixtureDataKind = "pcb" | "schematic" | "pad" | "schematic-relevance";
 export interface ClosedGeneratedFixtureDataLocator {
   readonly archive: Buffer; readonly rawWindowsPath: string; readonly snapshot: ArtifactDescriptor;
-  readonly oldQualification: ClosedGeneratedDataQualification | null; readonly kind: "pcb" | "schematic";
+  readonly oldQualification: ClosedGeneratedDataQualification | null; readonly kind: ClosedGeneratedFixtureDataKind;
   readonly clockRefusedInitialInventory?: NativeSqlInventory;
   readonly locatorReceipt: Readonly<Record<string, unknown>>;
 }
@@ -78,8 +90,10 @@ function phaseArtifact(artifacts: readonly ArtifactDescriptor[], operation: stri
   need(matches.length === 1 && (hash === undefined || matches[0]?.sha256 === hash), `one exact ${phase} artifact ID`); const found = matches[0]; need(found !== undefined, "phase artifact exists"); return found;
 }
 export async function qualifyClosedGeneratedDataSql(archive: Buffer, inventory: NativeSqlInventory, rawWindowsPath: string,
-  sourceCreatedEpochMs: number, sourceModifiedEpochMs: number, kind: "pcb" | "schematic"): Promise<ClosedGeneratedDataQualification> {
+  sourceCreatedEpochMs: number, sourceModifiedEpochMs: number, kind: ClosedGeneratedFixtureDataKind): Promise<ClosedGeneratedDataQualification> {
   const input = { archive, inventory, rawWindowsPath, sourceCreatedEpochMs, sourceModifiedEpochMs };
+  if (kind === "pad") { const result = await qualifyGeneratedPadFixtureInitialSql(input); return result.qualification; }
+  if (kind === "schematic-relevance") { const result = await qualifyGeneratedSchematicRelevanceFixtureInitialSql(input); return result.qualification; }
   return (kind === "pcb" ? await qualifyGeneratedFixtureInitialSql(input) : await qualifyGeneratedSchematicFixtureInitialSql(input)).qualification;
 }
 /** Historical records provide untrusted data locators only. Their old closure,
@@ -95,22 +109,30 @@ export async function loadClosedGeneratedFixtureData(request: ClosedGeneratedFix
   const generated = z.object({ staged: z.object({ stageId: z.uuid(), archive: descriptor }).loose() }).loose().parse(generatedRaw);
   const archiveDescriptor = generated.staged.archive;
   const archiveDirectory = join(controlDataDirectory(), "artifacts", "fixture-archives", generated.staged.stageId);
-  need(dirname(archiveDescriptor.path) === archiveDirectory && /^Codex_(?:via_only|line_and_via|arc_line_and_via|schematic)_[a-f0-9]{16}\.epro2$/u.test(basename(archiveDescriptor.path)), "managed generated archive stage");
+  need(dirname(archiveDescriptor.path) === archiveDirectory && /^Codex_(?:via_only|line_and_via|arc_line_and_via|schematic|circular_smt_pad|schematic_relevance)_[a-f0-9]{16}\.epro2$/u.test(basename(archiveDescriptor.path)), "managed generated archive stage");
   const archiveBytes = await checked(() => readExactBinaryArtifact(archiveDescriptor)); const archive = archiveBytes.content; const archiveData = qualifyManagedFixtureArchive(archive);
   need(basename(archiveDescriptor.path) === `${archiveData.manifest.title}.epro2`, "archive exact generated title");
   const capturedBytes = await checked(() => readExactUtf8Artifact(captureDescriptor));
-  const closed = z.union([capture, nativeClockCapture, clockRefusedCapture]).parse(JSON.parse(capturedBytes.text) as unknown);
-  const kind = closed.schema === "easyeda-pro-control.managed-fixture-closed-snapshot.v1" || closed.schema === "easyeda-pro-control.managed-fixture-closed-snapshot.v2" ? "pcb" : "schematic";
-  const old = kind === "pcb" ? closed.issuedReadOpenTarget : closed.issuedSchematicDataTarget;
-  need((kind === "pcb" ? closed.issuedSchematicDataTarget === undefined : closed.issuedReadOpenTarget === undefined) &&
+  const closed = z.union([capture, nativeClockCapture, clockRefusedCapture, padCapture, relevanceCapture]).parse(JSON.parse(capturedBytes.text) as unknown);
+  let kind: ClosedGeneratedFixtureDataKind = "schematic", slot = "issuedSchematicDataTarget";
+  if (closed.schema === "easyeda-pro-control.managed-pad-fixture-closed-snapshot.v1") { kind = "pad"; slot = "issuedPadReadOpenTarget"; }
+  else if (closed.schema === "easyeda-pro-control.managed-schematic-relevance-fixture-closed-snapshot.v1") { kind = "schematic-relevance"; slot = "issuedSchematicRelevanceDataTarget"; }
+  else if (closed.schema === "easyeda-pro-control.managed-fixture-closed-snapshot.v1" || closed.schema === "easyeda-pro-control.managed-fixture-closed-snapshot.v2") { kind = "pcb"; slot = "issuedReadOpenTarget"; }
+  const targets = closed as Record<string, unknown>;
+  let old: z.infer<typeof oldTarget> | null | undefined;
+  if (kind === "pad") { old = padTarget.parse(targets[slot]); }
+  else if (kind === "schematic-relevance") { old = relevanceTarget.parse(targets[slot]); }
+  else { old = oldTarget.nullable().optional().parse(targets[slot]); }
+  need(["issuedReadOpenTarget", "issuedSchematicDataTarget", "issuedPadReadOpenTarget", "issuedSchematicRelevanceDataTarget"].every(name => name === slot || targets[name] === undefined) &&
     (closed.completeInitialSqlRowsQualified ? old !== undefined && old !== null : old === null), "distinct initial data target");
   need(dirname(closed.snapshot.path) === join(controlDataDirectory(), "artifacts", "fixture-import-closed") && /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}\.eprj2$/u.test(basename(closed.snapshot.path)) &&
     closed.originalSourceSha256 === closed.snapshot.sha256, "exact managed closed snapshot");
-  if (closed.schema === "easyeda-pro-control.managed-fixture-closed-snapshot.v2" || closed.schema === "easyeda-pro-control.managed-schematic-fixture-closed-snapshot.v2") {
+  if (closed.schema === "easyeda-pro-control.managed-fixture-closed-snapshot.v2" || closed.schema === "easyeda-pro-control.managed-schematic-fixture-closed-snapshot.v2" || closed.schema === "easyeda-pro-control.managed-pad-fixture-closed-snapshot.v1" ||
+      closed.schema === "easyeda-pro-control.managed-schematic-relevance-fixture-closed-snapshot.v1") {
     const native = closed.windowsClosedFileMetadata.file;
     need(old !== undefined && old !== null && old.target.rawWindowsPath === native.windowsPath && native.sha256 === closed.snapshot.sha256 &&
       native.bytes === closed.snapshot.bytes && old.sourceCreatedEpochMs === native.createdEpochMs && old.sourceModifiedEpochMs === native.modifiedEpochMs,
-    "v2 complete snapshot and original native file-clock binding");
+    kind === "pad" || kind === "schematic-relevance" ? "alternative complete snapshot and original native file-clock binding" : "v2 complete snapshot and original native file-clock binding");
   }
   let rawWindowsPath: string;
   if (old !== undefined && old !== null) { rawWindowsPath = old.target.rawWindowsPath; }

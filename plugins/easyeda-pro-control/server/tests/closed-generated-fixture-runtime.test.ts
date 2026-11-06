@@ -11,15 +11,17 @@ import type { ClosedGeneratedFixtureDataLocator } from "../src/closed-generated-
 import { ClosedGeneratedFixtureFileOwner } from "../src/closed-generated-fixture-file.ts";
 import type { ClosedGeneratedFixtureFileObservation } from "../src/closed-generated-fixture-file.ts";
 import { ClosedGeneratedFixtureDataCoordinator } from "../src/closed-generated-fixture-runtime.ts";
-import { qualifyGeneratedFixtureInitialSql } from "../src/managed-fixture-initial-sql.ts";
-import { consumeManagedFixtureOpeningSource } from "../src/managed-fixture-opening-source.ts";
+import { consumeManagedPcbReadOpeningSource } from "../src/managed-pcb-fixture-read-source.ts";
+import { consumeManagedSchematicRelevanceFixtureSourceForFreshNativePreparation } from "../src/managed-schematic-relevance-fixture-opening-source.ts";
+import { qualifyClosedGeneratedDataSql } from "../src/closed-generated-fixture-data.ts";
+import { managedSchematicFixtureInitialSqlFixture } from "./helpers/managed-schematic-fixture-initial-sql.ts";
 import type { WindowsAuthoritySupervisor } from "../src/windows-authority.ts";
 import { WindowsControlRuntime } from "../src/windows-runtime.ts";
 import { managedFixtureInitialSqlFixture } from "./helpers/managed-fixture-initial-sql.ts";
 import { syntheticSqlRoot } from "./helpers/sqlite-inventory-fixture.ts";
 
 const forbidden = (): Promise<never> => Promise.reject(new Error("Synthetic data-only test forbids any application/bridge/capture call"));
-async function fixture(operationId: string, running = false, releaseFails = false, clockRefused = false): Promise<{ owner: ClosedGeneratedFixtureDataCoordinator; calls: string[] }> {
+async function fixture(operationId: string, running = false, releaseFails = false, clockRefused = false, kind: "pcb" | "pad" | "schematic-relevance" = "pcb"): Promise<{ owner: ClosedGeneratedFixtureDataCoordinator; calls: string[] }> {
   const calls: string[] = [];
   const runtime = new WindowsControlRuntime({ upstream: { callTool: forbidden, bridgeSessionLifecycle: (): undefined => undefined,
     currentAuthenticatedBridgeDispatchBinding: (): undefined => undefined }, pluginRoot: "/mnt/c/synthetic-plugin", assetsRoot: "/mnt/c/synthetic-app/resources/app/assets", reviewedExecutionScopeSha256: "1".repeat(64) }, {
@@ -31,13 +33,15 @@ async function fixture(operationId: string, running = false, releaseFails = fals
     },
   });
   const directory = join(syntheticSqlRoot(), `CodexEasyedaFixture_${randomUUID().replaceAll("-", "")}`); await mkdir(directory);
-  const input = await managedFixtureInitialSqlFixture(undefined, "arc-line-and-via", directory), old = await qualifyGeneratedFixtureInitialSql(input);
+  const input = kind === "schematic-relevance" ? await managedSchematicFixtureInitialSqlFixture(undefined, "relevance", directory) :
+    await managedFixtureInitialSqlFixture(undefined, kind === "pad" ? "circular-smt-pad-only" : "arc-line-and-via", directory);
+  const qualification = await qualifyClosedGeneratedDataSql(input.archive, input.inventory, input.rawWindowsPath, input.sourceCreatedEpochMs, input.sourceModifiedEpochMs, kind);
   const source = normalizeEasyedaProjectPath(input.rawWindowsPath); await copyFile(input.syntheticDatabasePath, source);
   const sourceInfo = await stat(input.syntheticDatabasePath);
   const locator: ClosedGeneratedFixtureDataLocator = { archive: input.archive, rawWindowsPath: input.rawWindowsPath, snapshot: { path: input.syntheticDatabasePath,
-    sha256: input.inventory.checkpointSha256, bytes: sourceInfo.size }, oldQualification: clockRefused ? null : old.qualification,
-    ...(clockRefused ? { clockRefusedInitialInventory: input.inventory } : {}), kind: "pcb", locatorReceipt: { syntheticDataOnly: true } };
-  const native: ClosedGeneratedFixtureFileObservation = { schema: "easyeda-pro-control.closed-generated-file-lease.v1", nonce: "3".repeat(64), state: "held", originalHandlesClosed: false, filesDeleted: false,
+    sha256: input.inventory.checkpointSha256, bytes: sourceInfo.size }, oldQualification: clockRefused ? null : qualification,
+    ...(clockRefused ? { clockRefusedInitialInventory: input.inventory } : {}), kind, locatorReceipt: { syntheticDataOnly: true } };
+  const native: ClosedGeneratedFixtureFileObservation = { schema: kind === "pcb" ? "easyeda-pro-control.closed-generated-file-lease.v1" : "easyeda-pro-control.closed-generated-alternative-file-lease.v1", nonce: "3".repeat(64), state: "held", originalHandlesClosed: false, filesDeleted: false,
     observation: { leaseId: "4".repeat(32), windowsPath: input.rawWindowsPath, parentDirectory: dirname(source), directoryIdentity: `${"5".repeat(8)}:${"6".repeat(16)}`,
       fileIdentity: `${"5".repeat(8)}:${"7".repeat(16)}`, sha256: locator.snapshot.sha256, bytes: locator.snapshot.bytes,
       createdEpochMs: input.sourceCreatedEpochMs, modifiedEpochMs: input.sourceModifiedEpochMs, watchState: "pending", privateDirectoryOwnerVerified: true, readOnlyFileLease: true, oldRuntimeAdopted: false } };
@@ -74,7 +78,7 @@ void test("fresh file clocks qualify a clock-refused baseline through complete S
   await owner.execute({ action: "settle-records", operationId: id }); assert.equal(owner.inspect(id)["requalifiedDataAvailable"], true);
   const admission = await scanQualifiedAdmissionOperations(); assert.equal(admission.some(entry => entry.summary.operationId === id), false);
   await owner.execute({ action: "release-owner", operationId: id, confirmReleaseClosedDataOwner: true }); assert.equal(owner.hasPendingWork(), false);
-  const source = owner.stageSourceForFreshOpening(id); const consumed = consumeManagedFixtureOpeningSource(source);
+  const source = owner.stageSourceForFreshOpening(id); const consumed = consumeManagedPcbReadOpeningSource(source);
   assert.equal(consumed.qualification.exactInitialNativePayloadQualified, true); assert.equal(consumed.qualification.registrationVerified, false);
   assert.throws(() => { owner.stageSourceForFreshOpening(id); }); assert.equal(calls.filter(value => value === "lease-initialize").length, 1);
   assert.equal(calls.filter(value => value === "lease-release").length, 1); assert.equal(calls.filter(value => value === "release-original-no-app-helper").length, 1);
@@ -97,4 +101,28 @@ void test("an unacknowledged original fresh proof release stays nonterminal and 
   assert.equal(owner.hasPendingWork(), true); assert.equal(owner.inspect(id)["freshResourcesClosed"], false);
   await assert.rejects(owner.execute({ action: "release-owner", operationId: id, confirmReleaseClosedDataOwner: true }));
   assert.throws(() => { owner.stageSourceForFreshOpening(id); });
+});
+
+void test("new Pad/Relevance qualifications stage only after original fresh resource and record closure", async () => {
+  for (const kind of ["pad", "schematic-relevance"] as const) {
+    const id = `fixture-data209-new-profile-${kind}`, { owner, calls } = await fixture(id, false, false, false, kind);
+    await assert.rejects(owner.execute(start(id)), /publication acknowledgment/u);
+    assert.throws(() => owner.stageSourceForFreshOpening(id)); assert.throws(() => owner.stageSchematicSourceForFreshOpening(id));
+    await owner.execute({ action: "settle-records", operationId: id });
+    assert.equal(owner.inspect(id)["freshResourcesClosed"], true);
+    await owner.execute({ action: "release-owner", operationId: id, confirmReleaseClosedDataOwner: true });
+    if (kind === "pad") {
+      assert.throws(() => owner.stageSchematicSourceForFreshOpening(id)); const source = owner.stageSourceForFreshOpening(id);
+      const data = consumeManagedPcbReadOpeningSource(source); assert.equal(data.qualification.schema, "easyeda-pro-control.qualified-generated-pad-fixture-target.v1");
+      assert.equal(data.qualification.registrationVerified, false); assert.throws(() => consumeManagedPcbReadOpeningSource(source));
+    } else {
+      assert.throws(() => owner.stageSourceForFreshOpening(id)); const source = owner.stageSchematicSourceForFreshOpening(id);
+      assert.equal(source.schema, "private.generated-schematic-relevance-fixture-opening-source.v1");
+      if (source.schema !== "private.generated-schematic-relevance-fixture-opening-source.v1") { throw new Error("Distinct Relevance source required"); }
+      const data = consumeManagedSchematicRelevanceFixtureSourceForFreshNativePreparation(source);
+      assert.equal(data.qualification.schema, "easyeda-pro-control.qualified-generated-schematic-relevance-fixture-target.v1");
+      assert.equal(data.qualification.registrationVerified, false); assert.throws(() => consumeManagedSchematicRelevanceFixtureSourceForFreshNativePreparation(source));
+    }
+    assert.equal(calls.filter(value => value === "lease-release").length, 1); assert.equal(calls.filter(value => value === "release-original-no-app-helper").length, 1);
+  }
 });

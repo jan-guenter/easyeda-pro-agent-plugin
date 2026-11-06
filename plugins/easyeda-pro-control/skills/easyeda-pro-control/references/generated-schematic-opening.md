@@ -14,6 +14,12 @@ unstored default child and correctly refuse the unchanged source-membership
 guard. Do not weaken that guard or promote the new reader fixture to the older
 display-writer contract.
 
+For an unchanged earlier closed fixture, the separate
+[closed-data route](closed-generated-fixture-data.md) can instead issue and
+stage a new ordinary-reader data token, including the distinct explicit-Relevance
+profile. It rechecks all initial source/SQL under fresh file leases and grants
+no earlier runtime ownership or display-writer authority.
+
 Complete the import's original normal cleanup and closed qualification. Release
 its destination and owner, then call `stage-schematic-for-fresh-opening` with
 the original base import ID and `confirmStageClosedFixture:true`, before

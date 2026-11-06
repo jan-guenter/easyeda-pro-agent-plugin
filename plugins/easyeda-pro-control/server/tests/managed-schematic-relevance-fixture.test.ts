@@ -53,6 +53,6 @@ void test("separate Relevance data reaches exact once-only navigation and all gu
   const wire: unknown = packet.values[1]; assert.ok(wire !== null && typeof wire === "object" && "json" in wire && typeof wire.json === "string" && "utf8Bytes" in wire);
   const value: unknown = JSON.parse(wire.json); assert.ok(value !== null && typeof value === "object" && "value" in value && Array.isArray(value.value));
   const group: unknown = value.value[0]; assert.ok(group !== null && typeof group === "object" && "customAttributeIds" in group);
-  group.customAttributeIds = []; wire.json = JSON.stringify(value); wire.utf8Bytes = Buffer.byteLength(wire.json);
+  group.customAttributeIds = []; const changedJson = JSON.stringify(value); wire.json = changedJson; wire.utf8Bytes = Buffer.byteLength(changedJson);
   assert.throws(() => validateGeneratedSchematicReaders(packet, result.qualification, result.history, "original-window"));
 });

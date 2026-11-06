@@ -5,6 +5,13 @@ generated fixture whose complete initial file is still unchanged. This avoids
 another import. It recreates no old process, Job, bridge session or helper owner.
 Finish the earlier workflow's original cleanup before retiring its facade.
 
+Supported data families include Via/Line/Arc PCB, standalone circular SMT Pad,
+and the separate original or explicit-Relevance SCH fixtures. Pad and Relevance
+use their own report, target and complete initial-SQL qualifications. The older
+report schemas are unchanged. New reports must retain their genuine original
+Windows metadata; the legacy zero-birth-time refusal branch below applies only
+to its explicitly released older profiles.
+
 Query `closed-generated-fixture-data` with `includeSchemas:true` through
 `easyeda_control_api`. Validate the request with
 `closed-generated-fixture-data-validate` before calling the tool. The first
@@ -52,8 +59,8 @@ with pending resources or publication.
 Before any application launch, use exactly one local staging action
 with `confirmStageRequalifiedData:true`:
 
-- `stage-for-fresh-opening` for qualified PCB data.
-- `stage-schematic-for-fresh-opening` for the distinct SCH data.
+- `stage-for-fresh-opening` for qualified PCB or standalone Pad data.
+- `stage-schematic-for-fresh-opening` for original or explicit-Relevance SCH data.
 
 For PCB data, select the `ordinary` or `spatial` purpose of
 `easyeda_control_pcb209_opening` before its fresh diagnostic launch. That owner
