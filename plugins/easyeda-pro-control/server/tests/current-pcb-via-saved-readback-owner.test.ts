@@ -9,7 +9,7 @@ import type { CurrentPcbViaSavedCacheBackupGrant } from "../src/current-pcb-via-
 import { PassThrough } from "node:stream";
 import { CurrentPcbViaSavedReadbackPipe } from "../src/current-pcb-diagnostic-pipe.ts";
 import { generateWorkerStartupProtocol } from "../../scripts/generate-worker-startup-protocol.ts";
-import { CURRENT_PCB_VIA_SAVED_READBACK_PROFILE } from "../src/current-pcb-via-saved-readback-profile.ts";
+import { CURRENT_PCB_VIA_SAVED_READBACK_BOOTSTRAP_REQUESTS, CURRENT_PCB_VIA_SAVED_READBACK_PROFILE } from "../src/current-pcb-via-saved-readback-profile.ts";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
