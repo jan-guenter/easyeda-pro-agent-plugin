@@ -74,3 +74,9 @@ void test("native clock mismatch and changed original closed-file identity/conte
   await invalid.release(); const drift = owner("metadata-drift"); await drift.initialize(); const proof = await drift.captureClosedFileMetadata(); await assert.rejects(drift.inspectClosedFileMetadata(), /changed/u);
   await drift.release(); assert.equal(managedFixtureClosedFileMetadataSchema.safeParse({ ...proof, file: { ...proof.file, createdEpochMs: 0 } }).success, false);
 });
+void test("complete capture reserves eight remaining requests under the unchanged sixteen-command ceiling", async () => {
+  const native = owner("success"); await native.initialize();
+  for (let count = 0; count < 8; count += 1) { await native.inspect(); }
+  native.assertClosedCaptureCapacity(); await native.inspect(); assert.throws(() => { native.assertClosedCaptureCapacity(); }, /eight-request/u);
+  const released = await native.release(); assert.equal(released.originalTransportClosed, true); assert.equal(released.migrationExclusionHeldUntilRelease, true);
+});

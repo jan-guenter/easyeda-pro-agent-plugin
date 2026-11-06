@@ -5,10 +5,11 @@ import type { BigIntStats } from "node:fs";
 import { lstat, open, realpath } from "node:fs/promises";
 import { join, win32 } from "node:path";
 import { z } from "zod";
+import { types } from "node:util";
 import { controlDataDirectory, ensureManagedDirectory, publishManagedAttachmentExclusive } from "./artifacts.ts";
 import { canonicalJson, sha256Json } from "./core.ts";
-import { managedFixtureDestinationObservationSchema } from "./managed-fixture-destination.ts";
-import type { ManagedFixtureDestinationObservation } from "./managed-fixture-destination.ts";
+import { managedFixtureClosedFileMetadataSchema, managedFixtureDestinationObservationSchema } from "./managed-fixture-destination.ts";
+import type { ManagedFixtureClosedFileMetadata, ManagedFixtureDestinationObservation } from "./managed-fixture-destination.ts";
 import { qualifyManagedFixtureArchive } from "./managed-fixture-archive.ts";
 import { readManagedLibraryZip } from "./managed-library-files-zip.ts";
 import { currentProcessSqlRuntime } from "./machine-profile.ts";
@@ -75,6 +76,37 @@ export interface ManagedFixtureClosedSnapshotOptions {
   readonly observeOriginalTermination: () => Promise<void>;
   readonly inspectOriginalDestination: () => Promise<ManagedFixtureDestinationObservation>;
 }
+export interface ManagedFixtureWindowsClosedSnapshotOptions extends ManagedFixtureClosedSnapshotOptions {
+  readonly captureWindowsFileMetadata: () => Promise<ManagedFixtureClosedFileMetadata>;
+  readonly inspectWindowsFileMetadata: () => Promise<ManagedFixtureClosedFileMetadata>;
+}
+interface WindowsMetadataCapture { readonly capture: () => Promise<ManagedFixtureClosedFileMetadata>; readonly inspect: () => Promise<ManagedFixtureClosedFileMetadata> }
+/** Snapshot every original input/callback before the first await. Public JSON,
+ * accessors and replaced callbacks cannot redirect the original native lease. */
+function windowsOptions(options: ManagedFixtureWindowsClosedSnapshotOptions): Readonly<{ options: ManagedFixtureClosedSnapshotOptions; metadata: WindowsMetadataCapture }> {
+  const names = ["archive", "destination", "assertOriginalOwner", "observeOriginalTermination", "inspectOriginalDestination", "captureWindowsFileMetadata", "inspectWindowsFileMetadata"];
+  if (types.isProxy(options) || Object.getPrototypeOf(options) !== Object.prototype || Reflect.ownKeys(options).length !== names.length || !names.every(name => {
+    const descriptor = Object.getOwnPropertyDescriptor(options, name); return descriptor !== undefined && Object.hasOwn(descriptor, "value");
+  })) { throw new Error("Original Windows capture requires exact plain data inputs."); }
+  const archive = options.archive, destination = options.destination;
+  const assertOwner = options.assertOriginalOwner, capture = options.captureWindowsFileMetadata, inspect = options.inspectWindowsFileMetadata,
+    inspectDestination = options.inspectOriginalDestination, observe = options.observeOriginalTermination;
+  if (!Buffer.isBuffer(archive) || types.isProxy(archive) || [assertOwner, capture, inspect, inspectDestination, observe].some(value => typeof value !== "function" || types.isProxy(value))) {
+    throw new Error("Original Windows capture callbacks/archive differ.");
+  }
+  const copy = Buffer.from(archive), destinationCopy = structuredClone(destination);
+  const values = names.map(name => { const descriptor = Object.getOwnPropertyDescriptor(options, name); const value: unknown = descriptor?.value; return { name, value }; });
+  const current = (): void => {
+    if (types.isProxy(options) || Object.getPrototypeOf(options) !== Object.prototype || Reflect.ownKeys(options).length !== names.length || values.some(({ name, value }) => {
+      const descriptor = Object.getOwnPropertyDescriptor(options, name); return descriptor === undefined || !Object.hasOwn(descriptor, "value") || descriptor.value !== value;
+    }) || !archive.equals(copy)) { throw new Error("Original Windows capture inputs/callback identities changed."); }
+    assertOwner();
+  };
+  const checked = async <T>(call: () => Promise<T>): Promise<T> => { current(); try { return await call(); } finally { current(); } };
+  current(); return { options: Object.freeze({ archive: copy, destination: destinationCopy, assertOriginalOwner: current,
+    observeOriginalTermination: (): Promise<void> => checked(observe), inspectOriginalDestination: (): Promise<ManagedFixtureDestinationObservation> => checked(inspectDestination) }),
+  metadata: Object.freeze({ capture: (): Promise<ManagedFixtureClosedFileMetadata> => checked(capture), inspect: (): Promise<ManagedFixtureClosedFileMetadata> => checked(inspect) }) };
+}
 
 /** New immutable artifacts only. No SQLite attachment to the native file, no
  * native close/open, registry write, deletion, persistent acceptance or native
@@ -95,7 +127,15 @@ export async function captureManagedSchematicFixtureClosedSnapshot(options: Mana
 }>> {
   const result = await captureClosedSnapshot(options, "schematic"); return { report: result.report, qualifiedSchematicTarget: result.qualifiedSchematicTarget };
 }
-async function captureClosedSnapshot(options: ManagedFixtureClosedSnapshotOptions, kind: "pcb" | "schematic"): Promise<Readonly<{
+/** New Windows-clock report profile; old v1 report shape and qualifier guards
+ * remain unchanged. This original helper file handle stays held through release. */
+export async function captureManagedFixtureClosedSnapshotWithWindowsMetadata(input: ManagedFixtureWindowsClosedSnapshotOptions): ReturnType<typeof captureManagedFixtureClosedSnapshot> {
+  const retained = windowsOptions(input); const result = await captureClosedSnapshot(retained.options, "pcb", retained.metadata); return { report: result.report, qualifiedTarget: result.qualifiedTarget };
+}
+export async function captureManagedSchematicFixtureClosedSnapshotWithWindowsMetadata(input: ManagedFixtureWindowsClosedSnapshotOptions): ReturnType<typeof captureManagedSchematicFixtureClosedSnapshot> {
+  const retained = windowsOptions(input); const result = await captureClosedSnapshot(retained.options, "schematic", retained.metadata); return { report: result.report, qualifiedSchematicTarget: result.qualifiedSchematicTarget };
+}
+async function captureClosedSnapshot(options: ManagedFixtureClosedSnapshotOptions, kind: "pcb" | "schematic", metadata?: WindowsMetadataCapture): Promise<Readonly<{
   report: Record<string, unknown>; qualifiedTarget: QualifiedGeneratedFixtureTarget | null; qualifiedSchematicTarget: QualifiedGeneratedSchematicFixtureTarget | null;
 }>> {
   const destination = managedFixtureDestinationObservationSchema.parse(options.destination), qualification = qualifyManagedFixtureArchive(options.archive);
@@ -103,6 +143,14 @@ async function captureClosedSnapshot(options: ManagedFixtureClosedSnapshotOption
   const windowsPath = win32.join(destination.windowsDirectory, destination.expectedBasename);
   const projectUuid = createHash("sha256").update(windowsPath, "utf8").digest("hex");
   const sourcePath = `/mnt/${windowsPath[0]?.toLowerCase()}/${windowsPath.slice(3).replaceAll("\\", "/")}`;
+  let windowsFile: ManagedFixtureClosedFileMetadata | undefined;
+  const validateWindowsFile = (raw: ManagedFixtureClosedFileMetadata): ManagedFixtureClosedFileMetadata => {
+    const value = managedFixtureClosedFileMetadataSchema.parse(raw); const owner = value.destination;
+    if (owner.nonce !== destination.nonce || owner.ownerId !== destination.ownerId || owner.windowsDirectory !== destination.windowsDirectory || owner.directoryIdentity !== destination.directoryIdentity ||
+      owner.expectedBasename !== destination.expectedBasename || canonicalJson(owner.libraries) !== canonicalJson(destination.libraries) ||
+      windowsFile !== undefined && canonicalJson(value.file) !== canonicalJson(windowsFile.file)) { throw new Error("Original Windows closed file metadata lost its destination/file binding."); }
+    return value;
+  };
   const owner = async (): Promise<void> => {
     options.assertOriginalOwner(); await options.observeOriginalTermination(); options.assertOriginalOwner();
     const current = managedFixtureDestinationObservationSchema.parse(await options.inspectOriginalDestination()); options.assertOriginalOwner();
@@ -110,20 +158,24 @@ async function captureClosedSnapshot(options: ManagedFixtureClosedSnapshotOption
         canonicalJson(current.libraries) !== canonicalJson(destination.libraries) || canonicalJson(current.entries) !== canonicalJson([destination.expectedBasename])) {
       throw new Error("Original closed fixture directory/watch identity or complete child roster changed.");
     }
+    if (windowsFile !== undefined && metadata !== undefined) { validateWindowsFile(await metadata.inspect()); options.assertOriginalOwner(); }
   };
   await owner();
+  if (metadata !== undefined) { windowsFile = validateWindowsFile(await metadata.capture()); options.assertOriginalOwner(); }
   if (await realpath(sourcePath) !== sourcePath) { throw new Error("Closed fixture source includes a filesystem alias."); }
   // oxlint-disable-next-line eslint/no-bitwise -- Read only, without following substituted links or blocking on a substituted FIFO.
   const source = await open(sourcePath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   try {
     const before = await source.stat({ bigint: true });
     if (!before.isFile() || before.nlink !== 1n || before.size < 512n || before.size > 64n * 1024n * 1024n) { throw new Error("Closed fixture is not a bounded single-link regular file."); }
+    if (windowsFile !== undefined && before.size !== BigInt(windowsFile.file.bytes)) { throw new Error("Windows/Linux closed file size differs."); }
     const chunks: Buffer[] = []; let count = 0;
     for await (const chunk of source.createReadStream({ autoClose: false, highWaterMark: 1_048_576 })) {
       options.assertOriginalOwner(); if (!Buffer.isBuffer(chunk)) { throw new TypeError("Closed fixture copy returned non-binary data."); }
       count += chunk.length; if (BigInt(count) > before.size) { throw new Error("Closed fixture grew during snapshot capture."); } chunks.push(chunk);
     }
     const bytes = Buffer.concat(chunks), digest = createHash("sha256").update(bytes).digest("hex");
+    if (windowsFile !== undefined && digest !== windowsFile.file.sha256) { throw new Error("Windows/Linux complete closed file hashes differ."); }
     const reprove = async (): Promise<void> => {
       options.assertOriginalOwner(); const after = await source.stat({ bigint: true }), named = await lstat(sourcePath, { bigint: true }); options.assertOriginalOwner();
       if (!sameFile(before, after) || !sameFile(before, named) || BigInt(bytes.length) !== before.size || await realpath(sourcePath) !== sourcePath) { throw new Error("Original closed fixture changed during capture."); }
@@ -138,7 +190,7 @@ async function captureClosedSnapshot(options: ManagedFixtureClosedSnapshotOption
     let qualified: Awaited<ReturnType<typeof qualifyGeneratedFixtureInitialSql>> | Awaited<ReturnType<typeof qualifyGeneratedSchematicFixtureInitialSql>> | undefined; let qualificationFailure: string | null = null;
     try {
       qualified = await (kind === "pcb" ? qualifyGeneratedFixtureInitialSql : qualifyGeneratedSchematicFixtureInitialSql)({ archive: options.archive, inventory, rawWindowsPath: windowsPath,
-        sourceCreatedEpochMs: Number(before.birthtimeMs), sourceModifiedEpochMs: Number(before.mtimeMs) }); options.assertOriginalOwner();
+        sourceCreatedEpochMs: windowsFile?.file.createdEpochMs ?? Number(before.birthtimeMs), sourceModifiedEpochMs: windowsFile?.file.modifiedEpochMs ?? Number(before.mtimeMs) }); options.assertOriginalOwner();
     } catch (error) { qualificationFailure = error instanceof Error ? error.message : "Initial SQL/source profile refused."; }
     const decoded = qualified === undefined ? null : await publishManagedAttachmentExclusive(join(directory, `${id}.history.json`), "Complete closed fixture decoded native history",
       Buffer.from(JSON.stringify(qualified.history), "utf8"), "closed-fixture-history", reprove);
@@ -150,10 +202,14 @@ async function captureClosedSnapshot(options: ManagedFixtureClosedSnapshotOption
     }
     if (reread !== bytes.length || freshHash.digest("hex") !== snapshot.sha256) { throw new Error("Native closed fixture changed after complete SQL/history capture."); }
     await reprove();
+    if (windowsFile !== undefined && metadata !== undefined) { validateWindowsFile(await metadata.inspect()); options.assertOriginalOwner(); }
     const target = qualified?.qualification;
+    let schema = kind === "pcb" ? "easyeda-pro-control.managed-fixture-closed-snapshot.v1" : "easyeda-pro-control.managed-schematic-fixture-closed-snapshot.v1";
+    if (windowsFile !== undefined) { schema = kind === "pcb" ? "easyeda-pro-control.managed-fixture-closed-snapshot.v2" : "easyeda-pro-control.managed-schematic-fixture-closed-snapshot.v2"; }
     return { qualifiedTarget: target?.schema === "easyeda-pro-control.qualified-generated-fixture-target.v1" ? target : null,
       qualifiedSchematicTarget: target?.schema === "easyeda-pro-control.qualified-generated-schematic-fixture-target.v1" ? target : null,
-      report: { schema: kind === "pcb" ? "easyeda-pro-control.managed-fixture-closed-snapshot.v1" : "easyeda-pro-control.managed-schematic-fixture-closed-snapshot.v1", projectUuid, branchUuid: qualified?.history.branchUuid ?? null,
+      report: { schema, projectUuid, branchUuid: qualified?.history.branchUuid ?? null,
+      ...(windowsFile === undefined ? {} : { sourceClockSource: "original-destination-windows-filetime", windowsClosedFileMetadata: windowsFile }),
       snapshot, sql, decoded, originalSourceSha256: snapshot.sha256, completeSqlInventoryCaptured: true,
       sqlReaderCompletion: readerCompletion(inventory), completeInitialSqlRowsQualified: qualified !== undefined, qualificationFailure,
       tableRoster: inventory.tables.map((table) => ({ name: table.name, rowCount: table.rows.length, sha256: table.sha256 })),

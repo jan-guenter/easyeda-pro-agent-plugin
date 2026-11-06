@@ -17,7 +17,8 @@ import { managedLibraryFileSchema } from "./managed-library-files.ts";
 import type { WindowsControlRuntime } from "./windows-runtime.ts";
 import { buildManagedFixtureEnvironmentProgram, managedFixtureEnvironmentObservationSchema, managedFixtureEnvironmentRefusalSchema } from "./managed-fixture-environment-program.ts";
 import { captureManagedFixtureDispatchReply } from "./managed-fixture-dispatch-reply.ts";
-import { captureManagedFixtureClosedSnapshot, captureManagedSchematicFixtureClosedSnapshot } from "./managed-fixture-closed-snapshot.ts";
+import { captureManagedFixtureClosedSnapshotWithWindowsMetadata, captureManagedSchematicFixtureClosedSnapshotWithWindowsMetadata } from "./managed-fixture-closed-snapshot.ts";
+import type { captureManagedFixtureClosedSnapshot, captureManagedSchematicFixtureClosedSnapshot } from "./managed-fixture-closed-snapshot.ts";
 import { assertOriginalGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
 import type { QualifiedGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
 import { stageManagedFixtureOpeningSource } from "./managed-fixture-opening-source.ts";
@@ -97,7 +98,8 @@ export interface ManagedFixtureImportOptions {
 }
 /** Internal offline-test seams; production never accepts dependency overrides. */
 export interface ManagedFixtureImportDependencies {
-  readonly destination?: (options: ConstructorParameters<typeof ManagedFixtureDestinationOwner>[0]) => Pick<ManagedFixtureDestinationOwner, "initialize" | "inspect" | "snapshot" | "release" | "failureObservation">;
+  readonly destination?: (options: ConstructorParameters<typeof ManagedFixtureDestinationOwner>[0]) => Pick<ManagedFixtureDestinationOwner, "initialize" | "inspect" | "snapshot" | "release" | "failureObservation"> &
+    Partial<Pick<ManagedFixtureDestinationOwner, "assertClosedCaptureCapacity" | "captureClosedFileMetadata" | "inspectClosedFileMetadata">>;
   readonly verifySources?: typeof verifyManagedFixtureImportSources;
   readonly assertFingerprint?: typeof assertManagedFixtureImportFingerprint;
   readonly prepareInput?: typeof prepareManagedLibraryFile;
@@ -153,6 +155,7 @@ export class ManagedFixtureImportCoordinator {
   private closedCapture: Awaited<ReturnType<typeof captureManagedFixtureClosedSnapshot>> | undefined;
   private closedSchematicCapture: Awaited<ReturnType<typeof captureManagedSchematicFixtureClosedSnapshot>> | undefined;
   private destination: ReturnType<NonNullable<ManagedFixtureImportDependencies["destination"]>> | undefined;
+  private destinationMethods: readonly unknown[] | undefined;
   private destinationReleased = false;
   private destinationPreparationFailed = false;
   private migrationExclusionVerified = false;
@@ -170,7 +173,12 @@ export class ManagedFixtureImportCoordinator {
   private current(): void {
     this.options.assertOriginalOwner(); const status = this.options.runtime.status();
     const methods = [this.options.runtime.status, this.options.runtime.observeLaunchTermination, this.options.engine.status, this.options.engine.assertBridgeDispatchAllowed, this.options.engine.dispatchWithOrphanTracking, this.options.engine.originalTrackedDispatchStatus];
-    if (status.state !== "owned" || canonicalJson(status.launch) !== this.launchText || methods.some((method, index) => method !== this.methods[index])) { throw new Error("Fixture import lost its original ordinary launch generation or methods."); }
+    if (status.state !== "owned" || canonicalJson(status.launch) !== this.launchText || methods.some((method, index) => method !== this.methods[index]) ||
+      this.destination !== undefined && (this.destinationMethods === undefined || ManagedFixtureImportCoordinator.destinationMethodIdentities(this.destination).some((method, index) => method !== this.destinationMethods?.[index]))) { throw new Error("Fixture import lost its original ordinary launch generation or methods."); }
+  }
+  private static destinationMethodIdentities(destination: NonNullable<ManagedFixtureImportCoordinator["destination"]>): readonly unknown[] {
+    return [destination.initialize, destination.inspect, destination.snapshot, destination.release, destination.failureObservation,
+      destination.assertClosedCaptureCapacity, destination.captureClosedFileMetadata, destination.inspectClosedFileMetadata];
   }
   private async checked<T>(call: () => Promise<T>): Promise<T> {
     this.current(); try { return await call(); } finally { this.current(); }
@@ -390,6 +398,9 @@ export class ManagedFixtureImportCoordinator {
       if (this.closedCaptureAttempted || destination === undefined || this.destinationReleased || archive === undefined || last === undefined ||
           this.options.cleanup.inspect(last.operationId)["cleanupComplete"] !== true) { throw new Error("Closed fixture capture requires its original completed cleanup and retained unopened destination."); }
       const held = this.destinationObservation ?? destination.snapshot(); if (held === null) { throw new Error("Original fixture directory identity is unavailable."); }
+      const capacity = destination.assertClosedCaptureCapacity, captureFile = destination.captureClosedFileMetadata, inspectFile = destination.inspectClosedFileMetadata;
+      if (typeof capacity !== "function" || typeof captureFile !== "function" || typeof inspectFile !== "function") { throw new TypeError("Original destination Windows file metadata capability is unavailable."); }
+      capacity.call(destination);
       await this.artifact("closed-import-capture-intent", { source: destination.snapshot(), nativeRootAndJobCleanupComplete: true, readOnly: true });
       this.closedCaptureAttempted = true;
       const captureOptions = { archive, destination: held,
@@ -397,9 +408,11 @@ export class ManagedFixtureImportCoordinator {
         observeOriginalTermination: async (): Promise<void> => {
           const termination = await this.checked(() => this.options.runtime.observeLaunchTermination());
           if (!termination.terminated) { throw new Error("Original import root/Job is no longer proven terminated."); }
-        }, inspectOriginalDestination: (): Promise<ManagedFixtureDestinationObservation> => this.checked(() => destination.inspect()) };
-      if (this.generatedFixtureKind === MANAGED_SCHEMATIC_FIXTURE_KIND) { this.closedSchematicCapture = await this.checked(() => captureManagedSchematicFixtureClosedSnapshot(captureOptions)); }
-      else { this.closedCapture = await this.checked(() => captureManagedFixtureClosedSnapshot(captureOptions)); }
+        }, inspectOriginalDestination: (): Promise<ManagedFixtureDestinationObservation> => this.checked(() => destination.inspect()),
+        captureWindowsFileMetadata: (): ReturnType<ManagedFixtureDestinationOwner["captureClosedFileMetadata"]> => this.checked(() => captureFile.call(destination)),
+        inspectWindowsFileMetadata: (): ReturnType<ManagedFixtureDestinationOwner["inspectClosedFileMetadata"]> => this.checked(() => inspectFile.call(destination)) };
+      if (this.generatedFixtureKind === MANAGED_SCHEMATIC_FIXTURE_KIND) { this.closedSchematicCapture = await this.checked(() => captureManagedSchematicFixtureClosedSnapshotWithWindowsMetadata(captureOptions)); }
+      else { this.closedCapture = await this.checked(() => captureManagedFixtureClosedSnapshotWithWindowsMetadata(captureOptions)); }
       const report = this.closedCapture?.report ?? this.closedSchematicCapture?.report;
       if (report === undefined) { throw new Error("Original closed import capture returned no retained data report."); }
       await this.artifact("closed-import-capture", report); return this.inspect(request.operationId);
@@ -468,6 +481,7 @@ export class ManagedFixtureImportCoordinator {
       const destination = (this.dependencies.destination ?? ((options): ManagedFixtureDestinationOwner => new ManagedFixtureDestinationOwner(options)))({ pluginRoot: this.options.pluginRoot,
         assetsRoot: this.options.assetsRoot, nonce, expectedBasename: generated.name.replace(/\.epro2$/u, ".eprj2"), libraryWindowsDirectories: environment.libraryWindowsDirectories });
       this.destination = destination;
+      this.destinationMethods = ManagedFixtureImportCoordinator.destinationMethodIdentities(destination);
       try { this.destinationObservation = await this.checked(() => destination.initialize()); }
       catch (error) {
         this.destinationPreparationFailed = true;

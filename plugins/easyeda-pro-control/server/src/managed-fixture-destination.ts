@@ -46,6 +46,10 @@ export const managedFixtureClosedFileMetadataSchema = z.strictObject({
   (BigInt(value.file.modifiedFileTime) - 116_444_736_000_000_000n) / 10_000n === BigInt(value.file.modifiedEpochMs),
 "The original closed file path, complete roster or native FILETIME conversion differs.");
 export type ManagedFixtureClosedFileMetadata = z.infer<typeof managedFixtureClosedFileMetadataSchema>;
+/** Exact closed-capture sequence: three destination/root boundaries, one file
+ * lease, three same-file reproofs (including after the final Linux hash), then
+ * the existing final destination release. The native16 ceiling is unchanged. */
+export const MANAGED_FIXTURE_CLOSED_CAPTURE_DESTINATION_REQUESTS = Object.freeze({ destinationInspections: 3, fileCapture: 1, fileInspections: 3, release: 1, total: 8 });
 
 export interface ManagedFixtureDestinationOptions {
   readonly pluginRoot: string; readonly assetsRoot: string; readonly nonce: string; readonly expectedBasename: string;
@@ -189,6 +193,12 @@ export class ManagedFixtureDestinationOwner {
       throw new Error("Original retained Windows file handle, metadata or content changed.");
     }
     this.closedFileMetadata = value; return structuredClone(value);
+  }
+  /** Local counter proof before acquiring any new file/watch handle. The
+   * coordinator serializes this entire sequence and keeps the release slot. */
+  public assertClosedCaptureCapacity(): void {
+    if (this.current === undefined || this.child === undefined || this.closedFileMetadataAttempted || this.releaseAttempted || this.pending !== undefined || this.failed !== undefined ||
+      this.sequence > 16 - MANAGED_FIXTURE_CLOSED_CAPTURE_DESTINATION_REQUESTS.total) { throw new Error("Original destination lacks the complete eight-request closed capture/release capacity."); }
   }
   /** The original coordinator must first prove its app root and empty Job.
    * This one fixed action then retains a NEW Windows read-only file handle and
