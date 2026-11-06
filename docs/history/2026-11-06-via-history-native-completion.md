@@ -349,3 +349,19 @@ metadata, so that projection alone cannot establish a faithful complete backup.
 A fixed native metadata join or independently proved source constraints remain
 required before deletion. Two finite-wire refusal cases, full types and strict
 changed-file lint pass. No CDP cache command was dispatched to a live browser.
+
+The cache limit is now named `combinedEntries:8`; the separate per-namespace
+slot maximum only bounds the grammar. The shared CDP decoders require complete
+unfiltered returnCount/array agreement and reject a combined8+1 roster before
+any body request. They retain only the exact original storage scope and derive
+both selected names from the UUID; peer IDs cannot enter that selection. The
+narrow entry profile rejects opaque/non-default responses, non-GET requests,
+request headers and unsupported response headers. Both native request metadata
+and body bytes must still be joined before any complete-backup grant.
+
+Canonical base64 decoding, per-body8192/combined32768byte bounds and complete
+second-round equality are checked separately. These exported functions are
+supplied-data comparisons only, not original packet tokens or cache mutation
+permission. Five focused combined-wire/data cases cover over-budget rosters,
+truncated pages, foreign scope, duplicate IDs, unsupported metadata, noncanonical
+base64, changed repeated data and accessors; types and strict lint pass.
