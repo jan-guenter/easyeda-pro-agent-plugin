@@ -56,8 +56,8 @@ async function fixture(context: TestContext, holdSaveWrite = false): Promise<Rea
     else { reply(command, {}); }
     callback();
   } });
-  const inputClose = Promise.withResolvers<void>(), outputClose = Promise.withResolvers<void>();
-  input.once("close", inputClose.resolve); output.once("close", outputClose.resolve);
+  const inputClose = Promise.withResolvers<true>(), outputClose = Promise.withResolvers<true>();
+  input.once("close", () => { inputClose.resolve(true); }); output.once("close", () => { outputClose.resolve(true); });
   const closed = [inputClose.promise, outputClose.promise];
   const pipe = new Constructor(input, output); pipe.start();
   context.after(async () => { input.destroy(); output.destroy(); await Promise.all(closed); pipe.releaseClosedListeners(); });
