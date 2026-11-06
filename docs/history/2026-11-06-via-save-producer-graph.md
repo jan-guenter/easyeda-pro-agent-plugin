@@ -137,3 +137,44 @@ foreign copy creator, missing original preload log and missing resume observatio
 all stop before project continuation or origin callback. Strict types and
 zero-warning type-aware lint pass. These are offline checks, with no connected
 worker, native origin, startup completion, selected clock responder or SQL grant.
+
+## Via-only clock command foundation
+
+`current-pcb-via-clock-programs.ts` derives new fixed descriptor programs from
+inert mixed209 source selectors. The new worker tuple contains14 actual project,
+bus, method and channel references. It does not manufacture the old70-dependency
+or footprint-manager tuple. UI registration starts from the original private
+SDK Array9 and retains its selected concurrentBus service, wrapper, callback,
+Date/now and lexical offset. A copied SDK root or invalid create/Save state
+refuses before its original target guard can run. This source foundation issues
+no native clock origin or SQL authority.
+
+The selected original wrapper is preload.js `k`, UTF16 [135404,135727), at
+line1,column86476. Its actual callback is ws-service.js UTF16 [851606,851623),
+17bytes, at line28,column23421. The older v1 bus-copy result at offset8383 is not
+this registered handler. The complete preload was compiled without execution:
+Node24.18.0 confirms wrapper result column86544, caller89687 and final return86798.
+Every native allocation still must acknowledge these exact positions.
+
+The clock collector's fixed worker pauses are push/dispatch/reply; its two UI
+pauses are callback result and wrapper completion after the original finally.pull.
+The Save observer alone owns its existing clock-continuation breakpoint; adding
+a second breakpoint there would invalidate the exact hit roster. Actual installed
+IDs must route each paused/resumed pair through one retained poll pump and one
+serialized observer lane while the SDK Save Promise stays separately retained.
+The body clock later joins that same original returned reply value.
+
+The finite grammar exports37 cases and reserves59 normal plus12 cleanup requests.
+It has no caller session, function, expression, topic, source-role override or
+arbitrary breakpoint condition. Conditions inspect own-data bus UUID descriptors;
+unknown/accessor receivers and condition exceptions pause, and no UUID getter
+runs. Native binding must substitute the original worker context and original
+SDK tuple for their initial captures, omitting those slots from caller fields.
+Actual source/callback/roundtrip collection and opaque native issuance remain
+separate work; these schemas enable neither Save nor a selected SQL call.
+
+Three focused fixed-code/descriptor/schema tests pass. All11 generated programs
+compile, retain the new14-reference worker shape, reject copied SDK roots and
+condition/code/realm drift, and stop on descriptor exceptions. Strict types and
+zero-warning type-aware lint pass. No native/helper generation, pin or live call
+is part of this source increment.
