@@ -110,3 +110,24 @@ void test("owner drift, bad handler source and failed release each withhold obse
     assert.equal(calls.length, count);
   }
 });
+
+void test("capture keeps the first fixed failing phase when cleanup also fails and never exposes cause text", async () => {
+  const calls: string[] = [];
+  const runner = new CurrentPcbSpatialCaptureRunner({
+    assertCurrent(): void {
+      // The synthetic original context is stable.
+    },
+    request(command): Promise<unknown> {
+      calls.push(command.spatialPhase);
+      return command.spatialPhase === "wrapper" ? Promise.resolve({ exceptionDetails: { text: "private renderer text" } })
+        : Promise.reject(new Error("private release path"));
+    },
+  }, "original-script", "original-context", "a".repeat(16));
+  await assert.rejects(runner.observe(), (error: unknown) => {
+    assert.ok(error instanceof AggregateError);
+    assert.equal(error.message, "PCB_SPATIAL_CAPTURE:wrapper:decode,release:failed");
+    assert.equal(error.errors.length, 2); assert.equal(error.message.includes("private"), false); return true;
+  });
+  assert.deepEqual(calls, ["wrapper", "release"]);
+  await assert.rejects(runner.observe(), /PCB_SPATIAL_CAPTURE/u); assert.equal(calls.length, 2);
+});

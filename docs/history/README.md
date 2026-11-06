@@ -571,3 +571,4 @@ layout. The connected ledger retains its generation and case anchors.
 - [2026-10-28 footprint clock integration](2026-10-28-footprint-clock-integration.md)
 - [2026-11-06 Arc/Line/Via spatial implementation](2026-11-06-spatial-arc-line-via-implementation.md)
 - [2026-11-06 Via original main cursor](2026-11-06-via-original-main-cursor.md)
+- [2026-11-06 generated PCB spatial live case](2026-11-06-generated-pcb-spatial-live-case.md)

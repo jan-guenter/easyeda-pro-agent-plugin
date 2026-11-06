@@ -73,12 +73,12 @@ const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,"const
 /** The RPC wrapper and its lexical t handler are inspected by the source and
  * location decoders. Keep exactly one original running task in the registry. */
 export const CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION = `(()=>{${guards}
-const bridge=named(own(globalThis,"MSG_BUS_PCB"),"HJ"),bus=named(own(bridge,"messageBus"),"Oet");
+const bridge=named(own(globalThis,"MSG_BUS_PCB"),"YJ"),bus=named(own(bridge,"messageBus"),"Net");
 const subscribed=object(own(bus,"subscribed")),p=Object.getPrototypeOf(subscribed);
 if(p!==Object.prototype&&p!==null)bad();
 const tasks=own(subscribed,"pcb/extensionAPI/document-getPrimitiveAtPoint");
 if(!Array.isArray(tasks)||Object.getPrototypeOf(tasks)!==Array.prototype||own(tasks,"length")!==1||Reflect.ownKeys(tasks).length!==2)bad();
-const task=named(own(tasks,"0"),"Z1e"),callback=own(task,"callback");
+const task=named(own(tasks,"0"),"rye"),callback=own(task,"callback");
 if(own(task,"isRunning")!==true||typeof callback!=="function")bad();return callback;
 })()`;
 

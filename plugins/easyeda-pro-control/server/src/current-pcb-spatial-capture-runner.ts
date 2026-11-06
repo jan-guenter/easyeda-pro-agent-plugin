@@ -25,6 +25,7 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 export const CURRENT_PCB_SPATIAL_OBJECT_GROUP = "easyeda-pro-control-pcb209-spatial-v1";
 const EFFECTS = Object.freeze({ throwOnSideEffect: true, silent: true, awaitPromise: false,
   generatePreview: false, userGesture: false } as const);
+const failureSteps = new WeakMap<object, string>();
 export type CurrentPcbSpatialCaptureCommand =
   | Readonly<{ spatialPhase: "wrapper"; method: "Runtime.evaluate"; params: typeof EFFECTS & Readonly<{
     expression: typeof CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION; uniqueContextId: string;
@@ -131,11 +132,20 @@ export class CurrentPcbSpatialCaptureRunner {
   /** Dispatch through the original receiver, decode before hooks can change
    * Reply aliases, then reprove the same retained context after the await. */
   async #request<T>(command: CurrentPcbSpatialCaptureCommand, decode: (input: unknown) => T): Promise<T> {
-    this.#current();
-    const arrived = await this.#requestCallback.call(this.#transport, freezeDeep(command));
-    // Decode before an owner hook can alter aliases to the reply envelope.
-    const result = decode(arrived);
-    this.#current(); return result;
+    let step: "owner-before" | "request" | "decode" | "owner-after" = "owner-before";
+    try {
+      this.#current(); step = "request";
+      const arrived = await this.#requestCallback.call(this.#transport, freezeDeep(command));
+      // Decode before an owner hook can alter aliases to the reply envelope.
+      step = "decode"; const result = decode(arrived);
+      step = "owner-after"; this.#current(); return result;
+    } catch (error) {
+      // Fixed local labels only. The original cause stays private; renderer
+      // Exception text and opaque handles never enter the public diagnostic.
+      const label = `${command.spatialPhase}:${step}`;
+      const failure = new Error(`PCB_SPATIAL_CAPTURE:${label}`, { cause: error });
+      failureSteps.set(failure, label); throw failure;
+    }
   }
   /** Read only own descriptors of an original group handle through the same
    * Guarded request path; no getter or new target is selected. */
@@ -153,6 +163,7 @@ export class CurrentPcbSpatialCaptureRunner {
     let started = false;
     let result: T | undefined;
     const failures: unknown[] = [];
+    const failedSteps: string[] = [];
     try {
       this.#current(); started = true;
       const wrapper = await this.#request({ spatialPhase: "wrapper", method: "Runtime.evaluate", params: {
@@ -186,17 +197,20 @@ export class CurrentPcbSpatialCaptureRunner {
         }
       }
       result = await consume(bundle);
-    } catch (caughtError) { failures.push(caughtError); }
+    } catch (caughtError) {
+      failures.push(caughtError);
+      failedSteps.push(caughtError !== null && typeof caughtError === "object" ? failureSteps.get(caughtError) ?? "capture:owner" : "capture:owner");
+    }
     if (started) {
       try {
         record(await this.#requestCallback.call(this.#transport, freezeDeep({ spatialPhase: "release", method: "Runtime.releaseObjectGroup",
           params: { objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP } })), []);
-      } catch (caughtError) { failures.push(caughtError); }
+      } catch (caughtError) { failures.push(caughtError); failedSteps.push("release:failed"); }
     }
     if (failures.length === 0) {
-      try { this.#current(); } catch (caughtError) { failures.push(caughtError); }
+      try { this.#current(); } catch (caughtError) { failures.push(caughtError); failedSteps.push("complete:owner"); }
     }
-    if (failures.length > 0) { throw new AggregateError(failures, "PCB_SPATIAL_CAPTURE"); }
+    if (failures.length > 0) { throw new AggregateError(failures, `PCB_SPATIAL_CAPTURE:${failedSteps.join(",")}`); }
     if (result === undefined) { return refuse(); }
     return result;
   }
