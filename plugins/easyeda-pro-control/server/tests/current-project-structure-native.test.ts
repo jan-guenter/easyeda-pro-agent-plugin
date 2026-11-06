@@ -19,13 +19,13 @@ void test("dedicated structure source is idempotent, bounded and retains indepen
   const next = applyCurrentProjectStructureNativeFragment(helper); assert.equal(applyCurrentProjectStructureNativeFragment(next), next);
   assert.ok(Buffer.byteLength(next) < 2 * 1024 * 1024); assert.match(next, /AdmitProjectStructureAction/u);
   assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [59, 27, 86]);
-  assert.deepEqual([PROFILE.worker.normal, PROFILE.worker.cleanup, PROFILE.worker.total], [864, 42, 906]);
+  assert.deepEqual([PROFILE.worker.normal, PROFILE.worker.cleanup, PROFILE.worker.total], [897, 47, 944]);
   assert.equal(CURRENT_FOOTPRINT_COMBINED_PROFILE.main.requestLimit, 55); assert.equal(PROFILE.writerAuthorized, false);
   assert.equal(PROFILE.saveAuthorized, false); assert.equal(PROFILE.completeUploadFrontierVerified, false);
   assert.throws(() => applyCurrentProjectStructureNativeFragment(helper.replace(/public sealed (?:partial )?class EasyedaDiagnosticOwner \{\n {2}\[StructLayout/u, "public class ForeignOwner {\n  [StructLayout")), /FRAGMENT_ANCHOR/u);
 });
 void test("worker observer wire admits only fixed sites/programs on its own birth and reserves comparison text before arm", () => {
-  const cases = currentProjectStructureWorkerNativeCases(); assert.equal(cases.length, 26);
+  const cases = currentProjectStructureWorkerNativeCases(); assert.equal(cases.length, 36);
   assert.match(currentProjectStructureWorkerNativeSource(), /EasyedaProjectStructureWorkerProtocol/u);
   for (const command of cases) {
     const wire = currentProjectStructureWorkerWire(command, PROFILE.worker.total); assert.equal(wire.request["action"], "structure-worker-send");

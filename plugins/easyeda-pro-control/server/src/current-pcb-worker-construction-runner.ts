@@ -86,7 +86,7 @@ import type { CurrentFootprintColdProducerRoster } from "./current-footprint-col
 import { CurrentFootprintDetachedCacheObserver } from "./current-footprint-detached-cache-observer.ts";
 import { CURRENT_FOOTPRINT_DETACHED_CACHE_REQUESTS } from "./current-footprint-detached-cache-profile.ts";
 import type { CurrentFootprintDetachedCacheBinding, CurrentFootprintDetachedCacheEvents, CurrentFootprintDetachedCacheLease } from "./current-footprint-detached-cache-lease.ts";
-import type { CurrentFootprintDetachedCacheObservation } from "./current-footprint-detached-cache-observer.ts";
+import type { CurrentFootprintDetachedCacheObservationV2 } from "./current-footprint-detached-cache-observer.ts";
 
 const detachedCacheLeases = new WeakMap<CurrentFootprintDetachedCacheLease, CurrentFootprintDetachedCacheBinding>();
 export function requireCurrentFootprintDetachedCacheLease(lease: CurrentFootprintDetachedCacheLease): CurrentFootprintDetachedCacheBinding {
@@ -903,7 +903,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     }));
     const observer = new CurrentFootprintDetachedCacheObserver(lease); this.#detachedCacheObserver = observer; await observer.arm();
   }
-  public async closeOriginalDetachedCacheProducer(packet: ConstructionPacket<P>): Promise<CurrentFootprintDetachedCacheObservation> {
+  public async closeOriginalDetachedCacheProducer(packet: ConstructionPacket<P>): Promise<CurrentFootprintDetachedCacheObservationV2> {
     await this.#requireOriginal(packet); const observer = this.#detachedCacheObserver;
     if (observer === null || !isOriginalProjectStructureConstructionTransport(this.#transport)) { throw fail("DETACHED_CACHE_ORIGINAL_OWNER"); }
     const result = await observer.closeAndObserve(); await this.#requireOriginal(packet); return result;

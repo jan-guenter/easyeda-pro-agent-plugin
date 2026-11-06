@@ -2,7 +2,7 @@
  * not admit these pauses. There is no public caller-selected breakpoint/code. */
 import type { CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION } from "./current-footprint-copy-state.ts";
 import type { CurrentFootprintCopySourceCommand } from "./current-footprint-copy-source-command.ts";
-import type { CURRENT_FOOTPRINT_DETACHED_CACHE_EXPRESSION, CURRENT_FOOTPRINT_DETACHED_CACHE_GROUP } from "./current-footprint-detached-cache-profile.ts";
+import type { CURRENT_FOOTPRINT_DETACHED_CACHE_EXPRESSION, CURRENT_FOOTPRINT_DETACHED_CACHE_GROUP, CURRENT_FOOTPRINT_HEAD_CACHE_EXPRESSION } from "./current-footprint-detached-cache-profile.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE = Object.freeze({
@@ -35,7 +35,7 @@ export const CURRENT_PCB_WORKER_CONSTRUCTION_SEQUENCE = Object.freeze([
   "channel", "upload", "base", "cooperation", "serial", "debounce", "serial", "project", "bootstrap",
 ] as const);
 
-export type CurrentPcbWorkerConstructionExpression = "this" | "e" | "t" | "this.bc" | "this.bc.onmessage" | typeof CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION | typeof CURRENT_FOOTPRINT_DETACHED_CACHE_EXPRESSION;
+export type CurrentPcbWorkerConstructionExpression = "this" | "e" | "t" | "this.bc" | "this.bc.onmessage" | typeof CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION | typeof CURRENT_FOOTPRINT_DETACHED_CACHE_EXPRESSION | typeof CURRENT_FOOTPRINT_HEAD_CACHE_EXPRESSION;
 type ObjectGroup = typeof CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group | typeof CURRENT_FOOTPRINT_DETACHED_CACHE_GROUP;
 export const CURRENT_PCB_WORKER_CONSTRUCTION_SAME = "function(other){\"use strict\";return this===other;}";
 export const CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT = "function(bus){\"use strict\";const own=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,\"value\"))throw new Error(\"WORKER_CONSTRUCTION_MEMBER\");return d.value;};return own(globalThis,\"PROJECT\")===this&&own(this,\"workerBus\")===bus;}";
@@ -53,7 +53,7 @@ for(const [o,k,v]of retained){const d=Object.getOwnPropertyDescriptor(o,k);if(!d
 return identity;}`;
 export type CurrentPcbWorkerConstructionCommand =
   | CurrentFootprintCopySourceCommand
-  | Readonly<{ method: "Debugger.setBreakpoint"; params: Readonly<{ location: Readonly<{ scriptId: string; lineNumber: number; columnNumber: number }> }> }>
+  | Readonly<{ method: "Debugger.setBreakpoint"; params: Readonly<{ location: Readonly<{ scriptId: string; lineNumber: number; columnNumber: number }>; condition?: string }> }>
   | Readonly<{ method: "Debugger.removeBreakpoint"; params: Readonly<{ breakpointId: string }> }>
   | Readonly<{ method: "Debugger.resume"; params: Readonly<Record<string, never>> }>
   | Readonly<{ method: "Debugger.evaluateOnCallFrame"; params: Readonly<{ callFrameId: string; expression: CurrentPcbWorkerConstructionExpression;
