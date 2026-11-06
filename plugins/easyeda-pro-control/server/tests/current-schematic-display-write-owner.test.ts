@@ -320,6 +320,7 @@ void test("actual source callback arms every original producer guard before rele
   f.owner.armSchematicDisplaySaveWorker(f.argumentsValue, async origin => { await f.createObserver(origin).arm(); });
   f.owner.armSchematicDisplaySaveStructureWorker(f.argumentsValue, async origin => { await f.createStructureObserver(origin).arm(); });
   f.owner.armSchematicDisplayProducerPrefixWorker(f.argumentsValue);
+  assert.throws(() => f.owner.requireSchematicDisplayProducerPrefixReady(f.argumentsValue), /PREFIX_READY_REQUIRED/u);
   await assert.rejects(f.owner.enrollSchematicDisplayProducerPrefix(f.argumentsValue), /PREFIX_UNAVAILABLE/u);
   await f.runWorker(); assert.equal(f.actions.filter(action => action === "schematic-display-producer-guard").length, 10);
   await f.owner.executeSchematicDisplayStage("capture", f.argumentsValue); await f.owner.executeSchematicDisplayStage("preflight", f.argumentsValue);

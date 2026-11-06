@@ -1936,6 +1936,10 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#busy || this.#schematicTransportSetup !== null || this.#schematicStructureSetup === null || this.#schematicWorkerController !== null || this.#projectOpeningConsumed || typeof setup !== "function" || types.isProxy(setup)) { throw error("PROJECT_STRUCTURE_TRANSPORT_ARM_UNAVAILABLE"); }
     this.#schematicTransportOperation = argumentsValue; this.#schematicTransportSetup = setup;
   }
+  public requireSchematicDisplayProducerPrefixReady(argumentsValue: GeneratedSchematicDisplayNativeArguments): CurrentSchematicDisplaySaveProducerPrefix {
+    requireSchematicArguments(this, argumentsValue); const token = this.#schematicProducerPrefix; if (token === null) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_READY_REQUIRED"); }
+    requireOriginalCurrentProjectSaveProducerPrefix(token, this, argumentsValue); return token;
+  }
   public async enrollSchematicDisplayProducerPrefix(argumentsValue: GeneratedSchematicDisplayNativeArguments): Promise<CurrentSchematicDisplaySaveProducerPrefix> {
     requireSchematicArguments(this, argumentsValue); const reproof = this.#schematicProducerGuardReproof, worker = this.#schematicWorkerController;
     if (this.#schematicProducerEnrollmentAttempted || this.#schematicProducerGuardOperation !== argumentsValue || !this.#schematicProducerModeVerified || reproof === null || worker === null || !worker.status().ready || !this.#schematicStages.has("preflight") || this.#schematicStages.has("modify") || this.#schematicStages.has("save")) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_UNAVAILABLE"); }
@@ -2147,6 +2151,10 @@ class CurrentPcbRetainedOwnerCore {
     requireViaPlan(this, plan);
     if (this.#busy || this.#viaTransportSetup !== null || this.#viaStructureSetup === null || this.#viaWorkerController !== null || this.#projectOpeningConsumed || typeof setup !== "function" || types.isProxy(setup)) { throw error("PROJECT_STRUCTURE_TRANSPORT_ARM_UNAVAILABLE"); }
     this.#viaTransportOperation = plan; this.#viaTransportSetup = setup;
+  }
+  public requireViaProducerPrefixReady(plan: CurrentPcbViaWritePlan): CurrentPcbViaSaveProducerPrefix {
+    requireViaPlan(this, plan); const token = this.#viaProducerPrefix; if (token === null) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_READY_REQUIRED"); }
+    requireOriginalCurrentProjectSaveProducerPrefix(token, this, plan); return token;
   }
   public async enrollViaProducerPrefix(plan: CurrentPcbViaWritePlan): Promise<CurrentPcbViaSaveProducerPrefix> {
     requireViaPlan(this, plan); const reproof = this.#viaProducerGuardReproof, worker = this.#viaWorkerController;

@@ -26,6 +26,9 @@ bootstrap, mode request and stage flags plus the live original root. The
 central WeakMap issues a distinct original prefix token. Copied fields cannot
 issue or transfer it. Via create now additionally requires this enrollment;
 the original durable create intent is still consumed before dispatch awaits.
+`requireViaProducerPrefixReady` and its schematic counterpart retrieve only
+that exact already-issued token, for prospective main enrollment without a
+caller-supplied prefix. They issue nothing and refuse before enrollment.
 
 This token establishes guard coverage before action. It explicitly leaves
 planned producer continuation and the complete upload frontier false. An SDK
