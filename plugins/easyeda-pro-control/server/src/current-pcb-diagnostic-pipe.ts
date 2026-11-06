@@ -44,6 +44,12 @@ import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-re
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_PCB_SPATIAL_DISCOVERY_METHODS, CURRENT_PCB_SPATIAL_PROFILE, CURRENT_PCB_SPATIAL_REQUEST_DERIVATION, currentPcbSpatialBindingSchema } from "./current-pcb-spatial-profile.ts";
 import type { CurrentPcbSpatialBinding } from "./current-pcb-spatial-profile.ts";
+import { currentPcbViaWriteCommand } from "./current-pcb-via-write-protocol.ts";
+import type { CurrentPcbViaObservationPhase, CurrentPcbViaSdkPropertiesCommand, CurrentPcbViaSpatialCommand, CurrentPcbViaWriteCommand } from "./current-pcb-via-write-protocol.ts";
+import type { CurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
+import { currentPcbViaWriteProgramArguments } from "./current-pcb-via-write-program.ts";
+import type { CurrentPcbViaWriteStage } from "./current-pcb-via-write-program.ts";
+import { CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE } from "./current-pcb-via-write-native-profile.ts";
 import { currentPcbSpatialWire } from "./current-pcb-spatial-protocol.ts";
 import type { CurrentPcbSpatialWireCommand } from "./current-pcb-spatial-protocol.ts";
 import type { CurrentPcbSpatialCaptureCommand } from "./current-pcb-spatial-capture-runner.ts";
@@ -69,7 +75,7 @@ type RequestPhase = "generated-fixture-register" | "renderer-capture209" | "disc
   `actor-clock-${CurrentPcbStringActorClockCommand["actorClockPhase"]}` | `move-${CurrentPcbStringMoveCommand["movePhase"]}` |
   `saved-cache-${CurrentFootprintSavedCacheCommand["cacheNativePhase"]}` |
   `saved-accessor-${CurrentFootprintSavedCacheAccessorCommand["cacheAccessorPhase"]}` |
-  `held-cache-${CurrentFootprintSavedCacheHeldCommand["heldCachePhase"]}` | `spatial-${CurrentPcbSpatialCaptureCommand["spatialPhase"]}`;
+  `held-cache-${CurrentFootprintSavedCacheHeldCommand["heldCachePhase"]}` | `via-sdk-${CurrentPcbViaWriteStage}` | `via-spatial-${CurrentPcbViaObservationPhase}-${CurrentPcbSpatialCaptureCommand["spatialPhase"]}` | `spatial-${CurrentPcbSpatialCaptureCommand["spatialPhase"]}`;
 const HELD_CACHE_PHASES = ["capture", "array-properties", "constructor-properties", "match-properties", "getter-properties", "recheck-before-getter",
   "retain-receiver", "queue-first", "recheck-first", "queue-fresh", "recheck-fresh"] as const;
 const REQUEST_METHODS = [
@@ -167,6 +173,10 @@ class CurrentPcbFixedPipeCore {
   readonly #startupPurpose: boolean;
   readonly #combinedPurpose: boolean;
   readonly #heldCacheDiagnosticPurpose: boolean;
+  readonly #viaPurpose: boolean;
+  readonly #viaSpatial = { before: { binding: null as CurrentPcbSpatialBinding | null, stage: 0, read: false, released: false }, after: { binding: null as CurrentPcbSpatialBinding | null, stage: 0, read: false, released: false } };
+  #viaProperties = 0;
+  readonly #viaStages = new Set<CurrentPcbViaWriteStage>();
   readonly #spatialPurpose: boolean;
   readonly #spatialSources = new Set<string>();
   #spatialBinding: CurrentPcbSpatialBinding | null = null;
@@ -213,7 +223,7 @@ class CurrentPcbFixedPipeCore {
   #workerDiscoverySettled = false;
   #selectedWorkerSession: string | null = null;
 
-  public constructor(input: Readable, output: Writable, purpose: "diagnostic" | "string-precreate" | "worker-startup" | "combined-discovery" | "forward-discovery" | "forward-saved-discovery" | "held-cache-diagnostic" | "pcb-spatial209",
+  public constructor(input: Readable, output: Writable, purpose: "diagnostic" | "string-precreate" | "worker-startup" | "combined-discovery" | "forward-discovery" | "forward-saved-discovery" | "held-cache-diagnostic" | "pcb-spatial209" | "pcb-via-write209",
     observeEventBytes: ((bytes: number) => void) | null = null) {
     if ((purpose === "forward-discovery" || purpose === "forward-saved-discovery" || purpose === "held-cache-diagnostic") !== (observeEventBytes !== null) || observeEventBytes !== null && typeof observeEventBytes !== "function") { throw new Error("PCB_DIAGNOSTIC_FORWARD_ACCOUNTING"); }
     this.#observeEventBytes = observeEventBytes;
@@ -221,7 +231,7 @@ class CurrentPcbFixedPipeCore {
     this.#startupPurpose = purpose === "worker-startup" || purpose === "combined-discovery" || purpose === "forward-discovery" || purpose === "forward-saved-discovery";
     this.#combinedPurpose = purpose === "combined-discovery" || purpose === "forward-discovery";
     this.#heldCacheDiagnosticPurpose = purpose === "held-cache-diagnostic";
-    this.#spatialPurpose = purpose === "pcb-spatial209";
+    this.#spatialPurpose = purpose === "pcb-spatial209"; this.#viaPurpose = purpose === "pcb-via-write209";
   }
 
   /** One clean transfer of the original counter and receive budgets. Listeners
@@ -347,7 +357,7 @@ class CurrentPcbFixedPipeCore {
   public async getScriptSource(scriptId: string): Promise<Reply> {
     if (this.#sessionId === null || !diagnosticToken(scriptId)) { throw new Error("PCB_DIAGNOSTIC_PIPE_SCRIPT_INPUT"); }
     const result = await this.#request({ id: this.#nextId, method: "Debugger.getScriptSource", params: { scriptId }, sessionId: this.#sessionId });
-    if (this.#spatialPurpose && typeof result["scriptSource"] === "string") { this.#spatialSources.add(scriptId); }
+    if ((this.#spatialPurpose || this.#viaPurpose) && typeof result["scriptSource"] === "string") { this.#spatialSources.add(scriptId); }
     return result;
   }
   /** Only the new birth can seal its already observed original PCB realm.
@@ -399,6 +409,42 @@ class CurrentPcbFixedPipeCore {
       }
     }
     return this.#request(fixed.command, `spatial-${phase}`);
+  }
+  protected bindViaSpatialCommand(phase: CurrentPcbViaObservationPhase, input: CurrentPcbSpatialBinding): void {
+    const state = this.#viaSpatial[phase];
+    if (!this.#viaPurpose || state.binding !== null || this.#pending !== null || this.#sessionId === null || this.#failure !== null ||
+      phase === "after" && !this.#viaSpatial.before.released) { throw new Error("PCB_VIA_SCENE_BINDING"); }
+    const binding = freezeDeep(currentPcbSpatialBindingSchema.parse(captureCurrentPcbStringClockReply(input).value));
+    if (!this.#spatialSources.has(binding.scriptId)) { throw new Error("PCB_VIA_SCENE_SOURCE"); }
+    state.binding = binding;
+  }
+  protected observeViaSpatialCommand(phase: CurrentPcbViaObservationPhase, input: CurrentPcbSpatialCaptureCommand): Promise<Reply> {
+    const state = this.#viaSpatial[phase];
+    const binding = state.binding;
+    if (!this.#viaPurpose || binding === null || this.#sessionId === null || state.released) { throw new Error("PCB_VIA_SCENE_PURPOSE"); }
+    const wire = currentPcbSpatialWire(input, 1, this.#sessionId);
+    const command = wire.command, step = command.spatialPhase;
+    if (step === "release") { if (state.stage === 0) { throw new Error("PCB_VIA_SCENE_SEQUENCE"); } state.released = true; }
+    else if (step === "properties") { if (state.stage < 1 || state.stage > 4) { throw new Error("PCB_VIA_SCENE_SEQUENCE"); } }
+    else if (step === "read-track") { if (state.stage !== 4 || state.read) { throw new Error("PCB_VIA_SCENE_SEQUENCE"); } state.read = true; }
+    else {
+      if ((["wrapper", "handler", "bindings-track", "functions"] as const)[state.stage] !== step ||
+        step === "wrapper" && command.params.uniqueContextId !== binding.uniqueContextId) { throw new Error("PCB_VIA_SCENE_SEQUENCE"); }
+      state.stage += 1;
+    }
+    return this.#request({ ...command, id: this.#nextId, viaObservationPhase: phase }, `via-spatial-${phase}-${step}`);
+  }
+  protected observeViaSdkPropertiesCommand(objectId: string): Promise<Reply> {
+    if (!this.#viaPurpose || !this.#viaStages.has("capture") || this.#viaStages.size !== 1 || this.#viaProperties >= 3 || this.#sessionId === null || !diagnosticToken(objectId)) { throw new Error("PCB_VIA_SDK_PROPERTIES"); }
+    this.#viaProperties += 1;
+    return this.#request({ id: this.#nextId, viaSdkProperties: true, method: "Runtime.getProperties", params: { objectId, ownProperties: true,
+      accessorPropertiesOnly: false, generatePreview: false }, sessionId: this.#sessionId });
+  }
+  protected observeViaStageCommand(stage: CurrentPcbViaWriteStage, binding: string, plan: CurrentPcbViaWritePlan): Promise<Reply> {
+    if (!this.#viaPurpose || this.#sessionId === null || this.#viaStages.has(stage) || stage !== "capture" && !this.#viaStages.has("capture")) { throw new Error("PCB_VIA_SDK_SEQUENCE"); }
+    const command = currentPcbViaWriteCommand(stage, binding, currentPcbViaWriteProgramArguments(plan));
+    this.#viaStages.add(stage);
+    return this.#request({ id: this.#nextId, ...command, sessionId: this.#sessionId }, `via-sdk-${stage}`);
   }
   /** Original newly observed child frame only. The owner/context validates the
    * reciprocal DOM node; no caller selectors or recursive DOM traversal. */
@@ -633,7 +679,7 @@ class CurrentPcbFixedPipeCore {
    * write ambiguity fails the pipe and never grants an automatic resend.
    */
   // oxlint-disable-next-line eslint/require-await -- Async converts pre-dispatch guards to rejected promises; native completion is callback-based.
-  async #request(command: DiagnosticCommand | CurrentPcbSpatialWireCommand | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheHeldCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
+  async #request(command: DiagnosticCommand | CurrentPcbSpatialWireCommand | ((CurrentPcbViaWriteCommand | CurrentPcbViaSpatialCommand | CurrentPcbViaSdkPropertiesCommand) & Readonly<{ id: number; sessionId: string }>) | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheHeldCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
     Readonly<{ id: number; sessionId: string }>), phase: RequestPhase = "discovery"): Promise<Reply> {
     if (!this.#started || this.#released || this.#handedOff) { throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED"); }
     const spatial = this.#spatialPurpose && "spatialPhase" in command && phase.startsWith("spatial-");
@@ -661,6 +707,7 @@ class CurrentPcbFixedPipeCore {
     let limit = this.#stringPurpose ? CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT : DIAGNOSTIC_REQUEST_LIMIT;
     if (this.#heldCacheDiagnosticPurpose) { limit = HELD_DIAGNOSTIC.requestLimit; }
     if (this.#spatialPurpose) { limit = CURRENT_PCB_SPATIAL_PROFILE.requestLimit; }
+    if (this.#viaPurpose) { limit = CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.renderer.total; }
     const heldCleanup = heldCache && command.method === "Runtime.releaseObjectGroup";
     if (this.#nextId > limit || this.#heldCacheDiagnosticPurpose && (heldCleanup ? this.#heldCacheCleanup >= HELD_DIAGNOSTIC.cleanupRequestLimit :
       this.#heldCacheNormal >= HELD_DIAGNOSTIC.normalRequestLimit)) {
@@ -823,6 +870,15 @@ export class CurrentPcbSpatialPipe extends CurrentPcbFixedPipeCore {
   public assertSpatialCapacity(): void { this.assertSpatialWorkflowCapacity(); }
   public bindSpatial(binding: CurrentPcbSpatialBinding): void { this.bindSpatialCommand(binding); }
   public observeSpatial(command: CurrentPcbSpatialCaptureCommand): Promise<Reply> { return this.observeSpatialCommand(command); }
+}
+/** Original Via birth only. Each whole-scene capture has its own immutable
+ * ledger; no old spatial pipe is reset or transferred. */
+export class CurrentPcbViaWritePipe extends CurrentPcbFixedPipeCore {
+  public constructor(input: Readable, output: Writable) { super(input, output, "pcb-via-write209"); }
+  public bindViaSpatial(phase: CurrentPcbViaObservationPhase, binding: CurrentPcbSpatialBinding): void { this.bindViaSpatialCommand(phase, binding); }
+  public observeViaSpatial(phase: CurrentPcbViaObservationPhase, command: CurrentPcbSpatialCaptureCommand): Promise<Reply> { return this.observeViaSpatialCommand(phase, command); }
+  public observeViaSdkProperties(objectId: string): Promise<Reply> { return this.observeViaSdkPropertiesCommand(objectId); }
+  public observeViaStage(stage: CurrentPcbViaWriteStage, binding: string, plan: CurrentPcbViaWritePlan): Promise<Reply> { return this.observeViaStageCommand(stage, binding, plan); }
 }
 /** Internal, unregistered String pre-create profile. It has no create/Save
  * vocabulary and cannot extend an existing diagnostic pipe's lifetime budget. */

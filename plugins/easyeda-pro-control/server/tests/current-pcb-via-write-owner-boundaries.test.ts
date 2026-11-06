@@ -1,0 +1,89 @@
+/* oxlint-disable import/max-dependencies -- Compare original owner issuance with the independent fixed/native grammars, SDK metadata and released capacities. */
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { test } from "node:test";
+import { CURRENT_PCB_VIA_WRITE_FUNCTION, CURRENT_PCB_VIA_WRITE_SDK_METHODS } from "../src/current-pcb-via-write-program.ts";
+import { currentPcbViaWriteCommand, currentPcbViaWriteNativeRequest } from "../src/current-pcb-via-write-protocol.ts";
+import { CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE as PROFILE } from "../src/current-pcb-via-write-native-profile.ts";
+import { decodeCurrentPcbViaSdkMethod, decodeCurrentPcbViaSdkTuple, qualifyCurrentPcbViaSdkSource } from "../src/current-pcb-via-write-sdk-source.ts";
+import { applyCurrentPcbViaWriteNativeFragment } from "../src/current-pcb-via-write-native-fragment.ts";
+import { applyManagedFixtureRegistrationNativeFragment } from "../src/managed-fixture-registration-native-fragment.ts";
+import { applyCurrentProjectStructureNativeFragment } from "../src/current-project-structure-native-fragment.ts";
+import { diagnosticNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
+import { spatialDiagnosticNativeRequest } from "../src/current-pcb-spatial-protocol.ts";
+import { currentSelectedFileMainSqlFenceNativeCases, currentSelectedFileMainSqlFenceNativeSource, currentSelectedFileMainSqlFenceWire } from "../src/current-selected-file-main-sql-fence-native.ts";
+import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SOURCE, qualifyCurrentSelectedFileMainSqlFenceSource } from "../src/current-selected-file-main-sql-fence-source.ts";
+import { requireCurrentSelectedFileMainSqlFenceBootstrap } from "../src/current-selected-file-main-sql-fence-bootstrap.ts";
+
+const rawWindowsPath = String.raw`C:\Synthetic\Codex_via_only_1111111111111111.eprj2`;
+const target = { rawWindowsPath, projectUuid: createHash("sha256").update(rawWindowsPath).digest("hex"), branchUuid: "b".repeat(32), documentUuid: "c".repeat(32), expectedSourceSha256: "d".repeat(64) };
+const operation = { operationId: "pcb209-via-write-one-test", via: { netName: "", xMil: 1, yMil: 2, holeDiameterMil: 3, diameterMil: 4,
+  viaType: 0, designRuleBlindViaName: "", solderMaskExpansion: { topSolderMask: 0, bottomSolderMask: 0 }, primitiveLock: false } } as const;
+function compose(source: string): string { return applyCurrentPcbViaWriteNativeFragment(applyManagedFixtureRegistrationNativeFragment(applyCurrentProjectStructureNativeFragment(source))); }
+function bytes(value: unknown): Buffer { return Buffer.from(`${JSON.stringify(value)}\0`); }
+function property(name: string, value: Record<string, unknown>): Record<string, unknown> { return { name, value, writable: false, enumerable: false, configurable: true, isOwn: true }; }
+function metadata(kind: "create" | "save"): Record<string, unknown> {
+  return { result: [property("name", { type: "string", value: kind }), property("length", { type: "number", value: kind === "create" ? 9 : 0 })],
+    internalProperties: [{ name: "[[FunctionLocation]]", value: { type: "object", subtype: "internal#location", value: { scriptId: "api", lineNumber: 37, columnNumber: kind === "create" ? 41_170 : 139_882 } } },
+      { name: "[[Scopes]]", value: { type: "object", subtype: "internal#scopeList", objectId: "scopes" } }, { name: "[[Prototype]]", value: { type: "function", objectId: "prototype" } }] };
+}
+void test("new SDK wire contains fixed scalars only and cannot be spent by released103/384 grammars", () => {
+  for (const stage of ["capture", "preflight", "create", "observe", "save"] as const) {
+    const command = { id: PROFILE.renderer.total, ...currentPcbViaWriteCommand(stage, "original", { target, operation }), sessionId: "session" };
+    const wire = currentPcbViaWriteNativeRequest(bytes(command)); assert.equal(wire["action"], "pcb-via-sdk"); assert.equal(wire["viaWritePhase"], stage);
+    for (const field of ["functionDeclaration", "arguments", "via", "requestLimit", "purpose"]) { assert.equal(Object.hasOwn(wire, field), false); }
+    assert.throws(() => diagnosticNativeRequest(bytes(command))); assert.throws(() => spatialDiagnosticNativeRequest(bytes(command)));
+    assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, id: PROFILE.renderer.total + 1 })));
+    assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, functionDeclaration: `${CURRENT_PCB_VIA_WRITE_FUNCTION}\n` } })));
+    assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, awaitPromise: false } })));
+  }
+  assert.equal(PROFILE.renderer.total, 700); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [288, 8, 296]);
+});
+void test("retained SDK methods require exact original installed function locations, names and arity", () => {
+  for (const kind of ["create", "save"] as const) { assert.equal(decodeCurrentPcbViaSdkMethod(metadata(kind), kind), "api"); }
+  const native = metadata("create"); Reflect.set(native, "internalProperties", []); assert.throws(() => decodeCurrentPcbViaSdkMethod(native, "create"));
+  const copied = metadata("create"); Reflect.set(copied, "result", [property("name", { type: "string", value: "create" }), property("length", { type: "number", value: 8 })]);
+  assert.throws(() => decodeCurrentPcbViaSdkMethod(copied, "create")); assert.throws(() => decodeCurrentPcbViaSdkMethod(metadata("create"), "save"));
+  const result = Array.from({ length: 9 }, (_value, index) => property(String(index), index === 3 || index === 6 ? { type: "function", className: "AsyncFunction",
+    objectId: index === 3 ? "original-create" : "original-save", description: CURRENT_PCB_VIA_WRITE_SDK_METHODS[index === 3 ? "create" : "save"] } : { type: "object", objectId: `member${String(index)}` }));
+  result.push(property("length", { type: "number", value: 9 }));
+  const tuple = { result, internalProperties: [{ name: "[[Prototype]]", value: { type: "object", objectId: "array" } }] };
+  assert.deepEqual(decodeCurrentPcbViaSdkTuple(tuple), { create: "original-create", save: "original-save" });
+  result.pop(); assert.throws(() => decodeCurrentPcbViaSdkTuple(tuple));
+});
+void test("full API pin refuses small sources, proxies and getters before touching them", () => {
+  let calls = 0; const rejected = (): never => { calls += 1; throw new Error("effectful source"); };
+  assert.throws(() => { qualifyCurrentPcbViaSdkSource({ scriptSource: CURRENT_PCB_VIA_WRITE_SDK_METHODS.create }); });
+  assert.throws(() => { qualifyCurrentPcbViaSdkSource(Object.defineProperty({}, "scriptSource", { get: rejected })); });
+  assert.throws(() => { qualifyCurrentPcbViaSdkSource(new Proxy({}, { ownKeys: rejected, getPrototypeOf: rejected })); }); assert.equal(calls, 0);
+});
+void test("early fence vocabulary retains fixed source sites and admits no arbitrary conditions, SQL or caller programs", () => {
+  const cases = currentSelectedFileMainSqlFenceNativeCases(); assert.equal(cases.length, 51);
+  for (const command of cases) {
+    const wire = currentSelectedFileMainSqlFenceWire(command, PROFILE.main.total); assert.equal(wire.request["action"], "main-send");
+    for (const field of ["condition", "lineNumber", "functionDeclaration", "sql", "sessionId"]) { assert.equal(Object.hasOwn(wire.request, field), false); }
+    assert.throws(() => currentSelectedFileMainSqlFenceWire({ ...command, extra: "caller" }, 1));
+  }
+  assert.match(currentSelectedFileMainSqlFenceNativeSource(), /EasyedaDiagnosticFixedTable\.Load/u);
+  assert.equal(SOURCE.sites.import.breakpointColumnNumber, 20_050); assert.equal(SOURCE.sites.afterImports.breakpointColumnNumber, 20_158);
+  assert.throws(() => qualifyCurrentSelectedFileMainSqlFenceSource("copied-source"));
+});
+void test("matching bootstrap and owner JSON cannot mint original native ownership or observation packets", async () => {
+  assert.throws(() => requireCurrentSelectedFileMainSqlFenceBootstrap({ profile: "private.selected-file-main-sql-fence-bootstrap.v1", executionAuthorized: false }, {}));
+  const owner = await import("../src/current-pcb-via-write-owner.ts");
+  const forged: unknown = Object.create(owner.CurrentPcbViaWriteOwner.prototype);
+  // Deliberate untyped runtime forgery; no constructor or native process runs.
+  assert.throws(() => Reflect.apply(owner.assertOriginalCurrentPcbViaWriteOwner, undefined, [forged]));
+  for (const lookup of [owner.requireOriginalCurrentPcbViaNativeObservation, owner.requireOriginalCurrentPcbViaSceneObservation, owner.requireOriginalCurrentPcbViaWriteStage]) {
+    assert.throws(() => Reflect.apply(lookup, undefined, [forged, {}, {}, "before"]));
+  }
+});
+void test("composed native fragment is idempotent and keeps old births, caps and primitive methods separate", async () => {
+  const original = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const generated = compose(original); assert.equal(compose(generated), generated); assert.ok(Buffer.byteLength(generated) < 2 * 1024 * 1024);
+  for (const text of ["EasyedaPcbViaWriteBirth", "CreatePcbViaWrite209()", "via-old-birth-smoke", "via-retain-main-until-exit", "viaConstructionComplete", "stage==\"save\"", "pcb-diagnostic-conflicting-via-purpose",
+    "return pcbViaWrite209?700:spatial209?384:workerStartup?256:stringPrecreate?3309:103", "viaSdkProperties>=3", "SendPcbViaSpatial"]) { assert.ok(generated.includes(text), text); }
+  assert.equal(generated.includes("sqlite3.Database="), false); assert.equal(generated.includes("Object.setPrototypeOf(sc.Database"), false);
+  assert.throws(() => compose(original.replace("[switch]$StringPrecreate,", "[switch]$ForeignPurpose,")), /ANCHOR/u);
+});
