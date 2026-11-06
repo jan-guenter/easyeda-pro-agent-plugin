@@ -41,6 +41,7 @@ export class CurrentPcbViaWorkerController {
   #source: CurrentPcbViaProjectSourceHeld | null = null;
   #result: CurrentPcbViaWorkerBootstrapResult | null = null;
   #work: Promise<void> | null = null;
+  readonly #sourceResumed = Promise.withResolvers<boolean>();
   #pumping = false; #reading = false; #failed = false; #parentRunning = false; #loaded = false; #eventCount = 0;
   public constructor(bindings: CurrentPcbViaWorkerControllerBindings) {
     need(bindings !== null && typeof bindings === "object" && !types.isProxy(bindings) && Object.getPrototypeOf(bindings) === Object.prototype && Object.isFrozen(bindings));
@@ -64,7 +65,7 @@ export class CurrentPcbViaWorkerController {
   public status(): Readonly<{ ready: boolean; pumping: boolean; failed: boolean; projectSourceHeld: boolean; originalWorkerSelected: boolean }> {
     return Object.freeze({ ready: this.#result !== null, pumping: this.#pumping, failed: this.#failed, projectSourceHeld: this.#source !== null, originalWorkerSelected: this.#child !== null });
   }
-  public fail(): void { this.#failed = true; this.#bindings.fail(); }
+  public fail(): void { this.#failed = true; this.#sourceResumed.resolve(false); this.#bindings.fail(); }
   /** Private original object identity, also usable for historical retirement. */
   public requireHeld(source: CurrentPcbViaProjectSourceHeld): CurrentPcbViaWorkerChild {
     need(this.#source === source && this.#child !== null && this.#runner !== null); return this.#child;
@@ -144,6 +145,9 @@ export class CurrentPcbViaWorkerController {
     if (event.sessionId !== this.#bindings.parentSessionId || this.#result === null || !["Debugger.paused", "Debugger.resumed", "Debugger.breakpointResolved"].includes(event.method)) { return false; }
     this.observeEvent(event); return true;
   }
+  /** Pure retained barrier. It never infers completion from elapsed time or
+   * starts another native poll; the original abort/failure settles false. */
+  public async whenOriginalSourceResumed(): Promise<void> { const resumed = await this.#sourceResumed.promise; need(resumed && !this.#failed && this.#result !== null && this.#router !== null); }
   public nextSaveEvent(): Promise<CurrentPcbViaRoutedEvent> { return this.#eventRouter().next("save"); }
   public nextClockEvent(): Promise<CurrentPcbViaRoutedEvent> { return this.#eventRouter().next("clock"); }
   public bindClockBreakpoint(source: CurrentPcbViaProjectSourceHeld, point: CurrentPcbViaEventPoint): void {
@@ -174,7 +178,7 @@ export class CurrentPcbViaWorkerController {
     const router = new CurrentPcbViaEventRouter(Object.freeze({ workerSessionId: child.sessionId, uiSessionId: this.#bindings.parentSessionId,
       nextEvent: (): Promise<DiagnosticEvent> => this.#nextObservedEvent(), assertCurrent: (): Promise<void> => this.#current(), fail: (): void => { this.fail(); } }));
     for (const [role, breakpointId] of this.#savePoints) { const site = CURRENT_PCB_VIA_SAVE_SITES[role]; router.register("save", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
-    this.#router = router;
+    this.#router = router; this.#sourceResumed.resolve(true);
   }
   /** The outer original renderer call drives this, including its still-pending
    * project-open Promise. Nested observer transfers never start a second pump. */

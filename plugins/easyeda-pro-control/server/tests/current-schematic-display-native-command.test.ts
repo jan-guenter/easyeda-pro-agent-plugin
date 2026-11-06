@@ -11,13 +11,13 @@ const operation = { operationId: "sch209-display-native-codec", textId: "text-1"
 function wire(value: unknown): Buffer { return Buffer.from(`${JSON.stringify(value)}\0`); }
 void test("only seven fixed original SCH source calls encode, with bounded inert target/operation arguments", () => {
   for (const phase of ["start", "navigate", "capture", "preflight", "modify", "observe", "save"] as const) {
-    const original = command(phase, "original-binding", target, operation), raw = { id: 63, ...original, sessionId: "original-session" };
+    const original = command(phase, "original-binding", target, operation), raw = { id: 129, ...original, sessionId: "original-session" };
     assert.deepEqual(validate(original), original); const encoded = encode(wire(raw));
-    assert.equal(encoded["action"], "schematic-display-native"); assert.equal(encoded["phase"], phase); assert.equal(encoded["requestId"], 63);
+    assert.equal(encoded["action"], "schematic-display-native"); assert.equal(encoded["phase"], phase); assert.equal(encoded["requestId"], 129);
     assert.equal(Object.hasOwn(encoded, "functionDeclaration"), false); assert.ok(wire(raw).length <= 65_536);
     assert.throws(() => encode(wire({ ...raw, params: { ...original.params, functionDeclaration: "function(){return true}" } })));
     assert.throws(() => encode(wire({ ...raw, callerCode: "void 0" })));
-    assert.throws(() => encode(wire({ ...raw, id: 64 })));
+    assert.throws(() => encode(wire({ ...raw, id: 130 })));
   }
 });
 void test("source call selectors, context kinds and canonical JSON cannot drift across encoding", () => {

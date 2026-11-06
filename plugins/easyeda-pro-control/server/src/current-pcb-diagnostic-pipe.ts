@@ -8,6 +8,9 @@
  * application-closure policy permits release. No TCP endpoint is supported. */
 /* oxlint-disable max-classes-per-file -- Three fixed-purpose facades share a private byte-transport core without exposing a caller-selectable purpose or budget. */
 /* oxlint-disable import/max-dependencies -- Fixed transport composes independent model/common/worker/actor grammars without merging their source or authority boundaries. */
+import { currentSchematicDisplayWorkerWire } from "./current-schematic-display-worker-wire.ts";
+import type { CurrentSchematicDisplayWorkerCommand } from "./current-schematic-display-worker-wire.ts";
+import { CURRENT_SCHEMATIC_DISPLAY_WORKER_PARENT_PARAMS, CURRENT_SCHEMATIC_DISPLAY_WORKER_RUNNING_PARAMS } from "./current-schematic-display-worker-bootstrap-protocol.ts";
 import { currentSchematicDisplayNativeCommand } from "./current-schematic-display-native-command.ts";
 import type { CurrentSchematicDisplayNativeCommand, CurrentSchematicDisplayNativePhase } from "./current-schematic-display-native-command.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_DISCOVERY_METHODS, CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE } from "./current-schematic-display-write-native-profile.ts";
@@ -80,7 +83,8 @@ type FailureReason = Failure | "empty-frame" | "nonobject-frame" | "reply-unsoli
 type ViaClockWireCommand = CurrentPcbViaClockCommand & Readonly<{ viaClockCommand: true; viaClockRealm: CurrentPcbViaClockRealm }>;
 type ViaWorkerParentCommand = Readonly<{ viaWorkerParentPhase: "arm"; method: "Target.setAutoAttach"; params: typeof CURRENT_PCB_VIA_WORKER_PARENT_PARAMS }> |
   Readonly<{ viaWorkerParentPhase: "running"; method: "Target.setAutoAttach"; params: typeof CURRENT_PCB_VIA_WORKER_RUNNING_PARAMS }>;
-type RequestPhase = `schematic-display-${CurrentSchematicDisplayNativePhase}` | "via-clock" | "via-worker" | "via-parent-arm" | "via-parent-running" | "generated-fixture-register" | "renderer-capture209" | "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
+type SchematicWorkerParentCommand = Readonly<{ schematicWorkerParentPhase: "arm"; method: "Target.setAutoAttach"; params: typeof CURRENT_SCHEMATIC_DISPLAY_WORKER_PARENT_PARAMS }> | Readonly<{ schematicWorkerParentPhase: "running"; method: "Target.setAutoAttach"; params: typeof CURRENT_SCHEMATIC_DISPLAY_WORKER_RUNNING_PARAMS }>;
+type RequestPhase = "schematic-worker" | "schematic-parent-arm" | "schematic-parent-running" | `schematic-display-${CurrentSchematicDisplayNativePhase}` | "via-clock" | "via-worker" | "via-parent-arm" | "via-parent-running" | "generated-fixture-register" | "renderer-capture209" | "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
   `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "visual209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209" |
   `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}` |
   `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}` | `worker-producer-${CurrentPcbStringWorkerProducerCommand["workerProducerPhase"]}` |
@@ -188,6 +192,10 @@ class CurrentPcbFixedPipeCore {
   readonly #viaPurpose: boolean;
   readonly #schematicDisplayPurpose: boolean;
   readonly #viaSpatial = { before: { binding: null as CurrentPcbSpatialBinding | null, stage: 0, read: false, released: false }, after: { binding: null as CurrentPcbSpatialBinding | null, stage: 0, read: false, released: false } };
+  #schematicWorkerEvent: ((event: DiagnosticEvent) => void) | null = null;
+  #schematicWorkerSession: string | null = null;
+  #schematicParentRunning = false;
+  readonly #schematicWaitingWorkers = new Set<string>();
   #viaProperties = 0;
   #viaWorkerEvent: ((event: DiagnosticEvent) => void) | null = null;
   #viaWorkerSession: string | null = null;
@@ -477,6 +485,28 @@ class CurrentPcbFixedPipeCore {
     const wire = currentPcbViaWorkerWire(input, this.#nextId);
     return this.#request({ id: this.#nextId, ...wire.command, viaWorkerCommand: true, sessionId: this.#viaWorkerSession }, "via-worker");
   }
+  protected enableSchematicDisplayWorkerDiscoveryCommand(event: (value: DiagnosticEvent) => void): Promise<Reply> {
+    if (!this.#schematicDisplayPurpose || this.#sessionId === null || this.#schematicWorkerEvent !== null || this.#workerEvent !== null || this.#pending !== null || this.#viaRetainedPending !== null) { throw new Error("SCHEMATIC_DISPLAY_PARENT_ARM"); }
+    this.#schematicWorkerEvent = event;
+    return this.#request({ id: this.#nextId, schematicWorkerParentPhase: "arm", method: "Target.setAutoAttach", params: CURRENT_SCHEMATIC_DISPLAY_WORKER_PARENT_PARAMS,
+      sessionId: this.#sessionId }, "schematic-parent-arm");
+  }
+  protected configureSchematicDisplayWorkerRunningCommand(): Promise<Reply> {
+    if (!this.#schematicDisplayPurpose || this.#sessionId === null || this.#schematicWorkerSession === null || this.#schematicWorkerEvent === null || this.#schematicParentRunning) { throw new Error("SCHEMATIC_DISPLAY_PARENT_RUNNING"); }
+    this.#schematicParentRunning = true;
+    return this.#request({ id: this.#nextId, schematicWorkerParentPhase: "running", method: "Target.setAutoAttach", params: CURRENT_SCHEMATIC_DISPLAY_WORKER_RUNNING_PARAMS,
+      sessionId: this.#sessionId }, "schematic-parent-running");
+  }
+  protected bindSchematicDisplayWorkerCommand(sessionId: string, targetId: string): void {
+    if (!this.#schematicDisplayPurpose || this.#schematicWorkerSession !== null || this.#schematicWorkerEvent === null || this.#workerSessions.get(sessionId) !== targetId ||
+      !this.#schematicWaitingWorkers.has(sessionId) || sessionId === this.#sessionId) { throw new Error("SCHEMATIC_DISPLAY_WORKER_ORIGINAL_ATTACHMENT"); }
+    this.#schematicWorkerSession = sessionId;
+  }
+  protected observeSchematicDisplayWorkerCommand(input: CurrentSchematicDisplayWorkerCommand): Promise<Reply> {
+    if (!this.#schematicDisplayPurpose || this.#schematicWorkerSession === null || this.#workerSessions.get(this.#schematicWorkerSession) === undefined) { throw new Error("SCHEMATIC_DISPLAY_WORKER_ORIGINAL_SESSION"); }
+    const wire = currentSchematicDisplayWorkerWire(input, this.#nextId);
+    return this.#request({ id: this.#nextId, ...wire.command, schematicWorkerCommand: true, sessionId: this.#schematicWorkerSession }, "schematic-worker");
+  }
   protected bindViaClockCommand(workerContext: string, uiSdk: string): void {
     if (!this.#viaPurpose || this.#viaClockBinding !== null || !this.#viaParentRunning || !this.#viaStages.has("create") || !diagnosticToken(workerContext) || !diagnosticToken(uiSdk)) { throw new Error("PCB_VIA_CLOCK_BINDING"); }
     this.#viaClockBinding = Object.freeze({ workerContext, uiSdk });
@@ -521,7 +551,7 @@ class CurrentPcbFixedPipeCore {
   /** One fixed direct-child discovery on the original page. No recursive
    * autoattachment, debugger waiting, detached adoption or caller target URL. */
   public async enableWorkerDiscovery(event: (value: DiagnosticEvent) => void): Promise<Reply> {
-    if (this.#viaPurpose || this.#sessionId === null || this.#workerEvent !== null || this.#pending !== null) {
+    if (this.#viaPurpose || this.#schematicDisplayPurpose || this.#sessionId === null || this.#workerEvent !== null || this.#pending !== null) {
       throw new Error("PCB_DIAGNOSTIC_PIPE_WORKER_DISCOVERY_INPUT");
     }
     this.#workerEvent = event;
@@ -737,7 +767,7 @@ class CurrentPcbFixedPipeCore {
    * write ambiguity fails the pipe and never grants an automatic resend.
    */
   // oxlint-disable-next-line eslint/require-await -- Async converts pre-dispatch guards to rejected promises; native completion is callback-based.
-  async #request(command: (CurrentSchematicDisplayNativeCommand & Readonly<{ id: number; sessionId: string }>) | DiagnosticCommand | CurrentPcbSpatialWireCommand | ((CurrentPcbViaWriteCommand | CurrentPcbViaSpatialCommand | CurrentPcbViaSdkPropertiesCommand | ViaWorkerParentCommand | ViaClockWireCommand | (CurrentPcbViaWorkerCommand & Readonly<{ viaWorkerCommand: true }>)) & Readonly<{ id: number; sessionId: string }>) | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheHeldCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
+  async #request(command: ((SchematicWorkerParentCommand | (CurrentSchematicDisplayWorkerCommand & Readonly<{ schematicWorkerCommand: true }>)) & Readonly<{ id: number; sessionId: string }>) | (CurrentSchematicDisplayNativeCommand & Readonly<{ id: number; sessionId: string }>) | DiagnosticCommand | CurrentPcbSpatialWireCommand | ((CurrentPcbViaWriteCommand | CurrentPcbViaSpatialCommand | CurrentPcbViaSdkPropertiesCommand | ViaWorkerParentCommand | ViaClockWireCommand | (CurrentPcbViaWorkerCommand & Readonly<{ viaWorkerCommand: true }>)) & Readonly<{ id: number; sessionId: string }>) | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheHeldCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
     Readonly<{ id: number; sessionId: string }>), phase: RequestPhase = "discovery"): Promise<Reply> {
     if (!this.#started || this.#released || this.#handedOff) { throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED"); }
     const spatial = this.#spatialPurpose && "spatialPhase" in command && phase.startsWith("spatial-");
@@ -760,10 +790,10 @@ class CurrentPcbFixedPipeCore {
         command.method === "Target.setAutoAttach" || command.method === "Runtime.evaluate" || command.method === "Runtime.callFunctionOn")) {
       throw new Error("PCB_DIAGNOSTIC_PIPE_STARTUP_DISCOVERY_ONLY");
     }
-    if (this.#schematicDisplayPurpose && !("schematicDisplayPhase" in command && phase === `schematic-display-${command.schematicDisplayPhase}`) && !CURRENT_SCHEMATIC_DISPLAY_DISCOVERY_METHODS.includes(command.method)) { throw new Error("SCHEMATIC_DISPLAY_DISCOVERY_ONLY"); }
+    if (this.#schematicDisplayPurpose && !("schematicDisplayPhase" in command && phase === `schematic-display-${command.schematicDisplayPhase}` || "schematicWorkerParentPhase" in command && ["schematic-parent-arm", "schematic-parent-running"].includes(phase) || "schematicWorkerCommand" in command && phase === "schematic-worker") && !CURRENT_SCHEMATIC_DISPLAY_DISCOVERY_METHODS.includes(command.method)) { throw new Error("SCHEMATIC_DISPLAY_DISCOVERY_ONLY"); }
     if (this.#failure !== null) { throw failureError(this.#failure); }
-    const viaRetained = this.#viaPurpose && ["via-sdk-save", "project-open-project", "pcb-open-document"].includes(phase);
-    if (this.#viaRetainedPending !== null && (viaRetained || !(phase === "via-clock" || phase === "via-worker" || phase === "via-parent-running" || phase === "discovery" && command.method === "Debugger.getScriptSource"))) { throw new Error("PCB_VIA_RETAINED_PENDING_SCOPE"); }
+    const viaRetained = this.#viaPurpose && ["via-sdk-save", "project-open-project", "pcb-open-document"].includes(phase) || this.#schematicDisplayPurpose && ["schematic-display-navigate", "schematic-display-save"].includes(phase);
+    if (this.#viaRetainedPending !== null && (viaRetained || !(this.#viaPurpose && ["via-clock", "via-worker", "via-parent-running"].includes(phase) || this.#schematicDisplayPurpose && ["schematic-worker", "schematic-parent-running"].includes(phase) || phase === "discovery" && command.method === "Debugger.getScriptSource"))) { throw new Error("PCB_VIA_RETAINED_PENDING_SCOPE"); }
     if (this.#pending !== null) { throw new Error("PCB_DIAGNOSTIC_PIPE_REQUEST_PENDING"); }
     let limit = this.#stringPurpose ? CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT : DIAGNOSTIC_REQUEST_LIMIT;
     if (this.#heldCacheDiagnosticPurpose) { limit = HELD_DIAGNOSTIC.requestLimit; }
@@ -855,6 +885,9 @@ class CurrentPcbFixedPipeCore {
     pending.reply = result;
   }
 
+  #originalWorkerHandler(): ((event: DiagnosticEvent) => void) | null {
+    if (this.#viaPurpose) { return this.#viaWorkerEvent; } if (this.#schematicDisplayPurpose) { return this.#schematicWorkerEvent; } return this.#workerEvent;
+  }
   #receiveEvent(value: Record<string, unknown>, bytes: number): void {
     const method = value["method"], params = value["params"], sessionId = value["sessionId"];
     try { this.#observeEventBytes?.(bytes); }
@@ -875,21 +908,22 @@ class CurrentPcbFixedPipeCore {
       const event = sessionId === undefined ? { method, params } : { method, params, sessionId };
       if (sessionId === this.#sessionId && method === "Target.attachedToTarget") {
         const child = params["targetInfo"], childSession = params["sessionId"];
-        const observeChild = this.#viaPurpose ? this.#viaWorkerEvent : this.#workerEvent;
+        const observeChild = this.#originalWorkerHandler();
         if (observeChild === null || !diagnosticExact(params, ["sessionId", "targetInfo", "waitingForDebugger"]) ||
             !record(child) || child["type"] !== "worker" || child["attached"] !== true || !diagnosticToken(child["targetId"]) ||
-            !diagnosticToken(childSession) || (this.#viaPurpose ? typeof params["waitingForDebugger"] !== "boolean" : params["waitingForDebugger"] !== false) || childSession === this.#sessionId ||
+            !diagnosticToken(childSession) || ((this.#viaPurpose || this.#schematicDisplayPurpose) ? typeof params["waitingForDebugger"] !== "boolean" : params["waitingForDebugger"] !== false) || childSession === this.#sessionId ||
             this.#workerSessions.has(childSession) || [...this.#workerSessions.values()].includes(child["targetId"]) ||
             this.#workerSessions.size >= 16) { this.#fail("reply", "worker-attachment", eventKind(method)); return; }
         this.#workerSessions.set(childSession, child["targetId"]);
         if (this.#viaPurpose && params["waitingForDebugger"] === true) { this.#viaWaitingWorkers.add(childSession); }
+        if (this.#schematicDisplayPurpose && params["waitingForDebugger"] === true) { this.#schematicWaitingWorkers.add(childSession); }
         observeChild(event);
       } else if (typeof sessionId === "string" && this.#workerSessions.has(sessionId)) {
-        const observeWorker = this.#viaPurpose ? this.#viaWorkerEvent : this.#workerEvent;
+        const observeWorker = this.#originalWorkerHandler();
         if (observeWorker === null) { this.#fail("reply", "worker-handler", eventKind(method)); return; }
         observeWorker(event);
-      } else if (sessionId === this.#sessionId && method === "Target.detachedFromTarget" && (this.#workerEvent !== null || this.#viaWorkerEvent !== null)) {
-        const observeDetached = this.#viaPurpose ? this.#viaWorkerEvent : this.#workerEvent; if (observeDetached === null) { throw new Error("PCB_VIA_WORKER_HANDLER"); } observeDetached(event);
+      } else if (sessionId === this.#sessionId && method === "Target.detachedFromTarget" && (this.#workerEvent !== null || this.#viaWorkerEvent !== null || this.#schematicWorkerEvent !== null)) {
+        const observeDetached = this.#originalWorkerHandler(); if (observeDetached === null) { throw new Error("PCB_VIA_WORKER_HANDLER"); } observeDetached(event);
       } else { this.#event(event); }
     }
     catch { this.#fail("reply", "event-callback", eventKind(method)); }
@@ -944,6 +978,10 @@ export class CurrentPcbSpatialPipe extends CurrentPcbFixedPipeCore {
  * worker and writer grammars require their original source issuance. */
 export class CurrentSchematicDisplayWritePipe extends CurrentPcbFixedPipeCore {
   public constructor(input: Readable, output: Writable) { super(input, output, "schematic-display-write209"); }
+  public enableSchematicDisplayWorkerDiscovery(event: (value: DiagnosticEvent) => void): Promise<Reply> { return this.enableSchematicDisplayWorkerDiscoveryCommand(event); }
+  public configureSchematicDisplayWorkerRunning(): Promise<Reply> { return this.configureSchematicDisplayWorkerRunningCommand(); }
+  public bindSchematicDisplayWorker(sessionId: string, targetId: string): void { this.bindSchematicDisplayWorkerCommand(sessionId, targetId); }
+  public observeSchematicDisplayWorker(command: CurrentSchematicDisplayWorkerCommand): Promise<Reply> { return this.observeSchematicDisplayWorkerCommand(command); }
   public observeSchematicDisplay(phase: CurrentSchematicDisplayNativePhase, binding: string, target?: unknown, operation?: unknown): Promise<Reply> {
     return this.observeSchematicDisplayCommand(phase, binding, target, operation);
   }
