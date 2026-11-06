@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 generated schematic display stages](2026-11-06-generated-schematic-display-stages.md). Distinct209 Text source/body projection, reused pure display leaves, fixed original-holder stages and explicit remaining native/worker/SQL coordinator joins.
+
 - [2026-11-06 cleanup publication scan](2026-11-06-cleanup-publication-scan.md). Removes an immediately duplicated history scan before the publisher's unchanged fresh verification; original native-action and terminal checks remain, no admission/ownership cache or runtime speed claim.
 
 - [2026-11-06 Windows fixture library parser](2026-11-06-fixture-library-parser.md). Exact5.1 JSON-array capture correction, scalar/path guards and maintained parser-only regression before native allocation; original lost-stderr cause remains unproved.
