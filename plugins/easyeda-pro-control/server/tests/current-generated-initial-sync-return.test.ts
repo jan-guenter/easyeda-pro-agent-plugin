@@ -41,3 +41,16 @@ void test("implicit async return exposes the actual outer Promise retained throu
     await session.post("Runtime.evaluate", { expression: "delete globalThis.__inertInitialSyncReturn" });
   } finally { session.disconnect(); }
 });
+
+void test("actual Inspector nested Proxy metadata exposes the wrapper without invoking its get trap", async () => {
+  const session = new Session(); session.connect();
+  try {
+    await session.post("Runtime.enable");
+    const captured = await session.post("Runtime.evaluate", { expression: "globalThis.__inertProxyReads=0;globalThis.__inertProxyArray=[new Proxy({value:1},{get(target,key){globalThis.__inertProxyReads++;return Reflect.get(target,key)}})]", objectGroup: "inert-proxy-metadata", returnByValue: false });
+    assert.equal(captured.result.subtype, "array"); assert.ok(captured.result.objectId !== undefined);
+    const metadata = await session.post("Runtime.getProperties", { objectId: captured.result.objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false });
+    const child = metadata.result.find(field => field.name === "0"); assert.equal(child?.value?.subtype, "proxy"); assert.ok(child?.value?.objectId !== undefined);
+    const reads = await session.post("Runtime.evaluate", { expression: "__inertProxyReads", returnByValue: true }); assert.equal(reads.result.value, 0);
+    await session.post("Runtime.releaseObjectGroup", { objectGroup: "inert-proxy-metadata" }); await session.post("Runtime.evaluate", { expression: "delete globalThis.__inertProxyArray;delete globalThis.__inertProxyReads" });
+  } finally { session.disconnect(); }
+});

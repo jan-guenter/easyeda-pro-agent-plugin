@@ -25,6 +25,10 @@ export interface CurrentGeneratedInitialSyncBindings {
 const yes = z.strictObject({ result: z.strictObject({ type: z.literal("boolean"), value: z.literal(true) }) });
 function need(value: boolean): asserts value { if (!value) { throw new Error("GENERATED_INITIAL_SYNC_ORIGINAL_CALL"); } }
 const properties = (objectId: string): Readonly<{ objectId: string; ownProperties: true; accessorPropertiesOnly: false; generatePreview: false }> => ({ objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false });
+function plainObjects(reply: unknown, count: number): void {
+  const objects = decodeCurrentFootprintCopyClockRpcV2Array(reply, count);
+  for (let index = 0; index < count; index += 1) { const value = objects.get(String(index)); need(value?.type === "object" && value.objectId !== undefined && value.value === undefined && (value.subtype === undefined || value.subtype === "array") && (value.className === "Object" || value.className === "Array")); }
+}
 export class CurrentGeneratedInitialSyncCursor {
   readonly #data: CurrentGeneratedInitialFlowCacheData; readonly #bindings: CurrentGeneratedInitialSyncBindings; readonly #attempted = new WeakSet<object>();
   #requests = 0; #step = 0; #ordinal: 1 | 2 | 3 | 4 = 1; #capture: string | null = null; #full: string | null = null; #last: string | null = null;
@@ -51,6 +55,9 @@ export class CurrentGeneratedInitialSyncCursor {
           const fixedSlot = slot as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
           decodeCurrentGeneratedInitialSyncCallee(await this.#send({ phase: "initial-sync-callee", slot: fixedSlot, method: "Runtime.getProperties", params: properties(handle) }), slot, this.#bindings.scriptId);
         }
+        // Metadata exposes Proxy wrappers without running their get traps.
+        const baseline = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(await this.#send({ phase: "initial-sync-baseline-objects", method: "Runtime.callFunctionOn", params: { ...FLAGS, returnByValue: false, objectId: this.#capture, functionDeclaration: PROGRAMS.baselineObjects, arguments: [] } }), 8);
+        plainObjects(await this.#send({ phase: "initial-sync-baseline-object-properties", method: "Runtime.getProperties", params: properties(baseline) }), 8);
         resumeRole = "syncEntry"; this.#step = 1;
       } else {
         need(this.#capture !== null);
@@ -62,7 +69,10 @@ export class CurrentGeneratedInitialSyncCursor {
         } else {
           need(this.#full !== null);
           if (this.#step === 2) {
-            need(held.role === "syncHistory"); yes.parse(await this.#send({ phase: "initial-sync-history", ordinal: this.#ordinal, method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: held.joinedId, functionDeclaration: PROGRAMS.history, arguments: [{ objectId: this.#capture }, { objectId: this.#full }, { value: this.#ordinal }] } }));
+            need(held.role === "syncHistory");
+            const objects = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(await this.#send({ phase: "initial-sync-response-objects", ordinal: this.#ordinal, method: "Runtime.callFunctionOn", params: { ...FLAGS, returnByValue: false, objectId: held.joinedId, functionDeclaration: PROGRAMS.responseObjects, arguments: [] } }), 3);
+            plainObjects(await this.#send({ phase: "initial-sync-response-object-properties", ordinal: this.#ordinal, method: "Runtime.getProperties", params: properties(objects) }), 3);
+            yes.parse(await this.#send({ phase: "initial-sync-history", ordinal: this.#ordinal, method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: held.joinedId, functionDeclaration: PROGRAMS.history, arguments: [{ objectId: this.#capture }, { objectId: this.#full }, { value: this.#ordinal }] } }));
             this.#last = held.joinedId; const role = (["syncHistory1", "syncHistory2", "syncHistory3", "syncHistory4"] as const)[this.#ordinal - 1]; need(role !== undefined); resumeRole = role;
             this.#advanceHistory();
           } else if (this.#step === 3) {

@@ -39,7 +39,7 @@ void test("new SDK wire contains fixed scalars only and cannot be spent by relea
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, functionDeclaration: `${CURRENT_PCB_VIA_WRITE_FUNCTION}\n` } })));
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, awaitPromise: false } })));
   }
-  assert.equal(PROFILE.renderer.total, 1509); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [1109, 41, 1150]);
+  assert.equal(PROFILE.renderer.total, 1519); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [1109, 41, 1150]);
 });
 void test("retained SDK methods require exact original installed function locations, names and arity", () => {
   for (const kind of ["create", "save"] as const) { assert.equal(decodeCurrentPcbViaSdkMethod(metadata(kind), kind), "api"); }
@@ -89,10 +89,10 @@ void test("matching bootstrap and owner JSON cannot mint original native ownersh
 void test("composed native fragment is idempotent and keeps old births, caps and primitive methods separate", async () => {
   const original = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   const generated = compose(original); assert.equal(compose(generated), generated);
-  const earlierVia = generated.replace("return pcbViaWrite209?1509:spatial209?384:", "return pcbViaWrite209?766:spatial209?384:").replace("$requestLimit=if ($PcbViaWrite209) {1509}", "$requestLimit=if ($PcbViaWrite209) {766}");
+  const earlierVia = generated.replace("return pcbViaWrite209?1519:spatial209?384:", "return pcbViaWrite209?766:spatial209?384:").replace("$requestLimit=if ($PcbViaWrite209) {1519}", "$requestLimit=if ($PcbViaWrite209) {766}");
   assert.equal(compose(earlierVia), generated); assert.ok(Buffer.byteLength(generated) < 2 * 1024 * 1024);
   for (const text of ["EasyedaPcbViaWriteBirth", "CreatePcbViaWrite209()", "via-old-birth-smoke", "via-retain-main-until-exit", "viaConstructionComplete", "stage==\"save\"", "pcb-diagnostic-conflicting-via-purpose",
-    "return pcbViaWrite209?1509:spatial209?384:workerStartup?256:stringPrecreate?3309:103", "viaSdkProperties>=3", "SendPcbViaSpatial", "via-main-precreate-required", "via-main-precreate-original-enrollment", "VerifyViaMainPrecreateSmoke", "viaBeginArms.Count!=4", "viaHistoryArms.Count!=9", "viaStructureMainArms.Count!=9"]) { assert.ok(generated.includes(text), text); }
+    "return pcbViaWrite209?1519:spatial209?384:workerStartup?256:stringPrecreate?3309:103", "viaSdkProperties>=3", "SendPcbViaSpatial", "via-main-precreate-required", "via-main-precreate-original-enrollment", "VerifyViaMainPrecreateSmoke", "viaBeginArms.Count!=4", "viaHistoryArms.Count!=9", "viaStructureMainArms.Count!=9"]) { assert.ok(generated.includes(text), text); }
   assert.equal(generated.includes("sqlite3.Database="), false); assert.equal(generated.includes("Object.setPrototypeOf(sc.Database"), false);
   assert.throws(() => compose(original.replace("[switch]$StringPrecreate,", "[switch]$ForeignPurpose,")), /ANCHOR/u);
 });

@@ -97,3 +97,42 @@ Both TypeScript projects and strict type-aware lint pass with zero warnings.
 Repository, plugin/MCP-contract and all-skill validation pass. The source
 slice contains no regenerated helper, compatibility, bundle or coverage
 artifact; final combined emission remains the parent integration task.
+
+## Nested Proxy correction
+
+A subsequent source review found that own-descriptor walking alone does not
+exclude a nested Proxy whose separate get trap would run during resumed
+application property access. No connected use of the preceding increment
+occurred. That earlier proof was incomplete at this boundary.
+
+The corrected cursor collects actual correlated Inspector metadata for all
+eight objects in the exact initial head graph. The source-derived graph has
+one history array/row, one editHead array/actor, and docs/docIds arrays and
+their sole map/list. The complete initial SQL qualifier already fixes that
+actor and graph. Every reference must be an actual plain Object or Array;
+Proxy metadata is refused before the first resume. Each of the four actual
+response pauses separately captures the original reply, result array and
+row, then inspects their actual references before the value comparison.
+An effectful get trap can no longer hide behind ordinary own descriptors.
+
+These five metadata pairs add ten mandatory requests. The fixed lane now has
+45 ordered command shapes and reserves 47 requests including its existing
+optional second settlement pass. Renderer capacities become 1519 Via and
+1117 schematic display; the nine resumed events and main budgets are
+unchanged. The metadata pairs belong to the same original source packet and
+private cursor, with no caller-selectable objects.
+
+The real cursor regression covers a nested initial docIds Proxy, a response
+array Proxy and a response-row Proxy. All refuse with zero get-trap calls
+and no corresponding native resume. A real Node Inspector regression
+independently observes the nested wrapper as subtype proxy without invoking
+its get trap. Existing plain-data cases remain required.
+
+The correction passes seven cursor/program cases and both actual Inspector
+cases. All fourteen fixed-codec/native-boundary cases pass, both TypeScript
+projects and strict lint pass, and repository/MCP/all-skill validation passes.
+The corrected complete helper regenerates twice byte-identically in a private
+directory and Linux .NET 10 passes the full C# compilation and all 45 sync
+hash vectors. No tracked generated artifact or Windows/native call is added.
+The unchanged 21 production-owner cases were not repeated for this metadata
+addition; their original cleanup/refusal path remains the separate evidence.

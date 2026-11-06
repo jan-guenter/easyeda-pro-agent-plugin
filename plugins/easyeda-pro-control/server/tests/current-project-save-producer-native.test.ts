@@ -51,7 +51,7 @@ void test("startup-only initial cache dispatch remains idempotent across whole w
 void test("same-head startup sync codec is separate, once-ordered and idempotent through complete combined generation", async () => {
   const base = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"), source = initialSyncFragment(initialCache(compose(base)));
   const recomposed = compose(source); assert.equal(initialSyncFragment(initialCache(recomposed)), source); assert.equal(initialSyncFragment(source), source);
-  assert.ok(source.includes("viaInitialSyncStage-2")); assert.ok(source.includes("schematicInitialSyncStage!=35&&schematicInitialSyncStage!=37"));
+  assert.ok(source.includes("viaInitialSyncStage-2")); assert.ok(source.includes("schematicInitialSyncStage!=45&&schematicInitialSyncStage!=47"));
   assert.ok(source.includes("!viaInitialCacheCompleted||!viaInitialSyncCompleted")); assert.ok(source.includes("!schematicInitialCacheCompleted||!schematicInitialSyncCompleted"));
   assert.throws(() => initialSyncFragment(source.replace("$owner.SendViaInitialSync", "$owner.ForeignSync")), /CHANGED/u);
   for (const command of currentGeneratedInitialSyncNativeCases()) { for (const purpose of ["via", "schematic"] as const) {

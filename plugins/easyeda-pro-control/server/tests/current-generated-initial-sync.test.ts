@@ -71,7 +71,7 @@ void test("original module/prototype/collection/task/ordinal drift refuses witho
   assert.throws(() => f.proof("history", "historyFrame", "original,full,1"));
 });
 void test("fixed metadata and vocabulary require actual current209 script/functions and exact response ordinal", () => {
-  const cases = currentGeneratedInitialSyncNativeCases(); assert.equal(cases.length, 35);
+  const cases = currentGeneratedInitialSyncNativeCases(); assert.equal(cases.length, 45);
   for (const command of cases) { if (command.method === "Runtime.callFunctionOn") { assert.throws(() => validateCurrentGeneratedInitialSyncCommand({ ...command, params: { ...command.params, functionDeclaration: "function(){return true;}" } })); } }
   const historyCase = cases.find(command => command.phase === "initial-sync-history"); assert.ok(historyCase?.phase === "initial-sync-history"); assert.throws(() => validateCurrentGeneratedInitialSyncCommand({ ...historyCase, ordinal: 2 }));
   for (const [slot, profile] of CALLEES.entries()) {
@@ -96,9 +96,10 @@ function cursorFixture(): Readonly<{ cursor: CurrentGeneratedInitialSyncCursor; 
   const properties = (variable: string, count: number): unknown => ({ result: [
     ...Array.from({ length: count }, (_, index) => {
       const value = f.run(`${variable}[${String(index)}]`); let remote: Record<string, unknown>;
-      if (value === undefined) { remote = { type: "undefined" }; }
+      if ((typeof value === "object" && value !== null || typeof value === "function") && types.isProxy(value)) { remote = { type: "object", subtype: "proxy", className: "Object", description: "Proxy", objectId: `${variable}_${String(index)}` }; }
+      else if (value === undefined) { remote = { type: "undefined" }; }
       else if (typeof value === "function") { remote = { type: "function", className: "Function", objectId: `${variable}_${String(index)}`, description: f.run(`Function.prototype.toString.call(${variable}[${String(index)}])`) }; }
-      else if (value !== null && typeof value === "object") { remote = { type: "object", objectId: `${variable}_${String(index)}`, ...(types.isPromise(value) ? { subtype: "promise", className: "Promise", description: "Promise" } : {}) }; }
+      else if (value !== null && typeof value === "object") { remote = { type: "object", className: Array.isArray(value) ? "Array" : "Object", ...(Array.isArray(value) ? { subtype: "array" } : {}), objectId: `${variable}_${String(index)}`, ...(types.isPromise(value) ? { subtype: "promise", className: "Promise", description: "Promise" } : {}) }; }
       else { remote = { type: typeof value, value }; }
       return { name: String(index), value: remote, writable: true, configurable: true, enumerable: true, isOwn: true };
     }),
@@ -112,6 +113,8 @@ function cursorFixture(): Readonly<{ cursor: CurrentGeneratedInitialSyncCursor; 
     state.requests += 1;
     if (command.phase === "initial-sync-module" || command.phase === "initial-sync-caller") { return Promise.resolve(arrayReply(command.phase === "initial-sync-module" ? "module" : "caller", command.phase === "initial-sync-module" ? 6 : 2)); }
     if (command.phase === "initial-sync-capture-properties") { return Promise.resolve(properties("cursorOriginal", 16)); }
+    if (command.phase === "initial-sync-baseline-object-properties") { return Promise.resolve(properties("baselineObjects", 8)); }
+    if (command.phase === "initial-sync-response-object-properties") { return Promise.resolve(properties(`responseObjects${String(command.ordinal)}`, 3)); }
     if (command.phase === "initial-sync-full-properties") { return Promise.resolve(properties("full", 5)); }
     if (command.phase === "initial-sync-callee") {
       const profile = CALLEES[command.slot]; assert.ok(profile !== undefined);
@@ -132,6 +135,8 @@ function cursorFixture(): Readonly<{ cursor: CurrentGeneratedInitialSyncCursor; 
     assert.equal(command.method, "Runtime.callFunctionOn"); assert.ok(command.method === "Runtime.callFunctionOn");
     const args = command.params.arguments.map(arg => "objectId" in arg ? arg.objectId : JSON.stringify(arg.value)).join(",");
     if (command.phase === "initial-sync-capture") { f.run(`globalThis.cursorOriginal=(${command.params.functionDeclaration}).call(${command.params.objectId},${args})`); return Promise.resolve(arrayReply("cursorOriginal", 16)); }
+    if (command.phase === "initial-sync-baseline-objects") { f.run(`globalThis.baselineObjects=(${command.params.functionDeclaration}).call(${command.params.objectId})`); return Promise.resolve(arrayReply("baselineObjects", 8)); }
+    if (command.phase === "initial-sync-response-objects") { const name = `responseObjects${String(command.ordinal)}`; f.run(`globalThis.${name}=(${command.params.functionDeclaration}).call(${command.params.objectId})`); return Promise.resolve(arrayReply(name, 3)); }
     if (command.phase === "initial-sync-return-promise") { f.run(`globalThis.outerRetained=(${command.params.functionDeclaration}).call(${command.params.objectId})`); return Promise.resolve({ result: { type: "object", subtype: "promise", className: "Promise", description: "Promise", objectId: "outerRetained" } }); }
     const value = f.run(`(${command.params.functionDeclaration}).call(${command.params.objectId},${args})`); return Promise.resolve({ result: { type: "boolean", value } });
   };
@@ -155,12 +160,24 @@ void test("real sync cursor consumes all nine source calls and waits for both ac
   for (const role of ["syncEntry", "syncFull"] as const) { await f.cursor.continue(f.next(role)); }
   for (const ordinal of [1, 2, 3, 4]) { await f.cursor.continue(f.next("syncHistory", ordinal)); }
   for (const role of ["syncMerged", "syncFinalizing"] as const) { await f.cursor.continue(f.next(role)); }
-  f.state.pending = true; await f.cursor.continue(f.next("syncReturned")); assert.equal(f.state.requests, 26); assert.equal(f.state.resumes, 9); assert.equal(f.state.completed, 0); assert.throws(() => { f.cursor.requireCompleted(); });
-  f.state.pending = false; await f.cursor.settle(); f.cursor.requireCompleted(); assert.equal(f.state.requests, 28); assert.equal(f.state.completed, 1); assert.equal(f.run("hooks"), 0);
+  f.state.pending = true; await f.cursor.continue(f.next("syncReturned")); assert.equal(f.state.requests, 36); assert.equal(f.state.resumes, 9); assert.equal(f.state.completed, 0); assert.throws(() => { f.cursor.requireCompleted(); });
+  f.state.pending = false; await f.cursor.settle(); f.cursor.requireCompleted(); assert.equal(f.state.requests, 38); assert.equal(f.state.completed, 1); assert.equal(f.run("hooks"), 0);
 });
 void test("cursor refuses changed history before that response resume; unknown original ACK burns the source attempt", async () => {
   const changed = cursorFixture(); await changed.cursor.continue(changed.next("syncEntry")); await changed.cursor.continue(changed.next("syncFull"));
   const packet = changed.next("syncHistory"); changed.run("history1[7].result[0].num=1"); await assert.rejects(changed.cursor.continue(packet)); assert.equal(changed.state.resumes, 2); assert.equal(changed.state.failed, true); assert.equal(changed.run("modelParses"), 0);
   const unknown = cursorFixture(); unknown.state.ambiguous = true; const entry = unknown.next("syncEntry"); await assert.rejects(unknown.cursor.continue(entry), /unknown original ACK/u); const count = unknown.state.requests;
   await assert.rejects(unknown.cursor.continue(entry)); assert.equal(unknown.state.requests, count); assert.equal(unknown.state.resumes, 1); assert.equal(unknown.state.completed, 0);
+});
+
+void test("actual nested Proxy metadata refuses before original baseline or response property reads can invoke its get trap", async () => {
+  const baseline = cursorFixture(); baseline.run("head[0].docIds[0]=new Proxy(head[0].docIds[0],{get(target,key){hooks++;return Reflect.get(target,key)}})");
+  await assert.rejects(baseline.cursor.continue(baseline.next("syncEntry"))); assert.equal(baseline.state.resumes, 0); assert.equal(baseline.run("hooks"), 0);
+  for (const mutation of [
+    "history1[7].result=new Proxy(history1[7].result,{get(target,key){hooks++;return Reflect.get(target,key)}})",
+    "history1[7].result[0]=new Proxy(history1[7].result[0],{get(target,key){hooks++;return Reflect.get(target,key)}})"
+  ]) {
+    const response = cursorFixture(); await response.cursor.continue(response.next("syncEntry")); await response.cursor.continue(response.next("syncFull")); const packet = response.next("syncHistory"); response.run(mutation);
+    await assert.rejects(response.cursor.continue(packet)); assert.equal(response.state.resumes, 2); assert.equal(response.run("hooks"), 0); assert.equal(response.run("modelParses"), 0);
+  }
 });
