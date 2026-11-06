@@ -9,7 +9,7 @@ import type { CurrentGeneratedStartupProgress } from "./current-generated-startu
 import type { CurrentProjectSaveProducerCacheCaller } from "./current-project-save-producer-cache-source.ts";
 import { types } from "node:util";
 import { z } from "zod";
-import { continueOriginalCurrentGeneratedInitialCacheCall, continueOriginalCurrentGeneratedInitialSyncCall, continueOriginalCurrentGeneratedPeriodicSyncCall, continueOriginalCurrentPcbViaLocalUploadCall, originalCurrentProjectSaveProducerStartupProgress, requireOriginalCurrentPcbViaLocalUploadCompleted, requireOriginalCurrentProjectSaveProducerOrigin, settleOriginalCurrentGeneratedInitialCacheCalls, settleOriginalCurrentGeneratedInitialSyncCall, settleOriginalCurrentGeneratedPeriodicSyncCall } from "./current-pcb-diagnostic-owner.ts";
+import { continueOriginalCurrentGeneratedInitialCacheCall, continueOriginalCurrentGeneratedInitialSyncCall, continueOriginalCurrentGeneratedPeriodicSyncCall, continueOriginalCurrentPcbViaLocalUploadCall, continueOriginalCurrentPcbViaPreSavePeriodicSyncCall, originalCurrentProjectSaveProducerStartupProgress, requireOriginalCurrentPcbViaLocalUploadCompleted, requireOriginalCurrentProjectSaveProducerOrigin, settleOriginalCurrentGeneratedInitialCacheCalls, settleOriginalCurrentGeneratedInitialSyncCall, settleOriginalCurrentGeneratedPeriodicSyncCall, settleOriginalCurrentPcbViaPreSavePeriodicSyncCall } from "./current-pcb-diagnostic-owner.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { decodeCurrentFootprintCopyClockRpcV2ArrayCapture } from "./current-footprint-copy-clock-rpc-v2-protocol.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_PRODUCER_FRAME_FLAGS as FRAME_FLAGS,
@@ -138,6 +138,16 @@ export class CurrentProjectSaveProducerObserver {
     need(!this.#busy && !this.#failed && !this.#closed && this.#held === packet, "PERIODIC_SYNC_ORIGINAL_HELD"); this.#busy = true;
     try { await this.#current(); await continueOriginalCurrentGeneratedPeriodicSyncCall(this.#origin, this.#owner, this.#operation, packet); await this.#current(); this.#held = null; }
     catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
+  }
+  public async continuePreSavePeriodicSyncCall(packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
+    need(!this.#busy && !this.#failed && !this.#closed && this.#held === packet,"PRESAVE_PERIODIC_ORIGINAL_HELD");this.#busy=true;
+    try{await this.#current();await continueOriginalCurrentPcbViaPreSavePeriodicSyncCall(this.#origin,this.#owner,this.#operation,packet);await this.#current();this.#held=null;}
+    catch(error){this.#refuse();throw error;}finally{this.#busy=false;}
+  }
+  public async settlePreSavePeriodicSyncCall(): Promise<void> {
+    need(!this.#busy && !this.#failed && !this.#closed,"PRESAVE_PERIODIC_SETTLE_STATE");const held=this.#held;if(held!==null){requireOriginalCurrentProjectSaveProducerHeldCall(held,this);}this.#busy=true;
+    try{await this.#current();need(this.#held===held,"PRESAVE_PERIODIC_HELD_CHANGED");await settleOriginalCurrentPcbViaPreSavePeriodicSyncCall(this.#origin,this.#owner,this.#operation);await this.#current();need(this.#held===held,"PRESAVE_PERIODIC_HELD_CHANGED");}
+    catch(error){this.#refuse();throw error;}finally{this.#busy=false;}
   }
   public async settlePeriodicSyncCall(): Promise<void> {
     need(!this.#busy && !this.#failed && !this.#closed, "PERIODIC_SYNC_SETTLE_STATE"); const held = this.#held;

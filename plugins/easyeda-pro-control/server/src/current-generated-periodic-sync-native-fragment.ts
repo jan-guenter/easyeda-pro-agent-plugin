@@ -7,7 +7,7 @@ import { installOwnedNativeDispatch } from "./native-owned-dispatch.ts";
 const begin = "// BEGIN ORIGINAL GENERATED PERIODIC SYNC", end = "// END ORIGINAL GENERATED PERIODIC SYNC";
 function owner(purpose: "via" | "schematic"): string {
   const name = purpose === "via" ? "Via" : "SchematicDisplay";
-  const born = purpose === "via" ? "pcbViaWrite209&&!viaAbortAttempted&&!viaSdkStages[2]&&!viaSdkStages[4]" : "schematicDisplayWrite209&&!schematicDisplayAbort&&!schematicDisplayStages[4]&&!schematicDisplayStages[6]";
+  const born = purpose === "via" ? "pcbViaWrite209&&!viaAbortAttempted&&(!viaSdkStages[2]&&!viaSdkStages[4]||viaSdkStages[2]&&viaMainPrecreateEnrolled&&viaProducerPrefixEnrolled&&viaHistoryStep==0)" : "schematicDisplayWrite209&&!schematicDisplayAbort&&!schematicDisplayStages[4]&&!schematicDisplayStages[6]";
   return `int ${purpose}PeriodicSyncCalls,${purpose}PeriodicSyncStage;
 public void Send${name}PeriodicSync(int id,string phase,string method,System.Collections.IDictionary fields){if(!(${born})||!${purpose}InitialSyncCompleted||${purpose}PeriodicSyncCalls>=${String(MAXIMUM)}||${purpose}WorkerSession==null||${purpose}WorkerStage!=7||!${purpose}StructureBootstrapResumed||!${purpose}ProducerModeRequested||!${purpose}ProducerIntrinsicsReproved||${purpose}ProducerObserveArms.Count!=27||${purpose}PeriodicSyncStage>=${String(REQUESTS.perCall)})throw Error("periodic-sync-original-startup");
 string encoded=EasyedaGeneratedInitialSyncProtocol.EncodePeriodic(id,${purpose}WorkerSession,phase,method,fields);int index=EasyedaGeneratedInitialSyncProtocol.PeriodicIndex(phase),expected=${purpose}PeriodicSyncStage<26?${purpose}PeriodicSyncStage:${purpose}PeriodicSyncStage-2;if(index!=expected)throw Error("periodic-sync-original-order");AssertLive();${purpose}PeriodicSyncStage++;SendMessage(id,encoded);}
@@ -55,7 +55,7 @@ export function applyCurrentGeneratedPeriodicSyncNativeFragment(input: string): 
   if(!source.includes(sizeLine)){if(source.split(sizeAnchor).length!==2){throw new Error("PERIODIC_SYNC_SIZE_ANCHOR");}source=source.replace(sizeAnchor,()=>sizeLine+sizeAnchor);}
   const newGuard="(-not $periodicSyncOpening -and -not $initialSyncOpening -and -not $initialCacheOpening -and", oldGuard="(-not $initialSyncOpening -and -not $initialCacheOpening -and";
   if(!source.includes(newGuard)){if(source.split(oldGuard).length!==2){throw new Error("PERIODIC_SYNC_SIZE_GUARD");}source=source.replace(oldGuard,newGuard);}
-  const viaBefore='viaSdkStages[index]=true;SendMessage(id,message);'; const viaAfter=`if(stage=="create"&&viaPeriodicSyncStage!=0)throw Error("periodic-sync-create-held");${viaBefore}`;
+  const viaBefore='viaSdkStages[index]=true;SendMessage(id,message);'; const viaAfter=`if(stage=="create"&&viaPeriodicSyncStage!=0&&(!viaMainPrecreateEnrolled||!viaProducerPrefixEnrolled))throw Error("periodic-sync-create-held");${viaBefore}`;
   if(!source.includes(viaAfter)){if(source.split(viaBefore).length!==2){throw new Error("PERIODIC_SYNC_VIA_STAGE");}source=source.replace(viaBefore,viaAfter);}
   const schBefore='schematicDisplayStages[index]=true;SendMessage(id,message);'; const schAfter=`if(phase=="modify"&&schematicPeriodicSyncStage!=0)throw Error("periodic-sync-modify-held");${schBefore}`;
   if(!source.includes(schAfter)){if(source.split(schBefore).length!==2){throw new Error("PERIODIC_SYNC_SCH_STAGE");}source=source.replace(schBefore,schAfter);}

@@ -24,6 +24,8 @@
 
 
 
+
+- [Original Via prepublication periodic continuation](2026-11-06-original-via-prepublication-periodic.md)
 - [Original Via local upload](2026-11-06-original-via-local-upload.md)
 - [Original Via Save request generation](2026-11-06-original-via-save-request-generation.md)
 - [2026-11-06 original startup cursor progress](2026-11-06-original-startup-progress.md): original readonly progress and retained-Promise settlement while the same producer pause stays held; no resume/owner/frontier grant.

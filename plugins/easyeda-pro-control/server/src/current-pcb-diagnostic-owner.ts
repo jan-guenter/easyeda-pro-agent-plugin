@@ -691,16 +691,23 @@ export async function settleOriginalCurrentGeneratedInitialSyncCall(origin: Curr
   if (original === undefined || original.owner !== owner || original.operation !== operation) { throw error("INITIAL_SYNC_ORIGINAL_CURSOR"); }
   await original.cursor().settle(); requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation);
 }
-const originalPeriodicSyncCursors = new WeakMap<CurrentProjectSaveProducerOrigin, Readonly<{ owner: object; operation: object; cursor: () => CurrentGeneratedPeriodicSyncCursor }>>();
+const originalPreSavePeriodicScopes = new WeakMap<CurrentProjectSaveProducerOrigin, Readonly<{ owner: object; operation: object; continueCall: (packet: CurrentProjectSaveProducerHeldCall) => Promise<void>; settle: () => Promise<void> }>>();
+export async function continueOriginalCurrentPcbViaPreSavePeriodicSyncCall(origin: CurrentProjectSaveProducerOrigin,owner: object,operation: object,packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
+  requireOriginalCurrentProjectSaveProducerOrigin(origin,owner,operation);const original=originalPreSavePeriodicScopes.get(origin);if(original===undefined||original.owner!==owner||original.operation!==operation) { throw error("PRESAVE_PERIODIC_ORIGINAL_SCOPE"); }await original.continueCall(packet);requireOriginalCurrentProjectSaveProducerOrigin(origin,owner,operation);
+}
+export async function settleOriginalCurrentPcbViaPreSavePeriodicSyncCall(origin: CurrentProjectSaveProducerOrigin,owner: object,operation: object): Promise<void> {
+  requireOriginalCurrentProjectSaveProducerOrigin(origin,owner,operation);const original=originalPreSavePeriodicScopes.get(origin);if(original===undefined||original.owner!==owner||original.operation!==operation) { throw error("PRESAVE_PERIODIC_ORIGINAL_SCOPE"); }await original.settle();requireOriginalCurrentProjectSaveProducerOrigin(origin,owner,operation);
+}
+const originalPeriodicSyncCursors = new WeakMap<CurrentProjectSaveProducerOrigin, Readonly<{ owner: object; operation: object; cursor: () => CurrentGeneratedPeriodicSyncCursor; continueCall?: (packet: CurrentProjectSaveProducerHeldCall) => Promise<void>; settleCall?: () => Promise<void> }>>();
 export async function continueOriginalCurrentGeneratedPeriodicSyncCall(origin: CurrentProjectSaveProducerOrigin, owner: object, operation: object, packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
   requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation); const original = originalPeriodicSyncCursors.get(origin);
   if (original === undefined || original.owner !== owner || original.operation !== operation) { throw error("PERIODIC_SYNC_ORIGINAL_CURSOR"); }
-  await original.cursor().continue(packet); requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation);
+  await (original.continueCall===undefined?original.cursor().continue(packet):original.continueCall(packet)); requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation);
 }
 export async function settleOriginalCurrentGeneratedPeriodicSyncCall(origin: CurrentProjectSaveProducerOrigin, owner: object, operation: object): Promise<void> {
   requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation); const original = originalPeriodicSyncCursors.get(origin);
   if (original === undefined || original.owner !== owner || original.operation !== operation) { throw error("PERIODIC_SYNC_ORIGINAL_CURSOR"); }
-  await original.cursor().settle(); requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation);
+  await (original.settleCall===undefined?original.cursor().settle():original.settleCall()); requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation);
 }
 const originalProjectSaveProducerOrigins = new WeakMap<CurrentProjectSaveProducerOrigin, Readonly<{ owner: object; operation: object; bindings: CurrentProjectSaveProducerBindings; assertOriginal: () => void }>>();
 interface OriginalProducerCachePromise { readonly objectId: string; readonly state: "pending" | "fulfilled" }
@@ -3291,6 +3298,7 @@ class CurrentPcbRetainedOwnerCore {
           };
           originalInitialSyncCursors.set(producerOrigin, Object.freeze({ owner: this, operation: plan, cursor: syncCursor }));
           let periodicSyncCursor: CurrentGeneratedPeriodicSyncCursor | null = null;
+          let preSavePeriodicScopeActive = false, startupPeriodicScopeActive = false;
           const periodicHeld = new WeakMap<object, CurrentGeneratedPeriodicSyncHeld>();
           const periodicCursor = (): CurrentGeneratedPeriodicSyncCursor => {
             original(); assertProducerOriginal(); if (periodicSyncCursor !== null) { return periodicSyncCursor; }
@@ -3307,7 +3315,9 @@ class CurrentPcbRetainedOwnerCore {
             const projectId = receivers().project;
             periodicSyncCursor = new CurrentGeneratedPeriodicSyncCursor(data, Object.freeze({ scriptId: source.scriptId,
               assertCurrent: async (): Promise<void> => { original(); assertProducerOriginal();
-                const reprovePeriodic = (): void => { if (pcbViaWriteFactories.get(this)?.allocation !== allocation || allocation.initialCachePlan !== initialPlan || allocation.initialBranchPlan !== branchPlan || this.#viaSdkPhases.has("create") || this.#viaSdkPhases.has("save") || receivers().project !== projectId) { throw error("PERIODIC_SYNC_STARTUP_ONLY"); } requireOriginalCurrentGeneratedInitialBranchDataPlan(branchPlan, allocation.prepared, initialPlan); syncCursor().requireCompleted(); };
+                const reprovePeriodic = (): void => { if (pcbViaWriteFactories.get(this)?.allocation !== allocation || allocation.initialCachePlan !== initialPlan || allocation.initialBranchPlan !== branchPlan || receivers().project !== projectId) { throw error("PERIODIC_SYNC_ORIGINAL_PREPARATION_CHANGED"); }
+                  if(this.#viaSdkPhases.has("create")||this.#viaSdkPhases.has("save")){const enrollment=this.#viaMainCreateEnrollment;if(!preSavePeriodicScopeActive&&!startupPeriodicScopeActive||enrollment===null||!this.#viaMainPrecreateReady||this.#viaMainCreatePrefix!==this.#viaProducerPrefix||this.#viaHistoryCompletion!==null) { throw error("PERIODIC_SYNC_ORIGINAL_PRESAVE_REQUIRED"); }enrollment.assertOriginalAttempted();}
+                  requireOriginalCurrentGeneratedInitialBranchDataPlan(branchPlan, allocation.prepared, initialPlan); syncCursor().requireCompleted(); };
                 reprovePeriodic(); await this.#verify(); original(); assertProducerOriginal(); reprovePeriodic();
               }, requireHeld, originalCompletedCapture: (): string => syncCursor().originalCompletedCapture(),
               request: (command: CurrentGeneratedPeriodicSyncCommand) => this.#serializeViaObserver(() => this.#transfer(() => { original(); assertProducerOriginal(); return pipe.continueViaPeriodicSyncCall(command); })),
@@ -3323,7 +3333,12 @@ class CurrentPcbRetainedOwnerCore {
                 if (!exact(result, ["completed"]) || result["completed"] !== true) { throw error("PERIODIC_SYNC_ORIGINAL_COMPLETE_ACK"); } original(); assertProducerOriginal(); }, fail: (): void => { selected.fail(); },
             })); return periodicSyncCursor;
           };
-          originalPeriodicSyncCursors.set(producerOrigin, Object.freeze({ owner: this, operation: plan, cursor: periodicCursor }));
+          const withStartupPeriodicScope=async(task:()=>Promise<void>):Promise<void>=>{original();assertProducerOriginal();if(startupPeriodicScopeActive||preSavePeriodicScopeActive||this.#viaSdkPhases.has("create")||this.#viaSdkPhases.has("save")){throw error("PERIODIC_SYNC_STARTUP_ONLY");}startupPeriodicScopeActive=true;try{await task();}finally{startupPeriodicScopeActive=false;}};
+          originalPeriodicSyncCursors.set(producerOrigin, Object.freeze({ owner: this, operation: plan, cursor: periodicCursor,continueCall:(packet:CurrentProjectSaveProducerHeldCall):Promise<void>=>withStartupPeriodicScope(()=>periodicCursor().continue(packet)),settleCall:():Promise<void>=>withStartupPeriodicScope(()=>periodicCursor().settle()) }));
+          const withPreSavePeriodicScope=async(task:()=>Promise<void>):Promise<void>=>{original();assertProducerOriginal();const enrollment=this.#viaMainCreateEnrollment;
+            if(preSavePeriodicScopeActive||startupPeriodicScopeActive||enrollment===null||!this.#viaMainPrecreateReady||!this.#viaSdkPhases.has("create")||this.#viaMainCreatePrefix!==this.#viaProducerPrefix||this.#viaHistoryCompletion!==null) { throw error("PERIODIC_SYNC_ORIGINAL_PRESAVE_ENROLLMENT"); }enrollment.assertOriginalAttempted();preSavePeriodicScopeActive=true;
+            try{await task();original();assertProducerOriginal();enrollment.assertOriginalAttempted();}finally{preSavePeriodicScopeActive=false;}};
+          originalPreSavePeriodicScopes.set(producerOrigin,Object.freeze({owner:this,operation:plan,continueCall:(packet:CurrentProjectSaveProducerHeldCall):Promise<void>=>withPreSavePeriodicScope(()=>periodicCursor().continue(packet)),settle:():Promise<void>=>withPreSavePeriodicScope(()=>periodicCursor().settle())}));
           originalProducerStartupProgress.set(producerOrigin, Object.freeze({ owner: this, operation: plan, read: (): CurrentGeneratedStartupProgress => { original(); assertProducerOriginal(); return Object.freeze({ initialCache: initialCacheCursor?.startupProgress() ?? null, initialSync: initialSyncCursor?.startupProgress() ?? null, periodicSync: periodicSyncCursor?.startupProgress() ?? null, executionAuthorized: false }); } }));
           await Reflect.apply(producerSetup, undefined, [producerOrigin]); original(); assertProducerOriginal();
           for (const role of CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS) { selected.bindProducerObservationBreakpoint(source, role, selected.originalProducerGuardBreakpoint(source, role)); } selected.sealProducerObservation(source); selected.requireProducerObservationArmed(source);
@@ -3636,6 +3651,13 @@ class CurrentPcbRetainedOwnerCore {
     requireOriginalCurrentPcbViaMainOrigin(origin, this, plan); const effects = this.#mainRunner.requireViaHistoryCompleted(origin);
     if (effects.projectUuid !== plan.target.projectUuid || effects.branchUuid !== plan.target.branchUuid || effects.initialLogicalSha256 !== plan.initialLogicalSha256 || effects.bodySha256 !== this.#viaMainBoundBody.bodySha256) { throw error("PCB_VIA_HISTORY_ORIGINAL_EFFECTS_SCOPE"); }
     if (this.#viaHistorySqlEffects !== null && this.#viaHistorySqlEffects !== effects) { throw error("PCB_VIA_HISTORY_ORIGINAL_EFFECTS_CHANGED"); } this.#viaHistorySqlEffects = effects; return effects;
+  }
+  /** Data-only input for the original live post-history cache projection.
+   * It retains the actual body/value refs and supplies no worker resume. */
+  public requireViaLiveHistoryBody(plan: CurrentPcbViaWritePlan): Readonly<{ delta: CurrentPcbViaPendingSaveDelta; workerValue: CurrentPcbViaSavePendingBodyValue; clock: number }> {
+    const effects=this.requireViaHistorySqlEffects(plan);const delta=this.#viaMainBoundBody;const workerValue=this.#viaSaveCapturedBody;const clock=this.#viaClockValue;
+    if(delta===null||workerValue===null||clock===null||workerValue.clock!==clock||effects.bodySha256!==delta.bodySha256||delta.dataStr!==workerValue.body||delta.headTicket!==workerValue.headTicket) { throw error("PCB_VIA_LIVE_HISTORY_ORIGINAL_BODY"); }
+    return Object.freeze({delta,workerValue,clock});
   }
   /** The original backend, original native callback ACKs and retained body
    * issue this completion. It records no structure publication or durability. */

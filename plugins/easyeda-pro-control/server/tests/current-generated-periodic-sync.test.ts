@@ -119,3 +119,8 @@ void test("periodic entry accepts only its source-fixed timer caller and retains
   for (const changed of [{ ...caller, functionName: "open" }, { ...caller, location: point(112_914) }, { ...caller, functionLocation: point(112_880) }]) { assert.throws(() => currentGeneratedPeriodicSyncFrames({ ...event, params: { callFrames: [top, changed] } }, "syncEntry", "original-script")); }
   assert.throws(() => currentGeneratedPeriodicSyncFrames(event, "syncReturned", "original-script"));
 });
+
+void test("the unchanged-head native source does not inspect or replace an independent pending Via consistency record",async()=>{
+  const f=graph();f.run('const pendingVia={id:"original-pending-via",ticket:17,uniqueId:"original-create"};PROJECT.consistencyManager={pendingVia};globalThis.originalPending=pendingVia;');
+  await f.run("PROJECT.syncCloud()");assert.equal(f.run("PROJECT.consistencyManager.pendingVia===originalPending"),true);assert.equal(f.run("PROJECT.consistencyManager.pendingVia.ticket"),17);assert.equal(f.run("requests"),1);assert.equal(f.run("branches"),1);assert.equal(f.run("modelParses"),0);assert.equal(f.run("hooks"),0);
+});

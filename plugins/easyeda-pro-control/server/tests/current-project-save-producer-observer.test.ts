@@ -25,9 +25,9 @@ if(f.call(frame,project,wrapper,callback)!==frame)throw Error("identity");let re
 Object.defineProperty(frame,"5",{get(){calls++;return callback}});try{f.call(frame,project,wrapper,callback)}catch{refused++}({calls,refused});`);
   assert.equal(JSON.stringify(result), JSON.stringify({ calls: 0, refused: 2 }));
 });
-async function fixture(foreign = false): Promise<Readonly<{ observer: CurrentProjectSaveProducerObserver; packetData: (packet: object) => object; exit: () => void; state: { failed: boolean; requests: number; settlements: number } }>> {
+async function fixture(foreign = false): Promise<Readonly<{ observer: CurrentProjectSaveProducerObserver; packetData: (packet: object) => object; exit: () => void; state: { failed: boolean; requests: number; settlements: number; continuations: number } }>> {
   const origin: CurrentProjectSaveProducerOrigin = Object.freeze({ profile: "private.current-pcb-via-save-producer-origin.v1" }); const operation = Object.freeze({ syntheticOperation: true }), owner = Object.freeze({ syntheticOwner: true });
-  const state = { failed: false, requests: 0, settlements: 0 }; let exited = false;
+  const state = { failed: false, requests: 0, settlements: 0, continuations: 0 }; let exited = false;
   const role = "syncEntry", site = SITES[role];
   const bindings: CurrentProjectSaveProducerBindings = Object.freeze({ sessionId: "worker-session", scriptId: "worker-script",
     originalIntrinsics: (): string => "original-native-intrinsics",
@@ -43,8 +43,9 @@ async function fixture(foreign = false): Promise<Readonly<{ observer: CurrentPro
     } });
   const exports = await loadSyntheticRegistryModule(new URL("../src/current-project-save-producer-observer.ts", import.meta.url), (name, actual) => name === "./current-pcb-diagnostic-owner.ts" ? { ...actual,
     requireOriginalCurrentProjectSaveProducerOrigin: (candidate: object, actualOwner: object, actualOperation: object): CurrentProjectSaveProducerBindings => { assert.equal(candidate, origin); assert.equal(actualOwner, owner); assert.equal(actualOperation, operation); return bindings; },
+    continueOriginalCurrentPcbViaPreSavePeriodicSyncCall: (candidate: object,actualOwner:object,actualOperation:object,packet:object):Promise<void>=>{assert.equal(candidate,origin);assert.equal(actualOwner,owner);assert.equal(actualOperation,operation);assert.equal(Reflect.get(packet,"profile"),"private.current-project-save-producer-held-call.v1");state.continuations+=1;return Promise.resolve();},
     originalCurrentProjectSaveProducerStartupProgress: (candidate: object, actualOwner: object, actualOperation: object): Readonly<{ initialCache: null; initialSync: null; periodicSync: null; executionAuthorized: false }> => { assert.equal(candidate, origin); assert.equal(actualOwner, owner); assert.equal(actualOperation, operation); return Object.freeze({ initialCache: null, initialSync: null, periodicSync: null, executionAuthorized: false }); },
-    ...Object.fromEntries(["settleOriginalCurrentGeneratedInitialCacheCalls", "settleOriginalCurrentGeneratedInitialSyncCall", "settleOriginalCurrentGeneratedPeriodicSyncCall"].map(functionName => [functionName, (candidate: object, actualOwner: object, actualOperation: object): Promise<void> => { assert.equal(candidate, origin); assert.equal(actualOwner, owner); assert.equal(actualOperation, operation); state.settlements += 1; return Promise.resolve(); }])) } : actual);
+    ...Object.fromEntries(["settleOriginalCurrentGeneratedInitialCacheCalls", "settleOriginalCurrentGeneratedInitialSyncCall", "settleOriginalCurrentGeneratedPeriodicSyncCall", "settleOriginalCurrentPcbViaPreSavePeriodicSyncCall"].map(functionName => [functionName, (candidate: object, actualOwner: object, actualOperation: object): Promise<void> => { assert.equal(candidate, origin); assert.equal(actualOwner, owner); assert.equal(actualOperation, operation); state.settlements += 1; return Promise.resolve(); }])) } : actual);
   const Constructor = exports["CurrentProjectSaveProducerObserver"], held = exports["requireOriginalCurrentProjectSaveProducerHeldCall"]; assert.ok(typeof Constructor === "function" && typeof held === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Runtime checked real collector; only its original registry accessor has the stated explicit synthetic seam.
   const observer = Reflect.construct(Constructor, [origin, owner, operation]) as CurrentProjectSaveProducerObserver;
@@ -68,4 +69,12 @@ void test("metadata-only settlement preserves the same held producer marker and 
   await f.observer.settleInitialCacheCalls(); await f.observer.settleInitialSyncCall(); await f.observer.settlePeriodicSyncCall();
   assert.equal(f.packetData(packet), original); assert.equal(f.state.settlements, 3); assert.equal(f.state.requests, count); assert.equal(f.state.failed, false);
   await assert.rejects(f.observer.observeHeldCall(), /HELD_CALL_ONCE/u); f.exit(); await f.observer.retireAfterOriginalExit();
+});
+
+void test("the distinct prepublication API retains metadata settlement and consumes only its exact held periodic marker",async()=>{
+  const f=await fixture();await f.observer.arm();const packet=await f.observer.observeHeldCall();const observed=f.packetData(packet);const count=f.state.requests;
+  await f.observer.settlePreSavePeriodicSyncCall();assert.equal(f.packetData(packet),observed);assert.equal(f.state.settlements,1);assert.equal(f.state.requests,count);
+  await assert.rejects(f.observer.continuePreSavePeriodicSyncCall({...packet}),/ORIGINAL_HELD/u);assert.equal(f.state.continuations,0);
+  await f.observer.continuePreSavePeriodicSyncCall(packet);assert.equal(f.state.continuations,1);assert.equal(f.state.failed,false);await assert.rejects(f.observer.continuePreSavePeriodicSyncCall(packet),/ORIGINAL_HELD/u);assert.equal(f.state.continuations,1);
+  f.exit();await f.observer.retireAfterOriginalExit();
 });
