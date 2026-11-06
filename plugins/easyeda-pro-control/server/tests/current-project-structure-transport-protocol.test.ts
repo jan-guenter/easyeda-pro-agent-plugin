@@ -11,7 +11,7 @@ import { CURRENT_PROJECT_STRUCTURE_TRANSPORT_CALL_FLAGS as FLAGS, CURRENT_PROJEC
 import { CURRENT_PROJECT_STRUCTURE_TRANSPORT_PROGRAMS as PROGRAMS } from "../src/current-project-structure-transport-programs.ts";
 import { CURRENT_PROJECT_STRUCTURE_TRANSPORT_CONDITION as CONDITION, CURRENT_PROJECT_STRUCTURE_TRANSPORT_SITES as SITES,
   CURRENT_PROJECT_STRUCTURE_TRANSPORT_SOURCE as SOURCE, qualifyCurrentProjectStructureTransportSource } from "../src/current-project-structure-transport-source.ts";
-import { originalProjectStructureTransportSource as original } from "./helpers/project-structure-transport-source-fragment.ts";
+import { originalProjectStructureLivenessSource as liveness, originalProjectStructureTransportSource as original } from "./helpers/project-structure-transport-source-fragment.ts";
 
 void test("fixed transport source distinguishes actual send, implicit return and caught synchronous failure", () => {
   assert.equal(Buffer.byteLength(original), SOURCE.transport.bytes); assert.equal(createHash("sha256").update(original).digest("hex"), SOURCE.transport.sha256);
@@ -41,4 +41,11 @@ void test("readonly capture rejects accessor constructors without invoking hooks
   let hooks = 0; const fixture = { get XMLHttpRequest(): never { hooks += 1; throw new Error("getter"); } };
   for (const source of Object.values(PROGRAMS)) { assert.doesNotThrow(() => new Script(`(${source})`)); }
   assert.throws(() => runInNewContext(`(${PROGRAMS.capture})()`, fixture)); assert.equal(hooks, 0);
+});
+
+void test("the original nonprivate liveness branch returns without yielding to an application RPC", async () => {
+  assert.equal(Buffer.byteLength(liveness), SOURCE.liveness.bytes); assert.equal(createHash("sha256").update(liveness).digest("hex"), SOURCE.liveness.sha256);
+  let calls = 0; const forbidden = (): never => { calls += 1; throw new Error("unexpected application RPC"); };
+  const pending: unknown = runInNewContext(`(function(qh){${liveness};return j6();})(false)`, { oo: forbidden, J1: forbidden, Ge: Object.freeze({ messageBus: Object.freeze({ rpcCall: forbidden }) }) });
+  assert.equal(await pending, true); assert.equal(calls, 0); assert.equal(SITES.send.length, 17); assert.ok(SITES.send.expression.endsWith(",qh]"));
 });

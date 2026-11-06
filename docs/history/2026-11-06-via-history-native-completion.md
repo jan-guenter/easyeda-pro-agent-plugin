@@ -69,3 +69,12 @@ possible pause/resume events. Three focused source/AST/grammar/getter checks,
 types and strict lint passed. Original native source-point acknowledgments and
 body/main-publication grant mounting remain pending; this leaf alone resumes
 nothing and enables no Save.
+
+The transport send snapshot additionally retains the original lexical `qh`
+flag and refuses private mode. The pinned original j6/F6/Ve source then takes
+only resolved-Promise awaits before U6: no UI liveness RPC can let the 500ms
+uploader timer overtake that already-running structure task. This proof still
+requires the separate producer's original empty pre-Save timer/frontier join;
+it does not infer quiescence from the timer durations. The command/event counts
+are unchanged. A focused actual-source branch check confirms zero application
+RPC calls when the original flag is false.
