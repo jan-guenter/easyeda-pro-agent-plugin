@@ -3802,7 +3802,9 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     const run = async (): Promise<{ result: Record<string, unknown> }> => {
       retained.assertLocal(); const result = await retained.run.call(retained.owner, request); retained.assertLocal(); return { result };
     };
-    return request.action === "inspect" || request.action === "query-observation" ? run() : runFacadeGate(run);
+    // The confirmed Component abort reserves its original owner synchronously.
+    // It must not wait behind the interrupted reader's global gate.
+    return request.action === "inspect" || request.action === "query-observation" || componentSpatial && request.action === "abort-component" ? run() : runFacadeGate(run);
   }));
 }
 

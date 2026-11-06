@@ -140,3 +140,18 @@ void test(`public ${stringPurpose ? "String precreate" : "diagnostic"} registrat
   }
 });
 }
+
+void test("Component original abort dispatch does not queue behind its interrupted global reader gate", async () => {
+  const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
+  const start = source.lastIndexOf("    const retained = original; retained.assertLocal();"); const end = source.indexOf("\n  }));", start);
+  assert.ok(start > 0 && end > start); const fragment = stripTypeScriptTypes(`async function dispatch(){${source.slice(start, end)}}`);
+  const calls: string[] = [], waiting = Promise.withResolvers<Record<string, unknown>>();
+  const owner = { run: (request: { action: string }): Promise<Record<string, unknown>> => { calls.push(request.action); return request.action === "observe-components" ? waiting.promise : Promise.resolve({ action: request.action }); } };
+  const context = vm.createContext({ original: { owner, run: owner.run, assertLocal: (): void => { calls.push("reproof"); } },
+    componentSpatial: true, request: { action: "observe-components" }, runFacadeGate: (run: () => Promise<unknown>): Promise<unknown> => { calls.push("gate"); return run(); } });
+  vm.runInContext(fragment, context); const pending: unknown = vm.runInContext("dispatch()", context);
+  context["request"] = { action: "abort-component" }; const result: unknown = await vm.runInContext("dispatch()", context);
+  assert.match(JSON.stringify(result), /abort-component/u); assert.equal(calls.filter(value => value === "gate").length, 1);
+  context["componentSpatial"] = false; context["request"] = { action: "normal-close" }; await vm.runInContext("dispatch()", context);
+  assert.equal(calls.filter(value => value === "gate").length, 2); waiting.resolve({ synthetic: true }); await pending;
+});

@@ -819,6 +819,10 @@ export interface CurrentFootprintCombinedMainCapability {
   readonly profile: "private.current-footprint-combined-main-capability.v1";
   readonly executionAuthorized: false;
 }
+export interface CurrentPcbComponentAbortReservation {
+  readonly profile: "private.current-pcb-component-abort-reservation.v1";
+  readonly executionAuthorized: false;
+}
 export interface CurrentFootprintCombinedAbortReservation {
   readonly profile: "private.current-footprint-combined-abort-reservation.v1";
   readonly executionAuthorized: false;
@@ -1220,6 +1224,9 @@ class CurrentPcbRetainedOwnerCore {
   #mainCompletionRetireAttempted = false;
   #mainCompletionTailReleaseAttempted = false;
   #visualAbortAttempted = false;
+  #componentAbortReservation: CurrentPcbComponentAbortReservation | null = null;
+  #componentAbortBinding: Binding | null = null;
+  #componentAbortDispatchAttempted = false;
   #mainTerminateAttempted = false;
   #combinedAbortAttempted = false;
   #combinedOutputCleanupOnly = false;
@@ -5390,6 +5397,32 @@ class CurrentPcbRetainedOwnerCore {
     } finally { this.#busy = false; }
   }
 
+  /** Seal only this original generated Component owner before journal awaits. */
+  public reserveComponentSpatialAbort(): CurrentPcbComponentAbortReservation {
+    this.#available(); const original = this.#binding;
+    if (this.#purpose !== "pcb-component-spatial209" || this.#componentPrepared === null || original === null ||
+      original.rootCreated === "0" || this.#componentAbortReservation !== null || this.#terminationObserved || this.#releaseConsumed) { throw error("COMPONENT_ABORT_OWNER"); }
+    assertOriginalGeneratedComponentFixtureOpenCheckpoint(this.#componentPrepared);
+    const token: CurrentPcbComponentAbortReservation = Object.freeze({ profile: "private.current-pcb-component-abort-reservation.v1", executionAuthorized: false });
+    this.#componentAbortBinding = original; this.#componentAbortReservation = token; return token;
+  }
+  /** Durable intent precedes this once-only original Job control. The normal
+   * caller retains its Promise and busy slot; acknowledgment never proves exit. */
+  public async dispatchComponentSpatialAbort(token: CurrentPcbComponentAbortReservation, confirmAbortOriginalComponentJob: true): Promise<void> {
+    this.#available(); const original = this.#componentAbortBinding;
+    // oxlint-disable-next-line typescript/no-unnecessary-boolean-literal-compare -- Runtime confirmation must be exact before consuming the original native dispatch.
+    if (confirmAbortOriginalComponentJob !== true) { throw error("COMPONENT_ABORT_CONFIRMATION"); }
+    if (this.#purpose !== "pcb-component-spatial209" || token !== this.#componentAbortReservation || original === null ||
+      this.#binding !== original || this.#componentAbortDispatchAttempted || this.#terminationObserved || this.#releaseConsumed) { throw error("COMPONENT_ABORT_RESERVATION"); }
+    this.#componentAbortDispatchAttempted = true;
+    this.#input.emit("error", error("COMPONENT_ORIGINAL_ABORT"));
+    await this.#nativeTail; await this.#verify(); this.#available();
+    if (this.#binding !== original || this.#terminationObserved || this.#releaseConsumed) { throw error("COMPONENT_ABORT_OWNER_CHANGED"); }
+    const reply = await this.#request({ action: "component-abort", confirmAbortOriginalComponentJob: true });
+    if (!exact(reply, ["terminationDispatched"]) || reply["terminationDispatched"] !== true) { throw error("COMPONENT_ABORT_REPLY"); }
+    await this.#verify(); this.#available(); if (this.#binding !== original) { throw error("COMPONENT_ABORT_OWNER_CHANGED"); }
+  }
+
   /** Explicit user-authorized cleanup for the original diagnostic Job, including
    * an initial main pause before any window exists. Acknowledgment is not exit. */
   public async abortPcbViaWrite(): Promise<void> {
@@ -6202,7 +6235,7 @@ class CurrentPcbRetainedOwnerCore {
     finally { this.#forwardExecutionPendingNativeRequests.delete(activity); }
   }
   #queuedRequest(request: RecordValue, beforeDispatch?: () => void, forwardMain?: ForwardExecutionMainRequest): Promise<RecordValue> {
-    if (this.#startupParent === null && !bornFootprintTransport(this.#purpose) && !heldCachePurpose(this.#purpose) && this.#purpose !== "footprint-head-age209" && !selectedFileMainPurpose(this.#purpose)) {
+    if (this.#startupParent === null && !bornFootprintTransport(this.#purpose) && !heldCachePurpose(this.#purpose) && this.#purpose !== "footprint-head-age209" && this.#purpose !== "pcb-component-spatial209" && !selectedFileMainPurpose(this.#purpose)) {
       beforeDispatch?.(); return this.#requestNow(request, forwardMain);
     }
     const heldNormal = heldCachePurpose(this.#purpose) && request["action"] !== "poll" &&
@@ -6234,6 +6267,7 @@ class CurrentPcbRetainedOwnerCore {
       !["identity", "pcb-via-abort", "termination", "release"].includes(String(request["action"]))) { throw error("PCB_VIA_CLEANUP_ONLY"); }
     if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE && this.#schematicDisplayCleanupOnly &&
       !["identity", "schematic-display-abort", "termination", "release"].includes(String(request["action"]))) { throw error("SCHEMATIC_DISPLAY_CLEANUP_ONLY"); }
+    if (this.#componentAbortReservation !== null && !["identity", "component-abort", "termination", "release"].includes(String(request["action"]))) { throw error("COMPONENT_CLEANUP_ONLY"); }
     if (this.#pending !== null) { throw error("REQUEST_PENDING"); }
     if (this.#purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE) {
       const action = String(request["action"]);

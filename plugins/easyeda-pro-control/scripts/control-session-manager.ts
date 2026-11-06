@@ -39,6 +39,7 @@ const generationSchema = z.number().int().positive().max(Number.MAX_SAFE_INTEGER
 const originalCleanupSchema = z.discriminatedUnion("action", [
   z.strictObject({ action: z.literal("observe-window") }),
   z.strictObject({ action: z.literal("normal-close"), confirmNormalClose: z.literal(true) }),
+  z.strictObject({ action: z.literal("abort-component"), confirmAbortOriginalComponentJob: z.literal(true) }),
   z.strictObject({ action: z.literal("inspect") }),
   z.strictObject({ action: z.literal("abort-generation"), confirmAbortOriginalForwardJob: z.literal(true) }),
   z.strictObject({ action: z.literal("observe-termination") }),
@@ -53,6 +54,7 @@ const originalCleanupSchema = z.discriminatedUnion("action", [
   z.strictObject({ action: z.literal("settle-publication") }),
 ]);
 const inFlightControlSchema = z.discriminatedUnion("action", [
+  z.strictObject({ action: z.literal("abort-component"), confirmAbortOriginalComponentJob: z.literal(true) }),
   z.strictObject({ action: z.literal("inspect") }),
   z.strictObject({ action: z.literal("abort") }),
   z.strictObject({ action: z.literal("abort-generation"), confirmAbortOriginalForwardJob: z.literal(true) }),
@@ -219,7 +221,7 @@ function originalManagerTool(original: InterruptedCall): string {
   return original.via === null ? "easyeda_control_pcb209_worker_startup" : "easyeda_control_current_pcb_via_write";
 }
 function originalManagerInFlightAllowed(original: InterruptedCall, action: string): boolean {
-  if (original.spatial !== null) { return isOriginalSpatialManagerControl(action, true); }
+  if (original.spatial !== null) { return isOriginalSpatialManagerControl(action, true, original.spatial.family); }
   if (original.via !== null) { return original.via.action === "execute" && isOriginalViaManagerControl(action, true); }
   return original.forward !== null && original.forwardCapture && (action === "inspect" || action === "abort-generation");
 }
@@ -516,7 +518,7 @@ export class ForegroundSessionManager {
         connection.client.transport !== connection.transport || !connection.transport.hasUnclosedChild() ||
         !connection.tools.has(tool) || this.retirementUncertain || this.evidenceFault || this.publicationFault ||
         this.records.some(row => Object.hasOwn(row, "unpublishedValue")) ||
-        (request.request.action === "abort-generation" || request.request.action === "abort") && current.original.abortReservation.attempted) {
+        (request.request.action === "abort-component" || request.request.action === "abort-generation" || request.request.action === "abort") && current.original.abortReservation.attempted) {
       throw new Error("manager-in-flight-original-not-authorized");
     }
     return current;
@@ -561,9 +563,10 @@ export class ForegroundSessionManager {
       // Parent refuses before dispatch and consumes no abort attempt.
       if (this.requireInFlightControl(request, current) !== current) { throw new Error("manager-in-flight-original-not-authorized"); }
       current.controls.add(id);
-      if (request.request.action === "abort-generation" || request.request.action === "abort") {
+      if (request.request.action === "abort-component" || request.request.action === "abort-generation" || request.request.action === "abort") {
         current.original.abortReservation.attempted = true; this.controlledCapture = current; this.stage = "blocked";
       }
+      if (spatial !== null) { consumeOriginalSpatialManagerControl(current.original.spatialRecovery, request.request.action); }
       let result: unknown;
       dispatched = true;
       try { result = await current.original.connection.client.callTool({ name: call.tool, arguments: call.arguments }, undefined, { timeout: call.timeoutMs }); }
@@ -578,7 +581,7 @@ export class ForegroundSessionManager {
       toolResultSchema.parse(result);
       if (spatial !== null) {
         if (this.inFlight !== current || this.connection !== current.original.connection || this.generation !== current.original.generation) { throw new Error("manager-spatial-original-connection-changed"); }
-        learnOriginalSpatialManagerInspection(spatial, current.original.spatialRecovery, result);
+        if (request.request.action === "inspect") { learnOriginalSpatialManagerInspection(spatial, current.original.spatialRecovery, result); }
       }
       await this.publishCallResult(call, result, evidence);
     } catch (error) {

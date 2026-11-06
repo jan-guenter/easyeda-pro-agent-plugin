@@ -29,3 +29,23 @@ void test("spatial manager controls retain strict family/operation, original rec
   }
   assert.equal(captureOriginalSpatialManagerRequest("easyeda_control_runtime", { request: {} }), null);
 });
+
+void test("only original Component bindings admit one explicitly confirmed abort while the reader remains busy", () => {
+  for (const family of ["spatial", "component-spatial"] as const) {
+    const operationId = family === "spatial" ? "pcb209-spatial-abort" : "pcb209-spatial-component-abort";
+    const original = captureOriginalSpatialManagerRequest("easyeda_control_pcb209_opening", { request: { action: family, request: {
+      action: "launch", operationId, confirmValidationOnly: true, confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true,
+    } } }); assert.ok(original !== null); const state = createOriginalSpatialManagerRecovery(original);
+    const abort = { action: "abort-component", confirmAbortOriginalComponentJob: true };
+    assert.throws(() => originalSpatialManagerControl(original, state, abort));
+    learnOriginalSpatialManagerInspection(original, state, { structuredContent: { result: { operationId, busy: true, publicationSettlementAvailable: true,
+      intentSha256: "a".repeat(64), bindingSha256: "b".repeat(64), binding: { helperInstance: "c".repeat(32), jobId: "d".repeat(32), rootPid: 123, rootCreated: "123456789012345" },
+      launchAcknowledged: false, closeAttemptConsumed: false, releaseAttemptConsumed: false, componentAbortAttemptConsumed: false } } });
+    if (family === "spatial") { assert.throws(() => originalSpatialManagerControl(original, state, abort)); } else {
+    for (const extra of [{ confirmAbortOriginalComponentJob: false }, { rootPid: 123 }, { path: "caller" }]) { assert.throws(() => originalSpatialManagerControl(original, state, { ...abort, ...extra })); }
+    const command = originalSpatialManagerControl(original, state, abort); assert.deepEqual(command.arguments.request, { action: family, request: { ...abort, operationId, expectedBindingSha256: "b".repeat(64) } });
+    consumeOriginalSpatialManagerControl(state, "abort-component"); assert.throws(() => originalSpatialManagerControl(original, state, abort));
+    assert.throws(() => originalSpatialManagerControl(original, state, { action: "observe-window" }));
+    }
+  }
+});

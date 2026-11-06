@@ -24,13 +24,19 @@ export function currentPcbComponentSpatialNativeSource(): string {
     ["ComponentReadFunction", CURRENT_PCB_209_COMPONENT_POINT_READ_FUNCTION], ["ComponentRegistrationFunction", GENERATED_COMPONENT_FIXTURE_REGISTRATION_FUNCTION],
   ].map(([name, program]) => packed(name ?? "", program ?? "")).join("\n")}
 ${String.raw`
-bool componentSpatial209,componentRegistrationConsumed,componentAttachmentAttempted,componentReleased;
+bool componentSpatial209,componentRegistrationConsumed,componentAttachmentAttempted,componentReleased,componentAbortAttempted;
 string componentParentSession,componentPcbSession,componentSourceSession,componentContext,componentProject,componentDocument;
 int componentStage,componentReads;
 enum ComponentSpatialBirth { SourceQualified }
 EasyedaDiagnosticOwner(ComponentSpatialBirth purpose){if(purpose!=ComponentSpatialBirth.SourceQualified)throw Error("component-birth");componentSpatial209=true;generatedFixture209=true;}
 public static EasyedaDiagnosticOwner CreateComponentSpatial209(){return new EasyedaDiagnosticOwner(ComponentSpatialBirth.SourceQualified);}
-public void AdmitComponentAction(string action){if(!componentSpatial209)return;foreach(string allowed in new[]{"identity","launch","send","component-spatial419","component-register419","poll","window","normal-close","termination","release","release-unlaunched","release-no-process","no-process-proof"})if(action==allowed)return;throw Error("component-action");}
+public void AdmitComponentAction(string action){if(!componentSpatial209)return;if(componentAbortAttempted&&action!="identity"&&action!="termination"&&action!="release")throw Error("component-cleanup-only");foreach(string allowed in new[]{"identity","launch","send","component-spatial419","component-register419","component-abort","poll","window","normal-close","termination","release","release-unlaunched","release-no-process","no-process-proof"})if(action==allowed)return;throw Error("component-action");}
+public void AbortComponentSpatial(){
+if(!componentSpatial209||componentAbortAttempted||released||root==IntPtr.Zero||job==IntPtr.Zero||rootCreated==0)throw Error("component-abort-owner");
+componentAbortAttempted=true;AssertLimits();long created,exited,kernel,user;bool member;
+if(GetProcessId(root)!=rootPid||!GetProcessTimes(root,out created,out exited,out kernel,out user)||created!=rootCreated||!IsProcessInJob(root,job,out member)||!member)throw Error("component-abort-identity");
+Native(TerminateJobObject(job,0x45444350));
+}
 static string ComponentOriginalId(int id,string encoded){const string prefix="{\"id\":1,";if(id<1||id>418||encoded==null||!encoded.StartsWith(prefix,StringComparison.Ordinal)||!encoded.EndsWith("}\0",StringComparison.Ordinal))throw Error("component-envelope");string text="{\"id\":"+id.ToString(CultureInfo.InvariantCulture)+","+encoded.Substring(prefix.Length);if(Encoding.UTF8.GetByteCount(text)>65536)throw Error("component-envelope-bound");return text;}
 void ComponentSession(string session){if(session==null||!System.Text.RegularExpressions.Regex.IsMatch(session,@"\A[A-Za-z0-9_.:-]{1,128}\z"))throw Error("component-session");if(componentParentSession==null)componentParentSession=session;else if(componentParentSession!=session)throw Error("component-original-session");}
 void ComponentDiscovery(string method,string session){if(!componentSpatial209)throw Error("component-purpose");bool allowed=false;foreach(string candidate in new[]{"Browser.getVersion","Target.getTargets","Target.attachToTarget","Page.enable","Page.getFrameTree","Runtime.enable","Debugger.enable","Debugger.getScriptSource","DOM.getFrameOwner","DOM.describeNode"})if(method==candidate)allowed=true;if(!allowed)throw Error("component-discovery");if(method=="Target.attachToTarget"){if(componentAttachmentAttempted||componentStage>0)throw Error("component-attachment");componentAttachmentAttempted=true;return;}if(session!=null)ComponentSession(session);if(method=="Debugger.getScriptSource")componentSourceSession=session;}
@@ -72,6 +78,9 @@ owner.componentParentSession="s";owner.componentPcbSession="s";owner.componentSo
 var point=new System.Collections.Hashtable();point.Add("objectId","bundle");point.Add("queryKind","point");point.Add("xMil",0.1m);point.Add("yMil",-0.25m);string read=ComponentSpatialProtocolMessage(418,"Runtime.callFunctionOn","s","read-component",point);if(read.IndexOf(JsonString(ComponentReadFunction),StringComparison.Ordinal)<0||read.IndexOf("\"throwOnSideEffect\":false",StringComparison.Ordinal)<0)throw Error("component-read-smoke");for(int i=0;i<16;i++)owner.ComponentSequence(i+5,"s","read-component",point);
 refused=false;try{owner.ComponentSequence(21,"s","read-component",point);}catch{refused=true;}if(!refused)throw Error("component-read-limit-smoke");point["queryKind"]="region";refused=false;try{ComponentSpatialProtocolMessage(1,"Runtime.callFunctionOn","s","read-component",point);}catch{refused=true;}if(!refused)throw Error("component-region-smoke");
 refused=false;try{owner.ComponentSequence(419,"foreign","release",empty);}catch{refused=true;}if(!refused)throw Error("component-original-release-smoke");owner.ComponentSequence(419,"s","release",empty);refused=false;try{owner.ComponentSequence(419,"s","release",empty);}catch{refused=true;}if(!refused)throw Error("component-release-once-smoke");
+foreach(var old in new[]{new EasyedaDiagnosticOwner(),CreateLayers209(),CreateSpatial209(),CreateGeneratedFixtureSpatial209(),CreatePcbViaWrite209()}){refused=false;try{old.AbortComponentSpatial();}catch{refused=true;}if(!refused)throw Error("component-old-abort-smoke");}
+var unbound=CreateComponentSpatial209();refused=false;try{unbound.AbortComponentSpatial();}catch{refused=true;}if(!refused||unbound.componentAbortAttempted)throw Error("component-unbound-abort-smoke");
+unbound.componentAbortAttempted=true;foreach(string action in new[]{"send","poll","window","normal-close","component-abort","component-spatial419","component-register419"}){refused=false;try{unbound.AdmitComponentAction(action);}catch{refused=true;}if(!refused)throw Error("component-aborted-action-smoke");}foreach(string action in new[]{"identity","termination","release"})unbound.AdmitComponentAction(action);
 string path=@"C:\SyntheticTemp\Codex_component_circular_pad_1111111111111111.eprj2",project;using(SHA256 hash=SHA256.Create()){project=BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(path))).Replace("-","").ToLowerInvariant();}string registration=ComponentRegistrationProtocolMessage(418,"s","context",path,project,new string('a',32),new string('b',32),new string('c',64));if(registration.IndexOf(JsonString(ComponentRegistrationFunction),StringComparison.Ordinal)<0)throw Error("component-registration-smoke");
 }
 `}
@@ -81,7 +90,12 @@ function one(source: string, before: string, after: string): string {
   if (source.includes(after)) { if (source.split(after).length !== 2) { throw new Error("COMPONENT_NATIVE_DUPLICATE"); } return source; }
   if (source.split(before).length !== 2) { throw new Error(`COMPONENT_NATIVE_ANCHOR:${before.slice(0, 96)}`); } return source.replace(before, after);
 }
-const dispatch = String.raw`        'component-spatial419' {
+const dispatch = String.raw`        'component-abort' {
+          if (-not $ComponentSpatial209 -or $request.confirmAbortOriginalComponentJob -isnot [bool] -or $request.confirmAbortOriginalComponentJob -ne $true -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,confirmAbortOriginalComponentJob,helperInstance,id,jobId,rootCreated,rootPid') {throw 'pcb-diagnostic-component-abort-fields'}
+          if ($request.helperInstance -isnot [string] -or $request.jobId -isnot [string] -or $request.rootCreated -isnot [string] -or ($request.rootPid -isnot [int] -and $request.rootPid -isnot [long]) -or $request.helperInstance -cne $owner.HelperInstance -or $request.jobId -cne $owner.JobId -or $request.rootCreated -cne $owner.RootCreated -or $request.rootPid -ne $owner.RootPid) {throw 'pcb-diagnostic-component-abort-binding'}
+          $owner.AbortComponentSpatial();$result=@{terminationDispatched=$true}
+        }
+        'component-spatial419' {
           if (-not $ComponentSpatial209 -or -not $launched -or $request.method -isnot [string] -or $request.sessionId -isnot [string] -or $request.spatialPhase -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt 419) {throw 'pcb-diagnostic-component-fields'}
           $baseFields=@('action','helperInstance','id','jobId','method','requestId','rootCreated','rootPid','sessionId','spatialPhase');$fields=New-Object Collections.Hashtable ([StringComparer]::Ordinal)
           foreach ($field in $baseFields) {if (@($request.PSObject.Properties.Name) -cnotcontains $field) {throw 'pcb-diagnostic-component-field'}}

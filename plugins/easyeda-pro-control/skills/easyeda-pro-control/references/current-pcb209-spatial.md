@@ -178,3 +178,19 @@ original root and empty-Job termination, acknowledged helper release and record
 settlement. Do not answer Save/Discard prompts or substitute process-presence
 samples for original termination proof. Report read results separately from
 closed-file invariance, installation and connected evidence.
+
+## Original Component Job cleanup
+
+Only the distinct `component-spatial` wrapper accepts this explicit cleanup:
+
+```json
+{"action":"component-spatial","request":{"action":"abort-component","operationId":"pcb209-spatial-component-...","expectedBindingSha256":"<original binding digest>","confirmAbortOriginalComponentJob":true}}
+```
+
+It dispatches at most one termination request to that owner's original retained
+Job, without accepting a PID, path or HWND. It remains callable while that
+original reader is pending. Afterward, use the original `observe-termination`
+and `release-closed` actions. Do not navigate, replay a read, Save, answer a dialog
+or send normal-close after abort. The acknowledgment proves neither termination
+nor discard. Lost publication or acknowledgment consumes the attempt and supplies
+no automatic retry. The older `spatial` purpose has no new abort action.

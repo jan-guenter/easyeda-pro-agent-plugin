@@ -453,3 +453,21 @@ This path creates no owner from historical JSON, signals no PID, answers no
 Save/Discard prompt and grants no persistence or replacement proof. Complete
 actual original termination and helper release before normal manager retirement.
 Source/synthetic recovery checks do not establish a connected Component case.
+
+## Original Component abort selector
+
+For an interrupted original Component request, the same foreground manager also
+accepts the strict selector below through `cleanup-original`. Its existing
+`in-flight-original` lane accepts the same selector after a fresh original
+private-owner inspection, even while that reader is still pending.
+
+```json
+{"action":"abort-component","confirmAbortOriginalComponentJob":true}
+```
+
+The manager supplies the original wrapper, operation and binding. Caller paths,
+PIDs, HWNDs and binding overrides refuse. This consumes one original Job-only
+abort before dispatch. Inspect the same operation, separately observe termination,
+release its helper, then retire and observe the original facade. Abort grants no
+Save/discard claim or replacement owner. This selector does not apply to the
+older spatial purpose. The repository source record is `docs/history/2026-11-06-component-original-job-abort.md`.

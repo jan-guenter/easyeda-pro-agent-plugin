@@ -233,7 +233,7 @@ const methods = ["launch", "status", "observeApplicationWindow", "requestNormalC
   "releaseNoProcess", "browserObservation", "inspectFrames", "inspectScript", "inspectWorkers", "inspectWorkerScript", "observeWorkerState", "observeModelState", "openProject",
   "openPcb", "observePcbOpening"] as const;
 export type CurrentPcbDiagnosticLifecycleOwner = Pick<CurrentPcbDiagnosticOwner, (typeof methods)[number]> &
-  Partial<Pick<CurrentPcbDiagnosticOwner, "observeComponentSpatial209" | "observeSpatial209" | "observeSpatialTrack209" | "observeSpatialArc209" | "observeSpatialPad209" | "observeLayers209" | "observePrimitives209" | "observeExtendedPrimitives209" | "observeSelectionRelations209" | "observePadShapes209" | "observeImageShapes209" | "observeArcShapes209" | "observePouredShapes209" | "performVisual209" | "captureRendererViewport209" | "rendererCaptureSession209" | "captureWindow209" | "observeWindowCaptureReadiness209" | "resizeWindowForCapture209" | "restoreWindowForCapture209" | "terminateVisualJob">>;
+  Partial<Pick<CurrentPcbDiagnosticOwner, "reserveComponentSpatialAbort" | "dispatchComponentSpatialAbort" | "observeComponentSpatial209" | "observeSpatial209" | "observeSpatialTrack209" | "observeSpatialArc209" | "observeSpatialPad209" | "observeLayers209" | "observePrimitives209" | "observeExtendedPrimitives209" | "observeSelectionRelations209" | "observePadShapes209" | "observeImageShapes209" | "observeArcShapes209" | "observePouredShapes209" | "performVisual209" | "captureRendererViewport209" | "rendererCaptureSession209" | "captureWindow209" | "observeWindowCaptureReadiness209" | "resizeWindowForCapture209" | "restoreWindowForCapture209" | "terminateVisualJob">>;
 type StringOwnerMethods = Pick<CurrentPcbStringPrecreateOwner, "observeStringPrecreate" | "observeCommonBaseline" | "retainedCommonBaselineFailure">;
 type StartupOwnerMethods = Pick<CurrentPcbWorkerStartupOwner, "handoffWorkerStartup">;
 type StartupContinuationOwnerMethods = Pick<CurrentPcb209RatlineContinuationOwner, "prepareWorkerStartupRatlineContinuationSession209">;
@@ -518,6 +518,9 @@ class CurrentPcbLifecycleCore {
   #combinedFactoryDiagnostics: CurrentFootprintCombinedFactoryFailureDiagnostics | null = null;
   #combinedAbortAttempted = false;
   #combinedAbortBusy = false;
+  #componentAbortBusy = false;
+  #componentAbortAttempted = false;
+  readonly #componentAbortedRecords = new Map<DiagnosticLifecycleRecordName, string>();
   #publicationTail: Promise<void> = Promise.resolve();
   readonly #combinedAbortedRecords = new Map<DiagnosticLifecycleRecordName, string>();
   #forwardQualificationAttempted = false;
@@ -602,7 +605,7 @@ class CurrentPcbLifecycleCore {
     else if (generation === "209-opening" || generation === "209-ordinary") { allocate = this.#generatedSource === null ? startCurrentPcb209DiagnosticOwner : startCurrentGeneratedFixture209DiagnosticOwner; }
     this.#allocate = dependencies.allocateOwner ?? allocate;
     const publish = dependencies.publishRecord ?? publishCurrentPcbDiagnosticLifecycleRecord;
-    this.#publish = (generation === "209-startup-footprint-combined" || generation === "209-startup-footprint-forward") ? (operationId, name, record): Promise<void> => {
+    this.#publish = (generation === "209-component-spatial" || generation === "209-startup-footprint-combined" || generation === "209-startup-footprint-forward") ? (operationId, name, record): Promise<void> => {
       const previous = this.#publicationTail;
       const pending = (async (): Promise<void> => {
         await previous; this.#assertPublicationAllowed(name);
@@ -660,6 +663,7 @@ class CurrentPcbLifecycleCore {
     else if (this.#generation === "209-opening") { request = currentPcb209OpeningRequestSchema.parse(input); }
     else { request = { diagnostic: currentPcbDiagnosticValidationRequestSchema, "string-precreate": currentPcbStringPrecreateRequestSchema,
       "worker-startup": currentPcbWorkerStartupLifecycleRequestSchema }[this.#purpose].parse(input); }
+    if (request.action === "abort-component") { return this.#runComponentAbort(request); }
     if (request.action === "query-observation") {
       const operations = await readCurrentPcbDiagnosticLifecycles();
       const operation = operations.find(value => value.operationId === request.operationId);
@@ -789,6 +793,9 @@ class CurrentPcbLifecycleCore {
         savedCacheAccessorObservation: original && operation?.records["saved-cache-accessor-result.json"] === undefined ? native?.savedCacheAccessorObservation ?? null : null,
         savedCacheAccessorResult: operation?.records["saved-cache-accessor-result.json"]?.result ?? null,
         mainConstructionObservation: original && this.#retained?.methods.retainedFootprintMainConstruction !== undefined ? this.#retained.methods.retainedFootprintMainConstruction.call(this.#retained.owner) : null,
+        componentAbortAttemptConsumed: operation?.records["component-abort-intent.json"] !== undefined || original && this.#componentAbortAttempted,
+        componentAbortAcknowledged: operation?.records["component-abort-acknowledged.json"] !== undefined,
+        componentAbortedUnpublishedRecordCount: original ? this.#componentAbortedRecords.size : 0,
         visualAbortAttemptConsumed: operation?.records["visual-abort-intent.json"] !== undefined || original && this.#visualAbortAttempted,
         visualAbortAcknowledged: operation?.records["visual-abort-acknowledged.json"] !== undefined,
         mainTerminationAttemptConsumed: operation?.records["main-terminate-intent.json"] !== undefined || original && this.#mainTerminateAttempted,
@@ -937,7 +944,7 @@ class CurrentPcbLifecycleCore {
         releaseAttemptConsumed: operation?.records["release-intent.json"] !== undefined || original && this.#releaseAttempted };
     }
     this.#options.assertLocalAllowed();
-    requireValue(!this.#busy && !this.#combinedAbortBusy, "BUSY"); this.#busy = true;
+    requireValue(!this.#busy && !this.#combinedAbortBusy && !this.#componentAbortBusy, "BUSY"); this.#busy = true;
     try {
       if (request.action === "launch") {
         requireValue(this.#lease === null && !this.#launchAttempted, "LAUNCH_CONSUMED");
@@ -2729,6 +2736,50 @@ class CurrentPcbLifecycleCore {
         abortDispatched: true, terminationProved: false, executionAuthorized: false, saveAuthorized: false };
     } finally { this.#combinedAbortBusy = false; }
   }
+  /** The original private owner seals normal work before any journal await.
+   * Only this Component generation can request its retained Job's termination. */
+  async #runComponentAbort(request: Extract<CurrentPcbComponentSpatialRequest, { action: "abort-component" }>): Promise<Record<string, unknown>> {
+    this.#options.assertLocalAllowed();
+    requireValue(this.#generation === "209-component-spatial" && !this.#componentAbortBusy && !this.#componentAbortAttempted, "COMPONENT_ABORT_CONSUMED");
+    const bindingText = this.#pending.get("binding.json"), retained = this.#retained;
+    requireValue(retained !== null && retained.operationId === request.operationId && bindingText !== undefined &&
+      sha256Json(JSON.parse(bindingText) as unknown) === request.expectedBindingSha256 && !this.#releaseAttempted, "ORIGINAL_OWNER_REQUIRED");
+    this.#assertOwner(retained);
+    const dispatch = retained.methods.dispatchComponentSpatialAbort, reserve = retained.methods.reserveComponentSpatialAbort;
+    requireValue(reserve !== undefined && dispatch !== undefined, "COMPONENT_ABORT_OWNER_METHODS");
+    this.#componentAbortBusy = true; this.#componentAbortAttempted = true;
+    try {
+      const token = reserve.call(retained.owner); this.#assertOwner(retained);
+      await this.#publicationTail; this.#assertOwner(retained);
+      const operations = await readCurrentPcbDiagnosticLifecycles(); this.#assertOwner(retained);
+      const operation = operations.find(value => value.operationId === request.operationId); this.#assertPurpose(request.operationId, operation);
+      requireValue(operation !== undefined && canonicalJson(operation.records["binding.json"]) === bindingText &&
+        operation.records["component-abort-intent.json"] === undefined && operation.records["terminated.json"] === undefined &&
+        operation.records["release-intent.json"] === undefined && operation.records["released.json"] === undefined, "COMPONENT_ABORT_UNAVAILABLE");
+      requireValue(Object.keys(operation.records).every(name => [...this.#pending].some(([known, text]) => known === name && canonicalJson(operation.records[known]) === text)), "JOURNAL_CHANGED");
+      for (const [name, text] of this.#pending) {
+        if (operation.records[name] === undefined) { this.#componentAbortedRecords.set(name, text); this.#pending.delete(name); }
+      }
+      const intent: NonNullable<DiagnosticLifecycleRecords["component-abort-intent.json"]> = {
+        schema: "easyeda-pro-control.pcb209-component-abort-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+        bindingSha256: request.expectedBindingSha256, previousRecordsSha256: sha256Json(operation.records), confirmAbortOriginalComponentJob: true,
+      };
+      await assertSnapshot(operations); this.#assertOwner(retained);
+      await this.#record(request.operationId, "component-abort-intent.json", intent); this.#assertOwner(retained);
+      const updated = { ...operation, records: { ...operation.records, "component-abort-intent.json": intent } };
+      const expected = operations.map(value => value.operationId === request.operationId ? updated : value);
+      await assertSnapshot(expected); this.#assertOwner(retained);
+      await dispatch.call(retained.owner, token, request.confirmAbortOriginalComponentJob); this.#assertOwner(retained);
+      await assertSnapshot(expected); this.#assertOwner(retained);
+      const acknowledgment: NonNullable<DiagnosticLifecycleRecords["component-abort-acknowledged.json"]> = {
+        schema: "easyeda-pro-control.pcb209-component-abort-acknowledged.v1", operationId: request.operationId,
+        createdAt: new Date().toISOString(), intentSha256: sha256Json(intent), terminationDispatched: true, terminationProved: false,
+      };
+      await this.#record(request.operationId, "component-abort-acknowledged.json", acknowledgment); this.#assertOwner(retained);
+      return { ...describe(request.operationId, { ...updated, records: { ...updated.records, "component-abort-acknowledged.json": acknowledgment } }),
+        terminationDispatched: true, terminationProved: false, executionAuthorized: false, saveAuthorized: false, discardProved: false, persistenceVerified: false };
+    } finally { this.#componentAbortBusy = false; }
+  }
   protected assertCombinedNormal(): void {
     this.#options.assertLocalAllowed();
     requireValue((this.#generation === "209-startup-footprint-combined" || this.#generation === "209-startup-footprint-forward") && !this.#combinedAbortAttempted, "COMBINED_GENERATION_ABORTED");
@@ -2736,9 +2787,11 @@ class CurrentPcbLifecycleCore {
   #assertNormalOwner(retained: Retained): void {
     requireValue(!(this.#generation === "209-startup-footprint-combined" || this.#generation === "209-startup-footprint-forward") || !this.#combinedAbortAttempted, "COMBINED_GENERATION_ABORTED");
     requireValue(!this.#visualAbortAttempted, "VISUAL_GENERATION_ABORTED");
+    requireValue(!this.#componentAbortAttempted, "COMPONENT_GENERATION_ABORTED");
     this.#assertOwner(retained);
   }
   #assertPublicationAllowed(name: DiagnosticLifecycleRecordName): void {
+    requireValue(!this.#componentAbortAttempted || ["component-abort-intent.json", "component-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"].includes(name), "COMPONENT_GENERATION_ABORTED");
     requireValue(!this.#visualAbortAttempted || ["visual-abort-intent.json", "visual-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"].includes(name), "VISUAL_GENERATION_ABORTED");
     requireValue(!this.#combinedAbortAttempted || ["combined-abort-intent.json", "combined-abort-acknowledged.json", "forward-abort-intent.json", "forward-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"].includes(name), "COMBINED_GENERATION_ABORTED");
   }
@@ -2756,7 +2809,7 @@ class CurrentPcbLifecycleCore {
     requireValue(this.#generatedSource === null || status.generatedFixtureRegistrationPurpose === true, "GENERATED_FIXTURE_BIRTH_CHANGED");
     const expectedProfile = this.#generation === "206" ? this.#purpose : { "209-startup-footprint-forward": "worker-startup-footprint-forward209", "209-startup-footprint-combined": "worker-startup-footprint-combined209", "209-startup-footprint-main": "worker-startup-footprint-main209", "209-startup-footprint-route": "worker-startup-footprint-copy209", "209-startup-footprint": "worker-startup-footprint209", "209-startup": "worker-startup209", "209-startup-empty": "worker-startup-empty209", "209-startup-ratline": "worker-startup-ratline209", "209-startup-ratline-continuation": "worker-startup-ratline-continuation209", "209-component-spatial": "pcb-component-spatial209", "209-spatial": "pcb-spatial209", "209-visual": "visual209", "209-opening": "diagnostic209", "209-ordinary": "diagnostic209" }[this.#generation];
     requireValue(status.profile === expectedProfile &&
-      (this.#generation !== "209-component-spatial" || typeof retained.methods.observeComponentSpatial209 === "function" && retained.owner.observeComponentSpatial209 === retained.methods.observeComponentSpatial209 && typeof retained.methods.openGeneratedComponentFixtureProject === "function" && retained.owner.openGeneratedComponentFixtureProject === retained.methods.openGeneratedComponentFixtureProject) &&
+      (this.#generation !== "209-component-spatial" || typeof retained.methods.reserveComponentSpatialAbort === "function" && retained.owner.reserveComponentSpatialAbort === retained.methods.reserveComponentSpatialAbort && typeof retained.methods.dispatchComponentSpatialAbort === "function" && retained.owner.dispatchComponentSpatialAbort === retained.methods.dispatchComponentSpatialAbort && typeof retained.methods.observeComponentSpatial209 === "function" && retained.owner.observeComponentSpatial209 === retained.methods.observeComponentSpatial209 && typeof retained.methods.openGeneratedComponentFixtureProject === "function" && retained.owner.openGeneratedComponentFixtureProject === retained.methods.openGeneratedComponentFixtureProject) &&
       (this.#generation !== "209-spatial" || typeof retained.methods.observeSpatial209 === "function" &&
         retained.owner.observeSpatial209 === retained.methods.observeSpatial209 &&
         retained.owner.observeSpatialTrack209 === retained.methods.observeSpatialTrack209 &&
@@ -3136,7 +3189,7 @@ class CurrentPcbLifecycleCore {
       ...(this.#generatedSource === null ? {} : { openGeneratedComponentFixtureProject: owner.openGeneratedComponentFixtureProject, openGeneratedFixtureProject: owner.openGeneratedFixtureProject, retainedGeneratedFixtureRegistration: owner.retainedGeneratedFixtureRegistration }),
       openPcb: owner.openPcb, observePcbOpening: owner.observePcbOpening,
       ...(this.#generation === "209-visual" ? { performVisual209: owner.performVisual209, captureRendererViewport209: owner.captureRendererViewport209, rendererCaptureSession209: owner.rendererCaptureSession209, captureWindow209: owner.captureWindow209, observeWindowCaptureReadiness209: owner.observeWindowCaptureReadiness209, resizeWindowForCapture209: owner.resizeWindowForCapture209, restoreWindowForCapture209: owner.restoreWindowForCapture209, terminateVisualJob: owner.terminateVisualJob } : {}),
-      ...(this.#generation === "209-component-spatial" ? { observeComponentSpatial209: owner.observeComponentSpatial209 } : {}),
+      ...(this.#generation === "209-component-spatial" ? { reserveComponentSpatialAbort: owner.reserveComponentSpatialAbort, dispatchComponentSpatialAbort: owner.dispatchComponentSpatialAbort, observeComponentSpatial209: owner.observeComponentSpatial209 } : {}),
       ...(this.#generation === "209-spatial" ? { observeSpatial209: owner.observeSpatial209, observeSpatialTrack209: owner.observeSpatialTrack209, observeSpatialArc209: owner.observeSpatialArc209, observeSpatialPad209: owner.observeSpatialPad209 } : {}),
       ...(opening209(this.#generation) && this.#generation !== "209-spatial" && this.#generation !== "209-component-spatial" ? { observeLayers209: owner.observeLayers209, observePrimitives209: owner.observePrimitives209,
         observeExtendedPrimitives209: owner.observeExtendedPrimitives209, observeSelectionRelations209: owner.observeSelectionRelations209,
@@ -3238,6 +3291,7 @@ class CurrentPcbLifecycleCore {
     // Handles. The native owner still checks its retained helper on cleanup.
     this.#assertOwner(retained);
     await assertSnapshot(operations); this.#assertOwner(retained);
+    if (this.#componentAbortAttempted) { requireValue(["observe-termination", "release-closed"].includes(request.action), "COMPONENT_GENERATION_ABORTED"); }
     if (request.action === "abort-visual") { return this.#abortVisual(request, operation, operations, retained); }
     if (this.#visualAbortAttempted) { requireValue(["observe-termination", "release-closed"].includes(request.action), "VISUAL_GENERATION_ABORTED"); }
     if (request.action === "open-project" || request.action === "open-generated-fixture") { return this.#openProject(request, operation, operations, retained); }

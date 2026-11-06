@@ -155,6 +155,12 @@ const spatialIntentSchema = diagnosticIntentSchema.extend({
   generatedFixtureBirth: ordinaryReadIntentSchema.shape.generatedFixtureBirth,
 });
 const componentSpatialIntentSchema = spatialIntentSchema.extend({ schema: z.literal("easyeda-pro-control.pcb209-component-spatial-launch-intent.v1"), operationId: currentPcbComponentSpatialIdSchema });
+const componentAbortIntentSchema = z.strictObject({ ...base, operationId: currentPcbComponentSpatialIdSchema,
+  schema: z.literal("easyeda-pro-control.pcb209-component-abort-intent.v1"), bindingSha256: diagnosticLifecycleDigestSchema,
+  previousRecordsSha256: diagnosticLifecycleDigestSchema, confirmAbortOriginalComponentJob: z.literal(true) });
+const componentAbortAckSchema = z.strictObject({ ...base, operationId: currentPcbComponentSpatialIdSchema,
+  schema: z.literal("easyeda-pro-control.pcb209-component-abort-acknowledged.v1"), intentSha256: diagnosticLifecycleDigestSchema,
+  terminationDispatched: z.literal(true), terminationProved: z.literal(false) });
 const visualIntentSchema = diagnosticIntentSchema.extend({
   schema: z.literal("easyeda-pro-control.pcb209-visual-launch-intent.v1"), operationId: currentPcb209VisualIdSchema,
   acceptVisualStateChanges: z.literal(true),
@@ -840,6 +846,8 @@ export const diagnosticLifecycleRecordSchemas = {
   "project-opening-intent.json": projectOpeningIntentSchema, "project-opening-result.json": projectOpeningResultSchema,
   "pcb-open-intent.json": pcbOpenIntentSchema, "pcb-open-result.json": pcbOpenResultSchema,
   "pcb-opening-intent.json": observationIntentSchema, "pcb-opening-result.json": observationResultSchema,
+  "component-abort-intent.json": componentAbortIntentSchema,
+  "component-abort-acknowledged.json": componentAbortAckSchema,
   "visual-abort-intent.json": visualAbortIntentSchema, "visual-abort-acknowledged.json": visualAbortAckSchema,
   "window-restore209-intent.json": observationIntentSchema, "window-restore209-result.json": observationResultSchema,
   "window-resize209-intent.json": observationIntentSchema, "window-resize209-result.json": observationResultSchema,
@@ -1168,7 +1176,17 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
       "no-process-released.json", "browser-intent.json", "browser-result.json", "frames-intent.json", "frames-result.json", "script-intent.json",
       "script-result.json", "project-opening-intent.json", "project-opening-result.json", "pcb-open-intent.json", "pcb-open-result.json",
       "pcb-opening-intent.json", "pcb-opening-result.json", "spatial209-intent.json", "spatial209-result.json", "spatial209-failure.json"]);
+    if (componentSpatialPurpose) { allowed.add("component-abort-intent.json"); allowed.add("component-abort-acknowledged.json"); }
     for (const name of Object.keys(records)) { requireValue(allowed.has(name), "SPATIAL_STAGE_PURPOSE"); }
+  }
+  const componentAbort = records["component-abort-intent.json"], componentAck = records["component-abort-acknowledged.json"];
+  requireValue(componentAbort === undefined || componentSpatialPurpose && binding !== undefined && binding.binding.rootCreated !== "0" &&
+    componentAbort.bindingSha256 === predecessorDigest(binding), "COMPONENT_ABORT_CHAIN");
+  requireValue(componentAck === undefined || componentAbort !== undefined && componentAck.intentSha256 === predecessorDigest(componentAbort), "COMPONENT_ABORT_ACK_CHAIN");
+  if (componentAbort !== undefined) {
+    const cleanup = new Set(["component-abort-intent.json", "component-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"]);
+    const prefix = Object.fromEntries(Object.entries(records).filter(([name]) => !cleanup.has(name)));
+    requireValue(predecessorDigest(prefix) === componentAbort.previousRecordsSha256, "COMPONENT_ABORT_PREFIX_CHANGED");
   }
   const visualPurpose = intent?.schema === "easyeda-pro-control.pcb209-visual-launch-intent.v1";
   requireValue(intent === undefined || visualPurpose === operation.operationId.startsWith("pcb209-visual-"), "VISUAL_PURPOSE_ID");
