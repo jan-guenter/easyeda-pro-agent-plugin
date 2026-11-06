@@ -20,6 +20,19 @@ has no such mount. New `sys_ExternalApi` registrations are another trust boundar
 not permission to run another extension's code. [Help reference](https://prodocs.easyeda.com/en/api/reference/pro-api.sys_help.help.html),
 [external API reference](https://prodocs.easyeda.com/en/api/reference/pro-api.sys_externalapi.html).
 
+The offline `sdk` and `coverage` queries also accept `reference:"packaged-4197"`.
+That separate candidate records862 signatures from the statically inspected
+4.1.97.04b092ac/API0.3.69.f840f579 package. It preserves all earlier snapshots;
+it is neither the installed3.2.209 profile nor a runtime upgrade. Query exact
+namespaces and signatures before planning a future adapter. The exhaustive
+inventory includes its20 new method paths and their runtime-admission omissions.
+Do not dispatch those methods through an older bridge or interpret the official
+CLI's session acknowledgment as a saved result. The hidden `--userData` flag
+does not establish independent config/cache/profile roots, and CLI session
+destruction does not prove normal editor closure. See the
+[dated source investigation](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-06-official-cli-applicability.md)
+before evaluating that backend in a genuinely isolated environment.
+
 ## Package and runtime
 
 `extension.json` binds UUID, entrypoint, activation events, editor compatibility,

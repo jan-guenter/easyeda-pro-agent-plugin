@@ -42,7 +42,7 @@ export interface ApiCoverageEntry {
 
 const statusSchema = z.enum(["implemented-public-subset", "implemented-native-equivalent", "implemented-vendor-http-equivalent", "internal-lifecycle-only", "implemented-but-blocked", "omitted"]);
 export const extensionApiCoverageInputSchema = z.object({
-  reference: z.enum(["all", "reviewed-installed", "official-latest", "installed-209"]).default("all"),
+  reference: z.enum(["all", "reviewed-installed", "official-latest", "installed-209", "packaged-4197"]).default("all"),
   namespace: z.string().regex(/^(?:dmt|lib|pcb|pnl|sch|sys)_[A-Za-z0-9]+$/u).optional(),
   search: z.string().min(1).max(128).optional(),
   status: statusSchema.optional(),
@@ -181,8 +181,13 @@ const concreteOmissions: Readonly<Record<string, ApiCoverageOmission>> = {
  * defects override declaration shapes. The remaining category explicitly says
  * implementation is still missing; absence is not an assertion of infeasibility.
  */
-function omissionFor(namespace: string, method: string, declarations: readonly ApiDeclarationMethod[], reviewed: boolean, installed209: boolean): ApiCoverageOmission {
+function omissionFor(namespace: string, method: string, declarations: readonly ApiDeclarationMethod[], reviewed: boolean, installed209: boolean, packaged4197Only: boolean): ApiCoverageOmission {
   const short = `${namespace}.${method}`;
+  if (packaged4197Only) {
+    return omitted("packaged-4197-runtime-not-admitted", `${short} is declared only in the statically inspected 4.1.97.04b092ac/API0.3.69.f840f579 candidate. It is absent from the three earlier declaration snapshots, including installed3.2.209. No candidate executable, CLI session, implementation or persistence contract is admitted by this inventory.`,
+      "Establish an isolated candidate runtime, inspect this exact implementation and its delegated effects, then implement a strict task adapter with original-session cleanup and disposable saved-result proof where applicable. The packaged CLI's window destruction and successful invocation do not establish normal closure or storage completion.",
+      ["extension-api-packaged-4197-data.ts", "docs/history/2026-11-06-official-cli-applicability.md"]);
+  }
   const installedOmission = installed209 ? installed209ApiOmission(short) : undefined;
   if (installedOmission !== undefined) { return installedOmission; }
   if (!reviewed) { return omitted("not-in-reviewed-runtime", `${short} is absent from the legacy reviewed-installed declaration. Its presence in a newer reference${installed209 ? " and the separately cataloged installed-209 declaration" : ""} does not admit that backend or method.`, "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.", ["reviewed-compatibility.json", "extension-api-catalog-data.ts"]); }
@@ -419,7 +424,8 @@ export function inventoryExtensionApiCoverage(): ApiCoverageEntry[] {
     else if (supported.some((entry) => entry.executionState !== "blocked" && entry.implementation === "vendor-http-task-equivalent")) { status = "implemented-vendor-http-equivalent"; }
     else if (supported.length > 0) { status = "internal-lifecycle-only"; }
     return { path, namespace: group.namespace, method: group.method, declarations: group.declarations, reviewedRuntimeDeclaration: reviewed, installed209Declaration: installed209, status, routes: supported,
-      omission: supported.length === 0 ? omissionFor(group.namespace, group.method, group.methods, reviewed, installed209) : null,
+      omission: supported.length === 0 ? omissionFor(group.namespace, group.method, group.methods, reviewed, installed209,
+        group.declarations.every(entry => entry.reference === "packaged-4197")) : null,
       completeDeclaredContractSupported: false, currentGenerationLiveValidation: "not-recorded", runtimeAdmission: "not-granted-by-inventory" };
   });
 }
@@ -429,6 +435,7 @@ export function extensionApiCoverageSummary(entries = inventoryExtensionApiCover
   return { totalDistinctMethods: entries.length, reviewedDistinctMethods: count((entry) => entry.reviewedRuntimeDeclaration),
     latestDistinctMethods: count((entry) => entry.declarations.some((declaration) => declaration.reference === "official-latest")),
     installed209DistinctMethods: count((entry) => entry.installed209Declaration),
+    packaged4197DistinctMethods: count(entry => entry.declarations.some(declaration => declaration.reference === "packaged-4197")),
     statuses: Object.fromEntries(statusSchema.options.map((status) => [status, count((entry) => entry.status === status)])),
     executionRoutes: Object.fromEntries(["available-with-runtime-guards", "available-with-network-guards", "available-with-managed-file-guards", "blocked", "partially-blocked"].map((state) => [state, entries.flatMap((entry) => entry.routes).filter((route) => route.executionState === state).length])),
     omissions: Object.fromEntries([...new Set(entries.flatMap((entry) => entry.omission === null ? [] : [entry.omission.code]))].toSorted().map((code) => [code, count((entry) => entry.omission?.code === code)])),
@@ -461,7 +468,7 @@ export function queryExtensionApiCoverage(input: unknown = {}): Record<string, u
   }
   const next = query.offset + page.length;
   const result = { schema: "easyeda-pro-control.extension-api-coverage.v1", offline: true, invocationEnabled: false,
-    scope: "Distinct mounted method paths; overloads and all three snapshots retained. Legacy reviewed-installed and installed-209 declaration presence are separate from runtime admission. Supported routes expose documented subsets, not every declared contract.",
+    scope: "Distinct mounted method paths; overloads and all four snapshots retained. Legacy reviewed-installed, installed-209 and statically inspected packaged-4197 declarations are separate from runtime admission. Supported routes expose documented subsets, not every declared contract.",
     summary: extensionApiCoverageSummary(all), page: { offset: query.offset, limit: query.limit, totalMatched: matched.length, returned: page.length,
       nextOffset: next < matched.length ? next : null, maxEntriesBytes: 49_152, maxResponseBytes: 65_536 }, entries: page };
   if (Buffer.byteLength(JSON.stringify(result), "utf8") > 65_536) { throw new Error("Coverage response exceeds budget."); }

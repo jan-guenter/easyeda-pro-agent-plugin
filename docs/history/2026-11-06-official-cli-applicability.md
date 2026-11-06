@@ -45,3 +45,31 @@ Session cleanup is narrower than persistence proof. `sG.close[3258769,3259473)` 
 A hidden session is still a real BrowserWindow using the default Electron session, with no independent partition and with background throttling disabled. A feasible Linux evaluation therefore needs an actual filesystem/user boundary, such as a disposable non-root container or VM with its own home, document/config directories, temporary socket directory and activation/config files, and no host CAD/profile mounts. A display backend may still be required; hidden rendering is not proof of display/GPU independence. Runtime libraries, activation, offline configuration and genuine process-tree shutdown remain to be checked on the extracted package. Merely changing a flag, using a ZIP directory, or changing `TMPDIR` does not establish all of those boundaries. The bundled installer is unsuitable for an isolated source probe: it replaces `/opt/apps/lceda-pro`, creates a global command link and desktop entry, recursively changes permissions, and offers a reboot. It was only read.
 
 No new runtime was launched and no existing owner was contacted or terminated by this inspection. Current3.2 admissions and source work remain separate.
+
+## Separate offline candidate declaration inventory
+
+The follow-up extracted the package's1857649-byte `api-types.d.ts`, SHA256
+`773046ae11ae9291215226858c7dfc9f8121bbba5f0e7c71d29cd7aa53c81257`,
+as data and parsed it with the maintained declaration inventory. The new
+`packaged-4197` offline `sdk`/`coverage` reference records115 mounted namespaces,
+862 method signatures,829 distinct method paths and474 type names. The three
+earlier snapshots remain byte-identical metadata. The combined coverage inventory
+now contains855 distinct paths rather than835, without any new execution route.
+
+Its20 new paths cover library geometry, DFM, PCB command-group lifecycle,
+fanout/ratlines, detailed DRC, stackup, primitive search, schematic region
+rendering/search, Altium export and source-pin geometry. Two former
+`sch_SourceDocument` region methods are absent from the candidate and appear
+under `sch_Document`; the older paths remain in their original snapshots rather
+than becoming aliases or receiving candidate execution support. Every
+candidate-only method has a concrete `packaged-4197-runtime-not-admitted`
+omission. Static signatures establish neither working implementations nor
+permission to use arbitrary CLI invocation. No external compatibility pin,
+application installation, native owner or saved-result claim changed.
+
+Both TypeScript projects, strict type-aware lint,75 focused catalog/coverage
+checks, deterministic candidate regeneration, all-skill validation and repository
+validation passed. The initial focused run retained a stale aggregate omission
+count, and the first lint run required an explicit filesystem-flags exception;
+both failures remain in private logs. Bundles, full exact-payload CI and actual
+candidate execution remain separate work.

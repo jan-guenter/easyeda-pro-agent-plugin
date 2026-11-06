@@ -300,16 +300,16 @@ void test("ordinary symbol coverage exposes its bounded forward-only history pro
   assert.equal(result["historicalCanvasConnectedValidation"], "installed080000-ordinary-unused-canvas-segments-forward-only");
 });
 
-void test("coverage enumerates every distinct mounted method and retains every overload in all three pinned snapshots", () => {
+void test("coverage enumerates every distinct mounted method and retains every overload in all four pinned snapshots", () => {
   const rows = inventoryExtensionApiCoverage();
   const expected = new Set(extensionApiSnapshots.flatMap((snapshot) => snapshot.namespaces.flatMap((namespace) => namespace.methods.map((method) => `eda.${namespace.name}.${method.name}`))));
-  assert.equal(expected.size, 835);
+  assert.equal(expected.size, 855);
   assert.equal(rows.length, expected.size);
   assert.deepEqual(new Set(rows.map((row) => row.path)), expected);
   assert.equal(rows.filter((row) => row.reviewedRuntimeDeclaration).length, 697);
   assert.equal(rows.filter((row) => row.declarations.some((declaration) => declaration.reference === "official-latest")).length, 773);
   assert.equal(rows.filter((row) => row.installed209Declaration).length, 811);
-  assert.equal(rows.reduce((count, row) => count + row.declarations.length, 0), 749 + 806 + 844);
+  assert.equal(rows.reduce((count, row) => count + row.declarations.length, 0), 749 + 806 + 844 + 862);
   for (const row of rows) {
     assert.equal(row.currentGenerationLiveValidation, "not-recorded");
     assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
@@ -573,7 +573,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 217, "implemented-native-equivalent": 47, "implemented-vendor-http-equivalent": 13, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 479,
+    "implemented-public-subset": 217, "implemented-native-equivalent": 47, "implemented-vendor-http-equivalent": 13, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 499,
   });
 });
 
