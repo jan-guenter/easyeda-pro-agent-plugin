@@ -1,5 +1,6 @@
-/** A source-owned producer call remains held. This collector has no resume,
- * cleanup-CDP, timer or write authority; incomplete retirement needs Job exit. */
+/** Source-owned producer calls remain held unless the separate original
+ * startup-cache cursor admits that exact packet. There is no generic resume,
+ * cleanup-CDP or timer authority; incomplete retirement needs Job exit. */
 /* oxlint-disable import/max-dependencies -- One original collector joins separately audited source, native intrinsic, caller and actual owner boundaries. */
 import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_PROMISE_CAPTURE, currentProjectSaveProducerCachePromiseHandle, decodeCurrentProjectSaveProducerCachePromise } from "./current-project-save-producer-cache-replies.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLS as CACHE_CALLS, CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CAPTURE_LENGTH } from "./current-project-save-producer-cache-programs.ts";
@@ -7,12 +8,12 @@ import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS as CACHE_CALLERS, currentPr
 import type { CurrentProjectSaveProducerCacheCaller } from "./current-project-save-producer-cache-source.ts";
 import { types } from "node:util";
 import { z } from "zod";
-import { requireOriginalCurrentProjectSaveProducerOrigin } from "./current-pcb-diagnostic-owner.ts";
+import { continueOriginalCurrentGeneratedInitialCacheCall, requireOriginalCurrentProjectSaveProducerOrigin, settleOriginalCurrentGeneratedInitialCacheCalls } from "./current-pcb-diagnostic-owner.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { decodeCurrentFootprintCopyClockRpcV2ArrayCapture } from "./current-footprint-copy-clock-rpc-v2-protocol.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_PRODUCER_FRAME_FLAGS as FRAME_FLAGS,
   CURRENT_PROJECT_SAVE_PRODUCER_REQUESTS as REQUESTS, CURRENT_PROJECT_SAVE_PRODUCER_ROLES as ROLES, CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS as SHARED,
-  currentProjectSaveProducerNativeCases, validateCurrentProjectSaveProducerCommand } from "./current-project-save-producer-protocol.ts";
+  currentProjectSaveProducerNativeCases, currentProjectSaveProducerRoleLimit, validateCurrentProjectSaveProducerCommand } from "./current-project-save-producer-protocol.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_RECEIVER_CALLS as CALLS } from "./current-project-save-producer-programs.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_SITES as SITES } from "./current-project-save-producer-source.ts";
 import type { CurrentProjectSaveProducerRole } from "./current-project-save-producer-source.ts";
@@ -70,10 +71,10 @@ export class CurrentProjectSaveProducerObserver {
     need(this.#armed && !this.#busy && !this.#failed && !this.#closed && this.#held === null, "HELD_CALL_ONCE"); this.#busy = true;
     try { await this.#current(); this.#events += 1; need(this.#events <= REQUESTS.events, "EVENT_CAPACITY");
       const received = event.parse(captureCurrentPcbStringClockReply(await this.#binding.nextEvent()).value); await this.#current(); need(received.sessionId === this.#binding.sessionId, "EVENT_SESSION");
-      for (const role of SHARED) { const id = this.#binding.originalBreakpoint(role); handle.parse(id); need(![...this.#points.values()].includes(id), "SHARED_POINT_ALIAS"); this.#points.set(role, id); }
+      for (const role of SHARED) { const id = this.#binding.originalBreakpoint(role); handle.parse(id); const prior = this.#points.get(role); need(prior === id || prior === undefined && ![...this.#points.values()].includes(id), "SHARED_POINT_ALIAS"); this.#points.set(role, id); }
       const role = ROLES.find(name => this.#points.get(name) === received.params.hitBreakpoints[0]), top = received.params.callFrames[0]; need(role !== undefined && top !== undefined, "ORIGINAL_POINT"); const site = SITES[role];
       need(top.location.scriptId === this.#binding.scriptId && top.location.lineNumber === site.lineNumber && top.location.columnNumber === site.columnNumber && top.functionLocation.scriptId === this.#binding.scriptId && top.functionLocation.lineNumber === site.functionLineNumber && top.functionLocation.columnNumber === site.functionColumnNumber, "ORIGINAL_FRAME");
-      const count = (this.#occurrences.get(role) ?? 0) + 1; need(count <= REQUESTS.maximumRoleOccurrences, "ROLE_CAPACITY"); this.#occurrences.set(role, count);
+      const count = (this.#occurrences.get(role) ?? 0) + 1; need(count <= currentProjectSaveProducerRoleLimit(role), "ROLE_CAPACITY"); this.#occurrences.set(role, count);
       const captured = await this.#send({ phase: "project-save-producer-frame", role, method: "Debugger.evaluateOnCallFrame", params: { ...FRAME_FLAGS, callFrameId: top.callFrameId, expression: site.expression } });
       const frameId = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(captured, site.length), original = this.#binding.originalReceivers();
       const joined = await this.#send({ phase: "project-save-producer-receiver", role, method: "Runtime.callFunctionOn", params: { ...CALL_FLAGS, objectId: frameId, functionDeclaration: CALLS[role], arguments: [{ objectId: original.project }, { objectId: original.wrapper }, { objectId: original.callback }] } });
@@ -102,6 +103,16 @@ export class CurrentProjectSaveProducerObserver {
       }
       const packet = this.#binding.retainHeldCall(); need(packet !== null && typeof packet === "object" && !types.isProxy(packet) && Object.isFrozen(packet) && Reflect.ownKeys(packet).length === 1 && Object.getOwnPropertyDescriptor(packet, "profile")?.value === "private.current-project-save-producer-held-call.v1", "ORIGINAL_NATIVE_MARKER"); heldCalls.set(packet, Object.freeze({ observer: this, role, fields: fieldsValue, cache, promise })); this.#held = packet; return packet;
     } catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
+  }
+  public async continueInitialCacheCall(packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
+    need(!this.#busy && !this.#failed && !this.#closed && this.#held === packet, "INITIAL_CACHE_ORIGINAL_HELD"); this.#busy = true;
+    try { await this.#current(); await continueOriginalCurrentGeneratedInitialCacheCall(this.#origin, this.#owner, this.#operation, packet); await this.#current(); this.#held = null; }
+    catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
+  }
+  public async settleInitialCacheCalls(): Promise<void> {
+    need(!this.#busy && !this.#failed && !this.#closed && this.#held === null, "INITIAL_CACHE_SETTLE_STATE"); this.#busy = true;
+    try { await this.#current(); await settleOriginalCurrentGeneratedInitialCacheCalls(this.#origin, this.#owner, this.#operation); await this.#current(); }
+    catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
   public async retireAfterOriginalExit(): Promise<void> { need(!this.#busy && !this.#closed, "RETIRE_STATE"); await this.#binding.assertOriginalGenerationExited(); this.#closed = true; }
 }

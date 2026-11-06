@@ -218,6 +218,9 @@ export class CurrentPcbViaWorkerController {
    * starts another native poll; the original abort/failure settles false. */
   public async whenOriginalSourceResumed(): Promise<void> { const resumed = await this.#sourceResumed.promise; need(resumed && !this.#failed && this.#result !== null && this.#router !== null); }
   public async nextProducerEvent(): Promise<CurrentPcbViaRoutedEvent> { await this.whenOriginalSourceResumed(); return this.#eventRouter().next("producer"); }
+  public reserveInitialCacheResume(source: CurrentPcbViaProjectSourceHeld, event: CurrentPcbViaRoutedEvent, role: "headEntry" | "headPromise" | "headSuccess"): void {
+    need(this.#source === source && this.#child !== null); this.#eventRouter().reserveInitialCacheResume(event, role);
+  }
   public async nextStructureTransportEvent(): Promise<CurrentPcbViaRoutedEvent> { await this.whenOriginalSourceResumed(); return this.#eventRouter().next("structureTransport"); }
   public reserveStructureTransportResume(source: CurrentPcbViaProjectSourceHeld, role: "send" | "returned"): void {
     need(this.#source === source && this.#child !== null); this.#eventRouter().reserveResume("structureTransport", this.#child.sessionId, role);

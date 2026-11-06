@@ -13,10 +13,12 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 export const CURRENT_PROJECT_SAVE_PRODUCER_ROLES = ["localIngress", "bufferIngress", "cloudIngress", "historyCloud", "localReturned", "localFailed", "bufferScheduled", "bufferDrain", "bufferDone", "batchReturned", "historyReply", "historyFailed", "historyQueued", "historyFinally", "cloudReturned", "cloudFinally", "syncEntry", "syncDeferred", "syncFull", "syncReturned", "syncFailed", "detachedEntry", "detachedReturned", "headEntry", "headPromise", "headSuccess", "cacheFailed"] as const;
 export const CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS = ["localIngress", "bufferIngress", "cloudIngress", "historyCloud"] as const;
 export const CURRENT_PROJECT_SAVE_PRODUCER_GROUP = "easyeda-project-save-producer209-v1";
-/** Two original occurrences per source role are a finite observation budget,
- * not a claim that background work finishes or cannot occur again. */
-export const CURRENT_PROJECT_SAVE_PRODUCER_REQUESTS = Object.freeze({ newArms: 23, maximumRoleOccurrences: 2, frames: 54, joins: 54, properties: 54,
-  intrinsics: 3 + 2 + INTRINSIC_PROFILES.length, cacheCalls: 2 * 3, cachePromises: 2 * 2, normal: 185 + 3 + 2 + INTRINSIC_PROFILES.length + 2 * 3 + 2 * 2, cleanup: 0, cdpRequests: 185 + 3 + 2 + INTRINSIC_PROFILES.length + 2 * 3 + 2 * 2, events: 54 });
+/** Two observations per general role and three per initial cache role admit
+ * the distinct two-document/index jobs. These are finite capacities, not a
+ * claim that background work finishes or cannot occur again. */
+export function currentProjectSaveProducerRoleLimit(role: string): number { return ["headEntry", "headPromise", "headSuccess", "cacheFailed"].includes(role) ? 3 : 2; }
+export const CURRENT_PROJECT_SAVE_PRODUCER_REQUESTS = Object.freeze({ newArms: 23, maximumRoleOccurrences: 2, frames: 58, joins: 58, properties: 58,
+  intrinsics: 3 + 2 + INTRINSIC_PROFILES.length, cacheCalls: 3 * 3, cachePromises: 3 * 2, normal: 197 + 3 + 2 + INTRINSIC_PROFILES.length + 3 * 3 + 3 * 2, cleanup: 0, cdpRequests: 197 + 3 + 2 + INTRINSIC_PROFILES.length + 3 * 3 + 3 * 2, events: 58 });
 const GROUP = CURRENT_PROJECT_SAVE_PRODUCER_GROUP;
 export const CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS = Object.freeze({ objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true, awaitPromise: false, userGesture: false, returnByValue: false } as const);
 export const CURRENT_PROJECT_SAVE_PRODUCER_FRAME_FLAGS = Object.freeze({ objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true, returnByValue: false, includeCommandLineAPI: false } as const);

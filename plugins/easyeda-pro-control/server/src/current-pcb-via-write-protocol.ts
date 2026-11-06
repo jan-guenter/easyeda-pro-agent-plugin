@@ -1,3 +1,4 @@
+import { currentGeneratedInitialCacheWire } from "./current-generated-initial-cache-wire.ts";
 import { currentProjectSaveProducerWire } from "./current-project-save-producer-wire.ts";
 import { currentProjectSaveProducerGuardWire } from "./current-project-save-producer-guard-wire.ts";
 import { currentProjectStructureTransportWire } from "./current-project-structure-transport-wire.ts";
@@ -55,6 +56,12 @@ export function currentPcbViaWriteNativeRequest(chunk: Buffer): Readonly<Record<
     raw["id"] < 1 || raw["id"] > PROFILE.renderer.total || !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("PCB_VIA_WIRE"); }
   const { id, sessionId, ...input } = raw;
   if (typeof sessionId !== "string" && Object.hasOwn(raw, "viaWritePhase")) { throw new Error("PCB_VIA_SESSION"); }
+  if (Object.hasOwn(raw, "initialCacheCommand")) {
+    const { id: initialId, sessionId: initialSession, initialCacheCommand, ...initialInput } = raw;
+    if (initialCacheCommand !== true || typeof initialSession !== "string") { throw new Error("INITIAL_CACHE_WIRE"); }
+    const fixed = currentGeneratedInitialCacheWire(initialInput, initialId, "via");
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id: initialId, ...fixed.command, initialCacheCommand: true, sessionId: initialSession })}\0`))) { throw new Error("INITIAL_CACHE_WIRE"); } return fixed.request;
+  }
   if (Object.hasOwn(raw, "producerObserveCommand")) {
     const { id: producerId, sessionId: producerSession, producerObserveCommand, ...producerInput } = raw;
     if (producerObserveCommand !== true || typeof producerSession !== "string") { throw new Error("PROJECT_SAVE_PRODUCER_WIRE"); }

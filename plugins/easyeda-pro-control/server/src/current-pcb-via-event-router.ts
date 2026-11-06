@@ -24,10 +24,12 @@ const resolved = z.strictObject({ breakpointId: handle, location });
 const empty = z.strictObject({});
 const eventSchema = z.strictObject({ method: z.enum(["Debugger.paused", "Debugger.resumed", "Debugger.breakpointResolved"]), sessionId: handle, params: z.record(z.string(), z.unknown()) });
 function need(value: boolean): asserts value { if (!value) { throw new Error("PCB_VIA_EVENT_ROUTE"); } }
+interface OriginalPausedDelivery { readonly lane: CurrentPcbViaEventLane; readonly point: CurrentPcbViaEventPoint; delivered: boolean; resumeAttempted: boolean }
 export class CurrentPcbViaEventRouter {
   readonly #bindings: CurrentPcbViaEventRouterBindings;
   readonly #points = new Map<string, Readonly<{ lane: CurrentPcbViaEventLane; point: CurrentPcbViaEventPoint }>>();
-  readonly #paused = new Map<string, { lane: CurrentPcbViaEventLane; point: CurrentPcbViaEventPoint; delivered: boolean; resumeAttempted: boolean }>();
+  readonly #paused = new Map<string, OriginalPausedDelivery>();
+  readonly #pauseEvents = new WeakMap<CurrentPcbViaSaveWorkerEvent, OriginalPausedDelivery>();
   readonly #queues: Record<CurrentPcbViaEventLane, CurrentPcbViaSaveWorkerEvent[]> = { save: [], clock: [], structure: [], structureTransport: [], producer: [] };
   readonly #reading = { save: false, clock: false, structure: false, structureTransport: false, producer: false };
   readonly #resumeRoles = new WeakMap<CurrentPcbViaSaveWorkerEvent, Readonly<{ lane: CurrentPcbViaEventLane; role: string }>>();
@@ -51,6 +53,15 @@ export class CurrentPcbViaEventRouter {
    * unknown acknowledgement never refunds this one continuation attempt. */
   public reserveResume(lane: CurrentPcbViaEventLane, sessionId: string, role?: string): void {
     const pause = this.#paused.get(sessionId); need(lane !== "producer" && !this.#failed && pause !== undefined && pause.lane === lane && pause.delivered && !pause.resumeAttempted && (role === undefined || pause.point.role === role)); pause.resumeAttempted = true; if (lane === "clock" && sessionId === this.#bindings.workerSessionId && pause.point.role === "push") { this.#clockUiPending = true; } this.notifyEvent();
+  }
+  /** Consume one exact delivered initial-cache pause. Source/body/job and
+   * native one-shot authorization remain separate; generic producer resumes
+   * continue to refuse. Copied or previous deliveries cannot select a pause. */
+  public reserveInitialCacheResume(event: CurrentPcbViaSaveWorkerEvent, role: "headEntry" | "headPromise" | "headSuccess"): void {
+    const original = this.#pauseEvents.get(event); const current = this.#paused.get(this.#bindings.workerSessionId);
+    need(!this.#failed && original !== undefined && original === current && original.lane === "producer" && original.delivered && !original.resumeAttempted &&
+      ["headEntry", "headPromise", "headSuccess"].includes(role) && original.point.role === role && event.sessionId === this.#bindings.workerSessionId);
+    original.resumeAttempted = true; this.notifyEvent();
   }
   /** Wake readers for an actual queued event or owned continuation. */
   public notifyEvent(): void { const signal = this.#changed; this.#changed = Promise.withResolvers<true>(); signal.resolve(true); }
@@ -86,6 +97,7 @@ export class CurrentPcbViaEventRouter {
       need(previous !== undefined && previous.resumeAttempted); lane = previous.lane; resumeRole = previous.point.role; this.#paused.delete(session); if (lane === "clock" && session === this.#bindings.uiSessionId && resumeRole === "complete") { this.#clockUiPending = false; }
     }
     const queued = Object.freeze({ method: event.method, sessionId: session, params: event.params });
+    if (event.method === "Debugger.paused") { const original = this.#paused.get(session); need(original !== undefined); this.#pauseEvents.set(queued, original); }
     if (resumeRole !== null) { this.#resumeRoles.set(queued, Object.freeze({ lane, role: resumeRole })); }
     need(this.#queues[lane].length < 32); this.#queues[lane].push(queued); this.notifyEvent();
   }

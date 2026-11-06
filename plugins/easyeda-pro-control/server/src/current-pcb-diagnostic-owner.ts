@@ -5,6 +5,11 @@
  * Browser discovery grants no frame, worker, script or CAD execution authority. */
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Four fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import { CurrentGeneratedInitialCacheCursor } from "./current-generated-initial-cache-cursor.ts";
+import type { CurrentGeneratedInitialCacheCommand } from "./current-generated-initial-cache-protocol.ts";
+import type { CurrentGeneratedInitialCacheHeld } from "./current-generated-initial-cache-cursor.ts";
+import { prepareCurrentGeneratedInitialFlowCachePlan, requireOriginalCurrentGeneratedInitialFlowCachePlan } from "./current-generated-initial-flow-cache-plan.ts";
+import type { CurrentGeneratedInitialFlowCachePlan } from "./current-generated-initial-flow-cache-plan.ts";
 import { currentProjectSaveProducerCachePromiseHandle, decodeCurrentProjectSaveProducerCachePromise } from "./current-project-save-producer-cache-replies.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CAPTURE_LENGTH } from "./current-project-save-producer-cache-programs.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS, currentProjectSaveProducerCacheCallerFrame, qualifyCurrentProjectSaveProducerCacheSource } from "./current-project-save-producer-cache-source.ts";
@@ -538,7 +543,7 @@ const headAgeValidationFactories = new WeakMap<CurrentFootprintHeadAgeValidation
   options: CurrentPcbDiagnosticInstallationOptions;
   installation: CurrentPcbDiagnosticInstallation;
 }>>();
-interface SchematicDisplayWriteAllocation { readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: GeneratedSchematicFixtureOpenCheckpoint; state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentSchematicDisplayWriteOwner | null; child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown }
+interface SchematicDisplayWriteAllocation { initialCachePlan: CurrentGeneratedInitialFlowCachePlan | null; readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: GeneratedSchematicFixtureOpenCheckpoint; state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentSchematicDisplayWriteOwner | null; child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown }
 const schematicDisplayAllocations = new WeakMap<GeneratedSchematicFixtureOpenCheckpoint, SchematicDisplayWriteAllocation>();
 const schematicDisplayFactories = new WeakMap<object, Readonly<{ allocation: SchematicDisplayWriteAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
 const schematicDisplayStagePackets = new WeakMap<object, Readonly<{ owner: object; argumentsValue: GeneratedSchematicDisplayNativeArguments; stage: string; text: string }>>();
@@ -600,10 +605,21 @@ export function requireOriginalCurrentSchematicDisplaySaveWorkerOrigin(origin: C
   requireSchematicArguments(owner, argumentsValue); original.assertOriginal(); return original.bindings;
 }
 export type CurrentProjectSaveProducerSetup = (origin: CurrentProjectSaveProducerOrigin) => Promise<void>;
+const originalInitialCacheCursors = new WeakMap<CurrentProjectSaveProducerOrigin, Readonly<{ owner: object; operation: object; cursor: () => CurrentGeneratedInitialCacheCursor }>>();
+export async function continueOriginalCurrentGeneratedInitialCacheCall(origin: CurrentProjectSaveProducerOrigin, owner: object, operation: object, packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
+  requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation); const original = originalInitialCacheCursors.get(origin);
+  if (original === undefined || original.owner !== owner || original.operation !== operation) { throw error("INITIAL_CACHE_ORIGINAL_CURSOR"); }
+  await original.cursor().continue(packet); requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation);
+}
+export async function settleOriginalCurrentGeneratedInitialCacheCalls(origin: CurrentProjectSaveProducerOrigin, owner: object, operation: object): Promise<void> {
+  requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation); const original = originalInitialCacheCursors.get(origin);
+  if (original === undefined || original.owner !== owner || original.operation !== operation) { throw error("INITIAL_CACHE_ORIGINAL_CURSOR"); }
+  await original.cursor().settle(); requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation);
+}
 const originalProjectSaveProducerOrigins = new WeakMap<CurrentProjectSaveProducerOrigin, Readonly<{ owner: object; operation: object; bindings: CurrentProjectSaveProducerBindings; assertOriginal: () => void }>>();
 interface OriginalProducerCachePromise { readonly objectId: string; readonly state: "pending" | "fulfilled" }
 interface OriginalProducerCacheCapture { readonly role: CurrentProjectSaveProducerCacheCaller; readonly callerFrameId: string; readonly callerCaptureId: string; readonly joinedId: string }
-const originalProjectProducerHeldCalls = new WeakMap<CurrentProjectSaveProducerHeldCall, Readonly<{ owner: object; operation: object; origin: CurrentProjectSaveProducerOrigin; role: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES; event: object; frameId: string; joinedId: string; cache: OriginalProducerCacheCapture | null; promise: OriginalProducerCachePromise | null; assertOriginal: () => void }>>();
+const originalProjectProducerHeldCalls = new WeakMap<object, Readonly<{ owner: object; operation: object; origin: CurrentProjectSaveProducerOrigin; role: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES; event: object; frameId: string; joinedId: string; cache: OriginalProducerCacheCapture | null; promise: OriginalProducerCachePromise | null; cacheKey: string | null; assertOriginal: () => void }>>();
 export function requireOriginalCurrentProjectSaveProducerHeldNativeCall(packet: CurrentProjectSaveProducerHeldCall, owner: object, operation: object, origin: CurrentProjectSaveProducerOrigin): Readonly<{ role: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES; event: object; frameId: string; joinedId: string }> {
   const original = originalProjectProducerHeldCalls.get(packet); if (original === undefined || original.owner !== owner || original.operation !== operation || original.origin !== origin) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_NATIVE_HELD_CALL"); } original.assertOriginal(); return Object.freeze({ role: original.role, event: original.event, frameId: original.frameId, joinedId: original.joinedId });
 }
@@ -737,7 +753,7 @@ function requireSavedReadbackPreparation(allocation: PcbViaSavedReadbackAllocati
   const prior = allocation.requireCheckpoint(allocation.prepared), status = prior.owner.status();
   if (prior.owner !== allocation.writer || !status.released || !status.helperClosed) { throw error("SAVED_READBACK_PRIOR_HELPER_REQUIRED_CLOSED"); }
 }
-interface PcbViaWriteAllocation { readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: GeneratedFixtureOpenCheckpoint; state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentPcbViaWriteOwner | null; child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown }
+interface PcbViaWriteAllocation { initialCachePlan: CurrentGeneratedInitialFlowCachePlan | null; readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: GeneratedFixtureOpenCheckpoint; state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentPcbViaWriteOwner | null; child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown }
 const pcbViaWriteAllocations = new WeakMap<GeneratedFixtureOpenCheckpoint, PcbViaWriteAllocation>();
 const pcbViaWriteFactories = new WeakMap<object, Readonly<{ allocation: PcbViaWriteAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
 export type CurrentPcbViaSaveWorkerSetup = (origin: CurrentPcbViaSaveWorkerOrigin) => Promise<void>;
@@ -2173,6 +2189,8 @@ class CurrentPcbRetainedOwnerCore {
   public async enrollSchematicDisplayProducerPrefix(argumentsValue: GeneratedSchematicDisplayNativeArguments): Promise<CurrentSchematicDisplaySaveProducerPrefix> {
     requireSchematicArguments(this, argumentsValue); const reproof = this.#schematicProducerGuardReproof, worker = this.#schematicWorkerController;
     if (this.#schematicProducerEnrollmentAttempted || this.#schematicProducerGuardOperation !== argumentsValue || this.#schematicProducerOriginalUploadWrapper === null || this.#schematicProducerOriginalUploadCallback === null || !this.#schematicProducerModeVerified || reproof === null || worker === null || !worker.status().ready || !this.#schematicStages.has("preflight") || this.#schematicStages.has("modify") || this.#schematicStages.has("save")) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_UNAVAILABLE"); }
+    const initialCursor = this.#schematicProducerObservationOrigin === null ? undefined : originalInitialCacheCursors.get(this.#schematicProducerObservationOrigin);
+    if (initialCursor === undefined || initialCursor.owner !== this || initialCursor.operation !== argumentsValue) { throw error("INITIAL_CACHE_ORIGINAL_COMPLETION_REQUIRED"); } initialCursor.cursor().requireCompleted();
     this.#schematicProducerEnrollmentAttempted = true; this.#enter(true);
     const original = (): void => { requireSchematicArguments(this, argumentsValue); reproof(); if (this.#schematicProducerGuardReproof !== reproof || this.#schematicWorkerController !== worker || !worker.status().ready || !this.#schematicProducerModeVerified) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_CHANGED"); } };
     try { original(); await this.#verify(); original(); const reply = await this.#request({ action: "schematic-display-producer-prefix-enroll" }); original();
@@ -2384,8 +2402,9 @@ class CurrentPcbRetainedOwnerCore {
           const receivers = (): Readonly<{ project: string; wrapper: string; callback: string }> => { original(); assertProducerOriginal();
             const callback = this.#schematicProducerOriginalUploadCallback, project = this.#schematicProducerOriginalProject, wrapper = this.#schematicProducerOriginalUploadWrapper;
             if (project === null || wrapper === null || callback === null) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_CONSTRUCTION_REQUIRED"); } return Object.freeze({ project, wrapper, callback }); };
-          let originalHeldEvent: object | null = null, originalHeldRole: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES | null = null;
+          let originalHeldEvent: Awaited<ReturnType<typeof selected.nextProducerEvent>> | null = null, originalHeldRole: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES | null = null;
           let originalFrameId: string | null = null, originalJoinedId: string | null = null; let originalFrameAttempted = false, originalHeldRetained = false, originalPropertiesAttempted = false, originalPropertiesObserved = false, originalReadAttempted = false, originalReceiverAttempted = false;
+          let originalCacheKey: string | null = null;
           let originalCachePromise: OriginalProducerCachePromise | null = null, originalCachePromiseId: string | null = null; let originalCachePromiseAttempted = false, originalCachePromisePropertiesAttempted = false;
           let originalCache: OriginalProducerCacheCapture | null = null, originalCacheCaller: Readonly<{ role: CurrentProjectSaveProducerCacheCaller; callFrameId: string }> | null = null;
           let originalCacheCallerId: string | null = null, originalCacheJoinedId: string | null = null; let originalCacheCallerAttempted = false, originalCacheJoinAttempted = false, originalCachePropertiesAttempted = false;
@@ -2426,7 +2445,8 @@ class CurrentPcbRetainedOwnerCore {
                 const site = CURRENT_PROJECT_SAVE_PRODUCER_SITES[command.role];
                 if (!record(reply) || !exact(reply, ["breakpointId", "actualLocation"]) || typeof reply["breakpointId"] !== "string" || !record(reply["actualLocation"]) || !exact(reply["actualLocation"], ["scriptId", "lineNumber", "columnNumber"]) || reply["actualLocation"]["scriptId"] !== source.scriptId || reply["actualLocation"]["lineNumber"] !== site.lineNumber || reply["actualLocation"]["columnNumber"] !== site.columnNumber) { throw error("PROJECT_SAVE_PRODUCER_ARM_REPLY"); } selected.bindProducerObservationBreakpoint(source, command.role, reply["breakpointId"]);
               }
-              if (command.phase === "project-save-producer-properties") { if (originalHeldRole === null || originalJoinedId !== command.params.objectId) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_PROPERTIES_CHANGED"); } requireHeldRole(originalHeldRole); decodeCurrentFootprintCopyClockRpcV2Array(reply, CURRENT_PROJECT_SAVE_PRODUCER_SITES[originalHeldRole].length); originalPropertiesObserved = true; }
+              if (command.phase === "project-save-producer-properties") { if (originalHeldRole === null || originalJoinedId !== command.params.objectId) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_PROPERTIES_CHANGED"); } requireHeldRole(originalHeldRole); const fields = decodeCurrentFootprintCopyClockRpcV2Array(reply, CURRENT_PROJECT_SAVE_PRODUCER_SITES[originalHeldRole].length);
+                if (originalHeldRole === "headEntry" || originalHeldRole === "headPromise" || originalHeldRole === "headSuccess") { const key = currentFootprintCopyClockRpcV2ArrayValue(fields, 1); if (typeof key !== "string") { throw error("INITIAL_CACHE_ORIGINAL_KEY"); } originalCacheKey = key; } originalPropertiesObserved = true; }
               if (command.phase === "project-save-producer-cache-caller") { originalCacheCallerId = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS[command.cacheRole].length); }
               if (command.phase === "project-save-producer-cache-receiver") { originalCacheJoinedId = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CAPTURE_LENGTH); }
               if (command.phase === "project-save-producer-cache-properties") {
@@ -2447,11 +2467,49 @@ class CurrentPcbRetainedOwnerCore {
               if (originalHeldRetained || originalHeldEvent === null || originalHeldRole === null || originalFrameId === null || originalJoinedId === null || !originalPropertiesObserved || originalHeldRole === "headEntry" && originalCache === null || originalHeldRole === "headPromise" && originalCachePromise === null) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_CAPTURE_REQUIRED"); }
               requireHeldRole(originalHeldRole); originalHeldRetained = true; const cache = originalCache, event = originalHeldEvent, frameId = originalFrameId, joinedId = originalJoinedId, promise = originalCachePromise, role = originalHeldRole;
               const packet: CurrentProjectSaveProducerHeldCall = Object.freeze({ profile: "private.current-project-save-producer-held-call.v1" });
-              originalProjectProducerHeldCalls.set(packet, Object.freeze({ owner: this, operation: argumentsValue, origin: producerOrigin, role, event, frameId, joinedId, cache, promise, assertOriginal: (): void => { assertProducerOriginal(); if (originalHeldEvent !== event || originalHeldRole !== role || originalFrameId !== frameId || originalJoinedId !== joinedId || originalCache !== cache || originalCachePromise !== promise || !originalHeldRetained) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_NATIVE_HELD_CALL_CHANGED"); } } })); return packet;
+              originalProjectProducerHeldCalls.set(packet, Object.freeze({ owner: this, operation: argumentsValue, origin: producerOrigin, role, event, frameId, joinedId, cache, promise, cacheKey: originalCacheKey, assertOriginal: (): void => { assertProducerOriginal(); if (originalHeldEvent !== event || originalHeldRole !== role || originalFrameId !== frameId || originalJoinedId !== joinedId || originalCache !== cache || originalCachePromise !== promise || !originalHeldRetained) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_NATIVE_HELD_CALL_CHANGED"); } } })); return packet;
             }, originalIntrinsics: () => { original(); assertProducerOriginal(); if (this.#schematicProducerIntrinsicTuple !== intrinsicTuple) { throw error("PROJECT_SAVE_PRODUCER_INTRINSICS_CHANGED"); } return intrinsicTuple; }, originalReceivers: receivers, originalBreakpoint: (role: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES) => selected.originalProducerObservationBreakpoint(source, role),
             assertCurrent: async (): Promise<void> => { original(); assertProducerOriginal(); await this.#verify(); original(); assertProducerOriginal(); },
             assertOriginalGenerationExited: (): Promise<void> => { assertProducerOriginal(); if (!this.#terminationObserved || this.#terminationObservation?.terminated !== true) { return Promise.reject(error("PROJECT_SAVE_PRODUCER_ORIGINAL_EXIT_REQUIRED")); } return Promise.resolve(); }, fail: (): void => { selected.fail(); } });
           originalProjectSaveProducerOrigins.set(producerOrigin, Object.freeze({ owner: this, operation: argumentsValue, bindings: producerBindings, assertOriginal: assertProducerOriginal })); this.#schematicProducerObservationOrigin = producerOrigin;
+          let initialCacheCursor: CurrentGeneratedInitialCacheCursor | null = null;
+          const initialHeld = new WeakMap<object, CurrentGeneratedInitialCacheHeld>();
+          const initialCursor = (): CurrentGeneratedInitialCacheCursor => {
+            original(); assertProducerOriginal();
+            if (initialCacheCursor !== null) { return initialCacheCursor; }
+            const allocation = schematicDisplayFactories.get(this)?.allocation, initialPlan = allocation?.initialCachePlan;
+            if (allocation === undefined || initialPlan === undefined || initialPlan === null || allocation.owner !== this || schematicDisplayAllocations.get(allocation.prepared) !== allocation) { throw error("INITIAL_CACHE_ORIGINAL_PREPARATION"); }
+            const data = requireOriginalCurrentGeneratedInitialFlowCachePlan(initialPlan, allocation.prepared);
+            const requireHeld = (packet: object): CurrentGeneratedInitialCacheHeld => {
+              original(); assertProducerOriginal();
+              const actual = originalProjectProducerHeldCalls.get(packet);
+              if (actual === undefined || actual.owner !== this || actual.operation !== argumentsValue || actual.origin !== producerOrigin || actual.cacheKey === null || actual.role !== "headEntry" && actual.role !== "headPromise" && actual.role !== "headSuccess") { throw error("INITIAL_CACHE_ORIGINAL_HELD_CALL"); }
+              actual.assertOriginal(); let held = initialHeld.get(packet);
+              if (held === undefined) { held = Object.freeze({ packet, role: actual.role, key: actual.cacheKey, joinedId: actual.joinedId, cache: actual.cache, promise: actual.promise }); initialHeld.set(packet, held); } return held;
+            };
+            initialCacheCursor = new CurrentGeneratedInitialCacheCursor(data, Object.freeze({
+              assertCurrent: async (): Promise<void> => { original(); assertProducerOriginal();
+                if (schematicDisplayFactories.get(this)?.allocation !== allocation || allocation.initialCachePlan !== initialPlan || this.#schematicStages.has("modify") || this.#schematicStages.has("save")) { throw error("INITIAL_CACHE_STARTUP_ONLY"); }
+                requireOriginalCurrentGeneratedInitialFlowCachePlan(initialPlan, allocation.prepared); await this.#verify(); original(); assertProducerOriginal();
+                if (schematicDisplayFactories.get(this)?.allocation !== allocation || allocation.initialCachePlan !== initialPlan || this.#schematicStages.has("modify") || this.#schematicStages.has("save")) { throw error("INITIAL_CACHE_STARTUP_CHANGED"); }
+              }, requireHeld,
+              request: (command: CurrentGeneratedInitialCacheCommand) => this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { original(); assertProducerOriginal(); return pipe.continueSchematicDisplayInitialCache(command); })),
+              resume: async (held: CurrentGeneratedInitialCacheHeld, command: CurrentGeneratedInitialCacheCommand): Promise<void> => {
+                requireHeld(held.packet); const event = originalHeldEvent;
+                if (event === null || originalHeldRole !== held.role || !originalHeldRetained) { throw error("INITIAL_CACHE_ORIGINAL_EVENT_REQUIRED"); }
+                const ack = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { requireHeld(held.packet); selected.reserveInitialCacheResume(source, event, held.role); return pipe.continueSchematicDisplayInitialCache(command); }));
+                if (!exact(ack, [])) { throw error("INITIAL_CACHE_ORIGINAL_RESUME_ACK"); }
+                const resumed = captureCurrentPcbStringClockReply(await selected.nextProducerEvent()).value; original(); assertProducerOriginal();
+                if (!record(resumed) || !exact(resumed, ["method", "sessionId", "params"]) || resumed["method"] !== "Debugger.resumed" || resumed["sessionId"] !== child.sessionId || !record(resumed["params"]) || !exact(resumed["params"], [])) { throw error("INITIAL_CACHE_ORIGINAL_RESUMED_EVENT"); }
+                originalHeldEvent = null; originalHeldRole = null; originalFrameId = null; originalJoinedId = null; originalFrameAttempted = false; originalHeldRetained = false; originalPropertiesAttempted = false; originalPropertiesObserved = false; originalReadAttempted = false; originalReceiverAttempted = false;
+                originalCache = null; originalCacheCaller = null; originalCacheCallerId = null; originalCacheJoinedId = null; originalCacheCallerAttempted = false; originalCacheJoinAttempted = false; originalCachePropertiesAttempted = false; originalCacheKey = null;
+                originalCachePromise = null; originalCachePromiseId = null; originalCachePromiseAttempted = false; originalCachePromisePropertiesAttempted = false;
+              }, complete: async (): Promise<void> => { original(); assertProducerOriginal(); const result = await this.#request({ action: "schematic-display-initial-cache-complete" });
+                if (!exact(result, ["completed"]) || result["completed"] !== true) { throw error("INITIAL_CACHE_ORIGINAL_COMPLETE_ACK"); } original(); assertProducerOriginal(); },
+              fail: (): void => { selected.fail(); },
+            })); return initialCacheCursor;
+          };
+          originalInitialCacheCursors.set(producerOrigin, Object.freeze({ owner: this, operation: argumentsValue, cursor: initialCursor }));
           await Reflect.apply(producerSetup, undefined, [producerOrigin]); original(); assertProducerOriginal();
           for (const role of CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS) { selected.bindProducerObservationBreakpoint(source, role, selected.originalProducerGuardBreakpoint(source, role)); } selected.sealProducerObservation(source); selected.requireProducerObservationArmed(source);
         }
@@ -2489,6 +2547,8 @@ class CurrentPcbRetainedOwnerCore {
   public async enrollViaProducerPrefix(plan: CurrentPcbViaWritePlan): Promise<CurrentPcbViaSaveProducerPrefix> {
     requireViaPlan(this, plan); const reproof = this.#viaProducerGuardReproof, worker = this.#viaWorkerController;
     if (this.#viaProducerEnrollmentAttempted || this.#viaProducerGuardOperation !== plan || this.#viaProducerOriginalUploadWrapper === null || this.#viaProducerOriginalUploadCallback === null || !this.#viaProducerModeVerified || reproof === null || worker === null || !worker.status().ready || !this.#viaSdkPhases.has("preflight") || this.#viaSdkPhases.has("create") || this.#viaSdkPhases.has("save")) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_UNAVAILABLE"); }
+    const initialCursor = this.#viaProducerObservationOrigin === null ? undefined : originalInitialCacheCursors.get(this.#viaProducerObservationOrigin);
+    if (initialCursor === undefined || initialCursor.owner !== this || initialCursor.operation !== plan) { throw error("INITIAL_CACHE_ORIGINAL_COMPLETION_REQUIRED"); } initialCursor.cursor().requireCompleted();
     this.#viaProducerEnrollmentAttempted = true; this.#enter(true);
     const original = (): void => { requireViaPlan(this, plan); reproof(); if (this.#viaProducerGuardReproof !== reproof || this.#viaWorkerController !== worker || !worker.status().ready || !this.#viaProducerModeVerified) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_CHANGED"); } };
     try { original(); await this.#verify(); original(); const reply = await this.#request({ action: "pcb-via-producer-prefix-enroll" }); original();
@@ -2714,8 +2774,9 @@ class CurrentPcbRetainedOwnerCore {
           const receivers = (): Readonly<{ project: string; wrapper: string; callback: string }> => { original(); assertProducerOriginal();
             const callback = this.#viaProducerOriginalUploadCallback, project = this.#viaProducerOriginalProject, wrapper = this.#viaProducerOriginalUploadWrapper;
             if (project === null || wrapper === null || callback === null) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_CONSTRUCTION_REQUIRED"); } return Object.freeze({ project, wrapper, callback }); };
-          let originalHeldEvent: object | null = null, originalHeldRole: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES | null = null;
+          let originalHeldEvent: Awaited<ReturnType<typeof selected.nextProducerEvent>> | null = null, originalHeldRole: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES | null = null;
           let originalFrameId: string | null = null, originalJoinedId: string | null = null; let originalFrameAttempted = false, originalHeldRetained = false, originalPropertiesAttempted = false, originalPropertiesObserved = false, originalReadAttempted = false, originalReceiverAttempted = false;
+          let originalCacheKey: string | null = null;
           let originalCachePromise: OriginalProducerCachePromise | null = null, originalCachePromiseId: string | null = null; let originalCachePromiseAttempted = false, originalCachePromisePropertiesAttempted = false;
           let originalCache: OriginalProducerCacheCapture | null = null, originalCacheCaller: Readonly<{ role: CurrentProjectSaveProducerCacheCaller; callFrameId: string }> | null = null;
           let originalCacheCallerId: string | null = null, originalCacheJoinedId: string | null = null; let originalCacheCallerAttempted = false, originalCacheJoinAttempted = false, originalCachePropertiesAttempted = false;
@@ -2756,7 +2817,8 @@ class CurrentPcbRetainedOwnerCore {
                 const site = CURRENT_PROJECT_SAVE_PRODUCER_SITES[command.role];
                 if (!record(reply) || !exact(reply, ["breakpointId", "actualLocation"]) || typeof reply["breakpointId"] !== "string" || !record(reply["actualLocation"]) || !exact(reply["actualLocation"], ["scriptId", "lineNumber", "columnNumber"]) || reply["actualLocation"]["scriptId"] !== source.scriptId || reply["actualLocation"]["lineNumber"] !== site.lineNumber || reply["actualLocation"]["columnNumber"] !== site.columnNumber) { throw error("PROJECT_SAVE_PRODUCER_ARM_REPLY"); } selected.bindProducerObservationBreakpoint(source, command.role, reply["breakpointId"]);
               }
-              if (command.phase === "project-save-producer-properties") { if (originalHeldRole === null || originalJoinedId !== command.params.objectId) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_PROPERTIES_CHANGED"); } requireHeldRole(originalHeldRole); decodeCurrentFootprintCopyClockRpcV2Array(reply, CURRENT_PROJECT_SAVE_PRODUCER_SITES[originalHeldRole].length); originalPropertiesObserved = true; }
+              if (command.phase === "project-save-producer-properties") { if (originalHeldRole === null || originalJoinedId !== command.params.objectId) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_PROPERTIES_CHANGED"); } requireHeldRole(originalHeldRole); const fields = decodeCurrentFootprintCopyClockRpcV2Array(reply, CURRENT_PROJECT_SAVE_PRODUCER_SITES[originalHeldRole].length);
+                if (originalHeldRole === "headEntry" || originalHeldRole === "headPromise" || originalHeldRole === "headSuccess") { const key = currentFootprintCopyClockRpcV2ArrayValue(fields, 1); if (typeof key !== "string") { throw error("INITIAL_CACHE_ORIGINAL_KEY"); } originalCacheKey = key; } originalPropertiesObserved = true; }
               if (command.phase === "project-save-producer-cache-caller") { originalCacheCallerId = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS[command.cacheRole].length); }
               if (command.phase === "project-save-producer-cache-receiver") { originalCacheJoinedId = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CAPTURE_LENGTH); }
               if (command.phase === "project-save-producer-cache-properties") {
@@ -2777,11 +2839,49 @@ class CurrentPcbRetainedOwnerCore {
               if (originalHeldRetained || originalHeldEvent === null || originalHeldRole === null || originalFrameId === null || originalJoinedId === null || !originalPropertiesObserved || originalHeldRole === "headEntry" && originalCache === null || originalHeldRole === "headPromise" && originalCachePromise === null) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_CAPTURE_REQUIRED"); }
               requireHeldRole(originalHeldRole); originalHeldRetained = true; const cache = originalCache, event = originalHeldEvent, frameId = originalFrameId, joinedId = originalJoinedId, promise = originalCachePromise, role = originalHeldRole;
               const packet: CurrentProjectSaveProducerHeldCall = Object.freeze({ profile: "private.current-project-save-producer-held-call.v1" });
-              originalProjectProducerHeldCalls.set(packet, Object.freeze({ owner: this, operation: plan, origin: producerOrigin, role, event, frameId, joinedId, cache, promise, assertOriginal: (): void => { assertProducerOriginal(); if (originalHeldEvent !== event || originalHeldRole !== role || originalFrameId !== frameId || originalJoinedId !== joinedId || originalCache !== cache || originalCachePromise !== promise || !originalHeldRetained) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_NATIVE_HELD_CALL_CHANGED"); } } })); return packet;
+              originalProjectProducerHeldCalls.set(packet, Object.freeze({ owner: this, operation: plan, origin: producerOrigin, role, event, frameId, joinedId, cache, promise, cacheKey: originalCacheKey, assertOriginal: (): void => { assertProducerOriginal(); if (originalHeldEvent !== event || originalHeldRole !== role || originalFrameId !== frameId || originalJoinedId !== joinedId || originalCache !== cache || originalCachePromise !== promise || !originalHeldRetained) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_NATIVE_HELD_CALL_CHANGED"); } } })); return packet;
             }, originalIntrinsics: () => { original(); assertProducerOriginal(); if (this.#viaProducerIntrinsicTuple !== intrinsicTuple) { throw error("PROJECT_SAVE_PRODUCER_INTRINSICS_CHANGED"); } return intrinsicTuple; }, originalReceivers: receivers, originalBreakpoint: (role: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES) => selected.originalProducerObservationBreakpoint(source, role),
             assertCurrent: async (): Promise<void> => { original(); assertProducerOriginal(); await this.#verify(); original(); assertProducerOriginal(); },
             assertOriginalGenerationExited: (): Promise<void> => { assertProducerOriginal(); if (!this.#terminationObserved || this.#terminationObservation?.terminated !== true) { return Promise.reject(error("PROJECT_SAVE_PRODUCER_ORIGINAL_EXIT_REQUIRED")); } return Promise.resolve(); }, fail: (): void => { selected.fail(); } });
           originalProjectSaveProducerOrigins.set(producerOrigin, Object.freeze({ owner: this, operation: plan, bindings: producerBindings, assertOriginal: assertProducerOriginal })); this.#viaProducerObservationOrigin = producerOrigin;
+          let initialCacheCursor: CurrentGeneratedInitialCacheCursor | null = null;
+          const initialHeld = new WeakMap<object, CurrentGeneratedInitialCacheHeld>();
+          const initialCursor = (): CurrentGeneratedInitialCacheCursor => {
+            original(); assertProducerOriginal();
+            if (initialCacheCursor !== null) { return initialCacheCursor; }
+            const allocation = pcbViaWriteFactories.get(this)?.allocation, initialPlan = allocation?.initialCachePlan;
+            if (allocation === undefined || initialPlan === undefined || initialPlan === null || allocation.owner !== this || pcbViaWriteAllocations.get(allocation.prepared) !== allocation) { throw error("INITIAL_CACHE_ORIGINAL_PREPARATION"); }
+            const data = requireOriginalCurrentGeneratedInitialFlowCachePlan(initialPlan, allocation.prepared);
+            const requireHeld = (packet: object): CurrentGeneratedInitialCacheHeld => {
+              original(); assertProducerOriginal();
+              const actual = originalProjectProducerHeldCalls.get(packet);
+              if (actual === undefined || actual.owner !== this || actual.operation !== plan || actual.origin !== producerOrigin || actual.cacheKey === null || actual.role !== "headEntry" && actual.role !== "headPromise" && actual.role !== "headSuccess") { throw error("INITIAL_CACHE_ORIGINAL_HELD_CALL"); }
+              actual.assertOriginal(); let held = initialHeld.get(packet);
+              if (held === undefined) { held = Object.freeze({ packet, role: actual.role, key: actual.cacheKey, joinedId: actual.joinedId, cache: actual.cache, promise: actual.promise }); initialHeld.set(packet, held); } return held;
+            };
+            initialCacheCursor = new CurrentGeneratedInitialCacheCursor(data, Object.freeze({
+              assertCurrent: async (): Promise<void> => { original(); assertProducerOriginal();
+                if (pcbViaWriteFactories.get(this)?.allocation !== allocation || allocation.initialCachePlan !== initialPlan || this.#viaSdkPhases.has("create") || this.#viaSdkPhases.has("save")) { throw error("INITIAL_CACHE_STARTUP_ONLY"); }
+                requireOriginalCurrentGeneratedInitialFlowCachePlan(initialPlan, allocation.prepared); await this.#verify(); original(); assertProducerOriginal();
+                if (pcbViaWriteFactories.get(this)?.allocation !== allocation || allocation.initialCachePlan !== initialPlan || this.#viaSdkPhases.has("create") || this.#viaSdkPhases.has("save")) { throw error("INITIAL_CACHE_STARTUP_CHANGED"); }
+              }, requireHeld,
+              request: (command: CurrentGeneratedInitialCacheCommand) => this.#serializeViaObserver(() => this.#transfer(() => { original(); assertProducerOriginal(); return pipe.continueViaInitialCache(command); })),
+              resume: async (held: CurrentGeneratedInitialCacheHeld, command: CurrentGeneratedInitialCacheCommand): Promise<void> => {
+                requireHeld(held.packet); const event = originalHeldEvent;
+                if (event === null || originalHeldRole !== held.role || !originalHeldRetained) { throw error("INITIAL_CACHE_ORIGINAL_EVENT_REQUIRED"); }
+                const ack = await this.#serializeViaObserver(() => this.#transfer(() => { requireHeld(held.packet); selected.reserveInitialCacheResume(source, event, held.role); return pipe.continueViaInitialCache(command); }));
+                if (!exact(ack, [])) { throw error("INITIAL_CACHE_ORIGINAL_RESUME_ACK"); }
+                const resumed = captureCurrentPcbStringClockReply(await selected.nextProducerEvent()).value; original(); assertProducerOriginal();
+                if (!record(resumed) || !exact(resumed, ["method", "sessionId", "params"]) || resumed["method"] !== "Debugger.resumed" || resumed["sessionId"] !== child.sessionId || !record(resumed["params"]) || !exact(resumed["params"], [])) { throw error("INITIAL_CACHE_ORIGINAL_RESUMED_EVENT"); }
+                originalHeldEvent = null; originalHeldRole = null; originalFrameId = null; originalJoinedId = null; originalFrameAttempted = false; originalHeldRetained = false; originalPropertiesAttempted = false; originalPropertiesObserved = false; originalReadAttempted = false; originalReceiverAttempted = false;
+                originalCache = null; originalCacheCaller = null; originalCacheCallerId = null; originalCacheJoinedId = null; originalCacheCallerAttempted = false; originalCacheJoinAttempted = false; originalCachePropertiesAttempted = false; originalCacheKey = null;
+                originalCachePromise = null; originalCachePromiseId = null; originalCachePromiseAttempted = false; originalCachePromisePropertiesAttempted = false;
+              }, complete: async (): Promise<void> => { original(); assertProducerOriginal(); const result = await this.#request({ action: "pcb-via-initial-cache-complete" });
+                if (!exact(result, ["completed"]) || result["completed"] !== true) { throw error("INITIAL_CACHE_ORIGINAL_COMPLETE_ACK"); } original(); assertProducerOriginal(); },
+              fail: (): void => { selected.fail(); },
+            })); return initialCacheCursor;
+          };
+          originalInitialCacheCursors.set(producerOrigin, Object.freeze({ owner: this, operation: plan, cursor: initialCursor }));
           await Reflect.apply(producerSetup, undefined, [producerOrigin]); original(); assertProducerOriginal();
           for (const role of CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS) { selected.bindProducerObservationBreakpoint(source, role, selected.originalProducerGuardBreakpoint(source, role)); } selected.sealProducerObservation(source); selected.requireProducerObservationArmed(source);
         }
@@ -7048,7 +7148,8 @@ class CurrentPcbRetainedOwnerCore {
       // Body capacity. No expression or caller program is admitted here.
       const viaStructureEnrollment = this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && request["action"] === "pcb-via-structure-body-enroll" && this.#viaStructureBodyAttempted;
       const viaHistoryController = this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && request["action"] === "pcb-via-main-observe" && request["phase"] === "via-main-request-controller" && this.#viaMainBoundBody !== null && request["dataStr"] === this.#viaMainBoundBody.dataStr;
-      const maximum = combinedRequest || viaStructureEnrollment || viaHistoryController || request["method"] === "Runtime.callFunctionOn" && (request["action"] === "worker-startup-parent" &&
+      const initialCacheEntry = (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && request["action"] === "pcb-via-initial-cache" || this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE && request["action"] === "schematic-display-initial-cache") && typeof request["phase"] === "string" && request["phase"].startsWith("initial-cache-entry-");
+      const maximum = initialCacheEntry || combinedRequest || viaStructureEnrollment || viaHistoryController || request["method"] === "Runtime.callFunctionOn" && (request["action"] === "worker-startup-parent" &&
         (request["parentPhase"] === "preflight" || request["parentPhase"] === "open-project" ||
           request["parentPhase"] === "pcb-preflight" || request["parentPhase"] === "pcb-open-document" || request["parentPhase"] === "pcb-observe") || request["action"] === "send" &&
         (request["openingPhase"] === "preflight" || request["openingPhase"] === "open-project" ||
@@ -7914,9 +8015,14 @@ export async function startCurrentPcbViaWriteOwner(options: CurrentPcbDiagnostic
   prepared: GeneratedFixtureOpenCheckpoint): Promise<CurrentPcbViaWriteOwner> {
   requirePcbViaBirthOptions(options); assertOriginalGeneratedFixtureOpenCheckpoint(prepared);
   if (pcbViaWriteAllocations.has(prepared)) { throw error("PCB_VIA_ALLOCATION_CONSUMED"); }
-  const allocation: PcbViaWriteAllocation = { options, prepared, state: "pending", owner: null, child: null, eofAttempted: false, cleanupFailure: null };
+  const allocation: PcbViaWriteAllocation = { initialCachePlan: null, options, prepared, state: "pending", owner: null, child: null, eofAttempted: false, cleanupFailure: null };
   pcbViaWriteAllocations.set(prepared, allocation);
   try {
+    const plan = await prepareCurrentGeneratedInitialFlowCachePlan(prepared); assertOriginalGeneratedFixtureOpenCheckpoint(prepared);
+    if (pcbViaWriteAllocations.get(prepared) !== allocation || allocation.state !== "pending" || allocation.initialCachePlan !== null) { throw error("PCB_VIA_INITIAL_CACHE_PREPARATION_CHANGED"); }
+    const data = requireOriginalCurrentGeneratedInitialFlowCachePlan(plan, prepared);
+    if (data.documents.length !== 1 || data.projectUuid !== prepared.qualification.target.projectUuid || data.branchUuid !== prepared.qualification.target.branchUuid) { throw error("PCB_VIA_INITIAL_CACHE_PREPARATION"); }
+    allocation.initialCachePlan = plan;
     await verifyGeneratedFixtureOpenCheckpoint(prepared);
     const owner = await startFixedOwner(options, CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE, "209-via-write", undefined, null, null, null, null, false, allocation);
     if (!(owner instanceof CurrentPcbViaWriteOwner)) { throw error("PCB_VIA_FACTORY"); }
@@ -7957,8 +8063,12 @@ export function assertOriginalCurrentSchematicDisplayWriteTermination(owner: Cur
 export async function startCurrentSchematicDisplayWriteOwner(options: CurrentPcbDiagnosticInstallationOptions, prepared: GeneratedSchematicFixtureOpenCheckpoint): Promise<CurrentSchematicDisplayWriteOwner> {
   requirePcbViaBirthOptions(options); assertOriginalGeneratedSchematicFixtureOpenCheckpoint(prepared);
   if (schematicDisplayAllocations.has(prepared)) { throw error("SCHEMATIC_DISPLAY_ALLOCATION_CONSUMED"); }
-  const allocation: SchematicDisplayWriteAllocation = { options, prepared, state: "pending", owner: null, child: null, eofAttempted: false, cleanupFailure: null }; schematicDisplayAllocations.set(prepared, allocation);
-  try { await verifyGeneratedSchematicFixtureOpenCheckpoint(prepared);
+  const allocation: SchematicDisplayWriteAllocation = { initialCachePlan: null, options, prepared, state: "pending", owner: null, child: null, eofAttempted: false, cleanupFailure: null }; schematicDisplayAllocations.set(prepared, allocation);
+  try { const plan = await prepareCurrentGeneratedInitialFlowCachePlan(prepared); assertOriginalGeneratedSchematicFixtureOpenCheckpoint(prepared);
+    if (schematicDisplayAllocations.get(prepared) !== allocation || allocation.state !== "pending" || allocation.initialCachePlan !== null) { throw error("SCHEMATIC_DISPLAY_INITIAL_CACHE_PREPARATION_CHANGED"); }
+    const data = requireOriginalCurrentGeneratedInitialFlowCachePlan(plan, prepared);
+    if (data.documents.length !== 2 || data.projectUuid !== prepared.qualification.target.projectUuid || data.branchUuid !== prepared.qualification.target.branchUuid) { throw error("SCHEMATIC_DISPLAY_INITIAL_CACHE_PREPARATION"); }
+    allocation.initialCachePlan = plan; await verifyGeneratedSchematicFixtureOpenCheckpoint(prepared);
     const owner = await startFixedOwner(options, CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE, "209-schematic-display", undefined, null, null, null, null, false, null, allocation);
     if (!(owner instanceof CurrentSchematicDisplayWriteOwner)) { throw error("SCHEMATIC_DISPLAY_FACTORY"); } assertOriginalCurrentSchematicDisplayWriteOwner(owner); return owner;
   } catch (caughtError) { if (allocation.state === "pending") { allocation.state = "no-resource"; }

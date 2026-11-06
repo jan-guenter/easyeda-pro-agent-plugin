@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { applyCurrentGeneratedInitialCacheNativeFragment as initialCache } from "../src/current-generated-initial-cache-native-fragment.ts";
 import { currentProjectSaveProducerNativeCases } from "../src/current-project-save-producer-protocol.ts";
 import { currentProjectSaveProducerWire } from "../src/current-project-save-producer-wire.ts";
 import { applyCurrentProjectSaveProducerNativeFragment as producer } from "../src/current-project-save-producer-native-fragment.ts";
@@ -32,6 +33,14 @@ void test("full producer generation is idempotent and keeps source observation s
   const base = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"), source = compose(base);
   assert.equal(compose(source), source); assert.equal(producer(source), source);
   for (const action of ["pcb-via-producer-observe", "schematic-display-producer-observe"]) { assert.equal(source.split(`        '${action}' {`).length, 2); }
-  assert.ok(source.includes("viaProducerObserveRequests>=223")); assert.ok(source.includes("schematicProducerObserveArms.Count!=23"));
+  assert.ok(source.includes("viaProducerObserveRequests>=240")); assert.ok(source.includes("schematicProducerObserveArms.Count!=23"));
   assert.equal(source.includes("project-save-producer-resume"), false); assert.throws(() => producer(source.replace("$owner.SendViaProducerObserve", "$owner.ForeignViaProducerObserve")), /CHANGED/u);
+});
+
+void test("startup-only initial cache dispatch remains idempotent across whole writer regeneration and refuses changed owned blocks", async () => {
+  const base = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"), source = initialCache(compose(base));
+  assert.equal(initialCache(compose(source)), source); assert.equal(initialCache(source), source);
+  for (const action of ["pcb-via-initial-cache", "schematic-display-initial-cache", "pcb-via-initial-cache-complete", "schematic-display-initial-cache-complete"]) { assert.equal(source.split(`        '${action}' {`).length, 2); }
+  assert.ok(source.includes("viaProducerPrefixEnrolled||!viaInitialCacheCompleted")); assert.ok(source.includes("schematicProducerPrefixEnrolled||!schematicInitialCacheCompleted"));
+  assert.ok(source.includes("if ($line.Length -ge 32768)")); assert.throws(() => initialCache(source.replace("$owner.SendViaInitialCache", "$owner.UnownedInitialCache")), /CHANGED/u);
 });

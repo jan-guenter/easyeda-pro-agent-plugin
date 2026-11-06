@@ -1,0 +1,23 @@
+/** Original cache-entry/body and later async-frame joins. These observers
+ * invoke no Cache/Response getter or method or application serializer. */
+import { CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_CALLS as INTRINSICS } from "./current-native-cache-response-intrinsics.ts";
+
+const guards = String.raw`"use strict";const bad=()=>{throw new Error("GENERATED_INITIAL_CACHE_ORIGINAL");},seen=[];
+const own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();seen.push([o,k,d]);return d.value;};
+const array=(o,n)=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype||own(o,"length")!==n||Reflect.ownKeys(o).length!==n+1)bad();for(let i=0;i<n;i++)own(o,String(i));};
+const verify=()=>{for(const[o,k,d]of seen){const q=Object.getOwnPropertyDescriptor(o,k);if(!q||!Object.hasOwn(q,"value")||!Object.is(q.value,d.value)||q.writable!==d.writable||q.enumerable!==d.enumerable||q.configurable!==d.configurable)bad();}};
+const entry=original=>{array(original,10);const intrinsics=own(original,"5");array(intrinsics,28);if(Reflect.apply((${INTRINSICS.reprove.program}),intrinsics,[])!==true)bad();const tuple=own(original,"0");array(tuple,4);if(own(tuple,"0")!==own(original,"2")||own(tuple,"1")!==own(original,"6")||own(tuple,"2")!==own(original,"4")||own(tuple,"3")!==undefined||own(own(original,"2"),"cache")!==own(original,"3"))bad();const cache=own(original,"3"),response=own(original,"4");if(Object.getPrototypeOf(cache)!==own(intrinsics,"4")||Reflect.ownKeys(cache).length!==0||Object.getPrototypeOf(response)!==own(intrinsics,"6")||Reflect.ownKeys(response).length!==0)bad();return tuple;};`;
+
+// This is a bounded encoder of an already source-derived plain-data graph.
+// It reads own descriptors and implements JSON string escaping itself, so no
+// Application toJSON, JSON.stringify replacement or inherited getter runs.
+const encode = String.raw`let count=0;const active=new Set();
+const quote=s=>{let out='"';for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);if(c===34)out+='\\"';else if(c===92)out+='\\\\';else if(c===8)out+='\\b';else if(c===9)out+='\\t';else if(c===10)out+='\\n';else if(c===12)out+='\\f';else if(c===13)out+='\\r';else if(c<32||(c>=55296&&c<=57343&&(c>56319||i+1===s.length||s.charCodeAt(i+1)<56320||s.charCodeAt(i+1)>57343)))out+='\\u'+c.toString(16).padStart(4,'0');else if(c>=55296&&c<=56319){out+=s[i]+s[++i];}else out+=s[i];}return out+'"';};
+const encode=(v,depth)=>{if(++count>128||depth>7)bad();if(v===null)return"null";if(typeof v==="string"){if(v.length>8192)bad();return quote(v);}if(typeof v==="number"){if(!Number.isFinite(v))bad();return String(v);}if(typeof v==="boolean")return v?"true":"false";if(typeof v!=="object"||active.has(v))bad();active.add(v);let out;if(Array.isArray(v)){const n=own(v,"length");if(Object.getPrototypeOf(v)!==Array.prototype||!Number.isInteger(n)||n<0||n>4||Reflect.ownKeys(v).length!==n+1)bad();const values=[];for(let i=0;i<n;i++)values.push(encode(own(v,String(i)),depth+1));out='['+values.join(',')+']';}else{if(Object.getPrototypeOf(v)!==Object.prototype)bad();const keys=Reflect.ownKeys(v);if(keys.length>20)bad();const values=[];for(const k of keys){if(typeof k!=="string"||k==="toJSON")bad();const d=Object.getOwnPropertyDescriptor(v,k);if(!d||d.enumerable!==true)bad();values.push(quote(k)+':'+encode(own(v,k),depth+1));}out='{'+values.join(',')+'}';}active.delete(v);return out;};`;
+
+export const CURRENT_GENERATED_INITIAL_CACHE_PROGRAMS = Object.freeze({
+  document: `function(key,body){${guards}entry(this);if(typeof key!=="string"||typeof body!=="string"||key!==own(this,"6")||body!==own(this,"7"))bad();verify();return true;}`,
+  head: `function(key,body){${guards}entry(this);if(typeof key!=="string"||typeof body!=="string"||key!==own(this,"6")||Object.getOwnPropertyDescriptor(Object.prototype,"toJSON")||Object.getOwnPropertyDescriptor(Array.prototype,"toJSON"))bad();${encode}if(encode(own(this,"7"),0)!==body)bad();verify();return true;}`,
+  promise: `function(original){${guards}const initial=entry(original);array(this,6);for(let i=0;i<4;i++)if(own(this,String(i))!==own(initial,String(i)))bad();if(own(this,"4")!==0||typeof own(this,"5")!=="function")bad();verify();return true;}`,
+  success: `function(original,pending){${guards}const initial=entry(original);array(this,6);for(let i=0;i<4;i++)if(own(this,String(i))!==own(initial,String(i)))bad();array(pending,6);for(let i=0;i<6;i++)if(own(this,String(i))!==own(pending,String(i)))bad();if(own(this,"4")!==0||typeof own(this,"5")!=="function")bad();verify();return true;}`,
+});

@@ -35,7 +35,7 @@ if(${purpose}WorkerStage!=6||!${purpose}WorkerSourceRead||!${purpose}ProducerInt
 }else{
 if(${purpose}WorkerStage!=7||!${purpose}StructureBootstrapResumed||!${purpose}ProducerModeRequested||!${purpose}ProducerIntrinsicsReproved||${purpose}ProducerObserveArms.Count!=${String(REQUESTS.newArms)})throw Error("project-save-producer-original-construction");
 if(phase=="project-save-producer-properties"){if(${purpose}ProducerObserveProperties>=${String(REQUESTS.properties)})throw Error("project-save-producer-properties-budget");${purpose}ProducerObserveProperties++;}
-else{int count;${purpose}ProducerObserveCounts.TryGetValue(phase,out count);if(count>=${String(REQUESTS.maximumRoleOccurrences)})throw Error("project-save-producer-role-budget");${purpose}ProducerObserveCounts[phase]=count+1;}
+else{int count;${purpose}ProducerObserveCounts.TryGetValue(phase,out count);int maximum=phase.IndexOf("headEntry",StringComparison.Ordinal)>=0||phase.IndexOf("headPromise",StringComparison.Ordinal)>=0||phase.IndexOf("headSuccess",StringComparison.Ordinal)>=0||phase.IndexOf("cacheFailed",StringComparison.Ordinal)>=0||phase.StartsWith("project-save-producer-cache-",StringComparison.Ordinal)?3:2;if(count>=maximum)throw Error("project-save-producer-role-budget");${purpose}ProducerObserveCounts[phase]=count+1;}
 }
 AssertLive();${purpose}ProducerObserveRequests++;SendMessage(id,encoded);
 }

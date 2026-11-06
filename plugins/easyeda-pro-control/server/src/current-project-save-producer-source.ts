@@ -286,8 +286,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "lineNumber": 106,
     "columnNumber": 56_424,
     "offset": 1_684_884,
-    "expression": "[this,t,s,r]",
-    "length": 4
+    "expression": "[this,t,s,r,i,n]",
+    "length": 6
   },
   "headSuccess": {
     "functionLineNumber": 106,

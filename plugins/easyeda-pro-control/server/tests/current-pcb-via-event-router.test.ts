@@ -103,3 +103,18 @@ void test("producer event ownership never permits the router to reserve a worker
   const pending = f.router.next("producer"); await f.entered(); f.deliver(paused(point)); await pending;
   assert.throws(() => { f.router.reserveResume("producer", point.sessionId, point.role); }); assert.equal(f.reads.count, 1);
 });
+for (const Constructor of [CurrentPcbViaEventRouter, CurrentSchematicDisplayEventRouter]) {
+  void test(`${Constructor.name} reserves initial cache delivery only by the same original event and current pause`, async () => {
+    const f = fixture(Constructor), point = { ...save, breakpointId: "initial-cache-entry", role: "headEntry", lineNumber: 106, columnNumber: 55_920 };
+    f.router.register("producer", point); const first = f.router.next("producer"); await f.entered(); f.deliver(paused(point)); const original = await first;
+    assert.throws(() => { f.router.reserveResume("producer", point.sessionId, point.role); });
+    assert.throws(() => { f.router.reserveInitialCacheResume(structuredClone(original), "headEntry"); });
+    assert.throws(() => { f.router.reserveInitialCacheResume(original, "headSuccess"); });
+    f.router.reserveInitialCacheResume(original, "headEntry"); assert.throws(() => { f.router.reserveInitialCacheResume(original, "headEntry"); });
+    const resumed = f.router.next("producer"); await f.entered(); f.deliver({ method: "Debugger.resumed", sessionId: point.sessionId, params: {} }); const originalResumed = await resumed; assert.equal(originalResumed.method, "Debugger.resumed");
+    const next = f.router.next("producer"); await f.entered(); f.deliver(paused(point)); const current = await next;
+    assert.throws(() => { f.router.reserveInitialCacheResume(original, "headEntry"); });
+    f.router.reserveInitialCacheResume(current, "headEntry"); const final = f.router.next("producer"); await f.entered(); f.deliver({ method: "Debugger.resumed", sessionId: point.sessionId, params: {} }); await final;
+    assert.equal(f.reads.failed, false); assert.equal(f.reads.count, 4);
+  });
+}
