@@ -1,3 +1,4 @@
+import { applyCurrentPcbViaLocalUploadNativeFragment } from "../server/src/current-pcb-via-local-upload-native-fragment.ts";
 import { applyCurrentPcbViaSaveGenerationNativeFragment } from "../server/src/current-pcb-via-save-generation-native-fragment.ts";
 import { applyCurrentGeneratedPeriodicSyncNativeFragment } from "../server/src/current-generated-periodic-sync-native-fragment.ts";
 import { applyCurrentGeneratedInitialSyncNativeFragment } from "../server/src/current-generated-initial-sync-native-fragment.ts";
@@ -135,7 +136,7 @@ export function generateWorkerStartupProtocol(source: string): string {
   next = applyCurrentProjectStructureTransportNativeFragment(applyCurrentSchematicDisplayWriteNativeFragment(applyCurrentPcbViaWriteNativeFragment(next)));
   next = applyCurrentGeneratedInitialCacheNativeFragment(applyCurrentProjectSaveProducerNativeFragment(applyCurrentProjectSaveProducerGuardNativeFragment(next)));
   next = applyCurrentGeneratedInitialSyncNativeFragment(next);
-  next = applyCurrentPcbViaSaveGenerationNativeFragment(applyCurrentGeneratedPeriodicSyncNativeFragment(next));
+  next = applyCurrentPcbViaLocalUploadNativeFragment(applyCurrentPcbViaSaveGenerationNativeFragment(applyCurrentGeneratedPeriodicSyncNativeFragment(next)));
   next = applyCurrentPcbComponentSpatialNativeFragment(next);
   next = applyCurrentPcbViaSavedReadbackNativeFragment(next);
   next = applyCurrentFootprintInverseNativeFragment(next);

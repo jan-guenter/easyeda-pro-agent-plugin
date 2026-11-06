@@ -9,7 +9,7 @@ import type { CurrentGeneratedStartupProgress } from "./current-generated-startu
 import type { CurrentProjectSaveProducerCacheCaller } from "./current-project-save-producer-cache-source.ts";
 import { types } from "node:util";
 import { z } from "zod";
-import { continueOriginalCurrentGeneratedInitialCacheCall, continueOriginalCurrentGeneratedInitialSyncCall, continueOriginalCurrentGeneratedPeriodicSyncCall, originalCurrentProjectSaveProducerStartupProgress, requireOriginalCurrentProjectSaveProducerOrigin, settleOriginalCurrentGeneratedInitialCacheCalls, settleOriginalCurrentGeneratedInitialSyncCall, settleOriginalCurrentGeneratedPeriodicSyncCall } from "./current-pcb-diagnostic-owner.ts";
+import { continueOriginalCurrentGeneratedInitialCacheCall, continueOriginalCurrentGeneratedInitialSyncCall, continueOriginalCurrentGeneratedPeriodicSyncCall, continueOriginalCurrentPcbViaLocalUploadCall, originalCurrentProjectSaveProducerStartupProgress, requireOriginalCurrentPcbViaLocalUploadCompleted, requireOriginalCurrentProjectSaveProducerOrigin, settleOriginalCurrentGeneratedInitialCacheCalls, settleOriginalCurrentGeneratedInitialSyncCall, settleOriginalCurrentGeneratedPeriodicSyncCall } from "./current-pcb-diagnostic-owner.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { decodeCurrentFootprintCopyClockRpcV2ArrayCapture } from "./current-footprint-copy-clock-rpc-v2-protocol.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_PRODUCER_FRAME_FLAGS as FRAME_FLAGS,
@@ -110,6 +110,12 @@ export class CurrentProjectSaveProducerObserver {
     try { await this.#current(); await continueOriginalCurrentGeneratedInitialCacheCall(this.#origin, this.#owner, this.#operation, packet); await this.#current(); this.#held = null; }
     catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
+  public async continueSaveLocalCall(packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
+    need(!this.#busy && !this.#failed && !this.#closed && this.#held === packet,"SAVE_LOCAL_ORIGINAL_HELD"); this.#busy = true;
+    try { await this.#current(); await continueOriginalCurrentPcbViaLocalUploadCall(this.#origin,this.#owner,this.#operation,packet); await this.#current(); this.#held = null; }
+    catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
+  }
+  public requireSaveLocalCompleted(): void { need(!this.#busy && !this.#failed && !this.#closed,"SAVE_LOCAL_COMPLETION_STATE"); requireOriginalCurrentPcbViaLocalUploadCompleted(this.#origin,this.#owner,this.#operation); }
   public startupProgress(): CurrentGeneratedStartupProgress { need(!this.#busy && !this.#failed && !this.#closed, "STARTUP_PROGRESS_STATE"); return originalCurrentProjectSaveProducerStartupProgress(this.#origin, this.#owner, this.#operation); }
   public async settleInitialCacheCalls(): Promise<void> {
     need(!this.#busy && !this.#failed && !this.#closed, "INITIAL_CACHE_SETTLE_STATE"); const held = this.#held;

@@ -1,3 +1,4 @@
+import { currentPcbViaLocalUploadWire } from "./current-pcb-via-local-upload-wire.ts";
 import { currentGeneratedPeriodicSyncWire } from "./current-generated-periodic-sync-wire.ts";
 import { currentGeneratedInitialSyncWire } from "./current-generated-initial-sync-wire.ts";
 import { currentGeneratedInitialCacheWire } from "./current-generated-initial-cache-wire.ts";
@@ -58,6 +59,12 @@ export function currentPcbViaWriteNativeRequest(chunk: Buffer): Readonly<Record<
     raw["id"] < 1 || raw["id"] > PROFILE.renderer.total || !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("PCB_VIA_WIRE"); }
   const { id, sessionId, ...input } = raw;
   if (typeof sessionId !== "string" && Object.hasOwn(raw, "viaWritePhase")) { throw new Error("PCB_VIA_SESSION"); }
+  if (Object.hasOwn(raw, "viaLocalUploadCommand")) {
+    const { id: localId, sessionId: localSession, viaLocalUploadCommand, ...localInput } = raw;
+    if (viaLocalUploadCommand !== true || typeof localSession !== "string") { throw new Error("VIA_LOCAL_WIRE"); }
+    const fixed = currentPcbViaLocalUploadWire(localInput, localId);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id: localId, ...fixed.command, viaLocalUploadCommand: true, sessionId: localSession })}\0`))) { throw new Error("VIA_LOCAL_WIRE"); } return fixed.request;
+  }
   if (Object.hasOwn(raw, "periodicSyncCommand")) {
     const { id: initialId, sessionId: initialSession, periodicSyncCommand, ...initialInput } = raw;
     if (periodicSyncCommand !== true || typeof initialSession !== "string") { throw new Error("PERIODIC_SYNC_WIRE"); }

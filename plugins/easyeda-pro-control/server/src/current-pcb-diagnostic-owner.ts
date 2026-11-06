@@ -1,4 +1,8 @@
 /* oxlint-disable max-classes-per-file -- Four fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import { CurrentPcbViaLocalUploadCursor } from "./current-pcb-via-local-upload-cursor.ts";
+import type { CurrentPcbViaLocalUploadHeld } from "./current-pcb-via-local-upload-cursor.ts";
+import type { CurrentPcbViaLocalUploadCommand } from "./current-pcb-via-local-upload-protocol.ts";
+import { CURRENT_PCB_VIA_LOCAL_UPLOAD_ROLES } from "./current-pcb-via-local-upload-protocol.ts";
 import type { CurrentGeneratedStartupProgress } from "./current-generated-startup-progress.ts";
 import { CurrentGeneratedPeriodicSyncCursor } from "./current-generated-periodic-sync-cursor.ts";
 import type { CurrentGeneratedPeriodicSyncHeld } from "./current-generated-periodic-sync-cursor.ts";
@@ -652,6 +656,16 @@ export function originalCurrentProjectSaveProducerStartupProgress(origin: Curren
   requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation); const original = originalProducerStartupProgress.get(origin);
   if (original === undefined || original.owner !== owner || original.operation !== operation) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_STARTUP_PROGRESS"); }
   const progress = original.read(); requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation); return progress;
+}
+const originalViaLocalUploadCursors = new WeakMap<CurrentProjectSaveProducerOrigin, Readonly<{ owner: object; operation: object; cursor: () => CurrentPcbViaLocalUploadCursor }>>();
+export async function continueOriginalCurrentPcbViaLocalUploadCall(origin: CurrentProjectSaveProducerOrigin,owner: object,operation: object,packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
+  requireOriginalCurrentProjectSaveProducerOrigin(origin,owner,operation); const original=originalViaLocalUploadCursors.get(origin);
+  if(original===undefined||original.owner!==owner||original.operation!==operation) { throw error("VIA_LOCAL_ORIGINAL_CURSOR"); }
+  await original.cursor().continue(packet); requireOriginalCurrentProjectSaveProducerOrigin(origin,owner,operation);
+}
+export function requireOriginalCurrentPcbViaLocalUploadCompleted(origin: CurrentProjectSaveProducerOrigin,owner: object,operation: object): void {
+  requireOriginalCurrentProjectSaveProducerOrigin(origin,owner,operation); const original=originalViaLocalUploadCursors.get(origin);
+  if(original===undefined||original.owner!==owner||original.operation!==operation) { throw error("VIA_LOCAL_ORIGINAL_CURSOR"); } original.cursor().requireCompleted();
 }
 const originalInitialCacheCursors = new WeakMap<CurrentProjectSaveProducerOrigin, Readonly<{ owner: object; operation: object; cursor: () => CurrentGeneratedInitialCacheCursor }>>();
 export async function continueOriginalCurrentGeneratedInitialCacheCall(origin: CurrentProjectSaveProducerOrigin, owner: object, operation: object, packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
@@ -3074,6 +3088,7 @@ class CurrentPcbRetainedOwnerCore {
           let originalHeldEvent: Awaited<ReturnType<typeof selected.nextProducerEvent>> | null = null, originalHeldRole: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES | null = null;
           let originalFrameId: string | null = null, originalJoinedId: string | null = null; let originalFrameAttempted = false, originalHeldRetained = false, originalPropertiesAttempted = false, originalPropertiesObserved = false, originalReadAttempted = false, originalReceiverAttempted = false;
           let originalCacheKey: string | null = null;
+          let originalLocalBufferPromise: string | null = null; const localBufferPromises = new WeakMap<object,string>();
           let originalCachePromise: OriginalProducerCachePromise | null = null, originalCachePromiseId: string | null = null; let originalCachePromiseAttempted = false, originalCachePromisePropertiesAttempted = false;
           let originalCache: OriginalProducerCacheCapture | null = null, originalCacheCaller: Readonly<{ role: CurrentProjectSaveProducerCacheCaller; callFrameId: string }> | null = null;
           let originalCacheCallerId: string | null = null, originalCacheJoinedId: string | null = null; let originalCacheCallerAttempted = false, originalCacheJoinAttempted = false, originalCachePropertiesAttempted = false;
@@ -3115,6 +3130,7 @@ class CurrentPcbRetainedOwnerCore {
                 if (!record(reply) || !exact(reply, ["breakpointId", "actualLocation"]) || typeof reply["breakpointId"] !== "string" || !record(reply["actualLocation"]) || !exact(reply["actualLocation"], ["scriptId", "lineNumber", "columnNumber"]) || reply["actualLocation"]["scriptId"] !== source.scriptId || reply["actualLocation"]["lineNumber"] !== site.lineNumber || reply["actualLocation"]["columnNumber"] !== site.columnNumber) { throw error("PROJECT_SAVE_PRODUCER_ARM_REPLY"); } selected.bindProducerObservationBreakpoint(source, command.role, reply["breakpointId"]);
               }
               if (command.phase === "project-save-producer-properties") { if (originalHeldRole === null || originalJoinedId !== command.params.objectId) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_PROPERTIES_CHANGED"); } requireHeldRole(originalHeldRole); const fields = decodeCurrentFootprintCopyClockRpcV2Array(reply, CURRENT_PROJECT_SAVE_PRODUCER_SITES[originalHeldRole].length);
+                if (originalHeldRole === "bufferScheduled") { originalLocalBufferPromise = currentFootprintCopyClockRpcV2ArrayObject(fields,2); }
                 if (originalHeldRole === "headEntry" || originalHeldRole === "headPromise" || originalHeldRole === "headSuccess") { const key = currentFootprintCopyClockRpcV2ArrayValue(fields, 1); if (typeof key !== "string") { throw error("INITIAL_CACHE_ORIGINAL_KEY"); } originalCacheKey = key; } originalPropertiesObserved = true; }
               if (command.phase === "project-save-producer-cache-caller") { originalCacheCallerId = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS[command.cacheRole].length); }
               if (command.phase === "project-save-producer-cache-receiver") { originalCacheJoinedId = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CAPTURE_LENGTH); }
@@ -3136,6 +3152,7 @@ class CurrentPcbRetainedOwnerCore {
               if (originalHeldRetained || originalHeldEvent === null || originalHeldRole === null || originalFrameId === null || originalJoinedId === null || !originalPropertiesObserved || originalHeldRole === "headEntry" && originalCache === null || originalHeldRole === "headPromise" && originalCachePromise === null) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_CAPTURE_REQUIRED"); }
               requireHeldRole(originalHeldRole); originalHeldRetained = true; const cache = originalCache, event = originalHeldEvent, frameId = originalFrameId, joinedId = originalJoinedId, promise = originalCachePromise, role = originalHeldRole;
               const packet: CurrentProjectSaveProducerHeldCall = Object.freeze({ profile: "private.current-project-save-producer-held-call.v1" });
+              if (role === "bufferScheduled") { if(originalLocalBufferPromise===null) { throw error("VIA_LOCAL_BUFFER_ORIGINAL_PROMISE"); } localBufferPromises.set(packet,originalLocalBufferPromise); }
               originalProjectProducerHeldCalls.set(packet, Object.freeze({ owner: this, operation: plan, origin: producerOrigin, role, event, frameId, joinedId, cache, promise, cacheKey: originalCacheKey, assertOriginal: (): void => { assertProducerOriginal(); if (originalHeldEvent !== event || originalHeldRole !== role || originalFrameId !== frameId || originalJoinedId !== joinedId || originalCache !== cache || originalCachePromise !== promise || !originalHeldRetained) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_NATIVE_HELD_CALL_CHANGED"); } } })); return packet;
             }, originalIntrinsics: () => { original(); assertProducerOriginal(); if (this.#viaProducerIntrinsicTuple !== intrinsicTuple) { throw error("PROJECT_SAVE_PRODUCER_INTRINSICS_CHANGED"); } return intrinsicTuple; }, originalReceivers: receivers, originalBreakpoint: (role: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES) => selected.originalProducerObservationBreakpoint(source, role),
             assertCurrent: async (): Promise<void> => { original(); assertProducerOriginal(); await this.#verify(); original(); assertProducerOriginal(); },
@@ -3146,6 +3163,24 @@ class CurrentPcbRetainedOwnerCore {
             originalCache = null; originalCacheCaller = null; originalCacheCallerId = null; originalCacheJoinedId = null; originalCacheCallerAttempted = false; originalCacheJoinAttempted = false; originalCachePropertiesAttempted = false; originalCacheKey = null;
             originalCachePromise = null; originalCachePromiseId = null; originalCachePromiseAttempted = false; originalCachePromisePropertiesAttempted = false;
           };
+          let localUploadCursor: CurrentPcbViaLocalUploadCursor | null = null; const localHeld = new WeakMap<object,CurrentPcbViaLocalUploadHeld>();
+          const localCursor = (): CurrentPcbViaLocalUploadCursor => {
+            original(); assertProducerOriginal(); if(localUploadCursor!==null) { return localUploadCursor; }
+            const actualBody=this.#viaSaveCapturedBody;const bodyObject=this.#viaProducerOriginalSaveBody;const reservation=this.#viaStructureBodyReservation;const delta=this.#viaMainBoundBody;
+            if(actualBody===null||bodyObject===null||reservation===null||delta===null||actualBody.body!==delta.dataStr||this.#viaSaveEnrollment===null) { throw error("VIA_LOCAL_ORIGINAL_BODY_REQUIRED"); }
+            const currentLocal=():void=>{original();assertProducerOriginal();this.#viaSaveEnrollment?.assertOriginalAttempted();if(this.#viaSaveEnrollment===null||this.#viaSaveCapturedBody!==actualBody||this.#viaProducerOriginalSaveBody!==bodyObject||this.#viaStructureBodyReservation!==reservation||this.#viaMainBoundBody!==delta||this.#viaClockValue!==actualBody.clock||!this.#viaSdkPhases.has("save")) { throw error("VIA_LOCAL_ORIGINAL_BODY_CHANGED"); }
+              const body=originalStructureBodies.get(reservation);if(body===undefined||body.owner!==this||body.operation!==plan) { throw error("VIA_LOCAL_ORIGINAL_RESERVATION"); }body.assertCurrent();};
+            const requireHeld=(packet:object):CurrentPcbViaLocalUploadHeld=>{currentLocal();const actual=originalProjectProducerHeldCalls.get(packet);if(actual===undefined||actual.owner!==this||actual.operation!==plan||actual.origin!==producerOrigin||!CURRENT_PCB_VIA_LOCAL_UPLOAD_ROLES.some(role=>role===actual.role)) { throw error("VIA_LOCAL_ORIGINAL_HELD"); }actual.assertOriginal();
+              if(actual.role==="localIngress"||actual.role==="bufferIngress"){const event=actual.event;if(!record(event)||!record(event["params"])||!Array.isArray(event["params"]["callFrames"])) { throw error("VIA_LOCAL_ORIGINAL_CALLER"); }const caller:unknown=event["params"]["callFrames"][1];const column=actual.role==="localIngress"?131_307:17_322,functionColumn=actual.role==="localIngress"?130_802:17_009;
+                if(!record(caller)||!record(caller["location"])||!record(caller["functionLocation"])||caller["location"]["scriptId"]!==source.scriptId||caller["functionLocation"]["scriptId"]!==source.scriptId||caller["location"]["lineNumber"]!==110||caller["functionLocation"]["lineNumber"]!==110||caller["location"]["columnNumber"]!==column||caller["functionLocation"]["columnNumber"]!==functionColumn) { throw error("VIA_LOCAL_ORIGINAL_CALLER_LOCATION"); }}
+              let held=localHeld.get(packet);if(held===undefined){const role=CURRENT_PCB_VIA_LOCAL_UPLOAD_ROLES.find(value=>value===actual.role);if(role===undefined) { throw error("VIA_LOCAL_ROLE"); }held=Object.freeze({packet,role,joinedId:actual.joinedId,key:actual.cacheKey,cache:actual.cache,promise:actual.promise,bufferPromise:localBufferPromises.get(packet)??null});localHeld.set(packet,held);}return held;};
+            localUploadCursor=new CurrentPcbViaLocalUploadCursor(Object.freeze({body:actualBody.body,bodyObject,branchUuid:plan.target.branchUuid,assertCurrent:async():Promise<void>=>{currentLocal();await this.#verify();currentLocal();},requireHeld,
+              request:(command:CurrentPcbViaLocalUploadCommand)=>this.#serializeViaObserver(()=>this.#transfer(()=>{currentLocal();return pipe.continueViaLocalUpload(command);})),
+              resume:async(held:CurrentPcbViaLocalUploadHeld,command:CurrentPcbViaLocalUploadCommand):Promise<void>=>{requireHeld(held.packet);const event=originalHeldEvent;if(event===null||originalHeldRole!==held.role||!originalHeldRetained) { throw error("VIA_LOCAL_ORIGINAL_EVENT"); }
+                const ack=await this.#serializeViaObserver(()=>this.#transfer(()=>{requireHeld(held.packet);selected.reserveSaveLocalResume(source,event,held.role);return pipe.continueViaLocalUpload(command);}));if(!exact(ack,[])) { throw error("VIA_LOCAL_RESUME_ACK"); }
+                const resumed=captureCurrentPcbStringClockReply(await selected.nextProducerEvent()).value;currentLocal();if(!record(resumed)||!exact(resumed,["method","sessionId","params"])||resumed["method"]!=="Debugger.resumed"||resumed["sessionId"]!==child.sessionId||!record(resumed["params"])||!exact(resumed["params"],[])) { throw error("VIA_LOCAL_RESUMED_EVENT"); }resetProducerPause();originalLocalBufferPromise=null;},fail:()=>{ selected.fail(); }}));return localUploadCursor;
+          };
+          originalViaLocalUploadCursors.set(producerOrigin,Object.freeze({owner:this,operation:plan,cursor:localCursor}));
           let initialCacheCursor: CurrentGeneratedInitialCacheCursor | null = null;
           const initialHeld = new WeakMap<object, CurrentGeneratedInitialCacheHeld>();
           const initialCursor = (): CurrentGeneratedInitialCacheCursor => {
