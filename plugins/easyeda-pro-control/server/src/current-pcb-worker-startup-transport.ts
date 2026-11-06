@@ -60,8 +60,13 @@ interface ClockRpcTransportBinding {
   readonly consume: () => void;
 }
 const clockRpcTransports = new WeakMap<CurrentPcbWorkerStartupDependency,
-  Readonly<{ prepare: (lease: CurrentFootprintCopyClockRpcConstructionLease) => Promise<CurrentFootprintCopyClockRpcTransportHandoff> }>>();
+  Readonly<{ owner: object; prepare: (lease: CurrentFootprintCopyClockRpcConstructionLease) => Promise<CurrentFootprintCopyClockRpcTransportHandoff> }>>();
 const clockRpcHandoffs = new WeakMap<CurrentFootprintCopyClockRpcTransportHandoff, ClockRpcTransportBinding>();
+/** Match the exact original wrapper and separately issued cold-v2 dependency.
+ * Another genuine construction or copied transport cannot supply this join. */
+export function requireOriginalForwardClockPreparationTransport(transport: object, dependency: CurrentPcbWorkerStartupDependency): void {
+  if (!isOriginalFootprintForwardExecutionDependency(dependency) || clockRpcTransports.get(dependency)?.owner !== transport) { throw failure("FORWARD_CLOCK_ORIGINAL_TRANSPORT"); }
+}
 /** Only the actual execution transport registered by its private constructor
  * can prepare this dependency. No callback or copied worker handle is accepted. */
 export function prepareCurrentFootprintCopyClockRpcTransport(dependency: CurrentPcbWorkerStartupDependency,
@@ -321,7 +326,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     void observe(this.#peerAdvance.promise); void observe(this.#peerIdle.promise);
     if (execution209) {
       if (clockRpcTransports.has(dependency)) { throw failure("CLOCK_RPC_ORIGINAL_TRANSPORT"); }
-      clockRpcTransports.set(dependency, Object.freeze({ prepare: (lease: CurrentFootprintCopyClockRpcConstructionLease): Promise<CurrentFootprintCopyClockRpcTransportHandoff> => this.#prepareClockRpc(lease) }));
+      clockRpcTransports.set(dependency, Object.freeze({ owner: this, prepare: (lease: CurrentFootprintCopyClockRpcConstructionLease): Promise<CurrentFootprintCopyClockRpcTransportHandoff> => this.#prepareClockRpc(lease) }));
     }
   }
   async #prepareClockRpc(lease: CurrentFootprintCopyClockRpcConstructionLease): Promise<CurrentFootprintCopyClockRpcTransportHandoff> {

@@ -327,6 +327,7 @@ import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_BIRTH_PROFILE } from "./current-foo
 import { CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY, CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY, CurrentFootprintCopyForwardResourceLedger, requireOriginalForwardLedgerBinding } from "./current-footprint-copy-forward-capacity.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS, CURRENT_FOOTPRINT_COPY_SOURCE_SEAL_REQUESTS } from "./current-footprint-copy-preparation.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS } from "./current-footprint-copy-source-stage-budget.ts";
+import { CURRENT_FOOTPRINT_FORWARD_CLOCK_PREPARATION_REQUESTS } from "./current-footprint-forward-clock-preparation-budget.ts";
 import type { CurrentFootprintCopyForwardRole } from "./current-footprint-copy-forward-capacity.ts";
 import { CurrentFootprintCopyForwardMainAccounting } from "./current-footprint-copy-forward-main-accounting.ts";
 import type { CurrentFootprintForwardExecutionInputOrigin, CurrentFootprintForwardExecutionInputs } from "./current-footprint-forward-execution-origin.ts";
@@ -4173,6 +4174,43 @@ class CurrentPcbRetainedOwnerCore {
       this.#footprintClockRegistrationPacket = observation; return observation;
     } finally { this.#busy = false; }
   }
+  /** Same-source observation for the separately born forward-v2 owner only.
+   * This invokes no clock and grants no allocated-create route. */
+  public async observeFootprintForwardExecutionClockRegistration(opening: CurrentFootprintCopyOpeningOwner,
+    result: CurrentFootprintCopyOpeningResult): Promise<CurrentFootprintCopyClockRegistrationObservation> {
+    assertOriginalCurrentFootprintForwardExecutionNativeOwner(this);
+    const sealed = this.originalFootprintForwardExecutionSource();
+    if (sealed.opening !== opening || sealed.result !== result) { throw error("FORWARD_CLOCK_REGISTRATION_ORIGINAL_SOURCE"); }
+    const context = this.#stagedContext, handoff = this.#startupHandoff, packet = this.#footprintUiPacket, ui = this.#footprintUiRunner;
+    if (this.#footprintClockRegistrationAttempted || context === null || handoff === null ||
+        ui === null || packet === null || opening !== this.#footprintUiOpening || result !== this.#footprintUiOpeningResult || !this.#footprintUiReproofAttempted ||
+        !(handoff.channel instanceof CurrentFootprintForwardExecutionStartupChannel) || CurrentFootprintCopyUiRunner.prototype.createClockRegistration !== createFootprintClockRegistration ||
+        CurrentFootprintForwardExecutionStartupChannel.prototype.requestFootprintClockRegistration !== requestFootprintClockRegistration) { throw error("FOOTPRINT_CLOCK_REGISTRATION_UNAVAILABLE"); }
+    this.#enter(true); this.#footprintClockRegistrationAttempted = true;
+    try {
+      const channel = handoff.channel, original = this.#binding, script = context.script(), selected = context.openingContext();
+      const current = async (): Promise<void> => {
+        const same = (): void => {
+          this.#available(); assertOriginalCurrentFootprintForwardExecutionNativeOwner(this);
+          if (this.originalFootprintForwardExecutionSource().source !== sealed.source) { throw error("FORWARD_CLOCK_REGISTRATION_ORIGINAL_SOURCE"); }
+          if (this.#binding !== original || this.#startupHandoff !== handoff || this.#stagedContext !== context || this.#footprintUiRunner !== ui || this.#footprintUiPacket !== packet ||
+              this.#terminationObserved || this.#closeConsumed || this.#releaseConsumed || channel !== this.#startupChannel ||
+              context.script().scriptId !== script.scriptId || context.openingContext().uniqueContextId !== selected.uniqueContextId ||
+              context.openingContext().sessionId !== selected.sessionId || handoff.dependency.parentSessionId !== selected.sessionId ||
+              CurrentFootprintCopyUiRunner.prototype.createClockRegistration !== createFootprintClockRegistration ||
+              CurrentFootprintForwardExecutionStartupChannel.prototype.requestFootprintClockRegistration !== requestFootprintClockRegistration) { throw error("FOOTPRINT_CLOCK_REGISTRATION_OWNER_CHANGED"); }
+        };
+        same(); await handoff.opening.reprove(); same();
+      };
+      await requireCurrentFootprintCopyOpening(opening, result, handoff.dependency); await current();
+      const runner = createFootprintClockRegistration.call(ui, packet, Object.freeze({ assertCurrent: current,
+        request: (command: CurrentFootprintCopyClockRegistrationCommand): Promise<unknown> => requestFootprintClockRegistration.call(channel, command) }));
+      // Retain cleanup ownership before the first awaited capture request.
+      this.#footprintClockRegistrationRunner = runner;
+      const observation = await runner.observe(); await current(); await requireCurrentFootprintCopyOpening(opening, result, handoff.dependency);
+      this.#footprintClockRegistrationPacket = observation; return observation;
+    } finally { this.#busy = false; }
+  }
   public async sampleFootprintCopyClockRegistration(packet: CurrentFootprintCopyClockRegistrationObservation): Promise<CurrentFootprintCopyClockRegistrationSample> {
     const handoff = this.#startupHandoff, opening = this.#footprintUiOpening, result = this.#footprintUiOpeningResult, runner = this.#footprintClockRegistrationRunner;
     if (!footprintCopyObservationPurpose(this.#purpose) || runner === null || handoff === null || opening === null || result === null || packet !== this.#footprintClockRegistrationPacket) { throw error("FOOTPRINT_CLOCK_REGISTRATION_ORIGINAL"); }
@@ -4655,6 +4693,21 @@ class CurrentPcbRetainedOwnerCore {
     if (!status.started || status.failed || status.released || status.pendingReplies !== 0 || !Number.isSafeInteger(status.nextRequestId) ||
         counters.failed || counters.rendererNormalRequests + required > capacity.normalClassLimit || status.nextRequestId + required - 1 > capacity.normalIdCeiling) {
       throw error("FORWARD_EXECUTION_SOURCE_CAPACITY");
+    }
+  }
+  /** Preflight the complete metadata/lease read sequence before collection.
+   * It cannot enlarge any existing native, cleanup or control counter. */
+  public assertFootprintForwardExecutionClockPreparationCapacity(): void {
+    assertOriginalCurrentFootprintForwardExecutionNativeOwner(this); this.#available();
+    const channel = this.#startupChannel, resources = forwardResourceBirths.get(this);
+    if (!(channel instanceof CurrentFootprintForwardExecutionStartupChannel) || this.#startupHandoff?.channel !== channel || resources === undefined) { throw error("FORWARD_CLOCK_PREPARATION_CHANNEL"); }
+    resources.methods.requireOriginal();
+    const counters = resources.methods.generationStatus.call(resources.ledger, "forward-writer", this), status = forwardExecutionChannelStatus.call(channel);
+    const required = CURRENT_FOOTPRINT_FORWARD_CLOCK_PREPARATION_REQUESTS.normal;
+    const capacity = CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY.writer.renderer;
+    if (!status.started || status.failed || status.released || status.pendingReplies !== 0 || !Number.isSafeInteger(status.nextRequestId) ||
+        counters.failed || counters.rendererNormalRequests + required > capacity.normalClassLimit || status.nextRequestId + required - 1 > capacity.normalIdCeiling) {
+      throw error("FORWARD_CLOCK_PREPARATION_CAPACITY");
     }
   }
   /** Original v2 input references survive cleanup as historical custody only.

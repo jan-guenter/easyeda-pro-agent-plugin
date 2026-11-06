@@ -58,3 +58,63 @@ retain the exact original source/opening, construction/invocation leases,
 registration and cold continuation, then expose it only through the new genuine
 writer composition. Current source/head/producer and all-four-generation gates
 must remain closed until their original proofs and actual schedules exist.
+
+## Original cold-v2 metadata and lease preparation
+
+The next separate increment implements
+`CurrentFootprintForwardClockPreparationOwner(provider).prepare()`. It resolves
+only the original settled v2 provider and the preparation registry's actual
+opening/result/assignment/state/source/SQL references. It sequentially retains
+the original producer, dependency, registered-callback and destination packets,
+then the new v2-only native clock-registration observation and genuine
+construction/invocation leases. `requireOriginalCurrentFootprintForwardClockPreparation`
+resolves the exact original token/provider through a private closure; copied
+JSON, another provider or changed original owners refuse.
+
+Before the first awaited observation the actual source provider consumes its
+once-only preparation reservation and reports busy. Normal close cannot race
+that work. The original promise settles before busy is cleared. A collector or
+post-reply identity failure ends the provider's normal lane while retaining its
+original cleanup owner and consumed partial packets. Failed reservation
+settlement issues no preparation token. The stage does not unsubscribe the
+construction event owner, begin the allocated-clock transport, arm/invoke a
+clock, create a footprint, Save or allocate another native generation.
+
+The original wrapper/dependency check now compares the actual constructor's
+private transport entry as well as the genuine cold-v2 dependency marker. A
+Combined dependency and a copied wrapper cannot pass. The old registration
+method remains unchanged; the separate v2 method additionally requires the
+factory's exact sealed source/opening and v2 channel at every reproof. The old
+opening's new lease method also refuses a non-v2 dependency before observation.
+
+The complete new metadata/lease renderer-read reservation is derived from the
+existing fixed methods, with no native/cleanup ceiling increase:
+
+| Stage | Renderer requests |
+| --- | ---: |
+| Original owned-source reproof | 2 |
+| Producer observation including opening identity/assignment | 41 |
+| Dependencies including opening identity/assignment | 96 |
+| Registered callbacks | 19 |
+| Destinations | 41 |
+| UI registration plus two original-opening proofs | 19 |
+| Final dependency/callback/destination/assignment lease checks | 24 |
+| Total | 242 |
+
+The original owner's new preflight checks those 242 reads against its actual
+normal-class consumption and physical request-ID ceiling before collection.
+Its existing controls, events, raw output, state samples and cleanup ledgers
+remain cumulative. This read reservation does not establish complete writer or
+four-generation capacity, current head, continuous producer exclusion or an
+allocated-create origin. The new preparation packet preserves these false
+fields.
+
+Ten focused preparation/registration checks pass under the isolation preload.
+The whole preparation ordering/partial-failure cases use the actual maintained
+state machine with explicit synthetic source/UI/native collectors. Separate
+checks exercise real cold-v2 versus Combined channel/transport registries with
+zero native exchanges, and the real original provider/factory/publication
+reservation refusing close/reuse while busy. Existing registration source,
+selector, native-codec and owner-drift cases pass. Full strict types and changed
+file type-aware lint pass. No Windows/compiler helper, app, native allocation,
+MCP call or generated artifact changed.
