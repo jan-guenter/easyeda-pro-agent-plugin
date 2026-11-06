@@ -1,4 +1,5 @@
 /* oxlint-disable max-classes-per-file -- Four fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import type { CurrentGeneratedStartupProgress } from "./current-generated-startup-progress.ts";
 import { CurrentGeneratedPeriodicSyncCursor } from "./current-generated-periodic-sync-cursor.ts";
 import type { CurrentGeneratedPeriodicSyncHeld } from "./current-generated-periodic-sync-cursor.ts";
 import type { CurrentGeneratedPeriodicSyncCommand } from "./current-generated-periodic-sync-protocol.ts";
@@ -639,6 +640,12 @@ export function requireOriginalCurrentSchematicDisplaySaveWorkerOrigin(origin: C
   requireSchematicArguments(owner, argumentsValue); original.assertOriginal(); return original.bindings;
 }
 export type CurrentProjectSaveProducerSetup = (origin: CurrentProjectSaveProducerOrigin) => Promise<void>;
+const originalProducerStartupProgress = new WeakMap<CurrentProjectSaveProducerOrigin, Readonly<{ owner: object; operation: object; read: () => CurrentGeneratedStartupProgress }>>();
+export function originalCurrentProjectSaveProducerStartupProgress(origin: CurrentProjectSaveProducerOrigin, owner: object, operation: object): CurrentGeneratedStartupProgress {
+  requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation); const original = originalProducerStartupProgress.get(origin);
+  if (original === undefined || original.owner !== owner || original.operation !== operation) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_STARTUP_PROGRESS"); }
+  const progress = original.read(); requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation); return progress;
+}
 const originalInitialCacheCursors = new WeakMap<CurrentProjectSaveProducerOrigin, Readonly<{ owner: object; operation: object; cursor: () => CurrentGeneratedInitialCacheCursor }>>();
 export async function continueOriginalCurrentGeneratedInitialCacheCall(origin: CurrentProjectSaveProducerOrigin, owner: object, operation: object, packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
   requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation); const original = originalInitialCacheCursors.get(origin);
@@ -2762,6 +2769,7 @@ class CurrentPcbRetainedOwnerCore {
             })); return periodicSyncCursor;
           };
           originalPeriodicSyncCursors.set(producerOrigin, Object.freeze({ owner: this, operation: argumentsValue, cursor: periodicCursor }));
+          originalProducerStartupProgress.set(producerOrigin, Object.freeze({ owner: this, operation: argumentsValue, read: (): CurrentGeneratedStartupProgress => { original(); assertProducerOriginal(); return Object.freeze({ initialCache: initialCacheCursor?.startupProgress() ?? null, initialSync: initialSyncCursor?.startupProgress() ?? null, periodicSync: periodicSyncCursor?.startupProgress() ?? null, executionAuthorized: false }); } }));
           await Reflect.apply(producerSetup, undefined, [producerOrigin]); original(); assertProducerOriginal();
           for (const role of CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS) { selected.bindProducerObservationBreakpoint(source, role, selected.originalProducerGuardBreakpoint(source, role)); } selected.sealProducerObservation(source); selected.requireProducerObservationArmed(source);
         }
@@ -3211,6 +3219,7 @@ class CurrentPcbRetainedOwnerCore {
             })); return periodicSyncCursor;
           };
           originalPeriodicSyncCursors.set(producerOrigin, Object.freeze({ owner: this, operation: plan, cursor: periodicCursor }));
+          originalProducerStartupProgress.set(producerOrigin, Object.freeze({ owner: this, operation: plan, read: (): CurrentGeneratedStartupProgress => { original(); assertProducerOriginal(); return Object.freeze({ initialCache: initialCacheCursor?.startupProgress() ?? null, initialSync: initialSyncCursor?.startupProgress() ?? null, periodicSync: periodicSyncCursor?.startupProgress() ?? null, executionAuthorized: false }); } }));
           await Reflect.apply(producerSetup, undefined, [producerOrigin]); original(); assertProducerOriginal();
           for (const role of CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS) { selected.bindProducerObservationBreakpoint(source, role, selected.originalProducerGuardBreakpoint(source, role)); } selected.sealProducerObservation(source); selected.requireProducerObservationArmed(source);
         }

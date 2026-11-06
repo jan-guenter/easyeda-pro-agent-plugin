@@ -95,7 +95,8 @@ void test("actual periodic sync performs one branch and one history GET without 
 void test("real periodic cursor joins seven original pauses and both Promise settlements, retaining rearmed timer semantics", async () => {
   const f = cursorFixture(); for (const role of ["syncEntry", "syncFull", "syncLast", "syncHistory", "syncMerged", "syncFinalizing"] as const) { await f.cursor.continue(f.next(role)); }
   f.state.pending = true; await f.cursor.continue(f.next("syncReturned")); assert.equal(f.state.resumes, 7); assert.equal(f.state.completed, 0); assert.throws(() => { f.cursor.requireIdle(); });
-  f.state.pending = false; await f.cursor.settle(); f.cursor.requireIdle(); assert.equal(f.state.completed, 1); assert.equal(f.state.requests, 21); assert.equal(f.run("hooks"), 0);
+  assert.equal(f.cursor.startupProgress().active, true); assert.equal(f.cursor.startupProgress().canSettle, true);
+  f.state.pending = false; await f.cursor.settle(); f.cursor.requireIdle(); assert.equal(f.cursor.startupProgress().completedCalls, 1); assert.equal(f.cursor.startupProgress().active, false); assert.equal(f.cursor.startupProgress().canSettle, false); assert.equal(f.state.completed, 1); assert.equal(f.state.requests, 21); assert.equal(f.run("hooks"), 0);
 });
 void test("changed full branch row or nested Proxy refuses before the original branch-head read and any history/model call", async () => {
   for (const mutation of ["branchFrame[5].result.history_uuid='foreign'", "branchFrame[5].result.updated_at='foreign'", "branchFrame[5].result.extra='foreign'", "Object.defineProperty(branchFrame[5].result,'history_uuid',{get(){hooks++;throw Error('getter')}})", "branchFrame[5].result=new Proxy(branchFrame[5].result,{get(target,key){hooks++;return Reflect.get(target,key)}})"]) {

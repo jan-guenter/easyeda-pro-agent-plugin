@@ -1,3 +1,4 @@
+import type { CurrentGeneratedInitialCacheProgress } from "./current-generated-startup-progress.ts";
 /** One private startup cursor owns distinct original document/index jobs.
  * It neither serializes their native puts nor treats pending as fulfilled. */
 import { CURRENT_GENERATED_INITIAL_CACHE_CALL_FLAGS as FLAGS, CURRENT_GENERATED_INITIAL_CACHE_REQUESTS as REQUESTS, validateCurrentGeneratedInitialCacheCommand } from "./current-generated-initial-cache-protocol.ts";
@@ -29,7 +30,7 @@ const yes = z.strictObject({ result: z.strictObject({ type: z.literal("boolean")
 function need(value: boolean): asserts value { if (!value) { throw new Error("GENERATED_INITIAL_CACHE_ORIGINAL_JOB"); } }
 export class CurrentGeneratedInitialCacheCursor {
   readonly #bindings: CurrentGeneratedInitialCacheBindings; readonly #jobs: readonly Job[]; readonly #attempts = new WeakSet<object>();
-  #requests = 0; #settlementPasses = 0; #busy = false; #failed = false; #completed = false;
+  #requests = 0; #resumes = 0; #settlementPasses = 0; #busy = false; #failed = false; #completed = false;
   public constructor(data: CurrentGeneratedInitialFlowCacheData, bindings: CurrentGeneratedInitialCacheBindings) {
     need(data.documents.length > 0 && data.documents.length <= 2); this.#bindings = bindings;
     const jobs = [...data.documents.map(document => ({ key: document.url, body: document.body, role: "document" as const })), { key: data.headIndex.url, body: data.headIndex.body, role: "head" as const }];
@@ -57,7 +58,7 @@ export class CurrentGeneratedInitialCacheCursor {
       }
       yes.parse(await this.#send(command)); await this.#current(); need(this.#bindings.requireHeld(packet) === held);
       const resume = validateCurrentGeneratedInitialCacheCommand({ phase: "initial-cache-resume", slot: job.slot, role: held.role, method: "Debugger.resume", params: {} });
-      this.#requests += 1; need(this.#requests <= REQUESTS.cdpRequests); await this.#bindings.resume(held, resume); await this.#current(); job.stage += 1;
+      this.#requests += 1; need(this.#requests <= REQUESTS.cdpRequests); await this.#bindings.resume(held, resume); this.#resumes += 1; await this.#current(); job.stage += 1;
       if (this.#jobs.every(value => value.stage === 6)) { await this.#settle(); }
     } catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
@@ -71,5 +72,10 @@ export class CurrentGeneratedInitialCacheCursor {
    * make progress. No timer, delay, mutation or inferred settlement is used. */
   public async settle(): Promise<void> { need(!this.#busy && !this.#failed && !this.#completed); this.#busy = true; try { await this.#settle(); } catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; } }
   public originalHeadEntry(): string { const job = this.#jobs.find(value => value.role === "head"); need(!this.#failed && job !== undefined && job.stage >= 4 && job.entry !== null); return job.entry; }
+  public startupProgress(): CurrentGeneratedInitialCacheProgress {
+    const allCallsResumed = this.#jobs.every(job => job.stage === 6);
+    return Object.freeze({ jobs: this.#jobs.length, acknowledgedResumes: this.#resumes, allCallsResumed, settlementPasses: this.#settlementPasses,
+      canSettle: !this.#busy && !this.#failed && !this.#completed && allCallsResumed && this.#settlementPasses < 2, completed: this.#completed, failed: this.#failed });
+  }
   public requireCompleted(): void { need(!this.#failed && this.#completed); }
 }

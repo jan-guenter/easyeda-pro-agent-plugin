@@ -25,9 +25,9 @@ if(f.call(frame,project,wrapper,callback)!==frame)throw Error("identity");let re
 Object.defineProperty(frame,"5",{get(){calls++;return callback}});try{f.call(frame,project,wrapper,callback)}catch{refused++}({calls,refused});`);
   assert.equal(JSON.stringify(result), JSON.stringify({ calls: 0, refused: 2 }));
 });
-async function fixture(foreign = false): Promise<Readonly<{ observer: CurrentProjectSaveProducerObserver; packetData: (packet: object) => object; exit: () => void; state: { failed: boolean; requests: number } }>> {
+async function fixture(foreign = false): Promise<Readonly<{ observer: CurrentProjectSaveProducerObserver; packetData: (packet: object) => object; exit: () => void; state: { failed: boolean; requests: number; settlements: number } }>> {
   const origin: CurrentProjectSaveProducerOrigin = Object.freeze({ profile: "private.current-pcb-via-save-producer-origin.v1" }); const operation = Object.freeze({ syntheticOperation: true }), owner = Object.freeze({ syntheticOwner: true });
-  const state = { failed: false, requests: 0 }; let exited = false;
+  const state = { failed: false, requests: 0, settlements: 0 }; let exited = false;
   const role = "syncEntry", site = SITES[role];
   const bindings: CurrentProjectSaveProducerBindings = Object.freeze({ sessionId: "worker-session", scriptId: "worker-script",
     originalIntrinsics: (): string => "original-native-intrinsics",
@@ -42,7 +42,9 @@ async function fixture(foreign = false): Promise<Readonly<{ observer: CurrentPro
       return Promise.resolve({ result: { type: "object", subtype: "array", className: "Array", description: "Array(2)", objectId: command.phase === "project-save-producer-frame" ? "original-frame-array" : "original-joined-array" } });
     } });
   const exports = await loadSyntheticRegistryModule(new URL("../src/current-project-save-producer-observer.ts", import.meta.url), (name, actual) => name === "./current-pcb-diagnostic-owner.ts" ? { ...actual,
-    requireOriginalCurrentProjectSaveProducerOrigin: (candidate: object, actualOwner: object, actualOperation: object): CurrentProjectSaveProducerBindings => { assert.equal(candidate, origin); assert.equal(actualOwner, owner); assert.equal(actualOperation, operation); return bindings; } } : actual);
+    requireOriginalCurrentProjectSaveProducerOrigin: (candidate: object, actualOwner: object, actualOperation: object): CurrentProjectSaveProducerBindings => { assert.equal(candidate, origin); assert.equal(actualOwner, owner); assert.equal(actualOperation, operation); return bindings; },
+    originalCurrentProjectSaveProducerStartupProgress: (candidate: object, actualOwner: object, actualOperation: object): Readonly<{ initialCache: null; initialSync: null; periodicSync: null; executionAuthorized: false }> => { assert.equal(candidate, origin); assert.equal(actualOwner, owner); assert.equal(actualOperation, operation); return Object.freeze({ initialCache: null, initialSync: null, periodicSync: null, executionAuthorized: false }); },
+    ...Object.fromEntries(["settleOriginalCurrentGeneratedInitialCacheCalls", "settleOriginalCurrentGeneratedInitialSyncCall", "settleOriginalCurrentGeneratedPeriodicSyncCall"].map(functionName => [functionName, (candidate: object, actualOwner: object, actualOperation: object): Promise<void> => { assert.equal(candidate, origin); assert.equal(actualOwner, owner); assert.equal(actualOperation, operation); state.settlements += 1; return Promise.resolve(); }])) } : actual);
   const Constructor = exports["CurrentProjectSaveProducerObserver"], held = exports["requireOriginalCurrentProjectSaveProducerHeldCall"]; assert.ok(typeof Constructor === "function" && typeof held === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Runtime checked real collector; only its original registry accessor has the stated explicit synthetic seam.
   const observer = Reflect.construct(Constructor, [origin, owner, operation]) as CurrentProjectSaveProducerObserver;
@@ -58,4 +60,12 @@ void test("source-owned startup call stays held after exact receiver join and re
 void test("foreign function location refuses before any original frame projection or continuation", async () => {
   const f = await fixture(true); await f.observer.arm(); await assert.rejects(f.observer.observeHeldCall(), /ORIGINAL_FRAME/u); assert.equal(f.state.requests, 27); assert.equal(f.state.failed, true);
   f.exit(); await f.observer.retireAfterOriginalExit(); assert.equal(f.state.requests, 27);
+});
+
+void test("metadata-only settlement preserves the same held producer marker and grants no resume", async () => {
+  const f = await fixture(); await f.observer.arm(); const packet = await f.observer.observeHeldCall(); const original = f.packetData(packet); const count = f.state.requests;
+  assert.deepEqual(f.observer.startupProgress(), { initialCache: null, initialSync: null, periodicSync: null, executionAuthorized: false });
+  await f.observer.settleInitialCacheCalls(); await f.observer.settleInitialSyncCall(); await f.observer.settlePeriodicSyncCall();
+  assert.equal(f.packetData(packet), original); assert.equal(f.state.settlements, 3); assert.equal(f.state.requests, count); assert.equal(f.state.failed, false);
+  await assert.rejects(f.observer.observeHeldCall(), /HELD_CALL_ONCE/u); f.exit(); await f.observer.retireAfterOriginalExit();
 });

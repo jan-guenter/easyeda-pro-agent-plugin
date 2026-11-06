@@ -171,7 +171,7 @@ void test("real sync cursor consumes all nine source calls and waits for both ac
   for (const ordinal of [1, 2, 3, 4]) { await f.cursor.continue(f.next("syncHistory", ordinal)); }
   for (const role of ["syncMerged", "syncFinalizing"] as const) { await f.cursor.continue(f.next(role)); }
   f.state.pending = true; await f.cursor.continue(f.next("syncReturned")); assert.equal(f.state.requests, 36); assert.equal(f.state.resumes, 9); assert.equal(f.state.completed, 0); assert.throws(() => { f.cursor.requireCompleted(); });
-  f.state.pending = false; await f.cursor.settle(); f.cursor.requireCompleted(); assert.equal(f.state.requests, 38); assert.equal(f.state.completed, 1); assert.equal(f.run("hooks"), 0);
+  assert.equal(f.cursor.startupProgress().canSettle, true); assert.equal(f.cursor.startupProgress().acknowledgedResumes, 9); f.state.pending = false; await f.cursor.settle(); f.cursor.requireCompleted(); assert.equal(f.cursor.startupProgress().completed, true); assert.equal(f.cursor.startupProgress().canSettle, false); assert.equal(f.state.requests, 38); assert.equal(f.state.completed, 1); assert.equal(f.run("hooks"), 0);
 });
 void test("cursor refuses changed history before that response resume; unknown original ACK burns the source attempt", async () => {
   const changed = cursorFixture(); await changed.cursor.continue(changed.next("syncEntry")); await changed.cursor.continue(changed.next("syncFull"));

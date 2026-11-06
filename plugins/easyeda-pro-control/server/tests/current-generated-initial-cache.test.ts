@@ -47,12 +47,14 @@ const values=rows.map((r,index)=>{const response=Object.create(Response.prototyp
   } };
 }
 void test("two original document puts and the dropped index may overlap; only all actual fulfilled Promises complete startup", async () => {
-  const f = fixture();
+  const f = fixture(); assert.deepEqual(f.cursor.startupProgress(), { jobs: 3, acknowledgedResumes: 0, allCallsResumed: false, settlementPasses: 0, canSettle: false, completed: false, failed: false });
   for (const slot of [0, 1, 2]) { await f.cursor.continue(f.packet(slot, "headEntry")); await f.cursor.continue(f.packet(slot, "headPromise")); }
   assert.equal(f.state.nativeResumes, 6); assert.equal(f.state.complete, 0); assert.throws(() => { f.cursor.requireCompleted(); });
   f.state.pending = true; for (const slot of [1, 0, 2]) { await f.cursor.continue(f.packet(slot, "headSuccess")); }
   assert.equal(f.state.complete, 0); assert.throws(() => { f.cursor.requireCompleted(); });
+  assert.equal(f.cursor.startupProgress().canSettle, true); assert.equal(f.cursor.startupProgress().acknowledgedResumes, 9);
   f.state.pending = false; await f.cursor.settle(); f.cursor.requireCompleted(); assert.equal(f.state.complete, 1); assert.equal(f.state.nativeResumes, 9); assert.equal(f.run("hooks"), 0);
+  assert.equal(f.cursor.startupProgress().completed, true); assert.equal(f.cursor.startupProgress().canSettle, false);
   await assert.rejects(f.cursor.settle()); assert.equal(f.state.complete, 1);
 });
 void test("body/getter/Response/async closure drift refuses before its native resume and never refunds the original attempt", async () => {

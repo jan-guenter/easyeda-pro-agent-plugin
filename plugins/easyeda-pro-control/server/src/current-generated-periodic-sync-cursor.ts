@@ -1,3 +1,4 @@
+import type { CurrentGeneratedPeriodicSyncProgress } from "./current-generated-startup-progress.ts";
 /** Serial original periodic calls over the immutable initial head. Changed
  * branch/history replies refuse before their original property reads/merge. */
 import { z } from "zod";
@@ -85,5 +86,7 @@ export class CurrentGeneratedPeriodicSyncCursor {
     if (fulfilled) { await this.#current(); await this.#bindings.complete(); await this.#current(); this.#calls += 1; this.#step = 0; this.#requests = 0; this.#passes = 0; this.#capture = null; this.#full = null; this.#last = null; this.#task = null; this.#outer = null; }
   }
   public async settle(): Promise<void> { need(!this.#busy && !this.#failed); this.#busy = true; try { await this.#settle(); } catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; } }
+  public startupProgress(): CurrentGeneratedPeriodicSyncProgress { return Object.freeze({ completedCalls: this.#calls, active: this.#step !== 0, settlementPasses: this.#passes,
+    canSettle: !this.#busy && !this.#failed && this.#step === 7 && this.#passes < 2, failed: this.#failed }); }
   public requireIdle(): void { need(!this.#failed && !this.#busy && this.#step === 0); }
 }

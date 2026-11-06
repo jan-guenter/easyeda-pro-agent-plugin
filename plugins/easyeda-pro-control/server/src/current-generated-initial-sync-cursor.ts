@@ -1,3 +1,4 @@
+import type { CurrentGeneratedInitialSyncProgress } from "./current-generated-startup-progress.ts";
 /** One original initial sync. A changed API row is refused while its
  * actual response pause is still held, before hd/du or model parsing. */
 import { z } from "zod";
@@ -31,7 +32,7 @@ function plainObjects(reply: unknown, count: number): void {
 }
 export class CurrentGeneratedInitialSyncCursor {
   readonly #data: CurrentGeneratedInitialFlowCacheData; readonly #bindings: CurrentGeneratedInitialSyncBindings; readonly #attempted = new WeakSet<object>();
-  #requests = 0; #step = 0; #ordinal: 1 | 2 | 3 | 4 = 1; #capture: string | null = null; #full: string | null = null; #last: string | null = null;
+  #requests = 0; #resumes = 0; #step = 0; #ordinal: 1 | 2 | 3 | 4 = 1; #capture: string | null = null; #full: string | null = null; #last: string | null = null;
   #task: string | null = null; #outer: string | null = null; #passes = 0; #busy = false; #failed = false; #completed = false;
   public constructor(data: CurrentGeneratedInitialFlowCacheData, bindings: CurrentGeneratedInitialSyncBindings) { this.#data = data; this.#bindings = bindings; Object.freeze(this); }
   async #current(): Promise<void> { need(!this.#failed); await this.#bindings.assertCurrent(); need(!this.#failed); }
@@ -88,7 +89,7 @@ export class CurrentGeneratedInitialSyncCursor {
         }
       }
       await this.#current(); need(this.#bindings.requireHeld(packet) === held); const resume = validateCurrentGeneratedInitialSyncCommand({ phase: "initial-sync-resume", role: resumeRole, method: "Debugger.resume", params: {} });
-      this.#requests += 1; need(this.#requests <= REQUESTS.cdpRequests); await this.#bindings.resume(held, resume); await this.#current();
+      this.#requests += 1; need(this.#requests <= REQUESTS.cdpRequests); await this.#bindings.resume(held, resume); this.#resumes += 1; await this.#current();
       if (this.#step === 6) { await this.#settle(); }
     } catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
@@ -101,6 +102,8 @@ export class CurrentGeneratedInitialSyncCursor {
     if (fulfilled) { await this.#current(); await this.#bindings.complete(); await this.#current(); this.#completed = true; }
   }
   public async settle(): Promise<void> { need(!this.#busy && !this.#failed && !this.#completed); this.#busy = true; try { await this.#settle(); } catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; } }
+  public startupProgress(): CurrentGeneratedInitialSyncProgress { return Object.freeze({ acknowledgedResumes: this.#resumes, settlementPasses: this.#passes,
+    canSettle: !this.#busy && !this.#failed && !this.#completed && this.#step === 6 && this.#passes < 2, completed: this.#completed, failed: this.#failed }); }
   public requireCompleted(): void { need(!this.#failed && this.#completed); }
   public originalCompletedCapture(): string { this.requireCompleted(); need(this.#capture !== null); return this.#capture; }
 }

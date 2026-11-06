@@ -5,10 +5,11 @@
 import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_PROMISE_CAPTURE, currentProjectSaveProducerCachePromiseHandle, decodeCurrentProjectSaveProducerCachePromise } from "./current-project-save-producer-cache-replies.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLS as CACHE_CALLS, CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CAPTURE_LENGTH } from "./current-project-save-producer-cache-programs.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS as CACHE_CALLERS, currentProjectSaveProducerCacheCallerFrame } from "./current-project-save-producer-cache-source.ts";
+import type { CurrentGeneratedStartupProgress } from "./current-generated-startup-progress.ts";
 import type { CurrentProjectSaveProducerCacheCaller } from "./current-project-save-producer-cache-source.ts";
 import { types } from "node:util";
 import { z } from "zod";
-import { continueOriginalCurrentGeneratedInitialCacheCall, continueOriginalCurrentGeneratedInitialSyncCall, continueOriginalCurrentGeneratedPeriodicSyncCall, requireOriginalCurrentProjectSaveProducerOrigin, settleOriginalCurrentGeneratedInitialCacheCalls, settleOriginalCurrentGeneratedInitialSyncCall, settleOriginalCurrentGeneratedPeriodicSyncCall } from "./current-pcb-diagnostic-owner.ts";
+import { continueOriginalCurrentGeneratedInitialCacheCall, continueOriginalCurrentGeneratedInitialSyncCall, continueOriginalCurrentGeneratedPeriodicSyncCall, originalCurrentProjectSaveProducerStartupProgress, requireOriginalCurrentProjectSaveProducerOrigin, settleOriginalCurrentGeneratedInitialCacheCalls, settleOriginalCurrentGeneratedInitialSyncCall, settleOriginalCurrentGeneratedPeriodicSyncCall } from "./current-pcb-diagnostic-owner.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { decodeCurrentFootprintCopyClockRpcV2ArrayCapture } from "./current-footprint-copy-clock-rpc-v2-protocol.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_PRODUCER_FRAME_FLAGS as FRAME_FLAGS,
@@ -109,9 +110,11 @@ export class CurrentProjectSaveProducerObserver {
     try { await this.#current(); await continueOriginalCurrentGeneratedInitialCacheCall(this.#origin, this.#owner, this.#operation, packet); await this.#current(); this.#held = null; }
     catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
+  public startupProgress(): CurrentGeneratedStartupProgress { need(!this.#busy && !this.#failed && !this.#closed, "STARTUP_PROGRESS_STATE"); return originalCurrentProjectSaveProducerStartupProgress(this.#origin, this.#owner, this.#operation); }
   public async settleInitialCacheCalls(): Promise<void> {
-    need(!this.#busy && !this.#failed && !this.#closed && this.#held === null, "INITIAL_CACHE_SETTLE_STATE"); this.#busy = true;
-    try { await this.#current(); await settleOriginalCurrentGeneratedInitialCacheCalls(this.#origin, this.#owner, this.#operation); await this.#current(); }
+    need(!this.#busy && !this.#failed && !this.#closed, "INITIAL_CACHE_SETTLE_STATE"); const held = this.#held;
+    if (held !== null) { requireOriginalCurrentProjectSaveProducerHeldCall(held, this); } this.#busy = true;
+    try { await this.#current(); need(this.#held === held, "INITIAL_CACHE_SETTLE_HELD_CHANGED"); await settleOriginalCurrentGeneratedInitialCacheCalls(this.#origin, this.#owner, this.#operation); await this.#current(); need(this.#held === held, "INITIAL_CACHE_SETTLE_HELD_CHANGED"); }
     catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
   public async continueInitialSyncCall(packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
@@ -120,8 +123,9 @@ export class CurrentProjectSaveProducerObserver {
     catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
   public async settleInitialSyncCall(): Promise<void> {
-    need(!this.#busy && !this.#failed && !this.#closed && this.#held === null, "INITIAL_SYNC_SETTLE_STATE"); this.#busy = true;
-    try { await this.#current(); await settleOriginalCurrentGeneratedInitialSyncCall(this.#origin, this.#owner, this.#operation); await this.#current(); }
+    need(!this.#busy && !this.#failed && !this.#closed, "INITIAL_SYNC_SETTLE_STATE"); const held = this.#held;
+    if (held !== null) { requireOriginalCurrentProjectSaveProducerHeldCall(held, this); } this.#busy = true;
+    try { await this.#current(); need(this.#held === held, "INITIAL_SYNC_SETTLE_HELD_CHANGED"); await settleOriginalCurrentGeneratedInitialSyncCall(this.#origin, this.#owner, this.#operation); await this.#current(); need(this.#held === held, "INITIAL_SYNC_SETTLE_HELD_CHANGED"); }
     catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
   public async continuePeriodicSyncCall(packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
@@ -130,8 +134,9 @@ export class CurrentProjectSaveProducerObserver {
     catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
   public async settlePeriodicSyncCall(): Promise<void> {
-    need(!this.#busy && !this.#failed && !this.#closed && this.#held === null, "PERIODIC_SYNC_SETTLE_STATE"); this.#busy = true;
-    try { await this.#current(); await settleOriginalCurrentGeneratedPeriodicSyncCall(this.#origin, this.#owner, this.#operation); await this.#current(); }
+    need(!this.#busy && !this.#failed && !this.#closed, "PERIODIC_SYNC_SETTLE_STATE"); const held = this.#held;
+    if (held !== null) { requireOriginalCurrentProjectSaveProducerHeldCall(held, this); } this.#busy = true;
+    try { await this.#current(); need(this.#held === held, "PERIODIC_SYNC_SETTLE_HELD_CHANGED"); await settleOriginalCurrentGeneratedPeriodicSyncCall(this.#origin, this.#owner, this.#operation); await this.#current(); need(this.#held === held, "PERIODIC_SYNC_SETTLE_HELD_CHANGED"); }
     catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
   public async retireAfterOriginalExit(): Promise<void> { need(!this.#busy && !this.#closed, "RETIRE_STATE"); await this.#binding.assertOriginalGenerationExited(); this.#closed = true; }
