@@ -16,6 +16,7 @@ import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS, currentProjectSaveProducer
 import type { CurrentProjectSaveProducerCacheCaller } from "./current-project-save-producer-cache-source.ts";
 import { CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_ARRAY_LENGTH, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_PROFILES, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_CALLS as PRODUCER_INTRINSICS, decodeCurrentNativeCacheResponseIntrinsic } from "./current-native-cache-response-intrinsics.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS, CURRENT_PROJECT_SAVE_PRODUCER_ROLES, CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS, validateCurrentProjectSaveProducerCommand } from "./current-project-save-producer-protocol.ts";
+import type { CurrentSavedProjectRegistrationBindings, CurrentSavedProjectRegistrationIntent } from "./current-saved-project-registration-origin.ts";
 import { CurrentPcbViaSavedLoadController } from "./current-pcb-via-saved-load-controller.ts";
 import type { CurrentPcbViaSavedLoadWorkerPair } from "./current-pcb-via-saved-load-controller.ts";
 import type { CurrentPcbViaSavedLoadBootstrapCommand } from "./current-pcb-via-saved-load-bootstrap-protocol.ts";
@@ -276,7 +277,7 @@ import { CURRENT_PCB_209_VISUAL_RESULT_BYTES, currentPcb209VisualOperationSchema
 import { issueCurrentPcbDiagnosticNativeRefusal } from "./current-pcb-diagnostic-native-refusal.ts";
 import type { CurrentPcb209VisualOperation } from "./current-pcb-209-visual-actions.ts";
 import { CURRENT_PCB_209_OPENING_SCRIPTS } from "./current-pcb-209-opening-profile.ts";
-import { controlDataDirectory, controlRootCapability } from "./artifacts.ts";
+import { controlDataDirectory, controlRootCapability, ensureManagedDirectory, publishManagedAttachmentExclusive, readArtifact, verifyExactManagedArtifact } from "./artifacts.ts";
 import { verifyCheckpoint } from "./checkpoint.ts";
 import type { CheckpointReceipt } from "./checkpoint.ts";
 import type { MachineProfile } from "./machine-profile.ts";
@@ -755,6 +756,13 @@ const savedReadbackCacheBackups = new WeakMap<object, SavedReadbackCacheBackupHe
 const savedReadbackCacheAbsences = new WeakMap<object, Readonly<{ owner: CurrentPcbRetainedOwnerCore; backup: SavedReadbackCacheBackupHeld; ledger: CurrentPcbViaSavedCacheInvalidationLedger; data: CurrentPcbViaSavedCacheAbsenceData }>>();
 export type CurrentPcbViaSavedLoadSetup = (origin: CurrentPcbViaSavedLoadOrigin) => Promise<void>;
 const savedReadbackLoadOrigins = new WeakMap<object, Readonly<{ owner: CurrentPcbRetainedOwnerCore; prepared: CurrentPcbViaWriteClosedCheckpoint; bindings: CurrentPcbViaSavedLoadBindings; assertOriginal: () => void }>>();
+interface SavedProjectRegistrationHeld {
+  readonly owner: CurrentPcbRetainedOwnerCore; readonly runner: CurrentFootprintCopyMainBackendRunner; readonly prepared: CurrentPcbViaWriteClosedCheckpoint;
+  readonly target: CurrentDisposableOpenSealedTarget; readonly loading: CurrentPcbViaSavedLoadPreparation;
+  readonly bindings: CurrentSavedProjectRegistrationBindings; readonly artifact: Awaited<ReturnType<typeof publishManagedAttachmentExclusive>>; readonly text: string;
+  attempted: boolean; pending: Promise<unknown> | null; settled: boolean;
+}
+const savedProjectRegistrationIntents = new WeakMap<object, SavedProjectRegistrationHeld>();
 const savedReadbackLoadPreparationConsumed = new WeakSet<object>();
 const savedReadbackLoadPreparations = new WeakMap<object, Readonly<{ owner: CurrentPcbRetainedOwnerCore; prepared: CurrentPcbViaWriteClosedCheckpoint;
   absence: CurrentPcbViaSavedCacheAbsence; ledger: CurrentPcbViaSavedCacheInvalidationLedger; data: CurrentPcbViaSavedCacheLoadingData; bindings: CurrentPcbViaSavedLoadPreparationBindings }>>();
@@ -1457,6 +1465,8 @@ class CurrentPcbRetainedOwnerCore {
   #savedReadbackBackup: SavedReadbackCacheBackupHeld | null = null;
   #savedReadbackInvalidationPromise: Promise<CurrentPcbViaSavedCacheAbsence> | null = null;
   #savedReadbackInvalidation: CurrentPcbViaSavedCacheInvalidationLedger | null = null;
+  #savedReadbackRegistrationPromise: Promise<CurrentSavedProjectRegistrationIntent> | null = null;
+  #savedReadbackRegistrationIntent: CurrentSavedProjectRegistrationIntent | null = null;
   #savedReadbackLoadPreparation: CurrentPcbViaSavedLoadPreparation | null = null;
   #savedReadbackLoadSetup: CurrentPcbViaSavedLoadSetup | null = null; #savedReadbackLoadController: CurrentPcbViaSavedLoadController | null = null;
   #savedReadbackLoadPair: CurrentPcbViaSavedLoadWorkerPair | null = null; #savedReadbackLoadCommand: CurrentPcbViaSavedLoadBootstrapCommand | null = null;
@@ -6284,6 +6294,50 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#purpose !== CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE || controller === null) { throw error("SAVED_READBACK_LOAD_NOT_ARMED"); }
     this.#enter(true); try { return await controller.observeProjectSourceHeld(); } finally { this.#busy = false; }
   }
+  /** Publish the one original registration intent before any registration
+   * dispatch. Publication cannot manufacture a pending UI call or a SQL grant. */
+  public prepareSavedReadbackRegistrationIntent(): Promise<CurrentSavedProjectRegistrationIntent> {
+    assertOriginalCurrentPcbViaSavedReadbackOwner(this);
+    if (this.#savedReadbackRegistrationPromise !== null) { return this.#savedReadbackRegistrationPromise; }
+    const context = this.#stagedContext, controller = this.#savedReadbackLoadController, loading = this.#savedReadbackLoadPreparation, prepared = this.#savedReadbackPrepared, runner = this.#mainRunner;
+    if (loading === null || prepared === null || controller === null || context === null || runner === null || !savedReadbackLoadPreparationConsumed.has(loading) || this.#savedReadbackLoadSetup === null) { throw error("SAVED_READBACK_REGISTRATION_INTENT_UNAVAILABLE"); }
+    const proof = savedReadbackLoadPreparations.get(loading); if (proof?.owner !== this || proof.prepared !== prepared) { throw error("SAVED_READBACK_REGISTRATION_INTENT_ORIGINAL"); }
+    const binding = this.#binding, parent = context.openingContext(); if (binding === null) { throw error("SAVED_READBACK_REGISTRATION_INTENT_ORIGINAL"); }
+    const current = (): void => { this.#available(); assertOriginalCurrentPcbViaSavedReadbackOwner(this);
+      if (this.#mainRunner !== runner || this.#savedReadbackLoadController !== controller || this.#savedReadbackPrepared !== prepared || this.#savedReadbackLoadPreparation !== loading || this.#binding !== binding ||
+        this.#savedReadbackAborted || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed || controller.status().failed || runner.selectedSqlFenceState()["ready"] !== true || canonicalJson(context.openingContext()) !== canonicalJson(parent)) { throw error("SAVED_READBACK_REGISTRATION_INTENT_CHANGED"); }
+      proof.ledger.requireOriginalLoadingSnapshot(proof.data);
+    };
+    current(); this.#enter(true);
+    const promise = (async (): Promise<CurrentSavedProjectRegistrationIntent> => {
+      try {
+        await this.#verifyInstallation(); current(); await this.#verify(); current();
+        const target = Object.freeze(currentDisposableOpenSealedTargetSchema.parse({ rawWindowsPath: prepared.target.rawWindowsPath, projectUuid: prepared.target.projectUuid,
+          branchUuid: prepared.target.branchUuid, documentUuid: prepared.target.documentUuid, expectedSourceSha256: prepared.target.sourceSha256 }));
+        const text = `${canonicalJson({ schema: "private.current-saved-project-registration-durable-intent.v1", originalOperationId: prepared.operationId, target,
+          originalReader: binding, checkpointSha256: prepared.preparationCheckpoint.sha256, originalLoadingStorageKey: proof.data.storageKey,
+          normalRegistrationEffectsAcknowledged: true, selectedDesignWriteAuthorized: false, registrationDispatched: false, replayAllowed: false })}\n`;
+        if (Buffer.byteLength(text) > 16_384) { throw error("SAVED_READBACK_REGISTRATION_INTENT_BOUND"); }
+        const directory = await ensureManagedDirectory(join(controlDataDirectory(), "artifacts", "saved-project-registration-intent")); current();
+        const artifact = await publishManagedAttachmentExclusive(join(directory, `${randomBytes(16).toString("hex")}.json`), "Original disposable saved-reader registration intent", Buffer.from(text), "saved-project-registration-intent", (): Promise<void> => { current(); return Promise.resolve(); }); current();
+        const verify = async (): Promise<void> => { current(); await verifyExactManagedArtifact(artifact); current(); const raw = await readArtifact(artifact.path, 0, 16_384); current();
+          if (!raw.eof || raw.text !== text) { throw error("SAVED_READBACK_REGISTRATION_INTENT_ARTIFACT"); } await verifyExactManagedArtifact(artifact); current(); };
+        await verify();
+        const intent: CurrentSavedProjectRegistrationIntent = Object.freeze({ profile: "private.current-saved-project-registration-intent.v1" });
+        const bindings: CurrentSavedProjectRegistrationBindings = Object.freeze({ prepared, target, assertCurrent: async (): Promise<void> => { current(); await verify(); await this.#verify(); current(); },
+          assertOriginalDispatchPending: (): void => { current(); const held = savedProjectRegistrationIntents.get(intent);
+            if (held === undefined || held.owner !== this || held.runner !== runner || !held.attempted || held.pending === null || !types.isPromise(held.pending) || held.settled || this.#savedReadbackRegistrationIntent !== intent) { throw error("SAVED_READBACK_REGISTRATION_DISPATCH_PENDING_REQUIRED"); } } });
+        savedProjectRegistrationIntents.set(intent, { owner: this, runner, prepared, target, loading, bindings, artifact, text, attempted: false, pending: null, settled: false });
+        this.#savedReadbackRegistrationIntent = intent; current(); return intent;
+      } catch (caughtError) { this.#input.emit("error", error("SAVED_READBACK_REGISTRATION_INTENT_FAILED")); throw caughtError; }
+      finally { this.#busy = false; }
+    })(); this.#savedReadbackRegistrationPromise = promise; return promise;
+  }
+  public originalSavedProjectRegistrationIntent(intent: CurrentSavedProjectRegistrationIntent, runner: CurrentFootprintCopyMainBackendRunner): CurrentSavedProjectRegistrationBindings {
+    const original = savedProjectRegistrationIntents.get(intent);
+    if (original === undefined || original.owner !== this || original.runner !== runner || this.#mainRunner !== runner || this.#savedReadbackRegistrationIntent !== intent || original.prepared !== this.#savedReadbackPrepared || original.loading !== this.#savedReadbackLoadPreparation) { throw error("SAVED_READBACK_REGISTRATION_INTENT_ORIGINAL"); }
+    assertOriginalCurrentPcbViaSavedReadbackOwner(this); return original.bindings;
+  }
   /** One original Start Page/source/main-fence join before the first cache
    * query. The nine CDP requests are two parent/ancillary brackets and one
    * fixed empty-project preflight; no registration or navigation is attempted. */
@@ -8438,6 +8492,11 @@ export function requireOriginalCurrentPcbViaSavedLoadPreparation(token: CurrentP
 export function requireOriginalCurrentPcbViaSavedLoadOrigin(origin: CurrentPcbViaSavedLoadOrigin, owner: CurrentPcbViaSavedReadbackOwner, prepared: CurrentPcbViaWriteClosedCheckpoint): CurrentPcbViaSavedLoadBindings {
   assertOriginalCurrentPcbViaSavedReadbackOwner(owner); const original = savedReadbackLoadOrigins.get(origin);
   if (original === undefined || original.owner !== owner || original.prepared !== prepared) { throw error("SAVED_READBACK_LOAD_ORIGIN"); } original.assertOriginal(); return original.bindings;
+}
+export function requireOriginalCurrentSavedProjectRegistrationIntent(intent: CurrentSavedProjectRegistrationIntent, runner: CurrentFootprintCopyMainBackendRunner): CurrentSavedProjectRegistrationBindings {
+  const original = savedProjectRegistrationIntents.get(intent);
+  if (original === undefined || original.runner !== runner || !(original.owner instanceof CurrentPcbViaSavedReadbackOwner)) { throw error("SAVED_READBACK_REGISTRATION_INTENT_ORIGINAL"); }
+  assertOriginalCurrentPcbViaSavedReadbackOwner(original.owner); return original.owner.originalSavedProjectRegistrationIntent(intent, runner);
 }
 export function originalCurrentPcbViaSavedReadbackTarget(owner: CurrentPcbViaSavedReadbackOwner): CurrentPcbViaWriteClosedCheckpoint {
   assertOriginalCurrentPcbViaSavedReadbackOwner(owner); const original = pcbViaSavedReadbackFactories.get(owner);

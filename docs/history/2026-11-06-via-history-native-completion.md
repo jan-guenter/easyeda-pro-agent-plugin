@@ -683,3 +683,27 @@ real synthetic child cases, full types and changed-file strict lint pass. Full
 helper emission repeats identically; composed Linux C# smoke covers all22 fixed
 new worker codec cases and existing native purposes. No helper/pins/bundles were
 committed and no native owner, Windows process or EasyEDA worker was started.
+
+### Original saved-reader registration intent boundary
+
+`prepareSavedReadbackRegistrationIntent()` now retains one publication Promise
+before dispatch can exist. It requires the same genuine saved reader, consumed
+loading preparation, armed readonly cursor and original main runner, then
+exclusively publishes and fully rereads a bounded private intent artifact. It
+binds the original helper/Job identity, saved checkpoint and exact five-field
+target. No native registration or SQL continuation is attempted by publication.
+
+Core alone owns the nominal intent registry and exports
+`requireOriginalCurrentSavedProjectRegistrationIntent(intent, runner)` for the
+separate exact global-configuration collector. Its pending-dispatch check stays
+false until the actual once-consumed fixed registration slot owns its original
+unsettled pipe Promise. A serialized intent, publication ACK, callback or plan
+cannot supply that condition. This separates the pre-worker registration join
+from the later source-held loading origin.
+
+Verification:12 focused production-owner/real synthetic child cases, full types
+and changed-file strict lint pass. The added case proves retained publication,
+original lookup, copied-intent refusal and refusal of an unattempted registration
+as pending, then observes the original Job-only cleanup. These are isolated
+source/publication checks. Initial startup worker sources and the actual cold
+fetch/model/opening joins remain unqualified; no saved-cache route was run.

@@ -28,7 +28,8 @@ async function fixture(context: TestContext, malformed = false, cache = false, m
   const url = new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url); const sourceRequire = createRequire(url);
   const full = complete ? completeSyntheticSavedCacheFixture(invalidation) : null;
   const prepared = full?.prepared ?? Object.freeze({ syntheticCheckpoint: true, target: Object.freeze({ projectUuid: "a".repeat(64) }) });
-  const testMethod = `public async seedSyntheticCacheForTest(full){
+  const testMethod = `public syntheticRegistrationBindingsForTest(intent){return this.originalSavedProjectRegistrationIntent(intent,this.#mainRunner);}
+public async seedSyntheticCacheForTest(full){
 const pipe=this.#pipe;if(!(pipe instanceof CurrentPcbViaSavedReadbackPipe))throw Error("pipe");await this.#transfer(async()=>({sessionId:await pipe.attachTarget("synthetic-target",event=>{if(this.#savedReadbackLoadController!==null&&event.method==='Target.attachedToTarget'){this.#savedReadbackLoadController.observeEvent(event);return;}if(this.#observeSavedReadbackGuardHelper(event))return;if(this.#savedReadbackInvalidation?.observeOriginalEvent(event))return;})}));
 this.#stagedAttachment=Object.freeze({targetId:"synthetic-target",sessionId:"synthetic-session"});this.#savedReadbackActorsPending=true;await this.#transfer(()=>pipe.armSavedReadbackCacheActors());this.#savedReadbackActorsPending=false;this.#savedReadbackActorsArmed=true;this.#savedReadbackParentPending=true;await this.#transfer(()=>pipe.armSavedReadbackCacheParent());this.#savedReadbackParentPending=false;
 const selected=Object.freeze({frameId:"synthetic-frame",sessionId:"synthetic-session",uniqueContextId:"synthetic-context",securityOrigin:"https://client"});
@@ -137,6 +138,13 @@ void test("transferred original absence arms a distinct loading cursor and origi
   const f = await fixture(context, false, true, false, true, true); await f.owner.publishSavedCacheBackup(); await f.owner.invalidateSavedCaches();
   const prepared = await f.owner.prepareSavedReadbackLoading(); let callbacks = 0;
   await f.owner.armSavedReadbackLoadWorker(() => { callbacks += 1; return Promise.resolve(); });
+  const intentPromise = f.owner.prepareSavedReadbackRegistrationIntent(); assert.equal(f.owner.prepareSavedReadbackRegistrationIntent(), intentPromise);
+  const intent = await intentPromise, lookup: unknown = Reflect.get(f.owner, "syntheticRegistrationBindingsForTest"); assert.ok(typeof lookup === "function");
+  const bindings: unknown = Reflect.apply(lookup, f.owner, [intent]); assert.ok(bindings !== null && typeof bindings === "object" && "assertCurrent" in bindings && typeof bindings.assertCurrent === "function" && "assertOriginalDispatchPending" in bindings && typeof bindings.assertOriginalDispatchPending === "function");
+  const assertPending = bindings.assertOriginalDispatchPending;
+  await Reflect.apply(bindings.assertCurrent, bindings, []); assert.throws(() => Reflect.apply(assertPending, bindings, []));
+  assert.throws(() => Reflect.apply(lookup, f.owner, [{ ...intent }]));
+
   assert.throws(() => f.owner.originalSavedReadbackLoadPreparation(prepared, f.prepared));
   await assert.rejects(f.owner.armSavedReadbackLoadWorker(() => Promise.resolve()));
   const source = f.owner.observeSavedReadbackLoadSource(); const refused = assert.rejects(source); await delay(75);
