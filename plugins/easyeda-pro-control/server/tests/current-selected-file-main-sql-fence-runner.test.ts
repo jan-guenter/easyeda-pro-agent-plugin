@@ -13,10 +13,11 @@ import { CurrentFootprintCopyMainBackendRunner as OriginalRunner, requireOrigina
 import { selectedRequestPeer, selectedRequestReaderConstructor } from "./helpers/selected-main-request-reader-fixture.ts";
 import { CONFIG_SQL, mainBackendModule, mainBackendTransportFixture } from "./helpers/footprint-main-backend-runner-fixture.ts";
 import type { CurrentPcbViaMainCommand } from "../src/current-pcb-via-main-protocol.ts";
-import { validateCurrentPcbViaMainCommand } from "../src/current-pcb-via-main-protocol.ts";
+import { currentPcbViaMainNativeCases, validateCurrentPcbViaMainCommand } from "../src/current-pcb-via-main-protocol.ts";
 
 type Data = Record<string, unknown>;
 type CurrentPcbViaMainStepCommand = Parameters<CurrentFootprintCopyMainBackendRunner["consumeOriginalViaMainDriverStep"]>[0];
+const captureArrayId=(raw:unknown):string=>{assert.ok(raw!==null&&typeof raw==="object");const result:unknown=Reflect.get(raw,"result");assert.ok(result!==null&&typeof result==="object");const value:unknown=Reflect.get(result,"objectId");assert.ok(typeof value==="string");return value;};
 const capability = Object.freeze({ profile: "private.selected-file-main-sql-fence-bootstrap.v1" as const, executionAuthorized: false as const });
 function property(name: string, value: Data, writable = false, enumerable = false, configurable = true): Data { return { name, value, writable, enumerable, configurable, isOwn: true }; }
 function nativeArray(): Data {
@@ -33,7 +34,7 @@ function nativeMetadata(id: string): Data {
 }
 const configPacket = (role: "jb" | "dc", site: "run" | "prepare" | "prepared", sql: string, transactionDepth: 0 | 1): Data => ({ recognized: true, role, site, sql, transactionDepth, parametersEmpty: true, designWriteGrant: false, nativeCompletionProven: false });
 async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = null): Promise<Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; phases: string[]; transport: CurrentFootprintCopyMainBackendTransport;
-  loseNextDriverStep: () => void; injectRequest: (method: string, foreign?: boolean, sourceDelta?: number, history?: boolean) => void; injectMutation: () => void; injectDriver: () => void; resumes: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
+  injectViaPoint: (role: "context" | "controller") => void; loseNextDriverStep: () => void; injectRequest: (method: string, foreign?: boolean, sourceDelta?: number, history?: boolean) => void; injectMutation: () => void; injectDriver: () => void; resumes: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
   const base = mainBackendTransportFixture();
   const ids = new Map<number, number>(), phases: string[] = [], queue: Data[] = [], retainedRegistration: Data[] = [];
   let currentRequest = { method: "GET", url: "", delta: 0, pathHeader:"f".repeat(64) }, fetchScriptSeen = false;
@@ -48,20 +49,24 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
   if (wrongStartup === "order") { startup[2] = { site: "run", value: configPacket("jb", "run", CONFIG_SQL.scripts.jb[0]?.sql ?? "", 1) }; }
   if (wrongStartup === "foreign") { startup[2] = { site: "run", value: { recognized: false } }; }
   let startupIndex = -1;
-  let queuedBytes = Buffer.alloc(0); let loseDriverStep = false, plannedResumes = 0;
+  let queuedBytes = Buffer.alloc(0); let contextPointActive = false, loseDriverStep = false, plannedResumes = 0;
   let holdRegistration = false, normalResumes = 0, runner: CurrentFootprintCopyMainBackendRunner | null = null, sqlResumes = 0;
   let heldPoll: Readonly<{ started: PromiseWithResolvers<null>; settle: PromiseWithResolvers<null> }> | null = null;
   const event = (method: string, params: Data): void => { queue.push({ method, params }); };
   const location = (site: keyof typeof SOURCE.sites): Data => ({ scriptId: "app", lineNumber: SOURCE.sites[site].lineNumber, columnNumber: SOURCE.sites[site].breakpointColumnNumber + (site === "import" ? delta : 0) });
-  const pause = (site: keyof typeof SOURCE.sites): void => { event("Debugger.paused", { reason: "other", hitBreakpoints: [site === "import" ? EARLY_ID : `sql-${site}`],
-    callFrames: [{ callFrameId: `frame-${site}`, location: location(site) }] }); };
+  const pause = (site: keyof typeof SOURCE.sites): void => { const frames:Data[]=[{callFrameId:`frame-${site}`,location:location(site)}];
+    if(site==="driver"){frames.push({callFrameId:"frame-caller",location:{scriptId:"app",lineNumber:1164,columnNumber:51_414}});}
+    event("Debugger.paused",{reason:"other",hitBreakpoints:[site==="import"?EARLY_ID:`sql-${site}`],callFrames:frames});
+  };
   const sqlSend = (command: SqlCommand, id: number): Promise<void> => {
     phases.push(command.phase); let result: unknown = {};
     if (command.phase === "sql-fence-early-arm") { result = { breakpointId: EARLY_ID, locations: [] }; }
     else if (command.phase === "sql-fence-after-imports-arm" || command.phase === "sql-fence-arm") {
       const site = command.phase === "sql-fence-after-imports-arm" ? "afterImports" : command.site; result = { breakpointId: `sql-${site}`, actualLocation: location(site) };
     } else if (command.phase === "sql-fence-resume") {
-      sqlResumes += 1; event("Debugger.resumed", {}); if (sqlResumes === 1) { pause("afterImports"); }
+      sqlResumes += 1; event("Debugger.resumed", {});
+      if(contextPointActive&&currentRequest.method==="GET"){event("Debugger.paused",{reason:"other",hitBreakpoints:["via-2540"],callFrames:[{callFrameId:"wrong-get-context",location:{scriptId:"app",lineNumber:1164,columnNumber:2540}}]});}
+      if (sqlResumes === 1) { pause("afterImports"); }
       else { startupIndex += 1; const next = startup[startupIndex]; if (next === undefined) { holdRegistration = false; queue.push(...retainedRegistration.splice(0)); }
         else { pause(next.site); } }
     } else if (command.phase === "sql-fence-frame" || command.phase === "sql-fence-capture" || command.phase === "sql-fence-native-frame") {
@@ -125,21 +130,29 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
         assert.equal(token, capability); assert.equal(original, runner); return sqlSend(command, id);
       },
       sendOriginalCurrentPcbViaMainStep: (token: unknown, original: unknown, command: CurrentPcbViaMainStepCommand, id: number): Promise<void> => {
-        assert.equal(token, capability); assert.equal(original, runner); assert.equal(command.phase,"via-main-driver-step"); assert.ok(runner !== null);
-        runner.consumeOriginalViaMainDriverStep(command,id); phases.push(command.phase);
+        assert.equal(token, capability); assert.equal(original, runner); assert.ok(command.phase==="via-main-driver-step"||command.phase==="via-main-context-step"); assert.ok(runner !== null);
+        const grant=command.phase==="via-main-driver-step"?runner.consumeOriginalViaMainDriverStep(command,id):runner.consumeOriginalViaMainContextStep(command,id);assert.ok(typeof grant.dataStr==="string"); phases.push(command.phase);
         if(loseDriverStep){return Promise.reject(new Error("original-driver-step-ack-lost"));}
         plannedResumes += 1;event("Debugger.resumed",{});queue.push({id,result:{}});return Promise.resolve();
       },
       sendOriginalCurrentPcbViaMainCommand: (token: unknown, original: unknown, command: CurrentPcbViaMainCommand, id: number): Promise<void> => {
         assert.equal(token, capability); assert.equal(original, runner); validateCurrentPcbViaMainCommand(command); phases.push(command.phase);
         let result: unknown = command.phase === "via-main-construction-require" ? { result: { type: "boolean", value: true } } : { result: [] };
-        if (command.method === "Debugger.setBreakpoint") { const point = command.params["location"]; assert.ok(point !== null && typeof point === "object"); result = { breakpointId: `via-${String(Reflect.get(point, "columnNumber"))}`, actualLocation: point }; }
+        if (command.method === "Debugger.setBreakpoint") { const point = command.params["location"]; assert.ok(point !== null && typeof point === "object"); result = { breakpointId: `via-${String(Reflect.get(point, "columnNumber"))}`, actualLocation: point }; if(Reflect.get(point,"columnNumber")===2540){contextPointActive=true;} }
+        if(command.method==="Debugger.removeBreakpoint"&&command.params["breakpointId"]==="via-2540"){contextPointActive=false;result={};}
+        if(command.phase==="via-main-request-invocation-frame"||command.phase==="via-main-request-frame"||command.phase==="via-main-request-invocation"||command.phase==="via-main-request-context"||command.phase==="via-main-request-controller"){
+          const frame=command.method==="Debugger.evaluateOnCallFrame";let length=6;if(frame){if(command.phase==="via-main-request-invocation-frame"){length=3;}else if(command.params["callFrameId"]==="frame-context"){length=4;}else{length=8;}}else if(command.phase==="via-main-request-controller"){length=12;}
+          result={result:{type:"object",subtype:"array",className:"Array",description:`Array(${String(length)})`,objectId:`via-array-${String(id)}`}};
+        }else if(command.phase==="via-main-request-context-join"){result={result:{type:"boolean",value:true}};}
         queue.push({ id, result }); return Promise.resolve();
       },
     },
   });
   runner = new module.Constructor(transport, undefined, capability);
-  return { runner, phases, transport, loseNextDriverStep: ():void=>{loseDriverStep=true;}, injectRequest: (method: string, foreign = false, sourceDelta = 0, history=false): void => {
+  return { runner, phases, transport, injectViaPoint:(role:"context"|"controller"):void=>{
+    const site=role==="context"?{lineNumber:1164,columnNumber:2540}:{lineNumber:8573,columnNumber:1663};
+    event("Debugger.paused",{reason:"other",hitBreakpoints:[`via-${String(site.columnNumber)}`],callFrames:[{callFrameId:`frame-${role}`,location:{scriptId:"app",...site}}]});
+  }, loseNextDriverStep: ():void=>{loseDriverStep=true;}, injectRequest: (method: string, foreign = false, sourceDelta = 0, history=false): void => {
     const project = foreign ? "d".repeat(64) : createHash("sha256").update(String.raw`C:\Synthetic\fixture.eprj2`).digest("hex"); currentRequest = { method, url: `/api/v4/projects/${project}/branches${history?`/${"b".repeat(32)}/histories`:""}`, delta: sourceDelta, pathHeader:project };
     if (!fetchScriptSeen) { event("Debugger.scriptParsed", { scriptId: "builtin-fetch", url: "node:internal/deps/undici/undici", executionContextId: 1, startLine: 0, startColumn: 0, endLine: 17_434, endColumn: 0, length: 745_782, isLiveEdit: false, hasSourceURL: false, isModule: false, scriptLanguage: "JavaScript" }); fetchScriptSeen = true; }
     pause("driver"); }, injectMutation: (): void => { pause("run"); }, injectDriver: (): void => { pause("driver"); }, resumes: (): number => normalResumes + sqlResumes + plannedResumes,
@@ -207,7 +220,7 @@ void test("foreign-project GET and wrong original getter source location never a
 
 void test("after genuine Via cursor handoff the original Fetch GET is serviced and only its own resumed event is consumed", async () => {
   const f = await fixture(); await f.runner.observe(); const original = await f.runner.beginViaMainObservation();
-  for (const [lineNumber, columnNumber] of [[1164, 2540], [8573, 1663], [8572, 27_776]]) {
+  for (const [lineNumber, columnNumber] of [[8573, 1663], [8572, 27_776]]) {
     await original.bindings.request(validateCurrentPcbViaMainCommand({ phase: "via-main-request-site-arm", method: "Debugger.setBreakpoint", params: { location: { scriptId: "app", lineNumber, columnNumber } } }), false);
   }
   f.injectRequest("GET"); const event = await original.bindings.nextEvent(); assert.equal(event.method, "Debugger.paused");
@@ -249,4 +262,32 @@ void test("the original Via history driver grant is consumed only by its pending
     await assert.rejects(original.bindings.continuePlannedDriver(packet));assert.equal(f.phases.filter(phase=>phase==="via-main-driver-step").length,1);
     assert.throws(()=>f.runner.consumeOriginalViaMainDriverStep(command,1));assert.equal(f.runner.selectedSqlFenceState()["selectedProjectMutationsResumed"],0);
   }
+});
+
+void test("the original context join and exact held body are required before a separate controller packet is retained",async()=>{
+  const f=await fixture();await f.runner.observe();const original=await f.runner.beginViaMainObservation();
+  const cases=currentPcbViaMainNativeCases();
+  for(const role of [[8573,1663],[8572,27_776]]){await original.bindings.request(validateCurrentPcbViaMainCommand({phase:"via-main-request-site-arm",method:"Debugger.setBreakpoint",params:{location:{scriptId:"app",lineNumber:role[0],columnNumber:role[1]}}}),false);}
+  const expected={projectUuid:createHash("sha256").update(String.raw`C:\Synthetic\fixture.eprj2`).digest("hex"),branchUuid:"b".repeat(32),projectKey:createHash("sha256").update(String.raw`C:\Synthetic\fixture.eprj2`).digest("hex"),path:String.raw`C:\Synthetic\fixture.eprj2`,dataStr:"original-held-body"};
+  const beforeReads=f.resumes();f.injectRequest("GET");await f.runner.pumpSelectedSqlFence();await f.runner.pumpSelectedSqlFence();assert.equal(f.resumes(),beforeReads+1);
+  f.runner.bindViaExpectedHistoryBody(original.origin,expected);
+  const send=(phase:string,params:Record<string,unknown>,expression?:string):Promise<unknown>=>{const sample=cases.find(item=>item.phase===phase&&(expression===undefined||item.params["expression"]===expression));assert.ok(sample!==undefined);return original.bindings.request(validateCurrentPcbViaMainCommand({...sample,params:{...sample.params,...params}}),false);};
+
+  f.injectRequest("POST",false,0,true);await original.bindings.nextEvent();const request=await original.bindings.observeRequest();
+  const driver=captureArrayId(await send("via-main-request-invocation-frame",{callFrameId:"frame-driver"},"[this,r,i]"));
+  const caller=captureArrayId(await send("via-main-request-invocation-frame",{callFrameId:"frame-caller"},"[this,s,a]"));
+  const invocation=captureArrayId(await send("via-main-request-invocation",{objectId:driver,arguments:[{objectId:original.bindings.constructionObjectId},{objectId:caller}]}));
+  await original.bindings.request(validateCurrentPcbViaMainCommand({phase:"via-main-request-site-arm",method:"Debugger.setBreakpoint",params:{location:{scriptId:"app",lineNumber:1164,columnNumber:2540}}}),false);
+  await original.bindings.continuePlannedDriver(request);f.injectViaPoint("context");await original.bindings.nextEvent();
+  await assert.rejects(original.bindings.continuePlannedContext(),/ORIGINAL_JOINED_CONTEXT/u);
+  const frame=captureArrayId(await send("via-main-request-frame",{callFrameId:"frame-context"},"[this,r,i,s]"));
+  const context=captureArrayId(await send("via-main-request-context",{objectId:frame,arguments:[{objectId:original.bindings.constructionObjectId}]}));
+  await send("via-main-request-context-join",{objectId:invocation,arguments:[{objectId:context}]});
+  await original.bindings.request(validateCurrentPcbViaMainCommand({phase:"via-main-request-remove",method:"Debugger.removeBreakpoint",params:{breakpointId:"via-2540"}}),true);
+  await original.bindings.continuePlannedContext();f.injectRequest("GET");await original.bindings.nextEvent();const read=await original.bindings.observeRequest();const beforeLaterRead=f.resumes();await original.bindings.continueReadonlyRequest(read);assert.equal(f.resumes(),beforeLaterRead+1);
+  f.injectViaPoint("controller");await original.bindings.nextEvent();
+  const controllerFrame=captureArrayId(await send("via-main-request-frame",{callFrameId:"frame-controller"},"[this,this.ctx,this.service,this.path,L3,PB,Date,Date.now]"));
+  await send("via-main-request-controller",{objectId:controllerFrame,arguments:[{objectId:context},{value:expected}]});
+  original.bindings.requireOriginalControllerBody();assert.equal(f.runner.selectedSqlFenceState()["selectedProjectMutationsResumed"],0);
+  await assert.rejects(original.bindings.continuePlannedContext());
 });

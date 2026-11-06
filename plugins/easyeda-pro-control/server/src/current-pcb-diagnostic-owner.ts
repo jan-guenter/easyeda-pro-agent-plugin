@@ -588,7 +588,7 @@ export async function sendOriginalCurrentPcbViaMainStep(capability: CurrentSelec
   const original = selectedSqlFenceBootstraps.get(capability);
   // oxlint-disable-next-line eslint/no-use-before-define -- A native sender is reached only after its genuine dedicated owner exists.
   if (original === undefined || original.runner() !== runner || !(original.owner instanceof CurrentPcbViaWriteOwner)) { throw error("PCB_VIA_MAIN_STEP_ORIGINAL_OWNER"); }
-  assertOriginalCurrentPcbViaWriteOwner(original.owner); original.reprove(); await original.owner.sendViaMainDriverStep(capability, runner, command, id); original.reprove();
+  assertOriginalCurrentPcbViaWriteOwner(original.owner); original.reprove(); await original.owner.sendViaMainRequestStep(capability, runner, command, id); original.reprove();
 }
 const pcbViaMainOrigins = new WeakMap<CurrentPcbViaMainOrigin, Readonly<{ owner: CurrentPcbViaWriteOwner; plan: CurrentPcbViaWritePlan; effect: CurrentPcbViaWriteEffect; bindings: CurrentPcbViaMainBindings; assertOriginal: () => void }>>();
 export function requireOriginalCurrentPcbViaMainOrigin(origin: CurrentPcbViaMainOrigin, owner: CurrentPcbViaWriteOwner, plan: CurrentPcbViaWritePlan): CurrentPcbViaMainBindings {
@@ -4141,13 +4141,13 @@ class CurrentPcbRetainedOwnerCore {
       await this.#verify(); held.reprove();
     } finally { this.#leaveFootprintMain(); }
   }
-  public async sendViaMainDriverStep(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner,
+  public async sendViaMainRequestStep(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner,
     command: CurrentPcbViaMainStepCommand, requestId: number): Promise<void> {
     const held = selectedSqlFenceBootstraps.get(capability), original = this.#requireFootprintMain(true);
     if (this.#purpose !== CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE || held?.owner !== this || held.runner() !== runner || this.#mainRunner !== runner ||
       this.#viaMainBoundBody === null || this.#viaMainOrigin === null || !this.#viaSdkPhases.has("save") || !this.#viaMainSetupReady ||
       requestId !== this.#mainRequestId + 1 || this.#mainNormalRequests >= CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.main.normal) { throw error("PCB_VIA_MAIN_DRIVER_GRANT_REQUIRED"); }
-    const grant = runner.consumeOriginalViaMainDriverStep(command, requestId);
+    const grant = command.phase === "via-main-driver-step" ? runner.consumeOriginalViaMainDriverStep(command, requestId) : runner.consumeOriginalViaMainContextStep(command, requestId);
     if (grant.origin !== this.#viaMainOrigin || grant.dataStr !== this.#viaMainBoundBody.dataStr) { throw error("PCB_VIA_MAIN_DRIVER_BODY_CHANGED"); }
     held.reprove(); const wire = currentPcbViaMainStepWire(command, requestId); this.#enterFootprintMain(); this.#mainRequestId += 1; this.#mainNormalRequests += 1;
     try { await this.#verify(); held.reprove(); const reply = await this.#request({ ...wire });

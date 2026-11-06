@@ -338,10 +338,17 @@ export class CurrentFootprintCopyMainBackendRunner {
   #viaMainDeliveredPause: Pause | null = null;
   #viaMainDriverStep: Readonly<{ origin: CurrentPcbViaMainOrigin; request: CurrentSelectedFileMainRequestObservation; pause: Pause; expected: Readonly<z.infer<typeof currentFootprintCopyMainRequestPlanSchema>> }> | null = null;
   #viaMainDriverStepConsumed = false;
+  #viaMainInvocation: string | null = null;
+  #viaMainContextPacket: string | null = null;
+  #viaMainContextJoined = false;
+  #viaMainControllerPacket: string | null = null;
+  #viaMainContextStep: Readonly<{ origin: CurrentPcbViaMainOrigin; pause: Pause; expected: Readonly<z.infer<typeof currentFootprintCopyMainRequestPlanSchema>> }> | null = null;
+  #viaMainContextStepConsumed = false;
   readonly #viaMainEvents: CurrentPcbViaMainEvent[] = [];
   readonly #viaMainPoints = new Map<string, z.infer<typeof location>>();
   #viaMainArming: z.infer<typeof location> | null = null;
   #viaMainPoll: Promise<void> | null = null;
+  #viaMainReadonlyService: Promise<void> | null = null;
   #viaMainNormal = 0;
   #viaMainCleanup = 0;
   #viaMainGroupReleased = false;
@@ -720,7 +727,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     try {
     if (via) {
       need(this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null, "VIA_MAIN_ORIGINAL_BOOTSTRAP");
-      await (input.phase === "via-main-driver-step" ? sendOriginalCurrentPcbViaMainStep(this.#selectedSqlBootstrap, this, validateCurrentPcbViaMainStepCommand(input), id) :
+      await ((input.phase === "via-main-driver-step" || input.phase === "via-main-context-step") ? sendOriginalCurrentPcbViaMainStep(this.#selectedSqlBootstrap, this, validateCurrentPcbViaMainStepCommand(input), id) :
         sendOriginalCurrentPcbViaMainCommand(this.#selectedSqlBootstrap, this, validateCurrentPcbViaMainCommand(input), id));
     } else if (sqlFence) {
       need(this.#selectedSqlBootstrap !== null, "SELECTED_SQL_ORIGINAL_BOOTSTRAP");
@@ -986,7 +993,13 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Same original cursor, no second inspector. A held write remains paused;
    * this method never treats its data as permission to continue native SQL. */
   public async pumpSelectedSqlFence(): Promise<void> {
-    if (this.#viaMainOrigin !== null) { if (!this.#busy) { await this.#pump(); } return; }
+    if (this.#viaMainOrigin !== null) {
+      if (!this.#busy) { await this.#pump();
+        if (!this.#busy) { const service = (async (): Promise<void> => { this.#busy = true;
+          try { await this.#serveUndeliveredViaReadonly(); } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; this.#viaMainReadonlyService = null; }
+        })(); this.#viaMainReadonlyService = service; await service; }
+      } return;
+    }
     need(this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#packet !== null && !this.#busy && !this.#originActive && !this.#structureActive, "SELECTED_SQL_PUMP_OWNER");
     this.#busy = true; try {
       await this.#current(); if (this.#sqlHeld !== null) { return; } await this.#pump();
@@ -996,6 +1009,18 @@ export class CurrentFootprintCopyMainBackendRunner {
         else if (!await this.#configureStartupSql(pause)) { this.#sqlMutationPauses += 1; need(this.#sqlMutationPauses <= 64, "SELECTED_SQL_MUTATION_BOUND"); this.#sqlHeld = pause; await this.#requireSelectedSqlCapture(); }
       }
     } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
+  }
+  async #serveUndeliveredViaReadonly(): Promise<void> {
+    const pause = this.#pause;
+    if (pause === null || pause.sqlSite !== "driver" || pause.resumeAttempted || pause.resumed || this.#viaMainDeliveredPause !== null || this.#viaMainDriverStep !== null) { return; }
+    const context = CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_SITES.context;
+    need(![...this.#viaMainPoints.values()].some(point => point.lineNumber === context.lineNumber && point.columnNumber === context.columnNumber), "VIA_MAIN_READONLY_CONTEXT_POINT_PRESENT");
+    const packet = await this.#observeSelectedMainRequest(pause);
+    if (this.#selectedReadonlyRequest(packet)) {
+      const event = this.#viaMainEvents.shift(); need(event?.method === "Debugger.paused" && pauseSchema.parse(event.params).callFrames[0]?.callFrameId === pause.frameId, "VIA_MAIN_READONLY_ORIGINAL_PAUSE");
+      await this.#continueSelectedReadonlyRequest(packet); const resumed = this.#viaMainEvents.shift();
+      need(pause.resumed && resumed?.method === "Debugger.resumed", "VIA_MAIN_READONLY_ORIGINAL_RESUMED"); empty.parse(resumed.params);
+    }
   }
   public selectedSqlFenceState(): Readonly<Record<string, unknown>> {
     return Object.freeze({ profile: "private.selected-file-main-sql-fence.v1", originalBootstrapRetained: this.#selectedSqlBootstrap !== null,
@@ -1041,7 +1066,7 @@ export class CurrentFootprintCopyMainBackendRunner {
           } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
         },
         continuePlannedDriver: async (packet: CurrentSelectedFileMainRequestObservation): Promise<void> => {
-          same(); this.requireViaMainObservationArmed(origin); this.requireOriginalSelectedMainRequest(packet);
+          same(); this.#requireViaNextPoint(origin, "context"); this.requireOriginalSelectedMainRequest(packet);
           const actual = selectedRequestPackets.get(packet), expected = this.#viaExpectedBody;
           need(actual !== undefined && expected !== null && this.#viaMainDeliveredPause === actual.pause && this.#viaMainEvents.length === 0 && this.#viaMainDriverStep === null &&
             packet.mode === "fetch" && packet.method === "POST" && packet.pureQuery === "" && packet.pathHeader === expected.projectKey &&
@@ -1053,11 +1078,30 @@ export class CurrentFootprintCopyMainBackendRunner {
             empty.parse(resumed.params); this.#viaMainDeliveredPause = null; if (this.#sqlHeld === actual.pause) { this.#sqlHeld = null; }
           } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
         },
+        requireOriginalControllerBody: (): void => {
+          same(); need(this.#pause !== null && this.#viaMainControllerPacket !== null && this.#viaMainContextStepConsumed && this.#viaExpectedBody !== null, "VIA_MAIN_CONTROLLER_BODY_REQUIRED"); this.#viaPoint(this.#pause, "controller");
+        },
+        continuePlannedContext: async (): Promise<void> => {
+          same(); this.#requireViaNextPoint(origin, "controller"); const expected = this.#viaExpectedBody, pause = this.#pause;
+          need(pause !== null && expected !== null && this.#viaMainDeliveredPause === pause && this.#viaMainEvents.length === 0 && this.#viaMainContextStep === null &&
+            this.#viaMainContextJoined && this.#viaMainContextPacket !== null && this.#viaMainDriverStepConsumed && this.#viaMainDriverStep?.pause.resumed === true &&
+            !pause.resumeAttempted && !pause.resumed, "VIA_MAIN_ORIGINAL_JOINED_CONTEXT"); this.#viaPoint(pause, "context");
+          this.#busy = true; this.#viaMainContextStep = Object.freeze({ origin, pause, expected }); pause.resumeAttempted = true;
+          try {
+            empty.parse(await this.#request({ phase: "via-main-context-step", method: "Debugger.resume", params: {} })); await this.#wait(() => pause.resumed); same();
+            const resumed = this.#viaMainEvents.shift(); need(this.#viaMainContextStepConsumed && resumed?.method === "Debugger.resumed", "VIA_MAIN_CONTEXT_ORIGINAL_RESUMED");
+            empty.parse(resumed.params); this.#viaMainDeliveredPause = null;
+          } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
+        },
         request: async (input: CurrentPcbViaMainCommand, cleanup: boolean): Promise<unknown> => {
-          same(); need(!this.#busy, "VIA_MAIN_COMMAND_BUSY"); const command = validateCurrentPcbViaMainCommand(input);
+          same(); if (this.#viaMainReadonlyService !== null) { await this.#viaMainReadonlyService; same(); } need(!this.#busy, "VIA_MAIN_COMMAND_BUSY"); const command = validateCurrentPcbViaMainCommand(input);
           const removing = command.method === "Debugger.removeBreakpoint"; const releasing = command.method === "Runtime.releaseObjectGroup";
           need(cleanup === (removing || releasing), "VIA_MAIN_COMMAND_LANE");
-          if (cleanup) { this.#viaMainCleanup += 1; need(this.#viaMainCleanup <= VIA_REQUESTS.cleanup && (this.#pause === null || this.#pause.resumed), "VIA_MAIN_CLEANUP_HELD"); }
+          if (cleanup) { this.#viaMainCleanup += 1; const point = typeof command.params["breakpointId"] === "string" ? this.#viaMainPoints.get(command.params["breakpointId"]) : undefined;
+            const context = CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_SITES.context, pause = this.#pause;
+            const joinedContext = removing && pause !== null && !pause.resumeAttempted && !pause.resumed && this.#viaMainDeliveredPause === pause && this.#viaMainContextJoined && point !== undefined &&
+              canonicalJson(point) === canonicalJson(pause.location) && point.lineNumber === context.lineNumber && point.columnNumber === context.columnNumber;
+            need(this.#viaMainCleanup <= VIA_REQUESTS.cleanup && (pause === null || pause.resumed || joinedContext), "VIA_MAIN_CLEANUP_HELD"); }
           else { this.#viaMainNormal += 1; need(this.#viaMainNormal <= VIA_REQUESTS.normal, "VIA_MAIN_NORMAL_BOUND"); }
           if (command.method === "Debugger.evaluateOnCallFrame") { need(typeof command.params["callFrameId"] === "string" && this.#viaMainFrames.has(command.params["callFrameId"]) && this.#pause?.resumed === false, "VIA_MAIN_FRAME_OWNER"); }
           if (removing) { need(typeof command.params["breakpointId"] === "string" && this.#viaMainPoints.has(command.params["breakpointId"]), "VIA_MAIN_PERSISTENT_POINT"); }
@@ -1066,13 +1110,14 @@ export class CurrentFootprintCopyMainBackendRunner {
           this.#busy = true; this.#viaMainArming = arming;
           try {
             const raw = await this.#request(command, cleanup); const reply = captureCurrentPcbStringClockReply(raw).value;
+            this.#retainViaRequestReply(command, reply);
             if (arming !== null) { const allocated = z.object({ breakpointId: handle, actualLocation: location }).strict().parse(reply);
               need(canonicalJson(allocated.actualLocation) === canonicalJson(arming) && !this.#sqlBreakpoints.has(allocated.breakpointId) && !this.#viaMainPoints.has(allocated.breakpointId), "VIA_MAIN_ARM_REPLY"); this.#viaMainPoints.set(allocated.breakpointId, arming); }
             if (removing) { empty.parse(reply); need(typeof command.params["breakpointId"] === "string", "VIA_MAIN_POINT"); this.#viaMainPoints.delete(command.params["breakpointId"]); }
             if (releasing) { empty.parse(reply); } same(); if (releasing) { this.#viaMainGroupReleased = true; } return reply;
           } catch (error) { this.#fail(error); throw error; } finally { this.#viaMainArming = null; this.#busy = false; }
         }, nextEvent: async (): Promise<CurrentPcbViaMainEvent> => {
-          same(); need(!this.#busy, "VIA_MAIN_EVENT_BUSY"); this.#busy = true; const started = performance.now();
+          same(); if (this.#viaMainReadonlyService !== null) { await this.#viaMainReadonlyService; same(); } need(!this.#busy, "VIA_MAIN_EVENT_BUSY"); this.#busy = true; const started = performance.now();
           try { while (this.#viaMainEvents.length === 0) { need(performance.now() - started < 20_000, "VIA_MAIN_EVENT_DEADLINE"); await this.#pump(); same(); }
             const event = this.#viaMainEvents.shift(); need(event !== undefined, "VIA_MAIN_EVENT");
             if (event.method === "Debugger.paused") { need(this.#pause !== null && !this.#pause.resumed && this.#viaMainDeliveredPause === null, "VIA_MAIN_DELIVERY_OVERLAP"); this.#viaMainDeliveredPause = this.#pause; }
@@ -1081,6 +1126,39 @@ export class CurrentFootprintCopyMainBackendRunner {
         } });
       return Object.freeze({ origin, bindings });
     } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
+  }
+  #viaPoint(pause: Pause, role: "context" | "controller"): void {
+    const expected = CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_SITES[role];
+    need(pause.location.scriptId === this.#appScriptId && pause.location.lineNumber === expected.lineNumber && pause.location.columnNumber === expected.columnNumber &&
+      pause.sqlSite === undefined && this.#viaMainDeliveredPause === pause && !pause.resumed, "VIA_MAIN_ORIGINAL_POINT");
+  }
+  #retainViaRequestReply(command: CurrentPcbViaMainCommand, reply: unknown): void {
+    const array = (length: number): string => { const value = objectReply.parse(reply); need(value.result.description === `Array(${String(length)})`, "VIA_MAIN_ORIGINAL_REPLY_ARRAY"); return value.result.objectId; };
+    if (command.phase === "via-main-request-invocation") {
+      need(this.#pause?.sqlSite === "driver" && !this.#pause.resumeAttempted && this.#viaMainDeliveredPause === this.#pause && this.#viaMainInvocation === null, "VIA_MAIN_ORIGINAL_INVOCATION_CAPTURE");
+      const args = z.tuple([z.strictObject({ objectId: handle }), z.strictObject({ objectId: handle })]).parse(command.params["arguments"]);
+      need(args[0].objectId === this.#retainedArray, "VIA_MAIN_ORIGINAL_CONSTRUCTION_ARGUMENT"); this.#viaMainInvocation = array(6);
+    } else if (command.phase === "via-main-request-context") {
+      need(this.#pause !== null && this.#viaMainContextPacket === null && this.#viaMainInvocation !== null && this.#viaMainDriverStepConsumed, "VIA_MAIN_ORIGINAL_CONTEXT_CAPTURE"); this.#viaPoint(this.#pause, "context");
+      const args = z.tuple([z.strictObject({ objectId: handle })]).parse(command.params["arguments"]); need(args[0].objectId === this.#retainedArray, "VIA_MAIN_ORIGINAL_CONSTRUCTION_ARGUMENT");
+      this.#viaMainContextPacket = array(6);
+    } else if (command.phase === "via-main-request-context-join") {
+      need(this.#pause !== null && this.#viaMainContextPacket !== null && this.#viaMainInvocation !== null && !this.#viaMainContextJoined, "VIA_MAIN_ORIGINAL_CONTEXT_JOIN"); this.#viaPoint(this.#pause, "context");
+      const args = z.tuple([z.strictObject({ objectId: handle })]).parse(command.params["arguments"]);
+      need(command.params["objectId"] === this.#viaMainInvocation && args[0].objectId === this.#viaMainContextPacket, "VIA_MAIN_ORIGINAL_CONTEXT_ARGUMENTS");
+      z.strictObject({ result: z.strictObject({ type: z.literal("boolean"), value: z.literal(true) }) }).parse(reply); this.#viaMainContextJoined = true;
+    } else if (command.phase === "via-main-request-controller") {
+      need(this.#pause !== null && this.#viaMainContextJoined && this.#viaMainContextPacket !== null && this.#viaExpectedBody !== null && this.#viaMainContextStepConsumed && this.#viaMainControllerPacket === null, "VIA_MAIN_ORIGINAL_CONTROLLER_CAPTURE"); this.#viaPoint(this.#pause, "controller");
+      const args = z.tuple([z.strictObject({ objectId: handle }), z.strictObject({ value: currentFootprintCopyMainRequestPlanSchema })]).parse(command.params["arguments"]);
+      need(args[0].objectId === this.#viaMainContextPacket && canonicalJson(args[1].value) === canonicalJson(this.#viaExpectedBody), "VIA_MAIN_ORIGINAL_CONTROLLER_BODY"); this.#viaMainControllerPacket = array(12);
+    }
+  }
+  public consumeOriginalViaMainContextStep(command: CurrentPcbViaMainStepCommand, requestId: number): Readonly<{ origin: CurrentPcbViaMainOrigin; dataStr: string }> {
+    const grant = this.#viaMainContextStep; this.#same(false);
+    need(grant !== null && !this.#viaMainContextStepConsumed && command.phase === "via-main-context-step" && this.#pendingId === requestId && this.#busy &&
+      this.#viaMainOrigin === grant.origin && this.#viaExpectedBody === grant.expected && this.#pause === grant.pause && this.#viaMainDeliveredPause === grant.pause &&
+      grant.pause.resumeAttempted && !grant.pause.resumed && this.#viaMainContextJoined && this.#viaMainContextPacket !== null, "VIA_MAIN_ORIGINAL_PENDING_CONTEXT_GRANT");
+    this.#viaMainContextStepConsumed = true; return Object.freeze({ origin: grant.origin, dataStr: grant.expected.dataStr });
   }
   /** The genuine native sender consumes this pending original call once.
    * A phase string or matching plan cannot create the request/pause lineage. */
@@ -1091,9 +1169,14 @@ export class CurrentFootprintCopyMainBackendRunner {
       grant.pause.resumeAttempted && !grant.pause.resumed && selectedRequestPackets.get(grant.request)?.pause === grant.pause, "VIA_MAIN_ORIGINAL_PENDING_DRIVER_GRANT");
     this.#viaMainDriverStepConsumed = true; return Object.freeze({ origin: grant.origin, dataStr: grant.expected.dataStr });
   }
+  #requireViaNextPoint(origin: CurrentPcbViaMainOrigin, role: "context" | "controller"): void {
+    this.#same(false); const expected = CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_SITES[role];
+    need(this.#viaMainOrigin === origin && !this.#busy && !this.#failed && !this.#viaMainGroupReleased && this.#viaMainArming === null &&
+      [...this.#viaMainPoints.values()].some(point => point.scriptId === this.#appScriptId && point.lineNumber === expected.lineNumber && point.columnNumber === expected.columnNumber), "VIA_MAIN_NEXT_POINT_REQUIRED");
+  }
   public requireViaMainObservationArmed(origin: CurrentPcbViaMainOrigin): void {
-    need(this.#viaMainOrigin === origin && !this.#busy && !this.#failed && !this.#viaMainGroupReleased && this.#viaMainPoints.size === 3 && this.#viaMainArming === null, "VIA_MAIN_SETUP_UNSETTLED");
-    for (const role of ["context", "controller", "editHead"] as const) {
+    need(this.#viaMainOrigin === origin && !this.#busy && !this.#failed && !this.#viaMainGroupReleased && (this.#viaMainPoints.size === 2 || this.#viaMainPoints.size === 3) && this.#viaMainArming === null, "VIA_MAIN_SETUP_UNSETTLED");
+    for (const role of ["controller", "editHead"] as const) {
       const expected = CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_SITES[role]; need([...this.#viaMainPoints.values()].some(point => point.scriptId === this.#appScriptId && point.lineNumber === expected.lineNumber && point.columnNumber === expected.columnNumber), "VIA_MAIN_SETUP_POINTS");
     }
   }

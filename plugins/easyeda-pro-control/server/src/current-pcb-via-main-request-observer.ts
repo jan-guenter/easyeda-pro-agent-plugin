@@ -30,6 +30,11 @@ export interface CurrentPcbViaHeldMainContext {
   readonly originalDriverContextJoined: true; readonly actualRequestBodyJoined: false; readonly selectedSqlAuthorized: false;
 }
 const contexts = new WeakMap<CurrentPcbViaHeldMainContext, Readonly<{ observer: CurrentPcbViaMainRequestObserver; context: string }>>();
+export interface CurrentPcbViaHeldMainController {
+  readonly schema: "private.current-pcb-via-held-main-controller.v1";
+  readonly originalDriverContextJoined: true; readonly actualRequestBodyJoined: true; readonly mainActorClockVerified: false; readonly selectedSqlAuthorized: false;
+}
+const controllers = new WeakMap<CurrentPcbViaHeldMainController, Readonly<{ observer: CurrentPcbViaMainRequestObserver; controller: string }>>();
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PCB_VIA_MAIN_OBSERVER_${code}`); } }
 export class CurrentPcbViaMainRequestObserver {
   readonly #origin: CurrentPcbViaMainOrigin; readonly #owner: CurrentPcbViaWriteOwner; readonly #plan: CurrentPcbViaWritePlan; readonly #bindings: CurrentPcbViaMainBindings;
@@ -37,6 +42,7 @@ export class CurrentPcbViaMainRequestObserver {
   #projection: CurrentPcbViaSaveProjection | null = null;
   readonly #points = new Map<"context" | "controller" | "editHead", string>();
   #contextAttempted = false; #context: CurrentPcbViaHeldMainContext | null = null;
+  #contextAdvanced = false; #controllerAttempted = false; #controller: CurrentPcbViaHeldMainController | null = null;
   public constructor(origin: CurrentPcbViaMainOrigin, owner: CurrentPcbViaWriteOwner, plan: CurrentPcbViaWritePlan) {
     this.#origin = origin; this.#owner = owner; this.#plan = plan; this.#bindings = requireOriginalCurrentPcbViaMainOrigin(origin, owner, plan); Object.freeze(this);
   }
@@ -45,16 +51,32 @@ export class CurrentPcbViaMainRequestObserver {
     requireCurrentFootprintCopyMainRequestSource(this.#bindings.source); await this.#bindings.assertCurrent();
     need(!this.#failed && requireOriginalCurrentPcbViaMainOrigin(this.#origin, this.#owner, this.#plan) === this.#bindings, "CHANGED"); if (observing) { this.#bindings.assertSaveAttempt(); }
   }
-  async #send(input: unknown, observing = false): Promise<unknown> {
+  async #send(input: unknown, observing = false, cleanup = false): Promise<unknown> {
     await this.#current(observing); const command = validateCurrentPcbViaMainCommand(input);
-    const reply = captureCurrentPcbStringClockReply(await this.#bindings.request(command, false)).value; await this.#current(observing); return reply;
+    const reply = captureCurrentPcbStringClockReply(await this.#bindings.request(command, cleanup)).value; await this.#current(observing); return reply;
+  }
+  async #arm(role: "context" | "controller" | "editHead"): Promise<void> {
+    need(!this.#points.has(role), "POINT_CONSUMED"); const site = SITES[role]; const raw = await this.#send({ phase: "via-main-request-site-arm", method: "Debugger.setBreakpoint", params: {
+      location: { scriptId: this.#bindings.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } } });
+    const point = decodeAllocation(raw, role, this.#bindings.scriptId); need(![...this.#points.values()].includes(point), "POINT_ALIAS"); this.#points.set(role, point);
   }
   public async arm(): Promise<void> {
     need(!this.#armed && !this.#busy, "ARM_CONSUMED"); this.#armed = true; this.#busy = true;
-    try { for (const role of ["context", "controller", "editHead"] as const) { const site = SITES[role]; const raw = await this.#send({ phase: "via-main-request-site-arm", method: "Debugger.setBreakpoint", params: {
-      location: { scriptId: this.#bindings.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } } });
-      const point = decodeAllocation(raw, role, this.#bindings.scriptId); need(![...this.#points.values()].includes(point), "POINT_ALIAS"); this.#points.set(role, point); }
-    } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
+    try { for (const role of ["controller", "editHead"] as const) { await this.#arm(role); } }
+    catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
+  }
+  async #nextPoint(role: "context" | "controller"): Promise<ReturnType<typeof decodePause>> {
+    for (let index = 0; index < 64; index += 1) {
+      const raw = captureCurrentPcbStringClockReply(await this.#bindings.nextEvent()).value;
+      const event = z.strictObject({ method: z.literal("Debugger.paused"), params: z.unknown() }).parse(raw); await this.#current(true);
+      const paused = z.looseObject({ hitBreakpoints: z.tuple([z.string()]) }).parse(event.params);
+      if (paused.hitBreakpoints[0] === this.#bindings.persistentDriverBreakpointId) {
+        decodePause(event.params, "driver", this.#bindings.scriptId, this.#bindings.persistentDriverBreakpointId);
+        const request = await this.#bindings.observeRequest(); this.#bindings.requireOriginalRequest(request);
+        need(request.method === "GET" || request.method === "HEAD", "FOREIGN_WRITE_REQUEST"); await this.#bindings.continueReadonlyRequest(request);
+      } else { const point = this.#points.get(role); need(point !== undefined, "SOURCE_POINT"); return decodePause(event.params, role, this.#bindings.scriptId, point); }
+    }
+    throw new Error("PCB_VIA_MAIN_OBSERVER_READ_REQUEST_BOUND");
   }
   async #frame(callFrameId: string, expression: string): Promise<string> {
     return decodeArray(await this.#send({ phase: "via-main-request-invocation-frame", method: "Debugger.evaluateOnCallFrame", params: { callFrameId, expression, objectGroup: GROUP,
@@ -87,7 +109,7 @@ export class CurrentPcbViaMainRequestObserver {
           selected = Object.freeze({ pause, request }); break;
         }
       }
-      need(selected !== null, "DRIVER_REQUEST_BOUND"); const { pause, request } = selected; need(pause.callerFrameId !== null, "DRIVER_CALLER");
+      need(selected !== null, "DRIVER_REQUEST_BOUND"); await this.#arm("context"); const { pause, request } = selected; need(pause.callerFrameId !== null, "DRIVER_CALLER");
       const top = await this.#frame(pause.frameId, EXPRESSIONS.driver); const caller = await this.#frame(pause.callerFrameId, EXPRESSIONS.driverCaller);
       const invocation = decodeArray(await this.#send({ phase: "via-main-request-invocation", method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: top,
         functionDeclaration: PROGRAMS.invocation, arguments: [{ objectId: this.#bindings.constructionObjectId }, { objectId: caller }], returnByValue: false } }, true), 6);
@@ -110,20 +132,45 @@ export class CurrentPcbViaMainRequestObserver {
     try {
       await this.requireOriginal(packet); const original = packets.get(packet); need(original !== undefined, "ORIGINAL_PACKET");
       await this.#bindings.continuePlannedDriver(original.request); await this.#current(true);
-      const raw = captureCurrentPcbStringClockReply(await this.#bindings.nextEvent()).value;
-      const event = z.strictObject({ method: z.literal("Debugger.paused"), params: z.unknown() }).parse(raw); const point = this.#points.get("context"); need(point !== undefined, "CONTEXT_POINT");
-      const pause = decodePause(event.params, "context", this.#bindings.scriptId, point);
+      const pause = await this.#nextPoint("context");
       const frame = decodeArray(await this.#send({ phase: "via-main-request-frame", method: "Debugger.evaluateOnCallFrame", params: { callFrameId: pause.frameId,
         expression: SOURCE_FRAMES.context, objectGroup: GROUP, silent: true, returnByValue: false, generatePreview: false, throwOnSideEffect: true, includeCommandLineAPI: false } }, true), 4);
       const context = decodeArray(await this.#send({ phase: "via-main-request-context", method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: frame,
         functionDeclaration: SOURCE_CALLS.context.program, arguments: [{ objectId: this.#bindings.constructionObjectId }], returnByValue: false } }, true), 6);
       z.strictObject({ result: z.strictObject({ type: z.literal("boolean"), value: z.literal(true) }) }).parse(await this.#send({ phase: "via-main-request-context-join", method: "Runtime.callFunctionOn", params: {
         ...FLAGS, objectId: original.invocation, functionDeclaration: PROGRAMS.contextJoin, arguments: [{ objectId: context }], returnByValue: true } }, true));
+      const contextPoint = this.#points.get("context"); need(contextPoint !== undefined, "CONTEXT_POINT");
+      z.strictObject({}).parse(await this.#send({ phase: "via-main-request-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: contextPoint } }, true, true));
       await this.#current(true); const held: CurrentPcbViaHeldMainContext = Object.freeze({ schema: "private.current-pcb-via-held-main-context.v1", originalDriverContextJoined: true, actualRequestBodyJoined: false, selectedSqlAuthorized: false });
       this.#context = held; contexts.set(held, Object.freeze({ observer: this, context })); return held;
     } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
   }
   public async requireOriginalContext(packet: CurrentPcbViaHeldMainContext): Promise<void> {
-    need(this.#context === packet && contexts.get(packet)?.observer === this, "ORIGINAL_CONTEXT"); await this.#current(true);
+    need(!this.#contextAdvanced && this.#context === packet && contexts.get(packet)?.observer === this, "ORIGINAL_CONTEXT"); await this.#current(true);
+  }
+  /** The same original context may advance once to the actual history
+   * controller. Its fixed program joins the original request body and selected
+   * native path before the actor clock or any history mutation is released. */
+  public async continueToController(packet: CurrentPcbViaHeldMainContext): Promise<CurrentPcbViaHeldMainController> {
+    need(!this.#busy && !this.#controllerAttempted && this.#projection !== null, "CONTROLLER_CONSUMED"); this.#controllerAttempted = true; this.#busy = true;
+    try {
+      await this.requireOriginalContext(packet); const original = contexts.get(packet); need(original !== undefined, "ORIGINAL_CONTEXT");
+      const delta = await requireOriginalCurrentPcbViaSaveProjection(this.#projection, this.#owner, this.#plan);
+      const expected = Object.freeze({ projectUuid: this.#plan.target.projectUuid, branchUuid: this.#plan.target.branchUuid,
+        projectKey: this.#plan.target.projectUuid, path: this.#plan.target.rawWindowsPath, dataStr: delta.dataStr });
+      this.#contextAdvanced = true; await this.#bindings.continuePlannedContext(); await this.#current(true);
+      const pause = await this.#nextPoint("controller");
+      const frame = decodeArray(await this.#send({ phase: "via-main-request-frame", method: "Debugger.evaluateOnCallFrame", params: { callFrameId: pause.frameId,
+        expression: SOURCE_FRAMES.controller, objectGroup: GROUP, silent: true, returnByValue: false, generatePreview: false, throwOnSideEffect: true, includeCommandLineAPI: false } }, true), 8);
+      const controller = decodeArray(await this.#send({ phase: "via-main-request-controller", method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: frame,
+        functionDeclaration: SOURCE_CALLS.controller.program, arguments: [{ objectId: original.context }, { value: expected }], returnByValue: false } }, true), 12);
+      this.#bindings.requireOriginalControllerBody(); await requireOriginalCurrentPcbViaSaveProjection(this.#projection, this.#owner, this.#plan); await this.#current(true);
+      const held: CurrentPcbViaHeldMainController = Object.freeze({ schema: "private.current-pcb-via-held-main-controller.v1", originalDriverContextJoined: true,
+        actualRequestBodyJoined: true, mainActorClockVerified: false, selectedSqlAuthorized: false });
+      this.#controller = held; controllers.set(held, Object.freeze({ observer: this, controller })); return held;
+    } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
+  }
+  public async requireOriginalController(packet: CurrentPcbViaHeldMainController): Promise<void> {
+    need(this.#controller === packet && controllers.get(packet)?.observer === this, "ORIGINAL_CONTROLLER"); this.#bindings.requireOriginalControllerBody(); await this.#current(true);
   }
 }

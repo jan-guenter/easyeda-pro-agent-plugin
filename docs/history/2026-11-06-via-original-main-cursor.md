@@ -141,3 +141,27 @@ Nineteen focused finite-grammar, production-cursor, observer and native-fragment
 checks passed, including original pending-grant consumption, lost acknowledgment
 and generator idempotence. Full TypeScript and strict type-aware lint passed.
 No native execution, helper generation, pin or bundle refresh was performed.
+
+## Exact body at the original history controller
+
+The Via cursor now consumes a second private pending grant to advance its joined
+context to the original history controller. The fixed controller program checks
+the same req/res/context, selected project and branch, path header, native path,
+request body, actor function and original native Date references. The backend
+retains the actual context-join and controller replies independently before the
+observer can return a body-joined packet. L3 and all design SQL remain paused.
+
+The context breakpoint is now armed only after the selected history POST is
+held at the persistent driver fence. It is removed after the exact req/res join,
+before routing continues. Prearming that common callback point would also trap
+GETs. Controller/PB points remain armed from setup; each request continuation
+requires its own next source point. Qualified reads are serviced on the same
+retained cursor before body binding and while waiting for the controller, with
+every original read resume consumed exactly once. The readonly service has its
+own retained Promise, so concurrent requests await it without stealing a poll.
+
+The focused production cursor covers a GET before the history request and a GET
+after the selected context is removed, then requires the exact original body at
+the controller. Twelve cursor/observer regressions, full TypeScript and strict
+type-aware lint passed. Budgets and the immutable observation/shared SQL resume
+grammars are unchanged. Save, actor-clock and SQL completion remain unqualified.
