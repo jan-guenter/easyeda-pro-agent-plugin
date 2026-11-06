@@ -50,3 +50,39 @@ import record retains the exact terminal observations. No resource from that
 generation remains available for adoption. Independent source review of the
 clock-refused data path found no blocking issue and confirmed that both full
 initial models and the original fresh file/no-app boundaries remain required.
+
+## Fresh Windows-clock qualification passed
+
+The retained manager selected the separately frozen development payload
+`ce0427f2dc613fdd43426b8c059177fa40524c2e`, version
+`0.3.0+codex.20261106064341`. All2898 tracked plugin files and59,452,821bytes
+matched committed bytes and exact modes. Its inventory SHA256 was
+`d132533cfa13e94d0ba4951298971c265e885f568f60ef3553a25309c7867282`.
+Original serving-process and pinned Node24 admission completed before data
+acquisition. No official installation or Codex restart was used.
+
+One new read-only qualification of the original unchanged generated file
+passed. The genuine Windows file handle supplied creation time1793944870969
+and modification time1793944871155milliseconds since epoch. Both complete
+initial SQL/source models passed, including the unique60minute local offset.
+The logical inventory SHA256 was
+`2b9d3dc964036d02a10b7943e7ea2cad07670e7132724217d967ef068326c7b6`;
+the complete native source SHA256 was
+`aa7d337d26239e6cae4a87117abc3e4ec63808de86df613095e1c291e3fffda0`.
+The original raw source hash remained the59b1db78 value above. The failed
+generation5 capture and null target were preserved, with no import replay.
+
+The new file/watch transport exited0 with acknowledged handle closure and a
+drained unchanged watch. All Linux descriptors and the never-launched proof
+helper were released. Six no-application boundaries were observed; no
+continuous global absence guarantee is claimed. The qualification dispatched
+no app, bridge, edit or Save and attached no SQLite reader to the native file.
+Its complete result artifact was8264bytes, SHA256
+`dae318816b1e641772af2f7cdb206dd0dcfdfc0fa14e74e1e2a6fb293e6d16f9`.
+
+The original data reservation was then released and its newly issued opaque
+PCB data token staged once. A separately born spatial reader launch was
+acknowledged. Registration, actual PCB opening, spatial effects and final closed
+reader invariance remain separate work. This positive case qualifies fresh
+data reuse; it does not validate the separate new direct-import v2 metadata
+capture, accept an earlier owner or enable design writing.
