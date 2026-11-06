@@ -12,5 +12,9 @@ void test("combined Via and schematic native generation stays idempotent with on
     assert.equal(first.split(`        '${action}' {`).length, 2);
   }
   assert.ok(first.indexOf("        'schematic-display-native' {") < first.indexOf("        'pcb-via-main-step' {"));
+  const start = first.indexOf("        'schematic-display-native' {"), stop = first.indexOf("        'pcb-via-main-step' {");
+  const schematicBlock = first.slice(start, stop);
+  const interleaved = first.replace(schematicBlock, "").replace("        'pcb-via-main-observe' {", `${schematicBlock}        'pcb-via-main-observe' {`);
+  assert.equal(schematic(via(interleaved)), first);
   assert.throws(() => schematic(first.replace("        'schematic-display-native' {", "        'schematic-display-native' {\n        'schematic-display-native' {")), /SCHEMATIC_DISPLAY_NATIVE_DISPATCH_CHANGED/u);
 });

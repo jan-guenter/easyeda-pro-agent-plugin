@@ -18,6 +18,11 @@ const dispatch = String.raw`        'pcb-via-main-step' {
 export function applyCurrentPcbViaMainStepNativeFragment(input: string): string {
   let source = one(input, "bool pcbViaWrite209,viaAbortAttempted,viaRegistrationRemoved,viaConstructionComplete;", `${native}bool pcbViaWrite209,viaAbortAttempted,viaRegistrationRemoved,viaConstructionComplete;`);
   source = one(source, 'case "pcb-via-main-observe":', 'case "pcb-via-main-observe":case "pcb-via-main-step":');
+  const ownDispatch = "        'pcb-via-main-step' {";
+  if (source.includes(ownDispatch)) {
+    if (source.split(ownDispatch).length !== 2 || source.split(dispatch).length !== 2) { throw new Error("PCB_VIA_MAIN_STEP_NATIVE_DISPATCH_CHANGED"); }
+    source = source.replace(dispatch, "");
+  }
   source = one(source, "        'pcb-via-main-observe' {", `${dispatch}        'pcb-via-main-observe' {`);
   source = one(source, "$PcbViaWrite209 -and $request.action -ceq 'pcb-via-main-observe'", "$PcbViaWrite209 -and @('pcb-via-main-observe','pcb-via-main-step') -ccontains $request.action");
   return source;
