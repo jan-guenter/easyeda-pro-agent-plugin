@@ -10,7 +10,7 @@ import { decodeCurrentPcb209WorkerCallbackFunction, decodeCurrentPcb209WorkerCal
 import { captureCurrentProjectStructureCompletionReply } from "./current-project-structure-completion-protocol.ts";
 import { matchesCurrentProjectSaveStructureIntent, requireCurrentProjectPrehistoryBodyIntent, requireCurrentProjectPrehistoryPublication } from "./current-project-save-structure-prehistory.ts";
 import type { CurrentProjectStructureBodyReservation, CurrentProjectStructureMainPublication } from "./current-project-save-structure-prehistory.ts";
-import type { CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureEvent, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
+import type { CurrentGeneratedProjectSaveStructureBindings, CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureEvent, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_CALLS as CALLS, CURRENT_PROJECT_SAVE_STRUCTURE_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS as FRAME_FLAGS,
   CURRENT_PROJECT_SAVE_STRUCTURE_GROUP as GROUP, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES, CURRENT_PROJECT_SAVE_STRUCTURE_STARTUP_CONDITION as STARTUP_CONDITION,
   qualifyCurrentProjectSaveStructureSource, validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
@@ -242,7 +242,16 @@ export class CurrentProjectSaveStructureObserver {
   public producerConstruction(): CurrentProjectSaveProducerConstruction { need(this.#constructed && this.#producerConstruction !== null, "PRODUCER_CONSTRUCTION_REQUIRED"); return this.#producerConstruction; }
   /** Start concurrently with original project opening, after arm returns.
    * The original controller waits its own source-resume acknowledgement. */
-  public async observeConstruction(): Promise<void> { need(this.#armed && !this.#busy && !this.#constructionAttempted, "CONSTRUCTION_CONSUMED"); this.#constructionAttempted = true; this.#busy = true;
+  public observeConstruction(): Promise<void> { return this.#observeConstruction(false); }
+  /** Separate readonly hold after the original constructor/pristine joins.
+   * No EP/startup/Cache call or bootstrap continuation is granted here. */
+  public observeConstructionBeforeBootstrap(): Promise<void> { return this.#observeConstruction(true); }
+  #generatedPrepared(): CurrentGeneratedProjectSaveStructureBindings["prepared"] {
+    const prepared = this.#binding.prepared;
+    need(prepared.profile !== "private.current-footprint-forward-saved-checkpoint.v1", "GENERATED_PUBLICATION_PROFILE_REQUIRED");
+    return prepared;
+  }
+  async #observeConstruction(holdBootstrap: boolean): Promise<void> { need(this.#armed && !this.#busy && !this.#constructionAttempted, "CONSTRUCTION_CONSUMED"); this.#constructionAttempted = true; this.#busy = true;
     try { await this.#captureProducerConstructors(); await this.#nextPause("bootstrap"); await this.#frame("bootstrap"); const frameArray = this.#frameArrays.get("bootstrap"); need(frameArray !== undefined, "ORIGINAL_BOOTSTRAP_ARRAY"); const tuple = await this.#array(await this.#call("bootstrap", frameArray, [], false), 3);
       const mode = await this.#frame("mode"); need(mode.get("0")?.type === "boolean" && mode.get("0")?.value === false, "ORIGINAL_NONPRIVATE_MODE_REQUIRED"); this.#nonprivateModeObserved = true;
       this.#project = object(tuple.get("0")); this.#uploadWrapper = decodeCurrentPcb209WorkerProducerFunction({ result: tuple.get("1") }, "serial"); this.#structureWrapper = decodeCurrentPcb209WorkerProducerFunction({ result: tuple.get("2") }, "serial");
@@ -250,7 +259,7 @@ export class CurrentProjectSaveStructureObserver {
       this.#uploadCallback = decodeCurrentPcb209WorkerCallbackFunction(await this.#call("callback", upload[0], [], false), "uploadStructure"); decodeCurrentPcb209WorkerCallbackScopeList(await this.#properties(this.#uploadCallback), this.#binding.scriptId, "uploadStructure");
       this.#debounce = decodeCurrentPcb209WorkerProducerFunction(await this.#call("callback", structure[0], [], false), "debounce"); const scopes = await this.#scope(this.#debounce, "debounce"); need(scopes[1] !== undefined, "DEBOUNCE_PARAMETERS");
       this.#structureCallback = decodeCurrentPcb209WorkerCallbackFunction(await this.#call("callback", scopes[1], [], false), "structure"); decodeCurrentPcb209WorkerCallbackScopeList(await this.#properties(this.#structureCallback), this.#binding.scriptId, "structure");
-      await this.#pristine(); await this.#joinProducerConstructors(); await this.#removeProducerConstructorPoints(); this.#constructed = true; await this.#resume("bootstrap");
+      await this.#pristine(); await this.#joinProducerConstructors(); await this.#removeProducerConstructorPoints(); this.#constructed = true; if (!holdBootstrap) { this.#generatedPrepared(); await this.#resume("bootstrap"); }
     } catch (error) { this.#failure(error); throw error; } finally { this.#busy = false; }
   }
   async #serviceStartup(role: Site): Promise<void> {
@@ -259,7 +268,7 @@ export class CurrentProjectSaveStructureObserver {
     try {
       this.#binding.assertStartupPending();
       if (role === "startupEntry") {
-        need(this.#startupActive === null, "STARTUP_CALLBACK_ACTIVE"); const count = this.#binding.prepared.history.documents.reduce((total, document) => total + document.records.length, 0);
+        need(this.#startupActive === null, "STARTUP_CALLBACK_ACTIVE"); const count = this.#generatedPrepared().history.documents.reduce((total, document) => total + document.records.length, 0);
         need(Number.isSafeInteger(count) && count >= 1 && count <= 7 && this.#startupCalls < count, "STARTUP_SOURCE_RECORD_BOUND"); this.#startupCalls += 1;
         await this.#frame(role); await this.#frame("startupCaller"); const caller = this.#frameArrays.get("startupCaller"), entry = this.#frameArrays.get(role);
         const scopes = await this.#scope(this.#uploadWrapper, "serial"); need(entry !== undefined && caller !== undefined && scopes[0] !== undefined, "STARTUP_ORIGINAL_FRAMES");
@@ -287,7 +296,7 @@ export class CurrentProjectSaveStructureObserver {
   /** Start after construction, concurrently with the original opening. It
    * services only proved startup no-publication returns before retaining the
    * one actual Save structure packet. A packet requires the original Save role. */
-  public async observePacket(): Promise<CurrentProjectSaveStructurePacket> { need(this.#constructed && !this.#busy && !this.#packetAttempted, "PACKET_CONSUMED"); this.#packetAttempted = true; this.#busy = true;
+  public async observePacket(): Promise<CurrentProjectSaveStructurePacket> { this.#generatedPrepared(); need(this.#constructed && !this.#busy && !this.#packetAttempted, "PACKET_CONSUMED"); this.#packetAttempted = true; this.#busy = true;
     try { await this.#nextPause("packet"); this.#binding.assertOperationPending(); need(this.#startupActive === null && this.#startupOutstanding === 0, "STARTUP_DRAIN_REQUIRED"); const frame = await this.#frame("packet"); need(this.#project !== null, "PROJECT"); await this.#true("same", object(frame.get("0")), [this.#project]);
       this.#packet = object(frame.get("1")); this.#task = object(frame.get("2")); await this.#queues(); const timer = await this.#frame("timer"); need(this.#structureCallback !== null && this.#resolver !== null && timer.get("2")?.value === this.#timer, "ORIGINAL_TIMER_ID");
       await this.#true("same", fn(timer.get("0")), [this.#structureCallback]); await this.#true("same", fn(timer.get("1")), [this.#resolver]); const data = await this.#array(await this.#call("packet", this.#packet, [this.#project, this.#task], false), 2);
@@ -297,8 +306,8 @@ export class CurrentProjectSaveStructureObserver {
   }
   public async releasePacket(packet: CurrentProjectSaveStructurePacket, completion: CurrentProjectHistorySqlCompletion): Promise<void> {
     need(!this.#busy && !this.#releaseAttempted && this.#held === packet && this.#value !== null && this.#pause?.role === "packet", "HELD_PACKET"); this.#releaseAttempted = true; this.#busy = true;
-    try { const consume = consumeFunction.parse(Reflect.get(native, "consumeOriginalCurrentProjectHistorySqlCompletion")); const value = completionSchema.parse(consume(completion, this.#owner, this.#operation));
-      need(matchesCurrentProjectSaveStructureIntent(this.#binding.prepared, this.#value, value), "EXACT_HISTORY_AND_METADATA_INTENT");
+    try { const prepared = this.#generatedPrepared(); const consume = consumeFunction.parse(Reflect.get(native, "consumeOriginalCurrentProjectHistorySqlCompletion")); const value = completionSchema.parse(consume(completion, this.#owner, this.#operation));
+      need(matchesCurrentProjectSaveStructureIntent(prepared, this.#value, value), "EXACT_HISTORY_AND_METADATA_INTENT");
       this.#history = completion; await this.#current(); this.#binding.assertOperationPending(); await this.#resume("packet");
     } catch (error) { this.#failure(error); throw error; } finally { this.#busy = false; }
   }
@@ -306,8 +315,8 @@ export class CurrentProjectSaveStructureObserver {
    * packet/send; actual main response publication is required for its tail. */
   public async releasePrehistoryPacket(packet: CurrentProjectSaveStructurePacket, reservation: CurrentProjectStructureBodyReservation): Promise<void> {
     need(!this.#busy && !this.#releaseAttempted && this.#held === packet && this.#value !== null && this.#pause?.role === "packet", "HELD_PACKET"); this.#releaseAttempted = true; this.#busy = true;
-    try { const consume = consumeBodyFunction.parse(Reflect.get(native, "consumeOriginalCurrentProjectStructureBodyReservation")); const value = consume(reservation, this.#owner, this.#operation);
-      requireCurrentProjectPrehistoryBodyIntent(this.#binding.prepared, this.#value, value);
+    try { const prepared = this.#generatedPrepared(); const consume = consumeBodyFunction.parse(Reflect.get(native, "consumeOriginalCurrentProjectStructureBodyReservation")); const value = consume(reservation, this.#owner, this.#operation);
+      requireCurrentProjectPrehistoryBodyIntent(prepared, this.#value, value);
       this.#bodyReservation = reservation; await this.#current(); this.#binding.assertOperationPending(); await this.#resume("packet");
     } catch (error) { this.#failure(error); throw error; } finally { this.#busy = false; }
   }

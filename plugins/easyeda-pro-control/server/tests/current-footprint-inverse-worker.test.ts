@@ -26,7 +26,7 @@ void test("inverse finite frames retain the original pair and refuse final proje
     assert.throws(() => currentFootprintInverseWorkerNativeFrame(bytes({ ...frame, savedReadbackWorker: true }), command, pair));
   }
   assert.throws(() => currentFootprintInverseWorkerWire({ phase: "saved-load-resume", role: "project", method: "Debugger.resume", params: {} }, 40, pair));
-  assert.equal(PROFILE.renderer.total, 64); assert.equal(PROFILE.renderer.generic, 35);
+  assert.equal(PROFILE.renderer.sourceHeldPrefix, 64); assert.equal(PROFILE.renderer.generic, 35);
   assert.equal(PROFILE.controls, Object.values(ACTIONS).reduce((sum, count) => sum + count, 0));
   assert.equal(ACTIONS["main-reprove"], 2 * PROFILE.main.total + 2 * PROFILE.main.fenceNormal + 2 * PROFILE.main.polls + PROFILE.renderer.polls + PROFILE.renderer.total + 7);
   assert.equal(PROFILE.deleteInvocationAuthorized, false);
@@ -36,7 +36,7 @@ void test("inverse original cursor refuses a foreign or running paired worker be
     let failed = false, polls = 0, requests = 0;
     const controller = new CurrentFootprintInverseWorkerController(Object.freeze({ parentSessionId: "parent", projectUuid, windowTabId,
       bindWorker: () => { requests += 1; return Promise.resolve(); }, request: () => { requests += 1; return Promise.resolve({}); },
-      poll: () => { polls += 1; return Promise.resolve(); }, assertCurrent: () => Promise.resolve(), projectSourceHeld: () => Promise.resolve(), fail: () => { failed = true; } }));
+      poll: () => { polls += 1; return Promise.resolve(); }, assertCurrent: () => Promise.resolve(), projectSourceHeld: () => Promise.resolve(), constructionRequest: () => Promise.reject(new Error("not an issued constructor")), constructionHeld: () => Promise.reject(new Error("not an issued constructor")), fail: () => { failed = true; } }));
     const waiter = controller.whenSourceHeld();
     controller.observeEvent({ method: "Target.attachedToTarget", params: { sessionId: pair.browserSessionId, waitingForDebugger: true,
       targetInfo: { type: "worker", targetId: pair.targetId, title: pair.title, url, attached: true } } });

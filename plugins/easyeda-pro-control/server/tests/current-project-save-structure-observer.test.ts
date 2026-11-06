@@ -197,3 +197,11 @@ void test("original PRIVATE mode refuses before EP and cannot resume its bootstr
   await assert.rejects(f.observer.observeConstruction(), /ORIGINAL_NONPRIVATE_MODE_REQUIRED/u); assert.equal(f.resumes.includes("bootstrap"), false); assert.equal(f.consumed(), false);
   const before = [...f.resumes]; f.exit(); await f.observer.cleanup(); assert.deepEqual(f.resumes, before);
 });
+
+void test("explicit original constructor hold never resumes bootstrap or starts publication", async () => {
+  const f = await fixture(); await f.observer.arm(); await f.observer.observeConstructionBeforeBootstrap();
+  assert.deepEqual(f.resumes, [...SEQUENCE]); const data = f.observer.producerConstruction();
+  assert.equal(data.originalSevenConstructorContinuationsObserved, true); assert.equal(data.completeUploadFrontierVerified, false);
+  await assert.rejects(f.observer.observeConstruction()); assert.equal(f.resumes.at(-1), "producerProject");
+  const before = [...f.resumes]; f.exit(); await f.observer.cleanup(); assert.deepEqual(f.resumes, before);
+});

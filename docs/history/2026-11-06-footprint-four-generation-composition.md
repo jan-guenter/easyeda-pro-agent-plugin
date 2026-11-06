@@ -508,3 +508,66 @@ complete source-owned producer/head frontier, the actual delete/main request
 and native SQL completion, and the fourth fresh absence/readback owner. All
 writer/persistence/reopen acceptance remains false until those original joins
 and full closed-file SQL proofs complete.
+
+### Original inverse constructor custody before EP
+
+The inverse source-held callback now has a callable maintained continuation:
+`armFootprintInverseConstruction(originalWorkerOrigin)` arms the existing fixed
+source/constructor collector on that same worker. The shared origin union has a
+separate inverse brand and genuine opaque forward-saved checkpoint. The old
+Via/SCH generated prepared interface and generated expectations stay separate.
+Generated startup, packet, body and history admission refuse the inverse profile
+before consuming any body/history token. No generated target is synthesized.
+
+The original inverse controller removes only its captured instrumentation
+breakpoint, continues that one source pause, observes the seven original
+constructor callbacks and retains their actual receivers and wrappers. It
+checks the original full source, callee/closure metadata, nonprivate mode and
+pristine serial/debounce/buffer state, then stops at the actual bootstrap pause
+before EP. Only the constructor roles can resume. Bootstrap, packet and
+publication resumes remain refused in the controller, Core and native stage.
+The explicit shared `observeConstructionBeforeBootstrap()` leaves older
+`observeConstruction()` behavior unchanged for genuine generated inputs.
+
+`observeFootprintInverseConstruction()` queues this work on the same original
+pump and returns a separately issued opaque construction receipt.
+`requireOriginalCurrentFootprintInverseConstruction(receipt, owner, prepared)`
+requires the exact original references and the still-held bootstrap; copied
+markers or old origins cannot create custody. Source-held worker origins are
+revoked before a source resume is attempted. Normal work and original allocation
+attempts stay consumed after failure; queued work rejects on cursor revocation.
+Original breakpoint allocation replies reach the retained allocation callback
+before post-reply reproofs, so a later refusal does not pretend that no native
+breakpoint was allocated. Original Job termination remains required for unknown
+or partial cleanup.
+
+Each fixed call/frame helper is correlated to its actual empty-URL script event
+and its complete source is read and checked. An owned inert paused-thread Node
+Inspector test confirms that both repeated fixed `Runtime.callFunctionOn` and
+`Debugger.evaluateOnCallFrame` operations emit exactly the declaration/expression
+expected here without a nested pause. Unknown helper scripts refuse. There is
+no broad empty-URL exception. Original navigation can fulfill before worker
+readiness: a retained explicit observation then owns the one progress loop,
+without repeating registration or navigation.
+
+The new purpose reserves the prior64-command source prefix plus615 constructor
+commands:314 existing shared normal/cleanup slots, at most299 helper-source
+reads (one per shared normal command), and2 initial source continuations. Its
+renderer ceiling is679, main ceiling remains941, and per-action/aggregate
+controls are126,423 including the separate68 held-event and1 constructor-bind
+controls. The full helper emits2,073,663 bytes and the C# body1,886,502 bytes in
+this source composition, under the unchanged2MiB limits. Two-pass generation,
+complete emitted C#5/.NET10 Linux compilation, inverse and shared fixed-codec
+smokes,22 focused factory/stream/grammar/Inspector/hold checks, full types and
+strict changed-file lint pass. No tracked helper/pins/bundles or Windows/app/MCP
+calls changed. The SCH packing prerequisite is already in canonical1909b70f;
+its local isolated packing-only equivalent isd95e50c3.
+
+This provides original constructor custody, not the complete inverse writer.
+Own initial-cache data must account for the literal `FOOTPRINT` cache group
+combining document UUIDs, noninitial history heads/chunk suffixes and complete
+saved native source. The generated initial PCB/SCH sole-head plan cannot be
+reused as authority. Producer roots, startup/cache/sync completion, loaded copied
+model eligibility, the actual single-clock delete/main SQL wave and fourth
+fresh absence generation remain required. Continuous producer exclusion,
+complete frontier, delete, Save and four-generation acceptance remain false.

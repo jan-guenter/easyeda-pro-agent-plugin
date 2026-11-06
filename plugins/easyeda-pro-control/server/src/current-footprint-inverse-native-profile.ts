@@ -1,5 +1,6 @@
 /** Separate third-generation source-held prefix. Original registration and
  * discovery are admitted; producer/delete/Save continuations remain closed. */
+import { CURRENT_FOOTPRINT_INVERSE_CONSTRUCTION_REQUESTS as CONSTRUCTION } from "./current-footprint-inverse-construction-protocol.ts";
 import { CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_REQUESTS as REGISTRATION, CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITE_NAMES as REGISTRATION_SITES } from "./current-saved-project-registration-config-protocol.ts";
 import { CURRENT_PCB_VIA_SAVED_LOAD_BOOTSTRAP_REQUESTS as WORKER } from "./current-pcb-via-saved-load-bootstrap-protocol.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUESTS as FENCE } from "./current-selected-file-main-sql-fence-protocol.ts";
@@ -9,7 +10,8 @@ export const CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE = "footprint-inverse209";
 const mainCleanup = MAIN.cleanupRequests, mainNormal = MAIN.normalRequests + FENCE.normal + REGISTRATION;
 const discovery = 16, emptyGuard = 9 + 1, parent = 3 + 1, projectOpening = 9 + 1, registration = 2;
 const generic = discovery + 2 * 8 + 3;
-const renderer = discovery + emptyGuard + registration + parent + WORKER.totalUntilProjectHeld + projectOpening;
+const sourceHeldPrefix = discovery + emptyGuard + registration + parent + WORKER.totalUntilProjectHeld + projectOpening;
+const renderer = sourceHeldPrefix + CONSTRUCTION.cdpRequests;
 // One finite renderer poll lane, paired with the existing original-main poll
 // Envelope. A consumed failure does not replenish this reservation.
 const rendererPolls = MAIN.totalPolls;
@@ -26,7 +28,7 @@ export const CURRENT_FOOTPRINT_INVERSE_ACTION_LIMITS = Object.freeze({
   "main-attach": 1, "main-reprove": mainReproofs, "main-send": mainNormal + mainCleanup, "main-poll": MAIN.totalPolls,
   "footprint-inverse-abort": 1, "footprint-inverse-preflight": 1, "footprint-inverse-register": 1,
   "footprint-inverse-actors": 3, "footprint-inverse-parent": 1, "footprint-inverse-worker-bind": 1,
-  "footprint-inverse-worker": WORKER.totalUntilProjectHeld, "footprint-inverse-source-bind": 1, "footprint-inverse-project": 1,
+  "footprint-inverse-worker": WORKER.totalUntilProjectHeld, "footprint-inverse-construction": CONSTRUCTION.controls, "footprint-inverse-source-bind": 1, "footprint-inverse-project": 1,
 });
 const controls = Object.values(CURRENT_FOOTPRINT_INVERSE_ACTION_LIMITS).reduce((sum, limit) => sum + limit, 0);
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE = Object.freeze({
@@ -34,7 +36,7 @@ export const CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE = Object.freeze({
   main: Object.freeze({ constructionNormal: MAIN.normalRequests, fenceNormal: FENCE.normal,
     registrationNormal: REGISTRATION, normal: mainNormal, cleanup: mainCleanup, total: mainNormal + mainCleanup,
     reproofs: mainReproofs, polls: MAIN.totalPolls }),
-  renderer: Object.freeze({ discovery, emptyGuard, generic, registration, parent, projectOpening, sourceHeldBootstrap: WORKER.totalUntilProjectHeld, total: renderer, polls: rendererPolls }), controls,
+  renderer: Object.freeze({ discovery, emptyGuard, generic, registration, parent, projectOpening, sourceHeldPrefix, construction: CONSTRUCTION.cdpRequests, sourceHeldBootstrap: WORKER.totalUntilProjectHeld, total: renderer, polls: rendererPolls }), controls,
   completeInverseReserved: false, deleteInvocationAuthorized: false, executionAuthorized: false, saveAuthorized: false,
 });
 export const CURRENT_FOOTPRINT_INVERSE_DISCOVERY_METHODS = Object.freeze(["Browser.getVersion", "Target.getTargets", "Target.attachToTarget", "Page.enable", "Page.getFrameTree",

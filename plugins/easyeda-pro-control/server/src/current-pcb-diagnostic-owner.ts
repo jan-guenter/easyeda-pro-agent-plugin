@@ -1,8 +1,11 @@
-/* oxlint-disable max-classes-per-file -- Four fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
 import { CurrentPcbViaLocalUploadCursor } from "./current-pcb-via-local-upload-cursor.ts";
 import type { CurrentPcbViaLocalUploadHeld } from "./current-pcb-via-local-upload-cursor.ts";
 import type { CurrentPcbViaLocalUploadCommand } from "./current-pcb-via-local-upload-protocol.ts";
 import { CURRENT_PCB_VIA_LOCAL_UPLOAD_ROLES } from "./current-pcb-via-local-upload-protocol.ts";
+import { currentFootprintInverseConstructionNativeFrame, validateCurrentFootprintInverseConstructionCommand } from "./current-footprint-inverse-construction-protocol.ts";
+import type { CurrentFootprintInverseConstructionCommand } from "./current-footprint-inverse-construction-protocol.ts";
+import type { CurrentProjectSaveProducerConstruction, CurrentProjectSaveStructureObserver } from "./current-project-save-structure-observer.ts";
+import { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS, decodeCurrentProjectSaveProducerNonprivateMode, validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import type { CurrentGeneratedStartupProgress } from "./current-generated-startup-progress.ts";
 import { CurrentGeneratedPeriodicSyncCursor } from "./current-generated-periodic-sync-cursor.ts";
 import type { CurrentGeneratedPeriodicSyncHeld } from "./current-generated-periodic-sync-cursor.ts";
@@ -21,7 +24,7 @@ import type { CurrentGeneratedInitialBranchDataPlan } from "./current-generated-
 import type { CurrentPcbViaSavedLoadBootstrapCommand } from "./current-pcb-via-saved-load-bootstrap-protocol.ts";
 import { CurrentFootprintInverseWorkerController } from "./current-footprint-inverse-worker-controller.ts";
 import type { CurrentFootprintInverseWorkerHeld, CurrentFootprintInverseWorkerPair } from "./current-footprint-inverse-worker-controller.ts";
-import type { CurrentFootprintInverseWorkerBindings, CurrentFootprintInverseWorkerOrigin } from "./current-footprint-inverse-worker-origin.ts";
+import type { CurrentFootprintInverseConstruction, CurrentFootprintInverseWorkerBindings, CurrentFootprintInverseWorkerOrigin } from "./current-footprint-inverse-worker-origin.ts";
 import { currentFootprintInverseActorNativeFrame, currentFootprintInverseParentNativeFrame, currentFootprintInverseWorkerNativeFrame } from "./current-footprint-inverse-worker-wire.ts";
 import type { CurrentFootprintInverseActorStage } from "./current-footprint-inverse-worker-wire.ts";
 import { CURRENT_FOOTPRINT_INVERSE_REGISTRATION_FUNCTION, currentFootprintInversePreflightNativeFrame, currentFootprintInverseProjectNativeFrame, currentFootprintInverseRegistrationNativeFrame, decodeCurrentFootprintInverseRegistrationReply } from "./current-footprint-inverse-registration.ts";
@@ -97,8 +100,7 @@ import type { CurrentSchematicDisplayAccessorBindings, CurrentSchematicDisplayAc
 import { validateCurrentSchematicDisplayAccessorCommand } from "./current-schematic-display-accessor-protocol.ts";
 import { currentGeneratedProjectHistorySqlBaseline } from "./current-generated-project-history-sql-baseline.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_SITES } from "./current-project-save-structure-source.ts";
-import { decodeCurrentProjectSaveProducerNonprivateMode, validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
-import type { CurrentProjectHistorySqlCompletion, CurrentProjectHistorySqlCompletionValue, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
+import type { CurrentFootprintInverseStructureBindings, CurrentFootprintInverseStructureOrigin, CurrentProjectHistorySqlCompletion, CurrentProjectHistorySqlCompletionValue, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
 import type { CurrentSchematicDisplayClockBindings, CurrentSchematicDisplayClockOrigin, CurrentSchematicDisplayClockRealm } from "./current-schematic-display-clock-origin.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_CLOCK_SITES, validateCurrentSchematicDisplayClockCommand } from "./current-schematic-display-clock-protocol.ts";
 import type { CurrentSchematicDisplayClockCommand } from "./current-schematic-display-clock-protocol.ts";
@@ -1022,6 +1024,12 @@ export function requireOriginalCurrentPcbViaSaveWorkerOrigin(origin: CurrentPcbV
   if (original === undefined || original.owner !== owner || original.plan !== plan) { throw error("PCB_VIA_SAVE_WORKER_ORIGINAL"); }
   requireViaPlan(owner, plan); original.assertOriginal(); return original.bindings;
 }
+const footprintInverseConstructions = new WeakMap<CurrentFootprintInverseConstruction, Readonly<{ owner: CurrentFootprintInverseNativeOwner; prepared: CurrentFootprintForwardSavedCheckpoint; data: CurrentProjectSaveProducerConstruction; original: () => void }>>();
+export function requireOriginalCurrentFootprintInverseConstruction(token: CurrentFootprintInverseConstruction, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): CurrentProjectSaveProducerConstruction {
+  const original = footprintInverseConstructions.get(token);
+  if (original === undefined || original.owner !== owner || original.prepared !== prepared) { throw error("FOOTPRINT_INVERSE_CONSTRUCTION_ORIGINAL"); }
+  assertOriginalCurrentFootprintInverseNativeOwner(owner); original.original(); return original.data;
+}
 const footprintInverseWorkers = new WeakMap<CurrentFootprintInverseWorkerOrigin, Readonly<{ owner: CurrentFootprintInverseNativeOwner; prepared: CurrentFootprintForwardSavedCheckpoint; bindings: CurrentFootprintInverseWorkerBindings; original: () => void }>>();
 export function requireOriginalCurrentFootprintInverseWorkerOrigin(origin: CurrentFootprintInverseWorkerOrigin, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): CurrentFootprintInverseWorkerBindings {
   const held = footprintInverseWorkers.get(origin);
@@ -1618,6 +1626,13 @@ class CurrentPcbRetainedOwnerCore {
   #savedReadbackBackup: SavedReadbackCacheBackupHeld | null = null;
   #savedReadbackInvalidationPromise: Promise<CurrentPcbViaSavedCacheAbsence> | null = null;
   #savedReadbackInvalidation: CurrentPcbViaSavedCacheInvalidationLedger | null = null;
+  readonly #inverseNavigationSettlement = Promise.withResolvers<boolean>(); #inverseNavigationSettled = false;
+  #inverseSourceObservation: Promise<CurrentFootprintInverseWorkerHeld> | null = null;
+  #inverseSourceStarted = false; #inverseConstructionArmAttempted = false;
+  #inverseConstructionObserver: CurrentProjectSaveStructureObserver | null = null; #inverseConstructionOrigin: CurrentFootprintInverseStructureOrigin | null = null;
+  #inverseConstructionCommand: CurrentFootprintInverseConstructionCommand | null = null;
+  #inverseConstructionPromise: Promise<CurrentFootprintInverseConstruction> | null = null;
+  #inverseConstructionReceivers: Readonly<{ project: string; wrapper: string; callback: string }> | null = null;
   #inverseEarlyActors: CurrentPcbViaSavedEarlyActors | null = null; #inverseActorStage: CurrentFootprintInverseActorStage | null = null; #inverseActorAttempted = false;
   #inverseParentPending = false; #inverseWorkerController: CurrentFootprintInverseWorkerController | null = null; #inverseWorkerPair: CurrentFootprintInverseWorkerPair | null = null;
   #inverseWorkerCommand: CurrentPcbViaSavedLoadBootstrapCommand | null = null; #inverseProjectDispatch: Promise<RecordValue> | null = null;
@@ -6874,12 +6889,30 @@ class CurrentPcbRetainedOwnerCore {
           try { const reply = await this.#transfer(() => pipe.observeInverseWorker(command)); original(); return reply; } finally { this.#inverseWorkerCommand = null; }
         }, poll: async (): Promise<void> => { original(); await runner.pumpSelectedSqlFence(); original(); await this.#pollRenderer(); original(); },
         assertCurrent: async (): Promise<void> => { original(); await this.#verify(); original(); },
+        constructionRequest: async (input: CurrentFootprintInverseConstructionCommand, retain?: (reply: unknown) => void): Promise<unknown> => {
+          const command = validateCurrentFootprintInverseConstructionCommand(input), selected = original();
+          if (this.#inverseConstructionObserver === null || this.#inverseConstructionCommand !== null || this.#inverseWorkerCommand !== null) { throw error("FOOTPRINT_INVERSE_CONSTRUCTION_REQUEST"); }
+          if (command.phase === "inverse-construction-start") { if (this.#inverseSourceStarted) { throw error("FOOTPRINT_INVERSE_SOURCE_START_CONSUMED"); } this.#inverseSourceStarted = true; }
+          if (command.method === "Runtime.callFunctionOn" || command.method === "Debugger.evaluateOnCallFrame") { selected.expectConstructionHelper(command.method === "Runtime.callFunctionOn" ? `(${command.params.functionDeclaration})` : command.params.expression); }
+          if (retain !== undefined && (command.phase !== "project-save-structure-arm" || typeof retain !== "function" || types.isProxy(retain))) { throw error("FOOTPRINT_INVERSE_CONSTRUCTION_RETAIN"); }
+          this.#inverseConstructionCommand = command;
+          let result: RecordValue;
+          try { result = await this.#transfer(async (): Promise<RecordValue> => { const actual = await pipe.observeInverseConstruction(command);
+            if (retain !== undefined) { Reflect.apply(retain, undefined, [actual]); } return actual;
+          }); original(); } finally { this.#inverseConstructionCommand = null; }
+          if (command.method === "Runtime.callFunctionOn" || command.method === "Debugger.evaluateOnCallFrame") { await selected.qualifyConstructionHelper(command.method === "Runtime.callFunctionOn" ? `(${command.params.functionDeclaration})` : command.params.expression); original(); }
+          return result;
+        }, constructionHeld: async (role: Parameters<CurrentFootprintInverseWorkerController["reserveConstructionResume"]>[0], event: DiagnosticEvent): Promise<void> => { original(); const pair = this.#inverseWorkerPair;
+          if (pair === null || event.sessionId !== pair.pageSessionId || this.#inverseConstructionObserver === null) { throw error("FOOTPRINT_INVERSE_CONSTRUCTION_HELD_ORIGINAL"); }
+          const result = await this.#request({ action: "footprint-inverse-construction", requestId: 0, phase: `held-${role}`, method: "held" }); original();
+          if (!exact(result, ["written"]) || result["written"] !== true) { throw error("FOOTPRINT_INVERSE_CONSTRUCTION_HELD_ACK"); }
+        },
         projectSourceHeld: async (source: CurrentPcbViaSavedLoadProjectSourceHeld, selected: CurrentFootprintInverseWorkerController): Promise<void> => {
           if (original() !== selected) { throw error("FOOTPRINT_INVERSE_ORIGINAL_SOURCE"); } const pair = selected.requireHeld(source);
           const reply = await this.#request({ action: "footprint-inverse-source-bind", scriptId: source.scriptId, uniqueContextId: source.uniqueContextId }); original();
           if (!exact(reply, ["bound"]) || reply["bound"] !== true) { throw error("FOOTPRINT_INVERSE_NATIVE_SOURCE"); }
           const origin: CurrentFootprintInverseWorkerOrigin = Object.freeze({ profile: "private.current-footprint-inverse-worker-origin.v1" });
-          const same = (): void => { original(); if (selected.requireHeld(source) !== pair) { throw error("FOOTPRINT_INVERSE_ORIGINAL_SOURCE"); } };
+          const same = (): void => { original(); if (this.#inverseSourceStarted || selected.requireHeld(source) !== pair) { throw error("FOOTPRINT_INVERSE_ORIGINAL_SOURCE"); } };
           const bindings: CurrentFootprintInverseWorkerBindings = Object.freeze({ prepared, pair, source, projectInitialSourceRemainsPaused: true,
             assertCurrent: async (): Promise<void> => { same(); await this.#verify(); same(); }, deleteInvocationAuthorized: false, executionAuthorized: false });
           footprintInverseWorkers.set(origin, Object.freeze({ owner: this, prepared, bindings, original: same }));
@@ -6889,6 +6922,73 @@ class CurrentPcbRetainedOwnerCore {
       const reply = await this.#transfer(() => pipe.armInverseParent((event: DiagnosticEvent): void => { original().observeEvent(event); })); original();
       if (!exact(reply, [])) { throw error("FOOTPRINT_INVERSE_PARENT_ACK"); }
     } catch (caughtError) { controller?.fail(); throw caughtError; } finally { this.#inverseParentPending = false; this.#busy = false; }
+  }
+  /** Arm only on this owner's actual original project-source pause. The
+   * separately branded collector cannot use generated-fixture publication. */
+  public async armFootprintInverseConstruction(sourceOrigin: CurrentFootprintInverseWorkerOrigin): Promise<void> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); const prepared = originalCurrentFootprintInverseTarget(this);
+    const controller = this.#inverseWorkerController, worker = requireOriginalCurrentFootprintInverseWorkerOrigin(sourceOrigin, this, prepared);
+    if (controller === null || this.#inverseConstructionArmAttempted || this.#inverseConstructionObserver !== null || this.#inverseSourceStarted) { throw error("FOOTPRINT_INVERSE_CONSTRUCTION_ARM_CONSUMED"); }
+    this.#inverseConstructionArmAttempted = true;
+    const module = await import("./current-project-save-structure-observer.ts"); const Constructor = module.CurrentProjectSaveStructureObserver;
+    requireOriginalCurrentFootprintInverseWorkerOrigin(sourceOrigin, this, prepared);
+    const descriptors = Object.getOwnPropertyDescriptors(Constructor.prototype), pair = worker.pair, source = worker.source;
+    const origin: CurrentFootprintInverseStructureOrigin = Object.freeze({ profile: "private.current-footprint-inverse-structure-origin.v1" });
+    const current = (): void => { this.#available(); assertOriginalCurrentFootprintInverseNativeOwner(this);
+      if (this.#inverseWorkerController !== controller || this.#inverseWorkerPair !== pair || controller.requireHeld(source) !== pair || this.#inverseConstructionOrigin !== origin ||
+        this.#mainTerminateAttempted || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed || originalCurrentFootprintInverseTarget(this) !== prepared ||
+        module.CurrentProjectSaveStructureObserver !== Constructor || !originalFootprintDescriptors(Constructor.prototype, descriptors)) { throw error("FOOTPRINT_INVERSE_CONSTRUCTION_OWNER_CHANGED"); } };
+    this.#inverseConstructionOrigin = origin;
+    const bindings: CurrentFootprintInverseStructureBindings = Object.freeze({ sessionId: pair.pageSessionId, scriptId: source.scriptId, uniqueContextId: source.uniqueContextId, prepared,
+      request: async (input: Parameters<CurrentProjectSaveStructureBindings["request"]>[0], cleanup: boolean, retain?: (reply: unknown) => void): Promise<unknown> => {
+        const command = validateCurrentProjectSaveStructureCommand(input); current();
+        if (cleanup !== (command.phase === "project-save-structure-remove" || command.phase === "project-save-structure-release") ||
+          command.phase === "project-save-structure-resume" && !CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS.some(role => role === command.role)) { throw error("FOOTPRINT_INVERSE_CONSTRUCTION_ONLY"); }
+        if (command.phase === "project-save-structure-source" && command.params.scriptId !== source.scriptId || command.phase === "project-save-structure-arm" && command.params.location.scriptId !== source.scriptId) { throw error("FOOTPRINT_INVERSE_CONSTRUCTION_SCRIPT"); }
+        if (command.phase === "project-save-structure-arm") { controller.expectConstructionArm(source, command.role); }
+        if (command.phase === "project-save-structure-release") { throw error("FOOTPRINT_INVERSE_RETAIN_ORIGINAL_GROUP_UNTIL_EXIT"); }
+        if (command.phase === "project-save-structure-remove") { controller.reserveConstructionRemove(command.params.breakpointId); }
+        if (command.phase === "project-save-structure-resume") { controller.reserveConstructionResume(command.role); }
+        const reply = await this.#inverseConstructionRequest(command, retain); current();
+        if (command.phase === "project-save-structure-arm") { const site = CURRENT_PROJECT_SAVE_STRUCTURE_SITES[command.role];
+          if (!record(reply) || !exact(reply, ["breakpointId", "actualLocation"]) || !diagnosticToken(reply["breakpointId"]) || !record(reply["actualLocation"]) ||
+            !exact(reply["actualLocation"], ["scriptId", "lineNumber", "columnNumber"]) || reply["actualLocation"]["scriptId"] !== source.scriptId || reply["actualLocation"]["lineNumber"] !== site.lineNumber || reply["actualLocation"]["columnNumber"] !== site.columnNumber) { throw error("FOOTPRINT_INVERSE_CONSTRUCTION_ARM_REPLY"); }
+          controller.registerConstructionPoint(source, command.role, reply["breakpointId"]);
+        }
+        if (command.phase === "project-save-structure-uploadRelation") {
+          if (this.#inverseConstructionReceivers !== null || !record(reply) || !exact(reply, ["result"]) || !record(reply["result"]) || !exact(reply["result"], ["type", "value"]) || reply["result"]["type"] !== "boolean" || reply["result"]["value"] !== true) { throw error("FOOTPRINT_INVERSE_CONSTRUCTOR_RELATION"); }
+          this.#inverseConstructionReceivers = Object.freeze({ project: originalProducerArgument(command.params.arguments, 0), wrapper: originalProducerArgument(command.params.arguments, 1), callback: originalProducerArgument(command.params.arguments, 2) });
+        }
+        return reply;
+      }, nextEvent: () => controller.nextConstructionEvent(), assertCurrent: async (): Promise<void> => { current(); await this.#verify(); current(); },
+      assertStartupPending: (): void => { throw error("FOOTPRINT_INVERSE_STARTUP_PROFILE_PENDING"); }, assertOperationPending: (): void => { throw error("FOOTPRINT_INVERSE_DELETE_ADMISSION_PENDING"); },
+      assertOriginalGenerationExited: (): Promise<void> => { assertOriginalCurrentFootprintInverseNativeOwner(this);
+        if (this.#inverseWorkerController !== controller || this.#inverseConstructionOrigin !== origin || !this.#terminationObserved || this.#terminationObservation?.terminated !== true) { return Promise.reject(error("FOOTPRINT_INVERSE_ORIGINAL_GENERATION_EXIT_REQUIRED")); } return Promise.resolve();
+      }, fail: (): void => { controller.fail(); } });
+    projectSaveStructureOrigins.set(origin, Object.freeze({ owner: this, operation: prepared, bindings, assertOriginal: current }));
+    const observer = new Constructor(origin, this, prepared); this.#inverseConstructionObserver = observer; current();
+    const bound = await this.#request({ action: "footprint-inverse-construction", requestId: 0, phase: "bind", method: "bind", instrumentationBreakpointId: source.instrumentationBreakpointId }); current();
+    if (!exact(bound, ["written"]) || bound["written"] !== true) { throw error("FOOTPRINT_INVERSE_CONSTRUCTION_BIND_ACK"); }
+    await observer.arm(); current();
+  }
+  #inverseConstructionRequest(command: CurrentFootprintInverseConstructionCommand, retain?: (reply: unknown) => void): Promise<unknown> {
+    const controller = this.#inverseWorkerController; if (controller === null) { return Promise.reject(error("FOOTPRINT_INVERSE_CONSTRUCTION_NOT_ARMED")); }
+    return controller.requestConstruction(command, retain);
+  }
+  public observeFootprintInverseConstruction(): Promise<CurrentFootprintInverseConstruction> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); if (this.#inverseConstructionPromise !== null) { return this.#inverseConstructionPromise; }
+    const controller = this.#inverseWorkerController, observer = this.#inverseConstructionObserver;
+    if (observer === null || controller === null || this.#inverseProjectDispatch === null) { throw error("FOOTPRINT_INVERSE_CONSTRUCTION_NOT_ARMED"); }
+    const original = (async (): Promise<CurrentFootprintInverseConstruction> => {
+      await this.#settleInverseWorkerProgress(controller.queueConstruction(async (): Promise<void> => { await controller.startConstructionSource(); await observer.observeConstructionBeforeBootstrap(); }));
+      assertOriginalCurrentFootprintInverseNativeOwner(this); if (this.#inverseConstructionObserver !== observer || this.#inverseWorkerController !== controller || this.#inverseConstructionReceivers === null) { throw error("FOOTPRINT_INVERSE_CONSTRUCTION_RECEIVERS_REQUIRED"); }
+      const data = observer.producerConstruction(), origin = this.#inverseConstructionOrigin, prepared = originalCurrentFootprintInverseTarget(this);
+      if (origin === null) { throw error("FOOTPRINT_INVERSE_CONSTRUCTION_ORIGIN_REQUIRED"); }
+      const current = (): void => { assertOriginalCurrentFootprintInverseNativeOwner(this); requireOriginalCurrentProjectSaveStructureOrigin(origin, this, prepared);
+        if (this.#inverseConstructionObserver !== observer || this.#inverseWorkerController !== controller || controller.requireConstructionBootstrap() !== this.#inverseWorkerPair || observer.producerConstruction() !== data) { throw error("FOOTPRINT_INVERSE_BOOTSTRAP_HOLD_CHANGED"); } };
+      current(); const packet: CurrentFootprintInverseConstruction = Object.freeze({ profile: "private.current-footprint-inverse-construction.v1" });
+      footprintInverseConstructions.set(packet, Object.freeze({ owner: this, prepared, data, original: current })); return packet;
+    })(); this.#inverseConstructionPromise = original; return original;
   }
   /** Retains the one original navigation Promise. Its fulfillment never grants
    * a delete or Save; the worker stays source-held until a later genuine stage. */
@@ -6906,12 +7006,30 @@ class CurrentPcbRetainedOwnerCore {
       const body = await this.#transfer(() => ready.pipe.getScriptSource(helper.scriptId ?? ""));
       if (!exact(body, ["scriptSource"]) || body["scriptSource"] !== `(${CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION})` || this.#inverseHelper !== helper) { throw error("FOOTPRINT_INVERSE_PROJECT_HELPER_SOURCE"); }
       return freezeDeep({ ...reply });
-    } catch (caughtError) { controller.fail(); throw caughtError; } finally { this.#inverseFrame = null; this.#inverseHelper = null; this.#busy = false; } })();
+    } catch (caughtError) { controller.fail(); throw caughtError; } finally { this.#inverseFrame = null; this.#inverseHelper = null; this.#busy = false; this.#inverseNavigationSettled = true; this.#inverseNavigationSettlement.resolve(true); } })();
     this.#inverseProjectDispatch = work; return work;
   }
   public observeFootprintInverseWorkerSource(): Promise<CurrentFootprintInverseWorkerHeld> {
     assertOriginalCurrentFootprintInverseNativeOwner(this); const controller = this.#inverseWorkerController;
-    if (controller === null || this.#inverseProjectDispatch === null) { throw error("FOOTPRINT_INVERSE_PROJECT_NOT_DISPATCHED"); } return controller.whenSourceHeld();
+    if (controller === null || this.#inverseProjectDispatch === null) { throw error("FOOTPRINT_INVERSE_PROJECT_NOT_DISPATCHED"); }
+    this.#inverseSourceObservation ??= this.#settleInverseWorkerProgress(controller.whenSourceHeld()); return this.#inverseSourceObservation;
+  }
+  /** A fulfilled original navigation can precede worker readiness. Only this
+   * explicit retained observation then owns progress; it never navigates again. */
+  async #settleInverseWorkerProgress<T>(pending: Promise<T>): Promise<T> {
+    const controller = this.#inverseWorkerController; if (controller === null) { throw error("FOOTPRINT_INVERSE_WORKER_PROGRESS_ORIGINAL"); }
+    let settled = false; const observed = (async (): Promise<Readonly<{ value: T }> | Readonly<{ cause: unknown }>> => {
+      try { return { value: await pending }; } catch (caughtError) { return { cause: caughtError }; } finally { settled = true; }
+    })();
+    if (!this.#inverseNavigationSettled) { await Promise.race([this.#inverseNavigationSettlement.promise, observed]); }
+    if (!settled) {
+      this.#enter(true);
+      try { for (;;) {
+        if (settled) { break; } assertOriginalCurrentFootprintInverseNativeOwner(this); if (this.#inverseWorkerController !== controller || !this.#inverseNavigationSettled) { throw error("FOOTPRINT_INVERSE_WORKER_PROGRESS_CHANGED"); }
+        await controller.pump(); if (!settled) { await this.#mainRunner?.pumpSelectedSqlFence(); await this.#pollRenderer(); }
+      } } finally { this.#busy = false; }
+    }
+    const result = await observed; if ("cause" in result) { throw result.cause; } return result.value;
   }
   public registerFootprintInverseProject(): Promise<ReturnType<typeof decodeCurrentFootprintInverseRegistrationReply>> {
     assertOriginalCurrentFootprintInverseNativeOwner(this);
@@ -8104,7 +8222,8 @@ class CurrentPcbRetainedOwnerCore {
       else if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { nativeRequest = currentPcbViaWriteNativeRequest; }
       else if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { nativeRequest = currentSchematicDisplayWriteNativeRequest; }
       let encoded: Readonly<Record<string, unknown>>;
-      if (this.#inverseActorStage !== null) { encoded = currentFootprintInverseActorNativeFrame(chunk, this.#inverseActorStage); }
+      if (this.#inverseConstructionCommand !== null && this.#inverseWorkerPair !== null) { encoded = currentFootprintInverseConstructionNativeFrame(chunk, this.#inverseConstructionCommand, this.#inverseWorkerPair.pageSessionId); }
+      else if (this.#inverseActorStage !== null) { encoded = currentFootprintInverseActorNativeFrame(chunk, this.#inverseActorStage); }
       else if (this.#inverseParentPending && this.#inverseUiReady !== null) { encoded = currentFootprintInverseParentNativeFrame(chunk, this.#inverseUiReady.selected.sessionId); }
       else if (this.#inverseWorkerCommand !== null && this.#inverseWorkerPair !== null) { encoded = currentFootprintInverseWorkerNativeFrame(chunk, this.#inverseWorkerCommand, this.#inverseWorkerPair); }
       else if (this.#savedReadbackEarlyActorStage !== null) { encoded = currentPcbViaSavedEarlyActorNativeFrame(chunk, this.#savedReadbackEarlyActorStage); }

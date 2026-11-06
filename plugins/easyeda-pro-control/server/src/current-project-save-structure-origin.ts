@@ -1,14 +1,16 @@
 /** Separate original pre-project origins. Their central owner registries,
  * not these interfaces or serialized fields, issue native worker custody. */
+import type { CurrentFootprintForwardSavedCheckpoint } from "./current-footprint-copy-held-saved-generation.ts";
 import type { CurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import type { GeneratedFixtureOpenCheckpoint } from "./managed-fixture-generated-open-checkpoint.ts";
 import type { GeneratedSchematicFixtureOpenCheckpoint } from "./managed-schematic-fixture-open-checkpoint.ts";
 
 export interface CurrentPcbViaSaveStructureOrigin { readonly profile: "private.current-pcb-via-save-structure-origin.v1" }
 export interface CurrentSchematicDisplaySaveStructureOrigin { readonly profile: "private.current-schematic-display-save-structure-origin.v1" }
-export type CurrentProjectSaveStructureOrigin = CurrentPcbViaSaveStructureOrigin | CurrentSchematicDisplaySaveStructureOrigin;
+export interface CurrentFootprintInverseStructureOrigin { readonly profile: "private.current-footprint-inverse-structure-origin.v1" }
+export type CurrentProjectSaveStructureOrigin = CurrentPcbViaSaveStructureOrigin | CurrentSchematicDisplaySaveStructureOrigin | CurrentFootprintInverseStructureOrigin;
 export interface CurrentProjectSaveStructureEvent { readonly method: "Debugger.paused" | "Debugger.resumed"; readonly sessionId: string; readonly params: unknown }
-export interface CurrentProjectSaveStructureBindings {
+export interface CurrentGeneratedProjectSaveStructureBindings {
   readonly sessionId: string; readonly scriptId: string; readonly uniqueContextId: string;
   readonly prepared: GeneratedFixtureOpenCheckpoint | GeneratedSchematicFixtureOpenCheckpoint;
   readonly request: (command: CurrentProjectSaveStructureCommand, cleanup: boolean, retainAllocationReply?: (reply: unknown) => void) => Promise<unknown>;
@@ -19,6 +21,10 @@ export interface CurrentProjectSaveStructureBindings {
   readonly assertCurrent: () => Promise<void>; readonly assertStartupPending: () => void; readonly assertOperationPending: () => void;
   readonly assertOriginalGenerationExited: () => Promise<void>; readonly fail: () => void;
 }
+/** A separate inverse data checkpoint may reach only the shared original
+ * constructor collector. Generated packet/startup/history expectations reject it. */
+export type CurrentFootprintInverseStructureBindings = Omit<CurrentGeneratedProjectSaveStructureBindings, "prepared"> & Readonly<{ prepared: CurrentFootprintForwardSavedCheckpoint }>;
+export type CurrentProjectSaveStructureBindings = Omit<CurrentGeneratedProjectSaveStructureBindings, "prepared"> & Readonly<{ prepared: CurrentGeneratedProjectSaveStructureBindings["prepared"] | CurrentFootprintForwardSavedCheckpoint }>;
 /** Issued only by the original main service after all history/project SQL
  * native callbacks complete. No SDK/worker Save acknowledgement is required:
  * that continuation may still be paused behind the structure packet. */

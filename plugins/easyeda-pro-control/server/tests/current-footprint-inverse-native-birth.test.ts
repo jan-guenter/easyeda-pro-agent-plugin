@@ -93,3 +93,16 @@ void test("whole native composition is idempotent with original inverse limits a
   assert.equal(PROFILE.deleteInvocationAuthorized, false); assert.equal(PROFILE.executionAuthorized, false); assert.equal(PROFILE.saveAuthorized, false);
   assert.ok(first.includes('if(footprintInverseConstructionComplete)throw Error("footprint-inverse-main-construction-consumed")'));
 });
+
+void test("an original inverse factory cannot adopt a copied source or constructor receipt", async context => {
+  const { f, token } = await prepared();
+  context.after(async () => { if (f.child().exitCode === null) { const closed = once(f.child(), "close"); f.child().stdin.end(); await closed; } });
+  const owner = await pending(f.api.startCurrentFootprintInverseNativeOwner, [token]); assert.ok(owner instanceof f.api.CurrentFootprintInverseNativeOwner);
+  const copiedSource = Object.freeze({ profile: "private.current-footprint-inverse-worker-origin.v1" });
+  const arm: unknown = Reflect.get(owner, "armFootprintInverseConstruction"), lookup: unknown = Reflect.get(f.api, "requireOriginalCurrentFootprintInverseConstruction");
+  assert.ok(typeof arm === "function" && typeof lookup === "function"); const attempt: unknown = Reflect.apply(arm, owner, [copiedSource]); assert.ok(attempt instanceof Promise);
+  await assert.rejects(attempt, /FOOTPRINT_INVERSE_WORKER_ORIGINAL/u);
+  assert.throws(() => { Reflect.apply(lookup, undefined, [Object.freeze({ profile: "private.current-footprint-inverse-construction.v1" }), owner, token]); }, /FOOTPRINT_INVERSE_CONSTRUCTION_ORIGINAL/u);
+  assert.equal(owner.status().busy, false); await owner.releaseUnlaunched();
+  assert.deepEqual(f.state.actions, ["release-unlaunched", "release-unlaunched", "release-unlaunched"]);
+});

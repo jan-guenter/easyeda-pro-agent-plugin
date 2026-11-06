@@ -10,3 +10,7 @@ export interface CurrentFootprintInverseWorkerBindings {
   readonly source: CurrentPcbViaSavedLoadProjectSourceHeld; readonly projectInitialSourceRemainsPaused: true;
   readonly assertCurrent: () => Promise<void>; readonly deleteInvocationAuthorized: false; readonly executionAuthorized: false;
 }
+
+/** Original constructor receipt. Matching data cannot issue a live bootstrap
+ * hold or a delete grant; the central private registry owns both references. */
+export interface CurrentFootprintInverseConstruction { readonly profile: "private.current-footprint-inverse-construction.v1" }
