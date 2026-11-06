@@ -19,8 +19,8 @@ import { diagnosticNativeRequest } from "../src/current-pcb-diagnostic-protocol.
 import { spatialDiagnosticNativeRequest } from "../src/current-pcb-spatial-protocol.ts";
 
 function compose(input: string): string { const base = registration(structure(input)), writers = schematic(via(base)); return producer(guards(transport(writers))); }
-void test("78 observation templates roundtrip through only the two exact new writer births", () => {
-  const cases = currentProjectSaveProducerNativeCases(); assert.equal(cases.length, 78);
+void test("106 observation templates roundtrip through only the two exact new writer births", () => {
+  const cases = currentProjectSaveProducerNativeCases(); assert.equal(cases.length, 106);
   for (const command of cases) { for (const purpose of ["via", "schematic"] as const) {
     const encoded = Buffer.from(`${JSON.stringify({ id: 1, ...command, producerObserveCommand: true, sessionId: "original-worker" })}\0`), wire = currentProjectSaveProducerWire(command, 1, purpose);
     assert.deepEqual((purpose === "via" ? currentPcbViaWriteNativeRequest : currentSchematicDisplayWriteNativeRequest)(encoded), wire.request);
@@ -32,6 +32,6 @@ void test("full producer generation is idempotent and keeps source observation s
   const base = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"), source = compose(base);
   assert.equal(compose(source), source); assert.equal(producer(source), source);
   for (const action of ["pcb-via-producer-observe", "schematic-display-producer-observe"]) { assert.equal(source.split(`        '${action}' {`).length, 2); }
-  assert.ok(source.includes("viaProducerObserveRequests>=185")); assert.ok(source.includes("schematicProducerObserveArms.Count!=23"));
+  assert.ok(source.includes("viaProducerObserveRequests>=213")); assert.ok(source.includes("schematicProducerObserveArms.Count!=23"));
   assert.equal(source.includes("project-save-producer-resume"), false); assert.throws(() => producer(source.replace("$owner.SendViaProducerObserve", "$owner.ForeignViaProducerObserve")), /CHANGED/u);
 });

@@ -9,10 +9,12 @@ const marker = (key: string): string => `__project_save_producer_${key}__`;
 export function currentProjectSaveProducerTemplate(input: unknown): CurrentProjectSaveProducerTemplate {
   const command = validateCurrentProjectSaveProducerCommand(input), values: Record<string, string> = {};
   const field = (key: string, value: string): string => { if (Object.hasOwn(values, key)) { throw new Error("PROJECT_SAVE_PRODUCER_FIELD_ALIAS"); } values[key] = value; return marker(key); };
-  const params: Record<string, unknown> = { ...command.params }; const phase = "role" in command ? `${command.phase}-${command.role}` : command.phase;
-  if (command.phase === "project-save-producer-arm") { params["location"] = { ...command.params.location, scriptId: field("scriptId", command.params.location.scriptId) }; }
+  const params: Record<string, unknown> = { ...command.params }; let phase: string = command.phase;
+  if ("role" in command) { phase = `${command.phase}-${command.role}`; } else if ("slot" in command) { phase = `${command.phase}-${String(command.slot)}`; }
+  if (command.phase === "project-save-producer-intrinsics-constructors") { params["uniqueContextId"] = marker("boundContext"); }
+  else if (command.phase === "project-save-producer-arm") { params["location"] = { ...command.params.location, scriptId: field("scriptId", command.params.location.scriptId) }; }
   else if (command.phase === "project-save-producer-frame") { params["callFrameId"] = field("callFrameId", command.params.callFrameId); }
-  else if (command.phase === "project-save-producer-properties") { params["objectId"] = field("objectId", command.params.objectId); }
+  else if (command.method === "Runtime.getProperties") { params["objectId"] = field("objectId", command.params.objectId); }
   else { params["objectId"] = field("objectId", command.params.objectId); params["arguments"] = command.params.arguments.map((value, index) => ({ objectId: field(`argument${String(index)}`, value.objectId) })); }
   return freezeDeep({ phase, method: command.method, fields: Object.keys(values), values, template: JSON.stringify({ method: command.method, params }) });
 }

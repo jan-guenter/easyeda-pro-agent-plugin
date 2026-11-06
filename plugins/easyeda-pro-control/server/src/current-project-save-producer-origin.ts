@@ -15,6 +15,7 @@ export interface CurrentProjectSaveProducerBindings {
   readonly nextEvent: () => Promise<CurrentProjectSaveStructureEvent>;
   /** Native object IDs are original private captures, never MCP arguments. */
   readonly originalBreakpoint: (role: CurrentProjectSaveProducerRole) => string;
+  readonly originalIntrinsics: () => string;
   readonly originalReceivers: () => Readonly<{ project: string; wrapper: string; callback: string }>;
   readonly assertCurrent: () => Promise<void>;
   readonly assertOriginalGenerationExited: () => Promise<void>;

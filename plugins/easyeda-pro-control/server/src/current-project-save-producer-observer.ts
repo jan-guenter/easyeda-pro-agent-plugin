@@ -31,7 +31,7 @@ export function requireOriginalCurrentProjectSaveProducerHeldCall(packet: Curren
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PROJECT_SAVE_PRODUCER_${code}`); } }
 function binding(value: CurrentProjectSaveProducerBindings): CurrentProjectSaveProducerBindings {
   need(value !== null && typeof value === "object" && !types.isProxy(value) && Object.getPrototypeOf(value) === Object.prototype && Object.isFrozen(value), "BINDING");
-  const names = ["sessionId", "scriptId", "request", "nextEvent", "retainHeldCall", "originalReceivers", "originalBreakpoint", "assertCurrent", "assertOriginalGenerationExited", "fail"];
+  const names = ["sessionId", "scriptId", "request", "nextEvent", "retainHeldCall", "originalIntrinsics", "originalReceivers", "originalBreakpoint", "assertCurrent", "assertOriginalGenerationExited", "fail"];
   need(Reflect.ownKeys(value).length === names.length, "BINDING_FIELDS");
   for (const [index, name] of names.entries()) { const own = Object.getOwnPropertyDescriptor(value, name); need(own !== undefined && Object.hasOwn(own, "value"), "BINDING_DATA");
     if (index < 2) { handle.parse(own.value); } else { need(typeof own.value === "function" && !types.isProxy(own.value), "BINDING_FUNCTION"); } }

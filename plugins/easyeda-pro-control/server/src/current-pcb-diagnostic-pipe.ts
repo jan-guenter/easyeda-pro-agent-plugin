@@ -225,6 +225,7 @@ class CurrentPcbFixedPipeCore {
   #viaWorkerEvent: ((event: DiagnosticEvent) => void) | null = null;
   #viaWorkerSession: string | null = null;
   #schematicStructureTransportContext: string | null = null;
+  #viaProducerContext: string | null = null; #schematicProducerContext: string | null = null;
   #viaStructureTransportContext: string | null = null;
   #schematicClockBinding: Readonly<{ workerContext: string; uiSdk: string }> | null = null;
   #viaClockBinding: Readonly<{ workerContext: string; uiSdk: string }> | null = null;
@@ -563,9 +564,16 @@ class CurrentPcbFixedPipeCore {
     const wire = currentSchematicDisplayWorkerWire(input, this.#nextId);
     return this.#request({ id: this.#nextId, ...wire.command, schematicWorkerCommand: true, sessionId: this.#schematicWorkerSession }, "schematic-worker");
   }
+  protected bindProducerContext(purpose: "via" | "schematic", context: string): void {
+    if (!diagnosticToken(context)) { throw new Error("PROJECT_SAVE_PRODUCER_CONTEXT"); }
+    if (purpose === "via") { if (!this.#viaPurpose || this.#viaWorkerSession === null || this.#viaParentRunning || this.#viaProducerContext !== null) { throw new Error("PROJECT_SAVE_PRODUCER_VIA_BINDING"); } this.#viaProducerContext = context; }
+    else { if (!this.#schematicDisplayPurpose || this.#schematicWorkerSession === null || this.#schematicParentRunning || this.#schematicProducerContext !== null) { throw new Error("PROJECT_SAVE_PRODUCER_SCHEMATIC_BINDING"); } this.#schematicProducerContext = context; }
+  }
   protected observeProducerCommand(purpose: "via" | "schematic", input: CurrentProjectSaveProducerCommand): Promise<Reply> {
     const sessionId = purpose === "via" ? this.#viaWorkerSession : this.#schematicWorkerSession;
     if (sessionId === null || (purpose === "via" ? !this.#viaPurpose : !this.#schematicDisplayPurpose)) { throw new Error("PROJECT_SAVE_PRODUCER_ORIGINAL_SESSION"); }
+    const context = purpose === "via" ? this.#viaProducerContext : this.#schematicProducerContext;
+    if (context === null || input.phase === "project-save-producer-intrinsics-constructors" && input.params.uniqueContextId !== context) { throw new Error("PROJECT_SAVE_PRODUCER_ORIGINAL_CONTEXT"); }
     const wire = currentProjectSaveProducerWire(input, this.#nextId, purpose);
     return this.#request({ id: this.#nextId, ...wire.command, producerObserveCommand: true, sessionId }, "producer-observe");
   }
@@ -1117,6 +1125,7 @@ export class CurrentSchematicDisplayWritePipe extends CurrentPcbFixedPipeCore {
   public bindSchematicDisplayWorker(sessionId: string, targetId: string): void { this.bindSchematicDisplayWorkerCommand(sessionId, targetId); }
   public observeSchematicDisplayWorker(command: CurrentSchematicDisplayWorkerCommand): Promise<Reply> { return this.observeSchematicDisplayWorkerCommand(command); }
   public observeSchematicDisplayAccessor(command: CurrentSchematicDisplayAccessorCommand): Promise<Reply> { return this.observeSchematicDisplayAccessorCommand(command); }
+  public bindSchematicDisplayProducerContext(context: string): void { this.bindProducerContext("schematic", context); }
   public observeSchematicDisplayProducer(command: CurrentProjectSaveProducerCommand): Promise<Reply> { return this.observeProducerCommand("schematic", command); }
   public observeSchematicDisplayProducerGuard(command: CurrentProjectSaveProducerGuardCommand): Promise<Reply> { return this.observeProducerGuardCommand("schematic", command); }
   public bindSchematicDisplayStructureTransport(context: string): void { this.bindStructureTransportCommand("schematic", context); }
@@ -1137,6 +1146,7 @@ export class CurrentPcbViaWritePipe extends CurrentPcbFixedPipeCore {
   public configureViaWorkerRunning(): Promise<Reply> { return this.configureViaWorkerRunningCommand(); }
   public bindViaWorker(sessionId: string, targetId: string): void { this.bindViaWorkerCommand(sessionId, targetId); }
   public observeViaWorker(command: CurrentPcbViaWorkerCommand): Promise<Reply> { return this.observeViaWorkerCommand(command); }
+  public bindViaProducerContext(context: string): void { this.bindProducerContext("via", context); }
   public observeViaProducer(command: CurrentProjectSaveProducerCommand): Promise<Reply> { return this.observeProducerCommand("via", command); }
   public observeViaProducerGuard(command: CurrentProjectSaveProducerGuardCommand): Promise<Reply> { return this.observeProducerGuardCommand("via", command); }
   public bindViaStructureTransport(context: string): void { this.bindStructureTransportCommand("via", context); }

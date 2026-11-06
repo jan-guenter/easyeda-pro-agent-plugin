@@ -1,5 +1,6 @@
 /** Observation-only uploader vocabulary. Original receiver joins can retain a
  * held source call; there is no resume, timer, cache or mutation command. */
+import { CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_CALLS as INTRINSICS, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_PROFILES as INTRINSIC_PROFILES } from "./current-native-cache-response-intrinsics.ts";
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_RECEIVER_CALLS as CALLS } from "./current-project-save-producer-programs.ts";
@@ -12,7 +13,7 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_GROUP = "easyeda-project-save-produce
 /** Two original occurrences per source role are a finite observation budget,
  * not a claim that background work finishes or cannot occur again. */
 export const CURRENT_PROJECT_SAVE_PRODUCER_REQUESTS = Object.freeze({ newArms: 23, maximumRoleOccurrences: 2, frames: 54, joins: 54, properties: 54,
-  normal: 185, cleanup: 0, cdpRequests: 185, events: 54 });
+  intrinsics: 3 + 2 + INTRINSIC_PROFILES.length, normal: 185 + 3 + 2 + INTRINSIC_PROFILES.length, cleanup: 0, cdpRequests: 185 + 3 + 2 + INTRINSIC_PROFILES.length, events: 54 });
 const GROUP = CURRENT_PROJECT_SAVE_PRODUCER_GROUP;
 export const CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS = Object.freeze({ objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true, awaitPromise: false, userGesture: false, returnByValue: false } as const);
 export const CURRENT_PROJECT_SAVE_PRODUCER_FRAME_FLAGS = Object.freeze({ objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true, returnByValue: false, includeCommandLineAPI: false } as const);
@@ -20,7 +21,14 @@ const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u), ref = z.strictObjec
 const location = z.strictObject({ scriptId: handle, lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() });
 const callFlags = { objectGroup: z.literal(GROUP), silent: z.literal(true), generatePreview: z.literal(false), throwOnSideEffect: z.literal(true), awaitPromise: z.literal(false), userGesture: z.literal(false), returnByValue: z.literal(false) };
 const frameFlags = { objectGroup: z.literal(GROUP), silent: z.literal(true), generatePreview: z.literal(false), throwOnSideEffect: z.literal(true), returnByValue: z.literal(false), includeCommandLineAPI: z.literal(false) };
+const intrinsicSlots = [1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27] as const;
+const propertiesParams = z.strictObject({ objectId: handle, ownProperties: z.literal(true), accessorPropertiesOnly: z.literal(false), generatePreview: z.literal(false) });
 const schemas = [
+  z.strictObject({ phase: z.literal("project-save-producer-intrinsics-constructors"), method: z.literal("Runtime.callFunctionOn"), params: z.strictObject({ ...callFlags, uniqueContextId: handle, functionDeclaration: z.literal(INTRINSICS.constructors.program), arguments: z.tuple([]) }) }),
+  z.strictObject({ phase: z.literal("project-save-producer-intrinsics-members"), method: z.literal("Runtime.callFunctionOn"), params: z.strictObject({ ...callFlags, objectId: handle, functionDeclaration: z.literal(INTRINSICS.members.program), arguments: z.tuple([]) }) }),
+  z.strictObject({ phase: z.literal("project-save-producer-intrinsics-reprove"), method: z.literal("Runtime.callFunctionOn"), params: z.strictObject({ ...callFlags, returnByValue: z.literal(true), objectId: handle, functionDeclaration: z.literal(INTRINSICS.reprove.program), arguments: z.tuple([]) }) }),
+  z.strictObject({ phase: z.literal("project-save-producer-intrinsics-properties"), role: z.enum(["constructors", "members"]), method: z.literal("Runtime.getProperties"), params: propertiesParams }),
+  z.strictObject({ phase: z.literal("project-save-producer-intrinsics-metadata"), slot: z.union(intrinsicSlots.map(index => z.literal(index))), method: z.literal("Runtime.getProperties"), params: propertiesParams }),
   z.strictObject({ phase: z.literal("project-save-producer-arm"), role, method: z.literal("Debugger.setBreakpoint"), params: z.strictObject({ location }) }),
   z.strictObject({ phase: z.literal("project-save-producer-frame"), role, method: z.literal("Debugger.evaluateOnCallFrame"), params: z.strictObject({ ...frameFlags, callFrameId: handle, expression: z.string() }) }),
   z.strictObject({ phase: z.literal("project-save-producer-receiver"), role, method: z.literal("Runtime.callFunctionOn"), params: z.strictObject({ ...callFlags, objectId: handle, functionDeclaration: z.string(), arguments: z.tuple([ref, ref, ref]) }) }),
@@ -36,7 +44,13 @@ export function validateCurrentProjectSaveProducerCommand(input: unknown): Curre
   return freezeDeep(command);
 }
 export function currentProjectSaveProducerNativeCases(): readonly CurrentProjectSaveProducerCommand[] {
-  const cases: unknown[] = [];
+  const cases: unknown[] = [
+    { phase: "project-save-producer-intrinsics-constructors", method: "Runtime.callFunctionOn", params: { ...CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS, uniqueContextId: "original_context", functionDeclaration: INTRINSICS.constructors.program, arguments: [] } },
+    { phase: "project-save-producer-intrinsics-members", method: "Runtime.callFunctionOn", params: { ...CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS, objectId: "original_constructors", functionDeclaration: INTRINSICS.members.program, arguments: [] } },
+    { phase: "project-save-producer-intrinsics-reprove", method: "Runtime.callFunctionOn", params: { ...CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS, returnByValue: true, objectId: "original_members", functionDeclaration: INTRINSICS.reprove.program, arguments: [] } },
+  ];
+  for (const arrayRole of ["constructors", "members"]) { cases.push({ phase: "project-save-producer-intrinsics-properties", role: arrayRole, method: "Runtime.getProperties", params: { objectId: "original_array", ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }); }
+  for (const slot of intrinsicSlots) { cases.push({ phase: "project-save-producer-intrinsics-metadata", slot, method: "Runtime.getProperties", params: { objectId: "original_callable", ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }); }
   for (const name of CURRENT_PROJECT_SAVE_PRODUCER_ROLES) {
     const site = SITES[name];
     if (!CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS.some(value => value === name)) { cases.push({ phase: "project-save-producer-arm", role: name, method: "Debugger.setBreakpoint", params: { location: { scriptId: "original_script", lineNumber: site.lineNumber, columnNumber: site.columnNumber } } }); }

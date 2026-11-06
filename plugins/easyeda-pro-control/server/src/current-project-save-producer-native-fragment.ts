@@ -12,16 +12,28 @@ function one(source: string, before: string, after: string): string {
 }
 function owner(purpose: "via" | "schematic"): string {
   const born = purpose === "via" ? "pcbViaWrite209&&!viaAbortAttempted" : "schematicDisplayWrite209&&!schematicDisplayAbort", name = purpose === "via" ? "Via" : "SchematicDisplay";
-  return `int ${purpose}ProducerObserveRequests,${purpose}ProducerObserveProperties;
+  return `int ${purpose}ProducerObserveRequests,${purpose}ProducerObserveProperties;string ${purpose}ProducerContext;
+bool ${purpose}ProducerCtorCaptured,${purpose}ProducerCtorProperties,${purpose}ProducerMembersCaptured,${purpose}ProducerMembersProperties,${purpose}ProducerIntrinsicsReproved;
 readonly System.Collections.Generic.HashSet<string> ${purpose}ProducerObserveArms=new System.Collections.Generic.HashSet<string>();
+readonly System.Collections.Generic.HashSet<int> ${purpose}ProducerIntrinsicMetadata=new System.Collections.Generic.HashSet<int>();
 readonly System.Collections.Generic.Dictionary<string,int> ${purpose}ProducerObserveCounts=new System.Collections.Generic.Dictionary<string,int>(StringComparer.Ordinal);
+public void Bind${name}Producer(string context){if(!(${born})||${purpose}ProducerContext!=null||${purpose}WorkerSession==null||${purpose}WorkerStage!=6||!${purpose}WorkerSourceRead||${purpose}ProducerGuards.Count!=10||!System.Text.RegularExpressions.Regex.IsMatch(context??"",@"\\A[A-Za-z0-9_.:-]{1,256}\\z"))throw Error("project-save-producer-original-binding");AssertLive();${purpose}ProducerContext=context;}
 public void Send${name}ProducerObserve(int id,string phase,string method,System.Collections.IDictionary fields){
-if(!(${born})||${purpose}WorkerSession==null||fields==null||${purpose}ProducerObserveRequests>=${String(REQUESTS.cdpRequests)})throw Error("project-save-producer-original-owner");
-string encoded=EasyedaProjectSaveProducerProtocol.Encode(id,${purpose}WorkerSession,phase,method,fields);
-if(phase.StartsWith("project-save-producer-arm-",StringComparison.Ordinal)){
-if(${purpose}WorkerStage!=6||!${purpose}WorkerSourceRead||${purpose}ProducerGuards.Count!=10||fields["scriptId"] as string!=${purpose}WorkerProjectScript||${purpose}ProducerObserveArms.Count>=${String(REQUESTS.newArms)}||!${purpose}ProducerObserveArms.Add(phase))throw Error("project-save-producer-original-arm");
+if(!(${born})||${purpose}ProducerContext==null||${purpose}WorkerSession==null||fields==null||${purpose}ProducerObserveRequests>=${String(REQUESTS.cdpRequests)})throw Error("project-save-producer-original-owner");
+string encoded=EasyedaProjectSaveProducerProtocol.Encode(id,${purpose}WorkerSession,${purpose}ProducerContext,phase,method,fields);
+if(phase.StartsWith("project-save-producer-intrinsics-",StringComparison.Ordinal)){
+if(${purpose}WorkerStage!=6||!${purpose}WorkerSourceRead||${purpose}WorkerInstrumentRemoved||${purpose}ProducerObserveArms.Count!=0)throw Error("project-save-producer-intrinsics-original-source");
+if(phase=="project-save-producer-intrinsics-constructors"){if(${purpose}ProducerCtorCaptured)throw Error("project-save-producer-constructors-once");${purpose}ProducerCtorCaptured=true;}
+else if(phase=="project-save-producer-intrinsics-properties-constructors"){if(!${purpose}ProducerCtorCaptured||${purpose}ProducerCtorProperties)throw Error("project-save-producer-ctor-properties-once");${purpose}ProducerCtorProperties=true;}
+else if(phase=="project-save-producer-intrinsics-members"){if(!${purpose}ProducerCtorProperties||${purpose}ProducerIntrinsicMetadata.Count!=3||${purpose}ProducerMembersCaptured)throw Error("project-save-producer-members-once");${purpose}ProducerMembersCaptured=true;}
+else if(phase=="project-save-producer-intrinsics-properties-members"){if(!${purpose}ProducerMembersCaptured||${purpose}ProducerMembersProperties)throw Error("project-save-producer-member-properties-once");${purpose}ProducerMembersProperties=true;}
+else if(phase.StartsWith("project-save-producer-intrinsics-metadata-",StringComparison.Ordinal)){int slot=Int32.Parse(phase.Substring("project-save-producer-intrinsics-metadata-".Length),CultureInfo.InvariantCulture);if(slot<=3?!${purpose}ProducerCtorProperties||${purpose}ProducerMembersCaptured:!${purpose}ProducerMembersProperties)throw Error("project-save-producer-metadata-order");if(!${purpose}ProducerIntrinsicMetadata.Add(slot))throw Error("project-save-producer-metadata-once");}
+else if(phase=="project-save-producer-intrinsics-reprove"){if(!${purpose}ProducerMembersProperties||${purpose}ProducerIntrinsicMetadata.Count!=23||${purpose}ProducerIntrinsicsReproved)throw Error("project-save-producer-reprove-once");${purpose}ProducerIntrinsicsReproved=true;}
+else throw Error("project-save-producer-intrinsics-phase");
+}else if(phase.StartsWith("project-save-producer-arm-",StringComparison.Ordinal)){
+if(${purpose}WorkerStage!=6||!${purpose}WorkerSourceRead||!${purpose}ProducerIntrinsicsReproved||${purpose}ProducerGuards.Count!=10||fields["scriptId"] as string!=${purpose}WorkerProjectScript||${purpose}ProducerObserveArms.Count>=${String(REQUESTS.newArms)}||!${purpose}ProducerObserveArms.Add(phase))throw Error("project-save-producer-original-arm");
 }else{
-if(${purpose}WorkerStage!=7||!${purpose}StructureBootstrapResumed||!${purpose}ProducerModeRequested||${purpose}ProducerObserveArms.Count!=${String(REQUESTS.newArms)})throw Error("project-save-producer-original-construction");
+if(${purpose}WorkerStage!=7||!${purpose}StructureBootstrapResumed||!${purpose}ProducerModeRequested||!${purpose}ProducerIntrinsicsReproved||${purpose}ProducerObserveArms.Count!=${String(REQUESTS.newArms)})throw Error("project-save-producer-original-construction");
 if(phase=="project-save-producer-properties"){if(${purpose}ProducerObserveProperties>=${String(REQUESTS.properties)})throw Error("project-save-producer-properties-budget");${purpose}ProducerObserveProperties++;}
 else{int count;${purpose}ProducerObserveCounts.TryGetValue(phase,out count);if(count>=${String(REQUESTS.maximumRoleOccurrences)})throw Error("project-save-producer-role-budget");${purpose}ProducerObserveCounts[phase]=count+1;}
 }
@@ -34,6 +46,14 @@ function smoke(purpose: "via" | "schematic"): string {
   return `{var o=${factory}();try{bool refused=false;try{o.Send${name}ProducerObserve(1,"project-save-producer-properties","Runtime.getProperties",new System.Collections.Hashtable(){{"objectId","original"}});}catch(InvalidOperationException){refused=true;}if(!refused||o.${purpose}ProducerObserveRequests!=0)throw Error("producer-observation-original-owner-smoke");}finally{o.originalMain.Release();}}`;
 }
 function native(): string { return `${begin}\n${currentProjectSaveProducerNativeSource()}\npublic sealed partial class EasyedaDiagnosticOwner {\n${owner("via")}${owner("schematic")}\npublic static void VerifyOriginalProducerObservationSmoke(){${smoke("via")}${smoke("schematic")}}\n}\n${end}`; }
+function bindDispatch(purpose: "via" | "schematic"): string {
+  const action = purpose === "via" ? "pcb-via" : "schematic-display", flag = purpose === "via" ? "$PcbViaWrite209" : "$SchematicDisplayWrite209", name = purpose === "via" ? "Via" : "SchematicDisplay";
+  return `        '${action}-producer-bind' {
+          if (-not ${flag} -or -not $launched -or $request.workerContext -isnot [string] -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,helperInstance,id,jobId,rootCreated,rootPid,workerContext') {throw 'project-save-producer-bind-fields'}
+          $owner.Bind${name}Producer($request.workerContext);$result=@{bound=$true}
+        }
+`;
+}
 function dispatch(purpose: "via" | "schematic"): string {
   const action = purpose === "via" ? "pcb-via" : "schematic-display", flag = purpose === "via" ? "$PcbViaWrite209" : "$SchematicDisplayWrite209", name = purpose === "via" ? "Via" : "SchematicDisplay";
   return `        '${action}-producer-observe' {
@@ -46,9 +66,13 @@ function dispatch(purpose: "via" | "schematic"): string {
 `;
 }
 export function applyCurrentProjectSaveProducerNativeFragment(input: string): string {
-  let source = one(input, 'case "pcb-via-producer-guard":', 'case "pcb-via-producer-observe":case "pcb-via-producer-guard":');
-  source = one(source, 'case "schematic-display-producer-guard":', 'case "schematic-display-producer-observe":case "schematic-display-producer-guard":');
+  let source = input;
+  for (const name of ["pcb-via", "schematic-display"]) {
+    const before = `case "${name}-producer-observe":case "${name}-producer-guard":`; const after = `case "${name}-producer-bind":${before}`;
+    source = source.includes(before) && !source.includes(after) ? one(source, before, after) : one(source, `case "${name}-producer-guard":`, after);
+  }
   source = installOwnedNativeDispatch(source, dispatch("via") + dispatch("schematic"), "        'pcb-via-producer-guard' {");
+  source = installOwnedNativeDispatch(source, bindDispatch("via") + bindDispatch("schematic"), "        'pcb-via-producer-observe' {");
   source = installNativeCompileOnlyHook(source, "    [EasyedaProjectSaveProducerProtocol]::VerifySmoke()", "    [EasyedaProjectSaveProducerGuardProtocol]::VerifySmoke()");
   source = installNativeCompileOnlyHook(source, "    [EasyedaDiagnosticOwner]::VerifyOriginalProducerObservationSmoke()", "    [EasyedaProjectSaveProducerProtocol]::VerifySmoke()");
   const start = source.indexOf(begin), stop = source.indexOf(end);

@@ -11,7 +11,7 @@ import type { CurrentProjectSaveProducerObserver } from "../src/current-project-
 import { loadSyntheticRegistryModule } from "./helpers/load-synthetic-registry-module.ts";
 
 void test("all producer requests remain source-fixed observations with no resume or timer/cache operation", () => {
-  const cases = currentProjectSaveProducerNativeCases(); assert.equal(cases.length, 78);
+  const cases = currentProjectSaveProducerNativeCases(); assert.equal(cases.length, 106);
   for (const command of cases) { assert.deepEqual(validateCurrentProjectSaveProducerCommand(command), command);
     assert.throws(() => validateCurrentProjectSaveProducerCommand({ ...command, method: "Debugger.resume", params: {} }));
     if (command.phase === "project-save-producer-frame") { assert.throws(() => validateCurrentProjectSaveProducerCommand({ ...command, params: { ...command.params, expression: "this.uploadCloud()" } })); }
@@ -30,6 +30,7 @@ async function fixture(foreign = false): Promise<Readonly<{ observer: CurrentPro
   const state = { failed: false, requests: 0 }; let exited = false;
   const role = "syncEntry", site = SITES[role];
   const bindings: CurrentProjectSaveProducerBindings = Object.freeze({ sessionId: "worker-session", scriptId: "worker-script",
+    originalIntrinsics: (): string => "original-native-intrinsics",
     retainHeldCall: () => Object.freeze({ profile: "private.current-project-save-producer-held-call.v1" as const }),
     originalBreakpoint: (name: typeof ROLES[number]) => `bp-${name}`, originalReceivers: () => Object.freeze({ project: "original-project", wrapper: "original-wrapper", callback: "original-callback" }),
     assertCurrent: (): Promise<void> => Promise.resolve(), assertOriginalGenerationExited: (): Promise<void> => { assert.equal(exited, true); return Promise.resolve(); }, fail: (): void => { state.failed = true; },
