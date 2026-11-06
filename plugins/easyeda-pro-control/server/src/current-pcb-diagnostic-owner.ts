@@ -42,6 +42,8 @@ import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS, currentProjectSaveProducer
 import type { CurrentProjectSaveProducerCacheCaller } from "./current-project-save-producer-cache-source.ts";
 import { CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_ARRAY_LENGTH, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_PROFILES, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_CALLS as PRODUCER_INTRINSICS, decodeCurrentNativeCacheResponseIntrinsic } from "./current-native-cache-response-intrinsics.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS, CURRENT_PROJECT_SAVE_PRODUCER_ROLES, CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS, validateCurrentProjectSaveProducerCommand } from "./current-project-save-producer-protocol.ts";
+import { observeCurrentPcb209StartPageCandidate } from "./current-pcb-209-start-page-selection.ts";
+import { currentPcbViaSavedStartPageNativeFrame } from "./current-pcb-via-saved-start-page-protocol.ts";
 import { currentPcbViaSavedSceneNativeFrame } from "./current-pcb-via-saved-scene-protocol.ts";
 import { currentPcbViaSavedModelNativeFrame } from "./current-pcb-via-saved-model-protocol.ts";
 import type { CurrentPcbViaSavedModelPhase } from "./current-pcb-via-saved-model-protocol.ts";
@@ -1623,6 +1625,7 @@ class CurrentPcbRetainedOwnerCore {
   #savedReadbackRegistrationPromise: Promise<CurrentSavedProjectRegistrationIntent> | null = null;
   #savedReadbackRegistrationIntent: CurrentSavedProjectRegistrationIntent | null = null;
   #savedReadbackRegistrationDispatch: Promise<Readonly<RecordValue>> | null = null; #savedReadbackRegistrationResult: Readonly<RecordValue> | null = null;
+  #savedReadbackStartPagePromise: Promise<Readonly<RecordValue>> | null = null; #savedReadbackStartPageFrame = false;
   #savedReadbackSceneContext: string | null = null; #savedReadbackSceneFrame = false; #savedReadbackScenePromise: Promise<CurrentPcb209SpatialTrackResult> | null = null;
   #savedReadbackNativeModel: Readonly<RecordValue> | null = null; #savedReadbackSceneModel: CurrentPcb209SpatialTrackResult | null = null; #savedReadbackReopenedModel: CurrentPcbViaSavedReopenedModel | null = null;
   #savedReadbackModelEnrolled = false; #savedReadbackModelRunning = false; #savedReadbackModelPhase: CurrentPcbViaSavedModelPhase | null = null;
@@ -1952,6 +1955,40 @@ class CurrentPcbRetainedOwnerCore {
         debuggerSocketAbsenceVerified: false, bridgeAuthentication: false, executionAuthorized: false });
     } catch (caughtError) { this.#input.emit("error", error("BROWSER_OBSERVATION_FAILED")); throw caughtError; }
     finally { this.#busy = false; }
+  }
+
+  /** Separate saved-only bounded inventories. Blank observations grant no
+   * page/source authority; once born, a different or closed page refuses. */
+  public observeSavedReadbackStartPage(): Promise<Readonly<RecordValue>> {
+    assertOriginalCurrentPcbViaSavedReadbackOwner(this);
+    if (this.#savedReadbackStartPagePromise !== null) { return this.#savedReadbackStartPagePromise; }
+    const pipe = this.#pipe;
+    if (!(pipe instanceof CurrentPcbViaSavedReadbackPipe) || this.#browserObservationConsumed || this.#framesConsumed || this.#inspectionConsumed || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true) { throw error("SAVED_START_PAGE_UNAVAILABLE"); }
+    this.#enter(true); this.#browserObservationConsumed = true;
+    const work = (async (): Promise<Readonly<RecordValue>> => {
+      const current = (): void => { this.#available(); assertOriginalCurrentPcbViaSavedReadbackOwner(this);
+        if (this.#pipe !== pipe || this.#savedReadbackAborted || this.#closeConsumed || this.#framesConsumed || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true) { throw error("SAVED_START_PAGE_ORIGINAL_GENERATION"); } };
+      const read = async (phase: "version" | "targets"): Promise<RecordValue> => {
+        current(); if (this.#savedReadbackStartPageFrame) { throw error("SAVED_START_PAGE_ORIGINAL_PENDING"); } this.#savedReadbackStartPageFrame = true;
+        try { const result = await this.#transfer(() => pipe.observeSavedReadbackStartPage(phase)); current(); return result; } finally { this.#savedReadbackStartPageFrame = false; }
+      };
+      try {
+        const version = await read("version");
+        if (!exact(version, ["protocolVersion", "product", "revision", "userAgent", "jsVersion"]) || Object.values(version).some(value => typeof value !== "string" || value.length > 8192 || value.includes("\0"))) { throw error("BROWSER_VERSION_REPLY"); }
+        let targetId: string | null = null;
+        const maximum = CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.startPage.inventorySamples;
+        for (let index = 0; index < maximum; index += 1) {
+          const rows = diagnosticTargetInventory(await read("targets")); current();
+          const observation = { schema: "easyeda-pro-control.pcb-diagnostic-browser-observation.v1", version: structuredClone(version), targets: rows.map(value => diagnosticTargetSummary(value)),
+            projectFreeVerified: false, profileIsolated: false, debuggerSocketAbsenceVerified: false, bridgeAuthentication: false, executionAuthorized: false };
+          const candidate = observeCurrentPcb209StartPageCandidate(observation, targetId); targetId = candidate.targetId;
+          if (candidate.ready) { this.#browserTargets = rows; return diagnosticBoundedObservation({ ...observation, inventorySamples: index + 1, sourceQualified: false }); }
+          if (index + 1 < maximum) { await delay(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.startPage.delayMilliseconds); current(); }
+        }
+        throw error("SAVED_START_PAGE_NOT_OBSERVED");
+      } catch (caughtError) { this.#input.emit("error", error("SAVED_START_PAGE_FAILED")); throw caughtError; }
+      finally { this.#savedReadbackStartPageFrame = false; this.#busy = false; }
+    })(); this.#savedReadbackStartPagePromise = work; return work;
   }
 
   /** Only the distinct read-only purpose may wait for its original UI page.
@@ -8061,6 +8098,9 @@ class CurrentPcbRetainedOwnerCore {
         else { encoded = currentFootprintInverseRegistrationNativeFrame(chunk, inverse.session, inverse.context, inverse.target); }
       }
       else if (this.#savedReadbackLoadCommand !== null && this.#savedReadbackLoadPair !== null) { encoded = currentPcbViaSavedLoadWorkerNativeFrame(chunk, this.#savedReadbackLoadCommand, this.#savedReadbackLoadPair); }
+      else if (this.#savedReadbackStartPageFrame) {
+        assertOriginalCurrentPcbViaSavedReadbackOwner(this); encoded = currentPcbViaSavedStartPageNativeFrame(chunk);
+      }
       else if (this.#savedReadbackSceneFrame && this.#savedReadbackSceneContext !== null && this.#savedReadbackCache !== null) {
         this.#requireSavedReadbackModel(); encoded = currentPcbViaSavedSceneNativeFrame(chunk, this.#savedReadbackCache.selected.sessionId, this.#savedReadbackSceneContext);
       }

@@ -85,7 +85,7 @@ export class CurrentPcbViaSavedReadbackWorkflow {
         let owner: CurrentPcbViaSavedReadbackOwner; try { owner = await this.#factory; } finally { this.#factorySettled = true; } this.#owner = owner; this.#current(owner);
         await this.#step("native-launch", owner, () => owner.startSavedReadbackGeneration());
         await this.#step("original-main", owner, () => owner.observeFootprintMainConstruction());
-        const browser = await this.#step("browser", owner, () => owner.browserObservation());
+        const browser = await this.#step("browser", owner, () => owner.observeSavedReadbackStartPage());
         const selected = selectCurrentPcb209StartPage(browser);
         const frames = await this.#step("frames", owner, () => owner.inspectFrames(selected.targetId));
         const frame = selectCurrentPcb209StartPageFrame(frames, selected);

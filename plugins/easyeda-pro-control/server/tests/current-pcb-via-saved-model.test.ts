@@ -86,7 +86,7 @@ function wrapper(): CurrentPcbSpatialCaptureCommand { return { spatialPhase: "wr
 void test("saved whole-scene codec restores its own ID and refuses foreign contexts and old variants", () => {
   assert.equal(CURRENT_PCB_VIA_SAVED_SCENE_REQUESTS.stage, 267); assert.equal(CURRENT_PCB_VIA_SAVED_SCENE_REQUESTS.total, 275);
   assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeScene, CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activePcbModel + 275);
-  assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.total, 658);
+  assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.total, 665);
   const fixed = currentPcbViaSavedSceneWire(wrapper(), 600, "parent", "pcb-context");
   assert.equal(fixed.command.id, 600); assert.equal(fixed.request["requestId"], 600); assert.equal(fixed.request["action"], "saved-readback-scene");
   const frame = Buffer.from(`${JSON.stringify(fixed.command)}\0`); assert.deepEqual(currentPcbViaSavedSceneNativeFrame(frame, "parent", "pcb-context"), fixed.request);
