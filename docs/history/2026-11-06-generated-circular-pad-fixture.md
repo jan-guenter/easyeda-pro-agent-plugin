@@ -68,3 +68,14 @@ No tracked helper, payload pin or generated bundle was changed by this child.
 Windows compilation, native import/closure/SQL and a positive original Pad reader
 case remain unproved. Component geometry remains refused as documented in the
 [Pad point reader record](2026-11-06-pad-point-spatial-source.md).
+
+The first source commit `e294d6b9` still had two integration refusals. The actual
+destination grammar omitted the Pad basename, and the schematic navigation
+derivation expected the earlier PCB registration regex. The synthetic importer
+destination seam did not exercise the actual basename validator. A subsequent
+source audit found both before a native Pad selection. The follow-up adds only
+the fixed circular-Pad alternative to both native destination guards and its
+TypeScript validator, refreshes that helper SHA, and updates the schematic
+derivation anchor. A real original Node-child destination/metadata transport
+regression and existing schematic program tests cover those boundaries. No
+native Pad attempt or original failure stderr is claimed.

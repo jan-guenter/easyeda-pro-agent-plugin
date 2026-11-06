@@ -7,8 +7,8 @@ import { join } from "node:path";
 import { z } from "zod";
 import { deriveWindowsRuntimePaths } from "./windows-runtime.ts";
 
-export const MANAGED_FIXTURE_DESTINATION_HELPER_SHA256 = "5729fc3300d31737b0ff7b5f4585f81cf620759cb1243b0ce54b15e1c528fe78";
-const basename = z.string().regex(/^Codex_(?:via_only|line_and_via|arc_line_and_via|schematic)_[a-f0-9]{16}\.eprj2$/u);
+export const MANAGED_FIXTURE_DESTINATION_HELPER_SHA256 = "e6d3871ad3b4d5fd3bdf99a3a4e49a14bb7f7bd9d523b142e2b6c76d5fbcd283";
+const basename = z.string().regex(/^Codex_(?:via_only|line_and_via|arc_line_and_via|schematic|circular_smt_pad)_[a-f0-9]{16}\.eprj2$/u);
 export const managedFixtureLibraryDirectoriesSchema = z.array(z.string().min(4).max(1024).regex(/^[A-Z]:\\(?:[A-Za-z0-9_ -]+\\)*[A-Za-z0-9_-]+$/u)
   .refine((value) => value.slice(3).split("\\").every((part) => part.trim() === part && !/^(?:con|prn|aux|nul|com[0-9]|lpt[0-9])$/iu.test(part))))
   .min(1).max(4).refine((value) => new Set(value.map((path) => path.toLowerCase())).size === value.length);

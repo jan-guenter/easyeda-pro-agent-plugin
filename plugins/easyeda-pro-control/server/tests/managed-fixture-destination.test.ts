@@ -7,11 +7,11 @@ import { fileURLToPath } from "node:url";
 import { MANAGED_FIXTURE_DESTINATION_HELPER_SHA256, ManagedFixtureDestinationOwner, managedFixtureClosedFileMetadataSchema, managedFixtureDestinationObservationSchema } from "../src/managed-fixture-destination.ts";
 
 const expectedBasename = `Codex_via_only_${"3".repeat(16)}.eprj2`, nonce = "2".repeat(64);
-function owner(mode: string): ManagedFixtureDestinationOwner {
-  return new ManagedFixtureDestinationOwner({ pluginRoot: "/mnt/c/synthetic-plugin", assetsRoot: "/mnt/c/synthetic-app/resources/app/assets", nonce, expectedBasename,
+function owner(mode: string, selectedBasename = expectedBasename): ManagedFixtureDestinationOwner {
+  return new ManagedFixtureDestinationOwner({ pluginRoot: "/mnt/c/synthetic-plugin", assetsRoot: "/mnt/c/synthetic-app/resources/app/assets", nonce, expectedBasename: selectedBasename,
     libraryWindowsDirectories: [String.raw`C:\SyntheticLibraries`] }, {
     verifyHelper: (path) => { assert.ok(path.endsWith("/scripts/managed-fixture-destination.ps1")); return Promise.resolve(); },
-    spawnProcess: () => spawn(process.execPath, [fileURLToPath(new URL("helpers/managed-fixture-destination-child.ts", import.meta.url)), nonce, expectedBasename, mode], { stdio: ["pipe", "pipe", "pipe"] }),
+    spawnProcess: () => spawn(process.execPath, [fileURLToPath(new URL("helpers/managed-fixture-destination-child.ts", import.meta.url)), nonce, selectedBasename, mode], { stdio: ["pipe", "pipe", "pipe"] }),
   });
 }
 
@@ -25,6 +25,15 @@ void test("destination owner binds a fresh original transport and releases it wi
   assert.equal(released.originalTransportClosed, true); assert.equal(released.filesDeleted, false); assert.equal(released.exitCode, 0);
   assert.equal(released.migrationExclusionHeldUntilRelease, true);
   await assert.rejects(native.inspect()); await assert.rejects(native.release());
+});
+
+void test("actual destination owner accepts the fixed generated Pad basename through its original transport and metadata validators", async () => {
+  const padBasename = `Codex_circular_smt_pad_${"3".repeat(16)}.eprj2`;
+  const native = owner("success", padBasename);
+  const initialized = await native.initialize(); assert.equal(initialized.expectedBasename, padBasename);
+  const inspected = await native.inspect(); assert.deepEqual(inspected.entries, [padBasename]);
+  const file = await native.captureClosedFileMetadata(); assert.ok(file.file.windowsPath.endsWith(`\\${padBasename}`));
+  const released = await native.release(); assert.equal(released.originalTransportClosed, true);
 });
 
 void test("destination identity or complete-roster mismatch stops inspection and preserves supported original release", async () => {

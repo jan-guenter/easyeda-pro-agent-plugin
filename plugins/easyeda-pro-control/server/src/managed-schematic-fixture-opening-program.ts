@@ -23,7 +23,7 @@ function registrationFunction(): string {
   source = one(source, "Reflect.ownKeys(target).length!==5", "Reflect.ownKeys(target).length!==6");
   source = one(source, "'branchUuid','pageUuid','expectedSourceSha256'", "'branchUuid','pageUuid','schematicUuid','expectedSourceSha256'");
   source = one(source, "!/^[a-f0-9]{32}$/.test(target.pageUuid)", "!/^[a-f0-9]{32}$/.test(target.pageUuid)||!/^[a-f0-9]{32}$/.test(target.schematicUuid)");
-  return one(source, "(?:via_only|line_and_via|arc_line_and_via)", "schematic");
+  return one(source, "(?:via_only|line_and_via|arc_line_and_via|circular_smt_pad)", "schematic");
 }
 function projectFunction(): string {
   let source = CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION.replaceAll("documentUuid", "pageUuid");
