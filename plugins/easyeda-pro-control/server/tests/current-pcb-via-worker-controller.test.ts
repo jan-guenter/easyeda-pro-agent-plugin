@@ -1,6 +1,7 @@
 /** Production cursor + production seven-source runner, with only full imported
  * source bytes replaced at the explicit VM seam. No native origin is issued. */
 /* oxlint-disable import/max-dependencies -- Exercise the two actual state machines and their independent source/Save contracts. */
+import { CURRENT_PROJECT_STRUCTURE_TRANSPORT_PROGRAMS } from "../src/current-project-structure-transport-programs.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_ROLES, CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS } from "../src/current-project-save-producer-protocol.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_SITES } from "../src/current-project-save-producer-source.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_PRODUCER_GUARD_SITES as GUARDS, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as STRUCTURE } from "../src/current-project-save-structure-protocol.ts";
@@ -40,7 +41,7 @@ async function constructor(): Promise<typeof CurrentPcbViaWorkerController> {
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Runtime checked production class; only pinned full-source bytes have the stated seam.
   return result as typeof CurrentPcbViaWorkerController;
 }
-async function fixture(failSetup = false, holdPoll = false, structure = false, producerGuards = false, producerObservation = false): Promise<Readonly<{ controller: CurrentPcbViaWorkerController; bindings: CurrentPcbViaWorkerControllerBindings;
+async function fixture(failSetup = false, holdPoll = false, structure = false, producerGuards = false, producerObservation = false, helper: "none" | "original" | "foreign" = "none"): Promise<Readonly<{ controller: CurrentPcbViaWorkerController; bindings: CurrentPcbViaWorkerControllerBindings;
   commands: CurrentPcbViaWorkerCommand[]; incoming: DiagnosticEvent[]; state: { failed: boolean; held: number; released: number; resumed: boolean; bound: number }; releasePoll: () => void; pollStarted: Promise<true>; polls: { count: number } }>> {
   const Constructor = await constructor(), projectUuid = "a".repeat(64), windowTabId = "original-window";
   const targetUrl = "https://client/editor?entry=mgr-project-worker.js&cll=&debugOpen=0", title = `project_${projectUuid}_${windowTabId}`;
@@ -93,6 +94,7 @@ async function fixture(failSetup = false, holdPoll = false, structure = false, p
         controller.bindStructureBreakpoint(source, role, `structure-${role}`); const site = STRUCTURE[role];
         event("Debugger.breakpointResolved", { breakpointId: `structure-${role}`, location: { scriptId: source.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } });
       } controller.requireStructureArmed(source); }
+      if (helper !== "none") { controller.expectSetupHelper(source, CURRENT_PROJECT_STRUCTURE_TRANSPORT_PROGRAMS.capture); event("Debugger.scriptParsed", { scriptId: "original-helper", executionContextId: 7, url: "" }); }
       return Promise.resolve();
     },
     request: command => {
@@ -101,6 +103,7 @@ async function fixture(failSetup = false, holdPoll = false, structure = false, p
       if (command.phase === "via-worker-debugger") { return Promise.resolve({ debuggerId: "debugger" }); }
       if (command.phase === "via-worker-instrument") { return Promise.resolve({ breakpointId: "instrument" }); }
       if (command.phase === "via-worker-run-waiting") { stage("bootstrap"); }
+      if (command.phase === "via-worker-helper-source") { assert.equal(command.params.scriptId, "original-helper"); return Promise.resolve({ scriptSource: helper === "foreign" ? "(function(){return false;})" : `(${CURRENT_PROJECT_STRUCTURE_TRANSPORT_PROGRAMS.capture})` }); }
       if (command.phase === "via-worker-source") { return Promise.resolve({ scriptSource: command.role === "bootstrap" ? BOOTSTRAPS[1] : `source-${command.role}` }); }
       if (command.phase === "via-worker-resume") {
         event("Debugger.resumed", {});
@@ -187,4 +190,12 @@ void test("actual producer collector receives only the four transferred guard id
   f.controller.observeEvent({ method: "Debugger.breakpointResolved", sessionId: "original-worker", params: { breakpointId: "producer-historySeed", location: { scriptId: "script-project", lineNumber: denied.lineNumber, columnNumber: denied.columnNumber } } });
   assert.throws(() => { f.controller.observeEvent({ method: "Debugger.paused", sessionId: "original-worker", params: { hitBreakpoints: ["producer-historySeed"], callFrames: [{ location: { scriptId: "script-project", lineNumber: denied.lineNumber, columnNumber: denied.columnNumber } }] } }); }, /PRODUCER_GUARD_HELD/u);
   assert.equal(f.state.failed, true); assert.equal(f.commands.length, count);
+});
+
+void test("actual controller qualifies its correlated helper source before accepting the original final resume", async () => {
+  const f = await fixture(false, false, false, false, false, "original"); await f.controller.pump();
+  const helper = f.commands.findIndex(command => command.phase === "via-worker-helper-source"), resumed = f.commands.findIndex(command => command.phase === "via-worker-resume" && command.role === "project");
+  assert.ok(helper !== -1 && resumed > helper); assert.equal(f.commands.length, 21); assert.equal(f.state.failed, false);
+  const changed = await fixture(false, false, false, false, false, "foreign"); await assert.rejects(changed.controller.pump(), /SETUP_HELPER_SOURCE/u);
+  assert.equal(changed.state.resumed, false); assert.equal(changed.state.released, 0); assert.equal(changed.state.failed, true);
 });

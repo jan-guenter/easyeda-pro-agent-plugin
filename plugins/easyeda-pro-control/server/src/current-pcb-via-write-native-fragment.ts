@@ -67,7 +67,7 @@ const dispatch = String.raw`        'pcb-via-sdk-properties' {
 `;
 export function applyCurrentPcbViaWriteNativeFragment(input: string): string {
   // Upgrade only earlier unpublished Via reservations. Released103/384 stay exact.
-  const currentInput = input.replace(/return pcbViaWrite209\?(?:700|766|837|950|1019|1149|1165|1167|1177):spatial209\?384:/u, `return pcbViaWrite209?${String(PROFILE.renderer.total)}:spatial209?384:`).replace(/\$requestLimit=if \(\$PcbViaWrite209\) \{(?:700|766|837|950|1019|1149|1165|1167|1177)\}/u, `$requestLimit=if ($PcbViaWrite209) {${String(PROFILE.renderer.total)}}`);
+  const currentInput = input.replace(/return pcbViaWrite209\?(?:700|766|837|950|1019|1149|1165|1167|1177|1362):spatial209\?384:/u, `return pcbViaWrite209?${String(PROFILE.renderer.total)}:spatial209?384:`).replace(/\$requestLimit=if \(\$PcbViaWrite209\) \{(?:700|766|837|950|1019|1149|1165|1167|1177|1362)\}/u, `$requestLimit=if ($PcbViaWrite209) {${String(PROFILE.renderer.total)}}`);
   let source = one(currentInput, "[switch]$StringPrecreate,", "[switch]$PcbViaWrite209,[switch]$StringPrecreate,");
   const switches = [...source.slice(0, source.indexOf("\n")).matchAll(/\[switch\]\$(\w+)/gu)].map(match => match[1]).filter(name => name !== undefined && name !== "CompileOnly" && name !== "PcbViaWrite209" && name !== "SchematicDisplayWrite209");
   const conflict = `if ($PcbViaWrite209 -and (${switches.map(name => `$${name}`).join(" -or ")})) {throw 'pcb-diagnostic-conflicting-via-purpose'}\n`;

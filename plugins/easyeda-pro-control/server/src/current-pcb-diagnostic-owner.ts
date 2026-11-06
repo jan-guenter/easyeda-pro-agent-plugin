@@ -2267,6 +2267,7 @@ class CurrentPcbRetainedOwnerCore {
               const assertGrant = (): void => { if (grant !== null) { const activeGrant = command.phase === "project-structure-transport-resume" && command.role === "send" ? projectStructureTransportBodyGrants.get(transportOrigin) : projectStructureTransportPublicationGrants.get(transportOrigin); if (activeGrant !== grant) { throw error("PROJECT_STRUCTURE_TRANSPORT_GRANT_CHANGED"); } grant.assertCurrent(); } }; assertGrant();
               const reply = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { original(); assertTransportOriginal(); assertGrant();
                 if (command.phase === "project-structure-transport-resume") { selected.reserveStructureTransportResume(source, command.role); }
+                if (command.phase === "project-structure-transport-capture") { selected.expectSetupHelper(source, command.params.functionDeclaration); }
                 return pipe.observeSchematicDisplayStructureTransport(command);
               }));
               if (command.phase === "project-structure-transport-capture") { this.#schematicTransportCapture = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, CURRENT_PROJECT_STRUCTURE_TRANSPORT_NATIVE_CAPTURE_LENGTH); }
@@ -2549,6 +2550,7 @@ class CurrentPcbRetainedOwnerCore {
               const assertGrant = (): void => { if (grant !== null) { const activeGrant = command.phase === "project-structure-transport-resume" && command.role === "send" ? projectStructureTransportBodyGrants.get(transportOrigin) : projectStructureTransportPublicationGrants.get(transportOrigin); if (activeGrant !== grant) { throw error("PROJECT_STRUCTURE_TRANSPORT_GRANT_CHANGED"); } grant.assertCurrent(); } }; assertGrant();
               const reply = await this.#serializeViaObserver(() => this.#transfer(() => { original(); assertTransportOriginal(); assertGrant();
                 if (command.phase === "project-structure-transport-resume") { selected.reserveStructureTransportResume(source, command.role); }
+                if (command.phase === "project-structure-transport-capture") { selected.expectSetupHelper(source, command.params.functionDeclaration); }
                 return pipe.observeViaStructureTransport(command);
               }));
               if (command.phase === "project-structure-transport-capture") { this.#viaTransportCapture = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, CURRENT_PROJECT_STRUCTURE_TRANSPORT_NATIVE_CAPTURE_LENGTH); }

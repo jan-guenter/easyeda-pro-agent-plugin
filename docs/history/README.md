@@ -18,6 +18,8 @@
 - [2026-11-06 separate Relevance display data](2026-11-06-relevance-display-data-profile.md). Genuine seven-row checkpoint arguments, exact ATTR/native root permutation, separate fixed stages/effect/pending body and explicit normalized baseline; original native writer/SQL/persistence grants remain closed.
 
 - [2026-11-06 Component point source/cost](2026-11-06-component-point-source-cost.md). Complete cached/stored-box and owned Pad paths, actual identity/scratch checks and393/408 prospective requests; existing384-ID purposes and Component admission remain unchanged.
+- [2026-11-06 worker setup helper source](2026-11-06-worker-setup-helper-source.md). Genuine paused-thread Inspector evidence and exact original helper-script correlation before PROJECT resumes; no arbitrary empty-URL admission.
+
 - [2026-11-06 original producer held-call marker](2026-11-06-original-producer-held-marker.md). Central marker issuance from the exact delivered event and consumed frame/receiver/property attempts; no continuation grant.
 
 - [2026-11-06 original producer collector](2026-11-06-original-producer-collector.md). Same-worker original origin,23 new arms/four transferred guard IDs and immutable held calls; no producer resume or Save authority.

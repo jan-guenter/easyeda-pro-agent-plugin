@@ -78,6 +78,7 @@ sealProducerObservation(s){this.requireHeld(s);if(this.producerObservationPoints
 requireProducerObservationArmed(s){this.requireHeld(s);if(this.producerObservationPoints.size!==27)throw Error("producer observation arms");}
 originalProducerObservationBreakpoint(s,r){this.requireHeld(s);if(!this.producerObservationPoints.has(r))throw Error("producer observation original point");return this.producerObservationPoints.get(r);}
 nextProducerEvent(){throw Error("no producer dispatch");}
+expectSetupHelper(s,program){this.requireHeld(s);if(typeof program!=="string")throw Error("setup helper");}
 
 bindStructureTransportBreakpoint(s,r,id){this.requireHeld(s);if(this.transportPoints.has(r))throw Error("transport point");this.transportPoints.add(r);}
 requireStructureTransportArmed(s){this.requireHeld(s);if(this.transportPoints.size!==3)throw Error("transport arm");}

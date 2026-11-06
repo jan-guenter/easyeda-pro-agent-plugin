@@ -16,7 +16,7 @@ function native(): string {
   return `${begin}
 ${currentPcbViaWorkerNativeSource()}
 public sealed partial class EasyedaDiagnosticOwner {
-string viaWorkerSession,viaWorkerTarget,viaWorkerProjectScript;bool viaWorkerParentArmed,viaWorkerParentRunning;int viaWorkerSetup,viaWorkerStage,viaWorkerNormal,viaWorkerCleanup,viaSaveNormal,viaSaveCleanup;bool viaWorkerSourceRead,viaWorkerInstrumentRemoved;
+string viaWorkerSession,viaWorkerTarget,viaWorkerProjectScript;bool viaWorkerParentArmed,viaWorkerParentRunning;int viaWorkerSetup,viaWorkerStage,viaWorkerNormal,viaWorkerCleanup,viaSaveNormal,viaSaveCleanup;bool viaWorkerSourceRead,viaWorkerInstrumentRemoved;readonly System.Collections.Generic.HashSet<string> viaWorkerHelperScripts=new System.Collections.Generic.HashSet<string>();
 readonly System.Collections.Generic.HashSet<string> viaSavePoints=new System.Collections.Generic.HashSet<string>();
 static readonly string[] ViaWorkerRoles=new[]{${ROLES.map(role => `"${role}"`).join(",")}};
 public void BindPcbViaWorker(string session,string target,string project,string window){
@@ -31,6 +31,7 @@ string message="{\\"id\\":"+id.ToString(CultureInfo.InvariantCulture)+",\\"metho
 void AdmitViaWorkerBootstrap(string phase,System.Collections.IDictionary fields){
 string[] setup={"via-worker-runtime","via-worker-debugger","via-worker-async","via-worker-instrument","via-worker-run-waiting"};
 if(viaWorkerSetup<setup.Length){if(phase!=setup[viaWorkerSetup])throw Error("via-worker-bootstrap-setup");viaWorkerSetup++;return;}
+if(phase=="via-worker-helper-source"){string script=fields["scriptId"] as string;if(viaWorkerStage!=6||!viaWorkerSourceRead||viaWorkerInstrumentRemoved||script==viaWorkerProjectScript||viaWorkerHelperScripts.Count>=${String(BOOTSTRAP.setupHelpers)}||!viaWorkerHelperScripts.Add(script))throw Error("via-worker-helper-source-original");return;}
 if(phase=="via-worker-remove"){if(viaWorkerInstrumentRemoved||viaWorkerStage!=6||!viaWorkerSourceRead||viaSavePoints.Count!=6||viaStructurePoints.Count!=0&&viaStructurePoints.Count!=14)throw Error("via-worker-instrument-original");viaWorkerInstrumentRemoved=true;return;}
 if(viaWorkerStage>=ViaWorkerRoles.Length)throw Error("via-worker-bootstrap-consumed");string role=ViaWorkerRoles[viaWorkerStage];
 if(phase=="via-worker-source-"+role){if(viaWorkerSourceRead)throw Error("via-worker-source-once");viaWorkerSourceRead=true;if(role=="project")viaWorkerProjectScript=fields["scriptId"] as string;}

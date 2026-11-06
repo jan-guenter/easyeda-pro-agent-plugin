@@ -1,4 +1,5 @@
 /* oxlint-disable import/max-dependencies -- One original cursor joins independent bootstrap, Save, clock, structure, transport and producer source grammars. */
+import { CURRENT_PROJECT_WORKER_SETUP_HELPER_REQUESTS, qualifyCurrentProjectWorkerSetupHelperSource, requireCurrentProjectWorkerSetupHelper } from "./current-project-worker-setup-helpers.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_ROLES, CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS } from "./current-project-save-producer-protocol.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_SITES as PRODUCER_SITES } from "./current-project-save-producer-source.ts";
 import type { CurrentProjectSaveProducerRole } from "./current-project-save-producer-source.ts";
@@ -38,6 +39,7 @@ function token(value: unknown): value is string { return typeof value === "strin
 function record(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value) && !types.isProxy(value); }
 export class CurrentPcbViaWorkerController {
   readonly #bindings: CurrentPcbViaWorkerControllerBindings;
+  readonly #setupHelpers: string[] = []; readonly #setupHelperScripts = new Set<string>();
   readonly #events: CurrentPcbViaWorkerBootstrapEvent[] = [];
   readonly #savePoints = new Map<CurrentPcbViaSaveSite, string>();
   readonly #producerGuardPoints = new Map<CurrentProjectSaveProducerGuardRole, string>();
@@ -84,6 +86,18 @@ export class CurrentPcbViaWorkerController {
   }
   public requireOriginal(source: CurrentPcbViaProjectSourceHeld, child: CurrentPcbViaWorkerChild): void {
     need(this.#source === source && this.#child === child && this.#runner !== null);
+  }
+  public expectSetupHelper(source: CurrentPcbViaProjectSourceHeld, program: string): void {
+    need(this.#source === source && this.#result === null && this.#pumping && this.#setupHelpers.length < CURRENT_PROJECT_WORKER_SETUP_HELPER_REQUESTS); requireCurrentProjectWorkerSetupHelper(program); this.#setupHelpers.push(program);
+  }
+  async #consumeSetupHelpers(source: CurrentPcbViaProjectSourceHeld): Promise<void> {
+    need(this.#source === source && this.#result === null && this.#pumping);
+    for (const program of this.#setupHelpers) { const event = await this.#next();
+      need(event.method === "Debugger.scriptParsed" && record(event.params) && event.params["url"] === "" && event.params["executionContextId"] === source.executionContextId && event.params["hasSourceURL"] !== true && event.params["isLiveEdit"] !== true && (event.params["scriptLanguage"] === undefined || event.params["scriptLanguage"] === "JavaScript") && token(event.params["scriptId"]) && event.params["scriptId"] !== source.scriptId && !this.#setupHelperScripts.has(event.params["scriptId"]));
+      const scriptId = event.params["scriptId"]; this.#setupHelperScripts.add(scriptId);
+      const raw = await this.#bindings.request({ phase: "via-worker-helper-source", method: "Debugger.getScriptSource", params: { scriptId } }, false);
+      need(record(raw) && Reflect.ownKeys(raw).length === 1); const descriptor = Object.getOwnPropertyDescriptor(raw, "scriptSource"); need(descriptor !== undefined && Object.hasOwn(descriptor, "value")); const text: unknown = descriptor.value; qualifyCurrentProjectWorkerSetupHelperSource(text, program); await this.#current();
+    }
   }
   public bindSaveBreakpoint(source: CurrentPcbViaProjectSourceHeld, role: CurrentPcbViaSaveSite, breakpointId: string): void {
     need(this.#source === source && this.#result === null && !this.#savePoints.has(role) && ![...this.#savePoints.values()].includes(breakpointId) && token(breakpointId));
@@ -233,7 +247,7 @@ export class CurrentPcbViaWorkerController {
       expectedWindowTabId: this.#bindings.windowTabId, projectUuid: this.#bindings.projectUuid,
       request: (command: CurrentPcbViaWorkerBootstrapCommand, cleanup: boolean): Promise<unknown> => this.#bindings.request(command, cleanup), nextEvent: (): Promise<CurrentPcbViaWorkerBootstrapEvent> => this.#next(),
       assertCurrent: (): Promise<void> => this.#current(), projectSourceHeld: async (source: CurrentPcbViaProjectSourceHeld): Promise<void> => {
-        need(this.#runner === runner && this.#source === null); this.#source = source; await this.#bindings.projectSourceHeld(source, this); await this.#current(); need(this.#savePoints.size === 6);
+        need(this.#runner === runner && this.#source === null); this.#source = source; await this.#bindings.projectSourceHeld(source, this); await this.#consumeSetupHelpers(source); await this.#current(); need(this.#savePoints.size === 6);
       }, releaseParentWait: async (): Promise<void> => { need(!this.#parentRunning); this.#parentRunning = true; await this.#bindings.releaseParentWait(); await this.#current(); },
       fail: (): void => { this.fail(); } }));
     this.#runner = runner; const result = await runner.observe(); await this.#current();
