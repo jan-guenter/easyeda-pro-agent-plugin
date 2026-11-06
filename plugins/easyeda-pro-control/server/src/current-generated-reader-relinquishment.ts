@@ -23,6 +23,12 @@ export interface GeneratedReaderRelinquishmentDependencies {
   readonly observeWindows?: typeof observeOrdinaryLaunchRecovery;
   readonly observeLinux?: typeof observeOtherCurrentFootprintCombinedLinuxFacade;
   readonly publishRecord?: typeof publishGeneratedReaderRelinquishment;
+  /** Offline provenance seams only. The registered facade supplies no overrides. */
+  readonly readHistoricalSnapshot?: typeof readGeneratedReaderHistoricalSnapshot;
+  readonly requireHistoricalSnapshot?: typeof requireGeneratedReaderHistoricalSnapshot;
+  readonly assertHistoricalSnapshot?: typeof assertGeneratedReaderHistoricalSnapshot;
+  readonly readReceipt?: typeof readGeneratedReaderRelinquishment;
+  readonly assertIsolated?: typeof assertGeneratedReaderRelinquishmentIsolated;
 }
 interface Pending {
   readonly original: GeneratedReaderHistoricalSnapshot; readonly observationToken: object;
@@ -37,6 +43,11 @@ export class CurrentGeneratedReaderRelinquishment {
   readonly #windows: typeof observeOrdinaryLaunchRecovery;
   readonly #linux: typeof observeOtherCurrentFootprintCombinedLinuxFacade;
   readonly #publish: typeof publishGeneratedReaderRelinquishment;
+  readonly #history: Readonly<{
+    read: typeof readGeneratedReaderHistoricalSnapshot; require: typeof requireGeneratedReaderHistoricalSnapshot;
+    assert: typeof assertGeneratedReaderHistoricalSnapshot; receipt: typeof readGeneratedReaderRelinquishment;
+    isolated: typeof assertGeneratedReaderRelinquishmentIsolated;
+  }>;
   readonly #observations = new WeakMap<object, Readonly<{ original: GeneratedReaderHistoricalSnapshot; nonceSha256: string; nativeText: string }>>();
   #lease: CurrentPcbDiagnosticLaunchLease | null = null;
   #pending: Pending | null = null;
@@ -46,6 +57,11 @@ export class CurrentGeneratedReaderRelinquishment {
     this.#windows = dependencies.observeWindows ?? observeOrdinaryLaunchRecovery;
     this.#linux = dependencies.observeLinux ?? observeOtherCurrentFootprintCombinedLinuxFacade;
     this.#publish = dependencies.publishRecord ?? publishGeneratedReaderRelinquishment;
+    this.#history = Object.freeze({ read: dependencies.readHistoricalSnapshot ?? readGeneratedReaderHistoricalSnapshot,
+      require: dependencies.requireHistoricalSnapshot ?? requireGeneratedReaderHistoricalSnapshot,
+      assert: dependencies.assertHistoricalSnapshot ?? assertGeneratedReaderHistoricalSnapshot,
+      receipt: dependencies.readReceipt ?? readGeneratedReaderRelinquishment,
+      isolated: dependencies.assertIsolated ?? assertGeneratedReaderRelinquishmentIsolated });
   }
   public hasActiveReservation(): boolean { return this.#busy || this.#lease !== null || this.#pending !== null; }
   #local(): void {
@@ -53,20 +69,20 @@ export class CurrentGeneratedReaderRelinquishment {
     if (this.#lease !== null) { assertCurrentPcbDiagnosticLaunchExclusion(this.#lease); }
   }
   async #current(original: GeneratedReaderHistoricalSnapshot): Promise<void> {
-    this.#local(); await assertGeneratedReaderHistoricalSnapshot(original); this.#local();
+    this.#local(); await this.#history.assert(original); this.#local();
     await this.#options.assertOtherLaunchesSettled(); this.#local();
     await assertNoUnresolvedOrdinaryLaunches(); this.#local();
-    await assertGeneratedReaderRelinquishmentIsolated(original); this.#local();
+    await this.#history.isolated(original); this.#local();
   }
   public async run(input: unknown): Promise<Record<string, unknown>> {
     const request = currentGeneratedReaderRelinquishmentRequestSchema.parse(input);
     this.#local(); need(!this.#busy, "BUSY"); this.#busy = true;
     try {
-      const original = this.#pending?.original ?? await readGeneratedReaderHistoricalSnapshot(request.operationId);
-      const source = requireGeneratedReaderHistoricalSnapshot(original);
+      const original = this.#pending?.original ?? await this.#history.read(request.operationId);
+      const source = this.#history.require(original);
       need(source.operationId === request.operationId && source.originalRosterSha256 === request.expectedOriginalRosterSha256, "ORIGINAL_DIGEST");
       await this.#current(original); this.#lease = acquireCurrentPcbDiagnosticLaunchExclusion(); this.#local();
-      let receipt = await readGeneratedReaderRelinquishment(original); await this.#current(original);
+      let receipt = await this.#history.receipt(original); await this.#current(original);
       if (receipt?.result !== undefined && receipt.result !== null) { return this.#public(receipt.result); }
       if (this.#pending === null) {
         const installation = await this.#verify(this.#options); await this.#current(original);
@@ -96,10 +112,10 @@ export class CurrentGeneratedReaderRelinquishment {
       need(pending.original === original && observed?.original === original && observed.nonceSha256 === pending.result.observationNonceSha256 &&
         observed.nativeText === canonicalJson(pending.result.observation), "OBSERVATION_ORIGIN_CHANGED");
       if (receipt === null) { await this.#publish(original, "intent.json", pending.intent); await this.#current(original); }
-      receipt = await readGeneratedReaderRelinquishment(original); await this.#current(original);
+      receipt = await this.#history.receipt(original); await this.#current(original);
       need(receipt !== null && canonicalJson(receipt.intent) === canonicalJson(pending.intent), "INTENT_PUBLICATION_CHANGED");
       if (receipt.result === null) { await this.#publish(original, "relinquished.json", pending.result); await this.#current(original); }
-      receipt = await readGeneratedReaderRelinquishment(original); await this.#current(original);
+      receipt = await this.#history.receipt(original); await this.#current(original);
       need(receipt !== null && canonicalJson(receipt.result) === canonicalJson(pending.result), "RESULT_PUBLICATION_CHANGED");
       return this.#public(pending.result);
     } finally {
@@ -111,4 +127,15 @@ export class CurrentGeneratedReaderRelinquishment {
     this.#pending = null;
     return { ...structuredClone(result), state: "historical-closed-reader-relinquished", startupBlockerRelinquished: true, executionAuthorized: false };
   }
+}
+
+/** The registered index uses this same slot barrier. Failed publication keeps
+ * the original metadata owner visible to every competing native allocation. */
+export async function runOriginalGeneratedReaderMetadata(owner: CurrentGeneratedReaderRelinquishment,
+  run: CurrentGeneratedReaderRelinquishment["run"], request: unknown, slot: Readonly<{
+    current: () => object | undefined; set: (value: CurrentGeneratedReaderRelinquishment | undefined) => void; assertOriginal: () => void;
+  }>): Promise<Record<string, unknown>> {
+  slot.assertOriginal(); need(slot.current() === undefined || slot.current() === owner, "INDEX_SLOT_CHANGED"); slot.set(owner); slot.assertOriginal();
+  try { const result = await run.call(owner, request); slot.assertOriginal(); need(slot.current() === owner, "INDEX_SLOT_CHANGED"); return result; }
+  finally { slot.assertOriginal(); if (slot.current() === owner && !owner.hasActiveReservation()) { slot.set(undefined); } }
 }

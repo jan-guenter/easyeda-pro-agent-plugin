@@ -36,3 +36,16 @@ adversarial checks cover substituted runtime/history inputs, copied opaque
 tokens and false native release/adoption/write/persistence claims. These source
 checks do not prove connected recovery. Combined bundle generation, repository
 and skill checks and an actual disposable continuation remain pending.
+
+## Publication reservation review
+
+Independent source review requested a focused check of publication ambiguity.
+The registered index now uses the same maintained slot handler exercised by
+the production-coordinator regression. A real exclusive intent write followed
+by a synthetic lost acknowledgment keeps the original metadata reservation.
+A competing owner cannot replace it. The same original settlement preserves
+the intent bytes, publishes the result and clears the slot without repeating
+either process collector. A separate pre-observation refusal clears only its
+empty metadata slot and publishes no receipt. Five focused checks, TypeScript
+and strict targeted type-aware lint pass. History and process collectors are
+explicitly synthetic in these two cases; no native application was launched.
