@@ -8,7 +8,7 @@ import { basename, dirname, join } from "node:path";
 import { types } from "node:util";
 import { controlDataDirectory, ensureManagedDirectory, publishManagedAttachmentExclusive } from "./artifacts.ts";
 import { normalizeEasyedaProjectPath } from "./core.ts";
-import { assertSameClosedGeneratedData, qualifyClosedGeneratedDataSql } from "./closed-generated-fixture-data.ts";
+import { assertSameClosedGeneratedData, qualifyClosedGeneratedBaselineWithFileClocks, qualifyClosedGeneratedDataSql } from "./closed-generated-fixture-data.ts";
 import type { ClosedGeneratedDataQualification, ClosedGeneratedFixtureDataLocator } from "./closed-generated-fixture-data.ts";
 import type { ClosedGeneratedFixtureFileObservation } from "./closed-generated-fixture-file.ts";
 import { currentProcessSqlRuntime } from "./machine-profile.ts";
@@ -86,7 +86,8 @@ async function captureClosedGeneratedFixtureData(options: ClosedGeneratedFixture
     need(snapshot.sha256 === observed.sha256 && snapshot.bytes === observed.bytes, "new snapshot exact source bytes");
     const inventory = await readExactSqlInventory({ checkpointPath: snapshot.path, expectedSha256: snapshot.sha256, runtime: await currentProcessSqlRuntime() }); current();
     const qualification = await qualifyClosedGeneratedDataSql(archive, inventory, raw, observed.createdEpochMs, observed.modifiedEpochMs, locator.kind); current();
-    assertSameClosedGeneratedData(locator.oldQualification, qualification);
+    const baseline = await qualifyClosedGeneratedBaselineWithFileClocks(locator, observed.createdEpochMs, observed.modifiedEpochMs); current();
+    assertSameClosedGeneratedData(baseline, qualification);
     const sql = await publishManagedAttachmentExclusive(join(directory, `${id}.sql.json`), "Fresh complete generated data SQL", Buffer.from(JSON.stringify(inventory), "utf8"), "closed-generated-data-sql", reprove);
     await reprove(); await boundary(); const finalHash = createHash("sha256"); let reread = 0;
     for await (const chunk of original.createReadStream({ autoClose: false, start: 0, highWaterMark: 1_048_576 })) {

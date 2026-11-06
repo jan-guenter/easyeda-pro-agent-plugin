@@ -30,6 +30,14 @@ fixed initial source. It compares those data with the original managed snapshot.
 The Windows file lease denies write/delete sharing. Process-absence samples are
 bounded observations, not a continuous guarantee that another app cannot start.
 
+An earlier complete capture can have refused only its initial file-clock interval
+because WSL reported zero birth time. The exact released refusal and null target
+can locate data through that import's original `destination-held` artifact. They
+grant no qualification. The fresh Windows file lease must supply actual creation
+and modification clocks; the complete initial model must pass for both the old
+snapshot and new copy. Missing clocks, another refusal, extra rows or changed
+bytes still stop. This is a new read-only data qualification, not import replay.
+
 A changed file, unexpected directory member, watch event, source/SQL mismatch or
 unacknowledged release refuses acceptance. The initial profile accepts no changes
 caused by a later project opening. Do not relax that profile to reuse a changed

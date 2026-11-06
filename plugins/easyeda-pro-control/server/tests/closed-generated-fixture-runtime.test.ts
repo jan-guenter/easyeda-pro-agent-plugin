@@ -19,7 +19,7 @@ import { managedFixtureInitialSqlFixture } from "./helpers/managed-fixture-initi
 import { syntheticSqlRoot } from "./helpers/sqlite-inventory-fixture.ts";
 
 const forbidden = (): Promise<never> => Promise.reject(new Error("Synthetic data-only test forbids any application/bridge/capture call"));
-async function fixture(operationId: string, running = false, releaseFails = false): Promise<{ owner: ClosedGeneratedFixtureDataCoordinator; calls: string[] }> {
+async function fixture(operationId: string, running = false, releaseFails = false, clockRefused = false): Promise<{ owner: ClosedGeneratedFixtureDataCoordinator; calls: string[] }> {
   const calls: string[] = [];
   const runtime = new WindowsControlRuntime({ upstream: { callTool: forbidden, bridgeSessionLifecycle: (): undefined => undefined,
     currentAuthenticatedBridgeDispatchBinding: (): undefined => undefined }, pluginRoot: "/mnt/c/synthetic-plugin", assetsRoot: "/mnt/c/synthetic-app/resources/app/assets", reviewedExecutionScopeSha256: "1".repeat(64) }, {
@@ -35,7 +35,8 @@ async function fixture(operationId: string, running = false, releaseFails = fals
   const source = normalizeEasyedaProjectPath(input.rawWindowsPath); await copyFile(input.syntheticDatabasePath, source);
   const sourceInfo = await stat(input.syntheticDatabasePath);
   const locator: ClosedGeneratedFixtureDataLocator = { archive: input.archive, rawWindowsPath: input.rawWindowsPath, snapshot: { path: input.syntheticDatabasePath,
-    sha256: input.inventory.checkpointSha256, bytes: sourceInfo.size }, oldQualification: old.qualification, kind: "pcb", locatorReceipt: { syntheticDataOnly: true } };
+    sha256: input.inventory.checkpointSha256, bytes: sourceInfo.size }, oldQualification: clockRefused ? null : old.qualification,
+    ...(clockRefused ? { clockRefusedInitialInventory: input.inventory } : {}), kind: "pcb", locatorReceipt: { syntheticDataOnly: true } };
   const native: ClosedGeneratedFixtureFileObservation = { schema: "easyeda-pro-control.closed-generated-file-lease.v1", nonce: "3".repeat(64), state: "held", originalHandlesClosed: false, filesDeleted: false,
     observation: { leaseId: "4".repeat(32), windowsPath: input.rawWindowsPath, parentDirectory: dirname(source), directoryIdentity: `${"5".repeat(8)}:${"6".repeat(16)}`,
       fileIdentity: `${"5".repeat(8)}:${"7".repeat(16)}`, sha256: locator.snapshot.sha256, bytes: locator.snapshot.bytes,
@@ -65,8 +66,8 @@ async function fixture(operationId: string, running = false, releaseFails = fals
 }
 function start(operationId: string): Record<string, unknown> { return { action: "requalify-closed-generated-fixture", operationId, importOperationId: "synthetic-old-import", generatedArchiveArtifactSha256: "a".repeat(64),
   closedCaptureArtifactSha256: "b".repeat(64), confirmReadClosedGeneratedFixture: true, confirmFreshNoApplicationCheck: true }; }
-void test("fresh data qualification copies complete SQL and settles a lost result locally before one new source staging", async () => {
-  const id = "fixture-data209-runtime-success"; const { owner, calls } = await fixture(id);
+void test("fresh file clocks qualify a clock-refused baseline through complete SQL, lost publication and one new source staging", async () => {
+  const id = "fixture-data209-runtime-success"; const { owner, calls } = await fixture(id, false, false, true);
   await assert.rejects(owner.execute(start(id)), /publication acknowledgment/u); const pending = owner.inspect(id);
   assert.equal(pending["freshResourcesClosed"], true); assert.equal(pending["publicationPending"], true); assert.equal(pending["requalifiedDataAvailable"], false);
   assert.equal(owner.hasPendingWork(), true); assert.throws(() => { owner.stageSourceForFreshOpening(id); }); await assert.rejects(owner.execute(start(id)));

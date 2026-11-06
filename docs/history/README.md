@@ -1,5 +1,8 @@
 # Project history
 
+- [2026-11-06 generated fixture Windows file clocks](2026-11-06-generated-fixture-windows-file-clocks.md). Actual zero DrvFS birth time stopped initial acceptance; fresh Windows clocks and complete old/new initial-model qualification avoid replay without accepting the failed target.
+- [2026-11-06 main startup configuration SQL](2026-11-06-main-startup-config-sql.md). Exact pinned startup scripts and parameter grammar, with no SQL continuation authority by themselves.
+
 - [2026-11-06 generated import original SDK settlement](2026-11-06-generated-import-original-sdk-settlement.md). Fifth frozen disposable generation completed the original SDK Promise with the generated identity; original cleanup and full closed acceptance remain separate.
 
 - [2026-11-06 schematic display closed custody](2026-11-06-schematic-display-closed-custody.md). Distinct factory-issued target and actual original root/empty-Job termination references for the closed capture; copied and no-process evidence refuse.
