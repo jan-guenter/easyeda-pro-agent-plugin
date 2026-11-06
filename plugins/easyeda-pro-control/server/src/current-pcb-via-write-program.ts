@@ -4,6 +4,7 @@ import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION as OPENING } from "./curren
 import { requireOriginalCurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
 import type { CurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
+import { CURRENT_PCB_VIA_WRITE_TARGET_CAPTURE as TARGET_CAPTURE } from "./current-pcb-via-write-target-program.ts";
 
 export const CURRENT_PCB_VIA_WRITE_GROUP = "easyeda-pro-control-pcb-via-write-v1";
 export const CURRENT_PCB_VIA_WRITE_STAGES = ["capture", "preflight", "create", "observe", "save"] as const;
@@ -42,38 +43,40 @@ const sdk=own(root,"_EXTAPI_ROOT_"),via=own(sdk,"pcb_PrimitiveVia"),doc=own(sdk,
 const create=own(viaProto,"create"),save=own(docProto,"save"),functionText=Function.prototype.toString;
 if(typeof create!=="function"||typeof save!=="function"||apply(functionText,create,[])!==${JSON.stringify(createSource)}||apply(functionText,save,[])!==${JSON.stringify(saveSource)}||Object.hasOwn(via,"create")||Object.hasOwn(doc,"save"))bad();
 const identity=JSON.stringify({target,operation}),opening=${OPENING};
-let tuple=this,state;
+let tuple=this,state,targetIdentity;
 if(stage==="capture"){
+targetIdentity=(${TARGET_CAPTURE})(target);
 state={identity,owner:null,createAttempted:false,createAcknowledged:false,primitiveId:null,saveAttempted:false,saveAcknowledged:false,failed:false};
-tuple=[sdk,via,viaProto,create,doc,docProto,save,state];
+tuple=[sdk,via,viaProto,create,doc,docProto,save,state,targetIdentity];
 state.owner=tuple;
 }else{
-if(!Array.isArray(tuple)||Object.getPrototypeOf(tuple)!==Array.prototype||own(tuple,"length")!==8||Reflect.ownKeys(tuple).length!==9)bad();
+if(!Array.isArray(tuple)||Object.getPrototypeOf(tuple)!==Array.prototype||own(tuple,"length")!==9||Reflect.ownKeys(tuple).length!==10)bad();
 state=plain(own(tuple,"7"));keys(state,["identity","owner","createAttempted","createAcknowledged","primitiveId","saveAttempted","saveAcknowledged","failed"]);
 if(own(state,"owner")!==tuple||own(state,"identity")!==identity||own(state,"failed")!==false)bad();
+targetIdentity=own(tuple,"8");if(typeof targetIdentity!=="function")bad();
 }
 const current=()=>{if(own(root,"_EXTAPI_ROOT_")!==sdk||own(sdk,"pcb_PrimitiveVia")!==via||own(sdk,"pcb_Document")!==doc||Object.getPrototypeOf(via)!==viaProto||Object.getPrototypeOf(doc)!==docProto||own(viaProto,"create")!==create||own(docProto,"save")!==save||Function.prototype.toString!==functionText)bad();
-for(const [index,value]of [sdk,via,viaProto,create,doc,docProto,save,state].entries())if(own(tuple,String(index))!==value)bad();
+for(const [index,value]of [sdk,via,viaProto,create,doc,docProto,save,state,targetIdentity].entries())if(own(tuple,String(index))!==value)bad();
 if(own(state,"identity")!==identity||own(state,"failed")!==false)bad();};
-const targetCurrent=async()=>{current();const observed=JSON.parse(await apply(opening,root,[target,"observe"]));current();if(observed.ok!==true||observed.frameObserved!==true||observed.phase!=="observe"||observed.projectUuid!==target.projectUuid||observed.branchUuid!==target.branchUuid||observed.documentUuid!==target.documentUuid)bad();};
+const targetCurrent=async()=>{current();targetIdentity();const observed=JSON.parse(await apply(opening,root,[target,"observe"]));current();targetIdentity();if(observed.ok!==true||observed.frameObserved!==true||observed.phase!=="observe"||observed.projectUuid!==target.projectUuid||observed.branchUuid!==target.branchUuid||observed.documentUuid!==target.documentUuid)bad();};
 let dispatched=false,acknowledged=false,primitiveId=state.primitiveId;
 try{
 if(stage==="create"){if(state.createAttempted||state.saveAttempted)bad();state.createAttempted=true;}
 if(stage==="save"){if(!state.createAcknowledged||state.saveAttempted||typeof state.primitiveId!=="string")bad();state.saveAttempted=true;}
-await targetCurrent();
+if(stage==="capture"||stage==="preflight")await targetCurrent();else{current();targetIdentity();}
 if(stage==="capture")return tuple;
 if(stage==="create"){
 dispatched=true;const original=apply(create,via,[v.netName,v.xMil,v.yMil,v.holeDiameterMil,v.diameterMil,0,"",{topSolderMask:0,bottomSolderMask:0},false]);
-if(Object.getPrototypeOf(original)!==Promise.prototype)bad();const created=await original;current();
+if(Object.getPrototypeOf(original)!==Promise.prototype)bad();const created=await original;acknowledged=true;
 primitiveId=text(own(created,"primitiveId"),256);if(primitiveId.length===0)bad();
 for(const [key,expected]of [["net",v.netName],["x",v.xMil],["y",v.yMil],["holeDiameter",v.holeDiameterMil],["diameter",v.diameterMil],["viaType",0],["designRuleBlindViaName",""],["primitiveLock",false]])if(own(created,key)!==expected)bad();
 const actualMask=own(created,"solderMaskExpansion");keys(actualMask,["topSolderMask","bottomSolderMask"]);if(actualMask.topSolderMask!==0||actualMask.bottomSolderMask!==0)bad();
 state.primitiveId=primitiveId;state.createAcknowledged=true;acknowledged=true;
 }else if(stage==="save"){
 dispatched=true;const original=apply(save,doc,[]);if(Object.getPrototypeOf(original)!==Promise.prototype)bad();
-if(await original!==true)bad();current();state.saveAcknowledged=true;acknowledged=true;
+const saved=await original;acknowledged=true;if(saved!==true)bad();state.saveAcknowledged=true;
 }else if(stage==="preflight"&&(state.createAttempted||state.saveAttempted))bad();
-await targetCurrent();
+current();targetIdentity();
 return {schema:"easyeda-pro-control.pcb209-via-write-stage.v1",stage,ok:true,dispatchAttempted:dispatched,originalPromiseAcknowledged:acknowledged,primitiveId:state.primitiveId,createAttempted:state.createAttempted,createAcknowledged:state.createAcknowledged,saveAttempted:state.saveAttempted,saveAcknowledged:state.saveAcknowledged,inverseAvailable:false,persistenceVerified:false};
 }catch{state.failed=true;return {schema:"easyeda-pro-control.pcb209-via-write-stage.v1",stage,ok:false,dispatchAttempted:dispatched,originalPromiseAcknowledged:acknowledged,primitiveId,createAttempted:state.createAttempted,createAcknowledged:state.createAcknowledged,saveAttempted:state.saveAttempted,saveAcknowledged:state.saveAcknowledged,inverseAvailable:false,persistenceVerified:false};}
 }`;

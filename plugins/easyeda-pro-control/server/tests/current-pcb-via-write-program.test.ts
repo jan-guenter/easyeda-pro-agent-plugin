@@ -20,9 +20,13 @@ async function fixture(): Promise<Context> {
   const output = await transform(await readFile(url, "utf8"), { loader: "ts", format: "cjs", target: "node24" });
   const loaded: { exports: Record<string, unknown> } = { exports: {} };
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${output.code}\n})`); assert.ok(typeof evaluate === "function");
-  Reflect.apply(evaluate, undefined, [(name: string): unknown => name === "./current-pcb-diagnostic-pcb-opening.ts" ? {
-    CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION: 'async function(target,phase){return JSON.stringify({...target,phase,ok:true,frameObserved:true});}',
-  } : sourceRequire(name) as unknown, loaded, loaded.exports]);
+  Reflect.apply(evaluate, undefined, [(name: string): unknown => {
+    if (name === "./current-pcb-diagnostic-pcb-opening.ts") { return {
+      CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION: 'async function(target,phase){return JSON.stringify({...target,phase,ok:true,frameObserved:true});}',
+    }; }
+    if (name === "./current-pcb-via-write-target-program.ts") { return { CURRENT_PCB_VIA_WRITE_TARGET_CAPTURE: 'function(){return ()=>{};}' }; }
+    return sourceRequire(name) as unknown;
+  }, loaded, loaded.exports]);
   const program = loaded.exports["CURRENT_PCB_VIA_WRITE_FUNCTION"]; assert.equal(typeof program, "string");
   const context = createContext({});
   runInContext(`globalThis.calls={create:0,save:0};globalThis.createDeferred=Promise.withResolvers();globalThis.saveDeferred=Promise.withResolvers();
