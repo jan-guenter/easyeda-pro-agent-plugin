@@ -40,7 +40,7 @@ below is registered there. The separate [ordinary schematic page workflow](curre
 adds a complete-checkpoint-bound tracked open in an already loaded project, then
 current209 Text/Wire/Bus and supported-selection DTO reads on the exact active
 type-1 page. The separate generated explicit-Relevance fixture passed one
-[Text/Wire/Bus getAll case](../../../../../docs/history/2026-11-06-relevance-schematic-reader-live-case.md)
+[Text/Wire/Bus getAll case](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-06-relevance-schematic-reader-live-case.md)
 with two matching samples and unchanged closed bytes. That scoped historical
 case does not validate selected/explicit-ID reads, placed parts/pins or a newer
 runtime. It grants no writer, explicit Save, connectivity or persistence
