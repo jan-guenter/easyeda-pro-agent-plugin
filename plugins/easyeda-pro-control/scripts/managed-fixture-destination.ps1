@@ -153,7 +153,7 @@ public sealed class ManagedFixtureDestination : IDisposable {
   }
   public ManagedFixtureClosedFileMetadata CaptureClosedFile(string basename) {
     if (metadataAttempted) throw new InvalidOperationException("fixture-closed-file-capture-consumed"); metadataAttempted = true; Check();
-    if (basename == null || !System.Text.RegularExpressions.Regex.IsMatch(basename, @"\ACodex_(?:via_only|line_and_via|arc_line_and_via|schematic|circular_smt_pad)_[a-f0-9]{16}\.eprj2\z")) throw new InvalidOperationException("fixture-closed-file-basename");
+    if (basename == null || !System.Text.RegularExpressions.Regex.IsMatch(basename, @"\ACodex_(?:via_only|line_and_via|arc_line_and_via|schematic|schematic_relevance|circular_smt_pad)_[a-f0-9]{16}\.eprj2\z")) throw new InvalidOperationException("fixture-closed-file-basename");
     string[] entries = Entries(); if (entries.Length != 1 || entries[0] != basename) throw new InvalidOperationException("fixture-closed-file-complete-roster");
     metadataWatch = new ManagedFixtureLibraryGuard(original); metadataPath = System.IO.Path.Combine(original, basename);
     // READ sharing only denies existing/future writers and delete/rename. This
@@ -283,7 +283,7 @@ public sealed class ManagedFixtureLibraryGuard : IDisposable {
 }
 '@
 if ($CompileOnly) { exit 0 }
-if ($Nonce -cnotmatch '^[a-f0-9]{64}$' -or $ProjectBasename -cnotmatch '^Codex_(via_only|line_and_via|arc_line_and_via|schematic|circular_smt_pad)_[a-f0-9]{16}\.eprj2$' -or $LibraryDirectoriesBase64.Length -gt 8192) { throw 'fixture-destination-input' }
+if ($Nonce -cnotmatch '^[a-f0-9]{64}$' -or $ProjectBasename -cnotmatch '^Codex_(via_only|line_and_via|arc_line_and_via|schematic|schematic_relevance|circular_smt_pad)_[a-f0-9]{16}\.eprj2$' -or $LibraryDirectoriesBase64.Length -gt 8192) { throw 'fixture-destination-input' }
 $owner = $null
 $guards = @()
 try {

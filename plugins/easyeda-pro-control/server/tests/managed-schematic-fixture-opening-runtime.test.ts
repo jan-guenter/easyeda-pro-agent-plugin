@@ -7,7 +7,9 @@ import { canonicalJson, sha256Json } from "../src/core.ts";
 import { EasyedaControlEngine } from "../src/engine.ts";
 import type { ExecutionAuthorityCaptureInput, ExecutionAuthorityEvidence, RuntimeIdentity } from "../src/engine.ts";
 import { GeneratedSchematicOpeningCoordinator } from "../src/managed-schematic-fixture-opening-runtime.ts";
-import type { GeneratedSchematicFixtureOpenCheckpoint } from "../src/managed-schematic-fixture-open-checkpoint.ts";
+import type { GeneratedSchematicReadOpenCheckpoint as GeneratedSchematicFixtureOpenCheckpoint } from "../src/managed-schematic-fixture-read-source.ts";
+import { qualifyGeneratedSchematicRelevanceFixtureInitialSql } from "../src/managed-schematic-relevance-fixture-initial-sql.ts";
+import { stageManagedSchematicRelevanceFixtureOpeningSource } from "../src/managed-schematic-relevance-fixture-opening-source.ts";
 import { qualifyGeneratedSchematicFixtureInitialSql } from "../src/managed-schematic-fixture-initial-sql.ts";
 import { stageManagedSchematicFixtureOpeningSource } from "../src/managed-schematic-fixture-opening-source.ts";
 import { OrdinaryTrackedOpenCleanup } from "../src/ordinary-tracked-open-cleanup.ts";
@@ -18,11 +20,12 @@ import { authenticatedLoopbackUpstream } from "./helpers/authenticated-loopback-
 import { generatedSchematicOpeningVm } from "./helpers/generated-schematic-opening-vm.ts";
 import { managedSchematicFixtureInitialSqlFixture } from "./helpers/managed-schematic-fixture-initial-sql.ts";
 
-async function fixture(context: TestContext, operationId: string, losePublication = false): Promise<{
+async function fixture(context: TestContext, operationId: string, losePublication = false, sourceKind: "original" | "relevance" = "original"): Promise<{
   owner: GeneratedSchematicOpeningCoordinator; run: (request: unknown) => Promise<Record<string, unknown>>;
   expected: Record<string, unknown>; calls: string[]; behavior: { terminated: boolean; current: boolean; failed: boolean }; closeSession: () => Promise<void>;
 }> {
-  const input = await managedSchematicFixtureInitialSqlFixture(), qualified = await qualifyGeneratedSchematicFixtureInitialSql(input);
+  const input = await managedSchematicFixtureInitialSqlFixture(undefined, sourceKind);
+  const qualified = await (sourceKind === "relevance" ? qualifyGeneratedSchematicRelevanceFixtureInitialSql : qualifyGeneratedSchematicFixtureInitialSql)(input);
   const vm = generatedSchematicOpeningVm(qualified.qualification, qualified.history); const calls: string[] = [];
   const behavior = { terminated: false, current: true, failed: false }; const expected = { synthetic: "generated-schematic-original-runtime", installedBundles: { assetsRoot: "/mnt/c/Synthetic/resources/app/assets" } };
   const native = async (argumentsValue: Record<string, unknown>): Promise<UpstreamToolResult> => {
@@ -51,16 +54,21 @@ async function fixture(context: TestContext, operationId: string, losePublicatio
   const cleanup = new OrdinaryTrackedOpenCleanup(engine, runtime, assertOriginal);
   const importingRuntime = { status: (): ReturnType<WindowsControlRuntime["status"]> => ({ ...runtime.status(), launch: { ...launch, jobId: "a".repeat(32), helperInstance: "b".repeat(32),
     root: { ...launch.root, pid: 122, startIdentity: `win32:123456789012344:job:${"a".repeat(32)}` } } }) };
-  const source = stageManagedSchematicFixtureOpeningSource({ qualification: qualified.qualification, archive: input.archive, importingRuntime });
+  const source = qualified.qualification.schema === "easyeda-pro-control.qualified-generated-schematic-relevance-fixture-target.v1" ?
+    stageManagedSchematicRelevanceFixtureOpeningSource({ qualification: qualified.qualification, archive: input.archive, importingRuntime }) :
+    stageManagedSchematicFixtureOpeningSource({ qualification: qualified.qualification, archive: input.archive, importingRuntime });
   // The production preparer must issue its own genuine Windows-path checkpoint.
   // Only this explicit offline seam supplies a synthetic DTO: original SQL and
   // Navigation/authority are still real code; no target JSON enters production.
-  const prepared: GeneratedSchematicFixtureOpenCheckpoint = { profile: "easyeda-pro-control.generated-schematic-fixture-open-checkpoint.v1", qualification: qualified.qualification,
+  const commonPrepared = {
     preparationCheckpoint: { path: input.syntheticDatabasePath, bytes: 8192, sha256: input.inventory.checkpointSha256 }, history: qualified.history,
-    vacuumProjection: { sourceLogicalSha256: input.inventory.logicalSha256, checkpointLogicalSha256: input.inventory.logicalSha256, sourceSchemaVersion: 1, checkpointSchemaVersion: 2, onlySchemaVersionIncremented: true },
-    checkpoint: { schema: "easyeda-pro-control.checkpoint.v2", source: input.syntheticDatabasePath, checkpoint: input.syntheticDatabasePath, receiptPath: `${input.syntheticDatabasePath}.receipt.json`, createdAt: "2026-01-01T00:00:00Z",
+    vacuumProjection: { sourceLogicalSha256: input.inventory.logicalSha256, checkpointLogicalSha256: input.inventory.logicalSha256, sourceSchemaVersion: 1, checkpointSchemaVersion: 2, onlySchemaVersionIncremented: true as const },
+    checkpoint: { schema: "easyeda-pro-control.checkpoint.v2" as const, source: input.syntheticDatabasePath, checkpoint: input.syntheticDatabasePath, receiptPath: `${input.syntheticDatabasePath}.receipt.json`, createdAt: "2026-01-01T00:00:00Z",
       sourceIdentity: { dev: "1", ino: "2", birthtimeNs: "3", ctimeNs: "4" }, checkpointIdentity: { dev: "1", ino: "5", birthtimeNs: "6", ctimeNs: "7" },
       sourceSha256: input.inventory.checkpointSha256, checkpointSha256: input.inventory.checkpointSha256, sourceDumpSha256: "a".repeat(64), checkpointDumpSha256: "a".repeat(64), receiptSha256: "a".repeat(64) } };
+  const prepared: GeneratedSchematicFixtureOpenCheckpoint = qualified.qualification.schema === "easyeda-pro-control.qualified-generated-schematic-relevance-fixture-target.v1" ?
+    { profile: "easyeda-pro-control.generated-schematic-relevance-fixture-open-checkpoint.v1", qualification: qualified.qualification, ...commonPrepared } :
+    { profile: "easyeda-pro-control.generated-schematic-fixture-open-checkpoint.v1", qualification: qualified.qualification, ...commonPrepared };
   const owner = new GeneratedSchematicOpeningCoordinator({ operationId, source, engine, runtime, assetsRoot: "/mnt/c/Synthetic/resources/app/assets", assertOriginalOwner: assertOriginal, cleanup }, {
     assertFingerprint: (value): true => { assert.deepEqual(value, expected); return true; }, verifySources: (): Promise<void> => Promise.resolve(),
     prepareCheckpoint: (): Promise<GeneratedSchematicFixtureOpenCheckpoint> => Promise.resolve(prepared),
@@ -79,6 +87,22 @@ const opening = (operationId: string): Record<string, unknown> => ({ action: "op
 
 void test("real original engine/HMAC generated SCH navigation and passive reader batch preserve original cleanup through normal closure", async context => {
   const id = "sch209-generated-real-success", value = await fixture(context, id);
+  const result = await value.run(opening(id)); assert.equal(result["phase"], "opened-ready"); assert.equal(value.owner.hasPendingWork(), true);
+  const reader = await value.run({ action: "observe-text-wire-bus", operationId: id, confirmGeneratedReadOnly: true });
+  assert.equal(reader["phase"], "readers-observed-unverified"); assert.equal(reader["connectivityVerified"], false);
+  await assert.rejects(value.run(opening(id))); await assert.rejects(value.run({ action: "observe-text-wire-bus", operationId: id, confirmGeneratedReadOnly: true }));
+  assert.equal(value.calls.filter(call => call === "native-sdk").length, 2); assert.equal(value.calls.filter(call => call === "capture-original").length, 1);
+  const inspection = value.owner.inspect(id); const cleanup = inspection["cleanup"]; assert.ok(cleanup !== null && typeof cleanup === "object" && "cleanupNonce" in cleanup && typeof cleanup.cleanupNonce === "string");
+  const bound = { operationId: id, cleanupNonce: cleanup.cleanupNonce };
+  await value.owner.execute({ action: "request-cleanup-close", ...bound, confirmNormalClose: true, acceptUnknownFileEffects: true });
+  value.behavior.terminated = true; await value.owner.execute({ action: "observe-cleanup-termination", ...bound });
+  await value.closeSession(); await value.owner.execute({ action: "finish-cleanup", ...bound });
+  await value.owner.execute({ action: "release-owner", operationId: id, confirmReleaseGeneratedSchematicOwner: true });
+  assert.equal(value.owner.hasPendingWork(), false); assert.equal(value.calls.filter(call => call === "normal-close").length, 1);
+  const stored = await loadOperation(id); assert.equal(stored["orphanedCallPossible"], false);
+});
+void test("real original engine/HMAC Relevance SCH navigation and passive reader batch preserve original cleanup through normal closure", async context => {
+  const id = "sch209-generated-real-relevance", value = await fixture(context, id, false, "relevance");
   const result = await value.run(opening(id)); assert.equal(result["phase"], "opened-ready"); assert.equal(value.owner.hasPendingWork(), true);
   const reader = await value.run({ action: "observe-text-wire-bus", operationId: id, confirmGeneratedReadOnly: true });
   assert.equal(reader["phase"], "readers-observed-unverified"); assert.equal(reader["connectivityVerified"], false);

@@ -6,10 +6,11 @@ import { decodeExactReadEnvelope } from "./exact-readers.ts";
 import { GeneratedFixtureJournalPublication } from "./generated-fixture-journal-publication.ts";
 import type { GeneratedFixtureJournalPublicationDependencies } from "./generated-fixture-journal-publication.ts";
 import { verifyCurrentSchematicPageOpeningImplementation } from "./current-schematic-page-read-profile.ts";
-import { consumeManagedSchematicFixtureOpeningSource } from "./managed-schematic-fixture-opening-source.ts";
-import type { ManagedSchematicFixtureOpeningSource } from "./managed-schematic-fixture-opening-source.ts";
-import { prepareGeneratedSchematicFixtureOpenCheckpoint, verifyGeneratedSchematicFixtureOpenCheckpoint, verifyHistoricalGeneratedSchematicFixtureOpenCheckpoint } from "./managed-schematic-fixture-open-checkpoint.ts";
-import type { GeneratedSchematicFixtureOpenCheckpoint } from "./managed-schematic-fixture-open-checkpoint.ts";
+import { consumeManagedSchematicReadOpeningSource as consumeManagedSchematicFixtureOpeningSource,
+  prepareGeneratedSchematicReadOpenCheckpoint as prepareGeneratedSchematicFixtureOpenCheckpoint,
+  verifyGeneratedSchematicReadOpenCheckpoint as verifyGeneratedSchematicFixtureOpenCheckpoint,
+  verifyHistoricalGeneratedSchematicReadOpenCheckpoint as verifyHistoricalGeneratedSchematicFixtureOpenCheckpoint } from "./managed-schematic-fixture-read-source.ts";
+import type { GeneratedSchematicReadOpenCheckpoint as GeneratedSchematicFixtureOpenCheckpoint, ManagedSchematicReadOpeningSource as ManagedSchematicFixtureOpeningSource } from "./managed-schematic-fixture-read-source.ts";
 import { buildGeneratedSchematicNavigationProgram, buildGeneratedSchematicReadersProgram, validateGeneratedSchematicNavigation, validateGeneratedSchematicReaders } from "./managed-schematic-fixture-opening-program.ts";
 import { GENERATED_SCHEMATIC_OPEN_PHASE, GENERATED_SCHEMATIC_OPEN_PROFILE, generatedSchematicOpeningIdSchema, generatedSchematicOpeningRequestSchema } from "./managed-schematic-fixture-opening.ts";
 import type { GeneratedSchematicOpeningRequest } from "./managed-schematic-fixture-opening.ts";

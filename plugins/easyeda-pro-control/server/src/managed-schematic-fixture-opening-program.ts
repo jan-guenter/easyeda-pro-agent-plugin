@@ -10,20 +10,20 @@ import { validateCurrentSchematicPageReadResult } from "./current-schematic-page
 import { SCHEMATIC_TEXT_GUARD_CODES } from "./schematic-text-read.ts";
 import { SCHEMATIC_NETGROUP_GUARD_CODES } from "./schematic-netgroup-read.ts";
 import { GENERATED_FIXTURE_REGISTRATION_FUNCTION, generatedFixtureRegistrationResultSchema } from "./managed-fixture-registration-program.ts";
-import { assertOriginalGeneratedSchematicFixtureTarget } from "./managed-schematic-fixture-initial-sql.ts";
-import type { QualifiedGeneratedSchematicFixtureTarget } from "./managed-schematic-fixture-initial-sql.ts";
+import { assertOriginalGeneratedSchematicReadTarget as assertOriginalGeneratedSchematicFixtureTarget } from "./managed-schematic-fixture-read-target.ts";
+import type { QualifiedGeneratedSchematicReadTarget as QualifiedGeneratedSchematicFixtureTarget } from "./managed-schematic-fixture-read-target.ts";
 import { generatedSchematicTargetSchema } from "./managed-schematic-fixture-opening.ts";
 import type { NativeHistorySnapshot } from "./native-history.ts";
 
 const MAX = 65_536;
 function need(value: boolean): asserts value { if (!value) { throw new Error("GENERATED_SCHEMATIC_PROGRAM_REFUSED"); } }
 function one(source: string, before: string, after: string): string { need(source.split(before).length === 2); return source.replace(before, after); }
-function registrationFunction(): string {
+function registrationFunction(relevance = false): string {
   let source = GENERATED_FIXTURE_REGISTRATION_FUNCTION.replaceAll("documentUuid", "pageUuid");
   source = one(source, "Reflect.ownKeys(target).length!==5", "Reflect.ownKeys(target).length!==6");
   source = one(source, "'branchUuid','pageUuid','expectedSourceSha256'", "'branchUuid','pageUuid','schematicUuid','expectedSourceSha256'");
   source = one(source, "!/^[a-f0-9]{32}$/.test(target.pageUuid)", "!/^[a-f0-9]{32}$/.test(target.pageUuid)||!/^[a-f0-9]{32}$/.test(target.schematicUuid)");
-  return one(source, "(?:via_only|line_and_via|arc_line_and_via|circular_smt_pad)", "schematic");
+  return one(source, "(?:via_only|line_and_via|arc_line_and_via|circular_smt_pad)", relevance ? "schematic_relevance" : "schematic");
 }
 function projectFunction(): string {
   let source = CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION.replaceAll("documentUuid", "pageUuid");
@@ -73,7 +73,7 @@ if(root.UI!==ui||root.SCH!==sch||root.gVars!==host||ui.gVars!==host||host.curren
 if(sch.docMemoryManager!==manager||manager.getActiveDoc!==active||Reflect.apply(active,manager,[])!==page||page?.uuid!==target.pageUuid||page.project_uuid!==target.projectUuid||page.tabId!==tabId||page.docType!==1||page.schematicUuid!==target.schematicUuid||page.isSchSheetDoc?.()!==true||page.isBlockSymbolInstancePage!==false||page.source!==''||page.projectMgr!==project||project?.uuid!==target.projectUuid||page.consistencyImpl!==consistency||consistency?.decodeAndRealTimeSyncHandler!==handler||consistency.handler!==handler||handler?.docManager!==page||handler.consistencyImpl!==consistency||consistency.state!=='initialized'||page.shapeManager?.actionRunner?.running!==false)bad();};
 check();check();return {schema:'easyeda-pro-control.generated-schematic-page-identity.v1',projectUuid:target.projectUuid,branchUuid:target.branchUuid,schematicUuid:target.schematicUuid,pageUuid:target.pageUuid,tabId,windowTabId,samples:2,originalPageRechecked:true,nativePageReadinessObserved:true,persistenceVerified:false,connectivityVerified:false};`;
 }
-function navigationProgram(target: QualifiedGeneratedSchematicFixtureTarget["target"], targetExpression = JSON.stringify(target), pageExpression?: string): string {
+function navigationProgram(target: QualifiedGeneratedSchematicFixtureTarget["target"], targetExpression = JSON.stringify(target), pageExpression?: string, relevance = false): string {
   const page = currentSchematicPageOpeningTargetSchema.parse({ rawWindowsPath: target.rawWindowsPath, projectUuid: target.projectUuid, branchUuid: target.branchUuid,
     documentUuid: target.pageUuid, schematicUuid: target.schematicUuid, expectedSourceSha256: target.expectedSourceSha256 });
   const marker = "SCH_GENERATED_ORIGINAL_WINDOW"; const literal = JSON.stringify(marker);
@@ -86,7 +86,7 @@ const decode=envelope=>{if(!envelope||envelope.schema!=='easyeda-pro-control.exa
 const state={schema:'easyeda-pro-control.generated-schematic-navigation.v1',target,state:'settled',outcome:'partial-or-refused',attempted:[],failedStage:null,registration:null,projectPreflight:null,project:null,pagePreflight:null,page:null,identity:null,originalContextIntact:true,replayAllowed:false,persistentRegistrationVerified:false,completeSourceVerified:false,persistenceVerified:false,connectivityVerified:false,executionAuthorized:false,explicitSaveDispatched:false};
 const attempt=stage=>{current();state.attempted.push(stage);state.failedStage=stage;};
 const projectOpen=${projectOpening},pageOpen=async(phase,expectedWindowTabId)=>{${pageOpen}};
-try{attempt('registration');state.registration=JSON.parse(await (${registration})(target));current();
+try{attempt('registration');state.registration=JSON.parse(await (${relevance ? registrationFunction(true) : registration})(target));current();
 attempt('project-preflight');state.projectPreflight=JSON.parse(await projectOpen(target,'preflight'));current();if(!state.projectPreflight.ok)bad();
 attempt('project-open');state.project=JSON.parse(await projectOpen(target,'open-project'));current();if(!state.project.ok||state.project.status!=='opened-prefix-observed')bad();loaded=host.currentProject;
 attempt('page-preflight');state.pagePreflight=decode(await pageOpen('preflight',null));current();
@@ -101,8 +101,10 @@ const fixedNavigationTarget = generatedSchematicTargetSchema.parse({ rawWindowsP
   projectUuid: "3919da8423517ee46d2db9cacee04d58d4d101de21799478fa398dc8e3b40604", branchUuid: "d".repeat(32), schematicUuid: "e".repeat(32), pageUuid: "f".repeat(32), expectedSourceSha256: "1".repeat(64) });
 export const GENERATED_SCHEMATIC_NAVIGATION_FUNCTION = `async function(boundTarget){"use strict";${navigationProgram(fixedNavigationTarget, "boundTarget",
   "{rawWindowsPath:boundTarget.rawWindowsPath,projectUuid:boundTarget.projectUuid,branchUuid:boundTarget.branchUuid,documentUuid:boundTarget.pageUuid,schematicUuid:boundTarget.schematicUuid,expectedSourceSha256:boundTarget.expectedSourceSha256}")}}`;
+export const GENERATED_SCHEMATIC_RELEVANCE_NAVIGATION_FUNCTION = `async function(boundTarget){"use strict";${navigationProgram(fixedNavigationTarget, "boundTarget",
+  "{rawWindowsPath:boundTarget.rawWindowsPath,projectUuid:boundTarget.projectUuid,branchUuid:boundTarget.branchUuid,documentUuid:boundTarget.pageUuid,schematicUuid:boundTarget.schematicUuid,expectedSourceSha256:boundTarget.expectedSourceSha256}", true)}}`;
 export function buildGeneratedSchematicNavigationProgram(qualified: QualifiedGeneratedSchematicFixtureTarget): string {
-  const target = generatedSchematicTargetSchema.parse(qualified.target); assertOriginalGeneratedSchematicFixtureTarget(qualified); return navigationProgram(target);
+  const target = generatedSchematicTargetSchema.parse(qualified.target); assertOriginalGeneratedSchematicFixtureTarget(qualified); return navigationProgram(target, JSON.stringify(target), undefined, qualified.schema === "easyeda-pro-control.qualified-generated-schematic-relevance-fixture-target.v1");
 }
 export function validateGeneratedSchematicNavigation(value: unknown, qualified: QualifiedGeneratedSchematicFixtureTarget): z.infer<typeof generatedSchematicNavigationResultSchema> {
   assertOriginalGeneratedSchematicFixtureTarget(qualified); const result = generatedSchematicNavigationResultSchema.parse(value), target = qualified.target;
@@ -159,10 +161,15 @@ export function validateGeneratedSchematicReaders(value: unknown, qualified: Qua
     const result = validateCurrentSchematicPageReadResult(request, JSON.parse(raw.json) as unknown); const expected = page.records.filter(record => record.type === type); const state = result.value[0];
     need(expected.length === 1 && result.value.length === 1 && state !== undefined && state.primitiveId === expected[0]?.id);
     if (type !== "TEXT") { need("kind" in state && state.kind === type.toLowerCase() && state.lines.length === 1);
-      const line = page.records.filter(record => record.type === "LINE" && record.body["lineGroup"] === state.primitiveId); need(line.length === 1 && line[0]?.id === state.lines[0]?.primitiveId); }
+      const line = page.records.filter(record => record.type === "LINE" && record.body["lineGroup"] === state.primitiveId); need(line.length === 1 && line[0]?.id === state.lines[0]?.primitiveId);
+      if (qualified.schema === "easyeda-pro-control.qualified-generated-schematic-relevance-fixture-target.v1") {
+        const attrs = page.records.filter(record => record.type === "ATTR" && record.body["parentId"] === state.primitiveId).map(record => record.id).toSorted();
+        need(canonicalJson(state.customAttributeIds) === canonicalJson(attrs) && state.names.length === 0);
+      }
+    }
     return result;
   });
-  return { schema: "easyeda-pro-control.generated-schematic-readers-result.v1", identity, values, generatedPrimitiveRosterMatched: true,
+  return { schema: qualified.schema === "easyeda-pro-control.qualified-generated-schematic-relevance-fixture-target.v1" ? "easyeda-pro-control.generated-schematic-relevance-readers-result.v1" : "easyeda-pro-control.generated-schematic-readers-result.v1", identity, values, generatedPrimitiveRosterMatched: true,
     additionalNativeChildEffectsAccepted: false,
     completeSourceVerified: false, connectivityVerified: false, persistenceVerified: false, executionAuthorized: false, saveAuthorized: false };
 }

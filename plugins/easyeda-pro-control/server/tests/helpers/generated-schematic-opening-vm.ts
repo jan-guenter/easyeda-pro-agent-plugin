@@ -1,6 +1,6 @@
 import { webcrypto } from "node:crypto";
 import { createContext, runInContext } from "node:vm";
-import type { QualifiedGeneratedSchematicFixtureTarget } from "../../src/managed-schematic-fixture-initial-sql.ts";
+import type { QualifiedGeneratedSchematicReadTarget as QualifiedGeneratedSchematicFixtureTarget } from "../../src/managed-schematic-fixture-read-target.ts";
 import type { NativeHistorySnapshot } from "../../src/native-history.ts";
 
 /** Synthetic browser/native model surface only. It never starts CAD or calls
@@ -32,7 +32,8 @@ const root={id:'root',modelType:'Root',tagName:'Root',cmdKey:'root',children:[],
 const add=(parent,model)=>{model.parent=parent;model.shapeManager=shapes;model.isConnected=true;(parent.children??=[]).push(model);index.set(model.id,model);sourceIds.set(model.id,1);return model;};
 for(const record of sourceRows.toSorted((a,b)=>a.ticket-b.ticket)){const body=record.body;if(record.type==='TEXT'){const model=add(root,{id:record.id,modelType:'Text',tagName:'Text',cmdKey:'text',x:0,y:200,value:body.value,rotation:0,color:body.color,fontFamily:body.fontFamily,fontSize:body.fontSize,fontWeight:false,italic:false,underline:false,hAlign:0,vAlign:0});texts.add(model);}
 if(record.type==='WIRE'||record.type==='BUS'){const model=add(root,{id:record.id,modelType:'NetGroup',tagName:'NetGroup',cmdKey:'netGroup',type:record.type.toLowerCase(),lines:[],netNames:[],children:[]});groups.add(model);}
-if(record.type==='LINE'){const group=index.get(body.lineGroup),kind=group.type;const model=add(group,{id:record.id,modelType:kind==='wire'?'Wire':'Bus',tagName:'NetGroupLine',cmdKey:kind,type:kind,points:[{x:body.startX,y:-body.startY||0},{x:body.endX,y:-body.endY||0}],strokeColor:null,strokeWidth:null,strokeStyle:null});group.lines.push(model);}}
+if(record.type==='LINE'){const group=index.get(body.lineGroup),kind=group.type;const model=add(group,{id:record.id,modelType:kind==='wire'?'Wire':'Bus',tagName:'NetGroupLine',cmdKey:kind,type:kind,points:[{x:body.startX,y:-body.startY||0},{x:body.endX,y:-body.endY||0}],strokeColor:null,strokeWidth:null,strokeStyle:null});group.lines.push(model);}
+if(record.type==='ATTR'){const parent=index.get(body.parentId);add(parent,{id:record.id,modelType:'Attr',tagName:'Attr',cmdKey:'attr',key:body.key});}}
 const handler={getSourceCodeIdMap(){return new Map(sourceIds);}},consistency={state:failStage==='page-identity'?'initializing':'initialized',decodeAndRealTimeSyncHandler:handler,handler};
 globalThis.page={uuid:target.pageUuid,project_uuid:target.projectUuid,schematicUuid:target.schematicUuid,tabId:target.pageUuid+'@'+target.projectUuid,docType:1,source:'',projectMgr:{uuid:target.projectUuid},shapeManager:shapes,idManager:ids,consistencyImpl:consistency,isSchSheetDoc(){return true;},isBlockSymbolInstancePage:false};
 Object.assign(shapes,{docManager:page});Object.assign(ids,{docManager:page});Object.assign(consistency,{docManager:page});Object.assign(handler,{docManager:page,consistencyImpl:consistency});

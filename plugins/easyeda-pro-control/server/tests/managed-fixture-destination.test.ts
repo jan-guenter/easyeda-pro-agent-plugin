@@ -36,6 +36,15 @@ void test("actual destination owner accepts the fixed generated Pad basename thr
   const released = await native.release(); assert.equal(released.originalTransportClosed, true);
 });
 
+void test("actual destination owner accepts the fixed generated Relevance schematic basename through its original transport and metadata validators", async () => {
+  const schBasename = `Codex_schematic_relevance_${"3".repeat(16)}.eprj2`;
+  const native = owner("success", schBasename);
+  const initialized = await native.initialize(); assert.equal(initialized.expectedBasename, schBasename);
+  const inspected = await native.inspect(); assert.deepEqual(inspected.entries, [schBasename]);
+  const file = await native.captureClosedFileMetadata(); assert.ok(file.file.windowsPath.endsWith(`\\${schBasename}`));
+  const released = await native.release(); assert.equal(released.originalTransportClosed, true);
+});
+
 void test("destination identity or complete-roster mismatch stops inspection and preserves supported original release", async () => {
   for (const mode of ["substitute-owner", "unexpected-child", "watch-completed"]) {
     const native = owner(mode); await native.initialize();

@@ -8,21 +8,23 @@ import type { SQLInputValue } from "node:sqlite";
 import { MANAGED_FIXTURE_INITIAL_BASE_SQL_ROWS } from "../../src/managed-fixture-initial-sql-common.ts";
 import type { GeneratedFixtureInitialSqlInput } from "../../src/managed-fixture-initial-sql-common.ts";
 import { readManagedLibraryZip } from "../../src/managed-library-files-zip.ts";
+import { generateManagedSchematicRelevanceFixtureArchiveData } from "../../src/managed-schematic-relevance-fixture-generator.ts";
 import { generateManagedSchematicFixtureArchiveData } from "../../src/managed-schematic-fixture-generator.ts";
 import { nativeProjectSymbolSqlSchema } from "../../src/native-project-sql-schema.ts";
 import { readExactSqlInventory } from "../../src/sqlite-inventory.ts";
 import { encrypted } from "./symbol-sql-fixture.ts";
 import { syntheticSqlRoot, syntheticSqlRuntime } from "./sqlite-inventory-fixture.ts";
 
-type Patch = "extra-auxiliary" | "wrong-structure-parent" | "changed-text" | "ticked-page-header" | "extra-history" | undefined;
+type Patch = "extra-auxiliary" | "wrong-structure-parent" | "changed-text" | "ticked-page-header" | "extra-history" | "changed-relevance" | undefined;
 /** Fixed synthetic SCH rows only. This is not execution of a native importer. */
-export async function managedSchematicFixtureInitialSqlFixture(patch?: Patch): Promise<GeneratedFixtureInitialSqlInput & { syntheticDatabasePath: string }> {
-  const generated = generateManagedSchematicFixtureArchiveData(), source = readManagedLibraryZip(generated.bytes).get("Fixture.epru"); assert.ok(source !== undefined);
+export async function managedSchematicFixtureInitialSqlFixture(patch?: Patch, kind: "original" | "relevance" = "original"): Promise<GeneratedFixtureInitialSqlInput & { syntheticDatabasePath: string }> {
+  const generated = kind === "relevance" ? generateManagedSchematicRelevanceFixtureArchiveData() : generateManagedSchematicFixtureArchiveData(), source = readManagedLibraryZip(generated.bytes).get("Fixture.epru"); assert.ok(source !== undefined);
   const directory = `C:\\SyntheticTemp\\CodexEasyedaFixture_${"1".repeat(32)}`, rawWindowsPath = `${directory}\\${generated.name.replace(/\.epro2$/u, ".eprj2")}`;
   const project = createHash("sha256").update(rawWindowsPath).digest("hex"); const actor = "4".repeat(32), branch = "3".repeat(32), headId = "5".repeat(32), key = "6".repeat(32), start = "2".repeat(32);
   const schematicUuid = String(generated.metadata["schematicUuid"]); const pageUuid = String(generated.metadata["pageUuid"]); const generatedAt = Number(generated.metadata["generatedAtEpochMs"]);
   const when = Math.ceil(Date.now() / 1000) * 1000 + 1000; const utc = new Date(when).toISOString().slice(0, 19).replace("T", " "); const local = new Date(when + 60 * 60_000).toISOString().slice(0, 19).replace("T", " ");
   let text = source.toString("utf8");
+  if (patch === "changed-relevance") { text = text.replace('"key":"Relevance"', '"key":"Substituted"'); }
   if (patch === "changed-text") { text = text.replace("Disposable schematic fixture", "Substituted schematic fixture"); }
   if (patch === "ticked-page-header") { const at = text.indexOf('{"type":"DOCHEAD"}', 1); text = `${text.slice(0, at)}${text.slice(at).replace('{"type":"DOCHEAD"}', '{"type":"DOCHEAD","ticket":0}')}`; }
   const plaintext = `{"type":"EDIT_HEAD"}||${JSON.stringify({ uuid: actor, username: "", nickname: "", updateTime: when })}|\n${text}`;

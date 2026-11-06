@@ -142,7 +142,7 @@ import { currentSchematicPageReadRequestSchema } from "./current-schematic-page-
 import { generatedSchematicOpeningRequestSchema } from "./managed-schematic-fixture-opening.ts";
 import { GeneratedSchematicOpeningCoordinator } from "./managed-schematic-fixture-opening-runtime.ts";
 import { createOriginalWindowsRuntimeEngine } from "./original-windows-runtime-engine.ts";
-import type { ManagedSchematicFixtureOpeningSource } from "./managed-schematic-fixture-opening-source.ts";
+import type { ManagedSchematicReadOpeningSource as ManagedSchematicFixtureOpeningSource } from "./managed-schematic-fixture-read-source.ts";
 import { readCurrentSchematicPage } from "./current-schematic-page-read-runtime.ts";
 import { currentPcbOrdinaryReadRequestSchema } from "./current-pcb-ordinary-read-validation.ts";
 import { currentPcb209OpeningRequestSchema } from "./current-pcb-209-opening-validation.ts";

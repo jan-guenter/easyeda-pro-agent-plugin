@@ -104,6 +104,16 @@ void test("Pad alternative reaches the same original one-shot importer with its 
   await assert.rejects(value.owner.execute(value.request, value.expected)); assert.equal(value.calls.filter(call => call === "import").length, 1);
 });
 
+void test("Relevance schematic alternative reaches the same original one-shot importer with its own generated kind and no accepted target", async () => {
+  const value = fixture("managed-import-runtime-relevance"); value.request["fixtureKind"] = "schematic-text-wire-bus-relevance";
+  const result = await value.owner.execute(value.request, value.expected);
+  assert.equal(result["phase"], "sdk-settled-unverified"); assert.equal(result["importedFixtureAccepted"], false);
+  assert.equal(value.calls.filter(call => call === "import").length, 1);
+  const journal = await loadOperation("managed-import-runtime-relevance"); assert.equal(journal.plan["fixtureKind"], "schematic-text-wire-bus-relevance");
+  assert.throws(() => value.owner.qualifiedSchematicRelevanceSourceForFreshOpening());
+  await assert.rejects(value.owner.execute(value.request, value.expected)); assert.equal(value.calls.filter(call => call === "import").length, 1);
+});
+
 void test("actual import coordinator stages a fresh archive, seals destination and tracks its sole SDK call without accepting persistence", async () => {
   const value = fixture("managed-import-runtime-success");
   const result = await value.owner.execute(value.request, value.expected);
