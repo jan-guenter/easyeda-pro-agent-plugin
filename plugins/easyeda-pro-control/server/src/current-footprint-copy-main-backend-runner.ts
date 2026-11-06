@@ -69,7 +69,7 @@ import { currentProjectStructureMainGenerationExited, isCurrentProjectStructureM
 import type { CurrentProjectStructureMainCapability } from "./current-project-structure-main-capability.ts";
 
 // oxlint-disable-next-line import/no-cycle -- The actual selected-file native factory creates this runner; no capability issues during module initialization.
-import { requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentPcbViaMainCommand } from "./current-selected-file-main-sql-fence-bootstrap.ts";
+import { requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainStep } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import type { CurrentSelectedFileMainSqlFenceBootstrap } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SQL_SOURCE, qualifyCurrentSelectedFileMainSqlFenceSource } from "./current-selected-file-main-sql-fence-source.ts";
 import type { CurrentSelectedFileMainSqlFenceSite } from "./current-selected-file-main-sql-fence-source.ts";
@@ -82,6 +82,8 @@ import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CALL_FLAGS as SQL_CALL, CURRENT_SE
 import type { CurrentSelectedFileMainSqlFenceCommand } from "./current-selected-file-main-sql-fence-protocol.ts";
 import { decodeCurrentSelectedFileMainSqlFenceNative, decodeCurrentSelectedFileMainSqlFenceNativeArray } from "./current-selected-file-main-sql-fence-replies.ts";
 import { CURRENT_PCB_VIA_MAIN_REQUESTS as VIA_REQUESTS, validateCurrentPcbViaMainCommand } from "./current-pcb-via-main-protocol.ts";
+import { CURRENT_PCB_VIA_MAIN_STEP_REQUESTS as VIA_STEPS, validateCurrentPcbViaMainStepCommand } from "./current-pcb-via-main-step-protocol.ts";
+import type { CurrentPcbViaMainStepCommand } from "./current-pcb-via-main-step-protocol.ts";
 import type { CurrentPcbViaMainCommand } from "./current-pcb-via-main-protocol.ts";
 import type { CurrentPcbViaMainBackendBindings, CurrentPcbViaMainEvent, CurrentPcbViaMainOrigin } from "./current-pcb-via-main-origin.ts";
 import { createHash } from "node:crypto";
@@ -334,6 +336,8 @@ export class CurrentFootprintCopyMainBackendRunner {
   #sqlHeld: Pause | null = null;
   #viaMainOrigin: CurrentPcbViaMainOrigin | null = null;
   #viaMainDeliveredPause: Pause | null = null;
+  #viaMainDriverStep: Readonly<{ origin: CurrentPcbViaMainOrigin; request: CurrentSelectedFileMainRequestObservation; pause: Pause; expected: Readonly<z.infer<typeof currentFootprintCopyMainRequestPlanSchema>> }> | null = null;
+  #viaMainDriverStepConsumed = false;
   readonly #viaMainEvents: CurrentPcbViaMainEvent[] = [];
   readonly #viaMainPoints = new Map<string, z.infer<typeof location>>();
   #viaMainArming: z.infer<typeof location> | null = null;
@@ -680,7 +684,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Consume one fixed request number and retain its sole pending reply.
    * Head-age exceptions are captured before success decoding; cleanup keeps
    * its own counter and cannot repeat a consumed normal request. */
-  async #request(input: Command | CurrentSelectedFileMainSqlFenceCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand | CurrentProjectStructureMainCommand | CurrentPcbViaMainCommand,
+  async #request(input: Command | CurrentSelectedFileMainSqlFenceCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand | CurrentProjectStructureMainCommand | CurrentPcbViaMainCommand | CurrentPcbViaMainStepCommand,
     cleanup = false, retainAllocationReply?: (reply: unknown) => void): Promise<unknown> {
     this.#phase = input.phase; await this.#current(cleanup);
     if (this.#viaMainOrigin !== null && this.#viaMainPoll !== null) { await this.#viaMainPoll; await this.#current(cleanup); }
@@ -705,7 +709,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     const initialMaximum = this.#selectedSqlBootstrap === null ? 64 : 72 + SQL_REQUESTS.normal;
     const requestMaximum = cleanup && this.#selectedSqlBootstrap === null ? 72 : initialMaximum;
     let withinBound: boolean;
-    if (via) { withinBound = this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null && this.#requests < initialMaximum + VIA_REQUESTS.total; }
+    if (via) { withinBound = this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null && this.#requests < initialMaximum + VIA_REQUESTS.total + VIA_STEPS.total; }
     else if (this.#originAttempted || this.#structureAttempted) { withinBound = this.#requests < normalMaximum + cleanupMaximum && (cleanupCommand ? this.#cleanupRequests < cleanupMaximum : this.#normalRequests < normalMaximum); }
     else { withinBound = this.#requests < requestMaximum; }
     need(this.#pendingId === null && withinBound, "REQUEST_BOUND");
@@ -716,7 +720,8 @@ export class CurrentFootprintCopyMainBackendRunner {
     try {
     if (via) {
       need(this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null, "VIA_MAIN_ORIGINAL_BOOTSTRAP");
-      await sendOriginalCurrentPcbViaMainCommand(this.#selectedSqlBootstrap, this, validateCurrentPcbViaMainCommand(input), id);
+      await (input.phase === "via-main-driver-step" ? sendOriginalCurrentPcbViaMainStep(this.#selectedSqlBootstrap, this, validateCurrentPcbViaMainStepCommand(input), id) :
+        sendOriginalCurrentPcbViaMainCommand(this.#selectedSqlBootstrap, this, validateCurrentPcbViaMainCommand(input), id));
     } else if (sqlFence) {
       need(this.#selectedSqlBootstrap !== null, "SELECTED_SQL_ORIGINAL_BOOTSTRAP");
       await sendCurrentSelectedFileMainSqlFenceCommand(this.#selectedSqlBootstrap, this, validateCurrentSelectedFileMainSqlFenceCommand(input), id);
@@ -1035,6 +1040,19 @@ export class CurrentFootprintCopyMainBackendRunner {
             empty.parse(resumed.params); this.#viaMainDeliveredPause = null;
           } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
         },
+        continuePlannedDriver: async (packet: CurrentSelectedFileMainRequestObservation): Promise<void> => {
+          same(); this.requireViaMainObservationArmed(origin); this.requireOriginalSelectedMainRequest(packet);
+          const actual = selectedRequestPackets.get(packet), expected = this.#viaExpectedBody;
+          need(actual !== undefined && expected !== null && this.#viaMainDeliveredPause === actual.pause && this.#viaMainEvents.length === 0 && this.#viaMainDriverStep === null &&
+            packet.mode === "fetch" && packet.method === "POST" && packet.pureQuery === "" && packet.pathHeader === expected.projectKey &&
+            packet.pureUrl === `/api/v4/projects/${expected.projectUuid}/branches/${expected.branchUuid}/histories`, "VIA_MAIN_ORIGINAL_HISTORY_DRIVER");
+          this.#busy = true; this.#viaMainDriverStep = Object.freeze({ origin, request: packet, pause: actual.pause, expected }); actual.pause.resumeAttempted = true;
+          try {
+            empty.parse(await this.#request({ phase: "via-main-driver-step", method: "Debugger.resume", params: {} })); await this.#wait(() => actual.pause.resumed); same();
+            const resumed = this.#viaMainEvents.shift(); need(this.#viaMainDriverStepConsumed && resumed?.method === "Debugger.resumed", "VIA_MAIN_DRIVER_ORIGINAL_RESUMED");
+            empty.parse(resumed.params); this.#viaMainDeliveredPause = null; if (this.#sqlHeld === actual.pause) { this.#sqlHeld = null; }
+          } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
+        },
         request: async (input: CurrentPcbViaMainCommand, cleanup: boolean): Promise<unknown> => {
           same(); need(!this.#busy, "VIA_MAIN_COMMAND_BUSY"); const command = validateCurrentPcbViaMainCommand(input);
           const removing = command.method === "Debugger.removeBreakpoint"; const releasing = command.method === "Runtime.releaseObjectGroup";
@@ -1063,6 +1081,15 @@ export class CurrentFootprintCopyMainBackendRunner {
         } });
       return Object.freeze({ origin, bindings });
     } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
+  }
+  /** The genuine native sender consumes this pending original call once.
+   * A phase string or matching plan cannot create the request/pause lineage. */
+  public consumeOriginalViaMainDriverStep(command: CurrentPcbViaMainStepCommand, requestId: number): Readonly<{ origin: CurrentPcbViaMainOrigin; dataStr: string }> {
+    const grant = this.#viaMainDriverStep; this.#same(false);
+    need(grant !== null && !this.#viaMainDriverStepConsumed && command.phase === "via-main-driver-step" && this.#pendingId === requestId && this.#busy &&
+      this.#viaMainOrigin === grant.origin && this.#viaExpectedBody === grant.expected && this.#pause === grant.pause && this.#viaMainDeliveredPause === grant.pause &&
+      grant.pause.resumeAttempted && !grant.pause.resumed && selectedRequestPackets.get(grant.request)?.pause === grant.pause, "VIA_MAIN_ORIGINAL_PENDING_DRIVER_GRANT");
+    this.#viaMainDriverStepConsumed = true; return Object.freeze({ origin: grant.origin, dataStr: grant.expected.dataStr });
   }
   public requireViaMainObservationArmed(origin: CurrentPcbViaMainOrigin): void {
     need(this.#viaMainOrigin === origin && !this.#busy && !this.#failed && !this.#viaMainGroupReleased && this.#viaMainPoints.size === 3 && this.#viaMainArming === null, "VIA_MAIN_SETUP_UNSETTLED");

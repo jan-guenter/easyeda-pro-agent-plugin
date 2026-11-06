@@ -13,6 +13,7 @@ export interface CurrentPcbViaMainBackendBindings {
   readonly nextEvent: () => Promise<CurrentPcbViaMainEvent>;
   readonly observeRequest: () => Promise<CurrentSelectedFileMainRequestObservation>;
   readonly requireOriginalRequest: (packet: CurrentSelectedFileMainRequestObservation) => void;
+  readonly continuePlannedDriver: (packet: CurrentSelectedFileMainRequestObservation) => Promise<void>;
   readonly continueReadonlyRequest: (packet: CurrentSelectedFileMainRequestObservation) => Promise<void>;
   readonly assertCurrent: () => Promise<void>;
   readonly fail: () => void;

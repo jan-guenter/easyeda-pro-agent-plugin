@@ -6,11 +6,11 @@ import type { CurrentPcbViaWriteOwner } from "./current-pcb-via-write-owner.ts";
 import type { CurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
 import type { CurrentPcbViaMainBindings, CurrentPcbViaMainOrigin } from "./current-pcb-via-main-origin.ts";
 import { validateCurrentPcbViaMainCommand } from "./current-pcb-via-main-protocol.ts";
-import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_SITES as SITES, decodeCurrentFootprintCopyMainRequestArrayCapture as decodeArray,
-  decodeCurrentFootprintCopyMainRequestCollectionPause as decodePause } from "./current-footprint-copy-main-request-protocol.ts";
+import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_SITES as SITES, decodeCurrentFootprintCopyMainRequestAllocation as decodeAllocation,
+  decodeCurrentFootprintCopyMainRequestArrayCapture as decodeArray, decodeCurrentFootprintCopyMainRequestCollectionPause as decodePause } from "./current-footprint-copy-main-request-protocol.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_INVOCATION_EXPRESSIONS as EXPRESSIONS, CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_INVOCATION_PROGRAMS as PROGRAMS } from "./current-footprint-copy-main-request-collect-programs.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_FLAGS as FLAGS } from "./current-footprint-copy-main-request-contract.ts";
-import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_GROUP as GROUP } from "./current-footprint-copy-main-request-programs.ts";
+import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_GROUP as GROUP, CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_CALLS as SOURCE_CALLS, CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_EXPRESSIONS as SOURCE_FRAMES } from "./current-footprint-copy-main-request-programs.ts";
 import { requireCurrentFootprintCopyMainRequestSource } from "./current-footprint-copy-main-request-source.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { requireOriginalCurrentPcbViaSaveProjection } from "./current-pcb-via-save-projection.ts";
@@ -25,11 +25,18 @@ export interface CurrentPcbViaHeldMainDriver {
   readonly actualRequestBodyJoined: false; readonly nativeMutationResumed: false; readonly selectedSqlAuthorized: false;
 }
 const packets = new WeakMap<CurrentPcbViaHeldMainDriver, Readonly<{ observer: CurrentPcbViaMainRequestObserver; invocation: string; request: CurrentSelectedFileMainRequestObservation }>>();
+export interface CurrentPcbViaHeldMainContext {
+  readonly schema: "private.current-pcb-via-held-main-context.v1";
+  readonly originalDriverContextJoined: true; readonly actualRequestBodyJoined: false; readonly selectedSqlAuthorized: false;
+}
+const contexts = new WeakMap<CurrentPcbViaHeldMainContext, Readonly<{ observer: CurrentPcbViaMainRequestObserver; context: string }>>();
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PCB_VIA_MAIN_OBSERVER_${code}`); } }
 export class CurrentPcbViaMainRequestObserver {
   readonly #origin: CurrentPcbViaMainOrigin; readonly #owner: CurrentPcbViaWriteOwner; readonly #plan: CurrentPcbViaWritePlan; readonly #bindings: CurrentPcbViaMainBindings;
   #attempted = false; #armed = false; #busy = false; #failed = false; #packet: CurrentPcbViaHeldMainDriver | null = null;
   #projection: CurrentPcbViaSaveProjection | null = null;
+  readonly #points = new Map<"context" | "controller" | "editHead", string>();
+  #contextAttempted = false; #context: CurrentPcbViaHeldMainContext | null = null;
   public constructor(origin: CurrentPcbViaMainOrigin, owner: CurrentPcbViaWriteOwner, plan: CurrentPcbViaWritePlan) {
     this.#origin = origin; this.#owner = owner; this.#plan = plan; this.#bindings = requireOriginalCurrentPcbViaMainOrigin(origin, owner, plan); Object.freeze(this);
   }
@@ -44,8 +51,9 @@ export class CurrentPcbViaMainRequestObserver {
   }
   public async arm(): Promise<void> {
     need(!this.#armed && !this.#busy, "ARM_CONSUMED"); this.#armed = true; this.#busy = true;
-    try { for (const role of ["context", "controller", "editHead"] as const) { const site = SITES[role]; await this.#send({ phase: "via-main-request-site-arm", method: "Debugger.setBreakpoint", params: {
-      location: { scriptId: this.#bindings.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } } }); }
+    try { for (const role of ["context", "controller", "editHead"] as const) { const site = SITES[role]; const raw = await this.#send({ phase: "via-main-request-site-arm", method: "Debugger.setBreakpoint", params: {
+      location: { scriptId: this.#bindings.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } } });
+      const point = decodeAllocation(raw, role, this.#bindings.scriptId); need(![...this.#points.values()].includes(point), "POINT_ALIAS"); this.#points.set(role, point); }
     } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
   }
   async #frame(callFrameId: string, expression: string): Promise<string> {
@@ -93,5 +101,29 @@ export class CurrentPcbViaMainRequestObserver {
   public async requireOriginal(packet: CurrentPcbViaHeldMainDriver): Promise<void> {
     const original = packets.get(packet); need(this.#packet === packet && original?.observer === this, "ORIGINAL_PACKET");
     this.#bindings.requireOriginalRequest(original.request); await this.#current(true);
+  }
+  /** Advance only the actual selected history driver. The native sender also
+   * requires the operation's private body and original pending one-Save slot.
+   * The new context stays paused before routing or design SQL. */
+  public async continueToContext(packet: CurrentPcbViaHeldMainDriver): Promise<CurrentPcbViaHeldMainContext> {
+    need(!this.#busy && !this.#contextAttempted, "CONTEXT_CONSUMED"); this.#contextAttempted = true; this.#busy = true;
+    try {
+      await this.requireOriginal(packet); const original = packets.get(packet); need(original !== undefined, "ORIGINAL_PACKET");
+      await this.#bindings.continuePlannedDriver(original.request); await this.#current(true);
+      const raw = captureCurrentPcbStringClockReply(await this.#bindings.nextEvent()).value;
+      const event = z.strictObject({ method: z.literal("Debugger.paused"), params: z.unknown() }).parse(raw); const point = this.#points.get("context"); need(point !== undefined, "CONTEXT_POINT");
+      const pause = decodePause(event.params, "context", this.#bindings.scriptId, point);
+      const frame = decodeArray(await this.#send({ phase: "via-main-request-frame", method: "Debugger.evaluateOnCallFrame", params: { callFrameId: pause.frameId,
+        expression: SOURCE_FRAMES.context, objectGroup: GROUP, silent: true, returnByValue: false, generatePreview: false, throwOnSideEffect: true, includeCommandLineAPI: false } }, true), 4);
+      const context = decodeArray(await this.#send({ phase: "via-main-request-context", method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: frame,
+        functionDeclaration: SOURCE_CALLS.context.program, arguments: [{ objectId: this.#bindings.constructionObjectId }], returnByValue: false } }, true), 6);
+      z.strictObject({ result: z.strictObject({ type: z.literal("boolean"), value: z.literal(true) }) }).parse(await this.#send({ phase: "via-main-request-context-join", method: "Runtime.callFunctionOn", params: {
+        ...FLAGS, objectId: original.invocation, functionDeclaration: PROGRAMS.contextJoin, arguments: [{ objectId: context }], returnByValue: true } }, true));
+      await this.#current(true); const held: CurrentPcbViaHeldMainContext = Object.freeze({ schema: "private.current-pcb-via-held-main-context.v1", originalDriverContextJoined: true, actualRequestBodyJoined: false, selectedSqlAuthorized: false });
+      this.#context = held; contexts.set(held, Object.freeze({ observer: this, context })); return held;
+    } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
+  }
+  public async requireOriginalContext(packet: CurrentPcbViaHeldMainContext): Promise<void> {
+    need(this.#context === packet && contexts.get(packet)?.observer === this, "ORIGINAL_CONTEXT"); await this.#current(true);
   }
 }

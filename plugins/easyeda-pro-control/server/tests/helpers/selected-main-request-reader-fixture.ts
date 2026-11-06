@@ -37,12 +37,12 @@ function metadata(role: "method" | "Request" | "brand" | "fetch", scriptId: stri
 }
 const scope = (objectId: string, description: string): Bag => ({ type: "object", subtype: "internal#scope", description, objectId });
 
-export function selectedRequestPeer(command: Command, request: Readonly<{ method: string; url: string; delta?: number }>): unknown {
+export function selectedRequestPeer(command: Command, request: Readonly<{ method: string; url: string; delta?: number; pathHeader?: string }>): unknown {
   if (command.phase === "sql-fence-driver-frame") { return array("request-frame", 7); }
   if (command.phase === "sql-fence-request-capture") { return array("request-capture", 9); }
   if (command.phase === "sql-fence-request-bind" || command.phase === "sql-fence-request-rebind") { return array("request-bound", 7); }
   if (command.phase === "sql-fence-fetch-source") { return { scriptSource: fakeSource }; }
-  if (command.phase === "sql-fence-request-read") { return { result: { type: "object", value: { schema: "private.selected-file-main-request.v1", mode: "fetch", method: request.method, pureUrl: request.url, pureQuery: "", pathHeader: "f".repeat(64),
+  if (command.phase === "sql-fence-request-read") { return { result: { type: "object", value: { schema: "private.selected-file-main-request.v1", mode: "fetch", method: request.method, pureUrl: request.url, pureQuery: "", pathHeader: request.pathHeader ?? "f".repeat(64),
     originalRequestVerified: true, readonlySql: false, executionAuthorized: false, saveAuthorized: false } } }; }
   assert.equal(command.phase, "sql-fence-properties"); assert.ok("objectId" in command.params); const id = command.params.objectId;
   if (id === "request-capture") { return { result: [prop("5", fn("request-constructor")), prop("6", fn("request-getter")), prop("7", { type: "string", value: "fetch" })] }; }

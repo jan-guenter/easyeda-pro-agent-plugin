@@ -112,3 +112,32 @@ actual body before any native mutation grant.
 Nine focused real-cursor and observer tests passed, along with full TypeScript
 checks and strict type-aware lint. Existing shared Fetch reservations cover the
 read service. No native vocabulary, helper, pin or released forward graph changed.
+
+## Original driver to context continuation
+
+`pcb-via-main-step` is a separate finite native action. It does not extend the
+observation grammar or shared `sql-fence-*` resumes. The original sender consumes
+its private pending driver grant before dispatch and requires the same native
+owner, active one-Save slot and privately captured body. The native owner also
+requires its actual SDK Save slot and an ordered fixed request-step sequence.
+The existing unconditional Save refusal remains in place.
+
+The actual Via observer can now advance that original driver once, capture the
+source-qualified pre-routing context, and prove its req/res identities against
+the retained driver invocation. The returned context remains paused. Copied or
+stale request packets cannot issue the grant, and lost write acknowledgment
+consumes it without replay. This step authorizes no selected SQL or completed
+Save. Controller body/actor joins, native SQL slots and delayed structure
+completion are still required before writer eligibility can change.
+
+The four pinned driver/context/controller/PB transitions reserve four normal
+main commands. This increment implements issuance for the first driver step;
+the other three remain unavailable from the original sender. With the current
+startup configuration reservation, Via has 928 normal, 12 cleanup and 940 total
+main commands.
+Renderer and released forward capacities remain unchanged.
+
+Nineteen focused finite-grammar, production-cursor, observer and native-fragment
+checks passed, including original pending-grant consumption, lost acknowledgment
+and generator idempotence. Full TypeScript and strict type-aware lint passed.
+No native execution, helper generation, pin or bundle refresh was performed.

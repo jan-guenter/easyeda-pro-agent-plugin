@@ -16,6 +16,7 @@ import type { CurrentPcbViaMainCommand } from "../src/current-pcb-via-main-proto
 import { validateCurrentPcbViaMainCommand } from "../src/current-pcb-via-main-protocol.ts";
 
 type Data = Record<string, unknown>;
+type CurrentPcbViaMainStepCommand = Parameters<CurrentFootprintCopyMainBackendRunner["consumeOriginalViaMainDriverStep"]>[0];
 const capability = Object.freeze({ profile: "private.selected-file-main-sql-fence-bootstrap.v1" as const, executionAuthorized: false as const });
 function property(name: string, value: Data, writable = false, enumerable = false, configurable = true): Data { return { name, value, writable, enumerable, configurable, isOwn: true }; }
 function nativeArray(): Data {
@@ -32,10 +33,10 @@ function nativeMetadata(id: string): Data {
 }
 const configPacket = (role: "jb" | "dc", site: "run" | "prepare" | "prepared", sql: string, transactionDepth: 0 | 1): Data => ({ recognized: true, role, site, sql, transactionDepth, parametersEmpty: true, designWriteGrant: false, nativeCompletionProven: false });
 async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = null): Promise<Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; phases: string[]; transport: CurrentFootprintCopyMainBackendTransport;
-  injectRequest: (method: string, foreign?: boolean, sourceDelta?: number) => void; injectMutation: () => void; injectDriver: () => void; resumes: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
+  loseNextDriverStep: () => void; injectRequest: (method: string, foreign?: boolean, sourceDelta?: number, history?: boolean) => void; injectMutation: () => void; injectDriver: () => void; resumes: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
   const base = mainBackendTransportFixture();
   const ids = new Map<number, number>(), phases: string[] = [], queue: Data[] = [], retainedRegistration: Data[] = [];
-  let currentRequest = { method: "GET", url: "", delta: 0 }, fetchScriptSeen = false;
+  let currentRequest = { method: "GET", url: "", delta: 0, pathHeader:"f".repeat(64) }, fetchScriptSeen = false;
   const startup: { site: keyof typeof SOURCE.sites; value?: Data }[] = [{ site: "startupVersion" }, { site: "startupJB" },
     { site: "run", value: configPacket("jb", "run", CONFIG_SQL.transaction.begin, 1) },
     ...CONFIG_SQL.scripts.jb.map(row => ({ site: "run" as const, value: configPacket("jb", "run", row.sql, 1) })),
@@ -47,7 +48,7 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
   if (wrongStartup === "order") { startup[2] = { site: "run", value: configPacket("jb", "run", CONFIG_SQL.scripts.jb[0]?.sql ?? "", 1) }; }
   if (wrongStartup === "foreign") { startup[2] = { site: "run", value: { recognized: false } }; }
   let startupIndex = -1;
-  let queuedBytes = Buffer.alloc(0);
+  let queuedBytes = Buffer.alloc(0); let loseDriverStep = false, plannedResumes = 0;
   let holdRegistration = false, normalResumes = 0, runner: CurrentFootprintCopyMainBackendRunner | null = null, sqlResumes = 0;
   let heldPoll: Readonly<{ started: PromiseWithResolvers<null>; settle: PromiseWithResolvers<null> }> | null = null;
   const event = (method: string, params: Data): void => { queue.push({ method, params }); };
@@ -123,6 +124,12 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
       sendCurrentSelectedFileMainSqlFenceCommand: (token: unknown, original: unknown, command: SqlCommand, id: number): Promise<void> => {
         assert.equal(token, capability); assert.equal(original, runner); return sqlSend(command, id);
       },
+      sendOriginalCurrentPcbViaMainStep: (token: unknown, original: unknown, command: CurrentPcbViaMainStepCommand, id: number): Promise<void> => {
+        assert.equal(token, capability); assert.equal(original, runner); assert.equal(command.phase,"via-main-driver-step"); assert.ok(runner !== null);
+        runner.consumeOriginalViaMainDriverStep(command,id); phases.push(command.phase);
+        if(loseDriverStep){return Promise.reject(new Error("original-driver-step-ack-lost"));}
+        plannedResumes += 1;event("Debugger.resumed",{});queue.push({id,result:{}});return Promise.resolve();
+      },
       sendOriginalCurrentPcbViaMainCommand: (token: unknown, original: unknown, command: CurrentPcbViaMainCommand, id: number): Promise<void> => {
         assert.equal(token, capability); assert.equal(original, runner); validateCurrentPcbViaMainCommand(command); phases.push(command.phase);
         let result: unknown = command.phase === "via-main-construction-require" ? { result: { type: "boolean", value: true } } : { result: [] };
@@ -132,10 +139,10 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
     },
   });
   runner = new module.Constructor(transport, undefined, capability);
-  return { runner, phases, transport, injectRequest: (method: string, foreign = false, sourceDelta = 0): void => {
-    const project = foreign ? "d".repeat(64) : createHash("sha256").update(String.raw`C:\Synthetic\fixture.eprj2`).digest("hex"); currentRequest = { method, url: `/api/v4/projects/${project}/branches`, delta: sourceDelta };
+  return { runner, phases, transport, loseNextDriverStep: ():void=>{loseDriverStep=true;}, injectRequest: (method: string, foreign = false, sourceDelta = 0, history=false): void => {
+    const project = foreign ? "d".repeat(64) : createHash("sha256").update(String.raw`C:\Synthetic\fixture.eprj2`).digest("hex"); currentRequest = { method, url: `/api/v4/projects/${project}/branches${history?`/${"b".repeat(32)}/histories`:""}`, delta: sourceDelta, pathHeader:project };
     if (!fetchScriptSeen) { event("Debugger.scriptParsed", { scriptId: "builtin-fetch", url: "node:internal/deps/undici/undici", executionContextId: 1, startLine: 0, startColumn: 0, endLine: 17_434, endColumn: 0, length: 745_782, isLiveEdit: false, hasSourceURL: false, isModule: false, scriptLanguage: "JavaScript" }); fetchScriptSeen = true; }
-    pause("driver"); }, injectMutation: (): void => { pause("run"); }, injectDriver: (): void => { pause("driver"); }, resumes: (): number => normalResumes + sqlResumes,
+    pause("driver"); }, injectMutation: (): void => { pause("run"); }, injectDriver: (): void => { pause("driver"); }, resumes: (): number => normalResumes + sqlResumes + plannedResumes,
     deferPoll: () => { assert.equal(heldPoll, null); const original = { started: Promise.withResolvers<null>(), settle: Promise.withResolvers<null>() }; heldPoll = original;
       return { started: original.started.promise, release: (): void => { original.settle.resolve(null); } }; } };
 }
@@ -225,5 +232,21 @@ void test("the actual startup cursor consumes all original profile SQL before re
     const refused = await fixture(0, fault); await assert.rejects(refused.runner.observe(), /STARTUP_CONFIG_SEQUENCE|UNQUALIFIED_STARTUP_MUTATION/u);
     assert.equal(refused.phases.filter(phase => phase === "sql-fence-startup-select").length, 1); assert.equal(refused.resumes(), 5);
     assert.equal(refused.phases.includes("capture"), false);
+  }
+});
+
+void test("the original Via history driver grant is consumed only by its pending native call and lost acknowledgment cannot repeat",async()=>{
+  for(const lose of [false,true]){
+    const f=await fixture();await f.runner.observe();const original=await f.runner.beginViaMainObservation();
+    for(const [lineNumber,columnNumber]of [[1164,2540],[8573,1663],[8572,27_776]]){await original.bindings.request(validateCurrentPcbViaMainCommand({phase:"via-main-request-site-arm",method:"Debugger.setBreakpoint",params:{location:{scriptId:"app",lineNumber,columnNumber}}}),false);}
+    const command={phase:"via-main-driver-step",method:"Debugger.resume",params:{}} as const;
+    assert.throws(()=>f.runner.consumeOriginalViaMainDriverStep(command,1));
+    const projectUuid=createHash("sha256").update(String.raw`C:\Synthetic\fixture.eprj2`).digest("hex");
+    f.runner.bindViaExpectedHistoryBody(original.origin,{projectUuid,branchUuid:"b".repeat(32),projectKey:projectUuid,path:String.raw`C:\Synthetic\fixture.eprj2`,dataStr:"original-held-body"});
+    f.injectRequest("POST",false,0,true);await original.bindings.nextEvent();const packet=await original.bindings.observeRequest();const before=f.resumes();
+    if(lose){f.loseNextDriverStep();await assert.rejects(original.bindings.continuePlannedDriver(packet),/original-driver-step-ack-lost/u);assert.equal(f.resumes(),before);}
+    else{await original.bindings.continuePlannedDriver(packet);assert.equal(f.resumes(),before+1);}
+    await assert.rejects(original.bindings.continuePlannedDriver(packet));assert.equal(f.phases.filter(phase=>phase==="via-main-driver-step").length,1);
+    assert.throws(()=>f.runner.consumeOriginalViaMainDriverStep(command,1));assert.equal(f.runner.selectedSqlFenceState()["selectedProjectMutationsResumed"],0);
   }
 });
