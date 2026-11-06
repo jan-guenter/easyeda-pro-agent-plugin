@@ -12,7 +12,7 @@ import type { CurrentSchematicDisplayAccessorBindings, CurrentSchematicDisplayAc
 import { validateCurrentSchematicDisplayAccessorCommand } from "./current-schematic-display-accessor-protocol.ts";
 import { currentGeneratedProjectHistorySqlBaseline } from "./current-generated-project-history-sql-baseline.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_SITES } from "./current-project-save-structure-source.ts";
-import { validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
+import { decodeCurrentProjectSaveProducerNonprivateMode, validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import type { CurrentProjectHistorySqlCompletion, CurrentProjectHistorySqlCompletionValue, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
 import type { CurrentSchematicDisplayClockBindings, CurrentSchematicDisplayClockOrigin, CurrentSchematicDisplayClockRealm } from "./current-schematic-display-clock-origin.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_CLOCK_SITES, validateCurrentSchematicDisplayClockCommand } from "./current-schematic-display-clock-protocol.ts";
@@ -977,6 +977,7 @@ class CurrentPcbRetainedOwnerCore {
   #schematicTransportSetup: CurrentProjectStructureTransportSetup | null = null;
   #schematicTransportOperation: GeneratedSchematicDisplayNativeArguments | null = null;
   #schematicTransportOrigin: CurrentSchematicDisplayStructureTransportOrigin | null = null;
+  #schematicProducerModeArray: string | null = null; #schematicProducerModeVerified = false;
   #schematicTransportCapture: string | null = null;
   #schematicTransportCaptureAttempted = false;
   #schematicTransportSendFrame: string | null = null;
@@ -1022,6 +1023,7 @@ class CurrentPcbRetainedOwnerCore {
   #viaTransportSetup: CurrentProjectStructureTransportSetup | null = null;
   #viaTransportOperation: CurrentPcbViaWritePlan | null = null;
   #viaTransportOrigin: CurrentPcbViaStructureTransportOrigin | null = null;
+  #viaProducerModeArray: string | null = null; #viaProducerModeVerified = false;
   #viaTransportCapture: string | null = null;
   #viaTransportCaptureAttempted = false;
   #viaTransportSendFrame: string | null = null;
@@ -1971,8 +1973,10 @@ class CurrentPcbRetainedOwnerCore {
               const assertHistory = (): void => { if (historyGrant !== null) { if (command.phase !== "project-save-structure-resume" || originalProjectStructureContinuation(structureOrigin, command.role, this.#schematicStages.has("save")) !== historyGrant) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_CHANGED"); } historyGrant.assertCurrent(); } }; assertHistory();
               if (retain !== undefined && (typeof retain !== "function" || types.isProxy(retain))) { throw error("PROJECT_SAVE_STRUCTURE_RETAIN_CALLBACK"); }
               const reply = await this.#serializeSchematicDisplayObserver(() => this.#transfer(async () => { original(); assertStructureOriginal();
-                if (command.phase === "project-save-structure-resume") { assertHistory(); selected.reserveStructureResume(source, command.role); }
+                if (command.phase === "project-save-structure-resume") { assertHistory(); if (command.role === "bootstrap" && !this.#schematicProducerModeVerified) { throw error("PROJECT_SAVE_PRODUCER_NONPRIVATE_MODE_REQUIRED"); } selected.reserveStructureResume(source, command.role); }
                 const actual = await pipe.observeSchematicDisplayWorker(command);
+                if (command.phase === "project-save-structure-frame" && command.role === "mode") { if (this.#schematicProducerModeArray !== null) { throw error("PROJECT_SAVE_PRODUCER_MODE_ONCE"); } this.#schematicProducerModeArray = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(actual, 1); }
+                else if (command.phase === "project-save-structure-properties" && command.params.objectId === this.#schematicProducerModeArray) { decodeCurrentProjectSaveProducerNonprivateMode(actual); this.#schematicProducerModeVerified = true; }
                 if (retain !== undefined) { Reflect.apply(retain, undefined, [actual]); }
                 return actual;
               }));
@@ -2148,8 +2152,10 @@ class CurrentPcbRetainedOwnerCore {
               const assertHistory = (): void => { if (historyGrant !== null) { if (command.phase !== "project-save-structure-resume" || originalProjectStructureContinuation(structureOrigin, command.role, this.#viaSdkPhases.has("save")) !== historyGrant) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_CHANGED"); } historyGrant.assertCurrent(); } }; assertHistory();
               if (retain !== undefined && (typeof retain !== "function" || types.isProxy(retain))) { throw error("PROJECT_SAVE_STRUCTURE_RETAIN_CALLBACK"); }
               const reply = await this.#serializeViaObserver(() => this.#transfer(async () => { original(); assertStructureOriginal();
-                if (command.phase === "project-save-structure-resume") { assertHistory(); selected.reserveStructureResume(source, command.role); }
+                if (command.phase === "project-save-structure-resume") { assertHistory(); if (command.role === "bootstrap" && !this.#viaProducerModeVerified) { throw error("PROJECT_SAVE_PRODUCER_NONPRIVATE_MODE_REQUIRED"); } selected.reserveStructureResume(source, command.role); }
                 const actual = await pipe.observeViaWorker(command);
+                if (command.phase === "project-save-structure-frame" && command.role === "mode") { if (this.#viaProducerModeArray !== null) { throw error("PROJECT_SAVE_PRODUCER_MODE_ONCE"); } this.#viaProducerModeArray = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(actual, 1); }
+                else if (command.phase === "project-save-structure-properties" && command.params.objectId === this.#viaProducerModeArray) { decodeCurrentProjectSaveProducerNonprivateMode(actual); this.#viaProducerModeVerified = true; }
                 if (retain !== undefined) { Reflect.apply(retain, undefined, [actual]); }
                 return actual;
               }));

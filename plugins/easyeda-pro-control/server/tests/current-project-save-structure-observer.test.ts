@@ -43,7 +43,7 @@ const scopes = (id: string): object => {
 function constructorName(role: Site): string { if (role === "producerUpload") { return "Gd"; } return "Lg"; }
 
 
-async function fixture(changedTree = false, changedTimer = false, changedReceiver = false, changedCallback = false, changedCaller = false, startupCalls = 0, wrongStartupReady = false, wrongStartupReturn = false, wrongStartupFinalizer = false, earlySave = false, prehistoryFault: "body" | "publication" | null = null): Promise<Readonly<{ reservation: CurrentProjectStructureBodyReservation; publication: CurrentProjectStructureMainPublication; publish: () => void; bodyConsumed: () => boolean; observer: CurrentProjectSaveStructureObserver; origin: CurrentProjectSaveStructureOrigin; token: CurrentProjectHistorySqlCompletion; resumes: Site[]; consumed: () => boolean; exit: () => void }>> {
+async function fixture(changedTree = false, changedTimer = false, changedReceiver = false, changedCallback = false, changedCaller = false, startupCalls = 0, wrongStartupReady = false, wrongStartupReturn = false, wrongStartupFinalizer = false, earlySave = false, prehistoryFault: "body" | "publication" | "mode" | null = null): Promise<Readonly<{ reservation: CurrentProjectStructureBodyReservation; publication: CurrentProjectStructureMainPublication; publish: () => void; bodyConsumed: () => boolean; observer: CurrentProjectSaveStructureObserver; origin: CurrentProjectSaveStructureOrigin; token: CurrentProjectHistorySqlCompletion; resumes: Site[]; consumed: () => boolean; exit: () => void }>> {
   const excerpt = worker209ConstructionFixtureSource(); const descriptions = { upload: sourceAt(excerpt, PRODUCERS.serial), structure: sourceAt(excerpt, PRODUCERS.serial), debounce: sourceAt(excerpt, PRODUCERS.debounce),
     uploadCallback: sourceAt(excerpt, CALLBACKS.uploadStructure), structureCallback: sourceAt(excerpt, CALLBACKS.structure), bufferedUpload: sourceAt(excerpt, PRODUCERS.upload), cooperationWrapper: sourceAt(excerpt, PRODUCERS.cooperation), bufferedCallback: sourceAt(excerpt, CALLBACKS.upload), cooperationCallback: sourceAt(excerpt, CALLBACKS.cooperation) };
   const target = { projectUuid: "1".repeat(64), branchUuid: "2".repeat(32), documentUuid: "3".repeat(32) };
@@ -71,6 +71,7 @@ async function fixture(changedTree = false, changedTimer = false, changedReceive
     if (id === "frame.producerCooperation") { return array([selected("cooperationCallback"), { type: "number", value: 10 }]); }
     if (id === "frame.producerDebounce") { return array([selected("structureCallback"), { type: "number", value: 300 }]); }
     if (id === "frame.producerSerial") { return array([selected(resumes.filter(role => role === "producerSerial").length === 0 ? "uploadCallback" : "debounce")]); }
+    if (id === "frame.mode") { return array([{ type: "boolean", value: prehistoryFault === "mode" }]); }
     if (id === "frame.bootstrap") { return array([ref("project"), ref("bus")]); }
     if (id === "initial") { return array([ref("project"), selected("upload"), selected("structure")]); }
     if (id === "frame.packet") { return array([ref("project"), ref("packet"), ref("task")]); }
@@ -189,4 +190,10 @@ void test("foreign prehistory intent or publication stays held and never acquire
     else { await f.observer.releasePrehistoryPacket(packet, f.reservation); f.publish(); await assert.rejects(f.observer.observePrehistoryCompletion(f.publication), /EXACT_MAIN_PUBLICATION/u); assert.equal(f.resumes.includes("response"), false); }
     assert.equal(f.consumed(), false); assert.equal(f.observer.retained().completed, false); assert.equal(f.observer.retained().prehistoryCompleted, false); const before = [...f.resumes]; f.exit(); await f.observer.cleanup(); assert.deepEqual(f.resumes, before);
   }
+});
+
+void test("original PRIVATE mode refuses before EP and cannot resume its bootstrap as cleanup", async () => {
+  const f = await fixture(false, false, false, false, false, 0, false, false, false, false, "mode"); await f.observer.arm();
+  await assert.rejects(f.observer.observeConstruction(), /ORIGINAL_NONPRIVATE_MODE_REQUIRED/u); assert.equal(f.resumes.includes("bootstrap"), false); assert.equal(f.consumed(), false);
+  const before = [...f.resumes]; f.exit(); await f.observer.cleanup(); assert.deepEqual(f.resumes, before);
 });

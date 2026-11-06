@@ -67,7 +67,7 @@ const dispatch = String.raw`        'schematic-display-native' {
 `;
 export function applyCurrentSchematicDisplayWriteNativeFragment(input: string): string {
   if (!input.includes("public static class EasyedaSelectedFileMainSqlFenceProtocol")) { throw new Error("SCHEMATIC_DISPLAY_SHARED_READONLY_SQL_DATA_REQUIRED"); }
-  const current = input.replace(/if\(schematicDisplayWrite209\)return (?:16|63|129|242|313|548|617|747);/u, `if(schematicDisplayWrite209)return ${String(PROFILE.renderer.total)};`).replace(/if \(\$SchematicDisplayWrite209\) \{\$requestLimit=(?:16|63|129|242|313|548|617|747)\}/u, `if ($SchematicDisplayWrite209) {$requestLimit=${String(PROFILE.renderer.total)}}`);
+  const current = input.replace(/if\(schematicDisplayWrite209\)return (?:16|63|129|242|313|548|617|747|763);/u, `if(schematicDisplayWrite209)return ${String(PROFILE.renderer.total)};`).replace(/if \(\$SchematicDisplayWrite209\) \{\$requestLimit=(?:16|63|129|242|313|548|617|747|763)\}/u, `if ($SchematicDisplayWrite209) {$requestLimit=${String(PROFILE.renderer.total)}}`);
   let source = one(current, "[switch]$PcbViaWrite209,[switch]$StringPrecreate,", "[switch]$SchematicDisplayWrite209,[switch]$PcbViaWrite209,[switch]$StringPrecreate,");
   const switches = [...source.slice(0, source.indexOf("\n")).matchAll(/\[switch\]\$(\w+)/gu)].map(match => match[1]).filter(name => name !== undefined && name !== "CompileOnly" && name !== "SchematicDisplayWrite209");
   const conflict = `if ($SchematicDisplayWrite209 -and (${switches.map(name => `$${name}`).join(" -or ")})) {throw 'pcb-diagnostic-conflicting-schematic-display-purpose'}\n`;

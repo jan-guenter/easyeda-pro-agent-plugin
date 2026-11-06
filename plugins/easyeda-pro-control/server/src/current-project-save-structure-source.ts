@@ -20,6 +20,7 @@ export const CURRENT_PROJECT_SAVE_STRUCTURE_SITES = freezeDeep({
   startupReturn: { lineNumber: 110, columnNumber: 90_030, offset: 2_104_240, expression: "[this,s,r,i]", length: 4 },
   startupCaller: { lineNumber: 0, columnNumber: 0, offset: 0, expression: "[e,t,s,r]", length: 4 },
   bootstrap: { lineNumber: 110, columnNumber: 162_932, offset: 2_177_142, expression: "[TP,Nb]", length: 2 },
+  mode: { lineNumber: 110, columnNumber: 162_932, offset: 2_177_142, expression: "[qh]", length: 1 },
   packet: { ...CURRENT_PROJECT_STRUCTURE_WORKER_SITES.packet, expression: "[this,p,r]", length: 3 },
   response: { ...CURRENT_PROJECT_STRUCTURE_WORKER_SITES.response, expression: "[this,p,r,d]", length: 4 },
   callbackReturn: { ...CURRENT_PROJECT_STRUCTURE_WORKER_SITES.callbackReturn, expression: "[this,p,r,d]", length: 4 },

@@ -14,8 +14,9 @@ export const CURRENT_PROJECT_SAVE_STRUCTURE_GROUP = "easyeda-pro-control-project
 /** Prior producer/Save sequence169. Two startup arms plus at most seven
  * original initial records each use entry8, return4 and finalizer6 commands.
  * Cleanup removes fourteen points and one group. The two ready-state conditions
- * are fixed on the wire; no arbitrary predicate is accepted. */
-export const CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS = Object.freeze({ normal: 169 + 2 + 7 * (8 + 4 + 6), cleanup: 14 + 1, cdpRequests: 312, events: 26 + 7 * 6, total: 380 });
+ * are fixed on the wire; no arbitrary predicate is accepted. One original
+ * mode frame plus its properties add two readonly commands before EP. */
+export const CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS = Object.freeze({ normal: 169 + 2 + 7 * (8 + 4 + 6) + 2, cleanup: 14 + 1, cdpRequests: 314, events: 26 + 7 * 6, total: 382 });
 const GROUP = CURRENT_PROJECT_SAVE_STRUCTURE_GROUP;
 export const CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS = Object.freeze({ objectGroup: GROUP, silent: true, returnByValue: false, generatePreview: false,
   throwOnSideEffect: true, includeCommandLineAPI: false } as const);
@@ -23,7 +24,7 @@ export const CURRENT_PROJECT_SAVE_STRUCTURE_CALL_FLAGS = Object.freeze({ objectG
   throwOnSideEffect: true, awaitPromise: false, userGesture: false } as const);
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u), object = z.strictObject({ objectId: handle });
 const roles = [...CONSTRUCTORS, "startupEntry", "startupReturn", "bootstrap", "packet", "response", "callbackReturn", "initialFinally", "queuedFinally"] as const;
-const frameRoles = [...roles, "timer", "producerCaller", "startupCaller"] as const;
+const frameRoles = [...roles, "mode", "timer", "producerCaller", "startupCaller"] as const;
 const specs = { startupEntry: [4, true], startupReturn: [2, true], startupFinalizer: [3, true], retain: [0, false], pristine: [7, true], serial: [1, false], debounce: [2, false], callbackKind: [2, true], packet: [2, false],
   uploadSelect: [0, false], cooperationSelect: [0, false], uploadRelation: [3, true], cooperationRelation: [3, true], coldProject: [0, true], coldStream: [3, true], coldCooperation: [3, true],
   taskSet: [0, false], data: [0, false], taskRemoved: [2, true], same: [1, true], packetText: [0, true], success: [0, true], bootstrap: [0, false],
@@ -61,7 +62,7 @@ export function currentProjectSaveStructureNativeCases(): readonly CurrentProjec
   for (const role of roles) { const site = SITES[role]; result.push(validateCurrentProjectSaveStructureCommand({ phase: "project-save-structure-arm", role, method: "Debugger.setBreakpoint",
     params: { location: { scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber }, ...(role === "startupEntry" || role === "startupReturn" ? { condition: STARTUP_CONDITION } : {}) } }), validateCurrentProjectSaveStructureCommand({ phase: "project-save-structure-frame", role,
     method: "Debugger.evaluateOnCallFrame", params: { ...CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS, callFrameId, expression: site.expression } })); }
-  for (const role of ["timer", "producerCaller", "startupCaller"] as const) { result.push(validateCurrentProjectSaveStructureCommand({ phase: "project-save-structure-frame", role, method: "Debugger.evaluateOnCallFrame", params: { ...CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS, callFrameId, expression: SITES[role].expression } })); }
+  for (const role of ["mode", "timer", "producerCaller", "startupCaller"] as const) { result.push(validateCurrentProjectSaveStructureCommand({ phase: "project-save-structure-frame", role, method: "Debugger.evaluateOnCallFrame", params: { ...CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS, callFrameId, expression: SITES[role].expression } })); }
   for (const role of callRoles) { result.push(validateCurrentProjectSaveStructureCommand({ phase: `project-save-structure-${role}`, method: "Runtime.callFunctionOn", params: {
     ...CURRENT_PROJECT_SAVE_STRUCTURE_CALL_FLAGS, objectId, functionDeclaration: CALLS[role], arguments: Array.from({ length: specs[role][0] }, (_, index) => ({ objectId: `structure_arg${String(index)}` })), returnByValue: specs[role][1] } })); }
   result.push({ phase: "project-save-structure-source", method: "Debugger.getScriptSource", params: { scriptId } },
@@ -70,4 +71,12 @@ export function currentProjectSaveStructureNativeCases(): readonly CurrentProjec
     { phase: "project-save-structure-release", method: "Runtime.releaseObjectGroup", params: { objectGroup: GROUP } });
   for (const role of roles) { result.push({ phase: "project-save-structure-resume", role, method: "Debugger.resume", params: {} }); }
   return freezeDeep(result.map(command => validateCurrentProjectSaveStructureCommand(command)));
+}
+
+/** Only the original literal [qh] frame's own one-element array is accepted.
+ * This value does not establish a continuous producer prefix. */
+export function decodeCurrentProjectSaveProducerNonprivateMode(input: unknown): false {
+  const field = z.looseObject({ name: z.string(), isOwn: z.literal(true), value: z.looseObject({ type: z.string(), value: z.unknown() }), get: z.never().optional(), set: z.never().optional() });
+  const value = z.looseObject({ result: z.array(field).length(2) }).parse(captureCurrentPcbStringClockReply(input).value); const fields = new Map(value.result.map(item => [item.name, item.value]));
+  if (fields.size !== 2 || fields.get("0")?.type !== "boolean" || fields.get("0")?.value !== false || fields.get("length")?.type !== "number" || fields.get("length")?.value !== 1) { throw new Error("PROJECT_SAVE_PRODUCER_NONPRIVATE_MODE_REQUIRED"); } return false;
 }
