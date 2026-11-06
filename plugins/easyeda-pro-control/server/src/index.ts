@@ -204,6 +204,9 @@ import { readCurrentProjectOnlySymbolPreflight } from "./current-project-only-sy
 import { historicalAbandonmentRequestSchema, runHistoricalAbandonment } from "./historical-abandonment.ts";
 import { ManagedFixtureImportCoordinator, managedFixtureImportRequestSchema } from "./managed-fixture-import-runtime.ts";
 import type { ManagedFixtureOpeningSource } from "./managed-fixture-opening-source.ts";
+import { ClosedGeneratedFixtureDataCoordinator } from "./closed-generated-fixture-runtime.ts";
+import { closedGeneratedFixtureDataRequestSchema } from "./closed-generated-fixture-data.ts";
+import { ORDINARY_LAUNCH_209_PROFILE } from "./ordinary-launch-209-profile.ts";
 
 const facadeMode = configuredFacadeMode(process.env);
 
@@ -241,6 +244,27 @@ let windowsRuntime: WindowsControlRuntime | undefined;
 let ordinaryLaunchCoordinator: OrdinaryLaunchCoordinator | undefined;
 let ordinaryLaunchRuntime: WindowsControlRuntime | undefined;
 let fixtureImportCoordinator: ManagedFixtureImportCoordinator | undefined;
+let closedGeneratedDataCoordinator: ClosedGeneratedFixtureDataCoordinator | undefined;
+let closedGeneratedDataAllocation: WindowsControlRuntime | undefined;
+/* oxlint-disable typescript/unbound-method -- Capture identities; calls retain the original private-field coordinator receiver. */
+const closedGeneratedDataMethods = Object.freeze({ execute: ClosedGeneratedFixtureDataCoordinator.prototype.execute,
+  inspect: ClosedGeneratedFixtureDataCoordinator.prototype.inspect, hasPendingWork: ClosedGeneratedFixtureDataCoordinator.prototype.hasPendingWork,
+  hasActiveReservation: ClosedGeneratedFixtureDataCoordinator.prototype.hasActiveReservation,
+  stageSourceForFreshOpening: ClosedGeneratedFixtureDataCoordinator.prototype.stageSourceForFreshOpening,
+  stageSchematicSourceForFreshOpening: ClosedGeneratedFixtureDataCoordinator.prototype.stageSchematicSourceForFreshOpening });
+/* oxlint-enable typescript/unbound-method */
+function assertClosedGeneratedDataMethods(owner: ClosedGeneratedFixtureDataCoordinator): void {
+  if (Object.getPrototypeOf(owner) !== ClosedGeneratedFixtureDataCoordinator.prototype ||
+    Object.entries(closedGeneratedDataMethods).some(([name, method]) => disposableOwnerMethod(owner, name) !== method ||
+      disposableOwnerMethod(ClosedGeneratedFixtureDataCoordinator.prototype, name) !== method)) {
+    throw new Error("Original closed generated-data coordinator methods changed.");
+  }
+}
+function hasClosedGeneratedDataCustody(): boolean {
+  if (closedGeneratedDataAllocation !== undefined) { return true; }
+  const owner = closedGeneratedDataCoordinator; if (owner === undefined) { return false; }
+  assertClosedGeneratedDataMethods(owner); return closedGeneratedDataMethods.hasPendingWork.call(owner);
+}
 // Closed generated data only. This slot transfers no native owner or handle.
 let stagedFixtureOpeningSource: ManagedFixtureOpeningSource | undefined;
 let stagedSchematicOpeningSource: ManagedSchematicFixtureOpeningSource | undefined;
@@ -316,6 +340,16 @@ const libraryExecutor = new LibraryExecutor(engine);
 const ruleCheckExecutor = new RuleCheckExecutor(engine);
 const projectOpenExecutor = new ProjectOpenExecutor(engine);
 const bridgeGate = new SerializedGate();
+/** Recheck exclusive data custody after entering the original serialized gate.
+ * A call queued before that reservation must not enter a competing workflow. */
+function runFacadeGate<T>(task: () => Promise<T>, allowClosedGeneratedDataCustody = false): Promise<T> {
+  return bridgeGate.run(() => {
+    if (!allowClosedGeneratedDataCustody && hasClosedGeneratedDataCustody()) {
+      throw new Error("The original closed generated-data owner reserves this serialized workflow.");
+    }
+    return task();
+  });
+}
 const facadeSession = new FacadeSessionRetirement({
   assertQuiescent: async (): Promise<void> => {
     assertSessionRetirementNativeOwnersSettled();
@@ -369,7 +403,7 @@ const closedSymbolUnreservedFailure: { observed: boolean; original: unknown } = 
 /** Retirement requires each original native workflow to have completed its
  * own cleanup. It never releases, adopts or terminates a native owner. */
 function assertSessionRetirementNativeOwnersSettled(): void {
-  if (scheduledShutdown !== undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined || hasFixtureImportCustody() || hasGeneratedSchematicCustody() ||
+  if (scheduledShutdown !== undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined || hasClosedGeneratedDataCustody() || hasFixtureImportCustody() || hasGeneratedSchematicCustody() ||
       closedSymbolIndexReservation !== undefined && closedSymbolIndexReservation.entry?.isRuntimeDisposed() !== true || closedSymbolUnreservedFailure.observed ||
       currentDisposableOpenCoordinator !== undefined && !currentDisposableOpenCoordinator.isRuntimeDisposed() ||
       currentPcbRenameOperationCoordinator !== undefined && !currentPcbRenameOperationCoordinator.isRuntimeDisposed() ||
@@ -429,7 +463,7 @@ function releaseCompletedNativeRuntime(request: NativeRuntimeReleaseRequest): Pr
   };
   // Closed-symbol entries already serialize on this exact gate. Nesting that
   // Gate would deadlock their original cleanup. Other families enter it here.
-  return closedEntry === undefined ? bridgeGate.run(release) : release();
+  return closedEntry === undefined ? runFacadeGate(release) : release();
 }
 
 function disposableOwnData(owner: object, key: string): unknown {
@@ -477,6 +511,7 @@ function disposableConstructedMethods(runtime: WindowsControlRuntime, nativeUi: 
 /** Reserve ordinary startup against every active diagnostic purpose and consumed
  * closed-symbol attempt. Read-only diagnostics still own their app allocation. */
 function assertOrdinaryRuntimeAllocationAllowed(): void {
+  if (hasClosedGeneratedDataCustody()) { throw new Error("Complete the original closed generated-data resources and records before application startup."); }
   if (hasFixtureImportCustody()) { throw new Error("The original fixture import owner reserves application startup."); }
   if (hasGeneratedSchematicCustody()) { throw new Error("The original generated schematic owner reserves application startup."); }
   if (currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true || currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true || currentFootprintMainLifecycle?.hasActiveReservation() === true || currentFootprintHeldCacheValidation?.hasActiveReservation() === true || currentFootprintHeadAgeValidation?.hasActiveReservation() === true || hasForwardSourceCustody()) {
@@ -488,6 +523,7 @@ function assertOrdinaryRuntimeAllocationAllowed(): void {
 
 /** No outer gate/authenticated scope. The exact retained entry owns its one gate admission. */
 async function runClosedSymbolTool(input: unknown, mode: "validation" | "ordinary"): Promise<CallToolResult> {
+  if (hasClosedGeneratedDataCustody()) { return failure(new Error("The original closed generated-data owner reserves native allocation.")); }
   let phase: ClosedSymbolIndexPhase = "request";
   let reason: ClosedSymbolIndexReason = "invalid-request";
   let activeReservation: ClosedSymbolIndexReservation | undefined;
@@ -1111,6 +1147,7 @@ interface EvidenceOptions {
 interface SerializedGuardOptions {
   readonly allowDuringOrphanRisk?: boolean;
   readonly authenticatedBridgeScope?: boolean;
+  readonly allowClosedGeneratedDataCustody?: boolean;
 }
 
 interface FacadeToolConfig<InputArgs extends z.ZodRawShape> {
@@ -1208,9 +1245,13 @@ function failure(error: unknown, upstreamProcess?: ReturnType<UpstreamEasyedaCli
 function guarded<Input>(
   handler: FacadeHandler<Input>,
   failureDiagnostics?: () => ReturnType<UpstreamEasyedaClient["processDiagnostics"]>,
+  allowClosedGeneratedDataCustody = false,
 ): (input: Input) => Promise<CallToolResult> {
   return async (input: Input): Promise<CallToolResult> => {
     try {
+      if (!allowClosedGeneratedDataCustody && hasClosedGeneratedDataCustody()) {
+        throw new Error("Use the original closed generated-data tool to finish its exclusive resources and records before another workflow.");
+      }
       return success(await handler(input));
     } catch (error) {
       let diagnostics: ReturnType<UpstreamEasyedaClient["processDiagnostics"]>;
@@ -1228,14 +1269,14 @@ function serializedGuarded<Input>(
   options: SerializedGuardOptions = {},
 ): (input: Input) => Promise<CallToolResult> {
   return guarded((input) =>
-    bridgeGate.run(async () => {
+    runFacadeGate(async () => {
       if (options.allowDuringOrphanRisk !== true) {
         await engine.assertBridgeDispatchAllowed();
       }
       return options.authenticatedBridgeScope === true
         ? upstream.withAuthenticatedBridgeDispatchScope(() => handler(input))
         : handler(input);
-    }),
+    }, options.allowClosedGeneratedDataCustody === true), undefined, options.allowClosedGeneratedDataCustody === true,
   );
 }
 
@@ -1268,7 +1309,7 @@ function serializedLiveResult<Input>(
   handler: (input: Input) => Promise<CallToolResult>,
 ): (input: Input) => Promise<CallToolResult> {
   return (input: Input): Promise<CallToolResult> =>
-    bridgeGate.run(async () => {
+    runFacadeGate(async () => {
       try {
         await engine.assertBridgeDispatchAllowed();
         return await upstream.withAuthenticatedBridgeDispatchScope(() =>
@@ -1284,7 +1325,7 @@ function serializedStatusGuarded<Input>(
   handler: (input: Input, admission: StatusAdmissionObservation) => unknown,
 ): (input: Input) => Promise<CallToolResult> {
   return guarded((input) =>
-    bridgeGate.run(async () => {
+    runFacadeGate(async () => {
       const admission = await engine.observeStatusAdmission();
       await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
       await upstream.listTools();
@@ -2104,6 +2145,7 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_netlist_files: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_library_files: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_fixture_import: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_fixture_data: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_catalog_footprint: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_catalog_components: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_extensions: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -2197,7 +2239,7 @@ registerFacadeTool(
     if (request.action === "inspect") { return { result: facadeSession.inspect() }; }
     if (request.action === "retire") { return { result: await facadeSession.retire() }; }
     return { result: facadeSession.closeRetired() };
-  }),
+  }, undefined, true),
 );
 
 if (facadeToolRegistered(facadeMode, "easyeda_control_native_release")) {
@@ -2308,7 +2350,7 @@ registerFacadeTool(
       return queryOfflineApi(request);
     }
     return runOfflineApi(request);
-  }),
+  }, undefined, true),
 );
 
 registerFacadeTool(
@@ -2337,7 +2379,7 @@ registerFacadeTool(
     const entries = await discoverReviewedOrLiveTools(
       () => engine.assertBridgeDispatchAllowed(),
       () =>
-        bridgeGate.run(async () => {
+        runFacadeGate(async () => {
           await engine.assertBridgeDispatchAllowed();
           return upstream.listTools();
         }),
@@ -2668,7 +2710,7 @@ registerFacadeTool(
     }
     const expectedFingerprint = input.expectedFingerprint;
     if (expectedFingerprint === undefined) { throw new Error("compare-files requires the actual authenticated runtime fingerprint."); }
-    return bridgeGate.run(async () => {
+    return runFacadeGate(async () => {
       await engine.assertBridgeDispatchAllowed();
       return upstream.withAuthenticatedBridgeDispatchScope(async () => ({ result: await compareNetlistFiles(engine, input.request, expectedFingerprint) }));
     });
@@ -2767,7 +2809,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_string_precreate_valid
     const run = async (): Promise<{ result: Record<string, unknown> }> => {
       retained.assertLocal(); const result = await retained.run.call(retained.owner, request); retained.assertLocal(); return { result };
     };
-    return request.action === "inspect" ? run() : bridgeGate.run(run);
+    return request.action === "inspect" ? run() : runFacadeGate(run);
   }));
 }
 
@@ -2863,7 +2905,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     };
     heldCacheCalls += 1;
     try {
-      const pending = request.action === "inspect" || request.action === "abort" ? run() : bridgeGate.run(run);
+      const pending = request.action === "inspect" || request.action === "abort" ? run() : runFacadeGate(run);
       return pending.finally(() => { heldCacheCalls -= 1; });
     } catch (error) { heldCacheCalls -= 1; throw error; }
   };
@@ -2938,7 +2980,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     };
     forwardSourceCalls += 1;
     try {
-      const pending = request.action === "inspect" || request.action === "abort-generation" ? run() : bridgeGate.run(run);
+      const pending = request.action === "inspect" || request.action === "abort-generation" ? run() : runFacadeGate(run);
       return pending.finally(() => { forwardSourceCalls -= 1; });
     } catch (error) { forwardSourceCalls -= 1; throw error; }
   };
@@ -3013,7 +3055,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     };
     headAgeCalls += 1;
     try {
-      const pending = request.action === "inspect" || request.action === "abort" ? run() : bridgeGate.run(run);
+      const pending = request.action === "inspect" || request.action === "abort" ? run() : runFacadeGate(run);
       return pending.finally(() => { headAgeCalls -= 1; });
     } catch (error) { headAgeCalls -= 1; throw error; }
   };
@@ -3069,7 +3111,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     const run = async (): Promise<{ result: Record<string, unknown> }> => {
       retained.assertLocal(); const result = await retained.run.call(retained.owner, request); retained.assertLocal(); return { result };
     };
-    return request.action === "inspect" ? run() : bridgeGate.run(run);
+    return request.action === "inspect" ? run() : runFacadeGate(run);
   };
   let startupOriginal: { readonly owner: CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle | CurrentFootprintCopyPreparationLifecycle | CurrentFootprintCopyRoutePreparationLifecycle | CurrentFootprintCombinedLifecycle | CurrentFootprintForwardPrewriteLifecycle | CurrentPcb209EmptyStartupLifecycle | CurrentPcb209RatlineStartupLifecycle | CurrentPcb209RatlineContinuationLifecycle; readonly run: CurrentPcbWorkerStartupLifecycle["run"];
     readonly capture: CurrentPcbWorkerStartupLifecycle["captureWorkerStartup"];
@@ -3147,7 +3189,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       combinedHistoricalOriginal = { owner, run: owner.run, reserved: owner.hasActiveReservation, assertLocal };
     }
     const retained = combinedHistoricalOriginal; retained.assertLocal();
-    return bridgeGate.run(async () => {
+    return runFacadeGate(async () => {
       retained.assertLocal();
       if (combinedHistoricalOriginal !== retained) { throw new Error("Combined historical relinquishment owner changed."); }
       currentPcbWorkerStartupLifecycle = retained.owner;
@@ -3225,7 +3267,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       forwardOpeningHistoricalOriginal = { owner, run: owner.run, reserved: owner.hasActiveReservation, assertLocal };
     }
     const retained = forwardOpeningHistoricalOriginal; retained.assertLocal();
-    return bridgeGate.run(async () => {
+    return runFacadeGate(async () => {
       retained.assertLocal();
       if (forwardOpeningHistoricalOriginal !== retained) { throw new Error("Forward opening historical relinquishment owner changed."); }
       currentPcbWorkerStartupLifecycle = retained.owner;
@@ -3315,7 +3357,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       assertUnusedForwardSourceHistoricalRetirement = assertRetirement;
     }
     const retained = forwardSourceHistoricalOriginal; retained.assertLocal();
-    return bridgeGate.run(async () => {
+    return runFacadeGate(async () => {
       retained.assertLocal();
       if (forwardSourceHistoricalOriginal !== retained) { throw new Error("Forward source historical relinquishment owner changed."); }
       currentPcbWorkerStartupLifecycle = retained.owner;
@@ -3553,7 +3595,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     };
     startupCalls += 1;
     try {
-      const pending = request.action === "inspect" || request.action === "abort-generation" && (retained.combinedPurpose || retained.forwardPurpose) ? run() : bridgeGate.run(run);
+      const pending = request.action === "inspect" || request.action === "abort-generation" && (retained.combinedPurpose || retained.forwardPurpose) ? run() : runFacadeGate(run);
       return pending.finally(() => { startupCalls -= 1; });
     } catch (error) { startupCalls -= 1; throw error; }
   };
@@ -3594,7 +3636,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
   }, guarded(async (input: z.infer<typeof inputSchema>) => {
     const parsed = inputSchema.parse(input).request;
     if (parsed.action === "generated-schematic") {
-      return bridgeGate.run(() => {
+      return runFacadeGate(() => {
         const request = parsed.request;
         if (generatedSchematicOpening === undefined) {
           const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"], runtime = ordinaryLaunchRuntime, source = stagedSchematicOpeningSource;
@@ -3644,9 +3686,9 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       if (parsed.request.action !== "open") {
         const owner = schematicPageOpening;
         if (owner === undefined) { throw new Error("Tracked cleanup requires the original schematic opening owner."); }
-        return bridgeGate.run(async () => ({ result: await owner.run(parsed.request) }));
+        return runFacadeGate(async () => ({ result: await owner.run(parsed.request) }));
       }
-      return bridgeGate.run(() => upstream.withAuthenticatedBridgeDispatchScope(async () => {
+      return runFacadeGate(() => upstream.withAuthenticatedBridgeDispatchScope(async () => {
         if (schematicPageOpening === undefined) {
           const runtime = ordinaryLaunchRuntime;
           if (runtime === undefined || windowsRuntime !== runtime) { throw new Error("Schematic page opening requires this facade's original retained ordinary launch."); }
@@ -3660,7 +3702,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       }));
     }
     if (parsed.action === "schematic-page-read") {
-      return bridgeGate.run(() => upstream.withAuthenticatedBridgeDispatchScope(async () => ({
+      return runFacadeGate(() => upstream.withAuthenticatedBridgeDispatchScope(async () => ({
         result: await readCurrentSchematicPage(engine, parsed.request, parsed.expectedFingerprint),
       })));
     }
@@ -3731,7 +3773,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     const run = async (): Promise<{ result: Record<string, unknown> }> => {
       retained.assertLocal(); const result = await retained.run.call(retained.owner, request); retained.assertLocal(); return { result };
     };
-    return request.action === "inspect" || request.action === "query-observation" ? run() : bridgeGate.run(run);
+    return request.action === "inspect" || request.action === "query-observation" ? run() : runFacadeGate(run);
   }));
 }
 
@@ -5181,7 +5223,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_disposable_pcb_rename")) {
       return { result: await (currentPcbRenameOperationCoordinator === undefined
         ? inspectCurrentPcbRenameHistory(validated.operationId) : currentPcbRenameOperationCoordinator.run(validated)) };
     }
-    return bridgeGate.run(async () => {
+    return runFacadeGate(async () => {
       if (currentPcbRenameOperationCoordinator === undefined) {
         if (validated.action !== "baseline-begin" || currentDisposableOpenCoordinator === undefined) {
           throw new Error("PCB rename requires this facade's existing retained disposable opening and operation coordinator; journals cannot reconstruct ownership.");
@@ -5208,7 +5250,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_disposable_schematic_renam
       return { result: await (currentSchematicRenameOperationCoordinator === undefined
         ? inspectCurrentSchematicRenameHistory(validated.operationId) : currentSchematicRenameOperationCoordinator.run(validated)) };
     }
-    return bridgeGate.run(async () => {
+    return runFacadeGate(async () => {
       if (currentSchematicRenameOperationCoordinator === undefined) {
         if (validated.action !== "baseline-begin" || currentDisposableOpenCoordinator === undefined) {
           throw new Error("Schematic rename requires this facade's existing retained disposable opening and operation coordinator; journals cannot reconstruct ownership.");
@@ -5245,7 +5287,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_project_schematic_rename")
         ? inspectCurrentSchematicOpeningHistory(validated.operationId)
         : currentSchematicRenameOperationCoordinator.runOrdinary(validated)) };
     }
-    return bridgeGate.run(async () => {
+    return runFacadeGate(async () => {
       if (currentSchematicRenameOperationCoordinator === undefined && validated.action !== "open") {
         throw new Error("Ordinary schematic rename requires this facade's retained original opener and coordinator; journals cannot reconstruct ownership.");
       }
@@ -5266,6 +5308,85 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_project_schematic_rename")
     });
   }));
 }
+
+/** This data route starts with a fresh facade. A released data coordinator may
+ * retain inspection metadata, but no application allocation can overlap its
+ * fresh file/proof-helper reservation. */
+function assertFreshClosedGeneratedDataEnvironment(): void {
+  if (scheduledShutdown !== undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined || ordinaryLaunchCoordinator !== undefined ||
+    fixtureImportCoordinator !== undefined || stagedFixtureOpeningSource !== undefined || stagedSchematicOpeningSource !== undefined ||
+    generatedSchematicOpening !== undefined || generatedSchematicAllocation !== undefined || closedSymbolIndexReservation !== undefined || closedSymbolUnreservedFailure.observed ||
+    currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined || currentSchematicRenameOperationCoordinator !== undefined ||
+    [currentPcbDiagnosticLifecycle, currentPcbStringPrecreateLifecycle, currentFootprintMainLifecycle, currentFootprintHeldCacheValidation,
+      currentFootprintHeadAgeValidation, currentFootprintForwardSourceValidation, currentPcbWorkerStartupLifecycle].some(owner => owner !== undefined)) {
+    throw new Error("Closed generated-data qualification requires a fresh facade without another allocated or staged workflow.");
+  }
+}
+
+registerFacadeTool(
+  "easyeda_control_fixture_data",
+  {
+    title: "Requalify closed generated fixture data",
+    description: "Read an earlier generated fixture through fresh read-only file/watch leases and a fresh never-launched proof helper. Requires a fresh facade, exact managed archive/capture digests, complete initial SQL/source equality, explicit read/no-app confirmations and original resource release. Historical records locate data only; no old process, Job, helper or HMAC owner is adopted. Any post-open file change refuses this initial profile. inspect and settle-records retain original local outcomes without reacquisition. After acknowledged release-owner, stage-for-fresh-opening or stage-schematic-for-fresh-opening transfers only a new opaque data token to the existing generated reader route. This tool launches no application, edits no file, performs no bridge call and offers no Save, deletion, process signal or writer authority. Query closed-generated-fixture-data and closed-generated-fixture-data-validate first.",
+    inputSchema: { request: z.unknown().pipe(closedGeneratedFixtureDataRequestSchema) },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  },
+  serializedGuarded(async ({ request }) => {
+    if (request.action === "inspect") {
+      const owner = closedGeneratedDataCoordinator;
+      if (owner === undefined) { return { result: { originalOwnerRetained: false, requalifiedDataAvailable: false, writerAuthority: false } }; }
+      assertClosedGeneratedDataMethods(owner); return { result: closedGeneratedDataMethods.inspect.call(owner, request.operationId) };
+    }
+    if (request.action === "stage-for-fresh-opening" || request.action === "stage-schematic-for-fresh-opening") {
+      const owner = closedGeneratedDataCoordinator;
+      if (owner === undefined) { throw new Error("Stage only this facade's released original data qualification."); }
+      assertClosedGeneratedDataMethods(owner); assertFreshClosedGeneratedDataEnvironment();
+      if (request.action === "stage-for-fresh-opening") { stagedFixtureOpeningSource = closedGeneratedDataMethods.stageSourceForFreshOpening.call(owner, request.operationId); }
+      else { stagedSchematicOpeningSource = closedGeneratedDataMethods.stageSchematicSourceForFreshOpening.call(owner, request.operationId); }
+      return { result: { schema: "easyeda-pro-control.requalified-fixture-data-staged.v1", operationId: request.operationId,
+        kind: request.action === "stage-for-fresh-opening" ? "pcb" : "schematic", dataTokenStaged: true, oldRuntimeAdopted: false,
+        nativeOwnerTransferred: false, applicationStarted: false, writerAuthority: false } };
+    }
+    if (request.action === "requalify-closed-generated-fixture") {
+      if (closedGeneratedDataCoordinator !== undefined || closedGeneratedDataAllocation !== undefined) { throw new Error("This facade's original closed-data attempt is already retained."); }
+      assertFreshClosedGeneratedDataEnvironment();
+      const environment = process.env;
+      const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], distribution = environment["WSL_DISTRO_NAME"];
+      if (assetsRoot === undefined) { throw new Error("Configure the installed209 assets before closed generated-data qualification."); }
+      const implementation = await engine.controlFingerprintPromise;
+      assertFreshClosedGeneratedDataEnvironment();
+      if (process.env !== environment || environment["EASYEDA_ASSETS_ROOT"] !== assetsRoot || environment["WSL_DISTRO_NAME"] !== distribution) {
+        throw new Error("Closed generated-data configuration changed during source admission.");
+      }
+      const runtime = new WindowsControlRuntime({ upstream, pluginRoot: resolve(import.meta.dirname, "../.."), assetsRoot,
+        reviewedExecutionScopeSha256: implementation.sha256, expectedExecutableSha256: ORDINARY_LAUNCH_209_PROFILE.installedFiles[0].sha256,
+        expectedHelperSha256: ORDINARY_LAUNCH_209_PROFILE.helper.sha256, ...(distribution === undefined ? {} : { wslDistribution: distribution }) });
+      closedGeneratedDataAllocation = runtime;
+      // Constructor-only setup is synchronous and acquires no helper or file.
+      // Keep the reservation before the coordinator's first identity callback.
+      let owner: ClosedGeneratedFixtureDataCoordinator | undefined;
+      const assertOriginalOwner = (): void => {
+        assertFreshClosedGeneratedDataEnvironment();
+        if (process.env !== environment || environment["EASYEDA_ASSETS_ROOT"] !== assetsRoot || environment["WSL_DISTRO_NAME"] !== distribution ||
+          (owner === undefined ? closedGeneratedDataAllocation !== runtime || closedGeneratedDataCoordinator !== undefined :
+            closedGeneratedDataCoordinator !== owner || closedGeneratedDataAllocation !== undefined)) {
+          throw new Error("Original closed generated-data index allocation or configuration changed.");
+        }
+      };
+      try {
+        owner = new ClosedGeneratedFixtureDataCoordinator({ operationId: request.operationId, pluginRoot: resolve(import.meta.dirname, "../.."),
+          assetsRoot, runtime, assertOriginalOwner });
+        closedGeneratedDataCoordinator = owner; closedGeneratedDataAllocation = undefined;
+        assertClosedGeneratedDataMethods(owner); assertOriginalOwner();
+      } finally {
+        if (owner === undefined && closedGeneratedDataAllocation === runtime) { closedGeneratedDataAllocation = undefined; }
+      }
+    }
+    const owner = closedGeneratedDataCoordinator;
+    if (owner === undefined) { throw new Error("Cleanup requires this facade's original closed generated-data coordinator."); }
+    assertClosedGeneratedDataMethods(owner); return { result: await closedGeneratedDataMethods.execute.call(owner, request) };
+  }, { allowDuringOrphanRisk: true, allowClosedGeneratedDataCustody: true }),
+);
 
 registerFacadeTool(
   "easyeda_control_fixture_import",

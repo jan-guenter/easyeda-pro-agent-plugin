@@ -109,3 +109,8 @@ Start Page guard; application globals still require own data properties.
 Historical V1 refusals have no member evidence. A `capture-context` failure in
 that version does not identify a particular global. Neither diagnostic version
 grants replay or replaces original native cleanup.
+
+For unchanged generated data after a completed controller replacement, use the
+separate [closed fixture requalification route](closed-generated-fixture-data.md).
+It acquires new read-only resources and verifies the entire initial source/SQL.
+It accepts no earlier runtime authority and refuses any post-open file change.

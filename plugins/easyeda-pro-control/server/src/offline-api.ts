@@ -31,6 +31,7 @@ import { editorShellQuerySchema, queryEditorShell, validateEditorShellArguments 
 import { editorContextQuerySchema, queryEditorContext, validateEditorContextArguments } from "./editor-context.ts";
 import { queryShortcutKeys, shortcutKeysQuerySchema, validateShortcutKeysArguments } from "./shortcut-keys.ts";
 import { queryOrdinaryLaunch, validateOrdinaryLaunchArguments } from "./ordinary-launch.ts";
+import { queryClosedGeneratedFixtureData, validateClosedGeneratedFixtureDataArguments } from "./closed-generated-fixture-data.ts";
 import { currentPcbDiagnosticValidationQuerySchema, queryCurrentPcbDiagnosticValidation,
   validateCurrentPcbDiagnosticValidationArguments } from "./current-pcb-diagnostic-validation.ts";
 import { queryCurrentPcb209RatlineContinuationValidation, validateCurrentPcb209RatlineContinuationArguments } from "./current-pcb-209-ratline-continuation-validation.ts";
@@ -143,6 +144,8 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("history-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("launch"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("launch-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("closed-generated-fixture-data"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("closed-generated-fixture-data-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("pcb-diagnostic-validation"), query: currentPcbDiagnosticValidationQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("pcb-diagnostic-validation-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("pcb209-visual"), query: currentPcbDiagnosticValidationQuerySchema.optional() }).strict(),
@@ -381,6 +384,8 @@ export function queryOfflineApi(request: ApiRequest): { offline: true; result: u
     }
     case "launch": { result = queryOrdinaryLaunch(request.query ?? {}); break; }
     case "launch-validate": { result = validateOrdinaryLaunchArguments(request.query.request); break; }
+    case "closed-generated-fixture-data": { result = queryClosedGeneratedFixtureData(request.query ?? {}); break; }
+    case "closed-generated-fixture-data-validate": { result = validateClosedGeneratedFixtureDataArguments(request.query.request); break; }
     case "operations": { result = queryOperationCatalog(request.query); break; }
     case "validate": { result = validateCatalogOperation(request.query); break; }
     default: { throw new Error("Unknown offline API reference action."); }
