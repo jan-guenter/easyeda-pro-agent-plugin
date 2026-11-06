@@ -36,6 +36,8 @@ import type { CurrentPcbViaClockBindings, CurrentPcbViaClockOrigin, CurrentPcbVi
 import { CURRENT_PCB_VIA_CLOCK_SITES, validateCurrentPcbViaClockCommand } from "./current-pcb-via-clock-protocol.ts";
 import type { CurrentPcbViaClockCommand } from "./current-pcb-via-clock-protocol.ts";
 import type { CurrentPcbViaMainBindings, CurrentPcbViaMainOrigin } from "./current-pcb-via-main-origin.ts";
+import { currentPcbViaMainBeginWire } from "./current-pcb-via-main-begin-wire.ts";
+import type { CurrentPcbViaMainBeginCommand } from "./current-pcb-via-main-begin-protocol.ts";
 import { currentPcbViaMainStepWire } from "./current-pcb-via-main-step-protocol.ts";
 import type { CurrentPcbViaMainStepCommand } from "./current-pcb-via-main-step-protocol.ts";
 import { currentPcbViaMainWire } from "./current-pcb-via-main-protocol.ts";
@@ -651,6 +653,13 @@ export async function sendOriginalCurrentPcbViaMainCommand(capability: CurrentSe
   if (!(original.owner instanceof CurrentPcbViaWriteOwner)) { throw error("PCB_VIA_MAIN_ORIGINAL_OWNER"); }
   assertOriginalCurrentPcbViaWriteOwner(original.owner);
   original.reprove(); await original.owner.sendViaMainObservation(capability, runner, command, id); original.reprove();
+}
+export async function sendOriginalCurrentPcbViaMainBegin(capability: CurrentSelectedFileMainSqlFenceBootstrap,
+  runner: CurrentFootprintCopyMainBackendRunner, command: CurrentPcbViaMainBeginCommand, id: number): Promise<void> {
+  const original = selectedSqlFenceBootstraps.get(capability);
+  // oxlint-disable-next-line eslint/no-use-before-define -- Native calls occur only after the genuine dedicated factory has initialized.
+  if (original === undefined || original.runner() !== runner || !(original.owner instanceof CurrentPcbViaWriteOwner)) { throw error("PCB_VIA_BEGIN_ORIGINAL_OWNER"); }
+  assertOriginalCurrentPcbViaWriteOwner(original.owner); original.reprove(); await original.owner.sendViaMainBegin(capability, runner, command, id); original.reprove();
 }
 export async function sendOriginalCurrentPcbViaMainStep(capability: CurrentSelectedFileMainSqlFenceBootstrap,
   runner: CurrentFootprintCopyMainBackendRunner, command: CurrentPcbViaMainStepCommand, id: number): Promise<void> {
@@ -4478,6 +4487,20 @@ class CurrentPcbRetainedOwnerCore {
     try { await this.#verify(); held.reprove(); const reply = await this.#request({ ...wire });
       if (!exact(reply, ["written"]) || reply["written"] !== true || this.#requireFootprintMain(true) !== original) { throw error("PCB_VIA_MAIN_DRIVER_WRITE_REPLY"); }
       await this.#verify(); held.reprove();
+    } finally { this.#leaveFootprintMain(); }
+  }
+  public async sendViaMainBegin(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner,
+    command: CurrentPcbViaMainBeginCommand, requestId: number): Promise<void> {
+    const held = selectedSqlFenceBootstraps.get(capability), original = this.#requireFootprintMain(true); const cleanup = command.phase === "via-main-begin-remove";
+    if (this.#purpose !== CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE || held?.owner !== this || held.runner() !== runner || this.#mainRunner !== runner || this.#viaMainOrigin === null ||
+      requestId !== this.#mainRequestId + 1 || (cleanup ? this.#mainCleanupRequests >= CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.main.cleanup : this.#mainNormalRequests >= CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.main.normal)) { throw error("PCB_VIA_BEGIN_ORIGINAL_SENDER"); }
+    if (command.phase === "via-main-begin-arm") { if (this.#viaSdkPhases.has("save")) { throw error("PCB_VIA_BEGIN_PRE_SAVE_ARM"); } }
+    else { if (this.#viaMainBoundBody === null || !this.#viaSdkPhases.has("save") || !this.#viaMainSetupReady) { throw error("PCB_VIA_BEGIN_SAVE_BODY_REQUIRED"); }
+      if (command.phase === "via-main-begin-step") { const grant = runner.consumeOriginalViaMainBegin(command, requestId); if (grant.origin !== this.#viaMainOrigin || grant.dataStr !== this.#viaMainBoundBody.dataStr) { throw error("PCB_VIA_BEGIN_ORIGINAL_BODY_GRANT"); } }
+    }
+    held.reprove(); const wire = currentPcbViaMainBeginWire(command, requestId); this.#enterFootprintMain(); this.#mainRequestId += 1; if (cleanup) { this.#mainCleanupRequests += 1; } else { this.#mainNormalRequests += 1; }
+    try { await this.#verify(); held.reprove(); const reply = await this.#request({ ...wire.request });
+      if (!exact(reply, ["written"]) || reply["written"] !== true || this.#requireFootprintMain(true) !== original) { throw error("PCB_VIA_BEGIN_WRITE_REPLY"); } await this.#verify(); held.reprove();
     } finally { this.#leaveFootprintMain(); }
   }
   public async sendViaMainObservation(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner,

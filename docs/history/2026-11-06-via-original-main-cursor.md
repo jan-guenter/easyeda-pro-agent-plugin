@@ -182,3 +182,34 @@ main codebook and existing derived request limits are unchanged: the actor
 selectors and one controller continuation were already reserved. Thirteen
 focused observer/cursor cases, full types and strict lint pass. No application
 or native helper was launched, and no helper/pin/bundle was regenerated.
+
+A separate Via-only BEGIN enrollment now mounts on that same retained backend.
+Before the one SDK Save attempt it records four actual source breakpoint replies.
+After the original actor/body join it advances only the held PB, the exact
+saveProjectHistory input and its original inTransaction callback. The first raw
+SQLite slot must be `begin immediate transaction` on that request's actual
+Z2/native database, with the original Promise resolver/rejector retained.
+
+The native sender consumes each original pending continuation before writing to
+its original main transport. The success callback must carry the same SQL,
+parameter array and resolver/rejector, the original native Statement prototype
+and immutable SQL, a null error, and a data-only changes count. The selector
+then joins the original begin await return with transactionDepth1. A callback
+error stays held before rejection/retry; lost native acknowledgment consumes the
+slot without asserting completion. Other selected mutation calls remain held.
+
+The finite codebook has23 cases and19 normal/four cleanup requests. Main capacity
+is derived as947 normal/16 cleanup/963 total on this source base. The independent
+shared structure renderer reservation is a separate integration. The unchanged
+old observation grammar still cannot resume; the shared sql-fence vocabulary
+acquires no writer grant. Existing Via main native insertion now replaces its
+own prior fixed block when derived capacity changes, and the new codebook has a
+mandatory native smoke entry. No generated helper, pin, bundle or released
+forward artifact is edited here; combined Windows compilation remains pending.
+
+Twenty-three focused selector, original-cursor, lost-acknowledgment and native
+boundary cases pass, along with full types, strict lint and repository checks.
+These are source/cursor checks, not live writer validation. Save remains denied.
+Next are the finite history/cipher/head slots, original native callbacks and
+service completion, the genuine history completion token, structure publication,
+complete closed SQL and independent reopened saved-source verification.

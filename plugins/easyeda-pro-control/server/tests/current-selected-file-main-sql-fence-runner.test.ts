@@ -2,6 +2,8 @@
  * Only source/transport issuance are substituted; actual cursor, decoders,
  * ordering, predicates, counters and mutation-hold logic run unchanged. */
 /* oxlint-disable import/max-dependencies -- Exercise the real source cursor with explicit synthetic transport/source peers and the actual actor decoders. */
+import { currentPcbViaMainBeginNativeCases, validateCurrentPcbViaMainBeginCommand } from "../src/current-pcb-via-main-begin-protocol.ts";
+import type { CurrentPcbViaMainBeginCommand } from "../src/current-pcb-via-main-begin-protocol.ts";
 import { viaMainActorProperties, viaMainActorValue } from "./helpers/via-main-actor-replies.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -36,7 +38,7 @@ function nativeMetadata(id: string): Data {
 }
 const configPacket = (role: "jb" | "dc", site: "run" | "prepare" | "prepared", sql: string, transactionDepth: 0 | 1): Data => ({ recognized: true, role, site, sql, transactionDepth, parametersEmpty: true, designWriteGrant: false, nativeCompletionProven: false });
 async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = null): Promise<Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; phases: string[]; transport: CurrentFootprintCopyMainBackendTransport;
-  injectViaPoint: (role: "context" | "controller" | "editHead") => void; loseNextDriverStep: () => void; injectRequest: (method: string, foreign?: boolean, sourceDelta?: number, history?: boolean) => void; injectMutation: () => void; injectDriver: () => void; resumes: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
+  injectBeginPoint: (role: "save" | "transaction" | "run" | "callback" | "returned") => void; injectViaPoint: (role: "context" | "controller" | "editHead") => void; loseNextDriverStep: () => void; injectRequest: (method: string, foreign?: boolean, sourceDelta?: number, history?: boolean) => void; injectMutation: () => void; injectDriver: () => void; resumes: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
   const base = mainBackendTransportFixture();
   const ids = new Map<number, number>(), phases: string[] = [], queue: Data[] = [], retainedRegistration: Data[] = [];
   let currentRequest = { method: "GET", url: "", delta: 0, pathHeader:"f".repeat(64) }, fetchScriptSeen = false;
@@ -132,6 +134,15 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
       sendCurrentSelectedFileMainSqlFenceCommand: (token: unknown, original: unknown, command: SqlCommand, id: number): Promise<void> => {
         assert.equal(token, capability); assert.equal(original, runner); return sqlSend(command, id);
       },
+      sendOriginalCurrentPcbViaMainBegin: (token: unknown, original: unknown, command: CurrentPcbViaMainBeginCommand, id: number): Promise<void> => {
+        assert.equal(token,capability);assert.equal(original,runner);assert.ok(runner!==null);phases.push(`${command.phase}-${command.role}`);
+        let result:unknown={};
+        if(command.phase==="via-main-begin-arm"){result={breakpointId:`begin-${command.role}`,actualLocation:command.params.location};}
+        else if(command.phase==="via-main-begin-step"){const grant=runner.consumeOriginalViaMainBegin(command,id);assert.equal(grant.nativeSql,command.role==="run");if(loseDriverStep){return Promise.reject(new Error("original-driver-step-ack-lost"));}plannedResumes+=1;event("Debugger.resumed",{});}
+        else if(command.phase==="via-main-begin-frame"||command.phase==="via-main-begin-join"){const counts=command.phase==="via-main-begin-frame"?{save:4,transaction:2,run:7,callback:8,returned:2}:{save:4,transaction:3,run:10,callback:4,returned:0};result={result:{type:"object",subtype:"array",className:"Array",description:`Array(${String(counts[command.role])})`,objectId:`begin-${command.phase}-${command.role}`}};
+          if(command.phase==="via-main-begin-join"&&command.role==="returned"){result={result:{type:"object",value:{schema:"private.current-pcb-via-main-begin-result.v1",originalNativeCallbackSucceeded:true,originalBeginAwaitCompleted:true,transactionDepth:1,historySqlCompleted:false,furtherSelectedSqlAuthorized:false,persistenceVerified:false}}};}}
+        queue.push({id,result});return Promise.resolve();
+      },
       sendOriginalCurrentPcbViaMainStep: (token: unknown, original: unknown, command: CurrentPcbViaMainStepCommand, id: number): Promise<void> => {
         assert.equal(token, capability); assert.equal(original, runner); assert.ok(command.phase==="via-main-driver-step"||command.phase==="via-main-context-step"||command.phase==="via-main-controller-step"); assert.ok(runner !== null);
         let dataStr:string;if(command.phase==="via-main-driver-step"){dataStr=runner.consumeOriginalViaMainDriverStep(command,id).dataStr;}else if(command.phase==="via-main-context-step"){dataStr=runner.consumeOriginalViaMainContextStep(command,id).dataStr;}else{dataStr=runner.consumeOriginalViaMainControllerStep(command,id).dataStr;}assert.ok(typeof dataStr==="string"); phases.push(command.phase);
@@ -156,7 +167,12 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
     },
   });
   runner = new module.Constructor(transport, undefined, capability);
-  return { runner, phases, transport, injectViaPoint:(role:"context"|"controller"|"editHead"):void=>{
+  return { runner, phases, transport, injectBeginPoint:(role:"save"|"transaction"|"run"|"callback"|"returned"):void=>{
+    const sites={save:[8572,19_844,19_828,"saveProjectHistory"],transaction:[1025,2529,2514,"inTransaction"],run:[1025,875,859,""],callback:[1025,895,891,""],returned:[1025,2186,2040,"begin"]} as const;const site=sites[role];
+    const calls:unknown[]=[{callFrameId:`begin-frame-${role}`,functionName:site[3],location:{scriptId:"app",lineNumber:site[0],columnNumber:site[1]},functionLocation:{scriptId:"app",lineNumber:site[0],columnNumber:site[2]}}];
+    if(role==="run"){for(const [name,column]of[["begin",2040],["inTransaction",2514]]as const){calls.push({callFrameId:`begin-caller-${name}`,functionName:name,location:{scriptId:"app",lineNumber:1025,columnNumber:column},functionLocation:{scriptId:"app",lineNumber:1025,columnNumber:column}});}}
+    event("Debugger.paused",{reason:"other",hitBreakpoints:[role==="run"?"sql-run":`begin-${role}`],callFrames:calls});
+  }, injectViaPoint:(role:"context"|"controller"|"editHead"):void=>{
     const site={context:{lineNumber:1164,columnNumber:2540},controller:{lineNumber:8573,columnNumber:1663},editHead:{lineNumber:8572,columnNumber:27_776}}[role];
     const name={context:"",controller:"createProjectHistory",editHead:"PB"}[role];const column={context:2434,controller:1648,editHead:27_772}[role];
     const caller=role==="context"?{callFrameId:"frame-parent",functionName:"interceptHttpProtocol",location:{scriptId:"app",lineNumber:1164,columnNumber:51_414},functionLocation:{scriptId:"app",lineNumber:1164,columnNumber:51_072}}:{callFrameId:"frame-actor",functionName:"L3",location:{scriptId:"app",lineNumber:8573,columnNumber:267},functionLocation:{scriptId:"app",lineNumber:8573,columnNumber:31}};
@@ -273,11 +289,13 @@ void test("the original Via history driver grant is consumed only by its pending
   }
 });
 
-void test("the original context join and exact held body are required before a separate controller packet is retained",async()=>{
+for(const loseBegin of [false,true]){void test(`the original Via controller, actor and BEGIN callback retain exact native slots (lost=${String(loseBegin)})`,async()=>{
   const f=await fixture();await f.runner.observe();const original=await f.runner.beginViaMainObservation();
   const cases=currentPcbViaMainNativeCases();
   for(const role of [[8573,1663],[8572,27_776]]){await original.bindings.request(validateCurrentPcbViaMainCommand({phase:"via-main-request-site-arm",method:"Debugger.setBreakpoint",params:{location:{scriptId:"app",lineNumber:role[0],columnNumber:role[1]}}}),false);}
   const expected={projectUuid:createHash("sha256").update(String.raw`C:\Synthetic\fixture.eprj2`).digest("hex"),branchUuid:"b".repeat(32),projectKey:createHash("sha256").update(String.raw`C:\Synthetic\fixture.eprj2`).digest("hex"),path:String.raw`C:\Synthetic\fixture.eprj2`,dataStr:"original-held-body"};
+  const beginCases=currentPcbViaMainBeginNativeCases();
+  for(const command of beginCases.filter(item=>item.phase==="via-main-begin-arm")){await original.bindings.beginRequest({...command,params:{...command.params,location:{...command.params.location,scriptId:"app"}}},false);}original.bindings.requireBeginArmed();
   const beforeReads=f.resumes();f.injectRequest("GET");await f.runner.pumpSelectedSqlFence();await f.runner.pumpSelectedSqlFence();assert.equal(f.resumes(),beforeReads+1);
   f.runner.bindViaExpectedHistoryBody(original.origin,expected);
   const send=(phase:string,params:Record<string,unknown>,expression?:string):Promise<unknown>=>{const sample=cases.find(item=>item.phase===phase&&(expression===undefined||item.params["expression"]===expression));assert.ok(sample!==undefined);return original.bindings.request(validateCurrentPcbViaMainCommand({...sample,params:{...sample.params,...params}}),false);};
@@ -308,4 +326,22 @@ void test("the original context join and exact held body are required before a s
   const sql=captureArrayId(await send("via-main-request-sql",{objectId:actor,arguments:[{objectId:"native-yo"}]}));
   await send("via-main-request-properties",{objectId:sql});await send("via-main-request-properties",{objectId:"native-queryOne"});await send("via-main-request-value",{objectId:actor,arguments:[]});
   original.bindings.requireOriginalActorSql();assert.equal(f.runner.selectedSqlFenceState()["selectedProjectMutationsResumed"],0);await assert.rejects(original.bindings.continuePlannedController());
-});
+  const beginSend=(phase:string,role:string,params:Record<string,unknown>={}):Promise<unknown>=>{const sample=beginCases.find(item=>item.phase===phase&&item.role===role);assert.ok(sample!==undefined);return original.bindings.beginRequest(validateCurrentPcbViaMainBeginCommand({...sample,params:{...sample.params,...params}}),false);};
+  await beginSend("via-main-begin-step","actor");f.injectBeginPoint("save");await original.bindings.nextEvent();
+  const saveFrame=captureArrayId(await beginSend("via-main-begin-frame","save",{callFrameId:"begin-frame-save"}));
+  const save=captureArrayId(await beginSend("via-main-begin-join","save",{objectId:saveFrame,arguments:[{objectId:actor},{objectId:sql}]}));
+  await beginSend("via-main-begin-step","save");f.injectBeginPoint("transaction");await original.bindings.nextEvent();
+  const transactionFrame=captureArrayId(await beginSend("via-main-begin-frame","transaction",{callFrameId:"begin-frame-transaction"}));
+  const transaction=captureArrayId(await beginSend("via-main-begin-join","transaction",{objectId:transactionFrame,arguments:[{objectId:save}]}));
+  await beginSend("via-main-begin-step","transaction");f.injectBeginPoint("run");await original.bindings.nextEvent();
+  const runFrame=captureArrayId(await beginSend("via-main-begin-frame","run",{callFrameId:"begin-frame-run"}));
+  const run=captureArrayId(await beginSend("via-main-begin-join","run",{objectId:runFrame,arguments:[{objectId:original.bindings.sqlCaptureObjectId},{objectId:transaction}]}));
+  if(loseBegin){f.loseNextDriverStep();await assert.rejects(beginSend("via-main-begin-step","run"),/ack-lost/u);await assert.rejects(beginSend("via-main-begin-step","run"));assert.equal(f.phases.filter(item=>item==="via-main-begin-step-run").length,1);return;}
+  await beginSend("via-main-begin-step","run");f.injectBeginPoint("callback");await original.bindings.nextEvent();
+  const callbackFrame=captureArrayId(await beginSend("via-main-begin-frame","callback",{callFrameId:"begin-frame-callback"}));
+  const callback=captureArrayId(await beginSend("via-main-begin-join","callback",{objectId:callbackFrame,arguments:[{objectId:run}]}));
+  await beginSend("via-main-begin-step","callback");f.injectBeginPoint("returned");await original.bindings.nextEvent();
+  const returnedFrame=captureArrayId(await beginSend("via-main-begin-frame","returned",{callFrameId:"begin-frame-returned"}));
+  await beginSend("via-main-begin-join","returned",{objectId:returnedFrame,arguments:[{objectId:callback}]});const result=original.bindings.originalBeginResult();assert.equal(result.originalBeginAwaitCompleted,true);assert.equal(result.historySqlCompleted,false);
+  await assert.rejects(beginSend("via-main-begin-step","run"));
+});}

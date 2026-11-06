@@ -41,7 +41,7 @@ export interface CurrentPcbViaHeldMainActor {
   readonly originalL3ActorAndDateClockJoined: true; readonly originalFulfilledDatabasePromiseJoined: true;
   readonly originalSelectedNativeDatabaseJoined: true; readonly selectedSqlAuthorized: false;
 }
-const actors = new WeakMap<CurrentPcbViaHeldMainActor, Readonly<{ observer: CurrentPcbViaMainRequestObserver; actor: string; sql: string; value: ReturnType<typeof decodeValue> }>>();
+const actors = new WeakMap<CurrentPcbViaHeldMainActor, Readonly<{ observer: CurrentPcbViaMainRequestObserver; owner: CurrentPcbViaWriteOwner; plan: CurrentPcbViaWritePlan; origin: CurrentPcbViaMainOrigin; actor: string; sql: string; value: ReturnType<typeof decodeValue> }>>();
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PCB_VIA_MAIN_OBSERVER_${code}`); } }
 export class CurrentPcbViaMainRequestObserver {
   readonly #origin: CurrentPcbViaMainOrigin; readonly #owner: CurrentPcbViaWriteOwner; readonly #plan: CurrentPcbViaWritePlan; readonly #bindings: CurrentPcbViaMainBindings;
@@ -209,7 +209,7 @@ export class CurrentPcbViaMainRequestObserver {
       this.#bindings.requireOriginalActorSql(); await this.#current(true);
       const held: CurrentPcbViaHeldMainActor = Object.freeze({ schema: "private.current-pcb-via-held-main-actor.v1", actualRequestBodyJoined: true,
         originalL3ActorAndDateClockJoined: true, originalFulfilledDatabasePromiseJoined: true, originalSelectedNativeDatabaseJoined: true, selectedSqlAuthorized: false });
-      this.#actor = held; actors.set(held, Object.freeze({ observer: this, actor, sql, value })); return held;
+      this.#actor = held; actors.set(held, Object.freeze({ observer: this, owner: this.#owner, plan: this.#plan, origin: this.#origin, actor, sql, value })); return held;
     } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
   }
   public async requireOriginalActor(packet: CurrentPcbViaHeldMainActor): Promise<void> {
@@ -218,4 +218,11 @@ export class CurrentPcbViaMainRequestObserver {
   public async requireOriginalController(packet: CurrentPcbViaHeldMainController): Promise<void> {
     need(!this.#controllerAdvanced && this.#controller === packet && controllers.get(packet)?.observer === this, "ORIGINAL_CONTROLLER"); this.#bindings.requireOriginalControllerBody(); await this.#current(true);
   }
+}
+
+/** Exact live actor reference only. Equal JSON and another generation cannot
+ * enroll a history continuation against this original held PB. */
+export async function requireOriginalCurrentPcbViaHeldMainActor(packet: CurrentPcbViaHeldMainActor, owner: CurrentPcbViaWriteOwner, plan: CurrentPcbViaWritePlan): Promise<CurrentPcbViaMainOrigin> {
+  const original = actors.get(packet); need(original !== undefined && original.owner === owner && original.plan === plan, "ORIGINAL_ACTOR_OPERATION");
+  await original.observer.requireOriginalActor(packet); return original.origin;
 }

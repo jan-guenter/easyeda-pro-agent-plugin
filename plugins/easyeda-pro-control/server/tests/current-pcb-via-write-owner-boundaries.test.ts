@@ -39,7 +39,7 @@ void test("new SDK wire contains fixed scalars only and cannot be spent by relea
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, functionDeclaration: `${CURRENT_PCB_VIA_WRITE_FUNCTION}\n` } })));
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, awaitPromise: false } })));
   }
-  assert.equal(PROFILE.renderer.total, 950); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [928, 12, 940]);
+  assert.equal(PROFILE.renderer.total, 950); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [947, 16, 963]);
 });
 void test("retained SDK methods require exact original installed function locations, names and arity", () => {
   for (const kind of ["create", "save"] as const) { assert.equal(decodeCurrentPcbViaSdkMethod(metadata(kind), kind), "api"); }

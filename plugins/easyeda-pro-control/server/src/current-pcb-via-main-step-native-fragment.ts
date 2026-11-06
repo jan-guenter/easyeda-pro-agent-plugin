@@ -16,7 +16,10 @@ const dispatch = String.raw`        'pcb-via-main-step' {
         }
 `;
 export function applyCurrentPcbViaMainStepNativeFragment(input: string): string {
-  let source = one(input, "bool pcbViaWrite209,viaAbortAttempted,viaRegistrationRemoved,viaConstructionComplete;", `${native}bool pcbViaWrite209,viaAbortAttempted,viaRegistrationRemoved,viaConstructionComplete;`);
+  const anchor = "bool pcbViaWrite209,viaAbortAttempted,viaRegistrationRemoved,viaConstructionComplete;", start = input.indexOf("int viaMainStep;"), stop = input.indexOf(anchor);
+  let source: string;
+  if (start === -1) { source = one(input, anchor, `${native}${anchor}`); }
+  else { if (stop <= start || input.includes("int viaMainStep;", start + 1) || !input.slice(start, stop).includes("public void SendViaMainStep(")) { throw new Error("PCB_VIA_MAIN_STEP_NATIVE_EXISTING_BLOCK"); } source = input.slice(0, start) + native + input.slice(stop); }
   source = one(source, 'case "pcb-via-main-observe":', 'case "pcb-via-main-observe":case "pcb-via-main-step":');
   const ownDispatch = "        'pcb-via-main-step' {";
   if (source.includes(ownDispatch)) {
