@@ -7,6 +7,8 @@
 /* oxlint-disable max-classes-per-file -- Four fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
 import { CURRENT_PROJECT_SAVE_PRODUCER_ROLES, CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS, validateCurrentProjectSaveProducerCommand } from "./current-project-save-producer-protocol.ts";
 import type { CurrentProjectSaveProducerBindings, CurrentProjectSaveProducerHeldCall, CurrentProjectSaveProducerOrigin } from "./current-project-save-producer-origin.ts";
+import { CURRENT_PCB_VIA_SAVED_READBACK_PROFILE, CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE } from "./current-pcb-via-saved-readback-profile.ts";
+import type { CurrentPcbViaWriteClosedCheckpoint, requireOriginalCurrentPcbViaWriteClosedCheckpoint as RequireSavedReadbackCheckpoint, verifyCurrentPcbViaWriteClosedCheckpoint as VerifySavedReadbackCheckpoint } from "./current-pcb-via-write-closed-checkpoint.ts";
 import { currentProjectSaveProducerGuardCases } from "./current-project-save-producer-guard-protocol.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_SITES, qualifyCurrentProjectSaveProducerSource } from "./current-project-save-producer-source.ts";
 import { qualifyCurrentProjectSaveProducerGuardSource } from "./current-project-save-producer-guard-source.ts";
@@ -121,7 +123,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { canonicalJson, sha256Json, sha256Text } from "./core.ts";
 import { ORDINARY_LAUNCH_209_PROFILE } from "./ordinary-launch-209-profile.ts";
-import { CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentFootprintCopyForwardSavedDiscoveryPipe, CurrentFootprintHeldCacheDiagnosticPipe, CurrentPcbComponentSpatialPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbViaWritePipe, CurrentPcbWorkerStartupDiscoveryPipe, CurrentSchematicDisplayWritePipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
+import { CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentFootprintCopyForwardSavedDiscoveryPipe, CurrentFootprintHeldCacheDiagnosticPipe, CurrentPcbComponentSpatialPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbViaSavedReadbackPipe, CurrentPcbViaWritePipe, CurrentPcbWorkerStartupDiscoveryPipe, CurrentSchematicDisplayWritePipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
 import type { CurrentPcbDiagnosticFailureObservation } from "./current-pcb-diagnostic-pipe.ts";
 import { CurrentPcbSpatialPipe, spatialDiagnosticNativeRequest } from "./current-pcb-spatial-pipe.ts";
 import { CURRENT_PCB_SPATIAL_ARC_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_PAD_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_PROFILE, CURRENT_PCB_SPATIAL_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION } from "./current-pcb-spatial-profile.ts";
@@ -362,9 +364,10 @@ const forwardExecutionChannelStatus = CurrentFootprintForwardExecutionStartupCha
 
 type RecordValue = Record<string, unknown>;
 
-type OwnerPurpose = "pcb-component-spatial209" | typeof CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE | typeof CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE | "pcb-spatial209" | "footprint-head-age209" | "footprint-held-cache209" | "worker-startup-footprint-held-saved209" | "visual209" | "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-footprint-saved209" | "worker-startup-footprint-main209" | typeof CURRENT_FOOTPRINT_COMBINED_PURPOSE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE | typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE | typeof CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
-function selectedFileMainPurpose(purpose: OwnerPurpose): boolean { return purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE || purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE; }
+type OwnerPurpose = typeof CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE | "pcb-component-spatial209" | typeof CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE | typeof CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE | "pcb-spatial209" | "footprint-head-age209" | "footprint-held-cache209" | "worker-startup-footprint-held-saved209" | "visual209" | "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-footprint-saved209" | "worker-startup-footprint-main209" | typeof CURRENT_FOOTPRINT_COMBINED_PURPOSE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE | typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE | typeof CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
+function selectedFileMainPurpose(purpose: OwnerPurpose): boolean { return purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE || purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE || purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE; }
 function selectedFileMainLimits(purpose: OwnerPurpose): Readonly<{ normal: number; cleanup: number; total: number }> {
+  if (purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) { return CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.main; }
   if (purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { return CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.main; }
   if (purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { return CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE.main; } throw error("SELECTED_MAIN_PURPOSE");
 }
@@ -672,6 +675,25 @@ export function requireOriginalCurrentProjectSaveStructureOrigin(origin: Current
 }
 const pcbViaTerminations = new WeakMap<object, Readonly<{ owner: CurrentPcbViaWriteOwner; binding: Binding }>>();
 const schematicDisplayTerminations = new WeakMap<object, Readonly<{ owner: CurrentSchematicDisplayWriteOwner; binding: Binding }>>();
+type SavedReadbackCheckpointModule = Readonly<{ requireOriginalCurrentPcbViaWriteClosedCheckpoint: typeof RequireSavedReadbackCheckpoint; verifyCurrentPcbViaWriteClosedCheckpoint: typeof VerifySavedReadbackCheckpoint }>;
+interface PcbViaSavedReadbackAllocation {
+  readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: CurrentPcbViaWriteClosedCheckpoint; readonly writer: CurrentPcbViaWriteOwner;
+  readonly checkpointModule: SavedReadbackCheckpointModule;
+  readonly requireCheckpoint: SavedReadbackCheckpointModule["requireOriginalCurrentPcbViaWriteClosedCheckpoint"];
+  readonly verifyPrepared: SavedReadbackCheckpointModule["verifyCurrentPcbViaWriteClosedCheckpoint"];
+  state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentPcbViaSavedReadbackOwner | null;
+  child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown;
+}
+const pcbViaSavedReadbackAllocations = new WeakMap<CurrentPcbViaWriteClosedCheckpoint, PcbViaSavedReadbackAllocation>();
+const pcbViaSavedReadbackFactories = new WeakMap<object, Readonly<{ allocation: PcbViaSavedReadbackAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
+const pcbViaSavedReadbackTerminations = new WeakMap<object, Readonly<{ token: object; binding: Binding }>>();
+function requireSavedReadbackPreparation(allocation: PcbViaSavedReadbackAllocation): void {
+  if (allocation.checkpointModule.requireOriginalCurrentPcbViaWriteClosedCheckpoint !== allocation.requireCheckpoint ||
+    allocation.checkpointModule.verifyCurrentPcbViaWriteClosedCheckpoint !== allocation.verifyPrepared ||
+    pcbViaSavedReadbackAllocations.get(allocation.prepared) !== allocation) { throw error("SAVED_READBACK_ORIGINAL_PREPARATION"); }
+  const prior = allocation.requireCheckpoint(allocation.prepared), status = prior.owner.status();
+  if (prior.owner !== allocation.writer || !status.released || !status.helperClosed) { throw error("SAVED_READBACK_PRIOR_HELPER_REQUIRED_CLOSED"); }
+}
 interface PcbViaWriteAllocation { readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: GeneratedFixtureOpenCheckpoint; state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentPcbViaWriteOwner | null; child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown }
 const pcbViaWriteAllocations = new WeakMap<GeneratedFixtureOpenCheckpoint, PcbViaWriteAllocation>();
 const pcbViaWriteFactories = new WeakMap<object, Readonly<{ allocation: PcbViaWriteAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
@@ -772,7 +794,7 @@ export function requireOriginalCurrentPcbViaSaveWorkerOrigin(origin: CurrentPcbV
   if (original === undefined || original.owner !== owner || original.plan !== plan) { throw error("PCB_VIA_SAVE_WORKER_ORIGINAL"); }
   requireViaPlan(owner, plan); original.assertOriginal(); return original.bindings;
 }
-const selectedSqlFenceBootstraps = new WeakMap<object, Readonly<{ transport: object; runner: () => CurrentFootprintCopyMainBackendRunner | null; owner: CurrentPcbViaWriteOwner | CurrentSchematicDisplayWriteOwner; path: string; reprove: () => void }>>();
+const selectedSqlFenceBootstraps = new WeakMap<object, Readonly<{ transport: object; runner: () => CurrentFootprintCopyMainBackendRunner | null; owner: CurrentPcbViaWriteOwner | CurrentSchematicDisplayWriteOwner | CurrentPcbViaSavedReadbackOwner; path: string; reprove: () => void }>>();
 export function requireCurrentSelectedFileMainSqlFenceBootstrap(capability: CurrentSelectedFileMainSqlFenceBootstrap, transport: object): string {
   if (types.isProxy(capability) || types.isProxy(transport)) { throw error("SELECTED_SQL_BOOTSTRAP"); }
   const original = selectedSqlFenceBootstraps.get(capability);
@@ -949,7 +971,7 @@ class CurrentPcbRetainedOwnerCore {
   readonly #installation: CurrentPcbDiagnosticInstallation | null;
   readonly #input = new PassThrough({ autoDestroy: false });
   readonly #output: Writable;
-  readonly #pipe: CurrentPcbComponentSpatialPipe | CurrentSchematicDisplayWritePipe | CurrentPcbViaWritePipe | CurrentPcbDiagnosticPipe | CurrentPcbStringPrecreatePipe | CurrentPcbWorkerStartupDiscoveryPipe | CurrentFootprintCombinedDiscoveryPipe | CurrentFootprintCopyForwardDiscoveryPipe | CurrentFootprintCopyForwardSavedDiscoveryPipe | CurrentFootprintHeldCacheDiagnosticPipe;
+  readonly #pipe: CurrentPcbViaSavedReadbackPipe | CurrentPcbComponentSpatialPipe | CurrentSchematicDisplayWritePipe | CurrentPcbViaWritePipe | CurrentPcbDiagnosticPipe | CurrentPcbStringPrecreatePipe | CurrentPcbWorkerStartupDiscoveryPipe | CurrentFootprintCombinedDiscoveryPipe | CurrentFootprintCopyForwardDiscoveryPipe | CurrentFootprintCopyForwardSavedDiscoveryPipe | CurrentFootprintHeldCacheDiagnosticPipe;
   readonly #stringPurpose: boolean;
   readonly #startupPurpose: boolean;
   readonly #actorClockSource: CurrentPcb209ActorClockSourceQualification | null;
@@ -1313,16 +1335,20 @@ class CurrentPcbRetainedOwnerCore {
    * Transport and resource-ledger selection happen before listeners or launch. */
   readonly #generatedFixtureBirth: boolean;
   readonly #componentPrepared: GeneratedComponentFixtureOpenCheckpoint | null;
+  readonly #savedReadbackPrepared: CurrentPcbViaWriteClosedCheckpoint | null;
+  #savedReadbackStarted = false; #savedReadbackAborted = false;
   #generatedFixtureQualification: QualifiedGeneratedFixtureTarget | QualifiedGeneratedComponentFixtureTarget | null = null;
   #generatedFixtureRegistration: Readonly<Record<string, unknown>> | null = null;
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     installation: CurrentPcbDiagnosticInstallation | null, verifyInstallation: () => Promise<void>, purpose: OwnerPurpose,
     verifyStartupFacade: () => Promise<void> = verifyInstallation, actorClockSource: CurrentPcb209ActorClockSourceQualification | null = null,
     emptyAnchor: CurrentPcb209EmptyStartupBudgetAnchor | null = null, ratlineBudget: CurrentPcb209RatlineBudget | null = null, continuationBudget: CurrentPcb209RatlineContinuationBudget | null = null, readyChallenge: string | null = null, forwardSavedHandoff: object | null = null,
-    generatedFixtureBirth = false, componentPrepared: GeneratedComponentFixtureOpenCheckpoint | null = null) {
+    generatedFixtureBirth = false, componentPrepared: GeneratedComponentFixtureOpenCheckpoint | null = null, savedReadbackPrepared: CurrentPcbViaWriteClosedCheckpoint | null = null) {
     if ((componentPrepared !== null) !== (purpose === "pcb-component-spatial209")) { throw error("COMPONENT_ORIGINAL_PREPARED"); }
     if (componentPrepared !== null) { assertOriginalGeneratedComponentFixtureOpenCheckpoint(componentPrepared); }
     this.#componentPrepared = componentPrepared;
+    if ((savedReadbackPrepared !== null) !== (purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE)) { throw error("SAVED_READBACK_PREPARED_PURPOSE"); }
+    this.#savedReadbackPrepared = savedReadbackPrepared;
     if (generatedFixtureBirth && purpose !== "diagnostic209" && purpose !== "pcb-spatial209" && purpose !== "pcb-component-spatial209" && purpose !== CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { throw error("GENERATED_FIXTURE_BIRTH_PURPOSE"); }
     this.#generatedFixtureBirth = generatedFixtureBirth;
     const saved = forwardSavedHandoff === null ? null : requireForwardSavedObservationHandoff(forwardSavedHandoff);
@@ -1376,7 +1402,8 @@ class CurrentPcbRetainedOwnerCore {
         this.#send = this.#sendFrame(chunk, callback);
       },
     });
-    if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { this.#pipe = new CurrentSchematicDisplayWritePipe(this.#input, this.#output); }
+    if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) { this.#pipe = new CurrentPcbViaSavedReadbackPipe(this.#input, this.#output); }
+    else if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { this.#pipe = new CurrentSchematicDisplayWritePipe(this.#input, this.#output); }
     else if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { this.#pipe = new CurrentPcbViaWritePipe(this.#input, this.#output); }
     else if (this.#purpose === "pcb-component-spatial209") { this.#pipe = new CurrentPcbComponentSpatialPipe(this.#input, this.#output); }
     else if (this.#purpose === "pcb-spatial209") { this.#pipe = new CurrentPcbSpatialPipe(this.#input, this.#output); }
@@ -5545,6 +5572,43 @@ class CurrentPcbRetainedOwnerCore {
     } finally { this.#busy = false; }
   }
 
+  /** Launch only this fresh born-before-file reader, using its original
+   * installed executable and newly verified complete closed checkpoint. */
+  public async startSavedReadbackGeneration(): Promise<void> {
+    this.#available(); const original = pcbViaSavedReadbackFactories.get(this)?.allocation;
+    if (original === undefined || this.#savedReadbackPrepared !== original.prepared || this.#savedReadbackStarted || this.#installation === null) { throw error("SAVED_READBACK_START_CONSUMED"); }
+    this.#savedReadbackStarted = true; requireSavedReadbackPreparation(original);
+    await original.verifyPrepared(original.prepared); this.#available(); requireSavedReadbackPreparation(original);
+    const executable = this.#installation.plan.files[0]; if (executable === undefined) { throw error("SAVED_READBACK_INSTALLATION"); }
+    await this.launch({ executable: executable.windowsPath, executableSha256: executable.sha256, confirmDiagnosticLaunch: true }); this.#available(); requireSavedReadbackPreparation(original);
+  }
+  public originalSavedReadbackTermination(): object {
+    assertOriginalCurrentPcbViaSavedReadbackOwner(this);
+    const binding = this.#binding, observed = this.#terminationObservation;
+    if (binding === null || !this.#terminationObserved || observed?.originalRootExited !== true || observed.originalJobEmpty !== true) { throw error("SAVED_READBACK_ORIGINAL_TERMINATION"); }
+    const prior = pcbViaSavedReadbackTerminations.get(this);
+    if (prior !== undefined) { if (prior.binding !== binding) { throw error("SAVED_READBACK_ORIGINAL_TERMINATION"); } return prior.token; }
+    const token = Object.freeze({ profile: "private.pcb-via-saved-readback-termination.v1", executionAuthorized: false });
+    pcbViaSavedReadbackTerminations.set(this, Object.freeze({ token, binding })); return token;
+  }
+  public requireOriginalSavedReadbackTermination(token: object): void {
+    if (this.originalSavedReadbackTermination() !== token) { throw error("SAVED_READBACK_ORIGINAL_TERMINATION"); }
+  }
+  /** Explicit original Job-only cleanup retains the main transport until exit.
+   * It accepts neither a PID nor a path and never proves discard or Save. */
+  public async abortSavedReadback(confirmAbortOriginalSavedReadbackJob: true): Promise<void> {
+    this.#available(); const original = this.#binding;
+    // oxlint-disable-next-line typescript/no-unnecessary-boolean-literal-compare -- A runtime cleanup caller must supply the exact original-Job confirmation.
+    if (confirmAbortOriginalSavedReadbackJob !== true) { throw error("SAVED_READBACK_ABORT_CONFIRMATION"); }
+    if (this.#purpose !== CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE || original === null || this.#savedReadbackAborted || this.#terminationObserved || this.#releaseConsumed) { throw error("SAVED_READBACK_ABORT_CONSUMED"); }
+    this.#savedReadbackAborted = true; this.#mainTerminateAttempted = true; this.#input.emit("error", error("SAVED_READBACK_ORIGINAL_ABORT"));
+    await this.#nativeTail; await this.#verify(); this.#available();
+    if (this.#binding !== original || this.#terminationObserved || this.#releaseConsumed) { throw error("SAVED_READBACK_ABORT_OWNER_CHANGED"); }
+    const reply = await this.#request({ action: "saved-readback-abort", confirmAbortOriginalSavedReadbackJob: true });
+    if (!exact(reply, ["terminationDispatched"]) || reply["terminationDispatched"] !== true) { throw error("SAVED_READBACK_ABORT_REPLY"); }
+    await this.#verify(); this.#available(); if (this.#binding !== original) { throw error("SAVED_READBACK_ABORT_OWNER_CHANGED"); }
+  }
+
   /** Seal only this original generated Component owner before journal awaits. */
   public reserveComponentSpatialAbort(): CurrentPcbComponentAbortReservation {
     this.#available(); const original = this.#binding;
@@ -5786,6 +5850,17 @@ class CurrentPcbRetainedOwnerCore {
         path: allocation.prepared.qualification.target.rawWindowsPath, reprove: (): void => {
           assertOriginalCurrentSchematicDisplayWriteOwner(this);
           if (this.#requireFootprintMain(true) !== original || this.#mainRunner !== runner) { throw error("SCHEMATIC_DISPLAY_MAIN_OWNER_CHANGED"); }
+        } }));
+    }
+    if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) {
+      assertOriginalCurrentPcbViaSavedReadbackOwner(this); const allocation = pcbViaSavedReadbackFactories.get(this)?.allocation, original = this.#requireFootprintMain(true);
+      if (allocation === undefined || this.#savedReadbackPrepared !== allocation.prepared) { throw error("SAVED_READBACK_ORIGINAL_PREPARATION"); }
+      requireSavedReadbackPreparation(allocation);
+      selectedBootstrap = Object.freeze({ profile: "private.selected-file-main-sql-fence-bootstrap.v1", executionAuthorized: false });
+      selectedSqlFenceBootstraps.set(selectedBootstrap, Object.freeze({ transport, runner: () => runner, owner: this,
+        path: allocation.prepared.target.rawWindowsPath, reprove: (): void => {
+          assertOriginalCurrentPcbViaSavedReadbackOwner(this); requireSavedReadbackPreparation(allocation);
+          if (this.#requireFootprintMain(true) !== original || this.#mainRunner !== runner) { throw error("SAVED_READBACK_MAIN_OWNER_CHANGED"); }
         } }));
     }
     runner = new CurrentFootprintCopyMainBackendRunner(transport, bootstrap, selectedBootstrap);
@@ -6143,6 +6218,7 @@ class CurrentPcbRetainedOwnerCore {
   }
 
   #available(): void {
+    if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) { assertOriginalCurrentPcbViaSavedReadbackOwner(this); }
     if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { assertOriginalCurrentPcbViaWriteOwner(this); }
     if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { assertOriginalCurrentSchematicDisplayWriteOwner(this); }
     if (this.#purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE) { assertOriginalCurrentFootprintForwardExecutionNativeOwner(this); }
@@ -6416,6 +6492,7 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE && this.#schematicDisplayCleanupOnly &&
       !["identity", "schematic-display-abort", "termination", "release"].includes(String(request["action"]))) { throw error("SCHEMATIC_DISPLAY_CLEANUP_ONLY"); }
     if (this.#componentAbortReservation !== null && !["identity", "component-abort", "termination", "release"].includes(String(request["action"]))) { throw error("COMPONENT_CLEANUP_ONLY"); }
+    if (this.#savedReadbackAborted && !["identity", "saved-readback-abort", "termination", "release"].includes(String(request["action"]))) { throw error("SAVED_READBACK_CLEANUP_ONLY"); }
     if (this.#pending !== null) { throw error("REQUEST_PENDING"); }
     if (this.#purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE) {
       const action = String(request["action"]);
@@ -6775,6 +6852,14 @@ export class CurrentPcbSpatialOwner extends CurrentPcbRetainedOwnerCore {
   }
 }
 
+/** A separate saved-file reader. No initial-fixture or writer origin transfers. */
+export class CurrentPcbViaSavedReadbackOwner extends CurrentPcbRetainedOwnerCore {
+  public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>, prepared: CurrentPcbViaWriteClosedCheckpoint,
+    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve()) {
+    super(child, verify, installation, verifyInstallation, CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE, verifyInstallation, null, null, null, null, null, null, false, null, prepared);
+  }
+}
+
 /** Separate Component birth; no Layers/old spatial/writer purpose flags. */
 export class CurrentPcbComponentSpatialOwner extends CurrentPcbRetainedOwnerCore {
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>, prepared: GeneratedComponentFixtureOpenCheckpoint,
@@ -6964,6 +7049,9 @@ const footprintOwnershipMethods = Object.freeze({ assert: CurrentPcbRetainedOwne
   forwardExecutionTarget: CurrentPcbRetainedOwnerCore.prototype.originalFootprintForwardExecutionTarget,
   forwardExecutionTermination: CurrentPcbRetainedOwnerCore.prototype.originalFootprintForwardExecutionTermination,
   requireForwardExecutionTermination: CurrentPcbRetainedOwnerCore.prototype.requireFootprintForwardExecutionTermination });
+const savedReadbackOwnerDescriptors = Object.getOwnPropertyDescriptors(CurrentPcbViaSavedReadbackOwner.prototype);
+const savedReadbackOwnershipMethods = Object.freeze({ termination: CurrentPcbRetainedOwnerCore.prototype.originalSavedReadbackTermination,
+  requireTermination: CurrentPcbRetainedOwnerCore.prototype.requireOriginalSavedReadbackTermination });
 const pcbViaOwnershipMethods = Object.freeze({ closedEffects: CurrentPcbRetainedOwnerCore.prototype.originalViaWriteClosedEffects, termination: CurrentPcbRetainedOwnerCore.prototype.originalViaWriteTermination,
   requireTermination: CurrentPcbRetainedOwnerCore.prototype.requireViaWriteTermination });
 const schematicDisplayOwnershipMethods = Object.freeze({ termination: CurrentPcbRetainedOwnerCore.prototype.originalSchematicDisplayTermination,
@@ -7199,7 +7287,7 @@ export function currentFootprintForwardExecutionBirthAllocationOutcome(options: 
 
 /** Retain the actual child before owner construction can throw. This is not an
  * adopted owner: no request has entered stdin, and close is observed directly. */
-function retainForwardExecutionBirthChild(allocation: ForwardExecutionBirthAllocation | PcbViaWriteAllocation, child: ChildProcessWithoutNullStreams): void {
+function retainForwardExecutionBirthChild(allocation: ForwardExecutionBirthAllocation | PcbViaWriteAllocation | PcbViaSavedReadbackAllocation, child: ChildProcessWithoutNullStreams): void {
   if (allocation.state !== "unresolved" || allocation.owner !== null || allocation.child !== null) { throw error("FORWARD_EXECUTION_CHILD_CUSTODY"); }
   const closed = Promise.withResolvers<true>();
   const observation = { closed: false, code: null as number | null, signal: null as NodeJS.Signals | null, error: null as Error | null };
@@ -7213,7 +7301,7 @@ function retainForwardExecutionBirthChild(allocation: ForwardExecutionBirthAlloc
 
 /** An ownerless constructor failure may end only its original never-written
  * stdin once. Deadline expiry retains that child and its late close observer. */
-async function closeForwardExecutionOwnerlessBirth(allocation: ForwardExecutionBirthAllocation | PcbViaWriteAllocation): Promise<void> {
+async function closeForwardExecutionOwnerlessBirth(allocation: ForwardExecutionBirthAllocation | PcbViaWriteAllocation | PcbViaSavedReadbackAllocation): Promise<void> {
   const held = allocation.child;
   if (held === null || allocation.owner !== null || allocation.eofAttempted) { throw error("FORWARD_EXECUTION_OWNERLESS_EOF_REFUSED"); }
   allocation.eofAttempted = true;
@@ -7434,6 +7522,51 @@ export async function startCurrentSchematicDisplayWriteOwner(options: CurrentPcb
 export function currentSchematicDisplayWriteAllocationOutcome(prepared: GeneratedSchematicFixtureOpenCheckpoint): Readonly<{ state: "not-attempted" | SchematicDisplayWriteAllocation["state"]; owner: CurrentSchematicDisplayWriteOwner | null }> {
   assertOriginalGeneratedSchematicFixtureOpenCheckpoint(prepared); const original = schematicDisplayAllocations.get(prepared);
   if (original === undefined) { return Object.freeze({ state: "not-attempted", owner: null }); } if (original.owner !== null) { assertOriginalCurrentSchematicDisplayWriteOwner(original.owner); } return Object.freeze({ state: original.state, owner: original.owner });
+}
+
+/** Only a literal trusted module is joined after Core initialization. There is
+ * no caller function table, eager initialization cycle or serialized issuer. */
+export async function startCurrentPcbViaSavedReadbackOwner(options: CurrentPcbDiagnosticInstallationOptions, prepared: CurrentPcbViaWriteClosedCheckpoint): Promise<CurrentPcbViaSavedReadbackOwner> {
+  requirePcbViaBirthOptions(options);
+  const checkpointModule = await import("./current-pcb-via-write-closed-checkpoint.ts");
+  const requireCheckpoint = checkpointModule.requireOriginalCurrentPcbViaWriteClosedCheckpoint, verifyPrepared = checkpointModule.verifyCurrentPcbViaWriteClosedCheckpoint;
+  const writer = requireCheckpoint(prepared).owner; const before = writer.status();
+  if (!before.released || !before.helperClosed) { throw error("SAVED_READBACK_PRIOR_HELPER_REQUIRED_CLOSED"); }
+  await verifyPrepared(prepared); const prior = requireCheckpoint(prepared); const after = writer.status();
+  if (prior.owner !== writer || !after.released || !after.helperClosed) { throw error("SAVED_READBACK_PRIOR_HELPER_REQUIRED_CLOSED"); }
+  if (checkpointModule.requireOriginalCurrentPcbViaWriteClosedCheckpoint !== requireCheckpoint || checkpointModule.verifyCurrentPcbViaWriteClosedCheckpoint !== verifyPrepared || pcbViaSavedReadbackAllocations.has(prepared)) { throw error("SAVED_READBACK_ALLOCATION_CONSUMED"); }
+  const allocation: PcbViaSavedReadbackAllocation = { options, prepared, writer, checkpointModule, requireCheckpoint, verifyPrepared, state: "pending", owner: null, child: null, eofAttempted: false, cleanupFailure: null };
+  pcbViaSavedReadbackAllocations.set(prepared, allocation);
+  try {
+    const owner = await startFixedOwner(options, CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE, "209-via-saved-readback", undefined, null, null, null, null, false, null, null, null, allocation);
+    if (!(owner instanceof CurrentPcbViaSavedReadbackOwner)) { throw error("SAVED_READBACK_FACTORY"); } assertOriginalCurrentPcbViaSavedReadbackOwner(owner); return owner;
+  } catch (caughtError) {
+    if (allocation.state === "pending") { allocation.state = "no-resource"; }
+    else if (allocation.owner === null && allocation.child !== null) { try { await closeForwardExecutionOwnerlessBirth(allocation); } catch (cleanupError) { allocation.cleanupFailure = cleanupError; } } throw caughtError;
+  }
+}
+export function assertOriginalCurrentPcbViaSavedReadbackOwner(owner: CurrentPcbViaSavedReadbackOwner): void {
+  const original = pcbViaSavedReadbackFactories.get(owner);
+  if (original === undefined || original.allocation.owner !== owner || original.allocation.state !== "retained" ||
+    Object.getPrototypeOf(owner) !== CurrentPcbViaSavedReadbackOwner.prototype || Reflect.ownKeys(owner).length > 0 ||
+    !originalFootprintDescriptors(CurrentPcbViaSavedReadbackOwner.prototype, savedReadbackOwnerDescriptors) || !originalFootprintDescriptors(CurrentPcbRetainedOwnerCore.prototype, footprintCoreDescriptors) ||
+    owner.status().profile !== CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) { throw error("SAVED_READBACK_ORIGINAL_FACTORY"); }
+  requireSavedReadbackPreparation(original.allocation);
+}
+export function currentPcbViaSavedReadbackAllocationOutcome(prepared: CurrentPcbViaWriteClosedCheckpoint): Readonly<{ state: "not-attempted" | PcbViaSavedReadbackAllocation["state"]; owner: CurrentPcbViaSavedReadbackOwner | null }> {
+  const original = pcbViaSavedReadbackAllocations.get(prepared);
+  if (original === undefined) { return Object.freeze({ state: "not-attempted", owner: null }); } requireSavedReadbackPreparation(original);
+  if (original.owner !== null) { assertOriginalCurrentPcbViaSavedReadbackOwner(original.owner); } return Object.freeze({ state: original.state, owner: original.owner });
+}
+export function originalCurrentPcbViaSavedReadbackTarget(owner: CurrentPcbViaSavedReadbackOwner): CurrentPcbViaWriteClosedCheckpoint {
+  assertOriginalCurrentPcbViaSavedReadbackOwner(owner); const original = pcbViaSavedReadbackFactories.get(owner);
+  if (original === undefined) { throw error("SAVED_READBACK_ORIGINAL_FACTORY"); } return original.allocation.prepared;
+}
+export function originalCurrentPcbViaSavedReadbackTermination(owner: CurrentPcbViaSavedReadbackOwner): object {
+  assertOriginalCurrentPcbViaSavedReadbackOwner(owner); return savedReadbackOwnershipMethods.termination.call(owner);
+}
+export function assertOriginalCurrentPcbViaSavedReadbackTermination(owner: CurrentPcbViaSavedReadbackOwner, token: object): void {
+  assertOriginalCurrentPcbViaSavedReadbackOwner(owner); savedReadbackOwnershipMethods.requireTermination.call(owner, token);
 }
 
 export function startCurrentPcbSpatialOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbSpatialOwner> {
@@ -7831,9 +7964,12 @@ export function currentFootprintHeadAgeValidationAllocationOutcome(binding: Curr
  * Construct the matching fixed owner and retain it before listeners start;
  * Callers cannot substitute native arguments or upgrade an existing purpose. */
 async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, purpose: OwnerPurpose,
-  generation: "206" | "209-opening" | "209-visual" | "209-spatial" | "209-component-spatial" | "209-startup" | "209-held-cache" | "209-via-write" | "209-schematic-display" = "206", savedWriter?: CurrentFootprintCopyNativeOwner,
+  generation: "206" | "209-opening" | "209-visual" | "209-spatial" | "209-component-spatial" | "209-startup" | "209-held-cache" | "209-via-saved-readback" | "209-via-write" | "209-schematic-display" = "206", savedWriter?: CurrentFootprintCopyNativeOwner,
   forwardSavedHandoff: object | null = null, heldValidation: HeldCacheValidationAllocation | null = null, headAgeValidation: HeadAgeValidationAllocation | null = null,
-  forwardExecutionBirth: ForwardExecutionBirthAllocation | null = null, generatedFixtureBirth = false, viaWriteAllocation: PcbViaWriteAllocation | null = null, schematicDisplayAllocation: SchematicDisplayWriteAllocation | null = null, componentPrepared: GeneratedComponentFixtureOpenCheckpoint | null = null): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
+  forwardExecutionBirth: ForwardExecutionBirthAllocation | null = null, generatedFixtureBirth = false, viaWriteAllocation: PcbViaWriteAllocation | null = null, schematicDisplayAllocation: SchematicDisplayWriteAllocation | null = null, componentPrepared: GeneratedComponentFixtureOpenCheckpoint | null = null, savedReadbackAllocation: PcbViaSavedReadbackAllocation | null = null): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
+  if ((savedReadbackAllocation !== null) !== (purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) || savedReadbackAllocation !== null &&
+    (savedReadbackAllocation.options !== options || savedReadbackAllocation.state !== "pending")) { throw error("SAVED_READBACK_ORIGINAL_ALLOCATION"); }
+  if (savedReadbackAllocation !== null) { requireSavedReadbackPreparation(savedReadbackAllocation); }
   if (generatedFixtureBirth && !(purpose === "diagnostic209" && generation === "209-opening" || purpose === "pcb-spatial209" && generation === "209-spatial" || purpose === "pcb-component-spatial209" && generation === "209-component-spatial")) { throw error("GENERATED_FIXTURE_BIRTH_PURPOSE"); }
   if ((schematicDisplayAllocation !== null) !== (purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) || schematicDisplayAllocation !== null &&
     (schematicDisplayAllocation.options !== options || schematicDisplayAllocations.get(schematicDisplayAllocation.prepared) !== schematicDisplayAllocation || schematicDisplayAllocation.state !== "pending")) { throw error("SCHEMATIC_DISPLAY_ORIGINAL_ALLOCATION"); }
@@ -7850,7 +7986,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   if (forwardSaved !== null && (purpose !== "worker-startup-footprint-saved209" || generation !== "209-startup" || savedWriter !== undefined)) { throw error("FORWARD_SAVED_PURPOSE"); }
   const startup209 = purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-held-saved209" || purpose === "worker-startup-footprint-main209" || purpose === "footprint-head-age209" || bornFootprintTransport(purpose)) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
   if ((generation === "209-opening") !== (purpose === "diagnostic209") || (generation === "209-visual") !== (purpose === "visual209") ||
-      (generation === "209-component-spatial") !== (purpose === "pcb-component-spatial209") || (generation === "209-spatial") !== (purpose === "pcb-spatial209") || (generation === "209-via-write") !== (purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) || (generation === "209-schematic-display") !== (purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) ||
+      (generation === "209-component-spatial") !== (purpose === "pcb-component-spatial209") || (generation === "209-spatial") !== (purpose === "pcb-spatial209") || (generation === "209-via-saved-readback") !== (purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) || (generation === "209-via-write") !== (purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) || (generation === "209-schematic-display") !== (purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) ||
       (generation === "209-startup") !== startup209 || (generation === "209-held-cache") !== (purpose === "footprint-held-cache209") ||
       (heldValidation !== null) !== (purpose === "footprint-held-cache209")) { throw error("INSTALLATION_PURPOSE"); }
   if (heldValidation !== null) { requireHeldCacheValidationBinding(heldValidation); }
@@ -7925,6 +8061,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === "pcb-component-spatial209") { purposeSwitch = " -ComponentSpatial209"; }
   else if (purpose === "pcb-spatial209") { purposeSwitch = generatedFixtureBirth ? " -GeneratedFixtureSpatial209" : " -Spatial209"; }
   else if (purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { purposeSwitch = ` ${CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE.nativeSwitch}`; }
+  else if (purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) { purposeSwitch = ` ${CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.nativeSwitch}`; }
   else if (purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { purposeSwitch = ` ${CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.nativeSwitch}`; }
   else if (purpose === "footprint-held-cache209") { purposeSwitch = " -FootprintHeldCache209"; }
   const legacyBootstrap = `$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';` +
@@ -7951,12 +8088,14 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   if (heldValidation !== null) { requireHeldCacheValidationBinding(heldValidation); heldValidation.status = "unresolved"; }
   if (headAgeValidation !== null) { requireHeadAgeValidationBinding(headAgeValidation); headAgeValidation.status = "unresolved"; }
   if (forwardExecutionBirth !== null) { forwardExecutionBirth.state = "unresolved"; retainedOwners.add(forwardExecutionBirth); }
+  if (savedReadbackAllocation !== null) { requireSavedReadbackPreparation(savedReadbackAllocation); savedReadbackAllocation.state = "unresolved"; retainedOwners.add(savedReadbackAllocation); }
   if (viaWriteAllocation !== null) { viaWriteAllocation.state = "unresolved"; retainedOwners.add(viaWriteAllocation); }
   if (schematicDisplayAllocation !== null) { schematicDisplayAllocation.state = "unresolved"; retainedOwners.add(schematicDisplayAllocation); }
   const child = spawn(installation.paths.powershellExecutable,
     ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded],
     { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
   if (forwardExecutionBirth !== null) { retainForwardExecutionBirthChild(forwardExecutionBirth, child); }
+  if (savedReadbackAllocation !== null) { retainForwardExecutionBirthChild(savedReadbackAllocation, child); }
   if (viaWriteAllocation !== null) { retainForwardExecutionBirthChild(viaWriteAllocation, child); }
   if (schematicDisplayAllocation !== null) { retainForwardExecutionBirthChild(schematicDisplayAllocation, child); }
   let owner: CurrentPcbRetainedOwnerCore;
@@ -8035,6 +8174,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === "pcb-component-spatial209") { if (componentPrepared === null) { throw error("COMPONENT_PREPARED_REQUIRED"); } owner = new CurrentPcbComponentSpatialOwner(child, verify, componentPrepared, installation, verifyInstallation); }
   else if (purpose === "pcb-spatial209") { owner = new CurrentPcbSpatialOwner(child, verify, installation, verifyInstallation, generatedFixtureBirth); }
   else if (purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { owner = new CurrentSchematicDisplayWriteOwner(child, verify, installation, verifyInstallation); }
+  else if (purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) { if (savedReadbackAllocation === null) { throw error("SAVED_READBACK_ORIGINAL_FACTORY"); } owner = new CurrentPcbViaSavedReadbackOwner(child, verify, savedReadbackAllocation.prepared, installation, verifyInstallation); }
   else if (purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { owner = new CurrentPcbViaWriteOwner(child, verify, installation, verifyInstallation); }
   else { owner = new CurrentPcbDiagnosticOwner(child, verify, installation, verifyInstallation); }
   if (owner instanceof CurrentFootprintCopyNativeOwner || owner instanceof CurrentFootprintCopySavedNativeOwner || owner instanceof CurrentFootprintCopyHeldSavedNativeOwner || owner instanceof CurrentFootprintCopyForwardNativeOwner || owner instanceof CurrentFootprintCopyForwardSavedNativeOwner) {
@@ -8057,6 +8197,10 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   if (schematicDisplayAllocation !== null) {
     if (!(owner instanceof CurrentSchematicDisplayWriteOwner)) { throw error("SCHEMATIC_DISPLAY_FACTORY"); }
     schematicDisplayAllocation.owner = owner; schematicDisplayAllocation.state = "retained"; schematicDisplayFactories.set(owner, Object.freeze({ allocation: schematicDisplayAllocation, installation }));
+  }
+  if (savedReadbackAllocation !== null) {
+    if (!(owner instanceof CurrentPcbViaSavedReadbackOwner)) { throw error("SAVED_READBACK_FACTORY"); }
+    savedReadbackAllocation.owner = owner; savedReadbackAllocation.state = "retained"; pcbViaSavedReadbackFactories.set(owner, Object.freeze({ allocation: savedReadbackAllocation, installation }));
   }
   retainedOwners.add(owner); owner.start();
   return owner;

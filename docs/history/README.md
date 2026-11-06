@@ -1,5 +1,7 @@
 # Project history
 
+- [Fresh saved Via readback birth](2026-11-06-via-saved-readback-native-birth.md)
+
 - [Project cache startup source audit](2026-11-06-project-cache-startup-source-audit.md)
 
 - [Component original Job abort](2026-11-06-component-original-job-abort.md)
