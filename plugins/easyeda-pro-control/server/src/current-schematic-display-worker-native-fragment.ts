@@ -1,5 +1,6 @@
 /** Original schematic-only worker binding/observation. This adds no Save or SQL grant
  * and never upgrades a released worker-startup purpose. */
+import { currentProjectSaveStructureNativeGuard } from "./current-project-save-structure-native-guard.ts";
 import { currentSchematicDisplayWorkerNativeSource } from "./current-schematic-display-worker-native.ts";
 import { CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES as ROLES } from "./current-pcb-209-worker-bootstrap-source.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_WORKER_BOOTSTRAP_REQUESTS as BOOTSTRAP } from "./current-schematic-display-worker-bootstrap-protocol.ts";
@@ -25,32 +26,34 @@ if(!schematicDisplayWrite209||!schematicWorkerParentArmed||schematicWorkerSessio
 public void SendSchematicDisplayWorkerParent(int id,string session,string phase){
 if(!schematicDisplayWrite209||schematicDisplayAbort||session!=schematicDisplaySession||schematicWorkerProjectUuid==null)throw Error("schematic-worker-parent-purpose");bool wait;
 if(phase=="arm"){if(schematicWorkerParentArmed)throw Error("schematic-worker-parent-once");schematicWorkerParentArmed=true;wait=true;}
-else if(phase=="running"){if(!schematicWorkerParentArmed||schematicWorkerParentRunning||schematicWorkerSession==null||schematicWorkerStage!=6||!schematicWorkerSourceRead||schematicSavePoints.Count!=6)throw Error("schematic-worker-parent-original-source");schematicWorkerParentRunning=true;wait=false;}else throw Error("schematic-worker-parent-phase");
+else if(phase=="running"){if(!schematicWorkerParentArmed||schematicWorkerParentRunning||schematicWorkerSession==null||schematicWorkerStage!=6||!schematicWorkerSourceRead||schematicSavePoints.Count!=6||schematicStructurePoints.Count!=0&&schematicStructurePoints.Count!=6)throw Error("schematic-worker-parent-original-source");schematicWorkerParentRunning=true;wait=false;}else throw Error("schematic-worker-parent-phase");
 string message="{\\"id\\":"+id.ToString(CultureInfo.InvariantCulture)+",\\"method\\":\\"Target.setAutoAttach\\",\\"params\\":{\\"autoAttach\\":true,\\"waitForDebuggerOnStart\\":"+(wait?"true":"false")+",\\"flatten\\":true,\\"filter\\":[{\\"type\\":\\"worker\\",\\"exclude\\":false},{\\"exclude\\":true}]},\\"sessionId\\":"+JsonString(session)+"}\\0";SendMessage(id,message);
 }
 void AdmitSchematicDisplayWorkerBootstrap(string phase,System.Collections.IDictionary fields){
 string[] setup={"schematic-worker-runtime","schematic-worker-debugger","schematic-worker-async","schematic-worker-instrument","schematic-worker-run-waiting"};
 if(schematicWorkerSetup<setup.Length){if(phase!=setup[schematicWorkerSetup])throw Error("schematic-worker-bootstrap-setup");schematicWorkerSetup++;return;}
-if(phase=="schematic-worker-remove"){if(schematicWorkerInstrumentRemoved||schematicWorkerStage!=6||!schematicWorkerSourceRead||schematicSavePoints.Count!=6)throw Error("schematic-worker-instrument-original");schematicWorkerInstrumentRemoved=true;return;}
+if(phase=="schematic-worker-remove"){if(schematicWorkerInstrumentRemoved||schematicWorkerStage!=6||!schematicWorkerSourceRead||schematicSavePoints.Count!=6||schematicStructurePoints.Count!=0&&schematicStructurePoints.Count!=6)throw Error("schematic-worker-instrument-original");schematicWorkerInstrumentRemoved=true;return;}
 if(schematicWorkerStage>=SchematicDisplayWorkerRoles.Length)throw Error("schematic-worker-bootstrap-consumed");string role=SchematicDisplayWorkerRoles[schematicWorkerStage];
 if(phase=="schematic-worker-source-"+role){if(schematicWorkerSourceRead)throw Error("schematic-worker-source-once");schematicWorkerSourceRead=true;if(role=="project")schematicWorkerProjectScript=fields["scriptId"] as string;}
-else if(phase=="schematic-worker-resume-"+role){if(!schematicWorkerSourceRead||role=="project"&&(!schematicWorkerInstrumentRemoved||!schematicWorkerParentRunning||schematicSavePoints.Count!=6))throw Error("schematic-worker-source-before-resume");schematicWorkerStage++;schematicWorkerSourceRead=false;}else throw Error("schematic-worker-bootstrap-phase");
+else if(phase=="schematic-worker-resume-"+role){if(!schematicWorkerSourceRead||role=="project"&&(!schematicWorkerInstrumentRemoved||!schematicWorkerParentRunning||schematicSavePoints.Count!=6||schematicStructurePoints.Count!=0&&schematicStructurePoints.Count!=6))throw Error("schematic-worker-source-before-resume");schematicWorkerStage++;schematicWorkerSourceRead=false;}else throw Error("schematic-worker-bootstrap-phase");
 }
 void AdmitSchematicDisplaySaveObserver(string phase,System.Collections.IDictionary fields){
 if(schematicWorkerStage==6&&schematicWorkerSourceRead){if(phase=="schematic-save-source"){if(fields["scriptId"] as string!=schematicWorkerProjectScript)throw Error("schematic-save-source-original");return;}if(!phase.StartsWith("schematic-save-arm-",StringComparison.Ordinal)||fields["scriptId"] as string!=schematicWorkerProjectScript)throw Error("schematic-save-arm-original-source");string role=phase.Substring("schematic-save-arm-".Length);if(Array.IndexOf(new[]{"noData","entry","clock","compress","body","result"},role)<0||!schematicSavePoints.Add(role))throw Error("schematic-save-arm-once");return;}
-if(schematicWorkerStage!=7||schematicSavePoints.Count!=6)throw Error("schematic-save-bootstrap-required");
+if(schematicWorkerStage!=7||schematicSavePoints.Count!=6||schematicStructurePoints.Count!=0&&schematicStructurePoints.Count!=6)throw Error("schematic-save-bootstrap-required");
 if(phase=="schematic-save-source"&&fields["scriptId"] as string!=schematicWorkerProjectScript)throw Error("schematic-save-source-original");
 if(phase=="schematic-save-entry"&&(fields["pageUuid"] as string!=schematicWorkerPageUuid||fields["projectUuid"] as string!=schematicWorkerProjectUuid))throw Error("schematic-save-original-target");
 if(phase!="schematic-save-source"&&!schematicDisplayStages[6])throw Error("schematic-save-original-attempt");
 }
+${currentProjectSaveStructureNativeGuard("schematic")}
 public void SendSchematicDisplayWorker(int id,string phase,string method,System.Collections.IDictionary fields){
 if(!schematicDisplayWrite209||schematicDisplayAbort||schematicWorkerSession==null)throw Error("schematic-worker-purpose");string encoded=EasyedaSchematicDisplayWorkerProtocol.Encode(id,schematicWorkerSession,phase,method,fields);
+if(phase.StartsWith("project-save-structure-",StringComparison.Ordinal)){AdmitSchematicDisplaySaveStructureObserver(phase,fields);SendMessage(id,encoded);return;}
 bool bootstrap=phase.StartsWith("schematic-worker-",StringComparison.Ordinal),cleanup=phase.StartsWith("schematic-worker-resume-",StringComparison.Ordinal)||phase=="schematic-worker-remove"||phase=="schematic-save-resume"||phase=="schematic-save-remove"||phase=="schematic-save-release";
 if(bootstrap){if(cleanup?schematicWorkerCleanup>=${String(BOOTSTRAP.workerCleanup)}:schematicWorkerNormal>=${String(BOOTSTRAP.workerNormal)})throw Error("schematic-worker-bootstrap-budget");AdmitSchematicDisplayWorkerBootstrap(phase,fields);if(cleanup)schematicWorkerCleanup++;else schematicWorkerNormal++;}
 else{if(cleanup?schematicSaveCleanup>=${String(SAVE.cleanup)}:schematicSaveNormal>=${String(SAVE.normal)})throw Error("schematic-save-observer-budget");AdmitSchematicDisplaySaveObserver(phase,fields);if(cleanup)schematicSaveCleanup++;else schematicSaveNormal++;}
 SendMessage(id,encoded);
 }
-public static void VerifySchematicDisplayWorkerSmoke(){EasyedaSchematicDisplayWorkerProtocol.VerifySmoke();foreach(var owner in new[]{new EasyedaDiagnosticOwner(),CreateLayers209(),CreateSpatial209(),CreateGeneratedFixture209()}){bool refused=false;try{owner.BindSchematicDisplayWorker("w","t",new string('a',64),"window_1");}catch(InvalidOperationException){refused=true;}if(!refused||owner.schematicWorkerSession!=null)throw Error("schematic-worker-old-birth-smoke");}}
+public static void VerifySchematicDisplayWorkerSmoke(){VerifySchematicDisplaySaveStructureGuardSmoke();EasyedaSchematicDisplayWorkerProtocol.VerifySmoke();foreach(var owner in new[]{new EasyedaDiagnosticOwner(),CreateLayers209(),CreateSpatial209(),CreateGeneratedFixture209()}){bool refused=false;try{owner.BindSchematicDisplayWorker("w","t",new string('a',64),"window_1");}catch(InvalidOperationException){refused=true;}if(!refused||owner.schematicWorkerSession!=null)throw Error("schematic-worker-old-birth-smoke");}}
 }
 ${end}`;
 }

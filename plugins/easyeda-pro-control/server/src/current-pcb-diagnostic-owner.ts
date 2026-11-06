@@ -5,6 +5,9 @@
  * Browser discovery grants no frame, worker, script or CAD execution authority. */
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Four fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import { CURRENT_PROJECT_SAVE_STRUCTURE_SITES } from "./current-project-save-structure-source.ts";
+import { validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
+import type { CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
 import { CurrentSchematicDisplayWorkerController } from "./current-schematic-display-worker-controller.ts";
 import type { CurrentSchematicDisplayWorkerChild } from "./current-schematic-display-worker-controller.ts";
 import type { CurrentSchematicDisplayWorkerCommand } from "./current-schematic-display-worker-wire.ts";
@@ -491,6 +494,18 @@ export function requireOriginalCurrentSchematicDisplaySaveWorkerOrigin(origin: C
   const original = schematicDisplaySaveWorkers.get(origin); if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue) { throw error("SCHEMATIC_DISPLAY_ORIGINAL_SAVE_WORKER"); }
   requireSchematicArguments(owner, argumentsValue); original.assertOriginal(); return original.bindings;
 }
+export type CurrentProjectSaveStructureSetup = (origin: CurrentProjectSaveStructureOrigin) => Promise<void>;
+// Only the genuine central history-SQL completion consumer may populate this
+// Registry. It is intentionally empty until its actual callback join lands.
+const projectSaveStructureHistoryGrants = new WeakMap<CurrentProjectSaveStructureOrigin, Readonly<{ completion: CurrentProjectHistorySqlCompletion; assertCurrent: () => void }>>();
+const projectSaveStructureOrigins = new WeakMap<CurrentProjectSaveStructureOrigin, Readonly<{ owner: object; operation: object; bindings: CurrentProjectSaveStructureBindings; assertOriginal: () => void }>>();
+/** The actual source-held callback of the original native birth is the only
+ * issuer. Matching targets, old worker leases and caller bindings cannot join. */
+export function requireOriginalCurrentProjectSaveStructureOrigin(origin: CurrentProjectSaveStructureOrigin, owner: object, operation: object): CurrentProjectSaveStructureBindings {
+  const original = projectSaveStructureOrigins.get(origin);
+  if (original === undefined || original.owner !== owner || original.operation !== operation) { throw error("PROJECT_SAVE_STRUCTURE_ORIGINAL_ORIGIN"); }
+  original.assertOriginal(); return original.bindings;
+}
 const schematicDisplayTerminations = new WeakMap<object, Readonly<{ owner: CurrentSchematicDisplayWriteOwner; binding: Binding }>>();
 interface PcbViaWriteAllocation { readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: GeneratedFixtureOpenCheckpoint; state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentPcbViaWriteOwner | null; child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown }
 const pcbViaWriteAllocations = new WeakMap<GeneratedFixtureOpenCheckpoint, PcbViaWriteAllocation>();
@@ -842,6 +857,8 @@ class CurrentPcbRetainedOwnerCore {
   #pcbSourceProfile: DiagnosticScriptProfile | null = null;
   #schematicWorkerArguments: GeneratedSchematicDisplayNativeArguments | null = null;
   #schematicWorkerSetup: CurrentSchematicDisplaySaveWorkerSetup | null = null;
+  #schematicStructureSetup: CurrentProjectSaveStructureSetup | null = null;
+  #schematicStructureOrigin: CurrentProjectSaveStructureOrigin | null = null;
   #schematicWorkerController: CurrentSchematicDisplayWorkerController | null = null;
   #schematicWorkerOrigin: CurrentSchematicDisplaySaveWorkerOrigin | null = null;
   #schematicObserverTail: Promise<void> = Promise.resolve();
@@ -865,6 +882,8 @@ class CurrentPcbRetainedOwnerCore {
   #viaCleanupOnly = false;
   #viaWorkerPlan: CurrentPcbViaWritePlan | null = null;
   #viaWorkerSetup: CurrentPcbViaSaveWorkerSetup | null = null;
+  #viaStructureSetup: CurrentProjectSaveStructureSetup | null = null;
+  #viaStructureOrigin: CurrentProjectSaveStructureOrigin | null = null;
   #viaWorkerController: CurrentPcbViaWorkerController | null = null;
   #viaWorkerOrigin: CurrentPcbViaSaveWorkerOrigin | null = null;
   #viaClockAttempted = false;
@@ -1695,6 +1714,13 @@ class CurrentPcbRetainedOwnerCore {
   /** Trusted coordinator setup only, absent from every MCP operation schema.
    * Retain this exact callback before awaits; actual origin issuance still
    * requires the fresh direct worker and all original imported source pauses. */
+  /** Trusted arm callback only. It installs the fixed structure sites while
+   * the same original project source is held; construction waits its resume. */
+  public armSchematicDisplaySaveStructureWorker(argumentsValue: GeneratedSchematicDisplayNativeArguments, setup: CurrentProjectSaveStructureSetup): void {
+    requireSchematicArguments(this, argumentsValue);
+    if (this.#busy || this.#schematicStructureSetup !== null || this.#projectOpeningConsumed || this.#schematicWorkerController !== null || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true || typeof setup !== "function" || types.isProxy(setup)) { throw error("PROJECT_SAVE_STRUCTURE_ARM_UNAVAILABLE"); }
+    this.#schematicStructureSetup = setup;
+  }
   public armSchematicDisplaySaveWorker(argumentsValue: GeneratedSchematicDisplayNativeArguments, setup: CurrentSchematicDisplaySaveWorkerSetup): void {
     requireSchematicArguments(this, argumentsValue);
     if (this.#busy || this.#schematicWorkerArguments !== null || this.#projectOpeningConsumed || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true ||
@@ -1769,6 +1795,41 @@ class CurrentPcbRetainedOwnerCore {
           selected.requireOriginal(source, child);
         } }));
         this.#schematicWorkerOrigin = origin; await Reflect.apply(setup, undefined, [origin]); original(); selected.requireOriginal(source, child);
+        const structureSetup = this.#schematicStructureSetup;
+        if (structureSetup !== null) {
+          if (this.#schematicStructureOrigin !== null) { throw error("PROJECT_SAVE_STRUCTURE_SOURCE_CONSUMED"); }
+          const structurePrepared = requireSchematicArguments(this, argumentsValue); const structureOrigin: CurrentProjectSaveStructureOrigin = Object.freeze({ profile: "private.current-schematic-display-save-structure-origin.v1" });
+          const assertStructureOriginal = (): void => { requireSchematicArguments(this, argumentsValue); selected.requireOriginal(source, child);
+            if (this.#schematicStructureOrigin !== structureOrigin || this.#schematicStructureSetup !== structureSetup || this.#schematicWorkerController !== selected || this.#schematicWorkerOrigin !== origin) { throw error("PROJECT_SAVE_STRUCTURE_CUSTODY_CHANGED"); } };
+          const structureBindings: CurrentProjectSaveStructureBindings = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId, uniqueContextId: source.uniqueContextId, prepared: structurePrepared,
+            request: async (input: Parameters<CurrentProjectSaveStructureBindings["request"]>[0], cleanup: boolean, retain?: (reply: unknown) => void): Promise<unknown> => {
+              const command = validateCurrentProjectSaveStructureCommand(input); original(); assertStructureOriginal();
+              if (cleanup !== (command.phase === "project-save-structure-remove" || command.phase === "project-save-structure-release")) { throw error("PROJECT_SAVE_STRUCTURE_REQUEST_CLASS"); }
+              const historyGrant = command.phase === "project-save-structure-resume" && command.role !== "bootstrap" ? projectSaveStructureHistoryGrants.get(structureOrigin) : null;
+              if (historyGrant === undefined) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_REQUIRED"); }
+              const assertHistory = (): void => { if (historyGrant !== null) { if (projectSaveStructureHistoryGrants.get(structureOrigin) !== historyGrant) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_CHANGED"); } historyGrant.assertCurrent(); } }; assertHistory();
+              if (retain !== undefined && (typeof retain !== "function" || types.isProxy(retain))) { throw error("PROJECT_SAVE_STRUCTURE_RETAIN_CALLBACK"); }
+              const reply = await this.#serializeSchematicDisplayObserver(() => this.#transfer(async () => { original(); assertStructureOriginal();
+                if (command.phase === "project-save-structure-resume") { assertHistory(); selected.reserveStructureResume(source, command.role); }
+                const actual = await pipe.observeSchematicDisplayWorker(command);
+                if (retain !== undefined) { Reflect.apply(retain, undefined, [actual]); }
+                return actual;
+              }));
+              if (command.phase === "project-save-structure-arm") {
+                const site = CURRENT_PROJECT_SAVE_STRUCTURE_SITES[command.role];
+                if (!record(reply) || !exact(reply, ["breakpointId", "actualLocation"]) || typeof reply["breakpointId"] !== "string" || !record(reply["actualLocation"]) || !exact(reply["actualLocation"], ["scriptId", "lineNumber", "columnNumber"]) || reply["actualLocation"]["scriptId"] !== source.scriptId || reply["actualLocation"]["lineNumber"] !== site.lineNumber || reply["actualLocation"]["columnNumber"] !== site.columnNumber) { throw error("PROJECT_SAVE_STRUCTURE_ARM_REPLY"); }
+                selected.bindStructureBreakpoint(source, command.role, reply["breakpointId"]);
+              }
+              original(); assertStructureOriginal();
+              assertHistory(); return reply;
+            }, nextEvent: () => selected.nextStructureEvent(),
+            assertCurrent: async (): Promise<void> => { original(); assertStructureOriginal(); await this.#verify(); original(); assertStructureOriginal(); },
+            assertOperationPending: (): void => { original(); assertStructureOriginal(); if (!(this.#schematicStages.has("save"))) { throw error("PROJECT_SAVE_STRUCTURE_ORIGINAL_SAVE_REQUIRED"); } },
+            assertOriginalGenerationExited: (): Promise<void> => { assertStructureOriginal(); if (!this.#terminationObserved || this.#terminationObservation?.terminated !== true) { return Promise.reject(error("PROJECT_SAVE_STRUCTURE_ORIGINAL_EXIT_REQUIRED")); } return Promise.resolve(); },
+            fail: (): void => { selected.fail(); } });
+          projectSaveStructureOrigins.set(structureOrigin, Object.freeze({ owner, operation: argumentsValue, bindings: structureBindings, assertOriginal: assertStructureOriginal }));
+          this.#schematicStructureOrigin = structureOrigin; await Reflect.apply(structureSetup, undefined, [structureOrigin]); original(); assertStructureOriginal(); selected.requireStructureArmed(source);
+        }
       }, releaseParentWait: async () => { original(); const reply = await this.#transfer(() => pipe.configureSchematicDisplayWorkerRunning());
         if (!exact(reply, [])) { throw error("SCHEMATIC_DISPLAY_WORKER_PARENT_RUNNING_REPLY"); } original(); },
       fail: (): void => { this.#schematicFailed = true; } }));
@@ -1778,6 +1839,13 @@ class CurrentPcbRetainedOwnerCore {
       if (!this.#schematicNavigationDispatchAttempted && event.method === "Target.attachedToTarget" && record(targetInfo) && targetInfo["title"] === `project_${argumentsValue.target.projectUuid}_${windowTabId}`) { controller.fail(); return; }
       controller.observeEvent(event); }));
     if (!exact(reply, [])) { throw error("SCHEMATIC_DISPLAY_WORKER_PARENT_ARM_REPLY"); } original();
+  }
+  /** Trusted arm callback only. It installs the fixed structure sites while
+   * the same original project source is held; construction waits its resume. */
+  public armViaSaveStructureWorker(plan: CurrentPcbViaWritePlan, setup: CurrentProjectSaveStructureSetup): void {
+    requireViaPlan(this, plan);
+    if (this.#busy || this.#viaStructureSetup !== null || this.#projectOpeningConsumed || this.#viaWorkerController !== null || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true || typeof setup !== "function" || types.isProxy(setup)) { throw error("PROJECT_SAVE_STRUCTURE_ARM_UNAVAILABLE"); }
+    this.#viaStructureSetup = setup;
   }
   public armViaSaveWorker(plan: CurrentPcbViaWritePlan, setup: CurrentPcbViaSaveWorkerSetup): void {
     requireViaPlan(this, plan);
@@ -1851,6 +1919,41 @@ class CurrentPcbRetainedOwnerCore {
           selected.requireOriginal(source, child);
         } }));
         this.#viaWorkerOrigin = origin; await Reflect.apply(setup, undefined, [origin]); original(); selected.requireOriginal(source, child);
+        const structureSetup = this.#viaStructureSetup;
+        if (structureSetup !== null) {
+          if (this.#viaStructureOrigin !== null) { throw error("PROJECT_SAVE_STRUCTURE_SOURCE_CONSUMED"); }
+          const structurePrepared = requireOriginalCurrentPcbViaWritePlan(plan).prepared; const structureOrigin: CurrentProjectSaveStructureOrigin = Object.freeze({ profile: "private.current-pcb-via-save-structure-origin.v1" });
+          const assertStructureOriginal = (): void => { requireViaPlan(this, plan); selected.requireOriginal(source, child);
+            if (this.#viaStructureOrigin !== structureOrigin || this.#viaStructureSetup !== structureSetup || this.#viaWorkerController !== selected || this.#viaWorkerOrigin !== origin) { throw error("PROJECT_SAVE_STRUCTURE_CUSTODY_CHANGED"); } };
+          const structureBindings: CurrentProjectSaveStructureBindings = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId, uniqueContextId: source.uniqueContextId, prepared: structurePrepared,
+            request: async (input: Parameters<CurrentProjectSaveStructureBindings["request"]>[0], cleanup: boolean, retain?: (reply: unknown) => void): Promise<unknown> => {
+              const command = validateCurrentProjectSaveStructureCommand(input); original(); assertStructureOriginal();
+              if (cleanup !== (command.phase === "project-save-structure-remove" || command.phase === "project-save-structure-release")) { throw error("PROJECT_SAVE_STRUCTURE_REQUEST_CLASS"); }
+              const historyGrant = command.phase === "project-save-structure-resume" && command.role !== "bootstrap" ? projectSaveStructureHistoryGrants.get(structureOrigin) : null;
+              if (historyGrant === undefined) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_REQUIRED"); }
+              const assertHistory = (): void => { if (historyGrant !== null) { if (projectSaveStructureHistoryGrants.get(structureOrigin) !== historyGrant) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_CHANGED"); } historyGrant.assertCurrent(); } }; assertHistory();
+              if (retain !== undefined && (typeof retain !== "function" || types.isProxy(retain))) { throw error("PROJECT_SAVE_STRUCTURE_RETAIN_CALLBACK"); }
+              const reply = await this.#serializeViaObserver(() => this.#transfer(async () => { original(); assertStructureOriginal();
+                if (command.phase === "project-save-structure-resume") { assertHistory(); selected.reserveStructureResume(source, command.role); }
+                const actual = await pipe.observeViaWorker(command);
+                if (retain !== undefined) { Reflect.apply(retain, undefined, [actual]); }
+                return actual;
+              }));
+              if (command.phase === "project-save-structure-arm") {
+                const site = CURRENT_PROJECT_SAVE_STRUCTURE_SITES[command.role];
+                if (!record(reply) || !exact(reply, ["breakpointId", "actualLocation"]) || typeof reply["breakpointId"] !== "string" || !record(reply["actualLocation"]) || !exact(reply["actualLocation"], ["scriptId", "lineNumber", "columnNumber"]) || reply["actualLocation"]["scriptId"] !== source.scriptId || reply["actualLocation"]["lineNumber"] !== site.lineNumber || reply["actualLocation"]["columnNumber"] !== site.columnNumber) { throw error("PROJECT_SAVE_STRUCTURE_ARM_REPLY"); }
+                selected.bindStructureBreakpoint(source, command.role, reply["breakpointId"]);
+              }
+              original(); assertStructureOriginal();
+              assertHistory(); return reply;
+            }, nextEvent: () => selected.nextStructureEvent(),
+            assertCurrent: async (): Promise<void> => { original(); assertStructureOriginal(); await this.#verify(); original(); assertStructureOriginal(); },
+            assertOperationPending: (): void => { original(); assertStructureOriginal(); if (!(this.#viaSdkPhases.has("save"))) { throw error("PROJECT_SAVE_STRUCTURE_ORIGINAL_SAVE_REQUIRED"); } },
+            assertOriginalGenerationExited: (): Promise<void> => { assertStructureOriginal(); if (!this.#terminationObserved || this.#terminationObservation?.terminated !== true) { return Promise.reject(error("PROJECT_SAVE_STRUCTURE_ORIGINAL_EXIT_REQUIRED")); } return Promise.resolve(); },
+            fail: (): void => { selected.fail(); } });
+          projectSaveStructureOrigins.set(structureOrigin, Object.freeze({ owner, operation: plan, bindings: structureBindings, assertOriginal: assertStructureOriginal }));
+          this.#viaStructureOrigin = structureOrigin; await Reflect.apply(structureSetup, undefined, [structureOrigin]); original(); assertStructureOriginal(); selected.requireStructureArmed(source);
+        }
       }, releaseParentWait: async () => { original(); const reply = await this.#transfer(() => pipe.configureViaWorkerRunning());
         if (!exact(reply, [])) { throw error("PCB_VIA_WORKER_PARENT_RUNNING_REPLY"); } original(); },
       fail: (): void => { this.#viaFailed = true; } }));

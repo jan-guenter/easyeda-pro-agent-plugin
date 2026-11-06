@@ -3,6 +3,8 @@
  * its private native origin. No debugger continuation is attempted on failure. */
 import { CurrentSchematicDisplayEventRouter } from "./current-schematic-display-event-router.ts";
 import type { CurrentSchematicDisplayEventPoint, CurrentSchematicDisplayRoutedEvent } from "./current-schematic-display-event-router.ts";
+import { CURRENT_PROJECT_SAVE_STRUCTURE_SITES as STRUCTURE_SITES } from "./current-project-save-structure-protocol.ts";
+import type { CurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import { performance } from "node:perf_hooks";
 import { types } from "node:util";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -11,8 +13,7 @@ import type { CurrentSchematicDisplaySaveSite } from "./current-schematic-displa
 import { isCurrentPcb209BootstrapTargetUrl } from "./current-pcb-209-worker-bootstrap-source.ts";
 import { CurrentSchematicDisplayWorkerBootstrap } from "./current-schematic-display-worker-bootstrap.ts";
 import type { CurrentSchematicDisplayProjectSourceHeld, CurrentSchematicDisplayWorkerBootstrapEvent, CurrentSchematicDisplayWorkerBootstrapResult } from "./current-schematic-display-worker-bootstrap.ts";
-import type { CurrentSchematicDisplayWorkerBootstrapCommand } from "./current-schematic-display-worker-bootstrap-protocol.ts";
-import type { CurrentSchematicDisplayWorkerCommand } from "./current-schematic-display-worker-wire.ts";
+import type { CurrentSchematicDisplayWorkerBootstrapCommand, CurrentSchematicDisplayWorkerCommand } from "./current-schematic-display-worker-wire.ts";
 import type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 
 export interface CurrentSchematicDisplayWorkerChild { readonly sessionId: string; readonly targetId: string; readonly url: string; readonly title: string }
@@ -34,6 +35,7 @@ export class CurrentSchematicDisplayWorkerController {
   readonly #bindings: CurrentSchematicDisplayWorkerControllerBindings;
   readonly #events: CurrentSchematicDisplayWorkerBootstrapEvent[] = [];
   readonly #savePoints = new Map<CurrentSchematicDisplaySaveSite, string>();
+  readonly #structurePoints = new Map<Extract<CurrentProjectSaveStructureCommand, { phase: "project-save-structure-arm" }>["role"], string>();
   readonly #background = new Set<string>();
   #child: CurrentSchematicDisplayWorkerChild | null = null;
   #runner: CurrentSchematicDisplayWorkerBootstrap | null = null;
@@ -77,13 +79,19 @@ export class CurrentSchematicDisplayWorkerController {
     need(this.#source === source && this.#result === null && !this.#savePoints.has(role) && ![...this.#savePoints.values()].includes(breakpointId) && token(breakpointId));
     this.#savePoints.set(role, breakpointId);
   }
+  public bindStructureBreakpoint(source: CurrentSchematicDisplayProjectSourceHeld, role: Extract<CurrentProjectSaveStructureCommand, { phase: "project-save-structure-arm" }>["role"], breakpointId: string): void {
+    need(this.#source === source && this.#result === null && !this.#structurePoints.has(role) && ![...this.#structurePoints.values(), ...this.#savePoints.values()].includes(breakpointId) && token(breakpointId));
+    this.#structurePoints.set(role, breakpointId);
+  }
+  public requireStructureArmed(source: CurrentSchematicDisplayProjectSourceHeld): void { need(this.#source === source && this.#structurePoints.size === 6); }
   #resolution(event: CurrentSchematicDisplayWorkerBootstrapEvent): boolean {
     if (this.#result !== null) { return false; }
     if (event.method !== "Debugger.breakpointResolved") { return false; }
     need(this.#source !== null && record(event.params) && record(event.params["location"]));
     const location = event.params["location"], params = event.params;
-    const match = [...this.#savePoints].find(([_role, id]) => id === params["breakpointId"]); need(match !== undefined);
-    const site = CURRENT_SCHEMATIC_DISPLAY_SAVE_SITES[match[0]];
+    const match = [...this.#savePoints].find(([_role, id]) => id === params["breakpointId"]);
+    const structure = [...this.#structurePoints].find(([_role, id]) => id === params["breakpointId"]); need(match !== undefined || structure !== undefined);
+    const site = match === undefined ? STRUCTURE_SITES[structure?.[0] ?? "bootstrap"] : CURRENT_SCHEMATIC_DISPLAY_SAVE_SITES[match[0]];
     need(Reflect.ownKeys(params).length === 2 && Reflect.ownKeys(location).length === 3 && location["scriptId"] === this.#source.scriptId && location["lineNumber"] === site.lineNumber && location["columnNumber"] === site.columnNumber); return true;
   }
   public observeEvent(event: DiagnosticEvent): void {
@@ -148,6 +156,10 @@ export class CurrentSchematicDisplayWorkerController {
   /** Pure retained barrier. It never infers completion from elapsed time or
    * starts another native poll; the original abort/failure settles false. */
   public async whenOriginalSourceResumed(): Promise<void> { const resumed = await this.#sourceResumed.promise; need(resumed && !this.#failed && this.#result !== null && this.#router !== null); }
+  public async nextStructureEvent(): Promise<CurrentSchematicDisplayRoutedEvent> { await this.whenOriginalSourceResumed(); return this.#eventRouter().next("structure"); }
+  public reserveStructureResume(source: CurrentSchematicDisplayProjectSourceHeld, role: Extract<CurrentProjectSaveStructureCommand, { phase: "project-save-structure-resume" }>["role"]): void {
+    need(this.#source === source && this.#child !== null); this.#eventRouter().reserveResume("structure", this.#child.sessionId, role);
+  }
   public nextSaveEvent(): Promise<CurrentSchematicDisplayRoutedEvent> { return this.#eventRouter().next("save"); }
   public nextClockEvent(): Promise<CurrentSchematicDisplayRoutedEvent> { return this.#eventRouter().next("clock"); }
   public bindClockBreakpoint(source: CurrentSchematicDisplayProjectSourceHeld, point: CurrentSchematicDisplayEventPoint): void {
@@ -178,13 +190,14 @@ export class CurrentSchematicDisplayWorkerController {
     const router = new CurrentSchematicDisplayEventRouter(Object.freeze({ workerSessionId: child.sessionId, uiSessionId: this.#bindings.parentSessionId,
       nextEvent: (): Promise<DiagnosticEvent> => this.#nextObservedEvent(), assertCurrent: (): Promise<void> => this.#current(), fail: (): void => { this.fail(); } }));
     for (const [role, breakpointId] of this.#savePoints) { const site = CURRENT_SCHEMATIC_DISPLAY_SAVE_SITES[role]; router.register("save", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
-    this.#router = router; this.#sourceResumed.resolve(true);
+    for (const [role, breakpointId] of this.#structurePoints) { const site = STRUCTURE_SITES[role]; router.register("structure", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
+    this.#router = router;
   }
   /** The outer original renderer call drives this, including its still-pending
    * project-open Promise. Nested observer transfers never start a second pump. */
   public async pump(): Promise<void> {
     need(!this.#failed); if (this.#child === null || this.#result !== null || this.#pumping) { return; }
     this.#pumping = true;
-    try { this.#work ??= this.#start(); await this.#work; } catch (error) { this.fail(); throw error; } finally { this.#pumping = false; }
+    try { this.#work ??= this.#start(); await this.#work; } catch (error) { this.fail(); throw error; } finally { this.#pumping = false; if (!this.#failed && this.#result !== null && this.#router !== null) { this.#sourceResumed.resolve(true); } }
   }
 }

@@ -4,12 +4,14 @@ import { currentPcbViaSaveNativeCases, validateCurrentPcbViaSaveCommand } from "
 import type { CurrentPcbViaSaveCommand } from "./current-pcb-via-save-protocol.ts";
 import { currentPcbViaWorkerBootstrapNativeCases, validateCurrentPcbViaWorkerBootstrapCommand } from "./current-pcb-via-worker-bootstrap-protocol.ts";
 import type { CurrentPcbViaWorkerBootstrapCommand } from "./current-pcb-via-worker-bootstrap-protocol.ts";
+import { currentProjectSaveStructureNativeCases, validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
+import type { CurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
-export type CurrentPcbViaWorkerCommand = CurrentPcbViaSaveCommand | CurrentPcbViaWorkerBootstrapCommand;
+export type CurrentPcbViaWorkerCommand = CurrentPcbViaSaveCommand | CurrentPcbViaWorkerBootstrapCommand | CurrentProjectSaveStructureCommand;
 export function validateCurrentPcbViaWorkerCommand(input: unknown): CurrentPcbViaWorkerCommand {
   try { return validateCurrentPcbViaSaveCommand(input); }
-  catch { return validateCurrentPcbViaWorkerBootstrapCommand(input); }
+  catch { try { return validateCurrentPcbViaWorkerBootstrapCommand(input); } catch { return validateCurrentProjectSaveStructureCommand(input); } }
 }
 export function currentPcbViaWorkerWire(input: unknown, id: number): Readonly<{ command: CurrentPcbViaWorkerCommand; request: Readonly<Record<string, string | number>> }> {
   if (!Number.isSafeInteger(id) || id < 1 || id > 2_147_483_647) { throw new Error("PCB_VIA_WORKER_REQUEST_ID"); }
@@ -30,5 +32,7 @@ export function currentPcbViaWorkerWire(input: unknown, id: number): Readonly<{ 
   return freezeDeep({ command, request });
 }
 export function currentPcbViaWorkerNativeCases(): readonly CurrentPcbViaWorkerCommand[] {
-  return freezeDeep([...currentPcbViaWorkerBootstrapNativeCases(), ...currentPcbViaSaveNativeCases()]);
+  return freezeDeep([...currentPcbViaWorkerBootstrapNativeCases(), ...currentPcbViaSaveNativeCases(), ...currentProjectSaveStructureNativeCases()]);
 }
+
+export type { CurrentPcbViaWorkerBootstrapCommand } from "./current-pcb-via-worker-bootstrap-protocol.ts";

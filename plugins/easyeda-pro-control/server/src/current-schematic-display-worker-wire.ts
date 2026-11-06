@@ -4,12 +4,14 @@ import { currentSchematicDisplaySaveNativeCases, validateCurrentSchematicDisplay
 import type { CurrentSchematicDisplaySaveCommand } from "./current-schematic-display-save-protocol.ts";
 import { currentSchematicDisplayWorkerBootstrapNativeCases, validateCurrentSchematicDisplayWorkerBootstrapCommand } from "./current-schematic-display-worker-bootstrap-protocol.ts";
 import type { CurrentSchematicDisplayWorkerBootstrapCommand } from "./current-schematic-display-worker-bootstrap-protocol.ts";
+import { currentProjectSaveStructureNativeCases, validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
+import type { CurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
-export type CurrentSchematicDisplayWorkerCommand = CurrentSchematicDisplaySaveCommand | CurrentSchematicDisplayWorkerBootstrapCommand;
+export type CurrentSchematicDisplayWorkerCommand = CurrentSchematicDisplaySaveCommand | CurrentSchematicDisplayWorkerBootstrapCommand | CurrentProjectSaveStructureCommand;
 export function validateCurrentSchematicDisplayWorkerCommand(input: unknown): CurrentSchematicDisplayWorkerCommand {
   try { return validateCurrentSchematicDisplaySaveCommand(input); }
-  catch { return validateCurrentSchematicDisplayWorkerBootstrapCommand(input); }
+  catch { try { return validateCurrentSchematicDisplayWorkerBootstrapCommand(input); } catch { return validateCurrentProjectSaveStructureCommand(input); } }
 }
 export function currentSchematicDisplayWorkerWire(input: unknown, id: number): Readonly<{ command: CurrentSchematicDisplayWorkerCommand; request: Readonly<Record<string, string | number>> }> {
   if (!Number.isSafeInteger(id) || id < 1 || id > 2_147_483_647) { throw new Error("SCHEMATIC_DISPLAY_WORKER_REQUEST_ID"); }
@@ -30,5 +32,7 @@ export function currentSchematicDisplayWorkerWire(input: unknown, id: number): R
   return freezeDeep({ command, request });
 }
 export function currentSchematicDisplayWorkerNativeCases(): readonly CurrentSchematicDisplayWorkerCommand[] {
-  return freezeDeep([...currentSchematicDisplayWorkerBootstrapNativeCases(), ...currentSchematicDisplaySaveNativeCases()]);
+  return freezeDeep([...currentSchematicDisplayWorkerBootstrapNativeCases(), ...currentSchematicDisplaySaveNativeCases(), ...currentProjectSaveStructureNativeCases()]);
 }
+
+export type { CurrentSchematicDisplayWorkerBootstrapCommand } from "./current-schematic-display-worker-bootstrap-protocol.ts";

@@ -16,7 +16,7 @@ type GeneratedSchematicDisplayNativeArguments = Parameters<CurrentSchematicDispl
 
 function missingBootstrap(): never { throw new Error("Bootstrap not issued"); }
 async function fixture(context: TestContext, malformed = false, main = false, stages = false, workers = false, earlyWorker = false): Promise<Readonly<{ owner: CurrentSchematicDisplayWriteOwner; actions: string[]; pollEntered: Promise<true>; reproveBootstrap: () => string;
-  target: () => object; termination: () => object; requireTermination: (value: object) => void; argumentsValue: GeneratedSchematicDisplayNativeArguments; requireStage: (packet: object) => void; runWorker: () => Promise<unknown>; createObserver: (origin: object) => { arm: () => Promise<void>; observeBody: () => Promise<unknown> }; requireWorker: (origin: object) => object }>> {
+  target: () => object; termination: () => object; requireTermination: (value: object) => void; argumentsValue: GeneratedSchematicDisplayNativeArguments; requireStage: (packet: object) => void; runWorker: () => Promise<unknown>; createObserver: (origin: object) => { arm: () => Promise<void>; observeBody: () => Promise<unknown> }; requireWorker: (origin: object) => object; createStructureObserver: (origin: object) => { arm: () => Promise<void>; cleanup: () => Promise<void> }; requireStructure: (origin: object) => object }>> {
   const url = new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url); const sourceRequire = createRequire(url);
   const targetData = Object.freeze({ rawWindowsPath: String.raw`C:\Synthetic\Codex_schematic_1111111111111111.eprj2`, projectUuid: "c".repeat(64), branchUuid: "d".repeat(32), schematicUuid: "e".repeat(32), pageUuid: "f".repeat(32), expectedSourceSha256: "1".repeat(64) });
   const prepared = Object.freeze({ syntheticCheckpoint: true, qualification: Object.freeze({ target: targetData }) });
@@ -62,11 +62,13 @@ public async runSyntheticSchematicWorker(){this.#enter(true);try{const p=this.#s
       // Explicit construction/source-pause seam only. The production owner,
       // Pipe, fixed codecs, observer, callback and original registry run unchanged.
       const factory: unknown = runInThisContext(`(source=>class {
-constructor(bindings){this.bindings=bindings;this.source=null;this.child=null;this.busy=false;this.ready=false;this.failed=false;this.points=new Set();}
+constructor(bindings){this.bindings=bindings;this.source=null;this.child=null;this.busy=false;this.ready=false;this.failed=false;this.points=new Set();this.structurePoints=new Set();}
 status(){return{ready:this.ready,pumping:this.busy,failed:this.failed,projectSourceHeld:this.source!==null,originalWorkerSelected:this.child!==null};}
 observeEvent(e){if(e.method!=="Target.attachedToTarget")throw Error("unexpected peer event");this.child=Object.freeze({sessionId:e.params.sessionId,targetId:e.params.targetInfo.targetId,url:e.params.targetInfo.url,title:e.params.targetInfo.title});}
 observeUiEvent(){return false;}requireHeld(s){if(s!==this.source)throw Error("held");return this.child;}requireOriginal(s,c){if(s!==this.source||c!==this.child)throw Error("original");}
 bindSaveBreakpoint(s,r,id){this.requireHeld(s);if(this.points.has(r))throw Error("point");this.points.add(r);}
+bindStructureBreakpoint(s,r,id){this.requireHeld(s);if(this.structurePoints.has(r))throw Error("structure point");this.structurePoints.add(r);}
+requireStructureArmed(s){this.requireHeld(s);if(this.structurePoints.size!==6)throw Error("structure arm");}
 async pump(){if(this.ready||this.busy||this.child===null)return;this.busy=true;try{await this.bindings.bindWorker(this.child);this.source=Object.freeze({scriptId:"project-script",uniqueContextId:"worker-context",executionContextId:7,source});await this.bindings.projectSourceHeld(this.source,this);if(this.points.size!==6)throw Error("missing actual arms");await this.bindings.releaseParentWait();this.ready=true;}catch(e){this.fail();throw e;}finally{this.busy=false;}}
 fail(){this.failed=true;this.bindings.fail();}nextSaveEvent(){throw Error("Save attempt required");}reserveSaveResume(){throw Error("no Save");}
 })`); assert.ok(typeof factory === "function"); const Constructor: unknown = Reflect.apply(factory, undefined, [workerSource]); assert.ok(typeof Constructor === "function");
@@ -90,7 +92,7 @@ else if(q.action==='send'){if(${String(stages)})queue.push({id:q.requestId,resul
 else if(q.action==='schematic-display-worker-prepare')send(q,{prepared:true});
 else if(q.action==='schematic-display-worker-bind')send(q,{bound:true});
 else if(q.action==='schematic-display-worker-parent'){queue.push({id:q.requestId,sessionId:q.sessionId,result:{}});if(${String(earlyWorker)}&&q.phase==='arm')queue.push({method:'Target.attachedToTarget',sessionId:q.sessionId,params:{sessionId:'original-worker',waitingForDebugger:true,targetInfo:{targetId:'worker-target',type:'worker',attached:true,url:'https://client/editor?entry=mgr-project-worker.js&cll=&debugOpen=0',title:'project_'+'c'.repeat(64)+'_original-window'}}});if(q.phase==='running'){if(navigation===null)throw Error('navigation not retained');queue.push({id:navigation.id,sessionId:navigation.session,result:{result:{type:'object',value:{completed:true}}}});navigation=null;}send(q,{written:true});}
-else if(q.action==='schematic-display-worker'){const result=q.method==='Debugger.getScriptSource'?{scriptSource:fs.readFileSync(sourceFile,'utf8')}:{breakpointId:'save-'+q.phase.slice('schematic-save-arm-'.length),actualLocation:{scriptId:'project-script',lineNumber:110,columnNumber:({noData:131018,entry:131055,clock:131079,compress:131150,body:131307,result:131355})[q.phase.slice('schematic-save-arm-'.length)]}};queue.push({id:q.requestId,sessionId:'original-worker',result});send(q,{written:true});}
+else if(q.action==='schematic-display-worker'){const structure=q.phase.startsWith('project-save-structure-arm-'),role=q.phase.slice(structure?'project-save-structure-arm-'.length:'schematic-save-arm-'.length);const result=q.method==='Debugger.getScriptSource'?{scriptSource:fs.readFileSync(sourceFile,'utf8')}:{breakpointId:(structure?'structure-':'save-')+role,actualLocation:{scriptId:'project-script',lineNumber:structure&&['initialFinally','queuedFinally'].includes(role)?108:110,columnNumber:(structure?{bootstrap:162932,packet:90576,response:90621,callbackReturn:90770,initialFinally:145736,queuedFinally:145680}:{noData:131018,entry:131055,clock:131079,compress:131150,body:131307,result:131355})[role]}};queue.push({id:q.requestId,sessionId:'original-worker',result});send(q,{written:true});}
 else if(q.action==='schematic-display-native'&&${String(workers)}&&q.phase==='navigate'){navigation={id:q.requestId,session:q.sessionId};queue.push({method:'Target.attachedToTarget',sessionId:q.sessionId,params:{sessionId:'original-worker',waitingForDebugger:true,targetInfo:{targetId:'worker-target',type:'worker',attached:true,url:'https://client/editor?entry=mgr-project-worker.js&cll=&debugOpen=0',title:'project_'+'c'.repeat(64)+'_original-window'}}});send(q,{written:true});}
 else if(q.action==='schematic-display-native'&&${String(workers)}&&q.phase==='start'){queue.push({id:q.requestId,sessionId:q.sessionId,result:{result:{type:'object',value:{windowTabId:'original-window',documentTitle:'Start'}}}});send(q,{written:true});}
 else if(q.action==='schematic-display-native'){const packet=q.phase==='capture'?{type:'object',subtype:'array',className:'Array',description:'Array(2)',objectId:'original-holder'}:{type:'object',value:{schema:'easyeda-pro-control.generated-schematic-display-stage.v1',stage:q.phase,ok:true,dispatchAttempted:false,originalPromiseSettled:false,modifyAttempted:false,modifyAcknowledged:false,saveAttempted:false,saveAcknowledged:false,savePromiseSettled:false,source:'original synthetic source',windowTabId:'original-window',originalContextIntact:true,connectivityVerified:false,sourceVersionAliased:false,workerCompletionVerified:false,structureCompletionVerified:false,persistenceVerified:false,inverseAvailable:false}};queue.push({id:q.requestId,result:{result:packet},sessionId:q.sessionId});send(q,{written:true});}
@@ -122,6 +124,11 @@ else if(q.action==='release')send(q,{released:true});else throw Error('unexpecte
   const observerCompiled = await transform(await readFile(observerUrl, "utf8"), { loader: "ts", format: "cjs", target: "node24", logLevel: "silent" });
   const observerModule: { exports: Record<string, unknown> } = { exports: {} }; const evaluateObserver: unknown = runInThisContext(`(function(require,module,exports){${observerCompiled.code}\n})`); assert.ok(typeof evaluateObserver === "function");
   Reflect.apply(evaluateObserver, undefined, [(name: string): unknown => name === "./current-pcb-diagnostic-owner.ts" ? { requireOriginalCurrentSchematicDisplaySaveWorkerOrigin: originLookup } : observerRequire(name) as unknown, observerModule, observerModule.exports]);
+  const structureLookup = loaded.exports["requireOriginalCurrentProjectSaveStructureOrigin"]; assert.ok(typeof structureLookup === "function");
+  const structureUrl = new URL("../src/current-project-save-structure-observer.ts", import.meta.url); const structureRequire = createRequire(structureUrl);
+  const structureCompiled = await transform(await readFile(structureUrl, "utf8"), { loader: "ts", format: "cjs", target: "node24", logLevel: "silent" });
+  const structureModule: { exports: Record<string, unknown> } = { exports: {} }; const evaluateStructure: unknown = runInThisContext(`(function(require,module,exports){${structureCompiled.code}\n})`); assert.ok(typeof evaluateStructure === "function");
+  Reflect.apply(evaluateStructure, undefined, [(name: string): unknown => name === "./current-pcb-diagnostic-owner.ts" ? { requireOriginalCurrentProjectSaveStructureOrigin: structureLookup } : structureRequire(name) as unknown, structureModule, structureModule.exports]);
   return { owner, actions, pollEntered: pollEntered.promise, reproveBootstrap: (): string => reproveBootstrap(),
     target: (): object => { const result = callObject(target); assert.equal(result, prepared); return result; },
     termination: (): object => callObject(termination), requireTermination: (value: object): void => { Reflect.apply(requireTermination, undefined, [owner, value]); }, argumentsValue,
@@ -130,7 +137,11 @@ else if(q.action==='release')send(q,{released:true});else throw Error('unexpecte
     createObserver: (origin: object) => { const Observer = observerModule.exports["CurrentSchematicDisplaySaveObserver"]; assert.ok(typeof Observer === "function");
       // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Runtime checked production observer; only its fixed central accessor points to the production owner module loaded above.
       return Reflect.construct(Observer, [origin, owner, argumentsValue]) as { arm: () => Promise<void>; observeBody: () => Promise<unknown> }; },
-    requireWorker: (origin: object): object => { const value: unknown = Reflect.apply(originLookup, undefined, [origin, owner, argumentsValue]); assert.ok(value !== null && typeof value === "object"); return value; } };
+    requireWorker: (origin: object): object => { const value: unknown = Reflect.apply(originLookup, undefined, [origin, owner, argumentsValue]); assert.ok(value !== null && typeof value === "object"); return value; },
+    createStructureObserver: (origin: object) => { const Observer = structureModule.exports["CurrentProjectSaveStructureObserver"]; assert.ok(typeof Observer === "function");
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Production observer and real owner issuer, with the same explicit construction/source-pause seam above.
+      return Reflect.construct(Observer, [origin, owner, argumentsValue]) as { arm: () => Promise<void>; cleanup: () => Promise<void> }; },
+    requireStructure: (origin: object): object => { const value: unknown = Reflect.apply(structureLookup, undefined, [origin, owner, argumentsValue]); assert.ok(value !== null && typeof value === "object"); return value; } };
 }
 void test("Schematic original abort waits for pending native poll and settles the original busy renderer call without replay", async context => {
   const f = await fixture(context); const original = f.owner.getTargets(), refused = assert.rejects(original);
@@ -195,4 +206,16 @@ void test("selected schematic worker arriving before its original navigation is 
   assert.equal(f.actions.includes("schematic-display-worker-bind"), false); assert.equal(f.actions.includes("schematic-display-worker"), false);
   assert.equal(f.actions.filter(action => action === "schematic-display-worker-parent").length, 1);
   await f.owner.abortSchematicDisplayWrite(); assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
+});
+
+void test("the original SCH source pause arms the real common structure observer with its exact prepared checkpoint", async context => {
+  const f = await fixture(context, false, false, true, true); let original: object | null = null; let observer: ReturnType<typeof f.createStructureObserver> | null = null;
+  f.owner.armSchematicDisplaySaveWorker(f.argumentsValue, async origin => { await f.createObserver(origin).arm(); });
+  f.owner.armSchematicDisplaySaveStructureWorker(f.argumentsValue, async origin => { original = origin; const selected = f.createStructureObserver(origin); observer = selected; await selected.arm(); });
+  await f.runWorker(); assert.ok(original !== null); const issued = original; const bindings = f.requireStructure(issued); assert.equal(Object.isFrozen(bindings), true);
+  assert.equal(Reflect.get(bindings, "prepared"), f.target()); assert.throws(() => f.requireStructure(structuredClone(issued)), /ORIGINAL_ORIGIN/u);
+  assert.equal(f.actions.filter(action => action === "schematic-display-worker").length, 14); assert.ok(observer !== null);
+  await f.owner.abortSchematicDisplayWrite(); assert.equal(await f.owner.observeTermination(), true);
+  const cleanup = Reflect.get(observer, "cleanup"); assert.ok(typeof cleanup === "function"); const closed: unknown = Reflect.apply(cleanup, observer, []); assert.ok(closed instanceof Promise); await closed;
+  assert.equal(f.actions.filter(action => action === "schematic-display-worker").length, 14); await f.owner.releaseClosed();
 });

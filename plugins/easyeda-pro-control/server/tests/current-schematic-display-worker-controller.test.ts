@@ -1,6 +1,7 @@
 /** Production cursor + production seven-source runner, with only full imported
  * source bytes replaced at the explicit VM seam. No native origin is issued. */
 /* oxlint-disable import/max-dependencies -- Exercise the two actual state machines and their independent source/Save contracts. */
+import { CURRENT_PROJECT_SAVE_STRUCTURE_SITES as STRUCTURE } from "../src/current-project-save-structure-protocol.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
@@ -37,7 +38,7 @@ async function constructor(): Promise<typeof CurrentSchematicDisplayWorkerContro
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Runtime checked production class; only pinned full-source bytes have the stated seam.
   return result as typeof CurrentSchematicDisplayWorkerController;
 }
-async function fixture(failSetup = false, holdPoll = false): Promise<Readonly<{ controller: CurrentSchematicDisplayWorkerController; bindings: CurrentSchematicDisplayWorkerControllerBindings;
+async function fixture(failSetup = false, holdPoll = false, structure = false): Promise<Readonly<{ controller: CurrentSchematicDisplayWorkerController; bindings: CurrentSchematicDisplayWorkerControllerBindings;
   commands: CurrentSchematicDisplayWorkerCommand[]; incoming: DiagnosticEvent[]; state: { failed: boolean; held: number; released: number; resumed: boolean; bound: number }; releasePoll: () => void; pollStarted: Promise<true> }>> {
   const Constructor = await constructor(), projectUuid = "a".repeat(64), windowTabId = "original-window";
   const targetUrl = "https://client/editor?entry=mgr-project-worker.js&cll=&debugOpen=0", title = `project_${projectUuid}_${windowTabId}`;
@@ -71,6 +72,10 @@ async function fixture(failSetup = false, holdPoll = false): Promise<Readonly<{ 
         controller.bindSaveBreakpoint(source, role, `save-${role}`);
         event("Debugger.breakpointResolved", { breakpointId: `save-${role}`, location: { scriptId: source.scriptId, lineNumber: SITES[role].lineNumber, columnNumber: SITES[role].columnNumber } });
       }
+      if (structure) { for (const role of ["bootstrap", "packet", "response", "callbackReturn", "initialFinally", "queuedFinally"] as const) {
+        controller.bindStructureBreakpoint(source, role, `structure-${role}`); const site = STRUCTURE[role];
+        event("Debugger.breakpointResolved", { breakpointId: `structure-${role}`, location: { scriptId: source.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } });
+      } controller.requireStructureArmed(source); }
       return Promise.resolve();
     },
     request: command => {
@@ -83,6 +88,7 @@ async function fixture(failSetup = false, holdPoll = false): Promise<Readonly<{ 
       if (command.phase === "schematic-worker-resume") {
         event("Debugger.resumed", {});
         if (command.role === "project") { assert.equal(state.held, 1); assert.equal(state.released, 1); state.resumed = true; }
+        if (command.role === "project" && structure) { const site = STRUCTURE.bootstrap; event("Debugger.paused", { reason: "other", hitBreakpoints: ["structure-bootstrap"], callFrames: [{ location: { scriptId: "script-project", lineNumber: site.lineNumber, columnNumber: site.columnNumber } }] }); }
         const next = ROLES[ROLES.indexOf(command.role) + 1];
         if (next === "project") { event("Runtime.consoleAPICalled", { type: "log", args: [{ type: "string", value: LOG.message }], executionContextId: 7, timestamp: 1,
           stackTrace: { callFrames: [{ scriptId: "script-preload", functionName: LOG.functionName, url: PRELOAD, lineNumber: LOG.lineNumber, columnNumber: LOG.columnNumber }] } }); }
@@ -131,4 +137,10 @@ void test("failure retains an already pending original poll until its genuine se
   await f.pollStarted; f.controller.fail(); await Promise.resolve(); assert.equal(settled, false);
   await readinessRefused; f.releasePoll(); await refused; await observed; assert.equal(settled, true);
   assert.equal(f.state.resumed, false); assert.equal(f.state.released, 0);
+});
+
+void test("original construction collector starts before navigation settles and waits the exact final source-resume cursor release", async () => {
+  const f = await fixture(false, false, true); const constructed = f.controller.nextStructureEvent();
+  await f.controller.pump(); const event = await constructed;
+  assert.equal(event.method, "Debugger.paused"); assert.equal(f.controller.status().pumping, false); assert.equal(f.commands.length, 20);
 });
