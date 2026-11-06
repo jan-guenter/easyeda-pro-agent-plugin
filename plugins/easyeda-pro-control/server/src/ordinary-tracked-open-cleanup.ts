@@ -145,7 +145,8 @@ export class OrdinaryTrackedOpenCleanup {
   }
   async #event(slot: Slot, phase: string, data: unknown, closeIntent = false): Promise<void> {
     need(slot.pending === undefined);
-    const source = await this.#revalidate(slot);
+    // The publisher checks the journal and fresh global isolation before any write.
+    const source = this.#current(slot);
     const record = { schema: "easyeda-pro-control.original-tracked-open-cleanup-event.v1", operationId: slot.journal.operationId,
       createdAt: new Date().toISOString(), phase, originalPhase: source.phase, nonceSha256: sha256Text(source.nonce),
       originalAuthoritySha256: source.authority.authoritySha256, originalLaunch: slot.launch,
