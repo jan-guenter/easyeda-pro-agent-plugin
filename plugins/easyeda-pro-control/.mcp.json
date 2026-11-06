@@ -16,6 +16,7 @@
         "easyeda_control_calculate": { "approval_mode": "prompt" },
         "easyeda_control_system": { "approval_mode": "prompt" },
         "easyeda_control_library_files": { "approval_mode": "prompt" },
+        "easyeda_control_fixture_data": { "approval_mode": "prompt" },
         "easyeda_control_fixture_import": { "approval_mode": "prompt" },
         "easyeda_control_extensions": { "approval_mode": "prompt" },
         "easyeda_control_launch": { "approval_mode": "prompt" },
