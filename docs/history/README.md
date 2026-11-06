@@ -1,5 +1,8 @@
 # Project history
 
+- [2026-11-06 integrated reader native batch](2026-11-06-integrated-reader-native-batch.md). Combined generated helper, exact released/cold forward preservation, actual Windows compilation and distinct remaining live read/write proof.
+- [2026-11-06 original startup profile SQL controller](2026-11-06-original-startup-profile-sql-controller.md). Current-version original global configuration handles and ordered fixed SQL continuations before project loading; selected design writes stay held.
+
 - [2026-11-06 generated fixture Windows file clocks](2026-11-06-generated-fixture-windows-file-clocks.md). Actual zero DrvFS birth time stopped initial acceptance; fresh Windows clocks and complete old/new initial-model qualification avoid replay without accepting the failed target.
 - [2026-11-06 main startup configuration SQL](2026-11-06-main-startup-config-sql.md). Exact pinned startup scripts and parameter grammar, with no SQL continuation authority by themselves.
 
