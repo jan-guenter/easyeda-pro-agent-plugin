@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 saved-reader background worker candidates](2026-11-06-saved-background-worker-candidates.md). Existing startup worker evidence, exact file/generator/bootstrap pins and task-script imports; supplied-source checks grant no actor/cache/resume authority.
+
 - [2026-11-06 current schematic endpoint membership](2026-11-06-schematic-endpoint-membership.md). Independent exact integer-grid line/pin incidence comparison; raw reader contracts unchanged and no source, effective-net or writer authority issued.
 
 - [2026-11-06 footprint four-generation composition](2026-11-06-footprint-four-generation-composition.md). Concrete native/source/SQL/saved/inverse gaps and separate original forward-v2 paired handoff; no writer admission or connected execution claim.
