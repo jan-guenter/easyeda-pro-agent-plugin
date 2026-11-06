@@ -400,3 +400,42 @@ checks. Cache/Response fixed program bytes and callable indices are unchanged.
 These leaves still invoke no API, method or getter. Native Fetch snapshotting,
 complete data/artifact publication and the actual delete grant remain separate.
 Six focused cache/Request descriptor cases plus types/strict lint pass.
+
+### Full supported native Fetch metadata sampler
+
+The fixed saved-cache sampler now joins both independently qualified intrinsic
+tuples in the same new UI realm. It derives the two names from the checkpoint
+UUID, enumerates only those existing caches, and reads native Request/Response
+metadata through the retained original getters/methods. It records every
+supported Request getter (including native signal state), exact header pairs,
+Response URL/redirected/type/status/header/body-presence state and original key
+order. It consumes no response body and invokes no put/delete API. An absent
+namespace is not opened. Unknown Request/Response accessors and non-default
+Fetch profiles refuse before a complete backup or delete grant.
+
+Each await rechecks the same tuples/storage. A delayed original Cache API
+Promise cannot hide changed descriptors. The source-held new opener still has
+to exclude selected writers; keys/has/open and CDP cache IDs are not atomic
+lifetime reservations. Cache body bytes remain separately captured by the
+original CDP request ledger and must join these metadata packets before the
+complete artifact can be published.
+
+The finite metadata grammar carries only roles, intrinsic kind/slot, round and
+namespace ordinal. Original context, tuple/function/object/script handles and
+the UUID must be substituted from the same private owner. Its maximum is78
+normal commands plus one cleanup release: four captures, four reference-array
+reads, one catalogue,50native function property reads, two reproofs, one bind,
+four namespace observations and12fixed helper-source reads. Those12emissions
+belong to nine exact helper programs; no broad empty-URL script admission is
+permitted. The owner must correlate each scriptParsed/source reply to its
+actual helper request. UI native promises can settle before these source reads;
+they depend on no debugger continuation. Existing UI source inspection already
+enables Debugger, so this count adds no second enable.
+
+Six focused program/wire cases cover complete supported metadata, missing
+namespaces, unsupported profiles, descriptor drift across the original pending
+Promise, exact helper scripts and selector rejection. They use explicit inert
+fake-native VM seams and do not qualify a browser function or issue ownership.
+Full types and strict lint pass. Actual native mounting, complete durable backup,
+current pre-delete UI/writer exclusion, once-only deletion and cold loading
+remain required; cache deletion and reopened/persistence claims stay false.
