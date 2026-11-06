@@ -1,5 +1,9 @@
 # Project history
 
+- [2026-11-06 second disposable batch freeze](2026-11-06-second-disposable-batch-freeze.md). Combined closed fixture handoff and Arc reader development build, fixed import cycles, exact local checks and unchanged release graph; no connected acceptance or release claim.
+- [2026-11-06 Via intent and target continuation](2026-11-06-via-write-intent-and-target-continuation.md). Exclusive original dispatch intent and synchronous target closure without a post-SDK main-fence deadlock.
+- [2026-11-06 Via public scope acknowledgements](2026-11-06-via-public-scope-acknowledgements.md). Explicit disposable writer, once-only Save and original Job scope in the strict future schema.
+
 - [2026-11-06 second shared native integration](2026-11-06-second-shared-native-integration.md). Combined generated registration helper, exact historical projection, preserved released files, actual Windows5.1 compilation and fresh dependency audits before the next native case.
 
 - [2026-11-06 cold forward graph separation](2026-11-06-cold-forward-graph-separation.md). Released native files and loader remain exact; the new cold graph has separate files, pins, loader, build checks and Windows compilation coverage.

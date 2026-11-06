@@ -6,7 +6,7 @@ import { CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE } from "./current-pcb-worker-con
 import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
 import { CURRENT_PROJECT_STRUCTURE_WORKER_SITES as SITES } from "./current-project-structure-worker-profile.ts";
 import { CURRENT_PROJECT_STRUCTURE_WORKER_CALLS as CALLS } from "./current-project-structure-worker-programs.ts";
-import { currentProjectStructureWorkerWire } from "./current-project-structure-worker-wire.ts";
+import { currentProjectStructureWorkerFixedWire } from "./current-project-structure-worker-fixed-wire.ts";
 import { CURRENT_FOOTPRINT_COLD_PRODUCER_CALLS as COLD } from "./current-footprint-cold-producer-roster.ts";
 import { CURRENT_FOOTPRINT_HEAD_CACHE_CONDITION as CONDITION, CURRENT_FOOTPRINT_DETACHED_CACHE_SITES,
   CURRENT_FOOTPRINT_DETACHED_CACHE_CALLS as DETACHED, CURRENT_FOOTPRINT_DETACHED_CACHE_GROUP as DETACHED_GROUP,
@@ -51,7 +51,8 @@ export function currentProjectStructureWorkerNativeCases(): readonly Command[] {
 export function currentProjectStructureWorkerNativeSource(): string {
   const cases = currentProjectStructureWorkerNativeCases();
   const rows = cases.map(command => {
-    const wire = currentProjectStructureWorkerWire(command, 1);
+    const wire = currentProjectStructureWorkerFixedWire(command, 1);
+    if (wire === null) { throw new Error("PROJECT_STRUCTURE_WORKER_NATIVE_FIXED_CASE"); }
     const names = Object.keys(wire.request).filter(name => !["action", "requestId", "phase", "method"].includes(name));
     let template = JSON.stringify(command);
     for (const name of names) { const value = wire.request[name];
