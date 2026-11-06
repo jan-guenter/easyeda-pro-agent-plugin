@@ -95,6 +95,8 @@ void test("matching bootstrap and owner JSON cannot mint original native ownersh
   const forged: unknown = Object.create(owner.CurrentPcbViaWriteOwner.prototype);
   // Deliberate untyped runtime forgery; no constructor or native process runs.
   assert.throws(() => Reflect.apply(owner.assertOriginalCurrentPcbViaWriteOwner, undefined, [forged]));
+  assert.throws(() => Reflect.apply(owner.originalCurrentPcbViaWriteNoResource, undefined, [{}]), /ORIGINAL_PLAN/u);
+  assert.throws(() => Reflect.apply(owner.requireOriginalCurrentPcbViaWriteNoResourceProof, undefined, [{ profile: "private.current-pcb-via-write-no-resource.v1" }, {}]), /ORIGINAL_PLAN/u);
   const start: unknown = Reflect.get(owner.CurrentPcbViaWriteOwner.prototype, "startViaWriteGeneration"); assert.ok(typeof start === "function");
   await assert.rejects(async (): Promise<void> => { const pending: unknown = Reflect.apply(start, forged, [{}]); assert.ok(pending instanceof Promise); await pending; }, /ORIGINAL_PLAN/u);
   for (const lookup of [owner.requireOriginalCurrentPcbViaNativeObservation, owner.requireOriginalCurrentPcbViaSceneObservation, owner.requireOriginalCurrentPcbViaWriteStage]) {

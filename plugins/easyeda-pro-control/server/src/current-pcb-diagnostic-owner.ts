@@ -884,6 +884,9 @@ function requireSavedReadbackPreparation(allocation: PcbViaSavedReadbackAllocati
 }
 interface PcbViaWriteAllocation { initialBranchPlan: CurrentGeneratedInitialBranchDataPlan | null; initialCachePlan: CurrentGeneratedInitialFlowCachePlan | null; readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: GeneratedFixtureOpenCheckpoint; state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentPcbViaWriteOwner | null; child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown }
 const pcbViaWriteAllocations = new WeakMap<GeneratedFixtureOpenCheckpoint, PcbViaWriteAllocation>();
+export interface CurrentPcbViaWriteNoResourceProof { readonly profile: "private.current-pcb-via-write-no-resource.v1" }
+const viaNoResourceProofs = new WeakMap<CurrentPcbViaWriteNoResourceProof, Readonly<{ allocation: PcbViaWriteAllocation; plan: CurrentPcbViaWritePlan }>>();
+const viaNoResourceAllocations = new WeakMap<PcbViaWriteAllocation, CurrentPcbViaWriteNoResourceProof>();
 const pcbViaWriteFactories = new WeakMap<object, Readonly<{ allocation: PcbViaWriteAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
 export type CurrentPcbViaSaveWorkerSetup = (origin: CurrentPcbViaSaveWorkerOrigin) => Promise<void>;
 export type CurrentPcbViaClockSetup = (origin: CurrentPcbViaClockOrigin) => Promise<void>;
@@ -9343,6 +9346,24 @@ export function currentPcbViaWriteAllocationOutcome(prepared: GeneratedFixtureOp
   if (original === undefined) { return Object.freeze({ state: "not-attempted", owner: null }); }
   if (original.owner !== null) { assertOriginalCurrentPcbViaWriteOwner(original.owner); }
   return Object.freeze({ state: original.state, owner: original.owner });
+}
+/** The private factory crossed no native-allocation boundary. This is never
+ * inferred from an empty process list, an error message or a missing owner. */
+export function originalCurrentPcbViaWriteNoResource(plan: CurrentPcbViaWritePlan): CurrentPcbViaWriteNoResourceProof {
+  const prepared = requireOriginalCurrentPcbViaWritePlan(plan).prepared; const allocation = pcbViaWriteAllocations.get(prepared);
+  if (allocation === undefined || allocation.prepared !== prepared || allocation.state !== "no-resource" || allocation.owner !== null || allocation.child !== null || allocation.eofAttempted || allocation.cleanupFailure !== null) {
+    throw error("PCB_VIA_ORIGINAL_NO_RESOURCE_REQUIRED");
+  }
+  const prior = viaNoResourceAllocations.get(allocation);
+  if (prior !== undefined) { requireOriginalCurrentPcbViaWriteNoResourceProof(prior, plan); return prior; }
+  const proof: CurrentPcbViaWriteNoResourceProof = Object.freeze({ profile: "private.current-pcb-via-write-no-resource.v1" });
+  viaNoResourceProofs.set(proof, Object.freeze({ allocation, plan })); viaNoResourceAllocations.set(allocation, proof); return proof;
+}
+export function requireOriginalCurrentPcbViaWriteNoResourceProof(proof: CurrentPcbViaWriteNoResourceProof, plan: CurrentPcbViaWritePlan): void {
+  const original = viaNoResourceProofs.get(proof), prepared = requireOriginalCurrentPcbViaWritePlan(plan).prepared;
+  if (original === undefined || original.plan !== plan || original.allocation.prepared !== prepared || pcbViaWriteAllocations.get(prepared) !== original.allocation ||
+      viaNoResourceAllocations.get(original.allocation) !== proof || original.allocation.state !== "no-resource" || original.allocation.child !== null || original.allocation.owner !== null ||
+      original.allocation.eofAttempted || original.allocation.cleanupFailure !== null) { throw error("PCB_VIA_ORIGINAL_NO_RESOURCE_PROOF"); }
 }
 
 export function assertOriginalCurrentSchematicDisplayWriteOwner(owner: CurrentSchematicDisplayWriteOwner): void {

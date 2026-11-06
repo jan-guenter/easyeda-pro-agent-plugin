@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 Via unallocated-refusal journal](2026-11-06-via-unallocated-refusal-journal.md). Separate v2 terminal requires original factory proof of no native allocation, preserves v1 parsing and claims no process exit or owner transfer.
+
 - [2026-11-06 packed schematic programs](2026-11-06-packed-schematic-programs.md). Exact fixed program restoration keeps the combined helper within its unchanged bound; complete Linux C# compilation and pure message parity, without a native owner or application.
 
 - [2026-11-06 original structure transport observer](2026-11-06-original-structure-transport-observer.md). Fixed XHR send/return custody, original body and main-publication grants, failure retention, and checkpoint-bound Via generation launch; connected writer completion remains pending.

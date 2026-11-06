@@ -11,28 +11,34 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { requireOriginalCurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
 import type { CurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
 import { currentPcbViaWriteStageResultSchema } from "./current-pcb-via-write-contract.ts";
+import type { CurrentPcbViaWriteNoResourceProof } from "./current-pcb-via-write-owner.ts";
 
 export const CURRENT_PCB_VIA_WRITE_JOURNAL_STAGES = ["baseline", "allocation", "launch", "main", "opening", "sdk", "preflight",
   "native-before", "scene-before", "create", "native-after", "scene-after", "effect", "save", "close", "exit", "closed-sql",
   "reopen", "reopened-native", "reopened-scene", "reopen-close", "reopen-exit", "reopened-sql", "complete"] as const;
 export type CurrentPcbViaWriteJournalStage = typeof CURRENT_PCB_VIA_WRITE_JOURNAL_STAGES[number];
-type Kind = "operation-intent" | "failure" | "no-allocation" | "abort-intent" | "abort-result" | "termination-intent" |
+type Kind = "operation-intent" | "failure" | "no-allocation" | "allocation-refused" | "abort-intent" | "abort-result" | "termination-intent" |
   "termination-result" | "release-intent" | "release-result" | `${CurrentPcbViaWriteJournalStage}-${"intent" | "result"}`;
-const maximumRecordBytes = 65_536, maximumRecords = 64, profile = "private.pcb209-via-write-journal.v1";
-const kinds = new Set<string>(["operation-intent", "failure", "no-allocation", "abort-intent", "abort-result", "termination-intent",
+const legacyProfile = "private.pcb209-via-write-journal.v1", maximumRecordBytes = 65_536, maximumRecords = 64, profile = "private.pcb209-via-write-journal.v2";
+const kinds = new Set<string>(["operation-intent", "failure", "no-allocation", "allocation-refused", "abort-intent", "abort-result", "termination-intent",
   "termination-result", "release-intent", "release-result", ...CURRENT_PCB_VIA_WRITE_JOURNAL_STAGES.flatMap(stage => [`${stage}-intent`, `${stage}-result`])]);
 const hash = z.string().regex(/^[a-f\d]{64}$/u);
-const entrySchema = z.strictObject({ schema: z.literal("easyeda-pro-control.pcb209-via-write-record.v1"),
+const entrySchema = z.strictObject({ schema: z.enum(["easyeda-pro-control.pcb209-via-write-record.v1", "easyeda-pro-control.pcb209-via-write-record.v2"]),
   operationId: z.string().max(96).regex(/^pcb209-via-write-[a-z\d][a-z\d-]*$(?![\s\S])/u),
   sequence: z.number().int().nonnegative().max(maximumRecords - 1), previousSha256: hash.nullable(),
   kind: z.custom<Kind>((value): value is Kind => typeof value === "string" && kinds.has(value)),
   evidence: z.record(z.string(), z.unknown()), inverseAvailable: z.literal(false),
-}).refine(value => Buffer.byteLength(`${JSON.stringify(value)}\n`) <= maximumRecordBytes);
+}).refine(value => Buffer.byteLength(`${JSON.stringify(value)}\n`) <= maximumRecordBytes &&
+  (value.kind !== "allocation-refused" || value.schema === "easyeda-pro-control.pcb209-via-write-record.v2"));
 type Entry = z.infer<typeof entrySchema>;
 const artifactSchema = z.strictObject({ path: z.string().max(4096), sha256: hash, bytes: z.number().int().positive().max(maximumRecordBytes) });
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PCB_VIA_WRITE_JOURNAL_${code}`); } }
-function terminal(kind: Kind | undefined): boolean { return kind === "complete-result" || kind === "no-allocation"; }
+function terminal(kind: Kind | undefined): boolean { return kind === "complete-result" || kind === "no-allocation" || kind === "allocation-refused"; }
 function resultEvidence(entry: Entry): void {
+  if (entry.kind === "allocation-refused") {
+    z.strictObject({ allocationIntentPublished: z.literal(true), nativeAllocationNeverEntered: z.literal(true), originalFactoryNoResourceVerified: z.literal(true),
+      originalProcessExitClaimed: z.literal(false), nativeOwnershipTransferred: z.literal(false) }).parse(entry.evidence);
+  }
   if (entry.kind === "create-result" || entry.kind === "save-result") {
     const result = currentPcbViaWriteStageResultSchema.parse(entry.evidence);
     need(result.ok && result.stage === entry.kind.slice(0, -7), "SDK_ACKNOWLEDGEMENT");
@@ -58,11 +64,13 @@ export function assertCurrentPcbViaWriteJournalChain(input: readonly Entry[]): v
     const entry = entrySchema.parse(raw);
     resultEvidence(entry);
     need(entry.sequence === index && entry.previousSha256 === (previous === null ? null : sha256Json(previous)) &&
-      (previous === null || entry.operationId === previous.operationId) && !seen.has(entry.kind) && !terminal(previous?.kind), "CHAIN");
+      (previous === null || entry.operationId === previous.operationId && entry.schema === previous.schema) && !seen.has(entry.kind) && !terminal(previous?.kind), "CHAIN");
     if (index === 0) { need(entry.kind === "operation-intent", "FIRST"); }
     else if (entry.kind === "failure") { need(!failed, "DUPLICATE_FAILURE"); failed = true; }
     else if (entry.kind === "no-allocation") {
       need(failed && !seen.has("allocation-intent") && entry.evidence["allocationNeverEntered"] === true, "NO_ALLOCATION");
+    } else if (entry.kind === "allocation-refused") {
+      need(failed && previous?.kind === "failure" && pending === "allocation" && seen.has("allocation-intent") && !seen.has("allocation-result") && !seen.has("launch-intent"), "ORIGINAL_FACTORY_REFUSAL");
     } else if (entry.kind.startsWith("abort-") || entry.kind.startsWith("termination-") || entry.kind.startsWith("release-")) {
       need(failed, "CLEANUP_BEFORE_FAILURE");
       if (entry.kind.endsWith("-result")) { need(seen.has(entry.kind.replace(/-result$/u, "-intent")), "CLEANUP_INTENT"); }
@@ -78,12 +86,13 @@ export function assertCurrentPcbViaWriteJournalChain(input: readonly Entry[]): v
   }
 }
 function entries(input: Readonly<Record<string, unknown>>): readonly Entry[] {
-  const operation = z.looseObject({ operationId: z.string(), plan: z.looseObject({ profile: z.literal(profile) }), planHash: hash,
+  const operation = z.looseObject({ operationId: z.string(), plan: z.looseObject({ profile: z.enum([legacyProfile, profile]) }), planHash: hash,
     records: z.array(entrySchema).max(maximumRecords), state: z.enum(["completed", "prepared"]),
     artifacts: z.array(artifactSchema).max(maximumRecords) }).parse(input);
   const records = operation.records; assertCurrentPcbViaWriteJournalChain(records);
   need(operation.state === (terminal(records.at(-1)?.kind) ? "completed" : "prepared") &&
-    records.every(entry => entry.operationId === operation.operationId), "MANIFEST_STATE");
+    records.every(entry => entry.operationId === operation.operationId && entry.schema === (operation.plan.profile === legacyProfile ?
+      "easyeda-pro-control.pcb209-via-write-record.v1" : "easyeda-pro-control.pcb209-via-write-record.v2")), "MANIFEST_STATE");
   const artifacts = operation.artifacts; need(artifacts !== undefined && artifacts.length === records.length, "ARTIFACT_ROSTER");
   for (const [index, record] of records.entries()) { need(canonicalJson(artifacts[index]) === canonicalJson(artifact(record)), "ARTIFACT_BINDING"); }
   return records;
@@ -156,6 +165,7 @@ export class CurrentPcbViaWriteJournal {
   #reserveAttempted = false;
   #entered = false;
   #reserved = false;
+  #allocationRefusalAttempted = false;
   #busy = false;
   #idle: Promise<null> = Promise.resolve(null);
   #pending: Readonly<{ entry: Entry; descriptor: ArtifactDescriptor; next: OperationJournal }> | null = null;
@@ -188,14 +198,28 @@ export class CurrentPcbViaWriteJournal {
   #queue(kind: Kind, evidence: Readonly<Record<string, unknown>>): void {
     need(this.#pending === null, "PUBLICATION_PENDING"); const records = entries(this.#operation);
     const previousSha256 = records.length === 0 ? null : sha256Json(records.at(-1));
-    const entry = freezeDeep(entrySchema.parse({ schema: "easyeda-pro-control.pcb209-via-write-record.v1", operationId: this.#plan.operationId,
+    const entry = freezeDeep(entrySchema.parse({ schema: "easyeda-pro-control.pcb209-via-write-record.v2", operationId: this.#plan.operationId,
       sequence: records.length, previousSha256, kind, evidence, inverseAvailable: false }));
     const descriptor = artifact(entry), next = { ...this.#operation, records: [...records, entry], artifacts: [...this.#operation.artifacts ?? [], descriptor],
       state: terminal(kind) ? "completed" : "prepared" };
     entries(next); this.#pending = Object.freeze({ entry, descriptor, next });
   }
   public async append(kind: Kind, evidence: Readonly<Record<string, unknown>>): Promise<void> {
+    need(kind !== "allocation-refused", "ORIGINAL_NO_RESOURCE_PROOF_REQUIRED");
     await this.#exclusive(async (): Promise<void> => { await this.#assertCurrent(); this.#queue(kind, evidence); await this.#settle(); });
+  }
+  /** This one new terminal differs from the immutable v1 pre-intent refusal.
+   * Only the original factory's never-allocated state can issue its evidence.
+   * Lost publication joins the same pending record through settlePublication. */
+  public async recordAllocationRefusal(proof: CurrentPcbViaWriteNoResourceProof): Promise<void> {
+    need(!this.#allocationRefusalAttempted && !this.#busy && this.#pending === null, "ALLOCATION_REFUSAL_CONSUMED"); this.#allocationRefusalAttempted = true;
+    await this.#exclusive(async (): Promise<void> => {
+      const native = await import("./current-pcb-via-write-owner.ts"); const requireProof = native.requireOriginalCurrentPcbViaWriteNoResourceProof;
+      requireProof(proof, this.#plan);
+      await this.#assertCurrent(); need(native.requireOriginalCurrentPcbViaWriteNoResourceProof === requireProof, "ORIGINAL_NO_RESOURCE_ISSUER"); requireProof(proof, this.#plan);
+      this.#queue("allocation-refused", { allocationIntentPublished: true, nativeAllocationNeverEntered: true, originalFactoryNoResourceVerified: true,
+        originalProcessExitClaimed: false, nativeOwnershipTransferred: false }); await this.#settle(); requireProof(proof, this.#plan);
+    });
   }
   public async appendIntent(stage: "create" | "save", evidence: Readonly<Record<string, unknown>>, owner: object): Promise<CurrentPcbViaWriteDispatch> {
     need(this.#owner === owner && !this.#busy && this.#pending === null && !this.#dispatchTokens.has(stage), "WRITER_BINDING");
@@ -250,7 +274,7 @@ export class CurrentPcbViaWriteJournal {
 }
 const scan = createOperationScanner(operation => {
   const data = operation["plan"], id = operation["operationId"];
-  if (!(typeof id === "string" && id.startsWith("pcb209-via-write-")) && !(isRecord(data) && data["profile"] === profile)) {
+  if (!(typeof id === "string" && id.startsWith("pcb209-via-write-")) && !(isRecord(data) && (data["profile"] === profile || data["profile"] === legacyProfile))) {
     // oxlint-disable-next-line unicorn/no-useless-undefined -- The operation scanner's explicit omission result must stay distinct from a parsed reserved journal.
     return undefined;
   }

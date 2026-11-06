@@ -1,5 +1,6 @@
 /** Real private managed publication and dispatch state. Original generated
  * plan issuance is an explicit test seam; no native owner or CAD call exists. */
+/* oxlint-disable import/max-dependencies -- The original publisher, both journal versions, factory refusal token and shared public contract stay in one focused lifecycle test. */
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
@@ -7,27 +8,40 @@ import { createRequire } from "node:module";
 import { test } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
+import { sha256Json } from "../src/core.ts";
+import { assertCurrentPcbViaWriteJournalChain } from "../src/current-pcb-via-write-journal.ts";
+import type { CurrentPcbViaWriteNoResourceProof } from "../src/current-pcb-via-write-owner.ts";
 import { assertOperationIdUnused, createOperation, createOperationScanner, ensureOperationStorage, loadOperation, operationPath,
   updateOperation, verifyExactManagedArtifact, writePhaseArtifact } from "../src/artifacts.ts";
 import type { CurrentPcbViaCreateIntentEnrollment, CurrentPcbViaSaveIntentEnrollment, CurrentPcbViaWriteDispatch, CurrentPcbViaWriteJournal } from "../src/current-pcb-via-write-journal.ts";
 import { CURRENT_PCB_VIA_WRITE_ABORT_ACKNOWLEDGEMENTS, CURRENT_PCB_VIA_WRITE_EXECUTE_ACKNOWLEDGEMENTS,
   currentPcbViaWriteActionSchema, currentPcbViaWriteResultSchema } from "../src/current-pcb-via-write-contract.ts";
 
-async function fixture(loseCreateIntent = false): Promise<Readonly<{
+async function fixture(loseCreateIntent = false, allocationRefusal = false): Promise<Readonly<{
+  noResource: CurrentPcbViaWriteNoResourceProof;
   enrollSave: (token: CurrentPcbViaWriteDispatch, owner: object) => CurrentPcbViaSaveIntentEnrollment;
   enroll: (token: CurrentPcbViaWriteDispatch, owner: object) => CurrentPcbViaCreateIntentEnrollment; journal: CurrentPcbViaWriteJournal; owner: object; operationId: string; publications: () => number;
   consume: (token: CurrentPcbViaWriteDispatch, stage: "create" | "save", owner: object) => Readonly<{ assertPublished: () => Promise<void> }>;
 }>> {
   const operationId = `pcb209-via-write-journal-${randomUUID()}`, owner = Object.freeze({});
   const plan = Object.freeze({ operationId, schema: "explicit-synthetic-plan-seam", inverseAvailable: false });
+  const noResource: CurrentPcbViaWriteNoResourceProof = Object.freeze({ profile: "private.current-pcb-via-write-no-resource.v1" });
   const url = new URL("../src/current-pcb-via-write-journal.ts", import.meta.url);
   const sourceRequire = createRequire(url);
-  const output = await transform(await readFile(url, "utf8"), { loader: "ts", format: "cjs", target: "node24" });
+  const originalSource = await readFile(url, "utf8");
+  // The literal lazy import resolves through this VM's explicit registry seam.
+  // Production retains its real ESM module and original private allocation map.
+  const source = originalSource.replace('await import("./current-pcb-via-write-owner.ts")', 'await Promise.resolve(require("./current-pcb-via-write-owner.ts"))');
+  assert.notEqual(source, originalSource);
+  const output = await transform(source, { loader: "ts", format: "cjs", target: "node24" });
   let lost = false, publications = 0;
   const loaded: { exports: Record<string, unknown> } = { exports: {} };
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${output.code}\n})`); assert.ok(typeof evaluate === "function");
   Reflect.apply(evaluate, undefined, [(name: string): unknown => {
     if (name === "./current-pcb-via-write-plan.ts") { return { requireOriginalCurrentPcbViaWritePlan: (candidate: unknown): void => { assert.equal(candidate, plan); } }; }
+    if (name === "./current-pcb-via-write-owner.ts") { return { requireOriginalCurrentPcbViaWriteNoResourceProof: (candidate: unknown, originalPlan: unknown): void => {
+      assert.equal(allocationRefusal, true); assert.equal(candidate, noResource); assert.equal(originalPlan, plan);
+    } }; }
     if (name === "./artifacts.ts") { return { assertOperationIdUnused, createOperation, createOperationScanner, ensureOperationStorage, loadOperation, operationPath,
       updateOperation: async (operation: Parameters<typeof updateOperation>[0]): Promise<void> => {
       const rows = operation["records"]; assert.ok(Array.isArray(rows)); const last: unknown = rows.at(-1);
@@ -43,10 +57,12 @@ async function fixture(loseCreateIntent = false): Promise<Readonly<{
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The real class is VM-loaded with the one explicit original-plan seam and actual private artifact publisher.
   const journal = Reflect.construct(Constructor, [plan]) as CurrentPcbViaWriteJournal;
   await journal.reserve(); journal.bindWriter(owner);
-  for (const stage of ["baseline", "allocation", "launch", "main", "opening", "sdk", "preflight", "native-before", "scene-before"] as const) {
+  const stages = allocationRefusal ? ["baseline"] as const : ["baseline", "allocation", "launch", "main", "opening", "sdk", "preflight", "native-before", "scene-before"] as const;
+  for (const stage of stages) {
     await journal.append(`${stage}-intent`, {}); await journal.append(`${stage}-result`, {});
   }
-  return { journal, owner, operationId, enrollSave: (token, actor): CurrentPcbViaSaveIntentEnrollment => {
+  if (allocationRefusal) { await journal.append("allocation-intent", {}); await journal.append("failure", { stage: "allocation" }); }
+  return { journal, noResource, owner, operationId, enrollSave: (token, actor): CurrentPcbViaSaveIntentEnrollment => {
       const result: unknown = Reflect.apply(enrollSave, undefined, [token, actor, plan]); assert.ok(result !== null && typeof result === "object");
       for (const key of ["assertCurrent", "assertBeforeAttempt", "assertOriginalAttempted", "assertPublished"]) { assert.equal(typeof Reflect.get(result,key), "function"); }
       // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The real private Save registry is loaded with only the explicit original-plan seam.
@@ -64,6 +80,31 @@ async function fixture(loseCreateIntent = false): Promise<Readonly<{
       return { assertPublished: async (): Promise<void> => { await Reflect.apply(assertPublished, result, []); } };
     } };
 }
+
+void test("v2 closes an original never-allocated factory refusal without claiming process exit", async () => {
+  const f = await fixture(false, true);
+  await assert.rejects(f.journal.append("allocation-refused", {}), /ORIGINAL_NO_RESOURCE_PROOF_REQUIRED/u);
+  await f.journal.recordAllocationRefusal(f.noResource); await f.journal.assertCurrent();
+  const operation = await loadOperation(f.operationId); assert.equal(operation["state"], "completed");
+  const terminal = f.journal.retained().records.at(-1); assert.ok(terminal !== undefined);
+  assert.equal(terminal.schema, "easyeda-pro-control.pcb209-via-write-record.v2"); assert.equal(terminal.kind, "allocation-refused");
+  assert.equal(terminal.evidence["nativeAllocationNeverEntered"], true); assert.equal(terminal.evidence["originalProcessExitClaimed"], false);
+  await assert.rejects(f.journal.recordAllocationRefusal(f.noResource), /CONSUMED/u);
+});
+void test("copied never-allocated metadata cannot terminalize a journal or refund its original attempt", async () => {
+  const f = await fixture(false, true); await assert.rejects(f.journal.recordAllocationRefusal({ ...f.noResource }));
+  const operation = await loadOperation(f.operationId); assert.equal(operation["state"], "prepared"); assert.equal(f.journal.retained().records.at(-1)?.kind, "failure");
+  await assert.rejects(f.journal.recordAllocationRefusal(f.noResource), /CONSUMED/u);
+});
+void test("immutable v1 refusal chains still parse and cannot acquire the v2 factory terminal", () => {
+  const first = { schema: "easyeda-pro-control.pcb209-via-write-record.v1", operationId: "pcb209-via-write-legacy-chain", sequence: 0,
+    previousSha256: null, kind: "operation-intent", evidence: {}, inverseAvailable: false } as const;
+  const failure = { ...first, sequence: 1, previousSha256: sha256Json(first), kind: "failure" } as const;
+  const terminal = { ...first, sequence: 2, previousSha256: sha256Json(failure), kind: "no-allocation", evidence: { allocationNeverEntered: true } } as const;
+  assertCurrentPcbViaWriteJournalChain([first, failure, terminal]);
+  assert.throws(() => { assertCurrentPcbViaWriteJournalChain([first, failure, { ...terminal, kind: "allocation-refused" }]); });
+  assert.throws(() => { assertCurrentPcbViaWriteJournalChain([first, { ...failure, schema: "easyeda-pro-control.pcb209-via-write-record.v2" }]); });
+});
 
 void test("a lost intent publication keeps its original marker and settlement cannot repeat a native attempt", async () => {
   const f = await fixture(true);
