@@ -254,3 +254,57 @@ generation saved/inverse/recovery proof. The positive public system-owned CBB
 witness is still unavailable in the inspected sources. Final coverage/skills,
 exact-payload CI, full CodeRabbit review including legacy findings, protected
 merge, publication and official installation remain the release tasks.
+
+## 2026-11-06 reader and saved-lifecycle continuation
+
+Frozen4500 completed the positive generated Arc/Line/Via case with all six
+queries, complete closed raw/all35-table SQL/history invariance and original
+root/Job/helper/facade cleanup. The separate generated-Pad case accepted four
+positive points and one negative point, with two matching samples and unchanged
+selection. Its complete closed invariance also passed. The published Pad capture
+then exposed an older report-schema mismatch, which blocked original helper
+release before dispatch. The application root and empty Job were observed
+terminated; the facade and original helper transport remain retained. The
+[Pad record](2026-11-06-generated-pad-spatial-live-case.md) preserves that missing
+acknowledgment. No point query, close, capture or release was replayed.
+
+The combined reader build `b22f47c9431f72debd6f5f432c5e33e51a6a782e`, version
+`0.3.0+codex.20261106174413`, is frozen separately from the running payload.
+Its3685 committed files,70755188bytes and modes match. Fresh dependency checks,
+all local non-suite phases, bundle reproducibility, actual full Windows C#
+compilation and released native-role preservation passed. It adds the separate
+Component closed capture, corrected Pad report validation before publication,
+and an exact historical metadata relinquishment for this one Pad failure.
+None of those source changes replaces the original loaded owner. Selection of
+the new build requires original facade/helper exit and the separate fresh
+absence/metadata proof; that proof explicitly preserves the missing helper ACK.
+The next Component import/reader/closed-capture case is prepared but undispatched.
+
+Further canonical source now holds service/shared workers before saved-cache
+preparation, joins the original durable backup and bounded cache invalidation,
+and checks a fresh pre-loading cache absence/current-window token. Initial
+generated startup cache jobs retain their actual Promise objects and fulfillment
+before completion. The footprint v2 route has original main/paired scheduler,
+clock preparation and observer issuance. These are implementation increments,
+not a successful writer or saved/reopened lifecycle. The finite remaining work
+includes original cold worker/fetch/parse/readiness and final closed proof,
+same-head startup/frontier and display/wiring completion, and full footprint
+forward/inverse generation composition. Focused merged checks and both TypeScript
+projects passed; no full local suite was repeated.
+
+The [official CLI investigation](2026-11-06-official-cli-applicability.md) now
+includes static inspection of a published4.1.97 package. It found real CLI/MCP
+code, but no established profile isolation from its hidden user-data flag, and
+window destruction rather than normal editor closure in its session cleanup.
+No candidate application was launched. Separate offline discovery now contains
+all862 candidate signatures and20 new method paths, bringing the exhaustive
+inventory to855 paths. Candidate-only omissions name the unadmitted runtime;
+all three earlier snapshots and external runtime pins remain unchanged.
+
+Positive public system-owned CBB evidence remains unavailable in the inspected
+sources. Its existing concrete omissions remain; no repeated403/empty probes or
+invented witness supply completion. Final source/skill reconciliation, combined
+native helper/pins/bundles, required final checks, exact final CI, CodeRabbit full
+review including legacy findings, protected merge, publication and official
+installation remain open. No PR or marketplace update has been published by
+this continuation. The production project remains unopened and unchanged.
