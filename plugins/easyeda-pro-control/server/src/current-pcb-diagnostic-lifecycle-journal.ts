@@ -148,6 +148,7 @@ const ordinaryReadIntentSchema = diagnosticIntentSchema.omit({ confirmValidation
 });
 const spatialIntentSchema = diagnosticIntentSchema.extend({
   schema: z.literal("easyeda-pro-control.pcb209-spatial-launch-intent.v1"), operationId: currentPcbSpatialIdSchema,
+  generatedFixtureBirth: ordinaryReadIntentSchema.shape.generatedFixtureBirth,
 });
 const visualIntentSchema = diagnosticIntentSchema.extend({
   schema: z.literal("easyeda-pro-control.pcb209-visual-launch-intent.v1"), operationId: currentPcb209VisualIdSchema,
@@ -555,13 +556,13 @@ const disposableProjectOpeningIntentSchema = z.object({
   target: currentDisposableOpenSealedTargetSchema, preparationCheckpoint: currentDisposableOpenPreparationCheckpointSchema,
   checkpointReceiptSha256: diagnosticLifecycleDigestSchema,
   commonBeforeSqlSha256: diagnosticLifecycleDigestSchema.optional(),
+  generatedFixtureSource: z.object({ archiveSha256: diagnosticLifecycleDigestSchema, originalInventoryLogicalSha256: diagnosticLifecycleDigestSchema,
+    exactInitialNativePayloadQualified: z.literal(true), untickedDocHeadQualified: z.literal(true), acceptRecentPathRegistration: z.literal(true) }).strict().optional(),
   confirmDisposableProject: z.literal(true), acceptNormalOpenEffects: z.literal(true),
 }).strict();
 const ordinaryProjectOpeningIntentSchema = disposableProjectOpeningIntentSchema.omit({ confirmDisposableProject: true }).extend({
   schema: z.literal("easyeda-pro-control.pcb209-ordinary-project-opening-intent.v1"), operationId: currentPcbOrdinaryReadIdSchema,
   confirmOrdinaryProject: z.literal(true),
-  generatedFixtureSource: z.object({ archiveSha256: diagnosticLifecycleDigestSchema, originalInventoryLogicalSha256: diagnosticLifecycleDigestSchema,
-    exactInitialNativePayloadQualified: z.literal(true), untickedDocHeadQualified: z.literal(true), acceptRecentPathRegistration: z.literal(true) }).strict().optional(),
 });
 const projectOpeningIntentSchema = z.discriminatedUnion("schema", [disposableProjectOpeningIntentSchema, ordinaryProjectOpeningIntentSchema]);
 const projectOpeningResultSchema = z.object({

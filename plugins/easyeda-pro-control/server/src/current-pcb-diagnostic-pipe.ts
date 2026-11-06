@@ -641,7 +641,7 @@ class CurrentPcbFixedPipeCore {
       this.#nextId > CURRENT_PCB_SPATIAL_PROFILE.normalRequestLimit) { throw new Error("PCB_SPATIAL_PIPE_CLEANUP_RESERVE"); }
     const spatialDiscovery = (phase === "discovery" || phase === "frame-owner") &&
       CURRENT_PCB_SPATIAL_DISCOVERY_METHODS.some(method => method === command.method);
-    const spatialOpening = phase.startsWith("project-") || phase.startsWith("pcb-");
+    const spatialOpening = phase.startsWith("project-") || phase.startsWith("pcb-") || phase === "generated-fixture-register";
     if (this.#spatialPurpose && !spatial && (!spatialDiscovery && !spatialOpening ||
       this.#spatialBinding !== null && !spatialDiscovery && phase !== "pcb-observe")) {
       throw new Error("PCB_SPATIAL_PIPE_DISCOVERY_ONLY");

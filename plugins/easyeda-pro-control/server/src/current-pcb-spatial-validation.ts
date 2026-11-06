@@ -31,6 +31,8 @@ export const currentPcbSpatialRequestSchema = z.discriminatedUnion("action", [
   z.strictObject({ action: z.literal("inspect-script"), ...bound, frameId: token, family: z.literal("ui") }),
   z.strictObject({ action: z.literal("open-project"), ...bound, target: currentDisposableOpenTargetSchema,
     confirmDisposableProject: z.literal(true), acceptNormalOpenEffects: z.literal(true) }),
+  z.strictObject({ action: z.literal("open-generated-fixture"), ...bound, confirmGeneratedDisposableFixture: z.literal(true),
+    acceptRecentPathRegistration: z.literal(true), acceptNormalOpenEffects: z.literal(true) }),
   z.strictObject({ action: z.literal("open-pcb"), ...bound, acceptNormalOpenEffects: z.literal(true) }),
   z.strictObject({ action: z.literal("observe-pcb-opening"), ...bound }),
   z.strictObject({ action: z.literal("observe-spatial"), ...bound, queries: currentPcbSpatialQueriesSchema,

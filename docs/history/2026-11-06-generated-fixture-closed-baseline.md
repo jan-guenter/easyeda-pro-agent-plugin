@@ -103,3 +103,13 @@ synthetic helper process and proves prefix order, both source rechecks, consumed
 ambiguity, retained partial registration and original normal cleanup. These are
 source/synthetic results; actual Windows import and positive reader acceptance
 remain unrecorded.
+
+The same staged-data admission also supports a separately born spatial owner.
+Construct `CurrentPcbSpatialLifecycle` with its original staged source and use
+its no-target `open-generated-fixture` action. Native
+`-GeneratedFixtureSpatial209` constructs from `CreateSpatial209`, retaining
+`spatial209=true` and `layers209=false`. It does not combine switches or reuse an
+ordinary reader owner. Its registration prefix consumes one existing normal
+spatial request; the384-request ceiling and cleanup reserve stay unchanged.
+The existing spatial point/region, Line/Via and Arc/Line/Via stages remain
+separate one-shot actions under that original spatial lifecycle.

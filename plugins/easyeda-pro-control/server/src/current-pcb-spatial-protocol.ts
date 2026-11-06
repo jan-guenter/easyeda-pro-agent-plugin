@@ -94,7 +94,7 @@ export function spatialDiagnosticNativeRequest(chunk: Buffer): Readonly<Record<s
   const request = diagnosticNativeRequest(Buffer.from(`${JSON.stringify({ ...raw, id: 1 })}\0`));
   if (raw["id"] > CURRENT_PCB_SPATIAL_PROFILE.normalRequestLimit) { throw new Error("PCB_SPATIAL_CLEANUP_RESERVE"); }
   if (!CURRENT_PCB_SPATIAL_DISCOVERY_METHODS.some(method => method === raw["method"]) &&
-    !(raw["method"] === "Runtime.callFunctionOn" && (typeof request["openingPhase"] === "string" || typeof request["pcbOpeningPhase"] === "string"))) {
+    !(raw["method"] === "Runtime.callFunctionOn" && (typeof request["openingPhase"] === "string" || typeof request["pcbOpeningPhase"] === "string" || request["generatedFixtureRegistrationPhase"] === "register-generated-fixture"))) {
     throw new Error("PCB_SPATIAL_DISCOVERY_ONLY");
   }
   return Object.freeze({ ...request, requestId: raw["id"] });

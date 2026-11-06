@@ -25,7 +25,7 @@ import type { ManagedFixtureOpeningSource } from "./managed-fixture-opening-sour
 import { generatedFixtureDiagnosticCheckpoint, prepareGeneratedFixtureOpenCheckpoint, verifyGeneratedFixtureOpenCheckpoint, verifyHistoricalGeneratedFixtureOpenCheckpoint } from "./managed-fixture-generated-open-checkpoint.ts";
 import type { GeneratedFixtureOpenCheckpoint } from "./managed-fixture-generated-open-checkpoint.ts";
 import { assertNoUnresolvedOrdinaryLaunches } from "./ordinary-launch.ts";
-import { currentFootprintCombinedFactoryFailureDiagnostics, currentFootprintCopyForwardFactoryFailureDiagnostics, requireCurrentFootprintCombinedUnlaunchedFactoryFailure, requireCurrentFootprintCopyForwardUnlaunchedFactoryFailure, startCurrentFootprintCombinedNativeOwner, startCurrentFootprintCopyForwardNativeOwner, startCurrentFootprintCopyNativeOwner, startCurrentFootprintCopyPreparationOwner, startCurrentFootprintMainNativeOwner, startCurrentGeneratedFixture209DiagnosticOwner, startCurrentPcb209DiagnosticOwner, startCurrentPcb209EmptyStartupOwner, startCurrentPcb209RatlineContinuationOwner, startCurrentPcb209RatlineStartupOwner, startCurrentPcb209VisualOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbSpatialOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
+import { currentFootprintCombinedFactoryFailureDiagnostics, currentFootprintCopyForwardFactoryFailureDiagnostics, requireCurrentFootprintCombinedUnlaunchedFactoryFailure, requireCurrentFootprintCopyForwardUnlaunchedFactoryFailure, startCurrentFootprintCombinedNativeOwner, startCurrentFootprintCopyForwardNativeOwner, startCurrentFootprintCopyNativeOwner, startCurrentFootprintCopyPreparationOwner, startCurrentFootprintMainNativeOwner, startCurrentGeneratedFixture209DiagnosticOwner, startCurrentGeneratedFixtureSpatial209Owner, startCurrentPcb209DiagnosticOwner, startCurrentPcb209EmptyStartupOwner, startCurrentPcb209RatlineContinuationOwner, startCurrentPcb209RatlineStartupOwner, startCurrentPcb209VisualOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbSpatialOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintCopyNativeOwner, CurrentFootprintCopyPreparationOwner, CurrentFootprintMainNativeOwner, CurrentPcb209RatlineContinuationOwner, CurrentPcb209RatlineStartupOwner, CurrentPcb209WorkerStartupOwner, CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner, CurrentPcbWorkerStartupHandoff, CurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
 import { verifyCurrentPcb209DiagnosticInstallation, verifyCurrentPcb209RatlineInstallation, verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation, CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
@@ -545,7 +545,7 @@ class CurrentPcbLifecycleCore {
       { diagnostic: diagnosticObservationStageSchema.options, "string-precreate": currentPcbStringPrecreateStages,
         "worker-startup": startupStages }[purpose]; }
     this.#options = Object.freeze({ ...options });
-    requireValue(options.generatedFixtureSource === undefined || generation === "209-ordinary", "GENERATED_FIXTURE_LIFECYCLE_PURPOSE");
+    requireValue(options.generatedFixtureSource === undefined || generation === "209-ordinary" || generation === "209-spatial", "GENERATED_FIXTURE_LIFECYCLE_PURPOSE");
     this.#generatedSource = options.generatedFixtureSource === undefined ? null : consumeManagedFixtureOpeningSource(options.generatedFixtureSource);
     let verify = generation === "206" ? verifyCurrentPcbDiagnosticInstallation : verifyCurrentPcb209DiagnosticInstallation;
     if (generation === "209-startup-ratline" || generation === "209-startup-ratline-continuation") { verify = verifyCurrentPcb209RatlineInstallation; }
@@ -561,7 +561,7 @@ class CurrentPcbLifecycleCore {
     else if (routeStartup209(generation)) { allocate = startCurrentFootprintCopyNativeOwner; }
     else if (generation === "209-startup-footprint") { allocate = startCurrentFootprintCopyPreparationOwner; }
     else if (generation === "209-startup") { allocate = startCurrentPcb209WorkerStartupOwner; }
-    else if (generation === "209-spatial") { allocate = startCurrentPcbSpatialOwner; }
+    else if (generation === "209-spatial") { allocate = this.#generatedSource === null ? startCurrentPcbSpatialOwner : startCurrentGeneratedFixtureSpatial209Owner; }
     else if (generation === "209-visual") { allocate = startCurrentPcb209VisualOwner; }
     else if (generation === "209-opening" || generation === "209-ordinary") { allocate = this.#generatedSource === null ? startCurrentPcb209DiagnosticOwner : startCurrentGeneratedFixture209DiagnosticOwner; }
     this.#allocate = dependencies.allocateOwner ?? allocate;
@@ -3787,7 +3787,7 @@ class CurrentPcbLifecycleCore {
     await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
     const generated = request.action === "open-generated-fixture" ? this.#generatedSource : null;
     requireValue((request.action === "open-generated-fixture") === (this.#generatedSource !== null) &&
-      (generated === null || this.#generation === "209-ordinary" && typeof retained.methods.openGeneratedFixtureProject === "function"), "ORIGINAL_GENERATED_FIXTURE_SOURCE_REQUIRED");
+      (generated === null || (this.#generation === "209-ordinary" || this.#generation === "209-spatial") && typeof retained.methods.openGeneratedFixtureProject === "function"), "ORIGINAL_GENERATED_FIXTURE_SOURCE_REQUIRED");
     const target = Object.freeze(request.action === "open-project" ? structuredClone(request.target) : ((): CurrentDisposableOpenSealedTarget => {
       requireValue(generated !== null, "ORIGINAL_GENERATED_FIXTURE_SOURCE_REQUIRED");
       return generated.qualification.target;

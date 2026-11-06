@@ -6,14 +6,15 @@ import { once } from "node:events";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { fileURLToPath } from "node:url";
-import { CurrentPcb209DiagnosticOwner } from "../src/current-pcb-diagnostic-owner.ts";
+import { CurrentPcb209DiagnosticOwner, CurrentPcbSpatialOwner } from "../src/current-pcb-diagnostic-owner.ts";
 import { qualifyGeneratedFixtureInitialSql } from "../src/managed-fixture-initial-sql.ts";
 import { consumeManagedFixtureOpeningSource, stageManagedFixtureOpeningSource } from "../src/managed-fixture-opening-source.ts";
 import { currentPcbOrdinaryReadRequestSchema } from "../src/current-pcb-ordinary-read-validation.ts";
+import { currentPcbSpatialRequestSchema } from "../src/current-pcb-spatial-validation.ts";
 import { managedFixtureInitialSqlFixture } from "./helpers/managed-fixture-initial-sql.ts";
 
 const source = "const syntheticIdentity = true;\n";
-async function fixture(context: TestContext, scenario = "opening-pcb-generated", generated = true): Promise<Readonly<{ owner: CurrentPcb209DiagnosticOwner; phases: string[] }>> {
+async function fixture(context: TestContext, scenario = "opening-pcb-generated", generated = true, spatial = false): Promise<Readonly<{ owner: CurrentPcb209DiagnosticOwner; phases: string[] }>> {
   const child = spawn(process.execPath, [fileURLToPath(new URL("helpers/current-pcb-diagnostic-helper-fixture.ts", import.meta.url)), scenario], { stdio: ["pipe", "pipe", "pipe"] });
   const phases: string[] = []; const originalWrite = child.stdin.write.bind(child.stdin);
   context.mock.method(child.stdin, "write", (...args: Parameters<typeof child.stdin.write>) => {
@@ -26,7 +27,8 @@ async function fixture(context: TestContext, scenario = "opening-pcb-generated",
     }
     return originalWrite(...args);
   });
-  const owner = new CurrentPcb209DiagnosticOwner(child, () => Promise.resolve(), null, () => Promise.resolve(), generated); owner.start();
+  const Owner = spatial ? CurrentPcbSpatialOwner : CurrentPcb209DiagnosticOwner;
+  const owner = new Owner(child, () => Promise.resolve(), null, () => Promise.resolve(), generated); owner.start();
   context.after(async () => { if (!owner.status().helperClosed) { const closed = once(child, "close"); child.stdin.end(); await closed; } });
   await owner.launch({ executable: "C:\\Synthetic\\easyeda-pro.exe", executableSha256: "c".repeat(64), confirmDiagnosticLaunch: true });
   await owner.browserObservation(); await owner.inspectFrames("target-1");
@@ -71,4 +73,18 @@ void test("the generated public action accepts effects but never paths, targets,
     confirmGeneratedDisposableFixture: true, acceptRecentPathRegistration: true, acceptNormalOpenEffects: true };
   assert.equal(currentPcbOrdinaryReadRequestSchema.safeParse(request).success, true);
   for (const key of ["target", "rawWindowsPath", "qualification", "source", "sql", "code"]) { assert.equal(currentPcbOrdinaryReadRequestSchema.safeParse({ ...request, [key]: "caller" }).success, false); }
+  const spatial = { ...request, operationId: "pcb209-spatial-generated" };
+  assert.equal(currentPcbSpatialRequestSchema.safeParse(spatial).success, true);
+  assert.equal(currentPcbSpatialRequestSchema.safeParse({ ...spatial, target: "caller" }).success, false);
+});
+void test("generated spatial is a separate original birth that retains its own fixed pipeline and cannot upgrade old spatial owners", async context => {
+  const qualified = await qualifyGeneratedFixtureInitialSql(await managedFixtureInitialSqlFixture());
+  const value = await fixture(context, "opening-pcb-generated", true, true); let reproofs = 0;
+  const result = await value.owner.openGeneratedFixtureProject(qualified.qualification, () => { reproofs += 1; return Promise.resolve(); });
+  assert.equal(result.ok, true); assert.equal(reproofs, 2); assert.equal(value.owner.status().profile, "pcb-spatial209");
+  assert.deepEqual(value.phases, ["register-generated-fixture", "preflight", "open-project"]);
+  await close(value.owner);
+  const old = await fixture(context, "opening-pcb-generated", false, true);
+  assert.throws(() => old.owner.openGeneratedFixtureProject(qualified.qualification, () => Promise.resolve()), /CONSUMED/u);
+  assert.deepEqual(old.phases, []); await close(old.owner);
 });

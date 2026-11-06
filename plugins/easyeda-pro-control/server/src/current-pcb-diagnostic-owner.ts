@@ -771,7 +771,7 @@ class CurrentPcbRetainedOwnerCore {
     verifyStartupFacade: () => Promise<void> = verifyInstallation, actorClockSource: CurrentPcb209ActorClockSourceQualification | null = null,
     emptyAnchor: CurrentPcb209EmptyStartupBudgetAnchor | null = null, ratlineBudget: CurrentPcb209RatlineBudget | null = null, continuationBudget: CurrentPcb209RatlineContinuationBudget | null = null, readyChallenge: string | null = null, forwardSavedHandoff: object | null = null,
     generatedFixtureBirth = false) {
-    if (generatedFixtureBirth && purpose !== "diagnostic209") { throw error("GENERATED_FIXTURE_BIRTH_PURPOSE"); }
+    if (generatedFixtureBirth && purpose !== "diagnostic209" && purpose !== "pcb-spatial209") { throw error("GENERATED_FIXTURE_BIRTH_PURPOSE"); }
     this.#generatedFixtureBirth = generatedFixtureBirth;
     const saved = forwardSavedHandoff === null ? null : requireForwardSavedObservationHandoff(forwardSavedHandoff);
     if (saved !== null && purpose !== "worker-startup-footprint-saved209") { throw error("FORWARD_SAVED_PURPOSE"); }
@@ -4898,8 +4898,8 @@ export class CurrentPcb209DiagnosticOwner extends CurrentPcbRetainedOwnerCore {
 export class CurrentPcbSpatialOwner extends CurrentPcbRetainedOwnerCore {
   /** Select the spatial transport at construction; no existing owner is upgraded. */
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
-    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve()) {
-    super(child, verify, installation, verifyInstallation, "pcb-spatial209");
+    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve(), generatedFixtureBirth = false) {
+    super(child, verify, installation, verifyInstallation, "pcb-spatial209", verifyInstallation, null, null, null, null, null, null, generatedFixtureBirth);
   }
 }
 
@@ -5459,6 +5459,9 @@ export function startCurrentGeneratedFixture209DiagnosticOwner(options: CurrentP
 export function startCurrentPcbSpatialOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbSpatialOwner> {
   return startFixedOwner(options, "pcb-spatial209", "209-spatial");
 }
+export function startCurrentGeneratedFixtureSpatial209Owner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbSpatialOwner> {
+  return startFixedOwner(options, "pcb-spatial209", "209-spatial", undefined, null, null, null, null, true);
+}
 /** Called only by the separate String lifecycle, never diagnostic requests. */
 export function startCurrentPcbStringPrecreateOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbStringPrecreateOwner> {
   return startFixedOwner(options, "string-precreate");
@@ -5844,7 +5847,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   generation: "206" | "209-opening" | "209-visual" | "209-spatial" | "209-startup" | "209-held-cache" = "206", savedWriter?: CurrentFootprintCopyNativeOwner,
   forwardSavedHandoff: object | null = null, heldValidation: HeldCacheValidationAllocation | null = null, headAgeValidation: HeadAgeValidationAllocation | null = null,
   forwardExecutionBirth: ForwardExecutionBirthAllocation | null = null, generatedFixtureBirth = false): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
-  if (generatedFixtureBirth && (purpose !== "diagnostic209" || generation !== "209-opening")) { throw error("GENERATED_FIXTURE_BIRTH_PURPOSE"); }
+  if (generatedFixtureBirth && !(purpose === "diagnostic209" && generation === "209-opening" || purpose === "pcb-spatial209" && generation === "209-spatial")) { throw error("GENERATED_FIXTURE_BIRTH_PURPOSE"); }
   if ((forwardExecutionBirth !== null) !== (purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE) || forwardExecutionBirth !== null &&
     (forwardExecutionBirth.options !== options || forwardExecutionBirthAllocations.get(options) !== forwardExecutionBirth || forwardExecutionBirth.state !== "pending")) {
     throw error("FORWARD_EXECUTION_ORIGINAL_ALLOCATION");
@@ -5924,7 +5927,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === "string-precreate") { purposeSwitch = " -StringPrecreate"; }
   else if (purpose === "visual209") { purposeSwitch = " -Visual209"; }
   else if (purpose === "diagnostic209") { purposeSwitch = generatedFixtureBirth ? " -GeneratedFixture209" : " -Layers209"; }
-  else if (purpose === "pcb-spatial209") { purposeSwitch = " -Spatial209"; }
+  else if (purpose === "pcb-spatial209") { purposeSwitch = generatedFixtureBirth ? " -GeneratedFixtureSpatial209" : " -Spatial209"; }
   else if (purpose === "footprint-held-cache209") { purposeSwitch = " -FootprintHeldCache209"; }
   const legacyBootstrap = `$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';` +
     `$file=[IO.File]::Open('${windowsPath.replaceAll("'", "''")}',[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read);` +
@@ -6027,7 +6030,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === "string-precreate") { owner = new CurrentPcbStringPrecreateOwner(child, verify, installation, verifyInstallation); }
   else if (purpose === "visual209") { owner = new CurrentPcb209VisualOwner(child, verify, installation, verifyInstallation); }
   else if (purpose === "diagnostic209") { owner = new CurrentPcb209DiagnosticOwner(child, verify, installation, verifyInstallation, generatedFixtureBirth); }
-  else if (purpose === "pcb-spatial209") { owner = new CurrentPcbSpatialOwner(child, verify, installation, verifyInstallation); }
+  else if (purpose === "pcb-spatial209") { owner = new CurrentPcbSpatialOwner(child, verify, installation, verifyInstallation, generatedFixtureBirth); }
   else { owner = new CurrentPcbDiagnosticOwner(child, verify, installation, verifyInstallation); }
   if (owner instanceof CurrentFootprintCopyNativeOwner || owner instanceof CurrentFootprintCopySavedNativeOwner || owner instanceof CurrentFootprintCopyHeldSavedNativeOwner || owner instanceof CurrentFootprintCopyForwardNativeOwner || owner instanceof CurrentFootprintCopyForwardSavedNativeOwner) {
     footprintFactories.set(owner, Object.freeze({ options: sealedOptions, installation }));

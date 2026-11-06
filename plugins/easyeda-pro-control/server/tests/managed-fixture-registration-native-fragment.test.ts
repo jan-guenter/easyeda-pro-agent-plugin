@@ -6,6 +6,7 @@ import { diagnosticGeneratedFixtureRegistrationParams, diagnosticNativeRequest }
 import { GENERATED_FIXTURE_REGISTRATION_FUNCTION } from "../src/managed-fixture-registration-program.ts";
 import { applyManagedFixtureRegistrationNativeFragment } from "../src/managed-fixture-registration-native-fragment.ts";
 import { applyCurrentProjectStructureNativeFragment } from "../src/current-project-structure-native-fragment.ts";
+import { spatialDiagnosticNativeRequest } from "../src/current-pcb-spatial-protocol.ts";
 
 function wire(input: unknown): Buffer { return Buffer.from(`${JSON.stringify(input)}\0`); }
 
@@ -19,6 +20,7 @@ void test("maintained native fragment embeds the complete fixed program and isol
   for (const clause of ["CreateGeneratedFixture209()", "generatedFixtureRegistrationConsumed=true", "RequireGeneratedFixtureOpening(sessionId,uniqueContextId,path,project,branch,document,source);",
     "pcb-diagnostic-conflicting-generated-fixture-purpose", "VerifyGeneratedFixtureRegistrationSmoke()", "generated-registration-old-birth-smoke"] ) { assert.ok(generated.includes(clause)); }
   assert.ok(generated.includes("$request.generatedFixtureRegistrationPhase -isnot [string]"));
+  assert.ok(generated.includes("CreateGeneratedFixtureSpatial209()")); assert.ok(generated.includes("spatial.layers209"));
   assert.equal(generated.includes("[int]$GeneratedFixtureRequestLimit"), false);
   assert.throws(() => applyManagedFixtureRegistrationNativeFragment(original.replace("param([switch]$CompileOnly,", "paramChanged([switch]$CompileOnly,")), /ANCHOR/u);
 });
@@ -30,6 +32,8 @@ void test("registration wire carries only exact identifiers and rejects alternat
   const request = diagnosticNativeRequest(wire(command));
   assert.equal(request["generatedFixtureRegistrationPhase"], "register-generated-fixture"); assert.equal(request["targetRawWindowsPath"], rawWindowsPath);
   assert.equal(Object.hasOwn(request, "functionDeclaration"), false); assert.equal(Object.hasOwn(request, "arguments"), false);
+  assert.equal(spatialDiagnosticNativeRequest(wire({ ...command, id: 383 }))["requestId"], 383);
+  assert.throws(() => spatialDiagnosticNativeRequest(wire({ ...command, id: 384 })), /CLEANUP_RESERVE/u);
   for (const mutation of [
     { ...params, functionDeclaration: `${params.functionDeclaration}\n` }, { ...params, userGesture: true },
     { ...params, arguments: [params.arguments[0], { value: "open-project" }] },
