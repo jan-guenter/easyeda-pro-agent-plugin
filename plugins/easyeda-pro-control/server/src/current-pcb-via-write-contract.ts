@@ -30,3 +30,27 @@ export const currentPcbViaWriteStageResultSchema = z.strictObject({
   (!value.ok || value.stage !== "create" || value.createAcknowledged && value.originalPromiseAcknowledged) &&
   (!value.ok || value.stage !== "save" || value.saveAcknowledged && value.originalPromiseAcknowledged));
 export type CurrentPcbViaWriteStageResult = z.infer<typeof currentPcbViaWriteStageResultSchema>;
+
+/** Stable public operation/cleanup envelope. A matching result is historical
+ * data; only the retained original coordinator can perform its cleanup actions. */
+export const currentPcbViaWriteResultSchema = z.strictObject({
+  schema: z.literal("easyeda-pro-control.pcb209-via-write-operation.v1"), action: z.enum(["prepare", "execute", ...CURRENT_PCB_VIA_WRITE_CLEANUP_ACTIONS]),
+  operationId: currentPcbViaWriteRequestSchema.shape.operationId,
+  state: z.enum(["prepared", "running", "needs-cleanup", "verification-pending", "completed"]),
+  effects: z.strictObject({ createAttempted: z.boolean(), createAcknowledged: z.boolean(), saveAttempted: z.boolean(),
+    saveOutcome: z.enum(["not-attempted", "unknown", "acknowledged"]) }),
+  verification: z.strictObject({ saved: z.boolean(), reopened: z.boolean(), completeSqlVerified: z.boolean(), peerRosterPreserved: z.boolean() }),
+  cleanup: z.strictObject({ generation: z.enum(["none", "writer", "readback"]), allocation: z.enum(["not-entered", "no-resource", "unresolved", "retained", "released"]),
+    nativeResourcesRetained: z.boolean(), abortAttempted: z.boolean(), originalTerminationVerified: z.boolean(), helperReleaseVerified: z.boolean(), publicationPending: z.boolean() }),
+  forwardOnly: z.literal(true), inverseAvailable: z.literal(false),
+}).refine(value => {
+  const effects = value.effects, proof = value.verification, state = value.cleanup;
+  return (!effects.createAcknowledged || effects.createAttempted) && (!effects.saveAttempted || effects.createAcknowledged) &&
+    (effects.saveOutcome === "not-attempted") === !effects.saveAttempted &&
+    (!proof.saved || effects.saveAttempted && proof.completeSqlVerified && proof.peerRosterPreserved) && (!proof.reopened || proof.saved) &&
+    (!state.helperReleaseVerified || !state.nativeResourcesRetained) && (state.allocation !== "released" || state.helperReleaseVerified) &&
+    (!["not-entered", "no-resource"].includes(state.allocation) || !state.nativeResourcesRetained) &&
+    (state.allocation !== "unresolved" || state.nativeResourcesRetained) &&
+    (value.state !== "completed" || proof.saved && proof.reopened && proof.completeSqlVerified && proof.peerRosterPreserved && state.originalTerminationVerified && state.helperReleaseVerified && !state.nativeResourcesRetained && !state.publicationPending);
+});
+export type CurrentPcbViaWriteResult = z.infer<typeof currentPcbViaWriteResultSchema>;

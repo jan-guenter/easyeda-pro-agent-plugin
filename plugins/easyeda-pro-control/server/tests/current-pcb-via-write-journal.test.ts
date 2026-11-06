@@ -11,7 +11,7 @@ import { assertOperationIdUnused, createOperation, createOperationScanner, ensur
   updateOperation, verifyExactManagedArtifact, writePhaseArtifact } from "../src/artifacts.ts";
 import type { CurrentPcbViaWriteDispatch, CurrentPcbViaWriteJournal } from "../src/current-pcb-via-write-journal.ts";
 import { CURRENT_PCB_VIA_WRITE_ABORT_ACKNOWLEDGEMENTS, CURRENT_PCB_VIA_WRITE_EXECUTE_ACKNOWLEDGEMENTS,
-  currentPcbViaWriteActionSchema } from "../src/current-pcb-via-write-contract.ts";
+  currentPcbViaWriteActionSchema, currentPcbViaWriteResultSchema } from "../src/current-pcb-via-write-contract.ts";
 
 async function fixture(loseCreateIntent = false): Promise<Readonly<{
   journal: CurrentPcbViaWriteJournal; owner: object; operationId: string; publications: () => number;
@@ -87,4 +87,21 @@ void test("cleanup actions contain only the original operation identifier", () =
   assert.equal(currentPcbViaWriteActionSchema.safeParse({ action: "execute", operationId }).success, false);
   assert.equal(currentPcbViaWriteActionSchema.safeParse({ action: "execute", operationId, ...CURRENT_PCB_VIA_WRITE_EXECUTE_ACKNOWLEDGEMENTS }).success, true);
   assert.equal(currentPcbViaWriteActionSchema.safeParse({ action: "execute", operationId, ...CURRENT_PCB_VIA_WRITE_EXECUTE_ACKNOWLEDGEMENTS, confirmOneSave: false }).success, false);
+});
+
+void test("public cleanup retains unknown Save outcomes and cannot report completion from SDK acknowledgement alone", () => {
+  const result = { schema: "easyeda-pro-control.pcb209-via-write-operation.v1", action: "inspect", operationId: "pcb209-via-write-status-test", state: "needs-cleanup",
+    effects: { createAttempted: true, createAcknowledged: true, saveAttempted: true, saveOutcome: "unknown" },
+    verification: { saved: false, reopened: false, completeSqlVerified: false, peerRosterPreserved: false },
+    cleanup: { generation: "writer", allocation: "retained", nativeResourcesRetained: true, abortAttempted: false, originalTerminationVerified: false,
+      helperReleaseVerified: false, publicationPending: false }, forwardOnly: true, inverseAvailable: false };
+  assert.equal(currentPcbViaWriteResultSchema.safeParse(result).success, true);
+  assert.equal(currentPcbViaWriteResultSchema.safeParse({ ...result, state: "completed", effects: { ...result.effects, saveOutcome: "acknowledged" } }).success, false);
+  assert.equal(currentPcbViaWriteResultSchema.safeParse({ ...result, cleanup: { ...result.cleanup, helperReleaseVerified: true } }).success, false);
+  assert.equal(currentPcbViaWriteResultSchema.safeParse({ ...result, effects: { ...result.effects, saveOutcome: "not-attempted" } }).success, false);
+  assert.equal(currentPcbViaWriteResultSchema.safeParse({ ...result, verification: { ...result.verification, saved: true } }).success, false);
+  const independentlyVerified = { ...result, state: "completed", verification: { saved: true, reopened: true, completeSqlVerified: true, peerRosterPreserved: true },
+    cleanup: { ...result.cleanup, allocation: "released", nativeResourcesRetained: false, originalTerminationVerified: true, helperReleaseVerified: true } };
+  const parsed = currentPcbViaWriteResultSchema.parse(independentlyVerified); assert.equal(parsed.effects.saveOutcome, "unknown");
+  assert.equal(currentPcbViaWriteResultSchema.safeParse({ ...independentlyVerified, cleanup: { ...independentlyVerified.cleanup, originalTerminationVerified: false } }).success, false);
 });
