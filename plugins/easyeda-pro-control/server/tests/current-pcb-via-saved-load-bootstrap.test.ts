@@ -36,7 +36,7 @@ async function fixture(fault: Fault = "none"): Promise<Readonly<{ runner: Curren
     assertCurrent: (): Promise<void> => { assert.equal(state.failed, false); return Promise.resolve(); }, fail: (): void => { state.failed = true; },
     nextEvent: (): Promise<CurrentPcbViaSavedLoadBootstrapEvent> => { const next = queue.shift(); assert.ok(next !== undefined); return Promise.resolve(next); },
     projectSourceHeld: (held: unknown): Promise<void> => {
-      assert.equal(state.callbacks, 0); assert.equal(state.projectResumed, false); assert.deepEqual(held, { scriptId: "script-project", uniqueContextId: "original-context", executionContextId: 7, source: "source-project" });
+      assert.equal(state.callbacks, 0); assert.equal(state.projectResumed, false); assert.deepEqual(held, { instrumentationBreakpointId: "instrument", scriptId: "script-project", uniqueContextId: "original-context", executionContextId: 7, source: "source-project" });
       assert.equal(commands.filter(command => command.phase === "saved-load-source").length, 7); state.callbacks += 1; return Promise.resolve();
     },
     request: (command: CurrentPcbViaSavedLoadBootstrapCommand): Promise<unknown> => {

@@ -34,7 +34,7 @@ const pipe=this.#pipe;if(!(pipe instanceof CurrentPcbViaSavedReadbackPipe))throw
 this.#stagedAttachment=Object.freeze({targetId:"synthetic-target",sessionId:"synthetic-session"});this.#savedReadbackActorsPending=true;await this.#transfer(()=>pipe.armSavedReadbackCacheActors());this.#savedReadbackActorsPending=false;this.#savedReadbackActorsArmed=true;this.#savedReadbackParentPending=true;await this.#transfer(()=>pipe.armSavedReadbackCacheParent());this.#savedReadbackParentPending=false;
 const selected=Object.freeze({frameId:"synthetic-frame",sessionId:"synthetic-session",uniqueContextId:"synthetic-context",securityOrigin:"https://client"});
 const context={openingContext:()=>({sessionId:selected.sessionId,uniqueContextId:selected.uniqueContextId}),savedReadbackCacheContext:()=>selected,script:()=>({context:{id:7}})};this.#stagedContext=context;
-this.#savedReadbackParentArmed=true;this.#mainRunner={selectedSqlFenceState:()=>({ready:true}),pumpSelectedSqlFence:async()=>{}};
+this.#savedReadbackParentArmed=true;this.#mainRunner={selectedSqlFenceState:()=>({ready:true}),pumpSelectedSqlFence:async()=>{},enrollSavedProjectRegistrationIntent:async()=>{}};
 const ledger=full?.ledger??new CurrentPcbViaSavedCacheLedger(Object.freeze({frameId:selected.frameId,sessionId:selected.sessionId,securityOrigin:selected.securityOrigin,projectUuid:this.#savedReadbackPrepared.target.projectUuid}));
 const origin=Object.freeze({profile:"private.current-pcb-via-saved-cache-origin.v1"});const bindings=this.#createSavedReadbackCacheBindings(ledger,origin,pipe,this.#savedReadbackPrepared);
 const metadata=full?.metadata??new CurrentPcbViaSavedCacheMetadataLedger({sessionId:selected.sessionId,uniqueContextId:selected.uniqueContextId,executionContextId:7,projectUuid:this.#savedReadbackPrepared.target.projectUuid});
@@ -214,6 +214,10 @@ void test("fresh readback native composition repeats exactly and its current pip
   const preflightStart = first.indexOf("        'saved-readback-preflight' {\n");
   const abortStart = first.indexOf("        'saved-readback-abort' {\n");
   assert.ok(metadataStart !== -1 && parentStart > metadataStart && preflightStart > parentStart && abortStart > preflightStart);
+  const observationStart = first.indexOf("        'saved-readback-observation-bind' {\n");
+  const cacheDispatchStart = first.indexOf("        'saved-readback-load-guard' {\n");
+  assert.ok(observationStart > invalidationStart && cacheDispatchStart > observationStart);
+  assert.equal(generateWorkerStartupProtocol(first.slice(0, observationStart) + first.slice(cacheDispatchStart)), first);
   const priorParent = first.slice(0, invalidationStart) + first.slice(parentStart);
   assert.equal(generateWorkerStartupProtocol(priorParent), first);
   const priorReadOnly = first.slice(0, invalidationStart) + first.slice(preflightStart);
@@ -224,7 +228,7 @@ void test("fresh readback native composition repeats exactly and its current pip
   const flags = first.slice(0, first.indexOf("\n")).match(/\[switch\]\$\w+/gu); assert.ok(flags !== null); assert.equal(flags.length, new Set(flags).size);
   assert.equal(first.split("        'saved-readback-abort' {").length - 1, 1);
   assert.ok(first.includes("spatial209?384:componentSpatial209?419:"));
-  assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.main.total, 909); assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.total, 284);
+  assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.main.total, 909); assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.total, 419);
   assert.deepEqual(CURRENT_PCB_VIA_SAVED_READBACK_BOOTSTRAP_REQUESTS, { parent: 2, inventory: 1, workerNormal: 16, workerCleanup: 8, total: 27 });
   assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeReadOnly, 172);
   assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.enabledDiscovery, 16); assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.cacheDeletionAuthorized, false);

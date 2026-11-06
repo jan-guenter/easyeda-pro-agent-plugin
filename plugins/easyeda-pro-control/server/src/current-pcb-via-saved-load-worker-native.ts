@@ -3,18 +3,18 @@
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
-import { currentPcbViaSavedLoadBootstrapCases } from "./current-pcb-via-saved-load-bootstrap-protocol.ts";
-import { currentPcbViaSavedLoadWorkerWire } from "./current-pcb-via-saved-load-worker-wire.ts";
+import { currentPcbViaSavedLoadWorkerCases, currentPcbViaSavedLoadWorkerWire } from "./current-pcb-via-saved-load-worker-wire.ts";
 
 const literal = (value: string): string => `@"${value.replaceAll('"', '""')}"`;
 function sample(name: string): string { if (name === "documentUuid") { return "a".repeat(32); } if (name === "projectUuid") { return "b".repeat(64); } return "saved_handle"; }
 export function currentPcbViaSavedLoadWorkerNativeSource(): string {
-  const rows = currentPcbViaSavedLoadBootstrapCases().map(command => {
+  const rows = currentPcbViaSavedLoadWorkerCases().map(command => {
     const wire = currentPcbViaSavedLoadWorkerWire(command, 1);
     const fields = Object.keys(wire.request).filter(name => !["action", "requestId", "phase", "method"].includes(name));
+    if (command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params) { fields.push("uniqueContextId"); }
     let template = JSON.stringify({ method: command.method, params: command.params });
     for (const name of fields) {
-      const value = wire.request[name]; if (typeof value !== "string") { throw new TypeError("SAVED_READBACK_WORKER_TEMPLATE_FIELD"); }
+      const value = name === "uniqueContextId" && command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params ? command.params.uniqueContextId : wire.request[name]; if (typeof value !== "string") { throw new TypeError("SAVED_READBACK_WORKER_TEMPLATE_FIELD"); }
       if (template.split(JSON.stringify(value)).length !== 2) { throw new Error("SAVED_READBACK_WORKER_TEMPLATE_ALIAS"); }
       template = template.replace(JSON.stringify(value), JSON.stringify(`__savedload_${name}__`));
     }

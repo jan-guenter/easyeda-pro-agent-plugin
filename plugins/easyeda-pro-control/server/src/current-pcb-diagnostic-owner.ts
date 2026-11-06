@@ -24,7 +24,9 @@ import { CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS, CURRENT_PROJECT_SAVE_PRODUCER
 import type { CurrentSavedProjectRegistrationBindings, CurrentSavedProjectRegistrationIntent } from "./current-saved-project-registration-origin.ts";
 import { CurrentPcbViaSavedLoadController } from "./current-pcb-via-saved-load-controller.ts";
 import type { CurrentPcbViaSavedLoadWorkerPair } from "./current-pcb-via-saved-load-controller.ts";
-import type { CurrentPcbViaSavedLoadBootstrapCommand } from "./current-pcb-via-saved-load-bootstrap-protocol.ts";
+import type { CurrentPcbViaSavedLoadWorkerCommand } from "./current-pcb-via-saved-load-worker-wire.ts";
+import { CurrentPcbViaSavedLoadObserver } from "./current-pcb-via-saved-load-observer.ts";
+import type { CurrentPcbViaSavedLoadObservedData } from "./current-pcb-via-saved-load-observer.ts";
 import type { CurrentPcbViaSavedLoadBootstrapResult, CurrentPcbViaSavedLoadProjectSourceHeld } from "./current-pcb-via-saved-load-bootstrap.ts";
 import type { CurrentPcbViaSavedLoadBindings, CurrentPcbViaSavedLoadOrigin } from "./current-pcb-via-saved-load-origin.ts";
 import { currentPcbViaSavedLoadWorkerNativeFrame } from "./current-pcb-via-saved-load-worker-wire.ts";
@@ -1512,8 +1514,9 @@ class CurrentPcbRetainedOwnerCore {
   #savedReadbackRegistrationPromise: Promise<CurrentSavedProjectRegistrationIntent> | null = null;
   #savedReadbackRegistrationIntent: CurrentSavedProjectRegistrationIntent | null = null;
   #savedReadbackLoadPreparation: CurrentPcbViaSavedLoadPreparation | null = null;
+  #savedReadbackLoadObserver: CurrentPcbViaSavedLoadObserver | null = null; #savedReadbackLoadData: CurrentPcbViaSavedLoadObservedData | null = null; #savedReadbackLoadCompletion: Promise<CurrentPcbViaSavedLoadObservedData> | null = null;
   #savedReadbackLoadSetup: CurrentPcbViaSavedLoadSetup | null = null; #savedReadbackLoadController: CurrentPcbViaSavedLoadController | null = null;
-  #savedReadbackLoadPair: CurrentPcbViaSavedLoadWorkerPair | null = null; #savedReadbackLoadCommand: CurrentPcbViaSavedLoadBootstrapCommand | null = null;
+  #savedReadbackLoadPair: CurrentPcbViaSavedLoadWorkerPair | null = null; #savedReadbackLoadCommand: CurrentPcbViaSavedLoadWorkerCommand | null = null;
   #savedReadbackAbsence: CurrentPcbViaSavedCacheAbsence | null = null;
   #savedReadbackLoadPreparationPromise: Promise<CurrentPcbViaSavedLoadPreparation> | null = null;
   #savedReadbackDeleteGuard: 0 | 1 | "loading" | null = null;
@@ -6400,13 +6403,30 @@ class CurrentPcbRetainedOwnerCore {
           pipe.bindSavedReadbackLoadWorker(pair); this.#savedReadbackLoadPair = pair;
           const result = await this.#request({ action: "saved-readback-worker-bind", targetId: pair.targetId, browserSessionId: pair.browserSessionId, pageSessionId: pair.pageSessionId, projectUuid: prepared.target.projectUuid, windowTabId: cache.windowTabId }); original();
           if (!exact(result, ["bound"]) || result["bound"] !== true) { throw error("SAVED_READBACK_LOAD_NATIVE_BINDING"); }
-        }, request: async (command: CurrentPcbViaSavedLoadBootstrapCommand): Promise<unknown> => { original();
+        }, request: async (command: CurrentPcbViaSavedLoadWorkerCommand): Promise<unknown> => { original();
           if (this.#savedReadbackLoadCommand !== null) { throw error("SAVED_READBACK_LOAD_REQUEST_PENDING"); } this.#savedReadbackLoadCommand = command;
+          if (command.method === "Runtime.callFunctionOn" || command.method === "Debugger.evaluateOnCallFrame") { original().expectHelper(command.method === "Runtime.callFunctionOn" ? `(${command.params.functionDeclaration})` : command.params.expression); }
           try { const reply = await this.#transfer(() => pipe.observeSavedReadbackLoadWorker(command)); original(); return reply; } finally { this.#savedReadbackLoadCommand = null; }
         }, poll: async (): Promise<void> => { original(); if (this.#mainRunner !== null) { await this.#mainRunner.pumpSelectedSqlFence(); } original(); await this.#pollRenderer(); original(); },
         assertCurrent: async (): Promise<void> => { original(); await this.#verify(); original(); },
         projectSourceHeld: async (source: CurrentPcbViaSavedLoadProjectSourceHeld, selected: CurrentPcbViaSavedLoadController): Promise<void> => {
           if (original() !== selected) { throw error("SAVED_READBACK_LOAD_ORIGINAL_SOURCE"); } const pair = selected.requireHeld(source);
+          if (this.#savedReadbackLoadObserver !== null) { throw error("SAVED_READBACK_LOAD_OBSERVER_CONSUMED"); }
+          const bound = await this.#request({ action: "saved-readback-observation-bind", scriptId: source.scriptId, uniqueContextId: source.uniqueContextId }); original();
+          if (!exact(bound, ["bound"]) || bound["bound"] !== true) { throw error("SAVED_READBACK_OBSERVATION_NATIVE_BIND"); } pipe.bindSavedReadbackLoadObservation();
+          const request = async (command: CurrentPcbViaSavedLoadWorkerCommand): Promise<unknown> => { original();
+            if (this.#savedReadbackLoadCommand !== null) { throw error("SAVED_READBACK_LOAD_REQUEST_PENDING"); } this.#savedReadbackLoadCommand = command;
+            if (command.method === "Runtime.callFunctionOn" || command.method === "Debugger.evaluateOnCallFrame") { selected.expectHelper(command.method === "Runtime.callFunctionOn" ? `(${command.params.functionDeclaration})` : command.params.expression); }
+            try { const reply = await this.#transfer(() => pipe.observeSavedReadbackLoadWorker(command)); original(); return reply; } finally { this.#savedReadbackLoadCommand = null; }
+          };
+          const observer = new CurrentPcbViaSavedLoadObserver(Object.freeze({ source, sessionId: pair.pageSessionId, data: allocation.requireLoadPlan(allocation.loadPlan, prepared),
+            request, helper: async (program: string): Promise<void> => { original(); await selected.consumeHelper(program); original(); },
+            registerPoint: (role: Parameters<CurrentPcbViaSavedLoadController["registerPoint"]>[0], id: string): void => { original(); selected.registerPoint(role, id); }, nextEvent: async (): Promise<DiagnosticEvent> => { original(); const event = await selected.nextObservationEvent(); original(); return event; },
+            reserveResume: (role: Parameters<CurrentPcbViaSavedLoadController["reserveResume"]>[0]): void => { original(); selected.reserveResume(role); }, whenProjectStarted: async (): Promise<void> => { await selected.whenProjectStarted(); original(); },
+            assertCurrent: async (): Promise<void> => { original(); await this.#verify(); original(); }, fail: (): void => { selected.fail(); } }));
+          this.#savedReadbackLoadObserver = observer; await observer.arm(); original(); if (!observer.status().armed || observer.status().failed) { throw error("SAVED_READBACK_OBSERVER_ARM_REQUIRED"); }
+          const armed = await this.#request({ action: "saved-readback-observation-arm" }); original();
+          if (!exact(armed, ["armed"]) || armed["armed"] !== true) { throw error("SAVED_READBACK_OBSERVATION_NATIVE_ARM"); }
           const origin: CurrentPcbViaSavedLoadOrigin = Object.freeze({ profile: "private.current-pcb-via-saved-load-origin.v1" });
           const bindings: CurrentPcbViaSavedLoadBindings = Object.freeze({ prepared, plan: allocation.loadPlan, sessionId: pair.pageSessionId, targetId: pair.targetId, source,
             assertCurrent: async (): Promise<void> => { original(); selected.requireHeld(source); await this.#verify(); original(); selected.requireHeld(source); },
@@ -6425,6 +6445,27 @@ class CurrentPcbRetainedOwnerCore {
     const controller = this.#savedReadbackLoadController;
     if (this.#purpose !== CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE || controller === null) { throw error("SAVED_READBACK_LOAD_NOT_ARMED"); }
     this.#enter(true); try { return await controller.observeProjectSourceHeld(); } finally { this.#busy = false; }
+  }
+  /** Continue only the original source-held loading generation. The result
+   * remains a data observation until runtime-model and closed-file proof join. */
+  public observeSavedReadbackColdLoading(): Promise<CurrentPcbViaSavedLoadObservedData> {
+    assertOriginalCurrentPcbViaSavedReadbackOwner(this);
+    if (this.#savedReadbackLoadCompletion !== null) { return this.#savedReadbackLoadCompletion; }
+    const controller = this.#savedReadbackLoadController, observer = this.#savedReadbackLoadObserver;
+    if (controller === null || observer === null || !controller.status().sourceCallbackSettled || !observer.status().armed || observer.status().failed || this.#savedReadbackLoadData !== null) { throw error("SAVED_READBACK_COLD_LOAD_UNAVAILABLE"); }
+    this.#enter(true);
+    const promise = (async (): Promise<CurrentPcbViaSavedLoadObservedData> => {
+      try {
+        await controller.startProjectSource(); await this.#verify();
+        if (this.#savedReadbackLoadController !== controller || this.#savedReadbackLoadObserver !== observer || this.#savedReadbackAborted) { throw error("SAVED_READBACK_COLD_LOAD_ORIGINAL"); }
+        const data = await observer.observe(); await this.#verify();
+        if (this.#savedReadbackLoadController !== controller || this.#savedReadbackLoadObserver !== observer || this.#savedReadbackAborted || !observer.status().complete || observer.status().failed) { throw error("SAVED_READBACK_COLD_LOAD_ORIGINAL"); }
+        const completed = await this.#request({ action: "saved-readback-observation-complete" });
+        if (!exact(completed, ["completed"]) || completed["completed"] !== true || this.#savedReadbackAborted) { throw error("SAVED_READBACK_COLD_LOAD_NATIVE_COMPLETE"); }
+        await this.#verify(); this.#savedReadbackLoadData = data; return data;
+      } catch (caughtError) { controller.fail(); this.#input.emit("error", error("SAVED_READBACK_COLD_LOAD_FAILED")); throw caughtError; }
+      finally { this.#busy = false; }
+    })(); this.#savedReadbackLoadCompletion = promise; return promise;
   }
   /** Publish the one original registration intent before any registration
    * dispatch. Publication cannot manufacture a pending UI call or a SQL grant. */
@@ -6460,7 +6501,7 @@ class CurrentPcbRetainedOwnerCore {
           assertOriginalDispatchPending: (): void => { current(); const held = savedProjectRegistrationIntents.get(intent);
             if (held === undefined || held.owner !== this || held.runner !== runner || !held.attempted || held.pending === null || !types.isPromise(held.pending) || held.settled || this.#savedReadbackRegistrationIntent !== intent) { throw error("SAVED_READBACK_REGISTRATION_DISPATCH_PENDING_REQUIRED"); } } });
         savedProjectRegistrationIntents.set(intent, { owner: this, runner, prepared, target, loading, bindings, artifact, text, attempted: false, pending: null, settled: false });
-        this.#savedReadbackRegistrationIntent = intent; current(); return intent;
+        this.#savedReadbackRegistrationIntent = intent; current(); await runner.enrollSavedProjectRegistrationIntent(intent); current(); return intent;
       } catch (caughtError) { this.#input.emit("error", error("SAVED_READBACK_REGISTRATION_INTENT_FAILED")); throw caughtError; }
       finally { this.#busy = false; }
     })(); this.#savedReadbackRegistrationPromise = promise; return promise;

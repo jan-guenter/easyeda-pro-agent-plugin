@@ -707,3 +707,34 @@ original lookup, copied-intent refusal and refusal of an unattempted registratio
 as pending, then observes the original Job-only cleanup. These are isolated
 source/publication checks. Initial startup worker sources and the actual cold
 fetch/model/opening joins remain unqualified; no saved-cache route was run.
+
+
+The distinct saved reader now mounts a fixed cold-loading observer at its own
+original project source pause. It qualifies the actual Cache/Response and
+Fetch/DataView candidates before arming thirteen source points, retains the
+before-script instrumentation throughout loading, and admits no continuation
+for local-index, pending-cache, legacy-decrypt or failure paths. The live
+source-held origin expires when the original project script resumes.
+
+The narrow loading path joins the original branch/head, empty local index,
+complete API history rows, two original fetch callees and their source-bound
+flow callbacks, exact cipher and decrypted chunks, final parsed metadata and
+original ready/resumed pair. It handles overlapping chunks and sparse partial
+metadata explicitly. Its fixed grammar reserves135 requests:121 observations
+and14 continuations;34 of those observations are exact correlated helper source
+reads. The current saved-reader stages are172 readonly,194 through source hold,
+329 through this observation, and419 prospective total before later registration
+and runtime-model extensions. Existing spatial and writer purposes are unchanged.
+
+Focused verification runs the production collector with an explicit source-byte
+seam and correlated inert Inspector packets, fixed snapshots in an inert VM,
+original owner/real synthetic child cleanup, and deterministic finite native
+emission. It proves changed native metadata/body refusal before continuation,
+consumed rejected work, omission of caller realm selectors, and exact helper and
+request counts. Source types and strict lint are required for this increment.
+Final combined C# compilation is deferred to the parent's registration/native
+integration so its complete current helper is compiled once. No live cache,
+registration, loading or writer call was made. Initial startup actor exclusion,
+actual registration/opening, runtime DTO/scene comparison and final closed-file
+reproof remain necessary; this data result claims neither native ownership nor
+saved/reopened acceptance.

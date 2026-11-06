@@ -13,7 +13,7 @@ import type { CurrentGeneratedInitialSyncCommand } from "./current-generated-ini
 import { currentGeneratedInitialCacheWire } from "./current-generated-initial-cache-wire.ts";
 import type { CurrentGeneratedInitialCacheCommand } from "./current-generated-initial-cache-protocol.ts";
 import { currentPcbViaSavedLoadWorkerFrame } from "./current-pcb-via-saved-load-worker-wire.ts";
-import type { CurrentPcbViaSavedLoadBootstrapCommand } from "./current-pcb-via-saved-load-bootstrap-protocol.ts";
+import type { CurrentPcbViaSavedLoadWorkerCommand } from "./current-pcb-via-saved-load-worker-wire.ts";
 import type { CurrentPcbViaSavedLoadWorkerPair } from "./current-pcb-via-saved-load-controller.ts";
 import { currentProjectSaveProducerWire } from "./current-project-save-producer-wire.ts";
 import type { CurrentProjectSaveProducerCommand } from "./current-project-save-producer-protocol.ts";
@@ -288,6 +288,7 @@ class CurrentPcbFixedPipeCore {
   #event: ((event: DiagnosticEvent) => void) | null = null;
   readonly #savedReadbackPurpose: boolean;
   #savedReadbackLoadEvent: ((event: DiagnosticEvent) => void) | null = null;
+  #savedReadbackObservation = false;
   #savedReadbackLoadPair: CurrentPcbViaSavedLoadWorkerPair | null = null; readonly #savedReadbackLoadSlots = new Set<string>();
   #savedReadbackActors = false; #savedReadbackLoadingGuard = false; #savedReadbackGuard = 0; #savedReadbackDiscovery = 0; #savedReadbackPreflight = 0; #savedReadbackCache = 0; #savedReadbackMetadata = 0; #savedReadbackParent = false;
   #eventCount = 0;
@@ -910,11 +911,16 @@ class CurrentPcbFixedPipeCore {
     if (!this.#savedReadbackPurpose || this.#savedReadbackLoadEvent === null || this.#savedReadbackLoadPair !== null || this.#workerSessions.get(pair.pageSessionId) !== pair.targetId || this.#workerSessions.get(pair.browserSessionId) !== pair.targetId || pair.pageSessionId === pair.browserSessionId) { throw new Error("SAVED_READBACK_LOAD_ORIGINAL_PAIR"); }
     this.#savedReadbackLoadPair = pair;
   }
-  public observeSavedReadbackLoadWorker(command: CurrentPcbViaSavedLoadBootstrapCommand): Promise<Reply> {
+  public bindSavedReadbackLoadObservation(): void {
+    if (!this.#savedReadbackPurpose || this.#savedReadbackLoadPair === null || this.#savedReadbackObservation || !this.#savedReadbackLoadSlots.has("saved-load-source-project")) { throw new Error("SAVED_READBACK_OBSERVATION_BIND_ONCE"); }
+    this.#savedReadbackObservation = true;
+  }
+  public observeSavedReadbackLoadWorker(command: CurrentPcbViaSavedLoadWorkerCommand): Promise<Reply> {
     const pair = this.#savedReadbackLoadPair;
     if (!this.#savedReadbackPurpose || pair === null) { throw new Error("SAVED_READBACK_LOAD_ORIGINAL_PAIR"); }
-    const slot = "role" in command ? `${command.phase}-${command.role}` : command.phase;
-    if (this.#savedReadbackLoadSlots.has(slot)) { throw new Error("SAVED_READBACK_LOAD_COMMAND_CONSUMED"); }
+    const slot = `${command.phase}${"role" in command ? `-${command.role}` : ""}${"index" in command ? `-${String(command.index)}` : ""}`;
+    if (!this.#savedReadbackObservation && command.phase.startsWith("saved-observe-")) { throw new Error("SAVED_READBACK_OBSERVATION_NOT_BOUND"); }
+    if (this.#savedReadbackLoadSlots.has(slot) && !command.phase.startsWith("saved-observe-")) { throw new Error("SAVED_READBACK_LOAD_COMMAND_CONSUMED"); }
     this.#savedReadbackLoadSlots.add(slot); return this.#request(currentPcbViaSavedLoadWorkerFrame(command, this.#nextId, pair), "saved-readback-worker");
   }
 
@@ -949,7 +955,7 @@ class CurrentPcbFixedPipeCore {
    * write ambiguity fails the pipe and never grants an automatic resend.
    */
   // oxlint-disable-next-line eslint/require-await -- Async converts pre-dispatch guards to rejected promises; native completion is callback-based.
-  async #request(command: (InitialSyncWireCommand & Readonly<{ id: number; sessionId: string }>) | (CurrentPcbViaSavedLoadBootstrapCommand & Readonly<{ id: number; sessionId: string; savedReadbackWorker: true }>) | SavedReadbackCacheWire | (InitialCacheWireCommand & Readonly<{ id: number; sessionId: string }>) | (ProducerObserveWireCommand & Readonly<{ id: number; sessionId: string }>) | (ProducerGuardWireCommand & Readonly<{ id: number; sessionId: string }>) | (StructureTransportWireCommand & Readonly<{ id: number; sessionId: string }>) | ((CurrentSchematicDisplayAccessorCommand & Readonly<{ schematicAccessorCommand: true }>) & Readonly<{ id: number; sessionId: string }>) | ((CurrentSchematicDisplayClockCommand & Readonly<{ schematicClockCommand: true; schematicClockRealm: CurrentSchematicDisplayClockRealm }>) & Readonly<{ id: number; sessionId: string }>) | ((SchematicWorkerParentCommand | (CurrentSchematicDisplayWorkerCommand & Readonly<{ schematicWorkerCommand: true }>)) & Readonly<{ id: number; sessionId: string }>) | (CurrentSchematicDisplayNativeCommand & Readonly<{ id: number; sessionId: string }>) | DiagnosticCommand | CurrentPcbSpatialWireCommand | ((CurrentPcbViaWriteCommand | CurrentPcbViaSpatialCommand | CurrentPcbViaSdkPropertiesCommand | ViaWorkerParentCommand | ViaClockWireCommand | (CurrentPcbViaWorkerCommand & Readonly<{ viaWorkerCommand: true }>)) & Readonly<{ id: number; sessionId: string }>) | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheHeldCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
+  async #request(command: (InitialSyncWireCommand & Readonly<{ id: number; sessionId: string }>) | (CurrentPcbViaSavedLoadWorkerCommand & Readonly<{ id: number; sessionId: string; savedReadbackWorker: true }>) | SavedReadbackCacheWire | (InitialCacheWireCommand & Readonly<{ id: number; sessionId: string }>) | (ProducerObserveWireCommand & Readonly<{ id: number; sessionId: string }>) | (ProducerGuardWireCommand & Readonly<{ id: number; sessionId: string }>) | (StructureTransportWireCommand & Readonly<{ id: number; sessionId: string }>) | ((CurrentSchematicDisplayAccessorCommand & Readonly<{ schematicAccessorCommand: true }>) & Readonly<{ id: number; sessionId: string }>) | ((CurrentSchematicDisplayClockCommand & Readonly<{ schematicClockCommand: true; schematicClockRealm: CurrentSchematicDisplayClockRealm }>) & Readonly<{ id: number; sessionId: string }>) | ((SchematicWorkerParentCommand | (CurrentSchematicDisplayWorkerCommand & Readonly<{ schematicWorkerCommand: true }>)) & Readonly<{ id: number; sessionId: string }>) | (CurrentSchematicDisplayNativeCommand & Readonly<{ id: number; sessionId: string }>) | DiagnosticCommand | CurrentPcbSpatialWireCommand | ((CurrentPcbViaWriteCommand | CurrentPcbViaSpatialCommand | CurrentPcbViaSdkPropertiesCommand | ViaWorkerParentCommand | ViaClockWireCommand | (CurrentPcbViaWorkerCommand & Readonly<{ viaWorkerCommand: true }>)) & Readonly<{ id: number; sessionId: string }>) | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheHeldCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
     Readonly<{ id: number; sessionId: string }>), phase: RequestPhase = "discovery"): Promise<Reply> {
     if (!this.#started || this.#released || this.#handedOff) { throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED"); }
     if (this.#savedReadbackPurpose) {
@@ -962,7 +968,7 @@ class CurrentPcbFixedPipeCore {
       const preflight = phase === "project-preflight" && command.method === "Runtime.callFunctionOn";
       const discovery = (phase === "discovery" || phase === "frame-owner") && CURRENT_PCB_SPATIAL_DISCOVERY_METHODS.some(method => method === command.method);
       if (!worker && !cache && !metadata && !parent && !preflight && !guard && !loadGuard && !discovery) { throw new Error("SAVED_READBACK_DISCOVERY_ONLY"); }
-      if (worker) { if (this.#savedReadbackLoadSlots.size > 22) { throw new Error("SAVED_READBACK_LOAD_WORKER_BUDGET"); } }
+      if (worker) { if (this.#savedReadbackLoadSlots.size > 22 + CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.loadingObservation) { throw new Error("SAVED_READBACK_LOAD_WORKER_BUDGET"); } }
       else if (metadata) { if (this.#savedReadbackMetadata >= CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.nativeMetadata) { throw new Error("SAVED_READBACK_METADATA_BUDGET"); } this.#savedReadbackMetadata += 1; }
       else if (cache) { if (this.#savedReadbackCache >= 36) { throw new Error("SAVED_READBACK_CACHE_BUDGET"); } this.#savedReadbackCache += 1; }
       else if (loadGuard) { if (this.#savedReadbackLoadingGuard) { throw new Error("SAVED_READBACK_LOAD_GUARD_CONSUMED"); } this.#savedReadbackLoadingGuard = true; }
@@ -999,7 +1005,10 @@ class CurrentPcbFixedPipeCore {
     if (this.#heldCacheDiagnosticPurpose) { limit = HELD_DIAGNOSTIC.requestLimit; }
     if (this.#spatialPurpose) { limit = CURRENT_PCB_SPATIAL_PROFILE.requestLimit; }
     if (this.#componentSpatialPurpose) { limit = CURRENT_PCB_COMPONENT_SPATIAL_PROFILE.requestLimit; }
-    if (this.#savedReadbackPurpose) { limit = this.#savedReadbackLoadPair === null ? CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeReadOnly : CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeLoadBootstrap; }
+    if (this.#savedReadbackPurpose) {
+      if (this.#savedReadbackObservation) { limit = CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeLoadObservation; }
+      else { limit = this.#savedReadbackLoadPair === null ? CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeReadOnly : CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeLoadBootstrap; }
+    }
     if (this.#viaPurpose) { limit = CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.renderer.total; }
     if (this.#schematicDisplayPurpose) { limit = CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE.renderer.total; }
     const heldCleanup = heldCache && command.method === "Runtime.releaseObjectGroup";

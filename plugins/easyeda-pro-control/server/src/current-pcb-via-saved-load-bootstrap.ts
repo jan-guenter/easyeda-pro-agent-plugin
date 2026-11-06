@@ -14,7 +14,7 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export interface CurrentPcbViaSavedLoadBootstrapEvent { readonly method: string; readonly sessionId: string; readonly params: unknown }
 export interface CurrentPcbViaSavedLoadProjectSourceHeld {
-  readonly scriptId: string; readonly uniqueContextId: string; readonly executionContextId: number; readonly source: string;
+  readonly instrumentationBreakpointId: string; readonly scriptId: string; readonly uniqueContextId: string; readonly executionContextId: number; readonly source: string;
 }
 export interface CurrentPcbViaSavedLoadBootstrapBindings {
   readonly sessionId: string; readonly targetId: string; readonly targetUrl: string; readonly targetTitle: string;
@@ -150,7 +150,7 @@ export class CurrentPcbViaSavedLoadBootstrap {
         need(typeof source === "string", "SOURCE"); if (role === "bootstrap") { need(source === BOOTSTRAPS[1] || source === BOOTSTRAPS[2], "OFFLINE_MODE_REQUIRED"); }
         if (role === "project") {
           need(this.#context !== null && !this.#sourceCallbackAttempted && this.#instrument !== null, "PROJECT_SOURCE_CONSUMED"); this.#sourceCallbackAttempted = true;
-          await this.#bindings.projectSourceHeld(freezeDeep({ scriptId: selected.scriptId, uniqueContextId: this.#context.uniqueId, executionContextId: this.#context.id, source })); await this.#current();
+          await this.#bindings.projectSourceHeld(freezeDeep({ instrumentationBreakpointId: this.#instrument, scriptId: selected.scriptId, uniqueContextId: this.#context.uniqueId, executionContextId: this.#context.id, source })); await this.#current();
         } else { await this.#resume(role); }
       }
       const selected = this.#scripts.get("project"); need(selected !== undefined && this.#context !== null, "PROJECT_SOURCE");
