@@ -5,7 +5,7 @@ import { setImmediate as waitImmediate } from "node:timers/promises";
 import { createContext, runInContext } from "node:vm";
 import { buildManagedFixtureImportPrograms, managedFixtureImportJobObservationSchema, validateManagedFixtureImportJobObservation } from "../src/managed-fixture-import-program.ts";
 import { managedProjectFootprintArchive } from "./helpers/managed-project-footprint-archive.ts";
-import { buildManagedFixtureEnvironmentProgram, managedFixtureEnvironmentRefusalSchema } from "../src/managed-fixture-environment-program.ts";
+import { buildManagedFixtureEnvironmentProgram, managedFixtureEnvironmentObservationSchema, managedFixtureEnvironmentRefusalSchema } from "../src/managed-fixture-environment-program.ts";
 
 // Golden SHA-256 of the literal Windows path C:\PrivateFixtures\original\Fixture.eprj2.
 const UUID = "bbd7e0ad75800669f5a66d2b188d835a3eafef02da50da748f58dd6cac5bda3d", plan = { operationId: "fixture-import-synthetic", nonce: "2".repeat(64),
@@ -18,11 +18,11 @@ function fetchConfig(responseUrl = "https://client/api/client/config"): Promise<
     const response = Response.json({ success: true, result: { systemLib: plan.libraryWindowsDirectories, reuseBlock: plan.libraryWindowsDirectories, platform: "win32" } });
     Object.defineProperty(response, "url", { value: responseUrl }); return Promise.resolve(response);
 }
-function fixture(options: Readonly<{ throwSynchronously?: boolean; wrongReturn?: boolean; extraTab?: boolean; iframe?: boolean; responseUrl?: string }> = {}): Readonly<{
+function fixture(options: Readonly<{ throwSynchronously?: boolean; wrongReturn?: boolean; extraTab?: boolean; iframe?: boolean; responseUrl?: string; browserGlobals?: "lazy" | "inherited-fetch"; applicationAccessor?: boolean }> = {}): Readonly<{
   run: (program: string) => Promise<unknown>; calls: () => number; args: () => readonly unknown[];
-  resolve: (value: unknown) => void; reject: (error: Error) => void; changeOwner: () => void;
+  resolve: (value: unknown) => void; reject: (error: Error) => void; changeOwner: () => void; browserReads: () => number; configCalls: () => number;
 }> {
-  let count = 0; let captured: readonly unknown[] = [];
+  let count = 0; let captured: readonly unknown[] = []; let browserReads = 0, configCalls = 0;
   const pending = Promise.withResolvers<unknown>();
   const manager = { importProjectByProjectFile(...args: readonly unknown[]): unknown {
     count += 1; captured = args;
@@ -31,9 +31,22 @@ function fixture(options: Readonly<{ throwSynchronously?: boolean; wrongReturn?:
   } };
   const location = { href: "https://client/editor?cll=debug", origin: "https://client" };
   const host = { currentProject: null as unknown };
-  const root: Record<string, unknown> = { atob, crypto: webcrypto, File, Promise, Response, fetch: () => fetchConfig(options.responseUrl), location, gVars: host,
+  const root: Record<string, unknown> = { atob, crypto: webcrypto, File, Promise, Response, fetch: (url: unknown, input: unknown) => {
+    configCalls += 1; assert.equal(url, "/api/client/config"); assert.equal(JSON.stringify(input), '{"method":"GET"}'); return fetchConfig(options.responseUrl);
+  }, location, gVars: host,
     UI: { gVars: host }, PRO_EDITOR_MODE: "CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM",
     eda: { extensionUuid: "7e06d286b1ac846ef7eab9c7f2a9ee40", sys_FileManager: manager } };
+  const lazyGlobal = (key: string): PropertyDescriptor => { const value = root[key];
+    return { configurable: true, enumerable: true, get: (): unknown => {
+      browserReads += 1; Object.defineProperty(root, key, { value, writable: true, configurable: true, enumerable: true }); return value;
+    } };
+  };
+  if (options.browserGlobals === "lazy") {
+    for (const key of ["fetch", "Response"]) { Object.defineProperty(root, key, lazyGlobal(key)); }
+  } else if (options.browserGlobals === "inherited-fetch") {
+    const value = root["fetch"]; Reflect.deleteProperty(root, "fetch");
+    Object.setPrototypeOf(root, { fetch: value });
+  }
   const context = createContext(root);
   runInContext(`globalThis.top=globalThis;globalThis.window=globalThis;globalThis.document={defaultView:globalThis,nodeType:9,URL:location.href,querySelectorAll(selector){if(selector!=='iframe')throw new Error('selector');return {length:${options.iframe === true ? 1 : 0}};}};
 gVars.currentProject={branchUuid:''};gVars.isHistoryMode=false;
@@ -42,13 +55,14 @@ globalThis.container={id:'editor-window-main',belong:'editor-window-main',tabs:[
 class Tabs { static getActiveTab(){return this.currentTabId;} static getContainerInfo(id){if(id!==container.id)throw new Error('container');return container;} }
 Tabs.currentTabId='tab_page1';Tabs.belongContainer='editor-window-main';Tabs.containerIds=['editor-window-main'];Tabs.containerTree={id:'editor-window-main'};UI.tabBar=Tabs;
 ${options.extraTab === true ? "container.tabs.push({tabId:'unexpected-document'});" : ""}`, context);
+  if (options.applicationAccessor === true) { Object.defineProperty(root, "UI", lazyGlobal("UI")); }
   return { run: async (program) => { const result: unknown = runInContext(`(async function(){${program}})()`, context); return await result; },
     calls: () => count, args: () => captured, resolve: (value) => {
       root["syntheticValue"] = value;
       const sameRealm: unknown = runInContext("typeof syntheticValue==='object' && syntheticValue!==null ? JSON.parse(JSON.stringify(syntheticValue)) : syntheticValue", context);
       pending.resolve(sameRealm);
     }, reject: pending.reject,
-    changeOwner: () => { host.currentProject = { projectId: "unexpected" }; } };
+    changeOwner: () => { host.currentProject = { projectId: "unexpected" }; }, browserReads: () => browserReads, configCalls: () => configCalls };
 }
 function observation(value: unknown): ReturnType<typeof managedFixtureImportJobObservationSchema.parse> {
   return managedFixtureImportJobObservationSchema.parse(value);
@@ -67,6 +81,25 @@ void test("environment refusals retain the exact failed stage without importer d
   assert.equal(metadata.calls(), 0); assert.equal(afterFetch.effectsUnknown, true); assert.equal(afterFetch.retryAllowed, false);
   for (const change of [{ configGetAttempted: false }, { responseReceived: false }, { stage: "owner-before-fetch" }, { stage: "response-text" }]) {
     assert.equal(managedFixtureEnvironmentRefusalSchema.safeParse({ ...afterFetch, ...change }).success, false);
+  }
+});
+
+void test("fixed preflight reads platform globals after the empty guard, including lazy and inherited bindings", async () => {
+  const alteredApplication = fixture({ browserGlobals: "lazy", applicationAccessor: true });
+  const applicationRefusal = managedFixtureEnvironmentRefusalSchema.parse(await alteredApplication.run(buildManagedFixtureEnvironmentProgram()));
+  assert.equal(applicationRefusal.stage, "capture-context");
+  assert.equal(applicationRefusal.schema, "easyeda-pro-control.fixture-import-environment-refusal.v2");
+  assert.ok("captureMember" in applicationRefusal); assert.equal(applicationRefusal.captureMember, "UI");
+  assert.equal(alteredApplication.browserReads(), 0); assert.equal(alteredApplication.configCalls(), 0);
+  const unready = fixture({ browserGlobals: "lazy", extraTab: true });
+  const refused = managedFixtureEnvironmentRefusalSchema.parse(await unready.run(buildManagedFixtureEnvironmentProgram()));
+  assert.equal(refused.stage, "empty-start-page"); assert.equal(unready.browserReads(), 0); assert.equal(unready.configCalls(), 0);
+  for (const browserGlobals of ["lazy", "inherited-fetch"] as const) {
+    const native = fixture({ browserGlobals });
+    if (browserGlobals === "inherited-fetch") { assert.equal(await native.run("return Object.hasOwn(globalThis,'fetch');"), false); }
+    const result = managedFixtureEnvironmentObservationSchema.parse(await native.run(buildManagedFixtureEnvironmentProgram()));
+    assert.equal(result.mode, "HALF_OFFLINE"); assert.equal(native.configCalls(), 1); assert.equal(native.calls(), 0);
+    if (browserGlobals === "lazy") { assert.equal(native.browserReads(), 2); }
   }
 });
 

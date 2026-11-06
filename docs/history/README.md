@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 fixture browser-global capture](2026-11-06-fixture-browser-global-capture.md). Exact third-case pre-GET refusal, retained original reply and guarded fixed browser-global reads with a separate historical-compatible diagnostic schema; connected import remains pending.
+
 - [2026-11-06 generated schematic index mount](2026-11-06-generated-schematic-index-mount.md). Reachable separate SCH token and original ordinary-runtime route, source/API queries, exclusive custody and cleanup gates; connected acceptance pending.
 
 - [2026-11-06 current Node paired hash](2026-11-06-current-node-paired-hash.md). Removes one redundant full executable read while preserving fresh before/after version hashes, original paired descriptors and path/permission checks.

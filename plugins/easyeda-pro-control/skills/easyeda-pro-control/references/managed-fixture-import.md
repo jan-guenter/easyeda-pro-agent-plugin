@@ -101,3 +101,11 @@ nonce for cleanup. `nativeEnvironmentMayHaveBeenDispatched` is distinct from
 `nativeImportMayHaveBeenDispatched`. Do not infer safe retry from either a
 refusal stage or an unallocated importer. Preserve the original case and finish
 its cleanup before considering any independently identified later case.
+
+Refusal V2 also records the fixed capture member and bounded descriptor/value
+classifications for `fetch` and `Response`. These standard browser globals can
+be inherited or lazily exposed. The preflight reads them only after the empty
+Start Page guard; application globals still require own data properties.
+Historical V1 refusals have no member evidence. A `capture-context` failure in
+that version does not identify a particular global. Neither diagnostic version
+grants replay or replaces original native cleanup.
