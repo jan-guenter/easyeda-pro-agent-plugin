@@ -247,3 +247,43 @@ cases pass, with full TypeScript checks and strict changed-file lint. The
 reference-custody cases use explicit issuer/comparator seams; the prior
 complete SQL tests cover actual files and encryption. No app, Windows compiler
 or native owner was allocated.
+
+### Fresh reopen cache exclusion: fixed readonly leaf
+
+The pinned ordinary `Lg.open` path is not a forced disk reload. It initializes
+`project_<uuid>_v6` and `localProject_<uuid>_v1`, reads the cached index and takes
+`openInLocal` when that index is nonempty. `hd` merges cached document metadata
+into native history responses, and `pd` may parse cached document chunks.
+`flowGetLocalHistory` also calls `getUploadedData`, which can schedule persistent
+pending streams for upload. The cold `openInCloud` branch instead uses `du` and
+`mg` to fetch native history chunks. The `debugOpen` option suppresses fetch
+errors; it does not bypass these caches.
+
+The pinned main source (`52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c`)
+constructs its ordinary BrowserWindow without a separate partition and sets
+`userData` to the persistent `cache.<arch>.3` directory. A new app process does
+not establish namespace absence. The explicit settings cache-clear path calls
+`defaultSession.clearStorageData`; this implementation does not call it.
+
+`current-generated-project-reopen-cache-source.ts` now pins the complete
+worker plus the exact namespace/index, warm/cold load, cached metadata/chunk,
+pending replay and native fetch spans. Its fixed program leaf captures the
+original CacheStorage constructor, caches getter and keys method before the
+project script starts. Only after native metadata qualification may a future
+original readback owner bind that native storage and query its namespace names.
+The query refuses either selected namespace, bounds the complete native names
+array, exposes only the count, and rechecks the original references and absence
+of PROJECT around its pending native call. It does not call open, match, put,
+delete or any cache-clear API. Eight leaf commands plus one group release are
+counted separately from future owner/source/loading work.
+
+This leaf is deliberately not a reopen token or a mounted readback generation.
+A fresh original saved-checkpoint birth must retain the actual worker/source,
+qualify the three actual native function references, bind the UUID from that
+checkpoint, and continuously join this observation through the actual cold
+loading branch and native source responses. No such custody may be obtained
+from a caller's matching reply. Persistent namespaces normally populated by a
+writer will cause refusal; no supported per-project ignore-cache option was
+found in the pinned path. Saved checkpoint issuance and that fresh native
+loading integration remain required. Five focused source/program cases and
+full types/strict changed-file lint pass; no browser cache or app was used.
