@@ -34,6 +34,7 @@ export const currentPcbSpatialRequestSchema = z.discriminatedUnion("action", [
   z.strictObject({ action: z.literal("open-generated-fixture"), ...bound, confirmGeneratedDisposableFixture: z.literal(true),
     acceptRecentPathRegistration: z.literal(true), acceptNormalOpenEffects: z.literal(true) }),
   z.strictObject({ action: z.literal("open-pcb"), ...bound, acceptNormalOpenEffects: z.literal(true) }),
+  z.strictObject({ action: z.literal("capture-generated-closed"), ...bound, confirmReadClosedFixture: z.literal(true) }),
   z.strictObject({ action: z.literal("observe-pcb-opening"), ...bound }),
   z.strictObject({ action: z.literal("observe-spatial"), ...bound, queries: currentPcbSpatialQueriesSchema,
     acceptNativeScratchEffects: z.literal(true) }),
@@ -121,6 +122,7 @@ export function queryCurrentPcbSpatial(input: unknown = {}): Record<string, unkn
       "observe-spatial requires acceptNativeScratchEffects:true for the exact documented native math scratch effects. No selection, geometry writer, explicit Save or production scope is enabled.",
       "Fixed application callees require full original source descriptions, script locations and same-reference rechecks before each native sample. Standard ECMAScript intrinsics in the admitted renderer are assumed, not identity-verified; this route is not a hostile-page JavaScript sandbox. Unsupported replacement hooks and source/state changes refuse.",
       "Large batches return a bounded journal summary. The complete original ordered result remains in the referenced record rather than exceeding the response envelope.",
+      "A generated-fixture owner can capture exact closed bytes, complete SQL and raw history once after original root/Job termination and before helper release. Capture retains qualification failures and grants no new opening, persistence or writer authority.",
       "Opening can restore tabs, migrate, replay caches and automatically persist files. Missing replies consume their original stages; record settlement never replays dispatch. Keep the original owner through normal closure, observed root/Job exit and acknowledged release.",
     ], ...(request.includeSchemas ? { inputSchema: z.toJSONSchema(currentPcbSpatialRequestSchema) } : {}) };
 }

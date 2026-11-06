@@ -32,6 +32,10 @@ import type { CurrentPcbDiagnosticLifecycleDependencies, CurrentPcbDiagnosticLif
   CurrentPcbWorkerStartupLifecycleOwner, CurrentPcbWorkerStartupOpeningCoordinator } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { LIFECYCLE_MODEL_RESULT as MODEL_RESULT } from "./helpers/current-pcb-diagnostic-lifecycle-model.ts";
 import { fixture as sqlFixture } from "./helpers/symbol-sql-fixture.ts";
+import { managedFixtureInitialSqlFixture } from "./helpers/managed-fixture-initial-sql.ts";
+import { qualifyGeneratedFixtureInitialSql } from "../src/managed-fixture-initial-sql.ts";
+import { stageManagedFixtureOpeningSource } from "../src/managed-fixture-opening-source.ts";
+import type { ManagedFixtureOpeningSource } from "../src/managed-fixture-opening-source.ts";
 import { currentPcbCommonBaselineFailureSchema, currentPcbCommonBaselineRefusal, currentPcbCommonBaselineResultSchema } from "../src/current-pcb-common-baseline-validation.ts";
 import { CURRENT_PCB_STRING_ACTOR_CLOCK_LIMITS } from "../src/current-pcb-string-actor-clock-runner.ts";
 import type { CurrentPcbCommonBaselineFailure } from "../src/current-pcb-common-baseline-validation.ts";
@@ -146,7 +150,7 @@ function launch(id: string): Record<string, unknown> {
   return { action: "launch", operationId: id, ...(id.startsWith("pcb209-ordinary-") ? { confirmOrdinaryReadOnly: true } : { confirmValidationOnly: true }), confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true };
 }
 type FixtureDependencies = CurrentPcbDiagnosticLifecycleDependencies & Pick<CurrentPcbWorkerStartupLifecycleDependencies, "createStartupOpening">;
-function fixture(context: TestContext, id: string, dependencies: FixtureDependencies = {}, sharedAdmission?: () => Promise<void>): {
+function fixture(context: TestContext, id: string, dependencies: FixtureDependencies = {}, sharedAdmission?: () => Promise<void>, generatedSource?: ManagedFixtureOpeningSource): {
   coordinator: CurrentPcbDiagnosticLifecycle; owner: CurrentPcbStringPrecreateLifecycleOwner & CurrentPcbWorkerStartupLifecycleOwner;
   options: CurrentPcbDiagnosticLifecycleOptions; calls: string[];
   state: { bound: boolean; closed: boolean; terminated: boolean; released: boolean; failLaunch: boolean;
@@ -186,7 +190,8 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
       pcbObservationConsumed: calls.includes("pcb-observation"), pcbFrameObservation: calls.includes("pcb-observation") ? PCB_OBSERVATION : null,
       pcbSourceQualified: calls.includes("pcb-observation"), nativeLaunchError: null, nativeSendError: null, createProcessError: null,
       noProcessCleanupAvailable: state.rootless !== null && calls.includes("launch") && state.noProcessHealthy && !state.released,
-      cleanupOnly: state.cleanupOnly, frameWorkerVerified: false, executionAuthorized: false }),
+      cleanupOnly: state.cleanupOnly, frameWorkerVerified: false, executionAuthorized: false,
+      ...(generatedSource === undefined ? {} : { generatedFixtureRegistrationPurpose: true as const }) }),
     launch: async () => {
       calls.push("launch");
       const intent = await readFile(join(directory(id), "intent.json"), "utf8");
@@ -358,6 +363,10 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
       return { samples: 2, requestedComponentIds: [...componentIds], reciprocalParentVerified: false, executionAuthorized: false };
     },
   };
+  if (generatedSource !== undefined) {
+    Object.defineProperties(owner, { openGeneratedFixtureProject: { value: (): Promise<never> => Promise.reject(new Error("Synthetic opening not selected")) },
+      retainedGeneratedFixtureRegistration: { value: (): null => null } });
+  }
   const options: CurrentPcbDiagnosticLifecycleOptions = {
     pluginRoot: "/mnt/c/Reviewed/Plugin", assetsRoot: "/mnt/c/Reviewed/EasyEDA/resources/app/assets",
     powershellSha256: "d".repeat(64), powershellBytes: 123,
@@ -367,6 +376,7 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
     assertAllowed: (): Promise<void> => state.failAllowed ? Promise.reject(new Error("synthetic admission refused")) : Promise.resolve(),
     assertOtherLaunchesSettled: (): Promise<void> => state.failOther ? Promise.reject(new Error("synthetic unresolved project")) : Promise.resolve(),
     ...(sharedAdmission === undefined ? {} : { assertAllowed: sharedAdmission, assertOtherLaunchesSettled: sharedAdmission }),
+    ...(generatedSource === undefined ? {} : { generatedFixtureSource: generatedSource }),
   };
   const commonDependencies: FixtureDependencies = {
     verifyInstallation: (): Promise<CurrentPcbDiagnosticInstallation> => Promise.resolve({ ...(opening209 ? createCurrentPcb209DiagnosticInstallationPlan(options) : createCurrentPcbDiagnosticInstallationPlan(options)), facadeSha256: (state.installationDrift ? "e" : "a").repeat(64) }),
@@ -392,7 +402,7 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
     },
     ...dependencies,
   };
-  let coordinator: CurrentPcbDiagnosticLifecycle = new CurrentPcbDiagnosticLifecycle(options, commonDependencies);
+  let coordinator: CurrentPcbDiagnosticLifecycle;
   if (ordinary209) { coordinator = new CurrentPcbOrdinaryReadLifecycle(options, commonDependencies); }
   else if (opening209) { coordinator = new CurrentPcb209DiagnosticLifecycle(options, commonDependencies); }
   else if (stringPurpose) { coordinator = new CurrentPcbStringPrecreateLifecycle(options, { ...commonDependencies,
@@ -409,6 +419,7 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
         const intent = await readFile(join(directory(id), "intent.json"), "utf8");
         assert.match(intent, /worker-startup-launch-intent/u); return owner;
       } }); }
+  else { coordinator = new CurrentPcbDiagnosticLifecycle(options, commonDependencies); }
   async function request(action: string, extra: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
     const inspected = await coordinator.run({ action: "inspect", operationId: id });
     assert.equal(typeof inspected["bindingSha256"], "string");
@@ -2545,4 +2556,41 @@ void test("ordinary PCB requests cannot substitute disposable attestation or cha
   // Restore only the synthetic callback for fixture cleanup. Native production
   // Ownership cannot be repaired or reconstructed this way.
   value.owner.observeLayers209 = original;
+});
+
+void test("generated closed capture requires original termination and settles only retained local evidence before release", async context => {
+  for (const outcome of ["success", "capture-failure", "lost-publication"] as const) {
+    const input = await managedFixtureInitialSqlFixture(), qualified = await qualifyGeneratedFixtureInitialSql(input);
+    const staged = stageManagedFixtureOpeningSource({ qualification: qualified.qualification, archive: input.archive });
+    const id = `pcb209-ordinary-test-generated-close-${outcome}`; let captures = 0, rejectPublication = outcome === "lost-publication";
+    const value = fixture(context, id, { captureGeneratedClosedData: async options => {
+      captures += 1; options.assertOriginalOwner(); await options.observeOriginalTermination();
+      assert.equal(options.source.qualification, qualified.qualification);
+      if (outcome === "capture-failure") { throw new Error("Synthetic closed copy refused"); }
+      return { schema: "easyeda-pro-control.generated-reader-closed-snapshot.v1", projectUuid: qualified.qualification.target.projectUuid,
+        originalQualificationSha256: sha256Json(qualified.qualification), completeSqlInventoryCaptured: true,
+        sourceEqualsInitialBytes: false, completeInitialSqlRowsQualified: false, initialQualificationFailure: "synthetic changed startup rows",
+        oldImportDestinationHandlesRetained: false, oldImportRuntimeAdopted: false, startupEffectsAccepted: false, writerAuthority: false };
+    }, publishRecord: async (operationId, name, record) => {
+      if (name === "generated-closed-capture-result.json" && rejectPublication) { rejectPublication = false; throw new Error("Synthetic lost capture publication"); }
+      await publishCurrentPcbDiagnosticLifecycleRecord(operationId, name, record);
+    } }, undefined, staged);
+    await value.coordinator.run(launch(id));
+    await assert.rejects(value.request("capture-generated-closed", { confirmReadClosedFixture: true }), /CAPTURE_UNAVAILABLE/u); assert.equal(captures, 0);
+    await value.request("observe-window"); await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+    value.state.terminated = true; await value.request("observe-termination");
+    if (outcome === "lost-publication") {
+      await assert.rejects(value.request("capture-generated-closed", { confirmReadClosedFixture: true }), /lost capture/u);
+      const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+      await value.coordinator.run({ action: "settle-records", operationId: id, expectedIntentSha256: inspected["intentSha256"] });
+    } else { await value.request("capture-generated-closed", { confirmReadClosedFixture: true }); }
+    assert.equal(captures, 1);
+    const capturePath = join(directory(id), "generated-closed-capture-result.json"), captureText = await readFile(capturePath, "utf8");
+    const capture = diagnosticLifecycleRecordSchemas["generated-closed-capture-result.json"].parse(JSON.parse(captureText) as unknown);
+    assert.equal(capture.failure, outcome === "capture-failure" ? "closed-generated-data-capture-refused" : null);
+    assert.equal(capture.writerAuthority, false); assert.equal(capture.startupEffectsAccepted, false);
+    await assert.rejects(value.request("capture-generated-closed", { confirmReadClosedFixture: true }), /CAPTURE_UNAVAILABLE/u);
+    await value.request("release-closed"); assert.equal(value.state.released, true);
+    await assert.rejects(value.request("capture-generated-closed", { confirmReadClosedFixture: true })); assert.equal(captures, 1);
+  }
 });

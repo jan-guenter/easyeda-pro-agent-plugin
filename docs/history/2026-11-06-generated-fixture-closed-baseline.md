@@ -58,7 +58,7 @@ acceptance fields remain false until their original lifecycle evidence exists.
 ## Fresh original reader transfer
 
 The index must call the original import coordinator's synchronous
-`stageSourceForFreshOpening()` after `release-owner` completed, before discarding
+`stageSourceForFreshOpening(originalImportOperationId)` after `release-owner` completed, before discarding
 that coordinator during ordinary runtime release. Retain its opaque
 `ManagedFixtureOpeningSource` in the same facade. Construct a fresh
 `CurrentPcbOrdinaryReadLifecycle` with the internal option
@@ -113,3 +113,34 @@ ordinary reader owner. Its registration prefix consumes one existing normal
 spatial request; the384-request ceiling and cleanup reserve stay unchanged.
 The existing spatial point/region, Line/Via and Arc/Line/Via stages remain
 separate one-shot actions under that original spatial lifecycle.
+
+## Final reader closed data
+
+Both generated reader purposes expose `capture-generated-closed`, with the
+original operation ID/binding and `confirmReadClosedFixture:true`. Call it after
+`observe-termination` published the original root/empty-Job result and before
+`release-closed`. The original staged source and native owner are mandatory;
+ordinary projects without that data token cannot use it. Capture has one durable
+intent and one result; a lost result publication settles from retained exact
+local bytes and never repeats the copy or native navigation. A refused capture
+does not accept file effects or prevent supported original helper release.
+
+The new capture binds fresh Linux parent/file descriptors component by component
+without following links, requires the complete private child roster and no
+sidecars, creates a new managed byte-copy attachment, and verifies the full source
+hash and original file/parent identities again at the end. It repeatedly observes
+the same retained native reader root/Job. It pins its original plain-data inputs
+and callback identities across awaits. It claims no surviving import directory,
+library watch, old runtime or new Windows file lease.
+
+The result retains the full SQL inventory and attempts to decode every
+`history_data` row using its linked native history key, preserving raw plaintext
+without requiring a numeric DOCHEAD ticket. Generic normalized history and the
+strict initial generated profile are checked separately. Their failures remain
+recorded alongside complete SQL/ciphertext and any decoded raw data. Native
+bookkeeping timestamps and file identity values are retained as data. An initial
+qualification result is serialized data only; it does not expose an issued
+opening token. Unexpected post-open effects remain unaccepted. Later manager
+requalification requires a separately reviewed data-only route and fresh file
+checks; this action reconstructs no historical native owner and grants no writer
+or restoration authority.

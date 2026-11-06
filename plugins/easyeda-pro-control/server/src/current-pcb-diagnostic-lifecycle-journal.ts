@@ -569,6 +569,17 @@ const projectOpeningResultSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-diagnostic-project-opening-result.v1"), ...base,
   intentSha256: diagnosticLifecycleDigestSchema, result: z.record(z.string(), z.unknown()), executionAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "Opening result exceeds its bound.");
+const generatedClosedCaptureIntentSchema = z.object({
+  schema: z.literal("easyeda-pro-control.generated-reader-closed-capture-intent.v1"), ...base,
+  terminationSha256: diagnosticLifecycleDigestSchema, originalQualificationSha256: diagnosticLifecycleDigestSchema,
+  target: currentDisposableOpenSealedTargetSchema, readOnlyDataCapture: z.literal(true),
+}).strict();
+const generatedClosedCaptureResultSchema = z.object({
+  schema: z.literal("easyeda-pro-control.generated-reader-closed-capture-result.v1"), ...base,
+  intentSha256: diagnosticLifecycleDigestSchema, report: z.record(z.string(), z.unknown()).nullable(),
+  failure: z.literal("closed-generated-data-capture-refused").nullable(),
+  startupEffectsAccepted: z.literal(false), writerAuthority: z.literal(false), executionAuthorized: z.literal(false),
+}).strict().refine(value => (value.report === null) !== (value.failure === null) && Buffer.byteLength(canonicalJson(value)) <= 65_536);
 const workerStartupOpeningIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-worker-startup-opening-intent.v1"), ...base,
   operationId: startupOpeningId, bindingSha256: diagnosticLifecycleDigestSchema,
@@ -802,6 +813,8 @@ export const diagnosticLifecycleRecordSchemas = {
   "intent.json": intentSchema, "binding.json": bindingSchema, "close-intent.json": closeIntentSchema,
   "close-acknowledged.json": closeAcknowledgmentSchema, "terminated.json": terminationSchema,
   "release-intent.json": releaseIntentSchema, "released.json": releasedSchema,
+  "generated-closed-capture-intent.json": generatedClosedCaptureIntentSchema,
+  "generated-closed-capture-result.json": generatedClosedCaptureResultSchema,
   "unlaunched-release-intent.json": unlaunchedIntentSchema, "not-dispatched.json": notDispatchedSchema,
   "no-process-release-intent.json": noProcessIntentSchema, "no-process-released.json": noProcessReleasedSchema,
   "browser-intent.json": observationIntentSchema, "browser-result.json": observationResultSchema,
@@ -1112,6 +1125,7 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   if (ordinaryPurpose) {
     const allowed = new Set(["intent.json", "binding.json", "close-intent.json", "close-acknowledged.json", "terminated.json",
       "release-intent.json", "released.json", "unlaunched-release-intent.json", "not-dispatched.json", "no-process-release-intent.json",
+      "generated-closed-capture-intent.json", "generated-closed-capture-result.json",
       "no-process-released.json", "browser-intent.json", "browser-result.json", "frames-intent.json", "frames-result.json", "script-intent.json",
       "script-result.json", "project-opening-intent.json", "project-opening-result.json", "pcb-open-intent.json", "pcb-open-result.json",
       "pcb-opening-intent.json", "pcb-opening-result.json", "observation-failure.json", ...[
@@ -1128,6 +1142,7 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   if (spatialPurpose) {
     const allowed = new Set(["intent.json", "binding.json", "close-intent.json", "close-acknowledged.json", "terminated.json",
       "release-intent.json", "released.json", "unlaunched-release-intent.json", "not-dispatched.json", "no-process-release-intent.json",
+      "generated-closed-capture-intent.json", "generated-closed-capture-result.json",
       "no-process-released.json", "browser-intent.json", "browser-result.json", "frames-intent.json", "frames-result.json", "script-intent.json",
       "script-result.json", "project-opening-intent.json", "project-opening-result.json", "pcb-open-intent.json", "pcb-open-result.json",
       "pcb-opening-intent.json", "pcb-opening-result.json", "spatial209-intent.json", "spatial209-result.json"]);
@@ -1610,6 +1625,16 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(termination === undefined || binding !== undefined && termination.bindingSha256 === predecessorDigest(binding), "TERMINATION_CHAIN");
   requireValue(release === undefined || termination !== undefined && release.terminationSha256 === predecessorDigest(termination), "RELEASE_CHAIN");
   requireValue(released === undefined || release !== undefined && released.releaseIntentSha256 === predecessorDigest(release), "RELEASE_ACK_CHAIN");
+  const generatedCapture = records["generated-closed-capture-intent.json"], generatedCaptured = records["generated-closed-capture-result.json"];
+  requireValue(generatedCapture === undefined || (ordinaryPurpose || spatialPurpose) && termination !== undefined &&
+    intent !== undefined && "generatedFixtureBirth" in intent && intent.generatedFixtureBirth !== undefined &&
+    generatedCapture.terminationSha256 === predecessorDigest(termination) && generatedCapture.target.expectedSourceSha256 === intent.generatedFixtureBirth.originalSourceSha256 &&
+    (opening === undefined || canonicalJson(generatedCapture.target) === canonicalJson(opening.target)), "GENERATED_CLOSED_CAPTURE_CHAIN");
+  requireValue(generatedCaptured === undefined || generatedCapture !== undefined && generatedCaptured.intentSha256 === predecessorDigest(generatedCapture), "GENERATED_CLOSED_CAPTURE_RESULT_CHAIN");
+  requireValue(generatedCaptured?.report === undefined || generatedCaptured.report === null || generatedCapture !== undefined &&
+    generatedCaptured.report["schema"] === "easyeda-pro-control.generated-reader-closed-snapshot.v1" &&
+    generatedCaptured.report["projectUuid"] === generatedCapture.target.projectUuid && generatedCaptured.report["originalQualificationSha256"] === generatedCapture.originalQualificationSha256,
+  "GENERATED_CLOSED_CAPTURE_REPORT_CHAIN");
   requireValue(unlaunched === undefined || intent !== undefined && unlaunched.intentSha256 === predecessorDigest(intent) &&
     binding === undefined && close === undefined && acknowledgment === undefined && termination === undefined && release === undefined && released === undefined, "UNLAUNCHED_CHAIN");
   requireValue(notDispatched === undefined || unlaunched !== undefined && notDispatched.unlaunchedReleaseIntentSha256 === predecessorDigest(unlaunched) &&
