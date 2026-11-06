@@ -46,7 +46,7 @@ async function original(context: TestContext, warm: "task" | "publish" | null,
     const actual: unknown = sourceRequire(name);
     if (name !== "./current-footprint-copy-construction-purpose.ts") { return actual; }
     assert.ok(typeof actual === "object" && actual !== null);
-    return { ...actual, isOriginalProjectStructureConstructionTransport: (): boolean => true };
+    return { ...actual, isOriginalFootprintColdConstructionTransport: (): boolean => true };
   }, loaded, loaded.exports]);
   const Constructor = loaded.exports["CurrentPcb209WorkerConstructionRunner"]; assert.ok(typeof Constructor === "function");
   let cold = false, delayed = false, head = false, maintenance = false, requests = 0;

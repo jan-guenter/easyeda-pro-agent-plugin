@@ -106,6 +106,12 @@ export function requireOriginalProjectStructurePrefixCapacity(dependency: Curren
 const savedDependencies = new WeakSet<CurrentPcbWorkerStartupDependency>();
 const heldSavedDependencies = new WeakSet<CurrentPcbWorkerStartupDependency>();
 const executionDependencies = new WeakMap<CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupChannelCore>();
+const forwardExecutionDependencies = new WeakSet<CurrentPcbWorkerStartupDependency>();
+/** The v2 native channel alone issues this marker. Legacy forward observations
+ * cannot acquire continuous cold-producer ownership from their receipt. */
+export function isOriginalFootprintForwardExecutionDependency(dependency: CurrentPcbWorkerStartupDependency): boolean {
+  return forwardExecutionDependencies.has(dependency);
+}
 /** This marker is issued only by the separate channel, never by receipt data. */
 export function isOriginalFootprintPreparationDependency(dependency: CurrentPcbWorkerStartupDependency): boolean {
   return footprintDependencies.has(dependency);
@@ -495,6 +501,7 @@ class CurrentPcbWorkerStartupChannelCore {
       },
     });
     if (this.#footprintPurpose && !this.#savedPurpose) { footprintDependencies.add(dependency); }
+    if (this.#wire === currentFootprintForwardExecutionStartupWire) { forwardExecutionDependencies.add(dependency); }
     if (this.#structurePurpose) { structureDependencies.set(dependency, (): void => {
       this.#sameMethods(); this.#withinLifetime();
       if (this.#released || this.#releaseRequested || this.#terminationVerified || this.#failure !== null || this.#pending.size > 0 ||

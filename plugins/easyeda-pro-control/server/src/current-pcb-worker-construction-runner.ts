@@ -4,7 +4,7 @@
  * create/Save and writer permits remain outside this class. */
 import { z } from "zod";
 // oxlint-disable-next-line import/no-cycle -- Retain the genuine construction issuer and original startup transport; no initialization work crosses the cycle.
-import { isOriginalFootprintExecutionConstructionTransport, isOriginalFootprintHeldSavedConstructionTransport, isOriginalFootprintPreparationConstructionTransport, isOriginalFootprintSavedConstructionTransport, isOriginalProjectStructureConstructionTransport, originalFootprintExecutionConstructionProjectUuid, requestFootprintExecutionConstructionCache, requireOriginalProjectStructureConstructionDependency } from "./current-footprint-copy-construction-purpose.ts";
+import { isOriginalFootprintColdConstructionTransport, isOriginalFootprintExecutionConstructionTransport, isOriginalFootprintHeldSavedConstructionTransport, isOriginalFootprintPreparationConstructionTransport, isOriginalFootprintSavedConstructionTransport, originalFootprintExecutionConstructionProjectUuid, requestFootprintExecutionConstructionCache, requireOriginalProjectStructureConstructionDependency } from "./current-footprint-copy-construction-purpose.ts";
 import { CurrentFootprintCopyCacheConstructionRunner } from "./current-footprint-copy-cache-construction-runner.ts";
 import type { CurrentFootprintCopyCacheConstructionObservation, CurrentFootprintCopyCacheConstructionTransport } from "./current-footprint-copy-cache-construction-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
@@ -468,7 +468,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     let limitMs: number = CURRENT_PCB_209_STARTUP_TIMING.legacyPauseMs;
     if (this.#profile === "private.current-footprint-copy-construction.v1") { limitMs = CURRENT_FOOTPRINT_COPY_CONSTRUCTION_TIMING.pauseMs[index] ?? limitMs; }
     else if (this.#current209) { limitMs = CURRENT_PCB_209_STARTUP_TIMING.constructionPauseMs[index] ?? limitMs; }
-    if (this.#sequence[index] === "bootstrap" && isOriginalProjectStructureConstructionTransport(this.#transport)) {
+    if (this.#sequence[index] === "bootstrap" && isOriginalFootprintColdConstructionTransport(this.#transport)) {
       limitMs += (CURRENT_FOOTPRINT_COLD_PRODUCER_REQUESTS + CURRENT_FOOTPRINT_DETACHED_CACHE_REQUESTS.arm) * 3 * CURRENT_PCB_209_STARTUP_TIMING.requestMs;
     }
     const window = Object.freeze({ startedAtMs: currentPcbStartupMonotonicMs(), limitMs });
@@ -595,7 +595,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       const bus = this.#identities.channelBus, original = this.#identities.project;
       if (original === undefined || bus === undefined) { throw fail("MISSING_OWNER"); }
       await this.#same(original, bus, true);
-      if (isOriginalProjectStructureConstructionTransport(this.#transport)) { await this.#captureColdProducerRoster(); await this.#armDetachedCacheObserver(); }
+      if (isOriginalFootprintColdConstructionTransport(this.#transport)) { await this.#captureColdProducerRoster(); await this.#armDetachedCacheObserver(); }
       if (this.#profile === "private.current-footprint-copy-construction.v1" && isOriginalFootprintExecutionConstructionTransport(this.#transport)) {
         await this.#armFootprintCacheConstruction(original);
       }
@@ -828,7 +828,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
    * retains wrapper identities, never a stale lexical-scope value snapshot. */
   async #captureColdProducerRoster(): Promise<void> {
     if (this.#coldProducerRoster !== null || this.#pause?.resumeConsumed !== false || this.#sequence[this.#pause.index] !== "bootstrap" ||
-        !isOriginalProjectStructureConstructionTransport(this.#transport)) { throw fail("COLD_PRODUCER_BOOTSTRAP"); }
+        !isOriginalFootprintColdConstructionTransport(this.#transport)) { throw fail("COLD_PRODUCER_BOOTSTRAP"); }
     const original = Object.freeze(z.object({ project: token, channelBus: token, channel: token, onmessage: token,
       upload: token, cooperation: token, uploadStructure: token, structure: token, structureDebounce: token }).strict().parse(this.#identities));
     const wrappers: Partial<Record<CurrentPcbWorkerConstructionAssignment, string>> = {};
@@ -869,7 +869,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
    * Dormancy is a historical bootstrap fact, never a cached frontier grant. */
   public async originalColdProducerRoster(packet: ConstructionPacket<P>): Promise<CurrentFootprintColdProducerRoster> {
     const original = await this.#requireOriginal(packet), roster = this.#coldProducerRoster, wrappers = this.#coldProducerWrappers;
-    if (roster === null || wrappers === null || !isOriginalProjectStructureConstructionTransport(this.#transport)) { throw fail("COLD_PRODUCER_ORIGINAL_ROSTER"); }
+    if (roster === null || wrappers === null || !isOriginalFootprintColdConstructionTransport(this.#transport)) { throw fail("COLD_PRODUCER_ORIGINAL_ROSTER"); }
     try {
       await this.#assignmentRecheck(original, wrappers); await this.#requireOriginal(packet);
       if (this.#coldProducerRoster !== roster || this.#coldProducerWrappers !== wrappers) { throw fail("COLD_PRODUCER_ORIGINAL_ROSTER"); }
@@ -879,10 +879,10 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   async #armDetachedCacheObserver(): Promise<void> {
     const project = this.#identities.project;
     if (this.#detachedCacheObserver !== null || project === undefined || this.#coldProducerRoster === null ||
-        !isOriginalProjectStructureConstructionTransport(this.#transport)) { throw fail("DETACHED_CACHE_BOOTSTRAP"); }
+        !isOriginalFootprintColdConstructionTransport(this.#transport)) { throw fail("DETACHED_CACHE_BOOTSTRAP"); }
     const same = (): void => {
       this.#sameTransport();
-      if (this.#releaseConsumed || this.#identities.project !== project || !isOriginalProjectStructureConstructionTransport(this.#transport)) { throw fail("DETACHED_CACHE_ORIGINAL_OWNER"); }
+      if (this.#releaseConsumed || this.#identities.project !== project || !isOriginalFootprintColdConstructionTransport(this.#transport)) { throw fail("DETACHED_CACHE_ORIGINAL_OWNER"); }
     };
     const lease = Object.freeze({ profile: "private.current-footprint-detached-cache-lease.v1" as const });
     detachedCacheLeases.set(lease, Object.freeze({ issuer: this, scriptId: this.#scriptId, project,
@@ -905,7 +905,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   }
   public async closeOriginalDetachedCacheProducer(packet: ConstructionPacket<P>): Promise<CurrentFootprintDetachedCacheObservationV2> {
     await this.#requireOriginal(packet); const observer = this.#detachedCacheObserver;
-    if (observer === null || !isOriginalProjectStructureConstructionTransport(this.#transport)) { throw fail("DETACHED_CACHE_ORIGINAL_OWNER"); }
+    if (observer === null || !isOriginalFootprintColdConstructionTransport(this.#transport)) { throw fail("DETACHED_CACHE_ORIGINAL_OWNER"); }
     const result = await observer.closeAndObserve(); await this.#requireOriginal(packet); return result;
   }
   /** This original-event continuation is not a supplied-data projection. Every

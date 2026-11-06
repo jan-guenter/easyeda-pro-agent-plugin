@@ -4,11 +4,12 @@ import { currentFootprintCopyClockRegistrationV2NativeSource } from "./current-f
 import { currentFootprintCopyClockRpcV2NativeSource } from "./current-footprint-copy-clock-rpc-v2-native.ts";
 import { CURRENT_FOOTPRINT_FORWARD_NATIVE_LIMITS as LIMITS, CURRENT_FOOTPRINT_FORWARD_NATIVE_MAIN_LIMITS as MAIN } from "./current-footprint-forward-native-limits.ts";
 import { CURRENT_FOOTPRINT_COPY_ALLOCATION_NATIVE_ORDER as ORDER } from "./current-footprint-copy-allocated-create-clock-budget.ts";
+import { CURRENT_FOOTPRINT_FORWARD_COLD_PHASES, currentFootprintForwardColdNativeSource } from "./current-footprint-forward-cold-wire.ts";
 
 /** Compile in the same fixed source graph as the mechanically derived core.
  * Every owner field below belongs to this original partial instance. */
 export function currentFootprintForwardNativePhaseSource(): string {
-  return `${currentFootprintCopyClockRegistrationV2NativeSource()}\n${currentFootprintCopyClockRpcV2NativeSource()}\n
+  return `${currentFootprintCopyClockRegistrationV2NativeSource()}\n${currentFootprintCopyClockRpcV2NativeSource()}\n${currentFootprintForwardColdNativeSource()}\n
 public static class EasyedaFootprintForwardExecutionLimits {
 public const int Requests=${String(LIMITS.requestLimit)},NormalRequests=${String(LIMITS.requestLimit)},NormalClass=${String(LIMITS.normalClass)},CleanupClass=${String(LIMITS.cleanupClass)};
 public const int MainNormal=${String(MAIN.normalRequestLimit)},MainCleanup=${String(MAIN.cleanupRequestLimit)},MainRequests=${String(MAIN.requestLimit)};
@@ -59,8 +60,15 @@ case "footprint-copy-windows-clock":case "window":case "normal-close":case "term
 case "restore-window-for-capture":case "resize-window-for-capture":case "window-capture-readiness":case "renderer-viewport-send":case "capture-window":
 case "footprint-copy-allocated-create-clock-begin":case "footprint-copy-allocation-send":case "footprint-copy-native-create":case "footprint-copy-create-clock-retire":
 case "footprint-copy-clock-registration-v2":case "footprint-clock-rpc-v2-send":break;
+case "footprint-forward-cold-send":break;
 default:throw Error("forward-execution-provider-unmounted");}
 AdmitCombinedAction(action);
+}
+public void SendFootprintForwardCold(int id,string phase,string method,System.Collections.IDictionary fields){
+if(!forwardExecution||!workerStartupFootprintCopy209||footprintCopyWorkerSession==null||fields==null||fields["sessionId"] as string!=footprintCopyWorkerSession||footprintCreateClockActive)throw Error("forward-cold-original-worker");
+bool admitted=false;foreach(string value in new string[]{${CURRENT_FOOTPRINT_FORWARD_COLD_PHASES.map(value => JSON.stringify(value)).join(",")}})if(value==phase)admitted=true;
+if(!admitted)throw Error("forward-cold-phase");bool cleanup=phase=="detached-release";CheckFootprintWork(id,cleanup);
+string message=EasyedaFootprintForwardColdProtocol.Encode(id,phase,method,fields);SendMessage(id,message,cleanup);
 }
 bool registrationV2Started,registrationV2WrapperSource,registrationV2CallbackSource,registrationV2Callback,registrationV2Bindings,registrationV2Released;
 int registrationV2Requests,registrationV2Samples;
@@ -95,7 +103,8 @@ var ledger=EasyedaFootprintCopyAllocatedCreateClockLedger.ForwardExecutionBirth(
 ledger.Allocation(ledger.Next,phases[0],false);for(int i=0;i<13;i++)ledger.Clock(ledger.Next,false);ledger.Create(ledger.Next);
 for(int i=1;i<9;i++)ledger.Allocation(ledger.Next,phases[i],i>=7);for(int i=13;i<EasyedaFootprintCopyAllocatedCreateClockLedger.ClockNormal;i++)ledger.Clock(ledger.Next,false);
 for(int i=0;i<10;i++)ledger.Clock(ledger.Next,true);ledger.Allocation(ledger.Next,phases[9],true);for(int i=10;i<EasyedaFootprintCopyAllocatedCreateClockLedger.ClockCleanup;i++)ledger.Clock(ledger.Next,true);
-if(ledger.Next!=EasyedaFootprintForwardExecutionLimits.Requests+1||ledger.CreateId!=940)throw Error("forward-execution-graph-ledger");ledger.Retire(false);
+if(ledger.Next!=EasyedaFootprintForwardExecutionLimits.Requests+1||ledger.CreateId!=EasyedaFootprintForwardExecutionLimits.Requests-63)throw Error("forward-execution-graph-ledger");ledger.Retire(false);
+EasyedaFootprintForwardColdProtocol.VerifySmoke();
 born.originalMain.Release();
 }
 }\n`;

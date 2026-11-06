@@ -6,8 +6,9 @@
  * qualification through the original native process and pipe. */
 import { createHash } from "node:crypto";
 import { types } from "node:util";
+import { CURRENT_FOOTPRINT_FORWARD_NATIVE_LIMITS as FORWARD_V2 } from "./current-footprint-forward-native-limits.ts";
 import { bindFootprintPreparationConstructionTransport } from "./current-footprint-copy-construction-purpose.ts";
-import { isOriginalFootprintExecutionDependency, isOriginalFootprintHeldSavedDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency, isOriginalProjectStructureDependency,
+import { isOriginalFootprintExecutionDependency, isOriginalFootprintForwardExecutionDependency, isOriginalFootprintHeldSavedDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency, isOriginalProjectStructureDependency,
   requestCurrentFootprintCopyParent, requestCurrentFootprintCopyTransactionClock, subscribeCurrentFootprintCopyParentEvents } from "./current-pcb-worker-startup-channel.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
@@ -296,7 +297,9 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     const writerBudget = execution209 ? CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE : CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE;
     const savedBudget = heldSaved209 ? CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE : CURRENT_FOOTPRINT_COPY_SAVED_PROFILE;
     const budget = saved209 || heldSaved209 ? savedBudget : writerBudget;
-    if (isOriginalProjectStructureDependency(dependency)) {
+    if (isOriginalFootprintForwardExecutionDependency(dependency)) {
+      this.#normalRequestLimit = FORWARD_V2.requestLimit; this.#requestLimit = FORWARD_V2.requestLimit;
+    } else if (isOriginalProjectStructureDependency(dependency)) {
       this.#normalRequestLimit = CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.worker.normal;
       this.#requestLimit = CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.worker.total;
     } else {

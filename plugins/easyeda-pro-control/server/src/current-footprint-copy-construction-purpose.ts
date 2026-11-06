@@ -1,7 +1,7 @@
 /** Private identity propagation from the native-purpose dependency. Neither a
  * copied adapter nor a caller-provided field can enlarge the state-read bound. */
 /* oxlint-disable import/no-cycle -- Retain genuine channel identity checks through the construction/create cycle; these imports run only inside later owner operations. */
-import { isOriginalFootprintExecutionDependency, isOriginalFootprintHeldSavedDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency, isOriginalProjectStructureDependency,
+import { isOriginalFootprintExecutionDependency, isOriginalFootprintForwardExecutionDependency, isOriginalFootprintHeldSavedDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency, isOriginalProjectStructureDependency,
   originalCurrentFootprintExecutionProjectUuid, requestCurrentFootprintCopyCacheConstruction } from "./current-pcb-worker-startup-channel.ts";
 /* oxlint-enable import/no-cycle */
 import type { CurrentFootprintCacheConstructionCommand } from "./current-footprint-copy-cache-construction-contract.ts";
@@ -37,6 +37,11 @@ export function requireOriginalProjectStructureConstructionDependency(transport:
 export function isOriginalProjectStructureConstructionTransport(transport: CurrentPcbWorkerConstructionTransport): boolean {
   const dependency = structureOriginals.get(transport);
   return dependency !== undefined && isOriginalProjectStructureDependency(dependency);
+}
+/** Cold instrumentation belongs to these two exact original births only. */
+export function isOriginalFootprintColdConstructionTransport(transport: CurrentPcbWorkerConstructionTransport): boolean {
+  const held = executionOriginals.get(transport);
+  return isOriginalProjectStructureConstructionTransport(transport) || held !== undefined && isOriginalFootprintForwardExecutionDependency(held.dependency);
 }
 export function isOriginalFootprintSavedConstructionTransport(transport: CurrentPcbWorkerConstructionTransport): boolean { return savedOriginals.has(transport); }
 /** Distinct held-saved state-read marker; old saved and writer markers are not

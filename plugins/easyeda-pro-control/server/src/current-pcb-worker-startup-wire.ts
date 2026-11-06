@@ -8,6 +8,9 @@ import { CURRENT_FOOTPRINT_COPY_LEXICAL_CALLS } from "./current-footprint-copy-p
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE } from "./current-footprint-copy-forward-profile.ts";
+import { CURRENT_FOOTPRINT_FORWARD_NATIVE_LIMITS as FORWARD_V2 } from "./current-footprint-forward-native-limits.ts";
+// oxlint-disable-next-line import/no-cycle -- Fixed codebooks reference the legacy fallback only on a later encode, never during module initialization.
+import { currentFootprintForwardColdWire } from "./current-footprint-forward-cold-wire.ts";
 import { currentFootprintCopyExecutionWorkerWire } from "./current-footprint-copy-execution-worker-wire.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
 import { currentFootprintCopySavedSourceWire } from "./current-footprint-copy-saved-source-wire.ts";
@@ -295,7 +298,11 @@ export function currentFootprintCopyForwardStartupWire(raw: unknown, id: number)
 /** Separate writer-born identity for fixed preparation traffic. Allocation,
  * create and clocks still use their own closed grammars and original leases. */
 export function currentFootprintForwardExecutionStartupWire(raw: unknown, id: number): ReturnType<typeof startupWire> {
-  return currentFootprintCopyForwardStartupWire(raw, id);
+  if (!Number.isSafeInteger(id) || id < 1 || id > FORWARD_V2.requestLimit) { return fail(); }
+  const cold = currentFootprintForwardColdWire(raw, id); if (cold !== null) { return cold; }
+  const original = currentFootprintCopyForwardStartupWire(raw, 1);
+  return Object.freeze({ command: Object.freeze({ ...original.command, id }),
+    request: Object.freeze({ ...original.request, requestId: id }) });
 }
 /** The saved owner admits only construction and native-cache observation.
  * Parser registration capture is shared fixed code, not execution authority. */

@@ -195,7 +195,7 @@ import { captureCurrentFootprintForwardNativeGraph } from "./current-footprint-f
 import { requireCurrentFootprintForwardExecutionMainNativeOwner } from "./current-footprint-forward-execution-main-capability.ts";
 import type { CurrentFootprintForwardExecutionMainCapability, CurrentFootprintForwardExecutionMainMode } from "./current-footprint-forward-execution-main-capability.ts";
 import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_BIRTH_PROFILE } from "./current-footprint-forward-execution-profile.ts";
-import { CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY, CurrentFootprintCopyForwardResourceLedger, requireOriginalForwardLedgerBinding } from "./current-footprint-copy-forward-capacity.ts";
+import { CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY, CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY, CurrentFootprintCopyForwardResourceLedger, requireOriginalForwardLedgerBinding } from "./current-footprint-copy-forward-capacity.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS, CURRENT_FOOTPRINT_COPY_SOURCE_SEAL_REQUESTS } from "./current-footprint-copy-preparation.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS } from "./current-footprint-copy-source-stage-budget.ts";
 import type { CurrentFootprintCopyForwardRole } from "./current-footprint-copy-forward-capacity.ts";
@@ -771,7 +771,7 @@ class CurrentPcbRetainedOwnerCore {
     else if (saved !== null) { role = "forward-saved-readback"; }
     this.#forwardRole = role;
     this.#forwardSavedHandoff = forwardSavedHandoff;
-    this.#forwardLedger = forwardBirthPurpose(purpose) ? new CurrentFootprintCopyForwardResourceLedger() : saved?.ledger ?? null;
+    this.#forwardLedger = forwardBirthPurpose(purpose) ? new CurrentFootprintCopyForwardResourceLedger(purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE ? "forward-execution-v2" : "observation") : saved?.ledger ?? null;
     this.#forwardLedgerMethods = this.#forwardLedger === null ? null : requireOriginalForwardLedgerBinding(this.#forwardLedger);
     if (this.#forwardRole === "forward-writer" && this.#forwardLedger !== null && this.#forwardLedgerMethods !== null) {
       this.#forwardLedgerMethods.bind.call(this.#forwardLedger, "forward-writer", this);
@@ -2786,7 +2786,7 @@ class CurrentPcbRetainedOwnerCore {
     resources.methods.requireOriginal();
     const counters = resources.methods.generationStatus.call(resources.ledger, "forward-writer", this), status = forwardExecutionChannelStatus.call(channel);
     const required = CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS + CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS + CURRENT_FOOTPRINT_COPY_SOURCE_SEAL_REQUESTS;
-    const capacity = CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer;
+    const capacity = CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY.writer.renderer;
     if (!status.started || status.failed || status.released || status.pendingReplies !== 0 || !Number.isSafeInteger(status.nextRequestId) ||
         counters.failed || counters.rendererNormalRequests + required > capacity.normalClassLimit || status.nextRequestId + required - 1 > capacity.normalIdCeiling) {
       throw error("FORWARD_EXECUTION_SOURCE_CAPACITY");
@@ -4369,6 +4369,9 @@ class CurrentPcbRetainedOwnerCore {
     try { methods.consumeRendererEvent.call(ledger, role, this, bytes); }
     catch (caughtError) { this.#forwardCleanupOnly = true; throw caughtError; }
   }
+  #forwardCapacity(): typeof CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY | typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY {
+    return this.#purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE ? CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY : CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY;
+  }
   #forwardRequest(request: RecordValue, forwardMain?: ForwardExecutionMainRequest): Readonly<{ cleanup: boolean; waiting: boolean }> {
     const { ledger, methods, role } = this.#forwardResources(), action = request["action"];
     const mainLane = ["main-request-send", "main-completion-begin", "main-completion-send", "main-completion-retire"].includes(String(action));
@@ -4403,7 +4406,7 @@ class CurrentPcbRetainedOwnerCore {
       } else if (action === "main-poll") {
         methods.consumeMainPoll.call(ledger, role, this, request["cleanup"] === true);
       } else if (action !== "poll") {
-        const controls = CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls;
+        const controls = this.#forwardCapacity().controls;
         const limits = role === "forward-writer" ? controls.writer : controls.saved;
         if (!cleanup && methods.generationStatus.call(ledger, role, this).normalControls >= limits.normal) { throw error("FORWARD_CONTROL_CLEANUP_RESERVE"); }
         methods.consumeControl.call(ledger, role, this, cleanup);
@@ -4742,7 +4745,7 @@ class CurrentPcbRetainedOwnerCore {
     let maximum = MAX_TOTAL;
     if (heldCachePurpose(this.#purpose)) { maximum = CURRENT_FOOTPRINT_COPY_HELD_SAVED_CAPACITY.helperStdoutBytes; }
     if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) { maximum = CURRENT_FOOTPRINT_COMBINED_PROFILE.helperStdout.totalBytes; }
-    if (forwardBirthPurpose(this.#purpose)) { maximum = CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.helperStdoutBytes; }
+    if (forwardBirthPurpose(this.#purpose)) { maximum = this.#forwardCapacity().writer.helperStdoutBytes; }
     if (this.#purpose === "worker-startup-empty209") { maximum = CURRENT_PCB_209_EMPTY_NATIVE_PROFILE.bytes.helperStdout; }
     if (this.#ratlineBudget !== null) { maximum = CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.bytes.helperStdout; }
     if (this.#continuationBudget !== null) { maximum = CURRENT_PCB_209_RATLINE_CONTINUATION_NATIVE_PROFILE.bytes.helperStdout; }
@@ -4758,9 +4761,9 @@ class CurrentPcbRetainedOwnerCore {
         const { ledger, methods, role } = this.#forwardResources();
         methods.consumeBytes.call(ledger, role, this, "helper-stdout", chunk.length);
       } catch { this.#fail("FORWARD_HELPER_STDOUT"); return; }
-      const limits = this.#forwardRole === "forward-writer" ? CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.writer : CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.saved;
+      const limits = this.#forwardRole === "forward-writer" ? this.#forwardCapacity().controls.writer : CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.saved;
       const reserve = limits.cleanup * CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.replyHeaderBytes + MAX_LINE;
-      const ceiling = this.#forwardRole === "forward-writer" ? CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.helperStdoutBytes :
+      const ceiling = this.#forwardRole === "forward-writer" ? this.#forwardCapacity().writer.helperStdoutBytes :
         Math.min(MAX_TOTAL, CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.saved.helperStdoutBytes);
       if (this.#total + chunk.length > ceiling - reserve) { this.#forwardCleanupOnly = true; }
     }

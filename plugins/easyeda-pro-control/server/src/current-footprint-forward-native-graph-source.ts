@@ -93,7 +93,7 @@ function driverSource(predecessor: string, core: string, phase: string): string 
   }
 ${driver.slice(compileEnd)}`;
   driver = replace(driver, '      if ($forwardFamily) {$owner.AdmitForwardAction($request.action)}', '      $owner.AdmitForwardExecutionAction($request.action)');
-  driver = replace(driver, "      $largeOpening=", "      $largeV2Request=@('footprint-copy-clock-registration-v2','footprint-clock-rpc-v2-send') -ccontains $request.action\n      $largeOpening=");
+  driver = replace(driver, "      $largeOpening=", "      $largeV2Request=@('footprint-copy-clock-registration-v2','footprint-clock-rpc-v2-send','footprint-forward-cold-send') -ccontains $request.action\n      $largeOpening=");
   driver = replace(driver, "(-not $largeMainRequest -and -not $largeClockRpcRequest -and -not $largeOpening", "(-not $largeV2Request -and -not $largeMainRequest -and -not $largeClockRpcRequest -and -not $largeOpening");
   for (const worker of ["$false", "$true"]) {
     const before = `[EasyedaFootprintForwardLimits]::AllowsExecutionRequestId([long]$request.requestId,([bool]$forwardFamily),${worker})`;
@@ -119,7 +119,16 @@ ${driver.slice(compileEnd)}`;
 /** Scalar-only new phase cases. The original driver still checks its retained
  * helper/Job/root tuple before any action reaches the original owner instance. */
 function v2Dispatch(): string {
-  return `        'footprint-copy-clock-registration-v2' {
+  return `        'footprint-forward-cold-send' {
+          if (-not $launched -or $request.phase -isnot [string] -or $request.method -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt $startupRequestLimit) {throw 'forward-cold-fields'}
+          $baseFields=@('id','action','helperInstance','jobId','rootPid','rootCreated','requestId','phase','method')
+          foreach ($field in $baseFields) {if (@($request.PSObject.Properties.Name) -cnotcontains $field) {throw 'forward-cold-fields'}}
+          $fields=New-Object 'System.Collections.Hashtable' ([StringComparer]::Ordinal)
+          foreach ($property in $request.PSObject.Properties) {if ($baseFields -cnotcontains $property.Name) {if (@('sessionId','scriptId','callFrameId','objectId','argument0','argument1','argument2','argument3','argument4','argument5','argument6') -cnotcontains $property.Name -or $property.Value -isnot [string]) {throw 'forward-cold-field'};$fields.Add($property.Name,$property.Value)}}
+          $owner.SendFootprintForwardCold([int]$request.requestId,$request.phase,$request.method,$fields)
+          $result=@{written=$true}
+        }
+        'footprint-copy-clock-registration-v2' {
           if (-not $launched -or $request.phase -isnot [string] -or $request.method -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt $startupRequestLimit) {throw 'forward-registration-v2-fields'}
           $baseFields=@('id','action','helperInstance','jobId','rootPid','rootCreated','requestId','phase','method')
           foreach ($field in $baseFields) {if (@($request.PSObject.Properties.Name) -cnotcontains $field) {throw 'forward-registration-v2-fields'}}
