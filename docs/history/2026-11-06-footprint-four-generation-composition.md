@@ -632,3 +632,41 @@ per-delete guards. Two focused real-artifact supplied-data checks, the original
 factory copied-grant refusal, full types and strict changed-file lint pass. This
 increment changes no native helper or request limit and makes no connected or
 four-generation acceptance claim.
+
+The inverse cache chain now enrolls only that owner's original durable backup.
+`invalidateFootprintInverseCaches()` retains one Promise and consumes every
+native phase before awaiting it. Each exact namespace gets a fresh ten-command
+empty-UI/helper-source guard, original storage-key and complete peer-roster
+reproof, and at most one deletion when it originally existed. Its original
+Storage notification and complete resulting roster must settle before the next
+namespace. An absent namespace gets no delete. A final independent loading guard,
+key, complete absence roster and acknowledged untrack precede the inverse-only
+opaque absence token. Parent/worker allocation now requires that token. No PID,
+path, cache ID, artifact or backup JSON comes from an operation argument.
+Native enrollment, counters, guards, selected IDs and consumed attempts are
+separate from Via. Failed/unknown deletion gets no replay.
+
+The fixed pending inverse UI helper is routed before the completed metadata
+sampler. Otherwise a legitimate later empty-URL guard/navigation helper would
+be refused as an unexpected sampler helper. Its exact original context and
+complete source still need proof; unknown empty-URL scripts remain refused.
+
+This adds42 renderer commands:two ten-command delete guards, at most9 key/roster/
+delete commands, one ten-command loading guard and3 loading key/roster/untrack
+commands. Inverse renderer835, generic discovery39, main reproof76,398 and total
+controls126,704 are derived from that route; all older limits remain unchanged.
+Two-pass full generation, complete C#5/.NET10 Linux compilation, fixed-codec
+smokes,13 focused cache/factory/cursor checks, full types and strict changed-file
+lint pass. The original-factory test additionally refuses a copied absence token
+and worker allocation without original absence. Combined with418517e4 metadata
+packing, the helper is2,091,501 bytes and C#1,895,179 bytes. No generated tracked
+helper/pins/bundles, Windows/app/MCP call, cache deletion or navigation ran here.
+Root owns further lossless compaction before the combined writer freeze.
+
+The supplied-data backup limits remain eight combined entries,8KiB per body and
+32KiB total. A footprint cache outside that bounded profile refuses; there is no
+size-based exception. This completes the original inverse backup/invalidation
+prefix. The literal `FOOTPRINT` grouped saved-history plan, full initial producer
+frontier, actual copied-model delete/clock/main SQL wave, inverse full closed
+proof and fourth fresh absence read still remain. Cold loading, delete/Save and
+four-generation acceptance stay false until those original joins exist.

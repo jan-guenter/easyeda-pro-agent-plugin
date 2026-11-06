@@ -1,8 +1,8 @@
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
 import type { CurrentFootprintInverseCacheBackupModule as FootprintInverseCacheBackupModule } from "./current-footprint-inverse-cache-backup.ts";
-import type { CurrentFootprintInverseCacheBackupGrant, CurrentFootprintInverseCacheBindings, CurrentFootprintInverseCacheOrigin } from "./current-footprint-inverse-cache-origin.ts";
-import { currentFootprintInverseCacheMetadataNativeFrame, currentFootprintInverseCacheNativeFrame } from "./current-footprint-inverse-cache-wire.ts";
+import type { CurrentFootprintInverseCacheAbsence, CurrentFootprintInverseCacheBackupGrant, CurrentFootprintInverseCacheBindings, CurrentFootprintInverseCacheOrigin } from "./current-footprint-inverse-cache-origin.ts";
+import { currentFootprintInverseCacheInvalidationNativeFrame, currentFootprintInverseCacheMetadataNativeFrame, currentFootprintInverseCacheNativeFrame } from "./current-footprint-inverse-cache-wire.ts";
 import { decodeCurrentProjectSyncQuiesceArray } from "./current-project-sync-quiesce-replies.ts";
 import { consumeCurrentPcbViaPollingCancellationIntent,enrollCurrentPcbViaPollingCancellationIntent } from "./current-pcb-via-polling-cancellation-intent.ts";
 import type { CurrentPcbViaPollingCancellationEnrollment,CurrentPcbViaPollingCancellationIntent } from "./current-pcb-via-polling-cancellation-intent.ts";
@@ -881,6 +881,11 @@ interface FootprintInverseCacheBackupHeld {
   readonly published: Awaited<ReturnType<FootprintInverseCacheBackupModule["publishCurrentFootprintInverseCacheBackupData"]>>;
   readonly module: FootprintInverseCacheBackupModule; readonly methods: Readonly<Pick<FootprintInverseCacheBackupModule, "buildCurrentFootprintInverseCacheBackupData" | "requireCurrentFootprintInverseCacheBackupData" | "publishCurrentFootprintInverseCacheBackupData" | "verifyCurrentFootprintInverseCachePublishedData">>;
 }
+interface FootprintInverseCacheAbsenceHeld {
+  readonly owner: CurrentPcbRetainedOwnerCore; readonly backup: FootprintInverseCacheBackupHeld;
+  readonly ledger: CurrentPcbViaSavedCacheInvalidationLedger; readonly data: CurrentPcbViaSavedCacheAbsenceData; readonly loading: CurrentPcbViaSavedCacheLoadingData;
+}
+const footprintInverseCacheAbsences = new WeakMap<object, FootprintInverseCacheAbsenceHeld>();
 const footprintInverseCacheBackups = new WeakMap<object, FootprintInverseCacheBackupHeld>();
 const footprintInverseCaches = new WeakMap<object, FootprintInverseCacheHeld>();
 interface SavedReadbackCacheHeld {
@@ -1676,6 +1681,8 @@ class CurrentPcbRetainedOwnerCore {
   #inverseFrame: Readonly<{ phase: "preflight" | "register" | "open-project"; session: string; context: string; target: CurrentDisposableOpenSealedTarget }> | null = null;
   #inverseHelper: { phase: "preflight" | "register" | "open-project"; scriptId: string | null } | null = null;
   #inverseCache: FootprintInverseCacheHeld | null = null; #inverseCacheAttempted = false; #inverseCacheGuard = false;
+  #inverseCacheInvalidation: CurrentPcbViaSavedCacheInvalidationLedger | null = null; #inverseCacheInvalidationPromise: Promise<CurrentFootprintInverseCacheAbsence> | null = null;
+  #inverseCacheAbsence: CurrentFootprintInverseCacheAbsence | null = null; #inverseCacheLateGuard: 0 | 1 | "loading" | null = null;
   #inverseCacheBackupPromise: Promise<CurrentFootprintInverseCacheBackupGrant> | null = null; #inverseCacheBackup: FootprintInverseCacheBackupHeld | null = null;
   #inverseCachePlan: CurrentPcbViaSavedCachePlan | null = null; #inverseCacheMetadataPlan: CurrentPcbViaSavedCacheMetadataPlan | null = null;
   #inverseRegistrationResult: ReturnType<typeof decodeCurrentFootprintInverseRegistrationReply> | null = null;
@@ -4591,7 +4598,7 @@ class CurrentPcbRetainedOwnerCore {
     let sessionId: string | null = null;
     await this.#transfer(async () => {
       sessionId = await this.#pipe.attachTarget(targetId, event => {
-        if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#viaWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE && this.#schematicWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && (this.#savedReadbackInvalidation === null ? this.#savedReadbackCache?.ledger.observeOriginalEvent(event.method) : this.#savedReadbackInvalidation.observeOriginalEvent(event)) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#observeSavedReadbackGuardHelper(event)) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#savedReadbackCache?.metadata.observeOriginalEvent(event) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#inverseCache?.ledger.observeOriginalEvent(event.method) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#inverseCache?.metadata.observeOriginalEvent(event) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseHelper(event)) { return; } context.observeEvent(event); });
+        if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#viaWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE && this.#schematicWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && (this.#savedReadbackInvalidation === null ? this.#savedReadbackCache?.ledger.observeOriginalEvent(event.method) : this.#savedReadbackInvalidation.observeOriginalEvent(event)) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#observeSavedReadbackGuardHelper(event)) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#savedReadbackCache?.metadata.observeOriginalEvent(event) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && (this.#inverseCacheInvalidation === null ? this.#inverseCache?.ledger.observeOriginalEvent(event.method) : this.#inverseCacheInvalidation.observeOriginalEvent(event)) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#inverseHelper !== null && this.#observeFootprintInverseHelper(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#inverseCache?.metadata.observeOriginalEvent(event) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseHelper(event)) { return; } context.observeEvent(event); });
       return { sessionId };
     });
     if (sessionId === null) { throw error("ATTACH_REPLY"); }
@@ -7029,13 +7036,13 @@ class CurrentPcbRetainedOwnerCore {
       const heldOriginal = (): FootprintInverseCacheHeld => { const held = footprintInverseCaches.get(origin); if (held === undefined) { throw error("FOOTPRINT_INVERSE_CACHE_ORIGINAL_ORIGIN"); } this.#footprintInverseCacheCurrent(held); return held; };
       const bindings: CurrentFootprintInverseCacheBindings = Object.freeze({ prepared, projectUuid: ready.source.target.projectUuid,
         request: async (command: CurrentPcbViaSavedCacheCommand): Promise<CurrentPcbViaSavedCachePacket> => {
-          const held = heldOriginal(); this.#enter(true); let plan: CurrentPcbViaSavedCachePlan | null = null;
+          const held = heldOriginal(); if (this.#inverseCacheInvalidation !== null) { throw error("FOOTPRINT_INVERSE_CACHE_READ_PHASE_CONSUMED"); } this.#enter(true); let plan: CurrentPcbViaSavedCachePlan | null = null;
           try { const reserved = ledger.prepare(command); plan = reserved; this.#inverseCachePlan = reserved;
             const rawReply = await this.#transfer(() => ready.pipe.observeInverseCache(reserved)); this.#footprintInverseCacheCurrent(held); return ledger.accept(reserved, rawReply);
           } catch (caughtError) { if (plan !== null) { ledger.failOriginalDispatch(plan); } this.#input.emit("error", error("FOOTPRINT_INVERSE_CACHE_FAILED")); throw caughtError; }
           finally { this.#inverseCachePlan = null; this.#busy = false; }
         }, metadataRequest: async (command: CurrentPcbViaSavedCacheMetadataCommand): Promise<CurrentPcbViaSavedCacheMetadataPacket> => {
-          const held = heldOriginal(); this.#enter(true); let plan: CurrentPcbViaSavedCacheMetadataPlan | null = null;
+          const held = heldOriginal(); if (this.#inverseCacheInvalidation !== null) { throw error("FOOTPRINT_INVERSE_CACHE_READ_PHASE_CONSUMED"); } this.#enter(true); let plan: CurrentPcbViaSavedCacheMetadataPlan | null = null;
           try { const reserved = metadata.prepare(command); plan = reserved; if (command.phase === "saved-cache-native-observe") { ledger.requireMetadataRound(command.round); } this.#inverseCacheMetadataPlan = reserved;
             const rawReply = await this.#transfer(() => ready.pipe.observeInverseCacheMetadata(reserved)); this.#footprintInverseCacheCurrent(held); return metadata.accept(reserved, rawReply);
           } catch (caughtError) { if (plan !== null) { metadata.failOriginalDispatch(plan); } this.#input.emit("error", error("FOOTPRINT_INVERSE_CACHE_METADATA_FAILED")); throw caughtError; }
@@ -7087,8 +7094,74 @@ class CurrentPcbRetainedOwnerCore {
       } finally { this.#busy = false; }
     })(); this.#inverseCacheBackupPromise = promise; return promise;
   }
+  /** Retain one enrolled invalidation attempt. Every later boundary rechecks
+   * the original immutable backup; no caller selector or artifact is admitted. */
+  public invalidateFootprintInverseCaches(): Promise<CurrentFootprintInverseCacheAbsence> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); if (this.#inverseCacheInvalidationPromise !== null) { return this.#inverseCacheInvalidationPromise; }
+    const backup = this.#inverseCacheBackup; if (backup === null) { throw error("FOOTPRINT_INVERSE_CACHE_BACKUP_REQUIRED"); }
+    this.#footprintInverseCacheBackupCurrent(backup); this.#enter(true);
+    const promise = (async (): Promise<CurrentFootprintInverseCacheAbsence> => {
+      const cache = backup.cache, pipe = cache.ready.pipe, target = cache.ready.source.target;
+      const ledger = new CurrentPcbViaSavedCacheInvalidationLedger(backup.cdp); this.#inverseCacheInvalidation = ledger;
+      const current = (): void => { this.#footprintInverseCacheBackupCurrent(backup);
+        if (this.#inverseCacheInvalidation !== ledger || Object.getPrototypeOf(ledger) !== CurrentPcbViaSavedCacheInvalidationLedger.prototype || Reflect.ownKeys(ledger).length > 0 ||
+          !originalFootprintDescriptors(CurrentPcbViaSavedCacheInvalidationLedger.prototype, savedReadbackInvalidationDescriptors) || ledger.status().failed) { throw error("FOOTPRINT_INVERSE_INVALIDATION_ORIGINAL"); } };
+      const verify = async (): Promise<void> => { current(); await backup.methods.verifyCurrentFootprintInverseCachePublishedData(backup.published, backup.data); current(); };
+      const request = async (command: CurrentPcbViaSavedCacheCommand): Promise<void> => {
+        current(); const plan = ledger.prepare(command); this.#inverseCachePlan = plan;
+        try { const reply = await this.#transfer(() => pipe.observeInverseCacheInvalidation(plan)); current(); ledger.accept(plan, reply); }
+        catch (caughtError) { ledger.failOriginalDispatch(plan); throw caughtError; } finally { this.#inverseCachePlan = null; }
+      };
+      const waitDeleteNotification = async (): Promise<void> => {
+        const started = performance.now();
+        while (!ledger.status().currentDeleteNotificationObserved) { current(); if (performance.now() - started >= 30_000) { throw error("FOOTPRINT_INVERSE_DELETE_NOTIFICATION_MISSING"); } await this.#pollRenderer(); current(); }
+      };
+      const guard = async (ordinal: 0 | 1 | "loading"): Promise<void> => {
+        await verify(); await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current();
+        this.#inverseCacheLateGuard = ordinal; this.#inverseHelper = { phase: "preflight", scriptId: null };
+        this.#inverseFrame = { phase: "preflight", session: cache.selected.sessionId, context: cache.selected.uniqueContextId, target };
+        const raw = await this.#transfer(() => pipe.observeInverseCacheGuard(cache.selected.uniqueContextId, target)); current(); this.#inverseFrame = null; this.#inverseCacheLateGuard = null;
+        const helper = this.#inverseHelper; if (helper === null || helper.scriptId === null) { throw error("FOOTPRINT_INVERSE_LATE_GUARD_HELPER"); }
+        const scriptId = helper.scriptId, source = await this.#transfer(() => pipe.getScriptSource(scriptId)); current();
+        if (!exact(source, ["scriptSource"]) || source["scriptSource"] !== `(${CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION})` || this.#inverseHelper !== helper) { throw error("FOOTPRINT_INVERSE_LATE_GUARD_SOURCE"); } this.#inverseHelper = null;
+        const result = decodeCurrentPcbDiagnosticOpeningReply(raw, target, "preflight");
+        if (!result.ok || result.status !== "ready" || result.dispatchAttempted || result.observation?.projectPresent !== false || result.observation.windowTabId !== cache.ready.windowTabId) { throw error("FOOTPRINT_INVERSE_DELETE_EMPTY_UI_REQUIRED"); }
+        await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current(); await verify();
+      };
+      try {
+        await verify(); await this.#verifyInstallation(); current();
+        const enrolled = await this.#request({ action: "footprint-inverse-cache-enroll", backupSha256: backup.published.artifact.sha256, dataSha256: backup.published.dataSha256,
+          storageKey: backup.cdp.storageKey, cacheId0: backup.cdp.selected[0]?.cacheId ?? null, cacheId1: backup.cdp.selected[1]?.cacheId ?? null }); current();
+        if (!exact(enrolled, ["backupEnrolled"]) || enrolled["backupEnrolled"] !== true) { throw error("FOOTPRINT_INVERSE_BACKUP_ENROLL_ACK"); }
+        for (const ordinal of [0, 1] as const) {
+          await guard(ordinal);
+          await request({ phase: "saved-cache-key", step: ordinal === 0 ? "before-delete-0" : "before-delete-1" });
+          await request({ phase: "saved-cache-names", step: ordinal === 0 ? "before-delete-0" : "before-delete-1" });
+          if (backup.cdp.selected[ordinal] !== null) {
+            await request({ phase: "saved-cache-delete", ordinal }); await waitDeleteNotification();
+          }
+          await request({ phase: "saved-cache-names", step: ordinal === 0 ? "after-delete-0" : "after-delete-1" });
+        }
+        await request({ phase: "saved-cache-names", step: "absence" }); await verify();
+        const data = ledger.snapshot(); ledger.requireOriginalSnapshot(data); for (const packet of data.packets) { ledger.requireOriginalPacket(packet); }
+        await guard("loading"); await request({ phase: "saved-cache-key", step: "loading" }); await request({ phase: "saved-cache-names", step: "loading" });
+        const loading = ledger.loadingSnapshot(data); ledger.requireOriginalLoadingSnapshot(loading); for (const packet of loading.packets) { ledger.requireOriginalPacket(packet); }
+        await request({ phase: "saved-cache-untrack" }); await verify();
+        const token: CurrentFootprintInverseCacheAbsence = Object.freeze({ profile: "private.current-footprint-inverse-cache-absence.v1" });
+        footprintInverseCacheAbsences.set(token, Object.freeze({ owner: this, backup, ledger, data, loading })); this.#inverseCacheAbsence = token; current(); return token;
+      } catch (caughtError) { this.#input.emit("error", error("FOOTPRINT_INVERSE_INVALIDATION_FAILED")); throw caughtError; }
+      finally { this.#inverseCacheLateGuard = null; this.#inverseHelper = null; this.#inverseFrame = null; this.#inverseCachePlan = null; this.#busy = false; }
+    })(); this.#inverseCacheInvalidationPromise = promise; return promise;
+  }
+  public originalFootprintInverseCacheAbsence(token: CurrentFootprintInverseCacheAbsence, prepared: CurrentFootprintForwardSavedCheckpoint): FootprintInverseCacheAbsenceHeld {
+    const held = footprintInverseCacheAbsences.get(token);
+    if (held === undefined || held.owner !== this || held.backup.cache.prepared !== prepared || this.#inverseCacheAbsence !== token || this.#inverseCacheInvalidation !== held.ledger || held.ledger.status().failed) { throw error("FOOTPRINT_INVERSE_CACHE_ABSENCE_ORIGINAL"); }
+    this.#footprintInverseCacheBackupCurrent(held.backup); held.ledger.requireOriginalSnapshot(held.data); held.ledger.requireOriginalLoadingSnapshot(held.loading);
+    for (const packet of [...held.data.packets, ...held.loading.packets]) { held.ledger.requireOriginalPacket(packet); } return held;
+  }
   public async armFootprintInverseWorker(setup: (origin: CurrentFootprintInverseWorkerOrigin) => Promise<void>): Promise<void> {
     assertOriginalCurrentFootprintInverseNativeOwner(this); const intent = this.#inverseRegistrationIntent, ready = this.#inverseUiReady, runner = this.#mainRunner;
+    if (this.#inverseCacheAbsence === null) { throw error("FOOTPRINT_INVERSE_CACHE_ABSENCE_REQUIRED"); } this.originalFootprintInverseCacheAbsence(this.#inverseCacheAbsence, originalCurrentFootprintInverseTarget(this));
     if (ready === null || intent === null || runner === null || this.#inverseWorkerController !== null || typeof setup !== "function" || types.isProxy(setup)) { throw error("FOOTPRINT_INVERSE_WORKER_PREREQUISITE"); }
     const registration = footprintInverseRegistrationIntents.get(intent);
     if (registration === undefined || this.#inverseRegistrationResult === null || registration.owner !== this) { throw error("FOOTPRINT_INVERSE_REGISTRATION_RESULT_REQUIRED"); }
@@ -8441,7 +8514,7 @@ class CurrentPcbRetainedOwnerCore {
       else if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { nativeRequest = currentSchematicDisplayWriteNativeRequest; }
       let encoded: Readonly<Record<string, unknown>>;
       if (this.#inverseCacheMetadataPlan !== null && this.#inverseCache !== null) { this.#footprintInverseCacheCurrent(this.#inverseCache); encoded = currentFootprintInverseCacheMetadataNativeFrame(chunk, this.#inverseCacheMetadataPlan, this.#inverseCache.selected.sessionId); }
-      else if (this.#inverseCachePlan !== null && this.#inverseCache !== null) { this.#footprintInverseCacheCurrent(this.#inverseCache); encoded = currentFootprintInverseCacheNativeFrame(chunk, this.#inverseCachePlan, this.#inverseCache.selected.sessionId); }
+      else if (this.#inverseCachePlan !== null && this.#inverseCache !== null) { this.#footprintInverseCacheCurrent(this.#inverseCache); encoded = this.#inverseCacheInvalidation === null ? currentFootprintInverseCacheNativeFrame(chunk, this.#inverseCachePlan, this.#inverseCache.selected.sessionId) : currentFootprintInverseCacheInvalidationNativeFrame(chunk, this.#inverseCachePlan, this.#inverseCache.selected.sessionId); }
       else if (this.#inverseConstructionCommand !== null && this.#inverseWorkerPair !== null) { encoded = currentFootprintInverseConstructionNativeFrame(chunk, this.#inverseConstructionCommand, this.#inverseWorkerPair.pageSessionId); }
       else if (this.#inverseActorStage !== null) { encoded = currentFootprintInverseActorNativeFrame(chunk, this.#inverseActorStage); }
       else if (this.#inverseParentPending && this.#inverseUiReady !== null) { encoded = currentFootprintInverseParentNativeFrame(chunk, this.#inverseUiReady.selected.sessionId); }
@@ -8454,7 +8527,8 @@ class CurrentPcbRetainedOwnerCore {
         encoded = currentPcbViaSavedRegistrationNativeFrame(chunk, this.#savedReadbackCache.selected.sessionId, this.#savedReadbackCache.selected.uniqueContextId, held.target);
       }
       else if (this.#inverseFrame !== null) { const inverse = this.#inverseFrame;
-        if (inverse.phase === "preflight") { encoded = currentFootprintInversePreflightNativeFrame(chunk, inverse.session, inverse.context, inverse.target); if (this.#inverseCacheGuard) { encoded = { ...encoded, action: "footprint-inverse-cache-guard" }; } }
+        if (inverse.phase === "preflight") { encoded = currentFootprintInversePreflightNativeFrame(chunk, inverse.session, inverse.context, inverse.target); if (this.#inverseCacheGuard) { encoded = { ...encoded, action: "footprint-inverse-cache-guard" }; }
+          else if (this.#inverseCacheLateGuard !== null) { encoded = this.#inverseCacheLateGuard === "loading" ? { ...encoded, action: "footprint-inverse-cache-loading-guard" } : { ...encoded, action: "footprint-inverse-cache-delete-guard", namespaceOrdinal: this.#inverseCacheLateGuard }; } }
         else if (inverse.phase === "open-project") { encoded = currentFootprintInverseProjectNativeFrame(chunk, inverse.session, inverse.context, inverse.target); }
         else { encoded = currentFootprintInverseRegistrationNativeFrame(chunk, inverse.session, inverse.context, inverse.target); }
       }
@@ -9982,6 +10056,12 @@ export function requireOriginalCurrentFootprintInverseRegistrationIntentForRunne
   const held = footprintInverseRegistrationIntents.get(intent);
   if (held === undefined || held.runner !== runner) { throw error("FOOTPRINT_INVERSE_REGISTRATION_ORIGINAL_RUNNER"); }
   return requireOriginalCurrentFootprintInverseRegistrationIntent(intent, held.owner, runner);
+}
+export function requireOriginalCurrentFootprintInverseCacheAbsence(token: CurrentFootprintInverseCacheAbsence, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): Readonly<{
+  backup: CurrentFootprintInverseCacheBackupGrant; bothExactNamespacesAbsent: true; cacheTrackingReleased: true; freshLoadingVerified: false; executionAuthorized: false;
+}> {
+  assertOriginalCurrentFootprintInverseNativeOwner(owner); const held = owner.originalFootprintInverseCacheAbsence(token, prepared);
+  return Object.freeze({ backup: held.backup.grant, bothExactNamespacesAbsent: true, cacheTrackingReleased: true, freshLoadingVerified: false, executionAuthorized: false });
 }
 export function requireOriginalCurrentFootprintInverseCacheBackup(grant: CurrentFootprintInverseCacheBackupGrant, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): Readonly<{
   origin: CurrentFootprintInverseCacheOrigin; data: FootprintInverseCacheBackupHeld["data"]; published: FootprintInverseCacheBackupHeld["published"];

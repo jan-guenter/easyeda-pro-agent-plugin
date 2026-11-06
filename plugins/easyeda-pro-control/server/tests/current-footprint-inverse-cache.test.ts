@@ -1,5 +1,6 @@
 /** Actual automatic driver and both real custody ledgers with one explicit
  * original-native binding seam. No Cache API/native owner is constructed. */
+/* oxlint-disable import/max-dependencies -- This inert regression binds both original data ledgers and the separate fixed inverse observer/wire; it issues no native origin or grant. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
@@ -8,9 +9,10 @@ import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { freshSyntheticSavedCacheDriver } from "./helpers/current-pcb-via-saved-cache-fixture.ts";
 
+import { CurrentPcbViaSavedCacheInvalidationLedger } from "../src/current-pcb-via-saved-cache-invalidation-ledger.ts";
 import { CurrentPcbViaSavedCacheLedger } from "../src/current-pcb-via-saved-cache-ledger.ts";
 import { CurrentPcbViaSavedCacheMetadataLedger } from "../src/current-pcb-via-saved-cache-metadata-ledger.ts";
-import { CURRENT_FOOTPRINT_INVERSE_CACHE_REQUESTS, currentFootprintInverseCacheMetadataNativeFrame, currentFootprintInverseCacheMetadataWire,
+import { CURRENT_FOOTPRINT_INVERSE_CACHE_REQUESTS, currentFootprintInverseCacheInvalidationNativeFrame, currentFootprintInverseCacheInvalidationWire, currentFootprintInverseCacheMetadataNativeFrame, currentFootprintInverseCacheMetadataWire,
   currentFootprintInverseCacheNativeFrame, currentFootprintInverseCacheWire } from "../src/current-footprint-inverse-cache-wire.ts";
 
 const bytes = (value: unknown): Buffer => Buffer.from(`${JSON.stringify(value)}\0`);
@@ -57,5 +59,17 @@ void test("inverse native projection is bound to its actual reserved frame and m
   assert.equal(frame["action"], "footprint-inverse-cache-metadata"); assert.equal(frame["uniqueContextId"], "original-realm");
   assert.equal(Object.hasOwn(frame, "functionDeclaration"), false);
   assert.throws(() => currentFootprintInverseCacheMetadataNativeFrame(bytes({ ...native, params: { ...native.params, functionDeclaration: "function(){return true}" } }), reserved, sessionId));
-  assert.equal(CURRENT_FOOTPRINT_INVERSE_CACHE_REQUESTS.total, 114);
+  assert.equal(CURRENT_FOOTPRINT_INVERSE_CACHE_REQUESTS.total, 156);
+});
+
+void test("later inverse cache frames remain separate from the backup-read vocabulary", async () => {
+  const f = await fixture(); await f.observe(); const snapshot = f.data.ledger.snapshot();
+  const ledger = new CurrentPcbViaSavedCacheInvalidationLedger(snapshot), plan = ledger.prepare({ phase: "saved-cache-key", step: "before-delete-0" });
+  assert.throws(() => currentFootprintInverseCacheWire(plan, 800, snapshot.frame.sessionId));
+  const wire = currentFootprintInverseCacheInvalidationWire(plan, 800, snapshot.frame.sessionId);
+  const projected = currentFootprintInverseCacheInvalidationNativeFrame(bytes(wire), plan, snapshot.frame.sessionId);
+  assert.equal(projected["action"], "footprint-inverse-cache-invalidate"); assert.equal(projected["frameId"], snapshot.frame.frameId);
+  assert.throws(() => currentFootprintInverseCacheInvalidationNativeFrame(bytes({ ...wire, params: { frameId: "foreign" } }), plan, snapshot.frame.sessionId));
+  ledger.failOriginalDispatch(plan); assert.throws(() => ledger.prepare({ phase: "saved-cache-key", step: "before-delete-0" }));
+  assert.equal(CURRENT_FOOTPRINT_INVERSE_CACHE_REQUESTS.invalidationGuards, 30); assert.equal(CURRENT_FOOTPRINT_INVERSE_CACHE_REQUESTS.invalidation, 12);
 });

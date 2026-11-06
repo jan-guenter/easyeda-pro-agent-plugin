@@ -9,7 +9,7 @@ import { CURRENT_PCB_VIA_SAVED_CACHE_METADATA_REQUESTS as METADATA } from "./cur
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_FOOTPRINT_INVERSE_CACHE_REQUESTS = Object.freeze({ cacheNormal: 1 + 1 + 2 + 4 + 2 * 8, cacheCleanup: 1,
-  metadataNormal: METADATA.normal, metadataCleanup: METADATA.cleanup, guard: 9 + 1, total: 25 + METADATA.total + 10 });
+  metadataNormal: METADATA.normal, metadataCleanup: METADATA.cleanup, guard: 9 + 1, invalidationGuards: 3 * (9 + 1), invalidation: 2 + 5 + 2 + 3, total: 25 + METADATA.total + 10 + 30 + 12 });
 export function currentFootprintInverseCacheWire(plan: CurrentPcbViaSavedCachePlan, id: number, sessionId: string): Readonly<{
   id: number; method: CurrentPcbViaSavedCachePlan["method"]; params: CurrentPcbViaSavedCachePlan["params"]; sessionId: string; inverseCache: true;
 }> {
@@ -47,4 +47,19 @@ export function currentFootprintInverseCacheMetadataNativeFrame(chunk: Buffer, p
     fields["requestMembersObjectId"] = first.objectId; fields["projectUuid"] = second.value;
   }
   return freezeDeep({ action: "footprint-inverse-cache-metadata", requestId: id, sessionId, ...currentPcbViaSavedCacheMetadataNativeRequest(plan.command), ...fields });
+}
+
+/** The original invalidation ledger may select only its enrolled namespaces.
+ * These later frames have a separate marker and native enrollment gate. */
+export function currentFootprintInverseCacheInvalidationWire(plan: CurrentPcbViaSavedCachePlan, id: number, sessionId: string): Readonly<{
+  id: number; method: CurrentPcbViaSavedCachePlan["method"]; params: CurrentPcbViaSavedCachePlan["params"]; sessionId: string; inverseCacheInvalidation: true;
+}> {
+  const command = plan.command;
+  if (!Number.isSafeInteger(id) || id < 1 || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId) ||
+    !(command.phase === "saved-cache-delete" || command.phase === "saved-cache-untrack" || command.phase === "saved-cache-key" && command.step !== "initial" || command.phase === "saved-cache-names" && !["before", "after-backup"].includes(command.step))) { throw new Error("FOOTPRINT_INVERSE_INVALIDATION_WIRE"); }
+  return freezeDeep({ id, method: plan.method, params: plan.params, sessionId, inverseCacheInvalidation: true });
+}
+export function currentFootprintInverseCacheInvalidationNativeFrame(chunk: Buffer, plan: CurrentPcbViaSavedCachePlan, sessionId: string): Readonly<Record<string, unknown>> {
+  const id = requestId(chunk); exact(chunk, currentFootprintInverseCacheInvalidationWire(plan, id, sessionId));
+  return freezeDeep({ action: "footprint-inverse-cache-invalidate", requestId: id, sessionId, ...currentPcbViaSavedCacheNativeRequest(plan.command), ...plan.params });
 }

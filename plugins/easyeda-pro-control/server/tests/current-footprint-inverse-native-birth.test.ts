@@ -107,6 +107,11 @@ void test("an original inverse factory cannot adopt a copied source or construct
   assert.throws(() => { Reflect.apply(cache, undefined, [Object.freeze({ profile: "private.current-footprint-inverse-cache-origin.v1" }), owner, token]); }, /FOOTPRINT_INVERSE_CACHE_ORIGINAL_ORIGIN/u);
   const backup: unknown = Reflect.get(f.api, "requireOriginalCurrentFootprintInverseCacheBackup"); assert.ok(typeof backup === "function");
   assert.throws(() => { Reflect.apply(backup, undefined, [Object.freeze({ profile: "private.current-footprint-inverse-cache-backup.v1" }), owner, token]); }, /FOOTPRINT_INVERSE_CACHE_BACKUP_ORIGINAL_GRANT/u);
+  const absence: unknown = Reflect.get(f.api, "requireOriginalCurrentFootprintInverseCacheAbsence"); assert.ok(typeof absence === "function");
+  assert.throws(() => { Reflect.apply(absence, undefined, [Object.freeze({ profile: "private.current-footprint-inverse-cache-absence.v1" }), owner, token]); }, /FOOTPRINT_INVERSE_CACHE_ABSENCE_ORIGINAL/u);
+  const worker: unknown = Reflect.get(owner, "armFootprintInverseWorker"); assert.ok(typeof worker === "function");
+  const refused: unknown = Reflect.apply(worker, owner, [(): Promise<void> => Promise.resolve()]); assert.ok(refused instanceof Promise);
+  await assert.rejects(refused, /FOOTPRINT_INVERSE_CACHE_ABSENCE_REQUIRED/u);
   assert.equal(owner.status().busy, false); await owner.releaseUnlaunched();
   assert.deepEqual(f.state.actions, ["release-unlaunched", "release-unlaunched", "release-unlaunched"]);
 });

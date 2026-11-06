@@ -21,3 +21,4 @@ export interface CurrentFootprintInverseCacheBindings {
 }
 
 export interface CurrentFootprintInverseCacheBackupGrant { readonly profile: "private.current-footprint-inverse-cache-backup.v1" }
+export interface CurrentFootprintInverseCacheAbsence { readonly profile: "private.current-footprint-inverse-cache-absence.v1" }
