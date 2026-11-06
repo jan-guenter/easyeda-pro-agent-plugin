@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 public CBB witness research](2026-11-06-cbb-public-witness-research.md). Official CBB/board/archive contracts clarify witness requirements; no explicit public system project/branch tuple was identified in the bounded sources, and positive validation remains pending.
+
 - [2026-11-06 schematic active history source](2026-11-06-schematic-action-history-source.md). Fixed original action/recorder metadata leaves, exact idle-to-active callback provenance and77-request data-only budget; native custody and modify/Save remain gated.
 
 - [2026-11-06 Pad/Relevance closed-data reuse](2026-11-06-pad-relevance-closed-data-reuse.md). Separate historical reports, fresh read-only Windows leases, full initial SQL/source qualification and new one-use reader data staging; old schemas and writer brands remain unchanged.
