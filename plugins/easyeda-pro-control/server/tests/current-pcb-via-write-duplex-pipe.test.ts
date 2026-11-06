@@ -13,6 +13,7 @@ import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { CurrentPcbDiagnosticPipe } from "../src/current-pcb-diagnostic-pipe.ts";
 import type { CurrentPcbViaWritePipe } from "../src/current-pcb-diagnostic-pipe.ts";
+import { currentPcbViaClockNativeCases, validateCurrentPcbViaClockCommand } from "../src/current-pcb-via-clock-protocol.ts";
 import { currentPcbViaWriteNativeRequest } from "../src/current-pcb-via-write-protocol.ts";
 import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
 import type { CurrentPcbViaWritePlan } from "../src/current-pcb-via-write-plan.ts";
@@ -108,4 +109,23 @@ void test("actual Via pipe binds only its observed suspended child and keeps wor
   const running = f.sent.at(-1); assert.ok(running !== undefined);
   const parent = currentPcbViaWriteNativeRequest(Buffer.from(`${JSON.stringify(running)}\0`)); assert.equal(parent["phase"], "running");
   assert.equal(f.pipe.status().pendingRequestId, 4); f.replySave(); await saved;
+});
+
+void test("actual Via clock pipe substitutes only its retained original initial contexts while SDKSave remains pending", async context => {
+  const f = await fixture(context);
+  assert.throws(() => { f.pipe.bindViaClock("worker-context", "sdk-tuple"); }, /CLOCK_BINDING/u);
+  await f.pipe.enableViaWorkerDiscovery(() => {
+    // The original child attachment is retained by the production pipe.
+  });
+  f.emitEvent({ method: "Target.attachedToTarget", sessionId: "original-session", params: { sessionId: "clock-worker", waitingForDebugger: true,
+    targetInfo: { targetId: "clock-target", type: "worker", attached: true, title: "original", url: "https://client/editor?entry=mgr-project-worker.js&cll=&debugOpen=0" } } });
+  f.pipe.bindViaWorker("clock-worker", "clock-target"); await f.pipe.configureViaWorkerRunning();
+  await f.pipe.observeViaStage("create", "sdk-tuple", plan); f.pipe.bindViaClock("worker-context", "sdk-tuple");
+  const saved = f.pipe.observeViaStage("save", "sdk-tuple", plan);
+  const registration = currentPcbViaClockNativeCases().find(command => command.phase === "via-clock-registration"); assert.ok(registration !== undefined);
+  const original = validateCurrentPcbViaClockCommand({ ...registration, params: { ...registration.params, objectId: "sdk-tuple" } });
+  await f.pipe.observeViaClock(original, "ui"); const frame = f.sent.at(-1); assert.ok(frame !== undefined);
+  const encoded = currentPcbViaWriteNativeRequest(Buffer.from(`${JSON.stringify(frame)}\0`)); assert.equal(encoded["action"], "pcb-via-clock"); assert.equal(Object.hasOwn(encoded, "objectId"), false);
+  const count = f.sent.length; assert.throws(() => f.pipe.observeViaClock(validateCurrentPcbViaClockCommand({ ...registration, params: { ...registration.params, objectId: "foreign-sdk" } }), "ui"), /INITIAL_RECEIVER/u);
+  assert.equal(f.sent.length, count); f.replySave(); await saved;
 });

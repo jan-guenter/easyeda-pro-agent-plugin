@@ -2,6 +2,7 @@
  * programs; no caller JavaScript, SDK receiver or pipe handle is accepted. */
 /* oxlint-disable import/max-dependencies -- The original Via wire composes independent fixed SDK, cold bootstrap, worker observer, scene and legacy grammars while retaining their distinct validators. */
 import { z } from "zod";
+import { currentPcbViaClockWire } from "./current-pcb-via-clock-wire.ts";
 import { currentPcbViaWorkerWire } from "./current-pcb-via-worker-wire.ts";
 import { CURRENT_PCB_VIA_WORKER_PARENT_PARAMS, CURRENT_PCB_VIA_WORKER_RUNNING_PARAMS } from "./current-pcb-via-worker-bootstrap-protocol.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
@@ -51,6 +52,12 @@ export function currentPcbViaWriteNativeRequest(chunk: Buffer): Readonly<Record<
     raw["id"] < 1 || raw["id"] > PROFILE.renderer.total || !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("PCB_VIA_WIRE"); }
   const { id, sessionId, ...input } = raw;
   if (typeof sessionId !== "string" && Object.hasOwn(raw, "viaWritePhase")) { throw new Error("PCB_VIA_SESSION"); }
+  if (Object.hasOwn(raw, "viaClockCommand")) {
+    const { viaClockCommand, viaClockRealm, ...command } = input;
+    if (viaClockCommand !== true || typeof sessionId !== "string" || viaClockRealm !== "worker" && viaClockRealm !== "ui") { throw new Error("PCB_VIA_CLOCK_WIRE"); }
+    const fixed = currentPcbViaClockWire(command, viaClockRealm, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, viaClockCommand: true, viaClockRealm, sessionId })}\0`))) { throw new Error("PCB_VIA_CLOCK_WIRE"); } return fixed.request;
+  }
   if (Object.hasOwn(raw, "viaWorkerCommand")) {
     const { viaWorkerCommand, ...command } = input;
     if (viaWorkerCommand !== true || typeof sessionId !== "string") { throw new Error("PCB_VIA_WORKER_WIRE"); }

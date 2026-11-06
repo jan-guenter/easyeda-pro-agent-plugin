@@ -8,6 +8,9 @@
  * application-closure policy permits release. No TCP endpoint is supported. */
 /* oxlint-disable max-classes-per-file -- Three fixed-purpose facades share a private byte-transport core without exposing a caller-selectable purpose or budget. */
 /* oxlint-disable import/max-dependencies -- Fixed transport composes independent model/common/worker/actor grammars without merging their source or authority boundaries. */
+import { currentPcbViaClockWire } from "./current-pcb-via-clock-wire.ts";
+import type { CurrentPcbViaClockCommand } from "./current-pcb-via-clock-protocol.ts";
+import type { CurrentPcbViaClockRealm } from "./current-pcb-via-clock-origin.ts";
 import { CURRENT_PCB_DIAGNOSTIC_TRANSPORT_LIMITS as TRANSPORT } from "./current-pcb-diagnostic-transport-limits.ts";
 import type { Readable, Writable } from "node:stream";
 import { CURRENT_RENDERER_CAPTURE_PARAMS, DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_SESSION_BYTES, DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticArcShapes209Params, diagnosticExact, diagnosticExtendedPrimitives209Params, diagnosticGeneratedFixtureRegistrationParams, diagnosticImageShapes209Params, diagnosticLayers209Params, diagnosticOpeningParams, diagnosticPadShapes209Params, diagnosticPcbOpeningParams, diagnosticPouredShapes209Params, diagnosticPrimitives209Params, diagnosticSelectionRelations209Params, diagnosticToken, diagnosticVisual209Params, diagnosticWorkerEvaluationParams } from "./current-pcb-diagnostic-protocol.ts";
@@ -71,9 +74,10 @@ type Failure = "attachment" | "input" | "output" | "eof" | "closed" | "framing" 
 type FailureReason = Failure | "empty-frame" | "nonobject-frame" | "reply-unsolicited" | "reply-duplicate" | "reply-id" | "reply-envelope" | "reply-result" |
   "event-budget-or-handler" | "event-envelope" | "event-session" | "worker-attachment" | "worker-handler" | "event-callback" | "unsolicited-data" |
   "trailing-reply-data" | "attachment-result" | "worker-discovery-result";
+type ViaClockWireCommand = CurrentPcbViaClockCommand & Readonly<{ viaClockCommand: true; viaClockRealm: CurrentPcbViaClockRealm }>;
 type ViaWorkerParentCommand = Readonly<{ viaWorkerParentPhase: "arm"; method: "Target.setAutoAttach"; params: typeof CURRENT_PCB_VIA_WORKER_PARENT_PARAMS }> |
   Readonly<{ viaWorkerParentPhase: "running"; method: "Target.setAutoAttach"; params: typeof CURRENT_PCB_VIA_WORKER_RUNNING_PARAMS }>;
-type RequestPhase = "via-worker" | "via-parent-arm" | "via-parent-running" | "generated-fixture-register" | "renderer-capture209" | "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
+type RequestPhase = "via-clock" | "via-worker" | "via-parent-arm" | "via-parent-running" | "generated-fixture-register" | "renderer-capture209" | "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
   `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "visual209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209" |
   `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}` |
   `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}` | `worker-producer-${CurrentPcbStringWorkerProducerCommand["workerProducerPhase"]}` |
@@ -183,6 +187,7 @@ class CurrentPcbFixedPipeCore {
   #viaProperties = 0;
   #viaWorkerEvent: ((event: DiagnosticEvent) => void) | null = null;
   #viaWorkerSession: string | null = null;
+  #viaClockBinding: Readonly<{ workerContext: string; uiSdk: string }> | null = null;
   #viaParentRunning = false;
   readonly #viaWaitingWorkers = new Set<string>();
   readonly #viaStages = new Set<CurrentPcbViaWriteStage>();
@@ -468,6 +473,16 @@ class CurrentPcbFixedPipeCore {
     const wire = currentPcbViaWorkerWire(input, this.#nextId);
     return this.#request({ id: this.#nextId, ...wire.command, viaWorkerCommand: true, sessionId: this.#viaWorkerSession }, "via-worker");
   }
+  protected bindViaClockCommand(workerContext: string, uiSdk: string): void {
+    if (!this.#viaPurpose || this.#viaClockBinding !== null || !this.#viaParentRunning || !this.#viaStages.has("create") || !diagnosticToken(workerContext) || !diagnosticToken(uiSdk)) { throw new Error("PCB_VIA_CLOCK_BINDING"); }
+    this.#viaClockBinding = Object.freeze({ workerContext, uiSdk });
+  }
+  protected observeViaClockCommand(input: CurrentPcbViaClockCommand, realm: CurrentPcbViaClockRealm): Promise<Reply> {
+    const binding = this.#viaClockBinding; if (!this.#viaPurpose || binding === null || this.#sessionId === null || this.#viaWorkerSession === null) { throw new Error("PCB_VIA_CLOCK_ORIGINAL_BINDING"); }
+    const wire = currentPcbViaClockWire(input, realm, this.#nextId); const command = wire.command;
+    if (command.phase === "via-clock-worker" && command.params.uniqueContextId !== binding.workerContext || command.phase === "via-clock-registration" && command.params.objectId !== binding.uiSdk) { throw new Error("PCB_VIA_CLOCK_INITIAL_RECEIVER"); }
+    return this.#request({ id: this.#nextId, ...command, viaClockCommand: true, viaClockRealm: realm, sessionId: realm === "worker" ? this.#viaWorkerSession : this.#sessionId }, "via-clock");
+  }
   protected observeViaSdkPropertiesCommand(objectId: string): Promise<Reply> {
     if (!this.#viaPurpose || !this.#viaStages.has("capture") || this.#viaStages.size !== 1 || this.#viaProperties >= 3 || this.#sessionId === null || !diagnosticToken(objectId)) { throw new Error("PCB_VIA_SDK_PROPERTIES"); }
     this.#viaProperties += 1;
@@ -713,7 +728,7 @@ class CurrentPcbFixedPipeCore {
    * write ambiguity fails the pipe and never grants an automatic resend.
    */
   // oxlint-disable-next-line eslint/require-await -- Async converts pre-dispatch guards to rejected promises; native completion is callback-based.
-  async #request(command: DiagnosticCommand | CurrentPcbSpatialWireCommand | ((CurrentPcbViaWriteCommand | CurrentPcbViaSpatialCommand | CurrentPcbViaSdkPropertiesCommand | ViaWorkerParentCommand | (CurrentPcbViaWorkerCommand & Readonly<{ viaWorkerCommand: true }>)) & Readonly<{ id: number; sessionId: string }>) | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheHeldCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
+  async #request(command: DiagnosticCommand | CurrentPcbSpatialWireCommand | ((CurrentPcbViaWriteCommand | CurrentPcbViaSpatialCommand | CurrentPcbViaSdkPropertiesCommand | ViaWorkerParentCommand | ViaClockWireCommand | (CurrentPcbViaWorkerCommand & Readonly<{ viaWorkerCommand: true }>)) & Readonly<{ id: number; sessionId: string }>) | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheHeldCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
     Readonly<{ id: number; sessionId: string }>), phase: RequestPhase = "discovery"): Promise<Reply> {
     if (!this.#started || this.#released || this.#handedOff) { throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED"); }
     const spatial = this.#spatialPurpose && "spatialPhase" in command && phase.startsWith("spatial-");
@@ -738,7 +753,7 @@ class CurrentPcbFixedPipeCore {
     }
     if (this.#failure !== null) { throw failureError(this.#failure); }
     const viaRetained = this.#viaPurpose && ["via-sdk-save", "project-open-project", "pcb-open-document"].includes(phase);
-    if (this.#viaRetainedPending !== null && (viaRetained || !(phase === "via-worker" || phase === "via-parent-running" || phase === "discovery" && command.method === "Debugger.getScriptSource"))) { throw new Error("PCB_VIA_RETAINED_PENDING_SCOPE"); }
+    if (this.#viaRetainedPending !== null && (viaRetained || !(phase === "via-clock" || phase === "via-worker" || phase === "via-parent-running" || phase === "discovery" && command.method === "Debugger.getScriptSource"))) { throw new Error("PCB_VIA_RETAINED_PENDING_SCOPE"); }
     if (this.#pending !== null) { throw new Error("PCB_DIAGNOSTIC_PIPE_REQUEST_PENDING"); }
     let limit = this.#stringPurpose ? CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT : DIAGNOSTIC_REQUEST_LIMIT;
     if (this.#heldCacheDiagnosticPurpose) { limit = HELD_DIAGNOSTIC.requestLimit; }
@@ -924,6 +939,8 @@ export class CurrentPcbViaWritePipe extends CurrentPcbFixedPipeCore {
   public configureViaWorkerRunning(): Promise<Reply> { return this.configureViaWorkerRunningCommand(); }
   public bindViaWorker(sessionId: string, targetId: string): void { this.bindViaWorkerCommand(sessionId, targetId); }
   public observeViaWorker(command: CurrentPcbViaWorkerCommand): Promise<Reply> { return this.observeViaWorkerCommand(command); }
+  public bindViaClock(workerContext: string, uiSdk: string): void { this.bindViaClockCommand(workerContext, uiSdk); }
+  public observeViaClock(command: CurrentPcbViaClockCommand, realm: CurrentPcbViaClockRealm): Promise<Reply> { return this.observeViaClockCommand(command, realm); }
   public observeViaSdkProperties(objectId: string): Promise<Reply> { return this.observeViaSdkPropertiesCommand(objectId); }
   public observeViaStage(stage: CurrentPcbViaWriteStage, binding: string, plan: CurrentPcbViaWritePlan): Promise<Reply> { return this.observeViaStageCommand(stage, binding, plan); }
 }

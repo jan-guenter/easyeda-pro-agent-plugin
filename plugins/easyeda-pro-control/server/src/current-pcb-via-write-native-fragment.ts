@@ -1,5 +1,6 @@
 /** Distinct original Via birth. This generator changes only its supplied
  * source string; root owns helper regeneration and installation pins. */
+import { applyCurrentPcbViaClockNativeFragment } from "./current-pcb-via-clock-native-fragment.ts";
 import { applyCurrentPcbViaWorkerNativeFragment } from "./current-pcb-via-worker-native-fragment.ts";
 import { CURRENT_PCB_VIA_WRITE_FUNCTION } from "./current-pcb-via-write-program.ts";
 import { CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE as PROFILE } from "./current-pcb-via-write-native-profile.ts";
@@ -60,7 +61,9 @@ const dispatch = String.raw`        'pcb-via-sdk-properties' {
         }
 `;
 export function applyCurrentPcbViaWriteNativeFragment(input: string): string {
-  let source = one(input, "[switch]$StringPrecreate,", "[switch]$PcbViaWrite209,[switch]$StringPrecreate,");
+  // Upgrade only earlier unpublished Via reservations. Released103/384 stay exact.
+  const currentInput = input.replace(/return pcbViaWrite209\?(?:700|766):spatial209\?384:/u, `return pcbViaWrite209?${String(PROFILE.renderer.total)}:spatial209?384:`).replace(/\$requestLimit=if \(\$PcbViaWrite209\) \{(?:700|766)\}/u, `$requestLimit=if ($PcbViaWrite209) {${String(PROFILE.renderer.total)}}`);
+  let source = one(currentInput, "[switch]$StringPrecreate,", "[switch]$PcbViaWrite209,[switch]$StringPrecreate,");
   const switches = [...source.slice(0, source.indexOf("\n")).matchAll(/\[switch\]\$(\w+)/gu)].map(match => match[1]).filter(name => name !== undefined && name !== "CompileOnly" && name !== "PcbViaWrite209");
   const conflict = `if ($PcbViaWrite209 -and (${switches.map(name => `$${name}`).join(" -or ")})) {throw 'pcb-diagnostic-conflicting-via-purpose'}\n`;
   source = one(source, "$ErrorActionPreference = 'Stop'\n", `$ErrorActionPreference = 'Stop'\n${conflict}`);
@@ -89,5 +92,5 @@ export function applyCurrentPcbViaWriteNativeFragment(input: string): string {
   const start = source.indexOf(begin), stop = source.indexOf(end);
   if (start !== -1 || stop !== -1) { if (start === -1 || stop < start || source.includes(begin, start + begin.length) || source.includes(end, stop + end.length)) { throw new Error("PCB_VIA_NATIVE_MARKERS"); } source = source.slice(0, start) + native() + source.slice(stop + end.length); }
   else { source = one(source, "\n'@\n", `\n${native()}\n'@\n`); }
-  return applyCurrentPcbViaWorkerNativeFragment(source);
+  return applyCurrentPcbViaClockNativeFragment(applyCurrentPcbViaWorkerNativeFragment(source));
 }
