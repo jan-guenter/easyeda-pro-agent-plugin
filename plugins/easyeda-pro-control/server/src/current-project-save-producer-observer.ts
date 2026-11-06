@@ -1,5 +1,10 @@
 /** A source-owned producer call remains held. This collector has no resume,
  * cleanup-CDP, timer or write authority; incomplete retirement needs Job exit. */
+/* oxlint-disable import/max-dependencies -- One original collector joins separately audited source, native intrinsic, caller and actual owner boundaries. */
+import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_PROMISE_CAPTURE, currentProjectSaveProducerCachePromiseHandle, decodeCurrentProjectSaveProducerCachePromise } from "./current-project-save-producer-cache-replies.ts";
+import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLS as CACHE_CALLS, CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CAPTURE_LENGTH } from "./current-project-save-producer-cache-programs.ts";
+import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS as CACHE_CALLERS, currentProjectSaveProducerCacheCallerFrame } from "./current-project-save-producer-cache-source.ts";
+import type { CurrentProjectSaveProducerCacheCaller } from "./current-project-save-producer-cache-source.ts";
 import { types } from "node:util";
 import { z } from "zod";
 import { requireOriginalCurrentProjectSaveProducerOrigin } from "./current-pcb-diagnostic-owner.ts";
@@ -22,7 +27,8 @@ const remote = z.looseObject({ type: z.enum(["object", "function", "string", "nu
 const property = z.looseObject({ name: z.string(), isOwn: z.literal(true), value: remote, get: z.never().optional(), set: z.never().optional() });
 const properties = z.looseObject({ result: z.array(property).min(2).max(11) });
 export type { CurrentProjectSaveProducerHeldCall } from "./current-project-save-producer-origin.ts";
-interface OriginalHeldCall { readonly observer: CurrentProjectSaveProducerObserver; readonly role: CurrentProjectSaveProducerRole; readonly fields: readonly Readonly<{ name: string; value: z.infer<typeof remote> }>[] }
+interface CacheHeldCall { readonly caller: CurrentProjectSaveProducerCacheCaller; readonly fields: readonly Readonly<{ name: string; value: z.infer<typeof remote> }>[] }
+interface OriginalHeldCall { readonly promise: "pending" | "fulfilled" | null; readonly cache: Readonly<CacheHeldCall> | null; readonly observer: CurrentProjectSaveProducerObserver; readonly role: CurrentProjectSaveProducerRole; readonly fields: readonly Readonly<{ name: string; value: z.infer<typeof remote> }>[] }
 const heldCalls = new WeakMap<CurrentProjectSaveProducerHeldCall, OriginalHeldCall>();
 /** Private observations only; these fields provide no original continuation. */
 export function requireOriginalCurrentProjectSaveProducerHeldCall(packet: CurrentProjectSaveProducerHeldCall, observer: CurrentProjectSaveProducerObserver): OriginalHeldCall {
@@ -76,7 +82,25 @@ export class CurrentProjectSaveProducerObserver {
       const actual = new Map<string, z.infer<typeof remote>>(); for (const field of fields) { need(!actual.has(field.name), "FIELD_ALIAS"); actual.set(field.name, Object.freeze(field.value)); }
       need(actual.size === site.length + 1 && actual.get("length")?.type === "number" && actual.get("length")?.value === site.length, "ARRAY_LENGTH"); for (let index = 0; index < site.length; index += 1) { need(actual.has(String(index)), "ARRAY_MEMBER"); }
       const fieldsValue = Object.freeze([...actual].map(([name, value]) => Object.freeze({ name, value })));
-      const packet = this.#binding.retainHeldCall(); need(packet !== null && typeof packet === "object" && !types.isProxy(packet) && Object.isFrozen(packet) && Reflect.ownKeys(packet).length === 1 && Object.getOwnPropertyDescriptor(packet, "profile")?.value === "private.current-project-save-producer-held-call.v1", "ORIGINAL_NATIVE_MARKER"); heldCalls.set(packet, Object.freeze({ observer: this, role, fields: fieldsValue })); this.#held = packet; return packet;
+      let promise: "pending" | "fulfilled" | null = null;
+      if (role === "headPromise") { const promiseId = currentProjectSaveProducerCachePromiseHandle(top["returnValue"]);
+        const retained = await this.#send({ phase: "project-save-producer-cache-promise", method: "Runtime.callFunctionOn", params: { ...CALL_FLAGS, objectId: promiseId, functionDeclaration: CURRENT_PROJECT_SAVE_PRODUCER_CACHE_PROMISE_CAPTURE, arguments: [] } });
+        const retainedId = currentProjectSaveProducerCachePromiseHandle(z.strictObject({ result: z.unknown() }).parse(retained).result);
+        promise = decodeCurrentProjectSaveProducerCachePromise(await this.#send({ phase: "project-save-producer-cache-promise-properties", method: "Runtime.getProperties", params: { objectId: retainedId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } })); }
+      let cache: Readonly<CacheHeldCall> | null = null;
+      if (role === "headEntry") {
+        const caller = currentProjectSaveProducerCacheCallerFrame(received, this.#binding.scriptId), callerSite = CACHE_CALLERS[caller.role];
+        const capturedCaller = await this.#send({ phase: "project-save-producer-cache-caller", cacheRole: caller.role, method: "Debugger.evaluateOnCallFrame", params: { ...FRAME_FLAGS, callFrameId: caller.callFrameId, expression: callerSite.expression } });
+        const callerId = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(capturedCaller, callerSite.length);
+        const capturedCache = await this.#send({ phase: "project-save-producer-cache-receiver", cacheRole: caller.role, method: "Runtime.callFunctionOn", params: { ...CALL_FLAGS, objectId: joinedId, functionDeclaration: CACHE_CALLS[caller.role], arguments: [{ objectId: original.project }, { objectId: original.wrapper }, { objectId: original.callback }, { objectId: this.#binding.originalIntrinsics() }, { objectId: callerId }] } });
+        const cacheId = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(capturedCache, CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CAPTURE_LENGTH);
+        const cacheFields = properties.parse(await this.#send({ phase: "project-save-producer-cache-properties", method: "Runtime.getProperties", params: { objectId: cacheId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } })).result;
+        const values = new Map<string, z.infer<typeof remote>>(); for (const field of cacheFields) { need(!values.has(field.name), "CACHE_FIELD_ALIAS"); values.set(field.name, Object.freeze(field.value)); }
+        need(values.size === CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CAPTURE_LENGTH + 1 && values.get("length")?.type === "number" && values.get("length")?.value === CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CAPTURE_LENGTH, "CACHE_ARRAY_LENGTH");
+        for (let index = 0; index < CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CAPTURE_LENGTH; index += 1) { need(values.has(String(index)), "CACHE_ARRAY_MEMBER"); }
+        cache = Object.freeze({ caller: caller.role, fields: Object.freeze([...values].map(([name, value]) => Object.freeze({ name, value }))) });
+      }
+      const packet = this.#binding.retainHeldCall(); need(packet !== null && typeof packet === "object" && !types.isProxy(packet) && Object.isFrozen(packet) && Reflect.ownKeys(packet).length === 1 && Object.getOwnPropertyDescriptor(packet, "profile")?.value === "private.current-project-save-producer-held-call.v1", "ORIGINAL_NATIVE_MARKER"); heldCalls.set(packet, Object.freeze({ observer: this, role, fields: fieldsValue, cache, promise })); this.#held = packet; return packet;
     } catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
   public async retireAfterOriginalExit(): Promise<void> { need(!this.#busy && !this.#closed, "RETIRE_STATE"); await this.#binding.assertOriginalGenerationExited(); this.#closed = true; }

@@ -12,7 +12,7 @@ const selected=(project,wrapper,callback)=>{if(own(globalThis,"PROJECT")!==proje
 function join(role: CurrentProjectSaveProducerRole): string {
   if (role === "bufferIngress" || role === "bufferScheduled") { return 'if(own(this,"4")!==project||own(this,"5")!==callback||own(this,"6")!==500)bad();'; }
   if (role === "bufferDrain" || role === "bufferDone") { return 'if(own(this,"0")!==project||own(this,"1")!==callback||own(this,"2")!==500)bad();'; }
-  if (role === "headEntry" || role === "headPromise" || role === "headSuccess" || role === "cacheFailed") { return 'if(own(this,"0")!==own(project,"cache"))bad();'; }
+  if (role === "headEntry" || role === "headPromise" || role === "headSuccess" || role === "cacheFailed") { return 'const c=own(this,"0");if(c!==own(project,"cache")&&c!==own(project,"localCache"))bad();'; }
   return 'if(own(this,"0")!==project)bad();';
 }
 const calls = Object.fromEntries(

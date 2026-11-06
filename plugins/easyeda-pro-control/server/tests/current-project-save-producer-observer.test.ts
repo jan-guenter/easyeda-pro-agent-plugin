@@ -11,7 +11,7 @@ import type { CurrentProjectSaveProducerObserver } from "../src/current-project-
 import { loadSyntheticRegistryModule } from "./helpers/load-synthetic-registry-module.ts";
 
 void test("all producer requests remain source-fixed observations with no resume or timer/cache operation", () => {
-  const cases = currentProjectSaveProducerNativeCases(); assert.equal(cases.length, 106);
+  const cases = currentProjectSaveProducerNativeCases(); assert.equal(cases.length, 121);
   for (const command of cases) { assert.deepEqual(validateCurrentProjectSaveProducerCommand(command), command);
     assert.throws(() => validateCurrentProjectSaveProducerCommand({ ...command, method: "Debugger.resume", params: {} }));
     if (command.phase === "project-save-producer-frame") { assert.throws(() => validateCurrentProjectSaveProducerCommand({ ...command, params: { ...command.params, expression: "this.uploadCloud()" } })); }

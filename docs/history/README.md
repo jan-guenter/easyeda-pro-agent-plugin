@@ -24,6 +24,8 @@
 - [2026-11-06 separate Relevance display data](2026-11-06-relevance-display-data-profile.md). Genuine seven-row checkpoint arguments, exact ATTR/native root permutation, separate fixed stages/effect/pending body and explicit normalized baseline; original native writer/SQL/persistence grants remain closed.
 
 - [2026-11-06 Component point source/cost](2026-11-06-component-point-source-cost.md). Complete cached/stored-box and owned Pad paths, actual identity/scratch checks and393/408 prospective requests; existing384-ID purposes and Component admission remain unchanged.
+- [2026-11-06 original producer cache caller and Promise custody](2026-11-06-original-producer-cache-caller-promise.md). Exact six caller frames, separate selected cache namespaces and retained original async put Promises; unknown callers and every continuation remain held.
+
 - [2026-11-06 original producer Cache/Response intrinsics](2026-11-06-original-producer-cache-intrinsics.md). Actual source-held constructor/member metadata qualification before producer origin issuance; fixed context custody and no cache invocation or continuation authority.
 
 - [2026-11-06 worker setup helper source](2026-11-06-worker-setup-helper-source.md). Genuine paused-thread Inspector evidence and exact original helper-script correlation before PROJECT resumes; no arbitrary empty-URL admission.
