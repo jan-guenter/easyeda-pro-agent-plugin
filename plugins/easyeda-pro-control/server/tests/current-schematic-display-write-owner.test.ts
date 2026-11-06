@@ -16,7 +16,7 @@ type GeneratedSchematicDisplayNativeArguments = Parameters<CurrentSchematicDispl
 
 function missingBootstrap(): never { throw new Error("Bootstrap not issued"); }
 async function fixture(context: TestContext, malformed = false, main = false, stages = false, workers = false, earlyWorker = false): Promise<Readonly<{ owner: CurrentSchematicDisplayWriteOwner; actions: string[]; pollEntered: Promise<true>; reproveBootstrap: () => string;
-  target: () => object; termination: () => object; requireTermination: (value: object) => void; argumentsValue: GeneratedSchematicDisplayNativeArguments; requireStage: (packet: object) => void; runWorker: () => Promise<unknown>; createObserver: (origin: object) => { arm: () => Promise<void>; observeBody: () => Promise<unknown> }; requireWorker: (origin: object) => object; createStructureObserver: (origin: object) => { arm: () => Promise<void>; cleanup: () => Promise<void> }; requireStructure: (origin: object) => object; qualifyEffect: (copyPacket?: boolean) => object; requireEffect: (effect: object) => void; issueClock: (effect: object) => Promise<object>; requireClock: (origin: object) => object }>> {
+  target: () => object; termination: () => object; requireTermination: (value: object) => void; argumentsValue: GeneratedSchematicDisplayNativeArguments; requireStage: (packet: object) => void; runWorker: () => Promise<unknown>; createObserver: (origin: object) => { arm: () => Promise<void>; observeBody: () => Promise<unknown> }; requireWorker: (origin: object) => object; createStructureObserver: (origin: object) => { arm: () => Promise<void>; cleanup: () => Promise<void> }; requireStructure: (origin: object) => object; qualifyEffect: (copyPacket?: boolean) => object; requireEffect: (effect: object) => void; issueClock: (effect: object) => Promise<object>; requireClock: (origin: object) => object; issueAccessor: () => Promise<object>; requireAccessor: (origin: object) => object }>> {
   const url = new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url); const sourceRequire = createRequire(url);
   const targetData = Object.freeze({ rawWindowsPath: String.raw`C:\Synthetic\Codex_schematic_1111111111111111.eprj2`, projectUuid: "c".repeat(64), branchUuid: "d".repeat(32), schematicUuid: "e".repeat(32), pageUuid: "f".repeat(32), expectedSourceSha256: "1".repeat(64) });
   const prepared = Object.freeze({ syntheticCheckpoint: true, qualification: Object.freeze({ target: targetData }) });
@@ -94,6 +94,7 @@ input.on('line',line=>{const q=JSON.parse(line);
 if(q.action==='launch')send(q,{helperInstance:'b'.repeat(32),jobId:'c'.repeat(32),rootPid:123,rootCreated:'123456789012345'});
 else if(q.action==='main-attach')send(q,{attached:true});
 else if(q.action==='send'){if(${String(stages)})queue.push({id:q.requestId,result:q.method==='Target.attachToTarget'?{sessionId:'original-session'}:q.method==='Target.getTargets'?{targetInfos:[{targetId:'original-target',type:'page',title:'Start',url:'https://client/editor?cll=warn#',attached:true}]}:{},...(q.sessionId?{sessionId:q.sessionId}:{})});send(q,{written:true});}
+else if(q.action==='schematic-display-accessor'){if(q.phase!=='schematic-accessor-callees')throw Error('accessor command');queue.push({id:q.requestId,sessionId:'original-session',result:{result:{type:'object',subtype:'array',className:'Array',description:'Array(26)',objectId:'original-callees'}}});send(q,{written:true});}
 else if(q.action==='schematic-display-clock-bind')send(q,{bound:true});
 else if(q.action==='schematic-display-clock'){const role=q.phase.slice('schematic-clock-arm-'.length),site=(${JSON.stringify(clockSites)})[role];if(q.method!=='Debugger.setBreakpoint'||!site)throw Error('clock command');queue.push({id:q.requestId,sessionId:q.realm==='worker'?'original-worker':'original-session',result:{breakpointId:'clock-'+role,actualLocation:{scriptId:q.scriptId,lineNumber:site.lineNumber,columnNumber:site.columnNumber}}});send(q,{written:true});}
 else if(q.action==='schematic-display-worker-prepare')send(q,{prepared:true});
@@ -168,7 +169,18 @@ else if(q.action==='release')send(q,{released:true});else throw Error('unexpecte
         }
       }]); assert.ok(result !== null && typeof result === "object"); return result;
     },
-    requireClock: (origin: object): object => { const lookup = loaded.exports["requireOriginalCurrentSchematicDisplayClockOrigin"]; assert.ok(typeof lookup === "function"); const result: unknown = Reflect.apply(lookup, undefined, [origin, owner, argumentsValue]); assert.ok(result !== null && typeof result === "object"); return result; } };
+    requireClock: (origin: object): object => { const lookup = loaded.exports["requireOriginalCurrentSchematicDisplayClockOrigin"]; assert.ok(typeof lookup === "function"); const result: unknown = Reflect.apply(lookup, undefined, [origin, owner, argumentsValue]); assert.ok(result !== null && typeof result === "object"); return result; },
+    issueAccessor: async (): Promise<object> => {
+      const run: unknown = Reflect.get(owner, "createSchematicDisplayAccessorOrigin"); const lookup = loaded.exports["requireOriginalCurrentSchematicDisplayAccessorOrigin"]; assert.ok(typeof run === "function" && typeof lookup === "function");
+      const module: unknown = sourceRequire("./current-schematic-display-accessor-protocol.ts"); assert.ok(module !== null && typeof module === "object"); const cases: unknown = Reflect.get(module, "currentSchematicDisplayAccessorNativeCases"); assert.ok(typeof cases === "function"); const commands: unknown = Reflect.apply(cases, undefined, []); assert.ok(Array.isArray(commands));
+      const original: unknown = commands[0]; assert.ok(original !== null && typeof original === "object" && "params" in original && original.params !== null && typeof original.params === "object"); const params = original.params;
+      const result: unknown = await Reflect.apply(run, owner, [argumentsValue, async (origin: object): Promise<void> => {
+        const bindings: unknown = Reflect.apply(lookup, undefined, [origin, owner, argumentsValue]); assert.ok(bindings !== null && typeof bindings === "object"); const request: unknown = Reflect.get(bindings, "request"); assert.ok(typeof request === "function");
+        const holder: unknown = Reflect.get(bindings, "holderObjectId"); const targetValue: unknown = Reflect.get(bindings, "targetJson"); const operationValue: unknown = Reflect.get(bindings, "operationJson");
+        await Reflect.apply(request, undefined, [{ ...original, params: { ...params, objectId: holder, arguments: [{ value: targetValue }, { value: operationValue }] } }, false]);
+      }]); assert.ok(result !== null && typeof result === "object"); return result;
+    },
+    requireAccessor: (origin: object): object => { const lookup = loaded.exports["requireOriginalCurrentSchematicDisplayAccessorOrigin"]; assert.ok(typeof lookup === "function"); const result: unknown = Reflect.apply(lookup, undefined, [origin, owner, argumentsValue]); assert.ok(result !== null && typeof result === "object"); return result; } };
 }
 void test("Schematic original abort waits for pending native poll and settles the original busy renderer call without replay", async context => {
   const f = await fixture(context); const original = f.owner.getTargets(), refused = assert.rejects(original);
@@ -261,5 +273,14 @@ void test("actual SCH clock issuer binds its original effect, page holder and su
   assert.equal(Object.isFrozen(bindings), true); assert.equal(Reflect.get(bindings, "uiSdkObjectId"), "original-holder"); assert.equal(Reflect.get(bindings, "workerSessionId"), "original-worker");
   assert.throws(() => f.requireClock(structuredClone(origin)), /CLOCK_ORIGINAL/u); await assert.rejects(f.issueClock(effect), /CLOCK_UNAVAILABLE/u);
   assert.equal(f.actions.filter(action => action === "schematic-display-clock").length, 5); assert.equal(f.actions.filter(action => action === "schematic-display-clock-bind").length, 1);
+  await f.owner.abortSchematicDisplayWrite(); assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
+});
+
+void test("actual SCH accessor origin substitutes its original holder and target data through the native pipe once", async context => {
+  const f = await fixture(context, false, false, true); await f.owner.executeSchematicDisplayStage("capture", f.argumentsValue); await f.owner.executeSchematicDisplayStage("preflight", f.argumentsValue);
+  const origin = await f.issueAccessor(); const bindings = f.requireAccessor(origin); assert.equal(Reflect.get(bindings, "holderObjectId"), "original-holder"); assert.equal(Object.isFrozen(bindings), true);
+  assert.throws(() => f.requireAccessor(structuredClone(origin)), /ACCESSOR_ORIGINAL/u); await assert.rejects(f.issueAccessor(), /ACCESSOR_UNAVAILABLE/u);
+  assert.equal(f.actions.filter(action => action === "schematic-display-accessor").length, 1);
+  await assert.rejects(f.owner.executeSchematicDisplayStage("modify", f.argumentsValue), /SOURCE_WORKER_AND_SQL/u);
   await f.owner.abortSchematicDisplayWrite(); assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
 });

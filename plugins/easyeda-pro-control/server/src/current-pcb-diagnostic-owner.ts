@@ -5,6 +5,8 @@
  * Browser discovery grants no frame, worker, script or CAD execution authority. */
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Four fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import type { CurrentSchematicDisplayAccessorBindings, CurrentSchematicDisplayAccessorOrigin } from "./current-schematic-display-accessor-origin.ts";
+import { validateCurrentSchematicDisplayAccessorCommand } from "./current-schematic-display-accessor-protocol.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_SITES } from "./current-project-save-structure-source.ts";
 import { validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import type { CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
@@ -520,6 +522,12 @@ export function requireOriginalGeneratedSchematicDisplayEffect(effect: Generated
   const original = schematicDisplayEffects.get(effect);
   if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue || original.text !== canonicalJson(effect) || canonicalJson(compareOriginalSchematicDisplayEffect(original)) !== original.text) { throw error("SCHEMATIC_DISPLAY_EFFECT_ORIGINAL_EFFECT"); }
 }
+export type CurrentSchematicDisplayAccessorSetup = (origin: CurrentSchematicDisplayAccessorOrigin) => Promise<void>;
+const schematicDisplayAccessors = new WeakMap<CurrentSchematicDisplayAccessorOrigin, Readonly<{ owner: CurrentSchematicDisplayWriteOwner; argumentsValue: GeneratedSchematicDisplayNativeArguments; bindings: CurrentSchematicDisplayAccessorBindings; assertOriginal: () => void }>>();
+export function requireOriginalCurrentSchematicDisplayAccessorOrigin(origin: CurrentSchematicDisplayAccessorOrigin, owner: CurrentSchematicDisplayWriteOwner, argumentsValue: GeneratedSchematicDisplayNativeArguments): CurrentSchematicDisplayAccessorBindings {
+  const original = schematicDisplayAccessors.get(origin); if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue) { throw error("SCHEMATIC_DISPLAY_ACCESSOR_ORIGINAL"); }
+  requireSchematicArguments(owner, argumentsValue); original.assertOriginal(); return original.bindings;
+}
 export type CurrentSchematicDisplayClockSetup = (origin: CurrentSchematicDisplayClockOrigin) => Promise<void>;
 const schematicDisplayClocks = new WeakMap<CurrentSchematicDisplayClockOrigin, Readonly<{ owner: CurrentSchematicDisplayWriteOwner; argumentsValue: GeneratedSchematicDisplayNativeArguments; bindings: CurrentSchematicDisplayClockBindings; assertOriginal: () => void }>>();
 export function requireOriginalCurrentSchematicDisplayClockOrigin(origin: CurrentSchematicDisplayClockOrigin, owner: CurrentSchematicDisplayWriteOwner, argumentsValue: GeneratedSchematicDisplayNativeArguments): CurrentSchematicDisplayClockBindings {
@@ -908,6 +916,9 @@ class CurrentPcbRetainedOwnerCore {
   #schematicStructureOrigin: CurrentProjectSaveStructureOrigin | null = null;
   #schematicWorkerController: CurrentSchematicDisplayWorkerController | null = null;
   #schematicWorkerOrigin: CurrentSchematicDisplaySaveWorkerOrigin | null = null;
+  #schematicAccessorAttempted = false;
+  #schematicAccessorOrigin: CurrentSchematicDisplayAccessorOrigin | null = null;
+  #schematicAccessorSetup: CurrentSchematicDisplayAccessorSetup | null = null;
   #schematicClockAttempted = false;
   #schematicClockSetup: CurrentSchematicDisplayClockSetup | null = null;
   #schematicClockOrigin: CurrentSchematicDisplayClockOrigin | null = null;
@@ -2024,6 +2035,34 @@ class CurrentPcbRetainedOwnerCore {
       if (!this.#viaProjectNavigationDispatchAttempted && event.method === "Target.attachedToTarget" && record(targetInfo) && targetInfo["title"] === `project_${plan.target.projectUuid}_${windowTabId}`) { controller.fail(); return; }
       controller.observeEvent(event); }));
     if (!exact(reply, [])) { throw error("PCB_VIA_WORKER_PARENT_ARM_REPLY"); } original();
+  }
+  /** Fixed read-only callee/closure metadata over the original page holder.
+   * This origin provides no model action, resume, Save or SQL authority. */
+  public async createSchematicDisplayAccessorOrigin(argumentsValue: GeneratedSchematicDisplayNativeArguments, setup: CurrentSchematicDisplayAccessorSetup): Promise<CurrentSchematicDisplayAccessorOrigin> {
+    const selected = this.#schematicReadContext(argumentsValue); const holder = this.#schematicSdkBinding;
+    if (this.#schematicAccessorAttempted || holder === null || !this.#schematicStages.has("preflight") || this.#schematicStages.has("modify") || this.#schematicStages.has("save") || typeof setup !== "function" || types.isProxy(setup)) { throw error("SCHEMATIC_DISPLAY_ACCESSOR_UNAVAILABLE"); }
+    this.#enter(true); this.#schematicAccessorAttempted = true; this.#schematicAccessorSetup = setup;
+    const targetJson = canonicalJson(argumentsValue.target); const operationJson = canonicalJson(argumentsValue.operation); const ui = selected.context.openingContext();
+    const current = (): void => { selected.current(); if (this.#schematicFailed || this.#schematicDisplayCleanupOnly || this.#schematicAccessorSetup !== setup || this.#schematicSdkBinding !== holder || canonicalJson(selected.context.openingContext()) !== canonicalJson(ui)) { throw error("SCHEMATIC_DISPLAY_ACCESSOR_CHANGED"); } };
+    try { await this.#verifyInstallation(); current(); await this.#verify(); current();
+      const origin: CurrentSchematicDisplayAccessorOrigin = Object.freeze({ profile: "private.current-schematic-display-accessor-origin.v1" });
+      const bindings: CurrentSchematicDisplayAccessorBindings = Object.freeze({ sessionId: ui.sessionId, holderObjectId: holder, targetJson, operationJson,
+        request: async (input: Parameters<CurrentSchematicDisplayAccessorBindings["request"]>[0], cleanup: boolean): Promise<unknown> => { current(); const command = validateCurrentSchematicDisplayAccessorCommand(input);
+          if (cleanup !== (command.phase === "schematic-accessor-release")) { throw error("SCHEMATIC_DISPLAY_ACCESSOR_REQUEST_CLASS"); }
+          if (command.method === "Runtime.callFunctionOn") {
+            const args = command.params.arguments; const first = command.phase === "schematic-accessor-callees" ? 0 : 1;
+            if (command.phase === "schematic-accessor-callees" ? command.params.objectId !== holder : !("objectId" in args[0]) || args[0].objectId !== holder) { throw error("SCHEMATIC_DISPLAY_ACCESSOR_ORIGINAL_HOLDER"); }
+            const target = args[first]; const operation = args[first + 1];
+            if (target === undefined || !("value" in target) || target.value !== targetJson || operation === undefined || !("value" in operation) || operation.value !== operationJson) { throw error("SCHEMATIC_DISPLAY_ACCESSOR_ORIGINAL_ARGUMENTS"); }
+          }
+          const reply = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { current(); return selected.pipe.observeSchematicDisplayAccessor(command); })); current(); return reply;
+        }, assertCurrent: async (): Promise<void> => { current(); await this.#verify(); current(); },
+        assertOriginalGenerationExited: (): Promise<void> => { requireSchematicArguments(this, argumentsValue); if (!this.#terminationObserved || this.#terminationObservation?.terminated !== true) { return Promise.reject(error("SCHEMATIC_DISPLAY_ACCESSOR_ORIGINAL_EXIT_REQUIRED")); } return Promise.resolve(); },
+        fail: (): void => { this.#schematicFailed = true; } });
+      schematicDisplayAccessors.set(origin, Object.freeze({ owner: this, argumentsValue, bindings, assertOriginal: (): void => { requireSchematicArguments(this, argumentsValue);
+        if (this.#schematicAccessorOrigin !== origin || this.#schematicAccessorSetup !== setup || this.#schematicSdkBinding !== holder) { throw error("SCHEMATIC_DISPLAY_ACCESSOR_CUSTODY_CHANGED"); } } })); this.#schematicAccessorOrigin = origin;
+      await Reflect.apply(setup, undefined, [origin]); current(); await this.#verify(); current(); return origin;
+    } catch (caughtError) { this.#schematicFailed = true; throw caughtError; } finally { this.#busy = false; }
   }
   /** Exact acknowledged Text effect and same original page/worker only.
    * This issues observation custody and no Save or selected SQL grant. */

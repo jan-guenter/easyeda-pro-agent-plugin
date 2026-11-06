@@ -1,3 +1,4 @@
+import { currentSchematicDisplayAccessorWire } from "./current-schematic-display-accessor-wire.ts";
 import { currentSchematicDisplayClockWire } from "./current-schematic-display-clock-wire.ts";
 /** Fixed discovery and original schematic navigation/source-stage calls.
  * Native writer/Save admission is separate; caller JavaScript is absent. */
@@ -12,6 +13,12 @@ export function currentSchematicDisplayWriteNativeRequest(chunk: Buffer): Readon
   const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(chunk.subarray(0, -1)));
   if (!diagnosticRecord(raw) || typeof raw["id"] !== "number" || !Number.isSafeInteger(raw["id"]) || raw["id"] < 1 || raw["id"] > PROFILE.renderer.total ||
     typeof raw["method"] !== "string" || !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("SCHEMATIC_DISPLAY_WIRE"); }
+  if (Object.hasOwn(raw, "schematicAccessorCommand")) {
+    const { id, sessionId, schematicAccessorCommand, ...input } = raw;
+    if (schematicAccessorCommand !== true || typeof sessionId !== "string") { throw new Error("SCHEMATIC_DISPLAY_ACCESSOR_WIRE"); }
+    const fixed = currentSchematicDisplayAccessorWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicAccessorCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_DISPLAY_ACCESSOR_WIRE"); } return fixed.request;
+  }
   if (Object.hasOwn(raw, "schematicClockCommand")) {
     const { id, sessionId, schematicClockCommand, schematicClockRealm, ...input } = raw;
     if (schematicClockCommand !== true || typeof sessionId !== "string" || schematicClockRealm !== "worker" && schematicClockRealm !== "ui") { throw new Error("SCHEMATIC_DISPLAY_CLOCK_WIRE"); }
