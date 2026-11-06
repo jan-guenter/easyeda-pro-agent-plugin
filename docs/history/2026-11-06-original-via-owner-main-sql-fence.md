@@ -43,3 +43,13 @@ cover the composed native graph. These checks do not establish connected worker
 startup, clock response, a Save invocation or persistence. Save and selected SQL
 mutation remain refused until the separate original UI clock/body/request and
 per-call SQL joins are complete.
+
+Original Via abort now has a separate once-only cleanup entry while an original
+renderer call remains busy. It marks normal work ended synchronously, retains
+and settles the original helper tail, and sends only the fixed original-Job
+abort. It never clears another call's busy slot, resumes a suspended worker or
+settles a pending SDK result as successful. Only identity, abort, termination
+observation and closed release survive this cutoff. Source-observer refusal is
+separate from malformed helper transport, which remains fail-closed. Actual
+original-owner methods over a synthetic Node child test delayed-poll cutoff,
+no replay, separate exit observation/release and malformed transport refusal.

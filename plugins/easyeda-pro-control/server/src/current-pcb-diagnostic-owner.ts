@@ -754,6 +754,7 @@ class CurrentPcbRetainedOwnerCore {
   #viaSdkBinding: string | null = null;
   #viaSdkQualified = false;
   #viaFailed = false;
+  #viaCleanupOnly = false;
   #viaWorkerPlan: CurrentPcbViaWritePlan | null = null;
   #viaWorkerSetup: CurrentPcbViaSaveWorkerSetup | null = null;
   #viaWorkerController: CurrentPcbViaWorkerController | null = null;
@@ -3786,7 +3787,7 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#purpose === "footprint-head-age209" && !["runtime-enable", "debugger-enable", "run-waiting", "resume", "registration-arm", "source", "breakpoint", "frame", "capture", "require", "properties", "remove", "release", "head-age-context-capture", "head-age-context-source", "head-age-context-bind", "head-age-capture", "head-age-observe"].includes(command.phase)) { throw error("HEAD_AGE_MAIN_PHASE_PURPOSE"); }
     if (collection && this.#purpose !== CURRENT_FOOTPRINT_COMBINED_PURPOSE) { throw error("MAIN_REQUEST_PURPOSE"); }
     const headAge = command.phase.startsWith("head-age-");
-    if (headAge && this.#purpose !== "footprint-head-age209") { throw error("HEAD_AGE_MAIN_PURPOSE"); }
+    if (headAge && this.#purpose !== "footprint-head-age209" && this.#purpose !== CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { throw error("HEAD_AGE_MAIN_PURPOSE"); }
     let wire: Readonly<{ request: Readonly<Record<string, string | number>> }>;
     if (headAge) { wire = { request: currentFootprintHeadAgeNativeWire(command, requestId) }; }
     else { wire = collection ? currentFootprintCopyMainRequestWire(command, requestId) : currentFootprintCopyMainBackendWire(command, requestId); }
@@ -4103,13 +4104,18 @@ class CurrentPcbRetainedOwnerCore {
     if (!(this instanceof CurrentPcbViaWriteOwner)) { throw error("PCB_VIA_ABORT_PURPOSE"); }
     assertOriginalCurrentPcbViaWriteOwner(this); this.#available();
     if (this.#purpose !== CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE || this.#binding === null || this.#mainTerminateAttempted || this.#terminationObserved || this.#releaseConsumed) { throw error("PCB_VIA_ABORT_CONSUMED"); }
-    this.#enter(true); this.#mainTerminateAttempted = true;
-    try {
-      await this.#verify(); this.#available();
-      const reply = await this.#request({ action: "pcb-via-abort" });
-      if (!exact(reply, ["terminationDispatched"]) || reply["terminationDispatched"] !== true) { throw error("PCB_VIA_ABORT_REPLY"); }
-      await this.#verify(); this.#available();
-    } finally { this.#busy = false; }
+    // Claim the original Job-only control before awaits. The pending normal
+    // Caller keeps its own busy slot and Promise; this cleanup never clears it.
+    const original = this.#binding;
+    this.#mainTerminateAttempted = true; this.#viaCleanupOnly = true; this.#viaFailed = true;
+    this.#viaWorkerController?.fail(); this.#input.emit("error", error("PCB_VIA_ORIGINAL_ABORT"));
+    await this.#nativeTail;
+    await this.#verify(); this.#available();
+    if (this.#binding !== original || this.#terminationObserved || this.#releaseConsumed) { throw error("PCB_VIA_ABORT_OWNER_CHANGED"); }
+    const reply = await this.#request({ action: "pcb-via-abort" });
+    if (!exact(reply, ["terminationDispatched"]) || reply["terminationDispatched"] !== true) { throw error("PCB_VIA_ABORT_REPLY"); }
+    await this.#verify(); this.#available();
+    if (this.#binding !== original) { throw error("PCB_VIA_ABORT_OWNER_CHANGED"); }
   }
 
   public async terminateFootprintMain(confirmTerminateOriginalDiagnosticJob: true): Promise<void> {
@@ -4874,7 +4880,7 @@ class CurrentPcbRetainedOwnerCore {
     finally { this.#forwardExecutionPendingNativeRequests.delete(activity); }
   }
   #queuedRequest(request: RecordValue, beforeDispatch?: () => void, forwardMain?: ForwardExecutionMainRequest): Promise<RecordValue> {
-    if (this.#startupParent === null && !bornFootprintTransport(this.#purpose) && !heldCachePurpose(this.#purpose) && this.#purpose !== "footprint-head-age209") {
+    if (this.#startupParent === null && !bornFootprintTransport(this.#purpose) && !heldCachePurpose(this.#purpose) && this.#purpose !== "footprint-head-age209" && this.#purpose !== CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) {
       beforeDispatch?.(); return this.#requestNow(request, forwardMain);
     }
     const heldNormal = heldCachePurpose(this.#purpose) && request["action"] !== "poll" &&
@@ -4902,6 +4908,8 @@ class CurrentPcbRetainedOwnerCore {
   #requestNow(request: RecordValue, forwardMain?: ForwardExecutionMainRequest): Promise<RecordValue> {
     if (request["action"] === "main-poll" && this.#forwardExecutionMainPoll !== null && !this.#forwardExecutionMainPoll.delivered) { throw error("FORWARD_EXECUTION_MAIN_POLL_UNSETTLED"); }
     this.#available();
+    if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#viaCleanupOnly &&
+      !["identity", "pcb-via-abort", "termination", "release"].includes(String(request["action"]))) { throw error("PCB_VIA_CLEANUP_ONLY"); }
     if (this.#pending !== null) { throw error("REQUEST_PENDING"); }
     if (this.#purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE) {
       const action = String(request["action"]);
