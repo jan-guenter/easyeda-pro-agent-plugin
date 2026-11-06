@@ -3,6 +3,8 @@
 /* oxlint-disable import/max-dependencies -- Production private factory registry, retained synthetic child and exact purpose cleanup are checked together. */
 import { currentPcbViaSavedReadbackAllocationOutcome, startCurrentPcbViaSavedReadbackOwner } from "../src/current-pcb-via-saved-readback-owner.ts";
 import type { CurrentPcbViaWriteClosedCheckpoint } from "../src/current-pcb-via-write-closed-checkpoint.ts";
+import { completeSyntheticSavedCacheFixture } from "./helpers/current-pcb-via-saved-cache-fixture.ts";
+import type { CurrentPcbViaSavedCacheBackupGrant } from "../src/current-pcb-via-saved-cache-backup-origin.ts";
 import { PassThrough } from "node:stream";
 import { CurrentPcbViaSavedReadbackPipe } from "../src/current-pcb-diagnostic-pipe.ts";
 import { generateWorkerStartupProtocol } from "../../scripts/generate-worker-startup-protocol.ts";
@@ -10,7 +12,7 @@ import { CURRENT_PCB_VIA_SAVED_READBACK_PROFILE } from "../src/current-pcb-via-s
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import process from "node:process";
 import { test } from "node:test";
@@ -19,18 +21,19 @@ import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import type { CurrentPcbViaSavedReadbackOwner } from "../src/current-pcb-diagnostic-owner.ts";
 
-async function fixture(context: TestContext, malformed = false, cache = false, metadata = false): Promise<Readonly<{ owner: CurrentPcbViaSavedReadbackOwner; actions: string[]; pollEntered: Promise<true>; cacheRequest: (() => Promise<unknown>) | null }>> {
+async function fixture(context: TestContext, malformed = false, cache = false, metadata = false, complete = false): Promise<Readonly<{ owner: CurrentPcbViaSavedReadbackOwner; actions: string[]; pollEntered: Promise<true>; cacheRequest: (() => Promise<unknown>) | null; prepared: CurrentPcbViaWriteClosedCheckpoint }>> {
   const url = new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url); const sourceRequire = createRequire(url);
-  const prepared = Object.freeze({ syntheticCheckpoint: true, target: Object.freeze({ projectUuid: "a".repeat(64) }) });
-  const testMethod = `public async seedSyntheticCacheForTest(){
+  const full = complete ? completeSyntheticSavedCacheFixture() : null;
+  const prepared = full?.prepared ?? Object.freeze({ syntheticCheckpoint: true, target: Object.freeze({ projectUuid: "a".repeat(64) }) });
+  const testMethod = `public async seedSyntheticCacheForTest(full){
 const pipe=this.#pipe;if(!(pipe instanceof CurrentPcbViaSavedReadbackPipe))throw Error("pipe");await this.#transfer(async()=>({sessionId:await pipe.attachTarget("synthetic-target",()=>{})}));
 this.#stagedAttachment=Object.freeze({targetId:"synthetic-target",sessionId:"synthetic-session"});this.#savedReadbackParentPending=true;await this.#transfer(()=>pipe.armSavedReadbackCacheParent());this.#savedReadbackParentPending=false;
 const selected=Object.freeze({frameId:"synthetic-frame",sessionId:"synthetic-session",uniqueContextId:"synthetic-context",securityOrigin:"https://client"});
 const context={savedReadbackCacheContext:()=>selected};this.#stagedContext=context;
 this.#savedReadbackParentArmed=true;this.#mainRunner={selectedSqlFenceState:()=>({ready:true}),pumpSelectedSqlFence:async()=>{}};
-const ledger=new CurrentPcbViaSavedCacheLedger(Object.freeze({frameId:selected.frameId,sessionId:selected.sessionId,securityOrigin:selected.securityOrigin,projectUuid:this.#savedReadbackPrepared.target.projectUuid}));
+const ledger=full?.ledger??new CurrentPcbViaSavedCacheLedger(Object.freeze({frameId:selected.frameId,sessionId:selected.sessionId,securityOrigin:selected.securityOrigin,projectUuid:this.#savedReadbackPrepared.target.projectUuid}));
 const origin=Object.freeze({profile:"private.current-pcb-via-saved-cache-origin.v1"});const bindings=this.#createSavedReadbackCacheBindings(ledger,origin,pipe,this.#savedReadbackPrepared);
-const metadata=new CurrentPcbViaSavedCacheMetadataLedger({sessionId:selected.sessionId,uniqueContextId:selected.uniqueContextId,executionContextId:7,projectUuid:this.#savedReadbackPrepared.target.projectUuid});
+const metadata=full?.metadata??new CurrentPcbViaSavedCacheMetadataLedger({sessionId:selected.sessionId,uniqueContextId:selected.uniqueContextId,executionContextId:7,projectUuid:this.#savedReadbackPrepared.target.projectUuid});
 const held=Object.freeze({origin,prepared:this.#savedReadbackPrepared,owner:this,ledger,metadata,context,selected,bindings});this.#savedReadbackCache=held;savedReadbackCaches.set(origin,held);return bindings;
 }`;
   const originalSource = await readFile(url, "utf8");
@@ -78,12 +81,35 @@ else if(q.action==='release')send(q,{released:true});else throw Error('unexpecte
   let cacheRequest: (() => Promise<unknown>) | null = null;
   if (cache) {
     const method: unknown = Reflect.get(owner, "seedSyntheticCacheForTest"); assert.ok(typeof method === "function");
-    const bindings: unknown = await Reflect.apply(method, owner, []); assert.ok(bindings !== null && typeof bindings === "object" && "request" in bindings && typeof bindings.request === "function" && "metadataRequest" in bindings && typeof bindings.metadataRequest === "function");
+    const bindings: unknown = await Reflect.apply(method, owner, [full]); assert.ok(bindings !== null && typeof bindings === "object" && "request" in bindings && typeof bindings.request === "function" && "metadataRequest" in bindings && typeof bindings.metadataRequest === "function");
     const request = metadata ? bindings.metadataRequest : bindings.request;
     cacheRequest = (): Promise<unknown> => { const result: unknown = Reflect.apply(request, bindings, [metadata ? { phase: "saved-cache-native-constructors", kind: "cache-response" } : { phase: "saved-cache-key", step: "initial" }]); assert.ok(result instanceof Promise); return result; };
   }
-  return { owner, actions, pollEntered: pollEntered.promise, cacheRequest };
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The test-only private factory seam above deliberately substitutes an inert checkpoint issuer.
+  return { owner, actions, pollEntered: pollEntered.promise, cacheRequest, prepared: prepared as unknown as CurrentPcbViaWriteClosedCheckpoint };
 }
+
+void test("original reader publishes only its complete native ledgers once and refuses copied grants or changed backup bytes", async context => {
+  const f = await fixture(context, false, true, false, true);
+  const original = f.owner.publishSavedCacheBackup(); assert.equal(f.owner.publishSavedCacheBackup(), original);
+  const grant = await original;
+  // The fixture's checkpoint issuer is deliberately inert; the production
+  // Owner method still joins actual private ledger refs and full backup IO.
+  const bindings = f.owner.originalSavedReadbackBackupBindings(grant, f.prepared);
+  assert.equal(bindings.cacheDeletionAuthorized, false); assert.equal(bindings.data.totalEntries, 0);
+  await bindings.assertCurrent();
+  assert.throws(() => f.owner.originalSavedReadbackBackupBindings({ ...grant }, f.prepared));
+  await writeFile(bindings.published.artifact.path, "changed synthetic backup"); await assert.rejects(bindings.assertCurrent());
+  assert.equal(f.owner.publishSavedCacheBackup(), original); assert.equal(f.actions.filter(action => action === "saved-readback-cache").length, 0);
+  await f.owner.abortSavedReadback(true); assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
+});
+void test("incomplete original cache observations retain one rejected publication and cannot mint a backup grant", async context => {
+  const f = await fixture(context, false, true); const original = f.owner.publishSavedCacheBackup(); await assert.rejects(original);
+  assert.equal(f.owner.publishSavedCacheBackup(), original);
+  const forged: CurrentPcbViaSavedCacheBackupGrant = { profile: "private.current-pcb-via-saved-cache-backup-grant.v1" };
+  assert.throws(() => f.owner.originalSavedReadbackBackupBindings(forged, f.prepared));
+  await f.owner.abortSavedReadback(true); assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
+});
 
 void test("fresh saved readback retains its own original Job and cannot retry launch or abort", async context => {
   const f = await fixture(context); await assert.rejects(f.owner.startSavedReadbackGeneration(), /START_CONSUMED/u);

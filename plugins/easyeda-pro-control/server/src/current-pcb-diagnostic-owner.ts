@@ -11,6 +11,10 @@ import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS, currentProjectSaveProducer
 import type { CurrentProjectSaveProducerCacheCaller } from "./current-project-save-producer-cache-source.ts";
 import { CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_ARRAY_LENGTH, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_PROFILES, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_CALLS as PRODUCER_INTRINSICS, decodeCurrentNativeCacheResponseIntrinsic } from "./current-native-cache-response-intrinsics.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS, CURRENT_PROJECT_SAVE_PRODUCER_ROLES, CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS, validateCurrentProjectSaveProducerCommand } from "./current-project-save-producer-protocol.ts";
+import { buildCurrentPcbViaSavedCacheBackupData, publishCurrentPcbViaSavedCacheBackupData, requireCurrentPcbViaSavedCacheBackupData, verifyCurrentPcbViaSavedCachePublishedData } from "./current-pcb-via-saved-cache-backup.ts";
+import type { CurrentPcbViaSavedCacheBackupData, CurrentPcbViaSavedCachePublishedData } from "./current-pcb-via-saved-cache-backup.ts";
+import type { CurrentPcbViaSavedCacheBackupBindings, CurrentPcbViaSavedCacheBackupGrant } from "./current-pcb-via-saved-cache-backup-origin.ts";
+import { CURRENT_PCB_VIA_SAVED_CACHE_METADATA_REQUESTS as SAVED_METADATA_REQUESTS } from "./current-pcb-via-saved-cache-metadata-programs.ts";
 import type { CurrentProjectSaveProducerBindings, CurrentProjectSaveProducerHeldCall, CurrentProjectSaveProducerOrigin } from "./current-project-save-producer-origin.ts";
 import { CurrentPcbViaSavedCacheMetadataLedger } from "./current-pcb-via-saved-cache-metadata-ledger.ts";
 import type { CurrentPcbViaSavedCacheMetadataPacket, CurrentPcbViaSavedCacheMetadataPlan, CurrentPcbViaSavedCacheMetadataSnapshot } from "./current-pcb-via-saved-cache-metadata-ledger.ts";
@@ -710,6 +714,13 @@ interface SavedReadbackCacheHeld {
   readonly bindings: CurrentPcbViaSavedCacheBindings;
 }
 const savedReadbackCaches = new WeakMap<object, SavedReadbackCacheHeld>();
+interface SavedReadbackCacheBackupHeld {
+  readonly grant: CurrentPcbViaSavedCacheBackupGrant; readonly cache: SavedReadbackCacheHeld;
+  readonly cdp: CurrentPcbViaSavedCacheSnapshot; readonly metadata: CurrentPcbViaSavedCacheMetadataSnapshot;
+  readonly data: CurrentPcbViaSavedCacheBackupData; readonly published: CurrentPcbViaSavedCachePublishedData;
+  readonly bindings: CurrentPcbViaSavedCacheBackupBindings;
+}
+const savedReadbackCacheBackups = new WeakMap<object, SavedReadbackCacheBackupHeld>();
 const savedReadbackMetadataLedgerDescriptors = Object.getOwnPropertyDescriptors(CurrentPcbViaSavedCacheMetadataLedger.prototype);
 const savedReadbackCacheLedgerDescriptors = Object.getOwnPropertyDescriptors(CurrentPcbViaSavedCacheLedger.prototype);
 
@@ -1382,6 +1393,8 @@ class CurrentPcbRetainedOwnerCore {
   #savedReadbackCacheAttempted = false; #savedReadbackPreflightPending = false; #savedReadbackParentPending = false; #savedReadbackParentArmed = false;
   #savedReadbackMetadataPlan: CurrentPcbViaSavedCacheMetadataPlan | null = null;
   #savedReadbackCache: SavedReadbackCacheHeld | null = null; #savedReadbackCachePlan: CurrentPcbViaSavedCachePlan | null = null;
+  #savedReadbackBackupPromise: Promise<CurrentPcbViaSavedCacheBackupGrant> | null = null;
+  #savedReadbackBackup: SavedReadbackCacheBackupHeld | null = null;
 
   #generatedFixtureQualification: QualifiedGeneratedFixtureTarget | QualifiedGeneratedComponentFixtureTarget | null = null;
   #generatedFixtureRegistration: Readonly<Record<string, unknown>> | null = null;
@@ -5745,6 +5758,56 @@ class CurrentPcbRetainedOwnerCore {
     if (held === undefined || held.owner !== this || held.prepared !== prepared || held.origin !== origin) { throw error("SAVED_READBACK_CACHE_ORIGIN"); }
     this.#savedReadbackCacheCurrent(held); return held.bindings;
   }
+  #savedReadbackBackupInputs(held: SavedReadbackCacheHeld, cdp: CurrentPcbViaSavedCacheSnapshot, metadata: CurrentPcbViaSavedCacheMetadataSnapshot): void {
+    this.#savedReadbackCacheCurrent(held); held.ledger.requireOriginalSnapshot(cdp); held.metadata.requireOriginalSnapshot(metadata);
+    const native = held.metadata.status(), state = held.ledger.status();
+    if (!state.tracked || !state.completeRepeatedCdpData || state.pending || native.pending || native.helperPending || native.released ||
+      native.sourceReceipts !== SAVED_METADATA_REQUESTS.helperSources || !metadata.completeHelperSourcesVerified || metadata.helperEvents.length !== SAVED_METADATA_REQUESTS.helperEvents) { throw error("SAVED_READBACK_BACKUP_INCOMPLETE"); }
+    for (const packet of cdp.packets) { held.ledger.requireOriginalPacket(packet); }
+    for (const packet of metadata.packets) { held.metadata.requireOriginalPacket(packet); }
+  }
+  #savedReadbackBackupCurrent(backup: SavedReadbackCacheBackupHeld): void {
+    if (this.#savedReadbackBackup !== backup || savedReadbackCacheBackups.get(backup.grant) !== backup) { throw error("SAVED_READBACK_BACKUP_ORIGINAL"); }
+    this.#savedReadbackBackupInputs(backup.cache, backup.cdp, backup.metadata);
+    requireCurrentPcbViaSavedCacheBackupData(backup.data, backup.cache.prepared, backup.cdp, backup.metadata);
+  }
+  public originalSavedReadbackBackupBindings(grant: CurrentPcbViaSavedCacheBackupGrant, prepared: CurrentPcbViaWriteClosedCheckpoint): CurrentPcbViaSavedCacheBackupBindings {
+    const backup = savedReadbackCacheBackups.get(grant);
+    if (backup === undefined || backup.cache.owner !== this || backup.cache.prepared !== prepared || backup.grant !== grant) { throw error("SAVED_READBACK_BACKUP_ORIGINAL"); }
+    this.#savedReadbackBackupCurrent(backup); return backup.bindings;
+  }
+  /** No argument supplies a checkpoint, snapshot or selector. Retain this one
+   * original publication Promise, including rejection, before its first await. */
+  public publishSavedCacheBackup(): Promise<CurrentPcbViaSavedCacheBackupGrant> {
+    assertOriginalCurrentPcbViaSavedReadbackOwner(this);
+    if (this.#savedReadbackBackupPromise !== null) { return this.#savedReadbackBackupPromise; }
+    this.#enter(true);
+    const promise = (async (): Promise<CurrentPcbViaSavedCacheBackupGrant> => {
+      try {
+        const allocation = pcbViaSavedReadbackFactories.get(this)?.allocation, held = this.#savedReadbackCache;
+        if (held === null || allocation === undefined || allocation.prepared !== held.prepared) { throw error("SAVED_READBACK_BACKUP_UNAVAILABLE"); }
+        const cdp = held.ledger.snapshot(), metadata = held.metadata.snapshot();
+        const current = (): void => { this.#savedReadbackBackupInputs(held, cdp, metadata); };
+        current(); await this.#verifyInstallation(); current(); await allocation.verifyPrepared(held.prepared); current();
+        const data = buildCurrentPcbViaSavedCacheBackupData(held.prepared, cdp, metadata);
+        requireCurrentPcbViaSavedCacheBackupData(data, held.prepared, cdp, metadata); current();
+        const published = await publishCurrentPcbViaSavedCacheBackupData(data); current();
+        await verifyCurrentPcbViaSavedCachePublishedData(published, data); current();
+        await this.#verify(); current(); await allocation.verifyPrepared(held.prepared); current();
+        const grant: CurrentPcbViaSavedCacheBackupGrant = Object.freeze({ profile: "private.current-pcb-via-saved-cache-backup-grant.v1" });
+        const bindings: CurrentPcbViaSavedCacheBackupBindings = Object.freeze({ origin: held.origin, data, published,
+          assertCurrent: async (): Promise<void> => {
+            const active = savedReadbackCacheBackups.get(grant); if (active === undefined) { throw error("SAVED_READBACK_BACKUP_ORIGINAL"); }
+            this.#savedReadbackBackupCurrent(active); await verifyCurrentPcbViaSavedCachePublishedData(active.published, active.data); this.#savedReadbackBackupCurrent(active);
+            await this.#verify(); this.#savedReadbackBackupCurrent(active);
+          }, cacheDeletionAuthorized: false, freshLoadingVerified: false });
+        const backup: SavedReadbackCacheBackupHeld = Object.freeze({ grant, cache: held, cdp, metadata, data, published, bindings });
+        this.#savedReadbackBackup = backup; savedReadbackCacheBackups.set(grant, backup); this.#savedReadbackBackupCurrent(backup); return grant;
+      } catch (caughtError) { this.#input.emit("error", error("SAVED_READBACK_BACKUP_FAILED")); throw caughtError; }
+      finally { this.#busy = false; }
+    })();
+    this.#savedReadbackBackupPromise = promise; return promise;
+  }
   /** One original Start Page/source/main-fence join before the first cache
    * query. The nine CDP requests are two parent/ancillary brackets and one
    * fixed empty-project preflight; no registration or navigation is attempted. */
@@ -7784,6 +7847,9 @@ export function currentPcbViaSavedReadbackAllocationOutcome(prepared: CurrentPcb
 }
 export function requireOriginalCurrentPcbViaSavedCacheOrigin(origin: CurrentPcbViaSavedCacheOrigin, owner: CurrentPcbViaSavedReadbackOwner, prepared: CurrentPcbViaWriteClosedCheckpoint): CurrentPcbViaSavedCacheBindings {
   assertOriginalCurrentPcbViaSavedReadbackOwner(owner); return owner.originalSavedReadbackCacheBindings(origin, prepared);
+}
+export function requireOriginalCurrentPcbViaSavedCacheBackup(grant: CurrentPcbViaSavedCacheBackupGrant, owner: CurrentPcbViaSavedReadbackOwner, prepared: CurrentPcbViaWriteClosedCheckpoint): CurrentPcbViaSavedCacheBackupBindings {
+  assertOriginalCurrentPcbViaSavedReadbackOwner(owner); return owner.originalSavedReadbackBackupBindings(grant, prepared);
 }
 export function originalCurrentPcbViaSavedReadbackTarget(owner: CurrentPcbViaSavedReadbackOwner): CurrentPcbViaWriteClosedCheckpoint {
   assertOriginalCurrentPcbViaSavedReadbackOwner(owner); const original = pcbViaSavedReadbackFactories.get(owner);

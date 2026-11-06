@@ -473,3 +473,19 @@ The merged production-owner abort/factory cases pass; a separate native-emission
 check exposed the shared writer bootstrap's extra four setup-helper slots in a
 read-only prospective budget, sent to the owning agent for an explicit pure
 read-only reservation. No cache, app, Windows helper or native owner was used.
+
+The saved reader now owns `publishSavedCacheBackup()` directly. Its no-argument
+entry retains one original Promise before publication, captures only its own
+complete CDP and Fetch ledgers, and checks all original packet refs and the
+12 correlated helper receipts around checkpoint and artifact IO. The original
+closed writer helper must remain released and closed. The returned opaque
+backup grant is privately bound to the same owner, checkpoint, cache origin,
+exact snapshots and verified full backup bytes; copied grants and changed
+backup files refuse. Its readonly lookup reports cache deletion and fresh
+loading false. The two current empty-UI guards, per-namespace native delete
+admission and distinct cold-loading observer remain the next boundaries.
+
+Focused production-Core/synthetic-child cases exercise successful complete
+publication, retained failed publication, grant-copy refusal, complete backup
+corruption and original Job-only cleanup. These contain explicit inert
+checkpoint/native-data seams and are not connected Cache API validation.
