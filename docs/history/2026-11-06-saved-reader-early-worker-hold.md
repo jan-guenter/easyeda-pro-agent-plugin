@@ -50,3 +50,14 @@ availability and absence of workers at the earlier actual pause still require
 the next native case. If the prefix is too late or cannot connect, the source
 refuses; it does not fall back to adopting running workers. Saved/reopened
 acceptance, source/peer/full SQL proof and original cleanup remain pending.
+
+## Pinned startup order
+
+A later read-only AST inspection of the same complete pinned `app.js` places
+the protocol breakpoint inside `PC`, source2627476–2630578. The main `yh`
+startup awaits application readiness, server startup and then
+`PC(session.defaultSession, server)` before it calls `N6` to create the loading
+window. The two actual `BrowserWindow` constructor sites belong to `Ps` and
+`N6`; no application function ran during this inspection. This supports the
+chosen source boundary but does not prove native endpoint availability or
+replace the mandatory browser inventories.
