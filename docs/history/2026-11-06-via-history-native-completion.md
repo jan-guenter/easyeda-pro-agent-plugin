@@ -585,3 +585,24 @@ saved checkpoint issuer and connected worker load are intentionally absent in
 these inert cases. This data must join the later genuinely suspended new
 worker, its own fixed source observer and cache-absence transfer; it grants no
 Native run-waiting or fetch continuation by itself.
+
+### Saved reader prepares its exact loading data before allocation
+
+The distinct saved-reader factory now lazily joins the genuine saved-load plan
+module before allocating a helper. It retains the original plan and both actual
+module function identities in its private allocation record, checks that plan
+on subsequent owner proofs, and repeats the complete saved-checkpoint check after
+plan preparation. Unsupported history shapes therefore refuse before a native
+reader is allocated. The plan remains private data and grants no opening or
+worker continuation.
+
+Each current delete guard also compares its actual windowTabId with the one
+retained by the original empty-StartPage preflight. A different empty window
+cannot authorize even the first namespace delete. The focused production-owner
+regression proves that this refusal consumes the original attempt, issues no
+cache deletion/query, and retains supported original-Job cleanup.
+
+Verification: 13 focused owner/load-plan cases, full TypeScript checks and
+changed-file strict type-aware lint pass. These are isolated synthetic-child,
+completed SQL and source checks. No saved-cache route or loading worker ran in
+EasyEDA; project opening remains denied.

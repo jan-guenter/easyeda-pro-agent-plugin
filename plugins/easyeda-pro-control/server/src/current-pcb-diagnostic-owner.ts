@@ -34,6 +34,7 @@ import type { CurrentPcbViaSavedCacheBindings, CurrentPcbViaSavedCacheOrigin } f
 import { currentPcbViaSavedCacheNativeFrame, currentPcbViaSavedReadbackActorNativeFrame, currentPcbViaSavedReadbackParentNativeFrame } from "./current-pcb-via-saved-cache-wire.ts";
 import { CURRENT_PCB_VIA_SAVED_READBACK_PROFILE, CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE } from "./current-pcb-via-saved-readback-profile.ts";
 import type { CurrentPcbViaWriteClosedCheckpoint, requireOriginalCurrentPcbViaWriteClosedCheckpoint as RequireSavedReadbackCheckpoint, verifyCurrentPcbViaWriteClosedCheckpoint as VerifySavedReadbackCheckpoint } from "./current-pcb-via-write-closed-checkpoint.ts";
+import type { CurrentPcbViaSavedLoadPlan, prepareCurrentPcbViaSavedLoadPlan as PrepareSavedLoadPlan, requireOriginalCurrentPcbViaSavedLoadPlan as RequireSavedLoadPlan } from "./current-pcb-via-saved-load-plan.ts";
 import { currentProjectSaveProducerGuardCases } from "./current-project-save-producer-guard-protocol.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_SITES, qualifyCurrentProjectSaveProducerSource } from "./current-project-save-producer-source.ts";
 import { qualifyCurrentProjectSaveProducerGuardSource } from "./current-project-save-producer-guard-source.ts";
@@ -718,11 +719,13 @@ export function requireOriginalCurrentProjectSaveStructureOrigin(origin: Current
 const pcbViaTerminations = new WeakMap<object, Readonly<{ owner: CurrentPcbViaWriteOwner; binding: Binding }>>();
 const schematicDisplayTerminations = new WeakMap<object, Readonly<{ owner: CurrentSchematicDisplayWriteOwner; binding: Binding }>>();
 type SavedReadbackCheckpointModule = Readonly<{ requireOriginalCurrentPcbViaWriteClosedCheckpoint: typeof RequireSavedReadbackCheckpoint; verifyCurrentPcbViaWriteClosedCheckpoint: typeof VerifySavedReadbackCheckpoint }>;
+type SavedReadbackLoadModule = Readonly<{ prepareCurrentPcbViaSavedLoadPlan: typeof PrepareSavedLoadPlan; requireOriginalCurrentPcbViaSavedLoadPlan: typeof RequireSavedLoadPlan }>;
 interface PcbViaSavedReadbackAllocation {
   readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: CurrentPcbViaWriteClosedCheckpoint; readonly writer: CurrentPcbViaWriteOwner;
   readonly checkpointModule: SavedReadbackCheckpointModule;
   readonly requireCheckpoint: SavedReadbackCheckpointModule["requireOriginalCurrentPcbViaWriteClosedCheckpoint"];
   readonly verifyPrepared: SavedReadbackCheckpointModule["verifyCurrentPcbViaWriteClosedCheckpoint"];
+  readonly loadModule: SavedReadbackLoadModule; readonly prepareLoadPlan: typeof PrepareSavedLoadPlan; readonly requireLoadPlan: typeof RequireSavedLoadPlan; readonly loadPlan: CurrentPcbViaSavedLoadPlan;
   state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentPcbViaSavedReadbackOwner | null;
   child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown;
 }
@@ -733,7 +736,7 @@ interface SavedReadbackCacheHeld {
   readonly origin: CurrentPcbViaSavedCacheOrigin; readonly prepared: CurrentPcbViaWriteClosedCheckpoint;
   readonly owner: CurrentPcbRetainedOwnerCore; readonly ledger: CurrentPcbViaSavedCacheLedger; readonly metadata: CurrentPcbViaSavedCacheMetadataLedger;
   readonly context: CurrentPcbDiagnosticContext; readonly selected: ReturnType<CurrentPcbDiagnosticContext["savedReadbackCacheContext"]>;
-  readonly bindings: CurrentPcbViaSavedCacheBindings;
+  readonly bindings: CurrentPcbViaSavedCacheBindings; readonly windowTabId: string;
 }
 const savedReadbackCaches = new WeakMap<object, SavedReadbackCacheHeld>();
 interface SavedReadbackCacheBackupHeld {
@@ -751,7 +754,9 @@ const savedReadbackCacheLedgerDescriptors = Object.getOwnPropertyDescriptors(Cur
 function requireSavedReadbackPreparation(allocation: PcbViaSavedReadbackAllocation): void {
   if (allocation.checkpointModule.requireOriginalCurrentPcbViaWriteClosedCheckpoint !== allocation.requireCheckpoint ||
     allocation.checkpointModule.verifyCurrentPcbViaWriteClosedCheckpoint !== allocation.verifyPrepared ||
+    allocation.loadModule.prepareCurrentPcbViaSavedLoadPlan !== allocation.prepareLoadPlan || allocation.loadModule.requireOriginalCurrentPcbViaSavedLoadPlan !== allocation.requireLoadPlan ||
     pcbViaSavedReadbackAllocations.get(allocation.prepared) !== allocation) { throw error("SAVED_READBACK_ORIGINAL_PREPARATION"); }
+  allocation.requireLoadPlan(allocation.loadPlan, allocation.prepared);
   const prior = allocation.requireCheckpoint(allocation.prepared), status = prior.owner.status();
   if (prior.owner !== allocation.writer || !status.released || !status.helperClosed) { throw error("SAVED_READBACK_PRIOR_HELPER_REQUIRED_CLOSED"); }
 }
@@ -6087,7 +6092,7 @@ class CurrentPcbRetainedOwnerCore {
           if (!exact(helperSource, ["scriptSource"]) || helperSource["scriptSource"] !== `(${CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION})` || this.#savedReadbackGuardHelper !== helper) { throw error("SAVED_READBACK_GUARD_HELPER_SOURCE"); }
           this.#savedReadbackGuardHelper = null;
           const guard = decodeCurrentPcbDiagnosticOpeningReply(raw, target, "preflight");
-          if (!guard.ok || guard.status !== "ready" || guard.dispatchAttempted || guard.observation?.projectPresent !== false) { throw error("SAVED_READBACK_DELETE_EMPTY_UI_REQUIRED"); }
+          if (!guard.ok || guard.status !== "ready" || guard.dispatchAttempted || guard.observation?.projectPresent !== false || guard.observation.windowTabId !== held.windowTabId) { throw error("SAVED_READBACK_DELETE_EMPTY_UI_REQUIRED"); }
           await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current(); await verifyBackup();
           await request({ phase: "saved-cache-key", step: ordinal === 0 ? "before-delete-0" : "before-delete-1" });
           await request({ phase: "saved-cache-names", step: ordinal === 0 ? "before-delete-0" : "before-delete-1" });
@@ -6152,7 +6157,7 @@ class CurrentPcbRetainedOwnerCore {
       const executionContextId = context.script().context["id"];
       if (typeof executionContextId !== "number" || !Number.isSafeInteger(executionContextId) || executionContextId <= 0) { throw error("SAVED_READBACK_METADATA_CONTEXT"); }
       const metadata = new CurrentPcbViaSavedCacheMetadataLedger(Object.freeze({ sessionId: selected.sessionId, uniqueContextId: selected.uniqueContextId, executionContextId, projectUuid: allocation.prepared.target.projectUuid }));
-      const held: SavedReadbackCacheHeld = Object.freeze({ origin, prepared: allocation.prepared, owner: this, ledger, metadata, context, selected, bindings });
+      const held: SavedReadbackCacheHeld = Object.freeze({ origin, prepared: allocation.prepared, owner: this, ledger, metadata, context, selected, bindings, windowTabId: preflight.observation.windowTabId });
       this.#savedReadbackCache = held; savedReadbackCaches.set(origin, held); current(); return origin;
     } catch (caughtError) { this.#input.emit("error", error("SAVED_READBACK_CACHE_PREFLIGHT_FAILED")); throw caughtError; }
     finally { this.#savedReadbackActorsPending = false; this.#savedReadbackPreflightPending = false; this.#savedReadbackParentPending = false; this.#busy = false; }
@@ -8155,8 +8160,13 @@ export async function startCurrentPcbViaSavedReadbackOwner(options: CurrentPcbDi
   if (!before.released || !before.helperClosed) { throw error("SAVED_READBACK_PRIOR_HELPER_REQUIRED_CLOSED"); }
   await verifyPrepared(prepared); const prior = requireCheckpoint(prepared); const after = writer.status();
   if (prior.owner !== writer || !after.released || !after.helperClosed) { throw error("SAVED_READBACK_PRIOR_HELPER_REQUIRED_CLOSED"); }
+  const loadModule = await import("./current-pcb-via-saved-load-plan.ts");
+  const prepareLoadPlan = loadModule.prepareCurrentPcbViaSavedLoadPlan, requireLoadPlan = loadModule.requireOriginalCurrentPcbViaSavedLoadPlan;
+  const loadPlan = await prepareLoadPlan(prepared); requireLoadPlan(loadPlan, prepared);
+  await verifyPrepared(prepared); const finalPrior = requireCheckpoint(prepared), finalStatus = writer.status();
+  if (finalPrior.owner !== writer || !finalStatus.released || !finalStatus.helperClosed || loadModule.prepareCurrentPcbViaSavedLoadPlan !== prepareLoadPlan || loadModule.requireOriginalCurrentPcbViaSavedLoadPlan !== requireLoadPlan) { throw error("SAVED_READBACK_ORIGINAL_LOAD_PLAN"); }
   if (checkpointModule.requireOriginalCurrentPcbViaWriteClosedCheckpoint !== requireCheckpoint || checkpointModule.verifyCurrentPcbViaWriteClosedCheckpoint !== verifyPrepared || pcbViaSavedReadbackAllocations.has(prepared)) { throw error("SAVED_READBACK_ALLOCATION_CONSUMED"); }
-  const allocation: PcbViaSavedReadbackAllocation = { options, prepared, writer, checkpointModule, requireCheckpoint, verifyPrepared, state: "pending", owner: null, child: null, eofAttempted: false, cleanupFailure: null };
+  const allocation: PcbViaSavedReadbackAllocation = { options, prepared, writer, checkpointModule, requireCheckpoint, verifyPrepared, loadModule, prepareLoadPlan, requireLoadPlan, loadPlan, state: "pending", owner: null, child: null, eofAttempted: false, cleanupFailure: null };
   pcbViaSavedReadbackAllocations.set(prepared, allocation);
   try {
     const owner = await startFixedOwner(options, CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE, "209-via-saved-readback", undefined, null, null, null, null, false, null, null, null, allocation);

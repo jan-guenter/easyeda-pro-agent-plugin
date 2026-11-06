@@ -23,7 +23,7 @@ import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import type { CurrentPcbViaSavedReadbackOwner } from "../src/current-pcb-diagnostic-owner.ts";
 
-async function fixture(context: TestContext, malformed = false, cache = false, metadata = false, complete = false, invalidation = false, lostDelete = false): Promise<Readonly<{ owner: CurrentPcbViaSavedReadbackOwner; actions: string[]; pollEntered: Promise<true>; cacheRequest: (() => Promise<unknown>) | null; deleteEntered: Promise<true>; prepared: CurrentPcbViaWriteClosedCheckpoint }>> {
+async function fixture(context: TestContext, malformed = false, cache = false, metadata = false, complete = false, invalidation = false, lostDelete = false, windowDrift = false): Promise<Readonly<{ owner: CurrentPcbViaSavedReadbackOwner; actions: string[]; pollEntered: Promise<true>; cacheRequest: (() => Promise<unknown>) | null; deleteEntered: Promise<true>; prepared: CurrentPcbViaWriteClosedCheckpoint }>> {
   const url = new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url); const sourceRequire = createRequire(url);
   const full = complete ? completeSyntheticSavedCacheFixture(invalidation) : null;
   const prepared = full?.prepared ?? Object.freeze({ syntheticCheckpoint: true, target: Object.freeze({ projectUuid: "a".repeat(64) }) });
@@ -36,7 +36,7 @@ this.#savedReadbackParentArmed=true;this.#mainRunner={selectedSqlFenceState:()=>
 const ledger=full?.ledger??new CurrentPcbViaSavedCacheLedger(Object.freeze({frameId:selected.frameId,sessionId:selected.sessionId,securityOrigin:selected.securityOrigin,projectUuid:this.#savedReadbackPrepared.target.projectUuid}));
 const origin=Object.freeze({profile:"private.current-pcb-via-saved-cache-origin.v1"});const bindings=this.#createSavedReadbackCacheBindings(ledger,origin,pipe,this.#savedReadbackPrepared);
 const metadata=full?.metadata??new CurrentPcbViaSavedCacheMetadataLedger({sessionId:selected.sessionId,uniqueContextId:selected.uniqueContextId,executionContextId:7,projectUuid:this.#savedReadbackPrepared.target.projectUuid});
-const held=Object.freeze({origin,prepared:this.#savedReadbackPrepared,owner:this,ledger,metadata,context,selected,bindings});this.#savedReadbackCache=held;savedReadbackCaches.set(origin,held);return bindings;
+const held=Object.freeze({origin,prepared:this.#savedReadbackPrepared,owner:this,ledger,metadata,context,selected,bindings,windowTabId:"synthetic-window"});this.#savedReadbackCache=held;savedReadbackCaches.set(origin,held);return bindings;
 }`;
   const originalSource = await readFile(url, "utf8");
   let seededSource = originalSource.replace("  public async startSavedReadbackGeneration()", `${testMethod}\n  public async startSavedReadbackGeneration()`);
@@ -49,7 +49,8 @@ const held=Object.freeze({origin,prepared:this.#savedReadbackPrepared,owner:this
   const source = `${seededSource}\nexport function seedSyntheticSavedReadback(owner,installation,prepared){
 const writer={status:()=>({released:true,helperClosed:true})};const requireCheckpoint=value=>{if(value!==prepared)throw Error("synthetic original checkpoint");return {owner:writer};};const verifyPrepared=async value=>{requireCheckpoint(value);};
 const checkpointModule=Object.freeze({requireOriginalCurrentPcbViaWriteClosedCheckpoint:requireCheckpoint,verifyCurrentPcbViaWriteClosedCheckpoint:verifyPrepared});
-const allocation={options:Object.freeze({}),prepared,writer,checkpointModule,requireCheckpoint,verifyPrepared,state:"retained",owner,child:null,eofAttempted:false,cleanupFailure:null};
+const loadPlan=Object.freeze({profile:"private.current-pcb-via-saved-load-plan.v1"});const requireLoadPlan=(plan,value)=>{if(plan!==loadPlan||value!==prepared)throw Error("synthetic original plan");return {};};const prepareLoadPlan=async()=>loadPlan;const loadModule=Object.freeze({prepareCurrentPcbViaSavedLoadPlan:prepareLoadPlan,requireOriginalCurrentPcbViaSavedLoadPlan:requireLoadPlan});
+const allocation={options:Object.freeze({}),prepared,writer,checkpointModule,requireCheckpoint,verifyPrepared,loadModule,prepareLoadPlan,requireLoadPlan,loadPlan,state:"retained",owner,child:null,eofAttempted:false,cleanupFailure:null};
 pcbViaSavedReadbackAllocations.set(prepared,allocation);pcbViaSavedReadbackFactories.set(owner,Object.freeze({allocation,installation}));}
 `;
 
@@ -61,7 +62,7 @@ pcbViaSavedReadbackAllocations.set(prepared,allocation);pcbViaSavedReadbackFacto
   assert.ok(typeof Constructor === "function" && typeof seed === "function");
   const guardReply = { schema: "easyeda-pro-control.pcb-diagnostic-opening.v1", phase: "preflight", projectUuid: full?.ledger.snapshot().frame.projectUuid ?? "a".repeat(64),
     branchUuid: "3".repeat(32), documentUuid: "4".repeat(32), ok: true, status: "ready", failure: null, dispatchAttempted: false, publicResult: null, prefixObserved: false, nativeWorkMayRemain: false,
-    observation: { projectPresent: false, branchUuid: null, windowTabId: "synthetic-window", containerCount: 1, tabIds: [], activeTabId: "tab_page1", initialTitle: "EasyEDA Pro - V3.2.209", expectedOpenedTitle: "EasyEDA Pro - V3.2.209", documentTitle: "EasyEDA Pro - V3.2.209" } };
+    observation: { projectPresent: false, branchUuid: null, windowTabId: windowDrift ? "foreign-window" : "synthetic-window", containerCount: 1, tabIds: [], activeTabId: "tab_page1", initialTitle: "EasyEDA Pro - V3.2.209", expectedOpenedTitle: "EasyEDA Pro - V3.2.209", documentTitle: "EasyEDA Pro - V3.2.209" } };
   const initialRoster = full?.ledger.snapshot().roster.caches ?? [];
   const script = `const guardReply=${JSON.stringify(guardReply)},helperSource=${JSON.stringify(`(${CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION})`)},roster=${JSON.stringify(initialRoster)};
 const readline=require('node:readline'),input=readline.createInterface({input:process.stdin});let terminated=false,attached=false,queued=[];
@@ -115,6 +116,14 @@ void test("original durable backup drives two source-qualified guards and once-o
   assert.equal(f.actions.filter(action => action === "saved-readback-cache").length, 9);
   assert.equal(f.owner.invalidateSavedCaches(), original); await f.owner.abortSavedReadback(true);
   assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
+});
+
+void test("changed original empty window refuses before the first selected namespace delete", async context => {
+  const f = await fixture(context, false, true, false, true, true, false, true); await f.owner.publishSavedCacheBackup();
+  const attempt = f.owner.invalidateSavedCaches(); await assert.rejects(attempt, /EMPTY_UI_REQUIRED/u);
+  assert.equal(f.owner.invalidateSavedCaches(), attempt); assert.equal(f.actions.filter(action => action === "saved-readback-cache").length, 0);
+  assert.equal(f.actions.filter(action => action === "saved-readback-cache-guard").length, 1);
+  await f.owner.abortSavedReadback(true); assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
 });
 
 void test("lost original delete reply remains consumed and original Job abort settles it without deleting the peer namespace", async context => {
