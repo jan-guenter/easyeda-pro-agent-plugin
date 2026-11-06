@@ -1,3 +1,4 @@
+import { generatedComponentReaderOriginalQualificationSchema, generatedPadReaderOriginalQualificationSchema } from "./generated-reader-closed-capture-contract.ts";
 import { currentPcbComponentSpatialIdSchema, currentPcbComponentSpatialObservationSchema, requireCurrentPcbComponentSpatialObservation } from "./current-pcb-component-spatial-validation.ts";
 import { currentPcb209ComponentPointQueriesSchema } from "./current-pcb-209-component-point-read.ts";
 import { GENERATED_READER_KNOWN_FACADE_SHA256 } from "./current-generated-reader-relinquishment-contract.ts";
@@ -592,15 +593,23 @@ const projectOpeningResultSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-diagnostic-project-opening-result.v1"), ...base,
   intentSha256: diagnosticLifecycleDigestSchema, result: z.record(z.string(), z.unknown()), executionAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "Opening result exceeds its bound.");
-const generatedClosedCaptureIntentSchema = z.object({
+const genericGeneratedClosedCaptureIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.generated-reader-closed-capture-intent.v1"), ...base,
   terminationSha256: diagnosticLifecycleDigestSchema, originalQualificationSha256: diagnosticLifecycleDigestSchema,
   target: currentDisposableOpenSealedTargetSchema, readOnlyDataCapture: z.literal(true),
 }).strict();
+const generatedPadClosedCaptureIntentSchema = genericGeneratedClosedCaptureIntentSchema.extend({ schema: z.literal("easyeda-pro-control.generated-pad-reader-closed-capture-intent.v1"), originalQualification: generatedPadReaderOriginalQualificationSchema });
+const generatedClosedCaptureIntentSchema = z.discriminatedUnion("schema", [genericGeneratedClosedCaptureIntentSchema, generatedPadClosedCaptureIntentSchema]);
+const componentGeneratedClosedCaptureIntentSchema = genericGeneratedClosedCaptureIntentSchema.extend({ schema: z.literal("easyeda-pro-control.component-generated-reader-closed-capture-intent.v1"), operationId: currentPcbComponentSpatialIdSchema,
+  originalQualification: generatedComponentReaderOriginalQualificationSchema, preparationCheckpointSha256: diagnosticLifecycleDigestSchema });
 const generatedClosedCaptureResultSchema = z.object({
   schema: z.literal("easyeda-pro-control.generated-reader-closed-capture-result.v1"), ...base,
   intentSha256: diagnosticLifecycleDigestSchema, report: z.record(z.string(), z.unknown()).nullable(),
   failure: z.literal("closed-generated-data-capture-refused").nullable(),
+  startupEffectsAccepted: z.literal(false), writerAuthority: z.literal(false), executionAuthorized: z.literal(false),
+}).strict().refine(value => (value.report === null) !== (value.failure === null) && Buffer.byteLength(canonicalJson(value)) <= 65_536);
+const componentGeneratedClosedCaptureResultSchema = z.object({ schema: z.literal("easyeda-pro-control.component-generated-reader-closed-capture-result.v1"), ...base, operationId: currentPcbComponentSpatialIdSchema,
+  intentSha256: diagnosticLifecycleDigestSchema, report: z.record(z.string(), z.unknown()).nullable(), failure: z.literal("closed-component-generated-data-capture-refused").nullable(),
   startupEffectsAccepted: z.literal(false), writerAuthority: z.literal(false), executionAuthorized: z.literal(false),
 }).strict().refine(value => (value.report === null) !== (value.failure === null) && Buffer.byteLength(canonicalJson(value)) <= 65_536);
 const workerStartupOpeningIntentSchema = z.object({
@@ -836,6 +845,8 @@ export const diagnosticLifecycleRecordSchemas = {
   "intent.json": intentSchema, "binding.json": bindingSchema, "close-intent.json": closeIntentSchema,
   "close-acknowledged.json": closeAcknowledgmentSchema, "terminated.json": terminationSchema,
   "release-intent.json": releaseIntentSchema, "released.json": releasedSchema,
+  "component-generated-closed-capture-intent.json": componentGeneratedClosedCaptureIntentSchema,
+  "component-generated-closed-capture-result.json": componentGeneratedClosedCaptureResultSchema,
   "generated-closed-capture-intent.json": generatedClosedCaptureIntentSchema,
   "generated-closed-capture-result.json": generatedClosedCaptureResultSchema,
   "unlaunched-release-intent.json": unlaunchedIntentSchema, "not-dispatched.json": notDispatchedSchema,
@@ -1140,6 +1151,9 @@ async function requireSettledOperation(directory: ControlRootDirectory, operatio
  * terminal records require the matching closure path. This checks stored evidence;
  * it cannot reconstruct process handles or authorize another native dispatch.
  */
+/** Pure candidate integrity check before closed-reader report publication.
+ * This issues no runtime, Native owner, termination or cleanup authority. */
+export function assertGeneratedReaderClosedCaptureChain(operation: DiagnosticLifecycleOperation): void { validateChain(operation); }
 function validateChain(operation: DiagnosticLifecycleOperation): void {
   // Both private callers supply schema-owned JSON from complete fresh reads. This validator
   // Never awaits, invokes caller code or mutates those objects. Retain only lazy
@@ -1186,7 +1200,7 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
       "no-process-released.json", "browser-intent.json", "browser-result.json", "frames-intent.json", "frames-result.json", "script-intent.json",
       "script-result.json", "project-opening-intent.json", "project-opening-result.json", "pcb-open-intent.json", "pcb-open-result.json",
       "pcb-opening-intent.json", "pcb-opening-result.json", "spatial209-intent.json", "spatial209-result.json", "spatial209-failure.json"]);
-    if (componentSpatialPurpose) { allowed.add("component-abort-intent.json"); allowed.add("component-abort-acknowledged.json"); }
+    if (componentSpatialPurpose) { for (const name of ["component-abort-intent.json", "component-abort-acknowledged.json", "component-generated-closed-capture-intent.json", "component-generated-closed-capture-result.json"]) { allowed.add(name); } }
     for (const name of Object.keys(records)) { requireValue(allowed.has(name), "SPATIAL_STAGE_PURPOSE"); }
   }
   const componentAbort = records["component-abort-intent.json"], componentAck = records["component-abort-acknowledged.json"];
@@ -1691,10 +1705,29 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     generatedCapture.terminationSha256 === predecessorDigest(termination) && generatedCapture.target.expectedSourceSha256 === intent.generatedFixtureBirth.originalSourceSha256 &&
     (opening === undefined || canonicalJson(generatedCapture.target) === canonicalJson(opening.target)), "GENERATED_CLOSED_CAPTURE_CHAIN");
   requireValue(generatedCaptured === undefined || generatedCapture !== undefined && generatedCaptured.intentSha256 === predecessorDigest(generatedCapture), "GENERATED_CLOSED_CAPTURE_RESULT_CHAIN");
+  const generatedPad = generatedCapture !== undefined && /[\\/]Codex_circular_smt_pad_[a-f0-9]{16}\.eprj2$/u.test(generatedCapture.target.rawWindowsPath);
+  requireValue(generatedCapture?.schema !== "easyeda-pro-control.generated-pad-reader-closed-capture-intent.v1" || generatedPad &&
+    predecessorDigest(generatedCapture.originalQualification) === generatedCapture.originalQualificationSha256 &&
+    canonicalJson(generatedCapture.originalQualification.target) === canonicalJson(generatedCapture.target) &&
+    intent !== undefined && "generatedFixtureBirth" in intent && generatedCapture.originalQualification.archiveSha256 === intent.generatedFixtureBirth?.archiveSha256,
+  "GENERATED_PAD_CLOSED_CAPTURE_QUALIFICATION");
   requireValue(generatedCaptured?.report === undefined || generatedCaptured.report === null || generatedCapture !== undefined &&
-    generatedCaptured.report["schema"] === "easyeda-pro-control.generated-reader-closed-snapshot.v1" &&
+    generatedCaptured.report["schema"] === (generatedPad ? "easyeda-pro-control.generated-pad-reader-closed-snapshot.v1" : "easyeda-pro-control.generated-reader-closed-snapshot.v1") &&
+    (!generatedPad || generatedCaptured.report["rawWindowsPath"] === generatedCapture.target.rawWindowsPath) &&
     generatedCaptured.report["projectUuid"] === generatedCapture.target.projectUuid && generatedCaptured.report["originalQualificationSha256"] === generatedCapture.originalQualificationSha256,
   "GENERATED_CLOSED_CAPTURE_REPORT_CHAIN");
+  const componentCapture = records["component-generated-closed-capture-intent.json"], componentCaptured = records["component-generated-closed-capture-result.json"];
+  requireValue(componentCapture === undefined || componentSpatialPurpose && termination !== undefined && intent !== undefined && "generatedFixtureBirth" in intent && intent.generatedFixtureBirth !== undefined &&
+    componentCapture.terminationSha256 === predecessorDigest(termination) && predecessorDigest(componentCapture.originalQualification) === componentCapture.originalQualificationSha256 &&
+    canonicalJson(componentCapture.originalQualification.target) === canonicalJson(componentCapture.target) && componentCapture.target.expectedSourceSha256 === intent.generatedFixtureBirth.originalSourceSha256 &&
+    componentCapture.originalQualification.archiveSha256 === intent.generatedFixtureBirth.archiveSha256 && /[\\/]Codex_component_circular_pad_[a-f0-9]{16}\.eprj2$/u.test(componentCapture.target.rawWindowsPath) &&
+    (opening === undefined || canonicalJson(componentCapture.target) === canonicalJson(opening.target)), "COMPONENT_GENERATED_CLOSED_CAPTURE_CHAIN");
+  requireValue(componentCaptured === undefined || componentCapture !== undefined && componentCaptured.intentSha256 === predecessorDigest(componentCapture), "COMPONENT_GENERATED_CLOSED_CAPTURE_RESULT_CHAIN");
+  requireValue(componentCaptured?.report === undefined || componentCaptured.report === null || componentCapture !== undefined &&
+    componentCaptured.report["schema"] === "easyeda-pro-control.generated-component-reader-closed-snapshot.v1" && componentCaptured.report["projectUuid"] === componentCapture.target.projectUuid &&
+    componentCaptured.report["rawWindowsPath"] === componentCapture.target.rawWindowsPath && componentCaptured.report["originalQualificationSha256"] === componentCapture.originalQualificationSha256 &&
+    componentCaptured.report["originalPreparationCheckpointSha256"] === componentCapture.preparationCheckpointSha256,
+  "COMPONENT_GENERATED_CLOSED_CAPTURE_REPORT_CHAIN");
   requireValue(unlaunched === undefined || intent !== undefined && unlaunched.intentSha256 === predecessorDigest(intent) &&
     binding === undefined && close === undefined && acknowledgment === undefined && termination === undefined && release === undefined && released === undefined, "UNLAUNCHED_CHAIN");
   requireValue(notDispatched === undefined || unlaunched !== undefined && notDispatched.unlaunchedReleaseIntentSha256 === predecessorDigest(unlaunched) &&

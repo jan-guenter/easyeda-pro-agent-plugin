@@ -31,6 +31,7 @@ import { consumeManagedPcbReadOpeningSource as consumeManagedFixtureOpeningSourc
   prepareGeneratedPcbReadOpenCheckpoint as prepareGeneratedFixtureOpenCheckpoint, verifyGeneratedPcbReadOpenCheckpoint as verifyGeneratedFixtureOpenCheckpoint,
   verifyHistoricalGeneratedPcbReadOpenCheckpoint as verifyHistoricalGeneratedFixtureOpenCheckpoint } from "./managed-pcb-fixture-read-source.ts";
 import type { GeneratedPcbReadOpenCheckpoint as GeneratedFixtureOpenCheckpoint, ManagedPcbFixtureReadOpeningSource as ManagedFixtureOpeningSource } from "./managed-pcb-fixture-read-source.ts";
+import { captureGeneratedComponentReaderClosedSnapshot } from "./managed-component-reader-closed-snapshot.ts";
 import { captureGeneratedReaderClosedSnapshot } from "./managed-fixture-reader-closed-snapshot.ts";
 import { assertNoUnresolvedOrdinaryLaunches } from "./ordinary-launch.ts";
 import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintCopyNativeOwner, CurrentFootprintCopyPreparationOwner, CurrentFootprintMainNativeOwner, CurrentPcb209RatlineContinuationOwner, CurrentPcb209RatlineStartupOwner, CurrentPcb209WorkerStartupOwner, CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner, CurrentPcbWorkerStartupHandoff, CurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
@@ -56,7 +57,7 @@ import type { CurrentPcbDiagnosticValidationRequest as Request } from "./current
 import { CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX, currentPcbStringPrecreateRequestSchema, currentPcbStringPrecreateStages } from "./current-pcb-string-precreate-validation.ts";
 import type { CurrentPcbStringPrecreateRequest } from "./current-pcb-string-precreate-validation.ts";
 import { DIAGNOSTIC_OBSERVATION_MAX_BYTES, STRING_PRECREATE_OBSERVATION_MAX_BYTES, acquireCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLifecycleSnapshot,
-  assertNoUnresolvedCurrentPcbDiagnosticLaunches, diagnosticLifecycleBindingSchema,
+  assertGeneratedReaderClosedCaptureChain, assertNoUnresolvedCurrentPcbDiagnosticLaunches, diagnosticLifecycleBindingSchema,
   diagnosticLifecycleDigestSchema, diagnosticLifecycleNoProcessReleaseProofSchema, diagnosticLifecycleRecordSchemas, diagnosticLifecycleWindowSchema,
   diagnosticObservationStageSchema, diagnosticPcbOpeningSourceAccepted, publishCurrentPcbDiagnosticLifecycleRecord, readCurrentPcbDiagnosticLifecycles, releaseCurrentPcbDiagnosticLaunchExclusion,
   reserveCurrentPcbDiagnosticLifecycle, stringPrecreateObservationResultSchema, stringPrecreateTargetMatches } from "./current-pcb-diagnostic-lifecycle-journal.ts";
@@ -268,6 +269,7 @@ export interface CurrentPcbDiagnosticLifecycleOptions extends CurrentPcbDiagnost
 }
 /** Offline fixture seams only. No public request selects factories or pins. */
 export interface CurrentPcbDiagnosticLifecycleDependencies {
+  readonly captureComponentGeneratedClosedData?: typeof captureGeneratedComponentReaderClosedSnapshot;
   readonly captureGeneratedClosedData?: typeof captureGeneratedReaderClosedSnapshot;
   readonly verifyInstallation?: (options: CurrentPcbDiagnosticInstallationOptions) => Promise<CurrentPcbDiagnosticInstallation>;
   readonly allocateOwner?: (options: CurrentPcbDiagnosticInstallationOptions) => Promise<CurrentPcbDiagnosticLifecycleOwner>;
@@ -451,6 +453,9 @@ class CurrentPcbLifecycleCore {
   readonly #generatedSource: ReturnType<typeof consumeManagedFixtureOpeningSource> | ReturnType<typeof consumeManagedComponentFixtureOpeningSource> | null;
   #componentPrepared: GeneratedComponentFixtureOpenCheckpoint | null = null;
   #componentPreparationAttempted = false;
+  readonly #captureComponentGeneratedClosedData: typeof captureGeneratedComponentReaderClosedSnapshot;
+  #componentGeneratedClosedCaptureAttempted = false;
+  #componentGeneratedClosedCaptureResult: DiagnosticLifecycleRecords["component-generated-closed-capture-result.json"] | null = null;
   readonly #captureGeneratedClosedData: typeof captureGeneratedReaderClosedSnapshot;
   #generatedClosedCaptureAttempted = false;
   #generatedClosedCaptureResult: DiagnosticLifecycleRecords["generated-closed-capture-result.json"] | null = null;
@@ -581,6 +586,7 @@ class CurrentPcbLifecycleCore {
     requireValue((options.generatedComponentSource !== undefined) === (generation === "209-component-spatial") && !(options.generatedComponentSource !== undefined && options.generatedFixtureSource !== undefined), "COMPONENT_SOURCE_PURPOSE");
     if (options.generatedComponentSource === undefined) { this.#generatedSource = options.generatedFixtureSource === undefined ? null : consumeManagedFixtureOpeningSource(options.generatedFixtureSource); }
     else { this.#generatedSource = consumeManagedComponentFixtureOpeningSource(options.generatedComponentSource); }
+    this.#captureComponentGeneratedClosedData = dependencies.captureComponentGeneratedClosedData ?? captureGeneratedComponentReaderClosedSnapshot;
     this.#captureGeneratedClosedData = dependencies.captureGeneratedClosedData ?? captureGeneratedReaderClosedSnapshot;
     let verify = generation === "206" ? verifyCurrentPcbDiagnosticInstallation : verifyCurrentPcb209DiagnosticInstallation;
     if (generation === "209-startup-ratline" || generation === "209-startup-ratline-continuation") { verify = verifyCurrentPcb209RatlineInstallation; }
@@ -927,6 +933,7 @@ class CurrentPcbLifecycleCore {
         ...(nativeOpeningReply === null ? {} : { nativeOpeningReply, hostTransitionAccepted: false }),
         ...(nativeGeneratedRegistration === null ? {} : { nativeGeneratedRegistration, persistentRegistrationVerified: false }),
         ...(this.#generatedClosedCaptureResult === null ? {} : { generatedClosedCapture: this.#generatedClosedCaptureResult }),
+        ...(this.#componentGeneratedClosedCaptureResult === null ? {} : { componentGeneratedClosedCapture: this.#componentGeneratedClosedCaptureResult }),
         ...(nativePcbOpeningReply === null ? {} : { nativePcbOpeningReply, pcbHostTransitionAccepted: false }),
         ...(nativePcbFrameObservation === null ? {} : { nativePcbFrameObservation, pcbSourceAdmissionAccepted: false }),
         diagnosticFailureObservation: native?.diagnosticFailureObservation ?? null,
@@ -3296,6 +3303,7 @@ class CurrentPcbLifecycleCore {
     if (this.#visualAbortAttempted) { requireValue(["observe-termination", "release-closed"].includes(request.action), "VISUAL_GENERATION_ABORTED"); }
     if (request.action === "open-project" || request.action === "open-generated-fixture") { return this.#openProject(request, operation, operations, retained); }
     if (request.action === "open-pcb") { return this.#openPcb(request, operation, operations, retained); }
+    if (request.action === "capture-component-generated-closed") { return this.#captureComponentGeneratedClosed(request, operation, operations, retained); }
     if (request.action === "capture-generated-closed") { return this.#captureGeneratedClosed(request, operation, operations, retained); }
     if (request.action === "observe-common-baseline") { return this.#observeCommonBaseline(request, operation, operations, retained); }
     if (request.action === "observe-components" || request.action === "observe-spatial" || request.action === "observe-spatial-lines" || request.action === "observe-spatial-arcs" || request.action === "observe-spatial-pads") { return this.#observeSpatial(request, operation, operations, retained); }
@@ -4009,7 +4017,8 @@ class CurrentPcbLifecycleCore {
       operation.records["generated-closed-capture-intent.json"] === undefined, "GENERATED_CLOSED_CAPTURE_UNAVAILABLE");
     this.#generatedClosedCaptureAttempted = true;
     const intent = diagnosticLifecycleRecordSchemas["generated-closed-capture-intent.json"].parse({
-      schema: "easyeda-pro-control.generated-reader-closed-capture-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+      schema: source.qualification.schema === "easyeda-pro-control.qualified-generated-pad-fixture-target.v1" ? "easyeda-pro-control.generated-pad-reader-closed-capture-intent.v1" : "easyeda-pro-control.generated-reader-closed-capture-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+      ...(source.qualification.schema === "easyeda-pro-control.qualified-generated-pad-fixture-target.v1" ? { originalQualification: source.qualification } : {}),
       terminationSha256: sha256Json(termination), originalQualificationSha256: sha256Json(source.qualification), target: source.qualification.target, readOnlyDataCapture: true,
     });
     await this.#record(request.operationId, "generated-closed-capture-intent.json", intent);
@@ -4030,11 +4039,51 @@ class CurrentPcbLifecycleCore {
       schema: "easyeda-pro-control.generated-reader-closed-capture-result.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
       intentSha256: sha256Json(intent), report, failure, startupEffectsAccepted: false, writerAuthority: false, executionAuthorized: false,
     });
+    assertGeneratedReaderClosedCaptureChain({ ...updated, records: { ...updated.records, "generated-closed-capture-result.json": result } });
     this.#generatedClosedCaptureResult = result; this.#retainRecord("generated-closed-capture-result.json", result);
     current(); await assertSnapshot(expected); current(); await this.#publish(request.operationId, "generated-closed-capture-result.json", result);
     const completed = { ...updated, records: { ...updated.records, "generated-closed-capture-result.json": result } };
     await assertSnapshot(expected.map(value => value.operationId === request.operationId ? completed : value)); current();
     return { ...describe(request.operationId, completed), generatedClosedCaptureRetained: true, result };
+  }
+  async #captureComponentGeneratedClosed(request: Extract<CleanupRequest, { action: "capture-component-generated-closed" }>, operation: DiagnosticLifecycleOperation,
+    operations: readonly DiagnosticLifecycleOperation[], retained: Retained): Promise<Record<string, unknown>> {
+    const source = this.#generatedSource, termination = operation.records["terminated.json"];
+    const prepared = this.#componentPrepared;
+    requireValue(source !== null && source.qualification.schema === "easyeda-pro-control.qualified-generated-component-fixture-target.v1" && this.#generation === "209-component-spatial" && prepared !== null && prepared.qualification === source.qualification && termination !== undefined &&
+      this.#pending.get("terminated.json") === canonicalJson(termination) && !retained.methods.status.call(retained.owner).released &&
+      operation.records["release-intent.json"] === undefined && !this.#componentGeneratedClosedCaptureAttempted &&
+      operation.records["component-generated-closed-capture-intent.json"] === undefined, "GENERATED_CLOSED_CAPTURE_UNAVAILABLE");
+    this.#componentGeneratedClosedCaptureAttempted = true;
+    const intent = diagnosticLifecycleRecordSchemas["component-generated-closed-capture-intent.json"].parse({
+      schema: "easyeda-pro-control.component-generated-reader-closed-capture-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+      originalQualification: source.qualification, preparationCheckpointSha256: prepared.preparationCheckpoint.sha256,
+      terminationSha256: sha256Json(termination), originalQualificationSha256: sha256Json(source.qualification), target: source.qualification.target, readOnlyDataCapture: true,
+    });
+    await this.#record(request.operationId, "component-generated-closed-capture-intent.json", intent);
+    const updated = { ...operation, records: { ...operation.records, "component-generated-closed-capture-intent.json": intent } };
+    const expected = operations.map(value => value.operationId === request.operationId ? updated : value);
+    const current = (): void => {
+      this.#assertOwner(retained);
+      requireValue(this.#generatedSource === source && this.#componentPrepared === prepared && prepared.qualification === source.qualification && !retained.methods.status.call(retained.owner).released, "GENERATED_CLOSED_CAPTURE_OWNER_CHANGED");
+    };
+    const observeOriginalTermination = async (): Promise<void> => {
+      current(); requireValue(await retained.methods.observeTermination.call(retained.owner), "GENERATED_READER_ORIGINAL_ROOT_JOB_LIVE"); current();
+    };
+    current(); await assertSnapshot(expected); current();
+    let report: Readonly<Record<string, unknown>> | null = null; let failure: "closed-component-generated-data-capture-refused" | null = null;
+    try { report = await this.#captureComponentGeneratedClosedData({ prepared, source: { qualification: source.qualification, archive: source.archive }, assertOriginalOwner: current, observeOriginalTermination }); current(); }
+    catch { report = null; failure = "closed-component-generated-data-capture-refused"; }
+    const result = diagnosticLifecycleRecordSchemas["component-generated-closed-capture-result.json"].parse({
+      schema: "easyeda-pro-control.component-generated-reader-closed-capture-result.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+      intentSha256: sha256Json(intent), report, failure, startupEffectsAccepted: false, writerAuthority: false, executionAuthorized: false,
+    });
+    assertGeneratedReaderClosedCaptureChain({ ...updated, records: { ...updated.records, "component-generated-closed-capture-result.json": result } });
+    this.#componentGeneratedClosedCaptureResult = result; this.#retainRecord("component-generated-closed-capture-result.json", result);
+    current(); await assertSnapshot(expected); current(); await this.#publish(request.operationId, "component-generated-closed-capture-result.json", result);
+    const completed = { ...updated, records: { ...updated.records, "component-generated-closed-capture-result.json": result } };
+    await assertSnapshot(expected.map(value => value.operationId === request.operationId ? completed : value)); current();
+    return { ...describe(request.operationId, completed), componentGeneratedClosedCaptureRetained: true, result };
   }
   #originalPcbSource(operation: DiagnosticLifecycleOperation): void {
     const preparation = this.#originalProjectOpening(operation);

@@ -1,9 +1,12 @@
+/* oxlint-disable import/max-dependencies -- These closed-data regressions join both genuine initial profiles, the shared descriptor pipeline and independent full SQL/raw-history evidence. */
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
-import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
-import { normalizeEasyedaProjectPath } from "../src/core.ts";
+import { normalizeEasyedaProjectPath, sha256Json } from "../src/core.ts";
+import { captureGeneratedReaderClosedData } from "../src/managed-generated-reader-closed-data.ts";
+import { qualifyGeneratedComponentFixtureInitialSql } from "../src/managed-component-fixture-initial-sql.ts";
 import { qualifyGeneratedFixtureInitialSql } from "../src/managed-fixture-initial-sql.ts";
 import { captureGeneratedReaderClosedSnapshot, decodeGeneratedReaderRawHistory } from "../src/managed-fixture-reader-closed-snapshot.ts";
 import { managedFixtureInitialSqlFixture } from "./helpers/managed-fixture-initial-sql.ts";
@@ -35,6 +38,11 @@ void test("closed capture rejects proxies/accessors and pins its original callba
   let getterCalls = 0;
   Object.defineProperty(options, "assertOriginalOwner", { get: () => { getterCalls += 1; return (): void => { throw new Error("unowned callback"); }; } });
   await assert.rejects(captureGeneratedReaderClosedSnapshot(options), /capture data property/u); assert.equal(getterCalls, 0);
+  const fake = Object.defineProperty({}, "schema", { enumerable: true, get: (): string => { getterCalls += 1; return "foreign"; } });
+  const foreignSource = { qualification: result.qualification, archive: input.archive }; Object.defineProperty(foreignSource, "qualification", { value: fake });
+  await assert.rejects(captureGeneratedReaderClosedSnapshot({ source: foreignSource, assertOriginalOwner: (): void => { throw new Error("unowned"); }, observeOriginalTermination: (): Promise<void> => Promise.resolve() }), /qualification data property/u);
+  assert.equal(getterCalls, 0);
+
 });
 void test("closed capture copies the full synthetic file through fresh descriptors, retains SQL/raw history, and refuses an added sidecar", async () => {
   const directory = join(syntheticSqlRoot(), `CodexEasyedaFixture_${randomUUID().replaceAll("-", "")}`); await mkdir(directory);
@@ -56,4 +64,30 @@ void test("closed capture copies the full synthetic file through fresh descripto
   assert.ok(observed >= 4 && ownerChecks > observed);
   await writeFile(`${source}-wal`, Buffer.from("synthetic sidecar"));
   await assert.rejects(captureGeneratedReaderClosedSnapshot(options), /directory roster\/no sidecars/u);
+});
+
+void test("Component closed data retains every source byte and35SQL tables while forwarding fresh clocks without fallback", async () => {
+  const directory = join(syntheticSqlRoot(), `CodexEasyedaFixture_${randomUUID().replaceAll("-", "")}`); await mkdir(directory);
+  const input = await managedFixtureInitialSqlFixture(undefined, "component-circular-smt-pad", directory), qualified = await qualifyGeneratedComponentFixtureInitialSql(input);
+  await assert.rejects(qualifyGeneratedComponentFixtureInitialSql({ ...input, sourceCreatedEpochMs: 0, sourceModifiedEpochMs: 0 }), /initial SQL refused/u);
+  const source = normalizeEasyedaProjectPath(input.rawWindowsPath); await copyFile(input.syntheticDatabasePath, source);
+  const before = await stat(source, { bigint: true }); let qualifications = 0; let closures = 0;
+  const report = await captureGeneratedReaderClosedData(Object.freeze({ target: qualified.qualification.target, archive: input.archive, originalQualificationSha256: sha256Json(qualified.qualification),
+    reportSchema: "easyeda-pro-control.generated-component-reader-closed-snapshot.v1", artifactKind: "generated-component-reader-closed", assertCurrent: (): void => {
+      assert.equal(qualified.qualification.nativeComponentCacheQualified, false);
+    }, observeOriginalTermination: (): Promise<void> => { closures += 1; return Promise.resolve(); }, qualifyInitial: (value: Parameters<typeof qualifyGeneratedComponentFixtureInitialSql>[0]) => {
+      qualifications += 1; assert.equal(value.sourceCreatedEpochMs, Number(before.birthtimeMs)); assert.equal(value.sourceModifiedEpochMs, Number(before.mtimeMs));
+      return qualifyGeneratedComponentFixtureInitialSql(value);
+    } }));
+  assert.equal(report["schema"], "easyeda-pro-control.generated-component-reader-closed-snapshot.v1"); assert.equal(qualifications, 1); assert.ok(closures >= 4);
+  assert.equal(report["sourceEqualsInitialBytes"], true); assert.equal(report["writerAuthority"], false); assert.equal(report["newReadOpenTargetIssued"], false);
+  assert.ok(Array.isArray(report["tableRoster"])); assert.equal(report["tableRoster"].length, 35);
+  for (const name of ["snapshot", "sql", "rawHistory"]) {
+    const artifact = report[name]; assert.ok(artifact !== null && typeof artifact === "object" && "path" in artifact && typeof artifact.path === "string");
+    const bytes = await readFile(artifact.path);
+    if (name === "snapshot") { assert.deepEqual(bytes, await readFile(source)); }
+    if (name === "sql") { const parsed: unknown = JSON.parse(bytes.toString("utf8")); assert.ok(parsed !== null && typeof parsed === "object" && "logicalSha256" in parsed); assert.equal(parsed.logicalSha256, input.inventory.logicalSha256); }
+    if (name === "rawHistory") { for (const family of ["FOOTPRINT", "COMPONENT", "PAD", "ATTR"]) { assert.ok(bytes.toString("utf8").includes(family)); } }
+  }
+  if (before.birthtimeMs === 0n) { assert.equal(report["completeInitialSqlRowsQualified"], false); assert.equal(report["currentInitialQualification"], null); }
 });

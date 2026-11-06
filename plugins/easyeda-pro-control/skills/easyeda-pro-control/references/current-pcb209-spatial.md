@@ -203,3 +203,15 @@ and `release-closed` actions. Do not navigate, replay a read, Save, answer a dia
 or send normal-close after abort. The acknowledgment proves neither termination
 nor discard. Lost publication or acknowledgment consumes the attempt and supplies
 no automatic retry. The older `spatial` purpose has no new abort action.
+
+
+After this original Component reader reports root/empty-Job termination and
+before helper release, use the distinct nested
+`capture-component-generated-closed` action with its operation/binding digest
+and `confirmReadClosedFixture:true`. It retains complete closed bytes, SQL and
+raw history through the same genuine Component source/checkpoint. It issues no
+new target or writer grant. Fresh Linux file clocks can refuse initial
+qualification even when raw bytes and complete SQL are unchanged; zero birth
+time never borrows the old import clock. The existing PCB/standalone Pad action
+remains `capture-generated-closed`. A published valid report now retains its
+correct profile through the scanner and original helper release.
