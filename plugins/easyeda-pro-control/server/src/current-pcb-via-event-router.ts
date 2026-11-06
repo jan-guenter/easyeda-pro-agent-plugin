@@ -9,7 +9,7 @@ import type { CurrentPcbViaSaveWorkerEvent } from "./current-pcb-via-save-origin
 
 export type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 export type CurrentPcbViaRoutedEvent = CurrentPcbViaSaveWorkerEvent;
-export type CurrentPcbViaEventLane = "save" | "clock" | "structure" | "structureTransport";
+export type CurrentPcbViaEventLane = "save" | "clock" | "structure" | "structureTransport" | "producer";
 export interface CurrentPcbViaEventPoint { readonly sessionId: string; readonly scriptId: string; readonly breakpointId: string;
   readonly lineNumber: number; readonly columnNumber: number; readonly role: string }
 export interface CurrentPcbViaEventRouterBindings {
@@ -28,8 +28,8 @@ export class CurrentPcbViaEventRouter {
   readonly #bindings: CurrentPcbViaEventRouterBindings;
   readonly #points = new Map<string, Readonly<{ lane: CurrentPcbViaEventLane; point: CurrentPcbViaEventPoint }>>();
   readonly #paused = new Map<string, { lane: CurrentPcbViaEventLane; point: CurrentPcbViaEventPoint; delivered: boolean; resumeAttempted: boolean }>();
-  readonly #queues: Record<CurrentPcbViaEventLane, CurrentPcbViaSaveWorkerEvent[]> = { save: [], clock: [], structure: [], structureTransport: [] };
-  readonly #reading = { save: false, clock: false, structure: false, structureTransport: false };
+  readonly #queues: Record<CurrentPcbViaEventLane, CurrentPcbViaSaveWorkerEvent[]> = { save: [], clock: [], structure: [], structureTransport: [], producer: [] };
+  readonly #reading = { save: false, clock: false, structure: false, structureTransport: false, producer: false };
   readonly #resumeRoles = new WeakMap<CurrentPcbViaSaveWorkerEvent, Readonly<{ lane: CurrentPcbViaEventLane; role: string }>>();
   readonly #completedClock = new Set<string>();
   #poll: Promise<boolean> | null = null; #failed = false; #clockUiPending = false; #changed = Promise.withResolvers<true>();
@@ -40,8 +40,8 @@ export class CurrentPcbViaEventRouter {
     handle.parse(bindings.workerSessionId); handle.parse(bindings.uiSessionId); need(bindings.workerSessionId !== bindings.uiSessionId); this.#bindings = bindings; Object.freeze(this);
   }
   public register(lane: CurrentPcbViaEventLane, input: CurrentPcbViaEventPoint): void {
-    need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport")); const point = Object.freeze(pointSchema.parse(captureCurrentPcbStringClockReply(input).value));
-    need((point.sessionId === this.#bindings.workerSessionId || lane === "clock" && point.sessionId === this.#bindings.uiSessionId) && this.#points.size < 28);
+    need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport" || lane === "producer")); const point = Object.freeze(pointSchema.parse(captureCurrentPcbStringClockReply(input).value));
+    need((point.sessionId === this.#bindings.workerSessionId || lane === "clock" && point.sessionId === this.#bindings.uiSessionId) && this.#points.size < 55);
     const key = `${point.sessionId}\0${point.breakpointId}`;
     need(!this.#points.has(key) && ![...this.#points.values()].some(value => value.point.sessionId === point.sessionId && value.point.scriptId === point.scriptId &&
       value.point.lineNumber === point.lineNumber && value.point.columnNumber === point.columnNumber));
@@ -50,7 +50,7 @@ export class CurrentPcbViaEventRouter {
   /** Consume only the original collector's current pause before dispatch. An
    * unknown acknowledgement never refunds this one continuation attempt. */
   public reserveResume(lane: CurrentPcbViaEventLane, sessionId: string, role?: string): void {
-    const pause = this.#paused.get(sessionId); need(!this.#failed && pause !== undefined && pause.lane === lane && pause.delivered && !pause.resumeAttempted && (role === undefined || pause.point.role === role)); pause.resumeAttempted = true; if (lane === "clock" && sessionId === this.#bindings.workerSessionId && pause.point.role === "push") { this.#clockUiPending = true; } this.notifyEvent();
+    const pause = this.#paused.get(sessionId); need(lane !== "producer" && !this.#failed && pause !== undefined && pause.lane === lane && pause.delivered && !pause.resumeAttempted && (role === undefined || pause.point.role === role)); pause.resumeAttempted = true; if (lane === "clock" && sessionId === this.#bindings.workerSessionId && pause.point.role === "push") { this.#clockUiPending = true; } this.notifyEvent();
   }
   /** Wake readers for an actual queued event or owned continuation. */
   public notifyEvent(): void { const signal = this.#changed; this.#changed = Promise.withResolvers<true>(); signal.resolve(true); }
@@ -101,7 +101,7 @@ export class CurrentPcbViaEventRouter {
     if (lane === "clock") { need(!this.#completedClock.has(resumed.role)); this.#completedClock.add(resumed.role); }
   }
   public async next(lane: CurrentPcbViaEventLane): Promise<CurrentPcbViaSaveWorkerEvent> {
-    need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport") && !this.#reading[lane]); this.#reading[lane] = true;
+    need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport" || lane === "producer") && !this.#reading[lane]); this.#reading[lane] = true;
     try { for (;;) { need(!this.#failed); const event = this.#queues[lane].shift(); if (event !== undefined) { await this.#bindings.assertCurrent(); need(!this.#failed);
       this.#delivered(lane, event); return event; }
       const changed = this.#changed.promise; const allowNativePoll = this.#canPoll(lane); this.#poll ??= this.#pump(allowNativePoll); const dispatched = await this.#poll;

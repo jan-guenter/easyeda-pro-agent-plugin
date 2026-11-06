@@ -9,7 +9,7 @@ import type { CurrentSchematicDisplaySaveWorkerEvent } from "./current-schematic
 
 export type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 export type CurrentSchematicDisplayRoutedEvent = CurrentSchematicDisplaySaveWorkerEvent;
-export type CurrentSchematicDisplayEventLane = "save" | "clock" | "structure" | "structureTransport";
+export type CurrentSchematicDisplayEventLane = "save" | "clock" | "structure" | "structureTransport" | "producer";
 export interface CurrentSchematicDisplayEventPoint { readonly sessionId: string; readonly scriptId: string; readonly breakpointId: string;
   readonly lineNumber: number; readonly columnNumber: number; readonly role: string }
 export interface CurrentSchematicDisplayEventRouterBindings {
@@ -28,8 +28,8 @@ export class CurrentSchematicDisplayEventRouter {
   readonly #bindings: CurrentSchematicDisplayEventRouterBindings;
   readonly #points = new Map<string, Readonly<{ lane: CurrentSchematicDisplayEventLane; point: CurrentSchematicDisplayEventPoint }>>();
   readonly #paused = new Map<string, { lane: CurrentSchematicDisplayEventLane; point: CurrentSchematicDisplayEventPoint; delivered: boolean; resumeAttempted: boolean }>();
-  readonly #queues: Record<CurrentSchematicDisplayEventLane, CurrentSchematicDisplaySaveWorkerEvent[]> = { save: [], clock: [], structure: [], structureTransport: [] };
-  readonly #reading = { save: false, clock: false, structure: false, structureTransport: false };
+  readonly #queues: Record<CurrentSchematicDisplayEventLane, CurrentSchematicDisplaySaveWorkerEvent[]> = { save: [], clock: [], structure: [], structureTransport: [], producer: [] };
+  readonly #reading = { save: false, clock: false, structure: false, structureTransport: false, producer: false };
   readonly #resumeRoles = new WeakMap<CurrentSchematicDisplaySaveWorkerEvent, Readonly<{ lane: CurrentSchematicDisplayEventLane; role: string }>>();
   readonly #completedClock = new Set<string>();
   #poll: Promise<boolean> | null = null; #failed = false; #clockUiPending = false; #changed = Promise.withResolvers<true>();
@@ -40,8 +40,8 @@ export class CurrentSchematicDisplayEventRouter {
     handle.parse(bindings.workerSessionId); handle.parse(bindings.uiSessionId); need(bindings.workerSessionId !== bindings.uiSessionId); this.#bindings = bindings; Object.freeze(this);
   }
   public register(lane: CurrentSchematicDisplayEventLane, input: CurrentSchematicDisplayEventPoint): void {
-    need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport")); const point = Object.freeze(pointSchema.parse(captureCurrentPcbStringClockReply(input).value));
-    need((point.sessionId === this.#bindings.workerSessionId || lane === "clock" && point.sessionId === this.#bindings.uiSessionId) && this.#points.size < 28);
+    need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport" || lane === "producer")); const point = Object.freeze(pointSchema.parse(captureCurrentPcbStringClockReply(input).value));
+    need((point.sessionId === this.#bindings.workerSessionId || lane === "clock" && point.sessionId === this.#bindings.uiSessionId) && this.#points.size < 55);
     const key = `${point.sessionId}\0${point.breakpointId}`;
     need(!this.#points.has(key) && ![...this.#points.values()].some(value => value.point.sessionId === point.sessionId && value.point.scriptId === point.scriptId &&
       value.point.lineNumber === point.lineNumber && value.point.columnNumber === point.columnNumber));
@@ -50,7 +50,7 @@ export class CurrentSchematicDisplayEventRouter {
   /** Consume only the original collector's current pause before dispatch. An
    * unknown acknowledgement never refunds this one continuation attempt. */
   public reserveResume(lane: CurrentSchematicDisplayEventLane, sessionId: string, role?: string): void {
-    const pause = this.#paused.get(sessionId); need(!this.#failed && pause !== undefined && pause.lane === lane && pause.delivered && !pause.resumeAttempted && (role === undefined || pause.point.role === role)); pause.resumeAttempted = true; if (lane === "clock" && sessionId === this.#bindings.workerSessionId && pause.point.role === "push") { this.#clockUiPending = true; } this.notifyEvent();
+    const pause = this.#paused.get(sessionId); need(lane !== "producer" && !this.#failed && pause !== undefined && pause.lane === lane && pause.delivered && !pause.resumeAttempted && (role === undefined || pause.point.role === role)); pause.resumeAttempted = true; if (lane === "clock" && sessionId === this.#bindings.workerSessionId && pause.point.role === "push") { this.#clockUiPending = true; } this.notifyEvent();
   }
   /** Wake readers for an actual queued event or owned continuation. */
   public notifyEvent(): void { const signal = this.#changed; this.#changed = Promise.withResolvers<true>(); signal.resolve(true); }
@@ -101,7 +101,7 @@ export class CurrentSchematicDisplayEventRouter {
     if (lane === "clock") { need(!this.#completedClock.has(resumed.role)); this.#completedClock.add(resumed.role); }
   }
   public async next(lane: CurrentSchematicDisplayEventLane): Promise<CurrentSchematicDisplaySaveWorkerEvent> {
-    need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport") && !this.#reading[lane]); this.#reading[lane] = true;
+    need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport" || lane === "producer") && !this.#reading[lane]); this.#reading[lane] = true;
     try { for (;;) { need(!this.#failed); const event = this.#queues[lane].shift(); if (event !== undefined) { await this.#bindings.assertCurrent(); need(!this.#failed);
       this.#delivered(lane, event); return event; }
       const changed = this.#changed.promise; const allowNativePoll = this.#canPoll(lane); this.#poll ??= this.#pump(allowNativePoll); const dispatched = await this.#poll;

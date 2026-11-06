@@ -5,8 +5,10 @@
  * Browser discovery grants no frame, worker, script or CAD execution authority. */
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Four fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import { CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS, validateCurrentProjectSaveProducerCommand } from "./current-project-save-producer-protocol.ts";
+import type { CurrentProjectSaveProducerBindings, CurrentProjectSaveProducerOrigin } from "./current-project-save-producer-origin.ts";
 import { currentProjectSaveProducerGuardCases } from "./current-project-save-producer-guard-protocol.ts";
-import { qualifyCurrentProjectSaveProducerSource } from "./current-project-save-producer-source.ts";
+import { CURRENT_PROJECT_SAVE_PRODUCER_SITES, qualifyCurrentProjectSaveProducerSource } from "./current-project-save-producer-source.ts";
 import { qualifyCurrentProjectSaveProducerGuardSource } from "./current-project-save-producer-guard-source.ts";
 import type { CurrentPcbViaSaveProducerPrefix, CurrentProjectSaveProducerPrefix, CurrentProjectSaveProducerPrefixBindings, CurrentSchematicDisplaySaveProducerPrefix } from "./current-project-save-producer-prefix.ts";
 import { componentSpatialDiagnosticNativeRequest } from "./current-pcb-component-spatial-protocol.ts";
@@ -572,6 +574,11 @@ export function requireOriginalCurrentSchematicDisplaySaveWorkerOrigin(origin: C
   const original = schematicDisplaySaveWorkers.get(origin); if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue) { throw error("SCHEMATIC_DISPLAY_ORIGINAL_SAVE_WORKER"); }
   requireSchematicArguments(owner, argumentsValue); original.assertOriginal(); return original.bindings;
 }
+export type CurrentProjectSaveProducerSetup = (origin: CurrentProjectSaveProducerOrigin) => Promise<void>;
+const originalProjectSaveProducerOrigins = new WeakMap<CurrentProjectSaveProducerOrigin, Readonly<{ owner: object; operation: object; bindings: CurrentProjectSaveProducerBindings; assertOriginal: () => void }>>();
+export function requireOriginalCurrentProjectSaveProducerOrigin(origin: CurrentProjectSaveProducerOrigin, owner: object, operation: object): CurrentProjectSaveProducerBindings {
+  const original = originalProjectSaveProducerOrigins.get(origin); if (original === undefined || original.owner !== owner || original.operation !== operation) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_ORIGIN"); } original.assertOriginal(); return original.bindings;
+}
 const originalProjectSaveProducerPrefixes = new WeakMap<CurrentProjectSaveProducerPrefix, Readonly<{ owner: object; operation: object; bindings: CurrentProjectSaveProducerPrefixBindings; assertOriginal: () => void }>>();
 export function requireOriginalCurrentProjectSaveProducerPrefix(token: CurrentProjectSaveProducerPrefix, owner: object, operation: object): CurrentProjectSaveProducerPrefixBindings {
   const original = originalProjectSaveProducerPrefixes.get(token);
@@ -1042,6 +1049,10 @@ class CurrentPcbRetainedOwnerCore {
   #schematicTransportSetup: CurrentProjectStructureTransportSetup | null = null;
   #schematicTransportOperation: GeneratedSchematicDisplayNativeArguments | null = null;
   #schematicTransportOrigin: CurrentSchematicDisplayStructureTransportOrigin | null = null;
+  #schematicProducerObservationSetup: CurrentProjectSaveProducerSetup | null = null;
+  #schematicProducerObservationOrigin: CurrentProjectSaveProducerOrigin | null = null;
+  #schematicProducerOriginalProject: string | null = null;
+  readonly #schematicProducerFrames = new Map<string, string>(); readonly #schematicProducerObjects = new Set<string>();
   #schematicProducerGuardOperation: GeneratedSchematicDisplayNativeArguments | null = null;
   #schematicProducerGuardArmed = false;
   #schematicProducerGuardReproof: (() => void) | null = null;
@@ -1097,6 +1108,10 @@ class CurrentPcbRetainedOwnerCore {
   #viaTransportSetup: CurrentProjectStructureTransportSetup | null = null;
   #viaTransportOperation: CurrentPcbViaWritePlan | null = null;
   #viaTransportOrigin: CurrentPcbViaStructureTransportOrigin | null = null;
+  #viaProducerObservationSetup: CurrentProjectSaveProducerSetup | null = null;
+  #viaProducerObservationOrigin: CurrentProjectSaveProducerOrigin | null = null;
+  #viaProducerOriginalProject: string | null = null;
+  readonly #viaProducerFrames = new Map<string, string>(); readonly #viaProducerObjects = new Set<string>();
   #viaProducerGuardOperation: CurrentPcbViaWritePlan | null = null;
   #viaProducerGuardArmed = false;
   #viaProducerGuardReproof: (() => void) | null = null;
@@ -2023,6 +2038,11 @@ class CurrentPcbRetainedOwnerCore {
    * requires the fresh direct worker and all original imported source pauses. */
   /** Trusted arm callback only. It installs the fixed structure sites while
    * the same original project source is held; construction waits its resume. */
+  public armSchematicDisplayProducerObservationWorker(argumentsValue: GeneratedSchematicDisplayNativeArguments, setup: CurrentProjectSaveProducerSetup): void {
+    requireSchematicArguments(this, argumentsValue); this.#available();
+    if (this.#busy || this.#schematicWorkerController !== null || this.#projectOpeningConsumed || this.#schematicProducerGuardOperation !== argumentsValue || this.#schematicProducerObservationSetup !== null || typeof setup !== "function" || types.isProxy(setup)) { throw error("PROJECT_SAVE_PRODUCER_OBSERVATION_ARM_UNAVAILABLE"); }
+    this.#schematicProducerObservationSetup = setup;
+  }
   public armSchematicDisplayProducerPrefixWorker(argumentsValue: GeneratedSchematicDisplayNativeArguments): void {
     requireSchematicArguments(this, argumentsValue); this.#available();
     if (this.#busy || this.#schematicWorkerController !== null || this.#projectOpeningConsumed || this.#schematicProducerGuardOperation !== null || this.#schematicWorkerSetup === null || this.#schematicStructureSetup === null || this.#schematicNavigationDispatchAttempted) { throw error("PROJECT_SAVE_PRODUCER_GUARD_ARM_UNAVAILABLE"); }
@@ -2159,7 +2179,7 @@ class CurrentPcbRetainedOwnerCore {
                 const actual = await pipe.observeSchematicDisplayWorker(command);
                 if (command.phase === "project-save-structure-uploadRelation") {
                   if (this.#schematicProducerOriginalUploadWrapper !== null || this.#schematicProducerOriginalUploadCallback !== null || !exact(actual, ["result"]) || !record(actual["result"]) || !exact(actual["result"], ["type", "value"]) || actual["result"]["type"] !== "boolean" || actual["result"]["value"] !== true) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_CONSTRUCTOR_RELATION"); }
-                  this.#schematicProducerOriginalUploadWrapper = originalProducerArgument(command.params.arguments, 1); this.#schematicProducerOriginalUploadCallback = originalProducerArgument(command.params.arguments, 2);
+                  this.#schematicProducerOriginalProject = originalProducerArgument(command.params.arguments, 0); this.#schematicProducerOriginalUploadWrapper = originalProducerArgument(command.params.arguments, 1); this.#schematicProducerOriginalUploadCallback = originalProducerArgument(command.params.arguments, 2);
                 }
                 if (command.phase === "project-save-structure-frame" && command.role === "mode") { if (this.#schematicProducerModeArray !== null) { throw error("PROJECT_SAVE_PRODUCER_MODE_ONCE"); } this.#schematicProducerModeArray = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(actual, 1); }
                 else if (command.phase === "project-save-structure-properties" && command.params.objectId === this.#schematicProducerModeArray) { decodeCurrentProjectSaveProducerNonprivateMode(actual); this.#schematicProducerModeVerified = true; }
@@ -2236,6 +2256,38 @@ class CurrentPcbRetainedOwnerCore {
           selected.requireProducerGuardsArmed(source); this.#schematicProducerGuardArmed = true;
           this.#schematicProducerGuardReproof = (): void => { original(); selected.requireOriginal(source, child); selected.requireProducerGuardsArmed(source); if (this.#schematicProducerGuardOperation !== argumentsValue || this.#schematicWorkerController !== selected || !this.#schematicProducerGuardArmed) { throw error("PROJECT_SAVE_PRODUCER_GUARD_CUSTODY_CHANGED"); } };
         }
+        const producerSetup = this.#schematicProducerObservationSetup;
+        if (producerSetup !== null) {
+          if (this.#schematicProducerGuardOperation !== argumentsValue || !this.#schematicProducerGuardArmed || this.#schematicProducerObservationOrigin !== null) { throw error("PROJECT_SAVE_PRODUCER_OBSERVATION_SOURCE_CONSUMED"); }
+          const producerOrigin: CurrentProjectSaveProducerOrigin = Object.freeze({ profile: "private.current-schematic-display-save-producer-origin.v1" });
+          const assertProducerOriginal = (): void => { requireSchematicArguments(this, argumentsValue); selected.requireOriginal(source, child);
+            if (this.#schematicProducerObservationOrigin !== producerOrigin || this.#schematicProducerObservationSetup !== producerSetup || this.#schematicWorkerController !== selected || this.#schematicProducerGuardOperation !== argumentsValue) { throw error("PROJECT_SAVE_PRODUCER_OBSERVATION_CHANGED"); } };
+          const receivers = (): Readonly<{ project: string; wrapper: string; callback: string }> => { original(); assertProducerOriginal();
+            const callback = this.#schematicProducerOriginalUploadCallback, project = this.#schematicProducerOriginalProject, wrapper = this.#schematicProducerOriginalUploadWrapper;
+            if (project === null || wrapper === null || callback === null) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_CONSTRUCTION_REQUIRED"); } return Object.freeze({ project, wrapper, callback }); };
+          const producerBindings: CurrentProjectSaveProducerBindings = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId,
+            request: async (input: Parameters<CurrentProjectSaveProducerBindings["request"]>[0]): Promise<unknown> => {
+              const command = validateCurrentProjectSaveProducerCommand(input); original(); assertProducerOriginal();
+              if (command.phase === "project-save-producer-arm" && command.params.location.scriptId !== source.scriptId) { throw error("PROJECT_SAVE_PRODUCER_SOURCE_SCRIPT"); }
+              if (command.phase === "project-save-producer-receiver") { const actual = receivers();
+                if (this.#schematicProducerFrames.get(command.role) !== command.params.objectId || command.params.arguments[0].objectId !== actual.project || command.params.arguments[1].objectId !== actual.wrapper || command.params.arguments[2].objectId !== actual.callback) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_RECEIVERS"); } }
+              if (command.phase === "project-save-producer-properties" && !this.#schematicProducerObjects.has(command.params.objectId)) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_PROPERTIES"); }
+              const reply = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { original(); assertProducerOriginal(); return pipe.observeSchematicDisplayProducer(command); }));
+              if (command.phase === "project-save-producer-frame" || command.phase === "project-save-producer-receiver") {
+                const captured = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, CURRENT_PROJECT_SAVE_PRODUCER_SITES[command.role].length); this.#schematicProducerObjects.add(captured);
+                if (command.phase === "project-save-producer-frame") { this.#schematicProducerFrames.set(command.role, captured); }
+              } else if (command.phase === "project-save-producer-arm") {
+                const site = CURRENT_PROJECT_SAVE_PRODUCER_SITES[command.role];
+                if (!record(reply) || !exact(reply, ["breakpointId", "actualLocation"]) || typeof reply["breakpointId"] !== "string" || !record(reply["actualLocation"]) || !exact(reply["actualLocation"], ["scriptId", "lineNumber", "columnNumber"]) || reply["actualLocation"]["scriptId"] !== source.scriptId || reply["actualLocation"]["lineNumber"] !== site.lineNumber || reply["actualLocation"]["columnNumber"] !== site.columnNumber) { throw error("PROJECT_SAVE_PRODUCER_ARM_REPLY"); } selected.bindProducerObservationBreakpoint(source, command.role, reply["breakpointId"]);
+              }
+              original(); assertProducerOriginal(); return reply;
+            }, nextEvent: () => selected.nextProducerEvent(), originalReceivers: receivers, originalBreakpoint: (role: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES) => selected.originalProducerObservationBreakpoint(source, role),
+            assertCurrent: async (): Promise<void> => { original(); assertProducerOriginal(); await this.#verify(); original(); assertProducerOriginal(); },
+            assertOriginalGenerationExited: (): Promise<void> => { assertProducerOriginal(); if (!this.#terminationObserved || this.#terminationObservation?.terminated !== true) { return Promise.reject(error("PROJECT_SAVE_PRODUCER_ORIGINAL_EXIT_REQUIRED")); } return Promise.resolve(); }, fail: (): void => { selected.fail(); } });
+          originalProjectSaveProducerOrigins.set(producerOrigin, Object.freeze({ owner: this, operation: argumentsValue, bindings: producerBindings, assertOriginal: assertProducerOriginal })); this.#schematicProducerObservationOrigin = producerOrigin;
+          await Reflect.apply(producerSetup, undefined, [producerOrigin]); original(); assertProducerOriginal();
+          for (const role of CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS) { selected.bindProducerObservationBreakpoint(source, role, selected.originalProducerGuardBreakpoint(source, role)); } selected.sealProducerObservation(source); selected.requireProducerObservationArmed(source);
+        }
       }, releaseParentWait: async () => { original(); const reply = await this.#transfer(() => pipe.configureSchematicDisplayWorkerRunning());
         if (!exact(reply, [])) { throw error("SCHEMATIC_DISPLAY_WORKER_PARENT_RUNNING_REPLY"); } original(); },
       fail: (): void => { this.#schematicFailed = true; } }));
@@ -2248,6 +2300,11 @@ class CurrentPcbRetainedOwnerCore {
   }
   /** Trusted arm callback only. It installs the fixed structure sites while
    * the same original project source is held; construction waits its resume. */
+  public armViaProducerObservationWorker(plan: CurrentPcbViaWritePlan, setup: CurrentProjectSaveProducerSetup): void {
+    requireViaPlan(this, plan); this.#available();
+    if (this.#busy || this.#viaWorkerController !== null || this.#projectOpeningConsumed || this.#viaProducerGuardOperation !== plan || this.#viaProducerObservationSetup !== null || typeof setup !== "function" || types.isProxy(setup)) { throw error("PROJECT_SAVE_PRODUCER_OBSERVATION_ARM_UNAVAILABLE"); }
+    this.#viaProducerObservationSetup = setup;
+  }
   public armViaProducerPrefixWorker(plan: CurrentPcbViaWritePlan): void {
     requireViaPlan(this, plan); this.#available();
     if (this.#busy || this.#viaWorkerController !== null || this.#projectOpeningConsumed || this.#viaProducerGuardOperation !== null || this.#viaWorkerSetup === null || this.#viaStructureSetup === null || this.#viaProjectNavigationDispatchAttempted) { throw error("PROJECT_SAVE_PRODUCER_GUARD_ARM_UNAVAILABLE"); }
@@ -2382,7 +2439,7 @@ class CurrentPcbRetainedOwnerCore {
                 const actual = await pipe.observeViaWorker(command);
                 if (command.phase === "project-save-structure-uploadRelation") {
                   if (this.#viaProducerOriginalUploadWrapper !== null || this.#viaProducerOriginalUploadCallback !== null || !exact(actual, ["result"]) || !record(actual["result"]) || !exact(actual["result"], ["type", "value"]) || actual["result"]["type"] !== "boolean" || actual["result"]["value"] !== true) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_CONSTRUCTOR_RELATION"); }
-                  this.#viaProducerOriginalUploadWrapper = originalProducerArgument(command.params.arguments, 1); this.#viaProducerOriginalUploadCallback = originalProducerArgument(command.params.arguments, 2);
+                  this.#viaProducerOriginalProject = originalProducerArgument(command.params.arguments, 0); this.#viaProducerOriginalUploadWrapper = originalProducerArgument(command.params.arguments, 1); this.#viaProducerOriginalUploadCallback = originalProducerArgument(command.params.arguments, 2);
                 }
                 if (command.phase === "project-save-structure-frame" && command.role === "mode") { if (this.#viaProducerModeArray !== null) { throw error("PROJECT_SAVE_PRODUCER_MODE_ONCE"); } this.#viaProducerModeArray = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(actual, 1); }
                 else if (command.phase === "project-save-structure-properties" && command.params.objectId === this.#viaProducerModeArray) { decodeCurrentProjectSaveProducerNonprivateMode(actual); this.#viaProducerModeVerified = true; }
@@ -2458,6 +2515,38 @@ class CurrentPcbRetainedOwnerCore {
           }
           selected.requireProducerGuardsArmed(source); this.#viaProducerGuardArmed = true;
           this.#viaProducerGuardReproof = (): void => { original(); selected.requireOriginal(source, child); selected.requireProducerGuardsArmed(source); if (this.#viaProducerGuardOperation !== plan || this.#viaWorkerController !== selected || !this.#viaProducerGuardArmed) { throw error("PROJECT_SAVE_PRODUCER_GUARD_CUSTODY_CHANGED"); } };
+        }
+        const producerSetup = this.#viaProducerObservationSetup;
+        if (producerSetup !== null) {
+          if (this.#viaProducerGuardOperation !== plan || !this.#viaProducerGuardArmed || this.#viaProducerObservationOrigin !== null) { throw error("PROJECT_SAVE_PRODUCER_OBSERVATION_SOURCE_CONSUMED"); }
+          const producerOrigin: CurrentProjectSaveProducerOrigin = Object.freeze({ profile: "private.current-pcb-via-save-producer-origin.v1" });
+          const assertProducerOriginal = (): void => { requireViaPlan(this, plan); selected.requireOriginal(source, child);
+            if (this.#viaProducerObservationOrigin !== producerOrigin || this.#viaProducerObservationSetup !== producerSetup || this.#viaWorkerController !== selected || this.#viaProducerGuardOperation !== plan) { throw error("PROJECT_SAVE_PRODUCER_OBSERVATION_CHANGED"); } };
+          const receivers = (): Readonly<{ project: string; wrapper: string; callback: string }> => { original(); assertProducerOriginal();
+            const callback = this.#viaProducerOriginalUploadCallback, project = this.#viaProducerOriginalProject, wrapper = this.#viaProducerOriginalUploadWrapper;
+            if (project === null || wrapper === null || callback === null) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_CONSTRUCTION_REQUIRED"); } return Object.freeze({ project, wrapper, callback }); };
+          const producerBindings: CurrentProjectSaveProducerBindings = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId,
+            request: async (input: Parameters<CurrentProjectSaveProducerBindings["request"]>[0]): Promise<unknown> => {
+              const command = validateCurrentProjectSaveProducerCommand(input); original(); assertProducerOriginal();
+              if (command.phase === "project-save-producer-arm" && command.params.location.scriptId !== source.scriptId) { throw error("PROJECT_SAVE_PRODUCER_SOURCE_SCRIPT"); }
+              if (command.phase === "project-save-producer-receiver") { const actual = receivers();
+                if (this.#viaProducerFrames.get(command.role) !== command.params.objectId || command.params.arguments[0].objectId !== actual.project || command.params.arguments[1].objectId !== actual.wrapper || command.params.arguments[2].objectId !== actual.callback) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_RECEIVERS"); } }
+              if (command.phase === "project-save-producer-properties" && !this.#viaProducerObjects.has(command.params.objectId)) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_PROPERTIES"); }
+              const reply = await this.#serializeViaObserver(() => this.#transfer(() => { original(); assertProducerOriginal(); return pipe.observeViaProducer(command); }));
+              if (command.phase === "project-save-producer-frame" || command.phase === "project-save-producer-receiver") {
+                const captured = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, CURRENT_PROJECT_SAVE_PRODUCER_SITES[command.role].length); this.#viaProducerObjects.add(captured);
+                if (command.phase === "project-save-producer-frame") { this.#viaProducerFrames.set(command.role, captured); }
+              } else if (command.phase === "project-save-producer-arm") {
+                const site = CURRENT_PROJECT_SAVE_PRODUCER_SITES[command.role];
+                if (!record(reply) || !exact(reply, ["breakpointId", "actualLocation"]) || typeof reply["breakpointId"] !== "string" || !record(reply["actualLocation"]) || !exact(reply["actualLocation"], ["scriptId", "lineNumber", "columnNumber"]) || reply["actualLocation"]["scriptId"] !== source.scriptId || reply["actualLocation"]["lineNumber"] !== site.lineNumber || reply["actualLocation"]["columnNumber"] !== site.columnNumber) { throw error("PROJECT_SAVE_PRODUCER_ARM_REPLY"); } selected.bindProducerObservationBreakpoint(source, command.role, reply["breakpointId"]);
+              }
+              original(); assertProducerOriginal(); return reply;
+            }, nextEvent: () => selected.nextProducerEvent(), originalReceivers: receivers, originalBreakpoint: (role: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES) => selected.originalProducerObservationBreakpoint(source, role),
+            assertCurrent: async (): Promise<void> => { original(); assertProducerOriginal(); await this.#verify(); original(); assertProducerOriginal(); },
+            assertOriginalGenerationExited: (): Promise<void> => { assertProducerOriginal(); if (!this.#terminationObserved || this.#terminationObservation?.terminated !== true) { return Promise.reject(error("PROJECT_SAVE_PRODUCER_ORIGINAL_EXIT_REQUIRED")); } return Promise.resolve(); }, fail: (): void => { selected.fail(); } });
+          originalProjectSaveProducerOrigins.set(producerOrigin, Object.freeze({ owner: this, operation: plan, bindings: producerBindings, assertOriginal: assertProducerOriginal })); this.#viaProducerObservationOrigin = producerOrigin;
+          await Reflect.apply(producerSetup, undefined, [producerOrigin]); original(); assertProducerOriginal();
+          for (const role of CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS) { selected.bindProducerObservationBreakpoint(source, role, selected.originalProducerGuardBreakpoint(source, role)); } selected.sealProducerObservation(source); selected.requireProducerObservationArmed(source);
         }
       }, releaseParentWait: async () => { original(); const reply = await this.#transfer(() => pipe.configureViaWorkerRunning());
         if (!exact(reply, [])) { throw error("PCB_VIA_WORKER_PARENT_RUNNING_REPLY"); } original(); },

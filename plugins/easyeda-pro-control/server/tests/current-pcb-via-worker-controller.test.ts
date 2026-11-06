@@ -1,6 +1,8 @@
 /** Production cursor + production seven-source runner, with only full imported
  * source bytes replaced at the explicit VM seam. No native origin is issued. */
 /* oxlint-disable import/max-dependencies -- Exercise the two actual state machines and their independent source/Save contracts. */
+import { CURRENT_PROJECT_SAVE_PRODUCER_ROLES, CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS } from "../src/current-project-save-producer-protocol.ts";
+import { CURRENT_PROJECT_SAVE_PRODUCER_SITES } from "../src/current-project-save-producer-source.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_PRODUCER_GUARD_SITES as GUARDS, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as STRUCTURE } from "../src/current-project-save-structure-protocol.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -38,7 +40,7 @@ async function constructor(): Promise<typeof CurrentPcbViaWorkerController> {
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Runtime checked production class; only pinned full-source bytes have the stated seam.
   return result as typeof CurrentPcbViaWorkerController;
 }
-async function fixture(failSetup = false, holdPoll = false, structure = false, producerGuards = false): Promise<Readonly<{ controller: CurrentPcbViaWorkerController; bindings: CurrentPcbViaWorkerControllerBindings;
+async function fixture(failSetup = false, holdPoll = false, structure = false, producerGuards = false, producerObservation = false): Promise<Readonly<{ controller: CurrentPcbViaWorkerController; bindings: CurrentPcbViaWorkerControllerBindings;
   commands: CurrentPcbViaWorkerCommand[]; incoming: DiagnosticEvent[]; state: { failed: boolean; held: number; released: number; resumed: boolean; bound: number }; releasePoll: () => void; pollStarted: Promise<true>; polls: { count: number } }>> {
   const Constructor = await constructor(), projectUuid = "a".repeat(64), windowTabId = "original-window";
   const targetUrl = "https://client/editor?entry=mgr-project-worker.js&cll=&debugOpen=0", title = `project_${projectUuid}_${windowTabId}`;
@@ -79,6 +81,14 @@ async function fixture(failSetup = false, holdPoll = false, structure = false, p
         controller.bindProducerGuardBreakpoint(source, role as keyof typeof GUARDS, `producer-${role}`);
         event("Debugger.breakpointResolved", { breakpointId: `producer-${role}`, location: { scriptId: source.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } });
       } controller.requireProducerGuardsArmed(source); }
+      if (producerObservation) {
+        for (const role of CURRENT_PROJECT_SAVE_PRODUCER_ROLES) { const site = CURRENT_PROJECT_SAVE_PRODUCER_SITES[role];
+          if (!CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS.some(value => value === role)) { controller.bindProducerObservationBreakpoint(source, role, `observed-${role}`);
+          event("Debugger.breakpointResolved", { breakpointId: `observed-${role}`, location: { scriptId: source.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } }); }
+        }
+        for (const role of CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS) { controller.bindProducerObservationBreakpoint(source, role, controller.originalProducerGuardBreakpoint(source, role)); }
+        controller.sealProducerObservation(source); controller.requireProducerObservationArmed(source);
+      }
       if (structure) { for (const role of [...CONSTRUCTORS, "startupEntry", "startupReturn", "bootstrap", "packet", "response", "callbackReturn", "initialFinally", "queuedFinally"] as const) {
         controller.bindStructureBreakpoint(source, role, `structure-${role}`); const site = STRUCTURE[role];
         event("Debugger.breakpointResolved", { breakpointId: `structure-${role}`, location: { scriptId: source.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } });
@@ -166,4 +176,15 @@ void test("original worker pause parks the other collector without another nativ
   for (let index = 0; index < 24; index += 1) { await Promise.resolve(); }
   assert.equal(f.state.failed, false); assert.equal(f.polls.count, count); f.controller.fail(); await saving;
   assert.equal(f.state.failed, true); assert.equal(f.polls.count, count);
+});
+
+void test("actual producer collector receives only the four transferred guard identities while other roots remain refused", async () => {
+  const f = await fixture(false, false, false, true, true); await f.controller.pump(); const count = f.commands.length;
+  const site = CURRENT_PROJECT_SAVE_PRODUCER_SITES.localIngress;
+  f.incoming.push({ method: "Debugger.paused", sessionId: "original-worker", params: { hitBreakpoints: ["producer-localIngress"], callFrames: [{ location: { scriptId: "script-project", lineNumber: site.lineNumber, columnNumber: site.columnNumber } }] } });
+  const observed = await f.controller.nextProducerEvent(); assert.equal(observed.method, "Debugger.paused"); assert.equal(f.state.failed, false); assert.equal(f.commands.length, count);
+  const denied = GUARDS.historySeed;
+  f.controller.observeEvent({ method: "Debugger.breakpointResolved", sessionId: "original-worker", params: { breakpointId: "producer-historySeed", location: { scriptId: "script-project", lineNumber: denied.lineNumber, columnNumber: denied.columnNumber } } });
+  assert.throws(() => { f.controller.observeEvent({ method: "Debugger.paused", sessionId: "original-worker", params: { hitBreakpoints: ["producer-historySeed"], callFrames: [{ location: { scriptId: "script-project", lineNumber: denied.lineNumber, columnNumber: denied.columnNumber } }] } }); }, /PRODUCER_GUARD_HELD/u);
+  assert.equal(f.state.failed, true); assert.equal(f.commands.length, count);
 });

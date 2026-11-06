@@ -1,3 +1,7 @@
+/* oxlint-disable import/max-dependencies -- One original cursor joins independent bootstrap, Save, clock, structure, transport and producer source grammars. */
+import { CURRENT_PROJECT_SAVE_PRODUCER_ROLES, CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS } from "./current-project-save-producer-protocol.ts";
+import { CURRENT_PROJECT_SAVE_PRODUCER_SITES as PRODUCER_SITES } from "./current-project-save-producer-source.ts";
+import type { CurrentProjectSaveProducerRole } from "./current-project-save-producer-source.ts";
 import { CURRENT_PROJECT_STRUCTURE_TRANSPORT_SITES as TRANSPORT_SITES } from "./current-project-structure-transport-source.ts";
 import type { CurrentProjectStructureTransportRole } from "./current-project-structure-transport-source.ts";
 /** Original-event cursor for one fresh Via worker. Structural transports prove
@@ -37,6 +41,8 @@ export class CurrentPcbViaWorkerController {
   readonly #events: CurrentPcbViaWorkerBootstrapEvent[] = [];
   readonly #savePoints = new Map<CurrentPcbViaSaveSite, string>();
   readonly #producerGuardPoints = new Map<CurrentProjectSaveProducerGuardRole, string>();
+  readonly #producerPoints = new Map<CurrentProjectSaveProducerRole, string>();
+  #producerObservationArmed = false;
   #producerGuardHeld: CurrentProjectSaveProducerGuardRole | null = null;
   readonly #transportPoints = new Map<CurrentProjectStructureTransportRole, string>();
   readonly #structurePoints = new Map<Extract<CurrentProjectSaveStructureCommand, { phase: "project-save-structure-arm" }>["role"], string>();
@@ -93,12 +99,28 @@ export class CurrentPcbViaWorkerController {
   public bindProducerGuardBreakpoint(source: CurrentPcbViaProjectSourceHeld, role: CurrentProjectSaveProducerGuardRole, breakpointId: string): void {
     need(this.#source === source && this.#result === null && !this.#producerGuardPoints.has(role) && ![...this.#producerGuardPoints.values(), ...this.#transportPoints.values(), ...this.#structurePoints.values(), ...this.#savePoints.values()].includes(breakpointId) && token(breakpointId)); this.#producerGuardPoints.set(role, breakpointId);
   }
+  public originalProducerGuardBreakpoint(source: CurrentPcbViaProjectSourceHeld, role: typeof CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS[number]): string {
+    need(this.#source === source && this.#result === null && !this.#producerObservationArmed); const point = this.#producerGuardPoints.get(role); need(point !== undefined); return point;
+  }
+  public bindProducerObservationBreakpoint(source: CurrentPcbViaProjectSourceHeld, role: CurrentProjectSaveProducerRole, breakpointId: string): void {
+    need(this.#source === source && this.#result === null && !this.#producerObservationArmed && !this.#producerPoints.has(role) && ![...this.#producerPoints.values(), ...this.#structurePoints.values(), ...this.#transportPoints.values(), ...this.#savePoints.values()].includes(breakpointId) && token(breakpointId));
+    const shared = CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS.find(value => value === role);
+    if (shared === undefined) { need(![...this.#producerGuardPoints.values()].includes(breakpointId)); } else { need(this.#producerGuardPoints.get(shared) === breakpointId); } this.#producerPoints.set(role, breakpointId);
+  }
+  public originalProducerObservationBreakpoint(source: CurrentPcbViaProjectSourceHeld, role: CurrentProjectSaveProducerRole): string {
+    need(this.#source === source && this.#producerObservationArmed); const point = this.#producerPoints.get(role); need(point !== undefined); return point;
+  }
+  public sealProducerObservation(source: CurrentPcbViaProjectSourceHeld): void { need(this.#source === source && this.#result === null && !this.#producerObservationArmed && this.#producerPoints.size === CURRENT_PROJECT_SAVE_PRODUCER_ROLES.length); this.#producerObservationArmed = true; }
+  public requireProducerObservationArmed(source: CurrentPcbViaProjectSourceHeld): void { need(this.#source === source && this.#producerObservationArmed && this.#producerPoints.size === CURRENT_PROJECT_SAVE_PRODUCER_ROLES.length); }
   public requireProducerGuardsArmed(source: CurrentPcbViaProjectSourceHeld): void { need(this.#source === source && this.#producerGuardPoints.size === 10 && this.#producerGuardHeld === null && !this.#failed); }
   public requireStructureTransportArmed(source: CurrentPcbViaProjectSourceHeld): void { need(this.#source === source && this.#transportPoints.size === 3); }
   public requireStructureArmed(source: CurrentPcbViaProjectSourceHeld): void { need(this.#source === source && this.#structurePoints.size === 14); }
   #resolution(event: CurrentPcbViaWorkerBootstrapEvent): boolean {
     if (event.method === "Debugger.breakpointResolved" && record(event.params)) { const params = event.params; const guard = [...this.#producerGuardPoints].find(([_role, id]) => id === params["breakpointId"]);
       if (guard !== undefined) { const location = event.params["location"], site = GUARD_SITES[guard[0]]; need(this.#source !== null && record(location) && Reflect.ownKeys(event.params).length === 2 && Reflect.ownKeys(location).length === 3 && location["scriptId"] === this.#source.scriptId && location["lineNumber"] === site.lineNumber && location["columnNumber"] === site.columnNumber); return true; }
+    }
+    if (event.method === "Debugger.breakpointResolved" && record(event.params)) { const params = event.params, producer = [...this.#producerPoints].find(([_role, id]) => id === params["breakpointId"]);
+      if (producer !== undefined) { const location = params["location"], site = PRODUCER_SITES[producer[0]]; need(this.#source !== null && record(location) && Reflect.ownKeys(params).length === 2 && Reflect.ownKeys(location).length === 3 && location["scriptId"] === this.#source.scriptId && location["lineNumber"] === site.lineNumber && location["columnNumber"] === site.columnNumber); return true; }
     }
     if (this.#result !== null) { return false; }
     if (event.method !== "Debugger.breakpointResolved") { return false; }
@@ -139,7 +161,7 @@ export class CurrentPcbViaWorkerController {
     need(this.#child !== null && event.sessionId === this.#child.sessionId && this.#events.length < 256);
     if (event.method === "Debugger.paused" && record(event.params) && Array.isArray(event.params["hitBreakpoints"])) {
       const hits: readonly unknown[] = event.params["hitBreakpoints"]; const guard = [...this.#producerGuardPoints].find(([_role, id]) => hits.includes(id));
-      if (guard !== undefined) { this.#producerGuardHeld = guard[0]; throw new Error("PROJECT_SAVE_PRODUCER_GUARD_HELD"); }
+      if (guard !== undefined && !(this.#producerObservationArmed && CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS.some(role => role === guard[0]))) { this.#producerGuardHeld = guard[0]; throw new Error("PROJECT_SAVE_PRODUCER_GUARD_HELD"); }
     }
     this.#events.push(freezeDeep(structuredClone({ method: event.method, sessionId: event.sessionId, params: event.params })));
   }
@@ -181,6 +203,7 @@ export class CurrentPcbViaWorkerController {
   /** Pure retained barrier. It never infers completion from elapsed time or
    * starts another native poll; the original abort/failure settles false. */
   public async whenOriginalSourceResumed(): Promise<void> { const resumed = await this.#sourceResumed.promise; need(resumed && !this.#failed && this.#result !== null && this.#router !== null); }
+  public async nextProducerEvent(): Promise<CurrentPcbViaRoutedEvent> { await this.whenOriginalSourceResumed(); return this.#eventRouter().next("producer"); }
   public async nextStructureTransportEvent(): Promise<CurrentPcbViaRoutedEvent> { await this.whenOriginalSourceResumed(); return this.#eventRouter().next("structureTransport"); }
   public reserveStructureTransportResume(source: CurrentPcbViaProjectSourceHeld, role: "send" | "returned"): void {
     need(this.#source === source && this.#child !== null); this.#eventRouter().reserveResume("structureTransport", this.#child.sessionId, role);
@@ -221,6 +244,7 @@ export class CurrentPcbViaWorkerController {
     for (const [role, breakpointId] of this.#savePoints) { const site = CURRENT_PCB_VIA_SAVE_SITES[role]; router.register("save", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
     for (const [role, breakpointId] of this.#structurePoints) { const site = STRUCTURE_SITES[role]; router.register("structure", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
     for (const [role, breakpointId] of this.#transportPoints) { const site = TRANSPORT_SITES[role]; router.register("structureTransport", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
+    for (const [role, breakpointId] of this.#producerPoints) { const site = PRODUCER_SITES[role]; router.register("producer", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
     this.#router = router;
   }
   /** The outer original renderer call drives this, including its still-pending

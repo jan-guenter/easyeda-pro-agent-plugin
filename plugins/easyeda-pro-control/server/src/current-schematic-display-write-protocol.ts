@@ -1,3 +1,4 @@
+import { currentProjectSaveProducerWire } from "./current-project-save-producer-wire.ts";
 import { currentProjectSaveProducerGuardWire } from "./current-project-save-producer-guard-wire.ts";
 import { currentProjectStructureTransportWire } from "./current-project-structure-transport-wire.ts";
 import { currentSchematicDisplayAccessorWire } from "./current-schematic-display-accessor-wire.ts";
@@ -15,6 +16,12 @@ export function currentSchematicDisplayWriteNativeRequest(chunk: Buffer): Readon
   const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(chunk.subarray(0, -1)));
   if (!diagnosticRecord(raw) || typeof raw["id"] !== "number" || !Number.isSafeInteger(raw["id"]) || raw["id"] < 1 || raw["id"] > PROFILE.renderer.total ||
     typeof raw["method"] !== "string" || !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("SCHEMATIC_DISPLAY_WIRE"); }
+  if (Object.hasOwn(raw, "producerObserveCommand")) {
+    const { id: producerId, sessionId: producerSession, producerObserveCommand, ...producerInput } = raw;
+    if (producerObserveCommand !== true || typeof producerSession !== "string") { throw new Error("PROJECT_SAVE_PRODUCER_WIRE"); }
+    const fixed = currentProjectSaveProducerWire(producerInput, producerId, "schematic");
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id: producerId, ...fixed.command, producerObserveCommand: true, sessionId: producerSession })}\0`))) { throw new Error("PROJECT_SAVE_PRODUCER_WIRE"); } return fixed.request;
+  }
   if (Object.hasOwn(raw, "producerGuardCommand")) {
     const { id, sessionId, producerGuardCommand, ...input } = raw;
     if (producerGuardCommand !== true || typeof sessionId !== "string") { throw new Error("PROJECT_SAVE_PRODUCER_GUARD_WIRE"); }

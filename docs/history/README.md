@@ -14,6 +14,8 @@
 - [2026-11-06 separate Relevance display data](2026-11-06-relevance-display-data-profile.md). Genuine seven-row checkpoint arguments, exact ATTR/native root permutation, separate fixed stages/effect/pending body and explicit normalized baseline; original native writer/SQL/persistence grants remain closed.
 
 - [2026-11-06 Component point source/cost](2026-11-06-component-point-source-cost.md). Complete cached/stored-box and owned Pad paths, actual identity/scratch checks and393/408 prospective requests; existing384-ID purposes and Component admission remain unchanged.
+- [2026-11-06 original producer collector](2026-11-06-original-producer-collector.md). Same-worker original origin,23 new arms/four transferred guard IDs and immutable held calls; no producer resume or Save authority.
+
 - [2026-11-06 original uploader source returns](2026-11-06-original-uploader-source-returns.md). Complete current209 uploader qualification and actual pinned-method async/timer/cache regressions; original producer continuation and Save remain gated.
 
 - [2026-11-06 original worker event parking](2026-11-06-original-worker-event-parking.md). Original paused-role parking, queued event wakeups and retained in-flight poll settlement; no new continuation or Save authority.

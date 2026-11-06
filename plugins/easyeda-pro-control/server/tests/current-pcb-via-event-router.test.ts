@@ -97,3 +97,9 @@ void test("only five delivered original clock resumes together with the unconsum
   const held = f.router.next("save"); await f.entered(); f.deliver(paused(body)); await held; f.router.requireClockCompletionWithHeldSaveBody();
   f.router.reserveResume("save", save.sessionId, "body"); assert.throws(() => { f.router.requireClockCompletionWithHeldSaveBody(); });
 });
+
+void test("producer event ownership never permits the router to reserve a worker resume", async () => {
+  const f = fixture(), point = { ...save, breakpointId: "original-producer", role: "localIngress", columnNumber: 17_028 }; f.router.register("producer", point);
+  const pending = f.router.next("producer"); await f.entered(); f.deliver(paused(point)); await pending;
+  assert.throws(() => { f.router.reserveResume("producer", point.sessionId, point.role); }); assert.equal(f.reads.count, 1);
+});

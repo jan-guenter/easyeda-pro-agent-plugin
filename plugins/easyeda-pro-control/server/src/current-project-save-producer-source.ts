@@ -65,6 +65,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_METHOD_SOURCE = freezeDeep({
 });
 export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
   "localIngress": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 17_009,
     "lineNumber": 110,
     "columnNumber": 17_028,
     "offset": 2_031_238,
@@ -72,6 +74,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 4
   },
   "bufferIngress": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 15_521,
     "lineNumber": 110,
     "columnNumber": 15_525,
     "offset": 2_029_735,
@@ -79,6 +83,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 9
   },
   "cloudIngress": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 8674,
     "lineNumber": 110,
     "columnNumber": 8677,
     "offset": 2_022_887,
@@ -86,6 +92,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 1
   },
   "historyCloud": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 9319,
     "lineNumber": 110,
     "columnNumber": 9344,
     "offset": 2_023_554,
@@ -93,6 +101,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 8
   },
   "localReturned": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 17_009,
     "lineNumber": 110,
     "columnNumber": 17_393,
     "offset": 2_031_603,
@@ -100,6 +110,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 5
   },
   "localFailed": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 17_009,
     "lineNumber": 110,
     "columnNumber": 17_238,
     "offset": 2_031_448,
@@ -107,6 +119,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 6
   },
   "bufferScheduled": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 15_521,
     "lineNumber": 110,
     "columnNumber": 15_646,
     "offset": 2_029_856,
@@ -114,6 +128,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 9
   },
   "bufferDrain": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 15_750,
     "lineNumber": 110,
     "columnNumber": 15_806,
     "offset": 2_030_016,
@@ -121,6 +137,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 8
   },
   "bufferDone": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 15_750,
     "lineNumber": 110,
     "columnNumber": 15_869,
     "offset": 2_030_079,
@@ -128,6 +146,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 8
   },
   "batchReturned": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 15_893,
     "lineNumber": 110,
     "columnNumber": 15_985,
     "offset": 2_030_195,
@@ -135,6 +155,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 2
   },
   "historyReply": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 9319,
     "lineNumber": 110,
     "columnNumber": 9436,
     "offset": 2_023_646,
@@ -142,6 +164,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 9
   },
   "historyFailed": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 9319,
     "lineNumber": 110,
     "columnNumber": 9462,
     "offset": 2_023_672,
@@ -149,6 +173,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 9
   },
   "historyQueued": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 9319,
     "lineNumber": 110,
     "columnNumber": 10_368,
     "offset": 2_024_578,
@@ -156,6 +182,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 10
   },
   "historyFinally": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 10_385,
     "lineNumber": 110,
     "columnNumber": 10_390,
     "offset": 2_024_600,
@@ -163,6 +191,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 10
   },
   "cloudReturned": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 8674,
     "lineNumber": 110,
     "columnNumber": 10_477,
     "offset": 2_024_687,
@@ -170,6 +200,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 8
   },
   "cloudFinally": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 8674,
     "lineNumber": 110,
     "columnNumber": 10_698,
     "offset": 2_024_908,
@@ -177,6 +209,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 7
   },
   "syncEntry": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 17_658,
     "lineNumber": 110,
     "columnNumber": 17_676,
     "offset": 2_031_886,
@@ -184,6 +218,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 2
   },
   "syncDeferred": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 17_658,
     "lineNumber": 110,
     "columnNumber": 17_774,
     "offset": 2_031_984,
@@ -191,6 +227,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 2
   },
   "syncFull": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 17_658,
     "lineNumber": 110,
     "columnNumber": 17_888,
     "offset": 2_032_098,
@@ -198,6 +236,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 5
   },
   "syncReturned": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 17_658,
     "lineNumber": 110,
     "columnNumber": 20_478,
     "offset": 2_034_688,
@@ -205,6 +245,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 5
   },
   "syncFailed": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 17_658,
     "lineNumber": 110,
     "columnNumber": 19_691,
     "offset": 2_033_901,
@@ -212,6 +254,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 6
   },
   "detachedEntry": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 10_008,
     "lineNumber": 110,
     "columnNumber": 10_024,
     "offset": 2_024_234,
@@ -219,6 +263,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 4
   },
   "detachedReturned": {
+    "functionLineNumber": 110,
+    "functionColumnNumber": 10_008,
     "lineNumber": 110,
     "columnNumber": 10_322,
     "offset": 2_024_532,
@@ -226,6 +272,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 4
   },
   "headEntry": {
+    "functionLineNumber": 106,
+    "functionColumnNumber": 55_912,
     "lineNumber": 106,
     "columnNumber": 55_920,
     "offset": 1_684_380,
@@ -233,6 +281,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 4
   },
   "headPromise": {
+    "functionLineNumber": 106,
+    "functionColumnNumber": 55_912,
     "lineNumber": 106,
     "columnNumber": 56_424,
     "offset": 1_684_884,
@@ -240,6 +290,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 4
   },
   "headSuccess": {
+    "functionLineNumber": 106,
+    "functionColumnNumber": 55_938,
     "lineNumber": 106,
     "columnNumber": 56_166,
     "offset": 1_684_626,
@@ -247,6 +299,8 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "length": 6
   },
   "cacheFailed": {
+    "functionLineNumber": 106,
+    "functionColumnNumber": 55_938,
     "lineNumber": 106,
     "columnNumber": 56_176,
     "offset": 1_684_636,

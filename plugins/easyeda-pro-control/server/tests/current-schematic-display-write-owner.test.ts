@@ -16,7 +16,7 @@ type GeneratedSchematicDisplayNativeArguments = Parameters<CurrentSchematicDispl
 
 function missingBootstrap(): never { throw new Error("Bootstrap not issued"); }
 async function fixture(context: TestContext, malformed = false, main = false, stages = false, workers = false, earlyWorker = false): Promise<Readonly<{ owner: CurrentSchematicDisplayWriteOwner; actions: string[]; pollEntered: Promise<true>; reproveBootstrap: () => string;
-  target: () => object; termination: () => object; requireTermination: (value: object) => void; argumentsValue: GeneratedSchematicDisplayNativeArguments; requireStage: (packet: object) => void; runWorker: () => Promise<unknown>; createObserver: (origin: object) => { arm: () => Promise<void>; observeBody: () => Promise<unknown> }; requireWorker: (origin: object) => object; createStructureObserver: (origin: object) => { arm: () => Promise<void>; cleanup: () => Promise<void> }; requireStructure: (origin: object) => object; requireTransport: (origin: object) => object; qualifyEffect: (copyPacket?: boolean) => object; requireEffect: (effect: object) => void; issueClock: (effect: object) => Promise<object>; requireClock: (origin: object) => object; issueAccessor: () => Promise<object>; requireAccessor: (origin: object) => object }>> {
+  target: () => object; termination: () => object; requireTermination: (value: object) => void; argumentsValue: GeneratedSchematicDisplayNativeArguments; requireStage: (packet: object) => void; runWorker: () => Promise<unknown>; createObserver: (origin: object) => { arm: () => Promise<void>; observeBody: () => Promise<unknown> }; requireWorker: (origin: object) => object; requireProducer: (origin: object) => object; createStructureObserver: (origin: object) => { arm: () => Promise<void>; cleanup: () => Promise<void> }; requireStructure: (origin: object) => object; requireTransport: (origin: object) => object; qualifyEffect: (copyPacket?: boolean) => object; requireEffect: (effect: object) => void; issueClock: (effect: object) => Promise<object>; requireClock: (origin: object) => object; issueAccessor: () => Promise<object>; requireAccessor: (origin: object) => object }>> {
   const url = new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url); const sourceRequire = createRequire(url);
   const targetData = Object.freeze({ rawWindowsPath: String.raw`C:\Synthetic\Codex_schematic_1111111111111111.eprj2`, projectUuid: "c".repeat(64), branchUuid: "d".repeat(32), schematicUuid: "e".repeat(32), pageUuid: "f".repeat(32), expectedSourceSha256: "1".repeat(64) });
   const prepared = Object.freeze({ syntheticCheckpoint: true, qualification: Object.freeze({ target: targetData }) });
@@ -64,14 +64,21 @@ public async runSyntheticSchematicWorker(){this.#enter(true);try{const p=this.#s
       // Explicit construction/source-pause seam only. The production owner,
       // Pipe, fixed codecs, observer, callback and original registry run unchanged.
       const factory: unknown = runInThisContext(`(source=>class {
-constructor(bindings){this.bindings=bindings;this.source=null;this.child=null;this.busy=false;this.ready=false;this.failed=false;this.points=new Set();this.structurePoints=new Set();this.transportPoints=new Set();this.producerGuardPoints=new Set();this.clockPoints=new Set();}
+constructor(bindings){this.bindings=bindings;this.source=null;this.child=null;this.busy=false;this.ready=false;this.failed=false;this.points=new Set();this.structurePoints=new Set();this.transportPoints=new Set();this.producerGuardPoints=new Map();this.producerObservationPoints=new Map();this.clockPoints=new Set();}
 status(){return{ready:this.ready,pumping:this.busy,failed:this.failed,projectSourceHeld:this.source!==null,originalWorkerSelected:this.child!==null};}
 observeEvent(e){if(e.method!=="Target.attachedToTarget")throw Error("unexpected peer event");this.child=Object.freeze({sessionId:e.params.sessionId,targetId:e.params.targetInfo.targetId,url:e.params.targetInfo.url,title:e.params.targetInfo.title});}
 observeUiEvent(){return false;}requireHeld(s){if(s!==this.source)throw Error("held");return this.child;}requireOriginal(s,c){if(s!==this.source||c!==this.child)throw Error("original");}
 bindSaveBreakpoint(s,r,id){this.requireHeld(s);if(this.points.has(r))throw Error("point");this.points.add(r);}
 bindStructureBreakpoint(s,r,id){this.requireHeld(s);if(this.structurePoints.has(r))throw Error("structure point");this.structurePoints.add(r);}
-bindProducerGuardBreakpoint(s,r,id){this.requireHeld(s);if(this.producerGuardPoints.has(r))throw Error("producer guard point");this.producerGuardPoints.add(r);}
+bindProducerGuardBreakpoint(s,r,id){this.requireHeld(s);if(this.producerGuardPoints.has(r))throw Error("producer guard point");this.producerGuardPoints.set(r,id);}
 requireProducerGuardsArmed(s){this.requireHeld(s);if(this.failed||this.producerGuardPoints.size!==10)throw Error("producer guards");}
+originalProducerGuardBreakpoint(s,r){this.requireHeld(s);if(!this.producerGuardPoints.has(r))throw Error("original guard");return this.producerGuardPoints.get(r);}
+bindProducerObservationBreakpoint(s,r,id){this.requireHeld(s);if(this.producerObservationPoints.has(r))throw Error("producer observation point");this.producerObservationPoints.set(r,id);}
+sealProducerObservation(s){this.requireHeld(s);if(this.producerObservationPoints.size!==27)throw Error("producer observation seal");}
+requireProducerObservationArmed(s){this.requireHeld(s);if(this.producerObservationPoints.size!==27)throw Error("producer observation arms");}
+originalProducerObservationBreakpoint(s,r){this.requireHeld(s);if(!this.producerObservationPoints.has(r))throw Error("producer observation original point");return this.producerObservationPoints.get(r);}
+nextProducerEvent(){throw Error("no producer dispatch");}
+
 bindStructureTransportBreakpoint(s,r,id){this.requireHeld(s);if(this.transportPoints.has(r))throw Error("transport point");this.transportPoints.add(r);}
 requireStructureTransportArmed(s){this.requireHeld(s);if(this.transportPoints.size!==3)throw Error("transport arm");}
 nextStructureTransportEvent(){throw Error("no transport dispatch");}reserveStructureTransportResume(){throw Error("no transport grant");}
@@ -94,6 +101,7 @@ fail(){this.failed=true;this.bindings.fail();}nextSaveEvent(){throw Error("Save 
   const clockModule: unknown = sourceRequire("./current-schematic-display-clock-protocol.ts"); assert.ok(clockModule !== null && typeof clockModule === "object");
   const clockSites: unknown = Reflect.get(clockModule, "CURRENT_SCHEMATIC_DISPLAY_CLOCK_SITES"); assert.ok(clockSites !== null && typeof clockSites === "object");
   const guardModule: unknown = sourceRequire("./current-project-save-producer-guard-source.ts"); assert.ok(guardModule !== null && typeof guardModule === "object"); const guardSites: unknown = Reflect.get(guardModule, "CURRENT_PROJECT_SAVE_PRODUCER_GUARD_SITES"); assert.ok(guardSites !== null && typeof guardSites === "object");
+  const producerModule: unknown = sourceRequire("./current-project-save-producer-source.ts"); assert.ok(producerModule !== null && typeof producerModule === "object"); const producerSites: unknown = Reflect.get(producerModule, "CURRENT_PROJECT_SAVE_PRODUCER_SITES"); assert.ok(producerSites !== null && typeof producerSites === "object");
   const script = `const readline=require('node:readline'),input=readline.createInterface({input:process.stdin});let terminated=false;const queue=[];let navigation=null,pendingBytes=Buffer.alloc(0);const fs=require("node:fs"),sourceFile="/mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-mgr/3.2.185.bf63a159/js/project-worker.js";
 const send=(q,result)=>process.stdout.write(JSON.stringify({id:q.id,ok:true,result})+'\\n');
 input.on('line',line=>{const q=JSON.parse(line);
@@ -101,6 +109,7 @@ if(q.action==='launch')send(q,{helperInstance:'b'.repeat(32),jobId:'c'.repeat(32
 else if(q.action==='main-attach')send(q,{attached:true});
 else if(q.action==='send'){if(${String(stages)})queue.push({id:q.requestId,result:q.method==='Target.attachToTarget'?{sessionId:'original-session'}:q.method==='Target.getTargets'?{targetInfos:[{targetId:'original-target',type:'page',title:'Start',url:'https://client/editor?cll=warn#',attached:true}]}:{},...(q.sessionId?{sessionId:q.sessionId}:{})});send(q,{written:true});}
 else if(q.action==='schematic-display-accessor'){if(q.phase!=='schematic-accessor-callees')throw Error('accessor command');queue.push({id:q.requestId,sessionId:'original-session',result:{result:{type:'object',subtype:'array',className:'Array',description:'Array(26)',objectId:'original-callees'}}});send(q,{written:true});}
+else if(q.action==='schematic-display-producer-observe'){const role=q.phase.slice('project-save-producer-arm-'.length),site=(${JSON.stringify(producerSites)})[role];if(q.method!=='Debugger.setBreakpoint'||!site)throw Error('producer observation command');queue.push({id:q.requestId,sessionId:'original-worker',result:{breakpointId:'observed-'+role,actualLocation:{scriptId:q.scriptId,lineNumber:site.lineNumber,columnNumber:site.columnNumber}}});send(q,{written:true});}
 else if(q.action==='schematic-display-producer-guard'){const role=q.phase.slice('project-save-producer-guard-'.length),site=(${JSON.stringify(guardSites)})[role];if(q.method!=='Debugger.setBreakpoint'||!site)throw Error('producer guard command');queue.push({id:q.requestId,sessionId:'original-worker',result:{breakpointId:'producer-'+role,actualLocation:{scriptId:q.scriptId,lineNumber:site.lineNumber,columnNumber:site.columnNumber}}});send(q,{written:true});}
 else if(q.action==='schematic-display-structure-transport-bind')send(q,{bound:true});
 else if(q.action==='schematic-display-structure-transport'){let result;if(q.phase==='project-structure-transport-capture')result={result:{type:'object',subtype:'array',className:'Array',description:'Array(7)',objectId:'original-transport-capture'}};else{const role=q.phase.slice('project-structure-transport-arm-'.length),cols={send:111729,returned:111827,failed:111748};if(q.method!=='Debugger.setBreakpoint'||!(role in cols))throw Error('transport command');result={breakpointId:'transport-'+role,actualLocation:{scriptId:'project-script',lineNumber:103,columnNumber:cols[role]}};}queue.push({id:q.requestId,sessionId:'original-worker',result});send(q,{written:true});}
@@ -149,6 +158,7 @@ else if(q.action==='release')send(q,{released:true});else throw Error('unexpecte
   return { owner, actions, pollEntered: pollEntered.promise, reproveBootstrap: (): string => reproveBootstrap(),
     target: (): object => { const result = callObject(target); assert.equal(result, prepared); return result; },
     termination: (): object => callObject(termination), requireTermination: (value: object): void => { Reflect.apply(requireTermination, undefined, [owner, value]); }, argumentsValue,
+    requireProducer: (origin: object): object => { const lookup = loaded.exports["requireOriginalCurrentProjectSaveProducerOrigin"]; assert.ok(typeof lookup === "function"); const result: unknown = Reflect.apply(lookup, undefined, [origin, owner, argumentsValue]); assert.ok(result !== null && typeof result === "object"); return result; },
     requireStage: (packet: object): void => { const lookup = loaded.exports["requireOriginalSchematicDisplayStage"]; assert.ok(typeof lookup === "function"); Reflect.apply(lookup, undefined, [owner, argumentsValue, packet, "preflight"]); },
     runWorker: (): Promise<unknown> => { const run: unknown = Reflect.get(owner, "runSyntheticSchematicWorker"); assert.ok(typeof run === "function"); const result: unknown = Reflect.apply(run, owner, []); assert.ok(result instanceof Promise); return result; },
     createObserver: (origin: object) => { const Observer = observerModule.exports["CurrentSchematicDisplaySaveObserver"]; assert.ok(typeof Observer === "function");
@@ -342,5 +352,28 @@ void test("original constructor relation must acknowledge true once before prefi
   await assert.rejects(call(), /ORIGINAL_CONSTRUCTOR_RELATION/u); const count = f.actions.length;
   await assert.rejects(call(), /RELATION_CONSUMED/u); assert.equal(f.actions.length, count);
   await assert.rejects(f.owner.enrollSchematicDisplayProducerPrefix(f.argumentsValue), /PREFIX_UNAVAILABLE/u);
+  await f.owner.abortSchematicDisplayWrite(); assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
+});
+
+void test("actual owner issues one producer origin under source hold and preserves original-Job cleanup without a receiver grant", async context => {
+  const f = await fixture(context, false, false, true, true); let issued: object | null = null;
+  f.owner.armSchematicDisplaySaveWorker(f.argumentsValue, async origin => { await f.createObserver(origin).arm(); });
+  f.owner.armSchematicDisplaySaveStructureWorker(f.argumentsValue, async origin => { await f.createStructureObserver(origin).arm(); });
+  assert.throws(() => { f.owner.armSchematicDisplayProducerObservationWorker(f.argumentsValue, (): Promise<void> => Promise.resolve()); }, /ARM_UNAVAILABLE/u);
+  f.owner.armSchematicDisplayProducerPrefixWorker(f.argumentsValue);
+  f.owner.armSchematicDisplayProducerObservationWorker(f.argumentsValue, async origin => {
+    issued = origin; const binding = f.requireProducer(origin); const receivers: unknown = Reflect.get(binding, "originalReceivers"), request: unknown = Reflect.get(binding, "request"), scriptId: unknown = Reflect.get(binding, "scriptId");
+    assert.ok(typeof request === "function" && typeof scriptId === "string" && typeof receivers === "function"); assert.equal(Object.isFrozen(binding), true);
+    assert.throws(() => Reflect.apply(receivers, undefined, []), /ORIGINAL_CONSTRUCTION_REQUIRED/u);
+    const protocol: unknown = createRequire(import.meta.url)("../src/current-project-save-producer-protocol.ts"); assert.ok(protocol !== null && typeof protocol === "object"); const examples: unknown = Reflect.get(protocol, "currentProjectSaveProducerNativeCases"); assert.ok(typeof examples === "function"); const cases: unknown = Reflect.apply(examples, undefined, []); assert.ok(Array.isArray(cases));
+    for (const candidate of cases) { const command: unknown = candidate; assert.ok(command !== null && typeof command === "object" && "phase" in command && "params" in command && command.params !== null && typeof command.params === "object");
+      if (command.phase === "project-save-producer-arm") { assert.ok("location" in command.params && command.params.location !== null && typeof command.params.location === "object"); await Reflect.apply(request, undefined, [{ ...command, params: { location: { ...command.params.location, scriptId } } }]); }
+    }
+    const before = f.actions.length;
+    await assert.rejects(() => { const result: unknown = Reflect.apply(request, undefined, [{ phase: "project-save-producer-properties", method: "Runtime.getProperties", params: { objectId: "unissued-frame", ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }]); assert.ok(result instanceof Promise); return result; }, /ORIGINAL_PROPERTIES/u);
+    assert.equal(f.actions.length, before);
+  });
+  await f.runWorker(); const original = issued; assert.ok(original !== null); assert.equal(f.actions.filter(action => action === "schematic-display-producer-observe").length, 23);
+  assert.throws(() => f.requireProducer(structuredClone(original)), /ORIGINAL_ORIGIN/u);
   await f.owner.abortSchematicDisplayWrite(); assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
 });
