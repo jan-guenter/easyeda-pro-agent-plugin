@@ -25,20 +25,20 @@ if(!pcbViaWrite209||!viaWorkerParentArmed||viaWorkerSession!=null||viaWorkerPare
 public void SendPcbViaWorkerParent(int id,string session,string phase){
 if(!pcbViaWrite209||viaAbortAttempted||session!=viaSession||generatedFixtureTuple==null)throw Error("via-worker-parent-purpose");bool wait;
 if(phase=="arm"){if(viaWorkerParentArmed)throw Error("via-worker-parent-once");viaWorkerParentArmed=true;wait=true;}
-else if(phase=="running"){if(!viaWorkerParentArmed||viaWorkerParentRunning||viaWorkerSession==null||viaWorkerStage!=6||!viaWorkerSourceRead||viaSavePoints.Count!=6||viaStructurePoints.Count!=0&&viaStructurePoints.Count!=12)throw Error("via-worker-parent-original-source");viaWorkerParentRunning=true;wait=false;}else throw Error("via-worker-parent-phase");
+else if(phase=="running"){if(!viaWorkerParentArmed||viaWorkerParentRunning||viaWorkerSession==null||viaWorkerStage!=6||!viaWorkerSourceRead||viaSavePoints.Count!=6||viaStructurePoints.Count!=0&&viaStructurePoints.Count!=14)throw Error("via-worker-parent-original-source");viaWorkerParentRunning=true;wait=false;}else throw Error("via-worker-parent-phase");
 string message="{\\"id\\":"+id.ToString(CultureInfo.InvariantCulture)+",\\"method\\":\\"Target.setAutoAttach\\",\\"params\\":{\\"autoAttach\\":true,\\"waitForDebuggerOnStart\\":"+(wait?"true":"false")+",\\"flatten\\":true,\\"filter\\":[{\\"type\\":\\"worker\\",\\"exclude\\":false},{\\"exclude\\":true}]},\\"sessionId\\":"+JsonString(session)+"}\\0";SendMessage(id,message);
 }
 void AdmitViaWorkerBootstrap(string phase,System.Collections.IDictionary fields){
 string[] setup={"via-worker-runtime","via-worker-debugger","via-worker-async","via-worker-instrument","via-worker-run-waiting"};
 if(viaWorkerSetup<setup.Length){if(phase!=setup[viaWorkerSetup])throw Error("via-worker-bootstrap-setup");viaWorkerSetup++;return;}
-if(phase=="via-worker-remove"){if(viaWorkerInstrumentRemoved||viaWorkerStage!=6||!viaWorkerSourceRead||viaSavePoints.Count!=6||viaStructurePoints.Count!=0&&viaStructurePoints.Count!=12)throw Error("via-worker-instrument-original");viaWorkerInstrumentRemoved=true;return;}
+if(phase=="via-worker-remove"){if(viaWorkerInstrumentRemoved||viaWorkerStage!=6||!viaWorkerSourceRead||viaSavePoints.Count!=6||viaStructurePoints.Count!=0&&viaStructurePoints.Count!=14)throw Error("via-worker-instrument-original");viaWorkerInstrumentRemoved=true;return;}
 if(viaWorkerStage>=ViaWorkerRoles.Length)throw Error("via-worker-bootstrap-consumed");string role=ViaWorkerRoles[viaWorkerStage];
 if(phase=="via-worker-source-"+role){if(viaWorkerSourceRead)throw Error("via-worker-source-once");viaWorkerSourceRead=true;if(role=="project")viaWorkerProjectScript=fields["scriptId"] as string;}
-else if(phase=="via-worker-resume-"+role){if(!viaWorkerSourceRead||role=="project"&&(!viaWorkerInstrumentRemoved||!viaWorkerParentRunning||viaSavePoints.Count!=6||viaStructurePoints.Count!=0&&viaStructurePoints.Count!=12))throw Error("via-worker-source-before-resume");viaWorkerStage++;viaWorkerSourceRead=false;}else throw Error("via-worker-bootstrap-phase");
+else if(phase=="via-worker-resume-"+role){if(!viaWorkerSourceRead||role=="project"&&(!viaWorkerInstrumentRemoved||!viaWorkerParentRunning||viaSavePoints.Count!=6||viaStructurePoints.Count!=0&&viaStructurePoints.Count!=14))throw Error("via-worker-source-before-resume");viaWorkerStage++;viaWorkerSourceRead=false;}else throw Error("via-worker-bootstrap-phase");
 }
 void AdmitViaSaveObserver(string phase,System.Collections.IDictionary fields){
 if(viaWorkerStage==6&&viaWorkerSourceRead){if(phase=="via-save-source"){if(fields["scriptId"] as string!=viaWorkerProjectScript)throw Error("via-save-source-original");return;}if(!phase.StartsWith("via-save-arm-",StringComparison.Ordinal)||fields["scriptId"] as string!=viaWorkerProjectScript)throw Error("via-save-arm-original-source");string role=phase.Substring("via-save-arm-".Length);if(Array.IndexOf(new[]{"noData","entry","clock","compress","body","result"},role)<0||!viaSavePoints.Add(role))throw Error("via-save-arm-once");return;}
-if(viaWorkerStage!=7||viaSavePoints.Count!=6||viaStructurePoints.Count!=0&&viaStructurePoints.Count!=12)throw Error("via-save-bootstrap-required");
+if(viaWorkerStage!=7||viaSavePoints.Count!=6||viaStructurePoints.Count!=0&&viaStructurePoints.Count!=14)throw Error("via-save-bootstrap-required");
 if(phase=="via-save-source"&&fields["scriptId"] as string!=viaWorkerProjectScript)throw Error("via-save-source-original");
 if(phase=="via-save-entry"&&(fields["documentUuid"] as string!=generatedFixtureTuple.Split('\\n')[5]||fields["projectUuid"] as string!=generatedFixtureTuple.Split('\\n')[3]))throw Error("via-save-original-target");
 if(phase!="via-save-source"&&!viaSdkStages[4])throw Error("via-save-original-attempt");

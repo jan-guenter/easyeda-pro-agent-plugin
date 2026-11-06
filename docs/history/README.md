@@ -21,6 +21,8 @@
 
 - [2026-11-06 generated import original SDK settlement](2026-11-06-generated-import-original-sdk-settlement.md). Fifth frozen disposable generation completed the original SDK Promise with the generated identity; original cleanup and full closed acceptance remain separate.
 - [2026-11-06 original import Windows file metadata](2026-11-06-import-windows-file-metadata.md). Separate original destination action retains exact file handles, SHA and native FILETIME; existing destination observations stay unchanged and direct qualification uses a new report profile.
+- [2026-11-06 original startup callback continuation](2026-11-06-original-startup-no-publication.md). Exact false-readiness callback, original undefined return and same Nd initial/queued finalizer progress before Save; published structure and SQL remain separately held.
+
 - [2026-11-06 original common producer construction](2026-11-06-original-common-producer-construction.md). Actual seven constructor continuations and hidden arrow receivers joined to the same original pre-EP PROJECT wrappers; publication and SQL authority remain separate.
 
 - [2026-11-06 schematic display closed custody](2026-11-06-schematic-display-closed-custody.md). Distinct factory-issued target and actual original root/empty-Job termination references for the closed capture; copied and no-process evidence refuse.

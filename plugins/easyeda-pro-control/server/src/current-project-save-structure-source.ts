@@ -16,6 +16,9 @@ export const CURRENT_PROJECT_SAVE_STRUCTURE_SITES = freezeDeep({
   producerDebounce: { ...CONSTRUCTORS.debounce, expression: "[e,t]", length: 2 },
   producerProject: { ...CONSTRUCTORS.project, expression: "[this]", length: 1 },
   producerCaller: { lineNumber: 0, columnNumber: 0, offset: 0, expression: "[this]", length: 1 },
+  startupEntry: { lineNumber: 110, columnNumber: 89_848, offset: 2_104_058, expression: "[this,s,r,i]", length: 4 },
+  startupReturn: { lineNumber: 110, columnNumber: 90_030, offset: 2_104_240, expression: "[this,s,r,i]", length: 4 },
+  startupCaller: { lineNumber: 0, columnNumber: 0, offset: 0, expression: "[e,t,s,r]", length: 4 },
   bootstrap: { lineNumber: 110, columnNumber: 162_932, offset: 2_177_142, expression: "[TP,Nb]", length: 2 },
   packet: { ...CURRENT_PROJECT_STRUCTURE_WORKER_SITES.packet, expression: "[this,p,r]", length: 3 },
   response: { ...CURRENT_PROJECT_STRUCTURE_WORKER_SITES.response, expression: "[this,p,r,d]", length: 4 },
@@ -24,6 +27,10 @@ export const CURRENT_PROJECT_SAVE_STRUCTURE_SITES = freezeDeep({
   queuedFinally: { ...CURRENT_PROJECT_STRUCTURE_WORKER_SITES.queuedFinally, expression: "[t,s,e]", length: 3 },
   timer: { lineNumber: 109, columnNumber: 164_014, offset: 2_011_327, expression: "[e,a,r]", length: 3 },
 });
+/** Only startup false/unknown state pauses. Ready callbacks continue in
+ * the original application without entering this no-publication collector.
+ * Descriptor failures remain held; no application accessor is invoked. */
+export const CURRENT_PROJECT_SAVE_STRUCTURE_STARTUP_CONDITION = `(()=>{try{const p=Object.getOwnPropertyDescriptor(globalThis,"PROJECT"),r=Object.getOwnPropertyDescriptor(this,"isReady");return !p||!Object.hasOwn(p,"value")||p.value!==this||!r||!Object.hasOwn(r,"value")||r.value!==true;}catch{return true;}})()`;
 export type CurrentProjectSaveStructureSite = keyof typeof CURRENT_PROJECT_SAVE_STRUCTURE_SITES;
 export const CURRENT_PROJECT_SAVE_STRUCTURE_METADATA_METHODS = freezeDeep({
   pcb: { start: 1_811_116, end: 1_811_291, bytes: 175, sha256: "b4780bdc55594870e9421dff5901b6aea06f247eef26328d7194d0d6927c1626" },

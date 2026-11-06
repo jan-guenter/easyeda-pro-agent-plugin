@@ -72,7 +72,7 @@ async function fixture(failSetup = false, holdPoll = false, structure = false): 
         controller.bindSaveBreakpoint(source, role, `save-${role}`);
         event("Debugger.breakpointResolved", { breakpointId: `save-${role}`, location: { scriptId: source.scriptId, lineNumber: SITES[role].lineNumber, columnNumber: SITES[role].columnNumber } });
       }
-      if (structure) { for (const role of [...CONSTRUCTORS, "bootstrap", "packet", "response", "callbackReturn", "initialFinally", "queuedFinally"] as const) {
+      if (structure) { for (const role of [...CONSTRUCTORS, "startupEntry", "startupReturn", "bootstrap", "packet", "response", "callbackReturn", "initialFinally", "queuedFinally"] as const) {
         controller.bindStructureBreakpoint(source, role, `structure-${role}`); const site = STRUCTURE[role];
         event("Debugger.breakpointResolved", { breakpointId: `structure-${role}`, location: { scriptId: source.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } });
       } controller.requireStructureArmed(source); }

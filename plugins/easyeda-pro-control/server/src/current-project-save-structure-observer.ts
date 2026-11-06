@@ -11,7 +11,7 @@ import { captureCurrentProjectStructureCompletionReply } from "./current-project
 import { expectedCurrentGeneratedProjectSaveStructure } from "./current-project-save-structure-expectation.ts";
 import type { CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureEvent, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_CALLS as CALLS, CURRENT_PROJECT_SAVE_STRUCTURE_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS as FRAME_FLAGS,
-  CURRENT_PROJECT_SAVE_STRUCTURE_GROUP as GROUP, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES,
+  CURRENT_PROJECT_SAVE_STRUCTURE_GROUP as GROUP, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES, CURRENT_PROJECT_SAVE_STRUCTURE_STARTUP_CONDITION as STARTUP_CONDITION,
   qualifyCurrentProjectSaveStructureSource, validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import type { CurrentProjectSaveStructureSite as Site } from "./current-project-save-structure-protocol.ts";
 
@@ -20,7 +20,7 @@ const remote = z.looseObject({ type: z.string(), subtype: z.string().optional(),
 const property = z.looseObject({ name: z.string(), value: remote.optional(), get: z.unknown().optional(), set: z.unknown().optional(), isOwn: z.literal(true) });
 const properties = z.looseObject({ result: z.array(property).max(64) });
 const position = z.strictObject({ scriptId: handle, lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() });
-const pausedFrame = z.looseObject({ callFrameId: handle, functionName: z.string().optional(), location: position, functionLocation: position });
+const pausedFrame = z.looseObject({ callFrameId: handle, functionName: z.string().optional(), location: position, functionLocation: position, returnValue: remote.optional() });
 const pauseSchema = z.looseObject({ reason: z.literal("other"), hitBreakpoints: z.tuple([handle]), callFrames: z.array(pausedFrame).min(1).max(32) });
 const eventSchema = z.strictObject({ method: z.enum(["Debugger.paused", "Debugger.resumed"]), sessionId: handle, params: z.unknown() });
 const internal = z.strictObject({ name: z.string(), value: remote });
@@ -43,7 +43,7 @@ const lookupFunction = z.custom<(origin: CurrentProjectSaveStructureOrigin, owne
 const consumeFunction = z.custom<(token: CurrentProjectHistorySqlCompletion, owner: object, operation: object) => unknown>(value => typeof value === "function" && !types.isProxy(value));
 const bindingsSchema = z.custom<CurrentProjectSaveStructureBindings>(value => {
   if (value === null || typeof value !== "object" || types.isProxy(value) || Object.getPrototypeOf(value) !== Object.prototype || !Object.isFrozen(value)) { return false; }
-  const fields = ["sessionId", "scriptId", "uniqueContextId", "prepared", "request", "nextEvent", "assertCurrent", "assertOperationPending", "assertOriginalGenerationExited", "fail"];
+  const fields = ["sessionId", "scriptId", "uniqueContextId", "prepared", "request", "nextEvent", "assertCurrent", "assertStartupPending", "assertOperationPending", "assertOriginalGenerationExited", "fail"];
   if (Reflect.ownKeys(value).length !== fields.length) { return false; }
   return fields.every((key, index) => { const descriptor = Object.getOwnPropertyDescriptor(value, key); if (descriptor === undefined || !Object.hasOwn(descriptor, "value")) { return false; }
     if (index < 3) { return handle.safeParse(descriptor.value).success; } if (index === 3) { return descriptor.value !== null && typeof descriptor.value === "object"; }
@@ -78,7 +78,7 @@ export class CurrentProjectSaveStructureObserver {
   readonly #replies: unknown[] = []; readonly #finalizers = new Set<"upload" | "structure">();
   #normal = 0; #cleanup = 0; #events = 0; #busy = false; #failed = false; #armed = false; #constructionAttempted = false; #constructed = false; #packetAttempted = false;
   #releaseAttempted = false; #completionAttempted = false; #complete = false; #closed = false; #uncertainAllocation = false; #groupReleaseAttempted = false;
-  #cleanupUncertain = false;
+  #cleanupUncertain = false; #startupMode = false; #startupCalls = 0; #startupOutstanding = 0; #startupActive: string | null = null;
   #error: unknown = null; #revocationError: unknown = null;
   #pause: Readonly<{ role: Site; frameId: string; callerFrameId: string | null; resumeAttempted: boolean }> | null = null;
   #constructorProject: string | null = null;
@@ -95,7 +95,7 @@ export class CurrentProjectSaveStructureObserver {
     this.#binding = bindingsSchema.parse(this.#lookup(origin, owner, operation)); Object.freeze(this);
   }
   async #current(): Promise<void> { need(!this.#failed && !this.#closed && this.#lookup(this.#origin, this.#owner, this.#operation) === this.#binding, "ORIGINAL");
-    await this.#binding.assertCurrent(); need(!this.#failed && !this.#closed && this.#lookup(this.#origin, this.#owner, this.#operation) === this.#binding, "CHANGED"); }
+    if (this.#startupMode) { this.#binding.assertStartupPending(); } await this.#binding.assertCurrent(); if (this.#startupMode) { this.#binding.assertStartupPending(); } need(!this.#failed && !this.#closed && this.#lookup(this.#origin, this.#owner, this.#operation) === this.#binding, "CHANGED"); }
   #failure(error: unknown): void { if (!this.#failed) { this.#failed = true; this.#error = error; try { this.#binding.fail(); } catch (revocationError) { this.#revocationError = revocationError; } } }
   async #send(input: unknown, cleanup = false, retain?: (reply: unknown) => void): Promise<unknown> {
     const command = validateCurrentProjectSaveStructureCommand(input); if (cleanup) { this.#cleanup += 1; need(this.#cleanup <= REQUESTS.cleanup, "CLEANUP_CAPACITY"); }
@@ -117,7 +117,7 @@ export class CurrentProjectSaveStructureObserver {
   async #array(raw: unknown, length: number): Promise<Map<string, z.infer<typeof remote>>> { const array = remoteResult(raw); need(array.type === "object" && array.className === "Array", "ARRAY");
     const fields = await this.#own(object(array)); need(fields.size === length + 1 && fields.get("length")?.value === length && Array.from({ length }, (_, index) => fields.has(String(index))).every(Boolean), "ARRAY_ROSTER"); return fields;
   }
-  async #true(role: "same" | "success" | "pristine" | "taskExclusive" | "taskRemoved" | "uploadRelation" | "cooperationRelation" | "coldProject" | "coldStream" | "coldCooperation", objectId: string, args: readonly string[] = []): Promise<void> {
+  async #true(role: "same" | "success" | "pristine" | "taskExclusive" | "taskRemoved" | "uploadRelation" | "cooperationRelation" | "coldProject" | "coldStream" | "coldCooperation" | "startupEntry" | "startupReturn" | "startupFinalizer", objectId: string, args: readonly string[] = []): Promise<void> {
     z.strictObject({ result: z.strictObject({ type: z.literal("boolean"), value: z.literal(true) }) }).parse(await this.#call(role, objectId, args));
   }
   async #scope(functionId: string, kind: "serial" | "debounce" | "cooperation" | "upload"): Promise<readonly string[]> {
@@ -136,35 +136,43 @@ export class CurrentProjectSaveStructureObserver {
     need(event.sessionId === this.#binding.sessionId, "FOREIGN_SESSION"); return event; }
   async #nextPause(expected?: Site): Promise<Site> { need(this.#pause === null, "PAUSE_RETAINED"); const event = await this.#event(); need(event.method === "Debugger.paused", "PAUSE_EXPECTED");
     const paused = pauseSchema.parse(captureCurrentPcbStringClockReply(event.params).value); const selected = [...this.#points].find(([, point]) => point.id === paused.hitBreakpoints[0]);
-    need(selected !== undefined && (expected === undefined || selected[0] === expected), "ORIGINAL_BREAKPOINT"); const [role] = selected; const frame = paused.callFrames[0], site = SITES[role];
+    need(selected !== undefined && (expected === undefined || selected[0] === expected || expected === "packet" && this.#history === null && ["startupEntry", "startupReturn", "initialFinally", "queuedFinally"].includes(selected[0])), "ORIGINAL_BREAKPOINT"); const [role] = selected; const frame = paused.callFrames[0], site = SITES[role];
     need(frame !== undefined && frame.location.scriptId === this.#binding.scriptId && frame.location.lineNumber === site.lineNumber && frame.location.columnNumber === site.columnNumber, "EXACT_PAUSE");
     let callerFrameId: string | null = null;
     if (role === "packet") { const caller = paused.callFrames[1]; need(caller !== undefined && caller.functionLocation.scriptId === this.#binding.scriptId && caller.functionLocation.lineNumber === SITES.timer.lineNumber && caller.functionLocation.columnNumber === SITES.timer.columnNumber, "ORIGINAL_TIMER_FRAME"); callerFrameId = caller.callFrameId; }
+    if (role === "startupEntry") {
+      const caller = paused.callFrames[1], constructor = SITES.producerSerial;
+      need(caller !== undefined && caller.location.scriptId === this.#binding.scriptId && caller.location.lineNumber === constructor.lineNumber && caller.location.columnNumber >= constructor.columnNumber - (constructor.offset - constructor.start) && caller.location.columnNumber < constructor.columnNumber - (constructor.offset - constructor.start) + constructor.bytes, "ORIGINAL_STARTUP_SERIAL_CALLER"); callerFrameId = caller.callFrameId;
+    }
+    if (role === "startupReturn") { need(z.strictObject({ type: z.literal("undefined") }).safeParse(frame.returnValue).success, "ORIGINAL_UNDEFINED_STARTUP_RETURN"); }
     if (role === "producerUpload" || role === "producerCooperation" || role === "producerSerial" || role === "producerDebounce") {
       const caller = paused.callFrames[1], constructor = role === "producerUpload" ? SITES.producerBase : SITES.producerProject;
       need(caller !== undefined && caller.location.scriptId === this.#binding.scriptId && caller.location.lineNumber === constructor.lineNumber && caller.location.columnNumber >= constructor.columnNumber - (constructor.offset - constructor.start) && caller.location.columnNumber <= constructor.columnNumber &&
         caller.functionName === constructor.name, "ORIGINAL_CONSTRUCTOR_CALLER");
       callerFrameId = caller.callFrameId;
     }
-    this.#pause = { role, frameId: frame.callFrameId, callerFrameId, resumeAttempted: false }; need(role !== "queuedFinally", "QUEUED_WAVE_UNSUPPORTED"); return role;
+    this.#pause = { role, frameId: frame.callFrameId, callerFrameId, resumeAttempted: false }; need(role !== "queuedFinally" || expected === "packet" && this.#history === null && this.#startupOutstanding > 0, "QUEUED_WAVE_UNSUPPORTED");
+    if (expected === "packet" && role !== "packet") { await this.#serviceStartup(role); return this.#nextPause(expected); }
+    return role;
   }
   async #frame(role: Site): Promise<Map<string, z.infer<typeof remote>>> {
     need(this.#pause !== null, "FRAME_PAUSE");
-    if (role === "timer") { need(this.#pause.role === "packet" && this.#pause.callerFrameId !== null, "TIMER_FRAME_PAUSE"); }
+    if (role === "startupCaller") { need(this.#pause.role === "startupEntry" && this.#pause.callerFrameId !== null, "STARTUP_CALLER_FRAME"); }
+    else if (role === "timer") { need(this.#pause.role === "packet" && this.#pause.callerFrameId !== null, "TIMER_FRAME_PAUSE"); }
     else if (role === "producerCaller") { need(this.#pause.callerFrameId !== null && this.#pause.role.startsWith("producer"), "CONSTRUCTOR_FRAME_PAUSE"); }
     else { need(this.#pause.role === role, "FRAME_PAUSE_ROLE"); }
-    const callFrameId = role === "timer" || role === "producerCaller" ? this.#pause.callerFrameId : this.#pause.frameId; const raw = await this.#send({ phase: "project-save-structure-frame", role, method: "Debugger.evaluateOnCallFrame",
+    const callFrameId = role === "timer" || role === "producerCaller" || role === "startupCaller" ? this.#pause.callerFrameId : this.#pause.frameId; const raw = await this.#send({ phase: "project-save-structure-frame", role, method: "Debugger.evaluateOnCallFrame",
     params: { ...FRAME_FLAGS, callFrameId, expression: SITES[role].expression } }); this.#frameArrays.set(role, object(remoteResult(raw))); return this.#array(raw, SITES[role].length); }
-  async #resume(role: Site): Promise<void> { need(this.#pause?.role === role && !this.#pause.resumeAttempted && (role === "bootstrap" || CONSTRUCTORS.some(value => value === role) || this.#history !== null), "RESUME_AUTHORITY");
+  async #resume(role: Site): Promise<void> { need(this.#pause?.role === role && !this.#pause.resumeAttempted && (role === "bootstrap" || CONSTRUCTORS.some(value => value === role) || this.#history !== null || this.#startupMode && (role === "startupEntry" || role === "startupReturn" || role === "initialFinally" || role === "queuedFinally")), "RESUME_AUTHORITY");
     this.#pause = { ...this.#pause, resumeAttempted: true }; z.strictObject({}).parse(await this.#send({ phase: "project-save-structure-resume", role, method: "Debugger.resume", params: {} }));
     const event = await this.#event(); need(event.method === "Debugger.resumed", "RESUME_ACK"); z.strictObject({}).parse(event.params); this.#pause = null;
   }
   public async arm(): Promise<void> { need(!this.#armed && !this.#busy, "ARM_CONSUMED"); this.#armed = true; this.#busy = true;
     try { sourceReply(await this.#send({ phase: "project-save-structure-source", method: "Debugger.getScriptSource", params: { scriptId: this.#binding.scriptId } }));
-      for (const role of [...CONSTRUCTORS, "bootstrap", "packet", "response", "callbackReturn", "initialFinally", "queuedFinally"] as const) { const site = SITES[role]; this.#uncertainAllocation = true;
+      for (const role of [...CONSTRUCTORS, "startupEntry", "startupReturn", "bootstrap", "packet", "response", "callbackReturn", "initialFinally", "queuedFinally"] as const) { const site = SITES[role]; this.#uncertainAllocation = true;
         const retain = (raw: unknown): void => { const result = z.looseObject({ breakpointId: handle }).safeParse(raw); if (result.success && ![...this.#points.values()].some(point => point.id === result.data.breakpointId)) {
           this.#points.set(role, { id: result.data.breakpointId, removeAttempted: false, removed: false }); this.#uncertainAllocation = false; } };
-        const raw = await this.#send({ phase: "project-save-structure-arm", role, method: "Debugger.setBreakpoint", params: { location: { scriptId: this.#binding.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } } }, false, retain);
+        const raw = await this.#send({ phase: "project-save-structure-arm", role, method: "Debugger.setBreakpoint", params: { location: { scriptId: this.#binding.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber }, ...(role === "startupEntry" || role === "startupReturn" ? { condition: STARTUP_CONDITION } : {}) } }, false, retain);
         const result = z.strictObject({ breakpointId: handle, actualLocation: position }).parse(raw); need(!this.#uncertainAllocation && this.#points.get(role)?.id === result.breakpointId && result.actualLocation.scriptId === this.#binding.scriptId && result.actualLocation.lineNumber === site.lineNumber && result.actualLocation.columnNumber === site.columnNumber, "ARM_REPLY");
       }
     } catch (error) { this.#failure(error); throw error; } finally { this.#busy = false; }
@@ -230,6 +238,28 @@ export class CurrentProjectSaveStructureObserver {
       await this.#pristine(); await this.#joinProducerConstructors(); await this.#removeProducerConstructorPoints(); this.#constructed = true; await this.#resume("bootstrap");
     } catch (error) { this.#failure(error); throw error; } finally { this.#busy = false; }
   }
+  async #serviceStartup(role: Site): Promise<void> {
+    need(this.#constructed && this.#history === null && !this.#startupMode && this.#project !== null && this.#uploadWrapper !== null && this.#uploadCallback !== null, "STARTUP_ORIGINAL_CONSTRUCTION");
+    this.#startupMode = true;
+    try {
+      this.#binding.assertStartupPending();
+      if (role === "startupEntry") {
+        need(this.#startupActive === null, "STARTUP_CALLBACK_ACTIVE"); const count = this.#binding.prepared.history.documents.reduce((total, document) => total + document.records.length, 0);
+        need(Number.isSafeInteger(count) && count >= 1 && count <= 7 && this.#startupCalls < count, "STARTUP_SOURCE_RECORD_BOUND"); this.#startupCalls += 1;
+        await this.#frame(role); await this.#frame("startupCaller"); const caller = this.#frameArrays.get("startupCaller"), entry = this.#frameArrays.get(role);
+        const scopes = await this.#scope(this.#uploadWrapper, "serial"); need(entry !== undefined && caller !== undefined && scopes[0] !== undefined, "STARTUP_ORIGINAL_FRAMES");
+        await this.#true("startupEntry", entry, [this.#project, this.#uploadCallback, caller, scopes[0]]); this.#startupActive = entry;
+      } else if (role === "startupReturn") {
+        need(this.#startupActive !== null, "STARTUP_ORIGINAL_ENTRY"); await this.#frame(role); const current = this.#frameArrays.get(role); need(current !== undefined, "STARTUP_ORIGINAL_RETURN");
+        await this.#true("startupReturn", current, [this.#startupActive, this.#project]); this.#startupActive = null; this.#startupOutstanding += 1;
+      } else {
+        need((role === "initialFinally" || role === "queuedFinally") && this.#startupActive === null && this.#startupOutstanding > 0, "STARTUP_NO_PUBLICATION_RETURN_REQUIRED");
+        await this.#frame(role); const frame = this.#frameArrays.get(role), scopes = await this.#scope(this.#uploadWrapper, "serial"); need(frame !== undefined && scopes[0] !== undefined, "STARTUP_ORIGINAL_FINALIZER");
+        await this.#true("startupFinalizer", frame, [this.#project, this.#uploadCallback, scopes[0]]); this.#startupOutstanding -= 1;
+      }
+      await this.#resume(role); this.#binding.assertStartupPending();
+    } finally { this.#startupMode = false; }
+  }
   async #queues(): Promise<void> { need(this.#uploadCallback !== null && this.#debounce !== null && this.#structureCallback !== null, "QUEUES"); const scopes = await this.#freshScopes();
     const debounce = await this.#array(await this.#call("debounce", scopes.debounce, [scopes.parameters, this.#structureCallback], false), 2); const resolver = fn(debounce.get("1")), timer = debounce.get("0")?.value;
     need(typeof timer === "number" && Number.isSafeInteger(timer) && timer > 0, "TIMER");
@@ -239,8 +269,11 @@ export class CurrentProjectSaveStructureObserver {
       await this.#true("same", object(upload.get("0")), [this.#uploadPromise]); await this.#true("same", object(structure.get("0")), [this.#structurePromise]); }
   }
   async #readPacket(packet: string): Promise<z.infer<typeof packetSchema>> { const raw = remoteResult(await this.#call("packetText", packet, [])); return packetSchema.parse(raw.value); }
+  /** Start after construction, concurrently with the original opening. It
+   * services only proved startup no-publication returns before retaining the
+   * one actual Save structure packet. A packet requires the original Save role. */
   public async observePacket(): Promise<CurrentProjectSaveStructurePacket> { need(this.#constructed && !this.#busy && !this.#packetAttempted, "PACKET_CONSUMED"); this.#packetAttempted = true; this.#busy = true;
-    try { this.#binding.assertOperationPending(); await this.#nextPause("packet"); const frame = await this.#frame("packet"); need(this.#project !== null, "PROJECT"); await this.#true("same", object(frame.get("0")), [this.#project]);
+    try { await this.#nextPause("packet"); this.#binding.assertOperationPending(); need(this.#startupActive === null && this.#startupOutstanding === 0, "STARTUP_DRAIN_REQUIRED"); const frame = await this.#frame("packet"); need(this.#project !== null, "PROJECT"); await this.#true("same", object(frame.get("0")), [this.#project]);
       this.#packet = object(frame.get("1")); this.#task = object(frame.get("2")); await this.#queues(); const timer = await this.#frame("timer"); need(this.#structureCallback !== null && this.#resolver !== null && timer.get("2")?.value === this.#timer, "ORIGINAL_TIMER_ID");
       await this.#true("same", fn(timer.get("0")), [this.#structureCallback]); await this.#true("same", fn(timer.get("1")), [this.#resolver]); const data = await this.#array(await this.#call("packet", this.#packet, [this.#project, this.#task], false), 2);
       this.#datas = object(data.get("0")); this.#taskSet = object(data.get("1")); await this.#true("taskExclusive", this.#project, [this.#task, this.#taskSet]); this.#value = await this.#readPacket(this.#packet);

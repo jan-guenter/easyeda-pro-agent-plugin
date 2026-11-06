@@ -1903,7 +1903,7 @@ class CurrentPcbRetainedOwnerCore {
             request: async (input: Parameters<CurrentProjectSaveStructureBindings["request"]>[0], cleanup: boolean, retain?: (reply: unknown) => void): Promise<unknown> => {
               const command = validateCurrentProjectSaveStructureCommand(input); original(); assertStructureOriginal();
               if (cleanup !== (command.phase === "project-save-structure-remove" || command.phase === "project-save-structure-release")) { throw error("PROJECT_SAVE_STRUCTURE_REQUEST_CLASS"); }
-              const historyGrant = command.phase === "project-save-structure-resume" && command.role !== "bootstrap" && !command.role.startsWith("producer") ? projectSaveStructureHistoryGrants.get(structureOrigin) : null;
+              const historyGrant = command.phase === "project-save-structure-resume" && command.role !== "bootstrap" && !command.role.startsWith("producer") && !command.role.startsWith("startup") && (this.#schematicStages.has("save") || command.role !== "initialFinally" && command.role !== "queuedFinally") ? projectSaveStructureHistoryGrants.get(structureOrigin) : null;
               if (historyGrant === undefined) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_REQUIRED"); }
               const assertHistory = (): void => { if (historyGrant !== null) { if (projectSaveStructureHistoryGrants.get(structureOrigin) !== historyGrant) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_CHANGED"); } historyGrant.assertCurrent(); } }; assertHistory();
               if (retain !== undefined && (typeof retain !== "function" || types.isProxy(retain))) { throw error("PROJECT_SAVE_STRUCTURE_RETAIN_CALLBACK"); }
@@ -1922,6 +1922,7 @@ class CurrentPcbRetainedOwnerCore {
               assertHistory(); return reply;
             }, nextEvent: () => selected.nextStructureEvent(),
             assertCurrent: async (): Promise<void> => { original(); assertStructureOriginal(); await this.#verify(); original(); assertStructureOriginal(); },
+            assertStartupPending: (): void => { original(); assertStructureOriginal(); if (this.#schematicStages.has("save")) { throw error("PROJECT_SAVE_STRUCTURE_STARTUP_OVER"); } },
             assertOperationPending: (): void => { original(); assertStructureOriginal(); if (!(this.#schematicStages.has("save"))) { throw error("PROJECT_SAVE_STRUCTURE_ORIGINAL_SAVE_REQUIRED"); } },
             assertOriginalGenerationExited: (): Promise<void> => { assertStructureOriginal(); if (!this.#terminationObserved || this.#terminationObservation?.terminated !== true) { return Promise.reject(error("PROJECT_SAVE_STRUCTURE_ORIGINAL_EXIT_REQUIRED")); } return Promise.resolve(); },
             fail: (): void => { selected.fail(); } });
@@ -2027,7 +2028,7 @@ class CurrentPcbRetainedOwnerCore {
             request: async (input: Parameters<CurrentProjectSaveStructureBindings["request"]>[0], cleanup: boolean, retain?: (reply: unknown) => void): Promise<unknown> => {
               const command = validateCurrentProjectSaveStructureCommand(input); original(); assertStructureOriginal();
               if (cleanup !== (command.phase === "project-save-structure-remove" || command.phase === "project-save-structure-release")) { throw error("PROJECT_SAVE_STRUCTURE_REQUEST_CLASS"); }
-              const historyGrant = command.phase === "project-save-structure-resume" && command.role !== "bootstrap" && !command.role.startsWith("producer") ? projectSaveStructureHistoryGrants.get(structureOrigin) : null;
+              const historyGrant = command.phase === "project-save-structure-resume" && command.role !== "bootstrap" && !command.role.startsWith("producer") && !command.role.startsWith("startup") && (this.#viaSdkPhases.has("save") || command.role !== "initialFinally" && command.role !== "queuedFinally") ? projectSaveStructureHistoryGrants.get(structureOrigin) : null;
               if (historyGrant === undefined) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_REQUIRED"); }
               const assertHistory = (): void => { if (historyGrant !== null) { if (projectSaveStructureHistoryGrants.get(structureOrigin) !== historyGrant) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_CHANGED"); } historyGrant.assertCurrent(); } }; assertHistory();
               if (retain !== undefined && (typeof retain !== "function" || types.isProxy(retain))) { throw error("PROJECT_SAVE_STRUCTURE_RETAIN_CALLBACK"); }
@@ -2046,6 +2047,7 @@ class CurrentPcbRetainedOwnerCore {
               assertHistory(); return reply;
             }, nextEvent: () => selected.nextStructureEvent(),
             assertCurrent: async (): Promise<void> => { original(); assertStructureOriginal(); await this.#verify(); original(); assertStructureOriginal(); },
+            assertStartupPending: (): void => { original(); assertStructureOriginal(); if (this.#viaSdkPhases.has("save")) { throw error("PROJECT_SAVE_STRUCTURE_STARTUP_OVER"); } },
             assertOperationPending: (): void => { original(); assertStructureOriginal(); if (!(this.#viaSdkPhases.has("save"))) { throw error("PROJECT_SAVE_STRUCTURE_ORIGINAL_SAVE_REQUIRED"); } },
             assertOriginalGenerationExited: (): Promise<void> => { assertStructureOriginal(); if (!this.#terminationObserved || this.#terminationObservation?.terminated !== true) { return Promise.reject(error("PROJECT_SAVE_STRUCTURE_ORIGINAL_EXIT_REQUIRED")); } return Promise.resolve(); },
             fail: (): void => { selected.fail(); } });

@@ -42,24 +42,28 @@ const scopes = (id: string): object => {
 function constructorName(role: Site): string { if (role === "producerUpload") { return "Gd"; } return "Lg"; }
 
 
-async function fixture(changedTree = false, changedTimer = false, changedReceiver = false, changedCallback = false, changedCaller = false): Promise<Readonly<{ observer: CurrentProjectSaveStructureObserver; origin: CurrentProjectSaveStructureOrigin; token: CurrentProjectHistorySqlCompletion; resumes: Site[]; consumed: () => boolean; exit: () => void }>> {
+async function fixture(changedTree = false, changedTimer = false, changedReceiver = false, changedCallback = false, changedCaller = false, startupCalls = 0, wrongStartupReady = false, wrongStartupReturn = false, wrongStartupFinalizer = false, earlySave = false): Promise<Readonly<{ observer: CurrentProjectSaveStructureObserver; origin: CurrentProjectSaveStructureOrigin; token: CurrentProjectHistorySqlCompletion; resumes: Site[]; consumed: () => boolean; exit: () => void }>> {
   const excerpt = worker209ConstructionFixtureSource(); const descriptions = { upload: sourceAt(excerpt, PRODUCERS.serial), structure: sourceAt(excerpt, PRODUCERS.serial), debounce: sourceAt(excerpt, PRODUCERS.debounce),
     uploadCallback: sourceAt(excerpt, CALLBACKS.uploadStructure), structureCallback: sourceAt(excerpt, CALLBACKS.structure), bufferedUpload: sourceAt(excerpt, PRODUCERS.upload), cooperationWrapper: sourceAt(excerpt, PRODUCERS.cooperation), bufferedCallback: sourceAt(excerpt, CALLBACKS.upload), cooperationCallback: sourceAt(excerpt, CALLBACKS.cooperation) };
   const target = { projectUuid: "1".repeat(64), branchUuid: "2".repeat(32), documentUuid: "3".repeat(32) };
-  const prepared = Object.freeze({ qualification: { target } }); const owner = Object.freeze({ syntheticOwner: true }); const operation = Object.freeze({ syntheticOperation: true });
+  const prepared = Object.freeze({ qualification: { target }, history: { documents: [{ records: Array.from({ length: 7 }, () => ({})) }] } }); const owner = Object.freeze({ syntheticOwner: true }); const operation = Object.freeze({ syntheticOperation: true });
   const origin: CurrentProjectSaveStructureOrigin = Object.freeze({ profile: "private.current-pcb-via-save-structure-origin.v1" }); const token = Object.freeze({ profile: "private.current-project-history-sql-completion.v1" });
-  let consumed = false, exited = false, finalizer = 0; const resumes: Site[] = [];
+  let consumed = false, exited = false, finalizer = 0, startupFinalizers = 0; const resumes: Site[] = [];
   const events: CurrentProjectSaveStructureEvent[] = []; const points = new Map<Site, string>();
-  const roles: readonly Site[] = [...SEQUENCE, "bootstrap", "packet", "response", "callbackReturn", "initialFinally", "initialFinally"];
+  const roles: readonly Site[] = [...SEQUENCE, "bootstrap", ...Array.from({ length: startupCalls }, (_, index) => ["startupEntry", "startupReturn", index % 2 === 0 ? "initialFinally" : "queuedFinally"] as const).flat(), "packet", "response", "callbackReturn", "initialFinally", "initialFinally"];
   for (const [index, role] of roles.entries()) { events.push({ method: "Debugger.paused", sessionId: "worker.session", params: { reason: "other", hitBreakpoints: [`bp.${role}`], callFrames: [{ callFrameId: `frame.${String(index)}`,
-    location: { scriptId: "worker.script", lineNumber: SITES[role].lineNumber, columnNumber: SITES[role].columnNumber }, functionLocation: { scriptId: "worker.script", lineNumber: SITES[role].lineNumber, columnNumber: SITES[role].columnNumber } },
+    location: { scriptId: "worker.script", lineNumber: SITES[role].lineNumber, columnNumber: SITES[role].columnNumber }, functionLocation: { scriptId: "worker.script", lineNumber: SITES[role].lineNumber, columnNumber: SITES[role].columnNumber }, ...(role === "startupReturn" ? { returnValue: wrongStartupReturn ? { type: "number", value: 1 } : { type: "undefined" } } : {}) },
   ...(role === "producerUpload" || role === "producerCooperation" || role === "producerSerial" || role === "producerDebounce" ? [{ callFrameId: "constructor.caller", functionName: changedCaller ? "Unowned" : constructorName(role),
     location: { scriptId: "worker.script", lineNumber: SITES[role === "producerUpload" ? "producerBase" : "producerProject"].lineNumber, columnNumber: SITES[role === "producerUpload" ? "producerBase" : "producerProject"].columnNumber }, functionLocation: { scriptId: "worker.script", lineNumber: 0, columnNumber: 0 } }] : []),
+  ...(role === "startupEntry" ? [{ callFrameId: "startup.caller", location: { scriptId: "worker.script", lineNumber: SITES.producerSerial.lineNumber, columnNumber: SITES.producerSerial.columnNumber }, functionLocation: { scriptId: "worker.script", lineNumber: SITES.producerSerial.lineNumber, columnNumber: SITES.producerSerial.columnNumber } }] : []),
   ...(role === "packet" ? [{ callFrameId: "timer.caller", location: { scriptId: "worker.script", lineNumber: SITES.timer.lineNumber, columnNumber: SITES.timer.columnNumber }, functionLocation: { scriptId: "worker.script", lineNumber: SITES.timer.lineNumber, columnNumber: SITES.timer.columnNumber } }] : [])] } }, { method: "Debugger.resumed", sessionId: "worker.session", params: {} }); }
   const selected = (name: keyof typeof descriptions): Remote => ({ type: "function", className: (name === "structureCallback" || name === "bufferedCallback") ? "AsyncFunction" : "Function", objectId: name, description: descriptions[name] });
   const value = { projectUuid: target.projectUuid, branchUuid: target.branchUuid, ticket: 20, structureText: changedTree ? "unrelated metadata" : "fixed expected metadata" };
   const readProperties = (id: string): object => {
     if (id === "unowned.sameSourceCallback") { return metadata("bufferedCallback"); } if (id in descriptions) { return metadata(id); } if (id.endsWith(".scopes")) { return scopes(id); }
+    if (id === "frame.startupEntry" || id === "frame.startupReturn") { return array([ref("project"), { type: "string", value: "PCB" }, { type: "string", value: "VIA" }, { type: "boolean", value: true }]); }
+    if (id === "frame.startupCaller") { return array([selected("uploadCallback"), ref("startup.promise"), { type: "object", subtype: "null", value: null }, ref("startup.arguments")]); }
+    if ((id === "frame.initialFinally" || id === "frame.queuedFinally") && startupFinalizers < startupCalls) { return array([ref("startup.promise"), { type: "object", subtype: "null", value: null }, selected(wrongStartupFinalizer ? "debounce" : "uploadCallback")]); }
     if (id === "frame.producerCaller" || id === "frame.producerBase" || id === "frame.producerProject") { return array([ref(changedReceiver && id === "frame.producerBase" ? "unowned.project" : "project")]); }
     if (id === "frame.producerUpload") { return array([{ ...selected("bufferedCallback"), objectId: changedCallback ? "unowned.sameSourceCallback" : "bufferedCallback" }, { type: "number", value: 500 }]); }
     if (id === "frame.producerCooperation") { return array([selected("cooperationCallback"), { type: "number", value: 10 }]); }
@@ -83,11 +87,13 @@ async function fixture(changedTree = false, changedTimer = false, changedReceive
     else if (command.method === "Debugger.setBreakpoint") { points.set(command.role, `bp.${command.role}`); raw = { breakpointId: `bp.${command.role}`, actualLocation: command.params.location }; retain?.(raw); }
     else if (command.method === "Debugger.evaluateOnCallFrame") { raw = arrayRef(`frame.${command.role}`, SITES[command.role].length); }
     else if (command.method === "Runtime.getProperties") { raw = readProperties(command.params.objectId); }
-    else if (command.method === "Debugger.resume") { assert.ok(command.role === "bootstrap" || CONSTRUCTORS.some(role => role === command.role) || consumed); resumes.push(command.role); if (command.role === "initialFinally") { finalizer += 1; } raw = {}; }
+    else if (command.method === "Debugger.resume") { assert.ok(command.role === "bootstrap" || command.role === "startupEntry" || command.role === "startupReturn" || (command.role === "initialFinally" || command.role === "queuedFinally") && startupFinalizers < startupCalls || CONSTRUCTORS.some(role => role === command.role) || consumed); resumes.push(command.role); if (command.role === "initialFinally" || command.role === "queuedFinally") { if (startupFinalizers < startupCalls) { startupFinalizers += 1; } else { finalizer += 1; } } raw = {}; }
     else if (command.method === "Debugger.removeBreakpoint" || command.method === "Runtime.releaseObjectGroup") { raw = {}; }
     else { const id = command.params.objectId;
       if (command.phase === "project-save-structure-uploadRelation") { assert.equal(command.params.arguments[2]?.objectId, "bufferedCallback", "only original constructor arrow can join upload wrapper"); }
-      if (command.phase === "project-save-structure-uploadSelect") { raw = { result: selected("bufferedUpload") }; }
+      if (command.phase === "project-save-structure-startupEntry") { raw = { result: { type: "boolean", value: !wrongStartupReady } }; }
+      else if (command.phase === "project-save-structure-startupFinalizer") { raw = { result: { type: "boolean", value: !wrongStartupFinalizer } }; }
+      else if (command.phase === "project-save-structure-uploadSelect") { raw = { result: selected("bufferedUpload") }; }
       else if (command.phase === "project-save-structure-cooperationSelect") { raw = { result: selected("cooperationWrapper") }; }
       else if (command.phase === "project-save-structure-bootstrap") { raw = arrayRef("initial", 3); }
       else if (command.phase === "project-save-structure-callback") { let name: keyof typeof descriptions = "structureCallback"; if (id.startsWith("upload")) { name = "uploadCallback"; } else if (id.startsWith("structure")) { name = "debounce"; } raw = { result: selected(name) }; }
@@ -104,7 +110,7 @@ async function fixture(changedTree = false, changedTimer = false, changedReceive
     // Explicit synthetic checkpoint seam; the actual expectation issuer is separately tested and never replaced in production.
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This explicit synthetic registry seam does not issue a production checkpoint.
     prepared: prepared as unknown as CurrentProjectSaveStructureBindings["prepared"], request, nextEvent: (): Promise<CurrentProjectSaveStructureEvent> => { const event = events.shift(); assert.ok(event); return Promise.resolve(event); },
-    assertCurrent: (): Promise<void> => Promise.resolve(), assertOperationPending: (): void => { assert.equal(exited, false); },
+    assertCurrent: (): Promise<void> => Promise.resolve(), assertStartupPending: (): void => { assert.equal(earlySave, false); }, assertOperationPending: (): void => { assert.equal(exited, false); },
     assertOriginalGenerationExited: (): Promise<void> => { assert.ok(exited); return Promise.resolve(); }, fail: (): void => {
       // Synthetic source revocation only.
     } });
@@ -122,13 +128,13 @@ async function fixture(changedTree = false, changedTimer = false, changedReceive
   return { observer, origin, token, resumes, consumed: (): boolean => consumed, exit: (): void => { exited = true; } };
 }
 void test("original-held packet waits history consumption and observes both original serial finalizers within exact budget", async () => {
-  const f = await fixture(); await f.observer.arm(); await f.observer.observeConstruction(); const packet = await f.observer.observePacket();
-  assert.deepEqual(f.resumes, [...SEQUENCE, "bootstrap"]); assert.equal(f.consumed(), false); assert.equal(f.observer.retained().packetHeld, true);
+  const f = await fixture(false, false, false, false, false, 7); await f.observer.arm(); await f.observer.observeConstruction(); const packet = await f.observer.observePacket();
+  assert.deepEqual(f.resumes, [...SEQUENCE, "bootstrap", ...Array.from({ length: 7 }, (_, index) => ["startupEntry", "startupReturn", index % 2 === 0 ? "initialFinally" : "queuedFinally"]).flat()]); assert.equal(f.consumed(), false); assert.equal(f.observer.retained().packetHeld, true);
   await assert.rejects(f.observer.releasePacket({ ...packet }, f.token)); assert.equal(f.consumed(), false);
   await f.observer.releasePacket(packet, f.token); assert.equal(f.consumed(), true); const completion = await f.observer.observeCompletion();
   assert.equal(completion.mainStructurePublicationVerified, false); assert.equal(completion.completeClosedSqlVerified, false); assert.equal(completion.persistenceVerified, false);
   assert.equal(f.observer.producerConstruction().originalSevenConstructorContinuationsObserved, true); assert.equal(f.observer.producerConstruction().completeUploadFrontierVerified, false);
-  assert.equal(f.observer.retained().normalRequests, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS.normal); await f.observer.cleanup(); assert.equal(f.observer.retained().cleanupRequests, 13);
+  assert.equal(f.observer.retained().normalRequests, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS.normal); await f.observer.cleanup(); assert.equal(f.observer.retained().cleanupRequests, 15);
   assert.equal(f.observer.retained().resourcesClosed, true); await assert.rejects(f.observer.releasePacket(packet, f.token));
 });
 void test("an incomplete or mismatched structure packet is never resumed by cleanup", async () => {
@@ -147,5 +153,13 @@ void test("foreign constructor receivers, callers and same-source callbacks neve
     await f.observer.arm(); await assert.rejects(f.observer.observeConstruction());
     assert.equal(f.resumes.includes("bootstrap"), false); assert.equal(f.consumed(), false);
     const before = [...f.resumes]; await assert.rejects(f.observer.cleanup()); f.exit(); await f.observer.cleanup(); assert.deepEqual(f.resumes, before);
+  }
+});
+
+void test("startup continuation requires the actual false predicate, undefined return and original serial finalizer before Save", async () => {
+  for (const wrong of ["ready", "return", "finalizer", "save"]) {
+    const f = await fixture(false, false, false, false, false, 1, wrong === "ready", wrong === "return", wrong === "finalizer", wrong === "save");
+    await f.observer.arm(); await f.observer.observeConstruction(); await assert.rejects(f.observer.observePacket());
+    assert.equal(f.resumes.includes("packet"), false); assert.equal(f.consumed(), false); const before = [...f.resumes]; f.exit(); await f.observer.cleanup(); assert.deepEqual(f.resumes, before);
   }
 });

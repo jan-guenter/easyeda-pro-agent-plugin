@@ -16,7 +16,7 @@ export interface CurrentProjectSaveStructureBindings {
    * captures, pre-EP bootstrap and later held structure publication. It waits the same retained source
    * resume Promise before reading; it never starts another native event poll. */
   readonly nextEvent: () => Promise<CurrentProjectSaveStructureEvent>;
-  readonly assertCurrent: () => Promise<void>; readonly assertOperationPending: () => void;
+  readonly assertCurrent: () => Promise<void>; readonly assertStartupPending: () => void; readonly assertOperationPending: () => void;
   readonly assertOriginalGenerationExited: () => Promise<void>; readonly fail: () => void;
 }
 /** Issued only by the original main service after all history/project SQL

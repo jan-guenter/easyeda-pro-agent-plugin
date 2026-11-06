@@ -83,7 +83,7 @@ export class CurrentSchematicDisplayWorkerController {
     need(this.#source === source && this.#result === null && !this.#structurePoints.has(role) && ![...this.#structurePoints.values(), ...this.#savePoints.values()].includes(breakpointId) && token(breakpointId));
     this.#structurePoints.set(role, breakpointId);
   }
-  public requireStructureArmed(source: CurrentSchematicDisplayProjectSourceHeld): void { need(this.#source === source && this.#structurePoints.size === 12); }
+  public requireStructureArmed(source: CurrentSchematicDisplayProjectSourceHeld): void { need(this.#source === source && this.#structurePoints.size === 14); }
   #resolution(event: CurrentSchematicDisplayWorkerBootstrapEvent): boolean {
     if (this.#result !== null) { return false; }
     if (event.method !== "Debugger.breakpointResolved") { return false; }
