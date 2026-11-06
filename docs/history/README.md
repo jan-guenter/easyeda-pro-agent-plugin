@@ -2,6 +2,8 @@
 
 - [2026-11-06 original structure transport observer](2026-11-06-original-structure-transport-observer.md). Fixed XHR send/return custody, original body and main-publication grants, failure retention, and checkpoint-bound Via generation launch; connected writer completion remains pending.
 
+- [2026-11-06 fresh saved-reader scene/effect join](2026-11-06-saved-reader-scene-effect-join.md). Own cold-loaded PCB/frame, complete scene and genuine historical post-create effect; reader-closed full SQL remains separate.
+
 - [2026-11-06 saved-reader PCB model opening](2026-11-06-saved-reader-pcb-model-opening.md). Original loading-bound PCB opening, fixed source/frame observation and four-family DTO sequence; complete scene and reader-closed persistence remain pending.
 
 - [2026-11-06 saved-reader early worker hold](2026-11-06-saved-reader-early-worker-hold.md). Original pre-resume three-request browser prefix and suspended background bookkeeping; running actors still refuse and native startup timing remains unvalidated.

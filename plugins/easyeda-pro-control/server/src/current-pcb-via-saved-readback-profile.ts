@@ -1,3 +1,4 @@
+import { CURRENT_PCB_VIA_SAVED_SCENE_REQUESTS as SCENE } from "./current-pcb-via-saved-scene-protocol.ts";
 /** A fresh readonly birth after the original writer's complete closed SQL proof.
  * Cache grants and restored-source acceptance remain separate from these bounds. */
 import { CURRENT_PCB_VIA_SAVED_MODEL_REQUESTS as MODEL } from "./current-pcb-via-saved-model-protocol.ts";
@@ -15,14 +16,15 @@ export const CURRENT_PCB_VIA_SAVED_READBACK_BOOTSTRAP_REQUESTS = Object.freeze({
   workerNormal: LOAD.normal, workerCleanup: ROLES.length + 1,
   total: 2 + 1 + LOAD.normal + ROLES.length + 1 });
 const ACTIVE_READ_ONLY = 3 + 16 + 9 + 2 + CACHE.total + METADATA.total + 2 * (9 + 1) + (9 + 1);
+const ACTIVE_SCENE = ACTIVE_READ_ONLY + 2 + 16 + LOAD.totalUntilProjectHeld + OBSERVE.total + MODEL.total + SCENE.total;
 const BOOTSTRAP = CURRENT_PCB_VIA_SAVED_READBACK_BOOTSTRAP_REQUESTS;
 
 export const CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE = "pcb-via-saved-readback209";
 export const CURRENT_PCB_VIA_SAVED_READBACK_PROFILE = Object.freeze({
   purpose: CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE, nativeSwitch: "-PcbViaSavedReadback209",
   main: Object.freeze({ constructionNormal: 64, fenceNormal: FENCE.normal, registrationNormal: REGISTRATION, normal: 64 + FENCE.normal + REGISTRATION, cleanup: 8, total: 64 + FENCE.normal + REGISTRATION + 8 }),
-  renderer: Object.freeze({ earlyActorPrefix: 3, enabledDiscovery: 16, preCacheGuard: 9, preDeleteGuards: 2 * (9 + 1), preLoadGuard: 9 + 1, earlyWorkerParent: 2, activeReadOnly: ACTIVE_READ_ONLY, registration: 2, savedOpening: 16, activeRegistration: ACTIVE_READ_ONLY + 2, activeOpening: ACTIVE_READ_ONLY + 2 + 16, activeLoadBootstrap: ACTIVE_READ_ONLY + 2 + 16 + LOAD.totalUntilProjectHeld, activeLoadObservation: ACTIVE_READ_ONLY + 2 + 16 + LOAD.totalUntilProjectHeld + OBSERVE.total, activePcbModel: ACTIVE_READ_ONLY + 2 + 16 + LOAD.totalUntilProjectHeld + OBSERVE.total + MODEL.total, model: MODEL, loadingObservation: OBSERVE.total, nativeMetadata: METADATA.total, opening: 103, workerBootstrap: BOOTSTRAP.total, cache: CACHE.total,
-    normal: 3 + 9 + 103 + 2 + 16 + BOOTSTRAP.parent + BOOTSTRAP.inventory + BOOTSTRAP.workerNormal + OBSERVE.normal + CACHE.normal + METADATA.normal + 2 * (9 + 1) + (9 + 1),
-    cleanup: BOOTSTRAP.workerCleanup + OBSERVE.continuation + CACHE.cleanup + METADATA.cleanup, total: 3 + 9 + 103 + 2 + 16 + BOOTSTRAP.total + OBSERVE.total + CACHE.total + METADATA.total + 2 * (9 + 1) + (9 + 1) }),
+  renderer: Object.freeze({ earlyActorPrefix: 3, enabledDiscovery: 16, preCacheGuard: 9, preDeleteGuards: 2 * (9 + 1), preLoadGuard: 9 + 1, earlyWorkerParent: 2, activeReadOnly: ACTIVE_READ_ONLY, registration: 2, savedOpening: 16, activeRegistration: ACTIVE_READ_ONLY + 2, activeOpening: ACTIVE_READ_ONLY + 2 + 16, activeLoadBootstrap: ACTIVE_READ_ONLY + 2 + 16 + LOAD.totalUntilProjectHeld, activeLoadObservation: ACTIVE_READ_ONLY + 2 + 16 + LOAD.totalUntilProjectHeld + OBSERVE.total, activePcbModel: ACTIVE_READ_ONLY + 2 + 16 + LOAD.totalUntilProjectHeld + OBSERVE.total + MODEL.total, model: MODEL, scene: SCENE, activeScene: ACTIVE_SCENE, loadingObservation: OBSERVE.total, nativeMetadata: METADATA.total, opening: 103, workerBootstrap: BOOTSTRAP.total, cache: CACHE.total,
+    normal: ACTIVE_SCENE - 1,
+    cleanup: 1, total: ACTIVE_SCENE }),
   cacheDeletionAuthorized: false, executionAuthorized: false, saveAuthorized: false, reopenedVerified: false,
 });

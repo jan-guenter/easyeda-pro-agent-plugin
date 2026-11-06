@@ -15,6 +15,28 @@ function same(left: unknown, right: unknown): void { need(canonicalJson(left) ==
 type Geometry = ReturnType<typeof currentPcbGeometryResultSchema.parse>;
 type Row = Geometry["rows"][number];
 type Roster = ReadonlyMap<string, readonly Row[]>;
+export interface CurrentPcbViaReopenedModelComparison {
+  readonly schema: "easyeda-pro-control.pcb209-via-reopened-model-comparison.v1";
+  readonly operationId: string; readonly documentUuid: string; readonly projectionSha256: string;
+  readonly exactFourFamilyModelMatched: true; readonly completeLineViaSceneMatched: true;
+  readonly freshSelectionCompared: false; readonly persistenceVerified: false; readonly executionAuthorized: false;
+}
+/** Data comparison only. The caller must independently prove both historical
+ * effect custody and the fresh original reader's loading/source/packet joins. */
+export function compareCurrentPcbViaReopenedModel(plan: CurrentPcbViaWritePlan,
+  expected: Readonly<Record<string, unknown>>, actual: Readonly<Record<string, unknown>>,
+  expectedScene: CurrentPcb209SpatialTrackResult, actualScene: CurrentPcb209SpatialTrackResult): CurrentPcbViaReopenedModelComparison {
+  const left = rows(expected, plan), right = rows(actual, plan);
+  for (const family of CURRENT_PCB_209_PRIMITIVE_FAMILIES) { same(left.get(family), right.get(family)); }
+  const after = scene(actualScene, right, plan), before = scene(expectedScene, left, plan);
+  same(sceneIdentities(before), sceneIdentities(after)); need(before.sceneLineCount === after.sceneLineCount && before.sceneViaCount === after.sceneViaCount);
+  // Selection belongs to each original runtime and is independently proved
+  // Unchanged by its observation; it is not persisted circuit-model data.
+  return freezeDeep({ schema: "easyeda-pro-control.pcb209-via-reopened-model-comparison.v1", operationId: plan.operationId,
+    documentUuid: plan.target.documentUuid, projectionSha256: sha256Json([...right]), exactFourFamilyModelMatched: true,
+    completeLineViaSceneMatched: true, freshSelectionCompared: false, persistenceVerified: false, executionAuthorized: false });
+}
+function sceneIdentities(value: CurrentPcb209SpatialTrackResult): readonly string[] { return value.identities.map(row => canonicalJson(row)).toSorted(); }
 function rows(raw: Readonly<Record<string, unknown>>, plan: CurrentPcbViaWritePlan): Roster {
   need(raw["schema"] === "easyeda-pro-control.pcb209-primitives-observation.v1" && raw["matchingSamples"] === true && raw["samples"] === 2);
   const target = { projectUuid: plan.target.projectUuid, branchUuid: plan.target.branchUuid, documentUuid: plan.target.documentUuid,

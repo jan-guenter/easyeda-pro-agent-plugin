@@ -30,6 +30,7 @@ import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS, currentProjectSaveProducer
 import type { CurrentProjectSaveProducerCacheCaller } from "./current-project-save-producer-cache-source.ts";
 import { CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_ARRAY_LENGTH, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_PROFILES, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_CALLS as PRODUCER_INTRINSICS, decodeCurrentNativeCacheResponseIntrinsic } from "./current-native-cache-response-intrinsics.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS, CURRENT_PROJECT_SAVE_PRODUCER_ROLES, CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS, validateCurrentProjectSaveProducerCommand } from "./current-project-save-producer-protocol.ts";
+import { currentPcbViaSavedSceneNativeFrame } from "./current-pcb-via-saved-scene-protocol.ts";
 import { currentPcbViaSavedModelNativeFrame } from "./current-pcb-via-saved-model-protocol.ts";
 import type { CurrentPcbViaSavedModelPhase } from "./current-pcb-via-saved-model-protocol.ts";
 import type { CurrentSavedProjectRegistrationBindings, CurrentSavedProjectRegistrationIntent } from "./current-saved-project-registration-origin.ts";
@@ -131,7 +132,7 @@ import { currentPcbViaMainStepWire } from "./current-pcb-via-main-step-protocol.
 import type { CurrentPcbViaMainStepCommand } from "./current-pcb-via-main-step-protocol.ts";
 import { currentPcbViaMainWire } from "./current-pcb-via-main-protocol.ts";
 import type { CurrentPcbViaMainCommand } from "./current-pcb-via-main-protocol.ts";
-import { compareCurrentPcbViaProjectedEffect } from "./current-pcb-via-write-effect-data.ts";
+import { compareCurrentPcbViaProjectedEffect, compareCurrentPcbViaReopenedModel } from "./current-pcb-via-write-effect-data.ts";
 import type { CurrentPcbViaProjectedEffect } from "./current-pcb-via-write-effect-data.ts";
 import { decodeCurrentPcbViaSdkMethod, decodeCurrentPcbViaSdkTuple, qualifyCurrentPcbViaSdkSource } from "./current-pcb-via-write-sdk-source.ts";
 import type { CurrentPcbViaWorkerChild } from "./current-pcb-via-worker-controller.ts";
@@ -831,6 +832,16 @@ interface SavedReadbackCacheBackupHeld {
 }
 const savedReadbackCacheBackups = new WeakMap<object, SavedReadbackCacheBackupHeld>();
 const savedReadbackCacheAbsences = new WeakMap<object, Readonly<{ owner: CurrentPcbRetainedOwnerCore; backup: SavedReadbackCacheBackupHeld; ledger: CurrentPcbViaSavedCacheInvalidationLedger; data: CurrentPcbViaSavedCacheAbsenceData }>>();
+export interface CurrentPcbViaSavedReopenedModel {
+  readonly schema: "private.current-pcb-via-saved-reopened-model.v1"; readonly operationId: string; readonly documentUuid: string;
+  readonly sourceSha256: string; readonly projectionSha256: string; readonly originalColdLoadingJoined: true;
+  readonly originalHistoricalEffectMatched: true; readonly completeFreshSceneMatched: true; readonly persistenceVerified: false; readonly executionAuthorized: false;
+}
+const savedReadbackModels = new WeakMap<CurrentPcbViaSavedReopenedModel, Readonly<{ owner: CurrentPcbViaSavedReadbackOwner; prepared: CurrentPcbViaWriteClosedCheckpoint; native: Readonly<RecordValue>; scene: CurrentPcb209SpatialTrackResult; effect: CurrentPcbViaWriteEffect; text: string }>>();
+export function requireOriginalCurrentPcbViaSavedReopenedModel(packet: CurrentPcbViaSavedReopenedModel, owner: CurrentPcbViaSavedReadbackOwner, prepared: CurrentPcbViaWriteClosedCheckpoint): CurrentPcbViaSavedReopenedModel {
+  const original = savedReadbackModels.get(packet); assertOriginalCurrentPcbViaSavedReadbackOwner(owner);
+  if (original === undefined || original.owner !== owner || original.prepared !== prepared || original.text !== canonicalJson(packet)) { throw error("SAVED_MODEL_ORIGINAL_PACKET"); } return packet;
+}
 export type CurrentPcbViaSavedLoadSetup = (origin: CurrentPcbViaSavedLoadOrigin) => Promise<void>;
 const savedReadbackLoadOrigins = new WeakMap<object, Readonly<{ owner: CurrentPcbRetainedOwnerCore; prepared: CurrentPcbViaWriteClosedCheckpoint; bindings: CurrentPcbViaSavedLoadBindings; assertOriginal: () => void }>>();
 interface SavedProjectRegistrationHeld {
@@ -1561,6 +1572,8 @@ class CurrentPcbRetainedOwnerCore {
   #savedReadbackRegistrationPromise: Promise<CurrentSavedProjectRegistrationIntent> | null = null;
   #savedReadbackRegistrationIntent: CurrentSavedProjectRegistrationIntent | null = null;
   #savedReadbackRegistrationDispatch: Promise<Readonly<RecordValue>> | null = null; #savedReadbackRegistrationResult: Readonly<RecordValue> | null = null;
+  #savedReadbackSceneContext: string | null = null; #savedReadbackSceneFrame = false; #savedReadbackScenePromise: Promise<CurrentPcb209SpatialTrackResult> | null = null;
+  #savedReadbackNativeModel: Readonly<RecordValue> | null = null; #savedReadbackSceneModel: CurrentPcb209SpatialTrackResult | null = null; #savedReadbackReopenedModel: CurrentPcbViaSavedReopenedModel | null = null;
   #savedReadbackModelEnrolled = false; #savedReadbackModelRunning = false; #savedReadbackModelPhase: CurrentPcbViaSavedModelPhase | null = null;
   #savedReadbackModelHelper: { scriptId: string | null } | null = null;
   #savedReadbackPcbPromise: Promise<CurrentPcbDiagnosticPcbOpeningResult> | null = null; #savedReadbackPcbSourcePromise: Promise<Readonly<RecordValue>> | null = null; #savedReadbackPrimitivesPromise: Promise<Readonly<RecordValue>> | null = null;
@@ -6798,8 +6811,53 @@ class CurrentPcbRetainedOwnerCore {
     const target = this.#requireSavedReadbackModel();
     if (!this.#savedReadbackModelEnrolled || this.#savedReadbackModelRunning || !this.#pcbSourceQualified || this.#pcbFrameObservation?.ok !== true) { throw error("SAVED_MODEL_PCB_SOURCE_REQUIRED"); }
     this.#savedReadbackModelRunning = true;
-    const work = (async (): Promise<Readonly<RecordValue>> => { try { return await this.observePrimitives209(target); } finally { this.#savedReadbackModelRunning = false; } })();
+    const work = (async (): Promise<Readonly<RecordValue>> => { try { const result = await this.observePrimitives209(target); this.#requireSavedReadbackModel(); this.#savedReadbackNativeModel = result; return result; } finally { this.#savedReadbackModelRunning = false; } })();
     this.#savedReadbackPrimitivesPromise = work; return work;
+  }
+  public observeSavedReadbackScene(): Promise<CurrentPcb209SpatialTrackResult> {
+    if (this.#savedReadbackScenePromise !== null) { return this.#savedReadbackScenePromise; }
+    const context = this.#stagedContext, pipe = this.#pipe, profile = this.#pcbSourceProfile, target = this.#requireSavedReadbackModel();
+    if (!(pipe instanceof CurrentPcbViaSavedReadbackPipe) || context === null || profile === null || !this.#pcbSourceQualified || this.#savedReadbackNativeModel === null || this.#savedReadbackModelRunning) { throw error("SAVED_SCENE_ORIGINAL_DTO_REQUIRED"); }
+    const pcb = context.modelContext(), ui = context.pcbOpeningContext();
+    const current = (): void => { this.#requireSavedReadbackModel(); context.pcbScript(profile);
+      if (this.#stagedContext !== context || this.#pipe !== pipe || canonicalJson(context.modelContext()) !== canonicalJson(pcb) || canonicalJson(context.pcbOpeningContext()) !== canonicalJson(ui)) { throw error("SAVED_SCENE_ORIGINAL_CONTEXT"); } };
+    this.#enter(true); this.#savedReadbackModelRunning = true;
+    const work = (async (): Promise<CurrentPcb209SpatialTrackResult> => {
+      try {
+        await this.#verifyInstallation(); current(); await this.#verify(); current(); await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current();
+        const ack = await this.#request({ action: "saved-readback-scene-bind", uniqueContextId: pcb.uniqueContextId }); current();
+        if (!exact(ack, ["sceneBound"]) || ack["sceneBound"] !== true) { throw error("SAVED_SCENE_NATIVE_BIND"); }
+        pipe.bindSavedReadbackScene(pcb.uniqueContextId); this.#savedReadbackSceneContext = pcb.uniqueContextId;
+        const runner = new CurrentPcbSpatialCaptureRunner({ request: async (command): Promise<unknown> => {
+          current(); if (this.#savedReadbackSceneFrame) { throw error("SAVED_SCENE_ORIGINAL_REQUEST"); } this.#savedReadbackSceneFrame = true;
+          try { const result = await this.#transfer(() => pipe.observeSavedReadbackScene(command)); current(); return result; } finally { this.#savedReadbackSceneFrame = false; }
+        }, assertCurrent: current }, pcb.scriptId, pcb.uniqueContextId, target.documentUuid);
+        const rows = await runner.readTrackBatch([{ kind: "region", mode: "inside", leftMil: -10_000_000, rightMil: 10_000_000, bottomMil: -10_000_000, topMil: 10_000_000 }]); current();
+        const observation = rows[0];
+        if (rows.length !== 1 || observation === undefined || observation.identities.length !== observation.sceneLineCount + observation.sceneViaCount) { throw error("SAVED_SCENE_COMPLETE_ROSTER"); }
+        await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current(); await this.#verifyInstallation(); current(); await this.#verify(); current();
+        this.#savedReadbackSceneModel = observation; return observation;
+      } finally { this.#savedReadbackModelRunning = false; this.#busy = false; }
+    })(); this.#savedReadbackScenePromise = work; return work;
+  }
+  /** Historical writer packets supply expected data only. The fresh model
+   * remains bound to this reader's own cold load, source and original calls. */
+  public qualifySavedReadbackModel(): CurrentPcbViaSavedReopenedModel {
+    this.#requireSavedReadbackModel(); const allocation = pcbViaSavedReadbackFactories.get(this)?.allocation;
+    const native = this.#savedReadbackNativeModel, scene = this.#savedReadbackSceneModel;
+    if (allocation === undefined || native === null || scene === null || this.#savedReadbackModelRunning || this.#busy) { throw error("SAVED_MODEL_COMPLETE_OBSERVATIONS_REQUIRED"); }
+    if (this.#savedReadbackReopenedModel !== null) { return requireOriginalCurrentPcbViaSavedReopenedModel(this.#savedReadbackReopenedModel, this, allocation.prepared); }
+    const historical = allocation.requireCheckpoint(allocation.prepared); const effect = pcbViaEffectGenerations.get(historical.owner);
+    if (historical.owner !== allocation.writer || effect === undefined) { throw error("SAVED_MODEL_ORIGINAL_HISTORICAL_EFFECT_REQUIRED"); }
+    requireOriginalCurrentPcbViaWriteEffect(effect, historical.owner, historical.plan); const actual = pcbViaEffects.get(effect);
+    if (actual === undefined || actual.owner !== historical.owner || actual.plan !== historical.plan) { throw error("SAVED_MODEL_HISTORICAL_EFFECT_CHANGED"); }
+    const expected = requireOriginalCurrentPcbViaNativeObservation(historical.owner, historical.plan, actual.observations.after, "after");
+    const expectedScene = requireOriginalCurrentPcbViaSceneObservation(historical.owner, historical.plan, actual.observations.afterScene, "after");
+    const compared = compareCurrentPcbViaReopenedModel(historical.plan, expected, native, expectedScene, scene);
+    const packet: CurrentPcbViaSavedReopenedModel = Object.freeze({ schema: "private.current-pcb-via-saved-reopened-model.v1", operationId: historical.plan.operationId,
+      documentUuid: historical.plan.target.documentUuid, sourceSha256: allocation.prepared.target.sourceSha256, projectionSha256: compared.projectionSha256,
+      originalColdLoadingJoined: true, originalHistoricalEffectMatched: true, completeFreshSceneMatched: true, persistenceVerified: false, executionAuthorized: false });
+    savedReadbackModels.set(packet, Object.freeze({ owner: this, prepared: allocation.prepared, native, scene, effect, text: canonicalJson(packet) })); this.#savedReadbackReopenedModel = packet; return packet;
   }
   /** The only UI project opening for this generation. Its original SDK
    * Promise and fixed worker observation share separate bounded pipe slots. */
@@ -7721,6 +7779,9 @@ class CurrentPcbRetainedOwnerCore {
         encoded = currentPcbViaSavedRegistrationNativeFrame(chunk, this.#savedReadbackCache.selected.sessionId, this.#savedReadbackCache.selected.uniqueContextId, held.target);
       }
       else if (this.#savedReadbackLoadCommand !== null && this.#savedReadbackLoadPair !== null) { encoded = currentPcbViaSavedLoadWorkerNativeFrame(chunk, this.#savedReadbackLoadCommand, this.#savedReadbackLoadPair); }
+      else if (this.#savedReadbackSceneFrame && this.#savedReadbackSceneContext !== null && this.#savedReadbackCache !== null) {
+        this.#requireSavedReadbackModel(); encoded = currentPcbViaSavedSceneNativeFrame(chunk, this.#savedReadbackCache.selected.sessionId, this.#savedReadbackSceneContext);
+      }
       else if (this.#savedReadbackModelPhase !== null && this.#savedReadbackCache !== null && this.#projectOpeningTarget !== null) {
         this.#requireSavedReadbackModel();
         encoded = currentPcbViaSavedModelNativeFrame(chunk, this.#savedReadbackCache.selected.sessionId, this.#savedReadbackCache.selected.uniqueContextId, this.#projectOpeningTarget, this.#savedReadbackModelPhase);

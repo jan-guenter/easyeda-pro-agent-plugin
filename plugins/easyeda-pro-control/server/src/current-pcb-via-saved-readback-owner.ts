@@ -2,6 +2,6 @@
  * HMAC and serialized ownership cannot become this native generation. */
 export { CurrentPcbViaSavedReadbackOwner, startCurrentPcbViaSavedReadbackOwner, assertOriginalCurrentPcbViaSavedReadbackOwner,
   currentPcbViaSavedReadbackAllocationOutcome, originalCurrentPcbViaSavedReadbackTarget,
-  requireOriginalCurrentPcbViaSavedCacheOrigin, requireOriginalCurrentPcbViaSavedCacheBackup, requireOriginalCurrentPcbViaSavedCacheAbsence, requireOriginalCurrentPcbViaSavedLoadPreparation, requireOriginalCurrentPcbViaSavedLoadOrigin, originalCurrentPcbViaSavedReadbackTermination, assertOriginalCurrentPcbViaSavedReadbackTermination } from "./current-pcb-diagnostic-owner.ts";
+  requireOriginalCurrentPcbViaSavedReopenedModel, requireOriginalCurrentPcbViaSavedCacheOrigin, requireOriginalCurrentPcbViaSavedCacheBackup, requireOriginalCurrentPcbViaSavedCacheAbsence, requireOriginalCurrentPcbViaSavedLoadPreparation, requireOriginalCurrentPcbViaSavedLoadOrigin, originalCurrentPcbViaSavedReadbackTermination, assertOriginalCurrentPcbViaSavedReadbackTermination } from "./current-pcb-diagnostic-owner.ts";
 
-export type { CurrentPcbViaSavedLoadSetup } from "./current-pcb-diagnostic-owner.ts";
+export type { CurrentPcbViaSavedLoadSetup, CurrentPcbViaSavedReopenedModel } from "./current-pcb-diagnostic-owner.ts";

@@ -1,6 +1,10 @@
 /* oxlint-disable import/max-dependencies -- This focused actual-pipe regression compiles the original private byte core and checks its fixed model codec/profile on real streams. */
 /** Actual fixed wire codecs and original production pipe; seeded observation
  * state is inert and cannot issue a native owner or loading proof. */
+import { CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION } from "../src/current-pcb-209-spatial-capture-program.ts";
+import { CURRENT_PCB_SPATIAL_OBJECT_GROUP } from "../src/current-pcb-spatial-capture-runner.ts";
+import type { CurrentPcbSpatialCaptureCommand } from "../src/current-pcb-spatial-capture-runner.ts";
+import { CURRENT_PCB_VIA_SAVED_SCENE_REQUESTS, currentPcbViaSavedSceneNativeFrame, currentPcbViaSavedSceneWire } from "../src/current-pcb-via-saved-scene-protocol.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -45,7 +49,9 @@ async function fixture(context: TestContext, loseWrite = false): Promise<Readonl
   const output = new Writable({ write(chunk: Buffer, _encoding, done): void {
     const command: unknown = JSON.parse(chunk.subarray(0, -1).toString()); assert.ok(command !== null && typeof command === "object" && "id" in command && "method" in command);
     if (command.method === "Target.attachToTarget") { input.write(Buffer.from(`${JSON.stringify({ id: command.id, result: { sessionId: "parent" } })}\0`)); done(); return; }
-    const phase = phases[sent.length]; assert.ok(phase !== undefined); const native = currentPcbViaSavedModelNativeFrame(chunk, "parent", "ui", target, phase); sent.push(String(native["modelPhase"]));
+    if ("savedReadbackScene" in command) { const native = currentPcbViaSavedSceneNativeFrame(chunk, "parent", "pcb-context"); sent.push(String(native["spatialPhase"])); } else {
+      const phase = phases[sent.length]; assert.ok(phase !== undefined); const native = currentPcbViaSavedModelNativeFrame(chunk, "parent", "ui", target, phase); sent.push(String(native["modelPhase"]));
+    }
     input.write(Buffer.from(`${JSON.stringify({ id: command.id, result: {}, sessionId: "parent" })}\0`));
     done(loseWrite ? new Error("original ACK lost") : undefined);
   } });
@@ -71,4 +77,26 @@ void test("saved production pipe never turns an early model result into a missin
   assert.equal(f.pipe.status().failure, "output"); assert.equal(f.sent.length, 1);
   assert.throws(() => f.pipe.observeSavedReadbackModel("ui", target, "preflight"));
   await assert.rejects(f.pipe.observeSavedReadbackModel("ui", target, "open-document")); assert.equal(f.sent.length, 1);
+});
+
+function wrapper(): CurrentPcbSpatialCaptureCommand { return { spatialPhase: "wrapper", method: "Runtime.evaluate", params: {
+  throwOnSideEffect: true, silent: true, awaitPromise: false, generatePreview: false, userGesture: false,
+  expression: CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION, uniqueContextId: "pcb-context", objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP,
+  returnByValue: false, timeout: 1000, includeCommandLineAPI: false, allowUnsafeEvalBlockedByCSP: false } }; }
+void test("saved whole-scene codec restores its own ID and refuses foreign contexts and old variants", () => {
+  assert.equal(CURRENT_PCB_VIA_SAVED_SCENE_REQUESTS.stage, 267); assert.equal(CURRENT_PCB_VIA_SAVED_SCENE_REQUESTS.total, 275);
+  assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeScene, CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activePcbModel + 275);
+  assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.total, 658);
+  const fixed = currentPcbViaSavedSceneWire(wrapper(), 600, "parent", "pcb-context");
+  assert.equal(fixed.command.id, 600); assert.equal(fixed.request["requestId"], 600); assert.equal(fixed.request["action"], "saved-readback-scene");
+  const frame = Buffer.from(`${JSON.stringify(fixed.command)}\0`); assert.deepEqual(currentPcbViaSavedSceneNativeFrame(frame, "parent", "pcb-context"), fixed.request);
+  assert.throws(() => currentPcbViaSavedSceneNativeFrame(frame, "foreign", "pcb-context"));
+  assert.throws(() => currentPcbViaSavedSceneNativeFrame(frame, "parent", "foreign"));
+  const { savedReadbackScene: _marker, ...old } = fixed.command; assert.throws(() => currentPcbViaSavedSceneNativeFrame(Buffer.from(`${JSON.stringify(old)}\0`), "parent", "pcb-context"));
+});
+void test("saved production scene binding follows the original four model calls and keeps one byte stream", async context => {
+  const f = await fixture(context); assert.throws(() => { f.pipe.bindSavedReadbackScene("pcb-context"); });
+  for (const phase of phases) { await f.pipe.observeSavedReadbackModel("ui", target, phase); }
+  f.pipe.bindSavedReadbackScene("pcb-context"); assert.throws(() => { f.pipe.bindSavedReadbackScene("pcb-context"); });
+  await f.pipe.observeSavedReadbackScene(wrapper()); assert.deepEqual(f.sent, [...phases, "wrapper"]); assert.equal(f.pipe.status().requestCount, 6);
 });

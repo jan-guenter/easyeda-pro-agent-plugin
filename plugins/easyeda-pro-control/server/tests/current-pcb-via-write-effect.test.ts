@@ -6,7 +6,7 @@ import { createRequire } from "node:module";
 import { test } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
-import { compareCurrentPcbViaProjectedEffect } from "../src/current-pcb-via-write-effect-data.ts";
+import { compareCurrentPcbViaProjectedEffect, compareCurrentPcbViaReopenedModel } from "../src/current-pcb-via-write-effect-data.ts";
 import type { CurrentPcb209SpatialTrackResult } from "../src/current-pcb-209-spatial-track-read.ts";
 import type { CurrentPcbViaWritePlan } from "../src/current-pcb-via-write-plan.ts";
 import { MANAGED_FIXTURE_LINE_BODY, MANAGED_FIXTURE_VIA_BODY } from "../src/managed-fixture-generator.ts";
@@ -109,4 +109,19 @@ ${central.slice(central.indexOf(begin) + begin.length, central.indexOf(end))}`;
   assert.throws(() => Reflect.apply(requireEffect, undefined, [{ ...effect }, owner, f.plan]));
   assert.throws(() => Reflect.apply(requireEffect, undefined, [effect, {}, f.plan]));
   assert.throws(() => Reflect.apply(qualify, undefined, [owner, f.plan, observations]));
+});
+
+void test("fresh reopened data matches the historical effect and complete scene without inheriting runtime selection", () => {
+  const f = fixture(); const actual = structuredClone(f.after), fresh = { ...structuredClone(f.afterScene), selectedPrimitiveIds: [f.afterScene.identities[0]?.primitiveId ?? "missing"] };
+  const result = compareCurrentPcbViaReopenedModel(f.plan, f.after, actual, f.afterScene, fresh);
+  assert.equal(result.exactFourFamilyModelMatched, true); assert.equal(result.completeLineViaSceneMatched, true);
+  assert.equal(result.freshSelectionCompared, false); assert.equal(result.persistenceVerified, false); assert.equal(result.executionAuthorized, false);
+});
+void test("reopened geometry changes, omitted members and foreign complete-scene identities refuse", () => {
+  const f = fixture(); assert.throws(() => compareCurrentPcbViaReopenedModel(f.plan, f.after, f.before, f.afterScene, f.beforeScene));
+  assert.throws(() => compareCurrentPcbViaReopenedModel(f.plan, f.after, f.after, f.afterScene, { ...f.afterScene, identities: f.afterScene.identities.slice(1) }));
+  const changed = structuredClone(f.after); assert.ok(Array.isArray(changed["families"]));
+  const family: unknown = changed["families"][2]; assert.ok(family !== null && typeof family === "object" && "rows" in family && Array.isArray(family.rows));
+  const row: unknown = family.rows[1]; assert.ok(row !== null && typeof row === "object"); Reflect.set(row, "x", 999);
+  assert.throws(() => compareCurrentPcbViaReopenedModel(f.plan, f.after, changed, f.afterScene, f.afterScene));
 });
