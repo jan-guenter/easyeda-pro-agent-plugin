@@ -1,6 +1,7 @@
 # Project history
 
 - [2026-11-06 explicit-Relevance schematic reader live case](2026-11-06-relevance-schematic-reader-live-case.md). Actual distinct fixture import/full closed SQL, generated page readiness and accepted Text/Wire/Bus reads with exact closed raw invariance; original terminal cleanup is recorded separately.
+- [2026-11-06 Component point source/cost](2026-11-06-component-point-source-cost.md). Complete cached/stored-box and owned Pad paths, actual identity/scratch checks and393/408 prospective requests; existing384-ID purposes and Component admission remain unchanged.
 
 - [2026-11-06 public CBB witness research](2026-11-06-cbb-public-witness-research.md). Official CBB/board/archive contracts clarify witness requirements; no explicit public system project/branch tuple was identified in the bounded sources, and positive validation remains pending.
 
