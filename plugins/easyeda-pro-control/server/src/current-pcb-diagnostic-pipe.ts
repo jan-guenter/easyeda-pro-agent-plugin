@@ -212,7 +212,7 @@ class CurrentPcbFixedPipeCore {
   #spatialBinding: CurrentPcbSpatialBinding | null = null;
   #spatialStage = 0;
   #spatialReads = 0;
-  #spatialVariant: "via" | "line-via" | "arc-line-via" = "via";
+  #spatialVariant: "via" | "line-via" | "arc-line-via" | "pad-point" = "via";
   #spatialReleaseAttempted = false;
   readonly #observeEventBytes: ((bytes: number) => void) | null;
   #savedCacheSession: string | null = null;
@@ -423,21 +423,22 @@ class CurrentPcbFixedPipeCore {
       if (this.#nextId >= CURRENT_PCB_SPATIAL_PROFILE.requestLimit) { throw new Error("PCB_SPATIAL_PIPE_CLEANUP_RESERVE"); }
       if (phase === "properties") {
         if (this.#spatialStage < 1 || this.#spatialStage > 4) { throw new Error("PCB_SPATIAL_PIPE_SEQUENCE"); }
-      } else if (phase === "read" || phase === "read-track" || phase === "read-arc") {
-        const variant = { "read-arc": "arc-line-via", "read-track": "line-via", read: "via" }[phase];
-        const limit = { "arc-line-via": 6, "line-via": 15, via: CURRENT_PCB_SPATIAL_PROFILE.maximumReads }[this.#spatialVariant];
+      } else if (phase === "read" || phase === "read-track" || phase === "read-arc" || phase === "read-pad") {
+        const variant = { "read-arc": "arc-line-via", "read-track": "line-via", read: "via", "read-pad": "pad-point" }[phase];
+        const limit = { "arc-line-via": 6, "line-via": 15, via: CURRENT_PCB_SPATIAL_PROFILE.maximumReads, "pad-point": 16 }[this.#spatialVariant];
         if (variant !== this.#spatialVariant || this.#spatialStage < 4 || this.#spatialStage > 5 || this.#spatialReads >= limit) {
           throw new Error("PCB_SPATIAL_PIPE_READ_SEQUENCE");
         }
         this.#spatialReads += 1; this.#spatialStage = 5;
       } else {
-        const step = phase === "bindings-track" || phase === "bindings-arc" ? "bindings" : phase;
+        const step = phase === "bindings-track" || phase === "bindings-arc" || phase === "bindings-pad" ? "bindings" : phase;
         if ((["wrapper", "handler", "bindings", "functions"] as const)[this.#spatialStage] !== step) {
           throw new Error("PCB_SPATIAL_PIPE_SEQUENCE");
         }
         if (phase === "wrapper" && fixed.command.params.uniqueContextId !== binding.uniqueContextId) { throw new Error("PCB_SPATIAL_PIPE_CONTEXT"); }
         if (phase === "bindings-track") { this.#spatialVariant = "line-via"; }
         if (phase === "bindings-arc") { this.#spatialVariant = "arc-line-via"; }
+        if (phase === "bindings-pad") { this.#spatialVariant = "pad-point"; }
         this.#spatialStage += 1;
       }
     }

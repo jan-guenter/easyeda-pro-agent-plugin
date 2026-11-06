@@ -137,6 +137,19 @@ function fixture(context: TestContext, id: string): SpatialFixture {
         allowedExistingStateEffect: "D0.code;vMe.boxCache;Jdt-local-bbox-scratch;BLe.JJ", scope: "standalone-arc-line-via-ready-bbox-scene-no-region-border-crossings",
         nativeFunctionGraphVerified: false, nativeIntrinsicsVerified: false, sourceMembershipVerified: false, persistenceVerified: false }));
     },
+    observeSpatialPad209: async (target, input) => {
+      assert.deepEqual(target, SEALED);
+      const raw = await readFile(join(directory(id), "spatial209-intent.json"), "utf8");
+      const intent = diagnosticLifecycleRecordSchemas["spatial209-intent.json"].parse(JSON.parse(raw) as unknown);
+      assert.equal(intent.schema, "easyeda-pro-control.pcb209-spatial-pad-point-observation-intent.v1");
+      assert.deepEqual(intent.queries, input); calls.push("spatial-pads");
+      return intent.queries.map(query => ({ schema: "easyeda-pro-control.pcb209-spatial-pad-point-read.v1",
+        documentUuid: TARGET.documentUuid, query, identities: [{ primitiveId: "arc", family: "Pad" }],
+        scenePadCount: 1, selectedPrimitiveIds: [], samples: 2, nativeOrderingPreserved: true,
+        retainedSceneDescriptorsUnchanged: true, selectionUnchanged: true,
+        allowedExistingStateEffect: "D0.code;vMe.boxCache;Jdt-local-bbox-scratch;BLe.JJ", scope: "standalone-circular-pad-ready-point-scene",
+        nativeFunctionGraphVerified: false, nativeIntrinsicsVerified: false, sourceMembershipVerified: false, persistenceVerified: false }));
+    },
   };
   const options: CurrentPcbDiagnosticLifecycleOptions = { pluginRoot: "/mnt/c/Reviewed/Plugin", assetsRoot: "/mnt/c/Reviewed/EasyEDA/resources/app/assets",
     powershellSha256: "d".repeat(64), powershellBytes: 123, assertLocalAllowed: (): void => {
@@ -197,6 +210,19 @@ void test("Arc native batch has its own immutable contract and consumes both ear
   assert.equal(result.schema, "easyeda-pro-control.pcb209-spatial-arc-line-via-observation-result.v1");
   assert.equal(result.result.results[0]?.identities[0]?.family, "Arc");
   for (const action of ["observe-spatial", "observe-spatial-lines", "observe-spatial-arcs"]) {
+    await assert.rejects(value.request(action, { queries: QUERIES, acceptNativeScratchEffects: true }), /OBSERVATION_CONSUMED/u);
+  }
+});
+void test("Pad native batch has its own immutable contract and consumes both earlier alternatives", async context => {
+  const id = "pcb209-spatial-test-pads", value = fixture(context, id);
+  await ready(value, id);
+  await value.request("observe-spatial-pads", { queries: QUERIES, acceptNativeScratchEffects: true });
+  assert.equal(value.calls.filter(call => call === "spatial-pads").length, 1);
+  const raw = await readFile(join(directory(id), "spatial209-result.json"), "utf8");
+  const result = diagnosticLifecycleRecordSchemas["spatial209-result.json"].parse(JSON.parse(raw) as unknown);
+  assert.equal(result.schema, "easyeda-pro-control.pcb209-spatial-pad-point-observation-result.v1");
+  assert.equal(result.result.results[0]?.identities[0]?.family, "Pad");
+  for (const action of ["observe-spatial", "observe-spatial-lines", "observe-spatial-arcs", "observe-spatial-pads"]) {
     await assert.rejects(value.request(action, { queries: QUERIES, acceptNativeScratchEffects: true }), /OBSERVATION_CONSUMED/u);
   }
 });

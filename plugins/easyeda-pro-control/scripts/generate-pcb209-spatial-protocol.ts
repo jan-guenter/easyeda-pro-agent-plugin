@@ -2,8 +2,10 @@ import { CURRENT_PCB_209_SPATIAL_ARC_BINDINGS_FUNCTION, CURRENT_PCB_209_SPATIAL_
   CURRENT_PCB_209_SPATIAL_FUNCTIONS_FUNCTION, CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION, CURRENT_PCB_209_SPATIAL_TRACK_BINDINGS_FUNCTION } from "../server/src/current-pcb-209-spatial-capture-program.ts";
 import { readFile, writeFile } from "node:fs/promises";
 import { CURRENT_PCB_209_SPATIAL_ARC_READ_FUNCTION, CURRENT_PCB_209_SPATIAL_READ_FUNCTION, CURRENT_PCB_209_SPATIAL_TRACK_READ_FUNCTION } from "../server/src/current-pcb-209-spatial-read-program.ts";
+import { CURRENT_PCB_209_SPATIAL_PAD_BINDINGS_FUNCTION } from "../server/src/current-pcb-209-spatial-pad-capture.ts";
+import { CURRENT_PCB_209_SPATIAL_PAD_READ_FUNCTION } from "../server/src/current-pcb-209-spatial-pad-read-program.ts";
 import { packedNativeProgram } from "./native-program-packing.ts";
-import { CURRENT_PCB_SPATIAL_ARC_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_PROFILE, CURRENT_PCB_SPATIAL_REQUEST_DERIVATION,
+import { CURRENT_PCB_SPATIAL_ARC_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_PAD_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_PROFILE, CURRENT_PCB_SPATIAL_REQUEST_DERIVATION,
   CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION } from "../server/src/current-pcb-spatial-profile.ts";
 import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES } from "../server/src/current-pcb-diagnostic-helper-source-profile.ts";
 
@@ -15,15 +17,18 @@ const programs = [
   ["SpatialTrackReadFunction", CURRENT_PCB_209_SPATIAL_TRACK_READ_FUNCTION],
   ["SpatialArcBindingsFunction", CURRENT_PCB_209_SPATIAL_ARC_BINDINGS_FUNCTION],
   ["SpatialArcReadFunction", CURRENT_PCB_209_SPATIAL_ARC_READ_FUNCTION],
+  ["SpatialPadBindingsFunction", CURRENT_PCB_209_SPATIAL_PAD_BINDINGS_FUNCTION],
+  ["SpatialPadReadFunction", CURRENT_PCB_209_SPATIAL_PAD_READ_FUNCTION],
 ] as const;
 const native = String.raw`
   const int Spatial209Requests=${CURRENT_PCB_SPATIAL_PROFILE.requestLimit},Spatial209NormalRequests=${CURRENT_PCB_SPATIAL_PROFILE.normalRequestLimit};
   const int Spatial209Functions=${CURRENT_PCB_SPATIAL_REQUEST_DERIVATION.calleeProperties},Spatial209StageRequests=${CURRENT_PCB_SPATIAL_REQUEST_DERIVATION.spatialStage},Spatial209WorkflowRequests=${CURRENT_PCB_SPATIAL_REQUEST_DERIVATION.fullWorkflow};
   const int Spatial209TrackFunctions=${CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION.calleeProperties},Spatial209TrackStageRequests=${CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION.spatialStage},Spatial209TrackWorkflowRequests=${CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION.fullWorkflow};
   const int Spatial209ArcFunctions=${CURRENT_PCB_SPATIAL_ARC_REQUEST_DERIVATION.calleeProperties},Spatial209ArcStageRequests=${CURRENT_PCB_SPATIAL_ARC_REQUEST_DERIVATION.spatialStage},Spatial209ArcWorkflowRequests=${CURRENT_PCB_SPATIAL_ARC_REQUEST_DERIVATION.fullWorkflow};
+  const int Spatial209PadFunctions=${CURRENT_PCB_SPATIAL_PAD_REQUEST_DERIVATION.calleeProperties},Spatial209PadStageRequests=${CURRENT_PCB_SPATIAL_PAD_REQUEST_DERIVATION.spatialStage},Spatial209PadWorkflowRequests=${CURRENT_PCB_SPATIAL_PAD_REQUEST_DERIVATION.fullWorkflow};
   string spatialParentSession,spatialPcbSession,spatialSourceSession,spatialContext;
   const int Spatial209ReadLimit=${CURRENT_PCB_SPATIAL_PROFILE.maximumReads};
-  int spatialStage,spatialReads;bool spatialReleased,spatialAttachmentAttempted,spatialTrack,spatialArc;
+  int spatialStage,spatialReads;bool spatialReleased,spatialAttachmentAttempted,spatialTrack,spatialArc,spatialPad;
   public void AdmitSpatialAction(string action) {
     if(!spatial209)return;
     foreach(string allowed in new string[]{"identity","launch","send","spatial209","poll","window","normal-close","termination","release","release-unlaunched","release-no-process","no-process-proof"})if(action==allowed)return;
@@ -74,7 +79,7 @@ const native = String.raw`
     if(id<1||id>Spatial209Requests||session==null||!System.Text.RegularExpressions.Regex.IsMatch(session,@"\A[A-Za-z0-9_.:-]{1,128}\z")||fields==null)throw Error("spatial209-fields");
     if(id>Spatial209NormalRequests&&phase!="release")throw Error("spatial209-cleanup-reserve");
     const string group="easyeda-pro-control-pcb209-spatial-v1";
-    string effects="\"throwOnSideEffect\":"+(phase=="read"||phase=="bindings"||phase=="read-track"||phase=="bindings-track"||phase=="read-arc"||phase=="bindings-arc"?"false":"true")+",\"silent\":true,\"awaitPromise\":false,\"generatePreview\":false,\"userGesture\":false";
+    string effects="\"throwOnSideEffect\":"+(phase=="read"||phase=="bindings"||phase=="read-track"||phase=="bindings-track"||(phase=="read-arc"||phase=="read-pad")||(phase=="bindings-arc"||phase=="bindings-pad")?"false":"true")+",\"silent\":true,\"awaitPromise\":false,\"generatePreview\":false,\"userGesture\":false";
     string parameters;List<string> expected=new List<string>();
     if(phase=="wrapper"&&method=="Runtime.evaluate") {
       expected.Add("uniqueContextId");string context=SpatialText(fields,"uniqueContextId",128);
@@ -82,12 +87,13 @@ const native = String.raw`
     } else if(phase=="properties"&&method=="Runtime.getProperties") {
       expected.Add("objectId");parameters="\"objectId\":"+JsonString(SpatialText(fields,"objectId",256))+",\"ownProperties\":true,\"accessorPropertiesOnly\":false,\"generatePreview\":false";
     } else if(phase=="release"&&method=="Runtime.releaseObjectGroup")parameters="\"objectGroup\":"+JsonString(group);
-    else if(method=="Runtime.callFunctionOn"&&(phase=="handler"||phase=="bindings"||phase=="bindings-track"||phase=="bindings-arc"||phase=="functions"||phase=="read"||phase=="read-track"||phase=="read-arc")) {
+    else if(method=="Runtime.callFunctionOn"&&(phase=="handler"||phase=="bindings"||phase=="bindings-track"||(phase=="bindings-arc"||phase=="bindings-pad")||phase=="functions"||phase=="read"||phase=="read-track"||(phase=="read-arc"||phase=="read-pad"))) {
       expected.Add("objectId");string scope=SpatialText(fields,"objectId",256);
-      string program=phase=="handler"?SpatialHandlerFunction:phase=="bindings"?SpatialBindingsFunction:phase=="bindings-track"?SpatialTrackBindingsFunction:phase=="bindings-arc"?SpatialArcBindingsFunction:phase=="functions"?SpatialFunctionsFunction:phase=="read-track"?SpatialTrackReadFunction:phase=="read-arc"?SpatialArcReadFunction:SpatialReadFunction;
-      parameters=effects+",\"objectId\":"+JsonString(scope)+",\"functionDeclaration\":"+JsonString(program)+",\"objectGroup\":"+JsonString(group)+",\"returnByValue\":"+(phase=="read"||phase=="read-track"||phase=="read-arc"?"true":"false");
-      if(phase=="bindings"||phase=="bindings-track"||phase=="bindings-arc") {expected.Add("callbackObjectId");parameters+=",\"arguments\":[{\"objectId\":"+JsonString(SpatialText(fields,"callbackObjectId",256))+"}]";}
-      if(phase=="read"||phase=="read-track"||phase=="read-arc")parameters+=",\"arguments\":[{\"value\":"+SpatialQuery(fields,expected)+"}]";
+      string program=phase=="handler"?SpatialHandlerFunction:phase=="bindings"?SpatialBindingsFunction:phase=="bindings-track"?SpatialTrackBindingsFunction:phase=="bindings-pad"?SpatialPadBindingsFunction:phase=="bindings-arc"?SpatialArcBindingsFunction:phase=="functions"?SpatialFunctionsFunction:phase=="read-track"?SpatialTrackReadFunction:phase=="read-pad"?SpatialPadReadFunction:phase=="read-arc"?SpatialArcReadFunction:SpatialReadFunction;
+      parameters=effects+",\"objectId\":"+JsonString(scope)+",\"functionDeclaration\":"+JsonString(program)+",\"objectGroup\":"+JsonString(group)+",\"returnByValue\":"+(phase=="read"||phase=="read-track"||(phase=="read-arc"||phase=="read-pad")?"true":"false");
+      if(phase=="bindings"||phase=="bindings-track"||(phase=="bindings-arc"||phase=="bindings-pad")) {expected.Add("callbackObjectId");parameters+=",\"arguments\":[{\"objectId\":"+JsonString(SpatialText(fields,"callbackObjectId",256))+"}]";}
+      if(phase=="read-pad"&&!(fields["queryKind"] is string&&String.Equals((string)fields["queryKind"],"point",StringComparison.Ordinal)))throw Error("spatial209-pad-point-only");
+      if(phase=="read"||phase=="read-track"||(phase=="read-arc"||phase=="read-pad"))parameters+=",\"arguments\":[{\"value\":"+SpatialQuery(fields,expected)+"}]";
     } else throw Error("spatial209-phase");
     if(fields.Count!=expected.Count)throw Error("spatial209-extra-fields");foreach(object key in fields.Keys)if(!(key is string)||!expected.Contains((string)key))throw Error("spatial209-extra-fields");
     string message="{\"id\":"+id.ToString(CultureInfo.InvariantCulture)+",\"method\":"+JsonString(method)+",\"params\":{"+parameters+"},\"sessionId\":"+JsonString(session)+"}\0";
@@ -99,11 +105,12 @@ const native = String.raw`
     if(phase=="release") {if(spatialStage==0)throw Error("spatial209-sequence");spatialReleased=true;return;}
     if(id>Spatial209NormalRequests)throw Error("spatial209-cleanup-reserve");
     if(phase=="properties") {if(spatialStage<1||spatialStage>4)throw Error("spatial209-sequence");return;}
-    if(phase=="read"||phase=="read-track"||phase=="read-arc") {if(!(spatialArc?phase=="read-arc":spatialTrack?phase=="read-track":phase=="read")||spatialStage<4||spatialStage>5||spatialReads>=(spatialArc?6:spatialTrack?15:Spatial209ReadLimit))throw Error("spatial209-read-sequence");spatialReads++;spatialStage=5;return;}
+    if(phase=="read"||phase=="read-track"||(phase=="read-arc"||phase=="read-pad")) {if(!(spatialPad?phase=="read-pad":spatialArc?phase=="read-arc":spatialTrack?phase=="read-track":phase=="read")||spatialStage<4||spatialStage>5||spatialReads>=(spatialPad?16:spatialArc?6:spatialTrack?15:Spatial209ReadLimit))throw Error("spatial209-read-sequence");spatialReads++;spatialStage=5;return;}
     string[] sequence={"wrapper","handler","bindings","functions"};
-    if(spatialStage>=sequence.Length||sequence[spatialStage]!=((phase=="bindings-track"||phase=="bindings-arc")?"bindings":phase))throw Error("spatial209-sequence");
+    if(spatialStage>=sequence.Length||sequence[spatialStage]!=((phase=="bindings-track"||(phase=="bindings-arc"||phase=="bindings-pad"))?"bindings":phase))throw Error("spatial209-sequence");
     if(phase=="bindings-track")spatialTrack=true;
     if(phase=="bindings-arc"){spatialTrack=true;spatialArc=true;}
+    if(phase=="bindings-pad")spatialPad=true;
     if(phase=="wrapper") {if(spatialContext!=null)throw Error("spatial209-context-consumed");spatialContext=SpatialText(fields,"uniqueContextId",128);}
     spatialStage++;
   }
@@ -117,6 +124,7 @@ const native = String.raw`
     if(Spatial209StageRequests!=7+1+1+Spatial209Functions+16+1||Spatial209WorkflowRequests!=103+Spatial209StageRequests||Spatial209WorkflowRequests>Spatial209Requests)throw Error("spatial209-derivation-smoke");
     if(Spatial209TrackStageRequests!=7+1+1+Spatial209TrackFunctions+15+1||Spatial209TrackWorkflowRequests!=103+Spatial209TrackStageRequests||Spatial209TrackWorkflowRequests>Spatial209Requests)throw Error("spatial209-track-derivation-smoke");
     if(Spatial209ArcStageRequests!=7+1+1+Spatial209ArcFunctions+6+1||Spatial209ArcWorkflowRequests!=103+Spatial209ArcStageRequests||Spatial209ArcWorkflowRequests>Spatial209Requests)throw Error("spatial209-arc-derivation-smoke");
+    if(Spatial209PadStageRequests!=7+1+1+Spatial209PadFunctions+16+1||Spatial209PadWorkflowRequests!=103+Spatial209PadStageRequests||Spatial209PadWorkflowRequests>Spatial209Requests)throw Error("spatial209-pad-derivation-smoke");
     if(!owner.spatial209||owner.stringPrecreate||owner.workerStartup||owner.layers209||owner.visual209||owner.EffectiveRequestLimit!=Spatial209Requests)throw Error("spatial209-birth-smoke");
     var empty=new System.Collections.Hashtable(StringComparer.Ordinal);
     foreach(EasyedaDiagnosticOwner old in new[]{new EasyedaDiagnosticOwner(),CreateLayers209(),CreateVisual209(),CreateStringPrecreate(),CreateWorkerStartup209()}) {
@@ -162,6 +170,13 @@ const native = String.raw`
     for(int index=0;index<6;index++){Spatial209ProtocolMessage(5+index,"Runtime.callFunctionOn","s","read-arc",fields);arc.SpatialSequence(5+index,"s","read-arc",fields);}
     bool arcLimit=false;try{arc.SpatialSequence(11,"s","read-arc",fields);}catch{arcLimit=true;}if(!arcLimit)throw Error("spatial209-arc-limit-smoke");
     arc.SpatialSequence(384,"s","release",empty);
+    EasyedaDiagnosticOwner pad=CreateSpatial209();pad.spatialParentSession="s";pad.spatialPcbSession="s";pad.spatialSourceSession="s";
+    pad.SpatialSequence(1,"s","wrapper",context);pad.SpatialSequence(2,"s","handler",empty);pad.SpatialSequence(3,"s","bindings-pad",empty);pad.SpatialSequence(4,"s","functions",empty);
+    bool padVariant=false;try{pad.SpatialSequence(5,"s","read",fields);}catch{padVariant=true;}if(!padVariant)throw Error("spatial209-pad-variant-smoke");
+    for(int index=0;index<16;index++){Spatial209ProtocolMessage(5+index,"Runtime.callFunctionOn","s","read-pad",fields);pad.SpatialSequence(5+index,"s","read-pad",fields);}
+    bool padLimit=false;try{pad.SpatialSequence(21,"s","read-pad",fields);}catch{padLimit=true;}if(!padLimit)throw Error("spatial209-pad-limit-smoke");
+    fields["queryKind"]="region";bool padRegion=false;try{Spatial209ProtocolMessage(21,"Runtime.callFunctionOn","s","read-pad",fields);}catch{padRegion=true;}if(!padRegion)throw Error("spatial209-pad-region-smoke");fields["queryKind"]="point";
+    pad.SpatialSequence(384,"s","release",empty);
   }
 `;
 
@@ -207,7 +222,7 @@ if (numericStart === -1 || numericStop < numericStart || next.includes(numericBe
 }
 next = `${next.slice(0, numericStart)}${numericBegin}\n${numericSmoke}${numericEnd}${next.slice(numericStop + numericEnd.length)}`;
 if (Buffer.byteLength(next) > CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES || CURRENT_PCB_SPATIAL_REQUEST_DERIVATION.headroom < 0 ||
-    CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION.headroom < 0 || CURRENT_PCB_SPATIAL_ARC_REQUEST_DERIVATION.headroom < 0) {
+    CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION.headroom < 0 || CURRENT_PCB_SPATIAL_ARC_REQUEST_DERIVATION.headroom < 0 || CURRENT_PCB_SPATIAL_PAD_REQUEST_DERIVATION.headroom < 0) {
   throw new Error("Spatial fixed helper source or complete-workflow reservation exceeds its fixed ceiling");
 }
 // oxlint-disable-next-line node/no-top-level-await -- Explicit generation writes only the reviewed bounded marker region.

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES } from "./current-pcb-209-spatial-source-profile.ts";
 import { CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_PROFILES } from "./current-pcb-209-spatial-track-source-profile.ts";
 import { CURRENT_PCB_209_SPATIAL_ARC_EXTRA_PROFILES } from "./current-pcb-209-spatial-arc-source-profile.ts";
+import { CURRENT_PCB_209_SPATIAL_PAD_FUNCTION_PROFILES } from "./current-pcb-209-spatial-pad-source-profile.ts";
 
 export const CURRENT_PCB_SPATIAL_PROFILE = Object.freeze({ purpose: "pcb-spatial209", requestLimit: 384, normalRequestLimit: 383,
   maximumReads: 16, sessionBytes: 64 * 1024 * 1024, requestMilliseconds: 5000, sourceRequestMilliseconds: 30_000 } as const);
@@ -36,6 +37,15 @@ export const CURRENT_PCB_SPATIAL_ARC_REQUEST_DERIVATION = Object.freeze({
   originalOpeningSourceAndReproof: 103, capture: 7, functions: 1, tuple: 1, calleeProperties: arcCallees,
   reads: arcReads, release: 1, spatialStage: arcStage, fullWorkflow: 103 + arcStage,
   headroom: CURRENT_PCB_SPATIAL_PROFILE.requestLimit - 103 - arcStage,
+} as const);
+/** Point-only geometry excludes all Via/region calls before hits. Its own215
+ * callees replace the prior catalogs; sixteen points retain the384-ID bound. */
+const padCallees = CURRENT_PCB_209_SPATIAL_PAD_FUNCTION_PROFILES.length;
+const padStage = 7 + 1 + 1 + padCallees + 16 + 1;
+export const CURRENT_PCB_SPATIAL_PAD_REQUEST_DERIVATION = Object.freeze({
+  originalOpeningSourceAndReproof: 103, capture: 7, functions: 1, tuple: 1, calleeProperties: padCallees,
+  reads: 16, release: 1, spatialStage: padStage, fullWorkflow: 103 + padStage,
+  headroom: CURRENT_PCB_SPATIAL_PROFILE.requestLimit - 103 - padStage,
 } as const);
 const token = z.string().regex(/^[A-Za-z\d_.:-]{1,128}(?![\s\S])/u);
 /** This local seal records the owner's already admitted original page/source.

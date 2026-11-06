@@ -12,10 +12,11 @@ import { currentWindowCaptureResultSchema, requireCurrentWindowCaptureResult } f
 import { CURRENT_PCB_ORDINARY_READ_PREFIX, currentPcbOrdinaryReadIdSchema } from "./current-pcb-ordinary-read-validation.ts";
 import { currentPcb209VisualIdSchema } from "./current-pcb-209-visual-validation.ts";
 import { CURRENT_PCB_SPATIAL_OPERATION_PREFIX, CURRENT_PCB_SPATIAL_RESULT_MAX_BYTES, currentPcbSpatialArcObservationSchema,
-  currentPcbSpatialIdSchema, currentPcbSpatialObservationSchema, currentPcbSpatialQueriesSchema,
-  currentPcbSpatialTrackObservationSchema, requireCurrentPcbSpatialArcObservation, requireCurrentPcbSpatialObservation, requireCurrentPcbSpatialTrackObservation } from "./current-pcb-spatial-validation.ts";
+  currentPcbSpatialIdSchema, currentPcbSpatialObservationSchema, currentPcbSpatialPadObservationSchema, currentPcbSpatialQueriesSchema,
+  currentPcbSpatialTrackObservationSchema, requireCurrentPcbSpatialArcObservation, requireCurrentPcbSpatialObservation, requireCurrentPcbSpatialPadObservation, requireCurrentPcbSpatialTrackObservation } from "./current-pcb-spatial-validation.ts";
 import { currentPcb209SpatialTrackQueriesSchema } from "./current-pcb-209-spatial-track-read.ts";
 import { currentPcb209SpatialArcQueriesSchema } from "./current-pcb-209-spatial-arc-read.ts";
+import { currentPcb209SpatialPadQueriesSchema } from "./current-pcb-209-spatial-pad-read.ts";
 import { CURRENT_PCB_209_VISUAL_OPERATION_BYTES, CURRENT_PCB_209_VISUAL_RESULT_BYTES, currentPcb209VisualOperationSchema,
   requireCurrentPcb209VisualResult } from "./current-pcb-209-visual-actions.ts";
 import { constants } from "node:fs";
@@ -440,6 +441,12 @@ const spatialArcObservationIntentSchema = spatialObservationIntentSchema.extend(
 const spatialArcObservationResultSchema = spatialObservationResultSchema.extend({
   schema: z.literal("easyeda-pro-control.pcb209-spatial-arc-line-via-observation-result.v1"), result: currentPcbSpatialArcObservationSchema,
 });
+const spatialPadObservationIntentSchema = spatialObservationIntentSchema.extend({
+  schema: z.literal("easyeda-pro-control.pcb209-spatial-pad-point-observation-intent.v1"), queries: currentPcb209SpatialPadQueriesSchema,
+});
+const spatialPadObservationResultSchema = spatialObservationResultSchema.extend({
+  schema: z.literal("easyeda-pro-control.pcb209-spatial-pad-point-observation-result.v1"), result: currentPcbSpatialPadObservationSchema,
+});
 const stringPrecreateIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-string-precreate-observation-intent.v1"), ...base,
   operationId: currentPcbStringPrecreateIdSchema, stage: z.literal("string-precreate"),
@@ -841,8 +848,8 @@ export const diagnosticLifecycleRecordSchemas = {
   "image-shapes209-intent.json": observationIntentSchema, "image-shapes209-result.json": observationResultSchema,
   "arc-shapes209-intent.json": observationIntentSchema, "arc-shapes209-result.json": observationResultSchema,
   "poured-shapes209-intent.json": observationIntentSchema, "poured-shapes209-result.json": observationResultSchema,
-  "spatial209-intent.json": z.union([spatialObservationIntentSchema, spatialTrackObservationIntentSchema, spatialArcObservationIntentSchema]),
-  "spatial209-result.json": z.union([spatialObservationResultSchema, spatialTrackObservationResultSchema, spatialArcObservationResultSchema]),
+  "spatial209-intent.json": z.union([spatialObservationIntentSchema, spatialTrackObservationIntentSchema, spatialArcObservationIntentSchema, spatialPadObservationIntentSchema]),
+  "spatial209-result.json": z.union([spatialObservationResultSchema, spatialTrackObservationResultSchema, spatialArcObservationResultSchema, spatialPadObservationResultSchema]),
   "string-precreate-intent.json": stringPrecreateIntentSchema, "string-precreate-result.json": stringPrecreateResultSchema,
   "common-baseline-intent.json": commonBaselineIntentSchema, "common-baseline-result.json": commonBaselineResultSchema,
   "common-baseline-failure.json": commonBaselineFailureSchema,
@@ -1520,9 +1527,12 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     requireValue(spatial !== undefined && opening !== undefined, "SPATIAL209_TARGET_CHAIN");
     const mixed = spatial.schema === "easyeda-pro-control.pcb209-spatial-line-via-observation-intent.v1";
     const arcs = spatial.schema === "easyeda-pro-control.pcb209-spatial-arc-line-via-observation-intent.v1";
+    const pads = spatial.schema === "easyeda-pro-control.pcb209-spatial-pad-point-observation-intent.v1";
     requireValue(mixed === (spatialResult.schema === "easyeda-pro-control.pcb209-spatial-line-via-observation-result.v1"), "SPATIAL209_VARIANT_CHAIN");
     requireValue(arcs === (spatialResult.schema === "easyeda-pro-control.pcb209-spatial-arc-line-via-observation-result.v1"), "SPATIAL209_ARC_VARIANT_CHAIN");
-    if (arcs) { requireCurrentPcbSpatialArcObservation(spatialResult.result, opening.target, spatial.queries); }
+    requireValue(pads === (spatialResult.schema === "easyeda-pro-control.pcb209-spatial-pad-point-observation-result.v1"), "SPATIAL209_PAD_VARIANT_CHAIN");
+    if (pads) { requireCurrentPcbSpatialPadObservation(spatialResult.result, opening.target, spatial.queries); }
+    else if (arcs) { requireCurrentPcbSpatialArcObservation(spatialResult.result, opening.target, spatial.queries); }
     else if (mixed) { requireCurrentPcbSpatialTrackObservation(spatialResult.result, opening.target, spatial.queries); }
     else { requireCurrentPcbSpatialObservation(spatialResult.result, opening.target, spatial.queries); }
   }

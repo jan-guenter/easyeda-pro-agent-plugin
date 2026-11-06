@@ -16,6 +16,8 @@ import { CURRENT_PCB_209_SPATIAL_ARC_BINDINGS_FUNCTION, CURRENT_PCB_209_SPATIAL_
 import { CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES } from "../src/current-pcb-209-spatial-source-profile.ts";
 import { CURRENT_PCB_209_SPATIAL_ARC_READ_FUNCTION, CURRENT_PCB_209_SPATIAL_READ_FUNCTION, CURRENT_PCB_209_SPATIAL_TRACK_READ_FUNCTION } from "../src/current-pcb-209-spatial-read-program.ts";
 
+import { CURRENT_PCB_209_SPATIAL_PAD_BINDINGS_FUNCTION, CURRENT_PCB_209_SPATIAL_PAD_READ_FUNCTION } from "../src/current-pcb-209-spatial-pad-read.ts";
+
 const effects = { throwOnSideEffect: true, silent: true, awaitPromise: false, generatePreview: false, userGesture: false } as const;
 const wrapper = { spatialPhase: "wrapper", method: "Runtime.evaluate", params: { ...effects,
   expression: CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION, uniqueContextId: "original-context", objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP,
@@ -91,6 +93,33 @@ void test("Arc native grammar retains its six-query limit, fixed program and ori
   assert.throws(() => currentPcbSpatialWire({ ...read, params: trackRead.params }, 10, "s"));
   await assert.rejects(pipe.observeSpatial(trackRead), /READ_SEQUENCE/u);
   for (let i = 0; i < 6; i += 1) { await pipe.observeSpatial(read); }
+  const used = sent.length;
+  await assert.rejects(pipe.observeSpatial(read), /READ_SEQUENCE/u); assert.equal(sent.length, used);
+  await pipe.observeSpatial(release); assert.equal(sent.length, used + 1);
+});
+
+void test("Pad native grammar retains sixteen point reads, fixed program and original release", async context => {
+  const { pipe, sent } = fixture(context, true); assert.ok(pipe instanceof CurrentPcbSpatialPipe);
+  await pipe.attachTarget("original-target", () => { assert.fail("Unexpected event"); });
+  await pipe.getScriptSource("original-script");
+  pipe.bindSpatial({ uniqueContextId: "original-context", scriptId: "original-script" });
+  await pipe.observeSpatial(wrapper);
+  await pipe.observeSpatial({ spatialPhase: "handler", method: "Runtime.callFunctionOn", params: { ...effects, objectId: "scope",
+    functionDeclaration: CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION, objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP, returnByValue: false } });
+  await pipe.observeSpatial({ spatialPhase: "bindings-pad", method: "Runtime.callFunctionOn", params: { ...effects, throwOnSideEffect: false,
+    objectId: "scope", functionDeclaration: CURRENT_PCB_209_SPATIAL_PAD_BINDINGS_FUNCTION, objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP,
+    returnByValue: false, arguments: [{ objectId: "wrapper" }] } });
+  await pipe.observeSpatial({ spatialPhase: "functions", method: "Runtime.callFunctionOn", params: { ...effects, objectId: "bundle",
+    functionDeclaration: CURRENT_PCB_209_SPATIAL_FUNCTIONS_FUNCTION, objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP, returnByValue: false } });
+  const read = { ...trackRead, spatialPhase: "read-pad", params: { ...trackRead.params, functionDeclaration: CURRENT_PCB_209_SPATIAL_PAD_READ_FUNCTION } } as const;
+  const fixed = currentPcbSpatialWire(read, 383, "s");
+  assert.equal(spatialDiagnosticNativeRequest(bytes(fixed.command))["spatialPhase"], "read-pad");
+  assert.throws(() => currentPcbSpatialWire({ ...read, params: trackRead.params }, 10, "s"));
+  await assert.rejects(pipe.observeSpatial(trackRead), /READ_SEQUENCE/u);
+  for (let i = 0; i < 16; i += 1) { await pipe.observeSpatial(read); }
+  const beforeRegion = sent.length;
+  const region = { ...read, params: { ...read.params, arguments: [{ value: { kind: "region", mode: "inside", leftMil: 0, rightMil: 10, bottomMil: 0, topMil: 10 } }] } };
+  assert.throws(() => currentPcbSpatialWire(region, 382, "s")); assert.equal(sent.length, beforeRegion);
   const used = sent.length;
   await assert.rejects(pipe.observeSpatial(read), /READ_SEQUENCE/u); assert.equal(sent.length, used);
   await pipe.observeSpatial(release); assert.equal(sent.length, used + 1);
