@@ -520,3 +520,28 @@ request sequences and a held original delete reply settled through original
 Job abort; parent/frame inventory and native checkpoint inputs are explicit
 inert test seams. Pure emitted C# codec/birth/once-enrollment smoke checks run
 without an application or Windows handle. No connected cache validation ran.
+
+`prepareCurrentGeneratedInitialFlowCachePlan(prepared)` now derives the initial
+startup cache bodies from either distinct genuine PCB or SCH initial checkpoint.
+It verifies the original checkpoint/source before and after decrypting the
+qualification's original completed source inventory, checks the complete raw
+plaintext SHA, and retains one original preparation Promise. The opaque plan's
+lookup binds the exact prepared reference and original finished inventory;
+serialized checkpoints/tokens and accessor profiles refuse before file IO.
+
+The private data includes exact project namespace, original native history head,
+per-document raw DOCHEAD/records with no final delimiter, and the full ordered
+head-index body. The latter preserves the native API's ten projected SQL fields,
+iv/dataStrUrl and actual parser editHead/docs/docIds mutations; no snapshot field
+or serializer normalization is inserted. Generated encryption key material in
+that body stays private and must not enter public results/errors/journals.
+Historical lookup after opening reads only the original retained data; it does
+not revalidate a potentially changed live source or issue cache continuation,
+worker ownership or upload-frontier authority. The producer's separately owned
+actual caller/Promise/Native continuation composition must consume this data.
+
+Two focused cases use genuine completed synthetic SQL and native cipher decode,
+then execute the exact pinned flowParseFull/getFlowParse against inert inputs
+for1PCB/2SCH documents. Both raw bodies and complete head-index bytes match.
+They prove supplied-data/source projection, not a connected native put or a
+successful original checkpoint preparation/live Save.
