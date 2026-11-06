@@ -84,6 +84,10 @@ import { decodeCurrentSelectedFileMainSqlFenceNative, decodeCurrentSelectedFileM
 import { CURRENT_PCB_VIA_MAIN_REQUESTS as VIA_REQUESTS, validateCurrentPcbViaMainCommand } from "./current-pcb-via-main-protocol.ts";
 import type { CurrentPcbViaMainCommand } from "./current-pcb-via-main-protocol.ts";
 import type { CurrentPcbViaMainBackendBindings, CurrentPcbViaMainEvent, CurrentPcbViaMainOrigin } from "./current-pcb-via-main-origin.ts";
+import { createHash } from "node:crypto";
+import { CURRENT_SELECTED_FILE_MAIN_FETCH_SOURCE as FETCH_SOURCE } from "./current-selected-file-main-fetch-source.ts";
+import { CurrentSelectedFileMainRequestReader } from "./current-selected-file-main-request-reader.ts";
+import type { CurrentSelectedFileMainRequestObservation } from "./current-selected-file-main-request-reader.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { currentFootprintCopyMainRequestPlanSchema } from "./current-footprint-copy-main-request-contract.ts";
 
@@ -297,12 +301,22 @@ function methods(transport: CurrentFootprintCopyMainBackendTransport): readonly 
 }
 const issued = new WeakMap<CurrentFootprintCopyMainBackendObservation, CurrentFootprintCopyMainBackendRunner>();
 const forwardPollRetainers = new WeakMap<(chunk: string) => void, Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; requireOriginal: () => void }>>();
+const selectedRequestPackets = new WeakMap<CurrentSelectedFileMainRequestObservation, Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; pause: Pause; text: string }>>();
+export function requireOriginalCurrentSelectedFileMainRequest(packet: CurrentSelectedFileMainRequestObservation, runner: CurrentFootprintCopyMainBackendRunner): void {
+  const original = selectedRequestPackets.get(packet); need(original !== undefined && original.runner === runner, "SELECTED_REQUEST_ORIGINAL"); runner.requireOriginalSelectedMainRequest(packet);
+}
 export class CurrentFootprintCopyMainBackendRunner {
   readonly #transport: CurrentFootprintCopyMainBackendTransport;
   readonly #methods: readonly unknown[];
   readonly #decoder = new TextDecoder("utf-8", { fatal: true });
   #decoderPendingContinuations = 0;
   readonly #scripts = new Map<string, number>();
+  #selectedRequestReader: CurrentSelectedFileMainRequestReader | null = null;
+  #selectedRequestPause: Pause | null = null;
+  #selectedFetchScript: Readonly<{ scriptId: string; executionContextId: number }> | null = null;
+  readonly #sqlApprovedReadRequests = new WeakSet<Pause>();
+  readonly #selectedObservedRequests = new WeakMap<Pause, CurrentSelectedFileMainRequestObservation>();
+  #selectedReadonlyContinuations = 0;
   readonly #selectedSqlBootstrap: CurrentSelectedFileMainSqlFenceBootstrap | null;
   readonly #selectedSqlPath: string | null;
   readonly #sqlBreakpoints = new Map<string, CurrentSelectedFileMainSqlFenceSite>();
@@ -524,6 +538,12 @@ export class CurrentFootprintCopyMainBackendRunner {
         }
       }
       const script = z.looseObject({ scriptId: handle, url: z.string().max(4096), executionContextId: z.number().int().positive() }).parse(input);
+      if (this.#selectedSqlBootstrap !== null && script.url === FETCH_SOURCE.url) {
+        const builtin = z.looseObject({ scriptId: handle, url: z.literal(FETCH_SOURCE.url), executionContextId: z.number().int().positive(),
+          startLine: z.literal(0), startColumn: z.literal(0), endLine: z.literal(17_434), endColumn: z.literal(0), length: z.literal(745_782),
+          isLiveEdit: z.literal(false), hasSourceURL: z.literal(false), isModule: z.literal(false), scriptLanguage: z.literal("JavaScript") }).parse(input);
+        need(this.#selectedFetchScript === null, "SELECTED_FETCH_SCRIPT_REPLACED"); this.#selectedFetchScript = Object.freeze({ scriptId: builtin.scriptId, executionContextId: builtin.executionContextId });
+      }
       if (new RegExp(URL_PATTERN, "u").test(script.url)) { need(!this.#scripts.has(script.scriptId) && this.#scripts.size === 0, "APP_SCRIPT_CHANGED"); this.#scripts.set(script.scriptId, script.executionContextId); }
       return;
     }
@@ -811,7 +831,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     this.#sqlBreakpoints.set(reply.breakpointId, site); this.#sqlArming = null;
   }
   async #sqlResume(pause: Pause): Promise<void> {
-    need(this.#selectedSqlBootstrap !== null && this.#pause === pause && (pause.sqlSite === "import" || pause.sqlSite === "afterImports" || this.#sqlApprovedConfigurations.has(pause)) &&
+    need(this.#selectedSqlBootstrap !== null && this.#pause === pause && (pause.sqlSite === "import" || pause.sqlSite === "afterImports" || this.#sqlApprovedConfigurations.has(pause) || this.#sqlApprovedReadRequests.has(pause)) &&
       !pause.resumeAttempted && !pause.resumed, "SELECTED_SQL_NO_MUTATION_GRANT"); pause.resumeAttempted = true;
     empty.parse(await this.#request({ phase: "sql-fence-resume", method: "Debugger.resume", params: {} })); await this.#wait(() => pause.resumed);
   }
@@ -860,6 +880,49 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(reply.result.value.stage === stage && reply.result.value.selectedFile === (reply.result.value.path === this.#selectedSqlPath), "SELECTED_SQL_INITIALIZER_BINDING");
     this.#sqlConfigurationRecords.push(Object.freeze(reply.result.value)); this.#sqlApprovedConfigurations.add(pause); await this.#sqlResume(pause);
   }
+  #requireSelectedRequestPause(pause: Pause): void {
+    this.#same(false); need(this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#packet !== null && issued.get(this.#packet) === this && this.#sqlCapture !== null &&
+      this.#pause === pause && pause.sqlSite === "driver" && !pause.resumeAttempted && !pause.resumed && this.#pendingId === null, "SELECTED_REQUEST_ORIGINAL_PAUSE");
+  }
+  async #observeSelectedMainRequest(pause: Pause): Promise<CurrentSelectedFileMainRequestObservation> {
+    this.#requireSelectedRequestPause(pause); const previous = this.#selectedObservedRequests.get(pause); if (previous !== undefined) { this.requireOriginalSelectedMainRequest(previous); return previous; }
+    need(this.#selectedRequestPause === null, "SELECTED_REQUEST_REENTRANT"); this.#selectedRequestPause = pause;
+    try {
+      if (this.#selectedRequestReader === null) {
+        need(this.#appScriptId !== null && this.#sqlCapture !== null, "SELECTED_REQUEST_SOURCE_REQUIRED");
+        this.#selectedRequestReader = new CurrentSelectedFileMainRequestReader(Object.freeze({ appScriptId: this.#appScriptId, captureObjectId: this.#sqlCapture,
+          request: (command: CurrentSelectedFileMainSqlFenceCommand): Promise<unknown> => { const actual = this.#selectedRequestPause; need(actual !== null, "SELECTED_REQUEST_ORIGINAL_PAUSE"); this.#requireSelectedRequestPause(actual); return this.#request(command); },
+          assertCurrent: async (): Promise<void> => { const actual = this.#selectedRequestPause; need(actual !== null, "SELECTED_REQUEST_ORIGINAL_PAUSE"); this.#requireSelectedRequestPause(actual); await this.#current(); this.#requireSelectedRequestPause(actual); },
+          assertFetchScript: (scriptId: string): void => { need(this.#selectedFetchScript?.scriptId === scriptId && this.#appScriptId !== null && this.#scripts.get(this.#appScriptId) === this.#selectedFetchScript.executionContextId, "SELECTED_FETCH_ORIGINAL_SCRIPT"); } }));
+      }
+      const packet = await this.#selectedRequestReader.observe(pause.frameId); this.#requireSelectedRequestPause(pause);
+      selectedRequestPackets.set(packet, Object.freeze({ runner: this, pause, text: canonicalJson(packet) })); this.#selectedObservedRequests.set(pause, packet); return packet;
+    } finally { this.#selectedRequestPause = null; }
+  }
+  /** Original driver observation only. Matching JSON and another runner cannot
+   * recreate it, and it provides no request/SQL continuation by itself. */
+  public async observeSelectedMainRequest(): Promise<CurrentSelectedFileMainRequestObservation> {
+    need(!this.#busy && this.#pause !== null && !this.#originActive && !this.#structureActive, "SELECTED_REQUEST_CURSOR_BUSY"); this.#busy = true;
+    try { return await this.#observeSelectedMainRequest(this.#pause); } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
+  }
+  public requireOriginalSelectedMainRequest(packet: CurrentSelectedFileMainRequestObservation): void {
+    const original = selectedRequestPackets.get(packet); need(original?.runner === this && original.text === canonicalJson(packet) && this.#selectedObservedRequests.get(original.pause) === packet, "SELECTED_REQUEST_ORIGINAL");
+    this.#requireSelectedRequestPause(original.pause);
+  }
+  #selectedReadonlyRequest(packet: CurrentSelectedFileMainRequestObservation): boolean {
+    this.requireOriginalSelectedMainRequest(packet); need(this.#selectedSqlPath !== null, "SELECTED_REQUEST_PATH_REQUIRED");
+    const prefix = `/api/v4/projects/${createHash("sha256").update(this.#selectedSqlPath).digest("hex")}`;
+    return (packet.method === "GET" || packet.method === "HEAD") && (packet.pureUrl === prefix || packet.pureUrl.startsWith(`${prefix}/`));
+  }
+  async #continueSelectedReadonlyRequest(packet: CurrentSelectedFileMainRequestObservation): Promise<void> {
+    need(this.#selectedReadonlyRequest(packet) && this.#selectedReadonlyContinuations < 64, "SELECTED_REQUEST_NO_WRITE_GRANT"); const original = selectedRequestPackets.get(packet); need(original !== undefined, "SELECTED_REQUEST_ORIGINAL");
+    this.#selectedReadonlyContinuations += 1; this.#sqlApprovedReadRequests.add(original.pause); await this.#sqlResume(original.pause);
+    if (this.#sqlHeld === original.pause) { this.#sqlHeld = null; }
+  }
+  public async continueSelectedReadonlyRequest(packet: CurrentSelectedFileMainRequestObservation): Promise<void> {
+    need(!this.#busy, "SELECTED_REQUEST_CURSOR_BUSY"); this.#busy = true;
+    try { await this.#continueSelectedReadonlyRequest(packet); } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
+  }
   /** Same original cursor, no second inspector. A held write remains paused;
    * this method never treats its data as permission to continue native SQL. */
   public async pumpSelectedSqlFence(): Promise<void> {
@@ -870,6 +933,7 @@ export class CurrentFootprintCopyMainBackendRunner {
       const pause = this.#pause;
       if (pause !== null && !pause.resumed && pause.sqlSite !== undefined) {
         if (pause.sqlSite === "initializerSerialize" || pause.sqlSite === "initializerPragma") { await this.#configureSelectedSqlInitializer(pause); }
+        else if (pause.sqlSite === "driver") { const request = await this.#observeSelectedMainRequest(pause); if (this.#selectedReadonlyRequest(request)) { await this.#continueSelectedReadonlyRequest(request); } else { this.#sqlHeld = pause; } }
         else { this.#sqlMutationPauses += 1; need(this.#sqlMutationPauses <= 64, "SELECTED_SQL_MUTATION_BOUND"); this.#sqlHeld = pause; await this.#requireSelectedSqlCapture(); }
       }
     } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
@@ -877,7 +941,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   public selectedSqlFenceState(): Readonly<Record<string, unknown>> {
     return Object.freeze({ profile: "private.selected-file-main-sql-fence.v1", originalBootstrapRetained: this.#selectedSqlBootstrap !== null,
       ready: this.#sqlReady, conditionalBreakpoints: Math.max(0, this.#sqlBreakpoints.size - 2), nativePrimitivesReplaced: false,
-      heldSite: this.#sqlHeld?.sqlSite ?? null, mutationsResumed: 0, mutationGrantAvailable: false,
+      heldSite: this.#sqlHeld?.sqlSite ?? null, readonlyRequestContinuations: this.#selectedReadonlyContinuations, mutationsResumed: 0, mutationGrantAvailable: false,
       initializerConfigurations: Object.freeze([...this.#sqlConfigurationRecords]), initializerConfigurationAutomaticallyAdmitted: true, completeSqlEffectProven: false, executionAuthorized: false, saveAuthorized: false });
   }
 

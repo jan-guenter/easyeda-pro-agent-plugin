@@ -2,13 +2,15 @@
  * Only source/transport issuance are substituted; actual cursor, decoders,
  * ordering, predicates, counters and mutation-hold logic run unchanged. */
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { test } from "node:test";
 import type { CurrentFootprintCopyMainBackendCommand as Command } from "../src/current-footprint-copy-main-backend-contract.ts";
 import type { CurrentFootprintCopyMainBackendRunner, CurrentFootprintCopyMainBackendTransport } from "../src/current-footprint-copy-main-backend-runner.ts";
 import type { CurrentSelectedFileMainSqlFenceCommand as SqlCommand } from "../src/current-selected-file-main-sql-fence-protocol.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_EARLY_ID as EARLY_ID } from "../src/current-selected-file-main-sql-fence-protocol.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SOURCE } from "../src/current-selected-file-main-sql-fence-source.ts";
-import { CurrentFootprintCopyMainBackendRunner as OriginalRunner } from "../src/current-footprint-copy-main-backend-runner.ts";
+import { CurrentFootprintCopyMainBackendRunner as OriginalRunner, requireOriginalCurrentSelectedFileMainRequest } from "../src/current-footprint-copy-main-backend-runner.ts";
+import { selectedRequestPeer, selectedRequestReaderConstructor } from "./helpers/selected-main-request-reader-fixture.ts";
 import { mainBackendModule, mainBackendTransportFixture } from "./helpers/footprint-main-backend-runner-fixture.ts";
 import type { CurrentPcbViaMainCommand } from "../src/current-pcb-via-main-protocol.ts";
 import { validateCurrentPcbViaMainCommand } from "../src/current-pcb-via-main-protocol.ts";
@@ -28,9 +30,11 @@ function nativeMetadata(id: string): Data {
     { name: "[[Scopes]]", value: { type: "object", subtype: "internal#scopeList", className: "Array", description: "Scopes[0]", objectId: "scopes" } }] };
 }
 async function fixture(delta = 0): Promise<Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; phases: string[]; transport: CurrentFootprintCopyMainBackendTransport;
-  injectMutation: () => void; injectDriver: () => void; resumes: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
+  injectRequest: (method: string, foreign?: boolean, sourceDelta?: number) => void; injectMutation: () => void; injectDriver: () => void; resumes: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
   const base = mainBackendTransportFixture();
   const ids = new Map<number, number>(), phases: string[] = [], queue: Data[] = [], retainedRegistration: Data[] = [];
+  let currentRequest = { method: "GET", url: "", delta: 0 }, fetchScriptSeen = false;
+  let queuedBytes = Buffer.alloc(0);
   let holdRegistration = false, normalResumes = 0, runner: CurrentFootprintCopyMainBackendRunner | null = null, sqlResumes = 0;
   let heldPoll: Readonly<{ started: PromiseWithResolvers<null>; settle: PromiseWithResolvers<null> }> | null = null;
   const event = (method: string, params: Data): void => { queue.push({ method, params }); };
@@ -50,6 +54,8 @@ async function fixture(delta = 0): Promise<Readonly<{ runner: CurrentFootprintCo
       result = { result: { type: "object", subtype: "array", className: "Array", description: `Array(${String(count)})`, objectId: command.phase } };
     } else if (command.phase === "sql-fence-properties") { result = command.params.objectId === "sql-fence-native-frame" ? nativeArray() : nativeMetadata(command.params.objectId); }
     else if (command.phase === "sql-fence-require") { result = { result: { type: "boolean", value: true } }; }
+    if (command.phase.startsWith("sql-fence-request-") || command.phase === "sql-fence-driver-frame" || command.phase === "sql-fence-fetch-source" ||
+      command.phase === "sql-fence-properties" && "objectId" in command.params && !["sql-fence-native-frame", "native0", "native1", "native2"].includes(command.params.objectId)) { result = selectedRequestPeer(command, currentRequest); }
     queue.push({ id, result }); return Promise.resolve();
   };
   const transport: CurrentFootprintCopyMainBackendTransport = Object.freeze({
@@ -65,7 +71,8 @@ async function fixture(delta = 0): Promise<Readonly<{ runner: CurrentFootprintCo
     poll: async (): Promise<string> => {
       if (heldPoll !== null) { const original = heldPoll; original.started.resolve(null); await original.settle.promise; assert.equal(heldPoll, original); heldPoll = null; }
       for (;;) {
-        const ready = queue.shift(); if (ready !== undefined) { return Buffer.from(`${JSON.stringify(ready)}\0`).toString("base64"); }
+        if (queuedBytes.length > 0) { const part = queuedBytes.subarray(0, 32_768); queuedBytes = queuedBytes.subarray(part.length); return part.toString("base64"); }
+        const ready = queue.shift(); if (ready !== undefined) { const bytes = Buffer.from(`${JSON.stringify(ready)}\0`); queuedBytes = bytes.subarray(32_768); return bytes.subarray(0, 32_768).toString("base64"); }
         const text = Buffer.from(await base.transport.poll(false), "base64").toString(); if (text === "") { return ""; }
         const value: unknown = JSON.parse(text.slice(0, -1)); assert.ok(value !== null && typeof value === "object");
         if (Object.hasOwn(value, "id")) { const id: unknown = Reflect.get(value, "id"); assert.ok(typeof id === "number"); Reflect.set(value, "id", ids.get(id)); }
@@ -82,7 +89,9 @@ async function fixture(delta = 0): Promise<Readonly<{ runner: CurrentFootprintCo
       }
     },
   });
+  const RequestReader = await selectedRequestReaderConstructor();
   const module = await mainBackendModule({
+    "./current-selected-file-main-request-reader.ts": { CurrentSelectedFileMainRequestReader: RequestReader },
     "./current-footprint-copy-main-request-source.ts": {
       qualifyCurrentFootprintCopyMainRequestSource: (source: unknown): unknown => { assert.equal(source, "synthetic-complete-app-source"); return capability; },
       requireCurrentFootprintCopyMainRequestSource: (source: unknown): void => { assert.equal(source, capability); },
@@ -103,7 +112,10 @@ async function fixture(delta = 0): Promise<Readonly<{ runner: CurrentFootprintCo
     },
   });
   runner = new module.Constructor(transport, undefined, capability);
-  return { runner, phases, transport, injectMutation: (): void => { pause("run"); }, injectDriver: (): void => { pause("driver"); }, resumes: (): number => normalResumes + sqlResumes,
+  return { runner, phases, transport, injectRequest: (method: string, foreign = false, sourceDelta = 0): void => {
+    const project = foreign ? "d".repeat(64) : createHash("sha256").update(String.raw`C:\Synthetic\fixture.eprj2`).digest("hex"); currentRequest = { method, url: `/api/v4/projects/${project}/branches`, delta: sourceDelta };
+    if (!fetchScriptSeen) { event("Debugger.scriptParsed", { scriptId: "builtin-fetch", url: "node:internal/deps/undici/undici", executionContextId: 1, startLine: 0, startColumn: 0, endLine: 17_434, endColumn: 0, length: 745_782, isLiveEdit: false, hasSourceURL: false, isModule: false, scriptLanguage: "JavaScript" }); fetchScriptSeen = true; }
+    pause("driver"); }, injectMutation: (): void => { pause("run"); }, injectDriver: (): void => { pause("driver"); }, resumes: (): number => normalResumes + sqlResumes,
     deferPoll: () => { assert.equal(heldPoll, null); const original = { started: Promise.withResolvers<null>(), settle: Promise.withResolvers<null>() }; heldPoll = original;
       return { started: original.started.promise, release: (): void => { original.settle.resolve(null); } }; } };
 }
@@ -143,4 +155,25 @@ void test("the actual Via cursor shares a retained late poll, arms exact source 
   assert.throws(() => validateCurrentPcbViaMainCommand({ phase: "via-main-request-resume", method: "Debugger.resume", params: {} }), /NO_RESUME/u);
   await assert.rejects(original.bindings.request(validateCurrentPcbViaMainCommand({ phase: "via-main-request-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: "sql-driver" } }), true));
   await assert.rejects(f.runner.beginViaMainObservation(), /ORIGINAL_CURSOR/u); assert.equal(f.resumes(), 4); assert.equal(f.runner.selectedSqlFenceState()["mutationsResumed"], 0);
+});
+
+void test("the original main cursor qualifies modern Fetch GET, resumes it once, and keeps the next POST held", async () => {
+  const f = await fixture(); await f.runner.observe(); const initial = f.resumes(); f.injectRequest("GET"); await f.runner.pumpSelectedSqlFence(); await f.runner.pumpSelectedSqlFence();
+  assert.equal(f.resumes(), initial + 1); assert.equal(f.runner.selectedSqlFenceState()["readonlyRequestContinuations"], 1); assert.equal(f.runner.selectedSqlFenceState()["heldSite"], null);
+  f.injectRequest("POST"); await f.runner.pumpSelectedSqlFence(); assert.equal(f.resumes(), initial + 1); assert.equal(f.runner.selectedSqlFenceState()["heldSite"], "driver");
+  const packet = await f.runner.observeSelectedMainRequest(); assert.equal(packet.method, "POST"); assert.equal(packet.executionAuthorized, false);
+  // This runner came from the production module with an explicit source seam;
+  // Its own method checks the actual private registry, while the normal module
+  // Correctly rejects the packet as belonging to a different module instance.
+  f.runner.requireOriginalSelectedMainRequest(packet); assert.throws(() => { requireOriginalCurrentSelectedFileMainRequest(packet, f.runner); });
+  assert.throws(() => { f.runner.requireOriginalSelectedMainRequest(structuredClone(packet)); });
+  await assert.rejects(f.runner.continueSelectedReadonlyRequest(packet), /NO_WRITE_GRANT/u); assert.equal(f.resumes(), initial + 1);
+});
+void test("foreign-project GET and wrong original getter source location never acquire a driver resume", async () => {
+  for (const wrongSource of [false, true]) {
+    const f = await fixture(); await f.runner.observe(); const initial = f.resumes(); f.injectRequest("GET", !wrongSource, Number(wrongSource));
+    await f.runner.pumpSelectedSqlFence();
+    if (wrongSource) { await assert.rejects(f.runner.pumpSelectedSqlFence()); } else { await f.runner.pumpSelectedSqlFence(); assert.equal(f.runner.selectedSqlFenceState()["heldSite"], "driver"); }
+    assert.equal(f.resumes(), initial);
+  }
 });

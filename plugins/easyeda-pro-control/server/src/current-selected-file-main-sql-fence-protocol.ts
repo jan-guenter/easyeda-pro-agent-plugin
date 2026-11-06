@@ -9,6 +9,8 @@ import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM as CAPTURE, CURREN
   CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_GROUP as GROUP, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUIRE_PROGRAM as REQUIRE,
   CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SELECT_PROGRAM as SELECT } from "./current-selected-file-main-sql-fence-programs.ts";
 
+import { CURRENT_SELECTED_FILE_MAIN_REQUEST_CALLS as REQUEST, CURRENT_SELECTED_FILE_MAIN_REQUEST_FRAME as REQUEST_FRAME } from "./current-selected-file-main-request-programs.ts";
+
 export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES = Object.freeze(["keeperBirth", "keeperBound", "contextBirth", "contextBound", "initializerBirth", "initializerBound",
   "queryAll", "queryOne", "run", "finalize", "statementEach", "statementRun", "prepare", "prepared", "wrapClose", "keeperClose", "initializerSerialize", "initializerPragma", "initializerClose", "driver"] as const);
 export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_EARLY_ID = `2:${String(SOURCE.sites.import.lineNumber)}:${String(SOURCE.sites.import.breakpointColumnNumber)}:${URL}`;
@@ -34,6 +36,11 @@ const propertiesParams = z.object({ objectId: handle, ownProperties: z.literal(t
 const captureParams = z.object({ ...callFlags, objectId: handle, functionDeclaration: z.literal(CAPTURE), arguments: captureArguments, returnByValue: z.literal(false) }).strict();
 const requireParams = z.object({ ...callFlags, objectId: handle, functionDeclaration: z.literal(REQUIRE), arguments: z.tuple([]), returnByValue: z.literal(true) }).strict();
 const selectParams = z.object({ ...callFlags, objectId: handle, functionDeclaration: z.literal(SELECT), arguments: selectArguments, returnByValue: z.literal(false) }).strict();
+const requestFrameParams = z.object({ ...frameFlags, callFrameId: handle, expression: z.literal(REQUEST_FRAME) }).strict();
+const requestCaptureParams = z.object({ ...callFlags, objectId: handle, functionDeclaration: z.literal(REQUEST.capture), arguments: z.tuple([ref]), returnByValue: z.literal(false) }).strict();
+const requestBindParams = z.object({ ...callFlags, objectId: handle, functionDeclaration: z.literal(REQUEST.bind), arguments: z.tuple([ref, ref, ref, ref]), returnByValue: z.literal(false) }).strict();
+const requestRebindParams = z.object({ ...callFlags, objectId: handle, functionDeclaration: z.literal(REQUEST.rebind), arguments: z.tuple([ref]), returnByValue: z.literal(false) }).strict();
+const requestReadParams = z.object({ ...callFlags, objectId: handle, functionDeclaration: z.literal(REQUEST.read), arguments: z.tuple([]), returnByValue: z.literal(true) }).strict();
 const sites = z.enum(CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES);
 const frameSites = z.enum(["afterImports", ...CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES]);
 const configStage = z.enum(["serialize", "pragma"]);
@@ -52,6 +59,12 @@ const command = z.discriminatedUnion("phase", [
   z.object({ phase: z.literal("sql-fence-require"), method: z.literal("Runtime.callFunctionOn"), params: requireParams }).strict(),
   z.object({ phase: z.literal("sql-fence-select"), method: z.literal("Runtime.callFunctionOn"), params: selectParams }).strict(),
   z.object({ phase: z.literal("sql-fence-configure"), site: configSite, method: z.literal("Runtime.callFunctionOn"), params: configParams }).strict(),
+  z.object({ phase: z.literal("sql-fence-driver-frame"), method: z.literal("Debugger.evaluateOnCallFrame"), params: requestFrameParams }).strict(),
+  z.object({ phase: z.literal("sql-fence-request-capture"), method: z.literal("Runtime.callFunctionOn"), params: requestCaptureParams }).strict(),
+  z.object({ phase: z.literal("sql-fence-request-bind"), method: z.literal("Runtime.callFunctionOn"), params: requestBindParams }).strict(),
+  z.object({ phase: z.literal("sql-fence-request-rebind"), method: z.literal("Runtime.callFunctionOn"), params: requestRebindParams }).strict(),
+  z.object({ phase: z.literal("sql-fence-request-read"), method: z.literal("Runtime.callFunctionOn"), params: requestReadParams }).strict(),
+  z.object({ phase: z.literal("sql-fence-fetch-source"), method: z.literal("Debugger.getScriptSource"), params: z.object({ scriptId: handle }).strict() }).strict(),
   z.object({ phase: z.literal("sql-fence-resume"), method: z.literal("Debugger.resume"), params: empty }).strict(),
 ]);
 export type CurrentSelectedFileMainSqlFenceCommand = Readonly<z.infer<typeof command>>;
@@ -76,6 +89,7 @@ export function validateCurrentSelectedFileMainSqlFenceCommand(input: unknown): 
 export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUESTS = Object.freeze({
   earlyAndAfterImports: 2, conditionalArms: CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES.length,
   captureAndNativeMetadata: 8, startupResumes: 2, mutationPauses: 64, perMutationMaximum: 3,
-  normal: 2 + CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES.length + 8 + 2 + 64 * 3,
+  originalFetchSourceAndScopeProof: 20, readonlyRequestPauses: 64, perReadonlyRequestMaximum: 6,
+  normal: 2 + CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES.length + 8 + 2 + 64 * 3 + 20 + 64 * 6,
   cleanup: 0, executionAuthorized: false,
 });

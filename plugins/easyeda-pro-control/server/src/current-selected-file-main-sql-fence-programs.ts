@@ -39,7 +39,7 @@ const conditions = {
   initializerClose: 'if(own(database(a),"filename")!==t)bad();return false;',
   initializerSerialize: 'database(a);return true;',
   initializerPragma: 'database(a);return true;',
-  driver: 'plain(r);const req=plain(own(r,"req")),method=own(req,"method"),url=text(own(r,"pureUrl"),4096);if(typeof method!=="string"||!new Set(["GET","POST","PUT","DELETE","PATCH","HEAD","OPTIONS"]).has(method))bad();return method!=="GET"&&method!=="HEAD"&&/^\\/api\\/v4\\/projects\\//.test(url);',
+  driver: 'plain(r);const url=text(own(r,"pureUrl"),4096);return /^\\/api\\/v4\\/projects(?:\\/|$)/.test(url);',
 } as const satisfies Record<Exclude<CurrentSelectedFileMainSqlFenceSite, "import" | "afterImports">, string>;
 /** A condition exception must pause, since V8 otherwise ignores an exception
  * thrown by a breakpoint predicate. No readonly/unknown path can fail open. */

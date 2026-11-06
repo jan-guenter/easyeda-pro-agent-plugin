@@ -42,7 +42,9 @@ export function applyCurrentSchematicDisplayWriteNativeFragment(input: string): 
   source = one(source, "if(pcbViaWrite209){ViaDiscovery(method,OptionalText(sessionId));message=ViaOriginalId(id,message);}", "if(pcbViaWrite209){ViaDiscovery(method,OptionalText(sessionId));message=ViaOriginalId(id,message);}\n    if(schematicDisplayWrite209){SchematicDisplayDiscovery(method,OptionalText(sessionId));}");
   source = one(source, "          if (-not $launched -or ($request.requestId -isnot [int]", `          if ($SchematicDisplayWrite209) {$requestLimit=${String(PROFILE.renderer.total)}}\n          if (-not $launched -or ($request.requestId -isnot [int]`);
   source = one(source, "      if ($PcbViaWrite209) {$owner.AdmitPcbViaAction($request.action)}", "      if ($SchematicDisplayWrite209) {$owner.AdmitSchematicDisplayAction($request.action)}\n      if ($PcbViaWrite209) {$owner.AdmitPcbViaAction($request.action)}");
-  source = one(source, "        'pcb-via-clock-bind' {", `${dispatch}        'pcb-via-clock-bind' {`);
+  const dispatchAnchor = source.includes("        'pcb-via-main-observe' {") ? "        'pcb-via-main-observe' {" : "        'pcb-via-clock-bind' {";
+  if (dispatchAnchor.includes("main-observe") && source.includes(`${dispatch}        'pcb-via-clock-bind' {`)) { source = source.replace(dispatch, ""); }
+  source = one(source, dispatchAnchor, `${dispatch}${dispatchAnchor}`);
   source = one(source, "    [EasyedaDiagnosticOwner]::VerifyPcbViaClockSmoke()", "    [EasyedaDiagnosticOwner]::VerifySchematicDisplaySmoke()\n    [EasyedaDiagnosticOwner]::VerifyPcbViaClockSmoke()");
   const start = source.indexOf(begin), stop = source.indexOf(end);
   if (start !== -1 || stop !== -1) { if (start === -1 || stop < start || source.includes(begin, start + begin.length) || source.includes(end, stop + end.length)) { throw new Error("SCHEMATIC_DISPLAY_NATIVE_MARKERS"); } source = source.slice(0, start) + native() + source.slice(stop + end.length); }

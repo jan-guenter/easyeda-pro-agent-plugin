@@ -13,6 +13,8 @@ import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CALL_FLAGS as CALL, CURRENT_SELECT
   validateCurrentSelectedFileMainSqlFenceCommand } from "./current-selected-file-main-sql-fence-protocol.ts";
 import type { CurrentSelectedFileMainSqlFenceCommand as Command } from "./current-selected-file-main-sql-fence-protocol.ts";
 
+import { CURRENT_SELECTED_FILE_MAIN_REQUEST_CALLS as REQUEST, CURRENT_SELECTED_FILE_MAIN_REQUEST_FRAME as REQUEST_FRAME } from "./current-selected-file-main-request-programs.ts";
+
 const smoke = (name: string): string => name === "path" ? String.raw`C:\Synthetic\fixture.eprj2` : "main_handle";
 const marker = (name: string): string => `__selectedsql_${name}__`;
 export function currentSelectedFileMainSqlFenceWire(input: unknown, id: number): Readonly<{ command: Command & Readonly<{ id: number }>; request: Readonly<Record<string, string | number>> }> {
@@ -20,11 +22,15 @@ export function currentSelectedFileMainSqlFenceWire(input: unknown, id: number):
   const command = validateCurrentSelectedFileMainSqlFenceCommand(input);
   const request: Record<string, string | number> = { action: "main-send", requestId: id, phase: command.phase, method: command.method };
   if ("site" in command) { request["phase"] = `${command.phase}-${command.site}`; }
-  if (command.method === "Debugger.setBreakpoint") { request["scriptId"] = command.params.location.scriptId; }
+  if (command.method === "Debugger.getScriptSource") { request["scriptId"] = command.params.scriptId; }
+  else if (command.method === "Debugger.setBreakpoint") { request["scriptId"] = command.params.location.scriptId; }
   else if (command.method === "Debugger.evaluateOnCallFrame") { request["callFrameId"] = command.params.callFrameId; }
   else if (command.method === "Runtime.getProperties" || command.method === "Runtime.callFunctionOn") {
     request["objectId"] = command.params.objectId;
     if (command.phase === "sql-fence-capture") { request["path"] = command.params.arguments[0].value; }
+    else if (command.phase === "sql-fence-request-capture" || command.phase === "sql-fence-request-bind" || command.phase === "sql-fence-request-rebind") {
+      for (const [index, argument] of command.params.arguments.entries()) { request[`argument${String(index)}`] = argument.objectId; }
+    }
     else if (command.phase === "sql-fence-select" || command.phase === "sql-fence-configure") { request["argument0"] = command.params.arguments[0].objectId; }
   }
   return freezeDeep({ command: { ...command, id }, request });
@@ -42,6 +48,12 @@ export function currentSelectedFileMainSqlFenceNativeCases(): readonly Command[]
     { phase: "sql-fence-capture", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: CAPTURE, arguments: [{ value: marker("path") }], returnByValue: false } },
     { phase: "sql-fence-require", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: REQUIRE, arguments: [], returnByValue: true } },
     { phase: "sql-fence-select", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: SELECT, arguments: [{ objectId: marker("argument0") }], returnByValue: false } },
+    { phase: "sql-fence-driver-frame", method: "Debugger.evaluateOnCallFrame", params: { ...FRAME, callFrameId, expression: REQUEST_FRAME } },
+    { phase: "sql-fence-request-capture", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: REQUEST.capture, arguments: [{ objectId: marker("argument0") }], returnByValue: false } },
+    { phase: "sql-fence-request-bind", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: REQUEST.bind, arguments: [{ objectId: marker("argument0") }, { objectId: marker("argument1") }, { objectId: marker("argument2") }, { objectId: marker("argument3") }], returnByValue: false } },
+    { phase: "sql-fence-request-rebind", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: REQUEST.rebind, arguments: [{ objectId: marker("argument0") }], returnByValue: false } },
+    { phase: "sql-fence-request-read", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: REQUEST.read, arguments: [], returnByValue: true } },
+    { phase: "sql-fence-fetch-source", method: "Debugger.getScriptSource", params: { scriptId } },
     { phase: "sql-fence-resume", method: "Debugger.resume", params: {} },
   ];
   for (const [site, stage] of [["initializerSerialize", "serialize"], ["initializerPragma", "pragma"]] as const) {
