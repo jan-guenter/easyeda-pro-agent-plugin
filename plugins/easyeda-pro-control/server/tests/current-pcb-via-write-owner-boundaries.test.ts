@@ -1,5 +1,7 @@
 /* oxlint-disable import/max-dependencies -- Compare original owner issuance with the independent fixed/native grammars, SDK metadata and released capacities. */
 import assert from "node:assert/strict";
+import { gunzipSync } from "node:zlib";
+import { captureCurrentPcbStringClockReply } from "../src/current-pcb-string-clock-reply.ts";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
@@ -40,6 +42,17 @@ void test("new SDK wire contains fixed scalars only and cannot be spent by relea
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, awaitPromise: false } })));
   }
   assert.equal(PROFILE.renderer.total, 3088); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [1109, 41, 1150]);
+});
+void test("fixed Via SDK retains its reviewed large-program schema and identical packed bytes", async () => {
+  assert.ok(CURRENT_PCB_VIA_WRITE_FUNCTION.length > 16_384); assert.throws(() => captureCurrentPcbStringClockReply({ program: CURRENT_PCB_VIA_WRITE_FUNCTION }));
+  const original = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"); const generated = compose(original);
+  const match = /static readonly string ViaSdkFunction=UnpackFixedProgram\(@"([A-Za-z\d+/=]+)",(\d+),@"([a-f\d]{64})",@"([a-f\d]{64})"\);/u.exec(generated);
+  assert.ok(match !== null); const encoded = match[1]; const length = match[2]; const expected = match[3]; const compressed = match[4]; assert.ok(encoded !== undefined && length !== undefined && expected !== undefined && compressed !== undefined);
+  const packed = Buffer.from(encoded, "base64"); assert.equal(packed.toString("base64"), encoded); assert.equal(createHash("sha256").update(packed).digest("hex"), compressed);
+  // oxlint-disable-next-line node/no-sync -- Test-only expansion of one fixed generated program within the unchanged64KiB decoder bound.
+  const unpacked = gunzipSync(packed); assert.equal(unpacked.length, Number(length)); assert.equal(unpacked.toString(), CURRENT_PCB_VIA_WRITE_FUNCTION); assert.equal(createHash("sha256").update(unpacked).digest("hex"), expected);
+  assert.ok(packed.length < unpacked.length / 2); assert.ok(generated.includes("public static void VerifyPcbViaSdkWireSmoke()"));
+  for (const stage of ["capture", "preflight", "create", "observe", "save"] as const) { const command = { id: 79, ...currentPcbViaWriteCommand(stage, "original", { target, operation }), sessionId: "session" }; const frame = Buffer.from(`${JSON.stringify(command)}\0`); const actual = currentPcbViaWriteNativeRequest(frame); assert.equal(actual["viaWritePhase"], stage); }
 });
 void test("retained SDK methods require exact original installed function locations, names and arity", () => {
   for (const kind of ["create", "save"] as const) { assert.equal(decodeCurrentPcbViaSdkMethod(metadata(kind), kind), "api"); }

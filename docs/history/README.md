@@ -8,6 +8,8 @@
 
 - [2026-11-06 saved-reader project registration](2026-11-06-saved-reader-project-registration.md). Exact shared recent-project row SQL, separate original intent and native source/await continuations; one-run retry refusal, with actual saved-reader dispatch and connected proof still pending.
 
+- [2026-11-06 packed original Via SDK](2026-11-06-packed-original-via-sdk.md): lossless existing bounded-codec storage, all-five native SDK message parity and unchanged clock/owner/Save limits; no runtime authority added.
+
 - [2026-11-06 original periodic same-head sync](2026-11-06-original-periodic-same-head-sync.md): complete initial branch/API row, original timer/task and pre-model-parse history joins through a distinct bounded native lane; whole producer/writer frontier remains false.
 
 - [2026-11-06 original initial same-head sync](2026-11-06-original-initial-same-head-sync.md): exact original four-response startup sync, task/return Promise settlement and bounded native continuation, including nested Proxy metadata and branch-accessor corrections; whole producer frontier remains false.
