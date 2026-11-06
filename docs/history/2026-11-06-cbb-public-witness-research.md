@@ -50,3 +50,21 @@ fixture still needs an explicit public system-owner identity, actual project
 and selected branch, complete matching board/SCH/PCB identities and independent
 reciprocal checks under the maintained lifecycle. No fallback identity, API
 example, library name or schematic/PCB name establishes that evidence.
+
+## Official extension source follow-up
+
+A later read through the public GitHub API inspected the official extension at
+commit `c24c7228b022c53e509788ef375e1bf81bd82966`. Its catalog code resolves
+client libraries, pages `lib_Cbb.search` using the obtained library IDs and
+fetches individual module details. That is an implementation recipe, not a
+published system-owner/project/branch witness.
+[Pinned catalog source](https://github.com/easyeda/eext-ai-reuse-block-placement/blob/c24c7228b022c53e509788ef375e1bf81bd82966/src/catalog.ts).
+
+The catalog, CBB implementation and module-creation test files contained no
+32-to64-digit hexadecimal UUID literal in the bounded scan. This observation
+does not establish server catalog absence or exclude dynamic identities and
+other files. Original source bytes and blob identities are retained privately.
+No EasyEDA CBB SDK, catalog request, archive download or module mutation was
+performed for this follow-up.
+[Pinned CBB source](https://github.com/easyeda/eext-ai-reuse-block-placement/blob/c24c7228b022c53e509788ef375e1bf81bd82966/src/cbb.ts),
+[pinned module test](https://github.com/easyeda/eext-ai-reuse-block-placement/blob/c24c7228b022c53e509788ef375e1bf81bd82966/tests/create-module.test.cjs).
