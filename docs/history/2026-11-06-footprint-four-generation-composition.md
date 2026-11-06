@@ -161,3 +161,50 @@ native allocated-clock issuance, create, full SQL effect or four-generation
 lifecycle is claimed; no application, Windows process or native helper ran.
 The next source boundary is the inverse single-clock codebook and the genuine
 whole-transaction/producer/head admission needed before exposing create.
+
+## Separate inverse single-clock codebook
+
+The inverse now has its own finite `delete-clock-*` protocol, wire projection
+and native C# encoder. It does not borrow the copy observer's two-wave ordinal
+or a Via Save origin. The exact pinned `deleteString` calls `qe()` once and
+then constructs its FOOTPRINT DOCHEAD/tombstone. Its actual adjacent caller is
+`deleteData`; that method awaits the resulting string and its own
+`projectManager.uploadLocal([r])`. There is no additional explicit Save.
+
+The fixed entry/post-await locations are worker109:40070 and109:40077,
+`deleteString` function location109:40040. The entry requires the adjacent
+`deleteData` function109:40299 and its actual call109:40416. An inert Node24
+Inspector compilation of only the exact pinned method definitions accepts all
+three breakpoints at those exact coordinates. This is source/V8 evidence;
+Electron must still acknowledge its own original allocations. No method was
+invoked by that Inspector test.
+
+The local observer leaf derives35 normal commands:7 setup/metadata,6 arms,
+18 frame/join/array reads, one delete caller capture, one UI caller capture and
+two fresh callback scope reads. Cleanup reserves14:6 observed resumes,6 removes
+and two realm-group releases. Its49 commands are not a complete inverse-owner
+or four-generation budget. The26 finite native templates contain no caller
+program, source, session, expression or condition fields. A second clock
+ordinal and foreign caller/site substitutions refuse before wire dispatch.
+
+The separate entry relations retain original manager/target/clock/consistency
+references, a frozen copy of the five expected scalars, and actual worker
+`PRO_EDITOR_VERSION` presence/value. They reprove those relationships after
+the original clock await without invoking an application method or getter.
+This exposed an old-plan limitation: inverse plan v1 hardcodes editorVersion
+3.2.209. New data plan v2 preserves v1 and serializes the actual admitted worker
+value, including distinct absent versus own-undefined observations. Both omit
+editVersion when native `xt` omits it. It is data only; its flags grant no
+native clock provenance, delete, SQL completion or saved absence.
+
+Five focused isolated tests pass: inert exact source/Inspector sites, original
+reference/scalar refusal with zero application calls, adjacent caller pause
+validation, all26 wire/native templates, and exact native serializer parity
+for absent/undefined/3.2.185/3.2.209 values. Strict changed-file lint and full
+types pass. Linux .NET10 compiled the emitted codec with the maintained bounded
+unpacker and ran its26 positive/negative smoke cases. The initial smoke was
+followed by a frozen-scalar entry correction; the final exact emitted source
+also passes the same Linux smoke. No Windows process, app, native owner or MCP call ran. The codebook is
+not yet mounted; genuine inverse saved-source/native ownership, original main
+actor completion and full four-generation producer/head admission remain the
+next required joins.
