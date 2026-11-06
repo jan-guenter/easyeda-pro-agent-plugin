@@ -8,7 +8,7 @@ import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS as CACHE_CALLERS, currentPr
 import type { CurrentProjectSaveProducerCacheCaller } from "./current-project-save-producer-cache-source.ts";
 import { types } from "node:util";
 import { z } from "zod";
-import { continueOriginalCurrentGeneratedInitialCacheCall, requireOriginalCurrentProjectSaveProducerOrigin, settleOriginalCurrentGeneratedInitialCacheCalls } from "./current-pcb-diagnostic-owner.ts";
+import { continueOriginalCurrentGeneratedInitialCacheCall, continueOriginalCurrentGeneratedInitialSyncCall, requireOriginalCurrentProjectSaveProducerOrigin, settleOriginalCurrentGeneratedInitialCacheCalls, settleOriginalCurrentGeneratedInitialSyncCall } from "./current-pcb-diagnostic-owner.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { decodeCurrentFootprintCopyClockRpcV2ArrayCapture } from "./current-footprint-copy-clock-rpc-v2-protocol.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_PRODUCER_FRAME_FLAGS as FRAME_FLAGS,
@@ -62,7 +62,7 @@ export class CurrentProjectSaveProducerObserver {
   public async arm(): Promise<void> {
     need(!this.#busy && !this.#armed && !this.#failed && !this.#closed, "ARM_ONCE"); this.#busy = true;
     try { for (const command of currentProjectSaveProducerNativeCases()) {
-      if (command.phase === "project-save-producer-arm") { const reply = z.strictObject({ breakpointId: handle, actualLocation: location }).parse(await this.#send({ ...command, params: { location: { ...command.params.location, scriptId: this.#binding.scriptId } } }));
+      if (command.phase === "project-save-producer-arm") { const reply = z.strictObject({ breakpointId: handle, actualLocation: location }).parse(await this.#send({ ...command, params: { ...command.params, location: { ...command.params.location, scriptId: this.#binding.scriptId } } }));
         need(reply.actualLocation.scriptId === this.#binding.scriptId && reply.actualLocation.lineNumber === command.params.location.lineNumber && reply.actualLocation.columnNumber === command.params.location.columnNumber && ![...this.#points.values()].includes(reply.breakpointId), "ARM_REPLY"); this.#points.set(command.role, reply.breakpointId); }
     } need(this.#points.size === REQUESTS.newArms, "ARM_ROSTER"); this.#armed = true;
     } catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
@@ -112,6 +112,16 @@ export class CurrentProjectSaveProducerObserver {
   public async settleInitialCacheCalls(): Promise<void> {
     need(!this.#busy && !this.#failed && !this.#closed && this.#held === null, "INITIAL_CACHE_SETTLE_STATE"); this.#busy = true;
     try { await this.#current(); await settleOriginalCurrentGeneratedInitialCacheCalls(this.#origin, this.#owner, this.#operation); await this.#current(); }
+    catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
+  }
+  public async continueInitialSyncCall(packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
+    need(!this.#busy && !this.#failed && !this.#closed && this.#held === packet, "INITIAL_SYNC_ORIGINAL_HELD"); this.#busy = true;
+    try { await this.#current(); await continueOriginalCurrentGeneratedInitialSyncCall(this.#origin, this.#owner, this.#operation, packet); await this.#current(); this.#held = null; }
+    catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
+  }
+  public async settleInitialSyncCall(): Promise<void> {
+    need(!this.#busy && !this.#failed && !this.#closed && this.#held === null, "INITIAL_SYNC_SETTLE_STATE"); this.#busy = true;
+    try { await this.#current(); await settleOriginalCurrentGeneratedInitialSyncCall(this.#origin, this.#owner, this.#operation); await this.#current(); }
     catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
   public async retireAfterOriginalExit(): Promise<void> { need(!this.#busy && !this.#closed, "RETIRE_STATE"); await this.#binding.assertOriginalGenerationExited(); this.#closed = true; }

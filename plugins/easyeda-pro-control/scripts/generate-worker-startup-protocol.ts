@@ -1,3 +1,4 @@
+import { applyCurrentGeneratedInitialSyncNativeFragment } from "../server/src/current-generated-initial-sync-native-fragment.ts";
 import { applyCurrentGeneratedInitialCacheNativeFragment } from "../server/src/current-generated-initial-cache-native-fragment.ts";
 import { applyCurrentProjectSaveProducerNativeFragment } from "../server/src/current-project-save-producer-native-fragment.ts";
 import { applyCurrentProjectSaveProducerGuardNativeFragment } from "../server/src/current-project-save-producer-guard-native-fragment.ts";
@@ -130,6 +131,7 @@ export function generateWorkerStartupProtocol(source: string): string {
   next = applyManagedFixtureRegistrationNativeFragment(next);
   next = applyCurrentProjectStructureTransportNativeFragment(applyCurrentSchematicDisplayWriteNativeFragment(applyCurrentPcbViaWriteNativeFragment(next)));
   next = applyCurrentGeneratedInitialCacheNativeFragment(applyCurrentProjectSaveProducerNativeFragment(applyCurrentProjectSaveProducerGuardNativeFragment(next)));
+  next = applyCurrentGeneratedInitialSyncNativeFragment(next);
   next = applyCurrentPcbComponentSpatialNativeFragment(next);
   next = applyCurrentPcbViaSavedReadbackNativeFragment(next);
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);

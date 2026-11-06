@@ -1,6 +1,9 @@
+/* oxlint-disable import/max-dependencies -- Compare the independently sealed old/new wire families and the actual full fragment composition. */
+import { applyCurrentGeneratedInitialSyncNativeFragment as initialSyncFragment } from "../src/current-generated-initial-sync-native-fragment.ts";
+import { currentGeneratedInitialSyncNativeCases } from "../src/current-generated-initial-sync-protocol.ts";
+import { currentGeneratedInitialSyncWire } from "../src/current-generated-initial-sync-wire.ts";
 /** Fixed current209 observation codecs, released-purpose refusals and complete
  * generator composition. No original owner, process or worker is allocated. */
-/* oxlint-disable import/max-dependencies -- Compare the independently sealed old/new wire families and the actual full fragment composition. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
@@ -20,8 +23,8 @@ import { diagnosticNativeRequest } from "../src/current-pcb-diagnostic-protocol.
 import { spatialDiagnosticNativeRequest } from "../src/current-pcb-spatial-protocol.ts";
 
 function compose(input: string): string { const base = registration(structure(input)), writers = schematic(via(base)); return producer(guards(transport(writers))); }
-void test("121 observation templates roundtrip through only the two exact new writer births", () => {
-  const cases = currentProjectSaveProducerNativeCases(); assert.equal(cases.length, 121);
+void test("130 observation templates roundtrip through only the two exact new writer births", () => {
+  const cases = currentProjectSaveProducerNativeCases(); assert.equal(cases.length, 130);
   for (const command of cases) { for (const purpose of ["via", "schematic"] as const) {
     const encoded = Buffer.from(`${JSON.stringify({ id: 1, ...command, producerObserveCommand: true, sessionId: "original-worker" })}\0`), wire = currentProjectSaveProducerWire(command, 1, purpose);
     assert.deepEqual((purpose === "via" ? currentPcbViaWriteNativeRequest : currentSchematicDisplayWriteNativeRequest)(encoded), wire.request);
@@ -33,7 +36,7 @@ void test("full producer generation is idempotent and keeps source observation s
   const base = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"), source = compose(base);
   assert.equal(compose(source), source); assert.equal(producer(source), source);
   for (const action of ["pcb-via-producer-observe", "schematic-display-producer-observe"]) { assert.equal(source.split(`        '${action}' {`).length, 2); }
-  assert.ok(source.includes("viaProducerObserveRequests>=240")); assert.ok(source.includes("schematicProducerObserveArms.Count!=23"));
+  assert.ok(source.includes("viaProducerObserveRequests>=267")); assert.ok(source.includes("schematicProducerObserveArms.Count!=26"));
   assert.equal(source.includes("project-save-producer-resume"), false); assert.throws(() => producer(source.replace("$owner.SendViaProducerObserve", "$owner.ForeignViaProducerObserve")), /CHANGED/u);
 });
 
@@ -43,4 +46,18 @@ void test("startup-only initial cache dispatch remains idempotent across whole w
   for (const action of ["pcb-via-initial-cache", "schematic-display-initial-cache", "pcb-via-initial-cache-complete", "schematic-display-initial-cache-complete"]) { assert.equal(source.split(`        '${action}' {`).length, 2); }
   assert.ok(source.includes("viaProducerPrefixEnrolled||!viaInitialCacheCompleted")); assert.ok(source.includes("schematicProducerPrefixEnrolled||!schematicInitialCacheCompleted"));
   assert.ok(source.includes("if ($line.Length -ge 32768)")); assert.throws(() => initialCache(source.replace("$owner.SendViaInitialCache", "$owner.UnownedInitialCache")), /CHANGED/u);
+});
+
+void test("same-head startup sync codec is separate, once-ordered and idempotent through complete combined generation", async () => {
+  const base = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"), source = initialSyncFragment(initialCache(compose(base)));
+  const recomposed = compose(source); assert.equal(initialSyncFragment(initialCache(recomposed)), source); assert.equal(initialSyncFragment(source), source);
+  assert.ok(source.includes("viaInitialSyncStage-2")); assert.ok(source.includes("schematicInitialSyncStage!=35&&schematicInitialSyncStage!=37"));
+  assert.ok(source.includes("!viaInitialCacheCompleted||!viaInitialSyncCompleted")); assert.ok(source.includes("!schematicInitialCacheCompleted||!schematicInitialSyncCompleted"));
+  assert.throws(() => initialSyncFragment(source.replace("$owner.SendViaInitialSync", "$owner.ForeignSync")), /CHANGED/u);
+  for (const command of currentGeneratedInitialSyncNativeCases()) { for (const purpose of ["via", "schematic"] as const) {
+    const bytes = Buffer.from(JSON.stringify({ id: 1, ...command, initialSyncCommand: true, sessionId: "original-worker" }) + String.fromCodePoint(0));
+    assert.deepEqual((purpose === "via" ? currentPcbViaWriteNativeRequest : currentSchematicDisplayWriteNativeRequest)(bytes), currentGeneratedInitialSyncWire(command, 1, purpose).request);
+    assert.throws(() => diagnosticNativeRequest(bytes)); assert.throws(() => spatialDiagnosticNativeRequest(bytes));
+    assert.equal(Object.hasOwn(currentGeneratedInitialSyncWire(command, 1, purpose).request, "sessionId"), false);
+  } }
 });

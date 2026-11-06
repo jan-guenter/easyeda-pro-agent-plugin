@@ -26,7 +26,7 @@ void test("fixed method text, coordinates and frame arity are sealed without cla
     const source = sources[name]; assert.ok(source !== undefined); assert.equal(Buffer.byteLength(source), pin.bytes);
     assert.equal(createHash("sha256").update(source).digest("hex"), pin.sha256); assert.equal(pin.end - pin.start, source.length);
   }
-  assert.equal(Object.keys(SITES).length, 27);
+  assert.equal(Object.keys(SITES).length, 30);
   for (const site of Object.values(SITES)) { const names = site.expression.match(/[a-z]+/gu) ?? []; const frame: unknown = runInNewContext(`(${site.expression})`, Object.fromEntries(names.map(name => [name, undefined])));
     assert.ok(Array.isArray(frame)); assert.equal(frame.length, site.length); assert.equal(Object.hasOwn(site, "resume"), false); }
   assert.throws(() => { qualifyCurrentProjectSaveProducerSource("method text without the complete original script"); }, /PRODUCER_SOURCE/u);

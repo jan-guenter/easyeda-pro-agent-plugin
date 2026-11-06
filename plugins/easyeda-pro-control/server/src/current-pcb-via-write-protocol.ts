@@ -1,3 +1,4 @@
+import { currentGeneratedInitialSyncWire } from "./current-generated-initial-sync-wire.ts";
 import { currentGeneratedInitialCacheWire } from "./current-generated-initial-cache-wire.ts";
 import { currentProjectSaveProducerWire } from "./current-project-save-producer-wire.ts";
 import { currentProjectSaveProducerGuardWire } from "./current-project-save-producer-guard-wire.ts";
@@ -56,6 +57,12 @@ export function currentPcbViaWriteNativeRequest(chunk: Buffer): Readonly<Record<
     raw["id"] < 1 || raw["id"] > PROFILE.renderer.total || !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("PCB_VIA_WIRE"); }
   const { id, sessionId, ...input } = raw;
   if (typeof sessionId !== "string" && Object.hasOwn(raw, "viaWritePhase")) { throw new Error("PCB_VIA_SESSION"); }
+  if (Object.hasOwn(raw, "initialSyncCommand")) {
+    const { id: initialId, sessionId: initialSession, initialSyncCommand, ...initialInput } = raw;
+    if (initialSyncCommand !== true || typeof initialSession !== "string") { throw new Error("INITIAL_SYNC_WIRE"); }
+    const fixed = currentGeneratedInitialSyncWire(initialInput, initialId, "via");
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id: initialId, ...fixed.command, initialSyncCommand: true, sessionId: initialSession })}\0`))) { throw new Error("INITIAL_SYNC_WIRE"); } return fixed.request;
+  }
   if (Object.hasOwn(raw, "initialCacheCommand")) {
     const { id: initialId, sessionId: initialSession, initialCacheCommand, ...initialInput } = raw;
     if (initialCacheCommand !== true || typeof initialSession !== "string") { throw new Error("INITIAL_CACHE_WIRE"); }

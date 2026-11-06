@@ -1,5 +1,6 @@
 /** Observation-only uploader vocabulary. Original receiver joins can retain a
  * held source call; there is no resume, timer, cache or mutation command. */
+import { CURRENT_GENERATED_INITIAL_SYNC_CONDITION as SYNC_CONDITION } from "./current-generated-initial-sync-condition.ts";
 import { CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_CALLS as INTRINSICS, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_PROFILES as INTRINSIC_PROFILES } from "./current-native-cache-response-intrinsics.ts";
 import { z } from "zod";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_PROMISE_CAPTURE } from "./current-project-save-producer-cache-replies.ts";
@@ -10,15 +11,15 @@ import { CURRENT_PROJECT_SAVE_PRODUCER_RECEIVER_CALLS as CALLS } from "./current
 import { CURRENT_PROJECT_SAVE_PRODUCER_SITES as SITES } from "./current-project-save-producer-source.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
-export const CURRENT_PROJECT_SAVE_PRODUCER_ROLES = ["localIngress", "bufferIngress", "cloudIngress", "historyCloud", "localReturned", "localFailed", "bufferScheduled", "bufferDrain", "bufferDone", "batchReturned", "historyReply", "historyFailed", "historyQueued", "historyFinally", "cloudReturned", "cloudFinally", "syncEntry", "syncDeferred", "syncFull", "syncReturned", "syncFailed", "detachedEntry", "detachedReturned", "headEntry", "headPromise", "headSuccess", "cacheFailed"] as const;
+export const CURRENT_PROJECT_SAVE_PRODUCER_ROLES = ["localIngress", "bufferIngress", "cloudIngress", "historyCloud", "localReturned", "localFailed", "bufferScheduled", "bufferDrain", "bufferDone", "batchReturned", "historyReply", "historyFailed", "historyQueued", "historyFinally", "cloudReturned", "cloudFinally", "syncEntry", "syncDeferred", "syncFull", "syncHistory", "syncMerged", "syncFinalizing", "syncReturned", "syncFailed", "detachedEntry", "detachedReturned", "headEntry", "headPromise", "headSuccess", "cacheFailed"] as const;
 export const CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS = ["localIngress", "bufferIngress", "cloudIngress", "historyCloud"] as const;
 export const CURRENT_PROJECT_SAVE_PRODUCER_GROUP = "easyeda-project-save-producer209-v1";
 /** Two observations per general role and three per initial cache role admit
  * the distinct two-document/index jobs. These are finite capacities, not a
  * claim that background work finishes or cannot occur again. */
-export function currentProjectSaveProducerRoleLimit(role: string): number { return ["headEntry", "headPromise", "headSuccess", "cacheFailed"].includes(role) ? 3 : 2; }
-export const CURRENT_PROJECT_SAVE_PRODUCER_REQUESTS = Object.freeze({ newArms: 23, maximumRoleOccurrences: 2, frames: 58, joins: 58, properties: 58,
-  intrinsics: 3 + 2 + INTRINSIC_PROFILES.length, cacheCalls: 3 * 3, cachePromises: 3 * 2, normal: 197 + 3 + 2 + INTRINSIC_PROFILES.length + 3 * 3 + 3 * 2, cleanup: 0, cdpRequests: 197 + 3 + 2 + INTRINSIC_PROFILES.length + 3 * 3 + 3 * 2, events: 58 });
+export function currentProjectSaveProducerRoleLimit(role: string): number { if (role === "syncHistory") { return 4; } return ["headEntry", "headPromise", "headSuccess", "cacheFailed"].includes(role) ? 3 : 2; }
+export const CURRENT_PROJECT_SAVE_PRODUCER_REQUESTS = Object.freeze({ newArms: 26, maximumRoleOccurrences: 2, frames: 66, joins: 66, properties: 66,
+  intrinsics: 3 + 2 + INTRINSIC_PROFILES.length, cacheCalls: 3 * 3, cachePromises: 3 * 2, normal: 224 + 3 + 2 + INTRINSIC_PROFILES.length + 3 * 3 + 3 * 2, cleanup: 0, cdpRequests: 224 + 3 + 2 + INTRINSIC_PROFILES.length + 3 * 3 + 3 * 2, events: 66 });
 const GROUP = CURRENT_PROJECT_SAVE_PRODUCER_GROUP;
 export const CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS = Object.freeze({ objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true, awaitPromise: false, userGesture: false, returnByValue: false } as const);
 export const CURRENT_PROJECT_SAVE_PRODUCER_FRAME_FLAGS = Object.freeze({ objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true, returnByValue: false, includeCommandLineAPI: false } as const);
@@ -41,7 +42,7 @@ const schemas = [
   z.strictObject({ phase: z.literal("project-save-producer-intrinsics-reprove"), method: z.literal("Runtime.callFunctionOn"), params: z.strictObject({ ...callFlags, returnByValue: z.literal(true), objectId: handle, functionDeclaration: z.literal(INTRINSICS.reprove.program), arguments: z.tuple([]) }) }),
   z.strictObject({ phase: z.literal("project-save-producer-intrinsics-properties"), role: z.enum(["constructors", "members"]), method: z.literal("Runtime.getProperties"), params: propertiesParams }),
   z.strictObject({ phase: z.literal("project-save-producer-intrinsics-metadata"), slot: z.union(intrinsicSlots.map(index => z.literal(index))), method: z.literal("Runtime.getProperties"), params: propertiesParams }),
-  z.strictObject({ phase: z.literal("project-save-producer-arm"), role, method: z.literal("Debugger.setBreakpoint"), params: z.strictObject({ location }) }),
+  z.strictObject({ phase: z.literal("project-save-producer-arm"), role, method: z.literal("Debugger.setBreakpoint"), params: z.strictObject({ location, condition: z.literal(SYNC_CONDITION).optional() }) }),
   z.strictObject({ phase: z.literal("project-save-producer-frame"), role, method: z.literal("Debugger.evaluateOnCallFrame"), params: z.strictObject({ ...frameFlags, callFrameId: handle, expression: z.string() }) }),
   z.strictObject({ phase: z.literal("project-save-producer-receiver"), role, method: z.literal("Runtime.callFunctionOn"), params: z.strictObject({ ...callFlags, objectId: handle, functionDeclaration: z.string(), arguments: z.tuple([ref, ref, ref]) }) }),
   z.strictObject({ phase: z.literal("project-save-producer-properties"), method: z.literal("Runtime.getProperties"), params: z.strictObject({ objectId: handle, ownProperties: z.literal(true), accessorPropertiesOnly: z.literal(false), generatePreview: z.literal(false) }) }),
@@ -51,7 +52,7 @@ export type CurrentProjectSaveProducerCommand = z.infer<typeof schema>;
 export function validateCurrentProjectSaveProducerCommand(input: unknown): CurrentProjectSaveProducerCommand {
   const command = schema.parse(captureCurrentPcbStringClockReply(input).value);
   if (command.phase === "project-save-producer-arm") {
-    if (CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS.some(value => value === command.role) || command.params.location.lineNumber !== SITES[command.role].lineNumber || command.params.location.columnNumber !== SITES[command.role].columnNumber) { throw new Error("PROJECT_SAVE_PRODUCER_FIXED_ARM"); }
+    if ((command.role === "syncEntry") !== (command.params.condition === SYNC_CONDITION) || CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS.some(value => value === command.role) || command.params.location.lineNumber !== SITES[command.role].lineNumber || command.params.location.columnNumber !== SITES[command.role].columnNumber) { throw new Error("PROJECT_SAVE_PRODUCER_FIXED_ARM"); }
   } else if (command.phase === "project-save-producer-frame" && command.params.expression !== SITES[command.role].expression || command.phase === "project-save-producer-receiver" && command.params.functionDeclaration !== CALLS[command.role]) { throw new Error("PROJECT_SAVE_PRODUCER_FIXED_PROGRAM"); }
   if (command.phase === "project-save-producer-cache-caller" && command.params.expression !== CACHE_CALLERS[command.cacheRole].expression || command.phase === "project-save-producer-cache-receiver" && command.params.functionDeclaration !== CACHE_CALLS[command.cacheRole]) { throw new Error("PROJECT_SAVE_PRODUCER_FIXED_CACHE_CALLER"); }
   return freezeDeep(command);
@@ -73,7 +74,7 @@ export function currentProjectSaveProducerNativeCases(): readonly CurrentProject
   cases.push({ phase: "project-save-producer-cache-properties", method: "Runtime.getProperties", params: { objectId: "original_cache_receiver", ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } });
   for (const name of CURRENT_PROJECT_SAVE_PRODUCER_ROLES) {
     const site = SITES[name];
-    if (!CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS.some(value => value === name)) { cases.push({ phase: "project-save-producer-arm", role: name, method: "Debugger.setBreakpoint", params: { location: { scriptId: "original_script", lineNumber: site.lineNumber, columnNumber: site.columnNumber } } }); }
+    if (!CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS.some(value => value === name)) { cases.push({ phase: "project-save-producer-arm", role: name, method: "Debugger.setBreakpoint", params: { location: { scriptId: "original_script", lineNumber: site.lineNumber, columnNumber: site.columnNumber }, ...(name === "syncEntry" ? { condition: SYNC_CONDITION } : {}) } }); }
     cases.push({ phase: "project-save-producer-frame", role: name, method: "Debugger.evaluateOnCallFrame", params: { ...CURRENT_PROJECT_SAVE_PRODUCER_FRAME_FLAGS, callFrameId: "original_frame", expression: site.expression } },
       { phase: "project-save-producer-receiver", role: name, method: "Runtime.callFunctionOn", params: { ...CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS, objectId: "original_frame_array", functionDeclaration: CALLS[name], arguments: [{ objectId: "original_project" }, { objectId: "original_wrapper" }, { objectId: "original_callback" }] } });
   }

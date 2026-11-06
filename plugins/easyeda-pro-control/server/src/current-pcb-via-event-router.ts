@@ -43,7 +43,7 @@ export class CurrentPcbViaEventRouter {
   }
   public register(lane: CurrentPcbViaEventLane, input: CurrentPcbViaEventPoint): void {
     need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport" || lane === "producer")); const point = Object.freeze(pointSchema.parse(captureCurrentPcbStringClockReply(input).value));
-    need((point.sessionId === this.#bindings.workerSessionId || lane === "clock" && point.sessionId === this.#bindings.uiSessionId) && this.#points.size < 55);
+    need((point.sessionId === this.#bindings.workerSessionId || lane === "clock" && point.sessionId === this.#bindings.uiSessionId) && this.#points.size < 58);
     const key = `${point.sessionId}\0${point.breakpointId}`;
     need(!this.#points.has(key) && ![...this.#points.values()].some(value => value.point.sessionId === point.sessionId && value.point.scriptId === point.scriptId &&
       value.point.lineNumber === point.lineNumber && value.point.columnNumber === point.columnNumber));
@@ -61,6 +61,12 @@ export class CurrentPcbViaEventRouter {
     const original = this.#pauseEvents.get(event); const current = this.#paused.get(this.#bindings.workerSessionId);
     need(!this.#failed && original !== undefined && original === current && original.lane === "producer" && original.delivered && !original.resumeAttempted &&
       ["headEntry", "headPromise", "headSuccess"].includes(role) && original.point.role === role && event.sessionId === this.#bindings.workerSessionId);
+    original.resumeAttempted = true; this.notifyEvent();
+  }
+  public reserveInitialSyncResume(event: CurrentPcbViaSaveWorkerEvent, role: "syncEntry" | "syncFull" | "syncHistory" | "syncMerged" | "syncFinalizing" | "syncReturned"): void {
+    const original = this.#pauseEvents.get(event); const current = this.#paused.get(this.#bindings.workerSessionId);
+    need(!this.#failed && original !== undefined && original === current && original.lane === "producer" && original.delivered && !original.resumeAttempted &&
+      ["syncEntry", "syncFull", "syncHistory", "syncMerged", "syncFinalizing", "syncReturned"].includes(role) && original.point.role === role && event.sessionId === this.#bindings.workerSessionId);
     original.resumeAttempted = true; this.notifyEvent();
   }
   /** Wake readers for an actual queued event or owned continuation. */

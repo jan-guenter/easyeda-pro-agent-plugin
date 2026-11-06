@@ -1,5 +1,6 @@
 # Project history
 
+- [2026-11-06 original initial same-head sync](2026-11-06-original-initial-same-head-sync.md): exact original four-response startup sync, task/return Promise settlement and bounded native continuation; whole producer frontier remains false.
 - [2026-11-06 saved-reader background worker candidates](2026-11-06-saved-background-worker-candidates.md). Existing startup worker evidence, exact file/generator/bootstrap pins and task-script imports; supplied-source checks grant no actor/cache/resume authority.
 
 - [2026-11-06 current schematic endpoint membership](2026-11-06-schematic-endpoint-membership.md). Independent exact integer-grid line/pin incidence comparison; raw reader contracts unchanged and no source, effective-net or writer authority issued.

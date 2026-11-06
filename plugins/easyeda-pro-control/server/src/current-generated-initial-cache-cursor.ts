@@ -70,5 +70,6 @@ export class CurrentGeneratedInitialCacheCursor {
   /** One further actual metadata pass is available after original collectors
    * make progress. No timer, delay, mutation or inferred settlement is used. */
   public async settle(): Promise<void> { need(!this.#busy && !this.#failed && !this.#completed); this.#busy = true; try { await this.#settle(); } catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; } }
+  public originalHeadEntry(): string { const job = this.#jobs.find(value => value.role === "head"); need(!this.#failed && job !== undefined && job.stage >= 4 && job.entry !== null); return job.entry; }
   public requireCompleted(): void { need(!this.#failed && this.#completed); }
 }

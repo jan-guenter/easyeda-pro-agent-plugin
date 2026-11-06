@@ -5,6 +5,11 @@
  * Browser discovery grants no frame, worker, script or CAD execution authority. */
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Four fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import { CurrentGeneratedInitialSyncCursor } from "./current-generated-initial-sync-cursor.ts";
+import type { CurrentGeneratedInitialSyncHeld } from "./current-generated-initial-sync-cursor.ts";
+import type { CurrentGeneratedInitialSyncCommand } from "./current-generated-initial-sync-protocol.ts";
+import { currentGeneratedInitialSyncFrames } from "./current-generated-initial-sync-replies.ts";
+import { qualifyCurrentGeneratedInitialSyncSource } from "./current-generated-initial-sync-source.ts";
 import { CurrentGeneratedInitialCacheCursor } from "./current-generated-initial-cache-cursor.ts";
 import type { CurrentGeneratedInitialCacheCommand } from "./current-generated-initial-cache-protocol.ts";
 import type { CurrentGeneratedInitialCacheHeld } from "./current-generated-initial-cache-cursor.ts";
@@ -624,6 +629,17 @@ export async function continueOriginalCurrentGeneratedInitialCacheCall(origin: C
 export async function settleOriginalCurrentGeneratedInitialCacheCalls(origin: CurrentProjectSaveProducerOrigin, owner: object, operation: object): Promise<void> {
   requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation); const original = originalInitialCacheCursors.get(origin);
   if (original === undefined || original.owner !== owner || original.operation !== operation) { throw error("INITIAL_CACHE_ORIGINAL_CURSOR"); }
+  await original.cursor().settle(); requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation);
+}
+const originalInitialSyncCursors = new WeakMap<CurrentProjectSaveProducerOrigin, Readonly<{ owner: object; operation: object; cursor: () => CurrentGeneratedInitialSyncCursor }>>();
+export async function continueOriginalCurrentGeneratedInitialSyncCall(origin: CurrentProjectSaveProducerOrigin, owner: object, operation: object, packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
+  requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation); const original = originalInitialSyncCursors.get(origin);
+  if (original === undefined || original.owner !== owner || original.operation !== operation) { throw error("INITIAL_SYNC_ORIGINAL_CURSOR"); }
+  await original.cursor().continue(packet); requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation);
+}
+export async function settleOriginalCurrentGeneratedInitialSyncCall(origin: CurrentProjectSaveProducerOrigin, owner: object, operation: object): Promise<void> {
+  requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation); const original = originalInitialSyncCursors.get(origin);
+  if (original === undefined || original.owner !== owner || original.operation !== operation) { throw error("INITIAL_SYNC_ORIGINAL_CURSOR"); }
   await original.cursor().settle(); requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation);
 }
 const originalProjectSaveProducerOrigins = new WeakMap<CurrentProjectSaveProducerOrigin, Readonly<{ owner: object; operation: object; bindings: CurrentProjectSaveProducerBindings; assertOriginal: () => void }>>();
@@ -2243,6 +2259,8 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#schematicProducerEnrollmentAttempted || this.#schematicProducerGuardOperation !== argumentsValue || this.#schematicProducerOriginalUploadWrapper === null || this.#schematicProducerOriginalUploadCallback === null || !this.#schematicProducerModeVerified || reproof === null || worker === null || !worker.status().ready || !this.#schematicStages.has("preflight") || this.#schematicStages.has("modify") || this.#schematicStages.has("save")) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_UNAVAILABLE"); }
     const initialCursor = this.#schematicProducerObservationOrigin === null ? undefined : originalInitialCacheCursors.get(this.#schematicProducerObservationOrigin);
     if (initialCursor === undefined || initialCursor.owner !== this || initialCursor.operation !== argumentsValue) { throw error("INITIAL_CACHE_ORIGINAL_COMPLETION_REQUIRED"); } initialCursor.cursor().requireCompleted();
+    const syncCursor = this.#schematicProducerObservationOrigin === null ? undefined : originalInitialSyncCursors.get(this.#schematicProducerObservationOrigin);
+    if (syncCursor === undefined || syncCursor.owner !== this || syncCursor.operation !== argumentsValue) { throw error("INITIAL_SYNC_ORIGINAL_COMPLETION_REQUIRED"); } syncCursor.cursor().requireCompleted();
     this.#schematicProducerEnrollmentAttempted = true; this.#enter(true);
     const original = (): void => { requireSchematicArguments(this, argumentsValue); reproof(); if (this.#schematicProducerGuardReproof !== reproof || this.#schematicWorkerController !== worker || !worker.status().ready || !this.#schematicProducerModeVerified) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_CHANGED"); } };
     try { original(); await this.#verify(); original(); const reply = await this.#request({ action: "schematic-display-producer-prefix-enroll" }); original();
@@ -2524,6 +2542,11 @@ class CurrentPcbRetainedOwnerCore {
             assertCurrent: async (): Promise<void> => { original(); assertProducerOriginal(); await this.#verify(); original(); assertProducerOriginal(); },
             assertOriginalGenerationExited: (): Promise<void> => { assertProducerOriginal(); if (!this.#terminationObserved || this.#terminationObservation?.terminated !== true) { return Promise.reject(error("PROJECT_SAVE_PRODUCER_ORIGINAL_EXIT_REQUIRED")); } return Promise.resolve(); }, fail: (): void => { selected.fail(); } });
           originalProjectSaveProducerOrigins.set(producerOrigin, Object.freeze({ owner: this, operation: argumentsValue, bindings: producerBindings, assertOriginal: assertProducerOriginal })); this.#schematicProducerObservationOrigin = producerOrigin;
+          const resetProducerPause = (): void => {
+            originalHeldEvent = null; originalHeldRole = null; originalFrameId = null; originalJoinedId = null; originalFrameAttempted = false; originalHeldRetained = false; originalPropertiesAttempted = false; originalPropertiesObserved = false; originalReadAttempted = false; originalReceiverAttempted = false;
+            originalCache = null; originalCacheCaller = null; originalCacheCallerId = null; originalCacheJoinedId = null; originalCacheCallerAttempted = false; originalCacheJoinAttempted = false; originalCachePropertiesAttempted = false; originalCacheKey = null;
+            originalCachePromise = null; originalCachePromiseId = null; originalCachePromiseAttempted = false; originalCachePromisePropertiesAttempted = false;
+          };
           let initialCacheCursor: CurrentGeneratedInitialCacheCursor | null = null;
           const initialHeld = new WeakMap<object, CurrentGeneratedInitialCacheHeld>();
           const initialCursor = (): CurrentGeneratedInitialCacheCursor => {
@@ -2553,15 +2576,49 @@ class CurrentPcbRetainedOwnerCore {
                 if (!exact(ack, [])) { throw error("INITIAL_CACHE_ORIGINAL_RESUME_ACK"); }
                 const resumed = captureCurrentPcbStringClockReply(await selected.nextProducerEvent()).value; original(); assertProducerOriginal();
                 if (!record(resumed) || !exact(resumed, ["method", "sessionId", "params"]) || resumed["method"] !== "Debugger.resumed" || resumed["sessionId"] !== child.sessionId || !record(resumed["params"]) || !exact(resumed["params"], [])) { throw error("INITIAL_CACHE_ORIGINAL_RESUMED_EVENT"); }
-                originalHeldEvent = null; originalHeldRole = null; originalFrameId = null; originalJoinedId = null; originalFrameAttempted = false; originalHeldRetained = false; originalPropertiesAttempted = false; originalPropertiesObserved = false; originalReadAttempted = false; originalReceiverAttempted = false;
-                originalCache = null; originalCacheCaller = null; originalCacheCallerId = null; originalCacheJoinedId = null; originalCacheCallerAttempted = false; originalCacheJoinAttempted = false; originalCachePropertiesAttempted = false; originalCacheKey = null;
-                originalCachePromise = null; originalCachePromiseId = null; originalCachePromiseAttempted = false; originalCachePromisePropertiesAttempted = false;
+                resetProducerPause();
               }, complete: async (): Promise<void> => { original(); assertProducerOriginal(); const result = await this.#request({ action: "schematic-display-initial-cache-complete" });
                 if (!exact(result, ["completed"]) || result["completed"] !== true) { throw error("INITIAL_CACHE_ORIGINAL_COMPLETE_ACK"); } original(); assertProducerOriginal(); },
               fail: (): void => { selected.fail(); },
             })); return initialCacheCursor;
           };
           originalInitialCacheCursors.set(producerOrigin, Object.freeze({ owner: this, operation: argumentsValue, cursor: initialCursor }));
+          let initialSyncCursor: CurrentGeneratedInitialSyncCursor | null = null;
+          const syncHeld = new WeakMap<object, CurrentGeneratedInitialSyncHeld>();
+          const syncCursor = (): CurrentGeneratedInitialSyncCursor => {
+            original(); assertProducerOriginal(); if (initialSyncCursor !== null) { return initialSyncCursor; }
+            const allocation = schematicDisplayFactories.get(this)?.allocation, initialPlan = allocation?.initialCachePlan;
+            if (allocation === undefined || initialPlan === undefined || initialPlan === null || allocation.owner !== this || schematicDisplayAllocations.get(allocation.prepared) !== allocation) { throw error("INITIAL_SYNC_ORIGINAL_PREPARATION"); }
+            const data = requireOriginalCurrentGeneratedInitialFlowCachePlan(initialPlan, allocation.prepared); qualifyCurrentGeneratedInitialSyncSource(source.source);
+            const requireHeld = (packet: object): CurrentGeneratedInitialSyncHeld => {
+              original(); assertProducerOriginal(); const actual = originalProjectProducerHeldCalls.get(packet);
+              if (actual === undefined || actual.owner !== this || actual.operation !== argumentsValue || actual.origin !== producerOrigin ||
+                  actual.role !== "syncEntry" && actual.role !== "syncFull" && actual.role !== "syncHistory" && actual.role !== "syncMerged" && actual.role !== "syncFinalizing" && actual.role !== "syncReturned") { throw error("INITIAL_SYNC_ORIGINAL_HELD_CALL"); }
+              actual.assertOriginal(); let held = syncHeld.get(packet);
+              if (held === undefined) { const frames = currentGeneratedInitialSyncFrames(actual.event, actual.role, source.scriptId); held = Object.freeze({ packet, role: actual.role, joinedId: actual.joinedId, ...frames }); syncHeld.set(packet, held); } return held;
+            };
+            const projectId = receivers().project;
+            initialSyncCursor = new CurrentGeneratedInitialSyncCursor(data, Object.freeze({ scriptId: source.scriptId, projectId,
+              assertCurrent: async (): Promise<void> => { original(); assertProducerOriginal();
+                if (schematicDisplayFactories.get(this)?.allocation !== allocation || allocation.initialCachePlan !== initialPlan || this.#schematicStages.has("modify") || this.#schematicStages.has("save") || receivers().project !== projectId) { throw error("INITIAL_SYNC_STARTUP_ONLY"); }
+                requireOriginalCurrentGeneratedInitialFlowCachePlan(initialPlan, allocation.prepared); await this.#verify(); original(); assertProducerOriginal();
+                if (schematicDisplayFactories.get(this)?.allocation !== allocation || allocation.initialCachePlan !== initialPlan || this.#schematicStages.has("modify") || this.#schematicStages.has("save") || receivers().project !== projectId) { throw error("INITIAL_SYNC_STARTUP_CHANGED"); }
+              }, requireHeld, headEntry: (): string => initialCursor().originalHeadEntry(),
+              request: (command: CurrentGeneratedInitialSyncCommand) => this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { original(); assertProducerOriginal(); return pipe.continueSchematicDisplayInitialSyncCall(command); })),
+              resume: async (held: CurrentGeneratedInitialSyncHeld, command: CurrentGeneratedInitialSyncCommand): Promise<void> => {
+                requireHeld(held.packet); const event = originalHeldEvent;
+                if (event === null || originalHeldRole !== held.role || !originalHeldRetained) { throw error("INITIAL_SYNC_ORIGINAL_EVENT_REQUIRED"); }
+                const ack = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { requireHeld(held.packet); selected.reserveInitialSyncResume(source, event, held.role); return pipe.continueSchematicDisplayInitialSyncCall(command); }));
+                if (!exact(ack, [])) { throw error("INITIAL_SYNC_ORIGINAL_RESUME_ACK"); }
+                const resumed = captureCurrentPcbStringClockReply(await selected.nextProducerEvent()).value; original(); assertProducerOriginal();
+                if (!record(resumed) || !exact(resumed, ["method", "sessionId", "params"]) || resumed["method"] !== "Debugger.resumed" || resumed["sessionId"] !== child.sessionId || !record(resumed["params"]) || !exact(resumed["params"], [])) { throw error("INITIAL_SYNC_ORIGINAL_RESUMED_EVENT"); }
+                resetProducerPause();
+              }, complete: async (): Promise<void> => { original(); assertProducerOriginal(); const result = await this.#request({ action: "schematic-display-initial-sync-complete" });
+                if (!exact(result, ["completed"]) || result["completed"] !== true) { throw error("INITIAL_SYNC_ORIGINAL_COMPLETE_ACK"); } original(); assertProducerOriginal(); },
+              fail: (): void => { selected.fail(); },
+            })); return initialSyncCursor;
+          };
+          originalInitialSyncCursors.set(producerOrigin, Object.freeze({ owner: this, operation: argumentsValue, cursor: syncCursor }));
           await Reflect.apply(producerSetup, undefined, [producerOrigin]); original(); assertProducerOriginal();
           for (const role of CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS) { selected.bindProducerObservationBreakpoint(source, role, selected.originalProducerGuardBreakpoint(source, role)); } selected.sealProducerObservation(source); selected.requireProducerObservationArmed(source);
         }
@@ -2601,6 +2658,8 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#viaProducerEnrollmentAttempted || this.#viaProducerGuardOperation !== plan || this.#viaProducerOriginalUploadWrapper === null || this.#viaProducerOriginalUploadCallback === null || !this.#viaProducerModeVerified || reproof === null || worker === null || !worker.status().ready || !this.#viaSdkPhases.has("preflight") || this.#viaSdkPhases.has("create") || this.#viaSdkPhases.has("save")) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_UNAVAILABLE"); }
     const initialCursor = this.#viaProducerObservationOrigin === null ? undefined : originalInitialCacheCursors.get(this.#viaProducerObservationOrigin);
     if (initialCursor === undefined || initialCursor.owner !== this || initialCursor.operation !== plan) { throw error("INITIAL_CACHE_ORIGINAL_COMPLETION_REQUIRED"); } initialCursor.cursor().requireCompleted();
+    const syncCursor = this.#viaProducerObservationOrigin === null ? undefined : originalInitialSyncCursors.get(this.#viaProducerObservationOrigin);
+    if (syncCursor === undefined || syncCursor.owner !== this || syncCursor.operation !== plan) { throw error("INITIAL_SYNC_ORIGINAL_COMPLETION_REQUIRED"); } syncCursor.cursor().requireCompleted();
     this.#viaProducerEnrollmentAttempted = true; this.#enter(true);
     const original = (): void => { requireViaPlan(this, plan); reproof(); if (this.#viaProducerGuardReproof !== reproof || this.#viaWorkerController !== worker || !worker.status().ready || !this.#viaProducerModeVerified) { throw error("PROJECT_SAVE_PRODUCER_PREFIX_CHANGED"); } };
     try { original(); await this.#verify(); original(); const reply = await this.#request({ action: "pcb-via-producer-prefix-enroll" }); original();
@@ -2896,6 +2955,11 @@ class CurrentPcbRetainedOwnerCore {
             assertCurrent: async (): Promise<void> => { original(); assertProducerOriginal(); await this.#verify(); original(); assertProducerOriginal(); },
             assertOriginalGenerationExited: (): Promise<void> => { assertProducerOriginal(); if (!this.#terminationObserved || this.#terminationObservation?.terminated !== true) { return Promise.reject(error("PROJECT_SAVE_PRODUCER_ORIGINAL_EXIT_REQUIRED")); } return Promise.resolve(); }, fail: (): void => { selected.fail(); } });
           originalProjectSaveProducerOrigins.set(producerOrigin, Object.freeze({ owner: this, operation: plan, bindings: producerBindings, assertOriginal: assertProducerOriginal })); this.#viaProducerObservationOrigin = producerOrigin;
+          const resetProducerPause = (): void => {
+            originalHeldEvent = null; originalHeldRole = null; originalFrameId = null; originalJoinedId = null; originalFrameAttempted = false; originalHeldRetained = false; originalPropertiesAttempted = false; originalPropertiesObserved = false; originalReadAttempted = false; originalReceiverAttempted = false;
+            originalCache = null; originalCacheCaller = null; originalCacheCallerId = null; originalCacheJoinedId = null; originalCacheCallerAttempted = false; originalCacheJoinAttempted = false; originalCachePropertiesAttempted = false; originalCacheKey = null;
+            originalCachePromise = null; originalCachePromiseId = null; originalCachePromiseAttempted = false; originalCachePromisePropertiesAttempted = false;
+          };
           let initialCacheCursor: CurrentGeneratedInitialCacheCursor | null = null;
           const initialHeld = new WeakMap<object, CurrentGeneratedInitialCacheHeld>();
           const initialCursor = (): CurrentGeneratedInitialCacheCursor => {
@@ -2925,15 +2989,49 @@ class CurrentPcbRetainedOwnerCore {
                 if (!exact(ack, [])) { throw error("INITIAL_CACHE_ORIGINAL_RESUME_ACK"); }
                 const resumed = captureCurrentPcbStringClockReply(await selected.nextProducerEvent()).value; original(); assertProducerOriginal();
                 if (!record(resumed) || !exact(resumed, ["method", "sessionId", "params"]) || resumed["method"] !== "Debugger.resumed" || resumed["sessionId"] !== child.sessionId || !record(resumed["params"]) || !exact(resumed["params"], [])) { throw error("INITIAL_CACHE_ORIGINAL_RESUMED_EVENT"); }
-                originalHeldEvent = null; originalHeldRole = null; originalFrameId = null; originalJoinedId = null; originalFrameAttempted = false; originalHeldRetained = false; originalPropertiesAttempted = false; originalPropertiesObserved = false; originalReadAttempted = false; originalReceiverAttempted = false;
-                originalCache = null; originalCacheCaller = null; originalCacheCallerId = null; originalCacheJoinedId = null; originalCacheCallerAttempted = false; originalCacheJoinAttempted = false; originalCachePropertiesAttempted = false; originalCacheKey = null;
-                originalCachePromise = null; originalCachePromiseId = null; originalCachePromiseAttempted = false; originalCachePromisePropertiesAttempted = false;
+                resetProducerPause();
               }, complete: async (): Promise<void> => { original(); assertProducerOriginal(); const result = await this.#request({ action: "pcb-via-initial-cache-complete" });
                 if (!exact(result, ["completed"]) || result["completed"] !== true) { throw error("INITIAL_CACHE_ORIGINAL_COMPLETE_ACK"); } original(); assertProducerOriginal(); },
               fail: (): void => { selected.fail(); },
             })); return initialCacheCursor;
           };
           originalInitialCacheCursors.set(producerOrigin, Object.freeze({ owner: this, operation: plan, cursor: initialCursor }));
+          let initialSyncCursor: CurrentGeneratedInitialSyncCursor | null = null;
+          const syncHeld = new WeakMap<object, CurrentGeneratedInitialSyncHeld>();
+          const syncCursor = (): CurrentGeneratedInitialSyncCursor => {
+            original(); assertProducerOriginal(); if (initialSyncCursor !== null) { return initialSyncCursor; }
+            const allocation = pcbViaWriteFactories.get(this)?.allocation, initialPlan = allocation?.initialCachePlan;
+            if (allocation === undefined || initialPlan === undefined || initialPlan === null || allocation.owner !== this || pcbViaWriteAllocations.get(allocation.prepared) !== allocation) { throw error("INITIAL_SYNC_ORIGINAL_PREPARATION"); }
+            const data = requireOriginalCurrentGeneratedInitialFlowCachePlan(initialPlan, allocation.prepared); qualifyCurrentGeneratedInitialSyncSource(source.source);
+            const requireHeld = (packet: object): CurrentGeneratedInitialSyncHeld => {
+              original(); assertProducerOriginal(); const actual = originalProjectProducerHeldCalls.get(packet);
+              if (actual === undefined || actual.owner !== this || actual.operation !== plan || actual.origin !== producerOrigin ||
+                  actual.role !== "syncEntry" && actual.role !== "syncFull" && actual.role !== "syncHistory" && actual.role !== "syncMerged" && actual.role !== "syncFinalizing" && actual.role !== "syncReturned") { throw error("INITIAL_SYNC_ORIGINAL_HELD_CALL"); }
+              actual.assertOriginal(); let held = syncHeld.get(packet);
+              if (held === undefined) { const frames = currentGeneratedInitialSyncFrames(actual.event, actual.role, source.scriptId); held = Object.freeze({ packet, role: actual.role, joinedId: actual.joinedId, ...frames }); syncHeld.set(packet, held); } return held;
+            };
+            const projectId = receivers().project;
+            initialSyncCursor = new CurrentGeneratedInitialSyncCursor(data, Object.freeze({ scriptId: source.scriptId, projectId,
+              assertCurrent: async (): Promise<void> => { original(); assertProducerOriginal();
+                if (pcbViaWriteFactories.get(this)?.allocation !== allocation || allocation.initialCachePlan !== initialPlan || this.#viaSdkPhases.has("create") || this.#viaSdkPhases.has("save") || receivers().project !== projectId) { throw error("INITIAL_SYNC_STARTUP_ONLY"); }
+                requireOriginalCurrentGeneratedInitialFlowCachePlan(initialPlan, allocation.prepared); await this.#verify(); original(); assertProducerOriginal();
+                if (pcbViaWriteFactories.get(this)?.allocation !== allocation || allocation.initialCachePlan !== initialPlan || this.#viaSdkPhases.has("create") || this.#viaSdkPhases.has("save") || receivers().project !== projectId) { throw error("INITIAL_SYNC_STARTUP_CHANGED"); }
+              }, requireHeld, headEntry: (): string => initialCursor().originalHeadEntry(),
+              request: (command: CurrentGeneratedInitialSyncCommand) => this.#serializeViaObserver(() => this.#transfer(() => { original(); assertProducerOriginal(); return pipe.continueViaInitialSyncCall(command); })),
+              resume: async (held: CurrentGeneratedInitialSyncHeld, command: CurrentGeneratedInitialSyncCommand): Promise<void> => {
+                requireHeld(held.packet); const event = originalHeldEvent;
+                if (event === null || originalHeldRole !== held.role || !originalHeldRetained) { throw error("INITIAL_SYNC_ORIGINAL_EVENT_REQUIRED"); }
+                const ack = await this.#serializeViaObserver(() => this.#transfer(() => { requireHeld(held.packet); selected.reserveInitialSyncResume(source, event, held.role); return pipe.continueViaInitialSyncCall(command); }));
+                if (!exact(ack, [])) { throw error("INITIAL_SYNC_ORIGINAL_RESUME_ACK"); }
+                const resumed = captureCurrentPcbStringClockReply(await selected.nextProducerEvent()).value; original(); assertProducerOriginal();
+                if (!record(resumed) || !exact(resumed, ["method", "sessionId", "params"]) || resumed["method"] !== "Debugger.resumed" || resumed["sessionId"] !== child.sessionId || !record(resumed["params"]) || !exact(resumed["params"], [])) { throw error("INITIAL_SYNC_ORIGINAL_RESUMED_EVENT"); }
+                resetProducerPause();
+              }, complete: async (): Promise<void> => { original(); assertProducerOriginal(); const result = await this.#request({ action: "pcb-via-initial-sync-complete" });
+                if (!exact(result, ["completed"]) || result["completed"] !== true) { throw error("INITIAL_SYNC_ORIGINAL_COMPLETE_ACK"); } original(); assertProducerOriginal(); },
+              fail: (): void => { selected.fail(); },
+            })); return initialSyncCursor;
+          };
+          originalInitialSyncCursors.set(producerOrigin, Object.freeze({ owner: this, operation: plan, cursor: syncCursor }));
           await Reflect.apply(producerSetup, undefined, [producerOrigin]); original(); assertProducerOriginal();
           for (const role of CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS) { selected.bindProducerObservationBreakpoint(source, role, selected.originalProducerGuardBreakpoint(source, role)); } selected.sealProducerObservation(source); selected.requireProducerObservationArmed(source);
         }
@@ -7438,7 +7536,8 @@ class CurrentPcbRetainedOwnerCore {
       const viaStructureEnrollment = this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && request["action"] === "pcb-via-structure-body-enroll" && this.#viaStructureBodyAttempted;
       const viaHistoryController = this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && request["action"] === "pcb-via-main-observe" && request["phase"] === "via-main-request-controller" && this.#viaMainBoundBody !== null && request["dataStr"] === this.#viaMainBoundBody.dataStr;
       const initialCacheEntry = (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && request["action"] === "pcb-via-initial-cache" || this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE && request["action"] === "schematic-display-initial-cache") && typeof request["phase"] === "string" && request["phase"].startsWith("initial-cache-entry-");
-      const maximum = initialCacheEntry || combinedRequest || viaStructureEnrollment || viaHistoryController || request["method"] === "Runtime.callFunctionOn" && (request["action"] === "worker-startup-parent" &&
+      const initialSyncEntry = (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && request["action"] === "pcb-via-initial-sync" || this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE && request["action"] === "schematic-display-initial-sync") && request["phase"] === "initial-sync-capture";
+      const maximum = initialSyncEntry || initialCacheEntry || combinedRequest || viaStructureEnrollment || viaHistoryController || request["method"] === "Runtime.callFunctionOn" && (request["action"] === "worker-startup-parent" &&
         (request["parentPhase"] === "preflight" || request["parentPhase"] === "open-project" ||
           request["parentPhase"] === "pcb-preflight" || request["parentPhase"] === "pcb-open-document" || request["parentPhase"] === "pcb-observe") || request["action"] === "send" &&
         (request["openingPhase"] === "preflight" || request["openingPhase"] === "open-project" ||

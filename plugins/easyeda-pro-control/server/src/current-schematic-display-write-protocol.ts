@@ -1,3 +1,4 @@
+import { currentGeneratedInitialSyncWire } from "./current-generated-initial-sync-wire.ts";
 /* oxlint-disable import/max-dependencies -- Keep the new startup cache grammar separate from the original writer/source grammars. */
 import { currentGeneratedInitialCacheWire } from "./current-generated-initial-cache-wire.ts";
 import { currentProjectSaveProducerWire } from "./current-project-save-producer-wire.ts";
@@ -18,6 +19,12 @@ export function currentSchematicDisplayWriteNativeRequest(chunk: Buffer): Readon
   const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(chunk.subarray(0, -1)));
   if (!diagnosticRecord(raw) || typeof raw["id"] !== "number" || !Number.isSafeInteger(raw["id"]) || raw["id"] < 1 || raw["id"] > PROFILE.renderer.total ||
     typeof raw["method"] !== "string" || !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("SCHEMATIC_DISPLAY_WIRE"); }
+  if (Object.hasOwn(raw, "initialSyncCommand")) {
+    const { id: initialId, sessionId: initialSession, initialSyncCommand, ...initialInput } = raw;
+    if (initialSyncCommand !== true || typeof initialSession !== "string") { throw new Error("INITIAL_SYNC_WIRE"); }
+    const fixed = currentGeneratedInitialSyncWire(initialInput, initialId, "schematic");
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id: initialId, ...fixed.command, initialSyncCommand: true, sessionId: initialSession })}\0`))) { throw new Error("INITIAL_SYNC_WIRE"); } return fixed.request;
+  }
   if (Object.hasOwn(raw, "initialCacheCommand")) {
     const { id: initialId, sessionId: initialSession, initialCacheCommand, ...initialInput } = raw;
     if (initialCacheCommand !== true || typeof initialSession !== "string") { throw new Error("INITIAL_CACHE_WIRE"); }

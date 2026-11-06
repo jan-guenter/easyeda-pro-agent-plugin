@@ -221,6 +221,9 @@ export class CurrentPcbViaWorkerController {
   public reserveInitialCacheResume(source: CurrentPcbViaProjectSourceHeld, event: CurrentPcbViaRoutedEvent, role: "headEntry" | "headPromise" | "headSuccess"): void {
     need(this.#source === source && this.#child !== null); this.#eventRouter().reserveInitialCacheResume(event, role);
   }
+  public reserveInitialSyncResume(source: CurrentPcbViaProjectSourceHeld, event: CurrentPcbViaRoutedEvent, role: "syncEntry" | "syncFull" | "syncHistory" | "syncMerged" | "syncFinalizing" | "syncReturned"): void {
+    need(this.#source === source && this.#child !== null); this.#eventRouter().reserveInitialSyncResume(event, role);
+  }
   public async nextStructureTransportEvent(): Promise<CurrentPcbViaRoutedEvent> { await this.whenOriginalSourceResumed(); return this.#eventRouter().next("structureTransport"); }
   public reserveStructureTransportResume(source: CurrentPcbViaProjectSourceHeld, role: "send" | "returned"): void {
     need(this.#source === source && this.#child !== null); this.#eventRouter().reserveResume("structureTransport", this.#child.sessionId, role);
