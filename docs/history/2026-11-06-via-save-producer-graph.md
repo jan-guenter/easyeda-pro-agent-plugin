@@ -178,3 +178,61 @@ compile, retain the new14-reference worker shape, reject copied SDK roots and
 condition/code/realm drift, and stop on descriptor exceptions. Strict types and
 zero-warning type-aware lint pass. No native/helper generation, pin or live call
 is part of this source increment.
+
+## Original two-realm observer and body join
+
+`current-pcb-via-clock-observer.ts` now accepts only the actual native owner's
+private original clock origin. It requalifies both complete UI scripts and the
+selected wrapper/callback metadata, original native Date.now and channel getter,
+fresh lexical offsets, selected worker bus methods and actual five breakpoint
+locations. Arming uses36 requests. The selected worker push must retain the
+original synchronous saveCanvas caller; the following dispatch, selected UI
+callback result, original pending reply and finally.pull replacement all join
+the same request. The existing Save observer keeps sole ownership of its worker
+clock continuation breakpoint.
+
+The UI wrapper completion and worker reply can arrive in either order. Separate
+held pauses per realm retain a second pause while the first resume waits for its
+actual resumed event. Every resume requires its own acknowledgment and event;
+every breakpoint removal consumes its original slot. Collection uses the full59
+normal requests and ten cleanup requests; later successful group release uses
+the remaining two. A failed or lost acknowledgment requires the original Job
+exit path and never issues a replacement request or inspector detach.
+
+An opaque body-join token requires the actual clock packet and the original Save
+observer's exact body reference, document, project and equal clock value. Copies
+and another owner/plan cannot supply either proof. The token remains live only
+while both original observers and native generation remain current. Logical
+request/responder observation does not authenticate a native BroadcastChannel
+sender handle or prove the separate main actor clock. SQL authority and
+persistence remain false.
+
+Six focused offline tests cover fixed programs and the real observer async state
+with explicit native/source seams. Both tail orders pass, including a peer pause
+queued before the other realm's resumed event. Lost resume acknowledgment and
+delayed original Job exit preserve consumed requests and settle the original
+pending call before retirement. These tests supply no connected ownership proof.
+
+## Pending-data and delayed structure correction
+
+The actual batchPendData subscription at worker UTF16 2112949 calls
+consistencyManager.remoteChange with pending=true and the originating uniqueId.
+Its onChange callback's eighth argument is true, so uploadStructure suppresses
+non-META VIA changes before Save. This path does not call the separate explicit
+savePendData RPC.
+
+The Save compressor's uniqueId path at UTF16 287500 deletes pending state and
+calls publishChange with its eighth argument undefined. Lg.onChange at2105533
+then calls uploadStructure(PCB,VIA,undefined), which schedules the actual
+Nd(QA(structure,300)) task. A complete Via writer therefore needs original
+operation-owned delayed structure completion alongside its history request.
+The name asyncCompressFull describes combined output: uniqueId restricts the
+emitted keys to that operation's changes plus DOCHEAD. It does not serialize the
+whole scene. Exact delta projection and complete closed SQL/source peer proof
+remain required before any native design mutation is admitted.
+
+This increment was checked against the actual native origin dependency
+4558c44d. Twelve focused observer, fixed-program and shared-router regressions
+pass, along with strict types, zero-warning type-aware lint, repository,
+MCP-contract and all-skill validation under Node24.18.0/npm11.16.0 with core limit
+zero. No helper generation, pin refresh, app launch or connected Save occurred.
