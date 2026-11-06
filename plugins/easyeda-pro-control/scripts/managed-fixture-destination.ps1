@@ -19,8 +19,9 @@ function Read-ManagedFixtureLibraryDirectories([string]$Encoded) {
     }
     if (-not $seen.Add($entry)) { throw 'fixture-library-directory-duplicate' }
   }
-  # Preserve the one array object through this function's output too.
-  return ,$parsed
+  # Convert only AFTER every input element has passed scalar/path validation.
+  # The fresh CLR string[] drops WinPS5.1 ConvertFrom-Json PSObject wrappers.
+  return ,([string[]]$parsed)
 }
 if ($ParseLibraryDirectoriesOnly) {
   $parsedDirectories = Read-ManagedFixtureLibraryDirectories $LibraryDirectoriesBase64
