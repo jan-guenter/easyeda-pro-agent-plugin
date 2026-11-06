@@ -42,7 +42,7 @@ function fixture(options: Readonly<{ throwSynchronously?: boolean; wrongReturn?:
     } };
   };
   if (options.browserGlobals === "lazy") {
-    for (const key of ["fetch", "Response"]) { Object.defineProperty(root, key, lazyGlobal(key)); }
+    for (const key of ["fetch", "Response", "File", "atob"]) { Object.defineProperty(root, key, lazyGlobal(key)); }
   } else if (options.browserGlobals === "inherited-fetch") {
     const value = root["fetch"]; Reflect.deleteProperty(root, "fetch");
     Object.setPrototypeOf(root, { fetch: value });
@@ -101,6 +101,18 @@ void test("fixed preflight reads platform globals after the empty guard, includi
     assert.equal(result.mode, "HALF_OFFLINE"); assert.equal(native.configCalls(), 1); assert.equal(native.calls(), 0);
     if (browserGlobals === "lazy") { assert.equal(native.browserReads(), 2); }
   }
+});
+
+void test("tracked import captures lazy standard globals only after the empty editor guard", async () => {
+  const unready = fixture({ browserGlobals: "lazy", extraTab: true });
+  await assert.rejects(unready.run(programs.launchAndWait), /EDITOR_SHELL_READ_FAILED/u);
+  assert.equal(unready.browserReads(), 0); assert.equal(unready.calls(), 0); assert.equal(unready.configCalls(), 0);
+  const native = fixture({ browserGlobals: "lazy" });
+  const pending = observation(await native.run(programs.launch));
+  assert.equal(pending.sdkOutcome, "pending"); assert.equal(native.calls(), 1); assert.equal(native.browserReads(), 4);
+  native.resolve(PROJECT); await Promise.resolve();
+  assert.equal(observation(await native.run(programs.observe)).sdkOutcome, "fulfilled-project");
+  assert.equal(native.calls(), 1); assert.equal(native.browserReads(), 4);
 });
 
 void test("synthetic original import Promise remains pending across repeated observations and is never redispatched", async () => {

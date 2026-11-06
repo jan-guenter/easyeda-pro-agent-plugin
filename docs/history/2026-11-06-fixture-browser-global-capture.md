@@ -58,3 +58,20 @@ The original generation3 facade then retired, acknowledged lease release and
 closed with stdin EOF, observed process/stdio closure and exit0. No signal,
 project opening, edit, Save or prompt choice was used. The running manager can
 now select a separately verified replacement without restarting Codex.
+
+## Full importer standard-global capture
+
+Review of the full import program found the same own-data assumption for the
+standard `File` constructor and `atob`. The revised program verifies its original
+application context and empty Start Page first, then captures only the fixed
+File/decode/crypto APIs through normal host access. Application globals and SDK
+members retain their own-data/prototype-chain checks, and all captured browser
+bindings are rechecked around asynchronous work. The installed API constructor
+assigns `sys_FileManager` as an own field, so that application check is preserved.
+
+All11 focused program regressions pass. The added case materializes lazy
+File/atob/fetch/Response bindings once, tracks the sole SDK Promise through its
+original settlement, and proves that an unready shell reads none of those
+bindings and makes no config or importer call. Strict changed-file type-aware
+lint passes. This is a source/VM result, not an observed native File descriptor
+or a claim that the full importer has completed its connected lifecycle.
