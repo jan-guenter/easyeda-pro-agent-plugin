@@ -670,3 +670,36 @@ prefix. The literal `FOOTPRINT` grouped saved-history plan, full initial produce
 frontier, actual copied-model delete/clock/main SQL wave, inverse full closed
 proof and fourth fresh absence read still remain. Cold loading, delete/Save and
 four-generation acceptance stay false until those original joins exist.
+
+The saved-footprint flow-cache plan now derives from the genuine completed
+forward saved checkpoint. `prepareFootprintInverseFlowCachePlan()` is a
+parameterless original-owner preparation and must finish before held-worker
+arming. Its private issuer retains the exact complete saved inventory, finished
+reader, saved projection and source snapshot, and independently rechecks saved
+bytes before and after decryption/projection. The source decoder's selected
+linear chain, ID range, every chunk and final copied FOOTPRINT are required.
+An additional root-or-native-empty-start branch check matches the actual yB→UB
+API selection. The generic history decoder itself does not establish that
+branch-parent restriction. Older initial PCB/SCH plans are unchanged.
+
+An isolated Node VM runs the exact pinned Gu/Ro/Na/Uo/mB/flowParseFull/getFlowParse
+source functions against inert bounded plaintext. Only inert receiver hooks
+run; no app process or Cache API is entered. The resulting raw cache strings preserve16/32-character document
+UUIDs and combine library documents under the literal `FOOTPRINT` key; they
+retain noninitial history heads and nonzero chunk URL suffixes. The head index
+keeps the native SQL/API field order and parser-added editHead/docs/docIds.
+Only supplied data is produced; key-bearing head-index text stays private.
+The bounds are eight complete chunks/heads,16KiB per plaintext chunk,32KiB total,
+and at most seven cache bodies plus one8KiB index under the existing combined
+cache limits. Unsupported data refuses before worker arming.
+
+Three focused checks cover exact fixed parser output/grouping/index order,
+accessor/oversize refusal and copied-checkpoint/plan refusal. Full types and
+strict changed-file lint pass. This Node-only increment changes no helper,
+request cap, tracked bundle or live runtime. No native worker/cache/producer
+continuation is authorized by the data. The generated-profile cache cursor is
+limited to two document jobs plus its head and uses a four-item array encoder;
+it cannot be aliased for this footprint plan. A separate exact footprint cursor,
+head encoder, producer origin and derived native budget remain required before
+bootstrap may resume. Actual delete/main SQL, full closed inverse proof and the
+fourth original absence generation still remain.

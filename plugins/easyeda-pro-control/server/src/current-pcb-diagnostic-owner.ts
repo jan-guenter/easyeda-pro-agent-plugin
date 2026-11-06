@@ -1,5 +1,6 @@
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import type { CurrentFootprintSavedFlowCachePlan, CurrentFootprintSavedFlowCachePlanModule } from "./current-footprint-saved-flow-cache-plan.ts";
 import type { CurrentFootprintInverseCacheBackupModule as FootprintInverseCacheBackupModule } from "./current-footprint-inverse-cache-backup.ts";
 import type { CurrentFootprintInverseCacheAbsence, CurrentFootprintInverseCacheBackupGrant, CurrentFootprintInverseCacheBindings, CurrentFootprintInverseCacheOrigin } from "./current-footprint-inverse-cache-origin.ts";
 import { currentFootprintInverseCacheInvalidationNativeFrame, currentFootprintInverseCacheMetadataNativeFrame, currentFootprintInverseCacheNativeFrame } from "./current-footprint-inverse-cache-wire.ts";
@@ -1697,6 +1698,9 @@ class CurrentPcbRetainedOwnerCore {
   #inverseUiReady: Readonly<{ source: CurrentFootprintCopyNativeTarget; context: CurrentPcbDiagnosticContext; pipe: CurrentFootprintInversePipe; selected: ReturnType<CurrentPcbDiagnosticContext["openingContext"]>; windowTabId: string }> | null = null;
   #inverseFrame: Readonly<{ phase: "preflight" | "register" | "open-project"; session: string; context: string; target: CurrentDisposableOpenSealedTarget }> | null = null;
   #inverseHelper: { phase: "preflight" | "register" | "open-project"; scriptId: string | null } | null = null;
+  #inverseFlowCachePlanPromise: Promise<CurrentFootprintSavedFlowCachePlan> | null = null;
+  #inverseFlowCachePlan: Readonly<{ plan: CurrentFootprintSavedFlowCachePlan; module: CurrentFootprintSavedFlowCachePlanModule;
+    prepare: CurrentFootprintSavedFlowCachePlanModule["prepareCurrentFootprintSavedFlowCachePlan"]; lookup: CurrentFootprintSavedFlowCachePlanModule["requireOriginalCurrentFootprintSavedFlowCachePlan"] }> | null = null;
   #inverseCache: FootprintInverseCacheHeld | null = null; #inverseCacheAttempted = false; #inverseCacheGuard = false;
   #inverseCacheInvalidation: CurrentPcbViaSavedCacheInvalidationLedger | null = null; #inverseCacheInvalidationPromise: Promise<CurrentFootprintInverseCacheAbsence> | null = null;
   #inverseCacheAbsence: CurrentFootprintInverseCacheAbsence | null = null; #inverseCacheLateGuard: 0 | 1 | "loading" | null = null;
@@ -7205,10 +7209,32 @@ class CurrentPcbRetainedOwnerCore {
     this.#footprintInverseCacheBackupCurrent(held.backup); held.ledger.requireOriginalSnapshot(held.data); held.ledger.requireOriginalLoadingSnapshot(held.loading);
     for (const packet of [...held.data.packets, ...held.loading.packets]) { held.ledger.requireOriginalPacket(packet); } return held;
   }
+  /** Derive full saved history cache groups from the genuine completed source.
+   * This remains data and grants no producer or worker continuation. */
+  public prepareFootprintInverseFlowCachePlan(): Promise<CurrentFootprintSavedFlowCachePlan> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); if (this.#inverseFlowCachePlanPromise !== null) { return this.#inverseFlowCachePlanPromise; }
+    const prepared = originalCurrentFootprintInverseTarget(this); this.#enter(true);
+    const current = (): void => { assertOriginalCurrentFootprintInverseNativeOwner(this); this.#available();
+      if (originalCurrentFootprintInverseTarget(this) !== prepared || this.#mainTerminateAttempted || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed || this.#inverseWorkerController !== null) { throw error("FOOTPRINT_INVERSE_FLOW_PLAN_OWNER_CHANGED"); } };
+    const promise = (async (): Promise<CurrentFootprintSavedFlowCachePlan> => {
+      try {
+        current(); const module = await import("./current-footprint-saved-flow-cache-plan.ts"); current();
+        const lookup = module.requireOriginalCurrentFootprintSavedFlowCachePlan, prepare = module.prepareCurrentFootprintSavedFlowCachePlan;
+        const plan = await prepare(prepared); current();
+        if (module.prepareCurrentFootprintSavedFlowCachePlan !== prepare || module.requireOriginalCurrentFootprintSavedFlowCachePlan !== lookup) { throw error("FOOTPRINT_INVERSE_FLOW_PLAN_MODULE_CHANGED"); }
+        const data = lookup(plan, prepared), target = originalCurrentFootprintInverseNativeSource(this).target;
+        if (data.projectUuid !== target.projectUuid || data.branchUuid !== target.branchUuid) { throw error("FOOTPRINT_INVERSE_FLOW_PLAN_SCOPE"); }
+        this.#inverseFlowCachePlan = Object.freeze({ plan, module, prepare, lookup }); return plan;
+      } finally { this.#busy = false; }
+    })(); this.#inverseFlowCachePlanPromise = promise; return promise;
+  }
   public async armFootprintInverseWorker(setup: (origin: CurrentFootprintInverseWorkerOrigin) => Promise<void>): Promise<void> {
     assertOriginalCurrentFootprintInverseNativeOwner(this); const intent = this.#inverseRegistrationIntent, ready = this.#inverseUiReady, runner = this.#mainRunner;
     if (this.#inverseCacheAbsence === null) { throw error("FOOTPRINT_INVERSE_CACHE_ABSENCE_REQUIRED"); } this.originalFootprintInverseCacheAbsence(this.#inverseCacheAbsence, originalCurrentFootprintInverseTarget(this));
     if (ready === null || intent === null || runner === null || this.#inverseWorkerController !== null || typeof setup !== "function" || types.isProxy(setup)) { throw error("FOOTPRINT_INVERSE_WORKER_PREREQUISITE"); }
+    const flow = this.#inverseFlowCachePlan;
+    if (flow === null || flow.module.prepareCurrentFootprintSavedFlowCachePlan !== flow.prepare || flow.module.requireOriginalCurrentFootprintSavedFlowCachePlan !== flow.lookup) { throw error("FOOTPRINT_INVERSE_FLOW_PLAN_REQUIRED"); }
+    flow.lookup(flow.plan, originalCurrentFootprintInverseTarget(this));
     const registration = footprintInverseRegistrationIntents.get(intent);
     if (registration === undefined || this.#inverseRegistrationResult === null || registration.owner !== this) { throw error("FOOTPRINT_INVERSE_REGISTRATION_RESULT_REQUIRED"); }
     const pipe = ready.pipe, prepared = originalCurrentFootprintInverseTarget(this); this.#enter(true);
