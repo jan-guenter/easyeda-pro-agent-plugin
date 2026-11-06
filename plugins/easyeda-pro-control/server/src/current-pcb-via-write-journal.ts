@@ -116,6 +116,11 @@ export interface CurrentPcbViaPollingCancellationEnrollment {
   readonly assertCurrent: () => void; readonly assertBeforeAttempt: () => void;
   readonly assertOriginalAttempted: () => void; readonly assertPublished: () => Promise<void>;
 }
+export function requireOriginalCurrentPcbViaPollingCancellationIntent(token: CurrentPcbViaPollingCancellationIntent, owner: object, plan: CurrentPcbViaWritePlan): void {
+  const original = pollingIntents.get(token);
+  need(original !== undefined && original.owner === owner && original.plan === plan, "ORIGINAL_POLLING_INTENT");
+  requireOriginalCurrentPcbViaWritePlan(plan); original.journal.requireRetainedDispatchIntent("opening", original.sequence);
+}
 /** Arming retains the original opening intent without spending the distinct
  * effectful cancellation. Its target timer is never a caller argument. */
 export function enrollCurrentPcbViaPollingCancellationIntent(token: CurrentPcbViaPollingCancellationIntent, owner: object,
