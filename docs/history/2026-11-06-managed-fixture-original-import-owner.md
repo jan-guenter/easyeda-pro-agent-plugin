@@ -45,6 +45,11 @@ before the importer call, after the maintained engine cleared its unused
 capture, becomes a terminal `import-not-dispatched` record so the settled
 environment owner can close the original ordinary launch. An actual ambiguous
 dispatcher remains quarantined and retains all native effects as unknown.
+Cleanup nonce transport accepts the maintained bounded technical challenge
+strings; exact original nonce verification remains inside the cleanup issuer.
+The coordinator now consults `engine.originalTrackedDispatchStatus` from the
+actual journal-keyed Engine WeakMap to select its last entered dispatcher.
+A beforeDispatch callback flag cannot claim dispatcher entry or settlement.
 
 ## Detached system-library branch exclusion
 

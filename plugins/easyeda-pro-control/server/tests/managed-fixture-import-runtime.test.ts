@@ -17,15 +17,20 @@ function fixture(id: string, lostReply = false, lostEnvironment = false, watchCh
     startIdentity: `win32:123456789012345678:job:${"1".repeat(32)}` } };
   let originalJournal: TrackedDispatchOperationJournal | undefined;
   const cleanupComplete = new Set<string>(), cleanupJournals = new Map<string, TrackedDispatchOperationJournal>();
+  const dispatcherStates = new WeakMap<TrackedDispatchOperationJournal, { phase: string; settled: boolean; callToolEntered: boolean }>();
   let publicationFailed = false;
   const engine: ManagedFixtureImportOptions["engine"] = {
     assertBridgeDispatchAllowed: () => { calls.push("guard"); return Promise.resolve(true); },
     status: () => { calls.push("status"); return Promise.resolve({ stableFingerprint: expected }); },
+    originalTrackedDispatchStatus: (journal) => dispatcherStates.get(journal),
     dispatchWithOrphanTracking: async (journal, phase, name, args, _timeout, before, retain, beforeClear): Promise<unknown> => {
+      const dispatchState = { phase, settled: false, callToolEntered: false }; dispatcherStates.set(journal, dispatchState);
+      try {
       calls.push("tracked"); assert.equal(journal, originalJournal); assert.equal(phase, "managed-fixture-import"); assert.equal(name, "easyeda_execute");
       assert.equal(canonicalJson(await loadOperation(journal.operationId)), canonicalJson(journal));
       journal.orphanedCallPossible = true; journal.orphanedCallPhase = phase; await updateOperation(journal);
       try { await before?.(); } catch (error) { journal.orphanedCallPossible = false; await updateOperation(journal); throw error; }
+      dispatchState.callToolEntered = true;
       if (journal.operationId.endsWith("-environment")) {
         calls.push("environment");
         if (lostEnvironment) { throw new Error("Synthetic lost environment reply"); }
@@ -48,6 +53,7 @@ function fixture(id: string, lostReply = false, lostEnvironment = false, watchCh
       const { manifestTitle: omitted, ...payload } = observation; assert.equal(omitted, target.manifestTitle);
       const raw = { content: [], structuredContent: { ok: true, result: encodeExactReadEnvelope(payload) } };
       await retain?.(raw); await beforeClear?.(); journal.orphanedCallPossible = false; await updateOperation(journal); return raw;
+      } finally { dispatchState.settled = true; }
     },
   };
   const owner = new ManagedFixtureImportCoordinator({ pluginRoot: "/mnt/c/synthetic-plugin", assetsRoot: "/mnt/c/synthetic-app/resources/app/assets", engine,
@@ -101,7 +107,7 @@ void test("actual import coordinator stages a fresh archive, seals destination a
   assert.equal(released["destinationReleased"], true); assert.equal(released["filesDeleted"], false);
   assert.equal(value.owner.hasActiveReservation(), true);
   await assert.rejects(value.owner.execute({ action: "release-owner", operationId: "managed-import-runtime-success", confirmReleaseFixtureOwner: true }));
-  await value.owner.execute({ action: "finish-cleanup", operationId: "managed-import-runtime-success", cleanupNonce: "1".repeat(64) });
+  await value.owner.execute({ action: "finish-cleanup", operationId: "managed-import-runtime-success", cleanupNonce: "EASYEDA_ORIGINAL_TRACKED_CLEANUP:managed-import-runtime-success:managed-fixture-import:1:synthetic-original-id" });
   await value.owner.execute({ action: "release-owner", operationId: "managed-import-runtime-success", confirmReleaseFixtureOwner: true });
   assert.equal(value.owner.hasActiveReservation(), false); assert.equal(value.owner.hasPendingWork(), false);
   await assert.rejects(value.owner.execute(value.request, value.expected)); assert.equal(value.owner.hasActiveReservation(), false);

@@ -24,11 +24,11 @@ export const managedFixtureImportRequestSchema = z.discriminatedUnion("action", 
   z.object({ action: z.literal("inspect"), operationId }).strict(),
   z.object({ action: z.literal("inspect-destination"), operationId }).strict(),
   z.object({ action: z.literal("release-destination"), operationId, confirmReleaseRetainedDirectory: z.literal(true) }).strict(),
-  z.object({ action: z.literal("request-cleanup-close"), operationId, cleanupNonce: z.string().regex(/^[a-f0-9]{64}$/u),
+  z.object({ action: z.literal("request-cleanup-close"), operationId, cleanupNonce: z.string().min(32).max(512),
     confirmNormalClose: z.literal(true), acceptUnknownFileEffects: z.literal(true) }).strict(),
-  z.object({ action: z.literal("observe-cleanup-termination"), operationId, cleanupNonce: z.string().regex(/^[a-f0-9]{64}$/u) }).strict(),
-  z.object({ action: z.literal("finish-cleanup"), operationId, cleanupNonce: z.string().regex(/^[a-f0-9]{64}$/u) }).strict(),
-  z.object({ action: z.literal("settle-cleanup-records"), operationId, cleanupNonce: z.string().regex(/^[a-f0-9]{64}$/u) }).strict(),
+  z.object({ action: z.literal("observe-cleanup-termination"), operationId, cleanupNonce: z.string().min(32).max(512) }).strict(),
+  z.object({ action: z.literal("finish-cleanup"), operationId, cleanupNonce: z.string().min(32).max(512) }).strict(),
+  z.object({ action: z.literal("settle-cleanup-records"), operationId, cleanupNonce: z.string().min(32).max(512) }).strict(),
   z.object({ action: z.literal("settle-import-records"), operationId }).strict(),
   z.object({ action: z.literal("release-owner"), operationId, confirmReleaseFixtureOwner: z.literal(true) }).strict(),
 ]);
@@ -60,6 +60,8 @@ export interface ManagedFixtureImportOptions {
   readonly pluginRoot: string; readonly assetsRoot: string;
   readonly engine: Pick<EasyedaControlEngine, "assertBridgeDispatchAllowed" | "dispatchWithOrphanTracking"> & {
     readonly status: () => Promise<{ stableFingerprint: Record<string, unknown> }>;
+    /** Actual Engine WeakMap observer, not a beforeDispatch caller flag. */
+    readonly originalTrackedDispatchStatus: (journal: TrackedDispatchOperationJournal) => Readonly<{ phase: string; settled: boolean; callToolEntered: boolean }> | undefined;
   };
   readonly runtime: Pick<WindowsControlRuntime, "status" | "observeLaunchTermination">;
   /** Required synchronous closure over the actual index allocation objects.
@@ -135,11 +137,11 @@ export class ManagedFixtureImportCoordinator {
     options.assertOriginalOwner(); const status = options.runtime.status();
     if (status.state !== "owned" || status.launch === null) { throw new Error("Fixture import requires the current original ordinary launch runtime."); }
     this.launchText = canonicalJson(status.launch);
-    this.methods = [options.runtime.status, options.runtime.observeLaunchTermination, options.engine.status, options.engine.assertBridgeDispatchAllowed, options.engine.dispatchWithOrphanTracking];
+    this.methods = [options.runtime.status, options.runtime.observeLaunchTermination, options.engine.status, options.engine.assertBridgeDispatchAllowed, options.engine.dispatchWithOrphanTracking, options.engine.originalTrackedDispatchStatus];
   }
   private current(): void {
     this.options.assertOriginalOwner(); const status = this.options.runtime.status();
-    const methods = [this.options.runtime.status, this.options.runtime.observeLaunchTermination, this.options.engine.status, this.options.engine.assertBridgeDispatchAllowed, this.options.engine.dispatchWithOrphanTracking];
+    const methods = [this.options.runtime.status, this.options.runtime.observeLaunchTermination, this.options.engine.status, this.options.engine.assertBridgeDispatchAllowed, this.options.engine.dispatchWithOrphanTracking, this.options.engine.originalTrackedDispatchStatus];
     if (status.state !== "owned" || canonicalJson(status.launch) !== this.launchText || methods.some((method, index) => method !== this.methods[index])) { throw new Error("Fixture import lost its original ordinary launch generation or methods."); }
   }
   private async checked<T>(call: () => Promise<T>): Promise<T> {
@@ -227,6 +229,13 @@ export class ManagedFixtureImportCoordinator {
    */
   public hasActiveReservation(): boolean { return this.reservation === "reserved" || this.busy; }
   public hasPendingWork(): boolean { return this.hasActiveReservation(); }
+  private retainDispatcherStatus(journal: TrackedDispatchOperationJournal): boolean {
+    this.current(); const status = this.options.engine.originalTrackedDispatchStatus(journal);
+    if (status === undefined) { return false; }
+    if (status.phase !== MANAGED_FIXTURE_IMPORT_DISPATCH_PHASE) { throw new Error("Original Engine dispatcher status belongs to another phase."); }
+    if (status.callToolEntered) { this.lastNativeJournal = journal; }
+    return status.callToolEntered;
+  }
   private async observeEnvironment(id: string, fingerprint: Record<string, unknown>): Promise<z.infer<typeof managedFixtureEnvironmentObservationSchema>> {
     const environmentId = `${id}-environment`; const body = buildManagedFixtureEnvironmentProgram();
     const code = `const value=await(async()=>{${body}})();const json=JSON.stringify(value);return {schema:'easyeda-pro-control.exact-json.v1',utf8Bytes:new TextEncoder().encode(json).byteLength,json};`;
@@ -248,18 +257,20 @@ export class ManagedFixtureImportCoordinator {
       await this.change({ mutationMayHaveOccurred: true, mutationState: "profile-config-get-intent" });
       this.options.cleanup.retain(journal); this.current();
       await this.checked(() => this.options.engine.dispatchWithOrphanTracking(journal, MANAGED_FIXTURE_IMPORT_DISPATCH_PHASE, "easyeda_execute", { code, timeoutMs: 60_000, confirmWrite: true }, 70_000,
-        async () => { await revalidate(); await this.checked(() => (this.dependencies.verifySources ?? verifyManagedFixtureImportSources)(this.options.assetsRoot)); await revalidate(); this.lastNativeJournal = journal; },
+        async () => { await revalidate(); await this.checked(() => (this.dependencies.verifySources ?? verifyManagedFixtureImportSources)(this.options.assetsRoot)); await revalidate(); },
         async (raw) => {
           this.current(); const envelope = extractToolPayload(raw);
           if (Buffer.byteLength(JSON.stringify(envelope), "utf8") > 32_768) { throw new Error("Fixture environment response exceeds its bounded exact transport."); }
           this.environmentObservation = managedFixtureEnvironmentObservationSchema.parse(decodeExactReadEnvelope(envelope));
           await this.artifact("original-environment-observation", this.environmentObservation);
         }, revalidate));
+      this.retainDispatcherStatus(journal);
       if (this.environmentObservation === undefined) { throw new Error("Original environment getter settled without its retained observation."); }
       await this.change({ state: "completed", mutationState: "actual-config-directories-observed", hardStop: false,
         nextSafeAction: "No library migration was requested. The separate importer must retain native no-candidate watches before dispatch." });
       return this.environmentObservation;
     } catch (error) {
+      this.retainDispatcherStatus(journal);
       this.phase = "environment-ambiguous-or-refused"; this.error = error instanceof Error ? error.message : "Unknown environment preflight failure.";
       throw new Error(`Fixture environment ${environmentId} is incomplete. Inspect this original operation and use its retained cleanup; no import retry or destination allocation is authorized.`, { cause: error });
     }
@@ -348,7 +359,6 @@ export class ManagedFixtureImportCoordinator {
       orphanedCallPossible: false, hardStop: false, mutationMayHaveOccurred: false,
       nextSafeAction: "Retain the original fixture owner; preparation is not import acceptance.", sequence: 0, createdAt: time, updatedAt: time, artifacts: [] };
     this.operation = operation; this.phase = "preparing";
-    let nativeDispatcherEntered = false;
     try {
       await this.checked(() => createOperation(operation));
       const prepared = await this.checked(() => (this.dependencies.prepareInput ?? prepareManagedLibraryFile)({ action: "prepare-file", name: generated.name,
@@ -385,8 +395,6 @@ export class ManagedFixtureImportCoordinator {
           this.destinationObservation = await this.checked(() => destination.inspect());
           if (this.destinationObservation.entries.length > 0) { throw new Error("Managed fixture destination changed before the sole import dispatch."); }
           await revalidate();
-          nativeDispatcherEntered = true;
-          this.lastNativeJournal = operation;
         },
         async (raw) => {
           this.current(); const envelope = extractToolPayload(raw);
@@ -397,12 +405,14 @@ export class ManagedFixtureImportCoordinator {
           await this.change({ state: "managed-fixture-sdk-settled-unverified", hardStop: true, mutationState: "partial-import-unverified" },
             { phase: "original-sdk-settlement", value: this.observation });
         }, revalidate));
+      this.retainDispatcherStatus(operation);
       this.phase = "sdk-settled-unverified";
       await this.change({ state: "managed-fixture-sdk-settled-unverified", mutationState: "partial-import-unverified",
         nextSafeAction: "Use original tracked cleanup, then prove the complete fresh closed SQLite/source/registration roster. Retain every file; never replay this import." },
       { phase: "sdk-settled-partial", value: { sdkObservation: this.observation, accepted: false } });
       return this.inspect(request.operationId);
     } catch (error) {
+      const nativeDispatcherEntered = this.retainDispatcherStatus(operation);
       if (!nativeDispatcherEntered && !operation.orphanedCallPossible) {
         this.refusedBeforeDispatch.add(operation);
         if (this.pendingPublication === undefined) {
