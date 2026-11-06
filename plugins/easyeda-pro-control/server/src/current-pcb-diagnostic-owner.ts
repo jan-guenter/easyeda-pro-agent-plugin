@@ -44,6 +44,7 @@ import type { GeneratedSchematicFixtureOpenCheckpoint } from "./managed-schemati
 import type { CurrentPcbViaClockBindings, CurrentPcbViaClockOrigin, CurrentPcbViaClockRealm } from "./current-pcb-via-clock-origin.ts";
 import { CURRENT_PCB_VIA_CLOCK_SITES, validateCurrentPcbViaClockCommand } from "./current-pcb-via-clock-protocol.ts";
 import type { CurrentPcbViaClockCommand } from "./current-pcb-via-clock-protocol.ts";
+import type { CurrentProjectHistorySqlEffects } from "./current-project-history-sql-effects.ts";
 import type { CurrentPcbViaMainBindings, CurrentPcbViaMainOrigin } from "./current-pcb-via-main-origin.ts";
 import { expectedCurrentGeneratedProjectSaveStructure } from "./current-project-save-structure-expectation.ts";
 import { currentPcbViaMainStructureExpectedSchema } from "./current-pcb-via-main-structure-protocol.ts";
@@ -646,6 +647,7 @@ export function requireOriginalCurrentProjectSaveStructureOrigin(origin: Current
   if (original === undefined || original.owner !== owner || original.operation !== operation) { throw error("PROJECT_SAVE_STRUCTURE_ORIGINAL_ORIGIN"); }
   original.assertOriginal(); return original.bindings;
 }
+const pcbViaTerminations = new WeakMap<object, Readonly<{ owner: CurrentPcbViaWriteOwner; binding: Binding }>>();
 const schematicDisplayTerminations = new WeakMap<object, Readonly<{ owner: CurrentSchematicDisplayWriteOwner; binding: Binding }>>();
 interface PcbViaWriteAllocation { readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: GeneratedFixtureOpenCheckpoint; state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentPcbViaWriteOwner | null; child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown }
 const pcbViaWriteAllocations = new WeakMap<GeneratedFixtureOpenCheckpoint, PcbViaWriteAllocation>();
@@ -1065,6 +1067,7 @@ class CurrentPcbRetainedOwnerCore {
   #viaFailed = false;
   #schematicDisplayCleanupOnly = false;
   #schematicDisplayTermination: object | null = null;
+  #viaOriginalTermination: object | null = null;
   #viaObserverTail: Promise<void> = Promise.resolve();
   #viaCleanupOnly = false;
   #viaWorkerPlan: CurrentPcbViaWritePlan | null = null;
@@ -2606,6 +2609,14 @@ class CurrentPcbRetainedOwnerCore {
     const assertCurrent = (): void => { body.assertCurrent(); if (this.#viaStructurePublication !== token || this.#mainRunner !== runner || this.#viaMainOrigin !== origin || runner.requireViaStructureCompleted(origin) !== effects) { throw error("PCB_VIA_STRUCTURE_PUBLICATION_CHANGED"); } };
     this.#viaStructurePublication = token; originalStructurePublications.set(token, { owner: this, operation: plan, transportOrigin, sharedOrigin, value, assertCurrent, consumed: false }); assertCurrent(); return token;
   }
+  /** Source-owned data for the original worker response/head-index joins.
+   * This live lookup grants no continuation and exports no worker program. */
+  public requireViaHistorySqlEffects(plan: CurrentPcbViaWritePlan): CurrentProjectHistorySqlEffects {
+    requireViaPlan(this, plan); const origin = this.#viaMainOrigin;
+    if (origin === null || this.#mainRunner === null || this.#viaMainBoundBody === null || this.#viaFailed || this.#viaCleanupOnly) { throw error("PCB_VIA_HISTORY_ORIGINAL_EFFECTS_UNAVAILABLE"); }
+    requireOriginalCurrentPcbViaMainOrigin(origin, this, plan); const effects = this.#mainRunner.requireViaHistoryCompleted(origin);
+    if (effects.projectUuid !== plan.target.projectUuid || effects.branchUuid !== plan.target.branchUuid || effects.initialLogicalSha256 !== plan.initialLogicalSha256 || effects.bodySha256 !== this.#viaMainBoundBody.bodySha256) { throw error("PCB_VIA_HISTORY_ORIGINAL_EFFECTS_SCOPE"); } return effects;
+  }
   /** The original backend, original native callback ACKs and retained body
    * issue this completion. It records no structure publication or durability. */
   public completeViaHistorySql(plan: CurrentPcbViaWritePlan): CurrentProjectHistorySqlCompletion {
@@ -4122,6 +4133,18 @@ class CurrentPcbRetainedOwnerCore {
   public requireFootprintForwardExecutionTermination(original: object): void {
     assertOriginalCurrentFootprintForwardExecutionNativeOwner(this); const held = footprintTerminations.get(original);
     if (held?.owner !== this || held.binding !== this.#binding || (held.noProcess ? !this.#released || !this.#childClosed || this.#launchSucceeded || original !== (this.#noProcessProof ?? this.#footprintUnlaunchedRelease) : !this.#terminationObserved)) { throw error("FOOTPRINT_ORIGINAL_TERMINATION"); }
+  }
+  /** Historical original Via closure only. No-process cleanup and an abort
+   * acknowledgement cannot substitute for observed root exit and empty Job. */
+  public originalViaWriteTermination(): object {
+    assertOriginalCurrentPcbViaWriteOwner(this); const observed = this.#terminationObservation;
+    if (!this.#terminationObserved || observed === null || !observed.terminated || observed.originalRootExited !== true || observed.originalJobEmpty !== true || this.#binding === null) { throw error("PCB_VIA_ORIGINAL_TERMINATION"); }
+    if (this.#viaOriginalTermination === null) { this.#viaOriginalTermination = observed; pcbViaTerminations.set(observed, Object.freeze({ owner: this, binding: this.#binding })); }
+    this.requireViaWriteTermination(this.#viaOriginalTermination); return this.#viaOriginalTermination;
+  }
+  public requireViaWriteTermination(original: object): void {
+    assertOriginalCurrentPcbViaWriteOwner(this); const retained = pcbViaTerminations.get(original); const observed = this.#terminationObservation;
+    if (retained?.owner !== this || retained.binding !== this.#binding || original !== this.#viaOriginalTermination || !this.#terminationObserved || observed === null || !observed.terminated || observed.originalRootExited !== true || observed.originalJobEmpty !== true) { throw error("PCB_VIA_ORIGINAL_TERMINATION"); }
   }
   /** Distinct SCH data capture accepts only this generation's actual observed
    * root exit and empty original Job. Unlaunched/no-process cleanup is not an
@@ -6638,6 +6661,8 @@ const footprintOwnershipMethods = Object.freeze({ assert: CurrentPcbRetainedOwne
   forwardExecutionTarget: CurrentPcbRetainedOwnerCore.prototype.originalFootprintForwardExecutionTarget,
   forwardExecutionTermination: CurrentPcbRetainedOwnerCore.prototype.originalFootprintForwardExecutionTermination,
   requireForwardExecutionTermination: CurrentPcbRetainedOwnerCore.prototype.requireFootprintForwardExecutionTermination });
+const pcbViaOwnershipMethods = Object.freeze({ termination: CurrentPcbRetainedOwnerCore.prototype.originalViaWriteTermination,
+  requireTermination: CurrentPcbRetainedOwnerCore.prototype.requireViaWriteTermination });
 const schematicDisplayOwnershipMethods = Object.freeze({ termination: CurrentPcbRetainedOwnerCore.prototype.originalSchematicDisplayTermination,
   requireTermination: CurrentPcbRetainedOwnerCore.prototype.requireSchematicDisplayTermination });
 const combinedOwnershipMethods = Object.freeze({ generation: CurrentPcbRetainedOwnerCore.prototype.requireOriginalFootprintCombinedGeneration,
@@ -7021,6 +7046,17 @@ export function assertOriginalCurrentPcbViaWriteOwner(owner: CurrentPcbViaWriteO
     Reflect.ownKeys(owner).length > 0 || !originalFootprintDescriptors(CurrentPcbViaWriteOwner.prototype, viaOwnerDescriptors) ||
     !originalFootprintDescriptors(CurrentPcbRetainedOwnerCore.prototype, footprintCoreDescriptors) || owner.status().profile !== CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { throw error("PCB_VIA_ORIGINAL_FACTORY"); }
   assertOriginalGeneratedFixtureOpenCheckpoint(original.allocation.prepared);
+}
+/** Retained original preparation and historical closure only; neither can
+ * issue another writer birth or a cache-excluded readback generation. */
+export function originalCurrentPcbViaWriteTarget(owner: CurrentPcbViaWriteOwner): GeneratedFixtureOpenCheckpoint {
+  assertOriginalCurrentPcbViaWriteOwner(owner); const original = pcbViaWriteFactories.get(owner); if (original === undefined) { throw error("PCB_VIA_ORIGINAL_PREPARATION"); } return original.allocation.prepared;
+}
+export function originalCurrentPcbViaWriteTermination(owner: CurrentPcbViaWriteOwner): object {
+  assertOriginalCurrentPcbViaWriteOwner(owner); return pcbViaOwnershipMethods.termination.call(owner);
+}
+export function assertOriginalCurrentPcbViaWriteTermination(owner: CurrentPcbViaWriteOwner, original: object): void {
+  assertOriginalCurrentPcbViaWriteOwner(owner); pcbViaOwnershipMethods.requireTermination.call(owner, original);
 }
 /** The complete original closed-SQL checkpoint must exist before allocation.
  * A failed allocation remains consumed and never adopts another owner. */

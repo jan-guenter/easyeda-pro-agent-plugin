@@ -12,7 +12,7 @@ import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import type { CurrentPcbViaWriteOwner } from "../src/current-pcb-via-write-owner.ts";
 
-async function fixture(context: TestContext, malformed = false): Promise<Readonly<{ owner: CurrentPcbViaWriteOwner; actions: string[]; pollEntered: Promise<true> }>> {
+async function fixture(context: TestContext, malformed = false): Promise<Readonly<{ owner: CurrentPcbViaWriteOwner; actions: string[]; pollEntered: Promise<true>; termination: () => object; requireTermination: (original: object) => void }>> {
   const url = new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url); const sourceRequire = createRequire(url);
   const prepared = Object.freeze({ syntheticCheckpoint: true });
   const source = `${await readFile(url, "utf8")}\nexport function seedSyntheticViaAbortOwner(owner,installation,prepared){
@@ -52,7 +52,8 @@ else if(q.action==='release')send(q,{released:true});else throw Error('unexpecte
   Reflect.apply(seed, undefined, [owner, installation, prepared]); owner.start();
   context.after(async () => { if (child.exitCode === null && child.signalCode === null) { const closed = once(child, "close"); child.stdin.end(); await closed; } });
   await owner.launch({ executable: "C:\\Reviewed\\easyeda-pro.exe", executableSha256: "a".repeat(64), confirmDiagnosticLaunch: true });
-  return { owner, actions, pollEntered: pollEntered.promise };
+  const termination = loaded.exports["originalCurrentPcbViaWriteTermination"]; const requireTermination = loaded.exports["assertOriginalCurrentPcbViaWriteTermination"];assert.ok(typeof termination === "function" && typeof requireTermination === "function");
+  return { owner, actions, pollEntered: pollEntered.promise, termination: (): object => { const value:unknown=Reflect.apply(termination,undefined,[owner]);assert.ok(value!==null&&typeof value==="object");return value; }, requireTermination: (original): void => { Reflect.apply(requireTermination,undefined,[owner,original]); } };
 }
 void test("Via-only original abort waits for pending native poll and settles the original busy renderer call without replay", async context => {
   const f = await fixture(context); const original = f.owner.getTargets(), refused = assert.rejects(original);
@@ -61,8 +62,9 @@ void test("Via-only original abort waits for pending native poll and settles the
   await abort; await refused; assert.equal(f.owner.status().busy, false);
   assert.deepEqual(f.actions, ["launch", "send", "poll", "pcb-via-abort"]);
   await assert.rejects(f.owner.getTargets()); assert.equal(f.actions.filter(action => action === "send").length, 1);
-  assert.equal(f.owner.status().lastTerminationObservation, null); assert.equal(await f.owner.observeTermination(), true);
-  await f.owner.releaseClosed(); assert.equal(f.owner.status().released, true); assert.equal(f.owner.status().helperClosed, true);
+  assert.equal(f.owner.status().lastTerminationObservation, null); assert.throws(() => f.termination(), /ORIGINAL_TERMINATION/u); assert.equal(await f.owner.observeTermination(), true);
+  const termination = f.termination(); f.requireTermination(termination); assert.throws(() => { f.requireTermination({...termination}); }, /ORIGINAL_TERMINATION/u);
+  await f.owner.releaseClosed(); assert.equal(f.owner.status().released, true); assert.equal(f.owner.status().helperClosed, true); assert.equal(f.termination(),termination); f.requireTermination(termination);
 });
 void test("malformed original helper transport stays fail-closed and cannot acquire an abort retry", async context => {
   const f = await fixture(context, true), refused = assert.rejects(f.owner.getTargets()); await f.pollEntered; await refused;

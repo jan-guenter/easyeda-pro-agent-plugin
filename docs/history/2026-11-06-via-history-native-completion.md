@@ -167,3 +167,34 @@ and clock setup follow create. This closes retrospective Main enrollment, but
 planned producer continuation and complete producer/cache/drain, closed SQL
 and cache-excluded reopened verification remain separate prerequisites. Save
 is still denied. No native owner was allocated for this source increment.
+
+### Same-owner Via closed-data capture
+
+The dedicated Via owner now exposes its exact original preparation and a
+historical termination token only after an actual native observation of root
+exit and empty original Job. An abort acknowledgement or no-process cleanup
+cannot issue that token. Repeated lookups retain the same token; copies and a
+different owner fail, including after deliberate helper release.
+
+`CurrentPcbViaWriteClosedCapture(owner, originalTermination, originalPlan)`
+binds the original owner/preparation/plan before acquiring any new descriptor.
+It retains no-follow descriptors for every parent and the source, rejects
+sidecars/extra peers and path or inode drift, reads and rehashes all source
+bytes, publishes an exclusive managed copy, and runs the complete finished
+SQL reader on that copy. It also retains all decrypted history-data diagnostics
+when the bounded raw decoder succeeds. Every acquired descriptor's original
+close promise must finish before the issued snapshot can be retrieved.
+
+The snapshot is historical data only. Full SQL effects, persistence and reopen
+remain false; it cannot be retargeted as an initial checkpoint or mint a fresh
+writer/readback owner. The Linux file clocks are not Windows clock authority.
+Focused regressions exercise actual complete bytes/SQL/history capture and a
+sidecar refusal, plus the production original-owner abort/exit/termination
+registry through helper release. These use explicit synthetic native closure
+seams, never a live app or native process.
+
+The live-only `owner.requireViaHistorySqlEffects(plan)` separately exposes the
+same completed main ledger for original worker response/head-index joins. It
+retains distinct head UUID and data-row key (the mutable branch uses `head-1`)
+and grants no continuation. A later closed-data consumer cannot treat that
+live lookup as a still-live lease after owner exit.
