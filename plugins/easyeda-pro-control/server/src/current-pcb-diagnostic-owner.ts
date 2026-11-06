@@ -12,6 +12,9 @@ import type { GeneratedSchematicFixtureOpenCheckpoint } from "./managed-schemati
 import type { CurrentPcbViaClockBindings, CurrentPcbViaClockOrigin, CurrentPcbViaClockRealm } from "./current-pcb-via-clock-origin.ts";
 import { CURRENT_PCB_VIA_CLOCK_SITES, validateCurrentPcbViaClockCommand } from "./current-pcb-via-clock-protocol.ts";
 import type { CurrentPcbViaClockCommand } from "./current-pcb-via-clock-protocol.ts";
+import type { CurrentPcbViaMainBindings, CurrentPcbViaMainOrigin } from "./current-pcb-via-main-origin.ts";
+import { currentPcbViaMainWire } from "./current-pcb-via-main-protocol.ts";
+import type { CurrentPcbViaMainCommand } from "./current-pcb-via-main-protocol.ts";
 import { compareCurrentPcbViaProjectedEffect } from "./current-pcb-via-write-effect-data.ts";
 import type { CurrentPcbViaProjectedEffect } from "./current-pcb-via-write-effect-data.ts";
 import { decodeCurrentPcbViaSdkMethod, decodeCurrentPcbViaSdkTuple, qualifyCurrentPcbViaSdkSource } from "./current-pcb-via-write-sdk-source.ts";
@@ -452,6 +455,7 @@ const pcbViaWriteAllocations = new WeakMap<GeneratedFixtureOpenCheckpoint, PcbVi
 const pcbViaWriteFactories = new WeakMap<object, Readonly<{ allocation: PcbViaWriteAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
 export type CurrentPcbViaSaveWorkerSetup = (origin: CurrentPcbViaSaveWorkerOrigin) => Promise<void>;
 export type CurrentPcbViaClockSetup = (origin: CurrentPcbViaClockOrigin) => Promise<void>;
+export type CurrentPcbViaMainSetup = (origin: CurrentPcbViaMainOrigin) => Promise<void>;
 export interface CurrentPcbViaNativeObservation { readonly schema: "private.current-pcb-via-native-observation.v1"; readonly phase: CurrentPcbViaObservationPhase; readonly observations: Readonly<Record<string, unknown>> }
 export interface CurrentPcbViaSceneObservation { readonly schema: "private.current-pcb-via-scene-observation.v1"; readonly phase: CurrentPcbViaObservationPhase; readonly observation: CurrentPcb209SpatialTrackResult }
 const pcbViaPackets = new WeakMap<object, Readonly<{ owner: object; plan: CurrentPcbViaWritePlan; phase: string; kind: "native" | "scene" | "stage" }>>();
@@ -544,6 +548,20 @@ export async function sendCurrentSelectedFileMainSqlFenceCommand(capability: Cur
   const original = selectedSqlFenceBootstraps.get(capability);
   if (original === undefined || original.runner() !== runner) { throw error("SELECTED_SQL_ORIGINAL_RUNNER"); }
   original.reprove(); await original.owner.sendSelectedFileMainSqlFence(capability, runner, command, id); original.reprove();
+}
+export async function sendOriginalCurrentPcbViaMainCommand(capability: CurrentSelectedFileMainSqlFenceBootstrap,
+  runner: CurrentFootprintCopyMainBackendRunner, command: CurrentPcbViaMainCommand, id: number): Promise<void> {
+  const original = selectedSqlFenceBootstraps.get(capability);
+  if (original === undefined || original.runner() !== runner) { throw error("PCB_VIA_MAIN_ORIGINAL_RUNNER"); }
+  // oxlint-disable-next-line eslint/no-use-before-define -- This sender is callable only after the original native factory and public facade have initialized.
+  if (!(original.owner instanceof CurrentPcbViaWriteOwner)) { throw error("PCB_VIA_MAIN_ORIGINAL_OWNER"); }
+  assertOriginalCurrentPcbViaWriteOwner(original.owner);
+  original.reprove(); await original.owner.sendViaMainObservation(capability, runner, command, id); original.reprove();
+}
+const pcbViaMainOrigins = new WeakMap<CurrentPcbViaMainOrigin, Readonly<{ owner: CurrentPcbViaWriteOwner; plan: CurrentPcbViaWritePlan; bindings: CurrentPcbViaMainBindings; assertOriginal: () => void }>>();
+export function requireOriginalCurrentPcbViaMainOrigin(origin: CurrentPcbViaMainOrigin, owner: CurrentPcbViaWriteOwner, plan: CurrentPcbViaWritePlan): CurrentPcbViaMainBindings {
+  const original = pcbViaMainOrigins.get(origin); if (original === undefined || original.owner !== owner || original.plan !== plan) { throw error("PCB_VIA_MAIN_ORIGINAL"); }
+  requireViaPlan(owner, plan); original.assertOriginal(); return original.bindings;
 }
 const headAgeBootstrapCapabilities = new WeakMap<object, Readonly<{ transport: object; reprove: () => void }>>();
 /** This token admits only the original head-age transport's passive bootstrap
@@ -789,6 +807,9 @@ class CurrentPcbRetainedOwnerCore {
   #viaClockOrigin: CurrentPcbViaClockOrigin | null = null;
   readonly #viaClockArmAttempts = new Set<string>();
   readonly #viaClockArmedPoints = new Set<string>();
+  #viaMainAttempted = false;
+  #viaMainOrigin: CurrentPcbViaMainOrigin | null = null;
+  #viaMainSetupReady = false;
   #viaPlan: CurrentPcbViaWritePlan | null = null;
   readonly #viaNativePhases = new Set<CurrentPcbViaObservationPhase>();
   readonly #viaScenePhases = new Set<CurrentPcbViaObservationPhase>();
@@ -1662,6 +1683,28 @@ class CurrentPcbRetainedOwnerCore {
       if (this.#viaClockArmAttempts.size !== 5 || this.#viaClockArmedPoints.size !== 5) { throw error("PCB_VIA_CLOCK_SETUP_INCOMPLETE"); }
       await this.#verify(); current(); this.#viaClockSetupSettled = true; return origin;
     } catch (caughtError) { this.#viaFailed = true; throw caughtError; } finally { this.#busy = false; }
+  }
+  /** Original Via main cursor only. This setup installs fixed observation
+   * points and retains the SQL fence; it grants neither Save nor a resume. */
+  public async createViaMainObservationOrigin(plan: CurrentPcbViaWritePlan, effect: CurrentPcbViaWriteEffect, setup: CurrentPcbViaMainSetup): Promise<CurrentPcbViaMainOrigin> {
+    // oxlint-disable-next-line eslint/no-use-before-define -- The fixed public facade exists before its original factory can call this method.
+    if (!(this instanceof CurrentPcbViaWriteOwner) || typeof setup !== "function" || types.isProxy(setup) || this.#viaMainAttempted || this.#mainRunner === null) { throw error("PCB_VIA_MAIN_SETUP"); }
+    requireOriginalCurrentPcbViaWriteEffect(effect, this, plan); const selected = this.#viaReadContext(plan); const runner = this.#mainRunner;
+    this.#enter(true); this.#viaMainAttempted = true;
+    try {
+      await this.#verify(); selected.current(); const captured = await runner.beginViaMainObservation(); selected.current();
+      const { origin } = captured;
+      const original = (): void => { selected.current(); requireOriginalCurrentPcbViaWriteEffect(effect, this, plan);
+        if (this.#mainRunner !== runner || this.#viaMainOrigin !== origin || this.#viaFailed || this.#viaCleanupOnly) { throw error("PCB_VIA_MAIN_CHANGED"); } };
+      const bindings: CurrentPcbViaMainBindings = Object.freeze({ ...captured.bindings, assertSaveAttempt: (): void => { original(); if (!this.#viaSdkPhases.has("save")) { throw error("PCB_VIA_MAIN_ORIGINAL_SAVE_ATTEMPT"); } } });
+      this.#viaMainOrigin = origin; pcbViaMainOrigins.set(origin, Object.freeze({ owner: this, plan, bindings, assertOriginal: original }));
+      await Reflect.apply(setup, undefined, [origin]); original(); runner.requireViaMainObservationArmed(origin); await this.#verify(); original(); this.#viaMainSetupReady = true; return origin;
+    } catch (caughtError) { this.#viaFailed = true; throw caughtError; } finally { this.#busy = false; }
+  }
+  public requireViaMainObservationReady(plan: CurrentPcbViaWritePlan, origin: CurrentPcbViaMainOrigin): void {
+    requireOriginalCurrentPcbViaMainOrigin(origin, this, plan);
+    if (!this.#viaMainSetupReady || this.#mainRunner === null) { throw error("PCB_VIA_MAIN_SETUP_NOT_READY"); }
+    this.#mainRunner.requireViaMainObservationArmed(origin);
   }
   #viaReadContext(plan: CurrentPcbViaWritePlan): Readonly<{ context: CurrentPcbDiagnosticContext; pipe: CurrentPcbViaWritePipe; pcb: ReturnType<CurrentPcbDiagnosticContext["modelContext"]>; ui: ReturnType<CurrentPcbDiagnosticContext["pcbOpeningContext"]>; current: () => void }> {
     requireViaPlan(this, plan); const context = this.#stagedContext, pipe = this.#pipe, profile = this.#pcbSourceProfile;
@@ -3946,6 +3989,19 @@ class CurrentPcbRetainedOwnerCore {
       await this.#verify(); held.reprove(); if (this.#requireFootprintMain(true) !== original) { throw error("SELECTED_SQL_OWNER_CHANGED"); }
       const reply = await this.#request({ ...wire.request });
       held.reprove(); if (!exact(reply, ["written"]) || reply["written"] !== true || this.#requireFootprintMain(true) !== original) { throw error("SELECTED_SQL_WRITE_REPLY"); }
+      await this.#verify(); held.reprove();
+    } finally { this.#leaveFootprintMain(); }
+  }
+  public async sendViaMainObservation(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner,
+    command: CurrentPcbViaMainCommand, requestId: number): Promise<void> {
+    const held = selectedSqlFenceBootstraps.get(capability); const original = this.#requireFootprintMain(true);
+    const cleanup = command.method === "Debugger.removeBreakpoint" || command.method === "Runtime.releaseObjectGroup";
+    if (this.#purpose !== CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE || held?.owner !== this || held.runner() !== runner || this.#mainRunner !== runner ||
+      requestId !== this.#mainRequestId + 1 || (cleanup ? this.#mainCleanupRequests >= CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.main.cleanup : this.#mainNormalRequests >= CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.main.normal)) { throw error("PCB_VIA_MAIN_ORIGINAL_SENDER"); }
+    held.reprove(); const wire = currentPcbViaMainWire(command, requestId); this.#enterFootprintMain(); this.#mainRequestId += 1;
+    if (cleanup) { this.#mainCleanupRequests += 1; } else { this.#mainNormalRequests += 1; }
+    try { await this.#verify(); held.reprove(); const reply = await this.#request({ ...wire.request });
+      if (!exact(reply, ["written"]) || reply["written"] !== true || this.#requireFootprintMain(true) !== original) { throw error("PCB_VIA_MAIN_WRITE_REPLY"); }
       await this.#verify(); held.reprove();
     } finally { this.#leaveFootprintMain(); }
   }

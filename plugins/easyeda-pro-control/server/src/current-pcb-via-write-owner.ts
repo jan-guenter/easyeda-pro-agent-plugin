@@ -3,4 +3,4 @@
 export { CurrentPcbViaWriteOwner, startCurrentPcbViaWriteOwner, assertOriginalCurrentPcbViaWriteOwner,
   currentPcbViaWriteAllocationOutcome, requireOriginalCurrentPcbViaNativeObservation, requireOriginalCurrentPcbViaSceneObservation,
   requireOriginalCurrentPcbViaWriteStage } from "./current-pcb-diagnostic-owner.ts";
-export type { CurrentPcbViaClockSetup, CurrentPcbViaNativeObservation, CurrentPcbViaSaveWorkerSetup, CurrentPcbViaSceneObservation } from "./current-pcb-diagnostic-owner.ts";
+export type { CurrentPcbViaClockSetup, CurrentPcbViaMainSetup, CurrentPcbViaNativeObservation, CurrentPcbViaSaveWorkerSetup, CurrentPcbViaSceneObservation } from "./current-pcb-diagnostic-owner.ts";

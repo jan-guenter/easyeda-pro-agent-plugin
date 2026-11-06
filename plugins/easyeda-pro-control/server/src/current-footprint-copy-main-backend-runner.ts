@@ -6,6 +6,7 @@ import { performance } from "node:perf_hooks";
 import { setTimeout as delay } from "node:timers/promises";
 import { types } from "node:util";
 import { z } from "zod";
+import { canonicalJson } from "./core.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REGISTRATION_BREAKPOINT_ID as REGISTRATION_ID, CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_APP_URL_PATTERN as URL_PATTERN, decodeCurrentFootprintCopyMainBackendArray,
   decodeCurrentFootprintCopyMainBackendFunction, decodeCurrentFootprintCopyMainBackendNative, validateCurrentFootprintCopyMainBackendCommand } from "./current-footprint-copy-main-backend-contract.ts";
 import type { CurrentFootprintCopyMainBackendCommand as Command } from "./current-footprint-copy-main-backend-contract.ts";
@@ -18,7 +19,7 @@ import { currentFootprintCopyMainBackendObservationSchema } from "./current-foot
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-observation.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_TRANSPORT as PROFILE } from "./current-footprint-copy-main-transport-contract.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS } from "./current-footprint-copy-main-backend-budget.ts";
-import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_CLEANUP_PHASES, CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_REQUESTS,
+import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_CLEANUP_PHASES, CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_SITES, CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_REQUESTS,
   currentFootprintCopyMainRequestAllocatedId, validateCurrentFootprintCopyMainRequestCollectCommand } from "./current-footprint-copy-main-request-protocol.ts";
 import type { CurrentFootprintCopyMainRequestCollectCommand } from "./current-footprint-copy-main-request-protocol.ts";
 import { qualifyCurrentFootprintCopyMainRequestSource, requireCurrentFootprintCopyMainRequestSource } from "./current-footprint-copy-main-request-source.ts";
@@ -68,7 +69,7 @@ import { currentProjectStructureMainGenerationExited, isCurrentProjectStructureM
 import type { CurrentProjectStructureMainCapability } from "./current-project-structure-main-capability.ts";
 
 // oxlint-disable-next-line import/no-cycle -- The actual selected-file native factory creates this runner; no capability issues during module initialization.
-import { requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand } from "./current-selected-file-main-sql-fence-bootstrap.ts";
+import { requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentPcbViaMainCommand } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import type { CurrentSelectedFileMainSqlFenceBootstrap } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SQL_SOURCE, qualifyCurrentSelectedFileMainSqlFenceSource } from "./current-selected-file-main-sql-fence-source.ts";
 import type { CurrentSelectedFileMainSqlFenceSite } from "./current-selected-file-main-sql-fence-source.ts";
@@ -80,6 +81,10 @@ import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CALL_FLAGS as SQL_CALL, CURRENT_SE
   validateCurrentSelectedFileMainSqlFenceCommand } from "./current-selected-file-main-sql-fence-protocol.ts";
 import type { CurrentSelectedFileMainSqlFenceCommand } from "./current-selected-file-main-sql-fence-protocol.ts";
 import { decodeCurrentSelectedFileMainSqlFenceNative, decodeCurrentSelectedFileMainSqlFenceNativeArray } from "./current-selected-file-main-sql-fence-replies.ts";
+import { CURRENT_PCB_VIA_MAIN_REQUESTS as VIA_REQUESTS, validateCurrentPcbViaMainCommand } from "./current-pcb-via-main-protocol.ts";
+import type { CurrentPcbViaMainCommand } from "./current-pcb-via-main-protocol.ts";
+import type { CurrentPcbViaMainBackendBindings, CurrentPcbViaMainEvent, CurrentPcbViaMainOrigin } from "./current-pcb-via-main-origin.ts";
+import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 
 type MainCapability = CurrentFootprintCombinedMainCapability | CurrentFootprintForwardExecutionMainCapability | CurrentProjectStructureMainCapability;
 function mainCapability(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
@@ -305,6 +310,15 @@ export class CurrentFootprintCopyMainBackendRunner {
   #sqlCapture: string | null = null;
   #sqlReady = false;
   #sqlHeld: Pause | null = null;
+  #viaMainOrigin: CurrentPcbViaMainOrigin | null = null;
+  readonly #viaMainEvents: CurrentPcbViaMainEvent[] = [];
+  readonly #viaMainPoints = new Map<string, z.infer<typeof location>>();
+  #viaMainArming: z.infer<typeof location> | null = null;
+  #viaMainPoll: Promise<void> | null = null;
+  #viaMainNormal = 0;
+  #viaMainCleanup = 0;
+  #viaMainGroupReleased = false;
+  readonly #viaMainFrames = new Set<string>();
   #sqlMutationPauses = 0;
   readonly #sqlApprovedConfigurations = new WeakSet<Pause>();
   readonly #sqlConfigurationRecords: Readonly<Record<string, unknown>>[] = [];
@@ -458,6 +472,10 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(matches, "REGISTRATION_LOCATION");
   }
   #resolve(record: Resolved): void {
+    if (this.#viaMainOrigin !== null && !this.#sqlBreakpoints.has(record.breakpointId)) {
+      const expected = this.#viaMainPoints.get(record.breakpointId) ?? this.#viaMainArming;
+      need(expected !== null && expected !== undefined && canonicalJson(expected) === canonicalJson(record.location), "VIA_MAIN_BREAKPOINT_RESOLUTION"); return;
+    }
     if (this.#selectedSqlBootstrap !== null && record.breakpointId !== REGISTRATION_ID) {
       const site = this.#sqlBreakpoints.get(record.breakpointId) ?? this.#sqlArming;
       need(site !== null && site !== undefined, "SELECTED_SQL_FOREIGN_BREAKPOINT"); this.#sqlLocation(site, record.location);
@@ -471,6 +489,21 @@ export class CurrentFootprintCopyMainBackendRunner {
   #event(method: string, input: unknown): void {
     if (this.#headAgeBootstrapCapability !== null) { requireCurrentFootprintHeadAgeBootstrapCapability(this.#headAgeBootstrapCapability, this.#transport); }
     this.#events += 1; need(this.#events <= 4096, "EVENT_BOUND");
+    if (this.#viaMainOrigin !== null && (method === "Debugger.paused" || method === "Debugger.resumed")) {
+      need(this.#viaMainEvents.length < 64, "VIA_MAIN_EVENT_BOUND");
+      if (method === "Debugger.paused") {
+        need(this.#pause === null || this.#pause.resumed, "VIA_MAIN_OVERLAPPING_PAUSE");
+        const event = pauseSchema.parse(input), first = event.callFrames[0]; need(first !== undefined && event.reason === "other" && event.hitBreakpoints?.length === 1, "VIA_MAIN_PAUSE");
+        const id = event.hitBreakpoints[0]; need(id !== undefined, "VIA_MAIN_POINT"); const sqlSite = this.#sqlBreakpoints.get(id);
+        const expected = sqlSite === undefined ? this.#viaMainPoints.get(id) : null;
+        if (sqlSite === undefined) { need(expected !== undefined && expected !== null && canonicalJson(expected) === canonicalJson(first.location), "VIA_MAIN_FOREIGN_PAUSE"); }
+        else { this.#sqlLocation(sqlSite, first.location); }
+        this.#pause = { frameId: first.callFrameId, location: first.location, registration: false, ...(sqlSite === undefined ? {} : { sqlSite }), resumeAttempted: false, resumed: false };
+        this.#viaMainFrames.clear(); for (const call of event.callFrames) { this.#viaMainFrames.add(call.callFrameId); }
+        if (sqlSite !== undefined) { this.#sqlHeld = this.#pause; }
+      } else { empty.parse(input); need(this.#pause?.resumeAttempted === true && !this.#pause.resumed, "VIA_MAIN_UNRESERVED_RESUME"); this.#pause.resumed = true; }
+      this.#viaMainEvents.push(Object.freeze({ method, params: freezeDeep(input) })); return;
+    }
     if ((this.#originActive || this.#structureActive) && (method === "Debugger.paused" || method === "Debugger.resumed")) {
       need(this.#originEvents.length < 64, "REQUEST_EVENT_BOUND");
       if (method === "Debugger.paused") { if (this.#originPauseActive) { this.#originUncertain = true; } this.#originPauseActive = true; }
@@ -533,6 +566,12 @@ export class CurrentFootprintCopyMainBackendRunner {
     const event = z.object({ method: z.string().max(128), params: z.unknown() }).strict().parse(value); this.#event(event.method, event.params);
   }
   async #pump(cleanup = false): Promise<void> {
+    if (this.#viaMainOrigin === null) { await this.#pumpOriginal(cleanup); return; }
+    if (this.#viaMainPoll !== null) { await this.#viaMainPoll; return; }
+    const pending = this.#pumpOriginal(cleanup); this.#viaMainPoll = pending;
+    try { await pending; } finally { if (this.#viaMainPoll === pending) { this.#viaMainPoll = null; } }
+  }
+  async #pumpOriginal(cleanup: boolean): Promise<void> {
     await this.#current(cleanup);
     if (this.#structureAllocation !== null) {
       if (isCurrentFootprintForwardExecutionMainCapability(this.#originCapability)) {
@@ -548,6 +587,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     }
     const raw = isCurrentFootprintForwardExecutionMainCapability(this.#originCapability) ?
       await pollCurrentFootprintForwardExecutionMain(this.#originCapability, this, cleanup) : await this.#transport.poll(cleanup);
+    if (this.#viaMainOrigin !== null) { this.#chunk(raw); await this.#current(cleanup); if (raw === "") { await delay(10); } return; }
     await this.#current(cleanup); this.#chunk(raw); if (raw === "") { await delay(10); }
   }
   /** Register only this pending allocation's original byte receiver. A lost
@@ -610,9 +650,11 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Consume one fixed request number and retain its sole pending reply.
    * Head-age exceptions are captured before success decoding; cleanup keeps
    * its own counter and cannot repeat a consumed normal request. */
-  async #request(input: Command | CurrentSelectedFileMainSqlFenceCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand | CurrentProjectStructureMainCommand,
+  async #request(input: Command | CurrentSelectedFileMainSqlFenceCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand | CurrentProjectStructureMainCommand | CurrentPcbViaMainCommand,
     cleanup = false, retainAllocationReply?: (reply: unknown) => void): Promise<unknown> {
     this.#phase = input.phase; await this.#current(cleanup);
+    if (this.#viaMainOrigin !== null && this.#viaMainPoll !== null) { await this.#viaMainPoll; await this.#current(cleanup); }
+    const via = input.phase.startsWith("via-main-");
     const sqlFence = input.phase.startsWith("sql-fence-");
     const collection = input.phase.startsWith("request-");
     const completion = input.phase.startsWith("completion-");
@@ -622,7 +664,8 @@ export class CurrentFootprintCopyMainBackendRunner {
         completion && (input.phase === "completion-source-arm" || input.phase === "completion-callback-arm"));
     need(retainAllocationReply === undefined || !cleanup && (structure && input.phase === "structure-main-arm" || forwardAllocation), "STRUCTURE_ALLOCATION_CALLBACK");
     let cleanupCommand: boolean;
-    if (completion || structure) { cleanupCommand = ["Debugger.resume", "Debugger.removeBreakpoint", "Runtime.releaseObjectGroup"].includes(input.method); }
+    if (via) { cleanupCommand = cleanup; }
+    else if (completion || structure) { cleanupCommand = ["Debugger.resume", "Debugger.removeBreakpoint", "Runtime.releaseObjectGroup"].includes(input.method); }
     else if (collection) { cleanupCommand = (CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_CLEANUP_PHASES as readonly string[]).includes(input.phase); }
     else { cleanupCommand = !sqlFence && ["resume", "remove", "release"].includes(input.phase); }
     const normalMaximum = this.#structureAttempted ? CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.observeNormal + CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.originIssueNormal + CURRENT_PROJECT_STRUCTURE_MAIN_REQUESTS.normal : CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.observeNormal + CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.originIssueNormal + CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_REQUESTS.normal +
@@ -631,14 +674,20 @@ export class CurrentFootprintCopyMainBackendRunner {
       (this.#completionToken === null ? 0 : CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS.cleanup - 2);
     const initialMaximum = this.#selectedSqlBootstrap === null ? 64 : 72 + SQL_REQUESTS.normal;
     const requestMaximum = cleanup && this.#selectedSqlBootstrap === null ? 72 : initialMaximum;
-    need(this.#pendingId === null && (this.#originAttempted || this.#structureAttempted ? this.#requests < normalMaximum + cleanupMaximum &&
-      (cleanupCommand ? this.#cleanupRequests < cleanupMaximum : this.#normalRequests < normalMaximum) : this.#requests < requestMaximum), "REQUEST_BOUND");
+    let withinBound: boolean;
+    if (via) { withinBound = this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null && this.#requests < initialMaximum + VIA_REQUESTS.total; }
+    else if (this.#originAttempted || this.#structureAttempted) { withinBound = this.#requests < normalMaximum + cleanupMaximum && (cleanupCommand ? this.#cleanupRequests < cleanupMaximum : this.#normalRequests < normalMaximum); }
+    else { withinBound = this.#requests < requestMaximum; }
+    need(this.#pendingId === null && withinBound, "REQUEST_BOUND");
     this.#requests += 1; if (cleanupCommand) { this.#cleanupRequests += 1; } else { this.#normalRequests += 1; }
     const id = this.#requests; this.#pendingId = id; this.#replySeen = false; this.#reply = null;
     const allocation = retainAllocationReply === undefined ? null : { id, retain: retainAllocationReply, seen: false, stopped: false };
     if (allocation !== null) { need(this.#structureAllocation === null, "STRUCTURE_ALLOCATION_PENDING"); this.#structureAllocation = allocation; }
     try {
-    if (sqlFence) {
+    if (via) {
+      need(this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null, "VIA_MAIN_ORIGINAL_BOOTSTRAP");
+      await sendOriginalCurrentPcbViaMainCommand(this.#selectedSqlBootstrap, this, validateCurrentPcbViaMainCommand(input), id);
+    } else if (sqlFence) {
       need(this.#selectedSqlBootstrap !== null, "SELECTED_SQL_ORIGINAL_BOOTSTRAP");
       await sendCurrentSelectedFileMainSqlFenceCommand(this.#selectedSqlBootstrap, this, validateCurrentSelectedFileMainSqlFenceCommand(input), id);
     } else if (structure) {
@@ -812,6 +861,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Same original cursor, no second inspector. A held write remains paused;
    * this method never treats its data as permission to continue native SQL. */
   public async pumpSelectedSqlFence(): Promise<void> {
+    if (this.#viaMainOrigin !== null) { if (!this.#busy) { await this.#pump(); } return; }
     need(this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#packet !== null && !this.#busy && !this.#originActive && !this.#structureActive, "SELECTED_SQL_PUMP_OWNER");
     this.#busy = true; try {
       await this.#current(); if (this.#sqlHeld !== null) { return; } await this.#pump();
@@ -827,6 +877,58 @@ export class CurrentFootprintCopyMainBackendRunner {
       ready: this.#sqlReady, conditionalBreakpoints: Math.max(0, this.#sqlBreakpoints.size - 2), nativePrimitivesReplaced: false,
       heldSite: this.#sqlHeld?.sqlSite ?? null, mutationsResumed: 0, mutationGrantAvailable: false,
       initializerConfigurations: Object.freeze([...this.#sqlConfigurationRecords]), initializerConfigurationAutomaticallyAdmitted: true, completeSqlEffectProven: false, executionAuthorized: false, saveAuthorized: false });
+  }
+
+  /** Transfer this original selected-file cursor into a Via-only observer.
+   * The persistent SQL fence remains installed, and this vocabulary has no
+   * resume at all. A later per-call native grant must be separately added. */
+  public async beginViaMainObservation(): Promise<Readonly<{ origin: CurrentPcbViaMainOrigin; bindings: CurrentPcbViaMainBackendBindings }>> {
+    need(this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#packet !== null && issued.get(this.#packet) === this &&
+      this.#viaMainOrigin === null && !this.#busy && !this.#originAttempted && !this.#structureAttempted && this.#sqlHeld === null &&
+      this.#pause?.resumed === true && this.#appScriptId !== null && this.#appSource !== null && this.#sourceArray !== null && this.#retainedArray !== null, "VIA_MAIN_ORIGINAL_CURSOR");
+    const driver = [...this.#sqlBreakpoints].find(([, site]) => site === "driver")?.[0]; need(driver !== undefined, "VIA_MAIN_PERSISTENT_DRIVER");
+    this.#busy = true;
+    try {
+      const source = qualifyCurrentFootprintCopyMainRequestSource(this.#appSource);
+      const origin: CurrentPcbViaMainOrigin = Object.freeze({ profile: "private.current-pcb-via-main-origin.v1" }); this.#viaMainOrigin = origin; this.#viaMainNormal = 1;
+      const reproof = await this.#request({ phase: "via-main-construction-require", method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: this.#sourceArray,
+        functionDeclaration: CALLS.require.program, arguments: [{ objectId: this.#retainedArray }], returnByValue: true } });
+      z.object({ result: z.object({ type: z.literal("boolean"), value: z.literal(true) }).strict() }).strict().parse(reproof);
+      const same = (): void => { need(this.#viaMainOrigin === origin && this.#selectedSqlBootstrap !== null && !this.#failed && !this.#viaMainGroupReleased, "VIA_MAIN_ORIGINAL"); requireCurrentFootprintCopyMainRequestSource(source); this.#same(false); };
+      const bindings: CurrentPcbViaMainBackendBindings = Object.freeze({ scriptId: this.#appScriptId, constructionObjectId: this.#retainedArray, source, persistentDriverBreakpointId: driver,
+        assertCurrent: async (): Promise<void> => { same(); await this.#current(); same(); }, fail: (): void => { this.#fail(new Error("VIA_MAIN_OBSERVER_FAILED")); },
+        request: async (input: CurrentPcbViaMainCommand, cleanup: boolean): Promise<unknown> => {
+          same(); need(!this.#busy, "VIA_MAIN_COMMAND_BUSY"); const command = validateCurrentPcbViaMainCommand(input);
+          const removing = command.method === "Debugger.removeBreakpoint"; const releasing = command.method === "Runtime.releaseObjectGroup";
+          need(cleanup === (removing || releasing), "VIA_MAIN_COMMAND_LANE");
+          if (cleanup) { this.#viaMainCleanup += 1; need(this.#viaMainCleanup <= VIA_REQUESTS.cleanup && (this.#pause === null || this.#pause.resumed), "VIA_MAIN_CLEANUP_HELD"); }
+          else { this.#viaMainNormal += 1; need(this.#viaMainNormal <= VIA_REQUESTS.normal, "VIA_MAIN_NORMAL_BOUND"); }
+          if (command.method === "Debugger.evaluateOnCallFrame") { need(typeof command.params["callFrameId"] === "string" && this.#viaMainFrames.has(command.params["callFrameId"]) && this.#pause?.resumed === false, "VIA_MAIN_FRAME_OWNER"); }
+          if (removing) { need(typeof command.params["breakpointId"] === "string" && this.#viaMainPoints.has(command.params["breakpointId"]), "VIA_MAIN_PERSISTENT_POINT"); }
+          let arming: z.infer<typeof location> | null = null;
+          if (command.method === "Debugger.setBreakpoint") { arming = location.parse(command.params["location"]); need(arming.scriptId === this.#appScriptId, "VIA_MAIN_SOURCE_SCRIPT"); }
+          this.#busy = true; this.#viaMainArming = arming;
+          try {
+            const raw = await this.#request(command, cleanup); const reply = captureCurrentPcbStringClockReply(raw).value;
+            if (arming !== null) { const allocated = z.object({ breakpointId: handle, actualLocation: location }).strict().parse(reply);
+              need(canonicalJson(allocated.actualLocation) === canonicalJson(arming) && !this.#sqlBreakpoints.has(allocated.breakpointId) && !this.#viaMainPoints.has(allocated.breakpointId), "VIA_MAIN_ARM_REPLY"); this.#viaMainPoints.set(allocated.breakpointId, arming); }
+            if (removing) { empty.parse(reply); need(typeof command.params["breakpointId"] === "string", "VIA_MAIN_POINT"); this.#viaMainPoints.delete(command.params["breakpointId"]); }
+            if (releasing) { empty.parse(reply); } same(); if (releasing) { this.#viaMainGroupReleased = true; } return reply;
+          } catch (error) { this.#fail(error); throw error; } finally { this.#viaMainArming = null; this.#busy = false; }
+        }, nextEvent: async (): Promise<CurrentPcbViaMainEvent> => {
+          same(); need(!this.#busy, "VIA_MAIN_EVENT_BUSY"); this.#busy = true; const started = performance.now();
+          try { while (this.#viaMainEvents.length === 0) { need(performance.now() - started < 20_000, "VIA_MAIN_EVENT_DEADLINE"); await this.#pump(); same(); }
+            const event = this.#viaMainEvents.shift(); need(event !== undefined, "VIA_MAIN_EVENT"); return event;
+          } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
+        } });
+      return Object.freeze({ origin, bindings });
+    } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
+  }
+  public requireViaMainObservationArmed(origin: CurrentPcbViaMainOrigin): void {
+    need(this.#viaMainOrigin === origin && !this.#busy && !this.#failed && !this.#viaMainGroupReleased && this.#viaMainPoints.size === 3 && this.#viaMainArming === null, "VIA_MAIN_SETUP_UNSETTLED");
+    for (const role of ["context", "controller", "editHead"] as const) {
+      const expected = CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_SITES[role]; need([...this.#viaMainPoints.values()].some(point => point.scriptId === this.#appScriptId && point.lineNumber === expected.lineNumber && point.columnNumber === expected.columnNumber), "VIA_MAIN_SETUP_POINTS");
+    }
   }
 
   async #reprove(): Promise<void> {

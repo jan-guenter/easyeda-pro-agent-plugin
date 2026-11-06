@@ -39,7 +39,7 @@ void test("new SDK wire contains fixed scalars only and cannot be spent by relea
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, functionDeclaration: `${CURRENT_PCB_VIA_WRITE_FUNCTION}\n` } })));
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, awaitPromise: false } })));
   }
-  assert.equal(PROFILE.renderer.total, 837); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [288, 8, 296]);
+  assert.equal(PROFILE.renderer.total, 837); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [311, 12, 323]);
 });
 void test("retained SDK methods require exact original installed function locations, names and arity", () => {
   for (const kind of ["create", "save"] as const) { assert.equal(decodeCurrentPcbViaSdkMethod(metadata(kind), kind), "api"); }
@@ -75,6 +75,7 @@ void test("matching bootstrap and owner JSON cannot mint original native ownersh
   const owner = await import("../src/current-pcb-via-write-owner.ts");
   const central = await import("../src/current-pcb-diagnostic-owner.ts");
   assert.throws(() => Reflect.apply(central.requireOriginalCurrentPcbViaSaveWorkerOrigin, undefined, [{ profile: "private.current-pcb-via-save-worker-origin.v1" }, {}, {}]), /SAVE_WORKER_ORIGINAL/u);
+  assert.throws(() => Reflect.apply(central.requireOriginalCurrentPcbViaMainOrigin, undefined, [{ profile: "private.current-pcb-via-main-origin.v1" }, {}, {}]), /MAIN_ORIGINAL/u);
   const forged: unknown = Object.create(owner.CurrentPcbViaWriteOwner.prototype);
   // Deliberate untyped runtime forgery; no constructor or native process runs.
   assert.throws(() => Reflect.apply(owner.assertOriginalCurrentPcbViaWriteOwner, undefined, [forged]));

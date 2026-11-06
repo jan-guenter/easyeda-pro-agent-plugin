@@ -1,6 +1,7 @@
 /** Distinct original Via birth. This generator changes only its supplied
  * source string; root owns helper regeneration and installation pins. */
 import { applyCurrentPcbViaClockNativeFragment } from "./current-pcb-via-clock-native-fragment.ts";
+import { applyCurrentPcbViaMainNativeFragment } from "./current-pcb-via-main-native-fragment.ts";
 import { applyCurrentPcbViaWorkerNativeFragment } from "./current-pcb-via-worker-native-fragment.ts";
 import { CURRENT_PCB_VIA_WRITE_FUNCTION } from "./current-pcb-via-write-program.ts";
 import { CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE as PROFILE } from "./current-pcb-via-write-native-profile.ts";
@@ -92,5 +93,5 @@ export function applyCurrentPcbViaWriteNativeFragment(input: string): string {
   const start = source.indexOf(begin), stop = source.indexOf(end);
   if (start !== -1 || stop !== -1) { if (start === -1 || stop < start || source.includes(begin, start + begin.length) || source.includes(end, stop + end.length)) { throw new Error("PCB_VIA_NATIVE_MARKERS"); } source = source.slice(0, start) + native() + source.slice(stop + end.length); }
   else { source = one(source, "\n'@\n", `\n${native()}\n'@\n`); }
-  return applyCurrentPcbViaClockNativeFragment(applyCurrentPcbViaWorkerNativeFragment(source));
+  return applyCurrentPcbViaMainNativeFragment(applyCurrentPcbViaClockNativeFragment(applyCurrentPcbViaWorkerNativeFragment(source)));
 }
