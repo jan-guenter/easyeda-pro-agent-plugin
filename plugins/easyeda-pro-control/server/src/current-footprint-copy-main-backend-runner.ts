@@ -72,7 +72,7 @@ import { currentProjectStructureMainGenerationExited, isCurrentProjectStructureM
 import type { CurrentProjectStructureMainCapability } from "./current-project-structure-main-capability.ts";
 
 // oxlint-disable-next-line import/no-cycle -- The actual selected-file native factory creates this runner; no capability issues during module initialization.
-import { requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentPcbViaMainBegin, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainHistory, sendOriginalCurrentPcbViaMainStep, sendOriginalCurrentPcbViaMainStructure } from "./current-selected-file-main-sql-fence-bootstrap.ts";
+import { prepareOriginalCurrentSelectedFileStartupActors, requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentPcbViaMainBegin, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainHistory, sendOriginalCurrentPcbViaMainStep, sendOriginalCurrentPcbViaMainStructure } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import type { CurrentSelectedFileMainSqlFenceBootstrap } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SQL_SOURCE, qualifyCurrentSelectedFileMainSqlFenceSource } from "./current-selected-file-main-sql-fence-source.ts";
 import type { CurrentSelectedFileMainSqlFenceSite } from "./current-selected-file-main-sql-fence-source.ts";
@@ -899,7 +899,9 @@ export class CurrentFootprintCopyMainBackendRunner {
       }
       this.#metadataRole = null;
       this.#driverCallbackObjectId = ids[6] ?? null;
-      await this.#reprove(); await this.#remove(); await this.#resume(registration); await this.#current();
+      await this.#reprove();
+      if (this.#selectedSqlBootstrap !== null) { await prepareOriginalCurrentSelectedFileStartupActors(this.#selectedSqlBootstrap, this); await this.#current(); }
+      await this.#remove(); await this.#resume(registration); await this.#current();
       this.#packet = Object.freeze(currentFootprintCopyMainBackendObservationSchema.parse({ profile: "private.current-footprint-copy-main-backend-construction.v1",
         originalMainTransportRetained: true, runtimeAppSourceQualified: true, runtimeAppSourceSha256: SOURCE.sha256, initialContinuationCount: this.#initialContinuationCount,
         registrationBreakpointArmedBeforeInitialContinuation: true, actualRegistrationLocationVerified: true, originalProtocolCallbackAndBackendRetained: true,
@@ -907,6 +909,12 @@ export class CurrentFootprintCopyMainBackendRunner {
         protocolRegistrationObserved: false, requestContextRetained: false, actualActorClockInvocationObserved: false, projectSqlInvocationObserved: false,
         responderExclusivityProven: false, executionAuthorized: false })); issued.set(this.#packet, this); return this.#packet;
     } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
+  }
+  public requireOriginalStartupActorPause(capability: CurrentSelectedFileMainSqlFenceBootstrap): void {
+    this.#same(false); need(this.#selectedSqlBootstrap === capability && this.#busy && this.#sqlReady && this.#source !== null && this.#appSource !== null &&
+      this.#retainedArray !== null && this.#sourceArray !== null && this.#packet === null && this.#metadataRole === null &&
+      this.#pause?.registration === true && !this.#pause.resumeAttempted && !this.#pause.resumed && !this.#removeAttempted,
+    "SAVED_READBACK_EARLY_ACTOR_STARTUP_PAUSE");
   }
   #sqlLocation(site: CurrentSelectedFileMainSqlFenceSite, actual: z.infer<typeof location>): void {
     const expected = SQL_SOURCE.sites[site]; need(this.#scripts.has(actual.scriptId) && actual.lineNumber === expected.lineNumber &&

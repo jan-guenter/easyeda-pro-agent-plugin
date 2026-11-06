@@ -53,3 +53,21 @@ export function currentPcbViaSavedReadbackActorNativeFrame(chunk: Buffer): Reado
   if (value === null || typeof value !== "object" || !("id" in value) || typeof value.id !== "number" || chunk.toString("utf8") !== `${JSON.stringify(currentPcbViaSavedReadbackActorWire(value.id))}\0`) { throw new Error("SAVED_READBACK_ACTOR_WIRE"); }
   return Object.freeze({ action: "saved-readback-actors", requestId: value.id });
 }
+
+export type CurrentPcbViaSavedEarlyActorStage = "before" | "arm" | "after";
+export interface CurrentPcbViaSavedEarlyActorWire {
+  readonly id: number; readonly method: "Target.getTargets" | "Target.setAutoAttach";
+  readonly params?: typeof CURRENT_PCB_VIA_SAVED_READBACK_ACTOR_PARAMS;
+  readonly savedReadbackEarlyActors: CurrentPcbViaSavedEarlyActorStage;
+}
+export function currentPcbViaSavedEarlyActorWire(id: number, stage: CurrentPcbViaSavedEarlyActorStage): CurrentPcbViaSavedEarlyActorWire {
+  if (id !== ["before", "arm", "after"].indexOf(stage) + 1) { throw new Error("SAVED_READBACK_EARLY_ACTOR_WIRE"); }
+  return Object.freeze(stage === "arm" ? { id, method: "Target.setAutoAttach", params: CURRENT_PCB_VIA_SAVED_READBACK_ACTOR_PARAMS, savedReadbackEarlyActors: stage } :
+    { id, method: "Target.getTargets", savedReadbackEarlyActors: stage });
+}
+export function currentPcbViaSavedEarlyActorNativeFrame(chunk: Buffer, stage: CurrentPcbViaSavedEarlyActorStage): Readonly<Record<string, unknown>> {
+  if (chunk.length > 1024 || chunk.at(-1) !== 0) { throw new Error("SAVED_READBACK_EARLY_ACTOR_WIRE"); }
+  const id = ["before", "arm", "after"].indexOf(stage) + 1;
+  if (chunk.toString("utf8") !== `${JSON.stringify(currentPcbViaSavedEarlyActorWire(id, stage))}\0`) { throw new Error("SAVED_READBACK_EARLY_ACTOR_WIRE"); }
+  return Object.freeze({ action: "saved-readback-early-actors", requestId: id, earlyStage: stage });
+}

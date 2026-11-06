@@ -142,6 +142,9 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
     "./current-selected-file-main-sql-fence-source.ts": { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE: SOURCE,
       qualifyCurrentSelectedFileMainSqlFenceSource: (source: unknown): void => { assert.equal(source, "synthetic-complete-app-source"); } },
     "./current-selected-file-main-sql-fence-bootstrap.ts": {
+      prepareOriginalCurrentSelectedFileStartupActors: (token: unknown, original: CurrentFootprintCopyMainBackendRunner): Promise<void> => {
+        assert.equal(token, capability); assert.equal(original, runner); original.requireOriginalStartupActorPause(capability); phases.push("startup-actors"); return Promise.resolve();
+      },
       requireCurrentSelectedFileMainSqlFenceBootstrap: (token: unknown, original: unknown): string => { assert.equal(token, capability); assert.equal(original, transport); return String.raw`C:\Synthetic\fixture.eprj2`; },
       sendCurrentSelectedFileMainSqlFenceCommand: (token: unknown, original: unknown, command: SqlCommand, id: number): Promise<void> => {
         assert.equal(token, capability); assert.equal(original, runner); return sqlSend(command, id);

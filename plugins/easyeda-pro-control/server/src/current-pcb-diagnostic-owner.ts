@@ -45,7 +45,9 @@ import { CurrentPcbViaSavedCacheLedger } from "./current-pcb-via-saved-cache-led
 import type { CurrentPcbViaSavedCachePacket, CurrentPcbViaSavedCachePlan, CurrentPcbViaSavedCacheSnapshot } from "./current-pcb-via-saved-cache-ledger.ts";
 import type { CurrentPcbViaSavedCacheCommand } from "./current-pcb-via-saved-cache-protocol.ts";
 import type { CurrentPcbViaSavedCacheBindings, CurrentPcbViaSavedCacheOrigin } from "./current-pcb-via-saved-cache-origin.ts";
-import { currentPcbViaSavedCacheNativeFrame, currentPcbViaSavedReadbackActorNativeFrame, currentPcbViaSavedReadbackParentNativeFrame } from "./current-pcb-via-saved-cache-wire.ts";
+import { currentPcbViaSavedCacheNativeFrame, currentPcbViaSavedEarlyActorNativeFrame, currentPcbViaSavedReadbackActorNativeFrame, currentPcbViaSavedReadbackParentNativeFrame } from "./current-pcb-via-saved-cache-wire.ts";
+import type { CurrentPcbViaSavedEarlyActorStage } from "./current-pcb-via-saved-cache-wire.ts";
+import { CurrentPcbViaSavedEarlyActors } from "./current-pcb-via-saved-early-actors.ts";
 import { CURRENT_PCB_VIA_SAVED_READBACK_PROFILE, CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE } from "./current-pcb-via-saved-readback-profile.ts";
 import type { CurrentPcbViaWriteClosedCheckpoint, requireOriginalCurrentPcbViaWriteClosedCheckpoint as RequireSavedReadbackCheckpoint, verifyCurrentPcbViaWriteClosedCheckpoint as VerifySavedReadbackCheckpoint } from "./current-pcb-via-write-closed-checkpoint.ts";
 import type { CurrentPcbViaSavedLoadPlan, prepareCurrentPcbViaSavedLoadPlan as PrepareSavedLoadPlan, requireOriginalCurrentPcbViaSavedLoadPlan as RequireSavedLoadPlan } from "./current-pcb-via-saved-load-plan.ts";
@@ -816,6 +818,7 @@ const savedReadbackLoadPreparations = new WeakMap<object, Readonly<{ owner: Curr
   absence: CurrentPcbViaSavedCacheAbsence; ledger: CurrentPcbViaSavedCacheInvalidationLedger; data: CurrentPcbViaSavedCacheLoadingData; bindings: CurrentPcbViaSavedLoadPreparationBindings }>>();
 const savedReadbackInvalidationDescriptors = Object.getOwnPropertyDescriptors(CurrentPcbViaSavedCacheInvalidationLedger.prototype);
 const savedReadbackMetadataLedgerDescriptors = Object.getOwnPropertyDescriptors(CurrentPcbViaSavedCacheMetadataLedger.prototype);
+const savedReadbackEarlyActorDescriptors = Object.getOwnPropertyDescriptors(CurrentPcbViaSavedEarlyActors.prototype);
 const savedReadbackCacheLedgerDescriptors = Object.getOwnPropertyDescriptors(CurrentPcbViaSavedCacheLedger.prototype);
 
 function requireSavedReadbackPreparation(allocation: PcbViaSavedReadbackAllocation): void {
@@ -942,6 +945,16 @@ export function requireOriginalCurrentPcbViaSaveWorkerOrigin(origin: CurrentPcbV
   requireViaPlan(owner, plan); original.assertOriginal(); return original.bindings;
 }
 const selectedSqlFenceBootstraps = new WeakMap<object, Readonly<{ transport: object; runner: () => CurrentFootprintCopyMainBackendRunner | null; owner: CurrentFootprintInverseNativeOwner | CurrentPcbViaWriteOwner | CurrentSchematicDisplayWriteOwner | CurrentPcbViaSavedReadbackOwner; path: string; reprove: () => void }>>();
+/** Only the original selected bootstrap can arm its saved-reader actor hold. */
+export async function prepareOriginalCurrentSelectedFileStartupActors(capability: CurrentSelectedFileMainSqlFenceBootstrap,
+  runner: CurrentFootprintCopyMainBackendRunner): Promise<void> {
+  const original = selectedSqlFenceBootstraps.get(capability);
+  if (original === undefined || original.runner() !== runner) { throw error("SAVED_READBACK_EARLY_ACTOR_ORIGINAL_BOOTSTRAP"); }
+  original.reprove(); runner.requireOriginalStartupActorPause(capability);
+  // oxlint-disable-next-line eslint/no-use-before-define -- Called after the actual native factory creates its dedicated owner and runner.
+  if (original.owner instanceof CurrentPcbViaSavedReadbackOwner) { await original.owner.prepareSavedReadbackEarlyActors(capability, runner); }
+  original.reprove(); runner.requireOriginalStartupActorPause(capability);
+}
 export function requireCurrentSelectedFileMainSqlFenceBootstrap(capability: CurrentSelectedFileMainSqlFenceBootstrap, transport: object): string {
   if (types.isProxy(capability) || types.isProxy(transport)) { throw error("SELECTED_SQL_BOOTSTRAP"); }
   const original = selectedSqlFenceBootstraps.get(capability);
@@ -1505,6 +1518,9 @@ class CurrentPcbRetainedOwnerCore {
   readonly #savedReadbackPrepared: CurrentPcbViaWriteClosedCheckpoint | null;
   #savedReadbackStarted = false; #savedReadbackAborted = false;
   #savedReadbackActorsPending = false; #savedReadbackActorsArmed = false;
+  #savedReadbackEarlyActorStage: CurrentPcbViaSavedEarlyActorStage | null = null;
+  #savedReadbackEarlyActorAttempted = false;
+  #savedReadbackEarlyActors: CurrentPcbViaSavedEarlyActors | null = null;
   #savedReadbackCacheAttempted = false; #savedReadbackPreflightPending = false; #savedReadbackParentPending = false; #savedReadbackParentArmed = false;
   #savedReadbackMetadataPlan: CurrentPcbViaSavedCacheMetadataPlan | null = null;
   #savedReadbackCache: SavedReadbackCacheHeld | null = null; #savedReadbackCachePlan: CurrentPcbViaSavedCachePlan | null = null;
@@ -4107,7 +4123,10 @@ class CurrentPcbRetainedOwnerCore {
     context.assertCurrent();
     const targets = await this.#transfer(() => this.#pipe.getTargets());
     context.observeTarget(targets);
-    if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && diagnosticTargetInventory(targets).some(item => (item["type"] === "worker" || item["type"] === "shared_worker" || item["type"] === "service_worker"))) { throw error("SAVED_READBACK_CACHE_WORKER_ACTOR_EXISTS"); }
+    if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) {
+      if (this.#savedReadbackEarlyActors === null) { throw error("SAVED_READBACK_EARLY_ACTORS_REQUIRED"); }
+      this.#savedReadbackEarlyActors.inventory(targets);
+    }
     context.observeFrames(await this.#transfer(() => this.#pipe.getFrameTree()));
     context.assertCurrent(); this.#workerContext?.assertCurrent();
     if (this.#stringPurpose) { this.#workerContext?.observeTargets(targets); }
@@ -6571,9 +6590,9 @@ class CurrentPcbRetainedOwnerCore {
       if (this.#stagedContext !== context || this.#pipe !== pipe || this.#closeConsumed || this.#savedReadbackAborted || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true) { throw error("SAVED_READBACK_CACHE_ORIGINAL_CONTEXT"); } };
     try {
       await this.#verifyInstallation(); current(); await allocation.verifyPrepared(allocation.prepared); current();
-      this.#savedReadbackActorsPending = true;
-      const actors = await this.#transfer(() => pipe.armSavedReadbackCacheActors()); current(); this.#savedReadbackActorsPending = false;
-      if (!exact(actors, [])) { throw error("SAVED_READBACK_ACTORS_REPLY"); } this.#savedReadbackActorsArmed = true;
+      const early = this.#savedReadbackEarlyActors;
+      if (early === null || !this.#savedReadbackActorsArmed) { throw error("SAVED_READBACK_EARLY_ACTORS_REQUIRED"); }
+      early.assertSealed(); early.parent(context.modelContext().sessionId);
       this.#savedReadbackParentPending = true;
       const armed = await this.#transfer(() => pipe.armSavedReadbackCacheParent()); current();
       this.#savedReadbackParentPending = false;
@@ -6587,6 +6606,7 @@ class CurrentPcbRetainedOwnerCore {
       this.#savedReadbackPreflightPending = false;
       const preflight = decodeCurrentPcbDiagnosticOpeningReply(raw, target, "preflight");
       if (!preflight.ok || preflight.status !== "ready" || preflight.dispatchAttempted || preflight.observation?.projectPresent !== false) { throw error("SAVED_READBACK_EMPTY_UI_REFUSED"); }
+      early.expectProject(preflight.observation.windowTabId);
       await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current();
       if (canonicalJson(context.savedReadbackCacheContext()) !== canonicalJson(selected)) { throw error("SAVED_READBACK_CACHE_CONTEXT_CHANGED"); }
       const ledger = new CurrentPcbViaSavedCacheLedger(Object.freeze({ frameId: selected.frameId, sessionId: selected.sessionId, securityOrigin: selected.securityOrigin, projectUuid: allocation.prepared.target.projectUuid }));
@@ -6934,6 +6954,34 @@ class CurrentPcbRetainedOwnerCore {
     const packet = await runner.observe();
     if (this.#purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE) { this.#structureMainConstruction = packet; }
     return packet;
+  }
+  /** Finite browser hold before the original app-main startup pause resumes.
+   * Existing running workers refuse; later background workers never resume. */
+  public async prepareSavedReadbackEarlyActors(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner): Promise<void> {
+    assertOriginalCurrentPcbViaSavedReadbackOwner(this);
+    const allocation = pcbViaSavedReadbackFactories.get(this)?.allocation, original = selectedSqlFenceBootstraps.get(capability), pipe = this.#pipe;
+    if (original?.owner !== this || original.runner() !== runner || this.#mainRunner !== runner || allocation === undefined ||
+      !(pipe instanceof CurrentPcbViaSavedReadbackPipe) || this.#savedReadbackEarlyActorAttempted || this.#savedReadbackEarlyActors !== null ||
+      this.#browserObservationConsumed || this.#framesConsumed || this.#stagedContext !== null) { throw error("SAVED_READBACK_EARLY_ACTORS_UNAVAILABLE"); }
+    runner.requireOriginalStartupActorPause(capability); this.#enter(true); this.#savedReadbackEarlyActorAttempted = true;
+    const ledger = new CurrentPcbViaSavedEarlyActors(allocation.prepared.target.projectUuid); this.#savedReadbackEarlyActors = ledger;
+    const current = (): void => { this.#available(); assertOriginalCurrentPcbViaSavedReadbackOwner(this); original.reprove(); runner.requireOriginalStartupActorPause(capability);
+      if (this.#mainRunner !== runner || this.#pipe !== pipe || this.#savedReadbackEarlyActors !== ledger || this.#savedReadbackAborted || this.#closeConsumed) { throw error("SAVED_READBACK_EARLY_ACTORS_CHANGED"); } };
+    pipe.retainSavedReadbackEarlyActors(event => { this.#available(); assertOriginalCurrentPcbViaSavedReadbackOwner(this);
+      if (this.#pipe !== pipe || this.#savedReadbackEarlyActors !== ledger || this.#savedReadbackAborted || this.#closeConsumed) { throw error("SAVED_READBACK_EARLY_ACTOR_EVENT_OWNER"); }
+      return ledger.attachment(event); });
+    try {
+      for (const stage of ["before", "arm", "after"] as const) {
+        current(); this.#savedReadbackEarlyActorStage = stage; if (stage === "arm") { ledger.beginArm(); }
+        const reply = await this.#transfer(() => pipe.observeSavedReadbackEarlyActors(stage)); current();
+        if (stage === "before") { ledger.before(reply); }
+        else if (stage === "arm") { if (!exact(reply, [])) { throw error("SAVED_READBACK_EARLY_ACTOR_ARM_REPLY"); } ledger.acknowledgeArm(); }
+        else { ledger.after(reply); }
+        this.#savedReadbackEarlyActorStage = null;
+      }
+      ledger.assertSealed(); this.#savedReadbackActorsArmed = true; current();
+    } catch (caughtError) { this.#input.emit("error", error("SAVED_READBACK_EARLY_ACTORS_FAILED")); throw caughtError; }
+    finally { this.#savedReadbackEarlyActorStage = null; this.#busy = false; }
   }
   /** Observe original native descriptors before opening. No native roster,
    * CacheStorage invocation or saved-generation replay authority is inferred. */
@@ -7284,7 +7332,12 @@ class CurrentPcbRetainedOwnerCore {
   }
 
   #available(): void {
-    if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) { assertOriginalCurrentPcbViaSavedReadbackOwner(this); }
+    if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) {
+      assertOriginalCurrentPcbViaSavedReadbackOwner(this);
+      const ledger = this.#savedReadbackEarlyActors;
+      if (ledger !== null && (Object.getPrototypeOf(ledger) !== CurrentPcbViaSavedEarlyActors.prototype || Reflect.ownKeys(ledger).length > 0 ||
+        !originalFootprintDescriptors(CurrentPcbViaSavedEarlyActors.prototype, savedReadbackEarlyActorDescriptors))) { throw error("SAVED_READBACK_EARLY_ACTOR_LEDGER_CHANGED"); }
+    }
     if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { assertOriginalCurrentPcbViaWriteOwner(this); }
     if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { assertOriginalCurrentSchematicDisplayWriteOwner(this); }
     if (this.#purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE) { assertOriginalCurrentFootprintForwardExecutionNativeOwner(this); }
@@ -7322,7 +7375,7 @@ class CurrentPcbRetainedOwnerCore {
       })();
       await this.#send;
       while (selectedFileMainPurpose(this.#purpose) ? !settled : this.#pipe.status().pendingRequestId !== null) {
-        if (selectedFileMainPurpose(this.#purpose) && this.#mainRunner !== null) { await this.#mainRunner.pumpSelectedSqlFence(); }
+        if (selectedFileMainPurpose(this.#purpose) && this.#mainRunner !== null && this.#savedReadbackEarlyActorStage === null) { await this.#mainRunner.pumpSelectedSqlFence(); }
         if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#viaProjectNavigationDispatchAttempted && this.#viaWorkerController !== null && !this.#viaWorkerController.status().pumping) { await this.#viaWorkerController.pump(); }
         if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE && this.#schematicNavigationDispatchAttempted && this.#schematicWorkerController !== null && !this.#schematicWorkerController.status().pumping) { await this.#schematicWorkerController.pump(); }
         await this.#pollRenderer();
@@ -7364,7 +7417,8 @@ class CurrentPcbRetainedOwnerCore {
       else if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { nativeRequest = currentPcbViaWriteNativeRequest; }
       else if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { nativeRequest = currentSchematicDisplayWriteNativeRequest; }
       let encoded: Readonly<Record<string, unknown>>;
-      if (this.#savedReadbackRegistrationFrame && this.#savedReadbackCache !== null) {
+      if (this.#savedReadbackEarlyActorStage !== null) { encoded = currentPcbViaSavedEarlyActorNativeFrame(chunk, this.#savedReadbackEarlyActorStage); }
+      else if (this.#savedReadbackRegistrationFrame && this.#savedReadbackCache !== null) {
         const intent = this.#savedReadbackRegistrationIntent; const held = intent === null ? undefined : savedProjectRegistrationIntents.get(intent);
         if (held === undefined || held.owner !== this || held.pending === null || held.settled || !(this.#pipe instanceof CurrentPcbViaSavedReadbackPipe)) { throw error("SAVED_READBACK_REGISTRATION_WIRE_ORIGINAL"); }
         this.#pipe.requireOriginalSavedReadbackRegistrationPending(held.pending);
