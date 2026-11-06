@@ -10,7 +10,7 @@
 /* oxlint-disable import/max-dependencies -- Fixed transport composes independent model/common/worker/actor grammars without merging their source or authority boundaries. */
 import { currentProjectSaveProducerWire } from "./current-project-save-producer-wire.ts";
 import type { CurrentProjectSaveProducerCommand } from "./current-project-save-producer-protocol.ts";
-import { currentPcbViaSavedCacheWire } from "./current-pcb-via-saved-cache-wire.ts";
+import { currentPcbViaSavedCacheWire, currentPcbViaSavedReadbackParentWire } from "./current-pcb-via-saved-cache-wire.ts";
 import type { CurrentPcbViaSavedCachePlan } from "./current-pcb-via-saved-cache-ledger.ts";
 import { CURRENT_PCB_VIA_SAVED_READBACK_PROFILE } from "./current-pcb-via-saved-readback-profile.ts";
 import { currentProjectSaveProducerGuardWire } from "./current-project-save-producer-guard-wire.ts";
@@ -107,8 +107,8 @@ type SchematicWorkerParentCommand = Readonly<{ schematicWorkerParentPhase: "arm"
 type ProducerObserveWireCommand = CurrentProjectSaveProducerCommand & Readonly<{ producerObserveCommand: true }>;
 type ProducerGuardWireCommand = CurrentProjectSaveProducerGuardCommand & Readonly<{ producerGuardCommand: true }>;
 type StructureTransportWireCommand = CurrentProjectStructureTransportCommand & Readonly<{ structureTransportCommand: true }>;
-type SavedReadbackCacheWire = ReturnType<typeof currentPcbViaSavedCacheWire>;
-type RequestPhase = "saved-readback-cache" | "producer-observe" | "producer-guard" | "structure-transport" | "schematic-accessor" | "schematic-clock" | "schematic-worker" | "schematic-parent-arm" | "schematic-parent-running" | `schematic-display-${CurrentSchematicDisplayNativePhase}` | "via-clock" | "via-worker" | "via-parent-arm" | "via-parent-running" | "generated-fixture-register" | "renderer-capture209" | "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
+type SavedReadbackCacheWire = ReturnType<typeof currentPcbViaSavedCacheWire> | ReturnType<typeof currentPcbViaSavedReadbackParentWire>;
+type RequestPhase = "producer-observe" | "saved-readback-parent" | "saved-readback-cache" | "producer-guard" | "structure-transport" | "schematic-accessor" | "schematic-clock" | "schematic-worker" | "schematic-parent-arm" | "schematic-parent-running" | `schematic-display-${CurrentSchematicDisplayNativePhase}` | "via-clock" | "via-worker" | "via-parent-arm" | "via-parent-running" | "generated-fixture-register" | "renderer-capture209" | "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
   `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "visual209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209" |
   `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}` |
   `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}` | `worker-producer-${CurrentPcbStringWorkerProducerCommand["workerProducerPhase"]}` |
@@ -276,7 +276,7 @@ class CurrentPcbFixedPipeCore {
   #sessionId: string | null = null;
   #event: ((event: DiagnosticEvent) => void) | null = null;
   readonly #savedReadbackPurpose: boolean;
-  #savedReadbackDiscovery = 0; #savedReadbackPreflight = 0; #savedReadbackCache = 0;
+  #savedReadbackDiscovery = 0; #savedReadbackPreflight = 0; #savedReadbackCache = 0; #savedReadbackParent = false;
   #eventCount = 0;
   #eventBytes = 0;
   #workerEvent: ((event: DiagnosticEvent) => void) | null = null;
@@ -849,6 +849,11 @@ class CurrentPcbFixedPipeCore {
     return this.#request({ id: this.#nextId, method, params: {}, sessionId: this.#sessionId });
   }
 
+  public armSavedReadbackCacheParent(): Promise<Reply> {
+    if (!this.#savedReadbackPurpose || this.#sessionId === null || this.#savedReadbackParent) { return Promise.reject(new Error("SAVED_READBACK_PARENT_CONSUMED")); }
+    this.#savedReadbackParent = true;
+    return this.#request(currentPcbViaSavedReadbackParentWire(this.#nextId, this.#sessionId), "saved-readback-parent");
+  }
   public observeSavedReadbackCache(plan: CurrentPcbViaSavedCachePlan): Promise<Reply> {
     if (!this.#savedReadbackPurpose || this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("SAVED_READBACK_CACHE_PURPOSE")); }
     return this.#request(currentPcbViaSavedCacheWire(plan, this.#nextId, this.#sessionId), "saved-readback-cache");
@@ -890,12 +895,13 @@ class CurrentPcbFixedPipeCore {
     if (!this.#started || this.#released || this.#handedOff) { throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED"); }
     if (this.#savedReadbackPurpose) {
       const cache = phase === "saved-readback-cache" && "savedReadbackCache" in command && command.savedReadbackCache;
+      const parent = phase === "saved-readback-parent" && "savedReadbackParent" in command && command.savedReadbackParent === "arm";
       const preflight = phase === "project-preflight" && command.method === "Runtime.callFunctionOn";
       const discovery = (phase === "discovery" || phase === "frame-owner") && CURRENT_PCB_SPATIAL_DISCOVERY_METHODS.some(method => method === command.method);
-      if (!cache && !preflight && !discovery) { throw new Error("SAVED_READBACK_DISCOVERY_ONLY"); }
+      if (!cache && !parent && !preflight && !discovery) { throw new Error("SAVED_READBACK_DISCOVERY_ONLY"); }
       if (cache) { if (this.#savedReadbackCache >= 36) { throw new Error("SAVED_READBACK_CACHE_BUDGET"); } this.#savedReadbackCache += 1; }
       else if (preflight) { if (this.#savedReadbackPreflight !== 0) { throw new Error("SAVED_READBACK_PREFLIGHT_CONSUMED"); } this.#savedReadbackPreflight += 1; }
-      else { if (this.#savedReadbackDiscovery >= 24) { throw new Error("SAVED_READBACK_DISCOVERY_BUDGET"); } this.#savedReadbackDiscovery += 1; }
+      else if (!parent) { if (this.#savedReadbackDiscovery >= 24) { throw new Error("SAVED_READBACK_DISCOVERY_BUDGET"); } this.#savedReadbackDiscovery += 1; }
     } else if ("savedReadbackCache" in command) { throw new Error("SAVED_READBACK_CACHE_PURPOSE"); }
     const spatial = (this.#spatialPurpose || this.#componentSpatialPurpose) && "spatialPhase" in command && phase.startsWith("spatial-");
     if ((this.#spatialPurpose || this.#componentSpatialPurpose) && !(spatial && command.method === "Runtime.releaseObjectGroup") &&

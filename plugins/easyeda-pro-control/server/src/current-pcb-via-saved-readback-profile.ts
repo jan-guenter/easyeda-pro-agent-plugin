@@ -8,7 +8,7 @@ export const CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE = "pcb-via-saved-readback209
 export const CURRENT_PCB_VIA_SAVED_READBACK_PROFILE = Object.freeze({
   purpose: CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE, nativeSwitch: "-PcbViaSavedReadback209",
   main: Object.freeze({ constructionNormal: 64, fenceNormal: FENCE.normal, normal: 64 + FENCE.normal, cleanup: 8, total: 64 + FENCE.normal + 8 }),
-  renderer: Object.freeze({ enabledDiscovery: 16, preCacheGuard: 9, activeReadOnly: 16 + 9 + CACHE.total, opening: 103, workerBootstrap: BOOTSTRAP.total, cache: CACHE.total,
+  renderer: Object.freeze({ enabledDiscovery: 16, preCacheGuard: 9, earlyWorkerParent: 1, activeReadOnly: 16 + 9 + 1 + CACHE.total, opening: 103, workerBootstrap: BOOTSTRAP.total, cache: CACHE.total,
     normal: 9 + 103 + BOOTSTRAP.parent + BOOTSTRAP.inventory + BOOTSTRAP.workerNormal + CACHE.normal,
     cleanup: BOOTSTRAP.workerCleanup + CACHE.cleanup, total: 9 + 103 + BOOTSTRAP.total + CACHE.total }),
   cacheDeletionAuthorized: false, executionAuthorized: false, saveAuthorized: false, reopenedVerified: false,

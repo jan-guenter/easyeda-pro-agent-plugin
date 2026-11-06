@@ -57,3 +57,21 @@ lint pass. The complete generator repeats byte-identically, and its emitted C#
 compiles with the pure readback/Component/spatial/Via/SCH smoke checks on Linux
 .NET 10. No Windows process, application, cache method or selected SQL ran.
 Shared helper/pins/bundles remain integration-owned.
+
+The immediate source follow-up moves the distinct readonly bootstrap parent's
+first wait-for-debugger arm before the existing-worker inventory and every cache
+request. This also protects CDP `requestEntries`, whose Chromium implementation
+can call `Open(name)`, and the later native sampler's `has`/`open` pair. A running
+or unexpected worker attachment refuses normal work; newly born workers remain
+actually paused in the original Job, and this prefix never resumes one. The
+prospective bootstrap slot is reused rather than duplicated: the active bound is
+62, while the prospective full bound stays 171. Deletion/opening still require
+complete metadata, durable backup and their current boundary guards. Source
+exclusion is not inferred from a quiet snapshot.
+
+Whole-generation tests now also migrate the two exact maintained predecessor
+PowerShell dispatch blocks, then prove a byte-identical second pass. Unknown,
+partial and duplicated blocks retain the shared strict refusal. This corrects a
+composition gap in the first ledger draft when applied to a previously generated
+birth-only helper. Emitted C# and the pure Linux smoke checks pass after the early
+parent change; no Windows or application action ran.

@@ -26,7 +26,7 @@ async function fixture(context: TestContext, malformed = false, cache = false): 
 const pipe=this.#pipe;if(!(pipe instanceof CurrentPcbViaSavedReadbackPipe))throw Error("pipe");await this.#transfer(async()=>({sessionId:await pipe.attachTarget("synthetic-target",()=>{})}));
 const selected=Object.freeze({frameId:"synthetic-frame",sessionId:"synthetic-session",uniqueContextId:"synthetic-context",securityOrigin:"https://client"});
 const context={savedReadbackCacheContext:()=>selected};this.#stagedContext=context;
-this.#mainRunner={selectedSqlFenceState:()=>({ready:true}),pumpSelectedSqlFence:async()=>{}};
+this.#savedReadbackParentArmed=true;this.#mainRunner={selectedSqlFenceState:()=>({ready:true}),pumpSelectedSqlFence:async()=>{}};
 const ledger=new CurrentPcbViaSavedCacheLedger(Object.freeze({frameId:selected.frameId,sessionId:selected.sessionId,securityOrigin:selected.securityOrigin,projectUuid:this.#savedReadbackPrepared.target.projectUuid}));
 const origin=Object.freeze({profile:"private.current-pcb-via-saved-cache-origin.v1"});const bindings=this.#createSavedReadbackCacheBindings(ledger,origin,pipe,this.#savedReadbackPrepared);
 const held=Object.freeze({origin,prepared:this.#savedReadbackPrepared,owner:this,ledger,context,selected,bindings});this.#savedReadbackCache=held;savedReadbackCaches.set(origin,held);return bindings;
@@ -105,6 +105,15 @@ void test("copied closed-checkpoint data refuses the real lazy factory before na
 void test("fresh readback native composition repeats exactly and its current pipe preserves24 bounded discovery slots and no opening grant", async context => {
   const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   const first = generateWorkerStartupProtocol(source); assert.equal(generateWorkerStartupProtocol(first), first);
+  const parentStart = first.indexOf("        'saved-readback-parent' {\n");
+  const preflightStart = first.indexOf("        'saved-readback-preflight' {\n");
+  const abortStart = first.indexOf("        'saved-readback-abort' {\n");
+  assert.ok(parentStart !== -1 && preflightStart > parentStart && abortStart > preflightStart);
+  const priorReadOnly = first.slice(0, parentStart) + first.slice(preflightStart);
+  assert.equal(generateWorkerStartupProtocol(priorReadOnly), first);
+  const priorBirth = first.slice(0, parentStart) + first.slice(abortStart);
+  assert.equal(generateWorkerStartupProtocol(priorBirth), first);
+
   const flags = first.slice(0, first.indexOf("\n")).match(/\[switch\]\$\w+/gu); assert.ok(flags !== null); assert.equal(flags.length, new Set(flags).size);
   assert.equal(first.split("        'saved-readback-abort' {").length - 1, 1);
   assert.ok(first.includes("spatial209?384:componentSpatial209?419:"));
