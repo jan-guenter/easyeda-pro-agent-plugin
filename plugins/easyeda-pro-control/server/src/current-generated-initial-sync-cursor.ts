@@ -102,4 +102,5 @@ export class CurrentGeneratedInitialSyncCursor {
   }
   public async settle(): Promise<void> { need(!this.#busy && !this.#failed && !this.#completed); this.#busy = true; try { await this.#settle(); } catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; } }
   public requireCompleted(): void { need(!this.#failed && this.#completed); }
+  public originalCompletedCapture(): string { this.requireCompleted(); need(this.#capture !== null); return this.#capture; }
 }

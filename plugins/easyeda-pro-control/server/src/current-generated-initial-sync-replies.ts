@@ -12,7 +12,10 @@ const reply = z.strictObject({ result: z.array(property).min(2).max(3), internal
 const location = z.strictObject({ scriptId: handle, lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() });
 function need(value: boolean): asserts value { if (!value) { throw new Error("INITIAL_SYNC_ORIGINAL_CALLEE"); } }
 export function decodeCurrentGeneratedInitialSyncCallee(input: unknown, slot: number, scriptId: string): void {
-  const profile = CALLEES[slot]; need(profile !== undefined && Number.isInteger(slot)); handle.parse(scriptId);
+  const profile = CALLEES[slot]; need(profile !== undefined && Number.isInteger(slot)); decodeCurrentGeneratedSyncCallee(input, profile, scriptId);
+}
+export function decodeCurrentGeneratedSyncCallee(input: unknown, profile: Readonly<{ name: string; arity: number; async: boolean; regular: boolean; lineNumber: number; columnNumber: number }>, scriptId: string): void {
+  handle.parse(scriptId);
   const parsed = reply.parse(captureCurrentPcbStringClockReply(input).value); const fields = new Map(parsed.result.map(field => [field.name, field]));
   need(fields.size === (profile.regular ? 3 : 2));
   for (const [name, value] of [["name", profile.name], ["length", profile.arity]] as const) {

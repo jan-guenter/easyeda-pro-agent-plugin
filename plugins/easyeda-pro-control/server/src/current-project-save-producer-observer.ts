@@ -8,7 +8,7 @@ import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS as CACHE_CALLERS, currentPr
 import type { CurrentProjectSaveProducerCacheCaller } from "./current-project-save-producer-cache-source.ts";
 import { types } from "node:util";
 import { z } from "zod";
-import { continueOriginalCurrentGeneratedInitialCacheCall, continueOriginalCurrentGeneratedInitialSyncCall, requireOriginalCurrentProjectSaveProducerOrigin, settleOriginalCurrentGeneratedInitialCacheCalls, settleOriginalCurrentGeneratedInitialSyncCall } from "./current-pcb-diagnostic-owner.ts";
+import { continueOriginalCurrentGeneratedInitialCacheCall, continueOriginalCurrentGeneratedInitialSyncCall, continueOriginalCurrentGeneratedPeriodicSyncCall, requireOriginalCurrentProjectSaveProducerOrigin, settleOriginalCurrentGeneratedInitialCacheCalls, settleOriginalCurrentGeneratedInitialSyncCall, settleOriginalCurrentGeneratedPeriodicSyncCall } from "./current-pcb-diagnostic-owner.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { decodeCurrentFootprintCopyClockRpcV2ArrayCapture } from "./current-footprint-copy-clock-rpc-v2-protocol.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_PRODUCER_FRAME_FLAGS as FRAME_FLAGS,
@@ -122,6 +122,16 @@ export class CurrentProjectSaveProducerObserver {
   public async settleInitialSyncCall(): Promise<void> {
     need(!this.#busy && !this.#failed && !this.#closed && this.#held === null, "INITIAL_SYNC_SETTLE_STATE"); this.#busy = true;
     try { await this.#current(); await settleOriginalCurrentGeneratedInitialSyncCall(this.#origin, this.#owner, this.#operation); await this.#current(); }
+    catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
+  }
+  public async continuePeriodicSyncCall(packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
+    need(!this.#busy && !this.#failed && !this.#closed && this.#held === packet, "PERIODIC_SYNC_ORIGINAL_HELD"); this.#busy = true;
+    try { await this.#current(); await continueOriginalCurrentGeneratedPeriodicSyncCall(this.#origin, this.#owner, this.#operation, packet); await this.#current(); this.#held = null; }
+    catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
+  }
+  public async settlePeriodicSyncCall(): Promise<void> {
+    need(!this.#busy && !this.#failed && !this.#closed && this.#held === null, "PERIODIC_SYNC_SETTLE_STATE"); this.#busy = true;
+    try { await this.#current(); await settleOriginalCurrentGeneratedPeriodicSyncCall(this.#origin, this.#owner, this.#operation); await this.#current(); }
     catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
   public async retireAfterOriginalExit(): Promise<void> { need(!this.#busy && !this.#closed, "RETIRE_STATE"); await this.#binding.assertOriginalGenerationExited(); this.#closed = true; }

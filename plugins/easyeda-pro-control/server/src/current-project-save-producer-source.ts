@@ -235,6 +235,7 @@ export const CURRENT_PROJECT_SAVE_PRODUCER_SITES = freezeDeep({
     "expression": "[this,t,s,r,i]",
     "length": 5
   },
+  "syncLast": { "functionLineNumber": 110, "functionColumnNumber": 17_658, "lineNumber": 110, "columnNumber": 17_953, "offset": 2_032_163, "expression": "[this,t,s,r,i,g]", "length": 6 },
   "syncHistory": { "functionLineNumber": 110, "functionColumnNumber": 17_658, "lineNumber": 110, "columnNumber": 18_272, "offset": 2_032_482, "expression": "[this,t,s,r,i,u,h,y,g]", "length": 9 },
   "syncMerged": { "functionLineNumber": 110, "functionColumnNumber": 17_658, "lineNumber": 110, "columnNumber": 18_935, "offset": 2_033_145, "expression": "[this,t,s,r,i,u,h,p,d,m]", "length": 10 },
   "syncFinalizing": { "functionLineNumber": 110, "functionColumnNumber": 17_658, "lineNumber": 110, "columnNumber": 19_939, "offset": 2_034_149, "expression": "[this,t,s,r,i]", "length": 5 },

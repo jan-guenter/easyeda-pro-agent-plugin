@@ -1,5 +1,7 @@
+/* oxlint-disable import/max-dependencies -- The fixed producer schema composes separate intrinsic, source, cache and periodic-call grammars. */
 /** Observation-only uploader vocabulary. Original receiver joins can retain a
  * held source call; there is no resume, timer, cache or mutation command. */
+import { CURRENT_GENERATED_PERIODIC_SYNC_MAXIMUM as PERIODIC } from "./current-generated-periodic-sync-protocol.ts";
 import { CURRENT_GENERATED_INITIAL_SYNC_CONDITION as SYNC_CONDITION } from "./current-generated-initial-sync-condition.ts";
 import { CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_CALLS as INTRINSICS, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_PROFILES as INTRINSIC_PROFILES } from "./current-native-cache-response-intrinsics.ts";
 import { z } from "zod";
@@ -11,15 +13,15 @@ import { CURRENT_PROJECT_SAVE_PRODUCER_RECEIVER_CALLS as CALLS } from "./current
 import { CURRENT_PROJECT_SAVE_PRODUCER_SITES as SITES } from "./current-project-save-producer-source.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
-export const CURRENT_PROJECT_SAVE_PRODUCER_ROLES = ["localIngress", "bufferIngress", "cloudIngress", "historyCloud", "localReturned", "localFailed", "bufferScheduled", "bufferDrain", "bufferDone", "batchReturned", "historyReply", "historyFailed", "historyQueued", "historyFinally", "cloudReturned", "cloudFinally", "syncEntry", "syncDeferred", "syncFull", "syncHistory", "syncMerged", "syncFinalizing", "syncReturned", "syncFailed", "detachedEntry", "detachedReturned", "headEntry", "headPromise", "headSuccess", "cacheFailed"] as const;
+export const CURRENT_PROJECT_SAVE_PRODUCER_ROLES = ["localIngress", "bufferIngress", "cloudIngress", "historyCloud", "localReturned", "localFailed", "bufferScheduled", "bufferDrain", "bufferDone", "batchReturned", "historyReply", "historyFailed", "historyQueued", "historyFinally", "cloudReturned", "cloudFinally", "syncEntry", "syncDeferred", "syncFull", "syncLast", "syncHistory", "syncMerged", "syncFinalizing", "syncReturned", "syncFailed", "detachedEntry", "detachedReturned", "headEntry", "headPromise", "headSuccess", "cacheFailed"] as const;
 export const CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS = ["localIngress", "bufferIngress", "cloudIngress", "historyCloud"] as const;
 export const CURRENT_PROJECT_SAVE_PRODUCER_GROUP = "easyeda-project-save-producer209-v1";
 /** Two observations per general role and three per initial cache role admit
  * the distinct two-document/index jobs. These are finite capacities, not a
  * claim that background work finishes or cannot occur again. */
-export function currentProjectSaveProducerRoleLimit(role: string): number { if (role === "syncHistory") { return 4; } return ["headEntry", "headPromise", "headSuccess", "cacheFailed"].includes(role) ? 3 : 2; }
-export const CURRENT_PROJECT_SAVE_PRODUCER_REQUESTS = Object.freeze({ newArms: 26, maximumRoleOccurrences: 2, frames: 66, joins: 66, properties: 66,
-  intrinsics: 3 + 2 + INTRINSIC_PROFILES.length, cacheCalls: 3 * 3, cachePromises: 3 * 2, normal: 224 + 3 + 2 + INTRINSIC_PROFILES.length + 3 * 3 + 3 * 2, cleanup: 0, cdpRequests: 224 + 3 + 2 + INTRINSIC_PROFILES.length + 3 * 3 + 3 * 2, events: 66 });
+export function currentProjectSaveProducerRoleLimit(role: string): number { if (role === "syncHistory") { return 4 + PERIODIC; } if (role === "syncLast") { return PERIODIC; } if (["syncEntry", "syncFull", "syncMerged", "syncFinalizing", "syncReturned"].includes(role)) { return 2 + PERIODIC; } return ["headEntry", "headPromise", "headSuccess", "cacheFailed"].includes(role) ? 3 : 2; }
+export const CURRENT_PROJECT_SAVE_PRODUCER_REQUESTS = Object.freeze({ newArms: 27, maximumRoleOccurrences: 2, frames: 66 + 7 * PERIODIC, joins: 66 + 7 * PERIODIC, properties: 66 + 7 * PERIODIC,
+  intrinsics: 3 + 2 + INTRINSIC_PROFILES.length, cacheCalls: 3 * 3, cachePromises: 3 * 2, normal: 224 + 1 + 3 * (7 * PERIODIC) + 3 + 2 + INTRINSIC_PROFILES.length + 3 * 3 + 3 * 2, cleanup: 0, cdpRequests: 224 + 1 + 3 * (7 * PERIODIC) + 3 + 2 + INTRINSIC_PROFILES.length + 3 * 3 + 3 * 2, events: 66 + 7 * PERIODIC });
 const GROUP = CURRENT_PROJECT_SAVE_PRODUCER_GROUP;
 export const CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS = Object.freeze({ objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true, awaitPromise: false, userGesture: false, returnByValue: false } as const);
 export const CURRENT_PROJECT_SAVE_PRODUCER_FRAME_FLAGS = Object.freeze({ objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true, returnByValue: false, includeCommandLineAPI: false } as const);

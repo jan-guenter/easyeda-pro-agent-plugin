@@ -224,6 +224,9 @@ export class CurrentSchematicDisplayWorkerController {
   public reserveInitialSyncResume(source: CurrentSchematicDisplayProjectSourceHeld, event: CurrentSchematicDisplayRoutedEvent, role: "syncEntry" | "syncFull" | "syncHistory" | "syncMerged" | "syncFinalizing" | "syncReturned"): void {
     need(this.#source === source && this.#child !== null); this.#eventRouter().reserveInitialSyncResume(event, role);
   }
+  public reservePeriodicSyncResume(source: CurrentSchematicDisplayProjectSourceHeld, event: CurrentSchematicDisplayRoutedEvent, role: "syncEntry" | "syncFull" | "syncLast" | "syncHistory" | "syncMerged" | "syncFinalizing" | "syncReturned"): void {
+    need(this.#source === source && this.#child !== null); this.#eventRouter().reservePeriodicSyncResume(event, role);
+  }
   public async nextStructureTransportEvent(): Promise<CurrentSchematicDisplayRoutedEvent> { await this.whenOriginalSourceResumed(); return this.#eventRouter().next("structureTransport"); }
   public reserveStructureTransportResume(source: CurrentSchematicDisplayProjectSourceHeld, role: "send" | "returned"): void {
     need(this.#source === source && this.#child !== null); this.#eventRouter().reserveResume("structureTransport", this.#child.sessionId, role);

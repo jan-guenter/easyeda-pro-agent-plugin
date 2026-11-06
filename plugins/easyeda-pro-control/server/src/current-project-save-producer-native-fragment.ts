@@ -1,6 +1,7 @@
 /** Same fresh writer births; fixed observation only, with no resume/cleanup
  * grant. All installed source pauses remain original-Job abortable. */
 import { currentProjectSaveProducerNativeSource } from "./current-project-save-producer-native.ts";
+import { CURRENT_GENERATED_PERIODIC_SYNC_MAXIMUM as PERIODIC } from "./current-generated-periodic-sync-protocol.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_REQUESTS as REQUESTS } from "./current-project-save-producer-protocol.ts";
 import { installNativeCompileOnlyHook } from "./native-compile-only-hook.ts";
 import { installOwnedNativeDispatch } from "./native-owned-dispatch.ts";
@@ -35,7 +36,7 @@ if(${purpose}WorkerStage!=6||!${purpose}WorkerSourceRead||!${purpose}ProducerInt
 }else{
 if(${purpose}WorkerStage!=7||!${purpose}StructureBootstrapResumed||!${purpose}ProducerModeRequested||!${purpose}ProducerIntrinsicsReproved||${purpose}ProducerObserveArms.Count!=${String(REQUESTS.newArms)})throw Error("project-save-producer-original-construction");
 if(phase=="project-save-producer-properties"){if(${purpose}ProducerObserveProperties>=${String(REQUESTS.properties)})throw Error("project-save-producer-properties-budget");${purpose}ProducerObserveProperties++;}
-else{int count;${purpose}ProducerObserveCounts.TryGetValue(phase,out count);int maximum=phase.IndexOf("syncHistory",StringComparison.Ordinal)>=0?4:phase.IndexOf("headEntry",StringComparison.Ordinal)>=0||phase.IndexOf("headPromise",StringComparison.Ordinal)>=0||phase.IndexOf("headSuccess",StringComparison.Ordinal)>=0||phase.IndexOf("cacheFailed",StringComparison.Ordinal)>=0||phase.StartsWith("project-save-producer-cache-",StringComparison.Ordinal)?3:2;if(count>=maximum)throw Error("project-save-producer-role-budget");${purpose}ProducerObserveCounts[phase]=count+1;}
+else{int count;${purpose}ProducerObserveCounts.TryGetValue(phase,out count);int maximum=phase.IndexOf("syncHistory",StringComparison.Ordinal)>=0?${String(4 + PERIODIC)}:phase.IndexOf("syncLast",StringComparison.Ordinal)>=0?${String(PERIODIC)}:phase.IndexOf("syncEntry",StringComparison.Ordinal)>=0||phase.IndexOf("syncFull",StringComparison.Ordinal)>=0||phase.IndexOf("syncMerged",StringComparison.Ordinal)>=0||phase.IndexOf("syncFinalizing",StringComparison.Ordinal)>=0||phase.IndexOf("syncReturned",StringComparison.Ordinal)>=0?${String(2 + PERIODIC)}:phase.IndexOf("headEntry",StringComparison.Ordinal)>=0||phase.IndexOf("headPromise",StringComparison.Ordinal)>=0||phase.IndexOf("headSuccess",StringComparison.Ordinal)>=0||phase.IndexOf("cacheFailed",StringComparison.Ordinal)>=0||phase.StartsWith("project-save-producer-cache-",StringComparison.Ordinal)?3:2;if(count>=maximum)throw Error("project-save-producer-role-budget");${purpose}ProducerObserveCounts[phase]=count+1;}
 }
 AssertLive();${purpose}ProducerObserveRequests++;SendMessage(id,encoded);
 }

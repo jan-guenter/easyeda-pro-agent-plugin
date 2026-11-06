@@ -118,3 +118,17 @@ for (const Constructor of [CurrentPcbViaEventRouter, CurrentSchematicDisplayEven
     assert.equal(f.reads.failed, false); assert.equal(f.reads.count, 4);
   });
 }
+
+for (const Constructor of [CurrentPcbViaEventRouter, CurrentSchematicDisplayEventRouter]) {
+  void test(`${Constructor.name} admits a periodic branch resume only for that original delivered pause`, async () => {
+    const f = fixture(Constructor), point = { ...save, breakpointId: "periodic-branch", role: "syncLast", columnNumber: 17_953 };
+    f.router.register("producer", point); const next = f.router.next("producer"); await f.entered(); f.deliver(paused(point)); const original = await next;
+    assert.throws(() => { f.router.reserveResume("producer", point.sessionId, point.role); });
+    assert.throws(() => { f.router.reserveInitialSyncResume(original, "syncEntry"); });
+    assert.throws(() => { f.router.reservePeriodicSyncResume(structuredClone(original), "syncLast"); });
+    assert.throws(() => { f.router.reservePeriodicSyncResume(original, "syncHistory"); });
+    f.router.reservePeriodicSyncResume(original, "syncLast"); assert.throws(() => { f.router.reservePeriodicSyncResume(original, "syncLast"); });
+    const resumed = f.router.next("producer"); await f.entered(); f.deliver({ method: "Debugger.resumed", sessionId: point.sessionId, params: {} }); const actual = await resumed; assert.equal(actual.method, "Debugger.resumed");
+    assert.throws(() => { f.router.reservePeriodicSyncResume(original, "syncLast"); }); assert.equal(f.reads.failed, false);
+  });
+}

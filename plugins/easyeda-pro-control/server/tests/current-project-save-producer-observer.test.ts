@@ -11,7 +11,7 @@ import type { CurrentProjectSaveProducerObserver } from "../src/current-project-
 import { loadSyntheticRegistryModule } from "./helpers/load-synthetic-registry-module.ts";
 
 void test("all producer requests remain source-fixed observations with no resume or timer/cache operation", () => {
-  const cases = currentProjectSaveProducerNativeCases(); assert.equal(cases.length, 130);
+  const cases = currentProjectSaveProducerNativeCases(); assert.equal(cases.length, 133);
   for (const command of cases) { assert.deepEqual(validateCurrentProjectSaveProducerCommand(command), command);
     assert.throws(() => validateCurrentProjectSaveProducerCommand({ ...command, method: "Debugger.resume", params: {} }));
     if (command.phase === "project-save-producer-frame") { assert.throws(() => validateCurrentProjectSaveProducerCommand({ ...command, params: { ...command.params, expression: "this.uploadCloud()" } })); }
@@ -51,11 +51,11 @@ async function fixture(foreign = false): Promise<Readonly<{ observer: CurrentPro
 void test("source-owned startup call stays held after exact receiver join and retires only after original exit", async () => {
   const f = await fixture(); await f.observer.arm(); assert.equal(f.state.requests, ROLES.length - SHARED.length);
   const packet = await f.observer.observeHeldCall(); const data = f.packetData(packet); assert.equal(Reflect.get(data, "role"), "syncEntry");
-  assert.equal(Object.isFrozen(Reflect.get(data, "fields")), true); assert.throws(() => f.packetData(structuredClone(packet))); assert.equal(f.state.requests, 29);
+  assert.equal(Object.isFrozen(Reflect.get(data, "fields")), true); assert.throws(() => f.packetData(structuredClone(packet))); assert.equal(f.state.requests, 30);
   await assert.rejects(f.observer.observeHeldCall(), /HELD_CALL_ONCE/u); await assert.rejects(f.observer.retireAfterOriginalExit()); assert.equal(f.state.failed, false);
-  f.exit(); await f.observer.retireAfterOriginalExit(); assert.equal(f.state.requests, 29);
+  f.exit(); await f.observer.retireAfterOriginalExit(); assert.equal(f.state.requests, 30);
 });
 void test("foreign function location refuses before any original frame projection or continuation", async () => {
-  const f = await fixture(true); await f.observer.arm(); await assert.rejects(f.observer.observeHeldCall(), /ORIGINAL_FRAME/u); assert.equal(f.state.requests, 26); assert.equal(f.state.failed, true);
-  f.exit(); await f.observer.retireAfterOriginalExit(); assert.equal(f.state.requests, 26);
+  const f = await fixture(true); await f.observer.arm(); await assert.rejects(f.observer.observeHeldCall(), /ORIGINAL_FRAME/u); assert.equal(f.state.requests, 27); assert.equal(f.state.failed, true);
+  f.exit(); await f.observer.retireAfterOriginalExit(); assert.equal(f.state.requests, 27);
 });
