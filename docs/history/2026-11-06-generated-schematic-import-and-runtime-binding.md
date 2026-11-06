@@ -62,3 +62,13 @@ allocated no application or controller and changed no journals. Existing pure
 projection caches do not replace fresh complete-byte checks. These measurements
 identify a practical cost; they do not establish a performance improvement or
 justify skipping current integrity checks.
+
+## Original reader closure
+
+The undispatched reader's separate original launcher acknowledged one normal
+close, separately observed root exit and the empty Job, and completed original
+helper transport release. Generation 7 then acknowledged facade retirement and
+control-lease release. Its original stdin EOF, process and stdio closure and
+exit 0 were observed. No controller signal, navigation replay, explicit Save or
+forced application termination was used. Both generation 7 native runtimes are
+closed; the reader remains an undispatched failure, not a successful page read.
