@@ -1,3 +1,5 @@
+/* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
+/* oxlint-disable max-classes-per-file -- Fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
 import { CurrentPcbViaLocalUploadCursor } from "./current-pcb-via-local-upload-cursor.ts";
 import type { CurrentPcbViaLocalUploadHeld } from "./current-pcb-via-local-upload-cursor.ts";
 import type { CurrentPcbViaLocalUploadCommand } from "./current-pcb-via-local-upload-protocol.ts";
@@ -19,8 +21,6 @@ import type { CurrentGeneratedInitialBranchDataPlan } from "./current-generated-
  * A diagnostic failure never ends stdin or closes an Electron pipe. The only
  * release path first proves original root and complete Job termination.
  * Browser discovery grants no frame, worker, script or CAD execution authority. */
-/* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
-/* oxlint-disable max-classes-per-file -- Fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
 import type { CurrentPcbViaSavedLoadBootstrapCommand } from "./current-pcb-via-saved-load-bootstrap-protocol.ts";
 import { CurrentFootprintInverseWorkerController } from "./current-footprint-inverse-worker-controller.ts";
 import type { CurrentFootprintInverseWorkerHeld, CurrentFootprintInverseWorkerPair } from "./current-footprint-inverse-worker-controller.ts";

@@ -7,6 +7,7 @@ import { requireOriginalCurrentPcbViaWritePlan } from "./current-pcb-via-write-p
 import type { CurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
 import type { CurrentPcbViaWriteDispatch } from "./current-pcb-via-write-journal.ts";
 import { currentPcbViaWriteStageResultSchema } from "./current-pcb-via-write-contract.ts";
+import type { CurrentPcbViaWriteStageResult } from "./current-pcb-via-write-contract.ts";
 import { qualifyOriginalCurrentPcbViaWriteEffect } from "./current-pcb-via-write-effect.ts";
 import type { CurrentPcbViaWriteEffect } from "./current-pcb-via-write-effect.ts";
 import type { CurrentPcbViaMainOrigin } from "./current-pcb-via-main-origin.ts";
@@ -22,6 +23,7 @@ import type { CurrentProjectSaveProducerHeldCall } from "./current-project-save-
 import { CURRENT_PROJECT_SAVE_PRODUCER_REQUESTS } from "./current-project-save-producer-protocol.ts";
 import { CurrentProjectStructureTransportObserver } from "./current-project-structure-transport-observer.ts";
 import { qualifyOriginalCurrentPcbViaSaveProjection } from "./current-pcb-via-save-projection.ts";
+import { CURRENT_PCB_VIA_LOCAL_UPLOAD_ROLES } from "./current-pcb-via-local-upload-protocol.ts";
 
 type Outcome<T> = Readonly<{ ok: true; value: T }> | Readonly<{ ok: false; error: unknown }>;
 type NativeObservation = Awaited<ReturnType<CurrentPcbViaWriteOwner["observeViaPrimitives"]>>;
@@ -44,6 +46,10 @@ export class CurrentPcbViaWriteObservers {
   #mainBegin: CurrentPcbViaMainBeginObserver | null = null; #mainHistory: CurrentPcbViaMainHistoryObserver | null = null;
   #mainStructure: CurrentPcbViaMainStructureObserver | null = null; #clock: CurrentPcbViaClockObserver | null = null;
   #before: NativeObservation | null = null; #beforeScene: SceneObservation | null = null; #beforeAttempted = false; #beforeSceneAttempted = false;
+  #after: NativeObservation | null = null; #afterScene: SceneObservation | null = null; #afterAttempted = false; #afterSceneAttempted = false;
+  #createPrepared = false; #sdkCreateAttempted = false; #createDispatch: CurrentPcbViaWriteDispatch | null = null;
+  #createAcknowledgement: CurrentPcbViaWriteStageResult | null = null; #localAttempted = false;
+  #bodyReleaseEntered = false;
   #createAttempted = false; #effect: CurrentPcbViaWriteEffect | null = null; #clockAttempted = false; #bodyAttempted = false;
   public constructor(owner: CurrentPcbViaWriteOwner, plan: CurrentPcbViaWritePlan) {
     assertOriginalCurrentPcbViaWriteOwner(owner); const prepared = requireOriginalCurrentPcbViaWritePlan(plan).prepared;
@@ -94,7 +100,9 @@ export class CurrentPcbViaWriteObservers {
     // Initial sync provides a causal settlement opportunity for earlier cache work.
     // No delay, stability counter or copied completed flag is authority.
     if (progress.initialSync?.completed === true && progress.initialCache?.canSettle === true) { await observer.settleInitialCacheCalls(); this.#current(); progress = observer.startupProgress(); }
-    if (progress.periodicSync?.canSettle === true) { await observer.settlePeriodicSyncCall(); this.#current(); }
+    if (progress.periodicSync?.canSettle === true) {
+      await (this.#phase === "startup" ? observer.settlePeriodicSyncCall() : observer.settlePreSavePeriodicSyncCall()); this.#current();
+    }
   }
   async #collectStartup(observer: CurrentProjectSaveProducerObserver): Promise<void> {
     const construction = this.#construction; need(construction !== null, "ORIGINAL_CONSTRUCTION_REQUIRED"); result(await construction); this.#current();
@@ -109,9 +117,15 @@ export class CurrentPcbViaWriteObservers {
       const pending = observer.observeHeldCall(); this.#originalPendingProducer = pending;
       const packet = await pending; need(this.#originalPendingProducer === pending, "ORIGINAL_PRODUCER_READ_CHANGED"); this.#originalPendingProducer = null;
       this.#current(); await this.#settleStartup(observer); this.#current();
-      if (this.#phase === "action") { this.#afterAction.resolve(Object.freeze({ ok: true, value: packet })); return; }
       const actual = requireOriginalCurrentProjectSaveProducerHeldCall(packet, observer);
-      if (actual.role === "headEntry" || actual.role === "headPromise" || actual.role === "headSuccess") { await observer.continueInitialCacheCall(packet); }
+      if (this.#phase === "action") {
+        if (["syncEntry", "syncFull", "syncLast", "syncHistory", "syncMerged", "syncFinalizing", "syncReturned"].includes(actual.role)) {
+          await observer.continuePreSavePeriodicSyncCall(packet); this.#current();
+        } else {
+          need(actual.role === "localIngress" && this.#bodyReleaseEntered, "UNPLANNED_PRODUCER_BEFORE_ORIGINAL_BODY_RELEASE");
+          this.#afterAction.resolve(Object.freeze({ ok: true, value: packet })); return;
+        }
+      } else if (actual.role === "headEntry" || actual.role === "headPromise" || actual.role === "headSuccess") { await observer.continueInitialCacheCall(packet); }
       else if (observer.startupProgress().initialSync?.completed === true) { await observer.continuePeriodicSyncCall(packet); }
       else { await observer.continueInitialSyncCall(packet); }
       this.#current();
@@ -133,8 +147,9 @@ export class CurrentPcbViaWriteObservers {
   }
   /** Caller must already have published this original journal's create intent.
    * All main collectors arm before the actual one-shot SDK create. */
-  public async create(dispatch: CurrentPcbViaWriteDispatch): Promise<CurrentPcbViaWriteEffect> {
+  public async prepareCreate(dispatch: CurrentPcbViaWriteDispatch): Promise<void> {
     this.#current(); need(!this.#createAttempted && this.#before !== null && this.#beforeScene !== null, "CREATE_CONSUMED"); this.#createAttempted = true;
+    this.#createDispatch = dispatch;
     try {
       await this.waitForStartupObservations(); this.#current(); await this.#owner.enrollViaProducerPrefix(this.#plan); this.#current();
       this.#main = await this.#owner.prepareViaMainObservationOrigin(this.#plan, dispatch, async origin => {
@@ -144,14 +159,42 @@ export class CurrentPcbViaWriteObservers {
         this.#mainHistory = new CurrentPcbViaMainHistoryObserver(origin, this.#owner, this.#plan); await this.#mainHistory.arm(); this.#current();
         this.#mainStructure = new CurrentPcbViaMainStructureObserver(origin, this.#owner, this.#plan); await this.#mainStructure.arm(); this.#current();
       });
-      this.#current(); this.#phase = "action";
+      this.#current(); this.#createPrepared = true;
+    } catch (error) { this.#stop(error); throw error; }
+  }
+  public async dispatchCreate(dispatch: CurrentPcbViaWriteDispatch): Promise<CurrentPcbViaWriteStageResult> {
+    this.#current(); need(this.#createPrepared && this.#createDispatch === dispatch && !this.#sdkCreateAttempted, "ORIGINAL_CREATE_DISPATCH");
+    this.#sdkCreateAttempted = true; this.#phase = "action";
+    try {
       const acknowledgement = await this.#owner.executeViaStage("create", this.#plan, dispatch); this.#current();
       need("stage" in acknowledgement, "ORIGINAL_CREATE_ACKNOWLEDGEMENT"); currentPcbViaWriteStageResultSchema.parse(acknowledgement);
-      const after = await this.#owner.observeViaPrimitives(this.#plan, "after"); this.#current();
-      const afterScene = await this.#owner.observeViaSceneMembership(this.#plan, "after"); this.#current();
-      const effect = qualifyOriginalCurrentPcbViaWriteEffect(this.#owner, this.#plan, { before: this.#before, beforeScene: this.#beforeScene, after, afterScene, createAcknowledgement: acknowledgement });
+      need(acknowledgement.stage === "create", "ORIGINAL_CREATE_ACKNOWLEDGEMENT"); this.#createAcknowledgement = acknowledgement; return acknowledgement;
+    } catch (error) { this.#stop(error); throw error; }
+  }
+  public async observeAfterNative(): Promise<NativeObservation> {
+    this.#current(); need(this.#createAcknowledgement !== null && !this.#afterAttempted, "AFTER_NATIVE_CONSUMED"); this.#afterAttempted = true;
+    try { const value = await this.#owner.observeViaPrimitives(this.#plan, "after"); this.#current(); this.#after = value; return value; }
+    catch (error) { this.#stop(error); throw error; }
+  }
+  public async observeAfterScene(): Promise<SceneObservation> {
+    this.#current(); need(this.#createAcknowledgement !== null && !this.#afterSceneAttempted, "AFTER_SCENE_CONSUMED"); this.#afterSceneAttempted = true;
+    try { const value = await this.#owner.observeViaSceneMembership(this.#plan, "after"); this.#current(); this.#afterScene = value; return value; }
+    catch (error) { this.#stop(error); throw error; }
+  }
+  public qualifyEffect(): CurrentPcbViaWriteEffect {
+    this.#current(); need(this.#effect === null && this.#main !== null && this.#before !== null && this.#beforeScene !== null &&
+      this.#after !== null && this.#afterScene !== null && this.#createAcknowledgement !== null, "ORIGINAL_EFFECT_OBSERVATIONS");
+    try {
+      const effect = qualifyOriginalCurrentPcbViaWriteEffect(this.#owner, this.#plan, { before: this.#before, beforeScene: this.#beforeScene,
+        after: this.#after, afterScene: this.#afterScene, createAcknowledgement: this.#createAcknowledgement });
       this.#owner.bindViaMainOriginalEffect(this.#plan, this.#main, effect); this.#effect = effect; return effect;
     } catch (error) { this.#stop(error); throw error; }
+  }
+  /** Convenience composition. The outer durable workflow uses the separate
+   * stages to publish each journal intent before its actual native dispatch. */
+  public async create(dispatch: CurrentPcbViaWriteDispatch): Promise<CurrentPcbViaWriteEffect> {
+    await this.prepareCreate(dispatch); this.#current(); await this.dispatchCreate(dispatch); this.#current();
+    await this.observeAfterNative(); this.#current(); await this.observeAfterScene(); this.#current(); return this.qualifyEffect();
   }
   public async armSaveClock(): Promise<void> {
     this.#current(); need(this.#effect !== null && !this.#clockAttempted, "SAVE_CLOCK_CONSUMED"); this.#clockAttempted = true;
@@ -179,7 +222,7 @@ export class CurrentPcbViaWriteObservers {
       const projection = await qualifyOriginalCurrentPcbViaSaveProjection(this.#owner, this.#plan, this.#effect, body.value, joined); this.#current();
       await this.#mainRequest.bindOriginalBody(projection); this.#current();
       const reservation = await this.#owner.reserveViaStructurePublication(this.#plan, this.#main); this.#current();
-      await this.#save.releaseBody(body.value); this.#current();
+      this.#bodyReleaseEntered = true; await this.#save.releaseBody(body.value); this.#current();
       // The original Save result precedes the delayed structure/history timers.
       // Resume it first while the separate planned local producer is serviced.
       // Its SDK acknowledgment alone never completes this orchestration.
@@ -201,6 +244,27 @@ export class CurrentPcbViaWriteObservers {
   public async originalProducerAfterAction(): Promise<Readonly<{ observer: CurrentProjectSaveProducerObserver; packet: CurrentProjectSaveProducerHeldCall }>> {
     const packet = result(await this.#afterAction.promise); this.#current(); need(this.#producer !== null, "ORIGINAL_PRODUCER_REQUIRED");
     requireOriginalCurrentProjectSaveProducerHeldCall(packet, this.#producer); return Object.freeze({ observer: this.#producer, packet });
+  }
+  /** A separate original collector services the fixed local put/buffer chain
+   * alongside clock/body handling. It issues no final upload-drain authority. */
+  public async serviceSaveLocalCalls(): Promise<void> {
+    this.#current(); need(!this.#localAttempted && this.#phase === "action" && this.#bodyAttempted, "SAVE_LOCAL_CONSUMED"); this.#localAttempted = true;
+    try {
+      const first = await this.originalProducerAfterAction(); this.#current(); let packet = first.packet;
+      for (const [index, role] of CURRENT_PCB_VIA_LOCAL_UPLOAD_ROLES.entries()) {
+        if (index > 0) {
+          need(this.#originalPendingProducer === null, "ORIGINAL_PRODUCER_READ_PENDING"); const pending = first.observer.observeHeldCall(); this.#originalPendingProducer = pending;
+          packet = await pending; need(this.#originalPendingProducer === pending, "ORIGINAL_PRODUCER_READ_CHANGED"); this.#originalPendingProducer = null; this.#current();
+        }
+        need(requireOriginalCurrentProjectSaveProducerHeldCall(packet, first.observer).role === role, "ORIGINAL_SAVE_LOCAL_ROLE");
+        await first.observer.continueSaveLocalCall(packet); this.#current();
+      }
+      first.observer.requireSaveLocalCompleted(); this.#current();
+    } catch (error) { this.#stop(error); throw error; }
+  }
+  public retainedCreateState(): Readonly<{ requestGenerationEntered: boolean; originalAcknowledgement: CurrentPcbViaWriteStageResult | null }> {
+    assertOriginalCurrentPcbViaWriteOwner(this.#owner); need(originalCurrentPcbViaWriteTarget(this.#owner) === this.#prepared, "ORIGINAL_CHANGED");
+    return Object.freeze({ requestGenerationEntered: this.#sdkCreateAttempted, originalAcknowledgement: this.#createAcknowledgement });
   }
   /** Revoke only this orchestration. The original native owner and every
    * pending read remain retained for separately authorized original cleanup. */

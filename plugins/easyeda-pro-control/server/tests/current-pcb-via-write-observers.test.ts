@@ -37,7 +37,7 @@ async function fixture(failBefore = false): Promise<Readonly<{
       assert.equal(token, dispatch); await install(Object.freeze({ inertMainOrigin: true })); calls.push("main-armed"); return {};
     },
     executeViaStage: (stage: string, _p: unknown, token: unknown): Promise<unknown> => {
-      calls.push(`sdk-${stage}`); assert.equal(stage, "create"); assert.equal(token, dispatch); read.resolve(held); return Promise.resolve(acknowledgement);
+      calls.push(`sdk-${stage}`); assert.equal(stage, "create"); assert.equal(token, dispatch); return Promise.resolve(acknowledgement);
     }, bindViaMainOriginalEffect: (_p: unknown, _o: unknown, actual: unknown): void => { assert.equal(actual, effect); calls.push("effect-bound"); },
   });
   const sourceRequire = createRequire(new URL("../src/current-pcb-via-write-observers.ts", import.meta.url));
@@ -90,10 +90,11 @@ void test("one producer read spans startup and create and the original SDK ackno
   assert.equal(f.pendingReads(), 1); assert.equal(f.group.status().originalProducerReadPending, true);
   await f.group.observeBeforeNative(); await f.group.observeBeforeScene();
   assert.equal(await f.group.create(f.dispatch), f.effect); assert.equal(f.pendingReads(), 1);
-  const producer = await f.group.originalProducerAfterAction(); assert.equal(producer.packet.profile, "private.current-project-save-producer-held-call.v1");
+  assert.equal(f.group.status().originalProducerReadPending, true);
   assert.equal(f.calls.filter(call => call === "sdk-create").length, 1); assert.ok(f.calls.indexOf("main-armed") < f.calls.indexOf("sdk-create"));
   assert.ok(f.calls.indexOf("native-after") < f.calls.indexOf("effect-qualified")); assert.ok(f.calls.indexOf("scene-after") < f.calls.indexOf("effect-qualified"));
   await assert.rejects(f.group.create(f.dispatch), /CREATE_CONSUMED/u); assert.equal(f.group.status().persistenceVerified, false);
+  f.group.cancel(); f.closeRead(); await assert.rejects(f.group.originalProducerAfterAction(), /CANCELLED/u);
 });
 void test("failed original read consumes its observation and prevents a later create", async () => {
   const f = await fixture(true); f.group.armBeforeNavigation(); await f.activate(); await f.group.waitForStartupObservations();

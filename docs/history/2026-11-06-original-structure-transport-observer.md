@@ -70,3 +70,13 @@ before awaiting the structure packet. The early SDK acknowledgment remains
 insufficient for journal completion, full SQL or saved/reopened acceptance.
 The planned local producer still needs its separate genuine continuation.
 No live Save had exercised the earlier source ordering.
+
+The writer group subsequently separates create preparation, actual SDK dispatch,
+post-create native observation, complete-scene observation and effect issuance.
+The outer journal can publish each intent before its respective native call.
+The group preserves the original create acknowledgment even if a later read
+fails. Its fixed seven-call local collector uses the same original producer
+observer alongside Save-body handling. A local upload arriving before the
+original body release is refused. Same-head periodic calls use their distinct
+prepublication scope; unknown producer work stays held. Final upload draining
+and the complete outer writer workflow remain pending.
