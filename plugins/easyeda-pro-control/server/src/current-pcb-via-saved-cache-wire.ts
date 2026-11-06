@@ -36,3 +36,20 @@ export function currentPcbViaSavedReadbackParentNativeFrame(chunk: Buffer, sessi
   if (value === null || typeof value !== "object" || !("id" in value) || typeof value.id !== "number" || chunk.toString("utf8") !== `${JSON.stringify(currentPcbViaSavedReadbackParentWire(value.id, sessionId))}\0`) { throw new Error("SAVED_READBACK_PARENT_WIRE"); }
   return Object.freeze({ action: "saved-readback-parent", requestId: value.id, sessionId });
 }
+
+/** Browser-wide hold catches dedicated, shared and service workers, including
+ * actors unrelated to the selected page. No worker may run during backup. */
+export const CURRENT_PCB_VIA_SAVED_READBACK_ACTOR_PARAMS = Object.freeze({ autoAttach: true, waitForDebuggerOnStart: true, flatten: true,
+  filter: Object.freeze([Object.freeze({ type: "worker", exclude: false }), Object.freeze({ type: "shared_worker", exclude: false }),
+    Object.freeze({ type: "service_worker", exclude: false }), Object.freeze({ exclude: true })]) } as const);
+export function currentPcbViaSavedReadbackActorWire(id: number): Readonly<{ id: number; method: "Target.setAutoAttach";
+  params: typeof CURRENT_PCB_VIA_SAVED_READBACK_ACTOR_PARAMS; savedReadbackActors: "arm" }> {
+  if (!Number.isSafeInteger(id) || id < 1 || id > PROFILE.renderer.activeReadOnly) { throw new Error("SAVED_READBACK_ACTOR_WIRE"); }
+  return Object.freeze({ id, method: "Target.setAutoAttach", params: CURRENT_PCB_VIA_SAVED_READBACK_ACTOR_PARAMS, savedReadbackActors: "arm" });
+}
+export function currentPcbViaSavedReadbackActorNativeFrame(chunk: Buffer): Readonly<Record<string, unknown>> {
+  if (chunk.length > 1024 || chunk.at(-1) !== 0) { throw new Error("SAVED_READBACK_ACTOR_WIRE"); }
+  const value: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(chunk.subarray(0, -1)));
+  if (value === null || typeof value !== "object" || !("id" in value) || typeof value.id !== "number" || chunk.toString("utf8") !== `${JSON.stringify(currentPcbViaSavedReadbackActorWire(value.id))}\0`) { throw new Error("SAVED_READBACK_ACTOR_WIRE"); }
+  return Object.freeze({ action: "saved-readback-actors", requestId: value.id });
+}

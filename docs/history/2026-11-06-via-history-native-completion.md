@@ -545,3 +545,25 @@ then execute the exact pinned flowParseFull/getFlowParse against inert inputs
 for1PCB/2SCH documents. Both raw bodies and complete head-index bytes match.
 They prove supplied-data/source projection, not a connected native put or a
 successful original checkpoint preparation/live Save.
+
+The cache preparation fence now first arms the original browser session for all
+three worker types (`worker`, `shared_worker`, `service_worker`) with debugger
+waiting, then arms the original page's dedicated-worker relation. The complete
+fresh target inventory rejects every already running worker of those types.
+Any new browser worker attachment before the distinct cold-loading handoff
+refuses the operation, while its original debugger wait remains held; there is
+no worker-resume grammar in this cache phase. Shared/service workers and workers
+from another page therefore cannot bypass the original-page hold during backup,
+its has/open checks or either deletion. This adds one active early command
+(active162); the two originally reserved parent commands keep prospective270.
+Old readonly cache purposes are unchanged. The actual helper checks this
+browser-wide arm before metadata and backup/delete admission.
+
+The later cold-loading controller remains closed and must deliberately join
+the original browser and page attachments of the same waiting selected worker,
+install its source instrumentation before any run-waiting, and release only that
+original worker. It must not implement the old bootstrap callback as a no-op
+or resume a foreign browser worker. A real pipe regression admits no cache query
+when a foreign service-worker attachment arrives; fixed-codec tests reject a
+page-scoped substitute for the browser-wide command. This is source and inert
+transport evidence, not a connected actor-fence or cache-invalidation result.

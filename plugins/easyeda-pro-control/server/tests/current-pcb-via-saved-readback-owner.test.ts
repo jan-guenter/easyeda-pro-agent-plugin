@@ -4,6 +4,7 @@
 import { currentPcbViaSavedReadbackAllocationOutcome, startCurrentPcbViaSavedReadbackOwner } from "../src/current-pcb-via-saved-readback-owner.ts";
 import type { CurrentPcbViaWriteClosedCheckpoint } from "../src/current-pcb-via-write-closed-checkpoint.ts";
 import { completeSyntheticSavedCacheFixture } from "./helpers/current-pcb-via-saved-cache-fixture.ts";
+import { currentPcbViaSavedReadbackActorNativeFrame, currentPcbViaSavedReadbackActorWire } from "../src/current-pcb-via-saved-cache-wire.ts";
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-opening.ts";
 import type { CurrentPcbViaSavedCacheBackupGrant } from "../src/current-pcb-via-saved-cache-backup-origin.ts";
 import { PassThrough } from "node:stream";
@@ -28,7 +29,7 @@ async function fixture(context: TestContext, malformed = false, cache = false, m
   const prepared = full?.prepared ?? Object.freeze({ syntheticCheckpoint: true, target: Object.freeze({ projectUuid: "a".repeat(64) }) });
   const testMethod = `public async seedSyntheticCacheForTest(full){
 const pipe=this.#pipe;if(!(pipe instanceof CurrentPcbViaSavedReadbackPipe))throw Error("pipe");await this.#transfer(async()=>({sessionId:await pipe.attachTarget("synthetic-target",event=>{if(this.#observeSavedReadbackGuardHelper(event))return;if(this.#savedReadbackInvalidation?.observeOriginalEvent(event))return;})}));
-this.#stagedAttachment=Object.freeze({targetId:"synthetic-target",sessionId:"synthetic-session"});this.#savedReadbackParentPending=true;await this.#transfer(()=>pipe.armSavedReadbackCacheParent());this.#savedReadbackParentPending=false;
+this.#stagedAttachment=Object.freeze({targetId:"synthetic-target",sessionId:"synthetic-session"});this.#savedReadbackActorsPending=true;await this.#transfer(()=>pipe.armSavedReadbackCacheActors());this.#savedReadbackActorsPending=false;this.#savedReadbackActorsArmed=true;this.#savedReadbackParentPending=true;await this.#transfer(()=>pipe.armSavedReadbackCacheParent());this.#savedReadbackParentPending=false;
 const selected=Object.freeze({frameId:"synthetic-frame",sessionId:"synthetic-session",uniqueContextId:"synthetic-context",securityOrigin:"https://client"});
 const context={savedReadbackCacheContext:()=>selected,script:()=>({context:{id:7}})};this.#stagedContext=context;
 this.#savedReadbackParentArmed=true;this.#mainRunner={selectedSqlFenceState:()=>({ready:true}),pumpSelectedSqlFence:async()=>{}};
@@ -68,6 +69,7 @@ const send=(q,result)=>process.stdout.write(JSON.stringify({id:q.id,ok:true,resu
 input.on('line',line=>{const q=JSON.parse(line);
 if(q.action==='launch')send(q,{helperInstance:'b'.repeat(32),jobId:'c'.repeat(32),rootPid:123,rootCreated:'123456789012345'});
 else if(q.action==='send'){if(q.method==='Debugger.getScriptSource')queued.push({id:q.requestId,result:{scriptSource:helperSource},sessionId:q.sessionId});else{attached=true;queued.push({id:q.requestId,result:{sessionId:'synthetic-session'}});}send(q,{written:true});}
+else if(q.action==='saved-readback-actors'){queued.push({id:q.requestId,result:{}});send(q,{written:true});}
 else if(q.action==='saved-readback-parent'){queued.push({id:q.requestId,result:{},sessionId:q.sessionId});send(q,{written:true});}
 else if(q.action==='saved-readback-metadata'){if(q.savedCacheMetadataPhase!=='saved-cache-native-constructors'||q.uniqueContextId!=='synthetic-context')throw Error('metadata-selector');send(q,{written:true});}
 else if(q.action==='saved-readback-backup-enroll')send(q,{backupEnrolled:true});
@@ -171,7 +173,7 @@ void test("copied closed-checkpoint data refuses the real lazy factory before na
 void test("fresh readback native composition repeats exactly and its current pipe preserves42 bounded discovery slots and no opening grant", async context => {
   const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   const first = generateWorkerStartupProtocol(source); assert.equal(generateWorkerStartupProtocol(first), first);
-  const invalidationStart = first.indexOf("        'saved-readback-backup-enroll' {\n");
+  const invalidationStart = first.indexOf("        'saved-readback-actors' {\n");
   const metadataStart = first.indexOf("        'saved-readback-metadata' {\n");
   const parentStart = first.indexOf("        'saved-readback-parent' {\n");
   const preflightStart = first.indexOf("        'saved-readback-preflight' {\n");
@@ -189,7 +191,7 @@ void test("fresh readback native composition repeats exactly and its current pip
   assert.ok(first.includes("spatial209?384:componentSpatial209?419:"));
   assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.main.total, 909); assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.total, 270);
   assert.deepEqual(CURRENT_PCB_VIA_SAVED_READBACK_BOOTSTRAP_REQUESTS, { parent: 2, inventory: 1, workerNormal: 12, workerCleanup: 8, total: 23 });
-  assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeReadOnly, 161);
+  assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeReadOnly, 162);
   assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.enabledDiscovery, 16); assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.cacheDeletionAuthorized, false);
   const input = new PassThrough(), output = new PassThrough(); let requests = 0;
   output.on("data", (bytes: Buffer): void => { const command: unknown = JSON.parse(bytes.subarray(0, -1).toString()); assert.ok(command !== null && typeof command === "object" && "id" in command && "method" in command);
@@ -220,4 +222,20 @@ void test("pending original metadata helper settles through the retained Job-onl
   assert.equal(f.owner.status().busy, false); await assert.rejects(f.cacheRequest());
   assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
   assert.equal(f.owner.status().released, true); assert.equal(f.owner.status().helperClosed, true);
+});
+
+void test("browser-wide actor fence holds all worker kinds and a foreign service worker refuses before cache queries", async context => {
+  const wire = currentPcbViaSavedReadbackActorWire(2); assert.equal("sessionId" in wire, false);
+  assert.deepEqual(wire.params.filter.map(value => "type" in value ? value.type : "*"), ["worker", "shared_worker", "service_worker", "*"]);
+  const native = currentPcbViaSavedReadbackActorNativeFrame(Buffer.from(`${JSON.stringify(wire)}\0`)); assert.deepEqual(native, { action: "saved-readback-actors", requestId: 2 });
+  const scoped = Buffer.from(`${JSON.stringify({ ...wire, sessionId: "borrowed-page" })}\0`); assert.throws(() => currentPcbViaSavedReadbackActorNativeFrame(scoped));
+  const input = new PassThrough(), output = new PassThrough(), pipe = new CurrentPcbViaSavedReadbackPipe(input, output); let cacheQueries = 0;
+  output.on("data", (bytes: Buffer): void => { const value: unknown = JSON.parse(bytes.subarray(0, -1).toString()); assert.ok(value !== null && typeof value === "object" && "id" in value && "method" in value);
+    if (value.method === "Target.attachToTarget") { input.write(Buffer.from(`${JSON.stringify({ id: value.id, result: { sessionId: "original-ui" } })}\0`)); }
+    else if (value.method === "Target.setAutoAttach") { input.write(Buffer.from(`${JSON.stringify({ method: "Target.attachedToTarget", params: { sessionId: "foreign-service", waitingForDebugger: true, targetInfo: { targetId: "foreign", type: "service_worker", attached: true } } })}\0${JSON.stringify({ id: value.id, result: {} })}\0`)); }
+    else { cacheQueries += 1; }
+  });
+  context.after(async () => { const closed = [once(input, "close"), once(output, "close")]; input.destroy(); output.destroy(); await Promise.all(closed); pipe.releaseClosedListeners(); });
+  pipe.start(); await pipe.attachTarget("original-page", event => { assert.fail(`Unexpected UI event: ${event.method}`); }); await assert.rejects(pipe.armSavedReadbackCacheActors());
+  assert.notEqual(pipe.status().failure, null); assert.equal(cacheQueries, 0); await assert.rejects(pipe.armSavedReadbackCacheActors());
 });
