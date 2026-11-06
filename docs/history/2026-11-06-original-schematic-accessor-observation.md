@@ -43,3 +43,9 @@ Both TypeScript projects and zero-warning type-aware lint passed. Composed Linux
 C# compilation and the seven-case pure static encoder smoke passed without app,
 Job or owner construction. No live app/bridge, model action, Save, SQL effect or
 reopen was exercised. Generated helpers, pins, bundles and coverage were unchanged.
+
+## Combined generation hook correction
+
+The root combined candidate refused startup generation before writing its helper. The new Via BEGIN smoke call could sit between the older schematic smoke and Via-clock smoke, so a pair-based insertion duplicated the schematic call and the next worker fragment correctly refused the ambiguous anchor. The original failed generation log is retained.
+
+The schematic base, worker, clock and accessor fragments plus Via BEGIN now normalize only their own exact CompileOnly call before a unique fixed anchor. Unknown formatting, duplicate calls and missing anchors still refuse. Interleaving another fragment no longer duplicates a call. Five focused hook/command/protocol cases and strict targeted lint pass. Complete combined generation and Windows compilation remain separate checks for the next frozen payload.

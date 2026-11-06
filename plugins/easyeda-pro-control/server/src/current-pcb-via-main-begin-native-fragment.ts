@@ -1,4 +1,5 @@
 /** Fixed original Via BEGIN codebook and per-slot native admission. */
+import { installNativeCompileOnlyHook } from "./native-compile-only-hook.ts";
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
@@ -46,7 +47,7 @@ export function applyCurrentPcbViaMainBeginNativeFragment(input: string): string
   let source = one(input, 'case "pcb-via-main-step":', 'case "pcb-via-main-step":case "pcb-via-main-begin":');
   source = one(source, "        'pcb-via-main-step' {", `${dispatch}        'pcb-via-main-step' {`);
   source = one(source, "@('pcb-via-main-observe','pcb-via-main-step')", "@('pcb-via-main-observe','pcb-via-main-step','pcb-via-main-begin')");
-  source = one(source, "    [EasyedaDiagnosticOwner]::VerifyPcbViaClockSmoke()", "    [EasyedaDiagnosticOwner]::VerifyPcbViaMainBeginSmoke()\n    [EasyedaDiagnosticOwner]::VerifyPcbViaClockSmoke()");
+  source = installNativeCompileOnlyHook(source, "    [EasyedaDiagnosticOwner]::VerifyPcbViaMainBeginSmoke()", "    [EasyedaDiagnosticOwner]::VerifyPcbViaClockSmoke()");
   const begin = "// BEGIN GENERATED VIA ORIGINAL MAIN BEGIN", end = "// END GENERATED VIA ORIGINAL MAIN BEGIN", value = `${begin}\n${currentPcbViaMainBeginNativeSource()}\n${end}`;
   const start = source.indexOf(begin), stop = source.indexOf(end);
   if (start !== -1 || stop !== -1) { if (start === -1 || stop < start || source.includes(begin, start + begin.length) || source.includes(end, stop + end.length)) { throw new Error("PCB_VIA_BEGIN_NATIVE_MARKERS"); } source = source.slice(0, start) + value + source.slice(stop + end.length); }

@@ -1,4 +1,5 @@
 /** New passive metadata action of the original SCH birth only. */
+import { installNativeCompileOnlyHook } from "./native-compile-only-hook.ts";
 import { currentSchematicDisplayAccessorNativeSource } from "./current-schematic-display-accessor-native.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_ACCESSOR_REQUESTS as REQUESTS } from "./current-schematic-display-accessor-protocol.ts";
 
@@ -25,7 +26,7 @@ const dispatch = String.raw`        'schematic-display-accessor' {
 export function applyCurrentSchematicDisplayAccessorNativeFragment(input: string): string {
   let source = one(input, 'case "schematic-display-clock-bind":', 'case "schematic-display-accessor":case "schematic-display-clock-bind":');
   source = one(source, "        'schematic-display-clock-bind' {", `${dispatch}        'schematic-display-clock-bind' {`);
-  source = one(source, "    [EasyedaDiagnosticOwner]::VerifySchematicDisplayClockSmoke()", "    [EasyedaSchematicDisplayAccessorProtocol]::VerifySmoke()\n    [EasyedaDiagnosticOwner]::VerifySchematicDisplayClockSmoke()");
+  source = installNativeCompileOnlyHook(source, "    [EasyedaSchematicDisplayAccessorProtocol]::VerifySmoke()", "    [EasyedaDiagnosticOwner]::VerifySchematicDisplayClockSmoke()");
   const start = source.indexOf(begin), stop = source.indexOf(end);
   if (start !== -1 || stop !== -1) { if (start === -1 || stop < start || source.includes(begin, start + begin.length) || source.includes(end, stop + end.length)) { throw new Error("SCHEMATIC_DISPLAY_ACCESSOR_NATIVE_MARKERS"); } source = source.slice(0, start) + native() + source.slice(stop + end.length); }
   else { source = one(source, "// BEGIN GENERATED SCHEMATIC ORIGINAL CLOCK OBSERVER", `${native()}\n// BEGIN GENERATED SCHEMATIC ORIGINAL CLOCK OBSERVER`); } return source;

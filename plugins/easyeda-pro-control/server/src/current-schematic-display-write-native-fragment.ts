@@ -1,3 +1,4 @@
+import { installNativeCompileOnlyHook } from "./native-compile-only-hook.ts";
 import { applyCurrentSchematicDisplayAccessorNativeFragment } from "./current-schematic-display-accessor-native-fragment.ts";
 import { applyCurrentSchematicDisplayClockNativeFragment } from "./current-schematic-display-clock-native-fragment.ts";
 /** New schematic birth after shared fixed SQL data and prior fragments. This
@@ -91,7 +92,7 @@ export function applyCurrentSchematicDisplayWriteNativeFragment(input: string): 
   const dispatchAnchor = ["        'pcb-via-main-step' {", "        'pcb-via-main-observe' {", "        'pcb-via-clock-bind' {"].find(anchor => source.includes(anchor));
   if (dispatchAnchor === undefined) { throw new Error("SCHEMATIC_DISPLAY_NATIVE_DISPATCH_ANCHOR"); }
   source = one(source, dispatchAnchor, `${dispatch}${dispatchAnchor}`);
-  source = one(source, "    [EasyedaDiagnosticOwner]::VerifyPcbViaClockSmoke()", "    [EasyedaDiagnosticOwner]::VerifySchematicDisplaySmoke()\n    [EasyedaDiagnosticOwner]::VerifyPcbViaClockSmoke()");
+  source = installNativeCompileOnlyHook(source, "    [EasyedaDiagnosticOwner]::VerifySchematicDisplaySmoke()", "    [EasyedaDiagnosticOwner]::VerifyPcbViaClockSmoke()");
   const start = source.indexOf(begin), stop = source.indexOf(end);
   if (start !== -1 || stop !== -1) { if (start === -1 || stop < start || source.includes(begin, start + begin.length) || source.includes(end, stop + end.length)) { throw new Error("SCHEMATIC_DISPLAY_NATIVE_MARKERS"); } source = source.slice(0, start) + native() + source.slice(stop + end.length); }
   else { source = one(source, "\n'@\n", `\n${native()}\n'@\n`); } return applyCurrentSchematicDisplayAccessorNativeFragment(applyCurrentSchematicDisplayClockNativeFragment(applyCurrentSchematicDisplayWorkerNativeFragment(source)));
