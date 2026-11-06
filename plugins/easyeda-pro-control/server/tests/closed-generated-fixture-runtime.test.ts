@@ -5,6 +5,7 @@ import { copyFile, mkdir, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { writePhaseArtifact } from "../src/artifacts.ts";
+import { scanQualifiedAdmissionOperations } from "../src/closed-symbol-terminal-admission.ts";
 import { normalizeEasyedaProjectPath } from "../src/core.ts";
 import type { ClosedGeneratedFixtureDataLocator } from "../src/closed-generated-fixture-data.ts";
 import { ClosedGeneratedFixtureFileOwner } from "../src/closed-generated-fixture-file.ts";
@@ -18,7 +19,7 @@ import { managedFixtureInitialSqlFixture } from "./helpers/managed-fixture-initi
 import { syntheticSqlRoot } from "./helpers/sqlite-inventory-fixture.ts";
 
 const forbidden = (): Promise<never> => Promise.reject(new Error("Synthetic data-only test forbids any application/bridge/capture call"));
-async function fixture(operationId: string, running = false): Promise<{ owner: ClosedGeneratedFixtureDataCoordinator; calls: string[] }> {
+async function fixture(operationId: string, running = false, releaseFails = false): Promise<{ owner: ClosedGeneratedFixtureDataCoordinator; calls: string[] }> {
   const calls: string[] = [];
   const runtime = new WindowsControlRuntime({ upstream: { callTool: forbidden, bridgeSessionLifecycle: (): undefined => undefined,
     currentAuthenticatedBridgeDispatchBinding: (): undefined => undefined }, pluginRoot: "/mnt/c/synthetic-plugin", assetsRoot: "/mnt/c/synthetic-app/resources/app/assets", reviewedExecutionScopeSha256: "1".repeat(64) }, {
@@ -26,7 +27,7 @@ async function fixture(operationId: string, running = false): Promise<{ owner: C
       calls.push("new-no-app-helper"); return Promise.resolve({ capture: forbidden, releaseCapture: forbidden, validate: forbidden, proveTerminated: forbidden,
         prepareClosedSessionClose: forbidden, requestClosedSessionNormalClose: forbidden, proveClosedSession: forbidden, probeClosedSessionTermination: forbidden,
         launch: forbidden, requestNormalClose: forbidden, observeExistingApplication: (): Promise<{ running: boolean }> => { calls.push("observe-no-app"); return Promise.resolve({ running }); },
-        release: (): Promise<void> => { calls.push("release-original-no-app-helper"); return Promise.resolve(); } });
+        release: (): Promise<void> => { calls.push("release-original-no-app-helper"); return releaseFails ? Promise.reject(new Error("Synthetic original proof release unknown")) : Promise.resolve(); } });
     },
   });
   const directory = join(syntheticSqlRoot(), `CodexEasyedaFixture_${randomUUID().replaceAll("-", "")}`); await mkdir(directory);
@@ -70,6 +71,7 @@ void test("fresh data qualification copies complete SQL and settles a lost resul
   assert.equal(pending["freshResourcesClosed"], true); assert.equal(pending["publicationPending"], true); assert.equal(pending["requalifiedDataAvailable"], false);
   assert.equal(owner.hasPendingWork(), true); assert.throws(() => { owner.stageSourceForFreshOpening(id); }); await assert.rejects(owner.execute(start(id)));
   await owner.execute({ action: "settle-records", operationId: id }); assert.equal(owner.inspect(id)["requalifiedDataAvailable"], true);
+  const admission = await scanQualifiedAdmissionOperations(); assert.equal(admission.some(entry => entry.summary.operationId === id), false);
   await owner.execute({ action: "release-owner", operationId: id, confirmReleaseClosedDataOwner: true }); assert.equal(owner.hasPendingWork(), false);
   const source = owner.stageSourceForFreshOpening(id); const consumed = consumeManagedFixtureOpeningSource(source);
   assert.equal(consumed.qualification.exactInitialNativePayloadQualified, true); assert.equal(consumed.qualification.registrationVerified, false);
@@ -80,7 +82,18 @@ void test("a fresh observation of an existing app stops before source allocation
   const id = "fixture-data209-existing-refusal"; const { owner, calls } = await fixture(id, true);
   await assert.rejects(owner.execute(start(id)), /publication acknowledgment/u); await owner.execute({ action: "settle-records", operationId: id });
   assert.match(String(owner.inspect(id)["lastError"]), /APPLICATION_MUST_BE_CLOSED/u); assert.equal(owner.inspect(id)["requalifiedDataAvailable"], false);
+  const admission = await scanQualifiedAdmissionOperations(); assert.equal(admission.some(entry => entry.summary.operationId === id), false);
   assert.equal(calls.includes("load-data"), false); assert.equal(calls.includes("lease-initialize"), false);
   await owner.execute({ action: "release-owner", operationId: id, confirmReleaseClosedDataOwner: true }); assert.equal(owner.hasPendingWork(), false);
   assert.throws(() => { owner.stageSourceForFreshOpening(id); }); assert.equal(calls.filter(value => value === "release-original-no-app-helper").length, 1);
+});
+
+void test("an unacknowledged original fresh proof release stays nonterminal and blocks generic admission", async () => {
+  const id = "fixture-data209-release-uncertain"; const { owner } = await fixture(id, true, true);
+  await assert.rejects(owner.execute(start(id)), /publication acknowledgment/u); await owner.execute({ action: "settle-records", operationId: id });
+  const admission = await scanQualifiedAdmissionOperations(); const blocked = admission.find(entry => entry.summary.operationId === id);
+  assert.equal(blocked?.unfinished, true); assert.equal(blocked?.summary.state, "closed-data-resource-release-unresolved"); assert.equal(blocked.summary.hardStop, true);
+  assert.equal(owner.hasPendingWork(), true); assert.equal(owner.inspect(id)["freshResourcesClosed"], false);
+  await assert.rejects(owner.execute({ action: "release-owner", operationId: id, confirmReleaseClosedDataOwner: true }));
+  assert.throws(() => { owner.stageSourceForFreshOpening(id); });
 });

@@ -106,8 +106,8 @@ export class ClosedGeneratedFixtureDataCoordinator {
   async #publishTerminal(): Promise<void> {
     if (this.#terminalSubmitted || this.#terminal === undefined || this.#publication === undefined || !this.#journalCreationSettled) { return; }
     this.#terminalSubmitted = true;
-    await this.#publication.change({ state: this.#qualification === undefined ? "closed-data-refused" : "closed-data-qualified", hardStop: !this.#resourcesClosed,
-      mutationMayHaveOccurred: false, mutationState: "data-only-no-native-dispatch", nextSafeAction: "Release this original data owner, then stage its new in-memory source once. No earlier runtime is adopted." },
+    await this.#publication.change({ state: this.#resourcesClosed ? "completed" : "closed-data-resource-release-unresolved", hardStop: !this.#resourcesClosed,
+      mutationMayHaveOccurred: false, mutationState: this.#qualification === undefined ? "closed-data-refused-no-native-dispatch" : "closed-data-qualified-no-native-dispatch", nextSafeAction: "Release this original data owner, then stage its new in-memory source once. No earlier runtime is adopted." },
     { phase: "fresh-data-result", value: this.#terminal }); this.#terminalPublished = true;
   }
   #releaseResources(): Promise<void> {

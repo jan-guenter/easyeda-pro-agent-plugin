@@ -116,6 +116,13 @@ Only the first request allocates a coordinator. `inspect` reads this retained
 object, never historical JSON. `settle-records` resumes only immutable original
 pending journal/artifact bytes; it cannot reacquire files or repeat qualification.
 `release-owner` requires actual new resource acknowledgement and settled records.
+The settled journal uses generic terminal state `completed` only after all new
+resources acknowledge closure; the qualified/refused data outcome stays in
+`mutationState` and the typed result artifact. An uncertain resource release
+keeps `closed-data-resource-release-unresolved` with `hardStop:true`. The actual
+shared admission scanner verifies both terminal outcomes clear and the uncertain
+case remains blocking, without changing a shared guard.
+
 Gate all runtime replacement/retirement on the conservative synchronous pending
 observer, including before file allocation and after partial failures.
 
