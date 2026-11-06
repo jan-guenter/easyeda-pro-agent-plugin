@@ -101,10 +101,15 @@ callees and uses 344 of the unchanged 384 request IDs, including group release.
 Pads must use the supported Mi view and tE model, copper layer 1 or 2, rotation
 zero and padType zero, with no parent or smart Pad state. Mixed families,
 placed or polygon Pads and every region query refuse before native hits.
-The existing Via/Line/Arc generated fixtures cannot establish positive Pad
-validation. A matching generated Pad fixture has separate maintained archive,
-import, closed-data and staging routes. Its positive connected reading remains
-pending.
+A matching generated Pad fixture has separate maintained archive, import,
+closed-data and staging routes. Frozen4500 accepted four positive points and
+one negative point with two matching samples, exact identities and unchanged
+empty selection. Complete closed raw, all35-table SQL and raw-history invariance
+also passed. The [retained Pad case](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-06-generated-pad-spatial-live-case.md)
+then exposed an old closed-capture report-schema defect. The report was published,
+but that payload refused original helper release before dispatch. The missing
+release acknowledgment remains unknown. Keep this partial historical result
+separate from complete lifecycle acceptance and later-runtime admission.
 
 ## Supported scene and effects
 

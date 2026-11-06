@@ -66,8 +66,11 @@ grant no writer, selection, connectivity or persistence authority. Their
 source implementations and offline checks remain separate from positive
 connected acceptance. One historical Arc/Line/Via six-query branch passed on a
 generated fixture with exact point/region results and complete closed-file/SQL
-invariance. Pad, Component, other variants and later runtime admission remain
-separate. Component-only original-Job abort and the manager's
+invariance. A separate generated-Pad case accepted five points and complete
+closed raw/SQL/history invariance, then an old report-schema defect blocked
+original helper release. Its missing acknowledgment remains unknown. Component,
+other variants and later runtime admission remain separate. Component-only
+original-Job abort and the manager's
 retained cleanup adapter do not transfer ownership or replay a failed read.
 The separate `observe-primitives` stage returns two matching Line/Arc/Via and
 parentless String loaded-view projections with ordered IDs. Its256-row per-family
