@@ -19,9 +19,9 @@ import { syntheticSqlRoot, syntheticSqlRuntime } from "./sqlite-inventory-fixtur
 const actor = "4".repeat(32), branch = "3".repeat(32), headId = "5".repeat(32), key = "6".repeat(32), start = "2".repeat(32);
 const directoryWindows = `C:\\SyntheticTemp\\CodexEasyedaFixture_${"1".repeat(32)}`;
 type Patch = "extra-empty-table-row" | "changed-seed" | "extra-history" | "changed-header" | "bad-sequence" | "changed-arc" | undefined;
-export async function managedFixtureInitialSqlFixture(patch?: Patch, kind: ManagedFixtureGeneratorKind = "line-and-via"): Promise<Parameters<typeof qualifyGeneratedFixtureInitialSql>[0] & { syntheticDatabasePath: string }> {
+export async function managedFixtureInitialSqlFixture(patch?: Patch, kind: ManagedFixtureGeneratorKind = "line-and-via", syntheticDirectory = directoryWindows): Promise<Parameters<typeof qualifyGeneratedFixtureInitialSql>[0] & { syntheticDatabasePath: string }> {
   const generated = generateManagedFixtureArchiveData(kind), source = readManagedLibraryZip(generated.bytes).get("Fixture.epru"); assert.ok(source !== undefined);
-  const rawWindowsPath = `${directoryWindows}\\${generated.name.replace(/\.epro2$/u, ".eprj2")}`; const project = createHash("sha256").update(rawWindowsPath).digest("hex");
+  const rawWindowsPath = `${syntheticDirectory}\\${generated.name.replace(/\.epro2$/u, ".eprj2")}`; const project = createHash("sha256").update(rawWindowsPath).digest("hex");
   const documentUuid = String(generated.metadata["documentUuid"]), generatedAt = Number(generated.metadata["generatedAtEpochMs"]);
   const when = Math.ceil(Date.now() / 1000) * 1000 + 1000; const utc = new Date(when).toISOString().slice(0, 19).replace("T", " ");
   const local = new Date(when + 60 * 60_000).toISOString().slice(0, 19).replace("T", " ");
@@ -30,7 +30,7 @@ export async function managedFixtureInitialSqlFixture(patch?: Patch, kind: Manag
   if (patch === "changed-arc") { sourceText = sourceText.replace('"angle":90', '"angle":91'); }
   const plaintext = `{"type":"EDIT_HEAD"}||${JSON.stringify({ uuid: actor, username: "", nickname: "", updateTime: when })}|\n${sourceText}`;
   const structure = { boards: {}, schematics: {}, sheets: {}, pcbs: { [documentUuid]: { uuid: documentUuid, title: "PCB1", board: "", zIndex: null,
-    parent_uuid: "", source: "", version: String(generatedAt), updateTime: generatedAt } }, panels: {}, blockSymbols: {}, owner: { uuid: `${directoryWindows}/`, username: "", nickname: "" } };
+    parent_uuid: "", source: "", version: String(generatedAt), updateTime: generatedAt } }, panels: {}, blockSymbols: {}, owner: { uuid: `${syntheticDirectory}/`, username: "", nickname: "" } };
   const directory = await mkdtemp(join(syntheticSqlRoot(), "generated-initial-sql-")), path = join(directory, "synthetic.eprj2");
   const schema = nativeProjectSymbolSqlSchema(branch); const database = new DatabaseSync(path);
   try {
