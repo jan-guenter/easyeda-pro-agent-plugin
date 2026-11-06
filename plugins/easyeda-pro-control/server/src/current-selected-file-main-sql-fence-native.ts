@@ -10,7 +10,7 @@ import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM as CAPTURE, CURREN
   CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUIRE_PROGRAM as REQUIRE, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SELECT_PROGRAM as SELECT } from "./current-selected-file-main-sql-fence-programs.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CALL_FLAGS as CALL, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_FRAME_FLAGS as FRAME,
   CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_NATIVE_EXPRESSION as NATIVE_EXPRESSION, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES as SITES,
-  validateCurrentSelectedFileMainSqlFenceCommand } from "./current-selected-file-main-sql-fence-protocol.ts";
+  currentSavedProjectRegistrationConfigNativeCases, validateCurrentSelectedFileMainSqlFenceCommand } from "./current-selected-file-main-sql-fence-protocol.ts";
 import type { CurrentSelectedFileMainSqlFenceCommand as Command } from "./current-selected-file-main-sql-fence-protocol.ts";
 
 import { CURRENT_MAIN_STARTUP_CONFIG_CALLS as STARTUP } from "./current-main-startup-config-programs.ts";
@@ -30,6 +30,8 @@ export function currentSelectedFileMainSqlFenceWire(input: unknown, id: number):
   else if (command.method === "Runtime.getProperties" || command.method === "Runtime.callFunctionOn") {
     request["objectId"] = command.params.objectId;
     if (command.phase === "sql-fence-capture") { request["path"] = command.params.arguments[0].value; }
+    else if (command.phase === "sql-fence-registration-bind") { request["argument0"] = command.params.arguments[0].objectId; request["path"] = command.params.arguments[1].value; }
+    else if (command.phase === "sql-fence-registration-run" || command.phase === "sql-fence-registration-after-exec" || command.phase === "sql-fence-registration-opened") { request["argument0"] = command.params.arguments[0].objectId; }
     else if (command.phase === "sql-fence-request-capture" || command.phase === "sql-fence-request-bind" || command.phase === "sql-fence-request-rebind") {
       for (const [index, argument] of command.params.arguments.entries()) { request[`argument${String(index)}`] = argument.objectId; }
     }
@@ -40,6 +42,7 @@ export function currentSelectedFileMainSqlFenceWire(input: unknown, id: number):
 export function currentSelectedFileMainSqlFenceNativeCases(): readonly Command[] {
   const callFrameId = marker("callFrameId"), objectId = marker("objectId"), scriptId = marker("scriptId");
   const rows: Command[] = [
+    ...currentSavedProjectRegistrationConfigNativeCases(),
     { phase: "sql-fence-early-arm", method: "Debugger.setBreakpointByUrl", params: { urlRegex: URL,
       lineNumber: SOURCE.sites.import.lineNumber, columnNumber: SOURCE.sites.import.breakpointColumnNumber } },
     { phase: "sql-fence-after-imports-arm", method: "Debugger.setBreakpoint", params: { location: { scriptId,

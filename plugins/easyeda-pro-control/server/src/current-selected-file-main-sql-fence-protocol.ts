@@ -1,6 +1,7 @@
 /** Closed readonly-fence inspector grammar. Callers provide no condition,
  * program, target/session, SQL, native DB or request-resume grant. */
 import { z } from "zod";
+import { checkCurrentSavedProjectRegistrationConfigCommand, currentSavedProjectRegistrationConfigCommandSchemas } from "./current-saved-project-registration-config-protocol.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_APP_URL_PATTERN as URL } from "./current-footprint-copy-main-backend-contract.ts";
@@ -12,6 +13,8 @@ import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM as CAPTURE, CURREN
 import { CURRENT_MAIN_STARTUP_CONFIG_CALLS as STARTUP } from "./current-main-startup-config-programs.ts";
 
 import { CURRENT_SELECTED_FILE_MAIN_REQUEST_CALLS as REQUEST, CURRENT_SELECTED_FILE_MAIN_REQUEST_FRAME as REQUEST_FRAME } from "./current-selected-file-main-request-programs.ts";
+
+export { currentSavedProjectRegistrationConfigNativeCases } from "./current-saved-project-registration-config-protocol.ts";
 
 export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES = Object.freeze(["keeperBirth", "keeperBound", "contextBirth", "contextBound", "initializerBirth", "initializerBound",
   "queryAll", "queryOne", "run", "finalize", "statementEach", "statementRun", "prepare", "prepared", "wrapClose", "keeperClose", "initializerSerialize", "initializerPragma", "initializerClose", "startupVersion", "startupJB", "startupDC", "driver"] as const);
@@ -57,6 +60,7 @@ const startupVersionParams = z.object({ ...callFlags, throwOnSideEffect: z.liter
 const startupJBParams = z.object({ ...callFlags, throwOnSideEffect: z.literal(false), objectId: handle, functionDeclaration: z.literal(STARTUP.bindJB), arguments: selectArguments, returnByValue: z.literal(true) }).strict();
 const startupDCParams = z.object({ ...callFlags, throwOnSideEffect: z.literal(false), objectId: handle, functionDeclaration: z.literal(STARTUP.bindDC), arguments: selectArguments, returnByValue: z.literal(true) }).strict();
 const command = z.discriminatedUnion("phase", [
+  ...currentSavedProjectRegistrationConfigCommandSchemas,
   z.object({ phase: z.literal("sql-fence-startup-version"), method: z.literal("Runtime.callFunctionOn"), params: startupVersionParams }).strict(),
   z.object({ phase: z.literal("sql-fence-startup-jb"), method: z.literal("Runtime.callFunctionOn"), params: startupJBParams }).strict(),
   z.object({ phase: z.literal("sql-fence-startup-dc"), method: z.literal("Runtime.callFunctionOn"), params: startupDCParams }).strict(),
@@ -84,6 +88,9 @@ export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_FRAME_FLAGS = Object.freeze({ 
 export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CALL_FLAGS = Object.freeze({ objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true, awaitPromise: false, userGesture: false } as const);
 export function validateCurrentSelectedFileMainSqlFenceCommand(input: unknown): CurrentSelectedFileMainSqlFenceCommand {
   const captured = command.parse(captureCurrentPcbStringClockReply(input).value);
+  if (captured.phase.startsWith("sql-fence-registration-")) {
+    checkCurrentSavedProjectRegistrationConfigCommand(z.discriminatedUnion("phase", currentSavedProjectRegistrationConfigCommandSchemas).parse(captured));
+  }
   if (captured.phase === "sql-fence-startup-select" && captured.params.arguments[1].value !== captured.site) {
     throw new Error("SELECTED_FILE_MAIN_SQL_FENCE_FIXED_STARTUP_SITE");
   } else if (captured.phase === "sql-fence-arm") {

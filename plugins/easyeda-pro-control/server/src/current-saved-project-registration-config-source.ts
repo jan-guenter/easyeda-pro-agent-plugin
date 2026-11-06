@@ -22,6 +22,15 @@ export const CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SQL = freezeDeep({
 upsert:"\n    insert into db_paths (\"name\",\"path\",\"system\",\"type\",\"version\",\"last_open_time\") values (\n        ?,\n        ?,\n        false,\n        1,\n        ?,\n        ?) on conflict (\"path\") do update set \"last_open_time\" = \n    ?",
 query:"select \n    t1.\"path\" as \"path\",\n    t1.\"name\" as \"name\",\n    t1.\"version\" as \"version\",\n    t1.\"system\" as \"system\",\n    t1.\"type\" as \"type\",\n    t1.\"last_open_time\" as \"last_open_time\" from db_paths t1  where \n    t1.\"path\" = \n    ?"
 } as const);
+/** Actual V8 call locations were also observed by compiling only the two
+ * method declarations in an inert Inspector context. No application or SQL
+ * method ran. Runtime admission still requires these exact current pauses. */
+export const CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITES = freezeDeep({
+  bind: { lineNumber: 8549, columnNumber: 98_195,
+    expression: "[this,e,r,i,ca,vu,sd,Q,Jr,_,sc,F5,Date,Date.now,Date.prototype.getTime,Date.prototype,I.systemLibName]" },
+  afterExec: { lineNumber: 8549, columnNumber: 98_420, expression: "[this,e,r,i,sc,F5,Date,Date.now]" },
+  opened: { lineNumber: 8549, columnNumber: 107_364, expression: "[this,e,i,sc,F5,Date,Date.now]" },
+} as const);
 /** Full original app bytes and all exact DSL/table/caller rows are required.
  * A qualified source string remains data; actual pause/receiver/connection and
  * original pending registration custody belong to the retained runner. */

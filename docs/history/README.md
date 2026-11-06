@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 saved-reader project registration](2026-11-06-saved-reader-project-registration.md). Exact shared recent-project row SQL, separate original intent and native source/await continuations; one-run retry refusal, with actual saved-reader dispatch and connected proof still pending.
+
 - [2026-11-06 original initial same-head sync](2026-11-06-original-initial-same-head-sync.md): exact original four-response startup sync, task/return Promise settlement and bounded native continuation; whole producer frontier remains false.
 - [2026-11-06 saved-reader background worker candidates](2026-11-06-saved-background-worker-candidates.md). Existing startup worker evidence, exact file/generator/bootstrap pins and task-script imports; supplied-source checks grant no actor/cache/resume authority.
 

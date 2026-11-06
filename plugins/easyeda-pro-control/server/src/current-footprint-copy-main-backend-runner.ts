@@ -6,6 +6,8 @@ import { performance } from "node:perf_hooks";
 import { setTimeout as delay } from "node:timers/promises";
 import { types } from "node:util";
 import { z } from "zod";
+import { CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_CALLS as SAVED_CONFIG_CALLS } from "./current-saved-project-registration-config-programs.ts";
+import { CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITE_NAMES, CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_REQUESTS as SAVED_CONFIG_REQUESTS } from "./current-saved-project-registration-config-protocol.ts";
 import { canonicalJson } from "./core.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REGISTRATION_BREAKPOINT_ID as REGISTRATION_ID, CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_APP_URL_PATTERN as URL_PATTERN, decodeCurrentFootprintCopyMainBackendArray,
   decodeCurrentFootprintCopyMainBackendFunction, decodeCurrentFootprintCopyMainBackendNative, validateCurrentFootprintCopyMainBackendCommand } from "./current-footprint-copy-main-backend-contract.ts";
@@ -114,7 +116,7 @@ import { CURRENT_MAIN_STARTUP_CONFIG_CALLS as STARTUP_CALLS } from "./current-ma
 import { qualifyCurrentMainStartupConfigSource } from "./current-main-startup-config-sql.ts";
 import { CurrentMainStartupConfigProgress, currentMainStartupConfigSelectionSchema } from "./current-main-startup-config-progress.ts";
 import type { CurrentSavedProjectRegistrationBindings, CurrentSavedProjectRegistrationIntent } from "./current-saved-project-registration-origin.ts";
-import { qualifyCurrentSavedProjectRegistrationConfigSource } from "./current-saved-project-registration-config-source.ts";
+import { CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITES as SAVED_CONFIG_SITES, qualifyCurrentSavedProjectRegistrationConfigSource } from "./current-saved-project-registration-config-source.ts";
 
 type MainCapability = CurrentFootprintCombinedMainCapability | CurrentFootprintForwardExecutionMainCapability | CurrentProjectStructureMainCapability;
 function mainCapability(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
@@ -284,7 +286,14 @@ const sqlConfigurationRemote = z.object({ type: z.literal("object"), value: sqlC
 const sqlConfigurationReply = z.object({ result: sqlConfigurationRemote }).strict();
 const objectReply = z.object({ result: z.object({ type: z.literal("object"), subtype: z.literal("array"), className: z.literal("Array"),
   description: z.string().max(32), objectId: handle }).strict() }).strict();
-interface Pause { readonly frameId: string; readonly location: z.infer<typeof location>; readonly registration: boolean; readonly sqlSite?: CurrentSelectedFileMainSqlFenceSite; resumeAttempted: boolean; resumed: boolean }
+const savedRegistrationEpoch = z.number().int().min(-8_640_000_000_000_000).max(8_640_000_000_000_000);
+const savedRegistrationRunValue = z.strictObject({ schema: z.literal("private.current-saved-project-registration-run.v1"), path: z.string().max(4096),
+  insertEpochMilliseconds: savedRegistrationEpoch, updateEpochMilliseconds: savedRegistrationEpoch,
+  nativeSqlCallbackCompleted: z.literal(false), selectedDesignWriteAuthorized: z.literal(false) });
+const savedRegistrationRunRemote = z.strictObject({ type: z.literal("object"), value: savedRegistrationRunValue });
+const savedRegistrationRunReply = z.strictObject({ result: savedRegistrationRunRemote });
+type SavedRegistrationSite = typeof CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITE_NAMES[number];
+interface Pause { readonly frameId: string; readonly location: z.infer<typeof location>; readonly registration: boolean; readonly sqlSite?: CurrentSelectedFileMainSqlFenceSite; readonly savedRegistrationSite?: SavedRegistrationSite; resumeAttempted: boolean; resumed: boolean }
 interface SavedProjectRegistrationEnrollment {
   readonly intent: CurrentSavedProjectRegistrationIntent; readonly bindings: CurrentSavedProjectRegistrationBindings;
   readonly ownerModule: Readonly<{ requireOriginalCurrentSavedProjectRegistrationIntent: typeof RequireSavedRegistration }>;
@@ -432,6 +441,12 @@ export class CurrentFootprintCopyMainBackendRunner {
   #registrationSeen = false;
   #savedRegistrationEnrollmentAttempted = false;
   #savedRegistrationEnrollment: SavedProjectRegistrationEnrollment | null = null;
+  readonly #savedRegistrationBreakpoints = new Map<string, SavedRegistrationSite>();
+  readonly #savedRegistrationResolutions: Resolved[] = [];
+  #savedRegistrationArming: SavedRegistrationSite | null = null;
+  #savedRegistrationTracker: string | null = null;
+  #savedRegistrationOpenedPause: Pause | null = null;
+  #savedRegistrationStage: "unused" | "bound" | "run-consumed" | "upsert-awaited" | "registration-awaited" = "unused";
   #source: QualifiedSource | null = null;
   #appSource: string | null = null;
   #appScriptId: string | null = null;
@@ -554,6 +569,11 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(matches, "REGISTRATION_LOCATION");
   }
   #resolve(record: Resolved): void {
+    const savedSite = this.#savedRegistrationBreakpoints.get(record.breakpointId) ?? this.#savedRegistrationArming;
+    if (savedSite !== null && savedSite !== undefined) {
+      this.#savedRegistrationLocation(savedSite, record.location); need(this.#savedRegistrationResolutions.length < 3, "SAVED_REGISTRATION_RESOLUTION_BOUND");
+      this.#savedRegistrationResolutions.push(record); return;
+    }
     if (this.#viaMainOrigin !== null && !this.#sqlBreakpoints.has(record.breakpointId)) {
       const expected = this.#viaMainPoints.get(record.breakpointId) ?? this.#viaMainArming;
       need(expected !== null && expected !== undefined && canonicalJson(expected) === canonicalJson(record.location), "VIA_MAIN_BREAKPOINT_RESOLUTION"); return;
@@ -622,6 +642,12 @@ export class CurrentFootprintCopyMainBackendRunner {
     if (method === "Debugger.paused") {
       need(this.#pause === null || this.#pause.resumed, "DUPLICATE_PAUSE"); const event = pauseSchema.parse(input), first = event.callFrames[0]; need(first !== undefined, "PAUSE_FRAME");
       const points = event.hitBreakpoints ?? [], sqlSite = points.length === 1 ? this.#sqlBreakpoints.get(points[0] ?? "") : undefined;
+      const savedRegistrationSite = points.length === 1 ? this.#savedRegistrationBreakpoints.get(points[0] ?? "") : undefined;
+      if (savedRegistrationSite !== undefined) {
+        need(this.#savedRegistrationEnrollment !== null && event.reason === "other", "SAVED_REGISTRATION_ORIGINAL_PAUSE");
+        this.#savedRegistrationLocation(savedRegistrationSite, first.location);
+        this.#pause = { frameId: first.callFrameId, location: first.location, registration: false, savedRegistrationSite, resumeAttempted: false, resumed: false }; return;
+      }
       if (sqlSite !== undefined) {
         need(this.#selectedSqlBootstrap !== null && event.reason === "other", "SELECTED_SQL_PAUSE"); this.#sqlLocation(sqlSite, first.location);
         this.#pause = { frameId: first.callFrameId, location: first.location, registration: false, sqlSite, resumeAttempted: false, resumed: false }; return;
@@ -760,7 +786,7 @@ export class CurrentFootprintCopyMainBackendRunner {
       (this.#completionToken === null ? 0 : CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS.normal);
     const cleanupMaximum = this.#structureAttempted ? CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.observeCleanup + CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.releaseCleanup + CURRENT_PROJECT_STRUCTURE_MAIN_REQUESTS.cleanup : CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.observeCleanup + CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.releaseCleanup + CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_REQUESTS.cleanup +
       (this.#completionToken === null ? 0 : CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS.cleanup - 2);
-    const initialMaximum = this.#selectedSqlBootstrap === null ? 64 : 72 + SQL_REQUESTS.normal;
+    const initialMaximum = this.#selectedSqlBootstrap === null ? 64 : 72 + SQL_REQUESTS.normal + (this.#savedRegistrationEnrollment === null ? 0 : SAVED_CONFIG_REQUESTS);
     const requestMaximum = cleanup && this.#selectedSqlBootstrap === null ? 72 : initialMaximum;
     let withinBound: boolean;
     if (via) { withinBound = this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null && this.#requests < initialMaximum + VIA_REQUESTS.total + VIA_STEPS.total + VIA_BEGIN.total + VIA_HISTORY.total + VIA_STRUCTURE.total; }
@@ -983,6 +1009,19 @@ export class CurrentFootprintCopyMainBackendRunner {
       need(ownerModule.requireOriginalCurrentSavedProjectRegistrationIntent === requireOriginal && requireOriginal(intent, this) === bindings &&
         bindings.target.rawWindowsPath === this.#selectedSqlPath, "SAVED_REGISTRATION_ENROLLMENT_CHANGED");
       this.#savedRegistrationEnrollment = Object.freeze({ intent, bindings, ownerModule, requireOriginal });
+      for (const site of CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITE_NAMES) {
+        this.#savedRegistrationArming = site; const point = SAVED_CONFIG_SITES[site];
+        need(this.#appScriptId !== null, "SAVED_REGISTRATION_SCRIPT_REQUIRED");
+        const reply = z.strictObject({ breakpointId: handle, actualLocation: location }).parse(await this.#request({ phase: "sql-fence-registration-arm", site,
+          method: "Debugger.setBreakpoint", params: { location: { scriptId: this.#appScriptId, lineNumber: point.lineNumber, columnNumber: point.columnNumber }, condition: "true" } }));
+        this.#savedRegistrationLocation(site, reply.actualLocation);
+        need(!this.#sqlBreakpoints.has(reply.breakpointId) && !this.#savedRegistrationBreakpoints.has(reply.breakpointId), "SAVED_REGISTRATION_BREAKPOINT_REUSED");
+        for (const record of this.#savedRegistrationResolutions) {
+          if (record.location.columnNumber === point.columnNumber) { need(record.breakpointId === reply.breakpointId, "SAVED_REGISTRATION_RESOLUTION_ID"); }
+        }
+        this.#savedRegistrationBreakpoints.set(reply.breakpointId, site); this.#savedRegistrationArming = null;
+        await bindings.assertCurrent(); await this.#current();
+      }
     } catch (caughtError) { this.#fail(caughtError); throw caughtError; }
     finally { this.#busy = false; }
   }
@@ -996,6 +1035,69 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(this.#savedRegistrationEnrollment === original && original.ownerModule.requireOriginalCurrentSavedProjectRegistrationIntent === original.requireOriginal &&
       original.requireOriginal(original.intent, this) === original.bindings, "SAVED_REGISTRATION_ENROLLMENT_CHANGED");
     original.bindings.assertOriginalDispatchPending();
+  }
+  /** The native Core independently joins this intent to its private original
+   * registry before sending any new registration command. */
+  public originalSavedProjectRegistrationCommandIntent(): CurrentSavedProjectRegistrationIntent {
+    this.#same(false); const original = this.#savedRegistrationEnrollment;
+    need(original !== null && original.ownerModule.requireOriginalCurrentSavedProjectRegistrationIntent === original.requireOriginal &&
+      original.requireOriginal(original.intent, this) === original.bindings, "SAVED_REGISTRATION_ENROLLMENT_REQUIRED"); return original.intent;
+  }
+  /** Called by that same original Core after its one dispatch settles. It
+   * proves the source awaits, never the contents of a closed shared database. */
+  public requireOriginalSavedProjectRegistrationAwaited(intent: CurrentSavedProjectRegistrationIntent): void {
+    need(this.originalSavedProjectRegistrationCommandIntent() === intent && this.#savedRegistrationStage === "registration-awaited" &&
+      this.#savedRegistrationTracker !== null && this.#savedRegistrationArming === null && this.#savedRegistrationBreakpoints.size === 3 &&
+      this.#sqlHeld === null && this.#savedRegistrationOpenedPause?.savedRegistrationSite === "opened" && this.#savedRegistrationOpenedPause.resumed,
+    "SAVED_REGISTRATION_ORIGINAL_AWAITS_REQUIRED");
+  }
+  #savedRegistrationLocation(site: SavedRegistrationSite, actual: z.infer<typeof location>): void {
+    const expected = SAVED_CONFIG_SITES[site]; need(actual.scriptId === this.#appScriptId && this.#scripts.has(actual.scriptId) &&
+      actual.lineNumber === expected.lineNumber && actual.columnNumber === expected.columnNumber, "SAVED_REGISTRATION_SOURCE_LOCATION");
+  }
+  async #continueSavedRegistration(pause: Pause): Promise<void> {
+    need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && this.#sqlCapture !== null && this.#startupConfigTracker !== null &&
+      this.#selectedSqlPath !== null && this.#savedRegistrationBreakpoints.size === 3, "SAVED_REGISTRATION_ORIGINAL_PAUSE");
+    await this.assertOriginalSavedProjectRegistrationPending();
+    const site = pause.savedRegistrationSite; let selected: z.infer<typeof objectReply>;
+    if (site === undefined) {
+      need(pause.sqlSite === "run" && this.#savedRegistrationStage === "bound", "SAVED_REGISTRATION_SINGLE_RUN_REQUIRED");
+      selected = objectReply.parse(await this.#request({ phase: "sql-fence-frame", site: "run", method: "Debugger.evaluateOnCallFrame", params: {
+        ...SQL_FRAME, callFrameId: pause.frameId, expression: SQL_SOURCE.sites.run.expression } }));
+      need(selected.result.description === "Array(5)", "SAVED_REGISTRATION_NATIVE_RUN_FRAME");
+    } else {
+      selected = objectReply.parse(await this.#request({ phase: "sql-fence-registration-frame", site, method: "Debugger.evaluateOnCallFrame", params: {
+        ...SQL_FRAME, callFrameId: pause.frameId, expression: SAVED_CONFIG_SITES[site].expression } }));
+      let size = 7; if (site === "bind") { size = 17; } else if (site === "afterExec") { size = 8; }
+      need(selected.result.description === `Array(${String(size)})`, "SAVED_REGISTRATION_FRAME");
+    }
+    const frameId = selected.result.objectId;
+    if (site === "bind") {
+      need(this.#savedRegistrationStage === "unused" && this.#savedRegistrationTracker === null, "SAVED_REGISTRATION_BIND_CONSUMED");
+      const reply = objectReply.parse(await this.#request({ phase: "sql-fence-registration-bind", method: "Runtime.callFunctionOn", params: { ...SQL_CALL,
+        throwOnSideEffect: false, objectId: frameId, functionDeclaration: SAVED_CONFIG_CALLS.bind,
+        arguments: [{ objectId: this.#startupConfigTracker }, { value: this.#selectedSqlPath }], returnByValue: false } }));
+      need(reply.result.description === "Array(8)", "SAVED_REGISTRATION_TRACKER"); this.#savedRegistrationTracker = reply.result.objectId; this.#savedRegistrationStage = "bound";
+    } else {
+      need(this.#savedRegistrationTracker !== null, "SAVED_REGISTRATION_BIND_REQUIRED");
+      const registrationArguments: [{ objectId: string }] = [{ objectId: this.#savedRegistrationTracker }];
+      const params = { ...SQL_CALL, throwOnSideEffect: false as const, objectId: frameId, arguments: registrationArguments, returnByValue: true as const };
+      if (site === undefined) {
+        need(this.#savedRegistrationStage === "bound", "SAVED_REGISTRATION_RUN_CONSUMED");
+        const value = savedRegistrationRunReply.parse(
+          await this.#request({ phase: "sql-fence-registration-run", method: "Runtime.callFunctionOn", params: { ...params, functionDeclaration: SAVED_CONFIG_CALLS.run } }));
+        need(value.result.value.path === this.#selectedSqlPath, "SAVED_REGISTRATION_RUN_TARGET"); this.#savedRegistrationStage = "run-consumed";
+      } else if (site === "afterExec") {
+        need(this.#savedRegistrationStage === "run-consumed", "SAVED_REGISTRATION_UPSERT_AWAIT_REQUIRED");
+        sqlTrueReply.parse(await this.#request({ phase: "sql-fence-registration-after-exec", method: "Runtime.callFunctionOn", params: { ...params, functionDeclaration: SAVED_CONFIG_CALLS.afterExec } })); this.#savedRegistrationStage = "upsert-awaited";
+      } else {
+        need(this.#savedRegistrationStage === "upsert-awaited", "SAVED_REGISTRATION_QUERY_AWAIT_REQUIRED");
+        sqlTrueReply.parse(await this.#request({ phase: "sql-fence-registration-opened", method: "Runtime.callFunctionOn", params: { ...params, functionDeclaration: SAVED_CONFIG_CALLS.opened } })); this.#savedRegistrationStage = "registration-awaited";
+      }
+    }
+    await this.assertOriginalSavedProjectRegistrationPending(); await this.#requireSelectedSqlCapture();
+    this.#sqlApprovedConfigurations.add(pause); await this.#sqlResume(pause);
+    if (site === "opened") { need(this.#savedRegistrationOpenedPause === null, "SAVED_REGISTRATION_OPENED_ALREADY_RETAINED"); this.#savedRegistrationOpenedPause = pause; }
   }
   async #configureStartupSql(pause: Pause): Promise<boolean> {
     const site = pause.sqlSite;
@@ -1095,8 +1197,10 @@ export class CurrentFootprintCopyMainBackendRunner {
     this.#busy = true; try {
       await this.#current(); if (this.#sqlHeld !== null) { return; } await this.#pump();
       const pause = this.#pause;
-      if (pause !== null && !pause.resumed && pause.sqlSite !== undefined) {
-        if (pause.sqlSite === "driver") { const request = await this.#observeSelectedMainRequest(pause); if (this.#selectedReadonlyRequest(request)) { await this.#continueSelectedReadonlyRequest(request); } else { this.#sqlHeld = pause; } }
+      if (pause !== null && !pause.resumed && pause.savedRegistrationSite !== undefined) { await this.#continueSavedRegistration(pause); }
+      else if (pause !== null && !pause.resumed && pause.sqlSite !== undefined) {
+        if (pause.sqlSite === "run" && this.#savedRegistrationTracker !== null) { await this.#continueSavedRegistration(pause); }
+        else if (pause.sqlSite === "driver") { const request = await this.#observeSelectedMainRequest(pause); if (this.#selectedReadonlyRequest(request)) { await this.#continueSelectedReadonlyRequest(request); } else { this.#sqlHeld = pause; } }
         else if (!await this.#configureStartupSql(pause)) { this.#sqlMutationPauses += 1; need(this.#sqlMutationPauses <= 64, "SELECTED_SQL_MUTATION_BOUND"); this.#sqlHeld = pause; await this.#requireSelectedSqlCapture(); }
       }
     } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }

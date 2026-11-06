@@ -5770,13 +5770,19 @@ class CurrentPcbRetainedOwnerCore {
     const held = selectedSqlFenceBootstraps.get(capability); const original = this.#requireFootprintMain(true);
     if (!selectedFileMainPurpose(this.#purpose) || held?.owner !== this || held.runner() !== runner || this.#mainRunner !== runner ||
       requestId !== this.#mainRequestId + 1 || this.#mainNormalRequests >= selectedFileMainLimits(this.#purpose).normal) { throw error("SELECTED_SQL_ORIGINAL_MAIN"); }
-    held.reprove(); const wire = currentSelectedFileMainSqlFenceWire(command, requestId);
+    const registrationSame = (): void => { if (!command.phase.startsWith("sql-fence-registration-")) { return; }
+      const intent = runner.originalSavedProjectRegistrationCommandIntent(), registration = savedProjectRegistrationIntents.get(intent);
+      if (this.#purpose !== CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE || registration?.owner !== this || registration.runner !== runner ||
+        registration.prepared !== this.#savedReadbackPrepared || registration.loading !== this.#savedReadbackLoadPreparation || this.#savedReadbackRegistrationIntent !== intent) { throw error("SAVED_REGISTRATION_ORIGINAL_SENDER"); }
+      if (command.phase !== "sql-fence-registration-arm") { registration.bindings.assertOriginalDispatchPending(); }
+    };
+    registrationSame(); held.reprove(); const wire = currentSelectedFileMainSqlFenceWire(command, requestId);
     this.#enterFootprintMain(); this.#mainRequestId += 1; this.#mainNormalRequests += 1;
     try {
-      await this.#verify(); held.reprove(); if (this.#requireFootprintMain(true) !== original) { throw error("SELECTED_SQL_OWNER_CHANGED"); }
+      await this.#verify(); registrationSame(); held.reprove(); if (this.#requireFootprintMain(true) !== original) { throw error("SELECTED_SQL_OWNER_CHANGED"); }
       const reply = await this.#request({ ...wire.request });
-      held.reprove(); if (!exact(reply, ["written"]) || reply["written"] !== true || this.#requireFootprintMain(true) !== original) { throw error("SELECTED_SQL_WRITE_REPLY"); }
-      await this.#verify(); held.reprove();
+      registrationSame(); held.reprove(); if (!exact(reply, ["written"]) || reply["written"] !== true || this.#requireFootprintMain(true) !== original) { throw error("SELECTED_SQL_WRITE_REPLY"); }
+      await this.#verify(); registrationSame(); held.reprove();
     } finally { this.#leaveFootprintMain(); }
   }
   public async sendViaMainRequestStep(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner,

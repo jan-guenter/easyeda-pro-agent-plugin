@@ -1,3 +1,6 @@
+import { currentSavedProjectRegistrationConfigNativeCases } from "../src/current-saved-project-registration-config-protocol.ts";
+import { currentSelectedFileMainSqlFenceWire } from "../src/current-selected-file-main-sql-fence-native.ts";
+import { validateCurrentSelectedFileMainSqlFenceCommand } from "../src/current-selected-file-main-sql-fence-protocol.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { sha256Text } from "../src/core.ts";
@@ -39,4 +42,17 @@ void test("native Date instances and metadata objects cannot masquerade as indep
   assert.equal(calls, 0);
   const proxy = new Proxy({}, { get: (): never => { calls += 1; throw new Error("trap"); } });
   assert.throws(() => prepareCurrentSavedProjectRegistrationTargetData(proxy, "system")); assert.equal(calls, 0);
+});
+
+void test("the finite registration native vocabulary rejects substituted source, conditions, locations and connection selectors", () => {
+  const cases = currentSavedProjectRegistrationConfigNativeCases(); assert.equal(cases.length, 10);
+  for (const command of cases) {
+    validateCurrentSelectedFileMainSqlFenceCommand(command); const wire = currentSelectedFileMainSqlFenceWire(command, 73); assert.equal(wire.command.id, 73);
+    assert.throws(() => validateCurrentSelectedFileMainSqlFenceCommand({ ...command, params: { ...command.params, sessionId: "foreign" } }));
+    if (command.method === "Runtime.callFunctionOn") { assert.throws(() => validateCurrentSelectedFileMainSqlFenceCommand({ ...command, params: { ...command.params, functionDeclaration: "function(){return true}" } })); }
+    if (command.method === "Debugger.setBreakpoint") {
+      assert.throws(() => validateCurrentSelectedFileMainSqlFenceCommand({ ...command, params: { ...command.params, condition: "false" } }));
+      assert.throws(() => validateCurrentSelectedFileMainSqlFenceCommand({ ...command, params: { ...command.params, location: { ...command.params.location, columnNumber: command.params.location.columnNumber + 1 } } }));
+    }
+  }
 });
