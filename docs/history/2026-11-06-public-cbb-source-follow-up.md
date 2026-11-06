@@ -24,3 +24,15 @@ no source example was relabelled as a connected test. The remaining concrete
 dependency is a currently accessible anonymous system-owned CBB whose project,
 branch and reciprocal board structure pass the maintained getter. This record
 adds source evidence, not a claim that no public CBB exists.
+
+I also inspected the independent creator's
+[CBB adapter at4a74c563](https://github.com/zhoushoujianwork/easyeda-agent/blob/4a74c5636670e91c9894ac413f0badcf425757a9/extension/src/library-cbb.ts)
+and its
+[version-qualified observations](https://github.com/zhoushoujianwork/easyeda-agent/blob/4a74c5636670e91c9894ac413f0badcf425757a9/docs/ecosystem-survey.md#cbb-只读能力的当前边界).
+The creator reports Web4.1.78 search/get shape differences and a permission
+refusal when exporting one system asset. The adapter checks detail separately
+instead of assuming the search result contains a library UUID. These reports
+concern that creator's runtime. The inspected public source and release records
+contain no exact anonymous system-owned witness suitable for this plugin, and
+their private write evidence cannot qualify our installed209 route. This
+repository was also read without executing its scripts or copying its code.
