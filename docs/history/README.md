@@ -16,6 +16,7 @@
 - [2026-11-06 original post-clock cold continuation](2026-11-06-original-post-clock-cold-continuation.md). Same worker observer survives the clock handoff, reserves its actual remaining requests, and rejoins original termination without a queue deadlock.
 - [2026-11-06 forward cold native mount](2026-11-06-forward-cold-native-mount.md). Dedicated original v2 construction, fixed native commands and derived budgets; source integration does not establish writer eligibility.
 
+- [2026-11-06 original Via projected effect](2026-11-06-via-original-projected-effect.md) — Original owner/packet/create joins, complete generated scene roster and explicit remaining Save/SQL/readback bindings.
 - [2026-11-06 first manager native cleanup](2026-11-06-first-manager-native-cleanup.md). Actual frozen development controller, ordinary launch, normal close, original root/Job termination, helper release and facade EOF/exit; no import or design operation.
 - [2026-11-06 generated fixture closed baseline](2026-11-06-generated-fixture-closed-baseline.md). Complete fresh SQL/history qualification, unticked native DOCHEAD, exact VACUUM projection, same-facade issued source staging and dedicated fresh registration/open owner; connected acceptance remains unproved.
 - [2026-11-06 schematic disposable fixture generator](2026-11-06-schematic-disposable-fixture-generator.md). Two fixed documents and Text/Wire/Bus data, twelve original vendor serializer checks, shared ZIP framing and explicit pending native/import/read support.

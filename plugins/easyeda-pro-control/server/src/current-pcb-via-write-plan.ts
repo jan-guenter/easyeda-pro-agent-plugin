@@ -55,7 +55,7 @@ export async function prepareCurrentPcbViaWritePlan(prepared: GeneratedFixtureOp
   const plan: CurrentPcbViaWritePlan = freezeDeep({ schema: "private.current-pcb-via-write-plan.v1", operationId: request.operationId,
     target: qualification.target, initialLogicalSha256: inventory.logicalSha256,
     via: { ...v, viaType: 0, designRuleBlindViaName: "", solderMaskExpansion: { topSolderMask: 0, bottomSolderMask: 0 }, primitiveLock: false },
-    expectedNative: { family: "Via", net: "", x: v.xMil / 10, y: v.yMil / 10, radius: v.diameterMil / 20, holeRadius: v.holeDiameterMil / 20,
+    expectedNative: { family: "Via", net: "", x: v.xMil / 10, y: v.yMil / 10, radius: v.diameterMil / 10 / 2, holeRadius: v.holeDiameterMil / 10 / 2,
       type: 0, startLayer: 1, endLayer: 2, expansionType: 2, topExpansion: 0, bottomExpansion: 0, locked: false },
     inverseAvailable: false, footprintDocumentAllocationRequired: false, footprintStructureWriterRequired: false });
   issued.set(plan, Object.freeze({ text: canonicalJson(plan), prepared, qualification, inventory, history: prepared.history })); return plan;
