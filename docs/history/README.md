@@ -37,6 +37,7 @@
 
 - [2026-11-05 structure observer cold arm and native codebook](2026-11-05-structure-observer-native-codebook.md). Original Nd/QA pre-arm exclusion, a finite 42-shape main codec with shared exact descriptor guards, synthetic V8/C# verification and the remaining owner, native-purpose, frontier and durability dependencies. Source base `b16fb1e`.
 - [2026-11-06 managed fixture original import owner](2026-11-06-managed-fixture-original-import-owner.md). Fixed tracked environment/import journals, fresh exclusive native destination, retained no-candidate library watches, original Promise settlement and cleanup integration; connected import and closed SQL/registration acceptance remain unproved.
+- [2026-11-06 Arc, Line and Via fixture template](2026-11-06-arc-line-via-fixture-template.md). Fixed disjoint copper quarter Arc plus Line/Via, pinned codec/math/base constructor checks and complete initial SQL/source qualification; native scene and positive spatial acceptance remain unproved.
 
 - [2026-11-05 generated PCB fixture archives](2026-11-05-generated-pcb-fixture-archives.md). Maintained new-data Via-only and Line+Via `.epro2` generation, exact source templates, actual pinned codec methods exercised offline with synthetic constructors, and separate original eager-facade closure. Native import and registration remain pending.
 

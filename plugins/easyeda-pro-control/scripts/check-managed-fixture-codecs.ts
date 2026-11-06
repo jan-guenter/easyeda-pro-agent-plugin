@@ -6,7 +6,7 @@ import { lstat, open, realpath } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 import { createContext, runInContext } from "node:vm";
 import { z } from "zod";
-import { MANAGED_FIXTURE_GENERATOR_KINDS, MANAGED_FIXTURE_GENERATOR_PROFILE, MANAGED_FIXTURE_LINE_FIELDS,
+import { MANAGED_FIXTURE_ARC_FIELDS, MANAGED_FIXTURE_GENERATOR_KINDS, MANAGED_FIXTURE_GENERATOR_PROFILE, MANAGED_FIXTURE_LINE_FIELDS,
   MANAGED_FIXTURE_VIA_FIELDS, generateManagedFixtureArchiveData } from "../server/src/managed-fixture-generator.ts";
 import { readManagedLibraryZip } from "../server/src/managed-library-files-zip.ts";
 
@@ -63,15 +63,22 @@ async function main(): Promise<void> {
   // Vector/model constructors. This is not an editor/native-model lifecycle.
   const aliasStart = pcb.indexOf("Na={") + 3; const aliasEnd = pcb.indexOf("};var Jg=", aliasStart) + 1;
   assert.ok(aliasStart > 3 && aliasEnd > aliasStart && aliasEnd - aliasStart < 2048);
-  const setup = `const Na=${pcb.slice(aliasStart, aliasEnd)};const fields={${method("Jg.getVIA")},${method("Jg.getLINE")}};
-class E{constructor(x,y){this.x=x;this.y=y;}distance1(other){return Math.hypot(this.x-other.x,this.y-other.y);}}
-const Xa=value=>value==='0'||value===0?null:value!=null?value.toString():null;const NVe=value=>value==='SUTURE'?2:value==='BLIND'?1:0;`;
+  const setup = `const Na=${pcb.slice(aliasStart, aliasEnd)};const fields={${method("Jg.getVIA")},${method("Jg.getLINE")},${method("Jg.getARC")}};
+class E{constructor(x,y){this.x=x;this.y=y;}distance1(other){return Math.hypot(this.x-other.x,this.y-other.y);}equals1(other){return this.x===other.x&&this.y===other.y;}
+sub(other){return new E(this.x-other.x,this.y-other.y);}add(other){return new E(this.x+other.x,this.y+other.y);}mul(value){return new E(this.x*value,this.y*value);}length(){return Math.hypot(this.x,this.y);}
+normalize(){const length=this.length();return new E(this.x/length,this.y/length);}rotate(origin,angle){const x=this.x-origin.x,y=this.y-origin.y;return new E(origin.x+x*Math.cos(angle)-y*Math.sin(angle),origin.y+x*Math.sin(angle)+y*Math.cos(angle));}
+angle(other){return Math.atan2(this.y-other.y,this.x-other.x);}};E.ORIGIN=new E(0,0);
+const Xa=value=>value==='0'||value===0?null:value!=null?value.toString():null;const NVe=value=>value==='SUTURE'?2:value==='BLIND'?1:0;
+const Fr=Math.PI*2,le={CW:0,CCW:1},zt={toDegrees:value=>value*180/Math.PI},ne={eq:(a,b)=>Math.abs(a-b)<1e-10};var jM;${method("global.jM")};
+${method("global.kVe")};${method("global.q1")};class yo{${method("yo.pointToAngle")}}class ArcBase{${method("tF.constructor")}}`;
   const context = createContext({}, { codeGeneration: { strings: false, wasm: false } });
   runInContext(setup, context, { timeout: 1000 });
   const viaFields: unknown = runInContext("fields.getVIA('2.0')", context, { timeout: 1000 });
   const lineFields: unknown = runInContext("fields.getLINE('2.0')", context, { timeout: 1000 });
+  const arcFields: unknown = runInContext("fields.getARC('2.0')", context, { timeout: 1000 });
   assert.deepEqual(z.array(z.string()).parse(viaFields), MANAGED_FIXTURE_VIA_FIELDS);
   assert.deepEqual(z.array(z.string()).parse(lineFields), MANAGED_FIXTURE_LINE_FIELDS);
+  assert.deepEqual(z.array(z.string()).parse(arcFields), MANAGED_FIXTURE_ARC_FIELDS);
   for (const kind of MANAGED_FIXTURE_GENERATOR_KINDS) {
     const generated = generateManagedFixtureArchiveData(kind), rows = scenario(generated.bytes);
     const via = rows.get("VIA"); assert.ok(via);
@@ -91,6 +98,17 @@ value.feed(${JSON.stringify(via)});if(!value.check())throw new Error('Via check 
 getItem(start,end){return{start,end,width:this.width,layerId:this.layerId,locked:this.locked};}};value.feed(${JSON.stringify(line)});return value.finish();})()`, context, { timeout: 1000 });
       z.object({ start: z.object({ x: z.literal(50), y: z.literal(0) }), end: z.object({ x: z.literal(150), y: z.literal(0) }),
         width: z.literal(10), layerId: z.literal(1), locked: z.literal(false) }).strict().parse(nativeLine);
+    }
+    const arc = rows.get("ARC");
+    if (arc !== undefined) {
+      const nativeArc: unknown = runInContext(`(function(){const value={${method("Q4.feed")},${method("Q4.check")},${method("Q4.arcCheck")},${method("Q4.finish")},isNumber:Number.isFinite,
+addItem(center,radius,startAngle,endAngle,sweep){const model=new ArcBase(center,radius,startAngle,endAngle,sweep,this.type);return{center:model._center,radius:model._radius,startAngle:model._startAngle,endAngle:model._endAngle,sweep:model._sweep,arcType:model._arcType,width:this.width,layerId:this.layerId,locked:this.locked};}};
+value.feed(${JSON.stringify(arc)});if(!value.check()||!value.arcCheck())throw new Error('Arc check refused');return value.finish();})()`, context, { timeout: 1000 });
+      const resultArc = z.object({ center: z.object({ x: z.number(), y: z.number() }), radius: z.number(), startAngle: z.number(), endAngle: z.number(),
+        sweep: z.literal(1), arcType: z.literal(1), width: z.literal(10), layerId: z.literal(1), locked: z.literal(false) }).strict().parse(nativeArc);
+      for (const [actual, expected] of [[resultArc.center.x, 350], [resultArc.center.y, 100], [resultArc.radius, 100], [resultArc.startAngle, Math.PI], [resultArc.endAngle, 3 * Math.PI / 2]]) {
+        assert.ok(actual !== undefined && expected !== undefined && Math.abs(actual - expected) < 1e-10, `Actual pinned Arc decode ${String(actual)} differs from fixed expected ${String(expected)}.`);
+      }
     }
   }
   process.stdout.write(`${JSON.stringify({ ok: true, schema: "easyeda-pro-control.fixture-codec-source-check.v1",

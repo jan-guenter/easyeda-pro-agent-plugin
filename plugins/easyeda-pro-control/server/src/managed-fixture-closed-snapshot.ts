@@ -25,7 +25,7 @@ function expectedProjection(archive: Buffer): Readonly<Record<string, unknown>> 
     const boundary = text.indexOf("||"); return row.parse({ header: JSON.parse(text.slice(0, boundary)) as unknown, body: JSON.parse(text.slice(boundary + 2)) as unknown });
   });
   const head = rows[0], meta = rows[1];
-  if (head?.header.type !== "DOCHEAD" || meta?.header.type !== "META" || rows.slice(2).some((entry) => !["VIA", "LINE"].includes(entry.header.type) || entry.header.id === undefined)) { throw new Error("Closed fixture comparison refuses an unexpected source family."); }
+  if (head?.header.type !== "DOCHEAD" || meta?.header.type !== "META" || rows.slice(2).some((entry) => !["VIA", "LINE", "ARC"].includes(entry.header.type) || entry.header.id === undefined)) { throw new Error("Closed fixture comparison refuses an unexpected source family."); }
   return { documents: [{ uuid: qualification.documents[0].uuid, docType: "PCB", metadata: head.body,
     records: rows.slice(1).map((entry) => ({ id: entry.header.id, type: entry.header.type, body: entry.body })).toSorted((left, right) => String(left.id).localeCompare(String(right.id))) }] };
 }

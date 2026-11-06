@@ -28,3 +28,11 @@ void test("qualification snapshots the exact archive, path and raw file times be
   const result = await pending; assert.equal(result.qualification.target.rawWindowsPath, original.rawWindowsPath);
   assert.equal(result.qualification.sourceModifiedEpochMs, original.sourceModifiedEpochMs); assertOriginalGeneratedFixtureTarget(result.qualification);
 });
+void test("Arc/Line/Via complete initial qualification binds the exact fourth native record and rejects changed curved geometry", async () => {
+  const input = await managedFixtureInitialSqlFixture(undefined, "arc-line-and-via"), result = await qualifyGeneratedFixtureInitialSql(input);
+  assert.equal(result.history.documents[0]?.records.length, 4);
+  const arc = result.history.documents[0]?.records.find(record => record.type === "ARC");
+  assert.equal(arc?.ticket, 4); assert.equal(arc?.body["angle"], 90); assert.equal(arc?.body["arcType"], "DOT");
+  assertOriginalGeneratedFixtureTarget(result.qualification);
+  await assert.rejects(qualifyGeneratedFixtureInitialSql(await managedFixtureInitialSqlFixture("changed-arc", "arc-line-and-via")));
+});

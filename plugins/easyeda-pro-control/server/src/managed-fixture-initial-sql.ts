@@ -2,7 +2,7 @@ import { z } from "zod";
 import { canonicalJson, sha256Json, sha256Text } from "./core.ts";
 import { qualifyManagedFixtureArchive } from "./managed-fixture-archive.ts";
 import { readManagedLibraryZip } from "./managed-library-files-zip.ts";
-import { MANAGED_FIXTURE_LINE_BODY, MANAGED_FIXTURE_VIA_BODY } from "./managed-fixture-generator.ts";
+import { MANAGED_FIXTURE_ARC_BODY, MANAGED_FIXTURE_LINE_BODY, MANAGED_FIXTURE_VIA_BODY } from "./managed-fixture-generator.ts";
 import { decodeNativeHistoryChunk } from "./native-history.ts";
 import type { NativeDocumentSnapshot, NativeHistorySnapshot } from "./native-history.ts";
 import { nativeProjectSymbolSqlSchema } from "./native-project-sql-schema.ts";
@@ -78,16 +78,17 @@ export async function qualifyGeneratedFixtureInitialSql(inputValue: Readonly<{
     sourceCreatedEpochMs: inputValue.sourceCreatedEpochMs, sourceModifiedEpochMs: inputValue.sourceModifiedEpochMs });
   readerCompletion(input.inventory);
   const original = qualifyManagedFixtureArchive(input.archive), projectUuid = sha256Text(input.rawWindowsPath);
-  need(input.rawWindowsPath.endsWith(`\\${original.expectedDestinationBasename}`) && /^Codex_(?:via_only|line_and_via)_[a-f0-9]{16}$/u.test(original.manifest.title), "original generated filename");
+  need(input.rawWindowsPath.endsWith(`\\${original.expectedDestinationBasename}`) && /^Codex_(?:via_only|line_and_via|arc_line_and_via)_[a-f0-9]{16}$/u.test(original.manifest.title), "original generated filename");
   const source = readManagedLibraryZip(input.archive).get(original.source.member); need(source !== undefined, "original source member");
   const entries = source.toString("utf8").slice(0, -2).split("|\n").map((text) => { const boundary = text.indexOf("||");
     return sourceRowSchema.parse({ header: JSON.parse(text.slice(0, boundary)) as unknown, body: JSON.parse(text.slice(boundary + 2)) as unknown }); });
   const head = entries[0], meta = entries[1]; need(head !== undefined && meta !== undefined, "generated header/META");
-  const line = original.manifest.title.startsWith("Codex_line_and_via_");
-  need(canonicalJson(entries.map((entry) => entry.header.type)) === canonicalJson(line ? ["DOCHEAD", "META", "VIA", "LINE"] : ["DOCHEAD", "META", "VIA"]), "generated family roster");
+  const arc = original.manifest.title.startsWith("Codex_arc_line_and_via_"); const line = arc || original.manifest.title.startsWith("Codex_line_and_via_");
+  need(canonicalJson(entries.map((entry) => entry.header.type)) === canonicalJson(["DOCHEAD", "META", "VIA", ...(line ? ["LINE"] : []), ...(arc ? ["ARC"] : [])]), "generated family roster");
   need(head.header.ticket === undefined && Object.keys(head.header).length === 1 && meta.header.id === "META" && meta.header.ticket === 1, "exact initial unticked header and META clock");
   need(canonicalJson(meta.body) === canonicalJson({ title: "PCB1", parent: "", source: "", board: "", zIndex: null }) &&
-    canonicalJson(entries[2]?.body) === canonicalJson(MANAGED_FIXTURE_VIA_BODY) && (!line || canonicalJson(entries[3]?.body) === canonicalJson(MANAGED_FIXTURE_LINE_BODY)), "exact fixed geometry and META");
+    canonicalJson(entries[2]?.body) === canonicalJson(MANAGED_FIXTURE_VIA_BODY) && (!line || canonicalJson(entries[3]?.body) === canonicalJson(MANAGED_FIXTURE_LINE_BODY)) &&
+    (!arc || canonicalJson(entries[4]?.body) === canonicalJson(MANAGED_FIXTURE_ARC_BODY)), "exact fixed geometry and META");
   const documentUuid = uuid.parse(head.body["uuid"]); const client = z.string().regex(/^[a-f0-9]{16}$/u).parse(head.body["client"]);
   need(head.body["docType"] === "PCB" && head.body["editVersion"] === "3.2.209" && typeof head.body["updateTime"] === "number" && head.body["version"] === String(head.body["updateTime"]), "original source header");
   const minimum = Math.floor(input.sourceCreatedEpochMs / 1000) * 1000; const maximum = Math.ceil(input.sourceModifiedEpochMs / 1000) * 1000;

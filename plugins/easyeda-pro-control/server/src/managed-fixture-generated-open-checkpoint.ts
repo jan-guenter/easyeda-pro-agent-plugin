@@ -24,7 +24,7 @@ const issued = new WeakMap<GeneratedFixtureOpenCheckpoint, Readonly<{ text: stri
 function sourcePath(qualification: QualifiedGeneratedFixtureTarget): string {
   assertOriginalGeneratedFixtureTarget(qualification);
   const raw = qualification.target.rawWindowsPath;
-  if (!/^[A-Z]:\\[^/]+\\Codex_(?:via_only|line_and_via)_[a-f0-9]{16}\.eprj2$/u.test(raw) ||
+  if (!/^[A-Z]:\\[^/]+\\Codex_(?:via_only|line_and_via|arc_line_and_via)_[a-f0-9]{16}\.eprj2$/u.test(raw) ||
       sha256Text(raw) !== qualification.target.projectUuid || raw.slice(3).split("\\").some(segment =>
         segment.length === 0 || segment === "." || segment === ".." || segment.trim() !== segment ||
         segment.endsWith(".") || /[<>:"|?*]/u.test(segment) || /~\d/u.test(segment))) {

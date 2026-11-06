@@ -20,7 +20,7 @@ public static EasyedaDiagnosticOwner CreateGeneratedFixture209(){var owner=Creat
 public static EasyedaDiagnosticOwner CreateGeneratedFixtureSpatial209(){var owner=CreateSpatial209();owner.generatedFixture209=true;return owner;}
 static string GeneratedFixtureTuple(string session,string context,string path,string project,string branch,string document,string source){return String.Join("\\n",new[]{session,context,path,project,branch,document,source});}
 public static string GeneratedFixtureRegistrationProtocolMessage(int id,string session,string context,string phase,string path,string project,string branch,string document,string source){
-if(phase!="register-generated-fixture"||path==null||!System.Text.RegularExpressions.Regex.IsMatch(path,@"\\\\Codex_(?:via_only|line_and_via)_[a-f0-9]{16}\\.eprj2\\z"))throw Error("generated-registration-fields");
+if(phase!="register-generated-fixture"||path==null||!System.Text.RegularExpressions.Regex.IsMatch(path,@"\\\\Codex_(?:via_only|line_and_via|arc_line_and_via)_[a-f0-9]{16}\\.eprj2\\z"))throw Error("generated-registration-fields");
 string message=OpeningProtocolMessageCore(false,id,session,context,"preflight",path,project,branch,document,source,false);
 string original=JsonString(OpeningFunction),replacement=JsonString(GeneratedFixtureRegistrationFunction),argument="{\\\"value\\\":\\\"preflight\\\"}",selected="{\\\"value\\\":\\\"register-generated-fixture\\\"}";
 if(message.Split(new[]{original},StringSplitOptions.None).Length!=2||message.Split(new[]{argument},StringSplitOptions.None).Length!=2)throw Error("generated-registration-template");

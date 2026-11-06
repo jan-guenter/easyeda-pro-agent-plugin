@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { z } from "zod";
 import { managedFixtureArchiveQualificationSchema, qualifyManagedFixtureArchive } from "../src/managed-fixture-archive.ts";
-import { MANAGED_FIXTURE_GENERATOR_KINDS, MANAGED_FIXTURE_GENERATOR_PROFILE, MANAGED_FIXTURE_LINE_FIELDS,
+import { MANAGED_FIXTURE_ARC_BODY, MANAGED_FIXTURE_ARC_FIELDS, MANAGED_FIXTURE_GENERATOR_KINDS, MANAGED_FIXTURE_GENERATOR_PROFILE, MANAGED_FIXTURE_LINE_FIELDS,
   MANAGED_FIXTURE_VIA_FIELDS, generateManagedFixtureArchiveData } from "../src/managed-fixture-generator.ts";
 import { executeManagedLibraryFiles } from "../src/managed-library-files-runtime.ts";
 import { readManagedLibraryZip } from "../src/managed-library-files-zip.ts";
@@ -23,7 +23,7 @@ void test("fixed new fixture archives have one complete ordinary root PCB and ex
   for (const kind of MANAGED_FIXTURE_GENERATOR_KINDS) {
     const generated = generateManagedFixtureArchiveData(kind), qualification = qualifyManagedFixtureArchive(generated.bytes), source = rows(generated.bytes);
     assert.equal(qualification.documents.length, 1); assert.equal(qualification.documents[0]?.documentType, "PCB");
-    assert.deepEqual(source.map((row) => row.header.type), kind === "via-only" ? ["DOCHEAD", "META", "VIA"] : ["DOCHEAD", "META", "VIA", "LINE"]);
+    assert.deepEqual(source.map((row) => row.header.type), ["DOCHEAD", "META", "VIA", ...(kind === "via-only" ? [] : ["LINE"]), ...(kind === "arc-line-and-via" ? ["ARC"] : [])]);
     assert.deepEqual(source[1]?.body, { title: "PCB1", parent: "", source: "", board: "", zIndex: null });
     const via = source[2]; assert.ok(via); assert.deepEqual(Object.keys(via.body), MANAGED_FIXTURE_VIA_FIELDS);
     assert.equal(via.body["ruleName"], ""); assert.equal(via.body["viaType"], "NORMAL");
@@ -33,9 +33,15 @@ void test("fixed new fixture archives have one complete ordinary root PCB and ex
     assert.equal(generated.metadata["sqliteAccessed"], false); assert.equal(generated.metadata["existingProjectRead"], false);
     assert.equal(generated.metadata["nativeSceneVerified"], false); assert.equal(generated.metadata["nativeImportabilityVerified"], false);
     assert.equal(generated.metadata["currentInstalledSourcesVerified"], false);
-    if (kind === "line-and-via") {
+    if (kind !== "via-only") {
       const line = source[3]; assert.ok(line); assert.deepEqual(Object.keys(line.body), MANAGED_FIXTURE_LINE_FIELDS);
       assert.equal(line.body["layerId"], 1); assert.equal(line.body["startX"], 500); assert.equal(line.body["endX"], 1500); assert.equal(line.body["width"], 100);
+    }
+    if (kind === "arc-line-and-via") {
+      const arc = source[4]; assert.ok(arc); assert.equal(arc.header.ticket, 4); assert.deepEqual(Object.keys(arc.body), MANAGED_FIXTURE_ARC_FIELDS);
+      assert.deepEqual(arc.body, MANAGED_FIXTURE_ARC_BODY); assert.match(String(arc.header.id), /^[a-f0-9]{16}$/u);
+      const intended = z.object({ arc: z.object({ centerX: z.literal(350), centerY: z.literal(100), radius: z.literal(100), angleDegrees: z.literal(90), arcType: z.literal(1), sweep: z.literal(1) }) }).parse(generated.metadata["intendedNativeGeometry"]);
+      assert.equal(intended.arc.arcType, 1);
     }
     assert.equal(generated.metadata["sourceTemplateProfile"], MANAGED_FIXTURE_GENERATOR_PROFILE);
   }
@@ -61,7 +67,8 @@ void test("reachable generation uses ordinary input preparation and complete pri
     const artifact = z.object({ path: z.string() }).parse(output["archive"]), bytes = await readFile(artifact.path);
     const qualification = managedFixtureArchiveQualificationSchema.parse(output["qualification"]);
     assert.equal(qualifyManagedFixtureArchive(bytes).archiveSha256, qualification.archiveSha256);
-    assert.equal(rows(bytes).filter((row) => ["VIA", "LINE"].includes(row.header.type)).length, fixtureKind === "via-only" ? 1 : 2);
+    const expectedCount = { "via-only": 1, "line-and-via": 2, "arc-line-and-via": 3 }[fixtureKind];
+    assert.equal(rows(bytes).filter((row) => ["VIA", "LINE", "ARC"].includes(row.header.type)).length, expectedCount);
   }
 });
 

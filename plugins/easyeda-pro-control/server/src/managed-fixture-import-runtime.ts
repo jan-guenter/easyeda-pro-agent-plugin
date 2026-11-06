@@ -51,7 +51,7 @@ export function queryManagedFixtureImport(input: unknown = {}): Record<string, u
     effect: "fresh-managed-disposable-native-import", nativeImportLiveValidation: "not-recorded", importedFixtureAccepted: false,
     retryAllowed: false, deletionAuthorized: false, designExecutionAuthorized: false,
     limitations: ["Requires the same original ordinary 209 launch, exact empty StartPage, current SDK/UI/manager/main pins and authenticated tracked dispatch.",
-      "Generates a fresh fixed Via-only or Line+Via archive; no caller file, path, geometry, code, SQL or profile override is accepted.",
+      "Generates a fresh fixed Via-only, Line+Via or Arc+Line+Via archive; no caller file, path, geometry, code, SQL or profile override is accepted.",
       "The separate environment journal binds actual native config directories; HALF_OFFLINE and retained complete no-.elib rosters/watches exclude detached system-library seeding only after original termination and drained original watch cancellation.",
       "SDK settlement is partial evidence. Complete fresh closed-file SQLite/source and persistent registration acceptance remain separate; no import replay, automatic cleanup/deletion, Save or force termination is available.",
       "Cleanup requires the retained original dispatcher journal/Promise/session/runtime; inspect never adopts historical JSON. Release-destination closes only original held directory/watch handles after original root/Job termination."],
