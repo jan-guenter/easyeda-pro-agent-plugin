@@ -30,6 +30,7 @@ async function fixture(foreign = false): Promise<Readonly<{ observer: CurrentPro
   const state = { failed: false, requests: 0 }; let exited = false;
   const role = "syncEntry", site = SITES[role];
   const bindings: CurrentProjectSaveProducerBindings = Object.freeze({ sessionId: "worker-session", scriptId: "worker-script",
+    retainHeldCall: () => Object.freeze({ profile: "private.current-project-save-producer-held-call.v1" as const }),
     originalBreakpoint: (name: typeof ROLES[number]) => `bp-${name}`, originalReceivers: () => Object.freeze({ project: "original-project", wrapper: "original-wrapper", callback: "original-callback" }),
     assertCurrent: (): Promise<void> => Promise.resolve(), assertOriginalGenerationExited: (): Promise<void> => { assert.equal(exited, true); return Promise.resolve(); }, fail: (): void => { state.failed = true; },
     nextEvent: () => Promise.resolve({ method: "Debugger.paused" as const, sessionId: "worker-session", params: { reason: "other", hitBreakpoints: [`bp-${role}`], callFrames: [{ callFrameId: "original-frame", location: { scriptId: "worker-script", lineNumber: site.lineNumber, columnNumber: site.columnNumber }, functionLocation: { scriptId: foreign ? "foreign-script" : "worker-script", lineNumber: site.functionLineNumber, columnNumber: site.functionColumnNumber } }] } }),

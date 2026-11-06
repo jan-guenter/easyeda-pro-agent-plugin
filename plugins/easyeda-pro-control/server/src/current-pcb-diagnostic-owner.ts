@@ -5,8 +5,8 @@
  * Browser discovery grants no frame, worker, script or CAD execution authority. */
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Four fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
-import { CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS, validateCurrentProjectSaveProducerCommand } from "./current-project-save-producer-protocol.ts";
-import type { CurrentProjectSaveProducerBindings, CurrentProjectSaveProducerOrigin } from "./current-project-save-producer-origin.ts";
+import { CURRENT_PROJECT_SAVE_PRODUCER_ROLES, CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS, validateCurrentProjectSaveProducerCommand } from "./current-project-save-producer-protocol.ts";
+import type { CurrentProjectSaveProducerBindings, CurrentProjectSaveProducerHeldCall, CurrentProjectSaveProducerOrigin } from "./current-project-save-producer-origin.ts";
 import { currentProjectSaveProducerGuardCases } from "./current-project-save-producer-guard-protocol.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_SITES, qualifyCurrentProjectSaveProducerSource } from "./current-project-save-producer-source.ts";
 import { qualifyCurrentProjectSaveProducerGuardSource } from "./current-project-save-producer-guard-source.ts";
@@ -576,6 +576,10 @@ export function requireOriginalCurrentSchematicDisplaySaveWorkerOrigin(origin: C
 }
 export type CurrentProjectSaveProducerSetup = (origin: CurrentProjectSaveProducerOrigin) => Promise<void>;
 const originalProjectSaveProducerOrigins = new WeakMap<CurrentProjectSaveProducerOrigin, Readonly<{ owner: object; operation: object; bindings: CurrentProjectSaveProducerBindings; assertOriginal: () => void }>>();
+const originalProjectProducerHeldCalls = new WeakMap<CurrentProjectSaveProducerHeldCall, Readonly<{ owner: object; operation: object; origin: CurrentProjectSaveProducerOrigin; role: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES; event: object; frameId: string; joinedId: string; assertOriginal: () => void }>>();
+export function requireOriginalCurrentProjectSaveProducerHeldNativeCall(packet: CurrentProjectSaveProducerHeldCall, owner: object, operation: object, origin: CurrentProjectSaveProducerOrigin): Readonly<{ role: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES; event: object; frameId: string; joinedId: string }> {
+  const original = originalProjectProducerHeldCalls.get(packet); if (original === undefined || original.owner !== owner || original.operation !== operation || original.origin !== origin) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_NATIVE_HELD_CALL"); } original.assertOriginal(); return Object.freeze({ role: original.role, event: original.event, frameId: original.frameId, joinedId: original.joinedId });
+}
 export function requireOriginalCurrentProjectSaveProducerOrigin(origin: CurrentProjectSaveProducerOrigin, owner: object, operation: object): CurrentProjectSaveProducerBindings {
   const original = originalProjectSaveProducerOrigins.get(origin); if (original === undefined || original.owner !== owner || original.operation !== operation) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_ORIGIN"); } original.assertOriginal(); return original.bindings;
 }
@@ -677,6 +681,17 @@ export type CurrentPcbViaMainSetup = (origin: CurrentPcbViaMainOrigin) => Promis
 export interface CurrentPcbViaNativeObservation { readonly schema: "private.current-pcb-via-native-observation.v1"; readonly phase: CurrentPcbViaObservationPhase; readonly observations: Readonly<Record<string, unknown>> }
 export interface CurrentPcbViaSceneObservation { readonly schema: "private.current-pcb-via-scene-observation.v1"; readonly phase: CurrentPcbViaObservationPhase; readonly observation: CurrentPcb209SpatialTrackResult }
 const pcbViaPackets = new WeakMap<object, Readonly<{ owner: object; plan: CurrentPcbViaWritePlan; phase: string; kind: "native" | "scene" | "stage" }>>();
+function originalProducerEventFrame(input: unknown, role: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES, breakpointId: string, sessionId: string, scriptId: string): string {
+  const site = CURRENT_PROJECT_SAVE_PRODUCER_SITES[role], value = captureCurrentPcbStringClockReply(input).value;
+  if (!record(value) || !exact(value, ["method", "sessionId", "params"]) || value["method"] !== "Debugger.paused" || value["sessionId"] !== sessionId || !record(value["params"])) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_EVENT"); }
+  const params = value["params"]; const frames: unknown = params["callFrames"], hits: unknown = params["hitBreakpoints"];
+  if (params["reason"] !== "other" || !Array.isArray(hits) || hits.length !== 1 || hits[0] !== breakpointId || !Array.isArray(frames) || frames.length === 0 || frames.length > 32) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_EVENT"); }
+  const first: unknown = frames[0]; if (!record(first) || typeof first["callFrameId"] !== "string" || !/^[A-Za-z\d_.:-]{1,256}$/u.test(first["callFrameId"])) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_EVENT"); }
+  for (const [key, lineNumber, columnNumber] of [["location", site.lineNumber, site.columnNumber], ["functionLocation", site.functionLineNumber, site.functionColumnNumber]] as const) {
+    const point = first[key]; if (!record(point) || !exact(point, ["scriptId", "lineNumber", "columnNumber"]) || point["scriptId"] !== scriptId || point["lineNumber"] !== lineNumber || point["columnNumber"] !== columnNumber) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_EVENT"); }
+  }
+  return first["callFrameId"];
+}
 function originalProducerArgument(args: readonly unknown[], index: number): string {
   const argument = args[index]; if (!record(argument) || !exact(argument, ["objectId"]) || typeof argument["objectId"] !== "string" || !/^[A-Za-z\d_.:-]{1,256}$/u.test(argument["objectId"])) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_ARGUMENT"); } return argument["objectId"];
 }
@@ -2265,23 +2280,45 @@ class CurrentPcbRetainedOwnerCore {
           const receivers = (): Readonly<{ project: string; wrapper: string; callback: string }> => { original(); assertProducerOriginal();
             const callback = this.#schematicProducerOriginalUploadCallback, project = this.#schematicProducerOriginalProject, wrapper = this.#schematicProducerOriginalUploadWrapper;
             if (project === null || wrapper === null || callback === null) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_CONSTRUCTION_REQUIRED"); } return Object.freeze({ project, wrapper, callback }); };
+          let originalHeldEvent: object | null = null, originalHeldRole: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES | null = null;
+          let originalFrameId: string | null = null, originalJoinedId: string | null = null; let originalFrameAttempted = false, originalHeldRetained = false, originalPropertiesAttempted = false, originalPropertiesObserved = false, originalReadAttempted = false, originalReceiverAttempted = false;
+          const requireHeldRole = (role: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES): string => { original(); assertProducerOriginal();
+            if (originalHeldEvent === null || originalHeldRole !== role || originalHeldRetained) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_HELD_EVENT_REQUIRED"); }
+            return originalProducerEventFrame(originalHeldEvent, role, selected.originalProducerObservationBreakpoint(source, role), child.sessionId, source.scriptId); };
           const producerBindings: CurrentProjectSaveProducerBindings = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId,
             request: async (input: Parameters<CurrentProjectSaveProducerBindings["request"]>[0]): Promise<unknown> => {
               const command = validateCurrentProjectSaveProducerCommand(input); original(); assertProducerOriginal();
               if (command.phase === "project-save-producer-arm" && command.params.location.scriptId !== source.scriptId) { throw error("PROJECT_SAVE_PRODUCER_SOURCE_SCRIPT"); }
-              if (command.phase === "project-save-producer-receiver") { const actual = receivers();
+              if (command.phase === "project-save-producer-frame" && (command.params.callFrameId !== requireHeldRole(command.role) || originalFrameAttempted)) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_FRAME_ONCE"); }
+              if (command.phase === "project-save-producer-receiver") { requireHeldRole(command.role); if (originalReceiverAttempted || originalFrameId === null || command.params.objectId !== originalFrameId) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_RECEIVER_ONCE"); } const actual = receivers();
                 if (this.#schematicProducerFrames.get(command.role) !== command.params.objectId || command.params.arguments[0].objectId !== actual.project || command.params.arguments[1].objectId !== actual.wrapper || command.params.arguments[2].objectId !== actual.callback) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_RECEIVERS"); } }
-              if (command.phase === "project-save-producer-properties" && !this.#schematicProducerObjects.has(command.params.objectId)) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_PROPERTIES"); }
-              const reply = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { original(); assertProducerOriginal(); return pipe.observeSchematicDisplayProducer(command); }));
+              if (command.phase === "project-save-producer-properties" && (originalPropertiesAttempted || originalPropertiesObserved || originalJoinedId === null || command.params.objectId !== originalJoinedId || !this.#schematicProducerObjects.has(command.params.objectId))) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_PROPERTIES"); }
+              const reply = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { original(); assertProducerOriginal();
+                if (command.phase === "project-save-producer-frame") { requireHeldRole(command.role); if (originalFrameAttempted) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_FRAME_ONCE"); } originalFrameAttempted = true; }
+                if (command.phase === "project-save-producer-receiver") { requireHeldRole(command.role); if (originalReceiverAttempted) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_RECEIVER_ONCE"); } originalReceiverAttempted = true; }
+                if (command.phase === "project-save-producer-properties") { if (originalPropertiesAttempted || originalPropertiesObserved || originalJoinedId !== command.params.objectId) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_PROPERTIES_ONCE"); } originalPropertiesAttempted = true; }
+                return pipe.observeSchematicDisplayProducer(command); }));
               if (command.phase === "project-save-producer-frame" || command.phase === "project-save-producer-receiver") {
                 const captured = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, CURRENT_PROJECT_SAVE_PRODUCER_SITES[command.role].length); this.#schematicProducerObjects.add(captured);
-                if (command.phase === "project-save-producer-frame") { this.#schematicProducerFrames.set(command.role, captured); }
+                if (command.phase === "project-save-producer-frame") { this.#schematicProducerFrames.set(command.role, captured); originalFrameId = captured; } else { originalJoinedId = captured; }
               } else if (command.phase === "project-save-producer-arm") {
                 const site = CURRENT_PROJECT_SAVE_PRODUCER_SITES[command.role];
                 if (!record(reply) || !exact(reply, ["breakpointId", "actualLocation"]) || typeof reply["breakpointId"] !== "string" || !record(reply["actualLocation"]) || !exact(reply["actualLocation"], ["scriptId", "lineNumber", "columnNumber"]) || reply["actualLocation"]["scriptId"] !== source.scriptId || reply["actualLocation"]["lineNumber"] !== site.lineNumber || reply["actualLocation"]["columnNumber"] !== site.columnNumber) { throw error("PROJECT_SAVE_PRODUCER_ARM_REPLY"); } selected.bindProducerObservationBreakpoint(source, command.role, reply["breakpointId"]);
               }
+              if (command.phase === "project-save-producer-properties") { if (originalHeldRole === null || originalJoinedId !== command.params.objectId) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_PROPERTIES_CHANGED"); } requireHeldRole(originalHeldRole); decodeCurrentFootprintCopyClockRpcV2Array(reply, CURRENT_PROJECT_SAVE_PRODUCER_SITES[originalHeldRole].length); originalPropertiesObserved = true; }
               original(); assertProducerOriginal(); return reply;
-            }, nextEvent: () => selected.nextProducerEvent(), originalReceivers: receivers, originalBreakpoint: (role: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES) => selected.originalProducerObservationBreakpoint(source, role),
+            }, nextEvent: async () => { original(); assertProducerOriginal(); if (originalHeldEvent !== null || originalReadAttempted) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_CONTINUATION_REQUIRED"); } originalReadAttempted = true;
+              const actual = await selected.nextProducerEvent(); original(); assertProducerOriginal(); if (actual.method !== "Debugger.paused") { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_PAUSE_REQUIRED"); }
+              const captured = captureCurrentPcbStringClockReply(actual).value;
+              if (!record(captured) || !record(captured["params"]) || !Array.isArray(captured["params"]["hitBreakpoints"])) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_EVENT"); }
+              const hits: readonly unknown[] = captured["params"]["hitBreakpoints"], role = CURRENT_PROJECT_SAVE_PRODUCER_ROLES.find(value => selected.originalProducerObservationBreakpoint(source, value) === hits[0]);
+              if (role === undefined) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_EVENT"); } originalProducerEventFrame(captured, role, selected.originalProducerObservationBreakpoint(source, role), child.sessionId, source.scriptId); originalHeldEvent = actual; originalHeldRole = role; return actual;
+            }, retainHeldCall: () => { original(); assertProducerOriginal();
+              if (originalHeldRetained || originalHeldEvent === null || originalHeldRole === null || originalFrameId === null || originalJoinedId === null || !originalPropertiesObserved) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_CAPTURE_REQUIRED"); }
+              requireHeldRole(originalHeldRole); originalHeldRetained = true; const event = originalHeldEvent, frameId = originalFrameId, joinedId = originalJoinedId, role = originalHeldRole;
+              const packet: CurrentProjectSaveProducerHeldCall = Object.freeze({ profile: "private.current-project-save-producer-held-call.v1" });
+              originalProjectProducerHeldCalls.set(packet, Object.freeze({ owner: this, operation: argumentsValue, origin: producerOrigin, role, event, frameId, joinedId, assertOriginal: (): void => { assertProducerOriginal(); if (originalHeldEvent !== event || originalHeldRole !== role || originalFrameId !== frameId || originalJoinedId !== joinedId || !originalHeldRetained) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_NATIVE_HELD_CALL_CHANGED"); } } })); return packet;
+            }, originalReceivers: receivers, originalBreakpoint: (role: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES) => selected.originalProducerObservationBreakpoint(source, role),
             assertCurrent: async (): Promise<void> => { original(); assertProducerOriginal(); await this.#verify(); original(); assertProducerOriginal(); },
             assertOriginalGenerationExited: (): Promise<void> => { assertProducerOriginal(); if (!this.#terminationObserved || this.#terminationObservation?.terminated !== true) { return Promise.reject(error("PROJECT_SAVE_PRODUCER_ORIGINAL_EXIT_REQUIRED")); } return Promise.resolve(); }, fail: (): void => { selected.fail(); } });
           originalProjectSaveProducerOrigins.set(producerOrigin, Object.freeze({ owner: this, operation: argumentsValue, bindings: producerBindings, assertOriginal: assertProducerOriginal })); this.#schematicProducerObservationOrigin = producerOrigin;
@@ -2525,23 +2562,45 @@ class CurrentPcbRetainedOwnerCore {
           const receivers = (): Readonly<{ project: string; wrapper: string; callback: string }> => { original(); assertProducerOriginal();
             const callback = this.#viaProducerOriginalUploadCallback, project = this.#viaProducerOriginalProject, wrapper = this.#viaProducerOriginalUploadWrapper;
             if (project === null || wrapper === null || callback === null) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_CONSTRUCTION_REQUIRED"); } return Object.freeze({ project, wrapper, callback }); };
+          let originalHeldEvent: object | null = null, originalHeldRole: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES | null = null;
+          let originalFrameId: string | null = null, originalJoinedId: string | null = null; let originalFrameAttempted = false, originalHeldRetained = false, originalPropertiesAttempted = false, originalPropertiesObserved = false, originalReadAttempted = false, originalReceiverAttempted = false;
+          const requireHeldRole = (role: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES): string => { original(); assertProducerOriginal();
+            if (originalHeldEvent === null || originalHeldRole !== role || originalHeldRetained) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_HELD_EVENT_REQUIRED"); }
+            return originalProducerEventFrame(originalHeldEvent, role, selected.originalProducerObservationBreakpoint(source, role), child.sessionId, source.scriptId); };
           const producerBindings: CurrentProjectSaveProducerBindings = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId,
             request: async (input: Parameters<CurrentProjectSaveProducerBindings["request"]>[0]): Promise<unknown> => {
               const command = validateCurrentProjectSaveProducerCommand(input); original(); assertProducerOriginal();
               if (command.phase === "project-save-producer-arm" && command.params.location.scriptId !== source.scriptId) { throw error("PROJECT_SAVE_PRODUCER_SOURCE_SCRIPT"); }
-              if (command.phase === "project-save-producer-receiver") { const actual = receivers();
+              if (command.phase === "project-save-producer-frame" && (command.params.callFrameId !== requireHeldRole(command.role) || originalFrameAttempted)) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_FRAME_ONCE"); }
+              if (command.phase === "project-save-producer-receiver") { requireHeldRole(command.role); if (originalReceiverAttempted || originalFrameId === null || command.params.objectId !== originalFrameId) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_RECEIVER_ONCE"); } const actual = receivers();
                 if (this.#viaProducerFrames.get(command.role) !== command.params.objectId || command.params.arguments[0].objectId !== actual.project || command.params.arguments[1].objectId !== actual.wrapper || command.params.arguments[2].objectId !== actual.callback) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_RECEIVERS"); } }
-              if (command.phase === "project-save-producer-properties" && !this.#viaProducerObjects.has(command.params.objectId)) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_PROPERTIES"); }
-              const reply = await this.#serializeViaObserver(() => this.#transfer(() => { original(); assertProducerOriginal(); return pipe.observeViaProducer(command); }));
+              if (command.phase === "project-save-producer-properties" && (originalPropertiesAttempted || originalPropertiesObserved || originalJoinedId === null || command.params.objectId !== originalJoinedId || !this.#viaProducerObjects.has(command.params.objectId))) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_PROPERTIES"); }
+              const reply = await this.#serializeViaObserver(() => this.#transfer(() => { original(); assertProducerOriginal();
+                if (command.phase === "project-save-producer-frame") { requireHeldRole(command.role); if (originalFrameAttempted) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_FRAME_ONCE"); } originalFrameAttempted = true; }
+                if (command.phase === "project-save-producer-receiver") { requireHeldRole(command.role); if (originalReceiverAttempted) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_RECEIVER_ONCE"); } originalReceiverAttempted = true; }
+                if (command.phase === "project-save-producer-properties") { if (originalPropertiesAttempted || originalPropertiesObserved || originalJoinedId !== command.params.objectId) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_PROPERTIES_ONCE"); } originalPropertiesAttempted = true; }
+                return pipe.observeViaProducer(command); }));
               if (command.phase === "project-save-producer-frame" || command.phase === "project-save-producer-receiver") {
                 const captured = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(reply, CURRENT_PROJECT_SAVE_PRODUCER_SITES[command.role].length); this.#viaProducerObjects.add(captured);
-                if (command.phase === "project-save-producer-frame") { this.#viaProducerFrames.set(command.role, captured); }
+                if (command.phase === "project-save-producer-frame") { this.#viaProducerFrames.set(command.role, captured); originalFrameId = captured; } else { originalJoinedId = captured; }
               } else if (command.phase === "project-save-producer-arm") {
                 const site = CURRENT_PROJECT_SAVE_PRODUCER_SITES[command.role];
                 if (!record(reply) || !exact(reply, ["breakpointId", "actualLocation"]) || typeof reply["breakpointId"] !== "string" || !record(reply["actualLocation"]) || !exact(reply["actualLocation"], ["scriptId", "lineNumber", "columnNumber"]) || reply["actualLocation"]["scriptId"] !== source.scriptId || reply["actualLocation"]["lineNumber"] !== site.lineNumber || reply["actualLocation"]["columnNumber"] !== site.columnNumber) { throw error("PROJECT_SAVE_PRODUCER_ARM_REPLY"); } selected.bindProducerObservationBreakpoint(source, command.role, reply["breakpointId"]);
               }
+              if (command.phase === "project-save-producer-properties") { if (originalHeldRole === null || originalJoinedId !== command.params.objectId) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_PROPERTIES_CHANGED"); } requireHeldRole(originalHeldRole); decodeCurrentFootprintCopyClockRpcV2Array(reply, CURRENT_PROJECT_SAVE_PRODUCER_SITES[originalHeldRole].length); originalPropertiesObserved = true; }
               original(); assertProducerOriginal(); return reply;
-            }, nextEvent: () => selected.nextProducerEvent(), originalReceivers: receivers, originalBreakpoint: (role: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES) => selected.originalProducerObservationBreakpoint(source, role),
+            }, nextEvent: async () => { original(); assertProducerOriginal(); if (originalHeldEvent !== null || originalReadAttempted) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_CONTINUATION_REQUIRED"); } originalReadAttempted = true;
+              const actual = await selected.nextProducerEvent(); original(); assertProducerOriginal(); if (actual.method !== "Debugger.paused") { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_PAUSE_REQUIRED"); }
+              const captured = captureCurrentPcbStringClockReply(actual).value;
+              if (!record(captured) || !record(captured["params"]) || !Array.isArray(captured["params"]["hitBreakpoints"])) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_EVENT"); }
+              const hits: readonly unknown[] = captured["params"]["hitBreakpoints"], role = CURRENT_PROJECT_SAVE_PRODUCER_ROLES.find(value => selected.originalProducerObservationBreakpoint(source, value) === hits[0]);
+              if (role === undefined) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_EVENT"); } originalProducerEventFrame(captured, role, selected.originalProducerObservationBreakpoint(source, role), child.sessionId, source.scriptId); originalHeldEvent = actual; originalHeldRole = role; return actual;
+            }, retainHeldCall: () => { original(); assertProducerOriginal();
+              if (originalHeldRetained || originalHeldEvent === null || originalHeldRole === null || originalFrameId === null || originalJoinedId === null || !originalPropertiesObserved) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_CAPTURE_REQUIRED"); }
+              requireHeldRole(originalHeldRole); originalHeldRetained = true; const event = originalHeldEvent, frameId = originalFrameId, joinedId = originalJoinedId, role = originalHeldRole;
+              const packet: CurrentProjectSaveProducerHeldCall = Object.freeze({ profile: "private.current-project-save-producer-held-call.v1" });
+              originalProjectProducerHeldCalls.set(packet, Object.freeze({ owner: this, operation: plan, origin: producerOrigin, role, event, frameId, joinedId, assertOriginal: (): void => { assertProducerOriginal(); if (originalHeldEvent !== event || originalHeldRole !== role || originalFrameId !== frameId || originalJoinedId !== joinedId || !originalHeldRetained) { throw error("PROJECT_SAVE_PRODUCER_ORIGINAL_NATIVE_HELD_CALL_CHANGED"); } } })); return packet;
+            }, originalReceivers: receivers, originalBreakpoint: (role: keyof typeof CURRENT_PROJECT_SAVE_PRODUCER_SITES) => selected.originalProducerObservationBreakpoint(source, role),
             assertCurrent: async (): Promise<void> => { original(); assertProducerOriginal(); await this.#verify(); original(); assertProducerOriginal(); },
             assertOriginalGenerationExited: (): Promise<void> => { assertProducerOriginal(); if (!this.#terminationObserved || this.#terminationObservation?.terminated !== true) { return Promise.reject(error("PROJECT_SAVE_PRODUCER_ORIGINAL_EXIT_REQUIRED")); } return Promise.resolve(); }, fail: (): void => { selected.fail(); } });
           originalProjectSaveProducerOrigins.set(producerOrigin, Object.freeze({ owner: this, operation: plan, bindings: producerBindings, assertOriginal: assertProducerOriginal })); this.#viaProducerObservationOrigin = producerOrigin;

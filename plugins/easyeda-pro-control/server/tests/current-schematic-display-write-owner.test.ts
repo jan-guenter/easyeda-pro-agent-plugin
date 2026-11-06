@@ -369,11 +369,18 @@ void test("actual owner issues one producer origin under source hold and preserv
     for (const candidate of cases) { const command: unknown = candidate; assert.ok(command !== null && typeof command === "object" && "phase" in command && "params" in command && command.params !== null && typeof command.params === "object");
       if (command.phase === "project-save-producer-arm") { assert.ok("location" in command.params && command.params.location !== null && typeof command.params.location === "object"); await Reflect.apply(request, undefined, [{ ...command, params: { location: { ...command.params.location, scriptId } } }]); }
     }
-    const before = f.actions.length;
+    const before = f.actions.length, retain: unknown = Reflect.get(binding, "retainHeldCall"); assert.ok(typeof retain === "function");
+    assert.throws(() => Reflect.apply(retain, undefined, []), /ORIGINAL_CAPTURE_REQUIRED/u);
+    const fixed: unknown = cases.find((value: unknown) => value !== null && typeof value === "object" && Reflect.get(value, "phase") === "project-save-producer-frame"); assert.ok(fixed !== undefined);
+    await assert.rejects(() => { const result: unknown = Reflect.apply(request, undefined, [fixed]); assert.ok(result instanceof Promise); return result; }, /ORIGINAL_HELD_EVENT_REQUIRED/u);
     await assert.rejects(() => { const result: unknown = Reflect.apply(request, undefined, [{ phase: "project-save-producer-properties", method: "Runtime.getProperties", params: { objectId: "unissued-frame", ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }]); assert.ok(result instanceof Promise); return result; }, /ORIGINAL_PROPERTIES/u);
     assert.equal(f.actions.length, before);
   });
   await f.runWorker(); const original = issued; assert.ok(original !== null); assert.equal(f.actions.filter(action => action === "schematic-display-producer-observe").length, 23);
   assert.throws(() => f.requireProducer(structuredClone(original)), /ORIGINAL_ORIGIN/u);
+  const binding = f.requireProducer(original), next: unknown = Reflect.get(binding, "nextEvent"); assert.ok(typeof next === "function");
+  const read = (): Promise<unknown> => { const value: unknown = Reflect.apply(next, undefined, []); assert.ok(value instanceof Promise); return value; };
+  await assert.rejects(read(), /no producer dispatch/u); const after = f.actions.length;
+  await assert.rejects(read(), /ORIGINAL_CONTINUATION_REQUIRED/u); assert.equal(f.actions.length, after);
   await f.owner.abortSchematicDisplayWrite(); assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
 });

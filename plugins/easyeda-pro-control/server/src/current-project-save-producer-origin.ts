@@ -7,9 +7,11 @@ import type { CurrentProjectSaveStructureEvent } from "./current-project-save-st
 export interface CurrentPcbViaSaveProducerOrigin { readonly profile: "private.current-pcb-via-save-producer-origin.v1" }
 export interface CurrentSchematicDisplaySaveProducerOrigin { readonly profile: "private.current-schematic-display-save-producer-origin.v1" }
 export type CurrentProjectSaveProducerOrigin = CurrentPcbViaSaveProducerOrigin | CurrentSchematicDisplaySaveProducerOrigin;
+export interface CurrentProjectSaveProducerHeldCall { readonly profile: "private.current-project-save-producer-held-call.v1" }
 export interface CurrentProjectSaveProducerBindings {
   readonly sessionId: string; readonly scriptId: string;
   readonly request: (command: CurrentProjectSaveProducerCommand) => Promise<unknown>;
+  readonly retainHeldCall: () => CurrentProjectSaveProducerHeldCall;
   readonly nextEvent: () => Promise<CurrentProjectSaveStructureEvent>;
   /** Native object IDs are original private captures, never MCP arguments. */
   readonly originalBreakpoint: (role: CurrentProjectSaveProducerRole) => string;

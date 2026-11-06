@@ -11,7 +11,7 @@ import { CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT
 import { CURRENT_PROJECT_SAVE_PRODUCER_RECEIVER_CALLS as CALLS } from "./current-project-save-producer-programs.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_SITES as SITES } from "./current-project-save-producer-source.ts";
 import type { CurrentProjectSaveProducerRole } from "./current-project-save-producer-source.ts";
-import type { CurrentProjectSaveProducerBindings, CurrentProjectSaveProducerOrigin } from "./current-project-save-producer-origin.ts";
+import type { CurrentProjectSaveProducerBindings, CurrentProjectSaveProducerHeldCall, CurrentProjectSaveProducerOrigin } from "./current-project-save-producer-origin.ts";
 
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 const location = z.strictObject({ scriptId: handle, lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() });
@@ -21,7 +21,7 @@ const event = z.strictObject({ method: z.literal("Debugger.paused"), sessionId: 
 const remote = z.looseObject({ type: z.enum(["object", "function", "string", "number", "boolean", "undefined"]), objectId: handle.optional(), value: z.union([z.string().max(16_384), z.number(), z.boolean(), z.null()]).optional() });
 const property = z.looseObject({ name: z.string(), isOwn: z.literal(true), value: remote, get: z.never().optional(), set: z.never().optional() });
 const properties = z.looseObject({ result: z.array(property).min(2).max(11) });
-export interface CurrentProjectSaveProducerHeldCall { readonly profile: "private.current-project-save-producer-held-call.v1" }
+export type { CurrentProjectSaveProducerHeldCall } from "./current-project-save-producer-origin.ts";
 interface OriginalHeldCall { readonly observer: CurrentProjectSaveProducerObserver; readonly role: CurrentProjectSaveProducerRole; readonly fields: readonly Readonly<{ name: string; value: z.infer<typeof remote> }>[] }
 const heldCalls = new WeakMap<CurrentProjectSaveProducerHeldCall, OriginalHeldCall>();
 /** Private observations only; these fields provide no original continuation. */
@@ -31,7 +31,7 @@ export function requireOriginalCurrentProjectSaveProducerHeldCall(packet: Curren
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PROJECT_SAVE_PRODUCER_${code}`); } }
 function binding(value: CurrentProjectSaveProducerBindings): CurrentProjectSaveProducerBindings {
   need(value !== null && typeof value === "object" && !types.isProxy(value) && Object.getPrototypeOf(value) === Object.prototype && Object.isFrozen(value), "BINDING");
-  const names = ["sessionId", "scriptId", "request", "nextEvent", "originalReceivers", "originalBreakpoint", "assertCurrent", "assertOriginalGenerationExited", "fail"];
+  const names = ["sessionId", "scriptId", "request", "nextEvent", "retainHeldCall", "originalReceivers", "originalBreakpoint", "assertCurrent", "assertOriginalGenerationExited", "fail"];
   need(Reflect.ownKeys(value).length === names.length, "BINDING_FIELDS");
   for (const [index, name] of names.entries()) { const own = Object.getOwnPropertyDescriptor(value, name); need(own !== undefined && Object.hasOwn(own, "value"), "BINDING_DATA");
     if (index < 2) { handle.parse(own.value); } else { need(typeof own.value === "function" && !types.isProxy(own.value), "BINDING_FUNCTION"); } }
@@ -76,7 +76,7 @@ export class CurrentProjectSaveProducerObserver {
       const actual = new Map<string, z.infer<typeof remote>>(); for (const field of fields) { need(!actual.has(field.name), "FIELD_ALIAS"); actual.set(field.name, Object.freeze(field.value)); }
       need(actual.size === site.length + 1 && actual.get("length")?.type === "number" && actual.get("length")?.value === site.length, "ARRAY_LENGTH"); for (let index = 0; index < site.length; index += 1) { need(actual.has(String(index)), "ARRAY_MEMBER"); }
       const fieldsValue = Object.freeze([...actual].map(([name, value]) => Object.freeze({ name, value })));
-      const packet: CurrentProjectSaveProducerHeldCall = Object.freeze({ profile: "private.current-project-save-producer-held-call.v1" }); heldCalls.set(packet, Object.freeze({ observer: this, role, fields: fieldsValue })); this.#held = packet; return packet;
+      const packet = this.#binding.retainHeldCall(); need(packet !== null && typeof packet === "object" && !types.isProxy(packet) && Object.isFrozen(packet) && Reflect.ownKeys(packet).length === 1 && Object.getOwnPropertyDescriptor(packet, "profile")?.value === "private.current-project-save-producer-held-call.v1", "ORIGINAL_NATIVE_MARKER"); heldCalls.set(packet, Object.freeze({ observer: this, role, fields: fieldsValue })); this.#held = packet; return packet;
     } catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
   public async retireAfterOriginalExit(): Promise<void> { need(!this.#busy && !this.#closed, "RETIRE_STATE"); await this.#binding.assertOriginalGenerationExited(); this.#closed = true; }
