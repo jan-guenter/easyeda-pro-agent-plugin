@@ -1,5 +1,6 @@
-/** Fixed discovery only. There is no schematic editor, Save, worker, caller
- * JavaScript or borrowed PCB primitive vocabulary in this initial graph. */
+/** Fixed discovery and original schematic navigation/source-stage calls.
+ * Native writer/Save admission is separate; caller JavaScript is absent. */
+import { validateCurrentSchematicDisplayNativeCommand } from "./current-schematic-display-native-command.ts";
 import { diagnosticNativeRequest, diagnosticRecord } from "./current-pcb-diagnostic-protocol.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_DISCOVERY_METHODS as METHODS, CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE as PROFILE } from "./current-schematic-display-write-native-profile.ts";
 
@@ -7,7 +8,16 @@ export function currentSchematicDisplayWriteNativeRequest(chunk: Buffer): Readon
   if (chunk.length > 65_536 || chunk.at(-1) !== 0) { throw new Error("SCHEMATIC_DISPLAY_WIRE"); }
   const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(chunk.subarray(0, -1)));
   if (!diagnosticRecord(raw) || typeof raw["id"] !== "number" || !Number.isSafeInteger(raw["id"]) || raw["id"] < 1 || raw["id"] > PROFILE.renderer.total ||
-    typeof raw["method"] !== "string" || !METHODS.includes(raw["method"]) || !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("SCHEMATIC_DISPLAY_WIRE"); }
+    typeof raw["method"] !== "string" || !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("SCHEMATIC_DISPLAY_WIRE"); }
+  if (Object.hasOwn(raw, "schematicDisplayPhase")) {
+    const { id, sessionId, ...input } = raw; const command = validateCurrentSchematicDisplayNativeCommand(input);
+    if (typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_DISPLAY_NATIVE_SESSION"); }
+    const phase = command.schematicDisplayPhase;
+    return Object.freeze({ action: "schematic-display-native", requestId: id, sessionId, phase,
+      ...("uniqueContextId" in command.params ? { uniqueContextId: command.params.uniqueContextId } : { objectId: command.params.objectId }),
+      ...(phase === "start" ? {} : { targetJson: command.params.arguments[0].value }), ...(phase === "start" || phase === "navigate" ? {} : { operationJson: command.params.arguments[2].value }) });
+  }
+  if (!METHODS.includes(raw["method"])) { throw new Error("SCHEMATIC_DISPLAY_DISCOVERY_ONLY"); }
   const fixed = diagnosticNativeRequest(Buffer.from(`${JSON.stringify({ ...raw, id: 1 })}\0`));
   return Object.freeze({ ...fixed, requestId: raw["id"] });
 }

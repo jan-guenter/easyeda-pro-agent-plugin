@@ -5,6 +5,7 @@ import { DIAGNOSTIC_SOURCE_BYTES, diagnosticExact, diagnosticRecord, diagnosticT
 import type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 import { diagnosticAncillaryOwner } from "./current-pcb-diagnostic-ancillary.ts";
 import { CurrentPcbDiagnosticSameDocument } from "./current-pcb-diagnostic-same-document.ts";
+import { CurrentSchematicDisplaySameDocument } from "./current-schematic-display-same-document.ts";
 import { CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_SOURCE } from "./current-footprint-copy-manager-route-source.ts";
 import { CurrentPcbDiagnosticChildNavigation } from "./current-pcb-diagnostic-child-navigation.ts";
 
@@ -141,6 +142,8 @@ export class CurrentPcbDiagnosticContext {
   #openingConsumed = false;
   #opening: { readonly base: string; readonly url: string; readonly expectedTitle: string | null } | null = null;
   #rootNavigation: CurrentPcbDiagnosticSameDocument | null = null;
+  #schematicNavigation: CurrentSchematicDisplaySameDocument | null = null;
+  #schematicOpening: Readonly<{ base: string; url: string }> | null = null;
   #priorRootNavigation: CurrentPcbDiagnosticSameDocument | null = null;
   #pcbOpening: PcbOpeningTransition | null = null;
   #ancillaryFrame: Row | null = null;
@@ -214,6 +217,7 @@ export class CurrentPcbDiagnosticContext {
       this.#attachmentEvent = clone(params); return;
     }
     if (event.sessionId !== this.#sessionId) { this.#refuse(); }
+    if (this.#schematicNavigation?.accept(event) === true) { this.#uiSourceContext(); return; }
     if (this.#priorRootNavigation?.acceptLateNavigation(event) === true ||
         this.#rootNavigation?.accept(event) === true) { this.#uiSourceContext(); return; }
     if (this.#pcbOpening !== null && this.#pcbEvent(event)) { return; }
@@ -445,9 +449,38 @@ export class CurrentPcbDiagnosticContext {
       this.#opening = null;
     } catch { this.#refuse(); }
   }
+  /** Distinct two-fragment generated SCH route. No PCB transition, child
+   * frame or prior runtime can use this branch. Its fixed native call supplies
+   * the final DOM title; the complete original loader/context stays retained. */
+  public beginSchematicOpeningTransition(projectUuid: string, pageUuid: string): Readonly<{ sessionId: string; uniqueContextId: string }> {
+    const selected = this.openingContext();
+    if (this.#openingConsumed || this.#rootNavigation !== null || this.#schematicNavigation !== null) { return this.#refuse(); }
+    this.#openingConsumed = true;
+    try {
+      if (!/^[a-f\d]{64}$/u.test(projectUuid) || !/^[a-f\d]{32}$/u.test(pageUuid) || this.#frame === null || this.#target === null) { this.#refuse(); }
+      const base = startPageBase(this.#frame), fragment = this.#frame["urlFragment"] === "#" ? "#" : "";
+      if (this.#target["url"] !== `${base}${fragment}`) { this.#refuse(); }
+      const projectUrl = `${base}#id=${projectUuid}`; const pageUrl = `${projectUrl},tab=*${pageUuid}@${projectUuid}`;
+      this.#schematicNavigation = new CurrentSchematicDisplaySameDocument(String(this.#frame["id"]), projectUrl, pageUrl);
+      this.#schematicOpening = Object.freeze({ base, url: pageUrl }); return selected;
+    } catch { return this.#refuse(); }
+  }
+  public finishSchematicOpeningTransition(targetReply: Row, frameReply: Row, documentTitle: string): void {
+    this.openingContext();
+    try {
+      const opening = this.#schematicOpening, original = this.#frame;
+      if (opening === null || original === null || this.#target === null || this.#schematicNavigation === null || !text(documentTitle, 512) || documentTitle.length === 0) { this.#refuse(); }
+      this.#schematicNavigation.seal(); const currentFrames = frames(frameReply), currentTarget = target(targetReply, this.#targetId, true); const currentFrame = currentFrames[0];
+      if (currentFrames.length !== (this.#ancillaryFrame === null ? 1 : 2) || currentFrame === undefined || this.#ancillaryFrame !== null && !currentFrames.some(row => equal(row, this.#ancillaryFrame))) { this.#refuse(); }
+      const { urlFragment: currentFragment, ...currentFields } = currentFrame, { urlFragment: _fragment, ...originalFields } = original;
+      if (currentFragment !== opening.url.slice(opening.base.length) || !equal(originalFields, currentFields) || !equal({ ...this.#target, url: opening.url, attached: true, title: documentTitle }, currentTarget)) { this.#refuse(); }
+      this.openingContext(); this.#frame = currentFrame; this.#frames = currentFrames; this.#target = Object.freeze({ ...currentTarget, attached: false }); this.#schematicOpening = null;
+    } catch { this.#refuse(); }
+  }
   /** Separate document-opening branch. The original source-shaped ancillary
    * child stays unchanged. Only this one-shot branch can add an editor child. */
   public beginPcbOpeningTransition(projectUuid: string, documentUuid: string): Readonly<{ sessionId: string; uniqueContextId: string }> {
+    if (this.#schematicNavigation !== null) { return this.#refuse(); }
     const selected = this.openingContext();
     if (this.#pcbOpening !== null || !this.#openingConsumed || this.#opening !== null || this.#frame === null ||
         this.#sourceIdentity === null || this.#target === null || !/^[a-f\d]{64}$/u.test(projectUuid) ||

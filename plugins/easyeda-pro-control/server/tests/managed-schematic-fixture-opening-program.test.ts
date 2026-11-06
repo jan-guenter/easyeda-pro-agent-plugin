@@ -4,6 +4,7 @@ import { decodeExactReadEnvelope } from "../src/exact-readers.ts";
 import { qualifyGeneratedSchematicFixtureInitialSql } from "../src/managed-schematic-fixture-initial-sql.ts";
 import { GENERATED_SCHEMATIC_NAVIGATION_FUNCTION, buildGeneratedSchematicNavigationProgram, buildGeneratedSchematicReadersProgram, validateGeneratedSchematicNavigation, validateGeneratedSchematicReaders } from "../src/managed-schematic-fixture-opening-program.ts";
 import { generatedSchematicOpeningRequestSchema } from "../src/managed-schematic-fixture-opening.ts";
+import { CURRENT_SCHEMATIC_DISPLAY_NAVIGATION_FUNCTION, CURRENT_SCHEMATIC_DISPLAY_START_FUNCTION } from "../src/current-schematic-display-write-programs.ts";
 import { generatedSchematicOpeningVm } from "./helpers/generated-schematic-opening-vm.ts";
 import { managedSchematicFixtureInitialSqlFixture } from "./helpers/managed-schematic-fixture-initial-sql.ts";
 
@@ -61,4 +62,18 @@ void test("generated SCH public requests accept confirmations only and reject ca
   for (const extra of [{ target: {} }, { path: "C:\\UserProject" }, { pageUuid: "a".repeat(32) }, { code: "caller" }, { operation: "eda.sch_PrimitiveText.getAll" }]) {
     assert.equal(generatedSchematicOpeningRequestSchema.safeParse({ ...request, ...extra }).success, false);
   }
+});
+
+void test("native SCH start accepts original browser accessors and its one navigation returns the retained document title", async () => {
+  const input = await managedSchematicFixtureInitialSqlFixture(), result = await qualifyGeneratedSchematicFixtureInitialSql(input);
+  const fixture = generatedSchematicOpeningVm(result.qualification, result.history);
+  fixture.evaluate('const originalDoc=document;delete globalThis.document;Object.defineProperty(globalThis,"document",{get(){return originalDoc;}});void 0;');
+  const start = await fixture.run(`return (${CURRENT_SCHEMATIC_DISPLAY_START_FUNCTION})();`); assert.deepEqual(start, { windowTabId: "original-window", documentTitle: "EasyEDA Pro - V3.2.209" });
+  assert.deepEqual(fixture.evaluate("[calls.registration,calls.project,calls.page]"), [0, 0, 0]);
+  const opened = await fixture.run(`return await (${CURRENT_SCHEMATIC_DISPLAY_NAVIGATION_FUNCTION})(${JSON.stringify(JSON.stringify(result.qualification.target))});`);
+  assert.ok(opened !== null && typeof opened === "object" && "navigation" in opened && "documentTitle" in opened);
+  const receipt = validateGeneratedSchematicNavigation(decodeExactReadEnvelope(opened.navigation), result.qualification);
+  assert.equal(receipt.outcome, "opened-ready"); assert.equal(opened.documentTitle, "EasyEDA Pro - V3.2.209");
+  assert.deepEqual(fixture.evaluate("[calls.registration,calls.project,calls.page]"), [1, 1, 1]);
+  await assert.rejects(fixture.run(`return (${CURRENT_SCHEMATIC_DISPLAY_START_FUNCTION})();`), /SCHEMATIC_DISPLAY_START/u);
 });

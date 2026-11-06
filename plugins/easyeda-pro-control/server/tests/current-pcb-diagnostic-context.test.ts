@@ -701,3 +701,28 @@ void test("pending bootstrap preserves original UI and child context loss and do
   const duplicate = bootstrapFixture();
   assert.throws(() => duplicate.observePcbBootstrapFrames(OPEN_TARGET_REPLY, PCB_PENDING_ROOT_REPLY), /IDENTITY/u);
 });
+
+void test("distinct generated schematic route seals project then exact page while retaining root loader and source context", () => {
+  const context = openingFixture(), page = "b".repeat(32), pageUrl = `${OPEN_URL},tab=*${page}@${PROJECT_UUID}`;
+  const selected = context.beginSchematicOpeningTransition(PROJECT_UUID, page); within(context);
+  context.observeEvent(event("Page.navigatedWithinDocument", { frameId: "frame-1", url: pageUrl, navigationType: "fragment" }));
+  const frames = { frameTree: { frame: { ...UI_FRAME, urlFragment: pageUrl.slice(UI_BASE.length) } } }, target = { targetInfos: [{ ...UI_TARGET, url: pageUrl, title: "native selected page", attached: true }] };
+  context.finishSchematicOpeningTransition(target, frames, "native selected page"); assert.deepEqual(context.openingContext(), selected); context.observeTarget(target); context.observeFrames(frames);
+  context.observeEvent(event("Page.frameStartedNavigating", { frameId: "frame-1", url: OPEN_URL, loaderId: "pending-old", navigationType: "sameDocument" }));
+  assert.throws(() => context.beginPcbOpeningTransition(PROJECT_UUID, page));
+});
+void test("schematic route refuses missing project commit, another page, changed loader/title and replay", () => {
+  const page = "b".repeat(32), pageUrl = `${OPEN_URL},tab=*${page}@${PROJECT_UUID}`;
+  const absent = openingFixture(); absent.beginSchematicOpeningTransition(PROJECT_UUID, page);
+  assert.throws(() => { absent.observeEvent(event("Page.navigatedWithinDocument", { frameId: "frame-1", url: pageUrl, navigationType: "fragment" })); });
+  for (const drift of ["page", "loader", "title"] as const) {
+    const context = openingFixture(); context.beginSchematicOpeningTransition(PROJECT_UUID, page); within(context);
+    if (drift === "page") { assert.throws(() => { context.observeEvent(event("Page.navigatedWithinDocument", { frameId: "frame-1", url: `${OPEN_URL},tab=*${"c".repeat(32)}@${PROJECT_UUID}`, navigationType: "fragment" })); }); }
+    else {
+      context.observeEvent(event("Page.navigatedWithinDocument", { frameId: "frame-1", url: pageUrl, navigationType: "fragment" }));
+      assert.throws(() => { context.finishSchematicOpeningTransition({ targetInfos: [{ ...UI_TARGET, url: pageUrl, title: "native page", attached: true }] },
+        { frameTree: { frame: { ...UI_FRAME, urlFragment: pageUrl.slice(UI_BASE.length), ...(drift === "loader" ? { loaderId: "foreign" } : {}) } } }, drift === "title" ? "another page" : "native page"); });
+    }
+  }
+  const replay = openingFixture(); replay.beginSchematicOpeningTransition(PROJECT_UUID, page); assert.throws(() => replay.beginSchematicOpeningTransition(PROJECT_UUID, page));
+});

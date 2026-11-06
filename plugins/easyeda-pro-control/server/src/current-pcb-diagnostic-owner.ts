@@ -7,6 +7,12 @@
 /* oxlint-disable max-classes-per-file -- Four fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
 import { CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE, CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE } from "./current-schematic-display-write-native-profile.ts";
 import { currentSchematicDisplayWriteNativeRequest } from "./current-schematic-display-write-protocol.ts";
+import { validateGeneratedSchematicNavigation } from "./managed-schematic-fixture-opening-program.ts";
+import { requireOriginalGeneratedSchematicDisplayNativeArguments } from "./generated-schematic-display-source.ts";
+import type { GeneratedSchematicDisplayNativeArguments } from "./generated-schematic-display-source.ts";
+import { generatedSchematicDisplayStageResultSchema } from "./generated-schematic-display.ts";
+import type { GeneratedSchematicDisplayStageResult } from "./generated-schematic-display.ts";
+import type { GeneratedSchematicDisplayDispatch } from "./generated-schematic-display-journal.ts";
 import { assertOriginalGeneratedSchematicFixtureOpenCheckpoint, verifyGeneratedSchematicFixtureOpenCheckpoint } from "./managed-schematic-fixture-open-checkpoint.ts";
 import type { GeneratedSchematicFixtureOpenCheckpoint } from "./managed-schematic-fixture-open-checkpoint.ts";
 import type { CurrentPcbViaClockBindings, CurrentPcbViaClockOrigin, CurrentPcbViaClockRealm } from "./current-pcb-via-clock-origin.ts";
@@ -456,6 +462,18 @@ const headAgeValidationFactories = new WeakMap<CurrentFootprintHeadAgeValidation
 interface SchematicDisplayWriteAllocation { readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: GeneratedSchematicFixtureOpenCheckpoint; state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentSchematicDisplayWriteOwner | null; child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown }
 const schematicDisplayAllocations = new WeakMap<GeneratedSchematicFixtureOpenCheckpoint, SchematicDisplayWriteAllocation>();
 const schematicDisplayFactories = new WeakMap<object, Readonly<{ allocation: SchematicDisplayWriteAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
+const schematicDisplayStagePackets = new WeakMap<object, Readonly<{ owner: object; argumentsValue: GeneratedSchematicDisplayNativeArguments; stage: string; text: string }>>();
+function requireSchematicArguments(owner: object, value: GeneratedSchematicDisplayNativeArguments): GeneratedSchematicFixtureOpenCheckpoint {
+  const original = schematicDisplayFactories.get(owner); if (original === undefined || original.allocation.owner !== owner || original.allocation.owner === null) { throw error("SCHEMATIC_DISPLAY_ORIGINAL_ARGUMENTS"); }
+  assertOriginalCurrentSchematicDisplayWriteOwner(original.allocation.owner); requireOriginalGeneratedSchematicDisplayNativeArguments(value, original.allocation.prepared); return original.allocation.prepared;
+}
+/** Historical packet provenance only. Actual live dispatch separately rechecks
+ * the original native generation, source/worker and retained SDK holder. */
+export function requireOriginalSchematicDisplayStage(owner: CurrentSchematicDisplayWriteOwner, argumentsValue: GeneratedSchematicDisplayNativeArguments,
+  packet: GeneratedSchematicDisplayStageResult, stage: GeneratedSchematicDisplayStageResult["stage"]): GeneratedSchematicDisplayStageResult {
+  requireSchematicArguments(owner, argumentsValue); const original = schematicDisplayStagePackets.get(packet);
+  if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue || original.stage !== stage || original.text !== canonicalJson(packet)) { throw error("SCHEMATIC_DISPLAY_ORIGINAL_STAGE"); } return packet;
+}
 const schematicDisplayTerminations = new WeakMap<object, Readonly<{ owner: CurrentSchematicDisplayWriteOwner; binding: Binding }>>();
 interface PcbViaWriteAllocation { readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: GeneratedFixtureOpenCheckpoint; state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentPcbViaWriteOwner | null; child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown }
 const pcbViaWriteAllocations = new WeakMap<GeneratedFixtureOpenCheckpoint, PcbViaWriteAllocation>();
@@ -805,6 +823,12 @@ class CurrentPcbRetainedOwnerCore {
   #pcbFrameObservation: CurrentPcbDiagnosticPcbOpeningResult | null = null;
   #pcbSourceQualified = false;
   #pcbSourceProfile: DiagnosticScriptProfile | null = null;
+  #schematicArguments: GeneratedSchematicDisplayNativeArguments | null = null;
+  #schematicNavigationAttempted = false;
+  #schematicNavigationResult: ReturnType<typeof validateGeneratedSchematicNavigation> | null = null;
+  #schematicWindowTabId: string | null = null;
+  #schematicSdkBinding: string | null = null;
+  readonly #schematicStages = new Set<GeneratedSchematicDisplayStageResult["stage"]>();
   #viaSdkBinding: string | null = null;
   #viaSdkQualified = false;
   #viaFailed = false;
@@ -1333,6 +1357,67 @@ class CurrentPcbRetainedOwnerCore {
     finally { this.#busy = false; }
   }
 
+  #schematicReadContext(argumentsValue: GeneratedSchematicDisplayNativeArguments): Readonly<{ prepared: GeneratedSchematicFixtureOpenCheckpoint; context: CurrentPcbDiagnosticContext; pipe: CurrentSchematicDisplayWritePipe; current: () => void }> {
+    const context = this.#stagedContext, pipe = this.#pipe, prepared = requireSchematicArguments(this, argumentsValue);
+    if (!(pipe instanceof CurrentSchematicDisplayWritePipe) || context === null || !this.#scriptConsumed || this.#inspectionConsumed || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true ||
+      this.#schematicArguments !== null && this.#schematicArguments !== argumentsValue) { throw error("SCHEMATIC_DISPLAY_ORIGINAL_CONTEXT"); }
+    const selected = context.openingContext();
+    const current = (): void => { this.#available(); requireSchematicArguments(this, argumentsValue);
+      if (this.#stagedContext !== context || this.#pipe !== pipe || canonicalJson(context.openingContext()) !== canonicalJson(selected) || this.#schematicArguments !== argumentsValue) { throw error("SCHEMATIC_DISPLAY_CONTEXT_CHANGED"); } };
+    return Object.freeze({ prepared, context, pipe, current });
+  }
+  /** One original registration/project/page Promise, never replayed after a
+   * partial result. Its native helper and early main fence belong to this
+   * distinct generated-SCH birth, independently from every ordinary opener. */
+  public async openGeneratedSchematicDisplay(argumentsValue: GeneratedSchematicDisplayNativeArguments): Promise<ReturnType<typeof validateGeneratedSchematicNavigation>> {
+    const selected = this.#schematicReadContext(argumentsValue);
+    if (this.#schematicNavigationAttempted || this.#projectOpeningConsumed || this.#schematicArguments !== null) { throw error("SCHEMATIC_DISPLAY_OPEN_CONSUMED"); }
+    this.#enter(true); this.#schematicNavigationAttempted = true; this.#projectOpeningConsumed = true; this.#schematicArguments = argumentsValue;
+    try {
+      await this.#verifyInstallation(); selected.current(); await this.#verify(); selected.current(); await verifyGeneratedSchematicFixtureOpenCheckpoint(selected.prepared); selected.current();
+      await this.#observeParent(); selected.current(); await this.#observeOpeningAncillary(); selected.current(); const parent = selected.context.openingContext();
+      const before = await this.#transfer(() => selected.pipe.observeSchematicDisplay("start", parent.uniqueContextId)); selected.current();
+      if (!exact(before, ["result"]) || !record(before["result"]) || !exact(before["result"], ["type", "value"]) || before["result"]["type"] !== "object") { throw error("SCHEMATIC_DISPLAY_START_REPLY"); }
+      const start = before["result"]["value"];
+      if (!record(start) || !exact(start, ["windowTabId", "documentTitle"]) || typeof start["windowTabId"] !== "string" || !/^[A-Za-z\d_-]{1,128}$/u.test(start["windowTabId"]) || typeof start["documentTitle"] !== "string" || start["documentTitle"].length === 0 || start["documentTitle"].length > 512) { throw error("SCHEMATIC_DISPLAY_START_VALUE"); }
+      this.#schematicWindowTabId = start["windowTabId"]; await verifyGeneratedSchematicFixtureOpenCheckpoint(selected.prepared); selected.current();
+      selected.context.beginSchematicOpeningTransition(argumentsValue.target.projectUuid, argumentsValue.target.pageUuid);
+      const raw = await this.#transfer(() => selected.pipe.observeSchematicDisplay("navigate", parent.uniqueContextId, argumentsValue.target)); selected.current();
+      if (!exact(raw, ["result"]) || !record(raw["result"]) || !exact(raw["result"], ["type", "value"]) || raw["result"]["type"] !== "object" || !record(raw["result"]["value"]) || !exact(raw["result"]["value"], ["navigation", "documentTitle"])) { throw error("SCHEMATIC_DISPLAY_NAVIGATION_REPLY"); }
+      const value = raw["result"]["value"]; const envelope = value["navigation"];
+      if (!record(envelope) || !exact(envelope, ["schema", "utf8Bytes", "json"]) || envelope["schema"] !== "easyeda-pro-control.exact-json.v1" || typeof envelope["json"] !== "string" || Buffer.byteLength(envelope["json"]) !== envelope["utf8Bytes"] || Buffer.byteLength(envelope["json"]) > 65_536 || !envelope["json"].isWellFormed() || typeof value["documentTitle"] !== "string") { throw error("SCHEMATIC_DISPLAY_NAVIGATION_ENVELOPE"); }
+      const result = freezeDeep(validateGeneratedSchematicNavigation(JSON.parse(envelope["json"]) as unknown, selected.prepared.qualification)); this.#schematicNavigationResult = result;
+      if (result.outcome !== "opened-ready" || result.identity?.windowTabId !== start["windowTabId"]) { throw error("SCHEMATIC_DISPLAY_NAVIGATION_PARTIAL"); }
+      const targets = await this.#transfer(() => selected.pipe.getTargets()); selected.current(); const frames = await this.#transfer(() => selected.pipe.getFrameTree()); selected.current();
+      selected.context.finishSchematicOpeningTransition(targets, frames, value["documentTitle"]); selected.current(); await this.#observeOpeningAncillary(); selected.current();
+      await this.#verifyInstallation(); selected.current(); await this.#verify(); selected.current(); return result;
+    } finally { this.#busy = false; }
+  }
+  /** Source read stages are reachable. Modify waits for the actual accessor
+   * closure/source proof and worker custody; Save additionally needs exact
+   * body/clock/main SQL authority. No capability is inferred from these data. */
+  public async executeSchematicDisplayStage(stage: GeneratedSchematicDisplayStageResult["stage"], argumentsValue: GeneratedSchematicDisplayNativeArguments,
+    _dispatch?: GeneratedSchematicDisplayDispatch): Promise<GeneratedSchematicDisplayStageResult | Readonly<{ captured: true }>> {
+    const selected = this.#schematicReadContext(argumentsValue);
+    if (stage === "modify" || stage === "save") { throw error("SCHEMATIC_DISPLAY_ORIGINAL_SOURCE_WORKER_AND_SQL_REQUIRED"); }
+    if (this.#schematicNavigationResult?.outcome !== "opened-ready" || this.#schematicStages.has(stage) || stage !== "capture" && this.#schematicSdkBinding === null) { throw error("SCHEMATIC_DISPLAY_STAGE_CONSUMED"); }
+    this.#enter(true); this.#schematicStages.add(stage);
+    try {
+      await this.#verifyInstallation(); selected.current(); await this.#verify(); selected.current(); await this.#observeParent(); selected.current(); await this.#observeOpeningAncillary(); selected.current();
+      const binding = stage === "capture" ? selected.context.openingContext().uniqueContextId : this.#schematicSdkBinding;
+      if (binding === null) { throw error("SCHEMATIC_DISPLAY_HOLDER_REQUIRED"); }
+      const raw = await this.#transfer(() => selected.pipe.observeSchematicDisplay(stage, binding, argumentsValue.target, argumentsValue.operation)); selected.current();
+      if (stage === "capture") {
+        if (!exact(raw, ["result"]) || !record(raw["result"]) || !exact(raw["result"], ["type", "subtype", "className", "description", "objectId"]) || raw["result"]["type"] !== "object" || raw["result"]["subtype"] !== "array" || raw["result"]["className"] !== "Array" || raw["result"]["description"] !== "Array(2)" || typeof raw["result"]["objectId"] !== "string" || !/^[A-Za-z\d_.:-]{1,256}$/u.test(raw["result"]["objectId"])) { throw error("SCHEMATIC_DISPLAY_HOLDER_CAPTURE"); }
+        this.#schematicSdkBinding = raw["result"]["objectId"]; await this.#observeParent(); selected.current(); await this.#observeOpeningAncillary(); selected.current(); return Object.freeze({ captured: true });
+      }
+      if (!exact(raw, ["result"]) || !record(raw["result"]) || !exact(raw["result"], ["type", "value"]) || raw["result"]["type"] !== "object") { throw error("SCHEMATIC_DISPLAY_STAGE_REPLY"); }
+      const packet = freezeDeep(generatedSchematicDisplayStageResultSchema.parse(raw["result"]["value"]));
+      if (!packet.ok || packet.stage !== stage || packet.windowTabId !== this.#schematicWindowTabId) { throw error("SCHEMATIC_DISPLAY_STAGE_REFUSED"); }
+      await this.#observeParent(); selected.current(); await this.#observeOpeningAncillary(); selected.current(); await this.#verifyInstallation(); selected.current(); await this.#verify(); selected.current();
+      schematicDisplayStagePackets.set(packet, Object.freeze({ owner: this, argumentsValue, stage, text: canonicalJson(packet) })); return packet;
+    } finally { this.#busy = false; }
+  }
   /** Project-only fixed opening under this original diagnostic process owner.
    * The lifecycle supplies the checkpoint-sealed target and one original
    * reproof callback, after durable intent. No ordinary launcher is borrowed.
