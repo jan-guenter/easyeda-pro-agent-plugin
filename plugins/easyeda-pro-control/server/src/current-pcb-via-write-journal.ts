@@ -108,7 +108,12 @@ export interface CurrentPcbViaWriteDispatch { readonly profile: "private.current
 interface Dispatch { readonly journal: CurrentPcbViaWriteJournal; readonly owner: object; readonly plan: CurrentPcbViaWritePlan;
   readonly stage: "create" | "save"; readonly sequence: number; consumed: boolean; enrolled: boolean }
 const dispatches = new WeakMap<CurrentPcbViaWriteDispatch, Dispatch>();
-const journals = new WeakSet<CurrentPcbViaWriteJournal>();
+const journals = new WeakMap<CurrentPcbViaWriteJournal, CurrentPcbViaWritePlan>();
+/** Fixed nested workflows share only this original operation's publication
+ * journal. Equal JSON, another genuine plan and a copied instance refuse. */
+export function assertOriginalCurrentPcbViaWriteJournal(journal: CurrentPcbViaWriteJournal, plan: CurrentPcbViaWritePlan): void {
+  need(journals.get(journal) === plan, "ORIGINAL_JOURNAL_AND_PLAN"); requireOriginalCurrentPcbViaWritePlan(plan);
+}
 /** The actual native owner must pass itself before its first dispatch await.
  * A token bound to another owner or a copied plan cannot spend this slot. */
 export function consumeCurrentPcbViaWriteDispatch(token: CurrentPcbViaWriteDispatch, stage: "create" | "save", owner: object,
@@ -174,7 +179,7 @@ export class CurrentPcbViaWriteJournal {
     requireOriginalCurrentPcbViaWritePlan(plan); this.#plan = plan;
     const data = { profile, plan, nonce: randomBytes(32).toString("hex") };
     this.#operation = { schema: OPERATION_SCHEMA, operationId: plan.operationId, plan: data, planHash: buildPlanHash(data), state: "prepared", records: [], artifacts: [] };
-    journals.add(this); Object.freeze(this);
+    journals.set(this, plan); Object.freeze(this);
   }
   public bindWriter(owner: object): void {
     need(this.#owner === null && this.#reserved && !this.#busy && this.#pending === null && typeof owner === "object" && owner !== null, "WRITER_BINDING");
