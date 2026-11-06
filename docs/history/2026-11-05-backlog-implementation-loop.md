@@ -214,3 +214,43 @@ publication, installation, process signal or Codex restart occurred.
    full CodeRabbit review including legacy findings, protected merge,
    publication and official installation. No intermediate release is required
    to run the next verified build through the existing manager.
+
+## 2026-11-06 retained-controller and implementation continuation
+
+The [next frozen Arc case](2026-11-06-generated-pcb-spatial-live-case.md#frozen38c654-exact-wrapper-closure-diagnosis)
+used payload38c654, passed full local non-suite/build/reproducibility and actual
+Windows C# compilation, then retained the exact three-closure wrapper shape
+before refusing spatial acceptance. The source correction is now supported by
+actual pinned AST nesting and a real Inspector regression; the point-handler
+limit stays unchanged. Complete raw/all35-table SQL invariance, original helper
+release, facade retirement and original EOF/process/stdio exit0 all completed.
+The same manager is idle after generation3. No native owner, Save, force close,
+user-project change or unfinished live call remains from that case.
+
+The batch subsequently integrated original main STRUCTURE SQL/response
+publication, distinct prehistory joins, actual nonprivate bootstrap mode and
+[ten original producer guards](2026-11-06-original-preaction-producer-guards.md).
+These source capabilities do not yet release planned edit/Save producers or
+prove a drained cache/frontier. The merged main/prehistory/mode set passed both
+TypeScript projects and41 focused checks. Later guard changes have their own
+focused evidence and still require the next combined payload checks.
+
+The [complete Component point kernel](2026-11-06-component-point-complete-kernel.md)
+now qualifies290 original callees, including the required hidden-attribute paths.
+The final derived prospective cost is404 for one point and419 for16, superseding
+the earlier279-callee/408 estimate. Its separate419 native purpose, lifecycle
+and staged index handoff are being mounted. Existing384 purposes stay exact.
+Pad import/positive reading, new Arc positive acceptance and Component native
+acceptance remain pending. The accepted schematic reader case remains one
+fixed batch with two matching internal samples, without writer authority.
+
+A new private development checkout batches these source changes before the
+next native payload. Fresh dependency installation, full tree, signature and
+moderate audit checks passed against the unchanged lock. Its manifest is not
+yet stamped or frozen; it is not selected by the controller. Additional source
+implementation remains active for original pre-create enrollment, Save and
+cache/upload completion, schematic display and wiring, and footprint four-
+generation saved/inverse/recovery proof. The positive public system-owned CBB
+witness is still unavailable in the inspected sources. Final coverage/skills,
+exact-payload CI, full CodeRabbit review including legacy findings, protected
+merge, publication and official installation remain the release tasks.
