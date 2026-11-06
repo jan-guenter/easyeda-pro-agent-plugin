@@ -54,6 +54,17 @@ async function fixture(): Promise<Readonly<{ api: { retain: typeof retainCurrent
   const api = { retain, configured } as { retain: typeof retainCurrentProcessSqlNode; configured: typeof openVerifiedMachineNode };
   return { api, state, digest: createHash("sha256").update(initial).digest("hex") };
 }
+void test("current-process acquisition publishes one complete original birth proof and closes both descriptors on birth drift", async () => {
+  const f = await fixture(), owner = await f.api.retain();
+  assert.equal(f.state.versions, 1); assert.equal(f.state.coreChecks, 1);
+  assert.equal(f.state.pathPasses, 1); assert.equal(f.state.kernelPasses, 3);
+  assert.deepEqual(f.state.closes, []); await owner.close();
+  assert.deepEqual(f.state.closes.toSorted((left, right) => left - right), [31, 32]);
+  const changed = await fixture(); changed.state.corruptAfterVersion = true;
+  await assert.rejects(changed.api.retain(), /kernel-changed/u);
+  assert.equal(changed.state.versions, 1);
+  assert.deepEqual(changed.state.closes.toSorted((left, right) => left - right), [31, 32]);
+});
 void test("a current-process assertion hashes the joined original inode before and after version, with no redundant alias pass", async () => {
   const f = await fixture(), owner = await f.api.retain();
   f.state.pathPasses = 0; f.state.kernelPasses = 0; const coreChecks = f.state.coreChecks, versions = f.state.versions;
