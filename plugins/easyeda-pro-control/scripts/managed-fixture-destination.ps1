@@ -24,7 +24,7 @@ function Read-ManagedFixtureLibraryDirectories([string]$Encoded) {
 }
 if ($ParseLibraryDirectoriesOnly) {
   $parsedDirectories = Read-ManagedFixtureLibraryDirectories $LibraryDirectoriesBase64
-  @{schema='easyeda-pro-control.fixture-library-parser-only.v1'; directories=$parsedDirectories; count=$parsedDirectories.Count; nativeAllocated=$false; csharpCompiled=$false} | ConvertTo-Json -Compress -Depth 3 | ForEach-Object { [Console]::WriteLine($_) }
+  @{schema='easyeda-pro-control.fixture-library-parser-only.v1'; directories=$parsedDirectories; count=$parsedDirectories.Count; nativeAllocated=$false; csharpCompiled=$false} | ConvertTo-Json -Compress -Depth 3
   return
 }
 # A fresh private directory only. No existing destination, deletion, SQLite
