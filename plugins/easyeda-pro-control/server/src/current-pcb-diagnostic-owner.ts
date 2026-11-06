@@ -5833,10 +5833,20 @@ class CurrentPcbRetainedOwnerCore {
     if (!selectedFileMainPurpose(this.#purpose) || held?.owner !== this || held.runner() !== runner || this.#mainRunner !== runner ||
       requestId !== this.#mainRequestId + 1 || this.#mainNormalRequests >= selectedFileMainLimits(this.#purpose).normal) { throw error("SELECTED_SQL_ORIGINAL_MAIN"); }
     const registrationSame = (): void => { if (!command.phase.startsWith("sql-fence-registration-")) { return; }
-      const intent = runner.originalSavedProjectRegistrationCommandIntent(), registration = savedProjectRegistrationIntents.get(intent);
-      if (this.#purpose !== CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE || registration?.owner !== this || registration.runner !== runner ||
-        registration.prepared !== this.#savedReadbackPrepared || registration.loading !== this.#savedReadbackLoadPreparation || this.#savedReadbackRegistrationIntent !== intent) { throw error("SAVED_REGISTRATION_ORIGINAL_SENDER"); }
-      if (command.phase !== "sql-fence-registration-arm") { registration.bindings.assertOriginalDispatchPending(); }
+      let registrationBindings: CurrentSavedProjectRegistrationBindings | CurrentFootprintInverseRegistrationBindings;
+      if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE) {
+        const intent = runner.originalFootprintInverseRegistrationCommandIntent(), registration = footprintInverseRegistrationIntents.get(intent);
+        if (registration?.owner !== this || registration.runner !== runner) { throw error("INVERSE_REGISTRATION_ORIGINAL_SENDER"); }
+        registrationBindings = registration.bindings;
+        if (this.#inverseRegistrationIntent !== intent ||
+          registration.source !== originalCurrentFootprintInverseNativeSource(this)) { throw error("INVERSE_REGISTRATION_ORIGINAL_SENDER"); }
+      } else {
+        const intent = runner.originalSavedProjectRegistrationCommandIntent(), registration = savedProjectRegistrationIntents.get(intent);
+        if (this.#purpose !== CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE || registration?.owner !== this || registration.runner !== runner) { throw error("SAVED_REGISTRATION_ORIGINAL_SENDER"); }
+        registrationBindings = registration.bindings;
+        if (registration.prepared !== this.#savedReadbackPrepared || registration.loading !== this.#savedReadbackLoadPreparation || this.#savedReadbackRegistrationIntent !== intent) { throw error("SAVED_REGISTRATION_ORIGINAL_SENDER"); }
+      }
+      if (command.phase !== "sql-fence-registration-arm") { registrationBindings.assertOriginalDispatchPending(); }
     };
     registrationSame(); held.reprove(); const wire = currentSelectedFileMainSqlFenceWire(command, requestId);
     this.#enterFootprintMain(); this.#mainRequestId += 1; this.#mainNormalRequests += 1;

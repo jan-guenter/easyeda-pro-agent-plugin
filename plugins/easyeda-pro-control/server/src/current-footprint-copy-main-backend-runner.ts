@@ -37,7 +37,8 @@ import { requireCurrentFootprintCopyMainRequestHeldFinalPb, transferCurrentFootp
 import type { CurrentFootprintCopyMainRequestHeldFinalPb } from "./current-footprint-copy-main-request-runner.ts";
 // oxlint-disable-next-line import/no-cycle -- The native owner constructs this runner; its original private-factory guards are invoked only after that construction, never at module initialization. A callback registration seam would weaken this authority check.
 import { assertCurrentFootprintCombinedMainCompletionCapacity, beginCurrentFootprintCombinedMainCompletion, currentFootprintCombinedMainGenerationExited, failCurrentFootprintCombinedMainCompletion, requireCurrentFootprintCombinedMainCapability, requireCurrentFootprintCombinedMainCleanup, requireCurrentFootprintCombinedPairedSchedule, requireCurrentFootprintHeadAgeBootstrapCapability, retireCurrentFootprintCombinedMainCompletion, sendCurrentFootprintCombinedMainCommand, sendCurrentFootprintCombinedMainCompletion } from "./current-pcb-diagnostic-owner.ts";
-import type { CurrentFootprintCombinedMainCapability, requireOriginalCurrentSavedProjectRegistrationIntent as RequireSavedRegistration } from "./current-pcb-diagnostic-owner.ts";
+import type { CurrentFootprintCombinedMainCapability, requireOriginalCurrentFootprintInverseRegistrationIntentForRunner as RequireInverseRegistration, requireOriginalCurrentSavedProjectRegistrationIntent as RequireSavedRegistration } from "./current-pcb-diagnostic-owner.ts";
+import type { CurrentFootprintInverseRegistrationBindings, CurrentFootprintInverseRegistrationIntent } from "./current-footprint-inverse-registration-origin.ts";
 import type { CurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_FOOTPRINT_HEAD_AGE_CONTEXT_BIND_PROGRAM, CURRENT_FOOTPRINT_HEAD_AGE_CONTEXT_CAPTURE_PROGRAM, decodeCurrentFootprintHeadAgeContextAccessor, decodeCurrentFootprintHeadAgeContextArray, decodeCurrentFootprintHeadAgeContextScopes, qualifyCurrentFootprintHeadAgeContextSource, requireCurrentFootprintHeadAgeContextSource } from "./current-footprint-head-age-context.ts";
@@ -295,10 +296,18 @@ const savedRegistrationRunReply = z.strictObject({ result: savedRegistrationRunR
 type SavedRegistrationSite = typeof CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITE_NAMES[number];
 interface Pause { readonly frameId: string; readonly location: z.infer<typeof location>; readonly registration: boolean; readonly sqlSite?: CurrentSelectedFileMainSqlFenceSite; readonly savedRegistrationSite?: SavedRegistrationSite; resumeAttempted: boolean; resumed: boolean }
 interface SavedProjectRegistrationEnrollment {
+  readonly kind: "saved";
   readonly intent: CurrentSavedProjectRegistrationIntent; readonly bindings: CurrentSavedProjectRegistrationBindings;
   readonly ownerModule: Readonly<{ requireOriginalCurrentSavedProjectRegistrationIntent: typeof RequireSavedRegistration }>;
   readonly requireOriginal: typeof RequireSavedRegistration;
 }
+interface InverseProjectRegistrationEnrollment {
+  readonly kind: "inverse";
+  readonly intent: CurrentFootprintInverseRegistrationIntent; readonly bindings: CurrentFootprintInverseRegistrationBindings;
+  readonly ownerModule: Readonly<{ requireOriginalCurrentFootprintInverseRegistrationIntentForRunner: typeof RequireInverseRegistration }>;
+  readonly requireOriginal: typeof RequireInverseRegistration;
+}
+type ProjectRegistrationEnrollment = SavedProjectRegistrationEnrollment | InverseProjectRegistrationEnrollment;
 interface Resolved { readonly breakpointId: string; readonly location: z.infer<typeof location> }
 interface StructureAllocation { readonly id: number; readonly retain: (reply: unknown) => void; seen: boolean; stopped: boolean }
 interface ForwardPoll {
@@ -440,13 +449,13 @@ export class CurrentFootprintCopyMainBackendRunner {
   #initialContinuationCount: 0 | 1 = 0;
   #registrationSeen = false;
   #savedRegistrationEnrollmentAttempted = false;
-  #savedRegistrationEnrollment: SavedProjectRegistrationEnrollment | null = null;
+  #savedRegistrationEnrollment: ProjectRegistrationEnrollment | null = null;
   readonly #savedRegistrationBreakpoints = new Map<string, SavedRegistrationSite>();
   readonly #savedRegistrationResolutions: Resolved[] = [];
   #savedRegistrationArming: SavedRegistrationSite | null = null;
   #savedRegistrationTracker: string | null = null;
   #savedRegistrationOpenedPause: Pause | null = null;
-  #savedRegistrationStage: "unused" | "bound" | "run-consumed" | "upsert-awaited" | "registration-awaited" = "unused";
+  #savedRegistrationStage: "unused" | "bound" | "run-consumed" | "upsert-awaited" | "registration-awaited" | "registration-skipped" = "unused";
   #source: QualifiedSource | null = null;
   #appSource: string | null = null;
   #appScriptId: string | null = null;
@@ -997,7 +1006,14 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Enroll only the original saved Core's durable, pre-dispatch intent. This
    * cannot continue SQL. The later actual callback must separately prove that
    * same Core's once-consumed registration pipe Promise is still pending. */
-  public async enrollSavedProjectRegistrationIntent(intent: CurrentSavedProjectRegistrationIntent): Promise<void> {
+  public enrollSavedProjectRegistrationIntent(intent: CurrentSavedProjectRegistrationIntent): Promise<void> {
+    return this.#enrollProjectRegistration("saved", intent);
+  }
+  /** Separate inverse entry; a saved-reader intent cannot cross this issuer. */
+  public enrollFootprintInverseRegistrationIntent(intent: CurrentFootprintInverseRegistrationIntent): Promise<void> {
+    return this.#enrollProjectRegistration("inverse", intent);
+  }
+  async #enrollProjectRegistration(...[kind, intent]: ["saved", CurrentSavedProjectRegistrationIntent] | ["inverse", CurrentFootprintInverseRegistrationIntent]): Promise<void> {
     this.#same(false);
     need(!this.#busy && !this.#savedRegistrationEnrollmentAttempted && this.#savedRegistrationEnrollment === null &&
       this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#sqlCapture !== null && this.#selectedSqlPath !== null &&
@@ -1009,14 +1025,20 @@ export class CurrentFootprintCopyMainBackendRunner {
       // Literal lazy import avoids Core -> runner -> Core eager initialization.
       // The original private registry accessor is retained, never injected.
       const ownerModule = await import("./current-pcb-diagnostic-owner.ts"); await this.#current();
-      const requireOriginal = ownerModule.requireOriginalCurrentSavedProjectRegistrationIntent;
-      const bindings = requireOriginal(intent, this);
-      need(bindings.target.rawWindowsPath === this.#selectedSqlPath && bindings.target.rawWindowsPath === bindings.prepared.target.rawWindowsPath &&
-        bindings.target.expectedSourceSha256 === bindings.prepared.target.sourceSha256, "SAVED_REGISTRATION_SELECTED_TARGET");
-      await bindings.assertCurrent(); await this.#current();
-      need(ownerModule.requireOriginalCurrentSavedProjectRegistrationIntent === requireOriginal && requireOriginal(intent, this) === bindings &&
-        bindings.target.rawWindowsPath === this.#selectedSqlPath, "SAVED_REGISTRATION_ENROLLMENT_CHANGED");
-      this.#savedRegistrationEnrollment = Object.freeze({ intent, bindings, ownerModule, requireOriginal });
+      let enrollment: ProjectRegistrationEnrollment;
+      if (kind === "saved") {
+        const requireOriginal = ownerModule.requireOriginalCurrentSavedProjectRegistrationIntent; const bindings = requireOriginal(intent, this);
+        need(bindings.target.rawWindowsPath === this.#selectedSqlPath && bindings.target.rawWindowsPath === bindings.prepared.target.rawWindowsPath &&
+          bindings.target.expectedSourceSha256 === bindings.prepared.target.sourceSha256, "SAVED_REGISTRATION_SELECTED_TARGET");
+        enrollment = Object.freeze({ kind: "saved", intent, bindings, ownerModule, requireOriginal });
+      } else {
+        const requireOriginal = ownerModule.requireOriginalCurrentFootprintInverseRegistrationIntentForRunner; const bindings = requireOriginal(intent, this);
+        need(bindings.target.rawWindowsPath === this.#selectedSqlPath, "INVERSE_REGISTRATION_SELECTED_TARGET");
+        enrollment = Object.freeze({ kind: "inverse", intent, bindings, ownerModule, requireOriginal });
+      }
+      const bindings = enrollment.bindings;
+      await bindings.assertCurrent(); await this.#current(); this.#reproveProjectRegistration(enrollment);
+      this.#savedRegistrationEnrollment = enrollment;
       for (const site of CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITE_NAMES) {
         this.#savedRegistrationArming = site; const point = SAVED_CONFIG_SITES[site];
         need(this.#appScriptId !== null, "SAVED_REGISTRATION_SCRIPT_REQUIRED");
@@ -1036,25 +1058,52 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Original source/owner plus a genuinely attempted unsettled pipe dispatch.
    * Data-only SQL matching will never replace this native continuation gate. */
   public async assertOriginalSavedProjectRegistrationPending(): Promise<void> {
+    need(this.#savedRegistrationEnrollment?.kind === "saved", "SAVED_REGISTRATION_ISSUER_REQUIRED");
+    await this.#assertOriginalProjectRegistrationPending();
+  }
+  #reproveProjectRegistration(original: ProjectRegistrationEnrollment): void {
+    const current = original.kind === "saved" ? original.ownerModule.requireOriginalCurrentSavedProjectRegistrationIntent === original.requireOriginal &&
+      original.requireOriginal(original.intent, this) === original.bindings : original.ownerModule.requireOriginalCurrentFootprintInverseRegistrationIntentForRunner === original.requireOriginal &&
+      original.requireOriginal(original.intent, this) === original.bindings;
+    need(current && original.bindings.target.rawWindowsPath === this.#selectedSqlPath, "SAVED_REGISTRATION_ENROLLMENT_CHANGED");
+  }
+  async #assertOriginalProjectRegistrationPending(): Promise<void> {
     this.#same(false); const original = this.#savedRegistrationEnrollment;
-    need(original !== null && original.ownerModule.requireOriginalCurrentSavedProjectRegistrationIntent === original.requireOriginal &&
-      original.requireOriginal(original.intent, this) === original.bindings, "SAVED_REGISTRATION_ENROLLMENT_REQUIRED");
+    need(original !== null, "SAVED_REGISTRATION_ENROLLMENT_REQUIRED"); this.#reproveProjectRegistration(original);
     original.bindings.assertOriginalDispatchPending(); await original.bindings.assertCurrent(); this.#same(false);
-    need(this.#savedRegistrationEnrollment === original && original.ownerModule.requireOriginalCurrentSavedProjectRegistrationIntent === original.requireOriginal &&
-      original.requireOriginal(original.intent, this) === original.bindings, "SAVED_REGISTRATION_ENROLLMENT_CHANGED");
+    need(this.#savedRegistrationEnrollment === original, "SAVED_REGISTRATION_ENROLLMENT_CHANGED"); this.#reproveProjectRegistration(original);
     original.bindings.assertOriginalDispatchPending();
   }
   /** The native Core independently joins this intent to its private original
    * registry before sending any new registration command. */
   public originalSavedProjectRegistrationCommandIntent(): CurrentSavedProjectRegistrationIntent {
     this.#same(false); const original = this.#savedRegistrationEnrollment;
-    need(original !== null && original.ownerModule.requireOriginalCurrentSavedProjectRegistrationIntent === original.requireOriginal &&
-      original.requireOriginal(original.intent, this) === original.bindings, "SAVED_REGISTRATION_ENROLLMENT_REQUIRED"); return original.intent;
+    need(original?.kind === "saved", "SAVED_REGISTRATION_ISSUER_REQUIRED"); this.#reproveProjectRegistration(original); return original.intent;
+  }
+  public originalFootprintInverseRegistrationCommandIntent(): CurrentFootprintInverseRegistrationIntent {
+    this.#same(false); const original = this.#savedRegistrationEnrollment;
+    need(original?.kind === "inverse", "INVERSE_REGISTRATION_ISSUER_REQUIRED"); this.#reproveProjectRegistration(original); return original.intent;
   }
   /** Called by that same original Core after its one dispatch settles. It
    * proves the source awaits, never the contents of a closed shared database. */
   public requireOriginalSavedProjectRegistrationAwaited(intent: CurrentSavedProjectRegistrationIntent): void {
-    need(this.originalSavedProjectRegistrationCommandIntent() === intent && this.#savedRegistrationStage === "registration-awaited" &&
+    need(this.originalSavedProjectRegistrationCommandIntent() === intent, "SAVED_REGISTRATION_ISSUER_REQUIRED"); this.#requireProjectRegistrationAwaited();
+  }
+  public requireOriginalFootprintInverseRegistrationAwaited(intent: CurrentFootprintInverseRegistrationIntent): void {
+    need(this.originalFootprintInverseRegistrationCommandIntent() === intent, "INVERSE_REGISTRATION_ISSUER_REQUIRED"); this.#requireProjectRegistrationAwaited();
+  }
+  /** A real prior-registration result can finish an unused inverse sequence;
+   * it cannot fabricate a native run, callback or source-await acknowledgment. */
+  public requireOriginalFootprintInverseRegistrationSkipped(intent: CurrentFootprintInverseRegistrationIntent): void {
+    need(this.originalFootprintInverseRegistrationCommandIntent() === intent, "INVERSE_REGISTRATION_ISSUER_REQUIRED");
+    const original = this.#savedRegistrationEnrollment; need(original?.kind === "inverse", "INVERSE_REGISTRATION_ISSUER_REQUIRED");
+    original.bindings.assertOriginalNoDispatchResult();
+    need((this.#savedRegistrationStage === "unused" || this.#savedRegistrationStage === "registration-skipped") && this.#savedRegistrationTracker === null &&
+      this.#savedRegistrationOpenedPause === null && this.#savedRegistrationArming === null && this.#savedRegistrationBreakpoints.size === 3 && this.#sqlHeld === null,
+    "INVERSE_REGISTRATION_UNUSED_SEQUENCE_REQUIRED"); this.#savedRegistrationStage = "registration-skipped";
+  }
+  #requireProjectRegistrationAwaited(): void {
+    need(this.#savedRegistrationStage === "registration-awaited" &&
       this.#savedRegistrationTracker !== null && this.#savedRegistrationArming === null && this.#savedRegistrationBreakpoints.size === 3 &&
       this.#sqlHeld === null && this.#savedRegistrationOpenedPause?.savedRegistrationSite === "opened" && this.#savedRegistrationOpenedPause.resumed,
     "SAVED_REGISTRATION_ORIGINAL_AWAITS_REQUIRED");
@@ -1066,7 +1115,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   async #continueSavedRegistration(pause: Pause): Promise<void> {
     need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && this.#sqlCapture !== null && this.#startupConfigTracker !== null &&
       this.#selectedSqlPath !== null && this.#savedRegistrationBreakpoints.size === 3, "SAVED_REGISTRATION_ORIGINAL_PAUSE");
-    await this.assertOriginalSavedProjectRegistrationPending();
+    await this.#assertOriginalProjectRegistrationPending();
     const site = pause.savedRegistrationSite; let selected: z.infer<typeof objectReply>;
     if (site === undefined) {
       need(pause.sqlSite === "run" && this.#savedRegistrationStage === "bound", "SAVED_REGISTRATION_SINGLE_RUN_REQUIRED");
@@ -1103,7 +1152,7 @@ export class CurrentFootprintCopyMainBackendRunner {
         sqlTrueReply.parse(await this.#request({ phase: "sql-fence-registration-opened", method: "Runtime.callFunctionOn", params: { ...params, functionDeclaration: SAVED_CONFIG_CALLS.opened } })); this.#savedRegistrationStage = "registration-awaited";
       }
     }
-    await this.assertOriginalSavedProjectRegistrationPending(); await this.#requireSelectedSqlCapture();
+    await this.#assertOriginalProjectRegistrationPending(); await this.#requireSelectedSqlCapture();
     this.#sqlApprovedConfigurations.add(pause); await this.#sqlResume(pause);
     if (site === "opened") { need(this.#savedRegistrationOpenedPause === null, "SAVED_REGISTRATION_OPENED_ALREADY_RETAINED"); this.#savedRegistrationOpenedPause = pause; }
   }

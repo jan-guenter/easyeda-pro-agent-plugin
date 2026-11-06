@@ -6,7 +6,7 @@ installed release remains PR170; connected saved/reopened proof is pending.
 
 ## Actual application behavior
 
-The pinned current209 main application `app.js` is2,657,192 bytes with SHA256
+The pinned current209 main application `app.js` is 2,657,192 bytes with SHA256
 `52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c`.
 Its `sd.openProject` calls `sd.save`, which awaits `vu.save`. That service
 upserts one `db_paths` row in the shared profile's `database/web.db`, then
@@ -48,14 +48,14 @@ The native Core separately checks its actual saved-reader purpose, intent and
 runner before sending registration commands. Every continuation requires the
 same attempted, unsettled native dispatch Promise. The private codebook accepts
 only the fixed source expressions/programs and original handles; caller SQL,
-scripts, conditions or session selectors have no representation. Its32-request
+scripts, conditions or session selectors have no representation. Its 32-request
 allowance belongs only to this new saved-reader purpose. Existing startup
 JB/DC progress, generic SQL conditions and released footprint roles are unchanged.
 
 ## Verification and remaining joins
 
 Both TypeScript projects and strict changed-file type-aware lint pass.
-The41 focused registration, startup-config and selected-file fence checks pass.
+The 41 focused registration, startup-config and selected-file fence checks pass.
 These include actual fixed programs running against explicit inert SQLite
 peers and the unchanged production main scheduler against synthetic transport.
 They are not native SQLite or connected execution tests. The first local
@@ -76,3 +76,20 @@ snapshots. The fixed programs now check those objects before enumerating them.
 The focused regression includes an effectful nested Proxy `ownKeys` trap and
 proves refusal without invoking it. The original failing and passing local
 logs remain separate; no connected acceptance is inferred.
+
+## Separate inverse enrollment
+
+The original inverse owner now has a distinct durable intent and private
+registry. The main runner reuses only the exact application-source/SQL
+continuation through a separate inverse entry. Saved-reader and inverse
+intents cannot cross their original registry, owner, main runner or selected
+path. Each enrollment reproves its original accessor after every await; no
+caller supplies a function table or target path.
+
+The inverse has its own 32-request main allowance. A genuine prior-registration
+result can finish an unused inverse sequence only through the original
+written pipe request, retained settled Promise and exact registry result.
+That branch records a skipped registration; it never invents a native SQL run
+or source-await acknowledgment. A dispatched registration still requires the
+same one-run and original awaited-source sequence. The original inverse native
+registration dispatch and full four-generation lifecycle remain separate work.

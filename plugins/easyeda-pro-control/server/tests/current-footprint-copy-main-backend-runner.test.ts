@@ -132,5 +132,8 @@ void test("a diagnostic main cursor cannot enroll or activate a copied saved-pro
   const packet = await runner.observe(); const count = value.commands.length;
   await assert.rejects(runner.assertOriginalSavedProjectRegistrationPending());
   await assert.rejects(runner.enrollSavedProjectRegistrationIntent({ profile: "private.current-saved-project-registration-intent.v1" }));
+  await assert.rejects(runner.enrollFootprintInverseRegistrationIntent({ profile: "private.current-footprint-inverse-registration-intent.v1" }));
+  assert.throws(() => runner.originalFootprintInverseRegistrationCommandIntent());
+  assert.throws(() => { runner.requireOriginalFootprintInverseRegistrationSkipped({ profile: "private.current-footprint-inverse-registration-intent.v1" }); });
   assert.equal(value.commands.length, count); await runner.reprove(packet); await runner.release();
 });
