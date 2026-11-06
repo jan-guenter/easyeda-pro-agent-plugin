@@ -4,10 +4,10 @@ import { CURRENT_PCB_209_SPATIAL_CLASS_RELATIONS, CURRENT_PCB_209_SPATIAL_FAMILY
 // A synthetic original-context scene exercises the guard and result kernel.
 // Its instrumented hit methods do not establish vendor geometry equivalence.
 export const spatialScene = `
-class HJ{}class Oet{}class Z1e{}
+class YJ{}class Net{}class rye{}
 const callback=function(){};
-const task=Object.assign(new Z1e,{isRunning:true,callback});
-globalThis.MSG_BUS_PCB=Object.assign(new HJ,{messageBus:Object.assign(new Oet,{subscribed:{"pcb/extensionAPI/document-getPrimitiveAtPoint":[task]}})});
+const task=Object.assign(new rye,{isRunning:true,callback});
+globalThis.MSG_BUS_PCB=Object.assign(new YJ,{messageBus:Object.assign(new Net,{subscribed:{"pcb/extensionAPI/document-getPrimitiveAtPoint":[task]}})});
 class LH{filter(value){return new Set(value)}filterElement(value){return value}}
 class Qg{}class Ve{}class It{}class ki{}class qs{}class n3{}class D0{}
 class iV{}class vD{}class Nd{}class V0{}class BI{}class iy{}class sy{}class GN{}class Ud{}class g0{}class V_e{}
