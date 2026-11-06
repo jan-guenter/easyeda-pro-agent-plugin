@@ -1,15 +1,6 @@
 /** Local native phase capacity only. The extra source read is reserved here;
  * complete owner reproof, main/saved and four-generation budgets remain absent. */
 import { CURRENT_FOOTPRINT_COPY_MAIN_KNOWN_CAPACITY as MAIN } from "./current-footprint-copy-main-capacity.ts";
-import { CURRENT_FOOTPRINT_COLD_PRODUCER_REQUESTS } from "./current-footprint-cold-producer-roster.ts";
-import { CURRENT_FOOTPRINT_DETACHED_CACHE_REQUESTS as DETACHED } from "./current-footprint-detached-cache-profile.ts";
-
-/** Additional original-bootstrap and retained cache commands. This is a new
- * birth's reservation, never an extension of a released observation owner. */
-export const CURRENT_FOOTPRINT_FORWARD_COLD_REQUESTS = Object.freeze({
-  normal: CURRENT_FOOTPRINT_COLD_PRODUCER_REQUESTS + DETACHED.normal,
-  cleanup: DETACHED.cleanup,
-});
 
 /** Complete fixed main construction/request/completion schedule on one
  * physical cursor. This capacity grants no clock, create or whole writer. */
@@ -17,9 +8,7 @@ export const CURRENT_FOOTPRINT_FORWARD_NATIVE_MAIN_LIMITS = Object.freeze({
   normalRequestLimit: MAIN.minimumNormal, cleanupRequestLimit: MAIN.minimumCleanup, requestLimit: MAIN.minimumTotal,
 });
 export const CURRENT_FOOTPRINT_FORWARD_NATIVE_LIMITS = Object.freeze({
-  normalClass: 942 + CURRENT_FOOTPRINT_FORWARD_COLD_REQUESTS.normal,
-  cleanupClass: 61 + CURRENT_FOOTPRINT_FORWARD_COLD_REQUESTS.cleanup,
-  requestLimit: 1003 + CURRENT_FOOTPRINT_FORWARD_COLD_REQUESTS.normal + CURRENT_FOOTPRINT_FORWARD_COLD_REQUESTS.cleanup,
+  normalClass: 942, cleanupClass: 61, requestLimit: 1003,
   registration: 39, rpcNormal: 49, rpcCleanup: 18, rpcTotal: 67,
   normalMilliseconds: 3_600_000, totalMilliseconds: 3_660_000,
   wholeWriterReserved: false, executionAuthorized: false,

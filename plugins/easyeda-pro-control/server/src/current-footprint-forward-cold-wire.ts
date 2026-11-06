@@ -2,7 +2,7 @@
  * structure observer keeps its separate action, limits and legacy grammar. */
 // oxlint-disable-next-line import/no-cycle -- The existing fixed codec uses the unchanged startup fallback only when invoked later; no initializer calls across the codec cycle.
 import { currentProjectStructureWorkerWire } from "./current-project-structure-worker-wire.ts";
-import { CURRENT_FOOTPRINT_FORWARD_NATIVE_LIMITS as LIMITS } from "./current-footprint-forward-native-limits.ts";
+import { CURRENT_FOOTPRINT_FORWARD_COLD_NATIVE_LIMITS as LIMITS } from "./current-footprint-forward-cold-native-limits.ts";
 // oxlint-disable-next-line import/no-cycle -- Build-time codebook production invokes the fixed encoder only after initialization; the native source is never a runtime input.
 import { currentProjectStructureWorkerNativeSource } from "./current-project-structure-worker-native.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";

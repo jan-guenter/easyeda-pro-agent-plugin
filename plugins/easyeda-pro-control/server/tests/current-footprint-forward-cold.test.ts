@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { CURRENT_FOOTPRINT_FORWARD_COLD_PHASES } from "../src/current-footprint-forward-cold-wire.ts";
-import { CURRENT_FOOTPRINT_FORWARD_COLD_REQUESTS as COLD, CURRENT_FOOTPRINT_FORWARD_NATIVE_LIMITS as LIMITS } from "../src/current-footprint-forward-native-limits.ts";
+import { CURRENT_FOOTPRINT_FORWARD_COLD_REQUESTS as COLD, CURRENT_FOOTPRINT_FORWARD_COLD_NATIVE_LIMITS as LIMITS } from "../src/current-footprint-forward-cold-native-limits.ts";
 import { CurrentFootprintCopyForwardResourceLedger as Ledger, CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY as OLD, CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY as V2 } from "../src/current-footprint-copy-forward-capacity.ts";
 import { currentProjectStructureWorkerNativeCases } from "../src/current-project-structure-worker-native.ts";
 import { currentProjectStructureWorkerWire } from "../src/current-project-structure-worker-wire.ts";

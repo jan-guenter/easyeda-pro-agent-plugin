@@ -19,7 +19,7 @@ import type { CurrentFootprintCopyOutputReservation } from "./current-footprint-
 import type { CurrentFootprintCopyV2Plan } from "./current-footprint-copy-v2-plan.ts";
 import type { CurrentFootprintCopyV2SqlPlan } from "./current-footprint-copy-v2-sql.ts";
 import { types } from "node:util";
-import { CURRENT_FOOTPRINT_FORWARD_COLD_REQUESTS as COLD, CURRENT_FOOTPRINT_FORWARD_NATIVE_LIMITS as FORWARD_V2 } from "./current-footprint-forward-native-limits.ts";
+import { CURRENT_FOOTPRINT_FORWARD_COLD_REQUESTS as COLD, CURRENT_FOOTPRINT_FORWARD_COLD_NATIVE_LIMITS as FORWARD_V2 } from "./current-footprint-forward-cold-native-limits.ts";
 
 const MiB = 1024 * 1024;
 const legacyClockCleanup = 5;

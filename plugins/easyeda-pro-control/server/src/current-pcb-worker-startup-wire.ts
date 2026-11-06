@@ -8,7 +8,7 @@ import { CURRENT_FOOTPRINT_COPY_LEXICAL_CALLS } from "./current-footprint-copy-p
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE } from "./current-footprint-copy-forward-profile.ts";
-import { CURRENT_FOOTPRINT_FORWARD_NATIVE_LIMITS as FORWARD_V2 } from "./current-footprint-forward-native-limits.ts";
+import { CURRENT_FOOTPRINT_FORWARD_COLD_NATIVE_LIMITS as FORWARD_V2 } from "./current-footprint-forward-cold-native-limits.ts";
 // oxlint-disable-next-line import/no-cycle -- Fixed codebooks reference the legacy fallback only on a later encode, never during module initialization.
 import { currentFootprintForwardColdWire } from "./current-footprint-forward-cold-wire.ts";
 import { currentFootprintCopyExecutionWorkerWire } from "./current-footprint-copy-execution-worker-wire.ts";

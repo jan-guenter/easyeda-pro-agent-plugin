@@ -31,7 +31,7 @@ import { currentProjectStructureWorkerWire } from "./current-project-structure-w
 import { CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE } from "./current-project-structure-native-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE } from "./current-footprint-copy-forward-profile.ts";
 import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_RENDERER_PROFILE } from "./current-footprint-forward-execution-profile.ts";
-import { CurrentFootprintForwardAllocatedCreateClockBudget } from "./current-footprint-forward-allocated-create-clock-budget.ts";
+import { CurrentFootprintForwardColdAllocatedCreateClockBudget } from "./current-footprint-forward-cold-allocated-create-clock-budget.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE } from "./current-footprint-copy-held-saved-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_HELD_SAVED_CAPACITY } from "./current-footprint-copy-held-saved-capacity.ts";
@@ -66,7 +66,7 @@ import type { CurrentFootprintCopyNativeCreateCommand } from "./current-footprin
 import { requireCurrentFootprintCopyCreateInvocationLease, requireCurrentFootprintForwardColdContinuationLease } from "./current-pcb-worker-construction-runner.ts";
 import type { CurrentFootprintCopyCreateInvocationBinding, CurrentFootprintCopyCreateInvocationLease } from "./current-footprint-copy-create-invocation-lease.ts";
 import type { CurrentFootprintCopyV2Plan } from "./current-footprint-copy-v2-plan.ts";
-import { CURRENT_FOOTPRINT_FORWARD_NATIVE_LIMITS as FORWARD_LIMITS } from "./current-footprint-forward-native-limits.ts";
+import { CURRENT_FOOTPRINT_FORWARD_COLD_NATIVE_LIMITS as FORWARD_LIMITS } from "./current-footprint-forward-cold-native-limits.ts";
 import type { CurrentPcbWorkerConstructionCommand } from "./current-pcb-worker-construction-contract.ts";
 import { currentFootprintForwardColdTailWire } from "./current-footprint-forward-cold-wire.ts";
 import type { CurrentFootprintForwardColdContinuationBinding, CurrentFootprintForwardColdContinuationLease,
@@ -238,7 +238,7 @@ function cleanupCommand(command: Pick<PendingCommand, "method">): boolean {
 interface ClockRpcState {
   readonly workerSessionId: string;
   readonly uiSessionId: string;
-  readonly budget: CurrentFootprintCopyClockRpcBudget | CurrentFootprintCopyCreateClockBudget | CurrentFootprintCopyAllocatedCreateClockBudget | CurrentFootprintForwardAllocatedCreateClockBudget;
+  readonly budget: CurrentFootprintCopyClockRpcBudget | CurrentFootprintCopyCreateClockBudget | CurrentFootprintCopyAllocatedCreateClockBudget | CurrentFootprintForwardColdAllocatedCreateClockBudget;
   readonly create: CreateClockState | null;
   readonly events: CurrentFootprintCopyClockRpcOriginEvent[];
   begun: boolean;
@@ -978,7 +978,7 @@ class CurrentPcbWorkerStartupChannelCore {
         }
         if (create === null) { budget = new CurrentFootprintCopyClockRpcBudget(this.#nextId); }
         else if (create.allocation) { budget = this.#wire === currentFootprintForwardExecutionStartupWire ?
-          new CurrentFootprintForwardAllocatedCreateClockBudget(this.#nextId) : new CurrentFootprintCopyAllocatedCreateClockBudget(this.#nextId); }
+          new CurrentFootprintForwardColdAllocatedCreateClockBudget(this.#nextId) : new CurrentFootprintCopyAllocatedCreateClockBudget(this.#nextId); }
         else { budget = new CurrentFootprintCopyCreateClockBudget(this.#nextId); }
         if (this.#wire === currentFootprintForwardExecutionStartupWire) {
           const remaining = this.#coldContinuation?.binding.remainingRequests();
@@ -1081,7 +1081,7 @@ class CurrentPcbWorkerStartupChannelCore {
     this.#sameClockRpc(state, cleanup);
     const captured = captureCurrentPcbStringClockReply(input).value;
     const allocation = z.object({ phase: z.string() }).loose().parse(captured).phase.startsWith("allocation-");
-    if (allocation && !(state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardAllocatedCreateClockBudget)) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
+    if (allocation && !(state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardColdAllocatedCreateClockBudget)) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
     const { id: _validationId, ...command } = (allocation ? currentFootprintCopyAllocationWire(captured, 1, state.workerSessionId) :
       currentFootprintCopyClockRpcWire(captured, 1, state.workerSessionId, state.uiSessionId)).command;
     if (typeof cleanup !== "boolean" || cleanup !== cleanupCommand(command) || state.budget.snapshot().failed) { throw fail("FOOTPRINT_RPC_CLASS"); }
@@ -1096,7 +1096,7 @@ class CurrentPcbWorkerStartupChannelCore {
         const wire = allocation ? currentFootprintCopyAllocationWire(command, this.#nextId, state.workerSessionId) :
           currentFootprintCopyClockRpcWire(command, this.#nextId, state.workerSessionId, state.uiSessionId);
         if (allocation) {
-          if (!(state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardAllocatedCreateClockBudget)) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
+          if (!(state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardColdAllocatedCreateClockBudget)) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
           state.budget.consumeAllocation(this.#nextId, String(wire.request["phase"]), cleanup);
         } else { state.budget.consume(this.#nextId, cleanup); }
         this.#nextId += 1;
@@ -1124,7 +1124,7 @@ class CurrentPcbWorkerStartupChannelCore {
   }
   async #dispatchCreate(state: ClockRpcState): Promise<CurrentFootprintCopyPendingCreate> {
     const create = this.#samePendingCreate(state);
-    if (state.retired || create.dispatchAttempted || !(state.budget instanceof CurrentFootprintCopyCreateClockBudget || state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardAllocatedCreateClockBudget)) {
+    if (state.retired || create.dispatchAttempted || !(state.budget instanceof CurrentFootprintCopyCreateClockBudget || state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardColdAllocatedCreateClockBudget)) {
       throw fail("FOOTPRINT_CREATE_CONSUMED");
     }
     // Consume synchronously before entering the queue. A lost native ACK never
@@ -1139,7 +1139,7 @@ class CurrentPcbWorkerStartupChannelCore {
     await this.#queue(async (): Promise<void> => {
       let pending: Pending | null = null;
       try {
-        if (this.#samePendingCreate(state) !== create || state.retired || !(state.budget instanceof CurrentFootprintCopyCreateClockBudget || state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardAllocatedCreateClockBudget)) {
+        if (this.#samePendingCreate(state) !== create || state.retired || !(state.budget instanceof CurrentFootprintCopyCreateClockBudget || state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardColdAllocatedCreateClockBudget)) {
           throw fail("FOOTPRINT_CREATE_ORIGINAL");
         }
         if (this.#samePendingCreate(state) !== create) { throw fail("FOOTPRINT_CREATE_ORIGINAL"); }

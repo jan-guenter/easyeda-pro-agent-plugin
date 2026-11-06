@@ -6,7 +6,7 @@
  * qualification through the original native process and pipe. */
 import { createHash } from "node:crypto";
 import { types } from "node:util";
-import { CURRENT_FOOTPRINT_FORWARD_NATIVE_LIMITS as FORWARD_V2 } from "./current-footprint-forward-native-limits.ts";
+import { CURRENT_FOOTPRINT_FORWARD_COLD_NATIVE_LIMITS as FORWARD_V2 } from "./current-footprint-forward-cold-native-limits.ts";
 import { bindFootprintPreparationConstructionTransport } from "./current-footprint-copy-construction-purpose.ts";
 import { isOriginalFootprintExecutionDependency, isOriginalFootprintForwardExecutionDependency, isOriginalFootprintHeldSavedDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency, isOriginalProjectStructureDependency,
   requestCurrentFootprintCopyParent, requestCurrentFootprintCopyTransactionClock, subscribeCurrentFootprintCopyParentEvents } from "./current-pcb-worker-startup-channel.ts";

@@ -193,7 +193,7 @@ import type { CurrentProjectStructureMainCommand } from "./current-project-struc
 import { CURRENT_FOOTPRINT_COMBINED_PROFILE, CURRENT_FOOTPRINT_COMBINED_PURPOSE } from "./current-footprint-copy-combined-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE, CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE } from "./current-footprint-copy-forward-profile.ts";
 import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE } from "./current-footprint-forward-execution-contract.ts";
-import { captureCurrentFootprintForwardNativeGraph } from "./current-footprint-forward-native-graph.ts";
+import { captureCurrentFootprintForwardColdNativeGraph } from "./current-footprint-forward-cold-native-graph.ts";
 // oxlint-disable-next-line import/no-cycle -- The original published v2 capability resolves this exact native receiver only after construction.
 import { requireCurrentFootprintForwardExecutionMainNativeOwner } from "./current-footprint-forward-execution-main-capability.ts";
 import type { CurrentFootprintForwardExecutionMainCapability, CurrentFootprintForwardExecutionMainMode } from "./current-footprint-forward-execution-main-capability.ts";
@@ -5882,7 +5882,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   const actorClockSource = startup209 ? await qualifyCurrentPcb209StartupActorInstallation(sealedOptions) : null;
   if (startup209) { await verifyCurrentPcb209WorkerBootstrapInstallation(sealedOptions); }
   const graphChallenge = purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE ? randomBytes(16).toString("hex") : null;
-  const nativeGraph = graphChallenge === null ? null : await captureCurrentFootprintForwardNativeGraph(sealedOptions.wslDistribution ?? process.env["WSL_DISTRO_NAME"], graphChallenge);
+  const nativeGraph = graphChallenge === null ? null : await captureCurrentFootprintForwardColdNativeGraph(sealedOptions.wslDistribution ?? process.env["WSL_DISTRO_NAME"], graphChallenge);
   const helperPath = fileURLToPath(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url));
   const before = nativeGraph === null ? await lstat(helperPath) : null;
   const verify = async (): Promise<void> => {
