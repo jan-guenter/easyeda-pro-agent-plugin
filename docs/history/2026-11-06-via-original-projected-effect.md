@@ -76,3 +76,13 @@ type-aware lint pass against the actual native owner dependency, as do repositor
 MCP-contract and all-skill validation. Node 24.18.0, npm 11.16.0 and core limit
 zero were used. No fake owner shim, generated helper/pin change or connected
 validation is part of this increment.
+
+## Central custody follow-up
+
+The actual native owner now privately holds projected-effect issuance and its
+reference registry. The public effect module only reexports that issuer and
+lookup. The owner imports the pure data comparator, so adding its future Save
+guard needs no owner/effect runtime cycle or separately configurable issuer.
+Save remains refused until independent actual serializer/request/SQL authority
+exists. Nine focused effect/native-owner boundary tests pass; strict types and
+type-aware lint pass. No generated helper or native pin changed.

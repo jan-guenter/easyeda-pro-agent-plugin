@@ -72,8 +72,18 @@ void test("scene omissions, foreign ACKs and native peer drift refuse the effect
 void test("the binding rejects copied effects and foreign original references at its explicit native-lookup seam", async () => {
   const f = fixture(), owner = Object.freeze({ explicitSyntheticOwnerSeam: true });
   const observations = { before: { value: f.before }, after: { value: f.after }, beforeScene: { value: f.beforeScene }, afterScene: { value: f.afterScene }, createAcknowledgement: f.ack };
-  const url = new URL("../src/current-pcb-via-write-effect.ts", import.meta.url); const sourceRequire = createRequire(url);
-  const output = await transform(await readFile(url, "utf8"), { loader: "ts", format: "cjs", target: "node24" });
+  const url = new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url); const sourceRequire = createRequire(url);
+  // Evaluate the actual central custody region with only the explicit original
+  // Native lookup/plan seams below; no native factory or helper is allocated.
+  const central = await readFile(url, "utf8");
+  const begin = "// BEGIN original Via projected-effect custody.", end = "// END original Via projected-effect custody.";
+  assert.equal(central.split(begin).length, 2); assert.equal(central.split(end).length, 2);
+  const source = `import {canonicalJson} from "./core.ts";import {freezeDeep} from "./sqlite-inventory-core.ts";
+import {compareCurrentPcbViaProjectedEffect} from "./current-pcb-via-write-effect-data.ts";
+import {requireOriginalCurrentPcbViaWritePlan} from "./current-pcb-via-write-plan.ts";
+import {requireOriginalCurrentPcbViaNativeObservation,requireOriginalCurrentPcbViaSceneObservation,requireOriginalCurrentPcbViaWriteStage} from "./current-pcb-via-write-owner.ts";
+${central.slice(central.indexOf(begin) + begin.length, central.indexOf(end))}`;
+  const output = await transform(source, { loader: "ts", format: "cjs", target: "node24" });
   const loaded: { exports: Record<string, unknown> } = { exports: {} };
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${output.code}\n})`); assert.ok(typeof evaluate === "function");
   const original = (actualOwner: unknown, plan: unknown, packet: unknown, phase: "before" | "after", kind: "native" | "scene"): unknown => {

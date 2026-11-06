@@ -5,6 +5,8 @@
  * Browser discovery grants no frame, worker, script or CAD execution authority. */
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Four fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import { compareCurrentPcbViaProjectedEffect } from "./current-pcb-via-write-effect-data.ts";
+import type { CurrentPcbViaProjectedEffect } from "./current-pcb-via-write-effect-data.ts";
 import { decodeCurrentPcbViaSdkMethod, decodeCurrentPcbViaSdkTuple, qualifyCurrentPcbViaSdkSource } from "./current-pcb-via-write-sdk-source.ts";
 import { currentPcbViaWriteNativeRequest } from "./current-pcb-via-write-protocol.ts";
 import type { CurrentPcbViaObservationPhase } from "./current-pcb-via-write-protocol.ts";
@@ -443,6 +445,49 @@ export function requireOriginalCurrentPcbViaSceneObservation(owner: CurrentPcbVi
   phase: CurrentPcbViaObservationPhase): CurrentPcb209SpatialTrackResult { requireViaPacket(owner, plan, packet, phase, "scene"); return packet.observation; }
 export function requireOriginalCurrentPcbViaWriteStage(owner: CurrentPcbViaWriteOwner, plan: CurrentPcbViaWritePlan, packet: CurrentPcbViaWriteStageResult,
   phase: CurrentPcbViaWriteStage): CurrentPcbViaWriteStageResult { requireViaPacket(owner, plan, packet, phase, "stage"); return packet; }
+// BEGIN original Via projected-effect custody.
+export interface CurrentPcbViaWriteEffect {
+  readonly schema: "private.current-pcb-via-write-effect.v1";
+  readonly proof: CurrentPcbViaProjectedEffect;
+}
+export interface CurrentPcbViaWriteEffectObservations {
+  readonly before: CurrentPcbViaNativeObservation; readonly after: CurrentPcbViaNativeObservation;
+  readonly beforeScene: CurrentPcbViaSceneObservation; readonly afterScene: CurrentPcbViaSceneObservation;
+  readonly createAcknowledgement: CurrentPcbViaWriteStageResult;
+}
+interface OriginalPcbViaWriteEffect { readonly owner: CurrentPcbViaWriteOwner; readonly plan: CurrentPcbViaWritePlan;
+  readonly observations: CurrentPcbViaWriteEffectObservations; readonly text: string }
+const pcbViaEffects = new WeakMap<CurrentPcbViaWriteEffect, OriginalPcbViaWriteEffect>();
+const pcbViaEffectGenerations = new WeakMap<CurrentPcbViaWriteOwner, CurrentPcbViaWriteEffect>();
+function compareOriginalPcbViaEffect(owner: CurrentPcbViaWriteOwner, plan: CurrentPcbViaWritePlan, observations: CurrentPcbViaWriteEffectObservations): CurrentPcbViaProjectedEffect {
+  const original = requireOriginalCurrentPcbViaWritePlan(plan);
+  return compareCurrentPcbViaProjectedEffect(plan, original.history,
+    requireOriginalCurrentPcbViaNativeObservation(owner, plan, observations.before, "before"),
+    requireOriginalCurrentPcbViaNativeObservation(owner, plan, observations.after, "after"),
+    requireOriginalCurrentPcbViaSceneObservation(owner, plan, observations.beforeScene, "before"),
+    requireOriginalCurrentPcbViaSceneObservation(owner, plan, observations.afterScene, "after"),
+    requireOriginalCurrentPcbViaWriteStage(owner, plan, observations.createAcknowledgement, "create"));
+}
+/** Exactly one effect is issued for one genuine native generation. It joins
+ * live original objects, never a serialized stage result or facade receipt. */
+export function qualifyOriginalCurrentPcbViaWriteEffect(owner: CurrentPcbViaWriteOwner, plan: CurrentPcbViaWritePlan,
+  observations: CurrentPcbViaWriteEffectObservations): CurrentPcbViaWriteEffect {
+  if (pcbViaEffectGenerations.has(owner)) { throw new Error("PCB_VIA_EFFECT_ALREADY_ISSUED"); }
+  const proof = compareOriginalPcbViaEffect(owner, plan, observations); const effect = freezeDeep({ schema: "private.current-pcb-via-write-effect.v1", proof } as const);
+  pcbViaEffects.set(effect, Object.freeze({ owner, plan, observations: Object.freeze({ ...observations }), text: canonicalJson(effect) }));
+  pcbViaEffectGenerations.set(owner, effect); return effect;
+}
+/** The native owner's single Save entry uses this exact token and rechecks
+ * every original packet and create ACK. It supplies no SQL resume slot. */
+export function requireOriginalCurrentPcbViaWriteEffect(effect: CurrentPcbViaWriteEffect, owner: CurrentPcbViaWriteOwner,
+  plan: CurrentPcbViaWritePlan): CurrentPcbViaProjectedEffect {
+  const original = pcbViaEffects.get(effect);
+  if (original === undefined || original.owner !== owner || original.plan !== plan || pcbViaEffectGenerations.get(owner) !== effect ||
+      canonicalJson(effect) !== original.text) { throw new Error("PCB_VIA_ORIGINAL_EFFECT"); }
+  if (canonicalJson(compareOriginalPcbViaEffect(owner, plan, original.observations)) !== canonicalJson(effect.proof)) { throw new Error("PCB_VIA_EFFECT_CHANGED"); }
+  return effect.proof;
+}
+// END original Via projected-effect custody.
 const selectedSqlFenceBootstraps = new WeakMap<object, Readonly<{ transport: object; runner: () => CurrentFootprintCopyMainBackendRunner | null; owner: CurrentPcbViaWriteOwner; path: string; reprove: () => void }>>();
 export function requireCurrentSelectedFileMainSqlFenceBootstrap(capability: CurrentSelectedFileMainSqlFenceBootstrap, transport: object): string {
   if (types.isProxy(capability) || types.isProxy(transport)) { throw error("SELECTED_SQL_BOOTSTRAP"); }
