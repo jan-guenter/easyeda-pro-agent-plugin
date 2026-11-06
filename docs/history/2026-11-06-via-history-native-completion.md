@@ -633,3 +633,53 @@ Verification:14 focused ledger and production-Core/real-pipe synthetic-child
 cases, full types and changed-file strict lint pass. Two complete helper emissions
 are identical, and the composed Linux C# pure-codec/unallocated-constructor smoke
 passes. No Windows process, cache route, native owner or EasyEDA worker was run.
+
+### Distinct saved-reader loading cursor and original source hold
+
+The saved-reader owner now consumes its own loading-preparation reference when
+arming `armSavedReadbackLoadWorker`. It untracks cache notifications once,
+retains the transferred complete absence/checkpoint/backup data, and installs a
+separate readonly controller on the original pipe. Neither Via writer controller
+nor producer/clock/Save origins participate. The original supported Job abort
+also settles a loading cursor waiting for its first attachment.
+
+The controller joins actual browser-global and selected-page waiting attachments
+to one exact target, title, URL and two distinct sessions. Running, service,
+shared, foreign, duplicate and debugOpen1 workers refuse before a bootstrap
+request. The fixed native grammar enables Runtime/Debugger, async stacks and
+scoped Network/cache-disabled/service-worker-bypass policy, then arms
+beforeScriptExecution before either original run-waiting command. It qualifies
+all seven original sources and original preload-copy/log lineage. The actual
+project source remains paused after the original held-source callback. There
+is deliberately no final project-script resume in this grammar.
+
+Only that callback issues `CurrentPcbViaSavedLoadOrigin` in the original central
+registry. Copied origins and another owner/checkpoint cannot qualify. The
+bindings retain the same actual source, worker and genuine private saved chunk
+plan. Loading, model readiness, reopening and persistence remain false. Fixed
+project opening and the two actual fetch/decrypt/parse joins must still be
+composed before any complete readback workflow can run.
+
+The readonly bootstrap reserves27 requests independently of writer helpers.
+It currently uses22 through the project source hold. The active native limit
+stays172 before original worker binding and becomes194 only for that bound
+bootstrap; the full prospective reader bound is284. Native framing substitutes
+the original retained sessions and never accepts caller session/code selectors.
+Network notifications are bounded and discarded rather than retained as header
+or cookie artifacts.
+
+The cache anomaly path also now requires the original page session. Chromium's
+[StorageHandler frontend](https://chromium.googlesource.com/chromium/src/+/e8ea048d0fd135923d5dbaa06bb779e6a6bb2a9f/content/browser/devtools/protocol/storage_handler.cc)
+is bound to its dispatcher channel, and its CacheStorageObserver sends tracked
+notifications through that frontend. A current delete gets one bounded
+notification interval, drained before its complete post-delete roster and the
+next guard. Missing, late, extra, unscoped, foreign-session, foreign-bucket or
+content notifications refuse. A notification never identifies a deletion or
+proves absence; the complete native replies, peer rosters and actor exclusion
+remain required.
+
+Verification:20 focused source/controller/finite-wire and production owner with
+real synthetic child cases, full types and changed-file strict lint pass. Full
+helper emission repeats identically; composed Linux C# smoke covers all22 fixed
+new worker codec cases and existing native purposes. No helper/pins/bundles were
+committed and no native owner, Windows process or EasyEDA worker was started.

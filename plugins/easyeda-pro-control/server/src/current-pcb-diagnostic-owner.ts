@@ -16,6 +16,12 @@ import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS, currentProjectSaveProducer
 import type { CurrentProjectSaveProducerCacheCaller } from "./current-project-save-producer-cache-source.ts";
 import { CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_ARRAY_LENGTH, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_PROFILES, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_CALLS as PRODUCER_INTRINSICS, decodeCurrentNativeCacheResponseIntrinsic } from "./current-native-cache-response-intrinsics.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS, CURRENT_PROJECT_SAVE_PRODUCER_ROLES, CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS, validateCurrentProjectSaveProducerCommand } from "./current-project-save-producer-protocol.ts";
+import { CurrentPcbViaSavedLoadController } from "./current-pcb-via-saved-load-controller.ts";
+import type { CurrentPcbViaSavedLoadWorkerPair } from "./current-pcb-via-saved-load-controller.ts";
+import type { CurrentPcbViaSavedLoadBootstrapCommand } from "./current-pcb-via-saved-load-bootstrap-protocol.ts";
+import type { CurrentPcbViaSavedLoadBootstrapResult, CurrentPcbViaSavedLoadProjectSourceHeld } from "./current-pcb-via-saved-load-bootstrap.ts";
+import type { CurrentPcbViaSavedLoadBindings, CurrentPcbViaSavedLoadOrigin } from "./current-pcb-via-saved-load-origin.ts";
+import { currentPcbViaSavedLoadWorkerNativeFrame } from "./current-pcb-via-saved-load-worker-wire.ts";
 import { buildCurrentPcbViaSavedCacheBackupData, publishCurrentPcbViaSavedCacheBackupData, requireCurrentPcbViaSavedCacheBackupData, verifyCurrentPcbViaSavedCachePublishedData } from "./current-pcb-via-saved-cache-backup.ts";
 import type { CurrentPcbViaSavedCacheBackupData, CurrentPcbViaSavedCachePublishedData } from "./current-pcb-via-saved-cache-backup.ts";
 import type { CurrentPcbViaSavedCacheAbsence, CurrentPcbViaSavedCacheAbsenceBindings, CurrentPcbViaSavedCacheBackupBindings, CurrentPcbViaSavedCacheBackupGrant, CurrentPcbViaSavedLoadPreparation, CurrentPcbViaSavedLoadPreparationBindings } from "./current-pcb-via-saved-cache-backup-origin.ts";
@@ -747,6 +753,9 @@ interface SavedReadbackCacheBackupHeld {
 }
 const savedReadbackCacheBackups = new WeakMap<object, SavedReadbackCacheBackupHeld>();
 const savedReadbackCacheAbsences = new WeakMap<object, Readonly<{ owner: CurrentPcbRetainedOwnerCore; backup: SavedReadbackCacheBackupHeld; ledger: CurrentPcbViaSavedCacheInvalidationLedger; data: CurrentPcbViaSavedCacheAbsenceData }>>();
+export type CurrentPcbViaSavedLoadSetup = (origin: CurrentPcbViaSavedLoadOrigin) => Promise<void>;
+const savedReadbackLoadOrigins = new WeakMap<object, Readonly<{ owner: CurrentPcbRetainedOwnerCore; prepared: CurrentPcbViaWriteClosedCheckpoint; bindings: CurrentPcbViaSavedLoadBindings; assertOriginal: () => void }>>();
+const savedReadbackLoadPreparationConsumed = new WeakSet<object>();
 const savedReadbackLoadPreparations = new WeakMap<object, Readonly<{ owner: CurrentPcbRetainedOwnerCore; prepared: CurrentPcbViaWriteClosedCheckpoint;
   absence: CurrentPcbViaSavedCacheAbsence; ledger: CurrentPcbViaSavedCacheInvalidationLedger; data: CurrentPcbViaSavedCacheLoadingData; bindings: CurrentPcbViaSavedLoadPreparationBindings }>>();
 const savedReadbackInvalidationDescriptors = Object.getOwnPropertyDescriptors(CurrentPcbViaSavedCacheInvalidationLedger.prototype);
@@ -1430,6 +1439,9 @@ class CurrentPcbRetainedOwnerCore {
   #savedReadbackBackup: SavedReadbackCacheBackupHeld | null = null;
   #savedReadbackInvalidationPromise: Promise<CurrentPcbViaSavedCacheAbsence> | null = null;
   #savedReadbackInvalidation: CurrentPcbViaSavedCacheInvalidationLedger | null = null;
+  #savedReadbackLoadPreparation: CurrentPcbViaSavedLoadPreparation | null = null;
+  #savedReadbackLoadSetup: CurrentPcbViaSavedLoadSetup | null = null; #savedReadbackLoadController: CurrentPcbViaSavedLoadController | null = null;
+  #savedReadbackLoadPair: CurrentPcbViaSavedLoadWorkerPair | null = null; #savedReadbackLoadCommand: CurrentPcbViaSavedLoadBootstrapCommand | null = null;
   #savedReadbackAbsence: CurrentPcbViaSavedCacheAbsence | null = null;
   #savedReadbackLoadPreparationPromise: Promise<CurrentPcbViaSavedLoadPreparation> | null = null;
   #savedReadbackDeleteGuard: 0 | 1 | "loading" | null = null;
@@ -6082,6 +6094,12 @@ class CurrentPcbRetainedOwnerCore {
           catch (caughtError) { ledger.failOriginalDispatch(plan); throw caughtError; }
           finally { this.#savedReadbackCachePlan = null; }
         };
+        const waitDeleteNotification = async (): Promise<void> => {
+          const started = performance.now();
+          while (!ledger.status().currentDeleteNotificationObserved) {
+            current(); if (performance.now() - started >= 30_000) { throw error("SAVED_READBACK_DELETE_NOTIFICATION_MISSING"); } await this.#pollRenderer(); current();
+          }
+        };
         const target = Object.freeze(currentDisposableOpenSealedTargetSchema.parse({ rawWindowsPath: held.prepared.target.rawWindowsPath, projectUuid: held.prepared.target.projectUuid,
           branchUuid: held.prepared.target.branchUuid, documentUuid: held.prepared.target.documentUuid, expectedSourceSha256: held.prepared.target.sourceSha256 }));
         for (const ordinal of [0, 1] as const) {
@@ -6100,7 +6118,9 @@ class CurrentPcbRetainedOwnerCore {
           await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current(); await verifyBackup();
           await request({ phase: "saved-cache-key", step: ordinal === 0 ? "before-delete-0" : "before-delete-1" });
           await request({ phase: "saved-cache-names", step: ordinal === 0 ? "before-delete-0" : "before-delete-1" });
-          if (backup.cdp.selected[ordinal] !== null) { await request({ phase: "saved-cache-delete", ordinal }); }
+          if (backup.cdp.selected[ordinal] !== null) {
+            await request({ phase: "saved-cache-delete", ordinal }); await waitDeleteNotification();
+          }
           await request({ phase: "saved-cache-names", step: ordinal === 0 ? "after-delete-0" : "after-delete-1" });
         }
         await request({ phase: "saved-cache-names", step: "absence" }); await verifyBackup();
@@ -6166,7 +6186,7 @@ class CurrentPcbRetainedOwnerCore {
         const bindings: CurrentPcbViaSavedLoadPreparationBindings = Object.freeze({ absence, data, assertCurrent: async (): Promise<void> => {
           current(); ledger.requireOriginalLoadingSnapshot(data); for (const packet of data.packets) { ledger.requireOriginalPacket(packet); } await verify(); await this.#verify(); current();
         }, freshLoadingVerified: false, projectOpeningAuthorized: false });
-        savedReadbackLoadPreparations.set(token, Object.freeze({ owner: this, prepared: held.prepared, absence, ledger, data, bindings })); current(); return token;
+        savedReadbackLoadPreparations.set(token, Object.freeze({ owner: this, prepared: held.prepared, absence, ledger, data, bindings })); this.#savedReadbackLoadPreparation = token; current(); return token;
       } catch (caughtError) { this.#input.emit("error", error("SAVED_READBACK_LOAD_PREPARATION_FAILED")); throw caughtError; }
       finally { this.#savedReadbackGuardHelper = null; this.#savedReadbackDeleteGuard = null; this.#savedReadbackCachePlan = null; this.#busy = false; }
     })();
@@ -6174,8 +6194,64 @@ class CurrentPcbRetainedOwnerCore {
   }
   public originalSavedReadbackLoadPreparation(token: CurrentPcbViaSavedLoadPreparation, prepared: CurrentPcbViaWriteClosedCheckpoint): CurrentPcbViaSavedLoadPreparationBindings {
     const held = savedReadbackLoadPreparations.get(token);
-    if (held === undefined || held.owner !== this || held.prepared !== prepared || this.#savedReadbackAbsence !== held.absence || this.#savedReadbackInvalidation !== held.ledger) { throw error("SAVED_READBACK_LOAD_PREPARATION_ORIGINAL"); }
+    if (held === undefined || savedReadbackLoadPreparationConsumed.has(token) || held.owner !== this || held.prepared !== prepared || this.#savedReadbackAbsence !== held.absence || this.#savedReadbackInvalidation !== held.ledger) { throw error("SAVED_READBACK_LOAD_PREPARATION_ORIGINAL"); }
     this.originalSavedReadbackCacheAbsence(held.absence, prepared); held.ledger.requireOriginalLoadingSnapshot(held.data); return held.bindings;
+  }
+  public async armSavedReadbackLoadWorker(setup: CurrentPcbViaSavedLoadSetup): Promise<void> {
+    assertOriginalCurrentPcbViaSavedReadbackOwner(this);
+    const context = this.#stagedContext, pipe = this.#pipe, prepared = this.#savedReadbackPrepared, token = this.#savedReadbackLoadPreparation;
+    if (token === null || prepared === null || context === null || !(pipe instanceof CurrentPcbViaSavedReadbackPipe) || this.#savedReadbackLoadSetup !== null || typeof setup !== "function" || types.isProxy(setup)) { throw error("SAVED_READBACK_LOAD_ARM_UNAVAILABLE"); }
+    this.originalSavedReadbackLoadPreparation(token, prepared);
+    const allocation = pcbViaSavedReadbackFactories.get(this)?.allocation, proof = savedReadbackLoadPreparations.get(token);
+    if (proof === undefined || allocation === undefined) { throw error("SAVED_READBACK_LOAD_ARM_ORIGINAL"); }
+    const cache = savedReadbackCacheAbsences.get(proof.absence)?.backup.cache;
+    if (cache === undefined) { throw error("SAVED_READBACK_LOAD_ARM_ORIGINAL"); }
+    const parent = context.openingContext();
+    this.#enter(true); this.#savedReadbackLoadSetup = setup; savedReadbackLoadPreparationConsumed.add(token);
+    const current = (): void => { this.#available(); assertOriginalCurrentPcbViaSavedReadbackOwner(this);
+      if (this.#savedReadbackLoadSetup !== setup || this.#stagedContext !== context || this.#pipe !== pipe || this.#savedReadbackPrepared !== prepared || this.#savedReadbackLoadPreparation !== token ||
+        !savedReadbackLoadPreparationConsumed.has(token) || this.#savedReadbackAborted || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true || canonicalJson(context.openingContext()) !== canonicalJson(parent)) { throw error("SAVED_READBACK_LOAD_OWNER_CHANGED"); }
+      requireSavedReadbackPreparation(allocation); proof.ledger.requireOriginalLoadingSnapshot(proof.data);
+    };
+    try {
+      const backup = this.#savedReadbackBackup; if (backup === null || backup.cache !== cache) { throw error("SAVED_READBACK_LOAD_BACKUP_CHANGED"); }
+      await verifyCurrentPcbViaSavedCachePublishedData(backup.published, backup.data); current();
+      const untrack = proof.ledger.prepare({ phase: "saved-cache-untrack" }); this.#savedReadbackCachePlan = untrack;
+      try { const reply = await this.#transfer(() => pipe.observeSavedReadbackCache(untrack)); current(); proof.ledger.accept(untrack, reply); }
+      catch (caughtError) { proof.ledger.failOriginalDispatch(untrack); throw caughtError; }
+      finally { this.#savedReadbackCachePlan = null; }
+      let controller: CurrentPcbViaSavedLoadController | null = null;
+      const original = (): CurrentPcbViaSavedLoadController => { current(); if (controller === null || this.#savedReadbackLoadController !== controller) { throw error("SAVED_READBACK_LOAD_ORIGINAL_CURSOR"); } return controller; };
+      controller = new CurrentPcbViaSavedLoadController(Object.freeze({ parentSessionId: parent.sessionId, projectUuid: prepared.target.projectUuid, windowTabId: cache.windowTabId,
+        bindWorker: async (pair: CurrentPcbViaSavedLoadWorkerPair): Promise<void> => { original(); if (this.#savedReadbackLoadPair !== null) { throw error("SAVED_READBACK_LOAD_PAIR_CONSUMED"); }
+          pipe.bindSavedReadbackLoadWorker(pair); this.#savedReadbackLoadPair = pair;
+          const result = await this.#request({ action: "saved-readback-worker-bind", targetId: pair.targetId, browserSessionId: pair.browserSessionId, pageSessionId: pair.pageSessionId, projectUuid: prepared.target.projectUuid, windowTabId: cache.windowTabId }); original();
+          if (!exact(result, ["bound"]) || result["bound"] !== true) { throw error("SAVED_READBACK_LOAD_NATIVE_BINDING"); }
+        }, request: async (command: CurrentPcbViaSavedLoadBootstrapCommand): Promise<unknown> => { original();
+          if (this.#savedReadbackLoadCommand !== null) { throw error("SAVED_READBACK_LOAD_REQUEST_PENDING"); } this.#savedReadbackLoadCommand = command;
+          try { const reply = await this.#transfer(() => pipe.observeSavedReadbackLoadWorker(command)); original(); return reply; } finally { this.#savedReadbackLoadCommand = null; }
+        }, poll: async (): Promise<void> => { original(); if (this.#mainRunner !== null) { await this.#mainRunner.pumpSelectedSqlFence(); } original(); await this.#pollRenderer(); original(); },
+        assertCurrent: async (): Promise<void> => { original(); await this.#verify(); original(); },
+        projectSourceHeld: async (source: CurrentPcbViaSavedLoadProjectSourceHeld, selected: CurrentPcbViaSavedLoadController): Promise<void> => {
+          if (original() !== selected) { throw error("SAVED_READBACK_LOAD_ORIGINAL_SOURCE"); } const pair = selected.requireHeld(source);
+          const origin: CurrentPcbViaSavedLoadOrigin = Object.freeze({ profile: "private.current-pcb-via-saved-load-origin.v1" });
+          const bindings: CurrentPcbViaSavedLoadBindings = Object.freeze({ prepared, plan: allocation.loadPlan, sessionId: pair.pageSessionId, targetId: pair.targetId, source,
+            assertCurrent: async (): Promise<void> => { original(); selected.requireHeld(source); await this.#verify(); original(); selected.requireHeld(source); },
+            projectInitialSourceRemainsPaused: true, actualNativeLoadingVerified: false, reopenedVerified: false });
+          savedReadbackLoadOrigins.set(origin, Object.freeze({ owner: this, prepared, bindings, assertOriginal: (): void => { original(); selected.requireHeld(source); } }));
+          await Reflect.apply(setup, undefined, [origin]); original(); selected.requireHeld(source);
+        }, fail: (): void => { this.#input.emit("error", error("SAVED_READBACK_LOAD_WORKER_FAILED")); } }));
+      this.#savedReadbackLoadController = controller;
+      pipe.retainSavedReadbackLoadEvents((event: DiagnosticEvent): void => { if (controller === null) { throw error("SAVED_READBACK_LOAD_ORIGINAL_CURSOR"); } controller.observeEvent(event); }); current();
+    } catch (caughtError) { this.#input.emit("error", error("SAVED_READBACK_LOAD_ARM_FAILED")); throw caughtError; }
+    finally { this.#savedReadbackCachePlan = null; this.#busy = false; }
+  }
+  /** The distinct readonly controller stops before the actual project script
+   * executes. Its original helper/Job must remain retained for later completion. */
+  public async observeSavedReadbackLoadSource(): Promise<CurrentPcbViaSavedLoadBootstrapResult> {
+    const controller = this.#savedReadbackLoadController;
+    if (this.#purpose !== CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE || controller === null) { throw error("SAVED_READBACK_LOAD_NOT_ARMED"); }
+    this.#enter(true); try { return await controller.observeProjectSourceHeld(); } finally { this.#busy = false; }
   }
   /** One original Start Page/source/main-fence join before the first cache
    * query. The nine CDP requests are two parent/ancillary brackets and one
@@ -6248,7 +6324,7 @@ class CurrentPcbRetainedOwnerCore {
     // oxlint-disable-next-line typescript/no-unnecessary-boolean-literal-compare -- A runtime cleanup caller must supply the exact original-Job confirmation.
     if (confirmAbortOriginalSavedReadbackJob !== true) { throw error("SAVED_READBACK_ABORT_CONFIRMATION"); }
     if (this.#purpose !== CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE || original === null || this.#savedReadbackAborted || this.#terminationObserved || this.#releaseConsumed) { throw error("SAVED_READBACK_ABORT_CONSUMED"); }
-    this.#savedReadbackAborted = true; this.#mainTerminateAttempted = true; this.#input.emit("error", error("SAVED_READBACK_ORIGINAL_ABORT"));
+    this.#savedReadbackAborted = true; this.#savedReadbackLoadController?.fail(); this.#mainTerminateAttempted = true; this.#input.emit("error", error("SAVED_READBACK_ORIGINAL_ABORT"));
     await this.#nativeTail; await this.#verify(); this.#available();
     if (this.#binding !== original || this.#terminationObserved || this.#releaseConsumed) { throw error("SAVED_READBACK_ABORT_OWNER_CHANGED"); }
     const reply = await this.#request({ action: "saved-readback-abort", confirmAbortOriginalSavedReadbackJob: true });
@@ -6945,7 +7021,8 @@ class CurrentPcbRetainedOwnerCore {
       else if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { nativeRequest = currentPcbViaWriteNativeRequest; }
       else if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { nativeRequest = currentSchematicDisplayWriteNativeRequest; }
       let encoded: Readonly<Record<string, unknown>>;
-      if (this.#savedReadbackActorsPending) { encoded = currentPcbViaSavedReadbackActorNativeFrame(chunk); }
+      if (this.#savedReadbackLoadCommand !== null && this.#savedReadbackLoadPair !== null) { encoded = currentPcbViaSavedLoadWorkerNativeFrame(chunk, this.#savedReadbackLoadCommand, this.#savedReadbackLoadPair); }
+      else if (this.#savedReadbackActorsPending) { encoded = currentPcbViaSavedReadbackActorNativeFrame(chunk); }
       else if (this.#savedReadbackParentPending && this.#stagedAttachment !== null) { encoded = currentPcbViaSavedReadbackParentNativeFrame(chunk, this.#stagedAttachment.sessionId); }
       else if (this.#savedReadbackMetadataPlan !== null && this.#savedReadbackCache !== null) { this.#savedReadbackCacheCurrent(this.#savedReadbackCache); encoded = currentPcbViaSavedCacheMetadataNativeFrame(chunk, this.#savedReadbackMetadataPlan, this.#savedReadbackCache.selected.sessionId); }
       else if (this.#savedReadbackCachePlan !== null && this.#savedReadbackCache !== null) { encoded = currentPcbViaSavedCacheNativeFrame(chunk, this.#savedReadbackCachePlan, this.#savedReadbackCache.selected.sessionId); }
@@ -8257,6 +8334,10 @@ export function requireOriginalCurrentPcbViaSavedCacheAbsence(token: CurrentPcbV
 }
 export function requireOriginalCurrentPcbViaSavedLoadPreparation(token: CurrentPcbViaSavedLoadPreparation, owner: CurrentPcbViaSavedReadbackOwner, prepared: CurrentPcbViaWriteClosedCheckpoint): CurrentPcbViaSavedLoadPreparationBindings {
   assertOriginalCurrentPcbViaSavedReadbackOwner(owner); return owner.originalSavedReadbackLoadPreparation(token, prepared);
+}
+export function requireOriginalCurrentPcbViaSavedLoadOrigin(origin: CurrentPcbViaSavedLoadOrigin, owner: CurrentPcbViaSavedReadbackOwner, prepared: CurrentPcbViaWriteClosedCheckpoint): CurrentPcbViaSavedLoadBindings {
+  assertOriginalCurrentPcbViaSavedReadbackOwner(owner); const original = savedReadbackLoadOrigins.get(origin);
+  if (original === undefined || original.owner !== owner || original.prepared !== prepared) { throw error("SAVED_READBACK_LOAD_ORIGIN"); } original.assertOriginal(); return original.bindings;
 }
 export function originalCurrentPcbViaSavedReadbackTarget(owner: CurrentPcbViaSavedReadbackOwner): CurrentPcbViaWriteClosedCheckpoint {
   assertOriginalCurrentPcbViaSavedReadbackOwner(owner); const original = pcbViaSavedReadbackFactories.get(owner);

@@ -8,6 +8,7 @@ import { currentPcbViaSavedReadbackActorNativeFrame, currentPcbViaSavedReadbackA
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-opening.ts";
 import type { CurrentPcbViaSavedCacheBackupGrant } from "../src/current-pcb-via-saved-cache-backup-origin.ts";
 import { PassThrough } from "node:stream";
+import { setTimeout as delay } from "node:timers/promises";
 import { CurrentPcbViaSavedReadbackPipe } from "../src/current-pcb-diagnostic-pipe.ts";
 import { generateWorkerStartupProtocol } from "../../scripts/generate-worker-startup-protocol.ts";
 import { CURRENT_PCB_VIA_SAVED_READBACK_BOOTSTRAP_REQUESTS, CURRENT_PCB_VIA_SAVED_READBACK_PROFILE } from "../src/current-pcb-via-saved-readback-profile.ts";
@@ -28,10 +29,10 @@ async function fixture(context: TestContext, malformed = false, cache = false, m
   const full = complete ? completeSyntheticSavedCacheFixture(invalidation) : null;
   const prepared = full?.prepared ?? Object.freeze({ syntheticCheckpoint: true, target: Object.freeze({ projectUuid: "a".repeat(64) }) });
   const testMethod = `public async seedSyntheticCacheForTest(full){
-const pipe=this.#pipe;if(!(pipe instanceof CurrentPcbViaSavedReadbackPipe))throw Error("pipe");await this.#transfer(async()=>({sessionId:await pipe.attachTarget("synthetic-target",event=>{if(this.#observeSavedReadbackGuardHelper(event))return;if(this.#savedReadbackInvalidation?.observeOriginalEvent(event))return;})}));
+const pipe=this.#pipe;if(!(pipe instanceof CurrentPcbViaSavedReadbackPipe))throw Error("pipe");await this.#transfer(async()=>({sessionId:await pipe.attachTarget("synthetic-target",event=>{if(this.#savedReadbackLoadController!==null&&event.method==='Target.attachedToTarget'){this.#savedReadbackLoadController.observeEvent(event);return;}if(this.#observeSavedReadbackGuardHelper(event))return;if(this.#savedReadbackInvalidation?.observeOriginalEvent(event))return;})}));
 this.#stagedAttachment=Object.freeze({targetId:"synthetic-target",sessionId:"synthetic-session"});this.#savedReadbackActorsPending=true;await this.#transfer(()=>pipe.armSavedReadbackCacheActors());this.#savedReadbackActorsPending=false;this.#savedReadbackActorsArmed=true;this.#savedReadbackParentPending=true;await this.#transfer(()=>pipe.armSavedReadbackCacheParent());this.#savedReadbackParentPending=false;
 const selected=Object.freeze({frameId:"synthetic-frame",sessionId:"synthetic-session",uniqueContextId:"synthetic-context",securityOrigin:"https://client"});
-const context={savedReadbackCacheContext:()=>selected,script:()=>({context:{id:7}})};this.#stagedContext=context;
+const context={openingContext:()=>({sessionId:selected.sessionId,uniqueContextId:selected.uniqueContextId}),savedReadbackCacheContext:()=>selected,script:()=>({context:{id:7}})};this.#stagedContext=context;
 this.#savedReadbackParentArmed=true;this.#mainRunner={selectedSqlFenceState:()=>({ready:true}),pumpSelectedSqlFence:async()=>{}};
 const ledger=full?.ledger??new CurrentPcbViaSavedCacheLedger(Object.freeze({frameId:selected.frameId,sessionId:selected.sessionId,securityOrigin:selected.securityOrigin,projectUuid:this.#savedReadbackPrepared.target.projectUuid}));
 const origin=Object.freeze({profile:"private.current-pcb-via-saved-cache-origin.v1"});const bindings=this.#createSavedReadbackCacheBindings(ledger,origin,pipe,this.#savedReadbackPrepared);
@@ -73,9 +74,10 @@ else if(q.action==='send'){if(q.method==='Debugger.getScriptSource')queued.push(
 else if(q.action==='saved-readback-actors'){queued.push({id:q.requestId,result:{}});send(q,{written:true});}
 else if(q.action==='saved-readback-parent'){queued.push({id:q.requestId,result:{},sessionId:q.sessionId});send(q,{written:true});}
 else if(q.action==='saved-readback-metadata'){if(q.savedCacheMetadataPhase!=='saved-cache-native-constructors'||q.uniqueContextId!=='synthetic-context')throw Error('metadata-selector');send(q,{written:true});}
+else if(q.action==='saved-readback-worker-bind')send(q,{bound:true});
 else if(q.action==='saved-readback-backup-enroll')send(q,{backupEnrolled:true});
 else if(q.action==='saved-readback-cache-guard'||q.action==='saved-readback-load-guard'){queued.push({method:'Debugger.scriptParsed',params:{scriptId:'guard-'+q.namespaceOrdinal,url:'',executionContextId:7},sessionId:q.sessionId});queued.push({id:q.requestId,result:{result:{type:'string',value:JSON.stringify(guardReply)}},sessionId:q.sessionId});send(q,{written:true});}
-else if(q.action==='saved-readback-cache'){if(!${String(invalidation)}){if(q.savedCachePhase!=='saved-cache-key'||q.frameId!=='synthetic-frame')throw Error('selector');}else{let result;if(q.savedCachePhase==='saved-cache-key')result={storageKey:'https://client/'};else if(q.savedCachePhase==='saved-cache-names')result={caches:roster};else if(q.savedCachePhase==='saved-cache-delete'){if(q.cacheId!=='cache-'+q.namespaceOrdinal)throw Error('foreign-delete');const i=roster.findIndex(x=>x.cacheId===q.cacheId);if(i<0)throw Error('replay');roster.splice(i,1);result={};}else throw Error('cache-phase');if(!(${String(lostDelete)}&&q.savedCachePhase==='saved-cache-delete'))queued.push({id:q.requestId,result,sessionId:q.sessionId});}send(q,{written:true});}
+else if(q.action==='saved-readback-cache'){if(!${String(invalidation)}){if(q.savedCachePhase!=='saved-cache-key'||q.frameId!=='synthetic-frame')throw Error('selector');}else{let result;if(q.savedCachePhase==='saved-cache-untrack')result={};else if(q.savedCachePhase==='saved-cache-key')result={storageKey:'https://client/'};else if(q.savedCachePhase==='saved-cache-names')result={caches:roster};else if(q.savedCachePhase==='saved-cache-delete'){if(q.cacheId!=='cache-'+q.namespaceOrdinal)throw Error('foreign-delete');const i=roster.findIndex(x=>x.cacheId===q.cacheId);if(i<0)throw Error('replay');roster.splice(i,1);queued.push({method:'Storage.cacheStorageListUpdated',params:{origin:'https://client',storageKey:'https://client/',bucketId:'1'},sessionId:q.sessionId});result={};}else throw Error('cache-phase');if(!(${String(lostDelete)}&&q.savedCachePhase==='saved-cache-delete'))queued.push({id:q.requestId,result,sessionId:q.sessionId});}send(q,{written:true});}
 else if(q.action==='poll')setTimeout(()=>${malformed ? String.raw`process.stdout.write('malformed\n')` : String.raw`send(q,{bytes:attached&&queued.length?Buffer.from(JSON.stringify(queued.shift())+"\u0000").toString('base64'):''})`},50);
 else if(q.action==='saved-readback-abort'){if(q.confirmAbortOriginalSavedReadbackJob!==true)throw Error('confirmation');terminated=true;send(q,{terminationDispatched:true});}
 else if(q.action==='termination')send(q,{terminated,originalRootExited:terminated,originalJobEmpty:terminated});
@@ -129,6 +131,17 @@ void test("changed original empty window refuses before the first selected names
   assert.equal(f.owner.invalidateSavedCaches(), attempt); assert.equal(f.actions.filter(action => action === "saved-readback-cache").length, 0);
   assert.equal(f.actions.filter(action => action === "saved-readback-cache-guard").length, 1);
   await f.owner.abortSavedReadback(true); assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
+});
+
+void test("transferred original absence arms a distinct loading cursor and original abort settles its pending first attachment", async context => {
+  const f = await fixture(context, false, true, false, true, true); await f.owner.publishSavedCacheBackup(); await f.owner.invalidateSavedCaches();
+  const prepared = await f.owner.prepareSavedReadbackLoading(); let callbacks = 0;
+  await f.owner.armSavedReadbackLoadWorker(() => { callbacks += 1; return Promise.resolve(); });
+  assert.throws(() => f.owner.originalSavedReadbackLoadPreparation(prepared, f.prepared));
+  await assert.rejects(f.owner.armSavedReadbackLoadWorker(() => Promise.resolve()));
+  const source = f.owner.observeSavedReadbackLoadSource(); const refused = assert.rejects(source); await delay(75);
+  await f.owner.abortSavedReadback(true); await refused; assert.equal(callbacks, 0); assert.equal(f.owner.status().busy, false);
+  assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
 });
 
 void test("lost original delete reply remains consumed and original Job abort settles it without deleting the peer namespace", async context => {
@@ -187,7 +200,7 @@ void test("copied closed-checkpoint data refuses the real lazy factory before na
 void test("fresh readback native composition repeats exactly and its current pipe preserves51 bounded discovery slots and no opening grant", async context => {
   const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   const first = generateWorkerStartupProtocol(source); assert.equal(generateWorkerStartupProtocol(first), first);
-  const invalidationStart = first.indexOf("        'saved-readback-load-guard' {\n");
+  const invalidationStart = first.indexOf("        'saved-readback-worker-bind' {\n");
   const metadataStart = first.indexOf("        'saved-readback-metadata' {\n");
   const parentStart = first.indexOf("        'saved-readback-parent' {\n");
   const preflightStart = first.indexOf("        'saved-readback-preflight' {\n");
@@ -203,8 +216,8 @@ void test("fresh readback native composition repeats exactly and its current pip
   const flags = first.slice(0, first.indexOf("\n")).match(/\[switch\]\$\w+/gu); assert.ok(flags !== null); assert.equal(flags.length, new Set(flags).size);
   assert.equal(first.split("        'saved-readback-abort' {").length - 1, 1);
   assert.ok(first.includes("spatial209?384:componentSpatial209?419:"));
-  assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.main.total, 909); assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.total, 280);
-  assert.deepEqual(CURRENT_PCB_VIA_SAVED_READBACK_BOOTSTRAP_REQUESTS, { parent: 2, inventory: 1, workerNormal: 12, workerCleanup: 8, total: 23 });
+  assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.main.total, 909); assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.total, 284);
+  assert.deepEqual(CURRENT_PCB_VIA_SAVED_READBACK_BOOTSTRAP_REQUESTS, { parent: 2, inventory: 1, workerNormal: 16, workerCleanup: 8, total: 27 });
   assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeReadOnly, 172);
   assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.enabledDiscovery, 16); assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.cacheDeletionAuthorized, false);
   const input = new PassThrough(), output = new PassThrough(); let requests = 0;

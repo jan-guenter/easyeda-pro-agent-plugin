@@ -35,7 +35,7 @@ void test("ordered invalidation uses only retained two IDs, consumes each once a
     const foreignWire = Buffer.from(`${JSON.stringify({ ...wire, params: { cacheId: "peer" } })}\0`);
     assert.throws(() => currentPcbViaSavedCacheNativeFrame(foreignWire, plan, frame.sessionId));
     ledger.accept(plan, {}); assert.throws(() => ledger.prepare({ phase: "saved-cache-delete", ordinal }));
-    assert.equal(ledger.observeOriginalEvent({ method: "Storage.cacheStorageListUpdated", sessionId: frame.sessionId, params: { origin, storageKey, bucketId: "default" } }), true);
+    assert.equal(ledger.observeOriginalEvent({ method: "Storage.cacheStorageListUpdated", sessionId: frame.sessionId, params: { origin, storageKey, bucketId: "1" } }), true);
     run({ phase: "saved-cache-names", step: ordinal === 0 ? "after-delete-0" : "after-delete-1" }, { caches: [...selected.slice(ordinal + 1), peer] });
   }
   run({ phase: "saved-cache-names", step: "absence" }, { caches: [peer] }); const snapshot = ledger.snapshot();
@@ -81,4 +81,19 @@ void test("loading rechecks exact storage key and complete peer roster after ori
   assert.throws(() => recreated.accept(recreated.prepare({ phase: "saved-cache-names", step: "loading" }), { caches: [peer, selected[0]] }));
   const changedPeer = complete(); changedPeer.accept(changedPeer.prepare({ phase: "saved-cache-key", step: "loading" }), { storageKey });
   assert.throws(() => changedPeer.accept(changedPeer.prepare({ phase: "saved-cache-names", step: "loading" }), { caches: [] }));
+});
+
+void test("unscoped, foreign-session and late list notifications cannot be credited to another delete", () => {
+  for (const sessionId of [undefined, "foreign"]) {
+    const ledger = new CurrentPcbViaSavedCacheInvalidationLedger(before());
+    assert.throws(() => ledger.observeOriginalEvent({ method: "Storage.cacheStorageListUpdated", ...(sessionId === undefined ? {} : { sessionId }), params: { origin, storageKey, bucketId: "1" } }));
+  }
+  const ledger = new CurrentPcbViaSavedCacheInvalidationLedger(before());
+  ledger.accept(ledger.prepare({ phase: "saved-cache-key", step: "before-delete-0" }), { storageKey });
+  ledger.accept(ledger.prepare({ phase: "saved-cache-names", step: "before-delete-0" }), { caches: [...selected, peer] });
+  ledger.accept(ledger.prepare({ phase: "saved-cache-delete", ordinal: 0 }), {});
+  assert.equal(ledger.status().currentDeleteNotificationObserved, false);
+  ledger.observeOriginalEvent({ method: "Storage.cacheStorageListUpdated", sessionId: frame.sessionId, params: { origin, storageKey, bucketId: "1" } });
+  ledger.accept(ledger.prepare({ phase: "saved-cache-names", step: "after-delete-0" }), { caches: [selected[1], peer] });
+  assert.throws(() => ledger.observeOriginalEvent({ method: "Storage.cacheStorageListUpdated", sessionId: frame.sessionId, params: { origin, storageKey, bucketId: "1" } }));
 });

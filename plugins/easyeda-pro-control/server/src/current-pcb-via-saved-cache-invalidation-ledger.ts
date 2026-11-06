@@ -28,9 +28,9 @@ export class CurrentPcbViaSavedCacheInvalidationLedger {
   readonly #attempted = new Set<string>(); readonly #packets = new Set<CurrentPcbViaSavedCachePacket>();
   readonly #deleted = new Set<0 | 1>(); readonly #snapshots = new WeakSet<CurrentPcbViaSavedCacheAbsenceData>();
   #ordinal: 0 | 1 = 0; #stage: "key" | "before" | "delete" | "after" | "absence" | "complete" = "key";
-  #pending: CurrentPcbViaSavedCachePlan | null = null; #failed = false; #deleteEvents = 0; #deleteAttempts = 0;
+  #pending: CurrentPcbViaSavedCachePlan | null = null; #failed = false; #deleteAttempts = 0; #eventDeleteOrdinal: 0 | 1 | null = null; #deleteEventObserved = false; #eventBucketId: string | null = null;
   #roster: CurrentPcbViaSavedCacheNames | null = null;
-  #loading: 0 | 1 | 2 = 0; readonly #loadingPackets: CurrentPcbViaSavedCachePacket[] = []; readonly #loadingSnapshots = new WeakSet<CurrentPcbViaSavedCacheLoadingData>();
+  #loading: 0 | 1 | 2 = 0; #untracked = false; readonly #loadingPackets: CurrentPcbViaSavedCachePacket[] = []; readonly #loadingSnapshots = new WeakSet<CurrentPcbViaSavedCacheLoadingData>();
   public constructor(before: CurrentPcbViaSavedCacheSnapshot) { this.#before = before; Object.freeze(this); }
   #current(): void { need(!this.#failed && this.#pending === null); }
   #expected(): CurrentPcbViaSavedCacheNames {
@@ -47,9 +47,11 @@ export class CurrentPcbViaSavedCacheInvalidationLedger {
       need(this.#stage === "before" && command.step === `before-delete-${String(ordinal)}` ||
         (this.#stage === "after" || this.#stage === "delete" && selected === null) && command.step === `after-delete-${String(ordinal)}` ||
         this.#stage === "absence" && command.step === "absence" || this.#stage === "complete" && this.#loading === 1 && command.step === "loading"); params = { storageKey: this.#before.storageKey };
+    } else if (command.phase === "saved-cache-untrack") {
+      need(this.#stage === "complete" && this.#loading === 2 && !this.#untracked); params = { storageKey: this.#before.storageKey };
     } else {
       need(command.phase === "saved-cache-delete" && command.ordinal === ordinal && this.#stage === "delete" && selected !== null && !this.#deleted.has(ordinal));
-      params = { cacheId: selected.cacheId }; this.#deleteAttempts += 1;
+      need(this.#eventDeleteOrdinal === null); params = { cacheId: selected.cacheId }; this.#deleteAttempts += 1; this.#eventDeleteOrdinal = ordinal; this.#deleteEventObserved = false;
     }
     const plan = freezeDeep({ command, method: METHODS[command.phase], params }); this.#attempted.add(slot); this.#pending = plan; return plan;
   }
@@ -60,6 +62,7 @@ export class CurrentPcbViaSavedCacheInvalidationLedger {
       if (command.phase === "saved-cache-key") { need(reply !== null && typeof reply === "object" && Reflect.ownKeys(reply).length === 1 && "storageKey" in reply && reply.storageKey === this.#before.storageKey); if (command.step === "loading") { this.#loading = 1; } else { this.#stage = "before"; } }
       else if (command.phase === "saved-cache-delete") {
         need(reply !== null && typeof reply === "object" && Reflect.ownKeys(reply).length === 0); this.#deleted.add(command.ordinal); this.#stage = "after";
+      } else if (command.phase === "saved-cache-untrack") { need(reply !== null && typeof reply === "object" && Reflect.ownKeys(reply).length === 0); this.#untracked = true;
       } else {
         need(command.phase === "saved-cache-names"); const roster = decodeCurrentPcbViaSavedCacheNames(reply, this.#before.storageKey, this.#before.frame.securityOrigin);
         need(canonicalJson(roster) === canonicalJson(this.#expected())); this.#roster = roster;
@@ -67,23 +70,26 @@ export class CurrentPcbViaSavedCacheInvalidationLedger {
         else if (this.#stage === "before") { this.#stage = "delete"; }
         else if (this.#stage === "absence") { this.#stage = "complete"; }
         else { need(this.#stage === "after" || this.#stage === "delete" && this.#before.selected[this.#ordinal] === null);
+          if (this.#before.selected[this.#ordinal] !== null) { need(this.#eventDeleteOrdinal === this.#ordinal && this.#deleteEventObserved); this.#eventDeleteOrdinal = null; this.#deleteEventObserved = false; }
           if (this.#ordinal === 0) { this.#ordinal = 1; this.#stage = "key"; } else { this.#stage = "absence"; } }
       }
       const packet: CurrentPcbViaSavedCachePacket = freezeDeep({ command, reply, nativeOwnershipVerified: false }); if ((command.phase === "saved-cache-key" || command.phase === "saved-cache-names") && command.step === "loading") { this.#loadingPackets.push(packet); }
       this.#packets.add(packet); this.#pending = null; return packet;
     } catch (caughtError) { this.#failed = true; throw caughtError; }
   }
-  /** Only a bounded same-storage list notification after an actual planned
-   * delete can be ours. Content notifications always refuse. Complete peer
-   * rosters are independently compared after each original deletion reply. */
+  /** Notifications do not identify a deletion. Accept one original-session
+   * list anomaly in the current delete interval only, then close that interval
+   * before another guard. Complete peer rosters prove the actual absence. */
   public observeOriginalEvent(event: DiagnosticEvent): boolean {
     if (event.method !== "Storage.cacheStorageListUpdated" && event.method !== "Storage.cacheStorageContentUpdated") { return false; }
     try {
       const captured = captureCurrentPcbStringClockReply(event).value;
-      need(!this.#failed && event.method === "Storage.cacheStorageListUpdated" && captured !== null && typeof captured === "object" && "params" in captured &&
+      need(!this.#failed && event.sessionId === this.#before.frame.sessionId && event.method === "Storage.cacheStorageListUpdated" && captured !== null && typeof captured === "object" && "params" in captured &&
         captured.params !== null && typeof captured.params === "object" && "storageKey" in captured.params && captured.params.storageKey === this.#before.storageKey &&
-        "origin" in captured.params && captured.params.origin === this.#before.frame.securityOrigin && this.#deleteEvents < this.#deleteAttempts);
-      this.#deleteEvents += 1; return true;
+        "origin" in captured.params && captured.params.origin === this.#before.frame.securityOrigin && Reflect.ownKeys(captured.params).length === 3 &&
+        "bucketId" in captured.params && typeof captured.params.bucketId === "string" && /^[1-9]\d{0,19}$/u.test(captured.params.bucketId) &&
+        this.#eventDeleteOrdinal === this.#ordinal && !this.#deleteEventObserved && (this.#eventBucketId === null || this.#eventBucketId === captured.params.bucketId));
+      this.#eventBucketId = captured.params.bucketId; this.#deleteEventObserved = true; return true;
     } catch (caughtError) { this.#failed = true; throw caughtError; }
   }
   public snapshot(): CurrentPcbViaSavedCacheAbsenceData {
@@ -102,7 +108,7 @@ export class CurrentPcbViaSavedCacheInvalidationLedger {
   public failOriginalDispatch(plan: CurrentPcbViaSavedCachePlan): void { need(this.#pending === plan); this.#failed = true; }
   public requireOriginalSnapshot(snapshot: CurrentPcbViaSavedCacheAbsenceData): void { need(this.#snapshots.has(snapshot)); }
   public requireOriginalPacket(packet: CurrentPcbViaSavedCachePacket): void { need(this.#packets.has(packet)); }
-  public status(): Readonly<{ failed: boolean; pending: boolean; complete: boolean; attemptedDeletes: number }> {
-    return Object.freeze({ failed: this.#failed, pending: this.#pending !== null, complete: this.#stage === "complete", attemptedDeletes: this.#deleteAttempts });
+  public status(): Readonly<{ failed: boolean; pending: boolean; complete: boolean; attemptedDeletes: number; currentDeleteNotificationObserved: boolean }> {
+    return Object.freeze({ failed: this.#failed, pending: this.#pending !== null, complete: this.#stage === "complete", attemptedDeletes: this.#deleteAttempts, currentDeleteNotificationObserved: this.#eventDeleteOrdinal === this.#ordinal && this.#deleteEventObserved });
   }
 }
