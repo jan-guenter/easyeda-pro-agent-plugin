@@ -208,3 +208,71 @@ also passes the same Linux smoke. No Windows process, app, native owner or MCP c
 not yet mounted; genuine inverse saved-source/native ownership, original main
 actor completion and full four-generation producer/head admission remain the
 next required joins.
+
+## Original v2 writer to fresh saved reader and closed checkpoint
+
+The v2 path now has a concrete fresh saved-generation factory:
+`startCurrentFootprintForwardHeldSavedNativeOwner(writer, after)`. It accepts
+only the original v2 writer's complete closed snapshot after its acknowledged
+helper release. Its options come from that writer's actual original factory.
+A private once-only handoff retains the exact parent, inventory and new helper;
+no caller supplies a path, options, PID, Job or session. The existing
+Combined-copy saved factory still refuses a v2 predecessor.
+
+This fresh readonly allocation uses the existing held-saved native codebook
+and its unchanged request/control/output limits. It receives a new original
+child, pipe, Job and held-cache runner. This is no promotion of an older owner
+and it inherits no native create/delete, transaction clock or Save command.
+The allocation is retained before owner construction/listeners. A constructor
+failure retains the actual never-written child, sends original stdin EOF once
+and independently observes its exit. A thrown spawn remains unresolved;
+absence of an owner never fabricates no-resource evidence or a retry.
+
+`createCurrentFootprintForwardHeldSavedExecutionNative(writer, paired)` is
+async and allocates only the data-free adapter. A bounded literal lazy import
+resolves the actual paired registry after Core initialization and retains its
+exact function identity. The initially attempted static edge produced import
+cycles; it was removed without widening the lint rules. Before any saved
+helper allocation, the adapter joins the original paired result/created UUID
+and both observed worker clocks to the exact original sealed copy plan, full
+closed-SQL effect and saved projection. The registry requires the original
+main's root/empty-Job termination. Copied packets, foreign parents and replaced
+own lookup methods cannot fabricate that historical chain.
+
+The actual saved path retains its first held cache tuple, takes the separately
+timed fresh sample through the native opener's original guard, acknowledges
+group release, and verifies the v2 parent's descriptor-bound raw bytes before
+its one project open. It then exposes the fixed saved-content transport.
+`observeCurrentFootprintForwardHeldSavedSource(binding)` creates its own real
+saved-read runner on that exact open result, retains its two source/four state
+samples and requires its original result while the owner is live. Supplied
+reader, packet or callback data cannot replace this collector.
+
+After actual normal closure, a new complete SQL reader, exact SQL invariance
+and acknowledged helper release, `sealCurrentFootprintForwardSavedCheckpoint`
+can issue `private.current-footprint-forward-saved-checkpoint.v1`.
+`requireOriginalCurrentFootprintForwardSavedCheckpoint` retrieves only its
+private original parent/saved owner, paired/read packet, projection and closed
+snapshot references. `verifyCurrentFootprintForwardSavedCheckpoint` performs
+a fresh full raw-byte reproof from that actual closed owner. The token is
+historical data for a future fresh inverse birth; it transfers no live
+runtime, native handles or mutation grant. Old saved result schemas retain all
+of their false acceptance fields.
+
+One focused refusal initially exposed a local diagnostic trap: the adapter
+retained an invalid clock/projection pair before preflight, so the later
+start-outcome getter repeated the semantic refusal. The check now runs before
+adopting those fields. The regression proves no saved helper is allocated and
+no-resource remains inspectable. An earlier synthetic-VM Promise check also
+mistook a cross-realm Promise for a non-Promise; the fixture now uses the
+maintained cross-realm predicate and retains the original rejection.
+
+The final focused batch covers original factory/registry/pipe custody with
+inert Linux children, unchanged old held-adapter behavior, the new v2 normal
+and refused source paths, actual fixed saved-cache/content programs, complete
+real synthetic SQLite readers, checkpoint identity and the paired terminal
+lookup. It supplies no connected Windows or CAD evidence. No helper,
+generated bundle, compatibility pin, Windows process, native allocation or MCP
+call changed. The inverse birth/clock/main completion and final saved-absence
+owner remain to be composed; complete four-generation producer/head admission
+is still false.

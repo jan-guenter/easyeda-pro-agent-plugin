@@ -302,7 +302,7 @@ import { join } from "node:path";
 import { requireCurrentFootprintCopyOwned } from "./current-footprint-copy-preparation-runtime.ts";
 import type { CurrentFootprintCopyPreparation } from "./current-footprint-copy-preparation.ts";
 // oxlint-disable-next-line import/no-cycle -- The native owner consumes only its original footprint snapshot/guard registry; imports are used after construction.
-import { requireCurrentFootprintCopyClosedSnapshot } from "./current-footprint-copy-closed-snapshot.ts";
+import { requireCurrentFootprintCopyClosedSnapshot, requireCurrentFootprintForwardExecutionClosedSnapshot } from "./current-footprint-copy-closed-snapshot.ts";
 // oxlint-disable-next-line import/no-cycle -- The native owner consumes only its original footprint snapshot/guard registry; imports are used after construction.
 import { revalidateCurrentFootprintCopySavedOpenGuard } from "./current-footprint-copy-saved-generation.ts";
 import type { CurrentFootprintCopySavedOpenGuard } from "./current-footprint-copy-saved-generation.ts";
@@ -318,7 +318,7 @@ import type { CurrentFootprintCopyHeldSavedLedgerBinding } from "./current-footp
 import { revalidateCurrentFootprintCopyHeldSavedOpenGuard } from "./current-footprint-copy-held-saved-generation.ts";
 import type { CurrentFootprintCopyHeldSavedOpenGuard } from "./current-footprint-copy-held-saved-generation.ts";
 import type { CurrentFootprintCopyV2SavedProjection } from "./current-footprint-copy-v2-saved-source.ts";
-import { currentFootprintCopyV2SavedTarget } from "./current-footprint-copy-v2-saved-source.ts";
+import { currentFootprintCopyV2SavedSqlSource, currentFootprintCopyV2SavedTarget } from "./current-footprint-copy-v2-saved-source.ts";
 import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-state.ts";
 import type { CurrentFootprintCopySourceReadTransport } from "./current-footprint-copy-source-read-runner.ts";
 import { currentFootprintCopyMainBackendWire } from "./current-footprint-copy-main-backend-wire.ts";
@@ -967,6 +967,7 @@ const structureFactories = new WeakMap<object, CurrentPcbDiagnosticInstallation>
 const structureFactoryFailures = new WeakMap<object, Readonly<{ options: CurrentPcbDiagnosticInstallationOptions; owner: CurrentProjectStructureNativeOwner }>>();
 const footprintForwardFactories = new WeakMap<object, CurrentPcbDiagnosticInstallation>();
 const footprintForwardExecutionFactories = new WeakMap<object, CurrentPcbDiagnosticInstallation>();
+const footprintForwardExecutionFactoryOptions = new WeakMap<object, CurrentPcbDiagnosticInstallationOptions>();
 type ForwardExecutionReleaseKind = "closed" | "unlaunched" | "no-process";
 const forwardExecutionReleasePreflightFailures = new WeakMap<object, Readonly<{
   owner: CurrentPcbRetainedOwnerCore; attempt: object; kind: ForwardExecutionReleaseKind; activity: object | null;
@@ -985,6 +986,23 @@ interface ForwardExecutionBirthAllocation {
   cleanupFailure: unknown;
 }
 const forwardExecutionBirthAllocations = new WeakMap<CurrentPcbDiagnosticInstallationOptions, ForwardExecutionBirthAllocation>();
+/** A separate successor handoff. It reuses only the readonly held native
+ * codebook on a fresh allocation, never a predecessor's Job or write purpose. */
+interface ForwardExecutionHeldSavedAllocation {
+  readonly writer: CurrentFootprintForwardExecutionNativeOwner;
+  readonly after: Awaited<ReturnType<typeof readExactSqlInventory>>;
+  readonly options: CurrentPcbDiagnosticInstallationOptions;
+  readonly token: object;
+  state: "pending" | "no-resource" | "unresolved" | "retained";
+  owner: CurrentFootprintCopyHeldSavedNativeOwner | null;
+  child: ForwardExecutionBirthAllocation["child"];
+  eofAttempted: boolean;
+  cleanupFailure: unknown;
+}
+const forwardExecutionHeldSavedAllocations = new WeakMap<CurrentFootprintForwardExecutionNativeOwner, ForwardExecutionHeldSavedAllocation>();
+const forwardExecutionHeldSavedHandoffs = new WeakMap<object, ForwardExecutionHeldSavedAllocation>();
+const forwardExecutionHeldSavedOwners = new WeakMap<object, ForwardExecutionHeldSavedAllocation>();
+
 const forwardExecutionFactoryFailures = new WeakMap<object, Readonly<{
   options: CurrentPcbDiagnosticInstallationOptions; owner: CurrentFootprintForwardExecutionNativeOwner;
 }>>();
@@ -5010,6 +5028,19 @@ class CurrentPcbRetainedOwnerCore {
       runtime: source.runtime, checkpoint: snapshot.checkpoint, before: after });
     this.#footprintSourceBindingText = canonicalJson({ ...this.#footprintSourceBinding, before: undefined });
   }
+  /** Bind only the new v2 factory's exact released predecessor and snapshot.
+   * The old bind/factory path remains closed to a forward-v2 owner. */
+  public bindFootprintForwardHeldSavedSource(token: object): void {
+    assertOriginalCurrentFootprintCopyHeldSavedNativeOwner(this);
+    const held = requireForwardExecutionHeldSavedHandoff(token);
+    if (held.owner !== this || forwardExecutionHeldSavedOwners.get(this) !== held || this.#launchConsumed || this.#footprintSourceBinding !== null) { throw error("FORWARD_HELD_SAVED_SOURCE_BINDING"); }
+    const source = originalCurrentFootprintForwardExecutionNativeTarget(held.writer);
+    const snapshot = requireCurrentFootprintForwardExecutionClosedSnapshot(held.writer, held.after);
+    const target = Object.freeze({ ...source.target, expectedSourceSha256: snapshot.checkpoint.sourceSha256 });
+    this.#footprintSourceBinding = Object.freeze({ operationId: source.operationId, target, source: source.source,
+      runtime: source.runtime, checkpoint: snapshot.checkpoint, before: held.after });
+    this.#footprintSourceBindingText = canonicalJson({ ...this.#footprintSourceBinding, before: undefined });
+  }
   /** One fresh application launch followed by its original UI source capture.
    * All stages retain their native failures and leave normal cleanup available. */
   public async startFootprintCopySavedGeneration(): Promise<void> {
@@ -8038,7 +8069,7 @@ export function currentFootprintForwardExecutionBirthAllocationOutcome(options: 
 
 /** Retain the actual child before owner construction can throw. This is not an
  * adopted owner: no request has entered stdin, and close is observed directly. */
-function retainForwardExecutionBirthChild(allocation: ForwardExecutionBirthAllocation | PcbViaWriteAllocation | PcbViaSavedReadbackAllocation, child: ChildProcessWithoutNullStreams): void {
+function retainForwardExecutionBirthChild(allocation: ForwardExecutionBirthAllocation | ForwardExecutionHeldSavedAllocation | PcbViaWriteAllocation | PcbViaSavedReadbackAllocation, child: ChildProcessWithoutNullStreams): void {
   if (allocation.state !== "unresolved" || allocation.owner !== null || allocation.child !== null) { throw error("FORWARD_EXECUTION_CHILD_CUSTODY"); }
   const closed = Promise.withResolvers<true>();
   const observation = { closed: false, code: null as number | null, signal: null as NodeJS.Signals | null, error: null as Error | null };
@@ -8052,7 +8083,7 @@ function retainForwardExecutionBirthChild(allocation: ForwardExecutionBirthAlloc
 
 /** An ownerless constructor failure may end only its original never-written
  * stdin once. Deadline expiry retains that child and its late close observer. */
-async function closeForwardExecutionOwnerlessBirth(allocation: ForwardExecutionBirthAllocation | PcbViaWriteAllocation | PcbViaSavedReadbackAllocation): Promise<void> {
+async function closeForwardExecutionOwnerlessBirth(allocation: ForwardExecutionBirthAllocation | ForwardExecutionHeldSavedAllocation | PcbViaWriteAllocation | PcbViaSavedReadbackAllocation): Promise<void> {
   const held = allocation.child;
   if (held === null || allocation.owner !== null || allocation.eofAttempted) { throw error("FORWARD_EXECUTION_OWNERLESS_EOF_REFUSED"); }
   allocation.eofAttempted = true;
@@ -8064,6 +8095,75 @@ async function closeForwardExecutionOwnerlessBirth(allocation: ForwardExecutionB
     const closed = (async (): Promise<true> => { await held.closed.promise; return true; })();
     if (!await Promise.race([closed, expired.promise])) { throw error("FORWARD_EXECUTION_OWNERLESS_CHILD_RETAINED"); }
   } finally { clearTimeout(timer); }
+}
+function requireForwardExecutionHeldSavedHandoff(token: object): ForwardExecutionHeldSavedAllocation {
+  if (token === null || typeof token !== "object" || types.isProxy(token)) { throw error("FORWARD_HELD_SAVED_HANDOFF"); }
+  const held = forwardExecutionHeldSavedHandoffs.get(token);
+  if (held === undefined || held.token !== token || forwardExecutionHeldSavedAllocations.get(held.writer) !== held ||
+    footprintForwardExecutionFactoryOptions.get(held.writer) !== held.options) { throw error("FORWARD_HELD_SAVED_HANDOFF"); }
+  assertOriginalCurrentFootprintForwardExecutionNativeOwner(held.writer);
+  requireCurrentFootprintForwardExecutionClosedSnapshot(held.writer, held.after);
+  const status = held.writer.status();
+  if (!status.released || !status.helperClosed) { throw error("FORWARD_HELD_SAVED_PREDECESSOR_RELEASE_REQUIRED"); } return held;
+}
+/** Join the saved projection to this original writer's exact sealed plan and
+ * closed source reader before a fresh generation may select its copied UUID. */
+export function requireOriginalCurrentFootprintForwardSavedProjection(writer: CurrentFootprintForwardExecutionNativeOwner,
+  projection: CurrentFootprintCopyV2SavedProjection, after: Awaited<ReturnType<typeof readExactSqlInventory>>): void {
+  assertOriginalCurrentFootprintForwardExecutionNativeOwner(writer);
+  const saved = currentFootprintCopyV2SavedSqlSource(projection), sealed = writer.originalFootprintForwardExecutionSource();
+  requireCurrentFootprintForwardExecutionClosedSnapshot(writer, after);
+  if (saved.source.copyPlan !== sealed.owned.copyPlan || saved.after !== after || saved.before !== sealed.owned.before) { throw error("FORWARD_SAVED_ORIGINAL_PROJECTION"); }
+}
+/** Require the exact newly allocated readonly successor, not matching data or
+ * a legacy held owner created from another predecessor. Survives its cleanup. */
+export function requireOriginalCurrentFootprintForwardHeldSavedOwner(owner: CurrentFootprintCopyHeldSavedNativeOwner,
+  writer: CurrentFootprintForwardExecutionNativeOwner, after: Awaited<ReturnType<typeof readExactSqlInventory>>): void {
+  assertOriginalCurrentFootprintCopyHeldSavedNativeOwner(owner);
+  const held = forwardExecutionHeldSavedOwners.get(owner);
+  if (held === undefined || held.owner !== owner || held.writer !== writer || held.after !== after || requireForwardExecutionHeldSavedHandoff(held.token) !== held) { throw error("FORWARD_HELD_SAVED_ORIGINAL_OWNER"); }
+}
+/** Fresh readonly successor from the original v2 closed bytes. No supplied
+ * options, paths, native IDs, previous owner upgrade or copy grant is accepted. */
+export async function startCurrentFootprintForwardHeldSavedNativeOwner(writer: CurrentFootprintForwardExecutionNativeOwner,
+  after: Awaited<ReturnType<typeof readExactSqlInventory>>): Promise<CurrentFootprintCopyHeldSavedNativeOwner> {
+  assertOriginalCurrentFootprintForwardExecutionNativeOwner(writer);
+  requireCurrentFootprintForwardExecutionClosedSnapshot(writer, after);
+  const options = footprintForwardExecutionFactoryOptions.get(writer), status = writer.status();
+  if (options === undefined || !status.released || !status.helperClosed) { throw error("FORWARD_HELD_SAVED_PREDECESSOR_RELEASE_REQUIRED"); }
+  if (savedSuccessorAttempts.has(writer) || forwardExecutionHeldSavedAllocations.has(writer)) { throw error("FORWARD_HELD_SAVED_ALLOCATION_CONSUMED"); }
+  const token = Object.freeze({});
+  const allocation: ForwardExecutionHeldSavedAllocation = { writer, after, options, token,
+    state: "pending", owner: null, child: null, eofAttempted: false, cleanupFailure: null };
+  savedSuccessorAttempts.add(writer); forwardExecutionHeldSavedAllocations.set(writer, allocation); forwardExecutionHeldSavedHandoffs.set(token, allocation);
+  try {
+    const owner = await startFixedOwner(options, "worker-startup-footprint-held-saved209", "209-startup", undefined, token);
+    if (!(owner instanceof CurrentFootprintCopyHeldSavedNativeOwner) || allocation.owner !== owner) { throw error("FORWARD_HELD_SAVED_FACTORY"); }
+    owner.bindFootprintForwardHeldSavedSource(token); requireOriginalCurrentFootprintForwardHeldSavedOwner(owner, writer, after); return owner;
+  } catch (caughtError) {
+    if (allocation.state === "pending") { allocation.state = "no-resource"; }
+    if (allocation.owner === null && allocation.child !== null) {
+      try { await closeForwardExecutionOwnerlessBirth(allocation); } catch (cleanupError) { allocation.cleanupFailure = cleanupError; }
+    } throw caughtError;
+  }
+}
+export function currentFootprintForwardHeldSavedAllocationOutcome(writer: CurrentFootprintForwardExecutionNativeOwner): Readonly<{
+  status: "not-attempted" | "pending" | "no-resource" | "unresolved"; owner: null;
+}> | Readonly<{ status: "retained"; owner: CurrentFootprintCopyHeldSavedNativeOwner }> | Readonly<{
+  status: "retained-before-owner" | "closed-before-owner"; owner: null; helperClosed: boolean; eofAttempted: boolean;
+  helperExitCode: number | null; helperExitSignal: NodeJS.Signals | null;
+}> {
+  assertOriginalCurrentFootprintForwardExecutionNativeOwner(writer);
+  const held = forwardExecutionHeldSavedAllocations.get(writer);
+  if (held === undefined) { return Object.freeze({ status: "not-attempted", owner: null }); }
+  requireForwardExecutionHeldSavedHandoff(held.token);
+  if (held.owner !== null) { requireOriginalCurrentFootprintForwardHeldSavedOwner(held.owner, writer, held.after); return Object.freeze({ status: "retained", owner: held.owner }); }
+  if (held.child !== null) {
+    const observed = held.child.observation;
+    return Object.freeze({ status: observed.closed ? "closed-before-owner" : "retained-before-owner", owner: null,
+      helperClosed: observed.closed, eofAttempted: held.eofAttempted, helperExitCode: observed.code, helperExitSignal: observed.signal });
+  }
+  return Object.freeze({ status: held.state === "retained" ? "unresolved" : held.state, owner: null });
 }
 /** The handoff selects original resources and closed SQL only. It never
  * proves a preceding write, replay exclusion or a saved result. */
@@ -8763,7 +8863,9 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   if ((componentPrepared !== null) !== (purpose === "pcb-component-spatial209")) { throw error("COMPONENT_ALLOCATION_PREPARED"); }
   if (componentPrepared !== null) { assertOriginalGeneratedComponentFixtureOpenCheckpoint(componentPrepared); }
   const sealedOptions = Object.freeze({ ...options });
-  const forwardSaved = forwardSavedHandoff === null ? null : requireForwardSavedObservationHandoff(forwardSavedHandoff);
+  const forwardHeldSaved = forwardSavedHandoff !== null && forwardExecutionHeldSavedHandoffs.has(forwardSavedHandoff) ? requireForwardExecutionHeldSavedHandoff(forwardSavedHandoff) : null;
+  const forwardSaved = forwardSavedHandoff === null || forwardHeldSaved !== null ? null : requireForwardSavedObservationHandoff(forwardSavedHandoff);
+  if (forwardHeldSaved !== null && (purpose !== "worker-startup-footprint-held-saved209" || generation !== "209-startup" || savedWriter !== undefined || forwardHeldSaved.options !== options)) { throw error("FORWARD_HELD_SAVED_ALLOCATION"); }
   if (forwardSaved !== null && (purpose !== "worker-startup-footprint-saved209" || generation !== "209-startup" || savedWriter !== undefined)) { throw error("FORWARD_SAVED_PURPOSE"); }
   const startup209 = purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-held-saved209" || purpose === "worker-startup-footprint-main209" || purpose === "footprint-head-age209" || bornFootprintTransport(purpose)) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
   if ((generation === "209-opening") !== (purpose === "diagnostic209") || (generation === "209-visual") !== (purpose === "visual209") ||
@@ -8858,7 +8960,8 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   const emptyAnchor = purpose === "worker-startup-empty209" ? new CurrentPcb209EmptyStartupBudgetAnchor() : null;
   const ratlineBudget = purpose === "worker-startup-ratline209" ? new CurrentPcb209RatlineBudget() : null;
   const continuationBudget = purpose === "worker-startup-ratline-continuation209" ? new CurrentPcb209RatlineContinuationBudget() : null;
-  if (forwardSavedHandoff !== null) {
+  if (forwardHeldSaved !== null) { requireForwardExecutionHeldSavedHandoff(forwardHeldSaved.token); forwardHeldSaved.state = "unresolved"; retainedOwners.add(forwardHeldSaved); }
+  if (forwardSavedHandoff !== null && forwardHeldSaved === null) {
     if (requireForwardSavedObservationHandoff(forwardSavedHandoff) !== forwardSaved || forwardSaved === null) { throw error("FORWARD_SAVED_HANDOFF"); }
     forwardSavedAllocationStates.set(forwardSaved.writer, "unresolved");
   }
@@ -8876,6 +8979,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
     ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded],
     { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
   if (forwardExecutionBirth !== null) { retainForwardExecutionBirthChild(forwardExecutionBirth, child); }
+  if (forwardHeldSaved !== null) { retainForwardExecutionBirthChild(forwardHeldSaved, child); }
   if (savedReadbackAllocation !== null) { retainForwardExecutionBirthChild(savedReadbackAllocation, child); }
   if (viaWriteAllocation !== null) { retainForwardExecutionBirthChild(viaWriteAllocation, child); }
   if (schematicDisplayAllocation !== null) { retainForwardExecutionBirthChild(schematicDisplayAllocation, child); }
@@ -8904,7 +9008,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE) {
     if (actorClockSource === null || readyChallenge === null || forwardExecutionBirth === null) { throw error("FORWARD_EXECUTION_FACTORY_PROFILE"); }
     owner = new CurrentFootprintForwardExecutionNativeOwner(child, verify, actorClockSource, installation, verifyInstallation, verifyStartupFacade, readyChallenge);
-    footprintForwardExecutionFactories.set(owner, installation);
+    footprintForwardExecutionFactories.set(owner, installation); footprintForwardExecutionFactoryOptions.set(owner, sealedOptions);
     forwardExecutionBirth.owner = owner; forwardExecutionBirth.state = "retained";
   }
   else if (purpose === CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE) {
@@ -8928,7 +9032,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
     owner = new CurrentFootprintMainNativeOwner(child, verify, actorClockSource, installation, verifyInstallation, verifyStartupFacade);
   }
   else if (purpose === "worker-startup-footprint-held-saved209") {
-    if (actorClockSource === null || savedWriter === undefined) { throw error("HELD_SAVED_FACTORY_PROFILE"); }
+    if (actorClockSource === null || savedWriter === undefined && forwardHeldSaved === null) { throw error("HELD_SAVED_FACTORY_PROFILE"); }
     owner = new CurrentFootprintCopyHeldSavedNativeOwner(child, verify, actorClockSource, installation, verifyInstallation, verifyStartupFacade);
   }
   else if (purpose === "worker-startup-footprint-saved209") {
@@ -8962,8 +9066,12 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
     footprintFactories.set(owner, Object.freeze({ options: sealedOptions, installation }));
   }
   if (owner instanceof CurrentFootprintCopyHeldSavedNativeOwner) {
-    if (savedWriter === undefined) { throw error("HELD_SAVED_WRITER_REQUIRED"); }
-    heldSavedAllocations.set(savedWriter, owner);
+    if (forwardHeldSaved === null) {
+      if (savedWriter === undefined) { throw error("HELD_SAVED_WRITER_REQUIRED"); }
+      heldSavedAllocations.set(savedWriter, owner);
+    } else {
+      forwardHeldSaved.owner = owner; forwardHeldSaved.state = "retained"; forwardExecutionHeldSavedOwners.set(owner, forwardHeldSaved);
+    }
   } else if (owner instanceof CurrentFootprintCopySavedNativeOwner) {
     if (savedWriter === undefined) { throw error("FOOTPRINT_SAVED_WRITER_REQUIRED"); }
     footprintSavedAllocations.set(savedWriter, owner);

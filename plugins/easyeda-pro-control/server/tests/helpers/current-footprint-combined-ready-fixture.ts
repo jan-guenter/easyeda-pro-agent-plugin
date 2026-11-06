@@ -14,12 +14,12 @@ import { transform } from "esbuild";
 import { CURRENT_FOOTPRINT_COMBINED_READY, decodeCurrentFootprintCombinedReady } from "../../src/current-footprint-combined-ready.ts";
 import type { CurrentFootprintCopyWindowsClockIssuer } from "../../src/current-footprint-copy-windows-clock.ts";
 import type { CurrentPcbDiagnosticInstallationOptions } from "../../src/current-pcb-diagnostic-installation.ts";
-import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintCopyForwardNativeOwner, CurrentFootprintCopyForwardSavedNativeOwner, CurrentFootprintCopyNativeTarget, CurrentFootprintForwardExecutionNativeOwner, assertOriginalCurrentFootprintCopyForwardNativeOwner,
+import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintCopyForwardNativeOwner, CurrentFootprintCopyForwardSavedNativeOwner, CurrentFootprintCopyHeldSavedNativeOwner, CurrentFootprintCopyNativeTarget, CurrentFootprintForwardExecutionNativeOwner, assertOriginalCurrentFootprintCopyForwardNativeOwner,
   assertOriginalCurrentFootprintCopyForwardSavedNativeOwner, assertOriginalCurrentFootprintForwardExecutionNativeOwner, currentFootprintCombinedFactoryFailureDiagnostics,
   currentFootprintCopyForwardFactoryFailureDiagnostics, currentFootprintCopyForwardSavedObservationAllocationOutcome,
-  currentFootprintForwardExecutionBirthAllocationOutcome, currentFootprintForwardExecutionBirthFailureDiagnostics,
+  currentFootprintForwardExecutionBirthAllocationOutcome, currentFootprintForwardExecutionBirthFailureDiagnostics, currentFootprintForwardHeldSavedAllocationOutcome,
   currentProjectStructureFactoryFailureDiagnostics, requireCurrentFootprintCombinedUnlaunchedFactoryFailure, requireCurrentFootprintCopyForwardUnlaunchedFactoryFailure,
-  requireCurrentFootprintForwardExecutionInputs, startCurrentFootprintCopySavedNativeOwner, startCurrentProjectStructureNativeOwner } from "../../src/current-pcb-diagnostic-owner.ts";
+  requireCurrentFootprintForwardExecutionInputs, requireOriginalCurrentFootprintForwardHeldSavedOwner, startCurrentFootprintCopyHeldSavedNativeOwner, startCurrentFootprintCopySavedNativeOwner, startCurrentFootprintForwardHeldSavedNativeOwner, startCurrentProjectStructureNativeOwner } from "../../src/current-pcb-diagnostic-owner.ts";
 
 type Mode = "ready" | "stderr-close" | "malformed" | "wrong-challenge" | "oversize-no-newline" | "stderr-delayed-close" | "resource-traffic" | "saved-admission-failure" | "saved-spawn-refusal" | "execution-inputs";
 export interface SyntheticForwardFactoryOwner extends CurrentFootprintCopyForwardNativeOwner {
@@ -41,6 +41,7 @@ export interface SyntheticForwardExecutionFactoryOwner extends CurrentFootprintF
   syntheticForwardMainUiForTest: (opening: object, result: object) => void;
 }
 interface Module {
+  readonly CurrentFootprintCopyHeldSavedNativeOwner: typeof CurrentFootprintCopyHeldSavedNativeOwner;
   readonly startCurrentProjectStructureNativeOwner: typeof startCurrentProjectStructureNativeOwner;
   readonly currentProjectStructureFactoryFailureDiagnostics: typeof currentProjectStructureFactoryFailureDiagnostics;
   readonly startCurrentFootprintCombinedNativeOwner: (options: CurrentPcbDiagnosticInstallationOptions) => Promise<CurrentFootprintCombinedNativeOwner>;
@@ -60,6 +61,10 @@ interface Module {
   readonly assertOriginalCurrentFootprintForwardExecutionNativeOwner: typeof assertOriginalCurrentFootprintForwardExecutionNativeOwner;
   readonly currentFootprintForwardExecutionBirthAllocationOutcome: typeof currentFootprintForwardExecutionBirthAllocationOutcome;
   readonly currentFootprintForwardExecutionBirthFailureDiagnostics: typeof currentFootprintForwardExecutionBirthFailureDiagnostics;
+  readonly startCurrentFootprintForwardHeldSavedNativeOwner: typeof startCurrentFootprintForwardHeldSavedNativeOwner;
+  readonly currentFootprintForwardHeldSavedAllocationOutcome: typeof currentFootprintForwardHeldSavedAllocationOutcome;
+  readonly requireOriginalCurrentFootprintForwardHeldSavedOwner: typeof requireOriginalCurrentFootprintForwardHeldSavedOwner;
+  readonly startCurrentFootprintCopyHeldSavedNativeOwner: typeof startCurrentFootprintCopyHeldSavedNativeOwner;
 }
 /** Exercise the real owner factories, private registries and transport counters
  * with synthetic installation/SQL seams and an inert Node child. Fixed modes
@@ -73,7 +78,7 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
   api: Module; options: CurrentPcbDiagnosticInstallationOptions; child: () => ChildProcessWithoutNullStreams;
   state: { writes: number; bytes: number; readySent: boolean; actions: string[] };
   executionInputs: Readonly<{ opening: object; result: object; preparation: object; owned: object; checkpoint: object; runtime: object; target: object; main: object }>;
-  seedSyntheticClosedSnapshot: (writer: SyntheticForwardFactoryOwner, after: object) => void;
+  seedSyntheticClosedSnapshot: (writer: SyntheticForwardFactoryOwner | SyntheticForwardExecutionFactoryOwner, after: object) => void;
 }>> {
   const path = new URL("../../src/current-pcb-diagnostic-owner.ts", import.meta.url);
   const actualRequire = createRequire(path);
@@ -88,7 +93,7 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
       "  public syntheticForwardRouteForTest(channel: object, opening: object, result: object): void { this.#binding={helperInstance:'b'.repeat(32),jobId:'c'.repeat(32),rootPid:123,rootCreated:'123456789012345'}; this.#stagedContext={script:()=>{throw new Error('SYNTHETIC_ROUTE_GATE_PASSED');}} as never;this.#startupChannel=channel as never;this.#startupHandoff={channel,dependency:{},opening:{}} as never;this.#footprintUiSource={} as never;this.#footprintUiRunner={} as never;this.#footprintUiPacket={} as never;this.#footprintUiOpening=opening as never;this.#footprintUiOpeningResult=result as never;this.#footprintUiReproofAttempted=true;this.#footprintUiAttempted=false;this.#footprintClockRegistrationAttempted=false;this.#footprintManagerAttempted=false; }\n" +
       "  public syntheticForwardFrameForTest(frame: Buffer): Promise<void> { return new Promise<void>((resolve,reject)=>{void this.#sendFrame(frame,cause=>{if(cause===undefined||cause===null){resolve();}else{reject(cause);}});}); }\n" +
       "  public syntheticClockIssuerForTest(issuer: CurrentFootprintCopyWindowsClockIssuer): void { this.#footprintWindowsClock=issuer; }\n" +
-      "  public syntheticForwardClosedSourceForTest(source: CurrentFootprintCopyNativeTarget): void { this.#footprintSourceBinding=source; this.#footprintSourceBindingText=canonicalJson({...source,before:undefined}); }\n  public status():");
+      "  public syntheticForwardClosedSourceForTest(source: CurrentFootprintCopyNativeTarget): void { this.#footprintSourceBinding=source; this.#footprintSourceBindingText=canonicalJson({...source,before:undefined});if(this.#purpose===CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE)this.#forwardExecutionSourceInputs={resources:forwardResourceBirths.get(this),binding:this.#binding} as never; }\n  public status():");
   }
   if (mode === "execution-inputs") {
     ownerSource = ownerSource.replace("  public status():", `  public syntheticForwardExecutionSetupForTest(target: object, main: object): void {
@@ -120,7 +125,7 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
   const installation = Object.freeze({ paths: { powershellExecutable: "synthetic-inert-node-only" },
     plan: { schema: "easyeda-pro-control.pcb-diagnostic-installation.v1", files: supplied.launchTarget === undefined ? [] : [{ ...supplied.launchTarget, bytes: 1 }] }, facadeSha256: "a".repeat(64) });
   let original: ChildProcessWithoutNullStreams | null = null;
-  let selectedAfter: object | null = null, selectedWriter: SyntheticForwardFactoryOwner | null = null;
+  let selectedAfter: object | null = null, selectedWriter: SyntheticForwardFactoryOwner | SyntheticForwardExecutionFactoryOwner | null = null;
   const checkpoint = Object.freeze({ sourceSha256: "d".repeat(64) });
   const state: { writes: number; bytes: number; readySent: boolean; actions: string[] } = { writes: 0, bytes: 0, readySent: false, actions: [] };
   const executionCheckpoint = Object.freeze({ source: "/mnt/c/Synthetic/validation.eprj2", receiptPath: "/synthetic/receipt.json",
@@ -193,6 +198,9 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
         assert.ok(selectedWriter !== null); assert.equal(writer, selectedWriter); assert.equal(after, selectedAfter);
         return Object.freeze({ checkpoint });
       },
+      requireCurrentFootprintForwardExecutionClosedSnapshot: (writer: unknown, after: unknown): object => {
+        assert.ok(selectedWriter !== null); assert.equal(writer, selectedWriter); assert.equal(after, selectedAfter); return Object.freeze({ checkpoint });
+      },
       captureCurrentFootprintCopyClosedSnapshot: (): never => { throw new Error("Synthetic SQL capture is not implemented"); },
     }; }
     if (name === "./current-pcb-209-actor-clock-source.ts") { return { requireCurrentPcb209ActorClockSourceQualification: (value: unknown): void => { assert.equal(value, sourceOnly); } }; }
@@ -203,7 +211,7 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
       assert.equal(executable, "synthetic-inert-node-only");
       assert.ok(Array.isArray(args)); const encoded: unknown = args.at(-1); assert.equal(typeof encoded, "string"); assert.ok(typeof encoded === "string");
       const bootstrap = Buffer.from(encoded, "base64").toString("utf16le"), match = / -CombinedReadyChallenge '([a-f0-9]{32})'/u.exec(bootstrap);
-      const saved = bootstrap.includes(" -WorkerStartupFootprintSaved209");
+      const saved = bootstrap.includes(" -WorkerStartupFootprintSaved209") || bootstrap.includes(" -WorkerStartupFootprintHeldSaved209");
       if (saved) { assert.equal(savedObservation, true); assert.ok(original !== null); assert.equal(original.exitCode, 0); assert.equal(match, null); }
       else { assert.equal(original, null); assert.ok(match?.[1] !== undefined); }
       assert.equal(bootstrap.includes(" -WorkerStartupFootprintForward209 "), !saved && purpose === "forward");
@@ -248,7 +256,9 @@ input.on('close',()=>{if(mode==='stderr-delayed-close')setTimeout(()=>process.ex
   /* oxlint-enable typescript/no-unsafe-type-assertion */
   return { api, options, state, executionInputs, child: (): ChildProcessWithoutNullStreams => { assert.ok(original !== null); return original; },
     seedSyntheticClosedSnapshot: (writer, after): void => {
-      assert.equal(savedObservation, true); api.assertOriginalCurrentFootprintCopyForwardNativeOwner(writer);
+      assert.equal(savedObservation, true);
+      if (purpose === "forward-execution") { api.assertOriginalCurrentFootprintForwardExecutionNativeOwner(writer); }
+      else { api.assertOriginalCurrentFootprintCopyForwardNativeOwner(writer); }
       selectedWriter = writer; selectedAfter = after;
       const source = Object.freeze({ operationId: "footprint-copy-synthetic", source: "/synthetic-unused/validation.eprj2", checkpoint, before: after,
         target: Object.freeze({ rawWindowsPath: "C:\\Synthetic\\validation.eprj2", projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16), expectedSourceSha256: "d".repeat(64) }),

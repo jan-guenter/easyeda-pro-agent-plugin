@@ -18,11 +18,12 @@ import { requireCurrentFootprintCopyClockRpcOrigin } from "./current-footprint-c
 import type { CurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
 import { requireCurrentFootprintCopyCreateClockChannelRoute } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentFootprintCopyCreateClockChannelRoute, CurrentFootprintCopyPendingCreate } from "./current-pcb-worker-startup-channel.ts";
-import { requireCurrentFootprintForwardExecutionPairedCopy, requireCurrentFootprintForwardExecutionPairedSchedule, requireRetainedCurrentFootprintForwardPairedSchedule } from "./current-footprint-forward-execution-main-capability.ts";
+import { requireCurrentFootprintForwardExecutionMainNativeOwner, requireCurrentFootprintForwardExecutionPairedCopy, requireCurrentFootprintForwardExecutionPairedSchedule, requireRetainedCurrentFootprintForwardPairedSchedule } from "./current-footprint-forward-execution-main-capability.ts";
 import type { CurrentFootprintForwardExecutionMainCapability } from "./current-footprint-forward-execution-main-capability.ts";
 import { isCurrentFootprintCopyMainRequestReservation, requireCurrentFootprintCopyMainRequestReservationCopy, requireOriginalCurrentFootprintCopyMainRequestReservationCopy } from "./current-footprint-copy-main-request-plan.ts";
 import type { CurrentFootprintCopyMainRequestReservation } from "./current-footprint-copy-main-request-plan.ts";
 import type { CurrentFootprintCopyV2Plan } from "./current-footprint-copy-v2-plan.ts";
+import type { CurrentFootprintForwardExecutionNativeOwner } from "./current-pcb-diagnostic-owner.ts";
 
 type Phase = "ready" | "main-armed" | "clocks-bound" | "clocks-armed" | "create-written" | "clocks-retired" | "main-completed" | "complete" | "failed" | "ended";
 /* oxlint-disable typescript/unbound-method -- Captured class methods are invoked only with the original private-field receiver, preventing supplied method overrides. */
@@ -189,6 +190,17 @@ export class CurrentFootprintForwardExecutionPairedScheduler {
       packet.clocks === this.#clocks && packet.main === this.#mainPacket &&
       (this.#phase === "complete" || this.#phase === "ended"), "ORIGINAL_RESULT");
   }
+  /** Historical binding for the next fresh saved generation. Actual original
+   * root/Job exit is required; a matching copied packet or plan cannot pass. */
+  public requireOriginalSavedContinuation(packet: CurrentFootprintForwardExecutionPairedObservation,
+    owner: CurrentFootprintForwardExecutionNativeOwner): Readonly<{ copyPlan: CurrentFootprintCopyV2Plan; paired: CurrentFootprintForwardExecutionPairedObservation }> {
+    // oxlint-disable-next-line eslint/no-use-before-define -- Capture these genuine private-field class methods after the class definition; runtime lookup occurs only after module initialization.
+    savedContinuationMethods.requireResult.call(this, packet);
+    need(this.#executionCopy !== null && this.#mainReleased && this.#createDispatchAttempted && this.#pending !== null &&
+      requireCurrentFootprintForwardExecutionMainNativeOwner(this.#capability, this.#backend, "exited") === owner &&
+      owner.requireOriginalForwardExecutionMainRunner(this.#backend, "exited"), "ORIGINAL_CLOSED_SAVED_CONTINUATION");
+    return Object.freeze({ copyPlan: this.#executionCopy, paired: packet });
+  }
   /** Success already retired both sequencers. Failure or an armed/pending
    * schedule needs actual original root/Job exit; it is never resumed here. */
   public requireQuiescentClose(): void {
@@ -230,4 +242,16 @@ export class CurrentFootprintForwardExecutionPairedScheduler {
       executionCopyBound: this.#executionCopy !== null, originalResultRetained: this.#packet !== null,
       writerPurposeMounted: false, wholeWriterBudgetReserved: false, executionAuthorized: false });
   }
+}
+
+/* oxlint-disable typescript/unbound-method -- Call only on the original sequencer selected by its private issued packet registry. */
+const savedContinuationMethods = Object.freeze({ requireResult: CurrentFootprintForwardExecutionPairedScheduler.prototype.requireOriginalResult,
+  saved: CurrentFootprintForwardExecutionPairedScheduler.prototype.requireOriginalSavedContinuation });
+/* oxlint-enable typescript/unbound-method */
+/** Resolve only the actual original paired sequencer's retained completion.
+ * This joins historical create/clock/main provenance, never a new native lease. */
+export function requireOriginalCurrentFootprintForwardSavedContinuation(packet: CurrentFootprintForwardExecutionPairedObservation,
+  owner: CurrentFootprintForwardExecutionNativeOwner): Readonly<{ copyPlan: CurrentFootprintCopyV2Plan; paired: CurrentFootprintForwardExecutionPairedObservation }> {
+  const scheduler = issued.get(packet); need(scheduler !== undefined, "ORIGINAL_CLOSED_SAVED_CONTINUATION");
+  return savedContinuationMethods.saved.call(scheduler, packet, owner);
 }

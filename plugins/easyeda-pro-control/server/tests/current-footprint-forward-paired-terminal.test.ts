@@ -20,7 +20,7 @@ void test("v2 joins its original create through retained custody after actual ma
   const workerLease = Object.freeze({});
   const pending = Object.freeze({});
   const clocks = Object.freeze({});
-  const mainPacket = Object.freeze({}); let retainedChecks = 0;
+  const mainPacket = Object.freeze({}); let ended = false, retainedChecks = 0;
   class Backend {
     #released = false;
     public requireForwardExecutionRequestOrigin(cap: unknown, origin: unknown): void { assert.equal(cap, capability); assert.equal(origin, mainOrigin); assert.equal(this.#released, false); }
@@ -61,6 +61,7 @@ void test("v2 joins its original create through retained custody after actual ma
     public diagnostics(): Readonly<{ phase: string }> { return { phase: this.#phase }; }
   }
   const backend = new Backend();
+  const nativeOwner = Object.freeze({ requireOriginalForwardExecutionMainRunner: (value: unknown, mode: unknown): boolean => { assert.equal(value, backend); assert.equal(mode, "exited"); return ended; } });
   const allocation = new Allocation();
   const route = Object.freeze({ dispatchCreate: (): Promise<object> => { calls.push("create"); return Promise.resolve(pending); },
     joinCreate: (value: unknown): Promise<string> => { assert.equal(value, pending); calls.push("create-join"); return Promise.resolve("synthetic-original-create"); }, fail: (): void => { calls.push("fail"); } });
@@ -77,6 +78,7 @@ void test("v2 joins its original create through retained custody after actual ma
       requireCurrentFootprintCopyAllocationCopyPlan: (value: unknown, origin: unknown, plan: unknown, invocation: unknown): void => { assert.equal(value, allocation); assert.equal(origin, clockOrigin); assert.equal(plan, copy); assert.equal(invocation, binding.invocationBinding); } },
     "./current-pcb-worker-startup-channel.ts": { requireCurrentFootprintCopyCreateClockChannelRoute: (value: unknown): object => { assert.equal(value, route); return binding; } },
     "./current-footprint-forward-execution-main-capability.ts": {
+      requireCurrentFootprintForwardExecutionMainNativeOwner: (cap: unknown, value: unknown, mode: unknown): object => { assert.equal(cap, capability); assert.equal(value, backend); assert.equal(mode, "exited"); return nativeOwner; },
       requireCurrentFootprintForwardExecutionPairedCopy: (): object => copy,
       requireCurrentFootprintForwardExecutionPairedSchedule: (): void => { assert.equal(backend.released(), false, "released main cannot regain normal admission"); },
       requireRetainedCurrentFootprintForwardPairedSchedule: (): void => { assert.equal(backend.released(), true); retainedChecks += 1; },
@@ -103,4 +105,15 @@ void test("v2 joins its original create through retained custody after actual ma
   assert.equal(packet.profile, "private.current-footprint-forward-paired-observation.v2"); assert.equal(packet.executionAuthorized, false); assert.equal(packet.fullQualificationVerified, false);
   assert.ok(retainedChecks >= 2); assert.ok(calls.indexOf("clock-cleanup") < calls.indexOf("main-held")); assert.ok(calls.indexOf("main-release") < calls.indexOf("create-join"));
   assert.throws(() => { scheduler.requireOriginalResult(structuredClone(packet)); }, /ORIGINAL_RESULT/u); await assert.rejects(scheduler.dispatchCreate(), /PHASE/u);
+  const requireSaved = loaded.exports["requireOriginalCurrentFootprintForwardSavedContinuation"]; assert.ok(typeof requireSaved === "function");
+  assert.throws(() => Reflect.apply(requireSaved, undefined, [packet, nativeOwner]), /CLOSED_SAVED_CONTINUATION/u);
+  ended = true;
+  const historical: unknown = Reflect.apply(requireSaved, undefined, [packet, nativeOwner]); assert.ok(historical !== null && typeof historical === "object");
+  assert.equal(Reflect.get(historical, "copyPlan"), copy); assert.equal(Reflect.get(historical, "paired"), packet);
+  assert.throws(() => Reflect.apply(requireSaved, undefined, [{ ...packet }, nativeOwner]), /CLOSED_SAVED_CONTINUATION/u);
+  assert.throws(() => Reflect.apply(requireSaved, undefined, [packet, {}]), /CLOSED_SAVED_CONTINUATION/u);
+  Reflect.set(scheduler, "requireOriginalSavedContinuation", (): never => { throw new Error("substituted own getter"); });
+  Reflect.set(scheduler, "requireOriginalResult", (): never => { throw new Error("substituted own check"); });
+  const retained: unknown = Reflect.apply(requireSaved, undefined, [packet, nativeOwner]); assert.ok(retained !== null && typeof retained === "object");
+  assert.equal(Reflect.get(retained, "paired"), packet);
 });
