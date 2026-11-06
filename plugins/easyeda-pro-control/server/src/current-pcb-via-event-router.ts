@@ -40,7 +40,7 @@ export class CurrentPcbViaEventRouter {
   }
   public register(lane: CurrentPcbViaEventLane, input: CurrentPcbViaEventPoint): void {
     need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure")); const point = Object.freeze(pointSchema.parse(captureCurrentPcbStringClockReply(input).value));
-    need((point.sessionId === this.#bindings.workerSessionId || lane === "clock" && point.sessionId === this.#bindings.uiSessionId) && this.#points.size < 17);
+    need((point.sessionId === this.#bindings.workerSessionId || lane === "clock" && point.sessionId === this.#bindings.uiSessionId) && this.#points.size < 23);
     const key = `${point.sessionId}\0${point.breakpointId}`;
     need(!this.#points.has(key) && ![...this.#points.values()].some(value => value.point.sessionId === point.sessionId && value.point.scriptId === point.scriptId &&
       value.point.lineNumber === point.lineNumber && value.point.columnNumber === point.columnNumber));

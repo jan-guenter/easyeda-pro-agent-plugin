@@ -12,7 +12,8 @@ export interface CurrentProjectSaveStructureBindings {
   readonly sessionId: string; readonly scriptId: string; readonly uniqueContextId: string;
   readonly prepared: GeneratedFixtureOpenCheckpoint | GeneratedSchematicFixtureOpenCheckpoint;
   readonly request: (command: CurrentProjectSaveStructureCommand, cleanup: boolean, retainAllocationReply?: (reply: unknown) => void) => Promise<unknown>;
-  /** One original controller router lane. It waits the same retained source
+  /** One original controller router lane for the seven producer constructor
+   * captures, pre-EP bootstrap and later held structure publication. It waits the same retained source
    * resume Promise before reading; it never starts another native event poll. */
   readonly nextEvent: () => Promise<CurrentProjectSaveStructureEvent>;
   readonly assertCurrent: () => Promise<void>; readonly assertOperationPending: () => void;

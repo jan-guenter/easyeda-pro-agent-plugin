@@ -1,12 +1,21 @@
 /** Complete current209 worker source and actual fixed breakpoint coordinates.
  * These inert checks establish neither native birth nor queue ownership. */
 import { createHash } from "node:crypto";
-import { CURRENT_PCB_209_WORKER_STARTUP_SOURCE } from "./current-pcb-209-worker-startup-profile.ts";
+import { CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES as CONSTRUCTORS, CURRENT_PCB_209_WORKER_STARTUP_SOURCE } from "./current-pcb-209-worker-startup-profile.ts";
 import { CURRENT_PROJECT_STRUCTURE_WORKER_SITES } from "./current-project-structure-worker-profile.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_PROJECT_SAVE_STRUCTURE_SOURCE = CURRENT_PCB_209_WORKER_STARTUP_SOURCE;
+export const CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS = Object.freeze(["producerUpload", "producerBase", "producerCooperation", "producerSerial", "producerDebounce", "producerProject"] as const);
+export const CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE = Object.freeze(["producerUpload", "producerBase", "producerCooperation", "producerSerial", "producerDebounce", "producerSerial", "producerProject"] as const);
 export const CURRENT_PROJECT_SAVE_STRUCTURE_SITES = freezeDeep({
+  producerUpload: { ...CONSTRUCTORS.upload, expression: "[t,s]", length: 2 },
+  producerBase: { ...CONSTRUCTORS.base, expression: "[this]", length: 1 },
+  producerCooperation: { ...CONSTRUCTORS.cooperation, expression: "[e,t]", length: 2 },
+  producerSerial: { ...CONSTRUCTORS.serial, expression: "[e]", length: 1 },
+  producerDebounce: { ...CONSTRUCTORS.debounce, expression: "[e,t]", length: 2 },
+  producerProject: { ...CONSTRUCTORS.project, expression: "[this]", length: 1 },
+  producerCaller: { lineNumber: 0, columnNumber: 0, offset: 0, expression: "[this]", length: 1 },
   bootstrap: { lineNumber: 110, columnNumber: 162_932, offset: 2_177_142, expression: "[TP,Nb]", length: 2 },
   packet: { ...CURRENT_PROJECT_STRUCTURE_WORKER_SITES.packet, expression: "[this,p,r]", length: 3 },
   response: { ...CURRENT_PROJECT_STRUCTURE_WORKER_SITES.response, expression: "[this,p,r,d]", length: 4 },
@@ -33,7 +42,7 @@ export function qualifyCurrentProjectSaveStructureSource(input: unknown): void {
     const offset = lines.slice(0, site.lineNumber).reduce((sum, line) => sum + line.length + 1, 0) + site.columnNumber;
     if (offset !== site.offset) { throw new Error("PROJECT_SAVE_STRUCTURE_SOURCE_LOCATION"); }
   }
-  for (const method of Object.values(CURRENT_PROJECT_SAVE_STRUCTURE_METADATA_METHODS)) {
+  for (const method of [...Object.values(CURRENT_PROJECT_SAVE_STRUCTURE_METADATA_METHODS), ...Object.values(CONSTRUCTORS).filter(site => "start" in site)]) {
     const text = input.slice(method.start, method.end); if (Buffer.byteLength(text) !== method.bytes || createHash("sha256").update(text).digest("hex") !== method.sha256) { throw new Error("PROJECT_SAVE_STRUCTURE_METADATA_SOURCE"); }
   }
 }

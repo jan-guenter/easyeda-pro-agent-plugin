@@ -3,33 +3,33 @@
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_CALLS as CALLS } from "./current-project-save-structure-programs.ts";
-import { CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES } from "./current-project-save-structure-source.ts";
+import { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES } from "./current-project-save-structure-source.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export { CURRENT_PROJECT_SAVE_STRUCTURE_CALLS } from "./current-project-save-structure-programs.ts";
-export { CURRENT_PROJECT_SAVE_STRUCTURE_SITES, qualifyCurrentProjectSaveStructureSource } from "./current-project-save-structure-source.ts";
+export { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES, qualifyCurrentProjectSaveStructureSource } from "./current-project-save-structure-source.ts";
 export type { CurrentProjectSaveStructureSite } from "./current-project-save-structure-source.ts";
 
 export const CURRENT_PROJECT_SAVE_STRUCTURE_GROUP = "easyeda-pro-control-project-save-structure209-v1";
-/** Actual observer sequence: source+six arms7; bootstrap/qualified fresh
- * closures/pristine/resume23; held packet/timer-frame join23; admitted packet resume1;
- * response26; callback/task return13; two initial Nd finalizers11; final
- * Promise reproofs2. Twelve exact lane events are separate retained router
- * reads. Cleanup removes six original IDs and one group, with no resume. */
-export const CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS = Object.freeze({ normal: 7 + 23 + 23 + 1 + 26 + 13 + 11 + 2, cleanup: 6 + 1, cdpRequests: 113, events: 12, total: 125 });
+/** Original sequence adds six arms, seven constructor captures/resumes and
+ * exact callback/receiver/current-wrapper/cold-state joins before EP. Source
+ * constructor resumes are the only new pre-Save continuations. The positive
+ * fixed sequence exercises this complete reservation; events are separate. */
+export const CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS = Object.freeze({ normal: 106 + 6 + 42 + 15, cleanup: 12 + 1, cdpRequests: 182, events: 26, total: 208 });
 const GROUP = CURRENT_PROJECT_SAVE_STRUCTURE_GROUP;
 export const CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS = Object.freeze({ objectGroup: GROUP, silent: true, returnByValue: false, generatePreview: false,
   throwOnSideEffect: true, includeCommandLineAPI: false } as const);
 export const CURRENT_PROJECT_SAVE_STRUCTURE_CALL_FLAGS = Object.freeze({ objectGroup: GROUP, silent: true, generatePreview: false,
   throwOnSideEffect: true, awaitPromise: false, userGesture: false } as const);
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u), object = z.strictObject({ objectId: handle });
-const roles = ["bootstrap", "packet", "response", "callbackReturn", "initialFinally", "queuedFinally"] as const;
-const frameRoles = [...roles, "timer"] as const;
+const roles = [...CONSTRUCTORS, "bootstrap", "packet", "response", "callbackReturn", "initialFinally", "queuedFinally"] as const;
+const frameRoles = [...roles, "timer", "producerCaller"] as const;
 const specs = { retain: [0, false], pristine: [7, true], serial: [1, false], debounce: [2, false], callbackKind: [2, true], packet: [2, false],
+  uploadSelect: [0, false], cooperationSelect: [0, false], uploadRelation: [3, true], cooperationRelation: [3, true], coldProject: [0, true], coldStream: [3, true], coldCooperation: [3, true],
   taskSet: [0, false], data: [0, false], taskRemoved: [2, true], same: [1, true], packetText: [0, true], success: [0, true], bootstrap: [0, false],
   callback: [0, false], taskExclusive: [2, true] } as const;
 const callFlags = { objectGroup: z.literal(GROUP), silent: z.literal(true), generatePreview: z.literal(false), throwOnSideEffect: z.literal(true), awaitPromise: z.literal(false), userGesture: z.literal(false) };
-const callRoles = ["retain", "pristine", "serial", "debounce", "callbackKind", "packet", "taskSet", "data", "taskRemoved", "same", "packetText", "success", "bootstrap", "callback", "taskExclusive"] as const;
+const callRoles = ["uploadSelect", "cooperationSelect", "uploadRelation", "cooperationRelation", "coldProject", "coldStream", "coldCooperation", "retain", "pristine", "serial", "debounce", "callbackKind", "packet", "taskSet", "data", "taskRemoved", "same", "packetText", "success", "bootstrap", "callback", "taskExclusive"] as const;
 const callSchemas = callRoles.map(role => z.strictObject({ phase: z.literal(`project-save-structure-${role}`), method: z.literal("Runtime.callFunctionOn"),
   params: z.strictObject({ ...callFlags, objectId: handle, functionDeclaration: z.literal(CALLS[role]), arguments: z.array(object).length(specs[role][0]), returnByValue: z.literal(specs[role][1]) }) }));
 const position = z.strictObject({ scriptId: handle, lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() });
@@ -61,7 +61,7 @@ export function currentProjectSaveStructureNativeCases(): readonly CurrentProjec
   for (const role of roles) { const site = SITES[role]; result.push(validateCurrentProjectSaveStructureCommand({ phase: "project-save-structure-arm", role, method: "Debugger.setBreakpoint",
     params: { location: { scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } } }), validateCurrentProjectSaveStructureCommand({ phase: "project-save-structure-frame", role,
     method: "Debugger.evaluateOnCallFrame", params: { ...CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS, callFrameId, expression: site.expression } })); }
-  result.push(validateCurrentProjectSaveStructureCommand({ phase: "project-save-structure-frame", role: "timer", method: "Debugger.evaluateOnCallFrame", params: { ...CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS, callFrameId, expression: SITES.timer.expression } }));
+  for (const role of ["timer", "producerCaller"] as const) { result.push(validateCurrentProjectSaveStructureCommand({ phase: "project-save-structure-frame", role, method: "Debugger.evaluateOnCallFrame", params: { ...CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS, callFrameId, expression: SITES[role].expression } })); }
   for (const role of callRoles) { result.push(validateCurrentProjectSaveStructureCommand({ phase: `project-save-structure-${role}`, method: "Runtime.callFunctionOn", params: {
     ...CURRENT_PROJECT_SAVE_STRUCTURE_CALL_FLAGS, objectId, functionDeclaration: CALLS[role], arguments: Array.from({ length: specs[role][0] }, (_, index) => ({ objectId: `structure_arg${String(index)}` })), returnByValue: specs[role][1] } })); }
   result.push({ phase: "project-save-structure-source", method: "Debugger.getScriptSource", params: { scriptId } },

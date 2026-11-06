@@ -1877,7 +1877,7 @@ class CurrentPcbRetainedOwnerCore {
             request: async (input: Parameters<CurrentProjectSaveStructureBindings["request"]>[0], cleanup: boolean, retain?: (reply: unknown) => void): Promise<unknown> => {
               const command = validateCurrentProjectSaveStructureCommand(input); original(); assertStructureOriginal();
               if (cleanup !== (command.phase === "project-save-structure-remove" || command.phase === "project-save-structure-release")) { throw error("PROJECT_SAVE_STRUCTURE_REQUEST_CLASS"); }
-              const historyGrant = command.phase === "project-save-structure-resume" && command.role !== "bootstrap" ? projectSaveStructureHistoryGrants.get(structureOrigin) : null;
+              const historyGrant = command.phase === "project-save-structure-resume" && command.role !== "bootstrap" && !command.role.startsWith("producer") ? projectSaveStructureHistoryGrants.get(structureOrigin) : null;
               if (historyGrant === undefined) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_REQUIRED"); }
               const assertHistory = (): void => { if (historyGrant !== null) { if (projectSaveStructureHistoryGrants.get(structureOrigin) !== historyGrant) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_CHANGED"); } historyGrant.assertCurrent(); } }; assertHistory();
               if (retain !== undefined && (typeof retain !== "function" || types.isProxy(retain))) { throw error("PROJECT_SAVE_STRUCTURE_RETAIN_CALLBACK"); }
@@ -2001,7 +2001,7 @@ class CurrentPcbRetainedOwnerCore {
             request: async (input: Parameters<CurrentProjectSaveStructureBindings["request"]>[0], cleanup: boolean, retain?: (reply: unknown) => void): Promise<unknown> => {
               const command = validateCurrentProjectSaveStructureCommand(input); original(); assertStructureOriginal();
               if (cleanup !== (command.phase === "project-save-structure-remove" || command.phase === "project-save-structure-release")) { throw error("PROJECT_SAVE_STRUCTURE_REQUEST_CLASS"); }
-              const historyGrant = command.phase === "project-save-structure-resume" && command.role !== "bootstrap" ? projectSaveStructureHistoryGrants.get(structureOrigin) : null;
+              const historyGrant = command.phase === "project-save-structure-resume" && command.role !== "bootstrap" && !command.role.startsWith("producer") ? projectSaveStructureHistoryGrants.get(structureOrigin) : null;
               if (historyGrant === undefined) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_REQUIRED"); }
               const assertHistory = (): void => { if (historyGrant !== null) { if (projectSaveStructureHistoryGrants.get(structureOrigin) !== historyGrant) { throw error("PROJECT_SAVE_STRUCTURE_HISTORY_COMPLETION_CHANGED"); } historyGrant.assertCurrent(); } }; assertHistory();
               if (retain !== undefined && (typeof retain !== "function" || types.isProxy(retain))) { throw error("PROJECT_SAVE_STRUCTURE_RETAIN_CALLBACK"); }

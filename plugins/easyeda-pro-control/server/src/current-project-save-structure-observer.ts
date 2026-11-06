@@ -10,8 +10,8 @@ import { decodeCurrentPcb209WorkerCallbackFunction, decodeCurrentPcb209WorkerCal
 import { captureCurrentProjectStructureCompletionReply } from "./current-project-structure-completion-protocol.ts";
 import { expectedCurrentGeneratedProjectSaveStructure } from "./current-project-save-structure-expectation.ts";
 import type { CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureEvent, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
-import { CURRENT_PROJECT_SAVE_STRUCTURE_CALLS as CALLS, CURRENT_PROJECT_SAVE_STRUCTURE_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS as FRAME_FLAGS,
-  CURRENT_PROJECT_SAVE_STRUCTURE_GROUP as GROUP, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES,
+import { CURRENT_PROJECT_SAVE_STRUCTURE_CALLS as CALLS, CURRENT_PROJECT_SAVE_STRUCTURE_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS as FRAME_FLAGS,
+  CURRENT_PROJECT_SAVE_STRUCTURE_GROUP as GROUP, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES,
   qualifyCurrentProjectSaveStructureSource, validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import type { CurrentProjectSaveStructureSite as Site } from "./current-project-save-structure-protocol.ts";
 
@@ -20,7 +20,8 @@ const remote = z.looseObject({ type: z.string(), subtype: z.string().optional(),
 const property = z.looseObject({ name: z.string(), value: remote.optional(), get: z.unknown().optional(), set: z.unknown().optional(), isOwn: z.literal(true) });
 const properties = z.looseObject({ result: z.array(property).max(64) });
 const position = z.strictObject({ scriptId: handle, lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() });
-const pauseSchema = z.looseObject({ reason: z.literal("other"), hitBreakpoints: z.tuple([handle]), callFrames: z.array(z.looseObject({ callFrameId: handle, location: position, functionLocation: position })).min(1).max(32) });
+const pausedFrame = z.looseObject({ callFrameId: handle, functionName: z.string().optional(), location: position, functionLocation: position });
+const pauseSchema = z.looseObject({ reason: z.literal("other"), hitBreakpoints: z.tuple([handle]), callFrames: z.array(pausedFrame).min(1).max(32) });
 const eventSchema = z.strictObject({ method: z.enum(["Debugger.paused", "Debugger.resumed"]), sessionId: handle, params: z.unknown() });
 const internal = z.strictObject({ name: z.string(), value: remote });
 const promiseProperties = z.looseObject({ internalProperties: z.array(internal).min(2).max(4) });
@@ -48,6 +49,15 @@ const bindingsSchema = z.custom<CurrentProjectSaveStructureBindings>(value => {
     if (index < 3) { return handle.safeParse(descriptor.value).success; } if (index === 3) { return descriptor.value !== null && typeof descriptor.value === "object"; }
     return typeof descriptor.value === "function" && !types.isProxy(descriptor.value); });
 });
+export interface CurrentProjectSaveProducerConstruction {
+  readonly profile: "private.current-project-save-producer-construction.v1";
+  readonly originalSevenConstructorContinuationsObserved: true;
+  readonly originalFourArrowReceiversAndCurrentWrappersJoined: true;
+  readonly originalBootstrapColdStateObserved: true;
+  readonly continuousProducerExclusionVerified: false;
+  readonly completeUploadFrontierVerified: false;
+  readonly executionAuthorized: false;
+}
 export interface CurrentProjectSaveStructurePacket { readonly profile: "private.current-project-save-structure-packet.v1" }
 export interface CurrentProjectSaveStructureCompletion {
   readonly profile: "private.current-project-save-structure-completion.v1";
@@ -71,6 +81,9 @@ export class CurrentProjectSaveStructureObserver {
   #cleanupUncertain = false;
   #error: unknown = null; #revocationError: unknown = null;
   #pause: Readonly<{ role: Site; frameId: string; callerFrameId: string | null; resumeAttempted: boolean }> | null = null;
+  #constructorProject: string | null = null;
+  readonly #constructorCallbacks = new Map<"upload" | "cooperation" | "uploadStructure" | "structure" | "debounce", string>();
+  #producerConstruction: CurrentProjectSaveProducerConstruction | null = null;
   #project: string | null = null; #uploadWrapper: string | null = null; #structureWrapper: string | null = null;
   #uploadCallback: string | null = null; #debounce: string | null = null; #structureCallback: string | null = null;
   #uploadPromise: string | null = null; #structurePromise: string | null = null; #resolver: string | null = null; #timer: number | null = null;
@@ -104,10 +117,10 @@ export class CurrentProjectSaveStructureObserver {
   async #array(raw: unknown, length: number): Promise<Map<string, z.infer<typeof remote>>> { const array = remoteResult(raw); need(array.type === "object" && array.className === "Array", "ARRAY");
     const fields = await this.#own(object(array)); need(fields.size === length + 1 && fields.get("length")?.value === length && Array.from({ length }, (_, index) => fields.has(String(index))).every(Boolean), "ARRAY_ROSTER"); return fields;
   }
-  async #true(role: "same" | "success" | "pristine" | "taskExclusive" | "taskRemoved", objectId: string, args: readonly string[] = []): Promise<void> {
+  async #true(role: "same" | "success" | "pristine" | "taskExclusive" | "taskRemoved" | "uploadRelation" | "cooperationRelation" | "coldProject" | "coldStream" | "coldCooperation", objectId: string, args: readonly string[] = []): Promise<void> {
     z.strictObject({ result: z.strictObject({ type: z.literal("boolean"), value: z.literal(true) }) }).parse(await this.#call(role, objectId, args));
   }
-  async #scope(functionId: string, kind: "serial" | "debounce"): Promise<readonly string[]> {
+  async #scope(functionId: string, kind: "serial" | "debounce" | "cooperation" | "upload"): Promise<readonly string[]> {
     const scopes = decodeCurrentPcb209WorkerProducerScopeList(await this.#properties(functionId), this.#binding.scriptId, kind);
     return decodeCurrentPcb209WorkerProducerScopes(await this.#properties(scopes), kind);
   }
@@ -127,18 +140,28 @@ export class CurrentProjectSaveStructureObserver {
     need(frame !== undefined && frame.location.scriptId === this.#binding.scriptId && frame.location.lineNumber === site.lineNumber && frame.location.columnNumber === site.columnNumber, "EXACT_PAUSE");
     let callerFrameId: string | null = null;
     if (role === "packet") { const caller = paused.callFrames[1]; need(caller !== undefined && caller.functionLocation.scriptId === this.#binding.scriptId && caller.functionLocation.lineNumber === SITES.timer.lineNumber && caller.functionLocation.columnNumber === SITES.timer.columnNumber, "ORIGINAL_TIMER_FRAME"); callerFrameId = caller.callFrameId; }
+    if (role === "producerUpload" || role === "producerCooperation" || role === "producerSerial" || role === "producerDebounce") {
+      const caller = paused.callFrames[1], constructor = role === "producerUpload" ? SITES.producerBase : SITES.producerProject;
+      need(caller !== undefined && caller.location.scriptId === this.#binding.scriptId && caller.location.lineNumber === constructor.lineNumber && caller.location.columnNumber >= constructor.columnNumber - (constructor.offset - constructor.start) && caller.location.columnNumber <= constructor.columnNumber &&
+        caller.functionName === constructor.name, "ORIGINAL_CONSTRUCTOR_CALLER");
+      callerFrameId = caller.callFrameId;
+    }
     this.#pause = { role, frameId: frame.callFrameId, callerFrameId, resumeAttempted: false }; need(role !== "queuedFinally", "QUEUED_WAVE_UNSUPPORTED"); return role;
   }
-  async #frame(role: Site): Promise<Map<string, z.infer<typeof remote>>> { need(this.#pause !== null && (role === "timer" ? this.#pause.role === "packet" && this.#pause.callerFrameId !== null : this.#pause.role === role), "FRAME_PAUSE");
-    const callFrameId = role === "timer" ? this.#pause.callerFrameId : this.#pause.frameId; const raw = await this.#send({ phase: "project-save-structure-frame", role, method: "Debugger.evaluateOnCallFrame",
+  async #frame(role: Site): Promise<Map<string, z.infer<typeof remote>>> {
+    need(this.#pause !== null, "FRAME_PAUSE");
+    if (role === "timer") { need(this.#pause.role === "packet" && this.#pause.callerFrameId !== null, "TIMER_FRAME_PAUSE"); }
+    else if (role === "producerCaller") { need(this.#pause.callerFrameId !== null && this.#pause.role.startsWith("producer"), "CONSTRUCTOR_FRAME_PAUSE"); }
+    else { need(this.#pause.role === role, "FRAME_PAUSE_ROLE"); }
+    const callFrameId = role === "timer" || role === "producerCaller" ? this.#pause.callerFrameId : this.#pause.frameId; const raw = await this.#send({ phase: "project-save-structure-frame", role, method: "Debugger.evaluateOnCallFrame",
     params: { ...FRAME_FLAGS, callFrameId, expression: SITES[role].expression } }); this.#frameArrays.set(role, object(remoteResult(raw))); return this.#array(raw, SITES[role].length); }
-  async #resume(role: Site): Promise<void> { need(this.#pause?.role === role && !this.#pause.resumeAttempted && (role === "bootstrap" || this.#history !== null), "RESUME_AUTHORITY");
+  async #resume(role: Site): Promise<void> { need(this.#pause?.role === role && !this.#pause.resumeAttempted && (role === "bootstrap" || CONSTRUCTORS.some(value => value === role) || this.#history !== null), "RESUME_AUTHORITY");
     this.#pause = { ...this.#pause, resumeAttempted: true }; z.strictObject({}).parse(await this.#send({ phase: "project-save-structure-resume", role, method: "Debugger.resume", params: {} }));
     const event = await this.#event(); need(event.method === "Debugger.resumed", "RESUME_ACK"); z.strictObject({}).parse(event.params); this.#pause = null;
   }
   public async arm(): Promise<void> { need(!this.#armed && !this.#busy, "ARM_CONSUMED"); this.#armed = true; this.#busy = true;
     try { sourceReply(await this.#send({ phase: "project-save-structure-source", method: "Debugger.getScriptSource", params: { scriptId: this.#binding.scriptId } }));
-      for (const role of ["bootstrap", "packet", "response", "callbackReturn", "initialFinally", "queuedFinally"] as const) { const site = SITES[role]; this.#uncertainAllocation = true;
+      for (const role of [...CONSTRUCTORS, "bootstrap", "packet", "response", "callbackReturn", "initialFinally", "queuedFinally"] as const) { const site = SITES[role]; this.#uncertainAllocation = true;
         const retain = (raw: unknown): void => { const result = z.looseObject({ breakpointId: handle }).safeParse(raw); if (result.success && ![...this.#points.values()].some(point => point.id === result.data.breakpointId)) {
           this.#points.set(role, { id: result.data.breakpointId, removeAttempted: false, removed: false }); this.#uncertainAllocation = false; } };
         const raw = await this.#send({ phase: "project-save-structure-arm", role, method: "Debugger.setBreakpoint", params: { location: { scriptId: this.#binding.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } } }, false, retain);
@@ -146,16 +169,65 @@ export class CurrentProjectSaveStructureObserver {
       }
     } catch (error) { this.#failure(error); throw error; } finally { this.#busy = false; }
   }
+  async #captureProducerConstructors(): Promise<void> {
+    for (const [index, role] of SEQUENCE.entries()) {
+      await this.#nextPause(role); const frame = await this.#frame(role);
+      const receiver = role === "producerBase" || role === "producerProject" ? frame : await this.#frame("producerCaller");
+      const project = object(receiver.get("0"));
+      if (this.#constructorProject === null) { this.#constructorProject = project; }
+      else { await this.#true("same", project, [this.#constructorProject]); }
+      if (role !== "producerBase" && role !== "producerProject") {
+        const delays = { producerUpload: 500, producerCooperation: 10, producerDebounce: 300 };
+        if (role === "producerUpload" || role === "producerCooperation" || role === "producerDebounce") { need(frame.get("1")?.value === delays[role], "ORIGINAL_CONSTRUCTOR_DELAY"); }
+        const callback = frame.get("0"); need(callback !== undefined, "ORIGINAL_CONSTRUCTOR_CALLBACK");
+        if (role === "producerSerial" && index === 5) {
+          const selected = decodeCurrentPcb209WorkerProducerFunction({ result: callback }, "debounce");
+          decodeCurrentPcb209WorkerProducerScopeList(await this.#properties(selected), this.#binding.scriptId, "debounce"); this.#constructorCallbacks.set("debounce", selected);
+        } else {
+          let kind: "upload" | "cooperation" | "structure" | "uploadStructure" = "uploadStructure";
+          if (role === "producerUpload") { kind = "upload"; } else if (role === "producerCooperation") { kind = "cooperation"; } else if (role === "producerDebounce") { kind = "structure"; }
+          const selected = decodeCurrentPcb209WorkerCallbackFunction({ result: callback }, kind);
+          decodeCurrentPcb209WorkerCallbackScopeList(await this.#properties(selected), this.#binding.scriptId, kind); this.#constructorCallbacks.set(kind, selected);
+        }
+      }
+      await this.#resume(role);
+    }
+  }
+  async #joinProducerConstructors(): Promise<void> {
+    need(this.#project !== null && this.#constructorProject !== null && this.#uploadCallback !== null && this.#structureCallback !== null && this.#debounce !== null && this.#constructorCallbacks.size === 5, "ORIGINAL_CONSTRUCTION_HANDLES");
+    await this.#true("same", this.#project, [this.#constructorProject]);
+    for (const [kind, selected] of [["uploadStructure", this.#uploadCallback], ["structure", this.#structureCallback], ["debounce", this.#debounce]] as const) { const original = this.#constructorCallbacks.get(kind); need(original !== undefined, "ORIGINAL_CONSTRUCTION_CALLBACK"); await this.#true("same", selected, [original]); }
+    for (const kind of ["upload", "cooperation"] as const) {
+      const callback = this.#constructorCallbacks.get(kind); need(callback !== undefined, "ORIGINAL_BUFFERED_CALLBACK");
+      const wrapper = decodeCurrentPcb209WorkerProducerFunction(await this.#call(kind === "upload" ? "uploadSelect" : "cooperationSelect", this.#project, [], false), kind);
+      const scopes = await this.#scope(wrapper, kind); need(scopes[0] !== undefined, "ORIGINAL_BUFFERED_SCOPE");
+      await this.#true(kind === "upload" ? "uploadRelation" : "cooperationRelation", scopes[0], [this.#project, wrapper, callback]);
+      await this.#true(kind === "upload" ? "coldStream" : "coldCooperation", scopes[0], [this.#project, wrapper, callback]);
+    }
+    await this.#true("coldProject", this.#project);
+    this.#producerConstruction = Object.freeze({ profile: "private.current-project-save-producer-construction.v1", originalSevenConstructorContinuationsObserved: true,
+      originalFourArrowReceiversAndCurrentWrappersJoined: true, originalBootstrapColdStateObserved: true, continuousProducerExclusionVerified: false, completeUploadFrontierVerified: false, executionAuthorized: false });
+  }
+  async #removeProducerConstructorPoints(): Promise<void> {
+    for (const role of CONSTRUCTORS) {
+      await this.#current(); const point = this.#points.get(role); need(point !== undefined && !point.removeAttempted && !point.removed && this.#pause?.role === "bootstrap", "CONSTRUCTOR_POINT_RETAINED");
+      point.removeAttempted = true; z.strictObject({}).parse(await this.#send({ phase: "project-save-structure-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: point.id } }, true)); point.removed = true;
+      await this.#current();
+    }
+  }
+  /** Data from this observer's actual original constructor route only. A cold
+   * snapshot does not authorize a later producer, publication or SQL call. */
+  public producerConstruction(): CurrentProjectSaveProducerConstruction { need(this.#constructed && this.#producerConstruction !== null, "PRODUCER_CONSTRUCTION_REQUIRED"); return this.#producerConstruction; }
   /** Start concurrently with original project opening, after arm returns.
    * The original controller waits its own source-resume acknowledgement. */
   public async observeConstruction(): Promise<void> { need(this.#armed && !this.#busy && !this.#constructionAttempted, "CONSTRUCTION_CONSUMED"); this.#constructionAttempted = true; this.#busy = true;
-    try { await this.#nextPause("bootstrap"); await this.#frame("bootstrap"); const frameArray = this.#frameArrays.get("bootstrap"); need(frameArray !== undefined, "ORIGINAL_BOOTSTRAP_ARRAY"); const tuple = await this.#array(await this.#call("bootstrap", frameArray, [], false), 3);
+    try { await this.#captureProducerConstructors(); await this.#nextPause("bootstrap"); await this.#frame("bootstrap"); const frameArray = this.#frameArrays.get("bootstrap"); need(frameArray !== undefined, "ORIGINAL_BOOTSTRAP_ARRAY"); const tuple = await this.#array(await this.#call("bootstrap", frameArray, [], false), 3);
       this.#project = object(tuple.get("0")); this.#uploadWrapper = decodeCurrentPcb209WorkerProducerFunction({ result: tuple.get("1") }, "serial"); this.#structureWrapper = decodeCurrentPcb209WorkerProducerFunction({ result: tuple.get("2") }, "serial");
       const upload = await this.#scope(this.#uploadWrapper, "serial"); const structure = await this.#scope(this.#structureWrapper, "serial"); need(upload[0] !== undefined && structure[0] !== undefined, "INITIAL_SCOPES");
       this.#uploadCallback = decodeCurrentPcb209WorkerCallbackFunction(await this.#call("callback", upload[0], [], false), "uploadStructure"); decodeCurrentPcb209WorkerCallbackScopeList(await this.#properties(this.#uploadCallback), this.#binding.scriptId, "uploadStructure");
       this.#debounce = decodeCurrentPcb209WorkerProducerFunction(await this.#call("callback", structure[0], [], false), "debounce"); const scopes = await this.#scope(this.#debounce, "debounce"); need(scopes[1] !== undefined, "DEBOUNCE_PARAMETERS");
       this.#structureCallback = decodeCurrentPcb209WorkerCallbackFunction(await this.#call("callback", scopes[1], [], false), "structure"); decodeCurrentPcb209WorkerCallbackScopeList(await this.#properties(this.#structureCallback), this.#binding.scriptId, "structure");
-      await this.#pristine(); this.#constructed = true; await this.#resume("bootstrap");
+      await this.#pristine(); await this.#joinProducerConstructors(); await this.#removeProducerConstructorPoints(); this.#constructed = true; await this.#resume("bootstrap");
     } catch (error) { this.#failure(error); throw error; } finally { this.#busy = false; }
   }
   async #queues(): Promise<void> { need(this.#uploadCallback !== null && this.#debounce !== null && this.#structureCallback !== null, "QUEUES"); const scopes = await this.#freshScopes();

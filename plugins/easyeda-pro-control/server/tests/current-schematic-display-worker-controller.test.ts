@@ -1,7 +1,7 @@
 /** Production cursor + production seven-source runner, with only full imported
  * source bytes replaced at the explicit VM seam. No native origin is issued. */
 /* oxlint-disable import/max-dependencies -- Exercise the two actual state machines and their independent source/Save contracts. */
-import { CURRENT_PROJECT_SAVE_STRUCTURE_SITES as STRUCTURE } from "../src/current-project-save-structure-protocol.ts";
+import { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as STRUCTURE } from "../src/current-project-save-structure-protocol.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
@@ -72,7 +72,7 @@ async function fixture(failSetup = false, holdPoll = false, structure = false): 
         controller.bindSaveBreakpoint(source, role, `save-${role}`);
         event("Debugger.breakpointResolved", { breakpointId: `save-${role}`, location: { scriptId: source.scriptId, lineNumber: SITES[role].lineNumber, columnNumber: SITES[role].columnNumber } });
       }
-      if (structure) { for (const role of ["bootstrap", "packet", "response", "callbackReturn", "initialFinally", "queuedFinally"] as const) {
+      if (structure) { for (const role of [...CONSTRUCTORS, "bootstrap", "packet", "response", "callbackReturn", "initialFinally", "queuedFinally"] as const) {
         controller.bindStructureBreakpoint(source, role, `structure-${role}`); const site = STRUCTURE[role];
         event("Debugger.breakpointResolved", { breakpointId: `structure-${role}`, location: { scriptId: source.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } });
       } controller.requireStructureArmed(source); }
