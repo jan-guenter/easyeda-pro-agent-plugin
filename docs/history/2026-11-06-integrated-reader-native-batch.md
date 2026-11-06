@@ -39,3 +39,29 @@ mutation count. Final combined bundle/compatibility checks, frozen development
 payload admission, fresh data reuse and positive spatial reading remain next.
 No release, marketplace publication, official installation or user restart was
 performed for this batch.
+
+## Combined Pad, Relevance and original-producer reader candidate
+
+The next development candidate includes separate Pad and explicit-Relevance
+fixture import and historical closed-data reuse, Pad-only point picking,
+private spatial metadata-failure packets, original SCH accessor/clock/body
+observers, Via BEGIN custody and common producer-constructor tracking. Writer
+execution and Save remain blocked by their unfinished completion proofs.
+
+The shared helper is 1,575,140 bytes, SHA256
+`4108e469e52cc3f3e21088bde8c347b2130a5681b885832286d945c66ba4389d`.
+Startup generation is idempotent and spatial generation agrees. The exact
+independent projection retains the same released predecessor and all six
+released/cold forward files. Windows PowerShell5.1 compiled its exact
+1,446,004-byte C# body and ran only the pure schematic-stage, worker and accessor
+codecs. No owner constructor, native Job or app was started by this check.
+Both the destination and fresh closed-data helper also passed their own actual
+Windows5.1 CompileOnly paths.
+
+Pinned types, strict zero-warning type-aware lint, coverage checks, complete
+build, compatibility checks, repository and MCP contract validation, all-skill
+validation and all seven quick skill checks passed. Fresh dependency install,
+tree/signature/audit checks passed for the unchanged lockfile. These checks
+are offline and compilation evidence. Exact bundle reproduction and frozen
+package admission precede the next original live reader cases; no connected
+Pad/Relevance success or writer persistence is claimed here.
