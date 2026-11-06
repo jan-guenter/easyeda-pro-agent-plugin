@@ -26,7 +26,7 @@ void test("excluded families, regions and unsupported Pad geometry fail before h
   const realm = fixture(); assert.throws(() => read(realm, { kind: "region", mode: "inside", leftMil: -100, rightMil: 100, bottomMil: -100, topMil: 100 })); assert.equal(runInContext("metrics.hits", realm), 0);
 });
 void test("second-sample drift refuses and215 original callees leave40 requests under384", () => {
-  for (const change of ["center.x=6", "circle.width=3", "Sr.items=[]", "padTree.items.clear()"]) {
+  for (const change of ["center.x=6", "circle.width=3", "Fe.items=[]", "padTree.items.clear()"]) {
     const realm = fixture(`hook.run=()=>{${change}}`); assert.throws(() => read(realm), /PCB209_SPATIAL_READ_REFUSED/u, change); assert.equal(runInContext("metrics.hits", realm), 1, change);
   }
   assert.equal(CURRENT_PCB_209_SPATIAL_PAD_FUNCTION_PROFILES.length, 215); assert.equal(CURRENT_PCB_SPATIAL_PAD_REQUEST_DERIVATION.fullWorkflow, 344);

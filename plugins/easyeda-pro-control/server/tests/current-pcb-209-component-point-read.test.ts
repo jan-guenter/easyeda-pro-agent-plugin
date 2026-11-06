@@ -18,7 +18,7 @@ void test("complete generated cache/parent/index graph retains hidden ATTRs and 
   const component = decodeCurrentPcb209ComponentPointReply({ result: { type: "string", value: read(realm, 80) } }); assert.deepEqual(component.identities, [{ primitiveId: "d".repeat(16), family: "Component" }]); assert.equal(runInContext("metrics.hits", realm), 4);
 });
 void test("missing/stale cache, foreign parents, shown or unready ATTRs and all other families refuse before hits", () => {
-  for (const change of ["cache._layeredBoxMap=null", "cache.items.delete(expectedScene.padId)", "scope.Li.manager={}", "sourcePad._top.width=19", "compModel._position.x=1", "padModel._parent={}", "attrModels[0].base.showValue=true", "attrViews[0].textChange=true", "attrTree.items.delete(attrViews[0])", "Ht.map.set('Via',new Map)", "Ht.map.set('Track',new Map)", "Ht.map.set('ArcTrack',new Map)", "cache.attrDataMap.get('Footprint').index='borrowed'", "Sr.items=[compView]"]) {
+  for (const change of ["cache._layeredBoxMap=null", "cache.items.delete(expectedScene.padId)", "scope.Li.manager={}", "sourcePad._top.width=19", "compModel._position.x=1", "padModel._parent={}", "attrModels[0].base.showValue=true", "attrViews[0].textChange=true", "attrTree.items.delete(attrViews[0])", "Ht.map.set('Via',new Map)", "Ht.map.set('Track',new Map)", "Ht.map.set('ArcTrack',new Map)", "cache.attrDataMap.get('Footprint').index='borrowed'", "Fe.items=[compView]"]) {
     const realm = fixture(change); assert.throws(() => read(realm), /PCB209_SPATIAL_READ_REFUSED/u, change); assert.equal(runInContext("metrics.hits", realm), 0, change);
   }
 });

@@ -25,7 +25,7 @@ function encodedClassRelations(track: boolean, arc: boolean): unknown[] {
 /** Constructors used only in initializers may be elided from the V8 closure.
  * Follow their one fixed original receiver/prototype association instead. */
 function bindingCollector(track: boolean, arc = false): string { return `const collectBindings=scope=>{
-const names=["Hr","Ke","zi","wl","x","mx","vD","Nd","BI","D0","qs","Ve","Qg","ki","M2","WA","Ff","sy","GN","Ud","g0","at","E","M","pe","Rut","Ys","ln","e0","vMe","Re","Ne","Le","Ue","si","Zi","In","yr","lr","ft","xt","je","Ba","qn","Ms","lt","_r","tb","BLe","CQ","E2e","Fi","Rr","j1","Ll","YP","qt","a4","Me","Ht","G_e","ye","Sr","St","Jdt","Em","N4","Wj","M0"];
+const names=["Hr","Ke","zi","wl","x","mx","vD","Nd","BI","D0","qs","Ve","Qg","ki","M2","WA","Ff","sy","GN","Ud","g0","at","E","M","pe","Rut","Ys","ln","e0","vMe","Re","Ne","Le","Ue","si","Zi","In","yr","lr","ft","xt","je","Ba","qn","Ms","lt","_r","tb","BLe","CQ","E2e","Fi","Rr","j1","Ll","YP","qt","a4","Me","Ht","G_e","ye","Fe","St","Jdt","Em","N4","Wj","M0"];
 const bindings={};for(const name of names)Object.defineProperty(bindings,name,{value:own(scope,name),enumerable:true});
 ${track ? 'for(const name of ["xr","qr","bR","V0","iy","yh","bC","oie"])Object.defineProperty(bindings,name,{value:own(scope,name),enumerable:true});' : ""}
 ${arc ? 'for(const name of ["Oi","vi","tF","le","Fr"])Object.defineProperty(bindings,name,{value:own(scope,name),enumerable:true});' : ""}

@@ -28,12 +28,12 @@ const view=Object.assign(new Ve,{model,_dataState:1,_bbox:box});model._stateWatc
 const tree=Object.assign(new Nd,{items:new Set([view]),changeList:new Set,deadList:new Set,
 root:Object.assign(new BI,{parent:null,childs:[view],_bbox:box})});
 const Ht=Object.assign(new iV,{map:new Map([["Via",new Map([[12,tree]])]]),otherMap:new Map,ratlineMap:new Map});
-const Sr={items:[view]},metrics={hits:0,getters:0},hook={run:()=>{}};
+const Fe={items:[view]},Sr={_model:3,control:null,lockedLayers:new Set},metrics={hits:0,getters:0},hook={run:()=>{}};
 class Hr{static pointSelect(x,y){metrics.hits++;D0.code=1;touchScratch([x,x,y,y]);hook.run();return [view]}
 static filterPartiton(value){return value}static getSelectInside(box){metrics.hits++;D0.code=1;touchScratch([box.minX,box.maxX,box.minY,box.maxY]);hook.run();return new Set([view])}
 static getSelectContect(box){metrics.hits++;D0.code=1;touchScratch([box.minX,box.maxX,box.minY,box.maxY]);hook.run();return new Set([view])}}
 const scope={Hr,qt,LH,Fi:()=>camera,a4:camera,Me,Ht,zi,Ve,Qg,It,ki,qs,n3,D0,iV,vD,Nd,V0,BI,iy,sy,GN,Ud,g0,V_e,
-G_e:new V_e,at,Ll:value=>value,YP:value=>Array.from(value),x,ye,Sr,mx,wl,Ke};
+G_e:new V_e,at,Ll:value=>value,YP:value=>Array.from(value),x,ye,Fe,Sr,mx,wl,Ke};
 `;
 export const qualifiedSpatialScene = `
 const plans=${JSON.stringify(CURRENT_PCB_209_SPATIAL_FUNCTION_PLANS)};

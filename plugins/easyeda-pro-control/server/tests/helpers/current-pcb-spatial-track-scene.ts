@@ -21,7 +21,7 @@ const trackModel=Object.assign(new scope.qr,{_dataState:0,_globalIndex:"track-on
 const trackView=Object.assign(new scope.xr,{model:trackModel,_dataState:1,_bbox:shape});trackModel._stateWatcher=trackView;
 const trackRoot=Object.assign(new iy,{parent:null,childs:[trackView],_octagon:shape});
 const trackTree=Object.assign(new V0,{items:new Set([trackView]),changeList:new Set,deadList:new Set,root:trackRoot});
-Ht.map.set("Track",new Map([[1,trackTree]]));Sr.items=[trackView,view];
+Ht.map.set("Track",new Map([[1,trackTree]]));Fe.items=[trackView,view];
 Hr.pointSelect=function(x,y){metrics.hits++;D0.code=1;touchScratch([x,x,y,y]);hook.run();return [trackView]};
 Hr.getSelectInside=function(box){metrics.hits++;D0.code=1;touchScratch([box.minX,box.maxX,box.minY,box.maxY]);hook.run();return new Set([trackView,view])};
 Hr.getSelectContect=Hr.getSelectInside;

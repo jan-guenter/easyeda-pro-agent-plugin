@@ -26,7 +26,7 @@ const arcBox=new at(-1.5,1.5,-1.5,1.5),arcModel=Object.assign(new scope.vi,{_dat
 const arcView=Object.assign(new scope.Oi,{model:arcModel,_dataState:1,_bbox:arcBox});arcModel._stateWatcher=arcView;
 const arcRoot=Object.assign(new BI,{parent:null,childs:[arcView],_bbox:arcBox});
 const arcTree=Object.assign(new Nd,{items:new Set([arcView]),changeList:new Set,deadList:new Set,root:arcRoot});
-Ht.map.set("ArcTrack",new Map([[1,arcTree]]));Sr.items=[arcView,trackView,view];
+Ht.map.set("ArcTrack",new Map([[1,arcTree]]));Fe.items=[arcView,trackView,view];
 Hr.pointSelect=function(x,y){metrics.hits++;D0.code=1;touchScratch([x,x,y,y]);hook.run();return [arcView]};
 Hr.getSelectInside=function(box){metrics.hits++;D0.code=1;touchScratch([box.minX,box.maxX,box.minY,box.maxY]);hook.run();return new Set([arcView,trackView,view])};
 Hr.getSelectContect=Hr.getSelectInside;
@@ -72,7 +72,7 @@ void test("unsupported or pending Arc state refuses before any native hit", () =
 });
 
 void test("Arc source and selection drift stop the second sample and border crossings stop the first", () => {
-  for (const change of ["arcBase._radius=2", "arcBase._center.x=2", "arcCom.net='other'", "Sr.items=[]", "arcTree.items.clear()"]) {
+  for (const change of ["arcBase._radius=2", "arcBase._center.x=2", "arcCom.net='other'", "Fe.items=[]", "arcTree.items.clear()"]) {
     const realm = fixture(`hook.run=()=>{${change}}`);
     assert.throws(() => read(realm, point), /PCB209_SPATIAL_READ_REFUSED/u, change);
     assert.equal(runInContext("metrics.hits", realm), 1);

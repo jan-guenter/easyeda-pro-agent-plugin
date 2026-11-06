@@ -24,6 +24,6 @@ const padModel=Object.assign(new scope.rE,{modelType:"Pad",_globalIndex:expected
 const attrModels=[hiddenModel(expectedScene.placedFootprintAttrId,"Footprint","DisposableCircularPad",compModel),hiddenModel(expectedScene.placedDesignatorAttrId,"Designator","U?",compModel)],attrViews=attrModels.map(model=>Object.assign(new scope.jue,{model,_dataState:0,_bbox:new at(0,0,0,0),_parent:compView,textChange:false}));
 for(let i=0;i<2;i++){const key=attrModels[i]._key;attrModels[i]._stateWatcher=attrViews[i];compModel.attrs[key]=attrModels[i];compView.attrs[key]=attrViews[i];}cache.components.add(compView);
 const treeFor=(items,bounds)=>Object.assign(new Nd,{items:new Set(items),changeList:new Set,deadList:new Set,root:Object.assign(new BI,{parent:null,childs:items.slice(),_bbox:bounds})});
-const componentTree=treeFor([compView],compBox._bbox),padTree=treeFor([padView],padModel._bbox),attrTree=treeFor(attrViews,new at(0,0,0,0));Ht.map=new Map([["Component",new Map([[1,componentTree]])],["Pad",new Map([[1,padTree]])],["Text",new Map([[3,attrTree]])]]);Sr.items=[];
+const componentTree=treeFor([compView],compBox._bbox),padTree=treeFor([padView],padModel._bbox),attrTree=treeFor(attrViews,new at(0,0,0,0));Ht.map=new Map([["Component",new Map([[1,componentTree]])],["Pad",new Map([[1,padTree]])],["Text",new Map([[3,attrTree]])]]);Fe.items=[];
 scope.gqe=function(){};scope.yqe=function(){};Hr.pointSelect=function(x,y){metrics.hits++;D0.code=1;touchScratch([x,x,y,y]);hook.run();return x===5?[padView]:x===8?[compView]:[];};
 `;

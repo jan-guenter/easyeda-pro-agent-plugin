@@ -302,3 +302,50 @@ and was rejected before dispatch; it was not retried. Generated opening and
 the consumed Arc batch are still pending at this checkpoint. The frozen
 payload remains unchanged through original native cleanup. No new PR,
 publication, installation or user-project operation occurred.
+
+### Exact selection-owner refusal and terminal cleanup
+
+The original project and PCB opens, shared-registration peer proof and complete
+pinned PCB source/DOM observation passed. The one six-query Arc batch advanced
+through all265 original callee qualifications and the corrected environment
+guard, then refused its first read at generated line194, column53. The retained
+stack identifies `own(selectionOwner,"items")`, where the program used `Sr`.
+No hit or partial query result was accepted, and the consumed batch was not
+replayed or replaced with another family.
+
+The complete pinned source assigns `Sr=new bpe` to the control-point manager.
+Its constructor has no `items` field. The actual selection owner is `Fe=new KU`,
+where KU aliases b1. Its constructor assigns `items`; its131-byte `getSelects`
+method at UTF16 range7845253..7845384 has SHA256
+`aee426710faec4bb81c63688a8f23baedff0b79d1bae59d079169908d165d14f`.
+That method selects a nonempty temporary array before the permanent items.
+The actual method, executed only against inert receivers, confirms absent,
+null, undefined and empty temporary-array fallback and nonempty precedence.
+No application constructor ran during that source proof.
+
+The shared Via/Line/Arc/Pad/Component kernel now captures Fe and reads those
+own data arrays with the same precedence. Both arrays and owner descriptors
+remain retained across samples. Accessors, inherited temporary state, malformed
+arrays, unsupported selected objects and intervening selection changes refuse.
+No selector or control-point method is called; native request counts and
+original function qualifications are unchanged. The synthetic scene now keeps
+the real distinction between a selection owner and a control-point manager.
+The new positive regression fails the old code at the same missing-property
+check. Twenty-five cross-family checks, ten source/transport checks, both
+TypeScript projects and strict targeted lint pass. An initial local follow-up
+used the wrong working-directory prefix before replacing capture names; that
+failed log remains separate from the corrected selection. Independent source
+review found no blocker. The complete Component checker still qualifies290
+spans and reports65,454 of65,536 frame bytes, leaving82bytes without raising
+the419-request bound. This correction needs another frozen/live case.
+
+Original normal close was acknowledged once, followed by observed original
+root exit and an empty original Job. One complete closed capture and independent
+nofollow descriptor/path/hash checks prove exact raw bytes, all35-table SQL
+and raw history with the same hashes as the earlier cases. Older clock and
+generic-history qualification refusals remain preserved. Original helper
+release, facade retirement, lease acknowledgment and original stdin EOF,
+process/stdio closure and exit0 completed without a signal. The new manager
+remains retained and idle with replacement permitted. No native owner remains
+from this case; no explicit Save, discard, publication or user-project change
+occurred.

@@ -50,7 +50,7 @@ void test("mixed guards reject unsupported, locked, stale or mismatched Track st
 });
 
 void test("Track source, index, geometry and selection changes prevent a second sample", () => {
-  for (const change of ["com.net='other'", "start.x=1", "trackTree.items.delete(trackView)", "Sr.items=[]", "trackRoot._octagon={}"]) {
+  for (const change of ["com.net='other'", "start.x=1", "trackTree.items.delete(trackView)", "Fe.items=[]", "trackRoot._octagon={}"]) {
     const realm = fixture("", `hook.run=()=>{${change}}`);
     assert.throws(() => read(realm, point), /PCB209_SPATIAL_READ_REFUSED/u, change);
     assert.equal(runInContext("metrics.hits", realm), 1, change);

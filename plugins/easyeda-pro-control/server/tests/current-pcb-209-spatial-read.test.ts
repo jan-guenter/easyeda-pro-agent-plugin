@@ -47,6 +47,36 @@ void test("ordinary environment optional flags permit both original normal initi
   }
 });
 
+void test("native selection owner is Fe and its temporary selection takes precedence", () => {
+  const context = fixture("Fe.tempSelects=[view];Fe.items=[]");
+  const raw = invoke(context, { kind: "point", xMil: 0, yMil: 0 });
+  const reply = decodeCurrentPcb209SpatialReply({ result: { type: "string", value: raw } });
+  assert.deepEqual(reply.selectedPrimitiveIds, ["via-one"]);
+  assert.equal(hits(context), 2);
+});
+
+void test("absent, null, undefined and empty temporary selections use the permanent roster", () => {
+  for (const setup of ["", "Fe.tempSelects=null", "Fe.tempSelects=undefined", "Fe.tempSelects=[]"]) {
+    const context = fixture(setup);
+    const raw = invoke(context, { kind: "point", xMil: 0, yMil: 0 });
+    const reply = decodeCurrentPcb209SpatialReply({ result: { type: "string", value: raw } });
+    assert.deepEqual(reply.selectedPrimitiveIds, ["via-one"]);
+    assert.equal(hits(context), 2);
+  }
+});
+
+void test("temporary selection accessors, inherited fields and unsupported members refuse before hits", () => {
+  for (const setup of [
+    'Object.defineProperty(Fe,"tempSelects",{get(){metrics.getters++;return [view]}})',
+    "Object.setPrototypeOf(Fe,{tempSelects:[view]})", "Fe.tempSelects=[{}]", "Fe.tempSelects=false", "Fe.tempSelects='x'",
+  ]) {
+    const context = fixture(setup);
+    assert.throws(() => invoke(context, { kind: "point", xMil: 0, yMil: 0 }), /PCB209_SPATIAL_READ_REFUSED/u, setup);
+    assert.equal(hits(context), 0);
+    assert.equal(runInContext("metrics.getters", context), 0);
+  }
+});
+
 void test("preview, partition and malformed environment states refuse before any native hit", () => {
   for (const setup of [
     "x.env._isPreview=true", "x.env._isPreview=0", "x.env._isPreview=null", "delete x.env._isPreview",
@@ -96,7 +126,8 @@ void test("guard reads own data descriptors and never invokes a hostile source a
 void test("source, selection, method, index and extra scratch mutations stop before a second native call", () => {
   for (const setup of [
     'hook.run=()=>{model._net="changed"}', "hook.run=()=>{model._center.x=1}",
-    "hook.run=()=>{Sr.items.push(view)}", "hook.run=()=>{tree.items.delete(view)}",
+    "hook.run=()=>{Fe.items.push(view)}", "hook.run=()=>{tree.items.delete(view)}",
+    "hook.run=()=>{Fe.tempSelects=[]}", "Fe.tempSelects=[view];hook.run=()=>{Fe.tempSelects.pop()}",
     "hook.run=()=>{LH.prototype.filter=()=>new Set}", "hook.run=()=>{D0.code=8}",
     "hook.run=()=>{D0.extra=true}", "hook.run=()=>{ye._layerMap[12].model.status.state=7}",
     "hook.run=()=>{scope.Jdt.fac.minX=123}", "hook.run=()=>{scope.vMe.instance.boxCache[0]=123}",

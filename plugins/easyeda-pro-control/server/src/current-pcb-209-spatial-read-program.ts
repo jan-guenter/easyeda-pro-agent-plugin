@@ -12,6 +12,13 @@ import { CURRENT_PCB_209_SPATIAL_MAX_BYTES, CURRENT_PCB_209_SPATIAL_MAX_COORDINA
   CURRENT_PCB_209_SPATIAL_MAX_HITS } from "./current-pcb-209-spatial-read.ts";
 import { CURRENT_PCB_209_SPATIAL_FAMILY_ORDER } from "./current-pcb-209-spatial-source-profile.ts";
 
+/** Fe is the pinned KU selection owner. Sr is the control-point manager and
+ * has no items property. Match getSelects' temporary-array precedence without
+ * calling a selector; retain both arrays and refuse inherited/accessor state.
+ */
+export const CURRENT_PCB_209_SPATIAL_SELECTION_PROGRAM = `const selectionOwner=retainData(get("Fe")),selectedPrimitiveIds=[];let selected=own(selectionOwner,"items");list(selected);
+if(Object.hasOwn(selectionOwner,"tempSelects")){const t=own(selectionOwner,"tempSelects");if(t!=null&&list(t)>0)selected=t;}else absent(selectionOwner,"tempSelects");`;
+
 /** Select only a module-owned fixed program at build/import time. */
 function readFunction(track: boolean, arc = false): string {
   let bindings = CURRENT_PCB_209_SPATIAL_BINDING_COLLECTOR, functions = CURRENT_PCB_209_SPATIAL_FUNCTION_COLLECTOR,
@@ -133,7 +140,7 @@ const seenLeaves=new Set,walk=(node,parent,depth)=>{if(depth>16||treeNodes.has(n
 const children=own(node,"childs"),n=list(children);if(n===0){if(parent!==null||items.length!==0||own(node,"_bbox")!==null)bad();return;}
 bbox(own(node,"_bbox"));for(let i=0;i<n;i++){const child=own(children,String(i));if(Object.getPrototypeOf(child)===own(klass("BI"),"prototype"))walk(child,node,depth+1);else{if(!items.includes(child)||seenLeaves.has(child))bad();seenLeaves.add(child);}}};
 walk(own(tree,"root"),null,0);if(seenLeaves.size!==items.length)bad();}}
-const selectionOwner=retainData(get("Sr")),selected=own(selectionOwner,"items"),selectedPrimitiveIds=[];
+${CURRENT_PCB_209_SPATIAL_SELECTION_PROGRAM}
 for(let i=0,n=list(selected);i<n;i++){const selectedValue=own(selected,String(i)),entry=scene.find(row=>row.value===selectedValue);if(!entry||selectedPrimitiveIds.includes(entry.primitiveId))bad();selectedPrimitiveIds.push(entry.primitiveId);}
 const assertCurrent=()=>{recheck();bindingsCurrent();if((${CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION})!==callback)bad();
 const code=Object.getOwnPropertyDescriptor(D0,"code");if(oldCode&&!code)bad();if(code&&(!Object.hasOwn(code,"value")||!Number.isInteger(code.value)||(![1,2,4].includes(code.value)&&code.value!==oldCode?.value)||code.writable!==(oldCode?.writable??true)||code.enumerable!==(oldCode?.enumerable??true)||code.configurable!==(oldCode?.configurable??true)))bad();

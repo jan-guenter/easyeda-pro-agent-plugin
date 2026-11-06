@@ -4,7 +4,7 @@ import { CURRENT_PCB_209_SPATIAL_CLASS_RELATIONS } from "./current-pcb-209-spati
 import { CURRENT_PCB_209_SPATIAL_PAD_EXTRA_RELATIONS, CURRENT_PCB_209_SPATIAL_PAD_FUNCTION_PLANS } from "./current-pcb-209-spatial-pad-source-profile.ts";
 import { CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION } from "./current-pcb-209-spatial-capture-program.ts";
 
-const names = ["Hr", "Ke", "zi", "wl", "x", "mx", "vD", "Nd", "BI", "D0", "qs", "Ve", "Qg", "ki", "M2", "WA", "Ff", "sy", "GN", "Ud", "g0", "at", "E", "M", "pe", "Rut", "Ys", "ln", "e0", "vMe", "Re", "Ne", "Le", "Ue", "si", "Zi", "In", "yr", "lr", "ft", "xt", "je", "Ba", "qn", "Ms", "lt", "_r", "tb", "BLe", "CQ", "E2e", "Fi", "Rr", "j1", "Ll", "YP", "qt", "a4", "Me", "Ht", "G_e", "ye", "Sr", "St", "Jdt", "Em", "N4", "Wj", "M0", "Mi", "tE", "tC"] as const;
+const names = ["Hr", "Ke", "zi", "wl", "x", "mx", "vD", "Nd", "BI", "D0", "qs", "Ve", "Qg", "ki", "M2", "WA", "Ff", "sy", "GN", "Ud", "g0", "at", "E", "M", "pe", "Rut", "Ys", "ln", "e0", "vMe", "Re", "Ne", "Le", "Ue", "si", "Zi", "In", "yr", "lr", "ft", "xt", "je", "Ba", "qn", "Ms", "lt", "_r", "tb", "BLe", "CQ", "E2e", "Fi", "Rr", "j1", "Ll", "YP", "qt", "a4", "Me", "Ht", "G_e", "ye", "Fe", "St", "Jdt", "Em", "N4", "Wj", "M0", "Mi", "tE", "tC"] as const;
 const relations = Object.entries({ ...CURRENT_PCB_209_SPATIAL_CLASS_RELATIONS, ...CURRENT_PCB_209_SPATIAL_PAD_EXTRA_RELATIONS }).map(([key, relation]) => [key, relation.parent, relation.prototypeKeys.join("|")]);
 export const CURRENT_PCB_209_SPATIAL_PAD_BINDING_COLLECTOR = `const collectBindings=scope=>{
 const bindings={};for(const name of ${JSON.stringify(names)})Object.defineProperty(bindings,name,{value:own(scope,name),enumerable:true});

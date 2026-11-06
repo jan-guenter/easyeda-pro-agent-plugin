@@ -11,6 +11,6 @@ const center=Object.assign(new scope.E,{x:5,y:0}),circle=Object.assign(new scope
 const padBounds=new at(4,6,-1,1),padModel=Object.assign(new scope.tE,{modelType:"Pad",_dataState:0,_globalIndex:"standalone-pad",_layerId:1,_locked:false,_padType:0,_top:circle,_rotation:0,_center:center,_bbox:padBounds});
 const padView=Object.assign(new scope.Mi,{model:padModel,_dataState:1,_bbox:padBounds});padModel._stateWatcher=padView;
 const padTree=Object.assign(new Nd,{items:new Set([padView]),changeList:new Set,deadList:new Set,root:Object.assign(new BI,{parent:null,childs:[padView],_bbox:padBounds})});
-Ht.map=new Map([["Pad",new Map([[1,padTree]])]]);Sr.items=[padView];
+Ht.map=new Map([["Pad",new Map([[1,padTree]])]]);Fe.items=[padView];
 Hr.pointSelect=function(x,y){metrics.hits++;D0.code=1;touchScratch([x,x,y,y]);hook.run();return x===5?[padView]:[]};
 `;

@@ -1,7 +1,7 @@
 /** Component-only fixed point program; hidden ATTRs stay in the exact native
  * index and their qualified no-graphics refusal path is never pruned. */
 import { CURRENT_PCB_209_SPATIAL_BINDING_COLLECTOR, CURRENT_PCB_209_SPATIAL_FUNCTION_COLLECTOR } from "./current-pcb-209-spatial-capture-program.ts";
-import { CURRENT_PCB_209_SPATIAL_READ_FUNCTION } from "./current-pcb-209-spatial-read-program.ts";
+import { CURRENT_PCB_209_SPATIAL_READ_FUNCTION, CURRENT_PCB_209_SPATIAL_SELECTION_PROGRAM } from "./current-pcb-209-spatial-read-program.ts";
 import { CURRENT_PCB_209_COMPONENT_POINT_BINDING_COLLECTOR, CURRENT_PCB_209_COMPONENT_POINT_FUNCTION_COLLECTOR } from "./current-pcb-209-component-point-capture.ts";
 import { CURRENT_PCB_209_COMPONENT_POINT_GUARDS } from "./current-pcb-209-component-point-kernel.ts";
 import { CURRENT_PCB_209_COMPONENT_COMPLETE_POINT_FUNCTION_PROFILES } from "./current-pcb-209-component-point-complete-source-profile.ts";
@@ -20,7 +20,7 @@ function build(): string {
   source = replace(source, 'for(const [family,layerGroups]of groups){if(family!=="Via")bad();for(const [layer,tree]of entries(layerGroups,1)){if(layer!==12)bad();instance(tree,"Nd");',
     'for(const [family,layerGroups]of groups){if(!["Component","Pad","Text"].includes(family))bad();for(const [layer,tree]of entries(layerGroups,1)){if(layer!==(family==="Text"?3:1)||!Object.hasOwn(layerMap,String(layer)))bad();instance(tree,"Nd");');
   source = replace(source, 'for(const item of items)via(item);', 'for(const item of items){if(family==="Component")component(item,layer);else if(family==="Pad")pad(item,layer);else attribute(item,layer);}');
-  source = replace(source, 'const selectionOwner=retainData(get("Sr")),selected=own(selectionOwner,"items"),selectedPrimitiveIds=[];', 'finishScene();const selectionOwner=retainData(get("Sr")),selected=own(selectionOwner,"items"),selectedPrimitiveIds=[];if(list(selected)!==0)bad();');
+  source = replace(source, CURRENT_PCB_209_SPATIAL_SELECTION_PROGRAM, `finishScene();${CURRENT_PCB_209_SPATIAL_SELECTION_PROGRAM}if(list(selected)!==0)bad();`);
   source = replace(source, 'if(!entry||seen.has(entry.primitiveId))bad();', 'if(!entry||entry.family==="HiddenAttribute"||seen.has(entry.primitiveId))bad();');
   source = replace(source, 'schema:"easyeda-pro-control.pcb209-spatial-via-read.v1"', 'schema:"easyeda-pro-control.pcb209-spatial-component-point-read.v1"');
   source = replace(source, '// Class/static and prototype descriptors are retained across both native calls.\n// The outer runner separately qualifies these original functions against source.\n', '');
