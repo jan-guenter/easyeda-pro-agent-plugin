@@ -2,9 +2,17 @@
 
 Use this development route only when the loaded controller exposes
 `generated-schematic-opening` and its validation query. It consumes the real
-SCH/SCH_PAGE fixture produced by `schematic-text-wire-bus`; it accepts no caller
+SCH/SCH_PAGE fixture produced by `schematic-text-wire-bus` or the separately
+qualified `schematic-text-wire-bus-relevance` alternative; it accepts no caller
 path, project/page ID, source, primitive ID or JavaScript. It opens no existing
 user project and provides no edit, Save, connectivity or persistence authority.
+
+Prefer the explicit-Relevance alternative for new Text/Wire/Bus reader cases.
+It retains one source-owned Wire Relevance attribute under its own initial
+qualification and checkpoint brand. The older fixture can acquire an implicit
+unstored default child and correctly refuse the unchanged source-membership
+guard. Do not weaken that guard or promote the new reader fixture to the older
+display-writer contract.
 
 Complete the import's original normal cleanup and closed qualification. Release
 its destination and owner, then call `stage-schematic-for-fresh-opening` with

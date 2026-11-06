@@ -1,7 +1,7 @@
 # Generated disposable fixture import
 
 Use this development route to create a new fixed Via-only, Line/Via,
-Arc/Line/Via or separate SCH/SCH_PAGE Text/Wire/Bus project.
+Arc/Line/Via, standalone circular SMT Pad or separate SCH/SCH_PAGE Text/Wire/Bus project.
 It accepts no caller project, path, archive, ID, geometry, SQL or code. It never
 deletes a failed or partial output. Query `fixture-import` with
 `includeSchemas:true` and validate the assembled request using
@@ -34,6 +34,15 @@ disjoint circular top-layer arc as well.
 `schematic-text-wire-bus` selects a separate schematic container and page with
 fixed Text and disjoint one-segment Wire/Bus groups. These are disposable data,
 without validated electrical connectivity or manufacturing suitability.
+
+Use `circular-smt-pad-only` for the separate Pad point reader. It has its own
+initial SQL qualification and read-opening token; it cannot enter the Via
+writer through an older target brand. Use
+`schematic-text-wire-bus-relevance` for the distinct schematic reader fixture
+with one explicit source-owned Wire Relevance attribute. That variant avoids
+relying on an implicit unstored default child. It preserves the Bus group
+without adding a Wire attribute to it. The original schematic fixture and its
+display-writer contracts remain separate.
 
 The original environment operation has the ID `<operationId>-environment`.
 It observes actual native config directories through a tracked getter that can
@@ -70,8 +79,8 @@ and target with separate schematic/page identities. Its target cannot enter
 the PCB opening route. Its separate `stage-schematic-for-fresh-opening` action
 retains the original data token for a new original ordinary runtime. The
 `generated-schematic` wrapper opens that real project/page once, then optionally
-observes its Text/Wire/Bus through a separate one-shot action. Connected page
-readiness and electrical connectivity remain unproved.
+observes its Text/Wire/Bus through a separate one-shot action. Keep page
+readiness, complete accepted reads and electrical connectivity separate.
 
 Then use `release-destination` with `confirmReleaseRetainedDirectory:true`.
 It drains the exact original watches and closes directory handles after proved
@@ -114,6 +123,9 @@ For unchanged generated data after a completed controller replacement, use the
 separate [closed fixture requalification route](closed-generated-fixture-data.md).
 It acquires new read-only resources and verifies the entire initial source/SQL.
 It accepts no earlier runtime authority and refuses any post-open file change.
+The new Pad and explicit-Relevance closed reports currently require their first
+direct-import/staging workflow. Historical reuse for those distinct profiles
+is not yet available; do not send their reports through an older parser.
 
 A destination preparation failure can follow a completed environment getter.
 Inspect the explicit environment operation even when base import inspection
