@@ -29,7 +29,7 @@ export const MANAGED_COMPONENT_FIXTURE_PROFILE = freezeDeep({ schema: "easyeda-p
     "sha256": "a84059304d32d4f0feb768d6c5baf00d72a954643ac62299f2c46c08fa68fd0b",
     "methods": [
 {
-  "name": "np.getAlign",
+  "name": "Q8.getAlign",
   "start": 4_029_699,
   "end": 4_029_983,
   "sha256": "b7799071282612da12c0ddd9fb949b5347bd80832078db1641db6002ba5913e7"

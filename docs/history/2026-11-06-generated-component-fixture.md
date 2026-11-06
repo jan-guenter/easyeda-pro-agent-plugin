@@ -20,7 +20,7 @@ The current ATTR codec's `groupID` spelling is retained; its decoder reads
 `groupId`, and absent/zero both select no group in this fixed input.
 
 A field-roster-only intermediate check did not establish ATTR eligibility.
-The exact inherited `np.getAlign` source exposed that raw numeric3 is invalid:
+The exact inherited `Q8.getAlign` source exposed that raw numeric3 is invalid:
 it maps the raw string `LEFT_BOTTOM` to internal3, opposite to the serializer.
 The fixed generator uses that string. The maintained checker now executes the
 actual inherited mapper, enum and ATTR feed/check; a matching archive and SQL
