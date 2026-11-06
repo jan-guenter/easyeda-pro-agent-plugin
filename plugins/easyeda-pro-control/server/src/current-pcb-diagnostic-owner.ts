@@ -8,6 +8,7 @@
 import { compareCurrentPcbViaProjectedEffect } from "./current-pcb-via-write-effect-data.ts";
 import type { CurrentPcbViaProjectedEffect } from "./current-pcb-via-write-effect-data.ts";
 import { decodeCurrentPcbViaSdkMethod, decodeCurrentPcbViaSdkTuple, qualifyCurrentPcbViaSdkSource } from "./current-pcb-via-write-sdk-source.ts";
+import type { CurrentPcbViaSaveWorkerBindings, CurrentPcbViaSaveWorkerOrigin } from "./current-pcb-via-save-origin.ts";
 import { currentPcbViaWriteNativeRequest } from "./current-pcb-via-write-protocol.ts";
 import type { CurrentPcbViaObservationPhase } from "./current-pcb-via-write-protocol.ts";
 import { requireOriginalCurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
@@ -488,6 +489,19 @@ export function requireOriginalCurrentPcbViaWriteEffect(effect: CurrentPcbViaWri
   return effect.proof;
 }
 // END original Via projected-effect custody.
+interface OriginalPcbViaSaveWorker {
+  readonly owner: CurrentPcbViaWriteOwner; readonly plan: CurrentPcbViaWritePlan;
+  readonly bindings: CurrentPcbViaSaveWorkerBindings; readonly assertOriginal: () => void;
+}
+// Only this central original owner's forthcoming pre-project bootstrap can
+// Populate this map. The observer has no issuer, registration or adoption API.
+const pcbViaSaveWorkers = new WeakMap<CurrentPcbViaSaveWorkerOrigin, OriginalPcbViaSaveWorker>();
+export function requireOriginalCurrentPcbViaSaveWorkerOrigin(origin: CurrentPcbViaSaveWorkerOrigin, owner: CurrentPcbViaWriteOwner,
+  plan: CurrentPcbViaWritePlan): CurrentPcbViaSaveWorkerBindings {
+  const original = pcbViaSaveWorkers.get(origin);
+  if (original === undefined || original.owner !== owner || original.plan !== plan) { throw error("PCB_VIA_SAVE_WORKER_ORIGINAL"); }
+  requireViaPlan(owner, plan); original.assertOriginal(); return original.bindings;
+}
 const selectedSqlFenceBootstraps = new WeakMap<object, Readonly<{ transport: object; runner: () => CurrentFootprintCopyMainBackendRunner | null; owner: CurrentPcbViaWriteOwner; path: string; reprove: () => void }>>();
 export function requireCurrentSelectedFileMainSqlFenceBootstrap(capability: CurrentSelectedFileMainSqlFenceBootstrap, transport: object): string {
   if (types.isProxy(capability) || types.isProxy(transport)) { throw error("SELECTED_SQL_BOOTSTRAP"); }

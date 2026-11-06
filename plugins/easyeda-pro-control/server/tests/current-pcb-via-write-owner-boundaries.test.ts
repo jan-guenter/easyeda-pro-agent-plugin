@@ -72,6 +72,8 @@ void test("early fence vocabulary retains fixed source sites and admits no arbit
 void test("matching bootstrap and owner JSON cannot mint original native ownership or observation packets", async () => {
   assert.throws(() => requireCurrentSelectedFileMainSqlFenceBootstrap({ profile: "private.selected-file-main-sql-fence-bootstrap.v1", executionAuthorized: false }, {}));
   const owner = await import("../src/current-pcb-via-write-owner.ts");
+  const central = await import("../src/current-pcb-diagnostic-owner.ts");
+  assert.throws(() => Reflect.apply(central.requireOriginalCurrentPcbViaSaveWorkerOrigin, undefined, [{ profile: "private.current-pcb-via-save-worker-origin.v1" }, {}, {}]), /SAVE_WORKER_ORIGINAL/u);
   const forged: unknown = Object.create(owner.CurrentPcbViaWriteOwner.prototype);
   // Deliberate untyped runtime forgery; no constructor or native process runs.
   assert.throws(() => Reflect.apply(owner.assertOriginalCurrentPcbViaWriteOwner, undefined, [forged]));
