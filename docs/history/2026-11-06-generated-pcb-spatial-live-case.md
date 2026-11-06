@@ -52,3 +52,11 @@ both original failures privately. A cleanup failure cannot hide the first
 capture step, and renderer text or opaque handles do not enter the diagnostic.
 The source fix still requires regeneration of the shared helper and a fresh
 disposable live case. This failed attempt is not positive spatial validation.
+
+The follow-up development build also exposed a generator composition defect.
+Both the new Via continuation dispatcher and the schematic dispatcher inserted
+before the same switch case. A second generation duplicated both blocks. The
+schematic generator now moves only its single exact known block before the Via
+step, rejects duplicate or altered action blocks, and produces identical bytes
+on repeated combined generation. The original failed build log is retained.
+This correction changes build assembly only and grants no writer authority.
