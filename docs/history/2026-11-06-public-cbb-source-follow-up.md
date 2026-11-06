@@ -36,3 +36,19 @@ concern that creator's runtime. The inspected public source and release records
 contain no exact anonymous system-owned witness suitable for this plugin, and
 their private write evidence cannot qualify our installed209 route. This
 repository was also read without executing its scripts or copying its code.
+
+## Shipped system-library source
+
+Read-only inspection also checked the installed vendor asset
+`assets/db/easyeda-std.elib`,473,903,104bytes, SHA256
+`7bd571b9536ffc540c5a0f081ab90e7f4c95fd799e87e959249e3b5196f9d38d`.
+The full immutable source has205 SQLite tables, zero project rows and zero board
+rows. It therefore supplies no local CBB project/board witness for this route.
+The initial schema-listing bound of64tables refused before printing a partial
+list; a separate cardinality-bounded source query established the205-table
+roster. SQLite opened the retained regular source descriptor read-only with
+extension loading disabled, trusted schema disabled and query-only enabled.
+File identity/content hashing stayed unchanged. No user library, user design,
+application, project open or SDK/HTTP absence probe was involved. This static
+source result does not establish absence in the vendor's online catalog or
+satisfy the positive anonymous API witness requirement.
