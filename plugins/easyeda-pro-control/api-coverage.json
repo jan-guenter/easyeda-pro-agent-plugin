@@ -15,7 +15,7 @@
       "omitted": 479
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 464,
+      "available-with-runtime-guards": 465,
       "available-with-network-guards": 16,
       "available-with-managed-file-guards": 3,
       "blocked": 94,
@@ -11113,6 +11113,48 @@
       "installed209Declaration": true,
       "status": "implemented-native-equivalent",
       "routes": [
+        {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "spatial/observe-spatial-pads",
+          "implementation": "native-task-equivalent",
+          "scope": "Alternative once-only standalone circular SMT Pad-only point reader on the fresh original pcb209-spatial-* disposable owner. It qualifies 215 original callees and fits 344 total requests within the unchanged 384-ID cap, including original group release. One to sixteen ordered point queries use two matching native samples and retain selected IDs and complete supported scene descriptors. Only ready Mi views/tE models on copper layers 1 or 2 with rotation zero and padType zero, no parent and no smart Pad state are admitted. Mixed Component/Via/Line/Arc/Text scenes, placed or polygon Pads and every region request refuse before native hits. Component prefiltering still requires qualified Ji footprint-cache lineage, the yqe/Ae transform chain and its iE._modify scratch effect; Component regions additionally require Gs. Existing Via/Line/Arc generated fixtures cannot validate a positive Pad case. Original checkpoint opening, exact source/owner custody, normal close, root/empty-Job termination and helper release remain required. Bounded native geometry scratch effects are accepted explicitly. Public SDK instances, ordinary-board scope, connectivity, complete source/SQL membership, persistence, writers and Save remain unproved. Source-shaped tests and actual vendor geometry execution are offline evidence; connected Pad acceptance remains pending.",
+          "source": [
+            "current-pcb-spatial-validation.ts",
+            "current-pcb-209-spatial-pad-read.ts",
+            "current-pcb-209-spatial-pad-kernel.ts",
+            "current-pcb-209-spatial-pad-source-profile.ts",
+            "current-pcb-209-spatial-pad-capture.ts",
+            "current-pcb-209-spatial-pad-read-program.ts",
+            "current-pcb-spatial-capture-runner.ts",
+            "current-pcb-spatial-profile.ts",
+            "current-pcb-spatial-protocol.ts",
+            "current-pcb-diagnostic-pipe.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "current-pcb-diagnostic-lifecycle.ts",
+            "current-pcb-diagnostic-lifecycle-journal.ts"
+          ],
+          "tests": [
+            "current-pcb-209-spatial-pad-read.test.ts",
+            "current-pcb-spatial-pipe.test.ts",
+            "current-pcb-spatial-lifecycle.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-spatial",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_pcb209_opening",
           "selector": "spatial/observe-spatial-arcs",
@@ -44273,7 +44315,7 @@
           "tool": "easyeda_control_fixture_import",
           "selector": "import-generated-fixture",
           "implementation": "public-method",
-          "scope": "Narrow generated disposable validation subset only. One new fixed Via-only or Line/Via format2 archive, private managed staging, exact empty StartPage and same original ordinary209 launch; no caller file/path/geometry/code/SQL. A separately tracked actual-config getter and original no-.elib directory watches exclude the detached system-library seed branch only after original application termination and drained cancellation. Original public SDK File/local-folder import Promise is invoked once with autoOpenfalse and retained through settlement. Returned SDK identity is intermediate evidence; importedFixtureAccepted, complete closed SQL/source membership and persistent registration remain false. Original journal/runtime/session cleanup, one normal close, root/empty Job, original destination/watch release and explicit owner release are required before ordinary helper release or controller replacement. Unknown effects, pending publications and partial outputs are retained; exact local record settlement never repeats import. No deletion, explicit Save, prompt choice, force termination, historical ownership or general file import contract. Source/offline checks and helper compilation are not connected validation.",
+          "scope": "Narrow generated disposable validation subset only. One new fixed Via-only, Line/Via, Arc/Line/Via or SCH/SCH_PAGE Text/Wire/Bus format2 archive, private managed staging, exact empty StartPage and same original ordinary209 launch; no caller file/path/geometry/code/SQL. A separately tracked actual-config getter and original no-.elib directory watches exclude the detached system-library seed branch only after original application termination and drained cancellation. Original public SDK File/local-folder import Promise is invoked once with autoOpenfalse and retained through settlement. Returned SDK identity is intermediate evidence; importedFixtureAccepted, complete closed SQL/source membership and persistent registration remain false. Original journal/runtime/session cleanup, one normal close, root/empty Job, original destination/watch release and explicit owner release are required before ordinary helper release or controller replacement. Unknown effects, pending publications and partial outputs are retained; exact local record settlement never repeats import. No deletion, explicit Save, prompt choice, force termination, historical ownership or general file import contract. Source/offline checks and helper compilation are not connected validation.",
           "source": [
             "managed-fixture-generator.ts",
             "managed-fixture-archive.ts",

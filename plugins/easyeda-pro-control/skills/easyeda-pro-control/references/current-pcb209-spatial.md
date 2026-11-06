@@ -1,9 +1,8 @@
 # Disposable PCB point and region identities
 
 Use this reference for the separate `spatial` development/validation purpose on
-the reviewed EasyEDA 3.2.209 installation. It supports restricted Via, Line/Via or
-Arc/Line/Via scenes,
-not point picking on an ordinary populated user board. For general object
+the reviewed EasyEDA 3.2.209 installation. It supports restricted Via, Line/Via,
+Arc/Line/Via and standalone circular SMT Pad-only scenes. For general object
 observations, use [the opening reader](current-pcb209-opening.md).
 
 Discover `easyeda_control_api` action `pcb209-spatial` with
@@ -70,6 +69,17 @@ family `Arc`. It qualifies265 original application functions, keeping the same
 schema and consumes the same observation slot; no variant can follow another
 variant's completed or failed attempt.
 
+For a scene containing only ready standalone circular SMT Pads, choose
+`observe-spatial-pads` with one to sixteen point queries. Its distinct immutable
+result shares that same consumed observation slot. It qualifies 215 original
+callees and uses 344 of the unchanged 384 request IDs, including group release.
+Pads must use the supported Mi view and tE model, copper layer 1 or 2, rotation
+zero and padType zero, with no parent or smart Pad state. Mixed families,
+placed or polygon Pads and every region query refuse before native hits.
+The existing Via/Line/Arc generated fixtures cannot establish positive Pad
+validation. A matching generated Pad fixture and connected acceptance remain
+pending.
+
 ## Supported scene and effects
 
 The initial scene contains only standalone, unlocked, visible through vias in
@@ -88,8 +98,11 @@ applies across admitted families and layers. The Arc action additionally
 requires a finite positive circular radius, bounded start/end angles, an exact
 clockwise/counterclockwise enum, arcType1, width at least0.05 native units and
 copper layer1 or2. It requires the original ready model/view/index and cached
-bounds. Graphical native Arc/Line models, components, pads and other families
-remain unsupported. These actions are not general populated-board pickers.
+bounds. Graphical native Arc/Line models and components remain unsupported.
+The Pad-only alternative does not extend those mixed-family scenes. Component
+point prefiltering needs qualified footprint-cache lineage, the yqe/Ae transform
+chain and its iE._modify scratch effect; region filtering also needs Gs.
+These actions do not accept an ordinary populated board.
 
 Each query returns bounded ordered supported identities from two matching native
 samples, together with the ordered selected IDs and retained-descriptor checks.
