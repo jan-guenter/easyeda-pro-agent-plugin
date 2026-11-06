@@ -51,3 +51,23 @@ observed. Environment completion, destination-helper release, ordinary helper
 release and facade retirement are still pending at this checkpoint. No project
 was imported/opened, no edit or explicit Save was dispatched, and no prompt was
 answered. Later terminal cleanup belongs below this original failure record.
+
+## Original fourth-case cleanup completed
+
+The completed original environment getter used its distinct retained cleanup
+nonce. Normal close, original root/empty-Job termination, exact session/dispatch
+closure and environment cleanup completed. Its capture-release flags remained
+false because this successfully returned getter had no orphan capture to release;
+no extra release was invented. The retained destination transport then closed
+through its supported EOF path with exit1 and no signal. Its final observation
+and migration-exclusion proof remain absent. No file was deleted.
+
+The fixture reservation released. The separate ordinary termination record binds
+launch SHA256
+`746341618ff01faa796203f11dc2e2f2cfe06fa9228292e3757893c570d014d0`
+to termination SHA256
+`78e6ffd1c23175bab945ef0770d0f387312e8636725f2de618796b08f8eaaea4`.
+Original helper transport closure and index-allocation release were acknowledged.
+Generation4 then retired with lease release, stdin EOF, observed process/stdio
+closure and exit0. The manager remains alive between facades. No Save, prompt
+choice, forced termination or controller adoption was used.

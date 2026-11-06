@@ -44,3 +44,27 @@ JSON directory-array parser, so this particular correction does not change its
 source identity. Three original destination transport/source-hash regressions
 and strict type-aware lint pass; actual destination construction/import remains
 separate native validation.
+
+## Actual Windows parser and compilation checks
+
+The first maintained5.1 check failed `parser-array-roster` before C# or native
+allocation. The early diagnostic JSON serialized the returned Object[] as an
+extended wrapper containing `value` and `Count`. The final helper creates a
+fresh CLR string[] only after validating every original array member. Its same
+14-case check then passed on actual Windows PowerShell5.1.19041.6456, exit0
+with empty stderr. No C#, directory/watch, application or SQL action ran in
+that parser check. This does not recover the earlier native helper's lost error.
+
+The final18821byte destination helper at the SHA above also passed actual
+Windows5.1 `-CompileOnly`, exit0 with empty stdout/stderr and unchanged source
+before/after. The separate18296byte closed-data helper, SHA256
+`42e2395c6d04c972569a43a2f8f460b8b772db34340f475c9b4ce911c2369f17`,
+passed the same compilation prerequisite. Neither command constructs a native
+file/watch owner, starts EasyEDA or qualifies connected data reuse/import.
+
+The Windows GitHub workflow now includes the maintained parser check and both
+isolated helper compilations. Their unmodified run bodies passed locally under
+Windows5.1 with strict mode and a child-only workspace prologue. An initial
+local invocation lacked the Windows workspace environment variable and stopped
+before reaching the helper; its failure is retained. These are local checks,
+not hosted CI. Exact final GitHub runs remain required for release.

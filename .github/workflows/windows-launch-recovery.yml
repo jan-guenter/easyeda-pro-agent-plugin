@@ -100,6 +100,40 @@ jobs:
           Write-Output 'Windows PowerShell 5.1 recovery helper emitted no stderr, observed its parent and no EasyEDA process.'
           exit 0
 
+      - name: Check fixture directory parsing on Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-StrictMode -Version Latest
+          & (Join-Path $env:GITHUB_WORKSPACE 'plugins\easyeda-pro-control\scripts\check-managed-fixture-library-parser.ps1')
+
+      - name: Compile fixture destination and read-only data helpers without allocation
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-StrictMode -Version Latest
+          foreach ($name in @('managed-fixture-destination.ps1', 'closed-generated-fixture-data.ps1')) {
+            $script = Join-Path $env:GITHUB_WORKSPACE ('plugins\easyeda-pro-control\scripts\' + $name)
+            $child = [Diagnostics.Process]::new()
+            $child.StartInfo.FileName = Join-Path $PSHOME 'powershell.exe'
+            $child.StartInfo.Arguments = '-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $script + '" -CompileOnly'
+            $child.StartInfo.UseShellExecute = $false
+            $child.StartInfo.CreateNoWindow = $true
+            $child.StartInfo.RedirectStandardOutput = $true
+            $child.StartInfo.RedirectStandardError = $true
+            try {
+              if (-not $child.Start()) { throw ('Fixture compilation helper did not start: ' + $name) }
+              $stdout = $child.StandardOutput.ReadToEndAsync()
+              $stderr = $child.StandardError.ReadToEndAsync()
+              if (-not $child.WaitForExit(30000)) { throw ('Fixture compilation helper timed out: ' + $name) }
+              if (-not [Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($stdout, $stderr), 5000)) { throw ('Fixture compilation output did not close: ' + $name) }
+              if ($child.ExitCode -ne 0 -or $stdout.Result.Length -ne 0 -or $stderr.Result.Length -ne 0) {
+                throw ('Fixture compilation refused: ' + $name + ' exit=' + $child.ExitCode + ' stderr=' + $stderr.Result.Substring(0, [Math]::Min(4096, $stderr.Result.Length)))
+              }
+            } finally { $child.Dispose() }
+          }
+          Write-Output 'Fixture helpers compiled without directory/watch allocation, application launch or SQL.'
+
       - name: Compile each fixed owner purpose and check empty Job and pipe inheritance
         shell: powershell
         run: |

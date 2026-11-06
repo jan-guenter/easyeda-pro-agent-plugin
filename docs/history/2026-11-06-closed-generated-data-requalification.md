@@ -153,3 +153,15 @@ source transfer. Both TypeScript projects and strict type-aware zero-warning
 lint pass. Linux .NET C# compilation checks syntax only; Windows5.1
 `-CompileOnly` and actual fresh closed-data/helper execution remain root-owned
 prerequisites. No native acceptance is advertised by the tests.
+
+## Windows compilation prerequisite completed
+
+The root executed the exact18296byte helper, SHA256
+`42e2395c6d04c972569a43a2f8f460b8b772db34340f475c9b4ce911c2369f17`,
+with Windows PowerShell5.1 `-CompileOnly`. It exited0 with empty stdout/stderr;
+the complete source stayed unchanged. The new Windows CI step also compiled it
+locally through its original child/pipe wrapper. No file lease, native owner
+constructor, application, source SQLite or connected reuse ran. The public
+[index mount](2026-11-06-closed-generated-data-index-mount.md) is now in the
+canonical source batch; full generated payload/CI and connected reuse remain
+separate requirements.
