@@ -9,16 +9,16 @@ import { CURRENT_PCB_VIA_SAVE_CALLS as CALLS } from "./current-pcb-via-save-prog
 import { CURRENT_PCB_VIA_SAVE_CALL_FLAGS as CALL_FLAGS, CURRENT_PCB_VIA_SAVE_FRAME_FLAGS as FRAME_FLAGS,
   CURRENT_PCB_VIA_SAVE_REQUESTS as REQUESTS, validateCurrentPcbViaSaveCommand } from "./current-pcb-via-save-protocol.ts";
 import type { CurrentPcbViaSaveCommand } from "./current-pcb-via-save-protocol.ts";
-import { captureCurrentPcbViaSaveReply, currentPcbViaSaveArrayObject, currentPcbViaSaveArrayValue, decodeCurrentPcbViaSaveArray, decodeCurrentPcbViaSaveArrayCapture, decodeCurrentPcbViaSaveBodyValue, decodeCurrentPcbViaSaveBreakpoint, decodeCurrentPcbViaSaveEvent, decodeCurrentPcbViaSaveMethod,
-  decodeCurrentPcbViaSavePause, requireCurrentPcbViaSaveEmpty, requireCurrentPcbViaSaveMethodDescription } from "./current-pcb-via-save-replies.ts";
-import type { CurrentPcbViaSaveBodyValue } from "./current-pcb-via-save-replies.ts";
+import { captureCurrentPcbViaSaveReply, currentPcbViaSaveArrayObject, currentPcbViaSaveArrayValue, decodeCurrentPcbViaSaveArray, decodeCurrentPcbViaSaveArrayCapture, decodeCurrentPcbViaSaveBreakpoint, decodeCurrentPcbViaSaveEvent, decodeCurrentPcbViaSaveMethod, decodeCurrentPcbViaSavePause,
+  decodeCurrentPcbViaSavePendingBodyValue, requireCurrentPcbViaSaveEmpty, requireCurrentPcbViaSaveMethodDescription } from "./current-pcb-via-save-replies.ts";
+import type { CurrentPcbViaSavePendingBodyValue } from "./current-pcb-via-save-replies.ts";
 import { CURRENT_PCB_VIA_SAVE_METHODS as METHODS, CURRENT_PCB_VIA_SAVE_SITES as SITES, captureCurrentPcbViaSaveScriptReply, qualifyCurrentPcbViaSaveScriptReply,
   requireOriginalCurrentPcbViaSaveSource } from "./current-pcb-via-save-source.ts";
 import type { CurrentPcbViaSaveSite } from "./current-pcb-via-save-source.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export interface CurrentPcbViaSaveBodyObservation {
-  readonly schema: "private.current-pcb-via-save-body-observation.v1"; readonly value: CurrentPcbViaSaveBodyValue; readonly bodySha256: string;
+  readonly schema: "private.current-pcb-via-save-body-observation.v2"; readonly value: CurrentPcbViaSavePendingBodyValue; readonly bodySha256: string;
   readonly originalAwaitedClockContinuationObserved: true; readonly originalFullCompressReturnObserved: true;
   readonly selectedClockResponderVerified: false; readonly selectedSqlAuthorized: false; readonly persistenceVerified: false;
 }
@@ -111,10 +111,10 @@ export class CurrentPcbViaSaveObserver {
       const body = await this.#capture("body", this.#arrays.get("compress") ?? "missing"), objectId = this.#arrays.get("body"); need(objectId !== undefined, "BODY_MISSING");
       const valueCommand = validateCurrentPcbViaSaveCommand({ phase: "via-save-value", method: "Runtime.callFunctionOn", params: {
         ...CALL_FLAGS, objectId, functionDeclaration: CALLS.value, arguments: [{ objectId: this.#arrays.get("entry") }], returnByValue: true } });
-      const value = decodeCurrentPcbViaSaveBodyValue(await this.#send(valueCommand));
+      const value = decodeCurrentPcbViaSavePendingBodyValue(await this.#send(valueCommand));
       need(value.documentUuid === this.#plan.target.documentUuid && value.projectUuid === this.#plan.target.projectUuid && value.clock === currentPcbViaSaveArrayValue(body, 3) &&
         value.headTicket === currentPcbViaSaveArrayValue(body, 4) && value.body === currentPcbViaSaveArrayValue(body, 5), "BODY_VALUE");
-      const packet: CurrentPcbViaSaveBodyObservation = freezeDeep({ schema: "private.current-pcb-via-save-body-observation.v1", value, bodySha256: sha256Text(value.body),
+      const packet: CurrentPcbViaSaveBodyObservation = freezeDeep({ schema: "private.current-pcb-via-save-body-observation.v2", value, bodySha256: sha256Text(value.body),
         originalAwaitedClockContinuationObserved: true, originalFullCompressReturnObserved: true, selectedClockResponderVerified: false, selectedSqlAuthorized: false, persistenceVerified: false });
       this.#body = packet; bodies.set(packet, Object.freeze({ observer: this, owner: this.#owner, plan: this.#plan, text: canonicalJson(packet) })); return packet;
     } catch (error) { this.#failure(); throw error; } finally { this.#busy = false; }

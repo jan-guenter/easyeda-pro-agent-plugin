@@ -285,3 +285,30 @@ actual inherited accessor shape. Own-property shadowing, changed backing state
 and replaced getters refuse with zero application/getter calls. Sixteen focused
 Save/clock/native-boundary cases, strict types and zero-warning type-aware lint
 pass. The fixed codebook changed; root still owns final helper/pin regeneration.
+
+## Original pending node and body proof v2
+
+The actual Via observer and native Core now capture the sole selected uniqueId
+Set entry and its original `wDocData` Map, link and last node before the clock.
+The same native collection identities, data, client and actual ticket remain
+bound through allocation. Compression must clear the original Set, delete its
+document entry and remove the node's `unique` and `pend` fields. The Save header
+must be exactly one above the captured worker maximum.
+
+The new private body-value, body-observation, projection and delta v2 schemas
+use that retained ticket and the actual worker `PRO_EDITOR_VERSION`. They also
+retain the prior header version and user; the effective user follows the source
+`PROJECT.user || docHead.user` expression and preserves actual JSON key order.
+The initial archive's maximum and renderer version supply neither value on this
+path. Historical v1 decoder and pure delta behavior remain separate.
+
+The existing pauses carry these extra joins, so the finite Save request count
+stays 43. Fixed function literals changed and require the parent's next combined
+native codebook generation. No helper or pin was regenerated here.
+
+Twenty-one focused program, async observer, projection, original main-cursor and
+Fetch/fence regressions passed, along with strict type-aware lint and full
+TypeScript checks. Save and selected SQL remain denied. Next work must enroll the
+original pre-Save main/worker/clock generation, join the genuine POST to the held
+body, and authorize each original native SQL call separately. Structure task
+completion, full closed SQL and a separate fresh saved read remain required.

@@ -26,7 +26,7 @@ async function fixture(delayed = false): Promise<Readonly<{ observer: CurrentPcb
   const plan = Object.freeze({ target: { documentUuid: "a".repeat(32), projectUuid: "b".repeat(64) } }); const source = Object.freeze({ explicitSyntheticSource: true });
   const state = { exited: false, failed: false, resumes: 0 }; const order = ["entry", "clock", "compress", "body", "result"] as const;
   let index = 0; const notices: unknown[] = []; const event = Promise.withResolvers<unknown>(); const ready = Promise.withResolvers<null>();
-  const value = { ...plan.target, uniqueId: "compiler", client: "client", clock: 1_700_000_000_123, headTicket: 5, body: "original-body", userUndefined: true, userJson: null };
+  const value = { schema:"private.current-pcb-via-save-body-value.v2", pending:{maximumTicket:4,primitiveId:"3333333333333333",ticket:3,client:"producer",dataType:"VIA",data:"{}",canvasUuid:plan.target.documentUuid,workerEditVersion:"3.2.185",priorVersion:"prior",priorUserUndefined:true,priorUserJson:null}, ...plan.target, uniqueId: "compiler", client: "client", clock: 1_700_000_000_123, headTicket: 5, body: "original-body", userUndefined: true, userJson: null };
   const array = (role: typeof order[number]): unknown => {
     const length = role === "entry" ? 13 : SITES[role].length; const entries: unknown[] = [];
     for (let position = 0; position < length; position += 1) {

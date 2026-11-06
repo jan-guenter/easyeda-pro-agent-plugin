@@ -41,7 +41,7 @@ async function fixture(options: Readonly<{ first?: "reply" | "complete"; delayed
 }>> {
   const owner = Object.freeze({ explicitSyntheticOwner: true }); const origin = Object.freeze({ explicitSyntheticOrigin: true }); const workerSource = Object.freeze({ explicitSyntheticSource: true });
   const plan = Object.freeze({ target: { documentUuid: "a".repeat(32), projectUuid: "b".repeat(64), branchUuid: "c".repeat(32) } });
-  const body: CurrentPcbViaSaveBodyObservation = Object.freeze({ schema: "private.current-pcb-via-save-body-observation.v1", value: { ...plan.target, clock: value,
+  const body: CurrentPcbViaSaveBodyObservation = Object.freeze({ schema: "private.current-pcb-via-save-body-observation.v2", value: { schema:"private.current-pcb-via-save-body-value.v2" as const, pending:{maximumTicket:4,primitiveId:"3333333333333333",ticket:3,client:"producer",dataType:"VIA" as const,data:"{}",canvasUuid:plan.target.documentUuid,workerEditVersion:"3.2.185",priorVersion:"prior",priorUserUndefined:true,priorUserJson:null}, ...plan.target, clock: value,
     uniqueId: "compiler", client: "client", headTicket: 5, body: "synthetic-body", userUndefined: true, userJson: null }, bodySha256: "d".repeat(64),
     originalAwaitedClockContinuationObserved: true, originalFullCompressReturnObserved: true, selectedClockResponderVerified: false, selectedSqlAuthorized: false, persistenceVerified: false });
   const state = { exited: false, failed: false, normal: 0, cleanup: 0, resumes: 0 }; const queue: unknown[] = [paused("push")];

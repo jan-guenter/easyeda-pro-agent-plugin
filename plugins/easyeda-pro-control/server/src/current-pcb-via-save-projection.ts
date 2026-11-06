@@ -10,16 +10,16 @@ import { requireOriginalCurrentPcbViaSaveBody } from "./current-pcb-via-save-obs
 import type { CurrentPcbViaSaveBodyObservation } from "./current-pcb-via-save-observer.ts";
 import { requireOriginalCurrentPcbViaClockBodyJoin } from "./current-pcb-via-clock-observer.ts";
 import type { CurrentPcbViaClockBodyJoin } from "./current-pcb-via-clock-observer.ts";
-import { compareCurrentPcbViaSaveDelta } from "./current-pcb-via-save-delta.ts";
-import type { CurrentPcbViaSaveDelta } from "./current-pcb-via-save-delta.ts";
+import { compareCurrentPcbViaPendingSaveDelta } from "./current-pcb-via-save-delta.ts";
+import type { CurrentPcbViaPendingSaveDelta } from "./current-pcb-via-save-delta.ts";
 
 export interface CurrentPcbViaSaveProjection {
-  readonly schema: "private.current-pcb-via-save-projection.v1"; readonly bodySha256: string; readonly primitiveId: string;
+  readonly schema: "private.current-pcb-via-save-projection.v2"; readonly bodySha256: string; readonly primitiveId: string;
   readonly exactOriginalUniqueIdDeltaVerified: true; readonly originalClockBodyJoinVerified: true;
   readonly selectedSqlAuthorized: false; readonly persistenceVerified: false;
 }
 interface Original { readonly owner: CurrentPcbViaWriteOwner; readonly plan: CurrentPcbViaWritePlan; readonly effect: CurrentPcbViaWriteEffect;
-  readonly body: CurrentPcbViaSaveBodyObservation; readonly clock: CurrentPcbViaClockBodyJoin; readonly delta: CurrentPcbViaSaveDelta; readonly text: string }
+  readonly body: CurrentPcbViaSaveBodyObservation; readonly clock: CurrentPcbViaClockBodyJoin; readonly delta: CurrentPcbViaPendingSaveDelta; readonly text: string }
 const issued = new WeakMap<CurrentPcbViaSaveProjection, Original>(); const attempted = new WeakSet<CurrentPcbViaWriteOwner>();
 function need(value: boolean): asserts value { if (!value) { throw new Error("PCB_VIA_SAVE_ORIGINAL_PROJECTION"); } }
 async function current(original: Omit<Original, "delta" | "text">): Promise<void> {
@@ -36,14 +36,14 @@ export async function qualifyOriginalCurrentPcbViaSaveProjection(owner: CurrentP
   assertOriginalCurrentPcbViaWriteOwner(owner); const original = requireOriginalCurrentPcbViaWritePlan(plan);
   requireOriginalCurrentPcbViaWriteEffect(effect, owner, plan); need(!attempted.has(owner)); attempted.add(owner);
   const input = Object.freeze({ owner, plan, effect, body, clock }); await current(input);
-  const delta = compareCurrentPcbViaSaveDelta(plan, original.history, requireOriginalCurrentPcbViaWriteEffect(effect, owner, plan), body.value);
+  const delta = compareCurrentPcbViaPendingSaveDelta(plan, original.history, requireOriginalCurrentPcbViaWriteEffect(effect, owner, plan), body.value);
   need(delta.bodySha256 === body.bodySha256); await current(input);
-  const token: CurrentPcbViaSaveProjection = Object.freeze({ schema: "private.current-pcb-via-save-projection.v1", bodySha256: delta.bodySha256, primitiveId: delta.primitiveId,
+  const token: CurrentPcbViaSaveProjection = Object.freeze({ schema: "private.current-pcb-via-save-projection.v2", bodySha256: delta.bodySha256, primitiveId: delta.primitiveId,
     exactOriginalUniqueIdDeltaVerified: true, originalClockBodyJoinVerified: true, selectedSqlAuthorized: false, persistenceVerified: false });
   issued.set(token, Object.freeze({ ...input, delta, text: canonicalJson(token) })); return token;
 }
 export async function requireOriginalCurrentPcbViaSaveProjection(token: CurrentPcbViaSaveProjection, owner: CurrentPcbViaWriteOwner,
-  plan: CurrentPcbViaWritePlan): Promise<CurrentPcbViaSaveDelta> {
+  plan: CurrentPcbViaWritePlan): Promise<CurrentPcbViaPendingSaveDelta> {
   const original = issued.get(token); need(original !== undefined && original.owner === owner && original.plan === plan && original.text === canonicalJson(token));
   await current(original); need(issued.get(token) === original); return original.delta;
 }

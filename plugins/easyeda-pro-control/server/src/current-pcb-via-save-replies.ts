@@ -5,6 +5,7 @@ import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_PCB_VIA_SAVE_METHODS as METHODS, CURRENT_PCB_VIA_SAVE_SITES as SITES, CURRENT_PCB_VIA_SAVE_SOURCE as SOURCE } from "./current-pcb-via-save-source.ts";
 import type { CurrentPcbViaSaveSite } from "./current-pcb-via-save-source.ts";
+import { currentProjectCanvasPendingValueSchema } from "./current-project-canvas-pending-value.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 const handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
@@ -24,13 +25,21 @@ export function decodeCurrentPcbViaSaveArrayCapture(input: unknown, length: numb
   const remote = z.strictObject({ type: z.literal("object"), subtype: z.literal("array"), className: z.literal("Array"), objectId: handle, description: z.literal(`Array(${String(length)})`) });
   return z.strictObject({ result: remote }).parse(captureCurrentPcbStringClockReply(input).value).result.objectId;
 }
-const value = z.strictObject({ documentUuid: z.string().regex(/^[a-f\d]{32}$/u), projectUuid: z.string().regex(/^[a-f\d]{64}$/u),
+const bodyFields = { documentUuid: z.string().regex(/^[a-f\d]{32}$/u), projectUuid: z.string().regex(/^[a-f\d]{64}$/u),
   uniqueId: z.string().min(1).max(128), client: z.string().min(1).max(128), clock: z.number().int().positive().max(8_640_000_000_000_000),
   headTicket: z.number().int().positive().max(Number.MAX_SAFE_INTEGER - 1), body: z.string().min(1).max(16_384).refine(text => text.isWellFormed() && Buffer.byteLength(text) <= 16_384),
-  userUndefined: z.boolean(), userJson: z.string().max(4096).nullable() }).refine(packet => packet.userUndefined === (packet.userJson === null));
+  userUndefined: z.boolean(), userJson: z.string().max(4096).nullable() };
+const value = z.strictObject(bodyFields).refine(packet => packet.userUndefined === (packet.userJson === null));
 export type CurrentPcbViaSaveBodyValue = Readonly<z.infer<typeof value>>;
 export function decodeCurrentPcbViaSaveBodyValue(input: unknown): CurrentPcbViaSaveBodyValue {
   const remote = z.strictObject({ type: z.literal("object"), value });
+  return freezeDeep(z.strictObject({ result: remote }).parse(captureCurrentPcbStringClockReply(input).value).result.value);
+}
+const pendingBodyValue = z.strictObject({ ...bodyFields, schema: z.literal("private.current-pcb-via-save-body-value.v2"), pending: currentProjectCanvasPendingValueSchema })
+  .refine(packet => packet.userUndefined === (packet.userJson === null) && packet.headTicket === packet.pending.maximumTicket + 1);
+export type CurrentPcbViaSavePendingBodyValue = Readonly<z.infer<typeof pendingBodyValue>>;
+export function decodeCurrentPcbViaSavePendingBodyValue(input: unknown): CurrentPcbViaSavePendingBodyValue {
+  const remote = z.strictObject({ type: z.literal("object"), value: pendingBodyValue });
   return freezeDeep(z.strictObject({ result: remote }).parse(captureCurrentPcbStringClockReply(input).value).result.value);
 }
 export function requireCurrentPcbViaSaveMethodDescription(input: unknown, role: keyof typeof METHODS): void {

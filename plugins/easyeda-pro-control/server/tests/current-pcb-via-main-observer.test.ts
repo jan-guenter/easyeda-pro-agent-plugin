@@ -21,7 +21,7 @@ void test("Via main codebook keeps fixed request selectors separate and cannot e
 });
 void test("actual observer setup and driver capture retain exact source frames without attributing the unread body or resuming it", async () => {
   const origin = Object.freeze({ explicitOriginSeam: true }); const plan = Object.freeze({ explicitPlanSeam: true });
-  const source = Object.freeze({ explicitSourceSeam: true }); const projection = Object.freeze({ schema: "private.current-pcb-via-save-projection.v1" as const, bodySha256: "d".repeat(64), primitiveId: "3".repeat(16), exactOriginalUniqueIdDeltaVerified: true as const, originalClockBodyJoinVerified: true as const, selectedSqlAuthorized: false as const, persistenceVerified: false as const });
+  const source = Object.freeze({ explicitSourceSeam: true }); const projection = Object.freeze({ schema: "private.current-pcb-via-save-projection.v2" as const, bodySha256: "d".repeat(64), primitiveId: "3".repeat(16), exactOriginalUniqueIdDeltaVerified: true as const, originalClockBodyJoinVerified: true as const, selectedSqlAuthorized: false as const, persistenceVerified: false as const });
   const owner = Object.freeze({ bindViaMainOriginalBody: (p: unknown, o: unknown): unknown => { assert.equal(p, plan); assert.equal(o, origin); return { bodySha256: projection.bodySha256, primitiveId: projection.primitiveId }; } });
   const commands: CurrentPcbViaMainCommand[] = []; let delivered = false, failed = false, saveAttempted = false;
   const event = { method: "Debugger.paused", params: { reason: "other", hitBreakpoints: ["sql-driver"], callFrames: [

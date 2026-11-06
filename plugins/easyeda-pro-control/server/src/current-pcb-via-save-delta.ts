@@ -4,7 +4,7 @@ import { z } from "zod";
 import { canonicalJson, sha256Text } from "./core.ts";
 import type { CurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
 import type { CurrentPcbViaProjectedEffect } from "./current-pcb-via-write-effect-data.ts";
-import type { CurrentPcbViaSaveBodyValue } from "./current-pcb-via-save-replies.ts";
+import type { CurrentPcbViaSaveBodyValue, CurrentPcbViaSavePendingBodyValue } from "./current-pcb-via-save-replies.ts";
 import type { NativeHistorySnapshot } from "./native-history.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
@@ -53,5 +53,41 @@ export function compareCurrentPcbViaSaveDelta(plan: CurrentPcbViaWritePlan, hist
   need(value.body === expected && Buffer.byteLength(expected) <= 16_384, "EXACT_BODY");
   return freezeDeep({ schema: "private.current-pcb-via-save-delta.v1", dataStr: value.body, bodySha256: sha256Text(value.body), documentUuid: document.uuid,
     primitiveId: effect.primitiveId, primitiveTicket, headTicket: value.headTicket, sourceBody, exactUniqueIdDeltaVerified: true,
+    sourcePeerProjectionVerified: false, selectedSqlAuthorized: false, persistenceVerified: false });
+}
+
+export interface CurrentPcbViaPendingSaveDelta extends Omit<CurrentPcbViaSaveDelta, "schema"> {
+  readonly schema: "private.current-pcb-via-save-delta.v2";
+  readonly originalPendingNodeVerified: true; readonly maximumTicketBeforeSave: number;
+  readonly workerEditVersion: string | null;
+}
+/** Current original-worker proof. Tickets and version come from the retained
+ * actual pending node and worker, independently of initial archive counters. */
+export function compareCurrentPcbViaPendingSaveDelta(plan: CurrentPcbViaWritePlan, history: NativeHistorySnapshot, effect: CurrentPcbViaProjectedEffect,
+  value: CurrentPcbViaSavePendingBodyValue): CurrentPcbViaPendingSaveDelta {
+  need(history.projectUuid === plan.target.projectUuid && history.branchUuid === plan.target.branchUuid && history.documents.length === 1 &&
+    value.projectUuid === plan.target.projectUuid && value.documentUuid === plan.target.documentUuid && effect.operationId === plan.operationId &&
+    effect.documentUuid === plan.target.documentUuid && /^[a-f\d]{16}$/u.test(effect.primitiveId), "IDENTITY");
+  const document = history.documents[0]; need(document !== undefined && document.uuid === plan.target.documentUuid && document.docType === "PCB", "DOCUMENT");
+  need(document.records.every(record => record.id !== effect.primitiveId && ["META", "VIA", "LINE"].includes(record.type)), "BASELINE");
+  const maximumTicket = Math.max(...document.records.map(record => record.ticket)), pending = value.pending;
+  need(Number.isSafeInteger(maximumTicket) && maximumTicket > 0 && pending.maximumTicket >= maximumTicket && pending.ticket > maximumTicket &&
+    pending.ticket <= pending.maximumTicket && value.headTicket === pending.maximumTicket + 1 && pending.canvasUuid === document.uuid &&
+    pending.primitiveId === effect.primitiveId && pending.dataType === "VIA", "ACTUAL_PENDING_NODE");
+  const native = plan.expectedNative;
+  const sourceBody = { partitionId: "", groupId: 0, netName: "", ruleName: "", centerX: rounded(native.x * 10), centerY: rounded(native.y * 10),
+    holeDiameter: rounded(native.holeRadius * 20), viaDiameter: rounded(native.radius * 20), viaType: "NORMAL", topSolderExpansion: 0,
+    bottomSolderExpansion: 0, locked: false, unusedInnerLayers: [] } as const;
+  need(pending.data === JSON.stringify(sourceBody), "ACTUAL_PENDING_DATA");
+  let user: unknown;
+  if (value.userUndefined) { need(value.userJson === null, "USER_UNDEFINED"); }
+  else { need(value.userJson !== null, "USER"); const parsed: unknown = JSON.parse(value.userJson); userSchema.parse(parsed); user = parsed; }
+  const head = { docType: "PCB", client: value.client, uuid: document.uuid, updateTime: value.clock, version: String(value.clock),
+    ...(pending.workerEditVersion !== null && pending.workerEditVersion.length > 0 ? { editVersion: pending.workerEditVersion } : {}), ...(user === undefined ? {} : { user }) };
+  const expected = `${JSON.stringify({ type: "DOCHEAD", ticket: value.headTicket })}||${JSON.stringify(head)}|\n${JSON.stringify({ type: "VIA", ticket: pending.ticket, id: effect.primitiveId })}||${pending.data}`;
+  need(value.body === expected && Buffer.byteLength(expected) <= 16_384, "EXACT_BODY");
+  return freezeDeep({ schema: "private.current-pcb-via-save-delta.v2", dataStr: value.body, bodySha256: sha256Text(value.body), documentUuid: document.uuid,
+    primitiveId: effect.primitiveId, primitiveTicket: pending.ticket, headTicket: value.headTicket, sourceBody, exactUniqueIdDeltaVerified: true,
+    originalPendingNodeVerified: true, maximumTicketBeforeSave: pending.maximumTicket, workerEditVersion: pending.workerEditVersion,
     sourcePeerProjectionVerified: false, selectedSqlAuthorized: false, persistenceVerified: false });
 }

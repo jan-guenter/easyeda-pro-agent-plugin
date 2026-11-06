@@ -7,7 +7,7 @@ import { createContext, runInContext } from "node:vm";
 import { CURRENT_PCB_VIA_SAVE_CALLS as CALLS } from "../src/current-pcb-via-save-programs.ts";
 import { CURRENT_PCB_VIA_SAVE_METHOD_SOURCE, CURRENT_PCB_VIA_SAVE_METHODS as METHODS, CURRENT_PCB_VIA_SAVE_SITES as SITES, CURRENT_PCB_VIA_SAVE_SOURCE as SOURCE,
   qualifyCurrentPcbViaSaveSource } from "../src/current-pcb-via-save-source.ts";
-import { decodeCurrentPcbViaSaveBodyValue, decodeCurrentPcbViaSaveMethod, decodeCurrentPcbViaSavePause } from "../src/current-pcb-via-save-replies.ts";
+import { decodeCurrentPcbViaSaveMethod, decodeCurrentPcbViaSavePause, decodeCurrentPcbViaSavePendingBodyValue } from "../src/current-pcb-via-save-replies.ts";
 import { CURRENT_PCB_VIA_SAVE_REQUESTS, currentPcbViaSaveNativeCases, validateCurrentPcbViaSaveCommand } from "../src/current-pcb-via-save-protocol.ts";
 
 function fixture(): ReturnType<typeof createContext> {
@@ -15,14 +15,16 @@ function fixture(): ReturnType<typeof createContext> {
   runInContext(`globalThis.calls=0;class Gd {get isV2Format(){return this._isV2Format}set isV2Format(t){this._isV2Format=t,this._projectDetails&&(this._projectDetails.isV2Format=t)}}class Lg extends Gd{};globalThis.Gd=Gd;globalThis.PROJECT=Object.assign(new Lg(),{uuid:"${"b".repeat(64)}",_isV2Format:false,isReady:true,isHistoryBack:false,
 consistencyManager:{asyncCompressFull(){calls++;throw Error("forbidden");},getMaxTicket(){calls++;throw Error("forbidden");},setMaxTicket(){calls++;throw Error("forbidden");}},
 wsBus:{rpcCall(){calls++;throw Error("forbidden");}},pcb:{},user:undefined,saveCanvas:({${CURRENT_PCB_VIA_SAVE_METHOD_SOURCE}}).saveCanvas});
+globalThis.PRO_EDITOR_VERSION="3.2.185";globalThis.node={ticket:3,client:"producer",dataType:"VIA",data:"{}",unique:"original-compiler",pend:true};
+globalThis.pendingSet=new Set(["3333333333333333"]);Object.assign(PROJECT.consistencyManager,{maxTicket:4,uniqueIds:{"original-compiler":{"${"a".repeat(32)}":pendingSet}},wDocData:new Map([["${"a".repeat(32)}",new Map([["3333333333333333",{last:node}]])]]),docHead:{"${"a".repeat(32)}":{docType:"PCB",version:"prior"}}});
 globalThis.arg={uuid:"${"a".repeat(32)}",path:"${"b".repeat(64)}",docIds:["${"a".repeat(32)}","BLOB","FONT"],uniqueId:"original-compiler",client:"original-client"};
 globalThis.entryFrame=[PROJECT,arg,PROJECT.consistencyManager];
 globalThis.original=(${CALLS.entry}).call(entryFrame,"${"a".repeat(32)}","${"b".repeat(64)}");
 globalThis.clockFrame=[PROJECT,arg,PROJECT.consistencyManager,1700000000123];
 globalThis.clock=(${CALLS.clock}).call(clockFrame,original,original);
-globalThis.compressFrame=[PROJECT,arg,PROJECT.consistencyManager,1700000000123,5];
+PROJECT.consistencyManager.maxTicket=5;globalThis.compressFrame=[PROJECT,arg,PROJECT.consistencyManager,1700000000123,5];
 globalThis.compress=(${CALLS.compress}).call(compressFrame,original,clock);
-globalThis.bodyFrame=[PROJECT,arg,PROJECT.consistencyManager,1700000000123,5,"original serialized Save body"];`, context);
+pendingSet.clear();delete PROJECT.consistencyManager.uniqueIds["original-compiler"]["${"a".repeat(32)}"];delete node.unique;delete node.pend;globalThis.bodyFrame=[PROJECT,arg,PROJECT.consistencyManager,1700000000123,5,"original serialized Save body"];`, context);
   return context;
 }
 void test("actual Save-shaped frame joins retain the same uniqueId, clock, ticket and full-compress body without invoking methods", () => {
@@ -78,6 +80,15 @@ void test("original function locations, exact pause sites and complete body boun
   assert.equal(decodeCurrentPcbViaSavePause(pause, "body", "original", "bp"), "frame"); assert.throws(() => decodeCurrentPcbViaSavePause(pause, "clock", "original", "bp"));
   const remote: unknown = runInContext(`(${CALLS.value}).call(bodyFrame,original)`, fixture());
   const value: unknown = structuredClone(remote);
-  assert.ok(typeof value === "object" && value !== null); assert.equal(decodeCurrentPcbViaSaveBodyValue({ result: { type: "object", value } }).clock, 1_700_000_000_123);
-  assert.throws(() => decodeCurrentPcbViaSaveBodyValue({ result: { type: "object", value: { ...value, body: "é".repeat(9000) } } }));
+  assert.ok(typeof value === "object" && value !== null); assert.equal(decodeCurrentPcbViaSavePendingBodyValue({ result: { type: "object", value } }).clock, 1_700_000_000_123);
+  assert.throws(() => decodeCurrentPcbViaSavePendingBodyValue({ result: { type: "object", value: { ...value, body: "é".repeat(9000) } } }));
+});
+
+void test("the actual compressed header user falls back to the retained prior header in its original key order", () => {
+  const context = fixture();
+  runInContext(`const manager=PROJECT.consistencyManager;manager.maxTicket=4;node.unique="original-compiler";node.pend=true;pendingSet.add("3333333333333333");manager.uniqueIds["original-compiler"]["${"a".repeat(32)}"]=pendingSet;manager.docHead["${"a".repeat(32)}"].user={nickname:"N",uuid:"u",username:"U"};original=(${CALLS.entry}).call(entryFrame,"${"a".repeat(32)}","${"b".repeat(64)}");manager.maxTicket=5;pendingSet.clear();delete manager.uniqueIds["original-compiler"]["${"a".repeat(32)}"];delete node.unique;delete node.pend;`, context);
+  const raw: unknown = runInContext(`(${CALLS.value}).call(bodyFrame,original)`, context);
+  const value = decodeCurrentPcbViaSavePendingBodyValue({ result: { type: "object", value: structuredClone(raw) } });
+  assert.equal(value.userUndefined, false); assert.equal(value.userJson, '{"nickname":"N","uuid":"u","username":"U"}');
+  assert.equal(value.pending.priorUserJson, value.userJson); assert.equal(value.pending.workerEditVersion, "3.2.185"); assert.equal(runInContext("calls", context), 0);
 });

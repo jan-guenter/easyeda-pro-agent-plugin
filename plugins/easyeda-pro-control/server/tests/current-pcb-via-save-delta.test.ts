@@ -7,7 +7,8 @@ import { test } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { sha256Text } from "../src/core.ts";
-import { compareCurrentPcbViaSaveDelta } from "../src/current-pcb-via-save-delta.ts";
+import { compareCurrentPcbViaPendingSaveDelta, compareCurrentPcbViaSaveDelta } from "../src/current-pcb-via-save-delta.ts";
+import { decodeCurrentPcbViaSaveBodyValue, decodeCurrentPcbViaSavePendingBodyValue } from "../src/current-pcb-via-save-replies.ts";
 import type { CurrentPcbViaSaveProjection } from "../src/current-pcb-via-save-projection.ts";
 
 type CurrentPcbViaWritePlan = Parameters<typeof compareCurrentPcbViaSaveDelta>[0];
@@ -34,7 +35,9 @@ function fixture(): Readonly<{ plan: CurrentPcbViaWritePlan; history: NativeHist
     headTicket: 4, body, userUndefined: true, userJson: null }; return { plan, history, effect, value };
 }
 void test("the actual uniqueId delta has one new Via, source rounding and omitted zIndex without peer or SQL authority", () => {
-  const f = fixture(); const delta = compareCurrentPcbViaSaveDelta(f.plan, f.history, f.effect, f.value);
+  const f = fixture(); assert.deepEqual(decodeCurrentPcbViaSaveBodyValue({result:{type:"object",value:f.value}}),f.value);
+  assert.throws(()=>decodeCurrentPcbViaSavePendingBodyValue({result:{type:"object",value:f.value}}));
+  const delta = compareCurrentPcbViaSaveDelta(f.plan, f.history, f.effect, f.value);
   assert.equal(delta.sourceBody.centerX, 123.4568); assert.equal(JSON.stringify(delta.sourceBody.centerY), "0"); assert.equal(Object.hasOwn(delta.sourceBody, "zIndex"), false);
   assert.equal(delta.sourceBody.holeDiameter, 13.1235); assert.equal(delta.sourceBody.viaDiameter, 29.8754); assert.equal(delta.sourcePeerProjectionVerified, false); assert.equal(delta.selectedSqlAuthorized, false);
   for (const body of [`${f.value.body  }|\n`, f.value.body.replace('"unusedInnerLayers":[]', '"unusedInnerLayers":[],"zIndex":null'),
@@ -45,7 +48,7 @@ void test("the actual uniqueId delta has one new Via, source rounding and omitte
   assert.throws(() => compareCurrentPcbViaSaveDelta(f.plan, f.history, { ...f.effect, primitiveId: "1111111111111111" }, f.value), /BASELINE/u);
 });
 void test("the real late issuer keeps original clock/body/owner references and permits one issuance", async () => {
-  const f = fixture(); const owner = Object.freeze({ explicitOriginalOwnerSeam: true }); const effect = Object.freeze({ proof: f.effect }); const clock = Object.freeze({ explicitOriginalClockSeam: true });
+  const f = pendingFixture(); const owner = Object.freeze({ explicitOriginalOwnerSeam: true }); const effect = Object.freeze({ proof: f.effect }); const clock = Object.freeze({ explicitOriginalClockSeam: true });
   const body = Object.freeze({ value: f.value, bodySha256: sha256Text(f.value.body) }); let current = true;
   const url = new URL("../src/current-pcb-via-save-projection.ts", import.meta.url); const sourceRequire = createRequire(url);
   const output = await transform(await readFile(url, "utf8"), { loader: "ts", format: "cjs", target: "node24" }); const loaded: { exports: Record<string, unknown> } = { exports: {} };
@@ -63,7 +66,20 @@ void test("the real late issuer keeps original clock/body/owner references and p
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The VM executes the real issuer with only the explicit original-reference seams above.
   const projection = token as CurrentPcbViaSaveProjection;
   assert.equal(projection.exactOriginalUniqueIdDeltaVerified, true); assert.equal(projection.selectedSqlAuthorized, false);
-  const delta = await invoke(requireProjection, [projection, owner, f.plan]); assert.deepEqual(delta, compareCurrentPcbViaSaveDelta(f.plan, f.history, f.effect, f.value));
+  const delta = await invoke(requireProjection, [projection, owner, f.plan]); assert.deepEqual(delta, compareCurrentPcbViaPendingSaveDelta(f.plan, f.history, f.effect, f.value));
   await assert.rejects(invoke(requireProjection, [{ ...projection }, owner, f.plan]), /ORIGINAL_PROJECTION/u); await assert.rejects(invoke(qualify, [owner, f.plan, effect, body, clock]), /ORIGINAL_PROJECTION/u);
   current = false; await assert.rejects(invoke(requireProjection, [projection, owner, f.plan])); current = true;
+});
+
+function pendingFixture(): Readonly<Omit<ReturnType<typeof fixture>, "value"> & {value: Parameters<typeof compareCurrentPcbViaPendingSaveDelta>[3]}> {
+  const f=fixture(); const data=JSON.stringify(compareCurrentPcbViaSaveDelta(f.plan,f.history,f.effect,f.value).sourceBody);
+  const body=f.value.body.replace('"ticket":4','"ticket":12').replace('"ticket":3','"ticket":7').replace('"editVersion":"3.2.209"','"editVersion":"3.2.185"');
+  return {...f,value:{...f.value,schema:"private.current-pcb-via-save-body-value.v2",headTicket:12,body,pending:{maximumTicket:11,primitiveId:f.effect.primitiveId,ticket:7,client:"actual-pending-client",dataType:"VIA",data,canvasUuid:f.plan.target.documentUuid,workerEditVersion:"3.2.185",priorVersion:"old-version",priorUserUndefined:true,priorUserJson:null}}};
+}
+void test("current body binds the actual retained pending ticket, maximum, data and worker version",()=>{
+  const f=pendingFixture(); const delta=compareCurrentPcbViaPendingSaveDelta(f.plan,f.history,f.effect,f.value);
+  assert.equal(delta.primitiveTicket,7);assert.equal(delta.maximumTicketBeforeSave,11);assert.equal(delta.headTicket,12);assert.equal(delta.workerEditVersion,"3.2.185");assert.equal(delta.originalPendingNodeVerified,true);
+  for(const pending of [{...f.value.pending,ticket:8},{...f.value.pending,maximumTicket:12},{...f.value.pending,data:"{}"},{...f.value.pending,workerEditVersion:"3.2.209"}]){
+    assert.throws(()=>compareCurrentPcbViaPendingSaveDelta(f.plan,f.history,f.effect,{...f.value,pending}));
+  }
 });
