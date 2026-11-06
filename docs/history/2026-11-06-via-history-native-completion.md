@@ -439,3 +439,37 @@ fake-native VM seams and do not qualify a browser function or issue ownership.
 Full types and strict lint pass. Actual native mounting, complete durable backup,
 current pre-delete UI/writer exclusion, once-only deletion and cold loading
 remain required; cache deletion and reopened/persistence claims stay false.
+
+### Complete metadata/body data join and durable backup publication
+
+`buildCurrentPcbViaSavedCacheBackupData` now joins the real cache-ledger snapshot
+shape with both native metadata rounds. It checks the checkpoint-derived path/
+project scope, both exact names, full peer-roster fingerprint, complete combined
+entry counts, exact native GET keys and headers, Response status/type/header
+agreement, canonical body bytes/hashes, null-body consistency and identical
+second-round contents. Native key order and both native/stored header rosters
+are retained. No body text is parsed or executed. All entries across both
+namespaces must fit the declared body and131072byte artifact bounds; nothing
+is truncated to obtain a passing comparison.
+
+The data model retains its exact prepared/CDP/metadata input references for
+later same-owner reproof, but remains supplied-observations-only with native
+provenance and cache-deletion authorization false. The actual Core must first
+validate those genuine original snapshots and packet references. An identical
+caller DTO cannot turn this pure comparison into a native grant.
+
+The separate publisher writes an exclusive managed JSON attachment, verifies
+its complete bytes and final artifact hash, and retains the original publication
+Promise on repeat. Copies of a built or published object refuse. Artifact
+verification can be repeated at the actual native mutation boundary; a changed
+backup refuses. Publication still grants no cache action. The Core must reprove
+its original snapshots and live UI/worker exclusion before and after this IO,
+then issue a separate opaque native grant and consume each delete once.
+
+Two focused supplied-data/actual-file cases pass, including binary body bytes,
+complete repeated joins, copied-reference refusal, missing native keys, forged
+body hashes and post-publication file corruption. Types and strict lint pass.
+The merged production-owner abort/factory cases pass; a separate native-emission
+check exposed the shared writer bootstrap's extra four setup-helper slots in a
+read-only prospective budget, sent to the owning agent for an explicit pure
+read-only reservation. No cache, app, Windows helper or native owner was used.
