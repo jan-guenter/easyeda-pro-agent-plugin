@@ -13,7 +13,8 @@ import { transform } from "esbuild";
 import type { CurrentSchematicDisplayWriteOwner } from "../src/current-schematic-display-write-owner.ts";
 
 function missingBootstrap(): never { throw new Error("Bootstrap not issued"); }
-async function fixture(context: TestContext, malformed = false, main = false): Promise<Readonly<{ owner: CurrentSchematicDisplayWriteOwner; actions: string[]; pollEntered: Promise<true>; reproveBootstrap: () => string }>> {
+async function fixture(context: TestContext, malformed = false, main = false): Promise<Readonly<{ owner: CurrentSchematicDisplayWriteOwner; actions: string[]; pollEntered: Promise<true>; reproveBootstrap: () => string;
+  target: () => object; termination: () => object; requireTermination: (value: object) => void }>> {
   const url = new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url); const sourceRequire = createRequire(url);
   const prepared = Object.freeze({ syntheticCheckpoint: true, qualification: Object.freeze({ target: Object.freeze({ rawWindowsPath: String.raw`C:\Synthetic\Codex_schematic_1111111111111111.eprj2` }) }) });
   let reproveBootstrap: () => string = missingBootstrap;
@@ -72,7 +73,12 @@ else if(q.action==='release')send(q,{released:true});else throw Error('unexpecte
   Reflect.apply(seed, undefined, [owner, installation, prepared]); owner.start();
   context.after(async () => { if (child.exitCode === null && child.signalCode === null) { const closed = once(child, "close"); child.stdin.end(); await closed; } });
   await owner.launch({ executable: "C:\\Reviewed\\easyeda-pro.exe", executableSha256: "a".repeat(64), confirmDiagnosticLaunch: true });
-  return { owner, actions, pollEntered: pollEntered.promise, reproveBootstrap: (): string => reproveBootstrap() };
+  const requireTermination = loaded.exports["assertOriginalCurrentSchematicDisplayWriteTermination"], target = loaded.exports["originalCurrentSchematicDisplayWriteTarget"], termination = loaded.exports["originalCurrentSchematicDisplayWriteTermination"];
+  assert.ok(typeof target === "function" && typeof termination === "function" && typeof requireTermination === "function");
+  const callObject = (fn: unknown): object => { assert.ok(typeof fn === "function"); const result: unknown = Reflect.apply(fn, undefined, [owner]); assert.ok(typeof result === "object" && result !== null); return result; };
+  return { owner, actions, pollEntered: pollEntered.promise, reproveBootstrap: (): string => reproveBootstrap(),
+    target: (): object => { const result = callObject(target); assert.equal(result, prepared); return result; },
+    termination: (): object => callObject(termination), requireTermination: (value: object): void => { Reflect.apply(requireTermination, undefined, [owner, value]); } };
 }
 void test("Schematic original abort waits for pending native poll and settles the original busy renderer call without replay", async context => {
   const f = await fixture(context); const original = f.owner.getTargets(), refused = assert.rejects(original);
@@ -96,4 +102,12 @@ void test("actual schematic main issuer binds its own original checkpoint path a
   assert.deepEqual(f.actions, ["launch", "main-attach"]); await f.owner.abortSchematicDisplayWrite();
   assert.throws(f.reproveBootstrap, /MAIN_ORIGINAL_OWNER/u);
   assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
+});
+void test("original SCH target and exact root/empty-Job closure survive helper release; copied termination refuses", async context => {
+  const f = await fixture(context); const target = f.target(); assert.throws(f.termination, /ORIGINAL_TERMINATION/u);
+  assert.equal(await f.owner.observeTermination(), false); assert.throws(f.termination, /ORIGINAL_TERMINATION/u);
+  await f.owner.abortSchematicDisplayWrite(); assert.throws(f.termination, /ORIGINAL_TERMINATION/u);
+  assert.equal(await f.owner.observeTermination(), true); const terminated = f.termination(); f.requireTermination(terminated);
+  assert.throws(() => { f.requireTermination(structuredClone(terminated)); }, /ORIGINAL_TERMINATION/u);
+  await f.owner.releaseClosed(); assert.equal(f.target(), target); assert.equal(f.termination(), terminated); f.requireTermination(terminated);
 });

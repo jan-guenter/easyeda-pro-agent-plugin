@@ -454,6 +454,7 @@ const headAgeValidationFactories = new WeakMap<CurrentFootprintHeadAgeValidation
 interface SchematicDisplayWriteAllocation { readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: GeneratedSchematicFixtureOpenCheckpoint; state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentSchematicDisplayWriteOwner | null; child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown }
 const schematicDisplayAllocations = new WeakMap<GeneratedSchematicFixtureOpenCheckpoint, SchematicDisplayWriteAllocation>();
 const schematicDisplayFactories = new WeakMap<object, Readonly<{ allocation: SchematicDisplayWriteAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
+const schematicDisplayTerminations = new WeakMap<object, Readonly<{ owner: CurrentSchematicDisplayWriteOwner; binding: Binding }>>();
 interface PcbViaWriteAllocation { readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: GeneratedFixtureOpenCheckpoint; state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentPcbViaWriteOwner | null; child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown }
 const pcbViaWriteAllocations = new WeakMap<GeneratedFixtureOpenCheckpoint, PcbViaWriteAllocation>();
 const pcbViaWriteFactories = new WeakMap<object, Readonly<{ allocation: PcbViaWriteAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
@@ -799,6 +800,7 @@ class CurrentPcbRetainedOwnerCore {
   #viaSdkQualified = false;
   #viaFailed = false;
   #schematicDisplayCleanupOnly = false;
+  #schematicDisplayTermination: object | null = null;
   #viaObserverTail: Promise<void> = Promise.resolve();
   #viaCleanupOnly = false;
   #viaWorkerPlan: CurrentPcbViaWritePlan | null = null;
@@ -3235,6 +3237,23 @@ class CurrentPcbRetainedOwnerCore {
     assertOriginalCurrentFootprintForwardExecutionNativeOwner(this); const held = footprintTerminations.get(original);
     if (held?.owner !== this || held.binding !== this.#binding || (held.noProcess ? !this.#released || !this.#childClosed || this.#launchSucceeded || original !== (this.#noProcessProof ?? this.#footprintUnlaunchedRelease) : !this.#terminationObserved)) { throw error("FOOTPRINT_ORIGINAL_TERMINATION"); }
   }
+  /** Distinct SCH data capture accepts only this generation's actual observed
+   * root exit and empty original Job. Unlaunched/no-process cleanup is not an
+   * executed writer termination and cannot issue this reference. */
+  public originalSchematicDisplayTermination(): object {
+    assertOriginalCurrentSchematicDisplayWriteOwner(this); const observed = this.#terminationObservation;
+    if (!this.#terminationObserved || observed === null || !observed.terminated || observed.originalRootExited !== true ||
+      observed.originalJobEmpty !== true || this.#binding === null) { throw error("SCHEMATIC_DISPLAY_ORIGINAL_TERMINATION"); }
+    if (this.#schematicDisplayTermination === null) {
+      this.#schematicDisplayTermination = observed; schematicDisplayTerminations.set(observed, Object.freeze({ owner: this, binding: this.#binding }));
+    }
+    this.requireSchematicDisplayTermination(this.#schematicDisplayTermination); return this.#schematicDisplayTermination;
+  }
+  public requireSchematicDisplayTermination(original: object): void {
+    assertOriginalCurrentSchematicDisplayWriteOwner(this); const observed = this.#terminationObservation, retained = schematicDisplayTerminations.get(original);
+    if (retained?.owner !== this || retained.binding !== this.#binding || original !== this.#schematicDisplayTermination || !this.#terminationObserved || observed === null ||
+      !observed.terminated || observed.originalRootExited !== true || observed.originalJobEmpty !== true) { throw error("SCHEMATIC_DISPLAY_ORIGINAL_TERMINATION"); }
+  }
   public observeFootprintCopyRelease(): "pending" | "released" {
     this.requireOriginalFootprintGeneration();
     if (!this.#releaseConsumed) { throw error("FOOTPRINT_RELEASE_NOT_ATTEMPTED"); }
@@ -5665,6 +5684,8 @@ const footprintOwnershipMethods = Object.freeze({ assert: CurrentPcbRetainedOwne
   forwardExecutionTarget: CurrentPcbRetainedOwnerCore.prototype.originalFootprintForwardExecutionTarget,
   forwardExecutionTermination: CurrentPcbRetainedOwnerCore.prototype.originalFootprintForwardExecutionTermination,
   requireForwardExecutionTermination: CurrentPcbRetainedOwnerCore.prototype.requireFootprintForwardExecutionTermination });
+const schematicDisplayOwnershipMethods = Object.freeze({ termination: CurrentPcbRetainedOwnerCore.prototype.originalSchematicDisplayTermination,
+  requireTermination: CurrentPcbRetainedOwnerCore.prototype.requireSchematicDisplayTermination });
 const combinedOwnershipMethods = Object.freeze({ generation: CurrentPcbRetainedOwnerCore.prototype.requireOriginalFootprintCombinedGeneration,
   require: CurrentPcbRetainedOwnerCore.prototype.requireOriginalCombinedMainRunner,
   send: CurrentPcbRetainedOwnerCore.prototype.sendFootprintMain,
@@ -6090,6 +6111,18 @@ export function assertOriginalCurrentSchematicDisplayWriteOwner(owner: CurrentSc
     !originalFootprintDescriptors(CurrentSchematicDisplayWriteOwner.prototype, schematicDisplayOwnerDescriptors) || !originalFootprintDescriptors(CurrentPcbRetainedOwnerCore.prototype, footprintCoreDescriptors) ||
     owner.status().profile !== CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { throw error("SCHEMATIC_DISPLAY_ORIGINAL_FACTORY"); }
   assertOriginalGeneratedSchematicFixtureOpenCheckpoint(original.allocation.prepared);
+}
+/** Original data identity survives deliberate helper release. This retrieval
+ * grants neither another launch nor ownership from a serialized checkpoint. */
+export function originalCurrentSchematicDisplayWriteTarget(owner: CurrentSchematicDisplayWriteOwner): GeneratedSchematicFixtureOpenCheckpoint {
+  assertOriginalCurrentSchematicDisplayWriteOwner(owner); const original = schematicDisplayFactories.get(owner);
+  if (original === undefined) { throw error("SCHEMATIC_DISPLAY_ORIGINAL_PREPARATION"); } return original.allocation.prepared;
+}
+export function originalCurrentSchematicDisplayWriteTermination(owner: CurrentSchematicDisplayWriteOwner): object {
+  assertOriginalCurrentSchematicDisplayWriteOwner(owner); return schematicDisplayOwnershipMethods.termination.call(owner);
+}
+export function assertOriginalCurrentSchematicDisplayWriteTermination(owner: CurrentSchematicDisplayWriteOwner, original: object): void {
+  assertOriginalCurrentSchematicDisplayWriteOwner(owner); schematicDisplayOwnershipMethods.requireTermination.call(owner, original);
 }
 export async function startCurrentSchematicDisplayWriteOwner(options: CurrentPcbDiagnosticInstallationOptions, prepared: GeneratedSchematicFixtureOpenCheckpoint): Promise<CurrentSchematicDisplayWriteOwner> {
   requirePcbViaBirthOptions(options); assertOriginalGeneratedSchematicFixtureOpenCheckpoint(prepared);
