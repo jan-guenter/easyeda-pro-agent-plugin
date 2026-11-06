@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 complete Component point kernel](2026-11-06-component-point-complete-kernel.md). Required hidden ATTR index members, actual290-callee/419-request composition, exact cache/parent/kernel guards and bounded frame; native birth and index mount remain separate.
+
 - [2026-11-06 generated Component fixture](2026-11-06-generated-component-fixture.md). New complete local FOOTPRINT/PCB archive with explicit hidden attributes, strict initial SQL/checkpoint/staging and original import/Windows closed capture; new408-purpose cache/index and positive native proof remain separate.
 
 - [2026-11-06 explicit-Relevance schematic reader live case](2026-11-06-relevance-schematic-reader-live-case.md). Actual distinct fixture import/full closed SQL, generated page readiness and accepted Text/Wire/Bus reads with exact closed raw invariance; original terminal cleanup is recorded separately.
