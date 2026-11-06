@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 schematic active history source](2026-11-06-schematic-action-history-source.md). Fixed original action/recorder metadata leaves, exact idle-to-active callback provenance and77-request data-only budget; native custody and modify/Save remain gated.
+
 - [2026-11-06 Pad/Relevance closed-data reuse](2026-11-06-pad-relevance-closed-data-reuse.md). Separate historical reports, fresh read-only Windows leases, full initial SQL/source qualification and new one-use reader data staging; old schemas and writer brands remain unchanged.
 
 - [2026-11-06 schematic fixture with explicit Relevance ATTR](2026-11-06-schematic-relevance-fixture.md). Separate seven-record initial SQL/checkpoint/staging profile, source-proved native default replacement and original ordinary Text/Wire/Bus reader route; earlier SCH/display profiles remain unchanged.
