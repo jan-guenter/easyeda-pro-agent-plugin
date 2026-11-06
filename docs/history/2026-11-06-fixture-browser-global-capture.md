@@ -43,3 +43,18 @@ before running the preflight; its retained failed run was corrected by installin
 the accessor after shell setup. Full source types and strict type-aware lint
 pass. These are synthetic/source results. The revised program has not yet
 passed the connected environment preflight or imported a project.
+
+## Original third-case cleanup completed
+
+The original environment cleanup completed with its capture release acknowledged.
+The fixture reservation then released, with importer acceptance, registration
+and closed SQL still false. The separate ordinary termination record binds
+launch SHA256
+`997a54a9db8bf7ffc338f48ec274c0858d879a68aa912aa86db828219a97281d`
+to termination SHA256
+`6c4a6cc67a19808a7bf864eb5043b6687734f17ddc904fac94659d0c712ac950`.
+Original helper transport closure and index-allocation release were acknowledged.
+The original generation3 facade then retired, acknowledged lease release and
+closed with stdin EOF, observed process/stdio closure and exit0. No signal,
+project opening, edit, Save or prompt choice was used. The running manager can
+now select a separately verified replacement without restarting Codex.
