@@ -386,3 +386,17 @@ by another caller cannot qualify native provenance. Separate original owners
 must retain their own tuple, source/context, event cursor and continuation
 permission; this leaf transfers none. The three focused descriptor/data cases,
 full types and strict lint pass without browser/native cache or Response use.
+
+The next inert descriptor leaf covers Request, Headers and AbortSignal. It
+captures all15 required Request accessors and up to five explicitly supported
+optional accessors; any other accessor refuses instead of being omitted from
+the later snapshot. Headers iteration/cookie-list functions and both signal
+accessors are retained without invocation. An exact catalogue fixes every
+actual captured function slot before its native metadata can be qualified.
+The shared metadata validator now handles the genuine EventTarget parent of
+AbortSignal's constructor without relaxing the empty-native-scope/location
+checks. Cache/Response fixed program bytes and callable indices are unchanged.
+
+These leaves still invoke no API, method or getter. Native Fetch snapshotting,
+complete data/artifact publication and the actual delete grant remain separate.
+Six focused cache/Request descriptor cases plus types/strict lint pass.
