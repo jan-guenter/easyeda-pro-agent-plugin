@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 generated import environment refusal](2026-11-06-generated-import-environment-refusal.md). Frozen second controller, failed tracked preflight before importer allocation, complete original automated cleanup and retained diagnostic/performance gaps.
+
 - [2026-11-06 second disposable batch freeze](2026-11-06-second-disposable-batch-freeze.md). Combined closed fixture handoff and Arc reader development build, fixed import cycles, exact local checks and unchanged release graph; no connected acceptance or release claim.
 - [2026-11-06 Via intent and target continuation](2026-11-06-via-write-intent-and-target-continuation.md). Exclusive original dispatch intent and synchronous target closure without a post-SDK main-fence deadlock.
 - [2026-11-06 Via public scope acknowledgements](2026-11-06-via-public-scope-acknowledgements.md). Explicit disposable writer, once-only Save and original Job scope in the strict future schema.
