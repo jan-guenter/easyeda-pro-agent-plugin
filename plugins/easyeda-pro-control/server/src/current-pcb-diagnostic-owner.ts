@@ -6,6 +6,7 @@
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Four fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
 import { currentProjectSaveProducerGuardCases } from "./current-project-save-producer-guard-protocol.ts";
+import { qualifyCurrentProjectSaveProducerSource } from "./current-project-save-producer-source.ts";
 import { qualifyCurrentProjectSaveProducerGuardSource } from "./current-project-save-producer-guard-source.ts";
 import type { CurrentPcbViaSaveProducerPrefix, CurrentProjectSaveProducerPrefix, CurrentProjectSaveProducerPrefixBindings, CurrentSchematicDisplaySaveProducerPrefix } from "./current-project-save-producer-prefix.ts";
 import { componentSpatialDiagnosticNativeRequest } from "./current-pcb-component-spatial-protocol.ts";
@@ -2218,7 +2219,7 @@ class CurrentPcbRetainedOwnerCore {
         }
         if (this.#schematicProducerGuardOperation !== null) {
           if (this.#schematicProducerGuardOperation !== argumentsValue || this.#schematicProducerGuardArmed || this.#schematicStructureOrigin === null) { throw error("PROJECT_SAVE_PRODUCER_GUARD_SOURCE_CONSUMED"); }
-          qualifyCurrentProjectSaveProducerGuardSource(source.source); selected.requireStructureArmed(source);
+          qualifyCurrentProjectSaveProducerGuardSource(source.source); qualifyCurrentProjectSaveProducerSource(source.source); selected.requireStructureArmed(source);
           for (const command of currentProjectSaveProducerGuardCases(source.scriptId)) {
             const reply = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { original(); selected.requireOriginal(source, child); return pipe.observeSchematicDisplayProducerGuard(command); }));
             const site = command.params.location;
@@ -2441,7 +2442,7 @@ class CurrentPcbRetainedOwnerCore {
         }
         if (this.#viaProducerGuardOperation !== null) {
           if (this.#viaProducerGuardOperation !== plan || this.#viaProducerGuardArmed || this.#viaStructureOrigin === null) { throw error("PROJECT_SAVE_PRODUCER_GUARD_SOURCE_CONSUMED"); }
-          qualifyCurrentProjectSaveProducerGuardSource(source.source); selected.requireStructureArmed(source);
+          qualifyCurrentProjectSaveProducerGuardSource(source.source); qualifyCurrentProjectSaveProducerSource(source.source); selected.requireStructureArmed(source);
           for (const command of currentProjectSaveProducerGuardCases(source.scriptId)) {
             const reply = await this.#serializeViaObserver(() => this.#transfer(() => { original(); selected.requireOriginal(source, child); return pipe.observeViaProducerGuard(command); }));
             const site = command.params.location;
