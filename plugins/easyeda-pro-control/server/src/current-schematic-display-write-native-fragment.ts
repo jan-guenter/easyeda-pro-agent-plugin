@@ -79,7 +79,7 @@ export function applyCurrentSchematicDisplayWriteNativeFragment(input: string): 
   const oldAbort = dispatch.slice(dispatch.indexOf("        'schematic-display-abort' {"));
   if (!source.includes(dispatch) && source.includes(oldAbort)) { if (source.split(oldAbort).length !== 2) { throw new Error("SCHEMATIC_DISPLAY_NATIVE_OLD_DISPATCH"); } source = source.replace(oldAbort, ""); }
   // The Via step fragment also anchors at main-observe. Keep this block before
-  // that step so their separate generators cannot insert each other repeatedly.
+  // That step so their separate generators cannot insert each other repeatedly.
   const ownDispatch = "        'schematic-display-native' {";
   if (source.includes(ownDispatch)) {
     if (source.split(ownDispatch).length !== 2 || source.split(dispatch).length !== 2) { throw new Error("SCHEMATIC_DISPLAY_NATIVE_DISPATCH_CHANGED"); }
