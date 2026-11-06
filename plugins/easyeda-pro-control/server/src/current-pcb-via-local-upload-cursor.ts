@@ -7,13 +7,14 @@ import { CURRENT_PCB_VIA_LOCAL_UPLOAD_FLAGS as FLAGS, CURRENT_PCB_VIA_LOCAL_UPLO
 import type { CurrentPcbViaLocalUploadCommand, CurrentPcbViaLocalUploadRole } from "./current-pcb-via-local-upload-protocol.ts";
 import { CURRENT_PCB_VIA_LOCAL_UPLOAD_PROGRAMS as PROGRAMS } from "./current-pcb-via-local-upload-programs.ts";
 
+export interface CurrentPcbViaLocalUploadCompleted {readonly scheduledFrame:string;readonly bodyFrame:string;readonly cacheFrame:string;readonly putPromise:string;readonly bufferPromise:string}
 export interface CurrentPcbViaLocalUploadHeld { readonly packet: object; readonly role: CurrentPcbViaLocalUploadRole; readonly joinedId: string; readonly key: string | null; readonly cache: Readonly<{ role: string; joinedId: string }> | null; readonly promise: Readonly<{ objectId: string }> | null; readonly bufferPromise: string | null }
 export interface CurrentPcbViaLocalUploadBindings { readonly body: string; readonly bodyObject: string; readonly branchUuid: string; readonly assertCurrent: () => Promise<void>; readonly requireHeld: (packet: object) => CurrentPcbViaLocalUploadHeld; readonly request: (command: CurrentPcbViaLocalUploadCommand) => Promise<unknown>; readonly resume: (held: CurrentPcbViaLocalUploadHeld, command: CurrentPcbViaLocalUploadCommand) => Promise<void>; readonly fail: () => void }
 const yes = z.strictObject({ result: z.strictObject({ type: z.literal("boolean"), value: z.literal(true) }) });
 function need(value: boolean): asserts value { if (!value) { throw new Error("PCB_VIA_LOCAL_ORIGINAL"); } }
 export class CurrentPcbViaLocalUploadCursor {
   readonly #binding: CurrentPcbViaLocalUploadBindings; readonly #attempts = new WeakSet<object>(); readonly #frames = new Map<CurrentPcbViaLocalUploadRole,string>();
-  #step = 0; #requests = 0; #busy = false; #failed = false; #completed = false; #cache: string | null = null; #putPromise: string | null = null; #bufferPromise: string | null = null;
+  #step = 0; #requests = 0; #busy = false; #failed = false; #completed = false; #cache: string | null = null; #putPromise: string | null = null; #bufferPromise: string | null = null; #completedReference: CurrentPcbViaLocalUploadCompleted | null = null;
   public constructor(bindings: CurrentPcbViaLocalUploadBindings) { this.#binding = bindings; Object.freeze(this); }
   async #current(): Promise<void> { need(!this.#failed); await this.#binding.assertCurrent(); need(!this.#failed); }
   async #send(command: CurrentPcbViaLocalUploadCommand): Promise<unknown> { const fixed = validateCurrentPcbViaLocalUploadCommand(command); await this.#current(); this.#requests += 1; need(this.#requests <= REQUESTS.cdpRequests); const value = captureCurrentPcbStringClockReply(await this.#binding.request(fixed)).value; await this.#current(); return value; }
@@ -36,5 +37,6 @@ export class CurrentPcbViaLocalUploadCursor {
         for (const [kind,promise,state] of [["cache",this.#putPromise,"fulfilled"],["buffer",this.#bufferPromise,"pending"]] as const) { need(decodeCurrentProjectSaveProducerCachePromise(await this.#send({ phase:"via-local-properties",role:kind,method:"Runtime.getProperties",params:{objectId:promise,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false} })) === state); } this.#completed = true; }
     } catch (error) { if (!this.#failed) { this.#failed = true; this.#binding.fail(); } throw error; } finally { this.#busy = false; }
   }
+  public originalCompleted(): CurrentPcbViaLocalUploadCompleted { this.requireCompleted();need(this.#cache!==null&&this.#putPromise!==null&&this.#bufferPromise!==null);this.#completedReference??=Object.freeze({scheduledFrame:this.#frame("bufferScheduled"),bodyFrame:this.#binding.bodyObject,cacheFrame:this.#cache,putPromise:this.#putPromise,bufferPromise:this.#bufferPromise});return this.#completedReference; }
   public requireCompleted(): void { need(!this.#busy && !this.#failed && this.#completed); }
 }

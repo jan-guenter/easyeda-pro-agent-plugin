@@ -81,6 +81,11 @@ export class CurrentPcbViaEventRouter {
     need(!this.#failed && original !== undefined && original === current && original.lane === "producer" && original.delivered && !original.resumeAttempted && original.point.role === role && event.sessionId === this.#bindings.workerSessionId);
     original.resumeAttempted = true; this.notifyEvent();
   }
+  public reserveSaveUploadResume(event: CurrentPcbViaSaveWorkerEvent, role: "bufferDrain" | "cloudIngress" | "historyCloud"): void {
+    const current = this.#paused.get(this.#bindings.workerSessionId), original = this.#pauseEvents.get(event);
+    need(!this.#failed && original !== undefined && original === current && original.lane === "producer" && original.delivered && !original.resumeAttempted && original.point.role === role && event.sessionId === this.#bindings.workerSessionId);
+    original.resumeAttempted = true; this.notifyEvent();
+  }
   /** Wake readers for an actual queued event or owned continuation. */
   public notifyEvent(): void { const signal = this.#changed; this.#changed = Promise.withResolvers<true>(); signal.resolve(true); }
   /** Revocation wakes parked readers without abandoning an in-flight poll. */

@@ -236,6 +236,9 @@ export class CurrentPcbViaWorkerController {
   public reserveSaveLocalResume(source: CurrentPcbViaProjectSourceHeld, event: CurrentPcbViaRoutedEvent, role: "localIngress" | "headEntry" | "headPromise" | "headSuccess" | "bufferIngress" | "bufferScheduled" | "localReturned"): void {
     need(this.#source === source && this.#child !== null); this.#eventRouter().reserveSaveLocalResume(event,role);
   }
+  public reserveSaveUploadResume(source: CurrentPcbViaProjectSourceHeld, event: CurrentPcbViaRoutedEvent, role: "bufferDrain" | "cloudIngress" | "historyCloud"): void {
+    need(this.#source === source && this.#child !== null); this.#eventRouter().reserveSaveUploadResume(event,role);
+  }
   public async nextStructureTransportEvent(): Promise<CurrentPcbViaRoutedEvent> { await this.whenOriginalSourceResumed(); return this.#eventRouter().next("structureTransport"); }
   public reserveStructureTransportResume(source: CurrentPcbViaProjectSourceHeld, role: "send" | "returned"): void {
     need(this.#source === source && this.#child !== null); this.#eventRouter().reserveResume("structureTransport", this.#child.sessionId, role);

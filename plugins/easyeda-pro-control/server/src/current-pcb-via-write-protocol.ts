@@ -1,3 +1,4 @@
+import { currentPcbViaUploadRequestWire } from "./current-pcb-via-upload-request-wire.ts";
 import { currentProjectSyncQuiesceWire } from "./current-project-sync-quiesce-wire.ts";
 import { currentPcbViaLocalUploadWire } from "./current-pcb-via-local-upload-wire.ts";
 import { currentGeneratedPeriodicSyncWire } from "./current-generated-periodic-sync-wire.ts";
@@ -60,6 +61,7 @@ export function currentPcbViaWriteNativeRequest(chunk: Buffer): Readonly<Record<
     raw["id"] < 1 || raw["id"] > PROFILE.renderer.total || !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("PCB_VIA_WIRE"); }
   const { id, sessionId, ...input } = raw;
   if (typeof sessionId !== "string" && Object.hasOwn(raw, "viaWritePhase")) { throw new Error("PCB_VIA_SESSION"); }
+  if(Object.hasOwn(raw,"viaUploadRequestCommand")){const{id:uploadId,sessionId:uploadSession,viaUploadRequestCommand,...uploadInput}=raw;if(viaUploadRequestCommand!==true||typeof uploadSession!=="string"){throw new Error("VIA_UPLOAD_WIRE");}const fixed=currentPcbViaUploadRequestWire(uploadInput,uploadId);if(!chunk.equals(Buffer.from(`${JSON.stringify({id:uploadId,...fixed.command,viaUploadRequestCommand:true,sessionId:uploadSession})}\0`))){throw new Error("VIA_UPLOAD_WIRE");}return fixed.request;}
   if(Object.hasOwn(raw,"syncQuiesceCommand")){const{id:quiesceId,sessionId:quiesceSession,syncQuiesceCommand,...quiesceInput}=raw;if(syncQuiesceCommand!==true||typeof quiesceSession!=="string"){throw new Error("SYNC_QUIESCE_WIRE");}const fixed=currentProjectSyncQuiesceWire(quiesceInput,quiesceId,"via");if(!chunk.equals(Buffer.from(`${JSON.stringify({id:quiesceId,...fixed.command,syncQuiesceCommand:true,sessionId:quiesceSession})}\0`))){throw new Error("SYNC_QUIESCE_WIRE");}return fixed.request;}
   if (Object.hasOwn(raw, "viaLocalUploadCommand")) {
     const { id: localId, sessionId: localSession, viaLocalUploadCommand, ...localInput } = raw;

@@ -702,3 +702,5 @@ layout. The connected ledger retains its generation and case anchors.
 
 - [Original project polling cancellation](2026-11-07-original-project-polling-cancellation.md) — separately journaled first-timer effect, exact original worker/native custody, and preserved held-call refusal.
 - [Current history upload client source audit](2026-11-07-history-upload-client-source-audit.md)
+
+- [Original buffered upload request](2026-11-07-original-buffered-upload-request.md) — actual same-worker scheduled-body transfer to the first history request; response and final drain remain separate.
