@@ -17,7 +17,7 @@ import { managedLibraryFileSchema } from "./managed-library-files.ts";
 import type { WindowsControlRuntime } from "./windows-runtime.ts";
 import { buildManagedFixtureEnvironmentProgram, managedFixtureEnvironmentObservationSchema, managedFixtureEnvironmentRefusalSchema } from "./managed-fixture-environment-program.ts";
 import { captureManagedFixtureDispatchReply } from "./managed-fixture-dispatch-reply.ts";
-import { captureManagedFixtureClosedSnapshotWithWindowsMetadata, captureManagedPadFixtureClosedSnapshotWithWindowsMetadata,captureManagedSchematicFixtureClosedSnapshotWithWindowsMetadata,captureManagedSchematicRelevanceFixtureClosedSnapshotWithWindowsMetadata } from "./managed-fixture-closed-snapshot.ts";
+import { captureManagedComponentFixtureClosedSnapshotWithWindowsMetadata, captureManagedFixtureClosedSnapshotWithWindowsMetadata,captureManagedPadFixtureClosedSnapshotWithWindowsMetadata,captureManagedSchematicFixtureClosedSnapshotWithWindowsMetadata,captureManagedSchematicRelevanceFixtureClosedSnapshotWithWindowsMetadata } from "./managed-fixture-closed-snapshot.ts";
 import type { captureManagedFixtureClosedSnapshot, captureManagedSchematicFixtureClosedSnapshot } from "./managed-fixture-closed-snapshot.ts";
 import { assertOriginalGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
 import type { QualifiedGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
@@ -41,8 +41,13 @@ import type { QualifiedGeneratedSchematicRelevanceFixtureTarget } from "./manage
 import { stageManagedSchematicRelevanceFixtureOpeningSource } from "./managed-schematic-relevance-fixture-opening-source.ts";
 import type { ManagedSchematicRelevanceFixtureOpeningSource } from "./managed-schematic-relevance-fixture-opening-source.ts";
 
+import { MANAGED_COMPONENT_FIXTURE_KIND, generateManagedComponentFixtureArchiveData } from "./managed-component-fixture-generator.ts";
+import { assertOriginalGeneratedComponentFixtureTarget } from "./managed-component-fixture-initial-sql.ts";
+import { stageManagedComponentFixtureOpeningSource } from "./managed-component-fixture-opening-source.ts";
+import type { ManagedComponentFixtureOpeningSource } from "./managed-component-fixture-opening-source.ts";
+
 const operationId = z.string().regex(/^[a-z0-9][a-z0-9-]{7,95}$/u);
-export const MANAGED_FIXTURE_IMPORT_KINDS = [...MANAGED_FIXTURE_GENERATOR_KINDS, MANAGED_SCHEMATIC_FIXTURE_KIND, MANAGED_PAD_FIXTURE_KIND, MANAGED_SCHEMATIC_RELEVANCE_FIXTURE_KIND] as const;
+export const MANAGED_FIXTURE_IMPORT_KINDS = [...MANAGED_FIXTURE_GENERATOR_KINDS, MANAGED_SCHEMATIC_FIXTURE_KIND, MANAGED_PAD_FIXTURE_KIND, MANAGED_SCHEMATIC_RELEVANCE_FIXTURE_KIND, MANAGED_COMPONENT_FIXTURE_KIND] as const;
 export const managedFixtureImportRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("import-generated-fixture"), operationId: operationId.max(64), fixtureKind: z.enum(MANAGED_FIXTURE_IMPORT_KINDS),
     confirmDisposableFixture: z.literal(true), confirmNativeImport: z.literal(true), acceptPartialImportRetention: z.literal(true) }).strict(),
@@ -59,6 +64,7 @@ export const managedFixtureImportRequestSchema = z.discriminatedUnion("action", 
   z.object({ action: z.literal("capture-closed-import"), operationId, confirmReadClosedFixture: z.literal(true) }).strict(),
   z.object({ action: z.literal("stage-for-fresh-opening"), operationId, confirmStageClosedFixture: z.literal(true) }).strict(),
   z.object({ action: z.literal("stage-schematic-for-fresh-opening"), operationId, confirmStageClosedFixture: z.literal(true) }).strict(),
+  z.object({ action: z.literal("stage-component-for-fresh-opening"), operationId, confirmStageClosedFixture: z.literal(true) }).strict(),
 ]);
 export type ManagedFixtureImportRequest = z.infer<typeof managedFixtureImportRequestSchema>;
 type Observation = z.infer<typeof managedFixtureImportJobObservationSchema>;
@@ -68,12 +74,13 @@ export const MANAGED_FIXTURE_IMPORT_DISPATCH_PHASE = "managed-fixture-import";
 export function queryManagedFixtureImport(input: unknown = {}): Record<string, unknown> {
   const request = z.object({ includeSchemas: z.boolean().default(false) }).strict().parse(input);
   return { tool: "easyeda_control_fixture_import", profile: MANAGED_FIXTURE_IMPORT_PROFILE,
-    actions: ["import-generated-fixture", "inspect", "settle-import-records", "inspect-destination", "request-cleanup-close", "observe-cleanup-termination", "finish-cleanup", "settle-cleanup-records", "capture-closed-import", "release-destination", "release-owner", "stage-for-fresh-opening", "stage-schematic-for-fresh-opening"],
+    actions: ["import-generated-fixture", "inspect", "settle-import-records", "inspect-destination", "request-cleanup-close", "observe-cleanup-termination", "finish-cleanup", "settle-cleanup-records", "capture-closed-import", "release-destination", "release-owner", "stage-for-fresh-opening", "stage-schematic-for-fresh-opening", "stage-component-for-fresh-opening"],
     effect: "fresh-managed-disposable-native-import", nativeImportLiveValidation: "not-recorded", importedFixtureAccepted: false,
     retryAllowed: false, deletionAuthorized: false, designExecutionAuthorized: false,
     limitations: ["Requires the same original ordinary 209 launch, exact empty StartPage, current SDK/UI/manager/main pins and authenticated tracked dispatch.",
-      "Generates a fresh fixed Via-only, Line+Via, Arc+Line+Via, standalone circular SMT Pad or separate SCH/SCH_PAGE Text/Wire/Bus archives with either the original source profile or one explicit Wire Relevance ATTR; no caller file, path, geometry, code, SQL or profile override is accepted.",
+      "Generates a fresh fixed Via-only, Line+Via, Arc+Line+Via, standalone circular SMT Pad, Component with its own complete local circular-Pad footprint, or separate SCH/SCH_PAGE Text/Wire/Bus archives with either the original source profile or one explicit Wire Relevance ATTR; no caller file, path, geometry, code, SQL or profile override is accepted.",
       "The schematic initial data target has its own complete SQL/source profile and cannot satisfy PCB staging/opening. A dedicated fresh schematic registration/page owner remains required before native reading or writing.",
+      "The Component data target retains both local FOOTPRINT and PCB documents and explicit hidden attributes. Its fresh Component spatial owner/cache/index proof is separate; older PCB/Pad owners and historical loaders do not accept its brand.",
       "The separate environment journal binds actual native config directories; HALF_OFFLINE and retained complete no-.elib rosters/watches exclude detached system-library seeding only after original termination and drained original watch cancellation.",
       "SDK settlement is partial evidence. Complete fresh closed-file SQLite/source and persistent registration acceptance remain separate; no import replay, automatic cleanup/deletion, Save or force termination is available.",
       "Cleanup requires the retained original dispatcher journal/Promise/session/runtime; inspect never adopts historical JSON. Release-destination closes only original held directory/watch handles after original root/Job termination."],
@@ -165,6 +172,7 @@ export class ManagedFixtureImportCoordinator {
   private generatedFixtureKind: typeof MANAGED_FIXTURE_IMPORT_KINDS[number] | undefined;
   private closedCaptureAttempted = false;
   private closedSchematicRelevanceCapture: Awaited<ReturnType<typeof captureManagedSchematicRelevanceFixtureClosedSnapshotWithWindowsMetadata>> | undefined;
+  private closedComponentCapture: Awaited<ReturnType<typeof captureManagedComponentFixtureClosedSnapshotWithWindowsMetadata>> | undefined;
   private closedPadCapture: Awaited<ReturnType<typeof captureManagedPadFixtureClosedSnapshotWithWindowsMetadata>> | undefined;
   private closedCapture: Awaited<ReturnType<typeof captureManagedFixtureClosedSnapshot>> | undefined;
   private closedSchematicCapture: Awaited<ReturnType<typeof captureManagedSchematicFixtureClosedSnapshot>> | undefined;
@@ -260,7 +268,7 @@ export class ManagedFixtureImportCoordinator {
       originalImportReply: dispatchReplyEvidence(this.importReply),
       publicationPending: this.pendingPublication?.operation === operation, originalJournalRetained: true,
       ownerReservation: this.reservation, operationInFlight: this.busy,
-      closedSnapshot: this.closedSchematicRelevanceCapture?.report ?? this.closedPadCapture?.report ?? this.closedCapture?.report ?? this.closedSchematicCapture?.report ?? null,
+      closedSnapshot: this.closedComponentCapture?.report ?? this.closedSchematicRelevanceCapture?.report ?? this.closedPadCapture?.report ?? this.closedCapture?.report ?? this.closedSchematicCapture?.report ?? null,
       destinationReleased: this.destinationReleased, lastError: this.error,
       libraryMigrationExcluded: this.migrationExclusionVerified,
       nativeImportMayHaveBeenDispatched: this.operation !== this.environmentOperation && this.operation?.mutationMayHaveOccurred === true,
@@ -302,6 +310,12 @@ export class ManagedFixtureImportCoordinator {
   public stageSourceForFreshOpening(operationIdInput: string): ManagedFixtureOpeningSource | ManagedPadFixtureOpeningSource {
     if (operationId.parse(operationIdInput) !== this.attemptedOperationId) { throw new Error("Staging requires the original base import operation."); }
     return this.generatedFixtureKind === MANAGED_PAD_FIXTURE_KIND ? stageManagedPadFixtureOpeningSource(this.qualifiedPadSourceForFreshOpening()) : stageManagedFixtureOpeningSource(this.qualifiedSourceForFreshOpening());
+  }
+  public stageComponentSourceForFreshOpening(operationIdInput: string): ManagedComponentFixtureOpeningSource {
+    if (operationId.parse(operationIdInput) !== this.attemptedOperationId || this.generatedFixtureKind !== MANAGED_COMPONENT_FIXTURE_KIND) { throw new Error("Component staging requires the original base Component import operation."); }
+    this.current(); const qualification = this.closedComponentCapture?.qualifiedComponentTarget;
+    if (this.reservation !== "released" || this.busy || !this.migrationExclusionVerified || qualification === null || qualification === undefined || this.generatedArchive === undefined) { throw new Error("Original closed Component fixture has no released issued data source."); }
+    assertOriginalGeneratedComponentFixtureTarget(qualification); return stageManagedComponentFixtureOpeningSource({ qualification, archive: Buffer.from(this.generatedArchive) });
   }
   public qualifiedPadSourceForFreshOpening(): Readonly<{ qualification: QualifiedGeneratedPadFixtureTarget; archive: Buffer }> {
     this.current(); const qualification = this.closedPadCapture?.qualifiedPadTarget;
@@ -391,7 +405,7 @@ export class ManagedFixtureImportCoordinator {
   private async run(input: unknown, expectedFingerprint?: Record<string, unknown>): Promise<Record<string, unknown>> {
     const request = managedFixtureImportRequestSchema.parse(input);
     if (request.action === "inspect") { return this.inspect(request.operationId); }
-    if (request.action === "stage-for-fresh-opening" || request.action === "stage-schematic-for-fresh-opening") { throw new Error("Staging is a separate local index handoff after original owner release, never a destination cleanup action."); }
+    if (request.action === "stage-for-fresh-opening" || request.action === "stage-schematic-for-fresh-opening" || request.action === "stage-component-for-fresh-opening") { throw new Error("Staging is a separate local index handoff after original owner release, never a destination cleanup action."); }
     this.current();
     if (request.action === "release-owner") {
       if (request.operationId !== this.attemptedOperationId || this.pendingPublication !== undefined || this.hasRetainedDestination() || this.refusedBeforeDispatch.size > 0 ||
@@ -436,11 +450,12 @@ export class ManagedFixtureImportCoordinator {
         }, inspectOriginalDestination: (): Promise<ManagedFixtureDestinationObservation> => this.checked(() => destination.inspect()),
         captureWindowsFileMetadata: (): ReturnType<ManagedFixtureDestinationOwner["captureClosedFileMetadata"]> => this.checked(() => captureFile.call(destination)),
         inspectWindowsFileMetadata: (): ReturnType<ManagedFixtureDestinationOwner["inspectClosedFileMetadata"]> => this.checked(() => inspectFile.call(destination)) };
-      if (this.generatedFixtureKind === MANAGED_SCHEMATIC_RELEVANCE_FIXTURE_KIND) { this.closedSchematicRelevanceCapture = await this.checked(() => captureManagedSchematicRelevanceFixtureClosedSnapshotWithWindowsMetadata(captureOptions)); }
+      if (this.generatedFixtureKind === MANAGED_COMPONENT_FIXTURE_KIND) { this.closedComponentCapture = await this.checked(() => captureManagedComponentFixtureClosedSnapshotWithWindowsMetadata(captureOptions)); }
+      else if (this.generatedFixtureKind === MANAGED_SCHEMATIC_RELEVANCE_FIXTURE_KIND) { this.closedSchematicRelevanceCapture = await this.checked(() => captureManagedSchematicRelevanceFixtureClosedSnapshotWithWindowsMetadata(captureOptions)); }
       else if (this.generatedFixtureKind === MANAGED_PAD_FIXTURE_KIND) { this.closedPadCapture = await this.checked(() => captureManagedPadFixtureClosedSnapshotWithWindowsMetadata(captureOptions)); }
       else if (this.generatedFixtureKind === MANAGED_SCHEMATIC_FIXTURE_KIND) { this.closedSchematicCapture = await this.checked(() => captureManagedSchematicFixtureClosedSnapshotWithWindowsMetadata(captureOptions)); }
       else { this.closedCapture = await this.checked(() => captureManagedFixtureClosedSnapshotWithWindowsMetadata(captureOptions)); }
-      const report = this.closedSchematicRelevanceCapture?.report ?? this.closedPadCapture?.report ?? this.closedCapture?.report ?? this.closedSchematicCapture?.report;
+      const report = this.closedComponentCapture?.report ?? this.closedSchematicRelevanceCapture?.report ?? this.closedPadCapture?.report ?? this.closedCapture?.report ?? this.closedSchematicCapture?.report;
       if (report === undefined) { throw new Error("Original closed import capture returned no retained data report."); }
       await this.artifact("closed-import-capture", report); return this.inspect(request.operationId);
     }
@@ -482,7 +497,8 @@ export class ManagedFixtureImportCoordinator {
     await this.checked(() => (this.dependencies.verifySources ?? verifyManagedFixtureImportSources)(this.options.assetsRoot));
     const environment = await this.observeEnvironment(request.operationId, initial);
     let generated: ReturnType<typeof generateManagedFixtureArchiveData>;
-    if (request.fixtureKind === MANAGED_SCHEMATIC_RELEVANCE_FIXTURE_KIND) { generated = generateManagedSchematicRelevanceFixtureArchiveData(); }
+    if (request.fixtureKind === MANAGED_COMPONENT_FIXTURE_KIND) { generated = generateManagedComponentFixtureArchiveData(); }
+    else if (request.fixtureKind === MANAGED_SCHEMATIC_RELEVANCE_FIXTURE_KIND) { generated = generateManagedSchematicRelevanceFixtureArchiveData(); }
     else if (request.fixtureKind === MANAGED_PAD_FIXTURE_KIND) { generated = generateManagedPadFixtureArchiveData(); }
     else if (request.fixtureKind === MANAGED_SCHEMATIC_FIXTURE_KIND) { generated = generateManagedSchematicFixtureArchiveData(); }
     else { generated = generateManagedFixtureArchiveData(request.fixtureKind); }

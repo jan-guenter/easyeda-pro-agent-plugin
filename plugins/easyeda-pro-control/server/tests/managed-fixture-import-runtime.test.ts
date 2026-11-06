@@ -104,6 +104,17 @@ void test("Pad alternative reaches the same original one-shot importer with its 
   await assert.rejects(value.owner.execute(value.request, value.expected)); assert.equal(value.calls.filter(call => call === "import").length, 1);
 });
 
+void test("Component alternative uses one original import and cannot stage into an old reader before closed proof", async () => {
+  const value = fixture("managed-import-runtime-component"); value.request["fixtureKind"] = "component-circular-smt-pad";
+  const result = await value.owner.execute(value.request, value.expected);
+  assert.equal(result["phase"], "sdk-settled-unverified"); assert.equal(result["importedFixtureAccepted"], false);
+  assert.equal(value.calls.filter(call => call === "import").length, 1);
+  const journal = await loadOperation("managed-import-runtime-component"); assert.equal(journal.plan["fixtureKind"], "component-circular-smt-pad");
+  assert.throws(() => value.owner.stageComponentSourceForFreshOpening("managed-import-runtime-component"));
+  assert.throws(() => value.owner.stageSourceForFreshOpening("managed-import-runtime-component"));
+  await assert.rejects(value.owner.execute(value.request, value.expected)); assert.equal(value.calls.filter(call => call === "import").length, 1);
+});
+
 void test("Relevance schematic alternative reaches the same original one-shot importer with its own generated kind and no accepted target", async () => {
   const value = fixture("managed-import-runtime-relevance"); value.request["fixtureKind"] = "schematic-text-wire-bus-relevance";
   const result = await value.owner.execute(value.request, value.expected);

@@ -36,6 +36,15 @@ void test("actual destination owner accepts the fixed generated Pad basename thr
   const released = await native.release(); assert.equal(released.originalTransportClosed, true);
 });
 
+void test("actual destination owner binds the fixed Component basename and retains its original file metadata", async () => {
+  const componentBasename = `Codex_component_circular_pad_${"3".repeat(16)}.eprj2`;
+  const native = owner("success", componentBasename);
+  const initialized = await native.initialize(); assert.equal(initialized.expectedBasename, componentBasename);
+  const inspected = await native.inspect(); assert.deepEqual(inspected.entries, [componentBasename]);
+  const file = await native.captureClosedFileMetadata(); assert.ok(file.file.windowsPath.endsWith(`\\${componentBasename}`));
+  const released = await native.release(); assert.equal(released.originalTransportClosed, true);
+});
+
 void test("actual destination owner accepts the fixed generated Relevance schematic basename through its original transport and metadata validators", async () => {
   const schBasename = `Codex_schematic_relevance_${"3".repeat(16)}.eprj2`;
   const native = owner("success", schBasename);

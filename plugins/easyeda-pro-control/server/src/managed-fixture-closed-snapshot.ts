@@ -26,6 +26,9 @@ import type { QualifiedGeneratedPadFixtureTarget } from "./managed-pad-fixture-i
 import { qualifyGeneratedSchematicRelevanceFixtureInitialSql } from "./managed-schematic-relevance-fixture-initial-sql.ts";
 import type { QualifiedGeneratedSchematicRelevanceFixtureTarget } from "./managed-schematic-relevance-fixture-initial-sql.ts";
 
+import { qualifyGeneratedComponentFixtureInitialSql } from "./managed-component-fixture-initial-sql.ts";
+import type { QualifiedGeneratedComponentFixtureTarget } from "./managed-component-fixture-initial-sql.ts";
+
 const row = z.object({ header: z.looseObject({ type: z.string(), id: z.string().optional() }), body: z.record(z.string(), z.unknown()) });
 function expectedProjection(archive: Buffer, pad = false): Readonly<Record<string, unknown>> {
   const qualification = qualifyManagedFixtureArchive(archive), source = readManagedLibraryZip(archive).get(qualification.source.member);
@@ -77,6 +80,23 @@ export function compareGeneratedSchematicFixtureClosedSources(archive: Buffer, h
     completeDocumentAndBodyRosterMatched: canonicalJson(expected) === canonicalJson(actual), documentCount: history.documents.length,
     docHeadClocksAccepted: false, uploadTicketsAccepted: false, completeSqlEffectsAccepted: false, registrationVerified: false,
     importedFixtureAccepted: false, electricalConnectivityVerified: false, designExecutionAuthorized: false };
+}
+/** Separate complete Component/FOOTPRINT data comparison, no native cache claim. */
+export function compareGeneratedComponentFixtureClosedSources(archive: Buffer, history: NativeHistorySnapshot): Readonly<Record<string, unknown>> {
+  const qualification = qualifyManagedFixtureArchive(archive), source = readManagedLibraryZip(archive).get(qualification.source.member);
+  if (source === undefined || canonicalJson(qualification.documents.map(doc => doc.documentType)) !== canonicalJson(["FOOTPRINT", "PCB"])) { throw new Error("Component closed source requires its complete local footprint and PCB."); }
+  const documents: { uuid: string; docType: string; metadata: Record<string, unknown>; records: { id: string; type: string; body: Record<string, unknown> }[] }[] = [];
+  for (const text of source.toString("utf8").slice(0, -2).split("|\n")) {
+    const boundary = text.indexOf("||"); const entry = row.parse({ header: JSON.parse(text.slice(0, boundary)) as unknown, body: JSON.parse(text.slice(boundary + 2)) as unknown });
+    if (entry.header.type === "DOCHEAD") { documents.push({ uuid: String(entry.body["uuid"]), docType: String(entry.body["docType"]), metadata: entry.body, records: [] }); }
+    else { const document = documents.at(-1); if (document === undefined || entry.header.id === undefined || !(document.docType === "FOOTPRINT" ? ["META", "PAD", "ATTR"] : ["META", "COMPONENT", "ATTR"]).includes(entry.header.type)) { throw new Error("Component closed source has an unexpected family or identity."); }
+      document.records.push({ id: entry.header.id, type: entry.header.type, body: entry.body }); }
+  }
+  const project = (docs: typeof documents): unknown => ({ documents: docs.map(document => ({ ...document, records: document.records.toSorted((left, right) => left.id.localeCompare(right.id)) })).toSorted((left, right) => left.uuid.localeCompare(right.uuid)) });
+  const expected = project(documents); const actual = project(history.documents.map(doc => ({ uuid: doc.uuid, docType: doc.docType, metadata: doc.metadata, records: doc.records.map(record => ({ id: record.id, type: record.type, body: record.body })) })));
+  return { schema: "easyeda-pro-control.generated-component-fixture-closed-source-comparison.v1", expectedSha256: sha256Json(expected), actualSha256: sha256Json(actual),
+    completeDocumentAndBodyRosterMatched: canonicalJson(expected) === canonicalJson(actual), documentCount: history.documents.length, nativeComponentCacheQualified: false, nativeIndexQualified: false,
+    docHeadClocksAccepted: false, uploadTicketsAccepted: false, completeSqlEffectsAccepted: false, registrationVerified: false, importedFixtureAccepted: false, designExecutionAuthorized: false };
 }
 function sameFile(before: BigIntStats, after: BigIntStats): boolean {
   return after.isFile() && after.nlink === 1n && before.dev === after.dev && before.ino === after.ino && before.size === after.size && before.birthtimeNs === after.birthtimeNs && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs;
@@ -162,9 +182,16 @@ export async function captureManagedSchematicRelevanceFixtureClosedSnapshotWithW
   const retained = windowsOptions(input); const result = await captureClosedSnapshot(retained.options, "schematic-relevance", retained.metadata);
   return { report: result.report, qualifiedSchematicRelevanceTarget: result.qualifiedSchematicRelevanceTarget };
 }
-async function captureClosedSnapshot(options: ManagedFixtureClosedSnapshotOptions, kind: "pcb" | "schematic" | "pad" | "schematic-relevance", metadata?: WindowsMetadataCapture): Promise<Readonly<{
-  report: Record<string, unknown>; qualifiedTarget: QualifiedGeneratedFixtureTarget | null; qualifiedSchematicTarget: QualifiedGeneratedSchematicFixtureTarget | null; qualifiedPadTarget: QualifiedGeneratedPadFixtureTarget | null; qualifiedSchematicRelevanceTarget: QualifiedGeneratedSchematicRelevanceFixtureTarget | null;
+export async function captureManagedComponentFixtureClosedSnapshotWithWindowsMetadata(input: ManagedFixtureWindowsClosedSnapshotOptions): Promise<Readonly<{
+  report: Record<string, unknown>; qualifiedComponentTarget: QualifiedGeneratedComponentFixtureTarget | null;
 }>> {
+  const retained = windowsOptions(input); const result = await captureClosedSnapshot(retained.options, "component", retained.metadata);
+  return { report: result.report, qualifiedComponentTarget: result.qualifiedComponentTarget };
+}
+async function captureClosedSnapshot(options: ManagedFixtureClosedSnapshotOptions, kind: "pcb" | "schematic" | "pad" | "schematic-relevance" | "component", metadata?: WindowsMetadataCapture): Promise<Readonly<{
+  report: Record<string, unknown>; qualifiedTarget: QualifiedGeneratedFixtureTarget | null; qualifiedSchematicTarget: QualifiedGeneratedSchematicFixtureTarget | null; qualifiedPadTarget: QualifiedGeneratedPadFixtureTarget | null; qualifiedSchematicRelevanceTarget: QualifiedGeneratedSchematicRelevanceFixtureTarget | null; qualifiedComponentTarget: QualifiedGeneratedComponentFixtureTarget | null;
+}>> {
+  if (kind === "component" && metadata === undefined) { throw new Error("Component closed data requires original Windows file metadata."); }
   const destination = managedFixtureDestinationObservationSchema.parse(options.destination), qualification = qualifyManagedFixtureArchive(options.archive);
   if (destination.state !== "held" || destination.expectedBasename !== qualification.expectedDestinationBasename) { throw new Error("Closed fixture destination differs from the original generated archive."); }
   const windowsPath = win32.join(destination.windowsDirectory, destination.expectedBasename);
@@ -214,9 +241,9 @@ async function captureClosedSnapshot(options: ManagedFixtureClosedSnapshotOption
     const runtime = await currentProcessSqlRuntime(); options.assertOriginalOwner();
     const inventory = await readExactSqlInventory({ checkpointPath: snapshot.path, expectedSha256: snapshot.sha256, runtime }); options.assertOriginalOwner();
     const sql = await publishManagedAttachmentExclusive(join(directory, `${id}.sql.json`), "Complete closed fixture SQL inventory", Buffer.from(JSON.stringify(inventory), "utf8"), "closed-fixture-sql", reprove);
-    let qualified: Awaited<ReturnType<typeof qualifyGeneratedFixtureInitialSql>> | Awaited<ReturnType<typeof qualifyGeneratedSchematicFixtureInitialSql>> | Awaited<ReturnType<typeof qualifyGeneratedPadFixtureInitialSql>> | Awaited<ReturnType<typeof qualifyGeneratedSchematicRelevanceFixtureInitialSql>> | undefined; let qualificationFailure: string | null = null;
+    let qualified: Awaited<ReturnType<typeof qualifyGeneratedFixtureInitialSql>> | Awaited<ReturnType<typeof qualifyGeneratedSchematicFixtureInitialSql>> | Awaited<ReturnType<typeof qualifyGeneratedPadFixtureInitialSql>> | Awaited<ReturnType<typeof qualifyGeneratedSchematicRelevanceFixtureInitialSql>> | Awaited<ReturnType<typeof qualifyGeneratedComponentFixtureInitialSql>> | undefined; let qualificationFailure: string | null = null;
     try {
-      qualified = await ({ pcb: qualifyGeneratedFixtureInitialSql, schematic: qualifyGeneratedSchematicFixtureInitialSql, pad: qualifyGeneratedPadFixtureInitialSql, "schematic-relevance": qualifyGeneratedSchematicRelevanceFixtureInitialSql }[kind])({ archive: options.archive, inventory, rawWindowsPath: windowsPath,
+      qualified = await ({ pcb: qualifyGeneratedFixtureInitialSql, schematic: qualifyGeneratedSchematicFixtureInitialSql, pad: qualifyGeneratedPadFixtureInitialSql, "schematic-relevance": qualifyGeneratedSchematicRelevanceFixtureInitialSql, component: qualifyGeneratedComponentFixtureInitialSql }[kind])({ archive: options.archive, inventory, rawWindowsPath: windowsPath,
         sourceCreatedEpochMs: windowsFile?.file.createdEpochMs ?? Number(before.birthtimeMs), sourceModifiedEpochMs: windowsFile?.file.modifiedEpochMs ?? Number(before.mtimeMs) }); options.assertOriginalOwner();
     } catch (error) { qualificationFailure = error instanceof Error ? error.message : "Initial SQL/source profile refused."; }
     const decoded = qualified === undefined ? null : await publishManagedAttachmentExclusive(join(directory, `${id}.history.json`), "Complete closed fixture decoded native history",
@@ -235,11 +262,13 @@ async function captureClosedSnapshot(options: ManagedFixtureClosedSnapshotOption
     if (windowsFile !== undefined) { schema = kind === "pcb" ? "easyeda-pro-control.managed-fixture-closed-snapshot.v2" : "easyeda-pro-control.managed-schematic-fixture-closed-snapshot.v2"; }
     if (kind === "pad") { schema = "easyeda-pro-control.managed-pad-fixture-closed-snapshot.v1"; }
     if (kind === "schematic-relevance") { schema = "easyeda-pro-control.managed-schematic-relevance-fixture-closed-snapshot.v1"; }
+    if (kind === "component") { schema = "easyeda-pro-control.managed-component-fixture-closed-snapshot.v1"; }
     let targetFields: Record<string, unknown> = { issuedReadOpenTarget: target ?? null };
-    if (kind === "pad") { targetFields = { issuedPadReadOpenTarget: target ?? null }; }
+    if (kind === "component") { targetFields = { issuedComponentSpatialDataTarget: target ?? null, nativeComponentCacheQualified: false, nativeIndexQualified: false }; }
+    else if (kind === "pad") { targetFields = { issuedPadReadOpenTarget: target ?? null }; }
     else if (kind === "schematic-relevance") { targetFields = { issuedSchematicRelevanceDataTarget: target ?? null, nativePageReadinessVerified: false, electricalConnectivityVerified: false }; }
     else if (kind === "schematic") { targetFields = { issuedSchematicDataTarget: target ?? null, nativePageReadinessVerified: false, electricalConnectivityVerified: false }; }
-    return { qualifiedSchematicRelevanceTarget: target?.schema === "easyeda-pro-control.qualified-generated-schematic-relevance-fixture-target.v1" ? target : null, qualifiedPadTarget: target?.schema === "easyeda-pro-control.qualified-generated-pad-fixture-target.v1" ? target : null, qualifiedTarget: target?.schema === "easyeda-pro-control.qualified-generated-fixture-target.v1" ? target : null,
+    return { qualifiedComponentTarget: target?.schema === "easyeda-pro-control.qualified-generated-component-fixture-target.v1" ? target : null, qualifiedSchematicRelevanceTarget: target?.schema === "easyeda-pro-control.qualified-generated-schematic-relevance-fixture-target.v1" ? target : null, qualifiedPadTarget: target?.schema === "easyeda-pro-control.qualified-generated-pad-fixture-target.v1" ? target : null, qualifiedTarget: target?.schema === "easyeda-pro-control.qualified-generated-fixture-target.v1" ? target : null,
       qualifiedSchematicTarget: target?.schema === "easyeda-pro-control.qualified-generated-schematic-fixture-target.v1" ? target : null,
       report: { schema, projectUuid, branchUuid: qualified?.history.branchUuid ?? null,
       ...(windowsFile === undefined ? {} : { sourceClockSource: "original-destination-windows-filetime", windowsClosedFileMetadata: windowsFile }),
@@ -247,7 +276,7 @@ async function captureClosedSnapshot(options: ManagedFixtureClosedSnapshotOption
       sqlReaderCompletion: readerCompletion(inventory), completeInitialSqlRowsQualified: qualified !== undefined, qualificationFailure,
       tableRoster: inventory.tables.map((table) => ({ name: table.name, rowCount: table.rows.length, sha256: table.sha256 })),
       historySemanticSha256: qualified?.history.semanticSha256 ?? null, sourceComparison: qualified === undefined ? null :
-        ({ pcb: compareGeneratedFixtureClosedSources, schematic: compareGeneratedSchematicFixtureClosedSources, pad: compareGeneratedPadFixtureClosedSources, "schematic-relevance": compareGeneratedSchematicFixtureClosedSources }[kind])(options.archive, qualified.history),
+        ({ pcb: compareGeneratedFixtureClosedSources, schematic: compareGeneratedSchematicFixtureClosedSources, pad: compareGeneratedPadFixtureClosedSources, "schematic-relevance": compareGeneratedSchematicFixtureClosedSources, component: compareGeneratedComponentFixtureClosedSources }[kind])(options.archive, qualified.history),
       ...targetFields, originalRootAndJobReobservedClosed: true,
       registrationVerified: false, completeSqlEffectsAccepted: false, importedFixtureAccepted: false, designExecutionAuthorized: false,
       sourceFileModified: false, sqliteSourceAttached: false, filesDeleted: false } };

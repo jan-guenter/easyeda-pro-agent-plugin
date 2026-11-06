@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-06 generated Component fixture](2026-11-06-generated-component-fixture.md). New complete local FOOTPRINT/PCB archive with explicit hidden attributes, strict initial SQL/checkpoint/staging and original import/Windows closed capture; new408-purpose cache/index and positive native proof remain separate.
+
 - [2026-11-06 explicit-Relevance schematic reader live case](2026-11-06-relevance-schematic-reader-live-case.md). Actual distinct fixture import/full closed SQL, generated page readiness and accepted Text/Wire/Bus reads with exact closed raw invariance; original terminal cleanup is recorded separately.
 - [2026-11-06 separate Relevance display data](2026-11-06-relevance-display-data-profile.md). Genuine seven-row checkpoint arguments, exact ATTR/native root permutation, separate fixed stages/effect/pending body and explicit normalized baseline; original native writer/SQL/persistence grants remain closed.
 
