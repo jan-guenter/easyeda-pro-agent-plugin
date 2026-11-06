@@ -319,3 +319,33 @@ receipt verification and the complete SQL projection with explicit historical
 issuer seams. They also check retained Promise/copy refusal and changed-source
 refusal. The two existing actual closed-capture cases pass; full types and
 strict changed-file lint pass. No native purpose, browser cache or app was used.
+
+### Finite saved-cache CDP wire
+
+The separate saved opener has a selector-free cache command leaf. Its public
+Node command supplies only a fixed phase, stage/round, namespace ordinal and
+bounded entry slot. The original private pipe registry must capture and retain
+actual correlated frame storage-key, full cache-roster and entry replies; only
+those private values may supply native frame/cache IDs and request URL/headers.
+The grammar exposes no broad clear, arbitrary origin, cache name or caller ID.
+
+The maximum is35 normal commands and one cleanup untrack: four storage-key
+checks, eight namespace rosters, four complete entry lists, sixteen bodies
+over two rounds, two deletes and one track. Each complete list uses skip0,
+pageSize9 and no filter; more than eight entries across both selected caches
+refuses. Response bodies are bounded to8192bytes each/32768total. Original
+owner state must enforce the combined body bound and per-slot consumption.
+These counts exclude a still-required native full Request/Response metadata
+join. No delete or loading grant is issued by this leaf.
+
+The official [CDP CacheStorage definitions](https://raw.githubusercontent.com/ChromeDevTools/devtools-protocol/master/pdl/domains/CacheStorage.pdl)
+provide entry metadata, base64 response bodies and targeted deletion. The
+[Chromium inspector backend](https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/renderer/modules/cache_storage/inspector_cache_storage_agent.cc)
+currently implements entry enumeration through an internal Open call. Its cache
+IDs encode names rather than retaining a cache-lifetime handle. Thus the new
+opener must exclude selected writers throughout backup/deletion; this is not an
+atomic name-to-entry operation. Its DataEntry projection also omits some Fetch
+metadata, so that projection alone cannot establish a faithful complete backup.
+A fixed native metadata join or independently proved source constraints remain
+required before deletion. Two finite-wire refusal cases, full types and strict
+changed-file lint pass. No CDP cache command was dispatched to a live browser.
