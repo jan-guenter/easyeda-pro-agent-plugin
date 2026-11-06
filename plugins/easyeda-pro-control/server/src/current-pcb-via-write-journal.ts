@@ -97,7 +97,7 @@ function artifact(entry: Entry): ArtifactDescriptor {
 }
 export interface CurrentPcbViaWriteDispatch { readonly profile: "private.current-pcb-via-write-dispatch.v1" }
 interface Dispatch { readonly journal: CurrentPcbViaWriteJournal; readonly owner: object; readonly plan: CurrentPcbViaWritePlan;
-  readonly stage: "create" | "save"; readonly sequence: number; consumed: boolean }
+  readonly stage: "create" | "save"; readonly sequence: number; consumed: boolean; enrolled: boolean }
 const dispatches = new WeakMap<CurrentPcbViaWriteDispatch, Dispatch>();
 const journals = new WeakSet<CurrentPcbViaWriteJournal>();
 /** The actual native owner must pass itself before its first dispatch await.
@@ -108,6 +108,25 @@ export function consumeCurrentPcbViaWriteDispatch(token: CurrentPcbViaWriteDispa
   need(original !== undefined && !original.consumed && original.owner === owner && original.plan === plan && original.stage === stage, "ORIGINAL_DISPATCH");
   original.journal.requireDispatchIntent(stage, original.sequence); requireOriginalCurrentPcbViaWritePlan(plan); original.consumed = true;
   return Object.freeze({ assertPublished: (): Promise<void> => original.journal.assertCurrent() });
+}
+export interface CurrentPcbViaCreateIntentEnrollment {
+  readonly assertCurrent: () => void;
+  readonly assertBeforeAttempt: () => void;
+  readonly assertOriginalAttempted: () => void;
+  readonly assertPublished: () => Promise<void>;
+}
+/** Prospective custody of one already-published original create intent.
+ * Enrollment never spends or refunds the separate actual dispatch slot. */
+export function enrollCurrentPcbViaWriteCreateIntent(token: CurrentPcbViaWriteDispatch, owner: object,
+  plan: CurrentPcbViaWritePlan): CurrentPcbViaCreateIntentEnrollment {
+  const original = dispatches.get(token);
+  need(original !== undefined && original.owner === owner && original.plan === plan && original.stage === "create" && !original.consumed && !original.enrolled, "ORIGINAL_CREATE_ENROLLMENT");
+  const before = (): void => { need(dispatches.get(token) === original && !original.consumed, "CREATE_ENROLLMENT_BEFORE_ATTEMPT"); requireOriginalCurrentPcbViaWritePlan(plan); original.journal.requireDispatchIntent("create", original.sequence); };
+  before(); original.enrolled = true;
+  const current = (): void => { need(dispatches.get(token) === original && original.enrolled, "ORIGINAL_CREATE_ENROLLMENT"); requireOriginalCurrentPcbViaWritePlan(plan); original.journal.requireRetainedDispatchIntent("create", original.sequence); };
+  return Object.freeze({ assertCurrent: current, assertBeforeAttempt: before,
+    assertOriginalAttempted: (): void => { current(); need(original.consumed, "CREATE_ENROLLMENT_ORIGINAL_ATTEMPT_REQUIRED"); },
+    assertPublished: async (): Promise<void> => { current(); await original.journal.assertCurrent(); current(); } });
 }
 /** Failed journals stay unresolved after resource cleanup. Closing a process
  * cannot turn an unknown Save into a completed design operation. */
@@ -162,7 +181,7 @@ export class CurrentPcbViaWriteJournal {
   public async appendIntent(stage: "create" | "save", evidence: Readonly<Record<string, unknown>>, owner: object): Promise<CurrentPcbViaWriteDispatch> {
     need(this.#owner === owner && !this.#busy && this.#pending === null && !this.#dispatchTokens.has(stage), "WRITER_BINDING");
     const sequence = entries(this.#operation).length, token = Object.freeze({ profile: "private.current-pcb-via-write-dispatch.v1" as const });
-    dispatches.set(token, { journal: this, owner, plan: this.#plan, stage, sequence, consumed: false }); this.#dispatchTokens.set(stage, token);
+    dispatches.set(token, { journal: this, owner, plan: this.#plan, stage, sequence, consumed: false, enrolled: false }); this.#dispatchTokens.set(stage, token);
     await this.append(`${stage}-intent`, evidence); return this.retainedDispatchIntent(stage);
   }
   /** Publication settlement can return the same original unconsumed marker.
@@ -176,6 +195,12 @@ export class CurrentPcbViaWriteJournal {
   public requireDispatchIntent(stage: "create" | "save", sequence: number): void {
     need(!this.#busy && this.#pending === null && this.#reserved, "PUBLICATION_PENDING"); const last = entries(this.#operation).at(-1);
     need(last?.kind === `${stage}-intent` && last.sequence === sequence, "CURRENT_DISPATCH_INTENT");
+  }
+  /** Original marker remains historical evidence after its one dispatch or
+   * later journal stages. It cannot become an unconsumed marker again. */
+  public requireRetainedDispatchIntent(stage: "create" | "save", sequence: number): void {
+    need(!this.#busy && this.#pending === null && this.#reserved, "PUBLICATION_PENDING");
+    const record = entries(this.#operation)[sequence]; need(record?.kind === `${stage}-intent` && record.sequence === sequence, "RETAINED_DISPATCH_INTENT");
   }
   public async settlePublication(): Promise<void> { await this.#exclusive((): Promise<void> => this.#settle()); }
   public async waitForPublication(): Promise<void> { await this.#idle; }

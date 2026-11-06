@@ -92,7 +92,7 @@ void test("composed native fragment is idempotent and keeps old births, caps and
   const earlierVia = generated.replace("return pcbViaWrite209?1177:spatial209?384:", "return pcbViaWrite209?766:spatial209?384:").replace("$requestLimit=if ($PcbViaWrite209) {1177}", "$requestLimit=if ($PcbViaWrite209) {766}");
   assert.equal(compose(earlierVia), generated); assert.ok(Buffer.byteLength(generated) < 2 * 1024 * 1024);
   for (const text of ["EasyedaPcbViaWriteBirth", "CreatePcbViaWrite209()", "via-old-birth-smoke", "via-retain-main-until-exit", "viaConstructionComplete", "stage==\"save\"", "pcb-diagnostic-conflicting-via-purpose",
-    "return pcbViaWrite209?1177:spatial209?384:workerStartup?256:stringPrecreate?3309:103", "viaSdkProperties>=3", "SendPcbViaSpatial"]) { assert.ok(generated.includes(text), text); }
+    "return pcbViaWrite209?1177:spatial209?384:workerStartup?256:stringPrecreate?3309:103", "viaSdkProperties>=3", "SendPcbViaSpatial", "via-main-precreate-required", "via-main-precreate-original-enrollment", "VerifyViaMainPrecreateSmoke", "viaBeginArms.Count!=4", "viaHistoryArms.Count!=9", "viaStructureMainArms.Count!=9"]) { assert.ok(generated.includes(text), text); }
   assert.equal(generated.includes("sqlite3.Database="), false); assert.equal(generated.includes("Object.setPrototypeOf(sc.Database"), false);
   assert.throws(() => compose(original.replace("[switch]$StringPrecreate,", "[switch]$ForeignPurpose,")), /ANCHOR/u);
 });

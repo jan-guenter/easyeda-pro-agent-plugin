@@ -1,5 +1,6 @@
 /** Original Via body enrollment and per-call structure/publication native
  * custody. SQL/body/clock ownership is independently joined in the same Core. */
+import { applyCurrentPcbViaMainPrecreateNativeFragment } from "./current-pcb-via-main-precreate-native-fragment.ts";
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
@@ -69,5 +70,5 @@ export function applyCurrentPcbViaMainStructureNativeFragment(input: string): st
   const begin = "// BEGIN GENERATED VIA ORIGINAL MAIN STRUCTURE", end = "// END GENERATED VIA ORIGINAL MAIN STRUCTURE", value = `${begin}\n${currentPcbViaMainStructureNativeSource()}\n${end}`;
   const start = source.indexOf(begin), stop = source.indexOf(end);
   if (start !== -1 || stop !== -1) { if (start === -1 || stop < start || source.includes(begin, start + begin.length) || source.includes(end, stop + end.length)) { throw new Error("PCB_VIA_STRUCTURE_NATIVE_MARKERS"); } source = source.slice(0, start) + value + source.slice(stop + end.length); }
-  else { source = one(source, "internal enum EasyedaPcbViaWriteBirth { Original }", `${value}\ninternal enum EasyedaPcbViaWriteBirth { Original }`); } return source;
+  else { source = one(source, "internal enum EasyedaPcbViaWriteBirth { Original }", `${value}\ninternal enum EasyedaPcbViaWriteBirth { Original }`); } return applyCurrentPcbViaMainPrecreateNativeFragment(source);
 }

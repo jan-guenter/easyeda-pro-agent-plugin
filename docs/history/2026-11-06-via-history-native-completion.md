@@ -134,3 +134,36 @@ the complete closed SQL delta, or qualify a cache-excluded reopened result.
 These are explicit remaining prerequisites, not reconstructed from SDK ACKs
 or timer durations. The old effect-first main origin grants observation only;
 it does not establish prospective pre-create enrollment.
+
+### Prospective original create enrollment
+
+`prepareViaMainObservationOrigin(plan, originalCreateDispatch, setup)` now runs
+before SDK create. It claims one already-published original create-intent
+without consuming the dispatch, retains the exact original producer-prefix
+registry token, and arms the actual request/BEGIN/history/STRUCTURE collectors.
+The dedicated native pre-create receipt independently requires that original
+prefix, qualified SDK capture/preflight, original worker, live root/Job and
+source-derived arm counts before create. A matching boolean or JSON marker has
+no enrollment path. There is no SQL, producer or Save resume in this action.
+
+The SDK create entry checks the same enrollment before consuming its real
+journal dispatch and again immediately before its actual native pipe call.
+Failed publication, a different marker, repeated enrollment or lost attempt
+cannot refund the marker. The original intent remains historical evidence
+through later create-result records; it never becomes unconsumed again.
+
+`bindViaMainOriginalEffect` late-binds the genuine acknowledged create plus
+before/after native/whole-scene effect to this earlier origin. The old
+effect-first origin cannot satisfy the new create gate. The actual clock and
+Save-body joins still require the completed effect and one real Save attempt.
+The two fixed Via body enrollments now receive only their already-owned bounded
+body capacity in the helper envelope; no arbitrary program gets that capacity.
+
+Required order is original worker/structure/transport/producer arms before
+project open, original construction/mode and SDK capture/preflight, native and
+whole-scene baseline, published create-intent plus prefix enrollment, the new
+main source setup, then that original SDK create. Actual effect verification
+and clock setup follow create. This closes retrospective Main enrollment, but
+planned producer continuation and complete producer/cache/drain, closed SQL
+and cache-excluded reopened verification remain separate prerequisites. Save
+is still denied. No native owner was allocated for this source increment.
