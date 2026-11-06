@@ -154,7 +154,8 @@ import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { assertOriginalGeneratedPcbReadTarget as assertOriginalGeneratedFixtureTarget } from "./managed-pcb-fixture-read-target.ts";
 import type { QualifiedGeneratedPcbReadTarget as QualifiedGeneratedFixtureTarget } from "./managed-pcb-fixture-read-target.ts";
-import { decodeGeneratedFixtureRegistrationReply } from "./managed-fixture-registration-program.ts";
+import { currentPcbViaSavedRegistrationNativeFrame, decodeCurrentPcbViaSavedRegistrationReply } from "./current-pcb-via-saved-registration.ts";
+import { GENERATED_FIXTURE_REGISTRATION_FUNCTION, decodeGeneratedFixtureRegistrationReply } from "./managed-fixture-registration-program.ts";
 import { lstat, readFile, realpath } from "node:fs/promises";
 import process from "node:process";
 import { types } from "node:util";
@@ -1513,6 +1514,8 @@ class CurrentPcbRetainedOwnerCore {
   #savedReadbackInvalidation: CurrentPcbViaSavedCacheInvalidationLedger | null = null;
   #savedReadbackRegistrationPromise: Promise<CurrentSavedProjectRegistrationIntent> | null = null;
   #savedReadbackRegistrationIntent: CurrentSavedProjectRegistrationIntent | null = null;
+  #savedReadbackRegistrationDispatch: Promise<Readonly<RecordValue>> | null = null; #savedReadbackRegistrationResult: Readonly<RecordValue> | null = null;
+  #savedReadbackRegistrationFrame = false; #savedReadbackRegistrationHelper: { scriptId: string | null } | null = null;
   #savedReadbackLoadPreparation: CurrentPcbViaSavedLoadPreparation | null = null;
   #savedReadbackLoadObserver: CurrentPcbViaSavedLoadObserver | null = null; #savedReadbackLoadData: CurrentPcbViaSavedLoadObservedData | null = null; #savedReadbackLoadCompletion: Promise<CurrentPcbViaSavedLoadObservedData> | null = null;
   #savedReadbackLoadSetup: CurrentPcbViaSavedLoadSetup | null = null; #savedReadbackLoadController: CurrentPcbViaSavedLoadController | null = null;
@@ -6188,6 +6191,11 @@ class CurrentPcbRetainedOwnerCore {
     const captured = captureCurrentPcbStringClockReply(event).value;
     if (captured === null || typeof captured !== "object" || !("params" in captured) || captured.params === null || typeof captured.params !== "object" || !("url" in captured.params) || captured.params.url !== "") { return false; }
     const held = this.#savedReadbackCache, helper = this.#savedReadbackGuardHelper, params = captured.params;
+    const registration = this.#savedReadbackRegistrationHelper;
+    if (registration !== null) {
+      if (held === null || registration.scriptId !== null || event.sessionId !== held.selected.sessionId || !("executionContextId" in params) || params.executionContextId !== held.context.script().context["id"] || !("scriptId" in params) || !diagnosticToken(params.scriptId) || "hasSourceURL" in params && params.hasSourceURL === true || "isLiveEdit" in params && params.isLiveEdit === true) { throw error("SAVED_READBACK_REGISTRATION_HELPER_EVENT"); }
+      registration.scriptId = params.scriptId; return true;
+    }
     if (helper === null || held === null || helper.scriptId !== null || this.#savedReadbackDeleteGuard !== helper.ordinal || event.sessionId !== held.selected.sessionId ||
       !("executionContextId" in params) || params.executionContextId !== held.context.script().context["id"] || !("scriptId" in params) || !diagnosticToken(params.scriptId)) { throw error("SAVED_READBACK_GUARD_HELPER_EVENT"); }
     helper.scriptId = params.scriptId; return true;
@@ -6499,12 +6507,51 @@ class CurrentPcbRetainedOwnerCore {
         const intent: CurrentSavedProjectRegistrationIntent = Object.freeze({ profile: "private.current-saved-project-registration-intent.v1" });
         const bindings: CurrentSavedProjectRegistrationBindings = Object.freeze({ prepared, target, assertCurrent: async (): Promise<void> => { current(); await verify(); await this.#verify(); current(); },
           assertOriginalDispatchPending: (): void => { current(); const held = savedProjectRegistrationIntents.get(intent);
-            if (held === undefined || held.owner !== this || held.runner !== runner || !held.attempted || held.pending === null || !types.isPromise(held.pending) || held.settled || this.#savedReadbackRegistrationIntent !== intent) { throw error("SAVED_READBACK_REGISTRATION_DISPATCH_PENDING_REQUIRED"); } } });
+            if (held === undefined || held.owner !== this || held.runner !== runner || !held.attempted || held.pending === null || !types.isPromise(held.pending) || held.settled || this.#savedReadbackRegistrationIntent !== intent || !(this.#pipe instanceof CurrentPcbViaSavedReadbackPipe)) { throw error("SAVED_READBACK_REGISTRATION_DISPATCH_PENDING_REQUIRED"); }
+            this.#pipe.requireOriginalSavedReadbackRegistrationPending(held.pending); } });
         savedProjectRegistrationIntents.set(intent, { owner: this, runner, prepared, target, loading, bindings, artifact, text, attempted: false, pending: null, settled: false });
         this.#savedReadbackRegistrationIntent = intent; current(); await runner.enrollSavedProjectRegistrationIntent(intent); current(); return intent;
       } catch (caughtError) { this.#input.emit("error", error("SAVED_READBACK_REGISTRATION_INTENT_FAILED")); throw caughtError; }
       finally { this.#busy = false; }
     })(); this.#savedReadbackRegistrationPromise = promise; return promise;
+  }
+  /** Dispatch exactly one normal backend registration under the durable
+   * original intent. No project worker or UI project navigation is started. */
+  public registerSavedReadbackProject(): Promise<Readonly<RecordValue>> {
+    assertOriginalCurrentPcbViaSavedReadbackOwner(this);
+    if (this.#savedReadbackRegistrationDispatch !== null) { return this.#savedReadbackRegistrationDispatch; }
+    const cache = this.#savedReadbackCache, intent = this.#savedReadbackRegistrationIntent, pipe = this.#pipe, runner = this.#mainRunner;
+    if (intent === null || cache === null || runner === null || !(pipe instanceof CurrentPcbViaSavedReadbackPipe) || this.#savedReadbackLoadController === null || this.#savedReadbackRegistrationResult !== null) { throw error("SAVED_READBACK_REGISTRATION_NOT_PREPARED"); }
+    const held = savedProjectRegistrationIntents.get(intent);
+    if (held === undefined || held.owner !== this || held.runner !== runner || held.attempted || held.settled || held.pending !== null || held.prepared !== cache.prepared) { throw error("SAVED_READBACK_REGISTRATION_ORIGINAL_INTENT"); }
+    this.#enter(true);
+    const promise = (async (): Promise<Readonly<RecordValue>> => {
+      try {
+        await held.bindings.assertCurrent(); await this.#verifyInstallation(); await held.bindings.assertCurrent();
+        if (this.#savedReadbackCache !== cache || this.#pipe !== pipe || this.#mainRunner !== runner || this.#savedReadbackAborted) { throw error("SAVED_READBACK_REGISTRATION_ORIGINAL_OWNER"); }
+        this.#savedReadbackRegistrationHelper = { scriptId: null }; this.#savedReadbackRegistrationFrame = true;
+        let raw: RecordValue;
+        try {
+          raw = await this.#transfer(() => pipe.registerSavedReadbackProject(cache.selected.uniqueContextId, held.target, (pending: Promise<RecordValue>): void => {
+            if (held.attempted || held.pending !== null || held.settled || this.#savedReadbackRegistrationIntent !== intent || this.#pipe !== pipe || this.#savedReadbackAborted) { throw error("SAVED_READBACK_REGISTRATION_DISPATCH_CONSUMED"); }
+            held.attempted = true; held.pending = pending; pipe.requireOriginalSavedReadbackRegistrationPending(pending);
+          }));
+        } finally { held.settled = true; this.#savedReadbackRegistrationFrame = false; }
+        runner.requireOriginalSavedProjectRegistrationAwaited(intent);
+        const helper = this.#savedReadbackRegistrationHelper, result = decodeCurrentPcbViaSavedRegistrationReply(raw, held.target);
+        if (helper === null || helper.scriptId === null) { throw error("SAVED_READBACK_REGISTRATION_HELPER_REQUIRED"); }
+        const source = await this.#transfer(() => pipe.getScriptSource(helper.scriptId ?? ""));
+        if (!exact(source, ["scriptSource"]) || source["scriptSource"] !== `(${GENERATED_FIXTURE_REGISTRATION_FUNCTION})` || this.#savedReadbackRegistrationHelper !== helper) { throw error("SAVED_READBACK_REGISTRATION_HELPER_SOURCE"); }
+        await held.bindings.assertCurrent(); runner.requireOriginalSavedProjectRegistrationAwaited(intent);
+        const ack = await this.#request({ action: "saved-readback-registration-complete" });
+        if (!exact(ack, ["registrationAwaited"]) || ack["registrationAwaited"] !== true || this.#savedReadbackAborted) { throw error("SAVED_READBACK_REGISTRATION_NATIVE_AWAIT"); }
+        const observation = Object.freeze({ schema: "private.current-pcb-via-saved-registration-observation.v1", projectUuid: held.target.projectUuid,
+          originalRegistrationAcknowledged: result.registrationDispatched, originalMainSourceAwaitsVerified: true, exactOtherRegistrationRosterUnchanged: result.exactOtherRegistrationRosterUnchanged,
+          persistentGlobalRowVerified: false, projectNavigationDispatched: false, reopenedVerified: false, replayAllowed: false });
+        this.#savedReadbackRegistrationResult = observation; return observation;
+      } catch (caughtError) { this.#input.emit("error", error("SAVED_READBACK_REGISTRATION_FAILED")); throw caughtError; }
+      finally { this.#savedReadbackRegistrationFrame = false; this.#savedReadbackRegistrationHelper = null; this.#busy = false; }
+    })(); this.#savedReadbackRegistrationDispatch = promise; return promise;
   }
   public originalSavedProjectRegistrationIntent(intent: CurrentSavedProjectRegistrationIntent, runner: CurrentFootprintCopyMainBackendRunner): CurrentSavedProjectRegistrationBindings {
     const original = savedProjectRegistrationIntents.get(intent);
@@ -7317,7 +7364,13 @@ class CurrentPcbRetainedOwnerCore {
       else if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { nativeRequest = currentPcbViaWriteNativeRequest; }
       else if (this.#purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { nativeRequest = currentSchematicDisplayWriteNativeRequest; }
       let encoded: Readonly<Record<string, unknown>>;
-      if (this.#savedReadbackLoadCommand !== null && this.#savedReadbackLoadPair !== null) { encoded = currentPcbViaSavedLoadWorkerNativeFrame(chunk, this.#savedReadbackLoadCommand, this.#savedReadbackLoadPair); }
+      if (this.#savedReadbackRegistrationFrame && this.#savedReadbackCache !== null) {
+        const intent = this.#savedReadbackRegistrationIntent; const held = intent === null ? undefined : savedProjectRegistrationIntents.get(intent);
+        if (held === undefined || held.owner !== this || held.pending === null || held.settled || !(this.#pipe instanceof CurrentPcbViaSavedReadbackPipe)) { throw error("SAVED_READBACK_REGISTRATION_WIRE_ORIGINAL"); }
+        this.#pipe.requireOriginalSavedReadbackRegistrationPending(held.pending);
+        encoded = currentPcbViaSavedRegistrationNativeFrame(chunk, this.#savedReadbackCache.selected.sessionId, this.#savedReadbackCache.selected.uniqueContextId, held.target);
+      }
+      else if (this.#savedReadbackLoadCommand !== null && this.#savedReadbackLoadPair !== null) { encoded = currentPcbViaSavedLoadWorkerNativeFrame(chunk, this.#savedReadbackLoadCommand, this.#savedReadbackLoadPair); }
       else if (this.#savedReadbackActorsPending) { encoded = currentPcbViaSavedReadbackActorNativeFrame(chunk); }
       else if (this.#savedReadbackParentPending && this.#stagedAttachment !== null) { encoded = currentPcbViaSavedReadbackParentNativeFrame(chunk, this.#stagedAttachment.sessionId); }
       else if (this.#savedReadbackMetadataPlan !== null && this.#savedReadbackCache !== null) { this.#savedReadbackCacheCurrent(this.#savedReadbackCache); encoded = currentPcbViaSavedCacheMetadataNativeFrame(chunk, this.#savedReadbackMetadataPlan, this.#savedReadbackCache.selected.sessionId); }

@@ -738,3 +738,29 @@ registration, loading or writer call was made. Initial startup actor exclusion,
 actual registration/opening, runtime DTO/scene comparison and final closed-file
 reproof remain necessary; this data result claims neither native ownership nor
 saved/reopened acceptance.
+
+
+The saved reader now dispatches its one normal path-registration program from
+its own durable intent. Before synchronous Writable dispatch, the private pipe
+retains its original deferred Promise in the actual request slot and gives that
+exact reference to the original Core intent. Main registration checks reject
+another Promise, a settled slot or a copied intent. The existing fixed generated
+registration program remains byte-identical; its inputs come only from the
+saved checkpoint and the native owner's retained target/UI tuple.
+
+After its one reply, the Core requires the original main observer's upsert and
+outer caller awaits, qualifies the exact original helper script, and only then
+enrolls native registration completion. Lost replies, a missing await join or a
+source mismatch consume the stage and leave original Job-only cleanup usable.
+The added original-registration and helper-source calls give174 active CDP slots
+through registration,196 through worker source hold,331 through loading, and421
+prospective total. Main registration adds its separately derived32 calls to the
+original909 reservation, for941. These are separate saved-reader bounds.
+
+Thirteen production owner/real synthetic child cases pass, including successful
+registration, missing original-main completion and a delayed original reply
+settled by the same Job-only abort. Full types and changed-file strict lint pass.
+The synthetic main seam supplies no actual SQL or connected proof. Final combined
+native compilation remains with the parent's complete source integration.
+Initial actors and actual UI project opening/runtime comparison still block a
+saved/reopened result; no live registration, cache invalidation or Save occurred.

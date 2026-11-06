@@ -5,6 +5,7 @@ import { currentPcbViaSavedReadbackAllocationOutcome, startCurrentPcbViaSavedRea
 import type { CurrentPcbViaWriteClosedCheckpoint } from "../src/current-pcb-via-write-closed-checkpoint.ts";
 import { completeSyntheticSavedCacheFixture } from "./helpers/current-pcb-via-saved-cache-fixture.ts";
 import { currentPcbViaSavedReadbackActorNativeFrame, currentPcbViaSavedReadbackActorWire } from "../src/current-pcb-via-saved-cache-wire.ts";
+import { GENERATED_FIXTURE_REGISTRATION_FUNCTION } from "../src/managed-fixture-registration-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-opening.ts";
 import type { CurrentPcbViaSavedCacheBackupGrant } from "../src/current-pcb-via-saved-cache-backup-origin.ts";
 import { PassThrough } from "node:stream";
@@ -24,7 +25,7 @@ import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import type { CurrentPcbViaSavedReadbackOwner } from "../src/current-pcb-diagnostic-owner.ts";
 
-async function fixture(context: TestContext, malformed = false, cache = false, metadata = false, complete = false, invalidation = false, lostDelete = false, windowDrift = false): Promise<Readonly<{ owner: CurrentPcbViaSavedReadbackOwner; actions: string[]; pollEntered: Promise<true>; cacheRequest: (() => Promise<unknown>) | null; deleteEntered: Promise<true>; prepared: CurrentPcbViaWriteClosedCheckpoint }>> {
+async function fixture(context: TestContext, malformed = false, cache = false, metadata = false, complete = false, invalidation = false, lostDelete = false, windowDrift = false, registration: "none" | "success" | "lost" | "unawaited" = "none"): Promise<Readonly<{ owner: CurrentPcbViaSavedReadbackOwner; actions: string[]; pollEntered: Promise<true>; cacheRequest: (() => Promise<unknown>) | null; deleteEntered: Promise<true>; registrationEntered: Promise<true>; prepared: CurrentPcbViaWriteClosedCheckpoint }>> {
   const url = new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url); const sourceRequire = createRequire(url);
   const full = complete ? completeSyntheticSavedCacheFixture(invalidation) : null;
   const prepared = full?.prepared ?? Object.freeze({ syntheticCheckpoint: true, target: Object.freeze({ projectUuid: "a".repeat(64) }) });
@@ -34,7 +35,7 @@ const pipe=this.#pipe;if(!(pipe instanceof CurrentPcbViaSavedReadbackPipe))throw
 this.#stagedAttachment=Object.freeze({targetId:"synthetic-target",sessionId:"synthetic-session"});this.#savedReadbackActorsPending=true;await this.#transfer(()=>pipe.armSavedReadbackCacheActors());this.#savedReadbackActorsPending=false;this.#savedReadbackActorsArmed=true;this.#savedReadbackParentPending=true;await this.#transfer(()=>pipe.armSavedReadbackCacheParent());this.#savedReadbackParentPending=false;
 const selected=Object.freeze({frameId:"synthetic-frame",sessionId:"synthetic-session",uniqueContextId:"synthetic-context",securityOrigin:"https://client"});
 const context={openingContext:()=>({sessionId:selected.sessionId,uniqueContextId:selected.uniqueContextId}),savedReadbackCacheContext:()=>selected,script:()=>({context:{id:7}})};this.#stagedContext=context;
-this.#savedReadbackParentArmed=true;this.#mainRunner={selectedSqlFenceState:()=>({ready:true}),pumpSelectedSqlFence:async()=>{},enrollSavedProjectRegistrationIntent:async()=>{}};
+this.#savedReadbackParentArmed=true;this.#mainRunner={selectedSqlFenceState:()=>({ready:true}),pumpSelectedSqlFence:async()=>{},enrollSavedProjectRegistrationIntent:async()=>{},requireOriginalSavedProjectRegistrationAwaited:()=>{if(${String(registration === "unawaited")})throw Error("SAVED_REGISTRATION_ORIGINAL_AWAITS_REQUIRED");}};
 const ledger=full?.ledger??new CurrentPcbViaSavedCacheLedger(Object.freeze({frameId:selected.frameId,sessionId:selected.sessionId,securityOrigin:selected.securityOrigin,projectUuid:this.#savedReadbackPrepared.target.projectUuid}));
 const origin=Object.freeze({profile:"private.current-pcb-via-saved-cache-origin.v1"});const bindings=this.#createSavedReadbackCacheBindings(ledger,origin,pipe,this.#savedReadbackPrepared);
 const metadata=full?.metadata??new CurrentPcbViaSavedCacheMetadataLedger({sessionId:selected.sessionId,uniqueContextId:selected.uniqueContextId,executionContextId:7,projectUuid:this.#savedReadbackPrepared.target.projectUuid});
@@ -66,15 +67,19 @@ pcbViaSavedReadbackAllocations.set(prepared,allocation);pcbViaSavedReadbackFacto
     branchUuid: "3".repeat(32), documentUuid: "4".repeat(32), ok: true, status: "ready", failure: null, dispatchAttempted: false, publicResult: null, prefixObserved: false, nativeWorkMayRemain: false,
     observation: { projectPresent: false, branchUuid: null, windowTabId: windowDrift ? "foreign-window" : "synthetic-window", containerCount: 1, tabIds: [], activeTabId: "tab_page1", initialTitle: "EasyEDA Pro - V3.2.209", expectedOpenedTitle: "EasyEDA Pro - V3.2.209", documentTitle: "EasyEDA Pro - V3.2.209" } };
   const initialRoster = full?.ledger.snapshot().roster.caches ?? [];
-  const script = `const guardReply=${JSON.stringify(guardReply)},helperSource=${JSON.stringify(`(${CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION})`)},roster=${JSON.stringify(initialRoster)};
+  let registeredPath: string | undefined;
+  if (full !== null) { const target = full.prepared["target"]; assert.ok(target !== null && typeof target === "object" && "rawWindowsPath" in target && typeof target.rawWindowsPath === "string"); registeredPath = target.rawWindowsPath; }
+  const script = `const registrationReply=${JSON.stringify({ schema: "easyeda-pro-control.generated-fixture-path-registration.v1", projectUuid: full?.ledger.snapshot().frame.projectUuid, rawWindowsPath: registeredPath, beforeRegistrySha256: "0".repeat(64), afterRegistrySha256: "1".repeat(64), beforeCount: 0, afterCount: 1, registrationDispatched: true, priorRegistrationPresent: false, exactOtherRegistrationRosterUnchanged: true, selectedRawPathMatched: true, selectedNonCbbMatched: true, recentPathRowMayHaveChanged: true, projectNavigationDispatched: false, cadEditDispatched: false, explicitSaveDispatched: false, persistentRegistrationVerified: false, replayAllowed: false, writerAuthority: false })},registrationSource=${JSON.stringify(`(${GENERATED_FIXTURE_REGISTRATION_FUNCTION})`)};const guardReply=${JSON.stringify(guardReply)},helperSource=${JSON.stringify(`(${CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION})`)},roster=${JSON.stringify(initialRoster)};
 const readline=require('node:readline'),input=readline.createInterface({input:process.stdin});let terminated=false,attached=false,queued=[];
 const send=(q,result)=>process.stdout.write(JSON.stringify({id:q.id,ok:true,result})+'\\n');
 input.on('line',line=>{const q=JSON.parse(line);
 if(q.action==='launch')send(q,{helperInstance:'b'.repeat(32),jobId:'c'.repeat(32),rootPid:123,rootCreated:'123456789012345'});
-else if(q.action==='send'){if(q.method==='Debugger.getScriptSource')queued.push({id:q.requestId,result:{scriptSource:helperSource},sessionId:q.sessionId});else{attached=true;queued.push({id:q.requestId,result:{sessionId:'synthetic-session'}});}send(q,{written:true});}
+else if(q.action==='send'){if(q.method==='Debugger.getScriptSource')queued.push({id:q.requestId,result:{scriptSource:q.scriptId==='registration-helper'?registrationSource:helperSource},sessionId:q.sessionId});else{attached=true;queued.push({id:q.requestId,result:{sessionId:'synthetic-session'}});}send(q,{written:true});}
 else if(q.action==='saved-readback-actors'){queued.push({id:q.requestId,result:{}});send(q,{written:true});}
 else if(q.action==='saved-readback-parent'){queued.push({id:q.requestId,result:{},sessionId:q.sessionId});send(q,{written:true});}
 else if(q.action==='saved-readback-metadata'){if(q.savedCacheMetadataPhase!=='saved-cache-native-constructors'||q.uniqueContextId!=='synthetic-context')throw Error('metadata-selector');send(q,{written:true});}
+else if(q.action==='saved-readback-register'){if(q.sessionId!=='synthetic-session'||q.uniqueContextId!=='synthetic-context')throw Error('registration-receiver');queued.push({method:'Debugger.scriptParsed',params:{scriptId:'registration-helper',url:'',executionContextId:7},sessionId:q.sessionId});if(!${String(registration === 'lost')})queued.push({id:q.requestId,result:{result:{type:'string',value:JSON.stringify(registrationReply)}},sessionId:q.sessionId});send(q,{written:true});}
+else if(q.action==='saved-readback-registration-complete')send(q,{registrationAwaited:true});
 else if(q.action==='saved-readback-worker-bind')send(q,{bound:true});
 else if(q.action==='saved-readback-backup-enroll')send(q,{backupEnrolled:true});
 else if(q.action==='saved-readback-cache-guard'||q.action==='saved-readback-load-guard'){queued.push({method:'Debugger.scriptParsed',params:{scriptId:'guard-'+q.namespaceOrdinal,url:'',executionContextId:7},sessionId:q.sessionId});queued.push({id:q.requestId,result:{result:{type:'string',value:JSON.stringify(guardReply)}},sessionId:q.sessionId});send(q,{written:true});}
@@ -84,10 +89,10 @@ else if(q.action==='saved-readback-abort'){if(q.confirmAbortOriginalSavedReadbac
 else if(q.action==='termination')send(q,{terminated,originalRootExited:terminated,originalJobEmpty:terminated});
 else if(q.action==='release')send(q,{released:true});else throw Error('unexpected '+q.action);});`;
   const child = spawn(process.execPath, ["-e", script], { stdio: ["pipe", "pipe", "pipe"] });
-  const actions: string[] = [], deleteEntered = Promise.withResolvers<true>(), pollEntered = Promise.withResolvers<true>(); const originalWrite = child.stdin.write.bind(child.stdin);
+  const actions: string[] = [], deleteEntered = Promise.withResolvers<true>(), pollEntered = Promise.withResolvers<true>(), registrationEntered = Promise.withResolvers<true>(); const originalWrite = child.stdin.write.bind(child.stdin);
   context.mock.method(child.stdin, "write", (...args: Parameters<typeof child.stdin.write>): boolean => {
     const chunk: unknown = args[0]; if (typeof chunk === "string") { const value: unknown = JSON.parse(chunk);
-      assert.ok(value !== null && typeof value === "object" && "action" in value); actions.push(String(value.action)); if (value.action === "saved-readback-cache" && "savedCachePhase" in value && value.savedCachePhase === "saved-cache-delete") { deleteEntered.resolve(true); } if (value.action === "poll" && (!cache || actions.includes(metadata ? "saved-readback-metadata" : "saved-readback-cache"))) { pollEntered.resolve(true); } }
+      assert.ok(value !== null && typeof value === "object" && "action" in value); actions.push(String(value.action)); if (value.action === "saved-readback-register") { registrationEntered.resolve(true); } if (value.action === "saved-readback-cache" && "savedCachePhase" in value && value.savedCachePhase === "saved-cache-delete") { deleteEntered.resolve(true); } if (value.action === "poll" && (!cache || actions.includes(metadata ? "saved-readback-metadata" : "saved-readback-cache"))) { pollEntered.resolve(true); } }
     return originalWrite(...args);
   });
   const executable = Object.freeze({ windowsPath: "C:\\Reviewed\\easyeda-pro.exe", sha256: "a".repeat(64) });
@@ -105,7 +110,7 @@ else if(q.action==='release')send(q,{released:true});else throw Error('unexpecte
     cacheRequest = (): Promise<unknown> => { const result: unknown = Reflect.apply(request, bindings, [metadata ? { phase: "saved-cache-native-constructors", kind: "cache-response" } : { phase: "saved-cache-key", step: "initial" }]); assert.ok(result instanceof Promise); return result; };
   }
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The test-only private factory seam above deliberately substitutes an inert checkpoint issuer.
-  return { owner, actions, pollEntered: pollEntered.promise, cacheRequest, deleteEntered: deleteEntered.promise, prepared: prepared as unknown as CurrentPcbViaWriteClosedCheckpoint };
+  return { owner, actions, pollEntered: pollEntered.promise, cacheRequest, deleteEntered: deleteEntered.promise, registrationEntered: registrationEntered.promise, prepared: prepared as unknown as CurrentPcbViaWriteClosedCheckpoint };
 }
 
 void test("original durable backup drives two source-qualified guards and once-only native deletes before absence", async context => {
@@ -214,10 +219,11 @@ void test("fresh readback native composition repeats exactly and its current pip
   const preflightStart = first.indexOf("        'saved-readback-preflight' {\n");
   const abortStart = first.indexOf("        'saved-readback-abort' {\n");
   assert.ok(metadataStart !== -1 && parentStart > metadataStart && preflightStart > parentStart && abortStart > preflightStart);
+  const registrationStart = first.indexOf("        'saved-readback-register' {\n");
   const observationStart = first.indexOf("        'saved-readback-observation-bind' {\n");
   const cacheDispatchStart = first.indexOf("        'saved-readback-load-guard' {\n");
-  assert.ok(observationStart > invalidationStart && cacheDispatchStart > observationStart);
-  assert.equal(generateWorkerStartupProtocol(first.slice(0, observationStart) + first.slice(cacheDispatchStart)), first);
+  assert.ok(registrationStart > invalidationStart && observationStart > registrationStart && cacheDispatchStart > observationStart);
+  assert.equal(generateWorkerStartupProtocol(first.slice(0, registrationStart) + first.slice(cacheDispatchStart)), first);
   const priorParent = first.slice(0, invalidationStart) + first.slice(parentStart);
   assert.equal(generateWorkerStartupProtocol(priorParent), first);
   const priorReadOnly = first.slice(0, invalidationStart) + first.slice(preflightStart);
@@ -228,7 +234,7 @@ void test("fresh readback native composition repeats exactly and its current pip
   const flags = first.slice(0, first.indexOf("\n")).match(/\[switch\]\$\w+/gu); assert.ok(flags !== null); assert.equal(flags.length, new Set(flags).size);
   assert.equal(first.split("        'saved-readback-abort' {").length - 1, 1);
   assert.ok(first.includes("spatial209?384:componentSpatial209?419:"));
-  assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.main.total, 909); assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.total, 419);
+  assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.main.total, 941); assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.total, 421);
   assert.deepEqual(CURRENT_PCB_VIA_SAVED_READBACK_BOOTSTRAP_REQUESTS, { parent: 2, inventory: 1, workerNormal: 16, workerCleanup: 8, total: 27 });
   assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeReadOnly, 172);
   assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.enabledDiscovery, 16); assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.cacheDeletionAuthorized, false);
@@ -277,4 +283,24 @@ void test("browser-wide actor fence holds all worker kinds and a foreign service
   context.after(async () => { const closed = [once(input, "close"), once(output, "close")]; input.destroy(); output.destroy(); await Promise.all(closed); pipe.releaseClosedListeners(); });
   pipe.start(); await pipe.attachTarget("original-page", event => { assert.fail(`Unexpected UI event: ${event.method}`); }); await assert.rejects(pipe.armSavedReadbackCacheActors());
   assert.notEqual(pipe.status().failure, null); assert.equal(cacheQueries, 0); await assert.rejects(pipe.armSavedReadbackCacheActors());
+});
+
+void test("original saved registration retains its actual pipe Promise before write and requires separate main awaits", async context => {
+  for (const mode of ["success", "unawaited", "lost"] as const) {
+    const f = await fixture(context, false, true, false, true, true, false, false, mode);
+    await f.owner.publishSavedCacheBackup(); await f.owner.invalidateSavedCaches(); await f.owner.prepareSavedReadbackLoading(); await f.owner.armSavedReadbackLoadWorker(() => Promise.resolve());
+    const intent = await f.owner.prepareSavedReadbackRegistrationIntent();
+    const lookup: unknown = Reflect.get(f.owner, "syntheticRegistrationBindingsForTest"); assert.ok(typeof lookup === "function");
+    const original: unknown = Reflect.apply(lookup, f.owner, [intent]); assert.ok(original !== null && typeof original === "object" && "assertOriginalDispatchPending" in original && typeof original.assertOriginalDispatchPending === "function");
+    const pending = original.assertOriginalDispatchPending;
+    const work = f.owner.registerSavedReadbackProject(); assert.equal(f.owner.registerSavedReadbackProject(), work);
+    if (mode === "success") { const result = await work; assert.equal(result["originalMainSourceAwaitsVerified"], true); assert.equal(result["reopenedVerified"], false); }
+    else if (mode === "unawaited") { await assert.rejects(work, /ORIGINAL_AWAITS_REQUIRED/u); }
+    else { const refused = assert.rejects(work); await f.registrationEntered; Reflect.apply(pending, original, []); await f.owner.abortSavedReadback(true); await refused; }
+    assert.throws(() => Reflect.apply(pending, original, []));
+    assert.equal(f.actions.filter(action => action === "saved-readback-register").length, 1);
+    assert.equal(f.actions.filter(action => action === "saved-readback-registration-complete").length, Number(mode === "success"));
+    if (mode !== "lost") { await f.owner.abortSavedReadback(true); }
+    assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
+  }
 });
