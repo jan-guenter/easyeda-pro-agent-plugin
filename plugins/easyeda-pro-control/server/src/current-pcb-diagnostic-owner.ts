@@ -439,6 +439,7 @@ interface PcbViaWriteAllocation { readonly options: CurrentPcbDiagnosticInstalla
 const pcbViaWriteAllocations = new WeakMap<GeneratedFixtureOpenCheckpoint, PcbViaWriteAllocation>();
 const pcbViaWriteFactories = new WeakMap<object, Readonly<{ allocation: PcbViaWriteAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
 export type CurrentPcbViaSaveWorkerSetup = (origin: CurrentPcbViaSaveWorkerOrigin) => Promise<void>;
+export type CurrentPcbViaClockSetup = (origin: CurrentPcbViaClockOrigin) => Promise<void>;
 export interface CurrentPcbViaNativeObservation { readonly schema: "private.current-pcb-via-native-observation.v1"; readonly phase: CurrentPcbViaObservationPhase; readonly observations: Readonly<Record<string, unknown>> }
 export interface CurrentPcbViaSceneObservation { readonly schema: "private.current-pcb-via-scene-observation.v1"; readonly phase: CurrentPcbViaObservationPhase; readonly observation: CurrentPcb209SpatialTrackResult }
 const pcbViaPackets = new WeakMap<object, Readonly<{ owner: object; plan: CurrentPcbViaWritePlan; phase: string; kind: "native" | "scene" | "stage" }>>();
@@ -770,6 +771,8 @@ class CurrentPcbRetainedOwnerCore {
   #viaWorkerController: CurrentPcbViaWorkerController | null = null;
   #viaWorkerOrigin: CurrentPcbViaSaveWorkerOrigin | null = null;
   #viaClockAttempted = false;
+  #viaClockSetup: CurrentPcbViaClockSetup | null = null;
+  #viaClockSetupSettled = false;
   #viaClockOrigin: CurrentPcbViaClockOrigin | null = null;
   readonly #viaClockArmAttempts = new Set<string>();
   readonly #viaClockArmedPoints = new Set<string>();
@@ -1089,7 +1092,7 @@ class CurrentPcbRetainedOwnerCore {
       pcbOpeningConsumed: this.#pcbOpeningConsumed, pcbOpeningResult: this.#pcbOpeningResult,
       pcbObservationConsumed: this.#pcbObservationConsumed, pcbFrameObservation: this.#pcbFrameObservation, pcbSourceQualified: this.#pcbSourceQualified,
       stringPrecreateConsumed: this.#stringPrecreateConsumed, commonBaselineConsumed: this.#commonBaselineConsumed,
-      ...(this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE ? { selectedSqlFence: this.#mainRunner?.selectedSqlFenceState() ?? null, originalViaWorker: this.#viaWorkerController?.status() ?? null } : {}),
+      ...(this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE ? { selectedSqlFence: this.#mainRunner?.selectedSqlFenceState() ?? null, originalViaWorker: this.#viaWorkerController?.status() ?? null, originalViaClockSetupSettled: this.#viaClockSetupSettled } : {}),
       profile: this.#purpose, workerStartupHandoffConsumed: this.#startupHandoffConsumed,
       ...(this.#generatedFixtureBirth ? { generatedFixtureRegistrationPurpose: true as const, generatedFixtureRegistration: this.#generatedFixtureRegistration } : {}) });
   }
@@ -1594,17 +1597,17 @@ class CurrentPcbRetainedOwnerCore {
   }
   /** Actual original effect + SDK ACK + pre-project worker only. This creates
    * clock observation custody, never Save or SQL authority. */
-  public async createViaClockOrigin(plan: CurrentPcbViaWritePlan, effect: CurrentPcbViaWriteEffect): Promise<CurrentPcbViaClockOrigin> {
+  public async createViaClockOrigin(plan: CurrentPcbViaWritePlan, effect: CurrentPcbViaWriteEffect, setup: CurrentPcbViaClockSetup): Promise<CurrentPcbViaClockOrigin> {
     // oxlint-disable-next-line eslint/no-use-before-define -- The fixed public facade is initialized before an original factory can call this method.
     if (!(this instanceof CurrentPcbViaWriteOwner)) { throw error("PCB_VIA_CLOCK_OWNER"); }
     requireOriginalCurrentPcbViaWriteEffect(effect, this, plan); const selected = this.#viaReadContext(plan);
     const sdk = this.#viaSdkBinding, windowTabId = this.#projectOpeningResult?.observation?.windowTabId, workerOrigin = this.#viaWorkerOrigin;
     const worker = workerOrigin === null ? undefined : pcbViaSaveWorkers.get(workerOrigin);
-    if (this.#viaClockAttempted || sdk === null || !this.#viaSdkQualified || !this.#viaSdkPhases.has("create") || worker === undefined || worker.owner !== this || worker.plan !== plan ||
+    if (typeof setup !== "function" || types.isProxy(setup) || this.#viaClockAttempted || sdk === null || !this.#viaSdkQualified || !this.#viaSdkPhases.has("create") || worker === undefined || worker.owner !== this || worker.plan !== plan ||
       worker.controller !== this.#viaWorkerController || !worker.controller.status().ready || typeof windowTabId !== "string") { throw error("PCB_VIA_CLOCK_UNAVAILABLE"); }
-    this.#enter(true); this.#viaClockAttempted = true;
+    this.#enter(true); this.#viaClockAttempted = true; this.#viaClockSetup = setup;
     const current = (): void => { selected.current(); requireOriginalCurrentPcbViaWriteEffect(effect, this, plan); worker.assertOriginal();
-      if (this.#viaFailed || this.#viaCleanupOnly || this.#viaSdkBinding !== sdk || this.#viaWorkerOrigin !== workerOrigin || this.#projectOpeningResult?.observation?.windowTabId !== windowTabId) { throw error("PCB_VIA_CLOCK_CHANGED"); } };
+      if (this.#viaFailed || this.#viaCleanupOnly || this.#viaClockSetup !== setup || this.#viaSdkBinding !== sdk || this.#viaWorkerOrigin !== workerOrigin || this.#projectOpeningResult?.observation?.windowTabId !== windowTabId) { throw error("PCB_VIA_CLOCK_CHANGED"); } };
     try {
       await this.#verifyInstallation(); current(); await this.#verify(); current();
       const reply = await this.#request({ action: "pcb-via-clock-bind", workerContext: worker.bindings.uniqueContextId, uiSdkObject: sdk });
@@ -1633,7 +1636,12 @@ class CurrentPcbRetainedOwnerCore {
         assertSaveAttempt: (): void => { current(); worker.bindings.assertSaveAttempt(); }, assertOriginalGenerationExited: (): Promise<void> => worker.bindings.assertOriginalGenerationExited(),
         fail: (): void => { worker.controller.fail(); } });
       pcbViaClocks.set(origin, Object.freeze({ owner: this, plan, bindings, assertOriginal: (): void => { worker.assertOriginal();
-        if (this.#viaClockOrigin !== origin || this.#viaSdkBinding !== sdk || this.#viaWorkerOrigin !== workerOrigin) { throw error("PCB_VIA_CLOCK_CUSTODY_CHANGED"); } } })); this.#viaClockOrigin = origin; return origin;
+        if (this.#viaClockOrigin !== origin || this.#viaClockSetup !== setup || this.#viaSdkBinding !== sdk || this.#viaWorkerOrigin !== workerOrigin) { throw error("PCB_VIA_CLOCK_CUSTODY_CHANGED"); } } })); this.#viaClockOrigin = origin;
+      // Exact trusted Node setup only, absent from MCP input. Source/metadata
+      // Qualification and all arms settle while the SDK entry remains busy.
+      await Reflect.apply(setup, undefined, [origin]); current();
+      if (this.#viaClockArmAttempts.size !== 5 || this.#viaClockArmedPoints.size !== 5) { throw error("PCB_VIA_CLOCK_SETUP_INCOMPLETE"); }
+      await this.#verify(); current(); this.#viaClockSetupSettled = true; return origin;
     } catch (caughtError) { this.#viaFailed = true; throw caughtError; } finally { this.#busy = false; }
   }
   #viaReadContext(plan: CurrentPcbViaWritePlan): Readonly<{ context: CurrentPcbDiagnosticContext; pipe: CurrentPcbViaWritePipe; pcb: ReturnType<CurrentPcbDiagnosticContext["modelContext"]>; ui: ReturnType<CurrentPcbDiagnosticContext["pcbOpeningContext"]>; current: () => void }> {
