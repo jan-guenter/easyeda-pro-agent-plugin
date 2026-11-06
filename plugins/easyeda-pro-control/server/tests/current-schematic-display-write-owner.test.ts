@@ -16,7 +16,7 @@ type GeneratedSchematicDisplayNativeArguments = Parameters<CurrentSchematicDispl
 
 function missingBootstrap(): never { throw new Error("Bootstrap not issued"); }
 async function fixture(context: TestContext, malformed = false, main = false, stages = false, workers = false, earlyWorker = false): Promise<Readonly<{ owner: CurrentSchematicDisplayWriteOwner; actions: string[]; pollEntered: Promise<true>; reproveBootstrap: () => string;
-  target: () => object; termination: () => object; requireTermination: (value: object) => void; argumentsValue: GeneratedSchematicDisplayNativeArguments; requireStage: (packet: object) => void; runWorker: () => Promise<unknown>; createObserver: (origin: object) => { arm: () => Promise<void>; observeBody: () => Promise<unknown> }; requireWorker: (origin: object) => object; createStructureObserver: (origin: object) => { arm: () => Promise<void>; cleanup: () => Promise<void> }; requireStructure: (origin: object) => object }>> {
+  target: () => object; termination: () => object; requireTermination: (value: object) => void; argumentsValue: GeneratedSchematicDisplayNativeArguments; requireStage: (packet: object) => void; runWorker: () => Promise<unknown>; createObserver: (origin: object) => { arm: () => Promise<void>; observeBody: () => Promise<unknown> }; requireWorker: (origin: object) => object; createStructureObserver: (origin: object) => { arm: () => Promise<void>; cleanup: () => Promise<void> }; requireStructure: (origin: object) => object; qualifyEffect: (copyPacket?: boolean) => object; requireEffect: (effect: object) => void }>> {
   const url = new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url); const sourceRequire = createRequire(url);
   const targetData = Object.freeze({ rawWindowsPath: String.raw`C:\Synthetic\Codex_schematic_1111111111111111.eprj2`, projectUuid: "c".repeat(64), branchUuid: "d".repeat(32), schematicUuid: "e".repeat(32), pageUuid: "f".repeat(32), expectedSourceSha256: "1".repeat(64) });
   const prepared = Object.freeze({ syntheticCheckpoint: true, qualification: Object.freeze({ target: targetData }) });
@@ -27,7 +27,8 @@ async function fixture(context: TestContext, malformed = false, main = false, st
   const workerSource = workers ? await readFile("/mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-mgr/3.2.185.bf63a159/js/project-worker.js", "utf8") : "";
   const source = `${await readFile(url, "utf8")}\nexport function seedSyntheticSchematicAbortOwner(owner,installation,prepared){
 const allocation={options:Object.freeze({}),prepared,state:"retained",owner,child:null,eofAttempted:false,cleanupFailure:null};
-schematicDisplayAllocations.set(prepared,allocation);schematicDisplayFactories.set(owner,Object.freeze({allocation,installation}));\n}`;
+schematicDisplayAllocations.set(prepared,allocation);schematicDisplayFactories.set(owner,Object.freeze({allocation,installation}));\n}
+export function seedSyntheticSchematicEffectPackets(owner,args){const encode=body=>JSON.stringify({type:"DOCHEAD"})+"||"+JSON.stringify({uuid:args.target.pageUuid,docType:"SCH_PAGE"})+"|\\n"+[{id:args.operation.textId,type:"TEXT",body},...args.operation.peers].map((row,index)=>JSON.stringify({id:row.id,type:row.type,ticket:index+1})+"||"+JSON.stringify(row.body)+"|\\n").join("");return["preflight","modify","observe"].map(stage=>{const packet=Object.freeze({schema:"easyeda-pro-control.generated-schematic-display-stage.v1",stage,ok:true,dispatchAttempted:stage==="modify",originalPromiseSettled:stage==="modify",modifyAttempted:stage!=="preflight",modifyAcknowledged:stage!=="preflight",saveAttempted:false,saveAcknowledged:false,savePromiseSettled:false,source:encode(stage==="preflight"?args.operation.beforeBody:args.operation.afterBody),windowTabId:"original-window",originalContextIntact:true,connectivityVerified:false,sourceVersionAliased:false,workerCompletionVerified:false,structureCompletionVerified:false,persistenceVerified:false,inverseAvailable:false});schematicDisplayStagePackets.set(packet,Object.freeze({owner,argumentsValue:args,stage,text:canonicalJson(packet)}));return packet;});}`;
   const stageSource = stages ? source.replace("  public armViaSaveWorker(", `  public async seedSyntheticSchematicStageState(args){
 this.#stagedAttachment=Object.freeze({targetId:"original-target",sessionId:"original-session"});this.#scriptConsumed=true;this.#schematicArguments=args;this.#schematicNavigationResult={outcome:"opened-ready"};this.#schematicWindowTabId="original-window";
 this.#stagedContext={openingContext:()=>Object.freeze({sessionId:"original-session",uniqueContextId:"original-context"}),assertCurrent(){},observeTarget(){},observeFrames(){},openingAncillaryFrame(){return null;}};
@@ -141,7 +142,11 @@ else if(q.action==='release')send(q,{released:true});else throw Error('unexpecte
     createStructureObserver: (origin: object) => { const Observer = structureModule.exports["CurrentProjectSaveStructureObserver"]; assert.ok(typeof Observer === "function");
       // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Production observer and real owner issuer, with the same explicit construction/source-pause seam above.
       return Reflect.construct(Observer, [origin, owner, argumentsValue]) as { arm: () => Promise<void>; cleanup: () => Promise<void> }; },
-    requireStructure: (origin: object): object => { const value: unknown = Reflect.apply(structureLookup, undefined, [origin, owner, argumentsValue]); assert.ok(value !== null && typeof value === "object"); return value; } };
+    requireStructure: (origin: object): object => { const value: unknown = Reflect.apply(structureLookup, undefined, [origin, owner, argumentsValue]); assert.ok(value !== null && typeof value === "object"); return value; },
+    qualifyEffect: (copyPacket = false): object => { const seedPackets = loaded.exports["seedSyntheticSchematicEffectPackets"]; const qualify = loaded.exports["qualifyOriginalGeneratedSchematicDisplayEffect"]; assert.ok(typeof seedPackets === "function" && typeof qualify === "function");
+      const packets: unknown = Reflect.apply(seedPackets, undefined, [owner, argumentsValue]); assert.ok(Array.isArray(packets) && packets.length === 3);
+      const effect: unknown = Reflect.apply(qualify, undefined, [owner, argumentsValue, copyPacket ? structuredClone(packets[0]) : packets[0], packets[1], packets[2]]); assert.ok(effect !== null && typeof effect === "object"); return effect; },
+    requireEffect: (effect: object): void => { const requireEffect = loaded.exports["requireOriginalGeneratedSchematicDisplayEffect"]; assert.ok(typeof requireEffect === "function"); Reflect.apply(requireEffect, undefined, [effect, owner, argumentsValue]); } };
 }
 void test("Schematic original abort waits for pending native poll and settles the original busy renderer call without replay", async context => {
   const f = await fixture(context); const original = f.owner.getTargets(), refused = assert.rejects(original);
@@ -218,4 +223,11 @@ void test("the original SCH source pause arms the real common structure observer
   await f.owner.abortSchematicDisplayWrite(); assert.equal(await f.owner.observeTermination(), true);
   const cleanup = Reflect.get(observer, "cleanup"); assert.ok(typeof cleanup === "function"); const closed: unknown = Reflect.apply(cleanup, observer, []); assert.ok(closed instanceof Promise); await closed;
   assert.equal(f.actions.filter(action => action === "schematic-display-worker").length, 14); await f.owner.releaseClosed();
+});
+
+void test("central SCH effect issuance uses its original factory and packet registry, rejecting copied native results and repeated issue", async context => {
+  const f = await fixture(context, false, false, true); const effect = f.qualifyEffect(); f.requireEffect(effect);
+  assert.equal(Reflect.get(effect, "originalNativeStageProvenanceVerified"), true); assert.throws(() => { f.requireEffect(structuredClone(effect)); }, /ORIGINAL_EFFECT/u);
+  assert.throws(() => f.qualifyEffect(), /ORIGINAL_ISSUE_CONSUMED/u);
+  const copied = await fixture(context, false, false, true); assert.throws(() => copied.qualifyEffect(true), /ORIGINAL_STAGE/u);
 });

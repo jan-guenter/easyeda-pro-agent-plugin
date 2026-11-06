@@ -8,6 +8,8 @@
 import { CURRENT_PROJECT_SAVE_STRUCTURE_SITES } from "./current-project-save-structure-source.ts";
 import { validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import type { CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
+import { compareGeneratedSchematicDisplayEffect } from "./generated-schematic-display-effect-data.ts";
+import type { GeneratedSchematicDisplayEffect } from "./generated-schematic-display-effect-data.ts";
 import { CurrentSchematicDisplayWorkerController } from "./current-schematic-display-worker-controller.ts";
 import type { CurrentSchematicDisplayWorkerChild } from "./current-schematic-display-worker-controller.ts";
 import type { CurrentSchematicDisplayWorkerCommand } from "./current-schematic-display-worker-wire.ts";
@@ -485,6 +487,32 @@ export function requireOriginalSchematicDisplayStage(owner: CurrentSchematicDisp
   packet: GeneratedSchematicDisplayStageResult, stage: GeneratedSchematicDisplayStageResult["stage"]): GeneratedSchematicDisplayStageResult {
   requireSchematicArguments(owner, argumentsValue); const original = schematicDisplayStagePackets.get(packet);
   if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue || original.stage !== stage || original.text !== canonicalJson(packet)) { throw error("SCHEMATIC_DISPLAY_ORIGINAL_STAGE"); } return packet;
+}
+interface OriginalSchematicDisplayEffect { readonly owner: CurrentSchematicDisplayWriteOwner; readonly argumentsValue: GeneratedSchematicDisplayNativeArguments; readonly before: GeneratedSchematicDisplayStageResult; readonly modified: GeneratedSchematicDisplayStageResult; readonly observed: GeneratedSchematicDisplayStageResult; readonly text: string }
+const schematicDisplayEffectAttempts = new WeakSet<CurrentSchematicDisplayWriteOwner>();
+const schematicDisplayEffects = new WeakMap<GeneratedSchematicDisplayEffect, OriginalSchematicDisplayEffect>();
+function compareOriginalSchematicDisplayEffect(original: Omit<OriginalSchematicDisplayEffect, "text">): GeneratedSchematicDisplayEffect {
+  requireSchematicArguments(original.owner, original.argumentsValue);
+  const projected = compareGeneratedSchematicDisplayEffect(original.argumentsValue,
+    requireOriginalSchematicDisplayStage(original.owner, original.argumentsValue, original.before, "preflight"),
+    requireOriginalSchematicDisplayStage(original.owner, original.argumentsValue, original.modified, "modify"),
+    requireOriginalSchematicDisplayStage(original.owner, original.argumentsValue, original.observed, "observe"));
+  return freezeDeep({ ...projected, originalNativeStageProvenanceVerified: true });
+}
+/** One actual owner and the exact three native packet references. The inert
+ * source comparator cannot issue this original effect or a clock/Save grant. */
+export function qualifyOriginalGeneratedSchematicDisplayEffect(owner: CurrentSchematicDisplayWriteOwner, argumentsValue: GeneratedSchematicDisplayNativeArguments,
+  before: GeneratedSchematicDisplayStageResult, modified: GeneratedSchematicDisplayStageResult, observed: GeneratedSchematicDisplayStageResult): GeneratedSchematicDisplayEffect {
+  assertOriginalCurrentSchematicDisplayWriteOwner(owner);
+  if (schematicDisplayEffectAttempts.has(owner)) { throw error("SCHEMATIC_DISPLAY_EFFECT_ORIGINAL_ISSUE_CONSUMED"); } schematicDisplayEffectAttempts.add(owner);
+  const original = Object.freeze({ owner, argumentsValue, before, modified, observed }); const effect = compareOriginalSchematicDisplayEffect(original);
+  schematicDisplayEffects.set(effect, Object.freeze({ ...original, text: canonicalJson(effect) })); return effect;
+}
+/** Historical provenance only; live dispatch additionally rechecks the
+ * original native generation, current scene, source and retained SDK tuple. */
+export function requireOriginalGeneratedSchematicDisplayEffect(effect: GeneratedSchematicDisplayEffect, owner: CurrentSchematicDisplayWriteOwner, argumentsValue: GeneratedSchematicDisplayNativeArguments): void {
+  const original = schematicDisplayEffects.get(effect);
+  if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue || original.text !== canonicalJson(effect) || canonicalJson(compareOriginalSchematicDisplayEffect(original)) !== original.text) { throw error("SCHEMATIC_DISPLAY_EFFECT_ORIGINAL_EFFECT"); }
 }
 export type CurrentSchematicDisplaySaveWorkerSetup = (origin: CurrentSchematicDisplaySaveWorkerOrigin) => Promise<void>;
 const schematicDisplaySaveWorkers = new WeakMap<CurrentSchematicDisplaySaveWorkerOrigin, Readonly<{ owner: CurrentSchematicDisplayWriteOwner; argumentsValue: GeneratedSchematicDisplayNativeArguments;
