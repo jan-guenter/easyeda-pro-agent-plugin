@@ -14,12 +14,23 @@ export const managedFixtureEnvironmentObservationSchema = z.object({
 export const managedFixtureEnvironmentRefusalSchema = z.object({
   schema: z.literal("easyeda-pro-control.fixture-import-environment-refusal.v1"),
   stage: z.enum(["capture-context", "empty-start-page", "owner-before-fetch", "fetch-config", "response-metadata", "response-text", "config-envelope", "config-fields", "directory-roster", "owner-final"]),
-  reason: z.enum(["predicate-refused", "empty-start-page-refused", "external-exception"]),
+  reason: z.enum(["predicate-refused", "empty-start-page-refused", "owner-guard-refused", "external-exception"]),
   configGetAttempted: z.boolean(), responseReceived: z.boolean(), responseTextAttempted: z.boolean(),
   responseStatus: z.number().int().min(0).max(599).nullable(),
   responseUrl: z.enum(["unobserved", "expected", "empty", "other"]),
   effectsUnknown: z.literal(true), retryAllowed: z.literal(false),
-}).strict();
+}).strict().refine(value => {
+  if (value.responseReceived && !value.configGetAttempted || value.responseTextAttempted && !value.responseReceived ||
+    (value.responseStatus !== null || value.responseUrl !== "unobserved") && !value.responseReceived) { return false; }
+  if (["capture-context", "empty-start-page", "owner-before-fetch"].includes(value.stage) && value.configGetAttempted) { return false; }
+  if (["capture-context", "empty-start-page", "owner-before-fetch", "fetch-config", "response-metadata"].includes(value.stage) && value.responseTextAttempted) { return false; }
+  if (value.stage === "fetch-config" && (value.responseStatus !== null || value.responseUrl !== "unobserved")) { return false; }
+  if (["response-metadata", "response-text", "config-envelope", "config-fields", "directory-roster", "owner-final"].includes(value.stage) && !value.responseReceived) { return false; }
+  if (["response-text", "config-envelope", "config-fields", "directory-roster", "owner-final"].includes(value.stage) &&
+    (!value.responseTextAttempted || value.responseStatus !== 200 || value.responseUrl !== "expected")) { return false; }
+  if (value.reason === "owner-guard-refused" && !["owner-before-fetch", "fetch-config", "response-text", "owner-final"].includes(value.stage)) { return false; }
+  return value.reason !== "empty-start-page-refused" || value.stage === "empty-start-page";
+}, "Contradictory environment refusal stages or response observations.");
 
 /** Same fixed local config GET used by pinned manager HA and UI Tai. c0 can
  * create configured directories/perform drive classification; it does not run
@@ -50,6 +61,6 @@ if(new Set(directories.map(path=>path.toLowerCase())).size!==directories.length)
 return {schema:'easyeda-pro-control.fixture-import-environment.v1',mode:'HALF_OFFLINE',libraryWindowsDirectories:directories.slice(),candidatePredicate:'exclude-all-immediate-elib-names',actualMainConfigDirectories:true,systemLibNameAssumed:false,libraryContentsRead:false,libraryMigrationExcluded:false};
 }catch(error){const d=error!==null&&(typeof error==='object'||typeof error==='function')?Object.getOwnPropertyDescriptor(error,'message'):undefined;
 const message=d&&Object.hasOwn(d,'value')?d.value:undefined;
-const reason=message==='FIXTURE_IMPORT_ENVIRONMENT_REFUSED'?'predicate-refused':message==='EDITOR_SHELL_READ_FAILED'?'empty-start-page-refused':'external-exception';
+const reason=message==='FIXTURE_IMPORT_ENVIRONMENT_REFUSED'?'predicate-refused':message==='EDITOR_SHELL_READ_FAILED'?(stage==='empty-start-page'?'empty-start-page-refused':'owner-guard-refused'):'external-exception';
 return {schema:'easyeda-pro-control.fixture-import-environment-refusal.v1',stage,reason,configGetAttempted,responseReceived,responseTextAttempted,responseStatus,responseUrl,effectsUnknown:true,retryAllowed:false};}`;
 }

@@ -65,6 +65,9 @@ void test("environment refusals retain the exact failed stage without importer d
   assert.equal(afterFetch.responseReceived, true); assert.equal(afterFetch.responseTextAttempted, false);
   assert.equal(afterFetch.responseStatus, 200); assert.equal(afterFetch.responseUrl, "empty");
   assert.equal(metadata.calls(), 0); assert.equal(afterFetch.effectsUnknown, true); assert.equal(afterFetch.retryAllowed, false);
+  for (const change of [{ configGetAttempted: false }, { responseReceived: false }, { stage: "owner-before-fetch" }, { stage: "response-text" }]) {
+    assert.equal(managedFixtureEnvironmentRefusalSchema.safeParse({ ...afterFetch, ...change }).success, false);
+  }
 });
 
 void test("synthetic original import Promise remains pending across repeated observations and is never redispatched", async () => {
