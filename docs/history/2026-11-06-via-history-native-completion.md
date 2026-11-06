@@ -58,3 +58,14 @@ foreign SQL refusal, both head/cipher source paths and unchanged structure
 observer checks. Types, strict type-aware lint on changed TypeScript and
 repository validation passed. The source/transport peer in the cursor test is
 explicitly synthetic; this is not connected writer validation.
+
+The follow-up transport leaf pins the original U6 send, implicit-return and
+catch sites. The catch site has no resume command. Its fixed snapshots admit
+only the uncompressed JSON structure body below the source's 10,000-character
+threshold, with original XHR/native prototype, resolver, callback and request
+identity retained. Via and schematic origins have distinct brands. The shared
+finite grammar reserves 12 normal and four cleanup CDP requests, with five
+possible pause/resume events. Three focused source/AST/grammar/getter checks,
+types and strict lint passed. Original native source-point acknowledgments and
+body/main-publication grant mounting remain pending; this leaf alone resumes
+nothing and enables no Save.
