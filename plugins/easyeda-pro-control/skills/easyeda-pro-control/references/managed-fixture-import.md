@@ -1,6 +1,7 @@
 # Generated disposable fixture import
 
-Use this development route to create a new fixed Via-only or Line/Via project.
+Use this development route to create a new fixed Via-only, Line/Via or
+Arc/Line/Via project.
 It accepts no caller project, path, archive, ID, geometry, SQL or code. It never
 deletes a failed or partial output. Query `fixture-import` with
 `includeSchemas:true` and validate the assembled request using
@@ -28,8 +29,9 @@ to64characters, and supply the complete observed `expectedFingerprint` object:
 }
 ```
 
-`line-and-via` selects the second fixed geometry template. Neither template is
-a validated circuit or manufacturing design.
+`line-and-via` adds one disjoint top-layer line. `arc-line-and-via` adds a
+disjoint circular top-layer arc as well. These templates are not validated
+circuits or manufacturing designs.
 
 The original environment operation has the ID `<operationId>-environment`.
 It observes actual native config directories through a tracked getter that can
