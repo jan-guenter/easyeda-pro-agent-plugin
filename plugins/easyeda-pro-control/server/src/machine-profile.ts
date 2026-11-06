@@ -225,7 +225,13 @@ async function retainNodeIdentity(
       if (kernel !== undefined) { await assertKernelNodeCurrent(kernel); }
     };
     const assertCurrent = async (): Promise<void> => {
-      if (await nodeDescriptorHash(file, before) !== nodeSha256) {
+      // Current-process admission already joins these two original descriptors
+      // To the same inode at birth. Both descriptor/path identities remain
+      // Checked around the version probe, and the kernel descriptor is fully
+      // Rehashed before AND after it. Re-reading its alias here adds no proof.
+      // The ordinary configured-executable path has no kernel alias and keeps
+      // Its own complete fresh hash on every assertion.
+      if (kernel === undefined && await nodeDescriptorHash(file, before) !== nodeSha256) {
         throw new MachineProfileError("machine-node-changed");
       }
       await assertVersionAndIdentity();
