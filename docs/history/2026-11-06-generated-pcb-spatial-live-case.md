@@ -349,3 +349,50 @@ process/stdio closure and exit0 completed without a signal. The new manager
 remains retained and idle with replacement permitted. No native owner remains
 from this case; no explicit Save, discard, publication or user-project change
 occurred.
+
+## Frozen4500 positive Arc, Line and Via case
+
+Payload `4500ecaa04f8fc8cc8efab9238fd3f022a600944`, version
+`0.3.0+codex.20261106153924`, contains3,636 exact tracked files and69,872,480
+bytes. Fresh dependency/tree/signature/audit checks, all required local non-suite
+checks, seven quick skill validators, exact Git bytes/modes/single links and
+three reproducible bundles passed. The1,844,759-byte shared helper compiled its
+complete1,698,278-byte C# body under actual Windows PowerShell5.1 without an
+owner or application; unchanged static smoke cases were not repeated. External
+compatibility pins and all six released forward/cold files remain exact.
+
+The retained original manager selected this frozen package as generation2 after
+generation1's terminal cleanup. Its separately verified original frontend stays
+unchanged; actual new facade/package/process admission passed. New operation
+`fixture-data209-arc-selection-20261106g` qualified the unchanged complete
+initial SQL/source with six fresh no-app boundaries and released its original
+resources/owner before staging. New spatial operation
+`pcb209-spatial-arcs-selection-20261106g` passed original launch, full UI source,
+generated registration with every peer exact, project/PCB opens and complete
+PCB source/DOM identity.
+
+Its one `observe-spatial-arcs` batch accepted all six preplanned queries, each
+with two matching samples. An Arc interior point returned the original Arc;
+the circle center returned no hit. Via center and Line midpoint returned their
+original identities. Both inside and intersects regions containing the three
+supported objects returned the exact native order Line, Arc, Via. The expected
+geometry and order were recorded before dispatch. Every selected-ID list was
+empty and unchanged, and all retained supported scene descriptors matched.
+The outer runner qualified all265 original application callees. The kernel's
+fixed self-qualification, intrinsic, source-membership and persistence flags
+remain false; no flag was rewritten to enlarge this case's authority.
+
+One normal close, original root/empty-Job termination, one complete closed
+capture and original helper release completed. Independent nofollow descriptor,
+path, full-byte/hash and all35-table roster checks prove the same raw, complete
+SQL and raw-history hashes recorded above. Historical clock/generic-history
+refusals remain preserved. The facade retired with lease acknowledgment and
+original stdin EOF, process/stdio closure and exit0 without a signal. The
+original manager remains retained and idle with replacement permitted.
+
+This is positive connected evidence for the six-query Arc/Line/Via native
+identity branch on this one generated fixture. It does not validate other
+query variants or populated ordinary boards, full SDK objects, complete live
+source membership, connectivity, full intrinsics, a writer or Save/reopen.
+Pad and Component acceptance remain separate. No explicit Save, discard,
+publication, installation, user-project change or Codex restart occurred.

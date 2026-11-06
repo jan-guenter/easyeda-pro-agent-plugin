@@ -87,6 +87,13 @@ family `Arc`. It qualifies265 original application functions, keeping the same
 schema and consumes the same observation slot; no variant can follow another
 variant's completed or failed attempt.
 
+The [frozen4500 connected case](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-06-generated-pcb-spatial-live-case.md#frozen4500-positive-arc-line-and-via-case)
+passed one six-query Arc/Line/Via batch on its generated fixture. It checked Arc,
+Line and Via point hits, a negative point and both containing region modes with
+two matching samples, native ordering and unchanged selection. Original closure
+and full closed raw/SQL/history invariance passed. This historical case grants
+no later runtime admission, separate query-variant acceptance or writer authority.
+
 For a scene containing only ready standalone circular SMT Pads, choose
 `observe-spatial-pads` with one to sixteen point queries. Its distinct immutable
 result shares that same consumed observation slot. It qualifies 215 original
