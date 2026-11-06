@@ -223,3 +223,27 @@ for both append/mutable branches. Changed unrelated users, project g_ticket,
 head lock metadata, cipher bytes, persisted properties, mismatched body/key,
 wrong callback windows, copied inventories and input getters/proxies refuse.
 No app, native owner, Windows compiler or live project was opened for them.
+
+### Historical original-operation SQL proof
+
+The original Via Core now retains its completed body, history effects and
+structure effects independently of the live observer lease. Only its actual
+original-root exit and empty-Job token can retrieve that tuple. Retrieval also
+requires the pre-create enrollment, original consumed create marker and Save
+attempt, exact original body/clock, and source-derived selected structure. This
+historical tuple cannot recreate a live continuation after cleanup.
+
+`qualifyOriginalCurrentPcbViaWriteClosedSql` joins those exact retained objects
+with the same owner's original closed capture and original initial inventory.
+It runs the complete SQL delta comparison against the actual captured Save
+body. The references are rechecked after the pending comparison; a repeat
+returns the retained original Promise and a copied proof is refused. The
+issued proof records complete SQL and exact original Save data only. It does
+not issue a saved checkpoint, fresh target, reopen owner, persistence claim or
+reopened result. An unknown SDK outcome is not promoted to an acknowledgement.
+
+Two focused reference-custody cases and two production-owner abort/termination
+cases pass, with full TypeScript checks and strict changed-file lint. The
+reference-custody cases use explicit issuer/comparator seams; the prior
+complete SQL tests cover actual files and encryption. No app, Windows compiler
+or native owner was allocated.
