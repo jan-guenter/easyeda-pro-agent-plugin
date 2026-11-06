@@ -70,6 +70,34 @@ void test("real inspector exposes a Script tail without changing the selected or
   }
 });
 
+void test("real inspector preserves the wrapper handler binding before two anonymous enclosing closures", async () => {
+  const point = CURRENT_PCB_SPATIAL_FUNCTION_LOCATIONS["rpc-wrapper"];
+  const prefix = '(()=>{const outer={};return (()=>{const inner={};class Oet{rpcService(o,t){return (';
+  const expression = `${prefix}${"\n".repeat(point.lineNumber)}${" ".repeat(point.columnNumber)}(s,n,r)=>({s,n,r,t,inner,outer}));}}globalThis.__easyedaSpatialWrapperScopeFixture=new Oet().rpcService("point",()=>null)})()})()`;
+  const session = new Session(); session.connect();
+  try {
+    await session.post("Runtime.evaluate", { expression, objectGroup: "spatial-wrapper-scope-fixture" });
+    const remote = await session.post("Runtime.evaluate", { expression: "globalThis.__easyedaSpatialWrapperScopeFixture", objectGroup: "spatial-wrapper-scope-fixture" });
+    const functionId = decodeCurrentPcbSpatialFunction(remote, "rpc-wrapper");
+    const properties = await session.post("Runtime.getProperties", { objectId: functionId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false });
+    const location = properties.internalProperties?.find(item => item.name === "[[FunctionLocation]]")?.value?.value as unknown;
+    assert.ok(location !== null && typeof location === "object" && "scriptId" in location && typeof location.scriptId === "string");
+    const scopeListId = decodeCurrentPcbSpatialFunctionScopeList(properties, location.scriptId, "rpc-wrapper");
+    const scopes = await session.post("Runtime.getProperties", { objectId: scopeListId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false });
+    assert.deepEqual(scopes.result.map(item => item.value?.description), ["Closure (rpcService)", "Closure", "Closure", "Global"]);
+    assert.equal(decodeCurrentPcbSpatialFunctionScope(scopes, "rpc-wrapper"), scopes.result[0]?.value?.objectId);
+    const selected = scopes.result[0]?.value?.objectId;
+    assert.ok(selected !== undefined);
+    const bindings = await session.post("Runtime.getProperties", { objectId: selected, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false });
+    assert.equal(bindings.result.some(item => item.name === "t" && item.value?.type === "function"), true);
+    assert.throws(() => decodeCurrentPcbSpatialFunctionScope(scopes, "point-handler"), /PCB_SPATIAL_FUNCTION_SCOPE/u);
+  } finally {
+    await session.post("Runtime.evaluate", { expression: "delete globalThis.__easyedaSpatialWrapperScopeFixture" });
+    await session.post("Runtime.releaseObjectGroup", { objectGroup: "spatial-wrapper-scope-fixture" });
+    session.disconnect();
+  }
+});
+
 const scope = (index: number, label: string, objectId = `scope-${index}`): Record<string, unknown> => ({
   name: String(index), value: { type: "object", subtype: "internal#scope", className: "Object", description: label, objectId },
   writable: true, configurable: true, enumerable: true, isOwn: true,
@@ -80,6 +108,10 @@ void test("fixed scope selectors reject extra/private scopes, aliases and descri
   assert.equal(decodeCurrentPcbSpatialFunctionScope({ result: [scope(0, "Closure (rpcService)"), scope(1, "Closure"), scope(2, "Script"), scope(3, "Global")] }, "rpc-wrapper"), "scope-0");
   assert.equal(decodeCurrentPcbSpatialFunctionScope({ result: [scope(0, "Closure"), scope(1, "Script"), scope(2, "Global")] }, "point-handler"), "scope-0");
   assert.equal(decodeCurrentPcbSpatialFunctionScope({ result: [scope(0, "Closure"), scope(1, "Global")] }, "point-handler"), "scope-0");
+  for (const result of [
+    [scope(0, "Closure (rpcService)"), scope(1, "Closure"), scope(2, "Closure (private)"), scope(3, "Global")],
+    [scope(0, "Closure (rpcService)"), scope(1, "Closure"), scope(2, "Closure"), scope(3, "Closure"), scope(4, "Global")],
+  ]) { assert.throws(() => decodeCurrentPcbSpatialFunctionScope({ result }, "rpc-wrapper"), /PCB_SPATIAL_FUNCTION_SCOPE/u); }
   for (const result of [
     [scope(0, "Closure (other)"), scope(1, "Closure"), scope(2, "Global")],
     [scope(0, "Closure (rZe)"), scope(1, "Script"), scope(2, "Closure"), scope(3, "Global")],

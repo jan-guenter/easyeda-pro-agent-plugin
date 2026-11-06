@@ -101,7 +101,9 @@ export function decodeCurrentPcbSpatialFunctionScopeList(input: unknown, scriptI
 
 /** Follow only fixed lexical labels, never a caller-selected scope or Global.
  * The point handler may retain its enclosing registration closure before the
- * anonymous module closure. A trailing Script scope is metadata only, just like
+ * anonymous module closure. The RPC wrapper can retain two anonymous enclosing
+ * closures but still selects its first rpcService closure. A trailing Script
+ * scope is metadata only, just like
  * Global: neither is selected or read for bindings. Exact closure shapes still
  * select the same original source bindings.
  */
@@ -115,10 +117,12 @@ export function decodeCurrentPcbSpatialFunctionScope(input: unknown, kind: Curre
     }
     if (new Set(result.map(item => item.value.objectId)).size !== result.length || result.at(-1)?.value.description !== "Global") { return refuse(); }
     const labels = result.slice(0, result.at(-2)?.value.description === "Script" ? -2 : -1).map(item => item.value.description);
-    if (labels.length === 0 || labels.length > 2) { return refuse(); }
+    if (labels.length === 0) { return refuse(); }
     let selected = 0;
     if (kind === "rpc-wrapper") {
-      if (labels[0] !== "Closure (rpcService)" || labels.length === 2 && labels[1] !== "Closure") { return refuse(); }
+      if (labels[0] !== "Closure (rpcService)" || labels.length > 3 || labels.slice(1).some(label => label !== "Closure")) { return refuse(); }
+    } else if (labels.length > 2) {
+      return refuse();
     } else if (labels.length === 2) {
       if (labels[0] !== "Closure (rZe)" || labels[1] !== "Closure") { return refuse(); }
       selected = 1;

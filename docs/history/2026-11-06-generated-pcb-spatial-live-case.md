@@ -127,3 +127,63 @@ closure with exit0 and no signal. No native owner remains from this case.
 The manager retains only its permit to select a separately verified next
 payload; no controller or native owner is adopted. Private descriptor/hash
 checks independently repeated both complete raw and SQL artifact digests.
+
+## Frozen38c654 exact wrapper closure diagnosis
+
+The next combined development payload was frozen as
+`38c654b4869d6e78fdafb426f430e125a783f792`, version
+`0.3.0+codex.20261106123148`. All3,550 tracked files and68,132,253 bytes
+matched Git bytes, exact modes and single-link regular files. Fresh dependency
+installation/tree/signature/audit checks, all required local non-suite checks,
+all seven skill quick validators and reproducible server/supervisor/manager
+bundles passed. External compatibility pins were unchanged. Actual Windows5.1
+compiled the new1,692,977-byte shared helper's1,559,717-byte C# body and passed
+the pure schematic stage/worker/accessor codecs. No owner constructor or app
+was invoked by that compile check. These checks are separate from live proof.
+
+The retained manager selected this payload as generation3 after the previous
+original facade had fully retired. Actual facade process/source admission
+passed. Fresh closed qualification and resource release of the unchanged Arc
+fixture preceded staging. Operation
+`pcb209-spatial-arcs-script-scope-20261106d` then launched a new original owner,
+qualified full UI source, registered the exact generated path with all other
+entries preserved, opened project and PCB once each, and qualified full PCB
+source/DOM/identity. One validated six-query Arc batch ran once. It advanced
+past the old scope-count refusal, then refused at
+`PCB_SPATIAL_CAPTURE:properties:decode:wrapper-closure`. No spatial hit or
+partial accepted sample was returned; no alternate batch was attempted.
+
+The retained bounded original packet now gives the exact installed labels:
+`Closure (rpcService)`, `Closure`, `Closure`, `Global`. The earlier possible
+Script-tail explanation is therefore not the observed cause in this case.
+Offline AST inspection of the complete pinned PCB asset, without executing it,
+explains the shape. The wrapper at UTF16 offset16078 is inside the outer IIFE,
+a nested bundled IIFE and its rpcService method. The point handler at10305317
+is inside only the outer IIFE and rZe. The fixed decoder now permits the exact
+second anonymous tail only for the RPC wrapper and continues selecting its
+first rpcService closure. Point selection still permits at most two closures;
+Script and Global remain unselected metadata. Unknown/private tails, extra
+closures, aliases, changed descriptors, proxies and accessors still refuse.
+Source/location and original callback/callee qualifications remain required.
+No native purpose, request budget, writer or Save gate changed.
+
+A real Node24 Inspector regression reproduces the exact four labels and checks
+that the selected original scope contains the actual t handler. It fails the
+old decoder and passes the correction. Eleven focused inspector/production
+capture cases, both TypeScript projects and strict targeted zero-warning lint
+pass. Initial test-fixture and regression failures remain retained privately.
+Independent source review found no blocking concern. The correction still
+needs the next frozen build and a new live case; this attempt is not positive
+Arc validation.
+
+Original normal close was acknowledged once. The original root and empty Job
+exited before the complete closed capture and acknowledged helper release.
+Independent descriptor/path/hash checks confirmed the unchanged372,736-byte
+raw file and62,672-byte complete35-table SQL inventory, with the same hashes
+recorded above. Raw history was also exact. The old zero-WSL-birthtime and
+generic-history refusals remain preserved independently of that invariance.
+The facade acknowledged retirement and lease release, and its original stdin
+EOF, process/stdio closure and exit0 without a signal were observed. The same
+manager remains idle with a permit for a separately verified replacement.
+No native owner remains, and no explicit Save, discard, forced termination,
+user-project change, official publication or cache edit occurred.
