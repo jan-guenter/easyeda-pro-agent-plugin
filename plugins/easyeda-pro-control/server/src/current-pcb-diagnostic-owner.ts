@@ -7533,6 +7533,14 @@ export function requireCurrentFootprintCombinedPairedSchedule(capability: Curren
   const owner = originalCombinedCapabilityOwner(capability, runner, "normal");
   if (footprintClockRpcOwners.get(clock) !== owner || !footprintClockRpcOrigins.has(clock)) { throw error("FOOTPRINT_PAIRED_ORIGINAL_OWNER"); }
 }
+/** The forward-v2 issuer must retain this same clock receiver. Legacy Combined
+ * origins never qualify a new forward birth, even when their handles match. */
+export function requireOriginalCurrentFootprintForwardPairedClock(owner: CurrentFootprintForwardExecutionNativeOwner,
+  runner: CurrentFootprintCopyMainBackendRunner, clock: CurrentFootprintCopyClockRpcOrigin): void {
+  assertOriginalCurrentFootprintForwardExecutionNativeOwner(owner);
+  owner.requireOriginalForwardExecutionMainRunner(runner, "normal");
+  if (footprintClockRpcOwners.get(clock) !== owner || !footprintClockRpcOrigins.has(clock)) { throw error("FORWARD_PAIRED_ORIGINAL_OWNER"); }
+}
 export function requireCurrentFootprintCombinedMainCapability(capability: CurrentFootprintCombinedMainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
   originalCombinedCapabilityOwner(capability, runner, "normal");
 }

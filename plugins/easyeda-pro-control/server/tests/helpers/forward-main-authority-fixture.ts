@@ -23,6 +23,8 @@ import type { CurrentFootprintCopyMainBackendCommand } from "../../src/current-f
 import type { isCurrentFootprintForwardExecutionMainCapability, issueCurrentFootprintForwardExecutionMainCapability,
   reproveCurrentFootprintForwardExecutionMainPublication, requireCurrentFootprintForwardExecutionMainNativeOwner } from "../../src/current-footprint-forward-execution-main-capability.ts";
 import type { CurrentFootprintCopyMainRequestRunner, createCurrentFootprintForwardMainRequestRunner } from "../../src/current-footprint-copy-main-request-runner.ts";
+import type { CurrentFootprintForwardExecutionPairedScheduler } from "../../src/current-footprint-forward-paired-scheduler.ts";
+import type { CurrentFootprintCopyV2Plan } from "../../src/current-footprint-copy-v2-plan.ts";
 import type { CurrentFootprintForwardExecutionOpeningProvider } from "../../src/current-footprint-forward-execution-opening.ts";
 import { combinedReadyFactoryFixture } from "./current-footprint-combined-ready-fixture.ts";
 import { mainBackendTransportFixture } from "./footprint-main-backend-runner-fixture.ts";
@@ -53,7 +55,7 @@ interface Gate {
 }
 type ActualOwner = Awaited<ReturnType<Awaited<ReturnType<typeof combinedReadyFactoryFixture>>["api"]["startCurrentFootprintForwardExecutionNativeOwner"]>>;
 export async function forwardMainAuthorityFixture(context: TestContext, suffix: string, sealed = true,
-  nativeMode: "ordinary" | "bad-accounting" | "held-allocation" = "ordinary"): Promise<Readonly<{
+  nativeMode: "ordinary" | "bad-accounting" | "held-allocation" = "ordinary", pairedCopy?: CurrentFootprintCopyV2Plan): Promise<Readonly<{
   owner: ActualOwner;
   factory: Awaited<ReturnType<typeof combinedReadyFactoryFixture>>;
   main: CurrentFootprintCopyMainBackendRunner;
@@ -61,6 +63,7 @@ export async function forwardMainAuthorityFixture(context: TestContext, suffix: 
   mainApi: MainApi;
   capabilityApi: CapabilityApi;
   requestApi: RequestApi;
+  Scheduler: typeof CurrentFootprintForwardExecutionPairedScheduler;
   provider: SyntheticProvider;
   journal: CurrentFootprintForwardExecutionOpeningJournal;
   gate: Gate;
@@ -74,7 +77,7 @@ export async function forwardMainAuthorityFixture(context: TestContext, suffix: 
   const gate: Gate = { calls: 0, holdAt: 0, entered: Promise.withResolvers<null>(), release: Promise.withResolvers<null>(),
     async wait(): Promise<void> { this.calls += 1; if (this.calls === this.holdAt) { this.entered.resolve(null); await this.release.promise; } } };
   const names = ["current-footprint-copy-main-backend-runner.ts", "current-footprint-forward-execution-main-capability.ts",
-    "current-footprint-copy-main-request-runner.ts", "current-footprint-copy-main-completion-runner.ts", "current-footprint-forward-execution-opening.ts"];
+    "current-footprint-copy-main-request-runner.ts", "current-footprint-copy-main-completion-runner.ts", "current-footprint-forward-execution-opening.ts", "current-footprint-forward-paired-scheduler.ts"];
   const outputs = new Map<string, string>(); const cache = new Map<string, { exports: Record<string, unknown> }>();
   for (const name of names) {
     const url = new URL(`../../src/${name}`, import.meta.url); let source = await readFile(url, "utf8");
@@ -106,6 +109,7 @@ export async function forwardMainAuthorityFixture(context: TestContext, suffix: 
       if (specifier === "./synthetic-publication-gate-for-test") { return { wait: (): Promise<void> => gate.wait() }; }
       if (specifier === "./current-footprint-copy-main-request-origin.ts") { return load("./current-footprint-copy-main-backend-runner.ts"); }
       if (specifier === "./current-footprint-copy-main-completion-origin.ts") { return load("./current-footprint-copy-main-backend-runner.ts"); }
+      if (specifier === "./current-footprint-forward-execution-main-origin.ts") { return load("./current-footprint-copy-main-backend-runner.ts"); }
       if (specifier === "./current-footprint-copy-main-backend-source.ts") {
         const actual: unknown = sourceRequire("./current-footprint-copy-main-backend-source.ts"); assert.ok(actual !== null && typeof actual === "object");
         return { ...actual,
@@ -136,6 +140,9 @@ export async function forwardMainAuthorityFixture(context: TestContext, suffix: 
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The real private-field collector shares the exact original issuer module above.
   const requestApi = requestExports as unknown as RequestApi;
   const providerExports = load("./current-footprint-forward-execution-opening.ts"); assert.equal(typeof providerExports["CurrentFootprintForwardExecutionOpeningProvider"], "function");
+  const schedulerExports = load("./current-footprint-forward-paired-scheduler.ts"); assert.equal(typeof schedulerExports["CurrentFootprintForwardExecutionPairedScheduler"], "function");
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The actual scheduler resolves the same genuine factory/main/origin maps above; external source and process seams remain synthetic.
+  const Scheduler = schedulerExports["CurrentFootprintForwardExecutionPairedScheduler"] as typeof CurrentFootprintForwardExecutionPairedScheduler;
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only the labelled source-collector seed method is added; actual provider admission and captured getter execute unchanged.
   const providerApi = providerExports as unknown as ProviderModule;
   let suppliedInputs: Awaited<ReturnType<typeof combinedReadyFactoryFixture>>["executionInputs"] | null = null;
@@ -189,7 +196,7 @@ process.stdout.write(JSON.stringify({id:q.id,ok:true,result})+'\\n');});
   owner.syntheticForwardExecutionSetupForTest(target, main);
   const construction = await main.observe(); owner.syntheticForwardMainUiForTest(factory.executionInputs.opening, factory.executionInputs.result);
   const source = Object.freeze({ projectUuid, branchUuid: "b".repeat(32) });
-  owned = Object.freeze({ ...factory.executionInputs.owned, sourcePlan: Object.freeze({ source }) });
+  owned = Object.freeze({ ...factory.executionInputs.owned, ...(pairedCopy === undefined ? {} : { copyPlan: pairedCopy }), sourcePlan: Object.freeze({ source }) });
   const operationId = `footprint-forward-execution-main-${suffix}`;
   // oxlint-disable-next-line typescript/unbound-method -- Invoke the actual sealer with its exact original factory receiver and explicitly synthetic source collectors.
   const sealedSource: unknown = Reflect.apply(owner.sealFootprintForwardExecutionSource, owner, [operationId, factory.executionInputs.opening, factory.executionInputs.result,
@@ -214,7 +221,7 @@ process.stdout.write(JSON.stringify({id:q.id,ok:true,result})+'\\n');});
   const provider = new providerApi.CurrentFootprintForwardExecutionOpeningProvider(Object.freeze({ ...factory.options,
     assertLocalAllowed: (): void => undefined, assertAllowed: (): Promise<void> => Promise.resolve(), assertOtherLaunchesSettled: (): Promise<void> => Promise.resolve() }));
   provider.seedMainSourceForTest(owner, factory.executionInputs.opening, factory.executionInputs.result, originalSource.owned.before, journal, publication, sealed);
-  return Object.freeze({ owner, factory, main, construction, mainApi, capabilityApi, requestApi, provider, journal, gate,
+  return Object.freeze({ owner, factory, main, construction, mainApi, capabilityApi, requestApi, Scheduler, provider, journal, gate,
     injectPartialFrame: (): void => { partial = true; },
     waitForAllocationPoll: async (): Promise<void> => {
       const deadline = AbortSignal.timeout(5000);
