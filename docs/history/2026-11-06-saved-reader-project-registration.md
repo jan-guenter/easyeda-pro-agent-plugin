@@ -67,3 +67,12 @@ original fetch/decrypt/parse source joins, reopened scene/content acceptance,
 normal original termination and complete final closed SQL remain required.
 No missing acknowledgment, data-only metadata comparison or awaited source
 point replaces those obligations. No production project was opened or edited.
+
+## Nested descriptor review
+
+Before any native run, a follow-up review required explicit original Proxy
+checks on nested table-example and prototype objects before descriptor
+snapshots. The fixed programs now check those objects before enumerating them.
+The focused regression includes an effectful nested Proxy `ownKeys` trap and
+proves refusal without invoking it. The original failing and passing local
+logs remain separate; no connected acceptance is inferred.

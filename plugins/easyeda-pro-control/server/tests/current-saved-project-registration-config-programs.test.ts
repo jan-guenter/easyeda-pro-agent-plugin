@@ -39,7 +39,7 @@ void test("actual fixed registration programs preserve both Date identities and 
 });
 void test("wrong project/metadata, receiver, SQL, native Date, callback order or changed original descriptors stay held", () => {
   const mutations = [String.raw`frame[1].path="C:\\foreign.eprj2"`, 'frame[1].system=true', 'frame[1].name="SystemLibrary"',
-    'frame[0]=new Sd(ctx)', 'Object.defineProperty(metadata,"name",{get:forbidden})', 'frame[2]=new Proxy(columns,{getOwnPropertyDescriptor:forbidden})'];
+    'frame[0]=new Sd(ctx)', 'table.example=new Proxy({},{ownKeys:forbidden})', 'Object.defineProperty(metadata,"name",{get:forbidden})', 'frame[2]=new Proxy(columns,{getOwnPropertyDescriptor:forbidden})'];
   for (const mutation of mutations) { const context = fixture(); runInContext(mutation, context); assert.throws(() => { bind(context); }); assert.equal(runInContext("calls", context), 0); }
   for (const mutation of ['runFrame[0]=init.dbWrap', 'runFrame[1]+=";DELETE FROM projects"', 'params[3]=params[4]',
     'params[3]={}', 'params[3]=new Date(NaN)', 'params[3]=new Proxy(new Date,{getPrototypeOf:forbidden})',
