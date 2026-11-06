@@ -6,6 +6,12 @@ deletes a failed or partial output. Query `fixture-import` with
 `includeSchemas:true` and validate the assembled request using
 `fixture-import-validate` before calling `easyeda_control_fixture_import`.
 
+The schema query goes to `easyeda_control_api` in this exact wrapper:
+
+```json
+{"request":{"action":"fixture-import","query":{"includeSchemas":true}}}
+```
+
 Start with this facade's retained ordinary209 launch and exact empty Start Page.
 Obtain its current authenticated fingerprint. Keep the original manager and
 runtime through cleanup. Pass this as `request`, with a unique operation ID up
