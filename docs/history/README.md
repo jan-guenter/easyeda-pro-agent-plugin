@@ -6,6 +6,7 @@
 
 - [2026-11-06 first manager native cleanup](2026-11-06-first-manager-native-cleanup.md). Actual frozen development controller, ordinary launch, normal close, original root/Job termination, helper release and facade EOF/exit; no import or design operation.
 - [2026-11-06 generated fixture closed baseline](2026-11-06-generated-fixture-closed-baseline.md). Complete fresh SQL/history qualification, unticked native DOCHEAD, exact VACUUM projection, same-facade issued source staging and dedicated fresh registration/open owner; connected acceptance remains unproved.
+- [2026-11-06 schematic disposable fixture generator](2026-11-06-schematic-disposable-fixture-generator.md). Two fixed documents and Text/Wire/Bus data, twelve original vendor serializer checks, shared ZIP framing and explicit pending native/import/read support.
 
 - [2026-11-06 first disposable batch freeze](2026-11-06-first-disposable-batch-freeze.md). Local01437 payload, exact1101-source/runtime hashes, reproduced bundles, required non-suite checks and remaining connected/release work.
 - [2026-11-06 real Engine import composition](2026-11-06-fixture-real-engine-composition.md). Actual dispatcher-entry tracking, narrow successful-environment cleanup and real technical nonce grammar, verified through genuine test HMAC sessions.

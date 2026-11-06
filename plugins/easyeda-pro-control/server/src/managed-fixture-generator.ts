@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
-import { crc32 } from "node:zlib";
 import { z } from "zod";
 import { qualifyManagedFixtureArchive } from "./managed-fixture-archive.ts";
+import { packManagedFixtureArchive } from "./managed-fixture-zip.ts";
 
 export const MANAGED_FIXTURE_GENERATOR_KINDS = ["via-only", "line-and-via"] as const;
 export const MANAGED_FIXTURE_GENERATOR_PROFILE = Object.freeze({
@@ -47,26 +47,6 @@ export const MANAGED_FIXTURE_VIA_BODY = Object.freeze({ partitionId: "", groupId
   viaDiameter: 200, viaType: "NORMAL", topSolderExpansion: 0, bottomSolderExpansion: 0, locked: false, unusedInnerLayers: Object.freeze([]), zIndex: null });
 export const MANAGED_FIXTURE_LINE_BODY = Object.freeze({ partitionId: "", groupId: 0, netName: "", layerId: 1, startX: 500, startY: 0, endX: 1500, endY: 0, width: 100, locked: false, zIndex: null });
 
-/** New ZIP32 data only. The two member names and format are fixed here; no
- * supplied archive, design, SQLite file or extraction destination is edited. */
-function pack(manifest: Buffer, source: Buffer): Buffer {
-  const centrals: Buffer[] = [], locals: Buffer[] = [];
-  let offset = 0;
-  for (const [nameText, content] of [["project2.json", manifest], ["Fixture.epru", source]] as const) {
-    const central = Buffer.alloc(46), local = Buffer.alloc(30), name = Buffer.from(nameText, "utf8");
-    const checksum = crc32(content);
-    local.writeUInt32LE(0x04_03_4B_50); local.writeUInt16LE(20, 4); local.writeUInt16LE(33, 12);
-    local.writeUInt32LE(checksum, 14); local.writeUInt32LE(content.length, 18); local.writeUInt32LE(content.length, 22); local.writeUInt16LE(name.length, 26);
-    central.writeUInt32LE(0x02_01_4B_50); central.writeUInt16LE(20, 4); central.writeUInt16LE(20, 6); central.writeUInt16LE(33, 14);
-    central.writeUInt32LE(checksum, 16); central.writeUInt32LE(content.length, 20); central.writeUInt32LE(content.length, 24);
-    central.writeUInt16LE(name.length, 28); central.writeUInt32LE(offset, 42);
-    locals.push(local, name, content); centrals.push(central, name); offset += local.length + name.length + content.length;
-  }
-  const directory = Buffer.concat(centrals), end = Buffer.alloc(22);
-  end.writeUInt32LE(0x06_05_4B_50); end.writeUInt16LE(2, 8); end.writeUInt16LE(2, 10);
-  end.writeUInt32LE(directory.length, 12); end.writeUInt32LE(offset, 16);
-  return Buffer.concat([...locals, directory, end]);
-}
 function record(type: string, body: Readonly<Record<string, unknown>>, id?: string, ticket?: number): string {
   return `${JSON.stringify({ type, ...(ticket === undefined ? {} : { ticket }), ...(id === undefined ? {} : { id }) })}||${JSON.stringify(body)}|\n`;
 }
@@ -99,7 +79,7 @@ export function generateManagedFixtureArchiveData(kindInput: unknown): Readonly<
     record("VIA", via, viaId, 2) + (lineId === null ? "" : record("LINE", line, lineId, 3));
   const manifest = Buffer.from(JSON.stringify({ title, cbb_project: false, editorVersion: "3.2.209" }), "utf8");
   const sourceBytes = Buffer.from(source, "utf8");
-  const bytes = pack(manifest, sourceBytes), qualification = qualifyManagedFixtureArchive(bytes);
+  const bytes = packManagedFixtureArchive(manifest, sourceBytes), qualification = qualifyManagedFixtureArchive(bytes);
   const sourceTemplateProfileSha256 = createHash("sha256").update(JSON.stringify(MANAGED_FIXTURE_GENERATOR_PROFILE), "utf8").digest("hex");
   return Object.freeze({ name: `${title}.epro2`, bytes,
     metadata: Object.freeze({ schema: "easyeda-pro-control.generated-fixture-archive.v1", fixtureKind: kind, title, documentUuid,
