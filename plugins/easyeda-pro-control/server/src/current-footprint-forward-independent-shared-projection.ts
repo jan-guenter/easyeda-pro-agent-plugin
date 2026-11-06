@@ -4,7 +4,7 @@
  */
 import { createHash } from "node:crypto";
 
-export const FORWARD_NATIVE_INDEPENDENT_SHARED_HELPER = Object.freeze({"bytes": 1_200_556, "sha256": "59616fb6b7f933b3e4f50e197f690b28e1ea1d03223bbfd486dcdf9cc91076eb"});
+export const FORWARD_NATIVE_INDEPENDENT_SHARED_HELPER = Object.freeze({"bytes": 1_201_477, "sha256": "aa5f1f8f876a767d82bacc39796ee9252e25ececcfaa499b9afdea22259c05fc"});
 const sections = [
   {
     "begin": "  enum Spatial209Birth { SourceQualified }\n",
@@ -21,8 +21,8 @@ const sections = [
   {
     "begin": "// BEGIN GENERATED PROJECT STRUCTURE OBSERVER PROTOCOL\n",
     "end": "// END GENERATED PROJECT STRUCTURE OBSERVER PROTOCOL\n",
-    "bytes": 25_155,
-    "sha256": "d4c29756055efb4caa7df526d81ae20670075bea67cd2387ed80d33e24d39cbe"
+    "bytes": 26_076,
+    "sha256": "d464d4bd34a740b5f026b48afb3b43f4ce60b98aa3a104cfebaa929a57e9f128"
   }
 ] as const;
 const projections = [

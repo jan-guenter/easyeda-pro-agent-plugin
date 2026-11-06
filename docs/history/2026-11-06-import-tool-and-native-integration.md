@@ -56,3 +56,14 @@ Repository validation passes. The package validator currently reports its
 expected exact-tool-catalog mismatch against the old committed bundle; the
 new source tool and policy must be rebuilt together before runtime use. This
 intermediate source checkpoint is not a publishable payload.
+
+## Later source integration
+
+`2806ade` integrates the useful raw current209 schematic component/pin/contact
+reader. `3acfdb8` integrates original detached-cache return capture. The shared
+helper was regenerated afterward to1,201,477ASCII bytes, SHA256
+`aa5f1f8f876a767d82bacc39796ee9252e25ececcfaa499b9afdea22259c05fc`.
+The exact projection still produces the same three released forward outputs.
+Actual Windows5.1 CompileOnly passed again with compiledtrue,
+processLaunchedfalse and emptyJobtrue. The earlier1,200,556-byte compile result
+above remains evidence of that earlier source checkpoint only.

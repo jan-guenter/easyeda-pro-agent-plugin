@@ -32,11 +32,11 @@ $helper = Join-Path $PSScriptRoot 'pcb-diagnostic-owner.ps1'
 # worker-startup profiles. Exact length/hash below still admit only one helper;
 # this allocation bound changes no request or transport limits.
 $bytes = Read-BoundedFile $helper 2097152
-if ($bytes.Length -ne 1200556) {throw 'synthetic-launch-helper-size'}
+if ($bytes.Length -ne 1201477) {throw 'synthetic-launch-helper-size'}
 $hash = [Security.Cryptography.SHA256]::Create()
 try {$helperHash = [BitConverter]::ToString($hash.ComputeHash($bytes)).Replace('-','').ToLowerInvariant()}
 finally {$hash.Dispose()}
-if ($helperHash -cne '59616fb6b7f933b3e4f50e197f690b28e1ea1d03223bbfd486dcdf9cc91076eb') {
+if ($helperHash -cne 'aa5f1f8f876a767d82bacc39796ee9252e25ececcfaa499b9afdea22259c05fc') {
   throw 'synthetic-launch-helper-hash'
 }
 $source = [Text.UTF8Encoding]::new($false,$true).GetString($bytes)
