@@ -1654,6 +1654,14 @@ export class CurrentFootprintCopyMainBackendRunner {
     requireCurrentFootprintForwardExecutionMainCapability(capability, this);
     need(capability === this.#originCapability && token === this.#originToken, "FORWARD_REQUEST_ORIGINAL_OWNER"); this.#originCheck(token, false);
   }
+  /** All four original fixed request points must exist before cold-v2 gives
+   * the renderer its clock lane. A descriptor or equal origin is insufficient. */
+  public requireForwardExecutionRequestArmed(capability: CurrentFootprintForwardExecutionMainCapability, token: CurrentFootprintForwardMainRequestOrigin): void {
+    this.requireForwardExecutionRequestOrigin(capability, token);
+    need(!this.#busy && this.#pendingId === null && this.#originBreakpoints.size === Object.keys(CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_SITES).length &&
+      this.#originEvents.length === 0 && !this.#originPauseActive && !this.#originResumeExpected && !this.#originUncertain && !this.#originGroupReleased,
+    "FORWARD_REQUEST_ORIGINAL_ARM_REQUIRED");
+  }
   /** Private original-owner handoff. Capacity refuses before either the old
    * lease or a native phase is consumed. A dispatched begin is one-shot; only
    * actual original exit can settle a lost acknowledgment. No writer starts. */

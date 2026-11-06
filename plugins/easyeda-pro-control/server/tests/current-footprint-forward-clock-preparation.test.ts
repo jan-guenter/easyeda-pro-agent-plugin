@@ -9,7 +9,7 @@ import { test } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import type { CurrentFootprintForwardClockPreparationOwner, requireOriginalCurrentFootprintForwardClockPreparation } from "../src/current-footprint-forward-clock-preparation.ts";
-import { CurrentFootprintCombinedStartupChannel, CurrentFootprintForwardExecutionStartupChannel } from "../src/current-pcb-worker-startup-channel.ts";
+import { CurrentFootprintCombinedStartupChannel, CurrentFootprintForwardExecutionStartupChannel, beginCurrentFootprintForwardAllocatedClockChannel, prepareCurrentFootprintForwardAllocatedClockChannel } from "../src/current-pcb-worker-startup-channel.ts";
 import { CurrentFootprintCopyWorkerStartupTransport, requireOriginalForwardClockPreparationTransport } from "../src/current-pcb-worker-startup-transport.ts";
 import { forwardMainAuthorityFixture } from "./helpers/forward-main-authority-fixture.ts";
 import { CURRENT_FOOTPRINT_FORWARD_CLOCK_PREPARATION_REQUESTS } from "../src/current-footprint-forward-clock-preparation-budget.ts";
@@ -107,6 +107,10 @@ void test("actual cold-v2 transport registry refuses Combined and copied wrapper
     assert.throws(() => { requireOriginalForwardClockPreparationTransport({}, forwardDependency); }, /FORWARD_CLOCK_ORIGINAL_TRANSPORT/u);
     assert.throws(() => { requireOriginalForwardClockPreparationTransport(prior, combinedDependency); }, /FORWARD_CLOCK_ORIGINAL_TRANSPORT/u);
     assert.throws(() => { requireOriginalForwardClockPreparationTransport(transport, combinedDependency); }, /FORWARD_CLOCK_ORIGINAL_TRANSPORT/u);
+    const prepared: unknown = Reflect.apply(prepareCurrentFootprintForwardAllocatedClockChannel, undefined, [combinedDependency, "worker", {}, {}]); assert.ok(prepared instanceof Promise);
+    await assert.rejects(prepared, /FORWARD_ALLOCATED_CLOCK_ORIGINAL_CHANNEL/u);
+    const begun: unknown = Reflect.apply(beginCurrentFootprintForwardAllocatedClockChannel, undefined, [combinedDependency, {}]); assert.ok(begun instanceof Promise);
+    await assert.rejects(begun, /FORWARD_ALLOCATED_CLOCK_ORIGINAL_CHANNEL/u);
     assert.equal(exchanges, 0);
   } finally { await forward.releaseAfterTermination(); await combined.releaseAfterTermination(); }
 });

@@ -1542,3 +1542,21 @@ export function beginCurrentFootprintCopyClockRpcChannel(dependency: CurrentPcbW
   if (!(channel instanceof CurrentFootprintCombinedStartupChannel)) { return Promise.reject(fail("FOOTPRINT_RPC_PURPOSE")); }
   return beginOriginalClockRpc.call(channel, dependency, reservation);
 }
+// oxlint-disable typescript/unbound-method -- These fixed methods run only on the original private-map cold-v2 receiver below.
+const prepareOriginalForwardAllocatedClock = CurrentPcbWorkerStartupChannelCore.prototype.prepareFootprintCreateClockRpc;
+const beginOriginalForwardAllocatedClock = CurrentPcbWorkerStartupChannelCore.prototype.beginFootprintCreateClockRpc;
+// oxlint-enable typescript/unbound-method
+/** Separate cold-v2 channel entry. A Combined or copied dependency cannot
+ * select this original allocated-clock reservation or its retained tail. */
+export function prepareCurrentFootprintForwardAllocatedClockChannel(dependency: CurrentPcbWorkerStartupDependency,
+  workerSessionId: string, invocation: CurrentFootprintCopyCreateInvocationLease, plan: CurrentFootprintCopyV2Plan): Promise<CurrentFootprintCopyClockRpcChannelReservation> {
+  const channel = executionDependencies.get(dependency);
+  if (!(channel instanceof CurrentFootprintForwardExecutionStartupChannel)) { return Promise.reject(fail("FORWARD_ALLOCATED_CLOCK_ORIGINAL_CHANNEL")); }
+  return prepareOriginalForwardAllocatedClock.call(channel, dependency, workerSessionId, invocation, plan);
+}
+export function beginCurrentFootprintForwardAllocatedClockChannel(dependency: CurrentPcbWorkerStartupDependency,
+  reservation: CurrentFootprintCopyClockRpcChannelReservation): Promise<CurrentFootprintCopyCreateClockChannelRoute> {
+  const channel = executionDependencies.get(dependency);
+  if (!(channel instanceof CurrentFootprintForwardExecutionStartupChannel)) { return Promise.reject(fail("FORWARD_ALLOCATED_CLOCK_ORIGINAL_CHANNEL")); }
+  return beginOriginalForwardAllocatedClock.call(channel, dependency, reservation);
+}

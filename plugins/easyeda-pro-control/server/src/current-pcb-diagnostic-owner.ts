@@ -208,8 +208,8 @@ import { CURRENT_WINDOW_CAPTURE_LIMITS, decodeCurrentWindowCapture } from "./cur
 import type { CurrentPcbStringNativeClockObservation, CurrentPcbStringNativeClockPhase } from "./current-pcb-string-native-clock.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CurrentFootprintCombinedStartupChannel, CurrentFootprintCopyExecutionChannel, CurrentFootprintCopyForwardSavedStartupChannel, CurrentFootprintCopyForwardStartupChannel, CurrentFootprintCopyHeldSavedStartupChannel, CurrentFootprintCopyPreparationChannel, CurrentFootprintCopySavedChannel, CurrentFootprintForwardExecutionStartupChannel, CurrentPcb209WorkerStartupChannel, CurrentPcbWorkerStartupChannel, CurrentProjectStructureStartupChannel,
-  beginCurrentFootprintCopyClockRpcChannel, prepareCurrentFootprintCopyClockRpcChannel, requireOriginalProjectStructurePrefixCapacity } from "./current-pcb-worker-startup-channel.ts";
-import type { CurrentPcbWorkerStartupParent } from "./current-pcb-worker-startup-channel.ts";
+  beginCurrentFootprintCopyClockRpcChannel, beginCurrentFootprintForwardAllocatedClockChannel, prepareCurrentFootprintCopyClockRpcChannel, prepareCurrentFootprintForwardAllocatedClockChannel, requireOriginalProjectStructurePrefixCapacity } from "./current-pcb-worker-startup-channel.ts";
+import type { CurrentFootprintCopyCreateClockChannelRoute, CurrentPcbWorkerStartupParent } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
 import { CurrentPcbWorkerStartupOpening } from "./current-pcb-worker-startup-opening.ts";
 import type { CurrentPcbWorkerStartupOpeningResult } from "./current-pcb-worker-startup-opening.ts";
@@ -220,7 +220,9 @@ import type { CurrentFootprintCopyManagerRouteObservation } from "./current-foot
 import type { CurrentFootprintCopyManagerRouteCommand } from "./current-footprint-copy-manager-route-command.ts";
 import type { CurrentFootprintCopyClockRegistrationObservation, CurrentFootprintCopyClockRegistrationRunner, CurrentFootprintCopyClockRegistrationSample } from "./current-footprint-copy-clock-registration-runner.ts";
 import { requireCurrentFootprintCopyClockRpcRegistrationLease } from "./current-footprint-copy-clock-registration-runner.ts";
-import { requireCurrentFootprintCopyClockRpcConstructionLease } from "./current-pcb-worker-construction-runner.ts";
+import { requireCurrentFootprintCopyClockRpcConstructionLease, requireCurrentFootprintCopyCreateInvocationLease } from "./current-pcb-worker-construction-runner.ts";
+import type { CurrentFootprintCopyCreateInvocationLease } from "./current-footprint-copy-create-invocation-lease.ts";
+import type { CurrentFootprintForwardMainRequestOrigin } from "./current-footprint-forward-execution-main-origin.ts";
 import { prepareCurrentFootprintCopyClockRpcTransport, requireCurrentFootprintCopyClockRpcTransportHandoff } from "./current-pcb-worker-startup-transport.ts";
 import { requireCurrentFootprintCopyClockRpcHandoffHeadroom } from "./current-footprint-copy-clock-rpc-budget.ts";
 import type { CurrentFootprintCopyClockRpcCommand } from "./current-footprint-copy-clock-rpc-protocol.ts";
@@ -1079,6 +1081,7 @@ class CurrentPcbRetainedOwnerCore {
   #footprintClockRegistrationRunner: CurrentFootprintCopyClockRegistrationRunner | null = null;
   #footprintClockRegistrationPacket: CurrentFootprintCopyClockRegistrationObservation | null = null;
   #footprintClockRpcOriginAttempted = false;
+  #forwardAllocatedClockRoute: CurrentFootprintCopyCreateClockChannelRoute | null = null;
 
   #startupPcbConsumed = false;
   #startupPcbSession: CurrentPcbWorkerStartupPcbSession | CurrentPcb209WorkerStartupPcbSession | CurrentPcb209RatlineContinuationNativeSession | CurrentPcb209RatlineNativeSession | null = null;
@@ -4377,6 +4380,68 @@ class CurrentPcbRetainedOwnerCore {
         takeEvent: () => { same(true); return route.takeEvent(); },
         fail: (): void => { route.fail(); },
         retire: async (): Promise<void> => { same(true); await route.retire(); same(true); },
+      }));
+      return token;
+    } finally { this.#busy = false; }
+  }
+
+  /** Original cold-v2 observer issuance. The allocated-create route stays in
+   * this original private owner; no getter, create/invoke method or writer
+   * admission is supplied by this observation origin. */
+  public async issueFootprintForwardExecutionClockObserver(opening: CurrentFootprintCopyOpeningOwner,
+    result: CurrentFootprintCopyOpeningResult, workerLease: CurrentFootprintCopyClockRpcConstructionLease,
+    invocationLease: CurrentFootprintCopyCreateInvocationLease, capability: CurrentFootprintForwardExecutionMainCapability, mainOrigin: CurrentFootprintForwardMainRequestOrigin): Promise<CurrentFootprintCopyClockRpcOrigin> {
+    assertOriginalCurrentFootprintForwardExecutionNativeOwner(this);
+    const sealed = this.originalFootprintForwardExecutionSource(); const main = sealed.main;
+    if (sealed.opening !== opening || sealed.result !== result || main === null || requireCurrentFootprintForwardExecutionMainNativeOwner(capability, main, "normal") !== this) { throw error("FORWARD_CLOCK_ORIGINAL_MAIN_SOURCE"); }
+    main.requireForwardExecutionRequestArmed(capability, mainOrigin);
+    const handoff = this.#startupHandoff, packet = this.#footprintClockRegistrationPacket, ui = this.#footprintClockRegistrationRunner;
+    const context = this.#stagedContext, original = this.#binding;
+    if (this.#footprintClockRpcOriginAttempted || handoff === null || !(handoff.channel instanceof CurrentFootprintForwardExecutionStartupChannel) ||
+        original === null || context === null || ui === null || packet === null || opening !== this.#footprintUiOpening ||
+        result !== this.#footprintUiOpeningResult || this.#combinedAbortAttempted || this.#combinedOutputCleanupOnly) {
+      throw error("FOOTPRINT_CLOCK_RPC_UNAVAILABLE");
+    }
+    this.#enter(true); this.#footprintClockRpcOriginAttempted = true;
+    try {
+      // This full opening proof may execute fixed project getters. It belongs
+      // Before the handoff and before either realm can be paused by the RPC unit.
+      await requireCurrentFootprintCopyOpening(opening, result, handoff.dependency);
+      const invocation = requireCurrentFootprintCopyCreateInvocationLease(invocationLease), worker = requireCurrentFootprintCopyClockRpcConstructionLease(workerLease);
+      const registrationLease = ui.issueInvocationLease(packet);
+      const registration = requireCurrentFootprintCopyClockRpcRegistrationLease(registrationLease);
+      const selected = context.openingContext();
+      const same = (cleanup: boolean): void => {
+        this.#available(); assertOriginalCurrentFootprintForwardExecutionNativeOwner(this); worker.assertCleanup(); registration.assertCleanup(); invocation.assertCleanup();
+        if (this.originalFootprintForwardExecutionSource().source !== sealed.source || requireCurrentFootprintCopyCreateInvocationLease(invocationLease) !== invocation || invocation.clockLease !== workerLease || invocation.issuer !== worker.issuer || invocation.projectObjectId !== worker.projectObjectId) { throw error("FORWARD_CLOCK_ORIGINAL_INVOCATION"); }
+        if (!cleanup) { main.requireForwardExecutionRequestArmed(capability, mainOrigin); }
+        if (this.#binding !== original || this.#startupHandoff !== handoff || this.#stagedContext !== context ||
+            this.#footprintClockRegistrationRunner !== ui || this.#footprintClockRegistrationPacket !== packet ||
+            this.#footprintUiOpening !== opening || this.#footprintUiOpeningResult !== result || this.#startupChannel !== handoff.channel ||
+            registration.issuer !== ui || registration.sessionId !== selected.sessionId || selected.sessionId !== handoff.dependency.parentSessionId ||
+            context.script().scriptId !== registration.scriptId || this.#releaseConsumed ||
+            !cleanup && (this.#terminationObserved || this.#closeConsumed || this.#combinedAbortAttempted || this.#combinedOutputCleanupOnly)) {
+          throw error("FOOTPRINT_CLOCK_RPC_OWNER_CHANGED");
+        }
+      };
+      same(false); await worker.assertOriginal(); same(false); await registration.assertOriginal(); same(false);
+      const prepared = await prepareCurrentFootprintCopyClockRpcTransport(handoff.dependency, workerLease); same(false);
+      const transport = requireCurrentFootprintCopyClockRpcTransportHandoff(prepared);
+      if (transport.dependency !== handoff.dependency || transport.workerLease !== workerLease) { throw error("FOOTPRINT_CLOCK_RPC_TRANSPORT"); }
+      const reservation = await prepareCurrentFootprintForwardAllocatedClockChannel(handoff.dependency, transport.workerSessionId, invocationLease, sealed.owned.copyPlan); same(false);
+      transport.consume();
+      const route = await beginCurrentFootprintForwardAllocatedClockChannel(handoff.dependency, reservation); this.#forwardAllocatedClockRoute = route; same(false);
+      const token = Object.freeze({ profile: "private.current-footprint-clock-rpc-origin.v1" as const });
+      footprintClockRpcOwners.set(token, this);
+      footprintClockRpcOrigins.set(token, Object.freeze({ workerLease, registrationLease, workerSessionId: route.workerSessionId,
+        assertOriginal: async (): Promise<void> => { same(false); await route.assertOriginal(); same(false); },
+        assertCleanup: async (): Promise<void> => { same(true); await route.assertCleanup(); same(true); },
+        assertOriginalGenerationExited: async (): Promise<void> => { same(true); await route.assertOriginalGenerationExited(); same(true); },
+        request: async (command: CurrentFootprintCopyClockRpcCommand, cleanup: boolean): Promise<unknown> => { same(cleanup); const reply = await route.request(command, cleanup); same(cleanup); return reply; },
+        pump: async (cleanup: boolean): Promise<void> => { same(cleanup); await route.pump(cleanup); same(cleanup); },
+        takeEvent: () => { same(true); return route.takeEvent(); },
+        fail: (): void => { route.fail(); },
+        retire: async (): Promise<void> => { same(true); if (this.#forwardAllocatedClockRoute !== route) { throw error("FORWARD_CLOCK_ORIGINAL_ROUTE"); } await route.retire(); same(true); },
       }));
       return token;
     } finally { this.#busy = false; }
@@ -7695,9 +7760,9 @@ export function requireCurrentFootprintCombinedPairedSchedule(capability: Curren
 /** The forward-v2 issuer must retain this same clock receiver. Legacy Combined
  * origins never qualify a new forward birth, even when their handles match. */
 export function requireOriginalCurrentFootprintForwardPairedClock(owner: CurrentFootprintForwardExecutionNativeOwner,
-  runner: CurrentFootprintCopyMainBackendRunner, clock: CurrentFootprintCopyClockRpcOrigin): void {
+  runner: CurrentFootprintCopyMainBackendRunner, clock: CurrentFootprintCopyClockRpcOrigin, mode: "normal" | "cleanup" = "normal"): void {
   assertOriginalCurrentFootprintForwardExecutionNativeOwner(owner);
-  owner.requireOriginalForwardExecutionMainRunner(runner, "normal");
+  owner.requireOriginalForwardExecutionMainRunner(runner, mode);
   if (footprintClockRpcOwners.get(clock) !== owner || !footprintClockRpcOrigins.has(clock)) { throw error("FORWARD_PAIRED_ORIGINAL_OWNER"); }
 }
 export function requireCurrentFootprintCombinedMainCapability(capability: CurrentFootprintCombinedMainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {

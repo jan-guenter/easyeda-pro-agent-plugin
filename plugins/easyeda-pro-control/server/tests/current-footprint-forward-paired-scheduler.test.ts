@@ -25,11 +25,17 @@ void test("genuine v2 paired constructor requires an issued late reservation and
   assert.throws(() => Reflect.construct(f.Scheduler, [f.main, { ...capability }, origin, reservation]), /CAPABILITY/u);
   assert.throws(() => Reflect.construct(f.Scheduler, [f.main, capability, { ...origin }, reservation]), /FORWARD_REQUEST_ORIGINAL_OWNER/u);
   const scheduler = new f.Scheduler(f.main, capability, origin, reservation);
+  const source = f.owner.originalFootprintForwardExecutionSource();
+  const workerLease = Object.freeze({ profile: "private.current-footprint-clock-rpc-construction-lease.v1" as const });
+  const invocationLease = Object.freeze({ profile: "private.current-footprint-copy-create-invocation-lease.v1" as const });
+  await assert.rejects(f.owner.issueFootprintForwardExecutionClockObserver(source.opening, source.result, workerLease, invocationLease, capability, origin), /FORWARD_REQUEST_ORIGINAL_ARM_REQUIRED/u);
   await scheduler.armMain(); assert.equal(scheduler.diagnostics()["phase"], "main-armed");
   assert.equal(f.factory.state.actions.filter(action => action === "main-request-send").length, 4);
   await assert.rejects(scheduler.armMain(), /PHASE/u);
   const writes = f.factory.state.writes;
+  await assert.rejects(f.owner.issueFootprintForwardExecutionClockObserver(source.opening, source.result, workerLease, invocationLease, capability, origin), /FOOTPRINT_CLOCK_RPC_UNAVAILABLE/u);
   const foreignClock = { profile: "private.current-footprint-clock-rpc-origin.v1" };
+  assert.throws(() => Reflect.apply(f.capabilityApi.requireRetainedCurrentFootprintForwardPairedSchedule, undefined, [capability, f.main, foreignClock]), /ORIGINAL_MAIN_NOT_RELEASED/u);
   // oxlint-disable-next-line typescript/unbound-method -- Supply deliberately invalid data to this exact retained receiver; no caller function is admitted by production.
   assert.throws(() => Reflect.apply(scheduler.bindClocks, scheduler, [foreignClock, {}, "a".repeat(16)]), /FORWARD_PAIRED_ORIGINAL_OWNER/u);
   assert.equal(f.factory.state.writes, writes); assert.equal(scheduler.diagnostics()["createDispatchAttempted"], false);

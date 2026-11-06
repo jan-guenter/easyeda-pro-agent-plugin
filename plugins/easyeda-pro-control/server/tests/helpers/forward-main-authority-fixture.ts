@@ -21,7 +21,7 @@ import type { CurrentFootprintCopyMainBackendObservation, CurrentFootprintCopyMa
   requireCurrentFootprintCopyMainRequestOrigin, requireCurrentFootprintForwardMainRequestOrigin } from "../../src/current-footprint-copy-main-backend-runner.ts";
 import type { CurrentFootprintCopyMainBackendCommand } from "../../src/current-footprint-copy-main-backend-contract.ts";
 import type { isCurrentFootprintForwardExecutionMainCapability, issueCurrentFootprintForwardExecutionMainCapability,
-  reproveCurrentFootprintForwardExecutionMainPublication, requireCurrentFootprintForwardExecutionMainNativeOwner } from "../../src/current-footprint-forward-execution-main-capability.ts";
+  reproveCurrentFootprintForwardExecutionMainPublication, requireCurrentFootprintForwardExecutionMainNativeOwner, requireRetainedCurrentFootprintForwardPairedSchedule } from "../../src/current-footprint-forward-execution-main-capability.ts";
 import type { CurrentFootprintCopyMainRequestRunner, createCurrentFootprintForwardMainRequestRunner } from "../../src/current-footprint-copy-main-request-runner.ts";
 import type { CurrentFootprintForwardExecutionPairedScheduler } from "../../src/current-footprint-forward-paired-scheduler.ts";
 import type { CurrentFootprintCopyV2Plan } from "../../src/current-footprint-copy-v2-plan.ts";
@@ -40,6 +40,7 @@ type MainApi = Readonly<{ CurrentFootprintCopyMainBackendRunner: typeof CurrentF
 type CapabilityApi = Readonly<{ isCurrentFootprintForwardExecutionMainCapability: typeof isCurrentFootprintForwardExecutionMainCapability;
   issueCurrentFootprintForwardExecutionMainCapability: typeof issueCurrentFootprintForwardExecutionMainCapability;
   reproveCurrentFootprintForwardExecutionMainPublication: typeof reproveCurrentFootprintForwardExecutionMainPublication;
+  requireRetainedCurrentFootprintForwardPairedSchedule: typeof requireRetainedCurrentFootprintForwardPairedSchedule;
   requireCurrentFootprintForwardExecutionMainNativeOwner: typeof requireCurrentFootprintForwardExecutionMainNativeOwner }>;
 type RequestApi = Readonly<{ CurrentFootprintCopyMainRequestRunner: typeof CurrentFootprintCopyMainRequestRunner;
   createCurrentFootprintForwardMainRequestRunner: typeof createCurrentFootprintForwardMainRequestRunner }>;

@@ -118,3 +118,46 @@ reservation refusing close/reuse while busy. Existing registration source,
 selector, native-codec and owner-drift cases pass. Full strict types and changed
 file type-aware lint pass. No Windows/compiler helper, app, native allocation,
 MCP call or generated artifact changed.
+
+## Separate original v2 allocated-clock observer issuer
+
+`issueFootprintForwardExecutionClockObserver` now joins only the original v2
+factory's sealed source/opening, original main capability/request origin and
+all four actually retained main request breakpoints. Missing arming refuses
+before any clock handoff. It then checks the genuine same-constructor clock
+and invocation leases, the original UI registration and the original cold-v2
+transport/dependency. Separate fixed channel entry functions reject Combined
+and copied dependencies before preparing or beginning the allocated clock
+unit. Original captured methods, cursors, IDs, counters and native codecs are
+reused without an allowance increase or another polling owner.
+
+The actual allocated route is retained only inside the original native owner
+before post-reply checks. This increment exports no getter or create dispatcher
+for that route. The generic footprint clock observer origin keeps its existing
+shape; its registry now joins the exact v2 owner, while a Combined main
+capability still cannot pair with that owner. Partial or lost begin replies
+remain consumed in the same original channel/transport and require original
+cleanup. An incomplete allocated unit cannot fabricate normal retirement:
+actual completion or original retained root/empty-Job termination is required.
+This private issuer is not a public diagnostic probe or a writer mount.
+
+The v2 scheduler also needed a terminal correction found during this source
+integration. Its original main cursor deliberately becomes released after the
+actual backend release Promise fulfills. The copied older normal reproof would
+therefore refuse a successful v2 terminal join. Only after that fulfilled
+original release does the scheduler use a separate retained identity lookup.
+That lookup requires the original cursor's actual `released` phase, same
+private capability/runner and same original clock owner. It restores no normal
+cursor and authorizes no further native request. Old Combined contracts and
+all existing observation result fields remain unchanged.
+
+Seven focused source cases pass, including actual original main-arm guards,
+zero-exchange Combined refusal, original provider custody, and the actual v2
+sequencer's terminal transition over explicitly synthetic collectors. The
+terminal case would fail if normal admission were reused after release. After
+the final released-cursor guard, all three paired cases pass again. Full types,
+strict changed-file type-aware lint and whitespace checks pass. No successful
+native allocated-clock issuance, create, full SQL effect or four-generation
+lifecycle is claimed; no application, Windows process or native helper ran.
+The next source boundary is the inverse single-clock codebook and the genuine
+whole-transaction/producer/head admission needed before exposing create.

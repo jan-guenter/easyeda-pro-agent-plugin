@@ -90,6 +90,14 @@ export function requireCurrentFootprintForwardExecutionPairedSchedule(capability
   runner: CurrentFootprintCopyMainBackendRunner, clock: CurrentFootprintCopyClockRpcOrigin): void {
   const held = original(capability, runner, "normal"); requireOriginalCurrentFootprintForwardPairedClock(held.owner, runner, clock);
 }
+/** After the original main release, only retained identity is admissible.
+ * This never restores a normal cursor or qualifies another native request. */
+export function requireRetainedCurrentFootprintForwardPairedSchedule(capability: CurrentFootprintForwardExecutionMainCapability,
+  runner: CurrentFootprintCopyMainBackendRunner, clock: CurrentFootprintCopyClockRpcOrigin): void {
+  const held = original(capability, runner, "cleanup");
+  need(requireCurrentFootprintForwardMainCursor(held.cursor, runner).phase === "released", "ORIGINAL_MAIN_NOT_RELEASED");
+  requireOriginalCurrentFootprintForwardPairedClock(held.owner, runner, clock, "cleanup");
+}
 /** A genuine reservation still belongs to exactly one original sealed copy.
  * This is no current-head/queue/clock or dispatch-eligibility assertion. */
 export function requireCurrentFootprintForwardExecutionPairedCopy(capability: CurrentFootprintForwardExecutionMainCapability,

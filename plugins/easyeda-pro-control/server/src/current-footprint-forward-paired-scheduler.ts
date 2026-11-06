@@ -18,7 +18,7 @@ import { requireCurrentFootprintCopyClockRpcOrigin } from "./current-footprint-c
 import type { CurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
 import { requireCurrentFootprintCopyCreateClockChannelRoute } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentFootprintCopyCreateClockChannelRoute, CurrentFootprintCopyPendingCreate } from "./current-pcb-worker-startup-channel.ts";
-import { requireCurrentFootprintForwardExecutionPairedCopy, requireCurrentFootprintForwardExecutionPairedSchedule } from "./current-footprint-forward-execution-main-capability.ts";
+import { requireCurrentFootprintForwardExecutionPairedCopy, requireCurrentFootprintForwardExecutionPairedSchedule, requireRetainedCurrentFootprintForwardPairedSchedule } from "./current-footprint-forward-execution-main-capability.ts";
 import type { CurrentFootprintForwardExecutionMainCapability } from "./current-footprint-forward-execution-main-capability.ts";
 import { isCurrentFootprintCopyMainRequestReservation, requireCurrentFootprintCopyMainRequestReservationCopy, requireOriginalCurrentFootprintCopyMainRequestReservationCopy } from "./current-footprint-copy-main-request-plan.ts";
 import type { CurrentFootprintCopyMainRequestReservation } from "./current-footprint-copy-main-request-plan.ts";
@@ -72,6 +72,7 @@ export class CurrentFootprintForwardExecutionPairedScheduler {
   #completionOrigin: CurrentFootprintForwardMainCompletionOrigin | null = null;
   #mainPacket: CurrentFootprintCopyMainCompletionObservation | null = null;
   #mainTransferred = false;
+  #mainReleased = false;
   #firstFailure: Phase | null = null;
   public constructor(backend: CurrentFootprintCopyMainBackendRunner, capability: CurrentFootprintForwardExecutionMainCapability,
     mainOrigin: CurrentFootprintForwardMainRequestOrigin, plan: CurrentFootprintCopyMainRequestReservation) {
@@ -86,7 +87,8 @@ export class CurrentFootprintForwardExecutionPairedScheduler {
     need(!this.#generationEnded && this.#phase !== "failed" && this.#phase !== "ended" && this.#phase !== "complete", "UNAVAILABLE");
     if (!this.#mainTransferred) { backendMethods.requireRequestOrigin.call(this.#backend, this.#capability, this.#mainOrigin); }
     if (this.#clockToken !== null) {
-      requireCurrentFootprintForwardExecutionPairedSchedule(this.#capability, this.#backend, this.#clockToken);
+      if (this.#mainReleased) { requireRetainedCurrentFootprintForwardPairedSchedule(this.#capability, this.#backend, this.#clockToken); }
+      else { requireCurrentFootprintForwardExecutionPairedSchedule(this.#capability, this.#backend, this.#clockToken); }
       need(this.#route !== null && requireCurrentFootprintCopyCreateClockChannelRoute(this.#route) === this.#routeBinding, "ORIGINAL_ROUTE");
     }
   }
@@ -165,7 +167,7 @@ export class CurrentFootprintForwardExecutionPairedScheduler {
       this.#completion = createCurrentFootprintForwardMainCompletionRunner(origin); this.#same();
       await this.#completion.arm(); this.#same(); this.#mainPacket = await this.#completion.collect(); this.#same();
       await this.#completion.requireOriginal(this.#mainPacket); this.#same(); await this.#completion.cleanup(); this.#same();
-      await backendMethods.release.call(this.#backend); this.#same(); this.#phase = "main-completed";
+      await backendMethods.release.call(this.#backend); this.#mainReleased = true; this.#same(); this.#phase = "main-completed";
     } catch (error) { this.#failed(); throw error; } finally { this.#end(); }
   }
   public async joinCreate(): Promise<CurrentFootprintForwardExecutionPairedObservation> {
