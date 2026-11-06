@@ -19,3 +19,5 @@ export interface CurrentFootprintInverseCacheBindings {
   readonly requireMetadataSnapshot: (snapshot: CurrentPcbViaSavedCacheMetadataSnapshot) => void;
   readonly requireMetadataPacket: (packet: CurrentPcbViaSavedCacheMetadataPacket) => void;
 }
+
+export interface CurrentFootprintInverseCacheBackupGrant { readonly profile: "private.current-footprint-inverse-cache-backup.v1" }

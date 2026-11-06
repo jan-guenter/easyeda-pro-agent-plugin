@@ -614,3 +614,21 @@ backup grant, fresh per-delete guards, original once-only invalidation and
 absence before the cold project route can rely on it. No cache deletion,
 complete producer frontier, delete invocation, Save or four-generation
 acceptance is granted by this observation increment.
+
+On November7, inverse cache publication adds its own distinct data and artifact
+schemas. The parameterless owner method `publishFootprintInverseCacheBackup()`
+uses only its retained original CDP/native metadata snapshots, all actual packet
+references and the genuine saved copied-footprint source. The complete two-round
+data joins reuse the scoped comparison. Publication is exclusive, bounded and
+reread/rehashed before the original Core issues its private backup token. The
+current saved source bytes are independently reverified before token issuance.
+Module function identities, owner/checkpoint/origin/snapshot refs and artifact
+bytes are rechecked around IO. The same publication Promise is retained on both
+success and failure. Copies, altered artifacts and source drift refuse.
+
+Data and publication flags still grant no native deletion. The opaque backup
+token is inverse-only and will need its original native enrollment plus fresh
+per-delete guards. Two focused real-artifact supplied-data checks, the original
+factory copied-grant refusal, full types and strict changed-file lint pass. This
+increment changes no native helper or request limit and makes no connected or
+four-generation acceptance claim.

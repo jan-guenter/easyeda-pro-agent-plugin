@@ -1,6 +1,7 @@
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
-import type { CurrentFootprintInverseCacheBindings, CurrentFootprintInverseCacheOrigin } from "./current-footprint-inverse-cache-origin.ts";
+import type { CurrentFootprintInverseCacheBackupModule as FootprintInverseCacheBackupModule } from "./current-footprint-inverse-cache-backup.ts";
+import type { CurrentFootprintInverseCacheBackupGrant, CurrentFootprintInverseCacheBindings, CurrentFootprintInverseCacheOrigin } from "./current-footprint-inverse-cache-origin.ts";
 import { currentFootprintInverseCacheMetadataNativeFrame, currentFootprintInverseCacheNativeFrame } from "./current-footprint-inverse-cache-wire.ts";
 import { CurrentPcbViaLocalUploadCursor } from "./current-pcb-via-local-upload-cursor.ts";
 import type { CurrentPcbViaLocalUploadHeld } from "./current-pcb-via-local-upload-cursor.ts";
@@ -864,6 +865,14 @@ interface FootprintInverseCacheHeld {
   readonly selected: ReturnType<CurrentPcbDiagnosticContext["savedReadbackCacheContext"]>;
   readonly ledger: CurrentPcbViaSavedCacheLedger; readonly metadata: CurrentPcbViaSavedCacheMetadataLedger; readonly bindings: CurrentFootprintInverseCacheBindings;
 }
+interface FootprintInverseCacheBackupHeld {
+  readonly owner: CurrentPcbRetainedOwnerCore; readonly cache: FootprintInverseCacheHeld; readonly grant: CurrentFootprintInverseCacheBackupGrant;
+  readonly cdp: CurrentPcbViaSavedCacheSnapshot; readonly metadata: CurrentPcbViaSavedCacheMetadataSnapshot;
+  readonly data: ReturnType<FootprintInverseCacheBackupModule["buildCurrentFootprintInverseCacheBackupData"]>;
+  readonly published: Awaited<ReturnType<FootprintInverseCacheBackupModule["publishCurrentFootprintInverseCacheBackupData"]>>;
+  readonly module: FootprintInverseCacheBackupModule; readonly methods: Readonly<Pick<FootprintInverseCacheBackupModule, "buildCurrentFootprintInverseCacheBackupData" | "requireCurrentFootprintInverseCacheBackupData" | "publishCurrentFootprintInverseCacheBackupData" | "verifyCurrentFootprintInverseCachePublishedData">>;
+}
+const footprintInverseCacheBackups = new WeakMap<object, FootprintInverseCacheBackupHeld>();
 const footprintInverseCaches = new WeakMap<object, FootprintInverseCacheHeld>();
 interface SavedReadbackCacheHeld {
   readonly origin: CurrentPcbViaSavedCacheOrigin; readonly prepared: CurrentPcbViaWriteClosedCheckpoint;
@@ -1651,6 +1660,7 @@ class CurrentPcbRetainedOwnerCore {
   #inverseFrame: Readonly<{ phase: "preflight" | "register" | "open-project"; session: string; context: string; target: CurrentDisposableOpenSealedTarget }> | null = null;
   #inverseHelper: { phase: "preflight" | "register" | "open-project"; scriptId: string | null } | null = null;
   #inverseCache: FootprintInverseCacheHeld | null = null; #inverseCacheAttempted = false; #inverseCacheGuard = false;
+  #inverseCacheBackupPromise: Promise<CurrentFootprintInverseCacheBackupGrant> | null = null; #inverseCacheBackup: FootprintInverseCacheBackupHeld | null = null;
   #inverseCachePlan: CurrentPcbViaSavedCachePlan | null = null; #inverseCacheMetadataPlan: CurrentPcbViaSavedCacheMetadataPlan | null = null;
   #inverseRegistrationResult: ReturnType<typeof decodeCurrentFootprintInverseRegistrationReply> | null = null;
   #inverseRegistrationDispatch: Promise<ReturnType<typeof decodeCurrentFootprintInverseRegistrationReply>> | null = null;
@@ -6986,6 +6996,42 @@ class CurrentPcbRetainedOwnerCore {
       this.#footprintInverseCacheCurrent(held); return origin;
     } finally { this.#inverseCacheGuard = false; this.#inverseHelper = null; this.#inverseFrame = null; this.#busy = false; }
   }
+  #footprintInverseCacheBackupCurrent(held: FootprintInverseCacheBackupHeld): void {
+    this.#footprintInverseCacheCurrent(held.cache);
+    for (const name of ["buildCurrentFootprintInverseCacheBackupData", "requireCurrentFootprintInverseCacheBackupData", "publishCurrentFootprintInverseCacheBackupData", "verifyCurrentFootprintInverseCachePublishedData"] as const) { if (held.module[name] !== held.methods[name]) { throw error("FOOTPRINT_INVERSE_CACHE_BACKUP_MODULE_CHANGED"); } }
+    held.methods.requireCurrentFootprintInverseCacheBackupData(held.data, this, held.cache.prepared, held.cache.origin, held.cdp, held.metadata);
+  }
+  public originalFootprintInverseCacheBackup(grant: CurrentFootprintInverseCacheBackupGrant, prepared: CurrentFootprintForwardSavedCheckpoint): FootprintInverseCacheBackupHeld {
+    const held = footprintInverseCacheBackups.get(grant);
+    if (held === undefined || held.owner !== this || held.cache.prepared !== prepared || this.#inverseCacheBackup !== held) { throw error("FOOTPRINT_INVERSE_CACHE_BACKUP_ORIGINAL_GRANT"); }
+    this.#footprintInverseCacheBackupCurrent(held); return held;
+  }
+  public publishFootprintInverseCacheBackup(): Promise<CurrentFootprintInverseCacheBackupGrant> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); if (this.#inverseCacheBackupPromise !== null) { return this.#inverseCacheBackupPromise; }
+    const cache = this.#inverseCache; if (cache === null) { throw error("FOOTPRINT_INVERSE_CACHE_BACKUP_NOT_OBSERVED"); }
+    this.#footprintInverseCacheCurrent(cache); this.#enter(true);
+    const promise = (async (): Promise<CurrentFootprintInverseCacheBackupGrant> => {
+      try {
+        const module = await import("./current-footprint-inverse-cache-backup.ts"); this.#footprintInverseCacheCurrent(cache);
+        const methods = Object.freeze({ buildCurrentFootprintInverseCacheBackupData: module.buildCurrentFootprintInverseCacheBackupData,
+          requireCurrentFootprintInverseCacheBackupData: module.requireCurrentFootprintInverseCacheBackupData, publishCurrentFootprintInverseCacheBackupData: module.publishCurrentFootprintInverseCacheBackupData,
+          verifyCurrentFootprintInverseCachePublishedData: module.verifyCurrentFootprintInverseCachePublishedData });
+        const cdp = cache.ledger.snapshot(), metadata = cache.metadata.snapshot();
+        const native = cache.metadata.status(), state = cache.ledger.status();
+        if (!state.tracked || !state.completeRepeatedCdpData || state.pending || native.pending || native.helperPending || native.released || native.sourceReceipts !== SAVED_METADATA_REQUESTS.helperSources) { throw error("FOOTPRINT_INVERSE_CACHE_BACKUP_INCOMPLETE"); }
+        const current = (): void => { this.#footprintInverseCacheCurrent(cache); cache.ledger.requireOriginalSnapshot(cdp); cache.metadata.requireOriginalSnapshot(metadata);
+          for (const name of ["buildCurrentFootprintInverseCacheBackupData", "requireCurrentFootprintInverseCacheBackupData", "publishCurrentFootprintInverseCacheBackupData", "verifyCurrentFootprintInverseCachePublishedData"] as const) { if (module[name] !== methods[name]) { throw error("FOOTPRINT_INVERSE_CACHE_BACKUP_MODULE_CHANGED"); } } };
+        const data = methods.buildCurrentFootprintInverseCacheBackupData(this, cache.prepared, cache.origin, cdp, metadata); current();
+        const published = await methods.publishCurrentFootprintInverseCacheBackupData(data); current();
+        await methods.verifyCurrentFootprintInverseCachePublishedData(published, data); current(); await this.#verify(); current();
+        const allocation = footprintInverseFactories.get(this)?.allocation; if (allocation === undefined) { throw error("FOOTPRINT_INVERSE_ORIGINAL_FACTORY"); }
+        await allocation.verifyPrepared(cache.prepared); current();
+        const grant: CurrentFootprintInverseCacheBackupGrant = Object.freeze({ profile: "private.current-footprint-inverse-cache-backup.v1" });
+        const held = Object.freeze({ owner: this, cache, grant, cdp, metadata, data, published, module, methods });
+        this.#inverseCacheBackup = held; footprintInverseCacheBackups.set(grant, held); this.#footprintInverseCacheBackupCurrent(held); return grant;
+      } finally { this.#busy = false; }
+    })(); this.#inverseCacheBackupPromise = promise; return promise;
+  }
   public async armFootprintInverseWorker(setup: (origin: CurrentFootprintInverseWorkerOrigin) => Promise<void>): Promise<void> {
     assertOriginalCurrentFootprintInverseNativeOwner(this); const intent = this.#inverseRegistrationIntent, ready = this.#inverseUiReady, runner = this.#mainRunner;
     if (ready === null || intent === null || runner === null || this.#inverseWorkerController !== null || typeof setup !== "function" || types.isProxy(setup)) { throw error("FOOTPRINT_INVERSE_WORKER_PREREQUISITE"); }
@@ -9881,6 +9927,12 @@ export function requireOriginalCurrentFootprintInverseRegistrationIntentForRunne
   const held = footprintInverseRegistrationIntents.get(intent);
   if (held === undefined || held.runner !== runner) { throw error("FOOTPRINT_INVERSE_REGISTRATION_ORIGINAL_RUNNER"); }
   return requireOriginalCurrentFootprintInverseRegistrationIntent(intent, held.owner, runner);
+}
+export function requireOriginalCurrentFootprintInverseCacheBackup(grant: CurrentFootprintInverseCacheBackupGrant, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): Readonly<{
+  origin: CurrentFootprintInverseCacheOrigin; data: FootprintInverseCacheBackupHeld["data"]; published: FootprintInverseCacheBackupHeld["published"];
+}> {
+  assertOriginalCurrentFootprintInverseNativeOwner(owner); const held = owner.originalFootprintInverseCacheBackup(grant, prepared);
+  return Object.freeze({ origin: held.cache.origin, data: held.data, published: held.published });
 }
 export function requireOriginalCurrentFootprintInverseCacheOrigin(origin: CurrentFootprintInverseCacheOrigin, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): CurrentFootprintInverseCacheBindings {
   assertOriginalCurrentFootprintInverseNativeOwner(owner); return owner.originalFootprintInverseCacheBindings(origin, prepared);
