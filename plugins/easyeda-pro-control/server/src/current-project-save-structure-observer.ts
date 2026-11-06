@@ -8,7 +8,8 @@ import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-re
 import { decodeCurrentPcb209WorkerProducerFunction, decodeCurrentPcb209WorkerProducerScopeList, decodeCurrentPcb209WorkerProducerScopes } from "./current-pcb-string-producer-scope.ts";
 import { decodeCurrentPcb209WorkerCallbackFunction, decodeCurrentPcb209WorkerCallbackScopeList } from "./current-pcb-string-producer-callback-scope.ts";
 import { captureCurrentProjectStructureCompletionReply } from "./current-project-structure-completion-protocol.ts";
-import { expectedCurrentGeneratedProjectSaveStructure } from "./current-project-save-structure-expectation.ts";
+import { matchesCurrentProjectSaveStructureIntent, requireCurrentProjectPrehistoryBodyIntent, requireCurrentProjectPrehistoryPublication } from "./current-project-save-structure-prehistory.ts";
+import type { CurrentProjectStructureBodyReservation, CurrentProjectStructureMainPublication } from "./current-project-save-structure-prehistory.ts";
 import type { CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureEvent, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_CALLS as CALLS, CURRENT_PROJECT_SAVE_STRUCTURE_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS as FRAME_FLAGS,
   CURRENT_PROJECT_SAVE_STRUCTURE_GROUP as GROUP, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES, CURRENT_PROJECT_SAVE_STRUCTURE_STARTUP_CONDITION as STARTUP_CONDITION,
@@ -40,6 +41,8 @@ function sourceReply(raw: unknown): Readonly<{ scriptSource: string }> {
   const text: unknown = descriptor.value; need(typeof text === "string", "SOURCE_STRING"); qualifyCurrentProjectSaveStructureSource(text); return Object.freeze({ scriptSource: text });
 }
 const lookupFunction = z.custom<(origin: CurrentProjectSaveStructureOrigin, owner: object, operation: object) => unknown>(value => typeof value === "function" && !types.isProxy(value));
+const consumeBodyFunction = z.custom<(token: CurrentProjectStructureBodyReservation, owner: object, operation: object) => unknown>(value => typeof value === "function" && !types.isProxy(value));
+const publicationFunction = z.custom<(token: CurrentProjectStructureMainPublication, origin: CurrentProjectSaveStructureOrigin, owner: object, operation: object) => unknown>(value => typeof value === "function" && !types.isProxy(value));
 const consumeFunction = z.custom<(token: CurrentProjectHistorySqlCompletion, owner: object, operation: object) => unknown>(value => typeof value === "function" && !types.isProxy(value));
 const bindingsSchema = z.custom<CurrentProjectSaveStructureBindings>(value => {
   if (value === null || typeof value !== "object" || types.isProxy(value) || Object.getPrototypeOf(value) !== Object.prototype || !Object.isFrozen(value)) { return false; }
@@ -65,6 +68,16 @@ export interface CurrentProjectSaveStructureCompletion {
   readonly originalHeldPacketAndHistoryJoinVerified: true; readonly originalTaskAndBothSerialFinalizersObserved: true;
   readonly mainStructurePublicationVerified: false; readonly completeClosedSqlVerified: false; readonly persistenceVerified: false;
 }
+export interface CurrentProjectPrehistoryStructureCompletion {
+  readonly profile: "private.current-project-prehistory-structure-completion.v1";
+  readonly projectUuid: string; readonly branchUuid: string; readonly ticket: number; readonly structureText: string;
+  readonly originalHeldPacketAndBodyJoinVerified: true; readonly originalMainPublicationJoined: true; readonly originalTaskAndBothSerialFinalizersObserved: true;
+  readonly originalHistorySqlCompleted: false; readonly completeUploadFrontierVerified: false; readonly completeClosedSqlVerified: false; readonly persistenceVerified: false;
+}
+const prehistoryCompletions = new WeakMap<CurrentProjectPrehistoryStructureCompletion, Readonly<{ observer: CurrentProjectSaveStructureObserver; packet: CurrentProjectSaveStructurePacket; reservation: CurrentProjectStructureBodyReservation; publication: CurrentProjectStructureMainPublication }>>();
+export function requireOriginalCurrentProjectPrehistoryStructureCompletion(value: CurrentProjectPrehistoryStructureCompletion, observer: CurrentProjectSaveStructureObserver): void {
+  need(prehistoryCompletions.get(value)?.observer === observer, "ORIGINAL_PREHISTORY_COMPLETION");
+}
 interface Retained { readonly observer: CurrentProjectSaveStructureObserver; readonly packet: CurrentProjectSaveStructurePacket; readonly completion: CurrentProjectHistorySqlCompletion }
 const completions = new WeakMap<CurrentProjectSaveStructureCompletion, Retained>();
 export function requireOriginalCurrentProjectSaveStructureCompletion(value: CurrentProjectSaveStructureCompletion, observer: CurrentProjectSaveStructureObserver): void {
@@ -88,7 +101,7 @@ export class CurrentProjectSaveStructureObserver {
   #uploadCallback: string | null = null; #debounce: string | null = null; #structureCallback: string | null = null;
   #uploadPromise: string | null = null; #structurePromise: string | null = null; #resolver: string | null = null; #timer: number | null = null;
   #packet: string | null = null; #task: string | null = null; #datas: string | null = null; #taskSet: string | null = null; #response: string | null = null;
-  #value: z.infer<typeof packetSchema> | null = null; #held: CurrentProjectSaveStructurePacket | null = null; #history: CurrentProjectHistorySqlCompletion | null = null;
+  #value: z.infer<typeof packetSchema> | null = null; #held: CurrentProjectSaveStructurePacket | null = null; #bodyReservation: CurrentProjectStructureBodyReservation | null = null; #publication: CurrentProjectStructureMainPublication | null = null; #prehistoryComplete = false; #history: CurrentProjectHistorySqlCompletion | null = null;
   public constructor(origin: CurrentProjectSaveStructureOrigin, owner: object, operation: object) {
     this.#origin = origin; this.#owner = owner; this.#operation = operation;
     this.#lookup = lookupFunction.parse(Reflect.get(native, "requireOriginalCurrentProjectSaveStructureOrigin"));
@@ -163,7 +176,7 @@ export class CurrentProjectSaveStructureObserver {
     else { need(this.#pause.role === role, "FRAME_PAUSE_ROLE"); }
     const callFrameId = role === "timer" || role === "producerCaller" || role === "startupCaller" ? this.#pause.callerFrameId : this.#pause.frameId; const raw = await this.#send({ phase: "project-save-structure-frame", role, method: "Debugger.evaluateOnCallFrame",
     params: { ...FRAME_FLAGS, callFrameId, expression: SITES[role].expression } }); this.#frameArrays.set(role, object(remoteResult(raw))); return this.#array(raw, SITES[role].length); }
-  async #resume(role: Site): Promise<void> { need(this.#pause?.role === role && !this.#pause.resumeAttempted && (role === "bootstrap" || CONSTRUCTORS.some(value => value === role) || this.#history !== null || this.#startupMode && (role === "startupEntry" || role === "startupReturn" || role === "initialFinally" || role === "queuedFinally")), "RESUME_AUTHORITY");
+  async #resume(role: Site): Promise<void> { need(this.#pause?.role === role && !this.#pause.resumeAttempted && (role === "bootstrap" || CONSTRUCTORS.some(value => value === role) || this.#history !== null || (role === "packet" ? this.#bodyReservation !== null : this.#publication !== null) || this.#startupMode && (role === "startupEntry" || role === "startupReturn" || role === "initialFinally" || role === "queuedFinally")), "RESUME_AUTHORITY");
     this.#pause = { ...this.#pause, resumeAttempted: true }; z.strictObject({}).parse(await this.#send({ phase: "project-save-structure-resume", role, method: "Debugger.resume", params: {} }));
     const event = await this.#event(); need(event.method === "Debugger.resumed", "RESUME_ACK"); z.strictObject({}).parse(event.params); this.#pause = null;
   }
@@ -283,16 +296,23 @@ export class CurrentProjectSaveStructureObserver {
   public async releasePacket(packet: CurrentProjectSaveStructurePacket, completion: CurrentProjectHistorySqlCompletion): Promise<void> {
     need(!this.#busy && !this.#releaseAttempted && this.#held === packet && this.#value !== null && this.#pause?.role === "packet", "HELD_PACKET"); this.#releaseAttempted = true; this.#busy = true;
     try { const consume = consumeFunction.parse(Reflect.get(native, "consumeOriginalCurrentProjectHistorySqlCompletion")); const value = completionSchema.parse(consume(completion, this.#owner, this.#operation));
-      const target = this.#binding.prepared.qualification.target; const documentUuid = "documentUuid" in target ? target.documentUuid : target.pageUuid;
-      need(value.projectUuid === target.projectUuid && value.branchUuid === target.branchUuid && value.documentUuid === documentUuid && this.#value.projectUuid === value.projectUuid && this.#value.branchUuid === value.branchUuid && this.#value.ticket === value.saveHeadTicket &&
-        this.#value.structureText === expectedCurrentGeneratedProjectSaveStructure(this.#binding.prepared, value.workerClock), "EXACT_HISTORY_AND_METADATA_INTENT");
+      need(matchesCurrentProjectSaveStructureIntent(this.#binding.prepared, this.#value, value), "EXACT_HISTORY_AND_METADATA_INTENT");
       this.#history = completion; await this.#current(); this.#binding.assertOperationPending(); await this.#resume("packet");
+    } catch (error) { this.#failure(error); throw error; } finally { this.#busy = false; }
+  }
+  /** A separate prehistory path. The original body consumer grants only this
+   * packet/send; actual main response publication is required for its tail. */
+  public async releasePrehistoryPacket(packet: CurrentProjectSaveStructurePacket, reservation: CurrentProjectStructureBodyReservation): Promise<void> {
+    need(!this.#busy && !this.#releaseAttempted && this.#held === packet && this.#value !== null && this.#pause?.role === "packet", "HELD_PACKET"); this.#releaseAttempted = true; this.#busy = true;
+    try { const consume = consumeBodyFunction.parse(Reflect.get(native, "consumeOriginalCurrentProjectStructureBodyReservation")); const value = consume(reservation, this.#owner, this.#operation);
+      requireCurrentProjectPrehistoryBodyIntent(this.#binding.prepared, this.#value, value);
+      this.#bodyReservation = reservation; await this.#current(); this.#binding.assertOperationPending(); await this.#resume("packet");
     } catch (error) { this.#failure(error); throw error; } finally { this.#busy = false; }
   }
   async #fulfilled(promise: string): Promise<void> { const raw = promiseProperties.parse(await this.#properties(promise));
     const values = raw.internalProperties.filter(field => field.name === "[[PromiseState]]"); need(values.length === 1 && values[0]?.value.type === "string" && values[0].value.value === "fulfilled", "ORIGINAL_PROMISE_FULFILLED"); }
-  public async observeCompletion(): Promise<CurrentProjectSaveStructureCompletion> { need(!this.#busy && !this.#completionAttempted && this.#history !== null && this.#held !== null, "COMPLETION_CONSUMED"); this.#completionAttempted = true; this.#busy = true;
-    try { for (const role of ["response", "callbackReturn"] as const) { await this.#nextPause(role); const frame = await this.#frame(role);
+  async #observeTaskCompletion(): Promise<void> {
+    for (const role of ["response", "callbackReturn"] as const) { await this.#nextPause(role); const frame = await this.#frame(role);
         need(this.#project !== null && this.#packet !== null && this.#task !== null && this.#datas !== null && this.#taskSet !== null && this.#value !== null, "PACKET_RETAINED");
         await this.#true("same", object(frame.get("0")), [this.#project]); await this.#true("same", object(frame.get("1")), [this.#packet]); await this.#true("same", object(frame.get("2")), [this.#task]);
         const data = remoteResult(await this.#call("data", this.#packet, [], false)); await this.#true("same", object(data), [this.#datas]); const current = await this.#readPacket(this.#packet);
@@ -307,10 +327,23 @@ export class CurrentProjectSaveStructureObserver {
         if (kind === "structure") { await this.#true("same", callback, [this.#debounce]); } need(!this.#finalizers.has(kind), "DUPLICATE_FINALIZER"); const promise = kind === "upload" ? this.#uploadPromise : this.#structurePromise; need(promise !== null, "SERIAL_PROMISE_RETAINED");
         await this.#true("same", object(frame.get("0")), [promise]); this.#finalizers.add(kind); await this.#resume("initialFinally");
       }
-      need(this.#value !== null && this.#uploadPromise !== null && this.#structurePromise !== null && this.#history !== null && this.#held !== null, "COMPLETE_RETAINED"); await this.#fulfilled(this.#uploadPromise); await this.#fulfilled(this.#structurePromise); await this.#current();
+      need(this.#value !== null && this.#uploadPromise !== null && this.#structurePromise !== null && this.#held !== null, "COMPLETE_RETAINED"); await this.#fulfilled(this.#uploadPromise); await this.#fulfilled(this.#structurePromise); await this.#current();
+  }
+  public async observeCompletion(): Promise<CurrentProjectSaveStructureCompletion> { need(!this.#busy && !this.#completionAttempted && this.#history !== null && this.#held !== null, "COMPLETION_CONSUMED"); this.#completionAttempted = true; this.#busy = true;
+    try { await this.#observeTaskCompletion(); need(this.#value !== null, "COMPLETE_VALUE_RETAINED");
       this.#complete = true; const result = Object.freeze({ profile: "private.current-project-save-structure-completion.v1" as const, ...this.#value, originalHeldPacketAndHistoryJoinVerified: true as const,
         originalTaskAndBothSerialFinalizersObserved: true as const, mainStructurePublicationVerified: false as const, completeClosedSqlVerified: false as const, persistenceVerified: false as const });
       completions.set(result, { observer: this, packet: this.#held, completion: this.#history }); return result;
+    } catch (error) { this.#failure(error); throw error; } finally { this.#busy = false; }
+  }
+  public async observePrehistoryCompletion(publication: CurrentProjectStructureMainPublication): Promise<CurrentProjectPrehistoryStructureCompletion> {
+    need(!this.#busy && !this.#completionAttempted && this.#history === null && this.#bodyReservation !== null && this.#held !== null && this.#value !== null, "PREHISTORY_COMPLETION_CONSUMED"); this.#completionAttempted = true; this.#busy = true;
+    try { const lookup = publicationFunction.parse(Reflect.get(native, "requireOriginalCurrentProjectStructurePublicationForSharedOrigin")); const value = lookup(publication, this.#origin, this.#owner, this.#operation);
+      requireCurrentProjectPrehistoryPublication(this.#value, value);
+      this.#publication = publication; await this.#current(); this.#binding.assertOperationPending(); await this.#observeTaskCompletion(); this.#prehistoryComplete = true;
+      const result = Object.freeze({ profile: "private.current-project-prehistory-structure-completion.v1" as const, ...this.#value, originalHeldPacketAndBodyJoinVerified: true as const, originalMainPublicationJoined: true as const,
+        originalTaskAndBothSerialFinalizersObserved: true as const, originalHistorySqlCompleted: false as const, completeUploadFrontierVerified: false as const, completeClosedSqlVerified: false as const, persistenceVerified: false as const });
+      prehistoryCompletions.set(result, { observer: this, packet: this.#held, reservation: this.#bodyReservation, publication }); return result;
     } catch (error) { this.#failure(error); throw error; } finally { this.#busy = false; }
   }
   /** An incomplete held publication is never resumed as cleanup. The original
@@ -323,8 +356,8 @@ export class CurrentProjectSaveStructureObserver {
       need(!this.#groupReleaseAttempted, "GROUP_RELEASE_CONSUMED"); this.#groupReleaseAttempted = true; z.strictObject({}).parse(await this.#send({ phase: "project-save-structure-release", method: "Runtime.releaseObjectGroup", params: { objectGroup: GROUP } }, true)); this.#cleanupUncertain = false; this.#closed = true;
     } finally { this.#busy = false; }
   }
-  public retained(): Readonly<{ normalRequests: number; cleanupRequests: number; failed: boolean; error: unknown; revocationError: unknown; busy: boolean; constructed: boolean; packetHeld: boolean; packetReleaseAttempted: boolean; completed: boolean; resourcesClosed: boolean; uncertainAllocation: boolean; replies: readonly unknown[] }> {
+  public retained(): Readonly<{ normalRequests: number; cleanupRequests: number; failed: boolean; error: unknown; revocationError: unknown; busy: boolean; constructed: boolean; packetHeld: boolean; packetReleaseAttempted: boolean; completed: boolean; prehistoryCompleted: boolean; resourcesClosed: boolean; uncertainAllocation: boolean; replies: readonly unknown[] }> {
     return Object.freeze({ normalRequests: this.#normal, cleanupRequests: this.#cleanup, failed: this.#failed, error: this.#error, revocationError: this.#revocationError, busy: this.#busy, constructed: this.#constructed, packetHeld: this.#pause?.role === "packet", packetReleaseAttempted: this.#releaseAttempted,
-      completed: this.#complete, resourcesClosed: this.#closed, uncertainAllocation: this.#uncertainAllocation, replies: Object.freeze([...this.#replies]) });
+      completed: this.#complete, prehistoryCompleted: this.#prehistoryComplete, resourcesClosed: this.#closed, uncertainAllocation: this.#uncertainAllocation, replies: Object.freeze([...this.#replies]) });
   }
 }
