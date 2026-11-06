@@ -320,9 +320,10 @@ import { CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE } from "./current-footprint-c
 import { CURRENT_FOOTPRINT_COPY_HELD_SAVED_CAPACITY, CurrentFootprintCopyHeldSavedResourceLedger,
   requireOriginalHeldSavedLedgerBinding } from "./current-footprint-copy-held-saved-capacity.ts";
 import type { CurrentFootprintCopyHeldSavedLedgerBinding } from "./current-footprint-copy-held-saved-capacity.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE, CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE } from "./current-footprint-inverse-native-profile.ts";
 // oxlint-disable-next-line import/no-cycle -- The private guard revalidates its retained issuer only after original allocation.
 import { revalidateCurrentFootprintCopyHeldSavedOpenGuard } from "./current-footprint-copy-held-saved-generation.ts";
-import type { CurrentFootprintCopyHeldSavedOpenGuard } from "./current-footprint-copy-held-saved-generation.ts";
+import type { CurrentFootprintCopyHeldSavedOpenGuard, CurrentFootprintForwardSavedCheckpoint, requireOriginalCurrentFootprintForwardSavedCheckpoint as RequireFootprintForwardSavedCheckpoint, verifyCurrentFootprintForwardSavedCheckpoint as VerifyFootprintForwardSavedCheckpoint } from "./current-footprint-copy-held-saved-generation.ts";
 import type { CurrentFootprintCopyV2SavedProjection } from "./current-footprint-copy-v2-saved-source.ts";
 import { currentFootprintCopyV2SavedSqlSource, currentFootprintCopyV2SavedTarget } from "./current-footprint-copy-v2-saved-source.ts";
 import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-state.ts";
@@ -406,9 +407,10 @@ const forwardExecutionChannelStatus = CurrentFootprintForwardExecutionStartupCha
 
 type RecordValue = Record<string, unknown>;
 
-type OwnerPurpose = typeof CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE | "pcb-component-spatial209" | typeof CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE | typeof CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE | "pcb-spatial209" | "footprint-head-age209" | "footprint-held-cache209" | "worker-startup-footprint-held-saved209" | "visual209" | "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-footprint-saved209" | "worker-startup-footprint-main209" | typeof CURRENT_FOOTPRINT_COMBINED_PURPOSE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE | typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE | typeof CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
-function selectedFileMainPurpose(purpose: OwnerPurpose): boolean { return purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE || purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE || purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE; }
+type OwnerPurpose = typeof CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE | typeof CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE | "pcb-component-spatial209" | typeof CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE | typeof CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE | "pcb-spatial209" | "footprint-head-age209" | "footprint-held-cache209" | "worker-startup-footprint-held-saved209" | "visual209" | "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-footprint-saved209" | "worker-startup-footprint-main209" | typeof CURRENT_FOOTPRINT_COMBINED_PURPOSE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE | typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE | typeof CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
+function selectedFileMainPurpose(purpose: OwnerPurpose): boolean { return purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE || purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE || purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE || purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE; }
 function selectedFileMainLimits(purpose: OwnerPurpose): Readonly<{ normal: number; cleanup: number; total: number }> {
+  if (purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE) { return CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE.main; }
   if (purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) { return CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.main; }
   if (purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { return CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.main; }
   if (purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { return CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE.main; } throw error("SELECTED_MAIN_PURPOSE");
@@ -417,7 +419,7 @@ function heldCachePurpose(purpose: OwnerPurpose): boolean {
   return purpose === "worker-startup-footprint-held-saved209" || purpose === "footprint-held-cache209";
 }
 function bornFootprintTransport(purpose: OwnerPurpose): boolean {
-  return purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE || purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE || forwardBirthPurpose(purpose);
+  return purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE || purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE || purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE || forwardBirthPurpose(purpose);
 }
 function forwardBirthPurpose(purpose: OwnerPurpose): boolean {
   return purpose === CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE || purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE;
@@ -753,6 +755,32 @@ interface PcbViaSavedReadbackAllocation {
   child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown;
 }
 const pcbViaSavedReadbackAllocations = new WeakMap<CurrentPcbViaWriteClosedCheckpoint, PcbViaSavedReadbackAllocation>();
+const footprintForwardExecutionFactoryOptions = new WeakMap<object, CurrentPcbDiagnosticInstallationOptions>();
+type FootprintInverseCheckpointModule = Readonly<{ requireOriginalCurrentFootprintForwardSavedCheckpoint: typeof RequireFootprintForwardSavedCheckpoint;
+  verifyCurrentFootprintForwardSavedCheckpoint: typeof VerifyFootprintForwardSavedCheckpoint }>;
+interface FootprintInverseAllocation {
+  readonly prepared: CurrentFootprintForwardSavedCheckpoint; readonly options: CurrentPcbDiagnosticInstallationOptions; readonly token: object;
+  readonly checkpointModule: FootprintInverseCheckpointModule; readonly prior: ReturnType<typeof RequireFootprintForwardSavedCheckpoint>;
+  readonly requireCheckpoint: FootprintInverseCheckpointModule["requireOriginalCurrentFootprintForwardSavedCheckpoint"];
+  readonly verifyPrepared: FootprintInverseCheckpointModule["verifyCurrentFootprintForwardSavedCheckpoint"];
+  state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentFootprintInverseNativeOwner | null;
+  child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown;
+}
+const footprintInverseAllocations = new WeakMap<CurrentFootprintForwardSavedCheckpoint, FootprintInverseAllocation>();
+const footprintInverseTokens = new WeakMap<object, FootprintInverseAllocation>();
+const footprintInverseTerminations = new WeakMap<object, Readonly<{ token: object; binding: Binding }>>();
+const footprintInverseFactories = new WeakMap<object, Readonly<{ allocation: FootprintInverseAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
+function requireFootprintInversePreparation(allocation: FootprintInverseAllocation): ReturnType<typeof RequireFootprintForwardSavedCheckpoint> {
+  if (allocation.checkpointModule.requireOriginalCurrentFootprintForwardSavedCheckpoint !== allocation.requireCheckpoint ||
+    allocation.checkpointModule.verifyCurrentFootprintForwardSavedCheckpoint !== allocation.verifyPrepared || footprintInverseAllocations.get(allocation.prepared) !== allocation ||
+    footprintInverseTokens.get(allocation.token) !== allocation) { throw error("FOOTPRINT_INVERSE_ORIGINAL_PREPARATION"); }
+  const prior = allocation.requireCheckpoint(allocation.prepared), status = prior.owner.status();
+  if (prior.owner !== allocation.prior.owner || prior.writer !== allocation.prior.writer || prior.inventory !== allocation.prior.inventory || prior.snapshot !== allocation.prior.snapshot ||
+    prior.savedRead !== allocation.prior.savedRead || prior.paired !== allocation.prior.paired || prior.projection !== allocation.prior.projection ||
+    !status.released || !status.helperClosed || footprintForwardExecutionFactoryOptions.get(prior.writer) !== allocation.options) { throw error("FOOTPRINT_INVERSE_PRIOR_CHECKPOINT"); }
+  return prior;
+}
+
 const pcbViaSavedReadbackFactories = new WeakMap<object, Readonly<{ allocation: PcbViaSavedReadbackAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
 const pcbViaSavedReadbackTerminations = new WeakMap<object, Readonly<{ token: object; binding: Binding }>>();
 interface SavedReadbackCacheHeld {
@@ -909,7 +937,7 @@ export function requireOriginalCurrentPcbViaSaveWorkerOrigin(origin: CurrentPcbV
   if (original === undefined || original.owner !== owner || original.plan !== plan) { throw error("PCB_VIA_SAVE_WORKER_ORIGINAL"); }
   requireViaPlan(owner, plan); original.assertOriginal(); return original.bindings;
 }
-const selectedSqlFenceBootstraps = new WeakMap<object, Readonly<{ transport: object; runner: () => CurrentFootprintCopyMainBackendRunner | null; owner: CurrentPcbViaWriteOwner | CurrentSchematicDisplayWriteOwner | CurrentPcbViaSavedReadbackOwner; path: string; reprove: () => void }>>();
+const selectedSqlFenceBootstraps = new WeakMap<object, Readonly<{ transport: object; runner: () => CurrentFootprintCopyMainBackendRunner | null; owner: CurrentFootprintInverseNativeOwner | CurrentPcbViaWriteOwner | CurrentSchematicDisplayWriteOwner | CurrentPcbViaSavedReadbackOwner; path: string; reprove: () => void }>>();
 export function requireCurrentSelectedFileMainSqlFenceBootstrap(capability: CurrentSelectedFileMainSqlFenceBootstrap, transport: object): string {
   if (types.isProxy(capability) || types.isProxy(transport)) { throw error("SELECTED_SQL_BOOTSTRAP"); }
   const original = selectedSqlFenceBootstraps.get(capability);
@@ -991,7 +1019,6 @@ const structureFactories = new WeakMap<object, CurrentPcbDiagnosticInstallation>
 const structureFactoryFailures = new WeakMap<object, Readonly<{ options: CurrentPcbDiagnosticInstallationOptions; owner: CurrentProjectStructureNativeOwner }>>();
 const footprintForwardFactories = new WeakMap<object, CurrentPcbDiagnosticInstallation>();
 const footprintForwardExecutionFactories = new WeakMap<object, CurrentPcbDiagnosticInstallation>();
-const footprintForwardExecutionFactoryOptions = new WeakMap<object, CurrentPcbDiagnosticInstallationOptions>();
 type ForwardExecutionReleaseKind = "closed" | "unlaunched" | "no-process";
 const forwardExecutionReleasePreflightFailures = new WeakMap<object, Readonly<{
   owner: CurrentPcbRetainedOwnerCore; attempt: object; kind: ForwardExecutionReleaseKind; activity: object | null;
@@ -1564,7 +1591,7 @@ class CurrentPcbRetainedOwnerCore {
     else if (this.#purpose === "footprint-held-cache209") { this.#pipe = new CurrentFootprintHeldCacheDiagnosticPipe(this.#input, this.#output, (bytes): void => { this.#heldSavedEventBytes(bytes); }); }
     else if (forwardBirthPurpose(this.#purpose)) { this.#pipe = new CurrentFootprintCopyForwardDiscoveryPipe(this.#input, this.#output, (bytes): void => { this.#forwardRendererEvent(bytes); }); }
     else if (saved !== null) { this.#pipe = new CurrentFootprintCopyForwardSavedDiscoveryPipe(this.#input, this.#output, (bytes): void => { this.#forwardRendererEvent(bytes); }); }
-    else if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE || this.#purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE) { this.#pipe = new CurrentFootprintCombinedDiscoveryPipe(this.#input, this.#output); }
+    else if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE || this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE || this.#purpose === CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE) { this.#pipe = new CurrentFootprintCombinedDiscoveryPipe(this.#input, this.#output); }
     else if (this.#startupPurpose) { this.#pipe = new CurrentPcbWorkerStartupDiscoveryPipe(this.#input, this.#output); }
     else { this.#pipe = this.#stringPurpose ? new CurrentPcbStringPrecreatePipe(this.#input, this.#output) : new CurrentPcbDiagnosticPipe(this.#input, this.#output); }
     if (saved !== null && this.#forwardLedger !== null && this.#forwardLedgerMethods !== null) {
@@ -6568,6 +6595,30 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#binding !== original) { throw error("PCB_VIA_ABORT_OWNER_CHANGED"); }
   }
 
+  public originalFootprintInverseTermination(): object {
+    assertOriginalCurrentFootprintInverseNativeOwner(this);
+    const binding = this.#binding, observed = this.#terminationObservation;
+    if (binding === null || !this.#terminationObserved || observed?.originalRootExited !== true || observed.originalJobEmpty !== true) { throw error("FOOTPRINT_INVERSE_ORIGINAL_TERMINATION"); }
+    const prior = footprintInverseTerminations.get(this);
+    if (prior !== undefined) { if (prior.binding !== binding) { throw error("FOOTPRINT_INVERSE_ORIGINAL_TERMINATION"); } return prior.token; }
+    const token = Object.freeze({ profile: "private.footprint-inverse-termination.v1", executionAuthorized: false });
+    footprintInverseTerminations.set(this, Object.freeze({ token, binding })); return token;
+  }
+  public requireOriginalFootprintInverseTermination(token: object): void {
+    if (this.originalFootprintInverseTermination() !== token) { throw error("FOOTPRINT_INVERSE_ORIGINAL_TERMINATION"); }
+  }
+  public async abortFootprintInverse(confirmOriginalInverseJob: true): Promise<void> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); this.#available(); const original = this.#binding;
+    // oxlint-disable-next-line typescript/no-unnecessary-boolean-literal-compare -- Runtime confirmation is checked before consuming the original Job-only control.
+    if (confirmOriginalInverseJob !== true || original === null || this.#mainTerminateAttempted || this.#terminationObserved || this.#releaseConsumed) { throw error("FOOTPRINT_INVERSE_ABORT_CONSUMED"); }
+    this.#mainTerminateAttempted = true; this.#input.emit("error", error("FOOTPRINT_INVERSE_ORIGINAL_ABORT"));
+    await this.#nativeTail; await this.#verify(); this.#available();
+    if (this.#binding !== original || this.#terminationObserved || this.#releaseConsumed) { throw error("FOOTPRINT_INVERSE_ABORT_OWNER_CHANGED"); }
+    const reply = await this.#request({ action: "footprint-inverse-abort" });
+    if (!exact(reply, ["terminationDispatched"]) || reply["terminationDispatched"] !== true) { throw error("FOOTPRINT_INVERSE_ABORT_REPLY"); }
+    await this.#verify(); this.#available(); if (this.#binding !== original) { throw error("FOOTPRINT_INVERSE_ABORT_OWNER_CHANGED"); }
+  }
+
   public async abortSchematicDisplayWrite(): Promise<void> {
     // oxlint-disable-next-line eslint/no-use-before-define -- The fixed facade exists before an original native cleanup can be invoked.
     if (!(this instanceof CurrentSchematicDisplayWriteOwner)) { throw error("SCHEMATIC_DISPLAY_ABORT_PURPOSE"); }
@@ -6740,6 +6791,20 @@ class CurrentPcbRetainedOwnerCore {
       } }));
     }
     let selectedBootstrap: CurrentSelectedFileMainSqlFenceBootstrap | undefined;
+    if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE) {
+      // oxlint-disable-next-line eslint/no-use-before-define -- The original typed factory registers this new facade before main observation.
+      if (!(this instanceof CurrentFootprintInverseNativeOwner)) { throw error("FOOTPRINT_INVERSE_ORIGINAL_FACTORY"); }
+      assertOriginalCurrentFootprintInverseNativeOwner(this); const allocation = footprintInverseFactories.get(this)?.allocation, original = this.#requireFootprintMain(true);
+      if (allocation === undefined) { throw error("FOOTPRINT_INVERSE_ORIGINAL_CHECKPOINT"); }
+      const prior = requireFootprintInversePreparation(allocation), target = originalCurrentFootprintCopyNativeTarget(prior.owner);
+      selectedBootstrap = Object.freeze({ profile: "private.selected-file-main-sql-fence-bootstrap.v1", executionAuthorized: false });
+      selectedSqlFenceBootstraps.set(selectedBootstrap, Object.freeze({ transport, runner: () => runner, owner: this, path: target.target.rawWindowsPath,
+        reprove: (): void => {
+          assertOriginalCurrentFootprintInverseNativeOwner(this); requireFootprintInversePreparation(allocation);
+          if (this.#requireFootprintMain(true) !== original || this.#mainRunner !== runner) { throw error("FOOTPRINT_INVERSE_SQL_BOOTSTRAP_OWNER_CHANGED"); }
+        } }));
+    }
+
     if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) {
       // oxlint-disable-next-line eslint/no-use-before-define -- Native factory registers the actual fixed facade before main observation.
       if (!(this instanceof CurrentPcbViaWriteOwner)) { throw error("PCB_VIA_ORIGINAL_FACTORY"); }
@@ -7917,6 +7982,23 @@ export class CurrentFootprintForwardExecutionNativeOwner extends CurrentPcbRetai
 }
 const forwardExecutionOwnerDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintForwardExecutionNativeOwner.prototype);
 
+/** Distinct fresh inverse birth. Initial discovery/readonly main fence only;
+ * no old purpose upgrade, delete, clock or producer authority is installed. */
+export class CurrentFootprintInverseNativeOwner extends CurrentPcbRetainedOwnerCore {
+  public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>, actorClockSource: CurrentPcb209ActorClockSourceQualification,
+    token: object, readyChallenge: string, installation: CurrentPcbDiagnosticInstallation, verifyInstallation: () => Promise<void>, verifyStartupFacade: () => Promise<void>) {
+    const allocation = footprintInverseTokens.get(token);
+    if (allocation === undefined || allocation.owner !== null || allocation.child?.original !== child || allocation.state !== "unresolved") { throw error("FOOTPRINT_INVERSE_CONSTRUCTOR_ORIGINAL"); }
+    requireFootprintInversePreparation(allocation);
+    super(child, verify, installation, verifyInstallation, CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE, verifyStartupFacade, actorClockSource, null, null, null, readyChallenge);
+  }
+}
+const footprintInverseOwnerDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintInverseNativeOwner.prototype);
+/* oxlint-disable typescript/unbound-method -- Captured methods are invoked only with the same registry-checked original private-field receiver. */
+const footprintInverseOwnershipMethods = Object.freeze({ termination: CurrentPcbRetainedOwnerCore.prototype.originalFootprintInverseTermination,
+  requireTermination: CurrentPcbRetainedOwnerCore.prototype.requireOriginalFootprintInverseTermination });
+/* oxlint-enable typescript/unbound-method */
+
 /** Distinct read-only fresh generation. It cannot dispatch native create or
  * transaction clocks and cannot inherit a writer's process/Job handles. */
 export class CurrentFootprintCopyHeldSavedNativeOwner extends CurrentPcbRetainedOwnerCore {
@@ -8228,7 +8310,7 @@ export function currentFootprintForwardExecutionBirthAllocationOutcome(options: 
 
 /** Retain the actual child before owner construction can throw. This is not an
  * adopted owner: no request has entered stdin, and close is observed directly. */
-function retainForwardExecutionBirthChild(allocation: ForwardExecutionBirthAllocation | ForwardExecutionHeldSavedAllocation | PcbViaWriteAllocation | PcbViaSavedReadbackAllocation, child: ChildProcessWithoutNullStreams): void {
+function retainForwardExecutionBirthChild(allocation: ForwardExecutionBirthAllocation | ForwardExecutionHeldSavedAllocation | FootprintInverseAllocation | PcbViaWriteAllocation | PcbViaSavedReadbackAllocation, child: ChildProcessWithoutNullStreams): void {
   if (allocation.state !== "unresolved" || allocation.owner !== null || allocation.child !== null) { throw error("FORWARD_EXECUTION_CHILD_CUSTODY"); }
   const closed = Promise.withResolvers<true>();
   const observation = { closed: false, code: null as number | null, signal: null as NodeJS.Signals | null, error: null as Error | null };
@@ -8242,7 +8324,7 @@ function retainForwardExecutionBirthChild(allocation: ForwardExecutionBirthAlloc
 
 /** An ownerless constructor failure may end only its original never-written
  * stdin once. Deadline expiry retains that child and its late close observer. */
-async function closeForwardExecutionOwnerlessBirth(allocation: ForwardExecutionBirthAllocation | ForwardExecutionHeldSavedAllocation | PcbViaWriteAllocation | PcbViaSavedReadbackAllocation): Promise<void> {
+async function closeForwardExecutionOwnerlessBirth(allocation: ForwardExecutionBirthAllocation | ForwardExecutionHeldSavedAllocation | FootprintInverseAllocation | PcbViaWriteAllocation | PcbViaSavedReadbackAllocation): Promise<void> {
   const held = allocation.child;
   if (held === null || allocation.owner !== null || allocation.eofAttempted) { throw error("FORWARD_EXECUTION_OWNERLESS_EOF_REFUSED"); }
   allocation.eofAttempted = true;
@@ -8668,6 +8750,65 @@ export async function startCurrentFootprintCombinedNativeOwner(options: CurrentP
     throw failure;
   }
 }
+export function assertOriginalCurrentFootprintInverseNativeOwner(owner: CurrentFootprintInverseNativeOwner): void {
+  if (owner === null || typeof owner !== "object" || types.isProxy(owner) || Object.getPrototypeOf(owner) !== CurrentFootprintInverseNativeOwner.prototype ||
+    Reflect.ownKeys(owner).length > 0 || !originalFootprintDescriptors(CurrentFootprintInverseNativeOwner.prototype, footprintInverseOwnerDescriptors) ||
+    !originalFootprintDescriptors(CurrentPcbRetainedOwnerCore.prototype, footprintCoreDescriptors)) { throw error("FOOTPRINT_INVERSE_ORIGINAL_OWNER"); }
+  const original = footprintInverseFactories.get(owner);
+  if (original === undefined || original.allocation.owner !== owner) { throw error("FOOTPRINT_INVERSE_ORIGINAL_FACTORY"); }
+  requireFootprintInversePreparation(original.allocation);
+}
+export function originalCurrentFootprintInverseTarget(owner: CurrentFootprintInverseNativeOwner): CurrentFootprintForwardSavedCheckpoint {
+  assertOriginalCurrentFootprintInverseNativeOwner(owner); const original = footprintInverseFactories.get(owner);
+  if (original === undefined) { throw error("FOOTPRINT_INVERSE_ORIGINAL_FACTORY"); } return original.allocation.prepared;
+}
+export function originalCurrentFootprintInverseTermination(owner: CurrentFootprintInverseNativeOwner): object {
+  assertOriginalCurrentFootprintInverseNativeOwner(owner); return footprintInverseOwnershipMethods.termination.call(owner);
+}
+export function assertOriginalCurrentFootprintInverseTermination(owner: CurrentFootprintInverseNativeOwner, token: object): void {
+  assertOriginalCurrentFootprintInverseNativeOwner(owner); footprintInverseOwnershipMethods.requireTermination.call(owner, token);
+}
+/** No caller options/path or historical JSON can select this new original
+ * allocation. The prior runtime remains closed; only its data token is used. */
+export async function startCurrentFootprintInverseNativeOwner(prepared: CurrentFootprintForwardSavedCheckpoint): Promise<CurrentFootprintInverseNativeOwner> {
+  const checkpointModule = await import("./current-footprint-copy-held-saved-generation.ts");
+  const requireCheckpoint = checkpointModule.requireOriginalCurrentFootprintForwardSavedCheckpoint, verifyPrepared = checkpointModule.verifyCurrentFootprintForwardSavedCheckpoint;
+  const prior = requireCheckpoint(prepared);
+  const options = footprintForwardExecutionFactoryOptions.get(prior.writer);
+  if (options === undefined || footprintInverseAllocations.has(prepared)) { throw error("FOOTPRINT_INVERSE_ALLOCATION_CONSUMED_OR_SOURCE"); }
+  const token = Object.freeze({});
+  const allocation: FootprintInverseAllocation = { prepared, options, token, checkpointModule, requireCheckpoint, verifyPrepared, prior,
+    state: "pending", owner: null, child: null, eofAttempted: false, cleanupFailure: null };
+  footprintInverseAllocations.set(prepared, allocation); footprintInverseTokens.set(token, allocation);
+  try {
+    requireFootprintInversePreparation(allocation); await verifyPrepared(prepared); requireFootprintInversePreparation(allocation);
+    const owner = await startFixedOwner(options, CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE, "209-footprint-inverse", undefined, null, null, null, null, false, null, null, null, null, allocation);
+    if (!(owner instanceof CurrentFootprintInverseNativeOwner) || allocation.owner !== owner) { throw error("FOOTPRINT_INVERSE_FACTORY"); }
+    await owner.waitFootprintCombinedReady(); assertOriginalCurrentFootprintInverseNativeOwner(owner);
+    await verifyPrepared(prepared); assertOriginalCurrentFootprintInverseNativeOwner(owner); return owner;
+  } catch (caughtError) {
+    if (allocation.state === "pending") { allocation.state = "no-resource"; }
+    if (allocation.owner !== null) { try { await allocation.owner.closeFootprintCombinedBeforeLaunch(); } catch (cleanupError) { allocation.cleanupFailure = cleanupError; } }
+    else if (allocation.child !== null) { try { await closeForwardExecutionOwnerlessBirth(allocation); } catch (cleanupError) { allocation.cleanupFailure = cleanupError; } }
+    throw caughtError;
+  }
+}
+export function currentFootprintInverseAllocationOutcome(prepared: CurrentFootprintForwardSavedCheckpoint): Readonly<{
+  state: "not-attempted" | "pending" | "no-resource" | "unresolved"; owner: null;
+}> | Readonly<{ state: "retained"; owner: CurrentFootprintInverseNativeOwner }> | Readonly<{
+  state: "retained-before-owner" | "closed-before-owner"; owner: null; helperClosed: boolean; eofAttempted: boolean; helperExitCode: number | null; helperExitSignal: NodeJS.Signals | null;
+}> {
+  const allocation = footprintInverseAllocations.get(prepared);
+  if (allocation === undefined) { return Object.freeze({ state: "not-attempted", owner: null }); } requireFootprintInversePreparation(allocation);
+  if (allocation.owner !== null) { assertOriginalCurrentFootprintInverseNativeOwner(allocation.owner); return Object.freeze({ state: "retained", owner: allocation.owner }); }
+  if (allocation.child !== null) {
+    const observed = allocation.child.observation;
+    return Object.freeze({ state: observed.closed ? "closed-before-owner" : "retained-before-owner", owner: null, helperClosed: observed.closed,
+      eofAttempted: allocation.eofAttempted, helperExitCode: observed.code, helperExitSignal: observed.signal });
+  }
+  return Object.freeze({ state: allocation.state === "retained" ? "unresolved" : allocation.state, owner: null });
+}
+
 /** Actual read-only native allocation. Source/build installation must contain
  * the dedicated generated switch before this can enter the ready handshake. */
 export async function startCurrentProjectStructureNativeOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentProjectStructureNativeOwner> {
@@ -9009,9 +9150,12 @@ export function currentFootprintHeadAgeValidationAllocationOutcome(binding: Curr
  * Construct the matching fixed owner and retain it before listeners start;
  * Callers cannot substitute native arguments or upgrade an existing purpose. */
 async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, purpose: OwnerPurpose,
-  generation: "206" | "209-opening" | "209-visual" | "209-spatial" | "209-component-spatial" | "209-startup" | "209-held-cache" | "209-via-saved-readback" | "209-via-write" | "209-schematic-display" = "206", savedWriter?: CurrentFootprintCopyNativeOwner,
+  generation: "206" | "209-opening" | "209-visual" | "209-spatial" | "209-component-spatial" | "209-startup" | "209-held-cache" | "209-via-saved-readback" | "209-via-write" | "209-schematic-display" | "209-footprint-inverse" = "206", savedWriter?: CurrentFootprintCopyNativeOwner,
   forwardSavedHandoff: object | null = null, heldValidation: HeldCacheValidationAllocation | null = null, headAgeValidation: HeadAgeValidationAllocation | null = null,
-  forwardExecutionBirth: ForwardExecutionBirthAllocation | null = null, generatedFixtureBirth = false, viaWriteAllocation: PcbViaWriteAllocation | null = null, schematicDisplayAllocation: SchematicDisplayWriteAllocation | null = null, componentPrepared: GeneratedComponentFixtureOpenCheckpoint | null = null, savedReadbackAllocation: PcbViaSavedReadbackAllocation | null = null): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
+  forwardExecutionBirth: ForwardExecutionBirthAllocation | null = null, generatedFixtureBirth = false, viaWriteAllocation: PcbViaWriteAllocation | null = null, schematicDisplayAllocation: SchematicDisplayWriteAllocation | null = null, componentPrepared: GeneratedComponentFixtureOpenCheckpoint | null = null, savedReadbackAllocation: PcbViaSavedReadbackAllocation | null = null, footprintInverseAllocation: FootprintInverseAllocation | null = null): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
+  if ((footprintInverseAllocation !== null) !== (purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE) || footprintInverseAllocation !== null &&
+    (footprintInverseAllocation.options !== options || footprintInverseAllocation.state !== "pending")) { throw error("FOOTPRINT_INVERSE_ORIGINAL_ALLOCATION"); }
+  if (footprintInverseAllocation !== null) { requireFootprintInversePreparation(footprintInverseAllocation); }
   if ((savedReadbackAllocation !== null) !== (purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) || savedReadbackAllocation !== null &&
     (savedReadbackAllocation.options !== options || savedReadbackAllocation.state !== "pending")) { throw error("SAVED_READBACK_ORIGINAL_ALLOCATION"); }
   if (savedReadbackAllocation !== null) { requireSavedReadbackPreparation(savedReadbackAllocation); }
@@ -9032,9 +9176,9 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   if (forwardHeldSaved !== null && (purpose !== "worker-startup-footprint-held-saved209" || generation !== "209-startup" || savedWriter !== undefined || forwardHeldSaved.options !== options)) { throw error("FORWARD_HELD_SAVED_ALLOCATION"); }
   if (forwardSaved !== null && (purpose !== "worker-startup-footprint-saved209" || generation !== "209-startup" || savedWriter !== undefined)) { throw error("FORWARD_SAVED_PURPOSE"); }
   const startup209 = purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-held-saved209" || purpose === "worker-startup-footprint-main209" || purpose === "footprint-head-age209" || bornFootprintTransport(purpose)) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
-  if ((generation === "209-opening") !== (purpose === "diagnostic209") || (generation === "209-visual") !== (purpose === "visual209") ||
+  if ((generation === "209-footprint-inverse") !== (purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE) || (generation === "209-opening") !== (purpose === "diagnostic209") || (generation === "209-visual") !== (purpose === "visual209") ||
       (generation === "209-component-spatial") !== (purpose === "pcb-component-spatial209") || (generation === "209-spatial") !== (purpose === "pcb-spatial209") || (generation === "209-via-saved-readback") !== (purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) || (generation === "209-via-write") !== (purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) || (generation === "209-schematic-display") !== (purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) ||
-      (generation === "209-startup") !== startup209 || (generation === "209-held-cache") !== (purpose === "footprint-held-cache209") ||
+      (generation === "209-startup") !== (startup209 && purpose !== CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE) || (generation === "209-held-cache") !== (purpose === "footprint-held-cache209") ||
       (heldValidation !== null) !== (purpose === "footprint-held-cache209")) { throw error("INSTALLATION_PURPOSE"); }
   if (heldValidation !== null) { requireHeldCacheValidationBinding(heldValidation); }
   if ((headAgeValidation !== null) !== (purpose === "footprint-head-age209")) { throw error("HEAD_AGE_INSTALLATION_PURPOSE"); }
@@ -9107,6 +9251,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === "diagnostic209") { purposeSwitch = generatedFixtureBirth ? " -GeneratedFixture209" : " -Layers209"; }
   else if (purpose === "pcb-component-spatial209") { purposeSwitch = " -ComponentSpatial209"; }
   else if (purpose === "pcb-spatial209") { purposeSwitch = generatedFixtureBirth ? " -GeneratedFixtureSpatial209" : " -Spatial209"; }
+  else if (purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE) { purposeSwitch = ` ${CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE.nativeSwitch} -InverseReadyChallenge '${String(readyChallenge)}'`; }
   else if (purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { purposeSwitch = ` ${CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE.nativeSwitch}`; }
   else if (purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) { purposeSwitch = ` ${CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.nativeSwitch}`; }
   else if (purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { purposeSwitch = ` ${CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE.nativeSwitch}`; }
@@ -9135,6 +9280,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   }
   if (heldValidation !== null) { requireHeldCacheValidationBinding(heldValidation); heldValidation.status = "unresolved"; }
   if (headAgeValidation !== null) { requireHeadAgeValidationBinding(headAgeValidation); headAgeValidation.status = "unresolved"; }
+  if (footprintInverseAllocation !== null) { requireFootprintInversePreparation(footprintInverseAllocation); footprintInverseAllocation.state = "unresolved"; retainedOwners.add(footprintInverseAllocation); }
   if (forwardExecutionBirth !== null) { forwardExecutionBirth.state = "unresolved"; retainedOwners.add(forwardExecutionBirth); }
   if (savedReadbackAllocation !== null) { requireSavedReadbackPreparation(savedReadbackAllocation); savedReadbackAllocation.state = "unresolved"; retainedOwners.add(savedReadbackAllocation); }
   if (viaWriteAllocation !== null) { viaWriteAllocation.state = "unresolved"; retainedOwners.add(viaWriteAllocation); }
@@ -9142,13 +9288,18 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   const child = spawn(installation.paths.powershellExecutable,
     ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded],
     { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+  if (footprintInverseAllocation !== null) { retainForwardExecutionBirthChild(footprintInverseAllocation, child); }
   if (forwardExecutionBirth !== null) { retainForwardExecutionBirthChild(forwardExecutionBirth, child); }
   if (forwardHeldSaved !== null) { retainForwardExecutionBirthChild(forwardHeldSaved, child); }
   if (savedReadbackAllocation !== null) { retainForwardExecutionBirthChild(savedReadbackAllocation, child); }
   if (viaWriteAllocation !== null) { retainForwardExecutionBirthChild(viaWriteAllocation, child); }
   if (schematicDisplayAllocation !== null) { retainForwardExecutionBirthChild(schematicDisplayAllocation, child); }
   let owner: CurrentPcbRetainedOwnerCore;
-  if (purpose === "footprint-head-age209") {
+  if (purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE) {
+    if (actorClockSource === null || readyChallenge === null || footprintInverseAllocation === null) { throw error("FOOTPRINT_INVERSE_FACTORY_PROFILE"); }
+    owner = new CurrentFootprintInverseNativeOwner(child, verify, actorClockSource, footprintInverseAllocation.token, readyChallenge, installation, verifyInstallation, verifyStartupFacade);
+    footprintInverseAllocation.owner = owner; footprintInverseAllocation.state = "retained"; footprintInverseFactories.set(owner, Object.freeze({ allocation: footprintInverseAllocation, installation }));
+  } else if (purpose === "footprint-head-age209") {
     if (headAgeValidation === null || actorClockSource === null || headAgeValidation.head === null) { throw error("HEAD_AGE_FACTORY_PROFILE"); }
     const diagnostic = new CurrentFootprintHeadAgeValidationOwner(child, verify, actorClockSource, installation, verifyInstallation, verifyStartupFacade);
     headAgeValidationFactories.set(diagnostic, Object.freeze({ allocation: headAgeValidation, options: sealedOptions, installation }));

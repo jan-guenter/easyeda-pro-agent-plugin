@@ -1,5 +1,6 @@
 import { applyCurrentGeneratedInitialSyncNativeFragment } from "../server/src/current-generated-initial-sync-native-fragment.ts";
 import { applyCurrentGeneratedInitialCacheNativeFragment } from "../server/src/current-generated-initial-cache-native-fragment.ts";
+import { applyCurrentFootprintInverseNativeFragment, prepareCurrentFootprintInverseNativeSwitch } from "../server/src/current-footprint-inverse-native-fragment.ts";
 import { applyCurrentProjectSaveProducerNativeFragment } from "../server/src/current-project-save-producer-native-fragment.ts";
 import { applyCurrentProjectSaveProducerGuardNativeFragment } from "../server/src/current-project-save-producer-guard-native-fragment.ts";
 import { applyCurrentPcbViaSavedReadbackNativeFragment, prepareCurrentPcbViaSavedReadbackNativeSwitch } from "../server/src/current-pcb-via-saved-readback-native-fragment.ts";
@@ -107,7 +108,7 @@ async function main(): Promise<void> {
 }
 /** Pure complete composition, used by repeated-generation regressions without writing a helper. */
 export function generateWorkerStartupProtocol(source: string): string {
-  let next = prepareCurrentPcbViaSavedReadbackNativeSwitch(prepareCurrentPcbComponentSpatialNativeSwitch(source));
+  let next = prepareCurrentPcbViaSavedReadbackNativeSwitch(prepareCurrentPcbComponentSpatialNativeSwitch(prepareCurrentFootprintInverseNativeSwitch(source)));
   for (const [name, generated] of [["WORKER STARTUP", currentPcbWorkerStartupNativeSource()],
     ["WORKER STARTUP EMPTY209", currentPcb209EmptyNativeSource()],
     ["WORKER STARTUP RATLINE209", ratlineSource()],
@@ -134,6 +135,7 @@ export function generateWorkerStartupProtocol(source: string): string {
   next = applyCurrentGeneratedInitialSyncNativeFragment(next);
   next = applyCurrentPcbComponentSpatialNativeFragment(next);
   next = applyCurrentPcbViaSavedReadbackNativeFragment(next);
+  next = applyCurrentFootprintInverseNativeFragment(next);
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
   assertCurrentFootprintCopyForwardNativeRequestIds(next);
   if (Buffer.byteLength(next) > CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES) {

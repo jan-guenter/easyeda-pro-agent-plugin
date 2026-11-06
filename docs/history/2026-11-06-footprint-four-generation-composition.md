@@ -319,3 +319,49 @@ control record or user design was involved. Full types and strict changed-file
 lint pass. This removes the hardcoded-version data blocker; the original
 inverse native birth/clock/main route, final native absence reader and complete
 producer/head admission remain required before any writer is mounted.
+
+## Separate original inverse birth and readonly main construction
+
+`startCurrentFootprintInverseNativeOwner` now allocates a new original inverse
+helper only from the exact issued forward saved checkpoint. It derives options
+from the original forward factory registry; no caller path, options, JSON owner
+or previous native handle can choose this allocation. A literal lazy checkpoint
+module join retains its exact qualifier/verifier identities and original parent,
+saved owner, complete inventory, read packet, projection and closed snapshot.
+Fresh bytes are verified before helper allocation and after its readiness reply.
+The allocation is consumed before verification awaits. A failed qualifier cannot
+retry, and a postspawn failure retains its actual child through zero-input EOF.
+No-process closure is not accepted as executed inverse termination.
+
+The native `FootprintInverse209` constructor has its own purpose and readiness
+challenge. It selects original main construction before SQLite import, issues
+the same finite readonly SQL fence from this new original main runner, and keeps
+that transport until observed original Job/root termination. Its only shared
+source flag is the main-bootstrap flag. It carries no forward, Combined, PCB,
+schematic, Layers or spatial purpose. Old main request/completion, create,
+delete and clock action roots remain refused. The original-Job abort accepts no
+PID/path, is consumed once before awaits and does not claim termination, Save or
+discard. Separate token accessors require both actual root exit and empty Job;
+unlaunched release cannot issue that token.
+
+This stage reserves exactly 64 construction plus 837 readonly-fence normal main
+requests and eight cleanup requests (909 total), 16 discovery requests and
+50,820 native control reproofs derived from the existing bounded polls and
+cleanup observations. These are this birth's limits, not a complete inverse
+writer reservation. Existing purposes and their ceilings remain unchanged.
+Single-clock/delete/producer invocation and whole-lifecycle admission stay
+false pending their original worker and completion joins.
+
+The source generator prepares the new switch before calculating existing
+purpose conflicts and applies its fragment last. An initial composition check
+caught interleaved request-limit and purpose-guard anchors; the maintained
+fragment now preserves existing adjacent snippets. Complete generation twice is
+byte-identical. Five focused factory/composition cases pass with actual private
+registries and inert Linux children, including preallocation refusal, module
+identity drift and postspawn byte refusal with original EOF closure. The first
+positive fixture needed an explicit synthetic installation-qualifier seam; no
+production qualifier was weakened. Full types and strict changed-file lint pass.
+The complete emitted C# helper compiles as C#5 under Linux .NET10 and its own pure
+inverse smoke passes (`/tmp/footprint-inverse-native-OHgbvR`). No Windows process,
+application call, native allocation, MCP request, generated helper, bundle or pin
+was changed. The generator source is wired; root owns final generation/pins.

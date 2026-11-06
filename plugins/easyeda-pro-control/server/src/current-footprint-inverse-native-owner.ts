@@ -1,0 +1,5 @@
+/** Third original footprint generation. Only an original completed forward
+ * saved checkpoint can select its source; runtime ownership is allocated anew. */
+export { CurrentFootprintInverseNativeOwner, startCurrentFootprintInverseNativeOwner, assertOriginalCurrentFootprintInverseNativeOwner,
+  currentFootprintInverseAllocationOutcome, originalCurrentFootprintInverseTarget, originalCurrentFootprintInverseTermination,
+  assertOriginalCurrentFootprintInverseTermination } from "./current-pcb-diagnostic-owner.ts";
