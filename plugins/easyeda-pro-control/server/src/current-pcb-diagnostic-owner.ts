@@ -760,6 +760,7 @@ type FootprintInverseCheckpointModule = Readonly<{ requireOriginalCurrentFootpri
   verifyCurrentFootprintForwardSavedCheckpoint: typeof VerifyFootprintForwardSavedCheckpoint }>;
 interface FootprintInverseAllocation {
   readonly prepared: CurrentFootprintForwardSavedCheckpoint; readonly options: CurrentPcbDiagnosticInstallationOptions; readonly token: object;
+  source: CurrentFootprintCopyNativeTarget | null;
   readonly checkpointModule: FootprintInverseCheckpointModule; readonly prior: ReturnType<typeof RequireFootprintForwardSavedCheckpoint>;
   readonly requireCheckpoint: FootprintInverseCheckpointModule["requireOriginalCurrentFootprintForwardSavedCheckpoint"];
   readonly verifyPrepared: FootprintInverseCheckpointModule["verifyCurrentFootprintForwardSavedCheckpoint"];
@@ -8762,6 +8763,23 @@ export function originalCurrentFootprintInverseTarget(owner: CurrentFootprintInv
   assertOriginalCurrentFootprintInverseNativeOwner(owner); const original = footprintInverseFactories.get(owner);
   if (original === undefined) { throw error("FOOTPRINT_INVERSE_ORIGINAL_FACTORY"); } return original.allocation.prepared;
 }
+/** Bind only the copied footprint fixed by the original complete saved SQL
+ * projection. The earlier live owner and its native handles remain closed. */
+export function originalCurrentFootprintInverseNativeSource(owner: CurrentFootprintInverseNativeOwner): CurrentFootprintCopyNativeTarget {
+  assertOriginalCurrentFootprintInverseNativeOwner(owner); const allocation = footprintInverseFactories.get(owner)?.allocation;
+  if (allocation === undefined) { throw error("FOOTPRINT_INVERSE_ORIGINAL_FACTORY"); }
+  const prior = requireFootprintInversePreparation(allocation);
+  const origin = originalCurrentFootprintCopyNativeTarget(prior.owner);
+  const checkpoint = prior.snapshot.checkpoint, selected = currentFootprintCopyV2SavedTarget(prior.projection);
+  if (selected.projectUuid !== origin.target.projectUuid || selected.branchUuid !== origin.target.branchUuid || checkpoint.source !== origin.source ||
+    prior.snapshot.inventory !== prior.inventory || prior.inventory.checkpointSha256 !== checkpoint.checkpointSha256) { throw error("FOOTPRINT_INVERSE_ORIGINAL_SOURCE"); }
+  const candidate = Object.freeze({ operationId: origin.operationId, source: origin.source, runtime: origin.runtime, checkpoint, before: prior.inventory,
+    target: Object.freeze({ ...origin.target, documentUuid: selected.footprintUuid, expectedSourceSha256: checkpoint.sourceSha256 }) });
+  allocation.source ??= candidate;
+  if (allocation.source.before !== prior.inventory || allocation.source.checkpoint !== checkpoint || allocation.source.runtime !== origin.runtime ||
+    canonicalJson({ ...allocation.source, before: undefined }) !== canonicalJson({ ...candidate, before: undefined })) { throw error("FOOTPRINT_INVERSE_SOURCE_CHANGED"); }
+  return allocation.source;
+}
 export function originalCurrentFootprintInverseTermination(owner: CurrentFootprintInverseNativeOwner): object {
   assertOriginalCurrentFootprintInverseNativeOwner(owner); return footprintInverseOwnershipMethods.termination.call(owner);
 }
@@ -8778,7 +8796,7 @@ export async function startCurrentFootprintInverseNativeOwner(prepared: CurrentF
   if (options === undefined || footprintInverseAllocations.has(prepared)) { throw error("FOOTPRINT_INVERSE_ALLOCATION_CONSUMED_OR_SOURCE"); }
   const token = Object.freeze({});
   const allocation: FootprintInverseAllocation = { prepared, options, token, checkpointModule, requireCheckpoint, verifyPrepared, prior,
-    state: "pending", owner: null, child: null, eofAttempted: false, cleanupFailure: null };
+    state: "pending", owner: null, child: null, eofAttempted: false, cleanupFailure: null, source: null };
   footprintInverseAllocations.set(prepared, allocation); footprintInverseTokens.set(token, allocation);
   try {
     requireFootprintInversePreparation(allocation); await verifyPrepared(prepared); requireFootprintInversePreparation(allocation);

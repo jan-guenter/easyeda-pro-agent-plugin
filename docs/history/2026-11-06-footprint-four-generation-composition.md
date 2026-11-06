@@ -365,3 +365,32 @@ The complete emitted C# helper compiles as C#5 under Linux .NET10 and its own pu
 inverse smoke passes (`/tmp/footprint-inverse-native-OHgbvR`). No Windows process,
 application call, native allocation, MCP request, generated helper, bundle or pin
 was changed. The generator source is wired; root owns final generation/pins.
+
+## Inverse selected source and complete closed capture
+
+`originalCurrentFootprintInverseNativeSource` now derives the selected UUID from
+the original copy-v2 saved SQL projection. The earlier source document UUID
+cannot silently select the inverse. Project/branch, file path, saved checkpoint,
+completed inventory hash and original source/runtime references must agree. The
+new source captures the copied footprint and saved checkpoint once in the
+inverse allocation; later calls reprove the same original data references and
+complete sealed metadata. This transfers qualified data only.
+
+Separate `captureCurrentFootprintInverseClosedSnapshot` and
+`requireCurrentFootprintInverseClosedSnapshot` entry points join that original
+inverse factory/source with its actual original root-exit/empty-Job token. They
+share the existing descriptor/checkpoint/complete-SQL implementation; old copy
+and forward APIs keep their owner-family checks. Capture remains once-only,
+retains the actual completed reader, rechecks source inode/identity, complete
+receipt and raw bytes across awaits, and issues no snapshot after owner loss or
+an unfinished reader. It grants no writer, saved absence or new launch.
+
+The existing focused capture tests now exercise all three separate owner
+families, copied/foreign termination and inventory refusal, consumed attempts,
+owner loss and unfinished-reader failure. These use explicit synthetic issuers
+and no real file/control record. They and the five inverse factory/composition
+cases pass with full types and strict changed-file lint. No native codebook,
+helper, pin, Windows process or application resource changed in this increment.
+The inverse original worker/opening, single-clock/main completion and producer
+frontier remain the next mutation prerequisites; the closed-data path does not
+stand in for them.
