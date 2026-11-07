@@ -44,3 +44,10 @@ selection was relaxed to admit a new runtime capability.
 This is build and offline evidence. The new helpers have not been installed,
 selected by the foreground manager or connected to EasyEDA. Component positive
 validation and all remaining write/Save/reopen proofs remain open.
+
+The frozen package's subsequent validator refused its stale exact build-command
+contract, which omitted the separate schematic and inverse helper checks. The
+contract now requires both check/update commands and their packaged helper,
+review, generator and identity files. The earlier failure remains retained.
+The discovery description also now reports the actual four declaration
+snapshots and855-method union. This changes no execution claim.

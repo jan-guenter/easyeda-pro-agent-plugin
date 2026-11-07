@@ -239,6 +239,14 @@ const required = [
   "server/dist/upstream-supervisor.mjs",
   "server/dist/control-session-manager.mjs",
   "scripts/build-control-manager.ts",
+  "scripts/schematic-edit-native.ps1",
+  "scripts/schematic-edit-native.cs",
+  "scripts/generate-schematic-edit-native.ts",
+  "server/src/current-schematic-edit-native-identity.ts",
+  "scripts/footprint-inverse-native.ps1",
+  "scripts/footprint-inverse-native.cs",
+  "scripts/generate-footprint-inverse-native.ts",
+  "server/src/current-footprint-inverse-native-identity.ts",
   "scripts/control-session-manager-main.ts",
   "server/native/easyeda-fd-sanitizer.S",
   "server/native/easyeda-fd-sanitizer.ld",
@@ -516,7 +524,11 @@ check(
     packageScripts["sanitizer:check"] ===
       "node scripts/build-descriptor-sanitizer.ts --check" &&
     packageScripts["build"] ===
-      "npm run native:helper:check && npm run native:forward:check && npm run native:forward:source:check && npm run native:forward:cold:check && npm run native:forward:cold:source:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && npm run pcb209:spatial:check && node scripts/build-server.ts && node scripts/build-control-manager.ts" &&
+      "npm run native:helper:check && npm run native:forward:check && npm run native:forward:source:check && npm run native:forward:cold:check && npm run native:forward:cold:source:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run schematic:native:check && npm run inverse:native:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && npm run pcb209:spatial:check && node scripts/build-server.ts && node scripts/build-control-manager.ts" &&
+    packageScripts["schematic:native:check"] === "node scripts/generate-schematic-edit-native.ts --check" &&
+    packageScripts["schematic:native:update"] === "node scripts/generate-schematic-edit-native.ts --write" &&
+    packageScripts["inverse:native:check"] === "node scripts/generate-footprint-inverse-native.ts --check" &&
+    packageScripts["inverse:native:update"] === "node scripts/generate-footprint-inverse-native.ts --write" &&
     packageScripts["pcb209:spatial:check"] === "node scripts/generate-pcb209-spatial-protocol.ts --check" &&
     packageScripts["pcb209:spatial:update"] === "node scripts/generate-pcb209-spatial-protocol.ts --write" &&
     packageScripts["pcb:models:check"] === "node scripts/generate-pcb-model-programs.ts --check" &&
