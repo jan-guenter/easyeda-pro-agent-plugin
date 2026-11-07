@@ -18,7 +18,7 @@ void test("actual uninvoked lookup and formatter metadata preserves installed so
     for (const role of ROLES) {
       const row = SOURCE[role], text = full.slice(row.descriptionStart, row.end);
       // Whitespace derives from the installed asset, never the expected pin.
-      const padding = full.slice(0, row.descriptionStart).replaceAll(/[^\n]/gu, " ");
+      const padding = full.slice(0, row.descriptionStart).replaceAll(/[^\n]/gu, value => " ".repeat(value.length));
       const realm = createContext({}); let fn: unknown;
       if (row.kind === "method") {
         const constructor: unknown = runInContext(`${padding.slice(0, -7)}(class{${text}})`, realm);

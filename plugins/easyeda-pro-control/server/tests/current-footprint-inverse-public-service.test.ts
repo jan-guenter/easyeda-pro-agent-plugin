@@ -72,7 +72,7 @@ void test("actual uninvoked service and UI handler metadata matches exact source
       const text = full.slice("descriptionStart" in row ? row.descriptionStart : row.start, row.end);
       // Preserve the installed source positions independently of the expected
       // Location pins. Padding derived from a pin would reproduce a wrong pin.
-      let padding = full.slice(0, "descriptionStart" in row ? row.descriptionStart : row.start).replaceAll(/[^\n]/gu, " ");
+      let padding = full.slice(0, "descriptionStart" in row ? row.descriptionStart : row.start).replaceAll(/[^\n]/gu, value => " ".repeat(value.length));
       if (row.strict) { padding = `"use strict";${padding.slice(13)}`; }
       const context = createContext({}); let fn: unknown;
       if (row.kind === "method") {

@@ -802,3 +802,5 @@ layout. The connected ledger retains its generation and case anchors.
 - 2026-11-07: [Normal history completion callees](2026-11-07-schematic-normal-history-callees.md), thirty uninvoked function checks for the normal record path; actual event rosters and continuation remain separate.
 
 - 2026-11-07: [Inverse service and lookup metadata](2026-11-07-inverse-service-lookup-metadata.md), actual source-position corrections, async function metadata and the separately observed original process cleanup.
+
+- 2026-11-07: [Schematic consistency and Text echo callees](2026-11-07-schematic-consistency-echo-callees.md), exact local callback path and twenty-four uninvoked source function checks; actual pause and continuation remain original-owner obligations.
