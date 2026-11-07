@@ -191,6 +191,14 @@ export class ClosedGeneratedFixtureDataCoordinator {
     need(qualification.schema === "easyeda-pro-control.qualified-generated-fixture-target.v1", "PCB_DATA_REQUIRED");
     const source = stageManagedFixtureOpeningSource({ qualification, archive: locator.archive }); this.#staged = true; return source;
   }
+  /** Via preparation starts with an ordinary generated-PCB qualification.
+   * Reject Pad and schematic families before spending their source token.
+   * This transfers data only after the same completed original resource proof. */
+  public stageViaSourceForFreshOpening(operationId: string): ReturnType<typeof stageManagedFixtureOpeningSource> {
+    const { qualification, locator } = this.#staging(operationId);
+    need(qualification.schema === "easyeda-pro-control.qualified-generated-fixture-target.v1", "VIA_PCB_DATA_REQUIRED");
+    const source = stageManagedFixtureOpeningSource({ qualification, archive: locator.archive }); this.#staged = true; return source;
+  }
   public stageSchematicSourceForFreshOpening(operationId: string): ManagedSchematicReadOpeningSource {
     const { qualification, locator } = this.#staging(operationId);
     if (qualification.schema === "easyeda-pro-control.qualified-generated-schematic-relevance-fixture-target.v1") {

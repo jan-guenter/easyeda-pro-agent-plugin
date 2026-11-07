@@ -111,6 +111,8 @@ void test("new Pad/Relevance qualifications stage only after original fresh reso
     await owner.execute({ action: "settle-records", operationId: id });
     assert.equal(owner.inspect(id)["freshResourcesClosed"], true);
     await owner.execute({ action: "release-owner", operationId: id, confirmReleaseClosedDataOwner: true });
+    assert.throws(() => owner.stageViaSourceForFreshOpening(id), /VIA_PCB_DATA_REQUIRED/u);
+    assert.equal(owner.inspect(id)["sourceStaged"], false); assert.equal(owner.inspect(id)["requalifiedDataAvailable"], true);
     if (kind === "pad") {
       assert.throws(() => owner.stageSchematicSourceForFreshOpening(id)); const source = owner.stageSourceForFreshOpening(id);
       const data = consumeManagedPcbReadOpeningSource(source); assert.equal(data.qualification.schema, "easyeda-pro-control.qualified-generated-pad-fixture-target.v1");
