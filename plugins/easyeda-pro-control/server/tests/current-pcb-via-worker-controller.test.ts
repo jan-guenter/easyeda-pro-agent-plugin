@@ -1,6 +1,7 @@
 /** Production cursor + production seven-source runner, with only full imported
  * source bytes replaced at the explicit VM seam. No native origin is issued. */
 /* oxlint-disable import/max-dependencies -- Exercise the two actual state machines and their independent source/Save contracts. */
+import { CURRENT_GENERATED_INITIAL_SYNC_CONDITION } from "../src/current-generated-initial-sync-condition.ts";
 import { CURRENT_PROJECT_STRUCTURE_TRANSPORT_PROGRAMS } from "../src/current-project-structure-transport-programs.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_ROLES, CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS } from "../src/current-project-save-producer-protocol.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_SITES } from "../src/current-project-save-producer-source.ts";
@@ -18,6 +19,8 @@ import type { CurrentPcb209StartupScriptRole } from "../src/current-pcb-209-work
 import { CURRENT_PCB_VIA_SAVE_SITES as SITES } from "../src/current-pcb-via-save-source.ts";
 import type { CurrentPcbViaWorkerController, CurrentPcbViaWorkerControllerBindings } from "../src/current-pcb-via-worker-controller.ts";
 import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
+import type { CurrentPcbViaProjectSourceHeld } from "../src/current-pcb-via-worker-bootstrap.ts";
+import type { CurrentPcbViaObservedSourceCommand } from "../src/current-pcb-via-observed-source-protocol.ts";
 import type { CurrentPcbViaWorkerCommand } from "../src/current-pcb-via-worker-wire.ts";
 
 async function moduleWithSeam(file: string, replacement: (name: string, actual: unknown) => unknown): Promise<Record<string, unknown>> {
@@ -42,10 +45,11 @@ async function constructor(): Promise<typeof CurrentPcbViaWorkerController> {
   return result as typeof CurrentPcbViaWorkerController;
 }
 async function fixture(failSetup = false, holdPoll = false, structure = false, producerGuards = false, producerObservation = false, helper: "none" | "original" | "foreign" = "none"): Promise<Readonly<{ controller: CurrentPcbViaWorkerController; bindings: CurrentPcbViaWorkerControllerBindings;
-  commands: CurrentPcbViaWorkerCommand[]; incoming: DiagnosticEvent[]; state: { failed: boolean; held: number; released: number; resumed: boolean; bound: number }; releasePoll: () => void; pollStarted: Promise<true>; polls: { count: number } }>> {
+  commands: CurrentPcbViaWorkerCommand[]; incoming: DiagnosticEvent[]; observed:CurrentPcbViaObservedSourceCommand[];observedReplies:Map<string,unknown>;source:()=>CurrentPcbViaProjectSourceHeld;state: { failed: boolean; held: number; released: number; resumed: boolean; bound: number }; releasePoll: () => void; pollStarted: Promise<true>; polls: { count: number } }>> {
   const Constructor = await constructor(), projectUuid = "a".repeat(64), windowTabId = "original-window";
   const targetUrl = "https://client/editor?entry=mgr-project-worker.js&cll=&debugOpen=0", title = `project_${projectUuid}_${windowTabId}`;
   const commands: CurrentPcbViaWorkerCommand[] = [], incoming: DiagnosticEvent[] = [];
+  let heldSource:CurrentPcbViaProjectSourceHeld|null=null;const observed:CurrentPcbViaObservedSourceCommand[]=[];const observedReplies=new Map<string,unknown>();
   const state = { failed: false, held: 0, released: 0, resumed: false, bound: 0 };
   const pollGate = Promise.withResolvers<true>(), pollStarted = Promise.withResolvers<true>(), polls = { count: 0 }; let firstPoll = true;
   const event = (method: string, params: Record<string, unknown>): void => { incoming.push({ method, sessionId: "original-worker", params }); };
@@ -63,13 +67,14 @@ async function fixture(failSetup = false, holdPoll = false, structure = false, p
   // oxlint-disable-next-line eslint/prefer-const -- The retained callbacks close over this original cursor before its constructor receives them.
   let controller: CurrentPcbViaWorkerController;
   const bindings = Object.freeze<CurrentPcbViaWorkerControllerBindings>({ parentSessionId: "original-parent", projectUuid, windowTabId, existingWorkers: Object.freeze([]),
+    observedSource:command=>{observed.push(command);assert.equal(command.phase,"via-observed-source");return Promise.resolve(observedReplies.get(command.params.scriptId)??{scriptSource:`(${CURRENT_PROJECT_STRUCTURE_TRANSPORT_PROGRAMS.capture})`});},
     bindWorker: worker => { assert.equal(worker.sessionId, "original-worker"); state.bound += 1; return Promise.resolve(); },
     poll: async () => { polls.count += 1; if (firstPoll) { firstPoll = false; pollStarted.resolve(true); if (holdPoll) { await pollGate.promise; } }
       const next = incoming.shift(); assert.ok(next !== undefined); controller.observeEvent(next); },
     assertCurrent: () => { assert.equal(state.failed, false); return Promise.resolve(); }, fail: () => { state.failed = true; },
     releaseParentWait: () => { assert.equal(state.held, 1); assert.equal(state.resumed, false); state.released += 1; return Promise.resolve(); },
     projectSourceHeld: (source, original) => {
-      assert.equal(original, controller); assert.equal(source.scriptId, "script-project"); assert.equal(state.released, 0); assert.equal(state.resumed, false); state.held += 1;
+      heldSource=source;assert.equal(original, controller); assert.equal(source.scriptId, "script-project"); assert.equal(state.released, 0); assert.equal(state.resumed, false); state.held += 1;
       assert.equal(controller.requireHeld(source).sessionId, "original-worker"); if (failSetup) { throw new Error("original setup refused"); }
       for (const role of ["noData", "entry", "clock", "compress", "body", "result"] as const) {
         controller.bindSaveBreakpoint(source, role, `save-${role}`);
@@ -119,7 +124,7 @@ async function fixture(failSetup = false, holdPoll = false, structure = false, p
   controller = new Constructor(bindings);
   controller.observeEvent({ method: "Target.attachedToTarget", sessionId: "original-parent", params: { sessionId: "original-worker", waitingForDebugger: true,
     targetInfo: { targetId: "original-target", type: "worker", attached: true, url: targetUrl, title } } });
-  return { controller, bindings, commands, incoming, state, releasePoll: (): void => { pollGate.resolve(true); }, pollStarted: pollStarted.promise, polls };
+  return { controller, bindings, commands, incoming,observed,observedReplies,source:()=>{assert.ok(heldSource!==null);return heldSource;}, state, releasePoll: (): void => { pollGate.resolve(true); }, pollStarted: pollStarted.promise, polls };
 }
 void test("actual cursor retains source setup and six exact Save resolutions before original final continuation", async () => {
   const f = await fixture(); await f.controller.pump();
@@ -199,3 +204,8 @@ void test("actual controller qualifies its correlated helper source before accep
   const changed = await fixture(false, false, false, false, false, "foreign"); await assert.rejects(changed.controller.pump(), /SETUP_HELPER_SOURCE/u);
   assert.equal(changed.state.resumed, false); assert.equal(changed.state.released, 0); assert.equal(changed.state.failed, true);
 });
+
+void test("after-bootstrap helper reads match the original submitted fixed program without another producer read",async()=>{const f=await fixture();await f.controller.pump();const source=f.source();const count=f.polls.count;f.controller.expectObservedProgram(source,"function",CURRENT_PROJECT_STRUCTURE_TRANSPORT_PROGRAMS.capture);f.controller.observeEvent({method:"Debugger.scriptParsed",sessionId:"original-worker",params:{scriptId:"observed-helper",url:"",executionContextId:7}});await f.controller.settleObservedPrograms(source);assert.deepEqual(f.observed,[{phase:"via-observed-source",method:"Debugger.getScriptSource",params:{scriptId:"observed-helper"}}]);assert.equal(f.polls.count,count);f.controller.requireProducerFrontier(source);});
+void test("an unsubmitted helper or foreign context refuses before a source read",async()=>{for(const context of [7,8]){const f=await fixture();await f.controller.pump();const source=f.source();if(context===8){f.controller.expectObservedProgram(source,"function",CURRENT_PROJECT_STRUCTURE_TRANSPORT_PROGRAMS.capture);}f.controller.observeEvent({method:"Debugger.scriptParsed",sessionId:"original-worker",params:{scriptId:"foreign-helper",url:"",executionContextId:context}});await assert.rejects(f.controller.settleObservedPrograms(source));assert.equal(f.observed.length,0);}});
+
+void test("an original armed condition source can interleave without consuming the submitted helper",async()=>{const f=await fixture();await f.controller.pump();const source=f.source();f.controller.expectObservedProgram(source,"condition",CURRENT_GENERATED_INITIAL_SYNC_CONDITION);f.controller.expectObservedProgram(source,"function",CURRENT_PROJECT_STRUCTURE_TRANSPORT_PROGRAMS.capture);f.observedReplies.set("condition-source",{scriptSource:CURRENT_GENERATED_INITIAL_SYNC_CONDITION});for(const scriptId of ["condition-source","helper-source"]){f.controller.observeEvent({method:"Debugger.scriptParsed",sessionId:"original-worker",params:{scriptId,url:"",executionContextId:7}});}await f.controller.settleObservedPrograms(source);assert.equal(f.observed.length,2);f.controller.requireProducerFrontier(source);assert.throws(()=>{f.controller.expectObservedProgram(source,"condition","1===1");});});

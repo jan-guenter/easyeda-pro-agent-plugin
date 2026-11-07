@@ -28,6 +28,7 @@ export class CurrentPcbViaUploadRequestCursor {
     }else{need(this.#capture!==null);yes.parse(await this.#send(validateCurrentPcbViaUploadRequestCommand({phase:"via-upload-proof",role:held.role,method:"Runtime.callFunctionOn",params:{...FLAGS,objectId:held.joinedId,functionDeclaration:PROGRAMS[held.role],arguments:[{objectId:this.#capture}],returnByValue:true}})));}
       await this.#current();need(this.#binding.requireHeld(packet)===held);if(held.role==="historyCloud"){this.#historyFrame=held.joinedId;}this.#requests+=1;need(this.#requests<=REQUESTS.cdpRequests);await this.#binding.resume(held,{phase:"via-upload-resume",role:held.role,method:"Debugger.resume",params:{}});await this.#current();this.#step+=1;
     }catch(error){if(!this.#failed){this.#failed=true;this.#binding.fail();}throw error;}finally{this.#busy=false;}}
+  public progress():Readonly<{acknowledgedResumes:number;dispatched:boolean;failed:boolean}>{return Object.freeze({acknowledgedResumes:this.#step,dispatched:!this.#failed&&!this.#busy&&this.#step===ROLES.length,failed:this.#failed});}
   public originalDispatched():CurrentPcbViaUploadRequestDispatched{this.requireDispatched();need(this.#capture!==null&&this.#historyFrame!==null);this.#original??=Object.freeze({capture:this.#capture,historyFrame:this.#historyFrame});return this.#original;}
   public requireDispatched():void{need(!this.#busy&&!this.#failed&&this.#step===ROLES.length&&this.#requests===REQUESTS.cdpRequests);}
 }

@@ -95,7 +95,7 @@ const dispatch = String.raw`        'pcb-via-sdk-properties' {
 `;
 export function applyCurrentPcbViaWriteNativeFragment(input: string): string {
   // Upgrade only earlier unpublished Via reservations. Released103/384 stay exact.
-  const currentInput = input.replace(/return pcbViaWrite209\?(?:700|766|837|950|1019|1149|1165|1167|1177|1362|1366|1394|1404|1445|1509|1519|3088|3104|3111|3133|3140|3149):spatial209\?384:/u, `return pcbViaWrite209?${String(PROFILE.renderer.total)}:spatial209?384:`).replace(/\$requestLimit=if \(\$PcbViaWrite209\) \{(?:700|766|837|950|1019|1149|1165|1167|1177|1362|1366|1394|1404|1445|1509|1519|3088|3104|3111|3133|3140|3149)\}/u, `$requestLimit=if ($PcbViaWrite209) {${String(PROFILE.renderer.total)}}`);
+  const currentInput = input.replace(/return pcbViaWrite209\?(?:700|766|837|950|1019|1149|1165|1167|1177|1362|1366|1394|1404|1445|1509|1519|3088|3104|3111|3133|3140|3149|3209):spatial209\?384:/u, `return pcbViaWrite209?${String(PROFILE.renderer.total)}:spatial209?384:`).replace(/\$requestLimit=if \(\$PcbViaWrite209\) \{(?:700|766|837|950|1019|1149|1165|1167|1177|1362|1366|1394|1404|1445|1509|1519|3088|3104|3111|3133|3140|3149|3209)\}/u, `$requestLimit=if ($PcbViaWrite209) {${String(PROFILE.renderer.total)}}`);
 
   let source = one(currentInput, "[switch]$StringPrecreate,", "[switch]$PcbViaWrite209,[switch]$StringPrecreate,");
   const switches = [...source.slice(0, source.indexOf("\n")).matchAll(/\[switch\]\$(\w+)/gu)].map(match => match[1]).filter(name => name !== undefined && name !== "CompileOnly" && name !== "PcbViaWrite209" && name !== "SchematicDisplayWrite209");

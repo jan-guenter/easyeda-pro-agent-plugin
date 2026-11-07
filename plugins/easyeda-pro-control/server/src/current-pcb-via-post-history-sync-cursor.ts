@@ -91,6 +91,6 @@ export class CurrentPcbViaPostHistorySyncCursor {
     if (fulfilled) { await this.#bindings.complete(); await this.#current(); this.#completed = true; }
   }
   public async settle(): Promise<void> { need(!this.#busy && !this.#failed && !this.#completed); this.#busy = true; try { await this.#settle(); } catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; } }
-  public progress(): Readonly<{ acknowledgedResumes: number; canSettle: boolean; completed: boolean; failed: boolean; completeUploadFrontierVerified: false }> { return Object.freeze({ acknowledgedResumes: this.#resumes, canSettle: !this.#busy && !this.#failed && !this.#completed && this.#step === 7 && this.#passes < 2, completed: this.#completed, failed: this.#failed, completeUploadFrontierVerified: false }); }
+  public progress(): Readonly<{ acknowledgedResumes: number; canSettle: boolean; completed: boolean; failed: boolean; replayResumed:boolean; completeUploadFrontierVerified: false }> { return Object.freeze({ acknowledgedResumes: this.#resumes, canSettle: !this.#busy && !this.#failed && !this.#completed && this.#step === 7 && this.#passes < 2, completed: this.#completed, failed: this.#failed,replayResumed:!this.#failed&&this.#resumes>=5, completeUploadFrontierVerified: false }); }
   public requireCompleted(): void { need(this.#completed && !this.#failed); }
 }

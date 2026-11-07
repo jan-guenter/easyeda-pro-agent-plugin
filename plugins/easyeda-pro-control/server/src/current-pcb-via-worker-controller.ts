@@ -1,4 +1,6 @@
 /* oxlint-disable import/max-dependencies -- One original cursor joins independent bootstrap, Save, clock, structure, transport and producer source grammars. */
+import { CURRENT_PCB_VIA_OBSERVED_WORKER_SOURCE_REQUESTS,qualifyCurrentPcbViaObservedWorkerSource,requireCurrentPcbViaObservedWorkerCondition,requireCurrentPcbViaObservedWorkerProgram } from "./current-pcb-via-observed-worker-programs.ts";
+import type { CurrentPcbViaObservedSourceCommand } from "./current-pcb-via-observed-source-protocol.ts";
 import { CURRENT_PCB_VIA_SAVE_TAIL_DELETE_SITES as TAIL_SITES } from "./current-pcb-via-save-tail-observation-source.ts";
 import type { CurrentPcbViaSaveTailDeleteRole } from "./current-pcb-via-save-tail-observation-source.ts";
 import { CURRENT_PCB_VIA_WORKER_SETUP_HELPER_REQUESTS as CURRENT_PROJECT_WORKER_SETUP_HELPER_REQUESTS, qualifyCurrentPcbViaWorkerSetupHelperSource as qualifyCurrentProjectWorkerSetupHelperSource, requireCurrentPcbViaWorkerSetupHelper as requireCurrentProjectWorkerSetupHelper } from "./current-pcb-via-worker-setup-helpers.ts";
@@ -26,6 +28,7 @@ import type { CurrentPcbViaWorkerBootstrapCommand, CurrentPcbViaWorkerCommand } 
 
 export interface CurrentPcbViaWorkerChild { readonly sessionId: string; readonly targetId: string; readonly url: string; readonly title: string }
 export interface CurrentPcbViaWorkerControllerBindings {
+  readonly observedSource:(command:CurrentPcbViaObservedSourceCommand)=>Promise<unknown>;
   readonly parentSessionId: string; readonly projectUuid: string; readonly windowTabId: string;
   readonly existingWorkers: readonly Readonly<{ targetId: string; url: string; title: string }>[];
   readonly bindWorker: (worker: CurrentPcbViaWorkerChild) => Promise<void>;
@@ -41,6 +44,7 @@ function token(value: unknown): value is string { return typeof value === "strin
 function record(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value) && !types.isProxy(value); }
 export class CurrentPcbViaWorkerController {
   readonly #bindings: CurrentPcbViaWorkerControllerBindings;
+  readonly #observedPrograms:Readonly<{kind:"function"|"expression";text:string}>[]=[];readonly #observedSourceScripts=new Set<string>();readonly #observedConditions=new Set<string>();#observedInvocations=0;
   readonly #setupHelpers: string[] = []; readonly #setupHelperScripts = new Set<string>();
   readonly #events: CurrentPcbViaWorkerBootstrapEvent[] = [];
   readonly #savePoints = new Map<CurrentPcbViaSaveSite, string>();
@@ -63,7 +67,7 @@ export class CurrentPcbViaWorkerController {
   #pumping = false; #reading = false; #failed = false; #parentRunning = false; #loaded = false; #eventCount = 0;
   public constructor(bindings: CurrentPcbViaWorkerControllerBindings) {
     need(bindings !== null && typeof bindings === "object" && !types.isProxy(bindings) && Object.getPrototypeOf(bindings) === Object.prototype && Object.isFrozen(bindings));
-    const fields = ["parentSessionId", "projectUuid", "windowTabId", "existingWorkers", "bindWorker", "request", "poll", "assertCurrent", "projectSourceHeld", "releaseParentWait", "fail"];
+    const fields = ["parentSessionId", "projectUuid", "windowTabId", "existingWorkers", "bindWorker", "request", "poll", "assertCurrent", "projectSourceHeld", "releaseParentWait", "fail","observedSource"];
     need(Reflect.ownKeys(bindings).length === fields.length);
     for (const key of fields) { const field = Object.getOwnPropertyDescriptor(bindings, key); need(field !== undefined && Object.hasOwn(field, "value")); }
     need(token(bindings.parentSessionId) && /^[a-f\d]{64}$/u.test(bindings.projectUuid) && /^[A-Za-z\d_-]{1,128}$/u.test(bindings.windowTabId) &&
@@ -103,6 +107,10 @@ export class CurrentPcbViaWorkerController {
       need(record(raw) && Reflect.ownKeys(raw).length === 1); const descriptor = Object.getOwnPropertyDescriptor(raw, "scriptSource"); need(descriptor !== undefined && Object.hasOwn(descriptor, "value")); const text: unknown = descriptor.value; qualifyCurrentProjectWorkerSetupHelperSource(text, program); await this.#current();
     }
   }
+  public expectObservedProgram(source:CurrentPcbViaProjectSourceHeld,kind:"function"|"expression"|"condition",text:string):void{need(this.#source===source&&!this.#failed);if(kind==="condition"){requireCurrentPcbViaObservedWorkerCondition(text);this.#observedConditions.add(text);return;}if(this.#result===null){return;}requireCurrentPcbViaObservedWorkerProgram(kind,text);this.#observedInvocations+=1;need(this.#observedInvocations<=CURRENT_PCB_VIA_OBSERVED_WORKER_SOURCE_REQUESTS);this.#observedPrograms.push(Object.freeze({kind,text}));}
+  async #observeProgram(event:CurrentPcbViaWorkerBootstrapEvent):Promise<void>{const source=this.#source;need(source!==null&&this.#result!==null&&event.method==="Debugger.scriptParsed"&&record(event.params));const params=event.params;need(params["url"]===""&&params["executionContextId"]===source.executionContextId&&params["hasSourceURL"]!==true&&params["isLiveEdit"]!==true&&(params["scriptLanguage"]===undefined||params["scriptLanguage"]==="JavaScript")&&token(params["scriptId"])&&params["scriptId"]!==source.scriptId&&!this.#setupHelperScripts.has(params["scriptId"])&&!this.#observedSourceScripts.has(params["scriptId"]));const original=this.#observedPrograms[0];need(original!==undefined||this.#observedConditions.size>0);this.#observedSourceScripts.add(params["scriptId"]);const command:CurrentPcbViaObservedSourceCommand={phase:"via-observed-source",method:"Debugger.getScriptSource",params:{scriptId:params["scriptId"]}};const raw=await this.#bindings.observedSource(command);need(record(raw));const descriptor=Object.getOwnPropertyDescriptor(raw,"scriptSource");need(descriptor!==undefined&&Object.hasOwn(descriptor,"value")&&typeof descriptor.value==="string");const text:string=descriptor.value;if(original!==undefined&&text===(original.kind==="function"?`(${original.text})`:original.text)){qualifyCurrentPcbViaObservedWorkerSource(raw,original.kind,original.text);need(this.#observedPrograms.shift()===original);}else{need(this.#observedConditions.has(text));qualifyCurrentPcbViaObservedWorkerSource(raw,"expression",text);}await this.#current();}
+  public async settleObservedPrograms(source:CurrentPcbViaProjectSourceHeld):Promise<void>{need(this.#source===source&&this.#result!==null&&!this.#reading&&!this.#failed);const started=performance.now();while(this.#observedPrograms.length>0||this.#events.length>0){need(performance.now()-started<30_000);await this.#current();const event=this.#events.shift();if(event===undefined){await this.#bindings.poll();}else if(!this.#resolution(event)){if(event.method==="Debugger.scriptParsed"){await this.#observeProgram(event);}else if(event.method==="Runtime.consoleAPICalled"){need(record(event.params)&&event.params["executionContextId"]===source.executionContextId);}else{this.#events.unshift(event);throw new Error("VIA_OBSERVED_SOURCE_FRONTIER_HELD");}}}}
+  public requireProducerFrontier(source:CurrentPcbViaProjectSourceHeld):void{need(this.#source===source&&this.#result!==null&&!this.#failed&&!this.#reading&&this.#observedPrograms.length===0&&this.#events.length===0);this.#eventRouter().requireProducerFrontier();}
   public bindSaveBreakpoint(source: CurrentPcbViaProjectSourceHeld, role: CurrentPcbViaSaveSite, breakpointId: string): void {
     need(this.#source === source && this.#result === null && !this.#savePoints.has(role) && ![...this.#savePoints.values()].includes(breakpointId) && token(breakpointId));
     this.#savePoints.set(role, breakpointId);
@@ -206,7 +214,7 @@ export class CurrentPcbViaWorkerController {
       if (event.method === "Debugger.paused" || event.method === "Debugger.resumed" || event.method === "Debugger.breakpointResolved") { need(record(event.params)); return { method: event.method, sessionId: event.sessionId, params: event.params }; }
       need(record(event.params));
       if (event.method === "Inspector.workerScriptLoaded") { need(!this.#loaded && Reflect.ownKeys(event.params).length === 0); this.#loaded = true; }
-      else if (event.method === "Debugger.scriptParsed") { need(event.params["url"] === "" && event.params["executionContextId"] === this.#source?.executionContextId); }
+      else if (event.method === "Debugger.scriptParsed") { await this.#observeProgram(event); }
       else if (event.method === "Runtime.consoleAPICalled") { need(event.params["executionContextId"] === this.#source?.executionContextId); }
       else { this.fail(); throw new Error("PCB_VIA_WORKER_UNEXPECTED_EVENT"); }
       }
@@ -244,6 +252,8 @@ export class CurrentPcbViaWorkerController {
   public reserveSaveUploadResume(source: CurrentPcbViaProjectSourceHeld, event: CurrentPcbViaRoutedEvent, role: "bufferDrain" | "cloudIngress" | "historyCloud"): void {
     need(this.#source === source && this.#child !== null); this.#eventRouter().reserveSaveUploadResume(event,role);
   }
+  public reserveSaveDrainResume(source:CurrentPcbViaProjectSourceHeld,event:CurrentPcbViaRoutedEvent,role:string):void{need(this.#source===source&&this.#child!==null);this.#eventRouter().reserveSaveDrainResume(event,role);}
+  public reservePostHistorySyncResume(source:CurrentPcbViaProjectSourceHeld,event:CurrentPcbViaRoutedEvent,role:"syncEntry"|"syncFull"|"syncLast"|"syncHistory"|"syncMerged"|"syncFinalizing"|"syncReturned"):void{need(this.#source===source&&this.#child!==null);this.#eventRouter().reservePostHistorySyncResume(event,role);}
   public reserveSaveTailDeleteResume(source:CurrentPcbViaProjectSourceHeld,event:CurrentPcbViaRoutedEvent,role:"cacheDeleteCall"|"cacheDeleteReturned"):void{need(this.#source===source&&this.#child!==null);this.#eventRouter().reserveSaveTailDeleteResume(event,role);}
   public async nextStructureTransportEvent(): Promise<CurrentPcbViaRoutedEvent> { await this.whenOriginalSourceResumed(); return this.#eventRouter().next("structureTransport"); }
   public reserveStructureTransportResume(source: CurrentPcbViaProjectSourceHeld, role: "send" | "returned"): void {
