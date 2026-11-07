@@ -764,3 +764,5 @@ layout. The connected ledger retains its generation and case anchors.
 - [Original seven-record held descriptor baseline](2026-11-07-relevance-held-descriptor-baseline.md). Actual original invocation, native metadata and complete descriptor retention; run, setters and persistence remain held.
 
 - 2026-11-07: [Original seven-record worker helper receipts](2026-11-07-relevance-worker-helper-receipts.md).
+
+- 2026-11-07: [Original seven-record startup controls](2026-11-07-relevance-startup-controls.md), dedicated journal/worker custody, early structure readers and unchanged native compiler bounds.

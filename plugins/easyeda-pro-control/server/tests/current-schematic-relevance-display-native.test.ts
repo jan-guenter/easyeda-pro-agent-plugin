@@ -1,3 +1,4 @@
+import { currentProjectLibraryRefreshCases } from "../src/current-project-library-refresh-protocol.ts";
 import { currentProjectSyncQuiesceNativeCases } from "../src/current-project-sync-quiesce-protocol.ts";
 import { currentSchematicWireEditNativeRequest as wireEncode } from "../src/current-schematic-wire-edit-protocol.ts";
 import { currentSchematicDisplayAccessorNativeCases } from "../src/current-schematic-display-accessor-protocol.ts";
@@ -36,7 +37,7 @@ void test("seven-record calls and common readonly requests use their own fixed r
   }
   const query = { id: PROFILE.renderer.total, method: "Target.getTargets" };
   assert.equal(encode(wire(query))["requestId"], PROFILE.renderer.total); assert.throws(() => sixEncode(wire(query)));
-  assert.equal(PROFILE.renderer.total, SIX.renderer.total + 18 + PROFILE.renderer.modifyEntryObservation + PROFILE.renderer.startupPollingObservation + PROFILE.renderer.startupPollingHelperSources); assert.equal(PROFILE.renderer.structureObservation, SIX.renderer.structureObservation + 18);
+  assert.equal(PROFILE.renderer.total, SIX.renderer.total + 18 + PROFILE.renderer.modifyEntryObservation + PROFILE.renderer.startupPollingObservation + PROFILE.renderer.startupPollingHelperSources + PROFILE.renderer.startupLibraryObservation + PROFILE.renderer.startupLibrarySetupHelperSources); assert.equal(PROFILE.renderer.structureObservation, SIX.renderer.structureObservation + 18);
   const old = sixCommand("start", "original-binding"); assert.throws(() => encode(wire({ id: 1, ...old, sessionId: "original-session" })));
   assert.throws(() => command("capture", "original-binding", args.target, { ...args.operation, peers: args.operation.peers.slice(0, 5) }));
 });
@@ -103,5 +104,15 @@ void test("all fixed polling commands retain the seven-record verb and refuse si
     assert.throws(() => sixEncode(wire(raw))); assert.throws(() => wireEncode(wire(raw)));
     assert.throws(() => encode(wire({ ...raw, callerCode: "return true" })));
     assert.throws(() => encode(wire({ ...raw, schematicRelevanceSyncQuiesceCommand: false })));
+  }
+});
+
+void test("library refresh commands use only their original schematic purpose frame", () => {
+  for (const fixed of currentProjectLibraryRefreshCases()) {
+    const raw = { id: 1, ...fixed, schematicRelevanceLibraryRefreshCommand: true, sessionId: "original-worker-session" };
+    assert.equal(encode(wire(raw))["action"], "schematic-relevance-library-refresh");
+    assert.throws(() => sixEncode(wire(raw))); assert.throws(() => wireEncode(wire(raw)));
+    assert.throws(() => encode(wire({ ...raw, callerCode: "return true" })));
+    assert.throws(() => encode(wire({ ...raw, schematicRelevanceLibraryRefreshCommand: false })));
   }
 });

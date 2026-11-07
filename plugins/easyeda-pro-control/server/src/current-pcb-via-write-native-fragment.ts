@@ -1,3 +1,4 @@
+import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
 import { applyCurrentPcbViaMainLiveHistoryNativeFragment } from "./current-pcb-via-main-live-history-native-fragment.ts";
 /* oxlint-disable import/max-dependencies -- Build the separate original Via protocols and pack only its fixed SDK bytes without changing their runtime encoding. */
 import { createHash } from "node:crypto";
@@ -33,16 +34,16 @@ function sdkWireSmoke(): string {
   const path = String.raw`C:\Synthetic\Codex_via_only_1111111111111111.eprj2`, project = createHash("sha256").update(path).digest("hex");
   const target = { rawWindowsPath: path, projectUuid: project, branchUuid: "b".repeat(32), documentUuid: "c".repeat(32), expectedSourceSha256: "d".repeat(64) };
   const operation = { operationId: "pcb209-via-write-packing-fixture", via: { netName: "" as const, xMil: 1, yMil: 2, holeDiameterMil: 3, diameterMil: 4, viaType: 0 as const, designRuleBlindViaName: "" as const, solderMaskExpansion: { topSolderMask: 0 as const, bottomSolderMask: 0 as const }, primitiveLock: false as const } };
-  const rows = (["capture", "preflight", "create", "observe", "save"] as const).map(stage => {
+  const hashes = (["capture", "preflight", "create", "observe", "save"] as const).map(stage => {
     const command = currentPcbViaWriteCommand(stage, "original_binding", { target, operation }), p = command.params;
     const selected = p.arguments[0].value;
     const argumentsValue = [{ value: { rawWindowsPath: selected.rawWindowsPath, projectUuid: selected.projectUuid, branchUuid: selected.branchUuid, documentUuid: selected.documentUuid, expectedSourceSha256: selected.expectedSourceSha256 } }, p.arguments[1], p.arguments[2]];
     const parameters = { throwOnSideEffect: p.throwOnSideEffect, silent: p.silent, awaitPromise: p.awaitPromise, generatePreview: p.generatePreview, userGesture: p.userGesture, objectGroup: p.objectGroup, functionDeclaration: p.functionDeclaration,
       ...("uniqueContextId" in p ? { uniqueContextId: p.uniqueContextId } : { objectId: p.objectId }), returnByValue: p.returnByValue, arguments: argumentsValue };
     const hash = createHash("sha256").update(`${JSON.stringify({ id: 79, method: command.method, params: parameters, sessionId: "original_session" })}\0`).digest("hex");
-    return `{var fields=new System.Collections.Hashtable();fields.Add(${literal(stage === "capture" ? "uniqueContextId" : "objectId")},"original_binding");fields.Add("targetRawWindowsPath",${literal(path)});fields.Add("targetProjectUuid",${literal(project)});fields.Add("targetBranchUuid",${literal(target.branchUuid)});fields.Add("targetDocumentUuid",${literal(target.documentUuid)});fields.Add("targetExpectedSourceSha256",${literal(target.expectedSourceSha256)});fields.Add("operationId",${literal(operation.operationId)});fields.Add("xMil",1.0);fields.Add("yMil",2.0);fields.Add("holeDiameterMil",3.0);fields.Add("diameterMil",4.0);string encoded=PcbViaSdkProtocolMessage(79,"original_session",${literal(stage)},fields);using(var sha=System.Security.Cryptography.SHA256.Create())if(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(encoded))).Replace("-","").ToLowerInvariant()!=${literal(hash)})throw Error("via-sdk-packed-wire-smoke");}`;
+    return hash;
   });
-  return `public static void VerifyPcbViaSdkWireSmoke(){${rows.join("")}}`;
+  return `public static void VerifyPcbViaSdkWireSmoke(){string[] hashes=${currentPcbDiagnosticNativeHashVector(hashes)};int index=0;foreach(string stage in new[]{"capture","preflight","create","observe","save"}){var fields=new System.Collections.Hashtable();fields.Add(stage=="capture"?"uniqueContextId":"objectId","original_binding");fields.Add("targetRawWindowsPath",${literal(path)});fields.Add("targetProjectUuid",${literal(project)});fields.Add("targetBranchUuid",${literal(target.branchUuid)});fields.Add("targetDocumentUuid",${literal(target.documentUuid)});fields.Add("targetExpectedSourceSha256",${literal(target.expectedSourceSha256)});fields.Add("operationId",${literal(operation.operationId)});fields.Add("xMil",1.0);fields.Add("yMil",2.0);fields.Add("holeDiameterMil",3.0);fields.Add("diameterMil",4.0);string encoded=PcbViaSdkProtocolMessage(79,"original_session",stage,fields);using(var sha=System.Security.Cryptography.SHA256.Create())if(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(encoded))).Replace("-","").ToLowerInvariant()!=hashes[index++])throw Error("via-sdk-packed-wire-smoke");}}`;
 }
 function native(): string {
   return `${begin}

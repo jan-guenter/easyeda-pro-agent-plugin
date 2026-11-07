@@ -8,7 +8,11 @@ import type { CurrentSchematicRelevanceDisplaySaveMainBindings, CurrentSchematic
 import type { CurrentSchematicRelevanceDisplayMainCommand } from "./current-schematic-relevance-display-main-protocol.ts";
 import { currentSchematicRelevanceDisplayMainWire } from "./current-schematic-relevance-display-main-protocol.ts";
 import { originalGeneratedSchematicRelevanceFixtureInventory } from "./managed-schematic-relevance-fixture-initial-sql.ts";
-import type { CurrentProjectLibraryRefreshBindings,CurrentProjectLibraryRefreshOrigin } from "./current-project-library-refresh-origin.ts";
+import { CURRENT_PROJECT_LIBRARY_REFRESH_OBSERVATION_STEPS } from "./current-project-library-refresh-wire.ts";
+import { CURRENT_PROJECT_LIBRARY_REFRESH_REQUESTS, validateCurrentProjectLibraryRefreshCommand } from "./current-project-library-refresh-protocol.ts";
+import type { CurrentProjectLibraryRefreshCommand } from "./current-project-library-refresh-protocol.ts";
+import { currentProjectLibraryRefreshArrayObject, currentProjectLibraryRefreshPause, decodeCurrentProjectLibraryRefreshTuple } from "./current-project-library-refresh-replies.ts";
+import type { CurrentProjectLibraryRefreshBindings,CurrentProjectLibraryRefreshOrigin,CurrentSchematicRelevanceLibraryRefreshOrigin } from "./current-project-library-refresh-origin.ts";
 // oxlint-disable-next-line import/no-cycle -- The original initialized issuer calls this registry only after factory, worker and body construction have completed.
 import { requireOriginalGeneratedSchematicRelevanceDisplaySaveData } from "./generated-schematic-relevance-display-native-save.ts";
 import type { GeneratedSchematicRelevanceDisplayNativeSaveData, GeneratedSchematicRelevanceDisplaySaveDelta } from "./generated-schematic-relevance-display-native-save.ts";
@@ -39,8 +43,8 @@ import { validateCurrentFootprintInverseInitialCacheCommand } from "./current-fo
 import type { CurrentFootprintInverseInitialCacheCommand } from "./current-footprint-inverse-initial-cache-protocol.ts";
 import type { CurrentFootprintInverseInitialCacheBindings, CurrentFootprintInverseInitialCacheCompletion, CurrentFootprintInverseInitialCacheOrigin } from "./current-footprint-inverse-initial-cache-origin.ts";
 import type { CurrentFootprintInverseInitialCacheObserver } from "./current-footprint-inverse-initial-cache-observer.ts";
-import { consumeGeneratedSchematicRelevanceDisplayDispatch, consumeGeneratedSchematicRelevanceDisplayPollingIntent, enrollGeneratedSchematicRelevanceDisplayModifyIntent, enrollGeneratedSchematicRelevanceDisplayPollingIntent, enrollGeneratedSchematicRelevanceDisplaySaveIntent } from "./generated-schematic-relevance-display-journal.ts";
-import type { GeneratedSchematicRelevanceDisplayDispatch, GeneratedSchematicRelevanceDisplayModifyEnrollment, GeneratedSchematicRelevanceDisplayPollingIntent, GeneratedSchematicRelevanceDisplaySaveEnrollment, GeneratedSchematicRelevanceDisplayStartupEnrollment } from "./generated-schematic-relevance-display-journal.ts";
+import { consumeGeneratedSchematicRelevanceDisplayDispatch, consumeGeneratedSchematicRelevanceDisplayLibraryIntent, consumeGeneratedSchematicRelevanceDisplayPollingIntent, enrollGeneratedSchematicRelevanceDisplayLibraryIntent, enrollGeneratedSchematicRelevanceDisplayModifyIntent, enrollGeneratedSchematicRelevanceDisplayPollingIntent, enrollGeneratedSchematicRelevanceDisplaySaveIntent } from "./generated-schematic-relevance-display-journal.ts";
+import type { GeneratedSchematicRelevanceDisplayDispatch, GeneratedSchematicRelevanceDisplayLibraryIntent, GeneratedSchematicRelevanceDisplayModifyEnrollment, GeneratedSchematicRelevanceDisplayPollingIntent, GeneratedSchematicRelevanceDisplaySaveEnrollment, GeneratedSchematicRelevanceDisplayStartupEnrollment } from "./generated-schematic-relevance-display-journal.ts";
 import { deriveCurrentFootprintInverseMainHistoryBaseline } from "./current-footprint-inverse-main-history-baseline.ts";
 import type { CurrentFootprintInverseMainHistoryBaseline } from "./current-footprint-inverse-main-history-baseline.ts";
 import type { CurrentFootprintInverseMainHistoryRows } from "./current-footprint-inverse-main-history-custody.ts";
@@ -1774,6 +1778,12 @@ class CurrentPcbRetainedOwnerCore {
   #pcbFrameObservation: CurrentPcbDiagnosticPcbOpeningResult | null = null;
   #pcbSourceQualified = false;
   #pcbSourceProfile: DiagnosticScriptProfile | null = null;
+  #schematicRelevanceLibraryArguments: GeneratedSchematicRelevanceDisplayNativeArguments | null = null;
+  #schematicRelevanceLibraryIntent: GeneratedSchematicRelevanceDisplayLibraryIntent | null = null;
+  #schematicRelevanceLibraryEnrollment: GeneratedSchematicRelevanceDisplayStartupEnrollment | null = null;
+  #schematicRelevanceLibrarySetup: ((origin: CurrentSchematicRelevanceLibraryRefreshOrigin) => Promise<void>) | null = null;
+  #schematicRelevanceLibraryOrigin: CurrentSchematicRelevanceLibraryRefreshOrigin | null = null;
+  #schematicRelevanceLibraryAttempted = false; #schematicRelevanceLibraryCompleted = false;
   #schematicRelevancePollingArguments: GeneratedSchematicRelevanceDisplayNativeArguments | null = null;
   #schematicRelevancePollingIntent: GeneratedSchematicRelevanceDisplayPollingIntent | null = null;
   #schematicRelevancePollingEnrollment: GeneratedSchematicRelevanceDisplayStartupEnrollment | null = null;
@@ -3046,6 +3056,17 @@ class CurrentPcbRetainedOwnerCore {
    * requires the fresh direct worker and all original imported source pauses. */
   /** Trusted arm callback only. It installs the fixed structure sites while
    * the same original project source is held; construction waits its resume. */
+  public armSchematicRelevanceDisplayLibraryRefresh(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments, intent: GeneratedSchematicRelevanceDisplayLibraryIntent, setup: (origin: CurrentSchematicRelevanceLibraryRefreshOrigin) => Promise<void>): void {
+    assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this); requireSchematicArguments(this, argumentsValue); this.#available();
+    if (this.#busy || this.#projectOpeningConsumed || this.#schematicWorkerController !== null || this.#schematicWorkerArguments !== argumentsValue || this.#schematicStructureSetup === null || this.#schematicProducerObservationSetup === null || this.#schematicRelevancePollingSetup === null || this.#schematicRelevanceLibrarySetup !== null || typeof setup !== "function" || types.isProxy(setup)) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_ARM_UNAVAILABLE"); }
+    const enrollment = enrollGeneratedSchematicRelevanceDisplayLibraryIntent(intent, this, argumentsValue);
+    this.#schematicRelevanceLibraryArguments = argumentsValue; this.#schematicRelevanceLibraryIntent = intent; this.#schematicRelevanceLibraryEnrollment = enrollment; this.#schematicRelevanceLibrarySetup = setup;
+  }
+  public requireSchematicRelevanceDisplayStartupQuiesced(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): void {
+    this.requireOriginalSchematicRelevanceDisplayPollingQuiesced(argumentsValue); const origin = this.#schematicRelevanceLibraryOrigin;
+    if (origin === null || !this.#schematicRelevanceLibraryCompleted || this.#schematicFailed || this.#schematicDisplayCleanupOnly) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_COMPLETION_REQUIRED"); }
+    requireOriginalCurrentProjectLibraryRefreshOrigin(origin, this, argumentsValue);
+  }
   public armSchematicRelevanceDisplayPollingQuiescence(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments, intent: GeneratedSchematicRelevanceDisplayPollingIntent, setup: CurrentProjectSyncQuiesceSetup): void {
     assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this); requireSchematicArguments(this, argumentsValue); this.#available();
     if (this.#busy || this.#projectOpeningConsumed || this.#schematicWorkerController !== null || this.#schematicWorkerArguments !== argumentsValue || this.#schematicStructureSetup === null || this.#schematicProducerObservationSetup === null || this.#schematicRelevancePollingSetup !== null || typeof setup !== "function" || types.isProxy(setup)) { throw error("SCHEMATIC_RELEVANCE_POLLING_ARM_UNAVAILABLE"); }
@@ -3542,6 +3563,75 @@ class CurrentPcbRetainedOwnerCore {
             assertCurrent:async()=>{quiesceOriginal();await this.#verify();quiesceOriginal();},complete:async()=>{quiesceOriginal();if(step!==cases.length||!this.#schematicRelevancePollingCancelAttempted||heldRole!==null){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_COMPLETION");}const result=await this.#request({action:"schematic-relevance-display-sync-quiesce-complete"});quiesceOriginal();if(!exact(result,["completed"])||result["completed"]!==true){throw error("PROJECT_SYNC_QUIESCE_COMPLETE_ACK");}selected.completeSyncQuiesce(source,child);this.#schematicRelevancePollingCompleted=true;},
             assertOriginalGenerationExited:():Promise<void>=>{requireSchematicArguments(this,argumentsValue);if(!this.#terminationObserved||this.#terminationObservation?.terminated!==true){return Promise.reject(error("PROJECT_SYNC_QUIESCE_EXIT_REQUIRED"));}return Promise.resolve();},fail:()=>{ selected.fail(); }});
           projectSyncQuiesceOrigins.set(quiesceOrigin,Object.freeze({owner:this,operation:argumentsValue,bindings:quiesceBindings,assertOriginal:quiesceOriginal}));this.#schematicRelevancePollingOrigin=quiesceOrigin;await Reflect.apply(quiesceSetup,undefined,[quiesceOrigin]);quiesceOriginal();if(step!==17||points.size!==2){throw error("PROJECT_SYNC_QUIESCE_SETUP_INCOMPLETE");}
+        }
+        const librarySetup = this.#schematicRelevanceLibrarySetup;
+        if (librarySetup !== null) {
+          if (!isSchematicRelevanceDisplayArguments(argumentsValue) || !(selected instanceof CurrentSchematicRelevanceDisplayWorkerController) || !(pipe instanceof CurrentSchematicRelevanceDisplayWritePipe)) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_ORIGINAL_PURPOSE"); }
+          const intent = this.#schematicRelevanceLibraryIntent; const enrollment = this.#schematicRelevanceLibraryEnrollment;
+          if (intent === null || enrollment === null || this.#schematicRelevanceLibraryArguments !== argumentsValue || this.#schematicRelevanceLibraryOrigin !== null || this.#schematicProducerObservationOrigin === null) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_ORIGINAL_ARM"); }
+          enrollment.assertBeforeAttempt(); const bound = await this.#request({ action: "schematic-relevance-library-refresh-bind", context: source.uniqueContextId }); original();
+          if (!exact(bound, ["bound"]) || bound["bound"] !== true) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_BIND_ACK"); }
+          const libraryOrigin: CurrentSchematicRelevanceLibraryRefreshOrigin = Object.freeze({ profile: "private.current-schematic-relevance-library-refresh-origin.v1" });
+          const tuples = new Map<string, string>(); const functions = new Map<number, string>(); const points = new Map<Extract<CurrentProjectLibraryRefreshCommand, { phase: "library-refresh-arm" }>["role"], string>();
+          const receipts = new WeakMap<CurrentProjectLibraryRefreshCommand, Readonly<{ raw: unknown; pristine: boolean }>>();
+          let step = 0; let helperReceipts = 0; let heldRole: "firstLoop" | "loopReturned" | "mountReturned" | null = null; let heldFrame: string | null = null; let cancelAttempted = false;
+          const libraryOriginal = (): void => { original(); selected.requireOriginal(source, child); enrollment.assertCurrent();
+            if (this.#schematicRelevanceLibraryArguments !== argumentsValue || this.#schematicRelevanceLibraryIntent !== intent || this.#schematicRelevanceLibraryEnrollment !== enrollment || this.#schematicRelevanceLibrarySetup !== librarySetup || this.#schematicRelevanceLibraryOrigin !== libraryOrigin) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_CUSTODY_CHANGED"); }
+            if (this.#schematicRelevanceLibraryAttempted) { enrollment.assertOriginalAttempted(); } else { enrollment.assertBeforeAttempt(); }
+          };
+          const tuple = (name: string): string => { const value = tuples.get(name); if (value === undefined) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_ORIGINAL_TUPLE"); } return value; };
+          const request = async (input: CurrentProjectLibraryRefreshCommand): Promise<unknown> => {
+            libraryOriginal(); const command = validateCurrentProjectLibraryRefreshCommand(input), expected = CURRENT_PROJECT_LIBRARY_REFRESH_OBSERVATION_STEPS[step];
+            if (expected === undefined || command.phase !== expected.phase || ("role" in command ? command.role : null) !== ("role" in expected ? expected.role : null) || ("tuple" in command ? command.tuple : null) !== ("tuple" in expected ? expected.tuple : null) || ("slot" in command ? command.slot : null) !== ("slot" in expected ? expected.slot : null)) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_ORIGINAL_SEQUENCE"); }
+            if (step < 9) { selected.assertOriginalProjectSourceHeld(source); }
+            if (command.phase === "library-refresh-pristine") { if (command.params.uniqueContextId !== source.uniqueContextId) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_CONTEXT"); } selected.expectSetupHelper(source, command.params.functionDeclaration); }
+            else if (command.phase === "library-refresh-arm") { if (command.params.location.scriptId !== source.scriptId) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_SCRIPT"); } }
+            else if (command.phase === "library-refresh-properties") { if (command.params.objectId !== tuple(command.tuple)) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_PROPERTIES"); } }
+            else if (command.phase === "library-refresh-function") { if (command.params.objectId !== functions.get(command.slot)) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_FUNCTION"); } }
+            else if (command.phase === "library-refresh-modules" || command.phase === "library-refresh-frame") { if (command.params.callFrameId !== heldFrame || heldRole !== (command.phase === "library-refresh-modules" ? "firstLoop" : command.role)) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_FRAME"); } }
+            else if (command.phase === "library-refresh-resume") { if (command.role !== heldRole) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_RESUME"); } }
+            else if (command.method === "Runtime.callFunctionOn") {
+              let receiver: string; let args: readonly string[] = [];
+              if (command.phase === "library-refresh-capture") { receiver = tuple("modules"); args = [tuple("pristine")]; }
+              else if (command.phase === "library-refresh-first-loop") { receiver = tuple("firstLoopFrame"); const project = this.#schematicProducerOriginalProject; if (project === null) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_PROJECT"); } args = [project, tuple("captured")]; }
+              else if (command.phase === "library-refresh-loop-returned") { receiver = tuple("loopReturnedFrame"); args = [tuple("firstLoop")]; }
+              else if (command.phase === "library-refresh-cancel") { receiver = tuple("loopReturned"); }
+              else if (command.phase === "library-refresh-mount-returned") { receiver = tuple("mountReturnedFrame"); args = [tuple("firstLoop")]; }
+              else { receiver = tuple("firstLoop"); }
+              if (command.params.objectId !== receiver || canonicalJson(command.params.arguments) !== canonicalJson(args.map(objectId => ({ objectId })))) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_ORIGINAL_JOIN"); }
+            }
+            step += 1;
+            if (command.phase === "library-refresh-suspend") { const dispatch = consumeGeneratedSchematicRelevanceDisplayLibraryIntent(intent, this, argumentsValue); this.#schematicRelevanceLibraryAttempted = true; await dispatch.assertPublished(); libraryOriginal(); }
+            if (command.phase === "library-refresh-cancel") { if (!this.#schematicRelevanceLibraryAttempted || cancelAttempted) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_CANCEL_ONCE"); } cancelAttempted = true; }
+            const helper = command.method === "Runtime.callFunctionOn" || command.method === "Debugger.evaluateOnCallFrame";
+            if (helper && command.phase !== "library-refresh-pristine") { selected.registerSubmitted(source, input); }
+            const raw = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { libraryOriginal(); if (command.phase === "library-refresh-resume") { selected.reserveLibraryRefreshResume(source, command.role); } return pipe.observeSchematicRelevanceLibraryRefresh(command); })); libraryOriginal();
+            if (helper) { receipts.set(input, Object.freeze({ raw, pristine: command.phase === "library-refresh-pristine" })); }
+            if (command.phase === "library-refresh-arm") { if (!record(raw) || typeof raw["breakpointId"] !== "string") { throw error("SCHEMATIC_RELEVANCE_LIBRARY_POINT_REPLY"); } points.set(command.role, raw["breakpointId"]); selected.bindLibraryRefreshBreakpoint(source, command.role, raw["breakpointId"]); }
+            else if (command.phase === "library-refresh-properties" && command.tuple === "captured") { const fields = decodeCurrentProjectLibraryRefreshTuple(raw, 15); for (let slot = 1; slot <= 13; slot += 1) { functions.set(slot, currentProjectLibraryRefreshArrayObject(fields, slot)); } }
+            else if (helper && !command.params.returnByValue) { let name = ""; let length = 0;
+              if (command.phase === "library-refresh-pristine") { name = "pristine"; length = 2; } else if (command.phase === "library-refresh-modules") { name = "modules"; length = 14; } else if (command.phase === "library-refresh-capture") { name = "captured"; length = 15; } else if (command.phase === "library-refresh-frame") { name = `${command.role}Frame`; length = command.role === "mountReturned" ? 1 : 6; } else if (command.phase === "library-refresh-first-loop") { name = "firstLoop"; length = 7; } else if (command.phase === "library-refresh-loop-returned") { name = "loopReturned"; length = 3; }
+              if (name === "" || tuples.has(name)) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_TUPLE_ONCE"); } tuples.set(name, decodeCurrentFootprintCopyClockRpcV2ArrayCapture(raw, length));
+            }
+            return raw;
+          };
+          const libraryBindings: CurrentProjectLibraryRefreshBindings = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId, uniqueContextId: source.uniqueContextId, source: source.source,
+            originalProject: (): string => { libraryOriginal(); const value = this.#schematicProducerOriginalProject; if (value === null) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_PROJECT"); } return value; }, request,
+            assertCurrent: async (): Promise<void> => { libraryOriginal(); await this.#verify(); libraryOriginal(); },
+            assertOriginalSourceHeld: (): void => { libraryOriginal(); selected.assertOriginalProjectSourceHeld(source); },
+            assertOriginalHelperReceipt: async (command: CurrentProjectLibraryRefreshCommand, raw: unknown): Promise<void> => { libraryOriginal(); const receipt = receipts.get(command); if (receipt === undefined || receipt.raw !== raw) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_ORIGINAL_HELPER_RECEIPT"); } receipts.delete(command);
+              await (receipt.pristine ? selected.consumeOriginalSetupHelpers(source) : selected.verifyOriginalHelperReceipt(source, command, raw, (scriptId: string): Promise<unknown> => this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { libraryOriginal(); return pipe.observeSchematicRelevanceLibraryRefresh({ phase: "library-refresh-helper", method: "Debugger.getScriptSource", params: { scriptId } }); }))));
+              libraryOriginal(); helperReceipts += 1; if (helperReceipts > CURRENT_PROJECT_LIBRARY_REFRESH_REQUESTS.helperSources) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_HELPER_CAPACITY"); }
+            },
+            nextEvent: async () => { libraryOriginal(); const event = await selected.nextLibraryRefreshEvent(); libraryOriginal(); if (event.method === "Debugger.paused") { if (heldRole !== null) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_EVENT_HELD"); } const actual = currentProjectLibraryRefreshPause(event, child.sessionId, source.scriptId, points); if (actual.role !== "firstLoop" && actual.role !== "loopReturned" && actual.role !== "mountReturned") { throw error("SCHEMATIC_RELEVANCE_LIBRARY_UNEXPECTED_PATH"); } heldRole = actual.role; heldFrame = actual.callFrameId;
+                const ack = await this.#request({ action: "schematic-relevance-library-refresh-hold", role: actual.role }); libraryOriginal(); if (!exact(ack, ["held"]) || ack["held"] !== true) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_HOLD_ACK"); }
+              } else { heldRole = null; heldFrame = null; } return event;
+            },
+            complete: async (): Promise<void> => { libraryOriginal(); if (step !== CURRENT_PROJECT_LIBRARY_REFRESH_OBSERVATION_STEPS.length || helperReceipts !== CURRENT_PROJECT_LIBRARY_REFRESH_REQUESTS.helperSources || !this.#schematicRelevanceLibraryAttempted || !cancelAttempted || heldRole !== null) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_COMPLETION"); } const ack = await this.#request({ action: "schematic-relevance-library-refresh-complete" }); libraryOriginal(); if (!exact(ack, ["completed"]) || ack["completed"] !== true) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_COMPLETE_ACK"); } this.#schematicRelevanceLibraryCompleted = true; },
+            assertOriginalGenerationExited: (): Promise<void> => { requireSchematicArguments(this, argumentsValue); if (!this.#terminationObserved || this.#terminationObservation?.originalRootExited !== true || this.#terminationObservation.originalJobEmpty !== true) { return Promise.reject(error("SCHEMATIC_RELEVANCE_LIBRARY_EXIT_REQUIRED")); } return Promise.resolve(); }, fail: (): void => { selected.fail(); }
+          });
+          projectLibraryRefreshOrigins.set(libraryOrigin, Object.freeze({ owner: this, operation: argumentsValue, bindings: libraryBindings, assertOriginal: libraryOriginal })); this.#schematicRelevanceLibraryOrigin = libraryOrigin;
+          await Reflect.apply(librarySetup, undefined, [libraryOrigin]); libraryOriginal(); selected.assertOriginalProjectSourceHeld(source); if (step !== 9 || points.size !== 7 || helperReceipts !== 1) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_SETUP_INCOMPLETE"); }
         }
       }, releaseParentWait: async () => { original(); const reply = await this.#transfer(() => pipe.configureSchematicDisplayWorkerRunning());
         if (!exact(reply, [])) { throw error("SCHEMATIC_DISPLAY_WORKER_PARENT_RUNNING_REPLY"); } original(); },
@@ -4440,6 +4530,7 @@ class CurrentPcbRetainedOwnerCore {
     } catch (caughtError) { this.#schematicFailed = true; throw caughtError; } finally { this.#busy = false; }
   }
   #requireSchematicRelevanceSaveObservers(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): void {
+    this.requireSchematicRelevanceDisplayStartupQuiesced(argumentsValue);
     const clock = this.#schematicRelevanceClockOrigin, structure = this.#schematicStructureOrigin, worker = this.#schematicWorkerOrigin;
     if (clock === null || structure === null || worker === null || this.#schematicWorkerArguments !== argumentsValue || this.#schematicWorkerController === null || !this.#schematicWorkerController.status().ready ||
       !this.#schematicRelevanceClockSetupSettled || this.#schematicRelevanceClockArmAttempts.size !== 5 || this.#schematicRelevanceClockArmedPoints.size !== 5 || this.#schematicRelevanceClockRemoveAttempts.size > 0 ||

@@ -1,3 +1,4 @@
+import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
 /** Build-only distinct Relevance birth. Shared fixed worker/SQL codecs retain
  * their bytes; no existing six-record owner is upgraded or retargeted. */
 import { createHash } from "node:crypto";
@@ -39,7 +40,7 @@ export function normalizeCurrentSchematicRelevanceDisplayNativeFamily(input: str
   return source.replaceAll("SchematicDisplayFamily", "schematicDisplayWrite209")
     .replaceAll("-not ($SchematicDisplayWrite209 -or $SchematicRelevanceDisplayWrite209)", "-not $SchematicDisplayWrite209")
     .replace(`schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(SEVEN_STRUCTURE.normal)}:${String(SIX_STRUCTURE.normal)})`, `schematicStructureNormal>=${String(SIX_STRUCTURE.normal)}`)
-    .replace("schematicWorkerHelperScripts.Count>=(schematicRelevanceDisplayWrite209?5:4)", "schematicWorkerHelperScripts.Count>=4")
+    .replace("schematicWorkerHelperScripts.Count>=(schematicRelevanceDisplayWrite209?6:4)", "schematicWorkerHelperScripts.Count>=4")
     .replace("schematicStartupCalls>=(schematicRelevanceDisplayWrite209?8:7)", "schematicStartupCalls>=7")
     .replace(` if(schematicRelevanceDisplayWrite209)return ${String(PROFILE.renderer.total)};`, "")
     .replace("elseif ($SchematicRelevanceDisplayWrite209) {[EasyedaDiagnosticOwner]::CreateSchematicRelevanceDisplayWrite209()} ", "")
@@ -92,16 +93,13 @@ function smoke(): string {
   const captured = currentSchematicRelevanceDisplayNativeCommand("capture", "original_binding", target, operation);
   if (captured.schematicRelevanceDisplayPhase !== "capture") { throw new Error("SCHEMATIC_RELEVANCE_SMOKE_PHASE"); }
   const smokeOperation = captured.params.arguments[2].value, smokeTarget = captured.params.arguments[0].value;
-  const fieldLiteral = (key: string, value: string): string => { if (key === "targetJson") { return "smokeTarget"; } if (key === "operationJson") { return "smokeOperation"; } return quote(value); };
-  const checks = (["start", "navigate", "capture", "preflight", "modify", "observe", "save"] as const).flatMap(phase => [63, PROFILE.renderer.total].map(id => {
-    const command = currentSchematicRelevanceDisplayNativeCommand(phase, "original_binding", target, operation), fields: Record<string, string> = {};
-    if ("uniqueContextId" in command.params) { fields["uniqueContextId"] = command.params.uniqueContextId; } else { fields["objectId"] = command.params.objectId; }
-    if (command.schematicRelevanceDisplayPhase !== "start") { fields["targetJson"] = command.params.arguments[0].value;
-      if (command.schematicRelevanceDisplayPhase !== "navigate") { fields["operationJson"] = command.params.arguments[2].value; } }
-    const bytes = Buffer.from(`${JSON.stringify({ id, method: command.method, params: command.params, sessionId: "original_session" })}\0`);
-    return `{var fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);${Object.entries(fields).map(([key, value]) => `fields.Add(${quote(key)},${fieldLiteral(key, value)});`).join("")}string text=SchematicRelevanceDisplayProtocolMessage(${String(id)},"original_session",${quote(phase)},fields);using(var sha=System.Security.Cryptography.SHA256.Create())if(BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(text))).Replace("-","").ToLowerInvariant()!=${quote(createHash("sha256").update(bytes).digest("hex"))})throw Error("schematic-relevance-wire-smoke");}`;
+  const phases = ["start", "navigate", "capture", "preflight", "modify", "observe", "save"] as const;
+  const hashes = phases.flatMap(phase => [63, PROFILE.renderer.total].map(id => {
+    const command = currentSchematicRelevanceDisplayNativeCommand(phase, "original_binding", target, operation);
+    return createHash("sha256").update(`${JSON.stringify({ id, method: command.method, params: command.params, sessionId: "original_session" })}\0`).digest("hex");
   }));
-  return `public static void VerifySchematicRelevanceDisplaySmoke(){string smokeTarget=${quote(smokeTarget)},smokeOperation=${quote(smokeOperation)};${checks.join("")}var owner=CreateSchematicRelevanceDisplayWrite209();if(!owner.schematicRelevanceDisplayWrite209||owner.schematicDisplayWrite209||owner.pcbViaWrite209||owner.root!=IntPtr.Zero||owner.job!=IntPtr.Zero||owner.originalMain==null)throw Error("schematic-relevance-own-birth");foreach(string action in new[]{"schematic-display-native","pcb-via-sdk","footprint-copy-native-create"}){bool refused=false;try{owner.AdmitSchematicRelevanceDisplayAction(action);}catch(InvalidOperationException){refused=true;}if(!refused)throw Error("schematic-relevance-foreign-action");}owner.originalMain.Release();}`;
+  return `public static void VerifySchematicRelevanceDisplayProtocolSmoke(){string smokeTarget=${quote(smokeTarget)},smokeOperation=${quote(smokeOperation)};string[] hashes=${currentPcbDiagnosticNativeHashVector(hashes)};int index=0;foreach(string phase in new[]{"start","navigate","capture","preflight","modify","observe","save"})foreach(int id in new[]{63,${String(PROFILE.renderer.total)}}){var fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);fields.Add(phase=="start"||phase=="navigate"||phase=="capture"?"uniqueContextId":"objectId","original_binding");if(phase!="start"){fields.Add("targetJson",smokeTarget);if(phase!="navigate")fields.Add("operationJson",smokeOperation);}string text=SchematicRelevanceDisplayProtocolMessage(id,"original_session",phase,fields);using(var sha=System.Security.Cryptography.SHA256.Create())if(BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(text))).Replace("-","").ToLowerInvariant()!=hashes[index++])throw Error("schematic-relevance-wire-smoke");}}
+public static void VerifySchematicRelevanceDisplaySmoke(){VerifySchematicRelevanceDisplayProtocolSmoke();var owner=CreateSchematicRelevanceDisplayWrite209();if(!owner.schematicRelevanceDisplayWrite209||owner.schematicDisplayWrite209||owner.pcbViaWrite209||owner.root!=IntPtr.Zero||owner.job!=IntPtr.Zero||owner.originalMain==null)throw Error("schematic-relevance-own-birth");foreach(string action in new[]{"schematic-display-native","pcb-via-sdk","footprint-copy-native-create"}){bool refused=false;try{owner.AdmitSchematicRelevanceDisplayAction(action);}catch(InvalidOperationException){refused=true;}if(!refused)throw Error("schematic-relevance-foreign-action");}owner.originalMain.Release();}`;
 }
 const dispatch = String.raw`        'schematic-relevance-display-native' {
           if (-not $SchematicRelevanceDisplayWrite209 -or -not $launched -or $request.sessionId -isnot [string] -or $request.phase -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long])) {throw 'pcb-diagnostic-relevance-native-fields'}
@@ -128,7 +126,7 @@ export function applyCurrentSchematicRelevanceDisplayWriteNativeFragment(input: 
   source = source.replaceAll("-not $SchematicDisplayWrite209", "-not ($SchematicDisplayWrite209 -or $SchematicRelevanceDisplayWrite209)");
   source = once(source, admissionMarker, sixAdmission); source = once(source, stageMarker, sixStage);
   source = once(source, `schematicStructureNormal>=${String(SIX_STRUCTURE.normal)}`, `schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(SEVEN_STRUCTURE.normal)}:${String(SIX_STRUCTURE.normal)})`);
-  source = once(source, "schematicWorkerHelperScripts.Count>=4", "schematicWorkerHelperScripts.Count>=(schematicRelevanceDisplayWrite209?5:4)");
+  source = once(source, "schematicWorkerHelperScripts.Count>=4", "schematicWorkerHelperScripts.Count>=(schematicRelevanceDisplayWrite209?6:4)");
   source = once(source, "schematicStartupCalls>=7", "schematicStartupCalls>=(schematicRelevanceDisplayWrite209?8:7)");
   source = prepareCurrentSchematicRelevanceDisplayNativeSwitch(source);
   const switches = [...source.slice(0, source.indexOf("\n")).matchAll(/\[switch\]\$(\w+)/gu)].map(match => match[1]).filter(name => name !== undefined && name !== "CompileOnly" && name !== "SchematicRelevanceDisplayWrite209");
