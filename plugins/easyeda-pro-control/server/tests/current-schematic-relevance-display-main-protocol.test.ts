@@ -37,6 +37,12 @@ void test("seven-record Main reuses exact inert selectors while every native sen
   assert.throws(() => currentSchematicRelevanceDisplayMainWire({ phase: "via-main-edit-head-step", method: "Debugger.resume", params: {} }, 79));
   assert.throws(() => currentSchematicRelevanceDisplayMainWire({ phase: "via-main-structure-step", method: "Debugger.resume", params: {} }, 79));
   assert.throws(() => currentSchematicRelevanceDisplayMainWire({ phase: "via-main-request-resume", method: "Debugger.resume", params: {} }, 79));
+  let hooks = 0;
+  const hook = (): never => { hooks += 1; throw new Error("caller hook"); };
+  const getter = { method: "Debugger.resume", params: {} }; Object.defineProperty(getter, "phase", { get: hook });
+  assert.throws(() => currentSchematicRelevanceDisplayMainWire(getter, 79));
+  assert.throws(() => currentSchematicRelevanceDisplayMainWire(new Proxy({}, { getOwnPropertyDescriptor: hook, get: hook }), 79));
+  assert.equal(hooks, 0);
   assert.deepEqual(WIRE.main, SIX.main); assert.equal(WIRE.renderer.total, 2721); assert.equal(WIRE.renderer.modifyEntryObservation, 0); assert.deepEqual([SEVEN.main.normal, SEVEN.main.cleanup, SEVEN.main.total], [1035, 27, 1062]);
   assert.deepEqual([SIX.main.normal, SIX.main.cleanup, SIX.main.total], [901, 8, 909]);
 });
