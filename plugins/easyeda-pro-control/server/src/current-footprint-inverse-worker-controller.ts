@@ -18,6 +18,9 @@ import { isCurrentPcb209BootstrapTargetUrl } from "./current-pcb-209-worker-boot
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_PROJECT_SYNC_QUIESCE_SITES as TIMER_SITES } from "./current-project-sync-quiesce-source.ts";
 import type { CurrentFootprintInverseTimerCommand } from "./current-footprint-inverse-timer-protocol.ts";
+import { CURRENT_PROJECT_LIBRARY_REFRESH_SITES as LIBRARY_SITES } from "./current-project-library-refresh-source.ts";
+import { CURRENT_PROJECT_LIBRARY_REFRESH_HELPERS as LIBRARY_HELPERS } from "./current-project-library-refresh-programs.ts";
+import type { CurrentProjectLibraryRefreshCommand } from "./current-project-library-refresh-protocol.ts";
 
 export interface CurrentFootprintInverseWorkerPair {
   readonly targetId: string; readonly url: string; readonly title: string; readonly browserSessionId: string; readonly pageSessionId: string;
@@ -37,6 +40,8 @@ export interface CurrentFootprintInverseWorkerControllerBindings {
   readonly conditionSourceRequest:(scriptId:string)=>Promise<unknown>;
   readonly timerRequest: (command: CurrentFootprintInverseTimerCommand) => Promise<unknown>;
   readonly timerHeld: () => Promise<void>;
+  readonly libraryRequest:(command:CurrentProjectLibraryRefreshCommand)=>Promise<unknown>;
+  readonly libraryHeld:(role:"firstLoop"|"mountReturned")=>Promise<void>;
   readonly modelStepRequest:(command:CurrentFootprintInverseModelStepCommand)=>Promise<unknown>;readonly startupIdleReady:()=>boolean;readonly settleStartupPromises:()=>Promise<void>;
   readonly coldStepRequest:(command:CurrentFootprintInverseColdStepCommand)=>Promise<unknown>;
   readonly coldRequest: (command: CurrentFootprintInverseColdLoadCommand) => Promise<unknown>;
@@ -89,6 +94,9 @@ export class CurrentFootprintInverseWorkerController {
   #timerArming: "entry" | "returned" | null = null;
   #timerHeld: { role: "entry" | "returned"; event: WorkerEvent; delivered: boolean; resumeAttempted: boolean } | null = null;
   #timerEntryObserved = false; #timerReturnObserved = false; #timerCompleted = false;
+  readonly #libraryPoints=new Map<keyof typeof LIBRARY_SITES,string>();readonly #libraryResolutions=new Map<string,keyof typeof LIBRARY_SITES>();readonly #libraryHelpers:{program:string;source:string;scriptId:string|null}[]=[];
+  #libraryArming:keyof typeof LIBRARY_SITES|null=null;#libraryBound=false;#libraryFirstObserved=false;#libraryReturnedObserved=false;#libraryMountObserved=false;#librarySuspended=false;#libraryCompleted=false;
+  #libraryHeld:{role:"firstLoop"|"loopReturned"|"mountReturned";event:WorkerEvent;delivered:boolean;resumeAttempted:boolean}|null=null;
   readonly #coldStepAttempts=new WeakSet<object>();
   #initialHistoryMainArms = 0;
   #unsupportedStartupHeld:WorkerEvent|null=null;
@@ -98,7 +106,7 @@ export class CurrentFootprintInverseWorkerController {
   #source: CurrentPcbViaSavedLoadProjectSourceHeld | null = null; #failed = false; #reading = false; #eventCount = 0; #networkEvents = 0; #pumping = false;
   public constructor(bindings: CurrentFootprintInverseWorkerControllerBindings) {
     need(bindings !== null && typeof bindings === "object" && !types.isProxy(bindings) && Object.getPrototypeOf(bindings) === Object.prototype && Object.isFrozen(bindings));
-    const fields = ["parentSessionId", "projectUuid", "windowTabId", "bindWorker", "request", "poll", "assertCurrent", "projectSourceHeld", "constructionRequest", "initialSyncRequest", "initialSyncHeld", "initialCacheRequest", "initialCacheHeld", "startupQueueRequest", "startupCallbackRequest", "startupCallbackHeld", "conditionSourceRequest", "timerRequest", "timerHeld", "modelStepRequest", "startupIdleReady", "settleStartupPromises", "coldStepRequest", "coldRequest", "producerArmRequest", "constructionHeld", "fail"];
+    const fields = ["parentSessionId", "projectUuid", "windowTabId", "bindWorker", "request", "poll", "assertCurrent", "projectSourceHeld", "constructionRequest", "initialSyncRequest", "initialSyncHeld", "initialCacheRequest", "initialCacheHeld", "startupQueueRequest", "startupCallbackRequest", "startupCallbackHeld", "conditionSourceRequest", "timerRequest", "timerHeld", "libraryRequest", "libraryHeld", "modelStepRequest", "startupIdleReady", "settleStartupPromises", "coldStepRequest", "coldRequest", "producerArmRequest", "constructionHeld", "fail"];
     need(Reflect.ownKeys(bindings).length === fields.length);
     for (const [index, name] of fields.entries()) { const d = Object.getOwnPropertyDescriptor(bindings, name); need(d !== undefined && Object.hasOwn(d, "value") && typeof d.value === (index < 3 ? "string" : "function") && !types.isProxy(d.value)); }
     need(token(bindings.parentSessionId) && token(bindings.windowTabId) && /^[a-f\d]{64}$/u.test(bindings.projectUuid)); this.#bindings = bindings; Object.freeze(this);
@@ -118,18 +126,20 @@ export class CurrentFootprintInverseWorkerController {
    * fixed policy acknowledgments and later original source/body joins matter. */
   public observeEvent(event: DiagnosticEvent): void {
     try {
-      this.#eventCount += 1; need(!this.#failed && this.#eventCount <= 1024+13*this.#startupCallbackBound+18*this.#initialCacheBound+53+(this.#conditionBound>0?currentFootprintInverseConditionBudget(this.#conditionBound):0));
+      this.#eventCount += 1; need(!this.#failed && this.#eventCount <= 1024+13*this.#startupCallbackBound+18*this.#initialCacheBound+53+(this.#libraryBound?25:0)+(this.#conditionBound>0?currentFootprintInverseConditionBudget(this.#conditionBound):0));
       if (event.method === "Target.attachedToTarget") { this.#attach(event); return; }
       need(this.#page !== null && event.sessionId === this.#page.sessionId);
       if (["Network.requestWillBeSent", "Network.requestWillBeSentExtraInfo", "Network.responseReceived", "Network.responseReceivedExtraInfo", "Network.loadingFinished", "Network.loadingFailed", "Network.dataReceived", "Network.requestServedFromCache", "Network.resourceChangedPriority"].includes(event.method)) {
         this.#networkEvents += 1; need(this.#networkEvents <= 512); return;
       }
       if (this.#source !== null && event.method === "Debugger.scriptParsed" && event.params["url"] === "") {
-        const expected = [...this.#constructionHelpers,...this.#producerHelpers,...this.#coldHelpers,...this.#startupCallbackHelpers,...this.#timerHelpers,...this.#startupQueueHelpers,...this.#initialCacheHelpers,...this.#initialSyncHelpers].find(value => value.scriptId === null);
+        const expected = [...this.#constructionHelpers,...this.#producerHelpers,...this.#coldHelpers,...this.#startupCallbackHelpers,...this.#timerHelpers,...this.#libraryHelpers,...this.#startupQueueHelpers,...this.#initialCacheHelpers,...this.#initialSyncHelpers].find(value => value.scriptId === null);
         const scriptId=event.params["scriptId"];need(token(scriptId)&&event.params["executionContextId"]===this.#source.executionContextId);
         if(expected===undefined){need(this.#conditionBound>0&&this.#conditionRoles.size>0&&!this.#conditionSeenIds.has(scriptId)&&this.#conditionSeenIds.size<currentFootprintInverseConditionBudget(this.#conditionBound));this.#conditionSeenIds.add(scriptId);this.#conditionScriptIds.push(scriptId);}else{expected.scriptId=scriptId;}return;
       }
       if (this.#source !== null && event.method === "Debugger.breakpointResolved") {
+        const libraryId=event.params["breakpointId"],libraryLocation=event.params["location"],libraryRole=[...this.#libraryPoints].find(([,id])=>id===libraryId)?.[0]??this.#libraryArming;
+        if(libraryRole!==null&&libraryRole!==undefined&&record(libraryLocation)&&libraryLocation["scriptId"]===this.#source.scriptId&&libraryLocation["lineNumber"]===LIBRARY_SITES[libraryRole].lineNumber&&libraryLocation["columnNumber"]===LIBRARY_SITES[libraryRole].columnNumber){need(token(libraryId));const previous=this.#libraryResolutions.get(libraryId);need(previous===undefined||previous===libraryRole);this.#libraryResolutions.set(libraryId,libraryRole);return;}
         const timerId = event.params["breakpointId"]; const timerLocation = event.params["location"]; const knownTimer = [...this.#timerPoints].find(([, id]) => id === timerId);
         const timerRole = knownTimer?.[0] ?? this.#timerArming;
         if (timerRole !== null && timerRole !== undefined && record(timerLocation) && timerLocation["scriptId"] === this.#source.scriptId && timerLocation["lineNumber"] === TIMER_SITES[timerRole].lineNumber && timerLocation["columnNumber"] === TIMER_SITES[timerRole].columnNumber) {
@@ -268,6 +278,22 @@ export class CurrentFootprintInverseWorkerController {
   }
   public completeTimer(): void { need(this.#pumping && !this.#failed && !this.#timerCompleted && this.#timerEntryObserved && this.#timerReturnObserved && this.#timerHeld === null && this.#timerHelpers.length === 0); this.#timerCompleted = true; }
   public requireTimerCompleted(): void { need(!this.#failed && this.#timerCompleted && this.#timerHeld === null && this.#timerHelpers.length === 0); }
+  public bindLibraryRefresh():void{this.requireConstructionBootstrap();need(this.#pumping&&!this.#libraryBound);this.#libraryBound=true;}
+  public expectLibraryArm(role:keyof typeof LIBRARY_SITES):void{this.requireConstructionBootstrap();need(this.#pumping&&this.#libraryBound&&this.#libraryArming===null&&!this.#libraryPoints.has(role));this.#libraryArming=role;}
+  public registerLibraryArm(role:keyof typeof LIBRARY_SITES,id:string):void{this.requireConstructionBootstrap();need(this.#pumping&&this.#libraryArming===role&&token(id)&&!this.#libraryPoints.has(role)&&![...this.#libraryPoints.values()].includes(id));for(const[resolved,value]of this.#libraryResolutions){if(value===role){need(resolved===id);}}this.#libraryPoints.set(role,id);this.#libraryArming=null;}
+  public requireLibraryArmed():void{need(!this.#failed&&this.#libraryBound&&this.#libraryPoints.size===7&&this.#libraryArming===null&&this.#libraryHelpers.length===0);}
+  public expectLibraryHelper(program:string):void{const selected=LIBRARY_HELPERS.find(row=>row.program===program);need(!this.#failed&&this.#pumping&&this.#libraryBound&&selected!==undefined&&this.#libraryHelpers.length===0&&(this.#constructionHeld==="bootstrap"&&this.#constructionResume===null||this.#libraryHeld!==null&&!this.#libraryHeld.resumeAttempted||this.#libraryMountObserved&&!this.#libraryCompleted&&this.#libraryHeld===null));this.#libraryHelpers.push({program,source:selected.source,scriptId:null});}
+  public async qualifyLibraryHelper(program:string):Promise<void>{const original=this.#libraryHelpers[0];need(this.#pumping&&!this.#failed&&original!==undefined&&original.program===program&&original.scriptId!==null);const raw=await this.#bindings.libraryRequest({phase:"library-refresh-helper",method:"Debugger.getScriptSource",params:{scriptId:original.scriptId}});await this.#current();need(record(raw)&&Reflect.ownKeys(raw).length===1&&raw["scriptSource"]===original.source&&this.#libraryHelpers[0]===original);this.#libraryHelpers.shift();}
+  public requestLibrary(command:CurrentProjectLibraryRefreshCommand):Promise<unknown>{need(!this.#failed&&this.#pumping&&this.#libraryBound&&!this.#libraryCompleted&&(this.#constructionHeld==="bootstrap"&&this.#constructionResume===null||this.#libraryHeld!==null||this.#libraryMountObserved&&command.phase==="library-refresh-reprove"));return this.#bindings.libraryRequest(command);}
+  public reserveLibraryResume(role:"firstLoop"|"loopReturned"|"mountReturned"):void{const held=this.#libraryHeld;need(this.#pumping&&held!==null&&held.role===role&&held.delivered&&!held.resumeAttempted&&this.#libraryHelpers.length===0);held.resumeAttempted=true;}
+  public async nextLibraryEvent():Promise<DiagnosticEvent>{need(this.#pumping&&!this.#failed&&this.#pair!==null);let held=this.#libraryHeld;
+    if(held===null){need(this.#libraryFirstObserved&&!this.#libraryReturnedObserved&&!this.#librarySuspended);const event=await this.#next(),hits=event.params["hitBreakpoints"];need(event.sessionId===this.#pair.pageSessionId&&event.method==="Debugger.paused"&&Array.isArray(hits)&&hits.length===1&&hits[0]===this.#libraryPoints.get("loopReturned"));held={role:"loopReturned",event,delivered:false,resumeAttempted:false};this.#libraryHeld=held;this.#libraryReturnedObserved=true;}
+    if(!held.delivered){held.delivered=true;return held.event;}need(held.resumeAttempted&&this.#libraryHelpers.length===0);const resumed=await this.#next();need(resumed.sessionId===this.#pair.pageSessionId&&resumed.method==="Debugger.resumed"&&Reflect.ownKeys(resumed.params).length===0&&this.#libraryHeld===held);this.#libraryHeld=null;return resumed;
+  }
+  public completeLibraryFirstLoop():void{need(this.#pumping&&!this.#failed&&!this.#librarySuspended&&this.#libraryFirstObserved&&this.#libraryReturnedObserved&&this.#libraryHeld===null&&this.#libraryHelpers.length===0);this.#librarySuspended=true;}
+  public requireLibrarySuspended():void{this.requireLibraryArmed();need(this.#librarySuspended&&this.#libraryFirstObserved&&this.#libraryReturnedObserved&&this.#libraryHeld===null);}
+  public completeLibraryRefresh():void{need(this.#pumping&&!this.#failed&&!this.#libraryCompleted&&this.#librarySuspended&&this.#libraryMountObserved&&this.#libraryHeld===null&&this.#libraryHelpers.length===0);this.#libraryCompleted=true;}
+  public requireLibraryCompleted():void{this.requireLibrarySuspended();need(this.#libraryCompleted&&this.#libraryMountObserved);}
   public bindInitialSyncLane():void{this.requireConstructionBootstrap();need(this.#pumping&&!this.#initialSyncBound&&this.#initialCacheBound>0);this.#initialSyncBound=true;}
   public originalInitialSyncArms():readonly Readonly<{role:typeof SYNC_ROLES[number];id:string}>[]{this.requireConstructionBootstrap();return Object.freeze(SYNC_ROLES.map(role=>{const point=this.#producerPoints.get(`project-save-producer-arm-${role}`);need(point!==undefined);return Object.freeze({role,id:point.id});}));}
   public originalInitialSyncHeldRole():typeof SYNC_ROLES[number]{need(this.#pumping&&this.#initialSyncHeld!==null);return this.#initialSyncHeld.role;}
@@ -294,13 +320,15 @@ export class CurrentFootprintInverseWorkerController {
   public requestModelStep(command:CurrentFootprintInverseModelStepCommand):Promise<unknown>{need(!this.#failed&&this.#pumping&&this.#coldStepPending!==null&&this.#coldStepPending.role===command.role&&this.#coldStartupHeld===null);return this.#bindings.modelStepRequest(command);}
   public requestColdStep(command:CurrentFootprintInverseColdStepCommand):Promise<unknown>{need(!this.#failed&&this.#pumping&&this.#coldStepPending!==null&&this.#coldStepPending.role===command.role&&this.#coldStartupHeld===null);return this.#bindings.coldStepRequest(command);}
   public async observeColdStepResumed(held:Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>):Promise<void>{need(this.#pumping&&this.#coldStepPending===held&&this.#coldStartupHeld===null);const event=await this.#next();need(this.#pair!==null&&event.sessionId===this.#pair.pageSessionId&&event.method==="Debugger.resumed"&&Reflect.ownKeys(event.params).length===0);this.#coldStepPending=null;if(held.role==="ready"){need(!this.#modelReadyReleased);this.#modelReadyReleased=true;}}
-  public queueColdStartup(run:()=>Promise<void>):Promise<boolean>{this.requireConstructionBootstrap();need(!this.#failed&&!this.#coldStartupAttempted&&!this.#pumping&&this.#bootstrapSetupAttempted&&this.#bootstrapSetupWork===null&&this.#constructionWork===null&&this.#coldPoints.size===13&&this.#producerPoints.size===37&&this.#coldHelpers.length===0&&this.#producerHelpers.length===0&&typeof run==="function"&&!types.isProxy(run));this.#coldStartupAttempted=true;const result=Promise.withResolvers<boolean>();this.#coldStartupWork=Object.freeze({run,result});return result.promise;}
-  public reserveColdBootstrap():void{this.requireConstructionBootstrap();need(this.#pumping&&this.#coldStartupAttempted&&!this.#coldStartupStarted&&this.#coldPoints.size===13&&this.#producerPoints.size===37&&this.#coldHelpers.length===0&&this.#producerHelpers.length===0);this.#constructionHeld=null;this.#constructionResume="bootstrap";}
+  public queueColdStartup(run:()=>Promise<void>):Promise<boolean>{this.requireConstructionBootstrap();this.requireLibraryArmed();need(!this.#failed&&!this.#coldStartupAttempted&&!this.#pumping&&this.#bootstrapSetupAttempted&&this.#bootstrapSetupWork===null&&this.#constructionWork===null&&this.#coldPoints.size===13&&this.#producerPoints.size===37&&this.#coldHelpers.length===0&&this.#producerHelpers.length===0&&typeof run==="function"&&!types.isProxy(run));this.#coldStartupAttempted=true;const result=Promise.withResolvers<boolean>();this.#coldStartupWork=Object.freeze({run,result});return result.promise;}
+  public reserveColdBootstrap():void{this.requireConstructionBootstrap();this.requireLibraryArmed();need(this.#pumping&&this.#coldStartupAttempted&&!this.#coldStartupStarted&&this.#coldPoints.size===13&&this.#producerPoints.size===37&&this.#coldHelpers.length===0&&this.#producerHelpers.length===0);this.#constructionHeld=null;this.#constructionResume="bootstrap";}
   public requireColdStartupCustody():void{need(!this.#failed&&this.#coldStartupAttempted&&this.#pair!==null&&(this.#coldStartupStarted||this.#constructionHeld==="bootstrap"&&this.#constructionResume===null||this.#constructionHeld===null&&this.#constructionResume==="bootstrap"));}
   public originalColdStartupHeld():Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>{need(this.#coldStartupHeld!==null);this.requireColdStartupHeld(this.#coldStartupHeld);return this.#coldStartupHeld;}
   public requireColdStartupHeld(value:Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>):void{need(!this.#failed&&this.#coldStartupStarted&&this.#coldStartupHeld===value);}
   async #serviceStartupEvent(event:WorkerEvent):Promise<boolean>{
     const hits=event.params["hitBreakpoints"];if(event.method!=="Debugger.paused"||!Array.isArray(hits)||hits.length!==1){return false;}
+    const library=[...this.#libraryPoints].find(([,id])=>id===hits[0])?.[0];
+    if(library!==undefined){this.requireLibraryArmed();need(this.#libraryHeld===null);if(library!=="firstLoop"&&library!=="mountReturned"){this.#unsupportedStartupHeld=event;throw new Error("FOOTPRINT_INVERSE_LIBRARY_UNSUPPORTED_PATH");}if(library==="firstLoop"){need(!this.#libraryFirstObserved&&!this.#librarySuspended);this.#libraryFirstObserved=true;}else{need(this.#librarySuspended&&!this.#libraryMountObserved);this.#libraryMountObserved=true;}this.#libraryHeld={role:library,event,delivered:false,resumeAttempted:false};await this.#bindings.libraryHeld(library);await this.#current();if(library==="firstLoop"){this.requireLibrarySuspended();}else{this.requireLibraryCompleted();}return true;}
     if(hits[0]===this.#timerPoints.get("entry")){this.requireTimerArmed();need(!this.#timerEntryObserved&&!this.#timerCompleted&&this.#timerHeld===null);this.#timerEntryObserved=true;this.#timerHeld={role:"entry",event,delivered:false,resumeAttempted:false};await this.#bindings.timerHeld();await this.#current();this.requireTimerCompleted();return true;}
     const sync=SYNC_ROLES.find(role=>this.#producerPoints.get(`project-save-producer-arm-${role}`)?.id===hits[0]);
     if(sync!==undefined){need(this.#initialSyncBound&&this.#initialSyncHolds<9&&this.#initialSyncHeld===null);this.#initialSyncHolds+=1;this.#initialSyncHeld={role:sync,event,delivered:false,resumeAttempted:false};await this.#bindings.initialSyncHeld();await this.#current();need(this.#initialSyncHeld===null&&this.#initialSyncHelpers.length===0);return true;}
@@ -312,10 +340,10 @@ export class CurrentFootprintInverseWorkerController {
   }
   public async drainOriginalStartup():Promise<void>{
     this.requireColdStartupCustody();need(this.#pumping&&this.#modelReadyReleased&&!this.#startupDrained&&this.#coldStartupHeld===null&&this.#coldStepPending===null);
-    await drainCurrentFootprintInverseStartup<WorkerEvent>(Object.freeze({maximumPauses:3*this.#initialCacheBound+9+2,assertCurrent:()=>this.#current(),settleOriginalPromises:()=>this.#bindings.settleStartupPromises(),originalCompletionsPresent:()=>this.#bindings.startupIdleReady(),nextOriginalEvent:()=>this.#next(),serviceOriginalEvent:(event:WorkerEvent)=>this.#serviceStartupEvent(event),retainUnsupported:(event:WorkerEvent):void=>{this.#unsupportedStartupHeld=event;}}));
+    await drainCurrentFootprintInverseStartup<WorkerEvent>(Object.freeze({maximumPauses:3*this.#initialCacheBound+9+2+2,assertCurrent:()=>this.#current(),settleOriginalPromises:()=>this.#bindings.settleStartupPromises(),originalCompletionsPresent:()=>this.#bindings.startupIdleReady(),nextOriginalEvent:()=>this.#next(),serviceOriginalEvent:(event:WorkerEvent)=>this.#serviceStartupEvent(event),retainUnsupported:(event:WorkerEvent):void=>{this.#unsupportedStartupHeld=event;}}));
     this.#startupDrained=true;
   }
-  public requireOriginalStartupDrained():void{this.requireColdStartupCustody();need(this.#startupDrained&&this.#modelReadyReleased&&this.#coldStartupHeld===null&&this.#coldStepPending===null&&this.#startupCallbackHeld===null&&this.#initialCacheHeld===null&&this.#initialSyncHeld===null&&this.#timerHeld===null&&this.#unsupportedStartupHeld===null&&this.#events.length===0&&this.#conditionScriptIds.length===0&&this.#coldHelpers.length===0&&this.#startupCallbackHelpers.length===0&&this.#startupQueueHelpers.length===0&&this.#initialCacheHelpers.length===0&&this.#initialSyncHelpers.length===0&&this.#timerHelpers.length===0&&this.#bindings.startupIdleReady());}
+  public requireOriginalStartupDrained():void{this.requireColdStartupCustody();need(this.#startupDrained&&this.#modelReadyReleased&&this.#coldStartupHeld===null&&this.#coldStepPending===null&&this.#startupCallbackHeld===null&&this.#initialCacheHeld===null&&this.#initialSyncHeld===null&&this.#timerHeld===null&&this.#unsupportedStartupHeld===null&&this.#events.length===0&&this.#conditionScriptIds.length===0&&this.#coldHelpers.length===0&&this.#startupCallbackHelpers.length===0&&this.#startupQueueHelpers.length===0&&this.#initialCacheHelpers.length===0&&this.#initialSyncHelpers.length===0&&this.#timerHelpers.length===0&&this.#libraryHeld===null&&this.#libraryHelpers.length===0&&this.#libraryCompleted&&this.#bindings.startupIdleReady());}
   public async nextColdStartupHeld():Promise<Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>>{
     need(this.#pumping&&this.#coldStartupStarted&&this.#coldStartupHeld===null&&this.#unsupportedStartupHeld===null&&this.#startupCallbackHeld===null);
     let event:WorkerEvent;for(;;){event=await this.#next();if(!await this.#serviceStartupEvent(event)){break;}}

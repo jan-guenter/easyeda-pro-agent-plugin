@@ -188,3 +188,48 @@ strings. `Phase(step)` still yields the exact earlier phase sequence, verified
 by its complete SHA256 as well as all52 unchanged message hashes. The codec is
 12,773 compiler bytes (989 fewer); the same private combined C# smoke is
 2,079,046 bytes and passes. No role, field, program, cap or validator widened.
+
+## Original inverse adapter
+
+The inverse owner now publishes its own original durable library-loop intent
+before worker/navigation allocation, retains the exact publication Promise,
+rechecks the original saved source/native binding/Main fence and consumes that
+intent before the first suspension await. It reserves busy custody through
+publication settlement. Matching JSON, copied owners and copied intents cannot
+enter this path.
+
+`armFootprintInverseLibraryRefresh(originalBootstrapHold)` populates only the
+inverse origin registry entry, prepares the pristine tuple, arms the seven
+fixed points and substitutes the actual original frame/tuple/function handles
+for every observer command. Each helper receipt joins the exact original
+command/raw-reply references before its emitted source is accepted. The single
+existing inverse event cursor now routes both finite waves; it adds no second
+poll owner. The shared encoder is instantiated once even when both new purpose
+fragments compose it. The inverse owns its own bind/three holds/effect markers/
+completion and68-control reservation; older purposes retain their ceilings.
+
+The original seven-source bootstrap pins `self.PRO_EDITOR_MODE` to a
+`CLIENT-${mode}-EASYEDA-PCB-SCH-PANEL-SIM` literal. In the pinned project worker,
+`PL()` selects self, the mode computes `nn`, and `L1.IS_CLIENT` supplies `ln`.
+This genuine bootstrap source chain excludes the non-client teams query before
+library init; firstLoop's `ln===true` is a later independent reproof. It is not
+retrospectively used to attest that an earlier query was absent.
+
+The original parsed release now requires the actual pristine/armed observer;
+ready release requires its actual first-wave suspension/cancellation receipt.
+The post-ready same-cursor drain services mount's normal-return wave, and final
+startup idle requires the original final observer/native completion. Actual
+Root/Job termination and original cleanup remain separate. No inverse delete,
+Save, selected SQL or full producer-frontier grant is added by this increment.
+
+The existing mixed-data decoder remains unchanged. Before worker opening, this
+new inverse route admits only FOOTPRINT, SYMBOL, BOARD, CONFIG, PCB, PANEL, SCH,
+SCH_PAGE, DEVICE, INSTANCE and SIMULATION document families. BLOB/FONT/variant
+publication callbacks require their own actual custody and are explicitly
+refused. The intended mixed PCB/board/config peers are retained, not pruned.
+
+Thirteen focused inverse factory/grammar/drain/composition checks pass. Private
+full generation is two-pass exact at1,536,097 stored helper bytes and2,084,026
+compiler bytes; the full Linux C#5 library and model-step/refusal smokes pass.
+These are source/synthetic prerequisite checks, not connected four-generation
+validation. No tracked helper, pins, bundle or native application changed.
