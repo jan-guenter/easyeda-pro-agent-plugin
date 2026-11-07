@@ -823,3 +823,5 @@ layout. The connected ledger retains its generation and case anchors.
 - [Original schematic publisher pristine custody](2026-11-07-schematic-publisher-pristine-custody.md), connected held-setter readonly graph, complete descriptor preservation and separate native dependencies; continuation remains held.
 
 - [Original underline primitive to held record entry](2026-11-07-schematic-original-primitive-record-bridge.md), one consumed raw field write with exact new delta proofs and the original record body still held.
+
+- [Original record to held AST entry](2026-11-07-schematic-record-held-ast.md), exact event/closure proof and one original continuation ending before the next flag write.

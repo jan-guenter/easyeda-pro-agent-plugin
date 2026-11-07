@@ -42,9 +42,9 @@ void test("the held first setter matches actual underline accessor references wi
   const f = fixture(); assert.equal(f.firstSetter(), true); assert.equal(f.setterCalls(), 0);
   for (const fault of ["index", "binding", "getter"] as const) { const changed = fixture(); assert.throws(() => changed.firstSetter(fault), /FIRST_SETTER_PROOF/u); assert.equal(changed.setterCalls(), 0); }
 });
-function event(role: "entry" | "setter" | "record" | "setAttribute", script = "original-callback"): DiagnosticEvent {
+function event(role: "entry" | "setter" | "record" | "setAttribute" | "ast", script = "original-callback"): DiagnosticEvent {
   let location = { ...LOCATION, scriptId: script }; let functionLocation = location; const ids: string[] = [];
-  if (role === "record" || role === "setAttribute") { const row = SOURCES[0].methods[role === "record" ? "monitorRecord" : "monitorSetAttribute"]; functionLocation = { scriptId: "original-source", lineNumber: row.lineNumber, columnNumber: row.columnNumber }; location = functionLocation; ids.push(`point:schematic-callback-arm-${role}`); }
+  if (role === "record" || role === "setAttribute" || role === "ast") { const row = SOURCES[0].methods[role === "record" ? "monitorRecord" : role === "ast" ? "monitorAst" : "monitorSetAttribute"]; functionLocation = { scriptId: "original-source", lineNumber: row.lineNumber, columnNumber: row.columnNumber }; location = functionLocation; ids.push(`point:schematic-callback-arm-${role}`); }
   else { const marker = MARKERS.find(item => item.role === role); assert.ok(marker !== undefined); location = { scriptId: script, lineNumber: marker.lineNumber, columnNumber: marker.columnNumber }; }
   return { method: "Debugger.paused", sessionId: "original-session", params: { reason: "other", hitBreakpoints: ids, callFrames: [{ callFrameId: "original-frame", location, functionLocation }] } };
 }
@@ -98,4 +98,10 @@ void test("one primitive reservation joins the original record pause on either s
 });
 void test("a reserved primitive resume cannot consume an unsubmitted resumed event or manufacture a record completion", async () => {
   const f = await atOriginalSetAttribute(); const monitor = await f.lane.waitOriginalSetAttribute(); assert.throws(() => { f.lane.reservePrimitiveResume({ ...monitor }); }); const reservation = f.lane.reservePrimitiveResume(monitor); f.lane.observeOriginalEvent({ method: "Debugger.resumed", sessionId: "original-session", params: {} }); assert.equal(f.failures(), 1); await assert.rejects(f.lane.waitPrimitiveResumed(reservation)); await assert.rejects(f.lane.waitOriginalRecord());
+});
+
+void test("the one original record continuation stops at AST before or after its resume acknowledgement", async () => {
+  for (const pauseBeforeAck of [true, false]) {
+    const f = await atOriginalSetAttribute(); const primitive = f.lane.reservePrimitiveResume(await f.lane.waitOriginalSetAttribute()); f.lane.markPrimitiveResumeSubmitted(primitive); f.lane.observeOriginalEvent({ method: "Debugger.resumed", sessionId: "original-session", params: {} }); f.lane.observeOriginalEvent(event("record")); await f.lane.waitPrimitiveResumed(primitive); f.lane.completePrimitiveResume(primitive); const record = await f.lane.waitOriginalRecord(); const reservation = f.lane.reserveRecordResume(record); assert.throws(() => { f.lane.reserveRecordResume(record); }); f.lane.markRecordResumeSubmitted(reservation); f.lane.observeOriginalEvent({ method: "Debugger.resumed", sessionId: "original-session", params: {} }); const ast = event("ast"); if (pauseBeforeAck) { f.lane.observeOriginalEvent(ast); } await f.lane.waitRecordResumed(reservation); f.lane.completeRecordResume(reservation); if (!pauseBeforeAck) { f.lane.observeOriginalEvent(ast); } const held = await f.lane.waitOriginalAst(); assert.equal(held.event, ast); assert.equal(f.failures(), 0); assert.throws(() => { f.lane.reserveRecordResume(held); });
+  }
 });

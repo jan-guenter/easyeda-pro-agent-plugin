@@ -1,3 +1,4 @@
+import { currentSchematicRelevanceRecordAstWire } from "./current-schematic-relevance-record-ast-wire.ts";
 import { currentSchematicRelevancePrimitiveWire } from "./current-schematic-relevance-primitive-wire.ts";
 import { currentSchematicRelevanceUiPublicationWire } from "./current-schematic-relevance-ui-publication-wire.ts";
 /* oxlint-disable import/max-dependencies -- Each fixed purpose lane validates its own complete native codec; a caller-selected generic encoder would erase those boundaries. */
@@ -26,6 +27,13 @@ export function currentSchematicRelevanceDisplayWriteNativeRequest(chunk: Buffer
     !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("SCHEMATIC_RELEVANCE_DISPLAY_WIRE"); }
   if (Object.hasOwn(raw, "schematicDisplayPhase") || Object.hasOwn(raw, "schematicAccessorCommand") || Object.hasOwn(raw, "schematicActionCommand") || Object.hasOwn(raw, "schematicActionGuardCommand") || Object.hasOwn(raw, "schematicClockCommand")) {
     throw new Error("SCHEMATIC_RELEVANCE_DISPLAY_OWN_MUTATION_ORIGIN_REQUIRED");
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceRecordAstCommand")) {
+    const { id, sessionId, schematicRelevanceRecordAstCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_RECORD_AST_WIRE"); }
+    const fixed = currentSchematicRelevanceRecordAstWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceRecordAstCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_RECORD_AST_FIXED_WIRE"); }
+    return fixed.request;
   }
   if (Object.hasOwn(raw, "schematicRelevancePrimitiveCommand")) {
     const { id, sessionId, schematicRelevancePrimitiveCommand: marker, ...input } = raw;

@@ -1,5 +1,6 @@
 /* oxlint-disable import/max-dependencies -- The retained original request is exercised with its two separately fixed readonly lanes and purpose encoder. */
 /* oxlint-disable promise/prefer-await-to-callbacks -- Inspector and Writable callbacks are the acknowledgement boundaries under test. */
+import { currentSchematicRelevanceRecordAstCases } from "../src/current-schematic-relevance-record-ast-wire.ts";
 import { currentSchematicRelevancePrimitiveCases } from "../src/current-schematic-relevance-primitive-wire.ts";
 import { currentSchematicRelevanceUiPublicationCases } from "../src/current-schematic-relevance-ui-publication-wire.ts";
 /** Original pipe/Inspector behavior on inert streams and synthetic models.
@@ -46,6 +47,7 @@ void test("one original seven-record Modify remains pending while its fixed entr
   const publication = currentSchematicRelevanceUiPublicationCases().find(value => value.phase === "global"); assert.ok(publication !== undefined); await f.pipe.observeSchematicRelevanceUiPublication(publication);
   const publicationSent = f.sent[3]; assert.ok(publicationSent !== undefined); assert.equal(publicationSent["id"], 4); assert.equal(f.pipe.status().pendingRequestId, 2); const publicationRequest = currentSchematicRelevanceDisplayWriteNativeRequest(Buffer.from(`${JSON.stringify(publicationSent)}\0`)); assert.equal(publicationRequest["action"], "schematic-relevance-ui-publication"); assert.equal(Object.hasOwn(publicationRequest, "uniqueContextId"), false);
   const primitive = currentSchematicRelevancePrimitiveCases()[0]; assert.ok(primitive !== undefined); await f.pipe.observeSchematicRelevancePrimitive(primitive); const primitiveSent = f.sent[4]; assert.ok(primitiveSent !== undefined); assert.equal(primitiveSent["id"], 5); assert.equal(f.pipe.status().pendingRequestId, 2); const primitiveBytes = Buffer.from(`${JSON.stringify(primitiveSent)}\0`); assert.equal(currentSchematicRelevanceDisplayWriteNativeRequest(primitiveBytes)["action"], "schematic-relevance-primitive");
+  const recordAst = currentSchematicRelevanceRecordAstCases()[0]; assert.ok(recordAst !== undefined); await f.pipe.observeSchematicRelevanceRecordAst(recordAst); const recordAstSent = f.sent[5]; assert.ok(recordAstSent !== undefined); assert.equal(recordAstSent["id"], 6); assert.equal(f.pipe.status().pendingRequestId, 2); const recordAstBytes = Buffer.from(`${JSON.stringify(recordAstSent)}\0`); assert.equal(currentSchematicRelevanceDisplayWriteNativeRequest(recordAstBytes)["action"], "schematic-relevance-record-ast");
   const generated = f.sent[1], observed = f.sent[2]; assert.ok(generated !== undefined && observed !== undefined);
   const generationBytes = Buffer.from(`${JSON.stringify(generated)}\0`), generationRequest = currentSchematicRelevanceDisplayWriteNativeRequest(generationBytes);
   assert.equal(generationRequest["action"], "schematic-relevance-display-modify-generate");

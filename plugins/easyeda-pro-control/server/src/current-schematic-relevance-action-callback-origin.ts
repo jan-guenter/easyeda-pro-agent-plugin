@@ -1,4 +1,6 @@
 /* oxlint-disable import/max-dependencies -- Typed cursor and command boundaries remain separate while this one original callback capability shares their retained owner custody. */
+import type { CurrentSchematicRelevanceRecordAstCommand } from "./current-schematic-relevance-record-ast-protocol.ts";
+import type { CurrentSchematicRelevanceAstHeld, CurrentSchematicRelevanceRecordAstPrepared } from "./current-schematic-relevance-record-ast-cursor.ts";
 import type { CurrentSchematicRelevanceCompletionReceipt } from "./current-schematic-relevance-completion-cursor.ts";
 import type { CurrentSchematicRelevancePrimitiveCommand } from "./current-schematic-relevance-primitive-protocol.ts";
 import type { CurrentSchematicRelevancePrimitivePrepared, CurrentSchematicRelevancePrimitiveRecordHeld } from "./current-schematic-relevance-primitive-cursor.ts";
@@ -27,6 +29,13 @@ export interface CurrentSchematicRelevanceActionCallbackBindings {
   readonly requestSetAttribute: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand) => Promise<unknown>;
   readonly nextActiveHistoryCommand: () => CurrentSchematicRelevanceDisplayModifyEntryCommand | null;
   readonly requestActiveHistory: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand) => Promise<unknown>;
+  readonly nextRecordAstBeforeCommand: () => CurrentSchematicRelevanceRecordAstCommand | null;
+  readonly requestRecordAstBefore: (command: CurrentSchematicRelevanceRecordAstCommand) => Promise<unknown>;
+  readonly requireOriginalRecordAstPrepared: () => CurrentSchematicRelevanceRecordAstPrepared;
+  readonly continueRecordToAst: () => Promise<void>;
+  readonly nextAstCommand: () => CurrentSchematicRelevanceRecordAstCommand | null;
+  readonly requestAst: (command: CurrentSchematicRelevanceRecordAstCommand) => Promise<unknown>;
+  readonly requireOriginalAstHeld: () => CurrentSchematicRelevanceAstHeld;
   readonly nextNormalCompletionCommand: () => CurrentSchematicRelevanceDisplayModifyEntryCommand | null;
   readonly requestNormalCompletion: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand) => Promise<unknown>;
   readonly requireOriginalNormalCompletion: () => CurrentSchematicRelevanceCompletionReceipt;
