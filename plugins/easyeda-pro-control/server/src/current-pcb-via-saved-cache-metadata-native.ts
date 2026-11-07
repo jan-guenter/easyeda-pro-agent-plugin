@@ -57,3 +57,14 @@ export const CURRENT_PCB_VIA_SAVED_CACHE_METADATA_DISPATCH = String.raw`        
           $owner.SendSavedViaMetadata([int]$request.requestId,$request.sessionId,$request.savedCacheMetadataPhase,$fields);$result=@{written=$true}
         }
 `;
+
+/** Fixed source/table/field encoder only. No old purpose sender, instance
+ * ledger, flags or grant is included in this shared data projection. */
+export function currentScopedCacheMetadataNativeCodec(maximumRequests: number): string {
+  if (!Number.isSafeInteger(maximumRequests) || maximumRequests < 1 || maximumRequests > 2_147_483_647) { throw new Error("SCOPED_CACHE_METADATA_REQUEST_DOMAIN"); }
+  const source = currentPcbViaSavedCacheMetadataNative(); const begin = "static readonly string[][] SavedViaMetadataPrograms=", end = "public void SendSavedViaMetadata(";
+  if (source.split(begin).length !== 2 || source.split(end).length !== 2) { throw new Error("SCOPED_CACHE_METADATA_CODEBOOK"); }
+  const start = source.indexOf(begin), stop = source.indexOf(end); if (stop <= start) { throw new Error("SCOPED_CACHE_METADATA_CODEBOOK"); }
+  const code = source.slice(start, stop), range = `id>${String(PROFILE.renderer.activeReadOnly)}`;
+  if (code.split(range).length !== 2) { throw new Error("SCOPED_CACHE_METADATA_REQUEST_BOUND"); } return code.replace(range, `id>${String(maximumRequests)}`);
+}

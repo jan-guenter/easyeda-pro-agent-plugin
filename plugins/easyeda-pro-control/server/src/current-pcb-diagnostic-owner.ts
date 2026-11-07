@@ -15,7 +15,9 @@ import { CURRENT_FOOTPRINT_INVERSE_GET_CALLBACK_REQUESTS as INVERSE_GET_CALLBACK
 import type { CurrentFootprintInverseGetCallbackCommand } from "./current-footprint-inverse-get-callback-protocol.ts";
 import {CurrentSchematicRelevanceNoEchoCursor} from "./current-schematic-relevance-noecho-cursor.ts";
 import type {CurrentSchematicRelevanceNoEchoCommand} from "./current-schematic-relevance-noecho-protocol.ts";
+import type { CurrentSchematicRelevanceSavedCachePublishedData } from "./current-schematic-relevance-saved-cache-backup.ts";
 import type { CurrentSchematicRelevanceSavedSceneBindings, CurrentSchematicRelevanceSavedSceneOrigin } from "./current-schematic-relevance-saved-scene-origin.ts";
+import { currentSchematicRelevanceSavedCacheFrame, currentSchematicRelevanceSavedMetadataFrame, currentSchematicRelevanceSavedParentFrame, currentSchematicRelevanceSavedPreflightFrame } from "./current-schematic-relevance-saved-cache-wire.ts";
 import type { CurrentSchematicRelevanceSavedRegistrationBindings, CurrentSchematicRelevanceSavedRegistrationIntent } from "./current-schematic-relevance-saved-registration-intent.ts";
 import type { CurrentSchematicRelevanceSavedCacheBindings, CurrentSchematicRelevanceSavedCacheOrigin } from "./current-schematic-relevance-saved-cache-origin.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_SAVED_READBACK_PROFILE as SCH_SAVED_PROFILE, CURRENT_SCHEMATIC_RELEVANCE_SAVED_READBACK_PURPOSE as SCH_SAVED_PURPOSE } from "./current-schematic-relevance-saved-readback-profile.ts";
@@ -1549,6 +1551,13 @@ interface FootprintInverseCacheAbsenceHeld {
 const footprintInverseCacheAbsences = new WeakMap<object, FootprintInverseCacheAbsenceHeld>();
 const footprintInverseCacheBackups = new WeakMap<object, FootprintInverseCacheBackupHeld>();
 const footprintInverseCaches = new WeakMap<object, FootprintInverseCacheHeld>();
+interface SchematicSavedCacheHeld {
+  readonly origin: CurrentSchematicRelevanceSavedCacheOrigin; readonly prepared: GeneratedSchematicRelevanceSavedReadbackPlan;
+  readonly owner: CurrentPcbRetainedOwnerCore; readonly ledger: CurrentPcbViaSavedCacheLedger; readonly metadata: CurrentPcbViaSavedCacheMetadataLedger;
+  readonly context: CurrentPcbDiagnosticContext; readonly selected: ReturnType<CurrentPcbDiagnosticContext["savedReadbackCacheContext"]>;
+  readonly bindings: CurrentSchematicRelevanceSavedCacheBindings; readonly windowTabId: string;
+}
+const schematicSavedCaches = new WeakMap<object, SchematicSavedCacheHeld>();
 interface SavedReadbackCacheHeld {
   readonly origin: CurrentPcbViaSavedCacheOrigin; readonly prepared: CurrentPcbViaWriteClosedCheckpoint;
   readonly owner: CurrentPcbRetainedOwnerCore; readonly ledger: CurrentPcbViaSavedCacheLedger; readonly metadata: CurrentPcbViaSavedCacheMetadataLedger;
@@ -2517,6 +2526,11 @@ class CurrentPcbRetainedOwnerCore {
    * Transport and resource-ledger selection happen before listeners or launch. */
   readonly #generatedFixtureBirth: boolean;
   readonly #componentPrepared: GeneratedComponentFixtureOpenCheckpoint | null;
+  #schematicSavedCacheObservation: Promise<void> | null = null;
+  #schematicSavedCachePublication: Promise<CurrentSchematicRelevanceSavedCachePublishedData> | null = null;
+  #schematicSavedCacheAttempted = false; #schematicSavedParentPending = false; #schematicSavedParentArmed = false; #schematicSavedPreflightPending = false;
+  #schematicSavedCache: SchematicSavedCacheHeld | null = null; #schematicSavedCachePlan: CurrentPcbViaSavedCachePlan | null = null; #schematicSavedMetadataPlan: CurrentPcbViaSavedCacheMetadataPlan | null = null;
+  #schematicSavedGuardHelper: { scriptId: string | null } | null = null;
   readonly #schematicSavedPrepared: GeneratedSchematicRelevanceSavedReadbackPlan | null;
   #schematicSavedEarlyStage: CurrentSchematicRelevanceSavedEarlyStage | null = null;
   #schematicSavedActors: CurrentPcbViaSavedEarlyActors | null = null;
@@ -6900,7 +6914,7 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
     let sessionId: string | null = null;
     await this.#transfer(async () => {
       sessionId = await this.#pipe.attachTarget(targetId, event => {
-        if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#viaWorkerController?.observeUiEvent(event) === true) { return; } if (this.#schematicRelevanceRunGuardController?.observeOriginalEvent(event) === true || this.#schematicRelevanceCallbackController?.observeOriginalEvent(event) === true) { return; } if (this.#observeSchematicRelevanceActionGuardEvent(event) || this.#observeSchematicActionGuardEvent(event)) { return; } if (schematicDisplayPurpose(this.#purpose) && this.#schematicWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && (this.#savedReadbackInvalidation === null ? this.#savedReadbackCache?.ledger.observeOriginalEvent(event.method) : this.#savedReadbackInvalidation.observeOriginalEvent(event)) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#observeSavedReadbackGuardHelper(event)) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#savedReadbackCache?.metadata.observeOriginalEvent(event) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && (this.#inverseCacheInvalidation === null ? this.#inverseCache?.ledger.observeOriginalEvent(event.method) : this.#inverseCacheInvalidation.observeOriginalEvent(event)) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseGetCallbackEvent(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseGetManagerHelper(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseGetForwardingHelper(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseGetRpcEntryEvent(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseGetIntrinsicsHelper(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseLookupPreentryEvent(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseUiOwnDataHelper(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInversePublicPreferenceEvent(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInversePublicCallEvent(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#inverseHelper !== null && this.#observeFootprintInverseHelper(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#inverseCache?.metadata.observeOriginalEvent(event) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseHelper(event)) { return; } context.observeEvent(event); });
+        if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#viaWorkerController?.observeUiEvent(event) === true) { return; } if (this.#schematicRelevanceRunGuardController?.observeOriginalEvent(event) === true || this.#schematicRelevanceCallbackController?.observeOriginalEvent(event) === true) { return; } if (this.#observeSchematicRelevanceActionGuardEvent(event) || this.#observeSchematicActionGuardEvent(event)) { return; } if (schematicDisplayPurpose(this.#purpose) && this.#schematicWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && (this.#savedReadbackInvalidation === null ? this.#savedReadbackCache?.ledger.observeOriginalEvent(event.method) : this.#savedReadbackInvalidation.observeOriginalEvent(event)) === true) { return; } if (this.#purpose === SCH_SAVED_PURPOSE && this.#observeSchematicSavedGuardHelper(event)) { return; } if (this.#purpose === SCH_SAVED_PURPOSE && this.#schematicSavedCache?.metadata.observeOriginalEvent(event) === true) { return; } if (this.#purpose === SCH_SAVED_PURPOSE && this.#schematicSavedCache?.ledger.observeOriginalEvent(event.method) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#observeSavedReadbackGuardHelper(event)) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#savedReadbackCache?.metadata.observeOriginalEvent(event) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && (this.#inverseCacheInvalidation === null ? this.#inverseCache?.ledger.observeOriginalEvent(event.method) : this.#inverseCacheInvalidation.observeOriginalEvent(event)) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseGetCallbackEvent(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseGetManagerHelper(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseGetForwardingHelper(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseGetRpcEntryEvent(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseGetIntrinsicsHelper(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseLookupPreentryEvent(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseUiOwnDataHelper(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInversePublicPreferenceEvent(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInversePublicCallEvent(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#inverseHelper !== null && this.#observeFootprintInverseHelper(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#inverseCache?.metadata.observeOriginalEvent(event) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseHelper(event)) { return; } context.observeEvent(event); });
       return { sessionId };
     });
     if (sessionId === null) { throw error("ATTACH_REPLY"); }
@@ -9056,6 +9070,51 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
   }
 
   /** Reprove the same live original owner, source context and private ledger. */
+  #schematicSavedCacheCurrent(held: SchematicSavedCacheHeld): void {
+    this.#available(); assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(this); this.#schematicSavedActors?.assertSealed();
+    if (Object.getPrototypeOf(held.ledger) !== CurrentPcbViaSavedCacheLedger.prototype || Reflect.ownKeys(held.ledger).length > 0 || !originalFootprintDescriptors(CurrentPcbViaSavedCacheLedger.prototype, savedReadbackCacheLedgerDescriptors) || this.#schematicSavedCache !== held || schematicSavedCaches.get(held.origin) !== held || this.#schematicSavedPrepared !== held.prepared ||
+      this.#stagedContext !== held.context || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true || this.#closeConsumed || this.#savedReadbackAborted ||
+      this.#terminationObserved || this.#releaseConsumed || (!this.#schematicSavedParentArmed || this.#schematicSavedActors === null) || held.ledger.status().failed || Object.getPrototypeOf(held.metadata) !== CurrentPcbViaSavedCacheMetadataLedger.prototype || Reflect.ownKeys(held.metadata).length > 0 || !originalFootprintDescriptors(CurrentPcbViaSavedCacheMetadataLedger.prototype, savedReadbackMetadataLedgerDescriptors) || held.metadata.status().failed || canonicalJson(held.context.savedReadbackCacheContext()) !== canonicalJson(held.selected)) { throw error("SAVED_READBACK_CACHE_ORIGINAL_CONTEXT"); }
+  }
+  #createSchematicSavedCacheBindings(ledger: CurrentPcbViaSavedCacheLedger, origin: CurrentSchematicRelevanceSavedCacheOrigin, pipe: CurrentSchematicRelevanceSavedReadbackPipe, prepared: GeneratedSchematicRelevanceSavedReadbackPlan): CurrentSchematicRelevanceSavedCacheBindings {
+    const allocation = schematicSavedReadbackFactories.get(this)?.allocation; if (allocation === undefined || allocation.prepared !== prepared) { throw error("SCHEMATIC_SAVED_CACHE_PREPARATION"); }
+    return Object.freeze({ prepared, projectUuid: allocation.original.data.target.projectUuid,
+        request: async (command: CurrentPcbViaSavedCacheCommand): Promise<ReturnType<CurrentPcbViaSavedCacheLedger["accept"]>> => {
+          const held = schematicSavedCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); }
+          this.#schematicSavedCacheCurrent(held); this.#enter(true); let plan: CurrentPcbViaSavedCachePlan | null = null;
+          try { const reserved = ledger.prepare(command); plan = reserved; this.#schematicSavedCachePlan = reserved;
+            const value = await this.#transfer(() => pipe.observeSchematicSavedCache(reserved)); this.#schematicSavedCacheCurrent(held);
+            return ledger.accept(plan, value);
+          } catch (caughtError) { if (plan !== null) { ledger.failOriginalDispatch(plan); } this.#input.emit("error", error("SAVED_READBACK_CACHE_FAILED")); throw caughtError; }
+          finally { this.#schematicSavedCachePlan = null; this.#busy = false; }
+        },
+        metadataRequest: async (command: CurrentPcbViaSavedCacheMetadataCommand): Promise<CurrentPcbViaSavedCacheMetadataPacket> => {
+          const held = schematicSavedCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); }
+          this.#schematicSavedCacheCurrent(held); this.#enter(true); let plan: CurrentPcbViaSavedCacheMetadataPlan | null = null;
+          try {
+            const reserved = held.metadata.prepare(command); plan = reserved;
+            if (reserved.command.phase === "saved-cache-native-observe") { ledger.requireMetadataRound(reserved.command.round); }
+            this.#schematicSavedMetadataPlan = reserved;
+            const raw = await this.#transfer(() => pipe.observeSchematicSavedMetadata(reserved)); this.#schematicSavedCacheCurrent(held);
+            return held.metadata.accept(reserved, raw);
+          } catch (caughtError) { if (plan !== null) { held.metadata.failOriginalDispatch(plan); } this.#input.emit("error", error("SAVED_READBACK_METADATA_FAILED")); throw caughtError; }
+          finally { this.#schematicSavedMetadataPlan = null; this.#busy = false; }
+        },
+        metadataSnapshot: (): CurrentPcbViaSavedCacheMetadataSnapshot => { const held = schematicSavedCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); } this.#schematicSavedCacheCurrent(held); return held.metadata.snapshot(); },
+        requireMetadataSnapshot: (snapshot: CurrentPcbViaSavedCacheMetadataSnapshot): void => { const held = schematicSavedCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); } this.#schematicSavedCacheCurrent(held); held.metadata.requireOriginalSnapshot(snapshot); },
+        requireMetadataPacket: (packet: CurrentPcbViaSavedCacheMetadataPacket): void => { const held = schematicSavedCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); } this.#schematicSavedCacheCurrent(held); held.metadata.requireOriginalPacket(packet); },
+        assertCurrent: async (): Promise<void> => { const held = schematicSavedCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); }
+          this.#schematicSavedCacheCurrent(held); await this.#verify(); this.#schematicSavedCacheCurrent(held); },
+        snapshot: (): ReturnType<CurrentPcbViaSavedCacheLedger["snapshot"]> => { const held = schematicSavedCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); } this.#schematicSavedCacheCurrent(held); return ledger.snapshot(); },
+        requireSnapshot: (snapshot: CurrentPcbViaSavedCacheSnapshot): void => { const held = schematicSavedCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); } this.#schematicSavedCacheCurrent(held); ledger.requireOriginalSnapshot(snapshot); },
+        requirePacket: (packet: CurrentPcbViaSavedCachePacket): void => { const held = schematicSavedCaches.get(origin); if (held === undefined) { throw error("SAVED_READBACK_CACHE_ORIGIN"); } this.#schematicSavedCacheCurrent(held); ledger.requireOriginalPacket(packet); },
+      });
+  }
+  public originalSchematicSavedCacheBindings(origin: CurrentSchematicRelevanceSavedCacheOrigin, prepared: GeneratedSchematicRelevanceSavedReadbackPlan): CurrentSchematicRelevanceSavedCacheBindings {
+    const held = schematicSavedCaches.get(origin);
+    if (held === undefined || held.owner !== this || held.prepared !== prepared || held.origin !== origin) { throw error("SAVED_READBACK_CACHE_ORIGIN"); }
+    this.#schematicSavedCacheCurrent(held); return held.bindings;
+  }
   #savedReadbackCacheCurrent(held: SavedReadbackCacheHeld): void {
     this.#available(); assertOriginalCurrentPcbViaSavedReadbackOwner(this);
     if (Object.getPrototypeOf(held.ledger) !== CurrentPcbViaSavedCacheLedger.prototype || Reflect.ownKeys(held.ledger).length > 0 || !originalFootprintDescriptors(CurrentPcbViaSavedCacheLedger.prototype, savedReadbackCacheLedgerDescriptors) || this.#savedReadbackCache !== held || savedReadbackCaches.get(held.origin) !== held || this.#savedReadbackPrepared !== held.prepared ||
@@ -9099,6 +9158,13 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
     const held = savedReadbackCaches.get(origin);
     if (held === undefined || held.owner !== this || held.prepared !== prepared || held.origin !== origin) { throw error("SAVED_READBACK_CACHE_ORIGIN"); }
     this.#savedReadbackCacheCurrent(held); return held.bindings;
+  }
+  #observeSchematicSavedGuardHelper(event: DiagnosticEvent): boolean {
+    if (event.method !== "Debugger.scriptParsed" || event.params["url"] !== "") { return false; }
+    const helper = this.#schematicSavedGuardHelper; const context = this.#stagedContext;
+    if (helper === null) { return false; } const params = event.params;
+    if (helper.scriptId !== null || context === null || params["executionContextId"] !== context.script().context["id"] || typeof params["scriptId"] !== "string" || !/^[A-Za-z\d_.:-]{1,256}$/u.test(params["scriptId"]) || params["scriptId"] === context.script().scriptId || params["hasSourceURL"] === true || params["isLiveEdit"] === true) { throw error("SCHEMATIC_SAVED_GUARD_HELPER"); }
+    helper.scriptId = params["scriptId"]; return true;
   }
   #observeSavedReadbackGuardHelper(event: DiagnosticEvent): boolean {
     if (event.method !== "Debugger.scriptParsed") { return false; }
@@ -11368,6 +11434,64 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
   /** One original Start Page/source/main-fence join before the first cache
    * query. The nine CDP requests are two parent/ancillary brackets and one
    * fixed empty-project preflight; no registration or navigation is attempted. */
+  #schematicSavedTarget(): CurrentDisposableOpenSealedTarget {
+    const allocation = schematicSavedReadbackFactories.get(this)?.allocation; if (allocation === undefined || this.#schematicSavedPrepared !== allocation.prepared) { throw error("SCHEMATIC_SAVED_ORIGINAL_TARGET"); } requireSchematicSavedPreparation(allocation); const target = allocation.original.data.target;
+    return Object.freeze(currentDisposableOpenSealedTargetSchema.parse({ rawWindowsPath: target.rawWindowsPath, projectUuid: target.projectUuid, branchUuid: target.branchUuid, documentUuid: target.pageUuid, expectedSourceSha256: target.sourceSha256 }));
+  }
+  public observeSchematicSavedCaches(): Promise<void> {
+    assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(this); if (this.#schematicSavedCacheObservation !== null) { return this.#schematicSavedCacheObservation; }
+    const held = this.#schematicSavedCache; if (held === null) { throw error("SCHEMATIC_SAVED_CACHE_ORIGIN_REQUIRED"); } this.#schematicSavedCacheCurrent(held);
+    const current = (): void => { this.#schematicSavedCacheCurrent(held); if (this.#schematicSavedCache !== held) { throw error("SCHEMATIC_SAVED_CACHE_ORIGINAL"); } };
+    const promise = (async (): Promise<void> => { const namespace = await import("./current-schematic-relevance-saved-cache-observer.ts"), observe = namespace.observeOriginalCurrentSchematicRelevanceSavedCaches; current();
+      await observe(this, held.prepared, held.origin); current(); if (namespace.observeOriginalCurrentSchematicRelevanceSavedCaches !== observe) { throw error("SCHEMATIC_SAVED_CACHE_OBSERVER_CHANGED"); }
+      held.ledger.requireOriginalSnapshot(held.ledger.snapshot()); held.metadata.requireOriginalSnapshot(held.metadata.snapshot()); current();
+    })(); this.#schematicSavedCacheObservation = promise; return promise;
+  }
+  /** Data publication is purpose-bound and has no deletion/opening grant.
+   * Every original packet and source reference is rejoined around artifact IO. */
+  public publishSchematicSavedCacheBackup(): Promise<CurrentSchematicRelevanceSavedCachePublishedData> {
+    assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(this); if (this.#schematicSavedCachePublication !== null) { return this.#schematicSavedCachePublication; }
+    const held = this.#schematicSavedCache; if (held === null) { throw error("SCHEMATIC_SAVED_CACHE_ORIGIN_REQUIRED"); } this.#schematicSavedCacheCurrent(held);
+    const promise = (async (): Promise<CurrentSchematicRelevanceSavedCachePublishedData> => {
+      const cdp = held.ledger.snapshot(), metadata = held.metadata.snapshot();
+      const current = (): void => { this.#schematicSavedCacheCurrent(held); held.ledger.requireOriginalSnapshot(cdp); held.metadata.requireOriginalSnapshot(metadata);
+        for (const packet of cdp.packets) { held.ledger.requireOriginalPacket(packet); } for (const packet of metadata.packets) { held.metadata.requireOriginalPacket(packet); } };
+      const namespace = await import("./current-schematic-relevance-saved-cache-backup.ts"); current();
+      const build = namespace.buildCurrentSchematicRelevanceSavedCacheBackupData; const requireData = namespace.requireCurrentSchematicRelevanceSavedCacheBackupData; const publish = namespace.publishCurrentSchematicRelevanceSavedCacheBackupData; const verify = namespace.verifyCurrentSchematicRelevanceSavedCachePublishedData;
+      const data = build(this, held.prepared, held.origin, cdp, metadata); current(); requireData(data, this, held.prepared, held.origin, cdp, metadata);
+      const published = await publish(data); current(); requireData(data, this, held.prepared, held.origin, cdp, metadata); await verify(published, data); current();
+      if (namespace.buildCurrentSchematicRelevanceSavedCacheBackupData !== build || namespace.requireCurrentSchematicRelevanceSavedCacheBackupData !== requireData || namespace.publishCurrentSchematicRelevanceSavedCacheBackupData !== publish || namespace.verifyCurrentSchematicRelevanceSavedCachePublishedData !== verify) { throw error("SCHEMATIC_SAVED_CACHE_BACKUP_MODULE_CHANGED"); }
+      return published;
+    })(); this.#schematicSavedCachePublication = promise; return promise;
+  }
+  public async createSchematicSavedCacheOrigin(): Promise<CurrentSchematicRelevanceSavedCacheOrigin> {
+    assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(this); const allocation = schematicSavedReadbackFactories.get(this)?.allocation, context = this.#stagedContext, pipe = this.#pipe;
+    if (allocation === undefined || context === null || !(pipe instanceof CurrentSchematicRelevanceSavedReadbackPipe) || !this.#scriptConsumed || this.#inspectionConsumed || this.#schematicSavedCacheAttempted || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true) { throw error("SCHEMATIC_SAVED_CACHE_UNAVAILABLE"); }
+    this.#enter(true); this.#schematicSavedCacheAttempted = true;
+    const current = (): void => { this.#available(); requireSchematicSavedPreparation(allocation); if (this.#stagedContext !== context || this.#pipe !== pipe || this.#closeConsumed || this.#mainRunner?.selectedSqlFenceState()["ready"] !== true) { throw error("SCHEMATIC_SAVED_CACHE_CONTEXT"); } };
+    try {
+      await this.#verifyInstallation(); current(); await allocation.verifyCheckpoint(allocation.original.closed.checkpoint); current(); const early = this.#schematicSavedActors;
+      if (early === null) { throw error("SCHEMATIC_SAVED_EARLY_REQUIRED"); } early.assertSealed(); early.parent(context.modelContext().sessionId);
+      this.#schematicSavedParentPending = true; const armed = await this.#transfer(() => pipe.armSchematicSavedCacheParent()); current(); this.#schematicSavedParentPending = false;
+      if (!exact(armed, [])) { throw error("SCHEMATIC_SAVED_PARENT_REPLY"); } this.#schematicSavedParentArmed = true;
+      await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current(); const selected = context.savedReadbackCacheContext(), target = this.#schematicSavedTarget();
+      this.#schematicSavedPreflightPending = true; this.#schematicSavedGuardHelper = { scriptId: null };
+      const raw = await this.#transfer(() => pipe.observeSchematicSavedPreflight(selected.uniqueContextId, target)); current(); this.#schematicSavedPreflightPending = false;
+      const helper = this.#schematicSavedGuardHelper; if (helper === null || helper.scriptId === null) { throw error("SCHEMATIC_SAVED_PREFLIGHT_HELPER_REQUIRED"); }
+      const helperSource = await this.#transfer(() => pipe.getScriptSource(helper.scriptId ?? "")); current();
+      if (!exact(helperSource, ["scriptSource"]) || helperSource["scriptSource"] !== `(${CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION})` || this.#schematicSavedGuardHelper !== helper) { throw error("SCHEMATIC_SAVED_PREFLIGHT_HELPER_SOURCE"); } this.#schematicSavedGuardHelper = null;
+      const preflight = decodeCurrentPcbDiagnosticOpeningReply(raw, target, "preflight"); if (!preflight.ok || preflight.status !== "ready" || preflight.dispatchAttempted || preflight.observation?.projectPresent !== false) { throw error("SCHEMATIC_SAVED_EMPTY_UI_REFUSED"); }
+      early.expectProject(preflight.observation.windowTabId); await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current();
+      if (canonicalJson(context.savedReadbackCacheContext()) !== canonicalJson(selected)) { throw error("SCHEMATIC_SAVED_CONTEXT_CHANGED"); }
+      const ledger = new CurrentPcbViaSavedCacheLedger(Object.freeze({ frameId: selected.frameId, sessionId: selected.sessionId, securityOrigin: selected.securityOrigin, projectUuid: allocation.original.data.target.projectUuid }));
+      const origin: CurrentSchematicRelevanceSavedCacheOrigin = Object.freeze({ profile: "private.current-schematic-relevance-saved-cache-origin.v1" }); const bindings = this.#createSchematicSavedCacheBindings(ledger, origin, pipe, allocation.prepared);
+      const executionContextId = context.script().context["id"]; if (typeof executionContextId !== "number" || !Number.isSafeInteger(executionContextId) || executionContextId <= 0) { throw error("SCHEMATIC_SAVED_METADATA_CONTEXT"); }
+      const metadata = new CurrentPcbViaSavedCacheMetadataLedger(Object.freeze({ sessionId: selected.sessionId, uniqueContextId: selected.uniqueContextId, executionContextId, projectUuid: allocation.original.data.target.projectUuid }));
+      const held: SchematicSavedCacheHeld = Object.freeze({ origin, prepared: allocation.prepared, owner: this, ledger, metadata, context, selected, bindings, windowTabId: preflight.observation.windowTabId });
+      this.#schematicSavedCache = held; schematicSavedCaches.set(origin, held); schematicSavedCacheOrigins.set(origin, Object.freeze({ owner: this, prepared: allocation.prepared, bindings, reprove: (): void => { this.#schematicSavedCacheCurrent(held); } })); current(); return origin;
+    } catch (caughtError) { this.#input.emit("error", error("SCHEMATIC_SAVED_CACHE_PREFLIGHT_FAILED")); throw caughtError; }
+    finally { this.#schematicSavedParentPending = false; this.#schematicSavedPreflightPending = false; this.#schematicSavedGuardHelper = null; this.#busy = false; }
+  }
   public async createSavedReadbackCacheOrigin(): Promise<CurrentPcbViaSavedCacheOrigin> {
     assertOriginalCurrentPcbViaSavedReadbackOwner(this);
     const allocation = pcbViaSavedReadbackFactories.get(this)?.allocation, context = this.#stagedContext, pipe = this.#pipe;
@@ -12343,6 +12467,10 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
       else if (this.#inverseActorStage !== null) { encoded = currentFootprintInverseActorNativeFrame(chunk, this.#inverseActorStage); }
       else if (this.#inverseParentPending && this.#inverseUiReady !== null) { encoded = currentFootprintInverseParentNativeFrame(chunk, this.#inverseUiReady.selected.sessionId); }
       else if (this.#inverseWorkerCommand !== null && this.#inverseWorkerPair !== null) { encoded = currentFootprintInverseWorkerNativeFrame(chunk, this.#inverseWorkerCommand, this.#inverseWorkerPair); }
+      else if (this.#schematicSavedParentPending) { const context = this.#stagedContext; if (context === null) { throw error("SCHEMATIC_SAVED_PARENT_CONTEXT"); } encoded = currentSchematicRelevanceSavedParentFrame(chunk, context.modelContext().sessionId); }
+      else if (this.#schematicSavedPreflightPending) { const context = this.#stagedContext; if (context === null) { throw error("SCHEMATIC_SAVED_PREFLIGHT_CONTEXT"); } const selected = context.savedReadbackCacheContext(); encoded = currentSchematicRelevanceSavedPreflightFrame(chunk, selected.sessionId, selected.uniqueContextId, this.#schematicSavedTarget()); }
+      else if (this.#schematicSavedCachePlan !== null) { const held = this.#schematicSavedCache; if (held === null) { throw error("SCHEMATIC_SAVED_CACHE_ORIGINAL"); } this.#schematicSavedCacheCurrent(held); encoded = currentSchematicRelevanceSavedCacheFrame(chunk, this.#schematicSavedCachePlan, held.selected.sessionId); }
+      else if (this.#schematicSavedMetadataPlan !== null) { const held = this.#schematicSavedCache; if (held === null) { throw error("SCHEMATIC_SAVED_METADATA_ORIGINAL"); } this.#schematicSavedCacheCurrent(held); encoded = currentSchematicRelevanceSavedMetadataFrame(chunk, this.#schematicSavedMetadataPlan, held.selected.sessionId); }
       else if (this.#schematicSavedEarlyStage !== null) { encoded = currentSchematicRelevanceSavedEarlyFrame(chunk, this.#schematicSavedEarlyStage); }
       else if (this.#savedReadbackEarlyActorStage !== null) { encoded = currentPcbViaSavedEarlyActorNativeFrame(chunk, this.#savedReadbackEarlyActorStage); }
       else if (this.#savedReadbackRegistrationFrame && this.#savedReadbackCache !== null) {

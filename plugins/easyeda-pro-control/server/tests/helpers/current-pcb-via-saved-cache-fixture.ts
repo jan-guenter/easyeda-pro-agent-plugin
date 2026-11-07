@@ -27,8 +27,8 @@ function native(profile: CurrentNativeFunctionProfile): unknown {
   return { result: fields, internalProperties: [{ name: "[[Prototype]]", value: { type: "function", className: "Function", description: profile.name === "AbortSignal" ? "function EventTarget() { [native code] }" : "function () { [native code] }", objectId: "function-prototype" } },
     { name: "[[Scopes]]", value: { type: "object", className: "Array", subtype: "internal#scopeList", description: "Scopes[0]", objectId: "empty-native-scopes" } }] };
 }
-export function completeSyntheticSavedCacheFixture(existed = false): Readonly<{ prepared: Readonly<Record<string, unknown>>; ledger: CurrentPcbViaSavedCacheLedger; metadata: CurrentPcbViaSavedCacheMetadataLedger }> {
-  const rawWindowsPath = `C:\\Synthetic\\CodexEasyedaFixture_${"1".repeat(32)}\\Codex_line_and_via_${"2".repeat(16)}.eprj2`; const projectUuid = sha256Text(rawWindowsPath);
+export function completeSyntheticSavedCacheFixture(existed = false, alternateRawWindowsPath?: string): Readonly<{ prepared: Readonly<Record<string, unknown>>; ledger: CurrentPcbViaSavedCacheLedger; metadata: CurrentPcbViaSavedCacheMetadataLedger }> {
+  const rawWindowsPath = alternateRawWindowsPath ?? `C:\\Synthetic\\CodexEasyedaFixture_${"1".repeat(32)}\\Codex_line_and_via_${"2".repeat(16)}.eprj2`; const projectUuid = sha256Text(rawWindowsPath);
   const frame = Object.freeze({ sessionId: "synthetic-session", uniqueContextId: "synthetic-context", executionContextId: 7, projectUuid });
   const ledger = new CurrentPcbViaSavedCacheMetadataLedger(frame); let script = 0;
   const run = (command: CurrentPcbViaSavedCacheMetadataCommand, reply: unknown): void => {

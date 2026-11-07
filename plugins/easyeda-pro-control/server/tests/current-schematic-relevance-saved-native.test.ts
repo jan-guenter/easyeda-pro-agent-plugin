@@ -12,7 +12,7 @@ void test("three distinct schematic native births compose twice without duplicat
   const expanded = expandCurrentPcbDiagnosticCSharpReviewSource(first);
   assert.equal(expanded.split("// BEGIN SCHEMATIC RELEVANCE SAVED READBACK BIRTH").length, 2);
   assert.equal(expanded.split("        'schematic-saved-early-actors' {").length, 2);
-  assert.equal(expanded.split("if(schematicSavedReadback209)return 19;").length, 2);
+  assert.equal(expanded.split("if(schematicSavedReadback209)return schematicSavedCacheParent?145:19;").length, 2);
   assert.throws(() => generateWorkerStartupProtocol(expanded.replace('throw Error("schematic-saved-purpose");switch', 'throw Error("changed-purpose");switch'), "schematic"), /SCHEMATIC_SAVED_NORMALIZE_BLOCK/u);
   const data = generateSchematicEditNativeSource(seed), header = data.helper.slice(0, data.helper.indexOf("\n"));
   assert.equal(header, "param([switch]$CompileOnly,[switch]$SchematicRelevanceDisplayWrite209,[switch]$SchematicWireEdit209,[switch]$SchematicRelevanceSavedReadback209)");

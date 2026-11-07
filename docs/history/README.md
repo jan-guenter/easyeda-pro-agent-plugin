@@ -4,7 +4,7 @@
 
 - [2026-11-07 Separate saved schematic registration policy](2026-11-07-schematic-saved-registration-policy.md). Genuine third issuer and exact prior-path no-dispatch handling; native cache/loading and connected registration remain separate.
 
-- [2026-11-07 schematic saved-reader birth](2026-11-07-schematic-saved-reader-birth.md): distinct original seven-record saved-reader generation, readonly Main and early actor exclusion; cache/open/cold joins remain separate.
+- [2026-11-07 schematic saved-reader birth](2026-11-07-schematic-saved-reader-birth.md): distinct original seven-record saved-reader generation, readonly Main, early actor exclusion and complete scoped-cache data publication; delete/open/cold joins remain separate.
 - [2026-11-07 Original inverse GET callback advance](2026-11-07-inverse-original-get-callback-advance.md). One original RPC resume ends at the actual service callback before the GET handler; native forwarding and full request completion remain separate.
 
 - [2026-11-07 Schematic saved scene codec](2026-11-07-schematic-saved-scene-codec.md). Three finite readonly stages with original-session framing and unchanged scene semantics; fresh native birth and cold-load proof remain separate.

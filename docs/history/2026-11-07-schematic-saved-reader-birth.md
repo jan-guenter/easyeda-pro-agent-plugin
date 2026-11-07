@@ -82,3 +82,48 @@ empty until a genuine cold/page/source creator joins this new reader. Forged
 owner/origin objects, including a release label, refuse before getters run.
 The eventual private sender must retain its original cleanup session and group;
 release cannot borrow a replacement context or fabricate a CDP acknowledgment.
+
+The next checkpoint mounts the actual readonly scoped-cache lane under this
+reader's own original Core/pipe/native registry. Before either namespace can be
+opened, the original empty UI parent is put under waiting auto-attach, the
+existing early actor exclusion remains sealed, and a fresh nine-command empty
+UI preflight plus its exact helper-source receipt completes. The initial
+renderer ceiling stays19. The once-only cache parent enables the derived145
+ceiling: early3 + discovery16 + parent1 + guard9 + guard-source1 + cache36 +
+native-metadata79. Existing Via limits and emitted diagnostic helper bytes are
+unchanged; only its inert static cache encoder/table is reused.
+
+The automatic observer retains both complete cache rounds and all original
+native metadata/helper packets. Complete namespace rosters precede all body
+reads, combined entries remain8, and a ninth combined entry refuses before any
+body read. Each body is bounded8KiB and the combined body ceiling remains32KiB.
+Native delete is explicitly refused even after valid original-source state and
+selectors are present. No project opening or cold worker dispatch is offered.
+
+Purpose-specific backup data binds the genuine saved plan, distinct page and
+schematic UUIDs, original source/closed SQL identity, both actual packet sets,
+and complete native/CDP data equality. Exclusive managed publication retains
+one original Promise, rechecks the original references around IO, and rereads
+the complete artifact. Copies, corruption and source drift refuse. These data
+and publication objects retain false native-provenance/deletion flags; a later
+original native grant must separately reverify them before any once-only delete.
+
+Eleven focused cases passed, including the production Core and real byte pipe
+with a retained synthetic child, fixed helper source, actual cache-key packet,
+same failed-publication Promise, and original termination/release. The test
+source/Main qualification seam is inert and makes no connected claim. Both
+TypeScript configurations and strict changed-file lint passed. Two complete
+private generations were identical. Linux .NET10 C#5 compilation passed the
+new parent/cache/metadata messages, all nine fixed-program hashes and the
+explicit no-delete smoke. Private proof `schematic-saved-birth-0DbyVV`:
+stored helper1,366,828B SHA
+f36680b26561f88ea4310f9e5bea23d5d76ac74b4a8cd2d8ade3ff9a43ddf128;
+compiler1,885,914B SHA
+7f4c3e84d2830e748dce0d4894d614b9cc7b6fe313faadbfdc956283fe672995.
+No tracked helper, pin, bundle, native app, MCP call or Windows process changed.
+
+The remaining route is original durable-backup enrollment, fresh guards before
+each once-only namespace deletion, fresh absence/loading custody, the distinct
+cold worker/parser/page/source joins, actual registration/navigation and the
+saved-scene creator/controller. This checkpoint proves no reopened model,
+durability, Save or writer authority.
