@@ -86,6 +86,7 @@ import { CurrentSchematicRelevanceUnderlineCursor } from "./current-schematic-re
 import { CurrentSchematicRelevanceActionCallbackController } from "./current-schematic-relevance-action-callback-controller.ts";
 import type { CurrentSchematicRelevanceRawCapture } from "./current-schematic-relevance-action-raw-cursor.ts";
 import { CurrentSchematicRelevanceFirstSetterCursor } from "./current-schematic-relevance-first-setter-cursor.ts";
+import { CurrentSchematicRelevanceSetAttributeCursor, CurrentSchematicRelevanceUnderlineBridgeCursor } from "./current-schematic-relevance-underline-bridge-cursor.ts";
 import { CurrentSchematicRelevanceActionCallbackCursor } from "./current-schematic-relevance-action-callback-cursor.ts";
 import type { CurrentSchematicRelevanceActionCallbackBindings } from "./current-schematic-relevance-action-callback-origin.ts";
 import type { CurrentSchematicRelevanceDisplayActionCallbackHandoff, CurrentSchematicRelevanceDisplayActionCallbackOrigin, CurrentSchematicRelevanceDisplayActionCallbackSetup } from "./current-schematic-relevance-display-run-handoff.ts";
@@ -4872,7 +4873,7 @@ class CurrentPcbRetainedOwnerCore {
         request: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand): Promise<unknown> => this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { current(); return selected.pipe.observeSchematicRelevanceDisplayModifyEntry(command); })), assertCurrent: current, fail }));
       this.#schematicRelevanceCallbackController = controller; await controller.arm(); current(); original.requireUnderlineEligibility();
       const entry = (async (): Promise<CurrentSchematicRelevanceDisplayActionCallbackOrigin> => {
-        const held = await controller.waitOriginalEntry(); let currentHeld = held; let entryTransition = false, entryTransitionAttempted = false; let setterCursor: CurrentSchematicRelevanceFirstSetterCursor | null = null; current(); controller.requireHeld(held); if (this.#schematicRelevanceCallbackOrigin !== null) { throw error("SCHEMATIC_CALLBACK_ORIGINAL_ENTRY_ONCE"); }
+        const held = await controller.waitOriginalEntry(); let currentHeld = held; let entryTransition = false, entryTransitionAttempted = false; let setterCursor: CurrentSchematicRelevanceFirstSetterCursor | null = null; let bridgeCursor: CurrentSchematicRelevanceUnderlineBridgeCursor | null = null; let monitorCursor: CurrentSchematicRelevanceSetAttributeCursor | null = null; let setterTransitionAttempted = false; current(); controller.requireHeld(held); if (this.#schematicRelevanceCallbackOrigin !== null) { throw error("SCHEMATIC_CALLBACK_ORIGINAL_ENTRY_ONCE"); }
         const callbackOrigin: CurrentSchematicRelevanceDisplayActionCallbackOrigin = Object.freeze({ profile: "private.current-schematic-relevance-display-action-callback-origin.v1" }), cursor = new CurrentSchematicRelevanceActionCallbackCursor(held.callFrameId, holder, raw);
         const same = (): void => { current(); if (entryTransition) { throw error("SCHEMATIC_CALLBACK_ORIGINAL_TRANSITION_PENDING"); } controller.requireHeld(currentHeld); if (this.#schematicRelevanceCallbackOrigin !== callbackOrigin || this.#schematicRelevanceCallbackController !== controller) { throw error("SCHEMATIC_CALLBACK_ORIGINAL_PAUSE"); } };
         const bindings: CurrentSchematicRelevanceActionCallbackBindings = Object.freeze({ nextEntryCommand: () => { same(); return cursor.next(); }, requestEntry: async (command: CurrentSchematicRelevanceDisplayModifyEntryCommand): Promise<unknown> => {
@@ -4894,7 +4895,29 @@ class CurrentPcbRetainedOwnerCore {
           same(); const actual = setterCursor; if (actual === null || currentHeld.role !== "setter" || actual.next() !== command) { throw error("SCHEMATIC_CALLBACK_FIRST_SETTER_COMMAND"); } actual.reserve(command);
           try { const reply = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { same(); return selected.pipe.observeSchematicRelevanceDisplayModifyEntry(command); })); same(); actual.accept(command, reply); return reply; }
           catch (caughtError) { actual.fail(); controller.fail(); throw caughtError; }
-        }, requireOriginalFirstSetter: () => { same(); if (setterCursor === null || currentHeld.role !== "setter") { throw error("SCHEMATIC_CALLBACK_FIRST_SETTER_HELD_REQUIRED"); } return setterCursor.requireCompleted(); },
+        }, requireOriginalFirstSetter: () => { same(); if (setterCursor === null) { throw error("SCHEMATIC_CALLBACK_FIRST_SETTER_HELD_REQUIRED"); } return setterCursor.requireCompleted(); },
+        nextUnderlineBridgeCommand: () => { same(); if (setterCursor === null || currentHeld.role !== "setter") { throw error("SCHEMATIC_CALLBACK_UNDERLINE_BRIDGE_HELD_REQUIRED"); } bridgeCursor ??= new CurrentSchematicRelevanceUnderlineBridgeCursor(raw, cursor.requireCompleted(), setterCursor.requireCompleted(), functions, prefix); return bridgeCursor.next(); },
+        requestUnderlineBridge: async (command: CurrentSchematicRelevanceDisplayModifyEntryCommand): Promise<unknown> => {
+          same(); const actual = bridgeCursor; if (actual === null || currentHeld.role !== "setter" || actual.next() !== command) { throw error("SCHEMATIC_CALLBACK_UNDERLINE_BRIDGE_COMMAND"); } actual.reserve(command);
+          try { const reply = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { same(); return selected.pipe.observeSchematicRelevanceDisplayModifyEntry(command); })); same(); actual.accept(command, reply); return reply; }
+          catch (caughtError) { actual.fail(); controller.fail(); throw caughtError; }
+        }, requireOriginalUnderlineBridge: () => { same(); if (bridgeCursor === null) { throw error("SCHEMATIC_CALLBACK_UNDERLINE_BRIDGE_REQUIRED"); } return bridgeCursor.requireCompleted(); },
+        continueToSetAttribute: async (): Promise<void> => {
+          same(); if (setterTransitionAttempted || currentHeld.role !== "setter" || setterCursor === null || bridgeCursor === null) { throw error("SCHEMATIC_CALLBACK_SET_ATTRIBUTE_ONCE"); } setterCursor.requireCompleted(); bridgeCursor.requireCompleted(); const setterHeld = currentHeld; setterTransitionAttempted = true; entryTransition = true;
+          try {
+            const ready = await this.#request({ action: "schematic-relevance-display-callback-bridge-ready" }); current(); controller.requireHeld(setterHeld); bridgeCursor.requireCompleted();
+            if (!exact(ready, ["ready"]) || ready["ready"] !== true) { throw error("SCHEMATIC_CALLBACK_BRIDGE_READY_ACK"); }
+            const reservation = controller.reserveSetterResume(setterHeld); const command = validateCurrentSchematicRelevanceDisplayModifyEntryCommand({ phase: "schematic-callback-setter-resume", method: "Debugger.resume", params: {} });
+            const resumedAck = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { current(); controller.requireSetterResume(reservation); controller.markSetterResumeSubmitted(reservation); return selected.pipe.observeSchematicRelevanceDisplayModifyEntry(command); })); current();
+            if (!exact(resumedAck, [])) { throw error("SCHEMATIC_CALLBACK_SETTER_RESUME_ACK"); } await controller.waitSetterResumed(reservation); current(); controller.completeSetterResume(reservation);
+            currentHeld = await controller.waitOriginalSetAttribute(); current(); monitorCursor = new CurrentSchematicRelevanceSetAttributeCursor(currentHeld.callFrameId, raw, cursor.requireCompleted(), functions); entryTransition = false; same();
+          } catch (caughtError) { controller.fail(); throw caughtError; }
+        }, nextSetAttributeCommand: () => { same(); if (monitorCursor === null || currentHeld.role !== "setAttribute") { throw error("SCHEMATIC_CALLBACK_SET_ATTRIBUTE_HELD_REQUIRED"); } return monitorCursor.next(); },
+        requestSetAttribute: async (command: CurrentSchematicRelevanceDisplayModifyEntryCommand): Promise<unknown> => {
+          same(); const actual = monitorCursor; if (actual === null || currentHeld.role !== "setAttribute" || actual.next() !== command) { throw error("SCHEMATIC_CALLBACK_SET_ATTRIBUTE_COMMAND"); } actual.reserve(command);
+          try { const reply = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { same(); return selected.pipe.observeSchematicRelevanceDisplayModifyEntry(command); })); same(); actual.accept(command, reply); return reply; }
+          catch (caughtError) { actual.fail(); controller.fail(); throw caughtError; }
+        }, requireOriginalSetAttribute: () => { same(); if (monitorCursor === null || currentHeld.role !== "setAttribute") { throw error("SCHEMATIC_CALLBACK_SET_ATTRIBUTE_HELD_REQUIRED"); } return monitorCursor.requireCompleted(); },
         requireOriginalEntry: () => { same(); return cursor.requireCompleted(); }, assertCurrent: async () => { same(); await this.#verify(); same(); }, fail: () => { cursor.fail(); controller.fail(); } });
         this.#schematicRelevanceCallbackOrigin = callbackOrigin; schematicRelevanceActionCallbacks.set(callbackOrigin, Object.freeze({ owner: this, args: argumentsValue, bindings, assertOriginal: same })); return callbackOrigin;
       })();

@@ -42,9 +42,9 @@ void test("the held first setter matches actual underline accessor references wi
   const f = fixture(); assert.equal(f.firstSetter(), true); assert.equal(f.setterCalls(), 0);
   for (const fault of ["index", "binding", "getter"] as const) { const changed = fixture(); assert.throws(() => changed.firstSetter(fault), /FIRST_SETTER_PROOF/u); assert.equal(changed.setterCalls(), 0); }
 });
-function event(role: "entry" | "setter" | "record", script = "original-callback"): DiagnosticEvent {
+function event(role: "entry" | "setter" | "record" | "setAttribute", script = "original-callback"): DiagnosticEvent {
   let location = { ...LOCATION, scriptId: script }; let functionLocation = location; const ids: string[] = [];
-  if (role === "record") { const row = SOURCES[0].methods.monitorRecord; functionLocation = { scriptId: "original-source", lineNumber: row.lineNumber, columnNumber: row.columnNumber }; location = functionLocation; ids.push("point:schematic-callback-arm-record"); }
+  if (role === "record" || role === "setAttribute") { const row = SOURCES[0].methods[role === "record" ? "monitorRecord" : "monitorSetAttribute"]; functionLocation = { scriptId: "original-source", lineNumber: row.lineNumber, columnNumber: row.columnNumber }; location = functionLocation; ids.push(`point:schematic-callback-arm-${role}`); }
   else { const marker = MARKERS.find(item => item.role === role); assert.ok(marker !== undefined); location = { scriptId: script, lineNumber: marker.lineNumber, columnNumber: marker.columnNumber }; }
   return { method: "Debugger.paused", sessionId: "original-session", params: { reason: "other", hitBreakpoints: ids, callFrames: [{ callFrameId: "original-frame", location, functionLocation }] } };
 }
@@ -78,4 +78,11 @@ void test("unacknowledged resumed state is never synthesized and failure wakes t
 void test("a reserved but not submitted entry resume cannot consume a resumed event", async () => {
   const f = controller(); await f.lane.arm(); f.lane.observeOriginalEvent(event("entry")); const held = await f.lane.waitOriginalEntry(); const reservation = f.lane.reserveEntryResume(held);
   assert.equal(f.lane.observeOriginalEvent({ method: "Debugger.resumed", sessionId: "original-session", params: {} }), true); assert.equal(f.failures(), 1); await assert.rejects(f.lane.waitEntryResumed(reservation));
+});
+
+void test("setter forwarding burns one attempt and holds the original monitor even when its pause precedes the resume ACK", async () => {
+  const f = controller(); await f.lane.arm(); f.lane.observeOriginalEvent(event("entry")); const entry = await f.lane.waitOriginalEntry(); const first = f.lane.reserveEntryResume(entry); f.lane.markEntryResumeSubmitted(first); f.lane.observeOriginalEvent({ method: "Debugger.resumed", sessionId: "original-session", params: {} }); f.lane.observeOriginalEvent(event("setter")); await f.lane.waitEntryResumed(first); f.lane.completeEntryResume(first);
+  const setter = await f.lane.waitOriginalFirstSetter(); const original = f.lane.reserveSetterResume(setter); assert.throws(() => { f.lane.reserveSetterResume(setter); }); assert.throws(() => { f.lane.completeSetterResume(original); }); f.lane.markSetterResumeSubmitted(original);
+  f.lane.observeOriginalEvent({ method: "Debugger.resumed", sessionId: "original-session", params: {} }); const paused = event("setAttribute"); f.lane.observeOriginalEvent(paused); await f.lane.waitSetterResumed(original); f.lane.completeSetterResume(original); const monitor = await f.lane.waitOriginalSetAttribute(); assert.equal(monitor.event, paused); f.lane.requireHeld(monitor); assert.equal(f.failures(), 0);
+  assert.throws(() => { f.lane.reserveSetterResume(monitor); }); assert.equal(f.lane.observeOriginalEvent(event("record")), true); assert.equal(f.failures(), 1);
 });

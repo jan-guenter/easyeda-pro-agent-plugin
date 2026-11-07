@@ -792,3 +792,5 @@ layout. The connected ledger retains its generation and case anchors.
 - 2026-11-07: [Held underline accessors](2026-11-07-schematic-held-underline-accessors.md), original eight-read setter match and actual second-start empty Set with full descriptor preservation; primitive continuation remains denied.
 - 2026-11-07: [Text getter and active monitor metadata](2026-11-07-schematic-model-callee-metadata.md), six source roles in both schematic bundles, checked with actual uninvoked Node24 functions; receiver and continuation authority remain separate.
 - 2026-11-07: [Full saved footprint row projection](2026-11-07-inverse-full-public-row.md), original checkpoint/flow data, exact worker and UI fields and SQL owner join; live row and deletion authority remain separate.
+
+- [Original underline decorator forwarding](2026-11-07-schematic-original-decorator-forwarding.md)
