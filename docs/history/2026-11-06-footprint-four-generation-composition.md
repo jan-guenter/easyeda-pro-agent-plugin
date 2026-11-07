@@ -1267,3 +1267,33 @@ copied/foreign wire scope refuse, and all native binding/clock/execution claims
 remain unavailable until the original ready/owner registry mounts this leaf.
 Strict changed-file lint and both typechecks pass. This is a source prerequisite,
 not connected inverse or four-generation acceptance.
+
+The ready binding is now mounted in the original inverse owner. Its own private
+origin retains the exact original ready frame, checkpoint, project, source,
+controller and pending helper/reply references. The single existing event cursor
+accepts only its32 actually dispatched fixed helper scripts. The captured arrays
+are retained in the purpose's original object group; no raw paused return handle
+or historical JSON is adopted after resume. The final model-ready permit now
+requires the original binding observer and native completion acknowledgment.
+Only the separate final idle reproof remains reserved for a later dispatch.
+
+The native ledger admits initial binding only while the original inverse cold
+ready pause remains held. It fixes59 initial commands/31 helper receipts and
+keeps the last reproof/receipt separate. It has no deletion, clock, SQL or resume
+vocabulary. Its63-row packed table uses the existing64KiB decoder; all60 exact
+messages pass the Linux C#5 pure codec smoke. The new native source is14,292
+bytes. Standalone original-fragment two-pass generation is exact and emits one
+dispatch block. Seven focused binding/cursor cases pass; six original factory
+cases also pass. The old whole-monolith generation case refuses the unchanged
+2MiB compiler cap on this base, with no helper output. The separately developed
+purpose layout must be integrated and checked before that combined build is
+accepted. Both typechecks and strict changed-file lint pass.
+
+The complete constructor audit also fixes an important remaining boundary:
+`new Ke` eagerly allocates14 formatter objects. Its footprint member is `rN`
+with `Fo`/`th`/`of` inheritance; `rl` is the blob formatter. The28-callee binding
+is a receiver/source prerequisite, not a complete Ke lexical-constructor or
+single-clock grant. The remaining fifteen constructor/parent classes need a
+separate original scope/instance join before deleteString may run. Existing
+v1 source/binding shapes are preserved. No inverse edit, Save, selected SQL,
+closed deletion, fourth reader or four-generation success is claimed.

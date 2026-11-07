@@ -5,6 +5,8 @@ import { readFile } from "node:fs/promises";
 import { Session } from "node:inspector/promises";
 import { Script, runInNewContext } from "node:vm";
 import { test } from "node:test";
+import { CurrentFootprintInverseDeleteBindingObserver } from "../src/current-footprint-inverse-delete-binding-observer.ts";
+import type { CurrentFootprintForwardSavedCheckpoint } from "../src/current-footprint-copy-held-saved-generation.ts";
 import { CURRENT_FOOTPRINT_INVERSE_DELETE_CALLEES as CALLEES, CURRENT_FOOTPRINT_INVERSE_DELETE_BINDING_MODULES as MODULES, qualifyCurrentFootprintInverseDeleteBindingSource } from "../src/current-footprint-inverse-delete-binding-source.ts";
 import { CURRENT_FOOTPRINT_INVERSE_DELETE_BINDING_PROGRAMS as PROGRAMS } from "../src/current-footprint-inverse-delete-binding-programs.ts";
 import { CURRENT_FOOTPRINT_INVERSE_DELETE_BINDING_REQUESTS as BUDGET, CURRENT_FOOTPRINT_INVERSE_DELETE_BINDING_FLAGS as FLAGS, currentFootprintInverseDeleteBindingFunction, currentFootprintInverseDeleteBindingNativeFrame, currentFootprintInverseDeleteBindingWire, qualifyCurrentFootprintInverseDeleteBindingFunction, qualifyCurrentFootprintInverseDeleteBindingHelper, validateCurrentFootprintInverseDeleteBindingCommand } from "../src/current-footprint-inverse-delete-binding-protocol.ts";
@@ -42,4 +44,8 @@ void test("actual inert Inspector metadata qualifies every pinned class and dele
  for(let slot=0;slot<28;slot+=1){const captured=await inspector.post("Runtime.callFunctionOn",{objectId:tuple,functionDeclaration:"function(i){return this[i];}",arguments:[{value:slot}],objectGroup:"inert-inverse-delete-metadata",returnByValue:false});const objectId=currentFootprintInverseDeleteBindingFunction(captured,slot);const metadata:unknown=await inspector.post("Runtime.getProperties",{objectId,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false});try{qualifyCurrentFootprintInverseDeleteBindingFunction(metadata,slot,compiled.scriptId,source);}catch(error){throw new Error(`inert actual slot ${String(slot)} ${CALLEES[slot]?.key}`,{cause:error});}assert.throws(()=>{ qualifyCurrentFootprintInverseDeleteBindingFunction(metadata,slot,"other-script",source); });}
  await inspector.post("Runtime.releaseObjectGroup",{objectGroup:"inert-inverse-delete-metadata"});
  }finally{inspector.disconnect();}
+});
+
+void test("copied original ready origins refuse without inspecting supplied getters",()=>{
+ let reads=0;const owner=Object.defineProperty({},"prepared",{get(){reads+=1;throw new Error("caller getter");}});const prepared:CurrentFootprintForwardSavedCheckpoint=Object.freeze({profile:"private.current-footprint-forward-saved-checkpoint.v1"});const origin=Object.freeze({profile:"private.current-footprint-inverse-delete-binding-origin.v1"}as const);assert.throws(()=>new CurrentFootprintInverseDeleteBindingObserver(origin,owner,prepared));assert.equal(reads,0);
 });
