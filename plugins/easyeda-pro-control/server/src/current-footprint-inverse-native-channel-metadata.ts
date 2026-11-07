@@ -2,6 +2,7 @@
  * event, peer, message delivery or clock authority is issued by metadata. */
 import { createHash } from "node:crypto";
 import { z } from "zod";
+import { decodeCurrentNativeFunctionMetadata } from "./current-native-function-metadata.ts";
 import { captureCurrentFootprintInverseDeleteBindingReply as capture } from "./current-footprint-inverse-delete-binding-capture.ts";
 import { CURRENT_FOOTPRINT_INVERSE_DELETE_NATIVE_EVENT_SOURCE as SOURCE,qualifyCurrentFootprintInverseDeleteNativeEventSource } from "./current-footprint-inverse-delete-native-event-source.ts";
 
@@ -12,3 +13,8 @@ export function qualifyCurrentFootprintInverseNativeChannelCallback(input:unknow
  const parts=new Map(value.internalProperties.map(row=>[row.name,row.value]));need(parts.size===3);const at=parts.get("[[FunctionLocation]]"),parent=parts.get("[[Prototype]]"),scopes=parts.get("[[Scopes]]");const location=z.strictObject({scriptId:handle,lineNumber:z.literal(SOURCE.lineNumber),columnNumber:z.literal(SOURCE.columnNumber)}).parse(at?.value);need(location.scriptId===scriptId&&at?.type==="object"&&at.subtype==="internal#location"&&at.objectId===undefined&&parent?.type==="function"&&parent.className==="Function"&&parent.description==="function () { [native code] }"&&parent.objectId!==undefined&&parent.value===undefined&&parent.subtype===undefined&&scopes?.type==="object"&&scopes.subtype==="internal#scopeList"&&scopes.className==="Array"&&scopes.objectId!==undefined&&scopes.value===undefined&&/^Scopes\[[34]\]$/u.test(scopes.description??""));return scopes.objectId;
 }
 export function qualifyCurrentFootprintInverseNativeChannelScopes(input:unknown):void{const value=z.strictObject({result:z.array(property).min(3).max(4)}).parse(capture(input));const expected=value.result.length===4?["Closure","Closure","Script","Global"]:["Closure","Closure","Global"],ids=new Set<string>();for(const[index,row]of value.result.entries()){const item=row.value;need(row.name===String(index)&&row.writable&&row.enumerable&&row.configurable&&item.type==="object"&&item.subtype==="internal#scope"&&item.className==="Object"&&item.description===expected[index]&&item.objectId!==undefined&&item.value===undefined&&!ids.has(item.objectId));ids.add(item.objectId);}}
+
+/** The exact original BroadcastChannel-parent packet must already pass its
+ * complete native constructor qualifier. Never traverse a global substitute. */
+export function currentFootprintInverseNativeChannelEventTarget(input:unknown):string{const value=z.looseObject({internalProperties:z.array(internal).length(2)}).parse(capture(input));const parents=value.internalProperties.filter(row=>row.name==="[[Prototype]]");need(parents.length===1);const parent=parents[0]?.value;need(parent?.type==="function"&&parent.className==="Function"&&parent.description==="function EventTarget() { [native code] }"&&parent.objectId!==undefined&&parent.subtype===undefined&&parent.value===undefined);return parent.objectId;}
+export function qualifyCurrentFootprintInverseNativeChannelEventTarget(input:unknown):void{decodeCurrentNativeFunctionMetadata(input,{name:"EventTarget",arity:0,constructor:true});}

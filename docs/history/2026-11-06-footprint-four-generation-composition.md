@@ -1965,3 +1965,30 @@ Full emitted Linux C#5 passes the18 messages, original-purpose/once limits and
 intrinsic/peer/entry smokes (ORIGINAL_INVERSE_NATIVE_CHANNEL_OK, private
 inverse-native-channel-rUFNog). No tracked helper/pin, app/native channel,
 Windows compiler, SDK invocation or native-owner cleanup occurred.
+
+## EventTarget reference ordering correction
+
+Source review of the preceding prefix found that it read the global
+EventTarget.prototype before comparing that global to the BroadcastChannel
+constructor's qualified parent. A data Proxy in the global slot could
+therefore reach a descriptor trap before refusal. No connected/native use of
+that prefix occurred; the selected reader payload remains separate.
+
+Core now retains the original actual BroadcastChannel parent reference from
+its qualified Inspector packet, qualifies that EventTarget constructor's
+complete native metadata too, and substitutes only that reference into the
+fixed members call. The helper compares the global, current constructor
+parent and original qualified reference before any EventTarget traversal.
+It also checks the original function realm. A global-only Proxy, simultaneous
+parent/global Proxy and parent-only replacement each refuse with zero traps.
+Constructor descriptions alone supply no receipt or sender grant.
+
+The extra metadata read derives18 normal +four helper reads:22 CDP/24 controls;
+normal order and fixed table become19 messages/23 rows. Inverse renderer17,421,
+main reproofs93,088 and total controls161,695 come from the same formulas.
+Both type projects and strict changed lint pass. Targeted original Inspector,
+codec and real byte-pipe checks pass. Two-pass private generation stays exact
+at1,442,481 stored/2,020,705 compiler bytes. Full emitted Linux C#5 passes the
+new19-message codec/cap and intrinsic/entry smokes
+(ORIGINAL_INVERSE_EVENT_TARGET_OK, private inverse-event-target-Vbr5d7).
+No helper/pin or app/native call was changed or performed.
