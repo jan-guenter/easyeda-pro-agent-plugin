@@ -194,7 +194,7 @@ export function generateWorkerStartupProtocol(source: string, layout: "diagnosti
   next = applyCurrentPcbViaPostHistorySyncNativeFragment(next);
   next = applyCurrentPcbViaSaveDrainNativeFragment(next);
   next = applyCurrentPcbViaObservedSourceNativeFragment(next);
-  if (layout !== "schematic") { next = applyCurrentPcbComponentSpatialNativeFragment(next); }
+  if (layout !== "schematic") { next = applyCurrentPcbComponentSpatialNativeFragment(next, layout === "diagnostic"); }
   if (layout !== "schematic") { next = applyCurrentPcbViaSavedReadbackNativeFragment(next); }
   if (layout === "inverse") { next = applyCurrentFootprintInverseNativeFragment(next); }
   if (layout === "schematic") {

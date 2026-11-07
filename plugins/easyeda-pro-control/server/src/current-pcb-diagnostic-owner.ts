@@ -365,6 +365,7 @@ import { assertOriginalGeneratedComponentFixtureTarget } from "./managed-compone
 import type { QualifiedGeneratedComponentFixtureTarget } from "./managed-component-fixture-initial-sql.ts";
 import { decodeGeneratedComponentFixtureRegistrationReply } from "./managed-component-fixture-registration-program.ts";
 import { buildCurrentPcbComponentSpatialScene, requireOriginalCurrentPcbComponentSpatialScene } from "./current-pcb-component-spatial-scene.ts";
+import type {CurrentPcb209ComponentClonedPointResult} from "./current-pcb-209-component-cloned-point-read.ts";
 import type { CurrentPcb209ComponentPointResult } from "./current-pcb-209-component-point-read.ts";
 import { CURRENT_PROJECT_STRUCTURE_TRANSPORT_SITES, qualifyCurrentProjectStructureTransportSource } from "./current-project-structure-transport-source.ts";
 import { CURRENT_PROJECT_STRUCTURE_TRANSPORT_NATIVE_CAPTURE_LENGTH, validateCurrentProjectStructureTransportCommand } from "./current-project-structure-transport-protocol.ts";
@@ -3417,7 +3418,9 @@ class CurrentPcbRetainedOwnerCore {
     finally { this.#busy = false; }
   }
 
-  public async observeComponentSpatial209(input: CurrentDisposableOpenSealedTarget, queries: unknown): Promise<readonly CurrentPcb209ComponentPointResult[]> {
+  public observeComponentSpatial209(input:CurrentDisposableOpenSealedTarget,queries:unknown):Promise<readonly CurrentPcb209ComponentPointResult[]>{return this.#observeComponentSpatial209(input,runner=>runner.readComponentBatch(queries));}
+  public observeComponentClonedSpatial209(input:CurrentDisposableOpenSealedTarget,queries:unknown):Promise<readonly CurrentPcb209ComponentClonedPointResult[]>{return this.#observeComponentSpatial209(input,runner=>runner.readComponentClonedBatch(queries));}
+  async #observeComponentSpatial209<T>(input: CurrentDisposableOpenSealedTarget, read:(runner:CurrentPcbSpatialCaptureRunner)=>Promise<T>): Promise<T> {
     const context = this.#stagedContext, pipe = this.#pipe, profile = this.#pcbSourceProfile;
     const source = CURRENT_PCB_209_SPATIAL_SOURCE_PROFILE, target = currentDisposableOpenSealedTargetSchema.parse(input);
     if (this.#purpose !== "pcb-component-spatial209" || !(pipe instanceof CurrentPcbComponentSpatialPipe) || context === null || profile === null ||
@@ -3448,7 +3451,7 @@ class CurrentPcbRetainedOwnerCore {
       const runner = new CurrentPcbSpatialCaptureRunner({
         request: (command): Promise<unknown> => this.#transfer(() => pipe.observeComponentSpatial(command)), assertCurrent: current,
       }, pcb.scriptId, pcb.uniqueContextId, target.documentUuid, scene);
-      const result = await runner.readComponentBatch(queries);
+      const result = await read(runner);
       current(); await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current();
       await this.#verifyInstallation(); current(); await this.#verify(); current();
       return result;

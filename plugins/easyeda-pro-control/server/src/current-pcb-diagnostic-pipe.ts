@@ -382,6 +382,7 @@ class CurrentPcbFixedPipeCore {
   readonly #viaStages = new Set<CurrentPcbViaWriteStage>();
   readonly #spatialPurpose: boolean;
   readonly #componentSpatialPurpose: boolean;
+  #componentClonedSelected:boolean|null=null;
   readonly #spatialSources = new Set<string>();
   #spatialBinding: CurrentPcbSpatialBinding | null = null;
   #spatialStage = 0;
@@ -656,12 +657,14 @@ class CurrentPcbFixedPipeCore {
     } else {
       if (this.#nextId > CURRENT_PCB_COMPONENT_SPATIAL_PROFILE.normalRequestLimit) { throw new Error("PCB_COMPONENT_PIPE_CLEANUP_RESERVE"); }
       if (phase === "properties") { if (this.#spatialStage < 1 || this.#spatialStage > 4) { throw new Error("PCB_COMPONENT_PIPE_SEQUENCE"); } }
-      else if (phase === "read-component") {
-        if (this.#spatialStage < 4 || this.#spatialStage > 5 || this.#spatialReads >= 16) { throw new Error("PCB_COMPONENT_PIPE_READ_SEQUENCE"); }
+      else if (phase === "read-component" || phase === "read-component-cloned") {
+        if (this.#spatialStage < 4 || this.#spatialStage > 5 || this.#componentClonedSelected !== (phase === "read-component-cloned") || this.#spatialReads >= (this.#componentClonedSelected ? 11 : 16)) { throw new Error("PCB_COMPONENT_PIPE_READ_SEQUENCE"); }
         this.#spatialReads += 1; this.#spatialStage = 5;
       } else {
-        if (["wrapper", "handler", "bindings-component", "functions"][this.#spatialStage] !== phase) { throw new Error("PCB_COMPONENT_PIPE_SEQUENCE"); }
+        const bindingPhase=phase === "bindings-component-cloned" ? "bindings-component" : phase;
+        if (["wrapper", "handler", "bindings-component", "functions"][this.#spatialStage] !== bindingPhase) { throw new Error("PCB_COMPONENT_PIPE_SEQUENCE"); }
         if (phase === "wrapper" && fixed.command.params.uniqueContextId !== binding.uniqueContextId) { throw new Error("PCB_COMPONENT_PIPE_CONTEXT"); }
+        if (phase === "bindings-component" || phase === "bindings-component-cloned") {this.#componentClonedSelected=phase === "bindings-component-cloned";}
         this.#spatialStage += 1;
       }
     }

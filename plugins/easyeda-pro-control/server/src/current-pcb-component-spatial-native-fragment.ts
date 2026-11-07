@@ -9,6 +9,8 @@ import { CURRENT_PCB_209_COMPONENT_POINT_READ_FUNCTION } from "./current-pcb-209
 import { GENERATED_COMPONENT_FIXTURE_REGISTRATION_FUNCTION } from "./managed-component-fixture-registration-program.ts";
 import { CURRENT_PCB_COMPONENT_SPATIAL_REQUEST_DERIVATION as COST, CURRENT_PCB_COMPONENT_SPATIAL_PROFILE as PROFILE } from "./current-pcb-component-spatial-profile.ts";
 
+import {extendCurrentPcbComponentClonedSpatialNativeSource} from "./current-pcb-component-cloned-spatial-native-fragment.ts";
+
 const begin = "// BEGIN GENERATED COMPONENT SPATIAL419", end = "// END GENERATED COMPONENT SPATIAL419";
 function packed(name: string, text: string): string {
   const bytes = Buffer.from(text); if (bytes.length > 65_536) { throw new Error("COMPONENT_NATIVE_PROGRAM_BOUND"); }
@@ -16,9 +18,9 @@ function packed(name: string, text: string): string {
   const compressed = gzipSync(bytes, { level: 9 });
   return `static readonly string ${name}=UnpackFixedProgram("${compressed.toString("base64")}",${String(bytes.length)},"${createHash("sha256").update(bytes).digest("hex")}","${createHash("sha256").update(compressed).digest("hex")}");`;
 }
-export function currentPcbComponentSpatialNativeSource(): string {
+export function currentPcbComponentSpatialNativeSource(includeCloned=true): string {
   if (COST.calleeProperties !== 290 || COST.fullWorkflow !== 419 || COST.spatialStage !== 316 || PROFILE.normalRequestLimit !== 418) { throw new Error("COMPONENT_NATIVE_DERIVATION"); }
-  return `${begin}\npublic sealed partial class EasyedaDiagnosticOwner {\n${[
+  const source = `${begin}\npublic sealed partial class EasyedaDiagnosticOwner {\n${[
     ["ComponentWrapperFunction", CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION], ["ComponentHandlerFunction", CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION],
     ["ComponentFunctionsFunction", CURRENT_PCB_209_SPATIAL_FUNCTIONS_FUNCTION], ["ComponentBindingsFunction", CURRENT_PCB_209_COMPONENT_POINT_BINDINGS_FUNCTION],
     ["ComponentReadFunction", CURRENT_PCB_209_COMPONENT_POINT_READ_FUNCTION], ["ComponentRegistrationFunction", GENERATED_COMPONENT_FIXTURE_REGISTRATION_FUNCTION],
@@ -85,6 +87,7 @@ string path=@"C:\SyntheticTemp\Codex_component_circular_pad_1111111111111111.epr
 }
 `}
 }\n${end}`;
+  return includeCloned ? extendCurrentPcbComponentClonedSpatialNativeSource(source) : source;
 }
 function one(source: string, before: string, after: string): string {
   if (source.includes(after)) { if (source.split(after).length !== 2) { throw new Error("COMPONENT_NATIVE_DUPLICATE"); } return source; }
@@ -115,7 +118,7 @@ export function prepareCurrentPcbComponentSpatialNativeSwitch(input: string): st
   return one(input, "[switch]$GeneratedFixtureSpatial209,", "[switch]$GeneratedFixtureSpatial209,[switch]$ComponentSpatial209,");
 }
 /** Root regenerates shared helper and pins. This edits only the supplied copy. */
-export function applyCurrentPcbComponentSpatialNativeFragment(input: string): string {
+export function applyCurrentPcbComponentSpatialNativeFragment(input: string, includeCloned=true): string {
   let source = prepareCurrentPcbComponentSpatialNativeSwitch(input);
   const switches = [...source.slice(0, source.indexOf("\n")).matchAll(/\[switch\]\$(\w+)/gu)].map(match => match[1]).filter(name => name !== undefined && name !== "CompileOnly" && name !== "ComponentSpatial209");
   const registrationSwitches = [...switches.filter(name => name !== "GeneratedFixture209" && name !== "SchematicDisplayWrite209"), "ComponentSpatial209"];
@@ -137,7 +140,7 @@ export function applyCurrentPcbComponentSpatialNativeFragment(input: string): st
   source = one(source, "elseif ($Spatial209) {383} elseif ($StringPrecreate)", "elseif ($Spatial209) {383} elseif ($ComponentSpatial209) {418} elseif ($StringPrecreate)");
   source = installOwnedNativeDispatch(source, dispatch, "        'spatial209' {");
   source = installNativeCompileOnlyHook(source, "    [EasyedaDiagnosticOwner]::VerifyComponentSpatialSmoke()", "    [EasyedaDiagnosticOwner]::VerifySpatial209Smoke()");
-  const start = source.indexOf(begin), stop = source.indexOf(end), value = currentPcbComponentSpatialNativeSource();
+  const start = source.indexOf(begin), stop = source.indexOf(end), value = currentPcbComponentSpatialNativeSource(includeCloned);
   if (start !== -1 || stop !== -1) { if (start === -1 || stop < start || source.includes(begin, start + begin.length) || source.includes(end, stop + end.length)) { throw new Error("COMPONENT_NATIVE_MARKERS"); } source = source.slice(0, start) + value + source.slice(stop + end.length); }
   else { source = one(source, "\n'@\n", `\n${value}\n'@\n`); }
   return source;

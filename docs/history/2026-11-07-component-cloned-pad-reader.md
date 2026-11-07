@@ -46,3 +46,31 @@ and public lifecycle mounting, then a fresh frozen/admitted disposable case.
 It grants no execution through the existing reader and cannot retry either
 consumed Component case. The remaining writer, footprint and release work
 continues in the same source batch. No production design was opened or edited.
+
+## Diagnostic controller mounting on 2026-11-07
+
+The separate cloned-Pad program is now mounted through the original Component
+capture runner,295-callee qualification, fixed private pipe, native419-request
+codebook and opening lifecycle. The new public nested action is
+`observe-components-cloned-pads`, limited to11 points. Either representation
+consumes the same original reader's single point slot before dispatch. Mixing
+bindings and reads from the two representations refuses before transport.
+Older reference-linked observation/result records retain their exact schemas;
+the cloned form has distinct intent, result and observation schemas with exact
+query/target and history-chain checks.
+
+The new native programs are included only in the diagnostic layout. The
+inverse helper retains its older Component codebook and excludes these unused
+programs. Private two-pass generation produced identical helper/compiler bytes.
+The final measured compiler input was1,858,621bytes and the stored helper was
+1,408,189bytes, below the unchanged2MiB ceilings. C#5 compilation and the pure
+codebook smoke passed, including representation mixing, the11-read bound,
+once-only release and a JavaScript-to-native physical-message hash comparison.
+That smoke allocated no Windows application, native Job or control owner.
+
+Fourteen focused checks passed, including the older sixteen-point pipe,
+immutable old384-request purpose, real Node24 function metadata, alternate clone
+guards and representation mixing. Strict type-aware lint and both TypeScript
+projects passed. No source bundle, native artifact, compatibility pin, installed
+package or live facade was changed during this source checkpoint. A fresh
+verified batch and new disposable connected case remain required.

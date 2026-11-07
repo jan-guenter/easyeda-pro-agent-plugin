@@ -185,6 +185,27 @@ selection. Source membership, persistence, writer and connected acceptance stay
 false. The old `capture-generated-closed` and historical reuse profiles do not
 accept this new Component target; close and release the original reader normally.
 
+### Alternate cloned Pad representation
+
+The same Component-only birth also has the distinct
+`observe-components-cloned-pads` action. Select one representation for a fresh
+reader. Either action consumes its sole point batch, including failures. Never
+try the other action after a refusal on that reader.
+
+The cloned-Pad action qualifies295 original callees and accepts1–11 points.
+Five extra Pad getters consume the five request slots saved by the smaller
+batch, preserving the419 request ceiling and64KiB physical message ceiling.
+Its result schema is `easyeda-pro-control.pcb209-component-cloned-point.v1`.
+It requires the exact generated footprint geometry and reciprocal parent/index
+relations but reports `templateReferenceLinked:false`. The older reference-linked
+result remains separate. The cloned form accepts only the source-derived0 or5202
+model bitmap while its fixed point getters leave model state and descriptors
+unchanged. These source and offline checks do not establish a connected match.
+
+No caller chooses classes, supplies alternate source or relaxes guards. Normal
+close, complete closed capture, original process/Job termination and helper
+release are required after either representation's attempt.
+
 ## Closure
 
 Finish with the original observed window's one normal close, separately observed

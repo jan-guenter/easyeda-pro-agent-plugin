@@ -19,6 +19,8 @@ import { captureCurrentPcbSpatialCommand } from "./current-pcb-spatial-command-i
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { currentPcb209SpatialPadPointSchema } from "./current-pcb-209-spatial-pad-read.ts";
 
+import {CURRENT_PCB_209_COMPONENT_CLONED_POINT_BINDINGS_FUNCTION,CURRENT_PCB_209_COMPONENT_CLONED_POINT_READ_FUNCTION} from "./current-pcb-209-component-cloned-point-read.ts";
+
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}(?![\s\S])/u), session = handle.max(128);
 const effects = { throwOnSideEffect: z.literal(true), silent: z.literal(true), awaitPromise: z.literal(false),
   generatePreview: z.literal(false), userGesture: z.literal(false) };
@@ -45,6 +47,8 @@ const componentBindingArguments = z.tuple([bindingArgument, sceneArgument]);
 const componentBindingParams = bindingParams.extend({ functionDeclaration: z.literal(CURRENT_PCB_209_COMPONENT_POINT_BINDINGS_FUNCTION), arguments: componentBindingArguments });
 const componentQueryArgument = z.strictObject({ value: currentPcb209SpatialPadPointSchema });
 const componentReadParams = readParams.extend({ functionDeclaration: z.literal(CURRENT_PCB_209_COMPONENT_POINT_READ_FUNCTION), arguments: z.tuple([componentQueryArgument]) });
+const clonedBindingParams=componentBindingParams.extend({functionDeclaration:z.literal(CURRENT_PCB_209_COMPONENT_CLONED_POINT_BINDINGS_FUNCTION)});
+const clonedReadParams=componentReadParams.extend({functionDeclaration:z.literal(CURRENT_PCB_209_COMPONENT_CLONED_POINT_READ_FUNCTION)});
 const schema = z.discriminatedUnion("spatialPhase", [
   z.strictObject({ spatialPhase: z.literal("wrapper"), method: z.literal("Runtime.evaluate"), params: wrapperParams }),
   z.strictObject({ spatialPhase: z.literal("properties"), method: z.literal("Runtime.getProperties"), params: propertyParams }),
@@ -52,6 +56,8 @@ const schema = z.discriminatedUnion("spatialPhase", [
   z.strictObject({ spatialPhase: z.literal("functions"), method: z.literal("Runtime.callFunctionOn"), params: functionParams }),
   z.strictObject({ spatialPhase: z.literal("bindings-component"), method: z.literal("Runtime.callFunctionOn"), params: componentBindingParams }),
   z.strictObject({ spatialPhase: z.literal("read-component"), method: z.literal("Runtime.callFunctionOn"), params: componentReadParams }),
+  z.strictObject({ spatialPhase: z.literal("bindings-component-cloned"), method: z.literal("Runtime.callFunctionOn"), params: clonedBindingParams }),
+  z.strictObject({ spatialPhase: z.literal("read-component-cloned"), method: z.literal("Runtime.callFunctionOn"), params: clonedReadParams }),
   z.strictObject({ spatialPhase: z.literal("release"), method: z.literal("Runtime.releaseObjectGroup"), params: releaseParams }),
 ]);
 export type CurrentPcbSpatialWireCommand = CurrentPcbSpatialCaptureCommand & Readonly<{ id: number; sessionId: string }>;
@@ -72,8 +78,8 @@ export function currentPcbComponentSpatialWire(input: unknown, id: number, sessi
     action: "component-spatial419", requestId: id, method: command.method, sessionId: selectedSession, spatialPhase: command.spatialPhase,
     ...("uniqueContextId" in command.params ? { uniqueContextId: command.params.uniqueContextId } : {}),
     ...("objectId" in command.params ? { objectId: command.params.objectId } : {}),
-    ...(command.spatialPhase === "bindings-component" ? { callbackObjectId: command.params.arguments[0].objectId, ...command.params.arguments[1].value } : {}),
-    ...(command.spatialPhase === "read-component" ? { queryKind: command.params.arguments[0].value.kind, xMil: command.params.arguments[0].value.xMil, yMil: command.params.arguments[0].value.yMil } : {}),
+    ...((command.spatialPhase === "bindings-component" || command.spatialPhase === "bindings-component-cloned") ? { callbackObjectId: command.params.arguments[0].objectId, ...command.params.arguments[1].value } : {}),
+    ...((command.spatialPhase === "read-component" || command.spatialPhase === "read-component-cloned") ? { queryKind: command.params.arguments[0].value.kind, xMil: command.params.arguments[0].value.xMil, yMil: command.params.arguments[0].value.yMil } : {}),
   } });
 }
 /** Reuse the unchanged legacy reconstruction only with a local ID of one.

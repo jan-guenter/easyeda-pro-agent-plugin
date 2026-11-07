@@ -29,6 +29,8 @@ import { CURRENT_PCB_209_COMPONENT_POINT_READ_FUNCTION } from "./current-pcb-209
 import { currentPcb209ComponentPointQueriesSchema, decodeCurrentPcb209ComponentPointReply } from "./current-pcb-209-component-point-read.ts";
 import type { CurrentPcb209ComponentPointResult } from "./current-pcb-209-component-point-read.ts";
 import type { CurrentPcbComponentSpatialScene } from "./current-pcb-component-spatial-scene.ts";
+import {CURRENT_PCB_209_COMPONENT_CLONED_POINT_BINDINGS_FUNCTION,CURRENT_PCB_209_COMPONENT_CLONED_POINT_READ_FUNCTION,currentPcb209ComponentClonedPointQueriesSchema,decodeCurrentPcb209ComponentClonedPointReply} from "./current-pcb-209-component-cloned-point-read.ts";
+import type {CurrentPcb209ComponentClonedPointResult} from "./current-pcb-209-component-cloned-point-read.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_PCB_SPATIAL_OBJECT_GROUP = "easyeda-pro-control-pcb209-spatial-v1";
@@ -59,13 +61,13 @@ export type CurrentPcbSpatialCaptureCommand =
     objectId: string; functionDeclaration: typeof CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION;
     objectGroup: typeof CURRENT_PCB_SPATIAL_OBJECT_GROUP; returnByValue: false;
   }> }>
-  | Readonly<{ spatialPhase: "bindings" | "bindings-track" | "bindings-arc" | "bindings-pad" | "bindings-component"; method: "Runtime.callFunctionOn"; params: Omit<typeof EFFECTS, "throwOnSideEffect"> & Readonly<{
+  | Readonly<{ spatialPhase: "bindings" | "bindings-track" | "bindings-arc" | "bindings-pad" | "bindings-component" | "bindings-component-cloned"; method: "Runtime.callFunctionOn"; params: Omit<typeof EFFECTS, "throwOnSideEffect"> & Readonly<{
     throwOnSideEffect: false;
     objectId: string; functionDeclaration: typeof CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION;
     objectGroup: typeof CURRENT_PCB_SPATIAL_OBJECT_GROUP; returnByValue: false;
     arguments: readonly [Readonly<{ objectId: string }>] | readonly [Readonly<{ objectId: string }>, Readonly<{ value: CurrentPcbComponentSpatialScene }>];
   }> }>
-  | Readonly<{ spatialPhase: "read" | "read-track" | "read-arc" | "read-pad" | "read-component"; method: "Runtime.callFunctionOn"; params: Omit<typeof EFFECTS, "throwOnSideEffect"> & Readonly<{
+  | Readonly<{ spatialPhase: "read" | "read-track" | "read-arc" | "read-pad" | "read-component" | "read-component-cloned"; method: "Runtime.callFunctionOn"; params: Omit<typeof EFFECTS, "throwOnSideEffect"> & Readonly<{
     throwOnSideEffect: false; objectId: string; functionDeclaration: typeof CURRENT_PCB_209_SPATIAL_READ_FUNCTION;
     objectGroup: typeof CURRENT_PCB_SPATIAL_OBJECT_GROUP; returnByValue: true;
     arguments: readonly [Readonly<{ value: CurrentPcb209SpatialQuery }>];
@@ -210,12 +212,12 @@ export class CurrentPcbSpatialCaptureRunner {
       } }, input => decodeCurrentPcbSpatialFunction(input, "point-handler"));
       const handlerScopes = await this.#properties(handler, input => decodeCurrentPcbSpatialFunctionScopeList(input, this.#scriptId, "point-handler"), "handler-scopes");
       const handlerScope = await this.#properties(handlerScopes, input => decodeCurrentPcbSpatialFunctionScope(input, "point-handler"), "handler-closure");
-      const bundle = await this.#request({ spatialPhase: ({ via: "bindings", "line-via": "bindings-track", "arc-line-via": "bindings-arc", "pad-point": "bindings-pad", "component-point": "bindings-component" } as const)[variant], method: "Runtime.callFunctionOn", params: {
+      const bundle = await this.#request({ spatialPhase: ({ via: "bindings", "line-via": "bindings-track", "arc-line-via": "bindings-arc", "pad-point": "bindings-pad", "component-point": "bindings-component", "component-cloned-point": "bindings-component-cloned" } as const)[variant], method: "Runtime.callFunctionOn", params: {
         // The fixed bindings program only allocates and seals private containers.
         // V8 refuses its defineProperty/freeze calls under the side-effect flag.
         // No vendor getter, callback or hit method runs or app object changes.
-        ...EFFECTS, throwOnSideEffect: false, objectId: handlerScope, functionDeclaration: { via: CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION, "line-via": CURRENT_PCB_209_SPATIAL_TRACK_BINDINGS_FUNCTION, "arc-line-via": CURRENT_PCB_209_SPATIAL_ARC_BINDINGS_FUNCTION, "pad-point": CURRENT_PCB_209_SPATIAL_PAD_BINDINGS_FUNCTION, "component-point": CURRENT_PCB_209_COMPONENT_POINT_BINDINGS_FUNCTION }[variant],
-        objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP, returnByValue: false, arguments: variant === "component-point" ? [{ objectId: wrapper }, { value: this.#componentScene ?? refuse() }] : [{ objectId: wrapper }],
+        ...EFFECTS, throwOnSideEffect: false, objectId: handlerScope, functionDeclaration: { via: CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION, "line-via": CURRENT_PCB_209_SPATIAL_TRACK_BINDINGS_FUNCTION, "arc-line-via": CURRENT_PCB_209_SPATIAL_ARC_BINDINGS_FUNCTION, "pad-point": CURRENT_PCB_209_SPATIAL_PAD_BINDINGS_FUNCTION, "component-point": CURRENT_PCB_209_COMPONENT_POINT_BINDINGS_FUNCTION, "component-cloned-point": CURRENT_PCB_209_COMPONENT_CLONED_POINT_BINDINGS_FUNCTION }[variant],
+        objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP, returnByValue: false, arguments: variant === "component-point" || variant === "component-cloned-point" ? [{ objectId: wrapper }, { value: this.#componentScene ?? refuse() }] : [{ objectId: wrapper }],
       } }, bundleHandle);
       if (qualify) {
         const functions = await this.#request({ spatialPhase: "functions", method: "Runtime.callFunctionOn", params: {
@@ -268,6 +270,26 @@ export class CurrentPcbSpatialCaptureRunner {
       }
       return Object.freeze(results);
     }, true, "component-point");
+  }
+  /** A separate clone representation, once-only within the same original
+   * point batch slot. It never converts the older reference-linked result. */
+  public readComponentClonedBatch(input: unknown): Promise<readonly CurrentPcb209ComponentClonedPointResult[]> {
+    if (this.#componentScene === null) { return refuse(); }
+    const queries = freezeDeep(currentPcb209ComponentClonedPointQueriesSchema.parse(input));
+    return this.#run(async bundle => {
+      const results: CurrentPcb209ComponentClonedPointResult[] = [];
+      for (const query of queries) {
+        results.push(await this.#request({ spatialPhase: "read-component-cloned", method: "Runtime.callFunctionOn", params: {
+          ...EFFECTS, throwOnSideEffect: false, objectId: bundle, functionDeclaration: CURRENT_PCB_209_COMPONENT_CLONED_POINT_READ_FUNCTION,
+          objectGroup: CURRENT_PCB_SPATIAL_OBJECT_GROUP, returnByValue: true, arguments: [{ value: query }],
+        } }, reply => {
+          const result = decodeCurrentPcb209ComponentClonedPointReply(reply);
+          if (result.documentUuid !== this.#documentUuid || canonicalJson(result.query) !== canonicalJson(query)) { return refuse(); }
+          return result;
+        }));
+      }
+      return Object.freeze(results);
+    }, true, "component-cloned-point");
   }
   /** Passive qualification only, followed by original group release. */
   public observe(): Promise<CurrentPcbSpatialCaptureObservation> {
