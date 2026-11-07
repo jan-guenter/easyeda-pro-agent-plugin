@@ -92,6 +92,7 @@ void test("whole native composition is idempotent with original inverse limits a
   assert.equal(first.split("if ($FootprintInverse209 -and (").length - 1, 1);
   assert.ok(expanded.includes(`if(footprintInverse209)return ${String(PROFILE.renderer.total)};`));
   assert.ok(expanded.includes("spatial209?384:componentSpatial209?419:"));
+  assert.equal(ACTIONS["footprint-inverse-model-step"], 21); assert.ok(expanded.includes('case "footprint-inverse-model-step":limit=21;break;'));
   assert.equal(ACTIONS["footprint-inverse-initial-sync"], 120); assert.ok(expanded.includes('case "footprint-inverse-initial-sync":limit=120;break;'));
   assert.equal(ACTIONS["footprint-inverse-initial-cache"], 298); assert.ok(expanded.includes('case "footprint-inverse-initial-cache":limit=298;break;'));
   assert.equal(PROFILE.deleteInvocationAuthorized, false); assert.equal(PROFILE.executionAuthorized, false); assert.equal(PROFILE.saveAuthorized, false);
@@ -120,6 +121,9 @@ void test("an original inverse factory cannot adopt a copied source or construct
   const refused: unknown = Reflect.apply(worker, owner, [(): Promise<void> => Promise.resolve()]); assert.ok(refused instanceof Promise);
   await assert.rejects(refused, /FOOTPRINT_INVERSE_CACHE_ABSENCE_REQUIRED/u);
   const queue:unknown=Reflect.get(owner,"observeFootprintInverseStartupQueue");assert.ok(typeof queue==="function");assert.throws(()=>Reflect.apply(queue,owner,[Object.freeze({profile:"private.current-footprint-inverse-cold-held.v1"})]),/FOOTPRINT_INVERSE_STARTUP_QUEUE_ORIGINAL_READY/u);
+  const idle:unknown=Reflect.get(f.api,"requireOriginalCurrentFootprintInverseStartupIdle"),stepModel:unknown=Reflect.get(owner,"continueFootprintInverseModelIngress");assert.ok(typeof stepModel==="function"&&typeof idle==="function");
+  assert.throws(()=>Reflect.apply(stepModel,owner,[Object.freeze({profile:"private.current-footprint-inverse-cold-held.v1"})]),/FOOTPRINT_INVERSE_MODEL_STEP_ORIGINAL/u);
+  assert.throws(()=>Reflect.apply(idle,undefined,[Object.freeze({profile:"private.current-footprint-inverse-startup-idle.v1"}),owner,token]),/FOOTPRINT_INVERSE_STARTUP_IDLE_ORIGINAL/u);
   const stepCold:unknown=Reflect.get(owner,"continueFootprintInverseColdIngress");assert.ok(typeof stepCold==="function");assert.throws(()=>Reflect.apply(stepCold,owner,[Object.freeze({profile:"private.current-footprint-inverse-cold-held.v1"})]),/FOOTPRINT_INVERSE_COLD_STEP_ORIGINAL/u);
   const startCold:unknown=Reflect.get(owner,"startFootprintInverseColdIngress");assert.ok(typeof startCold==="function");assert.throws(()=>Reflect.apply(startCold,owner,[]),/FOOTPRINT_INVERSE_COLD_START_PREREQUISITES/u);
   const consume:unknown=Reflect.get(f.api,"consumeOriginalCurrentFootprintInverseBootstrapPermit");assert.ok(typeof consume==="function");assert.throws(()=>Reflect.apply(consume,undefined,[Object.freeze({profile:"private.current-footprint-inverse-bootstrap-permit.v1"}),Object.freeze({}),Object.freeze({}),owner,token]),/FOOTPRINT_INVERSE_BOOTSTRAP_PERMIT_ORIGINAL/u);

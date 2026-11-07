@@ -1190,3 +1190,55 @@ unchanged2MiB limits; integration must remeasure the full concurrent source.
 No tracked helper/pins/bundles, Windows/app/native/MCP call or runtime acceptance
 changed. Parser/ready permits, the post-ready drain/final idle join and subsequent
 delete/SQL/closed inverse/fourth-generation proofs remain pending.
+
+The next increment adds a separate original `inverse-model-step` grammar for
+plaintext, parsed and ready, preserving the older six-role cold-step whitelist.
+`continueFootprintInverseModelIngress(actualPacket)` retains one original
+Promise and spends its permit before the first native await. The Node issuer
+binds the real captured packet, complete cipher/plaintext/history comparison,
+original progress instance, prepared checkpoint, controller and all original
+armed lanes. Separate native-control and CDP-entry markers are consumed at the
+actual queued-write boundary; a copied packet or matching JSON cannot mint them.
+The native resume reuses the exact existing fixed step encoder. Eight chunks
+reserve10 CDP resumes,10 original permit controls and one idle enrollment,21
+controls total. Failed acknowledgments never refund an attempt.
+
+The ready/drain composition joins the actual once-only drained startup-serial
+reply, original cache and four-response sync completions and original timer
+cancellation. Its production drain helper accepts only known original events,
+with at most three pauses per actual cache job, nine sync pauses and two timer
+pauses (at most35). It uses only the already-reserved additional Promise samples;
+a final pending state refuses. An unsupported actual event stays retained. A
+prospective private idle token additionally requires the actual original project
+opening reply, complete opening decoder, original progress registry, current
+readonly Main fence and a fresh no-pending-work check. It grants no delete,
+Save, SQL mutation or full producer frontier.
+
+Final source audit found another concrete original open-tail producer before
+this token may be issued. At worker offset2,107,738, `initUpdateData()` awaits
+`updateTeam()` then calls `init()` and drops `mount()`'s Promise. The original
+`fu` class at1,964,488 inherits `Hm` at1,651,563; its unconditional mount runs an
+initial asynchronous library-refresh todo and then rearms requestAnimationFrame,
+with subsequent60-second work. This is independent of the first-checkProject
+setTimeout already owned by this purpose. Its client-only team-query predicate
+and the full initial todo/RAF custody need separate qualification. `applySnap`'s
+snapshot branch is excluded by the actual at-most-eight head roster against
+its minimum30-head threshold, but that does not exclude the library loop.
+
+Consequently the current implementation deliberately refuses the actual parsed
+packet with `FOOTPRINT_INVERSE_LIBRARY_UPDATE_FRONTIER_PENDING`, before releasing
+into the `fu` construction/mount tail. Plaintext parser releases and original
+callback custody are usable; ready/idle remain unreachable until that new
+original-source prerequisite is implemented. The gate is not waived by an empty
+queue or a fulfilled SDK acknowledgment. This preserves the incomplete outcome
+instead of claiming an unobserved startup frontier.
+
+Three focused grammar/production-drain cases and the original factory/controller
+checks pass (12 selected checks). Full types and strict changed-file lint pass.
+Two-pass v2 generation and Linux C#5/.NET10 inverse smokes pass using actual
+runtime compiler bytes: stored helper1,520,274 bytes, compiler2,062,284 bytes and
+build-only restored review2,103,215 bytes. Runtime compiler and stored helper
+limits stay2MiB; v1 decoding is unchanged. No tracked helper/pins/bundles,
+Windows/app/native/MCP calls or runtime acceptance changed. The next work is a
+complete pinned open-tail task/constructor inventory, then original `fu`
+custody/quiesce, followed by inverse deletion/Main SQL and fresh saved absence.

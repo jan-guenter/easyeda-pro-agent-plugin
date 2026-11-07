@@ -103,3 +103,5 @@ export type { CurrentFootprintInverseInitialCacheCommand, CurrentFootprintInvers
 
 export { CURRENT_FOOTPRINT_INVERSE_INITIAL_SYNC_ROLES } from "./current-footprint-inverse-initial-sync-protocol.ts";
 export type { CurrentFootprintInverseInitialSyncNativeCommand } from "./current-footprint-inverse-initial-sync-protocol.ts";
+
+export type { CurrentFootprintInverseModelStepCommand } from "./current-footprint-inverse-model-step-protocol.ts";
