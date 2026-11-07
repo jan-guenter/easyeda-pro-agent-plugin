@@ -804,3 +804,5 @@ layout. The connected ledger retains its generation and case anchors.
 - 2026-11-07: [Inverse service and lookup metadata](2026-11-07-inverse-service-lookup-metadata.md), actual source-position corrections, async function metadata and the separately observed original process cleanup.
 
 - 2026-11-07: [Schematic consistency and Text echo callees](2026-11-07-schematic-consistency-echo-callees.md), exact local callback path and twenty-four uninvoked source function checks; actual pause and continuation remain original-owner obligations.
+
+- 2026-11-07: [Original schematic publisher bus family](2026-11-07-schematic-original-broadcast-family.md), actual CJS factory selection and fourteen source function checks; native sender and local callback completion remain separate.
