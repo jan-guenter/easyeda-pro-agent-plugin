@@ -4,8 +4,8 @@ import { canonicalJson } from "./core.ts";
 import { requireOriginalCurrentFootprintForwardSavedCheckpoint, verifyCurrentFootprintForwardSavedCheckpoint } from "./current-footprint-copy-held-saved-generation.ts";
 import type { CurrentFootprintForwardSavedCheckpoint } from "./current-footprint-copy-held-saved-generation.ts";
 import { currentFootprintCopyV2SavedTarget } from "./current-footprint-copy-v2-saved-source.ts";
-import { deriveCurrentFootprintSavedFlowCacheData } from "./current-footprint-saved-flow-cache-data.ts";
-import type { CurrentFootprintSavedFlowCacheData } from "./current-footprint-saved-flow-cache-data.ts";
+import { captureCurrentFootprintSavedFlowCacheInput, deriveCurrentFootprintSavedFlowCacheData } from "./current-footprint-saved-flow-cache-data.ts";
+import type { CurrentFootprintSavedFlowCacheData, CurrentFootprintSavedFlowCacheInput } from "./current-footprint-saved-flow-cache-data.ts";
 import { readerCompletion } from "./sqlite-inventory.ts";
 import type { NativeSqlInventory, SqlCell, SqlTable } from "./sqlite-inventory-core.ts";
 import { decodeCurrentFootprintSourceHistory } from "./symbol-sql-comparator.ts";
@@ -13,7 +13,7 @@ import { decodeCurrentFootprintSourceHistory } from "./symbol-sql-comparator.ts"
 export interface CurrentFootprintSavedFlowCachePlan { readonly profile: "private.current-footprint-saved-flow-cache-plan.v1" }
 type Prior = ReturnType<typeof requireOriginalCurrentFootprintForwardSavedCheckpoint>;
 type Scalar = string | number | null;
-interface Original { readonly prepared: CurrentFootprintForwardSavedCheckpoint; readonly prior: Prior; readonly completion: ReturnType<typeof readerCompletion>; readonly data: CurrentFootprintSavedFlowCacheData; readonly text: string }
+interface Original { readonly prepared: CurrentFootprintForwardSavedCheckpoint; readonly prior: Prior; readonly completion: ReturnType<typeof readerCompletion>; readonly data: CurrentFootprintSavedFlowCacheData; readonly text: string; readonly input:CurrentFootprintSavedFlowCacheInput; readonly inputText:string }
 const issued = new WeakMap<CurrentFootprintSavedFlowCachePlan, Original>();
 const pending = new WeakMap<CurrentFootprintForwardSavedCheckpoint, Promise<CurrentFootprintSavedFlowCachePlan>>();
 const fields = ["id", "uuid", "parent", "key", "is_lock", "num", "snapshot_num", "created_at", "updated_at", "lock_time"] as const;
@@ -50,14 +50,20 @@ export function prepareCurrentFootprintSavedFlowCachePlan(prepared: CurrentFootp
     const heads = rows(table(prior.inventory, `project_history_${target.branchUuid}`)).map(row => Object.fromEntries(fields.map(name => { const value = row[name]; need(value !== undefined); return [name, value]; })));
     need(heads.every(row => typeof row["id"] === "number")); heads.sort((left, right) => Number(right["id"]) - Number(left["id"]));
     const chunks = decoded.chunks.map((plaintext, index) => { const link = decoded.links[index]; need(link !== undefined); return Object.freeze({ historyUuid: link.historyUuid, ordinal: link.ordinal, plaintext, plaintextSha256: link.plaintextSha256 }); });
-    const data = deriveCurrentFootprintSavedFlowCacheData({ projectUuid: target.projectUuid, branchUuid: target.branchUuid, headHistoryUuid: decoded.history.headHistoryUuid, heads, chunks });
+    const input=captureCurrentFootprintSavedFlowCacheInput({ projectUuid: target.projectUuid, branchUuid: target.branchUuid, headHistoryUuid: decoded.history.headHistoryUuid, heads, chunks });
+    const data = deriveCurrentFootprintSavedFlowCacheData(input);
     current(prepared, prior, completion); await verifyCurrentFootprintForwardSavedCheckpoint(prepared); current(prepared, prior, completion);
     const plan: CurrentFootprintSavedFlowCachePlan = Object.freeze({ profile: "private.current-footprint-saved-flow-cache-plan.v1" });
-    issued.set(plan, Object.freeze({ prepared, prior, completion, data, text: canonicalJson(data) })); return plan;
+    issued.set(plan, Object.freeze({ prepared, prior, completion, data, text: canonicalJson(data),input,inputText:canonicalJson(input) })); return plan;
   })(); pending.set(prepared, promise); return promise;
 }
 export function requireOriginalCurrentFootprintSavedFlowCachePlan(plan: CurrentFootprintSavedFlowCachePlan, prepared: CurrentFootprintForwardSavedCheckpoint): CurrentFootprintSavedFlowCacheData {
-  const original = issued.get(plan); need(original !== undefined && original.prepared === prepared && original.text === canonicalJson(original.data)); current(prepared, original.prior, original.completion); return original.data;
+  const original = issued.get(plan); need(original !== undefined && original.prepared === prepared && original.text === canonicalJson(original.data) && original.inputText === canonicalJson(original.input)); current(prepared, original.prior, original.completion); return original.data;
+}
+/** Original immutable complete decrypted source only. It reconstructs no
+ * runtime, Promise, worker, clock or ownership from the prior generation. */
+export function requireOriginalCurrentFootprintSavedFlowCacheInput(plan:CurrentFootprintSavedFlowCachePlan,prepared:CurrentFootprintForwardSavedCheckpoint):CurrentFootprintSavedFlowCacheInput {
+  requireOriginalCurrentFootprintSavedFlowCachePlan(plan,prepared);const original=issued.get(plan);need(original!==undefined&&original.prepared===prepared);return original.input;
 }
 export interface CurrentFootprintSavedFlowCachePlanModule {
   readonly prepareCurrentFootprintSavedFlowCachePlan: typeof prepareCurrentFootprintSavedFlowCachePlan;

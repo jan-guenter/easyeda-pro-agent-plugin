@@ -41,10 +41,14 @@ export interface CurrentFootprintSavedFlowCacheData {
   readonly suppliedObservationsOnly: true; readonly nativeWorkerOwnershipVerified: false; readonly cacheContinuationAuthorized: false; readonly completeUploadFrontierVerified: false;
 }
 function need(value: boolean): asserts value { if (!value) { throw new Error("FOOTPRINT_SAVED_FLOW_CACHE_DATA"); } }
+/** Immutable inert input, not a saved checkpoint or native authority. */
+export function captureCurrentFootprintSavedFlowCacheInput(input:unknown):CurrentFootprintSavedFlowCacheInput {
+  return freezeDeep(inputSchema.parse(captureCurrentPcbStringClockReply(input).value));
+}
 /** A strict subset: eight chunks,16KiB per plaintext chunk,32KiB combined and
  * the existing cache profile's eight bodies/8KiB per body/32KiB total. */
 export function deriveCurrentFootprintSavedFlowCacheData(input: unknown): CurrentFootprintSavedFlowCacheData {
-  const seen = new Set<string>(), value = inputSchema.parse(captureCurrentPcbStringClockReply(input).value);
+  const seen = new Set<string>(), value = captureCurrentFootprintSavedFlowCacheInput(input);
   need(value.heads[0]?.uuid === value.headHistoryUuid && new Set(value.heads.map(head => head.uuid)).size === value.heads.length);
   let bytes = 0;
   for (const [index, head] of value.heads.entries()) { need(head.parent === (value.heads[index + 1]?.uuid ?? null) && (index === 0 || head.id < (value.heads[index - 1]?.id ?? 0))); }

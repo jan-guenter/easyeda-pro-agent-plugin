@@ -12,6 +12,7 @@ import { CurrentPcbViaSaveTailObservationCursor } from "./current-pcb-via-save-t
 import type { CurrentPcbViaSaveTailDeleteRole } from "./current-pcb-via-save-tail-observation-source.ts";
 import type { CurrentPcbViaSaveTailObservationCommand } from "./current-pcb-via-save-tail-observation-protocol.ts";
 import type { CurrentPcbViaSaveTailObservationBindings } from "./current-pcb-via-save-tail-observation-origin.ts";
+import type { CurrentFootprintInverseStartupPlan, CurrentFootprintInverseStartupPlanModule } from "./current-footprint-inverse-startup-plan.ts";
 import type { CurrentFootprintSavedFlowCachePlan, CurrentFootprintSavedFlowCachePlanModule } from "./current-footprint-saved-flow-cache-plan.ts";
 import type { CurrentFootprintInverseCacheBackupModule as FootprintInverseCacheBackupModule } from "./current-footprint-inverse-cache-backup.ts";
 import type { CurrentFootprintInverseCacheAbsence, CurrentFootprintInverseCacheBackupGrant, CurrentFootprintInverseCacheBindings, CurrentFootprintInverseCacheOrigin } from "./current-footprint-inverse-cache-origin.ts";
@@ -1730,6 +1731,8 @@ class CurrentPcbRetainedOwnerCore {
   #inverseProducerOrigin:CurrentFootprintInverseProducerOrigin|null=null;
   #inverseProducerCommand:CurrentFootprintInverseProducerArmCommand|null=null;
   #inverseBootstrapSetupPromise: Promise<void> | null = null;
+  #inverseStartupPlanPromise:Promise<CurrentFootprintInverseStartupPlan>|null=null;
+  #inverseStartupPlan:Readonly<{plan:CurrentFootprintInverseStartupPlan;module:CurrentFootprintInverseStartupPlanModule;prepare:CurrentFootprintInverseStartupPlanModule["prepareCurrentFootprintInverseStartupPlan"];lookup:CurrentFootprintInverseStartupPlanModule["requireOriginalCurrentFootprintInverseStartupPlan"]}>|null=null;
   #inverseFlowCachePlanPromise: Promise<CurrentFootprintSavedFlowCachePlan> | null = null;
   #inverseFlowCachePlan: Readonly<{ plan: CurrentFootprintSavedFlowCachePlan; module: CurrentFootprintSavedFlowCachePlanModule;
     prepare: CurrentFootprintSavedFlowCachePlanModule["prepareCurrentFootprintSavedFlowCachePlan"]; lookup: CurrentFootprintSavedFlowCachePlanModule["requireOriginalCurrentFootprintSavedFlowCachePlan"] }> | null = null;
@@ -7305,13 +7308,30 @@ class CurrentPcbRetainedOwnerCore {
       } finally { this.#busy = false; }
     })(); this.#inverseFlowCachePlanPromise = promise; return promise;
   }
+  /** New source-data qualification, before any original worker allocation.
+   * No caller count/family or old runtime owner can issue this token. */
+  public prepareFootprintInverseStartupPlan():Promise<CurrentFootprintInverseStartupPlan>{
+    assertOriginalCurrentFootprintInverseNativeOwner(this);if(this.#inverseStartupPlanPromise!==null){return this.#inverseStartupPlanPromise;}
+    const flow=this.#inverseFlowCachePlan,prepared=originalCurrentFootprintInverseTarget(this);if(flow===null){throw error("FOOTPRINT_INVERSE_FLOW_PLAN_REQUIRED");}this.#enter(true);
+    const current=():void=>{assertOriginalCurrentFootprintInverseNativeOwner(this);this.#available();if(originalCurrentFootprintInverseTarget(this)!==prepared||this.#inverseFlowCachePlan!==flow||flow.module.prepareCurrentFootprintSavedFlowCachePlan!==flow.prepare||flow.module.requireOriginalCurrentFootprintSavedFlowCachePlan!==flow.lookup||this.#inverseWorkerController!==null||this.#mainTerminateAttempted||this.#closeConsumed||this.#terminationObserved||this.#releaseConsumed){throw error("FOOTPRINT_INVERSE_STARTUP_OWNER_CHANGED");}flow.lookup(flow.plan,prepared);};
+    const promise=(async():Promise<CurrentFootprintInverseStartupPlan>=>{try{current();const module=await import("./current-footprint-inverse-startup-plan.ts");current();
+      const lookup=module.requireOriginalCurrentFootprintInverseStartupPlan,prepare=module.prepareCurrentFootprintInverseStartupPlan;const plan=await prepare(flow.plan,prepared);current();
+      if(module.prepareCurrentFootprintInverseStartupPlan!==prepare||module.requireOriginalCurrentFootprintInverseStartupPlan!==lookup){throw error("FOOTPRINT_INVERSE_STARTUP_MODULE_CHANGED");}
+      lookup(plan,flow.plan,prepared);this.#inverseStartupPlan=Object.freeze({plan,module,prepare,lookup});return plan;
+    }finally{this.#busy=false;}})();this.#inverseStartupPlanPromise=promise;return promise;
+  }
+  #requireFootprintInverseStartup():CurrentFootprintInverseStartupPlan{
+    const flow=this.#inverseFlowCachePlan,prepared=originalCurrentFootprintInverseTarget(this),source=this.#inverseStartupPlan;
+    if(source===null||flow===null||source.module.prepareCurrentFootprintInverseStartupPlan!==source.prepare||source.module.requireOriginalCurrentFootprintInverseStartupPlan!==source.lookup){throw error("FOOTPRINT_INVERSE_STARTUP_PLAN_REQUIRED");}
+    source.lookup(source.plan,flow.plan,prepared);return source.plan;
+  }
   public async armFootprintInverseWorker(setup: (origin: CurrentFootprintInverseWorkerOrigin) => Promise<void>): Promise<void> {
     assertOriginalCurrentFootprintInverseNativeOwner(this); const intent = this.#inverseRegistrationIntent, ready = this.#inverseUiReady, runner = this.#mainRunner;
     if (this.#inverseCacheAbsence === null) { throw error("FOOTPRINT_INVERSE_CACHE_ABSENCE_REQUIRED"); } this.originalFootprintInverseCacheAbsence(this.#inverseCacheAbsence, originalCurrentFootprintInverseTarget(this));
     if (ready === null || intent === null || runner === null || this.#inverseWorkerController !== null || typeof setup !== "function" || types.isProxy(setup)) { throw error("FOOTPRINT_INVERSE_WORKER_PREREQUISITE"); }
     const flow = this.#inverseFlowCachePlan;
     if (flow === null || flow.module.prepareCurrentFootprintSavedFlowCachePlan !== flow.prepare || flow.module.requireOriginalCurrentFootprintSavedFlowCachePlan !== flow.lookup) { throw error("FOOTPRINT_INVERSE_FLOW_PLAN_REQUIRED"); }
-    flow.lookup(flow.plan, originalCurrentFootprintInverseTarget(this));
+    flow.lookup(flow.plan, originalCurrentFootprintInverseTarget(this));this.#requireFootprintInverseStartup();
     const registration = footprintInverseRegistrationIntents.get(intent);
     if (registration === undefined || this.#inverseRegistrationResult === null || registration.owner !== this) { throw error("FOOTPRINT_INVERSE_REGISTRATION_RESULT_REQUIRED"); }
     const pipe = ready.pipe, prepared = originalCurrentFootprintInverseTarget(this); this.#enter(true);
@@ -7439,7 +7459,7 @@ class CurrentPcbRetainedOwnerCore {
   public armFootprintInverseProducers(hold:CurrentFootprintInverseBootstrapHeld):Promise<CurrentFootprintInverseProducerOrigin>{
     assertOriginalCurrentFootprintInverseNativeOwner(this);const original=footprintInverseBootstraps.get(hold),prepared=originalCurrentFootprintInverseTarget(this);
     if(original===undefined||original.owner!==this||original.prepared!==prepared){throw error("FOOTPRINT_INVERSE_PRODUCER_BOOTSTRAP_ORIGINAL");}original.assertOriginal();
-    if(this.#inverseProducerArmPromise!==null){return this.#inverseProducerArmPromise;}
+    if(this.#inverseProducerArmPromise!==null){return this.#inverseProducerArmPromise;}const startup=this.#requireFootprintInverseStartup();
     const promise=(async():Promise<CurrentFootprintInverseProducerOrigin>=>{
       const args=original.args, controller=original.controller, structureObserver=original.observer, structureOrigin=original.origin;
       const current=():void=>{assertOriginalFootprintInverseController(controller);original.assertOriginal();if(this.#inverseWorkerController!==controller||this.#inverseConstructionObserver!==structureObserver||this.#inverseConstructionOrigin!==structureOrigin||controller.requireConstructionBootstrap()!==this.#inverseWorkerPair){throw error("FOOTPRINT_INVERSE_PRODUCER_BOOTSTRAP_CHANGED");}};
@@ -7462,8 +7482,8 @@ class CurrentPcbRetainedOwnerCore {
         for(const command of currentProjectSaveProducerNativeCases()){if(command.phase==="project-save-producer-arm"){await send({...command,params:{...command.params,location:{...command.params.location,scriptId:args.scriptId}}});current();}}
         const points=controller.originalProducerArms();const origin:CurrentFootprintInverseProducerOrigin=Object.freeze({profile:"private.current-footprint-inverse-producer-origin.v1"});
         const live=():void=>{assertOriginalFootprintInverseController(controller);assertOriginalCurrentFootprintInverseNativeOwner(this);this.#available();requireOriginalCurrentProjectSaveStructureOrigin(structureOrigin,this,prepared);
-          if(this.#inverseProducerOrigin!==origin||this.#inverseWorkerController!==controller||this.#inverseConstructionObserver!==structureObserver||this.#inverseConstructionOrigin!==structureOrigin||this.#inverseWorkerPair===null||this.#mainTerminateAttempted||this.#closeConsumed||this.#terminationObserved||this.#releaseConsumed||originalCurrentFootprintInverseTarget(this)!==prepared){throw error("FOOTPRINT_INVERSE_PRODUCER_OWNER_CHANGED");}};
-        const bindings:CurrentFootprintInverseProducerBindings=Object.freeze({prepared,actual:args,intrinsics,originalBreakpoints:points,assertCurrent:live,producerBootstrapResumeAuthorized:false,fullProducerFrontierVerified:false});
+          if(this.#inverseProducerOrigin!==origin||this.#requireFootprintInverseStartup()!==startup||this.#inverseWorkerController!==controller||this.#inverseConstructionObserver!==structureObserver||this.#inverseConstructionOrigin!==structureOrigin||this.#inverseWorkerPair===null||this.#mainTerminateAttempted||this.#closeConsumed||this.#terminationObserved||this.#releaseConsumed||originalCurrentFootprintInverseTarget(this)!==prepared){throw error("FOOTPRINT_INVERSE_PRODUCER_OWNER_CHANGED");}};
+        const bindings:CurrentFootprintInverseProducerBindings=Object.freeze({prepared,startup,actual:args,intrinsics,originalBreakpoints:points,assertCurrent:live,producerBootstrapResumeAuthorized:false,fullProducerFrontierVerified:false});
         current();this.#inverseProducerOrigin=origin;footprintInverseProducerOrigins.set(origin,Object.freeze({owner:this,prepared,bindings}));live();return origin;
       }catch(caughtError){controller.fail();throw caughtError;}
     })();this.#inverseProducerArmPromise=promise;return promise;

@@ -790,3 +790,51 @@ No Windows/app/native/MCP operation ran. The eight-job continuation sender/mux,
 initial startup/sync/timer joins, actual copied-model delete/clock/main SQL,
 closed inverse proof and fourth original absence generation remain incomplete;
 all execution/Save/four-generation acceptance flags remain false.
+
+A distinct original saved-footprint startup data token now retains the complete
+actual decrypted input from the existing genuine saved flow plan. Its fixed
+parser counts every raw `onLine` row before native ID filtering, including stale
+rows, and binds the complete chunk hash, original project/branch/head, copied
+target and16/32-character document roster. This profile retains every
+family and raw row, at most512 raw rows and32 documents under the existing
+eight-chunk/cache-byte bounds. Per-document family/count partitions separately
+bind non-FOOTPRINT baseline peers; the complete original decoded input hash and
+references still include every peer byte. The count is derived internally; no
+operation argument supplies it. Mixed PCB/SYMBOL inputs remain eligible data.
+The all-FOOTPRINT bit is only optimization eligibility and grants no skip or
+resume. The older flow-data v1 schema/projection remains unchanged.
+The full private plaintext and head-key material are not operation results.
+
+`prepareFootprintInverseStartupPlan()` retains one original preparation Promise,
+rechecks actual source bytes around projection, and binds the same completed
+saved checkpoint, flow plan and immutable raw input references. The Core now
+requires this exact startup token before original worker arming, and its
+separately issued producer origin retains that same token. A copied token or
+raw-input replacement across verification refuses. This token qualifies data;
+it grants no old runtime ownership, callback identity, fulfilled queued promise,
+bootstrap resume or writer authority.
+
+The source-only optimization under examination is smaller than512 per-record
+entry/return/finalizer cycles. Exact `Nd`1847057..1847248 coalesces arguments in
+its original `r` slot and retains initial/queued promises in `t`/`s`.
+The actual uploadStructure callback2104048..2104241 excludes FOOTPRINT, but
+checks `isReadOnly()` before that whitelist. A ready-state continuation must
+therefore retain the actual callback/receiver and queued arguments, qualify the
+existing77-byte readOnly method plus41-byte format getter, guard their original
+descriptors, and join actual returned promises through fulfillment. A null queue
+or source whitelist alone does not establish completion. The single lexical
+uploadStructure call at2106942 belongs to consistencyManager.onChange; the raw
+row count is a data bound and is not yet a complete native callback frontier.
+No native limit is increased or continuation granted by this increment.
+
+Four new focused parser/issuer checks plus the ten existing flow/factory checks,
+full types and strict changed-file lint pass. Checks cover stale raw rows,
+mixed-family peer retention, the513-row refusal within otherwise valid cache bounds,
+accessor avoidance, copied labels, one retained preparation Promise and original
+input-reference drift across verification. These are inert original data seams,
+not connected queue or writer validation. No helper/pins/bundles, Windows/app/
+native/MCP operation changed. The intended mixed saved project is never retargeted to a new project or reduced
+to its copied footprint. Mixed callbacks still require actual no-publication
+predicate/return/task proof; they cannot use the all-FOOTPRINT optimization.
+That optimization itself requires its explicit complete-family eligibility plus
+original live callback/receiver/queued-argument and fulfilled-promise joins.
