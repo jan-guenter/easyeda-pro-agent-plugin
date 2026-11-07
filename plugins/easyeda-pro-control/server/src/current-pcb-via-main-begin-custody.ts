@@ -6,7 +6,7 @@ import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-re
 import { CURRENT_PCB_VIA_MAIN_BEGIN_CALLS as CALLS } from "./current-pcb-via-main-begin-programs.ts";
 import { CURRENT_PCB_VIA_MAIN_BEGIN_REQUESTS as LIMITS, CURRENT_PCB_VIA_MAIN_BEGIN_SITES as SITES, CURRENT_PCB_VIA_MAIN_BEGIN_STEPS as STEPS, validateCurrentPcbViaMainBeginCommand } from "./current-pcb-via-main-begin-protocol.ts";
 import type { CurrentPcbViaMainBeginCall as Call, CurrentPcbViaMainBeginCommand as Command, CurrentPcbViaMainBeginRole as Role } from "./current-pcb-via-main-begin-protocol.ts";
-import type { CurrentPcbViaMainOrigin } from "./current-pcb-via-main-origin.ts";
+import type { CurrentSelectedProjectMainOrigin } from "./current-selected-project-main-origin.ts";
 import { decodeCurrentFootprintCopyMainRequestArrayCapture as decodeArray } from "./current-footprint-copy-main-request-protocol.ts";
 
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u), point = z.strictObject({ scriptId: handle, lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() });
@@ -16,7 +16,7 @@ export const currentPcbViaMainBeginResultSchema = z.strictObject({ schema: z.lit
 export type CurrentPcbViaMainBeginResult = Readonly<z.infer<typeof currentPcbViaMainBeginResultSchema>>;
 export interface CurrentPcbViaMainBeginPause { readonly identity: object; readonly frameId: string; readonly raw: unknown; readonly sqlSite: string | null; readonly pendingEvents: number; readonly resumed: boolean; readonly resumeAttempted: boolean }
 export interface CurrentPcbViaMainBeginHost {
-  readonly origin: CurrentPcbViaMainOrigin; readonly scriptId: string; readonly captureObjectId: string;
+  readonly origin: CurrentSelectedProjectMainOrigin; readonly scriptId: string; readonly captureObjectId: string;
   readonly assertCurrent: () => void;
   readonly actorSql: () => Readonly<{ actorObjectId: string; sqlObjectId: string; dataStr: string }>;
   readonly pause: () => CurrentPcbViaMainBeginPause;
@@ -84,7 +84,7 @@ export class CurrentPcbViaMainBeginCustody {
     need(this.#actor !== null, "ACTOR_REQUIRED"); this.#step += 1; this.#pending = Object.freeze({ pause: held.identity, role: command.role, dataStr: this.#actor.dataStr }); this.#consumed = false;
     const reply = await this.#host.resume(held.identity, command); this.#same(); need(this.#consumed, "NATIVE_GRANT_NOT_CONSUMED"); z.strictObject({}).parse(reply); this.#pending = null; return reply;
   }
-  public consume(command: Command, requestId: number): Readonly<{ origin: CurrentPcbViaMainOrigin; dataStr: string; nativeSql: boolean }> {
+  public consume(command: Command, requestId: number): Readonly<{ origin: CurrentSelectedProjectMainOrigin; dataStr: string; nativeSql: boolean }> {
     this.#same(); this.#pointsCurrent(); const pending = this.#pending; const held = this.#host.pause();
     need(command.phase === "via-main-begin-step" && pending !== null && !this.#consumed && this.#host.busy() && this.#host.pendingRequestId() === requestId && command.role === pending.role && held.identity === pending.pause && held.resumeAttempted && !held.resumed, "ORIGINAL_PENDING_NATIVE_GRANT");
     this.#consumed = true; return Object.freeze({ origin: this.#host.origin, dataStr: pending.dataStr, nativeSql: command.role === "run" });
@@ -100,7 +100,7 @@ export class CurrentPcbViaMainBeginCustody {
   }
   /** Synchronous one-use transfer while the original begin return is still
    * held. Only this backend's successor ledger receives these retained IDs. */
-  public consumeHistoryHandoff(): Readonly<{ origin: CurrentPcbViaMainOrigin; actorObjectId: string; sqlObjectId: string; saveObjectId: string; transactionObjectId: string; callbackBreakpointId: string; dataStr: string }> {
+  public consumeHistoryHandoff(): Readonly<{ origin: CurrentSelectedProjectMainOrigin; actorObjectId: string; sqlObjectId: string; saveObjectId: string; transactionObjectId: string; callbackBreakpointId: string; dataStr: string }> {
     need(this.#result !== null && this.#actor !== null && !this.#transferred, "HISTORY_TRANSFER_CONSUMED"); this.requireResult(this.#result); const callbackBreakpointId = this.#points.get("callback"); need(callbackBreakpointId !== undefined, "ORIGINAL_CALLBACK_POINT"); this.#transferred = true; this.#points.delete("callback");
     return Object.freeze({ origin: this.#host.origin, actorObjectId: this.#actor.actorObjectId, sqlObjectId: this.#actor.sqlObjectId, saveObjectId: this.#packet("save"), transactionObjectId: this.#packet("transaction"), callbackBreakpointId, dataStr: this.#actor.dataStr });
   }

@@ -7,7 +7,7 @@ import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-re
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { decodeCurrentFootprintCopyMainRequestArrayCapture as decodeArray, decodeCurrentFootprintCopyMainRequestArrayMember as decodeMember } from "./current-footprint-copy-main-request-protocol.ts";
 import { decodeCurrentFootprintCopyMainRequestPromise as decodePromise } from "./current-footprint-copy-main-request-contract.ts";
-import type { CurrentPcbViaMainOrigin } from "./current-pcb-via-main-origin.ts";
+import type { CurrentSelectedProjectMainOrigin } from "./current-selected-project-main-origin.ts";
 import type { CurrentPcbViaMainBeginPause, CurrentPcbViaMainCallbackLoan } from "./current-pcb-via-main-begin-custody.ts";
 import type { CurrentGeneratedProjectHistorySqlBaseline } from "./current-generated-project-history-sql-baseline.ts";
 import type { CurrentSelectedFileMainRequestObservation } from "./current-selected-file-main-request-reader.ts";
@@ -21,7 +21,7 @@ import type { CurrentPcbViaMainStructureCommand as Command, CurrentPcbViaMainStr
 import { CURRENT_PCB_VIA_MAIN_STRUCTURE_SITES as SITES } from "./current-pcb-via-main-structure-source.ts";
 
 export interface CurrentPcbViaMainStructureHost {
-  readonly origin: CurrentPcbViaMainOrigin; readonly scriptId: string; readonly constructionObjectId: string; readonly sqlCaptureObjectId: string;
+  readonly origin: CurrentSelectedProjectMainOrigin; readonly scriptId: string; readonly constructionObjectId: string; readonly sqlCaptureObjectId: string;
   readonly assertCurrent: () => void; readonly baseline: () => CurrentGeneratedProjectHistorySqlBaseline; readonly expected: () => Expected;
   readonly requireRequest: (packet: CurrentSelectedFileMainRequestObservation) => void;
   readonly lendCallback: () => CurrentPcbViaMainCallbackLoan; readonly returnCallback: (loan: CurrentPcbViaMainCallbackLoan) => void;
@@ -140,7 +140,7 @@ export class CurrentPcbViaMainStructureCustody {
     const reply = await this.#host.resume(held.identity, command); this.#same(); need(this.#consumed && this.#acknowledged, "ORIGINAL_NATIVE_ACK_REQUIRED"); z.strictObject({}).parse(reply); this.#pending = null;
     if (this.#step === STEPS.length) { this.#finish(); } return reply;
   }
-  public consume(command: Command, requestId: number): Readonly<{ origin: CurrentPcbViaMainOrigin; expected: Expected; role: Step }> {
+  public consume(command: Command, requestId: number): Readonly<{ origin: CurrentSelectedProjectMainOrigin; expected: Expected; role: Step }> {
     this.#same(); this.#currentPoints(); const pending = this.#pending; const held = this.#host.pause(); need(command.phase === "via-main-structure-step" && pending !== null && !this.#consumed && this.#host.busy() && this.#host.pendingRequestId() === requestId && command.role === pending.role && pending.identity === held.identity && held.resumeAttempted && !held.resumed, "ORIGINAL_PENDING_NATIVE_GRANT"); this.#consumed = true; this.#pendingId = requestId; return Object.freeze({ origin: this.#host.origin, expected: pending.expected, role: pending.role });
   }
   public acknowledge(command: Command, requestId: number, window: CurrentPcbViaMainStructureNativeWindow | null): void {

@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 original seven-record Main history SQL](2026-11-07-relevance-display-original-main5.md). Separate original Main5 custody and genuine body enrollment; STRUCTURE, drain and persistence remain independently fenced.
+
 - [2026-11-07 original seven-record effect and clock](2026-11-07-relevance-display-original-clock.md). Distinct original stage provenance, native clock custody and body joins; Save and Main persistence remain separate.
 
 - [2026-11-07 original seven-record Modify entry](2026-11-07-relevance-display-original-modify-entry.md). Consume the published intent once, retain its pending renderer request and inspect the original held runner entry before any action or setter continuation.

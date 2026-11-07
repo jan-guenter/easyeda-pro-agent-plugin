@@ -16,12 +16,12 @@ import type { CurrentPcbViaMainHistoryNativeWindow } from "./current-pcb-via-mai
 import type { CurrentGeneratedProjectHistorySqlBaseline } from "./current-generated-project-history-sql-baseline.ts";
 import { currentGeneratedProjectHistorySqlBaselineSchema } from "./current-generated-project-history-sql-baseline.ts";
 import type { CurrentPcbViaMainBeginPause } from "./current-pcb-via-main-begin-custody.ts";
-import type { CurrentPcbViaMainOrigin } from "./current-pcb-via-main-origin.ts";
+import type { CurrentSelectedProjectMainOrigin } from "./current-selected-project-main-origin.ts";
 
 type Step = typeof STEPS[number];
-export interface CurrentPcbViaMainHistoryHandoff { readonly origin: CurrentPcbViaMainOrigin; readonly actorObjectId: string; readonly sqlObjectId: string; readonly saveObjectId: string; readonly transactionObjectId: string; readonly callbackBreakpointId: string; readonly dataStr: string }
+export interface CurrentPcbViaMainHistoryHandoff { readonly origin: CurrentSelectedProjectMainOrigin; readonly actorObjectId: string; readonly sqlObjectId: string; readonly saveObjectId: string; readonly transactionObjectId: string; readonly callbackBreakpointId: string; readonly dataStr: string }
 export interface CurrentPcbViaMainHistoryHost {
-  readonly origin: CurrentPcbViaMainOrigin; readonly scriptId: string; readonly captureObjectId: string;
+  readonly origin: CurrentSelectedProjectMainOrigin; readonly scriptId: string; readonly captureObjectId: string;
   readonly assertCurrent: () => void; readonly baseline: () => CurrentGeneratedProjectHistorySqlBaseline;
   readonly handoff: () => CurrentPcbViaMainHistoryHandoff;
   readonly actorValue: () => Readonly<{ uuid: string; username: string; nickname: string; updateTime: number }>;
@@ -172,7 +172,7 @@ export class CurrentPcbViaMainHistoryCustody {
     const reply = await this.#host.resume(held.identity, command); this.#same(); need(this.#consumed && this.#acknowledged, "ORIGINAL_NATIVE_ACK_REQUIRED"); z.strictObject({}).parse(reply); this.#pending = null; this.#pendingId = null;
     if (this.#step === STEPS.length) { this.#finish(); } return reply;
   }
-  public consume(command: Command, requestId: number): Readonly<{ origin: CurrentPcbViaMainOrigin; dataStr: string; role: Step }> {
+  public consume(command: Command, requestId: number): Readonly<{ origin: CurrentSelectedProjectMainOrigin; dataStr: string; role: Step }> {
     this.#same(); this.#pointsCurrent(); const pending = this.#pending; const held = this.#host.pause(); need(command.phase === "via-main-history-step" && pending !== null && !this.#consumed && this.#host.busy() && this.#host.pendingRequestId() === requestId && command.role === pending.role && held.identity === pending.identity && held.resumeAttempted && !held.resumed, "ORIGINAL_PENDING_NATIVE_GRANT"); this.#consumed = true; this.#pendingId = requestId;
     return Object.freeze({ origin: this.#host.origin, dataStr: pending.dataStr, role: pending.role });
   }
