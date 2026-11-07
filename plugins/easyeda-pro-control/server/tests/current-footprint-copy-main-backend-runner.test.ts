@@ -133,7 +133,11 @@ void test("a diagnostic main cursor cannot enroll or activate a copied saved-pro
   await assert.rejects(runner.assertOriginalSavedProjectRegistrationPending());
   await assert.rejects(runner.enrollSavedProjectRegistrationIntent({ profile: "private.current-saved-project-registration-intent.v1" }));
   await assert.rejects(runner.enrollFootprintInverseRegistrationIntent({ profile: "private.current-footprint-inverse-registration-intent.v1" }));
+  await assert.rejects(runner.enrollSchematicRelevanceSavedRegistrationIntent({ profile: "private.current-schematic-relevance-saved-registration-intent.v1" }));
   assert.throws(() => runner.originalFootprintInverseRegistrationCommandIntent());
   assert.throws(() => { runner.requireOriginalFootprintInverseRegistrationSkipped({ profile: "private.current-footprint-inverse-registration-intent.v1" }); });
+  assert.throws(() => runner.originalSchematicRelevanceSavedRegistrationCommandIntent());
+  assert.throws(() => { runner.requireOriginalSchematicRelevanceSavedRegistrationAwaited({ profile: "private.current-schematic-relevance-saved-registration-intent.v1" }); });
+  assert.throws(() => { runner.requireOriginalSchematicRelevanceSavedRegistrationSkipped({ profile: "private.current-schematic-relevance-saved-registration-intent.v1" }); });
   assert.equal(value.commands.length, count); await runner.reprove(packet); await runner.release();
 });
