@@ -1,3 +1,4 @@
+import { CURRENT_SCHEMATIC_RELEVANCE_RUN_GUARD_REQUESTS as RUN_GUARD } from "./current-schematic-relevance-run-guard-controller.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_READ_BOUND as PREFIX_READS } from "./current-schematic-relevance-run-prefix-protocol.ts";
 import { CURRENT_PCB_VIA_SAVE_TAIL_OBSERVATION_REQUESTS as TAIL } from "./current-pcb-via-save-tail-observation-protocol.ts";
 import { CURRENT_PCB_VIA_SAVE_TAIL_DELETE_CONTROL_REQUESTS as DELETE } from "./current-pcb-via-save-tail-delete-control-protocol.ts";
@@ -35,8 +36,8 @@ export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE = Object.f
     submittedHelperSources:SOURCES,
     saveTailObservation: TAIL.cdpRequests, saveTailCacheMetadata:TAIL.additionalSharedRequests, saveTailDelete: DELETE.cdpRequests, saveDrainObservation:DRAIN.cdpRequests, savePostSyncObservation:POST.total, saveDrainCompletion:2,
     localUploadObservation: UPLOAD.local, uploadRequestObservation: UPLOAD.upload, localCacheExtraObservation: UPLOAD.localCacheMetadata,
-    runPrefixObservation: PREFIX_READS, runPrefixControls: 2,
+    runPrefixObservation: PREFIX_READS, runPrefixControls: 2, runGuardObservation: RUN_GUARD.total, runGuardControls: 2,
     modifyEntryObservation: MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + MODIFY_ENTRY.underlineEligibility,
     total: SHARED.renderer.total - SHARED.renderer.accessorObservation + ACCESSOR.total - SHARED.renderer.structureObservation - SHARED.renderer.actionPreflightObservation - SHARED.renderer.actionGuardObservation - SHARED.renderer.actionGuardBindingControls +
-      PREFIX_READS + 2 + STARTUP_STRUCTURE.total + TAIL.cdpRequests + TAIL.additionalSharedRequests + DELETE.cdpRequests + DRAIN.cdpRequests + POST.total + 2 + SOURCES + UPLOAD.local + UPLOAD.upload + UPLOAD.localCacheMetadata + STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + MODIFY_ENTRY.underlineEligibility + POLLING.cdpRequests + 1 + LIBRARY.controls + 1 }),
+      RUN_GUARD.total + 2 + PREFIX_READS + 2 + STARTUP_STRUCTURE.total + TAIL.cdpRequests + TAIL.additionalSharedRequests + DELETE.cdpRequests + DRAIN.cdpRequests + POST.total + 2 + SOURCES + UPLOAD.local + UPLOAD.upload + UPLOAD.localCacheMetadata + STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + MODIFY_ENTRY.underlineEligibility + POLLING.cdpRequests + 1 + LIBRARY.controls + 1 }),
 });

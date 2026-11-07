@@ -11,6 +11,7 @@ import { applyCurrentSchematicRelevanceDisplayStructureNativeFragment } from "..
 import { applyCurrentSchematicRelevanceDisplaySaveNativeFragment } from "../server/src/current-schematic-relevance-display-save-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayMainNativeFragment } from "../server/src/current-schematic-relevance-display-main-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayClockNativeFragment } from "../server/src/current-schematic-relevance-display-clock-native-fragment.ts";
+import { applyCurrentSchematicRelevanceRunGuardNativeFragment } from "../server/src/current-schematic-relevance-run-guard-native-fragment.ts";
 import { applyCurrentSchematicRelevanceRunPrefixNativeFragment } from "../server/src/current-schematic-relevance-run-prefix-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayModifyEntryNativeFragment } from "../server/src/current-schematic-relevance-display-modify-entry-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayActionNativeFragment } from "../server/src/current-schematic-relevance-display-action-native-fragment.ts";
@@ -192,6 +193,7 @@ export function generateWorkerStartupProtocol(source: string, layout: "legacy" |
     next = applyCurrentSchematicRelevanceDisplayActionNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplayModifyEntryNativeFragment(next);
     next = applyCurrentSchematicRelevanceRunPrefixNativeFragment(next);
+    next = applyCurrentSchematicRelevanceRunGuardNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplayClockNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplaySyncQuiesceNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplayLibraryRefreshNativeFragment(next);

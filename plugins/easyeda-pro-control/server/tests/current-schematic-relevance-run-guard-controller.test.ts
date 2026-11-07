@@ -6,6 +6,8 @@ import { CurrentSchematicRelevanceRunGuardController as Controller } from "../sr
 import type { CurrentSchematicRelevanceRunGuardStep } from "../src/current-schematic-relevance-run-guard-controller.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_PREFIX_QUEUE_SOURCE as SOURCE } from "../src/current-schematic-relevance-action-prefix-queue-source.ts";
 import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
+import { currentSchematicRelevanceRunGuardCases, currentSchematicRelevanceRunGuardWire } from "../src/current-schematic-relevance-run-guard-wire.ts";
+import { currentSchematicRelevanceDisplayWriteNativeRequest } from "../src/current-schematic-relevance-display-write-protocol.ts";
 
 function fixture(): Controller { return new Controller("original_ui", "original_script", 0, { runObjectId: "run", rootsObjectId: "roots", nativeObjectId: "native", referencesObjectId: "references", firstStartObjectId: "first_start", willEndObjectId: "will_end", firstEndObjectId: "first_end", baseFunctionsObjectId: "base", queueFunctionsObjectId: "queue", intrinsicFunctionsObjectId: "intrinsic", qualifiedObjectId: "qualified", originalRequests: 512, originalRunStillHeld: true, callbackReceiversVerified: false, continuationAuthorized: false, persistenceVerified: false }); }
 function resumed(): DiagnosticEvent { return { sessionId: "original_ui", method: "Debugger.resumed", params: {} }; }
@@ -52,4 +54,13 @@ void test("wrong-source pause poisons original waiters before receiver reads or 
   assert.equal(controller.observeOriginalEvent(resumed()), true); await controller.waitOriginalRunResumed();
   assert.equal(controller.observeOriginalEvent(paused(0, "foreign_script")), true);
   assert.throws(() => controller.next()); await assert.rejects(controller.waitOriginalGuard(0)); await assert.rejects(controller.waitOriginalEnd());
+});
+void test("the separate guard wire preserves fixed messages and rejects caller code or crossed roles", () => {
+  for (const step of currentSchematicRelevanceRunGuardCases()) {
+    const fixed = currentSchematicRelevanceRunGuardWire(step, 89);
+    const bytes = Buffer.from(`${JSON.stringify({ id: 89, ...fixed.step.command, schematicRelevanceRunGuardCommand: true, schematicRelevanceRunGuardRole: fixed.step.guard, sessionId: "original_ui" })}\0`);
+    assert.deepEqual(currentSchematicRelevanceDisplayWriteNativeRequest(bytes), fixed.request);
+    if (step.command.phase !== "prefix-resume" || step.guard !== "run") { assert.throws(() => currentSchematicRelevanceRunGuardWire({ ...step, guard: "run" }, 89)); }
+  }
+  assert.throws(() => currentSchematicRelevanceRunGuardWire({ guard: "first-start", command: { phase: "prefix-call", role: "callback-receiver", method: "Runtime.callFunctionOn", params: { objectId: "original", functionDeclaration: "function(){return this.modify()}" } } }, 89));
 });

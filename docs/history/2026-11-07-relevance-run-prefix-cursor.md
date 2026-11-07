@@ -66,3 +66,17 @@ orders and refusal of a wrong-source pause before another read or resume.
 These cases test the state machine only. The original callback/native transport
 and Core continuation mount remain pending; the readonly native lane still
 cannot encode a resume.
+
+A separate native guard codec and pipe lane now encode the 22 fixed guard
+message cases and enforce the 22-dispatch order. Binding requires the completed
+original readonly prefix and all 73 original entry/raw/underline observations.
+The native completion control is separate and once-only. The full generated
+schematic helper compiles as C# 5 with both guard and readonly-prefix parity
+checks and the existing Modify-entry codec check. The private helper is
+1,267,816 bytes and compiler input 1,738,655 bytes. No owner or application is
+constructed by this check. A third synthetic guard check verifies facade/wire
+round trips and refusals for crossed roles and caller programs.
+
+The Core initial-run/callback composition and independent end-task issuer still
+need to be mounted. A guard codec or parsed end packet alone grants no live
+continuation. This source batch has not been installed or connected.
