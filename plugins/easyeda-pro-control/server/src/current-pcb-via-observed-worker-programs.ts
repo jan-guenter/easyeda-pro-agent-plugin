@@ -2,8 +2,7 @@
  * only the original controller can correlate a submitted program with its
  * same-session Inspector event and source reply. */
 /* oxlint-disable import/max-dependencies -- The closed catalogue derives its strings and repeated-call bounds from every original finite lane; a caller registry would admit arbitrary execution. */
-import { z } from "zod";
-import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { types } from "node:util";
 import { CURRENT_PCB_VIA_REPLAY_NO_PUBLICATION_PROGRAM } from "./current-pcb-via-replay-program.ts";
 import { CURRENT_PCB_VIA_SAVE_REQUESTS, currentPcbViaSaveNativeCases } from "./current-pcb-via-save-protocol.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS, currentProjectSaveStructureNativeCases } from "./current-project-save-structure-protocol.ts";
@@ -71,12 +70,17 @@ export function requireCurrentPcbViaObservedWorkerProgram(kind: Kind, text: stri
   const catalogue = kind === "function" ? functions : expressions;
   if ((kind !== "function" && kind !== "expression") || !catalogue.has(text)) { throw new Error("PCB_VIA_OBSERVED_WORKER_PROGRAM"); }
 }
-const replySchema = z.strictObject({ scriptSource: z.string() });
 /** Inspector wraps callFunctionOn declarations in parentheses and retains
  * evaluateOnCallFrame expressions verbatim. No whitespace or wrapper fallback
  * is admitted. A different engine representation refuses before continuation. */
 export function qualifyCurrentPcbViaObservedWorkerSource(raw: unknown, kind: Kind, text: string): void {
   requireCurrentPcbViaObservedWorkerProgram(kind, text);
-  const reply = replySchema.parse(captureCurrentPcbStringClockReply(raw).value);
-  if (reply.scriptSource !== (kind === "function" ? `(${text})` : text)) { throw new Error("PCB_VIA_OBSERVED_WORKER_SOURCE"); }
+  if (typeof raw !== "object" || raw === null || types.isProxy(raw)) { throw new Error("PCB_VIA_OBSERVED_WORKER_SOURCE"); }
+  const prototype: unknown = Object.getPrototypeOf(raw);
+  if ((prototype !== Object.prototype && prototype !== null) || Reflect.ownKeys(raw).length !== 1) { throw new Error("PCB_VIA_OBSERVED_WORKER_SOURCE"); }
+  const descriptor = Object.getOwnPropertyDescriptor(raw, "scriptSource");
+  // Exact equality to an already admitted fixed program bounds this single
+  // source field, including the larger replay. No shared clock limit changes.
+  if (descriptor === undefined || !Object.hasOwn(descriptor, "value") || descriptor.enumerable !== true ||
+      descriptor.value !== (kind === "function" ? `(${text})` : text)) { throw new Error("PCB_VIA_OBSERVED_WORKER_SOURCE"); }
 }
