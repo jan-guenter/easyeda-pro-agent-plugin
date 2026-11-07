@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 Separate Component cloned-Pad reader](2026-11-07-component-cloned-pad-reader.md). Closed original second refusal, complete35-table invariance and distinct tE source candidate within existing bounds; native mounting and fresh connected proof remain.
+
 - [2026-11-07 Schematic normal-return callbacks](2026-11-07-schematic-normal-return-callees.md). Uninvoked end, success and fulfillment metadata with separate inert closure observations; original delivery remains separate.
 
 - [2026-11-07 Schematic document tab identity](2026-11-07-schematic-document-tab-id.md). Correct own raw identity selection and separately qualify eight uninvoked document getters and four constructors; continuation remains separate.
