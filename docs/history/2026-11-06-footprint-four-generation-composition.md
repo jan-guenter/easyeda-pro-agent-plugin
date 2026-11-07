@@ -1756,3 +1756,35 @@ compiler bytes. Full emitted Linux C#5 passes the five job messages and
 purpose/once limits plus RPC/entry/bus/public-call smokes
 (ORIGINAL_INVERSE_DELETE_JOB_NATIVE_OK). No tracked helper or pin was emitted,
 no EasyEDA process ran and no complete inverse/clock/effect claim is made.
+
+## Inverse native clock constructor metadata prerequisite
+
+The inverse has separate complete supplied-metadata validators for Promise
+and Date, plus a bounded BroadcastChannel/member catalogue. Callable V8
+native descriptions are checked independently from name/arity/property
+metadata, so a renamed different native function cannot supply a role. The
+Promise packet includes its species symbol and complete static roster, with
+only the two fixed try/withResolvers entries optional; unknown fields or
+members refuse. Date's prototype packet is the ordinary Object shape that
+actual Node24 Inspector returns. The initial invalid-Date assumption failed
+that real packet before any mount and was corrected in this new leaf.
+
+The standards explain the shape, not an installed runtime identity:
+[BroadcastChannel](https://html.spec.whatwg.org/multipage/web-messaging.html#the-broadcastchannel-interface)
+inherits EventTarget and exposes its name/message interface;
+[Promise's constructor properties](https://tc39.es/ecma262/multipage/control-abstraction-objects.html#sec-properties-of-the-promise-constructor)
+include the fixed methods/species; and
+[Date.prototype](https://tc39.es/ecma262/multipage/numbers-and-dates.html#sec-properties-of-the-date-prototype-object)
+is an ordinary object without Date instance state. Actual original context,
+constructor/member tuple identities and correlated replies remain mandatory
+in the later Core mount; copied descriptor packets issue no owner or permit.
+
+Two focused actual V8 metadata tests pass with types/strict changed lint.
+Promise/Date and the used methods/getter qualify without a clock or channel
+call; a fake species JS getter is not invoked by metadata inspection, native
+aliases/accessor input refuse, and Node's JS BroadcastChannel implementation
+is refused. Actual browser BroadcastChannel metadata remains unverified.
+Own7/Via source audit found no incorrect Date.prototype type guard: those
+older paths use native-text relations and explicitly retain native sender/
+Main actor flags false. They and generic validators remain unchanged. No
+Core/native lane, request-budget increase or execution grant is added here.
