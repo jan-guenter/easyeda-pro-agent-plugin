@@ -1,4 +1,5 @@
 import { workerConstructionFixtureSource } from "./current-pcb-worker-construction-fixture.ts";
+import { detachedCacheFixtureSource } from "./current-footprint-detached-cache-fixture.ts";
 
 /** Inert unchanged vendor excerpts at the separately reviewed209 positions.
  * The changed production text is not executed: padding moves the later spans
@@ -11,6 +12,7 @@ export function worker209ConstructionFixtureSource(publisherMethods = false): st
   const prepared = legacy.slice(0, 1000) + layout + legacy.slice(1000 + layout.length);
   return `${prepared.slice(0, 1_800_000)}${" ".repeat(24)}${prepared.slice(1_800_000)}`;
 }
+export function worker209DetachedFixtureSource(): string { return detachedCacheFixtureSource(worker209ConstructionFixtureSource()); }
 
 /** Exact registration bodies execute against the inert synthetic consistency
  * object. Their original Lg caller and callback arguments are real V8 events. */

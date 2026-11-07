@@ -1,5 +1,328 @@
 # Project history
 
+- [2026-11-07 Saved schematic scene native codec and replies](2026-11-07-schematic-saved-scene-native-replies.md). Three C#5 wire goldens and actual Inspector reply forms; genuine cold/page/source enrollment remains separate.
+
+- [2026-11-07 Saved schematic reader closed-file comparison](2026-11-07-schematic-saved-reader-closed-data.md). Original reader termination, retained descriptors and complete saved byte/SQL equality; cold/open/scene acceptance stays separate.
+
+- [2026-11-07 Separate saved schematic registration policy](2026-11-07-schematic-saved-registration-policy.md). Genuine third issuer and exact prior-path no-dispatch handling; native cache/loading and connected registration remain separate.
+
+- [2026-11-07 schematic saved-reader birth](2026-11-07-schematic-saved-reader-birth.md): distinct original seven-record saved-reader generation, readonly Main, early actor exclusion and complete scoped-cache data publication; delete/open/cold joins remain separate.
+- [2026-11-07 Original inverse GET callback advance](2026-11-07-inverse-original-get-callback-advance.md). One original RPC resume ends at the actual service callback before the GET handler; native forwarding and full request completion remain separate.
+
+- [2026-11-07 Schematic saved scene codec](2026-11-07-schematic-saved-scene-codec.md). Three finite readonly stages with original-session framing and unchanged scene semantics; fresh native birth and cold-load proof remain separate.
+
+- [Original schematic uploader entry](2026-11-07-schematic-original-uploader-entry.md)
+
+- [Original schematic CM and no-echo preparation](2026-11-07-schematic-original-cm-noecho-preparation.md)
+- [2026-11-07 Schematic upload helper callees](2026-11-07-schematic-uploader-helper-callees.md). Exact24 uninvoked helper/checker metadata records; original receivers and upload continuation remain separate.
+
+
+- [2026-11-07 Additional schematic upload callees](2026-11-07-schematic-uploader-extra-callees.md). Exact46 uninvoked function metadata records; original receivers, encoder selection and publication remain separate.
+
+- [2026-11-07 original inverse manager project lookup](2026-11-07-inverse-original-manager-lookup.md). Same-owner singleton/native-Map selection and exact manager getData custody; the original RPC stays held pending native forwarding.
+
+- [Original inverse GET delivery and complete worker rearm](2026-11-06-footprint-four-generation-composition.md). Genuine job/native entry, saved input and row, fresh task and both specific loopback returns; connected dispatch and deletion remain separate.
+
+- [2026-11-07 Inverse layout excludes Via action code](2026-11-07-inverse-layout-via-exclusion.md). Recover76,902compiler bytes while retaining the exact shared timer codec and unchanged diagnostic/schematic builds.
+
+- [Original schematic disposal and record continuation](2026-11-07-schematic-original-disposal-record-continuation.md)
+- [2026-11-07 Original schematic disposal preparation](2026-11-07-schematic-original-disposal-preparation.md). Source-bound readonly two-job, reverse-owner and listener-roster collection; no disposal or continuation authority.
+
+- [2026-11-07 Separate Component cloned-Pad reader](2026-11-07-component-cloned-pad-reader.md). Closed original second refusal, complete35-table invariance and distinct tE source candidate within existing bounds; native mounting and fresh connected proof remain.
+- [2026-11-07 Original schematic normal history update](2026-11-07-schematic-original-normal-history-update.md). Seven original callback/Promise/history joins stop at the genuine canRecord getter; record and publication remain separately held.
+
+- [2026-11-07 Schematic normal-return callbacks](2026-11-07-schematic-normal-return-callees.md). Uninvoked end, success and fulfillment metadata with separate inert closure observations; original delivery remains separate.
+
+- [2026-11-07 Schematic document tab identity](2026-11-07-schematic-document-tab-id.md). Correct own raw identity selection and separately qualify eight uninvoked document getters and four constructors; continuation remains separate.
+- [2026-11-07 original initialized inverse GET graph](2026-11-07-inverse-initialized-get-graph.md). Same-owner bounded graph preparation, exact target projection, retained timeout residual and 66-message renderer parity; native forwarding and completion stay separate.
+
+- [2026-11-07 inverse fixed codec sharing and origin syntax](2026-11-07-inverse-fixed-codec-and-origin-syntax.md). Exact29-message parity, modest source recovery and inert bounded native-origin syntax; runtime sender custody remains separate.
+
+- [2026-11-07 original inverse GET RPC entry](2026-11-07-inverse-original-get-rpc-entry.md). Once-only F2 advance with independently consumed worker readiness; exact initialized RPC body stays held pending forwarding and completion proof.
+
+- [2026-11-07 Bounded geometry schema discovery](2026-11-07-bounded-geometry-schema-discovery.md)
+
+- [2026-11-07 Bounded facade identifier compaction](2026-11-07-bounded-facade-identifier-compaction.md)
+
+- [2026-11-07 Separate diagnostic and inverse native layouts](2026-11-07-native-diagnostic-inverse-layouts.md)
+- [2026-11-07 inverse GET native and row preparation](2026-11-07-inverse-get-native-row-preparation.md). Original held-F2 readonly intrinsic preparation and passive exact-reference row checks; GET forwarding and completion remain separate.
+
+- [2026-11-07 inner manager GET transport source](2026-11-07-inverse-inner-get-functions.md). Exact43-function Li BroadcastChannel roster; runtime native sender and request custody remain separate.
+
+- [2026-11-07 Initialized Footprint GET function qualification](2026-11-07-initialized-footprint-get-functions.md)
+
+- [2026-11-07 original Save module initialization](2026-11-07-schematic-save-module-initialization.md). Remove the static verification cycle through original factory module retention; no lint or ownership guard is relaxed.
+
+- [2026-11-07 Component reader refusal and cleanup](2026-11-07-component-reader-refusal-cleanup.md). Original normal close and helper release, exact35-table invariance and clean manager retirement; the consumed point batch remains refused.
+- [2026-11-07 original normal-history graph](2026-11-07-relevance-normal-history-graph.md). Actual four-event descriptor graph and24 uninvoked functions before the held setter; callback delivery and continuation remain unproved.
+- [2026-11-07 original inverse service-to-lookup entry](2026-11-07-inverse-original-lookup-preentry.md). One original service resume reaches the held first F2 statement; GET, row, native deletion and collateral completion remain separate.
+
+- [2026-11-07 original inverse UI intrinsics and lookup graph](2026-11-07-inverse-ui-intrinsics-lookup-graph.md). Separate held-UI reflection receipt; readonly lookup/row leaves remain unmounted and issue no delete grant.
+
+- [2026-11-07 original inverse preference backup](2026-11-07-inverse-preferences-original-backup.md). Exact two-key original Storage backup and held removal points; restoration and native deletion remain unavailable.
+
+- [2026-11-07 original inverse SDK held entry](2026-11-07-inverse-original-sdk-held-entry.md). One genuine pending SDK write joins its held service entry; handler continuation, native job and collateral remain blocked.
+
+- [2026-11-07 original run-prefix cursor](2026-11-07-relevance-run-prefix-cursor.md). Bounded original queue, callee, native and iterator classification; actual receiver guards and continuation remain separate.
+- [2026-11-07 original inverse public service](2026-11-07-inverse-original-public-service.md). Original queued task, callback/handler and critical collateral metadata through a bounded native lane; actual SDK entry and completion remain separate.
+
+- [2026-11-07 inverse public-delete intent](2026-11-07-inverse-public-delete-intent.md). Original factory-derived exclusive intent and irreversible one-use enrollment; SDK/service/worker/collateral grants remain separate.
+
+- [2026-11-07 seven-record prefix queue graph](2026-11-07-relevance-prefix-queue-graph.md). Exact two-listener queues, separate WillEnd disposal and actual V8 lexical-binding limits; original callback receivers and continuation remain separate.
+
+- [2026-11-07 original seven-record Save drain](2026-11-07-relevance-original-save-drain.md). Same-reader causal tail, exact TEXT replay, actual Main row waits and distinct historical completion; connected action and reopen acceptance remain separate.
+
+- [2026-11-07 original seven-record STRUCTURE publication](2026-11-07-relevance-display-original-structure.md). Same-owner body/clock/tree enrollment, original callback/response publication and held worker continuation; drain and persistence remain separate.
+
+- [2026-11-07 original seven-record Main history SQL](2026-11-07-relevance-display-original-main5.md). Separate original Main5 custody and genuine body enrollment; STRUCTURE, drain and persistence remain independently fenced.
+- [2026-11-07 project-open library-refresh frontier](2026-11-07-project-open-library-refresh-frontier.md). Complete direct opening/task inventory and fixed first-loop suspension/RAF cancellation leaves; original purpose custody and broader producer completion remain separate.
+
+- [2026-11-07 original seven-record effect and clock](2026-11-07-relevance-display-original-clock.md). Distinct original stage provenance, native clock custody and body joins; Save and Main persistence remain separate.
+
+- [2026-11-07 original seven-record Modify entry](2026-11-07-relevance-display-original-modify-entry.md). Consume the published intent once, retain its pending renderer request and inspect the original held runner entry before any action or setter continuation.
+- [2026-11-07 compiler storage v2](2026-11-07-native-csharp-review-storage-v2.md). Exact original review restoration and bounded trivia-compacted compiler input; historical v1 and all six released outputs remain unchanged.
+
+- [2026-11-07 original seven-record display action setup](2026-11-07-relevance-display-original-action-setup.md). Distinct prefix, accessor, Main, idle action and refusal-point custody; actual setter and persistence remain fenced.
+- [2026-11-07 original fixed Wire-edit birth](2026-11-07-wire-edit-original-birth.md). Distinct seven-record checkpoint owner, four-stage transport and original readonly startup; Modify and Save remain blocked pending their own proofs.
+
+- [2026-11-07 schematic display scene baseline](2026-11-07-schematic-display-scene-baseline.md). Preserve all persistent models and the exact derived endpoint markers; refuse unsupported source-excluded children in the older six-row profile.
+- [2026-11-07 Relevance display original journal](2026-11-07-schematic-relevance-display-original-journal.md). Separate seven-row original mutation/Save intents, publication settlement and consumers; earlier six-row brands and journals stay distinct.
+
+- [2026-11-07 inverse first-timer intent](2026-11-07-inverse-first-timer-intent.md). One original durable pre-navigation intent, separate once-only enrollment/consumption and derived native reservation; actual timer transport and completion remain separate.
+- [2026-11-07 original Relevance display birth](2026-11-07-relevance-display-original-birth.md). Separate seven-record factory, pipe, source origins and original startup data with an exact eight-record callback bound; action, Save and persistence remain blocked.
+
+- [2026-11-07 fixed schematic Wire stage](2026-11-07-schematic-wire-native-stage.md). Retain one existing LINE and native geometry methods, prove two source-excluded endpoint dots and fixed Relevance index3, and preserve the unmounted original-lifecycle boundary.
+
+- [2026-11-07 generated schematic Wire data](2026-11-07-generated-schematic-wire-data.md). Strict existing-LINE geometry, full seven-record effect and separate pending LINE body; actual source confirms ID reuse while original invocation and persistence remain unproved.
+
+- [2026-11-07 controlled disposable Via registration](2026-11-07-disposable-via-mode-registration.md). Register only the generated-fixture validation route in the exact current profile, align explicit prompt policy and offline coverage, and retain all original runtime gates and unclaimed connected acceptance.
+
+- [2026-11-07 Via live-history release order](2026-11-07-via-live-history-release-order.md). Hold the original worker sync pause through the actual final Main read-release acknowledgement; source review identifies no further concrete selected-request completion gap before controlled disposable validation.
+
+- [2026-11-07 original schematic action preflight](2026-11-07-schematic-original-action-preflight.md). Mount actual idle runner/recorder metadata through a distinct original SCH native vocabulary and retain its JS reference graph; first-setter and persistence grants stay blocked.
+
+- [2026-11-07 original schematic pre-modify setup](2026-11-07-schematic-original-pre-modify-setup.md). Compose genuine worker startup/accessor custody and retain the original selected-file Main fence with an unspent durable modify intent; action and Save grants remain separate.
+- [2026-11-07 fixed native C# storage](2026-11-07-fixed-native-csharp-storage.md). Exact bounded compiler-input packing recovers helper headroom, restores all source-marker readers and preserves all six released outputs; supersedes ambient Node 26 storage measurements.
+
+- [2026-11-07 failed disposable Via abandonment](2026-11-07-via-failed-disposable-abandonment.md). Separate immutable closure sidecar clears historical quarantine only after all original resources settle; failed Save/reopen proofs remain false and old records stay exact.
+- [2026-11-07 Via drain native storage](2026-11-07-via-save-drain-native-storage.md). Fixed original drain/sync/source lanes and lossless pending-program sharing preserve exact message hashes; combined helper headroom remains a separately enforced release gate.
+
+- [2026-11-07 original Via save drain DAG](2026-11-07-via-original-save-drain-dag.md). Retain original cloud/buffer/deferred/dropped Promises and overlapping cache jobs with source finalizer ordering; native mounting and persistence remain separate.
+
+- [2026-11-07 Via changed-head sync cursor](2026-11-07-via-changed-head-sync-cursor.md). Separate prospective branch and genuine late SQLite rows, exact changed index and original Promise settlement; actual producer/native mounting remains separate.
+
+- [2026-11-07 Via replay and global admission](2026-11-07-via-replay-and-global-admission.md). Recheck the original unpended node before replay and quarantine incomplete private writer journals through global admission; full native upload drain and public mounting remain open.
+
+- [2026-11-07 combined writer choreography](2026-11-07-combined-writer-choreography.md). Join genuine timer startup and original collector closure, preserve exact fixed programs within the helper limit, and retain the full producer-drain requirement before writer exposure.
+
+- [2026-11-07 CBB reader omission decision](2026-11-07-cbb-omission-decision.md). Close the anonymous CBB implementation group with concrete retained routing/data limitations and exact reopening conditions; no new absence probes or online-absence claim.
+
+- [2026-11-07 writer startup and metadata packing](2026-11-07-writer-startup-and-metadata-packing.md). Separate bounded original writer page wait and exact fixed metadata restoration recover helper headroom; native-owner and application execution remain unvalidated.
+
+- [2026-11-06 Via unallocated-refusal journal](2026-11-06-via-unallocated-refusal-journal.md). Separate v2 terminal requires original factory proof of no native allocation, preserves v1 parsing and claims no process exit or owner transfer.
+
+- [2026-11-06 packed schematic programs](2026-11-06-packed-schematic-programs.md). Exact fixed program restoration keeps the combined helper within its unchanged bound; complete Linux C# compilation and pure message parity, without a native owner or application.
+
+- [2026-11-06 original structure transport observer](2026-11-06-original-structure-transport-observer.md). Fixed XHR send/return custody, original body and main-publication grants, failure retention, and checkpoint-bound Via generation launch; connected writer completion remains pending.
+
+- [2026-11-07 Via live cache plan](2026-11-07-via-live-cache-plan.md). Genuine body/SQL/native-row data for both history branches, exact parser/head/branch bytes, and corrected per-request original GET/Promise custody; producer completion remains separate.
+
+- [2026-11-07 original Via live history read](2026-11-07-via-original-live-history-read.md). Same original Main/SQLite return supplies actual history timestamps for the pending live cache projection; no clock, SQL or producer grant.
+
+- [2026-11-07 saved-reader journal and no-root cleanup](2026-11-07-saved-reader-journal-cleanup.md). Original reopen/effect/exit/fullSQL publications and honest writer/readback helper cleanup; unreproved publication holds controls and failed proof remains false.
+
+- [2026-11-06 saved-reader bounded exit settlement](2026-11-06-saved-reader-bounded-exit-settlement.md). One private exhausted-cleanup state admits one further original read-only exit wait; controls never replay and failed persistence stays false.
+
+- [2026-11-06 bounded saved-reader Start Page](2026-11-06-saved-reader-bounded-start-page.md). Same-generation eight-inventory wait pins the first page and refuses replacement/closure; observed metadata remains source-unqualified until the existing owner proof.
+
+- [2026-11-06 complete private saved-reader workflow](2026-11-06-saved-reader-complete-workflow.md). Automatic original cache/metadata observations through cold model/fullclosed acceptance and actual original helper cleanup; consumed exact browser sample remains narrow.
+
+- [2026-11-06 saved-reader closed acceptance](2026-11-06-saved-reader-closed-acceptance.md). Genuine fresh model plus original reader root/Job closure, complete bytes and full saved SQL equality; helper cleanup remains separately owned.
+
+- [2026-11-06 fresh saved-reader scene/effect join](2026-11-06-saved-reader-scene-effect-join.md). Own cold-loaded PCB/frame, complete scene and genuine historical post-create effect; reader-closed full SQL remains separate.
+
+- [2026-11-06 saved-reader PCB model opening](2026-11-06-saved-reader-pcb-model-opening.md). Original loading-bound PCB opening, fixed source/frame observation and four-family DTO sequence; complete scene and reader-closed persistence remain pending.
+
+- [2026-11-06 saved-reader early worker hold](2026-11-06-saved-reader-early-worker-hold.md). Original pre-resume three-request browser prefix and suspended background bookkeeping; running actors still refuse and native startup timing remains unvalidated.
+
+- [2026-11-06 saved-reader project registration](2026-11-06-saved-reader-project-registration.md). Exact shared recent-project row SQL, separate original intent and native source/await continuations; one-run retry refusal, with actual saved-reader dispatch and connected proof still pending.
+
+
+
+
+- [Original Via prepublication periodic continuation](2026-11-06-original-via-prepublication-periodic.md)
+- [Original Via local upload](2026-11-06-original-via-local-upload.md)
+- [Original Via Save request generation](2026-11-06-original-via-save-request-generation.md)
+- [2026-11-06 original startup cursor progress](2026-11-06-original-startup-progress.md): original readonly progress and retained-Promise settlement while the same producer pause stays held; no resume/owner/frontier grant.
+
+- [2026-11-06 packed original Via SDK](2026-11-06-packed-original-via-sdk.md): lossless existing bounded-codec storage, all-five native SDK message parity and unchanged clock/owner/Save limits; no runtime authority added.
+
+- [2026-11-06 original periodic same-head sync](2026-11-06-original-periodic-same-head-sync.md): complete initial branch/API row, original timer/task and pre-model-parse history joins through a distinct bounded native lane; whole producer/writer frontier remains false.
+
+- [2026-11-06 original initial same-head sync](2026-11-06-original-initial-same-head-sync.md): exact original four-response startup sync, task/return Promise settlement and bounded native continuation, including nested Proxy metadata and branch-accessor corrections; whole producer frontier remains false.
+- [2026-11-06 saved-reader background worker candidates](2026-11-06-saved-background-worker-candidates.md). Existing startup worker evidence, exact file/generator/bootstrap pins and task-script imports; supplied-source checks grant no actor/cache/resume authority.
+
+- [2026-11-06 current schematic endpoint membership](2026-11-06-schematic-endpoint-membership.md). Independent exact integer-grid line/pin incidence comparison; raw reader contracts unchanged and no source, effective-net or writer authority issued.
+
+- [2026-11-06 footprint four-generation composition](2026-11-06-footprint-four-generation-composition.md). Concrete native/source/SQL/saved/inverse gaps and separate original forward-v2 paired handoff; no writer admission or connected execution claim.
+- [2026-11-06 historical closed-reader relinquishment](2026-11-06-closed-reader-relinquishment.md). Exact frozen4500 Pad prefix, independent process absence and append-only metadata; missing native release acknowledgment remains false.
+
+- [2026-11-06 generated Pad point case](2026-11-06-generated-pad-spatial-live-case.md). Accepted five-point native results and complete closed raw/35-table SQL invariance; published Pad report exposed a journal-schema mismatch that blocked helper release. Original cleanup remains separately tracked.
+
+- [Component closed capture and Pad report-chain correction](2026-11-06-component-pad-reader-closed-capture.md)
+- [Original saved-reader native metadata custody](2026-11-06-saved-cache-native-metadata-custody.md)
+- [Original saved-reader cache ledger](2026-11-06-via-saved-cache-original-ledger.md)
+- [Fresh saved Via readback birth](2026-11-06-via-saved-readback-native-birth.md)
+
+- [Project cache startup source audit](2026-11-06-project-cache-startup-source-audit.md)
+
+- [Component original Job abort](2026-11-06-component-original-job-abort.md)
+
+- [2026-11-06 spatial manager original cleanup](2026-11-06-spatial-manager-original-cleanup.md). Strict original spatial/Component classification, same-client window/close/termination/release and private receipt joins; no native owner adoption or force-abort.
+
+- [2026-11-06 Component spatial native mount](2026-11-06-component-spatial-native-mount.md). Separate419-ID original birth, strict genuine Component staging/registration/point route and retained cleanup; Linux/source checks only. Includes the preserved synthetic test-intent incident and early isolation fix.
+
+- [2026-11-06 complete Component point kernel](2026-11-06-component-point-complete-kernel.md). Required hidden ATTR index members, actual290-callee/419-request composition, exact cache/parent/kernel guards and bounded frame; native birth and index mount remain separate.
+
+- [2026-11-06 generated Component fixture](2026-11-06-generated-component-fixture.md). New complete local FOOTPRINT/PCB archive with explicit hidden attributes, strict initial SQL/checkpoint/staging and original import/Windows closed capture; new408-purpose cache/index and positive native proof remain separate.
+
+- [2026-11-06 explicit-Relevance schematic reader live case](2026-11-06-relevance-schematic-reader-live-case.md). Actual distinct fixture import/full closed SQL, generated page readiness and accepted Text/Wire/Bus reads with exact closed raw invariance; original terminal cleanup is recorded separately.
+- [2026-11-06 separate Relevance display data](2026-11-06-relevance-display-data-profile.md). Genuine seven-row checkpoint arguments, exact ATTR/native root permutation, separate fixed stages/effect/pending body and explicit normalized baseline; original native writer/SQL/persistence grants remain closed.
+
+- [2026-11-06 Component point source/cost](2026-11-06-component-point-source-cost.md). Complete cached/stored-box and owned Pad paths, actual identity/scratch checks and393/408 prospective requests; existing384-ID purposes and Component admission remain unchanged.
+- [2026-11-06 original initial-cache continuations](2026-11-06-original-initial-cache-continuations.md). Genuine pre-open plans joined to distinct original document/index jobs, exact staged resume events and actual Promise settlement; startup-only, with full writer/frontier refusal preserved.
+
+- [2026-11-06 official CLI applicability](2026-11-06-official-cli-applicability.md). Primary-source version/download discrepancy, installed stub evidence and a separately isolated newer-runtime evaluation boundary; no CLI, app launch or admission change.
+
+- [2026-11-06 initial project cache source projection](2026-11-06-initial-project-cache-source.md). Exact histories API field order and raw document/head cache projection, verified on actual pinned inert methods; multiple pending puts and all original capability gates remain explicit.
+
+- [2026-11-06 original producer cache caller and Promise custody](2026-11-06-original-producer-cache-caller-promise.md). Exact six caller frames, current209 inherited branch/prototype joins, separate selected cache namespaces and retained original async put Promises; unknown callers and every continuation remain held.
+
+- [2026-11-06 original producer Cache/Response intrinsics](2026-11-06-original-producer-cache-intrinsics.md). Actual source-held constructor/member metadata qualification before producer origin issuance; fixed context custody and no cache invocation or continuation authority.
+
+- [2026-11-06 worker setup helper source](2026-11-06-worker-setup-helper-source.md). Genuine paused-thread Inspector evidence and exact original helper-script correlation before PROJECT resumes; no arbitrary empty-URL admission.
+
+- [2026-11-06 original producer held-call marker](2026-11-06-original-producer-held-marker.md). Central marker issuance from the exact delivered event and consumed frame/receiver/property attempts; no continuation grant.
+
+- [2026-11-06 original producer collector](2026-11-06-original-producer-collector.md). Same-worker original origin,23 new arms/four transferred guard IDs and immutable held calls; no producer resume or Save authority.
+
+- [2026-11-06 original uploader source returns](2026-11-06-original-uploader-source-returns.md). Complete current209 uploader qualification and actual pinned-method async/timer/cache regressions; original producer continuation and Save remain gated.
+
+- [2026-11-06 original worker event parking](2026-11-06-original-worker-event-parking.md). Original paused-role parking, queued event wakeups and retained in-flight poll settlement; no new continuation or Save authority.
+
+- [2026-11-06 original pre-action producer guards](2026-11-06-original-preaction-producer-guards.md). Ten same-worker refusal points and original prefix enrollment before SDK action; planned producer continuation, complete upload frontier and Save remain gated.
+
+- [2026-11-06 original bootstrap transport mode](2026-11-06-original-bootstrap-transport-mode.md). Actual pre-EP lexical mode capture and independent central/native custody reject PRIVATE before SDK actions; continuous producer and writer grants remain pending.
+
+- [2026-11-06 prehistory structure observation](2026-11-06-prehistory-structure-observer.md). Distinct once-consumed body and actual publication joins through original task/serial completion; old history contracts and writer/frontier refusal remain.
+
+- [2026-11-06 original structure transport custody](2026-11-06-original-structure-transport-custody.md). Same-worker send/return/catch collector, fixed native context binding and separate unissued body/publication gates; continuous pre-action producer custody and Save remain pending.
+
+- [2026-11-06 public CBB witness research](2026-11-06-cbb-public-witness-research.md). Official CBB/board/archive contracts clarify witness requirements; no explicit public system project/branch tuple was identified in the bounded sources, and positive validation remains pending.
+
+- [2026-11-06 schematic active history source](2026-11-06-schematic-action-history-source.md). Fixed original action/recorder metadata leaves, exact idle-to-active callback provenance and77-request data-only budget; native custody and modify/Save remain gated.
+
+- [2026-11-06 Pad/Relevance closed-data reuse](2026-11-06-pad-relevance-closed-data-reuse.md). Separate historical reports, fresh read-only Windows leases, full initial SQL/source qualification and new one-use reader data staging; old schemas and writer brands remain unchanged.
+
+- [2026-11-06 schematic fixture with explicit Relevance ATTR](2026-11-06-schematic-relevance-fixture.md). Separate seven-record initial SQL/checkpoint/staging profile, source-proved native default replacement and original ordinary Text/Wire/Bus reader route; earlier SCH/display profiles remain unchanged.
+
+- [2026-11-06 generated standalone circular Pad fixture](2026-11-06-generated-circular-pad-fixture.md). Separate fixed PAD archive, complete initial SQL issuer/checkpoint/staging and actual importer/reader integration; native positive validation and later historical reuse remain separate.
+
+- [2026-11-06 standalone circular Pad point reader](2026-11-06-pad-point-spatial-source.md). Distinct Pad-only point schemas, exact source geometry and344-of384 request derivation; Component cache/transform and positive fixture prerequisites remain explicit.
+- [2026-11-06 original Via history native completion](2026-11-06-via-history-native-completion.md). Same-cursor five-slot SQL/cipher/callback completion and original structure token; Save, producer ordering and persistence remain blocked.
+
+- [2026-11-06 integrated reader native batch](2026-11-06-integrated-reader-native-batch.md). Combined generated helper, exact released/cold forward preservation, actual Windows compilation and distinct remaining live read/write proof.
+- [2026-11-06 original startup profile SQL controller](2026-11-06-original-startup-profile-sql-controller.md). Current-version original global configuration handles and ordered fixed SQL continuations before project loading; selected design writes stay held.
+
+- [2026-11-06 generated fixture Windows file clocks](2026-11-06-generated-fixture-windows-file-clocks.md). Actual zero DrvFS birth time stopped initial acceptance; fresh Windows clocks and complete old/new initial-model qualification avoid replay without accepting the failed target.
+- [2026-11-06 main startup configuration SQL](2026-11-06-main-startup-config-sql.md). Exact pinned startup scripts and parameter grammar, with no SQL continuation authority by themselves.
+
+- [2026-11-06 generated import original SDK settlement](2026-11-06-generated-import-original-sdk-settlement.md). Fifth frozen disposable generation completed the original SDK Promise with the generated identity; original cleanup and full closed acceptance remain separate.
+- [2026-11-06 original import Windows file metadata](2026-11-06-import-windows-file-metadata.md). Separate original destination action retains exact file handles, SHA and native FILETIME; existing destination observations stay unchanged and direct qualification uses a new report profile.
+- [2026-11-06 original startup callback continuation](2026-11-06-original-startup-no-publication.md). Exact false-readiness callback, original undefined return and same Nd initial/queued finalizer progress before Save; published structure and SQL remain separately held.
+
+- [2026-11-06 original common producer construction](2026-11-06-original-common-producer-construction.md). Actual seven constructor continuations and hidden arrow receivers joined to the same original pre-EP PROJECT wrappers; publication and SQL authority remain separate.
+
+- [2026-11-06 schematic display closed custody](2026-11-06-schematic-display-closed-custody.md). Distinct factory-issued target and actual original root/empty-Job termination references for the closed capture; copied and no-process evidence refuse.
+
+- [2026-11-06 generated schematic display stages](2026-11-06-generated-schematic-display-stages.md). Distinct209 Text source/body projection, reused pure display leaves, fixed original-holder stages and explicit remaining native/worker/SQL coordinator joins.
+
+- [2026-11-06 cleanup publication scan](2026-11-06-cleanup-publication-scan.md). Removes an immediately duplicated history scan before the publisher's unchanged fresh verification; original native-action and terminal checks remain, no admission/ownership cache or runtime speed claim.
+
+- [2026-11-06 Windows fixture library parser](2026-11-06-fixture-library-parser.md). Exact5.1 JSON-array capture correction, scalar/path guards and maintained parser-only regression before native allocation; original lost-stderr cause remains unproved.
+
+- [2026-11-06 generated import destination refusal](2026-11-06-generated-import-destination-refusal.md). Fourth original controller passed actual config preflight and stopped before importer dispatch on unavailable helper stderr; new bounded diagnostic retention and pending original cleanup remain explicit.
+
+- [2026-11-06 closed generated data index mount](2026-11-06-closed-generated-data-index-mount.md). Fresh independent proof runtime, opaque reader staging, exclusive callback/queued-gate custody, source queries and operating reference; connected native reuse remains pending.
+
+- [2026-11-06 closed generated data requalification](2026-11-06-closed-generated-data-requalification.md). New read-only file/proof leases, full initial SQL and fixed source equality, current-facade data token issuance without historical runtime adoption, and exact index/manager mount requirements.
+
+- [2026-11-06 fixture browser-global capture](2026-11-06-fixture-browser-global-capture.md). Exact third-case pre-GET refusal, retained original reply and guarded fixed browser-global reads with a separate historical-compatible diagnostic schema; connected import remains pending.
+
+- [2026-11-06 generated schematic index mount](2026-11-06-generated-schematic-index-mount.md). Reachable separate SCH token and original ordinary-runtime route, source/API queries, exclusive custody and cleanup gates; connected acceptance pending.
+
+- [2026-11-06 current Node paired hash](2026-11-06-current-node-paired-hash.md). Removes one redundant full executable read while preserving fresh before/after version hashes, original paired descriptors and path/permission checks.
+- [2026-11-06 original Via owner and main SQL fence](2026-11-06-original-via-owner-main-sql-fence.md). New original Via birth with early fixed selected-file mutation stops; no Save or database write grant.
+
+- [2026-11-06 generated import environment refusal](2026-11-06-generated-import-environment-refusal.md). Frozen second controller, failed tracked preflight before importer allocation, complete original automated cleanup and retained diagnostic/performance gaps.
+- [2026-11-06 fixture preflight diagnostics](2026-11-06-fixture-preflight-diagnostics.md). Complete original failed-reply retention, fixed refusal stages, base-ID inspection and separate environment/import dispatch reporting without guard relaxation or retry.
+
+- [2026-11-06 second disposable batch freeze](2026-11-06-second-disposable-batch-freeze.md). Combined closed fixture handoff and Arc reader development build, fixed import cycles, exact local checks and unchanged release graph; no connected acceptance or release claim.
+- [2026-11-06 Via intent and target continuation](2026-11-06-via-write-intent-and-target-continuation.md). Exclusive original dispatch intent and synchronous target closure without a post-SDK main-fence deadlock.
+- [2026-11-06 Via public scope acknowledgements](2026-11-06-via-public-scope-acknowledgements.md). Explicit disposable writer, once-only Save and original Job scope in the strict future schema.
+
+- [2026-11-06 second shared native integration](2026-11-06-second-shared-native-integration.md). Combined generated registration helper, exact historical projection, preserved released files, actual Windows5.1 compilation and fresh dependency audits before the next native case.
+
+- [2026-11-06 cold forward graph separation](2026-11-06-cold-forward-graph-separation.md). Released native files and loader remain exact; the new cold graph has separate files, pins, loader, build checks and Windows compilation coverage.
+- [2026-11-06 current209 SDK Via write program](2026-11-06-current209-sdk-via-write-program.md). Original generated baseline, exact current argument order and sticky one-create/one-Save program; native owner and complete persistence eligibility remain separate.
+
+- [2026-11-06 generated schematic opening](2026-11-06-generated-schematic-opening.md). Original staged SCH data, fresh ordinary runtime, one tracked registration/project/page opening, independent native readers and no-replay original cleanup; index mount instructions and synthetic limits.
+- [2026-11-06 schematic fixture initial qualification](2026-11-06-schematic-fixture-initial-qualification.md). Distinct two-document source/SQL data target and tracked import scenario, exact vendor structure projection, unchanged PCBv1 result and pending native SCH owner.
+- [2026-11-06 generated fixture tool handoff](2026-11-06-generated-fixture-tool-handoff.md). Reachable explicit staging after closed qualification, original base-ID/runtime checks, drained migration exclusion and one private data transfer through ordinary helper release.
+- [2026-11-06 original post-clock cold continuation](2026-11-06-original-post-clock-cold-continuation.md). Same worker observer survives the clock handoff, reserves its actual remaining requests, and rejoins original termination without a queue deadlock.
+- [2026-11-06 forward cold native mount](2026-11-06-forward-cold-native-mount.md). Dedicated original v2 construction, fixed native commands and derived budgets; source integration does not establish writer eligibility.
+
+- [2026-11-06 Via Save producer graph](2026-11-06-via-save-producer-graph.md) — Source-pinned actual getTime/full-compress continuations, finite worker vocabulary and separate pending responder joins.
+- [2026-11-06 original Via projected effect](2026-11-06-via-original-projected-effect.md) — Original owner/packet/create joins, complete generated scene roster and explicit remaining Save/SQL/readback bindings.
+- [2026-11-06 first manager native cleanup](2026-11-06-first-manager-native-cleanup.md). Actual frozen development controller, ordinary launch, normal close, original root/Job termination, helper release and facade EOF/exit; no import or design operation.
+- [2026-11-06 generated fixture closed baseline](2026-11-06-generated-fixture-closed-baseline.md). Complete fresh SQL/history qualification, unticked native DOCHEAD, exact VACUUM projection, same-facade issued source staging and dedicated fresh registration/open owner; connected acceptance remains unproved.
+- [2026-11-06 schematic disposable fixture generator](2026-11-06-schematic-disposable-fixture-generator.md). Two fixed documents and Text/Wire/Bus data, twelve original vendor serializer checks, shared ZIP framing and explicit pending native/import/read support.
+
+- [2026-11-06 first disposable batch freeze](2026-11-06-first-disposable-batch-freeze.md). Local01437 payload, exact1101-source/runtime hashes, reproduced bundles, required non-suite checks and remaining connected/release work.
+- [2026-11-06 real Engine import composition](2026-11-06-fixture-real-engine-composition.md). Actual dispatcher-entry tracking, narrow successful-environment cleanup and real technical nonce grammar, verified through genuine test HMAC sessions.
+
+- [2026-11-06 public CBB source follow-up](2026-11-06-public-cbb-source-follow-up.md). Official SDK example and version-qualified vendor extension catalog research; neither supplies the missing positive anonymous system-owned witness.
+- [2026-11-06 schematic electrical observation](2026-11-06-schematic-electrical-observation.md). Current209 raw components, pins, attributes and existing contact-cache memberships without compiled topology or Save.
+
+- [2026-11-06 import tool and native integration](2026-11-06-import-tool-and-native-integration.md). Reachable original import owner, strict scope/custody registration, unchanged released forward graph and Windows5.1 compilation; production composition and connected acceptance remain pending.
+
+- [2026-11-06 generic supported PCB object lookup](2026-11-06-generic-pcb-object-lookup.md). Native equivalents for installed empty generic getters, complete supported-family compound samples and caller-order DTO lookup, without selection or persistence claims.
+- [2026-11-06 original tracked-open cleanup](2026-11-06-ordinary-tracked-open-cleanup.md). Retained original dispatch, process and HMAC cleanup, normal close once, exact local publication settlement and no navigation replay.
+
+- [2026-11-05 backlog implementation loop](2026-11-05-backlog-implementation-loop.md). Integrated source increments, remaining cross-family dependencies and batched release work after PR170. No installation or connected-validation claim.
+
+- [2026-11-05 mixed Line/Via spatial implementation](2026-11-05-spatial-line-via-implementation.md). Separate immutable mixed-family batch, complete supported ready-index guards, compact fixed rosters,256 qualified vendor callees and15 queries within the unchanged384-ID purpose. Offline source-path evidence; connected fixture validation remains pending.
+
+- [2026-11-05 PR170 publication and installation](2026-11-05-pr170-publication-and-installation.md). Protected main `b16fb1e6`, exact installed `0.3.0+codex.20261105182454`, all review issues addressed, complete CI with retained infrastructure retry, and two-generation facade replacement without a Codex restart. Connected spatial and broader API limits remain explicit.
+- [2026-11-05 schematic page opening and readers](2026-11-05-schematic-page-opening-and-readers.md). Checkpoint-bound tracked ordinary type-1 page opener, separately pinned Text/Wire/Bus and supported-selection DTOs, truthful automatic-persistence effects and original no-replay authority. Source and offline evidence only.
+
+- [2026-11-05 ordinary PCB read owner](2026-11-05-ordinary-pcb-read-owner.md). Separate ordinary-project grammar and immutable journals, eight unchanged fixed209 readers, original cleanup and 117 passing offline regressions. No writer, explicit Save or connected-validation claim.
+- [2026-11-06 original head-cache Promise and zero-retry fences](2026-11-06-head-cache-and-zero-retry.md). Original pending head-index Promise, native success return and fulfilled outcome, fixed retry stops and remaining original v2 handoff/eligibility composition.
+
+- [2026-11-06 detached cache-maintenance return capture](2026-11-06-detached-cache-return-capture.md). Automatic pre-RPC entry/return observation, actual awaited put/delete completion, retained late allocation, no-resume failure fence and the smaller FOOTPRINT/local/locked-head provider obligations.
+
+- [2026-11-06 original cold producer roster](2026-11-06-cold-producer-roster.md). Automatic original bootstrap capture before RPC registration, four wrapper/callback relations, serial/debounce/buffer/cooperation and publish dormancy, derived dedicated capacity and explicit remaining continuous-frontier dependencies.
+
+- [2026-11-05 original native structure owner](2026-11-05-structure-native-owner.md). Dedicated original native purpose, derived worker/main/helper capacities, original paired observer workflow, cooperative cancellation and historical-result release semantics; offline verification and fresh-import INSERT limits remain explicit.
+
+- [2026-11-05 structure observer cold arm and native codebook](2026-11-05-structure-observer-native-codebook.md). Original Nd/QA pre-arm exclusion, a finite 42-shape main codec with shared exact descriptor guards, synthetic V8/C# verification and the remaining owner, native-purpose, frontier and durability dependencies. Source base `b16fb1e`.
+- [2026-11-06 managed fixture original import owner](2026-11-06-managed-fixture-original-import-owner.md). Fixed tracked environment/import journals, fresh exclusive native destination, retained no-candidate library watches, original Promise settlement and cleanup integration; connected import and closed SQL/registration acceptance remain unproved.
+- [2026-11-06 Arc, Line and Via fixture template](2026-11-06-arc-line-via-fixture-template.md). Fixed disjoint copper quarter Arc plus Line/Via, pinned codec/math/base constructor checks and complete initial SQL/source qualification; native scene and positive spatial acceptance remain unproved.
+
+- [2026-11-05 generated PCB fixture archives](2026-11-05-generated-pcb-fixture-archives.md). Maintained new-data Via-only and Line+Via `.epro2` generation, exact source templates, actual pinned codec methods exercised offline with synthetic constructors, and separate original eager-facade closure. Native import and registration remain pending.
+
+- [2026-11-05 managed fixture archive preparation](2026-11-05-managed-fixture-archive-preparation.md). Reachable exact-archive staging with complete supplied rosters, retained directory custody and partial preparation; pinned local importer research and dormant original-Promise capture keep native import, registration, SQL and closure unproved.
+
 - [2026-11-05 API backlog priorities](2026-11-05-api-backlog-priorities.md). Complete 835-method inventory, grouped reasons for 481 omissions and the shared blocker behind 79 implemented entries; five next implementation batches and the separate Line geometry/transport prerequisites. This planning assessment grants no execution authority.
 
 - [2026-11-05 PCB spatial transport limits](2026-11-05-pcb-spatial-transport-limits.md). Separate fixed 384-request birth, original-source binding and strict native reconstruction, 2 MiB exact-pinned helper source allowance, unchanged old request/frame/session ceilings and source-only verification against main `f06279f1c13f25812e4a68e5ccfd10c133233dd0`.
@@ -480,3 +803,84 @@ layout. The connected ledger retains its generation and case anchors.
 | [2026-10-23 selected geometry and startup-PCB batch](2026-10-23-selected-geometry-startup-pcb-batch.md) | Selected-object DTO reader, background metadata initialization and private same-owner PCB continuation |
 
 - [2026-10-28 footprint clock integration](2026-10-28-footprint-clock-integration.md)
+- [2026-11-06 Arc/Line/Via spatial implementation](2026-11-06-spatial-arc-line-via-implementation.md)
+- [2026-11-06 Via original main cursor](2026-11-06-via-original-main-cursor.md)
+- [2026-11-06 generated PCB spatial live case](2026-11-06-generated-pcb-spatial-live-case.md)
+- [2026-11-06 Save structure custody](2026-11-06-save-structure-custody.md)
+- [2026-11-06 generated schematic import and runtime binding](2026-11-06-generated-schematic-import-and-runtime-binding.md)
+- [2026-11-06 original schematic worker Save custody](2026-11-06-original-schematic-worker-save-custody.md)
+- [2026-11-06 shared original Save structure custody](2026-11-06-shared-original-save-structure-custody.md)
+- [2026-11-06 central schematic display effect](2026-11-06-central-schematic-display-effect.md)
+- [2026-11-06 original schematic clock and captured body custody](2026-11-06-original-schematic-clock-body-custody.md)
+- [2026-11-06 generated schematic reader live case](2026-11-06-generated-schematic-reader-live-case.md)
+- [2026-11-06 original schematic accessor observation](2026-11-06-original-schematic-accessor-observation.md)
+
+- [Original project polling cancellation](2026-11-07-original-project-polling-cancellation.md) — separately journaled first-timer effect, exact original worker/native custody, and preserved held-call refusal.
+- [Current history upload client source audit](2026-11-07-history-upload-client-source-audit.md)
+
+- [Original buffered upload request](2026-11-07-original-buffered-upload-request.md) — actual same-worker scheduled-body transfer to the first history request; response and final drain remain separate.
+
+- [Inspector reference rewrapping](2026-11-07-inspector-reference-rewrapping.md) — actual same-realm identity remains proved by fixed code; different inspector handles cannot be compared as object identity.
+
+- [Original Via upload deletion projections](2026-11-07-original-via-upload-delete-projections.md) — fixed readonly call/return/catch and exact original cache/caller joins; no continuation authority.
+- [Original Via upload deletion custody](2026-11-07-original-via-upload-delete-custody.md) — one retained event lane, exact uploaded-body/history/native delete continuation, and source-correct 16-character local keys.
+- [Exact new-program native table packing](2026-11-07-native-shared-program-table-packing.md)
+- [Original Via drain owner API](2026-11-07-via-original-drain-owner-api.md) — one retained 32-event pump, actual Main readiness joins, exact script/condition correlation and opaque final completion; native packing remains separate.
+
+- [Original disposable Via controller and cleanup](2026-11-07-original-via-controller-and-cleanup.md). Retained two-generation composition, exact generated-worker source catalogue and failed-resource closure; connected validation remains pending.
+
+- [2026-11-07 original inverse startup history reads](2026-11-07-inverse-initial-history-main.md)
+
+- [2026-11-07 publication history privacy](2026-11-07-publication-history-privacy.md). Scan outgoing Git objects before pushing, including deleted content, with bounded output that omits matches.
+
+- [Original seven-record held descriptor baseline](2026-11-07-relevance-held-descriptor-baseline.md). Actual original invocation, native metadata and complete descriptor retention; run, setters and persistence remain held.
+
+- 2026-11-07: [Original seven-record worker helper receipts](2026-11-07-relevance-worker-helper-receipts.md).
+
+- 2026-11-07: [Original seven-record startup controls](2026-11-07-relevance-startup-controls.md), dedicated journal/worker custody, early structure readers and unchanged native compiler bounds.
+
+- 2026-11-07: [Original seven-record closed SQL proof](2026-11-07-relevance-closed-sql-proof.md), retained Save/clock/history/structure facts, complete closed comparison and separate checkpoint.
+- 2026-11-07: [Original seven-record local Save and first upload](2026-11-07-relevance-save-local-upload.md).
+- 2026-11-07: [Fixed-purpose native builds](2026-11-07-fixed-purpose-native-builds.md), separate schematic artifact, immutable published build seed and unchanged compiler limits.
+
+- 2026-11-07: [Original seven-record live history rows](2026-11-07-relevance-original-live-history.md).
+- 2026-11-07: [Schematic saved-load preparation](2026-11-07-schematic-saved-load-preparation.md), separate original checkpoint plan, complete two-document cold data and exact native Save delimiter handling.
+- 2026-11-07: [Polling Inspector tuple custody](2026-11-07-polling-inspector-tuple-custody.md), actual side-effect-checked capture execution and original private tuple reproof.
+- 2026-11-07: [Integrated backlog status](2026-11-07-integrated-backlog-status.md), remaining implementation, connected cases and final review/release steps at source checkpoint `290c5ea4`.
+- 2026-11-07: [Relevance accessor receiver boundary](2026-11-07-schematic-relevance-accessor-receiver-boundary.md), honest function metadata receipt, genuine once-only completion and fixed underline eligibility reads before receiver-entry proof.
+- 2026-11-07: [Original Relevance callback entry](2026-11-07-schematic-original-callback-entry.md), same-owner prearm, source-pinned receiver guards and retained original callback context; setter/publication continuations remain held.
+- 2026-11-07: [Callback first-setter boundary](2026-11-07-schematic-callback-first-setter-boundary.md), one original entry resume with separate submitted/ACK/resumed custody; actual setter bodies remain held.
+- 2026-11-07: [Held underline accessors](2026-11-07-schematic-held-underline-accessors.md), original eight-read setter match and actual second-start empty Set with full descriptor preservation; primitive continuation remains denied.
+- 2026-11-07: [Text getter and active monitor metadata](2026-11-07-schematic-model-callee-metadata.md), six source roles in both schematic bundles, checked with actual uninvoked Node24 functions; receiver and continuation authority remain separate.
+- 2026-11-07: [Full saved footprint row projection](2026-11-07-inverse-full-public-row.md), original checkpoint/flow data, exact worker and UI fields and SQL owner join; live row and deletion authority remain separate.
+
+- [Original underline decorator forwarding](2026-11-07-schematic-original-decorator-forwarding.md)
+- 2026-11-07: [Original schematic publisher source](2026-11-07-schematic-publisher-callee-metadata.md), exact selected publisher family and eighteen uninvoked function metadata checks; live publication remains separate.
+
+- [Held active history custody](2026-11-07-schematic-active-history-custody.md)
+- 2026-11-07: [Normal history completion callees](2026-11-07-schematic-normal-history-callees.md), thirty uninvoked function checks for the normal record path; actual event rosters and continuation remain separate.
+
+- 2026-11-07: [Inverse service and lookup metadata](2026-11-07-inverse-service-lookup-metadata.md), actual source-position corrections, async function metadata and the separately observed original process cleanup.
+
+- 2026-11-07: [Schematic consistency and Text echo callees](2026-11-07-schematic-consistency-echo-callees.md), exact local callback path and twenty-four uninvoked source function checks; actual pause and continuation remain original-owner obligations.
+
+- 2026-11-07: [Original schematic publisher bus family](2026-11-07-schematic-original-broadcast-family.md), actual CJS factory selection and fourteen source function checks; native sender and local callback completion remain separate.
+
+- 2026-11-07: [Separate saved-reader source comparison](2026-11-07-schematic-saved-source-comparison.md), seven-record readonly comparison without fabricated writer stage flags; original reader and cold reopen remain separate.
+
+- 2026-11-07: [Separate schematic saved-reader preparation](2026-11-07-schematic-saved-reader-preparation.md), genuine closed lifecycle/checkpoint and namespace data for a later separately admitted reader; no new owner or cache/open grant.
+
+- 2026-11-07: [Readonly saved schematic scene program](2026-11-07-schematic-readonly-saved-scene-program.md), separate fixed reader stages with writer methods removed, exact tree/source/marker checks and no connected reopen claim.
+- [Original schematic publisher pristine custody](2026-11-07-schematic-publisher-pristine-custody.md), connected held-setter readonly graph, complete descriptor preservation and separate native dependencies; continuation remains held.
+
+- [Original underline primitive to held record entry](2026-11-07-schematic-original-primitive-record-bridge.md), one consumed raw field write with exact new delta proofs and the original record body still held.
+
+- [Original record to held AST entry](2026-11-07-schematic-record-held-ast.md), exact event/closure proof and one original continuation ending before the next flag write.
+
+- [Original schematic monitor batch](2026-11-07-schematic-original-monitor-batch.md), four source-owned continuations with exact AST/view deltas, ending before the original history body.
+
+- [Original Text history recording](2026-11-07-schematic-original-history-command.md), source-bound constructor and attribute recording, ending at the held callback finish before normal success.
+
+- [Original schematic model upload](2026-11-07-schematic-original-model-upload.md), three source-owned delivery boundaries ending before Text serialization/publication.
+
+- [Original schematic Text serialization](2026-11-07-schematic-original-text-serialization.md), eight source-owned delivery/serializer continuations ending at the held original CM body, with captured-native and Array-iterator joins.

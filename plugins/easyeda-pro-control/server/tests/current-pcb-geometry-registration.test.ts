@@ -17,7 +17,7 @@ void test("PCB geometry registration preserves strict target requests and the se
   const engine = Object.freeze({ synthetic: true }), expectedFingerprint = Object.freeze({ synthetic: true });
   const calls: unknown[] = [];
   const observed = Object.freeze({ value: [], cadAuthority: false, persistenceVerified: false, sourceMembershipVerified: false });
-  const scope = vm.createContext({ z, currentPcbGeometryRequestSchema, engine, privateFingerprintSchema: z.unknown(),
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, currentPcbGeometryRequestSchema, engine, privateFingerprintSchema: z.unknown(),
     readCurrentPcbGeometry: (actualEngine: unknown, request: unknown, fingerprint: unknown): Promise<typeof observed> => {
       assert.equal(actualEngine, engine); assert.equal(fingerprint, expectedFingerprint);
       calls.push(request); return Promise.resolve(observed);
@@ -78,4 +78,11 @@ void test("PCB geometry registration preserves strict target requests and the se
   const selectionResult: unknown = await invoke({ request: selection, expectedFingerprint });
   assert.equal(calls.at(-1), selection); assert.ok(selectionResult !== null && typeof selectionResult === "object" && "result" in selectionResult);
   assert.equal(selectionResult.result, observed); assert.equal(calls.length, 20);
+  for (const method of ["eda.pcb_Primitive.getPrimitiveByPrimitiveId", "eda.pcb_Primitive.getPrimitivesByPrimitiveId"]) {
+    const lookup: unknown = requestSchema.parse({ ...request, method, arguments: { primitiveIds: ["one"] } });
+    const lookupResult: unknown = await invoke({ request: lookup, expectedFingerprint });
+    assert.equal(calls.at(-1), lookup); assert.ok(lookupResult !== null && typeof lookupResult === "object" && "result" in lookupResult);
+    assert.equal(lookupResult.result, observed);
+  }
+  assert.equal(calls.length, 22);
 });

@@ -24,7 +24,7 @@ async function registration(retainedOpener: boolean): Promise<{
   const allocations: unknown[][] = [], calls: unknown[] = [], engine = {}, history: string[] = [], opener = {};
   const gate = new SerializedGate();
   let fail = false, handler: Handler | undefined, inputSchema: z.ZodType | undefined;
-  const scope = vm.createContext({ z, currentPcbRenameOperationRequestSchema, currentSymbolOperationToolOutputSchema: z.unknown(),
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, currentPcbRenameOperationRequestSchema, currentSymbolOperationToolOutputSchema: z.unknown(),
     currentPcbRenameOperationCoordinator: undefined, currentDisposableOpenCoordinator: retainedOpener ? opener : undefined,
     engine, facadeMode: "calculation-only", facadeToolRegistered: (): boolean => true,
     CurrentPcbRenameOperationCoordinator: class {

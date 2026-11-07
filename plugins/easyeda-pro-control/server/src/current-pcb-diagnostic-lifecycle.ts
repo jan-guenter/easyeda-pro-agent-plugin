@@ -1,13 +1,21 @@
+/* oxlint-disable max-classes-per-file, import/max-dependencies -- Fixed facades retain one private cleanup core and distinct generation admission. */
+import {currentPcbComponentClonedSpatialObservation,requireCurrentPcbComponentClonedSpatialObservation} from "./current-pcb-component-cloned-spatial-validation.ts";
+import { currentPcbComponentSpatialObservation, currentPcbComponentSpatialRequestSchema, requireCurrentPcbComponentSpatialObservation } from "./current-pcb-component-spatial-validation.ts";
+import type { CurrentPcbComponentSpatialRequest } from "./current-pcb-component-spatial-validation.ts";
+import { consumeManagedComponentFixtureOpeningSource } from "./managed-component-fixture-opening-source.ts";
+import type { ManagedComponentFixtureOpeningSource } from "./managed-component-fixture-opening-source.ts";
+import { generatedComponentFixtureDiagnosticCheckpoint, prepareGeneratedComponentFixtureOpenCheckpoint, verifyGeneratedComponentFixtureOpenCheckpoint, verifyHistoricalGeneratedComponentFixtureOpenCheckpoint } from "./managed-component-fixture-generated-open-checkpoint.ts";
+import type { GeneratedComponentFixtureOpenCheckpoint } from "./managed-component-fixture-generated-open-checkpoint.ts";
+import { currentFootprintCombinedFactoryFailureDiagnostics, currentFootprintCopyForwardFactoryFailureDiagnostics, requireCurrentFootprintCombinedUnlaunchedFactoryFailure, requireCurrentFootprintCopyForwardUnlaunchedFactoryFailure, startCurrentFootprintCombinedNativeOwner, startCurrentFootprintCopyForwardNativeOwner, startCurrentFootprintCopyNativeOwner, startCurrentFootprintCopyPreparationOwner, startCurrentFootprintMainNativeOwner, startCurrentGeneratedFixture209DiagnosticOwner, startCurrentGeneratedFixtureSpatial209Owner, startCurrentPcb209DiagnosticOwner, startCurrentPcb209EmptyStartupOwner, startCurrentPcb209RatlineContinuationOwner, startCurrentPcb209RatlineStartupOwner, startCurrentPcb209VisualOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbComponentSpatialOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbSpatialOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
 /** Original-owner validation lifecycle with one checkpoint-bound disposable
  * opening. No generic debugger command, CAD writer or historical owner recreation. */
-/* oxlint-disable max-classes-per-file, import/max-dependencies -- Fixed facades share one private cleanup/journal core; keeping the purpose selector unexported prevents a caller-selectable upgrade API. */
+import { CURRENT_PCB_SPATIAL_OPERATION_PREFIX, currentPcbSpatialArcObservation, currentPcbSpatialObservation, currentPcbSpatialObservationSchema, currentPcbSpatialPadObservation, currentPcbSpatialRequestSchema,
+  currentPcbSpatialTrackObservation, requireCurrentPcbSpatialArcObservation, requireCurrentPcbSpatialObservation, requireCurrentPcbSpatialPadObservation, requireCurrentPcbSpatialTrackObservation } from "./current-pcb-spatial-validation.ts";
 import { CURRENT_WINDOW_RESTORE_LIMITS, currentWindowRestoreResult, requireCurrentWindowRestoreResult } from "./current-pcb-diagnostic-window-restore.ts";
 import { CURRENT_WINDOW_RESIZE_LIMITS, currentWindowResizeResult, requireCurrentWindowResizeResult } from "./current-pcb-diagnostic-window-resize.ts";
 import { currentRendererCaptureResult, decodeCurrentRendererCapture, publishCurrentRendererCapture, requireCurrentRendererCaptureResult } from "./current-pcb-diagnostic-renderer-capture.ts";
 import { currentWindowCaptureResult, publishCurrentWindowCapture, requireCurrentWindowCaptureResult } from "./current-pcb-diagnostic-window-capture.ts";
 import { currentPcb209VisualRequestSchema } from "./current-pcb-209-visual-validation.ts";
-import { CURRENT_PCB_SPATIAL_OPERATION_PREFIX, currentPcbSpatialObservation, currentPcbSpatialObservationSchema,
-  currentPcbSpatialRequestSchema, requireCurrentPcbSpatialObservation } from "./current-pcb-spatial-validation.ts";
 import type { CurrentPcbSpatialRequest } from "./current-pcb-spatial-validation.ts";
 import type { CurrentPcb209VisualRequest } from "./current-pcb-209-visual-validation.ts";
 import { CURRENT_PCB_209_VISUAL_RESULT_BYTES, requireCurrentPcb209VisualResult } from "./current-pcb-209-visual-actions.ts";
@@ -20,13 +28,21 @@ import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpen
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
 import { prepareCurrentDisposableOpenCheckpoint, readCurrentPcbCommonOpenInventory, verifyCurrentDisposableOpenCheckpoint, verifyHistoricalCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
+import { consumeManagedPcbReadOpeningSource as consumeManagedFixtureOpeningSource, generatedPcbReadDiagnosticCheckpoint as generatedFixtureDiagnosticCheckpoint,
+  prepareGeneratedPcbReadOpenCheckpoint as prepareGeneratedFixtureOpenCheckpoint, verifyGeneratedPcbReadOpenCheckpoint as verifyGeneratedFixtureOpenCheckpoint,
+  verifyHistoricalGeneratedPcbReadOpenCheckpoint as verifyHistoricalGeneratedFixtureOpenCheckpoint } from "./managed-pcb-fixture-read-source.ts";
+import type { GeneratedPcbReadOpenCheckpoint as GeneratedFixtureOpenCheckpoint, ManagedPcbFixtureReadOpeningSource as ManagedFixtureOpeningSource } from "./managed-pcb-fixture-read-source.ts";
+import { captureGeneratedComponentReaderClosedSnapshot } from "./managed-component-reader-closed-snapshot.ts";
+import { captureGeneratedReaderClosedSnapshot } from "./managed-fixture-reader-closed-snapshot.ts";
 import { assertNoUnresolvedOrdinaryLaunches } from "./ordinary-launch.ts";
-import { currentFootprintCombinedFactoryFailureDiagnostics, currentFootprintCopyForwardFactoryFailureDiagnostics, requireCurrentFootprintCombinedUnlaunchedFactoryFailure, requireCurrentFootprintCopyForwardUnlaunchedFactoryFailure, startCurrentFootprintCombinedNativeOwner, startCurrentFootprintCopyForwardNativeOwner, startCurrentFootprintCopyNativeOwner, startCurrentFootprintCopyPreparationOwner, startCurrentFootprintMainNativeOwner, startCurrentPcb209DiagnosticOwner, startCurrentPcb209EmptyStartupOwner, startCurrentPcb209RatlineContinuationOwner, startCurrentPcb209RatlineStartupOwner, startCurrentPcb209VisualOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbSpatialOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintCopyNativeOwner, CurrentFootprintCopyPreparationOwner, CurrentFootprintMainNativeOwner, CurrentPcb209RatlineContinuationOwner, CurrentPcb209RatlineStartupOwner, CurrentPcb209WorkerStartupOwner, CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner, CurrentPcbWorkerStartupHandoff, CurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
 import { verifyCurrentPcb209DiagnosticInstallation, verifyCurrentPcb209RatlineInstallation, verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation, CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
 import { CURRENT_PCB_DIAGNOSTIC_SCRIPTS } from "./current-pcb-diagnostic-profile.ts";
+import { currentPcbSpatialDecodeFailure } from "./current-pcb-spatial-capture-runner.ts";
 import { CURRENT_PCB_209_OPENING_PROFILE, CURRENT_PCB_209_OPENING_SCRIPTS } from "./current-pcb-209-opening-profile.ts";
+import { CURRENT_PCB_ORDINARY_READ_PREFIX, currentPcbOrdinaryReadRequestSchema } from "./current-pcb-ordinary-read-validation.ts";
+import type { CurrentPcbOrdinaryReadRequest } from "./current-pcb-ordinary-read-validation.ts";
 import { currentPcb209OpeningRequestSchema } from "./current-pcb-209-opening-validation.ts";
 import type { CurrentPcb209OpeningRequest } from "./current-pcb-209-opening-validation.ts";
 import { CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES } from "./current-pcb-209-primitives.ts";
@@ -42,7 +58,7 @@ import type { CurrentPcbDiagnosticValidationRequest as Request } from "./current
 import { CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX, currentPcbStringPrecreateRequestSchema, currentPcbStringPrecreateStages } from "./current-pcb-string-precreate-validation.ts";
 import type { CurrentPcbStringPrecreateRequest } from "./current-pcb-string-precreate-validation.ts";
 import { DIAGNOSTIC_OBSERVATION_MAX_BYTES, STRING_PRECREATE_OBSERVATION_MAX_BYTES, acquireCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLifecycleSnapshot,
-  assertNoUnresolvedCurrentPcbDiagnosticLaunches, diagnosticLifecycleBindingSchema,
+  assertGeneratedReaderClosedCaptureChain, assertNoUnresolvedCurrentPcbDiagnosticLaunches, diagnosticLifecycleBindingSchema,
   diagnosticLifecycleDigestSchema, diagnosticLifecycleNoProcessReleaseProofSchema, diagnosticLifecycleRecordSchemas, diagnosticLifecycleWindowSchema,
   diagnosticObservationStageSchema, diagnosticPcbOpeningSourceAccepted, publishCurrentPcbDiagnosticLifecycleRecord, readCurrentPcbDiagnosticLifecycles, releaseCurrentPcbDiagnosticLaunchExclusion,
   reserveCurrentPcbDiagnosticLifecycle, stringPrecreateObservationResultSchema, stringPrecreateTargetMatches } from "./current-pcb-diagnostic-lifecycle-journal.ts";
@@ -126,11 +142,11 @@ import type { CurrentFootprintCombinedValidationRequest } from "./current-footpr
 
 export type { CurrentPcbWorkerStartupOpeningCoordinator } from "./current-pcb-worker-startup-lifecycle-adapter.ts";
 
-type LifecycleRequest = Request | CurrentPcbStringPrecreateRequest | CurrentPcb209OpeningRequest | CurrentPcb209VisualRequest | CurrentPcbSpatialRequest;
-type LifecycleGeneration = "209-spatial" | "209-startup-footprint-forward" | "209-visual" | "209-startup-footprint-combined" | "209-startup-footprint-main" | "209-startup-footprint-route" | "206" | "209-opening" | "209-startup" | "209-startup-footprint" | "209-startup-empty" | "209-startup-ratline" | "209-startup-ratline-continuation";
+type LifecycleRequest = CurrentPcbComponentSpatialRequest | CurrentPcbOrdinaryReadRequest | Request | CurrentPcbStringPrecreateRequest | CurrentPcb209OpeningRequest | CurrentPcb209VisualRequest | CurrentPcbSpatialRequest;
+type LifecycleGeneration = "209-component-spatial" | "209-ordinary" | "209-spatial" | "209-startup-footprint-forward" | "209-visual" | "209-startup-footprint-combined" | "209-startup-footprint-main" | "209-startup-footprint-route" | "206" | "209-opening" | "209-startup" | "209-startup-footprint" | "209-startup-empty" | "209-startup-ratline" | "209-startup-ratline-continuation";
 /** Identify generations that share the fixed disposable project/PCB opening
  * Admission, without sharing their later spatial, visual or object stages. */
-function opening209(generation: LifecycleGeneration): boolean { return generation === "209-spatial" || generation === "209-opening" || generation === "209-visual"; }
+function opening209(generation: LifecycleGeneration): boolean { return generation === "209-component-spatial" || generation === "209-ordinary" || generation === "209-spatial" || generation === "209-opening" || generation === "209-visual"; }
 function routeStartup209(generation: LifecycleGeneration): boolean { return generation === "209-startup-footprint-forward" || generation === "209-startup-footprint-route" || generation === "209-startup-footprint-combined"; }
 function startup209(generation: LifecycleGeneration): boolean { return generation === "209-startup-footprint-forward" || generation === "209-startup-footprint-combined" || generation === "209-startup-footprint-route" || generation === "209-startup-footprint" || generation === "209-startup" || generation === "209-startup-empty" || generation === "209-startup-ratline" || generation === "209-startup-ratline-continuation"; }
 const startupStages = ["browser", "frames", "script"] as const;
@@ -139,10 +155,17 @@ const launchPurposeFields = {
   "string-precreate": { schema: "easyeda-pro-control.pcb-string-precreate-launch-intent.v1", purpose: "string-precreate" },
   "worker-startup": { schema: "easyeda-pro-control.pcb-worker-startup-launch-intent.v1", purpose: "worker-startup" },
 } as const;
+function generatedDiagnosticCheckpoint(prepared: GeneratedFixtureOpenCheckpoint | GeneratedComponentFixtureOpenCheckpoint): CurrentDisposableOpenCheckpoint {
+  return prepared.profile === "easyeda-pro-control.generated-component-fixture-open-checkpoint.v1" ? generatedComponentFixtureDiagnosticCheckpoint(prepared) : generatedFixtureDiagnosticCheckpoint(prepared);
+}
+function verifyGeneratedOpeningCheckpoint(prepared: GeneratedFixtureOpenCheckpoint | GeneratedComponentFixtureOpenCheckpoint, historical = false): Promise<void> {
+  if (prepared.profile === "easyeda-pro-control.generated-component-fixture-open-checkpoint.v1") { return historical ? verifyHistoricalGeneratedComponentFixtureOpenCheckpoint(prepared) : verifyGeneratedComponentFixtureOpenCheckpoint(prepared); }
+  return historical ? verifyHistoricalGeneratedFixtureOpenCheckpoint(prepared) : verifyGeneratedFixtureOpenCheckpoint(prepared);
+}
 /** Select the immutable launch-record schema for the construction-time purpose.
  * Historical schema parsing never upgrades its owner to a newer generation. */
 function launchFields(purpose: CurrentPcbDiagnosticLifecyclePurpose, generation: LifecycleGeneration):
-  typeof launchPurposeFields[CurrentPcbDiagnosticLifecyclePurpose] | Readonly<{ schema: "easyeda-pro-control.pcb209-visual-launch-intent.v1" | "easyeda-pro-control.pcb209-spatial-launch-intent.v1" }> | Readonly<{ schema: "easyeda-pro-control.footprint-forward-prewrite-launch-intent.v1" | "easyeda-pro-control.footprint-combined-launch-intent.v2" | "easyeda-pro-control.footprint-main-launch-intent.v1" | "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1" | "easyeda-pro-control.footprint-copy-preparation-launch-intent.v1" | "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-empty-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-continuation-launch-intent.v1"; purpose: "worker-startup" }> {
+  typeof launchPurposeFields[CurrentPcbDiagnosticLifecyclePurpose] | Readonly<{ schema: "easyeda-pro-control.pcb209-component-spatial-launch-intent.v1" | "easyeda-pro-control.pcb209-ordinary-read-launch-intent.v1" | "easyeda-pro-control.pcb209-visual-launch-intent.v1" | "easyeda-pro-control.pcb209-spatial-launch-intent.v1" }> | Readonly<{ schema: "easyeda-pro-control.footprint-forward-prewrite-launch-intent.v1" | "easyeda-pro-control.footprint-combined-launch-intent.v2" | "easyeda-pro-control.footprint-main-launch-intent.v1" | "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1" | "easyeda-pro-control.footprint-copy-preparation-launch-intent.v1" | "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-empty-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-continuation-launch-intent.v1"; purpose: "worker-startup" }> {
   if (generation === "209-startup-footprint-forward") { return { schema: "easyeda-pro-control.footprint-forward-prewrite-launch-intent.v1", purpose: "worker-startup" }; }
   if (generation === "209-startup-footprint-combined") { return { schema: "easyeda-pro-control.footprint-combined-launch-intent.v2", purpose: "worker-startup" }; }
   if (generation === "209-startup-footprint-main") { return { schema: "easyeda-pro-control.footprint-main-launch-intent.v1", purpose: "worker-startup" }; }
@@ -152,6 +175,8 @@ function launchFields(purpose: CurrentPcbDiagnosticLifecyclePurpose, generation:
   if (generation === "209-startup-ratline") { return { schema: "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1", purpose: "worker-startup" }; }
   if (generation === "209-startup-empty") { return { schema: "easyeda-pro-control.pcb209-empty-startup-launch-intent.v1", purpose: "worker-startup" }; }
   if (generation === "209-startup") { return { schema: "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1", purpose: "worker-startup" }; }
+  if (generation === "209-ordinary") { return { schema: "easyeda-pro-control.pcb209-ordinary-read-launch-intent.v1" }; }
+  if (generation === "209-component-spatial") { return { schema: "easyeda-pro-control.pcb209-component-spatial-launch-intent.v1" }; }
   if (generation === "209-spatial") { return { schema: "easyeda-pro-control.pcb209-spatial-launch-intent.v1" }; }
   if (generation === "209-visual") { return { schema: "easyeda-pro-control.pcb209-visual-launch-intent.v1" }; }
   return launchPurposeFields[purpose];
@@ -210,7 +235,7 @@ const methods = ["launch", "status", "observeApplicationWindow", "requestNormalC
   "releaseNoProcess", "browserObservation", "inspectFrames", "inspectScript", "inspectWorkers", "inspectWorkerScript", "observeWorkerState", "observeModelState", "openProject",
   "openPcb", "observePcbOpening"] as const;
 export type CurrentPcbDiagnosticLifecycleOwner = Pick<CurrentPcbDiagnosticOwner, (typeof methods)[number]> &
-  Partial<Pick<CurrentPcbDiagnosticOwner, "observeSpatial209" | "observeLayers209" | "observePrimitives209" | "observeExtendedPrimitives209" | "observeSelectionRelations209" | "observePadShapes209" | "observeImageShapes209" | "observeArcShapes209" | "observePouredShapes209" | "performVisual209" | "captureRendererViewport209" | "rendererCaptureSession209" | "captureWindow209" | "observeWindowCaptureReadiness209" | "resizeWindowForCapture209" | "restoreWindowForCapture209" | "terminateVisualJob">>;
+  Partial<Pick<CurrentPcbDiagnosticOwner, "reserveComponentSpatialAbort" | "dispatchComponentSpatialAbort" | "observeComponentSpatial209" | "observeComponentClonedSpatial209" | "observeSpatial209" | "observeSpatialTrack209" | "observeSpatialArc209" | "observeSpatialPad209" | "observeLayers209" | "observePrimitives209" | "observeExtendedPrimitives209" | "observeSelectionRelations209" | "observePadShapes209" | "observeImageShapes209" | "observeArcShapes209" | "observePouredShapes209" | "performVisual209" | "captureRendererViewport209" | "rendererCaptureSession209" | "captureWindow209" | "observeWindowCaptureReadiness209" | "resizeWindowForCapture209" | "restoreWindowForCapture209" | "terminateVisualJob">>;
 type StringOwnerMethods = Pick<CurrentPcbStringPrecreateOwner, "observeStringPrecreate" | "observeCommonBaseline" | "retainedCommonBaselineFailure">;
 type StartupOwnerMethods = Pick<CurrentPcbWorkerStartupOwner, "handoffWorkerStartup">;
 type StartupContinuationOwnerMethods = Pick<CurrentPcb209RatlineContinuationOwner, "prepareWorkerStartupRatlineContinuationSession209">;
@@ -224,7 +249,7 @@ type StartupFootprintRouteMethods = Pick<CurrentFootprintCopyNativeOwner, "obser
   "observeFootprintCopyClockRegistration" | "sampleFootprintCopyClockRegistration" | "retainedFootprintCopyClockRegistration" | "releaseFootprintCopyClockRegistration">;
 type MainOwnerMethods = Pick<CurrentFootprintMainNativeOwner, "observeFootprintMainConstruction" | "retainedFootprintMainConstruction" | "terminateFootprintMain">;
 type CombinedOwnerMethods = Pick<CurrentFootprintCombinedNativeOwner, "abortFootprintCombined" | "reserveFootprintCombinedAbort" | "dispatchFootprintCombinedAbort" | "observeSavedCacheNative" | "observeSavedCacheAccessor">;
-type LifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & Partial<CombinedOwnerMethods & MainOwnerMethods & StartupFootprintRouteMethods & StartupFootprintUiMethods & StringOwnerMethods & StartupOwnerMethods & StartupEmptyOwnerMethods & StartupRatlineOwnerMethods & StartupContinuationOwnerMethods>;
+type LifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & Partial<Pick<CurrentPcbDiagnosticOwner, "openGeneratedComponentFixtureProject" | "openGeneratedFixtureProject" | "retainedGeneratedFixtureRegistration"> & CombinedOwnerMethods & MainOwnerMethods & StartupFootprintRouteMethods & StartupFootprintUiMethods & StringOwnerMethods & StartupOwnerMethods & StartupEmptyOwnerMethods & StartupRatlineOwnerMethods & StartupContinuationOwnerMethods>;
 export interface CurrentPcb209StartupEmptyPreparation {
   /** The enclosing lifecycle must durably consume PCB navigation intent before
    * calling openAndQualify. This private preparation does not publish that intent. */
@@ -232,6 +257,10 @@ export interface CurrentPcb209StartupEmptyPreparation {
   readonly prepareEmpty: (packet: CurrentPcb209WorkerStartupPcbPacket) => CurrentPcb209WorkerStartupEmptySession;
 }
 export interface CurrentPcbDiagnosticLifecycleOptions extends CurrentPcbDiagnosticInstallationOptions {
+  /** Same-facade original issued import data, consumed at fresh construction.
+   * No caller schema or historical record can provide this token. */
+  readonly generatedFixtureSource?: ManagedFixtureOpeningSource;
+  readonly generatedComponentSource?: ManagedComponentFixtureOpeningSource;
   readonly assertAllowed: () => Promise<void>;
   /** Original local method/environment identity only. No bridge or full startup admission. */
   readonly assertLocalAllowed: () => void;
@@ -241,6 +270,8 @@ export interface CurrentPcbDiagnosticLifecycleOptions extends CurrentPcbDiagnost
 }
 /** Offline fixture seams only. No public request selects factories or pins. */
 export interface CurrentPcbDiagnosticLifecycleDependencies {
+  readonly captureComponentGeneratedClosedData?: typeof captureGeneratedComponentReaderClosedSnapshot;
+  readonly captureGeneratedClosedData?: typeof captureGeneratedReaderClosedSnapshot;
   readonly verifyInstallation?: (options: CurrentPcbDiagnosticInstallationOptions) => Promise<CurrentPcbDiagnosticInstallation>;
   readonly allocateOwner?: (options: CurrentPcbDiagnosticInstallationOptions) => Promise<CurrentPcbDiagnosticLifecycleOwner>;
   readonly publishRecord?: typeof publishCurrentPcbDiagnosticLifecycleRecord;
@@ -276,6 +307,7 @@ interface ProjectPreparation {
   readonly preparedText: string;
   readonly originalTarget: Extract<Request, { action: "open-project" }>["target"];
   readonly commonInventory: Awaited<ReturnType<typeof readExactSqlInventory>> | null;
+  readonly generatedCheckpoint?: GeneratedFixtureOpenCheckpoint | GeneratedComponentFixtureOpenCheckpoint;
 }
 const footprintAbortVariants = Object.freeze({
   combined: Object.freeze({ generation: "209-startup-footprint-combined", consumed: "COMBINED_ABORT_CONSUMED", unavailable: "COMBINED_ABORT_UNAVAILABLE",
@@ -340,7 +372,14 @@ function describe(operationId: string, operation: DiagnosticLifecycleOperation |
     workerStartupChannelAttemptConsumed: records?.["worker-startup-channel-intent.json"] !== undefined,
     workerStartupChannelResultPublished: records?.["worker-startup-channel-result.json"] !== undefined,
     ...(binding === undefined ? {} : { binding: binding.binding, bindingSha256: sha256Json(binding), launchAcknowledged: binding.launchAcknowledged }),
-    ...claims };
+    ...(records?.["spatial209-failure.json"] === undefined ? {} : { spatialDecodeFailure: {
+      step: records["spatial209-failure.json"].diagnostic.step,
+      replyCaptureRefused: records["spatial209-failure.json"].diagnostic.replyCaptureRefused,
+      path: join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", operationId, "spatial209-failure.json"),
+      contentSha256: sha256Json(records["spatial209-failure.json"]), privateReplyWithheld: true,
+    } }),
+    ...claims, ...(records?.["intent.json"]?.schema === "easyeda-pro-control.pcb209-ordinary-read-launch-intent.v1"
+      ? { validationOnly: false, ordinaryProjectReadOnly: true, saveAuthorized: false } : {}) };
 }
 /** V2/V3 retain up to680/712KiB on disk. Keep initial and inspect responses
  * below the facade512KiB envelope; the complete original record is unchanged. */
@@ -412,6 +451,15 @@ function publicStartupEmptyResult(operationId: string,
 /** Shared cleanup and journal machinery. Only fixed exported facades
  * construct it; neither public requests nor dependency seams select purpose. */
 class CurrentPcbLifecycleCore {
+  readonly #generatedSource: ReturnType<typeof consumeManagedFixtureOpeningSource> | ReturnType<typeof consumeManagedComponentFixtureOpeningSource> | null;
+  #componentPrepared: GeneratedComponentFixtureOpenCheckpoint | null = null;
+  #componentPreparationAttempted = false;
+  readonly #captureComponentGeneratedClosedData: typeof captureGeneratedComponentReaderClosedSnapshot;
+  #componentGeneratedClosedCaptureAttempted = false;
+  #componentGeneratedClosedCaptureResult: DiagnosticLifecycleRecords["component-generated-closed-capture-result.json"] | null = null;
+  readonly #captureGeneratedClosedData: typeof captureGeneratedReaderClosedSnapshot;
+  #generatedClosedCaptureAttempted = false;
+  #generatedClosedCaptureResult: DiagnosticLifecycleRecords["generated-closed-capture-result.json"] | null = null;
   readonly #purpose: CurrentPcbDiagnosticLifecyclePurpose;
   readonly #generation: LifecycleGeneration;
   readonly #stringPurpose: boolean;
@@ -476,6 +524,9 @@ class CurrentPcbLifecycleCore {
   #combinedFactoryDiagnostics: CurrentFootprintCombinedFactoryFailureDiagnostics | null = null;
   #combinedAbortAttempted = false;
   #combinedAbortBusy = false;
+  #componentAbortBusy = false;
+  #componentAbortAttempted = false;
+  readonly #componentAbortedRecords = new Map<DiagnosticLifecycleRecordName, string>();
   #publicationTail: Promise<void> = Promise.resolve();
   readonly #combinedAbortedRecords = new Map<DiagnosticLifecycleRecordName, string>();
   #forwardQualificationAttempted = false;
@@ -527,11 +578,17 @@ class CurrentPcbLifecycleCore {
     this.#generation = generation;
     this.#purpose = purpose;
     this.#stringPurpose = stringPurpose;
-    if (generation === "209-spatial") { this.#stages = ["browser", "frames", "script", "pcb-opening", "spatial209"]; }
+    if (generation === "209-spatial" || generation === "209-component-spatial") { this.#stages = ["browser", "frames", "script", "pcb-opening", "spatial209"]; }
     else { this.#stages = opening209(generation) ? [...(generation === "209-visual" ? ["visual-viewport209" as const, "window-restore209" as const, "window-resize209" as const, "window-capture209" as const, "renderer-capture209" as const] : []), "browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"] :
       { diagnostic: diagnosticObservationStageSchema.options, "string-precreate": currentPcbStringPrecreateStages,
         "worker-startup": startupStages }[purpose]; }
     this.#options = Object.freeze({ ...options });
+    requireValue(options.generatedFixtureSource === undefined || generation === "209-ordinary" || generation === "209-spatial", "GENERATED_FIXTURE_LIFECYCLE_PURPOSE");
+    requireValue((options.generatedComponentSource !== undefined) === (generation === "209-component-spatial") && !(options.generatedComponentSource !== undefined && options.generatedFixtureSource !== undefined), "COMPONENT_SOURCE_PURPOSE");
+    if (options.generatedComponentSource === undefined) { this.#generatedSource = options.generatedFixtureSource === undefined ? null : consumeManagedFixtureOpeningSource(options.generatedFixtureSource); }
+    else { this.#generatedSource = consumeManagedComponentFixtureOpeningSource(options.generatedComponentSource); }
+    this.#captureComponentGeneratedClosedData = dependencies.captureComponentGeneratedClosedData ?? captureGeneratedComponentReaderClosedSnapshot;
+    this.#captureGeneratedClosedData = dependencies.captureGeneratedClosedData ?? captureGeneratedReaderClosedSnapshot;
     let verify = generation === "206" ? verifyCurrentPcbDiagnosticInstallation : verifyCurrentPcb209DiagnosticInstallation;
     if (generation === "209-startup-ratline" || generation === "209-startup-ratline-continuation") { verify = verifyCurrentPcb209RatlineInstallation; }
     this.#verify = dependencies.verifyInstallation ?? verify;
@@ -546,12 +603,16 @@ class CurrentPcbLifecycleCore {
     else if (routeStartup209(generation)) { allocate = startCurrentFootprintCopyNativeOwner; }
     else if (generation === "209-startup-footprint") { allocate = startCurrentFootprintCopyPreparationOwner; }
     else if (generation === "209-startup") { allocate = startCurrentPcb209WorkerStartupOwner; }
-    else if (generation === "209-spatial") { allocate = startCurrentPcbSpatialOwner; }
+    else if (generation === "209-component-spatial") { allocate = (allocationOptions): Promise<CurrentPcbDiagnosticOwner> => {
+      requireValue(this.#componentPrepared !== null, "COMPONENT_PREPARATION_REQUIRED");
+      return startCurrentPcbComponentSpatialOwner(allocationOptions, this.#componentPrepared);
+    }; }
+    else if (generation === "209-spatial") { allocate = this.#generatedSource === null ? startCurrentPcbSpatialOwner : startCurrentGeneratedFixtureSpatial209Owner; }
     else if (generation === "209-visual") { allocate = startCurrentPcb209VisualOwner; }
-    else if (generation === "209-opening") { allocate = startCurrentPcb209DiagnosticOwner; }
+    else if (generation === "209-opening" || generation === "209-ordinary") { allocate = this.#generatedSource === null ? startCurrentPcb209DiagnosticOwner : startCurrentGeneratedFixture209DiagnosticOwner; }
     this.#allocate = dependencies.allocateOwner ?? allocate;
     const publish = dependencies.publishRecord ?? publishCurrentPcbDiagnosticLifecycleRecord;
-    this.#publish = (generation === "209-startup-footprint-combined" || generation === "209-startup-footprint-forward") ? (operationId, name, record): Promise<void> => {
+    this.#publish = (generation === "209-component-spatial" || generation === "209-startup-footprint-combined" || generation === "209-startup-footprint-forward") ? (operationId, name, record): Promise<void> => {
       const previous = this.#publicationTail;
       const pending = (async (): Promise<void> => {
         await previous; this.#assertPublicationAllowed(name);
@@ -602,11 +663,14 @@ class CurrentPcbLifecycleCore {
     else if (this.#generation === "209-startup-ratline") { request = currentPcb209RatlineStartupLifecycleRequestSchema.parse(input); }
     else if (this.#generation === "209-startup-empty") { request = currentPcb209EmptyStartupLifecycleRequestSchema.parse(input); }
     else if (this.#generation === "209-startup") { request = currentPcb209WorkerStartupLifecycleRequestSchema.parse(input); }
+    else if (this.#generation === "209-component-spatial") { request = currentPcbComponentSpatialRequestSchema.parse(input); }
     else if (this.#generation === "209-spatial") { request = currentPcbSpatialRequestSchema.parse(input); }
     else if (this.#generation === "209-visual") { request = currentPcb209VisualRequestSchema.parse(input); }
+    else if (this.#generation === "209-ordinary") { request = currentPcbOrdinaryReadRequestSchema.parse(input); }
     else if (this.#generation === "209-opening") { request = currentPcb209OpeningRequestSchema.parse(input); }
     else { request = { diagnostic: currentPcbDiagnosticValidationRequestSchema, "string-precreate": currentPcbStringPrecreateRequestSchema,
       "worker-startup": currentPcbWorkerStartupLifecycleRequestSchema }[this.#purpose].parse(input); }
+    if (request.action === "abort-component") { return this.#runComponentAbort(request); }
     if (request.action === "query-observation") {
       const operations = await readCurrentPcbDiagnosticLifecycles();
       const operation = operations.find(value => value.operationId === request.operationId);
@@ -646,7 +710,7 @@ class CurrentPcbLifecycleCore {
         const retained = pending === undefined ? undefined : diagnosticLifecycleRecordSchemas[`${stage}-result.json`].parse(JSON.parse(pending) as unknown);
         return { stage, consumed: operation?.records[`${stage}-intent.json`] !== undefined || original && this.#observationConsumed.has(stage),
           resultRetained: original && this.#observations.has(stage), published: record !== undefined,
-          ...(record === undefined || this.#generation !== "209-opening" ||
+          ...(record === undefined || !(["209-opening", "209-ordinary"] as const).some(generation => generation === this.#generation) ||
             !["primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"].includes(stage) ? {} :
             { resultRecordSha256: sha256Json(record), observedAt: record.createdAt }),
           result: stage === selectedStage ? publicObservationResult(request.operationId, stage, (record ?? retained)?.result, record !== undefined) : undefined };
@@ -667,6 +731,7 @@ class CurrentPcbLifecycleCore {
       // Or a publication plan that could authorize worker discovery.
       const nativeOpeningReply = original && openingConsumed && this.#openingResult === null
         ? native?.projectOpeningResult ?? null : null;
+      const nativeGeneratedRegistration = original && this.#generatedSource !== null ? native?.generatedFixtureRegistration ?? null : null;
       const nativePcbOpeningReply = original && this.#pcbOpeningAttempted && this.#pcbOpeningResult === null
         ? native?.pcbOpeningResult ?? null : null;
       const nativePcbFrameObservation = original && this.#observationConsumed.has("pcb-opening") && !this.#observations.has("pcb-opening")
@@ -695,6 +760,8 @@ class CurrentPcbLifecycleCore {
         combinedAbortDispatchAttempted: native.combinedAbortDispatchAttempted, combinedOutputCleanupOnly: native.combinedOutputCleanupOnly,
       }) : { combinedAbortDispatchAttempted: null, combinedOutputCleanupOnly: null };
       return { ...describe(request.operationId, operation), busy: this.#busy, observations, noProcessCleanupAvailable,
+        ...(this.#generation === "209-component-spatial" ? { componentPreparationAttemptConsumed: this.#componentPreparationAttempted,
+          componentPreparationCompleted: this.#componentPrepared !== null } : {}),
         ...combinedNativeState,
         combinedFactoryBeforeLaunchPublished: operation?.records["combined-factory-before-launch.json"] !== undefined,
         combinedFactoryBeforeLaunchRetained: this.#attempt?.operationId === request.operationId && this.#combinedFactoryFailure !== null,
@@ -733,6 +800,9 @@ class CurrentPcbLifecycleCore {
         savedCacheAccessorObservation: original && operation?.records["saved-cache-accessor-result.json"] === undefined ? native?.savedCacheAccessorObservation ?? null : null,
         savedCacheAccessorResult: operation?.records["saved-cache-accessor-result.json"]?.result ?? null,
         mainConstructionObservation: original && this.#retained?.methods.retainedFootprintMainConstruction !== undefined ? this.#retained.methods.retainedFootprintMainConstruction.call(this.#retained.owner) : null,
+        componentAbortAttemptConsumed: operation?.records["component-abort-intent.json"] !== undefined || original && this.#componentAbortAttempted,
+        componentAbortAcknowledged: operation?.records["component-abort-acknowledged.json"] !== undefined,
+        componentAbortedUnpublishedRecordCount: original ? this.#componentAbortedRecords.size : 0,
         visualAbortAttemptConsumed: operation?.records["visual-abort-intent.json"] !== undefined || original && this.#visualAbortAttempted,
         visualAbortAcknowledged: operation?.records["visual-abort-acknowledged.json"] !== undefined,
         mainTerminationAttemptConsumed: operation?.records["main-terminate-intent.json"] !== undefined || original && this.#mainTerminateAttempted,
@@ -862,6 +932,9 @@ class CurrentPcbLifecycleCore {
         ...(pcbOpeningResult === undefined ? {} : { pcbOpeningResult }),
         ...(openingResult === undefined ? {} : { projectOpeningResult: openingResult }),
         ...(nativeOpeningReply === null ? {} : { nativeOpeningReply, hostTransitionAccepted: false }),
+        ...(nativeGeneratedRegistration === null ? {} : { nativeGeneratedRegistration, persistentRegistrationVerified: false }),
+        ...(this.#generatedClosedCaptureResult === null ? {} : { generatedClosedCapture: this.#generatedClosedCaptureResult }),
+        ...(this.#componentGeneratedClosedCaptureResult === null ? {} : { componentGeneratedClosedCapture: this.#componentGeneratedClosedCaptureResult }),
         ...(nativePcbOpeningReply === null ? {} : { nativePcbOpeningReply, pcbHostTransitionAccepted: false }),
         ...(nativePcbFrameObservation === null ? {} : { nativePcbFrameObservation, pcbSourceAdmissionAccepted: false }),
         diagnosticFailureObservation: native?.diagnosticFailureObservation ?? null,
@@ -879,7 +952,7 @@ class CurrentPcbLifecycleCore {
         releaseAttemptConsumed: operation?.records["release-intent.json"] !== undefined || original && this.#releaseAttempted };
     }
     this.#options.assertLocalAllowed();
-    requireValue(!this.#busy && !this.#combinedAbortBusy, "BUSY"); this.#busy = true;
+    requireValue(!this.#busy && !this.#combinedAbortBusy && !this.#componentAbortBusy, "BUSY"); this.#busy = true;
     try {
       if (request.action === "launch") {
         requireValue(this.#lease === null && !this.#launchAttempted, "LAUNCH_CONSUMED");
@@ -2566,10 +2639,14 @@ class CurrentPcbLifecycleCore {
     let idPurpose: CurrentPcbDiagnosticLifecyclePurpose = "diagnostic";
     const continuation209 = operationId.startsWith(CURRENT_PCB_209_RATLINE_CONTINUATION_OPERATION_PREFIX);
     const empty209 = operationId.startsWith(CURRENT_PCB_209_EMPTY_STARTUP_OPERATION_PREFIX), ratline209 = operationId.startsWith(CURRENT_PCB_209_RATLINE_STARTUP_OPERATION_PREFIX);
+    const component209 = operationId.startsWith("pcb209-spatial-component-");
     const spatial209 = operationId.startsWith(CURRENT_PCB_SPATIAL_OPERATION_PREFIX);
     // Reserve new allocations. Historical broad pcb209-* IDs keep their original generation.
-    const spatialNamespaceMatches = intent === undefined ? spatial209 === (this.#generation === "209-spatial") :
-      (intent.schema === "easyeda-pro-control.pcb209-spatial-launch-intent.v1") === (this.#generation === "209-spatial");
+    const spatialNamespaceMatches = intent === undefined ? spatial209 === (this.#generation === "209-spatial" || this.#generation === "209-component-spatial") && component209 === (this.#generation === "209-component-spatial") :
+      (intent.schema === "easyeda-pro-control.pcb209-spatial-launch-intent.v1") === (this.#generation === "209-spatial") && (intent.schema === "easyeda-pro-control.pcb209-component-spatial-launch-intent.v1") === (this.#generation === "209-component-spatial");
+    const ordinary209 = operationId.startsWith(CURRENT_PCB_ORDINARY_READ_PREFIX);
+    const ordinaryNamespaceMatches = intent === undefined ? ordinary209 === (this.#generation === "209-ordinary") :
+      (intent.schema === "easyeda-pro-control.pcb209-ordinary-read-launch-intent.v1") === (this.#generation === "209-ordinary");
     const visual209 = operationId.startsWith("pcb209-visual-");
     const forward209 = operationId.startsWith(CURRENT_FOOTPRINT_FORWARD_PREWRITE_OPERATION_PREFIX);
     const combined209 = operationId.startsWith(CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX);
@@ -2580,7 +2657,7 @@ class CurrentPcbLifecycleCore {
     if (operationId.startsWith(CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX)) { idPurpose = "string-precreate"; }
     else if (operationId.startsWith(CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX) || project209 || empty209 || ratline209 || continuation209 || footprint209 || footprintRoute209 || main209 || combined209 || forward209) { idPurpose = "worker-startup"; }
     const expectedSchema = launchFields(this.#purpose, this.#generation).schema;
-    requireValue(spatialNamespaceMatches && forward209 === (this.#generation === "209-startup-footprint-forward") && visual209 === (this.#generation === "209-visual") && combined209 === (this.#generation === "209-startup-footprint-combined") && main209 === (this.#generation === "209-startup-footprint-main") && footprintRoute209 === (this.#generation === "209-startup-footprint-route") && footprint209 === (this.#generation === "209-startup-footprint") && continuation209 === (this.#generation === "209-startup-ratline-continuation") && ratline209 === (this.#generation === "209-startup-ratline") && project209 === (this.#generation === "209-startup") && empty209 === (this.#generation === "209-startup-empty") &&
+    requireValue(ordinaryNamespaceMatches && spatialNamespaceMatches && forward209 === (this.#generation === "209-startup-footprint-forward") && visual209 === (this.#generation === "209-visual") && combined209 === (this.#generation === "209-startup-footprint-combined") && main209 === (this.#generation === "209-startup-footprint-main") && footprintRoute209 === (this.#generation === "209-startup-footprint-route") && footprint209 === (this.#generation === "209-startup-footprint") && continuation209 === (this.#generation === "209-startup-ratline-continuation") && ratline209 === (this.#generation === "209-startup-ratline") && project209 === (this.#generation === "209-startup") && empty209 === (this.#generation === "209-startup-empty") &&
       (operationId.startsWith(CURRENT_PCB_209_OPENING_PROFILE.operationPrefix) && !project209 && !empty209 && !ratline209 && !continuation209) === (opening209(this.#generation)), "GENERATION_MISMATCH");
     requireValue(idPurpose === this.#purpose && (intent === undefined || intent.schema === expectedSchema || combined209 && intent.schema === "easyeda-pro-control.footprint-combined-launch-intent.v1"), "PURPOSE_MISMATCH");
   }
@@ -2667,6 +2744,50 @@ class CurrentPcbLifecycleCore {
         abortDispatched: true, terminationProved: false, executionAuthorized: false, saveAuthorized: false };
     } finally { this.#combinedAbortBusy = false; }
   }
+  /** The original private owner seals normal work before any journal await.
+   * Only this Component generation can request its retained Job's termination. */
+  async #runComponentAbort(request: Extract<CurrentPcbComponentSpatialRequest, { action: "abort-component" }>): Promise<Record<string, unknown>> {
+    this.#options.assertLocalAllowed();
+    requireValue(this.#generation === "209-component-spatial" && !this.#componentAbortBusy && !this.#componentAbortAttempted, "COMPONENT_ABORT_CONSUMED");
+    const bindingText = this.#pending.get("binding.json"), retained = this.#retained;
+    requireValue(retained !== null && retained.operationId === request.operationId && bindingText !== undefined &&
+      sha256Json(JSON.parse(bindingText) as unknown) === request.expectedBindingSha256 && !this.#releaseAttempted, "ORIGINAL_OWNER_REQUIRED");
+    this.#assertOwner(retained);
+    const dispatch = retained.methods.dispatchComponentSpatialAbort, reserve = retained.methods.reserveComponentSpatialAbort;
+    requireValue(reserve !== undefined && dispatch !== undefined, "COMPONENT_ABORT_OWNER_METHODS");
+    this.#componentAbortBusy = true; this.#componentAbortAttempted = true;
+    try {
+      const token = reserve.call(retained.owner); this.#assertOwner(retained);
+      await this.#publicationTail; this.#assertOwner(retained);
+      const operations = await readCurrentPcbDiagnosticLifecycles(); this.#assertOwner(retained);
+      const operation = operations.find(value => value.operationId === request.operationId); this.#assertPurpose(request.operationId, operation);
+      requireValue(operation !== undefined && canonicalJson(operation.records["binding.json"]) === bindingText &&
+        operation.records["component-abort-intent.json"] === undefined && operation.records["terminated.json"] === undefined &&
+        operation.records["release-intent.json"] === undefined && operation.records["released.json"] === undefined, "COMPONENT_ABORT_UNAVAILABLE");
+      requireValue(Object.keys(operation.records).every(name => [...this.#pending].some(([known, text]) => known === name && canonicalJson(operation.records[known]) === text)), "JOURNAL_CHANGED");
+      for (const [name, text] of this.#pending) {
+        if (operation.records[name] === undefined) { this.#componentAbortedRecords.set(name, text); this.#pending.delete(name); }
+      }
+      const intent: NonNullable<DiagnosticLifecycleRecords["component-abort-intent.json"]> = {
+        schema: "easyeda-pro-control.pcb209-component-abort-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+        bindingSha256: request.expectedBindingSha256, previousRecordsSha256: sha256Json(operation.records), confirmAbortOriginalComponentJob: true,
+      };
+      await assertSnapshot(operations); this.#assertOwner(retained);
+      await this.#record(request.operationId, "component-abort-intent.json", intent); this.#assertOwner(retained);
+      const updated = { ...operation, records: { ...operation.records, "component-abort-intent.json": intent } };
+      const expected = operations.map(value => value.operationId === request.operationId ? updated : value);
+      await assertSnapshot(expected); this.#assertOwner(retained);
+      await dispatch.call(retained.owner, token, request.confirmAbortOriginalComponentJob); this.#assertOwner(retained);
+      await assertSnapshot(expected); this.#assertOwner(retained);
+      const acknowledgment: NonNullable<DiagnosticLifecycleRecords["component-abort-acknowledged.json"]> = {
+        schema: "easyeda-pro-control.pcb209-component-abort-acknowledged.v1", operationId: request.operationId,
+        createdAt: new Date().toISOString(), intentSha256: sha256Json(intent), terminationDispatched: true, terminationProved: false,
+      };
+      await this.#record(request.operationId, "component-abort-acknowledged.json", acknowledgment); this.#assertOwner(retained);
+      return { ...describe(request.operationId, { ...updated, records: { ...updated.records, "component-abort-acknowledged.json": acknowledgment } }),
+        terminationDispatched: true, terminationProved: false, executionAuthorized: false, saveAuthorized: false, discardProved: false, persistenceVerified: false };
+    } finally { this.#componentAbortBusy = false; }
+  }
   protected assertCombinedNormal(): void {
     this.#options.assertLocalAllowed();
     requireValue((this.#generation === "209-startup-footprint-combined" || this.#generation === "209-startup-footprint-forward") && !this.#combinedAbortAttempted, "COMBINED_GENERATION_ABORTED");
@@ -2674,9 +2795,11 @@ class CurrentPcbLifecycleCore {
   #assertNormalOwner(retained: Retained): void {
     requireValue(!(this.#generation === "209-startup-footprint-combined" || this.#generation === "209-startup-footprint-forward") || !this.#combinedAbortAttempted, "COMBINED_GENERATION_ABORTED");
     requireValue(!this.#visualAbortAttempted, "VISUAL_GENERATION_ABORTED");
+    requireValue(!this.#componentAbortAttempted, "COMPONENT_GENERATION_ABORTED");
     this.#assertOwner(retained);
   }
   #assertPublicationAllowed(name: DiagnosticLifecycleRecordName): void {
+    requireValue(!this.#componentAbortAttempted || ["component-abort-intent.json", "component-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"].includes(name), "COMPONENT_GENERATION_ABORTED");
     requireValue(!this.#visualAbortAttempted || ["visual-abort-intent.json", "visual-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"].includes(name), "VISUAL_GENERATION_ABORTED");
     requireValue(!this.#combinedAbortAttempted || ["combined-abort-intent.json", "combined-abort-acknowledged.json", "forward-abort-intent.json", "forward-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"].includes(name), "COMBINED_GENERATION_ABORTED");
   }
@@ -2686,11 +2809,19 @@ class CurrentPcbLifecycleCore {
     this.#options.assertLocalAllowed();
     requireValue(this.#lease !== null, "ORIGINAL_LEASE_REQUIRED"); assertCurrentPcbDiagnosticLaunchExclusion(this.#lease);
     requireValue(this.#retained === retained && methods.every(name => retained.owner[name] === retained.methods[name]), "OWNER_CHANGED");
+    requireValue(this.#generatedSource === null || typeof retained.methods.openGeneratedFixtureProject === "function" &&
+      retained.owner.openGeneratedFixtureProject === retained.methods.openGeneratedFixtureProject &&
+      typeof retained.methods.retainedGeneratedFixtureRegistration === "function" &&
+      retained.owner.retainedGeneratedFixtureRegistration === retained.methods.retainedGeneratedFixtureRegistration, "GENERATED_FIXTURE_OWNER_CHANGED");
     const status = retained.methods.status.call(retained.owner);
-    const expectedProfile = this.#generation === "206" ? this.#purpose : { "209-startup-footprint-forward": "worker-startup-footprint-forward209", "209-startup-footprint-combined": "worker-startup-footprint-combined209", "209-startup-footprint-main": "worker-startup-footprint-main209", "209-startup-footprint-route": "worker-startup-footprint-copy209", "209-startup-footprint": "worker-startup-footprint209", "209-startup": "worker-startup209", "209-startup-empty": "worker-startup-empty209", "209-startup-ratline": "worker-startup-ratline209", "209-startup-ratline-continuation": "worker-startup-ratline-continuation209", "209-spatial": "pcb-spatial209", "209-visual": "visual209", "209-opening": "diagnostic209" }[this.#generation];
+    requireValue(this.#generatedSource === null || status.generatedFixtureRegistrationPurpose === true, "GENERATED_FIXTURE_BIRTH_CHANGED");
+    const expectedProfile = this.#generation === "206" ? this.#purpose : { "209-startup-footprint-forward": "worker-startup-footprint-forward209", "209-startup-footprint-combined": "worker-startup-footprint-combined209", "209-startup-footprint-main": "worker-startup-footprint-main209", "209-startup-footprint-route": "worker-startup-footprint-copy209", "209-startup-footprint": "worker-startup-footprint209", "209-startup": "worker-startup209", "209-startup-empty": "worker-startup-empty209", "209-startup-ratline": "worker-startup-ratline209", "209-startup-ratline-continuation": "worker-startup-ratline-continuation209", "209-component-spatial": "pcb-component-spatial209", "209-spatial": "pcb-spatial209", "209-visual": "visual209", "209-opening": "diagnostic209", "209-ordinary": "diagnostic209" }[this.#generation];
     requireValue(status.profile === expectedProfile &&
+      (this.#generation !== "209-component-spatial" || typeof retained.methods.reserveComponentSpatialAbort === "function" && retained.owner.reserveComponentSpatialAbort === retained.methods.reserveComponentSpatialAbort && typeof retained.methods.dispatchComponentSpatialAbort === "function" && retained.owner.dispatchComponentSpatialAbort === retained.methods.dispatchComponentSpatialAbort && typeof retained.methods.observeComponentSpatial209 === "function" && retained.owner.observeComponentSpatial209 === retained.methods.observeComponentSpatial209 && (retained.methods.observeComponentClonedSpatial209 === undefined || typeof retained.methods.observeComponentClonedSpatial209 === "function" && retained.owner.observeComponentClonedSpatial209 === retained.methods.observeComponentClonedSpatial209) && typeof retained.methods.openGeneratedComponentFixtureProject === "function" && retained.owner.openGeneratedComponentFixtureProject === retained.methods.openGeneratedComponentFixtureProject) &&
       (this.#generation !== "209-spatial" || typeof retained.methods.observeSpatial209 === "function" &&
-        retained.owner.observeSpatial209 === retained.methods.observeSpatial209) &&
+        retained.owner.observeSpatial209 === retained.methods.observeSpatial209 &&
+        retained.owner.observeSpatialTrack209 === retained.methods.observeSpatialTrack209 &&
+        retained.owner.observeSpatialArc209 === retained.methods.observeSpatialArc209 && retained.owner.observeSpatialPad209 === retained.methods.observeSpatialPad209) &&
       (this.#generation !== "209-visual" || typeof retained.methods.restoreWindowForCapture209 === "function" && retained.owner.restoreWindowForCapture209 === retained.methods.restoreWindowForCapture209 &&
         typeof retained.methods.resizeWindowForCapture209 === "function" && retained.owner.resizeWindowForCapture209 === retained.methods.resizeWindowForCapture209 &&
         typeof retained.methods.observeWindowCaptureReadiness209 === "function" && retained.owner.observeWindowCaptureReadiness209 === retained.methods.observeWindowCaptureReadiness209 &&
@@ -2700,7 +2831,7 @@ class CurrentPcbLifecycleCore {
         typeof retained.methods.performVisual209 === "function" && retained.owner.performVisual209 === retained.methods.performVisual209 &&
         typeof retained.methods.terminateVisualJob === "function" && retained.owner.terminateVisualJob === retained.methods.terminateVisualJob &&
         typeof retained.methods.observeSelectionRelations209 === "function" && retained.owner.observeSelectionRelations209 === retained.methods.observeSelectionRelations209) &&
-      (this.#generation !== "209-opening" || typeof retained.methods.observeLayers209 === "function" &&
+      (!["209-opening", "209-ordinary"].includes(this.#generation) || typeof retained.methods.observeLayers209 === "function" &&
         retained.owner.observeLayers209 === retained.methods.observeLayers209 &&
         typeof retained.methods.observePrimitives209 === "function" && retained.owner.observePrimitives209 === retained.methods.observePrimitives209 &&
         typeof retained.methods.observeExtendedPrimitives209 === "function" && retained.owner.observeExtendedPrimitives209 === retained.methods.observeExtendedPrimitives209 &&
@@ -3006,6 +3137,16 @@ class CurrentPcbLifecycleCore {
     const executable = installation.plan.files[0]; requireValue(executable !== undefined, "EXECUTABLE_MISSING");
     const installationText = canonicalJson(installation);
     await assertSnapshot(before); await this.#otherLaunches();
+    if (this.#generation === "209-component-spatial") {
+      requireValue(!this.#componentPreparationAttempted && this.#componentPrepared === null, "COMPONENT_PREPARATION_CONSUMED");
+      const source = this.#generatedSource;
+      requireValue(source !== null && source.qualification.schema === "easyeda-pro-control.qualified-generated-component-fixture-target.v1", "COMPONENT_SOURCE_REQUIRED");
+      // Local closed-data work precedes the launch/native-allocation journal.
+      // A failed checkpoint is consumed but cannot masquerade as an unknown helper.
+      this.#componentPreparationAttempted = true;
+      this.#componentPrepared = await prepareGeneratedComponentFixtureOpenCheckpoint({ qualification: source.qualification, archive: source.archive });
+      await assertSnapshot(before); await this.#otherLaunches();
+    }
     // Reserve before helper allocation. Even failure creating/syncing the intent
     // Can leave a durable reservation and never permits another attempt.
     this.#launchAttempted = true;
@@ -3013,7 +3154,10 @@ class CurrentPcbLifecycleCore {
     const intent = diagnosticLifecycleRecordSchemas["intent.json"].parse({
       ...launchFields(this.#purpose, this.#generation), operationId: request.operationId, createdAt: new Date().toISOString(),
       facadeSha256: installation.facadeSha256, installationSha256: sha256Json(installation),
-      confirmValidationOnly: true, confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true,
+      ...(this.#generation === "209-ordinary" ? { confirmOrdinaryReadOnly: true } : { confirmValidationOnly: true }),
+      ...(this.#generatedSource === null ? {} : { generatedFixtureBirth: { originalSourceSha256: this.#generatedSource.qualification.target.expectedSourceSha256,
+        archiveSha256: this.#generatedSource.qualification.archiveSha256, originalClosedInitialQualification: true as const } }),
+      confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true,
       ...(this.#generation === "209-visual" ? { acceptVisualStateChanges: true as const } : {}),
       ...(this.#generation === "209-startup-footprint-forward" || this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined" ? { acceptDebuggerPauseEffects: true as const } : {}),
       ...(this.#generation === "209-startup-footprint-combined" || this.#generation === "209-startup-footprint-forward" ? { dispatchProtocol: "challenge-ready-before-launch.v1" as const } : {}),
@@ -3050,10 +3194,12 @@ class CurrentPcbLifecycleCore {
       browserObservation: owner.browserObservation, inspectFrames: owner.inspectFrames, inspectScript: owner.inspectScript,
       inspectWorkers: owner.inspectWorkers, inspectWorkerScript: owner.inspectWorkerScript, observeWorkerState: owner.observeWorkerState,
       observeModelState: owner.observeModelState, openProject: owner.openProject,
+      ...(this.#generatedSource === null ? {} : { openGeneratedComponentFixtureProject: owner.openGeneratedComponentFixtureProject, openGeneratedFixtureProject: owner.openGeneratedFixtureProject, retainedGeneratedFixtureRegistration: owner.retainedGeneratedFixtureRegistration }),
       openPcb: owner.openPcb, observePcbOpening: owner.observePcbOpening,
       ...(this.#generation === "209-visual" ? { performVisual209: owner.performVisual209, captureRendererViewport209: owner.captureRendererViewport209, rendererCaptureSession209: owner.rendererCaptureSession209, captureWindow209: owner.captureWindow209, observeWindowCaptureReadiness209: owner.observeWindowCaptureReadiness209, resizeWindowForCapture209: owner.resizeWindowForCapture209, restoreWindowForCapture209: owner.restoreWindowForCapture209, terminateVisualJob: owner.terminateVisualJob } : {}),
-      ...(this.#generation === "209-spatial" ? { observeSpatial209: owner.observeSpatial209 } : {}),
-      ...(opening209(this.#generation) && this.#generation !== "209-spatial" ? { observeLayers209: owner.observeLayers209, observePrimitives209: owner.observePrimitives209,
+      ...(this.#generation === "209-component-spatial" ? { reserveComponentSpatialAbort: owner.reserveComponentSpatialAbort, dispatchComponentSpatialAbort: owner.dispatchComponentSpatialAbort, observeComponentSpatial209: owner.observeComponentSpatial209, observeComponentClonedSpatial209: owner.observeComponentClonedSpatial209 } : {}),
+      ...(this.#generation === "209-spatial" ? { observeSpatial209: owner.observeSpatial209, observeSpatialTrack209: owner.observeSpatialTrack209, observeSpatialArc209: owner.observeSpatialArc209, observeSpatialPad209: owner.observeSpatialPad209 } : {}),
+      ...(opening209(this.#generation) && this.#generation !== "209-spatial" && this.#generation !== "209-component-spatial" ? { observeLayers209: owner.observeLayers209, observePrimitives209: owner.observePrimitives209,
         observeExtendedPrimitives209: owner.observeExtendedPrimitives209, observeSelectionRelations209: owner.observeSelectionRelations209,
         observePadShapes209: owner.observePadShapes209, observeImageShapes209: owner.observeImageShapes209, observeArcShapes209: owner.observeArcShapes209, observePouredShapes209: owner.observePouredShapes209 } : {}),
       ...(this.#stringPurpose ? { observeStringPrecreate: owner.observeStringPrecreate, observeCommonBaseline: owner.observeCommonBaseline,
@@ -3153,12 +3299,15 @@ class CurrentPcbLifecycleCore {
     // Handles. The native owner still checks its retained helper on cleanup.
     this.#assertOwner(retained);
     await assertSnapshot(operations); this.#assertOwner(retained);
+    if (this.#componentAbortAttempted) { requireValue(["observe-termination", "release-closed"].includes(request.action), "COMPONENT_GENERATION_ABORTED"); }
     if (request.action === "abort-visual") { return this.#abortVisual(request, operation, operations, retained); }
     if (this.#visualAbortAttempted) { requireValue(["observe-termination", "release-closed"].includes(request.action), "VISUAL_GENERATION_ABORTED"); }
-    if (request.action === "open-project") { return this.#openProject(request, operation, operations, retained); }
+    if (request.action === "open-project" || request.action === "open-generated-fixture") { return this.#openProject(request, operation, operations, retained); }
     if (request.action === "open-pcb") { return this.#openPcb(request, operation, operations, retained); }
+    if (request.action === "capture-component-generated-closed") { return this.#captureComponentGeneratedClosed(request, operation, operations, retained); }
+    if (request.action === "capture-generated-closed") { return this.#captureGeneratedClosed(request, operation, operations, retained); }
     if (request.action === "observe-common-baseline") { return this.#observeCommonBaseline(request, operation, operations, retained); }
-    if (request.action === "observe-spatial") { return this.#observeSpatial(request, operation, operations, retained); }
+    if ((request.action === "observe-components" || request.action === "observe-components-cloned-pads") || request.action === "observe-spatial" || request.action === "observe-spatial-lines" || request.action === "observe-spatial-arcs" || request.action === "observe-spatial-pads") { return this.#observeSpatial(request, operation, operations, retained); }
     if (request.action === "browser-observation" || request.action === "inspect-frames" || request.action === "inspect-script" ||
         request.action === "inspect-workers" || request.action === "inspect-worker-script" || request.action === "observe-worker-state" ||
         request.action === "capture-renderer-viewport" || request.action === "restore-window-for-capture" || request.action === "resize-window-for-capture" || request.action === "capture-window" || request.action === "perform-visual" || request.action === "observe-model-state" || request.action === "observe-pcb-opening" || request.action === "observe-string-precreate" || request.action === "observe-layers" || request.action === "observe-primitives" || request.action === "observe-extended-primitives" || request.action === "observe-selection-relations" || request.action === "observe-pad-shapes" || request.action === "observe-image-shapes" || request.action === "observe-arc-shapes" || request.action === "observe-poured-shapes") {
@@ -3242,31 +3391,53 @@ class CurrentPcbLifecycleCore {
   }
   /** Consume one fixed query batch before native dispatch. Original results
    * remain retained if validation or publication later refuses settlement. */
-  async #observeSpatial(request: Extract<CurrentPcbSpatialRequest, { action: "observe-spatial" }>, operation: DiagnosticLifecycleOperation,
+  async #observeSpatial(request: Extract<CurrentPcbSpatialRequest | CurrentPcbComponentSpatialRequest, { action: "observe-components" | "observe-components-cloned-pads" | "observe-spatial" | "observe-spatial-lines" | "observe-spatial-arcs" | "observe-spatial-pads" }>, operation: DiagnosticLifecycleOperation,
     operations: readonly DiagnosticLifecycleOperation[], retained: Retained): Promise<Record<string, unknown>> {
-    const observe = retained.methods.observeSpatial209;
-    requireValue(this.#generation === "209-spatial" && observe !== undefined && operation.records["binding.json"]?.launchAcknowledged === true &&
+    const arcs = request.action === "observe-spatial-arcs", cloned = request.action === "observe-components-cloned-pads", components = request.action === "observe-components" || cloned, mixed = request.action === "observe-spatial-lines", pads = request.action === "observe-spatial-pads";
+    const observe = { "observe-components-cloned-pads": retained.methods.observeComponentClonedSpatial209, "observe-components": retained.methods.observeComponentSpatial209, "observe-spatial-pads": retained.methods.observeSpatialPad209, "observe-spatial-arcs": retained.methods.observeSpatialArc209, "observe-spatial-lines": retained.methods.observeSpatialTrack209, "observe-spatial": retained.methods.observeSpatial209 }[request.action];
+    requireValue((components ? this.#generation === "209-component-spatial" : this.#generation === "209-spatial") && observe !== undefined && operation.records["binding.json"]?.launchAcknowledged === true &&
       retained.binding?.rootCreated !== "0" && operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined,
     "SPATIAL209_PURPOSE");
     requireValue(!this.#observationConsumed.has("spatial209") && operation.records["spatial209-intent.json"] === undefined, "OBSERVATION_CONSUMED");
     const preparation = this.#originalProjectOpening(operation); this.#originalPcbSource(operation);
     await this.#installation(retained); await assertSnapshot(operations); this.#assertNormalOwner(retained);
-    const intent: NonNullable<DiagnosticLifecycleRecords["spatial209-intent.json"]> = {
-      schema: "easyeda-pro-control.pcb209-spatial-observation-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+    const intent = diagnosticLifecycleRecordSchemas["spatial209-intent.json"].parse({
+      schema: ({ "observe-components-cloned-pads": "easyeda-pro-control.pcb209-component-cloned-point-observation-intent.v2", "observe-components": "easyeda-pro-control.pcb209-component-point-observation-intent.v1", "observe-spatial-pads": "easyeda-pro-control.pcb209-spatial-pad-point-observation-intent.v1", "observe-spatial-arcs": "easyeda-pro-control.pcb209-spatial-arc-line-via-observation-intent.v1", "observe-spatial-lines": "easyeda-pro-control.pcb209-spatial-line-via-observation-intent.v1", "observe-spatial": "easyeda-pro-control.pcb209-spatial-observation-intent.v1" } as const)[request.action], operationId: request.operationId, createdAt: new Date().toISOString(),
       stage: "spatial209", bindingSha256: request.expectedBindingSha256,
       pcbOpeningResultSha256: sha256Json(operation.records["pcb-opening-result.json"]), queries: structuredClone(request.queries), acceptNativeScratchEffects: true,
-    };
+    });
     this.#observationConsumed.add("spatial209"); await this.#record(request.operationId, "spatial209-intent.json", intent);
     const updated = { ...operation, records: { ...operation.records, "spatial209-intent.json": intent } };
     const expected = operations.map(value => value.operationId === operation.operationId ? updated : value);
     await assertSnapshot(expected); this.#assertNormalOwner(retained); this.#originalPcbSource(updated);
-    const raw = await observe.call(retained.owner, preparation.sealedTarget, request.queries);
-    const result = currentPcbSpatialObservation(raw); this.#observations.set("spatial209", result);
-    this.#assertNormalOwner(retained); requireCurrentPcbSpatialObservation(result, preparation.sealedTarget, request.queries);
-    const record: NonNullable<DiagnosticLifecycleRecords["spatial209-result.json"]> = {
-      schema: "easyeda-pro-control.pcb209-spatial-observation-result.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+    let raw: unknown;
+    try { raw = await Reflect.apply(observe, retained.owner, [preparation.sealedTarget, request.queries]) as unknown; }
+    catch (error) {
+      const diagnostic = currentPcbSpatialDecodeFailure(error);
+      if (diagnostic !== undefined) {
+        const record = diagnosticLifecycleRecordSchemas["spatial209-failure.json"].parse({
+          schema: "easyeda-pro-control.pcb209-spatial-decode-failure.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+          stage: "spatial209", intentSha256: sha256Json(intent), diagnostic, replyEncoding: "bounded-normalized-inspector-json",
+          observationAccepted: false, replayAllowed: false, executionAuthorized: false, saveAuthorized: false,
+        });
+        this.#retainRecord("spatial209-failure.json", record);
+        try { await assertSnapshot(expected); this.#assertNormalOwner(retained); await this.#publish(request.operationId, "spatial209-failure.json", record); }
+        catch (publicationError) { throw new AggregateError([error, publicationError], "PCB_SPATIAL_FAILURE_PUBLICATION", { cause: publicationError }); }
+      }
+      throw error;
+    }
+    const result = { "observe-components-cloned-pads": currentPcbComponentClonedSpatialObservation, "observe-components": currentPcbComponentSpatialObservation, "observe-spatial-pads": currentPcbSpatialPadObservation, "observe-spatial-arcs": currentPcbSpatialArcObservation, "observe-spatial-lines": currentPcbSpatialTrackObservation, "observe-spatial": currentPcbSpatialObservation }[request.action](raw); this.#observations.set("spatial209", result);
+    this.#assertNormalOwner(retained);
+    if (cloned) { requireCurrentPcbComponentClonedSpatialObservation(result, preparation.sealedTarget, request.queries); }
+    else if (components) { requireCurrentPcbComponentSpatialObservation(result, preparation.sealedTarget, request.queries); }
+    else if (pads) { requireCurrentPcbSpatialPadObservation(result, preparation.sealedTarget, request.queries); }
+    else if (arcs) { requireCurrentPcbSpatialArcObservation(result, preparation.sealedTarget, request.queries); }
+    else if (mixed) { requireCurrentPcbSpatialTrackObservation(result, preparation.sealedTarget, request.queries); }
+    else { requireCurrentPcbSpatialObservation(result, preparation.sealedTarget, request.queries); }
+    const record = diagnosticLifecycleRecordSchemas["spatial209-result.json"].parse({
+      schema: ({ "observe-components-cloned-pads": "easyeda-pro-control.pcb209-component-cloned-point-observation-result.v2", "observe-components": "easyeda-pro-control.pcb209-component-point-observation-result.v1", "observe-spatial-pads": "easyeda-pro-control.pcb209-spatial-pad-point-observation-result.v1", "observe-spatial-arcs": "easyeda-pro-control.pcb209-spatial-arc-line-via-observation-result.v1", "observe-spatial-lines": "easyeda-pro-control.pcb209-spatial-line-via-observation-result.v1", "observe-spatial": "easyeda-pro-control.pcb209-spatial-observation-result.v1" } as const)[request.action], operationId: request.operationId, createdAt: new Date().toISOString(),
       stage: "spatial209", intentSha256: sha256Json(intent), result: structuredClone(result), executionAuthorized: false, saveAuthorized: false,
-    };
+    });
     this.#retainRecord("spatial209-result.json", record);
     await assertSnapshot(expected); this.#assertNormalOwner(retained); this.#originalPcbSource(updated);
     await this.#publish(request.operationId, "spatial209-result.json", record);
@@ -3735,7 +3906,7 @@ class CurrentPcbLifecycleCore {
     return { ...describe(request.operationId, completed), stage: "common-baseline", result: parsed };
   }
 
-  async #openProject(request: Extract<CleanupRequest, { action: "open-project" }>, operation: DiagnosticLifecycleOperation,
+  async #openProject(request: Extract<CleanupRequest, { action: "open-project" | "open-generated-fixture" }>, operation: DiagnosticLifecycleOperation,
     operations: readonly DiagnosticLifecycleOperation[], retained: Retained): Promise<Record<string, unknown>> {
     requireValue(!this.#openingAttempted && operation.records["project-opening-intent.json"] === undefined, "PROJECT_OPENING_CONSUMED");
     requireValue(operation.records["binding.json"]?.launchAcknowledged === true && retained.binding?.rootCreated !== "0" &&
@@ -3749,8 +3920,21 @@ class CurrentPcbLifecycleCore {
     // Backup or an uncertain durable intent; neither grants a retry.
     this.#openingAttempted = true;
     await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
-    const target = Object.freeze(structuredClone(request.target));
-    const prepared = await this.#prepareCheckpoint(target);
+    const generated = request.action === "open-generated-fixture" ? this.#generatedSource : null;
+    requireValue((request.action === "open-generated-fixture") === (this.#generatedSource !== null) &&
+      (generated === null || (this.#generation === "209-component-spatial" || this.#generation === "209-ordinary" || this.#generation === "209-spatial") && typeof retained.methods.openGeneratedFixtureProject === "function"), "ORIGINAL_GENERATED_FIXTURE_SOURCE_REQUIRED");
+    const target = Object.freeze(request.action === "open-project" ? structuredClone(request.target) : ((): CurrentDisposableOpenSealedTarget => {
+      requireValue(generated !== null, "ORIGINAL_GENERATED_FIXTURE_SOURCE_REQUIRED");
+      return generated.qualification.target;
+    })());
+    let generatedCheckpoint: GeneratedFixtureOpenCheckpoint | GeneratedComponentFixtureOpenCheckpoint | undefined;
+    if (generated !== null) {
+      if (generated.qualification.schema === "easyeda-pro-control.qualified-generated-component-fixture-target.v1") {
+        requireValue(this.#componentPrepared !== null, "COMPONENT_ORIGINAL_CHECKPOINT_REQUIRED"); generatedCheckpoint = this.#componentPrepared;
+      } else { generatedCheckpoint = await prepareGeneratedFixtureOpenCheckpoint({ qualification: generated.qualification, archive: generated.archive }); }
+    }
+    const prepared = generatedCheckpoint === undefined ? await this.#prepareCheckpoint(target) : generatedDiagnosticCheckpoint(generatedCheckpoint);
+    const verifyPrepared = (): Promise<void> => generatedCheckpoint === undefined ? this.#verifyCheckpoint(prepared, target) : verifyGeneratedOpeningCheckpoint(generatedCheckpoint);
     const preparedText = canonicalJson(prepared);
     requireValue(prepared.targetEvidence.projectUuid === target.projectUuid && prepared.targetEvidence.documentUuid === target.documentUuid &&
       prepared.targetEvidence.docType === "PCB" && prepared.targetEvidence.sourceSha256 === target.expectedSourceSha256, "PROJECT_CHECKPOINT_BINDING");
@@ -3762,32 +3946,43 @@ class CurrentPcbLifecycleCore {
       requireValue(completion.observedChildClose && completion.exitCode === 0 && completion.exitSignal === null &&
         commonInventory.checkpointSha256 === prepared.checkpoint.checkpointSha256, "COMMON_ORIGINAL_SQL_REQUIRED");
     }
-    this.#projectPreparation = Object.freeze({ sealedTarget, prepared, preparedText, originalTarget: target, commonInventory });
+    this.#projectPreparation = Object.freeze({ sealedTarget, prepared, preparedText, originalTarget: target, commonInventory,
+      ...(generatedCheckpoint === undefined ? {} : { generatedCheckpoint }) });
     const preparationCheckpoint = currentDisposableOpenPreparationCheckpointSchema.parse(prepared.preparationCheckpoint);
-    await this.#verifyCheckpoint(prepared, target);
+    await verifyPrepared();
     requireValue(canonicalJson(prepared) === preparedText, "PROJECT_CHECKPOINT_CHANGED");
     await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
-    const intent: NonNullable<DiagnosticLifecycleRecords["project-opening-intent.json"]> = {
-      schema: "easyeda-pro-control.pcb-diagnostic-project-opening-intent.v1", operationId: request.operationId,
+    const intent = diagnosticLifecycleRecordSchemas["project-opening-intent.json"].parse({
+      schema: this.#generation === "209-ordinary" ? "easyeda-pro-control.pcb209-ordinary-project-opening-intent.v1" : "easyeda-pro-control.pcb-diagnostic-project-opening-intent.v1", operationId: request.operationId,
       createdAt: new Date().toISOString(), bindingSha256: request.expectedBindingSha256, scriptResultSha256: sha256Json(script),
       target: sealedTarget, preparationCheckpoint, checkpointReceiptSha256: sha256Json(prepared.checkpoint),
       ...(commonInventory === null ? {} : { commonBeforeSqlSha256: commonInventory.logicalSha256 }),
-      confirmDisposableProject: true, acceptNormalOpenEffects: true,
-    };
+      ...(this.#generation === "209-ordinary" ? { confirmOrdinaryProject: true as const } : { confirmDisposableProject: true as const }),
+      ...(generated === null ? {} : { generatedFixtureSource: { archiveSha256: generated.qualification.archiveSha256,
+        originalInventoryLogicalSha256: generated.qualification.inventoryLogicalSha256, exactInitialNativePayloadQualified: true as const,
+        untickedDocHeadQualified: true as const, acceptRecentPathRegistration: true as const } }),
+      acceptNormalOpenEffects: true,
+    });
     await this.#record(request.operationId, "project-opening-intent.json", intent);
     const updated = { ...operation, records: { ...operation.records, "project-opening-intent.json": intent } };
     const expected = operations.map(value => value.operationId === operation.operationId ? updated : value);
     await assertSnapshot(expected); this.#assertOwner(retained);
-    let reverificationAttempted = false, reverified = false;
-    const result = await retained.methods.openProject.call(retained.owner, sealedTarget, async () => {
-      requireValue(!reverificationAttempted, "PROJECT_REVERIFICATION_CONSUMED"); reverificationAttempted = true;
+    let reverifications = 0, reverified = false;
+    const reverify = async (): Promise<void> => {
+      requireValue(reverifications < (generated === null ? 1 : 2), "PROJECT_REVERIFICATION_CONSUMED"); reverifications += 1;
       await this.#installation(retained); await assertSnapshot(expected); this.#assertOwner(retained);
       requireValue(canonicalJson(prepared) === preparedText, "PROJECT_CHECKPOINT_CHANGED");
-      await this.#verifyCheckpoint(prepared, target);
+      await verifyPrepared();
       requireValue(canonicalJson(prepared) === preparedText, "PROJECT_CHECKPOINT_CHANGED");
       await this.#installation(retained); await assertSnapshot(expected); this.#assertOwner(retained);
-      reverified = true;
-    });
+      reverified = reverifications === (generated === null ? 1 : 2);
+    };
+    let result: Awaited<ReturnType<CurrentPcbDiagnosticOwner["openProject"]>> | undefined;
+    if (generated === null) { result = await retained.methods.openProject.call(retained.owner, sealedTarget, reverify); }
+    else if (generated.qualification.schema === "easyeda-pro-control.qualified-generated-component-fixture-target.v1") {
+      requireValue(this.#componentPrepared !== null, "COMPONENT_PREPARED_REQUIRED"); result = await retained.methods.openGeneratedComponentFixtureProject?.call(retained.owner, this.#componentPrepared, reverify);
+    } else { result = await retained.methods.openGeneratedFixtureProject?.call(retained.owner, generated.qualification, reverify); }
+    requireValue(result !== undefined, "GENERATED_FIXTURE_OPENING_METHOD_REQUIRED");
     // Keep the exact decoded reply even when final owner checks or publication
     // Fail. This result is never a writer token or evidence of full restoration.
     this.#openingResult = result;
@@ -3814,6 +4009,83 @@ class CurrentPcbLifecycleCore {
       this.#pending.get("project-opening-intent.json") === canonicalJson(intent) &&
       canonicalJson(intent.target) === canonicalJson(preparation.sealedTarget), "PROJECT_OPENING_UNCONFIRMED");
     return preparation;
+  }
+  async #captureGeneratedClosed(request: Extract<CleanupRequest, { action: "capture-generated-closed" }>, operation: DiagnosticLifecycleOperation,
+    operations: readonly DiagnosticLifecycleOperation[], retained: Retained): Promise<Record<string, unknown>> {
+    const source = this.#generatedSource, termination = operation.records["terminated.json"];
+    requireValue(source !== null && (this.#generation === "209-ordinary" || this.#generation === "209-spatial") && termination !== undefined &&
+      this.#pending.get("terminated.json") === canonicalJson(termination) && !retained.methods.status.call(retained.owner).released &&
+      operation.records["release-intent.json"] === undefined && !this.#generatedClosedCaptureAttempted &&
+      operation.records["generated-closed-capture-intent.json"] === undefined, "GENERATED_CLOSED_CAPTURE_UNAVAILABLE");
+    this.#generatedClosedCaptureAttempted = true;
+    const intent = diagnosticLifecycleRecordSchemas["generated-closed-capture-intent.json"].parse({
+      schema: source.qualification.schema === "easyeda-pro-control.qualified-generated-pad-fixture-target.v1" ? "easyeda-pro-control.generated-pad-reader-closed-capture-intent.v1" : "easyeda-pro-control.generated-reader-closed-capture-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+      ...(source.qualification.schema === "easyeda-pro-control.qualified-generated-pad-fixture-target.v1" ? { originalQualification: source.qualification } : {}),
+      terminationSha256: sha256Json(termination), originalQualificationSha256: sha256Json(source.qualification), target: source.qualification.target, readOnlyDataCapture: true,
+    });
+    await this.#record(request.operationId, "generated-closed-capture-intent.json", intent);
+    const updated = { ...operation, records: { ...operation.records, "generated-closed-capture-intent.json": intent } };
+    const expected = operations.map(value => value.operationId === request.operationId ? updated : value);
+    const current = (): void => {
+      this.#assertOwner(retained);
+      requireValue(this.#generatedSource === source && !retained.methods.status.call(retained.owner).released, "GENERATED_CLOSED_CAPTURE_OWNER_CHANGED");
+    };
+    const observeOriginalTermination = async (): Promise<void> => {
+      current(); requireValue(await retained.methods.observeTermination.call(retained.owner), "GENERATED_READER_ORIGINAL_ROOT_JOB_LIVE"); current();
+    };
+    current(); await assertSnapshot(expected); current();
+    let report: Readonly<Record<string, unknown>> | null = null; let failure: "closed-generated-data-capture-refused" | null = null;
+    try { requireValue(source.qualification.schema !== "easyeda-pro-control.qualified-generated-component-fixture-target.v1", "OLD_READER_CAPTURE_PROFILE_REQUIRED"); report = await this.#captureGeneratedClosedData({ source: { qualification: source.qualification, archive: source.archive }, assertOriginalOwner: current, observeOriginalTermination }); current(); }
+    catch { report = null; failure = "closed-generated-data-capture-refused"; }
+    const result = diagnosticLifecycleRecordSchemas["generated-closed-capture-result.json"].parse({
+      schema: "easyeda-pro-control.generated-reader-closed-capture-result.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+      intentSha256: sha256Json(intent), report, failure, startupEffectsAccepted: false, writerAuthority: false, executionAuthorized: false,
+    });
+    assertGeneratedReaderClosedCaptureChain({ ...updated, records: { ...updated.records, "generated-closed-capture-result.json": result } });
+    this.#generatedClosedCaptureResult = result; this.#retainRecord("generated-closed-capture-result.json", result);
+    current(); await assertSnapshot(expected); current(); await this.#publish(request.operationId, "generated-closed-capture-result.json", result);
+    const completed = { ...updated, records: { ...updated.records, "generated-closed-capture-result.json": result } };
+    await assertSnapshot(expected.map(value => value.operationId === request.operationId ? completed : value)); current();
+    return { ...describe(request.operationId, completed), generatedClosedCaptureRetained: true, result };
+  }
+  async #captureComponentGeneratedClosed(request: Extract<CleanupRequest, { action: "capture-component-generated-closed" }>, operation: DiagnosticLifecycleOperation,
+    operations: readonly DiagnosticLifecycleOperation[], retained: Retained): Promise<Record<string, unknown>> {
+    const source = this.#generatedSource, termination = operation.records["terminated.json"];
+    const prepared = this.#componentPrepared;
+    requireValue(source !== null && source.qualification.schema === "easyeda-pro-control.qualified-generated-component-fixture-target.v1" && this.#generation === "209-component-spatial" && prepared !== null && prepared.qualification === source.qualification && termination !== undefined &&
+      this.#pending.get("terminated.json") === canonicalJson(termination) && !retained.methods.status.call(retained.owner).released &&
+      operation.records["release-intent.json"] === undefined && !this.#componentGeneratedClosedCaptureAttempted &&
+      operation.records["component-generated-closed-capture-intent.json"] === undefined, "GENERATED_CLOSED_CAPTURE_UNAVAILABLE");
+    this.#componentGeneratedClosedCaptureAttempted = true;
+    const intent = diagnosticLifecycleRecordSchemas["component-generated-closed-capture-intent.json"].parse({
+      schema: "easyeda-pro-control.component-generated-reader-closed-capture-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+      originalQualification: source.qualification, preparationCheckpointSha256: prepared.preparationCheckpoint.sha256,
+      terminationSha256: sha256Json(termination), originalQualificationSha256: sha256Json(source.qualification), target: source.qualification.target, readOnlyDataCapture: true,
+    });
+    await this.#record(request.operationId, "component-generated-closed-capture-intent.json", intent);
+    const updated = { ...operation, records: { ...operation.records, "component-generated-closed-capture-intent.json": intent } };
+    const expected = operations.map(value => value.operationId === request.operationId ? updated : value);
+    const current = (): void => {
+      this.#assertOwner(retained);
+      requireValue(this.#generatedSource === source && this.#componentPrepared === prepared && prepared.qualification === source.qualification && !retained.methods.status.call(retained.owner).released, "GENERATED_CLOSED_CAPTURE_OWNER_CHANGED");
+    };
+    const observeOriginalTermination = async (): Promise<void> => {
+      current(); requireValue(await retained.methods.observeTermination.call(retained.owner), "GENERATED_READER_ORIGINAL_ROOT_JOB_LIVE"); current();
+    };
+    current(); await assertSnapshot(expected); current();
+    let report: Readonly<Record<string, unknown>> | null = null; let failure: "closed-component-generated-data-capture-refused" | null = null;
+    try { report = await this.#captureComponentGeneratedClosedData({ prepared, source: { qualification: source.qualification, archive: source.archive }, assertOriginalOwner: current, observeOriginalTermination }); current(); }
+    catch { report = null; failure = "closed-component-generated-data-capture-refused"; }
+    const result = diagnosticLifecycleRecordSchemas["component-generated-closed-capture-result.json"].parse({
+      schema: "easyeda-pro-control.component-generated-reader-closed-capture-result.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+      intentSha256: sha256Json(intent), report, failure, startupEffectsAccepted: false, writerAuthority: false, executionAuthorized: false,
+    });
+    assertGeneratedReaderClosedCaptureChain({ ...updated, records: { ...updated.records, "component-generated-closed-capture-result.json": result } });
+    this.#componentGeneratedClosedCaptureResult = result; this.#retainRecord("component-generated-closed-capture-result.json", result);
+    current(); await assertSnapshot(expected); current(); await this.#publish(request.operationId, "component-generated-closed-capture-result.json", result);
+    const completed = { ...updated, records: { ...updated.records, "component-generated-closed-capture-result.json": result } };
+    await assertSnapshot(expected.map(value => value.operationId === request.operationId ? completed : value)); current();
+    return { ...describe(request.operationId, completed), componentGeneratedClosedCaptureRetained: true, result };
   }
   #originalPcbSource(operation: DiagnosticLifecycleOperation): void {
     const preparation = this.#originalProjectOpening(operation);
@@ -3846,7 +4118,7 @@ class CurrentPcbLifecycleCore {
       requireValue(!reverificationAttempted, "PCB_REVERIFICATION_CONSUMED"); reverificationAttempted = true;
       await this.#installation(retained); await assertSnapshot(expected); this.#assertOwner(retained);
       requireValue(this.#projectPreparation === preparation && canonicalJson(preparation.prepared) === preparation.preparedText, "PROJECT_CHECKPOINT_CHANGED");
-      await this.#verifyHistoricalCheckpoint(preparation.prepared, preparation.originalTarget);
+      await (preparation.generatedCheckpoint === undefined ? this.#verifyHistoricalCheckpoint(preparation.prepared, preparation.originalTarget) : verifyGeneratedOpeningCheckpoint(preparation.generatedCheckpoint, true));
       requireValue(canonicalJson(preparation.prepared) === preparation.preparedText, "PROJECT_CHECKPOINT_CHANGED");
       await this.#installation(retained); await assertSnapshot(expected); this.#assertOwner(retained); reverified = true;
     });
@@ -3923,6 +4195,14 @@ export class CurrentPcb209DiagnosticLifecycle extends CurrentPcbLifecycleCore {
   }
 }
 
+/** Ordinary read scope is sealed before launch and cannot become validation,
+ * visual navigation, a compiler observer or a native writer. */
+export class CurrentPcbOrdinaryReadLifecycle extends CurrentPcbLifecycleCore {
+  public constructor(options: CurrentPcbDiagnosticLifecycleOptions, dependencies: CurrentPcbDiagnosticLifecycleDependencies = {}) {
+    super(options, dependencies, "diagnostic", "209-ordinary");
+  }
+}
+
 /** Separate launch-sealed disposable spatial reader. Old model, worker and
  * visual stages are absent from its grammar and retained stage roster. */
 export class CurrentPcbSpatialLifecycle extends CurrentPcbLifecycleCore {
@@ -3932,6 +4212,12 @@ export class CurrentPcbSpatialLifecycle extends CurrentPcbLifecycleCore {
   }
 }
 
+/** Fixed new Component purpose; caller paths and older generated tokens refuse. */
+export class CurrentPcbComponentSpatialLifecycle extends CurrentPcbLifecycleCore {
+  public constructor(options: CurrentPcbDiagnosticLifecycleOptions, dependencies: CurrentPcbDiagnosticLifecycleDependencies = {}) {
+    super(options, dependencies, "diagnostic", "209-component-spatial");
+  }
+}
 /** Separate original-owner visual effects, sealed before native launch. */
 export class CurrentPcb209VisualLifecycle extends CurrentPcbLifecycleCore {
   public constructor(options: CurrentPcbDiagnosticLifecycleOptions, dependencies: CurrentPcbDiagnosticLifecycleDependencies = {}) {

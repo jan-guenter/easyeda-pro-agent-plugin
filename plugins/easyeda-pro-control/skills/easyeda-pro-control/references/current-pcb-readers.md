@@ -197,7 +197,22 @@ case; other methods and generations need their own evidence.
 
 ## PCB geometry on the current tuple
 
-Query `pcb-geometry` with `includeSchemas:true`, then validate the assembled
+The generic `eda.pcb_Primitive.getPrimitiveByPrimitiveId` and
+`eda.pcb_Primitive.getPrimitivesByPrimitiveId` equivalents resolve supported
+objects without knowing their family first. Use `arguments.primitiveIds` in
+caller order, with exactly one ID for the singular selector. They return plain
+geometry DTOs after two matching compound samples of the nine supported
+families. Missing or ambiguous IDs refuse the whole request; an unavailable ID
+does not prove absence from unsupported families or saved source. Complete
+supported family rosters and Attribute groups remain in the result. Selection
+is neither read nor changed. The installed empty generic object getters are
+not called, and this is not public class-instance parity.
+
+List `pcb-geometry` without schemas first. Select one returned `method` with
+`query:{"method":"eda.pcb_PrimitiveLine.getAll","includeSchemas":true}` to read its
+argument and result schemas. Use the exact method from discovery. Each argument schema describes that method
+only; the complete22-method catalog also remains bounded by the512KiB tool
+envelope. Then validate the assembled
 request with `pcb-geometry-validate` and `query:{"request":...}`. Invoke
 `easyeda_control_pcb_geometry` with the validated request and authenticated
 `expectedFingerprint`. Use the same explicit project/branch/document/tab target

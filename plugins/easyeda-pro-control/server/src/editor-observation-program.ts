@@ -30,8 +30,9 @@ const contextProjection = `
 /** Fixed native shell traversal shared by two compiled metadata projections.
  * Mode is selected by maintained callers, never by a public tool argument.
  */
-export function buildEditorObservationProgram(mode: "shell" | "context"): string {
+export function buildEditorObservationProgram(mode: "shell" | "context" | "empty-start-page-guard" | "native-empty-start-page-guard"): string {
   const context = mode === "context";
+  const empty = mode === "empty-start-page-guard" || mode === "native-empty-start-page-guard";
   const error = context ? "EDITOR_CONTEXT_READ_FAILED" : "EDITOR_SHELL_READ_FAILED";
   return `try{
 const root=globalThis,apply=Reflect.apply;
@@ -51,12 +52,12 @@ const location=root.location,href=location?.href,document=root.document;
 const mode=own(root,'PRO_EDITOR_MODE'),ui=own(root,'UI'),host=own(root,'gVars'),tabs=own(ui,'tabBar');
 if(typeof tabs!=='function'||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
 const active=fn(tabs,'getActiveTab'),container=fn(tabs,'getContainerInfo');
-const edaOwner=eda,bridgeUuid='7e06d286b1ac846ef7eab9c7f2a9ee40';
+${mode === "native-empty-start-page-guard" ? "" : "const edaOwner=eda,bridgeUuid='7e06d286b1ac846ef7eab9c7f2a9ee40';"}
 const check=()=>{
  if(root.top!==root||root.window!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')bad();
  if(typeof href!=='string'||!/^https:\\/\\/client\\/editor\\?cll=(?:trace|debug|info|warn|error)#?$/.test(href))bad();
  if(own(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'))bad();
- if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(ui,'tabBar')!==tabs||Object.getPrototypeOf(tabs)!==Function.prototype||fn(tabs,'getActiveTab')!==active||fn(tabs,'getContainerInfo')!==container||eda!==edaOwner||own(edaOwner,'extensionUuid')!==bridgeUuid)bad();
+ if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(ui,'tabBar')!==tabs||Object.getPrototypeOf(tabs)!==Function.prototype||fn(tabs,'getActiveTab')!==active||fn(tabs,'getContainerInfo')!==container${mode === "native-empty-start-page-guard" ? "" : "||eda!==edaOwner||own(edaOwner,'extensionUuid')!==bridgeUuid"})bad();
 };
 const sample=()=>{
  check();const owners=[],ids=own(tabs,'containerIds'),n=dense(ids,${MAX_CONTAINERS});if(n===0)bad();owners.push(ids);
@@ -93,10 +94,19 @@ const sample=()=>{
 ${context ? contextProjection : ""}
  return {owners,identity:JSON.stringify([names,treeProjection,containerProjection,current${context ? ",contextIdentity" : ""}]),value:${context ? "contextValue" : "{ok:true,kind:'editor-shell-observation',action:'observe-editor-shell',containerCount:n,tabCount:total,startPagePresent:start===1,startPageActive:current==='tab_page1',activeTabPresent:currentCount===1,placeholderTabCount:placeholder,otherTabCount:other,visibilityVerified:false,restorationCompletionVerified:false,projectClosureVerified:false,startupQualified:false,cadAuthority:false,persistenceVerified:false}"}};
 };
+${empty ? `
+const frameChain=[];let frameOwner=document,frameQuery;
+for(let i=0;frameOwner!==null&&i<8;i++){const descriptor=Object.getOwnPropertyDescriptor(frameOwner,'querySelectorAll');frameChain.push({owner:frameOwner,descriptor});if(frameQuery===undefined&&descriptor){if(!Object.hasOwn(descriptor,'value')||typeof descriptor.value!=='function')bad();frameQuery=descriptor.value;}frameOwner=Object.getPrototypeOf(frameOwner);}
+if(frameOwner!==null||frameQuery===undefined)bad();
+const assertNoFrames=()=>{for(let i=0;i<frameChain.length;i++){const item=frameChain[i],descriptor=Object.getOwnPropertyDescriptor(item.owner,'querySelectorAll');if(Object.getPrototypeOf(item.owner)!==(frameChain[i+1]?.owner??null)||descriptor?.value!==item.descriptor?.value||descriptor?.get!==item.descriptor?.get||descriptor?.set!==item.descriptor?.set)bad();}if(apply(frameQuery,document,['iframe']).length!==0)bad();check();};
+assertNoFrames();` : ""}
 const first=sample();await Promise.resolve();check();const second=sample();
 if(first.identity!==second.identity||first.owners.length!==second.owners.length||first.owners.some((owner,index)=>owner!==second.owners[index])||JSON.stringify(first.value)!==JSON.stringify(second.value))bad();check();
+${empty ? `
+const assertEmpty=()=>{assertNoFrames();const current=sample();if(current.identity!==first.identity||current.owners.length!==first.owners.length||current.owners.some((owner,index)=>owner!==first.owners[index])||current.value.startPagePresent!==true||current.value.startPageActive!==true||current.value.activeTabPresent!==true||current.value.otherTabCount!==0||current.value.tabCount!==1+current.value.placeholderTabCount)bad();check();};
+assertEmpty();return Object.freeze({assertCurrent:assertEmpty});` : `
 const json=JSON.stringify(first.value),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
-if(utf8Bytes>${EDITOR_OBSERVATION_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${EDITOR_OBSERVATION_MAX_BYTES})bad();return envelope;
+if(utf8Bytes>${EDITOR_OBSERVATION_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${EDITOR_OBSERVATION_MAX_BYTES})bad();return envelope;`}
 }catch{throw new Error(${JSON.stringify(error)});}`;
 }
 

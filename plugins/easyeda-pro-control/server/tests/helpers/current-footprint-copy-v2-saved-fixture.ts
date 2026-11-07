@@ -40,7 +40,7 @@ export async function savedFixture(equalClocks = false): Promise<Readonly<{
   copy: Awaited<ReturnType<typeof prepareCurrentFootprintCopyV2Plan>>;
   sql: Awaited<ReturnType<typeof prepareCurrentFootprintCopyV2SqlPlan>>;
   projection: Awaited<ReturnType<typeof prepareCurrentFootprintCopyV2SavedProjection>>;
-  after: Awaited<ReturnType<typeof inventory>>; chunk: string; time: number; innerTicket: number;
+  after: Awaited<ReturnType<typeof inventory>>; path: string; chunk: string; time: number; innerTicket: number;
 }>> {
   const { path } = await fixture({ project: PROJECT, branch: IDS.branch, target: IDS.target });
   const rawRows = ATOMS.map(atom => row(atom.type, atom.ticket, atom.id, atom.body));
@@ -63,7 +63,7 @@ export async function savedFixture(equalClocks = false): Promise<Readonly<{
   applyEffect(path, [edit(TIMES.edit), chunk].join("|\n"));
   mutate(path, "UPDATE project_structures SET ticket=100");
   const after = await inventory(path), effect = await verifyCurrentFootprintCopyV2SqlEffect(sql, after, { returnedUuid: TARGET });
-  return { copy, sql, projection: await prepareCurrentFootprintCopyV2SavedProjection(sql, effect, after), after, chunk, time, innerTicket };
+  return { copy, sql, projection: await prepareCurrentFootprintCopyV2SavedProjection(sql, effect, after), after, path, chunk, time, innerTicket };
 }
 export function nativeSavedCache(input: Awaited<ReturnType<typeof savedFixture>>, cacheActor: boolean): Context {
   const user = cacheActor ? { uuid: TARGET } : ACTOR;

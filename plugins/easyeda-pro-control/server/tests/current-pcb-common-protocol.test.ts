@@ -1,4 +1,5 @@
 /* oxlint-disable import/max-dependencies -- Exact native parity covers all fixed common reader programs and both bounded pipe purposes. */
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { once } from "node:events";
@@ -91,7 +92,7 @@ void test("common fixed protocol refuses source, effect, argument, group and con
 });
 
 void test("common native adapter embeds exact historical and packet programs and retains fixed purpose and group", async () => {
-  const native = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const native = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   for (const [name, source] of Object.entries({ CommonConstructorsFunction: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.common,
     CommonPresentationFunction: CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, CommonRulesFunction: CURRENT_PCB_COMMON_RULES_FUNCTION,
     CommonPreferenceFunction: CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, CommonAssetsFunction: CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION,
@@ -112,7 +113,7 @@ void test("common native adapter embeds exact historical and packet programs and
 });
 
 void test("common packet table keeps initialization order and refuses ambiguous or substituted aliases", async () => {
-  const native = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const native = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const table = /^ *static readonly string\[\] CommonPacketProgramTable0=StringWorkerPackedProgramTable\("[A-Za-z0-9+/=]+",[0-9]+,"[a-f0-9]{64}","[a-f0-9]{64}",5\);$/mu.exec(native)?.[0];
   assert.ok(table !== undefined);
   const names = ["CommonPresentationSeedFunction", "CommonRulesSeedFunction", "CommonPreferenceSeedFunction", "CommonPacketAdvanceFunction", "CommonPacketResultFunction"];

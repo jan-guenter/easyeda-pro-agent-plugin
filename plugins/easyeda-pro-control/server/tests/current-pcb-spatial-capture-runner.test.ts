@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CURRENT_PCB_SPATIAL_OBJECT_GROUP, CurrentPcbSpatialCaptureRunner } from "../src/current-pcb-spatial-capture-runner.ts";
+import { CURRENT_PCB_SPATIAL_OBJECT_GROUP, CurrentPcbSpatialCaptureRunner, currentPcbSpatialDecodeFailure } from "../src/current-pcb-spatial-capture-runner.ts";
 import type { CurrentPcbSpatialCaptureCommand, CurrentPcbSpatialCaptureTransport } from "../src/current-pcb-spatial-capture-runner.ts";
 import { CURRENT_PCB_SPATIAL_FUNCTION_LOCATIONS } from "../src/current-pcb-spatial-function-scope.ts";
 
@@ -109,4 +109,53 @@ void test("owner drift, bad handler source and failed release each withhold obse
     await assert.rejects(runner.observe(), /PCB_SPATIAL_CAPTURE/u);
     assert.equal(calls.length, count);
   }
+});
+
+void test("capture keeps the first fixed failing phase when cleanup also fails and never exposes cause text", async () => {
+  const calls: string[] = [];
+  const runner = new CurrentPcbSpatialCaptureRunner({
+    assertCurrent(): void {
+      // The synthetic original context is stable.
+    },
+    request(command): Promise<unknown> {
+      calls.push(command.spatialPhase);
+      return command.spatialPhase === "wrapper" ? Promise.resolve({ exceptionDetails: { text: "private renderer text" } })
+        : Promise.reject(new Error("private release path"));
+    },
+  }, "original-script", "original-context", "a".repeat(16));
+  await assert.rejects(runner.observe(), (error: unknown) => {
+    assert.ok(error instanceof AggregateError);
+    assert.equal(error.message, "PCB_SPATIAL_CAPTURE:wrapper:decode,release:failed");
+    assert.equal(error.errors.length, 2); assert.equal(error.message.includes("private"), false); return true;
+  });
+  assert.deepEqual(calls, ["wrapper", "release"]);
+  await assert.rejects(runner.observe(), /PCB_SPATIAL_CAPTURE/u); assert.equal(calls.length, 2);
+});
+void test("failed property decoding retains its bounded private packet and exact role without replay", async () => {
+  const { runner, calls } = transport("source");
+  await assert.rejects(runner.observe(), (error: unknown) => {
+    assert.ok(error instanceof AggregateError);
+    assert.equal(error.message, "PCB_SPATIAL_CAPTURE:properties:decode:handler-scopes");
+    const diagnostic = currentPcbSpatialDecodeFailure(error); assert.ok(diagnostic !== undefined); assert.ok(diagnostic.replyJson !== null);
+    assert.equal(diagnostic.replyCaptureRefused, false);
+    assert.deepEqual(JSON.parse(diagnostic.replyJson) as unknown, { ...functionProperties("point-handler"), internalProperties: [] });
+    assert.equal(error.message.includes("point-handler-prototype"), false);
+    assert.equal(currentPcbSpatialDecodeFailure(structuredClone(error)), undefined);
+    return true;
+  });
+  assert.equal(calls.filter(call => call.spatialPhase === "release").length, 1);
+  const count = calls.length; await assert.rejects(runner.observe()); assert.equal(calls.length, count);
+});
+void test("private failure capture refuses a Proxy without invoking its traps", async () => {
+  let traps = 0;
+  const packet = new Proxy({}, { ownKeys(): string[] { traps += 1; return []; } });
+  const runner = new CurrentPcbSpatialCaptureRunner({ assertCurrent(): void {
+    // Stable synthetic context.
+  },
+    request: (command): Promise<unknown> => Promise.resolve(command.spatialPhase === "release" ? {} : packet),
+  }, "original-script", "original-context", "a".repeat(16));
+  await assert.rejects(runner.observe(), (error: unknown) => {
+    assert.deepEqual(currentPcbSpatialDecodeFailure(error), { step: "wrapper:decode", replyJson: null, replyCaptureRefused: true }); return true;
+  });
+  assert.equal(traps, 0);
 });

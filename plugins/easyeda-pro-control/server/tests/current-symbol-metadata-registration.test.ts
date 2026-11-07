@@ -17,7 +17,7 @@ void test("project symbol metadata callback preserves strict inputs and the live
   let gates = 0;
   const engine = Object.freeze({ synthetic: true }), expectedFingerprint = Object.freeze({ synthetic: true });
   const calls: unknown[] = [], observed = Object.freeze({ cadAuthority: false, persistenceVerified: false });
-  const scope = vm.createContext({ z, currentSymbolMetadataRequestSchema, currentProjectOnlySymbolPreflightRequestSchema,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, currentSymbolMetadataRequestSchema, currentProjectOnlySymbolPreflightRequestSchema,
     engine, privateFingerprintSchema: z.unknown(),
     readCurrentSymbolMetadata: (actualEngine: unknown, request: unknown, fingerprint: unknown): Promise<typeof observed> => {
       assert.equal(actualEngine, engine); assert.equal(fingerprint, expectedFingerprint);

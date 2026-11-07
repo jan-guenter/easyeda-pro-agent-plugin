@@ -4,7 +4,7 @@
  */
 import { types } from "node:util";
 import { isRecord, sha256Text } from "./core.ts";
-import { currentFootprintCopyV2Rows } from "./current-footprint-copy-v2-plan.ts";
+import { currentFootprintCopyV2Before, currentFootprintCopyV2Rows } from "./current-footprint-copy-v2-plan.ts";
 import type { CurrentFootprintCopyV2Plan } from "./current-footprint-copy-v2-plan.ts";
 import { completedCurrentFootprintCopyV2SqlSource } from "./current-footprint-copy-v2-sql.ts";
 import type { CurrentFootprintCopyV2SqlPlan, CurrentFootprintCopyV2SqlSource } from "./current-footprint-copy-v2-sql.ts";
@@ -57,6 +57,13 @@ function original(plan: CurrentFootprintCopyV2SavedProjection): Retained {
   const state = originals.get(plan); need(state !== undefined, "original saved projection required");
   need(completedCurrentFootprintCopyV2SqlSource(state.sqlPlan, state.effect, state.after) === state.source,
     "original completed SQL relation changed"); return state;
+}
+/** Exact original full-SQL relation only; neither data nor hashes recreate a
+ * native writer, created-target owner or saved-generation runtime. */
+export function currentFootprintCopyV2SavedSqlSource(plan: CurrentFootprintCopyV2SavedProjection): Readonly<{
+  source: CurrentFootprintCopyV2SqlSource; before: Awaited<ReturnType<typeof readExactSqlInventory>>; after: Awaited<ReturnType<typeof readExactSqlInventory>>;
+}> {
+  const held = original(plan); return Object.freeze({ source: held.source, before: currentFootprintCopyV2Before(held.source.copyPlan), after: held.after });
 }
 /** Original SQL relationship only. This does not issue a reopened owner. */
 export function currentFootprintCopyV2SavedTarget(plan: CurrentFootprintCopyV2SavedProjection): Readonly<{

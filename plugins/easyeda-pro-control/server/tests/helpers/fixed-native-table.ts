@@ -1,5 +1,6 @@
 /** Independent decoding of the exact shared native table call. No inline
  * decoder fallback, app assets or native application execution is permitted. */
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -40,7 +41,7 @@ export async function decodeFixedNativeTable(source: string, expectedRows: numbe
   assert.match(shared, /rows<1\|\|rows>256\|\|columns<1\|\|columns>8/u);
   assert.match(shared, /EasyedaDiagnosticOwner\.UnpackFixedProgram\(encoded,length,hash,packedHash\)\.Split\('\\0'\)/u);
   assert.match(shared, /text\.Length!=rows/u); assert.match(shared, /result\[i\]\.Length!=columns/u);
-  const helper = await readFile(new URL("../../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const helper = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   assert.ok(helper.includes(shared));
   const start = helper.indexOf("  internal static string UnpackFixedProgram("); assert.notEqual(start, -1);
   const end = helper.indexOf("  static void ExpectPackedProgramRefusal", start); assert.ok(end > start);
