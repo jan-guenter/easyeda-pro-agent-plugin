@@ -1,3 +1,5 @@
+import type { CurrentSchematicRelevancePrimitiveCommand } from "./current-schematic-relevance-primitive-protocol.ts";
+import type { CurrentSchematicRelevancePrimitivePrepared, CurrentSchematicRelevancePrimitiveRecordHeld } from "./current-schematic-relevance-primitive-cursor.ts";
 import type { CurrentSchematicRelevanceUiPublicationCommand } from "./current-schematic-relevance-ui-publication-protocol.ts";
 import type { CurrentSchematicRelevanceUiPublicationReceipt } from "./current-schematic-relevance-ui-publication-cursor.ts";
 /** Original callback entry custody. This read lane cannot continue a setter. */
@@ -23,6 +25,13 @@ export interface CurrentSchematicRelevanceActionCallbackBindings {
   readonly requestSetAttribute: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand) => Promise<unknown>;
   readonly nextActiveHistoryCommand: () => CurrentSchematicRelevanceDisplayModifyEntryCommand | null;
   readonly requestActiveHistory: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand) => Promise<unknown>;
+  readonly nextPrimitiveBeforeCommand: () => CurrentSchematicRelevancePrimitiveCommand | null;
+  readonly requestPrimitiveBefore: (command: CurrentSchematicRelevancePrimitiveCommand) => Promise<unknown>;
+  readonly requireOriginalPrimitivePrepared: () => CurrentSchematicRelevancePrimitivePrepared;
+  readonly continueToRecord: () => Promise<void>;
+  readonly nextPrimitiveRecordCommand: () => CurrentSchematicRelevancePrimitiveCommand | null;
+  readonly requestPrimitiveRecord: (command: CurrentSchematicRelevancePrimitiveCommand) => Promise<unknown>;
+  readonly requireOriginalPrimitiveRecordHeld: () => CurrentSchematicRelevancePrimitiveRecordHeld;
   readonly nextUiPublicationCommand: () => CurrentSchematicRelevanceUiPublicationCommand | null;
   readonly requestUiPublication: (command: CurrentSchematicRelevanceUiPublicationCommand) => Promise<unknown>;
   readonly requireOriginalUiPublication: () => CurrentSchematicRelevanceUiPublicationReceipt;

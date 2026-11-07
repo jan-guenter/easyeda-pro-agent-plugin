@@ -1,6 +1,9 @@
+/* oxlint-disable import/max-dependencies -- The original callback facade binds independently fixed read and partial-continuation cursors to one genuine owner and event lane. */
+import type { CurrentSchematicRelevancePrimitivePrepared, CurrentSchematicRelevancePrimitiveRecordHeld } from "./current-schematic-relevance-primitive-cursor.ts";
 import type { CurrentSchematicRelevanceUiPublicationReceipt } from "./current-schematic-relevance-ui-publication-cursor.ts";
 /** Maintained original callback entry collector. Every read remains bound to
- * the original held callback and pending Modify; it has no resume method. */
+ * the original held callback and pending Modify; each finite continuation ends at
+ * its next separately held original body. */
 import { requireOriginalCurrentSchematicRelevanceActionCallbackOrigin } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentSchematicRelevanceDisplayWriteOwner } from "./current-schematic-relevance-display-write-owner.ts";
 import type { GeneratedSchematicRelevanceDisplayNativeArguments } from "./generated-schematic-relevance-display-source.ts";
@@ -57,6 +60,20 @@ export class CurrentSchematicRelevanceActionCallbackObserver {
   public async observeActiveHistory(): Promise<CurrentSchematicRelevanceActiveHistoryReceipt> {
     this.#current(); need(!this.#busy && this.#setAttribute !== null && !this.#activeAttempted); this.#activeAttempted = true; this.#busy = true;
     try { need(this.#setAttribute === this.#bindings.requireOriginalSetAttribute()); await this.#bindings.assertCurrent(); this.#current(); for (let command = this.#bindings.nextActiveHistoryCommand(); command !== null; command = this.#bindings.nextActiveHistoryCommand()) { await this.#bindings.requestActiveHistory(command); this.#current(); } this.#active = this.#bindings.requireOriginalActiveHistory(); await this.#bindings.assertCurrent(); this.#current(); need(this.#active === this.#bindings.requireOriginalActiveHistory()); return this.#active; }
+    catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
+  }
+  public async prepareOriginalPrimitive(): Promise<CurrentSchematicRelevancePrimitivePrepared> {
+    this.#current(); if (this.#busy) { throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY"); } this.#busy = true;
+    try { for (;;) { const command = this.#bindings.nextPrimitiveBeforeCommand(); if (command === null) { break; } await this.#bindings.requestPrimitiveBefore(command); this.#current(); } return this.#bindings.requireOriginalPrimitivePrepared(); }
+    catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
+  }
+  public async continueOriginalPrimitiveToRecord(): Promise<void> {
+    this.#current(); if (this.#busy) { throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY"); } this.#busy = true;
+    try { await this.#bindings.continueToRecord(); this.#current(); } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
+  }
+  public async observeOriginalPrimitiveRecord(): Promise<CurrentSchematicRelevancePrimitiveRecordHeld> {
+    this.#current(); if (this.#busy) { throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY"); } this.#busy = true;
+    try { for (;;) { const command = this.#bindings.nextPrimitiveRecordCommand(); if (command === null) { break; } await this.#bindings.requestPrimitiveRecord(command); this.#current(); } return this.#bindings.requireOriginalPrimitiveRecordHeld(); }
     catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
   }
   public async observeUiPublicationPristine(): Promise<CurrentSchematicRelevanceUiPublicationReceipt> {

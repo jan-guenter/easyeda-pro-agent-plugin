@@ -20,6 +20,7 @@ export type CurrentSchematicRelevanceActionCallbackRole = "entry" | "setter" | "
 export interface CurrentSchematicRelevanceActionCallbackHeld { readonly event: DiagnosticEvent; readonly role: CurrentSchematicRelevanceActionCallbackRole; readonly callFrameId: string }
 export interface CurrentSchematicRelevanceActionEntryResume { readonly original: CurrentSchematicRelevanceActionCallbackHeld }
 export interface CurrentSchematicRelevanceActionSetterResume { readonly original: CurrentSchematicRelevanceActionCallbackHeld }
+export interface CurrentSchematicRelevanceActionPrimitiveResume { readonly original: CurrentSchematicRelevanceActionCallbackHeld }
 export interface CurrentSchematicRelevanceActionCallbackHost {
   readonly sessionId: string; readonly callbackScriptId: string; readonly sourceScriptId: string; readonly variant: 0 | 1; readonly functions: Pick<CurrentSchematicRelevanceDisplayAccessorFunctions, "setAttributeObjectId" | "recordObjectId" | "astObjectId" | "normalRequests">;
   readonly request: (command: Command) => Promise<unknown>; readonly assertCurrent: () => void; readonly fail: () => void;
@@ -30,10 +31,12 @@ export class CurrentSchematicRelevanceActionCallbackController {
   readonly #points = new Map<string, typeof roles[number]>(); readonly #entry = Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld | null>();
   readonly #setter = Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld | null>();
   readonly #setAttribute = Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld | null>();
+  readonly #record = Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld | null>(); readonly #primitiveResumedSignal = Promise.withResolvers<boolean>();
   readonly #setterResumedSignal = Promise.withResolvers<boolean>();
   readonly #resumed = Promise.withResolvers<boolean>();
   #attempted = false; #armed = false; #failed = false; #entryResumed = false; #entryResumeAttempted = false; #entryResumeCompleted = false; #entryResumeSubmitted = false; #reservation: CurrentSchematicRelevanceActionEntryResume | null = null; #held: CurrentSchematicRelevanceActionCallbackHeld | null = null;
   #setterResumed = false; #setterResumeAttempted = false; #setterResumeCompleted = false; #setterResumeSubmitted = false; #setterReservation: CurrentSchematicRelevanceActionSetterResume | null = null;
+  #recordObserved = false; #primitiveResumeAttempted = false; #primitiveResumeSubmitted = false; #primitiveResumed = false; #primitiveResumeCompleted = false; #primitiveReservation: CurrentSchematicRelevanceActionPrimitiveResume | null = null;
   public constructor(host: CurrentSchematicRelevanceActionCallbackHost) { this.#host = host; handle.parse(host.sessionId); handle.parse(host.callbackScriptId); handle.parse(host.sourceScriptId); Object.freeze(this); }
   public async arm(): Promise<void> {
     need(!this.#attempted && !this.#failed); this.#attempted = true;
@@ -62,6 +65,10 @@ export class CurrentSchematicRelevanceActionCallbackController {
   public observeOriginalEvent(event: DiagnosticEvent): boolean {
     if (event.sessionId !== this.#host.sessionId) { return false; }
     if (event.method === "Debugger.resumed") {
+      if (this.#primitiveReservation !== null) {
+        try { this.#host.assertCurrent(); need(!this.#failed && this.#primitiveResumeSubmitted && !this.#primitiveResumed && this.#held === this.#primitiveReservation.original && Reflect.ownKeys(event.params).length === 0); this.#held = null; this.#primitiveResumed = true; this.#primitiveResumedSignal.resolve(true); }
+        catch { this.fail(); } return true;
+      }
       if (this.#setterReservation !== null) {
         try { this.#host.assertCurrent(); need(!this.#failed && this.#setterResumeSubmitted && !this.#setterResumed && this.#held === this.#setterReservation.original && Reflect.ownKeys(event.params).length === 0); this.#held = null; this.#setterResumed = true; this.#setterResumedSignal.resolve(true); }
         catch { this.fail(); } return true;
@@ -76,6 +83,7 @@ export class CurrentSchematicRelevanceActionCallbackController {
       const frames = event.params["callFrames"]; need(Array.isArray(frames)); const first = frame.parse(frames[0]); const held = Object.freeze({ event, role, callFrameId: first.callFrameId }); this.#held = held;
       if (role === "entry") { need(!this.#entryResumeAttempted); this.#entry.resolve(held); }
       else if (role === "setter") { need(this.#entryResumeAttempted && this.#entryResumed && !this.#setterResumeAttempted); this.#setter.resolve(held); }
+      else if (role === "record") { need(this.#primitiveResumeAttempted && this.#primitiveResumed && !this.#recordObserved); this.#recordObserved = true; this.#record.resolve(held); }
       else { need(role === "setAttribute" && this.#entryResumeCompleted && this.#setterResumeAttempted && this.#setterResumed); this.#setAttribute.resolve(held); }
       return true;
     } catch { this.fail(); return true; }
@@ -95,6 +103,12 @@ export class CurrentSchematicRelevanceActionCallbackController {
   public async waitSetterResumed(token: CurrentSchematicRelevanceActionSetterResume): Promise<void> { this.requireSetterResume(token); const seen = await this.#setterResumedSignal.promise; this.requireSetterResume(token); need(seen && this.#setterResumed); }
   public completeSetterResume(token: CurrentSchematicRelevanceActionSetterResume): void { this.requireSetterResume(token); need(this.#setterResumed && !this.#setterResumeCompleted); this.#setterResumeCompleted = true; this.#setterReservation = null; }
   public async waitOriginalSetAttribute(): Promise<CurrentSchematicRelevanceActionCallbackHeld> { const held = await this.#setAttribute.promise; need(held !== null && this.#setterResumeCompleted); this.requireHeld(held); return held; }
+  public reservePrimitiveResume(held: CurrentSchematicRelevanceActionCallbackHeld): CurrentSchematicRelevanceActionPrimitiveResume { this.requireHeld(held); need(held.role === "setAttribute" && this.#setterResumeCompleted && !this.#primitiveResumeAttempted && this.#primitiveReservation === null); this.#primitiveResumeAttempted = true; const token = Object.freeze({ original: held }); this.#primitiveReservation = token; return token; }
+  public requirePrimitiveResume(token: CurrentSchematicRelevanceActionPrimitiveResume): void { need(!this.#failed && this.#primitiveReservation === token); this.#host.assertCurrent(); }
+  public markPrimitiveResumeSubmitted(token: CurrentSchematicRelevanceActionPrimitiveResume): void { this.requirePrimitiveResume(token); need(!this.#primitiveResumeSubmitted && this.#held === token.original); this.#primitiveResumeSubmitted = true; }
+  public async waitPrimitiveResumed(token: CurrentSchematicRelevanceActionPrimitiveResume): Promise<void> { this.requirePrimitiveResume(token); const seen = await this.#primitiveResumedSignal.promise; this.requirePrimitiveResume(token); need(seen && this.#primitiveResumed); }
+  public completePrimitiveResume(token: CurrentSchematicRelevanceActionPrimitiveResume): void { this.requirePrimitiveResume(token); need(this.#primitiveResumed && !this.#primitiveResumeCompleted); this.#primitiveResumeCompleted = true; this.#primitiveReservation = null; }
+  public async waitOriginalRecord(): Promise<CurrentSchematicRelevanceActionCallbackHeld> { const held = await this.#record.promise; need(held !== null && this.#primitiveResumeCompleted); this.requireHeld(held); return held; }
   public requireHeld(held: CurrentSchematicRelevanceActionCallbackHeld): void { this.#host.assertCurrent(); need(!this.#failed && this.#held === held && held.event.sessionId === this.#host.sessionId); }
-  public fail(): void { if (!this.#failed) { this.#failed = true; this.#entry.resolve(null); this.#setter.resolve(null); this.#setAttribute.resolve(null); this.#resumed.resolve(false); this.#setterResumedSignal.resolve(false); this.#host.fail(); } }
+  public fail(): void { if (!this.#failed) { this.#failed = true; this.#entry.resolve(null); this.#setter.resolve(null); this.#setAttribute.resolve(null); this.#resumed.resolve(false); this.#setterResumedSignal.resolve(false); this.#record.resolve(null); this.#primitiveResumedSignal.resolve(false); this.#host.fail(); } }
 }
