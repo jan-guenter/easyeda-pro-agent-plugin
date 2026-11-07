@@ -55,7 +55,8 @@ export function applyCurrentSchematicRelevanceDisplayModifyEntryNativeFragment(i
   const readyAction = 'case "schematic-relevance-display-callback-entry-ready":';
   if (!source.includes(readyAction)) { if (source.split(callbackAction).length !== 2) { throw new Error("SCHEMATIC_CALLBACK_READY_ADMISSION_ANCHOR"); } source = source.replace(callbackAction, `${readyAction}${callbackAction}`); }
   else if (source.split(readyAction).length !== 2) { throw new Error("SCHEMATIC_CALLBACK_READY_ADMISSION_DUPLICATE"); }
-  source = installOwnedNativeDispatch(source, dispatch, "        'schematic-relevance-display-producer-prefix-enroll' {");
+  // Keep the separately owned action block intact on a second complete pass.
+  source = installOwnedNativeDispatch(source, dispatch, "        'schematic-relevance-display-accessor-complete' {");
   source = installOwnedNativeDispatch(source, callbackDispatch, "        'schematic-relevance-display-modify-bind' {");
   source = installOwnedNativeDispatch(source, entryReadyDispatch, "        'schematic-relevance-display-callback-bind' {");
   source = installNativeCompileOnlyHook(source, "    [EasyedaSchematicRelevanceDisplayModifyEntryProtocol]::VerifySmoke()", "    [EasyedaDiagnosticOwner]::VerifySchematicActionGuardSmoke()");

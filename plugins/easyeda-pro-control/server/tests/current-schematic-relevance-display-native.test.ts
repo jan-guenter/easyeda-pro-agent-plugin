@@ -12,6 +12,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { gunzipSync } from "node:zlib";
 import { generateSchematicEditNativeSource } from "../../scripts/schematic-edit-native-source.ts";
+import { generateWorkerStartupProtocol } from "../../scripts/generate-worker-startup-protocol.ts";
 import { CURRENT_NATIVE_BASELINE } from "../../scripts/native-baseline-source.ts";
 import { currentPcbDiagnosticCSharpReviewSource, currentPcbDiagnosticCSharpRuntimeCompilerInput, expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES as MAXIMUM } from "../src/current-pcb-diagnostic-helper-source-profile.ts";
@@ -83,6 +84,15 @@ void test("combined seven-record native source is idempotent, bounded and retain
     assert.equal(raw.length, Number(length)); assert.equal(raw.toString("utf8"), expected[name]);
     assert.equal(createHash("sha256").update(raw).digest("hex"), rawHash); assert.equal(createHash("sha256").update(compressed).digest("hex"), packedHash);
   }
+});
+
+void test("reapplying the complete schematic source compiler preserves independently owned dispatch blocks", async () => {
+  const seed = await readFile(new URL(`../../${CURRENT_NATIVE_BASELINE.relativePath}`, import.meta.url), "utf8");
+  const first = generateWorkerStartupProtocol(seed, "schematic");
+  assert.equal(generateWorkerStartupProtocol(first, "schematic"), first);
+  const changed = first.replace("$owner.CompleteRelevanceDisplayAccessor();", "$owner.CompleteForeignAccessor();");
+  assert.notEqual(changed, first);
+  assert.throws(() => generateWorkerStartupProtocol(changed, "schematic"), /NATIVE_OWNED_DISPATCH_CHANGED/u);
 });
 
 void test("seven-record metadata and guards retain separate native verbs and reject the old marker", () => {
