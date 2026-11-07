@@ -19,6 +19,7 @@ import type { CurrentPcbViaSavedReadbackClosedProof } from "./current-pcb-via-sa
 
 import { assertOriginalCurrentPcbViaWriteJournal } from "./current-pcb-via-write-journal.ts";
 import type { CurrentPcbViaWriteJournal } from "./current-pcb-via-write-journal.ts";
+import type { CurrentPcbViaWriteResult } from "./current-pcb-via-write-contract.ts";
 
 const attempts = new WeakSet<CurrentPcbViaWriteClosedCheckpoint>();
 const EXIT = Object.freeze({ observations: 40, delayMilliseconds: 250 });
@@ -47,7 +48,7 @@ export class CurrentPcbViaSavedReadbackWorkflow {
     const original = requireOriginalCurrentPcbViaWriteClosedCheckpoint(prepared);
     if (journal !== null) { assertOriginalCurrentPcbViaWriteJournal(journal, original.plan); } captureCurrentPcbStringClockReply(options);
     if (attempts.has(prepared) || !Object.isFrozen(options)) { throw new Error("SAVED_WORKFLOW_ORIGINAL_PREPARATION"); }
-    attempts.add(prepared); this.#options = options; this.#prepared = prepared; this.#journal = journal;
+    attempts.add(prepared); this.#options = options; this.#prepared = prepared; this.#journal = journal; Object.freeze(this);
   }
   public inspect(): Readonly<Record<string, unknown>> {
     return Object.freeze({ schema: "private.current-pcb-via-saved-readback-workflow-status.v1", operationId: this.#prepared.operationId,
@@ -56,6 +57,29 @@ export class CurrentPcbViaSavedReadbackWorkflow {
       allocation: currentPcbViaSavedReadbackAllocationOutcome(this.#prepared).state,
       owner: this.#owner?.status() ?? null, capture: this.#capture?.status() ?? null,
       persistenceVerified: this.#result !== null, reopenedVerified: this.#result !== null, executionAuthorized: false });
+  }
+  /** Typed historical status for the outer operation envelope. It cannot
+   * replace original closure, cleanup or persistence proofs. File-capture
+   * cleanup remains distinct from application/helper allocation cleanup. */
+  public cleanupStatus(): Readonly<{ native: CurrentPcbViaWriteResult["cleanup"]; captureReleasePending: boolean; originalCallsPending: boolean }> {
+    requireOriginalCurrentPcbViaWriteClosedCheckpoint(this.#prepared);
+    const original = currentPcbViaSavedReadbackAllocationOutcome(this.#prepared), owner = this.#owner ?? original.owner;
+    if (owner !== null) {
+      assertOriginalCurrentPcbViaSavedReadbackOwner(owner);
+      if (originalCurrentPcbViaSavedReadbackTarget(owner) !== this.#prepared) { throw new Error("SAVED_WORKFLOW_STATUS_ORIGINAL_OWNER"); }
+    }
+    const state = owner?.status(); const released = state?.released === true && state.helperClosed;
+    let allocation: CurrentPcbViaWriteResult["cleanup"]["allocation"] = "unresolved";
+    if (released) { allocation = "released"; }
+    else if (owner !== null) { allocation = "retained"; }
+    else if (original.state === "not-attempted") { allocation = "not-entered"; }
+    else if (original.state === "no-resource") { allocation = "no-resource"; }
+    return Object.freeze({ native: Object.freeze({ generation: "readback", allocation,
+      nativeResourcesRetained: allocation === "retained" || allocation === "unresolved", abortAttempted: this.#abort !== null,
+      originalTerminationVerified: this.#closed, helperReleaseVerified: released,
+      publicationPending: this.#publication !== null || this.#journal?.retained().publicationPending === true }),
+      captureReleasePending: this.#capture !== null && !this.#capture.isReleaseAcknowledged(),
+      originalCallsPending: this.#pending !== null || this.#factory !== null && !this.#factorySettled });
   }
   #current(owner: CurrentPcbViaSavedReadbackOwner, cleanup = false): void {
     assertOriginalCurrentPcbViaSavedReadbackOwner(owner);

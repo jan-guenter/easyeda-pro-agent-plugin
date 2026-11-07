@@ -92,9 +92,12 @@ async function fixture(mode: "complete" | "pending-cache" | "pending-launch" | "
   return { workflow, calls, journalRecords, repairJournal: (): void => { repaired = true; }, entered: entered.promise, continueLaunch: (): void => { blocked.resolve(true); }, requireResult: (result): unknown => Reflect.apply(lookup, undefined, [result, workflow]) };
 }
 void test("complete saved coordinator retains one execution and releases only after original model/closure/fullclosed proof", async () => {
-  const f = await fixture(); const execution = f.workflow.execute(); assert.equal(f.workflow.execute(), execution); const result = await execution;
+  const f = await fixture(); assert.equal(Object.isFrozen(f.workflow), true); assert.equal(f.workflow.cleanupStatus().native.allocation, "not-entered");
+  const execution = f.workflow.execute(); assert.equal(f.workflow.execute(), execution); const result = await execution;
   assert.equal(result.reopenedVerified, true); assert.equal(f.workflow.inspect()["cleanupComplete"], true); assert.equal(f.requireResult(result), result);
   assert.throws(() => f.requireResult({ ...result })); assert.equal(f.workflow.execute(), execution);
+  assert.deepEqual(f.workflow.cleanupStatus(), { native: { generation: "readback", allocation: "released", nativeResourcesRetained: false,
+    abortAttempted: false, originalTerminationVerified: true, helperReleaseVerified: true, publicationPending: false }, captureReleasePending: false, originalCallsPending: false });
   assert.deepEqual(f.calls, ["factory", "launch", "main", "browser", "frames", "ui", "cache-origin", "cache-observe", "backup", "invalidate", "load-prepare", "load-arm", "load-source-original", "registration-intent", "registration", "project", "pcb", "pcb-source", "dto", "scene", "model", "window", "normal-close", "termination", "release", "capture-constructor", "capture", "fd-release"]);
 });
 void test("journaled reader publishes each intent before its original effect and releases before fresh fullSQL capture", async () => {
@@ -116,6 +119,7 @@ void test("lost original descriptor-close acknowledgement cannot report cleanup 
   const f = await fixture("fd-close", "complete"); await assert.rejects(f.workflow.execute(), /FD close acknowledgement unknown/u);
   assert.equal(f.calls.filter(value => value === "release").length, 1); assert.equal(f.calls.filter(value => value === "fd-release").length, 1);
   assert.equal(f.workflow.inspect()["cleanupComplete"], false); assert.equal(f.workflow.inspect()["reopenedVerified"], false);
+  const cleanup = f.workflow.cleanupStatus(); assert.equal(cleanup.native.helperReleaseVerified, true); assert.equal(cleanup.captureReleasePending, true);
   assert.equal(f.journalRecords.includes("reopened-sql-result"), false); assert.equal(f.journalRecords.includes("failure"), true);
   await assert.rejects(f.workflow.settleCleanup(), /FD close acknowledgement unknown/u);
   assert.equal(f.calls.filter(value => value === "fd-release").length, 1);
