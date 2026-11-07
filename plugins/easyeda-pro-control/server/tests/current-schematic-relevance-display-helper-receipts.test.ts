@@ -10,8 +10,8 @@ void test("a source receipt joins original command, actual script and original r
   cursor.register(c); cursor.observe(e, 7, "project");
   await cursor.verify(c, raw, id => { reads += 1; assert.equal(id, "helper"); return Promise.resolve({ scriptSource: `(${CURRENT_PROJECT_LIBRARY_REFRESH_PROGRAMS.capture})` }); });
   await cursor.requireVerified(e); assert.equal(reads, 1);
-  await assert.rejects(cursor.verify({ ...c }, raw, () => { throw new Error("not reached"); }));
-  await assert.rejects(cursor.verify(c, raw, () => { throw new Error("not reached"); })); assert.equal(reads, 1);
+  assert.throws(()=>cursor.verify({ ...c }, raw, () => { throw new Error("not reached"); }));
+  assert.throws(()=>cursor.verify(c, raw, () => { throw new Error("not reached"); })); assert.equal(reads, 1);
 });
 void test("missing or foreign original source refuses without a receipt or another native read", async () => {
   const missing = new CurrentSchematicRelevanceDisplayHelperReceipts(); const c = command(); missing.register(c); let reads = 0;
@@ -26,4 +26,12 @@ void test("getter and proxy source substitutions are rejected without invoking a
     const raw = kind === "getter" ? Object.defineProperty({}, "scriptSource", { get: (): string => { hooks += 1; return ""; } }) : new Proxy({}, { ownKeys: (): string[] => { hooks += 1; return []; } });
     await assert.rejects(cursor.verify(c, {}, () => Promise.resolve(raw))); assert.equal(hooks, 0);
   }
+});
+
+void test("overlapping original receipts retain their own readers and serialize a held source read", async () => {
+  const cursor=new CurrentSchematicRelevanceDisplayHelperReceipts();const first=command();const second=command();const gate=Promise.withResolvers<unknown>();const started=Promise.withResolvers<true>();const seen:string[]=[];
+  cursor.register(first);cursor.register(second);cursor.observe(event("first"),7,"project");cursor.observe(event("second"),7,"project");
+  const one=cursor.verify(first,{result:1},id=>{seen.push(id);started.resolve(true);return gate.promise;});await started.promise;
+  const two=cursor.verify(second,{result:2},id=>{seen.push(id);return Promise.resolve({scriptSource:`(${CURRENT_PROJECT_LIBRARY_REFRESH_PROGRAMS.capture})`});});
+  await Promise.resolve();assert.deepEqual(seen,["first"]);gate.resolve({scriptSource:`(${CURRENT_PROJECT_LIBRARY_REFRESH_PROGRAMS.capture})`});await Promise.all([one,two]);assert.deepEqual(seen,["first","second"]);
 });
