@@ -26,7 +26,7 @@ export interface CurrentSchematicRelevanceDisplayAccessorObservation {
   readonly activeActionHistoryCallbackQualified: false; readonly completeActionFrontierQualified: false; readonly executionAuthorized: false; readonly selectedSqlAuthorized: false; readonly persistenceVerified: false;
 }
 export interface CurrentSchematicRelevanceDisplayUnderlineFunctions { readonly getObjectId: string; readonly setObjectId: string; readonly rawDescriptorObjectId: string; readonly rawGetObjectId: string; readonly rawSetObjectId: string; readonly decoratorObjectId: string; readonly decoratorSetterObjectId: string; readonly decoratorAccessorObjectId: string }
-export interface CurrentSchematicRelevanceDisplayAccessorFunctions { readonly setAttributeObjectId: string; readonly recordObjectId: string; readonly astObjectId: string; readonly normalRequests: number; readonly underline: CurrentSchematicRelevanceDisplayUnderlineFunctions }
+export interface CurrentSchematicRelevanceDisplayAccessorFunctions { readonly setAttributeObjectId: string; readonly recordObjectId: string; readonly astObjectId: string; readonly normalRequests: number; readonly positionGetters: Readonly<Record<"x" | "y" | "rotation" | "hAlign" | "vAlign", string>>; readonly underline: CurrentSchematicRelevanceDisplayUnderlineFunctions }
 const packets = new WeakMap<object, CurrentSchematicRelevanceDisplayAccessorObserver>();
 export function requireOriginalCurrentSchematicRelevanceDisplayAccessorObservation(packet: unknown, origin: CurrentSchematicRelevanceDisplayAccessorOrigin, owner: CurrentSchematicRelevanceDisplayWriteOwner, args: GeneratedSchematicRelevanceDisplayNativeArguments): CurrentSchematicRelevanceDisplayAccessorFunctions {
   need(packet !== null && typeof packet === "object", "ORIGINAL_METADATA_PACKET"); const observer = packets.get(packet); need(observer !== undefined, "ORIGINAL_METADATA_PACKET"); return observer.requireFunctions(packet, origin, owner, args);
@@ -103,7 +103,7 @@ export class CurrentSchematicRelevanceDisplayAccessorObserver {
       this.#packet = freezeDeep({ schema: "private.current-schematic-relevance-display-accessor-observation.v2", sourceSha256: SOURCES[this.#source].sha256, fields: 10, originalHolderCalleesObserved: true,
         exactRawAndDecoratedSettersObserved: true, watchedMonitorAndAstFunctionMetadataObserved: true, originalMonitorReceiversQualified: false, activeActionHistoryCallbackQualified: false, completeActionFrontierQualified: false, executionAuthorized: false, selectedSqlAuthorized: false, persistenceVerified: false });
       need(underline !== null, "ORIGINAL_UNDERLINE_FUNCTIONS_REQUIRED");
-      this.#functions = Object.freeze({ underline, setAttributeObjectId: callees.monitorSetAttribute.objectId, recordObjectId: callees.monitorRecord.objectId, astObjectId: ast.objectId, normalRequests: this.#normal });
+      this.#functions = Object.freeze({ underline, positionGetters: Object.freeze({ x: callees["x.get"].objectId, y: callees["y.get"].objectId, rotation: callees["rotation.get"].objectId, hAlign: callees["hAlign.get"].objectId, vAlign: callees["vAlign.get"].objectId }), setAttributeObjectId: callees.monitorSetAttribute.objectId, recordObjectId: callees.monitorRecord.objectId, astObjectId: ast.objectId, normalRequests: this.#normal });
       packets.set(this.#packet, this); this.#phase = "observed"; return this.#packet;
     } catch (error) { this.#failure(); throw error; } finally { this.#busy = false; }
   }
