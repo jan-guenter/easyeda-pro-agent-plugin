@@ -1,4 +1,5 @@
 /* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
+import { applyPcb209SpatialNativeSource } from "./pcb209-spatial-native-source.ts";
 import { CURRENT_NATIVE_BASELINE, assertCurrentNativeBaseline } from "./native-baseline-source.ts";
 import { sharedNativeIdentitySource, sharedNativeSmokeSource } from "./shared-native-identity-source.ts";
 import { applyCurrentSchematicRelevanceDisplaySaveDrainNativeFragment } from "../server/src/current-schematic-relevance-display-save-drain-native-fragment.ts";
@@ -144,17 +145,19 @@ async function main(): Promise<void> {
   else if (next !== source || await readFile(reviewPath, "utf8") !== compilerInput || await readFile(identityPath, "utf8") !== identity || smoke !== nextSmoke) { throw new Error("Generated native startup protocol, review copy or independent pins differ"); }
 }
 /** Pure complete composition, used by repeated-generation regressions without writing a helper. */
-export function generateWorkerStartupProtocol(source: string, layout: "legacy" | "schematic" = "legacy"): string {
-  if (layout !== "legacy" && layout !== "schematic") { throw new Error("NATIVE_BUILD_LAYOUT"); }
+export function generateWorkerStartupProtocol(source: string, layout: "diagnostic" | "inverse" | "schematic" = "diagnostic"): string {
+  if (layout !== "diagnostic" && layout !== "inverse" && layout !== "schematic") { throw new Error("NATIVE_BUILD_LAYOUT"); }
   const original = normalizeCurrentSchematicWireEditNativeFamily(expandCurrentPcbDiagnosticCSharpReviewSource(source));
-  const normalized = normalizeCurrentSchematicRelevanceDisplayNativeFamily(original);
+  const spatial = layout === "diagnostic" ? applyPcb209SpatialNativeSource(original) : original;
+  const normalized = normalizeCurrentSchematicRelevanceDisplayNativeFamily(spatial);
   // Cold generation starts from the exact published shared source, before any
   // Of the new fixture/Via/schematic switches or types exist. Each fixed
   // Fragment remains idempotent when reprocessing its own generated artifact.
   const structured = applyManagedFixtureRegistrationNativeFragment(applyCurrentProjectStructureNativeFragment(normalized));
   const initialized = applyCurrentSchematicDisplayWriteNativeFragment(applyCurrentPcbViaWriteNativeFragment(structured));
   const literal = layout === "schematic" ? prepareCurrentSchematicWireEditNativeSwitch(prepareCurrentSchematicRelevanceDisplayNativeSwitch(initialized)) : initialized;
-  let next = prepareCurrentPcbViaSavedReadbackNativeSwitch(prepareCurrentPcbComponentSpatialNativeSwitch(prepareCurrentFootprintInverseNativeSwitch(literal)));
+  let next = prepareCurrentPcbViaSavedReadbackNativeSwitch(prepareCurrentPcbComponentSpatialNativeSwitch(literal));
+  if (layout === "inverse") { next = prepareCurrentFootprintInverseNativeSwitch(next); }
   for (const [name, generated] of [["WORKER STARTUP", currentPcbWorkerStartupNativeSource()],
     ["WORKER STARTUP EMPTY209", currentPcb209EmptyNativeSource()],
     ["WORKER STARTUP RATLINE209", ratlineSource()],
@@ -188,9 +191,9 @@ export function generateWorkerStartupProtocol(source: string, layout: "legacy" |
   next = applyCurrentPcbViaPostHistorySyncNativeFragment(next);
   next = applyCurrentPcbViaSaveDrainNativeFragment(next);
   next = applyCurrentPcbViaObservedSourceNativeFragment(next);
-  if (layout === "legacy") { next = applyCurrentPcbComponentSpatialNativeFragment(next); }
-  if (layout === "legacy") { next = applyCurrentPcbViaSavedReadbackNativeFragment(next); }
-  if (layout === "legacy") { next = applyCurrentFootprintInverseNativeFragment(next); }
+  if (layout !== "schematic") { next = applyCurrentPcbComponentSpatialNativeFragment(next); }
+  if (layout !== "schematic") { next = applyCurrentPcbViaSavedReadbackNativeFragment(next); }
+  if (layout === "inverse") { next = applyCurrentFootprintInverseNativeFragment(next); }
   if (layout === "schematic") {
     next = applyCurrentSchematicRelevanceDisplayWriteNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplayActionNativeFragment(next);

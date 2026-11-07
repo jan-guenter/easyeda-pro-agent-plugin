@@ -65,6 +65,7 @@ import { currentFootprintInverseClockWorkerCallees,currentFootprintInverseClockW
 import type { CurrentFootprintInverseClockWorkerCommand } from "./current-footprint-inverse-clock-worker-protocol.ts";
 import type { CurrentFootprintInverseClockWorkerBindings,CurrentFootprintInverseClockWorkerOrigin } from "./current-footprint-inverse-clock-worker-origin.ts";
 import type { CurrentFootprintInverseClockWorker,CurrentFootprintInverseClockWorkerObserver } from "./current-footprint-inverse-clock-worker-observer.ts";
+import { captureCurrentFootprintInverseNativeHelper } from "./current-footprint-inverse-native-helper.ts";
 import { captureCurrentSchematicEditNativeHelper } from "./current-schematic-edit-native-helper.ts";
 import { CURRENT_PCB_DIAGNOSTIC_HELPER_BYTES as HELPER_BYTES, CURRENT_PCB_DIAGNOSTIC_HELPER_SHA256 as HELPER_SHA256 } from "./current-pcb-diagnostic-helper-identity.ts";
 import { currentFootprintInversePublicApiCallees,currentFootprintInversePublicApiFunction,currentFootprintInversePublicApiInitial,currentFootprintInversePublicApiKey,currentFootprintInversePublicApiNativeFrame,currentFootprintInversePublicApiObject,currentFootprintInversePublicApiOrder,currentFootprintInversePublicApiProgram,currentFootprintInversePublicApiScope,currentFootprintInversePublicApiScript,qualifyCurrentFootprintInversePublicApiHelper,validateCurrentFootprintInversePublicApiCommand } from "./current-footprint-inverse-public-api-protocol.ts";
@@ -13983,9 +13984,11 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   const actorClockSource = startup209 ? await qualifyCurrentPcb209StartupActorInstallation(sealedOptions) : null;
   if (startup209) { await verifyCurrentPcb209WorkerBootstrapInstallation(sealedOptions); }
   const graphChallenge = purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE ? randomBytes(16).toString("hex") : null;
+  const inverseChallenge = purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE ? randomBytes(16).toString("hex") : null;
   const schematicNativePurpose = purpose === CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE || purpose === CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE;
   let nativeGraph: Awaited<ReturnType<typeof captureCurrentFootprintForwardColdNativeGraph>> | null;
   if (schematicNativePurpose) { nativeGraph = await captureCurrentSchematicEditNativeHelper(sealedOptions.wslDistribution ?? process.env["WSL_DISTRO_NAME"], purpose); }
+  else if (purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && inverseChallenge !== null) { nativeGraph = await captureCurrentFootprintInverseNativeHelper(sealedOptions.wslDistribution ?? process.env["WSL_DISTRO_NAME"], purpose, inverseChallenge); }
   else if (graphChallenge === null) { nativeGraph = null; }
   else { nativeGraph = await captureCurrentFootprintForwardColdNativeGraph(sealedOptions.wslDistribution ?? process.env["WSL_DISTRO_NAME"], graphChallenge); }
   const helperPath = fileURLToPath(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url));
@@ -14012,7 +14015,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   // PowerShell executes exactly the bytes hashed through this retained file.
   // A short encoded bootstrap avoids the Windows command-length limit for the
   // Entire native helper and avoids reopening a pathname after byte admission.
-  const readyChallenge = graphChallenge ?? (bornFootprintTransport(purpose) ? randomBytes(16).toString("hex") : null);
+  const readyChallenge = graphChallenge ?? inverseChallenge ?? (bornFootprintTransport(purpose) ? randomBytes(16).toString("hex") : null);
   let purposeSwitch = "";
   if (purpose === "worker-startup-ratline-continuation209") { purposeSwitch = " -WorkerStartupRatlineContinuation209"; }
   else if (purpose === "worker-startup-ratline209") { purposeSwitch = " -WorkerStartupRatline209"; }

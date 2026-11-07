@@ -71,8 +71,13 @@ void test("complete v2 generation remains idempotent and every released forward/
     assert.equal(runtime.split(marker).length, 2); assert.ok(smoke.includes(marker));
   }
   const stored = pack(shared); const original = expand(stored); assert.ok(Buffer.byteLength(generated) <= MAXIMUM); assert.ok(Buffer.byteLength(compiler(generated)) <= MAXIMUM); assert.ok(Buffer.byteLength(review(generated)) <= REVIEW_MAXIMUM);
+  const baseline = await readFile(new URL("../../scripts/native-baseline/shared-owner.ps1.txt", import.meta.url), "utf8");
+  const packedBaseline = pack(baseline), restoredBaseline = expand(packedBaseline);
   for (const derive of [currentFootprintForwardNativeOutputs, currentFootprintForwardColdNativeOutputs]) {
-    const expected = derive(shared); assert.deepEqual(derive(stored), expected); assert.deepEqual(derive(original), expected); assert.equal(expected.length, 3);
+    // Released forward inputs retain their exact historical source contract.
+    // The new diagnostic-only layout cannot become an inverse/forward input.
+    assert.throws(() => derive(shared)); assert.throws(() => derive(stored)); assert.throws(() => derive(original));
+    const expected = derive(baseline); assert.deepEqual(derive(packedBaseline), expected); assert.deepEqual(derive(restoredBaseline), expected); assert.equal(expected.length, 3);
     for (const output of expected) { assert.equal(await readFile(new URL(`../../${output.relativePath}`, import.meta.url), "utf8"), output.source); }
   }
 });

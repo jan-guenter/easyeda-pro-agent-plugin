@@ -87,8 +87,8 @@ void test("failed inverse source prerequisite clears busy custody before origina
 });
 
 void test("whole native composition is idempotent with original inverse limits and no writer grant", async () => {
-  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
-  const first = generateWorkerStartupProtocol(source); assert.equal(generateWorkerStartupProtocol(first), first);
+  const source = await readFile(new URL("../../scripts/native-baseline/shared-owner.ps1.txt", import.meta.url), "utf8");
+  const first = generateWorkerStartupProtocol(source, "inverse"); assert.equal(generateWorkerStartupProtocol(first, "inverse"), first);
   const expanded=expandCurrentPcbDiagnosticCSharpReviewSource(first);
   assert.equal(first.split("[switch]$FootprintInverse209").length - 1, 1);
   assert.equal(first.split("if ($FootprintInverse209 -and (").length - 1, 1);

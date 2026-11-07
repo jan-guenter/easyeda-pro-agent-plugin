@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 Separate diagnostic and inverse native layouts](2026-11-07-native-diagnostic-inverse-layouts.md)
+
 - [2026-11-07 Initialized Footprint GET function qualification](2026-11-07-initialized-footprint-get-functions.md)
 
 - [2026-11-07 original Save module initialization](2026-11-07-schematic-save-module-initialization.md). Remove the static verification cycle through original factory module retention; no lint or ownership guard is relaxed.

@@ -86,6 +86,14 @@ layout, source fragment, helper path or compiler option. Run both
 `startup:protocol:check` and `schematic:native:check` after changing native
 protocols. Windows CI compiles both schematic purposes without launching an app.
 
+`inverse:native:update` emits the separate `footprint-inverse-native.ps1`, C#
+review copy and exact identity for the original Footprint inverse purpose. Its
+factory binds the readiness challenge before selecting the retained helper.
+The general diagnostic layout includes the complete spatial and Component
+codebooks. Run `inverse:native:check` with the other helper generation checks.
+Both layouts retain the existing source/compiler bounds; runtime callers cannot
+select a layout or supply a helper path.
+
 The combined diagnostic helper stores its fixed C# compiler body as gzip/base64
 in the final PowerShell output. The stored helper and actual runtime compiler
 input each retain the 2 MiB ceiling. Storage introduces no native purpose,
