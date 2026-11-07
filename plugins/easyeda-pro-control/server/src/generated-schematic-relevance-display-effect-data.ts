@@ -23,7 +23,7 @@ function stagePacket(input: unknown, stage: "preflight" | "modify" | "observe"):
   need(result.stage === stage && result.ok && result.originalContextIntact && result.source !== null &&
     (stage === "preflight" ? !result.modifyAttempted && !result.saveAttempted : result.modifyAttempted && result.modifyAcknowledged && !result.saveAttempted), "ORIGINAL_STAGE_STATE"); return result;
 }
-function source(result: GeneratedSchematicRelevanceDisplayStageResult, args: GeneratedSchematicRelevanceDisplayNativeArguments,
+function source(result: Pick<GeneratedSchematicRelevanceDisplayStageResult, "source">, args: GeneratedSchematicRelevanceDisplayNativeArguments,
   expectedText: Readonly<Record<string, unknown>>): readonly Readonly<{ id: string; zIndex: number }>[] {
   need(result.source !== null && result.source.isWellFormed() && Buffer.byteLength(result.source) <= 16_384, "SOURCE_BOUND");
   const [head, ...rows] = parseNativeRecords(result.source), { target, operation } = args;
@@ -66,4 +66,22 @@ export function assertGeneratedSchematicRelevanceDisplaySaveStage(args: Generate
     packet.modifyAttempted && packet.modifyAcknowledged && packet.saveAttempted && packet.saveAcknowledged && packet.savePromiseSettled && packet.windowTabId === effect.windowTabId &&
     effect.operationId === args.operation.operationId && effect.documentUuid === args.target.pageUuid && effect.textId === args.operation.textId, "ORIGINAL_SAVE_STAGE_STATE");
   need(canonicalJson(source(packet, args, args.operation.afterBody)) === canonicalJson(effect.rootIndices), "SAVE_ROOT_INDEX_CHANGED");
+}
+
+/** Readonly comparison for a fresh reader. It deliberately accepts source data
+ * without fabricating that new reader's Modify/Save flags or old window ID.
+ * The actual closed checkpoint, cold-load origin and reader remain separate. */
+export function compareGeneratedSchematicRelevanceSavedSourceData(args: GeneratedSchematicRelevanceDisplayNativeArguments, nativeSource: string): Readonly<{
+  schema: "private.generated-schematic-relevance-saved-source-data.v1";
+  operationId: string; projectUuid: string; branchUuid: string; pageUuid: string; schematicUuid: string;
+  textId: string; sourceSha256: string; rootIndices: readonly Readonly<{ id: string; zIndex: number }>[];
+  exactProjectedTextBodyVerified: true; completePeerBodyRosterPreserved: true; explicitRelevanceAttributePreserved: true;
+  originalReaderVerified: false; coldLoadVerified: false; persistenceVerified: false; reopenedVerified: false; executionAuthorized: false;
+}> {
+  const rootIndices = source({ source: nativeSource }, args, args.operation.afterBody);
+  return freezeDeep({ schema: "private.generated-schematic-relevance-saved-source-data.v1", operationId: args.operation.operationId,
+    projectUuid: args.target.projectUuid, branchUuid: args.target.branchUuid, pageUuid: args.target.pageUuid, schematicUuid: args.target.schematicUuid,
+    textId: args.operation.textId, sourceSha256: sha256Text(nativeSource), rootIndices,
+    exactProjectedTextBodyVerified: true, completePeerBodyRosterPreserved: true, explicitRelevanceAttributePreserved: true,
+    originalReaderVerified: false, coldLoadVerified: false, persistenceVerified: false, reopenedVerified: false, executionAuthorized: false });
 }
