@@ -15,7 +15,7 @@ import {
 import { validateReleaseVersionParity } from "./release-version.ts";
 import { MAIN_REFERENCE_HELPER_IDENTITY } from "../server/src/main-reference-helper-identity.ts";
 import { CURRENT_MAIN_REFERENCE_HELPER_IDENTITY } from "../server/src/current-main-reference-helper-identity.ts";
-import { AGENT_DEFAULT_PROMPT, FACADE_TOOL_NAMES, hasPortableMcpLaunch } from "./plugin-contract.ts";
+import { AGENT_DEFAULT_PROMPT, FACADE_TOOL_POLICY_NAMES, hasPortableMcpLaunch } from "./plugin-contract.ts";
 import { validateCiWorkflow } from "./ci-contract.ts";
 
 import {
@@ -59,7 +59,7 @@ const mainReferenceHelperRelativePath = "plugins/easyeda-pro-control/server/bin/
 const currentMainReferenceHelperRelativePath = "plugins/easyeda-pro-control/server/bin/Easyeda.CurrentMainReference.dll";
 const REVIEWED_CONNECTED_BRIDGE_BUILD_ID = "ded07x99dcxb504";
 const checks: CheckResult[] = [];
-const EXPECTED_TOOL_NAMES = [...FACADE_TOOL_NAMES].toSorted();
+const EXPECTED_TOOL_NAMES = [...FACADE_TOOL_POLICY_NAMES].toSorted();
 const AUTO_APPROVED_TOOLS = new Set([
   "easyeda_control_api",
   "easyeda_control_status",

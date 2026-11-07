@@ -9,7 +9,8 @@ offline supplied-library/project-file metadata, mixed-document sources, schemati
 records, persisted PCB stack/rules and symbol pin inspection,
 tab-count/active-identity/shortcut observations, public catalog queries,
 ordinary launch, disposable project/PCB opening with layer and primitive observations,
-a separate disposable PCB viewport purpose, and original project-worker startup capture.
+a separate disposable PCB viewport purpose, original project-worker startup capture,
+and the separate generated-fixture Via writer for controlled disposable validation.
 The [public utility readers](current-utility-readers.md#language-and-api-page-viewport-readers)
 do not establish document units or account/library contents. SDK-resolved
 language can be a fallback and does not prove provider success. Selected-row
@@ -75,9 +76,11 @@ retained cleanup adapter do not transfer ownership or replay a failed read.
 The [generated disposable Via controller](generated-pcb-via-write.md) has a
 separate original writer, saved reader, full SQL/source checks and failure
 cleanup composition. Offline `pcb209-via-write` reports its public-utility
-registration status and exact schemas. Native payload integration and connected
-validation remain pending; discovery grants no execution, ordinary-project
-writer or inverse authority.
+registration status and exact schemas. The source route is validation-only and
+requires the original released fixture data, explicit create/Save confirmations,
+current source admission, complete closed SQL/source proof and a separate fresh
+saved reader. Connected validation remains unclaimed. Discovery grants no
+execution, ordinary-project writer or inverse authority.
 The separate `observe-primitives` stage returns two matching Line/Arc/Via and
 parentless String loaded-view projections with ordered IDs. Its256-row per-family
 and384KiB aggregate bounds refuse excess output. It does not include raw models

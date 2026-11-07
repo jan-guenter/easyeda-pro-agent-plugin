@@ -12,6 +12,7 @@ void test("offline Via discovery includes exact schemas while retaining false ex
     assert.ok(field in result && Reflect.get(result, field) === false);
   }
   assert.ok("inputSchema" in result && "outputSchema" in result);
+  for (const field of ["mountedInPublicUtilities", "validationOnly", "runtimeAdmissionRequired", "sourceAdmissionRequired", "originalReleasedClosedDataQualificationRequired"]) { assert.equal(Reflect.get(result, field), true); }
 });
 void test("offline validation requires exact original-attempt acknowledgements and accepts no injected owner", () => {
   const request = { action: "execute", operationId: "pcb209-via-write-offline-validation", ...CURRENT_PCB_VIA_WRITE_EXECUTE_ACKNOWLEDGEMENTS };

@@ -39,13 +39,12 @@ groups.push({ namespace: "sys_FileManager", methods: ["importProjectByProjectFil
   inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "fixture-import", query: { includeSchemas: true } } } },
 } });
 
-// This is a blocked source composition until its matching native payload and
-// Connected saved/reopened case exist. No production or standalone Save route.
+// Separate disposable validation route. Original source admission and all
+// Lifecycle gates remain required; connected saved/reopened acceptance is unclaimed.
 for (const [namespace, methods] of [["pcb_PrimitiveVia", ["create"]], ["pcb_Document", ["save"]]] as const) {
   groups.push({ namespace, methods: [...methods], route: {
     tool: "easyeda_control_current_pcb_via_write", selector: "execute;original-generated-disposable-via-only", implementation: "public-method",
-    executionState: "blocked", documentTypes: [3],
-    blockedReason: "The original typed controller and complete proof composition are implemented in source, but matching native generation/installation and a connected full saved/reopened case are pending. The public-utility tool is not mounted yet.",
+    executionState: "available-with-runtime-guards", documentTypes: [3],
     scope: "One original generated Via-only or Line/Via PCB, empty net, normal unlocked Via, fixed masks and no inverse. Preparation consumes the explicitly named same-facade released closed data token; no caller path, owner or JavaScript. An original once-consumed SDK create and Save join the real clock/body/Main SQL, upload/cache/finalizer drain, full closed SQL/source proof and separate fresh saved reader. The controller retains all original cleanup/publication promises. A failed closed disposable operation can publish a separate immutable abandonment record preserving saved/reopened=false, with no replay, restored authority or native owner transfer. Completion concerns that original selected fixture and request/DAG, not general network-client or shared-account exclusion. This route does not implement named nets, other Via types, ordinary-project writing or an unrestricted Save.",
     source: ["current-pcb-via-write-validation.ts", "current-pcb-via-write-contract.ts", "current-pcb-via-write-coordinator.ts", "current-pcb-via-write-workflow.ts",
       "current-pcb-via-write-observers.ts", "current-pcb-via-write-program.ts", "current-pcb-via-save-drain-cursor.ts", "current-pcb-via-write-closed-proof.ts",

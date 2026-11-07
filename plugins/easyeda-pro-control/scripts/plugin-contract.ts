@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PUBLIC_UTILITIES_ONLY_TOOLS } from "../server/src/facade-mode.ts";
 
 export const FACADE_TOOL_NAMES = [
   "easyeda_control_api",
@@ -39,6 +40,8 @@ export const FACADE_TOOL_NAMES = [
   "easyeda_control_verify", "easyeda_control_rollback", "easyeda_control_save_reopen", "easyeda_control_checkpoint",
   "easyeda_control_recover_incomplete", "easyeda_control_evidence_recover", "easyeda_control_evidence_verify", "easyeda_control_artifact_read",
 ] as const;
+/** Approval metadata covers every exact mode; it does not register tools. */
+export const FACADE_TOOL_POLICY_NAMES = Object.freeze([...new Set([...FACADE_TOOL_NAMES, ...PUBLIC_UTILITIES_ONLY_TOOLS])].toSorted());
 export const AGENT_DEFAULT_PROMPT = "Use $easyeda-pro-control to inspect EasyEDA, apply the requested typed API changes, and verify saved results; use native controls for missing APIs and dialogs.";
 export const MANIFEST_DEFAULT_PROMPTS = [
   "Validate the EasyEDA bridge without bypassing compatibility gates.",

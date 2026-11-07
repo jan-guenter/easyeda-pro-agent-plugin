@@ -8,18 +8,18 @@
     "installed209DistinctMethods": 811,
     "packaged4197DistinctMethods": 829,
     "statuses": {
-      "implemented-public-subset": 217,
+      "implemented-public-subset": 219,
       "implemented-native-equivalent": 47,
       "implemented-vendor-http-equivalent": 13,
       "internal-lifecycle-only": 0,
-      "implemented-but-blocked": 79,
+      "implemented-but-blocked": 77,
       "omitted": 499
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 468,
+      "available-with-runtime-guards": 470,
       "available-with-network-guards": 16,
       "available-with-managed-file-guards": 3,
-      "blocked": 96,
+      "blocked": 94,
       "partially-blocked": 2
     },
     "omissions": {
@@ -13559,17 +13559,16 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "implemented-but-blocked",
+      "status": "implemented-public-subset",
       "routes": [
         {
           "tool": "easyeda_control_current_pcb_via_write",
           "selector": "execute;original-generated-disposable-via-only",
           "implementation": "public-method",
-          "executionState": "blocked",
+          "executionState": "available-with-runtime-guards",
           "documentTypes": [
             3
           ],
-          "blockedReason": "The original typed controller and complete proof composition are implemented in source, but matching native generation/installation and a connected full saved/reopened case are pending. The public-utility tool is not mounted yet.",
           "scope": "One original generated Via-only or Line/Via PCB, empty net, normal unlocked Via, fixed masks and no inverse. Preparation consumes the explicitly named same-facade released closed data token; no caller path, owner or JavaScript. An original once-consumed SDK create and Save join the real clock/body/Main SQL, upload/cache/finalizer drain, full closed SQL/source proof and separate fresh saved reader. The controller retains all original cleanup/publication promises. A failed closed disposable operation can publish a separate immutable abandonment record preserving saved/reopened=false, with no replay, restored authority or native owner transfer. Completion concerns that original selected fixture and request/DAG, not general network-client or shared-account exclusion. This route does not implement named nets, other Via types, ordinary-project writing or an unrestricted Save.",
           "source": [
             "current-pcb-via-write-validation.ts",
@@ -34101,17 +34100,16 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "implemented-but-blocked",
+      "status": "implemented-public-subset",
       "routes": [
         {
           "tool": "easyeda_control_current_pcb_via_write",
           "selector": "execute;original-generated-disposable-via-only",
           "implementation": "public-method",
-          "executionState": "blocked",
+          "executionState": "available-with-runtime-guards",
           "documentTypes": [
             3
           ],
-          "blockedReason": "The original typed controller and complete proof composition are implemented in source, but matching native generation/installation and a connected full saved/reopened case are pending. The public-utility tool is not mounted yet.",
           "scope": "One original generated Via-only or Line/Via PCB, empty net, normal unlocked Via, fixed masks and no inverse. Preparation consumes the explicitly named same-facade released closed data token; no caller path, owner or JavaScript. An original once-consumed SDK create and Save join the real clock/body/Main SQL, upload/cache/finalizer drain, full closed SQL/source proof and separate fresh saved reader. The controller retains all original cleanup/publication promises. A failed closed disposable operation can publish a separate immutable abandonment record preserving saved/reopened=false, with no replay, restored authority or native owner transfer. Completion concerns that original selected fixture and request/DAG, not general network-client or shared-account exclusion. This route does not implement named nets, other Via types, ordinary-project writing or an unrestricted Save.",
           "source": [
             "current-pcb-via-write-validation.ts",

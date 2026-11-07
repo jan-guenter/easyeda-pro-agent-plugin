@@ -6,6 +6,7 @@ import { facadeToolRegistered } from "./facade-mode.ts";
 
 export function queryCurrentPcbViaWrite(includeSchemas = false): Record<string, unknown> {
   return { offline: true, tool: CURRENT_PCB_VIA_WRITE_TOOL, mountedInPublicUtilities: facadeToolRegistered("public-utilities-only", CURRENT_PCB_VIA_WRITE_TOOL),
+    validationOnly: true, runtimeAdmissionRequired: true, sourceAdmissionRequired: true,
     executionAuthorized: false, connectedValidation: false, ordinaryProjectsSupported: false, inverseAvailable: false,
     scope: "one-normal-unlocked-empty-net-Via-in-an-original-generated-via-only-or-line-and-via-PCB",
     actions: ["prepare", "execute", ...CURRENT_PCB_VIA_WRITE_CLEANUP_ACTIONS],

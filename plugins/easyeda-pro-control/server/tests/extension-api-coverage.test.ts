@@ -372,7 +372,15 @@ void test("coverage does not promote schema-only, native equivalent, stub, lates
   assert.equal(rows.get("eda.dmt_Schematic.modifySchematicPageName")?.currentGenerationLiveValidation, "not-recorded");
   assert.equal(rows.get("eda.dmt_Project.createProject")?.status, "omitted");
   assert.equal(rows.get("eda.sch_PrimitiveBus.create")?.status, "omitted");
-  assert.equal(rows.get("eda.pcb_Document.save")?.status, "implemented-but-blocked");
+  assert.equal(rows.get("eda.pcb_Document.save")?.status, "implemented-public-subset");
+  for (const path of ["eda.pcb_Document.save", "eda.pcb_PrimitiveVia.create"]) {
+    const row = rows.get(path); assert.ok(row !== undefined); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+    const validation = row.routes.find(route => route.tool === "easyeda_control_current_pcb_via_write"); assert.ok(validation !== undefined);
+    assert.equal(validation.executionState, "available-with-runtime-guards"); assert.deepEqual(validation.documentTypes, [3]);
+    assert.match(validation.scope, /original generated Via-only or Line\/Via PCB/u); assert.match(validation.scope, /no caller path, owner or JavaScript/u);
+    assert.match(validation.scope, /does not implement named nets, other Via types, ordinary-project writing or an unrestricted Save/u);
+    for (const ordinary of row.routes.filter(route => route.tool === "easyeda_control_design")) { assert.equal(ordinary.executionState, "blocked"); }
+  }
   assert.equal(rows.get("eda.pcb_Layer.getCurrentLayer")?.status, "implemented-native-equivalent");
   assert.equal(rows.get("eda.sch_PrimitiveText.getAllPrimitiveId")?.status, "implemented-native-equivalent");
   assert.equal(rows.get("eda.sch_PrimitiveText.getAllPrimitiveId")?.routes[0]?.implementation, "native-task-equivalent");
@@ -573,7 +581,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 217, "implemented-native-equivalent": 47, "implemented-vendor-http-equivalent": 13, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 499,
+    "implemented-public-subset": 219, "implemented-native-equivalent": 47, "implemented-vendor-http-equivalent": 13, "internal-lifecycle-only": 0, "implemented-but-blocked": 77, omitted: 499,
   });
 });
 

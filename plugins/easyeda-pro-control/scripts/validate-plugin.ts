@@ -26,7 +26,7 @@ import type { PrivateTemporaryDirectory } from "./private-temporary-directory.ts
 import { validateReleaseVersionParity } from "./release-version.ts";
 import { MAIN_REFERENCE_HELPER_IDENTITY } from "../server/src/main-reference-helper-identity.ts";
 import { CURRENT_MAIN_REFERENCE_HELPER_IDENTITY } from "../server/src/current-main-reference-helper-identity.ts";
-import { AGENT_DEFAULT_PROMPT, FACADE_TOOL_NAMES, MANIFEST_DEFAULT_PROMPTS, hasPortableMcpLaunch, portableMcpLaunchSchema } from "./plugin-contract.ts";
+import { AGENT_DEFAULT_PROMPT, FACADE_TOOL_NAMES, FACADE_TOOL_POLICY_NAMES, MANIFEST_DEFAULT_PROMPTS, hasPortableMcpLaunch, portableMcpLaunchSchema } from "./plugin-contract.ts";
 import { ValidationStdioTransport } from "./validation-stdio-transport.ts";
 
 interface CheckResult {
@@ -38,6 +38,7 @@ interface CheckResult {
 type ToolSummary = Awaited<ReturnType<Client["listTools"]>>["tools"][number];
 
 const TOOL_NAMES = FACADE_TOOL_NAMES;
+const POLICY_TOOL_NAMES = FACADE_TOOL_POLICY_NAMES;
 const AUTO_APPROVED_TOOLS = new Set([
   "easyeda_control_api",
   "easyeda_control_status",
@@ -56,6 +57,13 @@ const OUTPUT_SCHEMA_ANCHORS = {
   easyeda_control_library_files: ["result"],
   easyeda_control_fixture_import: ["result"],
   easyeda_control_fixture_data: ["result"],
+  easyeda_control_public_readers: ["result"],
+  easyeda_control_netlist_files: ["result"],
+  easyeda_control_catalog_footprint: ["result"],
+  easyeda_control_catalog_components: ["result"],
+  easyeda_control_pcb209_opening: ["result"],
+  easyeda_control_pcb209_worker_startup: ["result"],
+  easyeda_control_current_pcb_via_write: ["result"],
   easyeda_control_extensions: ["result"],
   easyeda_control_launch: ["result"],
   easyeda_control_pcb_diagnostic_validation: ["result"],
@@ -103,7 +111,7 @@ const OUTPUT_SCHEMA_ANCHORS = {
   easyeda_control_evidence_recover: ["receiptHashOk", "resultHashOk"],
   easyeda_control_evidence_verify: ["receiptHashOk", "resultHashOk"],
   easyeda_control_artifact_read: ["path", "bytesRead", "text"],
-} as const satisfies Record<(typeof TOOL_NAMES)[number], readonly string[]>;
+} as const satisfies Record<(typeof POLICY_TOOL_NAMES)[number], readonly string[]>;
 const stringSchema = z.string();
 const approvalModeSchema = z.enum(["approve", "prompt"]);
 const toolPolicySchema = z.strictObject({
@@ -587,14 +595,15 @@ check(
 );
 const configuredPolicyNames = Object.keys(mcpServer.tools).toSorted();
 const expectedToolNames = [...TOOL_NAMES].toSorted();
+const expectedPolicyNames = [...POLICY_TOOL_NAMES].toSorted();
 check(
   "approval-exact-tool-mapping",
-  JSON.stringify(configuredPolicyNames) === JSON.stringify(expectedToolNames),
+  JSON.stringify(configuredPolicyNames) === JSON.stringify(expectedPolicyNames),
   JSON.stringify(configuredPolicyNames),
 );
 check(
   "approval-exact-modes",
-  TOOL_NAMES.every(
+  POLICY_TOOL_NAMES.every(
     (name) =>
       mcpServer.tools[name]?.approval_mode ===
       (AUTO_APPROVED_TOOLS.has(name) ? "approve" : "prompt"),

@@ -2,6 +2,8 @@
 
 - [2026-11-07 generated schematic Wire data](2026-11-07-generated-schematic-wire-data.md). Strict existing-LINE geometry, full seven-record effect and separate pending LINE body; actual source confirms ID reuse while original invocation and persistence remain unproved.
 
+- [2026-11-07 controlled disposable Via registration](2026-11-07-disposable-via-mode-registration.md). Register only the generated-fixture validation route in the exact current profile, align explicit prompt policy and offline coverage, and retain all original runtime gates and unclaimed connected acceptance.
+
 - [2026-11-07 Via live-history release order](2026-11-07-via-live-history-release-order.md). Hold the original worker sync pause through the actual final Main read-release acknowledgement; source review identifies no further concrete selected-request completion gap before controlled disposable validation.
 
 - [2026-11-07 original schematic action preflight](2026-11-07-schematic-original-action-preflight.md). Mount actual idle runner/recorder metadata through a distinct original SCH native vocabulary and retain its JS reference graph; first-setter and persistence grants stay blocked.

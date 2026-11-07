@@ -15,8 +15,9 @@ Read `mountedInPublicUtilities` and the serving facade's actual tool list. A
 false mounted value means the writer is unavailable in that payload. Report
 that result; do not substitute a private script, an older owner, or direct SDK
 execution. Matching schemas and source implementation do not prove connected
-execution. The source controller still needs its matching native payload and a
-complete connected case.
+execution. This source profile registers the tool only for controlled
+disposable validation. Its matching frozen helper and current installation/source
+admission are still required, and a complete connected case remains unclaimed.
 
 ## Prepare and execute
 

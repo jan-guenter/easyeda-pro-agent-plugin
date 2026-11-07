@@ -5464,7 +5464,7 @@ function assertFreshClosedGeneratedDataEnvironment(originalVia?: CurrentPcbViaWr
 if (facadeMode === "public-utilities-only" && facadeToolRegistered(facadeMode, CURRENT_PCB_VIA_WRITE_TOOL)) {
   registerFacadeTool(CURRENT_PCB_VIA_WRITE_TOOL, {
     title: "Write one Via in an original disposable PCB fixture",
-    description: "Prepare from this facade's released closed generated PCB data qualification, then explicitly execute one fixed typed Via creation and one Save. The original controller retains both writer and fresh saved-readback generations, complete scene and SQL checks, and original cleanup. Inspection and cleanup join that same operation. No caller paths, owners, code, retry, inverse, production target or historical-owner adoption. Completion requires original closure, full closed/reopened SQL proof and both helper releases.",
+    description: "Controlled disposable validation only; connected lifecycle acceptance is unclaimed. Prepare from this facade's released closed generated PCB data qualification, then explicitly execute one fixed typed Via creation and one Save. The original controller retains both writer and fresh saved-readback generations, complete scene and SQL checks, and original cleanup. Inspection and cleanup join that same operation. No caller paths, owners, code, retry, inverse, production target or historical-owner adoption. Completion requires original closure, full closed/reopened SQL proof and both helper releases.",
     inputSchema: { request: z.unknown().pipe(currentPcbViaWriteActionSchema) },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
   }, guarded(({ request }) => {
