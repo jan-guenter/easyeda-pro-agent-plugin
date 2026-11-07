@@ -1,3 +1,4 @@
+import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_REQUESTS as LIVE } from "./current-pcb-via-main-live-history-protocol.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_OBSERVED_WORKER_SOURCE_REQUESTS as SOURCES } from "./current-schematic-relevance-display-helper-source-catalogue.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_SAVE_UPLOAD_REQUESTS as UPLOAD } from "./current-schematic-relevance-display-save-upload-wire.ts";
 /* oxlint-disable import/max-dependencies -- Exact own-purpose budgets are derived from each separately qualified finite lane; accepting caller totals would weaken native bounds. */
@@ -19,7 +20,7 @@ import { CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS as STRUCTURE } from
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE = "schematic-relevance-display-write209";
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE = Object.freeze({
   purpose: CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE, nativeSwitch: "-SchematicRelevanceDisplayWrite209",
-  main: Object.freeze({ normal: SHARED.main.normal + MAIN.normal + STEP.normal + BEGIN.normal + HISTORY.normal + STRUCTURE_MAIN.normal, cleanup: SHARED.main.cleanup + MAIN.cleanup + BEGIN.cleanup + HISTORY.cleanup + STRUCTURE_MAIN.cleanup, total: SHARED.main.total + MAIN.total + STEP.total + BEGIN.total + HISTORY.total + STRUCTURE_MAIN.total }), renderer: Object.freeze({ ...SHARED.renderer,
+  main: Object.freeze({ normal: SHARED.main.normal + MAIN.normal + STEP.normal + BEGIN.normal + HISTORY.normal + STRUCTURE_MAIN.normal + LIVE.normal, cleanup: SHARED.main.cleanup + MAIN.cleanup + BEGIN.cleanup + HISTORY.cleanup + STRUCTURE_MAIN.cleanup + LIVE.cleanup, total: SHARED.main.total + MAIN.total + STEP.total + BEGIN.total + HISTORY.total + STRUCTURE_MAIN.total + LIVE.total }), renderer: Object.freeze({ ...SHARED.renderer,
     structureObservation: STRUCTURE.cdpRequests,
     startupPollingObservation: POLLING.cdpRequests, startupPollingHelperSources: 1, startupLibraryObservation: LIBRARY.controls, startupLibrarySetupHelperSources: 1,
     actionPreflightObservation: ACTION.total, actionGuardObservation: ACTION_GUARD.cdpRequests, actionGuardBindingControls: ACTION_GUARD.bindingControls,

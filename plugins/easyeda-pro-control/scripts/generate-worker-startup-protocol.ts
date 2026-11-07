@@ -1,5 +1,6 @@
 /* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
 import { CURRENT_NATIVE_BASELINE, assertCurrentNativeBaseline } from "./native-baseline-source.ts";
+import { applyCurrentSchematicRelevanceDisplayMainLiveHistoryNativeFragment } from "../server/src/current-schematic-relevance-display-main-live-history-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayObservedSourceNativeFragment } from "../server/src/current-schematic-relevance-display-observed-source-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayLibraryRefreshNativeFragment } from "../server/src/current-schematic-relevance-display-library-refresh-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplaySaveUploadNativeFragment } from "../server/src/current-schematic-relevance-display-save-upload-native-fragment.ts";
@@ -192,6 +193,7 @@ export function generateWorkerStartupProtocol(source: string, layout: "legacy" |
     next = applyCurrentSchematicRelevanceDisplaySaveNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplaySaveUploadNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplayObservedSourceNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplayMainLiveHistoryNativeFragment(next);
     next = applyCurrentSchematicWireEditNativeFragment(next);
   }
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);

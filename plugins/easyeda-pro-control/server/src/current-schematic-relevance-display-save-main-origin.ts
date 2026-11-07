@@ -5,8 +5,7 @@ import type { CurrentPcbViaMainBackendBindings } from "./current-pcb-via-main-or
 export interface CurrentSchematicRelevanceDisplaySaveMainOrigin {
   readonly profile: "private.current-schematic-relevance-display-save-main-origin.v1";
 }
-export type CurrentSchematicRelevanceDisplaySaveMainBackendBindings = Omit<CurrentPcbViaMainBackendBindings,
-  "liveHistoryRequest" | "originalLiveHistoryRequestObjectId" | "originalLiveHistoryRows">;
+export type CurrentSchematicRelevanceDisplaySaveMainBackendBindings = CurrentPcbViaMainBackendBindings;
 export interface CurrentSchematicRelevanceDisplaySaveMainBindings extends CurrentSchematicRelevanceDisplaySaveMainBackendBindings {
   readonly assertSaveAttempt: () => void;
 }
