@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 original schematic action preflight](2026-11-07-schematic-original-action-preflight.md). Mount actual idle runner/recorder metadata through a distinct original SCH native vocabulary and retain its JS reference graph; first-setter and persistence grants stay blocked.
+
 - [2026-11-07 original schematic pre-modify setup](2026-11-07-schematic-original-pre-modify-setup.md). Compose genuine worker startup/accessor custody and retain the original selected-file Main fence with an unspent durable modify intent; action and Save grants remain separate.
 
 - [2026-11-07 failed disposable Via abandonment](2026-11-07-via-failed-disposable-abandonment.md). Separate immutable closure sidecar clears historical quarantine only after all original resources settle; failed Save/reopen proofs remain false and old records stay exact.

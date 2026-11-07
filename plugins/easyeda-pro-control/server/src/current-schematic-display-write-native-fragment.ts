@@ -1,3 +1,4 @@
+import { applyCurrentSchematicDisplayActionNativeFragment } from "./current-schematic-display-action-native-fragment.ts";
 import { installNativeCompileOnlyHook } from "./native-compile-only-hook.ts";
 import { applyCurrentSchematicDisplayAccessorNativeFragment } from "./current-schematic-display-accessor-native-fragment.ts";
 import { applyCurrentSchematicDisplayClockNativeFragment } from "./current-schematic-display-clock-native-fragment.ts";
@@ -104,5 +105,5 @@ export function applyCurrentSchematicDisplayWriteNativeFragment(input: string): 
   source = installNativeCompileOnlyHook(source, "    [EasyedaDiagnosticOwner]::VerifySchematicDisplaySmoke()", "    [EasyedaDiagnosticOwner]::VerifyPcbViaClockSmoke()");
   const start = source.indexOf(begin), stop = source.indexOf(end);
   if (start !== -1 || stop !== -1) { if (start === -1 || stop < start || source.includes(begin, start + begin.length) || source.includes(end, stop + end.length)) { throw new Error("SCHEMATIC_DISPLAY_NATIVE_MARKERS"); } source = source.slice(0, start) + native() + source.slice(stop + end.length); }
-  else { source = one(source, "\n'@\n", `\n${native()}\n'@\n`); } return applyCurrentSchematicDisplayAccessorNativeFragment(applyCurrentSchematicDisplayClockNativeFragment(applyCurrentSchematicDisplayWorkerNativeFragment(source)));
+  else { source = one(source, "\n'@\n", `\n${native()}\n'@\n`); } source = applyCurrentSchematicDisplayWorkerNativeFragment(source); source = applyCurrentSchematicDisplayClockNativeFragment(source); source = applyCurrentSchematicDisplayAccessorNativeFragment(source); return applyCurrentSchematicDisplayActionNativeFragment(source);
 }

@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { GENERATED_SCHEMATIC_DISPLAY_ACTION_ACTIVE_FUNCTION as ACTIVE, GENERATED_SCHEMATIC_DISPLAY_ACTION_CLOSURE_FUNCTION as CLOSURE,
-  GENERATED_SCHEMATIC_DISPLAY_ACTION_PREFLIGHT_FUNCTION as PREFLIGHT, GENERATED_SCHEMATIC_DISPLAY_ACTION_SAME_FUNCTION as SAME } from "../src/generated-schematic-display-action-program.ts";
+  GENERATED_SCHEMATIC_DISPLAY_ACTION_PREFLIGHT_FUNCTION as PREFLIGHT, GENERATED_SCHEMATIC_DISPLAY_ACTION_PREFLIGHT_SAME_FUNCTION as PREFLIGHT_SAME, GENERATED_SCHEMATIC_DISPLAY_ACTION_SAME_FUNCTION as SAME } from "../src/generated-schematic-display-action-program.ts";
 import { decodeGeneratedSchematicDisplayActionActiveCallees, decodeGeneratedSchematicDisplayActionActiveOwners, decodeGeneratedSchematicDisplayActionFunction, decodeGeneratedSchematicDisplayActionPreflightCallees,
   decodeGeneratedSchematicDisplayActionRecorderScope, decodeGeneratedSchematicDisplayActionScopes, qualifyGeneratedSchematicDisplayActionSource } from "../src/generated-schematic-display-action-replies.ts";
 import { GENERATED_SCHEMATIC_DISPLAY_ACTION_ACTIVE_CALLEES, GENERATED_SCHEMATIC_DISPLAY_ACTION_METADATA_BUDGET,
@@ -22,6 +22,8 @@ const b={shapes,page,runner,run:{object:runner,owner:Runner.prototype,key:"run",
 `, context);
   const evaluate = (code: string): unknown => runInContext(code, context);
   assert.equal(evaluate(`const original=(${PREFLIGHT}).call(holder,target,operation);original.length`), 18);
+  assert.equal(evaluate(`(${PREFLIGHT_SAME}).call(original,holder,target,operation)`), true);
+  assert.throws(() => evaluate(`(${PREFLIGHT_SAME}).call([...original.slice(0,17),()=>0],holder,target,operation)`));
   assert.throws(() => evaluate(`(${ACTIVE}).call(original,holder,target,operation)`));
   evaluate(`state.modifyAttempted=true;runner._currentAction={status:"running",history:"add"};history.batchSaveStack=new Group();const resolver={start:()=>no(),complete:()=>no(),failure:()=>no()};runner._historyResolversMap.set(shapes,resolver);history.onModelAttributeChange=()=>no();`);
   assert.equal(evaluate(`const active=(${ACTIVE}).call(original,holder,target,operation);active.length`), 11);

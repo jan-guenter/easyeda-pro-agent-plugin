@@ -1,3 +1,4 @@
+import { currentSchematicDisplayActionWire } from "./current-schematic-display-action-wire.ts";
 import { currentGeneratedPeriodicSyncWire } from "./current-generated-periodic-sync-wire.ts";
 import { currentGeneratedInitialSyncWire } from "./current-generated-initial-sync-wire.ts";
 /* oxlint-disable import/max-dependencies -- Keep the new startup cache grammar separate from the original writer/source grammars. */
@@ -55,6 +56,12 @@ export function currentSchematicDisplayWriteNativeRequest(chunk: Buffer): Readon
     if (structureTransportCommand !== true || typeof sessionId !== "string") { throw new Error("SCHEMATIC_DISPLAY_STRUCTURE_TRANSPORT_WIRE"); }
     const fixed = currentProjectStructureTransportWire(command, id, "schematic");
     if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, structureTransportCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_DISPLAY_STRUCTURE_TRANSPORT_WIRE"); } return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicActionCommand")) {
+    const { id, sessionId, schematicActionCommand, ...input } = raw;
+    if (schematicActionCommand !== true || typeof sessionId !== "string") { throw new Error("SCHEMATIC_DISPLAY_ACTION_WIRE"); }
+    const fixed = currentSchematicDisplayActionWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicActionCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_DISPLAY_ACTION_WIRE"); } return fixed.request;
   }
   if (Object.hasOwn(raw, "schematicAccessorCommand")) {
     const { id, sessionId, schematicAccessorCommand, ...input } = raw;

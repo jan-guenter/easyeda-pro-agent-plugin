@@ -42,3 +42,7 @@ const s=selected(holder,target,operation,true);sameStable(s,original);activeGrap
  * invoking any of them; existing Text history commands may now be present. */
 export const GENERATED_SCHEMATIC_DISPLAY_ACTION_SAME_FUNCTION = `function(holder,target,operation,original){${GUARD}
 const s=selected(holder,target,operation,true);sameStable(s,original);dense(this,11);const values=activeGraph(s);for(let i=0;i<11;i++)if(own(this,String(i))!==values[i])bad();return true;}`;
+
+/** Same original idle graph after function/source metadata awaits. */
+export const GENERATED_SCHEMATIC_DISPLAY_ACTION_PREFLIGHT_SAME_FUNCTION = `function(holder,target,operation){${GUARD}
+const s=selected(holder,target,operation,false);sameStable(s,this);if(s.action!==null||s.resolver!==undefined||s.stack!==undefined&&s.stack!==null||size(own(s.history,"modelCommandMap"),Map.prototype)!==0||own(s.history,"onModelAttributeChange")!==own(this,"17")||own(s.history,"onSubTreeInsertConnectedChild")!==own(this,"17")||own(s.history,"onSubTreeRemoveConnectedChild")!==own(this,"17"))bad();return true;}`;

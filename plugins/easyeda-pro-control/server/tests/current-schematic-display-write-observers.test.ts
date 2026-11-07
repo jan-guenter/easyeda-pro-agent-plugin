@@ -22,6 +22,7 @@ async function fixture(): Promise<Readonly<{ group: CurrentSchematicDisplayWrite
     armSchematicDisplayStructureTransportWorker: (_args: unknown, setup: (origin: object) => Promise<void>): void => { assert.equal(_args, args); calls.push("transport-arm"); callbacks.push(setup); },
     armSchematicDisplayProducerPrefixWorker: (_args: unknown): void => { assert.equal(_args, args); calls.push("guard-arm"); },
     armSchematicDisplayProducerObservationWorker: (_args: unknown, setup: (origin: object) => Promise<void>): void => { assert.equal(_args, args); calls.push("producer-arm"); callbacks.push(setup); },
+    createSchematicDisplayActionOrigin: async (_args: unknown, actualMain: unknown, setup: (origin: object) => Promise<void>): Promise<object> => { assert.equal(_args, args); assert.equal(actualMain, origin); calls.push("action-origin"); await setup({}); return {}; },
     createSchematicDisplayAccessorOrigin: async (_args: unknown, setup: (origin: object) => Promise<void>): Promise<object> => { assert.equal(_args, args); calls.push("accessor-origin"); await setup({}); return {}; },
     enrollSchematicDisplayProducerPrefix: (_args: unknown): Promise<object> => { assert.equal(_args, args); assert.ok(cache && sync); calls.push("original-prefix"); return Promise.resolve({}); },
     prepareSchematicDisplayPreModifyMain: (_args: unknown, marker: unknown): Promise<object> => { assert.equal(_args, args); assert.equal(marker, dispatch); calls.push("original-main"); return Promise.resolve(origin); },
@@ -51,6 +52,7 @@ async function fixture(): Promise<Readonly<{ group: CurrentSchematicDisplayWrite
     "./current-project-structure-transport-observer.ts": { CurrentProjectStructureTransportObserver: Transport },
     "./current-project-save-producer-observer.ts": { CurrentProjectSaveProducerObserver: Producer, requireOriginalCurrentProjectSaveProducerHeldCall: (value: unknown): unknown => { assert.ok(value === event0 || value === event1); return value; } },
     "./current-schematic-display-accessor-observer.ts": { CurrentSchematicDisplayAccessorObserver: Accessor },
+    "./current-schematic-display-action-observer.ts": { CurrentSchematicDisplayActionObserver: Accessor },
   };
   const url = new URL("../src/current-schematic-display-write-observers.ts", import.meta.url); const sourceRequire = createRequire(url);
   const compiled = await transform(await readFile(url, "utf8"), { loader: "ts", format: "cjs", target: "node24" }); const loaded: { exports: Record<string, unknown> } = { exports: {} };
