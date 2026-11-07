@@ -74,3 +74,30 @@ guards and representation mixing. Strict type-aware lint and both TypeScript
 projects passed. No source bundle, native artifact, compatibility pin, installed
 package or live facade was changed during this source checkpoint. A fresh
 verified batch and new disposable connected case remain required.
+
+## Third original disposable case
+
+Frozen development payload `06b4f28c1b74685820b98a0fd4f21f493b57656e` ran a
+new genuine import and fresh cloned-Pad reader. Import, complete initial source
+and SQL qualification, importer cleanup, original project/PCB opening, exact PCB
+source and all295 callee qualifications passed. Its first point refused at the
+combined Pad watcher/model-state/view-state condition. The previous exact
+prototype and plain circular-geometry guards passed. The response did not retain
+the particular failed condition or actual state values, so no state correction
+or positive hit result can be claimed.
+
+Original normal close, root/empty-Job termination, complete closed capture and
+helper release were acknowledged. Independent comparison proves exact raw
+snapshot bytes, schema/properties/all35 SQL tables/columns/rows/unknown fields
+and complete raw history. Fresh post-reader initial-clock qualification remains
+false. The foreground manager then retired the facade, acknowledged lease
+release and observed its original stdin-EOF exit with code0. Nothing was replayed
+and no Save or production design operation ran.
+
+The cloned reader now records all three bounded state observations in that
+refusal: model bitmap, view bitmap and watcher equality. The acceptance
+condition remains unchanged. Four private local variable names were shortened
+to keep the complete physical command within the original65,536-byte limit.
+Four focused inert checks pass, including exact diagnostic states, unchanged
+no-hit refusals and the maximum frame bound. The diagnostic change has no new
+connected result yet; it exists to avoid another ambiguous failure.

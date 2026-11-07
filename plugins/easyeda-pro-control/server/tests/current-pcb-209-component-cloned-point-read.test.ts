@@ -39,3 +39,14 @@ void test("five restored tE sites fit original419 IDs by limiting only the new v
  const command = { id: 419, sessionId: "s".repeat(128), method: "Runtime.callFunctionOn", params: { objectId: "o".repeat(256), functionDeclaration: READ, objectGroup: "easyeda-pro-control-pcb209-component-spatial-v1", throwOnSideEffect: false, silent: true, awaitPromise: false, userGesture: false, generatePreview: false, returnByValue: true, arguments: [{ value: { kind: "point", xMil: -10_000_000, yMil: -10_000_000 } }] } };
  const bytes = Buffer.byteLength(JSON.stringify(command)) + 1 + 2 * (32 - String(-10_000_000).length); assert.ok(bytes <= 65_536);
 });
+void test("cloned Pad state diagnostics retain each bounded observation without allowing hits", () => {
+ for (const [change, diagnostic] of [
+  ["padModel._dataState=2", "2:1:true"],
+  ["padView._dataState=4", "0:4:true"],
+  ["padModel._stateWatcher=null", "0:1:false"],
+ ] as const) {
+  const realm = fixture(change);
+  assert.throws(() => read(realm), { message: `PCB209_SPATIAL_READ_REFUSED_PAD_STATE:${diagnostic}` });
+  assert.equal(runInContext("metrics.hits", realm), 0);
+ }
+});
