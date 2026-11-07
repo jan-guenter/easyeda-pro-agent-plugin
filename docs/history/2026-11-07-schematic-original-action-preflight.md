@@ -46,3 +46,15 @@ both scripts and all 68 spans. This leaf supplies no graph or resume authority;
 the two original history listeners, delivery queues and native callees still
 need the separate original graph collector. Both TypeScript projects and
 strict changed-file lint pass.
+
+The base34 selection program now takes the actual run14, original reference24
+and separately qualified queue graph tuples. Prototype lookup stops before an
+owner absent from the original non-Proxy tuple. It returns functions for source
+metadata without invoking them; a second program rechecks the same JS function
+references after metadata awaits. A bounded merge deduplicates actual JS
+references, avoiding Inspector wrapper-ID comparisons. Fixed per-variant frame
+expressions select the original module helpers, disposable symbols and group
+constructor. Three inert graph cases prove the function roster, fresh reproof,
+unknown-prototype/accessor refusal and opaque-field handling. Both TypeScript
+projects and strict changed-file lint pass. No native vocabulary or run grant
+is issued by these programs.
