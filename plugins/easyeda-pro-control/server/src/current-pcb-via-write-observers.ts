@@ -19,6 +19,8 @@ import { CurrentPcbViaClockObserver } from "./current-pcb-via-clock-observer.ts"
 import { CurrentPcbViaMainRequestObserver } from "./current-pcb-via-main-request-observer.ts";
 import { CurrentPcbViaMainBeginObserver } from "./current-pcb-via-main-begin-observer.ts";
 import { CurrentPcbViaMainHistoryObserver } from "./current-pcb-via-main-history-observer.ts";
+import { CurrentPcbViaMainLiveHistoryObserver } from "./current-pcb-via-main-live-history-observer.ts";
+import type { CurrentPcbViaMainLiveHistoryRows } from "./current-pcb-via-main-live-history-custody.ts";
 import { CurrentPcbViaMainStructureObserver } from "./current-pcb-via-main-structure-observer.ts";
 import { CurrentProjectSaveStructureObserver } from "./current-project-save-structure-observer.ts";
 import { CurrentProjectSaveProducerObserver, requireOriginalCurrentProjectSaveProducerHeldCall } from "./current-project-save-producer-observer.ts";
@@ -40,6 +42,8 @@ export class CurrentPcbViaWriteObservers {
   readonly #prepared: ReturnType<typeof originalCurrentPcbViaWriteTarget>;
   readonly #startupReady = Promise.withResolvers<Outcome<void>>();
   readonly #afterAction = Promise.withResolvers<Outcome<CurrentProjectSaveProducerHeldCall>>();
+  readonly #liveHistoryArmed = Promise.withResolvers<Outcome<void>>();
+  readonly #liveHistoryRows = Promise.withResolvers<Outcome<CurrentPcbViaMainLiveHistoryRows>>();
   #armAttempted = false; #failed = false; #failure: unknown; #phase: "startup" | "action" = "startup";
   #save: CurrentPcbViaSaveObserver | null = null; #structure: CurrentProjectSaveStructureObserver | null = null;
   #transport: CurrentProjectStructureTransportObserver | null = null; #producer: CurrentProjectSaveProducerObserver | null = null;
@@ -49,6 +53,7 @@ export class CurrentPcbViaWriteObservers {
   #main: CurrentPcbViaMainOrigin | null = null; #mainRequest: CurrentPcbViaMainRequestObserver | null = null;
   #mainBegin: CurrentPcbViaMainBeginObserver | null = null; #mainHistory: CurrentPcbViaMainHistoryObserver | null = null;
   #mainStructure: CurrentPcbViaMainStructureObserver | null = null; #clock: CurrentPcbViaClockObserver | null = null;
+  #mainLiveHistory: CurrentPcbViaMainLiveHistoryObserver | null = null;
   #before: NativeObservation | null = null; #beforeScene: SceneObservation | null = null; #beforeAttempted = false; #beforeSceneAttempted = false;
   #after: NativeObservation | null = null; #afterScene: SceneObservation | null = null; #afterAttempted = false; #afterSceneAttempted = false;
   #createPrepared = false; #sdkCreateAttempted = false; #createDispatch: CurrentPcbViaWriteDispatch | null = null;
@@ -67,6 +72,7 @@ export class CurrentPcbViaWriteObservers {
   #stop(error: unknown): void {
     if (!this.#failed) { this.#failed = true; this.#failure = error; }
     this.#startupReady.resolve(Object.freeze({ ok: false, error: this.#failure })); this.#afterAction.resolve(Object.freeze({ ok: false, error: this.#failure }));
+    this.#liveHistoryArmed.resolve(Object.freeze({ ok: false, error: this.#failure })); this.#liveHistoryRows.resolve(Object.freeze({ ok: false, error: this.#failure }));
   }
   async #retain<T>(original: Promise<T>): Promise<Outcome<T>> {
     try { return Object.freeze({ ok: true, value: await original }); }
@@ -254,7 +260,24 @@ export class CurrentPcbViaWriteObservers {
       const controller = await this.#mainRequest.continueToController(context); this.#current(); const actor = await this.#mainRequest.continueToActor(controller); this.#current();
       const begin = await this.#mainBegin.begin(actor); this.#current(); await this.#mainHistory.observe(begin); this.#current();
       this.#owner.completeViaHistorySql(this.#plan); this.#current();
+      need(this.#mainLiveHistory === null, "ORIGINAL_LIVE_HISTORY_CONSUMED");
+      const live = new CurrentPcbViaMainLiveHistoryObserver(this.#main, this.#owner, this.#plan); this.#mainLiveHistory = live;
+      await live.arm(); this.#current(); this.#liveHistoryArmed.resolve(Object.freeze({ ok: true, value: undefined }));
+      const rows = await live.observe(); this.#current(); need(this.#owner.requireViaLiveHistoryRows(this.#plan) === rows, "ORIGINAL_LIVE_HISTORY_ROWS");
+      this.#liveHistoryRows.resolve(Object.freeze({ ok: true, value: rows }));
     } catch (error) { this.#stop(error); throw error; }
+  }
+  /** The original upload pump may release its held sync entry only after the
+   * actual Main return observer is armed. This joins the same arm Promise. */
+  public async waitForOriginalLiveHistoryArm(): Promise<void> {
+    result(await this.#liveHistoryArmed.promise); this.#current(); need(this.#mainLiveHistory !== null, "ORIGINAL_LIVE_HISTORY_REQUIRED");
+    this.#owner.requireViaHistorySqlEffects(this.#plan); this.#current();
+  }
+  /** Actual SQLite return rows remain private data. Their timestamps are never
+   * synthesized from the worker clock, and these rows issue no continuation. */
+  public async waitForOriginalLiveHistoryRows(): Promise<CurrentPcbViaMainLiveHistoryRows> {
+    const rows = result(await this.#liveHistoryRows.promise); this.#current();
+    need(this.#owner.requireViaLiveHistoryRows(this.#plan) === rows, "ORIGINAL_LIVE_HISTORY_ROWS"); return rows;
   }
   /** The first original post-action producer remains held. The eventual fixed
    * writer continuation must use this same observer/packet, never copied JSON. */
