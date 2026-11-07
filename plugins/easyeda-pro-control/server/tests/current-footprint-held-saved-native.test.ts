@@ -2,6 +2,7 @@
  * Windows CI separately runs its pure held-saved grammar/ACK smoke; no app is
  * launched by either check, and this file claims no connected validation.
  */
+import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
@@ -12,8 +13,8 @@ import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE as DIAGNOSTIC,
   CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_METHODS as METHODS } from "../src/current-footprint-held-cache-diagnostic-profile.ts";
 
 void test("held-saved native class, ID, poll, byte and control caps match their complete derived reservation", async () => {
-  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
-  assert.ok(Buffer.byteLength(source) <= CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES, "Native cleanup regressions must preserve the fixed helper-source byte ceiling.");
+  const stored = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"); const source = expandCurrentPcbDiagnosticCSharpStorage(stored);
+  assert.ok(Buffer.byteLength(stored) <= CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES, "Native cleanup regressions must preserve the fixed helper-source byte ceiling.");
   const expected: Readonly<Record<string, number>> = {
     HeldSavedRequests: PROFILE.requestLimit, HeldSavedNormal: PROFILE.normalRequestLimit, HeldSavedCleanup: PROFILE.cleanupRequestLimit,
     HeldCacheRequests: DIAGNOSTIC.requestLimit, HeldCacheNormal: DIAGNOSTIC.normalRequestLimit, HeldCacheCleanup: DIAGNOSTIC.cleanupRequestLimit,

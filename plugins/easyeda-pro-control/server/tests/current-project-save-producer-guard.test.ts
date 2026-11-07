@@ -1,5 +1,6 @@
 /** Fixed source/wire boundaries only. No native owner, prefix or action grant. */
 /* oxlint-disable import/max-dependencies -- Compare independently sealed writer and released grammars with the common source guard. */
+import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
@@ -37,7 +38,7 @@ void test("ten fixed guards cover all five history roots and pre-effect producer
   assert.throws(() => requireOriginalCurrentProjectSaveProducerPrefix({ profile: "private.current-pcb-via-save-producer-prefix.v1" }, {}, {}), /ORIGINAL_PREFIX/u);
 });
 void test("combined generation retains exact guard enrollment and never gives the guard a resume or cleanup path", async () => {
-  const original = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"), source = compose(original);
+  const original = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8")), source = compose(original);
   assert.equal(compose(source), source); assert.equal(guard(source), source);
   for (const action of ["pcb-via-producer-guard", "pcb-via-producer-prefix-enroll", "schematic-display-producer-guard", "schematic-display-producer-prefix-enroll"]) { assert.equal(source.split(`        '${action}' {`).length, 2); }
   assert.ok(source.includes('stage=="create"&&!viaProducerPrefixEnrolled')); assert.ok(source.includes("!viaStructureBootstrapResumed||!viaProducerModeRequested"));

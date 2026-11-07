@@ -1,3 +1,4 @@
+import { expandCurrentPcbDiagnosticCSharpStorage, retainCurrentPcbDiagnosticCSharpStorage } from "../server/src/current-pcb-diagnostic-csharp-storage.ts";
 import { CURRENT_PCB_209_SPATIAL_ARC_BINDINGS_FUNCTION, CURRENT_PCB_209_SPATIAL_BINDINGS_FUNCTION, CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION,
   CURRENT_PCB_209_SPATIAL_FUNCTIONS_FUNCTION, CURRENT_PCB_209_SPATIAL_HANDLER_FUNCTION, CURRENT_PCB_209_SPATIAL_TRACK_BINDINGS_FUNCTION } from "../server/src/current-pcb-209-spatial-capture-program.ts";
 import { readFile, writeFile } from "node:fs/promises";
@@ -209,7 +210,8 @@ const action = process.argv[2];
 if (process.argv.length !== 3 || action !== "--write" && action !== "--check") { throw new Error("Expected --write or --check"); }
 const path = new URL("pcb-diagnostic-owner.ps1", import.meta.url);
 // oxlint-disable-next-line node/no-top-level-await -- This bounded generator is an explicit ESM command, never a runtime import.
-const source = await readFile(path, "utf8");
+const stored = await readFile(path, "utf8");
+const source = expandCurrentPcbDiagnosticCSharpStorage(stored);
 const begin = "// BEGIN GENERATED PCB209 SPATIAL PROTOCOL", end = "// END GENERATED PCB209 SPATIAL PROTOCOL";
 const start = source.indexOf(begin), stop = source.indexOf(end);
 if (start === -1 || stop < start || source.includes(begin, start + begin.length) || source.includes(end, stop + end.length)) { throw new Error("Spatial protocol markers must occur once"); }
@@ -221,10 +223,11 @@ if (numericStart === -1 || numericStop < numericStart || next.includes(numericBe
   throw new Error("Spatial numeric smoke markers must occur once");
 }
 next = `${next.slice(0, numericStart)}${numericBegin}\n${numericSmoke}${numericEnd}${next.slice(numericStop + numericEnd.length)}`;
+next = retainCurrentPcbDiagnosticCSharpStorage(next, stored);
 if (Buffer.byteLength(next) > CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES || CURRENT_PCB_SPATIAL_REQUEST_DERIVATION.headroom < 0 ||
     CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION.headroom < 0 || CURRENT_PCB_SPATIAL_ARC_REQUEST_DERIVATION.headroom < 0 || CURRENT_PCB_SPATIAL_PAD_REQUEST_DERIVATION.headroom < 0) {
   throw new Error("Spatial fixed helper source or complete-workflow reservation exceeds its fixed ceiling");
 }
 // oxlint-disable-next-line node/no-top-level-await -- Explicit generation writes only the reviewed bounded marker region.
 if (action === "--write") { await writeFile(path, next); }
-else if (next !== source) { throw new Error("Generated spatial native protocol differs"); }
+else if (next !== stored) { throw new Error("Generated spatial native protocol differs"); }

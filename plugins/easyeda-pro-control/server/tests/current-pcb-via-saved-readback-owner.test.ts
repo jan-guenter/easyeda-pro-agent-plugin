@@ -1,6 +1,7 @@
 /** Production original-owner methods/queues with real synthetic child streams.
  * The explicit checkpoint seam has no native authority. */
 /* oxlint-disable import/max-dependencies -- Production private factory registry, retained synthetic child and exact purpose cleanup are checked together. */
+import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
 import { currentPcbViaSavedReadbackAllocationOutcome, startCurrentPcbViaSavedReadbackOwner } from "../src/current-pcb-via-saved-readback-owner.ts";
 import type { CurrentPcbViaWriteClosedCheckpoint } from "../src/current-pcb-via-write-closed-checkpoint.ts";
 import { completeSyntheticSavedCacheFixture } from "./helpers/current-pcb-via-saved-cache-fixture.ts";
@@ -219,7 +220,7 @@ void test("copied closed-checkpoint data refuses the real lazy factory before na
 });
 
 void test("fresh readback native composition repeats exactly and its current pipe preserves51 bounded discovery slots and no opening grant", async context => {
-  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const first = generateWorkerStartupProtocol(source); assert.equal(generateWorkerStartupProtocol(first), first);
   const invalidationStart = first.indexOf("        'saved-readback-worker-bind' {\n");
   const metadataStart = first.indexOf("        'saved-readback-metadata' {\n");

@@ -1,4 +1,5 @@
 /* oxlint-disable import/max-dependencies -- Compare original owner issuance with the independent fixed/native grammars, SDK metadata and released capacities. */
+import { expandCurrentPcbDiagnosticCSharpStorage, packCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
 import assert from "node:assert/strict";
 import { gunzipSync } from "node:zlib";
 import { captureCurrentPcbStringClockReply } from "../src/current-pcb-string-clock-reply.ts";
@@ -45,7 +46,7 @@ void test("new SDK wire contains fixed scalars only and cannot be spent by relea
 });
 void test("fixed Via SDK retains its reviewed large-program schema and identical packed bytes", async () => {
   assert.ok(CURRENT_PCB_VIA_WRITE_FUNCTION.length > 16_384); assert.throws(() => captureCurrentPcbStringClockReply({ program: CURRENT_PCB_VIA_WRITE_FUNCTION }));
-  const original = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"); const generated = compose(original);
+  const original = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8")); const generated = compose(original);
   const match = /static readonly string ViaSdkFunction=UnpackFixedProgram\(@"([A-Za-z\d+/=]+)",(\d+),@"([a-f\d]{64})",@"([a-f\d]{64})"\);/u.exec(generated);
   assert.ok(match !== null); const encoded = match[1]; const length = match[2]; const expected = match[3]; const compressed = match[4]; assert.ok(encoded !== undefined && length !== undefined && expected !== undefined && compressed !== undefined);
   const packed = Buffer.from(encoded, "base64"); assert.equal(packed.toString("base64"), encoded); assert.equal(createHash("sha256").update(packed).digest("hex"), compressed);
@@ -108,10 +109,10 @@ void test("matching bootstrap and owner JSON cannot mint original native ownersh
   }
 });
 void test("composed native fragment is idempotent and keeps old births, caps and primitive methods separate", async () => {
-  const original = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const original = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const generated = compose(original); assert.equal(compose(generated), generated);
   const earlierVia = generated.replace(`return pcbViaWrite209?${String(PROFILE.renderer.total)}:spatial209?384:`, "return pcbViaWrite209?766:spatial209?384:").replace(`$requestLimit=if ($PcbViaWrite209) {${String(PROFILE.renderer.total)}}`, "$requestLimit=if ($PcbViaWrite209) {766}");
-  assert.equal(compose(earlierVia), generated); assert.ok(Buffer.byteLength(generated) < 2 * 1024 * 1024);
+  assert.equal(compose(earlierVia), generated); assert.ok(Buffer.byteLength(packCurrentPcbDiagnosticCSharpStorage(generated)) < 2 * 1024 * 1024);
   for (const text of ["EasyedaPcbViaWriteBirth", "CreatePcbViaWrite209()", "via-old-birth-smoke", "via-retain-main-until-exit", "viaConstructionComplete", "stage==\"save\"", "pcb-diagnostic-conflicting-via-purpose",
     `return pcbViaWrite209?${String(PROFILE.renderer.total)}:spatial209?384:componentSpatial209?419:workerStartup?256:stringPrecreate?3309:103`, "viaSdkProperties>=3", "SendPcbViaSpatial", "via-main-precreate-required", "via-main-precreate-original-enrollment", "VerifyViaMainPrecreateSmoke", "VerifyPcbViaMainLiveHistorySmoke", "viaHistoryStep!=20", "viaBeginArms.Count!=4", "viaHistoryArms.Count!=9", "viaStructureMainArms.Count!=9"]) { assert.ok(generated.includes(text), text); }
   assert.equal(generated.includes("sqlite3.Database="), false); assert.equal(generated.includes("Object.setPrototypeOf(sc.Database"), false);

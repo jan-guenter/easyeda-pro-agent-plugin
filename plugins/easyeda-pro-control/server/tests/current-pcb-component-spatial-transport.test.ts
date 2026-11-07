@@ -1,3 +1,4 @@
+import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
 import { generateWorkerStartupProtocol } from "../../scripts/generate-worker-startup-protocol.ts";
 import { queryOfflineApi } from "../src/offline-api.ts";
 import { diagnosticRecord } from "../src/current-pcb-diagnostic-protocol.ts";
@@ -58,7 +59,7 @@ void test("original Component pipe consumes one16-point stream, preserves strict
   const old = new CurrentPcbSpatialPipe(new PassThrough(), new PassThrough()); assert.equal(Object.hasOwn(old, "componentSpatialPurpose"), false); assert.throws(() => currentPcbSpatialWire(read, 1, "s"));
 });
 void test("Component native fragment composes idempotently with registration and preserves old384 codebook", async () => {
-  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"); const next = applyCurrentPcbComponentSpatialNativeFragment(source);
+  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8")); const next = applyCurrentPcbComponentSpatialNativeFragment(source);
   assert.equal(applyCurrentPcbComponentSpatialNativeFragment(next), next);
   const combined = generateWorkerStartupProtocol(source); assert.equal(generateWorkerStartupProtocol(combined), combined);
   for (const name of ["ComponentSpatial209", "PcbViaWrite209", "SchematicDisplayWrite209", "GeneratedFixture209"]) { assert.equal(combined.split(`if ($${name} -and (`).length - 1, 1); }

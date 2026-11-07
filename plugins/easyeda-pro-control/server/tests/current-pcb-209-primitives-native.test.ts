@@ -1,3 +1,4 @@
+import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
 import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -29,7 +30,7 @@ void test("209 primitive wire reconstructs only its fixed original-context comma
 });
 
 void test("native209 primitive source embeds the exact fixed program and rejects other owner purposes", async () => {
-  const native = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const native = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   assert.equal(readPackedNativeProgram(native, "Primitives209Function"), CURRENT_PCB_209_PRIMITIVES_FUNCTION);
   assert.equal(/const string Primitives209FunctionSha256="([a-f0-9]{64})";/u.exec(native)?.[1],
     createHash("sha256").update(CURRENT_PCB_209_PRIMITIVES_FUNCTION).digest("hex"));

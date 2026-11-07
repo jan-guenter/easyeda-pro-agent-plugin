@@ -1,4 +1,5 @@
 /** Pure fixed-wire parity. No native owner, renderer or application connects. */
+import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
 import assert from "node:assert/strict";
 import { decodeFixedNativeTable } from "./helpers/fixed-native-table.ts";
 import { readFile } from "node:fs/promises";
@@ -10,9 +11,9 @@ import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES } from "../src/current-p
 
 const worker = "clockrpc_worker"; const ui = "clockrpc_ui";
 void test("the fixed clock RPC encoder fits the helper-source ceiling behind its original combined-owner reservation", async () => {
-  const helper = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const stored = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"); const helper = expandCurrentPcbDiagnosticCSharpStorage(stored);
   const source = currentFootprintCopyClockRpcNativeSource();
-  assert.ok(Buffer.byteLength(helper) <= CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES);
+  assert.ok(Buffer.byteLength(stored) <= CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES);
   assert.equal(helper.split(source).length, 2);
   assert.equal(helper.split("EasyedaFootprintCopyClockRpcProtocol.Encode(").length, 2);
   assert.ok(helper.includes("if(!workerStartupFootprintCombined209 || footprintClockRpcBegun || footprintCreateClockBegun || mainCompletionBegun)"));

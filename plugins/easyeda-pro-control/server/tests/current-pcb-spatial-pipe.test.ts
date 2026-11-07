@@ -1,4 +1,5 @@
 /* oxlint-disable import/max-dependencies -- Purpose-isolation regressions compare the independent legacy codec, spatial codec, fixed program, catalog and derived limits. */
+import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import { PassThrough } from "node:stream";
@@ -139,7 +140,7 @@ void test("spatial purpose derives its fixed complete-workflow cap from the func
 });
 
 void test("spatial native birth has a private distinct type and no duplicate owner constructor signature", async () => {
-  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   assert.ok(source.includes("enum Spatial209Birth { SourceQualified }"));
   assert.ok(source.includes("EasyedaDiagnosticOwner(Spatial209Birth purpose)"));
   assert.ok(source.includes("return new EasyedaDiagnosticOwner(Spatial209Birth.SourceQualified);"));
@@ -152,7 +153,7 @@ void test("spatial native birth has a private distinct type and no duplicate own
 });
 
 void test("native CompileOnly exercises PowerShell-decoded fractions and invariant G17 for all six coordinates", async () => {
-  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   assert.ok(source.includes("!(value is double)&&!(value is decimal)"));
   const begin = source.indexOf("  static string SpatialQuery("), end = source.indexOf("  public static string Spatial209ProtocolMessage(", begin);
   assert.ok(begin !== -1 && end > begin);

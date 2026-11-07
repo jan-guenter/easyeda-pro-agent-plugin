@@ -1,6 +1,7 @@
 /** Source generation and real descriptor reads only. No C#/PowerShell compiler,
  * application, native helper or Windows owner runs in these focused cases. */
 /* oxlint-disable import/max-dependencies -- Verify the fixed graph against its legacy predecessor, independent codebooks and actual descriptor reader in one bounded source-only fixture. */
+import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
 import assert from "node:assert/strict";
 import { constants } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -22,7 +23,8 @@ import { currentFootprintCopyClockRpcV2NativeCases } from "../src/current-footpr
 
 void test("the exact current helper preserves all released forward graph bytes through separately pinned diagnostic projections", async () => {
   const shared = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
-  assert.equal(Buffer.byteLength(shared), FORWARD_NATIVE_INDEPENDENT_SHARED_HELPER.bytes); assert.equal(sha256Text(shared), FORWARD_NATIVE_INDEPENDENT_SHARED_HELPER.sha256);
+  const literal = expandCurrentPcbDiagnosticCSharpStorage(shared);
+  assert.equal(Buffer.byteLength(literal), FORWARD_NATIVE_INDEPENDENT_SHARED_HELPER.bytes); assert.equal(sha256Text(literal), FORWARD_NATIVE_INDEPENDENT_SHARED_HELPER.sha256);
   const legacy = normalizeForwardNativeLegacySource(shared);
   assert.equal(Buffer.byteLength(legacy), FORWARD_NATIVE_LEGACY.bytes); assert.equal(sha256Text(legacy), FORWARD_NATIVE_LEGACY.sha256);
   assert.equal(normalizeForwardNativeLegacySource(legacy), legacy);
@@ -64,7 +66,7 @@ void test("the exact current helper preserves all released forward graph bytes t
 });
 
 void test("altered spatial additions and unknown same-size or extended shared source refuse before released migration", async () => {
-  const shared = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const shared = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const changedLimit = shared.replace("spatial209?384:", "spatial209?385:");
   const changedPurpose = shared.replace("Spatial209Birth.SourceQualified", "Spatial209Birth.SourceQualifieX");
   assert.ok(changedLimit !== shared, "The fixed-limit mutation must change the fixture.");

@@ -3,6 +3,7 @@
 - [2026-11-07 original schematic action preflight](2026-11-07-schematic-original-action-preflight.md). Mount actual idle runner/recorder metadata through a distinct original SCH native vocabulary and retain its JS reference graph; first-setter and persistence grants stay blocked.
 
 - [2026-11-07 original schematic pre-modify setup](2026-11-07-schematic-original-pre-modify-setup.md). Compose genuine worker startup/accessor custody and retain the original selected-file Main fence with an unspent durable modify intent; action and Save grants remain separate.
+- [2026-11-07 fixed native C# storage](2026-11-07-fixed-native-csharp-storage.md). Exact bounded compiler-input packing recovers helper headroom, restores all source-marker readers and preserves all six released outputs; supersedes ambient Node 26 storage measurements.
 
 - [2026-11-07 failed disposable Via abandonment](2026-11-07-via-failed-disposable-abandonment.md). Separate immutable closure sidecar clears historical quarantine only after all original resources settle; failed Save/reopen proofs remain false and old records stay exact.
 - [2026-11-07 Via drain native storage](2026-11-07-via-save-drain-native-storage.md). Fixed original drain/sync/source lanes and lossless pending-program sharing preserve exact message hashes; combined helper headroom remains a separately enforced release gate.

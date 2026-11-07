@@ -58,6 +58,30 @@ all descriptors `11` and above with `close_range(2)`, and enters Bubblewrap from
 descriptor `10` with `execveat(2)`. Bubblewrap receives only descriptors `0`–`9`;
 an arbitrary descriptor inherited by the facade's shell cannot reach it.
 
+## Fixed native compiler input
+
+The combined diagnostic helper stores its one fixed C# body as gzip/base64 in
+the final PowerShell output. Both the stored helper and decoded C# retain the
+same 2 MiB ceiling. This is a storage transform: it changes no native purpose,
+control phase, request count, fixed debugger program or application permission.
+
+Builds use pinned Node 24.18.0 with core dumps disabled. Generation restores the
+exact literal `Add-Type` body before applying source markers, then packs only
+the final combined output. Forward and cold-forward migration restore that same
+body before checking their original source identities; their six released
+artifacts remain byte-identical. Source readers must use this closed restoration
+path rather than assume every combined helper contains a literal here-string.
+
+The emitted decoder takes metadata only from its embedded fixed literals. It
+checks canonical base64, compressed length/hash, the gzip envelope, bounded
+stream length and end, then decoded length/hash and strict UTF-8 without a BOM
+before `Add-Type`. The compiler receives the original ASCII byte sequence,
+including every LF. Build-time restoration additionally requires the canonical
+pinned gzip encoding, refusing ignored tails and extra members. No control
+request supplies source, hashes, lengths or decoder options. The original
+synthetic launch/CompileOnly reader uses the identical decoder before adding
+its existing in-memory test hooks.
+
 ## Runtime isolation
 
 Live context, read, capture, export, checkpoint, mutation, and recovery calls are bound to one exact authenticated renderer session through final evidence publication. A reconnect cannot substitute a new renderer with matching logical IDs. Status alone retains a disconnected read-only bootstrap mode so it can report why no authenticated session exists.

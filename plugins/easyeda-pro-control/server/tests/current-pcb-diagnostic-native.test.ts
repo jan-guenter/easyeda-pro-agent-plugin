@@ -1,4 +1,5 @@
 /* oxlint-disable import/max-dependencies -- Native parity compares each independent fixed program and the bounded packed decoder. */
+import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -10,7 +11,6 @@ import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, CURRENT_PCB_DIAGNOSTI
   CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION } from "../src/current-pcb-diagnostic-model-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION } from "../src/current-pcb-diagnostic-pending-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION } from "../src/current-pcb-diagnostic-raw-strings.ts";
-// oxlint-disable-next-line import/max-dependencies -- Native parity needs each fixed program from its independently reviewed implementation.
 import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION } from "../src/current-pcb-diagnostic-root-inventory.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-pcb-opening.ts";
 import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
@@ -31,7 +31,7 @@ void test("native helper bytes and hash match both owner and synthetic launch sm
 });
 
 void test("native forward birth self-check follows its generated purpose ceilings", async () => {
-  const source = await readFile(sourcePath, "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(sourcePath, "utf8"));
   assert.ok(source.includes("fresh.FootprintRequestLimit!=EasyedaFootprintForwardLimits.Requests||fresh.FootprintNormalRequestLimit!=EasyedaFootprintForwardLimits.NormalRequests"));
   assert.doesNotMatch(source, /fresh\.(?:Footprint(?:Normal)?RequestLimit|forward(?:Normal|Cleanup)Requests)!=\d/u);
   assert.ok(source.includes("int overflowId=checked(EasyedaFootprintForwardLimits.Requests+1)"));
@@ -39,7 +39,7 @@ void test("native forward birth self-check follows its generated purpose ceiling
 });
 
 void test("native helper embeds the complete fixed worker program with separate outgoing frame budget", async () => {
-  const source = await readFile(sourcePath, "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(sourcePath, "utf8"));
   const expression = readPackedNativeProgram(source, "WorkerExpressionFunction");
   assert.ok(source.includes("static readonly string WorkerExpression=WorkerExpressionFunction;"));
   assert.equal(expression, CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION);
@@ -56,7 +56,7 @@ void test("native helper embeds the complete fixed worker program with separate 
 });
 
 void test("native worker commands accept identifiers only and keep fixed non-pausing effect controls", async () => {
-  const source = await readFile(sourcePath, "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(sourcePath, "utf8"));
   assert.ok(source.includes("'Target.setAutoAttach' {$fields+=@('sessionId')}"));
   assert.ok(source.includes("'Runtime.evaluate' {$fields+=@('sessionId','uniqueContextId')}"));
   assert.ok(source.includes('if(id<1 || id>(stringPurpose?3309:103) || (method!="Runtime.evaluate" && uniqueContextId!=null))'));
@@ -82,7 +82,7 @@ void test("native worker commands accept identifiers only and keep fixed non-pau
 });
 
 void test("native opening and model programs are byte-exact fixed commands, not caller code", async () => {
-  const source = await readFile(sourcePath, "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(sourcePath, "utf8"));
   for (const [name, expected] of Object.entries({ OpeningFunction: CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION,
     ModelCallbackExpression: CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, ModelHandlerFunction: CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION,
     ModelStateFunction: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, ModelPendingFunction: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION,
@@ -105,7 +105,7 @@ void test("native opening and model programs are byte-exact fixed commands, not 
 });
 
 void test("native dispatch preserves missing PowerShell fields through object-typed boundaries without accepting supplied empties", async () => {
-  const source = await readFile(sourcePath, "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(sourcePath, "utf8"));
   assert.ok(source.includes("public void Send(int id,string method,object targetId,object sessionId,object scriptId,object uniqueContextId)"));
   assert.ok(source.includes("public void SendModel(int id,string method,string sessionId,string phase,object uniqueContextId,object objectId,object callbackObjectId,object constructorObjectId,object teardropObjectId)"));
   assert.ok(source.includes("if(value==null) return null;"));
@@ -121,7 +121,7 @@ void test("native dispatch preserves missing PowerShell fields through object-ty
 });
 
 void test("native constructor grammar admits only purpose-matched fixed selectors and exact required tuple handles", async () => {
-  const source = await readFile(sourcePath, "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(sourcePath, "utf8"));
   assert.ok(source.includes('(phase=="constructors-precreate")!=stringPurpose'));
   assert.ok(source.includes('if(!pending && phase!="root-inventory" && constructorObjectId!=null) throw Error("model-object")'));
   assert.ok(source.includes('((pending || phase=="root-inventory") && !handle(constructorObjectId))'));
@@ -143,7 +143,7 @@ void test("native constructor grammar admits only purpose-matched fixed selector
 });
 
 void test("native creation failure captures numeric error before cleanup while preserving unknown-creation refusal", async () => {
-  const source = await readFile(sourcePath, "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(sourcePath, "utf8"));
   assert.match(source, /if\(!createdProcess\) \{\s*\/\/[^\n]*\n\s*\/\/[^\n]*\n\s*createProcessError=unchecked\(\(uint\)Marshal.GetLastWin32Error\(\)\);/u);
   const creationEnd = source.indexOf("// Exact worker diagnostic program."), creationStart = source.indexOf("void CreateVerifiedRoot()");
   assert.ok(creationStart > 0 && creationEnd > creationStart);

@@ -1,3 +1,4 @@
+import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
@@ -18,7 +19,7 @@ void test("native program packing preserves exact UTF-8 source and deterministic
 });
 
 void test("native decoder has bounded fixed inputs and real CompileOnly refusal coverage", async () => {
-  const native = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const native = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   for (const guard of ["encoded.Length>87384", "length<1 || length>65536", "compressed.Length>65536",
     "Convert.ToBase64String(compressed)!=encoded", "packed-program-compressed-hash", "new byte[length]",
     "stream.Read(bytes,offset,bytes.Length-offset)", "packed-program-truncated", "stream.ReadByte()!=-1",
@@ -31,7 +32,7 @@ void test("native decoder has bounded fixed inputs and real CompileOnly refusal 
 });
 
 void test("fixed support tables initialize before aliases and reject corrupted storage", async () => {
-  const native = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const native = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const names = ["ModelStateFunction", "ModelStateV2Function", "ModelPendingFunction", "ModelPendingV2Function",
     "ModelRootInventoryFunction", "StringProducerMarkersV2Function", "CommonPresentationFunction", "CommonPreferenceFunction",
     "CommonRulesFunction", "CommonMetadataFunction", "ModelDiagnosticConstructorsFunction", "ModelPrecreateConstructorsFunction",

@@ -1,6 +1,7 @@
 /** Native codec/source and original empty-factory regressions. The process
  * fixture is inert Node, never an application or Windows ownership proof. */
 /* oxlint-disable import/max-dependencies -- Compare independent fixed vocabularies, source reservation and the genuine factory; no single mocked adapter can establish this boundary. */
+import { expandCurrentPcbDiagnosticCSharpStorage, packCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import { readFile } from "node:fs/promises";
@@ -15,9 +16,9 @@ import { requireCurrentProjectStructureMainPlanTransportCapacity } from "../src/
 import { combinedReadyFactoryFixture } from "./helpers/current-footprint-combined-ready-fixture.ts";
 
 void test("dedicated structure source is idempotent, bounded and retains independent old-purpose limits", async () => {
-  const helper = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const helper = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const next = applyCurrentProjectStructureNativeFragment(helper); assert.equal(applyCurrentProjectStructureNativeFragment(next), next);
-  assert.ok(Buffer.byteLength(next) < 2 * 1024 * 1024); assert.match(next, /AdmitProjectStructureAction/u);
+  assert.ok(Buffer.byteLength(packCurrentPcbDiagnosticCSharpStorage(next)) < 2 * 1024 * 1024); assert.match(next, /AdmitProjectStructureAction/u);
   assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [59, 27, 86]);
   assert.deepEqual([PROFILE.worker.normal, PROFILE.worker.cleanup, PROFILE.worker.total], [897, 47, 944]);
   assert.equal(CURRENT_FOOTPRINT_COMBINED_PROFILE.main.requestLimit, 55); assert.equal(PROFILE.writerAuthorized, false);

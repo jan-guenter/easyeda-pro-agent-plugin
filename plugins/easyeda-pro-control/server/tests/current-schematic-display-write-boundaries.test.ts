@@ -1,5 +1,7 @@
+/* oxlint-disable import/max-dependencies -- Source-only native protocol fixture additionally restores its exact stored compiler input. */
 /** Original schematic birth grammar and composed native source only. No app,
  * native process, project or controller is opened by these checks. */
+import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
@@ -32,7 +34,7 @@ void test("matching schematic/PCB checkpoint JSON and constructed facades cannot
   const schematicCopy: unknown = Reflect.apply(startCurrentSchematicDisplayWriteOwner, undefined, [options, { profile: "private.generated-schematic-fixture-open-checkpoint.v1" }]); assert.ok(schematicCopy instanceof Promise); await assert.rejects(schematicCopy, /Original/u);
 });
 void test("separate schematic fragment composes twice without changing prior Via or generated birth spans", async () => {
-  const original = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"), source = compose(original);
+  const original = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8")), source = compose(original);
   assert.equal(compose(source), source);
   const viaLimit = /return pcbViaWrite209\?(\d+):/u.exec(source)?.[1]; assert.ok(viaLimit !== undefined);
   const previous = source.replace("if(schematicDisplayWrite209)return 2709;", "if(schematicDisplayWrite209)return 617;").replace("$requestLimit=2709", "$requestLimit=617").replace(`return pcbViaWrite209?${viaLimit}:`, "return pcbViaWrite209?1019:").replace(`$requestLimit=if ($PcbViaWrite209) {${viaLimit}}`, "$requestLimit=if ($PcbViaWrite209) {1019}");
