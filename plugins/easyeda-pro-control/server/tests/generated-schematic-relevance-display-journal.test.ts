@@ -7,12 +7,14 @@ import { test } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { updateOperation } from "../src/artifacts.ts";
-import type { GeneratedSchematicRelevanceDisplayDispatch, GeneratedSchematicRelevanceDisplayJournal, GeneratedSchematicRelevanceDisplayModifyEnrollment } from "../src/generated-schematic-relevance-display-journal.ts";
+import type { GeneratedSchematicRelevanceDisplayDispatch, GeneratedSchematicRelevanceDisplayJournal, GeneratedSchematicRelevanceDisplayLibraryIntent, GeneratedSchematicRelevanceDisplayModifyEnrollment, GeneratedSchematicRelevanceDisplayPollingIntent } from "../src/generated-schematic-relevance-display-journal.ts";
 import { assertGeneratedSchematicRelevanceDisplayJournalChain } from "../src/generated-schematic-relevance-display-journal.ts";
 import type { GeneratedFixtureJournalPublicationDependencies } from "../src/generated-fixture-journal-publication.ts";
 import { assertGeneratedSchematicDisplayJournalChain, consumeGeneratedSchematicDisplayDispatch } from "../src/generated-schematic-display-journal.ts";
 
 async function fixture(dependencies: GeneratedFixtureJournalPublicationDependencies = {}, stage: "modify" | "save" = "modify"): Promise<Readonly<{ journal: GeneratedSchematicRelevanceDisplayJournal;
+  startupEnroll: (role: "polling" | "library", token: GeneratedSchematicRelevanceDisplayPollingIntent | GeneratedSchematicRelevanceDisplayLibraryIntent, owner: object) => GeneratedSchematicRelevanceDisplayModifyEnrollment;
+  startupConsume: (role: "polling" | "library", token: GeneratedSchematicRelevanceDisplayPollingIntent | GeneratedSchematicRelevanceDisplayLibraryIntent, owner: object) => Readonly<{ assertPublished: () => Promise<void> }>;
   enroll: (token: GeneratedSchematicRelevanceDisplayDispatch, owner: object) => GeneratedSchematicRelevanceDisplayModifyEnrollment;
   consume: (token: GeneratedSchematicRelevanceDisplayDispatch, owner: object, copyArguments?: boolean) => Readonly<{ assertPublished: () => Promise<void> }> }>> {
   const operationId = `sch209-relevance-display-${globalThis.crypto.randomUUID()}`;
@@ -28,7 +30,17 @@ async function fixture(dependencies: GeneratedFixtureJournalPublicationDependenc
   const Constructor = loaded.exports["GeneratedSchematicRelevanceDisplayJournal"], consume = loaded.exports["consumeGeneratedSchematicRelevanceDisplayDispatch"], enroll = loaded.exports[stage === "save" ? "enrollGeneratedSchematicRelevanceDisplaySaveIntent" : "enrollGeneratedSchematicRelevanceDisplayModifyIntent"]; assert.ok(typeof Constructor === "function" && typeof consume === "function" && typeof enroll === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Exact production private journal class with an explicit inert original-checkpoint seam; all managed publication/verification code is unchanged.
   const journal = Reflect.construct(Constructor, [argumentsValue, prepared, dependencies]) as GeneratedSchematicRelevanceDisplayJournal;
-  return { journal, enroll: (token: GeneratedSchematicRelevanceDisplayDispatch, owner: object): GeneratedSchematicRelevanceDisplayModifyEnrollment => {
+  return { journal,
+    startupEnroll: (role, token, owner): GeneratedSchematicRelevanceDisplayModifyEnrollment => {
+      const fn = loaded.exports[role === "polling" ? "enrollGeneratedSchematicRelevanceDisplayPollingIntent" : "enrollGeneratedSchematicRelevanceDisplayLibraryIntent"]; assert.ok(typeof fn === "function");
+      const value: unknown = Reflect.apply(fn, undefined, [token, owner, argumentsValue]); assert.ok(value !== null && typeof value === "object" && ["assertCurrent", "assertBeforeAttempt", "assertOriginalAttempted", "assertPublished"].every(key => typeof Reflect.get(value, key) === "function"));
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The production enrollment closure shape is checked; only original checkpoint issuance is the explicit seam.
+      return value as GeneratedSchematicRelevanceDisplayModifyEnrollment;
+    }, startupConsume: (role, token, owner): Readonly<{ assertPublished: () => Promise<void> }> => {
+      const fn = loaded.exports[role === "polling" ? "consumeGeneratedSchematicRelevanceDisplayPollingIntent" : "consumeGeneratedSchematicRelevanceDisplayLibraryIntent"]; assert.ok(typeof fn === "function");
+      const value: unknown = Reflect.apply(fn, undefined, [token, owner, argumentsValue]); assert.ok(value !== null && typeof value === "object" && "assertPublished" in value && typeof value.assertPublished === "function");
+      const assertPublished = value.assertPublished; return { assertPublished: async (): Promise<void> => { await Reflect.apply(assertPublished, value, []); } };
+    }, enroll: (token: GeneratedSchematicRelevanceDisplayDispatch, owner: object): GeneratedSchematicRelevanceDisplayModifyEnrollment => {
     const result: unknown = Reflect.apply(enroll, undefined, [token, owner, argumentsValue]);
     assert.ok(result !== null && typeof result === "object" && ["assertCurrent", "assertBeforeAttempt", "assertOriginalAttempted", "assertPublished"].every(name => typeof Reflect.get(result, name) === "function"));
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Checked exact exported production closure shape; only original argument issuance is replaced above.
@@ -96,4 +108,19 @@ void test("Save enrollment requires its own published stage and is consumed once
   await f.consume(token, owner).assertPublished(); original.assertOriginalAttempted();
   assert.throws(() => { original.assertBeforeAttempt(); }, /SAVE_BEFORE_ATTEMPT/u);
   assert.throws(() => f.consume(token, owner), /ORIGINAL_DISPATCH/u);
+});
+
+void test("startup controls share one original opening record while retaining separate roles and one-shot consumers", async () => {
+  const f = await fixture(); await f.journal.reserve(); const owner = Object.freeze({ explicitSyntheticWriter: true }); f.journal.bindWriter(owner);
+  for (const stage of ["baseline", "allocation", "launch", "main"] as const) { await f.journal.append(`${stage}-intent`, {}); await f.journal.append(`${stage}-result`, {}); }
+  const intents = await f.journal.appendStartupCancellationIntents(owner);
+  assert.equal(f.journal.retainedStartupCancellationIntents(), intents); assert.throws(() => f.startupEnroll("polling", intents.library, owner), /ORIGINAL_STARTUP_INTENT/u);
+  assert.throws(() => f.startupEnroll("library", structuredClone(intents.library), owner), /ORIGINAL_STARTUP_INTENT/u);
+  assert.throws(() => f.startupEnroll("polling", intents.polling, { ...owner }), /ORIGINAL_STARTUP_INTENT/u);
+  const library = f.startupEnroll("library", intents.library, owner), polling = f.startupEnroll("polling", intents.polling, owner);
+  polling.assertBeforeAttempt(); library.assertBeforeAttempt(); await polling.assertPublished(); await library.assertPublished();
+  await f.startupConsume("polling", intents.polling, owner).assertPublished(); polling.assertOriginalAttempted(); library.assertBeforeAttempt();
+  assert.throws(() => f.startupConsume("polling", intents.polling, owner), /ORIGINAL_STARTUP_DISPATCH/u);
+  await f.startupConsume("library", intents.library, owner).assertPublished(); library.assertOriginalAttempted();
+  await assert.rejects(f.journal.appendStartupCancellationIntents(owner), /STARTUP_ORIGINAL_WRITER/u);
 });

@@ -113,12 +113,47 @@ export function enrollGeneratedSchematicRelevanceDisplaySaveIntent(token: Genera
     assertPublished: async (): Promise<void> => { current(); await original.journal.assertDispatchPublished("save", original.sequence); current(); } });
 }
 
+/** Separate original startup controls share only their published opening
+ * record. Neither token can select a timer, consume its sibling or mint Save. */
+export interface GeneratedSchematicRelevanceDisplayPollingIntent { readonly profile: "private.generated-schematic-relevance-display-polling-intent.v1" }
+export interface GeneratedSchematicRelevanceDisplayLibraryIntent { readonly profile: "private.generated-schematic-relevance-display-library-intent.v1" }
+export type GeneratedSchematicRelevanceDisplayStartupEnrollment = GeneratedSchematicRelevanceDisplayModifyEnrollment;
+type StartupRole = "polling" | "library";
+type StartupToken = GeneratedSchematicRelevanceDisplayPollingIntent | GeneratedSchematicRelevanceDisplayLibraryIntent;
+interface StartupIntent { readonly journal: GeneratedSchematicRelevanceDisplayJournal; readonly owner: object; readonly argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments;
+  readonly role: StartupRole; readonly sequence: number; consumed: boolean; enrolled: boolean }
+const startupIntents = new WeakMap<StartupToken, StartupIntent>();
+function startupIntent(token: StartupToken, role: StartupRole, owner: object, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): StartupIntent {
+  const original = startupIntents.get(token);
+  need(original !== undefined && original.role === role && original.owner === owner && original.argumentsValue === argumentsValue, "ORIGINAL_STARTUP_INTENT");
+  original.journal.requireRetainedDispatchIntent("opening", original.sequence); return original;
+}
+function enrollStartup(token: StartupToken, role: StartupRole, owner: object, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): GeneratedSchematicRelevanceDisplayStartupEnrollment {
+  const original = startupIntent(token, role, owner, argumentsValue); need(!original.consumed && !original.enrolled, "ORIGINAL_STARTUP_ENROLLMENT");
+  original.journal.requireDispatchIntent("opening", original.sequence); original.enrolled = true;
+  const current = (): void => { need(startupIntent(token, role, owner, argumentsValue) === original && original.enrolled, "ORIGINAL_STARTUP_ENROLLMENT"); };
+  return Object.freeze({ assertCurrent: current,
+    assertBeforeAttempt: (): void => { current(); need(!original.consumed, "STARTUP_BEFORE_ATTEMPT"); original.journal.requireDispatchIntent("opening", original.sequence); },
+    assertOriginalAttempted: (): void => { current(); need(original.consumed, "STARTUP_ORIGINAL_ATTEMPT_REQUIRED"); },
+    assertPublished: async (): Promise<void> => { current(); await original.journal.assertOriginalPublication(); current(); } });
+}
+function consumeStartup(token: StartupToken, role: StartupRole, owner: object, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): Readonly<{ assertPublished: () => Promise<void> }> {
+  const original = startupIntent(token, role, owner, argumentsValue); need(original.enrolled && !original.consumed, "ORIGINAL_STARTUP_DISPATCH");
+  original.journal.requireDispatchIntent("opening", original.sequence); original.consumed = true;
+  return Object.freeze({ assertPublished: async (): Promise<void> => { need(startupIntent(token, role, owner, argumentsValue) === original, "ORIGINAL_STARTUP_DISPATCH"); await original.journal.assertOriginalPublication(); need(startupIntent(token, role, owner, argumentsValue) === original, "ORIGINAL_STARTUP_DISPATCH"); } });
+}
+export function enrollGeneratedSchematicRelevanceDisplayPollingIntent(token: GeneratedSchematicRelevanceDisplayPollingIntent, owner: object, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): GeneratedSchematicRelevanceDisplayStartupEnrollment { return enrollStartup(token, "polling", owner, argumentsValue); }
+export function enrollGeneratedSchematicRelevanceDisplayLibraryIntent(token: GeneratedSchematicRelevanceDisplayLibraryIntent, owner: object, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): GeneratedSchematicRelevanceDisplayStartupEnrollment { return enrollStartup(token, "library", owner, argumentsValue); }
+export function consumeGeneratedSchematicRelevanceDisplayPollingIntent(token: GeneratedSchematicRelevanceDisplayPollingIntent, owner: object, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): Readonly<{ assertPublished: () => Promise<void> }> { return consumeStartup(token, "polling", owner, argumentsValue); }
+export function consumeGeneratedSchematicRelevanceDisplayLibraryIntent(token: GeneratedSchematicRelevanceDisplayLibraryIntent, owner: object, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): Readonly<{ assertPublished: () => Promise<void> }> { return consumeStartup(token, "library", owner, argumentsValue); }
+
 /** One original retained journal. Publication settlement joins its immutable
  * pending candidate and same marker; it performs no native dispatch itself. */
 export class GeneratedSchematicRelevanceDisplayJournal {
   readonly #arguments: GeneratedSchematicRelevanceDisplayNativeArguments; readonly #prepared: GeneratedSchematicRelevanceFixtureOpenCheckpoint;
   readonly #operation: TrackedDispatchOperationJournal; readonly #publication: GeneratedFixtureJournalPublication;
   readonly #tokens = new Map<"modify" | "save", GeneratedSchematicRelevanceDisplayDispatch>();
+  #startupCancellationIntents: Readonly<{ polling: GeneratedSchematicRelevanceDisplayPollingIntent; library: GeneratedSchematicRelevanceDisplayLibraryIntent }> | null = null;
   #reserveAttempted = false; #creationEntered = false; #created = false; #reserved = false; #busy = false; #owner: object | null = null;
   public constructor(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments, prepared: GeneratedSchematicRelevanceFixtureOpenCheckpoint,
     dependencies: GeneratedFixtureJournalPublicationDependencies = {}) {
@@ -160,6 +195,25 @@ export class GeneratedSchematicRelevanceDisplayJournal {
   public append(kind: Kind, evidence: Readonly<Record<string, unknown>>): Promise<void> {
     return this.#exclusive(async (): Promise<void> => { need(this.#reserved, "ORIGINAL_RESERVATION"); await this.#assertCurrent(); await this.#append(kind, evidence); });
   }
+  /** Original operation opening also reserves these two exact process-local
+   * controls. No extra persisted kind/result shape or caller timer is added. */
+  public async appendStartupCancellationIntents(owner: object): Promise<Readonly<{ polling: GeneratedSchematicRelevanceDisplayPollingIntent; library: GeneratedSchematicRelevanceDisplayLibraryIntent }>> {
+    need(this.#owner === owner && !this.#busy && !this.#publication.pending() && this.#startupCancellationIntents === null, "STARTUP_ORIGINAL_WRITER");
+    const sequence = this.#records().length + 1;
+    const polling: GeneratedSchematicRelevanceDisplayPollingIntent = Object.freeze({ profile: "private.generated-schematic-relevance-display-polling-intent.v1" });
+    const library: GeneratedSchematicRelevanceDisplayLibraryIntent = Object.freeze({ profile: "private.generated-schematic-relevance-display-library-intent.v1" });
+    for (const [role, token] of [["polling", polling], ["library", library]] as const) { startupIntents.set(token, { journal: this, owner, argumentsValue: this.#arguments, role, sequence, consumed: false, enrolled: false }); }
+    this.#startupCancellationIntents = Object.freeze({ polling, library });
+    await this.append("opening-intent", { temporarySessionMutation: true, scope: "original-generated-schematic-startup-only",
+      controls: ["first-checkProject-native-timeout", "first-library-update-loop"], arbitraryTimerSelection: false, designModelMutationAuthorized: false,
+      originalEntryReturnAndNativeCancellationRequired: true, generationExitEndsTemporaryScope: true }); return this.retainedStartupCancellationIntents();
+  }
+  public retainedStartupCancellationIntents(): Readonly<{ polling: GeneratedSchematicRelevanceDisplayPollingIntent; library: GeneratedSchematicRelevanceDisplayLibraryIntent }> {
+    const original = this.#startupCancellationIntents; need(original !== null && this.#owner !== null, "ORIGINAL_STARTUP_INTENT");
+    for (const [role, token] of [["polling", original.polling], ["library", original.library]] as const) { const intent = startupIntent(token, role, this.#owner, this.#arguments); need(!intent.consumed, "ORIGINAL_STARTUP_DISPATCH"); this.requireDispatchIntent("opening", intent.sequence); }
+    return original;
+  }
+  public assertOriginalPublication(): Promise<void> { return this.#assertCurrent(); }
   public async appendIntent(stage: "modify" | "save", evidence: Readonly<Record<string, unknown>>, owner: object): Promise<GeneratedSchematicRelevanceDisplayDispatch> {
     need(this.#owner === owner && !this.#busy && !this.#publication.pending() && !this.#tokens.has(stage), "ORIGINAL_WRITER_BINDING");
     const token: GeneratedSchematicRelevanceDisplayDispatch = Object.freeze({ profile: "private.generated-schematic-relevance-display-dispatch.v1" });
@@ -170,11 +224,11 @@ export class GeneratedSchematicRelevanceDisplayJournal {
     const token = this.#tokens.get(stage); const original = token === undefined ? undefined : dispatches.get(token);
     need(token !== undefined && original !== undefined && !original.consumed, "ORIGINAL_DISPATCH"); this.requireDispatchIntent(stage, original.sequence); return token;
   }
-  public requireDispatchIntent(stage: "modify" | "save", sequence: number): void {
+  public requireDispatchIntent(stage: "opening" | "modify" | "save", sequence: number): void {
     this.#current(); need(!this.#busy && this.#reserved && !this.#publication.pending(), "PUBLICATION_PENDING"); const last = this.#records().at(-1);
     need(last?.kind === `${stage}-intent` && last.sequence === sequence, "CURRENT_DISPATCH_INTENT");
   }
-  public requireRetainedDispatchIntent(stage: "modify" | "save", sequence: number): void {
+  public requireRetainedDispatchIntent(stage: "opening" | "modify" | "save", sequence: number): void {
     this.#current(); need(!this.#busy && this.#reserved && !this.#publication.pending(), "PUBLICATION_PENDING");
     const record = this.#records()[sequence - 1]; need(record?.kind === `${stage}-intent` && record.sequence === sequence, "RETAINED_DISPATCH_INTENT");
   }

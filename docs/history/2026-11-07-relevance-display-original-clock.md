@@ -105,3 +105,19 @@ Structure publication, original producer drain, the independent library-update
 loop, full closed SQL acceptance and reopen remain unfinished. No public
 schematic writer route is enabled by this integration. No tracked helper,
 migration pin, bundle or installed version has changed.
+
+## Distinct opening control intents
+
+The original seven-record journal now reserves two separately branded controls
+in its existing opening-intent record: the first project-polling timeout and
+the first library-refresh loop. Each has its own original owner/arguments,
+enrollment and synchronous one-shot consumer. A sibling token, copied token,
+wrong owner, duplicate enrollment or consumed token cannot authorize a control.
+No caller timer, callback, expression or replacement receiver is accepted.
+The persisted record kinds, sequence and result schemas remain unchanged.
+
+The five focused journal cases pass, including independent startup consumers;
+both TypeScript projects and changed strict lint pass. This reserves intent
+only. Native arming, source/callee qualification, actual cancellation and the
+same-worker completion tokens are the next integration step. No completed
+startup-control proof has been issued and no native call was made here.
