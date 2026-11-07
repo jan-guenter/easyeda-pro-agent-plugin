@@ -27,3 +27,17 @@ logs remain outside the repository.
 These are source/build facts. There is no new connected writer validation,
 saved/reopened result, installation or permission to continue another native
 owner from this change.
+
+The next integrated source checkpoint includes inverse ready-callee bindings
+and the seven-record Main history result. Its shared helper is 1,374,245 bytes
+with a 1,897,943-byte compiler input. The schematic helper is 1,230,256 bytes
+with a 1,690,704-byte compiler input. The inverse worker's two-pass generation
+and C# 5 codec checks passed separately. Seven combined callee/custody/Main-wait
+checks passed on the integrated source.
+
+The static identity check initially refused the process-owner source because
+that file exceeds its ordinary 1 MiB source-read bound. The fix moves the two
+shared helper pins to a small independent module. The checker, runtime import,
+Windows smoke pins and isolated test package now use that module. The ordinary
+source-read bound and both native limits are unchanged. The exact byte check,
+its size/substitution checks and Main waiter checks passed after this change.

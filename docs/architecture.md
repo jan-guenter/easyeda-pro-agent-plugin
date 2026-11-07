@@ -66,6 +66,13 @@ commit, full length and hash. It is a build input, never a runtime path or an
 application snapshot. Forward and cold-forward generators use that same seed
 and must reproduce all six released artifacts exactly.
 
+The shared helper's runtime size/hash literals live in
+`current-pcb-diagnostic-helper-identity.ts`. The independent Windows synthetic
+launch script repeats them. The static checker reads the small identity module
+and actual helper, so growing process-owner source does not require enlarging
+its ordinary source-read limit. TypeScript imports these literals into the
+owner; no runtime request can update them.
+
 The default startup generator emits the shared legacy/PCB/footprint build.
 `schematic:native:update` emits a separate `schematic-edit-native.ps1` and readable
 C# review copy for the seven-record display and wire purposes. Its PowerShell

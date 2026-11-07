@@ -118,6 +118,10 @@ Open questions are not requirements.
   evidence remains077. Git executable bits alone do not prove exact755/644 modes.
 - Synchronize source/bundles; never hand-edit `server/dist/server.mjs`. Keep sanitizer
   assembly/linker/binary and `server/src/descriptor-sanitizer-identity.ts` synchronized.
+- Keep shared native helper pins in `current-pcb-diagnostic-helper-identity.ts`
+  synchronized with the independent Windows synthetic-launch pins. The
+  schematic helper has a separate generated identity. Static identity checks
+  read these small modules without importing or scanning the process owner.
 
 ## Required verification
 

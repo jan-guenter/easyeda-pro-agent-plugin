@@ -130,8 +130,9 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
   const raw = ownerSource.replaceAll("import.meta.url", JSON.stringify(path.href))
     // Explicit external checkpoint seam; production keeps its literal lazy import.
     .replace('await import("./current-footprint-copy-held-saved-generation.ts")', 'await Promise.resolve(require("./current-footprint-copy-held-saved-generation.ts"))')
-    .replace(/const HELPER_SHA256 = "[a-f\d]{64}";/u, `const HELPER_SHA256 = "${createHash("sha256").update(helper).digest("hex")}";`)
-    .replace(/const HELPER_BYTES = [\d_]+;/u, `const HELPER_BYTES = ${String(helper.length)};`);
+    // Exact helper identity seam for this isolated synthetic package only.
+    .replace('import { CURRENT_PCB_DIAGNOSTIC_HELPER_BYTES as HELPER_BYTES, CURRENT_PCB_DIAGNOSTIC_HELPER_SHA256 as HELPER_SHA256 } from "./current-pcb-diagnostic-helper-identity.ts";',
+      `const HELPER_SHA256 = "${createHash("sha256").update(helper).digest("hex")}";\nconst HELPER_BYTES = ${String(helper.length)};`);
   const output = await transform(raw, { loader: "ts", format: "cjs", target: "node24", logLevel: "silent" });
   const loaded: { exports: Record<string, unknown> } = { exports: {} }, sourceOnly = Object.freeze({ syntheticSourceOnly: true });
   const options = Object.freeze({ pluginRoot, assetsRoot: "/synthetic-unused-assets", powershellSha256: "a".repeat(64), powershellBytes: 1, wslDistribution: "Synthetic" });

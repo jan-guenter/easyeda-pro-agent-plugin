@@ -1,6 +1,7 @@
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
 import { captureCurrentSchematicEditNativeHelper } from "./current-schematic-edit-native-helper.ts";
+import { CURRENT_PCB_DIAGNOSTIC_HELPER_BYTES as HELPER_BYTES, CURRENT_PCB_DIAGNOSTIC_HELPER_SHA256 as HELPER_SHA256 } from "./current-pcb-diagnostic-helper-identity.ts";
 import { currentFootprintInverseDeleteBindingNativeFrame, currentFootprintInverseDeleteBindingObject, currentFootprintInverseDeleteBindingProgram, validateCurrentFootprintInverseDeleteBindingCommand } from "./current-footprint-inverse-delete-binding-protocol.ts";
 import type { CurrentFootprintInverseDeleteBindingCommand } from "./current-footprint-inverse-delete-binding-protocol.ts";
 import type { CurrentFootprintInverseDeleteBindingBindings, CurrentFootprintInverseDeleteBindingOrigin } from "./current-footprint-inverse-delete-binding-origin.ts";
@@ -551,8 +552,6 @@ import type { CurrentProjectStructureWorkerLease } from "./current-project-struc
 import type { CurrentProjectStructureObservationWorkflow as StructureWorkflow } from "./current-project-structure-observation-workflow.ts";
 
 
-const HELPER_SHA256 = "f2e1c65ef7941736f6ac28d954bf647e340ab3329083b14c43d0993d27c11206";
-const HELPER_BYTES = 1_364_718;
 const heldRunnerDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintSavedCacheHeldRunner.prototype);
 /* oxlint-disable typescript/unbound-method -- Retain fixed methods and invoke them only on the original private-field runner. */
 const heldRunnerMethods = Object.freeze({ prepare: CurrentFootprintSavedCacheHeldRunner.prototype.prepare,

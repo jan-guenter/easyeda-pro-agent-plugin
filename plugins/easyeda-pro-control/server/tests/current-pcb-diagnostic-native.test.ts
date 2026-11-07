@@ -20,12 +20,12 @@ const sourcePath = new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta
 void test("native helper bytes and hash match both owner and synthetic launch smoke pins", async () => {
   const [helper, owner, smoke] = await Promise.all([
     readFile(sourcePath),
-    readFile(new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/current-pcb-diagnostic-helper-identity.ts", import.meta.url), "utf8"),
     readFile(new URL("../../scripts/pcb-diagnostic-launch-smoke.ps1", import.meta.url), "utf8"),
   ]);
   const digest = createHash("sha256").update(helper).digest("hex");
-  assert.equal(/^const HELPER_BYTES = ([0-9_]+);$/mu.exec(owner)?.[1]?.replaceAll("_", ""), String(helper.length));
-  assert.equal(/^const HELPER_SHA256 = "([a-f0-9]{64})";$/mu.exec(owner)?.[1], digest);
+  assert.equal(/^export const CURRENT_PCB_DIAGNOSTIC_HELPER_BYTES = ([0-9_]+);$/mu.exec(owner)?.[1]?.replaceAll("_", ""), String(helper.length));
+  assert.equal(/^export const CURRENT_PCB_DIAGNOSTIC_HELPER_SHA256 = "([a-f0-9]{64})";$/mu.exec(owner)?.[1], digest);
   assert.equal(/^if \(\$bytes\.Length -ne ([0-9]+)\) \{throw 'synthetic-launch-helper-size'\}$/mu.exec(smoke)?.[1], String(helper.length));
   assert.equal(/^if \(\$helperHash -cne '([a-f0-9]{64})'\) \{$/mu.exec(smoke)?.[1], digest);
 });

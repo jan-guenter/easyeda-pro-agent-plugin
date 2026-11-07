@@ -184,7 +184,7 @@ new helper separately in CI. Passing schema/compiler tests does not establish
 that its process can start on the installed application version.
 
 When changing `pcb-diagnostic-owner.ps1`, synchronize its reviewed size/hash
-in both `current-pcb-diagnostic-owner.ts` and the separate
+in both `current-pcb-diagnostic-helper-identity.ts` and the separate
 `pcb-diagnostic-launch-smoke.ps1`. Include the existing
 `current-pcb-diagnostic-native.test.ts` in focused verification; it checks both
 consumers against actual helper bytes. CompileOnly alone does not exercise the
