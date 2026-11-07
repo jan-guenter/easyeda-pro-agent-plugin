@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 Via live-history release order](2026-11-07-via-live-history-release-order.md). Hold the original worker sync pause through the actual final Main read-release acknowledgement; source review identifies no further concrete selected-request completion gap before controlled disposable validation.
+
 - [2026-11-07 original schematic action preflight](2026-11-07-schematic-original-action-preflight.md). Mount actual idle runner/recorder metadata through a distinct original SCH native vocabulary and retain its JS reference graph; first-setter and persistence grants stay blocked.
 
 - [2026-11-07 original schematic pre-modify setup](2026-11-07-schematic-original-pre-modify-setup.md). Compose genuine worker startup/accessor custody and retain the original selected-file Main fence with an unspent durable modify intent; action and Save grants remain separate.

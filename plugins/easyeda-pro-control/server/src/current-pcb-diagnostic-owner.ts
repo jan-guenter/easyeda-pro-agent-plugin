@@ -1564,7 +1564,7 @@ class CurrentPcbRetainedOwnerCore {
   #viaSdkBinding: string | null = null;
   #viaSdkQualified = false;
   #viaFailed = false;
-  readonly #viaHistoryCompletionSignal=Promise.withResolvers<boolean>();readonly #viaLiveHistoryArmSignal=Promise.withResolvers<boolean>();#viaLiveHistoryArmed=false;
+  readonly #viaHistoryCompletionSignal=Promise.withResolvers<boolean>();readonly #viaLiveHistoryArmSignal=Promise.withResolvers<boolean>();readonly #viaLiveHistoryRowsSignal=Promise.withResolvers<boolean>();#viaLiveHistoryArmed=false;
   #schematicDisplayCleanupOnly = false;
   #schematicDisplayTermination: object | null = null;
   #viaOriginalTermination: object | null = null;
@@ -3621,9 +3621,9 @@ class CurrentPcbRetainedOwnerCore {
           originalViaSaveTailDeleteContinuations.set(producerOrigin,Object.freeze({owner:this,operation:plan,continueCall:continueDelete}));
           let saveDrainCursor:CurrentPcbViaSaveDrainCursor|null=null;
           let postSyncCursor:CurrentPcbViaPostHistorySyncCursor|null=null;let postSyncCompleted=false;let postSyncEnrollmentAttempted=false;let postSyncStarted=false;let liveCachePromise:Promise<CurrentPcbViaLiveHistoryCacheData>|null=null;const postHeld=new WeakMap<object,CurrentPcbViaPostHistorySyncHeld>();
-          const liveCacheData=():Promise<CurrentPcbViaLiveHistoryCacheData>=>{original();assertProducerOriginal();if(liveCachePromise!==null){return liveCachePromise;}const effects=this.requireViaHistorySqlEffects(plan),initial=this.requireViaInitialCacheData(plan),initialBranch=this.requireViaInitialBranchData(plan),live=this.requireViaLiveHistoryBody(plan),native=this.requireViaLiveHistoryRows(plan);
+          const liveCacheData=():Promise<CurrentPcbViaLiveHistoryCacheData>=>{original();assertProducerOriginal();if(liveCachePromise!==null){return liveCachePromise;}liveCachePromise=(async():Promise<CurrentPcbViaLiveHistoryCacheData>=>{const native=await this.#waitViaLiveHistoryRows(plan);original();assertProducerOriginal();const effects=this.requireViaHistorySqlEffects(plan),initial=this.requireViaInitialCacheData(plan),initialBranch=this.requireViaInitialBranchData(plan),live=this.requireViaLiveHistoryBody(plan);
             const same=():void=>{original();assertProducerOriginal();const liveNow=this.requireViaLiveHistoryBody(plan);if(this.requireViaHistorySqlEffects(plan)!==effects||this.requireViaInitialCacheData(plan)!==initial||this.requireViaInitialBranchData(plan)!==initialBranch||this.requireViaLiveHistoryRows(plan)!==native||liveNow.delta!==live.delta||liveNow.workerValue!==live.workerValue||liveNow.clock!==live.clock){throw error("VIA_POST_SYNC_ORIGINAL_LIVE_DATA");}};
-            liveCachePromise=(async():Promise<CurrentPcbViaLiveHistoryCacheData>=>{same();const plaintext=await decodeNativeHistoryChunk({historyUuid:effects.historyUuid,keyHex:effects.keyHex,dataBase64:effects.dataBase64});same();if(sha256Text(plaintext)!==effects.plaintextSha256){throw error("VIA_POST_SYNC_ACTUAL_PLAINTEXT");}const data=compareCurrentPcbViaLiveHistoryCacheData({projectUuid:plan.target.projectUuid,branchUuid:plan.target.branchUuid,documentUuid:plan.target.documentUuid,body:live.delta.dataStr,clock:live.clock,plaintext,initial,initialBranch,effects,native});same();return data;})();return liveCachePromise;};
+            same();const plaintext=await decodeNativeHistoryChunk({historyUuid:effects.historyUuid,keyHex:effects.keyHex,dataBase64:effects.dataBase64});same();if(sha256Text(plaintext)!==effects.plaintextSha256){throw error("VIA_POST_SYNC_ACTUAL_PLAINTEXT");}const data=compareCurrentPcbViaLiveHistoryCacheData({projectUuid:plan.target.projectUuid,branchUuid:plan.target.branchUuid,documentUuid:plan.target.documentUuid,body:live.delta.dataStr,clock:live.clock,plaintext,initial,initialBranch,effects,native});same();return data;})();return liveCachePromise;};
           const postCursor=():CurrentPcbViaPostHistorySyncCursor=>{original();assertProducerOriginal();if(postSyncCursor!==null){return postSyncCursor;}if(!postSyncStarted){throw error("VIA_POST_SYNC_ORIGINAL_ENROLLMENT");}if(saveDrainCursor===null){throw error("VIA_POST_SYNC_ORIGINAL_DRAIN");}saveDrainCursor.requirePostHistorySyncEntry();uploadCursor().requireDispatched();const initial=syncCursor().originalCompletedCapture();const effects=this.requireViaHistorySqlEffects(plan);const body=this.#viaProducerOriginalSaveBody;const entry=this.#viaProducerOriginalSaveEntry;
             if(body===null||entry===null||this.#viaSaveEnrollment===null){throw error("VIA_POST_SYNC_ORIGINAL_SAVE");}this.#viaSaveEnrollment.assertOriginalAttempted();qualifyCurrentPcbViaPostHistorySyncSource(source.source);const data=compareCurrentPcbViaProspectiveSyncData({projectUuid:plan.target.projectUuid,branchUuid:plan.target.branchUuid,documentUuid:plan.target.documentUuid,effects,initial:this.requireViaInitialCacheData(plan),branch:this.requireViaInitialBranchData(plan)});
             const currentPost=():void=>{original();assertProducerOriginal();uploadCursor().requireDispatched();this.#viaSaveEnrollment?.assertOriginalAttempted();if(this.#viaSaveEnrollment===null||this.#viaProducerOriginalSaveBody!==body||this.#viaProducerOriginalSaveEntry!==entry||syncCursor().originalCompletedCapture()!==initial||this.requireViaHistorySqlEffects(plan)!==effects){throw error("VIA_POST_SYNC_ORIGINAL_CHANGED");}};
@@ -3691,7 +3691,7 @@ class CurrentPcbRetainedOwnerCore {
         }
       }, releaseParentWait: async () => { original(); const reply = await this.#transfer(() => pipe.configureViaWorkerRunning());
         if (!exact(reply, [])) { throw error("PCB_VIA_WORKER_PARENT_RUNNING_REPLY"); } original(); },
-      fail: (): void => { this.#viaFailed = true;this.#viaHistoryCompletionSignal.resolve(false);this.#viaLiveHistoryArmSignal.resolve(false); } }));
+      fail: (): void => { this.#viaFailed = true;this.#failViaOriginalWaiters(); } }));
     this.#viaWorkerController = controller;
     const reply = await this.#transfer(() => pipe.enableViaWorkerDiscovery(event => { if (controller === null) { throw error("PCB_VIA_WORKER_ORIGINAL_CURSOR"); }
       const targetInfo = event.params["targetInfo"];
@@ -3907,7 +3907,7 @@ class CurrentPcbRetainedOwnerCore {
       runner.bindViaInitialHistoryBaseline(origin, currentGeneratedProjectHistorySqlBaseline(requireOriginalCurrentPcbViaWritePlan(plan).inventory, plan.target.projectUuid, plan.target.branchUuid));
       const original = (): void => { selected.current(); enrollment.assertCurrent(); if (this.requireViaProducerPrefixReady(plan) !== prefix || this.#mainRunner !== runner || this.#viaMainOrigin !== origin || this.#viaMainCreateEnrollment !== enrollment || this.#viaMainCreateDispatch !== dispatch || this.#viaMainCreatePrefix !== prefix || this.#viaFailed || this.#viaCleanupOnly) { throw error("PCB_VIA_MAIN_PRECREATE_CHANGED"); }
         if (this.#viaMainBoundEffect !== null) { requireOriginalCurrentPcbViaWriteEffect(this.#viaMainBoundEffect, this, plan); } };
-      const bindings: CurrentPcbViaMainBindings = Object.freeze({ ...captured.bindings,liveHistoryRequest:async(command:CurrentPcbViaMainLiveHistoryCommand,cleanup:boolean):Promise<unknown>=>{original();const result=await captured.bindings.liveHistoryRequest(command,cleanup);original();if(command.phase==="via-main-live-arm"){if(this.#viaLiveHistoryArmed){throw error("VIA_LIVE_ORIGINAL_ARM_ONCE");}this.#viaLiveHistoryArmed=true;this.#viaLiveHistoryArmSignal.resolve(true);}return result;},fail:():void=>{this.#viaFailed=true;this.#viaHistoryCompletionSignal.resolve(false);this.#viaLiveHistoryArmSignal.resolve(false);captured.bindings.fail();}, assertSaveAttempt: (): void => { original(); enrollment.assertOriginalAttempted(); if (!this.#viaSdkPhases.has("save") || this.#viaMainBoundEffect === null) { throw error("PCB_VIA_MAIN_ORIGINAL_SAVE_ATTEMPT"); } } });
+      const bindings: CurrentPcbViaMainBindings = Object.freeze({ ...captured.bindings,liveHistoryRequest:async(command:CurrentPcbViaMainLiveHistoryCommand,cleanup:boolean):Promise<unknown>=>{original();const result=await captured.bindings.liveHistoryRequest(command,cleanup);original();this.#observeViaLiveHistoryCommandCompleted(command);return result;},fail:():void=>{this.#viaFailed=true;this.#failViaOriginalWaiters();captured.bindings.fail();}, assertSaveAttempt: (): void => { original(); enrollment.assertOriginalAttempted(); if (!this.#viaSdkPhases.has("save") || this.#viaMainBoundEffect === null) { throw error("PCB_VIA_MAIN_ORIGINAL_SAVE_ATTEMPT"); } } });
       this.#viaMainOrigin = origin; pcbViaMainOrigins.set(origin, Object.freeze({ owner: this, plan, effect: (): CurrentPcbViaWriteEffect | null => this.#viaMainBoundEffect, bindings, assertOriginal: original }));
       await Reflect.apply(setup, undefined, [origin]); original(); await before(); runner.requireViaMainObservationArmed(origin); bindings.requireBeginArmed(); bindings.requireHistoryArmed(); bindings.requireStructureArmed();
       const reply = await this.#request({ action: "pcb-via-main-precreate-enroll" });
@@ -3983,7 +3983,7 @@ class CurrentPcbRetainedOwnerCore {
       runner.bindViaInitialHistoryBaseline(origin, currentGeneratedProjectHistorySqlBaseline(requireOriginalCurrentPcbViaWritePlan(plan).inventory, plan.target.projectUuid, plan.target.branchUuid));
       const original = (): void => { selected.current(); requireOriginalCurrentPcbViaWriteEffect(effect, this, plan);
         if (this.#mainRunner !== runner || this.#viaMainOrigin !== origin || this.#viaFailed || this.#viaCleanupOnly) { throw error("PCB_VIA_MAIN_CHANGED"); } };
-      const bindings: CurrentPcbViaMainBindings = Object.freeze({ ...captured.bindings,liveHistoryRequest:async(command:CurrentPcbViaMainLiveHistoryCommand,cleanup:boolean):Promise<unknown>=>{original();const result=await captured.bindings.liveHistoryRequest(command,cleanup);original();if(command.phase==="via-main-live-arm"){if(this.#viaLiveHistoryArmed){throw error("VIA_LIVE_ORIGINAL_ARM_ONCE");}this.#viaLiveHistoryArmed=true;this.#viaLiveHistoryArmSignal.resolve(true);}return result;},fail:():void=>{this.#viaFailed=true;this.#viaHistoryCompletionSignal.resolve(false);this.#viaLiveHistoryArmSignal.resolve(false);captured.bindings.fail();}, assertSaveAttempt: (): void => { original(); if (!this.#viaSdkPhases.has("save")) { throw error("PCB_VIA_MAIN_ORIGINAL_SAVE_ATTEMPT"); } } });
+      const bindings: CurrentPcbViaMainBindings = Object.freeze({ ...captured.bindings,liveHistoryRequest:async(command:CurrentPcbViaMainLiveHistoryCommand,cleanup:boolean):Promise<unknown>=>{original();const result=await captured.bindings.liveHistoryRequest(command,cleanup);original();this.#observeViaLiveHistoryCommandCompleted(command);return result;},fail:():void=>{this.#viaFailed=true;this.#failViaOriginalWaiters();captured.bindings.fail();}, assertSaveAttempt: (): void => { original(); if (!this.#viaSdkPhases.has("save")) { throw error("PCB_VIA_MAIN_ORIGINAL_SAVE_ATTEMPT"); } } });
       this.#viaMainOrigin = origin; pcbViaMainOrigins.set(origin, Object.freeze({ owner: this, plan, effect: (): CurrentPcbViaWriteEffect => effect, bindings, assertOriginal: original }));
       await Reflect.apply(setup, undefined, [origin]); original(); runner.requireViaMainObservationArmed(origin); await this.#verify(); original(); this.#viaMainSetupReady = true; return origin;
     } catch (caughtError) { this.#viaFailed = true; throw caughtError; } finally { this.#busy = false; }
@@ -4062,6 +4062,23 @@ class CurrentPcbRetainedOwnerCore {
     requireViaPlan(this, plan); const original = pcbViaWriteFactories.get(this)?.allocation;
     if (original === undefined || original.prepared !== requireOriginalCurrentPcbViaWritePlan(plan).prepared || original.initialCachePlan === null || original.initialBranchPlan === null) { throw error("PCB_VIA_ORIGINAL_INITIAL_BRANCH_DATA"); }
     return requireOriginalCurrentGeneratedInitialBranchDataPlan(original.initialBranchPlan, original.prepared, original.initialCachePlan);
+  }
+  #failViaOriginalWaiters(): void {
+    this.#viaHistoryCompletionSignal.resolve(false); this.#viaLiveHistoryArmSignal.resolve(false); this.#viaLiveHistoryRowsSignal.resolve(false);
+  }
+  #observeViaLiveHistoryCommandCompleted(command: CurrentPcbViaMainLiveHistoryCommand): void {
+    if (command.phase === "via-main-live-arm") {
+      if (this.#viaLiveHistoryArmed) { throw error("VIA_LIVE_ORIGINAL_ARM_ONCE"); }
+      this.#viaLiveHistoryArmed = true; this.#viaLiveHistoryArmSignal.resolve(true);
+    } else if (command.phase === "via-main-live-release") { this.#viaLiveHistoryRowsSignal.resolve(true); }
+  }
+  // Main resumes its yB return before releasing the original read group. The
+  // Worker can reach syncHistory first; keep that same pause held until the
+  // Final original release acknowledgement has completed the native ledger.
+  async #waitViaLiveHistoryRows(plan: CurrentPcbViaWritePlan): Promise<CurrentPcbViaMainLiveHistoryRows> {
+    requireViaPlan(this, plan);
+    if (!await this.#viaLiveHistoryRowsSignal.promise) { throw error("VIA_LIVE_ORIGINAL_ROWS_REFUSED"); }
+    requireViaPlan(this, plan); return this.requireViaLiveHistoryRows(plan);
   }
   public requireViaLiveHistoryRows(plan: CurrentPcbViaWritePlan): CurrentPcbViaMainLiveHistoryRows {
     const effects = this.requireViaHistorySqlEffects(plan), origin = this.#viaMainOrigin, runner = this.#mainRunner;
@@ -8243,7 +8260,7 @@ class CurrentPcbRetainedOwnerCore {
     // Claim the original Job-only control before awaits. The pending normal
     // Caller keeps its own busy slot and Promise; this cleanup never clears it.
     const original = this.#binding;
-    this.#mainTerminateAttempted = true; this.#viaCleanupOnly = true; this.#viaFailed = true;
+    this.#mainTerminateAttempted = true; this.#viaCleanupOnly = true; this.#viaFailed = true; this.#failViaOriginalWaiters();
     this.#viaWorkerController?.fail(); this.#input.emit("error", error("PCB_VIA_ORIGINAL_ABORT"));
     await this.#nativeTail;
     await this.#verify(); this.#available();
@@ -9452,6 +9469,7 @@ class CurrentPcbRetainedOwnerCore {
   }
   #fail(reason: string): void {
     this.#failure ??= reason; this.#buffer = Buffer.alloc(0);
+    if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { this.#failViaOriginalWaiters(); }
     if (bornFootprintTransport(this.#purpose) && this.#combinedReadyPacket === null) {
       this.#combinedReadyAbandoned = true; this.#combinedReady.reject(error(this.#failure ?? reason));
     }
