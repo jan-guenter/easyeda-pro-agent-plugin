@@ -8,10 +8,11 @@ import { test } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { updateOperation } from "../src/artifacts.ts";
-import type { GeneratedSchematicDisplayDispatch, GeneratedSchematicDisplayJournal } from "../src/generated-schematic-display-journal.ts";
+import type { GeneratedSchematicDisplayDispatch, GeneratedSchematicDisplayJournal, GeneratedSchematicDisplayModifyEnrollment } from "../src/generated-schematic-display-journal.ts";
 import type { GeneratedFixtureJournalPublicationDependencies } from "../src/generated-fixture-journal-publication.ts";
 
 async function fixture(dependencies: GeneratedFixtureJournalPublicationDependencies = {}): Promise<Readonly<{ journal: GeneratedSchematicDisplayJournal;
+  enroll: (token: GeneratedSchematicDisplayDispatch, owner: object) => GeneratedSchematicDisplayModifyEnrollment;
   consume: (token: GeneratedSchematicDisplayDispatch, owner: object, copyArguments?: boolean) => Readonly<{ assertPublished: () => Promise<void> }> }>> {
   const operationId = `sch209-display-${randomUUID()}`;
   const argumentsValue = Object.freeze({ operation: Object.freeze({ operationId }) }), prepared = Object.freeze({ preparationCheckpoint: Object.freeze({ path: "synthetic-managed-checkpoint", sha256: "1".repeat(64), bytes: 512 }) });
@@ -23,10 +24,15 @@ async function fixture(dependencies: GeneratedFixtureJournalPublicationDependenc
     if (name !== "./generated-schematic-display-source.ts") { return actual; } assert.ok(actual !== null && typeof actual === "object");
     return { ...actual, requireOriginalGeneratedSchematicDisplayNativeArguments: (value: unknown, checkpoint: unknown): void => { assert.equal(value, argumentsValue); assert.equal(checkpoint, prepared); } };
   }, loaded, loaded.exports]);
-  const Constructor = loaded.exports["GeneratedSchematicDisplayJournal"], consume = loaded.exports["consumeGeneratedSchematicDisplayDispatch"]; assert.ok(typeof Constructor === "function" && typeof consume === "function");
+  const Constructor = loaded.exports["GeneratedSchematicDisplayJournal"], consume = loaded.exports["consumeGeneratedSchematicDisplayDispatch"], enroll = loaded.exports["enrollGeneratedSchematicDisplayModifyIntent"]; assert.ok(typeof Constructor === "function" && typeof consume === "function" && typeof enroll === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Exact production private journal class with an explicit inert original-checkpoint seam; all managed publication/verification code is unchanged.
   const journal = Reflect.construct(Constructor, [argumentsValue, prepared, dependencies]) as GeneratedSchematicDisplayJournal;
-  return { journal, consume: (token: GeneratedSchematicDisplayDispatch, owner: object, copyArguments = false): Readonly<{ assertPublished: () => Promise<void> }> => {
+  return { journal, enroll: (token: GeneratedSchematicDisplayDispatch, owner: object): GeneratedSchematicDisplayModifyEnrollment => {
+    const result: unknown = Reflect.apply(enroll, undefined, [token, owner, argumentsValue]);
+    assert.ok(result !== null && typeof result === "object" && ["assertCurrent", "assertBeforeAttempt", "assertOriginalAttempted", "assertPublished"].every(name => typeof Reflect.get(result, name) === "function"));
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Checked exact exported production closure shape; only original argument issuance is replaced above.
+    return result as GeneratedSchematicDisplayModifyEnrollment;
+  }, consume: (token: GeneratedSchematicDisplayDispatch, owner: object, copyArguments = false): Readonly<{ assertPublished: () => Promise<void> }> => {
     const result: unknown = Reflect.apply(consume, undefined, [token, "modify", owner, copyArguments ? structuredClone(argumentsValue) : argumentsValue]);
     assert.ok(result !== null && typeof result === "object" && "assertPublished" in result && typeof result.assertPublished === "function");
     const assertPublished = result.assertPublished;
@@ -56,4 +62,16 @@ void test("lost original modify-intent publication settles the same retained mar
   assert.throws(() => f.journal.retainedDispatchIntent("modify"), /PUBLICATION_PENDING/u); await f.journal.settlePublication();
   const token = f.journal.retainedDispatchIntent("modify"); assert.equal(f.journal.retainedDispatchIntent("modify"), token); await f.consume(token, owner).assertPublished();
   assert.equal(f.journal.retained()["publicationPending"], false);
+});
+
+void test("prospective modify enrollment retains one original published marker without consuming or refunding it", async () => {
+  const f = await fixture(); await f.journal.reserve(); const owner = Object.freeze({ explicitSyntheticWriter: true }); f.journal.bindWriter(owner); await prefix(f.journal);
+  const token = await f.journal.appendIntent("modify", {}, owner);
+  assert.throws(() => f.enroll(structuredClone(token), owner), /ORIGINAL_MODIFY_ENROLLMENT/u);
+  assert.throws(() => f.enroll(token, { ...owner }), /ORIGINAL_MODIFY_ENROLLMENT/u);
+  const original = f.enroll(token, owner); original.assertBeforeAttempt(); await original.assertPublished();
+  assert.equal(f.journal.retainedDispatchIntent("modify"), token); assert.throws(() => { original.assertOriginalAttempted(); }, /MODIFY_ORIGINAL_ATTEMPT/u);
+  assert.throws(() => f.enroll(token, owner), /ORIGINAL_MODIFY_ENROLLMENT/u);
+  await f.consume(token, owner).assertPublished(); original.assertCurrent(); original.assertOriginalAttempted();
+  assert.throws(() => { original.assertBeforeAttempt(); }, /MODIFY_BEFORE_ATTEMPT/u);
 });

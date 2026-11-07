@@ -66,7 +66,7 @@ export function assertGeneratedSchematicDisplayJournalChain(input: unknown): rea
 
 export interface GeneratedSchematicDisplayDispatch { readonly profile: "private.generated-schematic-display-dispatch.v1" }
 interface Dispatch { readonly journal: GeneratedSchematicDisplayJournal; readonly owner: object; readonly argumentsValue: GeneratedSchematicDisplayNativeArguments;
-  readonly stage: "modify" | "save"; readonly sequence: number; consumed: boolean }
+  readonly stage: "modify" | "save"; readonly sequence: number; consumed: boolean; enrolled: boolean }
 const dispatches = new WeakMap<GeneratedSchematicDisplayDispatch, Dispatch>();
 /** The actual native owner consumes this token synchronously before its first
  * await. A lost acknowledgement cannot mint another token or repeat the stage. */
@@ -76,6 +76,26 @@ export function consumeGeneratedSchematicDisplayDispatch(token: GeneratedSchemat
   need(original !== undefined && !original.consumed && original.stage === stage && original.owner === owner && original.argumentsValue === argumentsValue, "ORIGINAL_DISPATCH");
   original.journal.requireDispatchIntent(stage, original.sequence); original.consumed = true;
   return Object.freeze({ assertPublished: (): Promise<void> => original.journal.assertDispatchPublished(stage, original.sequence) });
+}
+
+export interface GeneratedSchematicDisplayModifyEnrollment {
+  readonly assertCurrent: () => void;
+  readonly assertBeforeAttempt: () => void;
+  readonly assertOriginalAttempted: () => void;
+  readonly assertPublished: () => Promise<void>;
+}
+/** Preserve the published original modify intent through prospective setup.
+ * Enrollment never consumes, refunds or replaces the actual dispatch. */
+export function enrollGeneratedSchematicDisplayModifyIntent(token: GeneratedSchematicDisplayDispatch, owner: object,
+  argumentsValue: GeneratedSchematicDisplayNativeArguments): GeneratedSchematicDisplayModifyEnrollment {
+  const original = dispatches.get(token);
+  need(original !== undefined && original.stage === "modify" && original.owner === owner && original.argumentsValue === argumentsValue && !original.consumed && !original.enrolled, "ORIGINAL_MODIFY_ENROLLMENT");
+  original.journal.requireDispatchIntent("modify", original.sequence); original.enrolled = true;
+  const current = (): void => { need(dispatches.get(token) === original && original.enrolled, "ORIGINAL_MODIFY_ENROLLMENT"); original.journal.requireRetainedDispatchIntent("modify", original.sequence); };
+  return Object.freeze({ assertCurrent: current,
+    assertBeforeAttempt: (): void => { current(); need(!original.consumed, "MODIFY_BEFORE_ATTEMPT"); original.journal.requireDispatchIntent("modify", original.sequence); },
+    assertOriginalAttempted: (): void => { current(); need(original.consumed, "MODIFY_ORIGINAL_ATTEMPT_REQUIRED"); },
+    assertPublished: async (): Promise<void> => { current(); await original.journal.assertDispatchPublished("modify", original.sequence); current(); } });
 }
 
 /** One original retained journal. Publication settlement joins its immutable
@@ -128,7 +148,7 @@ export class GeneratedSchematicDisplayJournal {
   public async appendIntent(stage: "modify" | "save", evidence: Readonly<Record<string, unknown>>, owner: object): Promise<GeneratedSchematicDisplayDispatch> {
     need(this.#owner === owner && !this.#busy && !this.#publication.pending() && !this.#tokens.has(stage), "ORIGINAL_WRITER_BINDING");
     const token: GeneratedSchematicDisplayDispatch = Object.freeze({ profile: "private.generated-schematic-display-dispatch.v1" });
-    const sequence = this.#records().length + 1; dispatches.set(token, { journal: this, owner, argumentsValue: this.#arguments, stage, sequence, consumed: false }); this.#tokens.set(stage, token);
+    const sequence = this.#records().length + 1; dispatches.set(token, { journal: this, owner, argumentsValue: this.#arguments, stage, sequence, consumed: false, enrolled: false }); this.#tokens.set(stage, token);
     await this.append(`${stage}-intent`, evidence); return this.retainedDispatchIntent(stage);
   }
   public retainedDispatchIntent(stage: "modify" | "save"): GeneratedSchematicDisplayDispatch {
@@ -138,6 +158,10 @@ export class GeneratedSchematicDisplayJournal {
   public requireDispatchIntent(stage: "modify" | "save", sequence: number): void {
     this.#current(); need(!this.#busy && this.#reserved && !this.#publication.pending(), "PUBLICATION_PENDING"); const last = this.#records().at(-1);
     need(last?.kind === `${stage}-intent` && last.sequence === sequence, "CURRENT_DISPATCH_INTENT");
+  }
+  public requireRetainedDispatchIntent(stage: "modify" | "save", sequence: number): void {
+    this.#current(); need(!this.#busy && this.#reserved && !this.#publication.pending(), "PUBLICATION_PENDING");
+    const record = this.#records()[sequence - 1]; need(record?.kind === `${stage}-intent` && record.sequence === sequence, "RETAINED_DISPATCH_INTENT");
   }
   public async assertDispatchPublished(stage: "modify" | "save", sequence: number): Promise<void> { this.requireDispatchIntent(stage, sequence); await this.#assertCurrent(); this.requireDispatchIntent(stage, sequence); }
   public async settlePublication(): Promise<void> {
