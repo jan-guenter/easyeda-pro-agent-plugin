@@ -1,3 +1,4 @@
+import { CURRENT_FOOTPRINT_INVERSE_GET_CALLBACK_REQUESTS as GET_CALLBACK } from "./current-footprint-inverse-get-callback-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_GET_MANAGER_REQUESTS as GET_MANAGER } from "./current-footprint-inverse-get-manager-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_GET_FORWARDING_REQUESTS as GET_FORWARDING } from "./current-footprint-inverse-get-forwarding-protocol.ts";
 /* oxlint-disable import/max-dependencies -- This sole inverse reservation composes every independently bounded lane rather than duplicating native limits. */
@@ -50,7 +51,7 @@ const mainCleanup = MAIN.cleanupRequests + INITIAL_HISTORY.repetitions * INITIAL
 const discovery = 16, emptyGuard = 9 + 1, parent = 3 + 1, projectOpening = 9 + 1, registration = 2;
 const generic = discovery + 2 * 8 + 3 + 4;
 const sourceHeldPrefix = discovery + emptyGuard + registration + parent + WORKER.totalUntilProjectHeld + projectOpening;
-const renderer = sourceHeldPrefix + CONSTRUCTION.cdpRequests + CACHE.total + PRODUCER.cdpRequests + COLD.total + 1 + STEP.maximum + STARTUP.cdpRequests + CONDITIONS.reads + TIMER.direct + QUEUE.cdpRequests + INITIAL_CACHE.cdpRequests + INITIAL_SYNC.cdpRequests + MODEL.cdpRequests + LIBRARY.total + DELETE_BINDING.cdpRequests + DELETE_ENCODER.cdpRequests + PUBLIC_API.cdpRequests + CLOCK_WORKER.cdpRequests + PUBLIC_SERVICE.cdpRequests + DELETE_ENTRY.cdpRequests + PUBLIC_CALL.cdpRequests + DELETE_RPC.cdpRequests + DELETE_JOB.cdpRequests + WORKER_PEER.cdpRequests + PUBLIC_PREFERENCES.cdpRequests + OWN_DATA.cdpRequests + NATIVE_CHANNEL.cdpRequests + UI_OWN_DATA.cdpRequests + LOOKUP_PREENTRY.cdpRequests + NATIVE_DELIVERY.cdpRequests + GET_INTRINSICS.cdpRequests + GET_WORKER.cdpRequests + GET_RPC_ENTRY.cdpRequests + GET_FORWARDING.cdpRequests + GET_MANAGER.cdpRequests + GET_NATIVE.cdpRequests + GET_COMPLETION.cdpRequests;
+const renderer = sourceHeldPrefix + CONSTRUCTION.cdpRequests + CACHE.total + PRODUCER.cdpRequests + COLD.total + 1 + STEP.maximum + STARTUP.cdpRequests + CONDITIONS.reads + TIMER.direct + QUEUE.cdpRequests + INITIAL_CACHE.cdpRequests + INITIAL_SYNC.cdpRequests + MODEL.cdpRequests + LIBRARY.total + DELETE_BINDING.cdpRequests + DELETE_ENCODER.cdpRequests + PUBLIC_API.cdpRequests + CLOCK_WORKER.cdpRequests + PUBLIC_SERVICE.cdpRequests + DELETE_ENTRY.cdpRequests + PUBLIC_CALL.cdpRequests + DELETE_RPC.cdpRequests + DELETE_JOB.cdpRequests + WORKER_PEER.cdpRequests + PUBLIC_PREFERENCES.cdpRequests + OWN_DATA.cdpRequests + NATIVE_CHANNEL.cdpRequests + UI_OWN_DATA.cdpRequests + LOOKUP_PREENTRY.cdpRequests + NATIVE_DELIVERY.cdpRequests + GET_INTRINSICS.cdpRequests + GET_WORKER.cdpRequests + GET_RPC_ENTRY.cdpRequests + GET_FORWARDING.cdpRequests + GET_CALLBACK.cdpRequests + GET_MANAGER.cdpRequests + GET_NATIVE.cdpRequests + GET_COMPLETION.cdpRequests;
 // One finite renderer poll lane, paired with the existing original-main poll
 // Envelope. A consumed failure does not replenish this reservation.
 const rendererPolls = MAIN.totalPolls;
@@ -74,6 +75,8 @@ export const CURRENT_FOOTPRINT_INVERSE_ACTION_LIMITS = Object.freeze({
   "footprint-inverse-get-worker": GET_WORKER.controls,
   "footprint-inverse-get-rpc-entry": GET_RPC_ENTRY.controls,
   "footprint-inverse-get-forwarding": GET_FORWARDING.controls,
+  "footprint-inverse-get-manager": GET_MANAGER.controls,
+  "footprint-inverse-get-callback": GET_CALLBACK.controls,
   "footprint-inverse-get-native": GET_NATIVE.controls,
   "footprint-inverse-get-completion": GET_COMPLETION.controls,
   "footprint-inverse-worker": WORKER.totalUntilProjectHeld, "footprint-inverse-construction": CONSTRUCTION.controls, "footprint-inverse-source-bind": 1, "footprint-inverse-project": 1,
@@ -84,7 +87,7 @@ export const CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE = Object.freeze({
   main: Object.freeze({ constructionNormal: MAIN.normalRequests, fenceNormal: FENCE.normal,
     registrationNormal: REGISTRATION, initialHistory: INITIAL_HISTORY, normal: mainNormal, cleanup: mainCleanup, total: mainNormal + mainCleanup,
     reproofs: mainReproofs, polls: MAIN.totalPolls }),
-  renderer: Object.freeze({ discovery, emptyGuard, generic, registration, parent, projectOpening, sourceHeldPrefix, construction: CONSTRUCTION.cdpRequests, producerArm: PRODUCER, libraryRefresh:LIBRARY,deleteBindings:DELETE_BINDING,deleteEncoder:DELETE_ENCODER,publicApi:PUBLIC_API,clockWorker:CLOCK_WORKER,deleteEntry:DELETE_ENTRY,publicService:PUBLIC_SERVICE,publicCall:PUBLIC_CALL,publicPreferences:PUBLIC_PREFERENCES,deleteRpc:DELETE_RPC,deleteJob:DELETE_JOB,workerPeer:WORKER_PEER,ownData:OWN_DATA,nativeChannel:NATIVE_CHANNEL,nativeDelivery:NATIVE_DELIVERY,uiOwnData:UI_OWN_DATA,lookupPreentry:LOOKUP_PREENTRY,getIntrinsics:GET_INTRINSICS,getWorker:GET_WORKER,getRpcEntry:GET_RPC_ENTRY,getForwarding:GET_FORWARDING,getManager:GET_MANAGER,getNative:GET_NATIVE,getCompletion:GET_COMPLETION, cold: COLD, cache: CACHE, sourceHeldBootstrap: WORKER.totalUntilProjectHeld, total: renderer, polls: rendererPolls }), controls,
+  renderer: Object.freeze({ discovery, emptyGuard, generic, registration, parent, projectOpening, sourceHeldPrefix, construction: CONSTRUCTION.cdpRequests, producerArm: PRODUCER, libraryRefresh:LIBRARY,deleteBindings:DELETE_BINDING,deleteEncoder:DELETE_ENCODER,publicApi:PUBLIC_API,clockWorker:CLOCK_WORKER,deleteEntry:DELETE_ENTRY,publicService:PUBLIC_SERVICE,publicCall:PUBLIC_CALL,publicPreferences:PUBLIC_PREFERENCES,deleteRpc:DELETE_RPC,deleteJob:DELETE_JOB,workerPeer:WORKER_PEER,ownData:OWN_DATA,nativeChannel:NATIVE_CHANNEL,nativeDelivery:NATIVE_DELIVERY,uiOwnData:UI_OWN_DATA,lookupPreentry:LOOKUP_PREENTRY,getIntrinsics:GET_INTRINSICS,getWorker:GET_WORKER,getRpcEntry:GET_RPC_ENTRY,getForwarding:GET_FORWARDING,getCallback:GET_CALLBACK,getManager:GET_MANAGER,getNative:GET_NATIVE,getCompletion:GET_COMPLETION, cold: COLD, cache: CACHE, sourceHeldBootstrap: WORKER.totalUntilProjectHeld, total: renderer, polls: rendererPolls }), controls,
   completeInverseReserved: false, deleteInvocationAuthorized: false, executionAuthorized: false, saveAuthorized: false,
 });
 export const CURRENT_FOOTPRINT_INVERSE_DISCOVERY_METHODS = Object.freeze(["Browser.getVersion", "Target.getTargets", "Target.attachToTarget", "Page.enable", "Page.getFrameTree",

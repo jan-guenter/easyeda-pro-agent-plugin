@@ -1,3 +1,4 @@
+import { currentFootprintInverseGetCallbackCases } from "../src/current-footprint-inverse-get-callback-protocol.ts";
 import { currentFootprintInverseGetManagerCases } from "../src/current-footprint-inverse-get-manager-protocol.ts";
 import { currentFootprintInverseGetForwardingCases } from "../src/current-footprint-inverse-get-forwarding-protocol.ts";
 /* oxlint-disable import/max-dependencies -- This real byte-stream test composes the SDK and every independent finite concurrent vocabulary. */
@@ -42,6 +43,7 @@ void test("original SDK write and reply remain separate while fixed UI and worke
   for (const command of currentFootprintInverseGetRpcEntryCases()) { const observation = pipe.observeInverseGetRpcEntry(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
   for (const command of currentFootprintInverseGetForwardingCases()) { const observation = pipe.observeInverseGetForwarding(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
   for (const command of currentFootprintInverseGetManagerCases()) { const observation = pipe.observeInverseGetManager(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
+  for (const command of currentFootprintInverseGetCallbackCases()) { const observation = pipe.observeInverseGetCallback(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
   input.write(Buffer.from(`${JSON.stringify({...sdkRequest,result:{result:{type:"object",subtype:"promise",className:"Promise",objectId:"original-sdk-promise"}}})}\0`));
   assert.deepEqual(await pending,{result:{type:"object",subtype:"promise",className:"Promise",objectId:"original-sdk-promise"}});pipe.requireInversePublicDeleteWritten(pending);
   const commands=cases.filter(command=>command.phase!=="inverse-public-call-sdk");
@@ -54,7 +56,11 @@ void test("original SDK write and reply remain separate while fixed UI and worke
   for (const command of currentFootprintInverseGetRpcEntryCases()) { const observation = pipe.observeInverseGetRpcEntry(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
   for (const command of currentFootprintInverseGetForwardingCases()) { const observation = pipe.observeInverseGetForwarding(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
   for (const command of currentFootprintInverseGetManagerCases()) { const observation = pipe.observeInverseGetManager(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
+  for (const command of currentFootprintInverseGetCallbackCases()) { const observation = pipe.observeInverseGetCallback(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
   assert.equal(pipe.status().failureObservation,null);
+  const outputBeforeInvalid=sent.length;const callback=currentFootprintInverseGetCallbackCases()[0];assert.ok(callback!==undefined);
+  // oxlint-disable-next-line typescript/unbound-method -- Pass an intentionally invalid raw envelope through the actual sender.
+  assert.throws(()=>Reflect.apply(CurrentFootprintInversePipe.prototype.observeInverseGetCallback,pipe,[{...callback,params:{...callback.params,callerCode:"foreign"}}]));assert.equal(sent.length,outputBeforeInvalid);
   const before=sent.length;const first=currentFootprintInversePublicCallCases()[0];assert.ok(first!==undefined);const other:unknown=Object.create(CurrentPcbViaWritePipe.prototype);
   // oxlint-disable-next-line typescript/unbound-method -- Invalid sibling receiver must reject before emitting bytes.
   assert.throws(()=>Reflect.apply(CurrentFootprintInversePipe.prototype.observeInversePublicCall,other,[first]));assert.equal(sent.length,before);const uiOwnData=currentFootprintInverseUiOwnDataCases()[0];assert.ok(uiOwnData!==undefined);
