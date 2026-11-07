@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { test } from "node:test";
 import { CurrentPcbDiagnosticContext, diagnosticBoundedObservation, validateDiagnosticFrameExpectation, validateDiagnosticScriptProfile } from "../src/current-pcb-diagnostic-context.ts";
 import { DIAGNOSTIC_REQUEST_LIMIT, diagnosticNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
+import { GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE as SCHEMATIC_SOURCE } from "../src/generated-schematic-display-accessor-source.ts";
 import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
 
 const SOURCE = "const syntheticIdentity = true;\n";
@@ -700,4 +701,45 @@ void test("pending bootstrap preserves original UI and child context loss and do
   }
   const duplicate = bootstrapFixture();
   assert.throws(() => duplicate.observePcbBootstrapFrames(OPEN_TARGET_REPLY, PCB_PENDING_ROOT_REPLY), /IDENTITY/u);
+});
+
+void test("distinct generated schematic route seals project then exact page while retaining root loader and source context", () => {
+  const context = openingFixture(), page = "b".repeat(32), pageUrl = `${OPEN_URL},tab=*${page}@${PROJECT_UUID}`;
+  const selected = context.beginSchematicOpeningTransition(PROJECT_UUID, page); within(context);
+  context.observeEvent(event("Page.navigatedWithinDocument", { frameId: "frame-1", url: pageUrl, navigationType: "fragment" }));
+  const frames = { frameTree: { frame: { ...UI_FRAME, urlFragment: pageUrl.slice(UI_BASE.length) } } }, target = { targetInfos: [{ ...UI_TARGET, url: pageUrl, title: "native selected page", attached: true }] };
+  context.finishSchematicOpeningTransition(target, frames, "native selected page"); assert.deepEqual(context.openingContext(), selected); context.observeTarget(target); context.observeFrames(frames);
+  context.observeEvent(event("Page.frameStartedNavigating", { frameId: "frame-1", url: OPEN_URL, loaderId: "pending-old", navigationType: "sameDocument" }));
+  assert.throws(() => context.beginPcbOpeningTransition(PROJECT_UUID, page));
+});
+void test("schematic route refuses missing project commit, another page, changed loader/title and replay", () => {
+  const page = "b".repeat(32), pageUrl = `${OPEN_URL},tab=*${page}@${PROJECT_UUID}`;
+  const absent = openingFixture(); absent.beginSchematicOpeningTransition(PROJECT_UUID, page);
+  assert.throws(() => { absent.observeEvent(event("Page.navigatedWithinDocument", { frameId: "frame-1", url: pageUrl, navigationType: "fragment" })); });
+  for (const drift of ["page", "loader", "title"] as const) {
+    const context = openingFixture(); context.beginSchematicOpeningTransition(PROJECT_UUID, page); within(context);
+    if (drift === "page") { assert.throws(() => { context.observeEvent(event("Page.navigatedWithinDocument", { frameId: "frame-1", url: `${OPEN_URL},tab=*${"c".repeat(32)}@${PROJECT_UUID}`, navigationType: "fragment" })); }); }
+    else {
+      context.observeEvent(event("Page.navigatedWithinDocument", { frameId: "frame-1", url: pageUrl, navigationType: "fragment" }));
+      assert.throws(() => { context.finishSchematicOpeningTransition({ targetInfos: [{ ...UI_TARGET, url: pageUrl, title: "native page", attached: true }] },
+        { frameTree: { frame: { ...UI_FRAME, urlFragment: pageUrl.slice(UI_BASE.length), ...(drift === "loader" ? { loaderId: "foreign" } : {}) } } }, drift === "title" ? "another page" : "native page"); });
+    }
+  }
+  const replay = openingFixture(); replay.beginSchematicOpeningTransition(PROJECT_UUID, page); assert.throws(() => replay.beginSchematicOpeningTransition(PROJECT_UUID, page));
+});
+
+function finishedSchematicFixture(): CurrentPcbDiagnosticContext {
+  const context = openingFixture(), page = "b".repeat(32), url = `${OPEN_URL},tab=*${page}@${PROJECT_UUID}`;
+  context.beginSchematicOpeningTransition(PROJECT_UUID, page); within(context); context.observeEvent(event("Page.navigatedWithinDocument", { frameId: "frame-1", url, navigationType: "fragment" }));
+  context.finishSchematicOpeningTransition({ targetInfos: [{ ...UI_TARGET, url, title: "native selected page", attached: true }] }, { frameTree: { frame: { ...UI_FRAME, urlFragment: url.slice(UI_BASE.length) } } }, "native selected page"); return context;
+}
+void test("schematic callee realm lookup keeps the original opened UI default context and rejects foreign or ambiguous scripts", () => {
+  for (const variant of [0, 1] as const) { const context = finishedSchematicFixture(); context.observeEvent(event("Debugger.scriptParsed", { ...SCRIPT, scriptId: "schematic-callee", url: `https://client/${SCHEMATIC_SOURCE[variant].relativePath}` })); assert.deepEqual(context.schematicCalleeContext("schematic-callee", variant), { sessionId: "session-1", scriptId: "schematic-callee", uniqueContextId: UI_CONTEXT.uniqueId }); }
+  assert.throws(() => openingFixture().schematicCalleeContext("schematic-callee", 0), /IDENTITY/u);
+  for (const fault of ["foreign", "duplicate", "sourceURL", "liveEdit", "wrongScript", "wrongVariant"] as const) {
+    const context = finishedSchematicFixture(); const parsed = { ...SCRIPT, scriptId: "schematic-callee", url: `https://client/${SCHEMATIC_SOURCE[0].relativePath}`, ...(fault === "sourceURL" ? { hasSourceURL: true } : {}), ...(fault === "liveEdit" ? { isLiveEdit: true } : {}) };
+    if (fault === "foreign") { context.observeEvent(event("Runtime.executionContextCreated", { context: { ...UI_CONTEXT, id: 8, uniqueId: "foreign-unique", auxData: { ...UI_CONTEXT.auxData, isDefault: false, type: "isolated" } } })); context.observeEvent(event("Debugger.scriptParsed", { ...parsed, executionContextId: 8 })); }
+    else { context.observeEvent(event("Debugger.scriptParsed", parsed)); if (fault === "duplicate") { context.observeEvent(event("Debugger.scriptParsed", { ...parsed, scriptId: "schematic-duplicate" })); } }
+    assert.throws(() => context.schematicCalleeContext(fault === "wrongScript" ? "foreign-script" : "schematic-callee", fault === "wrongVariant" ? 1 : 0), /IDENTITY/u); assert.throws(() => context.openingContext(), /IDENTITY/u);
+  }
 });

@@ -26,7 +26,7 @@ import type { PrivateTemporaryDirectory } from "./private-temporary-directory.ts
 import { validateReleaseVersionParity } from "./release-version.ts";
 import { MAIN_REFERENCE_HELPER_IDENTITY } from "../server/src/main-reference-helper-identity.ts";
 import { CURRENT_MAIN_REFERENCE_HELPER_IDENTITY } from "../server/src/current-main-reference-helper-identity.ts";
-import { AGENT_DEFAULT_PROMPT, FACADE_TOOL_NAMES, MANIFEST_DEFAULT_PROMPTS, hasPortableMcpLaunch, portableMcpLaunchSchema } from "./plugin-contract.ts";
+import { AGENT_DEFAULT_PROMPT, FACADE_TOOL_NAMES, FACADE_TOOL_POLICY_NAMES, MANIFEST_DEFAULT_PROMPTS, hasPortableMcpLaunch, portableMcpLaunchSchema } from "./plugin-contract.ts";
 import { ValidationStdioTransport } from "./validation-stdio-transport.ts";
 
 interface CheckResult {
@@ -38,6 +38,7 @@ interface CheckResult {
 type ToolSummary = Awaited<ReturnType<Client["listTools"]>>["tools"][number];
 
 const TOOL_NAMES = FACADE_TOOL_NAMES;
+const POLICY_TOOL_NAMES = FACADE_TOOL_POLICY_NAMES;
 const AUTO_APPROVED_TOOLS = new Set([
   "easyeda_control_api",
   "easyeda_control_status",
@@ -54,6 +55,15 @@ const OUTPUT_SCHEMA_ANCHORS = {
   easyeda_control_calculate: ["result"],
   easyeda_control_system: ["result"],
   easyeda_control_library_files: ["result"],
+  easyeda_control_fixture_import: ["result"],
+  easyeda_control_fixture_data: ["result"],
+  easyeda_control_public_readers: ["result"],
+  easyeda_control_netlist_files: ["result"],
+  easyeda_control_catalog_footprint: ["result"],
+  easyeda_control_catalog_components: ["result"],
+  easyeda_control_pcb209_opening: ["result"],
+  easyeda_control_pcb209_worker_startup: ["result"],
+  easyeda_control_current_pcb_via_write: ["result"],
   easyeda_control_extensions: ["result"],
   easyeda_control_launch: ["result"],
   easyeda_control_pcb_diagnostic_validation: ["result"],
@@ -101,7 +111,7 @@ const OUTPUT_SCHEMA_ANCHORS = {
   easyeda_control_evidence_recover: ["receiptHashOk", "resultHashOk"],
   easyeda_control_evidence_verify: ["receiptHashOk", "resultHashOk"],
   easyeda_control_artifact_read: ["path", "bytesRead", "text"],
-} as const satisfies Record<(typeof TOOL_NAMES)[number], readonly string[]>;
+} as const satisfies Record<(typeof POLICY_TOOL_NAMES)[number], readonly string[]>;
 const stringSchema = z.string();
 const approvalModeSchema = z.enum(["approve", "prompt"]);
 const toolPolicySchema = z.strictObject({
@@ -206,6 +216,12 @@ const required = [
   "scripts/footprint-forward-execution-smoke.ps1",
   "scripts/check-footprint-forward-native-graph.ts",
   "scripts/generate-footprint-forward-native-graph.ts",
+  "scripts/footprint-forward-cold-execution/owner.ps1",
+  "scripts/footprint-forward-cold-execution/native-core.cs",
+  "scripts/footprint-forward-cold-execution/native-phase.cs",
+  "scripts/footprint-forward-cold-execution-smoke.ps1",
+  "scripts/check-footprint-forward-cold-native-graph.ts",
+  "scripts/generate-footprint-forward-cold-native-graph.ts",
   "scripts/main-reference/OwnedSyntheticJob.cs",
   "scripts/main-reference/EasyedaClockObservation.cs",
   "scripts/main-reference/owner-command-v3.ps1",
@@ -223,6 +239,14 @@ const required = [
   "server/dist/upstream-supervisor.mjs",
   "server/dist/control-session-manager.mjs",
   "scripts/build-control-manager.ts",
+  "scripts/schematic-edit-native.ps1",
+  "scripts/schematic-edit-native.cs",
+  "scripts/generate-schematic-edit-native.ts",
+  "server/src/current-schematic-edit-native-identity.ts",
+  "scripts/footprint-inverse-native.ps1",
+  "scripts/footprint-inverse-native.cs",
+  "scripts/generate-footprint-inverse-native.ts",
+  "server/src/current-footprint-inverse-native-identity.ts",
   "scripts/control-session-manager-main.ts",
   "server/native/easyeda-fd-sanitizer.S",
   "server/native/easyeda-fd-sanitizer.ld",
@@ -495,10 +519,16 @@ check(
     packageScripts["native:helper:check"] === "node scripts/check-diagnostic-helper-identity.ts" &&
     packageScripts["native:forward:check"] === "node scripts/check-footprint-forward-native-graph.ts" &&
     packageScripts["native:forward:source:check"] === "node scripts/generate-footprint-forward-native-graph.ts --check" &&
+    packageScripts["native:forward:cold:check"] === "node scripts/check-footprint-forward-cold-native-graph.ts" &&
+    packageScripts["native:forward:cold:source:check"] === "node scripts/generate-footprint-forward-cold-native-graph.ts --check" &&
     packageScripts["sanitizer:check"] ===
       "node scripts/build-descriptor-sanitizer.ts --check" &&
     packageScripts["build"] ===
-      "npm run native:helper:check && npm run native:forward:check && npm run native:forward:source:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && npm run pcb209:spatial:check && node scripts/build-server.ts && node scripts/build-control-manager.ts" &&
+      "npm run native:helper:check && npm run native:forward:check && npm run native:forward:source:check && npm run native:forward:cold:check && npm run native:forward:cold:source:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run schematic:native:check && npm run inverse:native:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && npm run pcb209:spatial:check && node scripts/build-server.ts && node scripts/build-control-manager.ts" &&
+    packageScripts["schematic:native:check"] === "node scripts/generate-schematic-edit-native.ts --check" &&
+    packageScripts["schematic:native:update"] === "node scripts/generate-schematic-edit-native.ts --write" &&
+    packageScripts["inverse:native:check"] === "node scripts/generate-footprint-inverse-native.ts --check" &&
+    packageScripts["inverse:native:update"] === "node scripts/generate-footprint-inverse-native.ts --write" &&
     packageScripts["pcb209:spatial:check"] === "node scripts/generate-pcb209-spatial-protocol.ts --check" &&
     packageScripts["pcb209:spatial:update"] === "node scripts/generate-pcb209-spatial-protocol.ts --write" &&
     packageScripts["pcb:models:check"] === "node scripts/generate-pcb-model-programs.ts --check" &&
@@ -577,14 +607,15 @@ check(
 );
 const configuredPolicyNames = Object.keys(mcpServer.tools).toSorted();
 const expectedToolNames = [...TOOL_NAMES].toSorted();
+const expectedPolicyNames = [...POLICY_TOOL_NAMES].toSorted();
 check(
   "approval-exact-tool-mapping",
-  JSON.stringify(configuredPolicyNames) === JSON.stringify(expectedToolNames),
+  JSON.stringify(configuredPolicyNames) === JSON.stringify(expectedPolicyNames),
   JSON.stringify(configuredPolicyNames),
 );
 check(
   "approval-exact-modes",
-  TOOL_NAMES.every(
+  POLICY_TOOL_NAMES.every(
     (name) =>
       mcpServer.tools[name]?.approval_mode ===
       (AUTO_APPROVED_TOOLS.has(name) ? "approve" : "prompt"),

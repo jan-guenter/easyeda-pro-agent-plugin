@@ -103,3 +103,11 @@ complete UUID/docType/source membership before exclusive managed publication.
 An outer timeout cannot cancel compression, history fetches or the pending
 public call. Do not turn archive hashes into asset ownership, remote freshness,
 saved geometry, complete dependencies or importability claims.
+
+Closed generated fixture reuse is a separate data verifier in
+`server/src/closed-generated-fixture-{data,file,copy,runtime}.ts`. It accepts only
+managed import/capture IDs, acquires new original no-app and read-only file/watch
+resources, and reruns the full unchanged initial profile before issuing a new
+in-memory source. Old JSON never reconstructs a native owner. See
+`docs/history/2026-11-06-closed-generated-data-requalification.md` for the exact
+root index/manager mount and Windows compilation/connected limits.

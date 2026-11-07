@@ -10,6 +10,7 @@ import { CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION } from "./current-pcb-string-e
 import { CURRENT_PCB_TEARDROP_CALLBACK_SELECTOR, CURRENT_PCB_TEARDROP_OWNER_ASSOCIATION } from "./current-pcb-teardrop-owner-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION } from "./current-pcb-diagnostic-worker-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION, currentPcbDiagnosticOpeningArguments } from "./current-pcb-diagnostic-opening.ts";
+import { GENERATED_FIXTURE_REGISTRATION_FUNCTION } from "./managed-fixture-registration-program.ts";
 import type { CurrentPcbDiagnosticOpeningPhase } from "./current-pcb-diagnostic-opening.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
@@ -69,6 +70,15 @@ export function diagnosticPcbOpeningParams(uniqueContextId: string, target: Curr
   return Object.freeze({ functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, uniqueContextId,
     arguments: currentPcbDiagnosticPcbOpeningArguments(target, phase), returnByValue: true, awaitPromise: true, silent: true,
     generatePreview: false, userGesture: false, throwOnSideEffect: false });
+}
+/** Fixed generated path prefix only. Actual issued-source custody is checked
+ * by the new original owner; this transport DTO cannot create that authority. */
+export function diagnosticGeneratedFixtureRegistrationParams(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget): ReturnType<typeof diagnosticOpeningParams> {
+  if (!diagnosticToken(uniqueContextId)) { return fail(); }
+  const selected = Object.freeze(currentDisposableOpenSealedTargetSchema.parse(target));
+  return Object.freeze({ functionDeclaration: GENERATED_FIXTURE_REGISTRATION_FUNCTION, uniqueContextId,
+    arguments: Object.freeze([Object.freeze({ value: selected }), Object.freeze({ value: "register-generated-fixture" })]),
+    returnByValue: true, awaitPromise: true, silent: true, generatePreview: false, userGesture: false, throwOnSideEffect: false });
 }
 
 export function diagnosticLayers209Params(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget): ReturnType<typeof diagnosticOpeningParams> {
@@ -504,6 +514,7 @@ function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Rec
       const args = params["arguments"];
       const selectionRelations209 = params["functionDeclaration"] === CURRENT_PCB_209_SELECTION_RELATIONS_FUNCTION;
       const visual209 = params["functionDeclaration"] === CURRENT_PCB_209_VISUAL_FUNCTION;
+      const generatedFixture = params["functionDeclaration"] === GENERATED_FIXTURE_REGISTRATION_FUNCTION;
       if (!diagnosticToken(params["uniqueContextId"]) || !Array.isArray(args) || args.length !== (selectionRelations209 || visual209 ? 3 : 2) ||
           !diagnosticRecord(args[0]) || !diagnosticExact(args[0], ["value"]) ||
           !diagnosticRecord(args[1]) || !diagnosticExact(args[1], ["value"])) { return fail(); }
@@ -526,7 +537,10 @@ function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Rec
       }
       let fixed: ReturnType<typeof diagnosticOpeningParams>;
       let visualOperation: CurrentPcb209VisualOperation | null = null;
-      if (visual209) {
+      if (generatedFixture) {
+        if (phase !== "register-generated-fixture") { return fail(); }
+        fixed = diagnosticGeneratedFixtureRegistrationParams(params["uniqueContextId"], selected);
+      } else if (visual209) {
         const argument: unknown = args[2];
         if (phase !== "visual" || !diagnosticRecord(argument) || !diagnosticExact(argument, ["value"])) { return fail(); }
         visualOperation = currentPcb209VisualOperationSchema.parse(argument["value"]);
@@ -565,7 +579,8 @@ function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Rec
       if (JSON.stringify(params) !== JSON.stringify(fixed)) { return fail(); }
       command = { id, method, params: fixed, sessionId };
       let selectedPhase: Record<string, unknown> = { openingPhase: phase };
-      if (visualOperation !== null) { selectedPhase = { pcbVisual209Phase: phase, visualOperationJson: JSON.stringify(visualOperation) }; }
+      if (generatedFixture) { selectedPhase = { generatedFixtureRegistrationPhase: phase }; }
+      else if (visualOperation !== null) { selectedPhase = { pcbVisual209Phase: phase, visualOperationJson: JSON.stringify(visualOperation) }; }
       else if (selectionRelations209) { selectedPhase = { pcbSelectionRelations209Phase: phase, componentIds }; }
       else if (imageShapes209) { selectedPhase = { pcbImageShapes209Phase: phase }; }
       else if (arcShapes209) { selectedPhase = { pcbArcShapes209Phase: phase }; }

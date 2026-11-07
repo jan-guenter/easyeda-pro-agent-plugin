@@ -229,6 +229,9 @@ export class CurrentProjectStructureMainObserver {
       observations.set(value, Object.freeze({ issuer: this.#binding.issuer, lease: this.#lease, packet })); this.#packet = value; return value;
     } catch (error) { this.#stop(error); throw error; } finally { this.#busy = false; }
   }
+  /** Cooperatively stop normal observation. The original pending request and
+   * any paused frame remain retained for their supported cleanup path. */
+  public cancel(): void { this.#stop(new Error("PROJECT_STRUCTURE_MAIN_CANCELLED")); }
   /** Remove only acknowledged original allocations and resume only a known
    * pause once. Unknown pause/allocation or lost acknowledgments retain custody. */
   public async cleanup(): Promise<void> {

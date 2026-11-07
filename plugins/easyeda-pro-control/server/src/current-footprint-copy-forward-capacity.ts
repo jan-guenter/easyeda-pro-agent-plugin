@@ -19,6 +19,7 @@ import type { CurrentFootprintCopyOutputReservation } from "./current-footprint-
 import type { CurrentFootprintCopyV2Plan } from "./current-footprint-copy-v2-plan.ts";
 import type { CurrentFootprintCopyV2SqlPlan } from "./current-footprint-copy-v2-sql.ts";
 import { types } from "node:util";
+import { CURRENT_FOOTPRINT_FORWARD_COLD_REQUESTS as COLD, CURRENT_FOOTPRINT_FORWARD_COLD_NATIVE_LIMITS as FORWARD_V2 } from "./current-footprint-forward-cold-native-limits.ts";
 
 const MiB = 1024 * 1024;
 const legacyClockCleanup = 5;
@@ -96,6 +97,32 @@ export const CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY = freezeDeep({
   nativePurposeMounted: false, wholeFourGenerationBudgetReserved: false, executionAuthorized: false,
 } as const);
 
+// Each additional command retains the existing sixteen two-exchange parent
+// Proofs and its own scalar reply envelope. Raw stream/event ceilings remain
+// Cumulative. The extra v2 source read also receives a command and proof slot.
+const v2CleanupExtra = FORWARD_V2.cleanupClass - cleanup, v2NormalExtra = FORWARD_V2.normalClass - normal;
+// Tail activation owns two original-parent proofs and one consumed native
+// Begin control. It cannot renew either the clock or cold request allowance.
+const tailActivationControls = 5;
+const v2Controls = Object.freeze({ normal: CONTROLS.normal + 32 * v2NormalExtra + tailActivationControls,
+  cleanup: CONTROLS.cleanup + 32 * v2CleanupExtra,
+  total: CONTROLS.total + 32 * (v2NormalExtra + v2CleanupExtra) + tailActivationControls });
+const v2ReplyBytes = (v2NormalExtra + v2CleanupExtra + v2Controls.total - CONTROLS.total) * controlReplyBytes;
+export const CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY = freezeDeep({
+  ...CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY,
+  profile: "private.current-footprint-forward-execution-capacity.v3",
+  purpose: "worker-startup-footprint-forward-execution209",
+  writer: { ...CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer,
+    renderer: { ...CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer,
+      normalClassLimit: FORWARD_V2.normalClass, cleanupClassLimit: FORWARD_V2.cleanupClass,
+      requestLimit: FORWARD_V2.requestLimit, normalIdCeiling: FORWARD_V2.requestLimit,
+      coldRequests: COLD },
+    helperStdoutBytes: writerHelperBytes + writerExceptionalControlBytes + v2ReplyBytes },
+  controls: { ...CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls, writer: v2Controls },
+  output: { ...CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.output,
+    helperStdoutBytes: CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.output.helperStdoutBytes + v2ReplyBytes },
+} as const);
+
 export type CurrentFootprintCopyForwardRole = "forward-writer" | "forward-saved-readback";
 const originalOutputs = new WeakSet<CurrentFootprintCopyOutputReservation>();
 /** Once actual original SQL/copy plans exist, narrow their data reservation
@@ -144,10 +171,15 @@ const originalLedgers = new WeakSet<CurrentFootprintCopyForwardResourceLedger>()
  * slots. This class does not authenticate its supplied owner reference and
  * cannot replace the original native factory/termination/eligibility checks. */
 export class CurrentFootprintCopyForwardResourceLedger {
+  readonly #profile: typeof CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY | typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY;
   readonly #generations = new Map<CurrentFootprintCopyForwardRole, Generation>();
   readonly #aggregateBytes = new Map<"artifact" | "journal", number>();
   #failed = false;
-  public constructor() { originalLedgers.add(this); }
+  public constructor(profile: "observation" | "forward-execution-v2" = "observation") {
+    if (profile !== "observation" && profile !== "forward-execution-v2") { fail("PROFILE"); }
+    this.#profile = profile === "forward-execution-v2" ? CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY : CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY;
+    originalLedgers.add(this);
+  }
   public bind(role: CurrentFootprintCopyForwardRole, original: object): void {
     if (this.#failed || !CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.generations.includes(role) || this.#generations.has(role) ||
         original === null || typeof original !== "object" || [...this.#generations.values()].some(value => value.original === original)) { fail("GENERATION"); }
@@ -162,7 +194,7 @@ export class CurrentFootprintCopyForwardResourceLedger {
   public consumeRequest(role: CurrentFootprintCopyForwardRole, original: object, channel: "renderer" | "main", id: number, cleanupRequest: boolean): void {
     const value = this.#original(role, original); count(id);
     if (typeof cleanupRequest !== "boolean" || this.#failed && !cleanupRequest) { fail("REQUEST_CLASS"); }
-    const profile = CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY;
+    const profile = this.#profile;
     if (channel === "main") {
       if (role !== "forward-writer" || id !== value.mainId + 1 || id > profile.writer.main.requestLimit ||
           (cleanupRequest ? value.mainCleanup >= profile.writer.main.cleanupClassLimit : value.mainNormal >= profile.writer.main.normalClassLimit)) { this.#refuse("MAIN_REQUEST"); }
@@ -213,7 +245,7 @@ export class CurrentFootprintCopyForwardResourceLedger {
   }
   public consumeBytes(role: CurrentFootprintCopyForwardRole, original: object, kind: StreamKind, bytes: number): void {
     const value = this.#original(role, original); count(bytes);
-    const profile = CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY;
+    const profile = this.#profile;
     const aggregate = kind === "artifact" || kind === "journal";
     const used = aggregate ? this.#aggregateBytes.get(kind) ?? 0 : value.bytes.get(kind) ?? 0;
     const limits: Readonly<Record<StreamKind, number>> = {
@@ -228,7 +260,7 @@ export class CurrentFootprintCopyForwardResourceLedger {
   public consumeControl(role: CurrentFootprintCopyForwardRole, original: object, cleanupControl = false): void {
     const value = this.#original(role, original);
     if (typeof cleanupControl !== "boolean" || this.#failed && !cleanupControl) { fail("CONTROL_CLASS"); }
-    const limits = role === "forward-writer" ? CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.writer : CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.saved;
+    const limits = role === "forward-writer" ? this.#profile.controls.writer : this.#profile.controls.saved;
     if (cleanupControl ? value.cleanupControls >= limits.cleanup : value.normalControls >= limits.normal) { this.#refuse("CONTROL"); }
     value.controls += 1; if (cleanupControl) { value.cleanupControls += 1; } else { value.normalControls += 1; }
   }

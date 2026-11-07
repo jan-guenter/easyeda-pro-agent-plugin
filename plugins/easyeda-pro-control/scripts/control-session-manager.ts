@@ -18,6 +18,11 @@ import {
   selectSessionLaunch, sessionFailureDiagnostic, sessionTransportEnvironment,
 } from "./control-session.ts";
 import type { CallRequest } from "./control-session.ts";
+import { captureOriginalSpatialManagerRequest, consumeOriginalSpatialManagerControl, createOriginalSpatialManagerRecovery, isOriginalSpatialManagerControl,
+  learnOriginalSpatialManagerInspection, learnOriginalSpatialManagerWindow, originalSpatialManagerControl } from "./control-session-spatial-adapter.ts";
+import type { OriginalSpatialManagerRecovery, OriginalSpatialManagerRequest } from "./control-session-spatial-adapter.ts";
+import { captureOriginalViaManagerRequest, isOriginalViaManagerControl, originalViaManagerControl } from "./control-session-via-adapter.ts";
+import type { OriginalViaManagerRequest } from "./control-session-via-adapter.ts";
 import { ForegroundSessionTransport } from "./control-session-transport.ts";
 import { createPrivateTemporaryDirectory } from "./private-temporary-directory.ts";
 import type { PrivateTemporaryDirectory } from "./private-temporary-directory.ts";
@@ -32,6 +37,9 @@ const generationSchema = z.number().int().positive().max(Number.MAX_SAFE_INTEGER
 // These selectors deliberately accept no tool, operation, binding or intent
 // Override. The manager supplies those from its private interrupted connection.
 const originalCleanupSchema = z.discriminatedUnion("action", [
+  z.strictObject({ action: z.literal("observe-window") }),
+  z.strictObject({ action: z.literal("normal-close"), confirmNormalClose: z.literal(true) }),
+  z.strictObject({ action: z.literal("abort-component"), confirmAbortOriginalComponentJob: z.literal(true) }),
   z.strictObject({ action: z.literal("inspect") }),
   z.strictObject({ action: z.literal("abort-generation"), confirmAbortOriginalForwardJob: z.literal(true) }),
   z.strictObject({ action: z.literal("observe-termination") }),
@@ -41,9 +49,14 @@ const originalCleanupSchema = z.discriminatedUnion("action", [
   z.strictObject({ action: z.literal("cleanup-before-launch") }),
   z.strictObject({ action: z.literal("cleanup-no-process") }),
   z.strictObject({ action: z.literal("settle-historical-metadata") }),
+  z.strictObject({ action: z.literal("abort") }),
+  z.strictObject({ action: z.literal("release") }),
+  z.strictObject({ action: z.literal("settle-publication") }),
 ]);
 const inFlightControlSchema = z.discriminatedUnion("action", [
+  z.strictObject({ action: z.literal("abort-component"), confirmAbortOriginalComponentJob: z.literal(true) }),
   z.strictObject({ action: z.literal("inspect") }),
+  z.strictObject({ action: z.literal("abort") }),
   z.strictObject({ action: z.literal("abort-generation"), confirmAbortOriginalForwardJob: z.literal(true) }),
 ]);
 const commandSchema = z.discriminatedUnion("action", [
@@ -186,6 +199,9 @@ interface InterruptedCall {
   readonly generation: number;
   readonly requestId: string | number;
   readonly tool: string;
+  readonly via: OriginalViaManagerRequest | null;
+  readonly spatial: OriginalSpatialManagerRequest | null;
+  readonly spatialRecovery: OriginalSpatialManagerRecovery;
   readonly forwardFamily: "footprint-forward-prewrite" | "footprint-forward-source-validation" | null;
   readonly forward: ForwardCleanupBinding | null;
   readonly forwardLaunchOperationId: string | null;
@@ -198,6 +214,16 @@ interface InterruptedCall {
   readonly forwardAction: string | null;
   readonly originalCaptureRequestId?: string | number;
   readonly abortReservation: { attempted: boolean };
+}
+/** Fixed tool selection comes only from the retained original strict request. */
+function originalManagerTool(original: InterruptedCall): string {
+  if (original.spatial !== null) { return "easyeda_control_pcb209_opening"; }
+  return original.via === null ? "easyeda_control_pcb209_worker_startup" : "easyeda_control_current_pcb_via_write";
+}
+function originalManagerInFlightAllowed(original: InterruptedCall, action: string): boolean {
+  if (original.spatial !== null) { return isOriginalSpatialManagerControl(action, true, original.spatial.family); }
+  if (original.via !== null) { return original.via.action === "execute" && isOriginalViaManagerControl(action, true); }
+  return original.forward !== null && original.forwardCapture && (action === "inspect" || action === "abort-generation");
 }
 interface InFlightCapture {
   readonly original: InterruptedCall;
@@ -328,16 +354,16 @@ export class ForegroundSessionManager {
       startupCleanupAttempted: this.startupCleanupAttempted,
       callerToolDispatchStarted: observed === undefined ? false : this.callerToolDispatches.has(observed.transport),
       inFlightRequest: this.inFlight === undefined ? null : { id: this.inFlight.original.requestId,
-        generation: this.inFlight.original.generation, tool: this.inFlight.original.tool, forward: this.inFlight.original.forward,
+        generation: this.inFlight.original.generation, tool: this.inFlight.original.tool, forward: this.inFlight.original.forward, via: this.inFlight.original.via, spatial: this.inFlight.original.spatial,
         rpcPending: this.inFlight.rpcPending, sidePending: this.inFlight.sidePending, controlCalls: this.inFlight.controls.size,
         abortAttempted: this.inFlight.original.abortReservation.attempted },
       controlledCapture: this.controlledCapture === undefined ? null : { id: this.controlledCapture.original.requestId,
         generation: this.controlledCapture.original.generation, forward: this.controlledCapture.original.forward, parentOutcome: this.controlledCapture.parentOutcome },
       interruptedRequest: this.interrupted === undefined ? null : { id: this.interrupted.requestId,
-        generation: this.interrupted.generation, tool: this.interrupted.tool, action: this.interrupted.forwardAction,
+        generation: this.interrupted.generation, tool: this.interrupted.tool, action: this.interrupted.spatial?.action ?? this.interrupted.via?.action ?? this.interrupted.forwardAction, via: this.interrupted.via, spatial: this.interrupted.spatial,
         ...(this.interrupted.originalCaptureRequestId === undefined ? {} : { originalCaptureRequestId: this.interrupted.originalCaptureRequestId }),
         forward: this.interrupted.forward ?? this.interrupted.inspectedLaunchBinding ?? null, outcome: "unknown", cleanupAvailable: this.stage === "blocked" &&
-          !this.retirementUncertain && (this.interrupted.forward !== null || this.interrupted.forwardLaunchOperationId !== null || this.interrupted.forwardSourceOperationId !== null || this.interrupted.sourceHistoricalRequest !== null) &&
+          !this.retirementUncertain && (this.interrupted.forward !== null || this.interrupted.forwardLaunchOperationId !== null || this.interrupted.forwardSourceOperationId !== null || this.interrupted.sourceHistoricalRequest !== null || this.interrupted.via !== null || this.interrupted.spatial !== null) &&
           this.interrupted.connection === this.connection && this.connection.client.transport === this.connection.transport &&
           this.connection.transport.hasUnclosedChild() && !this.evidenceFault && !this.publicationFault &&
           !this.records.some(row => Object.hasOwn(row, "unpublishedValue")) },
@@ -439,7 +465,7 @@ export class ForegroundSessionManager {
     if (this.evidenceFault || this.publicationFault || this.records.some(row => Object.hasOwn(row, "unpublishedValue"))) { throw new Error("manager-evidence-unsettled"); }
     if (this.stage === "active") { return this.requireActive(); }
     const connection = this.connection, interrupted = this.interrupted ?? this.controlledCapture?.original;
-    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.inspectedLaunchBinding === undefined && interrupted.prelaunchCleanupAcknowledged !== true && interrupted.forwardSourceOperationId === null && interrupted.sourceHistoricalRequest === null || connection === undefined ||
+    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.inspectedLaunchBinding === undefined && interrupted.prelaunchCleanupAcknowledged !== true && interrupted.forwardSourceOperationId === null && interrupted.sourceHistoricalRequest === null && interrupted.via === null && interrupted.spatial === null || connection === undefined ||
         interrupted.connection !== connection || interrupted.generation !== this.generation ||
         connection.client.transport !== connection.transport || !connection.transport.hasUnclosedChild()) {
       throw new Error("manager-original-connection-required");
@@ -468,7 +494,8 @@ export class ForegroundSessionManager {
     const historical = z.strictObject({ request: z.strictObject({ action: z.literal("footprint-forward-source-relinquishment"),
       request: currentFootprintForwardSourceRelinquishmentRequestSchema }) }).safeParse(request.arguments);
     const sourceHistoricalRequest = request.tool === "easyeda_control_pcb209_worker_startup" && historical.success ? Object.freeze(historical.data.request.request) : null;
-    return { connection, generation: this.generation, requestId: request.id, tool: request.tool,
+    const spatial = captureOriginalSpatialManagerRequest(request.tool, request.arguments);
+    return { connection, generation: this.generation, requestId: request.id, tool: request.tool, via: captureOriginalViaManagerRequest(request.tool, request.arguments), spatial, spatialRecovery: createOriginalSpatialManagerRecovery(spatial),
       forwardFamily: outer.success && request.tool === "easyeda_control_pcb209_worker_startup" ? outer.data.request.action : null,
       forward, forwardLaunchOperationId, forwardSourceOperationId, forwardCapture: selected?.action === "capture-project" || selected?.action === "capture-source", sourceHistoricalRequest,
       forwardAction: selected?.action ?? null, abortReservation: { attempted: false } };
@@ -482,14 +509,16 @@ export class ForegroundSessionManager {
    * Every other action remains on the existing serial owner path. */
   private requireInFlightControl(request: InFlightControlRequest, held?: InFlightCapture): InFlightCapture {
     const current = this.inFlight; const connection = this.connection;
+    const supported = current !== undefined && originalManagerInFlightAllowed(current.original, request.request.action);
+    const tool = current === undefined ? "" : originalManagerTool(current.original);
     if (!this.requestPending || current === undefined || !current.rpcPending || current.sidePending && current !== held || connection === undefined ||
         current.original.connection !== connection || current.original.generation !== this.generation || request.generation !== this.generation ||
         request.originalRequestId !== current.original.requestId || request.id === current.original.requestId || current.controls.has(request.id) ||
-        current.controls.size >= 16 || current.original.forward === null || !current.original.forwardCapture ||
+        current.controls.size >= 16 || !supported ||
         connection.client.transport !== connection.transport || !connection.transport.hasUnclosedChild() ||
-        !connection.tools.has("easyeda_control_pcb209_worker_startup") || this.retirementUncertain || this.evidenceFault || this.publicationFault ||
+        !connection.tools.has(tool) || this.retirementUncertain || this.evidenceFault || this.publicationFault ||
         this.records.some(row => Object.hasOwn(row, "unpublishedValue")) ||
-        request.request.action === "abort-generation" && current.original.abortReservation.attempted) {
+        (request.request.action === "abort-component" || request.request.action === "abort-generation" || request.request.action === "abort") && current.original.abortReservation.attempted) {
       throw new Error("manager-in-flight-original-not-authorized");
     }
     return current;
@@ -518,22 +547,26 @@ export class ForegroundSessionManager {
       if ("tool" in request || request.action !== "in-flight-original") { throw new Error("manager-in-flight-command-required"); }
       if (this.requireInFlightControl(request, current) !== current) { throw new Error("manager-in-flight-original-not-authorized"); }
       if (!sessionManagerCallBudgetAvailable(true, this.recordCounts.cleanup + 1, this.byteCounts.cleanup)) { throw new Error("manager-cleanup-reserve-required"); }
-      const binding = current.original.forward; if (binding === null) { throw new Error("manager-in-flight-original-not-authorized"); }
-      const input = request.request.action === "inspect" ? { action: "inspect" as const, operationId: binding.operationId } : {
-        action: "abort-generation" as const, operationId: binding.operationId, expectedBindingSha256: binding.bindingSha256, confirmAbortOriginalForwardJob: true as const };
-      const call: CallRequest = { id, tool: "easyeda_control_pcb209_worker_startup", timeoutMs: 120_000,
-        arguments: originalForwardArguments(current.original, input),
+      const binding = current.original.forward, spatial = current.original.spatial, via = current.original.via;
+      if (binding === null && via === null && spatial === null) { throw new Error("manager-in-flight-original-not-authorized"); }
+      const selectedVia = via === null ? null : originalViaManagerControl(via, request.request.action);
+      const selectedSpatial = spatial === null ? null : originalSpatialManagerControl(spatial, current.original.spatialRecovery, request.request);
+      const input = selectedSpatial?.arguments.request ?? selectedVia?.arguments.request ?? (request.request.action === "inspect" ? { action: "inspect" as const, operationId: binding?.operationId } : {
+        action: "abort-generation" as const, operationId: binding?.operationId, expectedBindingSha256: binding?.bindingSha256, confirmAbortOriginalForwardJob: true as const });
+      const call: CallRequest = { id, tool: selectedSpatial?.tool ?? selectedVia?.tool ?? "easyeda_control_pcb209_worker_startup", timeoutMs: 120_000,
+        arguments: selectedSpatial?.arguments ?? selectedVia?.arguments ?? originalForwardArguments(current.original, input),
         ...(request.responseFile === undefined ? {} : { responseFile: request.responseFile }) };
       reservation = true;
       await this.retain("in-flight-control-intent", { id, originalRequestId: current.original.requestId,
-        generation: current.original.generation, tool: call.tool, request: input, wrapperAction: current.original.forwardFamily }, "cleanup");
+        generation: current.original.generation, tool: call.tool, request: input, wrapperAction: current.original.spatial?.family ?? current.original.forwardFamily }, "cleanup");
       // Publication may outlast the parent SDK request. A no-longer-pending
       // Parent refuses before dispatch and consumes no abort attempt.
       if (this.requireInFlightControl(request, current) !== current) { throw new Error("manager-in-flight-original-not-authorized"); }
       current.controls.add(id);
-      if (request.request.action === "abort-generation") {
+      if (request.request.action === "abort-component" || request.request.action === "abort-generation" || request.request.action === "abort") {
         current.original.abortReservation.attempted = true; this.controlledCapture = current; this.stage = "blocked";
       }
+      if (spatial !== null) { consumeOriginalSpatialManagerControl(current.original.spatialRecovery, request.request.action); }
       let result: unknown;
       dispatched = true;
       try { result = await current.original.connection.client.callTool({ name: call.tool, arguments: call.arguments }, undefined, { timeout: call.timeoutMs }); }
@@ -541,11 +574,16 @@ export class ForegroundSessionManager {
         // This is the actual rejected side request, not an invented timeout of
         // The parent. Its same-owner binding remains available after settlement.
         this.interrupted = { ...this.interruptedCall(current.original.connection, call), forward: binding,
-          originalCaptureRequestId: current.original.requestId, abortReservation: current.original.abortReservation };
+          originalCaptureRequestId: current.original.requestId, abortReservation: current.original.abortReservation, via: current.original.via, spatial, spatialRecovery: current.original.spatialRecovery };
         this.stage = "blocked"; throw error;
       }
       const evidence = await this.retain("in-flight-control-result", { id, originalRequestId: current.original.requestId, result }, "cleanup");
-      toolResultSchema.parse(result); await this.publishCallResult(call, result, evidence);
+      toolResultSchema.parse(result);
+      if (spatial !== null) {
+        if (this.inFlight !== current || this.connection !== current.original.connection || this.generation !== current.original.generation) { throw new Error("manager-spatial-original-connection-changed"); }
+        if (request.request.action === "inspect") { learnOriginalSpatialManagerInspection(spatial, current.original.spatialRecovery, result); }
+      }
+      await this.publishCallResult(call, result, evidence);
     } catch (error) {
       if (dispatched || this.evidenceFault || this.publicationFault) { this.stage = "blocked"; this.replacementFrom = undefined; }
       const failure = { ...(id === undefined ? {} : { id }), error: dispatched ? "manager-blocked" : "manager-request-rejected", generation: this.generation,
@@ -566,13 +604,23 @@ export class ForegroundSessionManager {
   }> {
     if (request.request.action === "settle-historical-metadata") { throw new Error("manager-original-family-required"); }
     const connection = this.connection, interrupted = this.interrupted ?? this.controlledCapture?.original;
-    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.forwardLaunchOperationId === null && interrupted.forwardSourceOperationId === null || connection === undefined ||
+    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.forwardLaunchOperationId === null && interrupted.forwardSourceOperationId === null && interrupted.via === null && interrupted.spatial === null || connection === undefined ||
         this.retirementUncertain || this.evidenceFault || this.publicationFault || this.records.some(row => Object.hasOwn(row, "unpublishedValue")) ||
         interrupted.connection !== connection || interrupted.generation !== this.generation || request.generation !== this.generation ||
         request.interruptedRequestId !== interrupted.requestId || connection.client.transport !== connection.transport ||
-        !connection.transport.hasUnclosedChild() || !connection.tools.has("easyeda_control_pcb209_worker_startup")) {
+        !connection.transport.hasUnclosedChild() || !connection.tools.has(originalManagerTool(interrupted))) {
       throw new Error("manager-original-cleanup-not-authorized");
     }
+    if (interrupted.spatial !== null) {
+      originalSpatialManagerControl(interrupted.spatial, interrupted.spatialRecovery, request.request);
+      return { connection, interrupted, operationId: interrupted.spatial.operationId, binding: undefined };
+    }
+    if (request.request.action === "observe-window" || request.request.action === "normal-close") { throw new Error("manager-original-spatial-control-required"); }
+    if (interrupted.via !== null) {
+      if (!isOriginalViaManagerControl(request.request.action) || request.request.action === "abort" && interrupted.abortReservation.attempted) { throw new Error("manager-original-via-control-refused"); }
+      return { connection, interrupted, operationId: interrupted.via.operationId, binding: undefined };
+    }
+    if (request.request.action === "abort" || request.request.action === "release" || request.request.action === "settle-publication") { throw new Error("manager-original-family-required"); }
     const binding = interrupted.forward ?? interrupted.inspectedLaunchBinding;
     const operationId = binding?.operationId ?? interrupted.forwardLaunchOperationId ?? interrupted.forwardSourceOperationId;
     const unboundSource = interrupted.forwardFamily === "footprint-forward-source-validation" &&
@@ -676,6 +724,31 @@ export class ForegroundSessionManager {
   private async cleanupOriginal(request: OriginalCleanupRequest): Promise<void> {
     const { binding, connection, interrupted, operationId } = this.requireOriginalCleanup(request);
     const selected = request.request;
+    if (interrupted.spatial !== null) {
+      const command = originalSpatialManagerControl(interrupted.spatial, interrupted.spatialRecovery, selected);
+      const call: CallRequest = { id: request.id, tool: command.tool, arguments: command.arguments, timeoutMs: SESSION_CALL_TIMEOUT_MS,
+        ...(request.responseFile === undefined ? {} : { responseFile: request.responseFile }) };
+      await this.retain("original-cleanup-intent", { id: request.id, interruptedRequestId: interrupted.requestId,
+        generation: this.generation, tool: call.tool, request: command.arguments.request, wrapperAction: interrupted.spatial.family }, "cleanup");
+      this.requireOriginalCleanup(request); consumeOriginalSpatialManagerControl(interrupted.spatialRecovery, selected.action);
+      const result = await connection.client.callTool({ name: call.tool, arguments: call.arguments }, undefined, { timeout: call.timeoutMs });
+      const evidence = await this.retain("original-cleanup-result", { id: request.id, result }, "cleanup"); toolResultSchema.parse(result);
+      if (selected.action === "inspect") { learnOriginalSpatialManagerInspection(interrupted.spatial, interrupted.spatialRecovery, result); }
+      if (selected.action === "observe-window") { learnOriginalSpatialManagerWindow(interrupted.spatial, interrupted.spatialRecovery, result); }
+      await this.publishCallResult(call, result, evidence); return;
+    }
+    if (interrupted.via !== null) {
+      const command = originalViaManagerControl(interrupted.via, selected.action);
+      const call: CallRequest = { id: request.id, tool: command.tool, arguments: command.arguments, timeoutMs: SESSION_CALL_TIMEOUT_MS,
+        ...(request.responseFile === undefined ? {} : { responseFile: request.responseFile }) };
+      await this.retain("original-cleanup-intent", { id: request.id, interruptedRequestId: interrupted.requestId,
+        generation: this.generation, tool: call.tool, request: command.arguments.request }, "cleanup");
+      this.requireOriginalCleanup(request);
+      if (selected.action === "abort") { interrupted.abortReservation.attempted = true; }
+      const result = await connection.client.callTool({ name: call.tool, arguments: call.arguments }, undefined, { timeout: call.timeoutMs });
+      const evidence = await this.retain("original-cleanup-result", { id: request.id, result }, "cleanup");
+      toolResultSchema.parse(result); await this.publishCallResult(call, result, evidence); return;
+    }
     const input: Record<string, unknown> = { ...selected, operationId };
     if (selected.action === "settle-records" && interrupted.forwardFamily !== "footprint-forward-source-validation") { input["expectedIntentSha256"] = interrupted.intentSha256; }
     else if (selected.action !== "inspect" && selected.action !== "settle-records" && selected.action !== "cleanup-before-launch" && selected.action !== "cleanup-no-process") {
@@ -883,7 +956,7 @@ export class ForegroundSessionManager {
         }
         reserved = true;
         const interrupted = this.interruptedCall(connection, request);
-        if (request.cleanup !== true && interrupted.forwardCapture && interrupted.forward !== null) {
+        if (request.cleanup !== true && (interrupted.forwardCapture && interrupted.forward !== null || interrupted.via?.action === "execute" || interrupted.spatial !== null)) {
           this.inFlight = { original: interrupted, controls: new Set(), rpcPending: false, parentOutcome: "pending", sidePending: false, sideIdle: Promise.resolve(null) };
         }
         await this.call(request, interrupted); return;

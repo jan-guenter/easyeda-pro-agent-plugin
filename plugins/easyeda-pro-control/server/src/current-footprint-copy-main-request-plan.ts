@@ -63,6 +63,12 @@ export function reserveCurrentFootprintCopyMainRequestPlan(copy: CurrentFootprin
 export function isCurrentFootprintCopyMainRequestReservation(value: unknown): value is CurrentFootprintCopyMainRequestReservation {
   return value !== null && typeof value === "object" && originals.has(value);
 }
+/** Data identity only. A later original-writer composer must use its sealed
+ * copy plan, never another valid reservation from an unrelated source. */
+export function requireOriginalCurrentFootprintCopyMainRequestReservationCopy(token: CurrentFootprintCopyMainRequestReservation): CurrentFootprintCopyV2Plan {
+  const original = originals.get(token); need(original !== undefined && !original.consumed, "ORIGINAL_RESERVATION");
+  currentFootprintCopyV2Rows(original.copy); return original.copy;
+}
 export function requireCurrentFootprintCopyMainRequestReservation(token: CurrentFootprintCopyMainRequestReservation): Plan {
   const original = originals.get(token); need(original !== undefined && !original.consumed, "ORIGINAL_RESERVATION");
   currentFootprintCopyV2Rows(original.copy); return original.maximum;

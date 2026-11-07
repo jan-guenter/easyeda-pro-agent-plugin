@@ -1,3 +1,4 @@
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
@@ -39,7 +40,7 @@ void test("route summary rejects getters proxies unsupported shapes and oversize
 });
 
 void test("native worker envelope derives all seven capture and eight recheck argument fields", async () => {
-  const helper = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const helper = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   assert.doesNotThrow(() => { assertCurrentFootprintCopyExecutionWorkerNativeFields(helper); });
   for (const mutation of [helper.replaceAll("'arg7ObjectId'", "'arg8ObjectId'"), helper.replaceAll("'arg7ObjectId'", "'arg6ObjectId'")]) {
     assert.throws(() => { assertCurrentFootprintCopyExecutionWorkerNativeFields(mutation); }, /FIELD_BOUNDARY/u);
