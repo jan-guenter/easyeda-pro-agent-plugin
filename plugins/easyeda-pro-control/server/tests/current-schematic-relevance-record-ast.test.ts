@@ -8,6 +8,7 @@ import { currentSchematicRelevanceDisplayWriteNativeRequest as ownWire } from ".
 import { currentSchematicDisplayWriteNativeRequest as oldWire } from "../src/current-schematic-display-write-protocol.ts";
 import { currentSchematicWireEditNativeRequest as wireWire } from "../src/current-schematic-wire-edit-protocol.ts";
 import { validateCurrentSchematicRelevanceRecordAstCommand as validate } from "../src/current-schematic-relevance-record-ast-protocol.ts";
+
 void test("the original record may call only its retained AST with the same connected model and exact event", () => {
   let invoked = 0; const native: unknown[] = [Object.getOwnPropertyDescriptor, null, null, null, Object.hasOwn, Reflect.ownKeys, null, Array.isArray];
   const ast = (): void => { invoked += 1; }, record = (): void => { invoked += 1; }; const monitor = { record }; const shapes = { modifyMonitor: monitor }; const text = { _underline: true, isConnected: true, shapeManager: shapes }; const event = { model: text, attr: "underline", oldValue: false, newValue: true }; const entry: unknown[] = Array.from({ length: 13 }, () => ({})); entry[8] = text; entry[11] = monitor; const refs: unknown[] = Array.from({ length: 24 }, () => ({})); refs[10] = shapes; const primitive = [{}, false, true];
