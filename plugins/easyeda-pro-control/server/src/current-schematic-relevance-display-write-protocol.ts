@@ -1,4 +1,5 @@
 /* oxlint-disable import/max-dependencies -- Each fixed purpose lane validates its own complete native codec; a caller-selected generic encoder would erase those boundaries. */
+import {currentSchematicRelevanceUploadSerializeWire} from "./current-schematic-relevance-upload-serialize-wire.ts";
 import {currentSchematicRelevanceUploadModelWire} from "./current-schematic-relevance-upload-model-wire.ts";
 import {currentSchematicRelevanceUploadEntryWire} from "./current-schematic-relevance-upload-entry-wire.ts";
 import {currentSchematicRelevanceNoEchoWire} from "./current-schematic-relevance-noecho-wire.ts";
@@ -41,6 +42,13 @@ export function currentSchematicRelevanceDisplayWriteNativeRequest(chunk: Buffer
     if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_MONITOR_BATCH_WIRE"); }
     const fixed = currentSchematicRelevanceMonitorBatchWire(input, id);
     if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceMonitorBatchCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_MONITOR_BATCH_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceUploadSerializeCommand")) {
+    const { id, sessionId, schematicRelevanceUploadSerializeCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_UPLOAD_SERIALIZE_WIRE"); }
+    const fixed = currentSchematicRelevanceUploadSerializeWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceUploadSerializeCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_UPLOAD_SERIALIZE_FIXED_WIRE"); }
     return fixed.request;
   }
   if (Object.hasOwn(raw, "schematicRelevanceUploadModelCommand")) {

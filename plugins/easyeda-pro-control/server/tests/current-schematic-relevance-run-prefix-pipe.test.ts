@@ -1,3 +1,4 @@
+import {currentSchematicRelevanceUploadSerializeCases} from "../src/current-schematic-relevance-upload-serialize-wire.ts";
 import {currentSchematicRelevanceUploadModelCases} from "../src/current-schematic-relevance-upload-model-wire.ts";
 import {currentSchematicRelevanceUploadEntryCases} from "../src/current-schematic-relevance-upload-entry-wire.ts";
 import {currentSchematicRelevanceNoEchoCases} from "../src/current-schematic-relevance-noecho-wire.ts";
@@ -42,11 +43,12 @@ void test("finite run and normal callback lanes remain duplex with the original 
   for(const command of currentSchematicRelevanceNoEchoCases()){await pipe.observeSchematicRelevanceNoEcho(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
   for(const command of currentSchematicRelevanceUploadEntryCases()){await pipe.observeSchematicRelevanceUploadEntry(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
   for(const command of currentSchematicRelevanceUploadModelCases()){await pipe.observeSchematicRelevanceUploadModel(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
+  for(const command of currentSchematicRelevanceUploadSerializeCases()){await pipe.observeSchematicRelevanceUploadSerialize(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
   assert.equal(pipe.status().pendingRequestId, 2); assert.equal(pipe.status().failure, null);
   for (const row of sent.slice(2)) {
     assert.equal(row["sessionId"], "original-ui");
     const native = currentSchematicRelevanceDisplayWriteNativeRequest(Buffer.from(`${JSON.stringify(row)}\0`));
-    assert.ok(native["action"] === "schematic-relevance-run-prefix" || native["action"] === "schematic-relevance-run-guard" || native["action"] === "schematic-relevance-normal-update" || native["action"] === "schematic-relevance-normal-disposal" || native["action"] === "schematic-relevance-normal-record" || native["action"] === "schematic-relevance-noecho" || native["action"] === "schematic-relevance-upload-entry" || native["action"] === "schematic-relevance-upload-model");
+    assert.ok(native["action"] === "schematic-relevance-run-prefix" || native["action"] === "schematic-relevance-run-guard" || native["action"] === "schematic-relevance-normal-update" || native["action"] === "schematic-relevance-normal-disposal" || native["action"] === "schematic-relevance-normal-record" || native["action"] === "schematic-relevance-noecho" || native["action"] === "schematic-relevance-upload-entry" || native["action"] === "schematic-relevance-upload-model" || native["action"] === "schematic-relevance-upload-serialize");
   }
   input.emit("error", new Error("inert original request finished")); await failed;
 });

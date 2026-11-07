@@ -41,3 +41,9 @@ This is source-only implementation evidence. Serializer, CM publication,
 matching worker TEXT, remaining normal return/status callbacks, whole Modify,
 Save and persistence are not completed or authorized by this receipt. No app,
 native owner, MCP transport, design, native artifact or installed byte changed.
+
+The first handoff message contained stale estimates of 1,887,789 compiler /
+1,376,365 helper bytes. The actual final 3c1f9509 measurements were 1,888,403 /
+1,377,558. The later serialization checkpoint adds the distinct captured native
+alias and four Model-before reads, making that new bound 621; the original
+617-request receipt and its Text-body-held limit above remain historical.

@@ -1,4 +1,6 @@
 /* oxlint-disable import/max-dependencies -- Typed cursor and command boundaries remain separate while this one original callback capability shares their retained owner custody. */
+import type {CurrentSchematicRelevanceUploadSerializeCommand} from "./current-schematic-relevance-upload-serialize-protocol.ts";
+import type {CurrentSchematicRelevanceUploadSerializeHeld} from "./current-schematic-relevance-upload-serialize-cursor.ts";
 import type {CurrentSchematicRelevanceUploadModelCommand} from "./current-schematic-relevance-upload-model-protocol.ts";
 import type {CurrentSchematicRelevanceUploadModelHeld} from "./current-schematic-relevance-upload-model-cursor.ts";
 import type {CurrentSchematicRelevanceUploadEntryCommand} from "./current-schematic-relevance-upload-entry-protocol.ts";
@@ -64,6 +66,10 @@ export interface CurrentSchematicRelevanceActionCallbackBindings {
   readonly requestNormalRecord:(command:CurrentSchematicRelevanceNormalRecordCommand)=>Promise<unknown>;
   readonly requireOriginalNormalRecord:()=>CurrentSchematicRelevanceNormalRecordReceipt;
   readonly continueOriginalNormalRecord:()=>Promise<void>;
+  readonly nextSerializeCommand:()=>CurrentSchematicRelevanceUploadSerializeCommand|null;
+  readonly requestSerialize:(command:CurrentSchematicRelevanceUploadSerializeCommand)=>Promise<unknown>;
+  readonly continueOriginalSerialize:()=>Promise<void>;
+  readonly requireOriginalSerialize:()=>CurrentSchematicRelevanceUploadSerializeHeld;
   readonly nextUploadModelCommand:()=>CurrentSchematicRelevanceUploadModelCommand|null;
   readonly requestUploadModel:(command:CurrentSchematicRelevanceUploadModelCommand)=>Promise<unknown>;
   readonly continueOriginalUploadModel:()=>Promise<void>;

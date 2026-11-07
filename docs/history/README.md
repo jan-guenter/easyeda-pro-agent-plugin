@@ -882,3 +882,5 @@ layout. The connected ledger retains its generation and case anchors.
 - [Original Text history recording](2026-11-07-schematic-original-history-command.md), source-bound constructor and attribute recording, ending at the held callback finish before normal success.
 
 - [Original schematic model upload](2026-11-07-schematic-original-model-upload.md), three source-owned delivery boundaries ending before Text serialization/publication.
+
+- [Original schematic Text serialization](2026-11-07-schematic-original-text-serialization.md), eight source-owned delivery/serializer continuations ending at the held original CM body, with captured-native and Array-iterator joins.
