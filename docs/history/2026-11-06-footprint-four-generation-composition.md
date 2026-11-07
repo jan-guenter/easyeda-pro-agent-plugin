@@ -1242,3 +1242,28 @@ limits stay2MiB; v1 decoding is unchanged. No tracked helper/pins/bundles,
 Windows/app/native/MCP calls or runtime acceptance changed. The next work is a
 complete pinned open-tail task/constructor inventory, then original `fu`
 custody/quiesce, followed by inverse deletion/Main SQL and fresh saved absence.
+
+The next inverse prefix binds28 delete callees from its actual ready lexical
+frame: fourteen original constructors, nine selected receiver methods,
+`qe`/`xt`/`$e`, and `of.head`/`of.delete`. Its fixed capture keeps the actual
+PROJECT, worker/notification buses, manager, consistency, copied UUID, current
+client and ticket alongside descriptor/prototype reproof closures. It calls no
+application method, getter, clock, encoder or delete function. The selected
+copied UUID and ticket must come from the genuine saved checkpoint when this
+leaf is mounted; supplied equal values alone grant nothing.
+
+Each callee is selected and inspected separately. The pinned `Lg` class is
+43,658 bytes, so a new inverse-only descriptor capture permits that single
+class while preserving the older16KiB clock limit. One bounded reply is capped
+at65,280 bytes. The complete sequence reserves60 ordinary requests and32 exact
+call/frame helper-source reads (92 CDP,94 native controls including original
+bind/completion). It includes one final dispatch-time reproof, which must stay
+consumed on refusal. No invocation or resume command exists in this grammar.
+
+Four focused cases pass, including actual Node Inspector metadata for all28
+isolated pinned class/function definitions at their source coordinates. No
+constructor or application method executes in that check. Descriptor drift and
+copied/foreign wire scope refuse, and all native binding/clock/execution claims
+remain unavailable until the original ready/owner registry mounts this leaf.
+Strict changed-file lint and both typechecks pass. This is a source prerequisite,
+not connected inverse or four-generation acceptance.
