@@ -1,3 +1,5 @@
+import type {CurrentSchematicRelevanceNormalUpdateCommand} from "./current-schematic-relevance-normal-update-protocol.ts";
+import type {CurrentSchematicRelevanceNormalUpdateReceipt} from "./current-schematic-relevance-normal-update-cursor.ts";
 import type {CurrentSchematicRelevanceHistoryCommand} from "./current-schematic-relevance-history-command-protocol.ts";
 import type {CurrentSchematicRelevanceHistoryCommandReceipt} from "./current-schematic-relevance-history-command-cursor.ts";
 import type { CurrentSchematicRelevanceMonitorBatchCommand } from "./current-schematic-relevance-monitor-batch-protocol.ts";
@@ -48,6 +50,10 @@ export interface CurrentSchematicRelevanceActionCallbackBindings {
   readonly requestHistoryCommand:(command:CurrentSchematicRelevanceHistoryCommand)=>Promise<unknown>;
   readonly requireOriginalHistoryCommand:()=>CurrentSchematicRelevanceHistoryCommandReceipt;
   readonly continueOriginalHistoryCommand:()=>Promise<void>;
+  readonly nextNormalUpdateCommand:()=>CurrentSchematicRelevanceNormalUpdateCommand|null;
+  readonly requestNormalUpdate:(command:CurrentSchematicRelevanceNormalUpdateCommand)=>Promise<unknown>;
+  readonly requireOriginalNormalUpdate:()=>CurrentSchematicRelevanceNormalUpdateReceipt;
+  readonly continueOriginalNormalUpdate:()=>Promise<void>;
   readonly nextNormalCompletionCommand: () => CurrentSchematicRelevanceDisplayModifyEntryCommand | null;
   readonly requestNormalCompletion: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand) => Promise<unknown>;
   readonly requireOriginalNormalCompletion: () => CurrentSchematicRelevanceCompletionReceipt;

@@ -1,6 +1,7 @@
 # Project history
 
 - [2026-11-07 Separate Component cloned-Pad reader](2026-11-07-component-cloned-pad-reader.md). Closed original second refusal, complete35-table invariance and distinct tE source candidate within existing bounds; native mounting and fresh connected proof remain.
+- [2026-11-07 Original schematic normal history update](2026-11-07-schematic-original-normal-history-update.md). Seven original callback/Promise/history joins stop at the genuine canRecord getter; record and publication remain separately held.
 
 - [2026-11-07 Schematic normal-return callbacks](2026-11-07-schematic-normal-return-callees.md). Uninvoked end, success and fulfillment metadata with separate inert closure observations; original delivery remains separate.
 

@@ -1,3 +1,4 @@
+import {applyCurrentSchematicRelevanceNormalUpdateNativeFragment} from "../server/src/current-schematic-relevance-normal-update-native-fragment.ts";
 import {applyCurrentSchematicRelevanceHistoryCommandNativeFragment} from "../server/src/current-schematic-relevance-history-command-native-fragment.ts";
 import {applyCurrentSchematicRelevanceMonitorBatchNativeFragment} from "../server/src/current-schematic-relevance-monitor-batch-native-fragment.ts";
 /* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
@@ -206,6 +207,7 @@ export function generateWorkerStartupProtocol(source: string, layout: "diagnosti
     next = applyCurrentSchematicRelevanceRecordAstNativeFragment(next);
     next = applyCurrentSchematicRelevanceMonitorBatchNativeFragment(next);
     next = applyCurrentSchematicRelevanceHistoryCommandNativeFragment(next);
+    next = applyCurrentSchematicRelevanceNormalUpdateNativeFragment(next);
     next = applyCurrentSchematicRelevanceRunGuardNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplayClockNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplaySyncQuiesceNativeFragment(next);

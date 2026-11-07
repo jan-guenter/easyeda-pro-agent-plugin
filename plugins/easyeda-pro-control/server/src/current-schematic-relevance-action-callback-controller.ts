@@ -1,3 +1,9 @@
+import {CURRENT_SCHEMATIC_RELEVANCE_ACTION_PREFIX_SOURCE as NORMAL_PREFIX} from "./current-schematic-relevance-action-prefix-source.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_NORMAL_RETURN_SOURCE as NORMAL_RETURN} from "./current-schematic-relevance-normal-return-source.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_COMPLETION_CALLEE_SOURCE as NORMAL_COMPLETION} from "./current-schematic-relevance-completion-callee-source.ts";
+import {validateCurrentSchematicRelevanceNormalUpdateCommand as normalUpdate} from "./current-schematic-relevance-normal-update-protocol.ts";
+import type {CurrentSchematicRelevanceNormalUpdateCommand as NormalCommand} from "./current-schematic-relevance-normal-update-protocol.ts";
+import type {CurrentSchematicRelevanceNormalUpdateReceipt as NormalReceipt} from "./current-schematic-relevance-normal-update-cursor.ts";
 /* oxlint-disable import/max-dependencies -- Source-owned monitor and callback roles share one original event stream and separate fixed metadata profiles. */
 import {CURRENT_SCHEMATIC_RELEVANCE_HISTORY_CALLEE_SOURCE as HISTORY_COMMAND} from "./current-schematic-relevance-history-callee-source.ts";
 import {validateCurrentSchematicRelevanceHistoryCommand as historyCommand} from "./current-schematic-relevance-history-command-protocol.ts";
@@ -25,12 +31,15 @@ const frame = z.object({ callFrameId: handle, functionLocation: point, location:
 const roles = ["setAttribute", "record", "ast"] as const;
 const functionKeys = Object.freeze({ setAttribute: "setAttributeObjectId", record: "recordObjectId", ast: "astObjectId" } as const);
 const sourceKeys = Object.freeze({ setAttribute: "monitorSetAttribute", record: "monitorRecord", ast: "monitorAst" } as const);
+const normalRoles=["normalPromise","normalRunSuccess","normalFinishing","normalSuccess","normalStack","normalUpdate","normalCanRecord"] as const;
+type NormalRole=typeof normalRoles[number];
+export interface CurrentSchematicRelevanceNormalResume{readonly original:CurrentSchematicRelevanceActionCallbackHeld;readonly target:NormalRole}
 const historyRoles=["historyGetModel","commandAttribute","finish"] as const;
 type HistoryRole=typeof historyRoles[number];
 export interface CurrentSchematicRelevanceHistoryResume{readonly original:CurrentSchematicRelevanceActionCallbackHeld;readonly target:HistoryRole}
 type MonitorRole = typeof MONITORS[number];
 export interface CurrentSchematicRelevanceMonitorResume {readonly original:CurrentSchematicRelevanceActionCallbackHeld;readonly target:MonitorRole}
-export type CurrentSchematicRelevanceActionCallbackRole = "entry" | "setter" | "finish" | "failure" | "historyGetModel" | "commandAttribute" | MonitorRole | typeof roles[number];
+export type CurrentSchematicRelevanceActionCallbackRole = "entry" | "setter" | "finish" | "failure" | NormalRole | "historyGetModel" | "commandAttribute" | MonitorRole | typeof roles[number];
 export interface CurrentSchematicRelevanceActionCallbackHeld { readonly event: DiagnosticEvent; readonly role: CurrentSchematicRelevanceActionCallbackRole; readonly callFrameId: string }
 export interface CurrentSchematicRelevanceActionEntryResume { readonly original: CurrentSchematicRelevanceActionCallbackHeld }
 export interface CurrentSchematicRelevanceActionSetterResume { readonly original: CurrentSchematicRelevanceActionCallbackHeld }
@@ -38,12 +47,12 @@ export interface CurrentSchematicRelevanceActionPrimitiveResume { readonly origi
 export interface CurrentSchematicRelevanceActionRecordResume { readonly original: CurrentSchematicRelevanceActionCallbackHeld }
 export interface CurrentSchematicRelevanceActionCallbackHost {
   readonly sessionId: string; readonly callbackScriptId: string; readonly sourceScriptId: string; readonly variant: 0 | 1; readonly functions: Pick<CurrentSchematicRelevanceDisplayAccessorFunctions, "setAttributeObjectId" | "recordObjectId" | "astObjectId" | "normalRequests">;
-  readonly historyRequest?:(command:HistoryCommand)=>Promise<unknown>; readonly monitorRequest?: (command:MonitorCommand)=>Promise<unknown>; readonly request: (command: Command) => Promise<unknown>; readonly assertCurrent: () => void; readonly fail: () => void;
+  readonly normalRequest?:(command:NormalCommand)=>Promise<unknown>;readonly historyRequest?:(command:HistoryCommand)=>Promise<unknown>; readonly monitorRequest?: (command:MonitorCommand)=>Promise<unknown>; readonly request: (command: Command) => Promise<unknown>; readonly assertCurrent: () => void; readonly fail: () => void;
 }
 function need(value: boolean): asserts value { if (!value) { throw new Error("SCHEMATIC_RELEVANCE_ORIGINAL_CALLBACK_EVENT"); } }
 export class CurrentSchematicRelevanceActionCallbackController {
   readonly #host: CurrentSchematicRelevanceActionCallbackHost;
-  readonly #points = new Map<string, typeof roles[number] | MonitorRole | "historyGetModel" | "commandAttribute">(); readonly #entry = Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld | null>();
+  readonly #points = new Map<string, typeof roles[number] | MonitorRole | NormalRole | "historyGetModel" | "commandAttribute">(); readonly #entry = Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld | null>();
   readonly #setter = Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld | null>();
   readonly #setAttribute = Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld | null>();
   readonly #ast = Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld | null>(); readonly #recordResumedSignal = Promise.withResolvers<boolean>();
@@ -75,6 +84,17 @@ export class CurrentSchematicRelevanceActionCallbackController {
   public async waitHistoryResumed(token:CurrentSchematicRelevanceHistoryResume):Promise<void>{this.requireHistoryResume(token);const signal=this.#historyResumedSignal;need(signal!==null);const seen=await signal.promise;this.requireHistoryResume(token);need(seen&&this.#historyResumed);}
   public completeHistoryResume(token:CurrentSchematicRelevanceHistoryResume):void{this.requireHistoryResume(token);need(this.#historyResumed);this.#historyAt+=1;this.#historyReservation=null;}
   public async waitOriginalHistoryStep(role:HistoryRole):Promise<CurrentSchematicRelevanceActionCallbackHeld>{const signal=this.#historySignals.get(role);need(signal!==undefined);const held=await signal.promise;const expected=historyRoles[this.#historyAt-1];need(held!==null&&expected===role);this.requireHeld(held);return held;}
+  readonly #normalSignals=new Map<NormalRole,ReturnType<typeof Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld|null>>>(normalRoles.map(role=>[role,Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld|null>()]));readonly #normalObserved=new Set<NormalRole>();#normalArmAttempted=false;#normalArmed=false;#normalAt=0;#normalReservation:CurrentSchematicRelevanceNormalResume|null=null;#normalSubmitted=false;#normalResumed=false;#normalResumedSignal:ReturnType<typeof Promise.withResolvers<boolean>>|null=null;
+  #normalSuccessArmAttempted=false;#normalSuccessArmed=false;
+  public async armOriginalNormalUpdate(held:CurrentSchematicRelevanceActionCallbackHeld,methods:NormalReceipt["functions"]):Promise<void>{this.requireHeld(held);need(held.role==="finish"&&this.#historyAt===3&&!this.#normalArmAttempted&&this.#host.normalRequest!==undefined);this.#normalArmAttempted=true;try{for(const role of ["promise","finishing","success","stack","update","canRecord"] as const){const command=normalUpdate({phase:"arm",role,method:"Debugger.setBreakpointOnFunctionCall",params:{objectId:methods[role],condition:""}});const reply=z.strictObject({breakpointId:handle}).parse(captureCurrentPcbStringClockReply(await this.#host.normalRequest(command)).value);this.requireHeld(held);need(!this.#points.has(reply.breakpointId));const mapped={promise:"normalPromise",finishing:"normalFinishing",success:"normalSuccess",stack:"normalStack",update:"normalUpdate",canRecord:"normalCanRecord"} as const;this.#points.set(reply.breakpointId,mapped[role]);}this.#normalArmed=true;}catch(error){this.fail();throw error;}}
+  public async armOriginalNormalSuccess(held:CurrentSchematicRelevanceActionCallbackHeld,objectId:string):Promise<void>{this.requireHeld(held);need(held.role==="normalPromise"&&this.#normalAt===1&&!this.#normalSuccessArmAttempted&&this.#host.normalRequest!==undefined);this.#normalSuccessArmAttempted=true;try{const command=normalUpdate({phase:"arm",role:"runSuccess",method:"Debugger.setBreakpointOnFunctionCall",params:{objectId,condition:""}});const reply=z.strictObject({breakpointId:handle}).parse(captureCurrentPcbStringClockReply(await this.#host.normalRequest(command)).value);this.requireHeld(held);need(!this.#points.has(reply.breakpointId));this.#points.set(reply.breakpointId,"normalRunSuccess");this.#normalSuccessArmed=true;}catch(error){this.fail();throw error;}}
+  public reserveNormalResume(held:CurrentSchematicRelevanceActionCallbackHeld):CurrentSchematicRelevanceNormalResume{this.requireHeld(held);const expected=this.#normalAt===0?"finish":normalRoles[this.#normalAt-1];const target=normalRoles[this.#normalAt];need(this.#normalArmed&&(this.#normalAt===0||this.#normalSuccessArmed)&&this.#normalAt<normalRoles.length&&target!==undefined&&held.role===expected&&this.#normalReservation===null);const token=Object.freeze({original:held,target});this.#normalReservation=token;this.#normalSubmitted=false;this.#normalResumed=false;this.#normalResumedSignal=Promise.withResolvers<boolean>();return token;}
+  public requireNormalResume(token:CurrentSchematicRelevanceNormalResume):void{this.#host.assertCurrent();need(!this.#failed&&this.#normalReservation===token);}
+  public markNormalResumeSubmitted(token:CurrentSchematicRelevanceNormalResume):void{this.requireNormalResume(token);need(!this.#normalSubmitted&&this.#held===token.original);this.#normalSubmitted=true;}
+  public async waitNormalResumed(token:CurrentSchematicRelevanceNormalResume):Promise<void>{this.requireNormalResume(token);const signal=this.#normalResumedSignal;need(signal!==null);const seen=await signal.promise;this.requireNormalResume(token);need(seen&&this.#normalResumed);}
+  public completeNormalResume(token:CurrentSchematicRelevanceNormalResume):void{this.requireNormalResume(token);need(this.#normalResumed);this.#normalAt+=1;this.#normalReservation=null;}
+  public async waitOriginalNormalStep(role:NormalRole):Promise<CurrentSchematicRelevanceActionCallbackHeld>{const signal=this.#normalSignals.get(role);need(signal!==undefined);const held=await signal.promise;const expected=normalRoles[this.#normalAt-1];need(held!==null&&expected===role);this.requireHeld(held);return held;}
+  public requireOriginalNormalPromiseCaller(held:CurrentSchematicRelevanceActionCallbackHeld):string{this.requireHeld(held);need(held.role==="normalPromise");const frames=held.event.params["callFrames"];need(Array.isArray(frames));const caller=frame.parse(frames[1]),expected=NORMAL_PREFIX[this.#host.variant].roles.asyncHelper;need(caller.functionLocation.scriptId===this.#host.sourceScriptId&&caller.functionLocation.lineNumber===expected.lineNumber&&caller.functionLocation.columnNumber===expected.columnNumber&&caller.location.scriptId===this.#host.sourceScriptId);return caller.callFrameId;}
   public constructor(host: CurrentSchematicRelevanceActionCallbackHost) { this.#host = host; handle.parse(host.sessionId); handle.parse(host.callbackScriptId); handle.parse(host.sourceScriptId); Object.freeze(this); }
   public async arm(): Promise<void> {
     need(!this.#attempted && !this.#failed); this.#attempted = true;
@@ -94,7 +114,14 @@ export class CurrentSchematicRelevanceActionCallbackController {
     if (ids.some(id => typeof id === "string" && this.#points.has(id))) {
       need(ids.length === 1 && typeof ids[0] === "string"); const role = this.#points.get(ids[0]); need(role !== undefined);
       let expected:{readonly lineNumber:number;readonly columnNumber:number};
-      if(role==="historyGetModel"){expected=ACTION[this.#host.variant].methods.historyGetModelCommand;}
+      if(role==="normalPromise"){expected=NORMAL_PREFIX[this.#host.variant].roles.asyncPredicate;}
+      else if(role==="normalRunSuccess"){expected=NORMAL_RETURN[this.#host.variant].roles.runSuccess;}
+      else if(role==="normalFinishing"){expected=NORMAL_RETURN[this.#host.variant].roles.finishAction;}
+      else if(role==="normalSuccess"){expected=ACTION[this.#host.variant].methods.historyTransactionSuccess;}
+      else if(role==="normalStack"){expected=NORMAL_COMPLETION[this.#host.variant].roles.stackWillRecord;}
+      else if(role==="normalUpdate"){expected=HISTORY_COMMAND[this.#host.variant].roles.commandUpdate;}
+      else if(role==="normalCanRecord"){expected=NORMAL_COMPLETION[this.#host.variant].roles.commandCanRecordGet;}
+      else if(role==="historyGetModel"){expected=ACTION[this.#host.variant].methods.historyGetModelCommand;}
       else if(role==="commandAttribute"){expected=HISTORY_COMMAND[this.#host.variant].roles.commandAttribute;}
       else if(role==="modify"){expected=MODEL[this.#host.variant].roles.modifyAttributeChange;}
       else if(role==="bbox"){expected=MODEL[this.#host.variant].roles.bboxAttributeChange;}
@@ -110,6 +137,7 @@ export class CurrentSchematicRelevanceActionCallbackController {
   public observeOriginalEvent(event: DiagnosticEvent): boolean {
     if (event.sessionId !== this.#host.sessionId) { return false; }
     if (event.method === "Debugger.resumed") {
+      if(this.#normalReservation!==null){try{this.#host.assertCurrent();need(!this.#failed&&this.#normalSubmitted&&!this.#normalResumed&&this.#held===this.#normalReservation.original&&Reflect.ownKeys(event.params).length===0);this.#held=null;this.#normalResumed=true;this.#normalResumedSignal?.resolve(true);}catch{this.fail();}return true;}
       if(this.#historyReservation!==null){try{this.#host.assertCurrent();need(!this.#failed&&this.#historySubmitted&&!this.#historyResumed&&this.#held===this.#historyReservation.original&&Reflect.ownKeys(event.params).length===0);this.#held=null;this.#historyResumed=true;this.#historyResumedSignal?.resolve(true);}catch{this.fail();}return true;}
       if(this.#monitorReservation!==null){try{this.#host.assertCurrent();need(!this.#failed&&this.#monitorSubmitted&&!this.#monitorResumed&&this.#held===this.#monitorReservation.original&&Reflect.ownKeys(event.params).length===0);this.#held=null;this.#monitorResumed=true;this.#monitorResumedSignal?.resolve(true);}catch{this.fail();}return true;}
       if (this.#recordReservation !== null) {
@@ -134,6 +162,7 @@ export class CurrentSchematicRelevanceActionCallbackController {
       const frames = event.params["callFrames"]; need(Array.isArray(frames)); const first = frame.parse(frames[0]); const held = Object.freeze({ event, role, callFrameId: first.callFrameId }); this.#held = held;
       if (role === "entry") { need(!this.#entryResumeAttempted); this.#entry.resolve(held); }
       else if (role === "setter") { need(this.#entryResumeAttempted && this.#entryResumed && !this.#setterResumeAttempted); this.#setter.resolve(held); }
+      else if(role==="normalPromise"||role==="normalRunSuccess"||role==="normalFinishing"||role==="normalSuccess"||role==="normalStack"||role==="normalUpdate"||role==="normalCanRecord"){const pending=this.#normalReservation;const completed=normalRoles[this.#normalAt-1];need(this.#normalArmed&&(pending?.target??completed)===role&&this.#normalResumed&&!this.#normalObserved.has(role));this.#normalObserved.add(role);const signal=this.#normalSignals.get(role);need(signal!==undefined);signal.resolve(held);}
       else if(role==="historyGetModel"||role==="commandAttribute"||role==="finish"){const pending=this.#historyReservation;const completed=historyRoles[this.#historyAt-1];need(this.#historyArmed&&(pending?.target??completed)===role&&this.#historyResumed&&!this.#historyObserved.has(role));this.#historyObserved.add(role);const signal=this.#historySignals.get(role);need(signal!==undefined);signal.resolve(held);}
       else if(role==="modify"||role==="bbox"||role==="watch"||role==="history"){const pending=this.#monitorReservation;need(this.#monitorsArmed&&(pending?.target??MONITORS[this.#monitorAt-1])===role&&this.#monitorResumed&&!this.#monitorObserved.has(role));this.#monitorObserved.add(role);const signal=this.#monitorSignals.get(role);need(signal!==undefined);signal.resolve(held);}
       else if (role === "ast") { need(this.#recordResumeAttempted && this.#recordResumed && !this.#astObserved); this.#astObserved = true; this.#ast.resolve(held); }
@@ -170,5 +199,5 @@ export class CurrentSchematicRelevanceActionCallbackController {
   public completeRecordResume(token: CurrentSchematicRelevanceActionRecordResume): void { this.requireRecordResume(token); need(this.#recordResumed && !this.#recordResumeCompleted); this.#recordResumeCompleted = true; this.#recordReservation = null; }
   public async waitOriginalAst(): Promise<CurrentSchematicRelevanceActionCallbackHeld> { const held = await this.#ast.promise; need(held !== null && this.#recordResumeCompleted); this.requireHeld(held); return held; }
   public requireHeld(held: CurrentSchematicRelevanceActionCallbackHeld): void { this.#host.assertCurrent(); need(!this.#failed && this.#held === held && held.event.sessionId === this.#host.sessionId); }
-  public fail(): void { if (!this.#failed) { this.#failed = true;for(const signal of this.#historySignals.values()){signal.resolve(null);}this.#historyResumedSignal?.resolve(false);for(const signal of this.#monitorSignals.values()){signal.resolve(null);}this.#monitorResumedSignal?.resolve(false); this.#entry.resolve(null); this.#setter.resolve(null); this.#setAttribute.resolve(null); this.#resumed.resolve(false); this.#setterResumedSignal.resolve(false); this.#record.resolve(null); this.#primitiveResumedSignal.resolve(false); this.#ast.resolve(null); this.#recordResumedSignal.resolve(false); this.#host.fail(); } }
+  public fail(): void { if (!this.#failed) { this.#failed = true;for(const signal of this.#historySignals.values()){signal.resolve(null);}this.#normalResumedSignal?.resolve(false);for(const signal of this.#normalSignals.values()){signal.resolve(null);}this.#historyResumedSignal?.resolve(false);for(const signal of this.#monitorSignals.values()){signal.resolve(null);}this.#monitorResumedSignal?.resolve(false); this.#entry.resolve(null); this.#setter.resolve(null); this.#setAttribute.resolve(null); this.#resumed.resolve(false); this.#setterResumedSignal.resolve(false); this.#record.resolve(null); this.#primitiveResumedSignal.resolve(false); this.#ast.resolve(null); this.#recordResumedSignal.resolve(false); this.#host.fail(); } }
 }
