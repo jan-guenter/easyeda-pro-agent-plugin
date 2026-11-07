@@ -939,3 +939,35 @@ The remaining cold-stage continuations, pre-model plaintext joins, startup
 callback/queue/cache/sync/timer frontier, actual delete/clock/main SQL, closed
 inverse proof and fourth original absence generation are still incomplete.
 All complete-writer, Save, persistence and four-generation acceptance stays false.
+
+A further original-packet continuation now admits only the six pauses before
+model parsing: branch, cold, histories, Fetch entry, Response, and bytes. The
+public method `continueFootprintInverseColdIngress(actualPacket)` has no role,
+path, session, count or supplied boolean argument. The private packet retains
+its original owner/checkpoint/pause and one original Promise. It consumes its
+attempt before awaiting, requires the exact native pause role, an empty original
+resume acknowledgment and the same-session resumed event, then captures the next
+exact armed pause through the original single-event cursor. A repeat returns the
+same retained Promise; copied packets refuse. Failures keep original cleanup.
+
+The actual Fetch-entry parser's update/end references receive full fixed
+function-location metadata qualification against the original worker source.
+Cipher, plaintext and mixed-history comparison uses the earlier immutable data
+profile. Plaintext, parsed, ready, warm, pending, fallback and failure pauses have
+no continuation in this increment. In particular, capturing plaintext grants no
+permission to feed the parser or infer completion of callback, queued Promise,
+cache, initial sync or timer work. Actual startup producer effects still require
+an independent source-bound continuation before parsing can proceed.
+
+The dedicated six-role native action reserves `3+3*N` releases for the original
+1..8 chunk bound, at most27; no generic resume was added. Current derived limits
+are renderer1,160, main941, main reproof76,723 and aggregate controls127,393.
+Fifteen focused grammar/metadata/SQLite/cipher/real-factory seam checks pass,
+as do full types and strict changed-file lint. Complete combined generation is
+idempotent; Linux C#5/.NET10 inverse, registration and saved-metadata codec smokes
+pass. With the separately integrated immutable C# storage, this source produces
+1,391,193 stored helper bytes and1,918,262 decoded compiler bytes, both below the
+unchanged2MiB bounds. Existing packed-helper assertions now inspect the exact
+expanded C# rather than searching compressed bytes. No generated helper, pins,
+bundles, Windows process or application/native/MCP call was changed or invoked.
+Four-generation, delete, Save and persistence acceptance remain false.

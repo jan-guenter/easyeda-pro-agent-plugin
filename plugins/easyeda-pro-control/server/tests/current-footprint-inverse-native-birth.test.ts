@@ -87,12 +87,13 @@ void test("failed inverse source prerequisite clears busy custody before origina
 void test("whole native composition is idempotent with original inverse limits and no writer grant", async () => {
   const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const first = generateWorkerStartupProtocol(source); assert.equal(generateWorkerStartupProtocol(first), first);
+  const expanded=expandCurrentPcbDiagnosticCSharpStorage(first);
   assert.equal(first.split("[switch]$FootprintInverse209").length - 1, 1);
   assert.equal(first.split("if ($FootprintInverse209 -and (").length - 1, 1);
-  assert.ok(first.includes(`if(footprintInverse209)return ${String(PROFILE.renderer.total)};`));
-  assert.ok(first.includes("spatial209?384:componentSpatial209?419:"));
+  assert.ok(expanded.includes(`if(footprintInverse209)return ${String(PROFILE.renderer.total)};`));
+  assert.ok(expanded.includes("spatial209?384:componentSpatial209?419:"));
   assert.equal(PROFILE.deleteInvocationAuthorized, false); assert.equal(PROFILE.executionAuthorized, false); assert.equal(PROFILE.saveAuthorized, false);
-  assert.ok(first.includes('if(footprintInverseConstructionComplete)throw Error("footprint-inverse-main-construction-consumed")'));
+  assert.ok(expanded.includes('if(footprintInverseConstructionComplete)throw Error("footprint-inverse-main-construction-consumed")'));
 });
 
 void test("an original inverse factory cannot adopt a copied source or constructor receipt", async context => {
@@ -116,6 +117,7 @@ void test("an original inverse factory cannot adopt a copied source or construct
   const worker: unknown = Reflect.get(owner, "armFootprintInverseWorker"); assert.ok(typeof worker === "function");
   const refused: unknown = Reflect.apply(worker, owner, [(): Promise<void> => Promise.resolve()]); assert.ok(refused instanceof Promise);
   await assert.rejects(refused, /FOOTPRINT_INVERSE_CACHE_ABSENCE_REQUIRED/u);
+  const stepCold:unknown=Reflect.get(owner,"continueFootprintInverseColdIngress");assert.ok(typeof stepCold==="function");assert.throws(()=>Reflect.apply(stepCold,owner,[Object.freeze({profile:"private.current-footprint-inverse-cold-held.v1"})]),/FOOTPRINT_INVERSE_COLD_STEP_ORIGINAL/u);
   const startCold:unknown=Reflect.get(owner,"startFootprintInverseColdIngress");assert.ok(typeof startCold==="function");assert.throws(()=>Reflect.apply(startCold,owner,[]),/FOOTPRINT_INVERSE_COLD_START_PREREQUISITES/u);
   const consume:unknown=Reflect.get(f.api,"consumeOriginalCurrentFootprintInverseBootstrapPermit");assert.ok(typeof consume==="function");assert.throws(()=>Reflect.apply(consume,undefined,[Object.freeze({profile:"private.current-footprint-inverse-bootstrap-permit.v1"}),Object.freeze({}),Object.freeze({}),owner,token]),/FOOTPRINT_INVERSE_BOOTSTRAP_PERMIT_ORIGINAL/u);
   const cold:unknown=Reflect.get(owner,"armFootprintInverseColdLoad");assert.ok(typeof cold==="function");

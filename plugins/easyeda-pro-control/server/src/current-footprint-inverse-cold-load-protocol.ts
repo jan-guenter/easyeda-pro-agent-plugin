@@ -5,7 +5,7 @@ import { canonicalJson } from "./core.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { currentPcbViaSavedLoadObservationCases, validateCurrentPcbViaSavedLoadObservationCommand } from "./current-pcb-via-saved-load-observation-protocol.ts";
 import type { CurrentPcbViaSavedLoadObservationCommand } from "./current-pcb-via-saved-load-observation-protocol.ts";
-import { CURRENT_PCB_VIA_SAVED_LOAD_ROLES as ROLES, CURRENT_PCB_VIA_SAVED_LOAD_SITES as SITES } from "./current-pcb-via-saved-load-source.ts";
+import { CURRENT_PCB_VIA_SAVED_LOAD_FLOW_METHODS as FLOW_METHODS, CURRENT_PCB_VIA_SAVED_LOAD_ROLES as ROLES, CURRENT_PCB_VIA_SAVED_LOAD_SITES as SITES } from "./current-pcb-via-saved-load-source.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export { CURRENT_PCB_VIA_SAVED_LOAD_SITES as CURRENT_FOOTPRINT_INVERSE_COLD_LOAD_SITES } from "./current-pcb-via-saved-load-source.ts";
@@ -73,4 +73,19 @@ export function classifyCurrentFootprintInverseColdPause(input:unknown,sessionId
  if(event.sessionId!==sessionId||points.length!==ROLES.length||new Set(points.map(point=>point.role)).size!==ROLES.length||new Set(points.map(point=>point.id)).size!==ROLES.length||!ROLES.every(role=>points.some(point=>point.role===role))){throw new Error("FOOTPRINT_INVERSE_COLD_EVENT_ROSTER");}
  for(const point of points){handle.parse(point.id);}const selected=points.find(point=>point.id===event.params.hitBreakpoints[0]);const top=event.params.callFrames[0];if(selected===undefined||top===undefined){throw new Error("FOOTPRINT_INVERSE_COLD_EVENT_POINT");}const site=SITES[selected.role];
  if(top.location.scriptId!==scriptId||top.location.lineNumber!==site.lineNumber||top.location.columnNumber!==site.columnNumber||top.functionLocation.scriptId!==scriptId||top.functionLocation.lineNumber!==site.functionLine||top.functionLocation.columnNumber!==site.functionColumn||top.functionName!==site.functionName){throw new Error("FOOTPRINT_INVERSE_COLD_EVENT_SOURCE");}return selected.role;
+}
+
+export { CURRENT_FOOTPRINT_INVERSE_COLD_STEP_REQUESTS, currentFootprintInverseColdStepBudget } from "./current-footprint-inverse-cold-step-protocol.ts";
+export type { CurrentFootprintInverseColdStepCommand } from "./current-footprint-inverse-cold-step-protocol.ts";
+
+/** Fixed inert function metadata only; the genuine inverse owner must retain
+ * and request these exact original flow references before any input release. */
+export function qualifyCurrentFootprintInverseColdFlowMethod(input:unknown,role:keyof typeof FLOW_METHODS,scriptId:string):void{
+ const handle=z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);const remote=z.looseObject({type:z.string(),value:z.unknown().optional(),objectId:handle.optional(),subtype:z.string().optional()});
+ const property=z.looseObject({name:z.string(),value:remote,writable:z.literal(false),configurable:z.literal(true),enumerable:z.literal(false),isOwn:z.literal(true)});
+ const internal=z.strictObject({name:z.string(),value:remote});const data=z.strictObject({result:z.array(property).length(2),internalProperties:z.array(internal).length(3)}).parse(captureCurrentPcbStringClockReply(input).value);
+ const expected=FLOW_METHODS[role];const fields=new Map(data.result.map(item=>[item.name,item.value]));const parts=new Map(data.internalProperties.map(item=>[item.name,item.value]));
+ if(fields.size!==2||fields.get("name")?.type!=="string"||fields.get("name")?.value!==expected.name||fields.get("length")?.type!=="number"||fields.get("length")?.value!==expected.arity||parts.size!==3){throw new Error("FOOTPRINT_INVERSE_COLD_FLOW_METHOD");}
+ const location=z.strictObject({scriptId:handle,lineNumber:z.number().int().nonnegative(),columnNumber:z.number().int().nonnegative()}).parse(parts.get("[[FunctionLocation]]")?.value);
+ if(location.scriptId!==scriptId||location.lineNumber!==expected.lineNumber||location.columnNumber!==expected.columnNumber||parts.get("[[FunctionLocation]]")?.subtype!=="internal#location"||parts.get("[[Scopes]]")?.subtype!=="internal#scopeList"||parts.get("[[Prototype]]")?.type!=="function"){throw new Error("FOOTPRINT_INVERSE_COLD_FLOW_SOURCE");}
 }
