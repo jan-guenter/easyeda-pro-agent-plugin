@@ -119,3 +119,49 @@ The finite inert transport reserves41 normal CDP commands,11 exact helper-source
 receipts and8 cleanup commands (60 total). Three original pause holds, one bind
 and one completion control produce65 native controls. Actual purpose adapters
 must retain all counters, original IDs and the private completion reference.
+
+## Original observer and pre-script prerequisite
+
+The shared observer keeps distinct inverse and seven-record schematic origin
+brands. The central Core map is private and exports lookup only; there is no
+public register/issuer or owner reconstruction. The adapter must bind its exact
+original owner, operation, script, context and source before creating an
+observer. Copied origin/completion records cannot pass that registry.
+
+The whole original worker may still be held beforeScriptExecution, so lexical
+`fu`/`Hm` reads at that first hold would hit TDZ. `preparePristine()` therefore
+captures only native globals and the two absent library namespaces into one
+original frozen Array2 while the genuine source-held guard is current.
+`arm(pristine)` then installs only seven fixed breakpoints. The actual lexical
+MODULES frame and full native/class capture occur at firstLoop, using that same
+retained pristine tuple. Native-global absence is not replaced with a caller
+fresh flag or inferred from the later empty caches.
+
+The original helper receipt callback accepts the exact command and raw reply
+references from the private original request ledger. It must qualify that
+request's actual emitted helper source before the observer accepts the reply.
+There is one pre-script pristine helper and eleven post-script receipts. The
+updated complete budget is43 normal CDP commands plus12 source receipts and
+8 reserved cleanup commands (63 total); three holds, bind and completion make
+68 native controls. Earlier60/65 figures above describe the first inert leaf;
+they are not the new observer's authority ceiling.
+
+`observeFirstLoop()` observes original firstLoop/loopReturned events, suspends
+once, cancels the actual RAF once and returns a private suspension receipt after
+the loop-return resume acknowledgement/event. `observeMountReturn(receipt)` is
+a separate once-only wave that observes mount's normal-return source point,
+resumes it, rechecks the original state and joins the actual native completion
+acknowledgement before issuing its private completion. The opening's own ready
+continuation may run between these two waves because initUpdateData drops the
+mount Promise. Requiring the final mount receipt before releasing a ready pause
+could deadlock; final drained idle still requires the final completion.
+
+The decoder pins thirteen actual function shapes: two native RAF functions and
+eleven strict class constructors. Class constructors have exactly three own
+fields and readonly prototypes, with exact source-derived constructor locations
+and superclass descriptions. The inert Inspector regression executes only the
+isolated class definitions at preserved coordinates, never their constructors
+or the application module, and verifies the real metadata shapes and added-own-
+field refusal. Six focused source/program/grammar/metadata/provenance checks
+pass; these are not connected owner validation. Original purpose adapters and
+native codebooks remain separate work.

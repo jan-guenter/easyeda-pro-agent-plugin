@@ -8,6 +8,7 @@ import type { CurrentSchematicRelevanceDisplaySaveMainBindings, CurrentSchematic
 import type { CurrentSchematicRelevanceDisplayMainCommand } from "./current-schematic-relevance-display-main-protocol.ts";
 import { currentSchematicRelevanceDisplayMainWire } from "./current-schematic-relevance-display-main-protocol.ts";
 import { originalGeneratedSchematicRelevanceFixtureInventory } from "./managed-schematic-relevance-fixture-initial-sql.ts";
+import type { CurrentProjectLibraryRefreshBindings,CurrentProjectLibraryRefreshOrigin } from "./current-project-library-refresh-origin.ts";
 // oxlint-disable-next-line import/no-cycle -- The original initialized issuer calls this registry only after factory, worker and body construction have completed.
 import { requireOriginalGeneratedSchematicRelevanceDisplaySaveData } from "./generated-schematic-relevance-display-native-save.ts";
 import type { GeneratedSchematicRelevanceDisplayNativeSaveData, GeneratedSchematicRelevanceDisplaySaveDelta } from "./generated-schematic-relevance-display-native-save.ts";
@@ -915,6 +916,8 @@ export function requireOriginalCurrentSchematicDisplaySaveWorkerOrigin(origin: C
 export type CurrentProjectSyncQuiesceSetup=(origin:CurrentProjectSyncQuiesceOrigin)=>Promise<void>;
 const projectSyncQuiesceOrigins=new WeakMap<CurrentProjectSyncQuiesceOrigin,Readonly<{owner:object;operation:object;bindings:CurrentProjectSyncQuiesceBindings;assertOriginal:()=>void}>>();
 export function requireOriginalCurrentProjectSyncQuiesceOrigin(origin:CurrentProjectSyncQuiesceOrigin,owner:object,operation:object):CurrentProjectSyncQuiesceBindings {const original=projectSyncQuiesceOrigins.get(origin);if(original===undefined||original.owner!==owner||original.operation!==operation){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_ORIGIN");}original.assertOriginal();return original.bindings;}
+const projectLibraryRefreshOrigins=new WeakMap<CurrentProjectLibraryRefreshOrigin,Readonly<{owner:object;operation:object;bindings:CurrentProjectLibraryRefreshBindings;assertOriginal:()=>void}>>();
+export function requireOriginalCurrentProjectLibraryRefreshOrigin(origin:CurrentProjectLibraryRefreshOrigin,owner:object,operation:object):CurrentProjectLibraryRefreshBindings {const original=projectLibraryRefreshOrigins.get(origin);if(original===undefined||original.owner!==owner||original.operation!==operation){throw error("PROJECT_LIBRARY_REFRESH_ORIGINAL_ORIGIN");}original.assertOriginal();return original.bindings;}
 export type CurrentProjectSaveProducerSetup = (origin: CurrentProjectSaveProducerOrigin) => Promise<void>;
 const originalProducerStartupProgress = new WeakMap<CurrentProjectSaveProducerOrigin, Readonly<{ owner: object; operation: object; read: () => CurrentGeneratedStartupProgress }>>();
 export function originalCurrentProjectSaveProducerStartupProgress(origin: CurrentProjectSaveProducerOrigin, owner: object, operation: object): CurrentGeneratedStartupProgress {
