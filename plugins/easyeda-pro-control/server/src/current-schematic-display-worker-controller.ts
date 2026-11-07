@@ -40,6 +40,7 @@ function token(value: unknown): value is string { return typeof value === "strin
 function record(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value) && !types.isProxy(value); }
 export class CurrentSchematicDisplayWorkerController {
   readonly #bindings: CurrentSchematicDisplayWorkerControllerBindings;
+  #setupHelpersConsumed = 0; #projectSourceCallbackActive = false;
   readonly #setupHelpers: string[] = []; readonly #setupHelperScripts = new Set<string>();
   readonly #events: CurrentSchematicDisplayWorkerBootstrapEvent[] = [];
   readonly #savePoints = new Map<CurrentSchematicDisplaySaveSite, string>();
@@ -104,13 +105,15 @@ export class CurrentSchematicDisplayWorkerController {
   public expectSetupHelper(source: CurrentSchematicDisplayProjectSourceHeld, program: string): void {
     need(this.#source === source && this.#result === null && this.#pumping && this.#setupHelpers.length < this.setupHelperRequestLimit()); this.qualifySetupHelper(program); this.#setupHelpers.push(program);
   }
+  public assertOriginalProjectSourceHeld(source: CurrentSchematicDisplayProjectSourceHeld): void { need(!this.#failed && this.#source === source && this.#projectSourceCallbackActive && this.#result === null && this.#pumping); }
+  public consumeOriginalSetupHelpers(source: CurrentSchematicDisplayProjectSourceHeld): Promise<void> { this.assertOriginalProjectSourceHeld(source); return this.#consumeSetupHelpers(source); }
   async #consumeSetupHelpers(source: CurrentSchematicDisplayProjectSourceHeld): Promise<void> {
     need(this.#source === source && this.#result === null && this.#pumping);
-    for (const program of this.#setupHelpers) { const event = await this.#next();
+    while (this.#setupHelpersConsumed < this.#setupHelpers.length) { const program = this.#setupHelpers[this.#setupHelpersConsumed]; need(program !== undefined); const event = await this.#next();
       need(event.method === "Debugger.scriptParsed" && record(event.params) && event.params["url"] === "" && event.params["executionContextId"] === source.executionContextId && event.params["hasSourceURL"] !== true && event.params["isLiveEdit"] !== true && (event.params["scriptLanguage"] === undefined || event.params["scriptLanguage"] === "JavaScript") && token(event.params["scriptId"]) && event.params["scriptId"] !== source.scriptId && !this.#setupHelperScripts.has(event.params["scriptId"]));
       const scriptId = event.params["scriptId"]; this.#setupHelperScripts.add(scriptId);
       const raw = await this.#bindings.request({ phase: "schematic-worker-helper-source", method: "Debugger.getScriptSource", params: { scriptId } }, false);
-      need(record(raw) && Reflect.ownKeys(raw).length === 1); const descriptor = Object.getOwnPropertyDescriptor(raw, "scriptSource"); need(descriptor !== undefined && Object.hasOwn(descriptor, "value")); const text: unknown = descriptor.value; this.qualifySetupHelperSource(text, program); await this.#current();
+      need(record(raw) && Reflect.ownKeys(raw).length === 1); const descriptor = Object.getOwnPropertyDescriptor(raw, "scriptSource"); need(descriptor !== undefined && Object.hasOwn(descriptor, "value")); const text: unknown = descriptor.value; this.qualifySetupHelperSource(text, program); await this.#current(); this.#setupHelpersConsumed += 1;
     }
   }
   public bindSaveBreakpoint(source: CurrentSchematicDisplayProjectSourceHeld, role: CurrentSchematicDisplaySaveSite, breakpointId: string): void {
@@ -271,7 +274,7 @@ export class CurrentSchematicDisplayWorkerController {
       expectedWindowTabId: this.#bindings.windowTabId, projectUuid: this.#bindings.projectUuid,
       request: (command: CurrentSchematicDisplayWorkerBootstrapCommand, cleanup: boolean): Promise<unknown> => this.#bindings.request(command, cleanup), nextEvent: (): Promise<CurrentSchematicDisplayWorkerBootstrapEvent> => this.#next(),
       assertCurrent: (): Promise<void> => this.#current(), projectSourceHeld: async (source: CurrentSchematicDisplayProjectSourceHeld): Promise<void> => {
-        need(this.#runner === runner && this.#source === null); this.#source = source; await this.#bindings.projectSourceHeld(source, this); await this.#consumeSetupHelpers(source); await this.#current(); need(this.#savePoints.size === 6);
+        need(this.#runner === runner && this.#source === null); this.#source = source; this.#projectSourceCallbackActive = true; try { await this.#bindings.projectSourceHeld(source, this); await this.#consumeSetupHelpers(source); } finally { this.#projectSourceCallbackActive = false; } await this.#current(); need(this.#savePoints.size === 6);
       }, releaseParentWait: async (): Promise<void> => { need(!this.#parentRunning); this.#parentRunning = true; await this.#bindings.releaseParentWait(); await this.#current(); },
       fail: (): void => { this.fail(); } }));
     this.#runner = runner; const result = await runner.observe(); await this.#current();

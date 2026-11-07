@@ -5,6 +5,7 @@ import type { CurrentSchematicDisplayStartupEventPoint, CurrentSchematicDisplayW
 import type { CurrentSchematicDisplayProjectSourceHeld } from "./current-schematic-display-worker-bootstrap.ts";
 import type { CurrentSchematicDisplayEventRouterBindings, CurrentSchematicDisplayRoutedEvent, DiagnosticEvent } from "./current-schematic-display-event-router.ts";
 import { CurrentSchematicRelevanceDisplayEventRouter } from "./current-schematic-relevance-display-event-router.ts";
+import { CURRENT_PROJECT_LIBRARY_REFRESH_PROGRAMS } from "./current-project-library-refresh-programs.ts";
 import { CURRENT_PROJECT_SYNC_QUIESCE_PROGRAMS } from "./current-project-sync-quiesce-programs.ts";
 import { CURRENT_PROJECT_SYNC_QUIESCE_SITES } from "./current-project-sync-quiesce-source.ts";
 import { CURRENT_PROJECT_LIBRARY_REFRESH_SITES } from "./current-project-library-refresh-source.ts";
@@ -16,10 +17,10 @@ export class CurrentSchematicRelevanceDisplayWorkerController extends CurrentSch
   readonly #libraryPoints = new Map<LibraryRole, CurrentSchematicDisplayStartupEventPoint>();
   #ownRouter: CurrentSchematicRelevanceDisplayEventRouter | null = null;
   #pollingComplete = false;
-  protected override setupHelperRequestLimit(): number { return super.setupHelperRequestLimit() + 1; }
-  protected override qualifySetupHelper(program: string): void { if (program !== CURRENT_PROJECT_SYNC_QUIESCE_PROGRAMS.capture) { super.qualifySetupHelper(program); } }
+  protected override setupHelperRequestLimit(): number { return super.setupHelperRequestLimit() + 2; }
+  protected override qualifySetupHelper(program: string): void { if (program !== CURRENT_PROJECT_SYNC_QUIESCE_PROGRAMS.capture && program !== CURRENT_PROJECT_LIBRARY_REFRESH_PROGRAMS.pristine) { super.qualifySetupHelper(program); } }
   protected override qualifySetupHelperSource(input: unknown, program: string): void {
-    if (program === CURRENT_PROJECT_SYNC_QUIESCE_PROGRAMS.capture) { need(input === `(${program})`); } else { super.qualifySetupHelperSource(input, program); }
+    if (program === CURRENT_PROJECT_SYNC_QUIESCE_PROGRAMS.capture || program === CURRENT_PROJECT_LIBRARY_REFRESH_PROGRAMS.pristine) { need(input === `(${program})`); } else { super.qualifySetupHelperSource(input, program); }
   }
   protected override createEventRouter(bindings: CurrentSchematicDisplayEventRouterBindings): CurrentSchematicRelevanceDisplayEventRouter {
     need(this.#ownRouter === null); const router = new CurrentSchematicRelevanceDisplayEventRouter(bindings); this.#ownRouter = router; return router;

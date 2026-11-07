@@ -41,7 +41,7 @@ async function constructor(): Promise<typeof CurrentSchematicDisplayWorkerContro
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Runtime checked production class; only pinned full-source bytes have the stated seam.
   return result as typeof CurrentSchematicDisplayWorkerController;
 }
-async function fixture(failSetup = false, holdPoll = false, structure = false, producerGuards = false, producerObservation = false, helper: "none" | "original" | "foreign" = "none"): Promise<Readonly<{ controller: CurrentSchematicDisplayWorkerController; bindings: CurrentSchematicDisplayWorkerControllerBindings;
+async function fixture(failSetup = false, holdPoll = false, structure = false, producerGuards = false, producerObservation = false, helper: "none" | "original" | "foreign" | "incremental" = "none"): Promise<Readonly<{ controller: CurrentSchematicDisplayWorkerController; bindings: CurrentSchematicDisplayWorkerControllerBindings;
   commands: CurrentSchematicDisplayWorkerCommand[]; incoming: DiagnosticEvent[]; state: { failed: boolean; held: number; released: number; resumed: boolean; bound: number }; releasePoll: () => void; pollStarted: Promise<true>; polls: { count: number } }>> {
   const Constructor = await constructor(), projectUuid = "a".repeat(64), windowTabId = "original-window";
   const targetUrl = "https://client/editor?entry=mgr-project-worker.js&cll=&debugOpen=0", title = `project_${projectUuid}_${windowTabId}`;
@@ -68,7 +68,7 @@ async function fixture(failSetup = false, holdPoll = false, structure = false, p
       const next = incoming.shift(); assert.ok(next !== undefined); controller.observeEvent(next); },
     assertCurrent: () => { assert.equal(state.failed, false); return Promise.resolve(); }, fail: () => { state.failed = true; },
     releaseParentWait: () => { assert.equal(state.held, 1); assert.equal(state.resumed, false); state.released += 1; return Promise.resolve(); },
-    projectSourceHeld: (source, original) => {
+    projectSourceHeld: async (source, original) => {
       assert.equal(original, controller); assert.equal(source.scriptId, "script-project"); assert.equal(state.released, 0); assert.equal(state.resumed, false); state.held += 1;
       assert.equal(controller.requireHeld(source).sessionId, "original-worker"); if (failSetup) { throw new Error("original setup refused"); }
       for (const role of ["noData", "entry", "clock", "compress", "body", "result"] as const) {
@@ -95,7 +95,7 @@ async function fixture(failSetup = false, holdPoll = false, structure = false, p
         event("Debugger.breakpointResolved", { breakpointId: `structure-${role}`, location: { scriptId: source.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } });
       } controller.requireStructureArmed(source); }
       if (helper !== "none") { controller.expectSetupHelper(source, CURRENT_PROJECT_STRUCTURE_TRANSPORT_PROGRAMS.capture); event("Debugger.scriptParsed", { scriptId: "original-helper", executionContextId: 7, url: "" }); }
-      return Promise.resolve();
+      if (helper === "incremental") { controller.assertOriginalProjectSourceHeld(source); await controller.consumeOriginalSetupHelpers(source); await controller.consumeOriginalSetupHelpers(source); controller.assertOriginalProjectSourceHeld(source); }
     },
     request: command => {
       commands.push(command);
@@ -199,4 +199,10 @@ void test("actual controller qualifies its correlated helper source before accep
   assert.ok(helper !== -1 && resumed > helper); assert.equal(f.commands.length, 21); assert.equal(f.state.failed, false);
   const changed = await fixture(false, false, false, false, false, "foreign"); await assert.rejects(changed.controller.pump(), /SETUP_HELPER_SOURCE/u);
   assert.equal(changed.state.resumed, false); assert.equal(changed.state.released, 0); assert.equal(changed.state.failed, true);
+});
+
+void test("an original setup receipt drains once inside the source callback and is not reread at bootstrap completion", async () => {
+  const f = await fixture(false, false, false, false, false, "incremental"); await f.controller.pump();
+  assert.equal(f.commands.filter(command => command.phase === "schematic-worker-helper-source").length, 1);
+  assert.equal(f.state.resumed, true); assert.equal(f.state.failed, false);
 });
