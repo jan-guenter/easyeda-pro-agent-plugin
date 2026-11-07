@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 Schematic normal-return callbacks](2026-11-07-schematic-normal-return-callees.md). Uninvoked end, success and fulfillment metadata with separate inert closure observations; original delivery remains separate.
+
 - [2026-11-07 Schematic document tab identity](2026-11-07-schematic-document-tab-id.md). Correct own raw identity selection and separately qualify eight uninvoked document getters and four constructors; continuation remains separate.
 - [2026-11-07 original inverse GET RPC entry](2026-11-07-inverse-original-get-rpc-entry.md). Once-only F2 advance with independently consumed worker readiness; exact initialized RPC body stays held pending forwarding and completion proof.
 
