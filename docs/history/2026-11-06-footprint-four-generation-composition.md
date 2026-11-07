@@ -1855,3 +1855,60 @@ changes in this slice. Local loopback settlement will use original callback
 entry/normal synchronous return and separately proved branch effects. No
 Runtime.queryObjects or forced-GC route has run or is required, and no dropped
 Promise handle is claimed authenticated.
+
+## Original inverse intrinsic receipt before SDK admission
+
+The unmounted V1 Event helpers above used ambient reflection, array push and
+iteration. Their metadata checks alone cannot qualify those dependencies.
+A separate inverse-only bootstrap now obtains the actual same-realm native
+reflection references before any Event helper may execute. Its first fixed
+program only returns literal `[this,{},[],function(){}]`. Actual original
+Inspector property packets supply Object/Array/Function prototypes and the
+constructor links. Seven actual native callables are qualified independently:
+getOwnPropertyDescriptor, getPrototypeOf, hasOwn, getOwnPropertyNames,
+getOwnPropertySymbols, isArray and Function.prototype.apply. Actual identity
+comparisons join the constructor prototypes and native function realm.
+The private receipt retains the original owner/controller/checkpoint, root,
+remote tuple and all19 actual operation packets; caller JSON has no issuer.
+
+The genuine original worker preparation mounts this after its peer capture
+and before arming the deletion entry. It reserves19 normal commands and four
+exact helper source receipts:23 CDP/25 native controls/four helper events.
+All attempts are consumed before awaits. Both Node admission and the native
+SDK guard require this receipt. The new action has its own fixed packed table,
+order/counters and original page session. The inverse renderer bound rises
+by23 to17,399; the existing reproof formula adds23 and total native controls
+become161,649. Older purpose budgets remain unchanged. There is no native
+getter invocation, event trust, clock result or mutation grant in this lane.
+
+V2 Event helpers use only this receipt's captured references and64 preexisting
+own writable slots for descriptor bookkeeping. They use own-index loops,
+without push, array iterators, ambient Reflect, String or Error construction.
+Object.defineProperty/Reflect.defineProperty are not needed in readonly
+builders. Function.prototype.apply and descriptor fields are rechecked before
+invocation. The V1 data-only helper remains historical and is not mounted.
+The V2 event/channel ledger remains separate from this completed intrinsic
+provider and is not yet mounted.
+
+The actual inert Node24 Inspector test retains throwOnSideEffect:true for
+literal capture, reference binding, identity comparisons, reproof and V2 Event
+constructor/member capture. A hostile Array.prototype numeric setter and
+iterator execute zero times, and no unqualified Event getter runs. Native
+apply replacement refuses without invoking it. The initial combined poison
+case exposed a Node24 V8 NamedPropertyDescriptorCallback fatal error when an
+inherited Object.prototype.get hook reached the VM global proxy. Only that
+isolated test child exited, with RLIMIT_CORE0 and no control/native owner.
+The fixed receipt now refuses any inherited descriptor-field hook before a
+host/global descriptor callback. The corrected case passes with zero hook
+calls; the original failure is retained here rather than described as success.
+
+Five focused native-Inspector/codec/actual-byte-pipe/cursor cases pass; the
+cursor's exact binding roster was updated for the new required function.
+Both type projects and strict changed lint pass. Two-pass private legacy
+helper generation is byte-identical at1,436,803 stored/2,011,251 compiler bytes,
+under both unchanged2MiB caps. Full emitted Linux C#5 passes the20 new fixed
+messages and original purpose/once limits plus peer/job/entry smokes
+(ORIGINAL_INVERSE_OWN_DATA_NATIVE_OK, private inverse-own-data-native-EnfcBk).
+No tracked helper/pin, app, native channel, Windows compiler or SDK call ran.
+The genuine manager/native envelope and actual Event getters remain required
+before any inverse clock/delete continuation.
