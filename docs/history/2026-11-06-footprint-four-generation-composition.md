@@ -1297,3 +1297,31 @@ single-clock grant. The remaining fifteen constructor/parent classes need a
 separate original scope/instance join before deleteString may run. Existing
 v1 source/binding shapes are preserved. No inverse edit, Save, selected SQL,
 closed deletion, fourth reader or four-generation success is claimed.
+
+After the maintained purpose-layout split, the ready binding passes complete
+legacy two-pass generation:1,374,245 stored helper bytes and1,897,943 compiler
+bytes, below both unchanged2MiB limits. Full emitted Linux C#5 executes the
+original binding wire/purpose/control-limit smoke plus the library and model
+smokes. All seven actual factory/composition cases pass. The earlier monolithic
+refusal remains retained above; no tracked helper or pins were regenerated here.
+
+A separate encoder source leaf now closes the complete18-class Ke graph. An
+AST whitelist proves every eager constructor is empty, inherited, or only calls
+its original super constructor and assigns a literal doctype. Ke itself only
+constructs the14 exact formatter fields in source order. Its fixed scope
+projection reads the14 variables actually referenced by Ke, derives `of` from
+`rl`, `th` from `JR`, and `Fo` from `rN`, and compares the prior original
+Ke/rl/of references. It does not require optimized-away parent locals to appear
+in a V8 closure. An isolated Inspector probe confirmed that native scope wrappers
+have description/object data while context-retained bindings may omit unused
+locals. No alternate scope is searched to supply a missing referenced class.
+
+The fixed instance projection compares the already-created Ke object and every
+formatter's exact prototype, sole doctype and normal own-data descriptors.
+It constructs nothing. Its entry frame is `[this,s,r,i,qe]`: `r` and `i` are
+initialized, while `n` remains in the clock initializer's TDZ and is omitted.
+The old six-point clock grammar is unchanged. Two focused source/inert-VM cases
+pass, including all14 actual pinned pure constructor bodies and descriptor/
+prototype/scope drift refusals with zero clock calls. Both typechecks and strict
+changed lint pass. Original native Ke scope/instance issuance and subsequent
+single-clock/delete/producer/Main/closed/fourth-reader joins remain pending.
