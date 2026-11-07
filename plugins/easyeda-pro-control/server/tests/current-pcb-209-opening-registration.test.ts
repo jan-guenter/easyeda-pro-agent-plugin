@@ -9,10 +9,19 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintForwardPrewriteLifecycle, CurrentFootprintMainLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbSpatialLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintForwardPrewriteLifecycle, CurrentFootprintMainLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbOrdinaryReadLifecycle, CurrentPcbSpatialLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { WindowsControlRuntime } from "../src/windows-runtime.ts";
+import { OrdinaryTrackedOpenCleanup } from "../src/ordinary-tracked-open-cleanup.ts";
+import { inMemoryAuthenticatedUpstream } from "./helpers/in-memory-authenticated-upstream.ts";
+import type { CurrentSchematicPageOpeningEngine } from "../src/current-schematic-page-opening-runtime.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
 import { currentPcbDiagnosticToolRequestSchema } from "../src/current-pcb-diagnostic-validation.ts";
+import { currentSchematicPageOpeningRequestSchema } from "../src/current-schematic-page-opening.ts";
+import { CurrentSchematicPageOpeningCoordinator, inspectCurrentSchematicPageOpening } from "../src/current-schematic-page-opening-runtime.ts";
+import { currentSchematicPageReadRequestSchema } from "../src/current-schematic-page-read.ts";
+import { readCurrentSchematicPage } from "../src/current-schematic-page-read-runtime.ts";
+import { currentPcbOrdinaryReadRequestSchema } from "../src/current-pcb-ordinary-read-validation.ts";
 import { currentPcb209OpeningRequestSchema } from "../src/current-pcb-209-opening-validation.ts";
 import { currentPcb209VisualRequestSchema } from "../src/current-pcb-209-visual-validation.ts";
 import { currentPcbSpatialRequestSchema } from "../src/current-pcb-spatial-validation.ts";
@@ -23,6 +32,7 @@ import { facadeToolRegistered } from "../src/facade-mode.ts";
 function forbiddenLegacyLifecycle(): never { assert.fail("209 registration selected a legacy diagnostic or worker-startup lifecycle"); }
 function wrapRatline(request: unknown): { request: unknown } { return { request: { action: "ratline-held-import", request } }; }
 function mainWrap(request: unknown): { request: unknown } { return { request: { action: "footprint-main", request } }; }
+function ordinaryWrap(request: unknown): { request: unknown } { return { request: { action: "ordinary", request } }; }
 function visualWrap(request: unknown): { request: unknown } { return { request: { action: "visual", request } }; }
 
 void test("209 public opening and startup callbacks select original lifecycles and reject wider/caller-selected routes before allocation", async () => {
@@ -53,13 +63,13 @@ void test("209 public opening and startup callbacks select original lifecycles a
   assert.equal(Object.hasOwn(Selected209Lifecycle.prototype, "run"), false);
   assert.equal(Object.hasOwn(CurrentPcb209DiagnosticLifecycle.prototype, "run"), false);
   const environment = { EASYEDA_ASSETS_ROOT: "/mnt/c/Reviewed/EasyEDA/resources/app/assets", WSL_DISTRO_NAME: "Ubuntu" };
-  const authority = {}, facadePromise = Promise.resolve({ sha256: "a".repeat(64) }), upstream = {};
+  const authority = {}, facadePromise = Promise.resolve({ sha256: "a".repeat(64) }), upstream = inMemoryAuthenticatedUpstream({ content: [] }).upstream;
   const engine = { upstream, executionAuthorityValidator: authority, controlFingerprintPromise: facadePromise,
     assertDiagnosticLaunchOtherOperationsSettled: async (): Promise<void> => {
       checks += 1; if (blocked) { throw new Error("synthetic unresolved engine journal"); }
       if (pendingAdmission !== undefined) { await pendingAdmission; }
     } };
-  const scope = vm.createContext({ z, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupToolRequestSchema,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, OrdinaryTrackedOpenCleanup, CurrentSchematicPageOpeningCoordinator, inspectCurrentSchematicPageOpening, currentSchematicPageOpeningRequestSchema, privateFingerprintSchema: z.record(z.string(), z.unknown()), currentSchematicPageReadRequestSchema, readCurrentSchematicPage, currentPcbOrdinaryReadRequestSchema, CurrentPcbOrdinaryReadLifecycle, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupToolRequestSchema,
     CURRENT_PCB_DIAGNOSTIC_PROFILE, CurrentPcb209DiagnosticLifecycle: Selected209Lifecycle,
     CurrentPcb209VisualLifecycle: Selected209VisualLifecycle, CurrentPcbSpatialLifecycle,
     CurrentPcb209WorkerStartupLifecycle: Selected209StartupLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle,
@@ -261,7 +271,7 @@ void test("209 public opening and startup callbacks select original lifecycles a
   // A fresh registration chooses the actual visual subclass before any owner
   // Exists. It cannot upgrade that choice to ordinary diagnostics afterward.
   registrations.clear();
-  const visualScope = vm.createContext({ ...scope, currentPcbDiagnosticLifecycle: undefined });
+  const visualScope = vm.createContext({ stagedComponentOpeningSource: undefined, ...scope, currentPcbDiagnosticLifecycle: undefined });
   vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), visualScope);
   const visualRegistration = registrations.get("easyeda_control_pcb209_opening"); assert.ok(visualRegistration);
   const visualId = "pcb209-visual-registration";
@@ -282,4 +292,91 @@ void test("209 public opening and startup callbacks select original lifecycles a
   assert.equal(checks, beforeVisual.checks + 1); assert.equal(gateCalls, beforeVisual.gateCalls + 2);
   await assert.rejects(visualRegistration.invoke({ request: { action: "inspect", operationId } }), /purpose cannot change/u);
   assert.equal(visualAllocations, 1);
+  // The actual ordinary wrapper allocates its own generation and refuses
+  // Changing to a disposable/visual purpose even before native allocation.
+  registrations.clear();
+  const ordinaryScope = vm.createContext({ stagedComponentOpeningSource: undefined, ...scope, currentPcbDiagnosticLifecycle: undefined });
+  vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), ordinaryScope);
+  const ordinaryRegistration = registrations.get("easyeda_control_pcb209_opening"); assert.ok(ordinaryRegistration);
+  const ordinaryId = "pcb209-ordinary-registration";
+  const ordinaryInspected = await ordinaryRegistration.invoke(ordinaryWrap({ action: "inspect", operationId: ordinaryId }));
+  assert.match(JSON.stringify(ordinaryInspected), /not-found/u);
+  assert.ok(ordinaryScope["currentPcbDiagnosticLifecycle"] instanceof CurrentPcbOrdinaryReadLifecycle);
+  const ordinaryLaunch = { action: "launch", operationId: ordinaryId, confirmOrdinaryReadOnly: true,
+    confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true };
+  assert.equal(ordinaryRegistration.inputSchema.safeParse(ordinaryWrap(ordinaryLaunch)).success, true);
+  await assert.rejects(ordinaryRegistration.invoke(ordinaryWrap(ordinaryLaunch)), /unresolved engine journal/u);
+  await assert.rejects(ordinaryRegistration.invoke({ request: { action: "inspect", operationId } }), /purpose cannot change/u);
+  for (const request of [{ ...launch, operationId: ordinaryId },
+    { action: "observe-model-state", operationId: ordinaryId, expectedBindingSha256 },
+    { action: "perform-visual", operationId: ordinaryId, expectedBindingSha256 }]) {
+    assert.equal(ordinaryRegistration.inputSchema.safeParse(ordinaryWrap(request)).success, false);
+  }
+
+  const pageTarget = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
+    schematicUuid: "d".repeat(16), tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
+  const pageRead = { request: { action: "schematic-page-read", request: { target: pageTarget,
+    operation: { method: "eda.sch_PrimitiveText.getAll", arguments: {} } }, expectedFingerprint: {} } };
+  assert.equal(ordinaryRegistration.inputSchema.safeParse(pageRead).success, true);
+  const beforePageRead = counts();
+  await assert.rejects(ordinaryRegistration.invoke(pageRead));
+  assert.equal(counts().gateCalls, beforePageRead.gateCalls + 1); assert.equal(allocations, 1);
+  const pageWindowsPath = String.raw`C:\Fixtures\schematic-registration.eprj2`;
+  const pageOpen = { request: { action: "schematic-page-open", request: { action: "open", operationId: "sch209-open-registration",
+    target: { rawWindowsPath: pageWindowsPath, projectUuid: sha256Text(pageWindowsPath), branchUuid: pageTarget.branchUuid,
+      documentUuid: pageTarget.documentUuid, schematicUuid: pageTarget.schematicUuid, expectedSourceSha256: "e".repeat(64) },
+    confirmOrdinaryProject: true, acceptNormalOpenEffects: true }, expectedFingerprint: {} } };
+  assert.equal(ordinaryRegistration.inputSchema.safeParse(pageOpen).success, true);
+  const beforePageOpen = counts(); await assert.rejects(ordinaryRegistration.invoke(pageOpen), /original retained ordinary launch/u);
+  assert.equal(counts().gateCalls, beforePageOpen.gateCalls + 1); assert.equal(allocations, 1);
+
+  // Exercise the actual production AsyncLocalStorage scope issuer and callTool
+  // Requirement. This in-memory gateway owns no socket or native process.
+  const authenticated = inMemoryAuthenticatedUpstream({ content: [], structuredContent: { ok: true, result: "scoped" } });
+  await assert.rejects(authenticated.upstream.callTool("easyeda_execute", {}), /requires a dispatch scope/u);
+  assert.equal(authenticated.calls(), 0);
+  let pageConstructed = 0;
+  function ScopedPageOpening(input: CurrentSchematicPageOpeningEngine, assertLaunch: () => void): CurrentSchematicPageOpeningCoordinator {
+    assert.equal(input.upstream, authenticated.upstream); assert.ok(authenticated.upstream.currentAuthenticatedBridgeDispatchBinding());
+    assertLaunch(); pageConstructed += 1;
+    const owner = new CurrentSchematicPageOpeningCoordinator(input, assertLaunch);
+    const originalRun = owner.run.bind(owner);
+    Object.defineProperty(owner, "run", { value: (request: { action: string }, expected?: Record<string, unknown>): Promise<Record<string, unknown>> => {
+      if (request.action === "settle-cleanup-records") {
+        assert.equal(authenticated.upstream.currentAuthenticatedBridgeDispatchBinding(), undefined);
+        return Promise.resolve({ retainedCleanupObserved: true });
+      }
+      return originalRun(request, expected);
+    } });
+    return owner;
+  }
+  const originalLaunch = new WindowsControlRuntime({ upstream: authenticated.upstream, pluginRoot: "/opt/synthetic-control",
+    assetsRoot: "/mnt/c/Synthetic/resources/app/assets", wslDistribution: "SyntheticReview", reviewedExecutionScopeSha256: "a".repeat(64) });
+  registrations.clear();
+  const authenticatedScope = vm.createContext({ stagedComponentOpeningSource: undefined, ...scope, upstream: authenticated.upstream,
+    engine: { ...engine, upstream: authenticated.upstream }, ordinaryLaunchRuntime: originalLaunch, windowsRuntime: originalLaunch,
+    CurrentSchematicPageOpeningCoordinator: ScopedPageOpening,
+    readCurrentSchematicPage: async (): Promise<Record<string, unknown>> => {
+      assert.ok(authenticated.upstream.currentAuthenticatedBridgeDispatchBinding());
+      await authenticated.upstream.callTool("easyeda_execute", {}); return { authenticatedScopeObserved: true };
+    },
+  });
+  vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), authenticatedScope);
+  const authenticatedRegistration = registrations.get("easyeda_control_pcb209_opening"); assert.ok(authenticatedRegistration);
+  const scopedRead = await authenticatedRegistration.invoke(pageRead);
+  assert.match(JSON.stringify(scopedRead), /authenticatedScopeObserved/u); assert.equal(authenticated.calls(), 1);
+  const electricalRead = { request: { action: "schematic-page-read", request: { target: pageTarget,
+    operation: { method: "native.sch_Page.observeComponentsPinsNets", arguments: {} } }, expectedFingerprint: {} } };
+  assert.equal(authenticatedRegistration.inputSchema.safeParse(electricalRead).success, true);
+  const electricalResult = await authenticatedRegistration.invoke(electricalRead);
+  assert.match(JSON.stringify(electricalResult), /authenticatedScopeObserved/u); assert.equal(authenticated.calls(), 2);
+  await assert.rejects(authenticatedRegistration.invoke(pageOpen)); assert.equal(pageConstructed, 1);
+  assert.equal(authenticated.upstream.currentAuthenticatedBridgeDispatchBinding(), undefined);
+  const beforeCleanup = counts();
+  const cleanupResult = await authenticatedRegistration.invoke({ request: { action: "schematic-page-open", request: {
+    action: "settle-cleanup-records", operationId: "sch209-open-registration", cleanupNonce: "technical-original-nonce".repeat(3),
+  } } });
+  assert.match(JSON.stringify(cleanupResult), /retainedCleanupObserved/u);
+  assert.equal(counts().gateCalls, beforeCleanup.gateCalls + 1); assert.equal(pageConstructed, 1);
+  assert.equal(authenticated.calls(), 2);
 });

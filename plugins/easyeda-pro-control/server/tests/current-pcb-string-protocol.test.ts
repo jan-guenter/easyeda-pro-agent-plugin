@@ -1,4 +1,5 @@
 /* oxlint-disable import/max-dependencies -- Parity tests compare every separate fixed reader against the single native grammar. */
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -54,7 +55,7 @@ void test("String native protocol rejects caller code, effect overrides, extra a
   }
 });
 void test("String programs are byte-exact in the native fixed-purpose adapter", async () => {
-  const native = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const native = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   for (const [name, source] of Object.entries({
     StringRendererAssociationFunction: CURRENT_PCB_STRING_RENDERER_ASSOCIATION_FUNCTION,
     StringWorkerAssociationExpressionFunction: CURRENT_PCB_STRING_WORKER_ASSOCIATION_EXPRESSION,

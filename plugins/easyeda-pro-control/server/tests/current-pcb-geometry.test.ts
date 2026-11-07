@@ -10,6 +10,8 @@ import { buildCurrentPcbGeometryProgram } from "../src/current-pcb-geometry-prog
 import { decodeExactReadEnvelope } from "../src/exact-readers.ts";
 import { CURRENT_UI_IMPLEMENTATION } from "../src/current-ui-implementation.ts";
 import { CURRENT_PCB_SELECTED_GEOMETRY_METHOD, CURRENT_PCB_SELECTION_FAMILIES } from "../src/current-pcb-selection.ts";
+// oxlint-disable-next-line import/max-dependencies -- The same actual fixed-program realm tests both selection and generic lookup against the independent host validator and published schemas.
+import { CURRENT_PCB_LOOKUP_METHODS } from "../src/current-pcb-primitive-lookup.ts";
 
 const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
   tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
@@ -225,7 +227,7 @@ void test("current geometry schemas limit input and retain empty collection and 
     { ...input, method: "eda.pcb_PrimitiveLine.get" }, { ...input, target: { ...target, tabId: "wrong" } }]) {
     assert.throws(() => buildCurrentPcbGeometryProgram(invalid)); assert.equal(validateCurrentPcbGeometryArguments(invalid)["valid"], false);
   }
-  assert.equal(queryCurrentPcbGeometry({ includeSchemas: true })["total"], 20);
+  assert.equal(queryCurrentPcbGeometry({ includeSchemas: true })["total"], 22);
   assert.match(JSON.stringify(queryCurrentPcbGeometry({ method: methods[0], includeSchemas: true })), /inputSchema/u);
   for (const method of methods) {
     const request = inputFor(method);
@@ -248,16 +250,18 @@ void test("current geometry schemas limit input and retain empty collection and 
 void test("geometry discovery returns bounded method-specific successful result schemas and discloses remaining parser refinements", async () => {
   const catalog = queryCurrentPcbGeometry({ includeSchemas: true }), entries = catalog["entries"];
   assert.equal(catalog["offline"], true); assert.equal(catalog["invocationEnabledByDiscovery"], false);
-  assert.ok(Array.isArray(entries)); assert.equal(entries.length, 20);
-  assert.ok(Buffer.byteLength(JSON.stringify(catalog), "utf8") < 1024 * 1024);
+  assert.ok(Array.isArray(entries)); assert.equal(entries.length, 22);
+  assert.ok(Buffer.byteLength(JSON.stringify({ offline: true, result: catalog }), "utf8") < 512 * 1024);
   for (const rawEntry of entries) {
     const entry: unknown = rawEntry; assert.ok(isRecord(entry));
     const method = entry["method"], schema = entry["resultSchema"];
     assert.ok(typeof method === "string" && isRecord(schema));
+    const inputSchema = entry["inputSchema"]; assert.ok(isRecord(inputSchema) && isRecord(inputSchema["properties"]));
+    const inputMethod = inputSchema["properties"]["method"]; assert.ok(isRecord(inputMethod)); assert.equal(inputMethod["const"], method); assert.equal(inputSchema["additionalProperties"], false);
     const properties = schema["properties"]; assert.ok(isRecord(properties));
     const methodSchema = properties["method"], values = properties["value"];
     assert.ok(isRecord(methodSchema) && isRecord(values) && isRecord(values["items"]));
-    if (method === CURRENT_PCB_SELECTED_GEOMETRY_METHOD) {
+    if (method === CURRENT_PCB_SELECTED_GEOMETRY_METHOD || CURRENT_PCB_LOOKUP_METHODS.some(lookup => lookup === method)) {
       assert.ok(Array.isArray(values["items"]["oneOf"]));
       assert.equal(values["items"]["oneOf"].length, CURRENT_PCB_SELECTION_FAMILIES.length);
       assert.equal(methodSchema["const"], method); assert.ok(Object.hasOwn(properties, "returnedRowCount"));
@@ -1091,4 +1095,34 @@ void test("current geometry preserves bounded failure messages and does not retr
   await assert.rejects(failed.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" }); assert.equal(failed.evaluateChild("calls"), 1);
   const hung = environment({ afterCall: "return await new Promise(()=>{});", fastDeadline: true });
   await assert.rejects(hung.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" }); assert.equal(hung.evaluateChild("calls"), 1);
+});
+
+void test("generic PCB lookup resolves supported objects in caller order without reading selection or invoking public stubs", async () => {
+  for (const method of CURRENT_PCB_LOOKUP_METHODS) {
+    const ids = method === CURRENT_PCB_LOOKUP_METHODS[0] ? ["attribute-b"] : ["image-a", "attribute-b", "pad-b", "line-a"];
+    const request = inputFor(method, ids); const fixture = environment({ input: request });
+    const raw: unknown = decodeExactReadEnvelope(await fixture.run());
+    const result = validateCurrentPcbGeometryResult(request, raw);
+    assert.ok(Array.isArray(result["value"]));
+    assert.deepEqual(result["value"].map((row: unknown) => { assert.ok(isRecord(row)); return row["primitiveId"]; }), ids);
+    assert.equal(result["returnedRowCount"], ids.length); assert.equal(result["observedRowCount"], 16);
+    assert.equal(result["sourceMembershipVerified"], false);
+    assert.equal(fixture.evaluateChild("callTopics.includes('pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds')"), false);
+    assert.equal(fixture.evaluateChild("dataReads"), 18);
+    assert.ok(isRecord(raw));
+    for (const invalid of [{ ...raw, observedRowCount: 1 }, { ...raw, observedFamilies: [] },
+      ...(ids.length > 1 ? [{ ...raw, rows: result["value"].toReversed() }] : []),
+      { ...raw, attributeParentGroups: [] }, { ...raw, reciprocalParentVerified: true }]) {
+      assert.throws(() => validateCurrentPcbGeometryResult(request, invalid));
+    }
+  }
+  assert.equal(validateCurrentPcbGeometryArguments({ method: CURRENT_PCB_LOOKUP_METHODS[0], target, arguments: { primitiveIds: ["one", "two"] } })["valid"], false);
+});
+
+void test("generic PCB lookup refuses unavailable, ambiguous and malformed unrequested families and compares the whole compound sample", async () => {
+  const input = inputFor(CURRENT_PCB_LOOKUP_METHODS[1], ["line-a"]);
+  for (const beforeChild of ["rows.Via[0].globalIndex='line-a';", "rows.Image[0].width=undefined;", "rows.Line=rows.Line.filter(row=>row.globalIndex!=='line-a');"]) {
+    await assert.rejects(environment({ input, beforeChild }).run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+  }
+  await assert.rejects(environment({ input, afterCall: "if(dataReads===18)rows.Image[0].width++;" }).run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
 });
