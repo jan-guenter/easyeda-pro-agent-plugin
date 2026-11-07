@@ -39,3 +39,20 @@ getters returning `"sch"`. The original collector can qualify these functions
 without invoking them, then bind their exact prototypes separately. Eight
 uninvoked getters passed actual Inspector metadata checks. No original model,
 page type read, getter execution or writer continuation is issued by this leaf.
+
+## Document constructor qualification
+
+Source based on canonical `ac0db22d` adds separate metadata for base constructors
+m1/bv and schematic-page constructors ja/Ha. Whole-script hashes, complete class
+spans, actual one-argument constructors and their Inspector coordinates are
+pinned. The classes have no static or computed member definitions. Four
+uninstantiated classes passed actual Node24 Inspector name, arity, source,
+location, own-descriptor and internal-descriptor checks. Foreign script IDs,
+shifted locations, duplicate fields and getter-bearing reply packets refuse.
+TypeScript and strict lint pass.
+
+The returned constructor/prototype references grant no document ownership or
+invocation. The normal-success collector must separately bind the actual page
+prototype to its constructor, the constructor to its base, and all original
+getter references before continuing. These checks construct no application
+document and open no project.
