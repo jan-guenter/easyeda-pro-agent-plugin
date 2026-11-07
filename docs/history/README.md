@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 Schematic upload helper callees](2026-11-07-schematic-uploader-helper-callees.md). Exact24 uninvoked helper/checker metadata records; original receivers and upload continuation remain separate.
+
 - [2026-11-07 Additional schematic upload callees](2026-11-07-schematic-uploader-extra-callees.md). Exact46 uninvoked function metadata records; original receivers, encoder selection and publication remain separate.
 
 - [2026-11-07 Inverse layout excludes Via action code](2026-11-07-inverse-layout-via-exclusion.md). Recover76,902compiler bytes while retaining the exact shared timer codec and unchanged diagnostic/schematic builds.
