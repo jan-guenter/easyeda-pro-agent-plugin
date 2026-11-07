@@ -1,4 +1,6 @@
+/* oxlint-disable import/max-dependencies -- This sole inverse reservation composes every independently bounded lane rather than duplicating native limits. */
 import { CURRENT_FOOTPRINT_INVERSE_PUBLIC_CALL_REQUESTS as PUBLIC_CALL } from "./current-footprint-inverse-public-call-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_DELETE_JOB_REQUESTS as DELETE_JOB } from "./current-footprint-inverse-delete-job-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_DELETE_RPC_REQUESTS as DELETE_RPC } from "./current-footprint-inverse-delete-rpc-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_CLOCK_WORKER_REQUESTS as CLOCK_WORKER } from "./current-footprint-inverse-clock-worker-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_PUBLIC_SERVICE_REQUESTS as PUBLIC_SERVICE } from "./current-footprint-inverse-public-service-protocol.ts";
@@ -8,7 +10,6 @@ import { CURRENT_FOOTPRINT_INVERSE_DELETE_BINDING_REQUESTS as DELETE_BINDING } f
 import { CURRENT_PROJECT_LIBRARY_REFRESH_REQUESTS as LIBRARY } from "./current-project-library-refresh-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_MODEL_STEP_REQUESTS as MODEL } from "./current-footprint-inverse-model-step-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_INITIAL_SYNC_NATIVE_REQUESTS as INITIAL_SYNC } from "./current-footprint-inverse-initial-sync-protocol.ts";
-/* oxlint-disable import/max-dependencies -- This sole inverse reservation composes every independently bounded lane rather than duplicating native limits. */
 import { CURRENT_FOOTPRINT_INVERSE_DELETE_ENTRY_REQUESTS as DELETE_ENTRY } from "./current-footprint-inverse-delete-entry-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_INITIAL_CACHE_REQUESTS as INITIAL_CACHE } from "./current-footprint-inverse-initial-cache-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_MAIN_HISTORY_REQUESTS as INITIAL_HISTORY } from "./current-footprint-inverse-main-history-protocol.ts";
@@ -35,7 +36,7 @@ const mainCleanup = MAIN.cleanupRequests + INITIAL_HISTORY.repetitions * INITIAL
 const discovery = 16, emptyGuard = 9 + 1, parent = 3 + 1, projectOpening = 9 + 1, registration = 2;
 const generic = discovery + 2 * 8 + 3 + 4;
 const sourceHeldPrefix = discovery + emptyGuard + registration + parent + WORKER.totalUntilProjectHeld + projectOpening;
-const renderer = sourceHeldPrefix + CONSTRUCTION.cdpRequests + CACHE.total + PRODUCER.cdpRequests + COLD.total + 1 + STEP.maximum + STARTUP.cdpRequests + CONDITIONS.reads + TIMER.direct + QUEUE.cdpRequests + INITIAL_CACHE.cdpRequests + INITIAL_SYNC.cdpRequests + MODEL.cdpRequests + LIBRARY.total + DELETE_BINDING.cdpRequests + DELETE_ENCODER.cdpRequests + PUBLIC_API.cdpRequests + CLOCK_WORKER.cdpRequests + PUBLIC_SERVICE.cdpRequests + DELETE_ENTRY.cdpRequests + PUBLIC_CALL.cdpRequests + DELETE_RPC.cdpRequests;
+const renderer = sourceHeldPrefix + CONSTRUCTION.cdpRequests + CACHE.total + PRODUCER.cdpRequests + COLD.total + 1 + STEP.maximum + STARTUP.cdpRequests + CONDITIONS.reads + TIMER.direct + QUEUE.cdpRequests + INITIAL_CACHE.cdpRequests + INITIAL_SYNC.cdpRequests + MODEL.cdpRequests + LIBRARY.total + DELETE_BINDING.cdpRequests + DELETE_ENCODER.cdpRequests + PUBLIC_API.cdpRequests + CLOCK_WORKER.cdpRequests + PUBLIC_SERVICE.cdpRequests + DELETE_ENTRY.cdpRequests + PUBLIC_CALL.cdpRequests + DELETE_RPC.cdpRequests + DELETE_JOB.cdpRequests;
 // One finite renderer poll lane, paired with the existing original-main poll
 // Envelope. A consumed failure does not replenish this reservation.
 const rendererPolls = MAIN.totalPolls;
@@ -54,7 +55,7 @@ export const CURRENT_FOOTPRINT_INVERSE_ACTION_LIMITS = Object.freeze({
   "footprint-inverse-cache-guard": 1, "footprint-inverse-cache-enroll": 1, "footprint-inverse-cache-delete-guard": 2, "footprint-inverse-cache-loading-guard": 1, "footprint-inverse-cache-invalidate": CACHE.invalidation, "footprint-inverse-cache": CACHE.cacheNormal + CACHE.cacheCleanup, "footprint-inverse-cache-metadata": CACHE.metadataNormal + CACHE.metadataCleanup,
   "footprint-inverse-model-step": MODEL.controls, "footprint-inverse-initial-sync": INITIAL_SYNC.controls, "footprint-inverse-initial-cache": INITIAL_CACHE.controls, "footprint-inverse-startup-queue": QUEUE.controls, "footprint-inverse-condition-source":CONDITIONS.controls, "footprint-inverse-startup-callback":STARTUP.controls, "footprint-inverse-cold-step":STEP.maximum, "footprint-inverse-startup":1, "footprint-inverse-cold": COLD.total + 2 + COLD.pauses, "footprint-inverse-producer-arm": PRODUCER.cdpRequests, "footprint-inverse-actors": 3, "footprint-inverse-parent": 1, "footprint-inverse-worker-bind": 1,
   "footprint-inverse-main-history": INITIAL_HISTORY.repetitions * INITIAL_HISTORY.total,
-  "footprint-inverse-timer": TIMER.directControls, "footprint-inverse-library-refresh":LIBRARY.controls,"footprint-inverse-delete-bindings":DELETE_BINDING.controls,"footprint-inverse-delete-encoder":DELETE_ENCODER.controls,"footprint-inverse-public-api":PUBLIC_API.controls,"footprint-inverse-clock-worker":CLOCK_WORKER.controls,"footprint-inverse-delete-entry":DELETE_ENTRY.controls,"footprint-inverse-public-service":PUBLIC_SERVICE.controls,"footprint-inverse-public-call":PUBLIC_CALL.controls,"footprint-inverse-delete-rpc":DELETE_RPC.controls,
+  "footprint-inverse-timer": TIMER.directControls, "footprint-inverse-library-refresh":LIBRARY.controls,"footprint-inverse-delete-bindings":DELETE_BINDING.controls,"footprint-inverse-delete-encoder":DELETE_ENCODER.controls,"footprint-inverse-public-api":PUBLIC_API.controls,"footprint-inverse-clock-worker":CLOCK_WORKER.controls,"footprint-inverse-delete-entry":DELETE_ENTRY.controls,"footprint-inverse-public-service":PUBLIC_SERVICE.controls,"footprint-inverse-public-call":PUBLIC_CALL.controls,"footprint-inverse-delete-rpc":DELETE_RPC.controls,"footprint-inverse-delete-job":DELETE_JOB.controls,
   "footprint-inverse-worker": WORKER.totalUntilProjectHeld, "footprint-inverse-construction": CONSTRUCTION.controls, "footprint-inverse-source-bind": 1, "footprint-inverse-project": 1,
 });
 const controls = Object.values(CURRENT_FOOTPRINT_INVERSE_ACTION_LIMITS).reduce((sum, limit) => sum + limit, 0);
@@ -63,7 +64,7 @@ export const CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE = Object.freeze({
   main: Object.freeze({ constructionNormal: MAIN.normalRequests, fenceNormal: FENCE.normal,
     registrationNormal: REGISTRATION, initialHistory: INITIAL_HISTORY, normal: mainNormal, cleanup: mainCleanup, total: mainNormal + mainCleanup,
     reproofs: mainReproofs, polls: MAIN.totalPolls }),
-  renderer: Object.freeze({ discovery, emptyGuard, generic, registration, parent, projectOpening, sourceHeldPrefix, construction: CONSTRUCTION.cdpRequests, producerArm: PRODUCER, libraryRefresh:LIBRARY,deleteBindings:DELETE_BINDING,deleteEncoder:DELETE_ENCODER,publicApi:PUBLIC_API,clockWorker:CLOCK_WORKER,deleteEntry:DELETE_ENTRY,publicService:PUBLIC_SERVICE,publicCall:PUBLIC_CALL,deleteRpc:DELETE_RPC, cold: COLD, cache: CACHE, sourceHeldBootstrap: WORKER.totalUntilProjectHeld, total: renderer, polls: rendererPolls }), controls,
+  renderer: Object.freeze({ discovery, emptyGuard, generic, registration, parent, projectOpening, sourceHeldPrefix, construction: CONSTRUCTION.cdpRequests, producerArm: PRODUCER, libraryRefresh:LIBRARY,deleteBindings:DELETE_BINDING,deleteEncoder:DELETE_ENCODER,publicApi:PUBLIC_API,clockWorker:CLOCK_WORKER,deleteEntry:DELETE_ENTRY,publicService:PUBLIC_SERVICE,publicCall:PUBLIC_CALL,deleteRpc:DELETE_RPC,deleteJob:DELETE_JOB, cold: COLD, cache: CACHE, sourceHeldBootstrap: WORKER.totalUntilProjectHeld, total: renderer, polls: rendererPolls }), controls,
   completeInverseReserved: false, deleteInvocationAuthorized: false, executionAuthorized: false, saveAuthorized: false,
 });
 export const CURRENT_FOOTPRINT_INVERSE_DISCOVERY_METHODS = Object.freeze(["Browser.getVersion", "Target.getTargets", "Target.attachToTarget", "Page.enable", "Page.getFrameTree",

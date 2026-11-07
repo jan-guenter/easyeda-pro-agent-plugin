@@ -1721,3 +1721,38 @@ earlier manually assembled frame test gap, but remains a data-only leaf.
 The genuine manager-forwarded-job registry, native peer/envelope relation and
 Core/native continuation must still be joined; reply-topic equality by itself
 is not an original native job proof. No EasyEDA process or native owner ran.
+
+## Original forwarded-job consumer and held packet ledger
+
+Core now provides observeFootprintInverseDeleteJob(entry, forwardedJob). It
+requires the original private Entry and the separate public-forwarder Job,
+checks that Job's original Call and sealed project/footprint, and retains the
+actual Entry event. The Job bindings and assertion functions are pinned and
+reproved before/after every await. No caller path, frame ID or reply topic is
+accepted by this method. A different Job cannot adopt a retained attempt.
+
+One new work item on the same original worker controller reads the exact
+source-bound service frame, joins its packet to the genuine Job's reply topic
+and observed Ke instance, and retains the original proof tuple. Its private
+packet is bound to both original tokens, owner, saved checkpoint and held
+event. The new codebook has four normal commands and three exact helper-source
+receipts, plus bind/complete:seven CDP, nine controls and three helper events.
+It contains no clock, SDK, deletion, upload or resume command. Failures consume
+the one work item and keep the original cleanup scope.
+
+The actual manager/native-send/worker-peer Job issuer remains unimplemented
+in this source checkpoint. Its registry is therefore unissued, and this
+consumer refuses before dispatch until that independent genuine proof exists.
+The native ledger records packet observation only; it grants no clock or
+selected-file effect. Matching reply-topic data alone still cannot issue a
+Job or its consumer packet.
+
+Six focused actual paused-Inspector/closed-grammar/byte-pipe/cursor tests,
+both types and strict changed lint pass. The pipe regression now covers the
+five job cases along with the49 bus/20 RPC/6 entry cases; it was moved into a
+separate bounded test file to retain the existing import limit. Two-pass
+private legacy generation is identical at1,423,499 stored bytes/1,987,359
+compiler bytes. Full emitted Linux C#5 passes the five job messages and
+purpose/once limits plus RPC/entry/bus/public-call smokes
+(ORIGINAL_INVERSE_DELETE_JOB_NATIVE_OK). No tracked helper or pin was emitted,
+no EasyEDA process ran and no complete inverse/clock/effect claim is made.
