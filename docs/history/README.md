@@ -808,3 +808,5 @@ layout. The connected ledger retains its generation and case anchors.
 - 2026-11-07: [Original schematic publisher bus family](2026-11-07-schematic-original-broadcast-family.md), actual CJS factory selection and fourteen source function checks; native sender and local callback completion remain separate.
 
 - 2026-11-07: [Separate saved-reader source comparison](2026-11-07-schematic-saved-source-comparison.md), seven-record readonly comparison without fabricated writer stage flags; original reader and cold reopen remain separate.
+
+- 2026-11-07: [Separate schematic saved-reader preparation](2026-11-07-schematic-saved-reader-preparation.md), genuine closed lifecycle/checkpoint and namespace data for a later separately admitted reader; no new owner or cache/open grant.
