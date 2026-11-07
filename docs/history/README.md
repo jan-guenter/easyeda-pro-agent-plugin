@@ -799,3 +799,4 @@ layout. The connected ledger retains its generation and case anchors.
 - 2026-11-07: [Original schematic publisher source](2026-11-07-schematic-publisher-callee-metadata.md), exact selected publisher family and eighteen uninvoked function metadata checks; live publication remains separate.
 
 - [Held active history custody](2026-11-07-schematic-active-history-custody.md)
+- 2026-11-07: [Normal history completion callees](2026-11-07-schematic-normal-history-callees.md), thirty uninvoked function checks for the normal record path; actual event rosters and continuation remain separate.
