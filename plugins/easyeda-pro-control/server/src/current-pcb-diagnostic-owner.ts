@@ -40,7 +40,7 @@ import type { CurrentSchematicRelevanceDisplayClockOrigin } from "./current-sche
 import { currentFootprintInverseModelStepNativeFrame, validateCurrentFootprintInverseModelStepCommand } from "./current-footprint-inverse-model-step-protocol.ts";
 import type { CurrentFootprintInverseColdLoadProgress } from "./current-footprint-inverse-cold-load-progress.ts";
 import type { CurrentFootprintInverseModelStepCommand, CurrentFootprintInverseStartupIdle } from "./current-footprint-inverse-model-step-protocol.ts";
-import type { CurrentSchematicRelevanceDisplayModifyEntryBindings, CurrentSchematicRelevanceDisplayModifyEntryOrigin } from "./current-schematic-relevance-display-modify-entry-origin.ts";
+import type { CurrentSchematicRelevanceDisplayModifyEntryBindings, CurrentSchematicRelevanceDisplayModifyEntryOrigin, CurrentSchematicRelevanceDisplayOriginalRun } from "./current-schematic-relevance-display-modify-entry-origin.ts";
 import type { CurrentSchematicRelevanceStartupStructureDrained } from "./current-schematic-relevance-startup-structure-origin.ts";
 import { validateCurrentSchematicRelevanceDisplayModifyEntryCommand } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
 import type { CurrentSchematicRelevanceDisplayModifyEntryCommand } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
@@ -4569,11 +4569,13 @@ class CurrentPcbRetainedOwnerCore {
       current(); await attempted.assertPublished(); current(); await startupDrain.refresh(); current(); await this.#verify(); current(); startupDrain.assertCurrent();
       const bound = await this.#request({ action: "schematic-relevance-display-modify-bind", idle }); current(); if (!exact(bound, ["bound"]) || bound["bound"] !== true) { throw error("SCHEMATIC_MODIFY_GENERATION_BIND_ACK"); }
       const origin: CurrentSchematicRelevanceDisplayModifyEntryOrigin = Object.freeze({ profile: "private.current-schematic-relevance-display-modify-entry-origin.v1" });
+      let originalRun: Readonly<CurrentSchematicRelevanceDisplayOriginalRun> | null = null;
+      let runEvent: DiagnosticEvent | null = null;
       const operationJson = canonicalJson(argumentsValue.operation), targetJson = canonicalJson(argumentsValue.target); let callback: string | null = null, frameId: string | null = null, rawCursor: CurrentSchematicRelevanceRawCursor | null = null, source: string | null = null, step = 0, tuple: string | null = null;
       const original = (): void => { current(); if (this.#schematicRelevanceModifyEntryOrigin !== origin || this.#schematicRelevanceModifyTask === null) { throw error("SCHEMATIC_MODIFY_ENTRY_CUSTODY"); } };
-      const held = (): void => { original(); const request = this.#schematicRelevanceModifyRequest; if (request === null || this.#schematicRelevanceActionGuardHeld === null) { throw error("SCHEMATIC_MODIFY_ENTRY_ORIGINAL_PENDING_REQUIRED"); } selected.pipe.requireOriginalSchematicRelevanceDisplayModifyPending(request); };
+      const held = (): void => { original(); const request = this.#schematicRelevanceModifyRequest; if (request === null || runEvent === null || this.#schematicRelevanceActionGuardHeld !== runEvent) { throw error("SCHEMATIC_MODIFY_ENTRY_ORIGINAL_PENDING_REQUIRED"); } selected.pipe.requireOriginalSchematicRelevanceDisplayModifyPending(request); };
       const bindings: CurrentSchematicRelevanceDisplayModifyEntryBindings = Object.freeze({ holderObjectId: holder, idleActionObjectId: idle, targetJson, operationJson,
-        waitOriginalRunEntry: async (): Promise<Readonly<{ callFrameId: string }>> => { const event = await this.#schematicRelevanceModifyEntrySignal.promise; held(); if (event === null || event !== this.#schematicRelevanceActionGuardHeld) { throw error("SCHEMATIC_MODIFY_ENTRY_ORIGINAL_PAUSE"); }
+        waitOriginalRunEntry: async (): Promise<Readonly<{ callFrameId: string }>> => { const event = await this.#schematicRelevanceModifyEntrySignal.promise; original(); if (event === null || event !== this.#schematicRelevanceActionGuardHeld || runEvent !== null && runEvent !== event) { throw error("SCHEMATIC_MODIFY_ENTRY_ORIGINAL_PAUSE"); } runEvent = event; held();
           const frames = event.params["callFrames"]; if (!Array.isArray(frames) || !record(frames[0]) || typeof frames[0]["callFrameId"] !== "string" || !/^[A-Za-z\d_.:-]{1,256}$/u.test(frames[0]["callFrameId"])) { throw error("SCHEMATIC_MODIFY_ENTRY_FRAME"); } frameId = frames[0]["callFrameId"]; return Object.freeze({ callFrameId: frameId }); },
         request: async (input: CurrentSchematicRelevanceDisplayModifyEntryCommand): Promise<unknown> => {
           held(); if (step === 5) {
@@ -4591,6 +4593,11 @@ class CurrentPcbRetainedOwnerCore {
           else if (command.phase === "schematic-modify-entry-proof") { const value = captureCurrentPcbStringClockReply(raw).value; if (!record(value) || !record(value["result"]) || !exact(value, ["result"]) || !exact(value["result"], ["type", "value"]) || value["result"]["type"] !== "boolean" || value["result"]["value"] !== true || frameId === null) { throw error("SCHEMATIC_RAW_ORIGINAL_ENTRY_PROOF"); } rawCursor = new CurrentSchematicRelevanceRawCursor(frameId, holder); } return raw;
         }, nextRawCommand: (): CurrentSchematicRelevanceDisplayModifyEntryCommand | null => { held(); if (step !== 5 || rawCursor === null) { throw error("SCHEMATIC_RAW_ORIGINAL_ENTRY_REQUIRED"); } return rawCursor.next(); },
         requireRawCapture: () => { held(); if (step !== 5 || rawCursor === null) { throw error("SCHEMATIC_RAW_ORIGINAL_CAPTURE_REQUIRED"); } return rawCursor.requireCompleted(); },
+        originalRun: (): Readonly<CurrentSchematicRelevanceDisplayOriginalRun> => {
+          held(); if (step !== 5 || rawCursor === null || frameId === null || tuple === null || callback === null || source === null) { throw error("SCHEMATIC_RUN_ORIGINAL_CAPTURE_REQUIRED"); } rawCursor.requireCompleted();
+          originalRun ??= Object.freeze({ callFrameId: frameId, tupleObjectId: tuple, callbackObjectId: callback, callbackScriptId: source });
+          if (originalRun.callFrameId !== frameId || originalRun.tupleObjectId !== tuple || originalRun.callbackObjectId !== callback || originalRun.callbackScriptId !== source) { throw error("SCHEMATIC_RUN_ORIGINAL_CAPTURE_CHANGED"); } return originalRun;
+        },
         assertCurrent: async (): Promise<void> => { held(); await this.#verify(); held(); }, fail: (): void => { rawCursor?.fail(); this.#schematicFailed = true; this.#schematicWorkerController?.fail(); this.#schematicRelevanceModifyEntrySignal.resolve(null); } });
       this.#schematicRelevanceModifyEntryOrigin = origin; schematicRelevanceModifyEntries.set(origin, Object.freeze({ owner: this, argumentsValue, bindings, assertOriginal: original }));
       const pending = this.#transfer(() => { current(); this.#schematicRelevanceModifyDispatched = true; const request = selected.pipe.generateSchematicRelevanceDisplayModify(holder, argumentsValue.target, argumentsValue.operation); this.#schematicRelevanceModifyRequest = request; return request; });

@@ -3,12 +3,16 @@ import type { CurrentSchematicRelevanceDisplayModifyEntryCommand } from "./curre
 import type { CurrentSchematicRelevanceRawCapture } from "./current-schematic-relevance-action-raw-cursor.ts";
 
 export interface CurrentSchematicRelevanceDisplayModifyEntryOrigin { readonly profile: "private.current-schematic-relevance-display-modify-entry-origin.v1" }
+export interface CurrentSchematicRelevanceDisplayOriginalRun {
+  readonly callFrameId: string; readonly tupleObjectId: string; readonly callbackObjectId: string; readonly callbackScriptId: string;
+}
 export interface CurrentSchematicRelevanceDisplayModifyEntryBindings {
   readonly holderObjectId: string; readonly idleActionObjectId: string; readonly targetJson: string; readonly operationJson: string;
   readonly waitOriginalRunEntry: () => Promise<Readonly<{ callFrameId: string }>>;
   readonly request: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand) => Promise<unknown>;
   readonly nextRawCommand: () => CurrentSchematicRelevanceDisplayModifyEntryCommand | null;
   readonly requireRawCapture: () => CurrentSchematicRelevanceRawCapture;
+  readonly originalRun: () => Readonly<CurrentSchematicRelevanceDisplayOriginalRun>;
   readonly assertCurrent: () => Promise<void>;
   readonly fail: () => void;
 }

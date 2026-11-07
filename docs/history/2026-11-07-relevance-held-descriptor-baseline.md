@@ -113,3 +113,12 @@ mount return is required, and repeated exit settlement retires each once. All
 three group scheduling cases, both TypeScript projects and strict changed lint
 pass. No native grammar, request budget or write grant changes in this group
 composition.
+
+The next source slice retains one frozen original run record containing its
+actual frame, invocation tuple, generated callback and compiled script IDs.
+Retrieval requires the complete original Raw63 cursor. Entry reads now require
+the exact original run-pause event; a later callback or setter pause cannot
+reactivate that old lane. The new callback-handoff type keeps original native
+resume acknowledgment, the actual resumed event and the held callback entry as
+separate requirements. Strict changed-file lint and TypeScript checks pass.
+This slice adds no run continuation or setter invocation.
