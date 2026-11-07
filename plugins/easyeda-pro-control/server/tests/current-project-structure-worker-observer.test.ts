@@ -149,8 +149,8 @@ void test("original allocation reply is retained before a core post-reply owner 
   });
   const observer = new CurrentProjectStructureWorkerObserver(lease);
   await assert.rejects(observer.arm()); const failure = observer.retained().error;
-  assert.equal(observer.retained().failed, true); assert.equal(observer.retained().replies.length, 1);
-  assert.equal(z.looseObject({ breakpointId: z.string() }).parse(observer.retained().replies[0]).breakpointId, allocated);
+  assert.equal(observer.retained().failed, true); assert.equal(observer.retained().replies.length, 2);
+  assert.equal(z.looseObject({ breakpointId: z.string() }).parse(observer.retained().replies[1]).breakpointId, allocated);
   const commands = fixture.commands.length;
   await assert.rejects(observer.arm()); await assert.rejects(requireCurrentProjectStructureWorkerLease(lease).assertOriginal());
   assert.equal(fixture.commands.length, commands);
@@ -167,16 +167,43 @@ void test("late original allocation survives both caller deadlines without reviv
   const observer = new CurrentProjectStructureWorkerObserver(lease), rejected = assert.rejects(observer.arm(), /DEADLINE/u);
   const allocated = z.looseObject({ breakpointId: z.string() }).parse(await arrived.promise).breakpointId;
   await rejected; const failure = observer.retained().error;
-  assert.equal(observer.retained().replies.length, 0); assert.equal(observer.retained().unresolvedBreakpoints, true);
+  assert.equal(observer.retained().replies.length, 1); assert.equal(observer.retained().unresolvedBreakpoints, true);
   await assert.rejects(observer.cleanup()); assert.deepEqual(removed, []);
   await assert.rejects(runner.release(), /STRUCTURE_RETAIN_OBSERVER/u);
   const commands = fixture.commands.length; release.resolve(null);
   await nextTurn();
-  assert.equal(observer.retained().replies.length, 1); assert.equal(fixture.commands.length, commands);
+  assert.equal(observer.retained().replies.length, 2); assert.equal(fixture.commands.length, commands);
   assert.equal(observer.retained().failed, true); assert.equal(observer.retained().error, failure);
   await assert.rejects(observer.arm()); await assert.rejects(requireCurrentProjectStructureWorkerLease(lease).assertOriginal());
   await observer.cleanup(); assert.deepEqual(removed, [allocated]); assert.equal(observer.retained().unresolvedBreakpoints, false);
   await observer.cleanup(); assert.deepEqual(removed, [allocated]); await runner.release();
+});
+
+for (const expression of ["PROJECT.uploadStructure(ve.SCH,De.META,false)", "PROJECT.uploadStructure(-1,De.META,false)", "PROJECT.task2.add(Promise.resolve())"]) {
+  void test(`pre-existing structure producer refuses before breakpoint allocation: ${expression}`, { timeout: 30_000 }, async context => {
+    const { fixture, runner, lease } = await original(context);
+    await fixture.syntheticEvaluate(`${expression};true`);
+    const allocatedBefore = fixture.commands.filter(command => command === "Debugger.setBreakpoint").length;
+    const observer = new CurrentProjectStructureWorkerObserver(lease);
+    await assert.rejects(observer.arm()); assert.equal(observer.retained().failed, true);
+    assert.equal(fixture.commands.filter(command => command === "Debugger.setBreakpoint").length, allocatedBefore);
+    assert.equal(observer.retained().unresolvedBreakpoints, false);
+    const commands = fixture.commands.length; await assert.rejects(observer.arm()); assert.equal(fixture.commands.length, commands);
+    await observer.cleanup(); await runner.release();
+  });
+}
+
+void test("a producer consumed while arming refuses after retaining all original removable IDs", { timeout: 30_000 }, async context => {
+  const removed: string[] = []; let injected = false;
+  const f = await original(context, "none", { reply: async raw => {
+    if (!injected) { injected = true; await f.fixture.syntheticEvaluate("PROJECT.uploadStructure(-1,De.META,false);true"); }
+    return raw;
+  }, removed: id => { removed.push(id); } });
+  const observer = new CurrentProjectStructureWorkerObserver(f.lease);
+  await assert.rejects(observer.arm()); assert.equal(observer.retained().failed, true);
+  assert.equal(observer.retained().unresolvedBreakpoints, true); await observer.cleanup();
+  assert.equal(removed.length, 5); assert.equal(new Set(removed).size, 5); assert.equal(observer.retained().unresolvedBreakpoints, false);
+  await f.runner.release();
 });
 
 void test("malformed allocation location still retains only the original removable ID", { timeout: 30_000 }, async context => {
