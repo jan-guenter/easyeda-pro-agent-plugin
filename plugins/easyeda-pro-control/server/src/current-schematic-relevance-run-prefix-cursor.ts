@@ -14,6 +14,7 @@ import { qualifyCurrentSchematicRelevancePrefixQueueSource } from "./current-sch
 import type { CurrentSchematicRelevanceRawCapture } from "./current-schematic-relevance-action-raw-cursor.ts";
 import type { CurrentSchematicRelevanceDisplayOriginalRun } from "./current-schematic-relevance-display-modify-entry-origin.ts";
 import { captureCurrentSchematicDisplayAccessorSource } from "./current-schematic-display-accessor-replies.ts";
+import { currentSchematicRelevanceRawNativeConstructor } from "./current-schematic-relevance-action-raw-replies.ts";
 
 type Command = CurrentSchematicRelevanceRunPrefixCommand;
 type Step<T> = Generator<Command, T, unknown>;
@@ -134,6 +135,14 @@ export class CurrentSchematicRelevanceRunPrefixCursor {
     const roles = ["historyWillEnd", "listenerDispose", "historyClearTempData"] as const;
     for (const [index, role] of roles.entries()) { const value = this.#slot("will-functions", index); need(value.type === "function" && value.description !== undefined); requireCurrentSchematicRelevancePrefixQueueDescription(value.description, this.#variant, role); decodeCurrentSchematicRelevancePrefixQueueFunction(yield CurrentSchematicRelevanceRunPrefixCursor.#props(this.#at("will-functions", index)), this.#variant, role, this.#script); }
   }
+  *#busGroupPrecondition(): Step<void> {
+    yield* this.#tuple("object-constructor", CurrentSchematicRelevanceRunPrefixCursor.#call("bus-group-constructor", this.#id("native"), [this.#id("native")]), 1);
+    need(this.#slot("object-constructor", 0).description === "function Object() { [native code] }");
+    currentSchematicRelevanceRawNativeConstructor(yield CurrentSchematicRelevanceRunPrefixCursor.#props(this.#at("object-constructor", 0)), "Object");
+    yield* this.#tuple("extensibility", CurrentSchematicRelevanceRunPrefixCursor.#call("bus-group-extensibility", this.#at("object-constructor", 0), [this.#id("native")]), 1);
+    need(this.#slot("extensibility", 0).description === "function isExtensible() { [native code] }");
+    currentSchematicRelevancePrefixNativeFunction(yield CurrentSchematicRelevanceRunPrefixCursor.#props(this.#at("extensibility", 0)), ["isExtensible", 1]);
+  }
   *#collect(): Step<CurrentSchematicRelevanceRunPrefixCapture> {
     const source = captureCurrentSchematicDisplayAccessorSource(yield validateCurrentSchematicRelevanceRunPrefixCommand({ phase: "prefix-source", method: "Debugger.getScriptSource", params: { scriptId: this.#script } })).scriptSource;
     need(qualifyCurrentSchematicRelevanceActionPrefixSource(source) === this.#variant && qualifyCurrentSchematicRelevancePrefixQueueSource(source) === this.#variant);
@@ -159,7 +168,8 @@ export class CurrentSchematicRelevanceRunPrefixCursor {
     const weak = decodeCurrentSchematicRelevancePrefixQueueWeakRef(yield CurrentSchematicRelevanceRunPrefixCursor.#props(this.#at("members", 1)));
     yield* CurrentSchematicRelevanceRunPrefixCursor.#true("weak-target", weak.target, [this.#id("native"), this.#id("references")]);
     yield* CurrentSchematicRelevanceRunPrefixCursor.#true("weak-map", this.#at("container", 1), [this.#id("native"), this.#id("references"), this.#id("roots"), this.#id("container"), this.#id("members"), this.#id("intrinsic")]);
-    yield* this.#willEnd(); yield* this.#baseFunctions(); yield* this.#queueFunctions();
+    yield* this.#willEnd(); yield* this.#baseFunctions(); yield* this.#busGroupPrecondition(); yield* this.#queueFunctions();
+    yield* CurrentSchematicRelevanceRunPrefixCursor.#true("bus-group-idle", this.#at("references", 10), [this.#id("native"), this.#id("references"), this.#id("qualified"), this.#at("object-constructor", 0), this.#at("extensibility", 0)]);
     yield* CurrentSchematicRelevanceRunPrefixCursor.#true("raw-same", this.#raw.snapshotObjectId, [this.#id("native")]);
     return Object.freeze({ runObjectId: this.#id("run"), rootsObjectId: this.#id("roots"), nativeObjectId: this.#id("native"), referencesObjectId: this.#id("references"), firstStartObjectId: this.#at("queue", 4), willEndObjectId: this.#at("will-functions", 0), firstEndObjectId: this.#at("queue", 6), baseFunctionsObjectId: this.#id("base"), queueFunctionsObjectId: this.#id("queue"), intrinsicFunctionsObjectId: this.#id("intrinsic"), qualifiedObjectId: this.#id("qualified"), originalRequests: this.#requests, originalRunStillHeld: true, callbackReceiversVerified: false, continuationAuthorized: false, persistenceVerified: false });
   }

@@ -7,6 +7,7 @@ import { CURRENT_SCHEMATIC_RELEVANCE_PREFIX_QUEUE_MODULE_EXPRESSIONS as MODULES 
 import { CURRENT_SCHEMATIC_RELEVANCE_RAW_SAME_PROGRAM as RAW_SAME } from "./current-schematic-relevance-action-raw-programs.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_BUS_GROUP_PREFIX_CONSTRUCTOR as BUS_CONSTRUCTOR, CURRENT_SCHEMATIC_RELEVANCE_BUS_GROUP_PREFIX_EXTENSIBILITY as BUS_EXTENSIBILITY, CURRENT_SCHEMATIC_RELEVANCE_BUS_GROUP_PREFIX_IDLE as BUS_IDLE } from "./current-schematic-relevance-bus-group-prefix-programs.ts";
 
 const prototypes = String.raw`function(native){"use strict";const get=native[0],has=native[4],keys=native[5],bad=()=>{throw "PREFIX_PROTOTYPES";},own=(o,k)=>{const d=get(o,k);if(!d||!has(d,"value"))bad();return d.value;};if(!native[7](this)||native[2](this)!==native[16])bad();const length=own(this,"length");if(length>512||keys(this).length!==length+1)bad();const result=[];for(let i=0;i<length;i++){const value=own(this,""+i);if(value!==null&&typeof value!=="object"&&typeof value!=="function")bad();result[i]=value===null?null:native[2](value);}return result;}`;
 const triple = "function(a,b,c){\"use strict\";return[a,b,c];}";
@@ -26,6 +27,7 @@ export const CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_CALLS = freezeDeep([
   ["container", QUEUE.container, 2, false], ["container-members", QUEUE.containerMembers, 2, false], ["weak-target", QUEUE.weakTarget, 2, true], ["weak-map", QUEUE.weakMap, 6, true],
   ["will-end-root", QUEUE.willEndRoot, 2, false], ["will-end-details", QUEUE.willEndDetails, 2, false], ["will-end-subscription", QUEUE.willEndSubscription, 1, false], ["will-end-functions", QUEUE.willEndFunctions, 6, false],
   ["callback-receiver", QUEUE.callbackReceiver, 2, true],
+  ["bus-group-constructor", BUS_CONSTRUCTOR, 1, false], ["bus-group-extensibility", BUS_EXTENSIBILITY, 1, false], ["bus-group-idle", BUS_IDLE, 5, true],
 ] as const);
 export type CurrentSchematicRelevanceRunPrefixCallRole = typeof CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_CALLS[number][0];
 export const CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_READ_BOUND = 4096;

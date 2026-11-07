@@ -100,3 +100,15 @@ void test("purpose metadata preserves an actual384-reference tuple and full clas
     assert.throws(() => captureCurrentSchematicRelevancePrefixMetadata({ description: "x".repeat(131_073) }));
   } finally { Reflect.deleteProperty(globalThis, key); await session.post("Runtime.releaseObjectGroup", { objectGroup: FLAGS.objectGroup }); session.disconnect(); }
 });
+void test("the source-owned group assignment refuses inherited setters and nonextensible missing fields before run", () => {
+  const constructorRow = CALLS.find(row => row[0] === "bus-group-constructor"); const extensibilityRow = CALLS.find(row => row[0] === "bus-group-extensibility"); const idleRow = CALLS.find(row => row[0] === "bus-group-idle");
+  assert.ok(constructorRow !== undefined && extensibilityRow !== undefined && idleRow !== undefined);
+  for (const change of ["", "shapes.changedBusGroupIds=null", "shapes.changedBusGroupIds=null;Object.preventExtensions(shapes)", "Object.preventExtensions(shapes)", "shapes.changedBusGroupIds=new Set", "Object.setPrototypeOf(shapes,{set changedBusGroupIds(v){traps++;}})"]) {
+    const context = createContext({});
+    runInContext(`globalThis.traps=0;globalThis.shapes={};globalThis.native=Array(19).fill(null);native[0]=Object.getOwnPropertyDescriptor;native[2]=Object.getPrototypeOf;native[4]=Object.hasOwn;native[6]=Reflect.apply;native[7]=Array.isArray;native[15]=Object.prototype;globalThis.refs=Array(24).fill(null);refs[10]=shapes;${change};globalThis.qualified=Array(20).fill(Object.prototype);qualified[0]=shapes;qualified[1]=Object;qualified[2]=Object.getPrototypeOf(shapes);globalThis.constructorTuple=(${constructorRow[1]}).call(native,native);globalThis.extensibility=(${extensibilityRow[1]}).call(constructorTuple[0],native);`, context);
+    const evaluate = (): unknown => { const program: unknown = idleRow[1]; assert.ok(typeof program === "string"); return runInContext(`(${program}).call(shapes,native,refs,qualified,constructorTuple[0],extensibility[0])`, context) as unknown; };
+    if (change === "" || change.startsWith("shapes.changedBusGroupIds=null")) { assert.equal(evaluate(), true); }
+    else { assert.throws(() => evaluate()); }
+    assert.equal(runInContext("traps", context), 0);
+  }
+});

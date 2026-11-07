@@ -121,3 +121,20 @@ all 384 references and complete long descriptions and reject host hooks without
 running them. Five readonly-prefix and three guard cases pass with both
 TypeScript configurations and changed strict lint. These are local inert or
 synthetic checks, not connected writer validation.
+
+Source review found one more normal prefix effect. The second start listener
+creates `shapes.changedBusGroupIds = new Set`, while the end listener resets it
+to null. The older raw after-run projection allowed only the runner action and
+AST flag changes. A distinct post-start projection must also account for this
+source-owned Set without changing the generic raw guard.
+
+The readonly prefix now proves the assignment is safe before run. The original
+field must be absent or own writable/enumerable/configurable null. Every
+qualified ancestor must have a writable data descriptor or no descriptor for
+that name. Accessors and nonwritable fields refuse. A missing own field also
+requires the actual qualified native `Object.isExtensible` result. Its
+constructor, method and prototype identities are rechecked in the final
+precondition. Six focused readonly-prefix cases pass, including inherited
+setter refusal without invoking the setter. The three new readonly message
+cases use the existing 4,096-request bound. Staged qualification of the new Set
+and its exact post-start projection remain separate callback work.
