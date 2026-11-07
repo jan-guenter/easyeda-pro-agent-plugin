@@ -1,4 +1,4 @@
-import { expandCurrentPcbDiagnosticCSharpStorage, retainCurrentPcbDiagnosticCSharpStorage } from "../server/src/current-pcb-diagnostic-csharp-storage.ts";
+import { expandCurrentPcbDiagnosticCSharpReviewSource, retainCurrentPcbDiagnosticCSharpReviewStorage } from "../server/src/current-pcb-diagnostic-csharp-review-storage.ts";
 import { readFile, writeFile } from "node:fs/promises";
 import { currentWindowFailurePowerShell } from "../server/src/current-pcb-diagnostic-window-failure-native.ts";
 import { CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS } from "../server/src/current-pcb-diagnostic-window-capture-native.ts";
@@ -8,7 +8,7 @@ if (process.argv.length !== 3 || action !== "--write" && action !== "--check") {
 const path = new URL("pcb-diagnostic-owner.ps1", import.meta.url);
 // oxlint-disable-next-line node/no-top-level-await -- One deterministic builtin-only native source generation command.
 const stored = await readFile(path, "utf8");
-const source = expandCurrentPcbDiagnosticCSharpStorage(stored);
+const source = expandCurrentPcbDiagnosticCSharpReviewSource(stored);
 const begin = "// BEGIN GENERATED DIAGNOSTIC WINDOW CAPTURE", end = "// END GENERATED DIAGNOSTIC WINDOW CAPTURE";
 const start = source.indexOf(begin), stop = source.indexOf(end);
 if (start === -1 || stop < start || source.includes(begin, start + begin.length) || source.includes(end, stop + end.length)) {
@@ -22,7 +22,7 @@ if (first === -1 || last < first || nativeNext.includes(faultStart, first + faul
   throw new Error("Window fault adapter markers must occur once");
 }
 const literal = `${nativeNext.slice(0, first)  }${faultStart}\n      ${currentWindowFailurePowerShell()}\n      ${faultEnd}${nativeNext.slice(last + faultEnd.length)}`;
-const next = retainCurrentPcbDiagnosticCSharpStorage(literal, stored);
+const next = retainCurrentPcbDiagnosticCSharpReviewStorage(literal, stored);
 if (action === "--write") {
   // oxlint-disable-next-line node/no-top-level-await -- Emit only the exact source-owned fixed marker block.
   await writeFile(path, next);

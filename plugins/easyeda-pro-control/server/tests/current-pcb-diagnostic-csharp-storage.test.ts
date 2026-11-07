@@ -3,11 +3,8 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { gzipSync } from "node:zlib";
-import { generateWorkerStartupProtocol } from "../../scripts/generate-worker-startup-protocol.ts";
 import { CURRENT_PCB_DIAGNOSTIC_CSHARP_DECODER as DECODER, currentPcbDiagnosticCSharpCompilerInput, expandCurrentPcbDiagnosticCSharpStorage as expand, packCurrentPcbDiagnosticCSharpStorage as pack } from "../src/current-pcb-diagnostic-csharp-storage.ts";
 import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES as MAXIMUM } from "../src/current-pcb-diagnostic-helper-source-profile.ts";
-import { currentFootprintForwardNativeOutputs } from "../src/current-footprint-forward-native-graph-source.ts";
-import { currentFootprintForwardColdNativeOutputs } from "../src/current-footprint-forward-cold-native-graph-source.ts";
 
 const sha = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex");
 const sample = "# fixed preamble\nAdd-Type @'\nusing System;\npublic class Fixed { public string Value = \"LF\\n\"; }\n'@\n# fixed suffix\n";
@@ -16,19 +13,11 @@ function payload(source: string, raw: Buffer, packed: Buffer): string {
   return source.replace(fields, `$fixedCurrent209CSharp=Expand-FixedCurrent209CSharp '${packed.toString("base64")}' ${String(raw.length)} '${sha(raw)}' ${String(packed.length)} '${sha(packed)}'`);
 }
 
-void test("final emission is reversible, bounded and preserves every released forward/cold file", async () => {
-  assert.equal(process.versions.node, "24.18.0");
-  const shared = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"); const packed = pack(shared);
-  assert.equal(expand(packed), shared); assert.equal(pack(packed), packed); assert.ok(Buffer.byteLength(packed) < MAXIMUM);
-  for (const derive of [currentFootprintForwardNativeOutputs, currentFootprintForwardColdNativeOutputs]) {
-    const expected = derive(shared); assert.deepEqual(derive(packed), expected); assert.equal(expected.length, 3);
-    for (const output of expected) { assert.equal(await readFile(new URL(`../../${output.relativePath}`, import.meta.url), "utf8"), output.source); }
-  }
-  const generated = generateWorkerStartupProtocol(shared); assert.equal(generateWorkerStartupProtocol(generated), generated);
-  assert.equal(await readFile(new URL("../../scripts/pcb-diagnostic-native.cs", import.meta.url), "utf8"), currentPcbDiagnosticCSharpCompilerInput(generated));
-  assert.ok(Buffer.byteLength(generated) <= MAXIMUM); const restored = expand(generated), start = restored.indexOf("Add-Type @'\n") + 12, stop = restored.indexOf("\n'@\n");
-  assert.ok(start >= 12 && stop > start); assert.ok(Buffer.byteLength(restored.slice(start, stop)) <= MAXIMUM);
-  assert.ok(Buffer.byteLength(generated) + 15_000 < Buffer.byteLength(restored));
+void test("historical v1 storage retains its exact literal bytes and original body limit", () => {
+  const packed = pack(sample); assert.equal(expand(packed), sample); assert.equal(pack(packed), packed);
+  assert.equal(currentPcbDiagnosticCSharpCompilerInput(packed), 'using System;\npublic class Fixed { public string Value = "LF\\n"; }');
+  assert.ok(Buffer.byteLength(packed) < MAXIMUM);
+  assert.throws(() => pack(sample.replace("using System;", `${" ".repeat(MAXIMUM)  }using System;`)));
 });
 
 void test("hostile storage refuses before returning any compiler input", () => {

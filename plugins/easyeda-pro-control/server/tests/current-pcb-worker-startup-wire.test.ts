@@ -1,5 +1,5 @@
 /* oxlint-disable import/max-dependencies -- Exact startup wire cases, independent build compaction and the separate shared-source ceiling must be checked together; their runtime limits remain distinct. */
-import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -143,7 +143,7 @@ void test("startup identifiers and budget are bounded; placeholder-shaped handle
   for (const sessionId of ["", "a".repeat(129), "bad\n", null, 4]) { assert.throws(() => currentPcbWorkerStartupWire({ ...sample, sessionId }, 1)); }
 });
 void test("native startup source is generated exactly and keeps the distinct purpose boundary", async () => {
-  const native = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
+  const native = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const generated = currentPcbWorkerStartupNativeSource();
   // The generator removes code indentation with its literal-aware compactor.
   // Compare the entire uniquely delimited body, including every packed byte.
@@ -182,7 +182,7 @@ void test("native 209 cases preserve every command except the reviewed serial si
 });
 
 void test("native 209 launch fixes its encoder without a caller generation field or duplicate program table", async () => {
-  const stored = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"); const native = expandCurrentPcbDiagnosticCSharpStorage(stored);
+  const stored = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"); const native = expandCurrentPcbDiagnosticCSharpReviewSource(stored);
   const generated = currentPcbWorkerStartupNativeSource();
   assert.equal(generated.split("public static class EasyedaWorkerStartupProtocol").length, 2);
   assert.ok(generated.includes("public static string Encode209("));

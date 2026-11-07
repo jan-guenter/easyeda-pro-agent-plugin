@@ -1,4 +1,4 @@
-import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -30,7 +30,7 @@ void test("209 extended primitive wire reconstructs only its fixed command withi
 });
 
 void test("native209 extended primitive source embeds the exact program and refuses other purposes", async () => {
-  const native = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
+  const native = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   assert.equal(readPackedNativeProgram(native, "ExtendedPrimitives209Function"), CURRENT_PCB_209_EXTENDED_PRIMITIVES_FUNCTION);
   assert.equal(/const string ExtendedPrimitives209FunctionSha256="([a-f0-9]{64})";/u.exec(native)?.[1],
     createHash("sha256").update(CURRENT_PCB_209_EXTENDED_PRIMITIVES_FUNCTION).digest("hex"));

@@ -1,6 +1,6 @@
 /** Real factory/private registries with synthetic closed-data admission and inert
  * Linux child pipes. No application, Windows handle or writer proof is issued. */
-import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import { readFile } from "node:fs/promises";
@@ -85,9 +85,9 @@ void test("failed inverse source prerequisite clears busy custody before origina
 });
 
 void test("whole native composition is idempotent with original inverse limits and no writer grant", async () => {
-  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const first = generateWorkerStartupProtocol(source); assert.equal(generateWorkerStartupProtocol(first), first);
-  const expanded=expandCurrentPcbDiagnosticCSharpStorage(first);
+  const expanded=expandCurrentPcbDiagnosticCSharpReviewSource(first);
   assert.equal(first.split("[switch]$FootprintInverse209").length - 1, 1);
   assert.equal(first.split("if ($FootprintInverse209 -and (").length - 1, 1);
   assert.ok(expanded.includes(`if(footprintInverse209)return ${String(PROFILE.renderer.total)};`));

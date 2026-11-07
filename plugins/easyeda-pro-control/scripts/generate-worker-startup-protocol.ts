@@ -3,7 +3,7 @@ import { applyCurrentSchematicRelevanceDisplayActionNativeFragment } from "../se
 import { applyCurrentSchematicWireEditNativeFragment, normalizeCurrentSchematicWireEditNativeFamily, prepareCurrentSchematicWireEditNativeSwitch } from "../server/src/current-schematic-wire-edit-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayWriteNativeFragment, normalizeCurrentSchematicRelevanceDisplayNativeFamily, prepareCurrentSchematicRelevanceDisplayNativeSwitch } from "../server/src/current-schematic-relevance-display-write-native-fragment.ts";
 /* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
-import { currentPcbDiagnosticCSharpCompilerInput, expandCurrentPcbDiagnosticCSharpStorage, packCurrentPcbDiagnosticCSharpStorage } from "../server/src/current-pcb-diagnostic-csharp-storage.ts";
+import { currentPcbDiagnosticCSharpReviewSource, expandCurrentPcbDiagnosticCSharpReviewSource, packCurrentPcbDiagnosticCSharpReviewStorage } from "../server/src/current-pcb-diagnostic-csharp-review-storage.ts";
 import { applyCurrentPcbViaObservedSourceNativeFragment } from "../server/src/current-pcb-via-observed-source-native-fragment.ts";
 import { applyCurrentPcbViaSaveDrainNativeFragment } from "../server/src/current-pcb-via-save-drain-native-fragment.ts";
 import { applyCurrentPcbViaPostHistorySyncNativeFragment } from "../server/src/current-pcb-via-post-history-sync-native-fragment.ts";
@@ -117,13 +117,13 @@ async function main(): Promise<void> {
   const path = new URL("pcb-diagnostic-owner.ps1", import.meta.url);
   const source = await readFile(path, "utf8");
   const next = generateWorkerStartupProtocol(source);
-  const reviewPath = new URL("pcb-diagnostic-native.cs", import.meta.url); const compilerInput = currentPcbDiagnosticCSharpCompilerInput(next);
+  const reviewPath = new URL("pcb-diagnostic-native.cs", import.meta.url); const compilerInput = currentPcbDiagnosticCSharpReviewSource(next);
   if (action === "--write") { await writeFile(path, next); await writeFile(reviewPath, compilerInput); }
   else if (next !== source || await readFile(reviewPath, "utf8") !== compilerInput) { throw new Error("Generated native startup protocol or review copy differs"); }
 }
 /** Pure complete composition, used by repeated-generation regressions without writing a helper. */
 export function generateWorkerStartupProtocol(source: string): string {
-  const original = normalizeCurrentSchematicWireEditNativeFamily(expandCurrentPcbDiagnosticCSharpStorage(source));
+  const original = normalizeCurrentSchematicWireEditNativeFamily(expandCurrentPcbDiagnosticCSharpReviewSource(source));
   const normalized = normalizeCurrentSchematicRelevanceDisplayNativeFamily(original);
   const literal = prepareCurrentSchematicWireEditNativeSwitch(prepareCurrentSchematicRelevanceDisplayNativeSwitch(normalized));
   let next = prepareCurrentPcbViaSavedReadbackNativeSwitch(prepareCurrentPcbComponentSpatialNativeSwitch(prepareCurrentFootprintInverseNativeSwitch(literal)));
@@ -169,7 +169,7 @@ export function generateWorkerStartupProtocol(source: string): string {
   next = applyCurrentSchematicWireEditNativeFragment(next);
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
   assertCurrentFootprintCopyForwardNativeRequestIds(next);
-  next = packCurrentPcbDiagnosticCSharpStorage(next);
+  next = packCurrentPcbDiagnosticCSharpReviewStorage(next);
   if (Buffer.byteLength(next) > CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES) {
     throw new Error(`Native startup helper exceeds its fixed byte bound: ${String(Buffer.byteLength(next))} >${String(CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES)}`);
   }

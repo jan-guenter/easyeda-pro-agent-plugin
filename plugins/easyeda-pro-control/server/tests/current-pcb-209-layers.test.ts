@@ -1,5 +1,5 @@
 /* oxlint-disable import/max-dependencies -- Source-only native protocol fixture additionally restores its exact stored compiler input. */
-import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -111,7 +111,7 @@ void test("209 fixed command is native-reconstructed, phase-bound and absent fro
     { ...command.params, arguments: [{ value: target }, { value: "open-document" }] }]) {
     assert.throws(() => diagnosticNativeRequest(wire({ ...command, params })));
   }
-  const native = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
+  const native = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   assert.equal(readPackedNativeProgram(native, "Layers209Function"), CURRENT_PCB_209_LAYERS_FUNCTION);
   assert.ok(native.includes('if(!layers209 || stringPrecreate || workerStartup) throw Error("layers209-purpose")'));
   assert.ok(native.includes("if (-not $Layers209) {throw 'pcb-diagnostic-layers209-purpose'}"));

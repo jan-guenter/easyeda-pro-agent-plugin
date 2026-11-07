@@ -1,5 +1,5 @@
 /* oxlint-disable import/max-dependencies -- Source-only native protocol fixture additionally restores its exact stored compiler input. */
-import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
@@ -428,7 +428,7 @@ void test("concurrent observation cannot interleave normal close with an owned d
   assert.equal(value.owner.status().closeConsumed, false); await discovery; await close(value);
 });
 void test("diagnostic native source preserves original handles, explicit inheritance and EOF retention", async () => {
-  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   assert.ok(source.includes("root=info.process; rootThread=info.thread; rootPid=info.processId;"));
   const core = source.slice(source.indexOf("void CreateVerifiedRoot()"), source.indexOf("// Exact worker diagnostic program."));
   let cursor = -1;

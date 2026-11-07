@@ -1,5 +1,5 @@
 /* oxlint-disable import/max-dependencies -- Compare the independently sealed old/new wire families and the actual full fragment composition. */
-import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import { applyCurrentGeneratedPeriodicSyncNativeFragment as periodicFragment } from "../src/current-generated-periodic-sync-native-fragment.ts";
 import { currentGeneratedPeriodicSyncNativeCases } from "../src/current-generated-periodic-sync-protocol.ts";
 import { currentGeneratedPeriodicSyncWire } from "../src/current-generated-periodic-sync-wire.ts";
@@ -37,7 +37,7 @@ void test("133 observation templates roundtrip through only the two exact new wr
   } }
 });
 void test("full producer generation is idempotent and keeps source observation separate from every continuation", async () => {
-  const base = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8")), source = compose(base);
+  const base = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8")), source = compose(base);
   assert.equal(compose(source), source); assert.equal(producer(source), source);
   for (const action of ["pcb-via-producer-observe", "schematic-display-producer-observe"]) { assert.equal(source.split(`        '${action}' {`).length, 2); }
   assert.ok(source.includes("viaProducerObserveRequests>=940")); assert.ok(source.includes("schematicProducerObserveArms.Count!=27"));
@@ -45,7 +45,7 @@ void test("full producer generation is idempotent and keeps source observation s
 });
 
 void test("startup-only initial cache dispatch remains idempotent across whole writer regeneration and refuses changed owned blocks", async () => {
-  const base = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8")), source = initialCache(compose(base));
+  const base = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8")), source = initialCache(compose(base));
   assert.equal(initialCache(compose(source)), source); assert.equal(initialCache(source), source);
   for (const action of ["pcb-via-initial-cache", "schematic-display-initial-cache", "pcb-via-initial-cache-complete", "schematic-display-initial-cache-complete"]) { assert.equal(source.split(`        '${action}' {`).length, 2); }
   assert.ok(source.includes("viaProducerPrefixEnrolled||!viaInitialCacheCompleted")); assert.ok(source.includes("schematicProducerPrefixEnrolled||!schematicInitialCacheCompleted"));
@@ -53,7 +53,7 @@ void test("startup-only initial cache dispatch remains idempotent across whole w
 });
 
 void test("same-head startup sync codec is separate, once-ordered and idempotent through complete combined generation", async () => {
-  const base = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8")), source = initialSyncFragment(initialCache(compose(base)));
+  const base = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8")), source = initialSyncFragment(initialCache(compose(base)));
   const recomposed = compose(source); assert.equal(initialSyncFragment(initialCache(recomposed)), source); assert.equal(initialSyncFragment(source), source);
   assert.ok(source.includes("viaInitialSyncStage-2")); assert.ok(source.includes("schematicInitialSyncStage!=45&&schematicInitialSyncStage!=47"));
   assert.ok(source.includes("!viaInitialCacheCompleted||!viaInitialSyncCompleted")); assert.ok(source.includes("!schematicInitialCacheCompleted||!schematicInitialSyncCompleted"));
@@ -67,7 +67,7 @@ void test("same-head startup sync codec is separate, once-ordered and idempotent
 });
 
 void test("periodic branch/history lane composes idempotently and never enters the initial or released-purpose vocabularies", async () => {
-  const base = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
+  const base = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const initial = initialSyncFragment(initialCache(compose(base))); const source = periodicFragment(initial);
   const writers = compose(source); const caches = initialCache(writers); const sync = initialSyncFragment(caches);
   assert.equal(periodicFragment(sync), source); assert.equal(periodicFragment(source), source);

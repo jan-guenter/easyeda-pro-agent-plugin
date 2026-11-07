@@ -1,4 +1,4 @@
-import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -8,7 +8,7 @@ import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES } from "../src/current-pcb-diagnostic-helper-source-profile.ts";
 
 void test("native visual program is exact, packed and independently constrained to its six viewport operations", async () => {
-  const stored = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"); const source = expandCurrentPcbDiagnosticCSharpStorage(stored);
+  const stored = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"); const source = expandCurrentPcbDiagnosticCSharpReviewSource(stored);
   assert.equal(readPackedNativeProgram(source, "Visual209Function"), CURRENT_PCB_209_VISUAL_FUNCTION);
   assert.equal(/const string Visual209FunctionSha256="([a-f0-9]{64})";/u.exec(source)?.[1],
     createHash("sha256").update(CURRENT_PCB_209_VISUAL_FUNCTION).digest("hex"));
@@ -34,7 +34,7 @@ void test("independent Windows launch smoke binds exact helper length, digest an
     readFile(new URL("../../scripts/pcb-diagnostic-launch-smoke.ps1", import.meta.url), "utf8"),
   ]);
   const actualHash = createHash("sha256").update(bytes).digest("hex");
-  const source = expandCurrentPcbDiagnosticCSharpStorage(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
   const verify = (program: string): void => {
     assert.equal(Number(/\$bytes = Read-BoundedFile \$helper ([0-9]+)/u.exec(program)?.[1]), CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES);
     assert.ok(bytes.length > 0 && bytes.length <= CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES);

@@ -1,6 +1,6 @@
 /** Fixed native codecs and source composition only; no native owner is opened. */
 /* oxlint-disable import/max-dependencies -- Compare two distinct writer grammars against the common fixed transport and released grammars. */
-import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
@@ -38,7 +38,7 @@ void test("all16 transport calls substitute original native context and keep bot
   assert.match(currentProjectStructureTransportNativeSource(), /Regex\.Replace/u);
 });
 void test("the full transport fragment stays idempotent across adjacent dispatcher movement and cap predecessors", async () => {
-  const original = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8")), source = compose(original);
+  const original = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8")), source = compose(original);
   assert.equal(compose(source), source); assert.equal(transport(source), source);
   const prior = source.replace("if(schematicDisplayWrite209)return 775;", "if(schematicDisplayWrite209)return 747;").replace("$requestLimit=775", "$requestLimit=747")
     .replace("return pcbViaWrite209?1177:", "return pcbViaWrite209?1149:").replace("$requestLimit=if ($PcbViaWrite209) {1177}", "$requestLimit=if ($PcbViaWrite209) {1149}");

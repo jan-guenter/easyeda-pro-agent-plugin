@@ -1,7 +1,7 @@
 /** Exact 73-line native birth predecessor, captured before graph migration.
  * Build-time source transformation only; it is never a runtime program input. */
 import { createHash } from "node:crypto";
-import { expandCurrentPcbDiagnosticCSharpStorage } from "./current-pcb-diagnostic-csharp-storage.ts";
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "./current-pcb-diagnostic-csharp-review-storage.ts";
 import { projectIndependentForwardSharedHelper } from "./current-footprint-forward-independent-shared-projection.ts";
 
 export const FORWARD_NATIVE_LEGACY = Object.freeze({ bytes: 1_042_994, sha256: "58f681b7c896069fd748b957fe925e39ed4b8990f88de3483fbda781a65dccee" });
@@ -222,7 +222,7 @@ const hash = (value: string): string => createHash("sha256").update(value).diges
  * released legacy bytes before any existing forward transformation. Unknown
  * source, changed additions and every collateral byte still fail closed. */
 export function normalizeForwardNativeLegacySource(stored: string): string {
-  const input = expandCurrentPcbDiagnosticCSharpStorage(stored);
+  const input = expandCurrentPcbDiagnosticCSharpReviewSource(stored);
   if (Buffer.byteLength(input) === FORWARD_NATIVE_LEGACY.bytes && hash(input) === FORWARD_NATIVE_LEGACY.sha256) { return input; }
   const independent = projectIndependentForwardSharedHelper(input);
   if (independent !== null) {

@@ -62,7 +62,12 @@ function Expand-FixedCurrent209CSharp([string]$fixedEncoded,[int]$fixedLength,[s
     } finally {if($null -ne $fixedZip){$fixedZip.Dispose()};$fixedInput.Dispose()}
   } finally {$fixedHasher.Dispose()}
 }
-if($source.Contains("# BEGIN FIXED CURRENT209 CSHARP STORAGE`n")) {
+if($source.Contains("# BEGIN FIXED CURRENT209 CSHARP REVIEW STORAGE V2`n")) {
+  $fixedMatches=[regex]::Matches($source,'(?m)^\$fixedCurrent209CompactCompiler=Expand-FixedCurrent209CSharp ''([A-Za-z0-9+/=]+)'' ([0-9]+) ''([a-f0-9]{64})'' ([0-9]+) ''([a-f0-9]{64})''$')
+  if($fixedMatches.Count -ne 1 -or $source.Contains("Add-Type @'`n")){throw 'synthetic-launch-compact-boundaries'}
+  $fixedMatch=$fixedMatches[0]
+  $native=Expand-FixedCurrent209CSharp $fixedMatch.Groups[1].Value ([int]$fixedMatch.Groups[2].Value) $fixedMatch.Groups[3].Value ([int]$fixedMatch.Groups[4].Value) $fixedMatch.Groups[5].Value
+} elseif($source.Contains("# BEGIN FIXED CURRENT209 CSHARP STORAGE`n")) {
   $fixedMatches=[regex]::Matches($source,'(?m)^\$fixedCurrent209CSharp=Expand-FixedCurrent209CSharp ''([A-Za-z0-9+/=]+)'' ([0-9]+) ''([a-f0-9]{64})'' ([0-9]+) ''([a-f0-9]{64})''$')
   if($fixedMatches.Count -ne 1 -or $source.Contains("Add-Type @'`n")){throw 'synthetic-launch-packed-boundaries'}
   $fixedMatch=$fixedMatches[0]
@@ -82,7 +87,7 @@ $native = $source.Substring($start+$begin.Length,$stop-$start-$begin.Length)
 # These test-only methods are inserted in memory into the hash-pinned C# source.
 # Its actual structures, P/Invoke declarations, leases, Job and pipe methods are
 # unchanged. Neither addition exists in the production helper or its protocol.
-$installationMarker = '  public void Admit(string[] paths,long[] sizes,string[] hashes) {'
+$installationMarker = 'public void Admit(string[] paths,long[] sizes,string[] hashes) {'
 $installationTest = @'
   public static string SyntheticDirectory() {
     string directory=Path.Combine(Path.GetTempPath(),"easyeda-native-launch-"+Guid.NewGuid().ToString("N"));
@@ -117,7 +122,7 @@ $installationTest = @'
     throw Error("synthetic-image-lease");
   }
 '@
-$ownerMarker = '  // Exact worker diagnostic program. Its complete UTF-8 bytes must match the'
+$ownerMarker = 'static readonly string[] DiagnosticCoreProgramTable0='
 $ownerTest = @'
   [DllImport("kernel32.dll",SetLastError=true)] static extern bool GetExitCodeProcess(IntPtr process,out uint code);
   public sealed class SyntheticResult {

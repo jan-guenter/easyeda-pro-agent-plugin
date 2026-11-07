@@ -1,4 +1,4 @@
-import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { chmod, link, mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises";
@@ -38,7 +38,7 @@ void test("ratline installation extends only its fixed launch plan with every qu
   ]);
 });
 void test("native ratline acquisition checks the exact extended table before retaining all source leases or creating a process", async () => {
-  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const admission = source.slice(source.indexOf("public void AdmitRatline("), source.indexOf("public void AssertCurrent()"));
   assert.ok(admission.startsWith("public void AdmitRatline("));
   assert.ok(admission.indexOf("EasyedaRatline209Installation.Validate(paths,sizes,hashes)") < admission.indexOf("Admit(corePaths,coreSizes,coreHashes)"));
@@ -83,7 +83,7 @@ void test("PowerShell descriptor proof rejects different bytes, links to paths, 
   await chmod(file, 0o400); await verifyCurrentPcbDiagnosticPowerShell(file, expected);
 });
 void test("native installation source retains read leases, ancestry and volume paths through Job closure", async () => {
-  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   assert.ok(source.includes("directory?0x80u:0x80000000u,1u"));
   assert.ok(source.includes("leases.Add(lease); // Allocate retention before the native acquisition."));
   assert.ok(source.includes("new SafeFileHandle(lease.Handle,false)"));
@@ -100,7 +100,7 @@ void test("native installation source retains read leases, ancestry and volume p
   assert.ok(!source.includes("TerminateProcess"));
 });
 void test("native DOS creation verifies the retained original image before one primary-thread resume", async () => {
-  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const core = source.slice(source.indexOf("void CreateVerifiedRoot()"), source.indexOf("// Exact worker diagnostic program."));
   assert.ok(core.includes("root=info.process; rootThread=info.thread; rootPid=info.processId;"));
   const retained = core.indexOf("creationPhase=CreationPhase.RootRetained");
@@ -198,7 +198,7 @@ void test("native DOS creation verifies the retained original image before one p
   assert.ok(source.includes("if (-not $Visual209 -or $request.confirmAbortOriginalVisualJob -isnot [bool] -or -not $request.confirmAbortOriginalVisualJob"));
 });
 void test("native unlaunched release refuses any consumed launch or retained native root", async () => {
-  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const method = source.slice(source.indexOf("public void ReleaseUnlaunched()"), source.indexOf("public void ReleaseClosed()"));
   assert.ok(method.includes('if(launchAttempted || root!=IntPtr.Zero || rootThread!=IntPtr.Zero || rootPid!=0 || rootCreated!=0 || JobCount()!=0) throw Error("unlaunched-release-refused");'));
   assert.ok(method.indexOf('throw Error("unlaunched-release-refused")') < method.indexOf("ReleaseClosed();"));

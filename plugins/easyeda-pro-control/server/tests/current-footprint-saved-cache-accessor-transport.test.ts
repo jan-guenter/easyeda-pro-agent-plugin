@@ -1,7 +1,7 @@
 /* oxlint-disable import/max-dependencies -- Source-only native protocol fixture additionally restores its exact stored compiler input. */
 /** Real discovery byte streams and independently decoded fixed native table.
  * No Windows application, cache getter or CacheStorage method is invoked. */
-import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { once } from "node:events";
@@ -94,7 +94,7 @@ void test("the packed native seven-case table equals the exact TS vocabulary and
     else if ("objectId" in command.params) { expected += ",objectId"; }
     assert.equal(names, expected);
   }
-  const helper = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
+  const helper = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   assert.ok(helper.includes(source));
   assert.match(helper, /'saved-cache-accessor' \{\s+if \(\(-not \$WorkerStartupFootprintCombined209 -and -not \$WorkerStartupFootprintForward209\)/u);
   assert.ok(helper.includes("saved-cache-accessor-cleanup-required"));

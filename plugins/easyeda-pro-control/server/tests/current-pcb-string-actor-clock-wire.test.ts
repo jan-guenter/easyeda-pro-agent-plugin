@@ -1,4 +1,4 @@
-import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -47,7 +47,7 @@ void test("actor wire refuses hostile records without executing getters or proxy
   assert.throws(() => currentPcbStringActorClockWire(raw, 1), /OUTBOUND/u); assert.equal(reads, 0);
 });
 void test("native actor adapter contains exact fixed programs, purpose gates and six bounded fields", async () => {
-  const native = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
+  const native = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   for (const [name, source] of Object.entries({ ActorClockUiFunction: CURRENT_PCB_STRING_ACTOR_CLOCK_FUNCTIONS.ui,
     ActorClockWorkerFunction: CURRENT_PCB_STRING_ACTOR_CLOCK_FUNCTIONS.worker,
     ActorClockPcbFunction: CURRENT_PCB_STRING_ACTOR_CLOCK_FUNCTIONS.pcb })) {

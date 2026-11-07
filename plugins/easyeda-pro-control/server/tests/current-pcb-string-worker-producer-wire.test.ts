@@ -1,5 +1,5 @@
 /* oxlint-disable import/max-dependencies -- Source-only native protocol fixture additionally restores its exact stored compiler input. */
-import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -74,7 +74,7 @@ void test("worker grammar refuses phase/function mismatch, effects, context/grou
 });
 
 void test("all 20 native programs, sequence, effects and fixed argument grammar match the reviewed exports", async () => {
-  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const programs = [...Object.entries(CURRENT_PCB_STRING_WORKER_PRODUCER_EVALUATIONS), ...Object.entries(CURRENT_PCB_STRING_WORKER_PRODUCER_CALLS)];
   const packedNames = new Map([[0, "StringWorkerProjectSelectorFunction"], [1, "StringWorkerUploadStructureSelectorFunction"], [2, "StringWorkerStructureSelectorFunction"], [3, "StringWorkerCooperationSelectorFunction"],
     [4, "StringWorkerUploadSelectorFunction"], [5, "StringWorkerGateSelectorFunction"], [6, "StringWorkerGateFunction"],
@@ -109,7 +109,7 @@ void test("all 20 native programs, sequence, effects and fixed argument grammar 
 });
 
 void test("fixed worker table reader refuses ambiguous aliases and corrupt table or member pins", async () => {
-  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const name = "StringWorkerProjectSelectorFunction";
   const table = /static readonly string\[\] StringWorkerProgramTable0=StringWorkerPackedProgramTable\("([A-Za-z0-9+/=]+)",([0-9]+),"([a-f0-9]{64})","([a-f0-9]{64})",([0-9]+)\);/u.exec(source);
   const alias = /static readonly string StringWorkerProjectSelectorFunction=StringWorkerPackedProgram\(StringWorkerProgramTable0,0,([0-9]+),StringWorkerProjectSelectorFunctionSha256\);/u.exec(source);

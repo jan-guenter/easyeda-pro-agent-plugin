@@ -1,5 +1,5 @@
 /* oxlint-disable import/max-dependencies -- This boundary test checks exact packed source and both independent old native grammars directly. */
-import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { gunzip } from "node:zlib";
@@ -16,7 +16,7 @@ import { spatialDiagnosticNativeRequest } from "../src/current-pcb-spatial-proto
 function wire(input: unknown): Buffer { return Buffer.from(`${JSON.stringify(input)}\0`); }
 
 void test("maintained native fragment embeds the complete fixed program and isolates a new finite birth without changing old budgets", async () => {
-  const original = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
+  const original = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const generated = applyManagedFixtureRegistrationNativeFragment(original);
   assert.equal(applyManagedFixtureRegistrationNativeFragment(generated), generated);
   assert.equal(applyManagedFixtureRegistrationNativeFragment(applyCurrentProjectStructureNativeFragment(generated)), generated);

@@ -1,5 +1,5 @@
 /* oxlint-disable import/max-dependencies -- Closed protocol parity compares every independently implemented fixed reader and constructor selector. */
-import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -237,7 +237,7 @@ void test("fixed root inventory stays within the existing command bound at maxim
 });
 
 void test("native adapter embeds and private fields match TS programs without native execution", async () => {
-  const source = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   for (const [name, program] of Object.entries({
     OpeningFunction: diagnosticOpeningParams("context", target(), "preflight").functionDeclaration,
     PcbOpeningFunction: diagnosticPcbOpeningParams("context", target(), "preflight").functionDeclaration,

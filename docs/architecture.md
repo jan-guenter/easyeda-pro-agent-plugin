@@ -60,30 +60,44 @@ an arbitrary descriptor inherited by the facade's shell cannot reach it.
 
 ## Fixed native compiler input
 
-The combined diagnostic helper stores its one fixed C# body as gzip/base64 in
-the final PowerShell output. Both the stored helper and decoded C# retain the
-same 2 MiB ceiling. This is a storage transform: it changes no native purpose,
-control phase, request count, fixed debugger program or application permission.
+The combined diagnostic helper stores its fixed C# compiler body as gzip/base64
+in the final PowerShell output. The stored helper and actual runtime compiler
+input each retain the 2 MiB ceiling. Storage introduces no native purpose,
+control phase, request allowance, debugger program or application permission.
 
-Builds use pinned Node 24.18.0 with core dumps disabled. Generation restores the
-exact literal `Add-Type` body before applying source markers, then packs only
-the final combined output. Forward and cold-forward migration restore that same
-body before checking their original source identities; their six released
-artifacts remain byte-identical. The generated complete
-`scripts/pcb-diagnostic-native.cs` copy remains readable for review; startup
-`--write`/`--check` maintain exact equality with the decoded compiler input.
-Runtime does not load that review copy. Source readers must use this closed restoration
-path rather than assume every combined helper contains a literal here-string.
+Historical v1 storage restores and compiles the original ASCII body, including
+all line breaks, within its original 2 MiB bound. Its decoder and public
+restoration contracts remain unchanged. V2 is a separate format: it replaces
+only outside-literal comment/whitespace sequences with one separator space.
+It retains a canonical, independently bounded 128 KiB spacing sidecar, original
+and compact byte hashes, and an ordered token/literal hash. The original
+build-only review body may be at most 2 MiB plus 128 KiB, and no larger than the
+compact body plus the spacing allowance. Runtime never restores or compiles
+that larger view. Unsupported preprocessing, newer lexical forms, non-ASCII
+source, escaped identifiers and line-sensitive caller attributes refuse.
+String, verbatim-string and character literal bytes remain exact.
 
-The emitted decoder takes metadata only from its embedded fixed literals. It
-checks canonical base64, compressed length/hash, the gzip envelope, bounded
-stream length and end, then decoded length/hash and strict UTF-8 without a BOM
-before `Add-Type`. The compiler receives the original ASCII byte sequence,
-including every LF. Build-time restoration additionally requires the canonical
-pinned gzip encoding, refusing ignored tails and extra members. No control
-request supplies source, hashes, lengths or decoder options. The original
-synthetic launch/CompileOnly reader uses the identical decoder before adding
-its existing in-memory test hooks.
+Builds use pinned Node 24.18.0 with core dumps disabled.
+`expandCurrentPcbDiagnosticCSharpReviewSource` restores exact original bytes
+and markers before generators and released forward/cold migration. Their six
+released artifacts remain byte-identical. `currentPcbDiagnosticCSharpReviewSource`
+returns that original body for the readable generated
+`scripts/pcb-diagnostic-native.cs`; startup `--write`/`--check` compare those
+original review bytes. `currentPcbDiagnosticCSharpRuntimeCompilerInput` returns
+only the actual compiler bytes, compact for v2. Compiler harnesses must use
+that API and keep any original review copy outside their compilation roster.
+Runtime never loads the readable review copy.
+
+The unchanged emitted decoder takes metadata only from embedded fixed literals.
+It checks canonical base64, compressed length/hash, the gzip envelope, bounded
+stream length/end, decoded length/hash and strict ASCII/UTF-8 before `Add-Type`.
+For v2 those checks apply to the compact body. Build-only spacing data is a
+comment covered by the admitted complete helper identity; review restoration
+checks both sidecar identities, canonical records, exact original hash and
+token/literal equality. Canonical pinned gzip checks refuse extra members and
+ignored tails. No control request supplies source, hashes, lengths or options.
+The synthetic launch/CompileOnly reader uses the same bounded decoder for the
+actual compiler body before its original in-memory test hooks.
 
 ## Runtime isolation
 

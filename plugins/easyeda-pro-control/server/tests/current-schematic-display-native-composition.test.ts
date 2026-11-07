@@ -1,4 +1,4 @@
-import { expandCurrentPcbDiagnosticCSharpStorage } from "../src/current-pcb-diagnostic-csharp-storage.ts";
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -9,7 +9,7 @@ import { applyCurrentSchematicDisplayWriteNativeFragment as schematic } from "..
 import { CURRENT_SCHEMATIC_DISPLAY_NAVIGATION_FUNCTION as NAVIGATION, CURRENT_SCHEMATIC_DISPLAY_STAGE_FUNCTION as STAGE, CURRENT_SCHEMATIC_DISPLAY_START_FUNCTION as START } from "../src/current-schematic-display-write-programs.ts";
 
 void test("combined Via and schematic native generation stays idempotent with one dispatcher for each action", async () => {
-  const original = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
+  const original = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const first = schematic(via(original)), second = schematic(via(first));
   assert.equal(second, first);
   for (const action of ["pcb-via-main-step", "schematic-display-native", "schematic-display-abort"]) {
@@ -24,7 +24,7 @@ void test("combined Via and schematic native generation stays idempotent with on
 });
 
 void test("packed schematic literals restore exact original programs under the unchanged native decoder bound", async () => {
-  const original = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
+  const original = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const source = schematic(via(original)); const expected: Readonly<Record<string, string>> = { Navigation: NAVIGATION, Stage: STAGE, Start: START };
   const rows = [...source.matchAll(/static readonly string SchematicDisplay(Start|Navigation|Stage)=UnpackFixedProgram\(@"([A-Za-z\d+/=]+)",(\d+),@"([a-f\d]{64})",@"([a-f\d]{64})"\);/gu)];
   assert.equal(rows.length, 3); const seen = new Set<string>();
