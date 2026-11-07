@@ -17,7 +17,7 @@ void test("project PCB registration preserves strict metadata/preflight union an
   const calls: { route: string; request: unknown }[] = [], engine = Object.freeze({ synthetic: true }), expectedFingerprint = Object.freeze({ synthetic: true });
   const observed = Object.freeze({ cadAuthority: false, persistenceVerified: false, sourceMembershipVerified: false });
   const preflightObserved = Object.freeze({ writerAuthority: false, executionAuthorized: false, producerBindingVerified: false });
-  const scope = vm.createContext({ z, currentProjectPcbMetadataRequestSchema, currentPcbRenamePreflightRequestSchema, engine, privateFingerprintSchema: z.unknown(),
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, currentProjectPcbMetadataRequestSchema, currentPcbRenamePreflightRequestSchema, engine, privateFingerprintSchema: z.unknown(),
     readCurrentProjectPcbMetadata: (actualEngine: unknown, request: unknown, fingerprint: unknown): Promise<typeof observed> => {
       assert.equal(actualEngine, engine); assert.equal(fingerprint, expectedFingerprint); calls.push({ route: "metadata", request }); return Promise.resolve(observed);
     },

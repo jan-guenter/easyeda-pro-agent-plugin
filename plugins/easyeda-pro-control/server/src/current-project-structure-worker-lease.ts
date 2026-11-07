@@ -1,6 +1,7 @@
 /** Original construction custody only. Native purpose, command budgets, the
  * main POST/SQL join and complete closed SQL remain separate admission gates. */
 import type { CurrentPcbWorkerConstructionCommand } from "./current-pcb-worker-construction-contract.ts";
+import type { CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
 
 export { requireCurrentProjectStructureWorkerLease } from "./current-pcb-worker-construction-runner.ts";
 
@@ -23,6 +24,7 @@ export interface CurrentProjectStructureWorkerBinding {
   readonly assertOriginal: () => Promise<void>;
   readonly assertCleanup: () => void;
   readonly fail: () => void;
+  readonly requireNativeDependency: (dependency: CurrentPcbWorkerStartupDependency) => void;
   /** Allocation custody runs on the original reply before caller deadlines or
    * post-reply reproof; it grants neither normal continuation nor owner reuse. */
   readonly request: (command: CurrentPcbWorkerConstructionCommand, cleanup?: boolean, retainAllocationReply?: (reply: unknown) => void) => Promise<unknown>;

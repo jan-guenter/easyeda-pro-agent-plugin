@@ -1,0 +1,6 @@
+/** Distinct original seven-record factory. This exports no public tool or
+ * caller-supplied owner reconstruction and enables no mutation stage. */
+export { CurrentSchematicRelevanceDisplayWriteOwner, startCurrentSchematicRelevanceDisplayWriteOwner,
+  assertOriginalCurrentSchematicRelevanceDisplayWriteOwner, originalCurrentSchematicRelevanceDisplayWriteTarget,
+  originalCurrentSchematicRelevanceDisplayClosedEffects, originalCurrentSchematicRelevanceDisplayWriteTermination, assertOriginalCurrentSchematicRelevanceDisplayWriteTermination,
+  currentSchematicRelevanceDisplayWriteAllocationOutcome, requireOriginalSchematicRelevanceDisplayStage, requireOriginalCurrentSchematicRelevanceDisplayPreModifyMainOrigin, requireOriginalCurrentSchematicRelevanceDisplayActionGuard, requireOriginalCurrentSchematicRelevanceDisplayModifyEntryOrigin, requireOriginalCurrentSchematicRelevanceRunPrefixOrigin } from "./current-pcb-diagnostic-owner.ts";

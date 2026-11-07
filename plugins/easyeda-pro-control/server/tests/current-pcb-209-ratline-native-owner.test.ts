@@ -1,3 +1,4 @@
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
@@ -7,7 +8,7 @@ import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES } from "../src/current-p
 
 const sourcePath = new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url);
 void test("native ratline purpose embeds exact finite runtime and fixed cumulative resource limits", async () => {
-  const source = await readFile(sourcePath, "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(sourcePath, "utf8"));
   assert.ok(source.includes(currentPcb209RatlineNativeSource()));
   const values = { RequestLimit: profile.requestLimit, NormalRequestLimit: profile.normalRequestLimit, CleanupRequestLimit: profile.cleanupRequests,
     NormalByteLimit: profile.bytes.normal, TotalByteLimit: profile.bytes.total, NormalPollLimit: profile.polling.normalLimit, PollLimit: profile.polling.limit,
@@ -27,7 +28,7 @@ void test("native ratline purpose embeds exact finite runtime and fixed cumulati
   }
 });
 void test("native ratline activation and cleanup remain separate from old purposes and caller programs", async () => {
-  const source = await readFile(sourcePath, "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(sourcePath, "utf8"));
   assert.ok(source.includes("if ($WorkerStartupRatline209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $WorkerStartup209 -or $WorkerStartupEmpty209))"));
   assert.ok(source.includes('if(!workerStartupRatline209 || workerStartupRatlineContinuation209)throw Error("ratline-purpose");'));
   assert.ok(source.includes("[EasyedaDiagnosticOwner]::VerifyRatline209PurposeSmoke()"));

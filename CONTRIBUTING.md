@@ -80,3 +80,22 @@ and binary diff together. A build failure is not a reason to bypass
 `sanitizer:check` or substitute a path-selected launcher.
 
 Do not commit `node_modules`, live `.eprj2` files, operation journals, evidence, screenshots containing user designs, or credentials.
+
+## Before pushing
+
+From `plugins/easyeda-pro-control`, scan every outgoing Git object against the
+reviewed public base commit:
+
+```bash
+npm run repository:history:check -- --base <published-commit-id>
+```
+
+The check covers older file versions, commit messages and tree entries, including
+content deleted from the final tree. It uses the same secret and privacy rules
+as repository validation. Findings contain object IDs and rule labels; matched
+content is omitted. The check refuses shallow history or grafts, and disables
+replacement refs. The pull-request history workflow repeats it with full history.
+
+Resolve findings before the first push. The checker reads Git objects and changes
+no refs, files or configuration. Keep any private remediation backup outside the
+published refs, and push the intended feature branch explicitly.

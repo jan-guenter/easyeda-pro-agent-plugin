@@ -73,7 +73,7 @@ void test("registered v2 source wrapper keeps its original methods and aborts th
   const engine = { upstream, executionAuthorityValidator: {}, controlFingerprintPromise: Promise.resolve({ sha256: expectedBindingSha256 }),
     assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
   let invoke: ((input: { request: unknown }) => Promise<unknown>) | undefined;
-  const scope = vm.createContext({ z, CurrentPcbSpatialLifecycle, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, CurrentPcbSpatialLifecycle, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema,
     currentPcb209WorkerStartupToolRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE, CurrentFootprintForwardSourceValidation: Controller,
     ordinaryLaunchCoordinator: undefined, currentPcbWorkerStartupLifecycle: undefined, currentPcbDiagnosticLifecycle: undefined,
     currentPcbStringPrecreateLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined,
@@ -147,7 +147,7 @@ void test("registered forward methods reject prototype replacement and abort rem
   const gate = new SerializedGate(), upstream = {};
   const engine = { upstream, executionAuthorityValidator: {}, controlFingerprintPromise: Promise.resolve({ sha256: "a".repeat(64) }),
     assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
-  const scope = vm.createContext({ z, CurrentPcbSpatialLifecycle, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, CurrentPcbSpatialLifecycle, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema,
     currentPcb209WorkerStartupToolRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
     CurrentPcbDiagnosticLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209EmptyStartupLifecycle,
     CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209WorkerStartupLifecycle,
@@ -293,7 +293,7 @@ void test("startup public registration binds the actual inherited methods, fixed
   const upstream = {};
   const engine = { upstream, executionAuthorityValidator: {}, controlFingerprintPromise: Promise.resolve({ sha256: "a".repeat(64) }),
     assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => { checks += 1; return Promise.resolve(); } };
-  const scope = vm.createContext({ z, CurrentPcbSpatialLifecycle, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, CurrentPcbSpatialLifecycle, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
     CurrentPcbDiagnosticLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209WorkerStartupLifecycle,
     CurrentFootprintForwardPrewriteLifecycle, CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle,
     CurrentPcbWorkerStartupLifecycle: Coordinator, currentPcbWorkerStartupLifecycle: undefined,
@@ -418,7 +418,7 @@ void test("registered combined wrapper retains its lifecycle and confirmed abort
   const gate = new SerializedGate(), upstream = {};
   const engine = { upstream, executionAuthorityValidator: {}, controlFingerprintPromise: Promise.resolve({ sha256: "a".repeat(64) }),
     assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
-  const scope = vm.createContext({ z, CurrentPcbSpatialLifecycle, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, CurrentPcbSpatialLifecycle, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema,
     currentPcb209WorkerStartupToolRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
     CurrentPcbDiagnosticLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle,
     CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentFootprintCopyPreparationLifecycle,
