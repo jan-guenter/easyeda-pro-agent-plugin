@@ -1572,3 +1572,46 @@ and strict changed lint pass. Complete private legacy generation twice is
 exact at1,394,005 stored helper bytes and1,938,165 compiler bytes. Full emitted
 Linux C#5 passes all49 bus messages and the ready/public/Ke smokes. No tracked
 helper, pins or bundle was emitted; connected inverse proof remains pending.
+
+## Original once before-qe admission
+
+The original inverse now exposes no-argument armFootprintInverseDeleteWorker.
+It requires the completed actual ready, Ke, clock-bus, public receiver and
+startup-idle packets and the same live Main fence. A dedicated once-only
+post-startup work slot uses that original controller's single event reader.
+It spends the previously reserved final metadata/scope reproofs, binds the
+separate native latch and arms the exact original deleteString breakpoint
+before qe. Its opaque admission is issued only after the actual arm reply
+resolves that same script/line/column. It accepts no path, ID or caller flag.
+
+The private Node admission can be consumed once before the public sender's
+first await. Native AssertFootprintInverseDeleteWorkerAdmission is a check;
+ConsumeFootprintInverseDeleteWorkerAdmission spends its own once marker only
+when called by the fixed SDK sender immediately before its write. There is
+no PS consume verb. The original proof is rechecked before consumption; a
+consumed phase retains exact original owner/source/worker/Main identities
+without requiring the legitimately obsolete empty startup event queue.
+Rejected or ambiguous attempts retain their Promise and cannot replenish it.
+
+This admission means an exact entry trap is armed, not that a clock value,
+native job, deletion or inverse has completed. The actual new Ke does not
+exist before SDK invocation. A separate fixed capture therefore embeds the
+existing fourteen-child instance checker unchanged and joins its actual
+before-qe frame to the original clock-bus guard. Its finite grammar has five
+commands/three helper reads, plus bind/held/complete controls: eight CDP,
+eleven controls and five events. It has no resume, removal, native getter,
+clock, upload or deletion command. The packet-taking Core route remains
+unoffered until the genuine public call/write/service-entry token is joined;
+the independent worker RPC/job relationship and all effect/SQL tails remain
+required. No caller-written acknowledgment can replace that prerequisite.
+
+Actual Node24 Inspector verifies that the breakpoint resolves at the pinned
+before-qe location and that the fixed capture/reproof passes with side-effect
+checking enabled. Only pinned definitions and inert objects execute; no clock
+or app method runs. Guard drift, foreign pauses, copied admission and an
+unprepared genuine factory refuse before downstream action. Eleven focused
+cases, both types and strict changed lint pass. Complete private legacy
+generation is idempotent at1,399,404 stored bytes/1,947,487 compiler bytes;
+full emitted Linux C#5 passes all six entry messages, once/purpose refusals
+and the corrected bus/ready/public/Ke smokes. No tracked native artifact was
+emitted and no SDK/native call ran.
