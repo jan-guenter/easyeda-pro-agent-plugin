@@ -19,5 +19,5 @@ void test("fresh readonly source comparison needs no synthetic Modify or Save st
   for (const changed of [source.replace('"key":"Relevance"', '"key":"Other"'), source.replace(args.target.pageUuid, "0".repeat(32)), source.replace('"zIndex":1', '"zIndex":null')]) {
     assert.throws(() => compareGeneratedSchematicRelevanceSavedSourceData(args, changed));
   }
-  assert.deepEqual(vm.counts(), counts); assert.equal(counts.save, 0);
+  assert.deepEqual(vm.counts(), counts); assert.deepEqual(counts, { setSource: 0, setters: 2, transactions: 1, save: 0 });
 });
