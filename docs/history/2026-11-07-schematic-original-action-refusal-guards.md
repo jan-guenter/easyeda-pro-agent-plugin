@@ -41,4 +41,4 @@ zero-warning changed-file lint, eleven focused tests, twice-identical pure
 generation and full Linux C# compilation. Six new native messages and existing
 SCH action/accessor/birth and Via static checks passed. No Windows process,
 MCP call, EasyEDA launch, CAD edit, Save, package generation, install or live
-writer validation occurred. excluded production design was not opened.
+writer validation occurred. The production project was not opened.
