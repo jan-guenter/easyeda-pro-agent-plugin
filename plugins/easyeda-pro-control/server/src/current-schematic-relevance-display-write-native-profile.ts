@@ -1,3 +1,4 @@
+import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_REQUESTS as MODIFY_ENTRY } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
 /** New original seven-record birth, with its own immutable accounting. Equal
  * finite source algorithms do not transfer the six-record owner's resources. */
 import { CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE as SHARED } from "./current-schematic-display-write-native-profile.ts";
@@ -11,6 +12,7 @@ export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE = Object.f
   main: Object.freeze({ ...SHARED.main }), renderer: Object.freeze({ ...SHARED.renderer,
     structureObservation: STRUCTURE.cdpRequests,
     actionPreflightObservation: ACTION.total, actionGuardObservation: ACTION_GUARD.cdpRequests, actionGuardBindingControls: ACTION_GUARD.bindingControls,
+    modifyEntryObservation: MODIFY_ENTRY.observation,
     total: SHARED.renderer.total - SHARED.renderer.structureObservation - SHARED.renderer.actionPreflightObservation - SHARED.renderer.actionGuardObservation - SHARED.renderer.actionGuardBindingControls +
-      STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls }),
+      STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + MODIFY_ENTRY.observation }),
 });

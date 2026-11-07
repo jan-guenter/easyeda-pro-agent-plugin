@@ -46,3 +46,8 @@ const s=selected(holder,target,operation,true);sameStable(s,original);dense(this
 /** Same original idle graph after function/source metadata awaits. */
 export const GENERATED_SCHEMATIC_DISPLAY_ACTION_PREFLIGHT_SAME_FUNCTION = `function(holder,target,operation){${GUARD}
 const s=selected(holder,target,operation,false);sameStable(s,this);if(s.action!==null||s.resolver!==undefined||s.stack!==undefined&&s.stack!==null||size(own(s.history,"modelCommandMap"),Map.prototype)!==0||own(s.history,"onModelAttributeChange")!==own(this,"17")||own(s.history,"onSubTreeInsertConnectedChild")!==own(this,"17")||own(s.history,"onSubTreeRemoveConnectedChild")!==own(this,"17"))bad();return true;}`;
+
+/** Original named seven-record request, held before useAction/start. The fixed
+ * name uses supported options to avoid allocating an auto-cancel timer. */
+export const GENERATED_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_RUN_ENTRY_FUNCTION = `function(holder,target,operation,original,callback){${GUARD}
+const s=selected(holder,target,operation,true);sameStable(s,original);dense(this,3);const options=plain(own(this,"2"));if(Reflect.ownKeys(options).length!==2||own(options,"history")!==true||own(options,"name")!=="Codex disposable Text display"||own(this,"0")!==s.runner||own(this,"1")!==callback||typeof callback!=="function"||s.action!==null||s.resolver!==undefined||s.stack!==undefined&&s.stack!==null||size(own(s.history,"modelCommandMap"),Map.prototype)!==0||own(s.history,"onModelAttributeChange")!==own(original,"17")||own(s.history,"onSubTreeInsertConnectedChild")!==own(original,"17")||own(s.history,"onSubTreeRemoveConnectedChild")!==own(original,"17"))bad();return true;}`;

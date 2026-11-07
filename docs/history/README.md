@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 original seven-record Modify entry](2026-11-07-relevance-display-original-modify-entry.md). Consume the published intent once, retain its pending renderer request and inspect the original held runner entry before any action or setter continuation.
+
 - [2026-11-07 original seven-record display action setup](2026-11-07-relevance-display-original-action-setup.md). Distinct prefix, accessor, Main, idle action and refusal-point custody; actual setter and persistence remain fenced.
 - [2026-11-07 original fixed Wire-edit birth](2026-11-07-wire-edit-original-birth.md). Distinct seven-record checkpoint owner, four-stage transport and original readonly startup; Modify and Save remain blocked pending their own proofs.
 

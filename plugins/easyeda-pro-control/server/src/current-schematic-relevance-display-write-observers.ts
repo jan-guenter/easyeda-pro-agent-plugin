@@ -1,3 +1,5 @@
+import { CurrentSchematicRelevanceDisplayModifyEntryObserver } from "./current-schematic-relevance-display-modify-entry-observer.ts";
+import type { CurrentSchematicRelevanceDisplayModifyEntryObservation } from "./current-schematic-relevance-display-modify-entry-observer.ts";
 /** Maintained original SCH setup. The durable enclosing operation owns birth,
  * navigation and intent publication. This group never dispatches Modify/Save. */
 /* oxlint-disable import/max-dependencies -- One original group joins separately branded worker, accessor, action and Main collectors without accepting caller implementation. */
@@ -32,6 +34,8 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
   #transport: CurrentProjectStructureTransportObserver | null = null; #producer: CurrentProjectSaveProducerObserver | null = null;
   #accessor: CurrentSchematicRelevanceDisplayAccessorObserver | null = null; #accessorPacket: CurrentSchematicRelevanceDisplayAccessorObservation | null = null;
   #construction: Promise<Outcome> | null = null; #collector: Promise<Outcome> | null = null; #pendingProducer: Promise<unknown> | null = null;
+  #modifyEntryAttempted = false; #modifyEntryCollection: Promise<CurrentSchematicRelevanceDisplayModifyEntryObservation> | null = null;
+  #modifyEntryObserver: CurrentSchematicRelevanceDisplayModifyEntryObserver | null = null; #modifyEntryPacket: CurrentSchematicRelevanceDisplayModifyEntryObservation | null = null;
   #guard: CurrentSchematicRelevanceDisplayActionGuardObservation | null = null;
   #action: CurrentSchematicRelevanceDisplayActionObserver | null = null; #actionPacket: CurrentSchematicRelevanceDisplayActionObservation | null = null;
   #main: CurrentSchematicRelevanceDisplayPreModifyMainOrigin | null = null; #dispatch: GeneratedSchematicRelevanceDisplayDispatch | null = null;
@@ -126,12 +130,29 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
     this.#current(); need(this.#dispatch === dispatch && this.#main !== null && this.#accessor !== null && this.#accessorPacket !== null && this.#action !== null && this.#actionPacket !== null && this.#guard !== null, "ORIGINAL_PREPARATION_REQUIRED");
     this.#accessor.requireData(this.#accessorPacket, this.#owner, this.#arguments); this.#action.requireData(this.#actionPacket, this.#owner, this.#arguments); requireOriginalCurrentSchematicRelevanceDisplayActionGuard(this.#guard, this.#owner, this.#arguments); await requireOriginalCurrentSchematicRelevanceDisplayPreModifyMainOrigin(this.#main, this.#owner, this.#arguments).assertCurrent(); this.#current();
   }
+  /** One original request generation stops at runner entry. No action-start
+   * or setter continuation is available through this maintained group. */
+  public generateModificationEntry(dispatch: GeneratedSchematicRelevanceDisplayDispatch): Promise<CurrentSchematicRelevanceDisplayModifyEntryObservation> {
+    this.#current(); need(!this.#modifyEntryAttempted, "MODIFY_GENERATION_CONSUMED"); this.#modifyEntryAttempted = true;
+    this.#modifyEntryCollection = (async (): Promise<CurrentSchematicRelevanceDisplayModifyEntryObservation> => {
+      try {
+        await this.requirePrepared(dispatch); this.#current(); const guard = this.#guard, main = this.#main; need(main !== null && guard !== null, "ORIGINAL_MODIFY_PREPARATION");
+        const origin = await this.#owner.generateSchematicRelevanceDisplayModifyEntry(this.#arguments, main, dispatch, guard); this.#current();
+        const observer = new CurrentSchematicRelevanceDisplayModifyEntryObserver(origin, this.#owner, this.#arguments); this.#modifyEntryObserver = observer;
+        const packet = await observer.observe(); this.#current(); observer.requireData(packet, this.#owner, this.#arguments); this.#modifyEntryPacket = packet; return packet;
+      } catch (error) { this.#stop(error); throw error; }
+    })(); return this.#modifyEntryCollection;
+  }
+  public requireOriginalModificationEntry(): CurrentSchematicRelevanceDisplayModifyEntryObservation {
+    this.#current(); need(this.#modifyEntryObserver !== null && this.#modifyEntryPacket !== null, "ORIGINAL_MODIFY_ENTRY_REQUIRED"); this.#modifyEntryObserver.requireData(this.#modifyEntryPacket, this.#owner, this.#arguments); return this.#modifyEntryPacket;
+  }
   /** Original Job exit wakes existing collectors; retain and join those exact
    * requests rather than starting another read or detaching live breakpoints. */
   public async settleOriginalCallsAfterExit(): Promise<void> {
     const current = (): void => { assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this.#owner); originalCurrentSchematicRelevanceDisplayWriteTermination(this.#owner); need(originalCurrentSchematicRelevanceDisplayWriteTarget(this.#owner) === this.#prepared, "ORIGINAL_EXIT_OWNER"); };
     current(); const pending: Promise<unknown>[] = [];
     if (this.#construction !== null) { pending.push(this.#construction); } if (this.#collector !== null) { pending.push(this.#collector); } if (this.#pendingProducer !== null) { pending.push(this.#pendingProducer); }
+    if (this.#modifyEntryCollection !== null) { pending.push(this.#modifyEntryCollection, this.#owner.settleSchematicRelevanceDisplayModifyEntryAfterExit()); }
     await Promise.allSettled(pending); current();
   }
   public cancel(): void { this.#stop(new Error("SCHEMATIC_RELEVANCE_DISPLAY_SETUP_CANCELLED")); }

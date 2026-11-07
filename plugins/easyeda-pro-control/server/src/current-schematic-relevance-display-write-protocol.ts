@@ -1,3 +1,4 @@
+import { currentSchematicRelevanceDisplayModifyEntryWire } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
 import { currentSchematicDisplayAccessorWire } from "./current-schematic-display-accessor-wire.ts";
 import { currentSchematicDisplayActionWire } from "./current-schematic-display-action-wire.ts";
 import { currentSchematicDisplayActionGuardWire } from "./current-schematic-display-action-guard-protocol.ts";
@@ -15,6 +16,17 @@ export function currentSchematicRelevanceDisplayWriteNativeRequest(chunk: Buffer
     !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("SCHEMATIC_RELEVANCE_DISPLAY_WIRE"); }
   if (Object.hasOwn(raw, "schematicDisplayPhase") || Object.hasOwn(raw, "schematicAccessorCommand") || Object.hasOwn(raw, "schematicActionCommand") || Object.hasOwn(raw, "schematicActionGuardCommand") || Object.hasOwn(raw, "schematicClockCommand")) {
     throw new Error("SCHEMATIC_RELEVANCE_DISPLAY_OWN_MUTATION_ORIGIN_REQUIRED");
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceModifyGeneration")) {
+    const { id, sessionId, schematicRelevanceModifyGeneration: marker, ...input } = raw; const command = validateCurrentSchematicRelevanceDisplayNativeCommand(input);
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId) || command.schematicRelevanceDisplayPhase !== "modify" || !chunk.equals(Buffer.from(`${JSON.stringify({ id, ...command, schematicRelevanceModifyGeneration: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_RELEVANCE_MODIFY_GENERATION_WIRE"); }
+    return Object.freeze({ action: "schematic-relevance-display-modify-generate", requestId: id });
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceModifyEntryCommand")) {
+    const { id, sessionId, schematicRelevanceModifyEntryCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_RELEVANCE_MODIFY_ENTRY_WIRE"); }
+    const fixed = currentSchematicRelevanceDisplayModifyEntryWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceModifyEntryCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_RELEVANCE_MODIFY_ENTRY_FIXED_WIRE"); } return fixed.request;
   }
   if (Object.hasOwn(raw, "schematicRelevanceAccessorCommand")) {
     const { id, sessionId, schematicRelevanceAccessorCommand: marker, ...input } = raw;

@@ -1,10 +1,12 @@
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import type { CurrentSchematicRelevanceDisplayModifyEntryBindings, CurrentSchematicRelevanceDisplayModifyEntryOrigin } from "./current-schematic-relevance-display-modify-entry-origin.ts";
+import { validateCurrentSchematicRelevanceDisplayModifyEntryCommand } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
+import type { CurrentSchematicRelevanceDisplayModifyEntryCommand } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
+import { currentSchematicDisplayAccessorFunctionScriptId } from "./current-schematic-display-accessor-replies.ts";
 import type { CurrentSchematicDisplayAccessorBindings as CurrentSchematicRelevanceDisplayAccessorBindings, CurrentSchematicRelevanceDisplayAccessorOrigin } from "./current-schematic-relevance-display-accessor-origin.ts";
 import type { CurrentSchematicDisplayActionBindings as CurrentSchematicRelevanceDisplayActionBindings, CurrentSchematicRelevanceDisplayActionGuardObservation, CurrentSchematicRelevanceDisplayActionOrigin } from "./current-schematic-relevance-display-action-origin.ts";
 import type { CurrentSchematicDisplayPreModifyMainBindings as CurrentSchematicRelevanceDisplayPreModifyMainBindings, CurrentSchematicRelevanceDisplayPreModifyMainOrigin } from "./current-schematic-relevance-display-pre-modify-main-origin.ts";
-import { enrollGeneratedSchematicRelevanceDisplayModifyIntent } from "./generated-schematic-relevance-display-journal.ts";
-import type { GeneratedSchematicRelevanceDisplayDispatch } from "./generated-schematic-relevance-display-journal.ts";
 import { CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PROFILE, CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE } from "./current-schematic-wire-edit-native-profile.ts";
 import { currentSchematicWireEditNativeRequest } from "./current-schematic-wire-edit-protocol.ts";
 import type { GeneratedSchematicWireEditNativeArguments } from "./generated-schematic-wire-edit.ts";
@@ -15,6 +17,8 @@ import { validateCurrentFootprintInverseInitialCacheCommand } from "./current-fo
 import type { CurrentFootprintInverseInitialCacheCommand } from "./current-footprint-inverse-initial-cache-protocol.ts";
 import type { CurrentFootprintInverseInitialCacheBindings, CurrentFootprintInverseInitialCacheCompletion, CurrentFootprintInverseInitialCacheOrigin } from "./current-footprint-inverse-initial-cache-origin.ts";
 import type { CurrentFootprintInverseInitialCacheObserver } from "./current-footprint-inverse-initial-cache-observer.ts";
+import { consumeGeneratedSchematicRelevanceDisplayDispatch, enrollGeneratedSchematicRelevanceDisplayModifyIntent } from "./generated-schematic-relevance-display-journal.ts";
+import type { GeneratedSchematicRelevanceDisplayDispatch, GeneratedSchematicRelevanceDisplayModifyEnrollment } from "./generated-schematic-relevance-display-journal.ts";
 import { deriveCurrentFootprintInverseMainHistoryBaseline } from "./current-footprint-inverse-main-history-baseline.ts";
 import type { CurrentFootprintInverseMainHistoryBaseline } from "./current-footprint-inverse-main-history-baseline.ts";
 import type { CurrentFootprintInverseMainHistoryRows } from "./current-footprint-inverse-main-history-custody.ts";
@@ -782,6 +786,9 @@ export function requireOriginalGeneratedSchematicDisplayEffect(effect: Generated
   const original = schematicDisplayEffects.get(effect);
   if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue || original.text !== canonicalJson(effect) || canonicalJson(compareOriginalSchematicDisplayEffect(original)) !== original.text) { throw error("SCHEMATIC_DISPLAY_EFFECT_ORIGINAL_EFFECT"); }
 }
+const schematicRelevanceModifyEntries = new WeakMap<CurrentSchematicRelevanceDisplayModifyEntryOrigin, Readonly<{ owner: CurrentSchematicRelevanceDisplayWriteOwner; argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments; bindings: CurrentSchematicRelevanceDisplayModifyEntryBindings; assertOriginal: () => void }>>();
+export function requireOriginalCurrentSchematicRelevanceDisplayModifyEntryOrigin(origin: CurrentSchematicRelevanceDisplayModifyEntryOrigin, owner: CurrentSchematicRelevanceDisplayWriteOwner,
+  argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): CurrentSchematicRelevanceDisplayModifyEntryBindings { const original = schematicRelevanceModifyEntries.get(origin); if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue) { throw error("SCHEMATIC_RELEVANCE_MODIFY_ENTRY_ORIGINAL_ORIGIN"); } original.assertOriginal(); return original.bindings; }
 const schematicRelevanceActionGuards = new WeakMap<CurrentSchematicRelevanceDisplayActionGuardObservation, Readonly<{ owner: CurrentSchematicRelevanceDisplayWriteOwner; argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments; assertOriginal: () => void }>>();
 export function requireOriginalCurrentSchematicRelevanceDisplayActionGuard(packet: CurrentSchematicRelevanceDisplayActionGuardObservation, owner: CurrentSchematicRelevanceDisplayWriteOwner,
   argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): void { const original = schematicRelevanceActionGuards.get(packet); if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue) { throw error("SCHEMATIC_ACTION_GUARD_ORIGINAL_PACKET"); } original.assertOriginal(); }
@@ -1693,6 +1700,10 @@ class CurrentPcbRetainedOwnerCore {
   #schematicWorkerController: CurrentSchematicDisplayWorkerController | null = null;
   #schematicWorkerOrigin: CurrentSchematicDisplaySaveWorkerOrigin | null = null;
   #schematicAccessorAttempted = false;
+  #schematicRelevancePreModifyMainEnrollment: GeneratedSchematicRelevanceDisplayModifyEnrollment | null = null; #schematicRelevancePreModifyDispatch: GeneratedSchematicRelevanceDisplayDispatch | null = null;
+  #schematicRelevanceModifyGenerationAttempted = false; #schematicRelevanceModifyDispatched = false; #schematicRelevanceModifyTask: Promise<void> | null = null; #schematicRelevanceModifyRequest: Promise<RecordValue> | null = null;
+  #schematicRelevanceModifyEntryOrigin: CurrentSchematicRelevanceDisplayModifyEntryOrigin | null = null;
+  readonly #schematicRelevanceModifyEntrySignal = Promise.withResolvers<DiagnosticEvent | null>();
   #schematicRelevanceAccessorAttempted = false;
   #schematicRelevanceProducerPrefix: CurrentSchematicRelevanceDisplaySaveProducerPrefix | null = null;
   #schematicRelevanceProducerEnrollmentAttempted = false;
@@ -3976,7 +3987,7 @@ class CurrentPcbRetainedOwnerCore {
       const bindings: CurrentSchematicRelevanceDisplayPreModifyMainBindings = Object.freeze({ originalSelectedFileMainRetained: true, originalUnspentModifyIntentRetained: true,
         selectedFileMutationsStillHeld: true, actionHistoryQualified: false, selectedSqlAuthorized: false, saveAuthorized: false,
         assertCurrent: async (): Promise<void> => { current(false); await runner.pumpSelectedSqlFence(); original(); await enrollment.assertPublished(); original(); await this.#verify(); original(); } });
-      this.#schematicRelevancePreModifyMainOrigin = origin; schematicRelevancePreModifyMainOrigins.set(origin, Object.freeze({ owner: this, argumentsValue, bindings, assertOriginal: original })); return origin;
+      this.#schematicRelevancePreModifyMainEnrollment = enrollment; this.#schematicRelevancePreModifyDispatch = dispatch; this.#schematicRelevancePreModifyMainOrigin = origin; schematicRelevancePreModifyMainOrigins.set(origin, Object.freeze({ owner: this, argumentsValue, bindings, assertOriginal: original })); return origin;
     } catch (caughtError) { this.#schematicFailed = true; throw caughtError; } finally { this.#busy = false; }
   }
   /** Genuine readonly idle action graph under the same unspent intent and
@@ -4037,10 +4048,50 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#purpose !== CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE) { return false; }
     const match = matchCurrentSchematicDisplayActionGuardEvent(event, this.#schematicRelevanceActionGuardSession, this.#schematicRelevanceActionGuardPoints, this.#schematicRelevanceActionGuardArming);
     if (match === null) { return false; } if (match === "resolved") { return true; }
+    const ids = event.params["hitBreakpoints"]; const point = Array.isArray(ids) && typeof ids[0] === "string" ? this.#schematicRelevanceActionGuardPoints.get(ids[0]) : undefined;
+    if (point?.role === "run" && this.#schematicRelevanceModifyDispatched && this.#schematicRelevanceModifyEntryOrigin !== null && this.#schematicRelevanceActionGuardHeld === null) { this.#schematicRelevanceActionGuardHeld = event; this.#schematicRelevanceModifyEntrySignal.resolve(event); return true; }
     // This guard has no continuation vocabulary. Retain the actual original
     // Pause and fail the same worker cursor so pending collectors can settle.
-    this.#schematicRelevanceActionGuardHeld = event; this.#schematicFailed = true; this.#schematicWorkerController?.fail(); return true;
+    this.#schematicRelevanceActionGuardHeld = event; this.#schematicFailed = true; this.#schematicRelevanceModifyEntrySignal.resolve(null); this.#schematicWorkerController?.fail(); return true;
   }
+  /** Generate exactly one original request, held at run before new Promise.
+   * This grants neither action-start nor setter continuation. The original
+   * async call remains retained until its own settlement or original Job exit. */
+  public async generateSchematicRelevanceDisplayModifyEntry(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments, main: CurrentSchematicRelevanceDisplayPreModifyMainOrigin,
+    dispatch: GeneratedSchematicRelevanceDisplayDispatch, guard: CurrentSchematicRelevanceDisplayActionGuardObservation): Promise<CurrentSchematicRelevanceDisplayModifyEntryOrigin> {
+    assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this);
+    const selected = this.#schematicReadContext(argumentsValue); const enrollment = this.#schematicRelevancePreModifyMainEnrollment, holder = this.#schematicSdkBinding, idle = this.#schematicRelevanceActionArray, runner = this.#mainRunner;
+    const before = requireOriginalCurrentSchematicRelevanceDisplayPreModifyMainOrigin(main, this, argumentsValue); requireOriginalCurrentSchematicRelevanceDisplayActionGuard(guard, this, argumentsValue);
+    if (this.#schematicRelevanceModifyGenerationAttempted || enrollment === null || this.#schematicRelevancePreModifyDispatch !== dispatch || holder === null || idle === null || runner === null || this.#schematicRelevanceActionGuardPacket !== guard || this.#schematicRelevancePreModifyMainOrigin !== main) { throw error("SCHEMATIC_MODIFY_GENERATION_UNAVAILABLE"); }
+    this.#schematicRelevanceModifyGenerationAttempted = true; this.#enter(true); let launched = false;
+    try {
+      await before.assertCurrent(); requireOriginalCurrentSchematicRelevanceDisplayActionGuard(guard, this, argumentsValue); enrollment.assertBeforeAttempt();
+      const attempted = consumeGeneratedSchematicRelevanceDisplayDispatch(dispatch, "modify", this, argumentsValue);
+      const current = (): void => { selected.current(); enrollment.assertOriginalAttempted(); const fence = runner.selectedSqlFenceState(), retained = runner.retained();
+        if (this.#schematicFailed || this.#schematicDisplayCleanupOnly || this.#mainRunner !== runner || !retained.completed || retained.failed || retained.released || fence["originalBootstrapRetained"] !== true || fence["ready"] !== true || fence["mutationGrantAvailable"] !== false || fence["selectedProjectMutationsResumed"] !== 0 || this.#schematicSdkBinding !== holder || this.#schematicRelevanceActionArray !== idle || this.#schematicRelevanceActionGuardPoints.size !== 3 || this.#schematicRelevanceActionGuardArming !== null || this.#schematicStages.has("modify") || this.#schematicStages.has("save")) { throw error("SCHEMATIC_MODIFY_GENERATION_CHANGED"); } };
+      current(); await attempted.assertPublished(); current(); await this.#verify(); current();
+      const bound = await this.#request({ action: "schematic-relevance-display-modify-bind", idle }); current(); if (!exact(bound, ["bound"]) || bound["bound"] !== true) { throw error("SCHEMATIC_MODIFY_GENERATION_BIND_ACK"); }
+      const origin: CurrentSchematicRelevanceDisplayModifyEntryOrigin = Object.freeze({ profile: "private.current-schematic-relevance-display-modify-entry-origin.v1" });
+      const operationJson = canonicalJson(argumentsValue.operation), targetJson = canonicalJson(argumentsValue.target); let callback: string | null = null, frameId: string | null = null, source: string | null = null, step = 0, tuple: string | null = null;
+      const original = (): void => { current(); if (this.#schematicRelevanceModifyEntryOrigin !== origin || this.#schematicRelevanceModifyTask === null) { throw error("SCHEMATIC_MODIFY_ENTRY_CUSTODY"); } };
+      const held = (): void => { original(); const request = this.#schematicRelevanceModifyRequest; if (request === null || this.#schematicRelevanceActionGuardHeld === null) { throw error("SCHEMATIC_MODIFY_ENTRY_ORIGINAL_PENDING_REQUIRED"); } selected.pipe.requireOriginalSchematicRelevanceDisplayModifyPending(request); };
+      const bindings: CurrentSchematicRelevanceDisplayModifyEntryBindings = Object.freeze({ holderObjectId: holder, idleActionObjectId: idle, targetJson, operationJson,
+        waitOriginalRunEntry: async (): Promise<Readonly<{ callFrameId: string }>> => { const event = await this.#schematicRelevanceModifyEntrySignal.promise; held(); if (event === null || event !== this.#schematicRelevanceActionGuardHeld) { throw error("SCHEMATIC_MODIFY_ENTRY_ORIGINAL_PAUSE"); }
+          const frames = event.params["callFrames"]; if (!Array.isArray(frames) || !record(frames[0]) || typeof frames[0]["callFrameId"] !== "string" || !/^[A-Za-z\d_.:-]{1,256}$/u.test(frames[0]["callFrameId"])) { throw error("SCHEMATIC_MODIFY_ENTRY_FRAME"); } frameId = frames[0]["callFrameId"]; return Object.freeze({ callFrameId: frameId }); },
+        request: async (input: CurrentSchematicRelevanceDisplayModifyEntryCommand): Promise<unknown> => {
+          held(); const command = validateCurrentSchematicRelevanceDisplayModifyEntryCommand(input); const phases = ["schematic-modify-entry-frame", "schematic-modify-entry-properties", "schematic-modify-entry-properties", "schematic-modify-entry-source", "schematic-modify-entry-proof"];
+          if (command.phase !== phases[step] || command.phase === "schematic-modify-entry-frame" && command.params.callFrameId !== frameId || command.phase === "schematic-modify-entry-properties" && command.params.objectId !== (step === 1 ? tuple : callback) || command.phase === "schematic-modify-entry-source" && command.params.scriptId !== source || command.phase === "schematic-modify-entry-proof" && (command.params.objectId !== tuple || command.params.arguments[0].objectId !== holder || command.params.arguments[1].value !== targetJson || command.params.arguments[2].value !== operationJson || command.params.arguments[3].objectId !== idle || command.params.arguments[4].objectId !== callback)) { throw error("SCHEMATIC_MODIFY_ENTRY_ORIGINAL_COMMAND"); } step += 1;
+          const raw = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { held(); return selected.pipe.observeSchematicRelevanceDisplayModifyEntry(command); })); held();
+          if (command.phase === "schematic-modify-entry-frame") { tuple = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(raw, 3); }
+          else if (command.phase === "schematic-modify-entry-properties" && step === 2) { const fields = decodeCurrentFootprintCopyClockRpcV2Array(raw, 3), fn = fields.get("1"); if (fn?.type !== "function" || fn.objectId === undefined) { throw error("SCHEMATIC_MODIFY_ENTRY_CALLBACK"); } callback = fn.objectId; }
+          else if (command.phase === "schematic-modify-entry-properties") { source = currentSchematicDisplayAccessorFunctionScriptId(raw); } return raw;
+        }, assertCurrent: async (): Promise<void> => { held(); await this.#verify(); held(); }, fail: (): void => { this.#schematicFailed = true; this.#schematicWorkerController?.fail(); this.#schematicRelevanceModifyEntrySignal.resolve(null); } });
+      this.#schematicRelevanceModifyEntryOrigin = origin; schematicRelevanceModifyEntries.set(origin, Object.freeze({ owner: this, argumentsValue, bindings, assertOriginal: original }));
+      const pending = this.#transfer(() => { current(); this.#schematicRelevanceModifyDispatched = true; const request = selected.pipe.generateSchematicRelevanceDisplayModify(holder, argumentsValue.target, argumentsValue.operation); this.#schematicRelevanceModifyRequest = request; return request; });
+      this.#schematicRelevanceModifyTask = (async (): Promise<void> => { try { await pending; this.#schematicFailed = true; } catch { this.#schematicFailed = true; } finally { this.#schematicRelevanceModifyEntrySignal.resolve(null); this.#busy = false; } })(); launched = true; return origin;
+    } catch (caughtError) { this.#schematicFailed = true; this.#schematicRelevanceModifyEntrySignal.resolve(null); throw caughtError; } finally { if (!launched) { this.#busy = false; } }
+  }
+  public async settleSchematicRelevanceDisplayModifyEntryAfterExit(): Promise<void> { if (this.#schematicRelevanceModifyTask === null) { return; } if (!this.#terminationObserved || this.#terminationObservation?.originalRootExited !== true || this.#terminationObservation.originalJobEmpty !== true) { throw error("SCHEMATIC_MODIFY_ENTRY_ORIGINAL_EXIT_REQUIRED"); } await this.#schematicRelevanceModifyTask; }
   public async createSchematicRelevanceDisplayAccessorOrigin(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments, setup: CurrentSchematicRelevanceDisplayAccessorSetup): Promise<CurrentSchematicRelevanceDisplayAccessorOrigin> {
     assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this);
     const selected = this.#schematicReadContext(argumentsValue); const holder = this.#schematicSdkBinding;

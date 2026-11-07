@@ -33,6 +33,7 @@ const identity=json({target,operation}),tabId=`);
   source = replaceOnce(source, 'if(json(peers)!==json(operation.peers))bad("PEERS");', `if(json(peers)!==json(projectedPeers))bad("PEERS");
  for(const row of rows){if(row.id==="CANVAS")continue;const model=b.index.get(row.id),parentId=operation.rootIds.includes(row.id)?rootModel.id:row.type==="LINE"?row.body.lineGroup:row.type==="ATTR"?row.body.parentId:null;if(!model||typeof parentId!=="string"||model.parent?.id!==parentId)bad("SOURCE_PARENT");}`);
   source = replaceOnce(source, 'schema:"easyeda-pro-control.generated-schematic-display-stage.v1"', 'schema:"easyeda-pro-control.generated-schematic-relevance-display-stage.v1"');
+  source = replaceOnce(source, '}check();}]);', '}check();},{history:true,name:"Codex disposable Text display"}]);');
   return source;
 }
 export const GENERATED_SCHEMATIC_RELEVANCE_DISPLAY_FUNCTION = build();

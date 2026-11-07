@@ -1,10 +1,10 @@
 /** Synthetic VM graph only; no actual source/owner/SQL authority. */
 import { createContext, runInContext } from "node:vm";
 import { data } from "./generated-schematic-relevance-display-fixture.ts";
-import { GENERATED_SCHEMATIC_RELEVANCE_DISPLAY_FUNCTION } from "../src/generated-schematic-relevance-display-program.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_STAGE_FUNCTION } from "../src/generated-schematic-relevance-display-program.ts";
 import { GENERATED_SCHEMATIC_DISPLAY_SAVE_SOURCE } from "../src/generated-schematic-display-program.ts";
 
-export function fixture(mode = "success"): Readonly<{ call: (stage: string) => Promise<unknown>; counts: () => unknown; edit: (source: string) => void }> {
+export function fixture(mode = "success"): Readonly<{ call: (stage: string) => Promise<unknown>; counts: () => unknown; edit: (source: string) => void; reference: (source: string) => unknown }> {
   const { args } = data(), context = createContext({ target: structuredClone(args.target), operation: structuredClone(args.operation), mode, TextEncoder });
   runInContext(`target=JSON.parse(JSON.stringify(target));operation=JSON.parse(JSON.stringify(operation));const t=target,op=operation;
 globalThis.window=globalThis;globalThis.top=globalThis;globalThis.location={origin:"https://client",href:"https://client/editor?cll=warn#id="+t.projectUuid+",tab=*"+t.pageUuid+"@"+t.projectUuid};globalThis.document={defaultView:globalThis,nodeType:9,URL:location.href};globalThis._TAB_ID_="synthetic-window";
@@ -20,8 +20,14 @@ wire.children=[wireLine,...markers,attribute];wire._unConnectDotModels=new Set(m
 if(mode==="unsettled")rootModel.invalidZIndexChildMap.set(index.get(op.textId),1);
 const textModel=index.get(op.textId),textRecord=records.find(r=>r.id===op.textId);for(const field of ["x","y","rotation","fontFamily","fontSize","fontWeight","italic","underline","hAlign","vAlign"]){Object.defineProperty(textModel,field,{get(){return textRecord.body[field];},set(value){counters.setters++;textRecord.body[field]=value;if(mode==="window-drift")globalThis._TAB_ID_="foreign-window";}});}
 const sourceMap=new Map(records.filter(row=>row.id!=="CANVAS").map(row=>[row.id,1])),handler={docManager:page,getSourceCodeIdMap(){return new Map(sourceMap);}},consistency={docManager:page,state:"initialized",decodeAndRealTimeSyncHandler:handler,handler,getSourceCode(){return JSON.stringify({type:"DOCHEAD"})+"||"+JSON.stringify({uuid:t.pageUuid,docType:"SCH_PAGE"})+"|\\n"+records.map((r,i)=>JSON.stringify({type:r.type,id:r.id,ticket:i+1})+"||"+JSON.stringify(r.body)).join("|\\n")+"|\\n";},async setSourceCode(){counters.setSource++;throw Error("forbidden");}};handler.consistencyImpl=consistency;page.consistencyImpl=consistency;
-const runner={running:false,currentAction:null,async run(fn){counters.transactions++;this.running=true;this.currentAction={status:"running"};try{await fn();return true;}finally{this.currentAction.status="finished";this.running=false;}}};Object.defineProperty(shapes,"actionRunner",{get(){return runner;}});const manager={getActiveDoc(){return page;}};globalThis.SCH={get docMemoryManager(){return manager;}};
+const runner={running:false,currentAction:null,async run(fn,options){counters.transactions++;if(mode==="hold-run"){globalThis.heldCallback=fn;globalThis.heldOptions=options;return await new Promise(resolve=>{globalThis.releaseHold=()=>resolve(false);});}this.running=true;this.currentAction={status:"running"};try{await fn();return true;}finally{this.currentAction.status="finished";this.running=false;}}};Object.defineProperty(shapes,"actionRunner",{get(){return runner;}});const manager={getActiveDoc(){return page;}};globalThis.SCH={get docMemoryManager(){return manager;}};
 const tab={data:{doctype:1,pid:t.projectUuid}},tabs={getActiveTab(){return tabId;},getTabById(){return tab;}};globalThis.gVars={currentProject:{projectId:t.projectUuid,branchUuid:t.branchUuid,isV2Format:false},isHistoryMode:false,isReadOnlyMode:false};globalThis.UI={gVars,tabBar:tabs};const T={extensionApiMessageBus2:{async rpcCall(){counters.save++;return{success:true};}}};globalThis._EXTAPI_ROOT_={sch_Document:{${GENERATED_SCHEMATIC_DISPLAY_SAVE_SOURCE}}};globalThis.holder=null;`, context);
-  return { call: async stage => { const result: unknown = await runInContext(stage === "capture" ? `(async()=>{holder=await (${GENERATED_SCHEMATIC_RELEVANCE_DISPLAY_FUNCTION}).call(globalThis,target,"capture",operation);return holder;})()` : `(${GENERATED_SCHEMATIC_RELEVANCE_DISPLAY_FUNCTION}).call(holder,target,${JSON.stringify(stage)},operation)`, context); return result; },
-    counts: (): unknown => JSON.parse(String(runInContext("JSON.stringify(counters)", context))), edit: (source: string): void => { runInContext(source, context); } };
+  const fixedFunction: unknown = runInContext(`(${CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_STAGE_FUNCTION})`, context);
+  if (typeof fixedFunction !== "function") { throw new TypeError("Synthetic fixed stage did not compile"); }
+  return { call: async stage => { const receiver: unknown = runInContext(stage === "capture" ? "globalThis" : "holder", context);
+      const result: unknown = await Reflect.apply(fixedFunction, receiver, [JSON.stringify(args.target), stage, JSON.stringify(args.operation)]);
+      if (stage === "capture") { context["holder"] = result; } return result; },
+    counts: (): unknown => JSON.parse(String(runInContext("JSON.stringify(counters)", context))), edit: (source: string): void => { runInContext(source, context); },
+    reference: (source: string): unknown => runInContext(source, context) as unknown };
+
 }
