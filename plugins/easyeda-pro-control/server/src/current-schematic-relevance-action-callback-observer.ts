@@ -1,3 +1,4 @@
+import type {CurrentSchematicRelevanceHistoryCommandReceipt} from "./current-schematic-relevance-history-command-cursor.ts";
 import type {CurrentSchematicRelevanceMonitorBatchReceipt} from "./current-schematic-relevance-monitor-batch-cursor.ts";
 /* oxlint-disable import/max-dependencies -- The original callback facade binds independently fixed read and partial-continuation cursors to one genuine owner and event lane. */
 import type { CurrentSchematicRelevanceAstHeld, CurrentSchematicRelevanceRecordAstPrepared } from "./current-schematic-relevance-record-ast-cursor.ts";
@@ -82,6 +83,11 @@ export class CurrentSchematicRelevanceActionCallbackObserver {
   public async continueOriginalMonitorsToHistory():Promise<CurrentSchematicRelevanceMonitorBatchReceipt>{
     this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;
     try{for(let stage=0;stage<5;stage += 1){for(;;){const command=this.#bindings.nextMonitorBatchCommand();if(command===null){break;}await this.#bindings.requestMonitorBatch(command);this.#current();}const receipt=this.#bindings.requireOriginalMonitorBatch();if(receipt.stage==="history"){return receipt;}await this.#bindings.continueOriginalMonitorBatch();this.#current();}throw new Error("SCHEMATIC_MONITOR_HISTORY_NOT_REACHED");}
+    catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}
+  }
+  public async continueOriginalHistoryToFinish():Promise<CurrentSchematicRelevanceHistoryCommandReceipt>{
+    this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;
+    try{for(let stage=0;stage<4;stage+=1){for(;;){const command=this.#bindings.nextHistoryCommand();if(command===null){break;}await this.#bindings.requestHistoryCommand(command);this.#current();}const receipt=this.#bindings.requireOriginalHistoryCommand();if(receipt.stage==="finish"){return receipt;}await this.#bindings.continueOriginalHistoryCommand();this.#current();}throw new Error("SCH_HISTORY_COMMAND_FINISH_NOT_REACHED");}
     catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}
   }
   public async observeNormalCompletionGraph(): Promise<CurrentSchematicRelevanceCompletionReceipt> {

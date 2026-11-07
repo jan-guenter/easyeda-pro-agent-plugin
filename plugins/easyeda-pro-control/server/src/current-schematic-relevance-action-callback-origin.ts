@@ -1,3 +1,5 @@
+import type {CurrentSchematicRelevanceHistoryCommand} from "./current-schematic-relevance-history-command-protocol.ts";
+import type {CurrentSchematicRelevanceHistoryCommandReceipt} from "./current-schematic-relevance-history-command-cursor.ts";
 import type { CurrentSchematicRelevanceMonitorBatchCommand } from "./current-schematic-relevance-monitor-batch-protocol.ts";
 import type { CurrentSchematicRelevanceMonitorBatchReceipt } from "./current-schematic-relevance-monitor-batch-cursor.ts";
 /* oxlint-disable import/max-dependencies -- Typed cursor and command boundaries remain separate while this one original callback capability shares their retained owner custody. */
@@ -8,7 +10,7 @@ import type { CurrentSchematicRelevancePrimitiveCommand } from "./current-schema
 import type { CurrentSchematicRelevancePrimitivePrepared, CurrentSchematicRelevancePrimitiveRecordHeld } from "./current-schematic-relevance-primitive-cursor.ts";
 import type { CurrentSchematicRelevanceUiPublicationCommand } from "./current-schematic-relevance-ui-publication-protocol.ts";
 import type { CurrentSchematicRelevanceUiPublicationReceipt } from "./current-schematic-relevance-ui-publication-cursor.ts";
-/** Original callback entry custody. This read lane cannot continue a setter. */
+/** Original callback custody. Every finite continuation has its own source proof and consumed reservation. */
 import type { CurrentSchematicRelevanceDisplayActionCallbackOrigin } from "./current-schematic-relevance-display-run-handoff.ts";
 import type { CurrentSchematicRelevanceActiveHistoryReceipt } from "./current-schematic-relevance-active-history-cursor.ts";
 import type { CurrentSchematicRelevanceFirstSetterReceipt } from "./current-schematic-relevance-first-setter-cursor.ts";
@@ -42,6 +44,10 @@ export interface CurrentSchematicRelevanceActionCallbackBindings {
   readonly requestMonitorBatch:(command:CurrentSchematicRelevanceMonitorBatchCommand)=>Promise<unknown>;
   readonly requireOriginalMonitorBatch:()=>CurrentSchematicRelevanceMonitorBatchReceipt;
   readonly continueOriginalMonitorBatch:()=>Promise<void>;
+  readonly nextHistoryCommand:()=>CurrentSchematicRelevanceHistoryCommand|null;
+  readonly requestHistoryCommand:(command:CurrentSchematicRelevanceHistoryCommand)=>Promise<unknown>;
+  readonly requireOriginalHistoryCommand:()=>CurrentSchematicRelevanceHistoryCommandReceipt;
+  readonly continueOriginalHistoryCommand:()=>Promise<void>;
   readonly nextNormalCompletionCommand: () => CurrentSchematicRelevanceDisplayModifyEntryCommand | null;
   readonly requestNormalCompletion: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand) => Promise<unknown>;
   readonly requireOriginalNormalCompletion: () => CurrentSchematicRelevanceCompletionReceipt;
