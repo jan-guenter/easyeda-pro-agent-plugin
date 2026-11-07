@@ -4,13 +4,17 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { Session } from "node:inspector/promises";
 import { test } from "node:test";
+import type { TestContext } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { CURRENT_SCHEMATIC_RELEVANCE_PREFIX_QUEUE_PROGRAMS as P } from "../src/current-schematic-relevance-action-prefix-queue-programs.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_PREFIX_QUEUE_SOURCE as SOURCE, qualifyCurrentSchematicRelevancePrefixQueueSource } from "../src/current-schematic-relevance-action-prefix-queue-source.ts";
 import { decodeCurrentSchematicRelevancePrefixQueueScope, decodeCurrentSchematicRelevancePrefixQueueWeakRef, requireCurrentSchematicRelevancePrefixQueueDescription } from "../src/current-schematic-relevance-action-prefix-queue-replies.ts";
 
+let installedSources: Promise<readonly string[]> | null = null;
+function sourceTexts(): Promise<readonly string[]> { installedSources ??= Promise.all(SOURCE.map(row => readFile(`/mnt/c/Program Files/EasyEDA-Pro/resources/app/assets/${row.relativePath}`, "utf8"))); return installedSources; }
+async function sourceAvailable(context: TestContext): Promise<boolean> { try { await sourceTexts(); return true; } catch (error) { if (error !== null && typeof error === "object" && "code" in error && error.code === "ENOENT") { context.skip("installed source unavailable"); return false; } throw error; } }
 async function fixture(variant:0|1):Promise<ReturnType<typeof createContext>>{
- const profile=SOURCE[variant],source=await readFile(`/mnt/c/Program Files/EasyEDA-Pro/resources/app/assets/${profile.relativePath}`,"utf8");assert.equal(qualifyCurrentSchematicRelevancePrefixQueueSource(source),variant);
+ const profile=SOURCE[variant];const texts=await sourceTexts();const source=texts[variant];assert.ok(typeof source === "string");assert.equal(qualifyCurrentSchematicRelevancePrefixQueueSource(source),variant);
  const raw=(role:keyof typeof profile.roles):string=>{const row=profile.roles[role];return source.slice(row.start,row.end);};
  const q=profile.roles.queueConstructor.name;
  const b=profile.roles.eventBaseConstructor.name;
@@ -32,10 +36,12 @@ globalThis.willEndRoot=(${P.willEndRoot}).call(history,native,roots);globalThis.
 globalThis.qualified=[];for(const tuple of [roots,events,details,subscriptions,refs,module,idle,willEndRoot,willEndDetails,willEndSubscription])for(let value of tuple){while(value!==null&&(typeof value==="object"||typeof value==="function")){if(!qualified.includes(value))qualified.push(value);value=Object.getPrototypeOf(value);}}
 globalThis.willEndFunctions=(${P.willEndFunctions}).call(history,native,roots,willEndRoot,willEndDetails,willEndSubscription,qualified);globalThis.functions=(${P.functions}).call(roots,native,run,refs,idle,module,events,details,subscriptions,qualified);`,context);return context;
 }
-void test("both exact installed listener/queue graphs preserve idle dispatch and actual start/end reset behavior",async()=>{
+void test("both exact installed listener/queue graphs preserve idle dispatch and actual start/end reset behavior",async testContext=>{
+ if(!await sourceAvailable(testContext)){return;}
  for(const variant of [0,1] as const){const context=await fixture(variant);assert.equal(runInContext(`(${P.same}).call(functions,native)`,context),true);assert.equal(runInContext(`(${P.scopes}).call([shapes,shapes,shapes],native,refs,roots)`,context),true);runInContext('history._onBatchSaveStart.dispatch(undefined)',context);assert.equal(runInContext('history._dataOnChangeSubscriptions[module[2]].size',context),2);assert.equal(runInContext('shapes.changedBusGroupIds instanceof Set',context),true);assert.throws(()=>runInContext(`(${P.same}).call(functions,native)`,context));runInContext('history._onBatchSaveWillEnd.dispatch(undefined);history._onBatchSaveEnd.dispatch(undefined)',context);assert.equal(runInContext('history._dataOnChangeSubscriptions[module[2]].size',context),0);assert.equal(runInContext('history.onModelAttributeChange===Cr&&shapes.changedBusGroupIds===null',context),true);}
 });
-void test("callback/queue drift and prototype hook getters refuse without invoking an application hook",async()=>{
+void test("callback/queue drift and prototype hook getters refuse without invoking an application hook",async testContext=>{
+ if(!await sourceAvailable(testContext)){return;}
  for(const change of ['subscriptions[1].cb=()=>{}','details[4].current=events[0]','Object.setPrototypeOf(events[4],{get onBeforeAdd(){traps++;throw Error("getter")}})']){const context=await fixture(0);runInContext(change,context);assert.throws(()=>runInContext(`(${P.same}).call(functions,native)`,context));assert.equal(runInContext('traps',context),0);}
  const context=await fixture(0);runInContext('consistency.manager=new Proxy({},{ownKeys(){traps++;throw Error("proxy")},getOwnPropertyDescriptor(){traps++;throw Error("proxy")}})',context);runInContext(`(${P.roots}).call(run,native,refs,idle,module)`,context);assert.equal(runInContext('traps',context),0);
 });
@@ -43,7 +49,8 @@ void test("WeakRef target packets require the real target field and reject proxy
  const packet={result:[],internalProperties:[{name:"[[Prototype]]",value:{type:"object",className:"WeakRef",objectId:"prototype"}},{name:"[[WeakRefTarget]]",value:{type:"object",className:"sk",objectId:"original-shape"}}]};assert.deepEqual(decodeCurrentSchematicRelevancePrefixQueueWeakRef(packet),{prototype:"prototype",target:"original-shape"});assert.throws(()=>decodeCurrentSchematicRelevancePrefixQueueWeakRef({...packet,internalProperties:[packet.internalProperties[0],{name:"[[WeakRefTarget]]",value:{type:"undefined"}}]}));assert.throws(()=>decodeCurrentSchematicRelevancePrefixQueueWeakRef({...packet,internalProperties:[packet.internalProperties[0],{name:"[[WeakRefTarget]]",value:{type:"object",subtype:"proxy",objectId:"foreign"}}]}));
 });
 
-void test("staged intrinsic and single-shape projections keep unknown nested objects opaque",async()=>{
+void test("staged intrinsic and single-shape projections keep unknown nested objects opaque",async testContext=>{
+ if(!await sourceAvailable(testContext)){return;}
  const context=await fixture(0);
  runInContext(`globalThis.extra=[Reflect,Array,Set,WeakMap,String,Error,Promise,Number,Symbol,WeakRef];globalThis.extraPrototypes=(${P.intrinsicPrototypes}).call(extra,native);for(const tuple of [extra,extraPrototypes,native,[Object.prototype.toString,Function.prototype]])for(let value of tuple){while(value!==null&&(typeof value==="object"||typeof value==="function")){if(!qualified.includes(value))qualified.push(value);value=Object.getPrototypeOf(value);}}globalThis.members=(${P.intrinsicMembers}).call(extra,native,extraPrototypes,qualified,Function.prototype,run);globalThis.container=(${P.container}).call(roots[3],native,roots);globalThis.containerMembers=(${P.containerMembers}).call(container,native,roots);globalThis.manager=(${P.manager}).call(roots[5],native,roots);`,context);
  assert.equal(runInContext('members.length===38&&members.slice(0,34).every(v=>typeof v==="function")&&members.slice(34).every(v=>typeof v==="symbol")',context),true);
@@ -69,7 +76,8 @@ async function inspectExposedBinding(session: Session, objectId: string, binding
   }
   assert.equal(matched, binding === null ? 0 : 1);
 }
-void test("actual V8 scope packets expose t/e but omit lexical this for exact history callbacks", async () => {
+void test("actual V8 scope packets expose t/e but omit lexical this for exact history callbacks", async testContext => {
+  if (!await sourceAvailable(testContext)) { return; }
   assert.equal(process.versions.node, "24.18.0"); const session = new Session(); session.connect(); const key = "__inertPrefixQueueScopes";
   try {
     for (const variant of [0, 1] as const) {
