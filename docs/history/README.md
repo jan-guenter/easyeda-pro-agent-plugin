@@ -1,6 +1,7 @@
 # Project history
 
 - [2026-11-07 failed disposable Via abandonment](2026-11-07-via-failed-disposable-abandonment.md). Separate immutable closure sidecar clears historical quarantine only after all original resources settle; failed Save/reopen proofs remain false and old records stay exact.
+- [2026-11-07 Via drain native storage](2026-11-07-via-save-drain-native-storage.md). Fixed original drain/sync/source lanes and lossless pending-program sharing preserve exact message hashes; combined helper headroom remains a separately enforced release gate.
 
 - [2026-11-07 original Via save drain DAG](2026-11-07-via-original-save-drain-dag.md). Retain original cloud/buffer/deferred/dropped Promises and overlapping cache jobs with source finalizer ordering; native mounting and persistence remain separate.
 

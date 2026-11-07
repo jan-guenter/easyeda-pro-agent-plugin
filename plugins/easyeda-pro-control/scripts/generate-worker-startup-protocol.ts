@@ -1,4 +1,7 @@
 /* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
+import { applyCurrentPcbViaObservedSourceNativeFragment } from "../server/src/current-pcb-via-observed-source-native-fragment.ts";
+import { applyCurrentPcbViaSaveDrainNativeFragment } from "../server/src/current-pcb-via-save-drain-native-fragment.ts";
+import { applyCurrentPcbViaPostHistorySyncNativeFragment } from "../server/src/current-pcb-via-post-history-sync-native-fragment.ts";
 import { applyCurrentPcbViaSaveTailObservationNativeFragment } from "../server/src/current-pcb-via-save-tail-observation-native-fragment.ts";
 import { applyCurrentPcbViaUploadRequestNativeFragment } from "../server/src/current-pcb-via-upload-request-native-fragment.ts";
 import { applyCurrentProjectSyncQuiesceNativeFragment } from "../server/src/current-project-sync-quiesce-native-fragment.ts";
@@ -145,6 +148,9 @@ export function generateWorkerStartupProtocol(source: string): string {
   next = applyCurrentProjectSyncQuiesceNativeFragment(next);
   next = applyCurrentPcbViaUploadRequestNativeFragment(next);
   next = applyCurrentPcbViaSaveTailObservationNativeFragment(next);
+  next = applyCurrentPcbViaPostHistorySyncNativeFragment(next);
+  next = applyCurrentPcbViaSaveDrainNativeFragment(next);
+  next = applyCurrentPcbViaObservedSourceNativeFragment(next);
   next = applyCurrentPcbComponentSpatialNativeFragment(next);
   next = applyCurrentPcbViaSavedReadbackNativeFragment(next);
   next = applyCurrentFootprintInverseNativeFragment(next);
