@@ -2090,6 +2090,63 @@ delivery, original channel and own-data codecs/once guards
 inverse-delivery-full-rosters-EiRIn2). No tracked output or native action was
 performed.
 
+## Bounded single-clock inventory and the preceding worker GET
+
+The clock audit retains the complete currently selected path before any
+continuation is offered: worker `qe -> oo/wa -> notify.rpcCall`, the original
+native Promise/request subscription and push/dispatch, preload `La`'s service
+wrapper, ws-service's `()=>Date.now()+Jd`, native reply and the single
+`deleteString` await. The request's own message value is undefined; JSON alone
+cannot retain that field. `rpcCall`'s default timeout is0, so its timer/race
+branch is excluded. `JP.post` schedules a dropped `.then` callback which does
+not return `onMessage`'s value. `onMessage` is synchronous: a specific original
+local callback's entry/normal return can prove that local delivery, without
+inventing a dropped Promise handle or requesting GC. Exact callback/receiver,
+envelope, queue and separately awaited task proof still remains necessary.
+
+Compile-only Node Inspector on the hash-qualified full scripts confirms qe
+points108:9677/9684/9691/9715/9749 and the original worker
+push0:10170, dispatch0:11275 and reply0:10580 sites. The UI callback has
+points28:23430/23435 and no separately reported return point; the existing
+preload wrapper result point1:86544 must retain the actual returned value.
+Native globals/prototypes, source-owned `Jd`, native Promise adoption,
+console callees, both realms' native delivery and local callbacks still need
+their original custody before clock/deletion can resume. These source facts
+issue no clock receipt or owner upgrade.
+
+The preceding mandatory UI lookup is now the implementation priority. Offline
+source inspection corrected an assumed `/footprint/getData` request: the
+actual topic is `/mgr/projectWorker/footprint/get`, and registration calls
+`getNeedData(t.uuid,t.need)`. Manager `V0.getData(t,s)` sends the own fields
+`{uuid:t,need:s}`; the selected one-argument caller supplies undefined. The
+async worker `getNeedData` calls `getData -> get -> Ne/JSON.stringify` and
+enters `getCanvasData`/`Object.assign` only for truthy need. The fixed new
+branch check requires an actual own undefined field; missing/null/false/0
+and true cannot replace it. Its complete roster remains retained afterward.
+
+The new source leaf pins all5 entered handler/worker projection functions,
+including their actual strict/sloppy metadata and locations. The earlier
+34-callee clock metadata decoder now delegates to an inert shared decoder
+with identical strictness, own-property, prototype, scope bounds and refusal
+code; its catalogue, command grammar and budgets remain unchanged. A
+source-preserving inert class test qualifies all5 actual Inspector records,
+runs the actual undefined-need branch without canvas access, and demonstrates
+the excluded true-need canvas branch. A readonly Inspector check retains the
+own undefined field directly. Native JSON/String/Array/hasInstance metadata
+roles are checked on actual Node builtins, while Node console shims refuse
+the browser-native logger roles.
+
+Four focused GET source/readonly Inspector cases and the two existing clock
+metadata cases pass. Both TypeScript projects and strict changed-file lint
+pass.
+
+These leaves provide no GET transport, rearm result or deletion admission.
+Next is the same original worker's native primitive/queue preparation and
+actual GET entry/result/publication/local-delivery/rearm collector, joined to
+the separately branded manager GET Job and original full-row plan. No caller
+row, boolean or copied history becomes runtime authority. No application,
+native transport, Windows process, generated helper or pin was touched.
+
 Root integration then found a transport composition gap. Native delivery
 occurs after the original SDK dispatch, but its new phase was absent from the
 pipe's pending-SDK observation allowance. A retained original byte-stream case
