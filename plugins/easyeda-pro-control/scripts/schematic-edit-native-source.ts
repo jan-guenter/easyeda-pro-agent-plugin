@@ -32,6 +32,7 @@ export function generateSchematicEditNativeSource(seed: string): Readonly<{ help
     [EasyedaDiagnosticOwner]::VerifySchematicRelevanceDisplaySmoke()
     [EasyedaDiagnosticOwner]::VerifySchematicWireEditSmoke()
     [EasyedaProjectLibraryRefreshProtocol]::VerifySmoke()
+    [EasyedaDiagnosticOwner]::VerifyRelevanceDrainSmoke()
     if (-not $owner.Terminated()) {throw 'schematic-native-compile-job-not-empty'}
     $owner.ReleaseUnlaunched()
     @{schema='easyeda-pro-control.schematic-edit-compile.v1';compiled=$true;emptyJob=$true;pipesChecked=$true;processLaunched=$false} | ConvertTo-Json -Compress
