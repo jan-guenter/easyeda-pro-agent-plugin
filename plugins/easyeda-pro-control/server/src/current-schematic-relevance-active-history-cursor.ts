@@ -36,7 +36,7 @@ export class CurrentSchematicRelevanceActiveHistoryCursor {
     for (let depth = 0; depth < 12; depth += 1) {
       yield* this.#read("novel", CurrentSchematicRelevanceActiveHistoryCursor.#call("schematic-callback-active-novel", candidate, [this.#raw.nativeObjectId, this.#id("qualified")])); const fresh = this.#slots.get("novel"); need(fresh !== undefined); if (fresh.length === 0) { return; }
       for (const value of fresh) { properties(yield CurrentSchematicRelevanceActiveHistoryCursor.#props(handle(value))); }
-      yield* this.#read("qualified", CurrentSchematicRelevanceActiveHistoryCursor.#call("schematic-callback-active-merge", this.#id("qualified"), [this.#raw.nativeObjectId, this.#id("novel"), this.#id("novel"), this.#id("novel"), this.#id("novel")])); need((this.#slots.get("qualified")?.length ?? 385) <= 384);
+      yield* this.#read("qualified", CurrentSchematicRelevanceActiveHistoryCursor.#call("schematic-callback-active-merge", this.#id("qualified"), [this.#raw.nativeObjectId, this.#id("novel")])); need((this.#slots.get("qualified")?.length ?? 385) <= 384);
       yield* this.#read("parents", CurrentSchematicRelevanceActiveHistoryCursor.#call("schematic-callback-active-prototypes", this.#id("novel"), [this.#raw.nativeObjectId])); candidate = this.#id("parents");
     }
     need(this.#slots.get("parents")?.every(value => value.type === "object" && value.subtype === "null" && value.value === null) === true);

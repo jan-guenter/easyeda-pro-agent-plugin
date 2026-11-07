@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { Session } from "node:inspector/promises";
 import type { Runtime } from "node:inspector";
 import { readFile } from "node:fs/promises";
-import { runInThisContext } from "node:vm";
+import { createContext, runInContext, runInThisContext } from "node:vm";
 import { Worker } from "node:worker_threads";
 import { test } from "node:test";
 import { CURRENT_SCHEMATIC_RELEVANCE_UNDERLINE_BRIDGE_PROOF as BRIDGE, CURRENT_SCHEMATIC_RELEVANCE_SET_ATTRIBUTE_PROOF as ENTRY } from "../src/current-schematic-relevance-underline-bridge-programs.ts";
@@ -25,6 +25,7 @@ function fixture(): Readonly<{ bridge: () => unknown; entry: () => unknown; faul
 }
 void test("original decorator and monitor entry proofs preserve the raw value and never invoke a replaced accessor or call hook", async () => {
   const f = fixture(); assert.equal(f.bridge(), true); assert.equal(f.entry(), true); assert.equal(f.invoked(), 0);
+  const foreign = createContext({}); runInContext('let hooks=0;Array.prototype[Symbol.iterator]=function*(){hooks++};', foreign); const bridge: unknown = runInContext(`(${BRIDGE})`, foreign); assert.ok(typeof bridge === "function"); assert.equal(Reflect.apply(bridge, f.probe[0], f.probe.slice(1)), true); assert.equal(runInContext("hooks", foreign), 0);
   const key = "__inertUnderlineBridgeProof"; Object.defineProperty(globalThis, key, { value: f.probe, configurable: true }); const session = new Session(); session.connect();
   try { const captured = await session.post("Runtime.evaluate", { expression: `globalThis.${key}`, objectGroup: "inert-underline-bridge" }); assert.ok(captured.result.objectId !== undefined); const fields = await session.post("Runtime.getProperties", { objectId: captured.result.objectId, ownProperties: true }); const refs = Array.from({ length: 17 }, (_, index) => { const id = fields.result.find(item => item.name === String(index))?.value?.objectId; assert.ok(id !== undefined); return { objectId: id }; }); const receiver = refs[0]; assert.ok(receiver !== undefined); const sideEffect = { throwOnSideEffect: true } as const; const parameters: Runtime.CallFunctionOnParameterType = { objectId: receiver.objectId, functionDeclaration: BRIDGE, arguments: refs.slice(1), returnByValue: true, ...sideEffect }; const result = await session.post("Runtime.callFunctionOn", parameters); assert.equal(result.exceptionDetails, undefined); assert.equal(result.result.value, true); }
   finally { await session.post("Runtime.releaseObjectGroup", { objectGroup: "inert-underline-bridge" }); session.disconnect(); Reflect.deleteProperty(globalThis, key); }

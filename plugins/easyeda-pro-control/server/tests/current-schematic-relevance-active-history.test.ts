@@ -1,9 +1,11 @@
 /** Inert selected graph and native WeakMap identity; no history callback runs. */
 /* oxlint-disable max-classes-per-file -- Three inert constructor/prototype references exercise the separate group and command inheritance paths; none is an application class. */
 import assert from "node:assert/strict";
-import { runInThisContext } from "node:vm";
+import { Session } from "node:inspector/promises";
+import type { Runtime } from "node:inspector";
+import { createContext, runInContext, runInThisContext } from "node:vm";
 import { test } from "node:test";
-import { CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_FUNCTIONS as FUNCTIONS, CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_RESOLVER as RESOLVER, CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_ROOTS as ROOTS, CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_SAME as SAME } from "../src/current-schematic-relevance-active-history-programs.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_FUNCTIONS as FUNCTIONS, CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_MERGE as MERGE, CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_NOVEL as NOVEL, CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_PROTOTYPES as PROTOTYPES, CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_RESOLVER as RESOLVER, CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_ROOTS as ROOTS, CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_SAME as SAME } from "../src/current-schematic-relevance-active-history-programs.ts";
 
 function run(source: string, receiver: unknown, args: readonly unknown[]): unknown { const fn: unknown = runInThisContext(`(${source})`); assert.ok(typeof fn === "function"); return Reflect.apply(fn, receiver, args); }
 function fixture(): Readonly<{ roots: () => unknown; resolver: () => unknown; select: () => unknown; same: () => unknown; invoked: () => number; drift: (fault: "resolver" | "command" | "handler" | "getter") => void }> {
@@ -25,4 +27,18 @@ function fixture(): Readonly<{ roots: () => unknown; resolver: () => unknown; se
 void test("the actual selected history, resolver, empty command group and monitor references join without invoking their getters or callbacks", () => {
   const f = fixture(); const roots = f.roots(); const resolver = f.resolver(); const functions = f.select(); assert.ok(Array.isArray(roots) && roots.length === 8); assert.ok(Array.isArray(resolver) && resolver.length === 1); assert.ok(Array.isArray(functions) && functions.length === 21); assert.equal(f.same(), true); assert.equal(f.invoked(), 0);
   for (const fault of ["resolver", "command", "handler", "getter"] as const) { const changed = fixture(); changed.drift(fault); assert.throws(changed.same, /ACTIVE_HISTORY/u); assert.equal(changed.invoked(), 0); }
+});
+
+void test("callback-realm tuple builders avoid inherited index setters, descriptor getters and Array iterators", async () => {
+  const context = createContext({}); runInContext('let hooks=0;Object.defineProperty(Array.prototype,"0",{set(){hooks++},configurable:true});Array.prototype[Symbol.iterator]=function*(){hooks++};Object.defineProperty(Object.prototype,"get",{get(){hooks++;return undefined},configurable:true});', context);
+  const native: unknown[] = Array.from({ length: 19 }, () => null); native[0] = Object.getOwnPropertyDescriptor; native[2] = Object.getPrototypeOf; native[4] = Object.hasOwn; native[5] = Reflect.ownKeys; native[6] = Reflect.apply; native[7] = Array.isArray;
+  const selected = {};
+  const invoke = (source: string, receiver: unknown, args: readonly unknown[]): unknown => { const fn: unknown = runInContext(`(${source})`, context); assert.ok(typeof fn === "function"); return Reflect.apply(fn, receiver, args); };
+  const fresh = invoke(NOVEL, [selected], [native, []]); assert.ok(fresh !== null && typeof fresh === "object"); assert.equal(Object.getOwnPropertyDescriptor(fresh, "0")?.value, selected);
+  const merged = invoke(MERGE, [], [native, fresh]); assert.ok(merged !== null && typeof merged === "object"); assert.equal(Object.getOwnPropertyDescriptor(merged, "0")?.value, selected);
+  const parents = invoke(PROTOTYPES, fresh, [native]); assert.ok(parents !== null && typeof parents === "object"); assert.equal(Object.getOwnPropertyDescriptor(parents, "0")?.value, Object.prototype); assert.equal(runInContext("hooks", context), 0);
+  const key = "__inertActiveTupleBuilders"; Object.defineProperty(globalThis, key, { configurable: true, value: [[selected], native, []] }); const inspector = new Session(); inspector.connect();
+  try { const captured = await inspector.post("Runtime.evaluate", { expression: `globalThis.${key}`, objectGroup: "inert-active-builders" }); assert.ok(captured.result.objectId !== undefined); const fields = await inspector.post("Runtime.getProperties", { objectId: captured.result.objectId, ownProperties: true }); const handles = [0, 1, 2].map(index => { const id = fields.result.find(field => field.name === String(index))?.value?.objectId; assert.ok(id !== undefined); return { objectId: id }; }); const receiver = handles[0]; assert.ok(receiver !== undefined);
+    for (const source of [NOVEL, MERGE, PROTOTYPES]) { const extra = { throwOnSideEffect: true } as const; const parameters: Runtime.CallFunctionOnParameterType = { objectId: receiver.objectId, functionDeclaration: source, arguments: source === PROTOTYPES ? handles.slice(1, 2) : handles.slice(1), returnByValue: false, ...extra }; const reply = await inspector.post("Runtime.callFunctionOn", parameters); assert.equal(reply.exceptionDetails, undefined); assert.equal(reply.result.subtype, "array"); assert.equal(reply.result.description, "Array(1)"); }
+  } finally { await inspector.post("Runtime.releaseObjectGroup", { objectGroup: "inert-active-builders" }); inspector.disconnect(); Reflect.deleteProperty(globalThis, key); }
 });
