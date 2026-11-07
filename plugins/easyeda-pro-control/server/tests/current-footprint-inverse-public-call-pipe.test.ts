@@ -6,6 +6,7 @@ import { PassThrough, Writable } from "node:stream";
 import { test } from "node:test";
 import { sha256Text } from "../src/core.ts";
 import { CurrentFootprintInversePipe, CurrentPcbViaWritePipe } from "../src/current-pcb-diagnostic-pipe.ts";
+import { currentFootprintInverseLookupPreentryCases } from "../src/current-footprint-inverse-lookup-preentry-protocol.ts";
 import { currentFootprintInverseUiOwnDataCases } from "../src/current-footprint-inverse-ui-own-data-protocol.ts";
 import { currentFootprintInversePublicPreferencesCases } from "../src/current-footprint-inverse-public-preferences-protocol.ts";
 import { currentFootprintInversePublicCallCases } from "../src/current-footprint-inverse-public-call-protocol.ts";
@@ -37,6 +38,7 @@ void test("original SDK write and reply remain separate while fixed UI and worke
   assert.throws(()=>pipe.observeInversePublicCall(sdk));assert.throws(()=>{pipe.requireInversePublicDeleteWritten(Promise.resolve({}));});
   for(const command of currentFootprintInversePublicPreferencesCases()){const observation=pipe.observeInversePublicPreferences(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   for(const command of currentFootprintInverseUiOwnDataCases()){const observation=pipe.observeInverseUiOwnData(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseLookupPreentryCases()){const observation=pipe.observeInverseLookupPreentry(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   assert.equal(pipe.status().failureObservation,null);
   const before=sent.length;const first=currentFootprintInversePublicCallCases()[0];assert.ok(first!==undefined);const other:unknown=Object.create(CurrentPcbViaWritePipe.prototype);
   // oxlint-disable-next-line typescript/unbound-method -- Invalid sibling receiver must reject before emitting bytes.
