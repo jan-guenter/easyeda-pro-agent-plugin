@@ -3,4 +3,4 @@
 export { CurrentSchematicRelevanceSavedReadbackOwner, startCurrentSchematicRelevanceSavedReadbackOwner,
   assertOriginalCurrentSchematicRelevanceSavedReadbackOwner, currentSchematicRelevanceSavedReadbackAllocationOutcome,
   originalCurrentSchematicRelevanceSavedReadbackTarget, originalCurrentSchematicRelevanceSavedReadbackTermination,
-  assertOriginalCurrentSchematicRelevanceSavedReadbackTermination } from "./current-pcb-diagnostic-owner.ts";
+  assertOriginalCurrentSchematicRelevanceSavedReadbackTermination, requireOriginalCurrentSchematicRelevanceSavedCacheOrigin } from "./current-pcb-diagnostic-owner.ts";

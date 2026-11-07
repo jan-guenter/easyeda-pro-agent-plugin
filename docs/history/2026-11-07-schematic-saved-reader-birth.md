@@ -67,3 +67,11 @@ actual cold worker/body/parser custody, saved-scene observation and complete
 closed acceptance still require their own original generation joins. It makes
 no reopened, persistence, Save or writer-authority claim. The next source
 increment continues those joins with this distinct owner.
+
+The follow-up registration/cache contract now has distinct private Core
+WeakMaps and original lookup functions. Registration bindings retain the actual
+fresh owner, genuine plan, same Main runner, page/schematic identities and the
+required separate pending/no-dispatch checks. Both registries remain unissued
+until the actual cache/loading and original request joins exist. A forged
+intent/runner with getters refuses before either getter runs; this contract
+adds no dispatch, cache, opening or Main SQL permission.

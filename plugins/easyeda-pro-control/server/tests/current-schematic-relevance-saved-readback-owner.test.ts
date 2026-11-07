@@ -1,4 +1,8 @@
+/* oxlint-disable import/max-dependencies -- The original factory, genuine plan/registration contracts, exact pipe and retained real-child source seam are exercised together. */
 /** Source/real byte-pipe checks only. None allocates a native helper or app. */
+import { requireOriginalCurrentSchematicRelevanceSavedRegistrationIntent } from "../src/current-pcb-diagnostic-owner.ts";
+import type { CurrentFootprintCopyMainBackendRunner } from "../src/current-footprint-copy-main-backend-runner.ts";
+import type { CurrentSchematicRelevanceSavedRegistrationIntent } from "../src/current-schematic-relevance-saved-registration-intent.ts";
 import assert from "node:assert/strict";
 import process from "node:process";
 import { once } from "node:events";
@@ -55,4 +59,12 @@ export function seedSchematicSaved(owner,installation,prepared){const writer={st
   await assert.rejects(invoke("syntheticSchematicEarlyForTest"), /EARLY_ACTORS_UNAVAILABLE/u); await assert.rejects(invoke("startSchematicSavedReadbackGeneration"), /START_CONSUMED/u);
   assert.equal(await invoke("observeTermination"), true); const original = await invoke("originalSchematicSavedReadbackTermination"); await invoke("releaseClosed");
   assert.equal(await invoke("originalSchematicSavedReadbackTermination"), original);
+});
+
+void test("registration-looking JSON cannot supply original pending or no-dispatch proof", () => {
+  let reads = 0; const token = Object.freeze({ get profile(): string { reads += 1; return "private.current-schematic-relevance-saved-registration-intent.v1"; } });
+  const runner = Object.freeze({ get status(): never { reads += 1; throw new Error("foreign runner getter"); } });
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Deliberate foreign token/runner must be rejected at the private WeakMap before their descriptors or callbacks can run.
+  assert.throws(() => requireOriginalCurrentSchematicRelevanceSavedRegistrationIntent(token as CurrentSchematicRelevanceSavedRegistrationIntent, runner as unknown as CurrentFootprintCopyMainBackendRunner), /SCHEMATIC_SAVED_REGISTRATION_ORIGINAL/u);
+  assert.equal(reads, 0);
 });

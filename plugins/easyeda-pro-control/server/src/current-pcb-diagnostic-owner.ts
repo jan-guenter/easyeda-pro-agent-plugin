@@ -2,6 +2,8 @@
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 import {CurrentSchematicRelevanceNoEchoCursor} from "./current-schematic-relevance-noecho-cursor.ts";
 import type {CurrentSchematicRelevanceNoEchoCommand} from "./current-schematic-relevance-noecho-protocol.ts";
+import type { CurrentSchematicRelevanceSavedRegistrationBindings, CurrentSchematicRelevanceSavedRegistrationIntent } from "./current-schematic-relevance-saved-registration-intent.ts";
+import type { CurrentSchematicRelevanceSavedCacheBindings, CurrentSchematicRelevanceSavedCacheOrigin } from "./current-schematic-relevance-saved-cache-origin.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_SAVED_READBACK_PROFILE as SCH_SAVED_PROFILE, CURRENT_SCHEMATIC_RELEVANCE_SAVED_READBACK_PURPOSE as SCH_SAVED_PURPOSE } from "./current-schematic-relevance-saved-readback-profile.ts";
 import { currentSchematicRelevanceSavedEarlyFrame } from "./current-schematic-relevance-saved-wire.ts";
 import type { CurrentSchematicRelevanceSavedEarlyStage } from "./current-schematic-relevance-saved-wire.ts";
@@ -1334,6 +1336,8 @@ interface SchematicSavedReadbackAllocation {
 const schematicSavedReadbackAllocations = new WeakMap<GeneratedSchematicRelevanceSavedReadbackPlan, SchematicSavedReadbackAllocation>();
 const schematicSavedReadbackFactories = new WeakMap<object, Readonly<{ allocation: SchematicSavedReadbackAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
 const schematicSavedReadbackTerminations = new WeakMap<object, Readonly<{ token: object; binding: Binding }>>();
+const schematicSavedCacheOrigins = new WeakMap<CurrentSchematicRelevanceSavedCacheOrigin, Readonly<{ owner: CurrentSchematicRelevanceSavedReadbackOwner; prepared: GeneratedSchematicRelevanceSavedReadbackPlan; bindings: CurrentSchematicRelevanceSavedCacheBindings; reprove: () => void }>>();
+const schematicSavedRegistrationIntents = new WeakMap<CurrentSchematicRelevanceSavedRegistrationIntent, Readonly<{ owner: CurrentSchematicRelevanceSavedReadbackOwner; prepared: GeneratedSchematicRelevanceSavedReadbackPlan; runner: CurrentFootprintCopyMainBackendRunner; bindings: CurrentSchematicRelevanceSavedRegistrationBindings; reprove: () => void }>>();
 function requireSchematicSavedPreparation(allocation: SchematicSavedReadbackAllocation): void {
   if (allocation.namespace.requireOriginalGeneratedSchematicRelevanceSavedReadbackPlan !== allocation.lookup || allocation.checkpointNamespace.verifyGeneratedSchematicRelevanceDisplayClosedCheckpoint !== allocation.verifyCheckpoint || schematicSavedReadbackAllocations.get(allocation.prepared) !== allocation) { throw error("SCHEMATIC_SAVED_ORIGINAL_PREPARATION"); }
   const current = allocation.lookup(allocation.prepared), status = current.closed.owner.status();
@@ -13849,6 +13853,19 @@ export function assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(owner:
 export function currentSchematicRelevanceSavedReadbackAllocationOutcome(prepared: GeneratedSchematicRelevanceSavedReadbackPlan): Readonly<{ state: "not-attempted" | SchematicSavedReadbackAllocation["state"]; owner: CurrentSchematicRelevanceSavedReadbackOwner | null }> {
   const original = schematicSavedReadbackAllocations.get(prepared); if (original === undefined) { return Object.freeze({ state: "not-attempted", owner: null }); }
   requireSchematicSavedPreparation(original); if (original.owner !== null) { assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(original.owner); } return Object.freeze({ state: original.state, owner: original.owner });
+}
+/** Only the original fresh generation and same retained runner may obtain
+ * these bindings. No token is issued until actual cache/loading custody joins. */
+export function requireOriginalCurrentSchematicRelevanceSavedRegistrationIntent(intent: CurrentSchematicRelevanceSavedRegistrationIntent, runner: CurrentFootprintCopyMainBackendRunner): CurrentSchematicRelevanceSavedRegistrationBindings {
+  const original = schematicSavedRegistrationIntents.get(intent);
+  if (original === undefined || original.runner !== runner) { throw error("SCHEMATIC_SAVED_REGISTRATION_ORIGINAL"); }
+  assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(original.owner); const allocation = schematicSavedReadbackFactories.get(original.owner)?.allocation;
+  if (allocation === undefined || allocation.prepared !== original.prepared || original.bindings.prepared !== original.prepared || original.bindings.target.documentUuid !== allocation.original.data.target.pageUuid || original.bindings.pageUuid !== allocation.original.data.target.pageUuid || original.bindings.schematicUuid !== allocation.original.data.target.schematicUuid) { throw error("SCHEMATIC_SAVED_REGISTRATION_ORIGINAL"); }
+  original.reprove(); return original.bindings;
+}
+export function requireOriginalCurrentSchematicRelevanceSavedCacheOrigin(origin: CurrentSchematicRelevanceSavedCacheOrigin, owner: CurrentSchematicRelevanceSavedReadbackOwner, prepared: GeneratedSchematicRelevanceSavedReadbackPlan): CurrentSchematicRelevanceSavedCacheBindings {
+  assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(owner); const original = schematicSavedCacheOrigins.get(origin);
+  if (original === undefined || original.owner !== owner || original.prepared !== prepared) { throw error("SCHEMATIC_SAVED_CACHE_ORIGINAL"); } original.reprove(); return original.bindings;
 }
 export function originalCurrentSchematicRelevanceSavedReadbackTarget(owner: CurrentSchematicRelevanceSavedReadbackOwner): GeneratedSchematicRelevanceSavedReadbackPlan {
   assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(owner); const original = schematicSavedReadbackFactories.get(owner); if (original === undefined) { throw error("SCHEMATIC_SAVED_ORIGINAL_FACTORY"); } return original.allocation.prepared;
