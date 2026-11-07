@@ -7,6 +7,7 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SOURCE = freezeDeep({
   yB: INITIAL.yB, UB: INITIAL.UB, projectSql: MAIN.functions.projectSql,
+  requestDatabase: { start: 2_620_196, end: 2_620_331, bytes: 135, sha256: "b28ecda08b239e9381e112842d215e15df921dc086a3d3cdffe54e25a0b5e9c7" },
   table: { start: 2_232_389, end: 2_233_170, bytes: 781, sha256: "67b813d2eae8e8aadb771fcbe936e6b957b480754284e91e3f146a50152442b6" },
 });
 export const CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE = Object.freeze({ lineNumber: 8572, columnNumber: 24_050,

@@ -9,6 +9,7 @@ import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_FUNCTIONS as FUNCTIONS, CURRENT_PCB_V
 import { validateCurrentPcbViaMainLiveHistoryCommand } from "./current-pcb-via-main-live-history-protocol.ts";
 import type { CurrentPcbViaMainLiveHistoryCommand as Command } from "./current-pcb-via-main-live-history-protocol.ts";
 import type { CurrentPcbViaMainBeginPause } from "./current-pcb-via-main-begin-custody.ts";
+import type { CurrentSelectedFileMainRequestObservation } from "./current-selected-file-main-request-reader.ts";
 import type { CurrentProjectHistorySqlEffects } from "./current-project-history-sql-effects.ts";
 
 const uuid = z.string().regex(/^[a-f\d]{32}$/u); const time = z.string().regex(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u);
@@ -17,7 +18,7 @@ export const currentPcbViaMainLiveHistoryRowSchema = z.strictObject({ id: z.numb
 const valueSchema = z.strictObject({ projectUuid: z.string().regex(/^[a-f\d]{64}$/u), branchUuid: uuid, historyUuid: uuid, rows: z.array(currentPcbViaMainLiveHistoryRowSchema).min(1).max(2) });
 export type CurrentPcbViaMainLiveHistoryRows = Readonly<z.infer<typeof valueSchema>>;
 export interface CurrentPcbViaMainLiveHistoryHost {
-  readonly scriptId: string; readonly sqlCaptureObjectId: string; readonly originalSqlObjectId: () => string;
+  readonly scriptId: string; readonly sqlCaptureObjectId: string;
   readonly assertCurrent: () => void; readonly effects: () => CurrentProjectHistorySqlEffects;
   readonly pause: () => CurrentPcbViaMainBeginPause; readonly pendingRequestId: () => number | null; readonly busy: () => boolean;
   readonly send: (command: Command, cleanup: boolean) => Promise<unknown>;
@@ -33,17 +34,28 @@ const property = z.looseObject({ name: z.string(), value: propertyValue.optional
 const internalValue = z.looseObject({ value: z.unknown().optional() }); const internalProperty = z.looseObject({ name: z.string(), value: internalValue });
 const properties = z.looseObject({ result: z.array(property), internalProperties: z.array(internalProperty).optional() });
 const byValue = z.strictObject({ result: z.strictObject({ type: z.literal("object"), value: z.unknown() }) });
+const promiseMember = z.looseObject({ name: z.string(), value: propertyValue });
+const promiseReply = z.strictObject({ result: z.array(property).max(32), internalProperties: z.array(promiseMember).length(3) });
 const remote = z.strictObject({ result: z.looseObject({ type: z.literal("object"), subtype: z.literal("array"), objectId: handle, description: z.string().optional() }) });
 function need(value: boolean, reason: string): asserts value { if (!value) { throw new Error(`PCB_VIA_MAIN_LIVE_${reason}`); } }
-const order = ["arm", "frame", "join-capture", "properties-packet", "properties-projectSql", "properties-table", "properties-branches", "join-value", "remove", "step", "release"] as const;
+const order = ["arm", "frame", "join-capture", "properties-packet", "properties-promise", "join-resolved", "properties-projectSql", "properties-table", "properties-branches", "join-value", "remove", "step", "release"] as const;
 export class CurrentPcbViaMainLiveHistoryCustody {
   readonly #host: CurrentPcbViaMainLiveHistoryHost;
   #stage = 0; #failed = false; #point: string | null = null; #frame: string | null = null; #capture: string | null = null;
+  #requestCapture: string | null = null; #promise: string | null = null; #resolved: string | null = null;
   #effects: CurrentProjectHistorySqlEffects | null = null; #value: CurrentPcbViaMainLiveHistoryRows | null = null;
   readonly #functions = new Map<string, string>();
   #active: Readonly<{ command: Command; consumed: boolean }> | null = null;
   public constructor(host: CurrentPcbViaMainLiveHistoryHost) { this.#host = host; Object.freeze(this); }
   #same(): void { need(!this.#failed, "FAILED"); this.#host.assertCurrent(); if (this.#effects !== null) { need(this.#host.effects() === this.#effects, "ORIGINAL_EFFECTS"); } }
+  public wantsReadonlyRequest(packet: CurrentSelectedFileMainRequestObservation): boolean {
+    if (this.#stage !== 1 || this.#effects === null) { return false; } this.#same(); const effect = this.#effects;
+    return packet.mode === "fetch" && packet.method === "GET" && packet.pathHeader === effect.projectUuid && packet.pureQuery === "" && packet.pureUrl === `/api/v4/projects/${effect.projectUuid}/branches/${effect.branchUuid}/histories/${effect.historyUuid}`;
+  }
+  public retainReadonlyRequest(packet: CurrentSelectedFileMainRequestObservation, capture: string): void {
+    need(this.wantsReadonlyRequest(packet) && this.#requestCapture === null, "ONE_ORIGINAL_HISTORY_GET"); this.#requestCapture = handle.parse(capture);
+  }
+  public originalRequestObjectId(): string { this.#same(); need(this.#requestCapture !== null, "ORIGINAL_HISTORY_GET_REQUIRED"); return this.#requestCapture; }
   #held(): CurrentPcbViaMainBeginPause {
     const held = this.#host.pause(); const pause = pausedSchema.parse(captureCurrentPcbStringClockReply(held.raw).value); const first = pause.callFrames[0];
     need(first !== undefined && held.frameId === first.callFrameId && held.sqlSite === null && held.pendingEvents === 0 && !held.resumed && !held.resumeAttempted &&
@@ -54,13 +66,17 @@ export class CurrentPcbViaMainLiveHistoryCustody {
     const suffix = command.phase.replace("via-main-live-", ""); const selected = "role" in command ? `${suffix}-${command.role}` : suffix;
     need(selected === order[this.#stage], "ONCE_ORDER");
     if (this.#stage === 0) { need(command.phase === "via-main-live-arm" && command.params.location.scriptId === this.#host.scriptId, "ORIGINAL_SCRIPT"); this.#effects = this.#host.effects(); return; }
-    if (this.#stage < 10) { const held = this.#held(); if (this.#stage < 8) { need(this.#point !== null && this.#host.pointCurrent(this.#point), "CURRENT_POINT"); }
+    if (this.#stage < 12) { const held = this.#held(); if (this.#stage < 10) { need(this.#point !== null && this.#host.pointCurrent(this.#point), "CURRENT_POINT"); }
       if (command.phase === "via-main-live-frame") { need(command.params.callFrameId === held.frameId, "ORIGINAL_FRAME"); }
     }
     if (command.phase === "via-main-live-join") {
-      if (command.role === "capture") { need(command.params.objectId === this.#frame && command.params.arguments[0]?.objectId === this.#host.sqlCaptureObjectId && command.params.arguments[1]?.objectId === this.#host.originalSqlObjectId(), "ORIGINAL_DATABASE_CAPTURE"); }
-      else { need(command.params.objectId === this.#capture, "ORIGINAL_VALUE_PACKET"); }
-    } else if (command.phase === "via-main-live-properties") { need(command.params.objectId === (command.role === "packet" ? this.#capture : this.#functions.get(command.role)), "ORIGINAL_MEMBER"); }
+      if (command.role === "capture") { need(command.params.objectId === this.#frame && command.params.arguments[0]?.objectId === this.#host.sqlCaptureObjectId && command.params.arguments[1]?.objectId === this.originalRequestObjectId(), "ORIGINAL_DATABASE_CAPTURE"); }
+      else { need(command.params.objectId === this.#capture && (command.role !== "resolved" || command.params.arguments[0]?.objectId === this.#resolved), "ORIGINAL_VALUE_PACKET"); }
+    } else if (command.phase === "via-main-live-properties") {
+      let expected: string | null | undefined;
+      if (command.role === "packet") { expected = this.#capture; } else if (command.role === "promise") { expected = this.#promise; } else { expected = this.#functions.get(command.role); }
+      need(command.params.objectId === expected, "ORIGINAL_MEMBER");
+    }
     else if (command.phase === "via-main-live-remove") { need(command.params.breakpointId === this.#point, "ORIGINAL_REMOVE"); }
   }
   public consume(command: Command, requestId: number): void {
@@ -79,6 +95,7 @@ export class CurrentPcbViaMainLiveHistoryCustody {
       else if (command.phase === "via-main-live-frame") { this.#frame = remote.parse(reply).result.objectId; }
       else if (command.phase === "via-main-live-join") {
         if (command.role === "capture") { this.#capture = remote.parse(reply).result.objectId; }
+        else if (command.role === "resolved") { z.strictObject({ result: z.strictObject({ type: z.literal("boolean"), value: z.literal(true) }) }).parse(reply); }
         else { const value = valueSchema.parse(byValue.parse(reply).result.value); const effect = this.#effects;
           need(effect !== null && value.projectUuid === effect.projectUuid && value.branchUuid === effect.branchUuid && value.historyUuid === effect.historyUuid && value.rows.length === (effect.mode === "append" ? 2 : 1), "ORIGINAL_EFFECT_SCOPE");
           for (const row of value.rows) { need(row.iv === row.uuid, "NATIVE_IV"); }
@@ -86,8 +103,14 @@ export class CurrentPcbViaMainLiveHistoryCustody {
         }
       } else if (command.phase === "via-main-live-properties") {
         const parsed = properties.parse(reply);
-        if (command.role === "packet") { need(parsed.result.length === 9 && parsed.result.filter(item => item.name === "length").length === 1 && parsed.result.find(item => item.name === "length")?.value?.value === 8, "PACKET_MEMBERS");
+        if (command.role === "packet") { need(parsed.result.length === 11 && parsed.result.filter(item => item.name === "length").length === 1 && parsed.result.find(item => item.name === "length")?.value?.value === 10, "PACKET_MEMBERS");
+          const promise = parsed.result.find(item => item.name === "8")?.value; need(promise?.type === "object" && promise.subtype === "promise" && typeof promise.objectId === "string", "ORIGINAL_DB_PROMISE"); this.#promise = handle.parse(promise.objectId);
           for (const [role, expected] of Object.entries(FUNCTIONS)) { const member = parsed.result.filter(item => item.name === String(expected.index)); need(member.length === 1 && member[0]?.value?.type === "function" && member[0].value.subtype === undefined && typeof member[0].value.objectId === "string", "ORIGINAL_FUNCTION_MEMBER"); this.#functions.set(role, handle.parse(member[0].value.objectId)); }
+        } else if (command.role === "promise") {
+          const original = promiseReply.parse(reply); const state = original.internalProperties.filter(item => item.name === "[[PromiseState]]"); const results = original.internalProperties.filter(item => item.name === "[[PromiseResult]]");
+          need(state.length === 1 && results.length === 1 && original.internalProperties.filter(item => item.name === "[[Prototype]]").length === 1 && state[0]?.value.type === "string" && state[0].value.value === "fulfilled", "ORIGINAL_FULFILLED_DB_PROMISE");
+          const result = results[0]?.value;
+          need(result?.type === "object" && result.subtype === undefined && result.objectId !== undefined, "ORIGINAL_DB_PROMISE_RESULT"); this.#resolved = result.objectId;
         } else {
           decodeCurrentGeneratedSyncCallee(reply, FUNCTIONS[command.role], this.#host.scriptId);
         }

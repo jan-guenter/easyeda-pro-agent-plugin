@@ -28,6 +28,7 @@ function objectId(value: Bag): string { return token.parse(value["objectId"]); }
 function objectReply(value: unknown, length: number): string { const result = bag(bag(value)["result"]); need(result["type"] === "object" && result["subtype"] === "array" && result["className"] === "Array" && result["description"] === `Array(${String(length)})`); return objectId(result); }
 export class CurrentSelectedFileMainRequestReader {
   readonly #bindings: CurrentSelectedFileMainRequestReaderBindings;
+  readonly #originalCaptures = new WeakMap<CurrentSelectedFileMainRequestObservation, string>();
   #fetchSource: CurrentSelectedFileMainFetchSource | null = null; #fetchBound: string | null = null; #legacyCapture: string | null = null; #busy = false; #attempts = 0;
   public constructor(bindings: CurrentSelectedFileMainRequestReaderBindings) {
     need(bindings !== null && typeof bindings === "object" && !types.isProxy(bindings) && Object.isFrozen(bindings) && Object.getPrototypeOf(bindings) === Object.prototype);
@@ -67,6 +68,9 @@ export class CurrentSelectedFileMainRequestReader {
     return objectReply(await this.#send({ phase: "sql-fence-request-bind", method: "Runtime.callFunctionOn", params: { ...CALL, objectId: capture,
       functionDeclaration: CALLS.bind, arguments: [{ objectId: block }, { objectId: closure }, { objectId: webidl }, { objectId: brandScope }], returnByValue: false } }), 7);
   }
+  public requireOriginalCapture(packet: CurrentSelectedFileMainRequestObservation): string {
+    const capture = this.#originalCaptures.get(packet); need(capture !== undefined); return capture;
+  }
   public async observe(callFrameId: string): Promise<CurrentSelectedFileMainRequestObservation> {
     need(!this.#busy && this.#attempts < 64); this.#busy = true; this.#attempts += 1;
     try {
@@ -86,7 +90,7 @@ export class CurrentSelectedFileMainRequestReader {
         functionDeclaration: CALLS.rebind, arguments: [{ objectId: this.#legacyCapture }], returnByValue: false } }), 9); }
       const result = bag(bag(await this.#send({ phase: "sql-fence-request-read", method: "Runtime.callFunctionOn", params: { ...CALL, objectId: selected,
         functionDeclaration: CALLS.read, arguments: [], returnByValue: true } }))["result"]); need(result["type"] === "object" && !Object.hasOwn(result, "objectId"));
-      const observed = currentSelectedFileMainRequestObservationSchema.parse(result["value"]); need(observed.mode === mode); return Object.freeze(observed);
+      const observed = Object.freeze(currentSelectedFileMainRequestObservationSchema.parse(result["value"])); need(observed.mode === mode); this.#originalCaptures.set(observed, capture); return observed;
     } finally { this.#busy = false; }
   }
 }

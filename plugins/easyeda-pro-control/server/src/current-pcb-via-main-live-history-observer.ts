@@ -16,6 +16,8 @@ const frameDescription = z.looseObject({ callFrameId: z.string() });
 const pauseDescription = z.looseObject({ hitBreakpoints: z.tuple([z.string()]), callFrames: z.array(frameDescription).min(1).max(64) });
 const pauseEvent = z.strictObject({ method: z.literal("Debugger.paused"), params: pauseDescription });
 const memberValue = z.looseObject({ objectId: z.string().optional() }); const member = z.looseObject({ name: z.string(), value: memberValue.optional() });
+const promiseMember = z.looseObject({ name: z.string(), value: memberValue });
+const promiseProperties = z.looseObject({ internalProperties: z.array(promiseMember) });
 const packetProperties = z.looseObject({ result: z.array(member) });
 function need(value: boolean, reason: string): asserts value { if (!value) { throw new Error(`PCB_VIA_MAIN_LIVE_OBSERVER_${reason}`); } }
 export class CurrentPcbViaMainLiveHistoryObserver {
@@ -56,10 +58,14 @@ export class CurrentPcbViaMainLiveHistoryObserver {
       const frame = object.parse(await this.#send({ phase: "via-main-live-frame", method: "Debugger.evaluateOnCallFrame", params: { ...FRAME, callFrameId: frameId, expression: SITE.expression } })).result.objectId;
       // The SQL-owner receiver is supplied by the original backend, never the
       // Caller. Its private request closure verifies both exact arguments.
-      const originalSql = this.#bindings.originalLiveHistorySqlObjectId();
+      const originalRequest = this.#bindings.originalLiveHistoryRequestObjectId();
       const capture = object.parse(await this.#send({ phase: "via-main-live-join", role: "capture", method: "Runtime.callFunctionOn", params: { ...CALL, objectId: frame, functionDeclaration: PROGRAMS.capture.program,
-        arguments: [{ objectId: this.#bindings.sqlCaptureObjectId }, { objectId: originalSql }], returnByValue: false } })).result.objectId;
+        arguments: [{ objectId: this.#bindings.sqlCaptureObjectId }, { objectId: originalRequest }], returnByValue: false } })).result.objectId;
       const properties = packetProperties.parse(await this.#send({ phase: "via-main-live-properties", role: "packet", method: "Runtime.getProperties", params: { objectId: capture, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }));
+      const promiseId = properties.result.find(item => item.name === "8")?.value?.objectId; need(typeof promiseId === "string", "ORIGINAL_DB_PROMISE");
+      const promise = promiseProperties.parse(await this.#send({ phase: "via-main-live-properties", role: "promise", method: "Runtime.getProperties", params: { objectId: promiseId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }));
+      const resolved = promise.internalProperties.find(item => item.name === "[[PromiseResult]]")?.value.objectId; need(typeof resolved === "string", "ORIGINAL_DB_RESULT");
+      await this.#send({ phase: "via-main-live-join", role: "resolved", method: "Runtime.callFunctionOn", params: { ...CALL, objectId: capture, functionDeclaration: PROGRAMS.resolved.program, arguments: [{ objectId: resolved }], returnByValue: true } });
       for (const [role, original] of Object.entries(FUNCTIONS)) {
         const objectId = properties.result.find(item => item.name === String(original.index))?.value?.objectId; need(typeof objectId === "string", "ORIGINAL_FUNCTION");
         await this.#send({ phase: "via-main-live-properties", role, method: "Runtime.getProperties", params: { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } });

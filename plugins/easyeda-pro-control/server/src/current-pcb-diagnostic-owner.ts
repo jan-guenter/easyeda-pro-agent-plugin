@@ -32,7 +32,7 @@ import type { CurrentGeneratedPeriodicSyncCommand } from "./current-generated-pe
 import { currentGeneratedPeriodicSyncFrames } from "./current-generated-periodic-sync-replies.ts";
 import { qualifyCurrentGeneratedPeriodicSyncSource } from "./current-generated-periodic-sync-source.ts";
 import { prepareCurrentGeneratedInitialBranchDataPlan, requireOriginalCurrentGeneratedInitialBranchDataPlan } from "./current-generated-initial-branch-plan.ts";
-import type { CurrentGeneratedInitialBranchDataPlan } from "./current-generated-initial-branch-plan.ts";
+import type { CurrentGeneratedInitialBranchData, CurrentGeneratedInitialBranchDataPlan } from "./current-generated-initial-branch-plan.ts";
 /** Separate validation-only diagnostic launch path.
  * Its retained helper owns the original process, non-breakaway Job and pipes.
  * A diagnostic failure never ends stdin or closes an Electron pipe. The only
@@ -55,7 +55,7 @@ import { CurrentGeneratedInitialCacheCursor } from "./current-generated-initial-
 import type { CurrentGeneratedInitialCacheCommand } from "./current-generated-initial-cache-protocol.ts";
 import type { CurrentGeneratedInitialCacheHeld } from "./current-generated-initial-cache-cursor.ts";
 import { prepareCurrentGeneratedInitialFlowCachePlan, requireOriginalCurrentGeneratedInitialFlowCachePlan } from "./current-generated-initial-flow-cache-plan.ts";
-import type { CurrentGeneratedInitialFlowCachePlan } from "./current-generated-initial-flow-cache-plan.ts";
+import type { CurrentGeneratedInitialFlowCacheData, CurrentGeneratedInitialFlowCachePlan } from "./current-generated-initial-flow-cache-plan.ts";
 import { currentProjectSaveProducerCachePromiseHandle, decodeCurrentProjectSaveProducerCachePromise } from "./current-project-save-producer-cache-replies.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CAPTURE_LENGTH } from "./current-project-save-producer-cache-programs.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS, currentProjectSaveProducerCacheCallerFrame, qualifyCurrentProjectSaveProducerCacheSource } from "./current-project-save-producer-cache-source.ts";
@@ -3817,6 +3817,16 @@ class CurrentPcbRetainedOwnerCore {
   }
   /** Data-only input for the original live post-history cache projection.
    * It retains the actual body/value refs and supplies no worker resume. */
+  public requireViaInitialCacheData(plan: CurrentPcbViaWritePlan): CurrentGeneratedInitialFlowCacheData {
+    requireViaPlan(this, plan); const original = pcbViaWriteFactories.get(this)?.allocation;
+    if (original === undefined || original.prepared !== requireOriginalCurrentPcbViaWritePlan(plan).prepared || original.initialCachePlan === null) { throw error("PCB_VIA_ORIGINAL_INITIAL_CACHE_DATA"); }
+    return requireOriginalCurrentGeneratedInitialFlowCachePlan(original.initialCachePlan, original.prepared);
+  }
+  public requireViaInitialBranchData(plan: CurrentPcbViaWritePlan): CurrentGeneratedInitialBranchData {
+    requireViaPlan(this, plan); const original = pcbViaWriteFactories.get(this)?.allocation;
+    if (original === undefined || original.prepared !== requireOriginalCurrentPcbViaWritePlan(plan).prepared || original.initialCachePlan === null || original.initialBranchPlan === null) { throw error("PCB_VIA_ORIGINAL_INITIAL_BRANCH_DATA"); }
+    return requireOriginalCurrentGeneratedInitialBranchDataPlan(original.initialBranchPlan, original.prepared, original.initialCachePlan);
+  }
   public requireViaLiveHistoryRows(plan: CurrentPcbViaWritePlan): CurrentPcbViaMainLiveHistoryRows {
     const effects = this.requireViaHistorySqlEffects(plan), origin = this.#viaMainOrigin, runner = this.#mainRunner;
     if (origin === null || runner === null) { throw error("PCB_VIA_LIVE_ORIGINAL_MAIN"); }

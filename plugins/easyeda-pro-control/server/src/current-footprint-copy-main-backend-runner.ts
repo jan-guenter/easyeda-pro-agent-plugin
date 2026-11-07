@@ -1240,6 +1240,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   }
   async #continueSelectedReadonlyRequest(packet: CurrentSelectedFileMainRequestObservation): Promise<void> {
     need(this.#selectedReadonlyRequest(packet) && this.#selectedReadonlyContinuations < 64, "SELECTED_REQUEST_NO_WRITE_GRANT"); const original = selectedRequestPackets.get(packet); need(original !== undefined, "SELECTED_REQUEST_ORIGINAL");
+    if (this.#viaLiveHistoryCustody?.wantsReadonlyRequest(packet) === true) { need(this.#selectedRequestReader !== null, "VIA_LIVE_ORIGINAL_REQUEST_READER"); this.#viaLiveHistoryCustody.retainReadonlyRequest(packet, this.#selectedRequestReader.requireOriginalCapture(packet)); }
     this.#selectedReadonlyContinuations += 1; this.#sqlApprovedReadRequests.add(original.pause); await this.#sqlResume(original.pause);
     if (this.#sqlHeld === original.pause) { this.#sqlHeld = null; }
   }
@@ -1355,7 +1356,7 @@ export class CurrentFootprintCopyMainBackendRunner {
           this.#viaMainDeliveredPause = null; if (this.#sqlHeld === pause) { this.#sqlHeld = null; } return reply;
         } }); this.#viaHistoryCustody = history;
       const liveHistory = new CurrentPcbViaMainLiveHistoryCustody({ scriptId: this.#appScriptId, sqlCaptureObjectId: this.#sqlCapture,
-        originalSqlObjectId: (): string => { same(); need(this.#viaMainSqlPacket !== null, "VIA_LIVE_ORIGINAL_SQL_PACKET"); return this.#viaMainSqlPacket; }, assertCurrent: same,
+        assertCurrent: same,
         effects: (): CurrentProjectHistorySqlEffects => { same(); return history.result(); },
         pause: (): CurrentPcbViaMainBeginPause => { same(); const pause = this.#pause; need(pause !== null && pause === this.#viaMainDeliveredPause, "VIA_LIVE_ORIGINAL_PAUSE"); return Object.freeze({ identity: pause, frameId: pause.frameId, raw: this.#viaMainDeliveredEvent, sqlSite: pause.sqlSite ?? null, pendingEvents: this.#viaMainEvents.length, resumed: pause.resumed, resumeAttempted: pause.resumeAttempted }); },
         pendingRequestId: (): number | null => this.#pendingId, busy: (): boolean => this.#busy,
@@ -1381,7 +1382,7 @@ export class CurrentFootprintCopyMainBackendRunner {
           same(); if (this.#viaMainReadonlyService !== null) { await this.#viaMainReadonlyService; same(); } need(!this.#busy, "VIA_LIVE_BUSY"); const command = validateCurrentPcbViaMainLiveHistoryCommand(input);
           if (command.phase === "via-main-live-arm") { this.#viaMainArming = command.params.location; }
           this.#busy = true; try { return await liveHistory.request(command, cleanup); } catch (error) { this.#fail(error); throw error; } finally { this.#viaMainArming = null; this.#busy = false; }
-        }, originalLiveHistorySqlObjectId: (): string => { same(); history.result(); need(this.#viaMainSqlPacket !== null, "VIA_LIVE_ORIGINAL_SQL"); return this.#viaMainSqlPacket; }, originalLiveHistoryRows: (): CurrentPcbViaMainLiveHistoryRows => { same(); return liveHistory.result(); },
+        }, originalLiveHistoryRequestObjectId: (): string => { same(); history.result(); return liveHistory.originalRequestObjectId(); }, originalLiveHistoryRows: (): CurrentPcbViaMainLiveHistoryRows => { same(); return liveHistory.result(); },
         historyRequest: async (input: CurrentPcbViaMainHistoryCommand, cleanup: boolean): Promise<unknown> => {
           same(); if (this.#viaMainReadonlyService !== null) { await this.#viaMainReadonlyService; same(); } need(!this.#busy, "VIA_HISTORY_BUSY"); const command = validateCurrentPcbViaMainHistoryCommand(input);
           if (command.phase === "via-main-history-arm") { need(this.#viaExpectedBody === null, "VIA_HISTORY_PRE_SAVE_ARM_REQUIRED"); this.#viaMainArming = command.params.location; }

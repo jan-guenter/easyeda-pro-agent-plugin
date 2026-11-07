@@ -24,7 +24,7 @@ export interface CurrentPcbViaMainBackendBindings {
   readonly structureExpected: () => CurrentPcbViaMainStructureExpected;
   readonly originalStructureEffects: () => CurrentProjectStructureSqlEffects;
   readonly liveHistoryRequest: (command: CurrentPcbViaMainLiveHistoryCommand, cleanup: boolean) => Promise<unknown>;
-  readonly originalLiveHistorySqlObjectId: () => string;
+  readonly originalLiveHistoryRequestObjectId: () => string;
   readonly originalLiveHistoryRows: () => CurrentPcbViaMainLiveHistoryRows;
   readonly historyRequest: (command: CurrentPcbViaMainHistoryCommand, cleanup: boolean) => Promise<unknown>;
   readonly requireHistoryArmed: () => void;

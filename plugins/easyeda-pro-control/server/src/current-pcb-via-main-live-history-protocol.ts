@@ -7,7 +7,7 @@ import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_PROGRAMS as PROGRAMS } from "./curren
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_GROUP = "easyeda-via-main-live-history209-v1";
-export const CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_REQUESTS = Object.freeze({ arms: 1, frames: 1, joins: 2, properties: 4, originalSteps: 1, normal: 9, cleanup: 2, total: 11, events: 2 });
+export const CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_REQUESTS = Object.freeze({ arms: 1, frames: 1, joins: 3, properties: 5, originalSteps: 1, normal: 11, cleanup: 2, total: 13, events: 2 });
 const GROUP = CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_GROUP, handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u), ref = z.strictObject({ objectId: handle });
 export const CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_FRAME_FLAGS = Object.freeze({ objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true, returnByValue: false, includeCommandLineAPI: false } as const);
 export const CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_CALL_FLAGS = Object.freeze({ objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true, awaitPromise: false, userGesture: false } as const);
@@ -22,8 +22,8 @@ const empty = z.strictObject({}); const removeParams = z.strictObject({ breakpoi
 const schema = z.discriminatedUnion("phase", [
   z.strictObject({ phase: z.literal("via-main-live-arm"), method: z.literal("Debugger.setBreakpoint"), params: armParams }),
   z.strictObject({ phase: z.literal("via-main-live-frame"), method: z.literal("Debugger.evaluateOnCallFrame"), params: frameParams }),
-  z.strictObject({ phase: z.literal("via-main-live-join"), role: z.enum(["capture", "value"]), method: z.literal("Runtime.callFunctionOn"), params: joinParams }),
-  z.strictObject({ phase: z.literal("via-main-live-properties"), role: z.enum(["packet", "projectSql", "table", "branches"]), method: z.literal("Runtime.getProperties"), params: propertyParams }),
+  z.strictObject({ phase: z.literal("via-main-live-join"), role: z.enum(["capture", "resolved", "value"]), method: z.literal("Runtime.callFunctionOn"), params: joinParams }),
+  z.strictObject({ phase: z.literal("via-main-live-properties"), role: z.enum(["packet", "promise", "projectSql", "table", "branches"]), method: z.literal("Runtime.getProperties"), params: propertyParams }),
   z.strictObject({ phase: z.literal("via-main-live-step"), method: z.literal("Debugger.resume"), params: empty }),
   z.strictObject({ phase: z.literal("via-main-live-remove"), method: z.literal("Debugger.removeBreakpoint"), params: removeParams }),
   z.strictObject({ phase: z.literal("via-main-live-release"), method: z.literal("Runtime.releaseObjectGroup"), params: releaseParams }),
@@ -39,8 +39,8 @@ export function currentPcbViaMainLiveHistoryNativeCases(): readonly CurrentPcbVi
   return freezeDeep([
     { phase: "via-main-live-arm", method: "Debugger.setBreakpoint", params: { location: { scriptId: "live_script", lineNumber: SITE.lineNumber, columnNumber: SITE.columnNumber } } },
     { phase: "via-main-live-frame", method: "Debugger.evaluateOnCallFrame", params: { ...CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_FRAME_FLAGS, callFrameId: "live_frame", expression: SITE.expression } },
-    ...(["capture", "value"] as const).map(role => ({ phase: "via-main-live-join" as const, role, method: "Runtime.callFunctionOn" as const, params: { ...CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_CALL_FLAGS, objectId: "live_packet", functionDeclaration: PROGRAMS[role].program, arguments: Array.from({ length: PROGRAMS[role].arguments }, (_, i) => ({ objectId: `live_argument${String(i)}` })), returnByValue: PROGRAMS[role].returnByValue } })),
-    ...(["packet", "projectSql", "table", "branches"] as const).map(role => ({ phase: "via-main-live-properties" as const, role, method: "Runtime.getProperties" as const, params: { objectId: "live_member", ownProperties: true as const, accessorPropertiesOnly: false as const, generatePreview: false as const } })),
+    ...(["capture", "resolved", "value"] as const).map(role => ({ phase: "via-main-live-join" as const, role, method: "Runtime.callFunctionOn" as const, params: { ...CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_CALL_FLAGS, objectId: "live_packet", functionDeclaration: PROGRAMS[role].program, arguments: Array.from({ length: PROGRAMS[role].arguments }, (_, i) => ({ objectId: `live_argument${String(i)}` })), returnByValue: PROGRAMS[role].returnByValue } })),
+    ...(["packet", "promise", "projectSql", "table", "branches"] as const).map(role => ({ phase: "via-main-live-properties" as const, role, method: "Runtime.getProperties" as const, params: { objectId: "live_member", ownProperties: true as const, accessorPropertiesOnly: false as const, generatePreview: false as const } })),
     { phase: "via-main-live-step", method: "Debugger.resume", params: {} },
     { phase: "via-main-live-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: "live_point" } },
     { phase: "via-main-live-release", method: "Runtime.releaseObjectGroup", params: { objectGroup: GROUP } },

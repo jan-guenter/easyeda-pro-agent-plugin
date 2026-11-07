@@ -12,6 +12,8 @@
 
 - [2026-11-06 original structure transport observer](2026-11-06-original-structure-transport-observer.md). Fixed XHR send/return custody, original body and main-publication grants, failure retention, and checkpoint-bound Via generation launch; connected writer completion remains pending.
 
+- [2026-11-07 Via live cache plan](2026-11-07-via-live-cache-plan.md). Genuine body/SQL/native-row data for both history branches, exact parser/head/branch bytes, and corrected per-request original GET/Promise custody; producer completion remains separate.
+
 - [2026-11-07 original Via live history read](2026-11-07-via-original-live-history-read.md). Same original Main/SQLite return supplies actual history timestamps for the pending live cache projection; no clock, SQL or producer grant.
 
 - [2026-11-07 saved-reader journal and no-root cleanup](2026-11-07-saved-reader-journal-cleanup.md). Original reopen/effect/exit/fullSQL publications and honest writer/readback helper cleanup; unreproved publication holds controls and failed proof remains false.
