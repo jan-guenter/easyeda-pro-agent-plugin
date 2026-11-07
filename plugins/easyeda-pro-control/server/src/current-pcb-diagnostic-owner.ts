@@ -3,6 +3,7 @@
 import { captureCurrentSchematicEditNativeHelper } from "./current-schematic-edit-native-helper.ts";
 import { CURRENT_PCB_DIAGNOSTIC_HELPER_BYTES as HELPER_BYTES, CURRENT_PCB_DIAGNOSTIC_HELPER_SHA256 as HELPER_SHA256 } from "./current-pcb-diagnostic-helper-identity.ts";
 import { currentFootprintInversePublicApiCallees,currentFootprintInversePublicApiFunction,currentFootprintInversePublicApiInitial,currentFootprintInversePublicApiKey,currentFootprintInversePublicApiNativeFrame,currentFootprintInversePublicApiObject,currentFootprintInversePublicApiOrder,currentFootprintInversePublicApiProgram,currentFootprintInversePublicApiScope,currentFootprintInversePublicApiScript,qualifyCurrentFootprintInversePublicApiHelper,validateCurrentFootprintInversePublicApiCommand } from "./current-footprint-inverse-public-api-protocol.ts";
+import type { CurrentFootprintInversePublicDeleteEnrollment, CurrentFootprintInversePublicDeleteIntent } from "./current-footprint-inverse-public-delete-intent.ts";
 import type { CurrentFootprintInversePublicApiCommand } from "./current-footprint-inverse-public-api-protocol.ts";
 import type { CurrentFootprintInversePublicApiBindings,CurrentFootprintInversePublicApiOrigin } from "./current-footprint-inverse-public-api-origin.ts";
 import type { CurrentFootprintInversePublicApi,CurrentFootprintInversePublicApiObserver } from "./current-footprint-inverse-public-api-observer.ts";
@@ -1210,6 +1211,36 @@ export function consumeCurrentFootprintInversePollingIntent(token: CurrentFootpr
   if (!original.enrolled || original.consumed) { throw error("FOOTPRINT_INVERSE_POLLING_DISPATCH_CONSUMED"); } original.consumed = true;
   return Object.freeze({ assertPublished: async (): Promise<void> => { original.current(); await original.published(); original.current(); } });
 }
+interface FootprintInversePublicDeleteIntentOriginal {
+  readonly owner: CurrentFootprintInverseNativeOwner; readonly prepared: CurrentFootprintForwardSavedCheckpoint;
+  readonly current: () => void; readonly beforeAttempt: () => void; readonly published: () => Promise<void>;
+  enrolled: boolean; consumed: boolean;
+}
+const footprintInversePublicDeleteIntents = new WeakMap<CurrentFootprintInversePublicDeleteIntent, FootprintInversePublicDeleteIntentOriginal>();
+function footprintInversePublicDeleteIntent(token: CurrentFootprintInversePublicDeleteIntent, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): FootprintInversePublicDeleteIntentOriginal {
+  const original = footprintInversePublicDeleteIntents.get(token);
+  if (original === undefined || original.owner !== owner || original.prepared !== prepared) { throw error("FOOTPRINT_INVERSE_PUBLIC_DELETE_ORIGINAL_INTENT"); }
+  assertOriginalCurrentFootprintInverseNativeOwner(owner); original.current(); return original;
+}
+export function requireOriginalCurrentFootprintInversePublicDeleteIntent(token: CurrentFootprintInversePublicDeleteIntent, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): void {
+  footprintInversePublicDeleteIntent(token, owner, prepared);
+}
+/** Original idle enrollment only; copied evidence cannot acquire a live call. */
+export function enrollCurrentFootprintInversePublicDeleteIntent(token: CurrentFootprintInversePublicDeleteIntent, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): CurrentFootprintInversePublicDeleteEnrollment {
+  const original = footprintInversePublicDeleteIntent(token, owner, prepared); original.beforeAttempt();
+  if (original.enrolled || original.consumed) { throw error("FOOTPRINT_INVERSE_PUBLIC_DELETE_ENROLLMENT_CONSUMED"); } original.enrolled = true;
+  const current = (): void => { if (footprintInversePublicDeleteIntent(token, owner, prepared) !== original || !original.enrolled) { throw error("FOOTPRINT_INVERSE_PUBLIC_DELETE_ENROLLMENT_CHANGED"); } };
+  return Object.freeze({ assertCurrent: current, assertBeforeAttempt: (): void => { current(); if (original.consumed) { throw error("FOOTPRINT_INVERSE_PUBLIC_DELETE_ATTEMPT_CONSUMED"); } original.beforeAttempt(); },
+    assertOriginalAttempted: (): void => { current(); if (!original.consumed) { throw error("FOOTPRINT_INVERSE_PUBLIC_DELETE_ATTEMPT_REQUIRED"); } },
+    assertPublished: async (): Promise<void> => { current(); await original.published(); current(); } });
+}
+/** A future actual SDK lane spends this marker synchronously before its first
+ * await, after both original worker and service admissions. Never refundable. */
+export function consumeCurrentFootprintInversePublicDeleteIntent(token: CurrentFootprintInversePublicDeleteIntent, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): Readonly<{ assertPublished: () => Promise<void> }> {
+  const original = footprintInversePublicDeleteIntent(token, owner, prepared); original.beforeAttempt();
+  if (!original.enrolled || original.consumed) { throw error("FOOTPRINT_INVERSE_PUBLIC_DELETE_DISPATCH_CONSUMED"); } original.consumed = true;
+  return Object.freeze({ assertPublished: async (): Promise<void> => { original.current(); await original.published(); original.current(); } });
+}
 interface FootprintInverseLibraryRefreshIntentOriginal {
   readonly owner: CurrentFootprintInverseNativeOwner; readonly prepared: CurrentFootprintForwardSavedCheckpoint;
   readonly current: () => void; readonly beforeNavigation: () => void; readonly published: () => Promise<void>;
@@ -2238,6 +2269,9 @@ class CurrentPcbRetainedOwnerCore {
   #inverseLibraryRefreshArmPromise:Promise<CurrentFootprintInverseLibraryRefreshOrigin>|null=null;#inverseLibraryRefreshOrigin:CurrentFootprintInverseLibraryRefreshOrigin|null=null;#inverseLibraryRefreshObserver:CurrentProjectLibraryRefreshObserver|null=null;
   #inverseLibraryRefreshPristine:CurrentProjectLibraryRefreshPristine|null=null;#inverseLibraryRefreshSuspension:CurrentProjectLibraryRefreshSuspension|null=null;#inverseLibraryRefreshCompletion:CurrentProjectLibraryRefreshCompletion|null=null;
   #inverseLibraryRefreshNativeCompleted=false;#inverseLibraryRefreshAttempted=false;#inverseLibraryRefreshCommand:CurrentProjectLibraryRefreshCommand|null=null;
+  #inversePublicDeleteIntentPromise: Promise<CurrentFootprintInversePublicDeleteIntent> | null = null;
+  #inversePublicDeleteIntent: CurrentFootprintInversePublicDeleteIntent | null = null;
+  #inversePublicDeleteEnrollment: CurrentFootprintInversePublicDeleteEnrollment | null = null;
   #inverseLibraryRefreshIntentPromise:Promise<CurrentFootprintInverseLibraryRefreshIntent>|null=null;
   #inverseLibraryRefreshIntent:CurrentFootprintInverseLibraryRefreshIntent|null=null;
   #inverseLibraryRefreshEnrollment:CurrentFootprintInverseLibraryRefreshEnrollment|null=null;
@@ -8918,6 +8952,49 @@ class CurrentPcbRetainedOwnerCore {
       footprintInversePollingIntents.set(token, { owner: this, prepared, current, beforeNavigation, published, enrolled: false, consumed: false });
       this.#inversePollingIntent = token; current(); this.#inversePollingEnrollment = enrollCurrentFootprintInversePollingIntent(token, this, prepared); return token;
     })(); this.#inversePollingIntentPromise = pending; return pending;
+  }
+  /** Publish once while this original inverse generation is idle. This token
+   * alone cannot dispatch SDK/RPC, release the worker or authorize any SQL. */
+  public prepareFootprintInversePublicDeleteIntent(): Promise<CurrentFootprintInversePublicDeleteIntent> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this);
+    if (this.#inversePublicDeleteIntentPromise !== null) { this.#inversePublicDeleteEnrollment?.assertCurrent(); return this.#inversePublicDeleteIntentPromise; }
+    const prepared = originalCurrentFootprintInverseTarget(this), source = originalCurrentFootprintInverseNativeSource(this);
+    const allocation = footprintInverseFactories.get(this)?.allocation; const ready = this.#inverseUiReady; const runner = this.#mainRunner; const binding = this.#binding;
+    const idle = this.#inverseStartupIdle; const controller = this.#inverseWorkerController; const api = this.#inversePublicApi; const apiObserver = this.#inversePublicApiObserver;
+    if (allocation === undefined || ready === null || runner === null || binding === null || idle === null || controller === null || api === null || apiObserver === null || !this.#inversePublicApiNativeCompleted) { throw error("FOOTPRINT_INVERSE_PUBLIC_DELETE_IDLE_REQUIRED"); }
+    let token: CurrentFootprintInversePublicDeleteIntent | null = null;
+    const current = (): void => {
+      assertOriginalCurrentFootprintInverseNativeOwner(this); this.#available(); requireFootprintInversePreparation(allocation);
+      if (footprintInverseFactories.get(this)?.allocation !== allocation || originalCurrentFootprintInverseTarget(this) !== prepared || originalCurrentFootprintInverseNativeSource(this) !== source ||
+        this.#binding !== binding || this.#inverseUiReady !== ready || this.#mainRunner !== runner || this.#inverseWorkerController !== controller || this.#inverseStartupIdle !== idle ||
+        this.#inversePublicApi !== api || this.#inversePublicApiObserver !== apiObserver || !this.#inversePublicApiNativeCompleted ||
+        this.#mainTerminateAttempted || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed || token !== null && this.#inversePublicDeleteIntent !== token) {
+        throw error("FOOTPRINT_INVERSE_PUBLIC_DELETE_ORIGINAL_CHANGED");
+      }
+    };
+    const beforeAttempt = (): void => { current(); requireOriginalCurrentFootprintInverseStartupIdle(idle, this, prepared); apiObserver.requireOriginal(api); controller.requireOriginalStartupDrained(); if (runner.selectedSqlFenceState()["ready"] !== true) { throw error("FOOTPRINT_INVERSE_PUBLIC_DELETE_FENCE_REQUIRED"); } };
+    beforeAttempt(); this.#enter(true);
+    const pending = (async (): Promise<CurrentFootprintInversePublicDeleteIntent> => { try {
+      await allocation.verifyPrepared(prepared); beforeAttempt();
+      const text = `${canonicalJson({ schema: "private.current-footprint-inverse-public-delete-durable-intent.v1", originalOperationId: source.operationId,
+        target: source.target, originalBinding: binding, originalClosedLogicalSha256: source.before.logicalSha256,
+        nonce: randomBytes(32).toString("hex"), scope: "original-public-lib_Footprint.delete-Project-only", libraryArgument: "Project",
+        originalSdkReceiverAndRpcServiceRequired: true, originalWorkerAdmissionRequired: true, originalNativeDeletePromiseRequired: true,
+        collateralEffectsAndProducerDrainRequired: true, originalSelectedSqlRequired: true, noReplayAfterUnknownAcknowledgment: true,
+        sdkInvocationAuthorized: false, workerClockAuthorized: false, selectedSqlAuthorized: false, collateralCompletionVerified: false,
+        navigationReplayAuthorized: false, saveAuthorized: false })}\n`;
+      if (Buffer.byteLength(text) > 16_384) { throw error("FOOTPRINT_INVERSE_PUBLIC_DELETE_INTENT_BOUND"); }
+      const directory = await ensureManagedDirectory(join(controlDataDirectory(), "artifacts", "footprint-inverse-public-delete-intent")); beforeAttempt();
+      const artifact = await publishManagedAttachmentExclusive(join(directory, `${randomBytes(16).toString("hex")}.json`), "Original footprint inverse public Project delete intent", Buffer.from(text),
+        "footprint-inverse-public-delete-intent", (): Promise<void> => { beforeAttempt(); return Promise.resolve(); }); beforeAttempt();
+      const published = async (): Promise<void> => { current(); await verifyExactManagedArtifact(artifact); current();
+        const raw = await readArtifact(artifact.path, 0, 16_384); current(); if (!raw.eof || raw.text !== text) { throw error("FOOTPRINT_INVERSE_PUBLIC_DELETE_INTENT_ARTIFACT"); }
+        await verifyExactManagedArtifact(artifact); current();
+      };
+      await published(); beforeAttempt(); token = Object.freeze({ profile: "private.current-footprint-inverse-public-delete-intent.v1" });
+      footprintInversePublicDeleteIntents.set(token, { owner: this, prepared, current, beforeAttempt, published, enrolled: false, consumed: false });
+      this.#inversePublicDeleteIntent = token; current(); this.#inversePublicDeleteEnrollment = enrollCurrentFootprintInversePublicDeleteIntent(token, this, prepared); return token;
+    } finally { this.#busy = false; } })(); this.#inversePublicDeleteIntentPromise = pending; return pending;
   }
   public prepareFootprintInverseLibraryRefreshIntent(): Promise<CurrentFootprintInverseLibraryRefreshIntent> {
     assertOriginalCurrentFootprintInverseNativeOwner(this);
