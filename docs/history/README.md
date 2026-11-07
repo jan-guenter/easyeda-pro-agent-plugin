@@ -878,3 +878,5 @@ layout. The connected ledger retains its generation and case anchors.
 - [Original schematic monitor batch](2026-11-07-schematic-original-monitor-batch.md), four source-owned continuations with exact AST/view deltas, ending before the original history body.
 
 - [Original Text history recording](2026-11-07-schematic-original-history-command.md), source-bound constructor and attribute recording, ending at the held callback finish before normal success.
+
+- [Original schematic model upload](2026-11-07-schematic-original-model-upload.md), three source-owned delivery boundaries ending before Text serialization/publication.
