@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 Via changed-head sync cursor](2026-11-07-via-changed-head-sync-cursor.md). Separate prospective branch and genuine late SQLite rows, exact changed index and original Promise settlement; actual producer/native mounting remains separate.
+
 - [2026-11-07 Via replay and global admission](2026-11-07-via-replay-and-global-admission.md). Recheck the original unpended node before replay and quarantine incomplete private writer journals through global admission; full native upload drain and public mounting remain open.
 
 - [2026-11-07 combined writer choreography](2026-11-07-combined-writer-choreography.md). Join genuine timer startup and original collector closure, preserve exact fixed programs within the helper limit, and retain the full producer-drain requirement before writer exposure.
