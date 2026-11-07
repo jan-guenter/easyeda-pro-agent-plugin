@@ -861,3 +861,46 @@ helper bytes and1,855,021 C# bytes; all six old forward/cold source artifacts
 remain byte exact. No tracked helper/pins/bundles or native runtime changes.
 The original startup callback/queue/Promise collector remains required before
 any inverse bootstrap continuation or writer action.
+
+The same original inverse startup token now privately retains a separate cold
+loading data profile for its complete mixed saved branch. It binds every
+selected cipher row, full plaintext/hash, history/ordinal URL and exact pinned
+parser-derived final history metadata to the genuine completed source inventory.
+The old Via two-chunk data/schema/counters and old footprint startup-data v1
+result remain unchanged. These private expected values grant no old runtime
+owner or native loading acceptance.
+
+`armFootprintInverseColdLoad(originalBootstrapHold)` now reaches the genuine
+retained inverse worker. After its own producer enrollment it derives the actual
+chunk count from that private token, binds it once, qualifies original native
+Fetch/DataView metadata, and arms13 original cold-loading/readiness/refusal
+points while the bootstrap remains held. The47-case inverse codebook has its
+own keys and native/pipe/private origin; it reuses only immutable saved-loader
+source-template encoding, with every full wire hash checked. It supplies no
+Debugger.resume, Cache constructor transfer, caller chunk count, program or
+session selector. Copies of the hold/origin refuse before dispatch. Three
+actual helper scripts require exact source readback through this original lane.
+
+The pre-model plaintext site is the original `mg`109:3573, before its
+`Ql.write`/flow update. A separate inverse progress comparator admits up to8
+actual chunks, interleaved Fetch/Response/byte/plain stages, all mixed peers and
+exact final parser bookkeeping; altered cipher/plaintext, stage replay,
+warm/pending/fallback/failure paths refuse. This is data comparison until joined
+to its actual original collector. The source field-order smoke initially refused
+the new value wrapper; the inverse wire was corrected to preserve the existing
+encoder's exact `returnByValue`/`arguments` order. Original programs and older
+wire contracts were not changed.
+
+The arm requires25 commands. The finite readonly observation reservation is
+`46+22*N` for original1..8 chunks, at most222; native counters bind the actual
+N once. No continuation is reserved. Including the original bind gives inverse
+renderer1,132, original-main reproofs76,695 and aggregate controls127,299, with
+older purposes unchanged. Sixteen focused real synthetic SQLite/cipher,
+source/issuer/grammar/factory checks, full types, strict changed-file lint,
+complete two-pass generation, Linux C#5/.NET10 fixed-codec smokes and byte-exact
+old six-role forward/cold source checks pass. This branch emits2,063,892 helper
+bytes/1,861,788 C# bytes, an8,060-byte increment; combined integration must still
+meet the unchanged2MiB bound. Tracked helper/pins/bundles are untouched and no
+Windows/app/native/MCP call ran. The actual startup event mux/collector,
+callback and queued-Promise completion, eight-job cache cursor, initial sync and
+timer exclusion remain required before bootstrap continuation or delete/Save.

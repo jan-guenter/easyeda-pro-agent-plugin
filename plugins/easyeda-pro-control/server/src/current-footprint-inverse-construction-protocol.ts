@@ -8,6 +8,8 @@ import type { CurrentProjectSaveStructureCommand } from "./current-project-save-
 import { currentPcbViaWorkerWire } from "./current-pcb-via-worker-wire.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
+export type { CurrentProjectSaveStructureEvent } from "./current-project-save-structure-origin.ts";
+
 export const CURRENT_FOOTPRINT_INVERSE_CONSTRUCTION_REQUESTS = Object.freeze({
   sharedNormal: STRUCTURE.normal, sharedCleanup: STRUCTURE.cleanup, helperSources: STRUCTURE.normal, sourceStart: 2,
   cdpRequests: STRUCTURE.cdpRequests + STRUCTURE.normal + 2, heldEvents: STRUCTURE.events,
