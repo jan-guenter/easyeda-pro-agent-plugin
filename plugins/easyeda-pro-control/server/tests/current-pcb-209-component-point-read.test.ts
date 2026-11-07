@@ -22,6 +22,19 @@ void test("missing/stale cache, foreign parents, shown or unready ATTRs and all 
     const realm = fixture(change); assert.throws(() => read(realm), /PCB209_SPATIAL_READ_REFUSED/u, change); assert.equal(runInContext("metrics.hits", realm), 0, change);
   }
 });
+void test("only the exact template constructor bitmap is admitted; indexed Pad readiness stays strict", () => {
+  // oxlint-disable-next-line eslint/no-bitwise -- Exercise each independent native bitmap bit without accepting a dirty-mask class.
+  for (const state of [0, 2, 5200, ...Array.from({ length: 21 }, (_, bit) => 5202 ^ (1 << bit))]) {
+    const realm = fixture(`sourcePad._dataState=${String(state)}`);
+    assert.throws(() => read(realm), /PCB209_SPATIAL_READ_REFUSED/u, `template state ${String(state)}`);
+    assert.equal(runInContext("metrics.hits", realm), 0);
+  }
+  for (const state of [2, 4, 5202]) {
+    const realm = fixture(`padModel._dataState=${String(state)}`);
+    assert.throws(() => read(realm), /PCB209_SPATIAL_READ_REFUSED/u, `indexed state ${String(state)}`);
+    assert.equal(runInContext("metrics.hits", realm), 0);
+  }
+});
 void test("retained cache/ATTR/scratch mutation refuses after the first sample and exact290/419 budget leaves old384 unchanged", () => {
   for (const change of ["cache._layeredBoxMap[1].maxX=11", "attrModels[0].base.showValue=true", "scope.ws._modify=true", "cache.components.clear()", "attrTree.items.clear()"] ) {
     const realm = fixture(`hook.run=()=>{${change}}`); assert.throws(() => read(realm), /PCB209_SPATIAL_READ_REFUSED/u, change); assert.equal(runInContext("metrics.hits", realm), 1, change);

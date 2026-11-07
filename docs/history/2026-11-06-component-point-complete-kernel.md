@@ -64,3 +64,49 @@ root's scope-followup proof directory. No owner constructor, native directory
 lease or application was allocated. The earlier statement that Windows
 compilation remained separate is preserved as historical; connected Component
 import/cache/index and reader acceptance remain pending.
+
+The later frozen `b22` Component case consumed its single point batch and
+refused in `templatePad`, at the first compound guard on generated line117.
+The retained private failure is
+`pcb209-spatial-component-live-20261106i/spatial209-failure.json`. Its exception
+contains no scalar operands; the live bitmap and the exact failed operand were
+not observed. The original normal close, closed capture and release belong to
+the root's retained reader lifecycle. No read retry was made for this analysis.
+
+An offline audit of the exact installed PCB script identifies a concrete
+incorrect template assumption. The full10,991,441-byte script has SHA256
+`a84059304d32d4f0feb768d6c5baf00d72a954643ac62299f2c46c08fa68fd0b`.
+Its uncached `y3.getItem` path at UTF16offset4181997 constructs `tE`; the fixed
+top SMT Pad passes number `1`, empty net, its circular top shape, null other
+shapes and default padType0. The constructor calls `update` at3525404.
+The number, net and top setters produce1024+16+4096. The top setter dispatches
+the **`et.updateShapeData` override** at3518891, which sets refreshBBox without
+setting shapeModified for an undefined argument. The `ki.refreshBBox` setter
+at3425471 adds64+2. The exact constructor bitmap is therefore5202, with
+refreshBBox true and isEmpty false. This is source-derived constructor
+bookkeeping, not an observed live operand.
+
+`lC.buildItems` retains that original uncached Pad. `tE.updateBox` at3527911
+replaces its bbox without clearing the flags; `lC.updateBBox` at4303854 calls
+that method while aggregating the footprint bounds. The GPU
+`lC.clone2Template` path at4305720 constructs a separate indexed `rE`, whose
+constructor reads the original Pad and its bbox without resetting the template.
+The indexed clone starts at bitmap0. Neither path justifies treating the
+template as a ready indexed model or clearing its flags during a read.
+
+The Component template guard now requires exactly5202 along with its existing
+identity, parent, shape, origin, layer, lock and stored-bounds checks. It accepts
+no arbitrary dirty bitmap. Indexed Component/Pad readiness, hidden ATTR
+readiness and the separate standalone Pad operation retain their prior guards.
+The maintained full-source checker executes the hash-qualified actual
+`D0/n3/cP/ki/et/tE/rE/lC` class definitions with inert bbox/expansion/profiler
+dependencies. It proves5202 before and after actual `updateBBox` and
+`clone2Template`, bitmap0 on the indexed clone, and original source/bbox
+identity. No application/library factory or native owner runs in this check.
+
+Four focused kernel cases pass, including zero/partial template bitmaps,
+each of21 single-bit deviations from5202, and dirty indexed Pads refusing
+before any hit. The full installed-source checker retains all290 span and11
+Node function metadata checks. Its derived maximum frame is65453/65536 bytes;
+the419 request budget and old384 purposes are unchanged. Connected validation
+of this correction remains pending; the earlier refusal remains evidence.
