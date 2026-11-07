@@ -2,6 +2,7 @@
  * active first-setter callback and writer completion remain separately held. */
 /* oxlint-disable import/max-dependencies -- The original origin, exact protocol and independent full-source/function decoders remain separate. */
 import { z } from "zod";
+import { decodeCurrentSchematicRelevanceDisplayActionNoop } from "./current-schematic-relevance-display-action-replies.ts";
 import { requireOriginalCurrentSchematicRelevanceDisplayActionOrigin } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentSchematicRelevanceDisplayWriteOwner } from "./current-schematic-relevance-display-write-owner.ts";
 import type { GeneratedSchematicRelevanceDisplayNativeArguments } from "./generated-schematic-relevance-display-source.ts";
@@ -47,7 +48,8 @@ export class CurrentSchematicRelevanceDisplayActionObserver {
       const original = array.parse(await this.#send({ phase: "schematic-action-preflight", method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: this.#bindings.holderObjectId, functionDeclaration: CALLS.preflight, arguments: args, returnByValue: false } })).result.objectId;
       const functions = decodeGeneratedSchematicDisplayActionPreflightCallees(await this.#properties(original)); const first = await this.#properties(functions.runnerConstructor.objectId);
       const scriptId = currentSchematicDisplayAccessorFunctionScriptId(first); const source = qualifyGeneratedSchematicDisplayActionSource(await this.#send({ phase: "schematic-action-source", method: "Debugger.getScriptSource", params: { scriptId } }));
-      for (const role of ROLES) { const fn = functions[role]; requireGeneratedSchematicDisplayActionDescription(fn.description, source, role); decodeGeneratedSchematicDisplayActionFunction(role === "runnerConstructor" ? first : await this.#properties(fn.objectId), source, role, scriptId); }
+      for (const role of ROLES) { const fn = functions[role]; requireGeneratedSchematicDisplayActionDescription(fn.description, source, role); const properties = role === "runnerConstructor" ? first : await this.#properties(fn.objectId);
+        if (role === "noop") { decodeCurrentSchematicRelevanceDisplayActionNoop(properties, source, scriptId); } else { decodeGeneratedSchematicDisplayActionFunction(properties, source, role, scriptId); } }
       truth.parse(await this.#send({ phase: "schematic-action-same", method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: original, functionDeclaration: CALLS.same,
         arguments: [{ objectId: this.#bindings.holderObjectId }, ...args], returnByValue: true } }));
       const packet: CurrentSchematicRelevanceDisplayActionObservation = Object.freeze({ schema: "private.current-schematic-relevance-display-action-preflight-observation.v1", sourceSha256: SOURCES[source].sha256, originalFunctions: 18,

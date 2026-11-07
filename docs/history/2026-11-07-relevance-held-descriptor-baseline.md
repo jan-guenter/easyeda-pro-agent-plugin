@@ -39,3 +39,18 @@ completion still need their original source and continuation proofs. The
 separate `fu` library loop and `checkProject` worker controls also remain required
 before a run grant. Matching this baseline proves no persistence or reopened
 result. Full source preflight and observe checks are preserved.
+
+## Original idle callback metadata correction
+
+The pinned module's regular `Cr(...i)` declaration is outside strict mode.
+Actual Node 24 Inspector metadata has five own fields, including immutable
+`arguments` and `caller` data fields whose values are null. The seven-record
+idle-action observer now uses this exact source-specific shape. The old
+six-record parser is unchanged and still refuses that packet. No extra request
+or native reservation is added.
+
+Three focused cases pass, including real Inspector metadata at both pinned
+source locations, rejection of missing or contradictory fields, and the prior
+idle/active projection cases. Both TypeScript projects and changed strict lint
+pass. The declarations are compiled without invocation; these checks establish
+no application effect or write authority.
