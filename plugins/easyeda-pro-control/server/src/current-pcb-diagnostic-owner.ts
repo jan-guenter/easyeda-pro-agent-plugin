@@ -1,5 +1,8 @@
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import type { CurrentFootprintInversePublicGetJob, CurrentFootprintInversePublicGetJobBindings } from "./current-footprint-inverse-public-get-job.ts";
+import type { CurrentFootprintInversePublicRowPlan } from "./current-footprint-inverse-public-row-plan.ts";
+import type { CurrentFootprintInversePublicRowData } from "./current-footprint-inverse-public-row-data.ts";
 import { collectCurrentFootprintInverseLookupPreentry } from "./current-footprint-inverse-lookup-preentry-collector.ts";
 import { CURRENT_FOOTPRINT_INVERSE_LOOKUP_PREENTRY_REQUESTS as INVERSE_LOOKUP_PREENTRY_REQUESTS, currentFootprintInverseLookupPreentryNativeFrame, currentFootprintInverseLookupPreentryProgram, qualifyCurrentFootprintInverseLookupPreentryHelper, validateCurrentFootprintInverseLookupPreentryCommand } from "./current-footprint-inverse-lookup-preentry-protocol.ts";
 import type { CurrentFootprintInverseLookupPreentryCommand } from "./current-footprint-inverse-lookup-preentry-protocol.ts";
@@ -1331,6 +1334,11 @@ export function originalCurrentFootprintInversePublicLookupEntry(packet: Current
 }
 // This registry stays unissued until the actual manager/native forwarding
 // Collector joins the original Call and worker peer. No structural issuer.
+const footprintInversePublicGetJobs = new WeakMap<CurrentFootprintInversePublicGetJob, Readonly<{ owner: CurrentFootprintInverseNativeOwner; prepared: CurrentFootprintForwardSavedCheckpoint; bindings: CurrentFootprintInversePublicGetJobBindings; current: () => void }>>();
+export function requireOriginalCurrentFootprintInversePublicGetJob(packet: CurrentFootprintInversePublicGetJob, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): CurrentFootprintInversePublicGetJobBindings {
+  const original = footprintInversePublicGetJobs.get(packet); if (original === undefined || original.owner !== owner || original.prepared !== prepared) { throw error("FOOTPRINT_INVERSE_PUBLIC_GET_JOB_ORIGINAL"); }
+  assertOriginalCurrentFootprintInverseNativeOwner(owner); original.current(); original.bindings.assertCurrent(); original.bindings.assertOriginalForwarded(); if (owner.requireFootprintInversePublicRowPlan(original.bindings.rowPlan) !== original.bindings.rowData) { throw error("FOOTPRINT_INVERSE_PUBLIC_GET_JOB_ROW_PLAN"); } return original.bindings;
+}
 const footprintInversePublicDeleteJobs = new WeakMap<CurrentFootprintInversePublicDeleteJob, Readonly<{ owner: CurrentFootprintInverseNativeOwner; prepared: CurrentFootprintForwardSavedCheckpoint; bindings: CurrentFootprintInversePublicDeleteJobBindings; current: () => void }>>();
 export function requireOriginalCurrentFootprintInversePublicDeleteJob(packet: CurrentFootprintInversePublicDeleteJob, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): CurrentFootprintInversePublicDeleteJobBindings {
   const original = footprintInversePublicDeleteJobs.get(packet);
@@ -2532,6 +2540,8 @@ class CurrentPcbRetainedOwnerCore {
   #inverseStartupPlanPromise:Promise<CurrentFootprintInverseStartupPlan>|null=null;
   #inverseStartupPlan:Readonly<{plan:CurrentFootprintInverseStartupPlan;module:CurrentFootprintInverseStartupPlanModule;prepare:CurrentFootprintInverseStartupPlanModule["prepareCurrentFootprintInverseStartupPlan"];lookup:CurrentFootprintInverseStartupPlanModule["requireOriginalCurrentFootprintInverseStartupPlan"];cold:CurrentFootprintInverseStartupPlanModule["requireOriginalCurrentFootprintInverseColdLoadData"];initialCache:CurrentFootprintInverseStartupPlanModule["requireOriginalCurrentFootprintInverseInitialCacheData"];initialSyncData:CurrentFootprintInverseStartupPlanModule["requireOriginalCurrentFootprintInverseInitialSyncData"]}>|null=null;
   #inverseInitialHistoryBaseline: CurrentFootprintInverseMainHistoryBaseline | null = null;
+  #inversePublicRowPlanPromise: Promise<CurrentFootprintInversePublicRowPlan> | null = null;
+  #inversePublicRowPlan: Readonly<{ plan: CurrentFootprintInversePublicRowPlan; flow: CurrentFootprintSavedFlowCachePlan; data: CurrentFootprintInversePublicRowData; current: () => void; lookup: () => CurrentFootprintInversePublicRowData }> | null = null;
   #inverseFlowCachePlanPromise: Promise<CurrentFootprintSavedFlowCachePlan> | null = null;
   #inverseFlowCachePlan: Readonly<{ plan: CurrentFootprintSavedFlowCachePlan; module: CurrentFootprintSavedFlowCachePlanModule;
     prepare: CurrentFootprintSavedFlowCachePlanModule["prepareCurrentFootprintSavedFlowCachePlan"]; lookup: CurrentFootprintSavedFlowCachePlanModule["requireOriginalCurrentFootprintSavedFlowCachePlan"]; lookupInput: CurrentFootprintSavedFlowCachePlanModule["requireOriginalCurrentFootprintSavedFlowCacheInput"]; input: ReturnType<CurrentFootprintSavedFlowCachePlanModule["requireOriginalCurrentFootprintSavedFlowCacheInput"]> }> | null = null;
@@ -9366,6 +9376,19 @@ class CurrentPcbRetainedOwnerCore {
   }
   /** Derive full saved history cache groups from the genuine completed source.
    * This remains data and grants no producer or worker continuation. */
+  /** Genuine expected row data only. It authorizes no runtime GET or write. */
+  public prepareFootprintInversePublicRowPlan(): Promise<CurrentFootprintInversePublicRowPlan> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); this.#available(); if (this.#inversePublicRowPlanPromise !== null) { return this.#inversePublicRowPlanPromise; }
+    const prepared = originalCurrentFootprintInverseTarget(this); const flow = this.#inverseFlowCachePlan; if (flow === null) { throw error("FOOTPRINT_INVERSE_PUBLIC_ROW_FLOW_REQUIRED"); }
+    const current = (): void => { assertOriginalCurrentFootprintInverseNativeOwner(this); this.#available(); if (originalCurrentFootprintInverseTarget(this) !== prepared || this.#inverseFlowCachePlan !== flow || flow.module.prepareCurrentFootprintSavedFlowCachePlan !== flow.prepare || flow.module.requireOriginalCurrentFootprintSavedFlowCachePlan !== flow.lookup || flow.module.requireOriginalCurrentFootprintSavedFlowCacheInput !== flow.lookupInput || flow.lookupInput(flow.plan, prepared) !== flow.input || this.#mainTerminateAttempted || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed) { throw error("FOOTPRINT_INVERSE_PUBLIC_ROW_FACTORY_CHANGED"); } flow.lookup(flow.plan, prepared); };
+    const pending = (async (): Promise<CurrentFootprintInversePublicRowPlan> => { current(); const module = await import("./current-footprint-inverse-public-row-plan.ts"); current(); const prepare = module.prepareCurrentFootprintInversePublicRowPlan; const lookup = module.requireOriginalCurrentFootprintInversePublicRowPlan; const plan = await prepare(prepared, flow.plan); current(); const data = lookup(plan, prepared, flow.plan); const target = originalCurrentFootprintInverseNativeSource(this).target; if (data.projectUuid !== target.projectUuid || data.branchUuid !== target.branchUuid || data.footprintUuid !== target.documentUuid) { throw error("FOOTPRINT_INVERSE_PUBLIC_ROW_FACTORY_TARGET"); }
+      const same = (): void => { current(); if (module.prepareCurrentFootprintInversePublicRowPlan !== prepare || module.requireOriginalCurrentFootprintInversePublicRowPlan !== lookup || lookup(plan, prepared, flow.plan) !== data) { throw error("FOOTPRINT_INVERSE_PUBLIC_ROW_ORIGINAL_PLAN"); } };
+      this.#inversePublicRowPlan = Object.freeze({ plan, flow: flow.plan, data, current: same, lookup: (): CurrentFootprintInversePublicRowData => { same(); return data; } }); same(); return plan;
+    })(); this.#inversePublicRowPlanPromise = pending; return pending;
+  }
+  public requireFootprintInversePublicRowPlan(plan: CurrentFootprintInversePublicRowPlan): CurrentFootprintInversePublicRowData {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); const state = this.#inversePublicRowPlan; if (state === null || state.plan !== plan || this.#inverseFlowCachePlan?.plan !== state.flow) { throw error("FOOTPRINT_INVERSE_PUBLIC_ROW_ORIGINAL_PLAN"); } state.current(); return state.lookup();
+  }
   public prepareFootprintInverseFlowCachePlan(): Promise<CurrentFootprintSavedFlowCachePlan> {
     assertOriginalCurrentFootprintInverseNativeOwner(this); if (this.#inverseFlowCachePlanPromise !== null) { return this.#inverseFlowCachePlanPromise; }
     const prepared = originalCurrentFootprintInverseTarget(this); this.#enter(true);
