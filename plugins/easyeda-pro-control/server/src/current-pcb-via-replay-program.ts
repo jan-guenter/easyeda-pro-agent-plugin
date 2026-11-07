@@ -8,6 +8,7 @@ export const CURRENT_PCB_VIA_REPLAY_NO_PUBLICATION_PROGRAM = `function(original,
 array(this,6);array(merged,10);const saved=retained(original,"compressed"),p=saved.project,r=saved.r,snapshot=saved.snapshot,pending=own(snapshot,"pending");
 if(own(this,"0")!==p||own(this,"1")!==saved.arg||own(this,"2")!==r||own(merged,"0")!==p||own(this,"4")!==own(pending,"maximumTicket")+1)bad();
 integer(own(this,"3"),1,8640000000000000);const body=own(this,"5");if(typeof body!=="string"||body.length<1||body.length>16384||!body.isWellFormed())bad();
+const currentHead=own(own(r,"docHead"),own(snapshot,"documentUuid"));if(currentHead!==own(pending,"head")||own(currentHead,"uuid")!==own(snapshot,"documentUuid")||own(currentHead,"docType")!=="PCB"||own(currentHead,"client")!==own(snapshot,"documentUuid")||own(currentHead,"updateTime")!==own(this,"3")||own(currentHead,"version")!==String(own(this,"3"))||own(currentHead,"ticket")!==own(this,"4")||optional(currentHead,"editVersion")!==own(pending,"workerEditVersion"))bad();
 const methods=${JSON.stringify(Object.values(CURRENT_PCB_VIA_REPLAY_METHODS).map(row => row.source))},names=${JSON.stringify(Object.keys(CURRENT_PCB_VIA_REPLAY_METHODS))};
 for(let j=0;j<names.length;j++)if(Function.prototype.toString.call(method(r,names[j]))!==methods[j])bad();
 const split=native(own(String.prototype,"split"),"split",2),parse=native(own(JSON,"parse"),"parse",2),parts=Reflect.apply(split,body,["|\\n"]);array(parts,2);

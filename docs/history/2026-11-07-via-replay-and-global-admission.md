@@ -6,6 +6,9 @@ entry. This continuation adds two prerequisites for mounting it safely.
 The readonly pre-replay program rechecks the same original Save entry and body,
 including the actual consistency-manager map, document, link and last node.
 The node must still be unpended, with the original ticket, client and data.
+The same original document-header object must retain the actual compressed
+Save clock, ticket, version and worker version. Header replacement or drift
+refuses before replay.
 The incoming delta must contain the exact DOCHEAD/VIA pair, without a pending
 or foreign-client Via header. Four parser/consistency-manager method bodies are
 pinned to the inspected current209 source. Under that original existing-node
