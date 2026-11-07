@@ -2055,3 +2055,37 @@ this batch. The next inverse slice must join original clock request/response,
 queue/producer effects and selected Main SQL under its own custody. No helper,
 pin, bundle, application, native transport or Windows process was changed or
 started by this work.
+
+Review before integration found two gaps in that first Event join. Its
+capture's slot5 accidentally referenced the helper's intrinsic array named
+`expected` instead of the `forwarded` Job-data argument. Also, descriptor
+reproof retained all known properties but did not retain the complete own-key
+rosters checked at initial capture. An added unknown string or symbol key
+could therefore escape the claimed complete-object invariance. No native or
+connected use occurred, and neither observation is treated as accepted proof.
+
+Slot5 now retains the actual forwarded object. The fixed V2 helper snapshots
+the exact ordered own string and symbol keys at every complete-size check and
+rechecks both rosters using only qualified native reflection and own-index
+loops. A focused case adds each kind of key after capture to the Event,
+envelope, incoming RPC, forwarded top-level object, forwarded envelope and its
+message; every case refuses. Deleting/readding an existing field to change
+order refuses too. Actual readonly Node Inspector capture/reproof and the
+hostile inherited array/iterator case continue passing. Commands, helper
+receipts, event bounds and the16/4 reservation are unchanged.
+
+The same review also corrected a new-envelope-only32-character footprint-ID
+constraint. The maintained inverse target program already supports exactly16
+or32 hexadecimal characters. This new transport now uses that same domain,
+while Core still compares it to the exact original target. A16-character
+case passes;15/17/31/33/64-character cases refuse. No older target schema or
+guard changed.
+
+Seven corrected delivery cases and the original hostile-intrinsic case pass;
+an added unknown getter also refuses with zero invocations. Both type projects
+and strict changed lint pass. Final two-pass generation remains identical at
+1,453,547 stored/2,039,854 compiler bytes. Full emitted Linux C#5 passes the
+delivery, original channel and own-data codecs/once guards
+(ORIGINAL_INVERSE_DELIVERY_ROSTERS_OK, private
+inverse-delivery-full-rosters-EiRIn2). No tracked output or native action was
+performed.
