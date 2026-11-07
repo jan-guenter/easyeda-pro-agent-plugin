@@ -6,6 +6,7 @@ import { PassThrough, Writable } from "node:stream";
 import { test } from "node:test";
 import { sha256Text } from "../src/core.ts";
 import { CurrentFootprintInversePipe, CurrentPcbViaWritePipe } from "../src/current-pcb-diagnostic-pipe.ts";
+import { currentFootprintInverseUiOwnDataCases } from "../src/current-footprint-inverse-ui-own-data-protocol.ts";
 import { currentFootprintInversePublicPreferencesCases } from "../src/current-footprint-inverse-public-preferences-protocol.ts";
 import { currentFootprintInversePublicCallCases } from "../src/current-footprint-inverse-public-call-protocol.ts";
 
@@ -35,10 +36,13 @@ void test("original SDK write and reply remain separate while fixed UI and worke
   for(const command of commands){const observation=pipe.observeInversePublicCall(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   assert.throws(()=>pipe.observeInversePublicCall(sdk));assert.throws(()=>{pipe.requireInversePublicDeleteWritten(Promise.resolve({}));});
   for(const command of currentFootprintInversePublicPreferencesCases()){const observation=pipe.observeInversePublicPreferences(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseUiOwnDataCases()){const observation=pipe.observeInverseUiOwnData(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   assert.equal(pipe.status().failureObservation,null);
   const before=sent.length;const first=currentFootprintInversePublicCallCases()[0];assert.ok(first!==undefined);const other:unknown=Object.create(CurrentPcbViaWritePipe.prototype);
   // oxlint-disable-next-line typescript/unbound-method -- Invalid sibling receiver must reject before emitting bytes.
-  assert.throws(()=>Reflect.apply(CurrentFootprintInversePipe.prototype.observeInversePublicCall,other,[first]));assert.equal(sent.length,before);
+  assert.throws(()=>Reflect.apply(CurrentFootprintInversePipe.prototype.observeInversePublicCall,other,[first]));assert.equal(sent.length,before);const uiOwnData=currentFootprintInverseUiOwnDataCases()[0];assert.ok(uiOwnData!==undefined);
+  // oxlint-disable-next-line typescript/unbound-method -- Sibling purpose rejects before output.
+  assert.throws(()=>Reflect.apply(CurrentFootprintInversePipe.prototype.observeInverseUiOwnData,other,[uiOwnData]));assert.equal(sent.length,before);
 });
 
 void test("a reply before a failed SDK write callback never establishes original written custody", async context => {

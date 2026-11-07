@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 original inverse UI intrinsics and lookup graph](2026-11-07-inverse-ui-intrinsics-lookup-graph.md). Separate held-UI reflection receipt; readonly lookup/row leaves remain unmounted and issue no delete grant.
+
 - [2026-11-07 original inverse preference backup](2026-11-07-inverse-preferences-original-backup.md). Exact two-key original Storage backup and held removal points; restoration and native deletion remain unavailable.
 
 - [2026-11-07 original inverse SDK held entry](2026-11-07-inverse-original-sdk-held-entry.md). One genuine pending SDK write joins its held service entry; handler continuation, native job and collateral remain blocked.
