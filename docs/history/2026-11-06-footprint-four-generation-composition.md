@@ -1492,3 +1492,44 @@ The installed public-service callback and its returned Promise, the independentl
 retained worker deleteData job, complete reference-check/collateral branches,
 single clock and producer/Main completion remain required before SDK invocation.
 The fixed public receiver vocabulary intentionally contains no invoke command.
+
+## Original inverse worker clock-bus binding
+
+The original held-ready continuation now also qualifies the complete34-callee
+notification bus graph: Hg/Ac/WP, wu/Mb/KP/JP and every prototype method, plus
+oo/wa/qe. Its own worker tuple derives from the already-issued inverse ready
+tuple, never a forward dependency tuple. It binds the actual PROJECT/wsBus,
+original notify global, tab, bus UUID, RPC/push counters, exact prototype and
+descriptor rosters and absence of a queued selected clock request/reply.
+The guard re-reads these relations before dispatch. Its descriptor snapshots
+are captured once; later guards do not append to retained arrays.
+
+Core issues the original observer only after its genuine ready/Ke observations,
+from the same worker/session/source and Main fence. All39 setup commands and
+three exact same-worker helper receipts must finish before the native ready
+permit can release. A separate final reproof and receipt remain reserved for
+the original idle owner. One retained observation Promise and exact original
+reply references survive ambiguous failures; copied origins issue nothing.
+The own lane adds44 CDP requests,46 action controls and44 associated Main
+reproofs. It has41 finite message variants and no native getter, constructor,
+task, RPC, clock, delete or resume vocabulary.
+
+The selected source contains two additional obligations: qe calls oo, whose
+EDITOR_TOP branch can select a different root, then wa, which can construct a
+new notification bus if the selected property is absent. JP.post also drops
+an original Promise loopback. The current binding qualifies their exact source
+and existing receiver relations but does not claim native self/channel identity
+or completion of that Promise. Those joins, actual newly-created Ke/clock
+entry, producer/Main holds and UI service/collateral custody must precede the
+worker admission token; this packet alone cannot issue one.
+
+Actual Node24 Inspector compiles only pinned definitions at original locations
+with inert objects. All34 function metadata replies pass, including the five
+own fields of the actual sloppy helper declarations; class methods remain
+strict. True side-effect checks pass capture/reproof and reject changed
+counters or an occupied selected queue. Source/accessor/copy refusal and all41
+wire variants pass. Eleven focused original-factory/cursor/Inspector cases,
+both typechecks and strict changed lint pass. Complete legacy generation twice
+is exact at1,393,269 stored helper bytes and1,935,813 compiler bytes; full
+emitted Linux C#5 passes all41 message parity cases, purpose/cap refusals and
+previous public/Ke smokes. No helper/pins/bundles or live process were changed.
