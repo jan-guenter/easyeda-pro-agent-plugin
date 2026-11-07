@@ -6,7 +6,8 @@ import { createRequire } from "node:module";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import type { CurrentFootprintCopyClockRpcChannelReservation, CurrentFootprintCopyCreateClockChannelRoute,
-  CurrentFootprintCopyCreateClockStartupChannel, requireCurrentFootprintCopyCreateClockChannelRoute } from "../../src/current-pcb-worker-startup-channel.ts";
+  CurrentFootprintCopyCreateClockStartupChannel, requireCurrentFootprintCopyCreateClockChannelRoute, requireCurrentFootprintForwardColdTail } from "../../src/current-pcb-worker-startup-channel.ts";
+import type { CurrentFootprintForwardColdTail } from "../../src/current-footprint-forward-cold-continuation.ts";
 import { CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_CALL } from "../../src/current-footprint-copy-create-bindings.ts";
 import type { CurrentFootprintCopyClockRpcCommand } from "../../src/current-footprint-copy-clock-rpc-protocol.ts";
 
@@ -22,11 +23,12 @@ export interface CreateClockNativeHooks {
 type Dependency = Awaited<ReturnType<CurrentFootprintCopyCreateClockStartupChannel["start"]>>;
 interface Channel {
   start: () => Promise<Dependency>;
-  seedCreateForTest: (dependency: Dependency, command: unknown, clockLease: object) => Promise<CurrentFootprintCopyClockRpcChannelReservation>;
+  seedCreateForTest: (dependency: Dependency, command: unknown, clockLease: object, cold: object) => Promise<CurrentFootprintCopyClockRpcChannelReservation>;
   beginFootprintCreateClockRpc: (dependency: Dependency, reservation: CurrentFootprintCopyClockRpcChannelReservation) => Promise<CurrentFootprintCopyCreateClockChannelRoute>;
   retainedFootprintClockRpc: () => Readonly<Record<string, unknown>>;
   status: () => Readonly<{ pendingReplies: number; nextRequestId: number }>;
   releaseAfterTermination: () => Promise<void>;
+  beginForwardColdTail: (dependency: Dependency, pending: Awaited<ReturnType<CurrentFootprintCopyCreateClockChannelRoute["dispatchCreate"]>>) => Promise<CurrentFootprintForwardColdTail>;
 }
 function object(value: unknown): Record<string, unknown> {
   assert.ok(value !== null && typeof value === "object" && !Array.isArray(value));
@@ -47,16 +49,21 @@ export async function createClockChannelFixture(early: boolean, clockLease: obje
   forward = false, firstRequestId = 100): Promise<Readonly<{
   channel: Channel; dependency: Dependency; reservation: CurrentFootprintCopyClockRpcChannelReservation;
   requireRoute: typeof requireCurrentFootprintCopyCreateClockChannelRoute;
+  requireColdTail: typeof requireCurrentFootprintForwardColdTail;
+  cold: { events: object[]; attached: object | null };
   state: { exited: boolean; lostWrite: boolean; createFrame: object | null; frames: object[]; sent: Record<string, unknown>[]; consumed: number };
 }>> {
   const url = new URL("../../src/current-pcb-worker-startup-channel.ts", import.meta.url);
   const initial = await readFile(url, "utf8");
-  const seed = `public seedCreateForTest(dependency: CurrentPcbWorkerStartupDependency, command: CurrentFootprintCopyNativeCreateCommand, clockLease: object): Promise<CurrentFootprintCopyClockRpcChannelReservation> {
+  const seed = `public seedCreateForTest(dependency: CurrentPcbWorkerStartupDependency, command: CurrentFootprintCopyNativeCreateCommand, clockLease: object, coldState: {events:object[];attached:object|null}): Promise<CurrentFootprintCopyClockRpcChannelReservation> {
     this.#openingConsumed=true;this.#footprintUiStarted=true;this.#footprintClockRegistrationStarted=true;
     this.#executionWorkerSession="worker";this.#workers.set("worker","worker-target");
     const binding = Object.freeze({issuer:{},clockLease,projectObjectId:"project",handles:[],prewriteHandles:["prewrite-scope","prewrite-original","prewrite-upload"],
       assertOriginal:async()=>{await dependency.assertOriginalOwner();},assertCleanup:()=>{},consumeBeforeInvocation:()=>{}});
     const create={allocation:this.#allocationPurpose,binding,command,token:Object.freeze({profile:"private.current-footprint-copy-pending-create.v1"}),dispatchAttempted:false,pending:null,rejectedFrame:null};
+    if(this.#wire===currentFootprintForwardExecutionStartupWire)this.#coldContinuation={lease:{profile:"synthetic"},dependency,workerSessionId:"worker",binding:{issuer:{},dependency,workerLease:clockLease,
+      assertCleanup:()=>{},remainingRequests:()=>({normal:0,cleanup:0,total:0}),acceptsPause:p=>p.hitBreakpoints?.[0]==="cold-point",
+      paused:p=>coldState.events.push(p),resumed:()=>coldState.events.push({resumed:true}),lost:()=>coldState.events.push({lost:true}),attach:t=>{coldState.attached=t;},observeExited:async()=>{}}};
     return this.#prepareClockRpc(dependency,"worker",create);
   }\n  public status():`;
   const source = initial.replace("public status():", seed); assert.notEqual(source, initial);
@@ -76,7 +83,13 @@ export async function createClockChannelFixture(early: boolean, clockLease: obje
     observeOriginalParentEvent: (): void => { throw new Error("event reached retired construction observer"); },
     exchange: async (raw: unknown): Promise<unknown> => {
       const request = object(raw); state.sent.push(request);
-      if (request["action"] === "footprint-copy-create-clock-begin" || request["action"] === "footprint-copy-allocated-create-clock-begin") { hooks.begin(); return { begun: true }; }
+      if (request["action"] === "footprint-copy-create-clock-begin" || request["action"] === "footprint-copy-allocated-create-clock-begin" || request["action"] === "footprint-forward-allocated-clock-begin") { hooks.begin(); return { begun: true }; }
+      if (request["action"] === "footprint-forward-cold-begin") { return { begun: true }; }
+      if (request["action"] === "footprint-forward-cold-send") {
+        state.frames.push({ id: request["requestId"], sessionId: "worker", result: {} });
+        if (request["phase"] === "tail-resume") { state.frames.push({ method: "Debugger.resumed", sessionId: "worker", params: {} }); }
+        return { written: true };
+      }
       if (request["action"] === "footprint-copy-create-clock-retire") { await hooks.retire(); return { retired: true }; }
       if (request["action"] === "footprint-clock-rpc-send" || request["action"] === "footprint-copy-allocation-send") {
         const command = hooks.nextCommand();
@@ -96,8 +109,11 @@ export async function createClockChannelFixture(early: boolean, clockLease: obje
       // Synthetic event accounting is not original native-owner custody.
     } : undefined);
   const dependency = await channel.start(); dependency.subscribe(() => { throw new Error("post-clock event reached old observer"); });
-  const reservation = await channel.seedCreateForTest(dependency, createCommand(), clockLease);
+  const cold: { events: object[]; attached: object | null } = { events: [], attached: null };
+  const reservation = await channel.seedCreateForTest(dependency, createCommand(), clockLease, cold);
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This lookup belongs to the same VM-loaded real route registry, with explicit synthetic construction/native prerequisites.
   const requireRoute = loaded.exports["requireCurrentFootprintCopyCreateClockChannelRoute"] as typeof requireCurrentFootprintCopyCreateClockChannelRoute;
-  return { channel, dependency, reservation, state, requireRoute };
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The lookup and token belong to the same VM-loaded channel; prerequisites remain explicitly synthetic.
+  const requireColdTail = loaded.exports["requireCurrentFootprintForwardColdTail"] as typeof requireCurrentFootprintForwardColdTail;
+  return { channel, dependency, reservation, state, requireRoute, requireColdTail, cold };
 }

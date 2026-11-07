@@ -5,9 +5,9 @@ import { extensionApiCoverageSummary, inventoryExtensionApiCoverage, queryExtens
 import { installed209ApiOmission } from "../src/extension-api-installed-209-omissions.ts";
 
 void test("all 61 installed 209 additions have concrete source findings without registered execution routes", () => {
-  const previous = new Set(extensionApiSnapshots.filter((snapshot) => snapshot.reference !== "installed-209")
+  const previous = new Set(extensionApiSnapshots.filter((snapshot) => snapshot.reference === "reviewed-installed" || snapshot.reference === "official-latest")
     .flatMap((snapshot) => snapshot.namespaces.flatMap((namespace) => namespace.methods.map((method) => `eda.${namespace.name}.${method.name}`))));
-  const additions = inventoryExtensionApiCoverage().filter((entry) => !previous.has(entry.path));
+  const additions = inventoryExtensionApiCoverage().filter((entry) => entry.installed209Declaration && !previous.has(entry.path));
   assert.equal(additions.length, 61);
   const counts = new Map<string, number>();
   for (const entry of additions) {

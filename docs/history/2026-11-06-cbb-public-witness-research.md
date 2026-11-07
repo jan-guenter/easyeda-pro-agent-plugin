@@ -1,0 +1,88 @@
+# Public CBB project witness research
+
+On 2026-11-06 this bounded, application-independent check found concrete public
+API/type contracts, but no literal system-owned CBB project UUID, branch UUID
+and reciprocal board/document tuple in the inspected pages. A positive witness
+remains pending. This is no claim that system CBB data do not exist or that a
+runtime search would be empty. No app, account, vendor catalog endpoint or SDK
+method was queried; no module was copied, downloaded, opened or placed.
+
+The official `LIB_Cbb.search` contract defaults an omitted library UUID to the
+system library and returns CBB search-item data. The official copy example
+obtains system and personal library IDs at runtime and chooses the first search
+result; it does not publish a fixed source module identity. These are lookup
+recipes, not an independently retained witness.
+[Search contract](https://prodocs.lceda.cn/cn/api/reference/pro-api.lib_cbb.search.html),
+[copy example](https://prodocs.lceda.cn/cn/api/reference/pro-api.lib_cbb.copy.html).
+
+The official CBB item interface includes its library UUID, module UUID and a
+`boards` array. The board interface links `parentProjectUuid`, `pcb` and
+`schematic`. This provides a concrete documented relationship to check if an
+eligible public identity is later obtained. Those type definitions contain no
+particular module/project/branch values. Inferring current system ownership or
+reciprocal linkage from the types alone would be invalid.
+[CBB item](https://prodocs.lceda.cn/cn/api/reference/pro-api.ilib_cbbitem.html),
+[board item](https://prodocs.lceda.cn/cn/api/reference/pro-api.idmt_boarditem.html).
+
+The public file-manager contract documents CBB archive retrieval by module UUID,
+with optional schematic/PCB template UUIDs, and expressly requires the Team
+Module download permission. Its sample also derives the module ID from a
+runtime system-library search. The documented API therefore supplies no
+account-independent static archive or project/branch witness in that example.
+No permission check or download was attempted.
+[Official file-manager method](https://prodocs.lceda.cn/cn/api/reference/pro-api.sys_filemanager.getcbbfilebycbbuuid.html).
+
+The official reuse-template guide describes a reuse block as a special project
+with associated schematic, PCB and symbol, linked by matching names. This
+supports the intended relationship model but supplies no explicit witness tuple
+in the inspected text. The official EasyEDA reuse-block extension README
+instead describes catalogs detected from the current client's personal, team
+and local libraries and optional user-exported catalog JSON; it is not a
+published system-library project snapshot.
+[Reuse-template guide](https://prodocs.easyeda.com/en/pcb/design-update-place-and-route-from-reuse-template/),
+[official extension README](https://github.com/easyeda/eext-ai-reuse-block-placement/blob/main/README.md).
+
+The inspected material is limited to those public documentation pages, the CBB
+get/open method pages and that README. Restricted GitHub directory views and
+document timeouts were not retried and are not negative catalog evidence.
+No earlier403/empty vendor-catalog probe was repeated. Any future positive
+fixture still needs an explicit public system-owner identity, actual project
+and selected branch, complete matching board/SCH/PCB identities and independent
+reciprocal checks under the maintained lifecycle. No fallback identity, API
+example, library name or schematic/PCB name establishes that evidence.
+
+## Official extension source follow-up
+
+A later read through the public GitHub API inspected the official extension at
+commit `c24c7228b022c53e509788ef375e1bf81bd82966`. Its catalog code resolves
+client libraries, pages `lib_Cbb.search` using the obtained library IDs and
+fetches individual module details. That is an implementation recipe, not a
+published system-owner/project/branch witness.
+[Pinned catalog source](https://github.com/easyeda/eext-ai-reuse-block-placement/blob/c24c7228b022c53e509788ef375e1bf81bd82966/src/catalog.ts).
+
+The catalog, CBB implementation and module-creation test files contained no
+32-to64-digit hexadecimal UUID literal in the bounded scan. This observation
+does not establish server catalog absence or exclude dynamic identities and
+other files. Original source bytes and blob identities are retained privately.
+No EasyEDA CBB SDK, catalog request, archive download or module mutation was
+performed for this follow-up.
+[Pinned CBB source](https://github.com/easyeda/eext-ai-reuse-block-placement/blob/c24c7228b022c53e509788ef375e1bf81bd82966/src/cbb.ts),
+[pinned module test](https://github.com/easyeda/eext-ai-reuse-block-placement/blob/c24c7228b022c53e509788ef375e1bf81bd82966/tests/create-module.test.cjs).
+
+## Further bounded English documentation search
+
+A later three-query public web search covered the official guide, official
+EasyEDA GitHub material and the public Pro domain. It surfaced an official API
+quick reference and reuse-block creation documentation, with no concrete
+system-owner/project/branch witness in the returned results. This describes
+only those results, not the catalog's contents.
+[Official API quick reference](https://github.com/easyeda/easyeda-api-skill/blob/main/references/_quick-reference.md).
+
+The inspected English creation page explains generated related schematic and
+block documents, but publishes no particular system-owned module tuple in its
+text. The English file-manager page again derives its module ID through a
+runtime search and requires module-download permission. Neither observation
+supplies the missing positive witness. No creation, library-mode change, SDK
+call, account request, archive download or vendor catalog probe was performed.
+[Create Reuse Block](https://prodocs.easyeda.com/en/reuse-block/file-new-reuse-block/),
+[file-manager contract](https://prodocs.easyeda.com/en/api/reference/pro-api.sys_filemanager.getcbbfilebycbbuuid.html).

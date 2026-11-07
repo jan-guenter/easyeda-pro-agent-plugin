@@ -1,0 +1,9 @@
+# Normal history completion callees
+
+The normal success path does more than end the action. Before the existing WillEnd guard, its stack listener visits commands, calls `update` and reads `canRecord`. Recording then dispatches WillRecord, appends undo history, clears redo history, dispatches DidRecord and computes the status notification before the first end callback. Those event rosters and their actual receivers require separate custody.
+
+A source-only table now pins fifteen functions across both exact schematic bundles: the stack and command-visit callbacks, tab-bound WillRecord callback, command `canRecord`, history record/clear/status and undo/redo getters, group iteration/removal/size and the position-attribute visit callback. All thirty uninvoked functions pass actual Node24 metadata checks at their original source positions. Changed source, locations, names, arity and field rosters refuse. Getter-bearing reply inputs are rejected without invoking them. Returned metadata establishes no original history, receiver or continuation.
+
+The position update uses five actual model getters. The existing accessor table already identifies all five as raw class methods, including hAlign and vAlign. The pinned decorator installs a setter and accessor hook but supplies no getter, so its optional generic getter-wrapper branch is unused. A proposed extra hAlign/vAlign wrapper dependency was corrected by this source check. The live controller still needs its actual getter receiver, raw-field and native call proofs.
+
+Two focused metadata/refusal cases pass. The combined nine-case group also verifies the original preference backup, G9o source, early SDK reply/write acknowledgment and actual finite inverse pipe. Both TypeScript projects and strict changed-file lint pass. No application, command instance, history record, setter, publisher, native helper or Save was invoked. This table alone does not enable the normal completion or primitive write.

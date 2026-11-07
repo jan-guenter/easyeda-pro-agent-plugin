@@ -1,7 +1,61 @@
+import {applyCurrentSchematicRelevanceUploadSerializeNativeFragment} from "../server/src/current-schematic-relevance-upload-serialize-native-fragment.ts";
+import {applyCurrentSchematicRelevanceUploadModelNativeFragment} from "../server/src/current-schematic-relevance-upload-model-native-fragment.ts";
+import {applyCurrentSchematicRelevanceUploadEntryNativeFragment} from "../server/src/current-schematic-relevance-upload-entry-native-fragment.ts";
+import {applyCurrentSchematicRelevanceNoEchoNativeFragment} from "../server/src/current-schematic-relevance-noecho-native-fragment.ts";
+import {applyCurrentSchematicRelevanceNormalRecordNativeFragment} from "../server/src/current-schematic-relevance-normal-record-native-fragment.ts";
+import {applyCurrentSchematicRelevanceNormalDisposalNativeFragment} from "../server/src/current-schematic-relevance-normal-disposal-native-fragment.ts";
+import {applyCurrentSchematicRelevanceNormalUpdateNativeFragment} from "../server/src/current-schematic-relevance-normal-update-native-fragment.ts";
+import {applyCurrentSchematicRelevanceHistoryCommandNativeFragment} from "../server/src/current-schematic-relevance-history-command-native-fragment.ts";
+import {applyCurrentSchematicRelevanceMonitorBatchNativeFragment} from "../server/src/current-schematic-relevance-monitor-batch-native-fragment.ts";
 /* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
+import { applyPcb209SpatialNativeSource } from "./pcb209-spatial-native-source.ts";
+import { CURRENT_NATIVE_BASELINE, assertCurrentNativeBaseline } from "./native-baseline-source.ts";
+import { sharedNativeIdentitySource, sharedNativeSmokeSource } from "./shared-native-identity-source.ts";
+import { applyCurrentSchematicRelevanceDisplaySaveDrainNativeFragment } from "../server/src/current-schematic-relevance-display-save-drain-native-fragment.ts";
+import { applyCurrentSchematicRelevanceDisplayMainLiveHistoryNativeFragment } from "../server/src/current-schematic-relevance-display-main-live-history-native-fragment.ts";
+import { applyCurrentSchematicRelevanceDisplayObservedSourceNativeFragment } from "../server/src/current-schematic-relevance-display-observed-source-native-fragment.ts";
+import { applyCurrentSchematicRelevanceDisplayLibraryRefreshNativeFragment } from "../server/src/current-schematic-relevance-display-library-refresh-native-fragment.ts";
+import { applyCurrentSchematicRelevanceDisplaySaveUploadNativeFragment } from "../server/src/current-schematic-relevance-display-save-upload-native-fragment.ts";
+import { applyCurrentSchematicRelevanceDisplaySyncQuiesceNativeFragment } from "../server/src/current-schematic-relevance-display-sync-quiesce-native-fragment.ts";
+import { applyCurrentSchematicRelevanceDisplayStructureNativeFragment } from "../server/src/current-schematic-relevance-display-structure-native-fragment.ts";
+import { applyCurrentSchematicRelevanceDisplaySaveNativeFragment } from "../server/src/current-schematic-relevance-display-save-native-fragment.ts";
+import { applyCurrentSchematicRelevanceDisplayMainNativeFragment } from "../server/src/current-schematic-relevance-display-main-native-fragment.ts";
+import { applyCurrentSchematicRelevanceDisplayClockNativeFragment } from "../server/src/current-schematic-relevance-display-clock-native-fragment.ts";
+import { applyCurrentSchematicRelevanceRunGuardNativeFragment } from "../server/src/current-schematic-relevance-run-guard-native-fragment.ts";
+import { applyCurrentSchematicRelevanceRecordAstNativeFragment } from "../server/src/current-schematic-relevance-record-ast-native-fragment.ts";
+import { applyCurrentSchematicRelevancePrimitiveNativeFragment } from "../server/src/current-schematic-relevance-primitive-native-fragment.ts";
+import { applyCurrentSchematicRelevanceUiPublicationNativeFragment } from "../server/src/current-schematic-relevance-ui-publication-native-fragment.ts";
+import { applyCurrentSchematicRelevanceRunPrefixNativeFragment } from "../server/src/current-schematic-relevance-run-prefix-native-fragment.ts";
+import { applyCurrentSchematicRelevanceDisplayModifyEntryNativeFragment } from "../server/src/current-schematic-relevance-display-modify-entry-native-fragment.ts";
+import { applyCurrentSchematicRelevanceDisplayActionNativeFragment } from "../server/src/current-schematic-relevance-display-action-native-fragment.ts";
+import { applyCurrentSchematicRelevanceSavedReadbackNative, normalizeCurrentSchematicRelevanceSavedReadbackNative, prepareCurrentSchematicRelevanceSavedReadbackNativeSwitch } from "../server/src/current-schematic-relevance-saved-readback-native.ts";
+import { applyCurrentSchematicWireEditNativeFragment, normalizeCurrentSchematicWireEditNativeFamily, prepareCurrentSchematicWireEditNativeSwitch } from "../server/src/current-schematic-wire-edit-native-fragment.ts";
+import { applyCurrentSchematicRelevanceDisplayWriteNativeFragment, normalizeCurrentSchematicRelevanceDisplayNativeFamily, prepareCurrentSchematicRelevanceDisplayNativeSwitch } from "../server/src/current-schematic-relevance-display-write-native-fragment.ts";
+import { currentPcbDiagnosticCSharpReviewSource, expandCurrentPcbDiagnosticCSharpReviewSource, packCurrentPcbDiagnosticCSharpReviewStorage } from "../server/src/current-pcb-diagnostic-csharp-review-storage.ts";
+import { applyCurrentPcbViaObservedSourceNativeFragment } from "../server/src/current-pcb-via-observed-source-native-fragment.ts";
+import { applyCurrentPcbViaSaveDrainNativeFragment } from "../server/src/current-pcb-via-save-drain-native-fragment.ts";
+import { applyCurrentPcbViaPostHistorySyncNativeFragment } from "../server/src/current-pcb-via-post-history-sync-native-fragment.ts";
+import { applyCurrentPcbViaSaveTailObservationNativeFragment } from "../server/src/current-pcb-via-save-tail-observation-native-fragment.ts";
+import { applyCurrentPcbViaUploadRequestNativeFragment } from "../server/src/current-pcb-via-upload-request-native-fragment.ts";
+import { applyCurrentProjectSyncQuiesceCodecNativeFragment, applyCurrentProjectSyncQuiesceNativeFragment } from "../server/src/current-project-sync-quiesce-native-fragment.ts";
+import { applyCurrentPcbViaLocalUploadNativeFragment } from "../server/src/current-pcb-via-local-upload-native-fragment.ts";
+import { applyCurrentPcbViaSaveGenerationNativeFragment } from "../server/src/current-pcb-via-save-generation-native-fragment.ts";
+import { applyCurrentGeneratedPeriodicSyncNativeFragment } from "../server/src/current-generated-periodic-sync-native-fragment.ts";
+import { applyCurrentGeneratedInitialSyncNativeFragment } from "../server/src/current-generated-initial-sync-native-fragment.ts";
+import { applyCurrentGeneratedInitialCacheNativeFragment } from "../server/src/current-generated-initial-cache-native-fragment.ts";
+import { applyCurrentFootprintInverseNativeFragment, prepareCurrentFootprintInverseNativeSwitch } from "../server/src/current-footprint-inverse-native-fragment.ts";
+import { applyCurrentProjectSaveProducerNativeFragment } from "../server/src/current-project-save-producer-native-fragment.ts";
+import { applyCurrentProjectSaveProducerGuardNativeFragment } from "../server/src/current-project-save-producer-guard-native-fragment.ts";
+import { applyCurrentPcbViaSavedReadbackNativeFragment, prepareCurrentPcbViaSavedReadbackNativeSwitch } from "../server/src/current-pcb-via-saved-readback-native-fragment.ts";
+import { applyCurrentPcbComponentSpatialNativeFragment, prepareCurrentPcbComponentSpatialNativeSwitch } from "../server/src/current-pcb-component-spatial-native-fragment.ts";
+import { applyCurrentProjectStructureTransportNativeFragment } from "../server/src/current-project-structure-transport-native-fragment.ts";
 import { readFile, writeFile } from "node:fs/promises";
 import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES } from "../server/src/current-pcb-diagnostic-helper-source-profile.ts";
 import { currentPcbDiagnosticFixedTableNativeSource } from "../server/src/current-pcb-diagnostic-fixed-table-native.ts";
+import { applyCurrentProjectStructureNativeFragment } from "../server/src/current-project-structure-native-fragment.ts";
+import { applyCurrentSchematicDisplayWriteNativeFragment } from "../server/src/current-schematic-display-write-native-fragment.ts";
+import { applyCurrentPcbViaWriteNativeFragment } from "../server/src/current-pcb-via-write-native-fragment.ts";
+import { applyManagedFixtureRegistrationNativeFragment } from "../server/src/managed-fixture-registration-native-fragment.ts";
 import { compactGeneratedCSharpIndentation } from "./csharp-generated-indentation.ts";
 import { currentFootprintCopyManagerRouteNativeSource } from "../server/src/current-footprint-copy-manager-route-native.ts";
 import { currentFootprintCopyUiNativeSource } from "../server/src/current-footprint-copy-ui-native.ts";
@@ -90,7 +144,31 @@ async function main(): Promise<void> {
   if (process.argv.length !== 3 || action !== "--write" && action !== "--check") { throw new Error("Expected --write or --check"); }
   const path = new URL("pcb-diagnostic-owner.ps1", import.meta.url);
   const source = await readFile(path, "utf8");
-  let next = source;
+  const seed = await readFile(new URL(`../${CURRENT_NATIVE_BASELINE.relativePath}`, import.meta.url), "utf8");
+  assertCurrentNativeBaseline(seed);
+  const next = generateWorkerStartupProtocol(seed);
+  const reviewPath = new URL("pcb-diagnostic-native.cs", import.meta.url); const compilerInput = currentPcbDiagnosticCSharpReviewSource(next);
+  const identityPath = new URL("../server/src/current-pcb-diagnostic-helper-identity.ts", import.meta.url), smokePath = new URL("pcb-diagnostic-launch-smoke.ps1", import.meta.url);
+  const identity = sharedNativeIdentitySource(next), smoke = await readFile(smokePath, "utf8");
+  const nextSmoke = sharedNativeSmokeSource(smoke, next);
+  if (action === "--write") { await writeFile(path, next); await writeFile(reviewPath, compilerInput); await writeFile(identityPath, identity); await writeFile(smokePath, nextSmoke); }
+  else if (next !== source || await readFile(reviewPath, "utf8") !== compilerInput || await readFile(identityPath, "utf8") !== identity || smoke !== nextSmoke) { throw new Error("Generated native startup protocol, review copy or independent pins differ"); }
+}
+/** Pure complete composition, used by repeated-generation regressions without writing a helper. */
+export function generateWorkerStartupProtocol(source: string, layout: "diagnostic" | "inverse" | "schematic" = "diagnostic"): string {
+  if (layout !== "diagnostic" && layout !== "inverse" && layout !== "schematic") { throw new Error("NATIVE_BUILD_LAYOUT"); }
+  const original = normalizeCurrentSchematicWireEditNativeFamily(normalizeCurrentSchematicRelevanceSavedReadbackNative(expandCurrentPcbDiagnosticCSharpReviewSource(source)));
+  const prepared = layout === "schematic" ? prepareCurrentSchematicRelevanceSavedReadbackNativeSwitch(original) : original;
+  const spatial = layout === "diagnostic" ? applyPcb209SpatialNativeSource(prepared) : prepared;
+  const normalized = normalizeCurrentSchematicRelevanceDisplayNativeFamily(spatial);
+  // Cold generation starts from the exact published shared source, before any
+  // Of the new fixture/Via/schematic switches or types exist. Each fixed
+  // Fragment remains idempotent when reprocessing its own generated artifact.
+  const structured = applyManagedFixtureRegistrationNativeFragment(applyCurrentProjectStructureNativeFragment(normalized));
+  const initialized = applyCurrentSchematicDisplayWriteNativeFragment(applyCurrentPcbViaWriteNativeFragment(structured));
+  const literal = layout === "schematic" ? prepareCurrentSchematicWireEditNativeSwitch(prepareCurrentSchematicRelevanceDisplayNativeSwitch(initialized)) : initialized;
+  let next = prepareCurrentPcbViaSavedReadbackNativeSwitch(prepareCurrentPcbComponentSpatialNativeSwitch(literal));
+  if (layout === "inverse") { next = prepareCurrentFootprintInverseNativeSwitch(next); }
   for (const [name, generated] of [["WORKER STARTUP", currentPcbWorkerStartupNativeSource()],
     ["WORKER STARTUP EMPTY209", currentPcb209EmptyNativeSource()],
     ["WORKER STARTUP RATLINE209", ratlineSource()],
@@ -110,13 +188,65 @@ async function main(): Promise<void> {
     throw new Error("Native combined readiness markers must occur once");
   }
   next = next.slice(0, readyStart) + currentFootprintCombinedReadyNativeSource() + next.slice(readyStop + readyEnd.length);
+  next = applyCurrentProjectStructureNativeFragment(next);
+  next = applyManagedFixtureRegistrationNativeFragment(next);
+  next = applyCurrentProjectStructureTransportNativeFragment(applyCurrentSchematicDisplayWriteNativeFragment(applyCurrentPcbViaWriteNativeFragment(next)));
+  next = applyCurrentGeneratedInitialCacheNativeFragment(applyCurrentProjectSaveProducerNativeFragment(applyCurrentProjectSaveProducerGuardNativeFragment(next)));
+  next = applyCurrentGeneratedInitialSyncNativeFragment(next);
+  next = applyCurrentGeneratedPeriodicSyncNativeFragment(next);
+  if(layout!=="inverse"){
+    next = applyCurrentPcbViaSaveGenerationNativeFragment(next);
+    next = applyCurrentPcbViaLocalUploadNativeFragment(next);
+  }
+  next = layout === "inverse" ? applyCurrentProjectSyncQuiesceCodecNativeFragment(next) : applyCurrentProjectSyncQuiesceNativeFragment(next);
+  if(layout!=="inverse"){
+    next = applyCurrentPcbViaUploadRequestNativeFragment(next);
+    next = applyCurrentPcbViaSaveTailObservationNativeFragment(next);
+    next = applyCurrentPcbViaPostHistorySyncNativeFragment(next);
+    next = applyCurrentPcbViaSaveDrainNativeFragment(next);
+    next = applyCurrentPcbViaObservedSourceNativeFragment(next);
+  }
+  if (layout !== "schematic") { next = applyCurrentPcbComponentSpatialNativeFragment(next, layout === "diagnostic"); }
+  if (layout !== "schematic") { next = applyCurrentPcbViaSavedReadbackNativeFragment(next); }
+  if (layout === "inverse") { next = applyCurrentFootprintInverseNativeFragment(next); }
+  if (layout === "schematic") {
+    next = applyCurrentSchematicRelevanceDisplayWriteNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplayActionNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplayModifyEntryNativeFragment(next);
+    next = applyCurrentSchematicRelevanceRunPrefixNativeFragment(next);
+    next = applyCurrentSchematicRelevanceUiPublicationNativeFragment(next);
+    next = applyCurrentSchematicRelevancePrimitiveNativeFragment(next);
+    next = applyCurrentSchematicRelevanceRecordAstNativeFragment(next);
+    next = applyCurrentSchematicRelevanceMonitorBatchNativeFragment(next);
+    next = applyCurrentSchematicRelevanceHistoryCommandNativeFragment(next);
+    next = applyCurrentSchematicRelevanceNormalUpdateNativeFragment(next);
+    next = applyCurrentSchematicRelevanceNormalDisposalNativeFragment(next);
+    next = applyCurrentSchematicRelevanceNormalRecordNativeFragment(next);
+    next = applyCurrentSchematicRelevanceNoEchoNativeFragment(next);
+    next = applyCurrentSchematicRelevanceUploadEntryNativeFragment(next);
+    next = applyCurrentSchematicRelevanceUploadModelNativeFragment(next);
+    next = applyCurrentSchematicRelevanceUploadSerializeNativeFragment(next);
+    next = applyCurrentSchematicRelevanceRunGuardNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplayClockNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplaySyncQuiesceNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplayLibraryRefreshNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplayMainNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplayStructureNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplaySaveNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplaySaveUploadNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplayObservedSourceNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplayMainLiveHistoryNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplaySaveDrainNativeFragment(next);
+    next = applyCurrentSchematicWireEditNativeFragment(next);
+    next = applyCurrentSchematicRelevanceSavedReadbackNative(next);
+  }
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
   assertCurrentFootprintCopyForwardNativeRequestIds(next);
+  next = packCurrentPcbDiagnosticCSharpReviewStorage(next);
   if (Buffer.byteLength(next) > CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES) {
     throw new Error(`Native startup helper exceeds its fixed byte bound: ${String(Buffer.byteLength(next))} >${String(CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES)}`);
   }
-  if (action === "--write") { await writeFile(path, next); }
-  else if (next !== source) { throw new Error("Generated native startup protocol differs"); }
+  return next;
 }
 function continuationSource(): string {
   const limits = { RequestLimit: continuation.requestLimit, NormalRequestLimit: continuation.normalRequestLimit, CleanupRequestLimit: continuation.cleanupRequests,
@@ -151,4 +281,4 @@ function footprintMainSource(): string {
     "// END GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL";
 }
 // oxlint-disable-next-line node/no-top-level-await -- ESM-only build command; never loaded by require().
-await main();
+if (import.meta.main) { await main(); }

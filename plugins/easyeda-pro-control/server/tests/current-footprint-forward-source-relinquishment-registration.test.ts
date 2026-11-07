@@ -92,7 +92,7 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; scope: vm.Context;
       assert.equal(actual, snapshot); scans += 1; return Promise.resolve();
     } };
   let handler: Handler | undefined;
-  const scope = vm.createContext({ z, currentPcb209WorkerStartupToolRequestSchema, currentSymbolOperationToolOutputSchema: z.unknown(),
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, currentPcb209WorkerStartupToolRequestSchema, currentSymbolOperationToolOutputSchema: z.unknown(),
     CurrentFootprintForwardSourceUnknownRelinquishment: Historical,
     diagnostic209: true, facadeMode: "public-utilities-only", facadeToolRegistered: (): boolean => true,
     process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "synthetic" } },

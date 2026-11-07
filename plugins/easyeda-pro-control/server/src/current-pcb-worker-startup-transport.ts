@@ -6,8 +6,9 @@
  * qualification through the original native process and pipe. */
 import { createHash } from "node:crypto";
 import { types } from "node:util";
+import { CURRENT_FOOTPRINT_FORWARD_COLD_NATIVE_LIMITS as FORWARD_V2 } from "./current-footprint-forward-cold-native-limits.ts";
 import { bindFootprintPreparationConstructionTransport } from "./current-footprint-copy-construction-purpose.ts";
-import { isOriginalFootprintExecutionDependency, isOriginalFootprintHeldSavedDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency,
+import { isOriginalFootprintExecutionDependency, isOriginalFootprintForwardExecutionDependency, isOriginalFootprintHeldSavedDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency, isOriginalProjectStructureDependency,
   requestCurrentFootprintCopyParent, requestCurrentFootprintCopyTransactionClock, subscribeCurrentFootprintCopyParentEvents } from "./current-pcb-worker-startup-channel.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
@@ -26,6 +27,7 @@ import { bindCurrentFootprintCopyClockRoute, consumeCurrentFootprintCopyClockRpc
 import type { CurrentFootprintCopyClockRpcConstructionLease } from "./current-footprint-copy-clock-rpc-leases.ts";
 import type { CurrentFootprintCopyTransactionClockCommand } from "./current-footprint-copy-transaction-clock.ts";
 import { z } from "zod";
+import { CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE } from "./current-project-structure-native-profile.ts";
 import { CURRENT_PCB_209_STARTUP_TIMING, currentPcbStartupMonotonicMs, currentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
 import type { CurrentPcbStartupWindow, CurrentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
 import { CURRENT_PCB_209_WORKER_STARTUP_SOURCE } from "./current-pcb-209-worker-startup-profile.ts";
@@ -58,8 +60,13 @@ interface ClockRpcTransportBinding {
   readonly consume: () => void;
 }
 const clockRpcTransports = new WeakMap<CurrentPcbWorkerStartupDependency,
-  Readonly<{ prepare: (lease: CurrentFootprintCopyClockRpcConstructionLease) => Promise<CurrentFootprintCopyClockRpcTransportHandoff> }>>();
+  Readonly<{ owner: object; prepare: (lease: CurrentFootprintCopyClockRpcConstructionLease) => Promise<CurrentFootprintCopyClockRpcTransportHandoff> }>>();
 const clockRpcHandoffs = new WeakMap<CurrentFootprintCopyClockRpcTransportHandoff, ClockRpcTransportBinding>();
+/** Match the exact original wrapper and separately issued cold-v2 dependency.
+ * Another genuine construction or copied transport cannot supply this join. */
+export function requireOriginalForwardClockPreparationTransport(transport: object, dependency: CurrentPcbWorkerStartupDependency): void {
+  if (!isOriginalFootprintForwardExecutionDependency(dependency) || clockRpcTransports.get(dependency)?.owner !== transport) { throw failure("FORWARD_CLOCK_ORIGINAL_TRANSPORT"); }
+}
 /** Only the actual execution transport registered by its private constructor
  * can prepare this dependency. No callback or copied worker handle is accepted. */
 export function prepareCurrentFootprintCopyClockRpcTransport(dependency: CurrentPcbWorkerStartupDependency,
@@ -295,8 +302,15 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     const writerBudget = execution209 ? CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE : CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE;
     const savedBudget = heldSaved209 ? CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE : CURRENT_FOOTPRINT_COPY_SAVED_PROFILE;
     const budget = saved209 || heldSaved209 ? savedBudget : writerBudget;
-    this.#normalRequestLimit = footprint ? budget.normalRequestLimit : 224;
-    this.#requestLimit = footprint ? budget.requestLimit : 256;
+    if (isOriginalFootprintForwardExecutionDependency(dependency)) {
+      this.#normalRequestLimit = FORWARD_V2.requestLimit; this.#requestLimit = FORWARD_V2.requestLimit;
+    } else if (isOriginalProjectStructureDependency(dependency)) {
+      this.#normalRequestLimit = CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.worker.normal;
+      this.#requestLimit = CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.worker.total;
+    } else {
+      this.#normalRequestLimit = footprint ? budget.normalRequestLimit : 224;
+      this.#requestLimit = footprint ? budget.requestLimit : 256;
+    }
     this.#parentSession = sessionToken.parse(dependency.parentSessionId); this.#parentTarget = sessionToken.parse(dependency.parentTargetId);
     this.#send = dependency.request; this.#assertOwner = dependency.assertOriginalOwner;
     this.#assertTermination = dependency.assertOriginalTermination; this.#subscribe = dependency.subscribe;
@@ -312,7 +326,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     void observe(this.#peerAdvance.promise); void observe(this.#peerIdle.promise);
     if (execution209) {
       if (clockRpcTransports.has(dependency)) { throw failure("CLOCK_RPC_ORIGINAL_TRANSPORT"); }
-      clockRpcTransports.set(dependency, Object.freeze({ prepare: (lease: CurrentFootprintCopyClockRpcConstructionLease): Promise<CurrentFootprintCopyClockRpcTransportHandoff> => this.#prepareClockRpc(lease) }));
+      clockRpcTransports.set(dependency, Object.freeze({ owner: this, prepare: (lease: CurrentFootprintCopyClockRpcConstructionLease): Promise<CurrentFootprintCopyClockRpcTransportHandoff> => this.#prepareClockRpc(lease) }));
     }
   }
   async #prepareClockRpc(lease: CurrentFootprintCopyClockRpcConstructionLease): Promise<CurrentFootprintCopyClockRpcTransportHandoff> {
