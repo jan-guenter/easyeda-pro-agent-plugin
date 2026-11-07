@@ -30,3 +30,13 @@ bringing this leaf to26 uninvoked metadata records. The getter body reads only
 `this._root`; actual receiver/backing-root equality remains a separate check.
 Both original full-script source identities and the earlier twelve roles are
 unchanged. The focused metadata/accessor checks and strict lint passed again.
+
+## Original model-command callback
+
+The actual third argument to the uploader's `_handleModelCommand` now has its
+own source role, `modelCommandUploadCallback`, bringing this leaf to28 metadata
+records. Both callbacks have three parameters and distinct exact original
+source spans. The main and child scripts use different parameter ordering in
+their delete/upload branches; their descriptions are qualified separately.
+The actual uninvoked Node24 metadata and strict lint checks passed. Original
+callback arguments, receiver, closure and delivery remain runtime prerequisites.
