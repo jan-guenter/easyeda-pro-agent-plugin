@@ -37,14 +37,14 @@ async function main(): Promise<void> {
   if (process.argv.length !== 2) { refuse("no arguments or write mode are supported"); }
   const [helper, ownerBytes, smokeBytes] = await Promise.all([
     readBounded("pcb-diagnostic-owner.ps1", CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES),
-    readBounded("../server/src/current-pcb-diagnostic-owner.ts"), readBounded("pcb-diagnostic-launch-smoke.ps1"),
+    readBounded("../server/src/current-pcb-diagnostic-helper-identity.ts"), readBounded("pcb-diagnostic-launch-smoke.ps1"),
   ]);
   if (helper.some((byte) => byte > 0x7F)) { refuse("helper must remain ASCII for Windows PowerShell5 source loading"); }
   const decoder = new TextDecoder("utf-8", { fatal: true });
   const owner = decoder.decode(ownerBytes), smoke = decoder.decode(smokeBytes);
   const digest = createHash("sha256").update(helper).digest("hex");
-  const ownerLength = Number(one(owner, /^const HELPER_BYTES = ([0-9_]+);$/gmu, "owner byte pin").replaceAll("_", ""));
-  const ownerHash = one(owner, /^const HELPER_SHA256 = "([a-f0-9]{64})";$/gmu, "owner hash pin");
+  const ownerLength = Number(one(owner, /^export const CURRENT_PCB_DIAGNOSTIC_HELPER_BYTES = ([0-9_]+);$/gmu, "owner byte pin").replaceAll("_", ""));
+  const ownerHash = one(owner, /^export const CURRENT_PCB_DIAGNOSTIC_HELPER_SHA256 = "([a-f0-9]{64})";$/gmu, "owner hash pin");
   const smokeLength = Number(one(smoke, /^if \(\$bytes\.Length -ne ([0-9]+)\) \{throw 'synthetic-launch-helper-size'\}$/gmu, "Windows smoke byte pin"));
   const smokeHash = one(smoke, /^if \(\$helperHash -cne '([a-f0-9]{64})'\) \{$/gmu, "Windows smoke hash pin");
   const smokeCap = Number(one(smoke, /^\$bytes = Read-BoundedFile \$helper ([0-9]+)$/gmu, "Windows smoke byte cap"));
