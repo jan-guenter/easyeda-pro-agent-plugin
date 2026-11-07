@@ -48,3 +48,50 @@ The latest integrated helper bodies compile as C# 5 with fixed codecs and no
 owner/app construction. Both native input limits and all six released forward
 artifacts remain unchanged. These results do not replace any connected work
 listed above. User production designs remain outside this validation scope.
+
+## Later source and original-controller update
+
+Canonical source `2d012726` includes the original history-command batch, GET
+worker readiness and held-lookup intrinsic preparation, the bounded geometry
+schema fix, and the document identity correction. The history collector uses
+own `_tabId`; a separate leaf qualifies eight uninvoked base, waveform, page
+and page-type getters. The former own-`tabId` fixture and initial receiver-role
+labels are corrected in the [document identity record](2026-11-07-schematic-document-tab-id.md).
+The combined history/GET guards pass TypeScript, strict lint and26 focused
+checks. This does not establish a completed writer or inverse.
+
+The original approved old-facade cleanup is complete, including observed
+original facade/helper exits and old-manager closure. Its missing historical
+Pad release acknowledgment remains unknown. No old read, close or release was
+replayed. The retained new manager retired and observed its first controller,
+then selected verified frozen `ad117a8867a545f830b73d1af575a38ad000062d`, version
+`0.3.0+codex.20261107162545`, without a Codex restart. This is a development
+validation package, not an official installation or release.
+
+All3895 files and79,717,874 bytes in that package match frozen Git bytes and
+modes. Its79 offline API queries, seven skill checks, required local non-suite
+checks and three reproducible bundles pass. External compatibility pins remain
+unchanged. The actual serving process, module and pinned Node were independently
+checked before live work.
+
+A new disposable Component import returned the matching generated project.
+Its original normal close, root/empty-Job termination and closed-dispatch cleanup
+completed. The complete initial SQL/native source and Windows file-time
+qualification passed, original destination watches and fixture reservation were
+released, and only opaque qualified data was staged for a fresh Component
+reader. Ordinary helper release and the new reader case remain outstanding at
+this checkpoint. The previous consumed Component point refusal remains a
+failure, without inferred failing scalar values or replay authority.
+
+Current work continues on normal schematic history/publication, the complete
+initialized footprint GET and native return/rearm paths, and separate fresh
+schematic readback. Via, Wire, full footprint inverse/four-generation proof,
+final coverage/skills and release work remain open. Production designs remain
+outside scope.
+
+GitHub still reports protected main at `b16fb1e64c0d4cb0b2f57d2c4f07a894bb80940d`.
+The later `d1ffae95` is a completed local redaction checkpoint, not published
+main. Before any push, scan the complete outgoing history from actual main,
+including the remaining eight known private-name ancestor blobs, and preserve
+private backup refs only locally. No task PR, CodeRabbit request, publication
+or official installation has occurred in this continuation.
