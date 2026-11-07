@@ -251,11 +251,13 @@ void test("geometry discovery returns bounded method-specific successful result 
   const catalog = queryCurrentPcbGeometry({ includeSchemas: true }), entries = catalog["entries"];
   assert.equal(catalog["offline"], true); assert.equal(catalog["invocationEnabledByDiscovery"], false);
   assert.ok(Array.isArray(entries)); assert.equal(entries.length, 22);
-  assert.ok(Buffer.byteLength(JSON.stringify(catalog), "utf8") < 1024 * 1024);
+  assert.ok(Buffer.byteLength(JSON.stringify({ offline: true, result: catalog }), "utf8") < 512 * 1024);
   for (const rawEntry of entries) {
     const entry: unknown = rawEntry; assert.ok(isRecord(entry));
     const method = entry["method"], schema = entry["resultSchema"];
     assert.ok(typeof method === "string" && isRecord(schema));
+    const inputSchema = entry["inputSchema"]; assert.ok(isRecord(inputSchema) && isRecord(inputSchema["properties"]));
+    const inputMethod = inputSchema["properties"]["method"]; assert.ok(isRecord(inputMethod)); assert.equal(inputMethod["const"], method); assert.equal(inputSchema["additionalProperties"], false);
     const properties = schema["properties"]; assert.ok(isRecord(properties));
     const methodSchema = properties["method"], values = properties["value"];
     assert.ok(isRecord(methodSchema) && isRecord(values) && isRecord(values["items"]));

@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 Bounded geometry schema discovery](2026-11-07-bounded-geometry-schema-discovery.md)
+
 - [2026-11-07 Bounded facade identifier compaction](2026-11-07-bounded-facade-identifier-compaction.md)
 
 - [2026-11-07 Separate diagnostic and inverse native layouts](2026-11-07-native-diagnostic-inverse-layouts.md)

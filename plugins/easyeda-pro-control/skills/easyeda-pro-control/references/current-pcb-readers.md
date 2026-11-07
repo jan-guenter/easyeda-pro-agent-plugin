@@ -208,7 +208,11 @@ supported family rosters and Attribute groups remain in the result. Selection
 is neither read nor changed. The installed empty generic object getters are
 not called, and this is not public class-instance parity.
 
-Query `pcb-geometry` with `includeSchemas:true`, then validate the assembled
+List `pcb-geometry` without schemas first. Select one returned `method` with
+`query:{"method":"eda.pcb_PrimitiveLine.getAll","includeSchemas":true}` to read its
+argument and result schemas. Use the exact method from discovery. Each argument schema describes that method
+only; the complete22-method catalog also remains bounded by the512KiB tool
+envelope. Then validate the assembled
 request with `pcb-geometry-validate` and `query:{"request":...}`. Invoke
 `easyeda_control_pcb_geometry` with the validated request and authenticated
 `expectedFingerprint`. Use the same explicit project/branch/document/tab target

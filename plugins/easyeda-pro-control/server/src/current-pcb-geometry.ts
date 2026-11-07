@@ -186,6 +186,13 @@ export function currentPcbGeometryFamily(request: Pick<CurrentPcbGeometryRequest
     default: { throw new Error("Unsupported current PCB geometry method."); }
   }
 }
+/** Publish only this method's argument branch; repeating the full union for
+ * every entry exceeds the offline tool envelope and misstates exact arguments. */
+function discoveryRequestSchema(method: CurrentPcbGeometryRequest["method"]): z.ZodType {
+  const request = currentPcbGeometryRequestSchema.options.find(option => option.shape.method.safeParse(method).success);
+  if (request === undefined) { throw new Error("Unsupported current PCB geometry request method."); }
+  return z.object(request.shape).extend({ method: z.literal(method) }).strict();
+}
 /** Describe the successful facade result, not its internal rows envelope. Each
  * entry includes only its own method/family; JSON Schema cannot carry all of
  * the request-relative and native observation checks performed at runtime.
@@ -228,7 +235,7 @@ export function queryCurrentPcbGeometry(input: unknown = {}): Record<string, unk
         uiVersion: CURRENT_UI_IMPLEMENTATION.version, uiSha256: CURRENT_UI_IMPLEMENTATION.sha256,
         implementationKind: "native-task-equivalent", liveValidation: "not-recorded" } };
     if (query.includeSchemas) {
-      entry["inputSchema"] = z.toJSONSchema(currentPcbGeometryRequestSchema);
+      entry["inputSchema"] = z.toJSONSchema(discoveryRequestSchema(method));
       entry["resultSchema"] = z.toJSONSchema(discoveryResultSchema(method));
       entry["resultSchemaScope"] = "successful-tool-result;not-error-envelope";
       entry["resultSchemaLimitations"] = "Structural JSON Schema only: runtime additionally checks polygon command grammar, signed zero, integer/range refinements, Dimension type/tuple agreement, exact request target, identity uniqueness/order, group membership, observed counts, complete byte bounds and matching native samples. Schema validity supplies no runtime admission, execution authority or live validation.";
