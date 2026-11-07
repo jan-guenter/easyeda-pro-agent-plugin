@@ -42,7 +42,12 @@ Verification is offline. Both pinned source variants exercise the actual
 inert disposal/record algorithms across listener compaction branches, holes and
 peer counts, with an unknown history-field drift refusal. Fixed syntax tests
 reject changed programs and extra fields. Controller regressions cover both
-ACK/event orders and unsubmitted-resume refusal. The composed schematic source
+ACK/event orders and unsubmitted-resume refusal. The original byte-stream pipe
+regression also retains the real pending Modify request while every fixed
+normal-update, disposal and record command crosses its own finite lane. An
+initial integration review found these three phase names missing from the
+retained-request scope; the exact names are now admitted there while the
+purpose/marker guards remain mandatory. The composed schematic source
 remains deterministic and idempotent. Linux C#5 compilation checks the exact
 emitted compiler and fixed codec hash vectors without allocating an owner or
 running EasyEDA. No tracked native payload, installed bytes or source pins are

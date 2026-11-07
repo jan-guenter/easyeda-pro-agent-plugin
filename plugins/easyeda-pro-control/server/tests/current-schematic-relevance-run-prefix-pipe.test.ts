@@ -1,5 +1,9 @@
+/* oxlint-disable import/max-dependencies -- The same original retained Modify is tested through each independently fixed callback grammar and its purpose decoder. */
 /** Real pipe and inert byte streams. No original owner, renderer, actor,
  * native helper, mutation, receiver or durability is established. */
+import {currentSchematicRelevanceNormalUpdateCases} from "../src/current-schematic-relevance-normal-update-wire.ts";
+import {currentSchematicRelevanceNormalDisposalCases} from "../src/current-schematic-relevance-normal-disposal-wire.ts";
+import {currentSchematicRelevanceNormalRecordCases} from "../src/current-schematic-relevance-normal-record-wire.ts";
 import assert from "node:assert/strict";
 import { PassThrough, Writable } from "node:stream";
 import { test } from "node:test";
@@ -9,7 +13,7 @@ import { currentSchematicRelevanceRunGuardCases } from "../src/current-schematic
 import { currentSchematicRelevanceDisplayWriteNativeRequest } from "../src/current-schematic-relevance-display-write-protocol.ts";
 import { data } from "./generated-schematic-relevance-display-fixture.ts";
 
-void test("both finite run lanes remain duplex with the original pending Modify and original UI session", async context => {
+void test("finite run and normal callback lanes remain duplex with the original pending Modify and original UI session", async context => {
   const input = new PassThrough(); const sent: Record<string, unknown>[] = [];
   const output = new Writable({ write(bytes: Buffer, _encoding, done): void {
     const value: unknown = JSON.parse(bytes.subarray(0, -1).toString()); assert.ok(value !== null && typeof value === "object" && !Array.isArray(value));
@@ -29,11 +33,14 @@ void test("both finite run lanes remain duplex with the original pending Modify 
   pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);
   for (const command of currentSchematicRelevanceRunPrefixCases()) { await pipe.observeSchematicRelevanceRunPrefix(command); pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original); }
   for (const step of currentSchematicRelevanceRunGuardCases()) { await pipe.observeSchematicRelevanceRunGuard(step); pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original); }
+  for(const command of currentSchematicRelevanceNormalUpdateCases()){await pipe.observeSchematicRelevanceNormalUpdate(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
+  for(const command of currentSchematicRelevanceNormalDisposalCases()){await pipe.observeSchematicRelevanceNormalDisposal(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
+  for(const command of currentSchematicRelevanceNormalRecordCases()){await pipe.observeSchematicRelevanceNormalRecord(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
   assert.equal(pipe.status().pendingRequestId, 2); assert.equal(pipe.status().failure, null);
   for (const row of sent.slice(2)) {
     assert.equal(row["sessionId"], "original-ui");
     const native = currentSchematicRelevanceDisplayWriteNativeRequest(Buffer.from(`${JSON.stringify(row)}\0`));
-    assert.ok(native["action"] === "schematic-relevance-run-prefix" || native["action"] === "schematic-relevance-run-guard");
+    assert.ok(native["action"] === "schematic-relevance-run-prefix" || native["action"] === "schematic-relevance-run-guard" || native["action"] === "schematic-relevance-normal-update" || native["action"] === "schematic-relevance-normal-disposal" || native["action"] === "schematic-relevance-normal-record");
   }
   input.emit("error", new Error("inert original request finished")); await failed;
 });
