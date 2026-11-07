@@ -16,7 +16,7 @@ import { CurrentSchematicDisplayWriteOwner, assertOriginalCurrentSchematicDispla
 function wire(value: unknown): Buffer { return Buffer.from(`${JSON.stringify(value)}\0`); }
 function compose(source: string): string { const prepared = registration(structure(source)); return schematic(via(prepared)); }
 void test("distinct schematic discovery has a bounded vocabulary and no worker, PCB, script or Save command", () => {
-  assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total, PROFILE.renderer.total], [901, 8, 909, 2709]);
+  assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total, PROFILE.renderer.total], [901, 8, 909, 2712]);
   assert.equal(PROFILE.workerOwnershipIssued, false); assert.equal(PROFILE.executionAuthorized, false); assert.equal(PROFILE.saveAuthorized, false);
   const request = { id: 16, method: "Target.getTargets" };
   assert.equal(currentSchematicDisplayWriteNativeRequest(wire(request))["requestId"], 16);
@@ -37,10 +37,10 @@ void test("separate schematic fragment composes twice without changing prior Via
   const original = expandCurrentPcbDiagnosticCSharpStorage(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8")), source = compose(original);
   assert.equal(compose(source), source);
   const viaLimit = /return pcbViaWrite209\?(\d+):/u.exec(source)?.[1]; assert.ok(viaLimit !== undefined);
-  const previous = source.replace("if(schematicDisplayWrite209)return 2709;", "if(schematicDisplayWrite209)return 617;").replace("$requestLimit=2709", "$requestLimit=617").replace(`return pcbViaWrite209?${viaLimit}:`, "return pcbViaWrite209?1019:").replace(`$requestLimit=if ($PcbViaWrite209) {${viaLimit}}`, "$requestLimit=if ($PcbViaWrite209) {1019}");
+  const previous = source.replace("if(schematicDisplayWrite209)return 2712;", "if(schematicDisplayWrite209)return 617;").replace("$requestLimit=2712", "$requestLimit=617").replace(`return pcbViaWrite209?${viaLimit}:`, "return pcbViaWrite209?1019:").replace(`$requestLimit=if ($PcbViaWrite209) {${viaLimit}}`, "$requestLimit=if ($PcbViaWrite209) {1019}");
   assert.equal(compose(previous), source);
   for (const fragment of ["CreateSchematicDisplayWrite209()", "EasyedaSchematicDisplayBirth", "schematic-display-old-purpose-smoke", "schematic-display-foreign-refusal-smoke",
-    "if(schematicDisplayWrite209)return 2709;", "schematic-display-retain-main-until-exit", "schematic-display-main-construction-consumed"]) { assert.ok(source.includes(fragment), fragment); }
+    "if(schematicDisplayWrite209)return 2712;", "schematic-display-retain-main-until-exit", "schematic-display-main-construction-consumed"]) { assert.ok(source.includes(fragment), fragment); }
   const before = via(registration(structure(original))).split("\n").find(line => line.includes("int RequestLimit {"));
   const after = source.split("\n").find(line => line.includes("int RequestLimit {")); assert.ok(before !== undefined);
   assert.equal(after, before.replace(/if\(schematicDisplayWrite209\)return \d+;/u, `if(schematicDisplayWrite209)return ${String(PROFILE.renderer.total)};`));

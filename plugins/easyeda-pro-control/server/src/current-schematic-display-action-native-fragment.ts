@@ -1,5 +1,6 @@
 /** New passive metadata action of the original SCH birth only. */
 import { installNativeCompileOnlyHook } from "./native-compile-only-hook.ts";
+import { applyCurrentSchematicDisplayActionGuardNativeFragment } from "./current-schematic-display-action-guard-native-fragment.ts";
 import { installOwnedNativeDispatch } from "./native-owned-dispatch.ts";
 import { currentSchematicDisplayActionNativeSource } from "./current-schematic-display-action-native.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_ACTION_REQUESTS as REQUESTS } from "./current-schematic-display-action-protocol.ts";
@@ -30,5 +31,5 @@ export function applyCurrentSchematicDisplayActionNativeFragment(input: string):
   source = installNativeCompileOnlyHook(source, "    [EasyedaSchematicDisplayActionProtocol]::VerifySmoke()", "    [EasyedaSchematicDisplayAccessorProtocol]::VerifySmoke()");
   const start = source.indexOf(begin), stop = source.indexOf(end);
   if (start !== -1 || stop !== -1) { if (start === -1 || stop < start || source.includes(begin, start + begin.length) || source.includes(end, stop + end.length)) { throw new Error("SCHEMATIC_DISPLAY_ACTION_NATIVE_MARKERS"); } source = source.slice(0, start) + native() + source.slice(stop + end.length); }
-  else { source = one(source, "// BEGIN GENERATED SCHEMATIC ORIGINAL ACCESSOR OBSERVER", `${native()}\n// BEGIN GENERATED SCHEMATIC ORIGINAL ACCESSOR OBSERVER`); } return source;
+  else { source = one(source, "// BEGIN GENERATED SCHEMATIC ORIGINAL ACCESSOR OBSERVER", `${native()}\n// BEGIN GENERATED SCHEMATIC ORIGINAL ACCESSOR OBSERVER`); } return applyCurrentSchematicDisplayActionGuardNativeFragment(source);
 }

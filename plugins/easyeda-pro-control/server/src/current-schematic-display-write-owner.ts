@@ -2,4 +2,4 @@
  * HMAC runtime, PCB fixtures and serialized ownership are not accepted. */
 export { CurrentSchematicDisplayWriteOwner, startCurrentSchematicDisplayWriteOwner, assertOriginalCurrentSchematicDisplayWriteOwner,
   currentSchematicDisplayWriteAllocationOutcome, originalCurrentSchematicDisplayWriteTarget,
-  originalCurrentSchematicDisplayWriteTermination, assertOriginalCurrentSchematicDisplayWriteTermination, requireOriginalSchematicDisplayStage, requireOriginalCurrentSchematicDisplayPreModifyMainOrigin } from "./current-pcb-diagnostic-owner.ts";
+  originalCurrentSchematicDisplayWriteTermination, assertOriginalCurrentSchematicDisplayWriteTermination, requireOriginalSchematicDisplayStage, requireOriginalCurrentSchematicDisplayPreModifyMainOrigin, requireOriginalCurrentSchematicDisplayActionGuard } from "./current-pcb-diagnostic-owner.ts";

@@ -14,7 +14,7 @@ async function fixture(): Promise<Readonly<{ group: CurrentSchematicDisplayWrite
   birth: () => Promise<void>; exit: () => void; sameOwner: () => unknown; copiedArguments: () => unknown }>> {
   const calls: string[] = []; const prepared = Object.freeze({ inertPrepared: true }); const args = Object.freeze({ inertArguments: true }); const dispatch = Object.freeze({ profile: "private.generated-schematic-display-dispatch.v1" as const });
   const callbacks: ((origin: object) => Promise<void>)[] = []; const pending = Promise.withResolvers<never>(); let cache = false, exited = false, sync = false;
-  const packet = Object.freeze({ inertAccessor: true }); const origin = Object.freeze({ inertMain: true }); const event0 = Object.freeze({ role: "headEntry" }), event1 = Object.freeze({ role: "syncEntry" });
+  const packet = Object.freeze({ inertAccessor: true }); const actionOrigin = Object.freeze({ inertAction: true }), guard = Object.freeze({ inertRefusalGuard: true }), origin = Object.freeze({ inertMain: true }); const event0 = Object.freeze({ role: "headEntry" }), event1 = Object.freeze({ role: "syncEntry" });
   const events: object[] = [event0, event1];
   const owner = Object.freeze({
     armSchematicDisplaySaveWorker: (_args: unknown, setup: (origin: object) => Promise<void>): void => { assert.equal(_args, args); calls.push("save-arm"); callbacks.push(setup); },
@@ -22,7 +22,8 @@ async function fixture(): Promise<Readonly<{ group: CurrentSchematicDisplayWrite
     armSchematicDisplayStructureTransportWorker: (_args: unknown, setup: (origin: object) => Promise<void>): void => { assert.equal(_args, args); calls.push("transport-arm"); callbacks.push(setup); },
     armSchematicDisplayProducerPrefixWorker: (_args: unknown): void => { assert.equal(_args, args); calls.push("guard-arm"); },
     armSchematicDisplayProducerObservationWorker: (_args: unknown, setup: (origin: object) => Promise<void>): void => { assert.equal(_args, args); calls.push("producer-arm"); callbacks.push(setup); },
-    createSchematicDisplayActionOrigin: async (_args: unknown, actualMain: unknown, setup: (origin: object) => Promise<void>): Promise<object> => { assert.equal(_args, args); assert.equal(actualMain, origin); calls.push("action-origin"); await setup({}); return {}; },
+    createSchematicDisplayActionOrigin: async (_args: unknown, actualMain: unknown, setup: (origin: object) => Promise<void>): Promise<object> => { assert.equal(_args, args); assert.equal(actualMain, origin); calls.push("action-origin"); await setup(actionOrigin); return actionOrigin; },
+    armSchematicDisplayActionGuard: (_args: unknown, actualAction: unknown): Promise<object> => { assert.equal(_args, args); assert.equal(actualAction, actionOrigin); calls.push("original-refusal-guard"); return Promise.resolve(guard); },
     createSchematicDisplayAccessorOrigin: async (_args: unknown, setup: (origin: object) => Promise<void>): Promise<object> => { assert.equal(_args, args); calls.push("accessor-origin"); await setup({}); return {}; },
     enrollSchematicDisplayProducerPrefix: (_args: unknown): Promise<object> => { assert.equal(_args, args); assert.ok(cache && sync); calls.push("original-prefix"); return Promise.resolve({}); },
     prepareSchematicDisplayPreModifyMain: (_args: unknown, marker: unknown): Promise<object> => { assert.equal(_args, args); assert.equal(marker, dispatch); calls.push("original-main"); return Promise.resolve(origin); },
@@ -45,6 +46,7 @@ async function fixture(): Promise<Readonly<{ group: CurrentSchematicDisplayWrite
       assertOriginalCurrentSchematicDisplayWriteOwner: (actual: unknown): void => { assert.equal(actual, owner); }, originalCurrentSchematicDisplayWriteTarget: (): object => prepared,
       originalCurrentSchematicDisplayWriteTermination: (): object => { assert.ok(exited); return {}; },
       requireOriginalCurrentSchematicDisplayPreModifyMainOrigin: (actual: unknown, o: unknown, a: unknown): object => { assert.equal(actual, origin); assert.equal(o, owner); assert.equal(a, args); return { assertCurrent: (): Promise<void> => Promise.resolve() }; },
+      requireOriginalCurrentSchematicDisplayActionGuard: (actual: unknown, o: unknown, a: unknown): void => { assert.equal(actual, guard); assert.equal(o, owner); assert.equal(a, args); },
     },
     "./generated-schematic-display-source.ts": { requireOriginalGeneratedSchematicDisplayNativeArguments: (a: unknown, p: unknown): void => { assert.equal(a, args); assert.equal(p, prepared); } },
     "./current-schematic-display-save-observer.ts": { CurrentSchematicDisplaySaveObserver: Save },
@@ -75,6 +77,7 @@ void test("original startup, accessors and published-intent Main setup precede a
   // Journal token or native action is created.
   await f.group.prepareModification(f.dispatch); await f.group.requirePrepared(f.dispatch);
   assert.ok(f.calls.indexOf("original-accessor") < f.calls.indexOf("original-prefix")); assert.ok(f.calls.indexOf("original-prefix") < f.calls.indexOf("original-main"));
+  assert.ok(f.calls.indexOf("original-main") < f.calls.indexOf("action-origin")); assert.ok(f.calls.indexOf("action-origin") < f.calls.indexOf("original-refusal-guard"));
   assert.equal(f.group.status().modifyAuthorized, false); assert.equal(f.group.status().saveAuthorized, false);
   assert.equal(f.group.status().pendingOriginalProducerRead, true); f.exit(); await f.group.settleOriginalCallsAfterExit();
 });

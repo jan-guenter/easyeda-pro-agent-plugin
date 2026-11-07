@@ -2,7 +2,7 @@
  * navigation and intent publication. This group never dispatches Modify/Save. */
 /* oxlint-disable import/max-dependencies -- One original group joins separately branded worker, accessor, action and Main collectors without accepting caller implementation. */
 import { assertOriginalCurrentSchematicDisplayWriteOwner, originalCurrentSchematicDisplayWriteTarget, originalCurrentSchematicDisplayWriteTermination,
-  requireOriginalCurrentSchematicDisplayPreModifyMainOrigin } from "./current-schematic-display-write-owner.ts";
+  requireOriginalCurrentSchematicDisplayActionGuard, requireOriginalCurrentSchematicDisplayPreModifyMainOrigin } from "./current-schematic-display-write-owner.ts";
 import type { CurrentSchematicDisplayWriteOwner } from "./current-schematic-display-write-owner.ts";
 import { requireOriginalGeneratedSchematicDisplayNativeArguments } from "./generated-schematic-display-source.ts";
 import type { GeneratedSchematicDisplayNativeArguments } from "./generated-schematic-display-source.ts";
@@ -16,6 +16,7 @@ import { CurrentProjectSaveProducerObserver, requireOriginalCurrentProjectSavePr
 import { CURRENT_PROJECT_SAVE_PRODUCER_REQUESTS } from "./current-project-save-producer-protocol.ts";
 import { CurrentSchematicDisplayAccessorObserver } from "./current-schematic-display-accessor-observer.ts";
 import type { CurrentSchematicDisplayAccessorObservation } from "./current-schematic-display-accessor-observer.ts";
+import type { CurrentSchematicDisplayActionGuardObservation } from "./current-schematic-display-action-guard-protocol.ts";
 import type { CurrentSchematicDisplayPreModifyMainOrigin } from "./current-schematic-display-pre-modify-main-origin.ts";
 
 type Outcome = Readonly<{ ok: true }> | Readonly<{ ok: false; error: unknown }>;
@@ -31,6 +32,7 @@ export class CurrentSchematicDisplayWriteObservers {
   #transport: CurrentProjectStructureTransportObserver | null = null; #producer: CurrentProjectSaveProducerObserver | null = null;
   #accessor: CurrentSchematicDisplayAccessorObserver | null = null; #accessorPacket: CurrentSchematicDisplayAccessorObservation | null = null;
   #construction: Promise<Outcome> | null = null; #collector: Promise<Outcome> | null = null; #pendingProducer: Promise<unknown> | null = null;
+  #guard: CurrentSchematicDisplayActionGuardObservation | null = null;
   #action: CurrentSchematicDisplayActionObserver | null = null; #actionPacket: CurrentSchematicDisplayActionObservation | null = null;
   #main: CurrentSchematicDisplayPreModifyMainOrigin | null = null; #dispatch: GeneratedSchematicDisplayDispatch | null = null;
   public constructor(owner: CurrentSchematicDisplayWriteOwner, argumentsValue: GeneratedSchematicDisplayNativeArguments) {
@@ -114,15 +116,15 @@ export class CurrentSchematicDisplayWriteObservers {
       await this.#owner.enrollSchematicDisplayProducerPrefix(this.#arguments); this.#current();
       const origin = await this.#owner.prepareSchematicDisplayPreModifyMain(this.#arguments, dispatch); this.#current(); this.#main = origin;
       await requireOriginalCurrentSchematicDisplayPreModifyMainOrigin(origin, this.#owner, this.#arguments).assertCurrent(); this.#current();
-      await this.#owner.createSchematicDisplayActionOrigin(this.#arguments, origin, async actionOrigin => {
-        this.#current(); need(this.#action === null, "ORIGINAL_ACTION"); const observer = new CurrentSchematicDisplayActionObserver(actionOrigin, this.#owner, this.#arguments);
+      const actionOrigin = await this.#owner.createSchematicDisplayActionOrigin(this.#arguments, origin, async actualActionOrigin => {
+        this.#current(); need(this.#action === null, "ORIGINAL_ACTION"); const observer = new CurrentSchematicDisplayActionObserver(actualActionOrigin, this.#owner, this.#arguments);
         this.#action = observer; const packet = await observer.observe(); this.#current(); observer.requireData(packet, this.#owner, this.#arguments); this.#actionPacket = packet;
-      }); this.#current(); need(this.#actionPacket !== null, "ORIGINAL_ACTION_PREFLIGHT_REQUIRED"); return origin;
+      }); this.#current(); need(this.#actionPacket !== null, "ORIGINAL_ACTION_PREFLIGHT_REQUIRED"); this.#guard = await this.#owner.armSchematicDisplayActionGuard(this.#arguments, actionOrigin); this.#current(); requireOriginalCurrentSchematicDisplayActionGuard(this.#guard, this.#owner, this.#arguments); return origin;
     } catch (error) { this.#stop(error); throw error; }
   }
   public async requirePrepared(dispatch: GeneratedSchematicDisplayDispatch): Promise<void> {
-    this.#current(); need(this.#dispatch === dispatch && this.#main !== null && this.#accessor !== null && this.#accessorPacket !== null && this.#action !== null && this.#actionPacket !== null, "ORIGINAL_PREPARATION_REQUIRED");
-    this.#accessor.requireData(this.#accessorPacket, this.#owner, this.#arguments); this.#action.requireData(this.#actionPacket, this.#owner, this.#arguments); await requireOriginalCurrentSchematicDisplayPreModifyMainOrigin(this.#main, this.#owner, this.#arguments).assertCurrent(); this.#current();
+    this.#current(); need(this.#dispatch === dispatch && this.#main !== null && this.#accessor !== null && this.#accessorPacket !== null && this.#action !== null && this.#actionPacket !== null && this.#guard !== null, "ORIGINAL_PREPARATION_REQUIRED");
+    this.#accessor.requireData(this.#accessorPacket, this.#owner, this.#arguments); this.#action.requireData(this.#actionPacket, this.#owner, this.#arguments); requireOriginalCurrentSchematicDisplayActionGuard(this.#guard, this.#owner, this.#arguments); await requireOriginalCurrentSchematicDisplayPreModifyMainOrigin(this.#main, this.#owner, this.#arguments).assertCurrent(); this.#current();
   }
   /** Original Job exit wakes existing collectors; retain and join those exact
    * requests rather than starting another read or detaching live breakpoints. */
