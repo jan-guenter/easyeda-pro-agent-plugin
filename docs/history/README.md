@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 original run-prefix cursor](2026-11-07-relevance-run-prefix-cursor.md). Bounded original queue, callee, native and iterator classification; actual receiver guards and continuation remain separate.
+
 - [2026-11-07 inverse public-delete intent](2026-11-07-inverse-public-delete-intent.md). Original factory-derived exclusive intent and irreversible one-use enrollment; SDK/service/worker/collateral grants remain separate.
 
 - [2026-11-07 seven-record prefix queue graph](2026-11-07-relevance-prefix-queue-graph.md). Exact two-listener queues, separate WillEnd disposal and actual V8 lexical-binding limits; original callback receivers and continuation remain separate.
