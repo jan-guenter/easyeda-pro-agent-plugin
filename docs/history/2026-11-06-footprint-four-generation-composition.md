@@ -1124,3 +1124,11 @@ bytes and decoded C#2,033,547 bytes, below both unchanged2MiB limits. No tracked
 helper/pins/bundles, Windows compiler, app or live MCP call was used. Actual
 same-head renderer sync, plaintext/parser/ready continuation and the final idle,
 delete/main SQL, closed inverse and fourth-generation proofs remain pending.
+
+A follow-up source audit found the272 renderer requests were included in the
+aggregate derivation but the new action key was missing from the separate native
+control allowlist. That path would safely refuse before dispatch. The exact
+`footprint-inverse-initial-cache:298` action reservation is now included in both
+the native switch and aggregate sum; a composed generation regression checks
+it, and the pure native smoke admits exactly298 controls then refuses299. No
+runtime attempt used the missing entry and no old-purpose budget changed.

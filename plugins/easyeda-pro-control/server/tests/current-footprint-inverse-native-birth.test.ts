@@ -6,7 +6,7 @@ import { once } from "node:events";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { generateWorkerStartupProtocol } from "../../scripts/generate-worker-startup-protocol.ts";
-import { CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE as PROFILE } from "../src/current-footprint-inverse-native-profile.ts";
+import { CURRENT_FOOTPRINT_INVERSE_ACTION_LIMITS as ACTIONS, CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE as PROFILE } from "../src/current-footprint-inverse-native-profile.ts";
 import { combinedReadyFactoryFixture } from "./helpers/current-footprint-combined-ready-fixture.ts";
 
 function pending(method: unknown, args: readonly unknown[]): Promise<unknown> {
@@ -92,6 +92,7 @@ void test("whole native composition is idempotent with original inverse limits a
   assert.equal(first.split("if ($FootprintInverse209 -and (").length - 1, 1);
   assert.ok(expanded.includes(`if(footprintInverse209)return ${String(PROFILE.renderer.total)};`));
   assert.ok(expanded.includes("spatial209?384:componentSpatial209?419:"));
+  assert.equal(ACTIONS["footprint-inverse-initial-cache"], 298); assert.ok(expanded.includes('case "footprint-inverse-initial-cache":limit=298;break;'));
   assert.equal(PROFILE.deleteInvocationAuthorized, false); assert.equal(PROFILE.executionAuthorized, false); assert.equal(PROFILE.saveAuthorized, false);
   assert.ok(expanded.includes('if(footprintInverseConstructionComplete)throw Error("footprint-inverse-main-construction-consumed")'));
 });

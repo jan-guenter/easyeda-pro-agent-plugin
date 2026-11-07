@@ -2,6 +2,7 @@
  * keys/bodies/limits come from the original owner's complete saved plan. */
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
+import { CURRENT_FOOTPRINT_INVERSE_INITIAL_CACHE_REQUESTS as REQUESTS } from "./current-footprint-inverse-initial-cache-protocol.ts";
 import { currentFootprintInverseInitialCacheTemplates } from "./current-footprint-inverse-initial-cache-wire.ts";
 import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
 
@@ -54,7 +55,7 @@ else if(action=="inverse-initial-cache-settled"){if(stage!=6||footprintInverseIn
 text=EasyedaFootprintInverseInitialCacheProtocol.Encode(id,footprintInversePageSession,phase,method,fields);if(next>=0){footprintInverseInitialCacheStages[slot]=next;if(method=="Debugger.resume"){footprintInverseInitialCacheHeld=null;footprintInverseInitialCacheSlot=-1;}else footprintInverseInitialCacheSlot=slot;}}
 SendMessage(id,text);}
 public void CompleteFootprintInverseInitialCache(){if(!footprintInverse209||footprintInverseAborted||footprintInverseInitialCacheBound<2||footprintInverseInitialCacheCompleted||footprintInverseInitialCacheHeld!=null)throw Error("footprint-inverse-initial-cache-complete");for(int i=0;i<footprintInverseInitialCacheBound;i++)if(footprintInverseInitialCacheStages[i]!=6||footprintInverseInitialCacheSamples[i]<1)throw Error("footprint-inverse-initial-cache-pending");AssertLive();footprintInverseInitialCacheCompleted=true;}
-public static void VerifyFootprintInverseInitialCacheSmoke(){EasyedaFootprintInverseInitialCacheProtocol.VerifySmoke();var value=CreateFootprintInverse209();bool denied=false;try{value.CompleteFootprintInverseInitialCache();}catch(InvalidOperationException){denied=true;}if(!denied)throw Error("footprint-inverse-initial-cache-unissued-completion");value.originalMain.Release();}
+public static void VerifyFootprintInverseInitialCacheSmoke(){EasyedaFootprintInverseInitialCacheProtocol.VerifySmoke();var value=CreateFootprintInverse209();for(int i=0;i<${String(REQUESTS.controls)};i++)value.AdmitFootprintInverseAction("footprint-inverse-initial-cache");bool denied=false;try{value.AdmitFootprintInverseAction("footprint-inverse-initial-cache");}catch(InvalidOperationException){denied=true;}if(!denied)throw Error("footprint-inverse-initial-cache-control-cap");denied=false;try{value.CompleteFootprintInverseInitialCache();}catch(InvalidOperationException){denied=true;}if(!denied)throw Error("footprint-inverse-initial-cache-unissued-completion");value.originalMain.Release();}
 }
 `;
 }
