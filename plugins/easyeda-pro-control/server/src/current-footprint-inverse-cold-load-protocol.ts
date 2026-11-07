@@ -100,3 +100,6 @@ export type { CurrentFootprintInverseStartupQueueCommand } from "./current-footp
 
 export { CURRENT_FOOTPRINT_INVERSE_INITIAL_CACHE_ROLES, currentFootprintInverseInitialCacheBudget } from "./current-footprint-inverse-initial-cache-protocol.ts";
 export type { CurrentFootprintInverseInitialCacheCommand, CurrentFootprintInverseInitialCacheRole } from "./current-footprint-inverse-initial-cache-protocol.ts";
+
+export { CURRENT_FOOTPRINT_INVERSE_INITIAL_SYNC_ROLES } from "./current-footprint-inverse-initial-sync-protocol.ts";
+export type { CurrentFootprintInverseInitialSyncNativeCommand } from "./current-footprint-inverse-initial-sync-protocol.ts";

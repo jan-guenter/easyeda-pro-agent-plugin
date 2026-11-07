@@ -88,6 +88,7 @@ export class CurrentFootprintInverseInitialCacheObserver {
     } catch (error) { this.#failed = true; this.#binding.fail(); throw error; } finally { this.#busy = false; }
   }
   public async settleOriginal(): Promise<void> { this.#current(); need(!this.#busy && this.#held === null); this.#busy = true; try { await this.#cursor.settle(); this.#current(); } catch (error) { this.#failed = true; this.#binding.fail(); throw error; } finally { this.#busy = false; } }
+  public originalHeadEntry(): string { this.#current(); return this.#cursor.originalHeadEntry(); }
   public requireCompleted(): void { this.#current(); this.#cursor.requireCompleted(); }
   public status(): ReturnType<CurrentFootprintInverseInitialCacheCursor["status"]> { return this.#cursor.status(); }
 }

@@ -1132,3 +1132,61 @@ control allowlist. That path would safely refuse before dispatch. The exact
 the native switch and aggregate sum; a composed generation regression checks
 it, and the pure native smoke admits exactly298 controls then refuses299. No
 runtime attempt used the missing entry and no old-purpose budget changed.
+
+A distinct inverse renderer sync lane now joins the original saved multi-head
+worker graph to the four independently completed Main history reads. The cold
+loader's earlier history GET remains separate. `armFootprintInverseInitialSyncWorker(hold)`
+requires the genuine original bootstrap, saved input, producer/callback lane and
+already-armed inverse cache lane. It captures the original Main arm/wait/getter
+method identities and rechecks them across every await. Its original cache head
+entry is usable before cache fulfillment, with no copied data or caller handle
+standing in for that retained tuple.
+
+The separate fixed programs support one through eight actual saved heads and
+nonzero mutable chunk counts. They compare every response's complete own-key
+ordered base row to the original head index before merge/model code, then require
+the pinned `hd` result to retain exactly the intended per-head metadata references.
+All other rows and fields remain exact. Main1 arms only at the genuine syncEntry
+pause; Main2/3/4 arm while the preceding original syncHistory response remains
+held. Each response waits for its own original Main ACK/release completion and
+reproves that same result reference before resume. The final native task and
+outer returned Promise must fulfill. A replaced receipt or changed peer refuses
+before that response's continuation, retaining original cleanup and consumed
+attempts. No history key or body is progress output.
+
+The old generated sole-head programs, schemas and counters are unchanged. A
+focused regression initially exposed the old8KiB remote-description limit on
+one newly generated inverse guard. A separate inverse decoder admits only that
+exact full fixed closure source (at most16KiB), then applies every unchanged
+array/descriptor/proxy check through the original decoder. No arbitrary remote
+function description or general decoder limit was widened.
+
+The single original event cursor now routes cache, startup callbacks, sync and
+timer pauses sequentially on their exact original breakpoint IDs. Sync uses
+47 cursor commands (including one additional two-Promise metadata sample),
+27 original frame/receiver/tuple captures and35 exact emitted-helper source
+reads:109 renderer CDP requests, nine role-bound holds and two enrollment/
+completion controls, totaling120. The original Main lane keeps its separately
+derived four-by13 request reservation. All sync attempts, role resumes and
+completion tokens are privately bound and consumed before dispatch.
+
+The source also fixes the existing4KiB native control-envelope refusal for the
+inverse's private8KiB cache/head bodies. The larger existing32KiB envelope is
+admitted only for the exact inverse purpose, actual retained entry/capture
+command and its original bounded body. The native finite grammar still checks
+all fields and byte limits. An initial placement between other generators'
+adjacent size-guard anchors caused a repeated-generation refusal; moving this
+purpose-only size join outside those anchors restores two-pass identity. No
+tracked helper was emitted during either refusal.
+
+Five new source/cursor/grammar checks pass, including actual pinned four-GET
+same-head sync over a mutable two-head graph with no parse/cache effect, complete
+peer drift, replaced original Main receipt and exact long-guard admission.
+The combined focused factory/cache/controller selection has16 passing checks;
+full types and strict changed-file lint pass. Private combined generation is
+idempotent; Linux C#5/.NET10 inverse wire/refusal smokes pass. On this source
+base, storage is1,477,769 bytes and decoded C#2,057,652 bytes, both below the
+unchanged2MiB limits; integration must remeasure the full concurrent source.
+No tracked helper/pins/bundles, Windows/app/native/MCP call or runtime acceptance
+changed. Parser/ready permits, the post-ready drain/final idle join and subsequent
+delete/SQL/closed inverse/fourth-generation proofs remain pending.

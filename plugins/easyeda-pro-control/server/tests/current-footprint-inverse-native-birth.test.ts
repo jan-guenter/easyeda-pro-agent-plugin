@@ -92,6 +92,7 @@ void test("whole native composition is idempotent with original inverse limits a
   assert.equal(first.split("if ($FootprintInverse209 -and (").length - 1, 1);
   assert.ok(expanded.includes(`if(footprintInverse209)return ${String(PROFILE.renderer.total)};`));
   assert.ok(expanded.includes("spatial209?384:componentSpatial209?419:"));
+  assert.equal(ACTIONS["footprint-inverse-initial-sync"], 120); assert.ok(expanded.includes('case "footprint-inverse-initial-sync":limit=120;break;'));
   assert.equal(ACTIONS["footprint-inverse-initial-cache"], 298); assert.ok(expanded.includes('case "footprint-inverse-initial-cache":limit=298;break;'));
   assert.equal(PROFILE.deleteInvocationAuthorized, false); assert.equal(PROFILE.executionAuthorized, false); assert.equal(PROFILE.saveAuthorized, false);
   assert.ok(expanded.includes('if(footprintInverseConstructionComplete)throw Error("footprint-inverse-main-construction-consumed")'));
@@ -124,6 +125,9 @@ void test("an original inverse factory cannot adopt a copied source or construct
   const consume:unknown=Reflect.get(f.api,"consumeOriginalCurrentFootprintInverseBootstrapPermit");assert.ok(typeof consume==="function");assert.throws(()=>Reflect.apply(consume,undefined,[Object.freeze({profile:"private.current-footprint-inverse-bootstrap-permit.v1"}),Object.freeze({}),Object.freeze({}),owner,token]),/FOOTPRINT_INVERSE_BOOTSTRAP_PERMIT_ORIGINAL/u);
   const callbacks:unknown=Reflect.get(owner,"armFootprintInverseStartupCallbacks");assert.ok(typeof callbacks==="function");assert.throws(()=>Reflect.apply(callbacks,owner,[Object.freeze({profile:"private.current-footprint-inverse-bootstrap-held.v1"})]),/FOOTPRINT_INVERSE_STARTUP_CALLBACK_BOOTSTRAP/u);
   const callbackLookup:unknown=Reflect.get(f.api,"requireOriginalCurrentFootprintInverseStartupCallbackOrigin");assert.ok(typeof callbackLookup==="function");assert.throws(()=>Reflect.apply(callbackLookup,undefined,[Object.freeze({profile:"private.current-footprint-inverse-startup-callback-origin.v1"}),owner,token]),/FOOTPRINT_INVERSE_STARTUP_CALLBACK_ORIGINAL/u);
+  const initialSync:unknown=Reflect.get(owner,"armFootprintInverseInitialSyncWorker"),initialSyncLookup:unknown=Reflect.get(f.api,"requireOriginalCurrentFootprintInverseInitialSyncOrigin");assert.ok(typeof initialSync==="function"&&typeof initialSyncLookup==="function");
+  assert.throws(()=>Reflect.apply(initialSync,owner,[Object.freeze({profile:"private.current-footprint-inverse-bootstrap-held.v1"})]),/FOOTPRINT_INVERSE_INITIAL_SYNC_BOOTSTRAP/u);
+  assert.throws(()=>Reflect.apply(initialSyncLookup,undefined,[Object.freeze({profile:"private.current-footprint-inverse-initial-sync-origin.v1"}),owner,token]),/FOOTPRINT_INVERSE_INITIAL_SYNC_ORIGINAL/u);
   const initialCache:unknown=Reflect.get(owner,"armFootprintInverseInitialCache"),initialCacheLookup:unknown=Reflect.get(f.api,"requireOriginalCurrentFootprintInverseInitialCacheOrigin");assert.ok(typeof initialCache==="function"&&typeof initialCacheLookup==="function");
   assert.throws(()=>Reflect.apply(initialCache,owner,[Object.freeze({profile:"private.current-footprint-inverse-bootstrap-held.v1"})]),/FOOTPRINT_INVERSE_INITIAL_CACHE_BOOTSTRAP/u);
   assert.throws(()=>Reflect.apply(initialCacheLookup,undefined,[Object.freeze({profile:"private.current-footprint-inverse-initial-cache-origin.v1"}),owner,token]),/FOOTPRINT_INVERSE_INITIAL_CACHE_ORIGINAL/u);

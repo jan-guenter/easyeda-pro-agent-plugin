@@ -64,6 +64,7 @@ export class CurrentFootprintInverseInitialCacheCursor {
     if (fulfilled) { await this.#current(); await this.#bindings.complete(); await this.#current(); this.#complete = true; }
   }
   public async settle(): Promise<void> { need(!this.#busy && !this.#failed && !this.#complete); this.#busy = true; try { await this.#settle(); } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; } }
+  public originalHeadEntry(): string { need(!this.#failed); const head = this.#jobs.find(job => job.kind === "head"); need(head !== undefined && head.stage >= 2 && head.entry !== null); return head.entry; }
   public requireCompleted(): void { need(this.#complete && !this.#failed); }
   public status(): Readonly<{ jobs: number; acknowledgedResumes: number; allCallsResumed: boolean; settlementPasses: number; canSettle: boolean; complete: boolean; failed: boolean; completeProducerFrontierVerified: false }> {
     const allCallsResumed = this.#jobs.every(job => job.stage === 6); return Object.freeze({ jobs: this.#jobs.length, acknowledgedResumes: this.#resumes, allCallsResumed, settlementPasses: this.#settlementPasses,
