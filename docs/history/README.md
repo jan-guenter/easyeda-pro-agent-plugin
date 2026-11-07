@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 Schematic document tab identity](2026-11-07-schematic-document-tab-id.md). Correct own raw identity selection and separately qualify six uninvoked document getters; continuation remains separate.
+
 - [2026-11-07 Bounded geometry schema discovery](2026-11-07-bounded-geometry-schema-discovery.md)
 
 - [2026-11-07 Bounded facade identifier compaction](2026-11-07-bounded-facade-identifier-compaction.md)

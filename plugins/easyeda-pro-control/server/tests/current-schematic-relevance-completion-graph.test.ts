@@ -19,7 +19,8 @@ class CommandBase{get canRecord(){called();return false;}}
 class HistoryBase{_record(){called();}clearRecordsCore(){called();}get status(){called();return{};}get canRedo(){called();return false;}get canUndo(){called();return false;}}
 class History extends HistoryBase{get canRedo(){called();return false;}get canUndo(){called();return false;}}
 class Text{get x(){called();return 0;}get y(){called();return 0;}get rotation(){called();return 0;}get hAlign(){called();return 0;}get vAlign(){called();return 0;}}
-const doc={tabId:"tab"},group=new Group,text=new Text,history=Object.assign(new History,{batchSaveStack:group,_undoCommands:[],_redoCommands:[],_onBatchSaveStackWillRecord:new Event(1),_onWillRecord:new Event(1),_onDidRecord:new Event(1),_onStatusChange:new Event(3),maxLength:50,belongTabId:"tab",_enable:true});
+class Document{constructor(){this._tabId="tab";}get tabId(){called();return this._tabId;}}
+const doc=new Document,group=new Group,text=new Text,history=Object.assign(new History,{batchSaveStack:group,_undoCommands:[],_redoCommands:[],_onBatchSaveStackWillRecord:new Event(1),_onWillRecord:new Event(1),_onDidRecord:new Event(1),_onStatusChange:new Event(3),maxLength:50,belongTabId:"tab",_enable:true});
 const shapes={historyRecorder:history,docManager:doc};history.shapeManager=shapes;const action={},runner={_currentAction:action};
 const native=[Object.getOwnPropertyDescriptor,Object.getOwnPropertyDescriptors,Object.getPrototypeOf,Object.is,Object.hasOwn,Reflect.ownKeys,Reflect.apply,Array.isArray,Map.prototype.get,Map.prototype.has,Map.prototype.forEach,Object.getOwnPropertyDescriptor(Map.prototype,"size").get,Set.prototype.has,Set.prototype.forEach,Object.getOwnPropertyDescriptor(Set.prototype,"size").get,Object.prototype,Array.prototype,Map.prototype,Set.prototype];
 const refs=Array.from({length:24},()=>({}));refs[10]=shapes;refs[22]=runner;const entry=Array.from({length:13},()=>({}));entry[8]=text;entry[10]=action;
@@ -43,7 +44,7 @@ function fixture(): Readonly<{ realm: Context; execute: (source: string, receive
 }
 void test("normal history selection retains six original subscriptions and all24 uninvoked functions", () => {
   const f = fixture(); assert.equal(f.unchanged(), true); assert.equal(f.snapshotSame(), true); assert.equal(f.calls(), 0);
-  for (const fault of ["history._redoCommands.push({})", "history.belongTabId='foreign'", "history._onStatusChange._options.onAdd=fn", "history._onStatusChange._listenerSubscriptions[2]={cb:fn,dispose:fn}", "history._onStatusChange._deliveryQueue.current=history", "Object.defineProperty(text,'x',{get(){called();return 0;}})"]) {
+  for (const fault of ["history._redoCommands.push({})", "history.belongTabId='foreign'", "doc._tabId='foreign'", "Object.defineProperty(doc,'_tabId',{get(){called();return 'tab';}})", "history._onStatusChange._options.onAdd=fn", "history._onStatusChange._listenerSubscriptions[2]={cb:fn,dispose:fn}", "history._onStatusChange._deliveryQueue.current=history", "Object.defineProperty(text,'x',{get(){called();return 0;}})"]) {
     const changed = fixture(); runInContext(fault, changed.realm); assert.throws(changed.unchanged); assert.throws(changed.snapshotSame); assert.equal(changed.calls(), 0);
   }
   const changed = fixture(); runInContext("history[Symbol.for('unrecognized-original-field')]={retained:true}", changed.realm); assert.throws(changed.snapshotSame); assert.equal(changed.calls(), 0);
