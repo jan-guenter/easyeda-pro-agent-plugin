@@ -12,6 +12,8 @@ export interface CurrentSchematicRelevanceDisplayModifyEntryBindings {
   readonly request: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand) => Promise<unknown>;
   readonly nextRawCommand: () => CurrentSchematicRelevanceDisplayModifyEntryCommand | null;
   readonly requireRawCapture: () => CurrentSchematicRelevanceRawCapture;
+  readonly prepareUnderlineEligibility: () => Promise<void>;
+  readonly requireUnderlineEligibility: () => void;
   readonly originalRun: () => Readonly<CurrentSchematicRelevanceDisplayOriginalRun>;
   readonly assertCurrent: () => Promise<void>;
   readonly fail: () => void;

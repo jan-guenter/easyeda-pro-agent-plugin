@@ -54,6 +54,7 @@ import type { CurrentSchematicRelevanceRunPrefixCapture } from "./current-schema
 import type { CurrentSchematicRelevanceRunPrefixBindings, CurrentSchematicRelevanceRunPrefixOrigin } from "./current-schematic-relevance-run-prefix-origin.ts";
 import type { CurrentSchematicRelevanceRunPrefixCommand } from "./current-schematic-relevance-run-prefix-protocol.ts";
 import type { CurrentSchematicRelevanceDisplayAccessorFunctions, CurrentSchematicRelevanceDisplayAccessorObservation } from "./current-schematic-relevance-display-accessor-observer.ts";
+import { CurrentSchematicRelevanceUnderlineCursor } from "./current-schematic-relevance-underline-cursor.ts";
 import type { CurrentSchematicRelevanceDisplayModifyEntryBindings, CurrentSchematicRelevanceDisplayModifyEntryOrigin, CurrentSchematicRelevanceDisplayOriginalRun } from "./current-schematic-relevance-display-modify-entry-origin.ts";
 import type { CurrentSchematicRelevanceStartupStructureDrained } from "./current-schematic-relevance-startup-structure-origin.ts";
 import { validateCurrentSchematicRelevanceDisplayModifyEntryCommand } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
@@ -4611,6 +4612,8 @@ class CurrentPcbRetainedOwnerCore {
     dispatch: GeneratedSchematicRelevanceDisplayDispatch, guard: CurrentSchematicRelevanceDisplayActionGuardObservation, startup: CurrentSchematicRelevanceStartupStructureDrained): Promise<CurrentSchematicRelevanceDisplayModifyEntryOrigin> {
     assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this);
     this.requireSchematicRelevanceDisplayAccessorFunctions(argumentsValue);
+    const bodyAfter = argumentsValue.operation.afterBody, bodyBefore = argumentsValue.operation.beforeBody;
+    if (typeof bodyBefore["underline"] !== "boolean" || typeof bodyAfter["underline"] !== "boolean" || bodyBefore["underline"] === bodyAfter["underline"] || canonicalJson({ ...bodyBefore, underline: bodyAfter["underline"] }) !== canonicalJson(bodyAfter)) { throw error("SCHEMATIC_MODIFY_UNDERLINE_ONLY_SOURCE_FRONTIER"); }
     const selected = this.#schematicReadContext(argumentsValue); const enrollment = this.#schematicRelevancePreModifyMainEnrollment, holder = this.#schematicSdkBinding, idle = this.#schematicRelevanceActionArray, runner = this.#mainRunner;
     const before = requireOriginalCurrentSchematicRelevanceDisplayPreModifyMainOrigin(main, this, argumentsValue); requireOriginalCurrentSchematicRelevanceDisplayActionGuard(guard, this, argumentsValue);
     if (this.#schematicRelevanceModifyGenerationAttempted || enrollment === null || this.#schematicRelevancePreModifyDispatch !== dispatch || holder === null || idle === null || runner === null || this.#schematicRelevanceActionGuardPacket !== guard || this.#schematicRelevancePreModifyMainOrigin !== main) { throw error("SCHEMATIC_MODIFY_GENERATION_UNAVAILABLE"); }
@@ -4629,7 +4632,7 @@ class CurrentPcbRetainedOwnerCore {
       const bound = await this.#request({ action: "schematic-relevance-display-modify-bind", idle }); current(); if (!exact(bound, ["bound"]) || bound["bound"] !== true) { throw error("SCHEMATIC_MODIFY_GENERATION_BIND_ACK"); }
       const origin: CurrentSchematicRelevanceDisplayModifyEntryOrigin = Object.freeze({ profile: "private.current-schematic-relevance-display-modify-entry-origin.v1" });
       let originalRun: Readonly<CurrentSchematicRelevanceDisplayOriginalRun> | null = null;
-      let runEvent: DiagnosticEvent | null = null;
+      let runEvent: DiagnosticEvent | null = null; let underlineAttempted = false, underlineCompleted = false; let underlineCursor: CurrentSchematicRelevanceUnderlineCursor | null = null;
       const operationJson = canonicalJson(argumentsValue.operation), targetJson = canonicalJson(argumentsValue.target); let callback: string | null = null, frameId: string | null = null, rawCursor: CurrentSchematicRelevanceRawCursor | null = null, source: string | null = null, step = 0, tuple: string | null = null;
       const original = (): void => { current(); if (this.#schematicRelevanceModifyEntryOrigin !== origin || this.#schematicRelevanceModifyTask === null) { throw error("SCHEMATIC_MODIFY_ENTRY_CUSTODY"); } };
       const held = (): void => { original(); const request = this.#schematicRelevanceModifyRequest; if (request === null || runEvent === null || this.#schematicRelevanceActionGuardHeld !== runEvent) { throw error("SCHEMATIC_MODIFY_ENTRY_ORIGINAL_PENDING_REQUIRED"); } selected.pipe.requireOriginalSchematicRelevanceDisplayModifyPending(request); };
@@ -4652,6 +4655,17 @@ class CurrentPcbRetainedOwnerCore {
           else if (command.phase === "schematic-modify-entry-proof") { const value = captureCurrentPcbStringClockReply(raw).value; if (!record(value) || !record(value["result"]) || !exact(value, ["result"]) || !exact(value["result"], ["type", "value"]) || value["result"]["type"] !== "boolean" || value["result"]["value"] !== true || frameId === null) { throw error("SCHEMATIC_RAW_ORIGINAL_ENTRY_PROOF"); } rawCursor = new CurrentSchematicRelevanceRawCursor(frameId, holder); } return raw;
         }, nextRawCommand: (): CurrentSchematicRelevanceDisplayModifyEntryCommand | null => { held(); if (step !== 5 || rawCursor === null) { throw error("SCHEMATIC_RAW_ORIGINAL_ENTRY_REQUIRED"); } return rawCursor.next(); },
         requireRawCapture: () => { held(); if (step !== 5 || rawCursor === null) { throw error("SCHEMATIC_RAW_ORIGINAL_CAPTURE_REQUIRED"); } return rawCursor.requireCompleted(); },
+        prepareUnderlineEligibility: async (): Promise<void> => {
+          held(); if (underlineAttempted || step !== 5 || rawCursor === null || frameId === null || this.#schematicRelevanceActionVariant === null) { throw error("SCHEMATIC_UNDERLINE_ORIGINAL_PREARM_ONCE"); } underlineAttempted = true;
+          const raw = rawCursor.requireCompleted(); underlineCursor = new CurrentSchematicRelevanceUnderlineCursor(frameId, raw.nativeObjectId, this.#schematicRelevanceActionVariant);
+          try {
+            for (let command = underlineCursor.next(); command !== null; command = underlineCursor.next()) {
+              held(); const originalCommand = command; underlineCursor.reserve(originalCommand); const reply = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { held(); return selected.pipe.observeSchematicRelevanceDisplayModifyEntry(originalCommand); })); held(); underlineCursor.accept(originalCommand, reply);
+            }
+            underlineCursor.requireCompleted(); held(); underlineCompleted = true;
+          } catch (caughtError) { underlineCursor.fail(); this.#schematicFailed = true; this.#schematicWorkerController?.fail(); throw caughtError; }
+        },
+        requireUnderlineEligibility: (): void => { held(); if (!underlineCompleted || underlineCursor === null) { throw error("SCHEMATIC_UNDERLINE_ORIGINAL_ELIGIBILITY_REQUIRED"); } underlineCursor.requireCompleted(); },
         originalRun: (): Readonly<CurrentSchematicRelevanceDisplayOriginalRun> => {
           held(); if (step !== 5 || rawCursor === null || frameId === null || tuple === null || callback === null || source === null) { throw error("SCHEMATIC_RUN_ORIGINAL_CAPTURE_REQUIRED"); } rawCursor.requireCompleted();
           originalRun ??= Object.freeze({ callFrameId: frameId, tupleObjectId: tuple, callbackObjectId: callback, callbackScriptId: source });
