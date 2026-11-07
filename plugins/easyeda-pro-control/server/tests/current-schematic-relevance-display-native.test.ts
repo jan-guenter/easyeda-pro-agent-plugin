@@ -58,7 +58,9 @@ void test("combined seven-record native source is idempotent, bounded and retain
   const originalPreEntryReads = CALLBACK.arms + CALLBACK.entry + 1 + CALLBACK.setter + CALLBACK.bridge;
   assert.ok(bridge.includes(`relevanceCallbackReads!=${String(originalPreEntryReads)}||`));
   assert.ok(!bridge.includes(`relevanceCallbackReads!=${String(originalPreEntryReads + CALLBACK.activeHistory)}||`));
-  assert.ok(compiler.includes(`relevanceCallbackReads>=${String(CALLBACK.arms + CALLBACK.entry + CALLBACK.receiver + CALLBACK.resumes + CALLBACK.setter + CALLBACK.bridge + CALLBACK.activeHistory)}`), "Later active-history observations retain their finite native reservation.");
+  assert.equal(CALLBACK.activeHistory, 868);
+  assert.equal(CALLBACK.completionHistory, 718);
+  assert.ok(compiler.includes(`relevanceCallbackReads>=${String(CALLBACK.arms + CALLBACK.entry + CALLBACK.receiver + CALLBACK.resumes + CALLBACK.setter + CALLBACK.bridge + CALLBACK.activeHistory + CALLBACK.completionHistory)}`), "Both original readonly history collectors retain their distinct finite native reservations.");
   const expanded = expandCurrentPcbDiagnosticCSharpReviewSource(first);
   assert.equal(expanded.split("        'schematic-relevance-display-native' {").length, 2);
   assert.equal(expanded.split("    [EasyedaDiagnosticOwner]::VerifySchematicRelevanceDisplaySmoke()\n").length, 2);

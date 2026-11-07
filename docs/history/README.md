@@ -1,5 +1,8 @@
 # Project history
 
+- [2026-11-07 Component reader refusal and cleanup](2026-11-07-component-reader-refusal-cleanup.md). Original normal close and helper release, exact35-table invariance and clean manager retirement; the consumed point batch remains refused.
+- [2026-11-07 original normal-history graph](2026-11-07-relevance-normal-history-graph.md). Actual four-event descriptor graph and24 uninvoked functions before the held setter; callback delivery and continuation remain unproved.
+
 - [2026-11-07 original inverse UI intrinsics and lookup graph](2026-11-07-inverse-ui-intrinsics-lookup-graph.md). Separate held-UI reflection receipt; readonly lookup/row leaves remain unmounted and issue no delete grant.
 
 - [2026-11-07 original inverse preference backup](2026-11-07-inverse-preferences-original-backup.md). Exact two-key original Storage backup and held removal points; restoration and native deletion remain unavailable.
