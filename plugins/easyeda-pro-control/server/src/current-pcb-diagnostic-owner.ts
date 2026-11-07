@@ -49,6 +49,8 @@ import type { CurrentSchematicRelevanceDisplayClockOrigin } from "./current-sche
 import { currentFootprintInverseModelStepNativeFrame, validateCurrentFootprintInverseModelStepCommand } from "./current-footprint-inverse-model-step-protocol.ts";
 import type { CurrentFootprintInverseColdLoadProgress } from "./current-footprint-inverse-cold-load-progress.ts";
 import type { CurrentFootprintInverseModelStepCommand, CurrentFootprintInverseStartupIdle } from "./current-footprint-inverse-model-step-protocol.ts";
+import { CurrentSchematicRelevanceRunGuardController } from "./current-schematic-relevance-run-guard-controller.ts";
+import type { CurrentSchematicRelevanceRunGuardStep, CurrentSchematicRelevanceRunPrefixEnd } from "./current-schematic-relevance-run-guard-controller.ts";
 import { CurrentSchematicRelevanceRunPrefixCursor } from "./current-schematic-relevance-run-prefix-cursor.ts";
 import type { CurrentSchematicRelevanceRunPrefixCapture } from "./current-schematic-relevance-run-prefix-cursor.ts";
 import type { CurrentSchematicRelevanceRunPrefixBindings, CurrentSchematicRelevanceRunPrefixOrigin } from "./current-schematic-relevance-run-prefix-origin.ts";
@@ -59,7 +61,7 @@ import { CurrentSchematicRelevanceActionCallbackController } from "./current-sch
 import type { CurrentSchematicRelevanceRawCapture } from "./current-schematic-relevance-action-raw-cursor.ts";
 import { CurrentSchematicRelevanceActionCallbackCursor } from "./current-schematic-relevance-action-callback-cursor.ts";
 import type { CurrentSchematicRelevanceActionCallbackBindings } from "./current-schematic-relevance-action-callback-origin.ts";
-import type { CurrentSchematicRelevanceDisplayActionCallbackHandoff, CurrentSchematicRelevanceDisplayActionCallbackOrigin } from "./current-schematic-relevance-display-run-handoff.ts";
+import type { CurrentSchematicRelevanceDisplayActionCallbackHandoff, CurrentSchematicRelevanceDisplayActionCallbackOrigin, CurrentSchematicRelevanceDisplayActionCallbackSetup } from "./current-schematic-relevance-display-run-handoff.ts";
 import type { CurrentSchematicRelevanceDisplayModifyEntryBindings, CurrentSchematicRelevanceDisplayModifyEntryOrigin, CurrentSchematicRelevanceDisplayOriginalRun } from "./current-schematic-relevance-display-modify-entry-origin.ts";
 import type { CurrentSchematicRelevanceStartupStructureDrained } from "./current-schematic-relevance-startup-structure-origin.ts";
 import { validateCurrentSchematicRelevanceDisplayModifyEntryCommand } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
@@ -889,6 +891,8 @@ export function requireOriginalGeneratedSchematicRelevanceDisplayEffect(effect: 
     canonicalJson(compareOriginalSchematicRelevanceDisplayEffect(original)) !== canonicalJson(effect.projection)) { throw error("SCHEMATIC_RELEVANCE_EFFECT_ORIGINAL"); }
   return effect.projection;
 }
+type SchematicRunEndOutcome = Readonly<{ ok: true; packet: CurrentSchematicRelevanceRunPrefixEnd }> | Readonly<{ ok: false; error: unknown }>;
+type SchematicRunSetupOutcome = Readonly<{ ok: true }> | Readonly<{ ok: false; error: unknown }>;
 const schematicRelevanceRunPrefixes = new WeakMap<CurrentSchematicRelevanceRunPrefixOrigin, Readonly<{ owner: CurrentSchematicRelevanceDisplayWriteOwner; argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments; bindings: CurrentSchematicRelevanceRunPrefixBindings; assertOriginal: () => void }>>();
 export function requireOriginalCurrentSchematicRelevanceRunPrefixOrigin(origin: CurrentSchematicRelevanceRunPrefixOrigin, owner: CurrentSchematicRelevanceDisplayWriteOwner,
   argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): CurrentSchematicRelevanceRunPrefixBindings { const original = schematicRelevanceRunPrefixes.get(origin); if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue) { throw error("SCHEMATIC_PREFIX_ORIGINAL_ORIGIN"); } original.assertOriginal(); return original.bindings; }
@@ -1968,6 +1972,10 @@ class CurrentPcbRetainedOwnerCore {
   #schematicRelevanceCallbackArmAttempted = false; #schematicRelevanceCallbackController: CurrentSchematicRelevanceActionCallbackController | null = null;
   #schematicRelevanceCallbackOrigin: CurrentSchematicRelevanceDisplayActionCallbackOrigin | null = null;
   #schematicRelevanceModifyGenerationAttempted = false; #schematicRelevanceModifyDispatched = false; #schematicRelevanceModifyTask: Promise<void> | null = null; #schematicRelevanceModifyRequest: Promise<RecordValue> | null = null;
+  #schematicRelevanceRunContinuationAttempted = false; #schematicRelevanceRunGuardController: CurrentSchematicRelevanceRunGuardController | null = null;
+  #schematicRelevanceRunGuardEndTask: Promise<SchematicRunEndOutcome> | null = null; #schematicRelevanceRunGuardEnd: CurrentSchematicRelevanceRunPrefixEnd | null = null;
+  #schematicRelevanceRunGuardArguments: GeneratedSchematicRelevanceDisplayNativeArguments | null = null; #schematicRelevanceRunGuardCurrent: (() => void) | null = null;
+  #schematicRelevanceRunSetupTask: Promise<SchematicRunSetupOutcome> | null = null;
   #schematicRelevanceRunPrefixAttempted = false; #schematicRelevanceRunPrefixOrigin: CurrentSchematicRelevanceRunPrefixOrigin | null = null; #schematicRelevanceRunPrefixCapture: CurrentSchematicRelevanceRunPrefixCapture | null = null;
   #schematicRelevanceModifyEntryOrigin: CurrentSchematicRelevanceDisplayModifyEntryOrigin | null = null;
   readonly #schematicRelevanceModifyEntrySignal = Promise.withResolvers<DiagnosticEvent | null>();
@@ -4690,6 +4698,76 @@ class CurrentPcbRetainedOwnerCore {
   }
   /** Arm only original qualified receivers while the actual run is held. The
    * enclosing run owner separately consumes its one native continuation. */
+  /** Continue the one original pending invocation. The original callback
+   * setup and three independent history guards run concurrently; neither
+   * reports callback-body completion or permits Save by itself. */
+  public async continueSchematicRelevanceDisplayOriginalRun(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments, entry: CurrentSchematicRelevanceDisplayModifyEntryOrigin,
+    setup: CurrentSchematicRelevanceDisplayActionCallbackSetup): Promise<void> {
+    assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this);
+    const selected = this.#schematicReadContext(argumentsValue); const original = requireOriginalCurrentSchematicRelevanceDisplayModifyEntryOrigin(entry, this, argumentsValue);
+    const run = original.originalRun(); const raw = original.requireRawCapture(); const prefix = this.requireSchematicRelevanceDisplayRunPrefixCapture(argumentsValue);
+    const script = this.#schematicRelevanceActionScript; const variant = this.#schematicRelevanceActionVariant; const request = this.#schematicRelevanceModifyRequest; const holder = this.#schematicSdkBinding;
+    if (this.#schematicRelevanceRunContinuationAttempted || this.#schematicRelevanceModifyEntryOrigin !== entry || request === null || holder === null || script === null || variant === null || typeof setup !== "function" || types.isProxy(setup)) { throw error("SCHEMATIC_ORIGINAL_RUN_CONTINUATION_ONCE"); }
+    this.#schematicRelevanceRunContinuationAttempted = true;
+    const controller = new CurrentSchematicRelevanceRunGuardController(selected.context.openingContext().sessionId, script, variant, prefix);
+    this.#schematicRelevanceRunGuardController = controller; this.#schematicRelevanceRunGuardArguments = argumentsValue;
+    let started = false; let handoff: CurrentSchematicRelevanceDisplayActionCallbackHandoff | null = null;
+    const current = (): void => {
+      selected.current(); if (this.#schematicFailed || this.#schematicDisplayCleanupOnly || this.#schematicRelevanceRunGuardController !== controller || this.#schematicRelevanceRunGuardArguments !== argumentsValue || this.#schematicRelevanceModifyRequest !== request || this.#schematicRelevanceModifyEntryOrigin !== entry || this.#schematicSdkBinding !== holder || this.#schematicRelevanceRunPrefixCapture !== prefix || this.#schematicRelevanceActionScript !== script || this.#schematicRelevanceActionVariant !== variant) { throw error("SCHEMATIC_ORIGINAL_RUN_CONTINUATION_CHANGED"); }
+      if (!started && (original.originalRun() !== run || original.requireRawCapture() !== raw)) { throw error("SCHEMATIC_ORIGINAL_RUN_HELD_REQUIRED"); }
+    };
+    this.#schematicRelevanceRunGuardCurrent = current;
+    const fail = (): void => { controller.fail(); handoff?.fail(); this.#schematicFailed = true; this.#schematicWorkerController?.fail(); this.#schematicRelevanceModifyEntrySignal.resolve(null); };
+    const send = async (step: CurrentSchematicRelevanceRunGuardStep): Promise<void> => {
+      current(); controller.reserve(step);
+      try {
+        await this.#verify(); current();
+        const reply = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => {
+          current(); selected.pipe.requireOriginalSchematicRelevanceDisplayModifyPending(request);
+          if (step.guard === "run") { if (started || handoff === null) { throw error("SCHEMATIC_ORIGINAL_RUN_SUBMIT_ONCE"); } handoff.assertArmed(); original.requireUnderlineEligibility(); }
+          controller.markOriginalSubmitted(step);
+          if (step.guard === "run") { started = true; this.#schematicRelevanceActionGuardHeld = null; }
+          return selected.pipe.observeSchematicRelevanceRunGuard(step);
+        })); current(); controller.accept(step, reply);
+      } catch (caughtError) { fail(); throw caughtError; }
+    };
+    try {
+      current(); handoff = await this.prepareSchematicRelevanceDisplayActionCallback(argumentsValue, entry); current(); handoff.assertArmed(); original.requireUnderlineEligibility();
+      const bound = await this.#request({ action: "schematic-relevance-run-guard", requestId: 0, phase: "bind", method: "control" }); current();
+      if (!exact(bound, ["written"]) || bound["written"] !== true) { throw error("SCHEMATIC_ORIGINAL_RUN_GUARD_BIND_ACK"); }
+      for (let count = 0; count < 3; count += 1) { const step = controller.next(); if (step === null || step.command.phase !== "prefix-arm") { throw error("SCHEMATIC_ORIGINAL_RUN_GUARD_ARM"); } await send(step); current(); }
+      controller.assertArmed(); handoff.assertArmed();
+      this.#schematicRelevanceRunGuardEndTask = (async (): Promise<SchematicRunEndOutcome> => {
+        try {
+          for (const index of [0, 1, 2] as const) {
+            await controller.waitOriginalGuard(index); current();
+            for (let count = 0; count < 6; count += 1) { const step = controller.next(); if (step === null || step.guard === "run") { throw error("SCHEMATIC_ORIGINAL_RUN_GUARD_STEP"); } await send(step); current(); }
+          }
+          const packet = await controller.waitOriginalEnd(); current(); controller.requireCompleted(packet);
+          const completed = await this.#request({ action: "schematic-relevance-run-guard", requestId: 0, phase: "complete", method: "control" }); current(); controller.requireCompleted(packet);
+          if (!exact(completed, ["written"]) || completed["written"] !== true) { throw error("SCHEMATIC_ORIGINAL_RUN_GUARD_COMPLETE_ACK"); }
+          this.#schematicRelevanceRunGuardEnd = packet; return Object.freeze({ ok: true, packet });
+        } catch (caughtError) { fail(); return Object.freeze({ ok: false, error: caughtError }); }
+      })();
+      const initial = controller.beginOriginalRunResume(); await send(initial); current(); await controller.waitOriginalRunResumed(); current();
+      const callback = await handoff.entry; current();
+      this.#schematicRelevanceRunSetupTask = (async (): Promise<SchematicRunSetupOutcome> => { try { await setup(callback); current(); return Object.freeze({ ok: true }); } catch (caughtError) { fail(); return Object.freeze({ ok: false, error: caughtError }); } })();
+      const setupResult = await this.#schematicRelevanceRunSetupTask; if (!setupResult.ok) { throw setupResult.error; } current(); await this.waitForSchematicRelevanceDisplayRunPrefixEnd(argumentsValue); current();
+    } catch (caughtError) { fail(); throw caughtError; }
+  }
+  /** Join the independent original guard pump. A settled SDK response is
+   * permitted here; it cannot replace the final guard ACK/event/native ACK. */
+  public async waitForSchematicRelevanceDisplayRunPrefixEnd(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): Promise<CurrentSchematicRelevanceRunPrefixEnd> {
+    assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this); requireSchematicArguments(this, argumentsValue);
+    const task = this.#schematicRelevanceRunGuardEndTask; const current = this.#schematicRelevanceRunGuardCurrent;
+    if (task === null || current === null || this.#schematicRelevanceRunGuardArguments !== argumentsValue) { throw error("SCHEMATIC_ORIGINAL_RUN_END_TASK_REQUIRED"); } current();
+    const result = await task; if (!result.ok) { throw result.error; } current(); const packet = this.requireSchematicRelevanceDisplayRunPrefixEnd(argumentsValue); if (packet !== result.packet) { throw error("SCHEMATIC_ORIGINAL_RUN_END_TASK_CHANGED"); } return packet;
+  }
+  public requireSchematicRelevanceDisplayRunPrefixEnd(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): CurrentSchematicRelevanceRunPrefixEnd {
+    assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this); requireSchematicArguments(this, argumentsValue);
+    const controller = this.#schematicRelevanceRunGuardController, current = this.#schematicRelevanceRunGuardCurrent, packet = this.#schematicRelevanceRunGuardEnd;
+    if (controller === null || current === null || packet === null || this.#schematicRelevanceRunGuardArguments !== argumentsValue) { throw error("SCHEMATIC_ORIGINAL_RUN_END_REQUIRED"); } current(); controller.requireCompleted(packet); return packet;
+  }
   public prepareSchematicRelevanceDisplayActionCallback(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments, entry: CurrentSchematicRelevanceDisplayModifyEntryOrigin): Promise<CurrentSchematicRelevanceDisplayActionCallbackHandoff> {
     const original = requireOriginalCurrentSchematicRelevanceDisplayModifyEntryOrigin(entry, this, argumentsValue); this.requireSchematicRelevanceDisplayRunPrefixCapture(argumentsValue);
     if (entry !== this.#schematicRelevanceModifyEntryOrigin) { throw error("SCHEMATIC_CALLBACK_ORIGINAL_ENTRY_REQUIRED"); }
@@ -4770,7 +4848,7 @@ class CurrentPcbRetainedOwnerCore {
     const origin = this.#schematicRelevanceRunPrefixOrigin; if (origin === null) { throw error("SCHEMATIC_PREFIX_ORIGINAL_CAPTURE_REQUIRED"); }
     return requireOriginalCurrentSchematicRelevanceRunPrefixOrigin(origin, this, argumentsValue).requireCapture();
   }
-  public async settleSchematicRelevanceDisplayModifyEntryAfterExit(): Promise<void> { if (this.#schematicRelevanceModifyTask === null) { return; } if (!this.#terminationObserved || this.#terminationObservation?.originalRootExited !== true || this.#terminationObservation.originalJobEmpty !== true) { throw error("SCHEMATIC_MODIFY_ENTRY_ORIGINAL_EXIT_REQUIRED"); } await this.#schematicRelevanceModifyTask; }
+  public async settleSchematicRelevanceDisplayModifyEntryAfterExit(): Promise<void> { if (this.#schematicRelevanceModifyTask === null) { return; } if (!this.#terminationObserved || this.#terminationObservation?.originalRootExited !== true || this.#terminationObservation.originalJobEmpty !== true) { throw error("SCHEMATIC_MODIFY_ENTRY_ORIGINAL_EXIT_REQUIRED"); } this.#schematicRelevanceRunGuardController?.fail(); this.#schematicRelevanceCallbackController?.fail(); await this.#schematicRelevanceModifyTask; const calls: Promise<unknown>[] = []; if (this.#schematicRelevanceRunGuardEndTask !== null) { calls.push(this.#schematicRelevanceRunGuardEndTask); } if (this.#schematicRelevanceRunSetupTask !== null) { calls.push(this.#schematicRelevanceRunSetupTask); } await Promise.allSettled(calls); }
   public async createSchematicRelevanceDisplayAccessorOrigin(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments, setup: CurrentSchematicRelevanceDisplayAccessorSetup): Promise<CurrentSchematicRelevanceDisplayAccessorOrigin> {
     assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this);
     const selected = this.#schematicReadContext(argumentsValue); const holder = this.#schematicSdkBinding;
@@ -5183,7 +5261,7 @@ class CurrentPcbRetainedOwnerCore {
     } catch (caughtError) { this.#viaFailed = true; throw caughtError; } finally { this.#busy = false; }
   }
   #observeSchematicLiveHistoryReply(argumentsValue:GeneratedSchematicRelevanceDisplayNativeArguments,command:CurrentPcbViaMainLiveHistoryCommand):void{if(command.phase==="via-main-live-arm"){this.#schematicLiveHistoryArmSignal.resolve(true);}else if(command.phase==="via-main-live-release"){this.requireSchematicRelevanceDisplayLiveHistoryRows(argumentsValue);this.#schematicLiveHistoryRowsSignal.resolve(true);}}
-  #refuseSchematicHistoryWaiters():void{this.#schematicRelevanceCallbackController?.fail();this.#schematicHistorySignal.resolve(false);this.#schematicLiveHistoryArmSignal.resolve(false);this.#schematicLiveHistoryRowsSignal.resolve(false);}
+  #refuseSchematicHistoryWaiters():void{this.#schematicRelevanceRunGuardController?.fail();this.#schematicRelevanceCallbackController?.fail();this.#schematicHistorySignal.resolve(false);this.#schematicLiveHistoryArmSignal.resolve(false);this.#schematicLiveHistoryRowsSignal.resolve(false);}
   /** Original seven-record prospective Main setup. No Save or selected SQL
    * is released by setup; all thirteen source points are acknowledged first. */
   public async prepareSchematicRelevanceDisplaySaveMain(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments,
@@ -6313,7 +6391,7 @@ class CurrentPcbRetainedOwnerCore {
     let sessionId: string | null = null;
     await this.#transfer(async () => {
       sessionId = await this.#pipe.attachTarget(targetId, event => {
-        if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#viaWorkerController?.observeUiEvent(event) === true) { return; } if (this.#observeSchematicRelevanceActionGuardEvent(event) || this.#observeSchematicActionGuardEvent(event)) { return; } if (schematicDisplayPurpose(this.#purpose) && this.#schematicWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && (this.#savedReadbackInvalidation === null ? this.#savedReadbackCache?.ledger.observeOriginalEvent(event.method) : this.#savedReadbackInvalidation.observeOriginalEvent(event)) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#observeSavedReadbackGuardHelper(event)) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#savedReadbackCache?.metadata.observeOriginalEvent(event) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && (this.#inverseCacheInvalidation === null ? this.#inverseCache?.ledger.observeOriginalEvent(event.method) : this.#inverseCacheInvalidation.observeOriginalEvent(event)) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#inverseHelper !== null && this.#observeFootprintInverseHelper(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#inverseCache?.metadata.observeOriginalEvent(event) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseHelper(event)) { return; } context.observeEvent(event); });
+        if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#viaWorkerController?.observeUiEvent(event) === true) { return; } if (this.#schematicRelevanceRunGuardController?.observeOriginalEvent(event) === true || this.#schematicRelevanceCallbackController?.observeOriginalEvent(event) === true) { return; } if (this.#observeSchematicRelevanceActionGuardEvent(event) || this.#observeSchematicActionGuardEvent(event)) { return; } if (schematicDisplayPurpose(this.#purpose) && this.#schematicWorkerController?.observeUiEvent(event) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && (this.#savedReadbackInvalidation === null ? this.#savedReadbackCache?.ledger.observeOriginalEvent(event.method) : this.#savedReadbackInvalidation.observeOriginalEvent(event)) === true) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#observeSavedReadbackGuardHelper(event)) { return; } if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#savedReadbackCache?.metadata.observeOriginalEvent(event) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && (this.#inverseCacheInvalidation === null ? this.#inverseCache?.ledger.observeOriginalEvent(event.method) : this.#inverseCacheInvalidation.observeOriginalEvent(event)) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#inverseHelper !== null && this.#observeFootprintInverseHelper(event)) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#inverseCache?.metadata.observeOriginalEvent(event) === true) { return; } if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#observeFootprintInverseHelper(event)) { return; } context.observeEvent(event); });
       return { sessionId };
     });
     if (sessionId === null) { throw error("ATTACH_REPLY"); }

@@ -2,9 +2,10 @@
  * handle or structural packet supplies an owner or permission to continue. */
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_PREFIX_METADATA_LIMITS as LIMITS, captureCurrentSchematicRelevancePrefixMetadata } from "./current-schematic-relevance-prefix-metadata-capture.ts";
 
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
-const remote = z.strictObject({ type: z.enum(["object", "function", "undefined", "string", "number", "boolean", "symbol", "bigint"]), subtype: z.string().max(128).optional(), className: z.string().max(256).optional(), description: z.string().max(32_768).optional(), objectId: handle.optional(), value: z.unknown().optional(), unserializableValue: z.string().max(128).optional() });
+const remote = z.strictObject({ type: z.enum(["object", "function", "undefined", "string", "number", "boolean", "symbol", "bigint"]), subtype: z.string().max(128).optional(), className: z.string().max(256).optional(), description: z.string().max(LIMITS.string).optional(), objectId: handle.optional(), value: z.unknown().optional(), unserializableValue: z.string().max(128).optional() });
 const field = z.strictObject({ name: z.string().max(256), value: remote.optional(), get: remote.optional(), set: remote.optional(), writable: z.boolean().optional(), configurable: z.boolean(), enumerable: z.boolean(), isOwn: z.literal(true), symbol: remote.optional() });
 const internal = z.strictObject({ name: z.string().max(128), value: remote });
 const packet = z.strictObject({ result: z.array(field).max(513), internalProperties: z.array(internal).max(8).optional() });
@@ -23,7 +24,7 @@ export function currentSchematicRelevancePrefixCapture(input: unknown): string {
 /** Inspect an original value before any program follows its descriptors or
  * prototype. Proxy internals and duplicate properties fail before that read. */
 export function currentSchematicRelevancePrefixProperties(input: unknown): CurrentSchematicRelevancePrefixProperties {
-  const value = packet.parse(captureCurrentPcbStringClockReply(input).value);
+  const value = packet.parse(captureCurrentSchematicRelevancePrefixMetadata(input));
   const names = new Set(value.result.map(item => item.name)); need(names.size === value.result.length);
   const internals = value.internalProperties ?? []; need(new Set(internals.map(item => item.name)).size === internals.length);
   need(internals.every(item => !["[[Target]]", "[[Handler]]", "[[IsRevoked]]", "[[TargetFunction]]", "[[BoundThis]]", "[[BoundArgs]]"].includes(item.name)));

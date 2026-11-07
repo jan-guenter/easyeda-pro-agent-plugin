@@ -32,7 +32,7 @@ export class CurrentSchematicRelevanceRunGuardController {
   readonly #points = new Map<string, GuardRole>(); readonly #breakpoints = new Map<GuardRole, string>();
   readonly #heldSignals = ROLES.map(() => Promise.withResolvers<DiagnosticEvent | null>());
   readonly #initial = Promise.withResolvers<boolean>(); readonly #end = Promise.withResolvers<CurrentSchematicRelevanceRunPrefixEnd | null>();
-  #arms = 0; #index = 0; #started = false; #failed = false; #reserved = false; #requests = 0;
+  #arms = 0; #index = 0; #started = false; #failed = false; #reserved = false; #submitted = false; #requests = 0;
   #command: CurrentSchematicRelevanceRunGuardStep | null = null; #held: Readonly<{ role: GuardRole; event: DiagnosticEvent; frameId: string }> | null = null;
   #read = 0; #tuple: string | null = null; #receiver: string | null = null;
   #resume: GuardRole | "run" | null = null; #resumeAck = false; #resumeSeen = false; #initialCompleted = false;
@@ -70,9 +70,12 @@ export class CurrentSchematicRelevanceRunGuardController {
   }
   public reserve(step: CurrentSchematicRelevanceRunGuardStep): void {
     this.#require(); need(!this.#reserved && step === this.#command && this.#requests < CURRENT_SCHEMATIC_RELEVANCE_RUN_GUARD_REQUESTS.total);
-    this.#requests += 1; this.#reserved = true;
+    this.#requests += 1; this.#reserved = true; this.#submitted = false;
     if (step.command.phase === "prefix-resume") { need(this.#resume === null); this.#resume = step.guard; this.#resumeAck = false; this.#resumeSeen = false; if (step.guard !== "run") { need(this.#held?.role === step.guard && this.#read === 5); this.#held = null; } }
   }
+  /** Called synchronously in the original transfer immediately before its
+   * actual pipe submit, after all asynchronous owner checks have completed. */
+  public markOriginalSubmitted(step: CurrentSchematicRelevanceRunGuardStep): void { this.#require(); need(this.#reserved && !this.#submitted && step === this.#command); this.#submitted = true; }
   #finishResume(): void {
     if (this.#resume === null || !this.#resumeAck || !this.#resumeSeen) { return; }
     const role = this.#resume; this.#resume = null;
@@ -87,7 +90,7 @@ export class CurrentSchematicRelevanceRunGuardController {
     }
   }
   public accept(step: CurrentSchematicRelevanceRunGuardStep, raw: unknown): void {
-    this.#require(); need(this.#reserved && step === this.#command);
+    this.#require(); need(this.#reserved && this.#submitted && step === this.#command);
     try {
       const command = step.command;
       if (command.phase === "prefix-arm") { const ack = armAck.parse(captureCurrentPcbStringClockReply(raw).value); need(!this.#points.has(ack.breakpointId) && step.guard === ROLES[this.#arms]); this.#points.set(ack.breakpointId, command.role); this.#breakpoints.set(command.role, ack.breakpointId); this.#arms += 1; }
@@ -112,7 +115,7 @@ export class CurrentSchematicRelevanceRunGuardController {
     if (event.sessionId !== this.#session || this.#failed) { return false; }
     if (event.method === "Debugger.resumed") {
       if (this.#resume === null) { return false; }
-      try { need(!this.#resumeSeen); this.#resumeSeen = true; this.#finishResume(); } catch { this.fail(); } return true;
+      try { need(this.#submitted && !this.#resumeSeen); this.#resumeSeen = true; this.#finishResume(); } catch { this.fail(); } return true;
     }
     if (event.method !== "Debugger.paused") { return false; }
     const ids = event.params["hitBreakpoints"]; if (!Array.isArray(ids) || !ids.some(value => typeof value === "string" && this.#points.has(value))) { return false; }

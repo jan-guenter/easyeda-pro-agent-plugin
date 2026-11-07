@@ -91,3 +91,33 @@ object with the retained shapes. It no longer assumes the first scope contains
 that binding. The existing inert metadata case covers a nearer unrelated
 closure followed by the required binding. This adds no scope or continuation
 authority.
+
+The original Core continuation is now composed with the genuine callback
+prearm and three history guards. It consumes its attempt before awaiting, keeps
+the original pending request, arms all guards, then submits the original run
+resume once. The existing UI event stream routes guard events before callback
+events and legacy refusal points. Guard collection runs independently of
+callback setup. SDK finalization can await the original end task even if its
+own response arrives before the last guard acknowledgment. Native completion
+must acknowledge before the Core end packet is available. Original exit joins
+the retained tasks and wakes unfinished collectors.
+
+Reservation and actual submission are separate. A resumed event before the
+original transfer has submitted its command fails rather than completing a
+reserved attempt. Callback prearm also requires no already-held callback entry,
+so a stale entry cannot supply the initial run continuation. Setter bodies,
+active action callees, UI publication, the Modify worker wave, final SDK
+settlement and connected execution remain pending separate proofs.
+
+Metadata uses a distinct purpose-local immutable capture. The graph admits up
+to 384 references; both pinned bundles contain 1,398 classes and a largest
+class description of 70,496 bytes. The older clock packet allows only 256
+array entries, 1,024 nodes and 16,384-character strings, so it cannot represent
+this metadata. The new capture permits 513 entries, 8,192 nodes and
+131,072-character strings within the existing 1 MiB transport frame limit.
+It rejects getters, Proxies, aliases, cycles and serialization hooks. Shared
+clock and transport limits remain unchanged. Actual Inspector checks preserve
+all 384 references and complete long descriptions and reject host hooks without
+running them. Five readonly-prefix and three guard cases pass with both
+TypeScript configurations and changed strict lint. These are local inert or
+synthetic checks, not connected writer validation.

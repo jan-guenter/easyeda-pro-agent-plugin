@@ -39,7 +39,7 @@ export class CurrentSchematicRelevanceActionCallbackController {
       this.#armed = true; this.assertArmed();
     } catch (caughtError) { this.fail(); throw caughtError; }
   }
-  public assertArmed(): void { this.#host.assertCurrent(); need(!this.#failed && this.#armed && this.#points.size === roles.length ); }
+  public assertArmed(): void { this.#host.assertCurrent(); need(!this.#failed && this.#armed && this.#points.size === roles.length && this.#held === null); }
   #role(event: DiagnosticEvent): CurrentSchematicRelevanceActionCallbackRole | null {
     const ids = event.params["hitBreakpoints"]; const frames = event.params["callFrames"]; if (!Array.isArray(frames) || frames.length === 0 || !Array.isArray(ids)) { return null; }
     const first = frame.parse(frames[0]);

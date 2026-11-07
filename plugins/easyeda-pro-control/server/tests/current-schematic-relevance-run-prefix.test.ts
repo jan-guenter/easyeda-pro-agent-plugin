@@ -9,6 +9,7 @@ import { CURRENT_SCHEMATIC_RELEVANCE_PREFIX_NATIVE_FUNCTIONS as NATIVES, current
 import { CURRENT_SCHEMATIC_RELEVANCE_PREFIX_QUEUE_PROGRAMS as QUEUE } from "../src/current-schematic-relevance-action-prefix-queue-programs.ts";
 import { currentSchematicRelevanceRunPrefixCases, currentSchematicRelevanceRunPrefixWire } from "../src/current-schematic-relevance-run-prefix-wire.ts";
 import { currentSchematicRelevanceDisplayWriteNativeRequest } from "../src/current-schematic-relevance-display-write-protocol.ts";
+import { captureCurrentSchematicRelevancePrefixMetadata } from "../src/current-schematic-relevance-prefix-metadata-capture.ts";
 
 void test("fixed prefix grammar rejects caller expressions, program changes and indexed argument substitution", () => {
   const frame = { phase: "prefix-frame", role: "run", variant: 0, method: "Debugger.evaluateOnCallFrame", params: { ...FLAGS, callFrameId: "original_frame", expression: currentSchematicRelevanceRunPrefixExpression("run", 0), returnByValue: false, includeCommandLineAPI: false } };
@@ -81,4 +82,21 @@ void test("every readonly prefix wire round-trips while continuation and unbrand
     assert.throws(() => currentSchematicRelevanceDisplayWriteNativeRequest(forged));
   }
   for (const role of ["run", "first-start", "will-end", "first-end"] as const) { assert.throws(() => currentSchematicRelevanceRunPrefixWire({ phase: "prefix-resume", role, method: "Debugger.resume", params: {} }, 83)); }
+});
+void test("purpose metadata preserves an actual384-reference tuple and full class descriptions without host hooks", async () => {
+  const context = createContext({}); const session = new Session(); session.connect(); const key = "__inertPrefixMetadataBudget";
+  runInContext(`globalThis.references=Array.from({length:384},()=>({}));globalThis.largeClass=class Large{body(){return ${JSON.stringify("x".repeat(20_000))}}}`, context);
+  Object.defineProperty(globalThis, key, { value: context, configurable: true });
+  try {
+    const value = await session.post("Runtime.evaluate", { expression: `globalThis.${key}.references` }); assert.ok(typeof value.result.objectId === "string");
+    const packet = await session.post("Runtime.getProperties", { objectId: value.result.objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false });
+    assert.equal(currentSchematicRelevancePrefixTuple(packet, 384).length, 384);
+    const prototype = await session.post("Runtime.evaluate", { expression: `globalThis.${key}.largeClass.prototype` }); assert.ok(typeof prototype.result.objectId === "string");
+    const metadata = currentSchematicRelevancePrefixProperties(await session.post("Runtime.getProperties", { objectId: prototype.result.objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false }));
+    const constructor = metadata.result.find(item => item.name === "constructor"); assert.ok(constructor?.value?.description?.includes("x".repeat(20_000)) === true);
+    let hooks = 0; const hostile = Object.defineProperty({}, "result", { enumerable: true, get: () => { hooks += 1; throw new Error("getter"); } });
+    assert.throws(() => captureCurrentSchematicRelevancePrefixMetadata(hostile));
+    const proxy = new Proxy({}, { ownKeys: (): never => { hooks += 1; throw new Error("proxy"); } }); assert.throws(() => captureCurrentSchematicRelevancePrefixMetadata(proxy)); assert.equal(hooks, 0);
+    assert.throws(() => captureCurrentSchematicRelevancePrefixMetadata({ description: "x".repeat(131_073) }));
+  } finally { Reflect.deleteProperty(globalThis, key); await session.post("Runtime.releaseObjectGroup", { objectGroup: FLAGS.objectGroup }); session.disconnect(); }
 });
