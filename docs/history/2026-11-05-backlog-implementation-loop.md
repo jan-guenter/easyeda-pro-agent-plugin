@@ -325,3 +325,50 @@ now use their actual request-specific database connection. The outer workflow
 still awaits complete original upload/cache/finalizer drain before public
 mounting or connected validation. These source changes are batched with the
 ongoing schematic and library work; no new plugin has been published.
+
+
+## 2026-11-07 batched controller integration
+
+Canonical8fee9361 integrates the original Via writer/saved-reader controller,
+its single32-event producer pump and separate immutable failed-disposable
+abandonment. Original Save/Abort ambiguity and journal-reservation ambiguity
+retain custody without replay. The reader now independently observes original
+exit after a lost Abort acknowledgment, and cleanup settlement preserves the
+shared journal's existing failure/control records. The explicit disposable Via
+route remains unmounted pending the final native payload and connected case.
+Offline discovery, strict argument validation and blocked coverage are present
+for its original SDK create/Save subset; ordinary writing remains disabled.
+
+The selected-request/DAG review identified a race between the worker's later
+history pause and Main's final live-row group release. Its original completion
+signal is being corrected before controlled validation. The scope remains the
+selected fixture/request, not general network or shared-account exclusion.
+
+Schematic source now composes original worker/accessor setup, a prospective
+pre-modify Main reservation and actual idle action metadata. Active action and
+first-setter custody, later body/SQL/persistence and wiring remain work; modify
+and Save are still refused. Footprint inverse source now binds complete mixed
+saved chunks to its own cold ingress and can release only its original
+bootstrap into a held branch. Model/ready continuation and full callback/queue/
+cache completion plus the complete four-generation lifecycle remain work.
+
+Fixed C# compiler-input storage recovers native helper headroom without raising
+the2MiB stored-helper or decoded-body limits. All source-marker consumers expand
+it before their existing checks; six released role outputs remain exact. The
+complete decoded C# has a generated readable review copy. PinnedNode24.18.0
+private two-pass generation on8fee9361 produced1,390,244stored bytes and
+1,916,452decoded C# bytes; complete restored C# compilation and16pure codec
+smokes passed with .NET10.0.113/C#5, without an owner or application. Both facade
+TypeScript projects and targeted changed-file strict lint passed. The source
+helper, its four migration pins, review copy and bundles still need a final
+synchronized emission after the remaining increments. No full local suite was
+repeated.
+
+The855-method inventory remains exhaustive and explicit about omitted and
+blocked contracts. All seven skill validators and official quick checks passed
+after adding the Via operating reference. Final required checks, exact final
+CI, full CodeRabbit review including reported legacy issues, merge, publication
+and installation remain open. This continuation has made no native/app calls,
+sent no host signal, published no PR/version and changed no production design.
+The retained old reader facade/helper still requires its pending exact cleanup
+authority; its missing release acknowledgment has not been invented or replayed.
