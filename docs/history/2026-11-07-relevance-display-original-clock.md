@@ -48,3 +48,21 @@ Five focused journal and pending-body checks passed, including rejection of a
 Modify intent by Save enrollment, cloned Save tokens and repeat consumption.
 Both TypeScript projects and changed strict lint pass. Actual Save dispatch,
 prospective Main setup, SQL continuation and persistence remain pending.
+
+## Save generation transport and native prerequisites
+
+A separate once-only pending Save request now has its own exact wire marker,
+selector-only native verb, original Promise/transport-slot identity and foreign
+owner refusals. The native Save fragment requires the real prospective Main
+preparation guard, original five clock points and the same worker before
+setting its Save-attempt flag. Its body-enrollment control accepts no caller
+JSON or replacement handles. The Node enrollment requires the original captured
+body/clock/effect packet and pending native request across every await.
+
+The fragment is deliberately not mounted before the actual Main implementation.
+The prospective-Main-dependent Core dispatch methods remain a private integration
+patch until that implementation lands. Existing public execution remains blocked.
+Two focused data/byte checks passed: selector-only Save bytes refuse foreign
+owners/phases, and acknowledged Save source still requires the complete peer
+roster and normalized roots. The full native Save composition has not yet been
+compiled or run. No helper, pins, bundle, install or application change here.

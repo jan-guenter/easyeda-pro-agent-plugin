@@ -56,3 +56,14 @@ export function compareGeneratedSchematicRelevanceDisplayEffect(args: GeneratedS
     exactProjectedTextBodyVerified: true, completePeerBodyRosterPreserved: true, explicitRelevanceAttributePreserved: true,
     originalNativeStageProvenanceVerified: false, workerClockProvenanceVerified: false, connectivityVerified: false, selectedSqlAuthorized: false, persistenceVerified: false, inverseAvailable: false });
 }
+
+/** SDK Save acknowledgement and complete live source relation only. This
+ * check neither establishes durable SQL nor reconstructs native provenance. */
+export function assertGeneratedSchematicRelevanceDisplaySaveStage(args: GeneratedSchematicRelevanceDisplayNativeArguments,
+  effect: GeneratedSchematicRelevanceDisplayProjectedEffect, input: unknown): void {
+  const packet = generatedSchematicRelevanceDisplayStageResultSchema.parse(input);
+  need(packet.stage === "save" && packet.ok && packet.originalContextIntact && packet.dispatchAttempted && packet.originalPromiseSettled &&
+    packet.modifyAttempted && packet.modifyAcknowledged && packet.saveAttempted && packet.saveAcknowledged && packet.savePromiseSettled && packet.windowTabId === effect.windowTabId &&
+    effect.operationId === args.operation.operationId && effect.documentUuid === args.target.pageUuid && effect.textId === args.operation.textId, "ORIGINAL_SAVE_STAGE_STATE");
+  need(canonicalJson(source(packet, args, args.operation.afterBody)) === canonicalJson(effect.rootIndices), "SAVE_ROOT_INDEX_CHANGED");
+}

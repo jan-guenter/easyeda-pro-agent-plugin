@@ -25,6 +25,11 @@ export function currentSchematicRelevanceDisplayWriteNativeRequest(chunk: Buffer
     if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceClockCommand: true, schematicClockRealm: realm, sessionId })}\0`))) { throw new Error("SCHEMATIC_RELEVANCE_CLOCK_FIXED_WIRE"); }
     return Object.freeze({ ...fixed.request, action: "schematic-relevance-display-clock" });
   }
+  if (Object.hasOwn(raw, "schematicRelevanceSaveGeneration")) {
+    const { id, sessionId, schematicRelevanceSaveGeneration: marker, ...input } = raw; const command = validateCurrentSchematicRelevanceDisplayNativeCommand(input);
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId) || command.schematicRelevanceDisplayPhase !== "save" || !chunk.equals(Buffer.from(`${JSON.stringify({ id, ...command, schematicRelevanceSaveGeneration: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_RELEVANCE_SAVE_GENERATION_WIRE"); }
+    return Object.freeze({ action: "schematic-relevance-display-save-generate", requestId: id });
+  }
   if (Object.hasOwn(raw, "schematicRelevanceModifyGeneration")) {
     const { id, sessionId, schematicRelevanceModifyGeneration: marker, ...input } = raw; const command = validateCurrentSchematicRelevanceDisplayNativeCommand(input);
     if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId) || command.schematicRelevanceDisplayPhase !== "modify" || !chunk.equals(Buffer.from(`${JSON.stringify({ id, ...command, schematicRelevanceModifyGeneration: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_RELEVANCE_MODIFY_GENERATION_WIRE"); }
