@@ -1,5 +1,6 @@
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import type { CurrentFootprintInversePollingCancellationEnrollment, CurrentFootprintInversePollingCancellationIntent } from "./current-footprint-inverse-polling-intent.ts";
 import { currentFootprintInverseStartupCallbackNativeFrame, validateCurrentFootprintInverseStartupCallbackCommand } from "./current-footprint-inverse-startup-callback-protocol.ts";
 import type { CurrentFootprintInverseStartupCallbackCommand, CurrentFootprintInverseStartupCallbackRole } from "./current-footprint-inverse-startup-callback-protocol.ts";
 import type { CurrentFootprintInverseStartupCallbackBindings, CurrentFootprintInverseStartupCallbackOrigin } from "./current-footprint-inverse-startup-callback-origin.ts";
@@ -950,6 +951,37 @@ const footprintInverseAllocations = new WeakMap<CurrentFootprintForwardSavedChec
 const footprintInverseTokens = new WeakMap<object, FootprintInverseAllocation>();
 const footprintInverseTerminations = new WeakMap<object, Readonly<{ token: object; binding: Binding }>>();
 const footprintInverseFactories = new WeakMap<object, Readonly<{ allocation: FootprintInverseAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
+interface FootprintInversePollingIntentOriginal {
+  readonly owner: CurrentFootprintInverseNativeOwner; readonly prepared: CurrentFootprintForwardSavedCheckpoint;
+  readonly current: () => void; readonly beforeNavigation: () => void; readonly published: () => Promise<void>;
+  enrolled: boolean; consumed: boolean;
+}
+const footprintInversePollingIntents = new WeakMap<CurrentFootprintInversePollingCancellationIntent, FootprintInversePollingIntentOriginal>();
+function footprintInversePollingIntent(token: CurrentFootprintInversePollingCancellationIntent, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): FootprintInversePollingIntentOriginal {
+  const original = footprintInversePollingIntents.get(token);
+  if (original === undefined || original.owner !== owner || original.prepared !== prepared) { throw error("FOOTPRINT_INVERSE_POLLING_ORIGINAL_INTENT"); }
+  assertOriginalCurrentFootprintInverseNativeOwner(owner); original.current(); return original;
+}
+export function requireOriginalCurrentFootprintInversePollingIntent(token: CurrentFootprintInversePollingCancellationIntent, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): void {
+  footprintInversePollingIntent(token, owner, prepared);
+}
+/** Enrollment must precede the first original project navigation. A serialized
+ * intent or matching operation ID cannot acquire this original generation. */
+export function enrollCurrentFootprintInversePollingIntent(token: CurrentFootprintInversePollingCancellationIntent, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): CurrentFootprintInversePollingCancellationEnrollment {
+  const original = footprintInversePollingIntent(token, owner, prepared); original.beforeNavigation();
+  if (original.enrolled || original.consumed) { throw error("FOOTPRINT_INVERSE_POLLING_ENROLLMENT_CONSUMED"); } original.enrolled = true;
+  const current = (): void => { if (footprintInversePollingIntent(token, owner, prepared) !== original || !original.enrolled) { throw error("FOOTPRINT_INVERSE_POLLING_ENROLLMENT_CHANGED"); } };
+  return Object.freeze({ assertCurrent: current, assertBeforeAttempt: (): void => { current(); if (original.consumed) { throw error("FOOTPRINT_INVERSE_POLLING_ATTEMPT_CONSUMED"); } },
+    assertOriginalAttempted: (): void => { current(); if (!original.consumed) { throw error("FOOTPRINT_INVERSE_POLLING_ATTEMPT_REQUIRED"); } },
+    assertPublished: async (): Promise<void> => { current(); await original.published(); current(); } });
+}
+/** The actual timer cancellation lane spends this marker before its first
+ * await. Unknown acknowledgment never refunds it or creates another token. */
+export function consumeCurrentFootprintInversePollingIntent(token: CurrentFootprintInversePollingCancellationIntent, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): Readonly<{ assertPublished: () => Promise<void> }> {
+  const original = footprintInversePollingIntent(token, owner, prepared);
+  if (!original.enrolled || original.consumed) { throw error("FOOTPRINT_INVERSE_POLLING_DISPATCH_CONSUMED"); } original.consumed = true;
+  return Object.freeze({ assertPublished: async (): Promise<void> => { original.current(); await original.published(); original.current(); } });
+}
 function requireFootprintInversePreparation(allocation: FootprintInverseAllocation): ReturnType<typeof RequireFootprintForwardSavedCheckpoint> {
   if (allocation.checkpointModule.requireOriginalCurrentFootprintForwardSavedCheckpoint !== allocation.requireCheckpoint ||
     allocation.checkpointModule.verifyCurrentFootprintForwardSavedCheckpoint !== allocation.verifyPrepared || footprintInverseAllocations.get(allocation.prepared) !== allocation ||
@@ -1817,6 +1849,8 @@ class CurrentPcbRetainedOwnerCore {
   #inverseParentPending = false; #inverseWorkerController: CurrentFootprintInverseWorkerController | null = null; #inverseWorkerPair: CurrentFootprintInverseWorkerPair | null = null;
   #inverseWorkerCommand: CurrentPcbViaSavedLoadBootstrapCommand | null = null; #inverseProjectDispatch: Promise<RecordValue> | null = null;
   #inverseUiPreflightAttempted = false;
+  #inversePollingIntentPromise: Promise<CurrentFootprintInversePollingCancellationIntent> | null = null;
+  #inversePollingIntent: CurrentFootprintInversePollingCancellationIntent | null = null;
   #inverseUiReady: Readonly<{ source: CurrentFootprintCopyNativeTarget; context: CurrentPcbDiagnosticContext; pipe: CurrentFootprintInversePipe; selected: ReturnType<CurrentPcbDiagnosticContext["openingContext"]>; windowTabId: string }> | null = null;
   #inverseFrame: Readonly<{ phase: "preflight" | "register" | "open-project"; session: string; context: string; target: CurrentDisposableOpenSealedTarget }> | null = null;
   #inverseHelper: { phase: "preflight" | "register" | "open-project"; scriptId: string | null } | null = null;
@@ -7569,6 +7603,46 @@ class CurrentPcbRetainedOwnerCore {
     const flow=this.#inverseFlowCachePlan,prepared=originalCurrentFootprintInverseTarget(this),source=this.#inverseStartupPlan;
     if(source===null||flow===null||source.module.prepareCurrentFootprintInverseStartupPlan!==source.prepare||source.module.requireOriginalCurrentFootprintInverseStartupPlan!==source.lookup||source.module.requireOriginalCurrentFootprintInverseColdLoadData!==source.cold){throw error("FOOTPRINT_INVERSE_STARTUP_PLAN_REQUIRED");}
     source.lookup(source.plan,flow.plan,prepared);return source.plan;
+  }
+  /** Publish one durable temporary-session intent while this original inverse
+   * root is still on its empty UI. The same Promise retains publication failure;
+   * no replacement publication, timer selector or cancellation is offered here. */
+  public prepareFootprintInversePollingCancellationIntent(): Promise<CurrentFootprintInversePollingCancellationIntent> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this);
+    if (this.#inversePollingIntentPromise !== null) { return this.#inversePollingIntentPromise; }
+    const prepared = originalCurrentFootprintInverseTarget(this), source = originalCurrentFootprintInverseNativeSource(this);
+    const allocation = footprintInverseFactories.get(this)?.allocation; const ready = this.#inverseUiReady; const runner = this.#mainRunner; const binding = this.#binding;
+    if (allocation === undefined || ready === null || runner === null || binding === null || this.#inverseWorkerController !== null || this.#inverseProjectDispatch !== null) { throw error("FOOTPRINT_INVERSE_POLLING_BEFORE_NAVIGATION_REQUIRED"); }
+    let token: CurrentFootprintInversePollingCancellationIntent | null = null;
+    const current = (): void => {
+      assertOriginalCurrentFootprintInverseNativeOwner(this); this.#available(); requireFootprintInversePreparation(allocation);
+      if (footprintInverseFactories.get(this)?.allocation !== allocation || originalCurrentFootprintInverseTarget(this) !== prepared || originalCurrentFootprintInverseNativeSource(this) !== source ||
+        this.#binding !== binding || this.#inverseUiReady !== ready || this.#mainRunner !== runner || runner.selectedSqlFenceState()["ready"] !== true ||
+        this.#mainTerminateAttempted || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed || token !== null && this.#inversePollingIntent !== token) {
+        throw error("FOOTPRINT_INVERSE_POLLING_ORIGINAL_CHANGED");
+      }
+    };
+    const beforeNavigation = (): void => { current(); if (this.#inverseWorkerController !== null || this.#inverseProjectDispatch !== null) { throw error("FOOTPRINT_INVERSE_POLLING_NAVIGATION_CONSUMED"); } };
+    beforeNavigation();
+    const pending = (async (): Promise<CurrentFootprintInversePollingCancellationIntent> => {
+      await allocation.verifyPrepared(prepared); beforeNavigation();
+      const text = `${canonicalJson({ schema: "private.current-footprint-inverse-first-timer-durable-intent.v1", originalOperationId: source.operationId,
+        target: source.target, originalBinding: binding, originalClosedLogicalSha256: source.before.logicalSha256,
+        nonce: randomBytes(32).toString("hex"), temporarySessionMutation: true, scope: "original-first-checkProject-timer-only",
+        publishedBeforeNavigation: true, originalEntryReturnAndNativeClearRequired: true, timerSlotMustBeRetained: true,
+        callerTimerSelection: false, navigationReplayAuthorized: false, designWriteAuthorized: false, saveAuthorized: false })}\n`;
+      if (Buffer.byteLength(text) > 16_384) { throw error("FOOTPRINT_INVERSE_POLLING_INTENT_BOUND"); }
+      const directory = await ensureManagedDirectory(join(controlDataDirectory(), "artifacts", "footprint-inverse-first-timer-intent")); beforeNavigation();
+      const artifact = await publishManagedAttachmentExclusive(join(directory, `${randomBytes(16).toString("hex")}.json`), "Original footprint inverse first-timer intent", Buffer.from(text),
+        "footprint-inverse-first-timer-intent", (): Promise<void> => { beforeNavigation(); return Promise.resolve(); }); beforeNavigation();
+      const published = async (): Promise<void> => { current(); await verifyExactManagedArtifact(artifact); current();
+        const raw = await readArtifact(artifact.path, 0, 16_384); current(); if (!raw.eof || raw.text !== text) { throw error("FOOTPRINT_INVERSE_POLLING_INTENT_ARTIFACT"); }
+        await verifyExactManagedArtifact(artifact); current();
+      };
+      await published(); beforeNavigation(); token = Object.freeze({ profile: "private.current-footprint-inverse-polling-cancellation-intent.v1" });
+      footprintInversePollingIntents.set(token, { owner: this, prepared, current, beforeNavigation, published, enrolled: false, consumed: false });
+      this.#inversePollingIntent = token; current(); return token;
+    })(); this.#inversePollingIntentPromise = pending; return pending;
   }
   public async armFootprintInverseWorker(setup: (origin: CurrentFootprintInverseWorkerOrigin) => Promise<void>): Promise<void> {
     assertOriginalCurrentFootprintInverseNativeOwner(this); const intent = this.#inverseRegistrationIntent, ready = this.#inverseUiReady, runner = this.#mainRunner;
