@@ -22,7 +22,7 @@ const prop = (name: string, value: unknown, writable = true, enumerable = true, 
 const array = (values: unknown[]): unknown => ({ result: [...values.map((value, index) => prop(String(index), value)), prop("length", { type: "number", value: values.length }, true, false, false)], internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", objectId: "array-prototype" } }] });
 function scopes(id: string): unknown { return ({ result: [prop("0", { type: "object", subtype: "internal#scope", className: "Object", objectId: `scope:${id.slice("scopes:".length)}`, description: "Closure" }),
     prop("1", { type: "object", subtype: "internal#scope", className: "Object", objectId: "scope-global", description: "Global" })] }); }
-async function fixture(text: string, fault: "none" | "validator" | "raw" | "ast" = "none"): Promise<Readonly<{ observer: CurrentSchematicRelevanceDisplayAccessorObserver; state: { normal: number; cleanup: number; failed: boolean; exited: boolean }; owner: object; args: object }>> {
+async function fixture(text: string, fault: "none" | "validator" | "raw" | "ast" = "none"): Promise<Readonly<{ observer: CurrentSchematicRelevanceDisplayAccessorObserver; state: { normal: number; cleanup: number; failed: boolean; exited: boolean }; owner: object; args: object; origin: object }>> {
   const source = SOURCES[0];
   const owner = Object.freeze({ explicitOriginalOwnerSeam: true }); const origin = Object.freeze({ explicitOriginSeam: true }); const args = Object.freeze({ explicitArgumentsSeam: true });
   const state = { normal: 0, cleanup: 0, failed: false, exited: false };
@@ -74,11 +74,12 @@ async function fixture(text: string, fault: "none" | "validator" | "raw" | "ast"
   const Constructor = loaded.exports["CurrentSchematicRelevanceDisplayAccessorObserver"]; assert.ok(typeof Constructor === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Runtime checked production class with explicit original-origin/inspector seams; no app or native owner is allocated.
   const observer = Reflect.construct(Constructor, [origin, owner, args]) as CurrentSchematicRelevanceDisplayAccessorObserver;
-  return { observer, state, owner, args };
+  return { observer, state, owner, args, origin };
 }
 void test("actual observer qualifies complete imported source, all original metadata, decorator validators and monitor AST without pretending a lexical-this receiver join", async context => {
   const text = await installedSource(context); if (text === null) { return; } const f = await fixture(text); const packet = await f.observer.observe(); assert.equal(f.state.normal, 113); assert.equal(packet.schema, "private.current-schematic-relevance-display-accessor-observation.v2"); assert.equal(packet.originalMonitorReceiversQualified, false); assert.equal(packet.watchedMonitorAndAstFunctionMetadataObserved, true); assert.equal(packet.fields, 10); assert.equal(packet.executionAuthorized, false); assert.equal(packet.activeActionHistoryCallbackQualified, false);
   const check: unknown = Reflect.get(f.observer, "requireData"); assert.ok(typeof check === "function"); Reflect.apply(check, f.observer, [packet, f.owner, f.args]); assert.throws(() => Reflect.apply(check, f.observer, [structuredClone(packet), f.owner, f.args]), /ORIGINAL_PACKET_DATA/u);
+  const requireFunctions: unknown = Reflect.get(f.observer, "requireFunctions"); assert.ok(typeof requireFunctions === "function"); const functions: unknown = Reflect.apply(requireFunctions, f.observer, [packet, f.origin, f.owner, f.args]); assert.ok(functions !== null && typeof functions === "object"); assert.deepEqual(Reflect.get(functions, "underline"), { getObjectId: "callee:underline.get", setObjectId: "callee:underline.set", rawDescriptorObjectId: "raw:underline", rawGetObjectId: "callee:underline.get", rawSetObjectId: "rawSetter:underline" });
   await f.observer.release(); assert.equal(f.state.cleanup, 1); await assert.rejects(f.observer.observe(), /CONSUMED/u);
 });
 void test("changed raw method text and a nonempty original decorator validator refuse before action or metadata replay", async context => {

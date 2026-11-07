@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { runInThisContext } from "node:vm";
-import { CURRENT_SCHEMATIC_RELEVANCE_ACTION_AFTER_RUN_PROOF as AFTER, CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_BIND as BIND, CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_DETAILS as DETAILS, CURRENT_SCHEMATIC_RELEVANCE_ACTION_RECEIVER_PROOF as RECEIVER, CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_SAME as SAME } from "../src/current-schematic-relevance-action-callback-programs.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_ACTION_AFTER_RUN_PROOF as AFTER, CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_BIND as BIND, CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_DETAILS as DETAILS, CURRENT_SCHEMATIC_RELEVANCE_ACTION_RECEIVER_PROOF as RECEIVER, CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_SAME as SAME, CURRENT_SCHEMATIC_RELEVANCE_FIRST_SETTER_PROOF as SETTER_PROOF } from "../src/current-schematic-relevance-action-callback-programs.ts";
 import { CurrentSchematicRelevanceActionCallbackController } from "../src/current-schematic-relevance-action-callback-controller.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_MARKERS as MARKERS } from "../src/current-schematic-relevance-display-action-programs.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_CALLBACK_LOCATION as LOCATION } from "../src/current-schematic-relevance-display-modify-entry-replies.ts";
@@ -12,24 +12,35 @@ import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts"
 
 const evaluate = (source: string, receiver: unknown, args: readonly unknown[]): unknown => { const fn: unknown = runInThisContext(`(${source})`); assert.ok(typeof fn === "function"); return Reflect.apply(fn, receiver, args); };
 const snapshotEntry = (value: object): readonly unknown[] => { const parent: unknown = Object.getPrototypeOf(value); const list: unknown[] = []; for (const key of Reflect.ownKeys(value)) { const d = Object.getOwnPropertyDescriptor(value, key); assert.ok(d !== undefined); const original: unknown = d.value; list.push([key, Object.hasOwn(d, "value"), original, Reflect.get(d, "get"), Reflect.get(d, "set"), d.writable, d.enumerable, d.configurable]); } return [value, parent, list, null]; };
-function fixture(): Readonly<{ entry: () => unknown; same: (bound: unknown) => unknown; run: () => unknown; receiver: (value: unknown) => unknown; monitor: object; active: object; change: (fault: "peer" | "map" | "runner" | "body") => void }> {
+function fixture(busBaseline: "absent" | "null" | "unexpected" = "absent"): Readonly<{ entry: () => unknown; same: (bound: unknown) => unknown; run: () => unknown; receiver: (value: unknown) => unknown; monitor: object; active: object; firstSetter: (fault?: "index" | "binding" | "getter") => unknown; setterCalls: () => number; change: (fault: "peer" | "map" | "runner" | "body" | "bus") => void }> {
   // oxlint-disable-next-line typescript/unbound-method -- Retain exact inert native references for the fixed projection; no object method is called through an unqualified receiver.
-  const native = [Object.getOwnPropertyDescriptor, Object.getOwnPropertyDescriptors, Object.getPrototypeOf, Object.is, Object.hasOwn, Reflect.ownKeys, Reflect.apply, Array.isArray, Map.prototype.get, Map.prototype.has, Map.prototype.forEach, Object.getOwnPropertyDescriptor(Map.prototype, "size")?.get, Set.prototype.has, Set.prototype.forEach, Object.getOwnPropertyDescriptor(Set.prototype, "size")?.get];
-  const active = {}, monitor = {}, text = { _underline: false }; const shapes = { shouldUpdateAst: true, modifyMonitor: monitor }; const runner: { _currentAction: object | null } = { _currentAction: null }; const index = new Map([["text", text]]);
+  const native = [Object.getOwnPropertyDescriptor, Object.getOwnPropertyDescriptors, Object.getPrototypeOf, Object.is, Object.hasOwn, Reflect.ownKeys, Reflect.apply, Array.isArray, Map.prototype.get, Map.prototype.has, Map.prototype.forEach, Object.getOwnPropertyDescriptor(Map.prototype, "size")?.get, Set.prototype.has, Set.prototype.forEach, Object.getOwnPropertyDescriptor(Set.prototype, "size")?.get, Object.prototype, Array.prototype, Map.prototype, Set.prototype];
+  let setterCalls = 0; const getter = (): boolean => { setterCalls += 1; return false; }; const setter = (_value: boolean): void => { setterCalls += 1; }; const textProto = {}; Object.defineProperty(textProto, "underline", { get: getter, set: setter, configurable: true });
+  const active = { status: "running", history: "add" }, monitor = {}; const text = { _underline: false }; Object.setPrototypeOf(text, textProto); Object.defineProperty(text, "_underline", { value: false, writable: true, enumerable: true, configurable: true }); const shapes = { shouldUpdateAst: true, modifyMonitor: monitor }; const runner: { _currentAction: object | null } = { _currentAction: null }; const index = new Map([["text", text]]);
+  if (busBaseline !== "absent") { Object.defineProperty(shapes, "changedBusGroupIds", { value: busBaseline === "null" ? null : new Set(), writable: true, enumerable: true, configurable: true }); } Object.defineProperty(shapes, Symbol("original-shape-field"), { value: {}, writable: true, enumerable: true, configurable: true });
   const refs: unknown[] = Array.from({ length: 24 }, () => ({})); refs[10] = shapes; refs[12] = index; refs[22] = runner;
-  const before = { text }; const b = { shapes, runner }; const state: Record<string, unknown> = { before, failed: false, modifyAttempted: true, modifyAcknowledged: false, saveAttempted: false }; const holder = [b, state]; state["owner"] = holder;
+  const before = { text }; const binding = { object: text, owner: textProto, key: "underline", get: getter, set: setter }; const mapping = { underline: binding }; const b = { shapes, runner, setters: mapping }; const state: Record<string, unknown> = { before, failed: false, modifyAttempted: true, modifyAcknowledged: false, saveAttempted: false }; const holder = [b, state]; state["owner"] = holder;
   const operation = { textId: "text", beforeBody: { underline: false, value: "unchanged" }, afterBody: { underline: true, value: "unchanged" } }; const context = [holder, b, state, before, [["underline", true]], {}, operation]; const frame = [context, Reflect.apply];
   const entries = [runner, shapes, text].map(value => snapshotEntry(value)); const parent: unknown = Object.getPrototypeOf(index); entries.push([index, parent, [], ["map", [...index]]]); const snapshot = [entries, (): boolean => true];
-  Reflect.set(runner, "_currentAction", active); shapes.shouldUpdateAst = false;
+  Reflect.set(runner, "_currentAction", active); shapes.shouldUpdateAst = false; const busSet = new Set(); Reflect.set(shapes, "changedBusGroupIds", busSet);
   const details = evaluate(DETAILS, context, [native]);
-  return { entry: () => evaluate(BIND, frame, [native, refs, holder, details]), same: bound => evaluate(SAME, frame, [native, refs, holder, details, bound]), run: () => evaluate(AFTER, snapshot, [native, refs, active]), receiver: value => evaluate(RECEIVER, [value], [native, refs]), monitor, active,
-    change: fault => { if (fault === "peer") { Reflect.set(text, "_underline", true); } else if (fault === "map") { index.set("foreign", text); } else if (fault === "runner") { Reflect.set(runner, "_currentAction", {}); } else { operation.afterBody.value = "foreign"; } } };
+  return { entry: () => evaluate(BIND, frame, [native, refs, holder, details]), same: bound => evaluate(SAME, frame, [native, refs, holder, details, bound]), run: () => evaluate(AFTER, snapshot, [native, refs, active, busSet]), receiver: value => evaluate(RECEIVER, [value], [native, refs]), monitor, active, setterCalls: () => setterCalls,
+    firstSetter: fault => { const first = [context, active, fault === "index" ? 1 : 0, Reflect.apply]; const bound = evaluate(BIND, frame, [native, refs, holder, details]); if (fault === "binding") { binding.owner = {}; } if (fault === "getter") { Object.defineProperty(binding, "set", { get: (): typeof setter => { setterCalls += 1; return setter; } }); } return evaluate(SETTER_PROOF, first, [native, refs, bound, [mapping], [binding], getter, setter]); },
+    change: fault => { if (fault === "bus") { busSet.add("unexpected"); } else if (fault === "peer") { Reflect.set(text, "_underline", true); } else if (fault === "map") { index.set("foreign", text); } else if (fault === "runner") { Reflect.set(runner, "_currentAction", {}); } else { operation.afterBody.value = "foreign"; } } };
 }
 void test("original callback context and every baseline descriptor/collection join by JS reference before any setter", () => {
   const f = fixture(); const bound = f.entry(); assert.ok(Array.isArray(bound)); assert.equal(bound[10], f.active); assert.equal(bound[11], f.monitor); assert.equal(f.same(bound), true); assert.equal(f.run(), true); assert.equal(f.receiver(f.monitor), true); assert.throws(() => f.receiver({}), /CALLBACK_RECEIVER/u);
-  for (const fault of ["peer", "map", "runner"] as const) { const changed = fixture(); changed.change(fault); assert.throws(changed.run, /RUN_DELTA/u); }
+  for (const fault of ["peer", "map", "runner", "bus"] as const) { const changed = fixture(); changed.change(fault); assert.throws(changed.run, /RUN_DELTA/u); }
   const changed = fixture(); const before = changed.entry(); changed.change("runner"); assert.throws(() => changed.same(before), /CALLBACK_ENTRY/u);
   const broad = fixture(); broad.change("body"); assert.throws(broad.entry, /CALLBACK_ENTRY/u);
+});
+void test("the actual second-start empty Set is a distinct bounded delta for absent or completed-null baseline", () => {
+  for (const before of ["absent", "null"] as const) { const f = fixture(before); assert.equal(f.run(), true); assert.equal(f.setterCalls(), 0); }
+  const unexpected = fixture("unexpected"); assert.throws(unexpected.run, /RUN_DELTA/u);
+});
+void test("the held first setter matches actual underline accessor references without invoking either accessor", () => {
+  const f = fixture(); assert.equal(f.firstSetter(), true); assert.equal(f.setterCalls(), 0);
+  for (const fault of ["index", "binding", "getter"] as const) { const changed = fixture(); assert.throws(() => changed.firstSetter(fault), /FIRST_SETTER_PROOF/u); assert.equal(changed.setterCalls(), 0); }
 });
 function event(role: "entry" | "setter" | "record", script = "original-callback"): DiagnosticEvent {
   let location = { ...LOCATION, scriptId: script }; let functionLocation = location; const ids: string[] = [];

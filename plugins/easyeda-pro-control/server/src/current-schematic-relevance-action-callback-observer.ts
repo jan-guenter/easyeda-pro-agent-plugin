@@ -5,12 +5,13 @@ import type { CurrentSchematicRelevanceDisplayWriteOwner } from "./current-schem
 import type { GeneratedSchematicRelevanceDisplayNativeArguments } from "./generated-schematic-relevance-display-source.ts";
 import type { CurrentSchematicRelevanceDisplayActionCallbackOrigin } from "./current-schematic-relevance-display-run-handoff.ts";
 import type { CurrentSchematicRelevanceActionCallbackBindings } from "./current-schematic-relevance-action-callback-origin.ts";
+import type { CurrentSchematicRelevanceFirstSetterReceipt } from "./current-schematic-relevance-first-setter-cursor.ts";
 import type { CurrentSchematicRelevanceActionCallbackEntry } from "./current-schematic-relevance-action-callback-cursor.ts";
 
 function need(value: boolean): asserts value { if (!value) { throw new Error("SCHEMATIC_RELEVANCE_ORIGINAL_CALLBACK_OBSERVER"); } }
 export class CurrentSchematicRelevanceActionCallbackObserver {
   readonly #origin: CurrentSchematicRelevanceDisplayActionCallbackOrigin; readonly #owner: CurrentSchematicRelevanceDisplayWriteOwner; readonly #args: GeneratedSchematicRelevanceDisplayNativeArguments; readonly #bindings: CurrentSchematicRelevanceActionCallbackBindings;
-  #attempted = false; #firstSetterAttempted = false; #busy = false; #failed = false; #entry: CurrentSchematicRelevanceActionCallbackEntry | null = null;
+  #attempted = false; #firstSetterAttempted = false; #firstSetterReadAttempted = false; #busy = false; #failed = false; #entry: CurrentSchematicRelevanceActionCallbackEntry | null = null; #setter: CurrentSchematicRelevanceFirstSetterReceipt | null = null;
   public constructor(origin: CurrentSchematicRelevanceDisplayActionCallbackOrigin, owner: CurrentSchematicRelevanceDisplayWriteOwner, args: GeneratedSchematicRelevanceDisplayNativeArguments) {
     this.#origin = origin; this.#owner = owner; this.#args = args; this.#bindings = requireOriginalCurrentSchematicRelevanceActionCallbackOrigin(origin, owner, args); Object.freeze(this);
   }
@@ -26,6 +27,11 @@ export class CurrentSchematicRelevanceActionCallbackObserver {
   public async continueToFirstSetter(): Promise<void> {
     this.#current(); need(!this.#busy && !this.#firstSetterAttempted && this.#entry !== null); this.#firstSetterAttempted = true; this.#busy = true;
     try { need(this.#entry === this.#bindings.requireOriginalEntry()); await this.#bindings.continueToFirstSetter(); this.#current(); need(this.#entry === this.#bindings.requireOriginalEntry()); }
+    catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
+  }
+  public async observeFirstSetter(): Promise<CurrentSchematicRelevanceFirstSetterReceipt> {
+    this.#current(); need(!this.#busy && this.#firstSetterAttempted && !this.#firstSetterReadAttempted); this.#firstSetterReadAttempted = true; this.#busy = true;
+    try { await this.#bindings.assertCurrent(); this.#current(); for (let command = this.#bindings.nextFirstSetterCommand(); command !== null; command = this.#bindings.nextFirstSetterCommand()) { await this.#bindings.requestFirstSetter(command); this.#current(); } this.#setter = this.#bindings.requireOriginalFirstSetter(); await this.#bindings.assertCurrent(); this.#current(); need(this.#setter === this.#bindings.requireOriginalFirstSetter()); return this.#setter; }
     catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
   }
   public requireOriginalEntry(): CurrentSchematicRelevanceActionCallbackEntry { this.#current(); need(!this.#busy && this.#entry !== null && this.#entry === this.#bindings.requireOriginalEntry()); return this.#entry; }

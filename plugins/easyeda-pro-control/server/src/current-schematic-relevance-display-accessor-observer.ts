@@ -25,7 +25,8 @@ export interface CurrentSchematicRelevanceDisplayAccessorObservation {
   readonly originalHolderCalleesObserved: true; readonly exactRawAndDecoratedSettersObserved: true; readonly watchedMonitorAndAstFunctionMetadataObserved: true; readonly originalMonitorReceiversQualified: false;
   readonly activeActionHistoryCallbackQualified: false; readonly completeActionFrontierQualified: false; readonly executionAuthorized: false; readonly selectedSqlAuthorized: false; readonly persistenceVerified: false;
 }
-export interface CurrentSchematicRelevanceDisplayAccessorFunctions { readonly setAttributeObjectId: string; readonly recordObjectId: string; readonly astObjectId: string; readonly normalRequests: number }
+export interface CurrentSchematicRelevanceDisplayUnderlineFunctions { readonly getObjectId: string; readonly setObjectId: string; readonly rawDescriptorObjectId: string; readonly rawGetObjectId: string; readonly rawSetObjectId: string }
+export interface CurrentSchematicRelevanceDisplayAccessorFunctions { readonly setAttributeObjectId: string; readonly recordObjectId: string; readonly astObjectId: string; readonly normalRequests: number; readonly underline: CurrentSchematicRelevanceDisplayUnderlineFunctions }
 const packets = new WeakMap<object, CurrentSchematicRelevanceDisplayAccessorObserver>();
 export function requireOriginalCurrentSchematicRelevanceDisplayAccessorObservation(packet: unknown, origin: CurrentSchematicRelevanceDisplayAccessorOrigin, owner: CurrentSchematicRelevanceDisplayWriteOwner, args: GeneratedSchematicRelevanceDisplayNativeArguments): CurrentSchematicRelevanceDisplayAccessorFunctions {
   need(packet !== null && typeof packet === "object", "ORIGINAL_METADATA_PACKET"); const observer = packets.get(packet); need(observer !== undefined, "ORIGINAL_METADATA_PACKET"); return observer.requireFunctions(packet, origin, owner, args);
@@ -84,6 +85,7 @@ export class CurrentSchematicRelevanceDisplayAccessorObserver {
       this.#source = qualifyGeneratedSchematicDisplayAccessorSource(rawSource); requireGeneratedSchematicDisplayAccessorDescription(callees.textConstructor.description, this.#source, "textConstructor");
       const scopes = new Map<string, string>([["textConstructor", decodeCurrentSchematicRelevanceDisplayAccessorFunction(first, this.#source, "textConstructor", this.#scriptId).scopes]]);
       for (const role of CALLEES) { if (role !== "textConstructor") { scopes.set(role, await this.#metadata(callees[role], generatedSchematicDisplayPublicAccessorRole(role))); } }
+      let underline: CurrentSchematicRelevanceDisplayUnderlineFunctions | null = null;
       for (const field of FIELDS.slice(2)) {
         const scope = scopes.get(`${field}.set`); need(scope !== undefined, "DECORATOR_SCOPES"); const values = await this.#scope(scope, ["a", "i", "t"]); const raw = values.get("a"); const decorator = values.get("i"); const captured = values.get("t");
         need(raw?.kind === "object" && decorator?.kind === "object" && captured?.kind === "field" && captured.field === field, "DECORATOR_BINDINGS");
@@ -92,6 +94,7 @@ export class CurrentSchematicRelevanceDisplayAccessorObserver {
         const functions = currentSchematicDisplayAccessorFourFunctions(await this.#properties(array)); const roles = ["decoratorSetter", `${field}.get`, `${field}.set`, "decoratorAccessor"] as const; let setterScopes: string | null = null;
         for (const [index, ref] of functions.entries()) { const role = roles[index]; need(role !== undefined, "DECORATOR_FUNCTION_ROSTER"); const actual = await this.#metadata(ref, role); if (index === 0) { setterScopes = actual; } }
         need(setterScopes !== null, "DECORATOR_SETTER_SCOPES"); this.#phase = `validator:${field}`; const validator = await this.#scope(setterScopes, ["e"]); need(validator.get("e")?.kind === "undefined", "DECORATOR_VALIDATOR");
+        if (field === "underline") { const getter = functions[1], setter = functions[2]; need(getter !== undefined && setter !== undefined && underline === null, "ORIGINAL_UNDERLINE_FUNCTIONS"); underline = Object.freeze({ getObjectId: callees["underline.get"].objectId, setObjectId: callees["underline.set"].objectId, rawDescriptorObjectId: raw.objectId, rawGetObjectId: getter.objectId, rawSetObjectId: setter.objectId }); }
       }
       const record = scopes.get("monitorRecord"); need(record !== undefined, "MONITOR_FUNCTIONS");
       this.#phase = "monitor:record-ast"; const ast = await this.#recordAst(record); await this.#metadata(ast, "monitorAst");
@@ -99,7 +102,8 @@ export class CurrentSchematicRelevanceDisplayAccessorObserver {
         arguments: [{ objectId: this.#bindings.holderObjectId }, ...this.#arguments()], returnByValue: true } }));
       this.#packet = freezeDeep({ schema: "private.current-schematic-relevance-display-accessor-observation.v2", sourceSha256: SOURCES[this.#source].sha256, fields: 10, originalHolderCalleesObserved: true,
         exactRawAndDecoratedSettersObserved: true, watchedMonitorAndAstFunctionMetadataObserved: true, originalMonitorReceiversQualified: false, activeActionHistoryCallbackQualified: false, completeActionFrontierQualified: false, executionAuthorized: false, selectedSqlAuthorized: false, persistenceVerified: false });
-      this.#functions = Object.freeze({ setAttributeObjectId: callees.monitorSetAttribute.objectId, recordObjectId: callees.monitorRecord.objectId, astObjectId: ast.objectId, normalRequests: this.#normal });
+      need(underline !== null, "ORIGINAL_UNDERLINE_FUNCTIONS_REQUIRED");
+      this.#functions = Object.freeze({ underline, setAttributeObjectId: callees.monitorSetAttribute.objectId, recordObjectId: callees.monitorRecord.objectId, astObjectId: ast.objectId, normalRequests: this.#normal });
       packets.set(this.#packet, this); this.#phase = "observed"; return this.#packet;
     } catch (error) { this.#failure(); throw error; } finally { this.#busy = false; }
   }

@@ -20,7 +20,7 @@ export type CurrentSchematicRelevanceActionCallbackRole = "entry" | "setter" | "
 export interface CurrentSchematicRelevanceActionCallbackHeld { readonly event: DiagnosticEvent; readonly role: CurrentSchematicRelevanceActionCallbackRole; readonly callFrameId: string }
 export interface CurrentSchematicRelevanceActionEntryResume { readonly original: CurrentSchematicRelevanceActionCallbackHeld }
 export interface CurrentSchematicRelevanceActionCallbackHost {
-  readonly sessionId: string; readonly callbackScriptId: string; readonly sourceScriptId: string; readonly variant: 0 | 1; readonly functions: CurrentSchematicRelevanceDisplayAccessorFunctions;
+  readonly sessionId: string; readonly callbackScriptId: string; readonly sourceScriptId: string; readonly variant: 0 | 1; readonly functions: Pick<CurrentSchematicRelevanceDisplayAccessorFunctions, "setAttributeObjectId" | "recordObjectId" | "astObjectId" | "normalRequests">;
   readonly request: (command: Command) => Promise<unknown>; readonly assertCurrent: () => void; readonly fail: () => void;
 }
 function need(value: boolean): asserts value { if (!value) { throw new Error("SCHEMATIC_RELEVANCE_ORIGINAL_CALLBACK_EVENT"); } }
