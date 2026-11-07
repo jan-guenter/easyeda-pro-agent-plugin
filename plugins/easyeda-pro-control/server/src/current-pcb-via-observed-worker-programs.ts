@@ -23,7 +23,7 @@ import { CURRENT_PCB_VIA_SAVE_DRAIN_REQUESTS, currentPcbViaSaveDrainNativeCases 
 
 type Kind = "function" | "expression";
 const expressions = new Set<string>(), functions = new Set<string>([CURRENT_PCB_VIA_REPLAY_NO_PUBLICATION_PROGRAM]);
-const cases: readonly Readonly<{ method: string; params: object }>[] = [
+const cases: readonly (Readonly<{ method: string; params: object }> | Readonly<{ phase: "via-post-sync-replay" }>)[] = [
   ...currentPcbViaSaveNativeCases(),
   ...currentProjectSaveStructureNativeCases(),
   ...currentProjectSaveProducerNativeCases(),
@@ -41,6 +41,7 @@ const cases: readonly Readonly<{ method: string; params: object }>[] = [
   ...currentPcbViaSaveDrainNativeCases(),
 ];
 for (const command of cases) {
+  if (!("method" in command)) { continue; }
   if (command.method === "Runtime.callFunctionOn" && "functionDeclaration" in command.params && typeof command.params.functionDeclaration === "string") { functions.add(command.params.functionDeclaration); }
   else if (command.method === "Debugger.evaluateOnCallFrame" && "expression" in command.params && typeof command.params.expression === "string") { expressions.add(command.params.expression); }
 }
