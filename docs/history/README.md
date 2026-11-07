@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 original inverse SDK held entry](2026-11-07-inverse-original-sdk-held-entry.md). One genuine pending SDK write joins its held service entry; handler continuation, native job and collateral remain blocked.
+
 - [2026-11-07 original run-prefix cursor](2026-11-07-relevance-run-prefix-cursor.md). Bounded original queue, callee, native and iterator classification; actual receiver guards and continuation remain separate.
 - [2026-11-07 original inverse public service](2026-11-07-inverse-original-public-service.md). Original queued task, callback/handler and critical collateral metadata through a bounded native lane; actual SDK entry and completion remain separate.
 
