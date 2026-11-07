@@ -1,3 +1,6 @@
+/* oxlint-disable import/max-dependencies -- This dedicated seven-record policy joins independent fixed startup, Save and source-custody protocols. */
+import type { CurrentPcbViaLocalUploadRole } from "./current-pcb-via-local-upload-protocol.ts";
+import type { CurrentPcbViaUploadRequestRole } from "./current-pcb-via-upload-request-protocol.ts";
 /** Dedicated seven-record startup lanes. The native owner supplies the actual
  * source, child and breakpoint replies; a caller cannot reconstruct that custody. */
 import { CurrentSchematicRelevanceDisplayHelperReceipts } from "./current-schematic-relevance-display-helper-receipts.ts";
@@ -45,6 +48,8 @@ export class CurrentSchematicRelevanceDisplayWorkerController extends CurrentSch
     need(![...this.#pollingPoints.values(), ...this.#libraryPoints.values()].some(value => value.point.breakpointId === breakpointId));
     return Object.freeze({ lane, point: Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }) });
   }
+  public reserveSaveLocalResume(source:CurrentSchematicDisplayProjectSourceHeld,event:CurrentSchematicDisplayRoutedEvent,role:CurrentPcbViaLocalUploadRole):void{this.originalWorkerRouter(source).reserveSaveLocalResume(event,role);}
+  public reserveSaveUploadResume(source:CurrentSchematicDisplayProjectSourceHeld,event:CurrentSchematicDisplayRoutedEvent,role:CurrentPcbViaUploadRequestRole):void{this.originalWorkerRouter(source).reserveSaveUploadResume(event,role);}
   public bindSyncQuiesceBreakpoint(source: CurrentSchematicDisplayProjectSourceHeld, role: "entry" | "returned", breakpointId: string): void {
     need(!this.#pollingPoints.has(role)); this.#pollingPoints.set(role, this.#bind(source, role, breakpointId, CURRENT_PROJECT_SYNC_QUIESCE_SITES[role], "quiesce"));
   }

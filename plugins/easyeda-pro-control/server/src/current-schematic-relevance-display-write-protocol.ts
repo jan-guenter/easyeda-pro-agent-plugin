@@ -1,5 +1,6 @@
 /* oxlint-disable import/max-dependencies -- Each fixed purpose lane validates its own complete native codec; a caller-selected generic encoder would erase those boundaries. */
 import { currentProjectLibraryRefreshWire } from "./current-project-library-refresh-wire.ts";
+import { currentSchematicRelevanceDisplayLocalCacheWire, currentSchematicRelevanceDisplayLocalWire, currentSchematicRelevanceDisplayUploadWire } from "./current-schematic-relevance-display-save-upload-wire.ts";
 import { currentSchematicRelevanceDisplaySyncQuiesceWire } from "./current-schematic-relevance-display-sync-quiesce-wire.ts";
 import { currentSchematicDisplayClockWire } from "./current-schematic-display-clock-wire.ts";
 import { currentSchematicRelevanceDisplayModifyEntryWire } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
@@ -28,6 +29,9 @@ export function currentSchematicRelevanceDisplayWriteNativeRequest(chunk: Buffer
     if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceLibraryRefreshCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_RELEVANCE_LIBRARY_FIXED_WIRE"); }
     return fixed.request;
   }
+  if(Object.hasOwn(raw,"schematicRelevanceSaveLocalCommand")){const {id,sessionId,schematicRelevanceSaveLocalCommand:marker,...input}=raw;if(marker!==true||typeof sessionId!=="string"||!/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)){throw new Error("RELEVANCE_SAVE_UPLOAD_WIRE");}const fixed=currentSchematicRelevanceDisplayLocalWire(input,id);if(!chunk.equals(Buffer.from(`${JSON.stringify({id,...fixed.command,schematicRelevanceSaveLocalCommand:true,sessionId})}\0`))){throw new Error("RELEVANCE_SAVE_UPLOAD_WIRE");}return fixed.request;}
+  if(Object.hasOwn(raw,"schematicRelevanceSaveUploadCommand")){const {id,sessionId,schematicRelevanceSaveUploadCommand:marker,...input}=raw;if(marker!==true||typeof sessionId!=="string"||!/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)){throw new Error("RELEVANCE_SAVE_UPLOAD_WIRE");}const fixed=currentSchematicRelevanceDisplayUploadWire(input,id);if(!chunk.equals(Buffer.from(`${JSON.stringify({id,...fixed.command,schematicRelevanceSaveUploadCommand:true,sessionId})}\0`))){throw new Error("RELEVANCE_SAVE_UPLOAD_WIRE");}return fixed.request;}
+  if(Object.hasOwn(raw,"schematicRelevanceLocalCacheCommand")){const {id,sessionId,schematicRelevanceLocalCacheCommand:marker,...input}=raw;if(marker!==true||typeof sessionId!=="string"||!/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)){throw new Error("RELEVANCE_SAVE_UPLOAD_WIRE");}const fixed=currentSchematicRelevanceDisplayLocalCacheWire(input,id);if(!chunk.equals(Buffer.from(`${JSON.stringify({id,...fixed.command,schematicRelevanceLocalCacheCommand:true,sessionId})}\0`))){throw new Error("RELEVANCE_SAVE_UPLOAD_WIRE");}return fixed.request;}
   if (Object.hasOwn(raw, "schematicRelevanceSyncQuiesceCommand")) {
     const { id, sessionId, schematicRelevanceSyncQuiesceCommand: marker, ...input } = raw;
     if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_RELEVANCE_QUIESCE_WIRE"); }

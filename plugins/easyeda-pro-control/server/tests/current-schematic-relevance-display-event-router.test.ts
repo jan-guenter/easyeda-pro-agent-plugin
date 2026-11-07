@@ -27,3 +27,14 @@ void test("seven-record startup routes retain actual pause and acknowledge only 
     const resumed = await router.next(lane); assert.equal(resumed.method, "Debugger.resumed"); assert.equal(events.length, 0);
   }
 });
+
+void test("own7 Save producer continuation consumes only its delivered original event once", async () => {
+  for (const role of ["localIngress", "historyCloud"] as const) {
+    const events: DiagnosticEvent[] = [{ method: "Debugger.paused", sessionId: "worker", params: { hitBreakpoints: ["original"], callFrames: [{ location: { scriptId: "script", lineNumber: 1, columnNumber: 1 } }] } }, { method: "Debugger.resumed", sessionId: "worker", params: {} }];
+    const router = new CurrentSchematicRelevanceDisplayEventRouter(bindings(events)); router.register("producer", { sessionId: "worker", scriptId: "script", breakpointId: "original", role, lineNumber: 1, columnNumber: 1 });
+    const held = await router.next("producer");
+    if (role === "localIngress") { assert.throws(() => { router.reserveSaveLocalResume({ ...held }, role); }); assert.throws(() => { router.reserveSaveLocalResume(held, "headEntry"); }); router.reserveSaveLocalResume(held, role); assert.throws(() => { router.reserveSaveLocalResume(held, role); }); }
+    else { assert.throws(() => { router.reserveSaveUploadResume({ ...held }, role); }); assert.throws(() => { router.reserveSaveUploadResume(held, "cloudIngress"); }); router.reserveSaveUploadResume(held, role); assert.throws(() => { router.reserveSaveUploadResume(held, role); }); }
+    const resumed=await router.next("producer");assert.equal(resumed.method, "Debugger.resumed"); assert.equal(events.length, 0);
+  }
+});
