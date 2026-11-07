@@ -66,3 +66,19 @@ Two focused data/byte checks passed: selector-only Save bytes refuse foreign
 owners/phases, and acknowledged Save source still requires the complete peer
 roster and normalized roots. The full native Save composition has not yet been
 compiled or run. No helper, pins, bundle, install or application change here.
+
+## Original seven-record closed capture
+
+A distinct seven-record capture now requires its original factory, immutable
+preparation and observed root/empty-Job termination before opening any source
+descriptor. It retains fresh read-only parent/leaf descriptors, rejects symlinks
+and sidecars, publishes exclusive source and complete SQL/raw-history evidence,
+then rechecks source bytes and descriptor identities. The original source
+attachment is retained explicitly for the later checkpoint projection. Every
+descriptor close must be acknowledged before the original snapshot can be read.
+The six-record schema and capture registry are unchanged.
+
+The new capture provides complete closed data only. Complete effect acceptance,
+Save persistence, reopen and inverse remain unproved. One original-factory/report
+refusal check, both TypeScript projects and changed strict lint pass. This slice
+opened no application or project and captured no live source.
