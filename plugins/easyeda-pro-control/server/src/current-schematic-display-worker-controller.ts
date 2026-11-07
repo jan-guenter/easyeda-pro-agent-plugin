@@ -165,6 +165,7 @@ export class CurrentSchematicDisplayWorkerController {
     } else { site = CURRENT_SCHEMATIC_DISPLAY_SAVE_SITES[match[0]]; }
     need(Reflect.ownKeys(params).length === 2 && Reflect.ownKeys(location).length === 3 && location["scriptId"] === this.#source.scriptId && location["lineNumber"] === site.lineNumber && location["columnNumber"] === site.columnNumber); return true;
   }
+  protected qualifyObservedWorkerScript(event: DiagnosticEvent): Promise<void> { need(event.params["url"] === "" && event.params["executionContextId"] === this.#source?.executionContextId); return Promise.resolve(); }
   public observeEvent(event: DiagnosticEvent): void {
     try { this.#accept(event); this.#router?.notifyEvent(); } catch (error) { this.fail(); throw error; }
   }
@@ -218,7 +219,7 @@ export class CurrentSchematicDisplayWorkerController {
       if (event.method === "Debugger.paused" || event.method === "Debugger.resumed" || event.method === "Debugger.breakpointResolved") { need(record(event.params)); return { method: event.method, sessionId: event.sessionId, params: event.params }; }
       need(record(event.params));
       if (event.method === "Inspector.workerScriptLoaded") { need(!this.#loaded && Reflect.ownKeys(event.params).length === 0); this.#loaded = true; }
-      else if (event.method === "Debugger.scriptParsed") { need(event.params["url"] === "" && event.params["executionContextId"] === this.#source?.executionContextId); }
+      else if (event.method === "Debugger.scriptParsed") { await this.qualifyObservedWorkerScript({ method: event.method, sessionId: event.sessionId, params: event.params }); }
       else if (event.method === "Runtime.consoleAPICalled") { need(event.params["executionContextId"] === this.#source?.executionContextId); }
       else { this.fail(); throw new Error("SCHEMATIC_DISPLAY_WORKER_UNEXPECTED_EVENT"); }
       }
