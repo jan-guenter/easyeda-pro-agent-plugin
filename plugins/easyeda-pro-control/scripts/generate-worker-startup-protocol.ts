@@ -1,5 +1,6 @@
 /* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
 import { CURRENT_NATIVE_BASELINE, assertCurrentNativeBaseline } from "./native-baseline-source.ts";
+import { sharedNativeIdentitySource, sharedNativeSmokeSource } from "./shared-native-identity-source.ts";
 import { applyCurrentSchematicRelevanceDisplayMainLiveHistoryNativeFragment } from "../server/src/current-schematic-relevance-display-main-live-history-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayObservedSourceNativeFragment } from "../server/src/current-schematic-relevance-display-observed-source-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayLibraryRefreshNativeFragment } from "../server/src/current-schematic-relevance-display-library-refresh-native-fragment.ts";
@@ -130,8 +131,11 @@ async function main(): Promise<void> {
   assertCurrentNativeBaseline(seed);
   const next = generateWorkerStartupProtocol(seed);
   const reviewPath = new URL("pcb-diagnostic-native.cs", import.meta.url); const compilerInput = currentPcbDiagnosticCSharpReviewSource(next);
-  if (action === "--write") { await writeFile(path, next); await writeFile(reviewPath, compilerInput); }
-  else if (next !== source || await readFile(reviewPath, "utf8") !== compilerInput) { throw new Error("Generated native startup protocol or review copy differs"); }
+  const identityPath = new URL("../server/src/current-pcb-diagnostic-helper-identity.ts", import.meta.url), smokePath = new URL("pcb-diagnostic-launch-smoke.ps1", import.meta.url);
+  const identity = sharedNativeIdentitySource(next), smoke = await readFile(smokePath, "utf8");
+  const nextSmoke = sharedNativeSmokeSource(smoke, next);
+  if (action === "--write") { await writeFile(path, next); await writeFile(reviewPath, compilerInput); await writeFile(identityPath, identity); await writeFile(smokePath, nextSmoke); }
+  else if (next !== source || await readFile(reviewPath, "utf8") !== compilerInput || await readFile(identityPath, "utf8") !== identity || smoke !== nextSmoke) { throw new Error("Generated native startup protocol, review copy or independent pins differ"); }
 }
 /** Pure complete composition, used by repeated-generation regressions without writing a helper. */
 export function generateWorkerStartupProtocol(source: string, layout: "legacy" | "schematic" = "legacy"): string {
@@ -139,8 +143,8 @@ export function generateWorkerStartupProtocol(source: string, layout: "legacy" |
   const original = normalizeCurrentSchematicWireEditNativeFamily(expandCurrentPcbDiagnosticCSharpReviewSource(source));
   const normalized = normalizeCurrentSchematicRelevanceDisplayNativeFamily(original);
   // Cold generation starts from the exact published shared source, before any
-  // of the new fixture/Via/schematic switches or types exist. Each fixed
-  // fragment remains idempotent when reprocessing its own generated artifact.
+  // Of the new fixture/Via/schematic switches or types exist. Each fixed
+  // Fragment remains idempotent when reprocessing its own generated artifact.
   const structured = applyManagedFixtureRegistrationNativeFragment(applyCurrentProjectStructureNativeFragment(normalized));
   const initialized = applyCurrentSchematicDisplayWriteNativeFragment(applyCurrentPcbViaWriteNativeFragment(structured));
   const literal = layout === "schematic" ? prepareCurrentSchematicWireEditNativeSwitch(prepareCurrentSchematicRelevanceDisplayNativeSwitch(initialized)) : initialized;

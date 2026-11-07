@@ -189,6 +189,9 @@ in both `current-pcb-diagnostic-helper-identity.ts` and the separate
 `current-pcb-diagnostic-native.test.ts` in focused verification; it checks both
 consumers against actual helper bytes. CompileOnly alone does not exercise the
 synthetic launch script's independent source pin.
+`startup:protocol:update` emits the shared helper, readable C# and both pin
+copies together. Review those generated changes before freezing the payload.
+`startup:protocol:check` and `native:helper:check` perform no updates.
 
 The seven-record display and wire purposes use their separate generated
 `schematic-edit-native.ps1`. Rebuild and check it with `schematic:native:update`

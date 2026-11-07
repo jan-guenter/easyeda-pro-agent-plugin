@@ -72,6 +72,9 @@ launch script repeats them. The static checker reads the small identity module
 and actual helper, so growing process-owner source does not require enlarging
 its ordinary source-read limit. TypeScript imports these literals into the
 owner; no runtime request can update them.
+The explicit `startup:protocol:update` build command emits both pin copies
+with the helper and readable C# file. Its check mode compares every output
+without writing. `native:helper:check` remains a separate read-only byte check.
 
 The default startup generator emits the shared legacy/PCB/footprint build.
 `schematic:native:update` emits a separate `schematic-edit-native.ps1` and readable

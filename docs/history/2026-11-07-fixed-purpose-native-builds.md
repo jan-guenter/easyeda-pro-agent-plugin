@@ -41,3 +41,10 @@ shared helper pins to a small independent module. The checker, runtime import,
 Windows smoke pins and isolated test package now use that module. The ordinary
 source-read bound and both native limits are unchanged. The exact byte check,
 its size/substitution checks and Main waiter checks passed after this change.
+
+A later build-tool change emits the shared helper, readable review body,
+runtime identity module and independent Windows pin literals together through
+`startup:protocol:update`. Check mode compares all four outputs without writes;
+the separate identity checker continues to read and compare actual bytes only.
+This removes the manual pin-edit step during a source batch. Generated outputs
+will refresh with the combined writer changes before final verification.
