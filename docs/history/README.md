@@ -794,3 +794,4 @@ layout. The connected ledger retains its generation and case anchors.
 - 2026-11-07: [Full saved footprint row projection](2026-11-07-inverse-full-public-row.md), original checkpoint/flow data, exact worker and UI fields and SQL owner join; live row and deletion authority remain separate.
 
 - [Original underline decorator forwarding](2026-11-07-schematic-original-decorator-forwarding.md)
+- 2026-11-07: [Original schematic publisher source](2026-11-07-schematic-publisher-callee-metadata.md), exact selected publisher family and eighteen uninvoked function metadata checks; live publication remains separate.
