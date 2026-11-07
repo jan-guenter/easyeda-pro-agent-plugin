@@ -1427,3 +1427,31 @@ Promise remains pending, and the empty force-sync handler. Complete file/hash
 and all19 fragment checks, both types and strict changed lint pass. No actual
 SDK/native call, direct manager equivalent, delete dispatch or collateral
 completion has been enabled by this source leaf.
+
+The public receiver's next separate leaf closes17 SDK/MessageBus2 callees.
+Its initial descriptor-only capture retains the actual `_EXTAPI_ROOT_` with
+`extensionUuid === "eda"`, own footprint instance/method, selected current
+project/branch and original app extension bus. A fresh scope of the actual
+delete method must expose `Pe/Iy/xT/T`; Pe must be that very SDK instance and
+T's dispatcher must equal both `_MSG_BUS2_EXTAPI_` and the UI host's dispatcher.
+A separately fresh scope of the actual `rpcCall` supplies `xae/qh`; its base
+`p4` is derived from the actual constructor chain instead of requiring an
+optimized-away closure local. Complete source/hash, names/arities, exact script
+locations and constructor/prototype/descriptor relations cover all17 functions.
+
+The new fixed programs call none of those application methods. They return
+private ordinary tuples, use the unchanged true side-effect flag, and re-read
+both actual scopes after the metadata boundaries. A strict inverse-only grammar
+contains no invoke/resume command. Its prospective reservation is31 setup
+commands plus three exact helper receipts, then five final metadata/reproof
+commands plus one receipt:40 CDP requests and42 controls. Native origin/ledger
+mounting is not claimed by this leaf.
+
+Two focused tests pass, including actual Node24 Inspector compilation of only
+the pinned class definitions at their original locations, separate inert SDK
+and dispatcher closures, and all17 actual function metadata checks. Both fresh
+scope reproofs pass under side-effect checking and a changed project branch
+refuses. No original application module or SDK/RPC method runs. The complete
+API source/accessor rejection test, both types and strict changed lint pass.
+Original receiver issuance, installed service callback/native pending-job joins
+and all collateral/clock/producer/Main/lifecycle grants remain separate.
