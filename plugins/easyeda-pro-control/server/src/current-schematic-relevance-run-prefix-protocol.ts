@@ -8,7 +8,6 @@ import { CURRENT_SCHEMATIC_RELEVANCE_RAW_SAME_PROGRAM as RAW_SAME } from "./curr
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
-const select = String.raw`function(native,index){"use strict";const get=native[0],has=native[4],keys=native[5],bad=()=>{throw "PREFIX_SELECT";},own=(o,k)=>{const d=get(o,k);if(!d||!has(d,"value"))bad();return d.value;};if(!native[7](this)||native[2](this)!==native[16]||typeof index!=="number"||index%1!==0||index<0||index>511||native[3](index,-0))bad();const length=own(this,"length");if(index>=length||length>512||keys(this).length!==length+1)bad();return own(this,""+index);}`;
 const prototypes = String.raw`function(native){"use strict";const get=native[0],has=native[4],keys=native[5],bad=()=>{throw "PREFIX_PROTOTYPES";},own=(o,k)=>{const d=get(o,k);if(!d||!has(d,"value"))bad();return d.value;};if(!native[7](this)||native[2](this)!==native[16])bad();const length=own(this,"length");if(length>512||keys(this).length!==length+1)bad();const result=[];for(let i=0;i<length;i++){const value=own(this,""+i);if(value!==null&&typeof value!=="object"&&typeof value!=="function")bad();result[i]=value===null?null:native[2](value);}return result;}`;
 const triple = "function(a,b,c){\"use strict\";return[a,b,c];}";
 const novel = String.raw`function(native,qualified){"use strict";const get=native[0],has=native[4],keys=native[5],bad=()=>{throw "PREFIX_NOVEL";},own=(o,k)=>{const d=get(o,k);if(!d||!has(d,"value"))bad();return d.value;},dense=o=>{if(!native[7](o)||native[2](o)!==native[16])bad();const n=own(o,"length");if(n>384||keys(o).length!==n+1)bad();return n;};const count=dense(this),known=dense(qualified),result=[];for(let i=0;i<count;i++){const value=own(this,""+i);if(value===null||typeof value!=="object"&&typeof value!=="function")continue;let found=false;for(let j=0;j<known;j++)if(own(qualified,""+j)===value){found=true;break;}for(let j=0;j<result.length;j++)if(result[j]===value){found=true;break;}if(!found)result[result.length]=value;}return result;}`;
@@ -19,7 +18,7 @@ const iteratorMembers = String.raw`function(native,qualified,generatorPrototype,
 
 export const CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_CALLS = freezeDeep([
   ["run", RUN_PROOF, 3, true], ["base", BASE, 12, false], ["base-same", BASE_SAME, 12, true], ["merge", MERGE, 5, false],
-  ["raw-same", RAW_SAME, 1, true], ["select", select, 2, false], ["prototypes", prototypes, 1, false], ["triple", triple, 3, false], ["novel", novel, 2, false], ["map-iterator", mapIterator, 2, false], ["iterator-members", iteratorMembers, 4, false],
+  ["raw-same", RAW_SAME, 1, true], ["prototypes", prototypes, 1, false], ["triple", triple, 3, false], ["novel", novel, 2, false], ["map-iterator", mapIterator, 2, false], ["iterator-members", iteratorMembers, 4, false],
   ["queue-roots", QUEUE.roots, 4, false], ["queue-events", QUEUE.events, 3, false], ["queue-details", QUEUE.details, 2, false], ["queue-subscriptions", QUEUE.subscriptions, 1, false],
   ["queue-functions", QUEUE.functions, 9, false], ["queue-same", QUEUE.same, 1, true], ["queue-scopes", QUEUE.scopes, 3, true],
   ["manager", QUEUE.manager, 2, false], ["manager-base", QUEUE.managerBase, 2, true], ["pause-channel", QUEUE.pauseChannel, 2, false],
@@ -29,6 +28,7 @@ export const CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_CALLS = freezeDeep([
   ["callback-receiver", QUEUE.callbackReceiver, 2, true],
 ] as const);
 export type CurrentSchematicRelevanceRunPrefixCallRole = typeof CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_CALLS[number][0];
+export const CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_READ_BOUND = 4096;
 export const CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_GUARDS = Object.freeze(["first-start", "will-end", "first-end"] as const);
 export const CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_GROUP = "easyeda-pro-control-schematic-relevance-run-prefix-v1";
 export const CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_FLAGS = Object.freeze({ objectGroup: CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_GROUP, silent: true, generatePreview: false, throwOnSideEffect: true } as const);
@@ -36,15 +36,12 @@ const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 const guard = z.enum(CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_GUARDS);
 const variant = z.union([z.literal(0), z.literal(1)]);
 const reference = z.strictObject({ objectId: handle });
-const boundedIndex = z.number().int().min(0).max(511).refine(value => !Object.is(value, -0));
-const index = z.strictObject({ value: boundedIndex });
 const flags = { objectGroup: z.literal(CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_GROUP), silent: z.literal(true), generatePreview: z.literal(false), throwOnSideEffect: z.literal(true) };
 const frameRole = z.enum(["run", "group", "module", "intrinsics", "empty", "receiver"]);
 const frameParams = z.strictObject({ ...flags, callFrameId: handle, expression: z.string().max(256), returnByValue: z.literal(false), includeCommandLineAPI: z.literal(false) });
 const callRoles = CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_CALLS.map(row => row[0]);
 const callRole = z.enum(callRoles);
-const argumentSchema = z.union([reference, index]);
-const argumentsSchema = z.array(argumentSchema).max(12);
+const argumentsSchema = z.array(reference).max(12);
 const callParams = z.strictObject({ ...flags, objectId: handle, functionDeclaration: z.string().max(32_768), arguments: argumentsSchema, returnByValue: z.boolean(), awaitPromise: z.literal(false), userGesture: z.literal(false) });
 const propertyParams = z.strictObject({ objectId: handle, ownProperties: z.literal(true), accessorPropertiesOnly: z.literal(false), generatePreview: z.literal(false) });
 const sourceParams = z.strictObject({ scriptId: handle });
@@ -78,7 +75,7 @@ export function validateCurrentSchematicRelevanceRunPrefixCommand(input: unknown
   if (command.phase === "prefix-frame" && command.params.expression !== currentSchematicRelevanceRunPrefixExpression(command.role, command.variant)) { throw new Error("SCHEMATIC_RUN_PREFIX_FIXED_FRAME"); }
   if (command.phase === "prefix-call") {
     const row = CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_CALLS.find(value => value[0] === command.role);
-    if (row === undefined || command.params.functionDeclaration !== row[1] || command.params.arguments.length !== row[2] || command.params.returnByValue !== row[3] || command.params.arguments.some((argument, slot) => command.role === "select" && slot === 1 ? !("value" in argument) : !("objectId" in argument))) { throw new Error("SCHEMATIC_RUN_PREFIX_FIXED_CALL"); }
+    if (row === undefined || command.params.functionDeclaration !== row[1] || command.params.arguments.length !== row[2] || command.params.returnByValue !== row[3]) { throw new Error("SCHEMATIC_RUN_PREFIX_FIXED_CALL"); }
   }
   return freezeDeep(command);
 }

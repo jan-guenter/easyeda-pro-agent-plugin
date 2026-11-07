@@ -32,3 +32,24 @@ The grammar also defines three fixed callback-entry guards. The readonly cursor
 never emits an arm, remove, resume, setter or Save command. Original-owner
 transport and native admission, function-entry receiver checks, callback handoff,
 Modify settlement and saved/reopened validation are separate pending work.
+
+The next source slice connects this readonly cursor to a separate opaque
+original-owner origin, the original pending Modify request, its held run frame
+and the maintained observer group. Requests reserve the actual next cursor
+object before an await. Native bind and completion controls are consumed once;
+missing acknowledgments poison the original generation. Completion rechecks
+the same owner, source, raw scene and invocation.
+
+The finite native codec has 45 readonly message cases and no continuation row.
+Both fixed tables retain the existing 64 KiB limit. Its complete generated
+schematic helper compiles as C# 5 and all 45 messages match the TypeScript wire
+bytes. The pure check constructs no owner or application. The generated helper
+is 1,262,424 bytes and compiler input 1,730,917 bytes, each below the unchanged
+2 MiB bound. A fourth focused check verifies every facade/native wire projection
+and refusal of extra fields or resume attempts. Emitted release artifacts and
+runtime pins remain pending the larger source freeze.
+
+Native prefix bind requires the original five entry observations and 63 raw
+observations. Five additional underline eligibility observations belong after
+the prefix and before any run continuation. Requiring those five to begin the
+prefix would create a dependency cycle with the callback prearm step.

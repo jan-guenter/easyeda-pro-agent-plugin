@@ -2,7 +2,7 @@
 /** The original owner retains this cursor and supplies actual correlated
  * replies. It has no resume, setter, Save or application-call command. */
 import { z } from "zod";
-import { CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_CALLS as CALLS, CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_FLAGS as FLAGS, currentSchematicRelevanceRunPrefixExpression, validateCurrentSchematicRelevanceRunPrefixCommand } from "./current-schematic-relevance-run-prefix-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_CALLS as CALLS, CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_READ_BOUND, CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_FLAGS as FLAGS, currentSchematicRelevanceRunPrefixExpression, validateCurrentSchematicRelevanceRunPrefixCommand } from "./current-schematic-relevance-run-prefix-protocol.ts";
 import type { CurrentSchematicRelevanceRunPrefixCallRole, CurrentSchematicRelevanceRunPrefixCommand } from "./current-schematic-relevance-run-prefix-protocol.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_PREFIX_NATIVE_FUNCTIONS as NATIVES, currentSchematicRelevancePrefixCapture, currentSchematicRelevancePrefixClosure, currentSchematicRelevancePrefixHandle, currentSchematicRelevancePrefixNativeFunction, currentSchematicRelevancePrefixProperties, currentSchematicRelevancePrefixTrue, currentSchematicRelevancePrefixTuple } from "./current-schematic-relevance-run-prefix-replies.ts";
 import type { CurrentSchematicRelevancePrefixRemote } from "./current-schematic-relevance-run-prefix-replies.ts";
@@ -18,7 +18,7 @@ import { captureCurrentSchematicDisplayAccessorSource } from "./current-schemati
 type Command = CurrentSchematicRelevanceRunPrefixCommand;
 type Step<T> = Generator<Command, T, unknown>;
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
-export const CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_READ_BOUND = 4096;
+export { CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_READ_BOUND } from "./current-schematic-relevance-run-prefix-protocol.ts";
 function need(value: boolean): asserts value { if (!value) { throw new Error("SCHEMATIC_RELEVANCE_ORIGINAL_RUN_PREFIX_CURSOR"); } }
 export interface CurrentSchematicRelevanceRunPrefixCapture {
   readonly runObjectId: string; readonly rootsObjectId: string; readonly nativeObjectId: string; readonly referencesObjectId: string;

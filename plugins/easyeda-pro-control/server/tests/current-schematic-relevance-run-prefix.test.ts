@@ -7,13 +7,15 @@ import { createContext, runInContext } from "node:vm";
 import { CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_CALLS as CALLS, CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_FLAGS as FLAGS, currentSchematicRelevanceRunPrefixExpression, validateCurrentSchematicRelevanceRunPrefixCommand } from "../src/current-schematic-relevance-run-prefix-protocol.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_PREFIX_NATIVE_FUNCTIONS as NATIVES, currentSchematicRelevancePrefixCapture, currentSchematicRelevancePrefixHandle, currentSchematicRelevancePrefixNativeFunction, currentSchematicRelevancePrefixProperties, currentSchematicRelevancePrefixTuple } from "../src/current-schematic-relevance-run-prefix-replies.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_PREFIX_QUEUE_PROGRAMS as QUEUE } from "../src/current-schematic-relevance-action-prefix-queue-programs.ts";
+import { currentSchematicRelevanceRunPrefixCases, currentSchematicRelevanceRunPrefixWire } from "../src/current-schematic-relevance-run-prefix-wire.ts";
+import { currentSchematicRelevanceDisplayWriteNativeRequest } from "../src/current-schematic-relevance-display-write-protocol.ts";
 
 void test("fixed prefix grammar rejects caller expressions, program changes and indexed argument substitution", () => {
   const frame = { phase: "prefix-frame", role: "run", variant: 0, method: "Debugger.evaluateOnCallFrame", params: { ...FLAGS, callFrameId: "original_frame", expression: currentSchematicRelevanceRunPrefixExpression("run", 0), returnByValue: false, includeCommandLineAPI: false } };
   assert.equal(validateCurrentSchematicRelevanceRunPrefixCommand(frame).phase, "prefix-frame");
   assert.throws(() => validateCurrentSchematicRelevanceRunPrefixCommand({ ...frame, params: { ...frame.params, expression: "this.modify()" } }));
   for (const row of CALLS) {
-    const args = Array.from({ length: row[2] }, (_value, index) => row[0] === "select" && index === 1 ? { value: 0 } : { objectId: "original_value" });
+    const args = Array.from({ length: row[2] }, () => ({ objectId: "original_value" }));
     const command = { phase: "prefix-call", role: row[0], method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: "original_receiver", functionDeclaration: row[1], arguments: args, returnByValue: row[3], awaitPromise: false, userGesture: false } };
     assert.equal(validateCurrentSchematicRelevanceRunPrefixCommand(command).phase, "prefix-call");
     assert.throws(() => validateCurrentSchematicRelevanceRunPrefixCommand({ ...command, params: { ...command.params, functionDeclaration: `${row[1]} ` } }));
@@ -59,4 +61,15 @@ void test("Map iterator projection preserves the application map under the produ
     assert.equal(currentSchematicRelevancePrefixTuple(await session.post("Runtime.getProperties", { objectId: tuple, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false }), 3).length, 3);
     assert.equal(runInContext("map.size===1&&map.has(1)", context), true);
   } finally { Reflect.deleteProperty(globalThis, key); await session.post("Runtime.releaseObjectGroup", { objectGroup: FLAGS.objectGroup }); session.disconnect(); }
+});
+void test("every readonly prefix wire round-trips while continuation and unbranded requests refuse", () => {
+  for (const command of currentSchematicRelevanceRunPrefixCases()) {
+    const fixed = currentSchematicRelevanceRunPrefixWire(command, 83);
+    const raw = { id: 83, ...fixed.command, schematicRelevanceRunPrefixCommand: true, sessionId: "original_ui" };
+    const bytes = Buffer.from(`${JSON.stringify(raw)}\0`);
+    assert.deepEqual(currentSchematicRelevanceDisplayWriteNativeRequest(bytes), fixed.request);
+    const forged = Buffer.from(`${JSON.stringify({ ...raw, caller: true })}\0`);
+    assert.throws(() => currentSchematicRelevanceDisplayWriteNativeRequest(forged));
+  }
+  for (const role of ["run", "first-start", "will-end", "first-end"] as const) { assert.throws(() => currentSchematicRelevanceRunPrefixWire({ phase: "prefix-resume", role, method: "Debugger.resume", params: {} }, 83)); }
 });

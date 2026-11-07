@@ -1,3 +1,6 @@
+import { CurrentSchematicRelevanceRunPrefixObserver } from "./current-schematic-relevance-run-prefix-observer.ts";
+import type { CurrentSchematicRelevanceRunPrefixObservation } from "./current-schematic-relevance-run-prefix-observer.ts";
+import type { CurrentSchematicRelevanceDisplayModifyEntryOrigin } from "./current-schematic-relevance-display-modify-entry-origin.ts";
 import { CurrentSchematicRelevanceDisplayModifyEntryObserver } from "./current-schematic-relevance-display-modify-entry-observer.ts";
 import type { CurrentSchematicRelevanceDisplayModifyEntryObservation, CurrentSchematicRelevanceDisplayRawSceneObservation } from "./current-schematic-relevance-display-modify-entry-observer.ts";
 /** Maintained original SCH setup. The durable enclosing operation owns birth,
@@ -46,6 +49,9 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
   #polling: CurrentProjectSyncQuiesceObserver | null = null; #pollingCompletion: CurrentProjectSyncQuiesceCompletion | null = null; #pollingCollection: Promise<Outcome> | null = null;
   #library: CurrentProjectLibraryRefreshObserver | null = null; #libraryCompletion: CurrentProjectLibraryRefreshCompletion | null = null; #libraryCollection: Promise<Outcome> | null = null;
   #controlsRetirement: Promise<void> | null = null;
+  #modifyEntryOrigin: CurrentSchematicRelevanceDisplayModifyEntryOrigin | null = null;
+  #runPrefixCollection: Promise<CurrentSchematicRelevanceRunPrefixObservation> | null = null;
+  #runPrefixObserver: CurrentSchematicRelevanceRunPrefixObserver | null = null; #runPrefixPacket: CurrentSchematicRelevanceRunPrefixObservation | null = null;
   #modifyEntryAttempted = false; #modifyEntryCollection: Promise<CurrentSchematicRelevanceDisplayModifyEntryObservation> | null = null;
   #modifyEntryObserver: CurrentSchematicRelevanceDisplayModifyEntryObserver | null = null; #modifyEntryPacket: CurrentSchematicRelevanceDisplayModifyEntryObservation | null = null;
   #modifyRawPacket: CurrentSchematicRelevanceDisplayRawSceneObservation | null = null;
@@ -189,12 +195,28 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
     this.#modifyEntryCollection = (async (): Promise<CurrentSchematicRelevanceDisplayModifyEntryObservation> => {
       try {
         await this.requirePrepared(dispatch); this.#current(); const guard = this.#guard, main = this.#main, startup = this.#startupStructureDrain; need(main !== null && guard !== null && startup !== null, "ORIGINAL_MODIFY_PREPARATION");
-        const origin = await this.#owner.generateSchematicRelevanceDisplayModifyEntry(this.#arguments, main, dispatch, guard, startup); this.#current();
+        const origin = await this.#owner.generateSchematicRelevanceDisplayModifyEntry(this.#arguments, main, dispatch, guard, startup); this.#current(); this.#modifyEntryOrigin = origin;
         const observer = new CurrentSchematicRelevanceDisplayModifyEntryObserver(origin, this.#owner, this.#arguments); this.#modifyEntryObserver = observer;
         const packet = await observer.observe(); this.#current(); observer.requireData(packet, this.#owner, this.#arguments); this.#modifyEntryPacket = packet;
         const raw = await observer.observeRawScene(); this.#current(); observer.requireRawData(raw, this.#owner, this.#arguments); this.#modifyRawPacket = raw; return packet;
       } catch (error) { this.#stop(error); throw error; }
     })(); return this.#modifyEntryCollection;
+  }
+  public observeOriginalRunPrefix(): Promise<CurrentSchematicRelevanceRunPrefixObservation> {
+    this.#current(); need(this.#modifyEntryCollection !== null && this.#runPrefixCollection === null, "ORIGINAL_RUN_PREFIX_CONSUMED");
+    this.#runPrefixCollection = (async (): Promise<CurrentSchematicRelevanceRunPrefixObservation> => {
+      try {
+        const entryCollection = this.#modifyEntryCollection; need(entryCollection !== null, "ORIGINAL_RUN_ENTRY_COLLECTION"); await entryCollection; this.#current();
+        this.requireOriginalModificationEntry(); this.requireOriginalModificationRawScene();
+        const entry = this.#modifyEntryOrigin; need(entry !== null, "ORIGINAL_RUN_ENTRY_ORIGIN");
+        const origin = await this.#owner.createSchematicRelevanceDisplayRunPrefix(this.#arguments, entry); this.#current();
+        const observer = new CurrentSchematicRelevanceRunPrefixObserver(origin, this.#owner, this.#arguments); this.#runPrefixObserver = observer;
+        const packet = await observer.observe(); this.#current(); observer.requireData(packet, this.#owner, this.#arguments); this.#runPrefixPacket = packet; return packet;
+      } catch (error) { this.#stop(error); throw error; }
+    })(); return this.#runPrefixCollection;
+  }
+  public requireOriginalRunPrefix(): CurrentSchematicRelevanceRunPrefixObservation {
+    this.#current(); need(this.#runPrefixObserver !== null && this.#runPrefixPacket !== null, "ORIGINAL_RUN_PREFIX_REQUIRED"); this.#runPrefixObserver.requireData(this.#runPrefixPacket, this.#owner, this.#arguments); return this.#runPrefixPacket;
   }
   public requireOriginalModificationEntry(): CurrentSchematicRelevanceDisplayModifyEntryObservation {
     this.#current(); need(this.#modifyEntryObserver !== null && this.#modifyEntryPacket !== null, "ORIGINAL_MODIFY_ENTRY_REQUIRED"); this.#modifyEntryObserver.requireData(this.#modifyEntryPacket, this.#owner, this.#arguments); return this.#modifyEntryPacket;
@@ -209,6 +231,7 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
     current(); const pending: Promise<unknown>[] = [];
     if (this.#construction !== null) { pending.push(this.#construction); } if (this.#structurePacket !== null) { pending.push(this.#structurePacket); } if (this.#collector !== null) { pending.push(this.#collector); } if (this.#pendingProducer !== null) { pending.push(this.#pendingProducer); }
     if (this.#modifyEntryCollection !== null) { pending.push(this.#modifyEntryCollection, this.#owner.settleSchematicRelevanceDisplayModifyEntryAfterExit()); }
+    if (this.#runPrefixCollection !== null) { pending.push(this.#runPrefixCollection); }
     if (this.#pollingCollection !== null) { pending.push(this.#pollingCollection); } if (this.#libraryCollection !== null) { pending.push(this.#libraryCollection); }
     await Promise.allSettled(pending); current();
     this.#controlsRetirement ??= (async (): Promise<void> => {
