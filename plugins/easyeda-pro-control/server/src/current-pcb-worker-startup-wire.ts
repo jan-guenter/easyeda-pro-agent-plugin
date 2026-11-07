@@ -8,6 +8,8 @@ import { CURRENT_FOOTPRINT_COPY_LEXICAL_CALLS } from "./current-footprint-copy-p
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE } from "./current-footprint-copy-forward-profile.ts";
+import { CURRENT_FOOTPRINT_FORWARD_COLD_NATIVE_LIMITS as FORWARD_V2 } from "./current-footprint-forward-cold-native-limits.ts";
+import { currentFootprintForwardColdWire } from "./current-footprint-forward-cold-wire.ts";
 import { currentFootprintCopyExecutionWorkerWire } from "./current-footprint-copy-execution-worker-wire.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
 import { currentFootprintCopySavedSourceWire } from "./current-footprint-copy-saved-source-wire.ts";
@@ -157,6 +159,7 @@ function startupWire(raw: unknown, id: number,
       fields = { startupPhase: "breakpoint", site, scriptId: parsed.params.location.scriptId }; break;
     }
     case "Debugger.evaluateOnCallFrame": {
+      if (parsed.params.expression === "[this,l,t,f]" || parsed.params.expression === "[this,t,s]") { return fail(); }
       if (parsed.params.expression === CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION && sites !== CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES) { return fail(); }
       const selector = { [CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION]: "footprint-constructors", this: "receiver", e: "argument-e", t: "argument-t", "this.bc": "channel", "this.bc.onmessage": "onmessage" }[parsed.params.expression];
       fields = { startupPhase: "select", selector, callFrameId: parsed.params.callFrameId }; break;
@@ -294,7 +297,11 @@ export function currentFootprintCopyForwardStartupWire(raw: unknown, id: number)
 /** Separate writer-born identity for fixed preparation traffic. Allocation,
  * create and clocks still use their own closed grammars and original leases. */
 export function currentFootprintForwardExecutionStartupWire(raw: unknown, id: number): ReturnType<typeof startupWire> {
-  return currentFootprintCopyForwardStartupWire(raw, id);
+  if (!Number.isSafeInteger(id) || id < 1 || id > FORWARD_V2.requestLimit) { return fail(); }
+  const cold = currentFootprintForwardColdWire(raw, id); if (cold !== null) { return cold; }
+  const original = currentFootprintCopyForwardStartupWire(raw, 1);
+  return Object.freeze({ command: Object.freeze({ ...original.command, id }),
+    request: Object.freeze({ ...original.request, requestId: id }) });
 }
 /** The saved owner admits only construction and native-cache observation.
  * Parser registration capture is shared fixed code, not execution authority. */

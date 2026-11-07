@@ -126,3 +126,19 @@ void test("a lost normal-close group release cannot be retried or called quiesce
   assert.throws(() => { runner.requireNormalClosePrepared(); }, /NORMAL_CLOSE_QUIESCENCE/u);
   assert.equal(value.commands.length, before); assert.equal(value.state.resumeCount, 2);
 });
+
+void test("a diagnostic main cursor cannot enroll or activate a copied saved-project registration intent", async () => {
+  const Constructor = await constructor(), value = fixture(); const runner = new Constructor(value.transport);
+  const packet = await runner.observe(); const count = value.commands.length;
+  await assert.rejects(runner.assertOriginalSavedProjectRegistrationPending());
+  await assert.rejects(runner.assertOriginalSchematicRelevanceSavedRegistrationPending());
+  await assert.rejects(runner.enrollSavedProjectRegistrationIntent({ profile: "private.current-saved-project-registration-intent.v1" }));
+  await assert.rejects(runner.enrollFootprintInverseRegistrationIntent({ profile: "private.current-footprint-inverse-registration-intent.v1" }));
+  await assert.rejects(runner.enrollSchematicRelevanceSavedRegistrationIntent({ profile: "private.current-schematic-relevance-saved-registration-intent.v1" }));
+  assert.throws(() => runner.originalFootprintInverseRegistrationCommandIntent());
+  assert.throws(() => { runner.requireOriginalFootprintInverseRegistrationSkipped({ profile: "private.current-footprint-inverse-registration-intent.v1" }); });
+  assert.throws(() => runner.originalSchematicRelevanceSavedRegistrationCommandIntent());
+  assert.throws(() => { runner.requireOriginalSchematicRelevanceSavedRegistrationAwaited({ profile: "private.current-schematic-relevance-saved-registration-intent.v1" }); });
+  assert.throws(() => { runner.requireOriginalSchematicRelevanceSavedRegistrationSkipped({ profile: "private.current-schematic-relevance-saved-registration-intent.v1" }); });
+  assert.equal(value.commands.length, count); await runner.reprove(packet); await runner.release();
+});

@@ -1,8 +1,11 @@
+/* oxlint-disable import/max-dependencies -- Fixed209 actor/bootstrap/ratline and selected-file SQLite rosters share this private descriptor reader; caller-selected paths/pins would widen admission. */
 /** Private diagnostic capability admission. No tool accepts these options.
  * The PowerShell pin must come from a separately reviewed native installation;
  * deriving a pathname or hashing an unknown executable does not establish it.
  * Native ancestry/file leases are acquired by the original diagnostic helper.
  */
+import { CURRENT_PCB_VIA_WRITE_SDK_SOURCE } from "./current-pcb-via-write-program.ts";
+import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_INSTALLATION_FILES } from "./current-selected-file-main-sql-fence-source.ts";
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import type { BigIntStats } from "node:fs";
@@ -17,7 +20,6 @@ import { CURRENT_PCB_209_ACTOR_CLOCK_SOURCE_PROFILE, qualifyCurrentPcb209ActorCl
 import type { CurrentPcb209ActorClockSourceQualification, CurrentPcb209ActorClockSources } from "./current-pcb-209-actor-clock-source.ts";
 import { CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCE_PROFILE, qualifyCurrentPcb209WorkerBootstrapSources } from "./current-pcb-209-worker-bootstrap-source.ts";
 import type { CurrentPcb209WorkerBootstrapSources } from "./current-pcb-209-worker-bootstrap-source.ts";
-// oxlint-disable-next-line import/max-dependencies -- Fixed209 actor/bootstrap/ratline profiles share this private descriptor reader; exporting caller-selected paths or pins would widen the installation boundary.
 import { CURRENT_PCB_209_RATLINE_INSTALLATION_PROFILE } from "./current-pcb-209-ratline-installation-profile.ts";
 import { isPublicUtilities209Configured } from "./sdk-public-utilities-profile.ts";
 import { deriveWindowsRuntimePaths } from "./windows-runtime.ts";
@@ -166,6 +168,15 @@ export async function verifyCurrentPcb209WorkerBootstrapInstallation(options: Cu
     if (text === null) { refuse(); } sources[kind] = text;
   }
   qualifyCurrentPcb209WorkerBootstrapSources(sources);
+}
+
+/** Additional fixed selected-file main dependency roster. This only reads
+ * pinned descriptor bytes and grants no launch, SQL or project capability. */
+export async function verifyCurrentSelectedFileMainSqlFenceInstallation(options: CurrentPcbDiagnosticInstallationOptions): Promise<void> {
+  const original = createCurrentPcb209DiagnosticInstallationPlan(options);
+  for (const pin of [...CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_INSTALLATION_FILES, CURRENT_PCB_VIA_WRITE_SDK_SOURCE]) {
+    await readPinnedInstallationFile(path.posix.resolve(original.paths.assetsRoot, pin.relativePath), pin, 32 * 1024 * 1024, false);
+  }
 }
 
 export async function verifyCurrentPcbDiagnosticInstallation(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticInstallation> {

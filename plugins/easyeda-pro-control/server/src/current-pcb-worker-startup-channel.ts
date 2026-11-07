@@ -27,9 +27,11 @@ import type { CurrentFootprintCopyUiCommand } from "./current-footprint-copy-ui-
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
 import { CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE } from "./current-footprint-copy-combined-profile.ts";
+import { currentProjectStructureWorkerWire } from "./current-project-structure-worker-wire.ts";
+import { CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE } from "./current-project-structure-native-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE } from "./current-footprint-copy-forward-profile.ts";
 import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_RENDERER_PROFILE } from "./current-footprint-forward-execution-profile.ts";
-import { CurrentFootprintForwardAllocatedCreateClockBudget } from "./current-footprint-forward-allocated-create-clock-budget.ts";
+import { CurrentFootprintForwardColdAllocatedCreateClockBudget } from "./current-footprint-forward-cold-allocated-create-clock-budget.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE } from "./current-footprint-copy-held-saved-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_HELD_SAVED_CAPACITY } from "./current-footprint-copy-held-saved-capacity.ts";
@@ -61,9 +63,14 @@ import { CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_LIMITS, captureCurrentFootprintCop
   currentFootprintCopyNativeCreateWire } from "./current-footprint-copy-native-create-wire.ts";
 import type { CurrentFootprintCopyNativeCreateCommand } from "./current-footprint-copy-native-create-wire.ts";
 // oxlint-disable-next-line import/no-cycle -- The original construction issuer is required instead of an injectable capability registry; no initialization calls cross this transport cycle.
-import { requireCurrentFootprintCopyCreateInvocationLease } from "./current-pcb-worker-construction-runner.ts";
+import { requireCurrentFootprintCopyCreateInvocationLease, requireCurrentFootprintForwardColdContinuationLease } from "./current-pcb-worker-construction-runner.ts";
 import type { CurrentFootprintCopyCreateInvocationBinding, CurrentFootprintCopyCreateInvocationLease } from "./current-footprint-copy-create-invocation-lease.ts";
 import type { CurrentFootprintCopyV2Plan } from "./current-footprint-copy-v2-plan.ts";
+import { CURRENT_FOOTPRINT_FORWARD_COLD_NATIVE_LIMITS as FORWARD_LIMITS } from "./current-footprint-forward-cold-native-limits.ts";
+import type { CurrentPcbWorkerConstructionCommand } from "./current-pcb-worker-construction-contract.ts";
+import { currentFootprintForwardColdTailWire } from "./current-footprint-forward-cold-wire.ts";
+import type { CurrentFootprintForwardColdContinuationBinding, CurrentFootprintForwardColdContinuationLease,
+  CurrentFootprintForwardColdTail, CurrentFootprintForwardColdTailBinding } from "./current-footprint-forward-cold-continuation.ts";
 
 export interface CurrentPcbWorkerStartupParent {
   readonly targetId: string;
@@ -94,9 +101,42 @@ export interface CurrentFootprintCopyHeldSavedChannelBinding {
 }
 const INTERNAL_PROFILE = Symbol("fixed-worker-startup-channel-wire");
 const footprintDependencies = new WeakSet<CurrentPcbWorkerStartupDependency>();
+const structureDependencies = new WeakMap<CurrentPcbWorkerStartupDependency, () => void>();
+/** Identity only. Copies cannot enlarge the construction/observation budget. */
+export function isOriginalProjectStructureDependency(dependency: CurrentPcbWorkerStartupDependency): boolean { return structureDependencies.has(dependency); }
+/** Preserve the unspent observer suffix before either observer is armed. */
+export function requireOriginalProjectStructurePrefixCapacity(dependency: CurrentPcbWorkerStartupDependency): void {
+  const requirePrefix = structureDependencies.get(dependency); if (requirePrefix === undefined) { throw fail("STRUCTURE_ORIGINAL_DEPENDENCY"); } requirePrefix();
+}
 const savedDependencies = new WeakSet<CurrentPcbWorkerStartupDependency>();
 const heldSavedDependencies = new WeakSet<CurrentPcbWorkerStartupDependency>();
 const executionDependencies = new WeakMap<CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupChannelCore>();
+const forwardExecutionDependencies = new WeakSet<CurrentPcbWorkerStartupDependency>();
+/** The v2 native channel alone issues this marker. Legacy forward observations
+ * cannot acquire continuous cold-producer ownership from their receipt. */
+export function isOriginalFootprintForwardExecutionDependency(dependency: CurrentPcbWorkerStartupDependency): boolean {
+  return forwardExecutionDependencies.has(dependency);
+}
+const coldTails = new WeakMap<CurrentFootprintForwardColdTail, CurrentFootprintForwardColdTailBinding>();
+export function requireCurrentFootprintForwardColdTail(tail: CurrentFootprintForwardColdTail): CurrentFootprintForwardColdTailBinding {
+  const binding = coldTails.get(tail); if (binding === undefined) { throw fail("FORWARD_COLD_TAIL_ORIGINAL"); }
+  binding.assertCleanup(); return binding;
+}
+export function suspendCurrentFootprintForwardColdContinuation(dependency: CurrentPcbWorkerStartupDependency, lease: CurrentFootprintForwardColdContinuationLease): void {
+  const channel = executionDependencies.get(dependency); if (channel === undefined) { throw fail("FORWARD_COLD_PURPOSE"); }
+  channel.suspendForwardColdContinuation(dependency, lease);
+}
+export function requireCurrentFootprintForwardColdGenerationExited(dependency: CurrentPcbWorkerStartupDependency, lease: CurrentFootprintForwardColdContinuationLease): void {
+  const channel = executionDependencies.get(dependency); if (channel === undefined) { throw fail("FORWARD_COLD_PURPOSE"); }
+  channel.requireForwardColdGenerationExited(dependency, lease);
+}
+/** The sole original create and retired clock cursor select this continuation.
+ * Its token proves ownership only; it grants no SQL or producer eligibility. */
+export function beginCurrentFootprintForwardColdTail(dependency: CurrentPcbWorkerStartupDependency,
+  pending: CurrentFootprintCopyPendingCreate): Promise<CurrentFootprintForwardColdTail> {
+  const channel = executionDependencies.get(dependency); if (channel === undefined) { return Promise.reject(fail("FORWARD_COLD_PURPOSE")); }
+  return channel.beginForwardColdTail(dependency, pending);
+}
 /** This marker is issued only by the separate channel, never by receipt data. */
 export function isOriginalFootprintPreparationDependency(dependency: CurrentPcbWorkerStartupDependency): boolean {
   return footprintDependencies.has(dependency);
@@ -191,14 +231,14 @@ function fail(code: string): Error {
 }
 function record(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function exact(value: object, keys: readonly string[]): boolean { return Object.keys(value).toSorted().join(",") === [...keys].toSorted().join(","); }
-function cleanupCommand(command: PendingCommand): boolean {
+function cleanupCommand(command: Pick<PendingCommand, "method">): boolean {
   return command.method === "Debugger.removeBreakpoint" || command.method === "Debugger.resume" ||
     command.method === "Runtime.runIfWaitingForDebugger" || command.method === "Runtime.releaseObjectGroup";
 }
 interface ClockRpcState {
   readonly workerSessionId: string;
   readonly uiSessionId: string;
-  readonly budget: CurrentFootprintCopyClockRpcBudget | CurrentFootprintCopyCreateClockBudget | CurrentFootprintCopyAllocatedCreateClockBudget | CurrentFootprintForwardAllocatedCreateClockBudget;
+  readonly budget: CurrentFootprintCopyClockRpcBudget | CurrentFootprintCopyCreateClockBudget | CurrentFootprintCopyAllocatedCreateClockBudget | CurrentFootprintForwardColdAllocatedCreateClockBudget;
   readonly create: CreateClockState | null;
   readonly events: CurrentFootprintCopyClockRpcOriginEvent[];
   begun: boolean;
@@ -273,8 +313,19 @@ async function observe(work: Promise<unknown>): Promise<void> {
   }
 }
 
+interface ColdContinuationState {
+  readonly lease: CurrentFootprintForwardColdContinuationLease;
+  readonly binding: CurrentFootprintForwardColdContinuationBinding;
+  readonly dependency: CurrentPcbWorkerStartupDependency;
+  readonly workerSessionId: string;
+}
 class CurrentPcbWorkerStartupChannelCore {
+  #coldContinuation: ColdContinuationState | null = null;
+  #coldPause = false;
+  #coldTailAttempted = false;
+  #coldTail: CurrentFootprintForwardColdTail | null = null;
   readonly #wire: typeof currentPcbWorkerStartupWire;
+  readonly #structurePurpose: boolean;
   readonly #footprintPurpose: boolean;
   readonly #executionPurpose: boolean;
   readonly #createClockPurpose: boolean;
@@ -369,6 +420,7 @@ class CurrentPcbWorkerStartupChannelCore {
     forwardEventBytes: ((bytes: number) => void) | null = null, accountedSavedPurpose = false,
     heldSavedBinding: CurrentFootprintCopyHeldSavedChannelBinding | null = null) {
     if (internal !== INTERNAL_PROFILE) { throw fail("INTERNAL_PROFILE"); } this.#wire = wire; this.#createClockPurpose = createClockPurpose; this.#allocationPurpose = allocationPurpose;
+    this.#structurePurpose = wire === currentProjectStructureWorkerWire;
     if (typeof accountedSavedPurpose !== "boolean" || accountedSavedPurpose && wire !== currentFootprintCopySavedStartupWire ||
         (wire === currentFootprintCopyForwardStartupWire || wire === currentFootprintForwardExecutionStartupWire || accountedSavedPurpose || wire === currentFootprintCopyHeldSavedStartupWire) !== (forwardEventBytes !== null) ||
         forwardEventBytes !== null && typeof forwardEventBytes !== "function") { throw fail("FORWARD_ACCOUNTING"); }
@@ -388,7 +440,9 @@ class CurrentPcbWorkerStartupChannelCore {
     if (wire === currentFootprintForwardExecutionStartupWire) { footprintProfile = CURRENT_FOOTPRINT_FORWARD_EXECUTION_RENDERER_PROFILE; }
     if (wire === currentFootprintCopyHeldSavedStartupWire) { footprintProfile = CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE; }
     this.#footprintProfile = footprintProfile;
-    this.#requestLimit = this.#footprintPurpose ? this.#footprintProfile.requestLimit : CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT;
+    let requestLimit = this.#footprintPurpose ? this.#footprintProfile.requestLimit : CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT;
+    if (this.#structurePurpose) { requestLimit = CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.worker.total; }
+    this.#requestLimit = requestLimit;
     this.#members = members(native); this.#native = native;
     this.#parentMethod = native.requireOriginalParent; this.#terminate = native.assertOriginalTermination;
     this.#parentEvent = native.observeOriginalParentEvent; this.#exchange = native.exchange;
@@ -424,8 +478,10 @@ class CurrentPcbWorkerStartupChannelCore {
   }
   #withinLifetime(cleanup = false): void {
     const age = monotonicNow() - this.#created;
-    const normal = this.#footprintPurpose ? this.#footprintProfile.normalMilliseconds : LIFETIME_MS;
-    const total = normal + (this.#footprintPurpose ? this.#footprintProfile.cleanupMilliseconds : 0);
+    let normal = this.#footprintPurpose ? this.#footprintProfile.normalMilliseconds : LIFETIME_MS;
+    let cleanupMilliseconds = this.#footprintPurpose ? this.#footprintProfile.cleanupMilliseconds : 0;
+    if (this.#structurePurpose) { normal = CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.normalMilliseconds; cleanupMilliseconds = CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.cleanupMilliseconds; }
+    const total = normal + cleanupMilliseconds;
     if (age < 0n || age >= BigInt(total) * 1_000_000n) {
       this.#poison("LIFETIME", true); throw this.#failure ?? fail("LIFETIME");
     }
@@ -458,7 +514,7 @@ class CurrentPcbWorkerStartupChannelCore {
       this.#sameMethods(); const original = await this.#parentMethod.call(this.#native); this.#sameMethods();
       this.#withinLifetime();
       if (!record(original) || types.isProxy(original) || !Object.isFrozen(original)) { throw fail("PARENT"); }
-      const parent = (this.#footprintPurpose ? parentSchema.extend({ nextRequestId: z.number().int().min(1).max(this.#requestLimit) }) : parentSchema)
+      const parent = (this.#footprintPurpose || this.#structurePurpose ? parentSchema.extend({ nextRequestId: z.number().int().min(1).max(this.#requestLimit) }) : parentSchema)
         .parse(captureCurrentPcbStringClockReply(original).value);
       if (this.#heldSavedBinding !== null) {
         if (parent.sessionId !== this.#heldSavedBinding.sessionId || parent.nextRequestId - 1 > CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE.normalRequestLimit) { throw fail("HELD_SAVED_PARENT"); }
@@ -480,6 +536,12 @@ class CurrentPcbWorkerStartupChannelCore {
       },
     });
     if (this.#footprintPurpose && !this.#savedPurpose) { footprintDependencies.add(dependency); }
+    if (this.#wire === currentFootprintForwardExecutionStartupWire) { forwardExecutionDependencies.add(dependency); }
+    if (this.#structurePurpose) { structureDependencies.set(dependency, (): void => {
+      this.#sameMethods(); this.#withinLifetime();
+      if (this.#released || this.#releaseRequested || this.#terminationVerified || this.#failure !== null || this.#pending.size > 0 ||
+        this.#queuedRequests !== 0 || this.#nextId - 1 > CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.worker.derivation.startupNormal) { throw fail("STRUCTURE_PREFIX_CAPACITY"); }
+    }); }
     if (this.#savedPurpose && !this.#forwardSavedObservation && this.#heldSavedBinding === null) { savedDependencies.add(dependency); }
     if (this.#heldSavedBinding !== null) { heldSavedDependencies.add(dependency); }
     if (this.#executionPurpose) { markCurrentFootprintExecutionDependency(dependency); executionDependencies.set(dependency, this); }
@@ -625,8 +687,9 @@ class CurrentPcbWorkerStartupChannelCore {
         (!this.#openingConsumed || this.#executionWorkerSession !== null)) { throw fail("EXECUTION_WORKER_RUNTIME"); }
   }
   // oxlint-disable-next-line eslint/require-await -- Return the original retained completion, with synchronous guards converted to rejection.
-  async #request(raw: ChannelCommand, manager = false, clock = false, parentKind?: CurrentFootprintParentCommandKind, registration = false, heldCache = false): Promise<unknown> {
-    if (this.#clockRpcHandoffPending || this.#clockRpc !== null && (!this.#clockRpc.retired || this.#clockRpc.create !== null)) { throw fail("FOOTPRINT_RPC_EXCLUSIVE"); }
+  async #request(raw: ChannelCommand, manager = false, clock = false, parentKind?: CurrentFootprintParentCommandKind, registration = false, heldCache = false, coldTail = false): Promise<unknown> {
+    if (coldTail) { this.#sameColdTail(true); }
+    else if (this.#clockRpcHandoffPending || this.#clockRpc !== null && (!this.#clockRpc.retired || this.#clockRpc.create !== null)) { throw fail("FOOTPRINT_RPC_EXCLUSIVE"); }
     // Select the fixed grammar only after rejecting prototype/proxy traps.
     if (!record(raw) || types.isProxy(raw) ||
       Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null) { throw fail("COMMAND"); }
@@ -634,6 +697,7 @@ class CurrentPcbWorkerStartupChannelCore {
       Object.getOwnPropertyDescriptor(raw, "phase")?.value !== "saved-upload-queue")) { throw fail("FOOTPRINT_UI_PURPOSE"); }
     const copyWire = manager ? currentFootprintCopyManagerRouteWire : currentFootprintCopyUiWire;
     const encode = (value: ChannelCommand, id: number): Readonly<{ command: ChannelCommand & Readonly<{ id: number }>; request: Readonly<Record<string, string | number>> }> => {
+      if (coldTail) { this.#sameColdTail(cleanupCommand(value)); return currentFootprintForwardColdTailWire(value, id); }
       if (heldCache) {
         if (this.#heldSavedBinding === null) { throw fail("HELD_CACHE_PURPOSE"); }
         return currentFootprintSavedCacheHeldWire(value, id);
@@ -663,7 +727,8 @@ class CurrentPcbWorkerStartupChannelCore {
         this.#attributed(command, manager, clock, parentKind, registration);
         this.#withinLifetime(cleanupCommand(command));
         const cleanup = cleanupCommand(command);
-        const limit = this.#heldSavedBinding === null && this.#footprintPurpose && !cleanup ? this.#footprintProfile.normalRequestLimit : this.#requestLimit;
+        let limit = this.#heldSavedBinding === null && this.#footprintPurpose && !cleanup ? this.#footprintProfile.normalRequestLimit : this.#requestLimit;
+        if (this.#structurePurpose && !cleanup) { limit = CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.worker.normal; }
         if (this.#fatal || this.#released || this.#nextId > limit) { throw fail("REQUEST_BUDGET"); }
         if (this.#heldSavedBinding !== null && (cleanup ? this.#heldSavedCleanup >= CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE.cleanupRequestLimit :
           this.#heldSavedNormal >= CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE.normalRequestLimit)) { throw fail("HELD_SAVED_REQUEST_CLASS"); }
@@ -831,6 +896,66 @@ class CurrentPcbWorkerStartupChannelCore {
       dispatchAttempted: false, pending: null, rejectedFrame: null };
     return this.#prepareClockRpc(dependency, workerSessionId, create);
   }
+  /** Called synchronously by the original constructor before unsubscribing.
+   * Events cannot fall between the old listener and the clock event owner. */
+  public suspendForwardColdContinuation(dependency: CurrentPcbWorkerStartupDependency, lease: CurrentFootprintForwardColdContinuationLease): void {
+    this.#sameMethods(); this.#withinLifetime();
+    const binding = requireCurrentFootprintForwardColdContinuationLease(lease);
+    if (this.#wire !== currentFootprintForwardExecutionStartupWire || executionDependencies.get(dependency) !== this ||
+        binding.dependency !== dependency || this.#coldContinuation !== null || this.#clockRpcAttempted || this.#listener === null ||
+        this.#executionWorkerSession === null || this.#failure !== null || this.#fatal || this.#released || this.#releaseRequested) { throw fail("FORWARD_COLD_HANDOFF"); }
+    binding.suspend();
+    this.#coldContinuation = Object.freeze({ lease, binding, dependency, workerSessionId: this.#executionWorkerSession });
+  }
+  public requireForwardColdGenerationExited(dependency: CurrentPcbWorkerStartupDependency, lease: CurrentFootprintForwardColdContinuationLease): void {
+    this.#sameMethods();
+    if (!this.#terminationVerified || this.#wire !== currentFootprintForwardExecutionStartupWire ||
+        this.#coldContinuation?.dependency !== dependency || this.#coldContinuation.lease !== lease) { throw fail("FORWARD_COLD_ORIGINAL_EXIT"); }
+  }
+  #sameColdTail(cleanup: boolean): ColdContinuationState {
+    this.#sameMethods(); this.#withinLifetime(cleanup);
+    const cold = this.#coldContinuation, rpc = this.#clockRpc;
+    if (this.#wire !== currentFootprintForwardExecutionStartupWire || cold === null || this.#coldTail === null ||
+        rpc === null || !rpc.retired || !rpc.retireAcknowledged || rpc.create === null || !rpc.create.dispatchAttempted ||
+        rpc.create.binding.clockLease !== cold.binding.workerLease || rpc.workerSessionId !== cold.workerSessionId ||
+        this.#released || this.#releaseRequested || this.#terminationVerified || this.#fatal || !cleanup && this.#failure !== null) { throw fail("FORWARD_COLD_TAIL_ORIGINAL"); }
+    cold.binding.assertCleanup(); return cold;
+  }
+  public async beginForwardColdTail(dependency: CurrentPcbWorkerStartupDependency, originalPending: CurrentFootprintCopyPendingCreate): Promise<CurrentFootprintForwardColdTail> {
+    const cold = this.#coldContinuation, rpc = this.#clockRpc;
+    if (rpc === null || cold === null || cold.dependency !== dependency || executionDependencies.get(dependency) !== this ||
+        this.#wire !== currentFootprintForwardExecutionStartupWire || this.#coldTailAttempted || !rpc.retired || !rpc.retireAcknowledged ||
+        this.#samePendingCreate(rpc).token !== originalPending || !this.#createRetirementQuiescent(rpc)) { throw fail("FORWARD_COLD_TAIL_UNAVAILABLE"); }
+    this.#coldTailAttempted = true;
+    try {
+      await this.#queue(async (): Promise<void> => {
+        this.#samePendingCreate(rpc); cold.binding.assertCleanup();
+        if (this.#queuedRequests !== 0 || this.#used !== 0 || rpc.events.length > 0 || !this.#createRetirementQuiescent(rpc)) { throw fail("FORWARD_COLD_TAIL_RETAIN"); }
+        const parent = await this.#parentMethod.call(this.#native);
+        if (parent !== this.#parent || this.#samePendingCreate(rpc).token !== originalPending) { throw fail("FORWARD_COLD_TAIL_PARENT"); }
+        const result = captureCurrentPcbStringClockReply(await this.#exchange.call(this.#native, { action: "footprint-forward-cold-begin" })).value;
+        if (!record(result) || !exact(result, ["begun"]) || result["begun"] !== true) { throw fail("FORWARD_COLD_TAIL_BEGIN_ACK"); }
+      });
+      const tailToken = Object.freeze({ profile: "private.current-footprint-forward-cold-tail.v1" as const });
+      this.#coldTail = tailToken;
+      coldTails.set(tailToken, Object.freeze({ continuation: cold.lease, dependency, workerLease: cold.binding.workerLease, workerSessionId: cold.workerSessionId,
+        assertCleanup: (): void => { this.#sameColdTail(true); },
+        assertOriginal: async (): Promise<void> => {
+          this.#sameColdTail(false);
+          await this.#queue(async (): Promise<void> => { const parent = await this.#parentMethod.call(this.#native);
+            if (parent !== this.#parent) { throw fail("FORWARD_COLD_TAIL_PARENT"); } this.#sameColdTail(false); });
+          this.#sameColdTail(false);
+        },
+        request: async (command: CurrentPcbWorkerConstructionCommand, cleanup: boolean, retain?: (reply: unknown) => void): Promise<unknown> => {
+          this.#sameColdTail(cleanup);
+          if (typeof cleanup !== "boolean" || cleanup !== cleanupCommand(command) || retain !== undefined) { throw fail("FORWARD_COLD_TAIL_COMMAND"); }
+          const reply = await this.#request({ ...command, sessionId: cold.workerSessionId }, false, false, undefined, false, false, true);
+          this.#sameColdTail(cleanup); return reply;
+        },
+      }));
+      cold.binding.attach(tailToken); this.#sameColdTail(false); return tailToken;
+    } catch (error) { this.#poison("FORWARD_COLD_TAIL_BEGIN"); throw error; }
+  }
   async #prepareClockRpc(dependency: CurrentPcbWorkerStartupDependency, workerSessionId: string,
     create: CreateClockState | null): Promise<CurrentFootprintCopyClockRpcChannelReservation> {
     if ((this.#wire !== currentFootprintCombinedStartupWire && this.#wire !== currentFootprintForwardExecutionStartupWire) || executionDependencies.get(dependency) !== this || this.#clockRpcAttempted ||
@@ -847,10 +972,18 @@ class CurrentPcbWorkerStartupChannelCore {
           throw fail("FOOTPRINT_RPC_QUIESCENCE");
         }
         let budget: ClockRpcState["budget"];
+        if (this.#wire === currentFootprintForwardExecutionStartupWire && (create === null || this.#coldContinuation === null ||
+            this.#coldContinuation.binding.workerLease !== create.binding.clockLease || this.#coldContinuation.workerSessionId !== workerSessionId)) {
+          throw fail("FORWARD_COLD_HANDOFF_REQUIRED");
+        }
         if (create === null) { budget = new CurrentFootprintCopyClockRpcBudget(this.#nextId); }
         else if (create.allocation) { budget = this.#wire === currentFootprintForwardExecutionStartupWire ?
-          new CurrentFootprintForwardAllocatedCreateClockBudget(this.#nextId) : new CurrentFootprintCopyAllocatedCreateClockBudget(this.#nextId); }
+          new CurrentFootprintForwardColdAllocatedCreateClockBudget(this.#nextId) : new CurrentFootprintCopyAllocatedCreateClockBudget(this.#nextId); }
         else { budget = new CurrentFootprintCopyCreateClockBudget(this.#nextId); }
+        if (this.#wire === currentFootprintForwardExecutionStartupWire) {
+          const remaining = this.#coldContinuation?.binding.remainingRequests();
+          if (remaining === undefined || budget.snapshot().lastReservedId + remaining.total > FORWARD_LIMITS.requestLimit) { throw fail("FORWARD_COLD_TAIL_HEADROOM"); }
+        }
         this.#clockRpcPreparedState = { workerSessionId, uiSessionId: this.#parent.sessionId,
           budget,
           create, events: [], begun: false, retired: false,
@@ -877,8 +1010,13 @@ class CurrentPcbWorkerStartupChannelCore {
         await this.#currentWithinQueue();
         let action = "footprint-clock-rpc-begin";
         if (state.create !== null) { action = state.create.allocation ? "footprint-copy-allocated-create-clock-begin" : "footprint-copy-create-clock-begin"; }
+        let coldReservation: Readonly<Record<string, number>> = {};
+        if (this.#wire === currentFootprintForwardExecutionStartupWire) {
+          const remaining = this.#coldContinuation?.binding.remainingRequests(); if (remaining === undefined) { throw fail("FORWARD_COLD_HANDOFF_REQUIRED"); }
+          action = "footprint-forward-allocated-clock-begin"; coldReservation = { coldNormal: remaining.normal, coldCleanup: remaining.cleanup };
+        }
         const result = captureCurrentPcbStringClockReply(await this.#exchange.call(this.#native,
-          { action, firstRequestId: this.#nextId })).value;
+          { action, firstRequestId: this.#nextId, ...coldReservation })).value;
         if (!record(result) || !exact(result, ["begun"]) || result["begun"] !== true) { throw fail("FOOTPRINT_RPC_BEGIN_ACK"); }
         state.begun = true;
       });
@@ -943,7 +1081,7 @@ class CurrentPcbWorkerStartupChannelCore {
     this.#sameClockRpc(state, cleanup);
     const captured = captureCurrentPcbStringClockReply(input).value;
     const allocation = z.object({ phase: z.string() }).loose().parse(captured).phase.startsWith("allocation-");
-    if (allocation && !(state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardAllocatedCreateClockBudget)) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
+    if (allocation && !(state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardColdAllocatedCreateClockBudget)) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
     const { id: _validationId, ...command } = (allocation ? currentFootprintCopyAllocationWire(captured, 1, state.workerSessionId) :
       currentFootprintCopyClockRpcWire(captured, 1, state.workerSessionId, state.uiSessionId)).command;
     if (typeof cleanup !== "boolean" || cleanup !== cleanupCommand(command) || state.budget.snapshot().failed) { throw fail("FOOTPRINT_RPC_CLASS"); }
@@ -958,7 +1096,7 @@ class CurrentPcbWorkerStartupChannelCore {
         const wire = allocation ? currentFootprintCopyAllocationWire(command, this.#nextId, state.workerSessionId) :
           currentFootprintCopyClockRpcWire(command, this.#nextId, state.workerSessionId, state.uiSessionId);
         if (allocation) {
-          if (!(state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardAllocatedCreateClockBudget)) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
+          if (!(state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardColdAllocatedCreateClockBudget)) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
           state.budget.consumeAllocation(this.#nextId, String(wire.request["phase"]), cleanup);
         } else { state.budget.consume(this.#nextId, cleanup); }
         this.#nextId += 1;
@@ -986,7 +1124,7 @@ class CurrentPcbWorkerStartupChannelCore {
   }
   async #dispatchCreate(state: ClockRpcState): Promise<CurrentFootprintCopyPendingCreate> {
     const create = this.#samePendingCreate(state);
-    if (state.retired || create.dispatchAttempted || !(state.budget instanceof CurrentFootprintCopyCreateClockBudget || state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardAllocatedCreateClockBudget)) {
+    if (state.retired || create.dispatchAttempted || !(state.budget instanceof CurrentFootprintCopyCreateClockBudget || state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardColdAllocatedCreateClockBudget)) {
       throw fail("FOOTPRINT_CREATE_CONSUMED");
     }
     // Consume synchronously before entering the queue. A lost native ACK never
@@ -1001,7 +1139,7 @@ class CurrentPcbWorkerStartupChannelCore {
     await this.#queue(async (): Promise<void> => {
       let pending: Pending | null = null;
       try {
-        if (this.#samePendingCreate(state) !== create || state.retired || !(state.budget instanceof CurrentFootprintCopyCreateClockBudget || state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardAllocatedCreateClockBudget)) {
+        if (this.#samePendingCreate(state) !== create || state.retired || !(state.budget instanceof CurrentFootprintCopyCreateClockBudget || state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget || state.budget instanceof CurrentFootprintForwardColdAllocatedCreateClockBudget)) {
           throw fail("FOOTPRINT_CREATE_ORIGINAL");
         }
         if (this.#samePendingCreate(state) !== create) { throw fail("FOOTPRINT_CREATE_ORIGINAL"); }
@@ -1212,6 +1350,16 @@ class CurrentPcbWorkerStartupChannelCore {
     const event = z.object({ method: z.string().min(1).max(128), params: z.record(z.string(), z.unknown()), sessionId: token }).strict()
       .parse(captureCurrentPcbStringClockReply(value).value);
     const rpc = this.#clockRpc;
+    const cold = this.#coldContinuation;
+    if (cold !== null && event.sessionId === cold.workerSessionId) {
+      if (event.method === "Debugger.paused" && cold.binding.acceptsPause(event.params)) {
+        if (this.#coldPause) { throw fail("FORWARD_COLD_DUPLICATE_PAUSE"); }
+        this.#coldPause = true; cold.binding.paused(event.params); return;
+      }
+      if (event.method === "Debugger.resumed" && this.#coldPause) {
+        this.#coldPause = false; cold.binding.resumed(); return;
+      }
+    }
     if (rpc?.create !== null && rpc?.create !== undefined && rpc.retired) { throw fail("FOOTPRINT_CREATE_POST_CLOCK_EVENT"); }
     if (rpc !== null && !rpc.retired && (event.sessionId === rpc.uiSessionId || event.sessionId === rpc.workerSessionId) &&
         (event.method === "Debugger.paused" || event.method === "Debugger.resumed")) {
@@ -1260,6 +1408,7 @@ class CurrentPcbWorkerStartupChannelCore {
     await this.#queue(async (): Promise<void> => {
       this.#sameMethods(); await this.#terminate.call(this.#native); this.#sameMethods();
       this.#terminationVerified = true;
+      this.#coldContinuation?.binding.lost();
       if (this.#pollTimer !== null) { clearTimeout(this.#pollTimer); this.#pollTimer = null; }
       if (this.#clockRpc !== null && (!this.#clockRpc.retired || this.#clockRpc.create !== null)) {
         // Only the retained root/whole-Job proof above ends ambiguous RPC
@@ -1270,6 +1419,9 @@ class CurrentPcbWorkerStartupChannelCore {
         this.#pending.clear(); this.#clockRpc.budget.fail(); this.#clockRpc.events.length = 0; this.#used = 0;
       }
     });
+    // The queue must be free while the original observer joins its own pending
+    // Owner checks. Its exit join sends no inspector command or application RPC.
+    await this.#coldContinuation?.binding.observeExited();
   }
   /** Original termination, not a timeout or caller flag, ends reply retention.
    * This releases local polling only; native pipe handles belong to the owner. */
@@ -1314,6 +1466,13 @@ export class CurrentFootprintCopyExecutionChannel extends CurrentPcbWorkerStartu
 export class CurrentFootprintCombinedStartupChannel extends CurrentPcbWorkerStartupChannelCore {
   public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
     super(INTERNAL_PROFILE, native, currentFootprintCombinedStartupWire, priorUsage);
+  }
+}
+/** Separate cold-project observer birth. It receives no footprint execution,
+ * create, clock, saved or manager-route dependency marker. */
+export class CurrentProjectStructureStartupChannel extends CurrentPcbWorkerStartupChannelCore {
+  public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
+    super(INTERNAL_PROFILE, native, currentProjectStructureWorkerWire, priorUsage);
   }
 }
 /** Distinct forward observation grammar and counters. Its allocation/create
@@ -1382,4 +1541,22 @@ export function beginCurrentFootprintCopyClockRpcChannel(dependency: CurrentPcbW
   const channel = executionDependencies.get(dependency);
   if (!(channel instanceof CurrentFootprintCombinedStartupChannel)) { return Promise.reject(fail("FOOTPRINT_RPC_PURPOSE")); }
   return beginOriginalClockRpc.call(channel, dependency, reservation);
+}
+// oxlint-disable typescript/unbound-method -- These fixed methods run only on the original private-map cold-v2 receiver below.
+const prepareOriginalForwardAllocatedClock = CurrentPcbWorkerStartupChannelCore.prototype.prepareFootprintCreateClockRpc;
+const beginOriginalForwardAllocatedClock = CurrentPcbWorkerStartupChannelCore.prototype.beginFootprintCreateClockRpc;
+// oxlint-enable typescript/unbound-method
+/** Separate cold-v2 channel entry. A Combined or copied dependency cannot
+ * select this original allocated-clock reservation or its retained tail. */
+export function prepareCurrentFootprintForwardAllocatedClockChannel(dependency: CurrentPcbWorkerStartupDependency,
+  workerSessionId: string, invocation: CurrentFootprintCopyCreateInvocationLease, plan: CurrentFootprintCopyV2Plan): Promise<CurrentFootprintCopyClockRpcChannelReservation> {
+  const channel = executionDependencies.get(dependency);
+  if (!(channel instanceof CurrentFootprintForwardExecutionStartupChannel)) { return Promise.reject(fail("FORWARD_ALLOCATED_CLOCK_ORIGINAL_CHANNEL")); }
+  return prepareOriginalForwardAllocatedClock.call(channel, dependency, workerSessionId, invocation, plan);
+}
+export function beginCurrentFootprintForwardAllocatedClockChannel(dependency: CurrentPcbWorkerStartupDependency,
+  reservation: CurrentFootprintCopyClockRpcChannelReservation): Promise<CurrentFootprintCopyCreateClockChannelRoute> {
+  const channel = executionDependencies.get(dependency);
+  if (!(channel instanceof CurrentFootprintForwardExecutionStartupChannel)) { return Promise.reject(fail("FORWARD_ALLOCATED_CLOCK_ORIGINAL_CHANNEL")); }
+  return beginOriginalForwardAllocatedClock.call(channel, dependency, reservation);
 }

@@ -1,3 +1,5 @@
+/* oxlint-disable import/max-dependencies -- Source-only native protocol fixture additionally restores its exact stored compiler input. */
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -8,7 +10,6 @@ import { sha256Text } from "../src/core.ts";
 import { DIAGNOSTIC_REQUEST_LIMIT, diagnosticLayers209Params, diagnosticNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
 import { currentDisposableOpenSealedTargetSchema } from "../src/current-disposable-open.ts";
 import { currentPcb209OpeningRequestSchema } from "../src/current-pcb-209-opening-validation.ts";
-// oxlint-disable-next-line import/max-dependencies -- Native packing parity adds one independent decoder to this existing combined layer/schema regression.
 import { currentPcbDiagnosticValidationRequestSchema } from "../src/current-pcb-diagnostic-validation.ts";
 
 const path = String.raw`C:\Reviewed\LayerFixture.eprj2`;
@@ -110,7 +111,7 @@ void test("209 fixed command is native-reconstructed, phase-bound and absent fro
     { ...command.params, arguments: [{ value: target }, { value: "open-document" }] }]) {
     assert.throws(() => diagnosticNativeRequest(wire({ ...command, params })));
   }
-  const native = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const native = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   assert.equal(readPackedNativeProgram(native, "Layers209Function"), CURRENT_PCB_209_LAYERS_FUNCTION);
   assert.ok(native.includes('if(!layers209 || stringPrecreate || workerStartup) throw Error("layers209-purpose")'));
   assert.ok(native.includes("if (-not $Layers209) {throw 'pcb-diagnostic-layers209-purpose'}"));
