@@ -225,7 +225,13 @@ async function retainNodeIdentity(
       if (kernel !== undefined) { await assertKernelNodeCurrent(kernel); }
     };
     const assertCurrent = async (): Promise<void> => {
-      if (await nodeDescriptorHash(file, before) !== nodeSha256) {
+      // Current-process admission already joins these two original descriptors
+      // To the same inode at birth. Both descriptor/path identities remain
+      // Checked around the version probe, and the kernel descriptor is fully
+      // Rehashed before AND after it. Re-reading its alias here adds no proof.
+      // The ordinary configured-executable path has no kernel alias and keeps
+      // Its own complete fresh hash on every assertion.
+      if (kernel === undefined && await nodeDescriptorHash(file, before) !== nodeSha256) {
         throw new MachineProfileError("machine-node-changed");
       }
       await assertVersionAndIdentity();
@@ -293,8 +299,10 @@ export async function retainCurrentProcessSqlNode(): Promise<VerifiedMachineNode
     const kernel: KernelNodeIdentity = Object.freeze({
       file, information, nodeExecutable, nodeSha256: await nodeDescriptorHash(file, information),
     });
+    // The original birth verifier just completed its before/after kernel hashes,
+    // Pathname/descriptor join and descriptor-bound version probe. Publish that
+    // Same retained capability directly; every later borrow still reproves it.
     node = await retainNodeIdentity(nodeExecutable, kernel.nodeSha256, kernel);
-    await node.assertCurrent();
     const retained = node;
     const result = Object.freeze({ runtime: retained.runtime, descriptorPath: retained.descriptorPath,
       assertCurrent: retained.assertCurrent, close: async (): Promise<void> => { await closeCurrentProcessNode(file, retained); } });

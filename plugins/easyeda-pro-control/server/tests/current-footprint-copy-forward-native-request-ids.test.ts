@@ -1,3 +1,4 @@
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
@@ -6,7 +7,7 @@ import { assertCurrentFootprintCopyForwardNativeRequestIds, currentFootprintCopy
 const helper = new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url);
 
 void test("generated native parser ID policy and actual C# smoke retain forward1002 and legacy811/856 boundaries", async () => {
-  const generated = currentFootprintCopyForwardNativeLimits(), source = await readFile(helper, "utf8");
+  const generated = currentFootprintCopyForwardNativeLimits(), source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(helper, "utf8"));
   assert.ok(source.includes(generated));
   assert.ok(generated.includes("return id>=1&&id<=(forwardPurpose?Requests:workerCommand?EasyedaFootprintExecutionLimits.NormalRequests:EasyedaFootprintExecutionLimits.Requests);"));
   assert.ok(generated.includes("AllowsExecutionRequestId(1002,true,worker)&&!AllowsExecutionRequestId(1003,true,worker)"));
@@ -19,7 +20,7 @@ void test("generated native parser ID policy and actual C# smoke retain forward1
 });
 
 void test("each legacy dedicated parser selects its original forward switch and refuses stale or caller-selected ID guards", async () => {
-  const source = await readFile(helper, "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(helper, "utf8"));
   assert.doesNotThrow(() => { assertCurrentFootprintCopyForwardNativeRequestIds(source); });
   for (const [action, worker] of [["footprint-copy-parent", false], ["footprint-copy-worker", true], ["footprint-cache-construction", false]] as const) {
     const start = source.indexOf(`        '${action}' {`);

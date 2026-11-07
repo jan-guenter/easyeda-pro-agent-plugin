@@ -47,6 +47,7 @@ const familyQuery = z.discriminatedUnion("family", [
   z.object({ ...familyBase, family: z.literal("Poured"), where: pouredWhere }).strict(),
 ]);
 export const currentPcb209ObservationQuerySchema = z.union([familyQuery,
+  z.object({ kind: z.literal("primitive-lookup"), primitiveIds: ids }).strict(),
   z.object({ kind: z.literal("selection") }).strict(), z.object({ kind: z.literal("component-pads"), componentId: id }).strict()]);
 export const currentPcb209ObservationQueryStageSchema = z.enum(["primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"]);
 export const currentPcb209ObservationQueryProvenanceSchema = z.object({ operationId: z.string().max(80).regex(/^pcb209-[a-z0-9][a-z0-9_-]*$/u),
@@ -157,6 +158,16 @@ export function queryCurrentPcb209Observation(resultInput: unknown, targetInput:
     if (provenance.stage !== "selection-relations209") { throw new Error("PCB209_QUERY_RELATIONS_UNAVAILABLE"); }
     if (query.kind === "selection") {
       rows = recordsSchema.parse(source["selectedRows"]); candidateRowCount = rows.length; includeAttributes = true;
+    } else if (query.kind === "primitive-lookup") {
+      const byId = new Map<string, RecordValue>();
+      for (const row of completeRows) {
+        const primitiveId = id.parse(row["primitiveId"]);
+        if (byId.has(primitiveId)) { throw new Error("PCB209_QUERY_ID_AMBIGUOUS"); } byId.set(primitiveId, row);
+      }
+      rows = query.primitiveIds.map(primitiveId => {
+        const row = byId.get(primitiveId); if (row === undefined) { throw new Error("PCB209_QUERY_ID_MISSING"); } return row;
+      });
+      candidateRowCount = completeRows.length; requestedIdCount = query.primitiveIds.length; includeAttributes = true;
     } else {
       const group = recordsSchema.parse(source["componentPadGroups"]).find(value => value["parentPrimitiveId"] === query.componentId);
       if (group === undefined) { throw new Error("PCB209_QUERY_COMPONENT_NOT_OBSERVED"); }

@@ -3,20 +3,36 @@
  * Standard ECMAScript renderer intrinsics are trusted, as in the fixed readers.
  * This private synchronous kernel has no public SDK or selection dispatch.
  */
-import { CURRENT_PCB_209_SPATIAL_BINDING_COLLECTOR, CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION,
-  CURRENT_PCB_209_SPATIAL_FUNCTION_COLLECTOR } from "./current-pcb-209-spatial-capture-program.ts";
+import { CURRENT_PCB_209_SPATIAL_ARC_BINDING_COLLECTOR, CURRENT_PCB_209_SPATIAL_ARC_FUNCTION_COLLECTOR, CURRENT_PCB_209_SPATIAL_BINDING_COLLECTOR, CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION,
+  CURRENT_PCB_209_SPATIAL_FUNCTION_COLLECTOR, CURRENT_PCB_209_SPATIAL_TRACK_BINDING_COLLECTOR,
+  CURRENT_PCB_209_SPATIAL_TRACK_FUNCTION_COLLECTOR } from "./current-pcb-209-spatial-capture-program.ts";
+import { CURRENT_PCB_209_SPATIAL_TRACK_GUARDS } from "./current-pcb-209-spatial-track-kernel.ts";
+import { CURRENT_PCB_209_SPATIAL_ARC_GUARDS } from "./current-pcb-209-spatial-arc-kernel.ts";
 import { CURRENT_PCB_209_SPATIAL_MAX_BYTES, CURRENT_PCB_209_SPATIAL_MAX_COORDINATE,
   CURRENT_PCB_209_SPATIAL_MAX_HITS } from "./current-pcb-209-spatial-read.ts";
 import { CURRENT_PCB_209_SPATIAL_FAMILY_ORDER } from "./current-pcb-209-spatial-source-profile.ts";
 
-export const CURRENT_PCB_209_SPATIAL_READ_FUNCTION = `function(query){
+/** Fe is the pinned KU selection owner. Sr is the control-point manager and
+ * has no items property. Match getSelects' temporary-array precedence without
+ * calling a selector; retain both arrays and refuse inherited/accessor state.
+ */
+export const CURRENT_PCB_209_SPATIAL_SELECTION_PROGRAM = `const selectionOwner=retainData(get("Fe")),selectedPrimitiveIds=[];let selected=own(selectionOwner,"items");list(selected);
+if(Object.hasOwn(selectionOwner,"tempSelects")){const t=own(selectionOwner,"tempSelects");if(t!=null&&list(t)>0)selected=t;}else absent(selectionOwner,"tempSelects");`;
+
+/** Select only a module-owned fixed program at build/import time. */
+function readFunction(track: boolean, arc = false): string {
+  let bindings = CURRENT_PCB_209_SPATIAL_BINDING_COLLECTOR, functions = CURRENT_PCB_209_SPATIAL_FUNCTION_COLLECTOR,
+    groups = 1, variant = "via";
+  if (track) { bindings = CURRENT_PCB_209_SPATIAL_TRACK_BINDING_COLLECTOR; functions = CURRENT_PCB_209_SPATIAL_TRACK_FUNCTION_COLLECTOR; groups = 2; variant = "line-via"; }
+  if (arc) { bindings = CURRENT_PCB_209_SPATIAL_ARC_BINDING_COLLECTOR; functions = CURRENT_PCB_209_SPATIAL_ARC_FUNCTION_COLLECTOR; groups = 3; variant = "arc-line-via"; }
+  return `function(query){
 "use strict";
 const bad=()=>{throw new Error("PCB209_SPATIAL_READ_REFUSED");};
 const apply=Reflect.apply,objects=[],objectSet=new Set,collections=[];
 const object=o=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();return o;};
 const own=(o,k)=>{object(o);const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();return d.value;};
-${CURRENT_PCB_209_SPATIAL_BINDING_COLLECTOR}
-${CURRENT_PCB_209_SPATIAL_FUNCTION_COLLECTOR}
+${bindings}
+${functions}
 const absent=(o,k)=>{let p=o;for(let i=0;i<8;i++){if(p===null)return;const d=Object.getOwnPropertyDescriptor(p,k);if(d){if(p!==o||!Object.hasOwn(d,"value")||d.value!==undefined)bad();return;}p=Object.getPrototypeOf(p);}bad();};
 const num=v=>{if(typeof v!=="number"||!Number.isFinite(v)||Object.is(v,-0)||Math.abs(v)>${CURRENT_PCB_209_SPATIAL_MAX_COORDINATE})bad();return v;};
 const uint=v=>{if(!Number.isSafeInteger(v)||Object.is(v,-0)||v<0||v>2147483647)bad();return v;};
@@ -44,7 +60,7 @@ retain(query);
 record(this,["scope","originalCallback","bindings","functions"]);retain(this);const scope=own(this,"scope"),bindings=retain(own(this,"bindings")),callback=own(this,"originalCallback"),functions=own(this,"functions");
 if((${CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION})!==callback)bad();
 const bindingsCurrent=()=>{const current=collectBindings(scope),expected=Reflect.ownKeys(bindings),keys=Reflect.ownKeys(current);if(keys.length!==expected.length||keys.some((key,i)=>key!==expected[i]||own(current,key)!==own(bindings,key)))bad();
-const currentFunctions=collectFunctions(current);if(!Object.isFrozen(functions)||list(functions,256)!==currentFunctions.length)bad();for(let i=0;i<currentFunctions.length;i++)if(own(functions,String(i))!==currentFunctions[i])bad();};
+const currentFunctions=collectFunctions(current);if(!Object.isFrozen(functions)||list(functions,${arc ? 265 : 256})!==currentFunctions.length)bad();for(let i=0;i<currentFunctions.length;i++)if(own(functions,String(i))!==currentFunctions[i])bad();};
 bindingsCurrent();
 const get=k=>own(bindings,k),klass=k=>{const c=get(k);if(typeof c!=="function")bad();return c;};
 for(const [key,expected]of Object.entries(${JSON.stringify(CURRENT_PCB_209_SPATIAL_FAMILY_ORDER)})){const value=get(key);if(list(value,32)!==expected.length||expected.some((v,i)=>own(value,String(i))!==v))bad();}
@@ -59,11 +75,15 @@ const Me=retainData(get("Me"));if(own(Me,"_smartMode")!==false)bad();absent(qt,"
 instance(get("G_e"),"V_e");instance(get("St"),"StClass");
 const valid=Object.getOwnPropertyDescriptor(Hr,"validType");if(valid&&(!Object.hasOwn(valid,"value")||(valid.value!==null&&valid.value!==undefined)))bad();
 const camera=instance(get("a4"),"mx"),scale=num(own(camera,"scale"));if(scale<=0||typeof get("Fi")!=="function")bad();
-const env=instance(own(klass("x"),"env"),"x");if(own(env,"_doctype")!==3||own(env,"partitionId")!==""||own(env,"_envFlag")!==null)bad();
+const env=instance(own(klass("x"),"env"),"x"),preview=own(env,"_isPreview"),envFlag=own(env,"_envFlag");
+if(own(env,"_doctype")!==3)bad();
+if(own(env,"partitionId")!=="")bad();
+if(preview!==false&&preview!==undefined)bad();
+if(envFlag!==null&&envFlag!==undefined)bad();
 const documentUuid=own(env,"_id");if(typeof documentUuid!=="string"||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/.test(documentUuid))bad();
 const filterManager=instance(own(klass("zi"),"manager"),"zi"),filters=entries(own(filterManager,"map"),64);const filterMap=new Map;
 for(const [key,value]of filters){if(!Number.isInteger(key)||key<0||key>63)bad();instance(value,"wl");if(own(value,"type")!==key)bad();filterMap.set(key,{pick:bool(own(value,"_pick")),visible:bool(own(value,"_visible"))});}
-for(const key of [0,1,6,7,8,12,21,35,36,37])if(!filterMap.has(key))bad();
+for(const key of [0,1,${track ? "4," : ""}6,7,8,12,21,35,36,37])if(!filterMap.has(key))bad();
 for(const key of [7,8,12,35])if(filterMap.get(key).pick)bad();
 const layerManager=instance(own(klass("Ke"),"manager"),"Ke"),layers=retainData(get("ye"));
 if(own(layers,"modelManager")!==layerManager||own(layers,"grayIndex")!==0)bad();uint(own(layerManager,"activeLayer"));
@@ -83,7 +103,7 @@ const scratchShape=(o,keys)=>{const actual=Reflect.ownKeys(o);if(actual.length!=
 const calculatorShape=scratchShape(calculator,["fac","length","box","pt","i"]),factoryShape=scratchShape(factory,["minX","maxX","minY","maxY"]);
 const spatial=instance(get("Ht"),"iV");
 if(size(own(spatial,"otherMap"),Map.prototype,0)!==0||size(own(spatial,"ratlineMap"),Map.prototype,0)!==0)bad();
-const groups=entries(own(spatial,"map"),1),scene=[],ids=new Set,treeNodes=new Set;
+const groups=entries(own(spatial,"map"),${groups}),scene=[],ids=new Set,treeNodes=new Set;
 let regionBounds=null;if(kind==="region"){
 const cx=(query.leftMil+query.rightMil)/2,cy=(query.topMil+query.bottomMil)/2,hx=Math.abs(query.leftMil-query.rightMil)/2,hy=Math.abs(query.topMil-query.bottomMil)/2;
 regionBounds=new (klass("at"))(cx/10-hx/10,cx/10+hx/10,cy/10-hy/10,cy/10+hy/10);}
@@ -102,7 +122,7 @@ if(own(model,"_stateWatcher")!==value||own(model,"modelType")!=="Via"||(uint(own
 if((uint(own(value,"_dataState"))&4)!==0)bad();const parent=Object.getOwnPropertyDescriptor(value,"_parent");if(parent&&(!Object.hasOwn(parent,"value")||(parent.value!==undefined&&parent.value!==null)))bad();
 const modelParent=Object.getOwnPropertyDescriptor(model,"_parent");if(modelParent&&(!Object.hasOwn(modelParent,"value")||(modelParent.value!==undefined&&modelParent.value!==null)))bad();
 const partition=Object.getOwnPropertyDescriptor(model,"_partition");if(partition&&(!Object.hasOwn(partition,"value")||(partition.value!==undefined&&partition.value!=="")))bad();
-const primitiveId=id(own(model,"_globalIndex"));if(ids.has(primitiveId))bad();ids.add(primitiveId);
+const primitiveId=id(own(model,"_globalIndex"));if(ids.has(primitiveId)||scene.length>=${CURRENT_PCB_209_SPATIAL_MAX_HITS})bad();ids.add(primitiveId);
 const center=retainData(own(model,"_center"));num(own(center,"x"));num(own(center,"y"));
 const base=retainData(own(model,"_viaBaseInfo")),expansion=retainData(own(model,"_viaExpansion"));
 if(own(base,"startLayer")!==1||own(base,"endLayer")!==2||num(own(base,"radius"))<=0||num(own(base,"holeRadius"))<0)bad();
@@ -110,20 +130,22 @@ num(own(expansion,"topExpansion"));num(own(expansion,"bottomExpansion"));
 if(list(own(model,"_unusedInnerLayers"))!==0)bad();
 const box=own(model,"_bbox");if(own(value,"_bbox")!==box)bad();const [a,b,c,d]=bbox(box);
 if(regionBounds){const [l,r,bottom,top]=bbox(regionBounds),inside=a>=l&&b<=r&&c>=bottom&&d<=top,outside=b<l||a>r||d<bottom||c>top;if(!inside&&!outside)bad();}
-scene.push({value,model,primitiveId});};
-for(const [family,layerGroups]of groups){if(family!=="Via")bad();for(const [layer,tree]of entries(layerGroups,1)){if(layer!==12)bad();instance(tree,"Nd");
+scene.push({value,model,primitiveId,family:"Via"});};
+${track ? CURRENT_PCB_209_SPATIAL_TRACK_GUARDS : ""}
+${arc ? CURRENT_PCB_209_SPATIAL_ARC_GUARDS : ""}
+for(const [family,layerGroups]of groups){${track ? 'if(family==="Track"){for(const [layer,tree]of entries(layerGroups,2)){if(![1,2].includes(layer)||!Object.hasOwn(layerMap,String(layer)))bad();trackTree(tree,layer);}continue;}' : ""}if(family!=="Via"${arc ? '&&family!=="ArcTrack"' : ""})bad();for(const [layer,tree]of entries(layerGroups,${arc ? 'family==="ArcTrack"?2:1' : 1})){if(${arc ? 'family==="ArcTrack"?(![1,2].includes(layer)||!Object.hasOwn(layerMap,String(layer))):' : ""}layer!==12)bad();instance(tree,"Nd");
 if(size(own(tree,"changeList"),Set.prototype,0)!==0||size(own(tree,"deadList"),Set.prototype,0)!==0)bad();
-const items=values(own(tree,"items"),${CURRENT_PCB_209_SPATIAL_MAX_HITS});for(const item of items)via(item);
+const items=values(own(tree,"items"),${CURRENT_PCB_209_SPATIAL_MAX_HITS});for(const item of items)${arc ? 'family==="ArcTrack"?arc(item,layer):' : ""}via(item);
 const seenLeaves=new Set,walk=(node,parent,depth)=>{if(depth>16||treeNodes.has(node)||treeNodes.size>=1024)bad();treeNodes.add(node);instance(node,"BI");if(own(node,"parent")!==parent)bad();
 const children=own(node,"childs"),n=list(children);if(n===0){if(parent!==null||items.length!==0||own(node,"_bbox")!==null)bad();return;}
 bbox(own(node,"_bbox"));for(let i=0;i<n;i++){const child=own(children,String(i));if(Object.getPrototypeOf(child)===own(klass("BI"),"prototype"))walk(child,node,depth+1);else{if(!items.includes(child)||seenLeaves.has(child))bad();seenLeaves.add(child);}}};
 walk(own(tree,"root"),null,0);if(seenLeaves.size!==items.length)bad();}}
-const selectionOwner=retainData(get("Sr")),selected=own(selectionOwner,"items"),selectedPrimitiveIds=[];
+${CURRENT_PCB_209_SPATIAL_SELECTION_PROGRAM}
 for(let i=0,n=list(selected);i<n;i++){const selectedValue=own(selected,String(i)),entry=scene.find(row=>row.value===selectedValue);if(!entry||selectedPrimitiveIds.includes(entry.primitiveId))bad();selectedPrimitiveIds.push(entry.primitiveId);}
 const assertCurrent=()=>{recheck();bindingsCurrent();if((${CURRENT_PCB_209_SPATIAL_CALLBACK_EXPRESSION})!==callback)bad();
 const code=Object.getOwnPropertyDescriptor(D0,"code");if(oldCode&&!code)bad();if(code&&(!Object.hasOwn(code,"value")||!Number.isInteger(code.value)||(![1,2,4].includes(code.value)&&code.value!==oldCode?.value)||code.writable!==(oldCode?.writable??true)||code.enumerable!==(oldCode?.enumerable??true)||code.configurable!==(oldCode?.configurable??true)))bad();
 const keys=Reflect.ownKeys(D0).filter(k=>k!=="code");if(keys.length!==staticD0.length)bad();for(let i=0;i<keys.length;i++){const [k,old]=staticD0[i],d=Object.getOwnPropertyDescriptor(D0,k);if(keys[i]!==k||!d||d.value!==old.value||d.get!==old.get||d.set!==old.set||d.writable!==old.writable||d.enumerable!==old.enumerable||d.configurable!==old.configurable)bad();}};
-const project=result=>{const n=list(result),rows=[],seen=new Set;for(let i=0;i<n;i++){const value=own(result,String(i)),entry=scene.find(row=>row.value===value);if(!entry||seen.has(entry.primitiveId))bad();seen.add(entry.primitiveId);rows.push({primitiveId:entry.primitiveId,family:"Via"});}if(kind==="point"&&rows.length>1)bad();return rows;};
+const project=result=>{const n=list(result),rows=[],seen=new Set;for(let i=0;i<n;i++){const value=own(result,String(i)),entry=scene.find(row=>row.value===value);if(!entry||seen.has(entry.primitiveId))bad();seen.add(entry.primitiveId);rows.push({primitiveId:entry.primitiveId,family:entry.family});}if(kind==="point"&&rows.length>1)bad();return rows;};
 const read=()=>{assertCurrent();let result;
 if(kind==="point"){result=apply(own(Hr,"pointSelect"),Hr,[query.xMil/10,query.yMil/10]);result=Array.from(apply(own(Object.getPrototypeOf(qt),"filter"),qt,[result]));result=apply(own(Hr,"filterPartiton"),Hr,[result]);}
 else{const rectangle=apply(get("Ll"),undefined,[regionBounds]),method=query.mode==="inside"?"getSelectInside":"getSelectContect";
@@ -131,6 +153,9 @@ const raw=apply(own(Hr,method),Hr,[rectangle,{boxChoose:true,isBBox:true}]),filt
 result=query.mode==="inside"?Array.from(filtered):apply(get("YP"),undefined,[filtered]);}
 const rows=project(result);mathScratch();assertCurrent();return rows;};
 const first=read(),second=read();if(JSON.stringify(first)!==JSON.stringify(second))bad();assertCurrent();
-const result=JSON.stringify({schema:"easyeda-pro-control.pcb209-spatial-via-read.v1",documentUuid,query,identities:first,sceneViaCount:scene.length,selectedPrimitiveIds,samples:2,nativeOrderingPreserved:true,retainedSceneDescriptorsUnchanged:true,selectionUnchanged:true,allowedExistingStateEffect:"D0.code;vMe.boxCache;Jdt-local-bbox-scratch;BLe.JJ",scope:"standalone-via-ready-bbox-scene-no-region-border-crossings",nativeFunctionGraphVerified:false,nativeIntrinsicsVerified:false,sourceMembershipVerified:false,persistenceVerified:false});
+const result=JSON.stringify({schema:"easyeda-pro-control.pcb209-spatial-${variant}-read.v1",documentUuid,query,identities:first,sceneViaCount:${track ? 'scene.filter(row=>row.family==="Via").length,sceneLineCount:scene.filter(row=>row.family==="Line").length' : "scene.length"}${arc ? ',sceneArcCount:scene.filter(row=>row.family==="Arc").length' : ""},selectedPrimitiveIds,samples:2,nativeOrderingPreserved:true,retainedSceneDescriptorsUnchanged:true,selectionUnchanged:true,allowedExistingStateEffect:"D0.code;vMe.boxCache;Jdt-local-bbox-scratch;BLe.JJ",scope:"standalone-${variant}-ready-bbox-scene-no-region-border-crossings",nativeFunctionGraphVerified:false,nativeIntrinsicsVerified:false,sourceMembershipVerified:false,persistenceVerified:false});
 if(new TextEncoder().encode(result).byteLength>${CURRENT_PCB_209_SPATIAL_MAX_BYTES})bad();return result;
-}`;
+}`; }
+export const CURRENT_PCB_209_SPATIAL_READ_FUNCTION = readFunction(false);
+export const CURRENT_PCB_209_SPATIAL_TRACK_READ_FUNCTION = readFunction(true);
+export const CURRENT_PCB_209_SPATIAL_ARC_READ_FUNCTION = readFunction(true, true);

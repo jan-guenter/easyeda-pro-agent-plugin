@@ -19,7 +19,7 @@ void test("actual project-open registration keeps strict lifecycle inputs and lo
   type Callback = (input: { request: unknown; expectedFingerprint?: unknown }) => Promise<unknown>;
   let invoke: Callback | undefined, requestSchema: z.ZodType | undefined;
   let guards = 0, nativeOwners = 0, quarantineChecks = 0;
-  const scope = vm.createContext({ z, currentDisposableOpenRequestSchema, CurrentDisposableOpenCoordinator,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, currentDisposableOpenRequestSchema, CurrentDisposableOpenCoordinator,
     privateFingerprintSchema: z.unknown(), process: { env: {} },
     currentDisposableOpenCoordinator: undefined, ordinaryLaunchRuntime: undefined, windowsRuntime: undefined,
     closedSymbolIndexReservation: undefined, scheduledShutdown: undefined,
