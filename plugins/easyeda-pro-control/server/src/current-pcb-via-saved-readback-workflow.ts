@@ -19,6 +19,7 @@ import type { CurrentPcbViaSavedReadbackClosedProof } from "./current-pcb-via-sa
 
 import { assertOriginalCurrentPcbViaWriteJournal } from "./current-pcb-via-write-journal.ts";
 import type { CurrentPcbViaWriteJournal } from "./current-pcb-via-write-journal.ts";
+import type { CurrentPcbViaWriteGenerationClosure } from "./current-pcb-via-write-abandonment-origin.ts";
 import type { CurrentPcbViaWriteResult } from "./current-pcb-via-write-contract.ts";
 
 const attempts = new WeakSet<CurrentPcbViaWriteClosedCheckpoint>();
@@ -37,11 +38,11 @@ export class CurrentPcbViaSavedReadbackWorkflow {
   #publication: Promise<void> | null = null; #cleanupPublicationBlocked = false;
   #owner: CurrentPcbViaSavedReadbackOwner | null = null;
   #factory: Promise<CurrentPcbViaSavedReadbackOwner> | null = null; #factorySettled = false;
-  #execution: Promise<CurrentPcbViaSavedReadbackWorkflowResult> | null = null;
+  #execution: Promise<CurrentPcbViaSavedReadbackWorkflowResult> | null = null; #executionSettled = false;
   #cleanup: Promise<void> | null = null; #cleanupSettled = false; #cleanupExitWaitExhausted = false;
   #cleanupBinding: string | null = null; #settlement: Promise<void> | null = null; #abort: Promise<void> | null = null; #release: Promise<void> | null = null;
   #pending: Promise<unknown> | null = null; #stage = "prepared"; #failed = false; #aborted = false;
-  #closed = false; #normalClose = false; #cleanupComplete = false;
+  #closed = false; #normalClose = false; #cleanupComplete = false; #abortAcknowledged = false;
   #capture: CurrentPcbViaSavedReadbackClosedCapture | null = null;
   #result: CurrentPcbViaSavedReadbackWorkflowResult | null = null;
   public constructor(options: CurrentPcbDiagnosticInstallationOptions, prepared: CurrentPcbViaWriteClosedCheckpoint, journal: CurrentPcbViaWriteJournal | null = null) {
@@ -52,7 +53,7 @@ export class CurrentPcbViaSavedReadbackWorkflow {
   }
   public inspect(): Readonly<Record<string, unknown>> {
     return Object.freeze({ schema: "private.current-pcb-via-saved-readback-workflow-status.v1", operationId: this.#prepared.operationId,
-      stage: this.#stage, started: this.#execution !== null, publicationPending: this.#publication !== null || this.#journal?.retained().publicationPending === true, cleanupPublicationBlocked: this.#cleanupPublicationBlocked, pending: this.#pending !== null || this.#factory !== null && !this.#factorySettled, failed: this.#failed, abortAttempted: this.#abort !== null,
+      stage: this.#stage, started: this.#execution !== null, publicationPending: this.#publication !== null || this.#journal?.retained().publicationPending === true, cleanupPublicationBlocked: this.#cleanupPublicationBlocked, pending: this.#pending !== null || this.#factory !== null && !this.#factorySettled, failed: this.#failed, abortAttempted: this.#abort !== null, originalAbortAcknowledged: this.#abortAcknowledged,
       originalClosureObserved: this.#closed, cleanupSettled: this.#cleanupSettled, cleanupExitWaitExhausted: this.#cleanupExitWaitExhausted, settlementAttempted: this.#settlement !== null, normalCloseAttempted: this.#normalClose, cleanupComplete: this.#cleanupComplete,
       allocation: currentPcbViaSavedReadbackAllocationOutcome(this.#prepared).state,
       owner: this.#owner?.status() ?? null, capture: this.#capture?.status() ?? null,
@@ -81,6 +82,33 @@ export class CurrentPcbViaSavedReadbackWorkflow {
       captureReleasePending: this.#capture !== null && !this.#capture.isReleaseAcknowledged(),
       originalCallsPending: this.#pending !== null || this.#factory !== null && !this.#factorySettled });
   }
+  /** Historical closure data comes from these original private resources.
+   * This data issues no token and grants no continuation or saved proof. */
+  public requireOriginalResourceClosure(): Readonly<{ generation: CurrentPcbViaWriteGenerationClosure; captureStarted: boolean }> {
+    requireOriginalCurrentPcbViaWriteClosedCheckpoint(this.#prepared);
+    if (this.#pending !== null || this.#factory !== null && !this.#factorySettled || this.#execution !== null && !this.#executionSettled ||
+        this.#publication !== null || this.#journal?.retained().publicationPending === true ||
+        this.#capture !== null && !this.#capture.isReleaseAcknowledged()) { throw new Error("SAVED_WORKFLOW_ORIGINAL_RESOURCE_CLOSURE_PENDING"); }
+    const original = currentPcbViaSavedReadbackAllocationOutcome(this.#prepared), owner = this.#owner ?? original.owner;
+    let generation: CurrentPcbViaWriteGenerationClosure;
+    if (owner === null) {
+      if (original.state === "not-attempted" && this.#factory === null) {
+        generation = Object.freeze({ outcome: "allocation-never-entered", helperAllocated: false, rootCreated: false, exitClaimed: false });
+      } else if (original.state === "no-resource" && this.#factorySettled) {
+        generation = Object.freeze({ outcome: "no-resource-allocated", helperAllocated: false, rootCreated: false, exitClaimed: false });
+      } else { throw new Error("SAVED_WORKFLOW_ORIGINAL_RESOURCE_CLOSURE_UNRESOLVED"); }
+    } else {
+      this.#current(owner, true); const state = owner.status();
+      if (!state.released || !state.helperClosed) { throw new Error("SAVED_WORKFLOW_ORIGINAL_RESOURCE_CLOSURE_UNRELEASED"); }
+      if (state.binding === null) { generation = Object.freeze({ outcome: "root-never-created", helperAllocated: true, helperReleased: true, rootCreated: false, exitClaimed: false }); }
+      else {
+        if (!this.#closed) { throw new Error("SAVED_WORKFLOW_ORIGINAL_RESOURCE_CLOSURE_EXIT"); }
+        originalCurrentPcbViaSavedReadbackTermination(owner);
+        generation = Object.freeze({ outcome: "root-exited", helperAllocated: true, helperReleased: true, rootCreated: true, originalRootExited: true, originalJobEmpty: true });
+      }
+    }
+    return Object.freeze({ generation, captureStarted: this.#capture !== null });
+  }
   #current(owner: CurrentPcbViaSavedReadbackOwner, cleanup = false): void {
     assertOriginalCurrentPcbViaSavedReadbackOwner(owner);
     if (this.#owner !== owner || originalCurrentPcbViaSavedReadbackTarget(owner) !== this.#prepared || !cleanup && this.#aborted) { throw new Error("SAVED_WORKFLOW_ORIGINAL_OWNER"); }
@@ -105,7 +133,12 @@ export class CurrentPcbViaSavedReadbackWorkflow {
     if (!cleanup && this.#aborted) { throw new Error("SAVED_WORKFLOW_ABORTED_DURING_PUBLICATION"); }
   }
   async #cleanupRecord(kind: Parameters<CurrentPcbViaWriteJournal["append"]>[0], evidence: Readonly<Record<string, unknown>>): Promise<void> {
-    try { await this.#record(kind, evidence, true); }
+    try {
+      await this.#journalReady();
+      // The shared outer journal may already hold the original failure, and
+      // A bounded cleanup settlement must join its existing control intents.
+      if (!this.#hasRecord(kind)) { await this.#record(kind, evidence, true); }
+    }
     catch (caughtError) { this.#cleanupPublicationBlocked = true; throw caughtError; }
   }
   async #step<T>(stage: string, owner: CurrentPcbViaSavedReadbackOwner, invoke: () => Promise<T>): Promise<T> {
@@ -204,7 +237,7 @@ export class CurrentPcbViaSavedReadbackWorkflow {
           // Retain the same cleanup Promise and unresolved original resources.
         }
         throw caughtError;
-      }
+      } finally { this.#executionSettled = true; }
     })(); this.#execution = execution; return execution;
   }
   async #recordNoProcessIntent(owner: CurrentPcbViaSavedReadbackOwner): Promise<void> {
@@ -256,8 +289,11 @@ export class CurrentPcbViaSavedReadbackWorkflow {
     if (!this.#closed) {
       await this.#cleanupRecord("abort-intent", { originalReaderJobOnly: true });
       if (this.#abort === null) { this.#aborted = true; this.#abort = owner.abortSavedReadback(true); }
-      await this.#abort;
-      await this.#cleanupRecord("abort-result", { originalJobAbortAcknowledged: true });
+      try { await this.#abort; this.#abortAcknowledged = true; } catch {
+        // An unknown original acknowledgment permits no retry. Independently
+        // Observe the original root and Job through their retained handles.
+      }
+      await this.#cleanupRecord("abort-result", { originalJobAbortAcknowledged: this.#abortAcknowledged, retryAuthorized: false });
     }
     const pending = this.#pending; if (pending !== null) { try { await pending; } catch {
       // Join the actual original operation before its termination/release.

@@ -8,7 +8,7 @@ import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import type { CurrentPcbViaSavedReadbackWorkflow, CurrentPcbViaSavedReadbackWorkflowResult } from "../src/current-pcb-via-saved-readback-workflow.ts";
 
-async function fixture(mode: "complete" | "pending-cache" | "pending-launch" | "late-exit" | "exit-never" | "no-root" | "fd-close" = "complete", journalMode: "none" | "complete" | "lost" = "none"): Promise<Readonly<{
+async function fixture(mode: "complete" | "pending-cache" | "pending-launch" | "late-exit" | "exit-never" | "no-root" | "fd-close" | "abort-unknown" = "complete", journalMode: "none" | "complete" | "lost" = "none"): Promise<Readonly<{
   journalRecords: readonly string[]; repairJournal: () => void; workflow: CurrentPcbViaSavedReadbackWorkflow; calls: string[]; entered: Promise<true>; continueLaunch: () => void;
   requireResult: (result: CurrentPcbViaSavedReadbackWorkflowResult) => unknown;
 }>> {
@@ -38,7 +38,7 @@ async function fixture(mode: "complete" | "pending-cache" | "pending-launch" | "
     qualifySavedReadbackModel: (): object => { calls.push("model"); return model; }, observeApplicationWindow: async (): Promise<string> => { await Promise.resolve(); calls.push("window"); return "123"; },
     requestNormalClose: async (hwnd: string): Promise<void> => { await Promise.resolve(); assert.equal(hwnd, "123"); calls.push("normal-close"); terminated = true; },
     observeTermination: async (): Promise<boolean> => { await Promise.resolve(); assert.equal(busy, false); calls.push("termination"); terminationCalls += 1; if (mode === "late-exit") { terminated = terminationCalls > 80; } else if (mode === "exit-never") { terminated = false; } return terminated; },
-    abortSavedReadback: async (confirm: true): Promise<void> => { await Promise.resolve(); assert.equal(confirm, true); assert.equal(launched, true); calls.push("abort"); terminated = true; busy = false; if ((mode === "pending-cache" || mode === "exit-never")) { blocked.reject(new Error("original cache canceled")); } },
+    abortSavedReadback: async (confirm: true): Promise<void> => { await Promise.resolve(); assert.equal(confirm, true); assert.equal(launched, true); calls.push("abort"); terminated = true; busy = false; if ((mode === "pending-cache" || mode === "exit-never" || mode === "abort-unknown")) { blocked.reject(new Error("original cache canceled")); } if (mode === "abort-unknown") { throw new Error("original Abort acknowledgement unknown"); } },
     releaseNoProcess: async (): Promise<void> => { await Promise.resolve(); assert.equal(launched, false); calls.push("release-no-process"); released = true; },
     releaseClosed: async (): Promise<void> => { await Promise.resolve(); assert.equal(terminated, true); assert.equal(busy, false); if (mode === "complete") { assert.equal(captured, false); } calls.push("release"); released = true; },
   });
@@ -47,7 +47,7 @@ async function fixture(mode: "complete" | "pending-cache" | "pending-launch" | "
     retained: (): object => ({ records: journalRecords.map(kind => ({ kind })), publicationPending }),
     waitForPublication: (): Promise<void> => Promise.resolve(), assertCurrent: (): Promise<void> => Promise.resolve(),
     settlePublication: async (): Promise<void> => { await Promise.resolve(); if (!repaired) { throw new Error("original publication still unavailable"); } publicationPending = false; },
-    append: async (kind: string): Promise<void> => { await Promise.resolve(); journalRecords.push(kind); calls.push(`journal:${kind}`);
+    append: async (kind: string): Promise<void> => { await Promise.resolve(); assert.equal(journalRecords.includes(kind), false, "Cleanup cannot append a duplicate original phase."); journalRecords.push(kind); calls.push(`journal:${kind}`);
       if (journalMode === "lost" && kind === "reopened-native-intent") { publicationPending = true; throw new Error("original publication acknowledgement lost"); }
     },
     recordReaderNoProcessReleaseIntent: async (actual: unknown): Promise<void> => { await Promise.resolve(); assert.equal(actual, owner); assert.equal(launched, false); journalRecords.push("no-process-release-intent"); calls.push("journal:no-process-release-intent"); },
@@ -78,7 +78,7 @@ async function fixture(mode: "complete" | "pending-cache" | "pending-launch" | "
       requireOriginalCurrentPcbViaSavedLoadOrigin: (source: unknown, actual: unknown, target: unknown): object => { assert.equal(source, origin); assert.equal(actual, owner); assert.equal(target, prepared); return { assertCurrent: async (): Promise<void> => { await Promise.resolve(); calls.push("load-source-original"); } }; },
     }; }
     if (name === "./current-pcb-via-saved-cache-observer.ts") { return { observeOriginalCurrentPcbViaSavedCaches: async (actual: unknown, target: unknown, source: unknown): Promise<void> => { await Promise.resolve();
-      assert.equal(actual, owner); assert.equal(target, prepared); assert.equal(source, origin); calls.push("cache-observe"); if ((mode === "pending-cache" || mode === "exit-never")) { busy = true; entered.resolve(true); try { await blocked.promise; } finally { busy = false; } }
+      assert.equal(actual, owner); assert.equal(target, prepared); assert.equal(source, origin); calls.push("cache-observe"); if ((mode === "pending-cache" || mode === "exit-never" || mode === "abort-unknown")) { busy = true; entered.resolve(true); try { await blocked.promise; } finally { busy = false; } }
     } }; }
     if (name === "./current-pcb-via-saved-readback-closed-proof.ts") { return { CurrentPcbViaSavedReadbackClosedCapture: Capture,
       requireOriginalCurrentPcbViaSavedReadbackClosedProof: (actual: unknown, actor: unknown, observed: unknown): object => { assert.equal(actual, proof); assert.equal(actor, owner); assert.equal(observed, model); assert.equal(captured, true); return { rawHistory: { syntheticCompleteRawHistory: true } }; } }; }
@@ -143,7 +143,7 @@ void test("abort during original launch waits that same Promise and cleans its l
 });
 
 void test("one additional original exit wait can finish cleanup without changing the failed operation proof", async () => {
-  const f = await fixture("late-exit"); const execution = f.workflow.execute(); await assert.rejects(execution, /EXIT_NOT_OBSERVED/u);
+  const f = await fixture("late-exit", "complete"); const execution = f.workflow.execute(); await assert.rejects(execution, /EXIT_NOT_OBSERVED/u);
   assert.equal(f.workflow.inspect()["cleanupSettled"], true); assert.equal(f.workflow.inspect()["cleanupExitWaitExhausted"], true);
   assert.equal(f.calls.filter(value => value === "termination").length, 80); assert.equal(f.calls.filter(value => value === "abort").length, 1);
   const settlement = f.workflow.settleCleanup(); assert.equal(f.workflow.settleCleanup(), settlement); await settlement;
@@ -158,4 +158,17 @@ void test("an exhausted additional read-only wait stays consumed without another
   assert.equal(f.workflow.settleCleanup(), settlement); await assert.rejects(f.workflow.settleCleanup());
   assert.equal(f.calls.filter(value => value === "abort").length, 1); assert.equal(f.calls.filter(value => value === "termination").length, 80); assert.equal(f.calls.includes("release"), false);
   assert.equal(f.workflow.inspect()["cleanupComplete"], false); assert.equal(f.workflow.inspect()["reopenedVerified"], false);
+});
+
+void test("lost original reader Abort ACK still joins actual root and Job exit without replay", async () => {
+  const f = await fixture("abort-unknown", "complete");
+  const execution = f.workflow.execute(), rejected = assert.rejects(execution, /cache canceled/u);
+  await f.entered; await f.workflow.abort(true); await rejected;
+  assert.equal(f.workflow.inspect()["originalAbortAcknowledged"], false);
+  assert.equal(f.workflow.inspect()["cleanupComplete"], true);
+  assert.equal(f.calls.filter(value => value === "abort").length, 1);
+  assert.equal(f.calls.filter(value => value === "release").length, 1);
+  assert.equal(f.calls.filter(value => value === "journal:failure").length, 1);
+  assert.equal(f.workflow.cleanupStatus().native.originalTerminationVerified, true);
+  assert.equal(f.workflow.inspect()["reopenedVerified"], false);
 });
