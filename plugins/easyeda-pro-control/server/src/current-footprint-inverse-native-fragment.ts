@@ -5,8 +5,7 @@ import { currentPcbViaSavedLoadBootstrapCases } from "./current-pcb-via-saved-lo
 /** New original inverse birth. Existing purposes/ceilings/codebooks remain
  * unchanged; this initial native stage grants no delete or clock invocation. */
 import { createHash } from "node:crypto";
-import { gzipSync } from "node:zlib";
-import { CURRENT_FOOTPRINT_INVERSE_REGISTRATION_FUNCTION, currentFootprintInverseRegistrationParams } from "./current-footprint-inverse-registration.ts";
+import { currentFootprintInverseRegistrationParams } from "./current-footprint-inverse-registration.ts";
 import { installOwnedNativeDispatch } from "./native-owned-dispatch.ts";
 import { installNativeCompileOnlyHook } from "./native-compile-only-hook.ts";
 import { CURRENT_FOOTPRINT_INVERSE_ACTION_LIMITS as ACTIONS, CURRENT_FOOTPRINT_INVERSE_DISCOVERY_METHODS as METHODS, CURRENT_FOOTPRINT_INVERSE_PRODUCER_ARM_REQUESTS as PRODUCER, CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE as PROFILE, currentFootprintInverseProducerArmOrder } from "./current-footprint-inverse-native-profile.ts";
@@ -17,11 +16,6 @@ function one(source: string, before: string, after: string): string {
   if (source.split(before).length !== 2) { throw new Error(`FOOTPRINT_INVERSE_NATIVE_ANCHOR:${before.slice(0, 80)}`); } return source.replace(before, after);
 }
 function native(): string {
-  const bytes = Buffer.from(CURRENT_FOOTPRINT_INVERSE_REGISTRATION_FUNCTION);
-  // oxlint-disable-next-line node/no-sync -- Deterministic build-only compression of one fixed program under the unchanged64KiB native decoder ceiling.
-  const packed = gzipSync(bytes, { level: 9 });
-  if (bytes.length > 65_536) { throw new Error("FOOTPRINT_INVERSE_REGISTRATION_PROGRAM_BOUND"); }
-  const program = `UnpackFixedProgram(@"${packed.toString("base64")}",${String(bytes.length)},@"${createHash("sha256").update(bytes).digest("hex")}",@"${createHash("sha256").update(packed).digest("hex")}")`;
   const path = String.raw`C:\Synthetic\Footprint_Validation.eprj2`, project = createHash("sha256").update(path).digest("hex");
   const expected = JSON.stringify({ id: PROFILE.renderer.total, method: "Runtime.callFunctionOn", params: currentFootprintInverseRegistrationParams("original", { rawWindowsPath: path, projectUuid: project, branchUuid: "a".repeat(32), documentUuid: "b".repeat(16), expectedSourceSha256: "c".repeat(64) }), sessionId: "parent" });
   const expectedHash = createHash("sha256").update(`${expected}\0`).digest("hex");
@@ -75,7 +69,6 @@ internal EasyedaOriginalMainTransport(EasyedaFootprintInverseBirth birth):this()
 public sealed partial class EasyedaDiagnosticOwner {
 bool footprintInverse209,footprintInverseAborted,footprintInverseRegistrationRemoved,footprintInverseConstructionComplete,footprintInversePreflightConsumed,footprintInversePathRegistrationConsumed;int footprintInverseControls,footprintInverseDiscovery;
 string footprintInverseUiSession,footprintInverseUiContext,footprintInversePath,footprintInverseProject,footprintInverseBranch,footprintInverseDocument,footprintInverseSource;
-static readonly string FootprintInverseRegistrationFunction=${program};
 EasyedaDiagnosticOwner(EasyedaFootprintInverseBirth birth):this(){if(birth!=EasyedaFootprintInverseBirth.Original)throw Error("footprint-inverse-birth");footprintInverse209=true;workerStartupFootprintMain209=true;originalMain=new EasyedaOriginalMainTransport(EasyedaFootprintInverseBirth.Original);}
 public static EasyedaDiagnosticOwner CreateFootprintInverse209(){return new EasyedaDiagnosticOwner(EasyedaFootprintInverseBirth.Original);}
 readonly System.Collections.Generic.Dictionary<string,int> footprintInverseActionCounts=new System.Collections.Generic.Dictionary<string,int>(StringComparer.Ordinal);

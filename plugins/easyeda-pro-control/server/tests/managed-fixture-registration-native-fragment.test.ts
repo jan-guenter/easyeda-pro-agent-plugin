@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { diagnosticGeneratedFixtureRegistrationParams, diagnosticNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_REGISTRATION_FUNCTION } from "../src/current-footprint-inverse-registration.ts";
 import { GENERATED_FIXTURE_REGISTRATION_FUNCTION } from "../src/managed-fixture-registration-program.ts";
 import { applyManagedFixtureRegistrationNativeFragment } from "../src/managed-fixture-registration-native-fragment.ts";
 import { applyCurrentProjectStructureNativeFragment } from "../src/current-project-structure-native-fragment.ts";
@@ -18,11 +19,16 @@ void test("maintained native fragment embeds the complete fixed program and isol
   const generated = applyManagedFixtureRegistrationNativeFragment(original);
   assert.equal(applyManagedFixtureRegistrationNativeFragment(generated), generated);
   assert.equal(applyManagedFixtureRegistrationNativeFragment(applyCurrentProjectStructureNativeFragment(generated)), generated);
-  const match = /static readonly string GeneratedFixtureRegistrationFunction=UnpackFixedProgram\(@"([A-Za-z\d+/=]+)",(\d+),@"([a-f\d]{64})",@"([a-f\d]{64})"\);/u.exec(generated);
+  const match = /ManagedRegistrationPrograms=EasyedaDiagnosticFixedTable.Load\(@"([A-Za-z\d+/=]+)",(\d+),@"([a-f\d]{64})",@"([a-f\d]{64})",2,2\);/u.exec(generated);
   assert.ok(match?.[1] !== undefined && match[2] !== undefined && match[3] !== undefined && match[4] !== undefined);
   const compressed = Buffer.from(match[1], "base64"), plain = await promisify(gunzip)(compressed);
-  assert.equal(plain.toString("utf8"), GENERATED_FIXTURE_REGISTRATION_FUNCTION); assert.equal(plain.length, Number(match[2]));
+  const rows=plain.toString("utf8").split("\0").map(row=>row.split("\t"));assert.deepEqual(rows,[["generated-fixture",GENERATED_FIXTURE_REGISTRATION_FUNCTION],["footprint-inverse",CURRENT_FOOTPRINT_INVERSE_REGISTRATION_FUNCTION]]);
+  assert.equal(plain.length, Number(match[2]));assert.ok(plain.length<=60_000);
   assert.equal(createHash("sha256").update(plain).digest("hex"), match[3]); assert.equal(createHash("sha256").update(compressed).digest("hex"), match[4]);
+  for(const program of [GENERATED_FIXTURE_REGISTRATION_FUNCTION,CURRENT_FOOTPRINT_INVERSE_REGISTRATION_FUNCTION]){assert.ok(generated.includes(createHash("sha256").update(program).digest("hex")));}
+  assert.ok(generated.includes('ManagedRegistrationPrograms[index][0]!=role'));
+  assert.ok(generated.includes('GeneratedFixtureRegistrationFunction=ManagedRegistrationProgramAt(0,"generated-fixture")'));
+  assert.ok(generated.includes('FootprintInverseRegistrationFunction=ManagedRegistrationProgramAt(1,"footprint-inverse")'));
   for (const clause of ["CreateGeneratedFixture209()", "generatedFixtureRegistrationConsumed=true", "RequireGeneratedFixtureOpening(sessionId,uniqueContextId,path,project,branch,document,source);",
     "pcb-diagnostic-conflicting-generated-fixture-purpose", "VerifyGeneratedFixtureRegistrationSmoke()", "generated-registration-old-birth-smoke"] ) { assert.ok(generated.includes(clause)); }
   assert.ok(generated.includes("$request.generatedFixtureRegistrationPhase -isnot [string]"));
