@@ -2089,3 +2089,19 @@ delivery, original channel and own-data codecs/once guards
 (ORIGINAL_INVERSE_DELIVERY_ROSTERS_OK, private
 inverse-delivery-full-rosters-EiRIn2). No tracked output or native action was
 performed.
+
+Root integration then found a transport composition gap. Native delivery
+occurs after the original SDK dispatch, but its new phase was absent from the
+pipe's pending-SDK observation allowance. A retained original byte-stream case
+reproduced `FOOTPRINT_INVERSE_PUBLIC_CALL_PENDING_SCOPE` before dispatch.
+Its first assertion also reported the old SDK session before awaiting that
+rejection; the corrected case retains and settles both original requests.
+
+Only the inverse-purpose `inverse-native-delivery` phase carrying its exact
+fixed-command marker is now admitted while that SDK request is pending. The
+pre-SDK channel, intrinsic and peer setup routes remain excluded. The same
+original stream test runs every fixed Event command on its original worker
+session while keeping the SDK request unsettled, then settles that exact SDK
+request. Both the ordinary worker-prefix case and this pending case pass.
+No caller program, new native operation or broader pending-request allowance
+was added. The full manager forwarding Job remains a separate prerequisite.
