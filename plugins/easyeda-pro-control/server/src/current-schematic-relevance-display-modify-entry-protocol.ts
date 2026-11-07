@@ -3,12 +3,13 @@ import { z } from "zod";
 import { GENERATED_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_RUN_ENTRY_FUNCTION } from "./generated-schematic-display-action-program.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_UNDERLINE_PROGRAM as UNDERLINE, CURRENT_SCHEMATIC_RELEVANCE_UNDERLINE_EXPRESSIONS as UNDERLINE_EXPRESSIONS } from "./current-schematic-relevance-underline-program.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_RAW_COMBINE_PROGRAM, CURRENT_SCHEMATIC_RELEVANCE_RAW_DETAIL_PROGRAM, CURRENT_SCHEMATIC_RELEVANCE_RAW_NATIVE_EXPRESSION,
   CURRENT_SCHEMATIC_RELEVANCE_RAW_NATIVE_PROGRAM, CURRENT_SCHEMATIC_RELEVANCE_RAW_PROTOTYPES_PROGRAM, CURRENT_SCHEMATIC_RELEVANCE_RAW_REFERENCE_PROGRAM,
   CURRENT_SCHEMATIC_RELEVANCE_RAW_RELATED_PROGRAM, CURRENT_SCHEMATIC_RELEVANCE_RAW_SAME_PROGRAM, CURRENT_SCHEMATIC_RELEVANCE_RAW_SNAPSHOT_PROGRAM } from "./current-schematic-relevance-action-raw-programs.ts";
 
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_GROUP = "easyeda-pro-control-schematic-relevance-modify-entry-v1";
-export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_REQUESTS = Object.freeze({ generation: 1, observation: 5, rawObservation: 63, resume: 0 });
+export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_REQUESTS = Object.freeze({ generation: 1, observation: 5, rawObservation: 63, underlineEligibility: 5, resume: 0 });
 const originalEntryProof = GENERATED_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_RUN_ENTRY_FUNCTION;
 const oldOptions = 'Reflect.ownKeys(options).length!==2||own(options,"history")!==true||own(options,"name")!=="Codex disposable Text display"';
 const newOptions = 'Reflect.ownKeys(options).length!==4||own(options,"history")!==true||own(options,"name")!=="Codex disposable Text display"||own(options,"timeout")!==0||!Array.isArray(own(options,"dependencies"))||Object.getPrototypeOf(own(options,"dependencies"))!==Array.prototype||Reflect.ownKeys(own(options,"dependencies")).length!==1||own(own(options,"dependencies"),"length")!==0';
@@ -34,7 +35,15 @@ export const CURRENT_SCHEMATIC_RELEVANCE_RAW_CALLS = Object.freeze([
 const rawPhases = z.enum(["schematic-raw-native", "schematic-raw-references", "schematic-raw-related", "schematic-raw-detail", "schematic-raw-combine", "schematic-raw-prototypes", "schematic-raw-snapshot", "schematic-raw-same"]);
 const rawCalls = z.strictObject({ ...flags, objectId: handle, functionDeclaration: z.string().max(16_384), arguments: z.array(object).max(19), returnByValue: z.boolean(), awaitPromise: z.literal(false), userGesture: z.literal(false) });
 const rawFrameParams = frameParams.extend({ expression: z.literal(CURRENT_SCHEMATIC_RELEVANCE_RAW_NATIVE_EXPRESSION) });
+const underlineMainParams = frameParams.extend({ expression: z.literal(UNDERLINE_EXPRESSIONS[0]) });
+const underlineChildParams = frameParams.extend({ expression: z.literal(UNDERLINE_EXPRESSIONS[1]) });
+const underlineArguments = z.tuple([object, object]);
+const underlineProofParams = z.strictObject({ ...flags, objectId: handle, functionDeclaration: z.literal(UNDERLINE), arguments: underlineArguments, returnByValue: z.literal(true), awaitPromise: z.literal(false), userGesture: z.literal(false) });
 const schema = z.discriminatedUnion("phase", [
+  z.strictObject({ phase: z.literal("schematic-underline-frame-main"), method: z.literal("Debugger.evaluateOnCallFrame"), params: underlineMainParams }),
+  z.strictObject({ phase: z.literal("schematic-underline-frame-child"), method: z.literal("Debugger.evaluateOnCallFrame"), params: underlineChildParams }),
+  z.strictObject({ phase: z.literal("schematic-underline-properties"), method: z.literal("Runtime.getProperties"), params: propertiesParams }),
+  z.strictObject({ phase: z.literal("schematic-underline-proof"), method: z.literal("Runtime.callFunctionOn"), params: underlineProofParams }),
   z.strictObject({ phase: z.literal("schematic-modify-entry-frame"), method: z.literal("Debugger.evaluateOnCallFrame"), params: frameParams }),
   z.strictObject({ phase: z.literal("schematic-modify-entry-properties"), method: z.literal("Runtime.getProperties"), params: propertiesParams }),
   z.strictObject({ phase: z.literal("schematic-modify-entry-source"), method: z.literal("Debugger.getScriptSource"), params: sourceParams }),
@@ -47,11 +56,14 @@ const schema = z.discriminatedUnion("phase", [
 export type CurrentSchematicRelevanceDisplayModifyEntryCommand = z.infer<typeof schema>;
 export function validateCurrentSchematicRelevanceDisplayModifyEntryCommand(input: unknown): CurrentSchematicRelevanceDisplayModifyEntryCommand {
   const command = schema.parse(captureCurrentPcbStringClockReply(input).value);
-  if (command.method === "Runtime.callFunctionOn" && command.phase !== "schematic-modify-entry-proof") { const row = CURRENT_SCHEMATIC_RELEVANCE_RAW_CALLS.find(item => item[0] === command.phase); if (row === undefined || command.params.functionDeclaration !== row[1] || command.params.arguments.length !== row[2] || command.params.returnByValue !== row[3]) { throw new Error("SCHEMATIC_RAW_FIXED_PROGRAM"); } }
+  if (command.method === "Runtime.callFunctionOn" && command.phase !== "schematic-modify-entry-proof" && command.phase !== "schematic-underline-proof") { const row = CURRENT_SCHEMATIC_RELEVANCE_RAW_CALLS.find(item => item[0] === command.phase); if (row === undefined || command.params.functionDeclaration !== row[1] || command.params.arguments.length !== row[2] || command.params.returnByValue !== row[3]) { throw new Error("SCHEMATIC_RAW_FIXED_PROGRAM"); } }
   return freezeDeep(command);
 }
 export function currentSchematicRelevanceDisplayModifyEntryNativeCases(): readonly CurrentSchematicRelevanceDisplayModifyEntryCommand[] {
   return freezeDeep([
+    ...UNDERLINE_EXPRESSIONS.map((expression, index) => ({ phase: index === 0 ? "schematic-underline-frame-main" : "schematic-underline-frame-child", method: "Debugger.evaluateOnCallFrame", params: { ...CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_FLAGS, callFrameId: "entry_frame", expression, returnByValue: false, includeCommandLineAPI: false } })),
+    { phase: "schematic-underline-properties", method: "Runtime.getProperties", params: { objectId: "entry_object", ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } },
+    { phase: "schematic-underline-proof", method: "Runtime.callFunctionOn", params: { ...CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_FLAGS, objectId: "entry_object", functionDeclaration: UNDERLINE, arguments: [{ objectId: "entry_native" }, { objectId: "entry_map" }], returnByValue: true, awaitPromise: false, userGesture: false } },
     { phase: "schematic-modify-entry-frame", method: "Debugger.evaluateOnCallFrame", params: { ...CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_FLAGS, callFrameId: "entry_frame", expression: CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_EXPRESSION, returnByValue: false, includeCommandLineAPI: false } },
     { phase: "schematic-modify-entry-properties", method: "Runtime.getProperties", params: { objectId: "entry_object", ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } },
     { phase: "schematic-modify-entry-source", method: "Debugger.getScriptSource", params: { scriptId: "entry_script" } },

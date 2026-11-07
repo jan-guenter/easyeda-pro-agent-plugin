@@ -53,6 +53,7 @@ import { CurrentSchematicRelevanceRunPrefixCursor } from "./current-schematic-re
 import type { CurrentSchematicRelevanceRunPrefixCapture } from "./current-schematic-relevance-run-prefix-cursor.ts";
 import type { CurrentSchematicRelevanceRunPrefixBindings, CurrentSchematicRelevanceRunPrefixOrigin } from "./current-schematic-relevance-run-prefix-origin.ts";
 import type { CurrentSchematicRelevanceRunPrefixCommand } from "./current-schematic-relevance-run-prefix-protocol.ts";
+import type { CurrentSchematicRelevanceDisplayAccessorFunctions, CurrentSchematicRelevanceDisplayAccessorObservation } from "./current-schematic-relevance-display-accessor-observer.ts";
 import type { CurrentSchematicRelevanceDisplayModifyEntryBindings, CurrentSchematicRelevanceDisplayModifyEntryOrigin, CurrentSchematicRelevanceDisplayOriginalRun } from "./current-schematic-relevance-display-modify-entry-origin.ts";
 import type { CurrentSchematicRelevanceStartupStructureDrained } from "./current-schematic-relevance-startup-structure-origin.ts";
 import { validateCurrentSchematicRelevanceDisplayModifyEntryCommand } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
@@ -904,7 +905,7 @@ export function requireOriginalCurrentSchematicRelevanceDisplayPreModifyMainOrig
   const original = schematicRelevancePreModifyMainOrigins.get(origin); if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue) { throw error("SCHEMATIC_PREMODIFY_ORIGINAL_MAIN"); }
   original.assertOriginal(); return original.bindings;
 }
-export type CurrentSchematicRelevanceDisplayAccessorSetup = (origin: CurrentSchematicRelevanceDisplayAccessorOrigin) => Promise<void>;
+export type CurrentSchematicRelevanceDisplayAccessorSetup = (origin: CurrentSchematicRelevanceDisplayAccessorOrigin) => Promise<CurrentSchematicRelevanceDisplayAccessorObservation>;
 const schematicRelevanceDisplayAccessors = new WeakMap<CurrentSchematicRelevanceDisplayAccessorOrigin, Readonly<{ owner: CurrentSchematicRelevanceDisplayWriteOwner; argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments; bindings: CurrentSchematicRelevanceDisplayAccessorBindings; assertOriginal: () => void }>>();
 export function requireOriginalCurrentSchematicRelevanceDisplayAccessorOrigin(origin: CurrentSchematicRelevanceDisplayAccessorOrigin, owner: CurrentSchematicRelevanceDisplayWriteOwner, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): CurrentSchematicRelevanceDisplayAccessorBindings {
   const original = schematicRelevanceDisplayAccessors.get(origin); if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue) { throw error("SCHEMATIC_DISPLAY_ACCESSOR_ORIGINAL"); }
@@ -1970,6 +1971,7 @@ class CurrentPcbRetainedOwnerCore {
   #schematicRelevanceActionOrigin: CurrentSchematicRelevanceDisplayActionOrigin | null = null; #schematicRelevanceActionSetup: CurrentSchematicRelevanceDisplayActionSetup | null = null;
   #schematicRelevanceAccessorOrigin: CurrentSchematicRelevanceDisplayAccessorOrigin | null = null;
   #schematicRelevancePreModifyMainAttempted = false; #schematicRelevancePreModifyMainOrigin: CurrentSchematicRelevanceDisplayPreModifyMainOrigin | null = null;
+  #schematicRelevanceAccessorFunctions: CurrentSchematicRelevanceDisplayAccessorFunctions | null = null;
   #schematicRelevanceAccessorSetup: CurrentSchematicRelevanceDisplayAccessorSetup | null = null;
   #schematicActionArray: string | null = null; #schematicActionScript: string | null = null; #schematicActionVariant: 0 | 1 | null = null; #schematicActionSetupSettled = false;
   #schematicAccessorScript: string | null = null; #schematicAccessorVariant: 0 | 1 | null = null;
@@ -4608,6 +4610,7 @@ class CurrentPcbRetainedOwnerCore {
   public async generateSchematicRelevanceDisplayModifyEntry(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments, main: CurrentSchematicRelevanceDisplayPreModifyMainOrigin,
     dispatch: GeneratedSchematicRelevanceDisplayDispatch, guard: CurrentSchematicRelevanceDisplayActionGuardObservation, startup: CurrentSchematicRelevanceStartupStructureDrained): Promise<CurrentSchematicRelevanceDisplayModifyEntryOrigin> {
     assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this);
+    this.requireSchematicRelevanceDisplayAccessorFunctions(argumentsValue);
     const selected = this.#schematicReadContext(argumentsValue); const enrollment = this.#schematicRelevancePreModifyMainEnrollment, holder = this.#schematicSdkBinding, idle = this.#schematicRelevanceActionArray, runner = this.#mainRunner;
     const before = requireOriginalCurrentSchematicRelevanceDisplayPreModifyMainOrigin(main, this, argumentsValue); requireOriginalCurrentSchematicRelevanceDisplayActionGuard(guard, this, argumentsValue);
     if (this.#schematicRelevanceModifyGenerationAttempted || enrollment === null || this.#schematicRelevancePreModifyDispatch !== dispatch || holder === null || idle === null || runner === null || this.#schematicRelevanceActionGuardPacket !== guard || this.#schematicRelevancePreModifyMainOrigin !== main) { throw error("SCHEMATIC_MODIFY_GENERATION_UNAVAILABLE"); }
@@ -4724,8 +4727,19 @@ class CurrentPcbRetainedOwnerCore {
         fail: (): void => { this.#schematicFailed = true;this.#refuseSchematicHistoryWaiters(); } });
       schematicRelevanceDisplayAccessors.set(origin, Object.freeze({ owner: this, argumentsValue, bindings, assertOriginal: (): void => { requireSchematicArguments(this, argumentsValue);
         if (this.#schematicRelevanceAccessorOrigin !== origin || this.#schematicRelevanceAccessorSetup !== setup || this.#schematicSdkBinding !== holder) { throw error("SCHEMATIC_DISPLAY_ACCESSOR_CUSTODY_CHANGED"); } } })); this.#schematicRelevanceAccessorOrigin = origin;
-      await Reflect.apply(setup, undefined, [origin]); current(); await this.#verify(); current(); return origin;
+      const candidate: unknown = await Reflect.apply(setup, undefined, [origin]); current();
+      const observed = await import("./current-schematic-relevance-display-accessor-observer.ts"); current();
+      const functions = observed.requireOriginalCurrentSchematicRelevanceDisplayAccessorObservation(candidate, origin, this, argumentsValue);
+      await this.#verify(); current(); observed.requireOriginalCurrentSchematicRelevanceDisplayAccessorObservation(candidate, origin, this, argumentsValue);
+      const completed = await this.#request({ action: "schematic-relevance-display-accessor-complete" }); current();
+      if (!exact(completed, ["completed"]) || completed["completed"] !== true || this.#schematicRelevanceAccessorFunctions !== null) { throw error("SCHEMATIC_ACCESSOR_ORIGINAL_COMPLETION_ACK"); }
+      observed.requireOriginalCurrentSchematicRelevanceDisplayAccessorObservation(candidate, origin, this, argumentsValue); this.#schematicRelevanceAccessorFunctions = functions; return origin;
     } catch (caughtError) { this.#schematicFailed = true; throw caughtError; } finally { this.#busy = false; }
+  }
+  public requireSchematicRelevanceDisplayAccessorFunctions(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): CurrentSchematicRelevanceDisplayAccessorFunctions {
+    assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this); this.#schematicReadContext(argumentsValue).current(); const functions = this.#schematicRelevanceAccessorFunctions;
+    if (functions === null || this.#schematicRelevanceAccessorOrigin === null || this.#schematicFailed || this.#schematicDisplayCleanupOnly) { throw error("SCHEMATIC_ACCESSOR_ORIGINAL_FUNCTIONS_REQUIRED"); }
+    requireOriginalCurrentSchematicRelevanceDisplayAccessorOrigin(this.#schematicRelevanceAccessorOrigin, this, argumentsValue); return functions;
   }
   public async prepareSchematicDisplayPreModifyMain(argumentsValue: CurrentSchematicDisplayOperationArguments,
     dispatch: GeneratedSchematicDisplayDispatch): Promise<CurrentSchematicDisplayPreModifyMainOrigin> {

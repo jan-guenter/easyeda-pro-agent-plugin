@@ -2,13 +2,14 @@
  * fixed Text/decorator/watched-monitor path and grants no action authority. */
 /* oxlint-disable import/max-dependencies -- Join the actual original issuer, independent fixed source/metadata leaves and finite read-only protocol. */
 import { z } from "zod";
+import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_ACCESSOR_REQUESTS as REQUESTS } from "./current-schematic-relevance-display-accessor-profile.ts";
 import { decodeCurrentSchematicRelevanceDisplayAccessorFunction } from "./current-schematic-relevance-display-accessor-replies.ts";
 import { requireOriginalCurrentSchematicRelevanceDisplayAccessorOrigin } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentSchematicRelevanceDisplayWriteOwner } from "./current-schematic-relevance-display-write-owner.ts";
 import type { GeneratedSchematicRelevanceDisplayNativeArguments } from "./generated-schematic-relevance-display-source.ts";
 import type { CurrentSchematicDisplayAccessorBindings, CurrentSchematicRelevanceDisplayAccessorOrigin } from "./current-schematic-relevance-display-accessor-origin.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_ACCESSOR_CALLS as CALLS, CURRENT_SCHEMATIC_DISPLAY_ACCESSOR_GROUP as GROUP } from "./current-schematic-display-accessor-programs.ts";
-import { CURRENT_SCHEMATIC_DISPLAY_ACCESSOR_FLAGS as FLAGS, CURRENT_SCHEMATIC_DISPLAY_ACCESSOR_REQUESTS as REQUESTS, validateCurrentSchematicDisplayAccessorCommand } from "./current-schematic-display-accessor-protocol.ts";
+import { CURRENT_SCHEMATIC_DISPLAY_ACCESSOR_FLAGS as FLAGS, validateCurrentSchematicDisplayAccessorCommand } from "./current-schematic-display-accessor-protocol.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { captureCurrentSchematicDisplayAccessorSource, currentSchematicDisplayAccessorArray, currentSchematicDisplayAccessorFourFunctions,
   currentSchematicDisplayAccessorFunctionScriptId, currentSchematicDisplayAccessorScopeFunction } from "./current-schematic-display-accessor-replies.ts";
@@ -20,11 +21,15 @@ import type { GeneratedSchematicDisplayAccessorRole } from "./generated-schemati
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export interface CurrentSchematicRelevanceDisplayAccessorObservation {
-  readonly schema: "private.current-schematic-relevance-display-accessor-observation.v1"; readonly sourceSha256: string; readonly fields: 10;
-  readonly originalHolderCalleesObserved: true; readonly exactRawAndDecoratedSettersObserved: true; readonly watchedMonitorAndAstObserved: true;
+  readonly schema: "private.current-schematic-relevance-display-accessor-observation.v2"; readonly sourceSha256: string; readonly fields: 10;
+  readonly originalHolderCalleesObserved: true; readonly exactRawAndDecoratedSettersObserved: true; readonly watchedMonitorAndAstFunctionMetadataObserved: true; readonly originalMonitorReceiversQualified: false;
   readonly activeActionHistoryCallbackQualified: false; readonly completeActionFrontierQualified: false; readonly executionAuthorized: false; readonly selectedSqlAuthorized: false; readonly persistenceVerified: false;
 }
-const packets = new WeakMap<CurrentSchematicRelevanceDisplayAccessorObservation, CurrentSchematicRelevanceDisplayAccessorObserver>();
+export interface CurrentSchematicRelevanceDisplayAccessorFunctions { readonly setAttributeObjectId: string; readonly recordObjectId: string; readonly astObjectId: string; readonly normalRequests: number }
+const packets = new WeakMap<object, CurrentSchematicRelevanceDisplayAccessorObserver>();
+export function requireOriginalCurrentSchematicRelevanceDisplayAccessorObservation(packet: unknown, origin: CurrentSchematicRelevanceDisplayAccessorOrigin, owner: CurrentSchematicRelevanceDisplayWriteOwner, args: GeneratedSchematicRelevanceDisplayNativeArguments): CurrentSchematicRelevanceDisplayAccessorFunctions {
+  need(packet !== null && typeof packet === "object", "ORIGINAL_METADATA_PACKET"); const observer = packets.get(packet); need(observer !== undefined, "ORIGINAL_METADATA_PACKET"); return observer.requireFunctions(packet, origin, owner, args);
+}
 const empty = z.strictObject({}), trueReply = z.strictObject({ result: z.strictObject({ type: z.literal("boolean"), value: z.literal(true) }) });
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`SCHEMATIC_DISPLAY_ACCESSOR_${code}`); } }
 type FunctionRef = Readonly<{ objectId: string; description: string }>;
@@ -33,6 +38,7 @@ export class CurrentSchematicRelevanceDisplayAccessorObserver {
   readonly #bindings: CurrentSchematicDisplayAccessorBindings;
   #phase = "not-started";
   #normal = 0; #cleanup = 0; #attempted = false; #busy = false; #failed = false; #released = false; #retired = false;
+  #functions: CurrentSchematicRelevanceDisplayAccessorFunctions | null = null;
   #scriptId: string | null = null; #source: 0 | 1 | null = null; #callees: string | null = null; #packet: CurrentSchematicRelevanceDisplayAccessorObservation | null = null;
   public constructor(origin: CurrentSchematicRelevanceDisplayAccessorOrigin, owner: CurrentSchematicRelevanceDisplayWriteOwner, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments) {
     this.#origin = origin; this.#owner = owner; this.#argumentsValue = argumentsValue; this.#bindings = requireOriginalCurrentSchematicRelevanceDisplayAccessorOrigin(origin, owner, argumentsValue); Object.freeze(this);
@@ -62,15 +68,10 @@ export class CurrentSchematicRelevanceDisplayAccessorObserver {
     for (const handle of selected) { if (result.size < names.length) { this.#mergeScope(await this.#properties(handle), names, result); } }
     need(result.size === names.length, "LEXICAL_BINDING_MISSING"); return result;
   }
-  async #monitor(scopes: string, ast: boolean): Promise<FunctionRef | null> {
-    need(this.#source !== null, "SOURCE_REQUIRED"); const selected = decodeGeneratedSchematicDisplayAccessorScopes(await this.#properties(scopes)); let monitor: string | null = null; let fn: FunctionRef | null = null;
-    for (const handle of selected) { if (monitor === null || ast && fn === null) { const raw = await this.#properties(handle);
-      if (monitor === null) { const value = decodeGeneratedSchematicDisplayAccessorScopeValue(raw, "this", this.#source); if (value !== null) { need(value.kind === "object", "MONITOR_THIS"); monitor = value.objectId; } }
-      if (ast && fn === null) { fn = currentSchematicDisplayAccessorScopeFunction(raw, "t"); }
-    } }
-    need(monitor !== null && (!ast || fn !== null), "MONITOR_LEXICAL_BINDING");
-    trueReply.parse(await this.#send({ phase: "schematic-accessor-monitor", method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: monitor, functionDeclaration: CALLS.monitor,
-      arguments: [{ objectId: this.#bindings.holderObjectId }, ...this.#arguments()], returnByValue: true } })); return fn;
+  async #recordAst(scopes: string): Promise<FunctionRef> {
+    need(this.#source !== null, "SOURCE_REQUIRED"); const selected = decodeGeneratedSchematicDisplayAccessorScopes(await this.#properties(scopes));
+    for (const handle of selected) { const raw = await this.#properties(handle); const fn = currentSchematicDisplayAccessorScopeFunction(raw, "t"); if (fn !== null) { return fn; } }
+    throw new Error("SCHEMATIC_DISPLAY_ACCESSOR_ORIGINAL_AST_BINDING");
   }
   public async observe(): Promise<CurrentSchematicRelevanceDisplayAccessorObservation> {
     need(!this.#attempted && !this.#busy, "CONSUMED"); this.#attempted = true; this.#busy = true;
@@ -92,12 +93,13 @@ export class CurrentSchematicRelevanceDisplayAccessorObserver {
         for (const [index, ref] of functions.entries()) { const role = roles[index]; need(role !== undefined, "DECORATOR_FUNCTION_ROSTER"); const actual = await this.#metadata(ref, role); if (index === 0) { setterScopes = actual; } }
         need(setterScopes !== null, "DECORATOR_SETTER_SCOPES"); this.#phase = `validator:${field}`; const validator = await this.#scope(setterScopes, ["e"]); need(validator.get("e")?.kind === "undefined", "DECORATOR_VALIDATOR");
       }
-      const set = scopes.get("monitorSetAttribute"); const record = scopes.get("monitorRecord"); need(set !== undefined && record !== undefined, "MONITOR_FUNCTIONS");
-      this.#phase = "monitor:setAttribute"; await this.#monitor(set, false); this.#phase = "monitor:record"; const ast = await this.#monitor(record, true); need(ast !== null, "MONITOR_AST"); await this.#monitor(await this.#metadata(ast, "monitorAst"), false);
+      const record = scopes.get("monitorRecord"); need(record !== undefined, "MONITOR_FUNCTIONS");
+      this.#phase = "monitor:record-ast"; const ast = await this.#recordAst(record); await this.#metadata(ast, "monitorAst");
       this.#phase = "same-callees"; trueReply.parse(await this.#send({ phase: "schematic-accessor-same", method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: this.#callees, functionDeclaration: CALLS.same,
         arguments: [{ objectId: this.#bindings.holderObjectId }, ...this.#arguments()], returnByValue: true } }));
-      this.#packet = freezeDeep({ schema: "private.current-schematic-relevance-display-accessor-observation.v1", sourceSha256: SOURCES[this.#source].sha256, fields: 10, originalHolderCalleesObserved: true,
-        exactRawAndDecoratedSettersObserved: true, watchedMonitorAndAstObserved: true, activeActionHistoryCallbackQualified: false, completeActionFrontierQualified: false, executionAuthorized: false, selectedSqlAuthorized: false, persistenceVerified: false });
+      this.#packet = freezeDeep({ schema: "private.current-schematic-relevance-display-accessor-observation.v2", sourceSha256: SOURCES[this.#source].sha256, fields: 10, originalHolderCalleesObserved: true,
+        exactRawAndDecoratedSettersObserved: true, watchedMonitorAndAstFunctionMetadataObserved: true, originalMonitorReceiversQualified: false, activeActionHistoryCallbackQualified: false, completeActionFrontierQualified: false, executionAuthorized: false, selectedSqlAuthorized: false, persistenceVerified: false });
+      this.#functions = Object.freeze({ setAttributeObjectId: callees.monitorSetAttribute.objectId, recordObjectId: callees.monitorRecord.objectId, astObjectId: ast.objectId, normalRequests: this.#normal });
       packets.set(this.#packet, this); this.#phase = "observed"; return this.#packet;
     } catch (error) { this.#failure(); throw error; } finally { this.#busy = false; }
   }
@@ -107,5 +109,9 @@ export class CurrentSchematicRelevanceDisplayAccessorObserver {
   public retained(): Readonly<{ phase: string; normalRequests: number; cleanupRequests: number; failed: boolean; busy: boolean; released: boolean; retired: boolean; executionAuthorized: false }> {
     return Object.freeze({ phase: this.#phase, normalRequests: this.#normal, cleanupRequests: this.#cleanup, failed: this.#failed, busy: this.#busy, released: this.#released, retired: this.#retired, executionAuthorized: false });
   }
-  public requireData(packet: CurrentSchematicRelevanceDisplayAccessorObservation, owner: CurrentSchematicRelevanceDisplayWriteOwner, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): void { need(packets.get(packet) === this && packet === this.#packet && owner === this.#owner && argumentsValue === this.#argumentsValue, "ORIGINAL_PACKET_DATA"); }
+  public requireData(packet: unknown, owner: CurrentSchematicRelevanceDisplayWriteOwner, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): void { need(packet !== null && typeof packet === "object" && packets.get(packet) === this && packet === this.#packet && owner === this.#owner && argumentsValue === this.#argumentsValue && !this.#failed && !this.#released && !this.#retired, "ORIGINAL_PACKET_DATA"); }
+  public requireFunctions(packet: unknown, origin: CurrentSchematicRelevanceDisplayAccessorOrigin, owner: CurrentSchematicRelevanceDisplayWriteOwner, args: GeneratedSchematicRelevanceDisplayNativeArguments): CurrentSchematicRelevanceDisplayAccessorFunctions {
+    this.requireData(packet, owner, args); need(origin === this.#origin && this.#phase === "observed" && this.#functions !== null && !this.#busy, "ORIGINAL_METADATA_FUNCTIONS"); return this.#functions;
+  }
+
 }

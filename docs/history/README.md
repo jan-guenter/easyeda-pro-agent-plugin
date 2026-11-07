@@ -783,3 +783,4 @@ layout. The connected ledger retains its generation and case anchors.
 - 2026-11-07: [Schematic saved-load preparation](2026-11-07-schematic-saved-load-preparation.md), separate original checkpoint plan, complete two-document cold data and exact native Save delimiter handling.
 - 2026-11-07: [Polling Inspector tuple custody](2026-11-07-polling-inspector-tuple-custody.md), actual side-effect-checked capture execution and original private tuple reproof.
 - 2026-11-07: [Integrated backlog status](2026-11-07-integrated-backlog-status.md), remaining implementation, connected cases and final review/release steps at source checkpoint `290c5ea4`.
+- 2026-11-07: [Relevance accessor receiver boundary](2026-11-07-schematic-relevance-accessor-receiver-boundary.md), honest function metadata receipt, genuine once-only completion and fixed underline eligibility reads before receiver-entry proof.

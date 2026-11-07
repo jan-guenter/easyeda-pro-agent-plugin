@@ -18,6 +18,7 @@ import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_REQUESTS as MODIFY_ENT
 /** New original seven-record birth, with its own immutable accounting. Equal
  * finite source algorithms do not transfer the six-record owner's resources. */
 import { CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE as SHARED } from "./current-schematic-display-write-native-profile.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_ACCESSOR_REQUESTS as ACCESSOR } from "./current-schematic-relevance-display-accessor-profile.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_ACTION_REQUESTS as ACTION } from "./current-schematic-display-action-protocol.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_ACTION_GUARD_REQUESTS as ACTION_GUARD } from "./current-schematic-display-action-guard-protocol.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS as STRUCTURE } from "./current-project-save-structure-protocol.ts";
@@ -27,7 +28,7 @@ export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE = "schemat
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE = Object.freeze({
   purpose: CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE, nativeSwitch: "-SchematicRelevanceDisplayWrite209",
   main: Object.freeze({ normal: SHARED.main.normal + MAIN.normal + STEP.normal + BEGIN.normal + HISTORY.normal + STRUCTURE_MAIN.normal + LIVE.normal, cleanup: SHARED.main.cleanup + MAIN.cleanup + BEGIN.cleanup + HISTORY.cleanup + STRUCTURE_MAIN.cleanup + LIVE.cleanup, total: SHARED.main.total + MAIN.total + STEP.total + BEGIN.total + HISTORY.total + STRUCTURE_MAIN.total + LIVE.total }), renderer: Object.freeze({ ...SHARED.renderer,
-    structureObservation: STRUCTURE.cdpRequests,
+    structureObservation: STRUCTURE.cdpRequests, accessorObservation: ACCESSOR.total,
     startupStructureDrainObservation: STARTUP_STRUCTURE.total,
     startupPollingObservation: POLLING.cdpRequests, startupPollingHelperSources: 1, startupLibraryObservation: LIBRARY.controls, startupLibrarySetupHelperSources: 1,
     actionPreflightObservation: ACTION.total, actionGuardObservation: ACTION_GUARD.cdpRequests, actionGuardBindingControls: ACTION_GUARD.bindingControls,
@@ -35,7 +36,7 @@ export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE = Object.f
     saveTailObservation: TAIL.cdpRequests, saveTailCacheMetadata:TAIL.additionalSharedRequests, saveTailDelete: DELETE.cdpRequests, saveDrainObservation:DRAIN.cdpRequests, savePostSyncObservation:POST.total, saveDrainCompletion:2,
     localUploadObservation: UPLOAD.local, uploadRequestObservation: UPLOAD.upload, localCacheExtraObservation: UPLOAD.localCacheMetadata,
     runPrefixObservation: PREFIX_READS, runPrefixControls: 2,
-    modifyEntryObservation: MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation,
-    total: SHARED.renderer.total - SHARED.renderer.structureObservation - SHARED.renderer.actionPreflightObservation - SHARED.renderer.actionGuardObservation - SHARED.renderer.actionGuardBindingControls +
-      PREFIX_READS + 2 + STARTUP_STRUCTURE.total + TAIL.cdpRequests + TAIL.additionalSharedRequests + DELETE.cdpRequests + DRAIN.cdpRequests + POST.total + 2 + SOURCES + UPLOAD.local + UPLOAD.upload + UPLOAD.localCacheMetadata + STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + POLLING.cdpRequests + 1 + LIBRARY.controls + 1 }),
+    modifyEntryObservation: MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + MODIFY_ENTRY.underlineEligibility,
+    total: SHARED.renderer.total - SHARED.renderer.accessorObservation + ACCESSOR.total - SHARED.renderer.structureObservation - SHARED.renderer.actionPreflightObservation - SHARED.renderer.actionGuardObservation - SHARED.renderer.actionGuardBindingControls +
+      PREFIX_READS + 2 + STARTUP_STRUCTURE.total + TAIL.cdpRequests + TAIL.additionalSharedRequests + DELETE.cdpRequests + DRAIN.cdpRequests + POST.total + 2 + SOURCES + UPLOAD.local + UPLOAD.upload + UPLOAD.localCacheMetadata + STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + MODIFY_ENTRY.underlineEligibility + POLLING.cdpRequests + 1 + LIBRARY.controls + 1 }),
 });

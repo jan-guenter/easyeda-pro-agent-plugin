@@ -162,7 +162,7 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
       await this.waitForStartupObservations(); this.#current();
       await this.#owner.createSchematicRelevanceDisplayAccessorOrigin(this.#arguments, async origin => {
         this.#current(); need(this.#accessor === null, "ORIGINAL_ACCESSOR"); const observer = new CurrentSchematicRelevanceDisplayAccessorObserver(origin, this.#owner, this.#arguments);
-        this.#accessor = observer; const packet = await observer.observe(); this.#current(); observer.requireData(packet, this.#owner, this.#arguments); this.#accessorPacket = packet;
+        this.#accessor = observer; const packet = await observer.observe(); this.#current(); observer.requireData(packet, this.#owner, this.#arguments); this.#accessorPacket = packet; return packet;
       }); this.#current(); need(this.#accessorPacket !== null, "ORIGINAL_ACCESSOR_REQUIRED"); return this.#accessorPacket;
     } catch (error) { this.#stop(error); throw error; }
   }
