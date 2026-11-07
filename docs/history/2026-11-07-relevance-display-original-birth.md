@@ -47,3 +47,14 @@ stays below both unchanged 2MiB storage/compiler bounds, and restores all three
 fixed new programs exactly. Native compile-only parity checks are defined for
 all seven phases at two request IDs; they were not executed here. No helper,
 pin, bundle, application, native owner or MCP action was emitted or launched.
+
+## Combined-source verification
+
+Canonical integration8a77bf22 preserves the separate inverse timer, queue and
+saved-history Main protocols. Both TypeScript projects, strict changed-file
+lint and26 focused schematic owner/native checks pass after that merge.
+PinnedNode24.18.0 two-pass private generation produced1,446,119stored helper
+bytes and1,999,571decoded C# bytes, below the unchanged2MiB bounds. The complete
+C#5 source compiles, eighteen fixed-codec checks pass, and all fourteen
+seven-record stage/ID message hashes match without constructing a native owner
+or starting an application. Tracked helper/pins/bundles remain un-emitted.
