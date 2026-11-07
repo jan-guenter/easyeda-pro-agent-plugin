@@ -2,6 +2,7 @@
 
 - [2026-11-07 Inverse layout excludes Via action code](2026-11-07-inverse-layout-via-exclusion.md). Recover76,902compiler bytes while retaining the exact shared timer codec and unchanged diagnostic/schematic builds.
 
+- [Original schematic disposal and record continuation](2026-11-07-schematic-original-disposal-record-continuation.md)
 - [2026-11-07 Original schematic disposal preparation](2026-11-07-schematic-original-disposal-preparation.md). Source-bound readonly two-job, reverse-owner and listener-roster collection; no disposal or continuation authority.
 
 - [2026-11-07 Separate Component cloned-Pad reader](2026-11-07-component-cloned-pad-reader.md). Closed original second refusal, complete35-table invariance and distinct tE source candidate within existing bounds; native mounting and fresh connected proof remain.

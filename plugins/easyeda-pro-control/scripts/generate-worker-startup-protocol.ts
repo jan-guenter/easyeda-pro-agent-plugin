@@ -1,3 +1,5 @@
+import {applyCurrentSchematicRelevanceNormalRecordNativeFragment} from "../server/src/current-schematic-relevance-normal-record-native-fragment.ts";
+import {applyCurrentSchematicRelevanceNormalDisposalNativeFragment} from "../server/src/current-schematic-relevance-normal-disposal-native-fragment.ts";
 import {applyCurrentSchematicRelevanceNormalUpdateNativeFragment} from "../server/src/current-schematic-relevance-normal-update-native-fragment.ts";
 import {applyCurrentSchematicRelevanceHistoryCommandNativeFragment} from "../server/src/current-schematic-relevance-history-command-native-fragment.ts";
 import {applyCurrentSchematicRelevanceMonitorBatchNativeFragment} from "../server/src/current-schematic-relevance-monitor-batch-native-fragment.ts";
@@ -212,6 +214,8 @@ export function generateWorkerStartupProtocol(source: string, layout: "diagnosti
     next = applyCurrentSchematicRelevanceMonitorBatchNativeFragment(next);
     next = applyCurrentSchematicRelevanceHistoryCommandNativeFragment(next);
     next = applyCurrentSchematicRelevanceNormalUpdateNativeFragment(next);
+    next = applyCurrentSchematicRelevanceNormalDisposalNativeFragment(next);
+    next = applyCurrentSchematicRelevanceNormalRecordNativeFragment(next);
     next = applyCurrentSchematicRelevanceRunGuardNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplayClockNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplaySyncQuiesceNativeFragment(next);

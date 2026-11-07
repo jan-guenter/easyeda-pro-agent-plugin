@@ -1,3 +1,7 @@
+import type {CurrentSchematicRelevanceNormalRecordCommand} from "./current-schematic-relevance-normal-record-protocol.ts";
+import type {CurrentSchematicRelevanceNormalRecordReceipt} from "./current-schematic-relevance-normal-record-cursor.ts";
+import type {CurrentSchematicRelevanceNormalDisposalReceipt} from "./current-schematic-relevance-normal-disposal-cursor.ts";
+import type {CurrentSchematicRelevanceNormalDisposalCommand} from "./current-schematic-relevance-normal-disposal-protocol.ts";
 import type {CurrentSchematicRelevanceNormalUpdateCommand} from "./current-schematic-relevance-normal-update-protocol.ts";
 import type {CurrentSchematicRelevanceNormalUpdateReceipt} from "./current-schematic-relevance-normal-update-cursor.ts";
 import type {CurrentSchematicRelevanceHistoryCommand} from "./current-schematic-relevance-history-command-protocol.ts";
@@ -50,6 +54,13 @@ export interface CurrentSchematicRelevanceActionCallbackBindings {
   readonly requestHistoryCommand:(command:CurrentSchematicRelevanceHistoryCommand)=>Promise<unknown>;
   readonly requireOriginalHistoryCommand:()=>CurrentSchematicRelevanceHistoryCommandReceipt;
   readonly continueOriginalHistoryCommand:()=>Promise<void>;
+  readonly nextNormalRecordCommand:()=>CurrentSchematicRelevanceNormalRecordCommand|null;
+  readonly requestNormalRecord:(command:CurrentSchematicRelevanceNormalRecordCommand)=>Promise<unknown>;
+  readonly requireOriginalNormalRecord:()=>CurrentSchematicRelevanceNormalRecordReceipt;
+  readonly continueOriginalNormalRecord:()=>Promise<void>;
+  readonly nextListenerDisposalCommand:()=>CurrentSchematicRelevanceNormalDisposalCommand|null;
+  readonly requestListenerDisposal:(command:CurrentSchematicRelevanceNormalDisposalCommand)=>Promise<unknown>;
+  readonly requireOriginalListenerDisposal:()=>CurrentSchematicRelevanceNormalDisposalReceipt;
   readonly nextNormalUpdateCommand:()=>CurrentSchematicRelevanceNormalUpdateCommand|null;
   readonly requestNormalUpdate:(command:CurrentSchematicRelevanceNormalUpdateCommand)=>Promise<unknown>;
   readonly requireOriginalNormalUpdate:()=>CurrentSchematicRelevanceNormalUpdateReceipt;

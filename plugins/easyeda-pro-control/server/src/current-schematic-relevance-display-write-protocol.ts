@@ -1,3 +1,5 @@
+import {currentSchematicRelevanceNormalRecordWire} from "./current-schematic-relevance-normal-record-wire.ts";
+import {currentSchematicRelevanceNormalDisposalWire} from "./current-schematic-relevance-normal-disposal-wire.ts";
 import {currentSchematicRelevanceNormalUpdateWire} from "./current-schematic-relevance-normal-update-wire.ts";
 import {currentSchematicRelevanceHistoryCommandWire} from "./current-schematic-relevance-history-command-wire.ts";
 import {currentSchematicRelevanceMonitorBatchWire} from "./current-schematic-relevance-monitor-batch-wire.ts";
@@ -36,6 +38,20 @@ export function currentSchematicRelevanceDisplayWriteNativeRequest(chunk: Buffer
     if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_MONITOR_BATCH_WIRE"); }
     const fixed = currentSchematicRelevanceMonitorBatchWire(input, id);
     if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceMonitorBatchCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_MONITOR_BATCH_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceNormalDisposalCommand")) {
+    const { id, sessionId, schematicRelevanceNormalDisposalCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_NORMAL_DISPOSAL_WIRE"); }
+    const fixed = currentSchematicRelevanceNormalDisposalWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceNormalDisposalCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_NORMAL_DISPOSAL_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceNormalRecordCommand")) {
+    const { id, sessionId, schematicRelevanceNormalRecordCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_NORMAL_RECORD_WIRE"); }
+    const fixed = currentSchematicRelevanceNormalRecordWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceNormalRecordCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_NORMAL_RECORD_FIXED_WIRE"); }
     return fixed.request;
   }
   if (Object.hasOwn(raw, "schematicRelevanceNormalUpdateCommand")) {

@@ -22,7 +22,7 @@ const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 export { CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_READ_BOUND } from "./current-schematic-relevance-run-prefix-protocol.ts";
 function need(value: boolean): asserts value { if (!value) { throw new Error("SCHEMATIC_RELEVANCE_ORIGINAL_RUN_PREFIX_CURSOR"); } }
 export interface CurrentSchematicRelevanceRunPrefixCapture {
-  readonly runObjectId: string; readonly rootsObjectId: string; readonly nativeObjectId: string; readonly referencesObjectId: string;
+  readonly idleFunctionsObjectId: string; readonly runObjectId: string; readonly rootsObjectId: string; readonly nativeObjectId: string; readonly referencesObjectId: string;
   readonly firstStartObjectId: string; readonly willEndObjectId: string; readonly firstEndObjectId: string;
   readonly intrinsicObjectsObjectId: string; readonly baseFunctionsObjectId: string; readonly queueFunctionsObjectId: string; readonly intrinsicFunctionsObjectId: string;
   readonly qualifiedObjectId: string; readonly originalRequests: number; readonly originalRunStillHeld: true;
@@ -171,7 +171,7 @@ export class CurrentSchematicRelevanceRunPrefixCursor {
     yield* this.#willEnd(); yield* this.#baseFunctions(); yield* this.#busGroupPrecondition(); yield* this.#queueFunctions();
     yield* CurrentSchematicRelevanceRunPrefixCursor.#true("bus-group-idle", this.#at("references", 10), [this.#id("native"), this.#id("references"), this.#id("qualified"), this.#at("object-constructor", 0), this.#at("extensibility", 0)]);
     yield* CurrentSchematicRelevanceRunPrefixCursor.#true("raw-same", this.#raw.snapshotObjectId, [this.#id("native")]);
-    return Object.freeze({ runObjectId: this.#id("run"), rootsObjectId: this.#id("roots"), nativeObjectId: this.#id("native"), referencesObjectId: this.#id("references"), firstStartObjectId: this.#at("queue", 4), willEndObjectId: this.#at("will-functions", 0), firstEndObjectId: this.#at("queue", 6), intrinsicObjectsObjectId: this.#id("intrinsics"), baseFunctionsObjectId: this.#id("base"), queueFunctionsObjectId: this.#id("queue"), intrinsicFunctionsObjectId: this.#id("intrinsic"), qualifiedObjectId: this.#id("qualified"), originalRequests: this.#requests, originalRunStillHeld: true, callbackReceiversVerified: false, continuationAuthorized: false, persistenceVerified: false });
+    return Object.freeze({ idleFunctionsObjectId: this.#id("idle"), runObjectId: this.#id("run"), rootsObjectId: this.#id("roots"), nativeObjectId: this.#id("native"), referencesObjectId: this.#id("references"), firstStartObjectId: this.#at("queue", 4), willEndObjectId: this.#at("will-functions", 0), firstEndObjectId: this.#at("queue", 6), intrinsicObjectsObjectId: this.#id("intrinsics"), baseFunctionsObjectId: this.#id("base"), queueFunctionsObjectId: this.#id("queue"), intrinsicFunctionsObjectId: this.#id("intrinsic"), qualifiedObjectId: this.#id("qualified"), originalRequests: this.#requests, originalRunStillHeld: true, callbackReceiversVerified: false, continuationAuthorized: false, persistenceVerified: false });
   }
   public next(): Command | null {
     need(!this.#failed && !this.#reserved);
