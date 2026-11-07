@@ -7,6 +7,7 @@ import { CurrentFootprintInversePipe } from "../src/current-pcb-diagnostic-pipe.
 import { currentFootprintInverseDeleteRpcCases } from "../src/current-footprint-inverse-delete-rpc-protocol.ts";
 import { currentFootprintInverseClockWorkerCases } from "../src/current-footprint-inverse-clock-worker-protocol.ts";
 import { currentFootprintInverseDeleteEntryCases } from "../src/current-footprint-inverse-delete-entry-protocol.ts";
+import { currentFootprintInverseDeleteWorkerPeerCases } from "../src/current-footprint-inverse-delete-worker-peer-protocol.ts";
 import { currentFootprintInverseDeleteJobCases } from "../src/current-footprint-inverse-delete-job-protocol.ts";
 
 function ignoreEvent():void{
@@ -26,6 +27,7 @@ void test("actual inverse byte pipe admits only its retained worker for bus, RPC
  const source=pipe.observeInverseWorker({phase:"saved-load-source",role:"project",method:"Debugger.getScriptSource",params:{scriptId:"original-source"}});reply({});await source;
  for(const command of currentFootprintInverseClockWorkerCases()){const pending=pipe.observeInverseClockWorker(command);assert.equal(last().sessionId,pair.pageSessionId);reply({});await pending;}
  for(const command of currentFootprintInverseDeleteRpcCases()){const pending=pipe.observeInverseDeleteRpc(command);assert.equal(last().sessionId,pair.pageSessionId);reply({});await pending;}
+ for(const command of currentFootprintInverseDeleteWorkerPeerCases()){const pending=pipe.observeInverseDeleteWorkerPeer(command);assert.equal(last().sessionId,pair.pageSessionId);reply({});await pending;}
  for(const command of currentFootprintInverseDeleteEntryCases()){const pending=pipe.observeInverseDeleteEntry(command);assert.equal(last().sessionId,pair.pageSessionId);reply({});await pending;}
  for(const command of currentFootprintInverseDeleteJobCases()){const pending=pipe.observeInverseDeleteJob(command);assert.equal(last().sessionId,pair.pageSessionId);reply({});await pending;}assert.equal(pipe.status().failureObservation,null);
 });

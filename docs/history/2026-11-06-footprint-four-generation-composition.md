@@ -1788,3 +1788,30 @@ Own7/Via source audit found no incorrect Date.prototype type guard: those
 older paths use native-text relations and explicitly retain native sender/
 Main actor flags false. They and generic validators remain unchanged. No
 Core/native lane, request-budget increase or execution grant is added here.
+
+## Original project-worker peer getter
+
+The manager collector can now call
+requireOriginalCurrentFootprintInverseDeleteWorkerPeer(owner, prepared).
+Only the original inverse preparation issues its frozen bindings:
+workerUuid, projectUuid and assertCurrent. The UUID is read from the actual
+project workerBus; it is not the distinct clock notify/wsBus UUID. Core
+retains the remote tuple/guard and rechecks the sealed project identity.
+No caller UUID, path, prior report or replacement owner can populate the map.
+
+The fixed capture/reproof runs after the RPC prefix and before entry/admission
+on the same original worker stream. It uses three normal descriptor commands,
+two exact helper receipts, bind and complete:five CDP/seven controls/two helper
+events. Native SDK admission now also requires this metadata ledger complete.
+The stable remote guard preserves receiver/UUID identity after legitimate
+queue consumption; it does not call the obsolete queue-one guard again.
+Trusted native MessageEvent/data/target/origin authentication remains a
+separate prerequisite before the clock can resume. This getter grants none.
+
+Five focused Inspector/codec/real-byte-pipe/cursor cases, types and strict
+changed lint pass. The real pipe test also includes all four peer cases.
+Two-pass private generation is identical at1,427,213 stored bytes/1,994,452
+compiler bytes; full emitted Linux C#5 passes peer/job/RPC/entry smokes
+(ORIGINAL_INVERSE_WORKER_PEER_NATIVE_OK). The new rows use the existing hashed
+fixed table. Both2MiB limits and older purpose contracts stay unchanged. No
+tracked helper/pin, app/SDK/native call or original-owner cleanup was performed.
