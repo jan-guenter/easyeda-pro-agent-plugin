@@ -27,7 +27,7 @@ const captured=(${PROGRAMS.capture})();const original=(${PROGRAMS.entry}).call([
 }
 void test("the original first timer is cancelled once while its positive application slot remains unchanged",()=>{
   const f=fixture();assert.equal(f.run(CONDITION),true);f.run(`project.checkProject();const returned=(${PROGRAMS.returned}).call([project],original)`);
-  assert.equal(f.run('scheduled'),1);assert.equal(f.run('project.projectTimer'),17);
+  assert.equal(f.run('scheduled'),1);assert.equal(f.run('project.projectTimer'),17);assert.equal(f.run('returned[0]===original'),true);
   assert.equal(JSON.stringify(f.run(`(${PROGRAMS.cancel}).call(returned)`)),JSON.stringify({schema:"private.project-sync-quiesce-cancel.v1",cancelled:true,timerSlotRetained:true}));
   assert.equal(f.run('cleared'),1);assert.equal(f.run('lastCleared'),17);assert.equal(f.run('project.projectTimer'),17);
   assert.throws(()=>f.run(`(${PROGRAMS.cancel}).call(returned)`));assert.equal(f.run('cleared'),1);
@@ -57,4 +57,8 @@ void test("the pinned original method exposes exact entry, native call, return a
 
 void test("actual inert Inspector frozen arrays use readonly descriptors and mutable tuples refuse",async()=>{
   const inspector=new Session();inspector.connect();try{await inspector.post("Runtime.enable");for(const frozen of [true,false]){const captured=await inspector.post("Runtime.evaluate",{expression:frozen?"Object.freeze([1,{},function(){}])":"[1,{},function(){}]",returnByValue:false});const objectId=captured.result.objectId;assert.ok(objectId!==undefined);const properties=await inspector.post("Runtime.getProperties",{objectId,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false});if(frozen){const fields=decodeCurrentProjectSyncQuiesceArray(properties,3);assert.equal(fields.get("0")?.value,1);}else{assert.throws(()=>decodeCurrentProjectSyncQuiesceArray(properties,3));}}}finally{inspector.disconnect();}
+});
+
+void test("Inspector rewraps original references and equality must be proved inside the original realm",async()=>{
+  const inspector=new Session();inspector.connect();try{await inspector.post("Runtime.enable");const entry=await inspector.post("Runtime.evaluate",{expression:"Object.freeze([1,2,3,4,5])",objectGroup:"inert-timer-alias",returnByValue:false});const id=entry.result.objectId;assert.ok(id!==undefined);const returned=await inspector.post("Runtime.callFunctionOn",{objectId:id,functionDeclaration:"function(){return Object.freeze([this,17,{}])}",objectGroup:"inert-timer-alias",returnByValue:false});const returnedId=returned.result.objectId;assert.ok(returnedId!==undefined);const fields=decodeCurrentProjectSyncQuiesceArray(await inspector.post("Runtime.getProperties",{objectId:returnedId,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}),3);const rewrapped=fields.get("0")?.objectId;assert.ok(rewrapped!==undefined);assert.notEqual(rewrapped,id);const identity:unknown=await inspector.post("Runtime.callFunctionOn",{objectId:rewrapped,functionDeclaration:"function(original){return this===original}",arguments:[{objectId:id}],returnByValue:true});assert.deepEqual(identity,{result:{type:"boolean",value:true}});await inspector.post("Runtime.releaseObjectGroup",{objectGroup:"inert-timer-alias"});}finally{inspector.disconnect();}
 });
