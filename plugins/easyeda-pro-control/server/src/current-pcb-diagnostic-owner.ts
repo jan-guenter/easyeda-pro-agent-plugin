@@ -1,5 +1,10 @@
-/* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import { deriveCurrentFootprintInverseMainHistoryBaseline } from "./current-footprint-inverse-main-history-baseline.ts";
+import type { CurrentFootprintInverseMainHistoryBaseline } from "./current-footprint-inverse-main-history-baseline.ts";
+import type { CurrentFootprintInverseMainHistoryRows } from "./current-footprint-inverse-main-history-custody.ts";
+import { currentFootprintInverseMainHistoryWire } from "./current-footprint-inverse-main-history-wire.ts";
+import type { CurrentFootprintInverseMainHistoryCommand } from "./current-footprint-inverse-main-history-protocol.ts";
+/* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 import type { CurrentFootprintInversePollingCancellationEnrollment, CurrentFootprintInversePollingCancellationIntent } from "./current-footprint-inverse-polling-intent.ts";
 import { currentFootprintInverseStartupQueueNativeFrame, validateCurrentFootprintInverseStartupQueueCommand } from "./current-footprint-inverse-startup-queue-protocol.ts";
 import type { CurrentFootprintInverseStartupQueueCommand, CurrentFootprintInverseStartupQueueObservation } from "./current-footprint-inverse-startup-queue-protocol.ts";
@@ -1271,6 +1276,20 @@ export async function sendOriginalCurrentPcbViaMainStructure(capability: Current
   if (original === undefined || original.runner() !== runner || !(original.owner instanceof CurrentPcbViaWriteOwner)) { throw error("PCB_VIA_MAIN_STRUCTURE_ORIGINAL_OWNER"); }
   assertOriginalCurrentPcbViaWriteOwner(original.owner); original.reprove(); const window = await original.owner.sendViaMainStructure(capability, runner, command, id); original.reprove(); return window;
 }
+export function originalCurrentFootprintInverseMainHistoryBaseline(capability: CurrentSelectedFileMainSqlFenceBootstrap,
+  runner: CurrentFootprintCopyMainBackendRunner, intent: CurrentFootprintInverseRegistrationIntent): CurrentFootprintInverseMainHistoryBaseline {
+  const original = selectedSqlFenceBootstraps.get(capability);
+  // oxlint-disable-next-line eslint/no-use-before-define -- Only the initialized inverse factory can issue this selected Main bootstrap.
+  if (original === undefined || original.runner() !== runner || !(original.owner instanceof CurrentFootprintInverseNativeOwner)) { throw error("FOOTPRINT_INVERSE_HISTORY_ORIGINAL_OWNER"); }
+  assertOriginalCurrentFootprintInverseNativeOwner(original.owner); original.reprove(); return original.owner.originalFootprintInverseInitialHistoryBaseline(intent, runner);
+}
+export async function sendOriginalCurrentFootprintInverseMainHistory(capability: CurrentSelectedFileMainSqlFenceBootstrap,
+  runner: CurrentFootprintCopyMainBackendRunner, command: CurrentFootprintInverseMainHistoryCommand, id: number): Promise<void> {
+  const original = selectedSqlFenceBootstraps.get(capability);
+  // oxlint-disable-next-line eslint/no-use-before-define -- Actual inverse birth and the same original Main cursor are required.
+  if (original === undefined || original.runner() !== runner || !(original.owner instanceof CurrentFootprintInverseNativeOwner)) { throw error("FOOTPRINT_INVERSE_HISTORY_ORIGINAL_OWNER"); }
+  assertOriginalCurrentFootprintInverseNativeOwner(original.owner); original.reprove(); await original.owner.sendFootprintInverseMainHistory(capability, runner, command, id); original.reprove();
+}
 export async function sendOriginalCurrentPcbViaMainLiveHistory(capability: CurrentSelectedFileMainSqlFenceBootstrap,
   runner: CurrentFootprintCopyMainBackendRunner, command: CurrentPcbViaMainLiveHistoryCommand, id: number): Promise<void> {
   const original = selectedSqlFenceBootstraps.get(capability);
@@ -1890,9 +1909,10 @@ class CurrentPcbRetainedOwnerCore {
   #inverseBootstrapSetupPromise: Promise<void> | null = null;
   #inverseStartupPlanPromise:Promise<CurrentFootprintInverseStartupPlan>|null=null;
   #inverseStartupPlan:Readonly<{plan:CurrentFootprintInverseStartupPlan;module:CurrentFootprintInverseStartupPlanModule;prepare:CurrentFootprintInverseStartupPlanModule["prepareCurrentFootprintInverseStartupPlan"];lookup:CurrentFootprintInverseStartupPlanModule["requireOriginalCurrentFootprintInverseStartupPlan"];cold:CurrentFootprintInverseStartupPlanModule["requireOriginalCurrentFootprintInverseColdLoadData"]}>|null=null;
+  #inverseInitialHistoryBaseline: CurrentFootprintInverseMainHistoryBaseline | null = null;
   #inverseFlowCachePlanPromise: Promise<CurrentFootprintSavedFlowCachePlan> | null = null;
   #inverseFlowCachePlan: Readonly<{ plan: CurrentFootprintSavedFlowCachePlan; module: CurrentFootprintSavedFlowCachePlanModule;
-    prepare: CurrentFootprintSavedFlowCachePlanModule["prepareCurrentFootprintSavedFlowCachePlan"]; lookup: CurrentFootprintSavedFlowCachePlanModule["requireOriginalCurrentFootprintSavedFlowCachePlan"] }> | null = null;
+    prepare: CurrentFootprintSavedFlowCachePlanModule["prepareCurrentFootprintSavedFlowCachePlan"]; lookup: CurrentFootprintSavedFlowCachePlanModule["requireOriginalCurrentFootprintSavedFlowCachePlan"]; lookupInput: CurrentFootprintSavedFlowCachePlanModule["requireOriginalCurrentFootprintSavedFlowCacheInput"]; input: ReturnType<CurrentFootprintSavedFlowCachePlanModule["requireOriginalCurrentFootprintSavedFlowCacheInput"]> }> | null = null;
   #inverseCache: FootprintInverseCacheHeld | null = null; #inverseCacheAttempted = false; #inverseCacheGuard = false;
   #inverseCacheInvalidation: CurrentPcbViaSavedCacheInvalidationLedger | null = null; #inverseCacheInvalidationPromise: Promise<CurrentFootprintInverseCacheAbsence> | null = null;
   #inverseCacheAbsence: CurrentFootprintInverseCacheAbsence | null = null; #inverseCacheLateGuard: 0 | 1 | "loading" | null = null;
@@ -6739,6 +6759,43 @@ class CurrentPcbRetainedOwnerCore {
     try { await this.#verify(); held.reprove(); const reply = await this.#request({ ...wire.request }); const window = decodeCurrentPcbViaMainStructureNativeAck(reply, command); if (this.#requireFootprintMain(true) !== original) { throw error("PCB_VIA_STRUCTURE_WRITE_OWNER"); } await this.#verify(); held.reprove(); return window; }
     finally { this.#leaveFootprintMain(); }
   }
+  /** Four readonly original startup requests. This has no SQL mutation or
+   * generated-fixture baseline issuer and cannot use a Via origin. */
+  public originalFootprintInverseInitialHistoryBaseline(intent: CurrentFootprintInverseRegistrationIntent, runner: CurrentFootprintCopyMainBackendRunner): CurrentFootprintInverseMainHistoryBaseline {
+    this.originalFootprintInverseRegistrationIntent(intent, runner); const baseline = this.#inverseInitialHistoryBaseline, flow = this.#inverseFlowCachePlan;
+    if (flow === null || baseline === null || this.#mainTerminateAttempted || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed) { throw error("FOOTPRINT_INVERSE_HISTORY_ORIGINAL_BASELINE"); }
+    const prepared = originalCurrentFootprintInverseTarget(this); flow.lookup(flow.plan, prepared);
+    if (flow.module.requireOriginalCurrentFootprintSavedFlowCacheInput !== flow.lookupInput || flow.lookupInput(flow.plan, prepared) !== flow.input) { throw error("FOOTPRINT_INVERSE_HISTORY_INPUT_CHANGED"); } return baseline;
+  }
+  public async armFootprintInverseInitialHistory(ordinal: number): Promise<void> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); const controller = this.#inverseWorkerController, runner = this.#mainRunner;
+    if (runner === null || controller === null || this.#inverseProducerOrigin === null || this.#mainTerminateAttempted || this.#closeConsumed) { throw error("FOOTPRINT_INVERSE_HISTORY_ORIGINAL_STARTUP"); }
+    controller.reserveInitialHistoryMainArm(ordinal); await runner.armFootprintInverseInitialHistory(ordinal); assertOriginalCurrentFootprintInverseNativeOwner(this);
+    if (this.#mainRunner !== runner || this.#inverseWorkerController !== controller) { throw error("FOOTPRINT_INVERSE_HISTORY_OWNER_CHANGED"); }
+  }
+  public async waitFootprintInverseInitialHistoryRows(ordinal: number): Promise<CurrentFootprintInverseMainHistoryRows> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); const runner = this.#mainRunner;
+    if (runner === null) { throw error("FOOTPRINT_INVERSE_HISTORY_ORIGINAL_MAIN"); } const rows = await runner.originalFootprintInverseInitialHistoryCompletion(ordinal);
+    assertOriginalCurrentFootprintInverseNativeOwner(this); if (rows === null || this.#mainRunner !== runner || this.requireFootprintInverseInitialHistoryRows(ordinal) !== rows) { throw error("FOOTPRINT_INVERSE_HISTORY_COMPLETION_REFUSED"); } return rows;
+  }
+  public requireFootprintInverseInitialHistoryRows(ordinal: number): CurrentFootprintInverseMainHistoryRows {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); const runner = this.#mainRunner;
+    if (runner === null || this.#inverseWorkerController === null) { throw error("FOOTPRINT_INVERSE_HISTORY_ORIGINAL_MAIN"); } return runner.requireFootprintInverseInitialHistoryRows(ordinal);
+  }
+  public async sendFootprintInverseMainHistory(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner,
+    command: CurrentFootprintInverseMainHistoryCommand, requestId: number): Promise<void> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); const held = selectedSqlFenceBootstraps.get(capability), original = this.#requireFootprintMain(true);
+    const cleanup = command.phase === "inverse-main-history-remove" || command.phase === "inverse-main-history-release";
+    if (held?.owner !== this || held.runner() !== runner || this.#mainRunner !== runner || this.#inverseProducerOrigin === null || this.#inverseRegistrationIntent === null ||
+      requestId !== this.#mainRequestId + 1 || (cleanup ? this.#mainCleanupRequests >= CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE.main.cleanup : this.#mainNormalRequests >= CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE.main.normal)) { throw error("FOOTPRINT_INVERSE_HISTORY_ORIGINAL_SENDER"); }
+    const baseline = this.originalFootprintInverseInitialHistoryBaseline(this.#inverseRegistrationIntent, runner);
+    runner.consumeFootprintInverseInitialHistory(command, requestId); held.reprove(); const wire = currentFootprintInverseMainHistoryWire(command, requestId);
+    this.#enterFootprintMain(); this.#mainRequestId += 1; if (cleanup) { this.#mainCleanupRequests += 1; } else { this.#mainNormalRequests += 1; }
+    try { await this.#verify(); held.reprove(); const reply = await this.#request({ ...wire });
+      if (!exact(reply, ["written"]) || reply["written"] !== true || this.#requireFootprintMain(true) !== original || this.originalFootprintInverseInitialHistoryBaseline(this.#inverseRegistrationIntent, runner) !== baseline) { throw error("FOOTPRINT_INVERSE_HISTORY_ORIGINAL_ACK"); }
+      await this.#verify(); held.reprove();
+    } finally { this.#leaveFootprintMain(); }
+  }
   public async sendViaMainLiveHistory(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner,
     command: CurrentPcbViaMainLiveHistoryCommand, requestId: number): Promise<void> {
     const held = selectedSqlFenceBootstraps.get(capability), original = this.#requireFootprintMain(true); const cleanup = command.phase === "via-main-live-remove" || command.phase === "via-main-live-release";
@@ -7595,12 +7652,13 @@ class CurrentPcbRetainedOwnerCore {
     const promise = (async (): Promise<CurrentFootprintSavedFlowCachePlan> => {
       try {
         current(); const module = await import("./current-footprint-saved-flow-cache-plan.ts"); current();
-        const lookup = module.requireOriginalCurrentFootprintSavedFlowCachePlan, prepare = module.prepareCurrentFootprintSavedFlowCachePlan;
+        const lookup = module.requireOriginalCurrentFootprintSavedFlowCachePlan, lookupInput = module.requireOriginalCurrentFootprintSavedFlowCacheInput, prepare = module.prepareCurrentFootprintSavedFlowCachePlan;
         const plan = await prepare(prepared); current();
-        if (module.prepareCurrentFootprintSavedFlowCachePlan !== prepare || module.requireOriginalCurrentFootprintSavedFlowCachePlan !== lookup) { throw error("FOOTPRINT_INVERSE_FLOW_PLAN_MODULE_CHANGED"); }
-        const data = lookup(plan, prepared), target = originalCurrentFootprintInverseNativeSource(this).target;
+        if (module.prepareCurrentFootprintSavedFlowCachePlan !== prepare || module.requireOriginalCurrentFootprintSavedFlowCachePlan !== lookup || module.requireOriginalCurrentFootprintSavedFlowCacheInput !== lookupInput) { throw error("FOOTPRINT_INVERSE_FLOW_PLAN_MODULE_CHANGED"); }
+        const data = lookup(plan, prepared), input = lookupInput(plan, prepared), target = originalCurrentFootprintInverseNativeSource(this).target;
         if (data.projectUuid !== target.projectUuid || data.branchUuid !== target.branchUuid) { throw error("FOOTPRINT_INVERSE_FLOW_PLAN_SCOPE"); }
-        this.#inverseFlowCachePlan = Object.freeze({ plan, module, prepare, lookup }); return plan;
+        this.#inverseInitialHistoryBaseline = deriveCurrentFootprintInverseMainHistoryBaseline(input);
+        this.#inverseFlowCachePlan = Object.freeze({ plan, module, prepare, lookup, lookupInput, input }); return plan;
       } finally { this.#busy = false; }
     })(); this.#inverseFlowCachePlanPromise = promise; return promise;
   }
@@ -7744,7 +7802,7 @@ class CurrentPcbRetainedOwnerCore {
             assertCurrent: async (): Promise<void> => { same(); await this.#verify(); same(); }, deleteInvocationAuthorized: false, executionAuthorized: false });
           footprintInverseWorkers.set(origin, Object.freeze({ owner: this, prepared, bindings, original: same }));
           await Reflect.apply(setup, undefined, [origin]); same();
-        }, fail: (): void => { this.#input.emit("error", error("FOOTPRINT_INVERSE_WORKER_FAILED")); } }));
+        }, fail: (): void => { this.#mainRunner?.failFootprintInverseInitialHistory(); this.#input.emit("error", error("FOOTPRINT_INVERSE_WORKER_FAILED")); } }));
       this.#inverseWorkerController = controller; this.#inverseParentPending = true;
       const reply = await this.#transfer(() => pipe.armInverseParent((event: DiagnosticEvent): void => { original().observeEvent(event); })); original();
       if (!exact(reply, [])) { throw error("FOOTPRINT_INVERSE_PARENT_ACK"); }
@@ -8619,7 +8677,7 @@ class CurrentPcbRetainedOwnerCore {
     assertOriginalCurrentFootprintInverseNativeOwner(this); this.#available(); const original = this.#binding;
     // oxlint-disable-next-line typescript/no-unnecessary-boolean-literal-compare -- Runtime confirmation is checked before consuming the original Job-only control.
     if (confirmOriginalInverseJob !== true || original === null || this.#mainTerminateAttempted || this.#terminationObserved || this.#releaseConsumed) { throw error("FOOTPRINT_INVERSE_ABORT_CONSUMED"); }
-    this.#mainTerminateAttempted = true; this.#input.emit("error", error("FOOTPRINT_INVERSE_ORIGINAL_ABORT"));
+    this.#mainTerminateAttempted = true; this.#mainRunner?.failFootprintInverseInitialHistory(); this.#input.emit("error", error("FOOTPRINT_INVERSE_ORIGINAL_ABORT"));
     await this.#nativeTail; await this.#verify(); this.#available();
     if (this.#binding !== original || this.#terminationObserved || this.#releaseConsumed) { throw error("FOOTPRINT_INVERSE_ABORT_OWNER_CHANGED"); }
     const reply = await this.#request({ action: "footprint-inverse-abort" });

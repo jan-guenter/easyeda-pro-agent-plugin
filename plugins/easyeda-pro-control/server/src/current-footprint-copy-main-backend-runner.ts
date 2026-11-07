@@ -1,8 +1,14 @@
+import { CurrentFootprintInverseMainHistoryCustody } from "./current-footprint-inverse-main-history-custody.ts";
+import type { CurrentFootprintInverseMainHistoryRows } from "./current-footprint-inverse-main-history-custody.ts";
+import { CurrentFootprintInverseMainHistoryCollector } from "./current-footprint-inverse-main-history-collector.ts";
+import type { CurrentFootprintInverseMainHistoryBaseline } from "./current-footprint-inverse-main-history-baseline.ts";
+import { CURRENT_FOOTPRINT_INVERSE_MAIN_HISTORY_REQUESTS as INVERSE_HISTORY, validateCurrentFootprintInverseMainHistoryCommand } from "./current-footprint-inverse-main-history-protocol.ts";
+import type { CurrentFootprintInverseMainHistoryCommand } from "./current-footprint-inverse-main-history-protocol.ts";
 import { CurrentPcbViaMainLiveHistoryCustody } from "./current-pcb-via-main-live-history-custody.ts";
 import type { CurrentPcbViaMainLiveHistoryRows } from "./current-pcb-via-main-live-history-custody.ts";
 import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_REQUESTS as VIA_LIVE_HISTORY, validateCurrentPcbViaMainLiveHistoryCommand } from "./current-pcb-via-main-live-history-protocol.ts";
 import type { CurrentPcbViaMainLiveHistoryCommand } from "./current-pcb-via-main-live-history-protocol.ts";
-import { qualifyCurrentPcbViaMainLiveHistorySource } from "./current-pcb-via-main-live-history-source.ts";
+import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE, qualifyCurrentPcbViaMainLiveHistorySource } from "./current-pcb-via-main-live-history-source.ts";
 /** One original-main startup continuation and construction capture. This runner
  * never opens a project, invokes an application callback, samples a clock or
  * grants a writer. The native transport retains root/Job/socket ownership. */
@@ -78,7 +84,7 @@ import { currentProjectStructureMainGenerationExited, isCurrentProjectStructureM
 import type { CurrentProjectStructureMainCapability } from "./current-project-structure-main-capability.ts";
 
 // oxlint-disable-next-line import/no-cycle -- The actual selected-file native factory creates this runner; no capability issues during module initialization.
-import { prepareOriginalCurrentSelectedFileStartupActors, requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentPcbViaMainBegin, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainHistory, sendOriginalCurrentPcbViaMainLiveHistory, sendOriginalCurrentPcbViaMainStep, sendOriginalCurrentPcbViaMainStructure } from "./current-selected-file-main-sql-fence-bootstrap.ts";
+import { originalCurrentFootprintInverseMainHistoryBaseline, prepareOriginalCurrentSelectedFileStartupActors, requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentFootprintInverseMainHistory, sendOriginalCurrentPcbViaMainBegin, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainHistory, sendOriginalCurrentPcbViaMainLiveHistory, sendOriginalCurrentPcbViaMainStep, sendOriginalCurrentPcbViaMainStructure } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import type { CurrentSelectedFileMainSqlFenceBootstrap } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SQL_SOURCE, qualifyCurrentSelectedFileMainSqlFenceSource } from "./current-selected-file-main-sql-fence-source.ts";
 import type { CurrentSelectedFileMainSqlFenceSite } from "./current-selected-file-main-sql-fence-source.ts";
@@ -382,6 +388,16 @@ export class CurrentFootprintCopyMainBackendRunner {
   #startupMetadataContinuations = 0;
   readonly #startupConfigProgress = new CurrentMainStartupConfigProgress();
   #sqlHeld: Pause | null = null;
+  #inverseMainHistoryIntent: CurrentFootprintInverseRegistrationIntent | null = null;
+  #inverseMainHistoryBaseline: CurrentFootprintInverseMainHistoryBaseline | null = null;
+  #inverseMainHistoryCustody: CurrentFootprintInverseMainHistoryCustody | null = null;
+  #inverseMainHistoryCollector: CurrentFootprintInverseMainHistoryCollector | null = null;
+  #inverseMainHistoryArming = false;
+  #inverseMainHistoryPoint: Readonly<{ id: string; location: z.infer<typeof location> }> | null = null;
+  #inverseMainHistoryPause: Readonly<{ identity: Pause; raw: unknown }> | null = null;
+  readonly #inverseMainHistoryRows: CurrentFootprintInverseMainHistoryRows[] = [];
+  #inverseMainHistoryOrdinal = 0;
+  readonly #inverseMainHistorySignals = new Map<number, ReturnType<typeof Promise.withResolvers<CurrentFootprintInverseMainHistoryRows | null>>>();
   #viaMainOrigin: CurrentPcbViaMainOrigin | null = null;
   #viaBeginCustody: CurrentPcbViaMainBeginCustody | null = null;
   #viaStructureCustody: CurrentPcbViaMainStructureCustody | null = null;
@@ -584,6 +600,10 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(matches, "REGISTRATION_LOCATION");
   }
   #resolve(record: Resolved): void {
+    if (this.#inverseMainHistoryArming || this.#inverseMainHistoryPoint?.id === record.breakpointId) {
+      const site = CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE;
+      need(record.location.scriptId === this.#appScriptId && record.location.lineNumber === site.lineNumber && record.location.columnNumber === site.columnNumber, "INVERSE_HISTORY_RESOLUTION"); return;
+    }
     const savedSite = this.#savedRegistrationBreakpoints.get(record.breakpointId) ?? this.#savedRegistrationArming;
     if (savedSite !== null && savedSite !== undefined) {
       this.#savedRegistrationLocation(savedSite, record.location); need(this.#savedRegistrationResolutions.length < 3, "SAVED_REGISTRATION_RESOLUTION_BOUND");
@@ -657,6 +677,12 @@ export class CurrentFootprintCopyMainBackendRunner {
     if (method === "Debugger.paused") {
       need(this.#pause === null || this.#pause.resumed, "DUPLICATE_PAUSE"); const event = pauseSchema.parse(input), first = event.callFrames[0]; need(first !== undefined, "PAUSE_FRAME");
       const points = event.hitBreakpoints ?? [], sqlSite = points.length === 1 ? this.#sqlBreakpoints.get(points[0] ?? "") : undefined;
+      if (points.length === 1 && points[0] === this.#inverseMainHistoryPoint?.id) {
+        const site = CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE;
+        need(event.reason === "other" && first.location.scriptId === this.#appScriptId && first.location.lineNumber === site.lineNumber && first.location.columnNumber === site.columnNumber && this.#inverseMainHistoryPause === null, "INVERSE_HISTORY_ORIGINAL_PAUSE");
+        const pause: Pause = { frameId: first.callFrameId, location: first.location, registration: false, resumeAttempted: false, resumed: false };
+        this.#pause = pause; this.#inverseMainHistoryPause = Object.freeze({ identity: pause, raw: input }); return;
+      }
       const savedRegistrationSite = points.length === 1 ? this.#savedRegistrationBreakpoints.get(points[0] ?? "") : undefined;
       if (savedRegistrationSite !== undefined) {
         need(this.#savedRegistrationEnrollment !== null && event.reason === "other", "SAVED_REGISTRATION_ORIGINAL_PAUSE");
@@ -779,10 +805,11 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Consume one fixed request number and retain its sole pending reply.
    * Head-age exceptions are captured before success decoding; cleanup keeps
    * its own counter and cannot repeat a consumed normal request. */
-  async #request(input: Command | CurrentSelectedFileMainSqlFenceCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand | CurrentProjectStructureMainCommand | CurrentPcbViaMainCommand | CurrentPcbViaMainStepCommand | CurrentPcbViaMainBeginCommand | CurrentPcbViaMainHistoryCommand | CurrentPcbViaMainStructureCommand | CurrentPcbViaMainLiveHistoryCommand,
+  async #request(input: Command | CurrentSelectedFileMainSqlFenceCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand | CurrentProjectStructureMainCommand | CurrentPcbViaMainCommand | CurrentPcbViaMainStepCommand | CurrentPcbViaMainBeginCommand | CurrentPcbViaMainHistoryCommand | CurrentPcbViaMainStructureCommand | CurrentPcbViaMainLiveHistoryCommand | CurrentFootprintInverseMainHistoryCommand,
     cleanup = false, retainAllocationReply?: (reply: unknown) => void): Promise<unknown> {
     this.#phase = input.phase; await this.#current(cleanup);
     if (this.#viaMainOrigin !== null && this.#viaMainPoll !== null) { await this.#viaMainPoll; await this.#current(cleanup); }
+    const inverseHistory = input.phase.startsWith("inverse-main-history-");
     const via = input.phase.startsWith("via-main-");
     const sqlFence = input.phase.startsWith("sql-fence-");
     const collection = input.phase.startsWith("request-");
@@ -793,7 +820,7 @@ export class CurrentFootprintCopyMainBackendRunner {
         completion && (input.phase === "completion-source-arm" || input.phase === "completion-callback-arm"));
     need(retainAllocationReply === undefined || !cleanup && (structure && input.phase === "structure-main-arm" || forwardAllocation), "STRUCTURE_ALLOCATION_CALLBACK");
     let cleanupCommand: boolean;
-    if (via) { cleanupCommand = cleanup; }
+    if (via || inverseHistory) { cleanupCommand = cleanup; }
     else if (completion || structure) { cleanupCommand = ["Debugger.resume", "Debugger.removeBreakpoint", "Runtime.releaseObjectGroup"].includes(input.method); }
     else if (collection) { cleanupCommand = (CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_CLEANUP_PHASES as readonly string[]).includes(input.phase); }
     else { cleanupCommand = !sqlFence && ["resume", "remove", "release"].includes(input.phase); }
@@ -802,9 +829,10 @@ export class CurrentFootprintCopyMainBackendRunner {
     const cleanupMaximum = this.#structureAttempted ? CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.observeCleanup + CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.releaseCleanup + CURRENT_PROJECT_STRUCTURE_MAIN_REQUESTS.cleanup : CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.observeCleanup + CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.releaseCleanup + CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_REQUESTS.cleanup +
       (this.#completionToken === null ? 0 : CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS.cleanup - 2);
     const initialMaximum = this.#selectedSqlBootstrap === null ? 64 : 72 + SQL_REQUESTS.normal + (this.#savedRegistrationEnrollment === null ? 0 : SAVED_CONFIG_REQUESTS);
-    const requestMaximum = cleanup && this.#selectedSqlBootstrap === null ? 72 : initialMaximum;
+    const requestMaximum = cleanup && this.#selectedSqlBootstrap === null ? 72 : initialMaximum + (this.#inverseMainHistoryIntent === null ? 0 : INVERSE_HISTORY.repetitions * INVERSE_HISTORY.total);
     let withinBound: boolean;
-    if (via) { withinBound = this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null && this.#requests < initialMaximum + VIA_REQUESTS.total + VIA_STEPS.total + VIA_BEGIN.total + VIA_HISTORY.total + VIA_STRUCTURE.total + VIA_LIVE_HISTORY.total; }
+    if (inverseHistory) { withinBound = this.#selectedSqlBootstrap !== null && this.#inverseMainHistoryIntent !== null && this.#requests < initialMaximum + INVERSE_HISTORY.repetitions * INVERSE_HISTORY.total; }
+    else if (via) { withinBound = this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null && this.#requests < initialMaximum + VIA_REQUESTS.total + VIA_STEPS.total + VIA_BEGIN.total + VIA_HISTORY.total + VIA_STRUCTURE.total + VIA_LIVE_HISTORY.total; }
     else if (this.#originAttempted || this.#structureAttempted) { withinBound = this.#requests < normalMaximum + cleanupMaximum && (cleanupCommand ? this.#cleanupRequests < cleanupMaximum : this.#normalRequests < normalMaximum); }
     else { withinBound = this.#requests < requestMaximum; }
     need(this.#pendingId === null && withinBound, "REQUEST_BOUND");
@@ -813,7 +841,10 @@ export class CurrentFootprintCopyMainBackendRunner {
     const allocation = retainAllocationReply === undefined ? null : { id, retain: retainAllocationReply, seen: false, stopped: false };
     if (allocation !== null) { need(this.#structureAllocation === null, "STRUCTURE_ALLOCATION_PENDING"); this.#structureAllocation = allocation; }
     try {
-    if (via) {
+    if (inverseHistory) {
+      need(this.#selectedSqlBootstrap !== null && this.#inverseMainHistoryIntent !== null, "INVERSE_HISTORY_ORIGINAL_BOOTSTRAP");
+      await sendOriginalCurrentFootprintInverseMainHistory(this.#selectedSqlBootstrap, this, validateCurrentFootprintInverseMainHistoryCommand(input), id);
+    } else if (via) {
       need(this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null, "VIA_MAIN_ORIGINAL_BOOTSTRAP");
       if (input.phase.startsWith("via-main-structure-")) { const command = validateCurrentPcbViaMainStructureCommand(input), window = await sendOriginalCurrentPcbViaMainStructure(this.#selectedSqlBootstrap, this, command, id);
         if (command.phase === "via-main-structure-step") { need(this.#viaStructureCustody !== null, "VIA_STRUCTURE_ORIGINAL_CUSTODY"); this.#viaStructureCustody.acknowledge(command, id, window); }
@@ -873,7 +904,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     empty.parse(await this.#request({ phase: "remove", method: "Debugger.removeBreakpoint", params: { breakpointId: this.#breakpoint } }, cleanup)); this.#removed = true;
   }
   #fail(error: unknown): void {
-    this.#failed = true;
+    this.#failed = true; this.failFootprintInverseInitialHistory();
     if (this.#lastFailure !== null) { return; }
     if (error instanceof z.ZodError) { this.#lastFailure = "REPLY_SCHEMA"; this.#schemaIssues = schemaIssues(error); }
     else { this.#lastFailure = error instanceof Error ? issuedFailures.get(error) ?? "ORIGINAL_TRANSPORT_OR_CAPTURE" : "ORIGINAL_TRANSPORT_OR_CAPTURE"; }
@@ -1223,6 +1254,43 @@ export class CurrentFootprintCopyMainBackendRunner {
       selectedRequestPackets.set(packet, Object.freeze({ runner: this, pause, text: canonicalJson(packet) })); this.#selectedObservedRequests.set(pause, packet); return packet;
     } finally { this.#selectedRequestPause = null; }
   }
+  /** Own inverse issuer only. Four original same-head requests are armed one
+   * at a time before their worker response may continue. */
+  public async armFootprintInverseInitialHistory(ordinal: number): Promise<void> {
+    need(!this.#busy && this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#appScriptId !== null && this.#appSource !== null && this.#sqlCapture !== null && this.#viaMainOrigin === null && this.#sqlHeld === null && this.#inverseMainHistoryPoint === null && ordinal === this.#inverseMainHistoryRows.length + 1 && ordinal === this.#inverseMainHistoryOrdinal + 1 && ordinal <= INVERSE_HISTORY.repetitions, "INVERSE_HISTORY_ARM_ONCE");
+    const intent = this.originalFootprintInverseRegistrationCommandIntent();
+    const baseline = originalCurrentFootprintInverseMainHistoryBaseline(this.#selectedSqlBootstrap, this, intent);
+    if (this.#inverseMainHistoryBaseline === null) { this.#inverseMainHistoryIntent = intent; this.#inverseMainHistoryBaseline = baseline; }
+    need(this.#inverseMainHistoryIntent === intent && this.#inverseMainHistoryBaseline === baseline, "INVERSE_HISTORY_ORIGINAL_BASELINE");
+    qualifyCurrentPcbViaMainLiveHistorySource(this.#appSource); this.#busy = true; this.#inverseMainHistoryOrdinal = ordinal; this.#inverseMainHistorySignals.set(ordinal, Promise.withResolvers<CurrentFootprintInverseMainHistoryRows | null>());
+    const same = (): void => { this.#same(false); need(this.originalFootprintInverseRegistrationCommandIntent() === intent && this.#selectedSqlBootstrap !== null && originalCurrentFootprintInverseMainHistoryBaseline(this.#selectedSqlBootstrap, this, intent) === baseline, "INVERSE_HISTORY_OWNER_CHANGED"); };
+    const custody = new CurrentFootprintInverseMainHistoryCustody({ scriptId: this.#appScriptId, sqlCaptureObjectId: this.#sqlCapture, assertCurrent: same,
+      expected: (): CurrentFootprintInverseMainHistoryBaseline => { same(); return baseline; },
+      pause: (): CurrentPcbViaMainBeginPause => { same(); const held = this.#inverseMainHistoryPause; need(held !== null && held.identity === this.#pause, "INVERSE_HISTORY_HELD_REQUIRED");
+        return Object.freeze({ identity: held.identity, frameId: held.identity.frameId, raw: held.raw, sqlSite: null, pendingEvents: 0, resumed: held.identity.resumed, resumeAttempted: held.identity.resumeAttempted }); },
+      pendingRequestId: (): number | null => this.#pendingId, busy: (): boolean => this.#busy,
+      send: (command, cleanup): Promise<unknown> => this.#request(command, cleanup),
+      registerPoint: (id, actual): void => { need(this.#inverseMainHistoryPoint === null && !this.#sqlBreakpoints.has(id) && !this.#savedRegistrationBreakpoints.has(id), "INVERSE_HISTORY_POINT_ALIAS"); this.#inverseMainHistoryPoint = Object.freeze({ id, location: actual }); },
+      pointCurrent: (id): boolean => this.#inverseMainHistoryPoint?.id === id,
+      removePoint: (id): void => { need(this.#inverseMainHistoryPoint?.id === id, "INVERSE_HISTORY_ORIGINAL_REMOVE"); this.#inverseMainHistoryPoint = null; },
+      resume: async (identity, command): Promise<unknown> => { same(); const held = this.#inverseMainHistoryPause; need(held !== null && held.identity === identity && this.#pause === identity && !held.identity.resumed && !held.identity.resumeAttempted, "INVERSE_HISTORY_RESUME_ONCE");
+        held.identity.resumeAttempted = true; const result = await this.#request(command); await this.#wait(() => held.identity.resumed); same(); return result; } });
+    this.#inverseMainHistoryCustody = custody; const collector = new CurrentFootprintInverseMainHistoryCollector(custody, this.#sqlCapture); this.#inverseMainHistoryCollector = collector;
+    this.#inverseMainHistoryArming = true;
+    try { await collector.arm(this.#appScriptId); same(); } catch (error) { this.#fail(error); throw error; }
+    finally { this.#inverseMainHistoryArming = false; this.#busy = false; }
+  }
+  public consumeFootprintInverseInitialHistory(command: CurrentFootprintInverseMainHistoryCommand, id: number): void {
+    this.#same(false); need(this.#inverseMainHistoryCustody !== null && this.#inverseMainHistoryIntent === this.originalFootprintInverseRegistrationCommandIntent(), "INVERSE_HISTORY_ORIGINAL_CUSTODY"); this.#inverseMainHistoryCustody.consume(command, id);
+  }
+  /** Waits only on the original collector. It starts no second inspector poll. */
+  public originalFootprintInverseInitialHistoryCompletion(ordinal: number): Promise<CurrentFootprintInverseMainHistoryRows | null> {
+    this.#same(false); const signal = this.#inverseMainHistorySignals.get(ordinal); need(signal !== undefined && this.#inverseMainHistoryIntent === this.originalFootprintInverseRegistrationCommandIntent(), "INVERSE_HISTORY_ORIGINAL_COMPLETION"); return signal.promise;
+  }
+  public failFootprintInverseInitialHistory(): void { for (const signal of this.#inverseMainHistorySignals.values()) { signal.resolve(null); } }
+  public requireFootprintInverseInitialHistoryRows(ordinal: number): CurrentFootprintInverseMainHistoryRows {
+    this.#same(false); const rows = this.#inverseMainHistoryRows[ordinal - 1]; need(Number.isSafeInteger(ordinal) && ordinal >= 1 && ordinal <= INVERSE_HISTORY.repetitions && rows !== undefined && this.#inverseMainHistoryIntent === this.originalFootprintInverseRegistrationCommandIntent(), "INVERSE_HISTORY_COMPLETION_REQUIRED"); return rows;
+  }
   /** Original driver observation only. Matching JSON and another runner cannot
    * recreate it, and it provides no request/SQL continuation by itself. */
   public async observeSelectedMainRequest(): Promise<CurrentSelectedFileMainRequestObservation> {
@@ -1241,6 +1309,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   async #continueSelectedReadonlyRequest(packet: CurrentSelectedFileMainRequestObservation): Promise<void> {
     need(this.#selectedReadonlyRequest(packet) && this.#selectedReadonlyContinuations < 64, "SELECTED_REQUEST_NO_WRITE_GRANT"); const original = selectedRequestPackets.get(packet); need(original !== undefined, "SELECTED_REQUEST_ORIGINAL");
     if (this.#viaLiveHistoryCustody?.wantsReadonlyRequest(packet) === true) { need(this.#selectedRequestReader !== null, "VIA_LIVE_ORIGINAL_REQUEST_READER"); this.#viaLiveHistoryCustody.retainReadonlyRequest(packet, this.#selectedRequestReader.requireOriginalCapture(packet)); }
+    if (this.#inverseMainHistoryCustody?.wantsReadonlyRequest(packet) === true) { need(this.#selectedRequestReader !== null, "INVERSE_HISTORY_ORIGINAL_REQUEST_READER"); this.#inverseMainHistoryCustody.retainReadonlyRequest(packet, this.#selectedRequestReader.requireOriginalCapture(packet)); }
     this.#selectedReadonlyContinuations += 1; this.#sqlApprovedReadRequests.add(original.pause); await this.#sqlResume(original.pause);
     if (this.#sqlHeld === original.pause) { this.#sqlHeld = null; }
   }
@@ -1262,7 +1331,12 @@ export class CurrentFootprintCopyMainBackendRunner {
     this.#busy = true; try {
       await this.#current(); if (this.#sqlHeld !== null) { return; } await this.#pump();
       const pause = this.#pause;
-      if (pause !== null && !pause.resumed && pause.savedRegistrationSite !== undefined) { await this.#continueSavedRegistration(pause); }
+      if (pause !== null && !pause.resumed && this.#inverseMainHistoryPause?.identity === pause) {
+        need(this.#inverseMainHistoryCollector !== null && this.#inverseMainHistoryRows.length + 1 === this.#inverseMainHistoryOrdinal, "INVERSE_HISTORY_ORIGINAL_COLLECTOR");
+        const rows = await this.#inverseMainHistoryCollector.observeHeld(pause.frameId); this.#same(false);
+        need(pause.resumed && this.#inverseMainHistoryPoint === null, "INVERSE_HISTORY_READ_RELEASE_REQUIRED"); this.#inverseMainHistoryRows.push(rows); this.#inverseMainHistoryPause = null; this.#inverseMainHistorySignals.get(this.#inverseMainHistoryOrdinal)?.resolve(rows);
+      }
+      else if (pause !== null && !pause.resumed && pause.savedRegistrationSite !== undefined) { await this.#continueSavedRegistration(pause); }
       else if (pause !== null && !pause.resumed && pause.sqlSite !== undefined) {
         if (pause.sqlSite === "run" && this.#savedRegistrationTracker !== null) { await this.#continueSavedRegistration(pause); }
         else if (pause.sqlSite === "driver") { const request = await this.#observeSelectedMainRequest(pause); if (this.#selectedReadonlyRequest(request)) { await this.#continueSelectedReadonlyRequest(request); } else { this.#sqlHeld = pause; } }

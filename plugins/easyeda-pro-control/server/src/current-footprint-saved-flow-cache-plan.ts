@@ -66,6 +66,7 @@ export function requireOriginalCurrentFootprintSavedFlowCacheInput(plan:CurrentF
   requireOriginalCurrentFootprintSavedFlowCachePlan(plan,prepared);const original=issued.get(plan);need(original!==undefined&&original.prepared===prepared);return original.input;
 }
 export interface CurrentFootprintSavedFlowCachePlanModule {
+  readonly requireOriginalCurrentFootprintSavedFlowCacheInput: typeof requireOriginalCurrentFootprintSavedFlowCacheInput;
   readonly prepareCurrentFootprintSavedFlowCachePlan: typeof prepareCurrentFootprintSavedFlowCachePlan;
   readonly requireOriginalCurrentFootprintSavedFlowCachePlan: typeof requireOriginalCurrentFootprintSavedFlowCachePlan;
 }

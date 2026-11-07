@@ -81,6 +81,7 @@ export class CurrentFootprintInverseWorkerController {
   #timerHeld: { role: "entry" | "returned"; event: WorkerEvent; delivered: boolean; resumeAttempted: boolean } | null = null;
   #timerEntryObserved = false; #timerReturnObserved = false; #timerCompleted = false;
   readonly #coldStepAttempts=new WeakSet<object>();
+  #initialHistoryMainArms = 0;
   #unsupportedStartupHeld:WorkerEvent|null=null;
   #bootstrapSetupAttempted = false;
   #constructionWorkAttempted = false; #constructionStartAttempted = false; #constructionStarted = false;
@@ -193,6 +194,14 @@ export class CurrentFootprintInverseWorkerController {
   public originalColdArms():readonly Readonly<{role:CurrentPcbViaSavedLoadRole;id:string}>[]{this.requireConstructionBootstrap();need(this.#coldPoints.size===13&&this.#coldArming===null&&this.#coldHelpers.length===0);return Object.freeze([...this.#coldPoints].map(([role,id])=>Object.freeze({role,id})));}
   public expectColdHelper(program:string):void{if(this.#coldStartupStarted){need(this.#coldStartupHeld!==null);}else{this.requireConstructionBootstrap();}need(this.#pumping&&this.#coldHelpers.length===0&&this.#constructionHelpers.length===0&&this.#producerHelpers.length===0&&typeof program==="string"&&program.length<=65_536);this.#coldHelpers.push({program,scriptId:null});}
   public async qualifyColdHelper(program:string):Promise<void>{const original=this.#coldHelpers[0];need(original!==undefined&&original.program===program&&original.scriptId!==null);const reply=await this.#bindings.coldRequest({phase:"inverse-cold-helper",method:"Debugger.getScriptSource",params:{scriptId:original.scriptId}});await this.#current();need(record(reply)&&Reflect.ownKeys(reply).length===1&&reply["scriptSource"]===program&&this.#coldHelpers[0]===original);this.#coldHelpers.shift();}
+  /** This exact producer pause distinguishes four detached sync GETs from
+   * the earlier cold-loader GET. The sync cursor must retain it in this pump. */
+  public reserveInitialHistoryMainArm(ordinal: number): void {
+    need(!this.#failed && this.#pumping && this.#coldStartupStarted && this.#source !== null && ordinal === this.#initialHistoryMainArms + 1 && ordinal <= 4);
+    const event = this.#unsupportedStartupHeld, point = this.#producerPoints.get(`project-save-producer-arm-${ordinal === 1 ? "syncEntry" : "syncHistory"}`);
+    need(event !== null && point !== undefined && event.method === "Debugger.paused" && event.sessionId === this.#pair?.pageSessionId);
+    const hits = event.params["hitBreakpoints"]; need(Array.isArray(hits) && hits.length === 1 && hits[0] === point.id); this.#initialHistoryMainArms = ordinal;
+  }
   public requestProducerArm(command:CurrentFootprintInverseProducerArmCommand):Promise<unknown>{this.requireConstructionBootstrap();need(this.#pumping);return this.#bindings.producerArmRequest(command);}
   public expectProducerArm(command: CurrentFootprintInverseProducerArmCommand): void {
     this.requireConstructionBootstrap(); need(this.#pumping && this.#producerArming===null && (command.phase==="project-save-producer-arm"||command.phase==="project-save-producer-guard") && this.#source!==null && command.params.location.scriptId===this.#source.scriptId);
