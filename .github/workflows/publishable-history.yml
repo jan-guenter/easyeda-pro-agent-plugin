@@ -1,0 +1,34 @@
+name: Publishable history
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: history-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  history-content:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the full outgoing history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up the pinned Node runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.18.0
+      - name: Check older objects as well as current files
+        working-directory: plugins/easyeda-pro-control
+        env:
+          PUBLISHED_BASE: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          ulimit -c 0
+          node scripts/check-publishable-history.ts --base "$PUBLISHED_BASE"

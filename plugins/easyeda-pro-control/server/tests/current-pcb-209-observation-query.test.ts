@@ -191,6 +191,21 @@ void test("209 historical selection and observed component child lists preserve 
   assert.throws(() => query("primitives209", { kind: "family", family: "Line" }, fixture("primitives209"), []), /PCB209_QUERY_UNEXPECTED_COMPONENT_INTENT/u);
 });
 
+void test("209 historical generic lookup resolves all requested supported families without assuming live freshness", () => {
+  const request = { kind: "primitive-lookup", primitiveIds: ["attribute-a", "via-a", "component-a", "pad-b"] };
+  const result = query("selection-relations209", request);
+  assert.deepEqual(result["primitiveIds"], request.primitiveIds); assert.equal(result["returnedRowCount"], 4);
+  assert.equal(result["candidateRowCount"], result["sourceObservationRowCount"]);
+  assert.equal(result["historical"], true); assert.equal(result["freshObservation"], false);
+  assert.equal(result["persistenceVerified"], false);
+  assert.ok(Array.isArray(result["attributeParentGroups"]) && result["attributeParentGroups"].length > 0);
+  for (const stage of ["primitives209", "extended-primitives209", "pad-shapes209"] as const) {
+    assert.throws(() => query(stage, request), /PCB209_QUERY_RELATIONS_UNAVAILABLE/u);
+  }
+  assert.throws(() => query("selection-relations209", { ...request, primitiveIds: ["unsupported-id"] }), /PCB209_QUERY_ID_MISSING/u);
+  assert.equal(currentPcb209ObservationQuerySchema.safeParse({ ...request, primitiveIds: ["via-a", "via-a"] }).success, false);
+});
+
 void test("209 historical reconstruction rejects forged flags hashes selected rows family IDs and complete metadata", () => {
   for (const stage of ["primitives209", "extended-primitives209", "selection-relations209"] as const) {
     for (const field of ["executionAuthorized", "saveAuthorized", "persistenceVerified", "sourceMembershipVerified", "matchingSamples"]) {

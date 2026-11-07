@@ -50,6 +50,7 @@ function need(condition: boolean, code: string): asserts condition { if (!condit
 type Inventory = Awaited<ReturnType<typeof readExactSqlInventory>>;
 type Stage = Exclude<typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_NORMAL_STAGES[number], "prepare" | "allocation" | "launch" | "seal">;
 type Lease = ReturnType<typeof acquireCurrentPcbDiagnosticLaunchExclusion>;
+export interface CurrentFootprintForwardClockPreparationReservation { readonly profile: "private.current-footprint-forward-clock-preparation-reservation.v1" }
 interface Prepared {
   readonly checkpoint: CurrentDisposableOpenCheckpoint;
   readonly before: Inventory;
@@ -92,6 +93,8 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
   #bindingSha256: string | null = null;
   #stage: "new" | "launched" | "main" | "browser" | "frames" | "ui-source" | "sealed" = "new";
   #busy = false;
+  #clockPreparationAttempted = false;
+  #clockPreparationReservation: CurrentFootprintForwardClockPreparationReservation | null = null;
   #cleanupBusy = false;
   #failed: unknown = null;
   #factoryInvoked = false;
@@ -568,6 +571,21 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
     need(source.opening === this.#opening && source.result === this.#openingResult && source.owned.before === this.#prepared?.before, "ORIGINAL_SOURCE_INPUTS");
     return Object.freeze({ result: this.#result, owner, source });
   }
+  /** Same-provider custody before the first metadata await. This reservation
+   * adds no writer authority and cannot be reused after partial preparation. */
+  public reserveClockPreparation(): CurrentFootprintForwardClockPreparationReservation {
+    this.#current(); need(this.#stage === "sealed" && !this.#busy && !this.#cleanupBusy && !this.#clockPreparationAttempted, "CLOCK_PREPARATION_CONSUMED");
+    this.#clockPreparationAttempted = true; this.#busy = true;
+    const reservation = Object.freeze({ profile: "private.current-footprint-forward-clock-preparation-reservation.v1" as const });
+    this.#clockPreparationReservation = reservation; return reservation;
+  }
+  /** Called only after that original metadata promise has settled. Failure
+   * ends normal work while retaining all original native cleanup custody. */
+  public finishClockPreparation(reservation: CurrentFootprintForwardClockPreparationReservation, failure: unknown): void {
+    this.#current(true); need(reservation === this.#clockPreparationReservation && this.#busy, "CLOCK_PREPARATION_ORIGINAL_RESERVATION");
+    if (failure !== null) { this.#failed ??= failure; }
+    this.#clockPreparationReservation = null; this.#busy = false;
+  }
   /** Describe this instance's retained progress without returning native
    * handles, current-source proof or any execution/Save authority. */
   public retained(): Readonly<{ stage: string; failed: boolean; busy: boolean; publicationPending: boolean; result: Result | null; originalOwner: boolean; executionAuthorized: false; saveAuthorized: false }> {
@@ -632,6 +650,17 @@ const providerPrototypes = captureCurrentFootprintForwardExecutionPrototypes(Cur
 
 // oxlint-disable-next-line typescript/unbound-method -- The captured method is called only with its exact original private-field provider receiver.
 const originalPublishedSourceInput = CurrentFootprintForwardExecutionOpeningProvider.prototype.requireSourceInput;
+// oxlint-disable typescript/unbound-method -- Captured methods are invoked only on the exact original private-field provider.
+const originalReserveClockPreparation = CurrentFootprintForwardExecutionOpeningProvider.prototype.reserveClockPreparation;
+const originalFinishClockPreparation = CurrentFootprintForwardExecutionOpeningProvider.prototype.finishClockPreparation;
+// oxlint-enable typescript/unbound-method
+export function reserveOriginalCurrentFootprintForwardClockPreparation(provider: CurrentFootprintForwardExecutionOpeningProvider): CurrentFootprintForwardClockPreparationReservation {
+  return originalReserveClockPreparation.call(provider);
+}
+export function finishOriginalCurrentFootprintForwardClockPreparation(provider: CurrentFootprintForwardExecutionOpeningProvider,
+  reservation: CurrentFootprintForwardClockPreparationReservation, failure: unknown): void {
+  originalFinishClockPreparation.call(provider, reservation, failure);
+}
 /** The later main issuer resolves the original settled provider through this
  * captured method. Replacing receiver/prototype lookup cannot mint admission. */
 export function requireCurrentFootprintForwardExecutionOpeningInput(provider: CurrentFootprintForwardExecutionOpeningProvider): ReturnType<CurrentFootprintForwardExecutionOpeningProvider["requireSourceInput"]> {

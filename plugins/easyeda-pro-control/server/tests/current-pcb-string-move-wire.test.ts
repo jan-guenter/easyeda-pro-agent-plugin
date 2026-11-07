@@ -1,3 +1,4 @@
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -62,7 +63,7 @@ void test("move wire rejects substituted programs, phases, effects, groups, argu
 });
 
 void test("five native move programs, twelve-step grammar and original session/group checks match exports", async () => {
-  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const programs = [["wrapper", CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION], ...Object.entries(CURRENT_PCB_STRING_MOVE_CALLS)];
   assert.equal(programs.length, 5);
   for (const [index, entry] of programs.entries()) {

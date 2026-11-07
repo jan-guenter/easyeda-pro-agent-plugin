@@ -17,7 +17,7 @@ void test("historical abandonment registration retains only the local serialized
   const requests: unknown[] = [];
   const historical = Object.freeze({ classification: "historical-abandonment-verified", completionProved: false,
     executionAuthorized: false, authorityRestored: false, replayAllowed: false, saved: false, reopened: false });
-  const scope = vm.createContext({ z, historicalAbandonmentRequestSchema,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, historicalAbandonmentRequestSchema,
     runHistoricalAbandonment: (request: unknown): Promise<typeof historical> => {
       requests.push(request); return Promise.resolve(historical);
     },

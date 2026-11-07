@@ -43,7 +43,7 @@ async function registration(retainedOpener: boolean): Promise<Fixture> {
   function CurrentDisposableOpenCoordinator(this: object, options: { engine: unknown; assertOwner: () => void; runtime: () => unknown }): void {
     assert.equal(options.engine, engine); options.assertOwner(); assert.equal(options.runtime(), ownedRuntime); openerAllocations.push(this);
   }
-  const scope = vm.createContext({ z, currentSchematicOperationRequestSchema, currentSchematicRenameOperationRequestSchema,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, currentSchematicOperationRequestSchema, currentSchematicRenameOperationRequestSchema,
     CURRENT_SCHEMATIC_OPERATION_PURPOSE, currentSymbolOperationToolOutputSchema: z.unknown(), privateFingerprintSchema: z.unknown(),
     currentSchematicRenameOperationCoordinator: undefined, currentDisposableOpenCoordinator: retainedOpener ? opener : undefined,
     engine, facadeMode: "calculation-only", facadeToolRegistered: (): boolean => true,

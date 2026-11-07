@@ -15,7 +15,7 @@ void test("project board registration preserves strict selected/inventory reques
   let invoke: Callback | undefined, requestSchema: z.ZodType | undefined, wrappers = 0;
   const calls: unknown[] = [], engine = Object.freeze({ synthetic: true }), expectedFingerprint = Object.freeze({ synthetic: true });
   const observed = Object.freeze({ cadAuthority: false, persistenceVerified: false, sourceMembershipVerified: false });
-  const scope = vm.createContext({ z, currentProjectBoardMetadataRequestSchema, engine, privateFingerprintSchema: z.unknown(),
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, currentProjectBoardMetadataRequestSchema, engine, privateFingerprintSchema: z.unknown(),
     readCurrentProjectBoardMetadata: (actualEngine: unknown, request: unknown, fingerprint: unknown): Promise<typeof observed> => {
       assert.equal(actualEngine, engine); assert.equal(fingerprint, expectedFingerprint); calls.push(request); return Promise.resolve(observed);
     },
