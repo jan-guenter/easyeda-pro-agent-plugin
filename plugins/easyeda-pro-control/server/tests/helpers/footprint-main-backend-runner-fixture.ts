@@ -181,3 +181,5 @@ export function mainBackendTransportFixture(headAge = false): Readonly<{ transpo
   });
   return { transport, commands, state };
 }
+
+export { CURRENT_MAIN_STARTUP_CONFIG_SQL as CONFIG_SQL } from "../../src/current-main-startup-config-sql.ts";

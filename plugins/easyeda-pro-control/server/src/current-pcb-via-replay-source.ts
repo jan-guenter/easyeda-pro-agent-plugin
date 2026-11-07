@@ -1,0 +1,34 @@
+/** Pinned current209 consistency-manager parser methods. Source data only;
+ * method equality grants no worker continuation or execution authority. */
+import { freezeDeep } from "./sqlite-inventory-core.ts";
+
+export const CURRENT_PCB_VIA_REPLAY_METHODS = freezeDeep({
+  "flowParseFull": {
+    "start": 239_200,
+    "end": 241_089,
+    "bytes": 1889,
+    "sha256": "0a32d5d522f214faab4283c24bf666cbd67536c2087a47c989ff8763c4c61e34",
+    "source": "flowParseFull(e={}){let{cache:t,chunkLength:s=100*1024*1024,idsData:r,history:i}=e,n=\"\",a=null,o,c=null,l=!0,u=\"\",h=0,p=!1,d={},m=t?{}:void 0,f=new Set,g=E=>{m[E]===void 0&&(m[E]=-1),t(E,++m[E],d[E].data.join(`|\n`)),d[E].data.length=0,d[E].size=0,d[E].data.push(d[E].head),d[E].size+=d[E].head.length},y=E=>{if(f.add(n),!t)return;let T=Na(n,a);d[T].data.push(E),d[T].size+=(d[T].size?2:0)+E.length,d[T].size+E.length>s&&g(T)},b=(E,T)=>Ro(E,(w,S,v,_)=>{var I,A,x,C,L,z,H,k;let B=JSON.parse(w);if(B.type===\"EDIT_HEAD\")c=JSON.parse(S),(I=this.onEditHead)==null||I.call(this,c),(A=e.onEditHead)==null||A.call(e,c),p=!0;else if(B.type===\"DOCHEAD\"){let P=JSON.parse(S);a=P.docType,n=P.uuid,o=P.client,P.ticket=B.ticket,p||(c={uuid:P.uuid,username:(x=P==null?void 0:P.user)==null?void 0:x.username,nickname:(C=P==null?void 0:P.user)==null?void 0:C.nickname,updateTime:P==null?void 0:P.updateTime},(L=e.onEditHead)==null||L.call(e,c),p=!0),this.onDocHead(P,c,v,i);let R=Na(n,a);t&&!d[R]&&(d[R]={size:0,data:[],head:\"\"}),t&&(d[R].head=v),y(v)}else{let P=B.num,R=B.client||o;if(r){let O=(k=(H=(z=r.ids)==null?void 0:z[n])==null?void 0:H[R])==null?void 0:k[B.id];if(!O||O[0]!==B.ticket)return;P=O[1],r.size-=1,delete r.ids[n][R][B.id]}if(i){let O=Na(n,a);t&&(i.dNum=(m==null?void 0:m[O])===void 0?0:(m==null?void 0:m[O])+1),i.start=t?d[O].size+2+w.length+2:h+_,i.size=v.length,B.client&&(i.hClient=!0)}this.onLine(B.id,B.ticket,S,B.type,R,a,n,B.firstTicket,B.pend,c||(i==null?void 0:i.editHead),P,v,i),y(v)}},T,this.throwError);return{start:()=>{l=!0},end:()=>{if(u&&b(u,!1),t)for(let E in d)d[E].size&&d[E].data.length>1&&g(E),d[E]=null;l=!1,u=\"\",n=\"\",n=null,o=\"\",c=null,this.onEnd()},update:E=>{if(!l)throw new Error(\"\\u66F4\\u65B0\\u524D\\u672A\\u8C03\\u7528 start \\u65B9\\u6CD5\");let T=b(u+E,!0);h=h+u.length+E.length-((T==null?void 0:T.length)||0),u=\"\",T&&(u=T)},docMap:m,getDocIds:()=>Array.from(f)}}"
+  },
+  "onLine": {
+    "start": 274_888,
+    "end": 274_991,
+    "bytes": 103,
+    "sha256": "c5f3dbc0e5309e5d3d1350c47bf5d5e64d2896163bc602e1cbab7e1f8a1b146d",
+    "source": "onLine(e,t,s,r,i,n,a,o,c,l,u,h,p){this.remoteChange(t,i,a,e,s,r,n,void 0,o,c,l,void 0,void 0,void 0,p)}"
+  },
+  "onDocHead": {
+    "start": 275_156,
+    "end": 276_360,
+    "bytes": 1204,
+    "sha256": "0d8998d30474148fde6795b3fde0c6a57b8c57b1dbdf089aa9f24ac1f4b3452f",
+    "source": "onDocHead(e,t,s,r){r&&e!=null&&e.uuid&&e!=null&&e.updateTime&&(this.historyDocHead[r.uuid]||(this.historyDocHead[r.uuid]={}),(!this.historyDocHead[r.uuid][e.uuid]||this.historyDocHead[r.uuid][e.uuid].updateTime<e.updateTime)&&(this.historyDocHead[r.uuid][e.uuid]=e)),e.updateTime=e.updateTime||(t==null?void 0:t.updateTime),e.user=e.user||{uuid:t==null?void 0:t.uuid,username:t==null?void 0:t.username,nickname:t==null?void 0:t.nickname},this.setMaxTicket(e.ticket),this.docHead[e.uuid]?(!this.docHead[e.uuid].updateTime||this.docHead[e.uuid].updateTime<e.updateTime)&&(this.docHead[e.uuid].client=e.uuid,this.docHead[e.uuid].user=e.user,this.docHead[e.uuid].updateTime=e.updateTime,this.docHead[e.uuid].version=e.version,this.docHead[e.uuid].docType=e.docType,this.docHead[e.uuid].uuid=e.uuid,this.docHead[e.uuid].editVersion=e.editVersion,e.ticket&&e.ticket>this.docHead[e.uuid].ticket&&(this.docHead[e.uuid].ticket=e.ticket)):this.docHead[e.uuid]=e,this.creators[e.uuid]?this.creators[e.uuid].createTime>e.updateTime&&(this.creators[e.uuid].createTime=e.updateTime,this.creators[e.uuid].creator=e.user):this.creators[e.uuid]={createTime:e.updateTime,creator:e.user};for(let i of this.headCbArr)i(e,t)}"
+  },
+  "remoteChange": {
+    "start": 295_994,
+    "end": 298_668,
+    "bytes": 2674,
+    "sha256": "f11159ef785df5c8474c957458af4e69140ece319c74f266e8ac09041b95a527",
+    "source": "remoteChange(e,t,s,r,i,n,a,o,c,l,u,h,p,d,m){var f,g,y,b,E,T;this.setMaxTicket(e),a&&this.setDoctype(s,a),a=this.getDoctype(s),o=o||h===this.getUnique();let w=this.caseInsensitiveTypes.has(n),S=w?r.toUpperCase():r,v=r,_=(b=(y=(g=(f=this.wDocData)==null?void 0:f.get)==null?void 0:g.call(f,s))==null?void 0:y.get(S))==null?void 0:b.last;h&&(this.uniqueIds[h]||(this.uniqueIds[h]={}),this.uniqueIds[h][s]||(this.uniqueIds[h][s]=new Set),this.uniqueIds[h][s].add(S)),this.wDocData.get(s)||this.wDocData.set(s,new Map),this.wDocData.get(s).has(S)||this.wDocData.get(s).set(S,{last:null});let I=this.wDocData.get(s).get(S),A=_?At.getFirstTicket(I):null,x=_&&_.ticket===e&&_.client===t&&!!_.pend!=!!l,C=n!==\"ELE_PLACEHOLDER\"&&n!==\"META_PLACEHOLDER\"&&(!o||o&&this.getIsLocalChange())&&(!x||x&&this.getIsPendChange()),L=At.find(I,P=>P.client===t&&P.ticket===e);if(L){this.setDocMaxTicket(s,e,l),m&&(L.hId&&L.hId!==m.uuid&&(L.hIds||(L.hIds=[]),L.hIds.includes(L.hId)||L.hIds.push(L.hId)),L.hId=m.uuid,L.hNum=m.num,L.start=m.start,m.size&&(L.size=m.size),m.hClient&&(L.hClient=m.hClient),m.dNum&&(L.dNum=m.dNum)),this.getCache&&!this.cacheType.includes(n)&&(E=L.data)!=null&&E.length&&L!=null&&L.hId&&delete L.data,L.pend&&!l&&(delete L.pend,C&&L===I.last&&this.publishChange(s,v,i,n,t,e,At.getFirstTicket(I),l,void 0,x,h,void 0,(T=At.getPreLastNode(I))==null?void 0:T.dataType)),n===\"PAD_NET\"&&this.syncPadNet(s,S);return}let z=e;if(l){let P=[];At.preForEach(I,R=>R.client===t&&R.pend&&R.ticket<e?(P.push(R),!0):!1),P.length&&P.length===At.getLength(I)&&(z=A||e),P.forEach(R=>{At.remove(I,R)})}let H={client:t,ticket:z,dataType:n};w&&(H.actualId=v),m&&(H.hId=m.uuid,H.hNum=m.num,H.start=m.start,m.size&&(H.size=m.size),m.hClient&&(H.hClient=m.hClient),m.dNum&&(H.dNum=m.dNum)),(!this.getCache||!H.hId||!i||this.cacheType.includes(n)||l)&&(H.data=l?i:this.safeString(i)),c!==void 0&&(H.firstTicket=c),l!==void 0&&(H.pend=l),h!==void 0&&(H.unique=h);let k=!_||_.ticket<e||_.ticket===e&&_.client<t;At.insert(I,H);let B=At.getFirstTicket(I);if(this.orderTree.has(s)&&(!_||A>B))try{this.orderTree.setOrderNum(s,this.getDoctype(s),S,I,!0,A&&A>B)}catch(P){console.error(P)}if(this.needDocIdDoctype.includes(a)&&i)if(a===\"SCH_PAGE\"&&n===\"META_PLACEHOLDER\"){let P=JSON.parse(i),R=S.split(\"_\"),O=S.split(\"_\")[0],j=R[1]?R[1]:O;this.docIds.setOrderNum(j,O,B,t,P.max)}else if(a===\"SCH_PAGE\"&&n===\"META\"){let P=JSON.parse(i);this.docIds.setOrderNum(s,P.schematic,B,t)}else n===\"META\"&&this.docIds.setOrderNum(s,a,B,t);if(this.setDocMaxTicket(s,z,l),k){let P=At.getFirstTicket(I);C&&this.publishChange(s,v,i,n,t,e,P,l,void 0,x,h,void 0,_==null?void 0:_.dataType)}n===\"PAD_NET\"&&this.syncPadNet(s,S)}"
+  }
+});

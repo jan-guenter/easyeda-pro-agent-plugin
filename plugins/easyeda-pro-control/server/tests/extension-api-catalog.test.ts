@@ -28,7 +28,7 @@ void test("official and reviewed declarations remain distinct, offline and non-e
 });
 
 void test("installed 209 discovery preserves both historical snapshots and records its exact independent declaration", () => {
-  assert.equal(extensionApiSnapshots.length, 3);
+  assert.equal(extensionApiSnapshots.length, 4);
   const preserved = new Map([
     ["reviewed-installed", "1f6d1ab997e3f8c73272f3561d7ac2f7721c2fa28d6647fbdce49291901acf60"],
     ["official-latest", "4af9c242ee42a3ab7573b9d50ce3858ebf8ac4cadd269de45183e3df1e93ecc2"],
@@ -82,7 +82,7 @@ void test("literal search and pagination are deterministic and do not expose mut
 
 void test("all mounted API namespaces and signatures are bounded and each page advances", () => {
   for (const snapshot of extensionApiSnapshots) {
-    const counts = { "reviewed-installed": { namespaces: 93, methods: 749 }, "official-latest": { namespaces: 99, methods: 806 }, "installed-209": { namespaces: 113, methods: 844 } }[snapshot.reference];
+    const counts = { "reviewed-installed": { namespaces: 93, methods: 749 }, "official-latest": { namespaces: 99, methods: 806 }, "installed-209": { namespaces: 113, methods: 844 }, "packaged-4197": { namespaces: 115, methods: 862 } }[snapshot.reference];
     assert.equal(snapshot.namespaces.length, counts.namespaces);
     assert.equal(snapshot.namespaces.reduce((sum, entry) => sum + entry.methods.length, 0), counts.methods);
     const retainedSignatures = snapshot.namespaces.flatMap((entry) => entry.methods.map((method) => method.signature));

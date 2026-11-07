@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { sha256Text } from "../src/core.ts";
+import { CURRENT_PCB_VIA_WRITE_TARGET_CAPTURE } from "../src/current-pcb-via-write-target-program.ts";
+
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION_SHA256,
   currentPcbDiagnosticPcbOpeningArguments, decodeCurrentPcbDiagnosticPcbOpeningReply } from "../src/current-pcb-diagnostic-pcb-opening.ts";
 import type { CurrentPcbDiagnosticPcbOpeningPhase, CurrentPcbDiagnosticPcbOpeningResult } from "../src/current-pcb-diagnostic-pcb-opening.ts";
@@ -191,4 +193,14 @@ void test("PCB reply decoder rejects extra authority, target drift and contradic
   const hostile = Object.defineProperty({}, "result", { get(): never { reads += 1; throw new Error("GETTER"); } });
   assert.throws(() => decodeCurrentPcbDiagnosticPcbOpeningReply(hostile, target, "preflight"), /PCB_OPENING_REPLY/u);
   assert.equal(reads, 0);
+});
+
+void test("Via target reproof retains the original frame and runs with every main RPC held", () => {
+  const env = fixture({ before: "opened();" });
+  env.evaluate(`globalThis.viaTargetCheck=(${CURRENT_PCB_VIA_WRITE_TARGET_CAPTURE})(target);`);
+  env.evaluate("viaTargetCheck();viaTargetCheck();");
+  assert.equal(env.evaluate("registryCalls+documentCalls+nativeCalls"), 0);
+  env.evaluate('attrs["c_doctype"]="4";');
+  assert.throws(() => env.evaluate("viaTargetCheck();"), /PCB209_VIA_TARGET_REFUSED/u);
+  assert.equal(env.evaluate("registryCalls+documentCalls+nativeCalls"), 0);
 });

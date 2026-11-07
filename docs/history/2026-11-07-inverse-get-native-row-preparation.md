@@ -1,0 +1,13 @@
+# Inverse GET native and row preparation
+
+The original inverse owner now has `prepareFootprintInverseGetLookupIntrinsics(lookupEntry)` and a matching original-state lookup. Preparation requires the genuine first-statement F2 hold, the original pending SDK call and the separate same-UI reflection receipt. It retains one preparation Promise, including failure. Its fixed native lane offers descriptor reads and readonly helper calls; it has no resume, application invocation, restore or delete command.
+
+The collector qualifies the actual constructors and methods reached by the installed clone/RPC path, including inherited constructor chains, default `@@hasInstance`, Array/Promise species, iterator methods, native timers and console methods. Every newly selected object is inspected before traversal. Exact original helper `scriptParsed` events and single source reads are correlated before accepting results. Browser DOM/timer metadata must qualify on the actual owner; Node's JavaScript substitutes are deliberately refused. This is necessary preparation, not proof of the complete clone or GET lifecycle.
+
+The separate passive row reader compares every ordered own field, including own `undefined` values, against the genuine factory row plan. It inspects nested objects before use and retains exact JavaScript field-reference snapshots. Equal-shaped replacement does not satisfy reproof. The reader does not issue a row, native delivery, GET completion or deletion token; actual F2/M8 pause custody and the eventual fixed host remain separate.
+
+The dedicated reservation is 21 readonly calls, up to128 property reads and21 helper source reads:170 CDP requests and172 native controls including bind/completion. The bounded fixed table stores the13 message shapes with the existing64KiB decoder. Existing purpose limits and released role sources are unchanged.
+
+Pinned Node24.18.0 checks passed seven focused cases: actual native metadata and renamed-function refusal; getter-free global selection; readonly hook checks; exact nested row replacement refusal; fixed message parity/refusals; and real byte transport both before the SDK's raw reply and afterward. Both TypeScript projects and changed strict lint passed. A private C#5 pure harness restored the fixed table and passed all13 actual message hashes; it created no owner or application. No tracked helper, pins or bundles were emitted.
+
+F2 remains held. The initialized outer/inner bus queue and callback graph, native forwarding, worker GET completion/rearm, returned F2/M8 rows, tab/history collateral and preference restoration remain required. The genuine GET/DEL job registries remain unissued.
