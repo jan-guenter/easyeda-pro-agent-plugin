@@ -35,3 +35,12 @@ export interface CurrentProjectHistorySqlCompletionValue {
   readonly workerEditVersion: string | null;
   readonly originalHistoryNativeCallbacksCompleted: true; readonly selectedSqlStillFenced: true;
 }
+
+/** Opaque inverse-only setup hold. It never grants a generated startup resume. */
+export interface CurrentFootprintInverseBootstrapHeld { readonly profile: "private.current-footprint-inverse-bootstrap-held.v1" }
+export interface CurrentFootprintInverseBootstrapArguments {
+  readonly sessionId: string; readonly scriptId: string; readonly uniqueContextId: string;
+  readonly project: string; readonly uploadWrapper: string; readonly structureWrapper: string;
+  readonly uploadCallback: string; readonly debounce: string; readonly structureCallback: string;
+}
+export type CurrentFootprintInverseBootstrapPrepared = CurrentFootprintForwardSavedCheckpoint;

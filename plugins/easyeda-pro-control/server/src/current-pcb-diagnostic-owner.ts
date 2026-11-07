@@ -1,5 +1,6 @@
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import type { CurrentFootprintInverseBootstrapArguments, CurrentFootprintInverseBootstrapHeld } from "./current-footprint-inverse-bootstrap-origin.ts";
 import type { CurrentFootprintSavedFlowCachePlan, CurrentFootprintSavedFlowCachePlanModule } from "./current-footprint-saved-flow-cache-plan.ts";
 import type { CurrentFootprintInverseCacheBackupModule as FootprintInverseCacheBackupModule } from "./current-footprint-inverse-cache-backup.ts";
 import type { CurrentFootprintInverseCacheAbsence, CurrentFootprintInverseCacheBackupGrant, CurrentFootprintInverseCacheBindings, CurrentFootprintInverseCacheOrigin } from "./current-footprint-inverse-cache-origin.ts";
@@ -1067,6 +1068,9 @@ export function requireOriginalCurrentPcbViaSaveWorkerOrigin(origin: CurrentPcbV
   if (original === undefined || original.owner !== owner || original.plan !== plan) { throw error("PCB_VIA_SAVE_WORKER_ORIGINAL"); }
   requireViaPlan(owner, plan); original.assertOriginal(); return original.bindings;
 }
+const footprintInverseBootstraps = new WeakMap<CurrentFootprintInverseBootstrapHeld, Readonly<{ owner: CurrentPcbRetainedOwnerCore; prepared: CurrentFootprintForwardSavedCheckpoint;
+  observer: CurrentProjectSaveStructureObserver; origin: CurrentFootprintInverseStructureOrigin; controller: CurrentFootprintInverseWorkerController;
+  args: CurrentFootprintInverseBootstrapArguments; assertOriginal: () => void }>>();
 const footprintInverseConstructions = new WeakMap<CurrentFootprintInverseConstruction, Readonly<{ owner: CurrentFootprintInverseNativeOwner; prepared: CurrentFootprintForwardSavedCheckpoint; data: CurrentProjectSaveProducerConstruction; original: () => void }>>();
 export function requireOriginalCurrentFootprintInverseConstruction(token: CurrentFootprintInverseConstruction, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): CurrentProjectSaveProducerConstruction {
   const original = footprintInverseConstructions.get(token);
@@ -1698,6 +1702,7 @@ class CurrentPcbRetainedOwnerCore {
   #inverseUiReady: Readonly<{ source: CurrentFootprintCopyNativeTarget; context: CurrentPcbDiagnosticContext; pipe: CurrentFootprintInversePipe; selected: ReturnType<CurrentPcbDiagnosticContext["openingContext"]>; windowTabId: string }> | null = null;
   #inverseFrame: Readonly<{ phase: "preflight" | "register" | "open-project"; session: string; context: string; target: CurrentDisposableOpenSealedTarget }> | null = null;
   #inverseHelper: { phase: "preflight" | "register" | "open-project"; scriptId: string | null } | null = null;
+  #inverseBootstrapSetupPromise: Promise<void> | null = null;
   #inverseFlowCachePlanPromise: Promise<CurrentFootprintSavedFlowCachePlan> | null = null;
   #inverseFlowCachePlan: Readonly<{ plan: CurrentFootprintSavedFlowCachePlan; module: CurrentFootprintSavedFlowCachePlanModule;
     prepare: CurrentFootprintSavedFlowCachePlanModule["prepareCurrentFootprintSavedFlowCachePlan"]; lookup: CurrentFootprintSavedFlowCachePlanModule["requireOriginalCurrentFootprintSavedFlowCachePlan"] }> | null = null;
@@ -7362,6 +7367,29 @@ class CurrentPcbRetainedOwnerCore {
       current(); const packet: CurrentFootprintInverseConstruction = Object.freeze({ profile: "private.current-footprint-inverse-construction.v1" });
       footprintInverseConstructions.set(packet, Object.freeze({ owner: this, prepared, data, original: current })); return packet;
     })(); this.#inverseConstructionPromise = original; return original;
+  }
+  /** Same original pump as navigation/construction. A still-pending project
+   * open never has to finish before this arm-only bootstrap setup can run. */
+  public withFootprintInverseBootstrapHeld(setup: (hold: CurrentFootprintInverseBootstrapHeld) => Promise<void>): Promise<void> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); if (this.#inverseBootstrapSetupPromise !== null) { return this.#inverseBootstrapSetupPromise; }
+    const construction = this.#inverseConstructionPromise, controller = this.#inverseWorkerController, observer = this.#inverseConstructionObserver, origin = this.#inverseConstructionOrigin, prepared = originalCurrentFootprintInverseTarget(this);
+    if (observer === null || controller === null || origin === null || construction === null || typeof setup !== "function" || types.isProxy(setup)) { throw error("FOOTPRINT_INVERSE_BOOTSTRAP_NOT_CONSTRUCTED"); }
+    const promise = (async (): Promise<void> => {
+      const packet = await construction; const original = footprintInverseConstructions.get(packet);
+      if (original === undefined || original.owner !== this || original.prepared !== prepared) { throw error("FOOTPRINT_INVERSE_BOOTSTRAP_ORIGINAL_CONSTRUCTION"); } original.original();
+      await this.#settleInverseWorkerProgress(controller.queueOriginalBootstrapSetup(async (): Promise<void> => {
+        const module = await import("./current-project-save-structure-observer.ts"); original.original();
+        const lookup = module.requireOriginalCurrentFootprintInverseBootstrapHeld;
+        await observer.withOriginalFootprintInverseBootstrapHeld(async (hold: CurrentFootprintInverseBootstrapHeld): Promise<void> => {
+          original.original(); const args = lookup(hold, observer, origin, this, prepared);
+          const same = (): void => { original.original();
+            if (this.#inverseWorkerController !== controller || this.#inverseConstructionObserver !== observer || this.#inverseConstructionOrigin !== origin || module.requireOriginalCurrentFootprintInverseBootstrapHeld !== lookup ||
+              lookup(hold, observer, origin, this, prepared) !== args) { throw error("FOOTPRINT_INVERSE_BOOTSTRAP_SETUP_CHANGED"); } };
+          footprintInverseBootstraps.set(hold, Object.freeze({ owner: this, prepared, observer, origin, controller, args, assertOriginal: same }));
+          same(); await Reflect.apply(setup, undefined, [hold]); same();
+        }); original.original();
+      }));
+    })(); this.#inverseBootstrapSetupPromise = promise; return promise;
   }
   /** Retains the one original navigation Promise. Its fulfillment never grants
    * a delete or Save; the worker stays source-held until a later genuine stage. */

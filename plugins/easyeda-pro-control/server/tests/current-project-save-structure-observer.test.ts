@@ -43,12 +43,12 @@ const scopes = (id: string): object => {
 function constructorName(role: Site): string { if (role === "producerUpload") { return "Gd"; } return "Lg"; }
 
 
-async function fixture(changedTree = false, changedTimer = false, changedReceiver = false, changedCallback = false, changedCaller = false, startupCalls = 0, wrongStartupReady = false, wrongStartupReturn = false, wrongStartupFinalizer = false, earlySave = false, prehistoryFault: "body" | "publication" | "mode" | null = null): Promise<Readonly<{ reservation: CurrentProjectStructureBodyReservation; publication: CurrentProjectStructureMainPublication; publish: () => void; bodyConsumed: () => boolean; observer: CurrentProjectSaveStructureObserver; origin: CurrentProjectSaveStructureOrigin; token: CurrentProjectHistorySqlCompletion; resumes: Site[]; consumed: () => boolean; exit: () => void }>> {
+async function fixture(changedTree = false, changedTimer = false, changedReceiver = false, changedCallback = false, changedCaller = false, startupCalls = 0, wrongStartupReady = false, wrongStartupReturn = false, wrongStartupFinalizer = false, earlySave = false, prehistoryFault: "body" | "publication" | "mode" | null = null, inverse = false): Promise<Readonly<{ lookupBootstrap: (hold: object, wrong?: "observer" | "owner" | "origin" | "prepared") => unknown;  reservation: CurrentProjectStructureBodyReservation; publication: CurrentProjectStructureMainPublication; publish: () => void; bodyConsumed: () => boolean; observer: CurrentProjectSaveStructureObserver; origin: CurrentProjectSaveStructureOrigin; token: CurrentProjectHistorySqlCompletion; resumes: Site[]; consumed: () => boolean; exit: () => void }>> {
   const excerpt = worker209ConstructionFixtureSource(); const descriptions = { upload: sourceAt(excerpt, PRODUCERS.serial), structure: sourceAt(excerpt, PRODUCERS.serial), debounce: sourceAt(excerpt, PRODUCERS.debounce),
     uploadCallback: sourceAt(excerpt, CALLBACKS.uploadStructure), structureCallback: sourceAt(excerpt, CALLBACKS.structure), bufferedUpload: sourceAt(excerpt, PRODUCERS.upload), cooperationWrapper: sourceAt(excerpt, PRODUCERS.cooperation), bufferedCallback: sourceAt(excerpt, CALLBACKS.upload), cooperationCallback: sourceAt(excerpt, CALLBACKS.cooperation) };
   const target = { projectUuid: "1".repeat(64), branchUuid: "2".repeat(32), documentUuid: "3".repeat(32) };
-  const prepared = Object.freeze({ qualification: { target }, history: { documents: [{ records: Array.from({ length: 7 }, () => ({})) }] } }); const owner = Object.freeze({ syntheticOwner: true }); const operation = Object.freeze({ syntheticOperation: true });
-  const origin: CurrentProjectSaveStructureOrigin = Object.freeze({ profile: "private.current-pcb-via-save-structure-origin.v1" }); const token = Object.freeze({ profile: "private.current-project-history-sql-completion.v1" });
+  const prepared = inverse ? Object.freeze({ profile: "private.current-footprint-forward-saved-checkpoint.v1" }) : Object.freeze({ qualification: { target }, history: { documents: [{ records: Array.from({ length: 7 }, () => ({})) }] } }); const owner = Object.freeze({ syntheticOwner: true }); const operation = inverse ? prepared : Object.freeze({ syntheticOperation: true });
+  const origin: CurrentProjectSaveStructureOrigin = inverse ? Object.freeze({ profile: "private.current-footprint-inverse-structure-origin.v1" }) : Object.freeze({ profile: "private.current-pcb-via-save-structure-origin.v1" }); const token = Object.freeze({ profile: "private.current-project-history-sql-completion.v1" });
   const publication: CurrentProjectStructureMainPublication = Object.freeze({ profile: "private.current-project-structure-main-publication.v1" }), reservation: CurrentProjectStructureBodyReservation = Object.freeze({ profile: "private.current-project-structure-body-reservation.v1" });
   let bodyConsumed = false, consumed = false, exited = false, finalizer = 0, published = false, startupFinalizers = 0; const resumes: Site[] = [];
   const events: CurrentProjectSaveStructureEvent[] = []; const points = new Map<Site, string>();
@@ -135,7 +135,8 @@ async function fixture(changedTree = false, changedTimer = false, changedReceive
   const constructor = loaded["CurrentProjectSaveStructureObserver"]; assert.ok(typeof constructor === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The compiled original class is instantiated only behind this explicit synthetic native-registry seam; no production capability is supplied.
   const observer = Reflect.construct(constructor, [origin, owner, operation]) as CurrentProjectSaveStructureObserver;
-  return { observer, origin, token, reservation, publication, publish: (): void => { published = true; }, bodyConsumed: (): boolean => bodyConsumed, resumes, consumed: (): boolean => consumed, exit: (): void => { exited = true; } };
+  const lookup = loaded["requireOriginalCurrentFootprintInverseBootstrapHeld"]; assert.ok(typeof lookup === "function");
+  return { lookupBootstrap: (hold: object, wrong?: "observer" | "owner" | "origin" | "prepared"): unknown => Reflect.apply(lookup, undefined, [hold, wrong === "observer" ? Object.freeze({}) : observer, wrong === "origin" ? Object.freeze({ ...origin }) : origin, wrong === "owner" ? Object.freeze({}) : owner, wrong === "prepared" ? Object.freeze({ ...prepared }) : prepared]), observer, origin, token, reservation, publication, publish: (): void => { published = true; }, bodyConsumed: (): boolean => bodyConsumed, resumes, consumed: (): boolean => consumed, exit: (): void => { exited = true; } };
 }
 void test("original-held packet waits history consumption and observes both original serial finalizers within exact budget", async () => {
   const f = await fixture(false, false, false, false, false, 7); await f.observer.arm(); await f.observer.observeConstruction(); const packet = await f.observer.observePacket();
@@ -204,4 +205,28 @@ void test("explicit original constructor hold never resumes bootstrap or starts 
   assert.equal(data.originalSevenConstructorContinuationsObserved, true); assert.equal(data.completeUploadFrontierVerified, false);
   await assert.rejects(f.observer.observeConstruction()); assert.equal(f.resumes.at(-1), "producerProject");
   const before = [...f.resumes]; f.exit(); await f.observer.cleanup(); assert.deepEqual(f.resumes, before);
+});
+
+void test("inverse bootstrap setup receives only its own active opaque hold and never resumes EP", async () => {
+  const f = await fixture(false, false, false, false, false, 0, false, false, false, false, null, true);
+  await f.observer.arm(); await f.observer.observeConstructionBeforeBootstrap(); const before = [...f.resumes], holds: object[] = []; let calls = 0;
+  await f.observer.withOriginalFootprintInverseBootstrapHeld(async original => {
+    calls += 1; holds.push(original); const args = f.lookupBootstrap(original);
+    assert.ok(args !== null && typeof args === "object" && "project" in args); assert.equal(args.project, "project"); assert.equal(Object.isFrozen(args), true);
+    assert.throws(() => f.lookupBootstrap(structuredClone(original)), /INVERSE_BOOTSTRAP_ORIGINAL/u);
+    for (const wrong of ["observer", "owner", "origin", "prepared"] as const) { assert.throws(() => f.lookupBootstrap(original, wrong), /INVERSE_BOOTSTRAP_ORIGINAL/u); }
+    await Promise.resolve(); assert.equal(f.lookupBootstrap(original), args);
+  });
+  assert.equal(calls, 1); assert.deepEqual(f.resumes, before); const [hold] = holds; assert.ok(hold !== undefined);
+  assert.throws(() => f.lookupBootstrap(hold), /INVERSE_BOOTSTRAP_CHANGED/u);
+  await assert.rejects(f.observer.withOriginalFootprintInverseBootstrapHeld(() => Promise.resolve()), /INVERSE_BOOTSTRAP_SETUP/u);
+  const generated = await fixture(); await generated.observer.arm(); await generated.observer.observeConstructionBeforeBootstrap();
+  await assert.rejects(generated.observer.withOriginalFootprintInverseBootstrapHeld(() => Promise.resolve()), /INVERSE_BOOTSTRAP_SETUP/u);
+});
+void test("failed inverse bootstrap setup stays consumed and retains original post-exit cleanup", async () => {
+  const f = await fixture(false, false, false, false, false, 0, false, false, false, false, null, true);
+  await f.observer.arm(); await f.observer.observeConstructionBeforeBootstrap(); const before = [...f.resumes]; const failure = new Error("inert setup refusal");
+  await assert.rejects(f.observer.withOriginalFootprintInverseBootstrapHeld(async () => { await Promise.resolve(); throw failure; }), value => value === failure);
+  assert.equal(f.observer.retained().failed, true); await assert.rejects(f.observer.withOriginalFootprintInverseBootstrapHeld(() => Promise.resolve()));
+  f.exit(); await f.observer.cleanup(); assert.deepEqual(f.resumes, before);
 });

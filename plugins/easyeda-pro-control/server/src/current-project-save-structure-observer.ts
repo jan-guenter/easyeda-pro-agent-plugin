@@ -10,7 +10,7 @@ import { decodeCurrentPcb209WorkerCallbackFunction, decodeCurrentPcb209WorkerCal
 import { captureCurrentProjectStructureCompletionReply } from "./current-project-structure-completion-protocol.ts";
 import { matchesCurrentProjectSaveStructureIntent, requireCurrentProjectPrehistoryBodyIntent, requireCurrentProjectPrehistoryPublication } from "./current-project-save-structure-prehistory.ts";
 import type { CurrentProjectStructureBodyReservation, CurrentProjectStructureMainPublication } from "./current-project-save-structure-prehistory.ts";
-import type { CurrentGeneratedProjectSaveStructureBindings, CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureEvent, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
+import type { CurrentFootprintInverseBootstrapArguments, CurrentFootprintInverseBootstrapHeld, CurrentFootprintInverseBootstrapPrepared, CurrentFootprintInverseStructureOrigin, CurrentGeneratedProjectSaveStructureBindings, CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureEvent, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_CALLS as CALLS, CURRENT_PROJECT_SAVE_STRUCTURE_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS as FRAME_FLAGS,
   CURRENT_PROJECT_SAVE_STRUCTURE_GROUP as GROUP, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES, CURRENT_PROJECT_SAVE_STRUCTURE_STARTUP_CONDITION as STARTUP_CONDITION,
   qualifyCurrentProjectSaveStructureSource, validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
@@ -83,12 +83,26 @@ const completions = new WeakMap<CurrentProjectSaveStructureCompletion, Retained>
 export function requireOriginalCurrentProjectSaveStructureCompletion(value: CurrentProjectSaveStructureCompletion, observer: CurrentProjectSaveStructureObserver): void {
   need(completions.get(value)?.observer === observer, "ORIGINAL_COMPLETION");
 }
+interface InverseBootstrapOriginal {
+  readonly observer: CurrentProjectSaveStructureObserver; readonly origin: CurrentFootprintInverseStructureOrigin; readonly owner: object;
+  readonly prepared: CurrentFootprintInverseBootstrapPrepared; readonly args: CurrentFootprintInverseBootstrapArguments; readonly assertOriginal: () => void;
+}
+const inverseBootstrapHolds = new WeakMap<CurrentFootprintInverseBootstrapHeld, InverseBootstrapOriginal>();
+/** Private native-argument lookup only. The exact live hold, original observer,
+ * origin, owner and prepared object are mandatory, never a copied summary. */
+export function requireOriginalCurrentFootprintInverseBootstrapHeld(hold: CurrentFootprintInverseBootstrapHeld, observer: CurrentProjectSaveStructureObserver,
+  origin: CurrentFootprintInverseStructureOrigin, owner: object, prepared: CurrentFootprintInverseBootstrapPrepared): CurrentFootprintInverseBootstrapArguments {
+  const original = inverseBootstrapHolds.get(hold);
+  need(original !== undefined && original.observer === observer && original.origin === origin && original.owner === owner && original.prepared === prepared, "INVERSE_BOOTSTRAP_ORIGINAL");
+  original.assertOriginal(); return original.args;
+}
 export class CurrentProjectSaveStructureObserver {
   readonly #origin: CurrentProjectSaveStructureOrigin; readonly #owner: object; readonly #operation: object;
   readonly #lookup: (origin: CurrentProjectSaveStructureOrigin, owner: object, operation: object) => unknown;
   readonly #binding: CurrentProjectSaveStructureBindings; readonly #points = new Map<Site, { id: string; removeAttempted: boolean; removed: boolean }>();
   readonly #frameArrays = new Map<Site, string>();
   readonly #replies: unknown[] = []; readonly #finalizers = new Set<"upload" | "structure">();
+  #inverseBootstrapSetupAttempted = false; #inverseBootstrapActive: CurrentFootprintInverseBootstrapHeld | null = null;
   #normal = 0; #cleanup = 0; #events = 0; #busy = false; #failed = false; #armed = false; #constructionAttempted = false; #constructed = false; #packetAttempted = false;
   #releaseAttempted = false; #completionAttempted = false; #complete = false; #closed = false; #uncertainAllocation = false; #groupReleaseAttempted = false;
   #cleanupUncertain = false; #startupMode = false; #startupCalls = 0; #startupOutstanding = 0; #startupActive: string | null = null;
@@ -246,6 +260,33 @@ export class CurrentProjectSaveStructureObserver {
   /** Separate readonly hold after the original constructor/pristine joins.
    * No EP/startup/Cache call or bootstrap continuation is granted here. */
   public observeConstructionBeforeBootstrap(): Promise<void> { return this.#observeConstruction(true); }
+  /** Arm-only callback, outside any serialized native request. The original
+   * worker remains paused and every receiver stays in this private registry. */
+  public async withOriginalFootprintInverseBootstrapHeld(setup: (hold: CurrentFootprintInverseBootstrapHeld) => Promise<void>): Promise<void> {
+    need(this.#origin.profile === "private.current-footprint-inverse-structure-origin.v1" && this.#binding.prepared.profile === "private.current-footprint-forward-saved-checkpoint.v1" &&
+      this.#operation === this.#binding.prepared && typeof setup === "function" && !types.isProxy(setup) && !this.#inverseBootstrapSetupAttempted && !this.#busy, "INVERSE_BOOTSTRAP_SETUP");
+    this.#inverseBootstrapSetupAttempted = true; this.#busy = true;
+    const construction = this.#producerConstruction, origin = this.#origin, pause = this.#pause, point = this.#points.get("bootstrap"), prepared = this.#binding.prepared;
+    const debounce = this.#debounce, project = this.#project, structureCallback = this.#structureCallback, structureWrapper = this.#structureWrapper, uploadCallback = this.#uploadCallback, uploadWrapper = this.#uploadWrapper;
+    const hold: CurrentFootprintInverseBootstrapHeld = Object.freeze({ profile: "private.current-footprint-inverse-bootstrap-held.v1" });
+    const same = (): void => {
+      need(!this.#failed && !this.#closed && this.#busy && this.#inverseBootstrapActive === hold && this.#constructed && this.#nonprivateModeObserved && construction !== null && this.#producerConstruction === construction &&
+        this.#lookup(origin, this.#owner, prepared) === this.#binding && this.#pause === pause && pause?.role === "bootstrap" && !pause.resumeAttempted && this.#points.get("bootstrap") === point && point !== undefined && !point.removeAttempted && !point.removed &&
+        !this.#startupMode && !this.#packetAttempted && this.#held === null && this.#bodyReservation === null && this.#publication === null && this.#history === null && !this.#releaseAttempted && !this.#groupReleaseAttempted &&
+        project !== null && this.#project === project && uploadWrapper !== null && this.#uploadWrapper === uploadWrapper && structureWrapper !== null && this.#structureWrapper === structureWrapper &&
+        uploadCallback !== null && this.#uploadCallback === uploadCallback && debounce !== null && this.#debounce === debounce && structureCallback !== null && this.#structureCallback === structureCallback, "INVERSE_BOOTSTRAP_CHANGED");
+    };
+    this.#inverseBootstrapActive = hold;
+    try {
+      same(); await this.#current(); same();
+      need(project !== null && uploadWrapper !== null && structureWrapper !== null && uploadCallback !== null && debounce !== null && structureCallback !== null, "INVERSE_BOOTSTRAP_RECEIVERS");
+      const args = Object.freeze({ sessionId: this.#binding.sessionId, scriptId: this.#binding.scriptId, uniqueContextId: this.#binding.uniqueContextId,
+        project, uploadWrapper, structureWrapper, uploadCallback, debounce, structureCallback });
+      inverseBootstrapHolds.set(hold, Object.freeze({ observer: this, origin, owner: this.#owner, prepared, args, assertOriginal: same }));
+      await Reflect.apply(setup, undefined, [hold]); same(); await this.#current(); same();
+    } catch (caughtError) { this.#failure(caughtError); throw caughtError; }
+    finally { this.#inverseBootstrapActive = null; this.#busy = false; }
+  }
   #generatedPrepared(): CurrentGeneratedProjectSaveStructureBindings["prepared"] {
     const prepared = this.#binding.prepared;
     need(prepared.profile !== "private.current-footprint-forward-saved-checkpoint.v1", "GENERATED_PUBLICATION_PROFILE_REQUIRED");

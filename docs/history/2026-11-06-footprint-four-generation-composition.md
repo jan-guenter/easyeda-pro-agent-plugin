@@ -703,3 +703,29 @@ it cannot be aliased for this footprint plan. A separate exact footprint cursor,
 head encoder, producer origin and derived native budget remain required before
 bootstrap may resume. Actual delete/main SQL, full closed inverse proof and the
 fourth original absence generation still remain.
+
+The inverse constructor now exposes a separate arm-only bootstrap callback.
+`withFootprintInverseBootstrapHeld(setup)` uses the same retained navigation and
+construction pump, so the original project-open Promise may remain pending.
+The observer's `withOriginalFootprintInverseBootstrapHeld(setup)` consumes its
+one attempt before awaiting and issues an opaque hold only while that callback
+runs. Its private lookup requires the exact hold, observer, origin, owner and
+saved prepared object. The six actual retained PROJECT/wrapper/callback handles
+and original worker source/context are substituted from that registry; caller
+IDs and the inert `producerConstruction()` summary cannot select them.
+
+The original constructor pause, breakpoint, pristine construction, six receiver
+identities and same native bindings are rechecked around setup. Setup runs
+outside a serialized native request. It does not resume bootstrap, EP, startup,
+cache, delete or Save. The hold expires at callback return. A failed setup stays
+consumed and retains the original observer's post-exit cleanup. Generated Via/SCH
+constructor and startup continuations are unchanged. The next inverse producer
+issuer must retain its own original origin and fixed arm receipts at this point;
+it cannot reuse the expired hold as post-resume authority.
+
+Ten focused observer checks, full types and strict changed-file lint pass,
+including active/copied/wrong-reference holds, generated-purpose refusal,
+no-resume behavior and failed setup cleanup. This increment adds no CDP command,
+helper bytes or request authority. The separate footprint cache cursor and
+producer codebook remain unmounted; full upload/delete/Save and four-generation
+acceptance remain false. No Windows/app/native/MCP operation ran.

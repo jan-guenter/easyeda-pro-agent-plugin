@@ -44,6 +44,8 @@ export class CurrentFootprintInverseWorkerController {
   readonly #constructionRemoved = new Set<string>();
   readonly #constructionHelpers: { program: string; scriptId: string | null }[] = [];
   #constructionWork: Readonly<{ run: () => Promise<void>; result: ReturnType<typeof Promise.withResolvers<boolean>> }> | null = null;
+  #bootstrapSetupWork: Readonly<{ run: () => Promise<void>; result: ReturnType<typeof Promise.withResolvers<boolean>> }> | null = null;
+  #bootstrapSetupAttempted = false;
   #constructionWorkAttempted = false; #constructionStartAttempted = false; #constructionStarted = false;
   #constructionHeld: CurrentProjectSaveStructureSite | null = null; #constructionResume: CurrentProjectSaveStructureSite | null = null;
   #source: CurrentPcbViaSavedLoadProjectSourceHeld | null = null; #failed = false; #reading = false; #eventCount = 0; #networkEvents = 0; #pumping = false;
@@ -54,7 +56,7 @@ export class CurrentFootprintInverseWorkerController {
     for (const [index, name] of fields.entries()) { const d = Object.getOwnPropertyDescriptor(bindings, name); need(d !== undefined && Object.hasOwn(d, "value") && typeof d.value === (index < 3 ? "string" : "function") && !types.isProxy(d.value)); }
     need(token(bindings.parentSessionId) && token(bindings.windowTabId) && /^[a-f\d]{64}$/u.test(bindings.projectUuid)); this.#bindings = bindings; Object.freeze(this);
   }
-  public fail(): void { if (!this.#failed) { this.#failed = true; this.#completion.resolve(null); const queued = this.#constructionWork; this.#constructionWork = null; queued?.result.reject(new Error("FOOTPRINT_INVERSE_WORKER_CURSOR")); this.#bindings.fail(); } }
+  public fail(): void { if (!this.#failed) { this.#failed = true; this.#completion.resolve(null); const queued = this.#constructionWork; this.#constructionWork = null; queued?.result.reject(new Error("FOOTPRINT_INVERSE_WORKER_CURSOR")); const setup = this.#bootstrapSetupWork; this.#bootstrapSetupWork = null; setup?.result.reject(new Error("FOOTPRINT_INVERSE_WORKER_CURSOR")); this.#bindings.fail(); } }
   #attach(event: DiagnosticEvent): void {
     const params = event.params, sessionId = params["sessionId"], target = params["targetInfo"];
     need((event.sessionId === undefined || event.sessionId === this.#bindings.parentSessionId) && Reflect.ownKeys(params).length === 3 && record(target) &&
@@ -136,6 +138,10 @@ export class CurrentFootprintInverseWorkerController {
     need(this.#result !== null && !this.#constructionWorkAttempted && !this.#failed && typeof run === "function" && !types.isProxy(run)); this.#constructionWorkAttempted = true;
     const result = Promise.withResolvers<boolean>(); this.#constructionWork = Object.freeze({ run, result }); return result.promise;
   }
+  public queueOriginalBootstrapSetup(run: () => Promise<void>): Promise<boolean> {
+    this.requireConstructionBootstrap(); need(!this.#bootstrapSetupAttempted && !this.#failed && !this.#pumping && this.#constructionWork === null && this.#constructionArming === null && this.#constructionHelpers.length === 0 && typeof run === "function" && !types.isProxy(run)); this.#bootstrapSetupAttempted = true;
+    const result = Promise.withResolvers<boolean>(); this.#bootstrapSetupWork = Object.freeze({ run, result }); return result.promise;
+  }
   public async startConstructionSource(): Promise<void> {
     need(this.#pumping && this.#result !== null && this.#source !== null && !this.#constructionStartAttempted && this.#constructionPoints.size === CONSTRUCTORS.length + 8);
     this.#constructionStartAttempted = true;
@@ -164,11 +170,11 @@ export class CurrentFootprintInverseWorkerController {
     this.#constructionHeld = selected[0]; await this.#bindings.constructionHeld(selected[0], event); await this.#current(); return { ...event, method: "Debugger.paused", sessionId: event.sessionId };
   }
   public async pump(): Promise<void> {
-    need(!this.#failed); if (this.#browser === null || this.#page === null || this.#pumping || this.#result !== null && this.#constructionWork === null) { return; }
+    need(!this.#failed); if (this.#browser === null || this.#page === null || this.#pumping || this.#result !== null && this.#constructionWork === null && this.#bootstrapSetupWork === null) { return; }
     this.#pumping = true;
     try {
       if (this.#result === null) { await this.observeProjectSourceHeld(); }
-      else { const work = this.#constructionWork; need(work !== null); this.#constructionWork = null;
+      else { const work = this.#constructionWork ?? this.#bootstrapSetupWork; need(work !== null); if (this.#constructionWork === work) { this.#constructionWork = null; } else { this.#bootstrapSetupWork = null; this.requireConstructionBootstrap(); }
         try { await work.run(); work.result.resolve(true); } catch (error) { work.result.reject(error); throw error; } }
     } catch (error) { this.fail(); throw error; } finally { this.#pumping = false; }
   }
