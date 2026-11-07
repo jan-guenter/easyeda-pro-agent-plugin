@@ -6,6 +6,9 @@
 
 - [2026-11-07 Schematic saved scene codec](2026-11-07-schematic-saved-scene-codec.md). Three finite readonly stages with original-session framing and unchanged scene semantics; fresh native birth and cold-load proof remain separate.
 
+- [Original schematic uploader entry](2026-11-07-schematic-original-uploader-entry.md)
+
+- [Original schematic CM and no-echo preparation](2026-11-07-schematic-original-cm-noecho-preparation.md)
 - [2026-11-07 Schematic upload helper callees](2026-11-07-schematic-uploader-helper-callees.md). Exact24 uninvoked helper/checker metadata records; original receivers and upload continuation remain separate.
 
 - [Original schematic CM and no-echo preparation](2026-11-07-schematic-original-cm-noecho-preparation.md)

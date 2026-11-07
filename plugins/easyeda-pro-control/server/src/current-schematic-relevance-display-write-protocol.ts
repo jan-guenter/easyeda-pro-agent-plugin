@@ -1,3 +1,4 @@
+import {currentSchematicRelevanceUploadEntryWire} from "./current-schematic-relevance-upload-entry-wire.ts";
 import {currentSchematicRelevanceNoEchoWire} from "./current-schematic-relevance-noecho-wire.ts";
 import {currentSchematicRelevanceNormalRecordWire} from "./current-schematic-relevance-normal-record-wire.ts";
 import {currentSchematicRelevanceNormalDisposalWire} from "./current-schematic-relevance-normal-disposal-wire.ts";
@@ -39,6 +40,13 @@ export function currentSchematicRelevanceDisplayWriteNativeRequest(chunk: Buffer
     if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_MONITOR_BATCH_WIRE"); }
     const fixed = currentSchematicRelevanceMonitorBatchWire(input, id);
     if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceMonitorBatchCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_MONITOR_BATCH_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceUploadEntryCommand")) {
+    const { id, sessionId, schematicRelevanceUploadEntryCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_UPLOAD_ENTRY_WIRE"); }
+    const fixed = currentSchematicRelevanceUploadEntryWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceUploadEntryCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_UPLOAD_ENTRY_FIXED_WIRE"); }
     return fixed.request;
   }
   if (Object.hasOwn(raw, "schematicRelevanceNoEchoCommand")) {
