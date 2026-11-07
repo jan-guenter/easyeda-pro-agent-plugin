@@ -165,3 +165,20 @@ or the application module, and verifies the real metadata shapes and added-own-
 field refusal. Six focused source/program/grammar/metadata/provenance checks
 pass; these are not connected owner validation. Original purpose adapters and
 native codebooks remain separate work.
+
+## Shared fixed encoder
+
+Both new purpose ledgers use one immutable packed codebook. The TypeScript
+wire exports the exact43 observation selectors and the corresponding native
+phase order; steps9/32/38 are the three actual pause entries. Its52 unique
+fixed packets include bounded cleanup. The shared class only encodes messages:
+it has no process, send, intent or completion authority. Each original purpose
+must enforce its own stage, handles, pause and consumed effect intent.
+
+Two encoder/selector/composition cases pass. A private full Linux C#5 compile
+ran all52 independent exact-message SHA expectations, wrong-method/extra-field
+refusals and step bounds using the existing bounded FixedTable decoder. The
+shared encoder adds13,762 compiler bytes; that private base plus the encoder
+and smoke entry was2,080,035 bytes, below the unchanged2MiB compiler cap.
+This measures that source combination, not a future merged helper or Windows
+execution. No tracked helper, pins, generated bundle or native owner changed.
