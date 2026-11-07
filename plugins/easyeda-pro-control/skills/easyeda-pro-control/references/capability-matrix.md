@@ -72,6 +72,12 @@ original helper release. Its missing acknowledgment remains unknown. Component,
 other variants and later runtime admission remain separate. Component-only
 original-Job abort and the manager's
 retained cleanup adapter do not transfer ownership or replay a failed read.
+The [generated disposable Via controller](generated-pcb-via-write.md) has a
+separate original writer, saved reader, full SQL/source checks and failure
+cleanup composition. Offline `pcb209-via-write` reports its public-utility
+registration status and exact schemas. Native payload integration and connected
+validation remain pending; discovery grants no execution, ordinary-project
+writer or inverse authority.
 The separate `observe-primitives` stage returns two matching Line/Arc/Via and
 parentless String loaded-view projections with ordered IDs. Its256-row per-family
 and384KiB aggregate bounds refuse excess output. It does not include raw models

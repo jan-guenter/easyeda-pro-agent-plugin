@@ -35,6 +35,10 @@ For new fixed Via or Line/Via validation projects, read
 [generated fixture import](references/managed-fixture-import.md). Import uses
 the original ordinary launch, exclusive native destination and tracked Promise;
 its partial SDK result does not accept closed SQL or registration.
+For the separate generated disposable Via controller, read
+[its original writer and cleanup workflow](references/generated-pcb-via-write.md).
+Query its mounted status first; schemas and source composition are not connected
+validation or ordinary-project writing permission.
 For the one supported unfinished Source v2 history, use the separate
 [historical startup-blocker receipt](references/current-footprint-forward-source-relinquishment.md)
 only after original cleanup. It preserves unknown original outcomes.

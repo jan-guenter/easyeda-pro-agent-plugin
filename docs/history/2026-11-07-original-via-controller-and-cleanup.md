@@ -53,3 +53,14 @@ writing it. Further fixed-program packing must preserve exact expanded code
 and the existing helper limit. No full local suite was repeated. No application or native helper was started by
 these checks. No new PR, installation or publication occurred. The production
 project was not opened or changed.
+
+The controller now has offline `pcb209-via-write` schema discovery and exact
+argument validation, with its mounted state derived from the public-utility
+registry. Two discovery/validation cases passed, the complete62-case coverage
+file passed after adding the new lifecycle schema to its existing strict
+discovery checks, and the855-method inventory was regenerated. The Via create
+and Save routes remain explicitly blocked in that inventory pending native
+integration and connected acceptance. The control reference documents original
+cleanup sequencing; all seven packaged skill validators and all seven official
+quick skill checks passed. This selected-fixture request/DAG proof is not a
+general network-client or shared-account exclusion claim.

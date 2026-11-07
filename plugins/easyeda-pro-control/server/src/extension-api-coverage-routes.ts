@@ -39,6 +39,24 @@ groups.push({ namespace: "sys_FileManager", methods: ["importProjectByProjectFil
   inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "fixture-import", query: { includeSchemas: true } } } },
 } });
 
+// This is a blocked source composition until its matching native payload and
+// Connected saved/reopened case exist. No production or standalone Save route.
+for (const [namespace, methods] of [["pcb_PrimitiveVia", ["create"]], ["pcb_Document", ["save"]]] as const) {
+  groups.push({ namespace, methods: [...methods], route: {
+    tool: "easyeda_control_current_pcb_via_write", selector: "execute;original-generated-disposable-via-only", implementation: "public-method",
+    executionState: "blocked", documentTypes: [3],
+    blockedReason: "The original typed controller and complete proof composition are implemented in source, but matching native generation/installation and a connected full saved/reopened case are pending. The public-utility tool is not mounted yet.",
+    scope: "One original generated Via-only or Line/Via PCB, empty net, normal unlocked Via, fixed masks and no inverse. Preparation consumes the explicitly named same-facade released closed data token; no caller path, owner or JavaScript. An original once-consumed SDK create and Save join the real clock/body/Main SQL, upload/cache/finalizer drain, full closed SQL/source proof and separate fresh saved reader. The controller retains all original cleanup/publication promises. A failed closed disposable operation can publish a separate immutable abandonment record preserving saved/reopened=false, with no replay, restored authority or native owner transfer. Completion concerns that original selected fixture and request/DAG, not general network-client or shared-account exclusion. This route does not implement named nets, other Via types, ordinary-project writing or an unrestricted Save.",
+    source: ["current-pcb-via-write-validation.ts", "current-pcb-via-write-contract.ts", "current-pcb-via-write-coordinator.ts", "current-pcb-via-write-workflow.ts",
+      "current-pcb-via-write-observers.ts", "current-pcb-via-write-program.ts", "current-pcb-via-save-drain-cursor.ts", "current-pcb-via-write-closed-proof.ts",
+      "current-pcb-via-saved-readback-workflow.ts", "current-pcb-via-write-abandonment.ts", "current-pcb-via-write-admission.ts", "index.ts"],
+    tests: ["current-pcb-via-write-validation.test.ts", "current-pcb-via-write-workflow.test.ts", "current-pcb-via-write-coordinator.test.ts",
+      "current-pcb-via-save-drain.test.ts", "current-pcb-via-saved-readback-workflow.test.ts", "current-pcb-via-write-abandonment.test.ts"],
+    validation: "offline-regression;current-live-unclaimed",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb209-via-write", query: { includeSchemas: true } } } },
+  } });
+}
+
 for (const method of ["getPrimitiveByPrimitiveId", "getPrimitivesByPrimitiveId"]) {
   groups.push({ namespace: "pcb_Primitive", methods: [method], route: {
     tool: "easyeda_control_pcb_geometry", selector: `eda.pcb_Primitive.${method}`, implementation: "native-task-equivalent",
