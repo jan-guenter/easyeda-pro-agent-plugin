@@ -1,3 +1,5 @@
+import { qualifyCurrentFootprintInverseNativeChannelHelper } from "./current-footprint-inverse-native-channel-protocol.ts";
+import type { CurrentFootprintInverseNativeChannelCommand } from "./current-footprint-inverse-native-channel-protocol.ts";
 import { qualifyCurrentFootprintInverseOwnDataHelper } from "./current-footprint-inverse-own-data-protocol.ts";
 import type { CurrentFootprintInverseOwnDataCommand } from "./current-footprint-inverse-own-data-protocol.ts";
 import { qualifyCurrentFootprintInverseDeleteWorkerPeerHelper } from "./current-footprint-inverse-delete-worker-peer-protocol.ts";
@@ -17,8 +19,8 @@ import type { CurrentFootprintInverseColdLoadCommand, CurrentFootprintInverseCol
  * bootstrap algorithm, not a saved reader controller, origin or purpose.
  * Browser/page attachments must name the same suspended original target. */
 import type { CurrentFootprintInverseProducerArmCommand } from "./current-footprint-inverse-producer-protocol.ts";
-import type { CurrentFootprintInverseConstructionCommand, CurrentProjectSaveStructureEvent } from "./current-footprint-inverse-construction-protocol.ts";
 // oxlint-disable-next-line import/max-dependencies -- One original event reader owns construction, cold, callback, condition and timer packets; splitting readers would duplicate event custody.
+import type { CurrentFootprintInverseConstructionCommand, CurrentProjectSaveStructureEvent } from "./current-footprint-inverse-construction-protocol.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES } from "./current-project-save-structure-protocol.ts";
 import type { CurrentProjectSaveStructureSite } from "./current-project-save-structure-protocol.ts";
 import { types } from "node:util";
@@ -57,6 +59,7 @@ export interface CurrentFootprintInverseWorkerControllerBindings {
   readonly conditionSourceRequest:(scriptId:string)=>Promise<unknown>;
   readonly timerRequest: (command: CurrentFootprintInverseTimerCommand) => Promise<unknown>;
   readonly timerHeld: () => Promise<void>;
+  readonly nativeChannelRequest:(command:CurrentFootprintInverseNativeChannelCommand)=>Promise<unknown>;
   readonly ownDataRequest:(command:CurrentFootprintInverseOwnDataCommand)=>Promise<unknown>;
   readonly deleteWorkerPeerRequest:(command:CurrentFootprintInverseDeleteWorkerPeerCommand)=>Promise<unknown>;
   readonly deleteJobRequest:(command:CurrentFootprintInverseDeleteJobCommand)=>Promise<unknown>;
@@ -122,6 +125,7 @@ export class CurrentFootprintInverseWorkerController {
   readonly #libraryPoints=new Map<keyof typeof LIBRARY_SITES,string>();readonly #libraryResolutions=new Map<string,keyof typeof LIBRARY_SITES>();readonly #libraryHelpers:{program:string;source:string;scriptId:string|null}[]=[];
   #libraryArming:keyof typeof LIBRARY_SITES|null=null;#libraryBound=false;#libraryFirstObserved=false;#libraryReturnedObserved=false;#libraryMountObserved=false;#librarySuspended=false;#libraryCompleted=false;
   #libraryHeld:{role:"firstLoop"|"loopReturned"|"mountReturned";event:WorkerEvent;delivered:boolean;resumeAttempted:boolean}|null=null;
+  readonly #nativeChannelHelpers:{program:string;scriptId:string|null}[]=[];#nativeChannelHelperAttempts=0;
   readonly #ownDataHelpers:{program:string;scriptId:string|null}[]=[];#ownDataHelperAttempts=0;
   readonly #deleteWorkerPeerHelpers:{program:string;scriptId:string|null}[]=[];#deleteWorkerPeerHelperAttempts=0;
   readonly #deleteJobHelpers:{program:string;scriptId:string|null}[]=[];#deleteJobHelperAttempts=0;#deleteJobObservationAttempted=false;
@@ -140,7 +144,7 @@ export class CurrentFootprintInverseWorkerController {
   #source: CurrentPcbViaSavedLoadProjectSourceHeld | null = null; #failed = false; #reading = false; #eventCount = 0; #networkEvents = 0; #pumping = false;
   public constructor(bindings: CurrentFootprintInverseWorkerControllerBindings) {
     need(bindings !== null && typeof bindings === "object" && !types.isProxy(bindings) && Object.getPrototypeOf(bindings) === Object.prototype && Object.isFrozen(bindings));
-    const fields = ["parentSessionId", "projectUuid", "windowTabId", "bindWorker", "request", "poll", "assertCurrent", "projectSourceHeld", "constructionRequest", "initialSyncRequest", "initialSyncHeld", "initialCacheRequest", "initialCacheHeld", "startupQueueRequest", "startupCallbackRequest", "startupCallbackHeld", "conditionSourceRequest", "timerRequest", "timerHeld", "libraryRequest", "libraryHeld", "deleteBindingRequest", "deleteEncoderRequest", "clockWorkerRequest", "ownDataRequest", "deleteWorkerPeerRequest", "deleteJobRequest", "deleteRpcRequest", "deleteEntryRequest", "modelStepRequest", "startupIdleReady", "settleStartupPromises", "coldStepRequest", "coldRequest", "producerArmRequest", "constructionHeld", "fail"];
+    const fields = ["parentSessionId", "projectUuid", "windowTabId", "bindWorker", "request", "poll", "assertCurrent", "projectSourceHeld", "constructionRequest", "initialSyncRequest", "initialSyncHeld", "initialCacheRequest", "initialCacheHeld", "startupQueueRequest", "startupCallbackRequest", "startupCallbackHeld", "conditionSourceRequest", "timerRequest", "timerHeld", "libraryRequest", "libraryHeld", "deleteBindingRequest", "deleteEncoderRequest", "clockWorkerRequest", "nativeChannelRequest", "ownDataRequest", "deleteWorkerPeerRequest", "deleteJobRequest", "deleteRpcRequest", "deleteEntryRequest", "modelStepRequest", "startupIdleReady", "settleStartupPromises", "coldStepRequest", "coldRequest", "producerArmRequest", "constructionHeld", "fail"];
     need(Reflect.ownKeys(bindings).length === fields.length);
     for (const [index, name] of fields.entries()) { const d = Object.getOwnPropertyDescriptor(bindings, name); need(d !== undefined && Object.hasOwn(d, "value") && typeof d.value === (index < 3 ? "string" : "function") && !types.isProxy(d.value)); }
     need(token(bindings.parentSessionId) && token(bindings.windowTabId) && /^[a-f\d]{64}$/u.test(bindings.projectUuid)); this.#bindings = bindings; Object.freeze(this);
@@ -167,7 +171,7 @@ export class CurrentFootprintInverseWorkerController {
         this.#networkEvents += 1; need(this.#networkEvents <= 512); return;
       }
       if (this.#source !== null && event.method === "Debugger.scriptParsed" && event.params["url"] === "") {
-        const expected = [...this.#constructionHelpers,...this.#producerHelpers,...this.#coldHelpers,...this.#startupCallbackHelpers,...this.#timerHelpers,...this.#libraryHelpers,...this.#deleteBindingHelpers,...this.#deleteEncoderHelpers,...this.#clockWorkerHelpers,...this.#deleteEntryHelpers,...this.#deleteRpcHelpers,...this.#deleteJobHelpers,...this.#deleteWorkerPeerHelpers,...this.#ownDataHelpers,...this.#startupQueueHelpers,...this.#initialCacheHelpers,...this.#initialSyncHelpers].find(value => value.scriptId === null);
+        const expected = [...this.#constructionHelpers,...this.#producerHelpers,...this.#coldHelpers,...this.#startupCallbackHelpers,...this.#timerHelpers,...this.#libraryHelpers,...this.#deleteBindingHelpers,...this.#deleteEncoderHelpers,...this.#clockWorkerHelpers,...this.#deleteEntryHelpers,...this.#deleteRpcHelpers,...this.#deleteJobHelpers,...this.#deleteWorkerPeerHelpers,...this.#ownDataHelpers,...this.#nativeChannelHelpers,...this.#startupQueueHelpers,...this.#initialCacheHelpers,...this.#initialSyncHelpers].find(value => value.scriptId === null);
         const scriptId=event.params["scriptId"];need(token(scriptId)&&event.params["executionContextId"]===this.#source.executionContextId);
         if(expected===undefined){need(this.#conditionBound>0&&this.#conditionRoles.size>0&&!this.#conditionSeenIds.has(scriptId)&&this.#conditionSeenIds.size<currentFootprintInverseConditionBudget(this.#conditionBound));this.#conditionSeenIds.add(scriptId);this.#conditionScriptIds.push(scriptId);}else{expected.scriptId=scriptId;}return;
       }
@@ -340,8 +344,11 @@ export class CurrentFootprintInverseWorkerController {
   public expectDeleteEntryArm():void{need(this.#pumping&&!this.#failed&&this.#deletePreparationAttempted&&!this.#deleteEntryArming&&this.#deleteEntryPoint===null&&!this.#deleteEntryConsumed);this.#deleteEntryArming=true;}
   public registerDeleteEntryArm(reply:unknown):void{need(this.#source!==null&&this.#pumping&&!this.#failed&&this.#deleteEntryArming&&this.#deleteEntryPoint===null);const id=currentFootprintInverseDeleteEntryPoint(reply,this.#source.scriptId);need(this.#deleteEntryResolution===null||this.#deleteEntryResolution===id);this.#deleteEntryPoint=id;this.#deleteEntryArming=false;}
   public requireDeleteEntryCustody():void{need(!this.#failed&&this.#startupDrained&&this.#deletePreparationAttempted&&this.#deleteEntryPoint!==null&&!this.#deleteEntryArming);}
-  public requireDeleteEntryAdmission():void{need(!this.#failed&&this.#startupDrained&&this.#deletePreparationAttempted&&this.#deleteEntryPoint!==null&&!this.#deleteEntryArming&&this.#deleteEntryHeld===null&&this.#deleteEntryHelpers.length===0&&this.#deleteRpcHelpers.length===0&&this.#deleteRpcHelperAttempts===5&&this.#deleteWorkerPeerHelpers.length===0&&this.#deleteWorkerPeerHelperAttempts===2&&this.#ownDataHelpers.length===0&&this.#ownDataHelperAttempts===4);}
+  public requireDeleteEntryAdmission():void{need(!this.#failed&&this.#startupDrained&&this.#deletePreparationAttempted&&this.#deleteEntryPoint!==null&&!this.#deleteEntryArming&&this.#deleteEntryHeld===null&&this.#deleteEntryHelpers.length===0&&this.#deleteRpcHelpers.length===0&&this.#deleteRpcHelperAttempts===5&&this.#deleteWorkerPeerHelpers.length===0&&this.#deleteWorkerPeerHelperAttempts===2&&this.#ownDataHelpers.length===0&&this.#ownDataHelperAttempts===4&&this.#nativeChannelHelpers.length===0&&this.#nativeChannelHelperAttempts===4);}
   public consumeDeleteEntryAdmission():void{this.requireOriginalStartupDrained();this.requireDeleteEntryAdmission();need(!this.#deleteEntryConsumed);this.#deleteEntryConsumed=true;}
+  public requestNativeChannel(command:CurrentFootprintInverseNativeChannelCommand):Promise<unknown>{need(this.#pumping&&!this.#failed&&this.#deletePreparationAttempted&&!this.#deleteEntryConsumed);return this.#bindings.nativeChannelRequest(command);}
+  public expectNativeChannelHelper(program:string):void{const source=`(${program})`;qualifyCurrentFootprintInverseNativeChannelHelper(source,program);need(this.#pumping&&!this.#failed&&this.#deletePreparationAttempted&&!this.#deleteEntryConsumed&&this.#nativeChannelHelpers.length===0&&this.#nativeChannelHelperAttempts<4);this.#nativeChannelHelperAttempts+=1;this.#nativeChannelHelpers.push({program:source,scriptId:null});}
+  public async qualifyNativeChannelHelper(program:string):Promise<void>{const original=this.#nativeChannelHelpers[0];need(this.#pumping&&!this.#failed&&original!==undefined&&original.program===`(${program})`&&original.scriptId!==null);const raw=await this.#bindings.nativeChannelRequest({phase:"inverse-native-channel-helper",method:"Debugger.getScriptSource",params:{scriptId:original.scriptId}});await this.#current();need(record(raw)&&Reflect.ownKeys(raw).length===1&&this.#nativeChannelHelpers[0]===original);qualifyCurrentFootprintInverseNativeChannelHelper(raw["scriptSource"],program);this.#nativeChannelHelpers.shift();}
   public requestOwnData(command:CurrentFootprintInverseOwnDataCommand):Promise<unknown>{need(this.#pumping&&!this.#failed&&this.#deletePreparationAttempted&&!this.#deleteEntryConsumed);return this.#bindings.ownDataRequest(command);}
   public expectOwnDataHelper(program:string):void{const source=`(${program})`;qualifyCurrentFootprintInverseOwnDataHelper(source,program);need(this.#pumping&&!this.#failed&&this.#deletePreparationAttempted&&!this.#deleteEntryConsumed&&this.#ownDataHelpers.length===0&&this.#ownDataHelperAttempts<4);this.#ownDataHelperAttempts+=1;this.#ownDataHelpers.push({program:source,scriptId:null});}
   public async qualifyOwnDataHelper(program:string):Promise<void>{const original=this.#ownDataHelpers[0];need(this.#pumping&&!this.#failed&&original!==undefined&&original.program===`(${program})`&&original.scriptId!==null);const raw=await this.#bindings.ownDataRequest({phase:"inverse-own-data-helper",method:"Debugger.getScriptSource",params:{scriptId:original.scriptId}});await this.#current();need(record(raw)&&Reflect.ownKeys(raw).length===1&&this.#ownDataHelpers[0]===original);qualifyCurrentFootprintInverseOwnDataHelper(raw["scriptSource"],program);this.#ownDataHelpers.shift();}

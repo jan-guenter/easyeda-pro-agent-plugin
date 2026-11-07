@@ -1912,3 +1912,56 @@ messages and original purpose/once limits plus peer/job/entry smokes
 No tracked helper/pin, app, native channel, Windows compiler or SDK call ran.
 The genuine manager/native envelope and actual Event getters remain required
 before any inverse clock/delete continuation.
+
+## Original project channel and registered callback before SDK dispatch
+
+A separate inverse channel prefix now follows the intrinsic receipt and is
+required by both Node and native SDK admission. It binds the actual original
+ready/project/workerBus/footprint references through qualified own-data reads.
+It does not delegate the new Event path to the older ambient peer guard.
+Constructor/channel references are captured before prototype traversal, so
+native Inspector can refuse Proxy substitutes first. The Event/MessageEvent/
+BroadcastChannel constructors and four channel methods/getters must qualify
+before the two readonly native name/onmessage getter reads. Neither the
+setter nor postMessage is invoked. The native channel itself remains subject
+to future connected admission; Node's JS shims cannot supply these roles.
+
+The actual registered onmessage callback must have the complete27-byte pinned
+source, original script/function location0:11785 and strict own metadata.
+Its complete scope-list labels are Closure/Closure, optional Script, then
+Global; no Script/Global values are read. A real inert strict-CJS constructor
+case verifies those actual V8 packets and the contiguous caller stack at the
+before-qe pause. The private prefix retains the same native channel, callback,
+source/controller/checkpoint and17 correlated operation packets, with fresh
+name/callback descriptor reproof. It does not claim native event trust or a
+clock/delete continuation. That next join still requires the actual original
+trusted MessageEvent and forwarded manager job.
+
+The thin Job interface now requires nativeEnvelope and nativeOrigin, agreed
+with the separate manager issuer. The envelope is exactly IGIVE, original
+sender UUID/push id, fixed delete topic, original worker UUID and unchanged
+footprint/replyTopic packet. nativeOrigin is the actual serialized sender
+security origin, not a Location/CDP inference. The central Job registry remains
+unissued until that genuine native sender collector completes; these new
+required fields add no structural fallback or JSON issuer.
+
+The prefix has17 normal commands/four fixed helper source receipts:21 CDP,
+23 native controls and four helper events. Its separate22-row hashed table
+contains all18 finite messages. In this source profile the inverse renderer
+bound becomes17,420, main reproofs93,087 and total controls161,693; older purpose
+limits remain unchanged. V2 Event constructor capture defers prototype checks
+until after constructor metadata. Actual readonly Inspector confirms a
+constructor Proxy is rejected by metadata without its trap running. Channel
+constructor/member captures also pass with hostile array numeric setters and
+iteration, zero getters and an older peer guard that throws if invoked.
+These synthetic VM receivers are builder-safety cases, not native BC proof.
+
+Six focused source/metadata/readonly-Inspector/grammar/real-byte-pipe/cursor
+cases pass, plus both type projects and strict changed lint. The existing
+paused-job test now shares its inert fixture with the callback-specific test;
+its prior original-packet assertions remain. Two-pass private legacy generation
+is identical at1,442,461 stored/2,020,601 compiler bytes, under both2MiB caps.
+Full emitted Linux C#5 passes the18 messages, original-purpose/once limits and
+intrinsic/peer/entry smokes (ORIGINAL_INVERSE_NATIVE_CHANNEL_OK, private
+inverse-native-channel-rUFNog). No tracked helper/pin, app/native channel,
+Windows compiler, SDK invocation or native-owner cleanup occurred.

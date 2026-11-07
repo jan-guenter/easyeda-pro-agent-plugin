@@ -11,6 +11,17 @@ export interface CurrentFootprintInversePublicDeleteJobBindings {
   readonly projectUuid: string;
   readonly footprintUuid: string;
   readonly replyTopic: string;
+  /** Actual original native sender envelope and serialized security origin. */
+  readonly nativeEnvelope: Readonly<{
+    type: "IGIVE";
+    uuid: string;
+    topic: "/mgr/projectWorker/footprint/delete";
+    /** Actual nonnegative safe-integer parent push id. */
+    id: number;
+    target: string;
+    message: Readonly<{message:string;replyTopic:string}>;
+  }>;
+  readonly nativeOrigin: string;
   readonly assertCurrent: () => void;
   /** Actual original forwarded request, before its worker result. */
   readonly assertOriginalForwarded: () => void;

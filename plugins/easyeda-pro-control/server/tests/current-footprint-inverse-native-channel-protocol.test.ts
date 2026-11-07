@@ -1,0 +1,11 @@
+/** Exact metadata-only codebook, with no original channel issuance. */
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_CHANNEL_REQUESTS as BUDGET,currentFootprintInverseNativeChannelCases,currentFootprintInverseNativeChannelNativeFrame,currentFootprintInverseNativeChannelTemplate,currentFootprintInverseNativeChannelWire,validateCurrentFootprintInverseNativeChannelCommand } from "../src/current-footprint-inverse-native-channel-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_CHANNEL_PROGRAMS as PROGRAMS } from "../src/current-footprint-inverse-native-channel-programs.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE as PROFILE } from "../src/current-footprint-inverse-native-profile.ts";
+
+void test("native channel grammar accounts only17 metadata/getter commands and four exact helper receipts",()=>{
+ assert.equal(BUDGET.normal,17);assert.equal(BUDGET.helpers,4);assert.equal(BUDGET.cdpRequests,21);assert.equal(BUDGET.controls,23);assert.equal(PROFILE.renderer.nativeChannel,BUDGET);const cases=currentFootprintInverseNativeChannelCases();assert.equal(cases.length,18);assert.equal(new Set(cases.map(command=>command.phase)).size,18);
+ for(const command of cases){const row=currentFootprintInverseNativeChannelTemplate(command);let rendered=row.template;for(const name of row.names){rendered=rendered.replace(JSON.stringify(`__inverse_native_channel_${name}__`),JSON.stringify("original_ref"));}for(const[name,program]of Object.entries(PROGRAMS)){rendered=rendered.replace(JSON.stringify(`__inverse_native_channel_program${name}__`),JSON.stringify(program));}assert.deepEqual(JSON.parse(rendered),{method:command.method,params:command.params});const wire=currentFootprintInverseNativeChannelWire(command,79,"original_worker");const bytes=Buffer.from(`${JSON.stringify(wire)}\0`);assert.equal(currentFootprintInverseNativeChannelNativeFrame(bytes,command,"original_worker")["action"],"footprint-inverse-native-channel");assert.throws(()=>currentFootprintInverseNativeChannelNativeFrame(bytes,command,"foreign_worker"));if(command.method==="Runtime.callFunctionOn"){assert.equal(command.params.throwOnSideEffect,true);assert.throws(()=>validateCurrentFootprintInverseNativeChannelCommand({...command,params:{...command.params,throwOnSideEffect:false}}));}}
+});
