@@ -1,3 +1,4 @@
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -29,7 +30,7 @@ void test("209 Pad shape wire reconstructs only its fixed command within the unc
 });
 
 void test("native209 Pad shape source embeds the exact program and refuses other purposes", async () => {
-  const native = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const native = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   assert.equal(readPackedNativeProgram(native, "PadShapes209Function"), CURRENT_PCB_209_PAD_SHAPES_FUNCTION);
   assert.equal(/const string PadShapes209FunctionSha256="([a-f0-9]{64})";/u.exec(native)?.[1],
     createHash("sha256").update(CURRENT_PCB_209_PAD_SHAPES_FUNCTION).digest("hex"));

@@ -1,0 +1,77 @@
+# Fixture preflight browser-global capture
+
+The third original-manager case selected frozen development commit
+`066528e40fcf6198c8db6b7ff3a3f18fb945d354`, build
+`0.3.0+codex.20261106031007`. Its authenticated empty editor-shell observation
+reported the Start Page and no other tabs. The sole fixture request stopped in
+the tracked environment preflight at `capture-context`, with
+`predicate-refused`. Config GET, response receipt and text consumption were all
+false. The importer, archive generator and destination allocator were not
+reached. This preserves the earlier failure rather than treating it as a
+successful import or permission to replay it.
+
+The complete original upstream reply was retained as1007bytes, SHA256
+`2d2e2d60c30c2797a25b8de17bb33b33bf44eca72dad32762da74d27a3590f45`.
+Base-ID inspection returned its actual environment ID and original cleanup
+nonce. Normal close was acknowledged and the original process termination was
+observed. Subsequent resource release is recorded separately when complete.
+
+The failed V1 program grouped application and browser globals into one capture
+stage. It does not identify which member failed. The passive shell observation
+qualified application fields in a separate call, so the browser-global
+own-data assumption is a likely cause, not an observed property descriptor.
+
+The revised fixed program keeps own-data capture for `UI`, `gVars` and
+`PRO_EDITOR_MODE`. After the original empty Start Page guard passes, it reads
+only the fixed standard `fetch` and `Response` browser globals through normal
+host property access. Their binding identity is checked around asynchronous
+work. No caller-selected property, URL or code is accepted. Application getters
+remain refused. The existing mode, response class, status, URL, body,
+platform and complete directory predicates remain unchanged.
+
+A distinct refusal V2 records the selected capture member, bounded browser
+descriptor/value classifications and the separate browser-global stage.
+Original V1 replies remain supported without inventing that evidence for
+historical cases. Contradictory dispatch/stage/classification combinations
+refuse. Success retains the existing V1 observation shape.
+
+The final10 focused program regressions pass on pinned Node24.18.0 with the
+test-isolation preload and zero soft core limit. They cover lazy and inherited
+browser bindings, zero browser reads before the empty guard and zero invocation
+of an application accessor. The test setup initially materialized that accessor
+before running the preflight; its retained failed run was corrected by installing
+the accessor after shell setup. Full source types and strict type-aware lint
+pass. These are synthetic/source results. The revised program has not yet
+passed the connected environment preflight or imported a project.
+
+## Original third-case cleanup completed
+
+The original environment cleanup completed with its capture release acknowledged.
+The fixture reservation then released, with importer acceptance, registration
+and closed SQL still false. The separate ordinary termination record binds
+launch SHA256
+`997a54a9db8bf7ffc338f48ec274c0858d879a68aa912aa86db828219a97281d`
+to termination SHA256
+`6c4a6cc67a19808a7bf864eb5043b6687734f17ddc904fac94659d0c712ac950`.
+Original helper transport closure and index-allocation release were acknowledged.
+The original generation3 facade then retired, acknowledged lease release and
+closed with stdin EOF, observed process/stdio closure and exit0. No signal,
+project opening, edit, Save or prompt choice was used. The running manager can
+now select a separately verified replacement without restarting Codex.
+
+## Full importer standard-global capture
+
+Review of the full import program found the same own-data assumption for the
+standard `File` constructor and `atob`. The revised program verifies its original
+application context and empty Start Page first, then captures only the fixed
+File/decode/crypto APIs through normal host access. Application globals and SDK
+members retain their own-data/prototype-chain checks, and all captured browser
+bindings are rechecked around asynchronous work. The installed API constructor
+assigns `sys_FileManager` as an own field, so that application check is preserved.
+
+All11 focused program regressions pass. The added case materializes lazy
+File/atob/fetch/Response bindings once, tracks the sole SDK Promise through its
+original settlement, and proves that an unready shell reads none of those
+bindings and makes no config or importer call. Strict changed-file type-aware
+lint passes. This is a source/VM result, not an observed native File descriptor
+or a claim that the full importer has completed its connected lifecycle.

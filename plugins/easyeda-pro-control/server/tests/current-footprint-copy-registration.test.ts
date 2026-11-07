@@ -121,7 +121,7 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; calls: readonly Ro
   const engine = { upstream, controlFingerprintPromise: Promise.resolve(), executionAuthorityValidator: (): void => undefined,
     assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
   let handler: Handler | null = null;
-  const scope = vm.createContext({ z, currentPcb209WorkerStartupToolRequestSchema, currentSymbolOperationToolOutputSchema: z.unknown(),
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, currentPcb209WorkerStartupToolRequestSchema, currentSymbolOperationToolOutputSchema: z.unknown(),
     CurrentPcbWorkerStartupLifecycle: Ordinary, CurrentPcb209WorkerStartupLifecycle: Ordinary, CurrentFootprintCopyPreparationLifecycle: Preparation,
     CurrentFootprintCopyRoutePreparationLifecycle: RoutePreparation, CurrentFootprintForwardPrewriteLifecycle: ForwardPrewrite,
     CurrentPcb209EmptyStartupLifecycle: Empty, CurrentPcb209RatlineStartupLifecycle: Ratline, CurrentPcb209RatlineContinuationLifecycle: Continuation,

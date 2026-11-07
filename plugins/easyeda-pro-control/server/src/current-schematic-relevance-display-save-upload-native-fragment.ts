@@ -1,0 +1,29 @@
+/** Own seven-record native continuation counters. Shared classes encode fixed
+ * CDP bytes only; no Via sender or origin is called. */
+import { installOwnedNativeDispatch } from "./native-owned-dispatch.ts";
+import { currentSchematicRelevanceDisplayLocalCachePhases } from "./current-schematic-relevance-display-save-upload-wire.ts";
+
+const begin="// BEGIN ORIGINAL RELEVANCE SAVE UPLOAD",end="// END ORIGINAL RELEVANCE SAVE UPLOAD";
+function native():string { const phases=currentSchematicRelevanceDisplayLocalCachePhases();return String.raw`public sealed partial class EasyedaDiagnosticOwner {
+int relevanceLocalUploadStep,relevanceUploadRequestStep,relevanceLocalCacheRequests;readonly System.Collections.Generic.Dictionary<string,int> relevanceLocalCacheCounts=new System.Collections.Generic.Dictionary<string,int>(StringComparer.Ordinal);
+void AssertRelevanceSaveUpload(){if(!schematicRelevanceDisplayWrite209||schematicDisplayAbort||!relevanceSaveGenerated||!relevanceSaveBodyEnrolled||!schematicDisplayStages[6]||!schematicStructureTransportBodyReserved||schematicWorkerStage!=7||schematicWorkerSession==null||schematicProducerContext==null)throw Error("relevance-save-upload-original");AssertRelevanceStartupQuiesced();AssertLive();}
+public void SendRelevanceSaveLocal(int id,string phase,string method,System.Collections.IDictionary fields){AssertRelevanceSaveUpload();if(relevanceLocalUploadStep>=20||phase!=EasyedaPcbViaLocalUploadProtocol.Phase(relevanceLocalUploadStep)||relevanceLocalUploadStep<6&&relevanceLocalCacheRequests!=0||relevanceLocalUploadStep>=6&&relevanceLocalUploadStep<8&&relevanceLocalCacheRequests!=6||relevanceLocalUploadStep>=8&&relevanceLocalUploadStep<10&&relevanceLocalCacheRequests!=11||relevanceLocalUploadStep>=10&&relevanceLocalCacheRequests!=14)throw Error("relevance-local-original-order");string encoded=EasyedaPcbViaLocalUploadProtocol.Encode(id,schematicWorkerSession,phase,method,fields);if(fields.Contains("key")){string key=fields["key"] as string;if(key==null||key.Length<54||schematicDisplayTarget==null||schematicDisplayTarget.IndexOf("\"branchUuid\":\""+key.Substring(22,32)+"\"",StringComparison.Ordinal)<0)throw Error("relevance-local-original-branch");}relevanceLocalUploadStep++;SendMessage(id,encoded);}
+public void SendRelevanceSaveUpload(int id,string phase,string method,System.Collections.IDictionary fields){AssertRelevanceSaveUpload();if(relevanceLocalUploadStep!=20||!schematicStructureTransportPublished||relevanceUploadRequestStep>=9||phase!=EasyedaPcbViaUploadRequestProtocol.Phase(relevanceUploadRequestStep))throw Error("relevance-upload-original-order");string encoded=EasyedaPcbViaUploadRequestProtocol.Encode(id,schematicWorkerSession,phase,method,fields);relevanceUploadRequestStep++;SendMessage(id,encoded);}
+public void SendRelevanceLocalCacheObserve(int id,string phase,string method,System.Collections.IDictionary fields){AssertRelevanceSaveUpload();if(relevanceLocalUploadStep<6||relevanceLocalUploadStep>11||relevanceLocalCacheRequests>=14||Array.IndexOf(new string[]{${phases.map(value=>`@"${value.replaceAll('"','""')}"`).join(",")}},phase)<0)throw Error("relevance-local-cache-original");int count;relevanceLocalCacheCounts.TryGetValue(phase,out count);if(count>=(phase=="project-save-producer-properties"?3:1))throw Error("relevance-local-cache-count");string encoded=EasyedaProjectSaveProducerProtocol.Encode(id,schematicWorkerSession,schematicProducerContext,phase,method,fields);relevanceLocalCacheRequests++;relevanceLocalCacheCounts[phase]=count+1;SendMessage(id,encoded);}
+}
+`;}
+const dispatch=([['local','SendRelevanceSaveLocal'],['upload','SendRelevanceSaveUpload'],['local-cache','SendRelevanceLocalCacheObserve']] as const).map(([action,method])=>`        'schematic-relevance-display-save-${action}' {
+          if(-not $SchematicRelevanceDisplayWrite209 -or -not $launched -or $request.phase -isnot [string] -or $request.method -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long])){throw 'relevance-save-upload-fields'}
+          $baseFields=@('action','helperInstance','id','jobId','rootCreated','rootPid','requestId','phase','method');$fields=New-Object Collections.Hashtable ([StringComparer]::Ordinal)
+          foreach($field in $baseFields){if(@($request.PSObject.Properties.Name) -cnotcontains $field){throw 'relevance-save-upload-field'}}
+          foreach($property in $request.PSObject.Properties){if($baseFields -cnotcontains $property.Name){$fields.Add($property.Name,$property.Value)}}
+          $owner.${method}([int]$request.requestId,$request.phase,$request.method,$fields);$result=@{written=$true}
+        }
+`).join("");
+export function applyCurrentSchematicRelevanceDisplaySaveUploadNativeFragment(input:string):string{
+ let source=input;const anchor='case "schematic-relevance-display-main-observe":',owned='case "schematic-relevance-display-save-local":case "schematic-relevance-display-save-upload":case "schematic-relevance-display-save-local-cache":';
+ if(!source.includes(owned)){if(source.split(anchor).length!==2){throw new Error("RELEVANCE_SAVE_UPLOAD_ACTION_ANCHOR");}source=source.replace(anchor,owned+anchor);}
+ source=installOwnedNativeDispatch(source,dispatch,"        'schematic-relevance-display-main-observe' {");
+ const value=`${begin}\n${native()}${end}`;const start=source.indexOf(begin),stop=source.indexOf(end);if(start!==-1||stop!==-1){if(start===-1||stop<start||source.includes(begin,start+1)||source.includes(end,stop+1)){throw new Error("RELEVANCE_SAVE_UPLOAD_MARKERS");}return source.slice(0,start)+value+source.slice(stop+end.length);}
+ const body="internal enum EasyedaPcbViaWriteBirth { Original }";if(source.split(body).length!==2){throw new Error("RELEVANCE_SAVE_UPLOAD_BODY_ANCHOR");}return source.replace(body,`${value}\n${body}`);
+}
