@@ -25,3 +25,32 @@ has one narrow exception for Node's void declaration on a command whose actual
 empty runtime envelope is checked independently. No guard or global lint rule
 was relaxed. The original cold/page/source context and final saved/reopened
 proof remain necessary before runtime acceptance.
+
+
+## Original sequence controller
+
+The controller now joins the genuine Core scene origin and saved-readback plan.
+It retains one Promise per original origin, including failures, and permits only
+capture0, observe1 and release2 through Core's fixed sender. It rechecks the
+original binding, module functions and plan around every asynchronous check.
+Lost capture or observation acknowledgments still consume the attempt and issue
+one release. It retains both read and cleanup failures, including thrown
+undefined, and never retries either command.
+
+After release, the complete native source must match the intended Text body,
+all six peer records and the three root indices. An accepted observation keeps
+its own original owner/origin in a private registry. Copied result labels cannot
+recreate it. The pure source projection retains false native-origin, cold-load,
+persistence, reopened and execution fields; those require independent runtime
+and closed-file proofs.
+
+Four focused controller/origin regressions passed. Explicit synthetic Core and
+plan issuers exercise the real controller and validators on the fixed readonly
+VM scene. They cover retained Promise identity, lost acknowledgments, thrown
+undefined, drift, lost release, source mismatch and forged observations. The
+Component transport regressions passed in the same eight-check run. Both
+TypeScript projects and strict type-aware lint passed. Initial private test
+runs refused fixture ordering, a source-field spelling and an unsafe test-cast
+shape; those logs remain retained. No native source was promoted by these
+inert tests. Core's actual scene issuer still requires the new cold/page/source
+lifecycle and remains unissued at this checkpoint.
