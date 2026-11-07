@@ -8,6 +8,7 @@ import { test } from "node:test";
 import { sha256Text } from "../src/core.ts";
 import { CurrentFootprintInversePipe, CurrentPcbViaWritePipe } from "../src/current-pcb-diagnostic-pipe.ts";
 import { currentFootprintInverseLookupPreentryCases } from "../src/current-footprint-inverse-lookup-preentry-protocol.ts";
+import { currentFootprintInverseGetRpcEntryCases } from "../src/current-footprint-inverse-get-rpc-entry-protocol.ts";
 import { currentFootprintInverseGetIntrinsicsCases } from "../src/current-footprint-inverse-get-intrinsics-protocol.ts";
 import { currentFootprintInverseUiOwnDataCases } from "../src/current-footprint-inverse-ui-own-data-protocol.ts";
 import { currentFootprintInversePublicPreferencesCases } from "../src/current-footprint-inverse-public-preferences-protocol.ts";
@@ -36,6 +37,7 @@ void test("original SDK write and reply remain separate while fixed UI and worke
   // These same-UI metadata requests run while the original SDK CDP reply is
   // Still pending. A raw Promise reply is not needed to free this finite lane.
   for (const command of currentFootprintInverseGetIntrinsicsCases()) { const observation = pipe.observeInverseGetIntrinsics(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
+  for (const command of currentFootprintInverseGetRpcEntryCases()) { const observation = pipe.observeInverseGetRpcEntry(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
   input.write(Buffer.from(`${JSON.stringify({...sdkRequest,result:{result:{type:"object",subtype:"promise",className:"Promise",objectId:"original-sdk-promise"}}})}\0`));
   assert.deepEqual(await pending,{result:{type:"object",subtype:"promise",className:"Promise",objectId:"original-sdk-promise"}});pipe.requireInversePublicDeleteWritten(pending);
   const commands=cases.filter(command=>command.phase!=="inverse-public-call-sdk");
@@ -45,6 +47,7 @@ void test("original SDK write and reply remain separate while fixed UI and worke
   for(const command of currentFootprintInverseUiOwnDataCases()){const observation=pipe.observeInverseUiOwnData(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   for(const command of currentFootprintInverseLookupPreentryCases()){const observation=pipe.observeInverseLookupPreentry(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   for (const command of currentFootprintInverseGetIntrinsicsCases()) { const observation = pipe.observeInverseGetIntrinsics(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
+  for (const command of currentFootprintInverseGetRpcEntryCases()) { const observation = pipe.observeInverseGetRpcEntry(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
   assert.equal(pipe.status().failureObservation,null);
   const before=sent.length;const first=currentFootprintInversePublicCallCases()[0];assert.ok(first!==undefined);const other:unknown=Object.create(CurrentPcbViaWritePipe.prototype);
   // oxlint-disable-next-line typescript/unbound-method -- Invalid sibling receiver must reject before emitting bytes.
