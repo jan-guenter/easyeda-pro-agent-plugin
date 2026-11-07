@@ -1,4 +1,7 @@
 /** Original held runner-entry reads only. No prefix/setter resume exists. */
+/* oxlint-disable import/max-dependencies -- Each fixed callback family imports inert source programs; all command and native fields stay closed. */
+import { CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_CLASS_PROTOTYPES as ACTIVE_CLASSES, CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_DETAILS as ACTIVE_DETAILS, CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_ENTRY_PROOF as ACTIVE_ENTRY, CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_EXPRESSIONS as ACTIVE_EXPRESSIONS, CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_FUNCTIONS as ACTIVE_FUNCTIONS, CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_READ_BOUND as ACTIVE_READS, CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_RESOLVER as ACTIVE_RESOLVER, CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_ROOTS as ACTIVE_ROOTS, CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_SAME as ACTIVE_SAME } from "./current-schematic-relevance-active-history-programs.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_CALLS as PREFIX_CALLS } from "./current-schematic-relevance-run-prefix-protocol.ts";
 import { z } from "zod";
 import { CURRENT_SCHEMATIC_RELEVANCE_UNDERLINE_BRIDGE_PROOF as BRIDGE_PROOF, CURRENT_SCHEMATIC_RELEVANCE_SET_ATTRIBUTE_EXPRESSION as SET_ATTRIBUTE_EXPRESSION, CURRENT_SCHEMATIC_RELEVANCE_SET_ATTRIBUTE_PROOF as SET_ATTRIBUTE_PROOF } from "./current-schematic-relevance-underline-bridge-programs.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_FIRST_SETTER_BINDING as FIRST_SETTER_BINDING, CURRENT_SCHEMATIC_RELEVANCE_FIRST_SETTER_EXPRESSION as FIRST_SETTER_EXPRESSION, CURRENT_SCHEMATIC_RELEVANCE_FIRST_SETTER_MAPPING as FIRST_SETTER_MAPPING, CURRENT_SCHEMATIC_RELEVANCE_FIRST_SETTER_PROOF as FIRST_SETTER_PROOF } from "./current-schematic-relevance-first-setter-programs.ts";
@@ -13,7 +16,7 @@ import { CURRENT_SCHEMATIC_RELEVANCE_RAW_COMBINE_PROGRAM, CURRENT_SCHEMATIC_RELE
 
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_GROUP = "easyeda-pro-control-schematic-relevance-modify-entry-v1";
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_REQUESTS = Object.freeze({ generation: 1, observation: 5, rawObservation: 63, underlineEligibility: 5, resume: 0 });
-export const CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_REQUESTS = Object.freeze({ arms: 3, entry: 10, receiver: 4 + 2 * 3, binding: 1, entryReady: 1, bridgeReady: 1, resumes: 2, setter: 8, bridge: 4, total: 40 });
+export const CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_REQUESTS = Object.freeze({ arms: 3, entry: 10, receiver: 4 + 2 * 3, binding: 1, entryReady: 1, bridgeReady: 1, resumes: 2, setter: 8, bridge: 4, activeHistory: ACTIVE_READS, total: 40 + ACTIVE_READS });
 const originalEntryProof = GENERATED_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_RUN_ENTRY_FUNCTION;
 const oldOptions = 'Reflect.ownKeys(options).length!==2||own(options,"history")!==true||own(options,"name")!=="Codex disposable Text display"';
 const newOptions = 'Reflect.ownKeys(options).length!==4||own(options,"history")!==true||own(options,"name")!=="Codex disposable Text display"||own(options,"timeout")!==0||!Array.isArray(own(options,"dependencies"))||Object.getPrototypeOf(own(options,"dependencies"))!==Array.prototype||Reflect.ownKeys(own(options,"dependencies")).length!==1||own(own(options,"dependencies"),"length")!==0';
@@ -30,7 +33,10 @@ const propertiesParams = z.strictObject({ objectId: handle, ownProperties: z.lit
 const sourceParams = z.strictObject({ scriptId: handle });
 const argumentsSchema = z.tuple([object, data, data, object, object]);
 const proofParams = z.strictObject({ ...flags, objectId: handle, functionDeclaration: z.literal(CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_PROOF), arguments: argumentsSchema, returnByValue: z.literal(true), awaitPromise: z.literal(false), userGesture: z.literal(false) });
+const activeShared = PREFIX_CALLS.filter(row => row[0] === "novel" || row[0] === "prototypes" || row[0] === "merge");
 export const CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_CALLS = Object.freeze([
+  ...activeShared.map(row => [`schematic-callback-active-${row[0]}`, row[1], row[2], row[3]] as const),
+  ["schematic-callback-active-roots", ACTIVE_ROOTS, 4, false], ["schematic-callback-active-resolver", ACTIVE_RESOLVER, 3, false], ["schematic-callback-active-classes", ACTIVE_CLASSES, 1, false], ["schematic-callback-active-functions", ACTIVE_FUNCTIONS, 9, false], ["schematic-callback-active-details", ACTIVE_DETAILS, 1, false], ["schematic-callback-active-same", ACTIVE_SAME, 11, true], ["schematic-callback-active-entry", ACTIVE_ENTRY, 3, true],
   ["schematic-callback-underline-bridge", BRIDGE_PROOF, 16, true], ["schematic-callback-setAttribute-proof", SET_ATTRIBUTE_PROOF, 5, true],
   ["schematic-callback-setter-mapping", FIRST_SETTER_MAPPING, 1, false], ["schematic-callback-setter-binding", FIRST_SETTER_BINDING, 1, false], ["schematic-callback-setter-proof", FIRST_SETTER_PROOF, 7, true],
   ["schematic-callback-details", CALLBACK_DETAILS, 1, false], ["schematic-callback-bind", CALLBACK_BIND, 4, false], ["schematic-callback-same", CALLBACK_SAME, 5, true],
@@ -54,8 +60,13 @@ const callbackReceiverParams = frameParams.extend({ expression: z.literal(CALLBA
 const callbackArmParams = z.strictObject({ objectId: handle, condition: z.literal("") });
 const setAttributeParams = frameParams.extend({ expression: z.literal(SET_ATTRIBUTE_EXPRESSION) });
 const firstSetterParams = frameParams.extend({ expression: z.literal(FIRST_SETTER_EXPRESSION) });
-const callbackPhases = z.enum(["schematic-callback-underline-bridge", "schematic-callback-setAttribute-proof", "schematic-callback-setter-mapping", "schematic-callback-setter-binding", "schematic-callback-setter-proof", "schematic-callback-details", "schematic-callback-bind", "schematic-callback-same", "schematic-callback-after-run", "schematic-callback-receiver-proof"]);
+const callbackPhases = z.enum(["schematic-callback-active-novel", "schematic-callback-active-prototypes", "schematic-callback-active-merge", "schematic-callback-active-roots", "schematic-callback-active-resolver", "schematic-callback-active-classes", "schematic-callback-active-functions", "schematic-callback-active-details", "schematic-callback-active-same", "schematic-callback-active-entry", "schematic-callback-underline-bridge", "schematic-callback-setAttribute-proof", "schematic-callback-setter-mapping", "schematic-callback-setter-binding", "schematic-callback-setter-proof", "schematic-callback-details", "schematic-callback-bind", "schematic-callback-same", "schematic-callback-after-run", "schematic-callback-receiver-proof"]);
+const activeMainParams = frameParams.extend({ expression: z.literal(ACTIVE_EXPRESSIONS[0]) });
+const activeChildParams = frameParams.extend({ expression: z.literal(ACTIVE_EXPRESSIONS[1]) });
 const schema = z.discriminatedUnion("phase", [
+  z.strictObject({ phase: z.literal("schematic-callback-active-source"), method: z.literal("Debugger.getScriptSource"), params: sourceParams }),
+  z.strictObject({ phase: z.literal("schematic-callback-active-main"), method: z.literal("Debugger.evaluateOnCallFrame"), params: activeMainParams }),
+  z.strictObject({ phase: z.literal("schematic-callback-active-child"), method: z.literal("Debugger.evaluateOnCallFrame"), params: activeChildParams }),
   z.strictObject({ phase: z.literal("schematic-callback-setAttribute-frame"), method: z.literal("Debugger.evaluateOnCallFrame"), params: setAttributeParams }),
   z.strictObject({ phase: z.literal("schematic-callback-setter-resume"), method: z.literal("Debugger.resume"), params: z.strictObject({}) }),
   z.strictObject({ phase: z.literal("schematic-callback-first-setter-frame"), method: z.literal("Debugger.evaluateOnCallFrame"), params: firstSetterParams }),
@@ -88,6 +99,8 @@ export function validateCurrentSchematicRelevanceDisplayModifyEntryCommand(input
 }
 export function currentSchematicRelevanceDisplayModifyEntryNativeCases(): readonly CurrentSchematicRelevanceDisplayModifyEntryCommand[] {
   return freezeDeep([
+    { phase: "schematic-callback-active-source", method: "Debugger.getScriptSource", params: { scriptId: "entry_script" } },
+    ...ACTIVE_EXPRESSIONS.map((expression, variant) => ({ phase: variant === 0 ? "schematic-callback-active-main" : "schematic-callback-active-child", method: "Debugger.evaluateOnCallFrame", params: { ...CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_FLAGS, callFrameId: "entry_frame", expression, returnByValue: false, includeCommandLineAPI: false } })),
     { phase: "schematic-callback-setAttribute-frame", method: "Debugger.evaluateOnCallFrame", params: { ...CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_FLAGS, callFrameId: "entry_frame", expression: SET_ATTRIBUTE_EXPRESSION, returnByValue: false, includeCommandLineAPI: false } },
     { phase: "schematic-callback-setter-resume", method: "Debugger.resume", params: {} },
     { phase: "schematic-callback-first-setter-frame", method: "Debugger.evaluateOnCallFrame", params: { ...CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_FLAGS, callFrameId: "entry_frame", expression: FIRST_SETTER_EXPRESSION, returnByValue: false, includeCommandLineAPI: false } },

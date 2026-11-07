@@ -795,3 +795,5 @@ layout. The connected ledger retains its generation and case anchors.
 
 - [Original underline decorator forwarding](2026-11-07-schematic-original-decorator-forwarding.md)
 - 2026-11-07: [Original schematic publisher source](2026-11-07-schematic-publisher-callee-metadata.md), exact selected publisher family and eighteen uninvoked function metadata checks; live publication remains separate.
+
+- [Held active history custody](2026-11-07-schematic-active-history-custody.md)

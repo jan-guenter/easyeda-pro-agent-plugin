@@ -10,9 +10,14 @@ const json = String.raw`static string Json(string value){Need(value!=null);var o
 export function currentSchematicRelevanceDisplayModifyEntryNativeSource(): string {
   const cases = currentSchematicRelevanceDisplayModifyEntryNativeCases().map(command => currentSchematicRelevanceDisplayModifyEntryTemplate(command));
   const rows = cases.map(row => [row.phase, row.method, Object.entries(row.fields).map(([name, kind]) => `${name}:${kind}`).join(","), row.template].join("\t"));
-  const bytes = Buffer.from(rows.join("\0")); if (bytes.length > 60_000) { throw new Error("SCHEMATIC_MODIFY_ENTRY_TABLE_BOUND"); }
-  // oxlint-disable-next-line node/no-sync -- Fixed in-memory templates are packed deterministically under the unchanged64KiB native decoder bound.
-  const packed = gzipSync(bytes, { level: 9 });
+  const groups: string[][] = [[]];
+  for (const row of rows) { let group = groups.at(-1); if (group === undefined || Buffer.byteLength(row) > 60_000) { throw new Error("SCHEMATIC_MODIFY_ENTRY_TABLE_BOUND"); } if (Buffer.byteLength([...group, row].join("\0")) > 60_000) { group = []; groups.push(group); } group.push(row); }
+  if (groups.length > 2) { throw new Error("SCHEMATIC_MODIFY_ENTRY_TABLE_GROUPS"); }
+  const loaders = groups.map(group => { const bytes = Buffer.from(group.join("\0"));
+    // oxlint-disable-next-line node/no-sync -- Deterministic fixed rows retain the unchanged60KiB table and64KiB decoder/message ceilings.
+    const packed = gzipSync(bytes, { level: 9 });
+    return `rows.AddRange(EasyedaDiagnosticFixedTable.Load(${quote(packed.toString("base64"))},${String(bytes.length)},${quote(createHash("sha256").update(bytes).digest("hex"))},${quote(createHash("sha256").update(packed).digest("hex"))},${String(group.length)},4));`;
+  }).join("\n");
   const smokeTarget = JSON.stringify({ path: String.raw`C:\Synthetic`, value: "雪" });
   const smokeOperation = JSON.stringify({ fontFamily: "__schematic_entry_objectId__", literal: "quote\"\n" });
   const hashes = cases.map(row => {
@@ -24,7 +29,7 @@ export function currentSchematicRelevanceDisplayModifyEntryNativeSource(): strin
   });
   return `public static class EasyedaSchematicRelevanceDisplayModifyEntryProtocol {
 static void Need(bool value){if(!value)throw new System.InvalidOperationException("pcb-diagnostic-schematic-modify-entry-protocol");}
-static readonly string[][] Cases=EasyedaDiagnosticFixedTable.Load(${quote(packed.toString("base64"))},${String(bytes.length)},${quote(createHash("sha256").update(bytes).digest("hex"))},${quote(createHash("sha256").update(packed).digest("hex"))},${String(rows.length)},4);
+static string[][] Load(){var rows=new System.Collections.Generic.List<string[]>();${loaders}return rows.ToArray();}static readonly string[][] Cases=Load();
 ${json}
 static string Field(string kind,object input){string value=input as string;Need(value!=null);Need(System.Text.RegularExpressions.Regex.IsMatch(value,kind=="field"?@"\\A(?:rotation|fontFamily|fontSize|fontWeight|italic|underline|hAlign|vAlign)\\z":@"\\A[A-Za-z0-9_.:-]{1,256}\\z"));return value;}
 public static string Encode(int id,string session,string holder,string idle,string target,string operation,string phase,string method,System.Collections.IDictionary fields){Need(id>0&&fields!=null&&target!=null&&operation!=null&&target.Length<=16384&&operation.Length<=16384);Field("handle",session);Field("handle",holder);Field("handle",idle);string[] row=null;foreach(var item in Cases)if(item[0]==phase){Need(row==null);row=item;}Need(row!=null&&row[1]==method);string[] names=row[2].Length==0?new string[0]:row[2].Split(',');Need(fields.Count==names.Length);var kinds=new System.Collections.Generic.Dictionary<string,string>(System.StringComparer.Ordinal);foreach(string pair in names){var parts=pair.Split(':');Need(parts.Length==2&&fields.Contains(parts[0]));kinds.Add(parts[0],parts[1]);}string template=row[3];var output=new System.Text.StringBuilder();int previous=0;foreach(System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(template,"\\"__schematic_entry_([A-Za-z0-9]+)__\\"")){output.Append(template,previous,match.Index-previous);string name=match.Groups[1].Value;string value;if(name=="boundIdle")value=idle;else if(name=="boundHolder")value=holder;else if(name=="boundTarget")value=target;else if(name=="boundOperation")value=operation;else{Need(kinds.ContainsKey(name));value=Field(kinds[name],fields[name]);}output.Append(Json(value));previous=match.Index+match.Length;}output.Append(template,previous,template.Length-previous);string text=output.ToString();string encoded="{\\"id\\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+","+text.Substring(1,text.Length-2)+",\\"sessionId\\":"+Json(session)+"}\\0";Need(System.Text.Encoding.UTF8.GetByteCount(encoded)<=65536);return encoded;}
