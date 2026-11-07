@@ -748,3 +748,5 @@ layout. The connected ledger retains its generation and case anchors.
 - [Original disposable Via controller and cleanup](2026-11-07-original-via-controller-and-cleanup.md). Retained two-generation composition, exact generated-worker source catalogue and failed-resource closure; connected validation remains pending.
 
 - [2026-11-07 original inverse startup history reads](2026-11-07-inverse-initial-history-main.md)
+
+- [2026-11-07 publication history privacy](2026-11-07-publication-history-privacy.md). Scan outgoing Git objects before pushing, including deleted content, with bounded output that omits matches.

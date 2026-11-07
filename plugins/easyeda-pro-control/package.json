@@ -68,7 +68,8 @@
     "native:forward:cold:source:check": "node scripts/generate-footprint-forward-cold-native-graph.ts --check",
     "native:forward:cold:update": "node scripts/generate-footprint-forward-cold-native-graph.ts --write",
     "pcb209:spatial:check": "node scripts/generate-pcb209-spatial-protocol.ts --check",
-    "pcb209:spatial:update": "node scripts/generate-pcb209-spatial-protocol.ts --write"
+    "pcb209:spatial:update": "node scripts/generate-pcb209-spatial-protocol.ts --write",
+    "repository:history:check": "node scripts/check-publishable-history.ts"
   },
   "engines": {
     "node": "24.18.0"

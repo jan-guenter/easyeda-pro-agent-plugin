@@ -17,6 +17,7 @@ import { MAIN_REFERENCE_HELPER_IDENTITY } from "../server/src/main-reference-hel
 import { CURRENT_MAIN_REFERENCE_HELPER_IDENTITY } from "../server/src/current-main-reference-helper-identity.ts";
 import { AGENT_DEFAULT_PROMPT, FACADE_TOOL_POLICY_NAMES, hasPortableMcpLaunch } from "./plugin-contract.ts";
 import { validateCiWorkflow } from "./ci-contract.ts";
+import { privacyPatterns, privateDesignName, privateDesignPath, secretPatterns } from "./repository-content-policy.ts";
 
 import {
   bridgeExtensionManifestSchema,
@@ -1180,26 +1181,6 @@ const binaryPaths: string[] = [];
 const secretHits: string[] = [];
 const privacyHits: string[] = [];
 const placeholderHits: string[] = [];
-const secretPatterns: readonly (readonly [string, RegExp])[] = [
-  ["private-key", /-----BEGIN (?:DSA |EC |OPENSSH |PGP |RSA )?PRIVATE KEY-----/u],
-  ["github-classic", /\bgh[opsu]_[A-Za-z0-9]{30,255}\b/u],
-  ["github-fine-grained", /\bgithub_pat_[A-Za-z0-9_]{40,255}\b/u],
-  ["aws-access-key", /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/u],
-  ["npm-token", /\bnpm_[A-Za-z0-9]{30,255}\b/u],
-  ["slack-token", /\bxox[baprs]-[A-Za-z0-9-]{20,255}\b/u],
-  ["openai-key", /\bsk-(?:proj-)?[A-Za-z0-9_-]{20,255}\b/u],
-  ["anthropic-key", /\bsk-ant-[A-Za-z0-9_-]{20,255}\b/u],
-  ["google-api-key", /\bAIza[A-Za-z0-9_-]{30,60}\b/u],
-  [
-    "assigned-secret",
-    /(?:api[_-]?key|authentication[_-]?key|bridge[_-]?token|credential|password|secret|session[_-]?token|token)\s*[:=]\s*["'][A-Za-z0-9_+./=-]{32,}["']/iu,
-  ],
-  [
-    "esbuild-inlined-secret",
-    /\b(?:true|!0)\s*\?\s*["'][A-Za-z0-9_-]{32,256}["']\s*:\s*void 0\b/u,
-  ],
-  ["credential-url", /https?:\/\/[^\s/@:]+:[^\s/@]+@/iu],
-];
 check(
   "secret-scan-detects-esbuild-inlined-key",
   secretPatterns.some(
@@ -1210,16 +1191,6 @@ check(
       ),
   ),
 );
-const privateDesignName = ["Piano", "Pi"].join("");
-const privateDesignPath = ["/root/work/", "piano", "pi"].join("");
-const privacyPatterns: readonly (readonly [string, RegExp])[] = [
-  ["private-design-name", new RegExp(`\\b${privateDesignName}\\b`, "u")],
-  ["private-design-path", new RegExp(`${privateDesignPath}(?:/|\\b)`, "u")],
-  [
-    "windows-user-path",
-    /\/mnt\/c\/Users\/(?!Fixture(?:\/|\b)|Public(?:\/|\b))[^/\s]+\//u,
-  ],
-];
 check(
   "privacy-scan-detects-private-design-identifiers",
   privacyPatterns.some(

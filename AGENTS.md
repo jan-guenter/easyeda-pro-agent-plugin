@@ -187,6 +187,10 @@ are build/check dependencies only.
   recommendation remains disputed, ask the user to decide before merging.
   The minimal inherited CodeRabbit configuration disables commit-threshold
   auto-pausing. A skipped or paused check is not a review of the current head.
+- Before pushing a feature branch, run `npm run repository:history:check -- --base
+  <reviewed-published-commit>` from the plugin directory. Current files alone do
+  not cover deleted files or older commit messages. Scan the complete outgoing
+  history with the same secret/privacy rules, and never push private backup refs.
 - Keep marketplace/manifests/README/skills/agent metadata/tool descriptions and exhaustive
   coverage/omission reasons consistent. Publish only with green exact-payload CI and
   reproducible bundles. Scan staged secrets/design artifacts; preserve bridge identity/key epoch.
