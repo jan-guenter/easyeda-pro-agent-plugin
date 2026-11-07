@@ -1009,3 +1009,34 @@ smokes pass. Current storage is1,395,128 bytes and decoded compiler input is
 or Windows/app/native/MCP runtime changed. Plaintext/parsed/ready remain held;
 actual queue fulfillment, cache jobs, sync/timer custody, delete/main SQL,
 closed inverse proof and the fourth original generation remain incomplete.
+
+A subsequent inert Node24 Inspector check found another reachable metadata
+boundary: a nonempty breakpoint condition emits its own anonymous script when
+executed, rather than when armed. Two actual hits produced two distinct script
+IDs with the exact verbatim condition source. Treating every empty-URL script
+as an in-flight Runtime helper would therefore refuse legitimate startup.
+
+The inverse now registers only its actually armed fixed conditions. They are
+startupEntry/startupReturn, initial sync entry and the separately enrolled first
+checkProject timer entry. The ten refusal guards and cold arms have no nonempty
+condition. Unknown anonymous scripts without an active Runtime helper enter a
+separate original same-context receipt queue. Before delivering the next
+application pause, the cursor reads each actual script ID through a fixed
+Debugger.getScriptSource-only native action and compares exact text to its
+registered literals. Unknown or parenthesized variants refuse. Runtime helper
+FIFO receipts keep their existing exact program checks.
+
+The original saved raw-row bound reserves at most2*N startup condition receipts,
+plus one initial sync and one first timer receipt, at most1,026 source reads.
+The timer contributes that one shared read rather than a second competing
+reader. Later explicit timer/sync paths remain unsupported. The controller's
+`expectOriginalCondition('timer')` registers the fixed timer literal only; it
+accepts no program text. Old purposes and conditions are unchanged.
+
+Eleven focused actual Inspector/grammar/original-factory checks pass, as do
+full types, strict changed-file lint and idempotent combined generation. Linux
+C#5/.NET10 exact wire/refusal smokes pass. Source storage is1,396,652 bytes,
+decoded compiler input1,933,594 bytes; unchanged2MiB limits remain in force.
+Derived inverse limits are renderer14,986, main reproof90,549 and aggregate
+controls156,583 before the separate timer transport. No tracked helper/pins,
+Windows/app/native/MCP control, parser continuation or acceptance changed.

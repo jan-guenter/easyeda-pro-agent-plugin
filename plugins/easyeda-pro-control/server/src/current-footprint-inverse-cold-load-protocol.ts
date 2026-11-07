@@ -92,3 +92,6 @@ export function qualifyCurrentFootprintInverseColdFlowMethod(input:unknown,role:
 
 export { CURRENT_FOOTPRINT_INVERSE_STARTUP_CALLBACK_ROLES, currentFootprintInverseStartupCallbackBudget } from "./current-footprint-inverse-startup-callback-protocol.ts";
 export type { CurrentFootprintInverseStartupCallbackCommand, CurrentFootprintInverseStartupCallbackRole } from "./current-footprint-inverse-startup-callback-protocol.ts";
+
+export { currentFootprintInverseConditionBudget, currentFootprintInverseConditionText, qualifyCurrentFootprintInverseConditionSource } from "./current-footprint-inverse-condition-source.ts";
+export type { CurrentFootprintInverseConditionRole } from "./current-footprint-inverse-condition-source.ts";
