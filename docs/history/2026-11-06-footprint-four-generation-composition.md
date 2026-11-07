@@ -1615,3 +1615,25 @@ generation is idempotent at1,399,404 stored bytes/1,947,487 compiler bytes;
 full emitted Linux C#5 passes all six entry messages, once/purpose refusals
 and the corrected bus/ready/public/Ke smokes. No tracked native artifact was
 emitted and no SDK/native call ran.
+
+## Original public-written entry observation
+
+Core now exposes observeFootprintInverseDeleteEntry(call, admission). It
+requires both original private tokens, a consumed worker admission, the exact
+sealed project/branch/footprint and the public call's retained written Promise
+and function references. It awaits only the original SDK write plus verified
+service-entry proof; it never waits for the SDK result. The same original
+worker event reader then takes one exact before-qe pause, marks that native
+hold, runs the fixed instance/clock-guard capture, drains each original helper
+receipt and completes the native observation. Every command uses handles
+derived from the original tuple, source, event and correlated reply.
+
+Its opaque packet retains the call/admission/owner/checkpoint and held event.
+It cannot be reconstructed from a report, and asking with a different call
+cannot adopt the retained Promise. All work and refusal remain in the same
+original cleanup scope. This uses the already-reserved eight CDP/eleven
+controls; it introduces no resume or new native program. Nine focused
+Inspector/original-factory cases, both types and strict changed lint pass.
+The public call issuer remains gated on its actual SDK/service continuation.
+Even after this observation, the forwarded worker RPC/job relationship,
+single clock, producer/body and Main SQL joins remain separate prerequisites.

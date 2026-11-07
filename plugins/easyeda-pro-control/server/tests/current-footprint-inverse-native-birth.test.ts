@@ -37,6 +37,7 @@ void test("inverse birth consumes only its original saved data and retains a dis
   f.api.assertOriginalCurrentFootprintInverseNativeOwner(owner); assert.equal(f.api.originalCurrentFootprintInverseTarget(owner), token);
   assert.equal(owner.status().profile, "footprint-inverse209");
   assert.throws(() => owner.armFootprintInverseDeleteWorker(), /DELETE_WORKER_PREREQUISITES/u);
+  assert.throws(() => owner.observeFootprintInverseDeleteEntry({ profile: "private.current-footprint-inverse-public-delete-call.v1" }, { profile: "private.current-footprint-inverse-delete-worker-admission.v1" }), /ADMISSION_ORIGINAL/u);
   assert.throws(() => f.api.originalCurrentFootprintInverseTermination(owner), /ORIGINAL_TERMINATION/u);
   const copied: unknown = Object.create(f.api.CurrentFootprintInverseNativeOwner.prototype);
   assert.throws(() => { Reflect.apply(f.api.assertOriginalCurrentFootprintInverseNativeOwner, undefined, [copied]); }, /ORIGINAL_FACTORY/u);
