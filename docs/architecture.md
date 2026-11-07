@@ -60,6 +60,22 @@ an arbitrary descriptor inherited by the facade's shell cannot reach it.
 
 ## Fixed native compiler input
 
+Native builds start from the exact published first-party shared helper retained
+under `scripts/native-baseline/`. `native-baseline-source.ts` fixes its originating
+commit, full length and hash. It is a build input, never a runtime path or an
+application snapshot. Forward and cold-forward generators use that same seed
+and must reproduce all six released artifacts exactly.
+
+The default startup generator emits the shared legacy/PCB/footprint build.
+`schematic:native:update` emits a separate `schematic-edit-native.ps1` and readable
+C# review copy for the seven-record display and wire purposes. Its PowerShell
+entry accepts exactly one of those two purposes. The runtime chooses the fixed
+artifact from its already qualified purpose, checks its generated identity, and
+retains the Windows read handle through execution. No request chooses a build
+layout, source fragment, helper path or compiler option. Run both
+`startup:protocol:check` and `schematic:native:check` after changing native
+protocols. Windows CI compiles both schematic purposes without launching an app.
+
 The combined diagnostic helper stores its fixed C# compiler body as gzip/base64
 in the final PowerShell output. The stored helper and actual runtime compiler
 input each retain the 2 MiB ceiling. Storage introduces no native purpose,

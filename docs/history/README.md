@@ -769,3 +769,4 @@ layout. The connected ledger retains its generation and case anchors.
 
 - 2026-11-07: [Original seven-record closed SQL proof](2026-11-07-relevance-closed-sql-proof.md), retained Save/clock/history/structure facts, complete closed comparison and separate checkpoint.
 - 2026-11-07: [Original seven-record local Save and first upload](2026-11-07-relevance-save-local-upload.md).
+- 2026-11-07: [Fixed-purpose native builds](2026-11-07-fixed-purpose-native-builds.md), separate schematic artifact, immutable published build seed and unchanged compiler limits.

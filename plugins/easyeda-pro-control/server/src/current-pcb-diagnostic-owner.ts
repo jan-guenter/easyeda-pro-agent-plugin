@@ -1,5 +1,6 @@
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import { captureCurrentSchematicEditNativeHelper } from "./current-schematic-edit-native-helper.ts";
 import { currentSchematicRelevanceDisplayMainStructureWire } from "./current-schematic-relevance-display-main-structure-protocol.ts";
 import { validateCurrentPcbViaMainBeginCommand } from "./current-pcb-via-main-begin-protocol.ts";
 import { validateCurrentPcbViaMainHistoryCommand } from "./current-pcb-via-main-history-protocol.ts";
@@ -545,8 +546,8 @@ import type { CurrentProjectStructureWorkerLease } from "./current-project-struc
 import type { CurrentProjectStructureObservationWorkflow as StructureWorkflow } from "./current-project-structure-observation-workflow.ts";
 
 
-const HELPER_SHA256 = "b0419816f373490cc1445e0aec78f85e0ed12fcb46b583c397a9267f982f16df";
-const HELPER_BYTES = 1_923_461;
+const HELPER_SHA256 = "f2e1c65ef7941736f6ac28d954bf647e340ab3329083b14c43d0993d27c11206";
+const HELPER_BYTES = 1_364_718;
 const heldRunnerDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintSavedCacheHeldRunner.prototype);
 /* oxlint-disable typescript/unbound-method -- Retain fixed methods and invoke them only on the original private-field runner. */
 const heldRunnerMethods = Object.freeze({ prepare: CurrentFootprintSavedCacheHeldRunner.prototype.prepare,
@@ -12758,7 +12759,11 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   const actorClockSource = startup209 ? await qualifyCurrentPcb209StartupActorInstallation(sealedOptions) : null;
   if (startup209) { await verifyCurrentPcb209WorkerBootstrapInstallation(sealedOptions); }
   const graphChallenge = purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE ? randomBytes(16).toString("hex") : null;
-  const nativeGraph = graphChallenge === null ? null : await captureCurrentFootprintForwardColdNativeGraph(sealedOptions.wslDistribution ?? process.env["WSL_DISTRO_NAME"], graphChallenge);
+  const schematicNativePurpose = purpose === CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE || purpose === CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE;
+  let nativeGraph: Awaited<ReturnType<typeof captureCurrentFootprintForwardColdNativeGraph>> | null;
+  if (schematicNativePurpose) { nativeGraph = await captureCurrentSchematicEditNativeHelper(sealedOptions.wslDistribution ?? process.env["WSL_DISTRO_NAME"], purpose); }
+  else if (graphChallenge === null) { nativeGraph = null; }
+  else { nativeGraph = await captureCurrentFootprintForwardColdNativeGraph(sealedOptions.wslDistribution ?? process.env["WSL_DISTRO_NAME"], graphChallenge); }
   const helperPath = fileURLToPath(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url));
   const before = nativeGraph === null ? await lstat(helperPath) : null;
   const verify = async (): Promise<void> => {

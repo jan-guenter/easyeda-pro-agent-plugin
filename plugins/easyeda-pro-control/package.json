@@ -12,7 +12,7 @@
   "type": "module",
   "scripts": {
     "control:manage": "node server/dist/control-session-manager.mjs",
-    "build": "npm run native:helper:check && npm run native:forward:check && npm run native:forward:source:check && npm run native:forward:cold:check && npm run native:forward:cold:source:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && npm run pcb209:spatial:check && node scripts/build-server.ts && node scripts/build-control-manager.ts",
+    "build": "npm run native:helper:check && npm run native:forward:check && npm run native:forward:source:check && npm run native:forward:cold:check && npm run native:forward:cold:source:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run schematic:native:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && npm run pcb209:spatial:check && node scripts/build-server.ts && node scripts/build-control-manager.ts",
     "bridge:build": "node scripts/build-authenticated-bridge.ts",
     "bridge:lint": "oxlint --config .oxlintrc.bridge.json --type-aware --deny-warnings easyeda-bridge-extension/src easyeda-bridge-extension/tests easyeda-bridge-extension/scripts easyeda-bridge-extension/vitest.config.ts",
     "bridge:provision": "node scripts/provision-bridge-token.ts",
@@ -69,7 +69,9 @@
     "native:forward:cold:update": "node scripts/generate-footprint-forward-cold-native-graph.ts --write",
     "pcb209:spatial:check": "node scripts/generate-pcb209-spatial-protocol.ts --check",
     "pcb209:spatial:update": "node scripts/generate-pcb209-spatial-protocol.ts --write",
-    "repository:history:check": "node scripts/check-publishable-history.ts"
+    "repository:history:check": "node scripts/check-publishable-history.ts",
+    "schematic:native:check": "node scripts/generate-schematic-edit-native.ts --check",
+    "schematic:native:update": "node scripts/generate-schematic-edit-native.ts --write"
   },
   "engines": {
     "node": "24.18.0"

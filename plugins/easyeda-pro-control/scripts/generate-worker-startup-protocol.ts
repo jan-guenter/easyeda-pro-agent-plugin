@@ -1,4 +1,5 @@
 /* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
+import { CURRENT_NATIVE_BASELINE, assertCurrentNativeBaseline } from "./native-baseline-source.ts";
 import { applyCurrentSchematicRelevanceDisplayObservedSourceNativeFragment } from "../server/src/current-schematic-relevance-display-observed-source-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayLibraryRefreshNativeFragment } from "../server/src/current-schematic-relevance-display-library-refresh-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplaySaveUploadNativeFragment } from "../server/src/current-schematic-relevance-display-save-upload-native-fragment.ts";
@@ -124,16 +125,24 @@ async function main(): Promise<void> {
   if (process.argv.length !== 3 || action !== "--write" && action !== "--check") { throw new Error("Expected --write or --check"); }
   const path = new URL("pcb-diagnostic-owner.ps1", import.meta.url);
   const source = await readFile(path, "utf8");
-  const next = generateWorkerStartupProtocol(source);
+  const seed = await readFile(new URL(`../${CURRENT_NATIVE_BASELINE.relativePath}`, import.meta.url), "utf8");
+  assertCurrentNativeBaseline(seed);
+  const next = generateWorkerStartupProtocol(seed);
   const reviewPath = new URL("pcb-diagnostic-native.cs", import.meta.url); const compilerInput = currentPcbDiagnosticCSharpReviewSource(next);
   if (action === "--write") { await writeFile(path, next); await writeFile(reviewPath, compilerInput); }
   else if (next !== source || await readFile(reviewPath, "utf8") !== compilerInput) { throw new Error("Generated native startup protocol or review copy differs"); }
 }
 /** Pure complete composition, used by repeated-generation regressions without writing a helper. */
-export function generateWorkerStartupProtocol(source: string): string {
+export function generateWorkerStartupProtocol(source: string, layout: "legacy" | "schematic" = "legacy"): string {
+  if (layout !== "legacy" && layout !== "schematic") { throw new Error("NATIVE_BUILD_LAYOUT"); }
   const original = normalizeCurrentSchematicWireEditNativeFamily(expandCurrentPcbDiagnosticCSharpReviewSource(source));
   const normalized = normalizeCurrentSchematicRelevanceDisplayNativeFamily(original);
-  const literal = prepareCurrentSchematicWireEditNativeSwitch(prepareCurrentSchematicRelevanceDisplayNativeSwitch(normalized));
+  // Cold generation starts from the exact published shared source, before any
+  // of the new fixture/Via/schematic switches or types exist. Each fixed
+  // fragment remains idempotent when reprocessing its own generated artifact.
+  const structured = applyManagedFixtureRegistrationNativeFragment(applyCurrentProjectStructureNativeFragment(normalized));
+  const initialized = applyCurrentSchematicDisplayWriteNativeFragment(applyCurrentPcbViaWriteNativeFragment(structured));
+  const literal = layout === "schematic" ? prepareCurrentSchematicWireEditNativeSwitch(prepareCurrentSchematicRelevanceDisplayNativeSwitch(initialized)) : initialized;
   let next = prepareCurrentPcbViaSavedReadbackNativeSwitch(prepareCurrentPcbComponentSpatialNativeSwitch(prepareCurrentFootprintInverseNativeSwitch(literal)));
   for (const [name, generated] of [["WORKER STARTUP", currentPcbWorkerStartupNativeSource()],
     ["WORKER STARTUP EMPTY209", currentPcb209EmptyNativeSource()],
@@ -168,21 +177,23 @@ export function generateWorkerStartupProtocol(source: string): string {
   next = applyCurrentPcbViaPostHistorySyncNativeFragment(next);
   next = applyCurrentPcbViaSaveDrainNativeFragment(next);
   next = applyCurrentPcbViaObservedSourceNativeFragment(next);
-  next = applyCurrentPcbComponentSpatialNativeFragment(next);
-  next = applyCurrentPcbViaSavedReadbackNativeFragment(next);
-  next = applyCurrentFootprintInverseNativeFragment(next);
-  next = applyCurrentSchematicRelevanceDisplayWriteNativeFragment(next);
-  next = applyCurrentSchematicRelevanceDisplayActionNativeFragment(next);
-  next = applyCurrentSchematicRelevanceDisplayModifyEntryNativeFragment(next);
-  next = applyCurrentSchematicRelevanceDisplayClockNativeFragment(next);
-  next = applyCurrentSchematicRelevanceDisplaySyncQuiesceNativeFragment(next);
-  next = applyCurrentSchematicRelevanceDisplayLibraryRefreshNativeFragment(next);
-  next = applyCurrentSchematicRelevanceDisplayMainNativeFragment(next);
-  next = applyCurrentSchematicRelevanceDisplayStructureNativeFragment(next);
-  next = applyCurrentSchematicRelevanceDisplaySaveNativeFragment(next);
-  next = applyCurrentSchematicRelevanceDisplaySaveUploadNativeFragment(next);
-  next = applyCurrentSchematicRelevanceDisplayObservedSourceNativeFragment(next);
-  next = applyCurrentSchematicWireEditNativeFragment(next);
+  if (layout === "legacy") { next = applyCurrentPcbComponentSpatialNativeFragment(next); }
+  if (layout === "legacy") { next = applyCurrentPcbViaSavedReadbackNativeFragment(next); }
+  if (layout === "legacy") { next = applyCurrentFootprintInverseNativeFragment(next); }
+  if (layout === "schematic") {
+    next = applyCurrentSchematicRelevanceDisplayWriteNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplayActionNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplayModifyEntryNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplayClockNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplaySyncQuiesceNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplayLibraryRefreshNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplayMainNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplayStructureNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplaySaveNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplaySaveUploadNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplayObservedSourceNativeFragment(next);
+    next = applyCurrentSchematicWireEditNativeFragment(next);
+  }
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
   assertCurrentFootprintCopyForwardNativeRequestIds(next);
   next = packCurrentPcbDiagnosticCSharpReviewStorage(next);

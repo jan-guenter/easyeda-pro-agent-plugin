@@ -11,7 +11,8 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { gunzipSync } from "node:zlib";
-import { generateWorkerStartupProtocol } from "../../scripts/generate-worker-startup-protocol.ts";
+import { generateSchematicEditNativeSource } from "../../scripts/schematic-edit-native-source.ts";
+import { CURRENT_NATIVE_BASELINE } from "../../scripts/native-baseline-source.ts";
 import { currentPcbDiagnosticCSharpReviewSource, currentPcbDiagnosticCSharpRuntimeCompilerInput, expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES as MAXIMUM } from "../src/current-pcb-diagnostic-helper-source-profile.ts";
 import { currentSchematicDisplayNativeCommand as sixCommand } from "../src/current-schematic-display-native-command.ts";
@@ -43,8 +44,8 @@ void test("seven-record calls and common readonly requests use their own fixed r
 });
 void test("combined seven-record native source is idempotent, bounded and retains exact packed program bytes", async () => {
   assert.equal(process.versions.node, "24.18.0");
-  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"); const first = generateWorkerStartupProtocol(source), second = generateWorkerStartupProtocol(first);
-  assert.equal(expandCurrentPcbDiagnosticCSharpReviewSource(first).split("[switch]$SchematicWireEdit209,").length, 2);
+  const source = await readFile(new URL(`../../${CURRENT_NATIVE_BASELINE.relativePath}`, import.meta.url), "utf8"); const first = generateSchematicEditNativeSource(source).helper, second = generateSchematicEditNativeSource(source).helper;
+  assert.equal(expandCurrentPcbDiagnosticCSharpReviewSource(first).split("[switch]$SchematicWireEdit209").length, 2);
   assert.throws(() => prepareCurrentSchematicWireEditNativeSwitch("param([switch]$SchematicWireEdit209,[switch]$SchematicWireEdit209,)\n"), /SWITCH_DUPLICATE/u);
   assert.ok(second === first, "Complete fixed generation must remain byte-identical on its second pass."); assert.ok(Buffer.byteLength(first) <= MAXIMUM); const compiler = currentPcbDiagnosticCSharpReviewSource(first); assert.ok(Buffer.byteLength(currentPcbDiagnosticCSharpRuntimeCompilerInput(first)) <= MAXIMUM);
   const expanded = expandCurrentPcbDiagnosticCSharpReviewSource(first);

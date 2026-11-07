@@ -190,6 +190,15 @@ in both `current-pcb-diagnostic-owner.ts` and the separate
 consumers against actual helper bytes. CompileOnly alone does not exercise the
 synthetic launch script's independent source pin.
 
+The seven-record display and wire purposes use their separate generated
+`schematic-edit-native.ps1`. Rebuild and check it with `schematic:native:update`
+and `schematic:native:check`; its generated identity covers complete helper,
+readable review and actual compiler bytes. Keep the shared published baseline
+immutable. Verify both build layouts and all six released forward artifacts
+after generator changes. Each runtime helper and compiler input remains within
+the existing 2 MiB bound. Native compilation and an empty Job prove neither an
+application launch nor a writer lifecycle.
+
 Compatibility can be capability-specific. The supplied-coordinate math profile
 admits its reviewed API 0.3.50 closure without changing the older design tuple.
 The local environment/unit profile shares exact identity checks but fixes its
