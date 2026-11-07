@@ -1,4 +1,4 @@
-/** Exact base/page/symbol document getters. Source equality permits neither
+/** Exact base/waveform/page document getters. Source equality permits neither
  * getter execution nor original document ownership. Offsets use UTF16. */
 import { createHash } from "node:crypto";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -21,7 +21,7 @@ export const CURRENT_SCHEMATIC_DOCUMENT_TAB_ID_SOURCE = freezeDeep([
         "lineNumber": 3614,
         "columnNumber": 26_354
       },
-      "schematicPage": {
+      "waveform": {
         "start": 4_472_232,
         "end": 4_472_263,
         "name": "get tabId",
@@ -32,7 +32,7 @@ export const CURRENT_SCHEMATIC_DOCUMENT_TAB_ID_SOURCE = freezeDeep([
         "lineNumber": 3614,
         "columnNumber": 37_113
       },
-      "symbol": {
+      "schematicPage": {
         "start": 5_372_258,
         "end": 5_372_289,
         "name": "get tabId",
@@ -62,7 +62,7 @@ export const CURRENT_SCHEMATIC_DOCUMENT_TAB_ID_SOURCE = freezeDeep([
         "lineNumber": 4113,
         "columnNumber": 26_354
       },
-      "schematicPage": {
+      "waveform": {
         "start": 4_695_001,
         "end": 4_695_032,
         "name": "get tabId",
@@ -73,7 +73,7 @@ export const CURRENT_SCHEMATIC_DOCUMENT_TAB_ID_SOURCE = freezeDeep([
         "lineNumber": 4113,
         "columnNumber": 37_113
       },
-      "symbol": {
+      "schematicPage": {
         "start": 5_671_264,
         "end": 5_671_295,
         "name": "get tabId",
@@ -88,7 +88,7 @@ export const CURRENT_SCHEMATIC_DOCUMENT_TAB_ID_SOURCE = freezeDeep([
   }
 ] as const);
 export type CurrentSchematicDocumentTabIdRole = keyof typeof CURRENT_SCHEMATIC_DOCUMENT_TAB_ID_SOURCE[0]["roles"];
-export const CURRENT_SCHEMATIC_DOCUMENT_TAB_ID_ROLES = Object.freeze(["base", "schematicPage", "symbol"] as const);
+export const CURRENT_SCHEMATIC_DOCUMENT_TAB_ID_ROLES = Object.freeze(["base", "waveform", "schematicPage"] as const);
 const digest = (value: string): string => createHash("sha256").update(value).digest("hex");
 export function qualifyCurrentSchematicDocumentTabIdSource(input: string): 0 | 1 {
   if (!input.isWellFormed()) { throw new Error("SCHEMATIC_DOCUMENT_TAB_ID_SOURCE"); }

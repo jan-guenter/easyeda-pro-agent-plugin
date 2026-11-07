@@ -23,3 +23,13 @@ numeric separator style in the new generated table; that failure is retained
 privately. The corrected table passes the unchanged strict lint configuration.
 The normal-success callback still needs its own original document/prototype
 binding before reading `tabId`. No user project was opened or edited.
+
+## Receiver-role correction
+
+The first source table labeled the ON getter as schematic-page and the ja/Ha
+getter as symbol. Reviewing their containing classes shows ON is the waveform
+manager and ja/Ha is the schematic-page manager. The table now names them
+`waveform` and `schematicPage`, respectively. All six source spans, hashes and
+Inspector coordinates remain unchanged. No symbol getter is claimed by this
+leaf. A future original receiver proof must qualify the actual prototype and
+manager type independently of these role labels.

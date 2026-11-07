@@ -17,7 +17,7 @@ function inertFunction(source: string, variant: 0 | 1, role: CurrentSchematicDoc
   // oxlint-disable-next-line typescript/unbound-method -- Inspector must receive the exact uninvoked getter; binding it would replace its identity.
   const getter: unknown = Object.getOwnPropertyDescriptor(prototype, row.name.slice(4))?.get; assert.ok(typeof getter === "function"); return getter;
 }
-void test("actual Node24 metadata binds all six uninvoked base and derived document tabId getters in both exact sources", async context => {
+void test("actual Node24 metadata binds all six uninvoked base, waveform and schematic-page document tabId getters in both exact sources", async context => {
   let sources: readonly string[];
   try { sources = await Promise.all(SOURCE.map(row => readFile(`/mnt/c/Program Files/EasyEDA-Pro/resources/app/assets/${row.relativePath}`, "utf8"))); }
   catch (error) { if (error !== null && typeof error === "object" && "code" in error && error.code === "ENOENT") { context.skip("installed source unavailable"); return; } throw error; }
