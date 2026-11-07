@@ -205,6 +205,9 @@ import type { CurrentFootprintInverseStructureBindings, CurrentFootprintInverseS
 import type { CurrentSchematicDisplayClockBindings, CurrentSchematicDisplayClockOrigin, CurrentSchematicDisplayClockRealm } from "./current-schematic-display-clock-origin.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_CLOCK_SITES, validateCurrentSchematicDisplayClockCommand } from "./current-schematic-display-clock-protocol.ts";
 import type { CurrentSchematicDisplayClockCommand } from "./current-schematic-display-clock-protocol.ts";
+import { compareGeneratedSchematicRelevanceDisplayEffect } from "./generated-schematic-relevance-display-effect-data.ts";
+import type { GeneratedSchematicRelevanceDisplayProjectedEffect } from "./generated-schematic-relevance-display-effect-data.ts";
+import type { GeneratedSchematicRelevanceDisplayNativeEffect } from "./generated-schematic-relevance-display-effect.ts";
 import { compareGeneratedSchematicDisplayEffect } from "./generated-schematic-display-effect-data.ts";
 import type { GeneratedSchematicDisplayEffect } from "./generated-schematic-display-effect-data.ts";
 import { CurrentSchematicDisplayWorkerController } from "./current-schematic-display-worker-controller.ts";
@@ -785,6 +788,39 @@ export function qualifyOriginalGeneratedSchematicDisplayEffect(owner: CurrentSch
 export function requireOriginalGeneratedSchematicDisplayEffect(effect: GeneratedSchematicDisplayEffect, owner: CurrentSchematicDisplayWriteOwner, argumentsValue: GeneratedSchematicDisplayNativeArguments): void {
   const original = schematicDisplayEffects.get(effect);
   if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue || original.text !== canonicalJson(effect) || canonicalJson(compareOriginalSchematicDisplayEffect(original)) !== original.text) { throw error("SCHEMATIC_DISPLAY_EFFECT_ORIGINAL_EFFECT"); }
+}
+interface OriginalSchematicRelevanceDisplayEffect {
+  readonly owner: CurrentSchematicRelevanceDisplayWriteOwner; readonly argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments;
+  readonly before: GeneratedSchematicRelevanceDisplayStageResult; readonly modified: GeneratedSchematicRelevanceDisplayStageResult;
+  readonly observed: GeneratedSchematicRelevanceDisplayStageResult; readonly text: string;
+}
+const schematicRelevanceDisplayEffectAttempts = new WeakSet<CurrentSchematicRelevanceDisplayWriteOwner>();
+const schematicRelevanceDisplayEffects = new WeakMap<GeneratedSchematicRelevanceDisplayNativeEffect, OriginalSchematicRelevanceDisplayEffect>();
+function compareOriginalSchematicRelevanceDisplayEffect(original: Omit<OriginalSchematicRelevanceDisplayEffect, "text">): GeneratedSchematicRelevanceDisplayProjectedEffect {
+  requireSchematicArguments(original.owner, original.argumentsValue);
+  return compareGeneratedSchematicRelevanceDisplayEffect(original.argumentsValue,
+    requireOriginalSchematicRelevanceDisplayStage(original.owner, original.argumentsValue, original.before, "preflight"),
+    requireOriginalSchematicRelevanceDisplayStage(original.owner, original.argumentsValue, original.modified, "modify"),
+    requireOriginalSchematicRelevanceDisplayStage(original.owner, original.argumentsValue, original.observed, "observe"));
+}
+/** Three exact original stage objects, including the completed original Modify
+ * reply, are required. A predicted body or parsed JSON cannot issue this proof. */
+export function qualifyOriginalGeneratedSchematicRelevanceDisplayEffect(owner: CurrentSchematicRelevanceDisplayWriteOwner, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments,
+  before: GeneratedSchematicRelevanceDisplayStageResult, modified: GeneratedSchematicRelevanceDisplayStageResult, observed: GeneratedSchematicRelevanceDisplayStageResult): GeneratedSchematicRelevanceDisplayNativeEffect {
+  assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(owner);
+  if (schematicRelevanceDisplayEffectAttempts.has(owner)) { throw error("SCHEMATIC_RELEVANCE_EFFECT_ISSUE_CONSUMED"); } schematicRelevanceDisplayEffectAttempts.add(owner);
+  const original = Object.freeze({ owner, argumentsValue, before, modified, observed }); const projection = compareOriginalSchematicRelevanceDisplayEffect(original);
+  const effect: GeneratedSchematicRelevanceDisplayNativeEffect = Object.freeze({ profile: "private.generated-schematic-relevance-display-native-effect.v1", projection, originalNativeStagesJoined: true });
+  schematicRelevanceDisplayEffects.set(effect, Object.freeze({ ...original, text: canonicalJson(effect) })); return effect;
+}
+/** Historical stage provenance only. Live clock, Save and Main dispatch must
+ * separately reprove the same original generation, scene and native source. */
+export function requireOriginalGeneratedSchematicRelevanceDisplayEffect(effect: GeneratedSchematicRelevanceDisplayNativeEffect, owner: CurrentSchematicRelevanceDisplayWriteOwner,
+  argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): GeneratedSchematicRelevanceDisplayProjectedEffect {
+  const original = schematicRelevanceDisplayEffects.get(effect);
+  if (original === undefined || original.owner !== owner || original.argumentsValue !== argumentsValue || original.text !== canonicalJson(effect) ||
+    canonicalJson(compareOriginalSchematicRelevanceDisplayEffect(original)) !== canonicalJson(effect.projection)) { throw error("SCHEMATIC_RELEVANCE_EFFECT_ORIGINAL"); }
+  return effect.projection;
 }
 const schematicRelevanceModifyEntries = new WeakMap<CurrentSchematicRelevanceDisplayModifyEntryOrigin, Readonly<{ owner: CurrentSchematicRelevanceDisplayWriteOwner; argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments; bindings: CurrentSchematicRelevanceDisplayModifyEntryBindings; assertOriginal: () => void }>>();
 export function requireOriginalCurrentSchematicRelevanceDisplayModifyEntryOrigin(origin: CurrentSchematicRelevanceDisplayModifyEntryOrigin, owner: CurrentSchematicRelevanceDisplayWriteOwner,
