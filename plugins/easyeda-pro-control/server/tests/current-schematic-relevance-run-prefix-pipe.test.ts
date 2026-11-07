@@ -1,3 +1,4 @@
+import {currentSchematicRelevanceNoEchoCases} from "../src/current-schematic-relevance-noecho-wire.ts";
 /* oxlint-disable import/max-dependencies -- The same original retained Modify is tested through each independently fixed callback grammar and its purpose decoder. */
 /** Real pipe and inert byte streams. No original owner, renderer, actor,
  * native helper, mutation, receiver or durability is established. */
@@ -36,11 +37,12 @@ void test("finite run and normal callback lanes remain duplex with the original 
   for(const command of currentSchematicRelevanceNormalUpdateCases()){await pipe.observeSchematicRelevanceNormalUpdate(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
   for(const command of currentSchematicRelevanceNormalDisposalCases()){await pipe.observeSchematicRelevanceNormalDisposal(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
   for(const command of currentSchematicRelevanceNormalRecordCases()){await pipe.observeSchematicRelevanceNormalRecord(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
+  for(const command of currentSchematicRelevanceNoEchoCases()){await pipe.observeSchematicRelevanceNoEcho(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
   assert.equal(pipe.status().pendingRequestId, 2); assert.equal(pipe.status().failure, null);
   for (const row of sent.slice(2)) {
     assert.equal(row["sessionId"], "original-ui");
     const native = currentSchematicRelevanceDisplayWriteNativeRequest(Buffer.from(`${JSON.stringify(row)}\0`));
-    assert.ok(native["action"] === "schematic-relevance-run-prefix" || native["action"] === "schematic-relevance-run-guard" || native["action"] === "schematic-relevance-normal-update" || native["action"] === "schematic-relevance-normal-disposal" || native["action"] === "schematic-relevance-normal-record");
+    assert.ok(native["action"] === "schematic-relevance-run-prefix" || native["action"] === "schematic-relevance-run-guard" || native["action"] === "schematic-relevance-normal-update" || native["action"] === "schematic-relevance-normal-disposal" || native["action"] === "schematic-relevance-normal-record" || native["action"] === "schematic-relevance-noecho");
   }
   input.emit("error", new Error("inert original request finished")); await failed;
 });

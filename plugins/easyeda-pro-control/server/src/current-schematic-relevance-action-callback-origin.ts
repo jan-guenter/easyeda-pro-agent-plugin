@@ -1,3 +1,6 @@
+/* oxlint-disable import/max-dependencies -- Typed cursor and command boundaries remain separate while this one original callback capability shares their retained owner custody. */
+import type {CurrentSchematicRelevanceNoEchoCommand} from "./current-schematic-relevance-noecho-protocol.ts";
+import type {CurrentSchematicRelevanceNoEchoPreparation} from "./current-schematic-relevance-noecho-cursor.ts";
 import type {CurrentSchematicRelevanceNormalRecordCommand} from "./current-schematic-relevance-normal-record-protocol.ts";
 import type {CurrentSchematicRelevanceNormalRecordReceipt} from "./current-schematic-relevance-normal-record-cursor.ts";
 import type {CurrentSchematicRelevanceNormalDisposalReceipt} from "./current-schematic-relevance-normal-disposal-cursor.ts";
@@ -8,7 +11,6 @@ import type {CurrentSchematicRelevanceHistoryCommand} from "./current-schematic-
 import type {CurrentSchematicRelevanceHistoryCommandReceipt} from "./current-schematic-relevance-history-command-cursor.ts";
 import type { CurrentSchematicRelevanceMonitorBatchCommand } from "./current-schematic-relevance-monitor-batch-protocol.ts";
 import type { CurrentSchematicRelevanceMonitorBatchReceipt } from "./current-schematic-relevance-monitor-batch-cursor.ts";
-/* oxlint-disable import/max-dependencies -- Typed cursor and command boundaries remain separate while this one original callback capability shares their retained owner custody. */
 import type { CurrentSchematicRelevanceRecordAstCommand } from "./current-schematic-relevance-record-ast-protocol.ts";
 import type { CurrentSchematicRelevanceAstHeld, CurrentSchematicRelevanceRecordAstPrepared } from "./current-schematic-relevance-record-ast-cursor.ts";
 import type { CurrentSchematicRelevanceCompletionReceipt } from "./current-schematic-relevance-completion-cursor.ts";
@@ -58,6 +60,9 @@ export interface CurrentSchematicRelevanceActionCallbackBindings {
   readonly requestNormalRecord:(command:CurrentSchematicRelevanceNormalRecordCommand)=>Promise<unknown>;
   readonly requireOriginalNormalRecord:()=>CurrentSchematicRelevanceNormalRecordReceipt;
   readonly continueOriginalNormalRecord:()=>Promise<void>;
+  readonly nextNoEchoCommand:()=>CurrentSchematicRelevanceNoEchoCommand|null;
+  readonly requestNoEcho:(command:CurrentSchematicRelevanceNoEchoCommand)=>Promise<unknown>;
+  readonly requireOriginalNoEcho:()=>CurrentSchematicRelevanceNoEchoPreparation;
   readonly nextListenerDisposalCommand:()=>CurrentSchematicRelevanceNormalDisposalCommand|null;
   readonly requestListenerDisposal:(command:CurrentSchematicRelevanceNormalDisposalCommand)=>Promise<unknown>;
   readonly requireOriginalListenerDisposal:()=>CurrentSchematicRelevanceNormalDisposalReceipt;
