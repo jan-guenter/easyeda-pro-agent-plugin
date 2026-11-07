@@ -15,6 +15,7 @@ import { currentProjectLibraryRefreshArrayObject, currentProjectLibraryRefreshPa
 import type { CurrentProjectLibraryRefreshBindings,CurrentProjectLibraryRefreshOrigin,CurrentSchematicRelevanceLibraryRefreshOrigin } from "./current-project-library-refresh-origin.ts";
 // oxlint-disable-next-line import/no-cycle -- The original initialized issuer calls this registry only after factory, worker and body construction have completed.
 import { requireOriginalGeneratedSchematicRelevanceDisplaySaveData } from "./generated-schematic-relevance-display-native-save.ts";
+import type { GeneratedSchematicRelevanceDisplayClosedEffects } from "./generated-schematic-relevance-display-closed-effects.ts";
 import type { GeneratedSchematicRelevanceDisplayNativeSaveData, GeneratedSchematicRelevanceDisplaySaveDelta } from "./generated-schematic-relevance-display-native-save.ts";
 import type { CurrentSchematicRelevanceDisplayClockOrigin } from "./current-schematic-relevance-display-clock-origin.ts";
 import { currentFootprintInverseModelStepNativeFrame, validateCurrentFootprintInverseModelStepCommand } from "./current-footprint-inverse-model-step-protocol.ts";
@@ -1855,6 +1856,8 @@ class CurrentPcbRetainedOwnerCore {
   #schematicRelevanceSaveEnrollment: GeneratedSchematicRelevanceDisplaySaveEnrollment | null = null;
   #schematicRelevanceSaveRequest: Promise<RecordValue> | null = null;
   #schematicRelevanceSaveTask: Promise<SchematicRelevanceSaveOutcome> | null = null;
+  #schematicRelevanceSaveAcknowledgement: GeneratedSchematicRelevanceDisplayStageResult | null = null;
+  #schematicRelevanceClosedEffects: GeneratedSchematicRelevanceDisplayClosedEffects | null = null;
   #schematicRelevanceSaveBodyEnrollmentAttempted = false;
   #schematicRelevanceSaveBodyData: GeneratedSchematicRelevanceDisplayNativeSaveData | null = null;
   #schematicRelevanceClockAttempted = false;
@@ -4579,7 +4582,7 @@ class CurrentPcbRetainedOwnerCore {
           const packet = freezeDeep(generatedSchematicRelevanceDisplayStageResultSchema.parse(raw["result"]["value"]));
           if (!packet.ok || packet.stage !== "save" || !packet.saveAcknowledged || !packet.savePromiseSettled || !packet.originalPromiseSettled || packet.windowTabId !== this.#schematicWindowTabId || packet.source === null) { throw error("SCHEMATIC_RELEVANCE_SAVE_REFUSED"); }
           assertGeneratedSchematicRelevanceDisplaySaveStage(argumentsValue, requireOriginalGeneratedSchematicRelevanceDisplayEffect(effect, this, argumentsValue), packet);
-          await this.#verify(); selected.current(); schematicDisplayStagePackets.set(packet, Object.freeze({ owner: this, argumentsValue, stage: "save", text: canonicalJson(packet) })); return Object.freeze({ ok: true, packet });
+          await this.#verify(); selected.current(); schematicDisplayStagePackets.set(packet, Object.freeze({ owner: this, argumentsValue, stage: "save", text: canonicalJson(packet) })); this.#schematicRelevanceSaveAcknowledgement = packet; return Object.freeze({ ok: true, packet });
         } catch (caughtError) { this.#schematicFailed = true; this.#schematicWorkerController?.fail(); return Object.freeze({ ok: false, error: caughtError }); }
         finally { this.#schematicRelevanceSaveSettled = true; this.#busy = false; }
       })(); launched = true;
@@ -6738,6 +6741,20 @@ class CurrentPcbRetainedOwnerCore {
   }
   /** Historical original body/SQL facts only. These private completed values
    * cannot recreate live observer readiness after the original generation ends. */
+  public originalSchematicRelevanceDisplayClosedEffects(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments, termination: object): GeneratedSchematicRelevanceDisplayClosedEffects {
+    assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this); requireSchematicArguments(this, argumentsValue); this.requireSchematicDisplayTermination(termination);
+    const acknowledgement = this.#schematicRelevanceSaveAcknowledgement; const packet = this.#schematicSaveMainData;
+    const clock = this.#schematicRelevanceClockValue; const historyToken = this.#schematicHistorySqlCompletion; const publication = this.#schematicStructurePublication;
+    const enrollment = this.#schematicRelevanceSaveEnrollment;
+    if (acknowledgement === null || packet === null || this.#schematicRelevanceSaveBodyData !== packet || clock === null || historyToken === null || publication === null || enrollment === null || !this.#schematicRelevanceSaveStarted || !this.#schematicRelevanceSaveSettled || !this.#schematicStages.has("save") || this.#schematicSaveCapturedBody?.clock !== clock || this.#schematicRelevanceClockRemovedPoints.size !== 5) { throw error("SCHEMATIC_RELEVANCE_CLOSED_EFFECTS_UNAVAILABLE"); }
+    enrollment.assertOriginalAttempted(); requireOriginalSchematicRelevanceDisplayStage(this, argumentsValue, acknowledgement, "save");
+    const body = requireOriginalGeneratedSchematicRelevanceDisplaySaveData(packet, this, argumentsValue);
+    const history = this.requireOriginalSchematicRelevanceDisplayHistorySqlCompletion(argumentsValue, historyToken);
+    const structure = this.requireOriginalSchematicRelevanceDisplayStructureEffects(argumentsValue, publication);
+    if (body.documentUuid !== argumentsValue.target.pageUuid || body.bodySha256 !== history.bodySha256 || body.headTicket !== structure.ticket || history.projectUuid !== argumentsValue.target.projectUuid || history.branchUuid !== argumentsValue.target.branchUuid || structure.projectUuid !== history.projectUuid || structure.branchUuid !== history.branchUuid || structure.structureText !== expectedCurrentGeneratedProjectSaveStructure(originalCurrentSchematicRelevanceDisplayWriteTarget(this), clock)) { throw error("SCHEMATIC_RELEVANCE_CLOSED_EFFECTS_SCOPE"); }
+    this.#schematicRelevanceClosedEffects ??= Object.freeze({ schema: "private.generated-schematic-relevance-display-closed-effects.v1", body, history, structure, workerClock: clock, originalSaveAttemptRetained: true, originalSaveAcknowledgementRetained: true, originalRootAndJobClosureRetained: true, liveContinuationAuthorized: false });
+    return this.#schematicRelevanceClosedEffects;
+  }
   public originalViaWriteClosedEffects(plan: CurrentPcbViaWritePlan, termination: object): CurrentPcbViaWriteClosedEffects {
     assertOriginalCurrentPcbViaWriteOwner(this); this.requireViaWriteTermination(termination); requireViaPlan(this, plan);
     const body=this.#viaMainBoundBody; const history=this.#viaHistorySqlEffects; const structure=this.#viaStructureSqlEffects; const clock=this.#viaClockValue;
@@ -11272,7 +11289,7 @@ const savedReadbackOwnershipMethods = Object.freeze({ termination: CurrentPcbRet
   requireTermination: CurrentPcbRetainedOwnerCore.prototype.requireOriginalSavedReadbackTermination });
 const pcbViaOwnershipMethods = Object.freeze({ closedEffects: CurrentPcbRetainedOwnerCore.prototype.originalViaWriteClosedEffects, termination: CurrentPcbRetainedOwnerCore.prototype.originalViaWriteTermination,
   requireTermination: CurrentPcbRetainedOwnerCore.prototype.requireViaWriteTermination });
-const schematicDisplayOwnershipMethods = Object.freeze({ termination: CurrentPcbRetainedOwnerCore.prototype.originalSchematicDisplayTermination,
+const schematicDisplayOwnershipMethods = Object.freeze({ closedEffects: CurrentPcbRetainedOwnerCore.prototype.originalSchematicRelevanceDisplayClosedEffects, termination: CurrentPcbRetainedOwnerCore.prototype.originalSchematicDisplayTermination,
   requireTermination: CurrentPcbRetainedOwnerCore.prototype.requireSchematicDisplayTermination });
 const combinedOwnershipMethods = Object.freeze({ generation: CurrentPcbRetainedOwnerCore.prototype.requireOriginalFootprintCombinedGeneration,
   require: CurrentPcbRetainedOwnerCore.prototype.requireOriginalCombinedMainRunner,
@@ -11859,6 +11876,9 @@ export function assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(owner: 
 export function originalCurrentSchematicRelevanceDisplayWriteTarget(owner: CurrentSchematicRelevanceDisplayWriteOwner): GeneratedSchematicRelevanceFixtureOpenCheckpoint {
   assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(owner); const original = schematicRelevanceDisplayFactories.get(owner);
   if (original === undefined) { throw error("SCHEMATIC_RELEVANCE_DISPLAY_ORIGINAL_PREPARATION"); } return original.allocation.prepared;
+}
+export function originalCurrentSchematicRelevanceDisplayClosedEffects(owner: CurrentSchematicRelevanceDisplayWriteOwner, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments, termination: object): GeneratedSchematicRelevanceDisplayClosedEffects {
+  assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(owner); return schematicDisplayOwnershipMethods.closedEffects.call(owner, argumentsValue, termination);
 }
 export function originalCurrentSchematicRelevanceDisplayWriteTermination(owner: CurrentSchematicRelevanceDisplayWriteOwner): object {
   assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(owner); return schematicDisplayOwnershipMethods.termination.call(owner);

@@ -439,3 +439,25 @@ bundles, required checks, exact CI and release review are still pending.
 No PR, release or installed snapshot changed in this continuation. No native
 call, process signal, Save or project open was dispatched. The original Pad
 helper/controller and unanswered bounded cleanup request remain retained.
+
+## 2026-11-07 startup controls and closed SQL continuation
+
+The real seven-record prospective Main and original Save paths described as
+pending above are now mounted in source. Separate original polling and library
+refresh controls complete before action preparation or Save. Both controls retain
+their original journal intent, worker, source, event and helper-receipt custody.
+The structure packet reader now starts during opening and remains the same reader
+through Save and original-exit settlement. See the
+[startup control record](2026-11-07-relevance-startup-controls.md).
+
+The same owner's successful Save packet and completed structure/history/clock
+facts now support a distinct historical closed SQL comparison and checkpoint.
+The full-table comparator preserves all unrelated rows, properties and schema;
+its original-reference registry permits no replay or copied proof. See the
+[closed SQL record](2026-11-07-relevance-closed-sql-proof.md).
+
+These source increments do not finish the live writer lifecycle. Original
+run/setter continuation, Modify-time structure calls, full producer drain and
+independent saved reopening remain in progress, alongside the other open groups
+in the prior table. No release or installation changed. The original retained
+controller/helper and pending exact cleanup request remain untouched.

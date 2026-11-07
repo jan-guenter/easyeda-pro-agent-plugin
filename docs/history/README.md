@@ -766,3 +766,5 @@ layout. The connected ledger retains its generation and case anchors.
 - 2026-11-07: [Original seven-record worker helper receipts](2026-11-07-relevance-worker-helper-receipts.md).
 
 - 2026-11-07: [Original seven-record startup controls](2026-11-07-relevance-startup-controls.md), dedicated journal/worker custody, early structure readers and unchanged native compiler bounds.
+
+- 2026-11-07: [Original seven-record closed SQL proof](2026-11-07-relevance-closed-sql-proof.md), retained Save/clock/history/structure facts, complete closed comparison and separate checkpoint.
