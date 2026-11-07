@@ -70,3 +70,28 @@ prove the reader starts before opening/Save settles, repeated consumers join the
 same actual packet, and exit settlement waits the original pending read. Both
 TypeScript projects and strict changed lint pass. No protocol, native budget,
 application continuation, write authority or persistence claim changes here.
+
+## Original active-callback boundary
+
+Only the seven-record capture and Modify phases now have distinct fixed
+programs. Capture retains its original global reference. Modify specifies
+supported own `timeout:0` and empty `dependencies` options, and its callback
+stops at four exact debugger statements: entry, each setter, finish and failure.
+The original context tuple is created before the entry stop. Application
+readers and the source compiler are absent from this callback. Existing full
+source checks remain in preflight, the post-action result and observe.
+
+The shared stage bytes used by Wire remain exact. The native encoder selects
+only the appropriate phase variant, derived from bounded packed replacement
+rows and checked against its complete expected hash. The existing run-entry
+proof now requires all four exact own options. The callback requires a later
+original active-action proof; no installer, run resume, setter continuation or
+Modify acknowledgment is issued by this increment.
+
+Eight focused codec, metadata and callback cases pass. Actual Node 24 paused
+Inspector events match the fixed entry/failure coordinates and complete script;
+with no private active-action proof, the callback performs no reader or setter
+and returns a failed stage. Both TypeScript projects, strict changed lint,
+two-pass helper generation and Linux pure C# protocol smoke checks pass. Native
+request bounds and old result schemas are unchanged. No generated artifact,
+compatibility pin, application process or MCP connection was changed.

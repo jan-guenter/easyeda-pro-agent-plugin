@@ -9,6 +9,7 @@ import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_NAVIGATION_FUNCTION as NAVIGATION, 
 import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE as PROFILE } from "./current-schematic-relevance-display-write-native-profile.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE as SIX_PROFILE } from "./current-schematic-display-write-native-profile.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS as SEVEN_STRUCTURE, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as SIX_STRUCTURE } from "./current-project-save-structure-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_CAPTURE_FUNCTION as CAPTURE, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_CAPTURE_REPLACEMENTS as CAPTURE_REPLACEMENTS, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_FUNCTION as MODIFY, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_REPLACEMENTS as MODIFY_REPLACEMENTS } from "./current-schematic-relevance-display-action-programs.ts";
 import { installNativeCompileOnlyHook } from "./native-compile-only-hook.ts";
 import { installOwnedNativeDispatch } from "./native-owned-dispatch.ts";
 
@@ -63,6 +64,7 @@ function native(source: string): string {
     .replaceAll("SchematicDisplayNavigation", "SchematicRelevanceDisplayNavigation").replaceAll("SchematicDisplayStage", "SchematicRelevanceDisplayStage")
     .replaceAll("easyeda-pro-control-schematic-display-native-v1", "easyeda-pro-control-schematic-relevance-display-native-v1");
   encoder = once(encoder, `id>${String(SIX_PROFILE.renderer.total)}`, `id>${String(PROFILE.renderer.total)}`);
+  encoder = once(encoder, "index==1?SchematicRelevanceDisplayNavigation:SchematicRelevanceDisplayStage", "index==1?SchematicRelevanceDisplayNavigation:index==2?SchematicRelevanceDisplayCapture:index==4?SchematicRelevanceDisplayModify:SchematicRelevanceDisplayStage");
   const send = method(source, "public void SendSchematicDisplayNative(", "public void AbortSchematicDisplayWrite()")
     .replaceAll("SendSchematicDisplayNative", "SendSchematicRelevanceDisplayNative").replaceAll("SchematicDisplayProtocolMessage", "SchematicRelevanceDisplayProtocolMessage")
     .replaceAll("schematicDisplayWrite209", "schematicRelevanceDisplayWrite209");
@@ -77,6 +79,9 @@ bool SchematicDisplayFamily {get{return schematicDisplayWrite209||schematicRelev
 static readonly string SchematicRelevanceDisplayStart=${packed(START)};
 static readonly string SchematicRelevanceDisplayNavigation=${packed(NAVIGATION)};
 static readonly string SchematicRelevanceDisplayStage=${packed(STAGE)};
+static string SchematicRelevancePhase(string changes,int length,string hash){string text=SchematicRelevanceDisplayStage;string[] rows=changes.Split('\\0');if(rows.Length<2||rows.Length>4||rows.Length%2!=0)throw Error("schematic-relevance-phase-rows");for(int i=0;i<rows.Length;i+=2){int at=text.IndexOf(rows[i],StringComparison.Ordinal);if(at<0||text.IndexOf(rows[i],at+rows[i].Length,StringComparison.Ordinal)>=0)throw Error("schematic-relevance-phase-anchor");text=text.Substring(0,at)+rows[i+1]+text.Substring(at+rows[i].Length);}byte[] bytes=Encoding.UTF8.GetBytes(text);using(var sha=System.Security.Cryptography.SHA256.Create())if(bytes.Length!=length||BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()!=hash)throw Error("schematic-relevance-phase-hash");return text;}
+static readonly string SchematicRelevanceDisplayCapture=SchematicRelevancePhase(${packed(CAPTURE_REPLACEMENTS.flat().join("\0"))},${String(Buffer.byteLength(CAPTURE))},${quote(createHash("sha256").update(CAPTURE).digest("hex"))});
+static readonly string SchematicRelevanceDisplayModify=SchematicRelevancePhase(${packed(MODIFY_REPLACEMENTS.flat().join("\0"))},${String(Buffer.byteLength(MODIFY))},${quote(createHash("sha256").update(MODIFY).digest("hex"))});
 EasyedaDiagnosticOwner(EasyedaSchematicRelevanceDisplayBirth birth):this(){if(birth!=EasyedaSchematicRelevanceDisplayBirth.Original)throw Error("schematic-relevance-birth");schematicRelevanceDisplayWrite209=true;workerStartupFootprintMain209=true;originalMain=new EasyedaOriginalMainTransport(EasyedaSchematicRelevanceDisplayBirth.Original);}
 public static EasyedaDiagnosticOwner CreateSchematicRelevanceDisplayWrite209(){return new EasyedaDiagnosticOwner(EasyedaSchematicRelevanceDisplayBirth.Original);}
 ${admission}

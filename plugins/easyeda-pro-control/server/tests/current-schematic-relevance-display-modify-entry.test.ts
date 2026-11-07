@@ -68,6 +68,6 @@ void test("actual Inspector metadata binds the generated callback to the complet
     const evaluated = await post("Runtime.evaluate", { expression: `globalThis[${JSON.stringify(key)}]`, objectGroup: "inert-relevance-entry" }); assert.ok(evaluated !== null && typeof evaluated === "object"); const ref: unknown = Reflect.get(evaluated, "result"); assert.ok(ref !== null && typeof ref === "object"); const objectId: unknown = Reflect.get(ref, "objectId"); assert.ok(typeof objectId === "string");
     const metadata = await post("Runtime.getProperties", { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false });
     const scriptId = decodeCurrentSchematicRelevanceDisplayModifyEntryCallback(metadata); requireCurrentSchematicRelevanceDisplayModifyCallbackSource(await post("Debugger.getScriptSource", { scriptId }));
-    assert.deepEqual(structuredClone(vm.reference("heldOptions")), { history: true, name: "Codex disposable Text display" }); assert.deepEqual(vm.counts(), { setSource: 0, setters: 0, transactions: 1, save: 0 });
+    assert.deepEqual(structuredClone(vm.reference("heldOptions")), { history: true, name: "Codex disposable Text display", timeout: 0, dependencies: [] }); assert.deepEqual(vm.counts(), { setSource: 0, setters: 0, transactions: 1, save: 0 });
   } finally { vm.edit("releaseHold()"); await original; Reflect.deleteProperty(globalThis, key); await post("Runtime.releaseObjectGroup", { objectGroup: "inert-relevance-entry" }); session.disconnect(); }
 });

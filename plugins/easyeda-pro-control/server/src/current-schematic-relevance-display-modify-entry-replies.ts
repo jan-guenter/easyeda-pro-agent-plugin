@@ -1,14 +1,12 @@
 /** Exact metadata of the original generated callback, with no invocation. */
 import { z } from "zod";
-import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_STAGE_FUNCTION, GENERATED_SCHEMATIC_RELEVANCE_DISPLAY_FUNCTION } from "./generated-schematic-relevance-display-program.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_CALLBACK, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_FUNCTION } from "./current-schematic-relevance-display-action-programs.ts";
 import { decodeCurrentFootprintCopyClockRpcV2Array } from "./current-footprint-copy-clock-rpc-v2-protocol.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { captureCurrentSchematicDisplayAccessorSource } from "./current-schematic-display-accessor-replies.ts";
 
-const start = GENERATED_SCHEMATIC_RELEVANCE_DISPLAY_FUNCTION.indexOf("[async()=>") + 1, stop = GENERATED_SCHEMATIC_RELEVANCE_DISPLAY_FUNCTION.indexOf("},{history:true,name:\"Codex disposable Text display\"}]);", start) + 1;
-if (start < 1 || stop <= start || GENERATED_SCHEMATIC_RELEVANCE_DISPLAY_FUNCTION.includes("[async()=>", start)) { throw new Error("SCHEMATIC_MODIFY_CALLBACK_LITERAL"); }
-export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_CALLBACK_SOURCE = GENERATED_SCHEMATIC_RELEVANCE_DISPLAY_FUNCTION.slice(start, stop);
-export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_CALLBACK_SCRIPT = `(${CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_STAGE_FUNCTION})`;
+export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_CALLBACK_SOURCE = CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_CALLBACK;
+export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_CALLBACK_SCRIPT = `(${CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_FUNCTION})`;
 const callbackStart = CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_CALLBACK_SCRIPT.indexOf(CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_CALLBACK_SOURCE);
 const before = CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_CALLBACK_SCRIPT.slice(0, callbackStart);
 const callbackColumn = before.length - before.lastIndexOf("\n") - 1, callbackLine = before.split("\n").length - 1;
