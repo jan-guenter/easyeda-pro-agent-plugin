@@ -2237,3 +2237,28 @@ Full Linux C#5 compilation and the new fixed-codebook/cap/unissued-readiness
 smoke pass. Shared fixed helper syntax is stored once in its bounded table;
 all full expanded command hashes still match. No tracked helper, identity
 pin, bundle, Windows process or application call was produced.
+
+## GET native entry source/data checkpoint
+
+The new inert GET selector pins exactly7synchronous source callers:
+getNeedData, cP's handler, rpcService's s callback, wu.execute,
+onReceivedIGive, onMessage and the original native-channel callback.
+Compile-only Inspector on the hash-qualified full worker confirms the
+handler's exact call point110:137923 and service call0:8431. Extra/manual
+frames, wrong sessions/scripts/points and every changed caller PC refuse.
+
+The fixed readonly receiver leaf joins original entry args, service packet,
+handler/callback/bus/channel references and trusted active MessageEvent data.
+It requires an actual own need:undefined in the native-cloned body and the
+same undefined source argument; missing/null/falsy substitutes refuse. The
+expected packet retains the full nested envelope layout, with a fixed
+needUndefined:true data tag for JSON transport only. That tag cannot replace
+the actual own-field check or issue the separately branded original GetJob.
+All data string/symbol rosters and native dispatch state remain reprovable.
+
+Four focused data/actual readonly Inspector cases and strict changed-file
+lint pass, including unknown string/symbol additions and a zero-call need
+accessor refusal. These are inert leaves only: no native/Core delivery issuer,
+GET method/task resume, row/Promise/publication or new-task rearm result exists
+in this increment. The next mount must consume the genuine readiness and
+original manager GetJob; matching JSON cannot supply either.
