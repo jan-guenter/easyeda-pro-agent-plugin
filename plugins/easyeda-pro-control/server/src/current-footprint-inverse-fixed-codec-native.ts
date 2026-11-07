@@ -8,12 +8,13 @@ static string InverseFixedMessage(int id,string session,string phase,string role
 }`;
 }
 /** Build-only, closed identifiers. These parameters never come from a pipe. */
-export function currentFootprintInverseFixedCodecNativeMethod(method: "FootprintInverseGetIntrinsicsMessage" | "FootprintInverseGetRpcEntryMessage" | "FootprintInverseGetForwardingMessage", table: "InverseGetIntrinsicsRows" | "InverseGetRpcEntryRows" | "InverseGetForwardingRows", prefix: "inverse-get-intrinsics-" | "inverse-get-rpc-entry-" | "inverse-get-forwarding-", marker: "get_intrinsics_" | "get_rpc_entry_" | "get_forwarding_"): string {
-  if (method !== "FootprintInverseGetIntrinsicsMessage" && method !== "FootprintInverseGetRpcEntryMessage" && method !== "FootprintInverseGetForwardingMessage") { throw new Error("INVERSE_FIXED_CODEC_NAMESPACE"); }
+export function currentFootprintInverseFixedCodecNativeMethod(method: "FootprintInverseGetIntrinsicsMessage" | "FootprintInverseGetRpcEntryMessage" | "FootprintInverseGetForwardingMessage" | "FootprintInverseGetManagerMessage", table: "InverseGetIntrinsicsRows" | "InverseGetRpcEntryRows" | "InverseGetForwardingRows" | "InverseGetManagerRows", prefix: "inverse-get-intrinsics-" | "inverse-get-rpc-entry-" | "inverse-get-forwarding-" | "inverse-get-manager-", marker: "get_intrinsics_" | "get_rpc_entry_" | "get_forwarding_" | "get_manager_"): string {
+  if (method !== "FootprintInverseGetIntrinsicsMessage" && method !== "FootprintInverseGetRpcEntryMessage" && method !== "FootprintInverseGetForwardingMessage" && method !== "FootprintInverseGetManagerMessage") { throw new Error("INVERSE_FIXED_CODEC_NAMESPACE"); }
   const namespaces = {
     FootprintInverseGetIntrinsicsMessage: ["InverseGetIntrinsicsRows", "inverse-get-intrinsics-", "get_intrinsics_"],
     FootprintInverseGetRpcEntryMessage: ["InverseGetRpcEntryRows", "inverse-get-rpc-entry-", "get_rpc_entry_"],
     FootprintInverseGetForwardingMessage: ["InverseGetForwardingRows", "inverse-get-forwarding-", "get_forwarding_"],
+    FootprintInverseGetManagerMessage: ["InverseGetManagerRows", "inverse-get-manager-", "get_manager_"],
   } as const;
   const expected = namespaces[method];
   if (expected[0] !== table || expected[1] !== prefix || expected[2] !== marker) { throw new Error("INVERSE_FIXED_CODEC_NAMESPACE"); }

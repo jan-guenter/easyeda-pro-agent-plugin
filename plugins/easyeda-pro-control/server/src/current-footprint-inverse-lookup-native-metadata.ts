@@ -6,13 +6,13 @@ import { decodeCurrentNativeFunctionMetadata } from "./current-native-function-m
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_FOOTPRINT_INVERSE_LOOKUP_NATIVE_CONSTRUCTORS = freezeDeep({
-  Object: { arity: 1, parent: "" }, Array: { arity: 1, parent: "" }, Function: { arity: 1, parent: "" }, Symbol: { arity: 0, parent: "" }, Promise: { arity: 1, parent: "" }, Date: { arity: 7, parent: "" },
+  Object: { arity: 1, parent: "" }, Map: { arity: 0, parent: "" }, Array: { arity: 1, parent: "" }, Function: { arity: 1, parent: "" }, Symbol: { arity: 0, parent: "" }, Promise: { arity: 1, parent: "" }, Date: { arity: 7, parent: "" },
   ArrayBuffer: { arity: 1, parent: "" }, SharedArrayBuffer: { arity: 1, parent: "" }, Blob: { arity: 0, parent: "" }, FormData: { arity: 0, parent: "" }, Uint8ClampedArray: { arity: 3, parent: "TypedArray" }, HTMLImageElement: { arity: 0, parent: "HTMLElement" },
   String: { arity: 1, parent: "" }, Number: { arity: 1, parent: "" }, WeakRef: { arity: 1, parent: "" }, TypedArray: { arity: 0, parent: "" }, HTMLElement: { arity: 0, parent: "Element" }, Element: { arity: 0, parent: "Node" }, Node: { arity: 0, parent: "EventTarget" }, EventTarget: { arity: 0, parent: "" },
 } as const);
 export type CurrentFootprintInverseLookupNativeConstructorRole = keyof typeof CURRENT_FOOTPRINT_INVERSE_LOOKUP_NATIVE_CONSTRUCTORS;
 export const CURRENT_FOOTPRINT_INVERSE_LOOKUP_NATIVE_METHODS = freezeDeep({
-  hasInstance: { name: "[Symbol.hasInstance]", arity: 1 }, map: { name: "map", arity: 1 }, hasOwnProperty: { name: "hasOwnProperty", arity: 1 }, call: { name: "call", arity: 1 }, species: { name: "get [Symbol.species]", arity: 0 },
+  get: { name: "get", arity: 1 }, hasInstance: { name: "[Symbol.hasInstance]", arity: 1 }, map: { name: "map", arity: 1 }, hasOwnProperty: { name: "hasOwnProperty", arity: 1 }, call: { name: "call", arity: 1 }, species: { name: "get [Symbol.species]", arity: 0 },
   race: { name: "race", arity: 1 }, resolve: { name: "resolve", arity: 1 }, promiseThen: { name: "then", arity: 2 }, promiseCatch: { name: "catch", arity: 1 }, push: { name: "push", arity: 1 }, shift: { name: "shift", arity: 0 }, splice: { name: "splice", arity: 2 }, values: { name: "values", arity: 0 }, next: { name: "next", arity: 0 }, deref: { name: "deref", arity: 0 }, stringify: { name: "stringify", arity: 3 }, error: { name: "error", arity: 0 }, debug: { name: "debug", arity: 0 }, setTimeout: { name: "setTimeout", arity: 1 }, clearTimeout: { name: "clearTimeout", arity: 0 }, resolver: { name: "", arity: 1 },
 } as const);
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);

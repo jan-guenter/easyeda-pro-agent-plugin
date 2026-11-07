@@ -4,6 +4,8 @@
 
 - [2026-11-07 Additional schematic upload callees](2026-11-07-schematic-uploader-extra-callees.md). Exact46 uninvoked function metadata records; original receivers, encoder selection and publication remain separate.
 
+- [2026-11-07 original inverse manager project lookup](2026-11-07-inverse-original-manager-lookup.md). Same-owner singleton/native-Map selection and exact manager getData custody; the original RPC stays held pending native forwarding.
+
 - [2026-11-07 Inverse layout excludes Via action code](2026-11-07-inverse-layout-via-exclusion.md). Recover76,902compiler bytes while retaining the exact shared timer codec and unchanged diagnostic/schematic builds.
 
 - [Original schematic disposal and record continuation](2026-11-07-schematic-original-disposal-record-continuation.md)
