@@ -2181,3 +2181,59 @@ actual worker bus/task test now retains the complete original cP body instead
 of constructing EP. Two focused cases and strict changed-file lint pass.
 This corrects an unreachable source predicate, not connected deletion proof.
 No application/native helper was run or changed.
+
+## Original GET preparation before the UI lookup release
+
+The inverse factory now exposes
+`prepareFootprintInverseGetWorker(originalLookupEntry, originalRowPlan)`.
+It requires the actual held F2 entry, retained SDK Call, genuine row plan,
+original worker/controller, original source and the separately qualified
+same-realm reflection receipt. It retains one attempt and Promise. Twenty-two
+fixed observations qualify the sole live GET task, exact cP handler and
+rpcService closure, actual getNeedData/getData methods, native console.debug
+and Array.shift. Newly encountered console/maps/task objects are inspected
+before their next traversal. Full queue/task rosters, exact descriptor and
+prototype identities, and absent competing GET push/subscription entries
+remain in the retained reproof. Other queues receive no empty-bus claim.
+
+The final command arms the actual getNeedData first-call point109:34537,
+before getData runs. Compile-only Inspector on the pinned full worker reports
+that point; the guarded getData property lookup cannot invoke a substituted
+getter. The worker remains held there after the future UI GET release; this
+stage has no resume/removal, GET execution, row completion, clock or deletion
+vocabulary. Six actual helper emissions receive their own exact source reads:
+22observations+6reads=28CDP, plus original bind/ready=30controls and7events.
+The native request/aggregate caps derive from that sum; old purposes retain
+their existing budgets.
+
+Only the original Core can issue the new private readiness. Before its once
+consumption it rechecks the actual F2 hold. Consumption is synchronous before
+the future resume await; afterward its current lookup retains original
+owner/source/Call/row-plan references without requiring the legitimately
+released F2 frame to remain held. The future fixed UI sender must call the
+separate native Assert/ConsumeFootprintInverseGetWorkerReady immediately
+before its resume. No generic consume or resume verb was added. SDK-pending
+transport permits only the new exact marker/phase and actual worker session.
+The real manager GET Job, trusted native receive, row/Promise/publication and
+local WHOHAS/PUBLISH completion/new-task rearm remain separate prerequisites;
+this readiness issues none of those receipts.
+
+The source-preserving actual cP/bus/class Inspector case qualifies the whole
+preparation with readonly flagtrue, including native VM console.debug/shift,
+and rejects later competing GET entries and an own method accessor. The
+original byte-pipe case dispatches every new fixed command while its exact
+SDK request remains pending, then settles that original request. Seven
+focused checks, both TypeScript projects and strict changed-file lint pass.
+The initial generation refused an out-of-order compile-hook anchor; moving
+the new hook after its original anchor corrects composition. The closed
+inverse driver now requires its own20smoke calls, preserving the prior19.
+
+Private two-pass generation at `inverse-get-worker-prefix-xna9HT` is byte
+exact: storedhelper1,456,458B and actual compiler2,069,396B, both below the
+unchanged2MiB limits (27,756compiler bytes remain). Helper SHA
+616ec6a05cfc4da3ca88d19ca5394ee1f270ac4ab8abdf79fdbcce6fec4a28ad;
+compiler SHA9f12eb379ba661c2c4314397a150deefd06f2cf97cfa8ba9b93e34e42d244582.
+Full Linux C#5 compilation and the new fixed-codebook/cap/unissued-readiness
+smoke pass. Shared fixed helper syntax is stored once in its bounded table;
+all full expanded command hashes still match. No tracked helper, identity
+pin, bundle, Windows process or application call was produced.

@@ -14,6 +14,7 @@ import { createCurrentFootprintInverseWorkerPrefixPipe } from "./fixtures/curren
 import { currentFootprintInverseNativeDeliveryCases } from "../src/current-footprint-inverse-native-delivery-protocol.ts";
 import { currentFootprintInverseNativeChannelCases } from "../src/current-footprint-inverse-native-channel-protocol.ts";
 import { currentFootprintInverseOwnDataCases } from "../src/current-footprint-inverse-own-data-protocol.ts";
+import { currentFootprintInverseGetWorkerCases } from "../src/current-footprint-inverse-get-worker-protocol.ts";
 
 void test("actual inverse byte pipe admits only its retained worker for bus, RPC, entry, intrinsics and forwarded-job observations",async context=>{
  const{pipe,pair,last,reply}=await createCurrentFootprintInverseWorkerPrefixPipe(context);
@@ -37,6 +38,7 @@ void test("original forwarded Event observations progress while their SDK reques
  const pending=pipe.observeInversePublicCall(sdk);const original=last();let settled=false;const observed=(async():Promise<void>=>{await pending;settled=true;})();await pipe.originalInversePublicDeleteWrite(pending);
  try{
   for(const command of currentFootprintInverseNativeDeliveryCases()){const observation=pipe.observeInverseNativeDelivery(command);const request=last();if(request.id===original.id){await observation;assert.fail("Original Event command was not written");}reply({});await observation;assert.equal(request.sessionId,pair.pageSessionId);assert.equal(settled,false);pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseGetWorkerCases()){const observation=pipe.observeInverseGetWorker(command);const request=last();if(request.id===original.id){await observation;assert.fail("Original GET preparation command was not written");}reply({});await observation;assert.equal(request.sessionId,pair.pageSessionId);assert.equal(settled,false);pipe.requireInversePublicDeleteWritten(pending);}
  }finally{replyTo(original,{result:{type:"object",subtype:"promise",className:"Promise",objectId:"original-sdk-promise"}});await observed;}
  assert.equal(settled,true);assert.equal(pipe.status().failureObservation,null);
 });
