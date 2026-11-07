@@ -21,3 +21,12 @@ publication, Save or saved/reopened evidence.
 
 This extends [the earlier upload callee leaf](2026-11-07-schematic-uploader-extra-callees.md),
 whose remaining-work statement is retained as an earlier observation.
+
+## Original manager root getter
+
+The uploader's root-membership path also reads the genuine shape-manager
+`root` accessor. Its exact getter is now a thirteenth role in each script,
+bringing this leaf to26 uninvoked metadata records. The getter body reads only
+`this._root`; actual receiver/backing-root equality remains a separate check.
+Both original full-script source identities and the earlier twelve roles are
+unchanged. The focused metadata/accessor checks and strict lint passed again.
