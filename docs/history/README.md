@@ -717,3 +717,4 @@ layout. The connected ledger retains its generation and case anchors.
 
 - [Original Via upload deletion projections](2026-11-07-original-via-upload-delete-projections.md) — fixed readonly call/return/catch and exact original cache/caller joins; no continuation authority.
 - [Original Via upload deletion custody](2026-11-07-original-via-upload-delete-custody.md) — one retained event lane, exact uploaded-body/history/native delete continuation, and source-correct 16-character local keys.
+- [Exact new-program native table packing](2026-11-07-native-shared-program-table-packing.md)

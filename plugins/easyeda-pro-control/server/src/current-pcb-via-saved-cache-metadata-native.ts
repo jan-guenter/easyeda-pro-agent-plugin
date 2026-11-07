@@ -5,17 +5,20 @@ import { CURRENT_PCB_VIA_SAVED_CACHE_METADATA_HELPERS as HELPERS } from "./curre
 import { CURRENT_PCB_VIA_SAVED_READBACK_PROFILE as PROFILE } from "./current-pcb-via-saved-readback-profile.ts";
 
 function literal(value: string): string { return `@"${value.replaceAll('"', '""')}"`; }
-function packed(value: string): string {
-  const bytes = Buffer.from(value); if (bytes.length === 0 || bytes.length > 65_536) { throw new Error("SAVED_METADATA_FIXED_PROGRAM_SIZE"); }
-  // oxlint-disable-next-line node/no-sync -- Build-only deterministic encoding of exact fixed source through the existing bounded native decoder.
-  const compressed = gzipSync(bytes, { level: 9 });
-  return `UnpackFixedProgram(${literal(compressed.toString("base64"))},${String(bytes.length)},${literal(createHash("sha256").update(bytes).digest("hex"))},${literal(createHash("sha256").update(compressed).digest("hex"))})`;
+function packedTable():string {
+  const rows=Object.entries(HELPERS).map(([name,helper])=>{if(name.includes("\t")||name.includes("\0")||helper.program.includes("\t")||helper.program.includes("\0")){throw new Error("SAVED_METADATA_FIXED_PROGRAM_SEPARATOR");}return `${name}\t${helper.program}`;});
+  const bytes=Buffer.from(rows.join("\0"));if(bytes.length===0||bytes.length>60_000){throw new Error("SAVED_METADATA_FIXED_PROGRAM_SIZE");}
+  // oxlint-disable-next-line node/no-sync -- Build-only deterministic grouping of exact fixed programs through the existing bounded native table decoder.
+  const compressed=gzipSync(bytes,{level:9});
+  return `EasyedaDiagnosticFixedTable.Load(${literal(compressed.toString("base64"))},${String(bytes.length)},${literal(createHash("sha256").update(bytes).digest("hex"))},${literal(createHash("sha256").update(compressed).digest("hex"))},${String(rows.length)},2)`;
 }
 export function currentPcbViaSavedCacheMetadataNative(): string {
-  const helpers = Object.entries(HELPERS).map(([name, helper]) => `case ${literal(name)}:program=${packed(helper.program)};byValue=${String(helper.returnByValue).toLowerCase()};awaitPromise=${String(helper.awaitPromise).toLowerCase()};sideEffect=${String(helper.throwOnSideEffect).toLowerCase()};break;`).join("\n");
+  const helpers = Object.entries(HELPERS).map(([name, helper],index) => `case ${literal(name)}:program=SavedViaMetadataAt(${String(index)},role);byValue=${String(helper.returnByValue).toLowerCase()};awaitPromise=${String(helper.awaitPromise).toLowerCase()};sideEffect=${String(helper.throwOnSideEffect).toLowerCase()};break;`).join("\n");
   const parity = Object.entries(HELPERS).map(([name, helper]) => `{bool a,b,c;string program=SavedViaMetadataProgram(${literal(name)},out a,out b,out c);if(a!=${String(helper.returnByValue)}||b!=${String(helper.awaitPromise)}||c!=${String(helper.throwOnSideEffect)})throw Error("saved-metadata-packed-options");using(var sha=System.Security.Cryptography.SHA256.Create())if(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(program))).Replace("-","").ToLowerInvariant()!=${literal(createHash("sha256").update(helper.program).digest("hex"))})throw Error("saved-metadata-packed-program");}`).join("");
   return String.raw`
 readonly HashSet<string> savedViaMetadataSlots=new HashSet<string>(StringComparer.Ordinal);int savedViaMetadataCount;string savedViaReadbackContext,savedViaReadbackProject;
+static readonly string[][] SavedViaMetadataPrograms=${packedTable()};
+static string SavedViaMetadataAt(int index,string role){if(index<0||index>=SavedViaMetadataPrograms.Length||SavedViaMetadataPrograms[index].Length!=2||SavedViaMetadataPrograms[index][0]!=role)throw Error("saved-metadata-fixed-program-role");return SavedViaMetadataPrograms[index][1];}
 static string SavedViaMetadataProgram(string role,out bool byValue,out bool awaitPromise,out bool sideEffect){string program;switch(role){${helpers}
 default:throw Error("saved-readback-metadata-helper");}return program;}
 public static void VerifySavedViaMetadataProgramsSmoke(){${parity}}
