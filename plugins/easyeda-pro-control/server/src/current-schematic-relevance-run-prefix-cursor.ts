@@ -4,7 +4,7 @@
 import { z } from "zod";
 import { CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_CALLS as CALLS, CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_READ_BOUND, CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_FLAGS as FLAGS, currentSchematicRelevanceRunPrefixExpression, validateCurrentSchematicRelevanceRunPrefixCommand } from "./current-schematic-relevance-run-prefix-protocol.ts";
 import type { CurrentSchematicRelevanceRunPrefixCallRole, CurrentSchematicRelevanceRunPrefixCommand } from "./current-schematic-relevance-run-prefix-protocol.ts";
-import { CURRENT_SCHEMATIC_RELEVANCE_PREFIX_NATIVE_FUNCTIONS as NATIVES, currentSchematicRelevancePrefixCapture, currentSchematicRelevancePrefixClosure, currentSchematicRelevancePrefixHandle, currentSchematicRelevancePrefixNativeFunction, currentSchematicRelevancePrefixProperties, currentSchematicRelevancePrefixTrue, currentSchematicRelevancePrefixTuple } from "./current-schematic-relevance-run-prefix-replies.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_PREFIX_NATIVE_FUNCTIONS as NATIVES, currentSchematicRelevancePrefixCapture, currentSchematicRelevancePrefixClosures, currentSchematicRelevancePrefixHandle, currentSchematicRelevancePrefixNativeFunction, currentSchematicRelevancePrefixProperties, currentSchematicRelevancePrefixTrue, currentSchematicRelevancePrefixTuple } from "./current-schematic-relevance-run-prefix-replies.ts";
 import type { CurrentSchematicRelevancePrefixRemote } from "./current-schematic-relevance-run-prefix-replies.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_ACTION_PREFIX_ROLES as ROLES, qualifyCurrentSchematicRelevanceActionPrefixSource } from "./current-schematic-relevance-action-prefix-source.ts";
 import { decodeCurrentSchematicRelevancePrefixFunction, requireCurrentSchematicRelevancePrefixDescription } from "./current-schematic-relevance-action-prefix-replies.ts";
@@ -103,8 +103,14 @@ export class CurrentSchematicRelevanceRunPrefixCursor {
       const value = this.#slot("queue", index); need(value.type === "function" && value.description !== undefined); requireCurrentSchematicRelevancePrefixQueueDescription(value.description, this.#variant, role);
       const metadata = decodeCurrentSchematicRelevancePrefixQueueFunction(yield CurrentSchematicRelevanceRunPrefixCursor.#props(this.#at("queue", index)), this.#variant, role, this.#script);
       if (index === 4 || index === 5 || index === 7) {
-        const closure = currentSchematicRelevancePrefixClosure(yield CurrentSchematicRelevanceRunPrefixCursor.#props(metadata.scopes));
-        scopeValues.push(decodeCurrentSchematicRelevancePrefixQueueScope(yield CurrentSchematicRelevanceRunPrefixCursor.#props(closure), index === 4 ? "t" : "e"));
+        const closures = currentSchematicRelevancePrefixClosures(yield CurrentSchematicRelevanceRunPrefixCursor.#props(metadata.scopes));
+        const binding = index === 4 ? "t" : "e"; let selected: string | null = null;
+        for (const closure of closures) {
+          const packet = yield CurrentSchematicRelevanceRunPrefixCursor.#props(closure);
+          const fields = currentSchematicRelevancePrefixProperties(packet);
+          if (fields.result.some(item => item.name === binding)) { selected = decodeCurrentSchematicRelevancePrefixQueueScope(packet, binding); break; }
+        }
+        need(selected !== null); scopeValues.push(selected);
       }
     }
     need(scopeValues.length === 3);

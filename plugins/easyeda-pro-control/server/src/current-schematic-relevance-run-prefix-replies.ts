@@ -39,9 +39,16 @@ export function currentSchematicRelevancePrefixTuple(input: unknown, length?: nu
   return Object.freeze(result);
 }
 export function currentSchematicRelevancePrefixTrue(input: unknown): void { trueReply.parse(captureCurrentPcbStringClockReply(input).value); }
-export function currentSchematicRelevancePrefixClosure(input: unknown): string {
-  const value = currentSchematicRelevancePrefixProperties(input); const first = value.result.find(item => item.name === "0");
-  need(first?.value?.type === "object" && first.value.subtype === "internal#scope" && /^Closure(?: \(|$)/u.test(first.value.description ?? "")); return currentSchematicRelevancePrefixHandle(first.value);
+/** Preserve lexical order. The enclosing function may retain a nearer
+ * closure with unrelated bindings before the actual t/e binding. */
+export function currentSchematicRelevancePrefixClosures(input: unknown): readonly string[] {
+  const value = currentSchematicRelevancePrefixProperties(input); const fields = new Map(value.result.map(item => [item.name, item]));
+  need(fields.size > 0 && fields.size <= 16); const result: string[] = [];
+  for (let index = 0; index < fields.size; index += 1) { const item = fields.get(String(index));
+    need(item?.value?.type === "object" && item.value.subtype === "internal#scope");
+    if (/^Closure(?: \(|$)/u.test(item.value.description ?? "")) { result.push(currentSchematicRelevancePrefixHandle(item.value)); }
+  }
+  need(result.length > 0); return Object.freeze(result);
 }
 export const CURRENT_SCHEMATIC_RELEVANCE_PREFIX_NATIVE_FUNCTIONS = Object.freeze([
   ["get", 2], ["defineProperty", 3], ["deleteProperty", 2], ["push", 1], ["indexOf", 1], ["forEach", 1], ["add", 1], ["delete", 1], ["clear", 0], ["values", 0],

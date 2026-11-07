@@ -5,7 +5,7 @@ import { Session } from "node:inspector/promises";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_CALLS as CALLS, CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_FLAGS as FLAGS, currentSchematicRelevanceRunPrefixExpression, validateCurrentSchematicRelevanceRunPrefixCommand } from "../src/current-schematic-relevance-run-prefix-protocol.ts";
-import { CURRENT_SCHEMATIC_RELEVANCE_PREFIX_NATIVE_FUNCTIONS as NATIVES, currentSchematicRelevancePrefixCapture, currentSchematicRelevancePrefixHandle, currentSchematicRelevancePrefixNativeFunction, currentSchematicRelevancePrefixProperties, currentSchematicRelevancePrefixTuple } from "../src/current-schematic-relevance-run-prefix-replies.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_PREFIX_NATIVE_FUNCTIONS as NATIVES, currentSchematicRelevancePrefixCapture, currentSchematicRelevancePrefixClosures, currentSchematicRelevancePrefixHandle, currentSchematicRelevancePrefixNativeFunction, currentSchematicRelevancePrefixProperties, currentSchematicRelevancePrefixTuple } from "../src/current-schematic-relevance-run-prefix-replies.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_PREFIX_QUEUE_PROGRAMS as QUEUE } from "../src/current-schematic-relevance-action-prefix-queue-programs.ts";
 import { currentSchematicRelevanceRunPrefixCases, currentSchematicRelevanceRunPrefixWire } from "../src/current-schematic-relevance-run-prefix-wire.ts";
 import { currentSchematicRelevanceDisplayWriteNativeRequest } from "../src/current-schematic-relevance-display-write-protocol.ts";
@@ -26,6 +26,7 @@ void test("actual native member metadata, nullable prototype roots and Proxy rej
   assert.equal(process.versions.node, "24.18.0");
   const context = createContext({});
   runInContext(`globalThis.native=[Object.getOwnPropertyDescriptor,Object.getOwnPropertyDescriptors,Object.getPrototypeOf,Object.is,Object.hasOwn,Reflect.ownKeys,Reflect.apply,Array.isArray,Map.prototype.get,Map.prototype.has,Map.prototype.forEach,Object.getOwnPropertyDescriptor(Map.prototype,"size").get,Set.prototype.has,Set.prototype.forEach,Object.getOwnPropertyDescriptor(Set.prototype,"size").get,Object.prototype,Array.prototype,Map.prototype,Set.prototype];globalThis.extra=[Reflect,Array,Set,WeakMap,String,Error,Promise,Number,Symbol,WeakRef];globalThis.prototypes=(${QUEUE.intrinsicPrototypes}).call(extra,native);globalThis.run=Array(14).fill(null);run[10]=Object.prototype.toString;globalThis.qualified=[];for(const tuple of [extra,prototypes,native,[Object.prototype.toString,Function.prototype]])for(let value of tuple){while(value!==null&&(typeof value==="object"||typeof value==="function")){if(!qualified.includes(value))qualified.push(value);value=Object.getPrototypeOf(value);}}globalThis.members=(${QUEUE.intrinsicMembers}).call(extra,native,prototypes,qualified,Function.prototype,run);globalThis.traps=0;globalThis.proxy=new Proxy({},{ownKeys(){traps++;throw Error("trap")}});`, context);
+  runInContext("globalThis.scopeFn=(function outer(e){return(function inner(d){return()=>[e,d]})({})})({})", context);
   const session = new Session(); session.connect(); const key = "__inertOriginalRunPrefix";
   Object.defineProperty(globalThis, key, { value: context, configurable: true });
   try {
@@ -45,6 +46,14 @@ void test("actual native member metadata, nullable prototype roots and Proxy rej
       else { assert.equal(currentSchematicRelevancePrefixProperties(packet).internalProperties, undefined); }
     }
     assert.equal(runInContext("traps", context), 0);
+    const fn = await session.post("Runtime.evaluate", { expression: `globalThis.${key}.scopeFn` }); assert.ok(typeof fn.result.objectId === "string");
+    const metadata = await session.post("Runtime.getProperties", { objectId: fn.result.objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false });
+    const scopes = metadata.internalProperties?.find(item => item.name === "[[Scopes]]")?.value.objectId; assert.ok(typeof scopes === "string");
+    const closures = currentSchematicRelevancePrefixClosures(await session.post("Runtime.getProperties", { objectId: scopes, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false }));
+    assert.ok(closures[0] !== undefined && closures[1] !== undefined);
+    const first = currentSchematicRelevancePrefixProperties(await session.post("Runtime.getProperties", { objectId: closures[0], ownProperties: true, accessorPropertiesOnly: false, generatePreview: false }));
+    const second = currentSchematicRelevancePrefixProperties(await session.post("Runtime.getProperties", { objectId: closures[1], ownProperties: true, accessorPropertiesOnly: false, generatePreview: false }));
+    assert.equal(first.result.some(item => item.name === "d"), true); assert.equal(first.result.some(item => item.name === "e"), false); assert.equal(second.result.some(item => item.name === "e"), true);
   } finally { Reflect.deleteProperty(globalThis, key); await session.post("Runtime.releaseObjectGroup", { objectGroup: FLAGS.objectGroup }); session.disconnect(); }
 });
 void test("Map iterator projection preserves the application map under the production side-effect flag", async () => {

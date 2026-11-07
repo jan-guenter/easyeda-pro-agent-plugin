@@ -80,3 +80,14 @@ round trips and refusals for crossed roles and caller programs.
 The Core initial-run/callback composition and independent end-task issuer still
 need to be mounted. A guard codec or parsed end packet alone grants no live
 continuation. This source batch has not been installed or connected.
+
+A full AST ancestry audit of both pinned schematic bundles confirms all 16
+regular prefix function profiles are sloppy and share only the outer sloppy
+IIFE. The strict module-factory issue found separately in the inverse worker
+does not affect those profiles. Actual Inspector capture also covers nested
+closure lists. The collector preserves lexical order and selects the nearest
+closure exposing the required original `t` or `e`, then compares its actual
+object with the retained shapes. It no longer assumes the first scope contains
+that binding. The existing inert metadata case covers a nearer unrelated
+closure followed by the required binding. This adds no scope or continuation
+authority.
