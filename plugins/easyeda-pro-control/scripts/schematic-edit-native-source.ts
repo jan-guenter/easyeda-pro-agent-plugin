@@ -7,29 +7,30 @@ import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES as MAXIMUM } from "../se
 import { createHash } from "node:crypto";
 
 const hash = (source: string): string => createHash("sha256").update(source).digest("hex");
-const own = "SchematicRelevanceDisplayWrite209", wire = "SchematicWireEdit209";
+const own = "SchematicRelevanceDisplayWrite209", saved = "SchematicRelevanceSavedReadback209", wire = "SchematicWireEdit209";
 function replace(source: string, before: string, after: string): string {
   if (source.split(before).length !== 2) { throw new Error("SCHEMATIC_NATIVE_DRIVER_ANCHOR"); } return source.replace(before, after);
 }
 function literal(value: object): string { return `{ ${Object.entries(value).map(([key, cell]: [string, unknown]) => `${key}: ${typeof cell === "number" ? String(cell).replaceAll(/\B(?=(?:\d{3})+(?!\d))/gu, "_") : JSON.stringify(cell)}`).join(", ")} }`; }
 
 /** The broad source compiler is build-only. Its emitted script is narrowed to
- * exactly these two distinct births before it becomes a runtime artifact. */
+ * exactly these three distinct births before it becomes a runtime artifact. */
 export function generateSchematicEditNativeSource(seed: string): Readonly<{ helper: string; review: string; compiler: string }> {
   assertCurrentNativeBaseline(seed); let source = generateWorkerStartupProtocol(seed, "schematic");
   const firstLine = source.slice(0, source.indexOf("\n"));
   const switches = [...firstLine.matchAll(/\[switch\]\$(\w+)/gu)].map(match => match[1]).filter((name): name is string => name !== undefined);
-  if (switches.filter(name => name === own).length !== 1 || switches.filter(name => name === wire).length !== 1 || switches.filter(name => name === "CompileOnly").length !== 1) { throw new Error("SCHEMATIC_NATIVE_DRIVER_ROSTER"); }
-  const omitted = switches.filter(name => name !== own && name !== wire && name !== "CompileOnly");
-  const header = `param([switch]$CompileOnly,[switch]$${own},[switch]$${wire})\nif ([bool]$${own} -eq [bool]$${wire}) {throw 'schematic-native-exact-purpose-required'}\n$CombinedReadyChallenge=$null\n${omitted.map(name => `$${name}=[System.Management.Automation.SwitchParameter]$false`).join("\n")}`;
+  if (switches.filter(name => name === own).length !== 1 || switches.filter(name => name === wire).length !== 1 || switches.filter(name => name === saved).length !== 1 || switches.filter(name => name === "CompileOnly").length !== 1) { throw new Error("SCHEMATIC_NATIVE_DRIVER_ROSTER"); }
+  const omitted = switches.filter(name => name !== own && name !== wire && name !== saved && name !== "CompileOnly");
+  const header = `param([switch]$CompileOnly,[switch]$${own},[switch]$${wire},[switch]$${saved})\n$purposeCount=([int][bool]$${own})+([int][bool]$${wire})+([int][bool]$${saved})\nif ($purposeCount -ne 1) {throw 'schematic-native-exact-purpose-required'}\n$CombinedReadyChallenge=$null\n${omitted.map(name => `$${name}=[System.Management.Automation.SwitchParameter]$false`).join("\n")}`;
   source = replace(source, firstLine, header);
   const ownerLine = source.split("\n").find(line => line.startsWith("$owner=if "));
   if (ownerLine === undefined) { throw new Error("SCHEMATIC_NATIVE_DRIVER_OWNER"); }
-  source = replace(source, ownerLine, `$owner=if ($${own}) {[EasyedaDiagnosticOwner]::CreateSchematicRelevanceDisplayWrite209()} else {[EasyedaDiagnosticOwner]::CreateSchematicWireEdit209()}`);
+  source = replace(source, ownerLine, `$owner=if ($${own}) {[EasyedaDiagnosticOwner]::CreateSchematicRelevanceDisplayWrite209()} elseif ($${wire}) {[EasyedaDiagnosticOwner]::CreateSchematicWireEdit209()} else {[EasyedaDiagnosticOwner]::CreateSchematicRelevanceSavedReadback209()}`);
   const begin = source.indexOf("  if ($CompileOnly) {"), end = source.indexOf("  $launched=$false", begin);
   if (begin === -1 || end <= begin) { throw new Error("SCHEMATIC_NATIVE_DRIVER_COMPILE"); }
   source = `${source.slice(0, begin)}  if ($CompileOnly) {
     [EasyedaDiagnosticOwner]::VerifySchematicRelevanceDisplaySmoke()
+    [EasyedaDiagnosticOwner]::VerifySchematicSavedReadbackSmoke()
     [EasyedaDiagnosticOwner]::VerifySchematicWireEditSmoke()
     [EasyedaProjectLibraryRefreshProtocol]::VerifySmoke()
     [EasyedaSchematicRelevanceRunPrefixProtocol]::VerifySmoke()

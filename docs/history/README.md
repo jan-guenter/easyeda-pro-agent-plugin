@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 schematic saved-reader birth](2026-11-07-schematic-saved-reader-birth.md): distinct original seven-record saved-reader generation, readonly Main and early actor exclusion; cache/open/cold joins remain separate.
+
 - [2026-11-07 Schematic saved scene codec](2026-11-07-schematic-saved-scene-codec.md). Three finite readonly stages with original-session framing and unchanged scene semantics; fresh native birth and cold-load proof remain separate.
 
 - [2026-11-07 Schematic upload helper callees](2026-11-07-schematic-uploader-helper-callees.md). Exact24 uninvoked helper/checker metadata records; original receivers and upload continuation remain separate.

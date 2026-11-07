@@ -2,6 +2,11 @@
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 import {CurrentSchematicRelevanceNoEchoCursor} from "./current-schematic-relevance-noecho-cursor.ts";
 import type {CurrentSchematicRelevanceNoEchoCommand} from "./current-schematic-relevance-noecho-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_SAVED_READBACK_PROFILE as SCH_SAVED_PROFILE, CURRENT_SCHEMATIC_RELEVANCE_SAVED_READBACK_PURPOSE as SCH_SAVED_PURPOSE } from "./current-schematic-relevance-saved-readback-profile.ts";
+import { currentSchematicRelevanceSavedEarlyFrame } from "./current-schematic-relevance-saved-wire.ts";
+import type { CurrentSchematicRelevanceSavedEarlyStage } from "./current-schematic-relevance-saved-wire.ts";
+import type { GeneratedSchematicRelevanceSavedReadbackPlan, requireOriginalGeneratedSchematicRelevanceSavedReadbackPlan as RequireSchSavedPlan } from "./generated-schematic-relevance-saved-readback-plan.ts";
+import type { verifyGeneratedSchematicRelevanceDisplayClosedCheckpoint as VerifySchSavedCheckpoint } from "./generated-schematic-relevance-display-closed-checkpoint.ts";
 import {CurrentSchematicRelevanceNormalRecordCursor} from "./current-schematic-relevance-normal-record-cursor.ts";
 import type {CurrentSchematicRelevanceNormalRecordInputs} from "./current-schematic-relevance-normal-record-cursor.ts";
 import {validateCurrentSchematicRelevanceNormalRecordCommand} from "./current-schematic-relevance-normal-record-protocol.ts";
@@ -508,7 +513,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { canonicalJson, sha256Json, sha256Text } from "./core.ts";
 import { ORDINARY_LAUNCH_209_PROFILE } from "./ordinary-launch-209-profile.ts";
-import { CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentFootprintCopyForwardSavedDiscoveryPipe, CurrentFootprintHeldCacheDiagnosticPipe, CurrentFootprintInversePipe, CurrentPcbComponentSpatialPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbViaSavedReadbackPipe, CurrentPcbViaWritePipe, CurrentPcbWorkerStartupDiscoveryPipe, CurrentSchematicDisplayWritePipe, CurrentSchematicRelevanceDisplayWritePipe, CurrentSchematicWireEditPipe, assertOriginalCurrentFootprintInversePipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
+import { CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentFootprintCopyForwardSavedDiscoveryPipe, CurrentFootprintHeldCacheDiagnosticPipe, CurrentFootprintInversePipe, CurrentPcbComponentSpatialPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbViaSavedReadbackPipe, CurrentPcbViaWritePipe, CurrentPcbWorkerStartupDiscoveryPipe, CurrentSchematicDisplayWritePipe, CurrentSchematicRelevanceDisplayWritePipe, CurrentSchematicRelevanceSavedReadbackPipe, CurrentSchematicWireEditPipe, assertOriginalCurrentFootprintInversePipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
 import type { CurrentPcbDiagnosticFailureObservation } from "./current-pcb-diagnostic-pipe.ts";
 import { CurrentPcbSpatialPipe, spatialDiagnosticNativeRequest } from "./current-pcb-spatial-pipe.ts";
 import { CURRENT_PCB_SPATIAL_ARC_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_PAD_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_PROFILE, CURRENT_PCB_SPATIAL_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION } from "./current-pcb-spatial-profile.ts";
@@ -752,10 +757,12 @@ const forwardExecutionChannelStatus = CurrentFootprintForwardExecutionStartupCha
 
 type RecordValue = Record<string, unknown>;
 
-type OwnerPurpose = typeof CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE | typeof CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE | typeof CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE | typeof CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE | "pcb-component-spatial209" | typeof CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE | typeof CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE | "pcb-spatial209" | "footprint-head-age209" | "footprint-held-cache209" | "worker-startup-footprint-held-saved209" | "visual209" | "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-footprint-saved209" | "worker-startup-footprint-main209" | typeof CURRENT_FOOTPRINT_COMBINED_PURPOSE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE | typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE | typeof CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
+
+type OwnerPurpose = typeof SCH_SAVED_PURPOSE | typeof CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE | typeof CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE | typeof CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE | typeof CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE | "pcb-component-spatial209" | typeof CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE | typeof CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE | "pcb-spatial209" | "footprint-head-age209" | "footprint-held-cache209" | "worker-startup-footprint-held-saved209" | "visual209" | "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-footprint-saved209" | "worker-startup-footprint-main209" | typeof CURRENT_FOOTPRINT_COMBINED_PURPOSE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE | typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE | typeof CURRENT_PROJECT_STRUCTURE_NATIVE_PURPOSE | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
 function schematicDisplayPurpose(purpose: OwnerPurpose): boolean { return purpose === CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE || purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE || purpose === CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE; }
-function selectedFileMainPurpose(purpose: OwnerPurpose): boolean { return purpose === CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE || purpose === CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE || purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE || purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE || purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE || purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE; }
+function selectedFileMainPurpose(purpose: OwnerPurpose): boolean { return purpose === SCH_SAVED_PURPOSE || purpose === CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE || purpose === CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE || purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE || purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE || purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE || purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE; }
 function selectedFileMainLimits(purpose: OwnerPurpose): Readonly<{ normal: number; cleanup: number; total: number }> {
+  if (purpose === SCH_SAVED_PURPOSE) { return SCH_SAVED_PROFILE.main; }
   if (purpose === CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE) { return CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PROFILE.main; }
   if (purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE) { return CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE.main; }
   if (purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) { return CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.main; }
@@ -1315,6 +1322,23 @@ export function requireOriginalCurrentProjectSaveStructureOrigin(origin: Current
 }
 const pcbViaTerminations = new WeakMap<object, Readonly<{ owner: CurrentPcbViaWriteOwner; binding: Binding }>>();
 const schematicDisplayTerminations = new WeakMap<object, Readonly<{ owner: SchematicDisplayOwner; binding: Binding }>>();
+interface SchematicSavedReadbackAllocation {
+  readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: GeneratedSchematicRelevanceSavedReadbackPlan;
+  readonly namespace: Readonly<{ requireOriginalGeneratedSchematicRelevanceSavedReadbackPlan: typeof RequireSchSavedPlan }>;
+  readonly lookup: typeof RequireSchSavedPlan; readonly original: ReturnType<typeof RequireSchSavedPlan>;
+  readonly checkpointNamespace: Readonly<{ verifyGeneratedSchematicRelevanceDisplayClosedCheckpoint: typeof VerifySchSavedCheckpoint }>;
+  readonly verifyCheckpoint: typeof VerifySchSavedCheckpoint;
+  state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentSchematicRelevanceSavedReadbackOwner | null;
+  child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown;
+}
+const schematicSavedReadbackAllocations = new WeakMap<GeneratedSchematicRelevanceSavedReadbackPlan, SchematicSavedReadbackAllocation>();
+const schematicSavedReadbackFactories = new WeakMap<object, Readonly<{ allocation: SchematicSavedReadbackAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
+const schematicSavedReadbackTerminations = new WeakMap<object, Readonly<{ token: object; binding: Binding }>>();
+function requireSchematicSavedPreparation(allocation: SchematicSavedReadbackAllocation): void {
+  if (allocation.namespace.requireOriginalGeneratedSchematicRelevanceSavedReadbackPlan !== allocation.lookup || allocation.checkpointNamespace.verifyGeneratedSchematicRelevanceDisplayClosedCheckpoint !== allocation.verifyCheckpoint || schematicSavedReadbackAllocations.get(allocation.prepared) !== allocation) { throw error("SCHEMATIC_SAVED_ORIGINAL_PREPARATION"); }
+  const current = allocation.lookup(allocation.prepared), status = current.closed.owner.status();
+  if (current.lifecycle !== allocation.original.lifecycle || current.closed !== allocation.original.closed || current.data !== allocation.original.data || !status.released || !status.helperClosed) { throw error("SCHEMATIC_SAVED_PRIOR_GENERATION"); }
+}
 type SavedReadbackCheckpointModule = Readonly<{ requireOriginalCurrentPcbViaWriteClosedCheckpoint: typeof RequireSavedReadbackCheckpoint; verifyCurrentPcbViaWriteClosedCheckpoint: typeof VerifySavedReadbackCheckpoint }>;
 type SavedReadbackLoadModule = Readonly<{ prepareCurrentPcbViaSavedLoadPlan: typeof PrepareSavedLoadPlan; requireOriginalCurrentPcbViaSavedLoadPlan: typeof RequireSavedLoadPlan }>;
 interface PcbViaSavedReadbackAllocation {
@@ -1755,7 +1779,7 @@ export function requireOriginalCurrentFootprintInverseWorkerOrigin(origin: Curre
   if (held === undefined || held.owner !== owner || held.prepared !== prepared) { throw error("FOOTPRINT_INVERSE_WORKER_ORIGINAL"); }
   assertOriginalCurrentFootprintInverseNativeOwner(owner); held.original(); return held.bindings;
 }
-const selectedSqlFenceBootstraps = new WeakMap<object, Readonly<{ transport: object; runner: () => CurrentFootprintCopyMainBackendRunner | null; owner: CurrentFootprintInverseNativeOwner | CurrentPcbViaWriteOwner | CurrentSchematicDisplayWriteOwner | CurrentSchematicRelevanceDisplayWriteOwner | CurrentSchematicWireEditOwner | CurrentPcbViaSavedReadbackOwner; path: string; reprove: () => void }>>();
+const selectedSqlFenceBootstraps = new WeakMap<object, Readonly<{ transport: object; runner: () => CurrentFootprintCopyMainBackendRunner | null; owner: CurrentSchematicRelevanceSavedReadbackOwner | CurrentFootprintInverseNativeOwner | CurrentPcbViaWriteOwner | CurrentSchematicDisplayWriteOwner | CurrentSchematicRelevanceDisplayWriteOwner | CurrentSchematicWireEditOwner | CurrentPcbViaSavedReadbackOwner; path: string; reprove: () => void }>>();
 /** Only the original selected bootstrap can arm its saved-reader actor hold. */
 export async function prepareOriginalCurrentSelectedFileStartupActors(capability: CurrentSelectedFileMainSqlFenceBootstrap,
   runner: CurrentFootprintCopyMainBackendRunner): Promise<void> {
@@ -1764,6 +1788,8 @@ export async function prepareOriginalCurrentSelectedFileStartupActors(capability
   original.reprove(); runner.requireOriginalStartupActorPause(capability);
   // oxlint-disable-next-line eslint/no-use-before-define -- Called after the actual native factory creates its dedicated owner and runner.
   if (original.owner instanceof CurrentPcbViaSavedReadbackOwner) { await original.owner.prepareSavedReadbackEarlyActors(capability, runner); }
+  // oxlint-disable-next-line no-use-before-define -- A genuine new factory installs this owner before the original main startup callback runs.
+  if (original.owner instanceof CurrentSchematicRelevanceSavedReadbackOwner) { await original.owner.prepareSchematicSavedEarlyActors(capability, runner); }
   // oxlint-disable-next-line eslint/no-use-before-define -- This distinct native factory exists before its original main bootstrap resumes.
   else if (original.owner instanceof CurrentFootprintInverseNativeOwner) { await original.owner.prepareFootprintInverseEarlyActors(capability, runner); }
   original.reprove(); runner.requireOriginalStartupActorPause(capability);
@@ -2013,7 +2039,7 @@ class CurrentPcbRetainedOwnerCore {
   readonly #installation: CurrentPcbDiagnosticInstallation | null;
   readonly #input = new PassThrough({ autoDestroy: false });
   readonly #output: Writable;
-  readonly #pipe: CurrentSchematicWireEditPipe | CurrentSchematicRelevanceDisplayWritePipe | CurrentPcbViaSavedReadbackPipe | CurrentPcbComponentSpatialPipe | CurrentSchematicDisplayWritePipe | CurrentPcbViaWritePipe | CurrentPcbDiagnosticPipe | CurrentPcbStringPrecreatePipe | CurrentPcbWorkerStartupDiscoveryPipe | CurrentFootprintInversePipe | CurrentFootprintCombinedDiscoveryPipe | CurrentFootprintCopyForwardDiscoveryPipe | CurrentFootprintCopyForwardSavedDiscoveryPipe | CurrentFootprintHeldCacheDiagnosticPipe;
+  readonly #pipe: CurrentSchematicRelevanceSavedReadbackPipe | CurrentSchematicWireEditPipe | CurrentSchematicRelevanceDisplayWritePipe | CurrentPcbViaSavedReadbackPipe | CurrentPcbComponentSpatialPipe | CurrentSchematicDisplayWritePipe | CurrentPcbViaWritePipe | CurrentPcbDiagnosticPipe | CurrentPcbStringPrecreatePipe | CurrentPcbWorkerStartupDiscoveryPipe | CurrentFootprintInversePipe | CurrentFootprintCombinedDiscoveryPipe | CurrentFootprintCopyForwardDiscoveryPipe | CurrentFootprintCopyForwardSavedDiscoveryPipe | CurrentFootprintHeldCacheDiagnosticPipe;
   readonly #stringPurpose: boolean;
   readonly #startupPurpose: boolean;
   readonly #actorClockSource: CurrentPcb209ActorClockSourceQualification | null;
@@ -2473,6 +2499,11 @@ class CurrentPcbRetainedOwnerCore {
    * Transport and resource-ledger selection happen before listeners or launch. */
   readonly #generatedFixtureBirth: boolean;
   readonly #componentPrepared: GeneratedComponentFixtureOpenCheckpoint | null;
+  readonly #schematicSavedPrepared: GeneratedSchematicRelevanceSavedReadbackPlan | null;
+  #schematicSavedEarlyStage: CurrentSchematicRelevanceSavedEarlyStage | null = null;
+  #schematicSavedActors: CurrentPcbViaSavedEarlyActors | null = null;
+  #schematicSavedEarlyAttempted = false;
+  #schematicSavedStartAttempted = false;
   readonly #savedReadbackPrepared: CurrentPcbViaWriteClosedCheckpoint | null;
   #savedReadbackStarted = false; #savedReadbackAborted = false;
   #savedReadbackActorsPending = false; #savedReadbackActorsArmed = false;
@@ -2679,12 +2710,14 @@ class CurrentPcbRetainedOwnerCore {
     installation: CurrentPcbDiagnosticInstallation | null, verifyInstallation: () => Promise<void>, purpose: OwnerPurpose,
     verifyStartupFacade: () => Promise<void> = verifyInstallation, actorClockSource: CurrentPcb209ActorClockSourceQualification | null = null,
     emptyAnchor: CurrentPcb209EmptyStartupBudgetAnchor | null = null, ratlineBudget: CurrentPcb209RatlineBudget | null = null, continuationBudget: CurrentPcb209RatlineContinuationBudget | null = null, readyChallenge: string | null = null, forwardSavedHandoff: object | null = null,
-    generatedFixtureBirth = false, componentPrepared: GeneratedComponentFixtureOpenCheckpoint | null = null, savedReadbackPrepared: CurrentPcbViaWriteClosedCheckpoint | null = null) {
+    generatedFixtureBirth = false, componentPrepared: GeneratedComponentFixtureOpenCheckpoint | null = null, savedReadbackPrepared: CurrentPcbViaWriteClosedCheckpoint | null = null, schematicSavedPrepared: GeneratedSchematicRelevanceSavedReadbackPlan | null = null) {
     if ((componentPrepared !== null) !== (purpose === "pcb-component-spatial209")) { throw error("COMPONENT_ORIGINAL_PREPARED"); }
     if (componentPrepared !== null) { assertOriginalGeneratedComponentFixtureOpenCheckpoint(componentPrepared); }
     this.#componentPrepared = componentPrepared;
     if ((savedReadbackPrepared !== null) !== (purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE)) { throw error("SAVED_READBACK_PREPARED_PURPOSE"); }
     this.#savedReadbackPrepared = savedReadbackPrepared;
+    if ((schematicSavedPrepared !== null) !== (purpose === SCH_SAVED_PURPOSE)) { throw error("SCHEMATIC_SAVED_PREPARED_PURPOSE"); }
+    this.#schematicSavedPrepared = schematicSavedPrepared;
     if (generatedFixtureBirth && purpose !== "diagnostic209" && purpose !== "pcb-spatial209" && purpose !== "pcb-component-spatial209" && purpose !== CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { throw error("GENERATED_FIXTURE_BIRTH_PURPOSE"); }
     this.#generatedFixtureBirth = generatedFixtureBirth;
     const saved = forwardSavedHandoff === null ? null : requireForwardSavedObservationHandoff(forwardSavedHandoff);
@@ -2738,7 +2771,8 @@ class CurrentPcbRetainedOwnerCore {
         this.#send = this.#sendFrame(chunk, callback);
       },
     });
-    if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) { this.#pipe = new CurrentPcbViaSavedReadbackPipe(this.#input, this.#output); }
+    if (this.#purpose === SCH_SAVED_PURPOSE) { this.#pipe = new CurrentSchematicRelevanceSavedReadbackPipe(this.#input, this.#output); }
+    else if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) { this.#pipe = new CurrentPcbViaSavedReadbackPipe(this.#input, this.#output); }
     else if (this.#purpose === CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE) { this.#pipe = new CurrentSchematicWireEditPipe(this.#input, this.#output); }
     else if (this.#purpose === CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE) { this.#pipe = new CurrentSchematicRelevanceDisplayWritePipe(this.#input, this.#output); }
     else if (schematicDisplayPurpose(this.#purpose)) { this.#pipe = new CurrentSchematicDisplayWritePipe(this.#input, this.#output); }
@@ -11335,6 +11369,21 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
     const executable = this.#installation.plan.files[0]; if (executable === undefined) { throw error("SAVED_READBACK_INSTALLATION"); }
     await this.launch({ executable: executable.windowsPath, executableSha256: executable.sha256, confirmDiagnosticLaunch: true }); this.#available(); requireSavedReadbackPreparation(original);
   }
+  public async startSchematicSavedReadbackGeneration(): Promise<void> {
+    assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(this); this.#available(); const original = schematicSavedReadbackFactories.get(this)?.allocation;
+    if (original === undefined || this.#schematicSavedStartAttempted || this.#launchConsumed || this.#installation === null) { throw error("SCHEMATIC_SAVED_START_CONSUMED"); }
+    this.#schematicSavedStartAttempted = true; requireSchematicSavedPreparation(original); await original.verifyCheckpoint(original.original.closed.checkpoint); this.#available(); requireSchematicSavedPreparation(original);
+    if (schematicSavedReadbackFactories.get(this)?.allocation !== original) { throw error("SCHEMATIC_SAVED_START_ORIGINAL"); }
+    const executable = this.#installation.plan.files[0]; if (executable === undefined) { throw error("SCHEMATIC_SAVED_INSTALLATION"); }
+    await this.launch({ executable: executable.windowsPath, executableSha256: executable.sha256, confirmDiagnosticLaunch: true }); this.#available(); requireSchematicSavedPreparation(original);
+  }
+  public originalSchematicSavedReadbackTermination(): object {
+    assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(this); const binding = this.#binding, observed = this.#terminationObservation;
+    if (binding === null || !this.#terminationObserved || observed?.originalRootExited !== true || observed.originalJobEmpty !== true) { throw error("SCHEMATIC_SAVED_ORIGINAL_TERMINATION"); }
+    const prior = schematicSavedReadbackTerminations.get(this);
+    if (prior !== undefined) { if (prior.binding !== binding) { throw error("SCHEMATIC_SAVED_ORIGINAL_TERMINATION"); } return prior.token; }
+    const token = Object.freeze({ profile: "private.schematic-relevance-saved-readback-termination.v1", executionAuthorized: false }); schematicSavedReadbackTerminations.set(this, Object.freeze({ token, binding })); return token;
+  }
   public originalSavedReadbackTermination(): object {
     assertOriginalCurrentPcbViaSavedReadbackOwner(this);
     const binding = this.#binding, observed = this.#terminationObservation;
@@ -11654,6 +11703,13 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
           if (this.#requireFootprintMain(true) !== original || this.#mainRunner !== runner) { throw error("SAVED_READBACK_MAIN_OWNER_CHANGED"); }
         } }));
     }
+    if (this.#purpose === SCH_SAVED_PURPOSE) {
+      assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(this); const allocation = schematicSavedReadbackFactories.get(this)?.allocation, original = this.#requireFootprintMain(true);
+      if (allocation === undefined || this.#schematicSavedPrepared !== allocation.prepared) { throw error("SCHEMATIC_SAVED_MAIN_PREPARATION"); } requireSchematicSavedPreparation(allocation);
+      selectedBootstrap = Object.freeze({ profile: "private.selected-file-main-sql-fence-bootstrap.v1", executionAuthorized: false });
+      selectedSqlFenceBootstraps.set(selectedBootstrap, Object.freeze({ transport, runner: () => runner, owner: this, path: allocation.original.data.target.rawWindowsPath,
+        reprove: (): void => { assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(this); requireSchematicSavedPreparation(allocation); if (this.#requireFootprintMain(true) !== original || this.#mainRunner !== runner) { throw error("SCHEMATIC_SAVED_MAIN_ORIGINAL"); } } }));
+    }
     runner = new CurrentFootprintCopyMainBackendRunner(transport, bootstrap, selectedBootstrap);
     this.#mainRunner = runner;
     const packet = await runner.observe();
@@ -11689,6 +11745,32 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
   }
   /** Finite browser hold before the original app-main startup pause resumes.
    * Existing running workers refuse; later background workers never resume. */
+  public async prepareSchematicSavedEarlyActors(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner): Promise<void> {
+    assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(this);
+    const allocation = schematicSavedReadbackFactories.get(this)?.allocation, original = selectedSqlFenceBootstraps.get(capability), pipe = this.#pipe;
+    if (original?.owner !== this || original.runner() !== runner || this.#mainRunner !== runner || allocation === undefined ||
+      !(pipe instanceof CurrentSchematicRelevanceSavedReadbackPipe) || this.#schematicSavedEarlyAttempted || this.#schematicSavedActors !== null ||
+      this.#browserObservationConsumed || this.#framesConsumed || this.#stagedContext !== null) { throw error("SCHEMATIC_SAVED_EARLY_ACTORS_UNAVAILABLE"); }
+    runner.requireOriginalStartupActorPause(capability); this.#enter(true); this.#schematicSavedEarlyAttempted = true;
+    const ledger = new CurrentPcbViaSavedEarlyActors(allocation.original.data.target.projectUuid); this.#schematicSavedActors = ledger;
+    const current = (): void => { this.#available(); assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(this); original.reprove(); runner.requireOriginalStartupActorPause(capability);
+      if (this.#mainRunner !== runner || this.#pipe !== pipe || this.#schematicSavedActors !== ledger || this.#closeConsumed) { throw error("SCHEMATIC_SAVED_EARLY_ACTORS_CHANGED"); } };
+    pipe.retainSchematicSavedEarlyActors(event => { this.#available(); assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(this);
+      if (this.#pipe !== pipe || this.#schematicSavedActors !== ledger || this.#closeConsumed) { throw error("SCHEMATIC_SAVED_EARLY_ACTOR_EVENT_OWNER"); }
+      return ledger.attachment(event); });
+    try {
+      for (const stage of ["before", "arm", "after"] as const) {
+        current(); this.#schematicSavedEarlyStage = stage; if (stage === "arm") { ledger.beginArm(); }
+        const reply = await this.#transfer(() => pipe.observeSchematicSavedEarlyActors(stage)); current();
+        if (stage === "before") { ledger.before(reply); }
+        else if (stage === "arm") { if (!exact(reply, [])) { throw error("SCHEMATIC_SAVED_EARLY_ACTOR_ARM_REPLY"); } ledger.acknowledgeArm(); }
+        else { ledger.after(reply); }
+        this.#schematicSavedEarlyStage = null;
+      }
+      ledger.assertSealed(); current();
+    } catch (caughtError) { this.#input.emit("error", error("SCHEMATIC_SAVED_EARLY_ACTORS_FAILED")); throw caughtError; }
+    finally { this.#schematicSavedEarlyStage = null; this.#busy = false; }
+  }
   public async prepareSavedReadbackEarlyActors(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner): Promise<void> {
     assertOriginalCurrentPcbViaSavedReadbackOwner(this);
     const allocation = pcbViaSavedReadbackFactories.get(this)?.allocation, original = selectedSqlFenceBootstraps.get(capability), pipe = this.#pipe;
@@ -12064,6 +12146,10 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
   }
 
   #available(): void {
+    if (this.#purpose === SCH_SAVED_PURPOSE) {
+      assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(this); const ledger = this.#schematicSavedActors;
+      if (ledger !== null && (Object.getPrototypeOf(ledger) !== CurrentPcbViaSavedEarlyActors.prototype || Reflect.ownKeys(ledger).length > 0 || !originalFootprintDescriptors(CurrentPcbViaSavedEarlyActors.prototype, savedReadbackEarlyActorDescriptors))) { throw error("SCHEMATIC_SAVED_EARLY_LEDGER_CHANGED"); }
+    }
     if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) {
       assertOriginalCurrentPcbViaSavedReadbackOwner(this);
       const ledger = this.#savedReadbackEarlyActors;
@@ -12107,7 +12193,7 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
       })();
       await this.#send;
       while (selectedFileMainPurpose(this.#purpose) ? !settled : this.#pipe.status().pendingRequestId !== null) {
-        if (selectedFileMainPurpose(this.#purpose) && this.#mainRunner !== null && this.#savedReadbackEarlyActorStage === null && this.#inverseActorStage === null) { await this.#mainRunner.pumpSelectedSqlFence(); }
+        if (selectedFileMainPurpose(this.#purpose) && this.#mainRunner !== null && this.#savedReadbackEarlyActorStage === null && this.#schematicSavedEarlyStage === null && this.#inverseActorStage === null) { await this.#mainRunner.pumpSelectedSqlFence(); }
         if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#savedReadbackProjectNavigationPending && this.#savedReadbackLoadData === null && !this.#savedReadbackOpeningPumpRunning) { await this.#pumpSavedReadbackOpening(); }
         if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && this.#viaProjectNavigationDispatchAttempted && this.#viaWorkerController !== null && !this.#viaWorkerController.status().pumping) { await this.#viaWorkerController.pump(); }
         if (schematicDisplayPurpose(this.#purpose) && this.#schematicNavigationDispatchAttempted && this.#schematicWorkerController !== null && !this.#schematicWorkerController.status().pumping) { await this.#schematicWorkerController.pump(); }
@@ -12193,6 +12279,7 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
       else if (this.#inverseActorStage !== null) { encoded = currentFootprintInverseActorNativeFrame(chunk, this.#inverseActorStage); }
       else if (this.#inverseParentPending && this.#inverseUiReady !== null) { encoded = currentFootprintInverseParentNativeFrame(chunk, this.#inverseUiReady.selected.sessionId); }
       else if (this.#inverseWorkerCommand !== null && this.#inverseWorkerPair !== null) { encoded = currentFootprintInverseWorkerNativeFrame(chunk, this.#inverseWorkerCommand, this.#inverseWorkerPair); }
+      else if (this.#schematicSavedEarlyStage !== null) { encoded = currentSchematicRelevanceSavedEarlyFrame(chunk, this.#schematicSavedEarlyStage); }
       else if (this.#savedReadbackEarlyActorStage !== null) { encoded = currentPcbViaSavedEarlyActorNativeFrame(chunk, this.#savedReadbackEarlyActorStage); }
       else if (this.#savedReadbackRegistrationFrame && this.#savedReadbackCache !== null) {
         const intent = this.#savedReadbackRegistrationIntent; const held = intent === null ? undefined : savedProjectRegistrationIntents.get(intent);
@@ -12823,6 +12910,12 @@ export class CurrentPcbSpatialOwner extends CurrentPcbRetainedOwnerCore {
 }
 
 /** A separate saved-file reader. No initial-fixture or writer origin transfers. */
+export class CurrentSchematicRelevanceSavedReadbackOwner extends CurrentPcbRetainedOwnerCore {
+  public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>, prepared: GeneratedSchematicRelevanceSavedReadbackPlan,
+    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve()) {
+    super(child, verify, installation, verifyInstallation, SCH_SAVED_PURPOSE, verifyInstallation, null, null, null, null, null, null, false, null, null, prepared);
+  }
+}
 export class CurrentPcbViaSavedReadbackOwner extends CurrentPcbRetainedOwnerCore {
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>, prepared: CurrentPcbViaWriteClosedCheckpoint,
     installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve()) {
@@ -13038,7 +13131,9 @@ const footprintOwnershipMethods = Object.freeze({ assert: CurrentPcbRetainedOwne
   forwardExecutionTarget: CurrentPcbRetainedOwnerCore.prototype.originalFootprintForwardExecutionTarget,
   forwardExecutionTermination: CurrentPcbRetainedOwnerCore.prototype.originalFootprintForwardExecutionTermination,
   requireForwardExecutionTermination: CurrentPcbRetainedOwnerCore.prototype.requireFootprintForwardExecutionTermination });
+const schematicSavedReadbackOwnerDescriptors = Object.getOwnPropertyDescriptors(CurrentSchematicRelevanceSavedReadbackOwner.prototype);
 const savedReadbackOwnerDescriptors = Object.getOwnPropertyDescriptors(CurrentPcbViaSavedReadbackOwner.prototype);
+const schematicSavedReadbackTerminationMethod = CurrentPcbRetainedOwnerCore.prototype.originalSchematicSavedReadbackTermination;
 const savedReadbackOwnershipMethods = Object.freeze({ termination: CurrentPcbRetainedOwnerCore.prototype.originalSavedReadbackTermination,
   requireTermination: CurrentPcbRetainedOwnerCore.prototype.requireOriginalSavedReadbackTermination });
 const pcbViaOwnershipMethods = Object.freeze({ closedEffects: CurrentPcbRetainedOwnerCore.prototype.originalViaWriteClosedEffects, termination: CurrentPcbRetainedOwnerCore.prototype.originalViaWriteTermination,
@@ -13284,7 +13379,7 @@ export function currentFootprintForwardExecutionBirthAllocationOutcome(options: 
 
 /** Retain the actual child before owner construction can throw. This is not an
  * adopted owner: no request has entered stdin, and close is observed directly. */
-function retainForwardExecutionBirthChild(allocation: ForwardExecutionBirthAllocation | ForwardExecutionHeldSavedAllocation | FootprintInverseAllocation | PcbViaWriteAllocation | PcbViaSavedReadbackAllocation, child: ChildProcessWithoutNullStreams): void {
+function retainForwardExecutionBirthChild(allocation: ForwardExecutionBirthAllocation | ForwardExecutionHeldSavedAllocation | FootprintInverseAllocation | PcbViaWriteAllocation | PcbViaSavedReadbackAllocation | SchematicSavedReadbackAllocation, child: ChildProcessWithoutNullStreams): void {
   if (allocation.state !== "unresolved" || allocation.owner !== null || allocation.child !== null) { throw error("FORWARD_EXECUTION_CHILD_CUSTODY"); }
   const closed = Promise.withResolvers<true>();
   const observation = { closed: false, code: null as number | null, signal: null as NodeJS.Signals | null, error: null as Error | null };
@@ -13298,7 +13393,7 @@ function retainForwardExecutionBirthChild(allocation: ForwardExecutionBirthAlloc
 
 /** An ownerless constructor failure may end only its original never-written
  * stdin once. Deadline expiry retains that child and its late close observer. */
-async function closeForwardExecutionOwnerlessBirth(allocation: ForwardExecutionBirthAllocation | ForwardExecutionHeldSavedAllocation | FootprintInverseAllocation | PcbViaWriteAllocation | PcbViaSavedReadbackAllocation): Promise<void> {
+async function closeForwardExecutionOwnerlessBirth(allocation: ForwardExecutionBirthAllocation | ForwardExecutionHeldSavedAllocation | FootprintInverseAllocation | PcbViaWriteAllocation | PcbViaSavedReadbackAllocation | SchematicSavedReadbackAllocation): Promise<void> {
   const held = allocation.child;
   if (held === null || allocation.owner !== null || allocation.eofAttempted) { throw error("FORWARD_EXECUTION_OWNERLESS_EOF_REFUSED"); }
   allocation.eofAttempted = true;
@@ -13734,6 +13829,35 @@ export async function startCurrentPcbViaSavedReadbackOwner(options: CurrentPcbDi
     if (allocation.state === "pending") { allocation.state = "no-resource"; }
     else if (allocation.owner === null && allocation.child !== null) { try { await closeForwardExecutionOwnerlessBirth(allocation); } catch (cleanupError) { allocation.cleanupFailure = cleanupError; } } throw caughtError;
   }
+}
+export async function startCurrentSchematicRelevanceSavedReadbackOwner(options: CurrentPcbDiagnosticInstallationOptions, prepared: GeneratedSchematicRelevanceSavedReadbackPlan): Promise<CurrentSchematicRelevanceSavedReadbackOwner> {
+  requirePcbViaBirthOptions(options); const namespace = await import("./generated-schematic-relevance-saved-readback-plan.ts"); const lookup = namespace.requireOriginalGeneratedSchematicRelevanceSavedReadbackPlan;
+  const original = lookup(prepared); const checkpointNamespace = await import("./generated-schematic-relevance-display-closed-checkpoint.ts"); const verifySavedCheckpoint = checkpointNamespace.verifyGeneratedSchematicRelevanceDisplayClosedCheckpoint;
+  await verifySavedCheckpoint(original.closed.checkpoint); const again = lookup(prepared);
+  if (again.lifecycle !== original.lifecycle || again.closed !== original.closed || again.data !== original.data || namespace.requireOriginalGeneratedSchematicRelevanceSavedReadbackPlan !== lookup || checkpointNamespace.verifyGeneratedSchematicRelevanceDisplayClosedCheckpoint !== verifySavedCheckpoint || schematicSavedReadbackAllocations.has(prepared)) { throw error("SCHEMATIC_SAVED_ALLOCATION_CONSUMED"); }
+  const allocation: SchematicSavedReadbackAllocation = { options, prepared, namespace, lookup, original, checkpointNamespace, verifyCheckpoint: verifySavedCheckpoint, state: "pending", owner: null, child: null, eofAttempted: false, cleanupFailure: null };
+  schematicSavedReadbackAllocations.set(prepared, allocation);
+  try {
+    const owner = await startFixedOwner(options, SCH_SAVED_PURPOSE, "209-schematic-relevance-saved-readback", undefined, null, null, null, null, false, null, null, null, null, null, null, null, allocation);
+    if (!(owner instanceof CurrentSchematicRelevanceSavedReadbackOwner)) { throw error("SCHEMATIC_SAVED_FACTORY"); } assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(owner); return owner;
+  } catch (caughtError) { if (allocation.state === "pending") { allocation.state = "no-resource"; } else if (allocation.owner === null && allocation.child !== null) { try { await closeForwardExecutionOwnerlessBirth(allocation); } catch (cleanupError) { allocation.cleanupFailure = cleanupError; } } throw caughtError; }
+}
+export function assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(owner: CurrentSchematicRelevanceSavedReadbackOwner): void {
+  const original = schematicSavedReadbackFactories.get(owner);
+  if (original === undefined || original.allocation.owner !== owner || original.allocation.state !== "retained" || Object.getPrototypeOf(owner) !== CurrentSchematicRelevanceSavedReadbackOwner.prototype || Reflect.ownKeys(owner).length > 0 || !originalFootprintDescriptors(CurrentSchematicRelevanceSavedReadbackOwner.prototype, schematicSavedReadbackOwnerDescriptors) || !originalFootprintDescriptors(CurrentPcbRetainedOwnerCore.prototype, footprintCoreDescriptors) || owner.status().profile !== SCH_SAVED_PURPOSE) { throw error("SCHEMATIC_SAVED_ORIGINAL_FACTORY"); } requireSchematicSavedPreparation(original.allocation);
+}
+export function currentSchematicRelevanceSavedReadbackAllocationOutcome(prepared: GeneratedSchematicRelevanceSavedReadbackPlan): Readonly<{ state: "not-attempted" | SchematicSavedReadbackAllocation["state"]; owner: CurrentSchematicRelevanceSavedReadbackOwner | null }> {
+  const original = schematicSavedReadbackAllocations.get(prepared); if (original === undefined) { return Object.freeze({ state: "not-attempted", owner: null }); }
+  requireSchematicSavedPreparation(original); if (original.owner !== null) { assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(original.owner); } return Object.freeze({ state: original.state, owner: original.owner });
+}
+export function originalCurrentSchematicRelevanceSavedReadbackTarget(owner: CurrentSchematicRelevanceSavedReadbackOwner): GeneratedSchematicRelevanceSavedReadbackPlan {
+  assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(owner); const original = schematicSavedReadbackFactories.get(owner); if (original === undefined) { throw error("SCHEMATIC_SAVED_ORIGINAL_FACTORY"); } return original.allocation.prepared;
+}
+export function originalCurrentSchematicRelevanceSavedReadbackTermination(owner: CurrentSchematicRelevanceSavedReadbackOwner): object {
+  assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(owner); return schematicSavedReadbackTerminationMethod.call(owner);
+}
+export function assertOriginalCurrentSchematicRelevanceSavedReadbackTermination(owner: CurrentSchematicRelevanceSavedReadbackOwner, token: object): void {
+  if (originalCurrentSchematicRelevanceSavedReadbackTermination(owner) !== token) { throw error("SCHEMATIC_SAVED_ORIGINAL_TERMINATION"); }
 }
 export function assertOriginalCurrentPcbViaSavedReadbackOwner(owner: CurrentPcbViaSavedReadbackOwner): void {
   const original = pcbViaSavedReadbackFactories.get(owner);
@@ -14274,9 +14398,11 @@ export function currentFootprintHeadAgeValidationAllocationOutcome(binding: Curr
  * Construct the matching fixed owner and retain it before listeners start;
  * Callers cannot substitute native arguments or upgrade an existing purpose. */
 async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, purpose: OwnerPurpose,
-  generation: "206" | "209-opening" | "209-visual" | "209-spatial" | "209-component-spatial" | "209-startup" | "209-held-cache" | "209-via-saved-readback" | "209-via-write" | "209-schematic-display" | "209-schematic-relevance-display" | "209-schematic-wire-edit" | "209-footprint-inverse" = "206", savedWriter?: CurrentFootprintCopyNativeOwner,
+  generation: "209-schematic-relevance-saved-readback" | "206" | "209-opening" | "209-visual" | "209-spatial" | "209-component-spatial" | "209-startup" | "209-held-cache" | "209-via-saved-readback" | "209-via-write" | "209-schematic-display" | "209-schematic-relevance-display" | "209-schematic-wire-edit" | "209-footprint-inverse" = "206", savedWriter?: CurrentFootprintCopyNativeOwner,
   forwardSavedHandoff: object | null = null, heldValidation: HeldCacheValidationAllocation | null = null, headAgeValidation: HeadAgeValidationAllocation | null = null,
-  forwardExecutionBirth: ForwardExecutionBirthAllocation | null = null, generatedFixtureBirth = false, viaWriteAllocation: PcbViaWriteAllocation | null = null, schematicDisplayAllocation: SchematicDisplayWriteAllocation | null = null, componentPrepared: GeneratedComponentFixtureOpenCheckpoint | null = null, savedReadbackAllocation: PcbViaSavedReadbackAllocation | null = null, footprintInverseAllocation: FootprintInverseAllocation | null = null, schematicRelevanceAllocation: SchematicRelevanceDisplayWriteAllocation | null = null, schematicWireAllocation: SchematicWireEditAllocation | null = null): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
+  forwardExecutionBirth: ForwardExecutionBirthAllocation | null = null, generatedFixtureBirth = false, viaWriteAllocation: PcbViaWriteAllocation | null = null, schematicDisplayAllocation: SchematicDisplayWriteAllocation | null = null, componentPrepared: GeneratedComponentFixtureOpenCheckpoint | null = null, savedReadbackAllocation: PcbViaSavedReadbackAllocation | null = null, footprintInverseAllocation: FootprintInverseAllocation | null = null, schematicRelevanceAllocation: SchematicRelevanceDisplayWriteAllocation | null = null, schematicWireAllocation: SchematicWireEditAllocation | null = null, schematicSavedAllocation: SchematicSavedReadbackAllocation | null = null): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
+  if ((schematicSavedAllocation !== null) !== (purpose === SCH_SAVED_PURPOSE) || schematicSavedAllocation !== null && (schematicSavedAllocation.options !== options || schematicSavedAllocation.state !== "pending")) { throw error("SCHEMATIC_SAVED_ORIGINAL_ALLOCATION"); }
+  if (schematicSavedAllocation !== null) { requireSchematicSavedPreparation(schematicSavedAllocation); }
   if ((schematicWireAllocation !== null) !== (purpose === CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE) || schematicWireAllocation !== null &&
     (schematicWireAllocation.options !== options || schematicWireEditAllocations.get(schematicWireAllocation.prepared) !== schematicWireAllocation || schematicWireAllocation.state !== "pending")) { throw error("SCHEMATIC_WIRE_ORIGINAL_ALLOCATION"); }
   if ((schematicRelevanceAllocation !== null) !== (purpose === CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE) || schematicRelevanceAllocation !== null &&
@@ -14304,7 +14430,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   if (forwardHeldSaved !== null && (purpose !== "worker-startup-footprint-held-saved209" || generation !== "209-startup" || savedWriter !== undefined || forwardHeldSaved.options !== options)) { throw error("FORWARD_HELD_SAVED_ALLOCATION"); }
   if (forwardSaved !== null && (purpose !== "worker-startup-footprint-saved209" || generation !== "209-startup" || savedWriter !== undefined)) { throw error("FORWARD_SAVED_PURPOSE"); }
   const startup209 = purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-held-saved209" || purpose === "worker-startup-footprint-main209" || purpose === "footprint-head-age209" || bornFootprintTransport(purpose)) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
-  if ((generation === "209-schematic-wire-edit") !== (purpose === CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE) || (generation === "209-schematic-relevance-display") !== (purpose === CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE) || (generation === "209-footprint-inverse") !== (purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE) || (generation === "209-opening") !== (purpose === "diagnostic209") || (generation === "209-visual") !== (purpose === "visual209") ||
+  if ((generation === "209-schematic-relevance-saved-readback") !== (purpose === SCH_SAVED_PURPOSE) || (generation === "209-schematic-wire-edit") !== (purpose === CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE) || (generation === "209-schematic-relevance-display") !== (purpose === CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE) || (generation === "209-footprint-inverse") !== (purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE) || (generation === "209-opening") !== (purpose === "diagnostic209") || (generation === "209-visual") !== (purpose === "visual209") ||
       (generation === "209-component-spatial") !== (purpose === "pcb-component-spatial209") || (generation === "209-spatial") !== (purpose === "pcb-spatial209") || (generation === "209-via-saved-readback") !== (purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) || (generation === "209-via-write") !== (purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) || (generation === "209-schematic-display") !== (purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) ||
       (generation === "209-startup") !== (startup209 && purpose !== CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE) || (generation === "209-held-cache") !== (purpose === "footprint-held-cache209") ||
       (heldValidation !== null) !== (purpose === "footprint-held-cache209")) { throw error("INSTALLATION_PURPOSE"); }
@@ -14333,7 +14459,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   if (startup209) { await verifyCurrentPcb209WorkerBootstrapInstallation(sealedOptions); }
   const graphChallenge = purpose === CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE ? randomBytes(16).toString("hex") : null;
   const inverseChallenge = purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE ? randomBytes(16).toString("hex") : null;
-  const schematicNativePurpose = purpose === CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE || purpose === CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE;
+  const schematicNativePurpose = purpose === SCH_SAVED_PURPOSE || purpose === CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE || purpose === CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE;
   let nativeGraph: Awaited<ReturnType<typeof captureCurrentFootprintForwardColdNativeGraph>> | null;
   if (schematicNativePurpose) { nativeGraph = await captureCurrentSchematicEditNativeHelper(sealedOptions.wslDistribution ?? process.env["WSL_DISTRO_NAME"], purpose); }
   else if (purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && inverseChallenge !== null) { nativeGraph = await captureCurrentFootprintInverseNativeHelper(sealedOptions.wslDistribution ?? process.env["WSL_DISTRO_NAME"], purpose, inverseChallenge); }
@@ -14386,6 +14512,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === "pcb-component-spatial209") { purposeSwitch = " -ComponentSpatial209"; }
   else if (purpose === "pcb-spatial209") { purposeSwitch = generatedFixtureBirth ? " -GeneratedFixtureSpatial209" : " -Spatial209"; }
   else if (purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE) { purposeSwitch = ` ${CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE.nativeSwitch} -InverseReadyChallenge '${String(readyChallenge)}'`; }
+  else if (purpose === SCH_SAVED_PURPOSE) { purposeSwitch = ` ${SCH_SAVED_PROFILE.nativeSwitch}`; }
   else if (purpose === CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE) { purposeSwitch = ` ${CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PROFILE.nativeSwitch}`; }
   else if (purpose === CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE) { purposeSwitch = ` ${CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE.nativeSwitch}`; }
   else if (purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { purposeSwitch = ` ${CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE.nativeSwitch}`; }
@@ -14419,6 +14546,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   if (footprintInverseAllocation !== null) { requireFootprintInversePreparation(footprintInverseAllocation); footprintInverseAllocation.state = "unresolved"; retainedOwners.add(footprintInverseAllocation); }
   if (forwardExecutionBirth !== null) { forwardExecutionBirth.state = "unresolved"; retainedOwners.add(forwardExecutionBirth); }
   if (savedReadbackAllocation !== null) { requireSavedReadbackPreparation(savedReadbackAllocation); savedReadbackAllocation.state = "unresolved"; retainedOwners.add(savedReadbackAllocation); }
+  if (schematicSavedAllocation !== null) { requireSchematicSavedPreparation(schematicSavedAllocation); schematicSavedAllocation.state = "unresolved"; retainedOwners.add(schematicSavedAllocation); }
   if (viaWriteAllocation !== null) { viaWriteAllocation.state = "unresolved"; retainedOwners.add(viaWriteAllocation); }
   if (schematicWireAllocation !== null) { schematicWireAllocation.state = "unresolved"; retainedOwners.add(schematicWireAllocation); }
   if (schematicRelevanceAllocation !== null) { schematicRelevanceAllocation.state = "unresolved"; retainedOwners.add(schematicRelevanceAllocation); }
@@ -14430,6 +14558,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   if (forwardExecutionBirth !== null) { retainForwardExecutionBirthChild(forwardExecutionBirth, child); }
   if (forwardHeldSaved !== null) { retainForwardExecutionBirthChild(forwardHeldSaved, child); }
   if (savedReadbackAllocation !== null) { retainForwardExecutionBirthChild(savedReadbackAllocation, child); }
+  if (schematicSavedAllocation !== null) { retainForwardExecutionBirthChild(schematicSavedAllocation, child); }
   if (viaWriteAllocation !== null) { retainForwardExecutionBirthChild(viaWriteAllocation, child); }
   if (schematicWireAllocation !== null) { retainForwardExecutionBirthChild(schematicWireAllocation, child); }
   if (schematicRelevanceAllocation !== null) { retainForwardExecutionBirthChild(schematicRelevanceAllocation, child); }
@@ -14516,6 +14645,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE) { owner = new CurrentSchematicWireEditOwner(child, verify, installation, verifyInstallation); }
   else if (purpose === CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE) { owner = new CurrentSchematicRelevanceDisplayWriteOwner(child, verify, installation, verifyInstallation); }
   else if (purpose === CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PURPOSE) { owner = new CurrentSchematicDisplayWriteOwner(child, verify, installation, verifyInstallation); }
+  else if (purpose === SCH_SAVED_PURPOSE) { if (schematicSavedAllocation === null) { throw error("SCHEMATIC_SAVED_FACTORY"); } owner = new CurrentSchematicRelevanceSavedReadbackOwner(child, verify, schematicSavedAllocation.prepared, installation, verifyInstallation); }
   else if (purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE) { if (savedReadbackAllocation === null) { throw error("SAVED_READBACK_ORIGINAL_FACTORY"); } owner = new CurrentPcbViaSavedReadbackOwner(child, verify, savedReadbackAllocation.prepared, installation, verifyInstallation); }
   else if (purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { owner = new CurrentPcbViaWriteOwner(child, verify, installation, verifyInstallation); }
   else { owner = new CurrentPcbDiagnosticOwner(child, verify, installation, verifyInstallation); }
@@ -14555,6 +14685,10 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   if (savedReadbackAllocation !== null) {
     if (!(owner instanceof CurrentPcbViaSavedReadbackOwner)) { throw error("SAVED_READBACK_FACTORY"); }
     savedReadbackAllocation.owner = owner; savedReadbackAllocation.state = "retained"; pcbViaSavedReadbackFactories.set(owner, Object.freeze({ allocation: savedReadbackAllocation, installation }));
+  }
+  if (schematicSavedAllocation !== null) {
+    if (!(owner instanceof CurrentSchematicRelevanceSavedReadbackOwner)) { throw error("SCHEMATIC_SAVED_FACTORY"); }
+    schematicSavedAllocation.owner = owner; schematicSavedAllocation.state = "retained"; schematicSavedReadbackFactories.set(owner, Object.freeze({ allocation: schematicSavedAllocation, installation }));
   }
   retainedOwners.add(owner); owner.start();
   return owner;

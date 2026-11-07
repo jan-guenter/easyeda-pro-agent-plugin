@@ -25,6 +25,7 @@ import { applyCurrentSchematicRelevanceUiPublicationNativeFragment } from "../se
 import { applyCurrentSchematicRelevanceRunPrefixNativeFragment } from "../server/src/current-schematic-relevance-run-prefix-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayModifyEntryNativeFragment } from "../server/src/current-schematic-relevance-display-modify-entry-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayActionNativeFragment } from "../server/src/current-schematic-relevance-display-action-native-fragment.ts";
+import { applyCurrentSchematicRelevanceSavedReadbackNative, normalizeCurrentSchematicRelevanceSavedReadbackNative, prepareCurrentSchematicRelevanceSavedReadbackNativeSwitch } from "../server/src/current-schematic-relevance-saved-readback-native.ts";
 import { applyCurrentSchematicWireEditNativeFragment, normalizeCurrentSchematicWireEditNativeFamily, prepareCurrentSchematicWireEditNativeSwitch } from "../server/src/current-schematic-wire-edit-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayWriteNativeFragment, normalizeCurrentSchematicRelevanceDisplayNativeFamily, prepareCurrentSchematicRelevanceDisplayNativeSwitch } from "../server/src/current-schematic-relevance-display-write-native-fragment.ts";
 import { currentPcbDiagnosticCSharpReviewSource, expandCurrentPcbDiagnosticCSharpReviewSource, packCurrentPcbDiagnosticCSharpReviewStorage } from "../server/src/current-pcb-diagnostic-csharp-review-storage.ts";
@@ -153,8 +154,9 @@ async function main(): Promise<void> {
 /** Pure complete composition, used by repeated-generation regressions without writing a helper. */
 export function generateWorkerStartupProtocol(source: string, layout: "diagnostic" | "inverse" | "schematic" = "diagnostic"): string {
   if (layout !== "diagnostic" && layout !== "inverse" && layout !== "schematic") { throw new Error("NATIVE_BUILD_LAYOUT"); }
-  const original = normalizeCurrentSchematicWireEditNativeFamily(expandCurrentPcbDiagnosticCSharpReviewSource(source));
-  const spatial = layout === "diagnostic" ? applyPcb209SpatialNativeSource(original) : original;
+  const original = normalizeCurrentSchematicWireEditNativeFamily(normalizeCurrentSchematicRelevanceSavedReadbackNative(expandCurrentPcbDiagnosticCSharpReviewSource(source)));
+  const prepared = layout === "schematic" ? prepareCurrentSchematicRelevanceSavedReadbackNativeSwitch(original) : original;
+  const spatial = layout === "diagnostic" ? applyPcb209SpatialNativeSource(prepared) : prepared;
   const normalized = normalizeCurrentSchematicRelevanceDisplayNativeFamily(spatial);
   // Cold generation starts from the exact published shared source, before any
   // Of the new fixture/Via/schematic switches or types exist. Each fixed
@@ -230,6 +232,7 @@ export function generateWorkerStartupProtocol(source: string, layout: "diagnosti
     next = applyCurrentSchematicRelevanceDisplayMainLiveHistoryNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplaySaveDrainNativeFragment(next);
     next = applyCurrentSchematicWireEditNativeFragment(next);
+    next = applyCurrentSchematicRelevanceSavedReadbackNative(next);
   }
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
   assertCurrentFootprintCopyForwardNativeRequestIds(next);

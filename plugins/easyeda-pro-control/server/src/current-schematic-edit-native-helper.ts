@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { CURRENT_SCHEMATIC_EDIT_NATIVE_IDENTITY as IDENTITY } from "./current-schematic-edit-native-identity.ts";
 import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES as MAXIMUM } from "./current-pcb-diagnostic-helper-source-profile.ts";
 
-type Purpose = "schematic-relevance-display-write209" | "schematic-wire-edit209";
+type Purpose = "schematic-relevance-saved-readback209" | "schematic-relevance-display-write209" | "schematic-wire-edit209";
 function need(value: boolean): asserts value { if (!value) { throw new Error("SCHEMATIC_NATIVE_HELPER_SOURCE"); } }
 function same(first: Stats, last: Stats): boolean {
   return first.dev === last.dev && first.ino === last.ino && first.size === last.size && first.mode === last.mode && first.mtimeMs === last.mtimeMs && first.ctimeMs === last.ctimeMs && last.nlink === 1;
@@ -31,11 +31,13 @@ export interface CurrentSchematicEditNativeHelperCapture { readonly verify: () =
 /** Both the Linux source read and Windows loader check complete exact bytes.
  * Windows FileShare.Read remains retained until its original helper exits. */
 export async function captureCurrentSchematicEditNativeHelper(distribution: string | undefined, purpose: Purpose): Promise<CurrentSchematicEditNativeHelperCapture> {
-  need(purpose === "schematic-relevance-display-write209" || purpose === "schematic-wire-edit209");
+  need(purpose === "schematic-relevance-saved-readback209" || purpose === "schematic-relevance-display-write209" || purpose === "schematic-wire-edit209");
   const original = await read(), path = fileURLToPath(new URL(`../../${IDENTITY.helper.relativePath}`, import.meta.url)); let windowsPath: string;
   if (/^\/mnt\/[a-z]\//u.test(path)) { windowsPath = `${path[5]?.toUpperCase()}:\\${path.slice(7).replaceAll("/", "\\")}`; }
   else { need(typeof distribution === "string" && /^[A-Za-z\d][A-Za-z\d_.-]{0,127}$/u.test(distribution)); windowsPath = `\\\\wsl.localhost\\${distribution}${path.replaceAll("/", "\\")}`; }
-  const flag = purpose === "schematic-relevance-display-write209" ? "-SchematicRelevanceDisplayWrite209" : "-SchematicWireEdit209";
+  let flag = "-SchematicWireEdit209";
+  if (purpose === "schematic-relevance-saved-readback209") { flag = "-SchematicRelevanceSavedReadback209"; }
+  else if (purpose === "schematic-relevance-display-write209") { flag = "-SchematicRelevanceDisplayWrite209"; }
   const pin = IDENTITY.helper;
   const bootstrap = `$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';$file=[IO.File]::Open('${windowsPath.replaceAll("'", "''")}',[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read);try{if($file.Length -ne ${String(pin.bytes)} -or $file.Length -gt ${String(MAXIMUM)}){throw 'schematic-helper-size'};$bytes=New-Object byte[] ([int]$file.Length);$offset=0;while($offset -lt $file.Length){$read=$file.Read($bytes,$offset,$bytes.Length-$offset);if($read -le 0){throw 'schematic-helper-eof'};$offset+=$read};if($file.ReadByte() -ne -1){throw 'schematic-helper-grew'};$hasher=[Security.Cryptography.SHA256]::Create();try{$digest=([BitConverter]::ToString($hasher.ComputeHash($bytes))).Replace('-','').ToLowerInvariant()}finally{$hasher.Dispose()};if($digest -cne '${pin.sha256}'){throw 'schematic-helper-hash'};$decoder=New-Object Text.UTF8Encoding($false,$true);& ([ScriptBlock]::Create($decoder.GetString($bytes))) ${flag}}finally{$file.Dispose()}`;
   need(Buffer.from(bootstrap, "utf16le").toString("base64").length <= 16_000);
