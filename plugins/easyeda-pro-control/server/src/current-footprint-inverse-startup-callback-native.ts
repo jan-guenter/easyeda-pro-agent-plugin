@@ -28,3 +28,5 @@ public static void VerifyFootprintInverseStartupCallbackSmoke(){var fields=new S
 }
 `;
 }
+
+export { currentFootprintInverseStartupQueueNativeSource } from "./current-footprint-inverse-startup-queue-native.ts";

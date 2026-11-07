@@ -1,5 +1,5 @@
 import { CURRENT_FOOTPRINT_INVERSE_CONDITION_SOURCE_REQUESTS as CONDITIONS } from "./current-footprint-inverse-condition-source.ts";
-import { CURRENT_FOOTPRINT_INVERSE_STARTUP_CALLBACK_REQUESTS as STARTUP } from "./current-footprint-inverse-startup-callback-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_STARTUP_QUEUE_REQUESTS as QUEUE, CURRENT_FOOTPRINT_INVERSE_STARTUP_CALLBACK_REQUESTS as STARTUP } from "./current-footprint-inverse-startup-callback-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_TIMER_REQUESTS as TIMER } from "./current-footprint-inverse-timer-budget.ts";
 import { CURRENT_FOOTPRINT_INVERSE_COLD_LOAD_REQUESTS as COLD, CURRENT_FOOTPRINT_INVERSE_COLD_STEP_REQUESTS as STEP } from "./current-footprint-inverse-cold-load-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_PRODUCER_ARM_REQUESTS as PRODUCER } from "./current-footprint-inverse-producer-protocol.ts";
@@ -22,7 +22,7 @@ const mainCleanup = MAIN.cleanupRequests, mainNormal = MAIN.normalRequests + FEN
 const discovery = 16, emptyGuard = 9 + 1, parent = 3 + 1, projectOpening = 9 + 1, registration = 2;
 const generic = discovery + 2 * 8 + 3 + 4;
 const sourceHeldPrefix = discovery + emptyGuard + registration + parent + WORKER.totalUntilProjectHeld + projectOpening;
-const renderer = sourceHeldPrefix + CONSTRUCTION.cdpRequests + CACHE.total + PRODUCER.cdpRequests + COLD.total + 1 + STEP.maximum + STARTUP.cdpRequests + CONDITIONS.reads + TIMER.direct;
+const renderer = sourceHeldPrefix + CONSTRUCTION.cdpRequests + CACHE.total + PRODUCER.cdpRequests + COLD.total + 1 + STEP.maximum + STARTUP.cdpRequests + CONDITIONS.reads + TIMER.direct + QUEUE.cdpRequests;
 // One finite renderer poll lane, paired with the existing original-main poll
 // Envelope. A consumed failure does not replenish this reservation.
 const rendererPolls = MAIN.totalPolls;
@@ -39,7 +39,7 @@ export const CURRENT_FOOTPRINT_INVERSE_ACTION_LIMITS = Object.freeze({
   "main-attach": 1, "main-reprove": mainReproofs, "main-send": mainNormal + mainCleanup, "main-poll": MAIN.totalPolls,
   "footprint-inverse-abort": 1, "footprint-inverse-preflight": 1, "footprint-inverse-register": 1,
   "footprint-inverse-cache-guard": 1, "footprint-inverse-cache-enroll": 1, "footprint-inverse-cache-delete-guard": 2, "footprint-inverse-cache-loading-guard": 1, "footprint-inverse-cache-invalidate": CACHE.invalidation, "footprint-inverse-cache": CACHE.cacheNormal + CACHE.cacheCleanup, "footprint-inverse-cache-metadata": CACHE.metadataNormal + CACHE.metadataCleanup,
-  "footprint-inverse-condition-source":CONDITIONS.controls, "footprint-inverse-startup-callback":STARTUP.controls, "footprint-inverse-cold-step":STEP.maximum, "footprint-inverse-startup":1, "footprint-inverse-cold": COLD.total + 2 + COLD.pauses, "footprint-inverse-producer-arm": PRODUCER.cdpRequests, "footprint-inverse-actors": 3, "footprint-inverse-parent": 1, "footprint-inverse-worker-bind": 1,
+  "footprint-inverse-startup-queue": QUEUE.controls, "footprint-inverse-condition-source":CONDITIONS.controls, "footprint-inverse-startup-callback":STARTUP.controls, "footprint-inverse-cold-step":STEP.maximum, "footprint-inverse-startup":1, "footprint-inverse-cold": COLD.total + 2 + COLD.pauses, "footprint-inverse-producer-arm": PRODUCER.cdpRequests, "footprint-inverse-actors": 3, "footprint-inverse-parent": 1, "footprint-inverse-worker-bind": 1,
   "footprint-inverse-timer": TIMER.directControls,
   "footprint-inverse-worker": WORKER.totalUntilProjectHeld, "footprint-inverse-construction": CONSTRUCTION.controls, "footprint-inverse-source-bind": 1, "footprint-inverse-project": 1,
 });

@@ -46,3 +46,5 @@ export function currentFootprintInverseStartupCallbackNativeFrame(chunk: Buffer,
   if (command.phase === "inverse-startup-callback-helper") { return freezeDeep({ action: "footprint-inverse-startup-callback", requestId: value.id, phase: command.phase, method: command.method, scriptId: command.params.scriptId }); }
   return freezeDeep({ ...currentPcbViaWorkerWire(command, value.id).request, action: "footprint-inverse-startup-callback" });
 }
+
+export { CURRENT_FOOTPRINT_INVERSE_STARTUP_QUEUE_REQUESTS } from "./current-footprint-inverse-startup-queue-protocol.ts";

@@ -95,3 +95,5 @@ export type { CurrentFootprintInverseStartupCallbackCommand, CurrentFootprintInv
 
 export { currentFootprintInverseConditionBudget, currentFootprintInverseConditionText, qualifyCurrentFootprintInverseConditionSource } from "./current-footprint-inverse-condition-source.ts";
 export type { CurrentFootprintInverseConditionRole } from "./current-footprint-inverse-condition-source.ts";
+
+export type { CurrentFootprintInverseStartupQueueCommand } from "./current-footprint-inverse-startup-queue-protocol.ts";

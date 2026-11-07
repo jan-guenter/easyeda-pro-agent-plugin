@@ -1,5 +1,5 @@
 import { CURRENT_FOOTPRINT_INVERSE_COLD_LOAD_SITES as COLD_SITES, CURRENT_FOOTPRINT_INVERSE_STARTUP_CALLBACK_ROLES as STARTUP_ROLES, classifyCurrentFootprintInverseColdPause, currentFootprintInverseConditionBudget, currentFootprintInverseConditionText, currentFootprintInverseStartupCallbackBudget, qualifyCurrentFootprintInverseConditionSource } from "./current-footprint-inverse-cold-load-protocol.ts";
-import type { CurrentFootprintInverseColdLoadCommand, CurrentFootprintInverseColdStepCommand, CurrentFootprintInverseConditionRole, CurrentFootprintInverseStartupCallbackCommand, CurrentFootprintInverseStartupCallbackRole, CurrentFootprintInverseColdLoadRole as CurrentPcbViaSavedLoadRole } from "./current-footprint-inverse-cold-load-protocol.ts";
+import type { CurrentFootprintInverseColdLoadCommand, CurrentFootprintInverseColdStepCommand, CurrentFootprintInverseConditionRole, CurrentFootprintInverseStartupCallbackCommand, CurrentFootprintInverseStartupCallbackRole, CurrentFootprintInverseStartupQueueCommand, CurrentFootprintInverseColdLoadRole as CurrentPcbViaSavedLoadRole } from "./current-footprint-inverse-cold-load-protocol.ts";
 /** Separate inverse event cursor. It shares only the fixed seven-source
  * bootstrap algorithm, not a saved reader controller, origin or purpose.
  * Browser/page attachments must name the same suspended original target. */
@@ -28,6 +28,7 @@ export interface CurrentFootprintInverseWorkerControllerBindings {
   readonly poll: () => Promise<void>; readonly assertCurrent: () => Promise<void>;
   readonly projectSourceHeld: (source: CurrentPcbViaSavedLoadProjectSourceHeld, controller: CurrentFootprintInverseWorkerController) => Promise<void>;
   readonly constructionRequest: (command: CurrentFootprintInverseConstructionCommand, retainAllocationReply?: (reply: unknown) => void) => Promise<unknown>;
+  readonly startupQueueRequest:(command:CurrentFootprintInverseStartupQueueCommand)=>Promise<unknown>;
   readonly startupCallbackRequest:(command:CurrentFootprintInverseStartupCallbackCommand)=>Promise<unknown>;
   readonly startupCallbackHeld:(role:CurrentFootprintInverseStartupCallbackRole,event:DiagnosticEvent)=>Promise<void>;
   readonly conditionSourceRequest:(scriptId:string)=>Promise<unknown>;
@@ -69,6 +70,7 @@ export class CurrentFootprintInverseWorkerController {
   #coldStartupWork:Readonly<{run:()=>Promise<void>;result:ReturnType<typeof Promise.withResolvers<boolean>>}>|null=null;
   #coldStartupAttempted=false;#coldStartupStarted=false;#coldStartupHeld:Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>|null=null;
   #coldStepPending:Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>|null=null;
+  #startupQueueReading=false;readonly #startupQueueReads=new WeakSet<object>();readonly #startupQueueHelpers:{program:string;scriptId:string|null}[]=[];
   #conditionBound=0;#conditionReadAttempts=0;readonly #conditionRoles=new Set<CurrentFootprintInverseConditionRole>();readonly #conditionScriptIds:string[]=[];readonly #conditionSeenIds=new Set<string>();readonly #conditionCounts=new Map<string,number>();
   #startupCallbackBound=0;#startupCallbackHolds=0;#startupCallbackHeld:{role:CurrentFootprintInverseStartupCallbackRole;event:WorkerEvent;delivered:boolean;resumeAttempted:boolean}|null=null;
   readonly #startupCallbackHelpers:{program:string;scriptId:string|null}[]=[];
@@ -86,7 +88,7 @@ export class CurrentFootprintInverseWorkerController {
   #source: CurrentPcbViaSavedLoadProjectSourceHeld | null = null; #failed = false; #reading = false; #eventCount = 0; #networkEvents = 0; #pumping = false;
   public constructor(bindings: CurrentFootprintInverseWorkerControllerBindings) {
     need(bindings !== null && typeof bindings === "object" && !types.isProxy(bindings) && Object.getPrototypeOf(bindings) === Object.prototype && Object.isFrozen(bindings));
-    const fields = ["parentSessionId", "projectUuid", "windowTabId", "bindWorker", "request", "poll", "assertCurrent", "projectSourceHeld", "constructionRequest", "startupCallbackRequest", "startupCallbackHeld", "conditionSourceRequest", "timerRequest", "timerHeld", "coldStepRequest", "coldRequest", "producerArmRequest", "constructionHeld", "fail"];
+    const fields = ["parentSessionId", "projectUuid", "windowTabId", "bindWorker", "request", "poll", "assertCurrent", "projectSourceHeld", "constructionRequest", "startupQueueRequest", "startupCallbackRequest", "startupCallbackHeld", "conditionSourceRequest", "timerRequest", "timerHeld", "coldStepRequest", "coldRequest", "producerArmRequest", "constructionHeld", "fail"];
     need(Reflect.ownKeys(bindings).length === fields.length);
     for (const [index, name] of fields.entries()) { const d = Object.getOwnPropertyDescriptor(bindings, name); need(d !== undefined && Object.hasOwn(d, "value") && typeof d.value === (index < 3 ? "string" : "function") && !types.isProxy(d.value)); }
     need(token(bindings.parentSessionId) && token(bindings.windowTabId) && /^[a-f\d]{64}$/u.test(bindings.projectUuid)); this.#bindings = bindings; Object.freeze(this);
@@ -113,7 +115,7 @@ export class CurrentFootprintInverseWorkerController {
         this.#networkEvents += 1; need(this.#networkEvents <= 512); return;
       }
       if (this.#source !== null && event.method === "Debugger.scriptParsed" && event.params["url"] === "") {
-        const expected = [...this.#constructionHelpers,...this.#producerHelpers,...this.#coldHelpers,...this.#startupCallbackHelpers,...this.#timerHelpers].find(value => value.scriptId === null);
+        const expected = [...this.#constructionHelpers,...this.#producerHelpers,...this.#coldHelpers,...this.#startupCallbackHelpers,...this.#timerHelpers,...this.#startupQueueHelpers].find(value => value.scriptId === null);
         const scriptId=event.params["scriptId"];need(token(scriptId)&&event.params["executionContextId"]===this.#source.executionContextId);
         if(expected===undefined){need(this.#conditionBound>0&&this.#conditionRoles.size>0&&!this.#conditionSeenIds.has(scriptId)&&this.#conditionSeenIds.size<currentFootprintInverseConditionBudget(this.#conditionBound));this.#conditionSeenIds.add(scriptId);this.#conditionScriptIds.push(scriptId);}else{expected.scriptId=scriptId;}return;
       }
@@ -248,6 +250,10 @@ export class CurrentFootprintInverseWorkerController {
   }
   public completeTimer(): void { need(this.#pumping && !this.#failed && !this.#timerCompleted && this.#timerEntryObserved && this.#timerReturnObserved && this.#timerHeld === null && this.#timerHelpers.length === 0); this.#timerCompleted = true; }
   public requireTimerCompleted(): void { need(!this.#failed && this.#timerCompleted && this.#timerHeld === null && this.#timerHelpers.length === 0); }
+  public queueColdRead(held:Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>,run:()=>Promise<void>):Promise<boolean>{this.requireColdStartupHeld(held);need(held.role==="ready"&&!this.#pumping&&!this.#startupQueueReading&&!this.#startupQueueReads.has(held)&&this.#coldStartupWork===null&&this.#startupCallbackHeld===null&&typeof run==="function"&&!types.isProxy(run));this.#startupQueueReads.add(held);const result=Promise.withResolvers<boolean>();this.#coldStartupWork=Object.freeze({run:async():Promise<void>=>{this.requireColdStartupHeld(held);this.#startupQueueReading=true;try{await run();this.requireColdStartupHeld(held);}finally{this.#startupQueueReading=false;}},result});return result.promise;}
+  public requestStartupQueue(command:CurrentFootprintInverseStartupQueueCommand):Promise<unknown>{need(!this.#failed&&this.#pumping&&this.#startupQueueReading&&this.#coldStartupHeld?.role==="ready"&&this.#startupCallbackHeld===null);return this.#bindings.startupQueueRequest(command);}
+  public expectStartupQueueHelper(program:string):void{need(this.#pumping&&this.#startupQueueReading&&this.#coldStartupHeld?.role==="ready"&&this.#startupQueueHelpers.length===0);this.#startupQueueHelpers.push({program,scriptId:null});}
+  public async qualifyStartupQueueHelper(program:string):Promise<void>{const original=this.#startupQueueHelpers[0];need(this.#pumping&&this.#startupQueueReading&&original!==undefined&&original.program===program&&original.scriptId!==null);const reply=await this.#bindings.startupQueueRequest({phase:"inverse-startup-queue-helper",method:"Debugger.getScriptSource",params:{scriptId:original.scriptId}});await this.#current();need(record(reply)&&Reflect.ownKeys(reply).length===1&&reply["scriptSource"]===program&&this.#startupQueueHelpers[0]===original);this.#startupQueueHelpers.shift();}
   public queueColdContinuation(held:Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>,run:()=>Promise<void>):Promise<boolean>{this.requireColdStartupHeld(held);need(!this.#pumping&&this.#coldStepPending===null&&this.#coldStartupWork===null&&this.#constructionWork===null&&this.#bootstrapSetupWork===null&&!this.#coldStepAttempts.has(held)&&typeof run==="function"&&!types.isProxy(run));this.#coldStepAttempts.add(held);const result=Promise.withResolvers<boolean>();this.#coldStartupWork=Object.freeze({run,result});return result.promise;}
   public reserveColdStep(held:Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>):void{this.requireColdStartupHeld(held);need(this.#pumping&&this.#coldStepAttempts.has(held)&&this.#coldStepPending===null&&this.#coldHelpers.length===0);this.#coldStepPending=held;this.#coldStartupHeld=null;}
   public requestColdStep(command:CurrentFootprintInverseColdStepCommand):Promise<unknown>{need(!this.#failed&&this.#pumping&&this.#coldStepPending!==null&&this.#coldStepPending.role===command.role&&this.#coldStartupHeld===null);return this.#bindings.coldStepRequest(command);}
@@ -255,6 +261,7 @@ export class CurrentFootprintInverseWorkerController {
   public queueColdStartup(run:()=>Promise<void>):Promise<boolean>{this.requireConstructionBootstrap();need(!this.#failed&&!this.#coldStartupAttempted&&!this.#pumping&&this.#bootstrapSetupAttempted&&this.#bootstrapSetupWork===null&&this.#constructionWork===null&&this.#coldPoints.size===13&&this.#producerPoints.size===37&&this.#coldHelpers.length===0&&this.#producerHelpers.length===0&&typeof run==="function"&&!types.isProxy(run));this.#coldStartupAttempted=true;const result=Promise.withResolvers<boolean>();this.#coldStartupWork=Object.freeze({run,result});return result.promise;}
   public reserveColdBootstrap():void{this.requireConstructionBootstrap();need(this.#pumping&&this.#coldStartupAttempted&&!this.#coldStartupStarted&&this.#coldPoints.size===13&&this.#producerPoints.size===37&&this.#coldHelpers.length===0&&this.#producerHelpers.length===0);this.#constructionHeld=null;this.#constructionResume="bootstrap";}
   public requireColdStartupCustody():void{need(!this.#failed&&this.#coldStartupAttempted&&this.#pair!==null&&(this.#coldStartupStarted||this.#constructionHeld==="bootstrap"&&this.#constructionResume===null||this.#constructionHeld===null&&this.#constructionResume==="bootstrap"));}
+  public originalColdStartupHeld():Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>{need(this.#coldStartupHeld!==null);this.requireColdStartupHeld(this.#coldStartupHeld);return this.#coldStartupHeld;}
   public requireColdStartupHeld(value:Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>):void{need(!this.#failed&&this.#coldStartupStarted&&this.#coldStartupHeld===value);}
   public async nextColdStartupHeld():Promise<Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>>{
     need(this.#pumping&&this.#coldStartupStarted&&this.#coldStartupHeld===null&&this.#unsupportedStartupHeld===null&&this.#startupCallbackHeld===null);

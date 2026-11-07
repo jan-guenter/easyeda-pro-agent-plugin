@@ -1,6 +1,8 @@
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
 import type { CurrentFootprintInversePollingCancellationEnrollment, CurrentFootprintInversePollingCancellationIntent } from "./current-footprint-inverse-polling-intent.ts";
+import { currentFootprintInverseStartupQueueNativeFrame, validateCurrentFootprintInverseStartupQueueCommand } from "./current-footprint-inverse-startup-queue-protocol.ts";
+import type { CurrentFootprintInverseStartupQueueCommand, CurrentFootprintInverseStartupQueueObservation } from "./current-footprint-inverse-startup-queue-protocol.ts";
 import { currentFootprintInverseConditionNativeFrame } from "./current-footprint-inverse-condition-source.ts";
 import { currentFootprintInverseTimerNativeFrame, validateCurrentFootprintInverseTimerCommand } from "./current-footprint-inverse-timer-protocol.ts";
 import type { CurrentFootprintInverseTimerCommand } from "./current-footprint-inverse-timer-protocol.ts";
@@ -1871,6 +1873,9 @@ class CurrentPcbRetainedOwnerCore {
   #inverseColdHeld:CurrentFootprintInverseColdHeld|null=null;
   #inverseColdArmPromise:Promise<CurrentFootprintInverseColdLoadOrigin>|null=null;
   #inverseColdOrigin:CurrentFootprintInverseColdLoadOrigin|null=null;
+  #inverseStartupQueueCommand:CurrentFootprintInverseStartupQueueCommand|null=null;
+  #inverseStartupQueuePacket:CurrentFootprintInverseColdHeld|null=null;
+  readonly #inverseStartupQueuePromises=new WeakMap<CurrentFootprintInverseColdHeld,Promise<CurrentFootprintInverseStartupQueueObservation>>();
   #inverseConditionSource:string|null=null;
   #inverseStartupCallbackHold:CurrentFootprintInverseBootstrapHeld|null=null;
   #inverseStartupCallbackOrigin:CurrentFootprintInverseStartupCallbackOrigin|null=null;
@@ -7704,6 +7709,7 @@ class CurrentPcbRetainedOwnerCore {
           original(); const observer = this.#inverseTimerObserver, origin = this.#inverseTimerOrigin;
           if (observer === null || origin === null || this.#inverseTimerCompletion !== null) { throw error("FOOTPRINT_INVERSE_TIMER_ORIGINAL_OBSERVER"); }
           const completion = await observer.observeFirstTimer(); original(); await observer.requireOriginal(completion); original(); this.#inverseTimerCompletion = completion;
+        }, startupQueueRequest:async(input:CurrentFootprintInverseStartupQueueCommand):Promise<unknown>=>{const command=validateCurrentFootprintInverseStartupQueueCommand(input),selected=original();if(this.#inverseStartupQueuePacket===null||this.#inverseStartupQueueCommand!==null||this.#inverseStartupCallbackCommand!==null||this.#inverseColdCommand!==null){throw error("FOOTPRINT_INVERSE_STARTUP_QUEUE_PENDING");}let helper:string|null=null;if(command.method==="Runtime.callFunctionOn"){helper=`(${command.params.functionDeclaration})`;selected.expectStartupQueueHelper(helper);}this.#inverseStartupQueueCommand=command;let reply:unknown;try{reply=await this.#transfer(()=>pipe.observeInverseStartupQueue(command));original();}finally{this.#inverseStartupQueueCommand=null;}if(helper!==null){await selected.qualifyStartupQueueHelper(helper);original();}return reply;
         }, startupCallbackRequest:async(input:CurrentFootprintInverseStartupCallbackCommand):Promise<unknown>=>{
           const command=validateCurrentFootprintInverseStartupCallbackCommand(input),selected=original();if(this.#inverseStartupCallbackObserver===null||this.#inverseStartupCallbackCommand!==null||this.#inverseColdCommand!==null||this.#inverseColdStepCommand!==null||this.#inverseConstructionCommand!==null){throw error("FOOTPRINT_INVERSE_STARTUP_CALLBACK_PENDING");}
           let helper:string|null=null;if(command.method==="Runtime.callFunctionOn"){helper=`(${command.params.functionDeclaration})`;}else if(command.method==="Debugger.evaluateOnCallFrame"){helper=command.params.expression;}if(helper!==null){selected.expectStartupCallbackHelper(helper);}this.#inverseStartupCallbackCommand=command;
@@ -8005,7 +8011,7 @@ class CurrentPcbRetainedOwnerCore {
     this.#inverseStartupCallbackHold=hold;const pending=(async():Promise<CurrentFootprintInverseStartupCallbackOrigin>=>{before();const module=await import("./current-footprint-inverse-startup-callback-observer.ts");before();const Constructor=module.CurrentFootprintInverseStartupCallbackObserver,descriptors=Object.freeze(Object.getOwnPropertyDescriptors(Constructor.prototype));
       const current=():void=>{assertOriginalCurrentFootprintInverseNativeOwner(this);assertOriginalFootprintInverseController(controller);this.#available();if(this.#inverseWorkerController!==controller||this.#inverseStartupCallbackOrigin!==origin||(observer!==null&&this.#inverseStartupCallbackObserver!==observer)||originalCurrentFootprintInverseTarget(this)!==prepared||this.#requireFootprintInverseStartup()!==startup||source.lookup(startup,flow.plan,prepared)!==data||module.CurrentFootprintInverseStartupCallbackObserver!==Constructor||!originalFootprintDescriptors(Constructor.prototype,descriptors)||this.#mainTerminateAttempted||this.#closeConsumed||this.#terminationObserved||this.#releaseConsumed){throw error("FOOTPRINT_INVERSE_STARTUP_CALLBACK_CHANGED");}};
       const bindings:CurrentFootprintInverseStartupCallbackBindings=Object.freeze({prepared,startup,actual:original.args,sourceRecordUpperBound:data.sourceRecordUpperBound,originalBreakpoints:controller.originalStartupCallbackArms(),
-        request:(command:CurrentFootprintInverseStartupCallbackCommand)=>controller.requestStartupCallback(command),nextEvent:()=>controller.nextStartupCallbackEvent(),assertCurrent:current,fail:():void=>{controller.fail();}});
+        request:(command:CurrentFootprintInverseStartupCallbackCommand)=>controller.requestStartupCallback(command),queueRequest:(command:CurrentFootprintInverseStartupQueueCommand)=>controller.requestStartupQueue(command),nextEvent:()=>controller.nextStartupCallbackEvent(),assertCurrent:current,fail:():void=>{controller.fail();}});
       this.#inverseStartupCallbackOrigin=origin;footprintInverseStartupCallbackOrigins.set(origin,Object.freeze({owner:this,prepared,bindings}));observer=new Constructor(origin,this,prepared);this.#inverseStartupCallbackObserver=observer;current();controller.bindStartupCallbackBudget(data.sourceRecordUpperBound);
       const reply=await this.#request({action:"footprint-inverse-startup-callback",requestId:0,phase:"bind",method:"bind",records:data.sourceRecordUpperBound});before();current();if(!exact(reply,["written"])||reply["written"]!==true){throw error("FOOTPRINT_INVERSE_STARTUP_CALLBACK_BIND_ACK");}return origin;
     })();this.#inverseStartupCallbackArmPromise=pending;return pending;
@@ -8074,6 +8080,12 @@ class CurrentPcbRetainedOwnerCore {
   }
   /** Resume only an actual matched pre-model packet, at most once. The
    * original Promise survives a lost reply; plaintext/ready have no step. */
+  /** Same original ready pause and actual retained observer only. Returned
+   * data establishes no resume, Save or whole-frontier authority. */
+  public observeFootprintInverseStartupQueue(packet:CurrentFootprintInverseColdHeld):Promise<CurrentFootprintInverseStartupQueueObservation>{
+    assertOriginalCurrentFootprintInverseNativeOwner(this);const original=footprintInverseColdHeldPackets.get(packet),prepared=originalCurrentFootprintInverseTarget(this);if(original===undefined||original.owner!==this||original.prepared!==prepared||original.data.role!=="ready"){throw error("FOOTPRINT_INVERSE_STARTUP_QUEUE_ORIGINAL_READY");}const old=this.#inverseStartupQueuePromises.get(packet);if(old!==undefined){return old;}original.current();const controller=this.#inverseWorkerController,observer=this.#inverseStartupCallbackObserver;if(controller===null||observer===null||this.#inverseStartupQueuePacket!==null){throw error("FOOTPRINT_INVERSE_STARTUP_QUEUE_OBSERVER");}
+    const pending=(async():Promise<CurrentFootprintInverseStartupQueueObservation>=>{let result:Awaited<ReturnType<CurrentFootprintInverseStartupCallbackObserver["verifyOriginalQueue"]>>|null=null;try{await this.#settleInverseWorkerProgress(controller.queueColdRead(controller.originalColdStartupHeld(),async():Promise<void>=>{original.current();this.#inverseStartupQueuePacket=packet;const reply=await this.#request({action:"footprint-inverse-startup-queue",requestId:0});original.current();if(!exact(reply,["written"])||reply["written"]!==true){throw error("FOOTPRINT_INVERSE_STARTUP_QUEUE_OPEN_ACK");}result=await observer.verifyOriginalQueue();original.current();}));original.current();if(result===null){throw error("FOOTPRINT_INVERSE_STARTUP_QUEUE_RESULT");}return result;}catch(caughtError){controller.fail();throw caughtError;}finally{this.#inverseStartupQueuePacket=null;}})();this.#inverseStartupQueuePromises.set(packet,pending);return pending;
+  }
   public continueFootprintInverseColdIngress(packet:CurrentFootprintInverseColdHeld):Promise<CurrentFootprintInverseColdHeld>{
     assertOriginalCurrentFootprintInverseNativeOwner(this);const original=footprintInverseColdHeldPackets.get(packet);const prepared=originalCurrentFootprintInverseTarget(this);
     if(original===undefined||original.owner!==this||original.prepared!==prepared){throw error("FOOTPRINT_INVERSE_COLD_STEP_ORIGINAL");}return original.continueOriginal();
@@ -9335,6 +9347,7 @@ class CurrentPcbRetainedOwnerCore {
       let encoded: Readonly<Record<string, unknown>>;
       if (this.#inverseCacheMetadataPlan !== null && this.#inverseCache !== null) { this.#footprintInverseCacheCurrent(this.#inverseCache); encoded = currentFootprintInverseCacheMetadataNativeFrame(chunk, this.#inverseCacheMetadataPlan, this.#inverseCache.selected.sessionId); }
       else if (this.#inverseCachePlan !== null && this.#inverseCache !== null) { this.#footprintInverseCacheCurrent(this.#inverseCache); encoded = this.#inverseCacheInvalidation === null ? currentFootprintInverseCacheNativeFrame(chunk, this.#inverseCachePlan, this.#inverseCache.selected.sessionId) : currentFootprintInverseCacheInvalidationNativeFrame(chunk, this.#inverseCachePlan, this.#inverseCache.selected.sessionId); }
+      else if(this.#inverseStartupQueueCommand!==null&&this.#inverseWorkerPair!==null){encoded=currentFootprintInverseStartupQueueNativeFrame(chunk,this.#inverseStartupQueueCommand,this.#inverseWorkerPair.pageSessionId);}
       else if(this.#inverseConditionSource!==null&&this.#inverseWorkerPair!==null){encoded=currentFootprintInverseConditionNativeFrame(chunk,this.#inverseConditionSource,this.#inverseWorkerPair.pageSessionId);}
       else if(this.#inverseTimerCommand!==null&&this.#inverseWorkerPair!==null){encoded=currentFootprintInverseTimerNativeFrame(chunk,this.#inverseTimerCommand,this.#inverseWorkerPair.pageSessionId);}
       else if(this.#inverseStartupCallbackCommand!==null&&this.#inverseWorkerPair!==null){encoded=currentFootprintInverseStartupCallbackNativeFrame(chunk,this.#inverseStartupCallbackCommand,this.#inverseWorkerPair.pageSessionId);}

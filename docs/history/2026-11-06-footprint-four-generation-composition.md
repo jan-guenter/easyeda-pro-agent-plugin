@@ -1040,3 +1040,41 @@ decoded compiler input1,933,594 bytes; unchanged2MiB limits remain in force.
 Derived inverse limits are renderer14,986, main reproof90,549 and aggregate
 controls156,583 before the separate timer transport. No tracked helper/pins,
 Windows/app/native/MCP control, parser continuation or acceptance changed.
+
+An inverse-only `observeFootprintInverseStartupQueue(actualReadyPacket)` now
+reads actual retained startup serial Promises once, while the exact original
+ready pause stays held. The original observer must have matching callback and
+finalizer counts with no active/outstanding callback. Each retained own-group
+finalizer array is reread, and every original `t`/nonnull `s` Promise reference
+must have fulfilled native Promise metadata and an undefined result. Copies of
+the ready packet refuse; the same original operation Promise is retained through
+reply loss. This is a read and grants no ready resume or full startup frontier.
+
+Source review rejected reuse of the existing Save serial projection: it requires
+`t` to remain a Promise and returns `[t,r]`, which cannot qualify a drained startup
+queue. That original projection remains unchanged. A distinct fixed descriptor
+projection instead joins current `PROJECT.uploadStructure` to its original
+wrapper, the original lexical callback and fresh `t===s===null` slots. The new
+VM regression exercises that exact program, refuses wrapper/callback/slot drift,
+and proves accessor rejection without invoking a getter. No timer, callback,
+resolver or Promise method is called by the projection.
+
+The separate strict observation schema retains counts and
+`originalSerialSlotsNull:true`, with complete-frontier acceptance false. Existing
+status/result shapes remain unchanged. The finite queue codebook has only three
+cases: properties, the fixed queue projection and its actual helper-source read.
+It has no resume, packet, history or arbitrary program. At most three metadata
+reads per original finalizer, two fresh closure reads, one projection and its
+one exact helper receipt derive `3*N+4` CDP requests, at most1,540, plus one
+original ready-hold enrollment control. The native action requires its own
+original ready hold and matching callback/finalizer ledger.
+
+Fourteen focused actual-program/metadata/grammar/original-factory seam cases,
+full types and strict changed-file lint pass. Combined generation is idempotent;
+Linux C#5/.NET10 exact inverse codebook/refusal smokes pass. Current output is
+1,399,612 stored bytes and1,940,156 decoded compiler bytes, both below the
+unchanged2MiB limits. Maximum inverse limits derive renderer16,526, main
+reproof92,089 and aggregate controls159,664 before the separate timer transport.
+No tracked helper, pins, bundles, Windows/app/native/MCP runtime changed. Actual
+startup cache/sync and post-ready timer completion, parser/ready continuation,
+delete/main SQL, closed inverse and fourth-generation acceptance remain pending.

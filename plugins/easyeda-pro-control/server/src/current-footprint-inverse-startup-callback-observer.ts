@@ -1,5 +1,8 @@
 /** One inverse worker's actual no-publication startup callback/finalizer lane.
  * It supplies neither parser continuation nor a complete producer frontier. */
+import { CURRENT_FOOTPRINT_INVERSE_STARTUP_QUEUE_CALL, currentFootprintInverseStartupQueueBudget, qualifyCurrentFootprintInverseStartupQueueObservation, validateCurrentFootprintInverseStartupQueueCommand } from "./current-footprint-inverse-startup-queue-protocol.ts";
+import type { CurrentFootprintInverseStartupQueueObservation } from "./current-footprint-inverse-startup-queue-protocol.ts";
+import { currentProjectSaveProducerCachePromiseHandle, decodeCurrentProjectSaveProducerCachePromise } from "./current-project-save-producer-cache-replies.ts";
 import { types } from "node:util";
 import { z } from "zod";
 // oxlint-disable-next-line import/no-namespace -- One exact private original issuer, with no caller validator fallback.
@@ -24,6 +27,7 @@ const lookupSchema = z.custom<(origin: CurrentFootprintInverseStartupCallbackOri
 export class CurrentFootprintInverseStartupCallbackObserver {
   readonly #origin: CurrentFootprintInverseStartupCallbackOrigin; readonly #owner: object; readonly #prepared: object;
   readonly #lookup: z.infer<typeof lookupSchema>; readonly #binding: CurrentFootprintInverseStartupCallbackBindings;
+  #queueMode=false;#queueAttempted=false;#queueCommands=0;
   #busy = false; #failed = false; #commands = 0; #events = 0; #calls = 0; #outstanding = 0; #active: string | null = null;
   readonly #finalizerFrames: unknown[] = [];
   public constructor(origin: CurrentFootprintInverseStartupCallbackOrigin, owner: object, prepared: object) {
@@ -33,15 +37,17 @@ export class CurrentFootprintInverseStartupCallbackObserver {
   }
   #current(): void { need(!this.#failed && this.#lookup === Reflect.get(native, "requireOriginalCurrentFootprintInverseStartupCallbackOrigin") && this.#lookup(this.#origin, this.#owner, this.#prepared) === this.#binding); this.#binding.assertCurrent(); }
   async #send(input: unknown): Promise<unknown> {
-    this.#current(); const command = validateCurrentFootprintInverseStartupCallbackCommand(input); this.#commands += 1;
+    this.#current();if(this.#queueMode){const command=validateCurrentFootprintInverseStartupQueueCommand(input);this.#queueCommands+=1;need(this.#queueCommands<=currentFootprintInverseStartupQueueBudget(this.#binding.sourceRecordUpperBound).normal);const reply=captureCurrentPcbStringClockReply(await this.#binding.queueRequest(command)).value;this.#current();return reply;}
+    const command = validateCurrentFootprintInverseStartupCallbackCommand(input); this.#commands += 1;
     need(this.#commands <= currentFootprintInverseStartupCallbackBudget(this.#binding.sourceRecordUpperBound).normal);
     const reply = captureCurrentPcbStringClockReply(await this.#binding.request(command)).value; this.#current(); return reply;
   }
   #properties(objectId: string): Promise<unknown> { return this.#send({ phase: "project-save-structure-properties", method: "Runtime.getProperties", params: { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }); }
   async #array(raw: unknown, length: number): Promise<string> {
     const result = z.strictObject({ result: remote }).parse(raw).result; need(result.type === "object" && result.className === "Array"); const id = object(result);
-    const own = properties.parse(await this.#properties(id));
-    const fields = new Map(own.result.map(value => [value.name, value.value])); need(fields.size === length + 1 && own.result.length === fields.size && fields.get("length")?.value === length && Array.from({ length }, (_, index) => fields.has(String(index))).every(Boolean)); return id;
+    await this.#ownArray(id,length);return id;
+  }
+  async #ownArray(id:string,length:number):Promise<Map<string,z.infer<typeof remote>>>{const own=properties.parse(await this.#properties(id));const fields=new Map(own.result.map(value=>[value.name,value.value]));need(fields.size===length+1&&own.result.length===fields.size&&fields.get("length")?.value===length&&Array.from({length},(_,index)=>fields.has(String(index))).every(Boolean));return fields;
   }
   async #frame(role: Role | "startupCaller", callFrameId: string): Promise<string> {
     return this.#array(await this.#send({ phase: "project-save-structure-frame", role, method: "Debugger.evaluateOnCallFrame", params: { ...FRAME, callFrameId, expression: SITES[role].expression } }), SITES[role].length);
@@ -84,6 +90,16 @@ export class CurrentFootprintInverseStartupCallbackObserver {
       z.strictObject({}).parse(await this.#send({ phase: "project-save-structure-resume", role, method: "Debugger.resume", params: {} }));
       const resumed = await this.#event(); need(resumed.method === "Debugger.resumed"); z.strictObject({}).parse(resumed.params);
     } catch (error) { this.#failed = true; this.#binding.fail(); throw error; } finally { this.#busy = false; }
+  }
+  /** Retained own-group frame arrays hold the actual native Promise objects.
+   * One original ready pause may inspect them; no Promise method is invoked. */
+  public async verifyOriginalQueue():Promise<CurrentFootprintInverseStartupQueueObservation>{
+    this.#current();need(!this.#busy&&!this.#queueAttempted&&this.#calls>0&&this.#active===null&&this.#outstanding===0&&this.#finalizerFrames.length===this.#calls);this.#queueAttempted=true;this.#busy=true;this.#queueMode=true;
+    try{let fulfilledPromiseReferences=0;for(const retained of this.#finalizerFrames){const packet=z.strictObject({role:z.enum(["initialFinally","queuedFinally"]),frame:handle,scope:handle}).parse(retained);const fields=await this.#ownArray(packet.frame,3);
+      for(const index of ["0","1"]){const value=fields.get(index);need(value!==undefined);if(value.type==="object"&&value.subtype==="null"&&value.value===null){need(index==="1");}else{const promise=currentProjectSaveProducerCachePromiseHandle(value);need(decodeCurrentProjectSaveProducerCachePromise(await this.#properties(promise))==="fulfilled");fulfilledPromiseReferences+=1;}}}
+      const scope=await this.#scope();const actual=this.#binding.actual;const result=await this.#send({phase:"inverse-startup-queue-empty",method:"Runtime.callFunctionOn",params:{...FLAGS,objectId:scope,functionDeclaration:CURRENT_FOOTPRINT_INVERSE_STARTUP_QUEUE_CALL,arguments:[{objectId:actual.project},{objectId:actual.uploadWrapper},{objectId:actual.uploadCallback}],returnByValue:true}});
+      z.strictObject({result:z.strictObject({type:z.literal("boolean"),value:z.literal(true)})}).parse(result);this.#current();return qualifyCurrentFootprintInverseStartupQueueObservation({schema:"private.current-footprint-inverse-startup-queue-observation.v1",calls:this.#calls,finalizers:this.#finalizerFrames.length,fulfilledPromiseReferences,originalSerialSlotsNull:true,completeProducerFrontierVerified:false});
+    }catch(error){this.#failed=true;this.#binding.fail();throw error;}finally{this.#queueMode=false;this.#busy=false;}
   }
   public status(): Readonly<{ calls: number; outstanding: number; active: boolean; failed: boolean; originalFinalizersObserved: number; completeQueuedPromiseFulfillmentVerified: false; completeProducerFrontierVerified: false }> {
     return Object.freeze({ calls: this.#calls, outstanding: this.#outstanding, active: this.#active !== null, failed: this.#failed, originalFinalizersObserved: this.#finalizerFrames.length, completeQueuedPromiseFulfillmentVerified: false, completeProducerFrontierVerified: false });
