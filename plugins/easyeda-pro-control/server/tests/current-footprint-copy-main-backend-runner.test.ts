@@ -131,6 +131,7 @@ void test("a diagnostic main cursor cannot enroll or activate a copied saved-pro
   const Constructor = await constructor(), value = fixture(); const runner = new Constructor(value.transport);
   const packet = await runner.observe(); const count = value.commands.length;
   await assert.rejects(runner.assertOriginalSavedProjectRegistrationPending());
+  await assert.rejects(runner.assertOriginalSchematicRelevanceSavedRegistrationPending());
   await assert.rejects(runner.enrollSavedProjectRegistrationIntent({ profile: "private.current-saved-project-registration-intent.v1" }));
   await assert.rejects(runner.enrollFootprintInverseRegistrationIntent({ profile: "private.current-footprint-inverse-registration-intent.v1" }));
   await assert.rejects(runner.enrollSchematicRelevanceSavedRegistrationIntent({ profile: "private.current-schematic-relevance-saved-registration-intent.v1" }));

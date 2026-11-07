@@ -1121,6 +1121,10 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(this.#savedRegistrationEnrollment?.kind === "saved", "SAVED_REGISTRATION_ISSUER_REQUIRED");
     await this.#assertOriginalProjectRegistrationPending();
   }
+  public async assertOriginalSchematicRelevanceSavedRegistrationPending(): Promise<void> {
+    need(this.#savedRegistrationEnrollment?.kind === "schematic-saved", "SCHEMATIC_SAVED_REGISTRATION_ISSUER_REQUIRED");
+    await this.#assertOriginalProjectRegistrationPending();
+  }
   #reproveProjectRegistration(original: ProjectRegistrationEnrollment): void {
     let current: boolean;
     if (original.kind === "schematic-saved") {
