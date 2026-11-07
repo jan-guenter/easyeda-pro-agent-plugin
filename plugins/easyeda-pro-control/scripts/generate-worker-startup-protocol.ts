@@ -1,3 +1,4 @@
+import { applyCurrentSchematicRelevanceDisplayWriteNativeFragment, normalizeCurrentSchematicRelevanceDisplayNativeFamily, prepareCurrentSchematicRelevanceDisplayNativeSwitch } from "../server/src/current-schematic-relevance-display-write-native-fragment.ts";
 /* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
 import { currentPcbDiagnosticCSharpCompilerInput, expandCurrentPcbDiagnosticCSharpStorage, packCurrentPcbDiagnosticCSharpStorage } from "../server/src/current-pcb-diagnostic-csharp-storage.ts";
 import { applyCurrentPcbViaObservedSourceNativeFragment } from "../server/src/current-pcb-via-observed-source-native-fragment.ts";
@@ -119,7 +120,7 @@ async function main(): Promise<void> {
 }
 /** Pure complete composition, used by repeated-generation regressions without writing a helper. */
 export function generateWorkerStartupProtocol(source: string): string {
-  const literal = expandCurrentPcbDiagnosticCSharpStorage(source);
+  const literal = prepareCurrentSchematicRelevanceDisplayNativeSwitch(normalizeCurrentSchematicRelevanceDisplayNativeFamily(expandCurrentPcbDiagnosticCSharpStorage(source)));
   let next = prepareCurrentPcbViaSavedReadbackNativeSwitch(prepareCurrentPcbComponentSpatialNativeSwitch(prepareCurrentFootprintInverseNativeSwitch(literal)));
   for (const [name, generated] of [["WORKER STARTUP", currentPcbWorkerStartupNativeSource()],
     ["WORKER STARTUP EMPTY209", currentPcb209EmptyNativeSource()],
@@ -157,6 +158,7 @@ export function generateWorkerStartupProtocol(source: string): string {
   next = applyCurrentPcbComponentSpatialNativeFragment(next);
   next = applyCurrentPcbViaSavedReadbackNativeFragment(next);
   next = applyCurrentFootprintInverseNativeFragment(next);
+  next = applyCurrentSchematicRelevanceDisplayWriteNativeFragment(next);
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
   assertCurrentFootprintCopyForwardNativeRequestIds(next);
   next = packCurrentPcbDiagnosticCSharpStorage(next);

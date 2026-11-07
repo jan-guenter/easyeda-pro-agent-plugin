@@ -12,7 +12,7 @@ import { matchesCurrentProjectSaveStructureIntent, requireCurrentProjectPrehisto
 import type { CurrentProjectStructureBodyReservation, CurrentProjectStructureMainPublication } from "./current-project-save-structure-prehistory.ts";
 import type { CurrentFootprintInverseBootstrapArguments, CurrentFootprintInverseBootstrapHeld, CurrentFootprintInverseBootstrapPermit, CurrentFootprintInverseBootstrapPrepared, CurrentFootprintInverseStructureOrigin, CurrentGeneratedProjectSaveStructureBindings, CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureEvent, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_CALLS as CALLS, CURRENT_PROJECT_SAVE_STRUCTURE_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS as FRAME_FLAGS,
-  CURRENT_PROJECT_SAVE_STRUCTURE_GROUP as GROUP, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES, CURRENT_PROJECT_SAVE_STRUCTURE_STARTUP_CONDITION as STARTUP_CONDITION,
+  CURRENT_PROJECT_SAVE_STRUCTURE_GROUP as GROUP, CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS as RELEVANCE_REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES, CURRENT_PROJECT_SAVE_STRUCTURE_STARTUP_CONDITION as STARTUP_CONDITION,
   qualifyCurrentProjectSaveStructureSource, validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import type { CurrentProjectSaveStructureSite as Site } from "./current-project-save-structure-protocol.ts";
 
@@ -116,17 +116,22 @@ export class CurrentProjectSaveStructureObserver {
   #uploadPromise: string | null = null; #structurePromise: string | null = null; #resolver: string | null = null; #timer: number | null = null;
   #packet: string | null = null; #task: string | null = null; #datas: string | null = null; #taskSet: string | null = null; #response: string | null = null;
   #value: z.infer<typeof packetSchema> | null = null; #held: CurrentProjectSaveStructurePacket | null = null; #bodyReservation: CurrentProjectStructureBodyReservation | null = null; #publication: CurrentProjectStructureMainPublication | null = null; #prehistoryComplete = false; #history: CurrentProjectHistorySqlCompletion | null = null;
+  readonly #requests: Readonly<{ normal: number; cleanup: number; events: number }>;
+  readonly #startupRecordLimit: 7 | 8;
   public constructor(origin: CurrentProjectSaveStructureOrigin, owner: object, operation: object) {
     this.#origin = origin; this.#owner = owner; this.#operation = operation;
     this.#lookup = lookupFunction.parse(Reflect.get(native, "requireOriginalCurrentProjectSaveStructureOrigin"));
-    this.#binding = bindingsSchema.parse(this.#lookup(origin, owner, operation)); Object.freeze(this);
+    this.#binding = bindingsSchema.parse(this.#lookup(origin, owner, operation));
+    const relevance = origin.profile === "private.current-schematic-relevance-display-save-structure-origin.v1";
+    need(relevance === (this.#binding.prepared.profile === "easyeda-pro-control.generated-schematic-relevance-fixture-open-checkpoint.v1"), "ORIGINAL_STARTUP_DATA_FAMILY");
+    this.#requests = relevance ? RELEVANCE_REQUESTS : REQUESTS; this.#startupRecordLimit = relevance ? 8 : 7; Object.freeze(this);
   }
   async #current(): Promise<void> { need(!this.#failed && !this.#closed && this.#lookup(this.#origin, this.#owner, this.#operation) === this.#binding, "ORIGINAL");
     if (this.#startupMode) { this.#binding.assertStartupPending(); } await this.#binding.assertCurrent(); if (this.#startupMode) { this.#binding.assertStartupPending(); } need(!this.#failed && !this.#closed && this.#lookup(this.#origin, this.#owner, this.#operation) === this.#binding, "CHANGED"); }
   #failure(error: unknown): void { if (!this.#failed) { this.#failed = true; this.#error = error; try { this.#binding.fail(); } catch (revocationError) { this.#revocationError = revocationError; } } }
   async #send(input: unknown, cleanup = false, retain?: (reply: unknown) => void): Promise<unknown> {
-    const command = validateCurrentProjectSaveStructureCommand(input); if (cleanup) { this.#cleanup += 1; need(this.#cleanup <= REQUESTS.cleanup, "CLEANUP_CAPACITY"); }
-    else { await this.#current(); this.#normal += 1; need(this.#normal <= REQUESTS.normal, "NORMAL_CAPACITY"); }
+    const command = validateCurrentProjectSaveStructureCommand(input); if (cleanup) { this.#cleanup += 1; need(this.#cleanup <= this.#requests.cleanup, "CLEANUP_CAPACITY"); }
+    else { await this.#current(); this.#normal += 1; need(this.#normal <= this.#requests.normal, "NORMAL_CAPACITY"); }
     const raw = await this.#binding.request(command, cleanup, retain); let value: unknown;
     if (command.phase === "project-save-structure-source") { value = sourceReply(raw); }
     else if (command.phase === "project-save-structure-packetText") { value = captureCurrentProjectStructureCompletionReply(raw).value; }
@@ -159,7 +164,7 @@ export class CurrentProjectSaveStructureObserver {
   }
   async #pristine(): Promise<void> { need(this.#project !== null && this.#uploadCallback !== null && this.#debounce !== null && this.#structureCallback !== null, "CONSTRUCTION");
     const scopes = await this.#freshScopes(); await this.#true("pristine", this.#project, [scopes.upload, scopes.structure, scopes.debounce, scopes.parameters, this.#uploadCallback, this.#debounce, this.#structureCallback]); }
-  async #event(): Promise<CurrentProjectSaveStructureEvent> { await this.#current(); this.#events += 1; need(this.#events <= REQUESTS.events, "EVENT_CAPACITY"); const event = eventSchema.parse(captureCurrentPcbStringClockReply(await this.#binding.nextEvent()).value); await this.#current();
+  async #event(): Promise<CurrentProjectSaveStructureEvent> { await this.#current(); this.#events += 1; need(this.#events <= this.#requests.events, "EVENT_CAPACITY"); const event = eventSchema.parse(captureCurrentPcbStringClockReply(await this.#binding.nextEvent()).value); await this.#current();
     need(event.sessionId === this.#binding.sessionId, "FOREIGN_SESSION"); return event; }
   async #nextPause(expected?: Site): Promise<Site> { need(this.#pause === null, "PAUSE_RETAINED"); const event = await this.#event(); need(event.method === "Debugger.paused", "PAUSE_EXPECTED");
     const paused = pauseSchema.parse(captureCurrentPcbStringClockReply(event.params).value); const selected = [...this.#points].find(([, point]) => point.id === paused.hitBreakpoints[0]);
@@ -321,7 +326,7 @@ export class CurrentProjectSaveStructureObserver {
       this.#binding.assertStartupPending();
       if (role === "startupEntry") {
         need(this.#startupActive === null, "STARTUP_CALLBACK_ACTIVE"); const count = this.#generatedPrepared().history.documents.reduce((total, document) => total + document.records.length, 0);
-        need(Number.isSafeInteger(count) && count >= 1 && count <= 7 && this.#startupCalls < count, "STARTUP_SOURCE_RECORD_BOUND"); this.#startupCalls += 1;
+        need(Number.isSafeInteger(count) && count >= 1 && count <= this.#startupRecordLimit && this.#startupCalls < count, "STARTUP_SOURCE_RECORD_BOUND"); this.#startupCalls += 1;
         await this.#frame(role); await this.#frame("startupCaller"); const caller = this.#frameArrays.get("startupCaller"), entry = this.#frameArrays.get(role);
         const scopes = await this.#scope(this.#uploadWrapper, "serial"); need(entry !== undefined && caller !== undefined && scopes[0] !== undefined, "STARTUP_ORIGINAL_FRAMES");
         await this.#true("startupEntry", entry, [this.#project, this.#uploadCallback, caller, scopes[0]]); this.#startupActive = entry;

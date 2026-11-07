@@ -2,15 +2,16 @@
  * and a matching structural binding provide no worker or native custody. */
 import type { GeneratedFixtureOpenCheckpoint } from "./managed-fixture-generated-open-checkpoint.ts";
 import type { GeneratedSchematicFixtureOpenCheckpoint } from "./managed-schematic-fixture-open-checkpoint.ts";
+import type { GeneratedSchematicRelevanceFixtureOpenCheckpoint } from "./managed-schematic-relevance-fixture-open-checkpoint.ts";
 import type { CurrentProjectStructureTransportCommand } from "./current-project-structure-transport-protocol.ts";
 import type { CurrentProjectSaveStructureEvent } from "./current-project-save-structure-origin.ts";
 
 export interface CurrentPcbViaStructureTransportOrigin { readonly profile: "private.current-pcb-via-structure-transport-origin.v1" }
-export interface CurrentSchematicDisplayStructureTransportOrigin { readonly profile: "private.current-schematic-display-structure-transport-origin.v1" }
+export interface CurrentSchematicDisplayStructureTransportOrigin { readonly profile: "private.current-schematic-display-structure-transport-origin.v1" | "private.current-schematic-relevance-display-structure-transport-origin.v1" }
 export type CurrentProjectStructureTransportOrigin = CurrentPcbViaStructureTransportOrigin | CurrentSchematicDisplayStructureTransportOrigin;
 export interface CurrentProjectStructureTransportBindings {
   readonly sessionId: string; readonly scriptId: string; readonly uniqueContextId: string;
-  readonly prepared: GeneratedFixtureOpenCheckpoint | GeneratedSchematicFixtureOpenCheckpoint;
+  readonly prepared: GeneratedFixtureOpenCheckpoint | GeneratedSchematicFixtureOpenCheckpoint | GeneratedSchematicRelevanceFixtureOpenCheckpoint;
   readonly request: (command: CurrentProjectStructureTransportCommand, cleanup: boolean) => Promise<unknown>;
   readonly nextEvent: () => Promise<CurrentProjectSaveStructureEvent>;
   readonly assertCurrent: () => Promise<void>; readonly assertOperationPending: () => void;

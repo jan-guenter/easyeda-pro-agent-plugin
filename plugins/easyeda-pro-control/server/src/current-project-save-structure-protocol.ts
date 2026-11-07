@@ -20,6 +20,10 @@ export const CURRENT_PROJECT_SAVE_STRUCTURE_GROUP = "easyeda-pro-control-project
  * are fixed on the wire; no arbitrary predicate is accepted. One original
  * mode frame plus its properties add two readonly commands before EP. */
 export const CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS = Object.freeze({ normal: 169 + 2 + 7 * (8 + 4 + 6) + 2, cleanup: 14 + 1, cdpRequests: 314, events: 26 + 7 * 6, total: 382 });
+/** Distinct Relevance SCH parent META plus seven page records. The old
+ * generated seven-record aggregate and its counters remain unchanged. */
+export const CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS = Object.freeze({ normal: 169 + 2 + 8 * (8 + 4 + 6) + 2, cleanup: 14 + 1,
+  cdpRequests: 332, events: 26 + 8 * 6, total: 406 });
 const GROUP = CURRENT_PROJECT_SAVE_STRUCTURE_GROUP;
 export const CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS = Object.freeze({ objectGroup: GROUP, silent: true, returnByValue: false, generatePreview: false,
   throwOnSideEffect: true, includeCommandLineAPI: false } as const);

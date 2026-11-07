@@ -4,15 +4,17 @@ import type { CurrentFootprintForwardSavedCheckpoint } from "./current-footprint
 import type { CurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import type { GeneratedFixtureOpenCheckpoint } from "./managed-fixture-generated-open-checkpoint.ts";
 import type { GeneratedSchematicFixtureOpenCheckpoint } from "./managed-schematic-fixture-open-checkpoint.ts";
+import type { GeneratedSchematicRelevanceFixtureOpenCheckpoint } from "./managed-schematic-relevance-fixture-open-checkpoint.ts";
 
 export interface CurrentPcbViaSaveStructureOrigin { readonly profile: "private.current-pcb-via-save-structure-origin.v1" }
 export interface CurrentSchematicDisplaySaveStructureOrigin { readonly profile: "private.current-schematic-display-save-structure-origin.v1" }
+export interface CurrentSchematicRelevanceDisplaySaveStructureOrigin { readonly profile: "private.current-schematic-relevance-display-save-structure-origin.v1" }
 export interface CurrentFootprintInverseStructureOrigin { readonly profile: "private.current-footprint-inverse-structure-origin.v1" }
-export type CurrentProjectSaveStructureOrigin = CurrentPcbViaSaveStructureOrigin | CurrentSchematicDisplaySaveStructureOrigin | CurrentFootprintInverseStructureOrigin;
+export type CurrentProjectSaveStructureOrigin = CurrentPcbViaSaveStructureOrigin | CurrentSchematicDisplaySaveStructureOrigin | CurrentSchematicRelevanceDisplaySaveStructureOrigin | CurrentFootprintInverseStructureOrigin;
 export interface CurrentProjectSaveStructureEvent { readonly method: "Debugger.paused" | "Debugger.resumed"; readonly sessionId: string; readonly params: unknown }
 export interface CurrentGeneratedProjectSaveStructureBindings {
   readonly sessionId: string; readonly scriptId: string; readonly uniqueContextId: string;
-  readonly prepared: GeneratedFixtureOpenCheckpoint | GeneratedSchematicFixtureOpenCheckpoint;
+  readonly prepared: GeneratedFixtureOpenCheckpoint | GeneratedSchematicFixtureOpenCheckpoint | GeneratedSchematicRelevanceFixtureOpenCheckpoint;
   readonly request: (command: CurrentProjectSaveStructureCommand, cleanup: boolean, retainAllocationReply?: (reply: unknown) => void) => Promise<unknown>;
   /** One original controller router lane for the seven producer constructor
    * captures, pre-EP bootstrap and later held structure publication. It waits the same retained source

@@ -5,6 +5,8 @@ import { assertOriginalGeneratedFixtureOpenCheckpoint } from "./managed-fixture-
 import type { GeneratedFixtureOpenCheckpoint } from "./managed-fixture-generated-open-checkpoint.ts";
 import { assertOriginalGeneratedSchematicFixtureOpenCheckpoint } from "./managed-schematic-fixture-open-checkpoint.ts";
 import type { GeneratedSchematicFixtureOpenCheckpoint } from "./managed-schematic-fixture-open-checkpoint.ts";
+import { assertOriginalGeneratedSchematicRelevanceFixtureOpenCheckpoint } from "./managed-schematic-relevance-fixture-open-checkpoint.ts";
+import type { GeneratedSchematicRelevanceFixtureOpenCheckpoint } from "./managed-schematic-relevance-fixture-open-checkpoint.ts";
 import type { NativeDocumentSnapshot } from "./native-history.ts";
 
 const initialHead = z.looseObject({ version: z.string().min(1).max(128), updateTime: z.number().int().positive().max(8_640_000_000_000_000) });
@@ -14,9 +16,10 @@ function time(document: NativeDocumentSnapshot, clock: number): Readonly<{ versi
 /** Native nr.{pcb,schematic,sheet}, ar.setEditData and Lg.onHeadChange in the exact
  * full worker source determine every field here. PCB META does not copy zIndex
  * or docType; JSON omits them. SCH_PAGE updates its real parent as well. */
-export function expectedCurrentGeneratedProjectSaveStructure(prepared: GeneratedFixtureOpenCheckpoint | GeneratedSchematicFixtureOpenCheckpoint, clockInput: number): string {
+export function expectedCurrentGeneratedProjectSaveStructure(prepared: GeneratedFixtureOpenCheckpoint | GeneratedSchematicFixtureOpenCheckpoint | GeneratedSchematicRelevanceFixtureOpenCheckpoint, clockInput: number): string {
   const clock = z.number().int().positive().max(8_640_000_000_000_000).parse(clockInput);
   if (prepared.profile === "easyeda-pro-control.generated-fixture-open-checkpoint.v1") { assertOriginalGeneratedFixtureOpenCheckpoint(prepared); }
+  else if (prepared.profile === "easyeda-pro-control.generated-schematic-relevance-fixture-open-checkpoint.v1") { assertOriginalGeneratedSchematicRelevanceFixtureOpenCheckpoint(prepared); }
   else { assertOriginalGeneratedSchematicFixtureOpenCheckpoint(prepared); }
   const raw = prepared.qualification.target.rawWindowsPath; const owner = { uuid: `${raw.slice(0, raw.lastIndexOf("\\"))}/`, username: "", nickname: "" };
   if (prepared.profile === "easyeda-pro-control.generated-fixture-open-checkpoint.v1") {

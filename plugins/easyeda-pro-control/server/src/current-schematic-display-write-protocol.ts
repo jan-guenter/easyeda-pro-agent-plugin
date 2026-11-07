@@ -16,12 +16,25 @@ import { CURRENT_SCHEMATIC_DISPLAY_WORKER_PARENT_PARAMS, CURRENT_SCHEMATIC_DISPL
 import { validateCurrentSchematicDisplayNativeCommand } from "./current-schematic-display-native-command.ts";
 import { diagnosticNativeRequest, diagnosticRecord } from "./current-pcb-diagnostic-protocol.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_DISCOVERY_METHODS as METHODS, CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE as PROFILE } from "./current-schematic-display-write-native-profile.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE as RELEVANCE_PROFILE } from "./current-schematic-relevance-display-write-native-profile.ts";
 
 export function currentSchematicDisplayWriteNativeRequest(chunk: Buffer): Readonly<Record<string, unknown>> {
+  return decodeSharedNativeRequest(chunk, "six");
+}
+/** Separate fixed reservation for common readonly vocabulary. The new owner
+ * still cannot encode a six-record stage or its mutation-origin messages. */
+export function currentSchematicRelevanceDisplaySharedNativeRequest(chunk: Buffer): Readonly<Record<string, unknown>> {
+  return decodeSharedNativeRequest(chunk, "relevance");
+}
+function decodeSharedNativeRequest(chunk: Buffer, family: "six" | "relevance"): Readonly<Record<string, unknown>> {
+  const profile = family === "six" ? PROFILE : RELEVANCE_PROFILE;
   if (chunk.length > 65_536 || chunk.at(-1) !== 0) { throw new Error("SCHEMATIC_DISPLAY_WIRE"); }
   const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(chunk.subarray(0, -1)));
-  if (!diagnosticRecord(raw) || typeof raw["id"] !== "number" || !Number.isSafeInteger(raw["id"]) || raw["id"] < 1 || raw["id"] > PROFILE.renderer.total ||
+  if (!diagnosticRecord(raw) || typeof raw["id"] !== "number" || !Number.isSafeInteger(raw["id"]) || raw["id"] < 1 || raw["id"] > profile.renderer.total ||
     typeof raw["method"] !== "string" || !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("SCHEMATIC_DISPLAY_WIRE"); }
+  if (family === "relevance" && ["schematicDisplayPhase", "schematicActionCommand", "schematicActionGuardCommand", "schematicClockCommand"].some(key => Object.hasOwn(raw, key))) {
+    throw new Error("SCHEMATIC_RELEVANCE_OWN_MUTATION_ORIGIN_REQUIRED");
+  }
   if (Object.hasOwn(raw, "periodicSyncCommand")) {
     const { id: initialId, sessionId: initialSession, periodicSyncCommand, ...initialInput } = raw;
     if (periodicSyncCommand !== true || typeof initialSession !== "string") { throw new Error("PERIODIC_SYNC_WIRE"); }

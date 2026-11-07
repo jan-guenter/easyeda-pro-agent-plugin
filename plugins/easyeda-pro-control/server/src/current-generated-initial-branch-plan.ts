@@ -9,6 +9,8 @@ import { assertOriginalGeneratedFixtureTarget, originalGeneratedFixtureInventory
 import type { QualifiedGeneratedFixtureTarget } from "./managed-fixture-initial-sql.ts";
 import { assertOriginalGeneratedSchematicFixtureTarget, originalGeneratedSchematicFixtureInventory } from "./managed-schematic-fixture-initial-sql.ts";
 import type { QualifiedGeneratedSchematicFixtureTarget } from "./managed-schematic-fixture-initial-sql.ts";
+import { assertOriginalGeneratedSchematicRelevanceFixtureTarget, originalGeneratedSchematicRelevanceFixtureInventory } from "./managed-schematic-relevance-fixture-initial-sql.ts";
+import type { QualifiedGeneratedSchematicRelevanceFixtureTarget } from "./managed-schematic-relevance-fixture-initial-sql.ts";
 import { readerCompletion } from "./sqlite-inventory.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import type { NativeSqlInventory, SqlCell, SqlTable } from "./sqlite-inventory-core.ts";
@@ -16,7 +18,7 @@ import { CURRENT_GENERATED_INITIAL_BRANCH_API_FIELDS as FIELDS } from "./current
 
 type Scalar = string | number | boolean | null;
 type Row = Readonly<Record<string, string | number | null>>;
-type Qualification = QualifiedGeneratedFixtureTarget | QualifiedGeneratedSchematicFixtureTarget;
+type Qualification = QualifiedGeneratedFixtureTarget | QualifiedGeneratedSchematicFixtureTarget | QualifiedGeneratedSchematicRelevanceFixtureTarget;
 export interface CurrentGeneratedInitialBranchDataPlan { readonly profile: "private.current-generated-initial-branch-data-plan.v1" }
 export interface CurrentGeneratedInitialBranchData {
   readonly projectUuid: string; readonly branchUuid: string; readonly historyUuid: string; readonly body: string;
@@ -28,6 +30,7 @@ const preparedPlans = new WeakMap<CurrentGeneratedInitialFlowCachePrepared, Curr
 function need(value: boolean): asserts value { if (!value) { throw new Error("GENERATED_INITIAL_BRANCH_PLAN"); } }
 function inventoryFor(qualification: Qualification): NativeSqlInventory {
   if (qualification.schema === "easyeda-pro-control.qualified-generated-fixture-target.v1") { assertOriginalGeneratedFixtureTarget(qualification); return originalGeneratedFixtureInventory(qualification); }
+  if (qualification.schema === "easyeda-pro-control.qualified-generated-schematic-relevance-fixture-target.v1") { assertOriginalGeneratedSchematicRelevanceFixtureTarget(qualification); return originalGeneratedSchematicRelevanceFixtureInventory(qualification); }
   assertOriginalGeneratedSchematicFixtureTarget(qualification); return originalGeneratedSchematicFixtureInventory(qualification);
 }
 function scalar(input: SqlCell | undefined): string | number | null {

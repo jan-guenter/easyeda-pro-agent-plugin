@@ -13,6 +13,7 @@ import { prepareCurrentGeneratedInitialFlowCachePlan, requireOriginalCurrentGene
 import type { CurrentGeneratedInitialFlowCacheData, CurrentGeneratedInitialFlowCachePrepared } from "../src/current-generated-initial-flow-cache-plan.ts";
 import { qualifyGeneratedFixtureInitialSql } from "../src/managed-fixture-initial-sql.ts";
 import { qualifyGeneratedSchematicFixtureInitialSql } from "../src/managed-schematic-fixture-initial-sql.ts";
+import { qualifyGeneratedSchematicRelevanceFixtureInitialSql } from "../src/managed-schematic-relevance-fixture-initial-sql.ts";
 import { readManagedLibraryZip } from "../src/managed-library-files-zip.ts";
 import { managedFixtureInitialSqlFixture } from "./helpers/managed-fixture-initial-sql.ts";
 import { managedSchematicFixtureInitialSqlFixture } from "./helpers/managed-schematic-fixture-initial-sql.ts";
@@ -34,11 +35,12 @@ async function actualDeriver(): Promise<(qualification: unknown, history: unknow
 }
 void test("genuine initial SQL decrypts into exact raw PCB/SCH bodies and the source-derived ordered head index", async () => {
   const derive = await actualDeriver();
-  for (const schematic of [false, true]) {
-    const input = schematic ? await managedSchematicFixtureInitialSqlFixture() : await managedFixtureInitialSqlFixture();
-    const qualified = schematic ? await qualifyGeneratedSchematicFixtureInitialSql(input) : await qualifyGeneratedFixtureInitialSql(input);
+  for (const kind of ["pcb", "schematic", "relevance"] as const) {
+    const input = kind === "pcb" ? await managedFixtureInitialSqlFixture() : await managedSchematicFixtureInitialSqlFixture(undefined, kind === "relevance" ? "relevance" : "original");
+    const qualifiers = { pcb: qualifyGeneratedFixtureInitialSql, schematic: qualifyGeneratedSchematicFixtureInitialSql, relevance: qualifyGeneratedSchematicRelevanceFixtureInitialSql };
+    const qualified = await qualifiers[kind](input);
     const data = await derive(qualified.qualification, qualified.history);
-    assert.equal(data.documents.length, schematic ? 2 : 1); assert.equal(data.cacheContinuationAuthorized, false); assert.equal(data.nativeWorkerOwnershipVerified, false);
+    assert.equal(data.documents.length, kind === "pcb" ? 1 : 2); assert.equal(data.cacheContinuationAuthorized, false); assert.equal(data.nativeWorkerOwnershipVerified, false);
     const archive = readManagedLibraryZip(input.archive).get("Fixture.epru"); assert.ok(archive !== undefined);
     assert.equal(data.documents.map(document => document.body).join("|\n"), archive.toString("utf8").slice(0, -2));
     const initial: unknown = JSON.parse(data.headIndex.body); assert.ok(Array.isArray(initial)); const head: unknown = initial[0]; assert.ok(head !== null && typeof head === "object");

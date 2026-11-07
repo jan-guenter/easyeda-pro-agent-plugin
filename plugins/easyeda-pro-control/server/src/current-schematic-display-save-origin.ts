@@ -3,7 +3,7 @@
 import type { CurrentSchematicDisplaySaveCommand } from "./current-schematic-display-save-protocol.ts";
 import type { CurrentSchematicDisplaySaveSource } from "./current-schematic-display-save-source.ts";
 
-export interface CurrentSchematicDisplaySaveWorkerOrigin { readonly profile: "private.current-schematic-display-save-worker-origin.v1" }
+export interface CurrentSchematicDisplaySaveWorkerOrigin { readonly profile: "private.current-schematic-display-save-worker-origin.v1" | "private.current-schematic-relevance-display-save-worker-origin.v1" }
 export interface CurrentSchematicDisplaySaveWorkerEvent { readonly method: "Debugger.paused" | "Debugger.resumed"; readonly sessionId: string; readonly params: unknown }
 export interface CurrentSchematicDisplaySaveWorkerBindings {
   readonly sessionId: string; readonly scriptId: string; readonly uniqueContextId: string; readonly source: CurrentSchematicDisplaySaveSource;

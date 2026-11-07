@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- Three distinct genuine fixture issuers share only an inert initial cache projection. */
 /** Original checkpoint-derived startup cache data. No worker, cache Promise,
  * continuation or upload frontier authority is issued by this plan. */
 import { types } from "node:util";
@@ -11,13 +12,17 @@ import { assertOriginalGeneratedSchematicFixtureOpenCheckpoint, verifyGeneratedS
 import type { GeneratedSchematicFixtureOpenCheckpoint } from "./managed-schematic-fixture-open-checkpoint.ts";
 import { assertOriginalGeneratedSchematicFixtureTarget, originalGeneratedSchematicFixtureInventory } from "./managed-schematic-fixture-initial-sql.ts";
 import type { QualifiedGeneratedSchematicFixtureTarget } from "./managed-schematic-fixture-initial-sql.ts";
+import { assertOriginalGeneratedSchematicRelevanceFixtureOpenCheckpoint, verifyGeneratedSchematicRelevanceFixtureOpenCheckpoint } from "./managed-schematic-relevance-fixture-open-checkpoint.ts";
+import type { GeneratedSchematicRelevanceFixtureOpenCheckpoint } from "./managed-schematic-relevance-fixture-open-checkpoint.ts";
+import { assertOriginalGeneratedSchematicRelevanceFixtureTarget, originalGeneratedSchematicRelevanceFixtureInventory } from "./managed-schematic-relevance-fixture-initial-sql.ts";
+import type { QualifiedGeneratedSchematicRelevanceFixtureTarget } from "./managed-schematic-relevance-fixture-initial-sql.ts";
 import { decodeNativeHistoryChunk } from "./native-history.ts";
 import type { NativeHistorySnapshot } from "./native-history.ts";
 import { readerCompletion } from "./sqlite-inventory.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import type { NativeSqlInventory, SqlCell, SqlTable } from "./sqlite-inventory-core.ts";
 
-export type CurrentGeneratedInitialFlowCachePrepared = GeneratedFixtureOpenCheckpoint | GeneratedSchematicFixtureOpenCheckpoint;
+export type CurrentGeneratedInitialFlowCachePrepared = GeneratedFixtureOpenCheckpoint | GeneratedSchematicFixtureOpenCheckpoint | GeneratedSchematicRelevanceFixtureOpenCheckpoint;
 export interface CurrentGeneratedInitialFlowCachePlan { readonly profile: "private.current-generated-initial-flow-cache-plan.v1" }
 export interface CurrentGeneratedInitialFlowCacheData {
   readonly projectUuid: string; readonly branchUuid: string; readonly historyUuid: string; readonly namespace: string;
@@ -28,7 +33,7 @@ export interface CurrentGeneratedInitialFlowCacheData {
   readonly headIndex: Readonly<{ url: string; body: string; sha256: string }>;
   readonly nativeWorkerOwnershipVerified: false; readonly cacheContinuationAuthorized: false; readonly completeUploadFrontierVerified: false;
 }
-type Qualification = QualifiedGeneratedFixtureTarget | QualifiedGeneratedSchematicFixtureTarget;
+type Qualification = QualifiedGeneratedFixtureTarget | QualifiedGeneratedSchematicFixtureTarget | QualifiedGeneratedSchematicRelevanceFixtureTarget;
 type Scalar = string | number | null;
 interface Original { readonly prepared: CurrentGeneratedInitialFlowCachePrepared; readonly inventory: NativeSqlInventory; readonly data: CurrentGeneratedInitialFlowCacheData; readonly text: string }
 const issued = new WeakMap<CurrentGeneratedInitialFlowCachePlan, Original>();
@@ -40,10 +45,12 @@ function assertPrepared(prepared: CurrentGeneratedInitialFlowCachePrepared): voi
   const descriptor = Object.getOwnPropertyDescriptor(prepared, "profile"); need(descriptor !== undefined && Object.hasOwn(descriptor, "value"));
   need(descriptor.value === prepared.profile);
   if (prepared.profile === "easyeda-pro-control.generated-fixture-open-checkpoint.v1") { assertOriginalGeneratedFixtureOpenCheckpoint(prepared); }
+  else if (prepared.profile === "easyeda-pro-control.generated-schematic-relevance-fixture-open-checkpoint.v1") { assertOriginalGeneratedSchematicRelevanceFixtureOpenCheckpoint(prepared); }
   else { assertOriginalGeneratedSchematicFixtureOpenCheckpoint(prepared); }
 }
 function inventoryFor(qualification: Qualification): NativeSqlInventory {
   if (qualification.schema === "easyeda-pro-control.qualified-generated-fixture-target.v1") { assertOriginalGeneratedFixtureTarget(qualification); return originalGeneratedFixtureInventory(qualification); }
+  if (qualification.schema === "easyeda-pro-control.qualified-generated-schematic-relevance-fixture-target.v1") { assertOriginalGeneratedSchematicRelevanceFixtureTarget(qualification); return originalGeneratedSchematicRelevanceFixtureInventory(qualification); }
   assertOriginalGeneratedSchematicFixtureTarget(qualification); return originalGeneratedSchematicFixtureInventory(qualification);
 }
 function scalar(cell: SqlCell | undefined): Scalar {
@@ -106,7 +113,9 @@ export function prepareCurrentGeneratedInitialFlowCachePlan(prepared: CurrentGen
   assertPrepared(prepared); const previous = pending.get(prepared); if (previous !== undefined) { return previous; }
   const promise = (async (): Promise<CurrentGeneratedInitialFlowCachePlan> => {
     const verify = async (): Promise<void> => { assertPrepared(prepared);
-      await (prepared.profile === "easyeda-pro-control.generated-fixture-open-checkpoint.v1" ? verifyGeneratedFixtureOpenCheckpoint(prepared) : verifyGeneratedSchematicFixtureOpenCheckpoint(prepared)); assertPrepared(prepared); };
+      if (prepared.profile === "easyeda-pro-control.generated-fixture-open-checkpoint.v1") { await verifyGeneratedFixtureOpenCheckpoint(prepared); }
+      else if (prepared.profile === "easyeda-pro-control.generated-schematic-relevance-fixture-open-checkpoint.v1") { await verifyGeneratedSchematicRelevanceFixtureOpenCheckpoint(prepared); }
+      else { await verifyGeneratedSchematicFixtureOpenCheckpoint(prepared); } assertPrepared(prepared); };
     await verify(); const result = await deriveInitialFlowCacheData(prepared.qualification, prepared.history); assertPrepared(prepared); await verify();
     need(inventoryFor(prepared.qualification) === result.inventory);
     const plan: CurrentGeneratedInitialFlowCachePlan = Object.freeze({ profile: "private.current-generated-initial-flow-cache-plan.v1" });

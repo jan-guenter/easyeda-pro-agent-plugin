@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
 import { CURRENT_PCB_209_WORKER_CALLBACK_LOCATIONS as CALLBACKS, CURRENT_PCB_209_WORKER_PRODUCER_LOCATIONS as PRODUCERS } from "../src/current-pcb-209-worker-startup-profile.ts";
-import { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES, validateCurrentProjectSaveStructureCommand } from "../src/current-project-save-structure-protocol.ts";
+import { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS, CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES, validateCurrentProjectSaveStructureCommand } from "../src/current-project-save-structure-protocol.ts";
 import type { CurrentProjectSaveStructureCommand, CurrentProjectSaveStructureSite as Site } from "../src/current-project-save-structure-protocol.ts";
 import type { CurrentProjectStructureBodyReservation, CurrentProjectStructureMainPublication } from "../src/current-project-structure-transport-origin.ts";
 import type { CurrentFootprintInverseBootstrapPermit, CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureEvent, CurrentProjectSaveStructureOrigin } from "../src/current-project-save-structure-origin.ts";
@@ -13,6 +13,18 @@ import { worker209ConstructionFixtureSource } from "./helpers/current-pcb-209-wo
 import { loadSyntheticRegistryModule } from "./helpers/load-synthetic-registry-module.ts";
 
 type Remote = Record<string, unknown>;
+void test("only the separately branded Relevance worker admits its eight original startup callbacks", async () => {
+  const original = await fixture(false, false, false, false, false, 8); await original.observer.arm(); await original.observer.observeConstruction();
+  await assert.rejects(original.observer.observePacket(), /STARTUP_SOURCE_RECORD_BOUND/u); original.exit(); await original.observer.cleanup();
+  assert.equal(original.consumed(), false);
+  const seven = await fixture(false, false, false, false, false, 8, false, false, false, false, null, false, true);
+  await seven.observer.arm(); await seven.observer.observeConstruction(); const packet = await seven.observer.observePacket();
+  assert.equal(seven.resumes.filter(role => role === "startupEntry").length, 8); assert.equal(seven.consumed(), false);
+  await seven.observer.releasePacket(packet, seven.token); await seven.observer.observeCompletion(); await seven.observer.cleanup();
+  assert.equal(seven.observer.retained().normalRequests, CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS.normal);
+  assert.equal(seven.observer.retained().cleanupRequests, CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS.cleanup);
+  assert.equal(CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS.normal + 18, CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS.normal);
+});
 const ref = (objectId: string): Remote => ({ type: "object", objectId, className: "Object" });
 const property = (name: string, value: Remote, writable = true, enumerable = true, configurable = true): object => ({ name, value, writable, enumerable, configurable, isOwn: true });
 function array(values: readonly Remote[]): object { return { result: [...values.map((value, index) => property(String(index), value)), property("length", { type: "number", value: values.length }, true, false, false)],
@@ -43,12 +55,12 @@ const scopes = (id: string): object => {
 function constructorName(role: Site): string { if (role === "producerUpload") { return "Gd"; } return "Lg"; }
 
 
-async function fixture(changedTree = false, changedTimer = false, changedReceiver = false, changedCallback = false, changedCaller = false, startupCalls = 0, wrongStartupReady = false, wrongStartupReturn = false, wrongStartupFinalizer = false, earlySave = false, prehistoryFault: "body" | "publication" | "mode" | null = null, inverse = false): Promise<Readonly<{ bootstrapPermit:CurrentFootprintInverseBootstrapPermit;bootstrapConsumed:()=>boolean;lookupBootstrap: (hold: object, wrong?: "observer" | "owner" | "origin" | "prepared") => unknown;  reservation: CurrentProjectStructureBodyReservation; publication: CurrentProjectStructureMainPublication; publish: () => void; bodyConsumed: () => boolean; observer: CurrentProjectSaveStructureObserver; origin: CurrentProjectSaveStructureOrigin; token: CurrentProjectHistorySqlCompletion; resumes: Site[]; consumed: () => boolean; exit: () => void }>> {
+async function fixture(changedTree = false, changedTimer = false, changedReceiver = false, changedCallback = false, changedCaller = false, startupCalls = 0, wrongStartupReady = false, wrongStartupReturn = false, wrongStartupFinalizer = false, earlySave = false, prehistoryFault: "body" | "publication" | "mode" | null = null, inverse = false, relevance = false): Promise<Readonly<{ bootstrapPermit:CurrentFootprintInverseBootstrapPermit;bootstrapConsumed:()=>boolean;lookupBootstrap: (hold: object, wrong?: "observer" | "owner" | "origin" | "prepared") => unknown;  reservation: CurrentProjectStructureBodyReservation; publication: CurrentProjectStructureMainPublication; publish: () => void; bodyConsumed: () => boolean; observer: CurrentProjectSaveStructureObserver; origin: CurrentProjectSaveStructureOrigin; token: CurrentProjectHistorySqlCompletion; resumes: Site[]; consumed: () => boolean; exit: () => void }>> {
   const excerpt = worker209ConstructionFixtureSource(); const descriptions = { upload: sourceAt(excerpt, PRODUCERS.serial), structure: sourceAt(excerpt, PRODUCERS.serial), debounce: sourceAt(excerpt, PRODUCERS.debounce),
     uploadCallback: sourceAt(excerpt, CALLBACKS.uploadStructure), structureCallback: sourceAt(excerpt, CALLBACKS.structure), bufferedUpload: sourceAt(excerpt, PRODUCERS.upload), cooperationWrapper: sourceAt(excerpt, PRODUCERS.cooperation), bufferedCallback: sourceAt(excerpt, CALLBACKS.upload), cooperationCallback: sourceAt(excerpt, CALLBACKS.cooperation) };
   const target = { projectUuid: "1".repeat(64), branchUuid: "2".repeat(32), documentUuid: "3".repeat(32) };
-  const prepared = inverse ? Object.freeze({ profile: "private.current-footprint-forward-saved-checkpoint.v1" }) : Object.freeze({ qualification: { target }, history: { documents: [{ records: Array.from({ length: 7 }, () => ({})) }] } }); const owner = Object.freeze({ syntheticOwner: true }); const operation = inverse ? prepared : Object.freeze({ syntheticOperation: true });
-  const origin: CurrentProjectSaveStructureOrigin = inverse ? Object.freeze({ profile: "private.current-footprint-inverse-structure-origin.v1" }) : Object.freeze({ profile: "private.current-pcb-via-save-structure-origin.v1" }); const token = Object.freeze({ profile: "private.current-project-history-sql-completion.v1" });
+  const prepared = inverse ? Object.freeze({ profile: "private.current-footprint-forward-saved-checkpoint.v1" }) : Object.freeze({ ...(relevance ? { profile: "easyeda-pro-control.generated-schematic-relevance-fixture-open-checkpoint.v1" } : {}), qualification: { target }, history: { documents: [{ records: Array.from({ length: relevance ? 8 : 7 }, () => ({})) }] } }); const owner = Object.freeze({ syntheticOwner: true }); const operation = inverse ? prepared : Object.freeze({ syntheticOperation: true });
+  const origin: CurrentProjectSaveStructureOrigin = inverse ? Object.freeze({ profile: "private.current-footprint-inverse-structure-origin.v1" }) : Object.freeze({ profile: relevance ? "private.current-schematic-relevance-display-save-structure-origin.v1" : "private.current-pcb-via-save-structure-origin.v1" }); const token = Object.freeze({ profile: "private.current-project-history-sql-completion.v1" });
   const publication: CurrentProjectStructureMainPublication = Object.freeze({ profile: "private.current-project-structure-main-publication.v1" }), reservation: CurrentProjectStructureBodyReservation = Object.freeze({ profile: "private.current-project-structure-body-reservation.v1" });
   const bootstrapPermit:CurrentFootprintInverseBootstrapPermit=Object.freeze({profile:"private.current-footprint-inverse-bootstrap-permit.v1"});let originalObserver:object|null=null;let bootstrapConsumed=false;
   let bodyConsumed = false, consumed = false, exited = false, finalizer = 0, published = false, startupFinalizers = 0; const resumes: Site[] = [];
