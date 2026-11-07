@@ -372,3 +372,37 @@ and installation remain open. This continuation has made no native/app calls,
 sent no host signal, published no PR/version and changed no production design.
 The retained old reader facade/helper still requires its pending exact cleanup
 authority; its missing release acknowledgment has not been invented or replayed.
+
+## 2026-11-07 saved-startup integration and remaining work
+
+Canonicalfc6ccd0f includes the original inverse first-timer intent/controller,
+startup callback and drained-queue readers, and a separate
+[saved-history Main reader](2026-11-07-inverse-initial-history-main.md).
+The latter joins four actual synchronization requests to their own database
+Promises and complete saved rows. The cold-loader history request is separate.
+The full renderer cache/synchronization/ready collector remains under
+implementation, so these increments do not enable deletion or Save.
+
+The earlier statement that the Via route is unmounted is historical. The
+controlled disposable-only route was mounted ina1730531. It still needs the
+combined generated payload, actual source admission and its disposable saved
+lifecycle case. Ordinary-project writing remains unavailable.
+
+The remaining groups are:
+
+| Group | Open work |
+| --- | --- |
+|1 Fixtures/import | Complete the prepared Component import/reader case and its full closed invariance proof. |
+|2 Schematic readers | Integrate the genuine seven-record Relevance fixture owner and finish its current-runtime reader case. |
+|3 Via lifecycle | Validate the controlled composed create/Save/close/readback route in its disposable project. |
+|4 Schematic editing | Finish the seven-record action/history/first-setter continuation, Main/Save and saved readback; mount the separate fixed wire stage with those original lifecycle proofs. |
+|5 PCB spatial | Finish the retained Pad failure's documented cleanup and run the prepared Component point case. |
+|6 Footprint/library | Finish saved cache/sync/ready, actual delete/clock/Main/Save, closed inverse and independent fourth-generation absence readback; compose all four generations. |
+|7 CBB | Closed through the documented concrete omission decision; no positive CBB execution is claimed. |
+|8 Coverage/skills | Reconcile final implemented, controlled, validated and omitted contracts across the855-method inventory and seven skills. |
+|9 Release | Emit helper/readable C#/pins/bundles together; run final required checks and exact CI; obtain CodeRabbit full and legacy review, then protected merge, publish and official installation. |
+
+The selected old Pad controller and helper remain retained with the original
+release acknowledgment missing. Its pending exact cleanup approval is unchanged.
+No read, close, capture or release has been replayed. No new PR or version has
+been published, and the production project remains unopened and unchanged.
