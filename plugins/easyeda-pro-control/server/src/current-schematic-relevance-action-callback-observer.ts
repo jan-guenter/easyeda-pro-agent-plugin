@@ -10,7 +10,7 @@ import type { CurrentSchematicRelevanceActionCallbackEntry } from "./current-sch
 function need(value: boolean): asserts value { if (!value) { throw new Error("SCHEMATIC_RELEVANCE_ORIGINAL_CALLBACK_OBSERVER"); } }
 export class CurrentSchematicRelevanceActionCallbackObserver {
   readonly #origin: CurrentSchematicRelevanceDisplayActionCallbackOrigin; readonly #owner: CurrentSchematicRelevanceDisplayWriteOwner; readonly #args: GeneratedSchematicRelevanceDisplayNativeArguments; readonly #bindings: CurrentSchematicRelevanceActionCallbackBindings;
-  #attempted = false; #busy = false; #failed = false; #entry: CurrentSchematicRelevanceActionCallbackEntry | null = null;
+  #attempted = false; #firstSetterAttempted = false; #busy = false; #failed = false; #entry: CurrentSchematicRelevanceActionCallbackEntry | null = null;
   public constructor(origin: CurrentSchematicRelevanceDisplayActionCallbackOrigin, owner: CurrentSchematicRelevanceDisplayWriteOwner, args: GeneratedSchematicRelevanceDisplayNativeArguments) {
     this.#origin = origin; this.#owner = owner; this.#args = args; this.#bindings = requireOriginalCurrentSchematicRelevanceActionCallbackOrigin(origin, owner, args); Object.freeze(this);
   }
@@ -22,6 +22,11 @@ export class CurrentSchematicRelevanceActionCallbackObserver {
       for (let command = this.#bindings.nextEntryCommand(); command !== null; command = this.#bindings.nextEntryCommand()) { this.#current(); await this.#bindings.requestEntry(command); this.#current(); }
       this.#entry = this.#bindings.requireOriginalEntry(); await this.#bindings.assertCurrent(); this.#current(); need(this.#entry === this.#bindings.requireOriginalEntry()); return this.#entry;
     } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
+  }
+  public async continueToFirstSetter(): Promise<void> {
+    this.#current(); need(!this.#busy && !this.#firstSetterAttempted && this.#entry !== null); this.#firstSetterAttempted = true; this.#busy = true;
+    try { need(this.#entry === this.#bindings.requireOriginalEntry()); await this.#bindings.continueToFirstSetter(); this.#current(); need(this.#entry === this.#bindings.requireOriginalEntry()); }
+    catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
   }
   public requireOriginalEntry(): CurrentSchematicRelevanceActionCallbackEntry { this.#current(); need(!this.#busy && this.#entry !== null && this.#entry === this.#bindings.requireOriginalEntry()); return this.#entry; }
 }

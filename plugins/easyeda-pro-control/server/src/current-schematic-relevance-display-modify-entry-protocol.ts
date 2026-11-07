@@ -11,7 +11,7 @@ import { CURRENT_SCHEMATIC_RELEVANCE_RAW_COMBINE_PROGRAM, CURRENT_SCHEMATIC_RELE
 
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_GROUP = "easyeda-pro-control-schematic-relevance-modify-entry-v1";
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_REQUESTS = Object.freeze({ generation: 1, observation: 5, rawObservation: 63, underlineEligibility: 5, resume: 0 });
-export const CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_REQUESTS = Object.freeze({ arms: 3, entry: 9, receiver: 3 * 3, binding: 1, total: 22 });
+export const CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_REQUESTS = Object.freeze({ arms: 3, entry: 9, receiver: 3 * 3, binding: 1, entryReady: 1, resumes: 1, total: 24 });
 const originalEntryProof = GENERATED_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_RUN_ENTRY_FUNCTION;
 const oldOptions = 'Reflect.ownKeys(options).length!==2||own(options,"history")!==true||own(options,"name")!=="Codex disposable Text display"';
 const newOptions = 'Reflect.ownKeys(options).length!==4||own(options,"history")!==true||own(options,"name")!=="Codex disposable Text display"||own(options,"timeout")!==0||!Array.isArray(own(options,"dependencies"))||Object.getPrototypeOf(own(options,"dependencies"))!==Array.prototype||Reflect.ownKeys(own(options,"dependencies")).length!==1||own(own(options,"dependencies"),"length")!==0';
@@ -50,6 +50,7 @@ const callbackReceiverParams = frameParams.extend({ expression: z.literal(CALLBA
 const callbackArmParams = z.strictObject({ objectId: handle, condition: z.literal("") });
 const callbackPhases = z.enum(["schematic-callback-details", "schematic-callback-bind", "schematic-callback-same", "schematic-callback-after-run", "schematic-callback-receiver-proof"]);
 const schema = z.discriminatedUnion("phase", [
+  z.strictObject({ phase: z.literal("schematic-callback-entry-resume"), method: z.literal("Debugger.resume"), params: z.strictObject({}) }),
   z.strictObject({ phase: z.literal("schematic-callback-arm-setAttribute"), method: z.literal("Debugger.setBreakpointOnFunctionCall"), params: callbackArmParams }),
   z.strictObject({ phase: z.literal("schematic-callback-arm-record"), method: z.literal("Debugger.setBreakpointOnFunctionCall"), params: callbackArmParams }),
   z.strictObject({ phase: z.literal("schematic-callback-arm-ast"), method: z.literal("Debugger.setBreakpointOnFunctionCall"), params: callbackArmParams }),
@@ -78,6 +79,7 @@ export function validateCurrentSchematicRelevanceDisplayModifyEntryCommand(input
 }
 export function currentSchematicRelevanceDisplayModifyEntryNativeCases(): readonly CurrentSchematicRelevanceDisplayModifyEntryCommand[] {
   return freezeDeep([
+    { phase: "schematic-callback-entry-resume", method: "Debugger.resume", params: {} },
     ...["setAttribute", "record", "ast"].map(role => ({ phase: `schematic-callback-arm-${role}`, method: "Debugger.setBreakpointOnFunctionCall", params: { objectId: "entry_function", condition: "" } })),
     ...Object.entries(CALLBACK_EXPRESSIONS).map(([role, expression]) => ({ phase: `schematic-callback-${role}-frame`, method: "Debugger.evaluateOnCallFrame", params: { ...CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_FLAGS, callFrameId: "entry_frame", expression, returnByValue: false, includeCommandLineAPI: false } })),
     { phase: "schematic-callback-properties", method: "Runtime.getProperties", params: { objectId: "entry_object", ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } },
@@ -102,7 +104,7 @@ export function currentSchematicRelevanceDisplayModifyEntryTemplate(input: unkno
   const params: Record<string, unknown> = { ...command.params };
   if (command.method === "Debugger.evaluateOnCallFrame") { params["callFrameId"] = field("callFrameId", command.params.callFrameId); }
   else if (command.method === "Debugger.getScriptSource") { params["scriptId"] = field("scriptId", command.params.scriptId); }
-  else { params["objectId"] = command.phase === "schematic-raw-references" ? "__schematic_entry_boundHolder__" : field("objectId", command.params.objectId);
+  else if (command.method !== "Debugger.resume") { params["objectId"] = command.phase === "schematic-raw-references" ? "__schematic_entry_boundHolder__" : field("objectId", command.params.objectId);
     if (command.method === "Runtime.callFunctionOn") {
       params["arguments"] = command.phase === "schematic-modify-entry-proof" ? [{ objectId: "__schematic_entry_boundHolder__" }, { value: "__schematic_entry_boundTarget__" }, { value: "__schematic_entry_boundOperation__" }, { objectId: "__schematic_entry_boundIdle__" }, { objectId: field("callback", command.params.arguments[4].objectId) }] : command.params.arguments.map((argument, index) => ({ objectId: field(`argument${String(index)}`, argument.objectId) }));
     } }

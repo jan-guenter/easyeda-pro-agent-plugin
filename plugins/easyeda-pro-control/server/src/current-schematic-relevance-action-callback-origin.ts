@@ -7,6 +7,7 @@ export type { CurrentSchematicRelevanceDisplayActionCallbackOrigin } from "./cur
 export interface CurrentSchematicRelevanceActionCallbackBindings {
   readonly nextEntryCommand: () => CurrentSchematicRelevanceDisplayModifyEntryCommand | null;
   readonly requestEntry: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand) => Promise<unknown>;
+  readonly continueToFirstSetter: () => Promise<void>;
   readonly requireOriginalEntry: () => CurrentSchematicRelevanceActionCallbackEntry;
   readonly assertCurrent: () => Promise<void>; readonly fail: () => void;
 }

@@ -786,3 +786,4 @@ layout. The connected ledger retains its generation and case anchors.
 - 2026-11-07: [Integrated backlog status](2026-11-07-integrated-backlog-status.md), remaining implementation, connected cases and final review/release steps at source checkpoint `290c5ea4`.
 - 2026-11-07: [Relevance accessor receiver boundary](2026-11-07-schematic-relevance-accessor-receiver-boundary.md), honest function metadata receipt, genuine once-only completion and fixed underline eligibility reads before receiver-entry proof.
 - 2026-11-07: [Original Relevance callback entry](2026-11-07-schematic-original-callback-entry.md), same-owner prearm, source-pinned receiver guards and retained original callback context; setter/publication continuations remain held.
+- 2026-11-07: [Callback first-setter boundary](2026-11-07-schematic-callback-first-setter-boundary.md), one original entry resume with separate submitted/ACK/resumed custody; actual setter bodies remain held.

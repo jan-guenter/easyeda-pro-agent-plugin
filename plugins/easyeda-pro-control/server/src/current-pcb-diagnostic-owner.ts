@@ -4828,13 +4828,23 @@ class CurrentPcbRetainedOwnerCore {
         request: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand): Promise<unknown> => this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { current(); return selected.pipe.observeSchematicRelevanceDisplayModifyEntry(command); })), assertCurrent: current, fail }));
       this.#schematicRelevanceCallbackController = controller; await controller.arm(); current(); original.requireUnderlineEligibility();
       const entry = (async (): Promise<CurrentSchematicRelevanceDisplayActionCallbackOrigin> => {
-        const held = await controller.waitOriginalEntry(); current(); controller.requireHeld(held); if (this.#schematicRelevanceCallbackOrigin !== null) { throw error("SCHEMATIC_CALLBACK_ORIGINAL_ENTRY_ONCE"); }
+        const held = await controller.waitOriginalEntry(); let currentHeld = held; let entryTransition = false, entryTransitionAttempted = false; current(); controller.requireHeld(held); if (this.#schematicRelevanceCallbackOrigin !== null) { throw error("SCHEMATIC_CALLBACK_ORIGINAL_ENTRY_ONCE"); }
         const callbackOrigin: CurrentSchematicRelevanceDisplayActionCallbackOrigin = Object.freeze({ profile: "private.current-schematic-relevance-display-action-callback-origin.v1" }), cursor = new CurrentSchematicRelevanceActionCallbackCursor(held.callFrameId, holder, raw);
-        const same = (): void => { current(); controller.requireHeld(held); if (this.#schematicRelevanceCallbackOrigin !== callbackOrigin || this.#schematicRelevanceCallbackController !== controller) { throw error("SCHEMATIC_CALLBACK_ORIGINAL_PAUSE"); } };
+        const same = (): void => { current(); if (entryTransition) { throw error("SCHEMATIC_CALLBACK_ORIGINAL_TRANSITION_PENDING"); } controller.requireHeld(currentHeld); if (this.#schematicRelevanceCallbackOrigin !== callbackOrigin || this.#schematicRelevanceCallbackController !== controller) { throw error("SCHEMATIC_CALLBACK_ORIGINAL_PAUSE"); } };
         const bindings: CurrentSchematicRelevanceActionCallbackBindings = Object.freeze({ nextEntryCommand: () => { same(); return cursor.next(); }, requestEntry: async (command: CurrentSchematicRelevanceDisplayModifyEntryCommand): Promise<unknown> => {
           same(); if (cursor.next() !== command) { throw error("SCHEMATIC_CALLBACK_ORIGINAL_COMMAND"); } cursor.reserve(command);
           try { const reply = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { same(); return selected.pipe.observeSchematicRelevanceDisplayModifyEntry(command); })); same(); cursor.accept(command, reply); return reply; }
           catch (caughtError) { cursor.fail(); controller.fail(); throw caughtError; }
+        }, continueToFirstSetter: async (): Promise<void> => {
+          same(); cursor.requireCompleted(); if (entryTransitionAttempted || currentHeld !== held) { throw error("SCHEMATIC_CALLBACK_ENTRY_RESUME_ONCE"); } entryTransitionAttempted = true; entryTransition = true;
+          try {
+            const ready = await this.#request({ action: "schematic-relevance-display-callback-entry-ready" }); current(); controller.requireHeld(held); cursor.requireCompleted();
+            if (!exact(ready, ["ready"]) || ready["ready"] !== true) { throw error("SCHEMATIC_CALLBACK_ENTRY_READY_ACK"); }
+            const reservation = controller.reserveEntryResume(held); const command = validateCurrentSchematicRelevanceDisplayModifyEntryCommand({ phase: "schematic-callback-entry-resume", method: "Debugger.resume", params: {} });
+            const resumedAck = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { current(); controller.requireEntryResume(reservation); controller.markEntryResumeSubmitted(reservation); return selected.pipe.observeSchematicRelevanceDisplayModifyEntry(command); })); current();
+            if (!exact(resumedAck, [])) { throw error("SCHEMATIC_CALLBACK_ENTRY_RESUME_ACK"); } await controller.waitEntryResumed(reservation); current(); controller.completeEntryResume(reservation);
+            currentHeld = await controller.waitOriginalFirstSetter(); current(); entryTransition = false; same();
+          } catch (caughtError) { controller.fail(); throw caughtError; }
         }, requireOriginalEntry: () => { same(); return cursor.requireCompleted(); }, assertCurrent: async () => { same(); await this.#verify(); same(); }, fail: () => { cursor.fail(); controller.fail(); } });
         this.#schematicRelevanceCallbackOrigin = callbackOrigin; schematicRelevanceActionCallbacks.set(callbackOrigin, Object.freeze({ owner: this, args: argumentsValue, bindings, assertOriginal: same })); return callbackOrigin;
       })();

@@ -5,9 +5,9 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 const oldCallback = 'async()=>{ownedAction=b.runner.currentAction;check();same(before,capture(operation.beforeBody));for(const[field,value]of changes){check();const binding=b.setters[field];if(binding.object!==before.text)bad("TEXT_RECEIVER");reproveSetter(binding);apply(binding.set,before.text,[value]);}check();}';
 /** Each debugger marker belongs to this complete fixed program. A separate
- * original active-action collector must authorize every continuation. Until
- * then run remains held, and no originalAction property can be installed. */
-export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_CALLBACK = `async()=>{const originalContext=[tuple,b,state,before,changes,target,operation];debugger;try{const originalAction=own(state,"originalAction");ownedAction=apply(originalAction,undefined,["enter",originalContext]);for(let originalIndex=0;originalIndex<changes.length;originalIndex++){debugger;apply(originalAction,undefined,["set",originalContext,ownedAction,originalIndex]);}debugger;apply(originalAction,undefined,["leave",originalContext,ownedAction,changes.length]);}catch(originalError){debugger;throw originalError;}}`;
+ * Original active-action collector must authorize every continuation. Each
+ * direct property read is checked while the preceding actual marker is held. */
+export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_CALLBACK = `async()=>{const originalContext=[tuple,b,state,before,changes,target,operation];debugger;try{ownedAction=b.runner._currentAction;if(ownedAction===null||typeof ownedAction!=="object")throw{reason:"SCH209_CALLBACK_ACTIVE_ACTION"};for(let originalIndex=0;originalIndex<changes.length;originalIndex++){debugger;const originalChange=changes[originalIndex],originalBinding=b.setters[originalChange[0]];if(originalBinding.object!==before.text)throw "SCH209_CALLBACK_TEXT_RECEIVER";apply(originalBinding.set,before.text,[originalChange[1]]);}debugger;}catch(originalError){debugger;throw originalError;}}`;
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_CAPTURE_REPLACEMENTS = freezeDeep([['b={ui,host,sch,tabs,', 'b={root,ui,host,sch,tabs,']] as const);
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_REPLACEMENTS = freezeDeep([[oldCallback, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_CALLBACK],
   ['{history:true,name:"Codex disposable Text display"}', '{history:true,name:"Codex disposable Text display",timeout:0,dependencies:[]}']] as const);

@@ -18,6 +18,7 @@ const functionKeys = Object.freeze({ setAttribute: "setAttributeObjectId", recor
 const sourceKeys = Object.freeze({ setAttribute: "monitorSetAttribute", record: "monitorRecord", ast: "monitorAst" } as const);
 export type CurrentSchematicRelevanceActionCallbackRole = "entry" | "setter" | "finish" | "failure" | typeof roles[number];
 export interface CurrentSchematicRelevanceActionCallbackHeld { readonly event: DiagnosticEvent; readonly role: CurrentSchematicRelevanceActionCallbackRole; readonly callFrameId: string }
+export interface CurrentSchematicRelevanceActionEntryResume { readonly original: CurrentSchematicRelevanceActionCallbackHeld }
 export interface CurrentSchematicRelevanceActionCallbackHost {
   readonly sessionId: string; readonly callbackScriptId: string; readonly sourceScriptId: string; readonly variant: 0 | 1; readonly functions: CurrentSchematicRelevanceDisplayAccessorFunctions;
   readonly request: (command: Command) => Promise<unknown>; readonly assertCurrent: () => void; readonly fail: () => void;
@@ -26,7 +27,9 @@ function need(value: boolean): asserts value { if (!value) { throw new Error("SC
 export class CurrentSchematicRelevanceActionCallbackController {
   readonly #host: CurrentSchematicRelevanceActionCallbackHost;
   readonly #points = new Map<string, typeof roles[number]>(); readonly #entry = Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld | null>();
-  #attempted = false; #armed = false; #failed = false; #held: CurrentSchematicRelevanceActionCallbackHeld | null = null;
+  readonly #setter = Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld | null>();
+  readonly #resumed = Promise.withResolvers<boolean>();
+  #attempted = false; #armed = false; #failed = false; #entryResumed = false; #entryResumeAttempted = false; #entryResumeCompleted = false; #entryResumeSubmitted = false; #reservation: CurrentSchematicRelevanceActionEntryResume | null = null; #held: CurrentSchematicRelevanceActionCallbackHeld | null = null;
   public constructor(host: CurrentSchematicRelevanceActionCallbackHost) { this.#host = host; handle.parse(host.sessionId); handle.parse(host.callbackScriptId); handle.parse(host.sourceScriptId); Object.freeze(this); }
   public async arm(): Promise<void> {
     need(!this.#attempted && !this.#failed); this.#attempted = true;
@@ -53,16 +56,30 @@ export class CurrentSchematicRelevanceActionCallbackController {
     const marker = MARKERS.find(value => value.lineNumber === first.location.lineNumber && value.columnNumber === first.location.columnNumber); need(marker !== undefined); return marker.role;
   }
   public observeOriginalEvent(event: DiagnosticEvent): boolean {
-    if (event.sessionId !== this.#host.sessionId || event.method !== "Debugger.paused") { return false; }
+    if (event.sessionId !== this.#host.sessionId) { return false; }
+    if (event.method === "Debugger.resumed") {
+      if (this.#reservation === null) { return false; }
+      try { this.#host.assertCurrent(); need(!this.#failed && this.#entryResumeSubmitted && !this.#entryResumed && this.#held === this.#reservation.original && Reflect.ownKeys(event.params).length === 0); this.#held = null; this.#entryResumed = true; this.#resumed.resolve(true); }
+      catch { this.fail(); } return true;
+    }
+    if (event.method !== "Debugger.paused") { return false; }
     try {
       const role = this.#role(event); if (role === null) { return false; } this.#host.assertCurrent(); need(!this.#failed && this.#armed && this.#held === null && event.params["reason"] === "other");
       const frames = event.params["callFrames"]; need(Array.isArray(frames)); const first = frame.parse(frames[0]); const held = Object.freeze({ event, role, callFrameId: first.callFrameId }); this.#held = held;
-      // No continuation is available until the entry's original active-action
-      // And subsequent receiver proofs have their own finite grant.
-      need(role === "entry"); this.#entry.resolve(held); return true;
+      if (role === "entry") { need(!this.#entryResumeAttempted); this.#entry.resolve(held); }
+      else { need(role === "setter" && this.#entryResumeAttempted && this.#entryResumed); this.#setter.resolve(held); }
+      return true;
     } catch { this.fail(); return true; }
   }
   public async waitOriginalEntry(): Promise<CurrentSchematicRelevanceActionCallbackHeld> { const held = await this.#entry.promise; need(held !== null && !this.#failed && this.#held === held); this.#host.assertCurrent(); return held; }
+  public reserveEntryResume(held: CurrentSchematicRelevanceActionCallbackHeld): CurrentSchematicRelevanceActionEntryResume {
+    this.requireHeld(held); need(held.role === "entry" && !this.#entryResumeAttempted && this.#reservation === null); this.#entryResumeAttempted = true; const token = Object.freeze({ original: held }); this.#reservation = token; return token;
+  }
+  public requireEntryResume(token: CurrentSchematicRelevanceActionEntryResume): void { need(!this.#failed && this.#reservation === token); this.#host.assertCurrent(); }
+  public markEntryResumeSubmitted(token: CurrentSchematicRelevanceActionEntryResume): void { this.requireEntryResume(token); need(!this.#entryResumeSubmitted && this.#held === token.original); this.#entryResumeSubmitted = true; }
+  public async waitEntryResumed(token: CurrentSchematicRelevanceActionEntryResume): Promise<void> { this.requireEntryResume(token); const seen = await this.#resumed.promise; this.requireEntryResume(token); need(seen && this.#entryResumed); }
+  public completeEntryResume(token: CurrentSchematicRelevanceActionEntryResume): void { this.requireEntryResume(token); need(this.#entryResumed && !this.#entryResumeCompleted); this.#entryResumeCompleted = true; this.#reservation = null; }
+  public async waitOriginalFirstSetter(): Promise<CurrentSchematicRelevanceActionCallbackHeld> { const held = await this.#setter.promise; need(held !== null && this.#entryResumeCompleted); this.requireHeld(held); return held; }
   public requireHeld(held: CurrentSchematicRelevanceActionCallbackHeld): void { this.#host.assertCurrent(); need(!this.#failed && this.#held === held && held.event.sessionId === this.#host.sessionId); }
-  public fail(): void { if (!this.#failed) { this.#failed = true; this.#entry.resolve(null); this.#host.fail(); } }
+  public fail(): void { if (!this.#failed) { this.#failed = true; this.#entry.resolve(null); this.#setter.resolve(null); this.#resumed.resolve(false); this.#host.fail(); } }
 }

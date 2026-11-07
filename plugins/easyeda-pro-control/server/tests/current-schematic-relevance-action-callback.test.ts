@@ -31,10 +31,10 @@ void test("original callback context and every baseline descriptor/collection jo
   const changed = fixture(); const before = changed.entry(); changed.change("runner"); assert.throws(() => changed.same(before), /CALLBACK_ENTRY/u);
   const broad = fixture(); broad.change("body"); assert.throws(broad.entry, /CALLBACK_ENTRY/u);
 });
-function event(role: "entry" | "record", script = "original-callback"): DiagnosticEvent {
+function event(role: "entry" | "setter" | "record", script = "original-callback"): DiagnosticEvent {
   let location = { ...LOCATION, scriptId: script }; let functionLocation = location; const ids: string[] = [];
-  if (role === "entry") { const marker = MARKERS.find(item => item.role === "entry"); assert.ok(marker !== undefined); location = { scriptId: script, lineNumber: marker.lineNumber, columnNumber: marker.columnNumber }; }
-  else { const row = SOURCES[0].methods.monitorRecord; functionLocation = { scriptId: "original-source", lineNumber: row.lineNumber, columnNumber: row.columnNumber }; location = functionLocation; ids.push("point:schematic-callback-arm-record"); }
+  if (role === "record") { const row = SOURCES[0].methods.monitorRecord; functionLocation = { scriptId: "original-source", lineNumber: row.lineNumber, columnNumber: row.columnNumber }; location = functionLocation; ids.push("point:schematic-callback-arm-record"); }
+  else { const marker = MARKERS.find(item => item.role === role); assert.ok(marker !== undefined); location = { scriptId: script, lineNumber: marker.lineNumber, columnNumber: marker.columnNumber }; }
   return { method: "Debugger.paused", sessionId: "original-session", params: { reason: "other", hitBreakpoints: ids, callFrames: [{ callFrameId: "original-frame", location, functionLocation }] } };
 }
 function controller(): Readonly<{ lane: CurrentSchematicRelevanceActionCallbackController; sent: CurrentSchematicRelevanceDisplayModifyEntryCommand[]; failures: () => number }> {
@@ -51,4 +51,20 @@ void test("three original arms and the exact callback pause settle one entry wit
 void test("foreign session cannot supply an entry and an unexpected original receiver pause remains held/refused", async () => {
   const f = controller(); await f.lane.arm(); const original = event("entry"); assert.equal(f.lane.observeOriginalEvent({ ...original, sessionId: "foreign-session" }), false); assert.equal(f.failures(), 0);
   assert.equal(f.lane.observeOriginalEvent(event("record")), true); assert.equal(f.failures(), 1); await assert.rejects(f.lane.waitOriginalEntry(), /CALLBACK_EVENT/u); assert.equal(f.sent.length, 3);
+});
+
+void test("entry resume reservation admits the next setter pause before ACK settlement without admitting a primitive continuation", async () => {
+  const f = controller(); await f.lane.arm(); f.lane.observeOriginalEvent(event("entry")); const entry = await f.lane.waitOriginalEntry(); const reservation = f.lane.reserveEntryResume(entry);
+  assert.throws(() => { f.lane.reserveEntryResume(entry); }); assert.throws(() => { f.lane.completeEntryResume(reservation); }); f.lane.markEntryResumeSubmitted(reservation);
+  assert.equal(f.lane.observeOriginalEvent({ method: "Debugger.resumed", sessionId: "original-session", params: {} }), true);
+  const next = event("setter"); assert.equal(f.lane.observeOriginalEvent(next), true); await f.lane.waitEntryResumed(reservation); f.lane.completeEntryResume(reservation); const setter = await f.lane.waitOriginalFirstSetter(); assert.equal(setter.event, next); f.lane.requireHeld(setter); assert.equal(f.failures(), 0);
+  assert.throws(() => { f.lane.completeEntryResume(reservation); }); assert.equal(f.lane.observeOriginalEvent(event("record")), true); assert.equal(f.failures(), 1);
+});
+void test("unacknowledged resumed state is never synthesized and failure wakes the same reservation", async () => {
+  const f = controller(); await f.lane.arm(); f.lane.observeOriginalEvent(event("entry")); const held = await f.lane.waitOriginalEntry(); const reservation = f.lane.reserveEntryResume(held); const resumed = f.lane.waitEntryResumed(reservation); f.lane.fail(); await assert.rejects(resumed, /CALLBACK_EVENT/u); await assert.rejects(f.lane.waitOriginalFirstSetter(), /CALLBACK_EVENT/u); assert.equal(f.failures(), 1);
+});
+
+void test("a reserved but not submitted entry resume cannot consume a resumed event", async () => {
+  const f = controller(); await f.lane.arm(); f.lane.observeOriginalEvent(event("entry")); const held = await f.lane.waitOriginalEntry(); const reservation = f.lane.reserveEntryResume(held);
+  assert.equal(f.lane.observeOriginalEvent({ method: "Debugger.resumed", sessionId: "original-session", params: {} }), true); assert.equal(f.failures(), 1); await assert.rejects(f.lane.waitEntryResumed(reservation));
 });
