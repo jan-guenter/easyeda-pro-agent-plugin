@@ -1,3 +1,5 @@
+import { qualifyCurrentFootprintInverseDeleteRpcHelper } from "./current-footprint-inverse-delete-rpc-protocol.ts";
+import type { CurrentFootprintInverseDeleteRpcCommand } from "./current-footprint-inverse-delete-rpc-protocol.ts";
 import { qualifyCurrentFootprintInverseClockWorkerHelper } from "./current-footprint-inverse-clock-worker-protocol.ts";
 import type { CurrentFootprintInverseClockWorkerCommand } from "./current-footprint-inverse-clock-worker-protocol.ts";
 import { qualifyCurrentFootprintInverseDeleteBindingHelper } from "./current-footprint-inverse-delete-binding-protocol.ts";
@@ -15,8 +17,8 @@ import type { CurrentProjectSaveStructureSite } from "./current-project-save-str
 import { types } from "node:util";
 import { CurrentPcbViaSavedLoadBootstrap } from "./current-pcb-via-saved-load-bootstrap.ts";
 import type { CurrentPcbViaSavedLoadBootstrapResult, CurrentPcbViaSavedLoadProjectSourceHeld } from "./current-pcb-via-saved-load-bootstrap.ts";
-import type { CurrentPcbViaSavedLoadBootstrapCommand } from "./current-pcb-via-saved-load-bootstrap-protocol.ts";
 // oxlint-disable-next-line import/max-dependencies -- One original event reader owns construction, cold, callback, condition and timer packets; splitting readers would duplicate event custody.
+import type { CurrentPcbViaSavedLoadBootstrapCommand } from "./current-pcb-via-saved-load-bootstrap-protocol.ts";
 import type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 import { isCurrentPcb209BootstrapTargetUrl } from "./current-pcb-209-worker-bootstrap-source.ts";
 import { qualifyCurrentFootprintInverseDeleteEncoderHelper } from "./current-footprint-inverse-delete-encoder-protocol.ts";
@@ -49,6 +51,7 @@ export interface CurrentFootprintInverseWorkerControllerBindings {
   readonly conditionSourceRequest:(scriptId:string)=>Promise<unknown>;
   readonly timerRequest: (command: CurrentFootprintInverseTimerCommand) => Promise<unknown>;
   readonly timerHeld: () => Promise<void>;
+  readonly deleteRpcRequest:(command:CurrentFootprintInverseDeleteRpcCommand)=>Promise<unknown>;
   readonly deleteEntryRequest:(command:CurrentFootprintInverseDeleteEntryCommand)=>Promise<unknown>;
   readonly clockWorkerRequest:(command:CurrentFootprintInverseClockWorkerCommand)=>Promise<unknown>;
   readonly deleteEncoderRequest:(command:CurrentFootprintInverseDeleteEncoderCommand)=>Promise<unknown>;
@@ -110,6 +113,7 @@ export class CurrentFootprintInverseWorkerController {
   readonly #libraryPoints=new Map<keyof typeof LIBRARY_SITES,string>();readonly #libraryResolutions=new Map<string,keyof typeof LIBRARY_SITES>();readonly #libraryHelpers:{program:string;source:string;scriptId:string|null}[]=[];
   #libraryArming:keyof typeof LIBRARY_SITES|null=null;#libraryBound=false;#libraryFirstObserved=false;#libraryReturnedObserved=false;#libraryMountObserved=false;#librarySuspended=false;#libraryCompleted=false;
   #libraryHeld:{role:"firstLoop"|"loopReturned"|"mountReturned";event:WorkerEvent;delivered:boolean;resumeAttempted:boolean}|null=null;
+  readonly #deleteRpcHelpers:{program:string;scriptId:string|null}[]=[];#deleteRpcHelperAttempts=0;
   readonly #deleteEntryHelpers:{program:string;scriptId:string|null}[]=[];#deleteEntryArming=false;#deleteEntryPoint:string|null=null;#deleteEntryResolution:string|null=null;#deleteEntryConsumed=false;#deleteEntryHeld:WorkerEvent|null=null;#deleteEntryHelperAttempts=0;
   #deletePreparationAttempted=false;#deleteObservationAttempted=false;#deleteWork:Readonly<{kind:"prepare"|"observe";run:()=>Promise<void>;result:ReturnType<typeof Promise.withResolvers<boolean>>}>|null=null;
   readonly #clockWorkerHelpers:{program:string;scriptId:string|null}[]=[];#clockWorkerBound=false;#clockWorkerCompleted=false;#clockWorkerHelperAttempts=0;
@@ -124,7 +128,7 @@ export class CurrentFootprintInverseWorkerController {
   #source: CurrentPcbViaSavedLoadProjectSourceHeld | null = null; #failed = false; #reading = false; #eventCount = 0; #networkEvents = 0; #pumping = false;
   public constructor(bindings: CurrentFootprintInverseWorkerControllerBindings) {
     need(bindings !== null && typeof bindings === "object" && !types.isProxy(bindings) && Object.getPrototypeOf(bindings) === Object.prototype && Object.isFrozen(bindings));
-    const fields = ["parentSessionId", "projectUuid", "windowTabId", "bindWorker", "request", "poll", "assertCurrent", "projectSourceHeld", "constructionRequest", "initialSyncRequest", "initialSyncHeld", "initialCacheRequest", "initialCacheHeld", "startupQueueRequest", "startupCallbackRequest", "startupCallbackHeld", "conditionSourceRequest", "timerRequest", "timerHeld", "libraryRequest", "libraryHeld", "deleteBindingRequest", "deleteEncoderRequest", "clockWorkerRequest", "deleteEntryRequest", "modelStepRequest", "startupIdleReady", "settleStartupPromises", "coldStepRequest", "coldRequest", "producerArmRequest", "constructionHeld", "fail"];
+    const fields = ["parentSessionId", "projectUuid", "windowTabId", "bindWorker", "request", "poll", "assertCurrent", "projectSourceHeld", "constructionRequest", "initialSyncRequest", "initialSyncHeld", "initialCacheRequest", "initialCacheHeld", "startupQueueRequest", "startupCallbackRequest", "startupCallbackHeld", "conditionSourceRequest", "timerRequest", "timerHeld", "libraryRequest", "libraryHeld", "deleteBindingRequest", "deleteEncoderRequest", "clockWorkerRequest", "deleteRpcRequest", "deleteEntryRequest", "modelStepRequest", "startupIdleReady", "settleStartupPromises", "coldStepRequest", "coldRequest", "producerArmRequest", "constructionHeld", "fail"];
     need(Reflect.ownKeys(bindings).length === fields.length);
     for (const [index, name] of fields.entries()) { const d = Object.getOwnPropertyDescriptor(bindings, name); need(d !== undefined && Object.hasOwn(d, "value") && typeof d.value === (index < 3 ? "string" : "function") && !types.isProxy(d.value)); }
     need(token(bindings.parentSessionId) && token(bindings.windowTabId) && /^[a-f\d]{64}$/u.test(bindings.projectUuid)); this.#bindings = bindings; Object.freeze(this);
@@ -144,14 +148,14 @@ export class CurrentFootprintInverseWorkerController {
    * fixed policy acknowledgments and later original source/body joins matter. */
   public observeEvent(event: DiagnosticEvent): void {
     try {
-      this.#eventCount += 1; need(!this.#failed && this.#eventCount <= 1024+13*this.#startupCallbackBound+18*this.#initialCacheBound+53+(this.#libraryBound?25:0)+(this.#deleteBindingBound?32:0)+(this.#deleteEncoderBound?3:0)+(this.#clockWorkerBound?5:0)+(this.#deletePreparationAttempted?5:0)+(this.#conditionBound>0?currentFootprintInverseConditionBudget(this.#conditionBound):0));
+      this.#eventCount += 1; need(!this.#failed && this.#eventCount <= 1024+13*this.#startupCallbackBound+18*this.#initialCacheBound+53+(this.#libraryBound?25:0)+(this.#deleteBindingBound?32:0)+(this.#deleteEncoderBound?3:0)+(this.#clockWorkerBound?5:0)+(this.#deletePreparationAttempted?10:0)+(this.#conditionBound>0?currentFootprintInverseConditionBudget(this.#conditionBound):0));
       if (event.method === "Target.attachedToTarget") { this.#attach(event); return; }
       need(this.#page !== null && event.sessionId === this.#page.sessionId);
       if (["Network.requestWillBeSent", "Network.requestWillBeSentExtraInfo", "Network.responseReceived", "Network.responseReceivedExtraInfo", "Network.loadingFinished", "Network.loadingFailed", "Network.dataReceived", "Network.requestServedFromCache", "Network.resourceChangedPriority"].includes(event.method)) {
         this.#networkEvents += 1; need(this.#networkEvents <= 512); return;
       }
       if (this.#source !== null && event.method === "Debugger.scriptParsed" && event.params["url"] === "") {
-        const expected = [...this.#constructionHelpers,...this.#producerHelpers,...this.#coldHelpers,...this.#startupCallbackHelpers,...this.#timerHelpers,...this.#libraryHelpers,...this.#deleteBindingHelpers,...this.#deleteEncoderHelpers,...this.#clockWorkerHelpers,...this.#deleteEntryHelpers,...this.#startupQueueHelpers,...this.#initialCacheHelpers,...this.#initialSyncHelpers].find(value => value.scriptId === null);
+        const expected = [...this.#constructionHelpers,...this.#producerHelpers,...this.#coldHelpers,...this.#startupCallbackHelpers,...this.#timerHelpers,...this.#libraryHelpers,...this.#deleteBindingHelpers,...this.#deleteEncoderHelpers,...this.#clockWorkerHelpers,...this.#deleteEntryHelpers,...this.#deleteRpcHelpers,...this.#startupQueueHelpers,...this.#initialCacheHelpers,...this.#initialSyncHelpers].find(value => value.scriptId === null);
         const scriptId=event.params["scriptId"];need(token(scriptId)&&event.params["executionContextId"]===this.#source.executionContextId);
         if(expected===undefined){need(this.#conditionBound>0&&this.#conditionRoles.size>0&&!this.#conditionSeenIds.has(scriptId)&&this.#conditionSeenIds.size<currentFootprintInverseConditionBudget(this.#conditionBound));this.#conditionSeenIds.add(scriptId);this.#conditionScriptIds.push(scriptId);}else{expected.scriptId=scriptId;}return;
       }
@@ -320,8 +324,11 @@ export class CurrentFootprintInverseWorkerController {
   public expectDeleteEntryArm():void{need(this.#pumping&&!this.#failed&&this.#deletePreparationAttempted&&!this.#deleteEntryArming&&this.#deleteEntryPoint===null&&!this.#deleteEntryConsumed);this.#deleteEntryArming=true;}
   public registerDeleteEntryArm(reply:unknown):void{need(this.#source!==null&&this.#pumping&&!this.#failed&&this.#deleteEntryArming&&this.#deleteEntryPoint===null);const id=currentFootprintInverseDeleteEntryPoint(reply,this.#source.scriptId);need(this.#deleteEntryResolution===null||this.#deleteEntryResolution===id);this.#deleteEntryPoint=id;this.#deleteEntryArming=false;}
   public requireDeleteEntryCustody():void{need(!this.#failed&&this.#startupDrained&&this.#deletePreparationAttempted&&this.#deleteEntryPoint!==null&&!this.#deleteEntryArming);}
-  public requireDeleteEntryAdmission():void{need(!this.#failed&&this.#startupDrained&&this.#deletePreparationAttempted&&this.#deleteEntryPoint!==null&&!this.#deleteEntryArming&&this.#deleteEntryHeld===null&&this.#deleteEntryHelpers.length===0);}
+  public requireDeleteEntryAdmission():void{need(!this.#failed&&this.#startupDrained&&this.#deletePreparationAttempted&&this.#deleteEntryPoint!==null&&!this.#deleteEntryArming&&this.#deleteEntryHeld===null&&this.#deleteEntryHelpers.length===0&&this.#deleteRpcHelpers.length===0&&this.#deleteRpcHelperAttempts===5);}
   public consumeDeleteEntryAdmission():void{this.requireOriginalStartupDrained();this.requireDeleteEntryAdmission();need(!this.#deleteEntryConsumed);this.#deleteEntryConsumed=true;}
+  public requestDeleteRpc(command:CurrentFootprintInverseDeleteRpcCommand):Promise<unknown>{need(this.#pumping&&!this.#failed&&this.#deletePreparationAttempted&&!this.#deleteEntryConsumed);return this.#bindings.deleteRpcRequest(command);}
+  public expectDeleteRpcHelper(program:string):void{const source=`(${program})`;qualifyCurrentFootprintInverseDeleteRpcHelper(source,program);need(this.#pumping&&!this.#failed&&this.#deletePreparationAttempted&&!this.#deleteEntryConsumed&&this.#deleteRpcHelpers.length===0&&this.#deleteRpcHelperAttempts<5);this.#deleteRpcHelperAttempts+=1;this.#deleteRpcHelpers.push({program:source,scriptId:null});}
+  public async qualifyDeleteRpcHelper(program:string):Promise<void>{const original=this.#deleteRpcHelpers[0];need(this.#pumping&&!this.#failed&&original!==undefined&&original.program===`(${program})`&&original.scriptId!==null);const raw=await this.#bindings.deleteRpcRequest({phase:"inverse-delete-rpc-helper",method:"Debugger.getScriptSource",params:{scriptId:original.scriptId}});await this.#current();need(record(raw)&&Reflect.ownKeys(raw).length===1&&this.#deleteRpcHelpers[0]===original);qualifyCurrentFootprintInverseDeleteRpcHelper(raw["scriptSource"],program);this.#deleteRpcHelpers.shift();}
   public requestDeleteEntry(command:CurrentFootprintInverseDeleteEntryCommand):Promise<unknown>{need(this.#pumping&&!this.#failed&&this.#deletePreparationAttempted);if(command.phase==="inverse-delete-entry-arm"){need(this.#deleteEntryArming&&!this.#deleteEntryConsumed);}else{need(this.#deleteEntryConsumed&&this.#deleteEntryHeld!==null);}return this.#bindings.deleteEntryRequest(command);}
   public expectDeleteEntryHelper(program:string):void{const source=program.startsWith("[")?program:`(${program})`;qualifyCurrentFootprintInverseDeleteEntryHelper(source,program);need(this.#pumping&&!this.#failed&&this.#deleteEntryConsumed&&this.#deleteEntryHeld!==null&&this.#deleteEntryHelpers.length===0&&this.#deleteEntryHelperAttempts<3);this.#deleteEntryHelperAttempts+=1;this.#deleteEntryHelpers.push({program:source,scriptId:null});}
   public async qualifyDeleteEntryHelper(program:string):Promise<void>{const original=this.#deleteEntryHelpers[0],source=program.startsWith("[")?program:`(${program})`;need(this.#pumping&&!this.#failed&&original!==undefined&&original.program===source&&original.scriptId!==null);const raw=await this.#bindings.deleteEntryRequest({phase:"inverse-delete-entry-helper",method:"Debugger.getScriptSource",params:{scriptId:original.scriptId}});await this.#current();need(record(raw)&&Reflect.ownKeys(raw).length===1&&this.#deleteEntryHelpers[0]===original);qualifyCurrentFootprintInverseDeleteEntryHelper(raw["scriptSource"],program);this.#deleteEntryHelpers.shift();}

@@ -1663,3 +1663,40 @@ getter calls. Both types and strict changed lint pass. This is an inert data
 leaf: it issues no forwarded-job token, original owner, clock permit or delete
 completion. Its maintained Core/native custody and the actual manager's
 forwarded reply-topic token remain the next joins. No EasyEDA/native call ran.
+
+## Original worker-service prefix mounted before admission
+
+The original inverse preparation now runs that RPC prefix on its existing
+worker controller before arming/issuing the delete admission. Core retains
+its actual prelude/link/bound tuples, full source and script, requalifies both
+callee closures on fresh scope replies, and checks the original task/handler
+again immediately before the admission. Every helper is registered before its
+request, read from its actual scriptParsed receipt and checked byte-for-byte
+on the same worker/event reader. Failures consume the original preparation
+and retain cleanup; there is no retry or replacement token.
+
+The new purpose-only ledger has fourteen setup commands and five fresh-scope
+reproof commands, plus four setup/one reproof helper reads:24 CDP. Bind and
+ready acknowledgments make26 controls, with five helper events and no CDP
+after original exit. A joint hashed fixed table preserves all20 exact codec
+cases. Native admission now additionally checks this ledger's genuine ready
+state. The packet/clock continuation is deliberately absent from this grammar;
+no caller-provided reply topic can mint its later native job proof.
+
+An actual byte-pipe regression exposed a prior integration refusal: the
+existing clock-worker and delete-entry phase/brand pairs had not been added
+to the inverse finite admission list. The bus request refused with
+FOOTPRINT_INVERSE_FINITE_PIPE_ONLY before metadata. The correction admits
+only those exact existing pairs alongside RPC, retaining the original paired
+worker and selected source-slot checks. The real byte transport now accepts
+all49 bus,20 RPC and6 entry cases on its retained synthetic pair; no native
+owner or source authority is issued by that test. The new entry decoder also
+admits CDP's observed optional boolean canBeRestarted; other fields, location
+and identity checks stay strict.
+
+Nine focused Inspector/protocol/real-pipe/cursor cases, both types and strict
+changed lint pass. Two-pass private legacy generation is identical at1,412,774
+stored bytes and1,969,932 compiler bytes. Full emitted Linux C#5 passes the20
+RPC cases, once/purpose limits and entry/bus/public/encoder smokes
+(ORIGINAL_INVERSE_DELETE_RPC_NATIVE_OK). No tracked helper/pin was emitted,
+no app/SDK/native operation ran, and no clock/effect/SQL completion is claimed.
