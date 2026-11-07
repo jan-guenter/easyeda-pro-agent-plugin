@@ -1637,3 +1637,29 @@ Inspector/original-factory cases, both types and strict changed lint pass.
 The public call issuer remains gated on its actual SDK/service continuation.
 Even after this observation, the forwarded worker RPC/job relationship,
 single clock, producer/body and Main SQL joins remain separate prerequisites.
+
+## Worker delete service and forwarded-packet data leaf
+
+The inverse now has a separate fixed worker RPC source/metadata/program leaf.
+It qualifies the original strict-CJS Mb.rpcService callback and outer EP
+footprint handler, including exact function locations and source hashes. The
+callback's leading Closure (rpcService) and the handler's Closure (EP) have
+different, source-derived closure paths; only an optional final Script scope
+is admitted before Global, and neither Script nor Global is enumerated.
+
+Descriptor-only programs retain the actual project worker bus, its JP/KP/Mb
+prototype and method identities, one unsafe wu task, callback and EP's actual
+PROJECT binding. A later packet join explicitly accounts for the selected
+queue moving from one task to zero. It requires the original packet object,
+selected footprint message and an independently supplied expected reply topic;
+a foreign topic refuses. The pre-dispatch queue guard is not reused after its
+legitimate consumption. No task, handler, clock, channel or manager method is
+invoked by these programs.
+
+Two focused tests pass, including actual Node24 Inspector metadata and
+read-only calls on pinned declarations in their strict-factory/outer-IIFE
+scopes, exact scope-tail refusals and an accessor-input refusal with zero
+getter calls. Both types and strict changed lint pass. This is an inert data
+leaf: it issues no forwarded-job token, original owner, clock permit or delete
+completion. Its maintained Core/native custody and the actual manager's
+forwarded reply-topic token remain the next joins. No EasyEDA/native call ran.
