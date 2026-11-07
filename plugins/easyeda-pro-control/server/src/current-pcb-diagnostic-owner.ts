@@ -36,7 +36,7 @@ import { validateCurrentFootprintInverseInitialCacheCommand } from "./current-fo
 import type { CurrentFootprintInverseInitialCacheCommand } from "./current-footprint-inverse-initial-cache-protocol.ts";
 import type { CurrentFootprintInverseInitialCacheBindings, CurrentFootprintInverseInitialCacheCompletion, CurrentFootprintInverseInitialCacheOrigin } from "./current-footprint-inverse-initial-cache-origin.ts";
 import type { CurrentFootprintInverseInitialCacheObserver } from "./current-footprint-inverse-initial-cache-observer.ts";
-import { consumeGeneratedSchematicRelevanceDisplayDispatch, enrollGeneratedSchematicRelevanceDisplayModifyIntent } from "./generated-schematic-relevance-display-journal.ts";
+import { consumeGeneratedSchematicRelevanceDisplayDispatch, enrollGeneratedSchematicRelevanceDisplayModifyIntent, enrollGeneratedSchematicRelevanceDisplaySaveIntent } from "./generated-schematic-relevance-display-journal.ts";
 import type { GeneratedSchematicRelevanceDisplayDispatch, GeneratedSchematicRelevanceDisplayModifyEnrollment, GeneratedSchematicRelevanceDisplaySaveEnrollment } from "./generated-schematic-relevance-display-journal.ts";
 import { deriveCurrentFootprintInverseMainHistoryBaseline } from "./current-footprint-inverse-main-history-baseline.ts";
 import type { CurrentFootprintInverseMainHistoryBaseline } from "./current-footprint-inverse-main-history-baseline.ts";
@@ -224,7 +224,7 @@ import type { CurrentFootprintInverseStructureBindings, CurrentFootprintInverseS
 import type { CurrentSchematicDisplayClockBindings, CurrentSchematicDisplayClockOrigin, CurrentSchematicDisplayClockRealm } from "./current-schematic-display-clock-origin.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_CLOCK_SITES, validateCurrentSchematicDisplayClockCommand } from "./current-schematic-display-clock-protocol.ts";
 import type { CurrentSchematicDisplayClockCommand } from "./current-schematic-display-clock-protocol.ts";
-import { compareGeneratedSchematicRelevanceDisplayEffect } from "./generated-schematic-relevance-display-effect-data.ts";
+import { assertGeneratedSchematicRelevanceDisplaySaveStage, compareGeneratedSchematicRelevanceDisplayEffect } from "./generated-schematic-relevance-display-effect-data.ts";
 import type { GeneratedSchematicRelevanceDisplayProjectedEffect } from "./generated-schematic-relevance-display-effect-data.ts";
 import type { GeneratedSchematicRelevanceDisplayNativeEffect } from "./generated-schematic-relevance-display-effect.ts";
 import { compareGeneratedSchematicDisplayEffect } from "./generated-schematic-display-effect-data.ts";
@@ -1817,10 +1817,14 @@ class CurrentPcbRetainedOwnerCore {
   #schematicAccessorOrigin: CurrentSchematicDisplayAccessorOrigin | null = null;
   #schematicPreModifyMainAttempted = false; #schematicPreModifyMainOrigin: CurrentSchematicDisplayPreModifyMainOrigin | null = null;
   #schematicAccessorSetup: CurrentSchematicDisplayAccessorSetup | null = null;
-  readonly #schematicRelevanceSaveEnrollment: GeneratedSchematicRelevanceDisplaySaveEnrollment | null = null;
-  readonly #schematicRelevanceSaveSettled = false;
-  readonly #schematicRelevanceSaveRequest: Promise<RecordValue> | null = null;
-  readonly #schematicRelevanceSaveTask: Promise<SchematicRelevanceSaveOutcome> | null = null;
+  #schematicRelevanceClockSetupSettled = false;
+  #schematicRelevanceSaveDispatch: GeneratedSchematicRelevanceDisplayDispatch | null = null;
+  #schematicRelevanceSaveEffect: GeneratedSchematicRelevanceDisplayNativeEffect | null = null;
+  #schematicRelevanceSaveMain: object | null = null;
+  #schematicRelevanceSaveReady = false; #schematicRelevanceSaveStarted = false; #schematicRelevanceSaveSettled = false;
+  #schematicRelevanceSaveEnrollment: GeneratedSchematicRelevanceDisplaySaveEnrollment | null = null;
+  #schematicRelevanceSaveRequest: Promise<RecordValue> | null = null;
+  #schematicRelevanceSaveTask: Promise<SchematicRelevanceSaveOutcome> | null = null;
   #schematicRelevanceSaveBodyEnrollmentAttempted = false;
   #schematicRelevanceSaveBodyData: GeneratedSchematicRelevanceDisplayNativeSaveData | null = null;
   #schematicRelevanceClockAttempted = false;
@@ -4358,6 +4362,69 @@ class CurrentPcbRetainedOwnerCore {
       await Reflect.apply(setup, undefined, [origin]); current(); await this.#verify(); current(); return origin;
     } catch (caughtError) { this.#schematicFailed = true; throw caughtError; } finally { this.#busy = false; }
   }
+  #requireSchematicRelevanceSaveObservers(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): void {
+    const clock = this.#schematicRelevanceClockOrigin, structure = this.#schematicStructureOrigin, worker = this.#schematicWorkerOrigin;
+    if (clock === null || structure === null || worker === null || this.#schematicWorkerArguments !== argumentsValue || this.#schematicWorkerController === null || !this.#schematicWorkerController.status().ready ||
+      !this.#schematicRelevanceClockSetupSettled || this.#schematicRelevanceClockArmAttempts.size !== 5 || this.#schematicRelevanceClockArmedPoints.size !== 5 || this.#schematicRelevanceClockRemoveAttempts.size > 0 ||
+      this.#schematicSaveBodyCaptureAttempted || this.#schematicSaveCapturedBody !== null || this.#schematicFailed || this.#schematicDisplayCleanupOnly) { throw error("SCHEMATIC_RELEVANCE_SAVE_OBSERVERS_REQUIRED"); }
+    requireOriginalCurrentSchematicDisplaySaveWorkerOrigin(worker, this, argumentsValue); requireOriginalCurrentSchematicRelevanceDisplayClockOrigin(clock, this, argumentsValue);
+    requireOriginalCurrentProjectSaveStructureOrigin(structure, this, argumentsValue); this.requireSchematicDisplayStructureTransportReady(argumentsValue); this.requireSchematicRelevanceDisplayProducerPrefixReady(argumentsValue);
+  }
+  /** Prospective Main arms precede Save. Its original body and completed SQL
+   * cannot exist yet and are joined separately after this one request starts. */
+  public async prepareSchematicRelevanceDisplaySaveGeneration(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments,
+    effect: GeneratedSchematicRelevanceDisplayNativeEffect, dispatch: GeneratedSchematicRelevanceDisplayDispatch): Promise<void> {
+    assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this); const selected = this.#schematicReadContext(argumentsValue);
+    requireOriginalGeneratedSchematicRelevanceDisplayEffect(effect, this, argumentsValue); const main = this.requireSchematicRelevanceDisplaySaveMainReady(argumentsValue, effect);
+    if (this.#schematicRelevanceSaveEnrollment !== null || this.#schematicRelevanceSaveStarted || this.#schematicStages.has("save") || !this.#schematicStages.has("observe")) { throw error("SCHEMATIC_RELEVANCE_SAVE_ENROLLMENT_CONSUMED"); }
+    this.#requireSchematicRelevanceSaveObservers(argumentsValue); const enrollment = enrollGeneratedSchematicRelevanceDisplaySaveIntent(dispatch, this, argumentsValue);
+    this.#schematicRelevanceSaveEnrollment = enrollment; this.#schematicRelevanceSaveDispatch = dispatch; this.#schematicRelevanceSaveEffect = effect; this.#schematicRelevanceSaveMain = main; this.#enter(true);
+    const current = (): void => { selected.current(); enrollment.assertBeforeAttempt(); requireOriginalGeneratedSchematicRelevanceDisplayEffect(effect, this, argumentsValue);
+      if (this.#schematicRelevanceSaveEnrollment !== enrollment || this.#schematicRelevanceSaveDispatch !== dispatch || this.#schematicRelevanceSaveMain !== main || this.requireSchematicRelevanceDisplaySaveMainReady(argumentsValue, effect) !== main) { throw error("SCHEMATIC_RELEVANCE_SAVE_PREPARATION_CHANGED"); } this.#requireSchematicRelevanceSaveObservers(argumentsValue); };
+    try { current(); await enrollment.assertPublished(); current(); await requireOriginalCurrentProjectSaveProducerPrefix(this.requireSchematicRelevanceDisplayProducerPrefixReady(argumentsValue), this, argumentsValue).assertCurrent(); current();
+      await this.#verify(); current(); const reply = await this.#request({ action: "schematic-relevance-display-save-prepare" }); current();
+      if (!exact(reply, ["prepared"]) || reply["prepared"] !== true) { throw error("SCHEMATIC_RELEVANCE_SAVE_PREPARATION_ACK"); } this.#schematicRelevanceSaveReady = true;
+    } catch (caughtError) { this.#schematicFailed = true; this.#schematicWorkerController?.fail(); throw caughtError; } finally { this.#busy = false; }
+  }
+  /** Consume the exact published Save intent before the first await. The
+   * original retained SDK Promise is never abandoned or replaced on failure. */
+  public async generateSchematicRelevanceDisplaySave(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments,
+    effect: GeneratedSchematicRelevanceDisplayNativeEffect, dispatch: GeneratedSchematicRelevanceDisplayDispatch): Promise<void> {
+    assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this); const selected = this.#schematicReadContext(argumentsValue);
+    const enrollment = this.#schematicRelevanceSaveEnrollment, holder = this.#schematicSdkBinding, main = this.#schematicRelevanceSaveMain;
+    if (!this.#schematicRelevanceSaveReady || this.#schematicRelevanceSaveStarted || enrollment === null || holder === null || main === null || this.#schematicRelevanceSaveEffect !== effect || this.#schematicRelevanceSaveDispatch !== dispatch || this.#schematicStages.has("save")) { throw error("SCHEMATIC_RELEVANCE_SAVE_GENERATION_REQUIRED"); }
+    this.#requireSchematicRelevanceSaveObservers(argumentsValue); requireOriginalGeneratedSchematicRelevanceDisplayEffect(effect, this, argumentsValue);
+    if (this.requireSchematicRelevanceDisplaySaveMainReady(argumentsValue, effect) !== main) { throw error("SCHEMATIC_RELEVANCE_SAVE_ORIGINAL_MAIN"); }
+    this.#enter(true); this.#schematicRelevanceSaveStarted = true; let launched = false;
+    try {
+      const attempted = consumeGeneratedSchematicRelevanceDisplayDispatch(dispatch, "save", this, argumentsValue); this.#schematicStages.add("save");
+      const current = (): void => { selected.current(); enrollment.assertOriginalAttempted(); requireOriginalGeneratedSchematicRelevanceDisplayEffect(effect, this, argumentsValue);
+        if (this.#schematicFailed || this.#schematicDisplayCleanupOnly || this.#schematicSdkBinding !== holder || this.#schematicRelevanceSaveMain !== main || this.requireSchematicRelevanceDisplaySaveMainReady(argumentsValue, effect) !== main || this.#schematicRelevanceSaveEffect !== effect || this.#schematicRelevanceSaveDispatch !== dispatch) { throw error("SCHEMATIC_RELEVANCE_SAVE_GENERATION_CHANGED"); }
+        this.#requireSchematicRelevanceSaveObservers(argumentsValue); };
+      current(); await attempted.assertPublished(); current(); await this.#verifyInstallation(); current(); await this.#verify(); current();
+      const request = this.#transfer(() => { current(); const original = selected.pipe.generateSchematicRelevanceDisplaySave(holder, argumentsValue.target, argumentsValue.operation); this.#schematicRelevanceSaveRequest = original; return original; });
+      this.#schematicRelevanceSaveTask = (async (): Promise<SchematicRelevanceSaveOutcome> => {
+        try {
+          const raw = await request; selected.current(); enrollment.assertOriginalAttempted(); requireOriginalGeneratedSchematicRelevanceDisplayEffect(effect, this, argumentsValue);
+          if (!exact(raw, ["result"]) || !record(raw["result"]) || !exact(raw["result"], ["type", "value"]) || raw["result"]["type"] !== "object" || this.#schematicRelevanceSaveBodyData === null) { throw error("SCHEMATIC_RELEVANCE_SAVE_ORIGINAL_REPLY"); }
+          requireOriginalGeneratedSchematicRelevanceDisplaySaveData(this.#schematicRelevanceSaveBodyData, this, argumentsValue);
+          const packet = freezeDeep(generatedSchematicRelevanceDisplayStageResultSchema.parse(raw["result"]["value"]));
+          if (!packet.ok || packet.stage !== "save" || !packet.saveAcknowledged || !packet.savePromiseSettled || !packet.originalPromiseSettled || packet.windowTabId !== this.#schematicWindowTabId || packet.source === null) { throw error("SCHEMATIC_RELEVANCE_SAVE_REFUSED"); }
+          assertGeneratedSchematicRelevanceDisplaySaveStage(argumentsValue, requireOriginalGeneratedSchematicRelevanceDisplayEffect(effect, this, argumentsValue), packet);
+          await this.#verify(); selected.current(); schematicDisplayStagePackets.set(packet, Object.freeze({ owner: this, argumentsValue, stage: "save", text: canonicalJson(packet) })); return Object.freeze({ ok: true, packet });
+        } catch (caughtError) { this.#schematicFailed = true; this.#schematicWorkerController?.fail(); return Object.freeze({ ok: false, error: caughtError }); }
+        finally { this.#schematicRelevanceSaveSettled = true; this.#busy = false; }
+      })(); launched = true;
+    } catch (caughtError) { this.#schematicFailed = true; this.#schematicWorkerController?.fail(); throw caughtError; } finally { if (!launched) { this.#busy = false; } }
+  }
+  public async waitSchematicRelevanceDisplaySave(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): Promise<GeneratedSchematicRelevanceDisplayStageResult> {
+    requireSchematicArguments(this, argumentsValue); const original = this.#schematicRelevanceSaveTask; if (original === null) { throw error("SCHEMATIC_RELEVANCE_SAVE_ORIGINAL_TASK_REQUIRED"); }
+    const outcome = await original; requireSchematicArguments(this, argumentsValue); if (!outcome.ok) { throw outcome.error; } return requireOriginalSchematicRelevanceDisplayStage(this, argumentsValue, outcome.packet, "save");
+  }
+  public async settleSchematicRelevanceDisplaySaveAfterExit(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): Promise<void> {
+    requireSchematicArguments(this, argumentsValue); if (this.#schematicRelevanceSaveTask === null) { return; }
+    if (!this.#terminationObserved || this.#terminationObservation?.originalRootExited !== true || this.#terminationObservation.originalJobEmpty !== true) { throw error("SCHEMATIC_RELEVANCE_SAVE_ORIGINAL_EXIT_REQUIRED"); } await this.#schematicRelevanceSaveTask;
+  }
   /** Only the actual body/clock/effect join can enroll Main. The native
    * selector has no body JSON, replacement handles or caller booleans. */
   public async enrollSchematicRelevanceDisplaySaveBodyForMain(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments, packet: GeneratedSchematicRelevanceDisplayNativeSaveData): Promise<void> {
@@ -4433,7 +4500,7 @@ class CurrentPcbRetainedOwnerCore {
       // Qualification and all arms settle while the SDK entry remains busy.
       await Reflect.apply(setup, undefined, [origin]); current();
       if (this.#schematicRelevanceClockArmAttempts.size !== 5 || this.#schematicRelevanceClockArmedPoints.size !== 5) { throw error("SCHEMATIC_RELEVANCE_CLOCK_SETUP_INCOMPLETE"); }
-      await this.#verify(); current(); return origin;
+      await this.#verify(); current(); this.#schematicRelevanceClockSetupSettled = true; return origin;
     } catch (caughtError) { this.#schematicFailed = true; throw caughtError; } finally { this.#busy = false; }
   }
   public async createSchematicDisplayClockOrigin(plan: CurrentSchematicDisplayOperationArguments, effect: GeneratedSchematicDisplayEffect, setup: CurrentSchematicDisplayClockSetup): Promise<CurrentSchematicDisplayClockOrigin> {

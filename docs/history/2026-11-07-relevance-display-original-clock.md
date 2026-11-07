@@ -82,3 +82,26 @@ The new capture provides complete closed data only. Complete effect acceptance,
 Save persistence, reopen and inverse remain unproved. One original-factory/report
 refusal check, both TypeScript projects and changed strict lint pass. This slice
 opened no application or project and captured no live source.
+
+## Main prerequisite and retained Save request integration
+
+The real original Main preparation from d352d640 now supplies the prerequisite
+for the retained Save dispatch methods. The private integration patch has been
+applied without adding a temporary Main-ready guard. The exact published Save
+intent is consumed before the first await, the original SDK Promise and native
+transport slot remain retained, and a missing acknowledgment cannot authorize
+another Save. Original Job exit has a separate settlement join. A successful SDK
+packet still requires its actual body/clock/effect data and complete live peer
+source comparison; its persistence fields remain false.
+
+The Main native fragment and original Save fragment are composed in the same
+build. Private two-pass generation is idempotent. Its compact C# body is
+2,077,040 bytes and its exact review body is 2,118,239 bytes. Full C#5 compilation
+and eighteen pure codec checks plus fourteen current seven-stage wire hashes
+passed without constructing an owner or application. Both TypeScript projects
+and changed strict type-aware lint pass.
+
+Structure publication, original producer drain, the independent library-update
+loop, full closed SQL acceptance and reopen remain unfinished. No public
+schematic writer route is enabled by this integration. No tracked helper,
+migration pin, bundle or installed version has changed.
