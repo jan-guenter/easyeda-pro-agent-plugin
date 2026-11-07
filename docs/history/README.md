@@ -772,3 +772,4 @@ layout. The connected ledger retains its generation and case anchors.
 - 2026-11-07: [Fixed-purpose native builds](2026-11-07-fixed-purpose-native-builds.md), separate schematic artifact, immutable published build seed and unchanged compiler limits.
 
 - 2026-11-07: [Original seven-record live history rows](2026-11-07-relevance-original-live-history.md).
+- 2026-11-07: [Schematic saved-load preparation](2026-11-07-schematic-saved-load-preparation.md), separate original checkpoint plan, complete two-document cold data and exact native Save delimiter handling.

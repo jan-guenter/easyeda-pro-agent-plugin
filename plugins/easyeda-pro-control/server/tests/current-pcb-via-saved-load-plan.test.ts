@@ -1,38 +1,23 @@
 /** Completed synthetic SQL/cipher only. No native saved checkpoint, fresh
  * worker, network request or cold-load authority exists in these tests. */
 /* oxlint-disable import/max-dependencies -- Both finite history shapes use actual SQL files, finished readers and independent native cipher construction to exercise the private projection. */
+import { deriveGeneratedSavedHistoryLoadData } from "../src/current-generated-saved-history-load-data.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { createRequire } from "node:module";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
-import { types } from "node:util";
-import { runInThisContext } from "node:vm";
-import { transform } from "esbuild";
 import { prepareCurrentPcbViaSavedLoadPlan, requireOriginalCurrentPcbViaSavedLoadPlan } from "../src/current-pcb-via-saved-load-plan.ts";
-import type { CurrentPcbViaSavedLoadData } from "../src/current-pcb-via-saved-load-plan.ts";
 import type { CurrentPcbViaWriteClosedCheckpoint } from "../src/current-pcb-via-write-closed-checkpoint.ts";
 import { qualifyGeneratedFixtureInitialSql } from "../src/managed-fixture-initial-sql.ts";
 import { readManagedLibraryZip } from "../src/managed-library-files-zip.ts";
 import { readExactSqlInventory } from "../src/sqlite-inventory.ts";
-import type { NativeSqlInventory } from "../src/sqlite-inventory-core.ts";
 import { managedFixtureInitialSqlFixture } from "./helpers/managed-fixture-initial-sql.ts";
 import { encrypted } from "./helpers/symbol-sql-fixture.ts";
 import { syntheticSqlRuntime } from "./helpers/sqlite-inventory-fixture.ts";
 
-async function privateDeriver(): Promise<(inventory: NativeSqlInventory, target: CurrentPcbViaWriteClosedCheckpoint["target"]) => Promise<CurrentPcbViaSavedLoadData>> {
-  const url = new URL("../src/current-pcb-via-saved-load-plan.ts", import.meta.url); const loaded = { exports: {} as Record<string, unknown> };
-  const source = `${await readFile(url, "utf8")}\nexport { deriveSavedLoadData };`; const compiled = await transform(source, { loader: "ts", format: "cjs", target: "node24", logLevel: "silent" });
-  const evaluate: unknown = runInThisContext(`(function(require,module,exports){${compiled.code}\n})`); assert.ok(typeof evaluate === "function"); Reflect.apply(evaluate, undefined, [createRequire(url), loaded, loaded.exports]);
-  const derive = loaded.exports["deriveSavedLoadData"]; assert.ok(typeof derive === "function");
-  return async (inventory, target): Promise<CurrentPcbViaSavedLoadData> => { const pending: unknown = Reflect.apply(derive, undefined, [inventory, target]); assert.ok(types.isPromise(pending));
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This explicit test seam executes only the production private completed-SQL data projection.
-    return await pending as CurrentPcbViaSavedLoadData;
-  };
-}
 void test("closed two-chunk expectations preserve both finite native heads, nonce selection, URL and exact cipher/plain bytes", async () => {
-  const derive = await privateDeriver();
+  const derive = deriveGeneratedSavedHistoryLoadData;
   for (const mode of ["mutable", "append"] as const) {
     const input = await managedFixtureInitialSqlFixture(), qualified = await qualifyGeneratedFixtureInitialSql(input);
     const target = qualified.qualification.target; const head = mode === "mutable" ? "5".repeat(32) : "7".repeat(32), key = mode === "mutable" ? "6".repeat(32) : "8".repeat(32);
