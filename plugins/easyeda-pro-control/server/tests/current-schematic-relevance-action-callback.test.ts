@@ -1,3 +1,7 @@
+/* oxlint-disable import/max-dependencies -- The same event lane checks original callback, accessor and four independently pinned monitor profiles. */
+import type {CurrentSchematicRelevanceMonitorBatchCommand} from "../src/current-schematic-relevance-monitor-batch-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODEL_CALLEE_SOURCE as MODEL } from "../src/current-schematic-relevance-model-callee-source.ts";
+import { GENERATED_SCHEMATIC_DISPLAY_ACTION_SOURCE as ACTION } from "../src/generated-schematic-display-action-source.ts";
 /** Fixed projections and original event/ACK ordering on inert fixtures only. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -42,15 +46,17 @@ void test("the held first setter matches actual underline accessor references wi
   const f = fixture(); assert.equal(f.firstSetter(), true); assert.equal(f.setterCalls(), 0);
   for (const fault of ["index", "binding", "getter"] as const) { const changed = fixture(); assert.throws(() => changed.firstSetter(fault), /FIRST_SETTER_PROOF/u); assert.equal(changed.setterCalls(), 0); }
 });
-function event(role: "entry" | "setter" | "record" | "setAttribute" | "ast", script = "original-callback"): DiagnosticEvent {
+function event(role: "modify" | "bbox" | "watch" | "history" | "entry" | "setter" | "record" | "setAttribute" | "ast", script = "original-callback"): DiagnosticEvent {
   let location = { ...LOCATION, scriptId: script }; let functionLocation = location; const ids: string[] = [];
-  if (role === "record" || role === "setAttribute" || role === "ast") { const row = SOURCES[0].methods[role === "record" ? "monitorRecord" : role === "ast" ? "monitorAst" : "monitorSetAttribute"]; functionLocation = { scriptId: "original-source", lineNumber: row.lineNumber, columnNumber: row.columnNumber }; location = functionLocation; ids.push(`point:schematic-callback-arm-${role}`); }
+  if(role==="modify"||role==="bbox"||role==="watch"||role==="history"){const map={modify:MODEL[0].roles.modifyAttributeChange,bbox:MODEL[0].roles.bboxAttributeChange,watch:MODEL[0].roles.watchAttributeChange,history:ACTION[0].methods.historyActiveAttribute};const row=map[role];functionLocation={scriptId:"original-source",lineNumber:row.lineNumber,columnNumber:row.columnNumber};location=functionLocation;ids.push(`point:arm-${role}`);}
+  else if (role === "record" || role === "setAttribute" || role === "ast") { let key:"monitorRecord"|"monitorAst"|"monitorSetAttribute"="monitorSetAttribute";if(role==="record"){key="monitorRecord";}else if(role==="ast"){key="monitorAst";}const row=SOURCES[0].methods[key]; functionLocation = { scriptId: "original-source", lineNumber: row.lineNumber, columnNumber: row.columnNumber }; location = functionLocation; ids.push(`point:schematic-callback-arm-${role}`); }
   else { const marker = MARKERS.find(item => item.role === role); assert.ok(marker !== undefined); location = { scriptId: script, lineNumber: marker.lineNumber, columnNumber: marker.columnNumber }; }
   return { method: "Debugger.paused", sessionId: "original-session", params: { reason: "other", hitBreakpoints: ids, callFrames: [{ callFrameId: "original-frame", location, functionLocation }] } };
 }
 function controller(): Readonly<{ lane: CurrentSchematicRelevanceActionCallbackController; sent: CurrentSchematicRelevanceDisplayModifyEntryCommand[]; failures: () => number }> {
   const sent: CurrentSchematicRelevanceDisplayModifyEntryCommand[] = []; let failures = 0;
   const lane = new CurrentSchematicRelevanceActionCallbackController(Object.freeze({ sessionId: "original-session", callbackScriptId: "original-callback", sourceScriptId: "original-source", variant: 0, functions: Object.freeze({ setAttributeObjectId: "actual-set", recordObjectId: "actual-record", astObjectId: "actual-ast", normalRequests: 113 }),
+    monitorRequest: (command:CurrentSchematicRelevanceMonitorBatchCommand):Promise<unknown>=>Promise.resolve({breakpointId:`point:${command.phase}-${"role" in command?command.role:"unknown"}`}),
     assertCurrent: (): void => { assert.equal(failures, 0); }, fail: (): void => { failures += 1; }, request: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand): Promise<unknown> => { sent.push(command); return Promise.resolve({ breakpointId: `point:${command.phase}` }); } }));
   return { lane, sent, failures: () => failures };
 }
@@ -105,3 +111,14 @@ void test("the one original record continuation stops at AST before or after its
     const f = await atOriginalSetAttribute(); const primitive = f.lane.reservePrimitiveResume(await f.lane.waitOriginalSetAttribute()); f.lane.markPrimitiveResumeSubmitted(primitive); f.lane.observeOriginalEvent({ method: "Debugger.resumed", sessionId: "original-session", params: {} }); f.lane.observeOriginalEvent(event("record")); await f.lane.waitPrimitiveResumed(primitive); f.lane.completePrimitiveResume(primitive); const record = await f.lane.waitOriginalRecord(); const reservation = f.lane.reserveRecordResume(record); assert.throws(() => { f.lane.reserveRecordResume(record); }); f.lane.markRecordResumeSubmitted(reservation); f.lane.observeOriginalEvent({ method: "Debugger.resumed", sessionId: "original-session", params: {} }); const ast = event("ast"); if (pauseBeforeAck) { f.lane.observeOriginalEvent(ast); } await f.lane.waitRecordResumed(reservation); f.lane.completeRecordResume(reservation); if (!pauseBeforeAck) { f.lane.observeOriginalEvent(ast); } const held = await f.lane.waitOriginalAst(); assert.equal(held.event, ast); assert.equal(f.failures(), 0); assert.throws(() => { f.lane.reserveRecordResume(held); });
   }
 });
+
+async function atOriginalAst():Promise<ReturnType<typeof controller>>{
+ const f=await atOriginalSetAttribute();const primitive=f.lane.reservePrimitiveResume(await f.lane.waitOriginalSetAttribute());f.lane.markPrimitiveResumeSubmitted(primitive);f.lane.observeOriginalEvent({method:"Debugger.resumed",sessionId:"original-session",params:{}});f.lane.observeOriginalEvent(event("record"));await f.lane.waitPrimitiveResumed(primitive);f.lane.completePrimitiveResume(primitive);const record=f.lane.reserveRecordResume(await f.lane.waitOriginalRecord());f.lane.markRecordResumeSubmitted(record);f.lane.observeOriginalEvent({method:"Debugger.resumed",sessionId:"original-session",params:{}});f.lane.observeOriginalEvent(event("ast"));await f.lane.waitRecordResumed(record);f.lane.completeRecordResume(record);await f.lane.waitOriginalAst();return f;
+}
+const originalMonitorFunctions=Object.freeze({modifyAttributeChange:"original-modify",bboxAttributeChange:"original-bbox",watchAttributeChange:"original-watch",historyActiveAttribute:"original-history"});
+void test("four original synchronous monitor holds join on either side of each resume ACK and end before history body",async()=>{
+ for(const early of [true,false]){const f=await atOriginalAst();let held=await f.lane.waitOriginalAst();await f.lane.armOriginalMonitors(held,originalMonitorFunctions);await assert.rejects(f.lane.armOriginalMonitors(held,originalMonitorFunctions));
+ for(const role of ["modify","bbox","watch","history"] as const){const reservation=f.lane.reserveMonitorResume(held);assert.equal(reservation.target,role);const originalHeld=held;assert.throws(()=>{f.lane.reserveMonitorResume(originalHeld);});f.lane.markMonitorResumeSubmitted(reservation);f.lane.observeOriginalEvent({method:"Debugger.resumed",sessionId:"original-session",params:{}});const next=event(role);if(early){f.lane.observeOriginalEvent(next);}await f.lane.waitMonitorResumed(reservation);f.lane.completeMonitorResume(reservation);if(!early){f.lane.observeOriginalEvent(next);}held=await f.lane.waitOriginalMonitor(role);assert.equal(held.event,next);f.lane.requireHeld(held);assert.equal(f.failures(),0);}
+ assert.throws(()=>{f.lane.reserveMonitorResume(held);});assert.equal(f.failures(),0);}
+});
+void test("a reserved unsubmitted monitor resume cannot authorize a resumed event or next callback",async()=>{const f=await atOriginalAst();const held=await f.lane.waitOriginalAst();await f.lane.armOriginalMonitors(held,originalMonitorFunctions);const reservation=f.lane.reserveMonitorResume(held);f.lane.observeOriginalEvent({method:"Debugger.resumed",sessionId:"original-session",params:{}});assert.equal(f.failures(),1);await assert.rejects(f.lane.waitMonitorResumed(reservation));await assert.rejects(f.lane.waitOriginalMonitor("modify"));});

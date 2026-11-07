@@ -1,3 +1,5 @@
+import type { CurrentSchematicRelevanceMonitorBatchCommand } from "./current-schematic-relevance-monitor-batch-protocol.ts";
+import type { CurrentSchematicRelevanceMonitorBatchReceipt } from "./current-schematic-relevance-monitor-batch-cursor.ts";
 /* oxlint-disable import/max-dependencies -- Typed cursor and command boundaries remain separate while this one original callback capability shares their retained owner custody. */
 import type { CurrentSchematicRelevanceRecordAstCommand } from "./current-schematic-relevance-record-ast-protocol.ts";
 import type { CurrentSchematicRelevanceAstHeld, CurrentSchematicRelevanceRecordAstPrepared } from "./current-schematic-relevance-record-ast-cursor.ts";
@@ -36,6 +38,10 @@ export interface CurrentSchematicRelevanceActionCallbackBindings {
   readonly nextAstCommand: () => CurrentSchematicRelevanceRecordAstCommand | null;
   readonly requestAst: (command: CurrentSchematicRelevanceRecordAstCommand) => Promise<unknown>;
   readonly requireOriginalAstHeld: () => CurrentSchematicRelevanceAstHeld;
+  readonly nextMonitorBatchCommand:()=>CurrentSchematicRelevanceMonitorBatchCommand|null;
+  readonly requestMonitorBatch:(command:CurrentSchematicRelevanceMonitorBatchCommand)=>Promise<unknown>;
+  readonly requireOriginalMonitorBatch:()=>CurrentSchematicRelevanceMonitorBatchReceipt;
+  readonly continueOriginalMonitorBatch:()=>Promise<void>;
   readonly nextNormalCompletionCommand: () => CurrentSchematicRelevanceDisplayModifyEntryCommand | null;
   readonly requestNormalCompletion: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand) => Promise<unknown>;
   readonly requireOriginalNormalCompletion: () => CurrentSchematicRelevanceCompletionReceipt;

@@ -829,3 +829,5 @@ layout. The connected ledger retains its generation and case anchors.
 - [Original underline primitive to held record entry](2026-11-07-schematic-original-primitive-record-bridge.md), one consumed raw field write with exact new delta proofs and the original record body still held.
 
 - [Original record to held AST entry](2026-11-07-schematic-record-held-ast.md), exact event/closure proof and one original continuation ending before the next flag write.
+
+- [Original schematic monitor batch](2026-11-07-schematic-original-monitor-batch.md), four source-owned continuations with exact AST/view deltas, ending before the original history body.

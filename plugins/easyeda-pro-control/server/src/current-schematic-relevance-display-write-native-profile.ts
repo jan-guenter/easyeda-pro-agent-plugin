@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMATIC_RELEVANCE_MONITOR_BATCH_REQUESTS as MONITORS} from "./current-schematic-relevance-monitor-batch-protocol.ts";
 /* oxlint-disable import/max-dependencies -- Exact own-purpose budgets are derived from each separately qualified finite lane; accepting caller totals would weaken native bounds. */
 import { CURRENT_SCHEMATIC_RELEVANCE_RECORD_AST_REQUESTS as RECORD_AST } from "./current-schematic-relevance-record-ast-protocol.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_PRIMITIVE_REQUESTS as PRIMITIVE } from "./current-schematic-relevance-primitive-protocol.ts";
@@ -40,8 +41,8 @@ export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE = Object.f
     saveTailObservation: TAIL.cdpRequests, saveTailCacheMetadata:TAIL.additionalSharedRequests, saveTailDelete: DELETE.cdpRequests, saveDrainObservation:DRAIN.cdpRequests, savePostSyncObservation:POST.total, saveDrainCompletion:2,
     localUploadObservation: UPLOAD.local, uploadRequestObservation: UPLOAD.upload, localCacheExtraObservation: UPLOAD.localCacheMetadata,
     runPrefixObservation: PREFIX_READS, runPrefixControls: 2, runGuardObservation: RUN_GUARD.total, runGuardControls: 2,
-    callbackObservation: CALLBACK.total, uiPublicationObservation: PUBLICATION.total, primitiveBridgeObservation: PRIMITIVE.total, recordAstObservation: RECORD_AST.total,
+    callbackObservation: CALLBACK.total, uiPublicationObservation: PUBLICATION.total, primitiveBridgeObservation: PRIMITIVE.total, recordAstObservation: RECORD_AST.total, monitorBatchObservation:MONITORS.total,
     modifyEntryObservation: MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + MODIFY_ENTRY.underlineEligibility,
     total: SHARED.renderer.total - SHARED.renderer.accessorObservation + ACCESSOR.total - SHARED.renderer.structureObservation - SHARED.renderer.actionPreflightObservation - SHARED.renderer.actionGuardObservation - SHARED.renderer.actionGuardBindingControls +
-      RECORD_AST.total + PRIMITIVE.total + PUBLICATION.total + RUN_GUARD.total + 2 + PREFIX_READS + 2 + STARTUP_STRUCTURE.total + TAIL.cdpRequests + TAIL.additionalSharedRequests + DELETE.cdpRequests + DRAIN.cdpRequests + POST.total + 2 + SOURCES + UPLOAD.local + UPLOAD.upload + UPLOAD.localCacheMetadata + STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + CALLBACK.total + MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + MODIFY_ENTRY.underlineEligibility + POLLING.cdpRequests + 1 + LIBRARY.controls + 1 }),
+      MONITORS.total + RECORD_AST.total + PRIMITIVE.total + PUBLICATION.total + RUN_GUARD.total + 2 + PREFIX_READS + 2 + STARTUP_STRUCTURE.total + TAIL.cdpRequests + TAIL.additionalSharedRequests + DELETE.cdpRequests + DRAIN.cdpRequests + POST.total + 2 + SOURCES + UPLOAD.local + UPLOAD.upload + UPLOAD.localCacheMetadata + STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + CALLBACK.total + MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + MODIFY_ENTRY.underlineEligibility + POLLING.cdpRequests + 1 + LIBRARY.controls + 1 }),
 });

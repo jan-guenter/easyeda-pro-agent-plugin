@@ -1,3 +1,4 @@
+import type {CurrentSchematicRelevanceMonitorBatchReceipt} from "./current-schematic-relevance-monitor-batch-cursor.ts";
 /* oxlint-disable import/max-dependencies -- The original callback facade binds independently fixed read and partial-continuation cursors to one genuine owner and event lane. */
 import type { CurrentSchematicRelevanceAstHeld, CurrentSchematicRelevanceRecordAstPrepared } from "./current-schematic-relevance-record-ast-cursor.ts";
 import type { CurrentSchematicRelevanceCompletionReceipt } from "./current-schematic-relevance-completion-cursor.ts";
@@ -77,6 +78,11 @@ export class CurrentSchematicRelevanceActionCallbackObserver {
     this.#current(); if (this.#busy) { throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY"); } this.#busy = true;
     try { for (;;) { const command = this.#bindings.nextAstCommand(); if (command === null) { break; } await this.#bindings.requestAst(command); this.#current(); } return this.#bindings.requireOriginalAstHeld(); }
     catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
+  }
+  public async continueOriginalMonitorsToHistory():Promise<CurrentSchematicRelevanceMonitorBatchReceipt>{
+    this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;
+    try{for(let stage=0;stage<5;stage += 1){for(;;){const command=this.#bindings.nextMonitorBatchCommand();if(command===null){break;}await this.#bindings.requestMonitorBatch(command);this.#current();}const receipt=this.#bindings.requireOriginalMonitorBatch();if(receipt.stage==="history"){return receipt;}await this.#bindings.continueOriginalMonitorBatch();this.#current();}throw new Error("SCHEMATIC_MONITOR_HISTORY_NOT_REACHED");}
+    catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}
   }
   public async observeNormalCompletionGraph(): Promise<CurrentSchematicRelevanceCompletionReceipt> {
     this.#current(); if (this.#busy) { throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY"); } this.#busy = true;

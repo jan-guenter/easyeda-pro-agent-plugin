@@ -1,3 +1,9 @@
+/* oxlint-disable import/max-dependencies -- Source-owned monitor and callback roles share one original event stream and separate fixed metadata profiles. */
+import { CURRENT_SCHEMATIC_RELEVANCE_MODEL_CALLEE_SOURCE as MODEL } from "./current-schematic-relevance-model-callee-source.ts";
+import { GENERATED_SCHEMATIC_DISPLAY_ACTION_SOURCE as ACTION } from "./generated-schematic-display-action-source.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MONITOR_BATCH_ROLES as MONITORS, validateCurrentSchematicRelevanceMonitorBatchCommand as monitorCommand } from "./current-schematic-relevance-monitor-batch-protocol.ts";
+import type { CurrentSchematicRelevanceMonitorBatchCommand as MonitorCommand } from "./current-schematic-relevance-monitor-batch-protocol.ts";
+import type { CurrentSchematicRelevanceActiveHistoryReceipt } from "./current-schematic-relevance-active-history-cursor.ts";
 /** One original UI pause lane. It shares the owner's existing event stream;
  * it never polls, resumes a pause or treats a timeout as completion. */
 import { z } from "zod";
@@ -16,7 +22,9 @@ const frame = z.object({ callFrameId: handle, functionLocation: point, location:
 const roles = ["setAttribute", "record", "ast"] as const;
 const functionKeys = Object.freeze({ setAttribute: "setAttributeObjectId", record: "recordObjectId", ast: "astObjectId" } as const);
 const sourceKeys = Object.freeze({ setAttribute: "monitorSetAttribute", record: "monitorRecord", ast: "monitorAst" } as const);
-export type CurrentSchematicRelevanceActionCallbackRole = "entry" | "setter" | "finish" | "failure" | typeof roles[number];
+type MonitorRole = typeof MONITORS[number];
+export interface CurrentSchematicRelevanceMonitorResume {readonly original:CurrentSchematicRelevanceActionCallbackHeld;readonly target:MonitorRole}
+export type CurrentSchematicRelevanceActionCallbackRole = "entry" | "setter" | "finish" | "failure" | MonitorRole | typeof roles[number];
 export interface CurrentSchematicRelevanceActionCallbackHeld { readonly event: DiagnosticEvent; readonly role: CurrentSchematicRelevanceActionCallbackRole; readonly callFrameId: string }
 export interface CurrentSchematicRelevanceActionEntryResume { readonly original: CurrentSchematicRelevanceActionCallbackHeld }
 export interface CurrentSchematicRelevanceActionSetterResume { readonly original: CurrentSchematicRelevanceActionCallbackHeld }
@@ -24,12 +32,12 @@ export interface CurrentSchematicRelevanceActionPrimitiveResume { readonly origi
 export interface CurrentSchematicRelevanceActionRecordResume { readonly original: CurrentSchematicRelevanceActionCallbackHeld }
 export interface CurrentSchematicRelevanceActionCallbackHost {
   readonly sessionId: string; readonly callbackScriptId: string; readonly sourceScriptId: string; readonly variant: 0 | 1; readonly functions: Pick<CurrentSchematicRelevanceDisplayAccessorFunctions, "setAttributeObjectId" | "recordObjectId" | "astObjectId" | "normalRequests">;
-  readonly request: (command: Command) => Promise<unknown>; readonly assertCurrent: () => void; readonly fail: () => void;
+  readonly monitorRequest?: (command:MonitorCommand)=>Promise<unknown>; readonly request: (command: Command) => Promise<unknown>; readonly assertCurrent: () => void; readonly fail: () => void;
 }
 function need(value: boolean): asserts value { if (!value) { throw new Error("SCHEMATIC_RELEVANCE_ORIGINAL_CALLBACK_EVENT"); } }
 export class CurrentSchematicRelevanceActionCallbackController {
   readonly #host: CurrentSchematicRelevanceActionCallbackHost;
-  readonly #points = new Map<string, typeof roles[number]>(); readonly #entry = Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld | null>();
+  readonly #points = new Map<string, typeof roles[number] | MonitorRole>(); readonly #entry = Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld | null>();
   readonly #setter = Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld | null>();
   readonly #setAttribute = Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld | null>();
   readonly #ast = Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld | null>(); readonly #recordResumedSignal = Promise.withResolvers<boolean>();
@@ -40,6 +48,19 @@ export class CurrentSchematicRelevanceActionCallbackController {
   #setterResumed = false; #setterResumeAttempted = false; #setterResumeCompleted = false; #setterResumeSubmitted = false; #setterReservation: CurrentSchematicRelevanceActionSetterResume | null = null;
   #recordObserved = false; #primitiveResumeAttempted = false; #primitiveResumeSubmitted = false; #primitiveResumed = false; #primitiveResumeCompleted = false; #primitiveReservation: CurrentSchematicRelevanceActionPrimitiveResume | null = null;
   #astObserved = false; #recordResumeAttempted = false; #recordResumeSubmitted = false; #recordResumed = false; #recordResumeCompleted = false; #recordReservation: CurrentSchematicRelevanceActionRecordResume | null = null;
+  readonly #monitorSignals = new Map<MonitorRole, ReturnType<typeof Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld|null>>>(MONITORS.map(role=>[role,Promise.withResolvers<CurrentSchematicRelevanceActionCallbackHeld|null>()]));
+  readonly #monitorObserved=new Set<MonitorRole>();#monitorArmAttempted=false;#monitorsArmed=false;#monitorAt=0;#monitorReservation:CurrentSchematicRelevanceMonitorResume|null=null;#monitorSubmitted=false;#monitorResumed=false;#monitorResumedSignal:ReturnType<typeof Promise.withResolvers<boolean>>|null=null;
+  public async armOriginalMonitors(held:CurrentSchematicRelevanceActionCallbackHeld,functions:Pick<CurrentSchematicRelevanceActiveHistoryReceipt["functions"],"modifyAttributeChange"|"bboxAttributeChange"|"watchAttributeChange"|"historyActiveAttribute">):Promise<void>{
+    this.requireHeld(held);need(held.role==="ast"&&this.#recordResumeCompleted&&!this.#monitorArmAttempted&&this.#host.monitorRequest!==undefined);this.#monitorArmAttempted=true;
+    const keys={modify:"modifyAttributeChange",bbox:"bboxAttributeChange",watch:"watchAttributeChange",history:"historyActiveAttribute"} as const;
+    try{for(const role of MONITORS){this.requireHeld(held);const command=monitorCommand({phase:"arm",role,method:"Debugger.setBreakpointOnFunctionCall",params:{objectId:functions[keys[role]],condition:""}});const reply=z.strictObject({breakpointId:handle}).parse(captureCurrentPcbStringClockReply(await this.#host.monitorRequest(command)).value);this.requireHeld(held);need(!this.#points.has(reply.breakpointId));this.#points.set(reply.breakpointId,role);}this.#monitorsArmed=true;}catch(error){this.fail();throw error;}
+  }
+  public reserveMonitorResume(held:CurrentSchematicRelevanceActionCallbackHeld):CurrentSchematicRelevanceMonitorResume{this.requireHeld(held);const expected=this.#monitorAt===0?"ast":MONITORS[this.#monitorAt-1],target=MONITORS[this.#monitorAt];need(this.#monitorsArmed&&held.role===expected&&target!==undefined&&this.#monitorReservation===null);const token=Object.freeze({original:held,target});this.#monitorReservation=token;this.#monitorSubmitted=false;this.#monitorResumed=false;this.#monitorResumedSignal=Promise.withResolvers<boolean>();return token;}
+  public requireMonitorResume(token:CurrentSchematicRelevanceMonitorResume):void{this.#host.assertCurrent();need(!this.#failed&&this.#monitorReservation===token);}
+  public markMonitorResumeSubmitted(token:CurrentSchematicRelevanceMonitorResume):void{this.requireMonitorResume(token);need(!this.#monitorSubmitted&&this.#held===token.original);this.#monitorSubmitted=true;}
+  public async waitMonitorResumed(token:CurrentSchematicRelevanceMonitorResume):Promise<void>{this.requireMonitorResume(token);const signal=this.#monitorResumedSignal;need(signal!==null);const seen=await signal.promise;this.requireMonitorResume(token);need(seen&&this.#monitorResumed);}
+  public completeMonitorResume(token:CurrentSchematicRelevanceMonitorResume):void{this.requireMonitorResume(token);need(this.#monitorResumed);this.#monitorAt += 1;this.#monitorReservation=null;}
+  public async waitOriginalMonitor(role:MonitorRole):Promise<CurrentSchematicRelevanceActionCallbackHeld>{const signal=this.#monitorSignals.get(role);need(signal!==undefined);const held=await signal.promise;need(held!==null&&MONITORS[this.#monitorAt-1]===role);this.requireHeld(held);return held;}
   public constructor(host: CurrentSchematicRelevanceActionCallbackHost) { this.#host = host; handle.parse(host.sessionId); handle.parse(host.callbackScriptId); handle.parse(host.sourceScriptId); Object.freeze(this); }
   public async arm(): Promise<void> {
     need(!this.#attempted && !this.#failed); this.#attempted = true;
@@ -58,7 +79,12 @@ export class CurrentSchematicRelevanceActionCallbackController {
     const first = frame.parse(frames[0]);
     if (ids.some(id => typeof id === "string" && this.#points.has(id))) {
       need(ids.length === 1 && typeof ids[0] === "string"); const role = this.#points.get(ids[0]); need(role !== undefined);
-      const expected = SOURCES[this.#host.variant].methods[sourceKeys[role]];
+      let expected:{readonly lineNumber:number;readonly columnNumber:number};
+      if(role==="modify"){expected=MODEL[this.#host.variant].roles.modifyAttributeChange;}
+      else if(role==="bbox"){expected=MODEL[this.#host.variant].roles.bboxAttributeChange;}
+      else if(role==="watch"){expected=MODEL[this.#host.variant].roles.watchAttributeChange;}
+      else if(role==="history"){expected=ACTION[this.#host.variant].methods.historyActiveAttribute;}
+      else{expected=SOURCES[this.#host.variant].methods[sourceKeys[role]];}
       need(first.functionLocation.scriptId === this.#host.sourceScriptId && first.functionLocation.lineNumber === expected.lineNumber && first.functionLocation.columnNumber === expected.columnNumber && first.location.scriptId === this.#host.sourceScriptId); return role;
     }
     if (first.functionLocation.scriptId !== this.#host.callbackScriptId) { return null; }
@@ -68,6 +94,7 @@ export class CurrentSchematicRelevanceActionCallbackController {
   public observeOriginalEvent(event: DiagnosticEvent): boolean {
     if (event.sessionId !== this.#host.sessionId) { return false; }
     if (event.method === "Debugger.resumed") {
+      if(this.#monitorReservation!==null){try{this.#host.assertCurrent();need(!this.#failed&&this.#monitorSubmitted&&!this.#monitorResumed&&this.#held===this.#monitorReservation.original&&Reflect.ownKeys(event.params).length===0);this.#held=null;this.#monitorResumed=true;this.#monitorResumedSignal?.resolve(true);}catch{this.fail();}return true;}
       if (this.#recordReservation !== null) {
         try { this.#host.assertCurrent(); need(!this.#failed && this.#recordResumeSubmitted && !this.#recordResumed && this.#held === this.#recordReservation.original && Reflect.ownKeys(event.params).length === 0); this.#held = null; this.#recordResumed = true; this.#recordResumedSignal.resolve(true); }
         catch { this.fail(); } return true;
@@ -90,6 +117,7 @@ export class CurrentSchematicRelevanceActionCallbackController {
       const frames = event.params["callFrames"]; need(Array.isArray(frames)); const first = frame.parse(frames[0]); const held = Object.freeze({ event, role, callFrameId: first.callFrameId }); this.#held = held;
       if (role === "entry") { need(!this.#entryResumeAttempted); this.#entry.resolve(held); }
       else if (role === "setter") { need(this.#entryResumeAttempted && this.#entryResumed && !this.#setterResumeAttempted); this.#setter.resolve(held); }
+      else if(role==="modify"||role==="bbox"||role==="watch"||role==="history"){const pending=this.#monitorReservation;need(this.#monitorsArmed&&(pending?.target??MONITORS[this.#monitorAt-1])===role&&this.#monitorResumed&&!this.#monitorObserved.has(role));this.#monitorObserved.add(role);const signal=this.#monitorSignals.get(role);need(signal!==undefined);signal.resolve(held);}
       else if (role === "ast") { need(this.#recordResumeAttempted && this.#recordResumed && !this.#astObserved); this.#astObserved = true; this.#ast.resolve(held); }
       else if (role === "record") { need(this.#primitiveResumeAttempted && this.#primitiveResumed && !this.#recordObserved); this.#recordObserved = true; this.#record.resolve(held); }
       else { need(role === "setAttribute" && this.#entryResumeCompleted && this.#setterResumeAttempted && this.#setterResumed); this.#setAttribute.resolve(held); }
@@ -124,5 +152,5 @@ export class CurrentSchematicRelevanceActionCallbackController {
   public completeRecordResume(token: CurrentSchematicRelevanceActionRecordResume): void { this.requireRecordResume(token); need(this.#recordResumed && !this.#recordResumeCompleted); this.#recordResumeCompleted = true; this.#recordReservation = null; }
   public async waitOriginalAst(): Promise<CurrentSchematicRelevanceActionCallbackHeld> { const held = await this.#ast.promise; need(held !== null && this.#recordResumeCompleted); this.requireHeld(held); return held; }
   public requireHeld(held: CurrentSchematicRelevanceActionCallbackHeld): void { this.#host.assertCurrent(); need(!this.#failed && this.#held === held && held.event.sessionId === this.#host.sessionId); }
-  public fail(): void { if (!this.#failed) { this.#failed = true; this.#entry.resolve(null); this.#setter.resolve(null); this.#setAttribute.resolve(null); this.#resumed.resolve(false); this.#setterResumedSignal.resolve(false); this.#record.resolve(null); this.#primitiveResumedSignal.resolve(false); this.#ast.resolve(null); this.#recordResumedSignal.resolve(false); this.#host.fail(); } }
+  public fail(): void { if (!this.#failed) { this.#failed = true;for(const signal of this.#monitorSignals.values()){signal.resolve(null);}this.#monitorResumedSignal?.resolve(false); this.#entry.resolve(null); this.#setter.resolve(null); this.#setAttribute.resolve(null); this.#resumed.resolve(false); this.#setterResumedSignal.resolve(false); this.#record.resolve(null); this.#primitiveResumedSignal.resolve(false); this.#ast.resolve(null); this.#recordResumedSignal.resolve(false); this.#host.fail(); } }
 }
