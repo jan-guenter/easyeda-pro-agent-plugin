@@ -1,4 +1,5 @@
 /** Synthetic native replies only; no Windows helper/process is launched. */
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
@@ -117,7 +118,7 @@ void test("new native collector reads presence-only TZ and UTC/QPC but has no pr
   assert.doesNotMatch(CURRENT_PCB_STRING_NATIVE_CLOCK_CSHARP, /Process\.Start|GetProcessById|TerminateProcess|Kill\(/u);
 });
 void test("String native collector exactly matches the private diagnostic helper source", async () => {
-  const helper = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const helper = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const begin = "// BEGIN STRING NATIVE CLOCK COLLECTOR", end = "// END STRING NATIVE CLOCK COLLECTOR";
   const finish = helper.indexOf(end), start = helper.indexOf(begin);
   assert.ok(start !== -1 && finish > start); assert.equal(helper.indexOf(begin, start + 1), -1);

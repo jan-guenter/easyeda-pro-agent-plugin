@@ -131,7 +131,7 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
     // Stable inert authority owner.
   },
     assertBridgeDispatchAllowed: (): Promise<void> => Promise.resolve(), assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
-  const scope = vm.createContext({ z, ordinaryLaunchRequestSchema, OrdinaryLaunchCoordinator: Coordinator, WindowsControlRuntime: Runtime,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, ordinaryLaunchRequestSchema, OrdinaryLaunchCoordinator: Coordinator, WindowsControlRuntime: Runtime,
     CurrentPcbDiagnosticLifecycle: Diagnostic, CurrentPcbWorkerStartupLifecycle: Diagnostic, CurrentPcb209WorkerStartupLifecycle: Diagnostic,
     CurrentPcb209EmptyStartupLifecycle: Diagnostic, CurrentPcb209RatlineStartupLifecycle: Diagnostic,
     CurrentPcb209RatlineContinuationLifecycle: Diagnostic, CurrentFootprintCopyPreparationLifecycle: Diagnostic,
@@ -141,7 +141,7 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
     resolve: (): string => "/synthetic/plugin", controlDataDirectory: (): string => "/synthetic/control", retainedControlRoot: { path: "/synthetic/control" },
     CURRENT_PCB_DIAGNOSTIC_PROFILE: { powershell: { sha256: "a".repeat(64), bytes: 1 } },
     ordinaryLaunchCoordinator: undefined, ordinaryLaunchRuntime: undefined, windowsRuntime: undefined,
-    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, currentFootprintForwardSourceValidation: undefined, hasForwardSourceCustody: (): boolean => false,
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, currentFootprintForwardSourceValidation: undefined, hasForwardSourceCustody: (): boolean => false, hasFixtureImportCustody: (): boolean => false, fixtureImportCoordinator: undefined,
     currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
     closedSymbolIndexReservation: undefined, closedSymbolUnreservedFailure: { observed: false }, scheduledShutdown: undefined,
     serializedGuarded: (handler: Invoke): Invoke => handler,
@@ -195,6 +195,21 @@ void test("actual release callback allows a preflight-refused never-allocated di
   assert.equal(value.scope["windowsRuntime"], undefined); assert.equal(value.scope["ordinaryLaunchRuntime"], undefined);
   await value.startup(); assert.equal(value.state.diagnosticAllocations, 1);
   assert.equal(value.scope["currentPcbWorkerStartupLifecycle"], diagnostic);
+});
+
+void test("fixture import custody blocks ordinary allocation and original runtime release before helper I/O", async () => {
+  const value = await fixture();
+  value.scope["hasFixtureImportCustody"] = (): boolean => true;
+  await assert.rejects(value.invoke({ request: launch }), /fixture import owner reserves/u);
+  assert.equal(value.state.runtimeCount, 0);
+  value.scope["hasFixtureImportCustody"] = (): boolean => false;
+  await value.invoke({ request: launch });
+  value.scope["hasFixtureImportCustody"] = (): boolean => true;
+  await assert.rejects(value.invoke({ request: release }), /reserved by another owner/u);
+  assert.equal(value.state.releaseCalls, 0);
+  value.scope["hasFixtureImportCustody"] = (): boolean => false;
+  const pending = value.invoke({ request: release }); value.finish(); await pending;
+  assert.equal(value.state.releaseCalls, 1);
 });
 
 void test("actual release allocation callback rejects other owners and preserves allocations on helper failure", async () => {

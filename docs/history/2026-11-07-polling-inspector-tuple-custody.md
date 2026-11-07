@@ -1,0 +1,26 @@
+# Polling Inspector tuple custody
+
+The original polling capture used `Object.freeze` while requesting
+`throwOnSideEffect: true`. Actual Node 24.18.0 Inspector execution rejects even
+freezing a fresh array as a possible side effect. Earlier tests created frozen
+arrays without that flag and therefore missed the contradiction.
+
+The fixed capture, entry and return programs now create ordinary private
+arrays. The captured closure checks the exact prototype, length, own property
+roster, values and descriptor flags. The entry closure rechecks its original
+tuple and all retained application/native descriptors. Only the original
+once-only cancel command mutates the timer state. The exact tuple decoder
+rejects frozen, accessor, missing, extra and malformed forms.
+
+Nine focused checks passed with strict changed-file lint and TypeScript checks.
+One runs the unchanged production capture/entry/return programs through actual
+Inspector with side-effect checking enabled. It uses inert browser globals and
+timer substitutes, then mutates a private tuple and proves the next read refuses
+without scheduling or cancelling a timer. Other checks retain unknown outcome,
+no-replay and original completion-ack behavior.
+
+The shared polling programs cover the separately owned Via, inverse and
+seven-record paths; no owner, intent or completion transfers between them.
+Library-refresh capture already has its own fixed false side-effect flag and
+does not need this correction. Native artifacts will regenerate with the next
+combined source batch. There is no connected timer or writer success claim.

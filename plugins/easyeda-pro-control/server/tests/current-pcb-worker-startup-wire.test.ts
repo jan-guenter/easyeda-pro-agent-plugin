@@ -1,4 +1,5 @@
 /* oxlint-disable import/max-dependencies -- Exact startup wire cases, independent build compaction and the separate shared-source ceiling must be checked together; their runtime limits remain distinct. */
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -142,7 +143,7 @@ void test("startup identifiers and budget are bounded; placeholder-shaped handle
   for (const sessionId of ["", "a".repeat(129), "bad\n", null, 4]) { assert.throws(() => currentPcbWorkerStartupWire({ ...sample, sessionId }, 1)); }
 });
 void test("native startup source is generated exactly and keeps the distinct purpose boundary", async () => {
-  const native = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const native = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const generated = currentPcbWorkerStartupNativeSource();
   // The generator removes code indentation with its literal-aware compactor.
   // Compare the entire uniquely delimited body, including every packed byte.
@@ -181,7 +182,7 @@ void test("native 209 cases preserve every command except the reviewed serial si
 });
 
 void test("native 209 launch fixes its encoder without a caller generation field or duplicate program table", async () => {
-  const native = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const stored = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"); const native = expandCurrentPcbDiagnosticCSharpReviewSource(stored);
   const generated = currentPcbWorkerStartupNativeSource();
   assert.equal(generated.split("public static class EasyedaWorkerStartupProtocol").length, 2);
   assert.ok(generated.includes("public static string Encode209("));
@@ -199,7 +200,7 @@ void test("native 209 launch fixes its encoder without a caller generation field
   assert.ok(native.includes('fields.Add("generation","209");bool extra=false;'));
   // Keep the shared source-artifact ceiling separate from startup command bounds.
   // The unchanged fixed request bytes are checked separately above.
-  assert.ok(Buffer.byteLength(native) < CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES);
+  assert.ok(Buffer.byteLength(stored) < CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES);
 });
 
 void test("startup compile-only packing retains every legacy,209 and parent expected command byte", () => {

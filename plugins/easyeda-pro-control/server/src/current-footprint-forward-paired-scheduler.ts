@@ -1,0 +1,257 @@
+/** Separate original forward-v2 paired sequencer. It composes the actual v2
+ * main collectors and original allocated-clock channel. No legacy Combined
+ * capability, known destination UUID or copied packet can enter this path.
+ * Current head/frontier and complete four-generation admission stay separate. */
+/* oxlint-disable import/max-dependencies -- Keep genuine native ownership, the exact pending channel and each original sequencer explicit; none is replaceable by caller callbacks. */
+import { types } from "node:util";
+import { CurrentFootprintCopyAllocationRunner, requireCurrentFootprintCopyAllocationCopyPlan, requireCurrentFootprintCopyAllocationOrigin } from "./current-footprint-copy-allocation-runner.ts";
+import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-main-backend-runner.ts";
+import { createCurrentFootprintForwardMainRequestRunner } from "./current-footprint-copy-main-request-runner.ts";
+import type { CurrentFootprintCopyMainRequestRunner } from "./current-footprint-copy-main-request-runner.ts";
+import { createCurrentFootprintForwardMainCompletionRunner } from "./current-footprint-copy-main-completion-runner.ts";
+import type { CurrentFootprintCopyMainCompletionObservation, CurrentFootprintCopyMainCompletionRunner } from "./current-footprint-copy-main-completion-runner.ts";
+import { requireCurrentFootprintForwardMainCompletionOrigin } from "./current-footprint-forward-execution-main-origin.ts";
+import type { CurrentFootprintForwardMainCompletionOrigin, CurrentFootprintForwardMainRequestOrigin } from "./current-footprint-forward-execution-main-origin.ts";
+import { CurrentFootprintCopyClockRpcRunner } from "./current-footprint-copy-clock-rpc-runner.ts";
+import type { CurrentFootprintCopyClockRpcObservation } from "./current-footprint-copy-clock-rpc-runner.ts";
+import { requireCurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
+import type { CurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
+import { requireCurrentFootprintCopyCreateClockChannelRoute } from "./current-pcb-worker-startup-channel.ts";
+import type { CurrentFootprintCopyCreateClockChannelRoute, CurrentFootprintCopyPendingCreate } from "./current-pcb-worker-startup-channel.ts";
+import { requireCurrentFootprintForwardExecutionMainNativeOwner, requireCurrentFootprintForwardExecutionPairedCopy, requireCurrentFootprintForwardExecutionPairedSchedule, requireRetainedCurrentFootprintForwardPairedSchedule } from "./current-footprint-forward-execution-main-capability.ts";
+import type { CurrentFootprintForwardExecutionMainCapability } from "./current-footprint-forward-execution-main-capability.ts";
+import { isCurrentFootprintCopyMainRequestReservation, requireCurrentFootprintCopyMainRequestReservationCopy, requireOriginalCurrentFootprintCopyMainRequestReservationCopy } from "./current-footprint-copy-main-request-plan.ts";
+import type { CurrentFootprintCopyMainRequestReservation } from "./current-footprint-copy-main-request-plan.ts";
+import type { CurrentFootprintCopyV2Plan } from "./current-footprint-copy-v2-plan.ts";
+import type { CurrentFootprintForwardExecutionNativeOwner } from "./current-pcb-diagnostic-owner.ts";
+
+type Phase = "ready" | "main-armed" | "clocks-bound" | "clocks-armed" | "create-written" | "clocks-retired" | "main-completed" | "complete" | "failed" | "ended";
+/* oxlint-disable typescript/unbound-method -- Captured class methods are invoked only with the original private-field receiver, preventing supplied method overrides. */
+const backendMethods = Object.freeze({ requireRequestOrigin: CurrentFootprintCopyMainBackendRunner.prototype.requireForwardExecutionRequestOrigin,
+  issueCompletionOrigin: CurrentFootprintCopyMainBackendRunner.prototype.issueForwardExecutionCompletionOrigin, release: CurrentFootprintCopyMainBackendRunner.prototype.release });
+const allocationMethods = Object.freeze({ arm: CurrentFootprintCopyAllocationRunner.prototype.arm,
+  collectAndResume: CurrentFootprintCopyAllocationRunner.prototype.collectAndResume, consumeBeforeInvocation: CurrentFootprintCopyAllocationRunner.prototype.consumeBeforeInvocation,
+  observeOriginalGenerationEnded: CurrentFootprintCopyAllocationRunner.prototype.observeOriginalGenerationEnded, release: CurrentFootprintCopyAllocationRunner.prototype.release });
+/* oxlint-enable typescript/unbound-method */
+function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`FOOTPRINT_FORWARD_PAIRED_${code}`); } }
+const issued = new WeakMap<CurrentFootprintForwardExecutionPairedObservation, CurrentFootprintForwardExecutionPairedScheduler>();
+export interface CurrentFootprintForwardExecutionPairedObservation {
+  readonly profile: "private.current-footprint-forward-paired-observation.v2";
+  readonly clocks: CurrentFootprintCopyClockRpcObservation;
+  readonly main: CurrentFootprintCopyMainCompletionObservation;
+  readonly serializedCreateResult: string;
+  readonly clockRetirementBeforeMainCollection: true;
+  readonly exactOriginalCreateReplyJoined: true;
+  readonly fullQualificationVerified: false;
+  readonly nativeSqlCompletionVerified: false;
+  readonly savedResultVerified: false;
+  readonly executionAuthorized: false;
+}
+export class CurrentFootprintForwardExecutionPairedScheduler {
+  readonly #backend: CurrentFootprintCopyMainBackendRunner;
+  readonly #capability: CurrentFootprintForwardExecutionMainCapability;
+  readonly #mainOrigin: CurrentFootprintForwardMainRequestOrigin;
+  readonly #main: CurrentFootprintCopyMainRequestRunner;
+  readonly #reservation: CurrentFootprintCopyMainRequestReservation;
+  #executionCopy: CurrentFootprintCopyV2Plan | null = null;
+  #packet: CurrentFootprintForwardExecutionPairedObservation | null = null;
+  #phase: Phase = "ready";
+  #busy = false;
+  #ending = false;
+  #generationEnded = false;
+  #idle: Promise<null> = Promise.resolve(null);
+  #resolveIdle: (() => void) | null = null;
+  #clockToken: CurrentFootprintCopyClockRpcOrigin | null = null;
+  #clock: CurrentFootprintCopyClockRpcRunner | null = null;
+  #allocation: CurrentFootprintCopyAllocationRunner | null = null;
+  #route: CurrentFootprintCopyCreateClockChannelRoute | null = null;
+  #routeBinding: ReturnType<typeof requireCurrentFootprintCopyCreateClockChannelRoute> | null = null;
+  #pending: CurrentFootprintCopyPendingCreate | null = null;
+  #createDispatchAttempted = false;
+  #clocks: CurrentFootprintCopyClockRpcObservation | null = null;
+  #completion: CurrentFootprintCopyMainCompletionRunner | null = null;
+  #completionOrigin: CurrentFootprintForwardMainCompletionOrigin | null = null;
+  #mainPacket: CurrentFootprintCopyMainCompletionObservation | null = null;
+  #mainTransferred = false;
+  #mainReleased = false;
+  #firstFailure: Phase | null = null;
+  public constructor(backend: CurrentFootprintCopyMainBackendRunner, capability: CurrentFootprintForwardExecutionMainCapability,
+    mainOrigin: CurrentFootprintForwardMainRequestOrigin, plan: CurrentFootprintCopyMainRequestReservation) {
+    need(!types.isProxy(backend) && Object.getPrototypeOf(backend) === CurrentFootprintCopyMainBackendRunner.prototype && Reflect.ownKeys(backend).length === 0, "ORIGINAL_BACKEND");
+    backendMethods.requireRequestOrigin.call(backend, capability, mainOrigin);
+    this.#backend = backend; this.#capability = capability; this.#mainOrigin = mainOrigin;
+    need(isCurrentFootprintCopyMainRequestReservation(plan), "ORIGINAL_LATE_RESERVATION"); this.#reservation = plan;
+    need(requireOriginalCurrentFootprintCopyMainRequestReservationCopy(plan) === requireCurrentFootprintForwardExecutionPairedCopy(capability, backend), "ORIGINAL_PAIRED_COPY");
+    this.#main = createCurrentFootprintForwardMainRequestRunner(mainOrigin, plan);
+  }
+  #same(): void {
+    need(!this.#generationEnded && this.#phase !== "failed" && this.#phase !== "ended" && this.#phase !== "complete", "UNAVAILABLE");
+    if (!this.#mainTransferred) { backendMethods.requireRequestOrigin.call(this.#backend, this.#capability, this.#mainOrigin); }
+    if (this.#clockToken !== null) {
+      if (this.#mainReleased) { requireRetainedCurrentFootprintForwardPairedSchedule(this.#capability, this.#backend, this.#clockToken); }
+      else { requireCurrentFootprintForwardExecutionPairedSchedule(this.#capability, this.#backend, this.#clockToken); }
+      need(this.#route !== null && requireCurrentFootprintCopyCreateClockChannelRoute(this.#route) === this.#routeBinding, "ORIGINAL_ROUTE");
+    }
+  }
+  #begin(phase: Phase): void {
+    need(!this.#busy && !this.#ending && this.#phase === phase, "PHASE"); this.#same(); this.#busy = true;
+    const idle = Promise.withResolvers<null>(); this.#idle = idle.promise; this.#resolveIdle = (): void => { idle.resolve(null); };
+  }
+  #end(): void { this.#busy = false; this.#resolveIdle?.(); this.#resolveIdle = null; }
+  #failed(): void { this.#firstFailure ??= this.#phase; this.#phase = "failed"; this.#route?.fail(); }
+  public async armMain(): Promise<void> {
+    this.#begin("ready");
+    try { await this.#main.armForCompletion(); this.#same(); this.#phase = "main-armed"; }
+    catch (error) { this.#failed(); throw error; } finally { this.#end(); }
+  }
+  /** The genuine future native factory enters its separately sealed renderer
+   * phase only AFTER armMain. Existing observation origins have no create route. */
+  public bindClocks(token: CurrentFootprintCopyClockRpcOrigin, route: CurrentFootprintCopyCreateClockChannelRoute, allocation: CurrentFootprintCopyAllocationRunner): void {
+    need(!this.#busy && !this.#ending && this.#phase === "main-armed", "PHASE"); this.#same();
+    requireCurrentFootprintForwardExecutionPairedSchedule(this.#capability, this.#backend, token);
+    const binding = requireCurrentFootprintCopyCreateClockChannelRoute(route), original = requireCurrentFootprintCopyClockRpcOrigin(token);
+    need(original.workerLease === binding.clockLease && original.workerSessionId === binding.workerSessionId, "ORIGINAL_CLOCK_ROUTE");
+    need(allocation !== null && typeof allocation === "object" && !types.isProxy(allocation) && Object.getPrototypeOf(allocation) === CurrentFootprintCopyAllocationRunner.prototype && Reflect.ownKeys(allocation).length === 0, "ORIGINAL_ALLOCATED_DESTINATION"); this.#allocation = allocation;
+    requireCurrentFootprintCopyAllocationOrigin(this.#allocation, token);
+    this.#clock = new CurrentFootprintCopyClockRpcRunner(token, allocation);
+    this.#clockToken = token; this.#route = route; this.#routeBinding = binding; this.#phase = "clocks-bound";
+  }
+  public async armClocks(): Promise<void> {
+    this.#begin("clocks-bound");
+    try { need(this.#clock !== null, "CLOCKS"); if (this.#allocation !== null) { await allocationMethods.arm.call(this.#allocation); this.#same(); } await this.#clock.arm(); this.#same(); this.#phase = "clocks-armed"; }
+    catch (error) { this.#failed(); throw error; } finally { this.#end(); }
+  }
+  /** Only an original allocated-create schedule for this exact copy/window
+   * can reach the existing coordinator's write boundary. Known-UUID fixtures
+   * and merely shape-compatible schedules are not execution qualifications. */
+  public requireExecutionReady(copy: CurrentFootprintCopyV2Plan, minimum: number, maximum: number): void {
+    need(!this.#busy && !this.#ending && this.#phase === "clocks-armed" &&
+      this.#allocation !== null && this.#clockToken !== null && !this.#createDispatchAttempted, "EXECUTION_READY");
+    this.#same();
+    requireCurrentFootprintCopyMainRequestReservationCopy(this.#reservation, copy, minimum, maximum);
+    need(this.#routeBinding !== null && this.#routeBinding.copyPlan === copy, "ORIGINAL_EXECUTION_COPY");
+    requireCurrentFootprintCopyAllocationCopyPlan(this.#allocation, this.#clockToken, copy, this.#routeBinding.invocationBinding);
+    need(this.#executionCopy === null || this.#executionCopy === copy, "ORIGINAL_EXECUTION_COPY"); this.#executionCopy = copy;
+  }
+  /** The enclosing genuine owner must already have durable intent and complete
+   * eligibility. This partial schedule cannot issue either prerequisite. */
+  public async dispatchCreate(): Promise<void> {
+    this.#begin("clocks-armed");
+    try {
+      need(this.#clock !== null && this.#route !== null && this.#executionCopy !== null, "ALLOCATED_EXECUTION_COPY");
+      // Both markers consume synchronously. No await or native write separates
+      // Them from the original route's once-only queued dispatch.
+      this.#main.consumeBeforeInvocation(); this.#clock.consumeBeforeInvocation(); if (this.#allocation !== null) { allocationMethods.consumeBeforeInvocation.call(this.#allocation); }
+      this.#createDispatchAttempted = true;
+      this.#pending = await this.#route.dispatchCreate(); this.#same(); this.#phase = "create-written";
+    } catch (error) { this.#failed(); throw error; } finally { this.#end(); }
+  }
+  public async collectClocks(): Promise<void> {
+    this.#begin("create-written");
+    try {
+      need(this.#clock !== null, "CLOCKS");
+      if (this.#allocation !== null) { await allocationMethods.collectAndResume.call(this.#allocation); this.#same(); }
+      this.#clocks = await this.#clock.collect(); this.#same();
+      need(this.#clockToken !== null, "CLOCKS"); await this.#main.bindObservedClocks(this.#clockToken, this.#clocks); this.#same();
+      await this.#clock.requireOriginal(this.#clocks); this.#same();
+      if (this.#allocation !== null) { await allocationMethods.release.call(this.#allocation); this.#same(); }
+      await this.#clock.cleanup(); this.#same();
+      need(this.#clock.diagnostics()["retired"] === true, "CLOCK_RETIREMENT"); this.#phase = "clocks-retired";
+    } catch (error) { this.#failed(); throw error; } finally { this.#end(); }
+  }
+  public async collectMain(): Promise<void> {
+    this.#begin("clocks-retired");
+    try {
+      const held = await this.#main.collectToHeldFinalPb(); this.#same();
+      const origin = await backendMethods.issueCompletionOrigin.call(this.#backend, this.#capability, held);
+      this.#mainTransferred = true; this.#completionOrigin = origin;
+      this.#completion = createCurrentFootprintForwardMainCompletionRunner(origin); this.#same();
+      await this.#completion.arm(); this.#same(); this.#mainPacket = await this.#completion.collect(); this.#same();
+      await this.#completion.requireOriginal(this.#mainPacket); this.#same(); await this.#completion.cleanup(); this.#same();
+      await backendMethods.release.call(this.#backend); this.#mainReleased = true; this.#same(); this.#phase = "main-completed";
+    } catch (error) { this.#failed(); throw error; } finally { this.#end(); }
+  }
+  public async joinCreate(): Promise<CurrentFootprintForwardExecutionPairedObservation> {
+    this.#begin("main-completed");
+    try {
+      need(this.#route !== null && this.#pending !== null && this.#clocks !== null && this.#mainPacket !== null, "COMPLETE_INPUTS");
+      const serializedCreateResult = await this.#route.joinCreate(this.#pending); this.#same();
+      const result = Object.freeze({ profile: "private.current-footprint-forward-paired-observation.v2" as const,
+        clocks: this.#clocks, main: this.#mainPacket, serializedCreateResult, clockRetirementBeforeMainCollection: true as const,
+        exactOriginalCreateReplyJoined: true as const, fullQualificationVerified: false as const,
+        nativeSqlCompletionVerified: false as const, savedResultVerified: false as const, executionAuthorized: false as const });
+      this.#packet = result; issued.set(result, this); this.#phase = "complete"; return result;
+    } catch (error) { this.#failed(); throw error; } finally { this.#end(); }
+  }
+  /** A retained result remains inspectable after original generation exit.
+   * Its data alone grants neither current ownership nor saved-content proof. */
+  public requireOriginalResult(packet: CurrentFootprintForwardExecutionPairedObservation): void {
+    need(!this.#busy && !this.#ending && packet === this.#packet && issued.get(packet) === this &&
+      packet.clocks === this.#clocks && packet.main === this.#mainPacket &&
+      (this.#phase === "complete" || this.#phase === "ended"), "ORIGINAL_RESULT");
+  }
+  /** Historical binding for the next fresh saved generation. Actual original
+   * root/Job exit is required; a matching copied packet or plan cannot pass. */
+  public requireOriginalSavedContinuation(packet: CurrentFootprintForwardExecutionPairedObservation,
+    owner: CurrentFootprintForwardExecutionNativeOwner): Readonly<{ copyPlan: CurrentFootprintCopyV2Plan; paired: CurrentFootprintForwardExecutionPairedObservation }> {
+    // oxlint-disable-next-line eslint/no-use-before-define -- Capture these genuine private-field class methods after the class definition; runtime lookup occurs only after module initialization.
+    savedContinuationMethods.requireResult.call(this, packet);
+    need(this.#executionCopy !== null && this.#mainReleased && this.#createDispatchAttempted && this.#pending !== null &&
+      requireCurrentFootprintForwardExecutionMainNativeOwner(this.#capability, this.#backend, "exited") === owner &&
+      owner.requireOriginalForwardExecutionMainRunner(this.#backend, "exited"), "ORIGINAL_CLOSED_SAVED_CONTINUATION");
+    return Object.freeze({ copyPlan: this.#executionCopy, paired: packet });
+  }
+  /** Success already retired both sequencers. Failure or an armed/pending
+   * schedule needs actual original root/Job exit; it is never resumed here. */
+  public requireQuiescentClose(): void {
+    need(!this.#busy && !this.#ending && this.#phase === "complete" && this.#packet !== null &&
+      this.#clock?.diagnostics()["retired"] === true && this.#completion?.diagnostics().retired === true &&
+      this.#allocation?.diagnostics()["phase"] === "released", "GENERATION_CLOSURE_REQUIRED");
+    this.requireOriginalResult(this.#packet);
+  }
+  /** Does not close/kill the process. Only the retained native root-exit and
+   * empty-Job proof can end ambiguous pending replies and held native pauses. */
+  public async observeOriginalGenerationEnded(): Promise<void> {
+    need(!this.#ending && this.#phase !== "ended", "ENDING_PHASE"); this.#ending = true;
+    const idle = this.#idle; let timer: ReturnType<typeof setTimeout> | null = null;
+    try {
+      // Exit proof is allowed while a normal wait remains pending, since that
+      // Proof is what rejects the exact original pending entry and joins it.
+      // Before route binding, the original main collector owns the same proof.
+      if (this.#route !== null) { await this.#route.assertOriginalGenerationExited(); }
+      else if (!this.#main.diagnostics().retired) { await this.#main.observeOriginalGenerationEnded(); }
+      this.#generationEnded = true;
+      const deadline = Promise.withResolvers<never>();
+      timer = setTimeout(() => { deadline.reject(new Error("FOOTPRINT_FORWARD_PAIRED_ORIGINAL_IDLE_DEADLINE")); }, 300_000);
+      await Promise.race([idle, deadline.promise]); need(!this.#busy && this.#idle === idle, "ORIGINAL_OPERATION_UNSETTLED");
+      if (this.#allocation !== null && this.#allocation.diagnostics()["phase"] !== "ended") { await allocationMethods.observeOriginalGenerationEnded.call(this.#allocation); }
+      if (this.#clock !== null && this.#clock.diagnostics()["retired"] !== true) { await this.#clock.observeOriginalGenerationEnded(); }
+      if (this.#completion !== null) {
+        if (!this.#completion.diagnostics().retired) { await this.#completion.observeOriginalGenerationEnded(); }
+      } else if (this.#completionOrigin !== null) {
+        const completion = requireCurrentFootprintForwardMainCompletionOrigin(this.#completionOrigin);
+        await completion.assertOriginalGenerationExited(); await completion.retire();
+      } else if (!this.#main.diagnostics().retired) { await this.#main.observeOriginalGenerationEnded(); }
+      this.#phase = "ended";
+    } finally { if (timer !== null) { clearTimeout(timer); } this.#ending = false; }
+  }
+  public diagnostics(): Readonly<Record<string, unknown>> {
+    return Object.freeze({ phase: this.#phase, busy: this.#busy, ending: this.#ending, originalGenerationEnded: this.#generationEnded, firstFailure: this.#firstFailure,
+      createDispatchAttempted: this.#createDispatchAttempted, createWriteAcknowledged: this.#pending !== null, clocks: this.#clock?.diagnostics() ?? null, allocation: this.#allocation?.diagnostics() ?? null,
+      main: this.#main.diagnostics(), completion: this.#completion?.diagnostics() ?? null,
+      executionCopyBound: this.#executionCopy !== null, originalResultRetained: this.#packet !== null,
+      writerPurposeMounted: false, wholeWriterBudgetReserved: false, executionAuthorized: false });
+  }
+}
+
+/* oxlint-disable typescript/unbound-method -- Call only on the original sequencer selected by its private issued packet registry. */
+const savedContinuationMethods = Object.freeze({ requireResult: CurrentFootprintForwardExecutionPairedScheduler.prototype.requireOriginalResult,
+  saved: CurrentFootprintForwardExecutionPairedScheduler.prototype.requireOriginalSavedContinuation });
+/* oxlint-enable typescript/unbound-method */
+/** Resolve only the actual original paired sequencer's retained completion.
+ * This joins historical create/clock/main provenance, never a new native lease. */
+export function requireOriginalCurrentFootprintForwardSavedContinuation(packet: CurrentFootprintForwardExecutionPairedObservation,
+  owner: CurrentFootprintForwardExecutionNativeOwner): Readonly<{ copyPlan: CurrentFootprintCopyV2Plan; paired: CurrentFootprintForwardExecutionPairedObservation }> {
+  const scheduler = issued.get(packet); need(scheduler !== undefined, "ORIGINAL_CLOSED_SAVED_CONTINUATION");
+  return savedContinuationMethods.saved.call(scheduler, packet, owner);
+}

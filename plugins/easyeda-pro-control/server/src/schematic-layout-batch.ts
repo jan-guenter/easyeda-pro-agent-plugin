@@ -921,3 +921,7 @@ export async function buildSchematicLayoutAdapterCooperatively(input: unknown, b
   await yieldProofEventLoop();
   return adapter;
 }
+
+/** Pure field/coordinate/alignment projection only. A later native source
+ * profile must supply its own complete eligibility and persistence checks. */
+export { display as projectSchematicLiteralDisplayBody };

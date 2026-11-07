@@ -1,0 +1,11 @@
+# Inverse fixed codec sharing and native origin syntax
+
+The two new inverse GET codecs now share one private C# fixed-table encoder. Each production wrapper supplies its own immutable table and constant namespace. The existing native senders retain their original state, once-only and target checks. Scalar domains, exact field rosters, JSON bytes and64KiB message/table limits remain unchanged. No new runtime command selects a table or namespace.
+
+Pinned Node24.18.0 measures the two generated fragments plus shared encoder at22,094 bytes, versus23,382 before factoring:1,288 bytes recovered. A golden digest derived from the retained pre-factor C# tables covers all29 messages across both codecs. Three focused cases, both TypeScript projects and changed strict lint pass. A private C#5 harness restored both original tables, matched all29 message hashes and refused a cross-namespace request; owner methods were unavailable. The22 inverse smoke roster and both2MiB stored-helper/compiler-input limits remain unchanged. This is a small recovery plus a reusable encoder for the remaining fixed GET lanes, not a claim of whole-helper headroom.
+
+`current-native-serialized-origin.ts` adds inert descriptor/prototype/getter syntax for each future host's own original I11 receipt. It offers an eight-owner bounded walk, optional native setter qualification, native getter metadata, exact descriptor/parent reproof and a bounded string read. A newly returned prototype must pass its correlated non-Proxy metadata before traversal. Data properties, JavaScript getters, renamed native getters and Proxy parents cannot stand in for a native serialized-origin read.
+
+Actual readonly Node Inspector checks retain zero getter/Proxy effects and reject those substitutions. Node provides no accepted browser-global origin getter in this batch, so no positive browser-origin or native-sender claim is made. The syntax issues no origin/owner/transport token; the inverse manager and worker must each bind it through their own actual original receipt. It uses no Location or CDP-origin inference.
+
+No helper, pin, bundle, native owner, application or MCP transport was changed or started. Complete initialized GET forwarding, response/rearm and the later deletion/collateral lifecycle remain in progress.

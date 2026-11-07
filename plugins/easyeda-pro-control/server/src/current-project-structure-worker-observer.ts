@@ -10,18 +10,11 @@ import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-re
 import { requireCurrentProjectStructureWorkerLease } from "./current-project-structure-worker-lease.ts";
 import type { CurrentProjectStructureWorkerBinding, CurrentProjectStructureWorkerLease } from "./current-project-structure-worker-lease.ts";
 import { CURRENT_PROJECT_STRUCTURE_WORKER_CALLS as CALLS } from "./current-project-structure-worker-programs.ts";
+import { CURRENT_PROJECT_STRUCTURE_WORKER_SITES, CURRENT_PROJECT_STRUCTURE_WORKER_REQUESTS as REQUESTS } from "./current-project-structure-worker-profile.ts";
+
+export { CURRENT_PROJECT_STRUCTURE_WORKER_SITES } from "./current-project-structure-worker-profile.ts";
 
 const GROUP = CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group;
-/** Exact possible-breakpoint positions in the full pinned209 worker. The
- * three callback sites follow packet creation, await return and successful
- * callback cleanup; the Nd sites are its initial and queued finalizers. */
-export const CURRENT_PROJECT_STRUCTURE_WORKER_SITES = Object.freeze({
-  packet: Object.freeze({ lineNumber: 110, columnNumber: 90_576, offset: 2_104_786 }),
-  response: Object.freeze({ lineNumber: 110, columnNumber: 90_621, offset: 2_104_831 }),
-  callbackReturn: Object.freeze({ lineNumber: 110, columnNumber: 90_770, offset: 2_104_980 }),
-  initialFinally: Object.freeze({ lineNumber: 108, columnNumber: 145_736, offset: 1_847_232 }),
-  queuedFinally: Object.freeze({ lineNumber: 108, columnNumber: 145_680, offset: 1_847_176 }),
-});
 type Site = keyof typeof CURRENT_PROJECT_STRUCTURE_WORKER_SITES;
 const handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const location = z.object({ scriptId: handle, lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() }).strict();
@@ -111,6 +104,7 @@ export class CurrentProjectStructureWorkerObserver {
   #callbackReturned = false;
   #observationAttempted = false;
   #cleanupStarted = false;
+  #armed = false;
   public constructor(lease: CurrentProjectStructureWorkerLease) { this.#lease = lease; this.#binding = requireCurrentProjectStructureWorkerLease(lease); }
   #stop(error: unknown): void {
     if (!this.#failed) {
@@ -122,8 +116,8 @@ export class CurrentProjectStructureWorkerObserver {
   async #send(command: CurrentPcbWorkerConstructionCommand, cleanup = false, retainAllocationReply?: (reply: unknown) => void): Promise<unknown> {
     this.#binding.assertCleanup();
     if (!cleanup) { need(!this.#failed && !this.#cleanupStarted); await this.#binding.assertOriginal(); }
-    if (cleanup) { need(this.#cleanupRequests < 6); this.#cleanupRequests += 1; }
-    else { need(this.#normalRequests < 160); this.#normalRequests += 1; }
+    if (cleanup) { need(this.#cleanupRequests < REQUESTS.cleanup); this.#cleanupRequests += 1; }
+    else { need(this.#normalRequests < REQUESTS.normal); this.#normalRequests += 1; }
     this.#requests += 1;
     const capture = command.method === "Runtime.callFunctionOn" && command.params.functionDeclaration === CALLS.packetText
       ? captureCurrentProjectStructureCompletionReply : captureCurrentPcbStringClockReply;
@@ -183,6 +177,15 @@ export class CurrentProjectStructureWorkerObserver {
     if (this.#upload === null && this.#structure === null) { this.#upload = upload; this.#structure = structure; }
     else { need(this.#upload !== null && this.#structure !== null); await this.#boolean("same", upload, [this.#upload]); await this.#boolean("same", structure, [this.#structure]); }
   }
+  /** Require untouched serial/debounce closures before and after arming.
+   * This rejects work that started before this observer retained its pauses.
+   * It does not supply whole-project frontier or continuation exclusion. */
+  async #pristine(): Promise<void> {
+    const scopes = await this.#binding.freshScopes();
+    z.object({ result: z.object({ type: z.literal("boolean"), value: z.literal(true) }).strict() }).strict().parse(
+      await this.#call("pristine", this.#binding.project, [scopes.upload, scopes.structure, scopes.debounce, scopes.debounceParameters,
+        this.#binding.uploadCallback, this.#binding.debounce, this.#binding.structureCallback]));
+  }
   async #promiseFulfilled(objectId: string): Promise<void> {
     const internal = z.object({ name: z.string(), value: remote }).strict();
     const raw = z.looseObject({ internalProperties: z.array(internal).min(2).max(4) }).parse(await this.#properties(objectId));
@@ -199,6 +202,7 @@ export class CurrentProjectStructureWorkerObserver {
       need(this.#pause === null || this.#pause.resumed);
       const pause: Pause = { raw: null, resumed: false, attempted: false, signal: Promise.withResolvers<null>() }; this.#pause = pause;
       const raw = captureCurrentPcbStringClockReply(input).value; this.#raw.push(raw); pause.raw = pauseSchema.parse(raw);
+      need(this.#armed);
       const previous = this.#chain;
       this.#chain = (async (): Promise<void> => { await previous; try { await this.#process(pause); } catch (error) { this.#stop(error); } })();
     } catch (error) { this.#stop(error); }
@@ -220,7 +224,7 @@ export class CurrentProjectStructureWorkerObserver {
     return values;
   }
   async #process(pause: Pause): Promise<void> {
-    need(!this.#failed && pause.raw !== null); const raw = pause.raw;
+    need(!this.#failed && this.#armed && pause.raw !== null); const raw = pause.raw;
     const point = this.#breakpoints.find(p => p.id === raw.hitBreakpoints[0]); need(point !== undefined);
     const frame = raw.callFrames[0], site = CURRENT_PROJECT_STRUCTURE_WORKER_SITES[point.site];
     need(frame?.location.scriptId === this.#binding.scriptId && frame.location.lineNumber === site.lineNumber && frame.location.columnNumber === site.columnNumber);
@@ -272,6 +276,7 @@ export class CurrentProjectStructureWorkerObserver {
     need(!this.#attempted && !consumed.has(this.#lease)); this.#attempted = true; consumed.add(this.#lease);
     try {
       await this.#binding.assertOriginal();
+      await this.#pristine();
       this.#unsubscribe = this.#binding.subscribe(Object.freeze({ acceptsPause: this.#acceptsPause, paused: this.#paused,
         resumed: this.#resumed, lost: (): void => { this.#stop(fail("OWNER_LOST")); } }));
       for (const site of ["packet", "response", "callbackReturn", "initialFinally", "queuedFinally"] as const) {
@@ -290,6 +295,7 @@ export class CurrentProjectStructureWorkerObserver {
         need(retained && this.#breakpoints.at(-1)?.id === result.breakpointId && result.actualLocation.scriptId === this.#binding.scriptId &&
           result.actualLocation.lineNumber === value.lineNumber && result.actualLocation.columnNumber === value.columnNumber);
       }
+      await this.#pristine(); this.#armed = true;
     } catch (error) { this.#stop(error); throw error; }
   }
   public async observation(): Promise<CurrentProjectStructureWorkerObservation> {
@@ -305,6 +311,9 @@ export class CurrentProjectStructureWorkerObserver {
     observations.set(observation, Object.freeze({ issuer: this.#binding.issuer, lease: this.#lease, packet: this.#packet, task: this.#task, datas: this.#datas, taskSet: this.#taskSet,
       response: this.#response, debounceTimer: this.#timer, debounceResolver: this.#resolver, uploadPromise: this.#upload, structurePromise: this.#structure })); return observation;
   }
+  /** Stop normal observation without dispatching cleanup or abandoning any
+   * original pending request. observation() still awaits its retained chain. */
+  public cancel(): void { this.#stop(fail("CANCELLED")); }
   /** Remove only retained original breakpoint IDs and resume a retained pause
    * once. Ambiguous allocation or resume acknowledgment keeps owner custody. */
   public async cleanup(): Promise<void> {

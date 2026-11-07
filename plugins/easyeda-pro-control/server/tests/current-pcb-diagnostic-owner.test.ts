@@ -1,3 +1,5 @@
+/* oxlint-disable import/max-dependencies -- Source-only native protocol fixture additionally restores its exact stored compiler input. */
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
@@ -9,7 +11,6 @@ import type { TestContext } from "node:test";
 import { setImmediate as yieldToEventLoop } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { CurrentPcb209DiagnosticOwner, CurrentPcb209VisualOwner, CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner } from "../src/current-pcb-diagnostic-owner.ts";
-// oxlint-disable-next-line import/max-dependencies -- One integration case supplies the real completed SQL reader to the existing synthetic retained native-helper owner.
 import { IDS, encrypted, inventory, mutate, fixture as sqlFixture } from "./helpers/symbol-sql-fixture.ts";
 import { currentPcbStringSaveProvenanceSource } from "../src/current-pcb-string-save-provenance.ts";
 
@@ -427,7 +428,7 @@ void test("concurrent observation cannot interleave normal close with an owned d
   assert.equal(value.owner.status().closeConsumed, false); await discovery; await close(value);
 });
 void test("diagnostic native source preserves original handles, explicit inheritance and EOF retention", async () => {
-  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   assert.ok(source.includes("root=info.process; rootThread=info.thread; rootPid=info.processId;"));
   const core = source.slice(source.indexOf("void CreateVerifiedRoot()"), source.indexOf("// Exact worker diagnostic program."));
   let cursor = -1;
