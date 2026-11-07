@@ -89,3 +89,6 @@ export function qualifyCurrentFootprintInverseColdFlowMethod(input:unknown,role:
  const location=z.strictObject({scriptId:handle,lineNumber:z.number().int().nonnegative(),columnNumber:z.number().int().nonnegative()}).parse(parts.get("[[FunctionLocation]]")?.value);
  if(location.scriptId!==scriptId||location.lineNumber!==expected.lineNumber||location.columnNumber!==expected.columnNumber||parts.get("[[FunctionLocation]]")?.subtype!=="internal#location"||parts.get("[[Scopes]]")?.subtype!=="internal#scopeList"||parts.get("[[Prototype]]")?.type!=="function"){throw new Error("FOOTPRINT_INVERSE_COLD_FLOW_SOURCE");}
 }
+
+export { CURRENT_FOOTPRINT_INVERSE_STARTUP_CALLBACK_ROLES, currentFootprintInverseStartupCallbackBudget } from "./current-footprint-inverse-startup-callback-protocol.ts";
+export type { CurrentFootprintInverseStartupCallbackCommand, CurrentFootprintInverseStartupCallbackRole } from "./current-footprint-inverse-startup-callback-protocol.ts";

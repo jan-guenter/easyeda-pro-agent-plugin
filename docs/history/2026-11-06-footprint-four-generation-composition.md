@@ -971,3 +971,41 @@ unchanged2MiB bounds. Existing packed-helper assertions now inspect the exact
 expanded C# rather than searching compressed bytes. No generated helper, pins,
 bundles, Windows process or application/native/MCP call was changed or invoked.
 Four-generation, delete, Save and persistence acceptance remain false.
+
+The inverse now also enrolls a separate startup callback collector from the
+same original bootstrap hold, after its producer and cold arms. The concrete
+method is `armFootprintInverseStartupCallbacks(actualHold)`. It issues its own
+origin and original observer, binds the complete saved source's raw-row upper
+bound once (1..512), and retains the existing four actual constructor-armed
+callback/finalizer breakpoint IDs. Neither an inert count nor another purpose's
+origin can enroll it. Repeated arm calls require the same original hold and
+return the same retained Promise. Cold bootstrap now requires this enrollment.
+
+The original cold cursor services only those four exact startup IDs on its
+single event stream. The fixed leaves join the original project, serial wrapper,
+callback, actual caller arguments and fresh closure scopes. A callback must
+observe `isReady:false` and return actual `undefined`; the source branch then
+cannot invoke structure publication, including for mixed PCB/BOARD/CONFIG and
+FOOTPRINT rows. The collector follows actual initial/queued serial finalizers
+and retains their original frame arrays in the owned object group. Any packet,
+publication, foreign session, excess callback or unsupported event refuses before
+that continuation. Finalizer observation does not prove native Promise
+fulfillment, and both queued-fulfillment and complete-frontier flags stay false.
+
+Existing generated-fixture seven-row schemas, methods and counters are
+unchanged. The inverse-only source bound reserves entry8, return4 and finalizer6
+commands, plus7 actual helper-source readbacks, at most25*N CDP commands and6*N
+pause/resumed events. Each hold/control is separately bounded; native commands
+also require the actual held role. Its complete callback vocabulary has14 fixed
+cases and no source, history, packet, bootstrap or generic resume command.
+Maximum inverse limits now derive renderer13,960, main reproof89,523 and aggregate
+controls154,530. The actual per-owner bound comes from its original saved data.
+
+Twelve focused observer/metadata/grammar/original-factory seam cases and three
+released native/projection checks pass. Full types, strict changed-file lint,
+idempotent combined generation and Linux C#5/.NET10 inverse/registration/metadata
+smokes pass. Current storage is1,395,128 bytes and decoded compiler input is
+1,931,393 bytes, within both unchanged2MiB bounds. No tracked helper/pins/bundles
+or Windows/app/native/MCP runtime changed. Plaintext/parsed/ready remain held;
+actual queue fulfillment, cache jobs, sync/timer custody, delete/main SQL,
+closed inverse proof and the fourth original generation remain incomplete.
