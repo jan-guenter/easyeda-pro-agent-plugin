@@ -30,6 +30,16 @@ public void CompletePcbViaSyncQuiesce(){if(!pcbViaWrite209||viaAbortAttempted||v
 }
 `;
 }
+/** The inverse timer shares only this exact fixed codec. It receives none of
+ * the Via SDK guards, state, dispatch or action methods. */
+export function currentProjectSyncQuiesceCodecNativeSource():string{
+ const source=native();const anchor="public sealed partial class EasyedaDiagnosticOwner {\nstring viaSyncQuiesceContext";const at=source.indexOf(anchor);if(at===-1||source.includes(anchor,at+1)){throw new Error("SYNC_QUIESCE_CODEC_ANCHOR");}
+ return `${source.slice(0,at)}public sealed partial class EasyedaDiagnosticOwner {public static string ProjectSyncQuiesceQuote(string text){return JsonString(text);}}\n`;
+}
+export function applyCurrentProjectSyncQuiesceCodecNativeFragment(input:string):string{
+ const value=`${begin}\n${currentProjectSyncQuiesceCodecNativeSource()}\n${end}`;const at=input.indexOf(begin);const stop=input.indexOf(end);if(at!==-1||stop!==-1){if(at===-1||stop<at||input.includes(begin,at+1)||input.includes(end,stop+1)){throw new Error("SYNC_QUIESCE_CODEC_MARKERS");}return input.slice(0,at)+value+input.slice(stop+end.length);}
+ const anchor="internal enum EasyedaPcbViaWriteBirth { Original }";if(input.split(anchor).length!==2){throw new Error("SYNC_QUIESCE_CODEC_NATIVE_ANCHOR");}return input.replace(anchor,`${value}\n${anchor}`);
+}
 const dispatch=String.raw`        'pcb-via-sync-quiesce-bind' {
           if(-not $PcbViaWrite209 -or -not $launched -or $request.context -isnot [string] -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,context,helperInstance,id,jobId,rootCreated,rootPid'){throw 'sync-quiesce-bind-fields'}
           $owner.BindPcbViaSyncQuiesce($request.context);$result=@{bound=$true}

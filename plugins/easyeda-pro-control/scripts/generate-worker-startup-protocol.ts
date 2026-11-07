@@ -30,7 +30,7 @@ import { applyCurrentPcbViaSaveDrainNativeFragment } from "../server/src/current
 import { applyCurrentPcbViaPostHistorySyncNativeFragment } from "../server/src/current-pcb-via-post-history-sync-native-fragment.ts";
 import { applyCurrentPcbViaSaveTailObservationNativeFragment } from "../server/src/current-pcb-via-save-tail-observation-native-fragment.ts";
 import { applyCurrentPcbViaUploadRequestNativeFragment } from "../server/src/current-pcb-via-upload-request-native-fragment.ts";
-import { applyCurrentProjectSyncQuiesceNativeFragment } from "../server/src/current-project-sync-quiesce-native-fragment.ts";
+import { applyCurrentProjectSyncQuiesceCodecNativeFragment, applyCurrentProjectSyncQuiesceNativeFragment } from "../server/src/current-project-sync-quiesce-native-fragment.ts";
 import { applyCurrentPcbViaLocalUploadNativeFragment } from "../server/src/current-pcb-via-local-upload-native-fragment.ts";
 import { applyCurrentPcbViaSaveGenerationNativeFragment } from "../server/src/current-pcb-via-save-generation-native-fragment.ts";
 import { applyCurrentGeneratedPeriodicSyncNativeFragment } from "../server/src/current-generated-periodic-sync-native-fragment.ts";
@@ -186,14 +186,18 @@ export function generateWorkerStartupProtocol(source: string, layout: "diagnosti
   next = applyCurrentGeneratedInitialCacheNativeFragment(applyCurrentProjectSaveProducerNativeFragment(applyCurrentProjectSaveProducerGuardNativeFragment(next)));
   next = applyCurrentGeneratedInitialSyncNativeFragment(next);
   next = applyCurrentGeneratedPeriodicSyncNativeFragment(next);
-  next = applyCurrentPcbViaSaveGenerationNativeFragment(next);
-  next = applyCurrentPcbViaLocalUploadNativeFragment(next);
-  next = applyCurrentProjectSyncQuiesceNativeFragment(next);
-  next = applyCurrentPcbViaUploadRequestNativeFragment(next);
-  next = applyCurrentPcbViaSaveTailObservationNativeFragment(next);
-  next = applyCurrentPcbViaPostHistorySyncNativeFragment(next);
-  next = applyCurrentPcbViaSaveDrainNativeFragment(next);
-  next = applyCurrentPcbViaObservedSourceNativeFragment(next);
+  if(layout!=="inverse"){
+    next = applyCurrentPcbViaSaveGenerationNativeFragment(next);
+    next = applyCurrentPcbViaLocalUploadNativeFragment(next);
+  }
+  next = layout === "inverse" ? applyCurrentProjectSyncQuiesceCodecNativeFragment(next) : applyCurrentProjectSyncQuiesceNativeFragment(next);
+  if(layout!=="inverse"){
+    next = applyCurrentPcbViaUploadRequestNativeFragment(next);
+    next = applyCurrentPcbViaSaveTailObservationNativeFragment(next);
+    next = applyCurrentPcbViaPostHistorySyncNativeFragment(next);
+    next = applyCurrentPcbViaSaveDrainNativeFragment(next);
+    next = applyCurrentPcbViaObservedSourceNativeFragment(next);
+  }
   if (layout !== "schematic") { next = applyCurrentPcbComponentSpatialNativeFragment(next, layout === "diagnostic"); }
   if (layout !== "schematic") { next = applyCurrentPcbViaSavedReadbackNativeFragment(next); }
   if (layout === "inverse") { next = applyCurrentFootprintInverseNativeFragment(next); }
