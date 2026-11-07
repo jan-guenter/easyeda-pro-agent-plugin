@@ -406,3 +406,36 @@ The selected old Pad controller and helper remain retained with the original
 release acknowledgment missing. Its pending exact cleanup approval is unchanged.
 No read, close, capture or release has been replayed. No new PR or version has
 been published, and the production project remains unopened and unchanged.
+
+## 2026-11-07 original seven-record Save integration
+
+Canonical c670e842 includes the separate seven-record native stage-effect
+registry, original clock custody and body joins, Save journal enrollment,
+selector-only pending Save transport, complete Save-source comparison, and
+original-owner closed capture. The projected schemas retain their original
+false provenance fields; new original registries carry the stronger joins.
+See [the source record](2026-11-07-relevance-display-original-clock.md).
+The real prospective Main callback path and actual run/setter completion are
+being integrated before dispatch is mounted. A private dispatch patch waits for
+that real Main prerequisite; no temporary Main-ready implementation is used.
+
+The complete inverse cache and four-GET synchronization readers now join their
+original Main history receipts. The parser/readiness collector has found a
+separate library-update timer/animation loop in the startup source. That loop
+requires its own original custody or quiescence before any idle claim. An empty
+queue or completed first timer cannot stand in for it. The remaining footprint
+work still includes deletion, its Main/clock/Save chain and all four generations.
+
+The new reversible compiler storage retains the exact original review text and
+all string/token bytes while keeping the runtime compiler ceiling at 2 MiB.
+Private merged source generation was idempotent; full compact C#5 compilation
+and eighteen pure codec checks plus fourteen current wire hashes passed without
+constructing an owner or application. Thirteen focused merged cache/sync/storage/
+clock checks, five journal/pending-body checks, two Save data/byte checks and one
+closed-capture refusal check passed. Both TypeScript projects and changed strict
+lint pass. These remain offline results. Final synchronized helper, four pins,
+bundles, required checks, exact CI and release review are still pending.
+
+No PR, release or installed snapshot changed in this continuation. No native
+call, process signal, Save or project open was dispatched. The original Pad
+helper/controller and unanswered bounded cleanup request remain retained.
