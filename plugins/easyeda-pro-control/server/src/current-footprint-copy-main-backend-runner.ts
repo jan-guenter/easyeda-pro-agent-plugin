@@ -393,6 +393,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   #inverseMainHistoryCustody: CurrentFootprintInverseMainHistoryCustody | null = null;
   #inverseMainHistoryCollector: CurrentFootprintInverseMainHistoryCollector | null = null;
   #inverseMainHistoryArming = false;
+  #inverseMainHistoryResolution: Resolved | null = null;
   #inverseMainHistoryPoint: Readonly<{ id: string; location: z.infer<typeof location> }> | null = null;
   #inverseMainHistoryPause: Readonly<{ identity: Pause; raw: unknown }> | null = null;
   readonly #inverseMainHistoryRows: CurrentFootprintInverseMainHistoryRows[] = [];
@@ -602,7 +603,9 @@ export class CurrentFootprintCopyMainBackendRunner {
   #resolve(record: Resolved): void {
     if (this.#inverseMainHistoryArming || this.#inverseMainHistoryPoint?.id === record.breakpointId) {
       const site = CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE;
-      need(record.location.scriptId === this.#appScriptId && record.location.lineNumber === site.lineNumber && record.location.columnNumber === site.columnNumber, "INVERSE_HISTORY_RESOLUTION"); return;
+      need(record.location.scriptId === this.#appScriptId && record.location.lineNumber === site.lineNumber && record.location.columnNumber === site.columnNumber &&
+        (this.#inverseMainHistoryPoint === null || this.#inverseMainHistoryPoint.id === record.breakpointId) && (this.#inverseMainHistoryResolution === null || this.#inverseMainHistoryResolution.breakpointId === record.breakpointId), "INVERSE_HISTORY_RESOLUTION");
+      this.#inverseMainHistoryResolution = record; return;
     }
     const savedSite = this.#savedRegistrationBreakpoints.get(record.breakpointId) ?? this.#savedRegistrationArming;
     if (savedSite !== null && savedSite !== undefined) {
@@ -1270,13 +1273,13 @@ export class CurrentFootprintCopyMainBackendRunner {
         return Object.freeze({ identity: held.identity, frameId: held.identity.frameId, raw: held.raw, sqlSite: null, pendingEvents: 0, resumed: held.identity.resumed, resumeAttempted: held.identity.resumeAttempted }); },
       pendingRequestId: (): number | null => this.#pendingId, busy: (): boolean => this.#busy,
       send: (command, cleanup): Promise<unknown> => this.#request(command, cleanup),
-      registerPoint: (id, actual): void => { need(this.#inverseMainHistoryPoint === null && !this.#sqlBreakpoints.has(id) && !this.#savedRegistrationBreakpoints.has(id), "INVERSE_HISTORY_POINT_ALIAS"); this.#inverseMainHistoryPoint = Object.freeze({ id, location: actual }); },
+      registerPoint: (id, actual): void => { need(this.#inverseMainHistoryPoint === null && (this.#inverseMainHistoryResolution === null || this.#inverseMainHistoryResolution.breakpointId === id) && !this.#sqlBreakpoints.has(id) && !this.#savedRegistrationBreakpoints.has(id), "INVERSE_HISTORY_POINT_ALIAS"); this.#inverseMainHistoryPoint = Object.freeze({ id, location: actual }); },
       pointCurrent: (id): boolean => this.#inverseMainHistoryPoint?.id === id,
       removePoint: (id): void => { need(this.#inverseMainHistoryPoint?.id === id, "INVERSE_HISTORY_ORIGINAL_REMOVE"); this.#inverseMainHistoryPoint = null; },
       resume: async (identity, command): Promise<unknown> => { same(); const held = this.#inverseMainHistoryPause; need(held !== null && held.identity === identity && this.#pause === identity && !held.identity.resumed && !held.identity.resumeAttempted, "INVERSE_HISTORY_RESUME_ONCE");
         held.identity.resumeAttempted = true; const result = await this.#request(command); await this.#wait(() => held.identity.resumed); same(); return result; } });
     this.#inverseMainHistoryCustody = custody; const collector = new CurrentFootprintInverseMainHistoryCollector(custody, this.#sqlCapture); this.#inverseMainHistoryCollector = collector;
-    this.#inverseMainHistoryArming = true;
+    this.#inverseMainHistoryResolution = null; this.#inverseMainHistoryArming = true;
     try { await collector.arm(this.#appScriptId); same(); } catch (error) { this.#fail(error); throw error; }
     finally { this.#inverseMainHistoryArming = false; this.#busy = false; }
   }

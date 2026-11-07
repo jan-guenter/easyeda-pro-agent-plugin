@@ -21,7 +21,8 @@ owner or uncertain native acknowledgment refuses continuation. Main failure,
 original worker failure and original inverse abort wake pending waits without
 replaying reads or issuing another resume. Generic Main-send capacity retains
 its prior allowance; the new finite native lane owns the additional44 normal
-and8 cleanup commands separately.
+and8 cleanup commands separately. The Main cursor also retains each native
+breakpoint-resolution identity and joins it to the actual arm acknowledgment.
 
 Opening first makes a separate cold-loader history request. The four requests
 above belong only to the later detached `syncCloud` call. Enrollment consumes
