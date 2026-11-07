@@ -1,3 +1,4 @@
+import { applyCurrentSchematicRelevanceDisplayActionNativeFragment } from "../server/src/current-schematic-relevance-display-action-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayWriteNativeFragment, normalizeCurrentSchematicRelevanceDisplayNativeFamily, prepareCurrentSchematicRelevanceDisplayNativeSwitch } from "../server/src/current-schematic-relevance-display-write-native-fragment.ts";
 /* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
 import { currentPcbDiagnosticCSharpCompilerInput, expandCurrentPcbDiagnosticCSharpStorage, packCurrentPcbDiagnosticCSharpStorage } from "../server/src/current-pcb-diagnostic-csharp-storage.ts";
@@ -159,6 +160,7 @@ export function generateWorkerStartupProtocol(source: string): string {
   next = applyCurrentPcbViaSavedReadbackNativeFragment(next);
   next = applyCurrentFootprintInverseNativeFragment(next);
   next = applyCurrentSchematicRelevanceDisplayWriteNativeFragment(next);
+  next = applyCurrentSchematicRelevanceDisplayActionNativeFragment(next);
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
   assertCurrentFootprintCopyForwardNativeRequestIds(next);
   next = packCurrentPcbDiagnosticCSharpStorage(next);

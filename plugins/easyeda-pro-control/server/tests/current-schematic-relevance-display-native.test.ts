@@ -1,3 +1,6 @@
+import { currentSchematicDisplayAccessorNativeCases } from "../src/current-schematic-display-accessor-protocol.ts";
+import { currentSchematicDisplayActionNativeCases } from "../src/current-schematic-display-action-protocol.ts";
+import { currentSchematicDisplayActionGuardCommand } from "../src/current-schematic-display-action-guard-protocol.ts";
 /* oxlint-disable import/max-dependencies -- Independent finite codecs and exact source restoration are compared in one source-only composition regression. */
 /** Fixed source/codecs only. No helper is written, compiled or launched. */
 import assert from "node:assert/strict";
@@ -54,5 +57,19 @@ void test("combined seven-record native source is idempotent, bounded and retain
     const raw = gunzipSync(compressed, { maxOutputLength: 65_536 });
     assert.equal(raw.length, Number(length)); assert.equal(raw.toString("utf8"), expected[name]);
     assert.equal(createHash("sha256").update(raw).digest("hex"), rawHash); assert.equal(createHash("sha256").update(compressed).digest("hex"), packedHash);
+  }
+});
+
+void test("seven-record metadata and guards retain separate native verbs and reject the old marker", () => {
+  const variants = [
+    { command: currentSchematicDisplayAccessorNativeCases()[0], marker: "schematicRelevanceAccessorCommand", old: "schematicAccessorCommand", action: "schematic-relevance-display-accessor" },
+    { command: currentSchematicDisplayActionNativeCases()[0], marker: "schematicRelevanceActionCommand", old: "schematicActionCommand", action: "schematic-relevance-display-action" },
+    { command: currentSchematicDisplayActionGuardCommand("run", 0, "original-script"), marker: "schematicRelevanceActionGuardCommand", old: "schematicActionGuardCommand", action: "schematic-relevance-display-action-guard" },
+  ];
+  for (const row of variants) {
+    const raw = { id: 1, ...row.command, [row.marker]: true, sessionId: "original-session" };
+    assert.equal(encode(wire(raw))["action"], row.action); assert.throws(() => sixEncode(wire(raw)));
+    assert.throws(() => encode(wire({ id: 1, ...row.command, [row.old]: true, sessionId: "original-session" })));
+    assert.throws(() => encode(wire({ ...raw, callerCode: "return true" })));
   }
 });

@@ -2,7 +2,8 @@
  * source snapshot, elapsed delay or SDK acknowledgement can create custody. */
 export interface CurrentPcbViaSaveProducerPrefix { readonly profile: "private.current-pcb-via-save-producer-prefix.v1" }
 export interface CurrentSchematicDisplaySaveProducerPrefix { readonly profile: "private.current-schematic-display-save-producer-prefix.v1" }
-export type CurrentProjectSaveProducerPrefix = CurrentPcbViaSaveProducerPrefix | CurrentSchematicDisplaySaveProducerPrefix;
+export interface CurrentSchematicRelevanceDisplaySaveProducerPrefix { readonly profile: "private.current-schematic-relevance-display-save-producer-prefix.v1" }
+export type CurrentProjectSaveProducerPrefix = CurrentPcbViaSaveProducerPrefix | CurrentSchematicDisplaySaveProducerPrefix | CurrentSchematicRelevanceDisplaySaveProducerPrefix;
 export interface CurrentProjectSaveProducerPrefixBindings {
   readonly originalGuardsArmedBeforeAction: true;
   readonly originalNonprivateBootstrapObserved: true;

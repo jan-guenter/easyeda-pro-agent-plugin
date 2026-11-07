@@ -152,7 +152,7 @@ input.on('line',line=>{const q=JSON.parse(line);
 if(q.action==='launch')send(q,{helperInstance:'b'.repeat(32),jobId:'c'.repeat(32),rootPid:123,rootCreated:'123456789012345'});
 else if(q.action==='main-attach')send(q,{attached:true});
 else if(q.action==='send'){if(${String(stages)})queue.push({id:q.requestId,result:q.method==='Target.attachToTarget'?{sessionId:'original-session'}:q.method==='Target.getTargets'?{targetInfos:[{targetId:'original-target',type:'page',title:'Start',url:'https://client/editor?cll=warn#',attached:true}]}:{},...(q.sessionId?{sessionId:q.sessionId}:{})});send(q,{written:true});}
-else if(q.action==='schematic-display-accessor'){if(q.phase!=='schematic-accessor-callees')throw Error('accessor command');queue.push({id:q.requestId,sessionId:'original-session',result:{result:{type:'object',subtype:'array',className:'Array',description:'Array(26)',objectId:'original-callees'}}});send(q,{written:true});}
+else if(q.action==='schematic-display-accessor'||q.action==='schematic-relevance-display-accessor'){if(q.phase!=='schematic-accessor-callees')throw Error('accessor command');queue.push({id:q.requestId,sessionId:'original-session',result:{result:{type:'object',subtype:'array',className:'Array',description:'Array(26)',objectId:'original-callees'}}});send(q,{written:true});}
 else if(q.action==='schematic-display-producer-bind')send(q,{bound:true});
 else if(q.action==='schematic-display-producer-observe'){const profiles=(${JSON.stringify(intrinsicProfiles)}),field=(name,value,writable=false,enumerable=false,configurable=true)=>({name,value,writable,enumerable,configurable,isOwn:true});let result;
 if(q.phase==='project-save-producer-intrinsics-constructors'||q.phase==='project-save-producer-intrinsics-members'){const count=q.phase.endsWith('-constructors')?4:28;result={result:{type:'object',subtype:'array',className:'Array',description:'Array('+count+')',objectId:count===4?'original-native-constructors':'original-native-members'}};}
@@ -206,10 +206,10 @@ else if(q.action==='release')send(q,{released:true});else throw Error('unexpecte
   assert.ok(typeof target === "function" && typeof termination === "function" && typeof requireTermination === "function");
   const callObject = (fn: unknown): object => { assert.ok(typeof fn === "function"); const result: unknown = Reflect.apply(fn, undefined, [owner]); assert.ok(typeof result === "object" && result !== null); return result; };
   const originLookup = loaded.exports["requireOriginalCurrentSchematicDisplaySaveWorkerOrigin"]; assert.ok(typeof originLookup === "function");
-  const observerUrl = new URL("../src/current-schematic-display-save-observer.ts", import.meta.url); const observerRequire = createRequire(observerUrl);
+  const observerUrl = new URL(relevance ? "../src/current-schematic-relevance-display-save-observer.ts" : "../src/current-schematic-display-save-observer.ts", import.meta.url); const observerRequire = createRequire(observerUrl);
   const observerCompiled = await transform(await readFile(observerUrl, "utf8"), { loader: "ts", format: "cjs", target: "node24", logLevel: "silent" });
   const observerModule: { exports: Record<string, unknown> } = { exports: {} }; const evaluateObserver: unknown = runInThisContext(`(function(require,module,exports){${observerCompiled.code}\n})`); assert.ok(typeof evaluateObserver === "function");
-  Reflect.apply(evaluateObserver, undefined, [(name: string): unknown => name === "./current-pcb-diagnostic-owner.ts" ? { requireOriginalCurrentSchematicDisplaySaveWorkerOrigin: originLookup } : observerRequire(name) as unknown, observerModule, observerModule.exports]);
+  Reflect.apply(evaluateObserver, undefined, [(name: string): unknown => name === "./current-pcb-diagnostic-owner.ts" ? { requireOriginalCurrentSchematicDisplaySaveWorkerOrigin: originLookup, assertOriginalCurrentSchematicRelevanceDisplayWriteOwner: loaded.exports["assertOriginalCurrentSchematicRelevanceDisplayWriteOwner"] } : observerRequire(name) as unknown, observerModule, observerModule.exports]);
   const structureLookup = loaded.exports["requireOriginalCurrentProjectSaveStructureOrigin"]; assert.ok(typeof structureLookup === "function");
   const structureUrl = new URL("../src/current-project-save-structure-observer.ts", import.meta.url); const structureRequire = createRequire(structureUrl);
   const structureCompiled = await transform(await readFile(structureUrl, "utf8"), { loader: "ts", format: "cjs", target: "node24", logLevel: "silent" });
@@ -230,7 +230,7 @@ else if(q.action==='release')send(q,{released:true});else throw Error('unexpecte
     requireProducerPromise: (packet: object, origin: object): object => { const lookup = loaded.exports["requireOriginalCurrentProjectSaveProducerCachePromiseNativeCall"]; assert.ok(typeof lookup === "function"); const result: unknown = Reflect.apply(lookup, undefined, [packet, owner, argumentsValue, origin]); assert.ok(result !== null && typeof result === "object"); return result; },
     requireStage: (packet: object): void => { const lookup = loaded.exports[relevance ? "requireOriginalSchematicRelevanceDisplayStage" : "requireOriginalSchematicDisplayStage"]; assert.ok(typeof lookup === "function"); Reflect.apply(lookup, undefined, [owner, argumentsValue, packet, "preflight"]); },
     runWorker: (): Promise<unknown> => { const run: unknown = Reflect.get(owner, "runSyntheticSchematicWorker"); assert.ok(typeof run === "function"); const result: unknown = Reflect.apply(run, owner, []); assert.ok(result instanceof Promise); return result; },
-    createObserver: (origin: object) => { const Observer = observerModule.exports["CurrentSchematicDisplaySaveObserver"]; assert.ok(typeof Observer === "function");
+    createObserver: (origin: object) => { const Observer = observerModule.exports[relevance ? "CurrentSchematicRelevanceDisplaySaveObserver" : "CurrentSchematicDisplaySaveObserver"]; assert.ok(typeof Observer === "function");
       // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Runtime checked production observer; only its fixed central accessor points to the production owner module loaded above.
       return Reflect.construct(Observer, [origin, owner, argumentsValue]) as { arm: () => Promise<void>; observeBody: () => Promise<unknown> }; },
     requireWorker: (origin: object): object => { const value: unknown = Reflect.apply(originLookup, undefined, [origin, owner, argumentsValue]); assert.ok(value !== null && typeof value === "object"); return value; },
@@ -260,7 +260,7 @@ else if(q.action==='release')send(q,{released:true});else throw Error('unexpecte
     },
     requireClock: (origin: object): object => { const lookup = loaded.exports["requireOriginalCurrentSchematicDisplayClockOrigin"]; assert.ok(typeof lookup === "function"); const result: unknown = Reflect.apply(lookup, undefined, [origin, owner, argumentsValue]); assert.ok(result !== null && typeof result === "object"); return result; },
     issueAccessor: async (): Promise<object> => {
-      const run: unknown = Reflect.get(owner, "createSchematicDisplayAccessorOrigin"); const lookup = loaded.exports["requireOriginalCurrentSchematicDisplayAccessorOrigin"]; assert.ok(typeof run === "function" && typeof lookup === "function");
+      const run: unknown = Reflect.get(owner, relevance ? "createSchematicRelevanceDisplayAccessorOrigin" : "createSchematicDisplayAccessorOrigin"); const lookup = loaded.exports[relevance ? "requireOriginalCurrentSchematicRelevanceDisplayAccessorOrigin" : "requireOriginalCurrentSchematicDisplayAccessorOrigin"]; assert.ok(typeof run === "function" && typeof lookup === "function");
       const module: unknown = sourceRequire("./current-schematic-display-accessor-protocol.ts"); assert.ok(module !== null && typeof module === "object"); const cases: unknown = Reflect.get(module, "currentSchematicDisplayAccessorNativeCases"); assert.ok(typeof cases === "function"); const commands: unknown = Reflect.apply(cases, undefined, []); assert.ok(Array.isArray(commands));
       const original: unknown = commands[0]; assert.ok(original !== null && typeof original === "object" && "params" in original && original.params !== null && typeof original.params === "object"); const params = original.params;
       const result: unknown = await Reflect.apply(run, owner, [argumentsValue, async (origin: object): Promise<void> => {
@@ -269,7 +269,7 @@ else if(q.action==='release')send(q,{released:true});else throw Error('unexpecte
         await Reflect.apply(request, undefined, [{ ...original, params: { ...params, objectId: holder, arguments: [{ value: targetValue }, { value: operationValue }] } }, false]);
       }]); assert.ok(result !== null && typeof result === "object"); return result;
     },
-    requireAccessor: (origin: object): object => { const lookup = loaded.exports["requireOriginalCurrentSchematicDisplayAccessorOrigin"]; assert.ok(typeof lookup === "function"); const result: unknown = Reflect.apply(lookup, undefined, [origin, owner, argumentsValue]); assert.ok(result !== null && typeof result === "object"); return result; } };
+    requireAccessor: (origin: object): object => { const lookup = loaded.exports[relevance ? "requireOriginalCurrentSchematicRelevanceDisplayAccessorOrigin" : "requireOriginalCurrentSchematicDisplayAccessorOrigin"]; assert.ok(typeof lookup === "function"); const result: unknown = Reflect.apply(lookup, undefined, [origin, owner, argumentsValue]); assert.ok(result !== null && typeof result === "object"); return result; } };
 }
 void test("Schematic original abort waits for pending native poll and settles the original busy renderer call without replay", async context => {
   const f = await fixture(context); const original = f.owner.getTargets(), refused = assert.rejects(original);
@@ -367,6 +367,9 @@ void test("actual SCH clock issuer binds its original effect, page holder and su
 
 void test("actual SCH accessor origin substitutes its original holder and target data through the native pipe once", async context => {
   const f = await fixture(context, false, false, true); await f.owner.executeSchematicDisplayStage("capture", f.argumentsValue); await f.owner.executeSchematicDisplayStage("preflight", f.argumentsValue);
+  const foreign: unknown = Reflect.get(f.owner, "createSchematicRelevanceDisplayAccessorOrigin"); assert.ok(typeof foreign === "function");
+  const foreignCall: unknown = Reflect.apply(foreign, f.owner, [f.argumentsValue, (): Promise<void> => Promise.resolve()]); assert.ok(foreignCall instanceof Promise);
+  await assert.rejects(foreignCall, /SCHEMATIC_RELEVANCE_DISPLAY_ORIGINAL_FACTORY/u);
   const origin = await f.issueAccessor(); const bindings = f.requireAccessor(origin); assert.equal(Reflect.get(bindings, "holderObjectId"), "original-holder"); assert.equal(Object.isFrozen(bindings), true);
   assert.throws(() => f.requireAccessor(structuredClone(origin)), /ACCESSOR_ORIGINAL/u); await assert.rejects(f.issueAccessor(), /ACCESSOR_UNAVAILABLE/u);
   assert.equal(f.actions.filter(action => action === "schematic-display-accessor").length, 1);
@@ -538,4 +541,15 @@ void test("production periodic route refuses before dispatch until its same orig
   await assert.rejects(actual.continuePeriodicSyncCall(packet), /GENERATED_INITIAL_SYNC_ORIGINAL_CALL/u); assert.equal(f.actions.includes("schematic-display-periodic-sync"), false);
   await assert.rejects(actual.continuePeriodicSyncCall(packet)); assert.equal(f.actions.includes("schematic-display-periodic-sync-complete"), false);
   await f.owner.abortSchematicDisplayWrite(); await f.owner.observeTermination(); await f.owner.releaseClosed();
+});
+
+void test("seven-record accessor origin retains its own original holder and cannot enter the six-record issuer", async context => {
+  const f = await fixture(context, false, false, true, false, false, false, null, true);
+  await f.owner.executeSchematicDisplayStage("capture", f.argumentsValue); await f.owner.executeSchematicDisplayStage("preflight", f.argumentsValue);
+  await assert.rejects(f.owner.createSchematicDisplayAccessorOrigin(f.argumentsValue, (): Promise<void> => Promise.resolve()), /OWN_MUTATION_ORIGIN/u);
+  const origin = await f.issueAccessor(); assert.equal(Reflect.get(origin, "profile"), "private.current-schematic-relevance-display-accessor-origin.v1");
+  assert.equal(Reflect.get(f.requireAccessor(origin), "holderObjectId"), "original-holder");
+  assert.throws(() => f.requireAccessor(structuredClone(origin)), /ACCESSOR_ORIGINAL/u); await assert.rejects(f.issueAccessor(), /ACCESSOR_UNAVAILABLE/u);
+  assert.equal(f.actions.filter(action => action === "schematic-relevance-display-accessor").length, 1); assert.equal(f.actions.includes("schematic-display-accessor"), false);
+  await f.owner.abortSchematicDisplayWrite(); assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
 });
