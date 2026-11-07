@@ -2,6 +2,7 @@
  * fixed Text/decorator/watched-monitor path and grants no action authority. */
 /* oxlint-disable import/max-dependencies -- Join the actual original issuer, independent fixed source/metadata leaves and finite read-only protocol. */
 import { z } from "zod";
+import { decodeCurrentSchematicRelevanceDisplayAccessorFunction } from "./current-schematic-relevance-display-accessor-replies.ts";
 import { requireOriginalCurrentSchematicRelevanceDisplayAccessorOrigin } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentSchematicRelevanceDisplayWriteOwner } from "./current-schematic-relevance-display-write-owner.ts";
 import type { GeneratedSchematicRelevanceDisplayNativeArguments } from "./generated-schematic-relevance-display-source.ts";
@@ -11,7 +12,7 @@ import { CURRENT_SCHEMATIC_DISPLAY_ACCESSOR_FLAGS as FLAGS, CURRENT_SCHEMATIC_DI
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { captureCurrentSchematicDisplayAccessorSource, currentSchematicDisplayAccessorArray, currentSchematicDisplayAccessorFourFunctions,
   currentSchematicDisplayAccessorFunctionScriptId, currentSchematicDisplayAccessorScopeFunction } from "./current-schematic-display-accessor-replies.ts";
-import { decodeGeneratedSchematicDisplayAccessorCallees, decodeGeneratedSchematicDisplayAccessorFunction, decodeGeneratedSchematicDisplayAccessorScopeValue,
+import { decodeGeneratedSchematicDisplayAccessorCallees, decodeGeneratedSchematicDisplayAccessorScopeValue,
   decodeGeneratedSchematicDisplayAccessorScopes, generatedSchematicDisplayPublicAccessorRole, qualifyGeneratedSchematicDisplayAccessorSource, requireGeneratedSchematicDisplayAccessorDescription } from "./generated-schematic-display-accessor-replies.ts";
 import type { GeneratedSchematicDisplayScopeValue } from "./generated-schematic-display-accessor-replies.ts";
 import { GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_CALLEES as CALLEES, GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_FIELDS as FIELDS, GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE as SOURCES } from "./generated-schematic-display-accessor-source.ts";
@@ -50,7 +51,7 @@ export class CurrentSchematicRelevanceDisplayAccessorObserver {
   async #metadata(ref: FunctionRef, role: GeneratedSchematicDisplayAccessorRole): Promise<string> {
     this.#phase = `metadata:${role}`;
     need(this.#source !== null && this.#scriptId !== null, "SOURCE_REQUIRED"); requireGeneratedSchematicDisplayAccessorDescription(ref.description, this.#source, role);
-    return decodeGeneratedSchematicDisplayAccessorFunction(await this.#properties(ref.objectId), this.#source, role, this.#scriptId).scopes;
+    return decodeCurrentSchematicRelevanceDisplayAccessorFunction(await this.#properties(ref.objectId), this.#source, role, this.#scriptId).scopes;
   }
   #mergeScope(raw: unknown, names: readonly ("a" | "i" | "t" | "e" | "this")[], result: Map<string, GeneratedSchematicDisplayScopeValue>): void {
     need(this.#source !== null, "SOURCE_REQUIRED");
@@ -80,7 +81,7 @@ export class CurrentSchematicRelevanceDisplayAccessorObserver {
       const callees = decodeGeneratedSchematicDisplayAccessorCallees(await this.#properties(this.#callees)); const first = await this.#properties(callees.textConstructor.objectId);
       this.#phase = "complete-source"; this.#scriptId = currentSchematicDisplayAccessorFunctionScriptId(first); const rawSource = await this.#send({ phase: "schematic-accessor-source", method: "Debugger.getScriptSource", params: { scriptId: this.#scriptId } });
       this.#source = qualifyGeneratedSchematicDisplayAccessorSource(rawSource); requireGeneratedSchematicDisplayAccessorDescription(callees.textConstructor.description, this.#source, "textConstructor");
-      const scopes = new Map<string, string>([["textConstructor", decodeGeneratedSchematicDisplayAccessorFunction(first, this.#source, "textConstructor", this.#scriptId).scopes]]);
+      const scopes = new Map<string, string>([["textConstructor", decodeCurrentSchematicRelevanceDisplayAccessorFunction(first, this.#source, "textConstructor", this.#scriptId).scopes]]);
       for (const role of CALLEES) { if (role !== "textConstructor") { scopes.set(role, await this.#metadata(callees[role], generatedSchematicDisplayPublicAccessorRole(role))); } }
       for (const field of FIELDS.slice(2)) {
         const scope = scopes.get(`${field}.set`); need(scope !== undefined, "DECORATOR_SCOPES"); const values = await this.#scope(scope, ["a", "i", "t"]); const raw = values.get("a"); const decorator = values.get("i"); const captured = values.get("t");

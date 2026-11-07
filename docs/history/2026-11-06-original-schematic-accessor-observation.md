@@ -68,3 +68,12 @@ The full next check found the same adjacency assumption in the clock and
 accessor dispatchers. Its exact generated difference is retained separately.
 Those two insertions now use the same exact-block composition helper. No failed
 candidate was selected, and the observed failures grant no runtime authority.
+
+The Relevance7 accessor observer now uses a separate decoder for the exact
+`decoratedSetter` role. Its regular function is created in the sloppy `nk`
+factory and has immutable null `arguments` and `caller` own fields in addition
+to `name`, `length` and `prototype`. An actual uninvoked Node24 Inspector test
+checks both pinned locations and rejects missing or changed descriptors. The
+old6 decoder still refuses this five-field packet. Other roles, request counts,
+native bytes and mutation gates are unchanged. Both TypeScript projects and
+strict changed-file lint pass; no application or setter ran.
