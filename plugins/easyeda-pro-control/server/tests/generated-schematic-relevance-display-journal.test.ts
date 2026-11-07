@@ -12,7 +12,7 @@ import { assertGeneratedSchematicRelevanceDisplayJournalChain } from "../src/gen
 import type { GeneratedFixtureJournalPublicationDependencies } from "../src/generated-fixture-journal-publication.ts";
 import { assertGeneratedSchematicDisplayJournalChain, consumeGeneratedSchematicDisplayDispatch } from "../src/generated-schematic-display-journal.ts";
 
-async function fixture(dependencies: GeneratedFixtureJournalPublicationDependencies = {}): Promise<Readonly<{ journal: GeneratedSchematicRelevanceDisplayJournal;
+async function fixture(dependencies: GeneratedFixtureJournalPublicationDependencies = {}, stage: "modify" | "save" = "modify"): Promise<Readonly<{ journal: GeneratedSchematicRelevanceDisplayJournal;
   enroll: (token: GeneratedSchematicRelevanceDisplayDispatch, owner: object) => GeneratedSchematicRelevanceDisplayModifyEnrollment;
   consume: (token: GeneratedSchematicRelevanceDisplayDispatch, owner: object, copyArguments?: boolean) => Readonly<{ assertPublished: () => Promise<void> }> }>> {
   const operationId = `sch209-relevance-display-${globalThis.crypto.randomUUID()}`;
@@ -25,7 +25,7 @@ async function fixture(dependencies: GeneratedFixtureJournalPublicationDependenc
     if (name !== "./generated-schematic-relevance-display-source.ts") { return actual; } assert.ok(actual !== null && typeof actual === "object");
     return { ...actual, requireOriginalGeneratedSchematicRelevanceDisplayNativeArguments: (value: unknown, checkpoint: unknown): void => { assert.equal(value, argumentsValue); assert.equal(checkpoint, prepared); } };
   }, loaded, loaded.exports]);
-  const Constructor = loaded.exports["GeneratedSchematicRelevanceDisplayJournal"], consume = loaded.exports["consumeGeneratedSchematicRelevanceDisplayDispatch"], enroll = loaded.exports["enrollGeneratedSchematicRelevanceDisplayModifyIntent"]; assert.ok(typeof Constructor === "function" && typeof consume === "function" && typeof enroll === "function");
+  const Constructor = loaded.exports["GeneratedSchematicRelevanceDisplayJournal"], consume = loaded.exports["consumeGeneratedSchematicRelevanceDisplayDispatch"], enroll = loaded.exports[stage === "save" ? "enrollGeneratedSchematicRelevanceDisplaySaveIntent" : "enrollGeneratedSchematicRelevanceDisplayModifyIntent"]; assert.ok(typeof Constructor === "function" && typeof consume === "function" && typeof enroll === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Exact production private journal class with an explicit inert original-checkpoint seam; all managed publication/verification code is unchanged.
   const journal = Reflect.construct(Constructor, [argumentsValue, prepared, dependencies]) as GeneratedSchematicRelevanceDisplayJournal;
   return { journal, enroll: (token: GeneratedSchematicRelevanceDisplayDispatch, owner: object): GeneratedSchematicRelevanceDisplayModifyEnrollment => {
@@ -34,7 +34,7 @@ async function fixture(dependencies: GeneratedFixtureJournalPublicationDependenc
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Checked exact exported production closure shape; only original argument issuance is replaced above.
     return result as GeneratedSchematicRelevanceDisplayModifyEnrollment;
   }, consume: (token: GeneratedSchematicRelevanceDisplayDispatch, owner: object, copyArguments = false): Readonly<{ assertPublished: () => Promise<void> }> => {
-    const result: unknown = Reflect.apply(consume, undefined, [token, "modify", owner, copyArguments ? structuredClone(argumentsValue) : argumentsValue]);
+    const result: unknown = Reflect.apply(consume, undefined, [token, stage, owner, copyArguments ? structuredClone(argumentsValue) : argumentsValue]);
     assert.ok(result !== null && typeof result === "object" && "assertPublished" in result && typeof result.assertPublished === "function");
     const assertPublished = result.assertPublished;
     return { assertPublished: async (): Promise<void> => { await Reflect.apply(assertPublished, result, []); } };
@@ -77,4 +77,23 @@ void test("prospective modify enrollment retains one original published marker w
   assert.throws(() => f.enroll(token, owner), /ORIGINAL_MODIFY_ENROLLMENT/u);
   await f.consume(token, owner).assertPublished(); original.assertCurrent(); original.assertOriginalAttempted();
   assert.throws(() => { original.assertBeforeAttempt(); }, /MODIFY_BEFORE_ATTEMPT/u);
+});
+
+void test("Save enrollment requires its own published stage and is consumed once before asynchronous admission", async () => {
+  const f = await fixture({}, "save"); await f.journal.reserve(); const owner = Object.freeze({ explicitSyntheticWriter: true }); f.journal.bindWriter(owner); await prefix(f.journal);
+  const modify = await f.journal.appendIntent("modify", {}, owner);
+  assert.throws(() => f.enroll(modify, owner), /ORIGINAL_SAVE_ENROLLMENT/u);
+  // A coherent inert packet advances only this synthetic journal's sequencing.
+  await f.journal.append("modify-result", { schema: "easyeda-pro-control.generated-schematic-relevance-display-stage.v1", stage: "modify", ok: true,
+    dispatchAttempted: true, originalPromiseSettled: true, modifyAttempted: true, modifyAcknowledged: true, saveAttempted: false, saveAcknowledged: false,
+    savePromiseSettled: false, source: "synthetic", windowTabId: "window", originalContextIntact: true, connectivityVerified: false, sourceVersionAliased: false,
+    workerCompletionVerified: false, structureCompletionVerified: false, persistenceVerified: false, inverseAvailable: false });
+  for (const stage of ["observe", "effect", "clock"] as const) { await f.journal.append(`${stage}-intent`, {}); await f.journal.append(`${stage}-result`, {}); }
+  const token = await f.journal.appendIntent("save", {}, owner);
+  assert.throws(() => f.enroll(structuredClone(token), owner), /ORIGINAL_SAVE_ENROLLMENT/u);
+  const original = f.enroll(token, owner); await original.assertPublished(); original.assertBeforeAttempt();
+  assert.throws(() => f.enroll(token, owner), /ORIGINAL_SAVE_ENROLLMENT/u);
+  await f.consume(token, owner).assertPublished(); original.assertOriginalAttempted();
+  assert.throws(() => { original.assertBeforeAttempt(); }, /SAVE_BEFORE_ATTEMPT/u);
+  assert.throws(() => f.consume(token, owner), /ORIGINAL_DISPATCH/u);
 });

@@ -98,6 +98,21 @@ export function enrollGeneratedSchematicRelevanceDisplayModifyIntent(token: Gene
     assertPublished: async (): Promise<void> => { current(); await original.journal.assertDispatchPublished("modify", original.sequence); current(); } });
 }
 
+/** Same structural enrollment contract, with a distinct original Save-stage
+ * registry lookup. An enrolled Modify intent cannot satisfy this function. */
+export type GeneratedSchematicRelevanceDisplaySaveEnrollment = GeneratedSchematicRelevanceDisplayModifyEnrollment;
+export function enrollGeneratedSchematicRelevanceDisplaySaveIntent(token: GeneratedSchematicRelevanceDisplayDispatch, owner: object,
+  argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): GeneratedSchematicRelevanceDisplaySaveEnrollment {
+  const original = dispatches.get(token);
+  need(original !== undefined && original.stage === "save" && original.owner === owner && original.argumentsValue === argumentsValue && !original.consumed && !original.enrolled, "ORIGINAL_SAVE_ENROLLMENT");
+  original.journal.requireDispatchIntent("save", original.sequence); original.enrolled = true;
+  const current = (): void => { need(dispatches.get(token) === original && original.enrolled, "ORIGINAL_SAVE_ENROLLMENT"); original.journal.requireRetainedDispatchIntent("save", original.sequence); };
+  return Object.freeze({ assertCurrent: current,
+    assertBeforeAttempt: (): void => { current(); need(!original.consumed, "SAVE_BEFORE_ATTEMPT"); original.journal.requireDispatchIntent("save", original.sequence); },
+    assertOriginalAttempted: (): void => { current(); need(original.consumed, "SAVE_ORIGINAL_ATTEMPT_REQUIRED"); },
+    assertPublished: async (): Promise<void> => { current(); await original.journal.assertDispatchPublished("save", original.sequence); current(); } });
+}
+
 /** One original retained journal. Publication settlement joins its immutable
  * pending candidate and same marker; it performs no native dispatch itself. */
 export class GeneratedSchematicRelevanceDisplayJournal {

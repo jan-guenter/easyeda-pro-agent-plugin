@@ -32,3 +32,19 @@ pure codec checks plus fourteen current seven-stage wire hashes passed. The
 pure harness constructs no owner and accesses no application. No tracked
 helper, migration pins, bundles or installed snapshot were emitted by this slice.
 This is source and offline evidence, not a connected writer or Save result.
+
+## Original Save body join
+
+The follow-up adds a separate Save-stage journal enrollment with synchronous
+consumption and no retry after lost acknowledgment. A native Save-data packet
+requires the actual original body, clock reply and body-join references, the
+same original three-stage effect, and a fresh verification of the immutable
+complete baseline. The native owner's separately captured raw value and clock
+must match. The explicit seven-record delta projection preserves all existing
+false provenance fields and provides no selected SQL authority. Historical
+retrieval retains the original references and does not revalidate a live hold.
+
+Five focused journal and pending-body checks passed, including rejection of a
+Modify intent by Save enrollment, cloned Save tokens and repeat consumption.
+Both TypeScript projects and changed strict lint pass. Actual Save dispatch,
+prospective Main setup, SQL continuation and persistence remain pending.

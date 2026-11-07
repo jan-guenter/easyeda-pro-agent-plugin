@@ -4301,6 +4301,15 @@ class CurrentPcbRetainedOwnerCore {
       await Reflect.apply(setup, undefined, [origin]); current(); await this.#verify(); current(); return origin;
     } catch (caughtError) { this.#schematicFailed = true; throw caughtError; } finally { this.#busy = false; }
   }
+  /** Compare the original worker's captured raw value while the same Save is
+   * pending. This read cannot dispatch Save or transfer native ownership. */
+  public requireSchematicRelevanceDisplayOriginalSaveValue(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments, value: CurrentSchematicDisplaySaveBodyValue): void {
+    assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this); requireSchematicArguments(this, argumentsValue);
+    const captured = this.#schematicSaveCapturedBody, clock = this.#schematicRelevanceClockOrigin, worker = this.#schematicWorkerOrigin;
+    if (!this.#schematicStages.has("save") || this.#schematicFailed || this.#schematicDisplayCleanupOnly || captured === null || this.#schematicProducerOriginalSaveEntry === null || this.#schematicProducerOriginalSaveBody === null ||
+      worker === null || clock === null || this.#schematicRelevanceClockValue === null || captured.clock !== this.#schematicRelevanceClockValue || canonicalJson(captured) !== canonicalJson(value)) { throw error("SCHEMATIC_RELEVANCE_ORIGINAL_SAVE_VALUE_REQUIRED"); }
+    requireOriginalCurrentSchematicDisplaySaveWorkerOrigin(worker, this, argumentsValue); requireOriginalCurrentSchematicRelevanceDisplayClockOrigin(clock, this, argumentsValue);
+  }
   /** Exact acknowledged Text effect and same original page/worker only.
    * This issues observation custody and no Save or selected SQL grant. */
   public async createSchematicRelevanceDisplayClockOrigin(plan: GeneratedSchematicRelevanceDisplayNativeArguments, effect: GeneratedSchematicRelevanceDisplayNativeEffect, setup: CurrentSchematicRelevanceDisplayClockSetup): Promise<CurrentSchematicRelevanceDisplayClockOrigin> {
