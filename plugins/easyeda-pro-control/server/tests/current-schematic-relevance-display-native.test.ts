@@ -1,3 +1,4 @@
+import { CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_REQUESTS as CALLBACK } from "../src/current-schematic-relevance-display-modify-entry-protocol.ts";
 import { currentProjectLibraryRefreshCases } from "../src/current-project-library-refresh-protocol.ts";
 import { currentProjectSyncQuiesceNativeCases } from "../src/current-project-sync-quiesce-protocol.ts";
 import { currentSchematicWireEditNativeRequest as wireEncode } from "../src/current-schematic-wire-edit-protocol.ts";
@@ -49,6 +50,15 @@ void test("combined seven-record native source is idempotent, bounded and retain
   assert.equal(expandCurrentPcbDiagnosticCSharpReviewSource(first).split("[switch]$SchematicWireEdit209").length, 2);
   assert.throws(() => prepareCurrentSchematicWireEditNativeSwitch("param([switch]$SchematicWireEdit209,[switch]$SchematicWireEdit209,)\n"), /SWITCH_DUPLICATE/u);
   assert.ok(second === first, "Complete fixed generation must remain byte-identical on its second pass."); assert.ok(Buffer.byteLength(first) <= MAXIMUM); const compiler = currentPcbDiagnosticCSharpReviewSource(first); assert.ok(Buffer.byteLength(currentPcbDiagnosticCSharpRuntimeCompilerInput(first)) <= MAXIMUM);
+  // The bridge runs before the original setAttribute entry. Its active-history
+  // Collector cannot exist yet; requiring those later reads deadlocks the only
+  // Route to that entry even when every original pre-entry receipt is present.
+  const bridge = /public void ReadyRelevanceCallbackBridge\(\)\{if\(([^;]+)\)throw Error\("schematic-callback-original-bridge-ready"\)/u.exec(compiler)?.[1];
+  assert.ok(bridge !== undefined);
+  const originalPreEntryReads = CALLBACK.arms + CALLBACK.entry + 1 + CALLBACK.setter + CALLBACK.bridge;
+  assert.ok(bridge.includes(`relevanceCallbackReads!=${String(originalPreEntryReads)}||`));
+  assert.ok(!bridge.includes(`relevanceCallbackReads!=${String(originalPreEntryReads + CALLBACK.activeHistory)}||`));
+  assert.ok(compiler.includes(`relevanceCallbackReads>=${String(CALLBACK.arms + CALLBACK.entry + CALLBACK.receiver + CALLBACK.resumes + CALLBACK.setter + CALLBACK.bridge + CALLBACK.activeHistory)}`), "Later active-history observations retain their finite native reservation.");
   const expanded = expandCurrentPcbDiagnosticCSharpReviewSource(first);
   assert.equal(expanded.split("        'schematic-relevance-display-native' {").length, 2);
   assert.equal(expanded.split("    [EasyedaDiagnosticOwner]::VerifySchematicRelevanceDisplaySmoke()\n").length, 2);
