@@ -1,0 +1,7 @@
+# Text getter and active monitor metadata
+
+The source-only model callee table covers parent, tag name and position attribute getters plus the active modify, bounding-box and attribute-watcher callbacks in both pinned schematic bundles. Full-file hashes, exact spans and function descriptions must match. Its metadata decoder requires the actual V8 name, arity, own descriptors, function location, prototype and scope-list shape. It returns no model, receiver or continuation authority. The active history callback remains in its existing table.
+
+An actual Node24 Inspector check creates all twelve uninvoked functions at their original source positions in inert VMs. Both installed sources and all descriptions and locations pass. Foreign scripts, shifted locations, duplicate own fields, changed descriptions, malformed source and getter-bearing reply objects refuse. The reply getter is never invoked. These two focused cases, both TypeScript projects and strict changed-file lint pass. No EasyEDA process, model, native owner or write was involved. The existing callback controller still needs its separate receiver, model, history and completion proofs.
+
+This follows [the held underline accessor work](2026-11-07-schematic-held-underline-accessors.md). The proof used Node24.18.0 and the existing two pinned3.2.193 schematic assets. Raw source and Inspector evidence remain outside this repository.
