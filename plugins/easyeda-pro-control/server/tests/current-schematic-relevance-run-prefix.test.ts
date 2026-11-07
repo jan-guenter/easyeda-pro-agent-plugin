@@ -48,7 +48,7 @@ void test("actual native member metadata, nullable prototype roots and Proxy rej
     assert.equal(runInContext("traps", context), 0);
     const fn = await session.post("Runtime.evaluate", { expression: `globalThis.${key}.scopeFn` }); assert.ok(typeof fn.result.objectId === "string");
     const metadata = await session.post("Runtime.getProperties", { objectId: fn.result.objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false });
-    const scopes = metadata.internalProperties?.find(item => item.name === "[[Scopes]]")?.value.objectId; assert.ok(typeof scopes === "string");
+    const scopes = metadata.internalProperties?.find(item => item.name === "[[Scopes]]")?.value?.objectId; assert.ok(typeof scopes === "string");
     const closures = currentSchematicRelevancePrefixClosures(await session.post("Runtime.getProperties", { objectId: scopes, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false }));
     assert.ok(closures[0] !== undefined && closures[1] !== undefined);
     const first = currentSchematicRelevancePrefixProperties(await session.post("Runtime.getProperties", { objectId: closures[0], ownProperties: true, accessorPropertiesOnly: false, generatePreview: false }));
