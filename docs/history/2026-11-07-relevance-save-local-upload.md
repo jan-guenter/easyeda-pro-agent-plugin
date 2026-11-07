@@ -34,3 +34,21 @@ and no tracked helper, pin or bundle was emitted.
 Generic own7 post-bootstrap source correlation, the later cloud/cache/delete
 DAG, changed-head sync, final causal completion and saved/reopened proof remain
 separate required work. The seven-record writer remains unmounted.
+
+## Combined transport correction
+
+Integration with the original library path exposed missing transport admission
+entries beyond the fixed native encoders. The combined pipe now admits each
+new own-purpose marker explicitly, preserves its exact request-phase diagnostics,
+and permits those bounded observation lanes while the original navigation or
+Save request is pending. All three local/upload/cache senders validate through
+their exact fixed wire grammar before writing bytes. Six-record and Wire codecs
+explicitly reject the new sibling markers.
+
+One real Node stream regression retains navigation and exercises library,
+local Save, upload and cache requests in the same attached original worker
+session. Unsupported cache breakpoint requests are refused before any output.
+The three fixed-codec cases and this stream case pass. Both TypeScript projects
+and strict changed-file lint pass. These synthetic replies issue no native owner
+or connected validation. The combined local/upload reproofs require both genuine
+startup controls, including the original library completion.
