@@ -121,3 +121,20 @@ both TypeScript projects and changed strict lint pass. This reserves intent
 only. Native arming, source/callee qualification, actual cancellation and the
 same-worker completion tokens are the next integration step. No completed
 startup-control proof has been issued and no native call was made here.
+
+## Original startup routing
+
+The central seven-record factory now constructs a dedicated worker-controller
+subclass and event router. Its polling and library lanes retain exact original
+breakpoints, source/child references and single-resume deliveries. The existing
+six-record and Wire router still admits its original five lanes and59 points;
+the seven-record router has68 points, including the two polling and seven
+library sites. Protected finite extension hooks preserve the common original
+held-event identity checks for the later controlled producer drain. These hooks
+issue no native or design-write authority.
+
+Twelve focused router/worker cases and both TypeScript projects pass, with zero
+changed-file strict lint warnings. The original router rejects both new lanes;
+the new router requires its original role and one resume. Native control arming,
+pristine-global capture and cancellation/completion are still being connected.
+No application, helper, pin, bundle or installation changed.

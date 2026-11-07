@@ -232,6 +232,7 @@ import type { GeneratedSchematicRelevanceDisplayNativeEffect } from "./generated
 import { compareGeneratedSchematicDisplayEffect } from "./generated-schematic-display-effect-data.ts";
 import type { GeneratedSchematicDisplayEffect } from "./generated-schematic-display-effect-data.ts";
 import { CurrentSchematicDisplayWorkerController } from "./current-schematic-display-worker-controller.ts";
+import { CurrentSchematicRelevanceDisplayWorkerController } from "./current-schematic-relevance-display-worker-controller.ts";
 import type { CurrentSchematicDisplayWorkerChild } from "./current-schematic-display-worker-controller.ts";
 import type { CurrentSchematicDisplayWorkerCommand } from "./current-schematic-display-worker-wire.ts";
 import type { CurrentSchematicDisplayProjectSourceHeld } from "./current-schematic-display-worker-bootstrap.ts";
@@ -3150,7 +3151,8 @@ class CurrentPcbRetainedOwnerCore {
     const original = (): CurrentSchematicDisplayWorkerController => {
       current(); if (controller === null || this.#schematicWorkerController !== controller) { throw error("SCHEMATIC_DISPLAY_WORKER_ORIGINAL_CURSOR"); } return controller;
     };
-    controller = new CurrentSchematicDisplayWorkerController(Object.freeze({ parentSessionId: parent.sessionId, projectUuid: argumentsValue.target.projectUuid, windowTabId,
+    const WorkerController = isSchematicRelevanceDisplayArguments(argumentsValue) ? CurrentSchematicRelevanceDisplayWorkerController : CurrentSchematicDisplayWorkerController;
+    controller = new WorkerController(Object.freeze({ parentSessionId: parent.sessionId, projectUuid: argumentsValue.target.projectUuid, windowTabId,
       existingWorkers: Object.freeze(existingWorkers),
       bindWorker: async (worker: CurrentSchematicDisplayWorkerChild): Promise<void> => {
         original(); pipe.bindSchematicDisplayWorker(worker.sessionId, worker.targetId);

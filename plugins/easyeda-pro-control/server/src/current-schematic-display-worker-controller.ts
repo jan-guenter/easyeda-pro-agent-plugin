@@ -9,7 +9,7 @@ import type { CurrentProjectStructureTransportRole } from "./current-project-str
  * no ownership; only the actual central owner's held-source callback can issue
  * its private native origin. No debugger continuation is attempted on failure. */
 import { CurrentSchematicDisplayEventRouter } from "./current-schematic-display-event-router.ts";
-import type { CurrentSchematicDisplayEventPoint, CurrentSchematicDisplayRoutedEvent, DiagnosticEvent } from "./current-schematic-display-event-router.ts";
+import type { CurrentSchematicDisplayEventLane, CurrentSchematicDisplayEventPoint, CurrentSchematicDisplayEventRouterBindings, CurrentSchematicDisplayRoutedEvent, DiagnosticEvent } from "./current-schematic-display-event-router.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_GUARD_SITES as GUARD_SITES, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as STRUCTURE_SITES } from "./current-project-save-structure-protocol.ts";
 import type { CurrentProjectSaveProducerGuardRole, CurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import { performance } from "node:perf_hooks";
@@ -22,6 +22,7 @@ import { CurrentSchematicDisplayWorkerBootstrap } from "./current-schematic-disp
 import type { CurrentSchematicDisplayProjectSourceHeld, CurrentSchematicDisplayWorkerBootstrapEvent, CurrentSchematicDisplayWorkerBootstrapResult } from "./current-schematic-display-worker-bootstrap.ts";
 import type { CurrentSchematicDisplayWorkerBootstrapCommand, CurrentSchematicDisplayWorkerCommand } from "./current-schematic-display-worker-wire.ts";
 
+export interface CurrentSchematicDisplayStartupEventPoint { readonly lane: CurrentSchematicDisplayEventLane; readonly point: CurrentSchematicDisplayEventPoint }
 export interface CurrentSchematicDisplayWorkerChild { readonly sessionId: string; readonly targetId: string; readonly url: string; readonly title: string }
 export interface CurrentSchematicDisplayWorkerControllerBindings {
   readonly parentSessionId: string; readonly projectUuid: string; readonly windowTabId: string;
@@ -87,8 +88,21 @@ export class CurrentSchematicDisplayWorkerController {
   public requireOriginal(source: CurrentSchematicDisplayProjectSourceHeld, child: CurrentSchematicDisplayWorkerChild): void {
     need(this.#source === source && this.#child === child && this.#runner !== null);
   }
+  // oxlint-disable-next-line eslint/class-methods-use-this -- This protected virtual policy keeps the original owner limits fixed while the dedicated seven-record subclass supplies its separate finite policy.
+  protected setupHelperRequestLimit(): number { return CURRENT_PROJECT_WORKER_SETUP_HELPER_REQUESTS; }
+  // oxlint-disable-next-line eslint/class-methods-use-this -- This protected virtual policy keeps the original owner limits fixed while the dedicated seven-record subclass supplies its separate finite policy.
+  protected qualifySetupHelper(program: string): void { requireCurrentProjectWorkerSetupHelper(program); }
+  // oxlint-disable-next-line eslint/class-methods-use-this -- This protected virtual policy keeps the original owner limits fixed while the dedicated seven-record subclass supplies its separate finite policy.
+  protected qualifySetupHelperSource(input: unknown, program: string): void { qualifyCurrentProjectWorkerSetupHelperSource(input, program); }
+  // oxlint-disable-next-line eslint/class-methods-use-this -- This protected virtual policy keeps the original owner limits fixed while the dedicated seven-record subclass supplies its separate finite policy.
+  protected originalStartupPoints(): readonly CurrentSchematicDisplayStartupEventPoint[] { return Object.freeze([]); }
+  // oxlint-disable-next-line eslint/class-methods-use-this -- This protected virtual policy keeps the original owner limits fixed while the dedicated seven-record subclass supplies its separate finite policy.
+  protected createEventRouter(bindings: CurrentSchematicDisplayEventRouterBindings): CurrentSchematicDisplayEventRouter { return new CurrentSchematicDisplayEventRouter(bindings); }
+  protected originalEventRouter(): CurrentSchematicDisplayEventRouter { return this.#eventRouter(); }
+  // oxlint-disable-next-line eslint/class-methods-use-this -- This protected virtual policy keeps the original owner limits fixed while the dedicated seven-record subclass supplies its separate finite policy.
+  protected observeStartupControlEvent(event: DiagnosticEvent): void { if (event.sessionId === undefined) { throw new Error("SCHEMATIC_STARTUP_EVENT_SESSION_REQUIRED"); } }
   public expectSetupHelper(source: CurrentSchematicDisplayProjectSourceHeld, program: string): void {
-    need(this.#source === source && this.#result === null && this.#pumping && this.#setupHelpers.length < CURRENT_PROJECT_WORKER_SETUP_HELPER_REQUESTS); requireCurrentProjectWorkerSetupHelper(program); this.#setupHelpers.push(program);
+    need(this.#source === source && this.#result === null && this.#pumping && this.#setupHelpers.length < this.setupHelperRequestLimit()); this.qualifySetupHelper(program); this.#setupHelpers.push(program);
   }
   async #consumeSetupHelpers(source: CurrentSchematicDisplayProjectSourceHeld): Promise<void> {
     need(this.#source === source && this.#result === null && this.#pumping);
@@ -96,7 +110,7 @@ export class CurrentSchematicDisplayWorkerController {
       need(event.method === "Debugger.scriptParsed" && record(event.params) && event.params["url"] === "" && event.params["executionContextId"] === source.executionContextId && event.params["hasSourceURL"] !== true && event.params["isLiveEdit"] !== true && (event.params["scriptLanguage"] === undefined || event.params["scriptLanguage"] === "JavaScript") && token(event.params["scriptId"]) && event.params["scriptId"] !== source.scriptId && !this.#setupHelperScripts.has(event.params["scriptId"]));
       const scriptId = event.params["scriptId"]; this.#setupHelperScripts.add(scriptId);
       const raw = await this.#bindings.request({ phase: "schematic-worker-helper-source", method: "Debugger.getScriptSource", params: { scriptId } }, false);
-      need(record(raw) && Reflect.ownKeys(raw).length === 1); const descriptor = Object.getOwnPropertyDescriptor(raw, "scriptSource"); need(descriptor !== undefined && Object.hasOwn(descriptor, "value")); const text: unknown = descriptor.value; qualifyCurrentProjectWorkerSetupHelperSource(text, program); await this.#current();
+      need(record(raw) && Reflect.ownKeys(raw).length === 1); const descriptor = Object.getOwnPropertyDescriptor(raw, "scriptSource"); need(descriptor !== undefined && Object.hasOwn(descriptor, "value")); const text: unknown = descriptor.value; this.qualifySetupHelperSource(text, program); await this.#current();
     }
   }
   public bindSaveBreakpoint(source: CurrentSchematicDisplayProjectSourceHeld, role: CurrentSchematicDisplaySaveSite, breakpointId: string): void {
@@ -173,6 +187,7 @@ export class CurrentSchematicDisplayWorkerController {
     }
     if (typeof event.sessionId === "string" && this.#background.has(event.sessionId)) { return; }
     need(this.#child !== null && event.sessionId === this.#child.sessionId && this.#events.length < 256);
+    this.observeStartupControlEvent(event);
     if (event.method === "Debugger.paused" && record(event.params) && Array.isArray(event.params["hitBreakpoints"])) {
       const hits: readonly unknown[] = event.params["hitBreakpoints"]; const guard = [...this.#producerGuardPoints].find(([_role, id]) => hits.includes(id));
       if (guard !== undefined && !(this.#producerObservationArmed && CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS.some(role => role === guard[0]))) { this.#producerGuardHeld = guard[0]; throw new Error("PROJECT_SAVE_PRODUCER_GUARD_HELD"); }
@@ -262,12 +277,13 @@ export class CurrentSchematicDisplayWorkerController {
     this.#runner = runner; const result = await runner.observe(); await this.#current();
     need(this.#runner === runner && result.sessionId === child.sessionId && this.#source !== null && result.scriptId === this.#source.scriptId &&
       result.uniqueContextId === this.#source.uniqueContextId); this.#result = result;
-    const router = new CurrentSchematicDisplayEventRouter(Object.freeze({ workerSessionId: child.sessionId, uiSessionId: this.#bindings.parentSessionId,
+    const router = this.createEventRouter(Object.freeze({ workerSessionId: child.sessionId, uiSessionId: this.#bindings.parentSessionId,
       nextEvent: (allowNativePoll: boolean): Promise<DiagnosticEvent | null> => this.#nextObservedEvent(allowNativePoll), assertCurrent: (): Promise<void> => this.#current(), fail: (): void => { this.fail(); } }));
     for (const [role, breakpointId] of this.#savePoints) { const site = CURRENT_SCHEMATIC_DISPLAY_SAVE_SITES[role]; router.register("save", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
     for (const [role, breakpointId] of this.#structurePoints) { const site = STRUCTURE_SITES[role]; router.register("structure", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
     for (const [role, breakpointId] of this.#transportPoints) { const site = TRANSPORT_SITES[role]; router.register("structureTransport", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
     for (const [role, breakpointId] of this.#producerPoints) { const site = PRODUCER_SITES[role]; router.register("producer", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
+    for (const original of this.originalStartupPoints()) { router.register(original.lane, original.point); }
     this.#router = router;
   }
   /** The outer original renderer call drives this, including its still-pending

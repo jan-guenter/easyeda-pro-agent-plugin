@@ -9,7 +9,7 @@ import type { CurrentSchematicDisplaySaveWorkerEvent } from "./current-schematic
 
 export type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 export type CurrentSchematicDisplayRoutedEvent = CurrentSchematicDisplaySaveWorkerEvent;
-export type CurrentSchematicDisplayEventLane = "save" | "clock" | "structure" | "structureTransport" | "producer";
+export type CurrentSchematicDisplayEventLane = "save" | "clock" | "structure" | "structureTransport" | "producer" | "quiesce" | "library";
 export interface CurrentSchematicDisplayEventPoint { readonly sessionId: string; readonly scriptId: string; readonly breakpointId: string;
   readonly lineNumber: number; readonly columnNumber: number; readonly role: string }
 export interface CurrentSchematicDisplayEventRouterBindings {
@@ -30,8 +30,8 @@ export class CurrentSchematicDisplayEventRouter {
   readonly #points = new Map<string, Readonly<{ lane: CurrentSchematicDisplayEventLane; point: CurrentSchematicDisplayEventPoint }>>();
   readonly #paused = new Map<string, OriginalPausedDelivery>();
   readonly #pauseEvents = new WeakMap<CurrentSchematicDisplaySaveWorkerEvent, OriginalPausedDelivery>();
-  readonly #queues: Record<CurrentSchematicDisplayEventLane, CurrentSchematicDisplaySaveWorkerEvent[]> = { save: [], clock: [], structure: [], structureTransport: [], producer: [] };
-  readonly #reading = { save: false, clock: false, structure: false, structureTransport: false, producer: false };
+  readonly #queues: Record<CurrentSchematicDisplayEventLane, CurrentSchematicDisplaySaveWorkerEvent[]> = { save: [], clock: [], structure: [], structureTransport: [], producer: [], quiesce: [], library: [] };
+  readonly #reading = { save: false, clock: false, structure: false, structureTransport: false, producer: false, quiesce: false, library: false };
   readonly #resumeRoles = new WeakMap<CurrentSchematicDisplaySaveWorkerEvent, Readonly<{ lane: CurrentSchematicDisplayEventLane; role: string }>>();
   readonly #completedClock = new Set<string>();
   #poll: Promise<boolean> | null = null; #failed = false; #clockUiPending = false; #changed = Promise.withResolvers<true>();
@@ -41,9 +41,22 @@ export class CurrentSchematicDisplayEventRouter {
     for (const [index, key] of fields.entries()) { const own = Object.getOwnPropertyDescriptor(bindings, key); need(own !== undefined && Object.hasOwn(own, "value") && typeof own.value === (index < 2 ? "string" : "function") && !types.isProxy(own.value)); }
     handle.parse(bindings.workerSessionId); handle.parse(bindings.uiSessionId); need(bindings.workerSessionId !== bindings.uiSessionId); this.#bindings = bindings; Object.freeze(this);
   }
+  /** Original six-record/Wire policy remains fixed. A dedicated seven-record
+   * subclass adds only its finite startup lanes and their fixed point count. */
+  // oxlint-disable-next-line eslint/class-methods-use-this -- This protected virtual policy keeps the original owner limits fixed while the dedicated seven-record subclass supplies its separate finite policy.
+  protected acceptsLane(lane: CurrentSchematicDisplayEventLane): boolean { return lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport" || lane === "producer"; }
+  // oxlint-disable-next-line eslint/class-methods-use-this -- This protected virtual policy keeps the original owner limits fixed while the dedicated seven-record subclass supplies its separate finite policy.
+  protected maximumRegisteredPoints(): number { return 59; }
+  /** This consumes original router bookkeeping only. Native continuation
+   * authority still requires the subclass's fixed operation proof and sender. */
+  protected reserveOriginalProducerContinuation(event: CurrentSchematicDisplaySaveWorkerEvent, role: string, allowedRoles: readonly string[]): void {
+    const current = this.#paused.get(event.sessionId), original = this.#pauseEvents.get(event);
+    need(!this.#failed && original !== undefined && original === current && original.lane === "producer" && original.delivered && !original.resumeAttempted && original.point.role === role && allowedRoles.includes(role));
+    original.resumeAttempted = true; this.notifyEvent();
+  }
   public register(lane: CurrentSchematicDisplayEventLane, input: CurrentSchematicDisplayEventPoint): void {
-    need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport" || lane === "producer")); const point = Object.freeze(pointSchema.parse(captureCurrentPcbStringClockReply(input).value));
-    need((point.sessionId === this.#bindings.workerSessionId || lane === "clock" && point.sessionId === this.#bindings.uiSessionId) && this.#points.size < 59);
+    need(!this.#failed && this.acceptsLane(lane)); const point = Object.freeze(pointSchema.parse(captureCurrentPcbStringClockReply(input).value));
+    need((point.sessionId === this.#bindings.workerSessionId || lane === "clock" && point.sessionId === this.#bindings.uiSessionId) && this.#points.size < this.maximumRegisteredPoints());
     const key = `${point.sessionId}\0${point.breakpointId}`;
     need(!this.#points.has(key) && ![...this.#points.values()].some(value => value.point.sessionId === point.sessionId && value.point.scriptId === point.scriptId &&
       value.point.lineNumber === point.lineNumber && value.point.columnNumber === point.columnNumber));
@@ -125,7 +138,7 @@ export class CurrentSchematicDisplayEventRouter {
     if (lane === "clock") { need(!this.#completedClock.has(resumed.role)); this.#completedClock.add(resumed.role); }
   }
   public async next(lane: CurrentSchematicDisplayEventLane): Promise<CurrentSchematicDisplaySaveWorkerEvent> {
-    need(!this.#failed && (lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport" || lane === "producer") && !this.#reading[lane]); this.#reading[lane] = true;
+    need(!this.#failed && this.acceptsLane(lane) && !this.#reading[lane]); this.#reading[lane] = true;
     try { for (;;) { need(!this.#failed); const event = this.#queues[lane].shift(); if (event !== undefined) { await this.#bindings.assertCurrent(); need(!this.#failed);
       this.#delivered(lane, event); return event; }
       const changed = this.#changed.promise; const allowNativePoll = this.#canPoll(lane); this.#poll ??= this.#pump(allowNativePoll); const dispatched = await this.#poll;
