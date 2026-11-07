@@ -1,3 +1,5 @@
+/* oxlint-disable import/max-dependencies -- Typed cursor and command boundaries remain separate while this one original callback capability shares their retained owner custody. */
+import type { CurrentSchematicRelevanceCompletionReceipt } from "./current-schematic-relevance-completion-cursor.ts";
 import type { CurrentSchematicRelevancePrimitiveCommand } from "./current-schematic-relevance-primitive-protocol.ts";
 import type { CurrentSchematicRelevancePrimitivePrepared, CurrentSchematicRelevancePrimitiveRecordHeld } from "./current-schematic-relevance-primitive-cursor.ts";
 import type { CurrentSchematicRelevanceUiPublicationCommand } from "./current-schematic-relevance-ui-publication-protocol.ts";
@@ -25,6 +27,9 @@ export interface CurrentSchematicRelevanceActionCallbackBindings {
   readonly requestSetAttribute: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand) => Promise<unknown>;
   readonly nextActiveHistoryCommand: () => CurrentSchematicRelevanceDisplayModifyEntryCommand | null;
   readonly requestActiveHistory: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand) => Promise<unknown>;
+  readonly nextNormalCompletionCommand: () => CurrentSchematicRelevanceDisplayModifyEntryCommand | null;
+  readonly requestNormalCompletion: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand) => Promise<unknown>;
+  readonly requireOriginalNormalCompletion: () => CurrentSchematicRelevanceCompletionReceipt;
   readonly nextPrimitiveBeforeCommand: () => CurrentSchematicRelevancePrimitiveCommand | null;
   readonly requestPrimitiveBefore: (command: CurrentSchematicRelevancePrimitiveCommand) => Promise<unknown>;
   readonly requireOriginalPrimitivePrepared: () => CurrentSchematicRelevancePrimitivePrepared;

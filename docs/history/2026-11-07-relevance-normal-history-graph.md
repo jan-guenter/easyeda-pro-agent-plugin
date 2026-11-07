@@ -55,3 +55,13 @@ expected only the earlier callback budget. Its derived ceiling now includes
 the new718 reads while separately asserting the unchanged868 active reads.
 No tracked helper, pin or bundle was regenerated;
 original-owner mounting and connected record completion remain separate.
+
+The maintained original callback observer now exposes
+`observeNormalCompletionGraph()` through the same genuine owner/origin and held
+setAttribute. Core requires completed publisher pristine and active-history
+receipts, consumes only the original cursor's commands, and retains its exact
+receipt. Preparing or submitting the primitive bridge now additionally requires
+this completed graph. The original pending Modify and held event are reproved
+around each await. No callback, status publisher, record or Save continuation is
+added by this mounting. The pre-write snapshot remains separately retained after
+the partial primitive reaches record entry.

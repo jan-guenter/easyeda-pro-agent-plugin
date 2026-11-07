@@ -1,4 +1,5 @@
 /* oxlint-disable import/max-dependencies -- The original callback facade binds independently fixed read and partial-continuation cursors to one genuine owner and event lane. */
+import type { CurrentSchematicRelevanceCompletionReceipt } from "./current-schematic-relevance-completion-cursor.ts";
 import type { CurrentSchematicRelevancePrimitivePrepared, CurrentSchematicRelevancePrimitiveRecordHeld } from "./current-schematic-relevance-primitive-cursor.ts";
 import type { CurrentSchematicRelevanceUiPublicationReceipt } from "./current-schematic-relevance-ui-publication-cursor.ts";
 /** Maintained original callback entry collector. Every read remains bound to
@@ -60,6 +61,11 @@ export class CurrentSchematicRelevanceActionCallbackObserver {
   public async observeActiveHistory(): Promise<CurrentSchematicRelevanceActiveHistoryReceipt> {
     this.#current(); need(!this.#busy && this.#setAttribute !== null && !this.#activeAttempted); this.#activeAttempted = true; this.#busy = true;
     try { need(this.#setAttribute === this.#bindings.requireOriginalSetAttribute()); await this.#bindings.assertCurrent(); this.#current(); for (let command = this.#bindings.nextActiveHistoryCommand(); command !== null; command = this.#bindings.nextActiveHistoryCommand()) { await this.#bindings.requestActiveHistory(command); this.#current(); } this.#active = this.#bindings.requireOriginalActiveHistory(); await this.#bindings.assertCurrent(); this.#current(); need(this.#active === this.#bindings.requireOriginalActiveHistory()); return this.#active; }
+    catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
+  }
+  public async observeNormalCompletionGraph(): Promise<CurrentSchematicRelevanceCompletionReceipt> {
+    this.#current(); if (this.#busy) { throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY"); } this.#busy = true;
+    try { for (;;) { const command = this.#bindings.nextNormalCompletionCommand(); if (command === null) { break; } await this.#bindings.requestNormalCompletion(command); this.#current(); } return this.#bindings.requireOriginalNormalCompletion(); }
     catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
   }
   public async prepareOriginalPrimitive(): Promise<CurrentSchematicRelevancePrimitivePrepared> {
