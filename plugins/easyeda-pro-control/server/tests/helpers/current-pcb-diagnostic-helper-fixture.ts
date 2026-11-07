@@ -183,6 +183,16 @@ function pouredShapes209Response(request: object & Record<"pcbPouredShapes209Pha
     observation, parentGroups: [] }) } };
 }
 function openingOrLayerResponse(request: object, events: unknown[]): unknown {
+  if ("generatedFixtureRegistrationPhase" in request) {
+    assert.ok(scenario?.startsWith("opening-pcb-generated") === true && "targetProjectUuid" in request && "targetRawWindowsPath" in request);
+    assert.equal(request.generatedFixtureRegistrationPhase, "register-generated-fixture");
+    if (scenario === "opening-pcb-generated-ambiguous") { return { result: { type: "undefined" } }; }
+    return { result: { type: "string", value: JSON.stringify({ schema: "easyeda-pro-control.generated-fixture-path-registration.v1",
+      projectUuid: request.targetProjectUuid, rawWindowsPath: request.targetRawWindowsPath, beforeRegistrySha256: "1".repeat(64), afterRegistrySha256: "2".repeat(64),
+      beforeCount: 0, afterCount: 1, registrationDispatched: true, priorRegistrationPresent: false, exactOtherRegistrationRosterUnchanged: true,
+      selectedRawPathMatched: true, selectedNonCbbMatched: true, recentPathRowMayHaveChanged: true, projectNavigationDispatched: false,
+      cadEditDispatched: false, explicitSaveDispatched: false, persistentRegistrationVerified: false, replayAllowed: false, writerAuthority: false }) } };
+  }
   if ("pcbArcShapes209Phase" in request) { return arcShapes209Response(request); }
   if ("pcbPouredShapes209Phase" in request) { return pouredShapes209Response(request); }
   if ("pcbImageShapes209Phase" in request) { return imageShapes209Response(request); }

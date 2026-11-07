@@ -132,3 +132,12 @@ export async function requireCurrentFootprintCopyOwned(preparation: CurrentFootp
       copyPlan: retained.plan, nativeArguments: retained.arguments, sourceAssets: retained.sourceAssets, headReference: retained.headReference });
   } catch (error) { retained.failed = true; throw error; }
 }
+/** Original object continuation for the separately journaled native composer.
+ * No JSON/plan/callback input can manufacture these construction references. */
+export async function requireOriginalCurrentFootprintCopyPreparationSource(preparation: CurrentFootprintCopyPreparation,
+  opening: CurrentFootprintCopyOpeningOwner): Promise<Readonly<Source>> {
+  await requireCurrentFootprintCopyOwned(preparation, opening);
+  const retained = preparations.get(preparation);
+  need(retained !== undefined && !retained.failed && retained.source.opening === opening, "original preparation source required");
+  return retained.source;
+}

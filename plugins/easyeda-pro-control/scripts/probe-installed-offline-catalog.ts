@@ -269,7 +269,7 @@ async function assertClosedOfflineState(controlDirectory: string, upstreamMarker
 
 async function offlineApi(child: OfflineChild, request: Record<string, unknown>): Promise<Record<string, unknown>> {
   const reply = await child.request("tools/call", { name: "easyeda_control_api", arguments: { request } });
-  requireCheck(reply["isError"] !== true, "Offline API returned an error.");
+  requireCheck(reply["isError"] !== true, `Offline API returned an error for ${String(request["action"])}.`);
   const content = record(reply["structuredContent"]);
   requireCheck(content["offline"] === true, "API reply was not explicitly offline.");
   return record(content["result"]);
@@ -309,10 +309,11 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
     requireCheck(result["valid"] === valid && result["executionAuthorized"] === false,
       "Native release validation accepted caller-selected ownership or execution authority.");
   }
-  for (const [action, total] of [["calculations", 16], ["system", 18], ["pcb-geometry", 20], ["project-schematic", 4]] as const) {
+  for (const [action, total] of [["calculations", 16], ["system", 18], ["pcb-geometry", 22], ["project-schematic", 4]] as const) {
     const result = await offlineApi(child, { action, query: { includeSchemas: true } });
     requireCheck(result["total"] === total && result["invocationEnabledByDiscovery"] === false,
-      "Offline operation discovery changed or implies invocation authority.");
+      `Offline ${action} discovery changed or implies invocation authority.`);
+
   }
   const diagnostic = await offlineApi(child, { action: "pcb-diagnostic-validation", query: { includeSchemas: true } });
   requireCheck(diagnostic["tool"] === "easyeda_control_pcb_diagnostic_validation" && diagnostic["executionAuthorized"] === false &&

@@ -11,6 +11,8 @@ import type { Inventory } from "../src/closed-sql-equality.ts";
 
 interface Engine {
   readonly copy: (owner: object, termination: object) => Promise<Inventory>;
+  readonly inverse: (owner: object, termination: object) => Promise<Inventory>;
+  readonly requireInverse: (owner: object, inventory: Inventory) => unknown;
   readonly forward: (owner: object, termination: object) => Promise<Inventory>;
   readonly requireCopy: (owner: object, inventory: Inventory) => unknown;
   readonly requireForward: (owner: object, inventory: Inventory) => unknown;
@@ -19,10 +21,10 @@ interface FixtureState {
   owned: boolean; checkpoints: number; readers: number; complete: boolean; afterCheckpoint?: () => void;
 }
 async function fixture(): Promise<Readonly<{
-  engine: Engine; copy: object; forward: object; termination: object;
+  engine: Engine; copy: object; forward: object; inverse: object; termination: object;
   state: FixtureState;
 }>> {
-  const copy = Object.freeze({}), forward = Object.freeze({}), termination = Object.freeze({});
+  const copy = Object.freeze({}), forward = Object.freeze({}), inverse = Object.freeze({}), termination = Object.freeze({});
   const state: FixtureState = { owned: true, checkpoints: 0, readers: 0, complete: true };
   const sourceIdentity = { dev: "1", ino: "2", birthtimeNs: "3", ctimeNs: "4" };
   const checkpoint = Object.freeze({ source: "/synthetic/disposable.eprj2", checkpoint: "/synthetic/checkpoint.eprj2",
@@ -37,6 +39,9 @@ async function fixture(): Promise<Readonly<{
   const program = stripTypeScriptTypes(await readFile(new URL("../src/current-footprint-copy-closed-snapshot.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:function|const))/gu, "");
   const scope = vm.createContext({ Error, Object, JSON, Promise, WeakMap, WeakSet, canonicalJson, isRecord, join,
+    assertOriginalCurrentFootprintInverseNativeOwner: (selected: object): void => { owner(selected, inverse); },
+    assertOriginalCurrentFootprintInverseTermination: (selected: object, observed: object): void => { ended(selected, observed, inverse); },
+    originalCurrentFootprintInverseNativeSource: (selected: object): object => { owner(selected, inverse); return origin; },
     assertOriginalCurrentFootprintCopyNativeOwner: (selected: object): void => { owner(selected, copy); },
     assertOriginalCurrentFootprintForwardExecutionNativeOwner: (selected: object): void => { owner(selected, forward); },
     assertOriginalCurrentFootprintCopyNativeTermination: (selected: object, observed: object): void => { ended(selected, observed, copy); },
@@ -62,10 +67,10 @@ async function fixture(): Promise<Readonly<{
     lstat: (): Promise<object> => Promise.resolve({ isFile: (): boolean => true, isSymbolicLink: (): boolean => false,
       dev: 1n, ino: 2n, birthtimeNs: 3n, ctimeNs: 4n, mtimeNs: 5n, size: 6n, mode: 0o600n, uid: 1n, gid: 1n, nlink: 1n }),
   });
-  const loaded: unknown = vm.runInContext(`${program}\n({copy:captureCurrentFootprintCopyClosedSnapshot,forward:captureCurrentFootprintForwardExecutionClosedSnapshot,requireCopy:requireCurrentFootprintCopyClosedSnapshot,requireForward:requireCurrentFootprintForwardExecutionClosedSnapshot});`, scope);
-  assert.ok(isRecord(loaded) && ["copy", "forward", "requireCopy", "requireForward"].every((name) => typeof loaded[name] === "function"));
+  const loaded: unknown = vm.runInContext(`${program}\n({inverse:captureCurrentFootprintInverseClosedSnapshot,requireInverse:requireCurrentFootprintInverseClosedSnapshot,copy:captureCurrentFootprintCopyClosedSnapshot,forward:captureCurrentFootprintForwardExecutionClosedSnapshot,requireCopy:requireCurrentFootprintCopyClosedSnapshot,requireForward:requireCurrentFootprintForwardExecutionClosedSnapshot});`, scope);
+  assert.ok(isRecord(loaded) && ["copy", "forward", "inverse", "requireCopy", "requireForward", "requireInverse"].every((name) => typeof loaded[name] === "function"));
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Private VM evaluates the maintained engine with synthetic issuers; these functions are never installed in production.
-  return { engine: loaded as unknown as Engine, copy, forward, termination, state };
+  return { engine: loaded as unknown as Engine, copy, forward, inverse, termination, state };
 }
 
 void test("Closed snapshot families preserve original owner, termination and complete-reader identities", async () => {
@@ -82,7 +87,14 @@ void test("Closed snapshot families preserve original owner, termination and com
   const old = await f.engine.copy(f.copy, f.termination);
   assert.notEqual(f.engine.requireCopy(f.copy, old), undefined);
   assert.throws(() => f.engine.requireForward(f.copy, old), /ORIGINAL_SNAPSHOT/u);
-  assert.equal(f.state.checkpoints, 2); assert.equal(f.state.readers, 2);
+  await assert.rejects(f.engine.inverse(f.forward, f.termination), /original owner family/u);
+  await assert.rejects(f.engine.forward(f.inverse, f.termination), /original owner family/u);
+  const inverse = await f.engine.inverse(f.inverse, f.termination);
+  assert.notEqual(f.engine.requireInverse(f.inverse, inverse), undefined);
+  assert.throws(() => f.engine.requireForward(f.inverse, inverse), /ORIGINAL_SNAPSHOT/u);
+  assert.throws(() => f.engine.requireInverse(f.inverse, structuredClone(inverse)), /ORIGINAL_SNAPSHOT/u);
+  await assert.rejects(f.engine.inverse(f.inverse, f.termination), /ATTEMPT_CONSUMED/u);
+  assert.equal(f.state.checkpoints, 3); assert.equal(f.state.readers, 3);
 });
 
 void test("Closed snapshot failures retain their consumed attempt and issue no snapshot after owner loss or unfinished reader", async () => {
@@ -90,10 +102,10 @@ void test("Closed snapshot failures retain their consumed attempt and issue no s
     const f = await fixture();
     if (failure === "owner") { f.state.afterCheckpoint = (): void => { f.state.owned = false; }; }
     else { f.state.complete = false; }
-    await assert.rejects(f.engine.forward(f.forward, f.termination), failure === "owner" ? /original owner lost/u : /COMPLETE_READER/u);
+    await assert.rejects(f.engine.inverse(f.inverse, f.termination), failure === "owner" ? /original owner lost/u : /COMPLETE_READER/u);
     assert.equal(f.state.checkpoints, 1); assert.equal(f.state.readers, failure === "owner" ? 0 : 1);
     f.state.owned = true;
-    await assert.rejects(f.engine.forward(f.forward, f.termination), /ATTEMPT_CONSUMED/u);
+    await assert.rejects(f.engine.inverse(f.inverse, f.termination), /ATTEMPT_CONSUMED/u);
     assert.equal(f.state.checkpoints, 1);
   }
 });

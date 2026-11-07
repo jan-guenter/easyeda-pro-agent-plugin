@@ -6,7 +6,7 @@ import { WebSocket } from "ws";
 import { z } from "zod";
 import type { CurrentPcbWorkerConstructionTransport } from "../../src/current-pcb-worker-construction-contract.ts";
 import { current209QaDescriptorFixture } from "./current-pcb-209-qa-descriptor-fixture.ts";
-import { footprintCopyConstructionFixtureSource, worker209ConstructionFixtureSource } from "./current-pcb-209-worker-construction-fixture.ts";
+import { footprintCopyConstructionFixtureSource, worker209ConstructionFixtureSource, worker209DetachedFixtureSource } from "./current-pcb-209-worker-construction-fixture.ts";
 import { workerConstructionFixtureSource } from "./current-pcb-worker-construction-fixture.ts";
 
 /** This launches only this test's synthetic Node process, never EasyEDA or a
@@ -27,6 +27,10 @@ async function constructionInspectorSource(context: TestContext, source: string,
   const socket = new WebSocket(await address.promise); await once(socket, "open");
   context.after(() => { socket.close(); });
   const pending = new Map<number, PromiseWithResolvers<unknown>>();
+  socket.once("close", (): void => {
+    for (const reply of pending.values()) { reply.reject(new Error("Original synthetic inspector closed")); }
+    pending.clear();
+  });
   const subscribers = new Set<Parameters<CurrentPcbWorkerConstructionTransport["subscribe"]>[0]>();
   let nextId = 1, ownerCurrent = true, pauses = 0, resumes = 0;
   const commands: string[] = [];
@@ -85,6 +89,10 @@ export function constructionInspector(context: TestContext, loseAtPause = 0, pub
 }
 export async function construction209Inspector(context: TestContext, loseAtPause = 0, publisherMethods = false): ReturnType<typeof constructionInspectorSource> {
   const fixture = await constructionInspectorSource(context, worker209ConstructionFixtureSource(publisherMethods), loseAtPause);
+  return { ...fixture, transport: current209QaDescriptorFixture(fixture.transport) };
+}
+export async function detachedCacheConstructionInspector(context: TestContext): ReturnType<typeof constructionInspectorSource> {
+  const fixture = await constructionInspectorSource(context, worker209DetachedFixtureSource(), 0);
   return { ...fixture, transport: current209QaDescriptorFixture(fixture.transport) };
 }
 export async function footprintCopyConstructionInspector(context: TestContext): ReturnType<typeof constructionInspectorSource> {

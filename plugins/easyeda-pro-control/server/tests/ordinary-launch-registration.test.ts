@@ -29,14 +29,14 @@ void test("ordinary launcher registration keeps quarantine and exact shared runt
     public hasAttemptedNativeOwnerAllocation(): boolean { return this.unused; }
   }
   const environment = { EASYEDA_ASSETS_ROOT: "/mnt/d/Apps/EasyEDA/resources/app/assets" };
-  const scope = vm.createContext({ z, ordinaryLaunchRequestSchema, OrdinaryLaunchCoordinator: Coordinator, WindowsControlRuntime: Runtime,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, ordinaryLaunchRequestSchema, OrdinaryLaunchCoordinator: Coordinator, WindowsControlRuntime: Runtime,
     CurrentPcbDiagnosticLifecycle: Diagnostic,
     disposableOwnerMethod: (owner: object, key: string): unknown => Reflect.get(owner, key) as unknown,
     process: { env: environment }, resolve: (): string => "/synthetic/plugin", upstream: {},
     ordinaryLaunchCoordinator: undefined, ordinaryLaunchRuntime: undefined, windowsRuntime: undefined,
     closedSymbolIndexReservation: undefined, scheduledShutdown: undefined,
     currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
-    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, currentFootprintForwardSourceValidation: undefined, hasForwardSourceCustody: (): boolean => false,
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, currentFootprintForwardSourceValidation: undefined, hasForwardSourceCustody: (): boolean => false, hasFixtureImportCustody: (): boolean => false, fixtureImportCoordinator: undefined,
     closedSymbolUnreservedFailure: { observed: false },
     assertOrdinaryRuntimeAllocationAllowed: (): void => { checks += 1; },
     engine: { assertBridgeDispatchAllowed: async (): Promise<void> => {

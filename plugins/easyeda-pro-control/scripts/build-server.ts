@@ -47,6 +47,9 @@ const DISABLED_NATIVE_NAMESPACE = "easyeda-disabled-ws-native";
 const DISABLED_NATIVE_MODULES = new Set(["bufferutil", "utf-8-validate"]);
 const DISABLED_NATIVE_STUB =
   'throw new Error("Optional native ws acceleration is disabled in the reviewed bundle.");\n';
+// Only lexical identifiers are compacted. Runtime function/class names are
+// Retained, property names are untouched and reviewed program strings stay exact.
+const FACADE_BUNDLE_MINIFY_OPTIONS = Object.freeze({ keepNames: true, minifyIdentifiers: true, minifySyntax: false, minifyWhitespace: true });
 const ESBUILD_TSCONFIG_RAW = Object.freeze({
   compilerOptions: Object.freeze({
     useDefineForClassFields: true,
@@ -68,6 +71,7 @@ const MANAGER_FORBIDDEN_INPUTS = new Set([
 ]);
 const MANAGER_SCRIPT_INPUTS = new Set([
   "scripts/control-session-manager-main.ts", "scripts/control-session-manager.ts",
+  "scripts/control-session-via-adapter.ts", "scripts/control-session-spatial-adapter.ts",
   "scripts/control-session.ts", "scripts/control-session-transport.ts", "scripts/private-temporary-directory.ts",
 ]);
 const sha256Schema = z.string().regex(/^[a-f0-9]{64}$/u);
@@ -804,7 +808,7 @@ function pairIdentity(
       esbuildVersion,
       format: "esm",
       legalComments: "eof",
-      minifyWhitespace: true,
+      ...FACADE_BUNDLE_MINIFY_OPTIONS,
       platform: "node",
       publicationSchema: PUBLICATION_SCHEMA,
       sourcemap: false,
@@ -2254,9 +2258,8 @@ export async function buildServer(
     format: "esm",
     legalComments: "eof",
     metafile: true,
-    // Keep identifiers and syntax intact. Only generated formatting is compacted;
-    // Embedded reviewed program strings and the admission banner retain their bytes.
-    minifyWhitespace: true,
+    // Retain runtime names and literal program bytes while bounding the bundle.
+    ...FACADE_BUNDLE_MINIFY_OPTIONS,
     nodePaths: [join(pluginRoot, "node_modules")],
     outdir: outputRoot,
     outExtension: { ".js": ".mjs" },

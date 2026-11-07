@@ -9,6 +9,8 @@ import { yieldProofEventLoop } from "./cooperative-proof.ts";
 import { completedCurrentFootprintCopyV2SqlSource } from "./current-footprint-copy-v2-sql.ts";
 import type { CurrentFootprintCopyV2SqlPlan, CurrentFootprintCopyV2SqlSource } from "./current-footprint-copy-v2-sql.ts";
 import { prepareCurrentFootprintDeletePlan } from "./current-footprint-delete-plan.ts";
+import { captureCurrentFootprintDeleteWorkerEncoding, prepareCurrentFootprintDeleteObservedPlan } from "./current-footprint-delete-observed-plan.ts";
+import type { CurrentFootprintDeleteWorkerEncoding } from "./current-footprint-delete-observed-plan.ts";
 import { decodeNativeHistoryChunk, isNativeDocumentDeleted } from "./native-history.ts";
 import { nativeProjectSymbolSqlSchema } from "./native-project-sql-schema.ts";
 import { MAX_ENCODED_BYTES } from "./sqlite-inventory-core.ts";
@@ -41,7 +43,13 @@ export interface CurrentFootprintDeleteSqlPlan {
   readonly documentClockCalls: 1; readonly explicitSaveAttempts: 0;
   readonly executionAuthorized: false; readonly producerBindingVerified: false; readonly dependencyEligibilityVerified: false;
 }
+export interface CurrentFootprintDeleteObservedSqlPlan extends Omit<CurrentFootprintDeleteSqlPlan, "profile"> {
+  readonly profile: "private.current-footprint-delete-sql-plan.v2";
+  readonly workerEncoding: CurrentFootprintDeleteWorkerEncoding;
+}
+type Plan = CurrentFootprintDeleteSqlPlan | CurrentFootprintDeleteObservedSqlPlan;
 interface Prepared {
+  readonly workerEncoding: CurrentFootprintDeleteWorkerEncoding | null;
   readonly before: Inventory; readonly copyAfter: Inventory; readonly copySqlPlan: CurrentFootprintCopyV2SqlPlan;
   readonly copyEffect: unknown; readonly copySource: CurrentFootprintCopyV2SqlSource;
   readonly witness: CurrentFootprintDeleteSqlWitness; readonly targetUuid: string;
@@ -57,8 +65,8 @@ export interface CurrentFootprintDeleteSqlSource {
   readonly before: Inventory; readonly after: Inventory; readonly documentClock: number;
   readonly workerUpload: string; readonly appendPlaintextSha256: string;
 }
-const plans = new WeakMap<CurrentFootprintDeleteSqlPlan, Prepared>();
-const completedEffects = new WeakMap<object, Readonly<{ plan: CurrentFootprintDeleteSqlPlan; after: Inventory; source: CurrentFootprintDeleteSqlSource }>>();
+const plans = new WeakMap<Plan, Prepared>();
+const completedEffects = new WeakMap<object, Readonly<{ plan: Plan; after: Inventory; source: CurrentFootprintDeleteSqlSource }>>();
 function need(condition: boolean, message: string): asserts condition { if (!condition) { throw new Error(`Current footprint delete SQL: ${message}`); } }
 function requireOriginalDeleteInputs(prepared: Prepared): void {
   need(completedCurrentFootprintCopyV2SqlSource(prepared.copySqlPlan, prepared.copyEffect, prepared.copyAfter) === prepared.copySource,
@@ -66,6 +74,11 @@ function requireOriginalDeleteInputs(prepared: Prepared): void {
   supported(prepared.before, prepared.witness.branchUuid);
 }
 function workerUpload(prepared: Prepared, clock: number): string {
+  if (prepared.workerEncoding !== null) {
+    return prepareCurrentFootprintDeleteObservedPlan({ targetUuid: prepared.targetUuid, client: prepared.witness.client,
+      maximumTicketBeforeClock: prepared.witness.preDispatchMaxTicket, maximumTicketAfterClock: prepared.witness.preDispatchMaxTicket,
+      documentClock: clock, managerUserAbsent: true, ...prepared.workerEncoding }).workerUpload;
+  }
   return prepareCurrentFootprintDeletePlan({ targetUuid: prepared.targetUuid, client: prepared.witness.client,
     maximumTicketBeforeClock: prepared.witness.preDispatchMaxTicket, maximumTicketAfterClock: prepared.witness.preDispatchMaxTicket,
     documentClock: clock, managerUserAbsent: true, editorVersion: "3.2.209" }).workerUpload;
@@ -221,10 +234,11 @@ function sqlBudget(prepared: Prepared, plaintextBytes: number): Readonly<{ maxim
  * A supplied target UUID or matching digest cannot choose another document.
  * Fresh unlocked heads are refused; this append-only model requires the
  * existing locked/aged selection proof, never a SQL repair or forced lock. */
-export async function prepareCurrentFootprintDeleteSqlPlan(input: Readonly<{
-  copySqlPlan: CurrentFootprintCopyV2SqlPlan; copyEffect: unknown; copyAfter: Inventory; before: Inventory;
-  witness: CurrentFootprintDeleteSqlWitness;
-}>): Promise<CurrentFootprintDeleteSqlPlan> {
+export interface CurrentFootprintDeleteSqlInput {
+  readonly copySqlPlan: CurrentFootprintCopyV2SqlPlan; readonly copyEffect: unknown; readonly copyAfter: Inventory; readonly before: Inventory;
+  readonly witness: CurrentFootprintDeleteSqlWitness;
+}
+async function prepareDeleteSql(input: CurrentFootprintDeleteSqlInput, workerEncoding: CurrentFootprintDeleteWorkerEncoding | null): Promise<Plan> {
   const captured = dataFields(input, ["copySqlPlan", "copyEffect", "copyAfter", "before", "witness"]);
   const { before, copyAfter, copyEffect, copySqlPlan } = input;
   need(captured["before"] === before && captured["copyAfter"] === copyAfter && captured["copyEffect"] === copyEffect && captured["copySqlPlan"] === copySqlPlan,
@@ -250,18 +264,36 @@ export async function prepareCurrentFootprintDeleteSqlPlan(input: Readonly<{
   const eligibility = headEligibility(unique(history, "uuid", oldHead), history, witness);
   const data = table(before, "history_data");
   const allocation = sequenceAllocation(before, data);
-  const prepared: Prepared = { before, copyAfter, copySqlPlan, copyEffect, copySource, witness, targetUuid, project, branch, history, data, oldHead,
+  const prepared: Prepared = { workerEncoding, before, copyAfter, copySqlPlan, copyEffect, copySource, witness, targetUuid, project, branch, history, data, oldHead,
     historyId: maximumId(history) + 1n, chunkId: allocation.id, dataSequence: allocation.row, ...actor(before, witness.backendActorUuid) };
   const maximumPlaintextBytes = Buffer.byteLength(`${editRow(prepared, witness.backendClockMaxMs)}|\n${workerUpload(prepared, witness.documentClockMaxMs)}`);
   const capacity = sqlBudget(prepared, maximumPlaintextBytes);
   need(decoded.history.plaintextBytes + maximumPlaintextBytes <= 8_388_608, "complete raw-history capacity exceeded");
   requireOriginalDeleteInputs(prepared); need(readerCompletion(before) === completion, "original reader changed during preparation");
-  const plan: CurrentFootprintDeleteSqlPlan = Object.freeze({ profile: "private.current-footprint-delete-sql-plan.v1",
-    beforeSqlSha256: before.logicalSha256, originalCopySqlSha256: copyAfter.logicalSha256, targetUuid,
+  const common = { beforeSqlSha256: before.logicalSha256, originalCopySqlSha256: copyAfter.logicalSha256, targetUuid,
     expectedTicket: witness.preDispatchMaxTicket + 1, headEligibility: eligibility, maximumPlaintextBytes, ...capacity,
-    expectedStructureRequests: 0, onlyOriginalCreatedCopySelected: true, documentClockCalls: 1, explicitSaveAttempts: 0,
-    executionAuthorized: false, producerBindingVerified: false, dependencyEligibilityVerified: false });
+    expectedStructureRequests: 0 as const, onlyOriginalCreatedCopySelected: true as const, documentClockCalls: 1 as const, explicitSaveAttempts: 0 as const,
+    executionAuthorized: false as const, producerBindingVerified: false as const, dependencyEligibilityVerified: false as const };
+  const plan: Plan = workerEncoding === null ? Object.freeze({ profile: "private.current-footprint-delete-sql-plan.v1", ...common }) :
+    Object.freeze({ profile: "private.current-footprint-delete-sql-plan.v2", ...common, workerEncoding });
   plans.set(plan, prepared); return plan;
+}
+/** The historical encoder remains pinned to its original v1 model. */
+export async function prepareCurrentFootprintDeleteSqlPlan(input: CurrentFootprintDeleteSqlInput): Promise<CurrentFootprintDeleteSqlPlan> {
+  const plan = await prepareDeleteSql(input, null); need(plan.profile === "private.current-footprint-delete-sql-plan.v1", "legacy inverse plan required"); return plan;
+}
+/** New worker encoding is captured before the first await. Target UUID still
+ * comes exclusively from the original completed copy/full-SQL relationship. */
+export async function prepareCurrentFootprintDeleteObservedSqlPlan(input: CurrentFootprintDeleteSqlInput & Readonly<{ workerEncoding: unknown }>): Promise<CurrentFootprintDeleteObservedSqlPlan> {
+  const captured = dataFields(input, ["copySqlPlan", "copyEffect", "copyAfter", "before", "witness", "workerEncoding"]);
+  const workerEncoding = captureCurrentFootprintDeleteWorkerEncoding(captured["workerEncoding"]);
+  const { before, copyAfter, copyEffect, copySqlPlan, witness } = input;
+  need(captured["before"] === before && captured["copyAfter"] === copyAfter && captured["copyEffect"] === copyEffect && captured["copySqlPlan"] === copySqlPlan && captured["witness"] === witness, "original observed input changed");
+  const plan = await prepareDeleteSql({ before, copyAfter, copyEffect, copySqlPlan, witness }, workerEncoding);
+  need(plan.profile === "private.current-footprint-delete-sql-plan.v2", "observed inverse plan required"); return plan;
+}
+function requireVariant(plan: Plan, observed: boolean): Prepared {
+  const prepared = plans.get(plan); need(prepared !== undefined && (prepared.workerEncoding !== null) === observed, "original version-specific inverse plan required"); return prepared;
 }
 function newRow(owner: SqlTable, id: bigint): SqlRow {
   const matches = owner.rows.filter((row) => integer(field(owner, row, "id")) === id);
@@ -300,7 +332,7 @@ async function exactRows(expected: readonly SqlRow[], observed: readonly SqlRow[
 
 /** Native deleteData reports success even when uploadLocal returns false.
  * Only this complete, independently read SQL relation proves the modeled effect. */
-export async function verifyCurrentFootprintDeleteSqlEffect(plan: CurrentFootprintDeleteSqlPlan, after: Inventory): Promise<Readonly<Record<string, unknown>>> {
+async function verifyDeleteSqlEffect(plan: Plan, after: Inventory): Promise<Readonly<Record<string, unknown>>> {
   const prepared = plans.get(plan); need(prepared !== undefined, "original prepared plan required"); requireOriginalDeleteInputs(prepared);
   const { before, witness, history, data } = prepared;
   supported(after, witness.branchUuid); const completion = readerCompletion(after);
@@ -357,7 +389,7 @@ export async function verifyCurrentFootprintDeleteSqlEffect(plan: CurrentFootpri
     } else { need(observed.semanticSha256 === document.semanticSha256, "peer document changed"); }
   }
   requireOriginalDeleteInputs(prepared); need(readerCompletion(after) === completion, "original complete reader changed");
-  const effect = Object.freeze({ profile: "private.current-footprint-delete-full-sql-effect.v1", targetUuid: plan.targetUuid,
+  const effect = Object.freeze({ profile: prepared.workerEncoding === null ? "private.current-footprint-delete-full-sql-effect.v1" : "private.current-footprint-delete-full-sql-effect.v2", ...(prepared.workerEncoding === null ? {} : { workerEncoding: prepared.workerEncoding }), targetUuid: plan.targetUuid,
     beforeSqlSha256: before.logicalSha256, afterSqlSha256: after.logicalSha256, expectedTicket: plan.expectedTicket,
     exactLogicalSqlEffect: true, structureRowsUnchanged: true, allPeerDocumentsUnchanged: true, targetHistoricalRecordsRetained: true,
     plaintextSha256: sha256Text(plaintext), workerUploadSha256: sha256Text(upload), newHistoryUuid: headUuid,
@@ -370,9 +402,22 @@ export async function verifyCurrentFootprintDeleteSqlEffect(plan: CurrentFootpri
   completedEffects.set(effect, Object.freeze({ plan, after, source })); return effect;
 }
 /** Historical successful relation only; no copied effect or reader is adopted. */
-export function completedCurrentFootprintDeleteSqlSource(plan: CurrentFootprintDeleteSqlPlan, effect: unknown, after: Inventory): CurrentFootprintDeleteSqlSource {
+function completedDeleteSqlSource(plan: Plan, effect: unknown, after: Inventory): CurrentFootprintDeleteSqlSource {
   need(effect !== null && typeof effect === "object", "original successful delete effect required");
   const completed = completedEffects.get(effect), prepared = plans.get(plan);
   need(completed !== undefined && prepared !== undefined && completed.plan === plan && completed.after === after, "original successful effect/reader relation required");
   requireOriginalDeleteInputs(prepared); supported(after, prepared.witness.branchUuid); return completed.source;
+}
+
+export async function verifyCurrentFootprintDeleteSqlEffect(plan: CurrentFootprintDeleteSqlPlan, after: Inventory): Promise<Readonly<Record<string, unknown>>> {
+  requireVariant(plan, false); const effect = await verifyDeleteSqlEffect(plan, after); return effect;
+}
+export async function verifyCurrentFootprintDeleteObservedSqlEffect(plan: CurrentFootprintDeleteObservedSqlPlan, after: Inventory): Promise<Readonly<Record<string, unknown>>> {
+  requireVariant(plan, true); const effect = await verifyDeleteSqlEffect(plan, after); return effect;
+}
+export function completedCurrentFootprintDeleteSqlSource(plan: CurrentFootprintDeleteSqlPlan, effect: unknown, after: Inventory): CurrentFootprintDeleteSqlSource {
+  requireVariant(plan, false); return completedDeleteSqlSource(plan, effect, after);
+}
+export function completedCurrentFootprintDeleteObservedSqlSource(plan: CurrentFootprintDeleteObservedSqlPlan, effect: unknown, after: Inventory): CurrentFootprintDeleteSqlSource {
+  requireVariant(plan, true); return completedDeleteSqlSource(plan, effect, after);
 }
