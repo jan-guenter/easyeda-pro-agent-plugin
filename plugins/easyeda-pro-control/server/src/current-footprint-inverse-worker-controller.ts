@@ -1,5 +1,5 @@
-import { CURRENT_FOOTPRINT_INVERSE_COLD_LOAD_SITES as COLD_SITES, CURRENT_FOOTPRINT_INVERSE_STARTUP_CALLBACK_ROLES as STARTUP_ROLES, classifyCurrentFootprintInverseColdPause, currentFootprintInverseConditionBudget, currentFootprintInverseConditionText, currentFootprintInverseStartupCallbackBudget, qualifyCurrentFootprintInverseConditionSource } from "./current-footprint-inverse-cold-load-protocol.ts";
-import type { CurrentFootprintInverseColdLoadCommand, CurrentFootprintInverseColdStepCommand, CurrentFootprintInverseConditionRole, CurrentFootprintInverseStartupCallbackCommand, CurrentFootprintInverseStartupCallbackRole, CurrentFootprintInverseStartupQueueCommand, CurrentFootprintInverseColdLoadRole as CurrentPcbViaSavedLoadRole } from "./current-footprint-inverse-cold-load-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_INITIAL_CACHE_ROLES as CACHE_ROLES, CURRENT_FOOTPRINT_INVERSE_COLD_LOAD_SITES as COLD_SITES, CURRENT_FOOTPRINT_INVERSE_STARTUP_CALLBACK_ROLES as STARTUP_ROLES, classifyCurrentFootprintInverseColdPause, currentFootprintInverseConditionBudget, currentFootprintInverseConditionText, currentFootprintInverseInitialCacheBudget, currentFootprintInverseStartupCallbackBudget, qualifyCurrentFootprintInverseConditionSource } from "./current-footprint-inverse-cold-load-protocol.ts";
+import type { CurrentFootprintInverseColdLoadCommand, CurrentFootprintInverseColdStepCommand, CurrentFootprintInverseConditionRole, CurrentFootprintInverseInitialCacheCommand, CurrentFootprintInverseInitialCacheRole, CurrentFootprintInverseStartupCallbackCommand, CurrentFootprintInverseStartupCallbackRole, CurrentFootprintInverseStartupQueueCommand, CurrentFootprintInverseColdLoadRole as CurrentPcbViaSavedLoadRole } from "./current-footprint-inverse-cold-load-protocol.ts";
 /** Separate inverse event cursor. It shares only the fixed seven-source
  * bootstrap algorithm, not a saved reader controller, origin or purpose.
  * Browser/page attachments must name the same suspended original target. */
@@ -28,6 +28,7 @@ export interface CurrentFootprintInverseWorkerControllerBindings {
   readonly poll: () => Promise<void>; readonly assertCurrent: () => Promise<void>;
   readonly projectSourceHeld: (source: CurrentPcbViaSavedLoadProjectSourceHeld, controller: CurrentFootprintInverseWorkerController) => Promise<void>;
   readonly constructionRequest: (command: CurrentFootprintInverseConstructionCommand, retainAllocationReply?: (reply: unknown) => void) => Promise<unknown>;
+  readonly initialCacheRequest:(command:CurrentFootprintInverseInitialCacheCommand)=>Promise<unknown>;readonly initialCacheHeld:()=>Promise<void>;
   readonly startupQueueRequest:(command:CurrentFootprintInverseStartupQueueCommand)=>Promise<unknown>;
   readonly startupCallbackRequest:(command:CurrentFootprintInverseStartupCallbackCommand)=>Promise<unknown>;
   readonly startupCallbackHeld:(role:CurrentFootprintInverseStartupCallbackRole,event:DiagnosticEvent)=>Promise<void>;
@@ -70,6 +71,8 @@ export class CurrentFootprintInverseWorkerController {
   #coldStartupWork:Readonly<{run:()=>Promise<void>;result:ReturnType<typeof Promise.withResolvers<boolean>>}>|null=null;
   #coldStartupAttempted=false;#coldStartupStarted=false;#coldStartupHeld:Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>|null=null;
   #coldStepPending:Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>|null=null;
+  #initialCacheBound=0;#initialCacheHolds=0;#initialCacheHeld:{role:CurrentFootprintInverseInitialCacheRole;event:WorkerEvent;delivered:boolean;resumeAttempted:boolean}|null=null;#initialCacheSettlementAttempted=false;
+  readonly #initialCacheHelpers:{program:string;scriptId:string|null}[]=[];
   #startupQueueReading=false;readonly #startupQueueReads=new WeakSet<object>();readonly #startupQueueHelpers:{program:string;scriptId:string|null}[]=[];
   #conditionBound=0;#conditionReadAttempts=0;readonly #conditionRoles=new Set<CurrentFootprintInverseConditionRole>();readonly #conditionScriptIds:string[]=[];readonly #conditionSeenIds=new Set<string>();readonly #conditionCounts=new Map<string,number>();
   #startupCallbackBound=0;#startupCallbackHolds=0;#startupCallbackHeld:{role:CurrentFootprintInverseStartupCallbackRole;event:WorkerEvent;delivered:boolean;resumeAttempted:boolean}|null=null;
@@ -89,7 +92,7 @@ export class CurrentFootprintInverseWorkerController {
   #source: CurrentPcbViaSavedLoadProjectSourceHeld | null = null; #failed = false; #reading = false; #eventCount = 0; #networkEvents = 0; #pumping = false;
   public constructor(bindings: CurrentFootprintInverseWorkerControllerBindings) {
     need(bindings !== null && typeof bindings === "object" && !types.isProxy(bindings) && Object.getPrototypeOf(bindings) === Object.prototype && Object.isFrozen(bindings));
-    const fields = ["parentSessionId", "projectUuid", "windowTabId", "bindWorker", "request", "poll", "assertCurrent", "projectSourceHeld", "constructionRequest", "startupQueueRequest", "startupCallbackRequest", "startupCallbackHeld", "conditionSourceRequest", "timerRequest", "timerHeld", "coldStepRequest", "coldRequest", "producerArmRequest", "constructionHeld", "fail"];
+    const fields = ["parentSessionId", "projectUuid", "windowTabId", "bindWorker", "request", "poll", "assertCurrent", "projectSourceHeld", "constructionRequest", "initialCacheRequest", "initialCacheHeld", "startupQueueRequest", "startupCallbackRequest", "startupCallbackHeld", "conditionSourceRequest", "timerRequest", "timerHeld", "coldStepRequest", "coldRequest", "producerArmRequest", "constructionHeld", "fail"];
     need(Reflect.ownKeys(bindings).length === fields.length);
     for (const [index, name] of fields.entries()) { const d = Object.getOwnPropertyDescriptor(bindings, name); need(d !== undefined && Object.hasOwn(d, "value") && typeof d.value === (index < 3 ? "string" : "function") && !types.isProxy(d.value)); }
     need(token(bindings.parentSessionId) && token(bindings.windowTabId) && /^[a-f\d]{64}$/u.test(bindings.projectUuid)); this.#bindings = bindings; Object.freeze(this);
@@ -109,14 +112,14 @@ export class CurrentFootprintInverseWorkerController {
    * fixed policy acknowledgments and later original source/body joins matter. */
   public observeEvent(event: DiagnosticEvent): void {
     try {
-      this.#eventCount += 1; need(!this.#failed && this.#eventCount <= 1024+13*this.#startupCallbackBound+(this.#conditionBound>0?currentFootprintInverseConditionBudget(this.#conditionBound):0));
+      this.#eventCount += 1; need(!this.#failed && this.#eventCount <= 1024+13*this.#startupCallbackBound+18*this.#initialCacheBound+(this.#conditionBound>0?currentFootprintInverseConditionBudget(this.#conditionBound):0));
       if (event.method === "Target.attachedToTarget") { this.#attach(event); return; }
       need(this.#page !== null && event.sessionId === this.#page.sessionId);
       if (["Network.requestWillBeSent", "Network.requestWillBeSentExtraInfo", "Network.responseReceived", "Network.responseReceivedExtraInfo", "Network.loadingFinished", "Network.loadingFailed", "Network.dataReceived", "Network.requestServedFromCache", "Network.resourceChangedPriority"].includes(event.method)) {
         this.#networkEvents += 1; need(this.#networkEvents <= 512); return;
       }
       if (this.#source !== null && event.method === "Debugger.scriptParsed" && event.params["url"] === "") {
-        const expected = [...this.#constructionHelpers,...this.#producerHelpers,...this.#coldHelpers,...this.#startupCallbackHelpers,...this.#timerHelpers,...this.#startupQueueHelpers].find(value => value.scriptId === null);
+        const expected = [...this.#constructionHelpers,...this.#producerHelpers,...this.#coldHelpers,...this.#startupCallbackHelpers,...this.#timerHelpers,...this.#startupQueueHelpers,...this.#initialCacheHelpers].find(value => value.scriptId === null);
         const scriptId=event.params["scriptId"];need(token(scriptId)&&event.params["executionContextId"]===this.#source.executionContextId);
         if(expected===undefined){need(this.#conditionBound>0&&this.#conditionRoles.size>0&&!this.#conditionSeenIds.has(scriptId)&&this.#conditionSeenIds.size<currentFootprintInverseConditionBudget(this.#conditionBound));this.#conditionSeenIds.add(scriptId);this.#conditionScriptIds.push(scriptId);}else{expected.scriptId=scriptId;}return;
       }
@@ -259,6 +262,14 @@ export class CurrentFootprintInverseWorkerController {
   }
   public completeTimer(): void { need(this.#pumping && !this.#failed && !this.#timerCompleted && this.#timerEntryObserved && this.#timerReturnObserved && this.#timerHeld === null && this.#timerHelpers.length === 0); this.#timerCompleted = true; }
   public requireTimerCompleted(): void { need(!this.#failed && this.#timerCompleted && this.#timerHeld === null && this.#timerHelpers.length === 0); }
+  public bindInitialCacheJobs(jobs:number):void{this.requireConstructionBootstrap();need(this.#pumping&&this.#initialCacheBound===0);currentFootprintInverseInitialCacheBudget(jobs);this.#initialCacheBound=jobs;}
+  public originalInitialCacheArms():readonly Readonly<{role:CurrentFootprintInverseInitialCacheRole;id:string}>[]{this.requireConstructionBootstrap();return Object.freeze(CACHE_ROLES.map(role=>{const point=this.#producerPoints.get(`project-save-producer-arm-${role}`);need(point!==undefined);return Object.freeze({role,id:point.id});}));}
+  public originalInitialCacheHeldRole():CurrentFootprintInverseInitialCacheRole{need(this.#pumping&&this.#initialCacheHeld!==null);return this.#initialCacheHeld.role;}
+  public requestInitialCache(command:CurrentFootprintInverseInitialCacheCommand):Promise<unknown>{need(!this.#failed&&this.#pumping&&this.#initialCacheBound>0);const held=this.#initialCacheHeld;if(command.phase==="inverse-initial-cache-settled"){need(held===null);}else{need(held!==null&&held.delivered&&!held.resumeAttempted);if(command.phase==="inverse-initial-cache-resume"){need(command.role===held.role&&this.#initialCacheHelpers.length===0);held.resumeAttempted=true;}}return this.#bindings.initialCacheRequest(command);}
+  public expectInitialCacheHelper(program:string):void{need(this.#pumping&&this.#initialCacheHeld!==null&&!this.#initialCacheHeld.resumeAttempted&&this.#initialCacheHelpers.length===0);this.#initialCacheHelpers.push({program,scriptId:null});}
+  public async qualifyInitialCacheHelper(program:string):Promise<void>{const original=this.#initialCacheHelpers[0];need(this.#pumping&&this.#initialCacheHeld!==null&&original!==undefined&&original.program===program&&original.scriptId!==null);const reply=await this.#bindings.initialCacheRequest({phase:"inverse-initial-cache-helper",method:"Debugger.getScriptSource",params:{scriptId:original.scriptId}});await this.#current();need(record(reply)&&Reflect.ownKeys(reply).length===1&&reply["scriptSource"]===program&&this.#initialCacheHelpers[0]===original);this.#initialCacheHelpers.shift();}
+  public async nextInitialCacheEvent():Promise<DiagnosticEvent>{const held=this.#initialCacheHeld;need(this.#pumping&&held!==null);if(!held.delivered){held.delivered=true;return held.event;}need(held.resumeAttempted&&this.#initialCacheHelpers.length===0);const event=await this.#next();need(this.#pair!==null&&event.sessionId===this.#pair.pageSessionId&&event.method==="Debugger.resumed"&&Reflect.ownKeys(event.params).length===0&&this.#initialCacheHeld===held);this.#initialCacheHeld=null;return event;}
+  public queueInitialCacheSettlement(run:()=>Promise<void>):Promise<boolean>{this.requireColdStartupCustody();need(!this.#pumping&&this.#initialCacheHeld===null&&!this.#initialCacheSettlementAttempted&&this.#coldStartupWork===null&&typeof run==="function"&&!types.isProxy(run));this.#initialCacheSettlementAttempted=true;const result=Promise.withResolvers<boolean>();this.#coldStartupWork=Object.freeze({run,result});return result.promise;}
   public queueColdRead(held:Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>,run:()=>Promise<void>):Promise<boolean>{this.requireColdStartupHeld(held);need(held.role==="ready"&&!this.#pumping&&!this.#startupQueueReading&&!this.#startupQueueReads.has(held)&&this.#coldStartupWork===null&&this.#startupCallbackHeld===null&&typeof run==="function"&&!types.isProxy(run));this.#startupQueueReads.add(held);const result=Promise.withResolvers<boolean>();this.#coldStartupWork=Object.freeze({run:async():Promise<void>=>{this.requireColdStartupHeld(held);this.#startupQueueReading=true;try{await run();this.requireColdStartupHeld(held);}finally{this.#startupQueueReading=false;}},result});return result.promise;}
   public requestStartupQueue(command:CurrentFootprintInverseStartupQueueCommand):Promise<unknown>{need(!this.#failed&&this.#pumping&&this.#startupQueueReading&&this.#coldStartupHeld?.role==="ready"&&this.#startupCallbackHeld===null);return this.#bindings.startupQueueRequest(command);}
   public expectStartupQueueHelper(program:string):void{need(this.#pumping&&this.#startupQueueReading&&this.#coldStartupHeld?.role==="ready"&&this.#startupQueueHelpers.length===0);this.#startupQueueHelpers.push({program,scriptId:null});}
@@ -279,8 +290,11 @@ export class CurrentFootprintInverseWorkerController {
         this.requireTimerArmed(); need(!this.#timerEntryObserved && !this.#timerCompleted && this.#timerHeld === null); this.#timerEntryObserved = true;
         this.#timerHeld = { role: "entry", event, delivered: false, resumeAttempted: false }; await this.#bindings.timerHeld(); await this.#current(); this.requireTimerCompleted();
       } else {
+      const cache=event.method==="Debugger.paused"&&Array.isArray(hits)&&hits.length===1?CACHE_ROLES.find(role=>this.#producerPoints.get(`project-save-producer-arm-${role}`)?.id===hits[0]):undefined;
+      if(cache===undefined){
       const startup=event.method==="Debugger.paused"&&Array.isArray(hits)&&hits.length===1?STARTUP_ROLES.find(role=>this.#constructionPoints.get(role)===hits[0]):undefined;
-      if(startup===undefined){break;}need(this.#startupCallbackBound>0&&this.#startupCallbackHolds<3*this.#startupCallbackBound&&this.#startupCallbackHeld===null);this.#startupCallbackHolds+=1;this.#startupCallbackHeld={role:startup,event,delivered:false,resumeAttempted:false};await this.#bindings.startupCallbackHeld(startup,event);await this.#current();need(this.#startupCallbackHeld===null&&this.#startupCallbackHelpers.length===0);}}
+      if(startup===undefined){break;}need(this.#startupCallbackBound>0&&this.#startupCallbackHolds<3*this.#startupCallbackBound&&this.#startupCallbackHeld===null);this.#startupCallbackHolds+=1;this.#startupCallbackHeld={role:startup,event,delivered:false,resumeAttempted:false};await this.#bindings.startupCallbackHeld(startup,event);await this.#current();need(this.#startupCallbackHeld===null&&this.#startupCallbackHelpers.length===0);
+      }else{need(this.#initialCacheBound>0&&this.#initialCacheHolds<3*this.#initialCacheBound&&this.#initialCacheHeld===null);this.#initialCacheHolds+=1;this.#initialCacheHeld={role:cache,event,delivered:false,resumeAttempted:false};await this.#bindings.initialCacheHeld();await this.#current();need(this.#initialCacheHeld===null&&this.#initialCacheHelpers.length===0);}}}
     this.#unsupportedStartupHeld=event;need(this.#source!==null&&this.#pair!==null);
     const points=Object.freeze([...this.#coldPoints].map(([role,id])=>Object.freeze({role,id})));
     const role=classifyCurrentFootprintInverseColdPause(event,this.#pair.pageSessionId,this.#source.scriptId,points);

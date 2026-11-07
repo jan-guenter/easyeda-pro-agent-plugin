@@ -1,3 +1,5 @@
+/* oxlint-disable import/max-dependencies -- This sole inverse reservation composes every independently bounded lane rather than duplicating native limits. */
+import { CURRENT_FOOTPRINT_INVERSE_INITIAL_CACHE_REQUESTS as INITIAL_CACHE } from "./current-footprint-inverse-initial-cache-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_MAIN_HISTORY_REQUESTS as INITIAL_HISTORY } from "./current-footprint-inverse-main-history-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_CONDITION_SOURCE_REQUESTS as CONDITIONS } from "./current-footprint-inverse-condition-source.ts";
 import { CURRENT_FOOTPRINT_INVERSE_STARTUP_QUEUE_REQUESTS as QUEUE, CURRENT_FOOTPRINT_INVERSE_STARTUP_CALLBACK_REQUESTS as STARTUP } from "./current-footprint-inverse-startup-callback-protocol.ts";
@@ -10,7 +12,6 @@ import { CURRENT_FOOTPRINT_INVERSE_CACHE_REQUESTS as CACHE } from "./current-foo
 import { CURRENT_FOOTPRINT_INVERSE_CONSTRUCTION_REQUESTS as CONSTRUCTION } from "./current-footprint-inverse-construction-protocol.ts";
 import { CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_REQUESTS as REGISTRATION, CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITE_NAMES as REGISTRATION_SITES } from "./current-saved-project-registration-config-protocol.ts";
 import { CURRENT_PCB_VIA_SAVED_LOAD_BOOTSTRAP_REQUESTS as WORKER } from "./current-pcb-via-saved-load-bootstrap-protocol.ts";
-// oxlint-disable-next-line import/max-dependencies -- This one inverse reservation derives every original phase and Main reproof from its owning contract rather than duplicating constants.
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUESTS as FENCE } from "./current-selected-file-main-sql-fence-protocol.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_TRANSPORT as MAIN } from "./current-footprint-copy-main-transport-contract.ts";
 
@@ -23,7 +24,7 @@ const mainCleanup = MAIN.cleanupRequests + INITIAL_HISTORY.repetitions * INITIAL
 const discovery = 16, emptyGuard = 9 + 1, parent = 3 + 1, projectOpening = 9 + 1, registration = 2;
 const generic = discovery + 2 * 8 + 3 + 4;
 const sourceHeldPrefix = discovery + emptyGuard + registration + parent + WORKER.totalUntilProjectHeld + projectOpening;
-const renderer = sourceHeldPrefix + CONSTRUCTION.cdpRequests + CACHE.total + PRODUCER.cdpRequests + COLD.total + 1 + STEP.maximum + STARTUP.cdpRequests + CONDITIONS.reads + TIMER.direct + QUEUE.cdpRequests;
+const renderer = sourceHeldPrefix + CONSTRUCTION.cdpRequests + CACHE.total + PRODUCER.cdpRequests + COLD.total + 1 + STEP.maximum + STARTUP.cdpRequests + CONDITIONS.reads + TIMER.direct + QUEUE.cdpRequests + INITIAL_CACHE.cdpRequests;
 // One finite renderer poll lane, paired with the existing original-main poll
 // Envelope. A consumed failure does not replenish this reservation.
 const rendererPolls = MAIN.totalPolls;
@@ -56,3 +57,5 @@ export const CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE = Object.freeze({
 });
 export const CURRENT_FOOTPRINT_INVERSE_DISCOVERY_METHODS = Object.freeze(["Browser.getVersion", "Target.getTargets", "Target.attachToTarget", "Page.enable", "Page.getFrameTree",
   "Runtime.enable", "Debugger.enable", "Debugger.getScriptSource", "DOM.getFrameOwner", "DOM.describeNode"]);
+
+export { currentFootprintInverseInitialCacheNativeSource } from "./current-footprint-inverse-initial-cache-native.ts";

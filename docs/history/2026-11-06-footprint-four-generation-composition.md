@@ -1078,3 +1078,49 @@ reproof92,089 and aggregate controls159,664 before the separate timer transport.
 No tracked helper, pins, bundles, Windows/app/native/MCP runtime changed. Actual
 startup cache/sync and post-ready timer completion, parser/ready continuation,
 delete/main SQL, closed inverse and fourth-generation acceptance remain pending.
+
+The inverse startup cache lane is now separately mounted on the original worker
+and bootstrap hold. `armFootprintInverseInitialCache(hold)` requires the genuine
+saved flow plan, original producer/native Cache/Response intrinsic tuple and
+original startup callback observer. It derives one job per actual complete flow
+cache body plus the final head index, from two through eight jobs. Mixed document
+families remain eligible. The old three-job generated-fixture cursor and head
+encoder remain unchanged. Saved head encoding instead uses exact measured node,
+depth, array, own-key and string limits from the complete original compact graph;
+independent bounds remain 8KiB per body, 32KiB combined, depth/collections32 and
+8,192 nodes. Head contents and private history keys are never progress output.
+
+The original single-event controller routes the actual three `bb.put` sites to
+its private inverse observer. Each job binds the source/caller, original
+PROJECT/cache namespace, native cache/Response prototypes, exact key and body,
+and original wrapper/callback. The implicit-return Promise is captured into the
+existing object group while its actual frame remains paused, before resume.
+Each actual success callback and two bounded native Promise metadata samples
+must then qualify. Completion uses a private same-observer/origin/owner/prepared
+reference; matching data or copied packets grant nothing. Every role/slot resume
+is once-only, and a lost or failed attempt remains consumed.
+
+Cache jobs are detached by the pinned opening source, so their fulfillment is
+not a prerequisite to reaching the ready pause. This increment arms and captures
+them before any parser continuation. `settleFootprintInverseInitialCache()`
+retains one optional additional settlement Promise; the final idle frontier must
+call `requireFootprintInverseInitialCacheCompleted()`. Neither API grants parser,
+ready, sync, timer, delete, Save or full-frontier authority. The existing cold
+bootstrap permit now additionally requires the original cache lane enrollment.
+
+The finite cache lane packs its own immutable tables through the existing
+bounded fixed-table decoder. Per job it reserves14 capture,8 cursor (including
+two fulfillment samples) and12 exact emitted-helper source reads:34 CDP requests,
+three held-role controls, plus one binding and one completion for the operation.
+The eight-job maxima are272 CDP requests and298 controls. Original generated
+purposes, schemas, counters and request ceilings are unchanged.
+
+Five focused data/cursor/collector checks include a seventeen-document head,
+eight interleaved mixed-family jobs, pending then fulfilled native Promise,
+copied packet/origin refusal, and returned-Promise retention before resume.
+The complete generator is two-pass identical. Linux C#5/.NET10 compilation and
+all65 exact cache wire/refusal cases pass. Current combined storage is1,464,982
+bytes and decoded C#2,033,547 bytes, below both unchanged2MiB limits. No tracked
+helper/pins/bundles, Windows compiler, app or live MCP call was used. Actual
+same-head renderer sync, plaintext/parser/ready continuation and the final idle,
+delete/main SQL, closed inverse and fourth-generation proofs remain pending.

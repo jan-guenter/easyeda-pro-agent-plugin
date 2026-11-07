@@ -97,3 +97,6 @@ export { currentFootprintInverseConditionBudget, currentFootprintInverseConditio
 export type { CurrentFootprintInverseConditionRole } from "./current-footprint-inverse-condition-source.ts";
 
 export type { CurrentFootprintInverseStartupQueueCommand } from "./current-footprint-inverse-startup-queue-protocol.ts";
+
+export { CURRENT_FOOTPRINT_INVERSE_INITIAL_CACHE_ROLES, currentFootprintInverseInitialCacheBudget } from "./current-footprint-inverse-initial-cache-protocol.ts";
+export type { CurrentFootprintInverseInitialCacheCommand, CurrentFootprintInverseInitialCacheRole } from "./current-footprint-inverse-initial-cache-protocol.ts";
