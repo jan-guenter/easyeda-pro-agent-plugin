@@ -21,7 +21,7 @@ import { CURRENT_PCB_VIA_POST_HISTORY_SYNC_REQUESTS, currentPcbViaPostHistorySyn
 import { CURRENT_PCB_VIA_SAVE_DRAIN_REQUESTS, currentPcbViaSaveDrainNativeCases } from "./current-pcb-via-save-drain-protocol.ts";
 
 type Kind = "function" | "expression";
-const expressions = new Set<string>(), functions = new Set<string>([CURRENT_PCB_VIA_REPLAY_NO_PUBLICATION_PROGRAM]);
+const conditions = new Set<string>(), expressions = new Set<string>(), functions = new Set<string>([CURRENT_PCB_VIA_REPLAY_NO_PUBLICATION_PROGRAM]);
 const cases: readonly (Readonly<{ method: string; params: object }> | Readonly<{ phase: "via-post-sync-replay" }>)[] = [
   ...currentPcbViaSaveNativeCases(),
   ...currentProjectSaveStructureNativeCases(),
@@ -41,6 +41,9 @@ const cases: readonly (Readonly<{ method: string; params: object }> | Readonly<{
 ];
 for (const command of cases) {
   if ("method" in command) {
+  if ((command.method === "Debugger.setBreakpoint" || command.method === "Debugger.setBreakpointOnFunctionCall") && "condition" in command.params && typeof command.params.condition === "string") {
+    conditions.add(command.params.condition); expressions.add(command.params.condition);
+  }
   if (command.method === "Runtime.callFunctionOn" && "functionDeclaration" in command.params && typeof command.params.functionDeclaration === "string") { functions.add(command.params.functionDeclaration); }
   else if (command.method === "Debugger.evaluateOnCallFrame" && "expression" in command.params && typeof command.params.expression === "string") { expressions.add(command.params.expression); }
   }
@@ -67,6 +70,12 @@ export const CURRENT_PCB_VIA_OBSERVED_WORKER_SOURCE_REQUESTS =
   CURRENT_PCB_VIA_SAVE_DRAIN_REQUESTS.cdpRequests +
   CURRENT_PCB_VIA_SAVE_TAIL_OBSERVATION_REQUESTS.additionalSharedRequests + 1;
 
+/** Persistent conditions are registered only when the original controller
+ * installs their own fixed breakpoint. A later condition compilation consumes
+ * the same bounded source reader; it is not a new caller expression. */
+export function requireCurrentPcbViaObservedWorkerCondition(text: string): void {
+  if (!conditions.has(text)) { throw new Error("PCB_VIA_OBSERVED_WORKER_CONDITION"); }
+}
 export function requireCurrentPcbViaObservedWorkerProgram(kind: Kind, text: string): void {
   const catalogue = kind === "function" ? functions : expressions;
   if ((kind !== "function" && kind !== "expression") || !catalogue.has(text)) { throw new Error("PCB_VIA_OBSERVED_WORKER_PROGRAM"); }
