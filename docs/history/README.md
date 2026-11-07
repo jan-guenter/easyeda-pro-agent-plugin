@@ -2,6 +2,8 @@
 
 - [2026-11-07 Saved schematic scene native codec and replies](2026-11-07-schematic-saved-scene-native-replies.md). Three C#5 wire goldens and actual Inspector reply forms; genuine cold/page/source enrollment remains separate.
 
+- [2026-11-07 Saved schematic reader closed-file comparison](2026-11-07-schematic-saved-reader-closed-data.md). Original reader termination, retained descriptors and complete saved byte/SQL equality; cold/open/scene acceptance stays separate.
+
 - [2026-11-07 Separate saved schematic registration policy](2026-11-07-schematic-saved-registration-policy.md). Genuine third issuer and exact prior-path no-dispatch handling; native cache/loading and connected registration remain separate.
 
 - [2026-11-07 schematic saved-reader birth](2026-11-07-schematic-saved-reader-birth.md): distinct original seven-record saved-reader generation, readonly Main, early actor exclusion and complete scoped-cache data publication; delete/open/cold joins remain separate.
