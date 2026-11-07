@@ -10,7 +10,6 @@ import { CURRENT_FOOTPRINT_INVERSE_TIMER_DISPATCH, currentFootprintInverseTimerN
 import { CURRENT_FOOTPRINT_INVERSE_CACHE_DISPATCH, CURRENT_FOOTPRINT_INVERSE_INVALIDATION_DISPATCH, currentFootprintInverseCacheNative } from "./current-footprint-inverse-cache-native.ts";
 import { CURRENT_FOOTPRINT_INVERSE_CONSTRUCTION_REQUESTS as CONSTRUCTION } from "./current-footprint-inverse-construction-protocol.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS, currentProjectSaveStructureNativeCases } from "./current-project-save-structure-protocol.ts";
-// oxlint-disable-next-line import/max-dependencies -- The sole fixed inverse native assembler must compose each separately bounded phase and exact aggregate limits.
 import { currentPcbViaSavedLoadBootstrapCases } from "./current-pcb-via-saved-load-bootstrap-protocol.ts";
 /** New original inverse birth. Existing purposes/ceilings/codebooks remain
  * unchanged; this initial native stage grants no delete or clock invocation. */
