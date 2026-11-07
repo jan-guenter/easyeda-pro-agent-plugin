@@ -9,14 +9,14 @@ import { CURRENT_PCB_VIA_SAVE_DRAIN_PROGRAMS as PROGRAMS } from "./current-pcb-v
 import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_PROMISE_CAPTURE as RETAIN,currentProjectSaveProducerCachePromiseHandle,decodeCurrentProjectSaveProducerCachePromise } from "./current-project-save-producer-cache-replies.ts";
 import { currentFootprintCopyClockRpcV2ArrayObject,decodeCurrentFootprintCopyClockRpcV2Array,decodeCurrentFootprintCopyClockRpcV2ArrayCapture } from "./current-footprint-copy-clock-rpc-v2-protocol.ts";
 import type { CurrentPcbViaLocalUploadCompleted } from "./current-pcb-via-local-upload-cursor.ts";
-import type { CurrentPcbViaLiveHistoryCacheData } from "./current-pcb-via-live-history-cache-data.ts";
+import type { CurrentProjectLiveHistoryCacheData } from "./current-project-live-history-cache-data.ts";
 
 export interface CurrentPcbViaSaveDrainHeld {readonly packet:object;readonly role:CurrentPcbViaSaveDrainRole;readonly joinedId:string;readonly key:string|null;readonly cache:Readonly<{role:string;joinedId:string}>|null;readonly promise:Readonly<{objectId:string}>|null;readonly returnPromiseId:string|null}
 export interface CurrentPcbViaSaveDrainBindings {
   readonly local:CurrentPcbViaLocalUploadCompleted;readonly uploadCapture:string;readonly historyFrame:string;readonly body:string;readonly branchUuid:string;
   readonly assertCurrent:()=>Promise<void>;readonly requireHeld:(packet:object)=>CurrentPcbViaSaveDrainHeld;
   readonly historyResult:()=>Promise<Readonly<{historyUuid:string;bodySha256:string}>>;
-  readonly liveData:()=>Promise<CurrentPcbViaLiveHistoryCacheData>;
+  readonly liveData:()=>Promise<CurrentProjectLiveHistoryCacheData>;
   readonly postSyncProgress:()=>Readonly<{replayResumed:boolean;completed:boolean}>;
   readonly request:(command:CurrentPcbViaSaveDrainCommand)=>Promise<unknown>;
   readonly resume:(held:CurrentPcbViaSaveDrainHeld,command:CurrentPcbViaSaveDrainCommand)=>Promise<void>;
@@ -39,7 +39,7 @@ type Arg=Readonly<{objectId:string}>|Readonly<{value:string|0|1}>;
 export class CurrentPcbViaSaveDrainCursor {
   readonly #binding:CurrentPcbViaSaveDrainBindings;readonly #attempts=new WeakSet<object>();readonly #done=new Set<CurrentPcbViaSaveDrainRole>();readonly #frames=new Map<CurrentPcbViaSaveDrainRole,string>();
   readonly #jobs:readonly Job[]=[{role:"localSave",slot:0,key:null,entry:null,pending:null,stage:0},{role:"flow",slot:1,key:null,entry:null,pending:null,stage:0},{role:"head",slot:2,key:null,entry:null,pending:null,stage:0}];
-  readonly #promises=new Map<number,string>();#capture:string|null=null;#historyUuid:string|null=null;#live:CurrentPcbViaLiveHistoryCacheData|null=null;#requests=0;#events=0;#resumes=0;#passes=0;#busy=false;#failed=false;#completed=false;
+  readonly #promises=new Map<number,string>();#capture:string|null=null;#historyUuid:string|null=null;#live:CurrentProjectLiveHistoryCacheData|null=null;#requests=0;#events=0;#resumes=0;#passes=0;#busy=false;#failed=false;#completed=false;
   public constructor(binding:CurrentPcbViaSaveDrainBindings){this.#binding=binding;this.#promises.set(3,binding.local.bufferPromise);Object.freeze(this);}
   async #current():Promise<void>{need(!this.#failed);await this.#binding.assertCurrent();need(!this.#failed);}
   #refuse():void{if(!this.#failed){this.#failed=true;this.#binding.fail();}}
@@ -77,7 +77,7 @@ export class CurrentPcbViaSaveDrainCursor {
     }
     await this.#resume(held,0);
   }
-  async #liveData():Promise<CurrentPcbViaLiveHistoryCacheData>{
+  async #liveData():Promise<CurrentProjectLiveHistoryCacheData>{
     need(this.#done.has("cloudFinally")&&this.#binding.postSyncProgress().replayResumed);const live=await this.#binding.liveData();await this.#current();need(live.historyUuid===this.#historyUuid&&live.branchUuid===this.#binding.branchUuid&&live.historyBodySha256===sha256Text(this.#binding.body)&&live.documents.length===1);if(this.#live!==null){need(this.#live===live);}this.#live=live;return live;
   }
   async #cache(held:CurrentPcbViaSaveDrainHeld):Promise<void>{

@@ -16,7 +16,7 @@ import { CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES as BOOTSTRAPS, CURRENT_PCB_209
   CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES as ROLES, currentPcb209PreloadCopyCaller } from "../src/current-pcb-209-worker-bootstrap-source.ts";
 import type { CurrentPcb209StartupScriptRole } from "../src/current-pcb-209-worker-bootstrap-source.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_SAVE_SITES as SITES } from "../src/current-schematic-display-save-source.ts";
-import type { CurrentSchematicDisplayWorkerController, CurrentSchematicDisplayWorkerControllerBindings } from "../src/current-schematic-display-worker-controller.ts";
+import type { CurrentSchematicDisplayStartupEventPoint, CurrentSchematicDisplayWorkerController, CurrentSchematicDisplayWorkerControllerBindings } from "../src/current-schematic-display-worker-controller.ts";
 import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
 import type { CurrentSchematicDisplayWorkerCommand } from "../src/current-schematic-display-worker-wire.ts";
 
@@ -41,9 +41,11 @@ async function constructor(): Promise<typeof CurrentSchematicDisplayWorkerContro
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Runtime checked production class; only pinned full-source bytes have the stated seam.
   return result as typeof CurrentSchematicDisplayWorkerController;
 }
-async function fixture(failSetup = false, holdPoll = false, structure = false, producerGuards = false, producerObservation = false, helper: "none" | "original" | "foreign" | "incremental" = "none"): Promise<Readonly<{ controller: CurrentSchematicDisplayWorkerController; bindings: CurrentSchematicDisplayWorkerControllerBindings;
+async function fixture(failSetup = false, holdPoll = false, structure = false, producerGuards = false, producerObservation = false, helper: "none" | "original" | "foreign" | "incremental" = "none", startup: "none" | "original" | "moved" | "foreign" = "none"): Promise<Readonly<{ controller: CurrentSchematicDisplayWorkerController; bindings: CurrentSchematicDisplayWorkerControllerBindings;
   commands: CurrentSchematicDisplayWorkerCommand[]; incoming: DiagnosticEvent[]; state: { failed: boolean; held: number; released: number; resumed: boolean; bound: number }; releasePoll: () => void; pollStarted: Promise<true>; polls: { count: number } }>> {
-  const Constructor = await constructor(), projectUuid = "a".repeat(64), windowTabId = "original-window";
+  const Base=await constructor();
+  class Constructor extends Base { protected override originalStartupPoints():readonly CurrentSchematicDisplayStartupEventPoint[]{return Object.freeze(startup==="none"?super.originalStartupPoints():[...super.originalStartupPoints(),Object.freeze({lane:"producer" as const,point:Object.freeze({sessionId:"original-worker",scriptId:"script-project",breakpointId:"startup-original",role:"cacheDeleteCall",lineNumber:106,columnNumber:57_581})})]);} }
+  const projectUuid = "a".repeat(64), windowTabId = "original-window";
   const targetUrl = "https://client/editor?entry=mgr-project-worker.js&cll=&debugOpen=0", title = `project_${projectUuid}_${windowTabId}`;
   const commands: CurrentSchematicDisplayWorkerCommand[] = [], incoming: DiagnosticEvent[] = [];
   const state = { failed: false, held: 0, released: 0, resumed: false, bound: 0 };
@@ -94,6 +96,7 @@ async function fixture(failSetup = false, holdPoll = false, structure = false, p
         controller.bindStructureBreakpoint(source, role, `structure-${role}`); const site = STRUCTURE[role];
         event("Debugger.breakpointResolved", { breakpointId: `structure-${role}`, location: { scriptId: source.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } });
       } controller.requireStructureArmed(source); }
+      if(startup!=="none"){event("Debugger.breakpointResolved",{breakpointId:startup==="foreign"?"foreign":"startup-original",location:{scriptId:source.scriptId,lineNumber:106,columnNumber:startup==="moved"?57_582:57_581}});}
       if (helper !== "none") { controller.expectSetupHelper(source, CURRENT_PROJECT_STRUCTURE_TRANSPORT_PROGRAMS.capture); event("Debugger.scriptParsed", { scriptId: "original-helper", executionContextId: 7, url: "" }); }
       if (helper === "incremental") { controller.assertOriginalProjectSourceHeld(source); await controller.consumeOriginalSetupHelpers(source); await controller.consumeOriginalSetupHelpers(source); controller.assertOriginalProjectSourceHeld(source); }
     },
@@ -206,3 +209,5 @@ void test("an original setup receipt drains once inside the source callback and 
   assert.equal(f.commands.filter(command => command.phase === "schematic-worker-helper-source").length, 1);
   assert.equal(f.state.resumed, true); assert.equal(f.state.failed, false);
 });
+
+void test("registered startup resolutions are checked before the router exists and preserve the original source hold",async()=>{const original=await fixture(false,false,false,false,false,"incremental","original");await original.controller.pump();assert.equal(original.state.resumed,true);assert.equal(original.state.failed,false);for(const kind of ["moved","foreign"] as const){const changed=await fixture(false,false,false,false,false,"incremental",kind);await assert.rejects(changed.controller.pump());assert.equal(changed.state.resumed,false);assert.equal(changed.state.released,0);assert.equal(changed.state.failed,true);}});

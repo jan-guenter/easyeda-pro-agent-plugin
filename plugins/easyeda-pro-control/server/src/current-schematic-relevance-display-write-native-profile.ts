@@ -1,3 +1,7 @@
+import { CURRENT_PCB_VIA_SAVE_TAIL_OBSERVATION_REQUESTS as TAIL } from "./current-pcb-via-save-tail-observation-protocol.ts";
+import { CURRENT_PCB_VIA_SAVE_TAIL_DELETE_CONTROL_REQUESTS as DELETE } from "./current-pcb-via-save-tail-delete-control-protocol.ts";
+import { CURRENT_PCB_VIA_SAVE_DRAIN_REQUESTS as DRAIN } from "./current-pcb-via-save-drain-protocol.ts";
+import { CURRENT_PCB_VIA_POST_HISTORY_SYNC_REQUESTS as POST } from "./current-pcb-via-post-history-sync-protocol.ts";
 import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_REQUESTS as LIVE } from "./current-pcb-via-main-live-history-protocol.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_OBSERVED_WORKER_SOURCE_REQUESTS as SOURCES } from "./current-schematic-relevance-display-helper-source-catalogue.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_SAVE_UPLOAD_REQUESTS as UPLOAD } from "./current-schematic-relevance-display-save-upload-wire.ts";
@@ -25,8 +29,9 @@ export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE = Object.f
     startupPollingObservation: POLLING.cdpRequests, startupPollingHelperSources: 1, startupLibraryObservation: LIBRARY.controls, startupLibrarySetupHelperSources: 1,
     actionPreflightObservation: ACTION.total, actionGuardObservation: ACTION_GUARD.cdpRequests, actionGuardBindingControls: ACTION_GUARD.bindingControls,
     submittedHelperSources:SOURCES,
+    saveTailObservation: TAIL.cdpRequests, saveTailCacheMetadata:TAIL.additionalSharedRequests, saveTailDelete: DELETE.cdpRequests, saveDrainObservation:DRAIN.cdpRequests, savePostSyncObservation:POST.total, saveDrainCompletion:2,
     localUploadObservation: UPLOAD.local, uploadRequestObservation: UPLOAD.upload, localCacheExtraObservation: UPLOAD.localCacheMetadata,
     modifyEntryObservation: MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation,
     total: SHARED.renderer.total - SHARED.renderer.structureObservation - SHARED.renderer.actionPreflightObservation - SHARED.renderer.actionGuardObservation - SHARED.renderer.actionGuardBindingControls +
-      SOURCES + UPLOAD.local + UPLOAD.upload + UPLOAD.localCacheMetadata + STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + POLLING.cdpRequests + 1 + LIBRARY.controls + 1 }),
+      TAIL.cdpRequests + TAIL.additionalSharedRequests + DELETE.cdpRequests + DRAIN.cdpRequests + POST.total + 2 + SOURCES + UPLOAD.local + UPLOAD.upload + UPLOAD.localCacheMetadata + STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + POLLING.cdpRequests + 1 + LIBRARY.controls + 1 }),
 });

@@ -54,6 +54,7 @@ export class CurrentSchematicDisplayEventRouter {
     need(!this.#failed && original !== undefined && original === current && original.lane === "producer" && original.delivered && !original.resumeAttempted && original.point.role === role && allowedRoles.includes(role));
     original.resumeAttempted = true; this.notifyEvent();
   }
+  protected requireOriginalProducerFrontier():void{need(!this.#failed&&!this.#reading.producer&&this.#queues.producer.length===0&&this.#poll===null&&![...this.#paused.values()].some(pause=>pause.lane==="producer"));}
   public register(lane: CurrentSchematicDisplayEventLane, input: CurrentSchematicDisplayEventPoint): void {
     need(!this.#failed && this.acceptsLane(lane)); const point = Object.freeze(pointSchema.parse(captureCurrentPcbStringClockReply(input).value));
     need((point.sessionId === this.#bindings.workerSessionId || lane === "clock" && point.sessionId === this.#bindings.uiSessionId) && this.#points.size < this.maximumRegisteredPoints());

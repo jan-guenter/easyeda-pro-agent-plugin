@@ -49,3 +49,6 @@ const dispatch=String.raw`        'pcb-via-save-drain-complete' {
         }
 `;
 export function applyCurrentPcbViaSaveDrainNativeFragment(input:string):string{let source=one(input,'case "pcb-via-sdk":','case "pcb-via-save-drain":case "pcb-via-save-drain-complete":case "pcb-via-sdk":');source=installOwnedNativeDispatch(source,dispatch,"        'pcb-via-post-sync-complete' {");source=installNativeCompileOnlyHook(source,"    [EasyedaPcbViaSaveDrainProtocol]::VerifySmoke()","    [EasyedaPcbViaPostHistorySyncProtocol]::VerifySmoke()");const value=`${begin}\n${native()}\n${end}`;const start=source.indexOf(begin);const stop=source.indexOf(end);if(start!==-1||stop!==-1){if(start===-1||stop<start||source.includes(begin,start+1)||source.includes(end,stop+1)){throw new Error("VIA_DRAIN_MARKERS");}return source.slice(0,start)+value+source.slice(stop+end.length);}return one(source,"internal enum EasyedaPcbViaWriteBirth { Original }",`${value}\ninternal enum EasyedaPcbViaWriteBirth { Original }`);}
+
+/** Fixed build-time state-machine syntax only; no native owner is issued. */
+export function currentPcbViaSaveDrainOwnerNative():string{const source=native();const anchor="public sealed partial class EasyedaDiagnosticOwner {";if(source.split(anchor).length!==2){throw new Error("FIXED_OWNER_NATIVE_ANCHOR");}return anchor+source.split(anchor)[1];}

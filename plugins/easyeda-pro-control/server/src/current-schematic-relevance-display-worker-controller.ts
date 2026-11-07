@@ -1,4 +1,6 @@
 /* oxlint-disable import/max-dependencies -- This dedicated seven-record policy joins independent fixed startup, Save and source-custody protocols. */
+import { CURRENT_PCB_VIA_SAVE_TAIL_DELETE_SITES } from "./current-pcb-via-save-tail-observation-source.ts";
+import type { CurrentPcbViaSaveTailDeleteRole } from "./current-pcb-via-save-tail-observation-source.ts";
 import type { CurrentPcbViaLocalUploadRole } from "./current-pcb-via-local-upload-protocol.ts";
 import type { CurrentPcbViaUploadRequestRole } from "./current-pcb-via-upload-request-protocol.ts";
 /** Dedicated seven-record startup lanes. The native owner supplies the actual
@@ -17,6 +19,7 @@ import { CURRENT_PROJECT_LIBRARY_REFRESH_SITES } from "./current-project-library
 function need(value: boolean): asserts value { if (!value) { throw new Error("SCHEMATIC_RELEVANCE_STARTUP_ORIGINAL_CURSOR"); } }
 type LibraryRole = keyof typeof CURRENT_PROJECT_LIBRARY_REFRESH_SITES;
 export class CurrentSchematicRelevanceDisplayWorkerController extends CurrentSchematicDisplayWorkerController {
+  readonly #tailPoints=new Map<CurrentPcbViaSaveTailDeleteRole,CurrentSchematicDisplayStartupEventPoint>();
   readonly #pollingPoints = new Map<"entry" | "returned", CurrentSchematicDisplayStartupEventPoint>();
   readonly #libraryPoints = new Map<LibraryRole, CurrentSchematicDisplayStartupEventPoint>();
   #ownRouter: CurrentSchematicRelevanceDisplayEventRouter | null = null;
@@ -36,7 +39,7 @@ export class CurrentSchematicRelevanceDisplayWorkerController extends CurrentSch
   protected override createEventRouter(bindings: CurrentSchematicDisplayEventRouterBindings): CurrentSchematicRelevanceDisplayEventRouter {
     need(this.#ownRouter === null); const router = new CurrentSchematicRelevanceDisplayEventRouter(bindings); this.#ownRouter = router; return router;
   }
-  protected override originalStartupPoints(): readonly CurrentSchematicDisplayStartupEventPoint[] { return Object.freeze([...this.#pollingPoints.values(), ...this.#libraryPoints.values()]); }
+  protected override originalStartupPoints(): readonly CurrentSchematicDisplayStartupEventPoint[] { return Object.freeze([...this.#pollingPoints.values(), ...this.#libraryPoints.values(),...this.#tailPoints.values()]); }
   protected originalWorkerRouter(source: CurrentSchematicDisplayProjectSourceHeld): CurrentSchematicRelevanceDisplayEventRouter {
     this.requireHeld(source); const router = this.#ownRouter; need(router !== null && super.originalEventRouter() === router); return router;
   }
@@ -45,13 +48,19 @@ export class CurrentSchematicRelevanceDisplayWorkerController extends CurrentSch
     if (this.#helperSource!==null && !this.originalProjectSetupActive() && event.method === "Debugger.scriptParsed") { const source = this.#helperSource; need(source !== null); this.#helpers.observe(event, source.executionContextId, source.scriptId); }
     if (this.#pollingComplete && event.method === "Debugger.paused" && Array.isArray(event.params["hitBreakpoints"]) && event.params["hitBreakpoints"].includes(this.#pollingPoints.get("entry")?.point.breakpointId)) { this.fail(); throw new Error("SCHEMATIC_RELEVANCE_POLLING_REENTERED"); }
   }
-  #bind(source: CurrentSchematicDisplayProjectSourceHeld, role: string, breakpointId: string, site: Readonly<{ lineNumber: number; columnNumber: number }>, lane: "quiesce" | "library"): CurrentSchematicDisplayStartupEventPoint {
+  #bind(source: CurrentSchematicDisplayProjectSourceHeld, role: string, breakpointId: string, site: Readonly<{ lineNumber: number; columnNumber: number }>, lane: "quiesce" | "library" | "producer"): CurrentSchematicDisplayStartupEventPoint {
     const child = this.requireHeld(source); need(!this.status().ready && this.status().pumping && /^[A-Za-z\d_.:-]{1,256}$/u.test(breakpointId));
-    need(![...this.#pollingPoints.values(), ...this.#libraryPoints.values()].some(value => value.point.breakpointId === breakpointId));
+    need(![...this.#pollingPoints.values(), ...this.#libraryPoints.values(),...this.#tailPoints.values()].some(value => value.point.breakpointId === breakpointId));
     return Object.freeze({ lane, point: Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }) });
   }
   public reserveSaveLocalResume(source:CurrentSchematicDisplayProjectSourceHeld,event:CurrentSchematicDisplayRoutedEvent,role:CurrentPcbViaLocalUploadRole):void{this.originalWorkerRouter(source).reserveSaveLocalResume(event,role);}
   public reserveSaveUploadResume(source:CurrentSchematicDisplayProjectSourceHeld,event:CurrentSchematicDisplayRoutedEvent,role:CurrentPcbViaUploadRequestRole):void{this.originalWorkerRouter(source).reserveSaveUploadResume(event,role);}
+  public bindSaveTailBreakpoint(source:CurrentSchematicDisplayProjectSourceHeld,role:CurrentPcbViaSaveTailDeleteRole,breakpointId:string):void{need(!this.#tailPoints.has(role));this.#tailPoints.set(role,this.#bind(source,role,breakpointId,CURRENT_PCB_VIA_SAVE_TAIL_DELETE_SITES[role],"producer"));}
+  public reserveSaveDrainResume(source:CurrentSchematicDisplayProjectSourceHeld,event:CurrentSchematicDisplayRoutedEvent,role:string):void{this.originalWorkerRouter(source).reserveSaveDrainResume(event,role);}
+  public reservePostHistorySyncResume(source:CurrentSchematicDisplayProjectSourceHeld,event:CurrentSchematicDisplayRoutedEvent,role:string):void{this.originalWorkerRouter(source).reservePostHistorySyncResume(event,role);}
+  public reserveSaveTailDeleteResume(source:CurrentSchematicDisplayProjectSourceHeld,event:CurrentSchematicDisplayRoutedEvent,role:"cacheDeleteCall"|"cacheDeleteReturned"):void{this.originalWorkerRouter(source).reserveSaveTailDeleteResume(event,role);}
+  public async settleObservedPrograms(source:CurrentSchematicDisplayProjectSourceHeld):Promise<void>{await this.settleOriginalMetadata(source);this.#helpers.requireIdle();}
+  public requireProducerFrontier(source:CurrentSchematicDisplayProjectSourceHeld):void{this.requireOriginalMetadataEmpty(source);this.#helpers.requireIdle();this.originalWorkerRouter(source).requireProducerFrontier();}
   public bindSyncQuiesceBreakpoint(source: CurrentSchematicDisplayProjectSourceHeld, role: "entry" | "returned", breakpointId: string): void {
     need(!this.#pollingPoints.has(role)); this.#pollingPoints.set(role, this.#bind(source, role, breakpointId, CURRENT_PROJECT_SYNC_QUIESCE_SITES[role], "quiesce"));
   }

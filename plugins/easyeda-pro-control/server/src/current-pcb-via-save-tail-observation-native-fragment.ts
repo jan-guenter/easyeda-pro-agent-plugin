@@ -95,3 +95,6 @@ export function applyCurrentPcbViaSaveTailObservationNativeFragment(input:string
   if(start!==-1||stop!==-1){if(start===-1||stop<start||source.includes(begin,start+1)||source.includes(end,stop+1)) { throw new Error("VIA_TAIL_MARKERS"); }return source.slice(0,start)+value+source.slice(stop+end.length);}
   const anchor="internal enum EasyedaPcbViaWriteBirth { Original }";if(source.split(anchor).length!==2) { throw new Error("VIA_TAIL_BODY_ANCHOR"); }return source.replace(anchor,`${value}\n${anchor}`);
 }
+
+/** Fixed build-time state-machine syntax only; no native owner is issued. */
+export function currentPcbViaSaveTailOwnerNative():string{const source=native();const anchor="public sealed partial class EasyedaDiagnosticOwner {";if(source.split(anchor).length!==2){throw new Error("FIXED_OWNER_NATIVE_ANCHOR");}return anchor+source.split(anchor)[1];}

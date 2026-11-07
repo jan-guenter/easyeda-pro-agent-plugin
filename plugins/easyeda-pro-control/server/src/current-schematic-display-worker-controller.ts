@@ -148,6 +148,8 @@ export class CurrentSchematicDisplayWorkerController {
   public requireStructureTransportArmed(source: CurrentSchematicDisplayProjectSourceHeld): void { need(this.#source === source && this.#transportPoints.size === 3); }
   public requireStructureArmed(source: CurrentSchematicDisplayProjectSourceHeld): void { need(this.#source === source && this.#structurePoints.size === 14); }
   #resolution(event: CurrentSchematicDisplayWorkerBootstrapEvent): boolean {
+    if(event.method==="Debugger.breakpointResolved"&&record(event.params)){const params=event.params;const original=this.originalStartupPoints().find(value=>value.point.breakpointId===params["breakpointId"]);if(original!==undefined){const location=params["location"],point=original.point;need(event.sessionId===point.sessionId&&Reflect.ownKeys(params).length===2&&record(location)&&Reflect.ownKeys(location).length===3&&location["scriptId"]===point.scriptId&&location["lineNumber"]===point.lineNumber&&location["columnNumber"]===point.columnNumber);return true;}}
+
     if (event.method === "Debugger.breakpointResolved" && record(event.params)) { const params = event.params; const guard = [...this.#producerGuardPoints].find(([_role, id]) => id === params["breakpointId"]);
       if (guard !== undefined) { const location = event.params["location"], site = GUARD_SITES[guard[0]]; need(this.#source !== null && record(location) && Reflect.ownKeys(event.params).length === 2 && Reflect.ownKeys(location).length === 3 && location["scriptId"] === this.#source.scriptId && location["lineNumber"] === site.lineNumber && location["columnNumber"] === site.columnNumber); return true; }
     }
@@ -230,6 +232,8 @@ export class CurrentSchematicDisplayWorkerController {
   #eventRouter(): CurrentSchematicDisplayEventRouter {
     need(this.#router !== null && this.#result !== null && !this.#pumping); return this.#router;
   }
+  protected async settleOriginalMetadata(source:CurrentSchematicDisplayProjectSourceHeld):Promise<void>{this.requireHeld(source);need(this.#result!==null&&!this.#pumping&&!this.#reading&&!this.#failed);for(let count=0;count<256;count+=1){const event=this.#events.shift();if(event===undefined){return;}if(!this.#resolution(event)){if(event.method==="Debugger.scriptParsed"&&record(event.params)){await this.qualifyObservedWorkerScript({method:event.method,sessionId:event.sessionId,params:event.params});}else if(event.method==="Runtime.consoleAPICalled"&&record(event.params)){need(event.params["executionContextId"]===source.executionContextId);}else{this.#events.unshift(event);throw new Error("SCHEMATIC_ORIGINAL_PRODUCER_FRONTIER_HELD");}}}need(this.#events.length===0);}
+  protected requireOriginalMetadataEmpty(source:CurrentSchematicDisplayProjectSourceHeld):void{this.requireHeld(source);need(this.#result!==null&&!this.#failed&&!this.#reading&&this.#events.length===0);}
   public observeUiEvent(event: DiagnosticEvent): boolean {
     if (event.sessionId !== this.#bindings.parentSessionId || this.#result === null || !["Debugger.paused", "Debugger.resumed", "Debugger.breakpointResolved"].includes(event.method)) { return false; }
     this.observeEvent(event); return true;

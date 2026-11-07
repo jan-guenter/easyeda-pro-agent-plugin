@@ -46,5 +46,6 @@ export class CurrentSchematicRelevanceDisplayHelperReceipts {
   }
   public verifyObserved(event:object,read:(scriptId:string)=>Promise<unknown>):Promise<void>{const e=own(event);const p=own(e["params"]);const id=p["scriptId"];need(typeof id==="string"&&typeof read==="function"&&!types.isProxy(read));const script=this.#byId.get(id);need(!this.#failed&&script!==undefined);return this.#enqueue(async():Promise<void>=>{while(!script.verified){await this.#readNext(read);}});}
   public async requireVerified(event: object): Promise<void> { const e = own(event); const p = own(e["params"]); const id = p["scriptId"]; need(typeof id === "string"); const script = this.#byId.get(id); need(!this.#failed && script !== undefined); await script.done.promise; need(!this.#failed && script.verified); }
+  public requireIdle():void{need(!this.#failed&&this.#pending.length===0&&this.#scripts.every(script=>script.verified)&&this.#originals.every(submission=>submission.verified));}
   public fail(): void { if (!this.#failed) { this.#failed = true; for(const original of this.#originals){original.ready.reject(new Error("SCHEMATIC_RELEVANCE_ORIGINAL_HELPER_FAILED"));} for (const script of this.#scripts) { script.done.reject(new Error("SCHEMATIC_RELEVANCE_ORIGINAL_HELPER_FAILED")); } } }
 }

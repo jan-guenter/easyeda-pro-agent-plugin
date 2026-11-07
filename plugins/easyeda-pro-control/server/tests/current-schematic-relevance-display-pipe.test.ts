@@ -11,6 +11,10 @@ import { currentProjectLibraryRefreshCases } from "../src/current-project-librar
 import { currentPcbViaLocalUploadNativeCases } from "../src/current-pcb-via-local-upload-protocol.ts";
 import { currentPcbViaUploadRequestNativeCases } from "../src/current-pcb-via-upload-request-protocol.ts";
 import { currentProjectSaveProducerNativeCases } from "../src/current-project-save-producer-protocol.ts";
+import { currentPcbViaSaveTailObservationNativeCases } from "../src/current-pcb-via-save-tail-observation-protocol.ts";
+import { currentPcbViaSaveTailDeleteControlNativeCases } from "../src/current-pcb-via-save-tail-delete-control-protocol.ts";
+import { currentPcbViaSaveDrainNativeCases } from "../src/current-pcb-via-save-drain-protocol.ts";
+import { currentPcbViaPostHistorySyncNativeCases } from "../src/current-pcb-via-post-history-sync-protocol.ts";
 import { data } from "./generated-schematic-relevance-display-fixture.ts";
 
 function ignoreEvent(): void {
@@ -38,6 +42,10 @@ void test("own7 original library and Save lanes transmit while the original navi
   for (const send of [(): Promise<unknown> => pipe.observeSchematicRelevanceLibraryRefresh(library), (): Promise<unknown> => pipe.continueSchematicRelevanceDisplayLocal(local), (): Promise<unknown> => pipe.continueSchematicRelevanceDisplayUpload(upload), (): Promise<unknown> => pipe.observeSchematicRelevanceDisplayLocalCache(cache)]) {
     const pending = send(); const original = last(); assert.equal(original.sessionId, "original-worker-session"); assert.notEqual(original.id, navigationRequest.id); reply(original, {}); await pending;
   }
+  const deletion=currentPcbViaSaveTailDeleteControlNativeCases()[0],drain=currentPcbViaSaveDrainNativeCases()[0],post=currentPcbViaPostHistorySyncNativeCases()[0],tail=currentPcbViaSaveTailObservationNativeCases()[0];assert.ok(tail!==undefined&&deletion!==undefined&&drain!==undefined&&post!==undefined);
+  const extra=currentProjectSaveProducerNativeCases().find(command=>command.phase==="project-save-producer-cache-caller"&&command.cacheRole==="localSave");assert.ok(extra!==undefined);
+  for(const send of [():Promise<unknown>=>pipe.observeSchematicRelevanceDisplayTail(tail),():Promise<unknown>=>pipe.continueSchematicRelevanceDisplayTailDelete(deletion),():Promise<unknown>=>pipe.continueSchematicRelevanceDisplayDrain(drain),():Promise<unknown>=>pipe.continueSchematicRelevanceDisplayPostHistory(post),():Promise<unknown>=>pipe.observeSchematicRelevanceDisplayTailExtra(extra)]){const original=send();const request=last();assert.equal(request.sessionId,"original-worker-session");assert.notEqual(request.id,navigationRequest.id);reply(request,{});await original;}
+  const invalidExtra=currentProjectSaveProducerNativeCases()[0];assert.ok(invalidExtra!==undefined);assert.throws(()=>pipe.observeSchematicRelevanceDisplayTailExtra(invalidExtra));
   const sourceRead=Promise.withResolvers<Readonly<{id:number;sessionId?:string}>>();
   pipe.bindSchematicRelevanceDisplaySubmittedHelpers(command=>{receipts.register(command);return true;},(command,raw)=>receipts.verify(command,raw,scriptId=>{const pending=pipe.readSchematicRelevanceDisplayObservedSource({phase:"via-observed-source",method:"Debugger.getScriptSource",params:{scriptId}});sourceRead.resolve(last());return pending;}));
   const proof=pipe.continueSchematicRelevanceDisplayLocal(local);const proofRequest=last();let proofReturned=false;const completed=(async():Promise<void>=>{await proof;proofReturned=true;})();

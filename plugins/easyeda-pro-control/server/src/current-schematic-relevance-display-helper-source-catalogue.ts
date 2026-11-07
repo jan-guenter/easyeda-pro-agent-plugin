@@ -20,8 +20,10 @@ import { CURRENT_PCB_VIA_SAVE_TAIL_DELETE_CONTROL_REQUESTS, currentPcbViaSaveTai
 import { CURRENT_PCB_VIA_POST_HISTORY_SYNC_REQUESTS, currentPcbViaPostHistorySyncNativeCases } from "./current-pcb-via-post-history-sync-protocol.ts";
 import { CURRENT_PCB_VIA_SAVE_DRAIN_REQUESTS, currentPcbViaSaveDrainNativeCases } from "./current-pcb-via-save-drain-protocol.ts";
 
+import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_REPLAY_NO_PUBLICATION_PROGRAM } from "./current-schematic-relevance-display-replay-program.ts";
+
 type Kind = "function" | "expression";
-const conditions = new Set<string>(), expressions = new Set<string>(), functions = new Set<string>();
+const conditions = new Set<string>(), expressions = new Set<string>(), functions = new Set<string>([CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_REPLAY_NO_PUBLICATION_PROGRAM]);
 const cases: readonly (Readonly<{ method: string; params: object }> | Readonly<{ phase: "via-post-sync-replay" }>)[] = [
   ...currentSchematicDisplaySaveNativeCases(),
   ...currentProjectSaveStructureNativeCases(),
@@ -53,7 +55,7 @@ for (const command of cases) {
  * complete finite budgets is a conservative upper bound, not an execution
  * count. Periodic calls, repeated producer/cache roles and three tail jobs
  * remain included through their own derived bounds. The fourth schematic local cache job adds one full shared head-job budget.
- * The independent TEXT replay is not admitted until its own fixed program exists. */
+ * The independent fixed TEXT replay uses the same retained original Save node and its own source receipt. */
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_OBSERVED_WORKER_SOURCE_REQUESTS =
   CURRENT_SCHEMATIC_DISPLAY_SAVE_REQUESTS.total +
   CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS.cdpRequests +

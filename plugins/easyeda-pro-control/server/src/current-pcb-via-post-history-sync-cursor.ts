@@ -12,7 +12,7 @@ import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_PROMISE_CAPTURE as RETAIN, currentP
 import { currentFootprintCopyClockRpcV2ArrayObject, decodeCurrentFootprintCopyClockRpcV2Array, decodeCurrentFootprintCopyClockRpcV2ArrayCapture } from "./current-footprint-copy-clock-rpc-v2-protocol.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import type { CurrentPcbViaProspectiveSyncData } from "./current-pcb-via-prospective-sync-data.ts";
-import type { CurrentPcbViaLiveHistoryCacheData } from "./current-pcb-via-live-history-cache-data.ts";
+import type { CurrentProjectLiveHistoryCacheData } from "./current-project-live-history-cache-data.ts";
 
 export type CurrentPcbViaPostHistorySyncRole = "syncEntry" | "syncFull" | "syncLast" | "syncHistory" | "syncMerged" | "syncFinalizing" | "syncReturned";
 export interface CurrentPcbViaPostHistorySyncHeld { readonly packet: object; readonly role: CurrentPcbViaPostHistorySyncRole; readonly joinedId: string; readonly callFrameId: string; readonly callerFrameId: string | null; readonly returnPromiseId: string | null }
@@ -21,7 +21,7 @@ export interface CurrentPcbViaPostHistorySyncHeld { readonly packet: object; rea
 export interface CurrentPcbViaPostHistorySyncBindings {
   readonly scriptId: string; readonly originalInitialCapture: () => string; readonly assertCurrent: () => Promise<void>;
   readonly requireHeld: (packet: object) => CurrentPcbViaPostHistorySyncHeld;
-  readonly liveData: () => Promise<CurrentPcbViaLiveHistoryCacheData>;
+  readonly liveData: () => Promise<CurrentProjectLiveHistoryCacheData>;
   readonly request: (command: CurrentPcbViaPostHistorySyncCommand) => Promise<unknown>;
   readonly resume: (held: CurrentPcbViaPostHistorySyncHeld, command: CurrentPcbViaPostHistorySyncCommand) => Promise<void>;
   readonly complete: () => Promise<void>; readonly fail: () => void;
@@ -34,7 +34,7 @@ type PropertyRole = Extract<CurrentPcbViaPostHistorySyncCommand, { phase: "via-p
 type Argument = Readonly<{ objectId: string }> | Readonly<{ value: string }>;
 export class CurrentPcbViaPostHistorySyncCursor {
   readonly #data: CurrentPcbViaProspectiveSyncData; readonly #bindings: CurrentPcbViaPostHistorySyncBindings; readonly #initial: string; readonly #attempted = new WeakSet<object>();
-  #capture: string | null = null; #full: string | null = null; #last: string | null = null; #index: string | null = null; #task: string | null = null; #outer: string | null = null; #live: CurrentPcbViaLiveHistoryCacheData | null = null;
+  #capture: string | null = null; #full: string | null = null; #last: string | null = null; #index: string | null = null; #task: string | null = null; #outer: string | null = null; #live: CurrentProjectLiveHistoryCacheData | null = null;
   #step = 0; #requests = 0; #resumes = 0; #passes = 0; #busy = false; #failed = false; #completed = false;
   public constructor(data: CurrentPcbViaProspectiveSyncData, bindings: CurrentPcbViaPostHistorySyncBindings) { this.#data = data; this.#bindings = bindings; this.#initial = bindings.originalInitialCapture(); Object.freeze(this); }
   async #current(): Promise<void> { need(!this.#failed && this.#bindings.originalInitialCapture() === this.#initial); await this.#bindings.assertCurrent(); need(!this.#failed && this.#bindings.originalInitialCapture() === this.#initial); }

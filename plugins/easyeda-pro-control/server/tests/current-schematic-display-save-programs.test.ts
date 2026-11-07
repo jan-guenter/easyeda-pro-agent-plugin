@@ -10,6 +10,9 @@ import { CURRENT_SCHEMATIC_DISPLAY_SAVE_METHOD_SOURCE, CURRENT_SCHEMATIC_DISPLAY
 import { decodeCurrentSchematicDisplaySaveBodyValue, decodeCurrentSchematicDisplaySaveMethod, decodeCurrentSchematicDisplaySavePause } from "../src/current-schematic-display-save-replies.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_SAVE_REQUESTS, currentSchematicDisplaySaveNativeCases, validateCurrentSchematicDisplaySaveCommand } from "../src/current-schematic-display-save-protocol.ts";
 
+import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_REPLAY_NO_PUBLICATION_PROGRAM as REPLAY } from "../src/current-schematic-relevance-display-replay-program.ts";
+import { CURRENT_PCB_VIA_REPLAY_METHODS } from "../src/current-pcb-via-replay-source.ts";
+
 function fixture(): ReturnType<typeof createContext> {
   const context = createContext({});
   runInContext(`globalThis.calls=0;class Gd {get isV2Format(){return this._isV2Format}set isV2Format(t){this._isV2Format=t,this._projectDetails&&(this._projectDetails.isV2Format=t)}}class Lg extends Gd{};globalThis.Gd=Gd;globalThis.PROJECT=Object.assign(new Lg(),{uuid:"${"b".repeat(64)}",_isV2Format:false,isReady:true,isHistoryBack:false,
@@ -83,4 +86,11 @@ void test("original function locations, exact pause sites and complete body boun
   const value: unknown = structuredClone(remote);
   assert.ok(typeof value === "object" && value !== null); assert.equal(decodeCurrentSchematicDisplaySaveBodyValue({ result: { type: "object", value } }).clock, 1_700_000_000_123);
   assert.throws(() => decodeCurrentSchematicDisplaySaveBodyValue({ result: { type: "object", value: { ...value, body: "é".repeat(9000) } } }));
+});
+
+function replayFixture(): ReturnType<typeof createContext> { const context = fixture(); runInContext(`Object.assign(r,{${Object.values(CURRENT_PCB_VIA_REPLAY_METHODS).map(row=>row.source).join(",")}});Object.assign(r.docHead[arg.uuid],{uuid:arg.uuid,client:arg.uuid,updateTime:bodyFrame[3],version:String(bodyFrame[3]),ticket:5,editVersion:PRO_EDITOR_VERSION});globalThis.doc={docType:"SCH_PAGE",uuid:arg.uuid,client:arg.client,updateTime:bodyFrame[3],version:String(bodyFrame[3])};globalThis.header={type:"TEXT",ticket:node.ticket,id:"text-id"};globalThis.replaceBody=()=>{bodyFrame[5]=JSON.stringify({type:"DOCHEAD",ticket:5})+"||"+JSON.stringify(doc)+"|\\n"+JSON.stringify(header)+"||"+node.data};replaceBody();globalThis.merged=[PROJECT,undefined,false,()=>{},Promise.resolve(),undefined,undefined,[],0,false];`,context);return context; }
+void test("seven-record TEXT replay reproof retains the original unpended node and exact native header", () => {
+
+  const context=replayFixture();assert.equal(runInContext(`(${REPLAY}).call(bodyFrame,original,merged)`,context),true);assert.equal(runInContext("calls",context),0);
+  for(const change of ["node.pend=true","header.pend=true;replaceBody()","header.type='VIA';replaceBody()","doc.docType='PCB';replaceBody()","r.wDocData.get(arg.uuid).get('text-id').last={...node}","r.docHead[arg.uuid]={...r.docHead[arg.uuid]}","r.docHead[arg.uuid].updateTime++","doc.client='foreign';replaceBody()","Object.defineProperty(r,'onDocHead',{get(){calls++;throw Error('getter')}})"]){const altered=replayFixture();runInContext(change,altered);assert.throws(()=>runInContext(`(${REPLAY}).call(bodyFrame,original,merged)`,altered));assert.equal(runInContext("calls",altered),0);}
 });
