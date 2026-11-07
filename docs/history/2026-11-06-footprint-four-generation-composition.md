@@ -1815,3 +1815,43 @@ compiler bytes; full emitted Linux C#5 passes peer/job/RPC/entry smokes
 (ORIGINAL_INVERSE_WORKER_PEER_NATIVE_OK). The new rows use the existing hashed
 fixed table. Both2MiB limits and older purpose contracts stay unchanged. No
 tracked helper/pin, app/SDK/native call or original-owner cleanup was performed.
+
+## Native message receive source and fixed getter prerequisites
+
+The native receive join now has an independent Event/MessageEvent metadata
+catalogue and fixed constructor/member/read/reproof programs. The Event
+constructor check includes all four phase constants and its complete own
+roster. Actual callable descriptions are separate from supplied descriptors.
+The fixed member capture retains the exact target/type/isTrusted/data/origin/
+source getters without invoking them. A later read requires the correlated
+native qualifications first, trusted message type, original channel target,
+null source, exact incoming RPC reference and a complete six-field envelope.
+These inert programs issue no original event/job/clock ownership.
+
+The [DOM Event definition](https://dom.spec.whatwg.org/#interface-event)
+specifies the phase constants and unforgeable isTrusted member. The
+[HTML MessageEvent definition](https://html.spec.whatwg.org/multipage/comms.html#the-messageevent-interface)
+specifies Event inheritance and its data/origin/source interface. These sources
+establish the intended member profile, not browser runtime acceptance. The
+new tests explicitly label their positive descriptor/VM fixtures synthetic;
+actual Node Event/MessageEvent implementations refuse the native roles.
+
+A second actual paused Node24 Inspector case executes only the pinned strict
+CJS bus declarations on inert objects, including the original JP constructor
+and its original onmessage arrow. It proves the contiguous source chain:
+service callback, wu.execute, KP.onReceivedIGive, JP.onMessage and
+JP.bc.onmessage. The actual arrow is UTF16 11785..11812, function0:11785,
+paused caller0:11794, SHA d257238e1366dbd0132b6a8f3445117f2db2c2c2daa50815aaacf4de8506d4b7.
+This corrects the earlier informal 0:11767 estimate before any native mount.
+Its stack selector refuses shifted PCs and still observes zero clock calls
+at the before-qe proof. No native channel or trusted event was constructed.
+
+Five focused cases pass, with both type projects and zero-warning changed
+lint. The shared test-only source fixture keeps the dependency limit intact.
+Actual browser native metadata and the original manager envelope/origin still
+need their genuine same-owner Core join; the old partial worker job remains
+data-only. No request vocabulary, native budget, helper, pin or execution grant
+changes in this slice. Local loopback settlement will use original callback
+entry/normal synchronous return and separately proved branch effects. No
+Runtime.queryObjects or forced-GC route has run or is required, and no dropped
+Promise handle is claimed authenticated.
