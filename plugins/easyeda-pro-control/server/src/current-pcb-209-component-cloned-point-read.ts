@@ -8,7 +8,7 @@ export { CURRENT_PCB_209_COMPONENT_CLONED_POINT_READ_FUNCTION } from "./current-
 export const currentPcb209ComponentClonedPointQueriesSchema = z.array(currentPcb209SpatialPadPointSchema).min(1).max(11);
 const id = z.string().min(1).max(256).refine(value => value.isWellFormed() && !value.includes("\0"));
 const identitySchema = z.strictObject({ primitiveId: id, family: z.enum(["Component", "Pad"]) });
-export const currentPcb209ComponentClonedPointResultSchema = z.strictObject({
+export const currentPcb209ComponentClonedPointResultV1Schema = z.strictObject({
   schema: z.literal("easyeda-pro-control.pcb209-component-cloned-point.v1"), documentUuid: z.string().regex(/^[a-f0-9]{32}$/u),
   query: currentPcb209SpatialPadPointSchema, identities: z.array(identitySchema).max(1),
   sceneComponentCount: z.literal(1), scenePadCount: z.literal(1), sceneHiddenAttributeCount: z.literal(2), selectedPrimitiveIds: z.array(id).length(0), samples: z.literal(2),
@@ -18,6 +18,12 @@ export const currentPcb209ComponentClonedPointResultSchema = z.strictObject({
   cloneModelState: z.union([z.literal(0), z.literal(5202)]),
   templateGeometryMatched: z.literal(true), templateReferenceLinked: z.literal(false),
   nativeIntrinsicsVerified: z.literal(false), sourceMembershipVerified: z.literal(false), persistenceVerified: z.literal(false),
+});
+/** V1 remains immutable for historical records. V2 adds the exact observed
+ * normalized model64; geometry, watcher and view-readiness checks stay fixed. */
+export const currentPcb209ComponentClonedPointResultSchema = currentPcb209ComponentClonedPointResultV1Schema.extend({
+  schema: z.literal("easyeda-pro-control.pcb209-component-cloned-point.v2"),
+  cloneModelState: z.union([z.literal(0), z.literal(64), z.literal(5202)]),
 });
 export type CurrentPcb209ComponentClonedPointResult = z.infer<typeof currentPcb209ComponentClonedPointResultSchema>;
 export function decodeCurrentPcb209ComponentClonedPointReply(input: unknown): CurrentPcb209ComponentClonedPointResult {

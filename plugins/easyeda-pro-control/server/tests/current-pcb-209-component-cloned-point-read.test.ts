@@ -24,6 +24,7 @@ void test("cloned-tE mode compares both template and indexed geometry without in
  assert.equal(result.templateGeometryMatched, true); assert.equal(result.templateReferenceLinked, false); assert.equal(result.sourceMembershipVerified, false);
  assert.equal(runInContext("metrics.hits", realm), 2);
  const constructorState = fixture("padModel._dataState=5202"); assert.equal(decode({ result: { type: "string", value: read(constructorState) } }).cloneModelState, 5202);
+ const normalized = fixture("padModel._dataState=64;padView._dataState=17"); assert.equal(decode({ result: { type: "string", value: read(normalized) } }).cloneModelState, 64);
  const gpu = fixture(); runInContext(`globalThis.bundle=(${GPU_BINDINGS}).call({object:scope},callback,expectedScene);`, gpu);
  assert.throws(() => read(gpu, GPU_READ), /PCB209_SPATIAL_READ_REFUSED/u); assert.equal(runInContext("metrics.hits", gpu), 0);
 });

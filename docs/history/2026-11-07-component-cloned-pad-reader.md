@@ -101,3 +101,31 @@ to keep the complete physical command within the original65,536-byte limit.
 Four focused inert checks pass, including exact diagnostic states, unchanged
 no-hit refusals and the maximum frame bound. The diagnostic change has no new
 connected result yet; it exists to avoid another ambiguous failure.
+
+
+## Fourth original case and separately versioned normalized state
+
+Frozen payload `833350f722b95542a0ccf50d2a303ee91028e507` ran another
+original generated Component import and fresh reader. Project and PCB opening,
+complete source membership and295 callee qualifications passed. The once-only
+point attempt refused with model bitmap64, view bitmap17 and watcher equality
+true. This isolates the refusal to the old exact model-state enumeration. The
+existing source-ready mask rejects bits2 and4;64 carries neither bit. This
+observation authorizes no new dirty-state mask or refresh call.
+
+Original normal close, root/empty-Job termination, complete closed capture and
+helper release completed. Independent comparison proves byte-exact raw snapshot,
+SQL schema/properties/all35 tables/columns/rows/unknown fields and raw history.
+The manager then acknowledged retirement and lease release and observed the
+original facade's stdin-EOF exit with code0. Fresh initial-clock qualification
+remains separately false. No points were accepted and no Save ran.
+
+The new cloned result and observation use version2 and accept the exact observed
+model64 alongside0 and5202. Intent and result envelopes also emit version2.
+Historical version1 payloads retain their original exact0-or5202 schema and
+cannot enter the live decoder. Historical chain validation requires matching
+intent/result/observation versions; historical parsing creates no reader owner.
+Geometry, watchers, view readiness, descriptor retention, point limits and
+physical-frame bounds remain unchanged. Five focused checks, strict type-aware
+lint and both TypeScript projects pass. A new frozen connected case remains
+required for positive hits; this correction does not replay the consumed case.
