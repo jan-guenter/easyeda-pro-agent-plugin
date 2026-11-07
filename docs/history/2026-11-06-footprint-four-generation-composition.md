@@ -1350,3 +1350,42 @@ producer/Main, closure and fourth-reader composition remain pending.
 The corrected source also passes complete legacy two-pass generation and the
 three original Linux C#5 binding/library/model smokes:1,374,217 stored helper
 bytes and1,897,927 compiler bytes. No tracked helper or pins were emitted.
+
+## Original inverse Ke scope mount
+
+The original inverse ready path now mounts that encoder observer immediately
+after its actual28-callee observation. Core retains the exact prior packet,
+its private ready tuple and selected Ke reference. Only that adapter issues the
+separate opaque encoder origin. It substitutes actual freshly returned scope
+and constructor IDs in order; copied origins or caller IDs cannot enter the
+registry. All18 classes pass complete source and actual script-location checks.
+A new fresh closure is read after the metadata awaits and compared by the fixed
+JavaScript identity reproof. The observer reserves its original Promise once;
+failures consume the original lane and keep the same cleanup owner.
+
+The same original cursor owns both capture/reproof helper receipts. Setup uses
+25 ordinary requests plus two exact helper-source reads. Native completion
+requires that exact count while the original ready pause is held. Its final
+idle reproof reserves another three requests and one receipt for the future
+actual dispatch; it grants no dispatch itself. The ready native permit and
+original startup drain now require the genuine encoder completion as well as
+the prior callee packet. No constructor, instance, clock, delete, SQL or generic
+resume command is present in this ledger.
+
+The inverse-only reservation adds31 renderer requests,33 action controls and31
+associated original Main reproofs. On this source branch the resulting renderer
+limit is17,137, Main remains993, Main reproofs92,804 and aggregate controls161,103.
+The29 finite message variants use one packed immutable table and retain every
+expanded message hash. Complete legacy generation is idempotent at1,379,759
+stored helper bytes and1,908,769 compiler bytes. Full emitted Linux C#5 passes
+all29 encoder codec cases, original-purpose/control refusals, and the existing
+binding/library/model smokes. Nine actual factory/cursor/composition cases and
+nine source/VM/Inspector/protocol cases pass with the required isolation preload;
+both typechecks and strict changed-file lint pass. No helper or pins were
+regenerated and no native application test was performed.
+
+The next runtime boundary remains the actual newly constructed Ke instance at
+deleteString entry, its single awaited clock and once-only original SDK call.
+Upload/queue/cache producer settlement, inverse Main mutation/SQL completion,
+closed inverse proof and the independent fourth reader remain required before
+four-generation success can be claimed.

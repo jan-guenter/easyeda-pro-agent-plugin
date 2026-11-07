@@ -6,13 +6,15 @@ import { Session } from "node:inspector/promises";
 import type { Runtime } from "node:inspector/promises";
 import { test } from "node:test";
 import vm from "node:vm";
+import { CurrentFootprintInverseDeleteEncoderObserver } from "../src/current-footprint-inverse-delete-encoder-observer.ts";
 import { CURRENT_FOOTPRINT_INVERSE_DELETE_ENCODER_CLASSES as CLASSES, CURRENT_FOOTPRINT_INVERSE_DELETE_ENCODER_FIELDS as FIELDS, qualifyCurrentFootprintInverseDeleteEncoderSource } from "../src/current-footprint-inverse-delete-encoder-source.ts";
 import { CURRENT_FOOTPRINT_INVERSE_DELETE_ENCODER_ENTRY_EXPRESSION as ENTRY, CURRENT_FOOTPRINT_INVERSE_DELETE_ENCODER_PROGRAMS as PROGRAMS } from "../src/current-footprint-inverse-delete-encoder-programs.ts";
 
-import { currentFootprintInverseDeleteEncoderClasses, currentFootprintInverseDeleteEncoderKeScopes, currentFootprintInverseDeleteEncoderScope, qualifyCurrentFootprintInverseDeleteEncoderClass } from "../src/current-footprint-inverse-delete-encoder-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_DELETE_ENCODER_REQUESTS as BUDGET, currentFootprintInverseDeleteEncoderCases, currentFootprintInverseDeleteEncoderClasses, currentFootprintInverseDeleteEncoderKeScopes, currentFootprintInverseDeleteEncoderNativeFrame, currentFootprintInverseDeleteEncoderScope, currentFootprintInverseDeleteEncoderWire, qualifyCurrentFootprintInverseDeleteEncoderClass, validateCurrentFootprintInverseDeleteEncoderCommand } from "../src/current-footprint-inverse-delete-encoder-protocol.ts";
 
 // The installed protocol supports this field; Node's generated type omits it.
 function checkedCall(session:Session,params:Runtime.CallFunctionOnParameterType):Promise<Runtime.CallFunctionOnReturnType>{const checked={...params,throwOnSideEffect:true};return session.post("Runtime.callFunctionOn",checked);}
+
 const installed="/mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-mgr/3.2.185.bf63a159/js/project-worker.js";
 async function source():Promise<string|null>{try{return await readFile(installed,"utf8");}catch(error){if(error!==null&&typeof error==="object"&&"code"in error&&error.code==="ENOENT"){return null;}throw error;}}
 function fixture(full:string):vm.Context{
@@ -41,4 +43,10 @@ void test("actual inert Ke closure supplies the referenced constructors and fres
  const before=await fresh();const captured=await checkedCall(inspector,{objectId:before,functionDeclaration:PROGRAMS.capture,arguments:[{objectId:original}],objectGroup:"inert-inverse-ke-closure",returnByValue:false});assert.equal(captured.result.subtype,"array",JSON.stringify(captured));const value=captured.result.objectId;assert.equal(typeof value,"string",JSON.stringify(captured));if(value===undefined){throw new Error("inert scope capture missing");}const fields=await inspector.post("Runtime.getProperties",{objectId:value,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false});const classes=currentFootprintInverseDeleteEncoderClasses(fields,full);for(const[index,objectId]of classes.entries()){qualifyCurrentFootprintInverseDeleteEncoderClass(await inspector.post("Runtime.getProperties",{objectId,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}),index,scriptId,full);}
  const after=await fresh();const result=await checkedCall(inspector,{objectId:after,functionDeclaration:PROGRAMS.reprove,arguments:[{objectId:original},{objectId:value}],objectGroup:"inert-inverse-ke-closure",returnByValue:true});assert.deepEqual(result,{result:{type:"boolean",value:true}});await inspector.post("Runtime.releaseObjectGroup",{objectGroup:"inert-inverse-ke-closure"});
  }finally{inspector.disconnect();}
+});
+
+void test("encoder scope codebook has only finite original readonly selectors and exact native fields",()=>{
+ const cases=currentFootprintInverseDeleteEncoderCases();assert.equal(cases.length,29);assert.deepEqual(BUDGET,{classes:18,setup:25,setupHelpers:2,dispatchReproof:3,dispatchHelper:1,cdpRequests:31,controls:33,cleanupAfterOriginalExit:0});for(const command of cases){const wire=currentFootprintInverseDeleteEncoderWire(command,79,"original-worker");const frame=currentFootprintInverseDeleteEncoderNativeFrame(Buffer.from(`${JSON.stringify(wire)}\0`),command,"original-worker");assert.equal(frame["action"],"footprint-inverse-delete-encoder");assert.equal(frame["phase"],command.phase);assert.throws(()=>currentFootprintInverseDeleteEncoderNativeFrame(Buffer.from(`${JSON.stringify({...wire,sessionId:"other-worker"})}\0`),command,"original-worker"));}
+ assert.throws(()=>validateCurrentFootprintInverseDeleteEncoderCommand({phase:"inverse-delete-encoder-invoke",method:"Runtime.callFunctionOn",params:{}}));const selected=cases.find(command=>command.phase==="inverse-delete-encoder-class");assert.ok(selected);assert.throws(()=>validateCurrentFootprintInverseDeleteEncoderCommand({...selected,slot:18}));
+ let reads=0;const owner=Object.defineProperty({},"target",{get(){reads+=1;throw new Error("caller getter");}});const prepared:ConstructorParameters<typeof CurrentFootprintInverseDeleteEncoderObserver>[2]=Object.freeze({profile:"private.current-footprint-forward-saved-checkpoint.v1"});const copied=Object.freeze({profile:"private.current-footprint-inverse-delete-encoder-origin.v1"}as const);assert.throws(()=>new CurrentFootprintInverseDeleteEncoderObserver(copied,owner,prepared));assert.equal(reads,0);
 });

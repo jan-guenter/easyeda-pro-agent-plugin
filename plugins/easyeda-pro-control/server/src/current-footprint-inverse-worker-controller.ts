@@ -17,6 +17,8 @@ import type { CurrentPcbViaSavedLoadBootstrapCommand } from "./current-pcb-via-s
 import type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 // oxlint-disable-next-line import/max-dependencies -- One original event reader owns construction, cold, callback, condition and timer packets; splitting readers would duplicate event custody.
 import { isCurrentPcb209BootstrapTargetUrl } from "./current-pcb-209-worker-bootstrap-source.ts";
+import { qualifyCurrentFootprintInverseDeleteEncoderHelper } from "./current-footprint-inverse-delete-encoder-protocol.ts";
+import type { CurrentFootprintInverseDeleteEncoderCommand } from "./current-footprint-inverse-delete-encoder-protocol.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_PROJECT_SYNC_QUIESCE_SITES as TIMER_SITES } from "./current-project-sync-quiesce-source.ts";
 import type { CurrentFootprintInverseTimerCommand } from "./current-footprint-inverse-timer-protocol.ts";
@@ -42,6 +44,7 @@ export interface CurrentFootprintInverseWorkerControllerBindings {
   readonly conditionSourceRequest:(scriptId:string)=>Promise<unknown>;
   readonly timerRequest: (command: CurrentFootprintInverseTimerCommand) => Promise<unknown>;
   readonly timerHeld: () => Promise<void>;
+  readonly deleteEncoderRequest:(command:CurrentFootprintInverseDeleteEncoderCommand)=>Promise<unknown>;
   readonly deleteBindingRequest:(command:CurrentFootprintInverseDeleteBindingCommand)=>Promise<unknown>;
   readonly libraryRequest:(command:CurrentProjectLibraryRefreshCommand)=>Promise<unknown>;
   readonly libraryHeld:(role:"firstLoop"|"mountReturned")=>Promise<void>;
@@ -100,6 +103,7 @@ export class CurrentFootprintInverseWorkerController {
   readonly #libraryPoints=new Map<keyof typeof LIBRARY_SITES,string>();readonly #libraryResolutions=new Map<string,keyof typeof LIBRARY_SITES>();readonly #libraryHelpers:{program:string;source:string;scriptId:string|null}[]=[];
   #libraryArming:keyof typeof LIBRARY_SITES|null=null;#libraryBound=false;#libraryFirstObserved=false;#libraryReturnedObserved=false;#libraryMountObserved=false;#librarySuspended=false;#libraryCompleted=false;
   #libraryHeld:{role:"firstLoop"|"loopReturned"|"mountReturned";event:WorkerEvent;delivered:boolean;resumeAttempted:boolean}|null=null;
+  readonly #deleteEncoderHelpers:{program:string;scriptId:string|null}[]=[];#deleteEncoderBound=false;#deleteEncoderCompleted=false;#deleteEncoderHelperAttempts=0;
   readonly #deleteBindingHelpers:{program:string;scriptId:string|null}[]=[];#deleteBindingBound=false;#deleteBindingCompleted=false;#deleteBindingHelperAttempts=0;
   readonly #coldStepAttempts=new WeakSet<object>();
   #initialHistoryMainArms = 0;
@@ -110,7 +114,7 @@ export class CurrentFootprintInverseWorkerController {
   #source: CurrentPcbViaSavedLoadProjectSourceHeld | null = null; #failed = false; #reading = false; #eventCount = 0; #networkEvents = 0; #pumping = false;
   public constructor(bindings: CurrentFootprintInverseWorkerControllerBindings) {
     need(bindings !== null && typeof bindings === "object" && !types.isProxy(bindings) && Object.getPrototypeOf(bindings) === Object.prototype && Object.isFrozen(bindings));
-    const fields = ["parentSessionId", "projectUuid", "windowTabId", "bindWorker", "request", "poll", "assertCurrent", "projectSourceHeld", "constructionRequest", "initialSyncRequest", "initialSyncHeld", "initialCacheRequest", "initialCacheHeld", "startupQueueRequest", "startupCallbackRequest", "startupCallbackHeld", "conditionSourceRequest", "timerRequest", "timerHeld", "libraryRequest", "libraryHeld", "deleteBindingRequest", "modelStepRequest", "startupIdleReady", "settleStartupPromises", "coldStepRequest", "coldRequest", "producerArmRequest", "constructionHeld", "fail"];
+    const fields = ["parentSessionId", "projectUuid", "windowTabId", "bindWorker", "request", "poll", "assertCurrent", "projectSourceHeld", "constructionRequest", "initialSyncRequest", "initialSyncHeld", "initialCacheRequest", "initialCacheHeld", "startupQueueRequest", "startupCallbackRequest", "startupCallbackHeld", "conditionSourceRequest", "timerRequest", "timerHeld", "libraryRequest", "libraryHeld", "deleteBindingRequest", "deleteEncoderRequest", "modelStepRequest", "startupIdleReady", "settleStartupPromises", "coldStepRequest", "coldRequest", "producerArmRequest", "constructionHeld", "fail"];
     need(Reflect.ownKeys(bindings).length === fields.length);
     for (const [index, name] of fields.entries()) { const d = Object.getOwnPropertyDescriptor(bindings, name); need(d !== undefined && Object.hasOwn(d, "value") && typeof d.value === (index < 3 ? "string" : "function") && !types.isProxy(d.value)); }
     need(token(bindings.parentSessionId) && token(bindings.windowTabId) && /^[a-f\d]{64}$/u.test(bindings.projectUuid)); this.#bindings = bindings; Object.freeze(this);
@@ -130,14 +134,14 @@ export class CurrentFootprintInverseWorkerController {
    * fixed policy acknowledgments and later original source/body joins matter. */
   public observeEvent(event: DiagnosticEvent): void {
     try {
-      this.#eventCount += 1; need(!this.#failed && this.#eventCount <= 1024+13*this.#startupCallbackBound+18*this.#initialCacheBound+53+(this.#libraryBound?25:0)+(this.#deleteBindingBound?32:0)+(this.#conditionBound>0?currentFootprintInverseConditionBudget(this.#conditionBound):0));
+      this.#eventCount += 1; need(!this.#failed && this.#eventCount <= 1024+13*this.#startupCallbackBound+18*this.#initialCacheBound+53+(this.#libraryBound?25:0)+(this.#deleteBindingBound?32:0)+(this.#deleteEncoderBound?3:0)+(this.#conditionBound>0?currentFootprintInverseConditionBudget(this.#conditionBound):0));
       if (event.method === "Target.attachedToTarget") { this.#attach(event); return; }
       need(this.#page !== null && event.sessionId === this.#page.sessionId);
       if (["Network.requestWillBeSent", "Network.requestWillBeSentExtraInfo", "Network.responseReceived", "Network.responseReceivedExtraInfo", "Network.loadingFinished", "Network.loadingFailed", "Network.dataReceived", "Network.requestServedFromCache", "Network.resourceChangedPriority"].includes(event.method)) {
         this.#networkEvents += 1; need(this.#networkEvents <= 512); return;
       }
       if (this.#source !== null && event.method === "Debugger.scriptParsed" && event.params["url"] === "") {
-        const expected = [...this.#constructionHelpers,...this.#producerHelpers,...this.#coldHelpers,...this.#startupCallbackHelpers,...this.#timerHelpers,...this.#libraryHelpers,...this.#deleteBindingHelpers,...this.#startupQueueHelpers,...this.#initialCacheHelpers,...this.#initialSyncHelpers].find(value => value.scriptId === null);
+        const expected = [...this.#constructionHelpers,...this.#producerHelpers,...this.#coldHelpers,...this.#startupCallbackHelpers,...this.#timerHelpers,...this.#libraryHelpers,...this.#deleteBindingHelpers,...this.#deleteEncoderHelpers,...this.#startupQueueHelpers,...this.#initialCacheHelpers,...this.#initialSyncHelpers].find(value => value.scriptId === null);
         const scriptId=event.params["scriptId"];need(token(scriptId)&&event.params["executionContextId"]===this.#source.executionContextId);
         if(expected===undefined){need(this.#conditionBound>0&&this.#conditionRoles.size>0&&!this.#conditionSeenIds.has(scriptId)&&this.#conditionSeenIds.size<currentFootprintInverseConditionBudget(this.#conditionBound));this.#conditionSeenIds.add(scriptId);this.#conditionScriptIds.push(scriptId);}else{expected.scriptId=scriptId;}return;
       }
@@ -299,6 +303,11 @@ export class CurrentFootprintInverseWorkerController {
   public requireLibrarySuspended():void{this.requireLibraryArmed();need(this.#librarySuspended&&this.#libraryFirstObserved&&this.#libraryReturnedObserved&&this.#libraryHeld===null);}
   public completeLibraryRefresh():void{need(this.#pumping&&!this.#failed&&!this.#libraryCompleted&&this.#librarySuspended&&this.#libraryMountObserved&&this.#libraryHeld===null&&this.#libraryHelpers.length===0);this.#libraryCompleted=true;}
   public requireLibraryCompleted():void{this.requireLibrarySuspended();need(this.#libraryCompleted&&this.#libraryMountObserved);}
+  public bindDeleteEncoderAtReady():void{need(this.#pumping&&!this.#failed&&this.#deleteBindingCompleted&&this.#coldStartupHeld?.role==="ready"&&!this.#modelReadyReleased&&!this.#deleteEncoderBound);this.#deleteEncoderBound=true;}
+  public completeDeleteEncoderAtReady():void{need(this.#pumping&&!this.#failed&&this.#deleteEncoderBound&&!this.#deleteEncoderCompleted&&this.#coldStartupHeld?.role==="ready"&&this.#deleteEncoderHelpers.length===0&&this.#deleteEncoderHelperAttempts===2);this.#deleteEncoderCompleted=true;}
+  public requestDeleteEncoder(command:CurrentFootprintInverseDeleteEncoderCommand):Promise<unknown>{need(this.#pumping&&!this.#failed&&this.#deleteEncoderBound&&(this.#coldStartupHeld?.role==="ready"&&!this.#modelReadyReleased||this.#startupDrained&&this.#deleteEncoderCompleted));return this.#bindings.deleteEncoderRequest(command);}
+  public expectDeleteEncoderHelper(program:string):void{const source=`(${program})`;qualifyCurrentFootprintInverseDeleteEncoderHelper(source,program);need(this.#pumping&&!this.#failed&&this.#deleteEncoderBound&&this.#deleteEncoderHelpers.length===0&&(this.#coldStartupHeld?.role==="ready"&&!this.#modelReadyReleased||this.#startupDrained&&this.#deleteEncoderCompleted)&&this.#deleteEncoderHelperAttempts<3);this.#deleteEncoderHelperAttempts+=1;this.#deleteEncoderHelpers.push({program:source,scriptId:null});}
+  public async qualifyDeleteEncoderHelper(program:string):Promise<void>{const original=this.#deleteEncoderHelpers[0];need(this.#pumping&&!this.#failed&&original!==undefined&&original.program===`(${program})`&&original.scriptId!==null);const reply=await this.#bindings.deleteEncoderRequest({phase:"inverse-delete-encoder-helper",method:"Debugger.getScriptSource",params:{scriptId:original.scriptId}});await this.#current();need(record(reply)&&Reflect.ownKeys(reply).length===1&&this.#deleteEncoderHelpers[0]===original);qualifyCurrentFootprintInverseDeleteEncoderHelper(reply["scriptSource"],program);this.#deleteEncoderHelpers.shift();}
   public bindDeleteBindingsAtReady():void{need(this.#pumping&&!this.#failed&&this.#coldStartupHeld?.role==="ready"&&!this.#modelReadyReleased&&!this.#deleteBindingBound);this.#deleteBindingBound=true;}
   public completeDeleteBindingsAtReady():void{need(this.#pumping&&!this.#failed&&this.#deleteBindingBound&&!this.#deleteBindingCompleted&&this.#coldStartupHeld?.role==="ready"&&this.#deleteBindingHelpers.length===0&&this.#deleteBindingHelperAttempts===31);this.#deleteBindingCompleted=true;}
   public requestDeleteBinding(command:CurrentFootprintInverseDeleteBindingCommand):Promise<unknown>{need(this.#pumping&&!this.#failed&&this.#deleteBindingBound&&(this.#coldStartupHeld?.role==="ready"&&!this.#modelReadyReleased||this.#startupDrained&&this.#deleteBindingCompleted));return this.#bindings.deleteBindingRequest(command);}
@@ -353,7 +362,7 @@ export class CurrentFootprintInverseWorkerController {
     await drainCurrentFootprintInverseStartup<WorkerEvent>(Object.freeze({maximumPauses:3*this.#initialCacheBound+9+2+2,assertCurrent:()=>this.#current(),settleOriginalPromises:()=>this.#bindings.settleStartupPromises(),originalCompletionsPresent:()=>this.#bindings.startupIdleReady(),nextOriginalEvent:()=>this.#next(),serviceOriginalEvent:(event:WorkerEvent)=>this.#serviceStartupEvent(event),retainUnsupported:(event:WorkerEvent):void=>{this.#unsupportedStartupHeld=event;}}));
     this.#startupDrained=true;
   }
-  public requireOriginalStartupDrained():void{this.requireColdStartupCustody();need(this.#startupDrained&&this.#modelReadyReleased&&this.#coldStartupHeld===null&&this.#coldStepPending===null&&this.#startupCallbackHeld===null&&this.#initialCacheHeld===null&&this.#initialSyncHeld===null&&this.#timerHeld===null&&this.#unsupportedStartupHeld===null&&this.#events.length===0&&this.#conditionScriptIds.length===0&&this.#coldHelpers.length===0&&this.#startupCallbackHelpers.length===0&&this.#startupQueueHelpers.length===0&&this.#initialCacheHelpers.length===0&&this.#initialSyncHelpers.length===0&&this.#timerHelpers.length===0&&this.#libraryHeld===null&&this.#libraryHelpers.length===0&&this.#libraryCompleted&&this.#deleteBindingCompleted&&this.#deleteBindingHelpers.length===0&&this.#bindings.startupIdleReady());}
+  public requireOriginalStartupDrained():void{this.requireColdStartupCustody();need(this.#startupDrained&&this.#modelReadyReleased&&this.#coldStartupHeld===null&&this.#coldStepPending===null&&this.#startupCallbackHeld===null&&this.#initialCacheHeld===null&&this.#initialSyncHeld===null&&this.#timerHeld===null&&this.#unsupportedStartupHeld===null&&this.#events.length===0&&this.#conditionScriptIds.length===0&&this.#coldHelpers.length===0&&this.#startupCallbackHelpers.length===0&&this.#startupQueueHelpers.length===0&&this.#initialCacheHelpers.length===0&&this.#initialSyncHelpers.length===0&&this.#timerHelpers.length===0&&this.#libraryHeld===null&&this.#libraryHelpers.length===0&&this.#libraryCompleted&&this.#deleteBindingCompleted&&this.#deleteBindingHelpers.length===0&&this.#deleteEncoderCompleted&&this.#deleteEncoderHelpers.length===0&&this.#bindings.startupIdleReady());}
   public async nextColdStartupHeld():Promise<Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>>{
     need(this.#pumping&&this.#coldStartupStarted&&this.#coldStartupHeld===null&&this.#unsupportedStartupHeld===null&&this.#startupCallbackHeld===null);
     let event:WorkerEvent;for(;;){event=await this.#next();if(!await this.#serviceStartupEvent(event)){break;}}
