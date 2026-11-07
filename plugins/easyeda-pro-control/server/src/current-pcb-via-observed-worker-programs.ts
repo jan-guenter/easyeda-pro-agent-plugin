@@ -40,9 +40,10 @@ const cases: readonly (Readonly<{ method: string; params: object }> | Readonly<{
   ...currentPcbViaSaveDrainNativeCases(),
 ];
 for (const command of cases) {
-  if (!("method" in command)) { continue; }
+  if ("method" in command) {
   if (command.method === "Runtime.callFunctionOn" && "functionDeclaration" in command.params && typeof command.params.functionDeclaration === "string") { functions.add(command.params.functionDeclaration); }
   else if (command.method === "Debugger.evaluateOnCallFrame" && "expression" in command.params && typeof command.params.expression === "string") { expressions.add(command.params.expression); }
+  }
 }
 /** Each source-producing call spends an original lane request. Summing the
  * complete finite budgets is a conservative upper bound, not an execution
@@ -80,7 +81,7 @@ export function qualifyCurrentPcbViaObservedWorkerSource(raw: unknown, kind: Kin
   if ((prototype !== Object.prototype && prototype !== null) || Reflect.ownKeys(raw).length !== 1) { throw new Error("PCB_VIA_OBSERVED_WORKER_SOURCE"); }
   const descriptor = Object.getOwnPropertyDescriptor(raw, "scriptSource");
   // Exact equality to an already admitted fixed program bounds this single
-  // source field, including the larger replay. No shared clock limit changes.
+  // Source field, including the larger replay. No shared clock limit changes.
   if (descriptor === undefined || !Object.hasOwn(descriptor, "value") || descriptor.enumerable !== true ||
       descriptor.value !== (kind === "function" ? `(${text})` : text)) { throw new Error("PCB_VIA_OBSERVED_WORKER_SOURCE"); }
 }
