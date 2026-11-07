@@ -37,7 +37,7 @@ void test("seven-record Main reuses exact inert selectors while every native sen
   assert.throws(() => currentSchematicRelevanceDisplayMainWire({ phase: "via-main-edit-head-step", method: "Debugger.resume", params: {} }, 79));
   assert.throws(() => currentSchematicRelevanceDisplayMainWire({ phase: "via-main-structure-step", method: "Debugger.resume", params: {} }, 79));
   assert.throws(() => currentSchematicRelevanceDisplayMainWire({ phase: "via-main-request-resume", method: "Debugger.resume", params: {} }, 79));
-  assert.deepEqual(WIRE.main, SIX.main); assert.deepEqual([SEVEN.main.normal, SEVEN.main.cleanup, SEVEN.main.total], [1035, 27, 1062]);
+  assert.deepEqual(WIRE.main, SIX.main); assert.equal(WIRE.renderer.total, 2721); assert.equal(WIRE.renderer.modifyEntryObservation, 0); assert.deepEqual([SEVEN.main.normal, SEVEN.main.cleanup, SEVEN.main.total], [1035, 27, 1062]);
   assert.deepEqual([SIX.main.normal, SIX.main.cleanup, SIX.main.total], [901, 8, 909]);
 });
 void test("copied seven-record or Via origins cannot create any original Main observer", () => {

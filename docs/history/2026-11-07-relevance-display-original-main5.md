@@ -32,7 +32,10 @@ drain, full closed SQL and fresh-reader persistence remain separate. This
 increment does not enable a public Save workflow or claim connected validation.
 
 Seven-record Main reserves 1035 normal plus 27 cleanup requests, total 1062.
-Wire explicitly retains the six-record readonly Main bound 901/8/909; the old
+Wire explicitly retains the six-record readonly Main bound 901/8/909 and its
+2721 renderer reservation is derived directly from readonly counts plus the
+seven-record constructor/structure cost. Later display-only action reservations
+cannot enlarge Wire. The old
 six-record, Via and inverse budgets do not increase. New native methods share
 the fixed stateless observation/BEGIN/history encoders and add no program table.
 Root's original Save native fragment composes immediately after Main and clock,
