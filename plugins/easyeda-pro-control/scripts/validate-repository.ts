@@ -15,8 +15,9 @@ import {
 import { validateReleaseVersionParity } from "./release-version.ts";
 import { MAIN_REFERENCE_HELPER_IDENTITY } from "../server/src/main-reference-helper-identity.ts";
 import { CURRENT_MAIN_REFERENCE_HELPER_IDENTITY } from "../server/src/current-main-reference-helper-identity.ts";
-import { AGENT_DEFAULT_PROMPT, FACADE_TOOL_NAMES, hasPortableMcpLaunch } from "./plugin-contract.ts";
+import { AGENT_DEFAULT_PROMPT, FACADE_TOOL_POLICY_NAMES, hasPortableMcpLaunch } from "./plugin-contract.ts";
 import { validateCiWorkflow } from "./ci-contract.ts";
+import { privacyPatterns, privateDesignName, privateDesignPath, secretPatterns } from "./repository-content-policy.ts";
 
 import {
   bridgeExtensionManifestSchema,
@@ -59,7 +60,7 @@ const mainReferenceHelperRelativePath = "plugins/easyeda-pro-control/server/bin/
 const currentMainReferenceHelperRelativePath = "plugins/easyeda-pro-control/server/bin/Easyeda.CurrentMainReference.dll";
 const REVIEWED_CONNECTED_BRIDGE_BUILD_ID = "ded07x99dcxb504";
 const checks: CheckResult[] = [];
-const EXPECTED_TOOL_NAMES = [...FACADE_TOOL_NAMES].toSorted();
+const EXPECTED_TOOL_NAMES = [...FACADE_TOOL_POLICY_NAMES].toSorted();
 const AUTO_APPROVED_TOOLS = new Set([
   "easyeda_control_api",
   "easyeda_control_status",
@@ -200,6 +201,12 @@ const required = [
   "scripts/footprint-forward-execution-smoke.ps1",
   "scripts/check-footprint-forward-native-graph.ts",
   "scripts/generate-footprint-forward-native-graph.ts",
+  "scripts/footprint-forward-cold-execution/owner.ps1",
+  "scripts/footprint-forward-cold-execution/native-core.cs",
+  "scripts/footprint-forward-cold-execution/native-phase.cs",
+  "scripts/footprint-forward-cold-execution-smoke.ps1",
+  "scripts/check-footprint-forward-cold-native-graph.ts",
+  "scripts/generate-footprint-forward-cold-native-graph.ts",
   "scripts/main-reference/OwnedSyntheticJob.cs",
   "scripts/main-reference/EasyedaClockObservation.cs",
   "scripts/main-reference/owner-command-v3.ps1",
@@ -564,7 +571,11 @@ check(
     pluginPackageManifest.scripts?.["sanitizer:check"] ===
       "node scripts/build-descriptor-sanitizer.ts --check" &&
     pluginPackageManifest.scripts?.["build"] ===
-      "npm run native:helper:check && npm run native:forward:check && npm run native:forward:source:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && npm run pcb209:spatial:check && node scripts/build-server.ts && node scripts/build-control-manager.ts" &&
+      "npm run native:helper:check && npm run native:forward:check && npm run native:forward:source:check && npm run native:forward:cold:check && npm run native:forward:cold:source:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run schematic:native:check && npm run inverse:native:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && npm run pcb209:spatial:check && node scripts/build-server.ts && node scripts/build-control-manager.ts" &&
+    pluginPackageManifest.scripts?.["schematic:native:check"] === "node scripts/generate-schematic-edit-native.ts --check" &&
+    pluginPackageManifest.scripts?.["schematic:native:update"] === "node scripts/generate-schematic-edit-native.ts --write" &&
+    pluginPackageManifest.scripts?.["inverse:native:check"] === "node scripts/generate-footprint-inverse-native.ts --check" &&
+    pluginPackageManifest.scripts?.["inverse:native:update"] === "node scripts/generate-footprint-inverse-native.ts --write" &&
     pluginPackageManifest.scripts?.["pcb209:spatial:check"] === "node scripts/generate-pcb209-spatial-protocol.ts --check" &&
     pluginPackageManifest.scripts?.["pcb209:spatial:update"] === "node scripts/generate-pcb209-spatial-protocol.ts --write" &&
     pluginPackageManifest.scripts?.["pcb:models:check"] === "node scripts/generate-pcb-model-programs.ts --check" &&
@@ -1174,26 +1185,6 @@ const binaryPaths: string[] = [];
 const secretHits: string[] = [];
 const privacyHits: string[] = [];
 const placeholderHits: string[] = [];
-const secretPatterns: readonly (readonly [string, RegExp])[] = [
-  ["private-key", /-----BEGIN (?:DSA |EC |OPENSSH |PGP |RSA )?PRIVATE KEY-----/u],
-  ["github-classic", /\bgh[opsu]_[A-Za-z0-9]{30,255}\b/u],
-  ["github-fine-grained", /\bgithub_pat_[A-Za-z0-9_]{40,255}\b/u],
-  ["aws-access-key", /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/u],
-  ["npm-token", /\bnpm_[A-Za-z0-9]{30,255}\b/u],
-  ["slack-token", /\bxox[baprs]-[A-Za-z0-9-]{20,255}\b/u],
-  ["openai-key", /\bsk-(?:proj-)?[A-Za-z0-9_-]{20,255}\b/u],
-  ["anthropic-key", /\bsk-ant-[A-Za-z0-9_-]{20,255}\b/u],
-  ["google-api-key", /\bAIza[A-Za-z0-9_-]{30,60}\b/u],
-  [
-    "assigned-secret",
-    /(?:api[_-]?key|authentication[_-]?key|bridge[_-]?token|credential|password|secret|session[_-]?token|token)\s*[:=]\s*["'][A-Za-z0-9_+./=-]{32,}["']/iu,
-  ],
-  [
-    "esbuild-inlined-secret",
-    /\b(?:true|!0)\s*\?\s*["'][A-Za-z0-9_-]{32,256}["']\s*:\s*void 0\b/u,
-  ],
-  ["credential-url", /https?:\/\/[^\s/@:]+:[^\s/@]+@/iu],
-];
 check(
   "secret-scan-detects-esbuild-inlined-key",
   secretPatterns.some(
@@ -1204,16 +1195,6 @@ check(
       ),
   ),
 );
-const privateDesignName = ["Piano", "Pi"].join("");
-const privateDesignPath = ["/root/work/", "piano", "pi"].join("");
-const privacyPatterns: readonly (readonly [string, RegExp])[] = [
-  ["private-design-name", new RegExp(`\\b${privateDesignName}\\b`, "u")],
-  ["private-design-path", new RegExp(`${privateDesignPath}(?:/|\\b)`, "u")],
-  [
-    "windows-user-path",
-    /\/mnt\/c\/Users\/(?!Fixture(?:\/|\b)|Public(?:\/|\b))[^/\s]+\//u,
-  ],
-];
 check(
   "privacy-scan-detects-private-design-identifiers",
   privacyPatterns.some(

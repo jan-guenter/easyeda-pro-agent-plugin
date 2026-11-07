@@ -5,6 +5,7 @@ import { buildCurrentProjectUrlGuard } from "./current-project-url.ts";
 import { CURRENT_PCB_IMAGE_ROW_PROGRAM } from "./current-pcb-image-geometry.ts";
 import { CURRENT_PCB_PAD_POLYGON_PROGRAM } from "./current-pcb-pad-polygon.ts";
 import { CURRENT_PCB_SELECTION_FAMILIES, CURRENT_PCB_SELECTION_PROGRAM } from "./current-pcb-selection.ts";
+import { CURRENT_PCB_LOOKUP_PROGRAM } from "./current-pcb-primitive-lookup.ts";
 
 /** Current API021d155b / UI3823ed6e / PCB217199c8 only. The native
  * serializers are the same ones used by current identity enumeration.
@@ -20,7 +21,7 @@ export function buildCurrentPcbGeometryProgram(input: unknown): string {
     Attribute: "pcb/extensionAPI/attribute-getAll", Dimension: "pcb/extensionAPI/dimension-getAll", Image: "pcb/extensionAPI/image-getAll" } as const;
   return `let timer,clear;
 try{
-const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request.target)},family=${JSON.stringify(family)},topics=${JSON.stringify(topics)},topic=${JSON.stringify(family === "Selected" ? null : topics[family])},primitiveIds=${JSON.stringify(primitiveIds)},componentPrimitiveId=${JSON.stringify(componentPrimitiveId)};
+const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request.target)},family=${JSON.stringify(family)},topics=${JSON.stringify(topics)},topic=${JSON.stringify(family === "Selected" || family === "Lookup" ? null : topics[family])},primitiveIds=${JSON.stringify(primitiveIds)},componentPrimitiveId=${JSON.stringify(componentPrimitiveId)};
 const selectionFamilies=${JSON.stringify(CURRENT_PCB_SELECTION_FAMILIES)},maxBytes=${CURRENT_PCB_GEOMETRY_MAX_BYTES};let expired=false;
 const bad=()=>{throw new Error('CURRENT_PCB_GEOMETRY_READ_FAILED');};
 ${buildCurrentProjectUrlGuard()}
@@ -216,19 +217,22 @@ const readComponentPads=async()=>{
  await identity();check();return{componentIds,pads,childRows,selected};
 };
 ${CURRENT_PCB_SELECTION_PROGRAM}
+${CURRENT_PCB_LOOKUP_PROGRAM}
 const run=async()=>{
- const reader=family==='Selected'?readSelected:componentPrimitiveId===null?read:readComponentPads,first=await reader(),firstJson=JSON.stringify(first);if(new TextEncoder().encode(firstJson).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();
+ const readers={Selected:readSelected,Lookup:readLookup};const reader=readers[family]||(componentPrimitiveId===null?read:readComponentPads),first=await reader(),firstJson=JSON.stringify(first);if(new TextEncoder().encode(firstJson).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();
  const second=await reader();if(JSON.stringify(second)!==firstJson)bad();check();
- const firstRows=componentPrimitiveId!==null?first.selected:family==='Attribute'||family==='Selected'?first.rows:first;
+ const firstRows=componentPrimitiveId!==null?first.selected:family==='Attribute'||family==='Selected'||family==='Lookup'?first.rows:first;
  const observation={ok:true,kind:'current-pcb-geometry-observation',method:${JSON.stringify(request.method)},target,rows:firstRows,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
  if(family==='Attribute')Object.assign(observation,{attributeParentGroups:first.attributeParentGroups,relationshipEvidence:'native-component-attribute-groups',reciprocalParentVerified:false});
  if(family==='Selected')Object.assign(observation,{selectedPrimitiveIds:first.selectedPrimitiveIds,observedFamilies:first.observedFamilies,
   attributeParentGroups:first.attributeParentGroups,selectionEvidence:'native-ordered-selection-and-complete-family-projections',reciprocalParentVerified:false});
+ if(family==='Lookup')Object.assign(observation,{observedFamilies:first.observedFamilies,attributeParentGroups:first.attributeParentGroups,
+  observedRowCount:first.observedRowCount,lookupEvidence:'complete-supported-family-projections-in-requested-order',reciprocalParentVerified:false});
  if(componentPrimitiveId!==null)Object.assign(observation,{componentPrimitiveId,observedComponentCount:first.componentIds.length,observedPadCount:first.pads.length,
   relationshipEvidence:'native-component-child-list-and-global-pad-membership',reciprocalParentVerified:false,symbolPinMappingVerified:false});
  const encode=value=>{const json=JSON.stringify(value),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
   if(utf8Bytes>${CURRENT_PCB_GEOMETRY_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();return envelope;};
- const complete=encode(observation);if(primitiveIds===null)return complete;
+ const complete=encode(observation);if(primitiveIds===null||family==='Lookup')return complete;
  const byId=new Map(firstRows.map(row=>[row.primitiveId,row])),selected=primitiveIds.map(id=>{const row=byId.get(id);if(row===undefined)bad();return row;});
  return encode({...observation,rows:selected,observedRowCount:firstRows.length});
 };

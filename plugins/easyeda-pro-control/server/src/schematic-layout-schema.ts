@@ -47,3 +47,7 @@ export const schematicLayoutBatchSchema = z.object({ id: stepIdSchema, action: z
 });
 export type SchematicLayoutBatch = z.infer<typeof schematicLayoutBatchSchema>;
 export type SchematicLayoutStep = z.infer<typeof schematicLayoutStepSchema>;
+
+/** Pure literal display schema shared with separately qualified later source
+ * versions. This export does not change the old transaction's version gate. */
+export { textDisplayPatch as schematicTextDisplayPatchSchema };

@@ -1,3 +1,12 @@
+import {currentPcbComponentClonedSpatialObservationSchema,currentPcbComponentClonedSpatialObservationV1Schema,requireHistoricalCurrentPcbComponentClonedSpatialObservation} from "./current-pcb-component-cloned-spatial-validation.ts";
+import {currentPcb209ComponentClonedPointQueriesSchema} from "./current-pcb-209-component-cloned-point-read.ts";
+import { generatedComponentReaderOriginalQualificationSchema, generatedPadReaderOriginalQualificationSchema } from "./generated-reader-closed-capture-contract.ts";
+import { currentPcbComponentSpatialIdSchema, currentPcbComponentSpatialObservationSchema, requireCurrentPcbComponentSpatialObservation } from "./current-pcb-component-spatial-validation.ts";
+import { currentPcb209ComponentPointQueriesSchema } from "./current-pcb-209-component-point-read.ts";
+import { GENERATED_READER_KNOWN_FACADE_SHA256 } from "./current-generated-reader-relinquishment-contract.ts";
+// oxlint-disable-next-line import/no-cycle -- Lazy historical receipt checks reuse this journal's full validator without initialization-time recursion.
+import { assertGeneratedReaderHistoricalSnapshot, readGeneratedReaderHistoricalSnapshot, readGeneratedReaderRelinquishment, requireGeneratedReaderHistoricalSnapshot } from "./current-generated-reader-relinquishment-journal.ts";
+import type { GeneratedReaderHistoricalSnapshot } from "./current-generated-reader-relinquishment-journal.ts";
 /** Private, append-only diagnostic lifecycle records. Historical JSON never
  * recreates a native owner. Partial reservations remain launch blockers. */
 /* oxlint-disable import/max-dependencies -- This shared journal validates distinct diagnostic, String and common evidence, including global String exclusion, without merging their authority. */
@@ -9,9 +18,15 @@ import type { CurrentFootprintForwardSourceHistoricalSnapshot } from "./current-
 import { currentWindowResizeResultSchema, requireCurrentWindowResizeResult } from "./current-pcb-diagnostic-window-resize.ts";
 import { CURRENT_RENDERER_CAPTURE_LIMITS, currentRendererCaptureResultSchema, requireCurrentRendererCaptureResult } from "./current-pcb-diagnostic-renderer-capture.ts";
 import { currentWindowCaptureResultSchema, requireCurrentWindowCaptureResult } from "./current-pcb-diagnostic-window-capture.ts";
+import { CURRENT_PCB_ORDINARY_READ_PREFIX, currentPcbOrdinaryReadIdSchema } from "./current-pcb-ordinary-read-validation.ts";
 import { currentPcb209VisualIdSchema } from "./current-pcb-209-visual-validation.ts";
-import { CURRENT_PCB_SPATIAL_OPERATION_PREFIX, CURRENT_PCB_SPATIAL_RESULT_MAX_BYTES, currentPcbSpatialIdSchema,
-  currentPcbSpatialObservationSchema, currentPcbSpatialQueriesSchema, requireCurrentPcbSpatialObservation } from "./current-pcb-spatial-validation.ts";
+import { CURRENT_PCB_SPATIAL_OPERATION_PREFIX, CURRENT_PCB_SPATIAL_RESULT_MAX_BYTES, currentPcbSpatialArcObservationSchema,
+  currentPcbSpatialIdSchema, currentPcbSpatialObservationSchema, currentPcbSpatialPadObservationSchema, currentPcbSpatialQueriesSchema,
+  currentPcbSpatialTrackObservationSchema, requireCurrentPcbSpatialArcObservation, requireCurrentPcbSpatialObservation, requireCurrentPcbSpatialPadObservation, requireCurrentPcbSpatialTrackObservation } from "./current-pcb-spatial-validation.ts";
+import { currentPcb209SpatialTrackQueriesSchema } from "./current-pcb-209-spatial-track-read.ts";
+import { currentPcb209SpatialArcQueriesSchema } from "./current-pcb-209-spatial-arc-read.ts";
+import { currentPcb209SpatialPadQueriesSchema } from "./current-pcb-209-spatial-pad-read.ts";
+import { CURRENT_PCB_SPATIAL_FAILURE_REPLY_BYTES, currentPcbSpatialDecodeFailureSchema } from "./current-pcb-spatial-failure.ts";
 import { CURRENT_PCB_209_VISUAL_OPERATION_BYTES, CURRENT_PCB_209_VISUAL_RESULT_BYTES, currentPcb209VisualOperationSchema,
   requireCurrentPcb209VisualResult } from "./current-pcb-209-visual-actions.ts";
 import { constants } from "node:fs";
@@ -136,9 +151,23 @@ const diagnosticIntentSchema = z.object({ schema: z.literal("easyeda-pro-control
   facadeSha256: diagnosticLifecycleDigestSchema, installationSha256: diagnosticLifecycleDigestSchema,
   confirmValidationOnly: z.literal(true), confirmDiagnosticLaunch: z.literal(true), acceptExistingProfileEffects: z.literal(true),
 }).strict();
+const ordinaryReadIntentSchema = diagnosticIntentSchema.omit({ confirmValidationOnly: true }).extend({
+  schema: z.literal("easyeda-pro-control.pcb209-ordinary-read-launch-intent.v1"), operationId: currentPcbOrdinaryReadIdSchema,
+  confirmOrdinaryReadOnly: z.literal(true),
+  generatedFixtureBirth: z.object({ originalSourceSha256: diagnosticLifecycleDigestSchema, archiveSha256: diagnosticLifecycleDigestSchema,
+    originalClosedInitialQualification: z.literal(true) }).strict().optional(),
+});
 const spatialIntentSchema = diagnosticIntentSchema.extend({
   schema: z.literal("easyeda-pro-control.pcb209-spatial-launch-intent.v1"), operationId: currentPcbSpatialIdSchema,
+  generatedFixtureBirth: ordinaryReadIntentSchema.shape.generatedFixtureBirth,
 });
+const componentSpatialIntentSchema = spatialIntentSchema.extend({ schema: z.literal("easyeda-pro-control.pcb209-component-spatial-launch-intent.v1"), operationId: currentPcbComponentSpatialIdSchema });
+const componentAbortIntentSchema = z.strictObject({ ...base, operationId: currentPcbComponentSpatialIdSchema,
+  schema: z.literal("easyeda-pro-control.pcb209-component-abort-intent.v1"), bindingSha256: diagnosticLifecycleDigestSchema,
+  previousRecordsSha256: diagnosticLifecycleDigestSchema, confirmAbortOriginalComponentJob: z.literal(true) });
+const componentAbortAckSchema = z.strictObject({ ...base, operationId: currentPcbComponentSpatialIdSchema,
+  schema: z.literal("easyeda-pro-control.pcb209-component-abort-acknowledged.v1"), intentSha256: diagnosticLifecycleDigestSchema,
+  terminationDispatched: z.literal(true), terminationProved: z.literal(false) });
 const visualIntentSchema = diagnosticIntentSchema.extend({
   schema: z.literal("easyeda-pro-control.pcb209-visual-launch-intent.v1"), operationId: currentPcb209VisualIdSchema,
   acceptVisualStateChanges: z.literal(true),
@@ -276,7 +305,7 @@ const footprintStartupId = z.union([currentPcb209WorkerStartupLifecycleIdSchema,
 const legacyStartupId = z.union([currentPcbWorkerStartupLifecycleIdSchema, footprintStartupId]);
 const startupId = z.union([legacyStartupId, footprintRouteId]);
 const startupOpeningId = z.union([startupId, currentPcb209EmptyStartupIdSchema, currentPcb209RatlineStartupIdSchema, currentPcb209RatlineContinuationIdSchema]);
-const intentSchema = z.discriminatedUnion("schema", [diagnosticIntentSchema, spatialIntentSchema, visualIntentSchema, stringIntentSchema, workerStartupIntentSchema,
+const intentSchema = z.discriminatedUnion("schema", [diagnosticIntentSchema, ordinaryReadIntentSchema, spatialIntentSchema, componentSpatialIntentSchema, visualIntentSchema, stringIntentSchema, workerStartupIntentSchema,
   workerStartup209IntentSchema, workerStartupEmpty209IntentSchema, workerStartupRatline209IntentSchema, workerStartupContinuation209IntentSchema, workerStartupFootprint209IntentSchema, workerStartupFootprintRoute209IntentSchema, mainIntentSchema, combinedIntentSchema, combinedReadyIntentSchema, forwardIntentSchema]);
 const workerStartupHandoffIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-worker-startup-handoff-intent.v1"), ...base,
   operationId: startupOpeningId, bindingSha256: diagnosticLifecycleDigestSchema,
@@ -415,6 +444,32 @@ const spatialObservationResultSchema = z.strictObject({
   operationId: currentPcbSpatialIdSchema, stage: z.literal("spatial209"), intentSha256: diagnosticLifecycleDigestSchema,
   result: currentPcbSpatialObservationSchema, executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
 });
+const spatialTrackObservationIntentSchema = spatialObservationIntentSchema.extend({
+  schema: z.literal("easyeda-pro-control.pcb209-spatial-line-via-observation-intent.v1"),
+  queries: currentPcb209SpatialTrackQueriesSchema,
+});
+const spatialTrackObservationResultSchema = spatialObservationResultSchema.extend({
+  schema: z.literal("easyeda-pro-control.pcb209-spatial-line-via-observation-result.v1"),
+  result: currentPcbSpatialTrackObservationSchema,
+});
+const spatialArcObservationIntentSchema = spatialObservationIntentSchema.extend({
+  schema: z.literal("easyeda-pro-control.pcb209-spatial-arc-line-via-observation-intent.v1"), queries: currentPcb209SpatialArcQueriesSchema,
+});
+const spatialArcObservationResultSchema = spatialObservationResultSchema.extend({
+  schema: z.literal("easyeda-pro-control.pcb209-spatial-arc-line-via-observation-result.v1"), result: currentPcbSpatialArcObservationSchema,
+});
+const componentSpatialObservationIntentSchema = spatialObservationIntentSchema.extend({ schema: z.literal("easyeda-pro-control.pcb209-component-point-observation-intent.v1"), operationId: currentPcbComponentSpatialIdSchema, queries: currentPcb209ComponentPointQueriesSchema });
+const componentSpatialObservationResultSchema = spatialObservationResultSchema.extend({ schema: z.literal("easyeda-pro-control.pcb209-component-point-observation-result.v1"), operationId: currentPcbComponentSpatialIdSchema, result: currentPcbComponentSpatialObservationSchema });
+const componentClonedSpatialObservationIntentV1Schema=spatialObservationIntentSchema.extend({schema:z.literal("easyeda-pro-control.pcb209-component-cloned-point-observation-intent.v1"),operationId:currentPcbComponentSpatialIdSchema,queries:currentPcb209ComponentClonedPointQueriesSchema});
+const componentClonedSpatialObservationResultV1Schema=spatialObservationResultSchema.extend({schema:z.literal("easyeda-pro-control.pcb209-component-cloned-point-observation-result.v1"),operationId:currentPcbComponentSpatialIdSchema,result:currentPcbComponentClonedSpatialObservationV1Schema});
+const componentClonedSpatialObservationIntentSchema=componentClonedSpatialObservationIntentV1Schema.extend({schema:z.literal("easyeda-pro-control.pcb209-component-cloned-point-observation-intent.v2")});
+const componentClonedSpatialObservationResultSchema=componentClonedSpatialObservationResultV1Schema.extend({schema:z.literal("easyeda-pro-control.pcb209-component-cloned-point-observation-result.v2"),result:currentPcbComponentClonedSpatialObservationSchema});
+const spatialPadObservationIntentSchema = spatialObservationIntentSchema.extend({
+  schema: z.literal("easyeda-pro-control.pcb209-spatial-pad-point-observation-intent.v1"), queries: currentPcb209SpatialPadQueriesSchema,
+});
+const spatialPadObservationResultSchema = spatialObservationResultSchema.extend({
+  schema: z.literal("easyeda-pro-control.pcb209-spatial-pad-point-observation-result.v1"), result: currentPcbSpatialPadObservationSchema,
+});
 const stringPrecreateIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-string-precreate-observation-intent.v1"), ...base,
   operationId: currentPcbStringPrecreateIdSchema, stage: z.literal("string-precreate"),
@@ -525,18 +580,44 @@ const observationFailureSchema = z.object({ schema: z.literal("easyeda-pro-contr
   stage: z.enum(["model-state", "string-precreate"]), intentSha256: diagnosticLifecycleDigestSchema,
   failure: currentPcbObservationFailureSchema, executionAuthorized: z.literal(false),
 }).strict().refine(value => (value.stage === "string-precreate") === (value.failure.family === "STRING_PRECREATE"));
-const projectOpeningIntentSchema = z.object({
+const disposableProjectOpeningIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-diagnostic-project-opening-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, scriptResultSha256: diagnosticLifecycleDigestSchema,
   target: currentDisposableOpenSealedTargetSchema, preparationCheckpoint: currentDisposableOpenPreparationCheckpointSchema,
   checkpointReceiptSha256: diagnosticLifecycleDigestSchema,
   commonBeforeSqlSha256: diagnosticLifecycleDigestSchema.optional(),
+  generatedFixtureSource: z.object({ archiveSha256: diagnosticLifecycleDigestSchema, originalInventoryLogicalSha256: diagnosticLifecycleDigestSchema,
+    exactInitialNativePayloadQualified: z.literal(true), untickedDocHeadQualified: z.literal(true), acceptRecentPathRegistration: z.literal(true) }).strict().optional(),
   confirmDisposableProject: z.literal(true), acceptNormalOpenEffects: z.literal(true),
 }).strict();
+const ordinaryProjectOpeningIntentSchema = disposableProjectOpeningIntentSchema.omit({ confirmDisposableProject: true }).extend({
+  schema: z.literal("easyeda-pro-control.pcb209-ordinary-project-opening-intent.v1"), operationId: currentPcbOrdinaryReadIdSchema,
+  confirmOrdinaryProject: z.literal(true),
+});
+const projectOpeningIntentSchema = z.discriminatedUnion("schema", [disposableProjectOpeningIntentSchema, ordinaryProjectOpeningIntentSchema]);
 const projectOpeningResultSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-diagnostic-project-opening-result.v1"), ...base,
   intentSha256: diagnosticLifecycleDigestSchema, result: z.record(z.string(), z.unknown()), executionAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "Opening result exceeds its bound.");
+const genericGeneratedClosedCaptureIntentSchema = z.object({
+  schema: z.literal("easyeda-pro-control.generated-reader-closed-capture-intent.v1"), ...base,
+  terminationSha256: diagnosticLifecycleDigestSchema, originalQualificationSha256: diagnosticLifecycleDigestSchema,
+  target: currentDisposableOpenSealedTargetSchema, readOnlyDataCapture: z.literal(true),
+}).strict();
+const generatedPadClosedCaptureIntentSchema = genericGeneratedClosedCaptureIntentSchema.extend({ schema: z.literal("easyeda-pro-control.generated-pad-reader-closed-capture-intent.v1"), originalQualification: generatedPadReaderOriginalQualificationSchema });
+const generatedClosedCaptureIntentSchema = z.discriminatedUnion("schema", [genericGeneratedClosedCaptureIntentSchema, generatedPadClosedCaptureIntentSchema]);
+const componentGeneratedClosedCaptureIntentSchema = genericGeneratedClosedCaptureIntentSchema.extend({ schema: z.literal("easyeda-pro-control.component-generated-reader-closed-capture-intent.v1"), operationId: currentPcbComponentSpatialIdSchema,
+  originalQualification: generatedComponentReaderOriginalQualificationSchema, preparationCheckpointSha256: diagnosticLifecycleDigestSchema });
+const generatedClosedCaptureResultSchema = z.object({
+  schema: z.literal("easyeda-pro-control.generated-reader-closed-capture-result.v1"), ...base,
+  intentSha256: diagnosticLifecycleDigestSchema, report: z.record(z.string(), z.unknown()).nullable(),
+  failure: z.literal("closed-generated-data-capture-refused").nullable(),
+  startupEffectsAccepted: z.literal(false), writerAuthority: z.literal(false), executionAuthorized: z.literal(false),
+}).strict().refine(value => (value.report === null) !== (value.failure === null) && Buffer.byteLength(canonicalJson(value)) <= 65_536);
+const componentGeneratedClosedCaptureResultSchema = z.object({ schema: z.literal("easyeda-pro-control.component-generated-reader-closed-capture-result.v1"), ...base, operationId: currentPcbComponentSpatialIdSchema,
+  intentSha256: diagnosticLifecycleDigestSchema, report: z.record(z.string(), z.unknown()).nullable(), failure: z.literal("closed-component-generated-data-capture-refused").nullable(),
+  startupEffectsAccepted: z.literal(false), writerAuthority: z.literal(false), executionAuthorized: z.literal(false),
+}).strict().refine(value => (value.report === null) !== (value.failure === null) && Buffer.byteLength(canonicalJson(value)) <= 65_536);
 const workerStartupOpeningIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-worker-startup-opening-intent.v1"), ...base,
   operationId: startupOpeningId, bindingSha256: diagnosticLifecycleDigestSchema,
@@ -770,6 +851,10 @@ export const diagnosticLifecycleRecordSchemas = {
   "intent.json": intentSchema, "binding.json": bindingSchema, "close-intent.json": closeIntentSchema,
   "close-acknowledged.json": closeAcknowledgmentSchema, "terminated.json": terminationSchema,
   "release-intent.json": releaseIntentSchema, "released.json": releasedSchema,
+  "component-generated-closed-capture-intent.json": componentGeneratedClosedCaptureIntentSchema,
+  "component-generated-closed-capture-result.json": componentGeneratedClosedCaptureResultSchema,
+  "generated-closed-capture-intent.json": generatedClosedCaptureIntentSchema,
+  "generated-closed-capture-result.json": generatedClosedCaptureResultSchema,
   "unlaunched-release-intent.json": unlaunchedIntentSchema, "not-dispatched.json": notDispatchedSchema,
   "no-process-release-intent.json": noProcessIntentSchema, "no-process-released.json": noProcessReleasedSchema,
   "browser-intent.json": observationIntentSchema, "browser-result.json": observationResultSchema,
@@ -782,6 +867,8 @@ export const diagnosticLifecycleRecordSchemas = {
   "project-opening-intent.json": projectOpeningIntentSchema, "project-opening-result.json": projectOpeningResultSchema,
   "pcb-open-intent.json": pcbOpenIntentSchema, "pcb-open-result.json": pcbOpenResultSchema,
   "pcb-opening-intent.json": observationIntentSchema, "pcb-opening-result.json": observationResultSchema,
+  "component-abort-intent.json": componentAbortIntentSchema,
+  "component-abort-acknowledged.json": componentAbortAckSchema,
   "visual-abort-intent.json": visualAbortIntentSchema, "visual-abort-acknowledged.json": visualAbortAckSchema,
   "window-restore209-intent.json": observationIntentSchema, "window-restore209-result.json": observationResultSchema,
   "window-resize209-intent.json": observationIntentSchema, "window-resize209-result.json": observationResultSchema,
@@ -796,7 +883,14 @@ export const diagnosticLifecycleRecordSchemas = {
   "image-shapes209-intent.json": observationIntentSchema, "image-shapes209-result.json": observationResultSchema,
   "arc-shapes209-intent.json": observationIntentSchema, "arc-shapes209-result.json": observationResultSchema,
   "poured-shapes209-intent.json": observationIntentSchema, "poured-shapes209-result.json": observationResultSchema,
-  "spatial209-intent.json": spatialObservationIntentSchema, "spatial209-result.json": spatialObservationResultSchema,
+  "spatial209-intent.json": z.union([spatialObservationIntentSchema, spatialTrackObservationIntentSchema, spatialArcObservationIntentSchema, spatialPadObservationIntentSchema, componentSpatialObservationIntentSchema, componentClonedSpatialObservationIntentV1Schema, componentClonedSpatialObservationIntentSchema]),
+  "spatial209-result.json": z.union([spatialObservationResultSchema, spatialTrackObservationResultSchema, spatialArcObservationResultSchema, spatialPadObservationResultSchema, componentSpatialObservationResultSchema, componentClonedSpatialObservationResultV1Schema, componentClonedSpatialObservationResultSchema]),
+  "spatial209-failure.json": z.strictObject({
+    schema: z.literal("easyeda-pro-control.pcb209-spatial-decode-failure.v1"), ...base,
+    operationId: currentPcbSpatialIdSchema, stage: z.literal("spatial209"), intentSha256: diagnosticLifecycleDigestSchema,
+    diagnostic: currentPcbSpatialDecodeFailureSchema, replyEncoding: z.literal("bounded-normalized-inspector-json"),
+    observationAccepted: z.literal(false), replayAllowed: z.literal(false), executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
+  }),
   "string-precreate-intent.json": stringPrecreateIntentSchema, "string-precreate-result.json": stringPrecreateResultSchema,
   "common-baseline-intent.json": commonBaselineIntentSchema, "common-baseline-result.json": commonBaselineResultSchema,
   "common-baseline-failure.json": commonBaselineFailureSchema,
@@ -886,6 +980,8 @@ function recordBound(name: RecordName): number {
   if (name === "saved-cache-accessor-result.json") { return MAX_BYTES + CURRENT_FOOTPRINT_SAVED_CACHE_ACCESSOR_PROBE_LIMITS.resultBytes; }
   if (name === "spatial209-result.json") { return MAX_BYTES + CURRENT_PCB_SPATIAL_RESULT_MAX_BYTES; }
   if (name === "spatial209-intent.json") { return MAX_BYTES + 16_384; }
+  // A JSON string can double its UTF-8 bytes when embedded in the outer record.
+  if (name === "spatial209-failure.json") { return MAX_BYTES + 2 * CURRENT_PCB_SPATIAL_FAILURE_REPLY_BYTES; }
   if (name === "visual-viewport209-intent.json") { return MAX_BYTES + CURRENT_PCB_209_VISUAL_OPERATION_BYTES; }
   if (name === "visual-viewport209-result.json") { return MAX_BYTES + CURRENT_PCB_209_VISUAL_RESULT_BYTES; }
   if (name === "selection-relations209-intent.json") { return MAX_BYTES + 16 * 256 * 6; }
@@ -993,6 +1089,12 @@ function settled(operation: DiagnosticLifecycleOperation): boolean {
     operation.records["no-process-released.json"] !== undefined || operation.records["combined-factory-before-launch.json"] !== undefined || operation.records["forward-factory-before-launch.json"] !== undefined;
 }
 async function recordedHistoricalRelinquishment(operation: DiagnosticLifecycleOperation): Promise<boolean> {
+  if (operation.records["intent.json"]?.facadeSha256 === GENERATED_READER_KNOWN_FACADE_SHA256 &&
+      operation.records["generated-closed-capture-result.json"]?.report?.["schema"] === "easyeda-pro-control.generated-pad-reader-closed-snapshot.v1" &&
+      operation.records["terminated.json"] !== undefined) {
+    const snapshot = await readGeneratedReaderHistoricalSnapshot(operation.operationId);
+    const receipt = await readGeneratedReaderRelinquishment(snapshot); return receipt !== null && receipt.result !== null;
+  }
   if (currentFootprintForwardOpeningKnownHistoricalIntentSchema.safeParse(operation.records["intent.json"]).success) {
     const snapshot = await readCurrentFootprintForwardOpeningHistoricalSnapshot(operation.operationId);
     const receipt = await readCurrentFootprintForwardOpeningRelinquishment(snapshot);
@@ -1055,6 +1157,9 @@ async function requireSettledOperation(directory: ControlRootDirectory, operatio
  * terminal records require the matching closure path. This checks stored evidence;
  * it cannot reconstruct process handles or authorize another native dispatch.
  */
+/** Pure candidate integrity check before closed-reader report publication.
+ * This issues no runtime, Native owner, termination or cleanup authority. */
+export function assertGeneratedReaderClosedCaptureChain(operation: DiagnosticLifecycleOperation): void { validateChain(operation); }
 function validateChain(operation: DiagnosticLifecycleOperation): void {
   // Both private callers supply schema-owned JSON from complete fresh reads. This validator
   // Never awaits, invokes caller code or mutates those objects. Retain only lazy
@@ -1074,16 +1179,44 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   const release = records["release-intent.json"], released = records["released.json"];
   const notDispatched = records["not-dispatched.json"], unlaunched = records["unlaunched-release-intent.json"];
   const noProcess = records["no-process-release-intent.json"], noProcessReleased = records["no-process-released.json"];
-  const spatialPurpose = intent?.schema === "easyeda-pro-control.pcb209-spatial-launch-intent.v1";
+  const ordinaryPurpose = intent?.schema === "easyeda-pro-control.pcb209-ordinary-read-launch-intent.v1";
+  requireValue(!ordinaryPurpose || operation.operationId.startsWith(CURRENT_PCB_ORDINARY_READ_PREFIX), "ORDINARY_PURPOSE_ID");
+  if (ordinaryPurpose) {
+    const allowed = new Set(["intent.json", "binding.json", "close-intent.json", "close-acknowledged.json", "terminated.json",
+      "release-intent.json", "released.json", "unlaunched-release-intent.json", "not-dispatched.json", "no-process-release-intent.json",
+      "generated-closed-capture-intent.json", "generated-closed-capture-result.json",
+      "no-process-released.json", "browser-intent.json", "browser-result.json", "frames-intent.json", "frames-result.json", "script-intent.json",
+      "script-result.json", "project-opening-intent.json", "project-opening-result.json", "pcb-open-intent.json", "pcb-open-result.json",
+      "pcb-opening-intent.json", "pcb-opening-result.json", "observation-failure.json", ...[
+        "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209",
+      ].flatMap(stage => [`${stage}-intent.json`, `${stage}-result.json`])]);
+    for (const name of Object.keys(records)) { requireValue(allowed.has(name), "ORDINARY_STAGE_PURPOSE"); }
+    const opening = records["project-opening-intent.json"];
+    requireValue(opening === undefined || opening.schema === "easyeda-pro-control.pcb209-ordinary-project-opening-intent.v1" &&
+      opening.commonBeforeSqlSha256 === undefined, "ORDINARY_OPENING_PURPOSE");
+  }
+  const componentSpatialPurpose = intent?.schema === "easyeda-pro-control.pcb209-component-spatial-launch-intent.v1";
+  const spatialPurpose = componentSpatialPurpose || intent?.schema === "easyeda-pro-control.pcb209-spatial-launch-intent.v1";
   // Preserve legacy diagnostic IDs that admitted this prefix before the spatial purpose existed.
   requireValue(!spatialPurpose || operation.operationId.startsWith(CURRENT_PCB_SPATIAL_OPERATION_PREFIX), "SPATIAL_PURPOSE_ID");
   if (spatialPurpose) {
     const allowed = new Set(["intent.json", "binding.json", "close-intent.json", "close-acknowledged.json", "terminated.json",
       "release-intent.json", "released.json", "unlaunched-release-intent.json", "not-dispatched.json", "no-process-release-intent.json",
+      "generated-closed-capture-intent.json", "generated-closed-capture-result.json",
       "no-process-released.json", "browser-intent.json", "browser-result.json", "frames-intent.json", "frames-result.json", "script-intent.json",
       "script-result.json", "project-opening-intent.json", "project-opening-result.json", "pcb-open-intent.json", "pcb-open-result.json",
-      "pcb-opening-intent.json", "pcb-opening-result.json", "spatial209-intent.json", "spatial209-result.json"]);
+      "pcb-opening-intent.json", "pcb-opening-result.json", "spatial209-intent.json", "spatial209-result.json", "spatial209-failure.json"]);
+    if (componentSpatialPurpose) { for (const name of ["component-abort-intent.json", "component-abort-acknowledged.json", "component-generated-closed-capture-intent.json", "component-generated-closed-capture-result.json"]) { allowed.add(name); } }
     for (const name of Object.keys(records)) { requireValue(allowed.has(name), "SPATIAL_STAGE_PURPOSE"); }
+  }
+  const componentAbort = records["component-abort-intent.json"], componentAck = records["component-abort-acknowledged.json"];
+  requireValue(componentAbort === undefined || componentSpatialPurpose && binding !== undefined && binding.binding.rootCreated !== "0" &&
+    componentAbort.bindingSha256 === predecessorDigest(binding), "COMPONENT_ABORT_CHAIN");
+  requireValue(componentAck === undefined || componentAbort !== undefined && componentAck.intentSha256 === predecessorDigest(componentAbort), "COMPONENT_ABORT_ACK_CHAIN");
+  if (componentAbort !== undefined) {
+    const cleanup = new Set(["component-abort-intent.json", "component-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"]);
+    const prefix = Object.fromEntries(Object.entries(records).filter(([name]) => !cleanup.has(name)));
+    requireValue(predecessorDigest(prefix) === componentAbort.previousRecordsSha256, "COMPONENT_ABORT_PREFIX_CHANGED");
   }
   const visualPurpose = intent?.schema === "easyeda-pro-control.pcb209-visual-launch-intent.v1";
   requireValue(intent === undefined || visualPurpose === operation.operationId.startsWith("pcb209-visual-"), "VISUAL_PURPOSE_ID");
@@ -1402,6 +1535,7 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(records["worker-script-intent.json"] === undefined || records["workers-result.json"] !== undefined, "WORKER_SCRIPT_CHAIN");
   requireValue(records["worker-state-intent.json"] === undefined || records["worker-script-result.json"] !== undefined, "WORKER_STATE_CHAIN");
   const opened = records["project-opening-result.json"], opening = records["project-opening-intent.json"], script = records["script-result.json"];
+  requireValue(opening === undefined || (opening.schema === "easyeda-pro-control.pcb209-ordinary-project-opening-intent.v1") === ordinaryPurpose, "PROJECT_OPENING_PURPOSE");
   const pcbObserved = records["pcb-opening-result.json"], pcbOpen = records["pcb-open-intent.json"], pcbOpened = records["pcb-open-result.json"];
   const windowRestore = records["window-restore209-intent.json"]; const restoredWindow = records["window-restore209-result.json"];
   requireValue(windowRestore === undefined || visualPurpose && opening !== undefined && pcbObserved !== undefined &&
@@ -1449,12 +1583,33 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     requireCurrentWindowCaptureResult(windowImage.result, opening.target, operation.operationId, windowCapture.bindingSha256, windowCapture.captureHwnd);
   }
   const spatial = records["spatial209-intent.json"], spatialResult = records["spatial209-result.json"];
+  const spatialFailure = records["spatial209-failure.json"];
   requireValue(spatial === undefined || spatialPurpose && opening !== undefined && pcbObserved !== undefined &&
     spatial.pcbOpeningResultSha256 === predecessorDigest(pcbObserved) && diagnosticPcbOpeningSourceAccepted(pcbObserved.result, opening.target),
   "SPATIAL209_CHAIN");
+  requireValue(spatial === undefined || componentSpatialPurpose === (spatial.schema === "easyeda-pro-control.pcb209-component-point-observation-intent.v1" || spatial.schema === "easyeda-pro-control.pcb209-component-cloned-point-observation-intent.v1" || spatial.schema === "easyeda-pro-control.pcb209-component-cloned-point-observation-intent.v2"), "COMPONENT_SPATIAL_INTENT_PURPOSE");
+  requireValue(spatialFailure === undefined || spatial !== undefined && spatialResult === undefined &&
+    spatialFailure.intentSha256 === predecessorDigest(spatial), "SPATIAL209_FAILURE_CHAIN");
   if (spatialResult !== undefined) {
     requireValue(spatial !== undefined && opening !== undefined, "SPATIAL209_TARGET_CHAIN");
-    requireCurrentPcbSpatialObservation(spatialResult.result, opening.target, spatial.queries);
+    const mixed = spatial.schema === "easyeda-pro-control.pcb209-spatial-line-via-observation-intent.v1";
+    const arcs = spatial.schema === "easyeda-pro-control.pcb209-spatial-arc-line-via-observation-intent.v1";
+    const clonedV1=spatial.schema === "easyeda-pro-control.pcb209-component-cloned-point-observation-intent.v1";
+    const clonedV2=spatial.schema === "easyeda-pro-control.pcb209-component-cloned-point-observation-intent.v2";
+    const cloned=clonedV1||clonedV2;
+    const components = spatial.schema === "easyeda-pro-control.pcb209-component-point-observation-intent.v1";
+    requireValue((components || cloned) === componentSpatialPurpose && components === (spatialResult.schema === "easyeda-pro-control.pcb209-component-point-observation-result.v1"), "COMPONENT_SPATIAL_VARIANT_CHAIN");
+    requireValue(clonedV1 === (spatialResult.schema === "easyeda-pro-control.pcb209-component-cloned-point-observation-result.v1") && clonedV2 === (spatialResult.schema === "easyeda-pro-control.pcb209-component-cloned-point-observation-result.v2"), "COMPONENT_CLONED_SPATIAL_VARIANT_CHAIN");
+    const pads = spatial.schema === "easyeda-pro-control.pcb209-spatial-pad-point-observation-intent.v1";
+    requireValue(mixed === (spatialResult.schema === "easyeda-pro-control.pcb209-spatial-line-via-observation-result.v1"), "SPATIAL209_VARIANT_CHAIN");
+    requireValue(arcs === (spatialResult.schema === "easyeda-pro-control.pcb209-spatial-arc-line-via-observation-result.v1"), "SPATIAL209_ARC_VARIANT_CHAIN");
+    requireValue(pads === (spatialResult.schema === "easyeda-pro-control.pcb209-spatial-pad-point-observation-result.v1"), "SPATIAL209_PAD_VARIANT_CHAIN");
+    if(cloned){requireHistoricalCurrentPcbComponentClonedSpatialObservation(spatialResult.result, opening.target, spatial.queries);}
+    else if (components) { requireCurrentPcbComponentSpatialObservation(spatialResult.result, opening.target, spatial.queries); }
+    else if (pads) { requireCurrentPcbSpatialPadObservation(spatialResult.result, opening.target, spatial.queries); }
+    else if (arcs) { requireCurrentPcbSpatialArcObservation(spatialResult.result, opening.target, spatial.queries); }
+    else if (mixed) { requireCurrentPcbSpatialTrackObservation(spatialResult.result, opening.target, spatial.queries); }
+    else { requireCurrentPcbSpatialObservation(spatialResult.result, opening.target, spatial.queries); }
   }
   for (const stage of ["visual-viewport209"] as const) {
     const result = records[`${stage}-result.json`], visual = records[`${stage}-intent.json`];
@@ -1555,6 +1710,35 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(termination === undefined || binding !== undefined && termination.bindingSha256 === predecessorDigest(binding), "TERMINATION_CHAIN");
   requireValue(release === undefined || termination !== undefined && release.terminationSha256 === predecessorDigest(termination), "RELEASE_CHAIN");
   requireValue(released === undefined || release !== undefined && released.releaseIntentSha256 === predecessorDigest(release), "RELEASE_ACK_CHAIN");
+  const generatedCapture = records["generated-closed-capture-intent.json"], generatedCaptured = records["generated-closed-capture-result.json"];
+  requireValue(generatedCapture === undefined || (ordinaryPurpose || spatialPurpose && !componentSpatialPurpose) && termination !== undefined &&
+    intent !== undefined && "generatedFixtureBirth" in intent && intent.generatedFixtureBirth !== undefined &&
+    generatedCapture.terminationSha256 === predecessorDigest(termination) && generatedCapture.target.expectedSourceSha256 === intent.generatedFixtureBirth.originalSourceSha256 &&
+    (opening === undefined || canonicalJson(generatedCapture.target) === canonicalJson(opening.target)), "GENERATED_CLOSED_CAPTURE_CHAIN");
+  requireValue(generatedCaptured === undefined || generatedCapture !== undefined && generatedCaptured.intentSha256 === predecessorDigest(generatedCapture), "GENERATED_CLOSED_CAPTURE_RESULT_CHAIN");
+  const generatedPad = generatedCapture !== undefined && /[\\/]Codex_circular_smt_pad_[a-f0-9]{16}\.eprj2$/u.test(generatedCapture.target.rawWindowsPath);
+  requireValue(generatedCapture?.schema !== "easyeda-pro-control.generated-pad-reader-closed-capture-intent.v1" || generatedPad &&
+    predecessorDigest(generatedCapture.originalQualification) === generatedCapture.originalQualificationSha256 &&
+    canonicalJson(generatedCapture.originalQualification.target) === canonicalJson(generatedCapture.target) &&
+    intent !== undefined && "generatedFixtureBirth" in intent && generatedCapture.originalQualification.archiveSha256 === intent.generatedFixtureBirth?.archiveSha256,
+  "GENERATED_PAD_CLOSED_CAPTURE_QUALIFICATION");
+  requireValue(generatedCaptured?.report === undefined || generatedCaptured.report === null || generatedCapture !== undefined &&
+    generatedCaptured.report["schema"] === (generatedPad ? "easyeda-pro-control.generated-pad-reader-closed-snapshot.v1" : "easyeda-pro-control.generated-reader-closed-snapshot.v1") &&
+    (!generatedPad || generatedCaptured.report["rawWindowsPath"] === generatedCapture.target.rawWindowsPath) &&
+    generatedCaptured.report["projectUuid"] === generatedCapture.target.projectUuid && generatedCaptured.report["originalQualificationSha256"] === generatedCapture.originalQualificationSha256,
+  "GENERATED_CLOSED_CAPTURE_REPORT_CHAIN");
+  const componentCapture = records["component-generated-closed-capture-intent.json"], componentCaptured = records["component-generated-closed-capture-result.json"];
+  requireValue(componentCapture === undefined || componentSpatialPurpose && termination !== undefined && intent !== undefined && "generatedFixtureBirth" in intent && intent.generatedFixtureBirth !== undefined &&
+    componentCapture.terminationSha256 === predecessorDigest(termination) && predecessorDigest(componentCapture.originalQualification) === componentCapture.originalQualificationSha256 &&
+    canonicalJson(componentCapture.originalQualification.target) === canonicalJson(componentCapture.target) && componentCapture.target.expectedSourceSha256 === intent.generatedFixtureBirth.originalSourceSha256 &&
+    componentCapture.originalQualification.archiveSha256 === intent.generatedFixtureBirth.archiveSha256 && /[\\/]Codex_component_circular_pad_[a-f0-9]{16}\.eprj2$/u.test(componentCapture.target.rawWindowsPath) &&
+    (opening === undefined || canonicalJson(componentCapture.target) === canonicalJson(opening.target)), "COMPONENT_GENERATED_CLOSED_CAPTURE_CHAIN");
+  requireValue(componentCaptured === undefined || componentCapture !== undefined && componentCaptured.intentSha256 === predecessorDigest(componentCapture), "COMPONENT_GENERATED_CLOSED_CAPTURE_RESULT_CHAIN");
+  requireValue(componentCaptured?.report === undefined || componentCaptured.report === null || componentCapture !== undefined &&
+    componentCaptured.report["schema"] === "easyeda-pro-control.generated-component-reader-closed-snapshot.v1" && componentCaptured.report["projectUuid"] === componentCapture.target.projectUuid &&
+    componentCaptured.report["rawWindowsPath"] === componentCapture.target.rawWindowsPath && componentCaptured.report["originalQualificationSha256"] === componentCapture.originalQualificationSha256 &&
+    componentCaptured.report["originalPreparationCheckpointSha256"] === componentCapture.preparationCheckpointSha256,
+  "COMPONENT_GENERATED_CLOSED_CAPTURE_REPORT_CHAIN");
   requireValue(unlaunched === undefined || intent !== undefined && unlaunched.intentSha256 === predecessorDigest(intent) &&
     binding === undefined && close === undefined && acknowledgment === undefined && termination === undefined && release === undefined && released === undefined, "UNLAUNCHED_CHAIN");
   requireValue(notDispatched === undefined || unlaunched !== undefined && notDispatched.unlaunchedReleaseIntentSha256 === predecessorDigest(unlaunched) &&
@@ -1592,6 +1776,22 @@ export async function readCurrentPcbDiagnosticLifecycles(): Promise<readonly Dia
     }
     await root.assertCurrent(); return operations;
   } finally { await parent.handle.close(); }
+}
+
+/** Only the complete descriptor-issued historical Pad prefix is exempt. The
+ * separate receipt preserves missing native release acknowledgment. */
+export async function assertGeneratedReaderRelinquishmentIsolated(snapshot: GeneratedReaderHistoricalSnapshot): Promise<void> {
+  await assertNoUnresolvedCurrentFootprintForwardExecutionOpenings();
+  await assertNoUnresolvedFootprintHeldCacheValidation(); await assertNoUnresolvedFootprintHeadAgeValidation();
+  await assertNoUnresolvedCurrentPcbStringLedgers();
+  const original = requireGeneratedReaderHistoricalSnapshot(snapshot); await assertGeneratedReaderHistoricalSnapshot(snapshot);
+  const operations = await readCurrentPcbDiagnosticLifecycles(); let selected = false;
+  for (const operation of operations) {
+    if (operation.operationId === original.operationId) {
+      requireValue(canonicalJson(operation.records) === canonicalJson(original.records), "GENERATED_READER_RELINQUISHMENT_ORIGINAL_CHANGED"); selected = true;
+    } else { requireValue(settled(operation) || await recordedHistoricalRelinquishment(operation), "UNRESOLVED_LAUNCH"); }
+  }
+  requireValue(selected, "GENERATED_READER_RELINQUISHMENT_ORIGINAL_MISSING"); await assertGeneratedReaderHistoricalSnapshot(snapshot);
 }
 
 /** Dedicated read-only recovery isolation. The exception is one reader-issued

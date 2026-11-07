@@ -8,6 +8,10 @@ const promise=p=>{if(p===null||typeof p!=="object"||Object.getPrototypeOf(p)!==P
 const scope=o=>own(o,"object");`;
 export const CURRENT_PROJECT_STRUCTURE_WORKER_CALLS = Object.freeze({
   retain: 'function(){"use strict";return this;}',
+  /** Initial cold-project scope only. Nd keeps its latest arguments and QA
+   * keeps its timer/resolver after completion, so later empty task2 snapshots
+   * cannot pass this initial producer check. Nothing is invoked or cleared. */
+  pristine: `function(upload,structure,debounce,parameters,uploadCallback,debounceCallback,structureCallback){${GUARDS}if(own(globalThis,"PROJECT")!==this)bad();const u=scope(upload),s=scope(structure),d=scope(debounce),p=scope(parameters);for(const [v,callback]of [[u,uploadCallback],[s,debounceCallback]])if(own(v,"e")!==callback||own(v,"t")!==null||own(v,"s")!==null||own(v,"r")!==undefined)bad();if(own(p,"e")!==structureCallback||own(p,"t")!==300||own(p,"s")!==false||own(d,"r")!==undefined||own(d,"i")!==null)bad();if(Reflect.apply(Object.getOwnPropertyDescriptor(Set.prototype,"size").get,own(this,"task2"),[])!==0)bad();return true;}`,
   serial: `function(callback){${GUARDS}const s=scope(this);if(own(s,"e")!==callback||own(s,"s")!==null)bad();return [promise(own(s,"t")),own(s,"r")];}`,
   debounce: `function(parameters,callback){${GUARDS}const p=scope(parameters),s=scope(this);if(own(p,"e")!==callback||own(p,"t")!==300||own(p,"s")!==false)bad();const timer=own(s,"r"),resolver=own(s,"i");if(!Number.isSafeInteger(timer)||timer<1||typeof resolver!=="function")bad();return [timer,resolver];}`,
   callbackKind: `function(upload,debounce){${GUARDS}const e=own(this,"e");return e===upload?"upload":e===debounce?"structure":"other";}`,
