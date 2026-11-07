@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 original inverse preference backup](2026-11-07-inverse-preferences-original-backup.md). Exact two-key original Storage backup and held removal points; restoration and native deletion remain unavailable.
+
 - [2026-11-07 original inverse SDK held entry](2026-11-07-inverse-original-sdk-held-entry.md). One genuine pending SDK write joins its held service entry; handler continuation, native job and collateral remain blocked.
 
 - [2026-11-07 original run-prefix cursor](2026-11-07-relevance-run-prefix-cursor.md). Bounded original queue, callee, native and iterator classification; actual receiver guards and continuation remain separate.

@@ -6,6 +6,7 @@ import { PassThrough, Writable } from "node:stream";
 import { test } from "node:test";
 import { sha256Text } from "../src/core.ts";
 import { CurrentFootprintInversePipe, CurrentPcbViaWritePipe } from "../src/current-pcb-diagnostic-pipe.ts";
+import { currentFootprintInversePublicPreferencesCases } from "../src/current-footprint-inverse-public-preferences-protocol.ts";
 import { currentFootprintInversePublicCallCases } from "../src/current-footprint-inverse-public-call-protocol.ts";
 
 function ignoreEvent(): void {
@@ -28,11 +29,12 @@ void test("original SDK write and reply remain separate while fixed UI and worke
   const parent=pipe.armInverseParent(ignoreEvent);reply({});await parent;const opened=pipe.openInverseProject("original-context",target);reply({});await opened;
   const cases = currentFootprintInversePublicCallCases(); const sdk = cases.find(command=>command.phase==="inverse-public-call-sdk"); assert.ok(sdk!==undefined);
   const pending = pipe.observeInversePublicCall(sdk); const sdkRequest=last(); await pipe.originalInversePublicDeleteWrite(pending); pipe.requireInversePublicDeleteWritten(pending);
+  input.write(Buffer.from(`${JSON.stringify({...sdkRequest,result:{result:{type:"object",subtype:"promise",className:"Promise",objectId:"original-sdk-promise"}}})}\0`));
+  assert.deepEqual(await pending,{result:{type:"object",subtype:"promise",className:"Promise",objectId:"original-sdk-promise"}});pipe.requireInversePublicDeleteWritten(pending);
   const commands=cases.filter(command=>command.phase!=="inverse-public-call-sdk");
   for(const command of commands){const observation=pipe.observeInversePublicCall(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   assert.throws(()=>pipe.observeInversePublicCall(sdk));assert.throws(()=>{pipe.requireInversePublicDeleteWritten(Promise.resolve({}));});
-  input.write(Buffer.from(`${JSON.stringify({...sdkRequest,result:{result:{type:"object",subtype:"promise",className:"Promise",objectId:"original-sdk-promise"}}})}\0`));
-  assert.deepEqual(await pending,{result:{type:"object",subtype:"promise",className:"Promise",objectId:"original-sdk-promise"}});assert.throws(()=>{pipe.requireInversePublicDeleteWritten(pending);});
+  for(const command of currentFootprintInversePublicPreferencesCases()){const observation=pipe.observeInversePublicPreferences(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   assert.equal(pipe.status().failureObservation,null);
   const before=sent.length;const first=currentFootprintInversePublicCallCases()[0];assert.ok(first!==undefined);const other:unknown=Object.create(CurrentPcbViaWritePipe.prototype);
   // oxlint-disable-next-line typescript/unbound-method -- Invalid sibling receiver must reject before emitting bytes.
