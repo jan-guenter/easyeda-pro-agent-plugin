@@ -1,4 +1,4 @@
-/** Complete fixed shared native helper identity. The independent Windows
- * synthetic-launch reader repeats both literals and must agree byte for byte. */
-export const CURRENT_PCB_DIAGNOSTIC_HELPER_SHA256 = "e06174ea773984d21dfeaa3ce04e3ad845d4c15e3a25dde5eae73b451f85483b";
-export const CURRENT_PCB_DIAGNOSTIC_HELPER_BYTES = 1_374_245;
+/** Generated complete fixed shared helper identity. Rebuild through
+ * startup:protocol:update. Windows synthetic-launch pins repeat both values. */
+export const CURRENT_PCB_DIAGNOSTIC_HELPER_SHA256 = "212f849b6d0116febe8feb6e520a408752cb643cebaf447900efdcd91a59db16";
+export const CURRENT_PCB_DIAGNOSTIC_HELPER_BYTES = 1_380_067;

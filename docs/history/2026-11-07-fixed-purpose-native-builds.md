@@ -48,3 +48,21 @@ runtime identity module and independent Windows pin literals together through
 the separate identity checker continues to read and compare actual bytes only.
 This removes the manual pin-edit step during a source batch. Generated outputs
 will refresh with the combined writer changes before final verification.
+
+The combined source through `a5fb0539` now emits a 1,380,067-byte shared helper
+and 1,909,037-byte runtime compiler input. The schematic helper is 1,248,443
+bytes with a 1,715,121-byte compiler input. Both actual bodies compiled as C# 5
+and passed their fixed codecs, including inverse ready/encoder and schematic
+drain checks, without constructing an owner or launching an app. Both generation
+checks and all six released forward artifacts remained exact. Automatic shared
+pin generation agrees with the separate read-only identity checker.
+
+Eight focused integrated checks, both TypeScript checks and strict changed-file
+lint passed. The first integrated stream check failed because its negative
+input selected the first native case, which is a permitted observation. That
+test now selects the explicit forbidden breakpoint-arm command and checks zero
+output on both affected lanes. Its original failure and cleanup rejections are
+retained in private logs. No production guard changed for that correction.
+Duplicate diagnostic phase labels were removed and the new inverse observation
+labels were added. Final payload freeze, complete CI and connected validation
+remain pending.

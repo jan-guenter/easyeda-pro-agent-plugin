@@ -214,7 +214,7 @@ const REQUEST_METHODS = [
   "Debugger.enable", "Debugger.getScriptSource", "DOM.getFrameOwner", "DOM.describeNode", "Target.setAutoAttach",
   "Runtime.evaluate", "Runtime.callFunctionOn", "Runtime.getProperties", "Runtime.releaseObjectGroup",
 ] as const satisfies readonly DiagnosticCommand["method"][];
-const REQUEST_PHASES = ["relevance-save-tail", "relevance-save-tail-extra", "relevance-save-tail-delete", "relevance-save-drain", "relevance-save-post-sync", "relevance-save-tail", "relevance-save-tail-extra", "relevance-save-tail-delete", "relevance-save-drain", "relevance-save-post-sync", "relevance-observed-source", "relevance-save-local", "relevance-save-upload", "relevance-local-cache","schematic-relevance-library","schematic-relevance-quiesce","schematic-relevance-clock","schematic-relevance-modify-entry","inverse-preflight", "inverse-register",
+const REQUEST_PHASES = ["inverse-delete-encoder", "inverse-delete-bindings", "inverse-library-refresh", "relevance-save-tail", "relevance-save-tail-extra", "relevance-save-tail-delete", "relevance-save-drain", "relevance-save-post-sync", "relevance-observed-source", "relevance-save-local", "relevance-save-upload", "relevance-local-cache","schematic-relevance-library","schematic-relevance-quiesce","schematic-relevance-clock","schematic-relevance-modify-entry","inverse-preflight", "inverse-register",
   "spatial-bindings-component", "spatial-read-component",
   "renderer-capture209",
   "discovery", "frame-owner", "worker-discovery", "worker-state", "project-preflight", "project-open-project", "generated-fixture-register", "saved-readback-start-page", "saved-readback-scene", "saved-readback-model", "saved-readback-register", "saved-readback-project-preflight", "saved-readback-open-project",
