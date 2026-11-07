@@ -35,3 +35,27 @@ The complete original producer drain, action continuation and independent saved
 reopening still need integration and disposable execution. No helper, application,
 project or native generation was started for this work. Bundles, compatibility
 pins and installed packages remain unchanged until the combined batch is ready.
+
+## Changed-head cache projection
+
+A distinct inert seven-record cache comparator now retains both initial
+SCH/SCH_PAGE documents and the full parent/page head index. It checks the
+complete seven-record page roster, explicit wire attribute and both line-group
+bindings. The changed body must be the same supplied DOCHEAD and sole TEXT
+record/ticket/hash as the Save delta. Mutable and appended heads preserve the
+native metadata property order and unchanged initial parent entries. Native
+timestamps remain supplied readonly SQL observations.
+
+One focused test executes the actual pinned parser and merge methods on inert
+values for both modes. Their complete index bytes and cache-body bytes match;
+foreign parent, omitted document and wrong TEXT inputs refuse. Both TypeScript
+projects and strict changed lint pass. This pure data projection retains false
+ownership, continuation and full-frontier fields. The private original Main row
+issuer and drain coordinator are separate work.
+
+The library request adapter also retains its original serialization slot through
+each post-bootstrap helper-source receipt. Its bounded source reads use the
+original direct transfer; a later lane cannot hold the queue while awaiting an
+earlier receipt queued behind it. The observer's later hook rechecks the original
+command/raw reply identity. The source-held pristine receipt stays in its own
+incremental bootstrap queue.

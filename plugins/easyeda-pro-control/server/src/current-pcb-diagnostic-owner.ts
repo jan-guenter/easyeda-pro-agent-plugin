@@ -3656,7 +3656,14 @@ class CurrentPcbRetainedOwnerCore {
             if (command.phase === "library-refresh-cancel") { if (!this.#schematicRelevanceLibraryAttempted || cancelAttempted) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_CANCEL_ONCE"); } cancelAttempted = true; }
             const helper = command.method === "Runtime.callFunctionOn" || command.method === "Debugger.evaluateOnCallFrame";
             if (helper && command.phase !== "library-refresh-pristine") { selected.registerSubmitted(source, input); }
-            const raw = await this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { libraryOriginal(); if (command.phase === "library-refresh-resume") { selected.reserveLibraryRefreshResume(source, command.role); } return pipe.observeSchematicRelevanceLibraryRefresh(command); })); libraryOriginal();
+            const raw = await this.#serializeSchematicDisplayObserver(async (): Promise<RecordValue> => {
+              const reply = await this.#transfer(() => { libraryOriginal(); if (command.phase === "library-refresh-resume") { selected.reserveLibraryRefreshResume(source, command.role); } return pipe.observeSchematicRelevanceLibraryRefresh(command); }); libraryOriginal();
+              // Keep this original request's serialization slot until its source
+              // Receipt finishes. A later lane must not wait on a receipt whose
+              // Reader is queued behind that later lane's own pending request.
+              if (helper && command.phase !== "library-refresh-pristine") { await selected.verifyOriginalHelperReceipt(source, input, reply, (scriptId: string): Promise<unknown> => this.#transfer(() => { libraryOriginal(); return pipe.observeSchematicRelevanceLibraryRefresh({ phase: "library-refresh-helper", method: "Debugger.getScriptSource", params: { scriptId } }); })); libraryOriginal(); }
+              return reply;
+            }); libraryOriginal();
             if (helper) { receipts.set(input, Object.freeze({ raw, pristine: command.phase === "library-refresh-pristine" })); }
             if (command.phase === "library-refresh-arm") { if (!record(raw) || typeof raw["breakpointId"] !== "string") { throw error("SCHEMATIC_RELEVANCE_LIBRARY_POINT_REPLY"); } points.set(command.role, raw["breakpointId"]); selected.bindLibraryRefreshBreakpoint(source, command.role, raw["breakpointId"]); }
             else if (command.phase === "library-refresh-properties" && command.tuple === "captured") { const fields = decodeCurrentProjectLibraryRefreshTuple(raw, 15); for (let slot = 1; slot <= 13; slot += 1) { functions.set(slot, currentProjectLibraryRefreshArrayObject(fields, slot)); } }
@@ -3671,7 +3678,9 @@ class CurrentPcbRetainedOwnerCore {
             assertCurrent: async (): Promise<void> => { libraryOriginal(); await this.#verify(); libraryOriginal(); },
             assertOriginalSourceHeld: (): void => { libraryOriginal(); selected.assertOriginalProjectSourceHeld(source); },
             assertOriginalHelperReceipt: async (command: CurrentProjectLibraryRefreshCommand, raw: unknown): Promise<void> => { libraryOriginal(); const receipt = receipts.get(command); if (receipt === undefined || receipt.raw !== raw) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_ORIGINAL_HELPER_RECEIPT"); } receipts.delete(command);
-              await (receipt.pristine ? selected.consumeOriginalSetupHelpers(source) : selected.verifyOriginalHelperReceipt(source, command, raw, (scriptId: string): Promise<unknown> => this.#serializeSchematicDisplayObserver(() => this.#transfer(() => { libraryOriginal(); return pipe.observeSchematicRelevanceLibraryRefresh({ phase: "library-refresh-helper", method: "Debugger.getScriptSource", params: { scriptId } }); }))));
+              // Post-bootstrap receipts were verified before request() returned
+              // This exact raw reference. Pristine still owns the held setup queue.
+              if (receipt.pristine) { await selected.consumeOriginalSetupHelpers(source); }
               libraryOriginal(); helperReceipts += 1; if (helperReceipts > CURRENT_PROJECT_LIBRARY_REFRESH_REQUESTS.helperSources) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_HELPER_CAPACITY"); }
             },
             nextEvent: async () => { libraryOriginal(); const event = await selected.nextLibraryRefreshEvent(); libraryOriginal(); if (event.method === "Debugger.paused") { if (heldRole !== null) { throw error("SCHEMATIC_RELEVANCE_LIBRARY_EVENT_HELD"); } const actual = currentProjectLibraryRefreshPause(event, child.sessionId, source.scriptId, points); if (actual.role !== "firstLoop" && actual.role !== "loopReturned" && actual.role !== "mountReturned") { throw error("SCHEMATIC_RELEVANCE_LIBRARY_UNEXPECTED_PATH"); } heldRole = actual.role; heldFrame = actual.callFrameId;
