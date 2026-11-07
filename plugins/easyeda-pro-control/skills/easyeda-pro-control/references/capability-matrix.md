@@ -9,7 +9,8 @@ offline supplied-library/project-file metadata, mixed-document sources, schemati
 records, persisted PCB stack/rules and symbol pin inspection,
 tab-count/active-identity/shortcut observations, public catalog queries,
 ordinary launch, disposable project/PCB opening with layer and primitive observations,
-a separate disposable PCB viewport purpose, and original project-worker startup capture.
+a separate disposable PCB viewport purpose, original project-worker startup capture,
+and the separate generated-fixture Via writer for controlled disposable validation.
 The [public utility readers](current-utility-readers.md#language-and-api-page-viewport-readers)
 do not establish document units or account/library contents. SDK-resolved
 language can be a fallback and does not prove provider success. Selected-row
@@ -36,12 +37,50 @@ It admits the source-reviewed fixed16Math and18Unit/Environment subsets through
 their own exact runtime checks. Two utility argument sets passed on the prior
 installed release; that does not validate every method or this source payload.
 None of the older native/private design-content, project-opening or metadata-writing routes
-below is registered there. Its separate [209 opening route](current-pcb209-opening.md)
+below is registered there. The separate [ordinary schematic page workflow](current-schematic-page-observation.md)
+adds a complete-checkpoint-bound tracked open in an already loaded project, then
+current209 Text/Wire/Bus and supported-selection DTO reads on the exact active
+type-1 page. The separate generated explicit-Relevance fixture passed one
+[Text/Wire/Bus getAll case](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-06-relevance-schematic-reader-live-case.md)
+with two matching samples and unchanged closed bytes. That scoped historical
+case does not validate selected/explicit-ID reads, placed parts/pins or a newer
+runtime. It grants no writer, explicit Save, connectivity or persistence
+authority. The separate [ordinary PCB read owner](current-pcb209-ordinary-read.md)
+uses its own launch-sealed namespace and truthful ordinary-project intent. It
+reuses all eight fixed209 reader stages and original cleanup; normal opening
+and closure effects can persist application data. It grants no writer or explicit
+Save authority and has no connected validation. Its separate [209 opening route](current-pcb209-opening.md)
 uses its own restricted original-owner lifecycle and source pins; it can trigger
 ordinary automatic persistence, but offers no explicit Save or writer. Its
 one-shot `observe-layers` stage provides two matching native layer samples,
 the public layer projection and enabled copper count; it does not establish
 physical stackup, complete startup or a saved baseline.
+The separate [spatial identity workflow](current-pcb209-spatial.md) offers one
+consumed Via-only, Line/Via or Arc/Line/Via point/region batch and a separate
+standalone circular SMT Pad point batch. Its older native purpose retains384
+requests. The generated Component point workflow uses a distinct419-request
+birth with genuine footprint/cache/attribute custody; it cannot upgrade an
+existing owner or accept an ordinary populated board. Both workflows qualify
+original application functions and explicitly accept bounded math scratch
+effects. They return native identities rather than complete SDK objects and
+grant no writer, selection, connectivity or persistence authority. Their
+source implementations and offline checks remain separate from positive
+connected acceptance. One historical Arc/Line/Via six-query branch passed on a
+generated fixture with exact point/region results and complete closed-file/SQL
+invariance. A separate generated-Pad case accepted five points and complete
+closed raw/SQL/history invariance, then an old report-schema defect blocked
+original helper release. Its missing acknowledgment remains unknown. Component,
+other variants and later runtime admission remain separate. Component-only
+original-Job abort and the manager's
+retained cleanup adapter do not transfer ownership or replay a failed read.
+The [generated disposable Via controller](generated-pcb-via-write.md) has a
+separate original writer, saved reader, full SQL/source checks and failure
+cleanup composition. Offline `pcb209-via-write` reports its public-utility
+registration status and exact schemas. The source route is validation-only and
+requires the original released fixture data, explicit create/Save confirmations,
+current source admission, complete closed SQL/source proof and a separate fresh
+saved reader. Connected validation remains unclaimed. Discovery grants no
+execution, ordinary-project writer or inverse authority.
 The separate `observe-primitives` stage returns two matching Line/Arc/Via and
 parentless String loaded-view projections with ordered IDs. Its256-row per-family
 and384KiB aggregate bounds refuse excess output. It does not include raw models
@@ -372,7 +411,7 @@ below describe retained source contracts, not execution support for types1/2/3.
 | Current PCB loaded-view identities | pcb_identities; api pcb-identities/pcb-identities-validate | Selected IDs or unfiltered Line/Arc/Via/Component/Pad/String/Dimension/Image/Attribute IDs; positive type lookup remains Line/Arc/Via-only. Attribute results retain ordered native parent groups, not verified stored ownership. Explicit target and captured native receiver, two matching ordered samples. No stored membership, ownership, geometry, connectivity or persistence claim; missing/ambiguous IDs refuse. Installed023200 passed six Attribute IDs in two groups on one disposable PCB, followed by retained closure and unchanged closed bytes. Nonempty Dimension/Image validation remains pending; see current-pcb-readers for scoped historical cases |
 | Current selected PCB geometry | pcb_geometry; pcb_SelectControl.getSelectedPrimitives | Empty arguments, exact PCB target and fingerprint. Ordered selected IDs bracket all nine supported family projections twice; complete rows, rosters and Attribute groups must match. Returns existing DTOs in selection order; unsupported, absent or ambiguous IDs refuse the whole result. At most256selected/256per family and384KiB;26fixed getter calls for nonempty selection,8for empty. Sampled stability only, not atomicity, public-object parity, ownership or saved state. Source-reviewed/offline-tested; connected validation pending. See [selected PCB objects](current-pcb-readers.md#selected-pcb-objects) |
 | Local historical abandonment | history; api history/history-validate | Two exact boundaries: sixteen-event closed-symbol validation marker-read, and seven-phase closed baseline stopped before relaunch intent. The first checks unchanged source; the second rehashes retained evidence only and proves no current process/source state. Exclusive sidecars preserve original journals. No bridge, restart, restored process authority, completion or replay. Six-event legacy baseline and generic recovery remain unavailable in restricted mode |
-| Offline SDK and exact operation reference | api sdk/operations/validate | 749 reviewed / 806 latest official declaration signatures; exact strict design/library schemas and offline custom-refinement validation; no SDK invocation or runtime admission |
+| Offline SDK and exact operation reference | api sdk/operations/validate | Separate749 reviewed,806 official-reference,844 installed-209 and862 packaged-4197 candidate declaration signatures. The candidate adds20 method paths to the855-method exhaustive inventory, with runtime-admission omissions. Exact strict design/library schemas and offline custom-refinement validation; no SDK invocation or runtime admission |
 | Ordinary current-version startup | launch | Fixed no-argument executable with exact installed code/helper pins, explicit existing-profile effects and durable attempt tracking. Retained root/Job termination or separately acknowledged supervision abandonment can permit consideration of a new-ID launch. No isolation, bridge, Start Page, navigation or CAD claim |
 | Native diagnostic validation | pcb_diagnostic_validation; api pcb-diagnostic-validation/pcb-diagnostic-validation-validate | Separate validation-only existing-profile launch and original root/Job ownership; one browser inventory, retained target/frame inspection and one compiled UI/PCB/public-API script/context check. Bounded identity results, no raw console data. Original normal-close, termination, release and exact receipt settlement; no ownership recreation after restart. Not isolated or guaranteed project-free; socket absence, bridge/worker/compiler authority and connected validation remain unproved. No navigation, arbitrary CDP/evaluation, CAD writer or Save. See [the diagnostic workflow](current-pcb-diagnostic-validation.md) |
 | Current disposable project/PCB opening | project_open; api project-open/project-open-validate | Already registered local disposable file, exact raw-path hash/original source digest, checkpoint-member default-branch PCB, initially empty editor and retained ordinary launch. Public project/document calls run once with orphan tracking. Normal opening may migrate data, replay caches and automatically Save. Inspection/observation never navigate. Terminal retirement requires original root/Job termination and exact session closure; no writer, persistence or full-initialization claim. Installed101500 passed the disposable fixture opening within its metadata round trip; other startup shapes remain separately scoped. Read [the opening guide](current-project-opening.md) |

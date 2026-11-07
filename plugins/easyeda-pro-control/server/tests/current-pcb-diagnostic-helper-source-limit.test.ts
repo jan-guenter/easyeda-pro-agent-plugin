@@ -22,9 +22,9 @@ async function fixture(bytes: number): Promise<Readonly<{ helper: string; checke
     copyFile(new URL("../src/current-pcb-diagnostic-helper-source-profile.ts", import.meta.url), join(root, "server/src/current-pcb-diagnostic-helper-source-profile.ts")),
   ]);
   const content = Buffer.alloc(bytes, 0x41), digest = createHash("sha256").update(content).digest("hex");
-  const owner = `const HELPER_BYTES = ${bytes};\nconst HELPER_SHA256 = "${digest}";\n`;
+  const owner = `export const CURRENT_PCB_DIAGNOSTIC_HELPER_BYTES = ${bytes};\nexport const CURRENT_PCB_DIAGNOSTIC_HELPER_SHA256 = "${digest}";\n`;
   const smoke = `$bytes = Read-BoundedFile $helper ${MAXIMUM}\nif ($bytes.Length -ne ${bytes}) {throw 'synthetic-launch-helper-size'}\nif ($helperHash -cne '${digest}') {\n`;
-  await Promise.all([writeFile(helper, content), writeFile(join(root, "server/src/current-pcb-diagnostic-owner.ts"), owner),
+  await Promise.all([writeFile(helper, content), writeFile(join(root, "server/src/current-pcb-diagnostic-helper-identity.ts"), owner),
     writeFile(join(root, "scripts/pcb-diagnostic-launch-smoke.ps1"), smoke), writeFile(join(root, "package.json"), '{"type":"module"}\n')]);
   return { checker, helper };
 }

@@ -2,6 +2,7 @@
  * not admit these pauses. There is no public caller-selected breakpoint/code. */
 import type { CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION } from "./current-footprint-copy-state.ts";
 import type { CurrentFootprintCopySourceCommand } from "./current-footprint-copy-source-command.ts";
+import type { CURRENT_FOOTPRINT_DETACHED_CACHE_EXPRESSION, CURRENT_FOOTPRINT_DETACHED_CACHE_GROUP, CURRENT_FOOTPRINT_HEAD_CACHE_EXPRESSION } from "./current-footprint-detached-cache-profile.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE = Object.freeze({
@@ -34,7 +35,8 @@ export const CURRENT_PCB_WORKER_CONSTRUCTION_SEQUENCE = Object.freeze([
   "channel", "upload", "base", "cooperation", "serial", "debounce", "serial", "project", "bootstrap",
 ] as const);
 
-export type CurrentPcbWorkerConstructionExpression = "this" | "e" | "t" | "this.bc" | "this.bc.onmessage" | typeof CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION;
+export type CurrentPcbWorkerConstructionExpression = "this" | "e" | "t" | "this.bc" | "this.bc.onmessage" | typeof CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION | typeof CURRENT_FOOTPRINT_DETACHED_CACHE_EXPRESSION | typeof CURRENT_FOOTPRINT_HEAD_CACHE_EXPRESSION;
+type ObjectGroup = typeof CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group | typeof CURRENT_FOOTPRINT_DETACHED_CACHE_GROUP;
 export const CURRENT_PCB_WORKER_CONSTRUCTION_SAME = "function(other){\"use strict\";return this===other;}";
 export const CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT = "function(bus){\"use strict\";const own=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,\"value\"))throw new Error(\"WORKER_CONSTRUCTION_MEMBER\");return d.value;};return own(globalThis,\"PROJECT\")===this&&own(this,\"workerBus\")===bus;}";
 /** Read only the three native identity fields already used by the pinned
@@ -51,20 +53,20 @@ for(const [o,k,v]of retained){const d=Object.getOwnPropertyDescriptor(o,k);if(!d
 return identity;}`;
 export type CurrentPcbWorkerConstructionCommand =
   | CurrentFootprintCopySourceCommand
-  | Readonly<{ method: "Debugger.setBreakpoint"; params: Readonly<{ location: Readonly<{ scriptId: string; lineNumber: number; columnNumber: number }> }> }>
+  | Readonly<{ method: "Debugger.setBreakpoint"; params: Readonly<{ location: Readonly<{ scriptId: string; lineNumber: number; columnNumber: number }>; condition?: string }> }>
   | Readonly<{ method: "Debugger.removeBreakpoint"; params: Readonly<{ breakpointId: string }> }>
   | Readonly<{ method: "Debugger.resume"; params: Readonly<Record<string, never>> }>
   | Readonly<{ method: "Debugger.evaluateOnCallFrame"; params: Readonly<{ callFrameId: string; expression: CurrentPcbWorkerConstructionExpression;
-    objectGroup: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group; silent: true; returnByValue: false;
+    objectGroup: ObjectGroup; silent: true; returnByValue: false;
     generatePreview: false; throwOnSideEffect: true; includeCommandLineAPI: false }> }>
   | Readonly<{ method: "Runtime.getProperties"; params: Readonly<{ objectId: string; ownProperties: true; generatePreview: false }> }>
   | Readonly<{ method: "Runtime.callFunctionOn"; params: Readonly<{ objectId: string;
     /** Only fixed construction, assignment, actor, current209 footprint and current-channel reads. The
      * native boundary must reject every other string before forwarding. */
     functionDeclaration: string;
-    arguments: readonly Readonly<{ objectId: string }>[]; objectGroup: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group;
+    arguments: readonly Readonly<{ objectId: string }>[]; objectGroup: ObjectGroup;
     silent: true; returnByValue: boolean; generatePreview: false; throwOnSideEffect: true; awaitPromise: false; userGesture: false }> }>
-  | Readonly<{ method: "Runtime.releaseObjectGroup"; params: Readonly<{ objectGroup: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group }> }>;
+  | Readonly<{ method: "Runtime.releaseObjectGroup"; params: Readonly<{ objectGroup: ObjectGroup }> }>;
 
 /** This transport is a trusted, original single-worker owner dependency, not an
  * MCP argument or historical receipt. Native integration must attest complete
