@@ -1,6 +1,7 @@
 # Project history
 
 - [2026-11-07 original seven-record Main history SQL](2026-11-07-relevance-display-original-main5.md). Separate original Main5 custody and genuine body enrollment; STRUCTURE, drain and persistence remain independently fenced.
+- [2026-11-07 project-open library-refresh frontier](2026-11-07-project-open-library-refresh-frontier.md). Complete direct opening/task inventory and fixed first-loop suspension/RAF cancellation leaves; original purpose custody and broader producer completion remain separate.
 
 - [2026-11-07 original seven-record effect and clock](2026-11-07-relevance-display-original-clock.md). Distinct original stage provenance, native clock custody and body joins; Save and Main persistence remain separate.
 
