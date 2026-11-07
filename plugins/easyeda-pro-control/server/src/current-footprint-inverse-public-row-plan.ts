@@ -6,8 +6,8 @@ import type { CurrentFootprintForwardSavedCheckpoint } from "./current-footprint
 import { currentFootprintCopyV2SavedTarget } from "./current-footprint-copy-v2-saved-source.ts";
 import { requireOriginalCurrentFootprintSavedFlowCacheInput, requireOriginalCurrentFootprintSavedFlowCachePlan } from "./current-footprint-saved-flow-cache-plan.ts";
 import type { CurrentFootprintSavedFlowCachePlan } from "./current-footprint-saved-flow-cache-plan.ts";
-import { deriveCurrentFootprintInversePublicRowData } from "./current-footprint-inverse-public-row-data.ts";
-import type { CurrentFootprintInversePublicRowData } from "./current-footprint-inverse-public-row-data.ts";
+import { deriveCurrentFootprintInverseGetModelInputData,deriveCurrentFootprintInversePublicRowData } from "./current-footprint-inverse-public-row-data.ts";
+import type { CurrentFootprintInverseGetModelInputData,CurrentFootprintInversePublicRowData } from "./current-footprint-inverse-public-row-data.ts";
 import { readerCompletion } from "./sqlite-inventory.ts";
 
 export interface CurrentFootprintInversePublicRowPlan { readonly profile: "private.current-footprint-inverse-public-row-plan.v1" }
@@ -44,4 +44,12 @@ export function prepareCurrentFootprintInversePublicRowPlan(prepared: CurrentFoo
 }
 export function requireOriginalCurrentFootprintInversePublicRowPlan(token: CurrentFootprintInversePublicRowPlan, prepared: CurrentFootprintForwardSavedCheckpoint, flow: CurrentFootprintSavedFlowCachePlan): CurrentFootprintInversePublicRowData {
   const original = issued.get(token); need(original !== undefined && original.prepared === prepared && original.flow === flow && original.text === canonicalJson(original.data)); current(original); return original.data;
+}
+
+const modelInputs=new WeakMap<CurrentFootprintInversePublicRowPlan,Readonly<{data:CurrentFootprintInverseGetModelInputData;text:string}>>();
+/** Same genuine historical source data, separately projected for actual GET
+ * hook exclusion. No runtime row/worker/GetJob is constructed by this lookup. */
+export function requireOriginalCurrentFootprintInverseGetModelInput(token:CurrentFootprintInversePublicRowPlan,prepared:CurrentFootprintForwardSavedCheckpoint,flow:CurrentFootprintSavedFlowCachePlan):CurrentFootprintInverseGetModelInputData{
+ const data=requireOriginalCurrentFootprintInversePublicRowPlan(token,prepared,flow),original=issued.get(token);need(original!==undefined&&original.data===data);const prior=modelInputs.get(token);if(prior!==undefined){need(prior.text===canonicalJson(prior.data));current(original);return prior.data;}
+ const input=deriveCurrentFootprintInverseGetModelInputData(original.input,data.footprintUuid,original.prior.inventory,data);current(original);modelInputs.set(token,Object.freeze({data:input,text:canonicalJson(input)}));return input;
 }

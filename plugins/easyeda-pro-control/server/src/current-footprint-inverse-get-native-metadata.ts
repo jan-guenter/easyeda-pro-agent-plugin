@@ -7,6 +7,7 @@ import { decodeCurrentNativeFunctionMetadata } from "./current-native-function-m
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_FOOTPRINT_INVERSE_GET_NATIVE_PROFILES=freezeDeep({
+ parse:{name:"parse",arity:2,constructor:false},
  stringify:{name:"stringify",arity:3,constructor:false},
  lower:{name:"toLocaleLowerCase",arity:0,constructor:false},
  push:{name:"push",arity:1,constructor:false},

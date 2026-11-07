@@ -11,7 +11,7 @@ import { test } from "node:test";
 import { runInNewContext } from "node:vm";
 import { sha256Text } from "../src/core.ts";
 import { CURRENT_FOOTPRINT_INVERSE_PUBLIC_ROW_FILES as FILES, CURRENT_FOOTPRINT_INVERSE_PUBLIC_ROW_SOURCE as SOURCE, qualifyCurrentFootprintInversePublicRowSource } from "../src/current-footprint-inverse-public-row-source.ts";
-import { deriveCurrentFootprintInversePublicRowData } from "../src/current-footprint-inverse-public-row-data.ts";
+import { CURRENT_FOOTPRINT_INVERSE_GET_MODEL_READ_FIELDS,deriveCurrentFootprintInverseGetModelInputData,deriveCurrentFootprintInversePublicRowData } from "../src/current-footprint-inverse-public-row-data.ts";
 import type { CurrentFootprintInversePublicRowValue } from "../src/current-footprint-inverse-public-row-data.ts";
 import { prepareCurrentFootprintInversePublicRowPlan, requireOriginalCurrentFootprintInversePublicRowPlan } from "../src/current-footprint-inverse-public-row-plan.ts";
 import { readExactSqlInventory } from "../src/sqlite-inventory.ts";
@@ -51,6 +51,7 @@ void test("actual source transforms retain full worker/UI rows, own undefined ac
   const workerOwner = worker.get("owner"); assert.ok(workerOwner !== undefined); assert.deepEqual(fields(workerOwner).get("uuid"), { kind: "string", value: owner });
   const uiOwner = ui.get("owner"); assert.ok(uiOwner !== undefined); assert.deepEqual([...fields(uiOwner).keys()], ["uuid", "nickname", "username"]);
   assert.deepEqual(ui.get("custom_tags"), { kind: "string", value: '["test"]' });
+  const before=JSON.stringify(data),modelInput=deriveCurrentFootprintInverseGetModelInputData(input(),footprintUuid,sql,data);const model=fields(modelInput.model);assert.deepEqual([...model.keys()],CURRENT_FOOTPRINT_INVERSE_GET_MODEL_READ_FIELDS);assert.deepEqual(model.get("tags"),{kind:"array",values:[{kind:"string",value:"test"}]});assert.deepEqual(modelInput.owner,workerOwner);assert.equal(modelInput.nativeInputVerified,false);assert.equal(JSON.stringify(data),before);
   assert.equal(data.nativeRowVerified, false); assert.equal(data.deletionAuthorized, false);
   const equal = fields(deriveCurrentFootprintInversePublicRowData(input("Saved copy", 1_700_000_000_000), footprintUuid, sql).workerRow);
   assert.deepEqual(equal.get("version"), { kind: "string", value: "v1" });

@@ -6,6 +6,8 @@
 
 - [2026-11-07 original inverse manager project lookup](2026-11-07-inverse-original-manager-lookup.md). Same-owner singleton/native-Map selection and exact manager getData custody; the original RPC stays held pending native forwarding.
 
+- [Original inverse GET delivery and complete worker rearm](2026-11-06-footprint-four-generation-composition.md). Genuine job/native entry, saved input and row, fresh task and both specific loopback returns; connected dispatch and deletion remain separate.
+
 - [2026-11-07 Inverse layout excludes Via action code](2026-11-07-inverse-layout-via-exclusion.md). Recover76,902compiler bytes while retaining the exact shared timer codec and unchanged diagnostic/schematic builds.
 
 - [Original schematic disposal and record continuation](2026-11-07-schematic-original-disposal-record-continuation.md)

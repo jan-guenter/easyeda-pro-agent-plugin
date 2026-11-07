@@ -2262,3 +2262,80 @@ accessor refusal. These are inert leaves only: no native/Core delivery issuer,
 GET method/task resume, row/Promise/publication or new-task rearm result exists
 in this increment. The next mount must consume the genuine readiness and
 original manager GetJob; matching JSON cannot supply either.
+
+### Original GET native delivery, input and complete worker rearm
+
+The inverse owner now has the once-only source route
+`observeFootprintInverseGetWorker(originalGetJob)`. It takes the original
+manager-forwarded GET job, joins its native MessageEvent to the exact held
+getNeedData/service arguments, and returns a private Core-issued
+`CurrentFootprintInverseGetWorkerCompletion` only after the supported worker
+GET finishes its complete finite tail. The upstream UI/manager GetJob issuer
+remains a separate prerequisite; this increment creates no structural or JSON
+issuer and makes no connected validation claim.
+
+The native receiver independently requires own `need:undefined` in the actual
+cloned packet and the undefined source argument. The transported expected data
+uses a fixed `needUndefined:true` tag because JSON cannot carry the undefined
+field; the tag never supplies the actual presence proof. All nested envelope
+rosters, source packet references and active trusted Event getters reprove.
+The existing SDK request can remain physically pending while this new finite
+worker lane runs; the original-byte pipe regression exercises that duplex case.
+
+A separate model-input projection comes from the same genuine saved row plan,
+finished SQL inventory and complete decoded history. The prior row projection,
+v1 schema and result flags remain unchanged. Before the first GET body resume,
+the collector qualifies get/Ne and their actual closures, Fe/Oe, the existing
+bus constructors/queue callees, the original channel, native JSON, String and
+Promise primitives, all source-read model fields and the project owner. Every
+new object receives original Inspector metadata before its descriptors or
+children are traversed. The two complete descriptor graphs have a distinct
+maximum of63 object/array nodes each, depth8 and63 fields/elements per node;
+unsupported inputs refuse before the initial body permit. Reflection uses the
+same original I11 realm and fixed own-index programs with readonly flags.
+
+The actual PromiseResult is read from the original captured native Promise.
+Its wrapper and full row must match the genuine saved-row plan. Subsequent
+receipts join the fresh same-callback GET task, the original service/task/Event
+normal exits, both native postMessage normal returns and both specific local
+loopback callback entries and normal returns. This proves those synchronous
+local deliveries; it authenticates no dropped Promise handle and uses no
+queryObjects or forced GC. Source failure points remain armed before logging,
+String conversion or failure publication. The spent native-entry receipt stops
+claiming a held frame after its body permit; later checks retain original
+custody without reasserting the old F2/native Event hold.
+
+The exact normal request bound is173+3N and helper-source reads50+N, where
+N is the sum of the two genuine planned object/array-node counts. The fixed
+33 controls cover bind,14 original point receipts, body permit,16 actual held
+receipts and completion. Maximum reservation is727 CDP requests/760 controls;
+the three-input-node/two-row-node inert source case uses exactly188 normal and
+55 helper requests. Optional breakpoint-resolution receipts and four source
+console notifications are bounded separately. All older purpose limits stay
+unchanged; the inverse aggregate includes this new explicit reservation.
+
+One complete hash-checked inert source/paused-Inspector collector regression
+passes input qualification through both loopback returns. It found that i/n
+are out of scope at the service's final return; the final capture now uses the
+five still-live references. The Node test runner also installs Node-only own
+Promise symbols. The maintained test therefore uses an independent inert Node
+process, retaining the production empty-own-roster Promise guard and readonly
+flags. Counterexamples cover getters, inherited hooks, original child identity,
+full string/symbol rosters, missing/falsy need, foreign callers and copied
+completion labels. None issues an original native owner.
+
+The earlier whole-generator size refusal was retained without emitting a
+helper. After the separate inverse-layout Via exclusion and the exact shared
+fixed codec, two private generations match byte-for-byte. Actual full C#5
+compilation and both new21+116-message codec smokes pass: stored helper
+1,443,282 bytes SHA85be26d31bfa8f70bafdcaddbabcd1da0954392b1cd43106fad159616c7fb2dd;
+actual compiler2,045,199 bytes SHA77c8f6c12da223c5aa5c4d01087788f733a27ca402611ed520ca076a166aab4f.
+Both unchanged2MiB caps hold. This proof is private under
+`inverse-get-full-worker-afx652`; no tracked helper, identity pin, bundle,
+installation or frozen payload changed. No app/MCP/Windows call occurred.
+
+The completion proves that exact GET and its rearm. It grants no whole-bus
+emptiness, DELETE, clock, mutation, Save, closed persistence or fourth-generation
+acceptance. The actual forwarded job must still be issued by its original
+manager native-post collector, and the later DEL/clock/producer/Main/closed-SQL
+and fresh readback joins remain separate original-owner work.
