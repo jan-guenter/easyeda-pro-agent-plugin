@@ -10,7 +10,7 @@ import { decodeCurrentPcb209WorkerCallbackFunction, decodeCurrentPcb209WorkerCal
 import { captureCurrentProjectStructureCompletionReply } from "./current-project-structure-completion-protocol.ts";
 import { matchesCurrentProjectSaveStructureIntent, requireCurrentProjectPrehistoryBodyIntent, requireCurrentProjectPrehistoryPublication } from "./current-project-save-structure-prehistory.ts";
 import type { CurrentProjectStructureBodyReservation, CurrentProjectStructureMainPublication } from "./current-project-save-structure-prehistory.ts";
-import type { CurrentFootprintInverseBootstrapArguments, CurrentFootprintInverseBootstrapHeld, CurrentFootprintInverseBootstrapPrepared, CurrentFootprintInverseStructureOrigin, CurrentGeneratedProjectSaveStructureBindings, CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureEvent, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
+import type { CurrentFootprintInverseBootstrapArguments, CurrentFootprintInverseBootstrapHeld, CurrentFootprintInverseBootstrapPermit, CurrentFootprintInverseBootstrapPrepared, CurrentFootprintInverseStructureOrigin, CurrentGeneratedProjectSaveStructureBindings, CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureEvent, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_CALLS as CALLS, CURRENT_PROJECT_SAVE_STRUCTURE_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS as FRAME_FLAGS,
   CURRENT_PROJECT_SAVE_STRUCTURE_GROUP as GROUP, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES, CURRENT_PROJECT_SAVE_STRUCTURE_STARTUP_CONDITION as STARTUP_CONDITION,
   qualifyCurrentProjectSaveStructureSource, validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
@@ -286,6 +286,17 @@ export class CurrentProjectSaveStructureObserver {
       await Reflect.apply(setup, undefined, [hold]); same(); await this.#current(); same();
     } catch (caughtError) { this.#failure(caughtError); throw caughtError; }
     finally { this.#inverseBootstrapActive = null; this.#busy = false; }
+  }
+  /** Separate original inverse permit only. Generated bootstrap and later
+   * startup/history/publication paths keep their existing guards. */
+  public async resumeOriginalFootprintInverseBootstrap(permit:CurrentFootprintInverseBootstrapPermit):Promise<void>{
+    need(!this.#failed&&!this.#closed&&this.#origin.profile==="private.current-footprint-inverse-structure-origin.v1"&&this.#binding.prepared.profile==="private.current-footprint-forward-saved-checkpoint.v1"&&this.#operation===this.#binding.prepared&&!this.#busy&&this.#constructed&&this.#nonprivateModeObserved&&this.#pause?.role==="bootstrap"&&!this.#pause.resumeAttempted&&!this.#startupMode&&!this.#packetAttempted&&this.#history===null&&!this.#releaseAttempted&&!this.#groupReleaseAttempted,"INVERSE_BOOTSTRAP_PERMIT_STATE");
+    const consume=native.consumeOriginalCurrentFootprintInverseBootstrapPermit;this.#busy=true;
+    try{
+      consume(permit,this,this.#origin,this.#owner,this.#operation);
+      await this.#current();need(native.consumeOriginalCurrentFootprintInverseBootstrapPermit===consume,"INVERSE_BOOTSTRAP_PERMIT_FUNCTION_CHANGED");
+      await this.#resume("bootstrap");need(native.consumeOriginalCurrentFootprintInverseBootstrapPermit===consume,"INVERSE_BOOTSTRAP_PERMIT_FUNCTION_CHANGED");
+    }catch(caughtError){this.#failure(caughtError);throw caughtError;}finally{this.#busy=false;}
   }
   #generatedPrepared(): CurrentGeneratedProjectSaveStructureBindings["prepared"] {
     const prepared = this.#binding.prepared;

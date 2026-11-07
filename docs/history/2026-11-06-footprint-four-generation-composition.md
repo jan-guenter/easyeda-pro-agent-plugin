@@ -904,3 +904,38 @@ meet the unchanged2MiB bound. Tracked helper/pins/bundles are untouched and no
 Windows/app/native/MCP call ran. The actual startup event mux/collector,
 callback and queued-Promise completion, eight-job cache cursor, initial sync and
 timer exclusion remain required before bootstrap continuation or delete/Save.
+
+A separate `startFootprintInverseColdIngress()` prefix now issues and consumes
+an inverse-only original bootstrap permit. Its private registry requires the
+same observer/origin/owner/prepared references, actual constructor/pristine and
+producer/cold arm receipts, original readonly main fence and retained cache
+absence/backup packet provenance. The complete durable backup is reread and
+rehashed. That retained absence proves its earlier boundary; it does not claim
+current cache absence after worker allocation or weaken the live empty-UI getter.
+Original warm/pending/fallback/failure guards remain hard refusals.
+
+The new observer hook consumes its original permit before awaiting the one
+bootstrap resume; generated constructor/startup paths keep their existing
+guards. Failed or copied permits never dispatch, and a failed observer cannot
+consume another permit. The original controller uses one event stream and exact
+armed ID/session/function/source locations, retaining unsupported model or queued
+pauses before effects. The prefix qualifies the first branch frame/value against
+the genuine original project and private mixed-branch expectation, then retains
+an opaque original held packet. Its getter returns frozen data only. There is no
+cold/model/ready resume or generic continuation. Ready must remain held until
+actual callback/queued-task/cache/parser completion is joined.
+
+One new bootstrap CDP command plus bounded permit/held controls derives inverse
+renderer1,133, original-main reproofs76,696 and aggregate controls127,339.
+Older purpose budgets and the47-case readonly cold codebook remain unchanged.
+Focused original observer seams cover once-only inverse consumption, copied and
+generated-purpose refusal, no history/publication grant and post-exit cleanup;
+actual source/event classification checks reject foreign/duplicate IDs, sessions
+and function locations. Full types, strict changed-file lint, two-pass generation
+and complete Linux C#5/.NET10 codec/no-permit smokes pass. Current literal source
+is2,068,217 helper bytes/1,864,958 C# bytes; integration must preserve the unchanged
+source/compiler bounds. No tracked helper/pins/bundles or native runtime changed.
+The remaining cold-stage continuations, pre-model plaintext joins, startup
+callback/queue/cache/sync/timer frontier, actual delete/clock/main SQL, closed
+inverse proof and fourth original absence generation are still incomplete.
+All complete-writer, Save, persistence and four-generation acceptance stays false.

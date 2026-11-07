@@ -116,6 +116,8 @@ void test("an original inverse factory cannot adopt a copied source or construct
   const worker: unknown = Reflect.get(owner, "armFootprintInverseWorker"); assert.ok(typeof worker === "function");
   const refused: unknown = Reflect.apply(worker, owner, [(): Promise<void> => Promise.resolve()]); assert.ok(refused instanceof Promise);
   await assert.rejects(refused, /FOOTPRINT_INVERSE_CACHE_ABSENCE_REQUIRED/u);
+  const startCold:unknown=Reflect.get(owner,"startFootprintInverseColdIngress");assert.ok(typeof startCold==="function");assert.throws(()=>Reflect.apply(startCold,owner,[]),/FOOTPRINT_INVERSE_COLD_START_PREREQUISITES/u);
+  const consume:unknown=Reflect.get(f.api,"consumeOriginalCurrentFootprintInverseBootstrapPermit");assert.ok(typeof consume==="function");assert.throws(()=>Reflect.apply(consume,undefined,[Object.freeze({profile:"private.current-footprint-inverse-bootstrap-permit.v1"}),Object.freeze({}),Object.freeze({}),owner,token]),/FOOTPRINT_INVERSE_BOOTSTRAP_PERMIT_ORIGINAL/u);
   const cold:unknown=Reflect.get(owner,"armFootprintInverseColdLoad");assert.ok(typeof cold==="function");
   assert.throws(()=>Reflect.apply(cold,owner,[Object.freeze({profile:"private.current-footprint-inverse-bootstrap-held.v1"})]),/FOOTPRINT_INVERSE_COLD_BOOTSTRAP_ORIGINAL/u);
   const coldLookup:unknown=Reflect.get(f.api,"requireOriginalCurrentFootprintInverseColdLoadOrigin");assert.ok(typeof coldLookup==="function");

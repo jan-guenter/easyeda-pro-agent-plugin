@@ -5,7 +5,7 @@ import { canonicalJson } from "./core.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { currentPcbViaSavedLoadObservationCases, validateCurrentPcbViaSavedLoadObservationCommand } from "./current-pcb-via-saved-load-observation-protocol.ts";
 import type { CurrentPcbViaSavedLoadObservationCommand } from "./current-pcb-via-saved-load-observation-protocol.ts";
-import { CURRENT_PCB_VIA_SAVED_LOAD_ROLES as ROLES } from "./current-pcb-via-saved-load-source.ts";
+import { CURRENT_PCB_VIA_SAVED_LOAD_ROLES as ROLES, CURRENT_PCB_VIA_SAVED_LOAD_SITES as SITES } from "./current-pcb-via-saved-load-source.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export { CURRENT_PCB_VIA_SAVED_LOAD_SITES as CURRENT_FOOTPRINT_INVERSE_COLD_LOAD_SITES } from "./current-pcb-via-saved-load-source.ts";
@@ -61,4 +61,16 @@ export function currentFootprintInverseColdLoadNativeFrame(chunk:Buffer,input:Cu
   if(command.method==="Debugger.evaluateOnCallFrame"){return freezeDeep({...base,callFrameId:command.params.callFrameId});}
   if(command.method==="Runtime.getProperties"){return freezeDeep({...base,objectId:command.params.objectId});}
   const fields:Record<string,string>="uniqueContextId"in command.params?{uniqueContextId:command.params.uniqueContextId}:{objectId:command.params.objectId};for(const[index,arg]of command.params.arguments.entries()){fields[`argument${String(index)}`]=arg.objectId;}return freezeDeep({...base,...fields});
+}
+
+/** Pure supplied event classification only. The retained original controller
+ * separately owns the event and exact armed-point map; copies grant nothing. */
+export function classifyCurrentFootprintInverseColdPause(input:unknown,sessionId:string,scriptId:string,points:readonly Readonly<{role:keyof typeof SITES;id:string}>[]):keyof typeof SITES{
+ const handle=z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);const at=z.strictObject({scriptId:handle,lineNumber:z.number().int().nonnegative(),columnNumber:z.number().int().nonnegative()});
+ const frame=z.looseObject({callFrameId:handle,functionName:z.string(),location:at,functionLocation:at});
+ const schema=z.strictObject({method:z.literal("Debugger.paused"),sessionId:handle,params:z.looseObject({hitBreakpoints:z.tuple([handle]),callFrames:z.array(frame).min(1).max(32)})});
+ const event=schema.parse(captureCurrentPcbStringClockReply(input).value);handle.parse(scriptId);handle.parse(sessionId);
+ if(event.sessionId!==sessionId||points.length!==ROLES.length||new Set(points.map(point=>point.role)).size!==ROLES.length||new Set(points.map(point=>point.id)).size!==ROLES.length||!ROLES.every(role=>points.some(point=>point.role===role))){throw new Error("FOOTPRINT_INVERSE_COLD_EVENT_ROSTER");}
+ for(const point of points){handle.parse(point.id);}const selected=points.find(point=>point.id===event.params.hitBreakpoints[0]);const top=event.params.callFrames[0];if(selected===undefined||top===undefined){throw new Error("FOOTPRINT_INVERSE_COLD_EVENT_POINT");}const site=SITES[selected.role];
+ if(top.location.scriptId!==scriptId||top.location.lineNumber!==site.lineNumber||top.location.columnNumber!==site.columnNumber||top.functionLocation.scriptId!==scriptId||top.functionLocation.lineNumber!==site.functionLine||top.functionLocation.columnNumber!==site.functionColumn||top.functionName!==site.functionName){throw new Error("FOOTPRINT_INVERSE_COLD_EVENT_SOURCE");}return selected.role;
 }

@@ -1,4 +1,4 @@
-import { CURRENT_FOOTPRINT_INVERSE_COLD_LOAD_SITES as COLD_SITES } from "./current-footprint-inverse-cold-load-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_COLD_LOAD_SITES as COLD_SITES, classifyCurrentFootprintInverseColdPause } from "./current-footprint-inverse-cold-load-protocol.ts";
 import type { CurrentFootprintInverseColdLoadCommand, CurrentFootprintInverseColdLoadRole as CurrentPcbViaSavedLoadRole } from "./current-footprint-inverse-cold-load-protocol.ts";
 /** Separate inverse event cursor. It shares only the fixed seven-source
  * bootstrap algorithm, not a saved reader controller, origin or purpose.
@@ -57,6 +57,9 @@ export class CurrentFootprintInverseWorkerController {
   readonly #constructionHelpers: { program: string; scriptId: string | null }[] = [];
   #constructionWork: Readonly<{ run: () => Promise<void>; result: ReturnType<typeof Promise.withResolvers<boolean>> }> | null = null;
   #bootstrapSetupWork: Readonly<{ run: () => Promise<void>; result: ReturnType<typeof Promise.withResolvers<boolean>> }> | null = null;
+  #coldStartupWork:Readonly<{run:()=>Promise<void>;result:ReturnType<typeof Promise.withResolvers<boolean>>}>|null=null;
+  #coldStartupAttempted=false;#coldStartupStarted=false;#coldStartupHeld:Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>|null=null;
+  #unsupportedStartupHeld:WorkerEvent|null=null;
   #bootstrapSetupAttempted = false;
   #constructionWorkAttempted = false; #constructionStartAttempted = false; #constructionStarted = false;
   #constructionHeld: CurrentProjectSaveStructureSite | null = null; #constructionResume: CurrentProjectSaveStructureSite | null = null;
@@ -68,7 +71,7 @@ export class CurrentFootprintInverseWorkerController {
     for (const [index, name] of fields.entries()) { const d = Object.getOwnPropertyDescriptor(bindings, name); need(d !== undefined && Object.hasOwn(d, "value") && typeof d.value === (index < 3 ? "string" : "function") && !types.isProxy(d.value)); }
     need(token(bindings.parentSessionId) && token(bindings.windowTabId) && /^[a-f\d]{64}$/u.test(bindings.projectUuid)); this.#bindings = bindings; Object.freeze(this);
   }
-  public fail(): void { if (!this.#failed) { this.#failed = true; this.#completion.resolve(null); const queued = this.#constructionWork; this.#constructionWork = null; queued?.result.reject(new Error("FOOTPRINT_INVERSE_WORKER_CURSOR")); const setup = this.#bootstrapSetupWork; this.#bootstrapSetupWork = null; setup?.result.reject(new Error("FOOTPRINT_INVERSE_WORKER_CURSOR")); this.#bindings.fail(); } }
+  public fail(): void { if (!this.#failed) { this.#failed = true; this.#completion.resolve(null); const queued = this.#constructionWork; this.#constructionWork = null; queued?.result.reject(new Error("FOOTPRINT_INVERSE_WORKER_CURSOR")); const startup=this.#coldStartupWork;this.#coldStartupWork=null;startup?.result.reject(new Error("FOOTPRINT_INVERSE_WORKER_CURSOR"));const setup = this.#bootstrapSetupWork; this.#bootstrapSetupWork = null; setup?.result.reject(new Error("FOOTPRINT_INVERSE_WORKER_CURSOR")); this.#bindings.fail(); } }
   #attach(event: DiagnosticEvent): void {
     const params = event.params, sessionId = params["sessionId"], target = params["targetInfo"];
     need((event.sessionId === undefined || event.sessionId === this.#bindings.parentSessionId) && Reflect.ownKeys(params).length === 3 && record(target) &&
@@ -153,11 +156,11 @@ export class CurrentFootprintInverseWorkerController {
     const reply = await this.#bindings.constructionRequest({ phase: "inverse-construction-helper", method: "Debugger.getScriptSource", params: { scriptId: expected.scriptId } }); await this.#current();
     need(record(reply) && Reflect.ownKeys(reply).length === 1 && reply["scriptSource"] === program && this.#constructionHelpers[0] === expected); this.#constructionHelpers.shift();
   }
-  public requestCold(command:CurrentFootprintInverseColdLoadCommand):Promise<unknown>{this.requireConstructionBootstrap();need(this.#pumping);return this.#bindings.coldRequest(command);}
+  public requestCold(command:CurrentFootprintInverseColdLoadCommand):Promise<unknown>{if(this.#coldStartupStarted){need(this.#coldStartupHeld!==null);}else{this.requireConstructionBootstrap();}need(this.#pumping);return this.#bindings.coldRequest(command);}
   public expectColdArm(role:CurrentPcbViaSavedLoadRole):void{this.requireConstructionBootstrap();need(this.#pumping&&this.#coldArming===null&&!this.#coldPoints.has(role));this.#coldArming=role;}
   public registerColdArm(role:CurrentPcbViaSavedLoadRole,id:string):void{this.requireConstructionBootstrap();need(this.#coldArming===role&&token(id)&&!this.#coldPoints.has(role)&&![...this.#coldPoints.values()].includes(id));for(const[resolved,actual]of this.#coldResolutions){if(actual===role){need(resolved===id);}}this.#coldPoints.set(role,id);this.#coldArming=null;}
   public originalColdArms():readonly Readonly<{role:CurrentPcbViaSavedLoadRole;id:string}>[]{this.requireConstructionBootstrap();need(this.#coldPoints.size===13&&this.#coldArming===null&&this.#coldHelpers.length===0);return Object.freeze([...this.#coldPoints].map(([role,id])=>Object.freeze({role,id})));}
-  public expectColdHelper(program:string):void{this.requireConstructionBootstrap();need(this.#pumping&&this.#coldHelpers.length===0&&this.#constructionHelpers.length===0&&this.#producerHelpers.length===0&&typeof program==="string"&&program.length<=65_536);this.#coldHelpers.push({program,scriptId:null});}
+  public expectColdHelper(program:string):void{if(this.#coldStartupStarted){need(this.#coldStartupHeld!==null);}else{this.requireConstructionBootstrap();}need(this.#pumping&&this.#coldHelpers.length===0&&this.#constructionHelpers.length===0&&this.#producerHelpers.length===0&&typeof program==="string"&&program.length<=65_536);this.#coldHelpers.push({program,scriptId:null});}
   public async qualifyColdHelper(program:string):Promise<void>{const original=this.#coldHelpers[0];need(original!==undefined&&original.program===program&&original.scriptId!==null);const reply=await this.#bindings.coldRequest({phase:"inverse-cold-helper",method:"Debugger.getScriptSource",params:{scriptId:original.scriptId}});await this.#current();need(record(reply)&&Reflect.ownKeys(reply).length===1&&reply["scriptSource"]===program&&this.#coldHelpers[0]===original);this.#coldHelpers.shift();}
   public requestProducerArm(command:CurrentFootprintInverseProducerArmCommand):Promise<unknown>{this.requireConstructionBootstrap();need(this.#pumping);return this.#bindings.producerArmRequest(command);}
   public expectProducerArm(command: CurrentFootprintInverseProducerArmCommand): void {
@@ -179,6 +182,18 @@ export class CurrentFootprintInverseWorkerController {
   public queueConstruction(run: () => Promise<void>): Promise<boolean> {
     need(this.#result !== null && !this.#constructionWorkAttempted && !this.#failed && typeof run === "function" && !types.isProxy(run)); this.#constructionWorkAttempted = true;
     const result = Promise.withResolvers<boolean>(); this.#constructionWork = Object.freeze({ run, result }); return result.promise;
+  }
+  public queueColdStartup(run:()=>Promise<void>):Promise<boolean>{this.requireConstructionBootstrap();need(!this.#failed&&!this.#coldStartupAttempted&&!this.#pumping&&this.#bootstrapSetupAttempted&&this.#bootstrapSetupWork===null&&this.#constructionWork===null&&this.#coldPoints.size===13&&this.#producerPoints.size===37&&this.#coldHelpers.length===0&&this.#producerHelpers.length===0&&typeof run==="function"&&!types.isProxy(run));this.#coldStartupAttempted=true;const result=Promise.withResolvers<boolean>();this.#coldStartupWork=Object.freeze({run,result});return result.promise;}
+  public reserveColdBootstrap():void{this.requireConstructionBootstrap();need(this.#pumping&&this.#coldStartupAttempted&&!this.#coldStartupStarted&&this.#coldPoints.size===13&&this.#producerPoints.size===37&&this.#coldHelpers.length===0&&this.#producerHelpers.length===0);this.#constructionHeld=null;this.#constructionResume="bootstrap";}
+  public requireColdStartupCustody():void{need(!this.#failed&&this.#coldStartupAttempted&&this.#pair!==null&&(this.#coldStartupStarted||this.#constructionHeld==="bootstrap"&&this.#constructionResume===null||this.#constructionHeld===null&&this.#constructionResume==="bootstrap"));}
+  public requireColdStartupHeld(value:Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>):void{need(!this.#failed&&this.#coldStartupStarted&&this.#coldStartupHeld===value);}
+  public async nextColdStartupHeld():Promise<Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>>{
+    need(this.#pumping&&this.#coldStartupStarted&&this.#coldStartupHeld===null&&this.#unsupportedStartupHeld===null);const event=await this.#next();
+    this.#unsupportedStartupHeld=event;need(this.#source!==null&&this.#pair!==null);
+    const points=Object.freeze([...this.#coldPoints].map(([role,id])=>Object.freeze({role,id})));
+    const role=classifyCurrentFootprintInverseColdPause(event,this.#pair.pageSessionId,this.#source.scriptId,points);
+    this.#unsupportedStartupHeld=null;
+    const held=Object.freeze({role,event});this.#coldStartupHeld=held;return held;
   }
   public queueOriginalBootstrapSetup(run: () => Promise<void>): Promise<boolean> {
     this.requireConstructionBootstrap(); need(!this.#bootstrapSetupAttempted && !this.#failed && !this.#pumping && this.#constructionWork === null && this.#constructionArming === null && this.#constructionHelpers.length === 0 && typeof run === "function" && !types.isProxy(run)); this.#bootstrapSetupAttempted = true;
@@ -203,7 +218,7 @@ export class CurrentFootprintInverseWorkerController {
   }
   public async nextConstructionEvent(): Promise<CurrentProjectSaveStructureEvent> {
     need(this.#pumping && this.#constructionStarted); const event = await this.#next(); need(typeof event.sessionId === "string");
-    if (event.method === "Debugger.resumed") { need(this.#constructionResume !== null && Reflect.ownKeys(event.params).length === 0); this.#constructionResume = null; return { ...event, method: "Debugger.resumed", sessionId: event.sessionId }; }
+    if (event.method === "Debugger.resumed") { need(this.#constructionResume !== null && Reflect.ownKeys(event.params).length === 0);if(this.#constructionResume==="bootstrap"){need(this.#coldStartupAttempted&&!this.#coldStartupStarted);this.#coldStartupStarted=true;} this.#constructionResume = null; return { ...event, method: "Debugger.resumed", sessionId: event.sessionId }; }
     need(event.method === "Debugger.paused" && this.#constructionHeld === null && this.#constructionResume === null);
     const frames = event.params["callFrames"], hits = event.params["hitBreakpoints"];
     need(Array.isArray(hits) && hits.length === 1 && Array.isArray(frames) && frames.length > 0 && record(frames[0]));
@@ -212,11 +227,11 @@ export class CurrentFootprintInverseWorkerController {
     this.#constructionHeld = selected[0]; await this.#bindings.constructionHeld(selected[0], event); await this.#current(); return { ...event, method: "Debugger.paused", sessionId: event.sessionId };
   }
   public async pump(): Promise<void> {
-    need(!this.#failed); if (this.#browser === null || this.#page === null || this.#pumping || this.#result !== null && this.#constructionWork === null && this.#bootstrapSetupWork === null) { return; }
+    need(!this.#failed); if (this.#browser === null || this.#page === null || this.#pumping || this.#result !== null && this.#constructionWork === null && this.#bootstrapSetupWork === null&&this.#coldStartupWork===null) { return; }
     this.#pumping = true;
     try {
       if (this.#result === null) { await this.observeProjectSourceHeld(); }
-      else { const work = this.#constructionWork ?? this.#bootstrapSetupWork; need(work !== null); if (this.#constructionWork === work) { this.#constructionWork = null; } else { this.#bootstrapSetupWork = null; this.requireConstructionBootstrap(); }
+      else { const work = this.#constructionWork ?? this.#bootstrapSetupWork??this.#coldStartupWork; need(work !== null); if (this.#constructionWork === work) { this.#constructionWork = null; } else if(this.#bootstrapSetupWork===work) { this.#bootstrapSetupWork = null; this.requireConstructionBootstrap(); }else{need(this.#coldStartupWork===work);this.#coldStartupWork=null;this.requireConstructionBootstrap();}
         try { await work.run(); work.result.resolve(true); } catch (error) { work.result.reject(error); throw error; } }
     } catch (error) { this.fail(); throw error; } finally { this.#pumping = false; }
   }

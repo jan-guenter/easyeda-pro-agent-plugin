@@ -1,12 +1,14 @@
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
 import { CURRENT_FOOTPRINT_INVERSE_NO_PUBLICATION_PROGRAMS as INVERSE_GATES, CURRENT_FOOTPRINT_INVERSE_NO_PUBLICATION_FLAGS as INVERSE_GATE_FLAGS } from "./current-footprint-inverse-no-publication-programs.ts";
+import type { CurrentFootprintInverseBootstrapPermit, CurrentFootprintInverseColdHeld } from "./current-footprint-inverse-startup-origin.ts";
+import { CURRENT_PCB_VIA_SAVED_LOAD_CALLS as INVERSE_COLD_CALLS } from "./current-pcb-via-saved-load-programs.ts";
 import { currentFootprintInverseColdLoadNativeFrame, validateCurrentFootprintInverseColdLoadCommand } from "./current-footprint-inverse-cold-load-protocol.ts";
 import type { CurrentFootprintInverseColdLoadCommand } from "./current-footprint-inverse-cold-load-protocol.ts";
 import type { CurrentFootprintInverseColdLoadBindings, CurrentFootprintInverseColdLoadOrigin } from "./current-footprint-inverse-cold-load-origin.ts";
 import { CURRENT_NATIVE_FETCH_BYTES_CALLS as INVERSE_BYTES_CALLS, CURRENT_NATIVE_FETCH_BYTES_PROFILES as INVERSE_BYTES_PROFILES, decodeCurrentNativeFetchBytesIntrinsic } from "./current-native-fetch-bytes-intrinsics.ts";
 import { CURRENT_PCB_VIA_SAVED_LOAD_ROLES as INVERSE_COLD_ROLES, CURRENT_PCB_VIA_SAVED_LOAD_SITES as INVERSE_COLD_SITES } from "./current-pcb-via-saved-load-source.ts";
-import { CURRENT_PCB_VIA_SAVED_LOAD_CALL_FLAGS as INVERSE_COLD_FLAGS } from "./current-pcb-via-saved-load-observation-protocol.ts";
+import { CURRENT_PCB_VIA_SAVED_LOAD_CALL_FLAGS as INVERSE_COLD_FLAGS, CURRENT_PCB_VIA_SAVED_LOAD_FRAME_FLAGS as INVERSE_COLD_FRAME_FLAGS } from "./current-pcb-via-saved-load-observation-protocol.ts";
 import { decodeCurrentPcb209WorkerGateProperties } from "./current-pcb-string-worker-gate-scope.ts";
 import { currentFootprintInverseProducerArmNativeFrame, validateCurrentFootprintInverseProducerArmCommand } from "./current-footprint-inverse-producer-protocol.ts";
 import type { CurrentFootprintInverseProducerArmCommand } from "./current-footprint-inverse-producer-protocol.ts";
@@ -1140,6 +1142,15 @@ const footprintInverseWorkerControllerDescriptors=Object.getOwnPropertyDescripto
 function assertOriginalFootprintInverseController(controller:CurrentFootprintInverseWorkerController):void{
   if(types.isProxy(controller)||Object.getPrototypeOf(controller)!==CurrentFootprintInverseWorkerController.prototype||Reflect.ownKeys(controller).length > 0||!originalFootprintDescriptors(CurrentFootprintInverseWorkerController.prototype,footprintInverseWorkerControllerDescriptors)){throw error("FOOTPRINT_INVERSE_CONTROLLER_CHANGED");}
 }
+interface FootprintInverseBootstrapPermitOriginal{readonly owner:CurrentPcbRetainedOwnerCore;readonly prepared:CurrentFootprintForwardSavedCheckpoint;readonly observer:CurrentProjectSaveStructureObserver;readonly origin:CurrentFootprintInverseStructureOrigin;readonly assertOriginal:()=>void;consumed:boolean}
+const footprintInverseBootstrapPermits=new WeakMap<CurrentFootprintInverseBootstrapPermit,FootprintInverseBootstrapPermitOriginal>();
+export function consumeOriginalCurrentFootprintInverseBootstrapPermit(permit:CurrentFootprintInverseBootstrapPermit,observer:CurrentProjectSaveStructureObserver,origin:CurrentFootprintInverseStructureOrigin,owner:object,operation:object):void{
+ const original=footprintInverseBootstrapPermits.get(permit);if(original===undefined||original.owner!==owner||original.prepared!==operation||original.observer!==observer||original.origin!==origin||original.consumed){throw error("FOOTPRINT_INVERSE_BOOTSTRAP_PERMIT_ORIGINAL");}original.assertOriginal();original.consumed=true;original.assertOriginal();
+}
+const footprintInverseColdHeldPackets=new WeakMap<CurrentFootprintInverseColdHeld,Readonly<{owner:CurrentPcbRetainedOwnerCore;prepared:CurrentFootprintForwardSavedCheckpoint;current:()=>void;data:Readonly<{role:string;value:unknown}>}>>();
+export function requireOriginalCurrentFootprintInverseColdHeld(packet:CurrentFootprintInverseColdHeld,owner:CurrentFootprintInverseNativeOwner,prepared:CurrentFootprintForwardSavedCheckpoint):Readonly<{role:string;value:unknown}>{
+ assertOriginalCurrentFootprintInverseNativeOwner(owner);const held=footprintInverseColdHeldPackets.get(packet);if(held===undefined||held.owner!==owner||held.prepared!==prepared){throw error("FOOTPRINT_INVERSE_COLD_HELD_ORIGINAL");}held.current();return held.data;
+}
 function inverseColdProperties(objectId:string):Readonly<{objectId:string;ownProperties:true;accessorPropertiesOnly:false;generatePreview:false}>{return Object.freeze({objectId,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false});}
 const footprintInverseColdOrigins=new WeakMap<CurrentFootprintInverseColdLoadOrigin,Readonly<{owner:CurrentFootprintInverseNativeOwner;prepared:CurrentFootprintForwardSavedCheckpoint;bindings:CurrentFootprintInverseColdLoadBindings}>>();
 export function requireOriginalCurrentFootprintInverseColdLoadOrigin(origin:CurrentFootprintInverseColdLoadOrigin,owner:CurrentFootprintInverseNativeOwner,prepared:CurrentFootprintForwardSavedCheckpoint):CurrentFootprintInverseColdLoadBindings{
@@ -1787,6 +1798,10 @@ class CurrentPcbRetainedOwnerCore {
   #inverseUiReady: Readonly<{ source: CurrentFootprintCopyNativeTarget; context: CurrentPcbDiagnosticContext; pipe: CurrentFootprintInversePipe; selected: ReturnType<CurrentPcbDiagnosticContext["openingContext"]>; windowTabId: string }> | null = null;
   #inverseFrame: Readonly<{ phase: "preflight" | "register" | "open-project"; session: string; context: string; target: CurrentDisposableOpenSealedTarget }> | null = null;
   #inverseHelper: { phase: "preflight" | "register" | "open-project"; scriptId: string | null } | null = null;
+  #inverseColdBootstrapFrame=false;
+  #inverseColdStartPromise:Promise<CurrentFootprintInverseColdHeld>|null=null;
+  #inverseBootstrapPermit:CurrentFootprintInverseBootstrapPermit|null=null;
+  #inverseColdHeld:CurrentFootprintInverseColdHeld|null=null;
   #inverseColdArmPromise:Promise<CurrentFootprintInverseColdLoadOrigin>|null=null;
   #inverseColdOrigin:CurrentFootprintInverseColdLoadOrigin|null=null;
   #inverseColdCommand:CurrentFootprintInverseColdLoadCommand|null=null;
@@ -7506,11 +7521,12 @@ class CurrentPcbRetainedOwnerCore {
           if (command.phase === "inverse-construction-start") { if (this.#inverseSourceStarted) { throw error("FOOTPRINT_INVERSE_SOURCE_START_CONSUMED"); } this.#inverseSourceStarted = true; }
           if (command.method === "Runtime.callFunctionOn" || command.method === "Debugger.evaluateOnCallFrame") { selected.expectConstructionHelper(command.method === "Runtime.callFunctionOn" ? `(${command.params.functionDeclaration})` : command.params.expression); }
           if (retain !== undefined && (command.phase !== "project-save-structure-arm" || typeof retain !== "function" || types.isProxy(retain))) { throw error("FOOTPRINT_INVERSE_CONSTRUCTION_RETAIN"); }
-          this.#inverseConstructionCommand = command;
+          this.#inverseConstructionCommand = command;const coldBootstrap=command.phase==="project-save-structure-resume"&&command.role==="bootstrap";
+          if(coldBootstrap){if(this.#inverseColdBootstrapFrame){throw error("FOOTPRINT_INVERSE_BOOTSTRAP_FRAME_PENDING");}this.#inverseColdBootstrapFrame=true;}
           let result: RecordValue;
           try { result = await this.#transfer(async (): Promise<RecordValue> => { const actual = await pipe.observeInverseConstruction(command);
             if (retain !== undefined) { Reflect.apply(retain, undefined, [actual]); } return actual;
-          }); original(); } finally { this.#inverseConstructionCommand = null; }
+          }); original(); } finally { this.#inverseConstructionCommand = null;if(coldBootstrap){this.#inverseColdBootstrapFrame=false;} }
           if (command.method === "Runtime.callFunctionOn" || command.method === "Debugger.evaluateOnCallFrame") { await selected.qualifyConstructionHelper(command.method === "Runtime.callFunctionOn" ? `(${command.params.functionDeclaration})` : command.params.expression); original(); }
           return result;
         }, coldRequest: async(input:CurrentFootprintInverseColdLoadCommand):Promise<unknown>=>{
@@ -7561,12 +7577,12 @@ class CurrentPcbRetainedOwnerCore {
       request: async (input: Parameters<CurrentProjectSaveStructureBindings["request"]>[0], cleanup: boolean, retain?: (reply: unknown) => void): Promise<unknown> => {
         const command = validateCurrentProjectSaveStructureCommand(input); current();
         if (cleanup !== (command.phase === "project-save-structure-remove" || command.phase === "project-save-structure-release") ||
-          command.phase === "project-save-structure-resume" && !CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS.some(role => role === command.role)) { throw error("FOOTPRINT_INVERSE_CONSTRUCTION_ONLY"); }
+          command.phase === "project-save-structure-resume" && !CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS.some(role => role === command.role)&&!(command.role==="bootstrap"&&this.#inverseBootstrapPermit!==null&&footprintInverseBootstrapPermits.get(this.#inverseBootstrapPermit)?.consumed===true)) { throw error("FOOTPRINT_INVERSE_CONSTRUCTION_ONLY"); }
         if (command.phase === "project-save-structure-source" && command.params.scriptId !== source.scriptId || command.phase === "project-save-structure-arm" && command.params.location.scriptId !== source.scriptId) { throw error("FOOTPRINT_INVERSE_CONSTRUCTION_SCRIPT"); }
         if (command.phase === "project-save-structure-arm") { controller.expectConstructionArm(source, command.role); }
         if (command.phase === "project-save-structure-release") { throw error("FOOTPRINT_INVERSE_RETAIN_ORIGINAL_GROUP_UNTIL_EXIT"); }
         if (command.phase === "project-save-structure-remove") { controller.reserveConstructionRemove(command.params.breakpointId); }
-        if (command.phase === "project-save-structure-resume") { controller.reserveConstructionResume(command.role); }
+        if (command.phase === "project-save-structure-resume") {if(command.role==="bootstrap"){const permit=this.#inverseBootstrapPermit===null?undefined:footprintInverseBootstrapPermits.get(this.#inverseBootstrapPermit);if(permit===undefined||!permit.consumed||permit.owner!==this||permit.observer!==this.#inverseConstructionObserver||permit.origin!==origin){throw error("FOOTPRINT_INVERSE_BOOTSTRAP_NATIVE_PERMIT");}permit.assertOriginal();controller.reserveColdBootstrap();}else{controller.reserveConstructionResume(command.role);} }
         const reply = await this.#inverseConstructionRequest(command, retain); current();
         if (command.phase === "project-save-structure-arm") { const site = CURRENT_PROJECT_SAVE_STRUCTURE_SITES[command.role];
           if (!record(reply) || !exact(reply, ["breakpointId", "actualLocation"]) || !diagnosticToken(reply["breakpointId"]) || !record(reply["actualLocation"]) ||
@@ -7683,6 +7699,47 @@ class CurrentPcbRetainedOwnerCore {
         current();this.#inverseColdOrigin=origin;footprintInverseColdOrigins.set(origin,Object.freeze({owner:this,prepared,bindings}));live();return origin;
       }catch(caughtError){controller.fail();throw caughtError;}
     })();this.#inverseColdArmPromise=promise;return promise;
+  }
+  /** Once-only original bootstrap prefix. It captures the first original cold
+   * pause and retains it; no cold/ready/model/cache continuation is granted. */
+  public startFootprintInverseColdIngress():Promise<CurrentFootprintInverseColdHeld>{
+    assertOriginalCurrentFootprintInverseNativeOwner(this);if(this.#inverseColdStartPromise!==null){return this.#inverseColdStartPromise;}
+    const prepared=originalCurrentFootprintInverseTarget(this);const controller=this.#inverseWorkerController;const observer=this.#inverseConstructionObserver;const origin=this.#inverseConstructionOrigin;const producer=this.#inverseProducerOrigin;const cold=this.#inverseColdOrigin;const absence=this.#inverseCacheAbsence;const runner=this.#mainRunner;
+    if(controller===null||observer===null||origin===null||producer===null||cold===null||absence===null||runner===null||this.#inverseBootstrapSetupPromise===null||this.#inverseBootstrapPermit!==null){throw error("FOOTPRINT_INVERSE_COLD_START_PREREQUISITES");}
+    const coldBindings=requireOriginalCurrentFootprintInverseColdLoadOrigin(cold,this,prepared);const producerBindings=requireOriginalCurrentFootprintInverseProducerOrigin(producer,this,prepared);const cache=footprintInverseCacheAbsences.get(absence);
+    if(cache===undefined||cache.owner!==this||cache.backup.cache.prepared!==prepared||cache.ledger!==this.#inverseCacheInvalidation||cache.backup.cache!==this.#inverseCache){throw error("FOOTPRINT_INVERSE_BOOTSTRAP_ABSENCE_ORIGINAL");}
+    let consumed=false;const permit:CurrentFootprintInverseBootstrapPermit=Object.freeze({profile:"private.current-footprint-inverse-bootstrap-permit.v1"});
+    const current=():void=>{assertOriginalCurrentFootprintInverseNativeOwner(this);assertOriginalFootprintInverseController(controller);this.#available();requireOriginalCurrentProjectSaveStructureOrigin(origin,this,prepared);
+      if(this.#inverseWorkerController!==controller||this.#inverseConstructionObserver!==observer||this.#inverseConstructionOrigin!==origin||this.#inverseProducerOrigin!==producer||this.#inverseColdOrigin!==cold||requireOriginalCurrentFootprintInverseColdLoadOrigin(cold,this,prepared)!==coldBindings||requireOriginalCurrentFootprintInverseProducerOrigin(producer,this,prepared)!==producerBindings||this.#inverseCacheAbsence!==absence||footprintInverseCacheAbsences.get(absence)!==cache||this.#inverseCacheInvalidation!==cache.ledger||this.#inverseCache!==cache.backup.cache||cache.ledger.status().failed||this.#mainRunner!==runner||runner.selectedSqlFenceState()["ready"]!==true||this.#mainTerminateAttempted||this.#closeConsumed||this.#terminationObserved||this.#releaseConsumed||originalCurrentFootprintInverseTarget(this)!==prepared){throw error("FOOTPRINT_INVERSE_COLD_START_CHANGED");}
+      cache.ledger.requireOriginalSnapshot(cache.data);cache.ledger.requireOriginalLoadingSnapshot(cache.loading);for(const packet of[...cache.data.packets,...cache.loading.packets]){cache.ledger.requireOriginalPacket(packet);}
+      cache.backup.cache.ledger.requireOriginalSnapshot(cache.backup.cdp);cache.backup.cache.metadata.requireOriginalSnapshot(cache.backup.metadata);for(const packet of cache.backup.cdp.packets){cache.backup.cache.ledger.requireOriginalPacket(packet);}for(const packet of cache.backup.metadata.packets){cache.backup.cache.metadata.requireOriginalPacket(packet);}
+      if(consumed){controller.requireColdStartupCustody();}else{controller.requireConstructionBootstrap();}
+    };
+    const promise=(async():Promise<CurrentFootprintInverseColdHeld>=>{
+      try{
+        await this.#inverseBootstrapSetupPromise;current();
+        const artifact=cache.backup.published.artifact;const text=`${canonicalJson(cache.backup.data)}\n`;if(sha256Text(canonicalJson(cache.backup.data))!==cache.backup.published.dataSha256){throw error("FOOTPRINT_INVERSE_BOOTSTRAP_BACKUP_HASH");}
+        await verifyExactManagedArtifact(artifact);current();const raw=await readArtifact(artifact.path,0,131_072);current();if(!raw.eof||raw.text!==text){throw error("FOOTPRINT_INVERSE_BOOTSTRAP_BACKUP_BYTES");}await verifyExactManagedArtifact(artifact);current();
+        const module=await import("./current-footprint-inverse-cold-load-progress.ts");current();const Constructor=module.CurrentFootprintInverseColdLoadProgress;const descriptors=Object.getOwnPropertyDescriptors(Constructor.prototype);const progress=new Constructor(coldBindings.data);
+        const same=():void=>{current();if(module.CurrentFootprintInverseColdLoadProgress!==Constructor||Object.getPrototypeOf(progress)!==Constructor.prototype||!originalFootprintDescriptors(Constructor.prototype,descriptors)||this.#inverseBootstrapPermit!==permit){throw error("FOOTPRINT_INVERSE_COLD_PROGRESS_CHANGED");}};
+        this.#inverseBootstrapPermit=permit;const permitRecord:FootprintInverseBootstrapPermitOriginal={owner:this,prepared,observer,origin,consumed:false,assertOriginal:():void=>{same();const original=footprintInverseBootstrapPermits.get(permit);if(original!==permitRecord){throw error("FOOTPRINT_INVERSE_BOOTSTRAP_PERMIT_CHANGED");}consumed=permitRecord.consumed;}};footprintInverseBootstrapPermits.set(permit,permitRecord);same();
+        const enrolled=await this.#request({action:"footprint-inverse-cold",requestId:0,phase:"bootstrap-permit",method:"permit"});same();if(!exact(enrolled,["written"])||enrolled["written"]!==true){throw error("FOOTPRINT_INVERSE_BOOTSTRAP_PERMIT_ACK");}
+        let packet:CurrentFootprintInverseColdHeld|null=null;
+        await this.#settleInverseWorkerProgress(controller.queueColdStartup(async():Promise<void>=>{
+          same();await observer.resumeOriginalFootprintInverseBootstrap(permit);same();const held=await controller.nextColdStartupHeld();same();
+          const role=held.role;if(!["branch","cold","histories","fetchEntry","response","bytes","plaintext","parsed","ready"].includes(role)){throw error("FOOTPRINT_INVERSE_COLD_REFUSAL_POINT_HELD");}
+          const frames=held.event.params["callFrames"];if(!Array.isArray(frames)||!record(frames[0])||!diagnosticToken(frames[0]["callFrameId"])){throw error("FOOTPRINT_INVERSE_COLD_FRAME");}const frameId=frames[0]["callFrameId"];
+          const heldAck=await this.#request({action:"footprint-inverse-cold",requestId:0,phase:`held-${role}`,method:"held"});same();controller.requireColdStartupHeld(held);if(!exact(heldAck,["written"])||heldAck["written"]!==true){throw error("FOOTPRINT_INVERSE_COLD_HELD_ACK");}
+          const send=async(input:unknown):Promise<unknown>=>{const command=validateCurrentFootprintInverseColdLoadCommand(input);same();controller.requireColdStartupHeld(held);let helper:string|null=null;if(command.method==="Runtime.callFunctionOn"){helper=`(${command.params.functionDeclaration})`;}else if(command.method==="Debugger.evaluateOnCallFrame"){helper=command.params.expression;}if(helper!==null){controller.expectColdHelper(helper);}const reply=await controller.requestCold(command);same();controller.requireColdStartupHeld(held);if(helper!==null){await controller.qualifyColdHelper(helper);same();}return reply;};
+          // This prefix deliberately captures the first branch pause only. Any
+          // Other ordering is retained/refused before a cold/model resume.
+          if(role!=="branch"){throw error("FOOTPRINT_INVERSE_COLD_FIRST_BRANCH_REQUIRED");}
+          const tuple=decodeCurrentFootprintCopyClockRpcV2ArrayCapture(await send({phase:"inverse-cold-frame",role,method:"Debugger.evaluateOnCallFrame",params:{...INVERSE_COLD_FRAME_FLAGS,callFrameId:frameId,expression:INVERSE_COLD_SITES[role].expression}}),INVERSE_COLD_SITES[role].length);same();
+          const value=captureCurrentPcbStringClockReply(await send({phase:"inverse-cold-value",role,method:"Runtime.callFunctionOn",params:{...INVERSE_COLD_FLAGS,objectId:tuple,functionDeclaration:INVERSE_COLD_CALLS[role],arguments:[{objectId:coldBindings.cacheIntrinsics},{objectId:coldBindings.bytesIntrinsics},{objectId:coldBindings.actual.project}],returnByValue:true}})).value;same();progress.accept(role,value);controller.requireColdStartupHeld(held);
+          const originalPacket:CurrentFootprintInverseColdHeld=Object.freeze({profile:"private.current-footprint-inverse-cold-held.v1"});const live=():void=>{same();controller.requireColdStartupHeld(held);if(this.#inverseColdHeld!==originalPacket){throw error("FOOTPRINT_INVERSE_COLD_HELD_CHANGED");}};this.#inverseColdHeld=originalPacket;footprintInverseColdHeldPackets.set(originalPacket,Object.freeze({owner:this,prepared,current:live,data:Object.freeze({role,value})}));live();packet=originalPacket;
+        }));same();if(packet===null){throw error("FOOTPRINT_INVERSE_COLD_HELD_MISSING");}return packet;
+      }catch(caughtError){controller.fail();throw caughtError;}
+    })();this.#inverseColdStartPromise=promise;return promise;
   }
   /** Same original pump as navigation/construction. A still-pending project
    * open never has to finish before this arm-only bootstrap setup can run. */
@@ -8943,7 +9000,7 @@ class CurrentPcbRetainedOwnerCore {
       else if (this.#inverseCachePlan !== null && this.#inverseCache !== null) { this.#footprintInverseCacheCurrent(this.#inverseCache); encoded = this.#inverseCacheInvalidation === null ? currentFootprintInverseCacheNativeFrame(chunk, this.#inverseCachePlan, this.#inverseCache.selected.sessionId) : currentFootprintInverseCacheInvalidationNativeFrame(chunk, this.#inverseCachePlan, this.#inverseCache.selected.sessionId); }
       else if(this.#inverseColdCommand!==null&&this.#inverseWorkerPair!==null){encoded=currentFootprintInverseColdLoadNativeFrame(chunk,this.#inverseColdCommand,this.#inverseWorkerPair.pageSessionId);}
       else if (this.#inverseProducerCommand !== null && this.#inverseWorkerPair !== null) { encoded = currentFootprintInverseProducerArmNativeFrame(chunk, this.#inverseProducerCommand, this.#inverseWorkerPair.pageSessionId); }
-      else if (this.#inverseConstructionCommand !== null && this.#inverseWorkerPair !== null) { encoded = currentFootprintInverseConstructionNativeFrame(chunk, this.#inverseConstructionCommand, this.#inverseWorkerPair.pageSessionId); }
+      else if (this.#inverseConstructionCommand !== null && this.#inverseWorkerPair !== null) { encoded = currentFootprintInverseConstructionNativeFrame(chunk, this.#inverseConstructionCommand, this.#inverseWorkerPair.pageSessionId);if(this.#inverseColdBootstrapFrame){if(this.#inverseConstructionCommand.phase!=="project-save-structure-resume"||this.#inverseConstructionCommand.role!=="bootstrap"){throw error("FOOTPRINT_INVERSE_BOOTSTRAP_FRAME_PHASE");}encoded={...encoded,action:"footprint-inverse-startup"};} }
       else if (this.#inverseActorStage !== null) { encoded = currentFootprintInverseActorNativeFrame(chunk, this.#inverseActorStage); }
       else if (this.#inverseParentPending && this.#inverseUiReady !== null) { encoded = currentFootprintInverseParentNativeFrame(chunk, this.#inverseUiReady.selected.sessionId); }
       else if (this.#inverseWorkerCommand !== null && this.#inverseWorkerPair !== null) { encoded = currentFootprintInverseWorkerNativeFrame(chunk, this.#inverseWorkerCommand, this.#inverseWorkerPair); }

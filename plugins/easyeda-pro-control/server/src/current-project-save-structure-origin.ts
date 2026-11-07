@@ -44,3 +44,5 @@ export interface CurrentFootprintInverseBootstrapArguments {
   readonly uploadCallback: string; readonly debounce: string; readonly structureCallback: string;
 }
 export type CurrentFootprintInverseBootstrapPrepared = CurrentFootprintForwardSavedCheckpoint;
+
+export type { CurrentFootprintInverseBootstrapPermit } from "./current-footprint-inverse-startup-origin.ts";

@@ -8,11 +8,12 @@ import{join}from"node:path";
 import{tmpdir}from"node:os";
 import{DatabaseSync}from"node:sqlite";
 import{test}from"node:test";
+import{z}from"zod";
 import{sha256Text}from"../src/core.ts";
 import{captureCurrentFootprintSavedFlowCacheInput,deriveCurrentFootprintSavedFlowCacheData}from"../src/current-footprint-saved-flow-cache-data.ts";
 import{deriveCurrentFootprintInverseColdLoadData}from"../src/current-footprint-inverse-cold-load-data.ts";
 import{CurrentFootprintInverseColdLoadProgress}from"../src/current-footprint-inverse-cold-load-progress.ts";
-import{currentFootprintInverseColdLoadArmOrder,currentFootprintInverseColdLoadBudget,currentFootprintInverseColdLoadCases,currentFootprintInverseColdLoadNativeFrame,currentFootprintInverseColdLoadWire,validateCurrentFootprintInverseColdLoadCommand}from"../src/current-footprint-inverse-cold-load-protocol.ts";
+import{CURRENT_FOOTPRINT_INVERSE_COLD_LOAD_SITES as SITES,classifyCurrentFootprintInverseColdPause,currentFootprintInverseColdLoadArmOrder,currentFootprintInverseColdLoadBudget,currentFootprintInverseColdLoadCases,currentFootprintInverseColdLoadNativeFrame,currentFootprintInverseColdLoadWire,validateCurrentFootprintInverseColdLoadCommand}from"../src/current-footprint-inverse-cold-load-protocol.ts";
 import{readExactSqlInventory}from"../src/sqlite-inventory.ts";
 import{syntheticSqlRuntime}from"./helpers/sqlite-inventory-fixture.ts";
 import{encrypted}from"./helpers/symbol-sql-fixture.ts";
@@ -46,4 +47,13 @@ void test("a foreign plaintext or unexpected parser/fallback stage is consumed a
 void test("own inverse cold codebook has no resume or cache-constructor transfer and derives the eight-chunk ceiling",()=>{
  const cases=currentFootprintInverseColdLoadCases();assert.ok(cases.length>30);const order=currentFootprintInverseColdLoadArmOrder();assert.equal(order.length,22);assert.equal(order[0],"inverse-cold-intrinsic-bytesConstructors");assert.equal(currentFootprintInverseColdLoadBudget(1).arm,25);assert.equal(currentFootprintInverseColdLoadBudget(8).normal,222);assert.equal(currentFootprintInverseColdLoadBudget(8).continuation,0);assert.throws(()=>currentFootprintInverseColdLoadBudget(9));
  for(const command of cases){const wire=currentFootprintInverseColdLoadWire(command,73,"original_worker");const native=currentFootprintInverseColdLoadNativeFrame(Buffer.from(`${JSON.stringify(wire)}\0`),command,"original_worker");assert.equal(native["action"],"footprint-inverse-cold");assert.throws(()=>validateCurrentFootprintInverseColdLoadCommand({...command,method:"Debugger.resume",params:{}}));assert.throws(()=>currentFootprintInverseColdLoadNativeFrame(Buffer.from(`${JSON.stringify({...wire,sessionId:"copied"})}\0`),command,"original_worker"));}
+});
+
+void test("single inverse event classification binds exact armed ID, session and function/source locations",()=>{
+ const points=Object.freeze(Object.keys(SITES).map((role,index)=>{const parsed=z.enum(["branch","cold","histories","fetchEntry","response","bytes","plaintext","parsed","ready","warm","pending","fallback","failed"]).parse(role);return Object.freeze({role:parsed,id:`original-${String(index)}`});}));
+ const site=SITES.branch;const location={scriptId:"original-script",lineNumber:site.lineNumber,columnNumber:site.columnNumber};const fn={scriptId:"original-script",lineNumber:site.functionLine,columnNumber:site.functionColumn};
+ const event={method:"Debugger.paused",sessionId:"original-session",params:{reason:"other",hitBreakpoints:[points[0]?.id],callFrames:[{callFrameId:"original-frame",functionName:site.functionName,location,functionLocation:fn}]}};
+ assert.equal(classifyCurrentFootprintInverseColdPause(event,"original-session","original-script",points),"branch");
+ for(const changed of[{...event,sessionId:"copied"},{...event,params:{...event.params,hitBreakpoints:["copied"]}},{...event,params:{...event.params,hitBreakpoints:[points[0]?.id,points[1]?.id]}},{...event,params:{...event.params,callFrames:[{...event.params.callFrames[0],functionLocation:{...fn,columnNumber:fn.columnNumber+1}}]}}]){assert.throws(()=>classifyCurrentFootprintInverseColdPause(changed,"original-session","original-script",points));}
+ assert.throws(()=>classifyCurrentFootprintInverseColdPause(event,"original-session","original-script",points.map(point=>({role:point.role,id:"alias"}))));
 });
