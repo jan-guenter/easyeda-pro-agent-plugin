@@ -106,10 +106,8 @@ import type { CurrentFootprintInverseLibraryRefreshOrigin, CurrentProjectLibrary
 import type { CURRENT_PROJECT_LIBRARY_REFRESH_SITES as LIBRARY_SITES } from "./current-project-library-refresh-source.ts";
 import type { CurrentProjectLibraryRefreshCompletion, CurrentProjectLibraryRefreshObserver, CurrentProjectLibraryRefreshPristine, CurrentProjectLibraryRefreshSuspension } from "./current-project-library-refresh-observer.ts";
 import type { CurrentFootprintInverseLibraryRefreshEnrollment,CurrentFootprintInverseLibraryRefreshIntent } from "./current-footprint-inverse-library-refresh-intent.ts";
-// oxlint-disable-next-line import/no-cycle -- The original initialized issuer calls this registry only after factory, worker and body construction have completed.
-import { requireOriginalGeneratedSchematicRelevanceDisplaySaveData } from "./generated-schematic-relevance-display-native-save.ts";
 import type { GeneratedSchematicRelevanceDisplayClosedEffects } from "./generated-schematic-relevance-display-closed-effects.ts";
-import type { GeneratedSchematicRelevanceDisplayNativeSaveData, GeneratedSchematicRelevanceDisplaySaveDelta } from "./generated-schematic-relevance-display-native-save.ts";
+import type { GeneratedSchematicRelevanceDisplayNativeSaveData, GeneratedSchematicRelevanceDisplaySaveDelta, requireOriginalGeneratedSchematicRelevanceDisplaySaveData as OriginalNativeSaveDataLookup } from "./generated-schematic-relevance-display-native-save.ts";
 import type { CurrentSchematicRelevanceDisplayClockOrigin } from "./current-schematic-relevance-display-clock-origin.ts";
 import { currentFootprintInverseModelStepNativeFrame, validateCurrentFootprintInverseModelStepCommand } from "./current-footprint-inverse-model-step-protocol.ts";
 import type { CurrentFootprintInverseColdLoadProgress } from "./current-footprint-inverse-cold-load-progress.ts";
@@ -846,9 +844,18 @@ const headAgeValidationFactories = new WeakMap<CurrentFootprintHeadAgeValidation
 interface SchematicDisplayWriteAllocation { initialBranchPlan: CurrentGeneratedInitialBranchDataPlan | null; initialCachePlan: CurrentGeneratedInitialFlowCachePlan | null; readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: GeneratedSchematicFixtureOpenCheckpoint; state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentSchematicDisplayWriteOwner | null; child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown }
 const schematicDisplayAllocations = new WeakMap<GeneratedSchematicFixtureOpenCheckpoint, SchematicDisplayWriteAllocation>();
 const schematicDisplayFactories = new WeakMap<object, Readonly<{ allocation: SchematicDisplayWriteAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
-interface SchematicRelevanceDisplayWriteAllocation { initialBranchPlan: CurrentGeneratedInitialBranchDataPlan | null; initialCachePlan: CurrentGeneratedInitialFlowCachePlan | null; readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: GeneratedSchematicRelevanceFixtureOpenCheckpoint; state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentSchematicRelevanceDisplayWriteOwner | null; child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown }
+type SchematicRelevanceSaveDataModule = Readonly<{ requireOriginalGeneratedSchematicRelevanceDisplaySaveData: typeof OriginalNativeSaveDataLookup }>;
+interface SchematicRelevanceDisplayWriteAllocation { saveDataModule: Readonly<{ namespace: SchematicRelevanceSaveDataModule; lookup: SchematicRelevanceSaveDataModule["requireOriginalGeneratedSchematicRelevanceDisplaySaveData"] }> | null; initialBranchPlan: CurrentGeneratedInitialBranchDataPlan | null; initialCachePlan: CurrentGeneratedInitialFlowCachePlan | null; readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: GeneratedSchematicRelevanceFixtureOpenCheckpoint; state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentSchematicRelevanceDisplayWriteOwner | null; child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown }
 const schematicRelevanceDisplayAllocations = new WeakMap<GeneratedSchematicRelevanceFixtureOpenCheckpoint, SchematicRelevanceDisplayWriteAllocation>();
 const schematicRelevanceDisplayFactories = new WeakMap<object, Readonly<{ allocation: SchematicRelevanceDisplayWriteAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
+/** The original factory retains the genuine module after owner-module
+ * initialization. A caller function table or copied data cannot replace it. */
+function requireOriginalGeneratedSchematicRelevanceDisplaySaveData(packet: GeneratedSchematicRelevanceDisplayNativeSaveData, owner: CurrentSchematicRelevanceDisplayWriteOwner, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): GeneratedSchematicRelevanceDisplaySaveDelta {
+  assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(owner);
+  const held = schematicRelevanceDisplayFactories.get(owner)?.allocation.saveDataModule;
+  if (held === undefined || held === null || held.namespace.requireOriginalGeneratedSchematicRelevanceDisplaySaveData !== held.lookup) { throw error("SCHEMATIC_RELEVANCE_ORIGINAL_SAVE_DATA_MODULE"); }
+  return held.lookup(packet, owner, argumentsValue);
+}
 interface SchematicWireEditAllocation { initialBranchPlan: CurrentGeneratedInitialBranchDataPlan | null; initialCachePlan: CurrentGeneratedInitialFlowCachePlan | null; readonly options: CurrentPcbDiagnosticInstallationOptions; readonly prepared: GeneratedSchematicRelevanceFixtureOpenCheckpoint; state: "pending" | "no-resource" | "unresolved" | "retained"; owner: CurrentSchematicWireEditOwner | null; child: ForwardExecutionBirthAllocation["child"]; eofAttempted: boolean; cleanupFailure: unknown }
 const schematicWireEditAllocations = new WeakMap<GeneratedSchematicRelevanceFixtureOpenCheckpoint, SchematicWireEditAllocation>();
 const schematicWireEditFactories = new WeakMap<object, Readonly<{ allocation: SchematicWireEditAllocation; installation: CurrentPcbDiagnosticInstallation }>>();
@@ -13261,14 +13268,19 @@ export function assertOriginalCurrentSchematicRelevanceDisplayWriteTermination(o
 export async function startCurrentSchematicRelevanceDisplayWriteOwner(options: CurrentPcbDiagnosticInstallationOptions, prepared: GeneratedSchematicRelevanceFixtureOpenCheckpoint): Promise<CurrentSchematicRelevanceDisplayWriteOwner> {
   requirePcbViaBirthOptions(options); assertOriginalGeneratedSchematicRelevanceFixtureOpenCheckpoint(prepared);
   if (schematicRelevanceDisplayAllocations.has(prepared)) { throw error("SCHEMATIC_RELEVANCE_DISPLAY_ALLOCATION_CONSUMED"); }
-  const allocation: SchematicRelevanceDisplayWriteAllocation = { initialBranchPlan: null, initialCachePlan: null, options, prepared, state: "pending", owner: null, child: null, eofAttempted: false, cleanupFailure: null };
+  const allocation: SchematicRelevanceDisplayWriteAllocation = { saveDataModule: null, initialBranchPlan: null, initialCachePlan: null, options, prepared, state: "pending", owner: null, child: null, eofAttempted: false, cleanupFailure: null };
   schematicRelevanceDisplayAllocations.set(prepared, allocation);
   try {
     const plan = await prepareCurrentGeneratedInitialFlowCachePlan(prepared); assertOriginalGeneratedSchematicRelevanceFixtureOpenCheckpoint(prepared);
     if (schematicRelevanceDisplayAllocations.get(prepared) !== allocation || allocation.state !== "pending" || allocation.initialCachePlan !== null) { throw error("SCHEMATIC_RELEVANCE_DISPLAY_INITIAL_CACHE_CHANGED"); }
     const data = requireOriginalCurrentGeneratedInitialFlowCachePlan(plan, prepared);
     if (data.documents.length !== 2 || data.projectUuid !== prepared.qualification.target.projectUuid || data.branchUuid !== prepared.qualification.target.branchUuid) { throw error("SCHEMATIC_RELEVANCE_DISPLAY_INITIAL_CACHE_PREPARATION"); }
-    allocation.initialCachePlan = plan; allocation.initialBranchPlan = prepareCurrentGeneratedInitialBranchDataPlan(prepared, plan); await verifyGeneratedSchematicRelevanceFixtureOpenCheckpoint(prepared);
+    allocation.initialCachePlan = plan; allocation.initialBranchPlan = prepareCurrentGeneratedInitialBranchDataPlan(prepared, plan);
+    const namespace = await import("./generated-schematic-relevance-display-native-save.ts");
+    assertOriginalGeneratedSchematicRelevanceFixtureOpenCheckpoint(prepared);
+    if (schematicRelevanceDisplayAllocations.get(prepared) !== allocation || allocation.state !== "pending" || allocation.saveDataModule !== null) { throw error("SCHEMATIC_RELEVANCE_SAVE_DATA_MODULE_CHANGED"); }
+    allocation.saveDataModule = Object.freeze({ namespace, lookup: namespace.requireOriginalGeneratedSchematicRelevanceDisplaySaveData });
+    await verifyGeneratedSchematicRelevanceFixtureOpenCheckpoint(prepared);
     const owner = await startFixedOwner(options, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE, "209-schematic-relevance-display", undefined, null, null, null, null, false, null, null, null, null, null, allocation);
     if (!(owner instanceof CurrentSchematicRelevanceDisplayWriteOwner)) { throw error("SCHEMATIC_RELEVANCE_DISPLAY_FACTORY"); } assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(owner); return owner;
   } catch (caughtError) {

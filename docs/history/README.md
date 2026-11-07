@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 original Save module initialization](2026-11-07-schematic-save-module-initialization.md). Remove the static verification cycle through original factory module retention; no lint or ownership guard is relaxed.
+
 - [2026-11-07 Component reader refusal and cleanup](2026-11-07-component-reader-refusal-cleanup.md). Original normal close and helper release, exact35-table invariance and clean manager retirement; the consumed point batch remains refused.
 - [2026-11-07 original normal-history graph](2026-11-07-relevance-normal-history-graph.md). Actual four-event descriptor graph and24 uninvoked functions before the held setter; callback delivery and continuation remain unproved.
 - [2026-11-07 original inverse service-to-lookup entry](2026-11-07-inverse-original-lookup-preentry.md). One original service resume reaches the held first F2 statement; GET, row, native deletion and collateral completion remain separate.
