@@ -5,6 +5,8 @@ import { createHash } from "node:crypto";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { CURRENT_PCB_VIA_SAVE_CALLS as CALLS } from "../src/current-pcb-via-save-programs.ts";
+import { CURRENT_PCB_VIA_REPLAY_NO_PUBLICATION_PROGRAM } from "../src/current-pcb-via-replay-program.ts";
+import { CURRENT_PCB_VIA_REPLAY_METHODS } from "../src/current-pcb-via-replay-source.ts";
 import { CURRENT_PCB_VIA_SAVE_METHOD_SOURCE, CURRENT_PCB_VIA_SAVE_METHODS as METHODS, CURRENT_PCB_VIA_SAVE_SITES as SITES, CURRENT_PCB_VIA_SAVE_SOURCE as SOURCE,
   qualifyCurrentPcbViaSaveSource } from "../src/current-pcb-via-save-source.ts";
 import { decodeCurrentPcbViaSaveMethod, decodeCurrentPcbViaSavePause, decodeCurrentPcbViaSavePendingBodyValue } from "../src/current-pcb-via-save-replies.ts";
@@ -91,4 +93,30 @@ void test("the actual compressed header user falls back to the retained prior he
   const value = decodeCurrentPcbViaSavePendingBodyValue({ result: { type: "object", value: structuredClone(raw) } });
   assert.equal(value.userUndefined, false); assert.equal(value.userJson, '{"nickname":"N","uuid":"u","username":"U"}');
   assert.equal(value.pending.priorUserJson, value.userJson); assert.equal(value.pending.workerEditVersion, "3.2.185"); assert.equal(runInContext("calls", context), 0);
+});
+
+function replayFixture(): ReturnType<typeof createContext> {
+  const context = fixture();
+  runInContext(`const manager=PROJECT.consistencyManager;manager.maxTicket=4;node.client=arg.client;node.unique="original-compiler";node.pend=true;pendingSet.add("3333333333333333");manager.uniqueIds["original-compiler"]["${"a".repeat(32)}"]=pendingSet;
+original=(${CALLS.entry}).call(entryFrame,"${"a".repeat(32)}","${"b".repeat(64)}");manager.maxTicket=5;pendingSet.clear();delete manager.uniqueIds["original-compiler"]["${"a".repeat(32)}"];delete node.unique;delete node.pend;
+Object.assign(manager,{${Object.values(CURRENT_PCB_VIA_REPLAY_METHODS).map(row => row.source).join(",")}});
+globalThis.doc={docType:"PCB",uuid:"${"a".repeat(32)}",client:arg.client,updateTime:bodyFrame[3],version:String(bodyFrame[3])};
+globalThis.via={type:"VIA",ticket:node.ticket,id:"3333333333333333"};
+globalThis.replaceBody=()=>{bodyFrame[5]=JSON.stringify({type:"DOCHEAD",ticket:5})+"||"+JSON.stringify(doc)+"|\\n"+JSON.stringify(via)+"||"+node.data};replaceBody();globalThis.merged=[PROJECT,undefined,false,()=>{},Promise.resolve(),undefined,undefined,[],0,false];`, context);
+  return context;
+}
+void test("pre-replay reproof requires the same unpended saved node and a matching incoming client, ticket and body", () => {
+  const context = replayFixture();
+  assert.equal(runInContext(`(${CURRENT_PCB_VIA_REPLAY_NO_PUBLICATION_PROGRAM}).call(bodyFrame,original,merged)`, context), true);
+  assert.equal(runInContext("calls", context), 0);
+});
+void test("pre-replay reproof refuses pending or replaced nodes, foreign clients, a pend header and substituted parser methods", () => {
+  for (const alteration of ["node.pend=true", "via.pend=true;replaceBody()", "doc.client='foreign';replaceBody()", "via.ticket++;replaceBody()",
+    "manager.wDocData.get(arg.uuid).get(via.id).last={...node}", "original=[...original]", "merged[0]={...PROJECT}",
+    "manager.remoteChange=function replacement(){calls++;throw Error('forbidden')}",
+    "Object.defineProperty(manager,'flowParseFull',{get(){calls++;throw Error('getter')}})"]) {
+    const context = replayFixture(); runInContext(alteration, context);
+    assert.throws(() => runInContext(`(${CURRENT_PCB_VIA_REPLAY_NO_PUBLICATION_PROGRAM}).call(bodyFrame,original,merged)`, context));
+    assert.equal(runInContext("calls", context), 0);
+  }
 });

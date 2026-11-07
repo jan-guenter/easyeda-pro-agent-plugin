@@ -5,7 +5,8 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_PROJECT_CANVAS_ACCESSOR_REPROOF, CURRENT_PROJECT_CANVAS_FORMAT_GUARD, CURRENT_PROJECT_CANVAS_PENDING_CAPTURE } from "./current-project-canvas-pending-programs.ts";
 
 export const CURRENT_PCB_VIA_SAVE_GROUP = "easyeda-pro-control-pcb-via-save-v1";
-const guards = String.raw`"use strict";const bad=()=>{throw new Error("PCB_VIA_SAVE_RELATION");},seen=[],parents=[],accessors=[];
+/** Shared readonly descriptor reproof. Embedding this text issues no origin. */
+export const CURRENT_PCB_VIA_SAVE_RETAINED_GUARDS = String.raw`"use strict";const bad=()=>{throw new Error("PCB_VIA_SAVE_RELATION");},seen=[],parents=[],accessors=[];
 const own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();seen.push([o,k,d]);return d.value;};
 const array=(o,n)=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype||own(o,"length")!==n||Reflect.ownKeys(o).length!==n+1)bad();for(let i=0;i<n;i++)own(o,String(i));};
 const text=(v,max)=>{if(typeof v!=="string"||v.length<1||v.length>max||!v.isWellFormed()||/[\u0000-\u001F\u007F]/.test(v))bad();return v;};
@@ -16,6 +17,7 @@ ${CURRENT_PROJECT_CANVAS_PENDING_CAPTURE}
 const verify=()=>{for(const[o,k,d]of seen){const v=Object.getOwnPropertyDescriptor(o,k);if(!v||!Object.hasOwn(v,"value")||!Object.is(v.value,d.value)||v.writable!==d.writable||v.enumerable!==d.enumerable||v.configurable!==d.configurable)bad();}for(const[o,p]of parents)if(Object.getPrototypeOf(o)!==p)bad();${CURRENT_PROJECT_CANVAS_ACCESSOR_REPROOF}reprovePendingMissing();};
 const selected=(project,arg,r,documentUuid,projectUuid)=>{projectFormat(project);if(own(globalThis,"PROJECT")!==project||own(project,"consistencyManager")!==r||own(project,"uuid")!==projectUuid||own(project,"isReady")!==true||own(project,"isHistoryBack")!==false||own(arg,"uuid")!==documentUuid||own(arg,"path")!==projectUuid)bad();const docs=own(arg,"docIds");array(docs,3);if(own(docs,"0")!==documentUuid||own(docs,"1")!=="BLOB"||own(docs,"2")!=="FONT")bad();return{docs,uniqueId:text(own(arg,"uniqueId"),128),client:text(own(arg,"client"),128)};};
 const retained=(original,stage)=>{array(original,13);const project=own(original,"0"),arg=own(original,"1"),r=own(original,"2"),snapshot=own(original,"12");if(own(snapshot,"owner")!==original)bad();const s=selected(project,arg,r,own(snapshot,"documentUuid"),own(snapshot,"projectUuid"));if(own(original,"3")!==own(project,"wsBus")||own(original,"4")!==method(project,"saveCanvas")||own(original,"5")!==method(own(original,"3"),"rpcCall")||own(original,"6")!==method(r,"asyncCompressFull")||own(original,"7")!==method(r,"getMaxTicket")||own(original,"8")!==method(r,"setMaxTicket")||own(original,"9")!==own(project,"user")||own(original,"10")!==s.docs||own(original,"11")!==own(project,"pcb")||s.uniqueId!==own(snapshot,"uniqueId")||s.client!==own(snapshot,"client"))bad();reprovePending(own(snapshot,"pending"),r,arg,stage);return{project,arg,r,snapshot};};`;
+const guards = CURRENT_PCB_VIA_SAVE_RETAINED_GUARDS;
 const pendingStage = (length: number): "entry" | "allocated" | "compressed" => {
   if (length === 4) { return "entry"; } if (length === 5) { return "allocated"; } return "compressed";
 };
