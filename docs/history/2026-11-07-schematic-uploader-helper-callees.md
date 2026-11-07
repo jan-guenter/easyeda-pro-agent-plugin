@@ -40,3 +40,12 @@ source spans. The main and child scripts use different parameter ordering in
 their delete/upload branches; their descriptions are qualified separately.
 The actual uninvoked Node24 metadata and strict lint checks passed. Original
 callback arguments, receiver, closure and delivery remain runtime prerequisites.
+
+## Selected upload manager base getter
+
+The selected upload manager's `base` getter is now a fifteenth role in each
+script, bringing this leaf to30 uninvoked metadata records. The exact getter
+reads `this._base`. Its receiver, backing base and UUID still require original
+runtime custody before the manager's default parameter may execute. Two focused
+metadata/accessor checks and strict type-aware lint passed. No default argument
+or manager body was invoked by this source qualification.
