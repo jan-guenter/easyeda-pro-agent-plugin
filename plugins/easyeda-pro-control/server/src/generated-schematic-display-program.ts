@@ -72,6 +72,7 @@ const capture=expected=>{
  const tree=[],queue=[rootModel],seen=new Set();for(let n=0;n<queue.length;n++){const parent=queue[n];if(parent.children===undefined)continue;for(const model of dense(parent.children,64)){if(!model||typeof model.id!=="string"||seen.has(model.id)||model.parent!==parent||model.shapeManager!==b.shapes||model.isConnected!==true||b.index.get(model.id)!==model)bad("TREE");seen.add(model.id);tree.push({model,parent,id:model.id,type:model.modelType,locked:model.locked});queue.push(model);if(tree.length>64)bad("TREE");}}
  if(tree.length!==b.index.size)bad("TREE");const text=b.index.get(operation.textId);if(!text||text.modelType!=="Text"||text.cmdKey!=="text"||text.parent!==rootModel||text.locked!==false)bad("TEXT");
  const sourceMap=apply(b.sourceIds.fn,b.handler,[]);if(!(sourceMap instanceof Map)||sourceMap.size!==5)bad("SOURCE_IDS");
+ if(tree.some(row=>!sourceMap.has(row.id)))bad("SOURCE_EXCLUDED_MODEL_REQUIRES_EXPLICIT_PROFILE");
  const raw=apply(b.getSource.fn,b.consistency,[]);if(typeof raw!=="string"||!raw.endsWith("|\\n")||new TextEncoder().encode(raw).byteLength>16384)bad("SOURCE");
  const parts=raw.slice(0,-2).split("|\\n"),head=parts.shift();if(!head)bad("HEADER");const boundary=head.indexOf("||"),header=JSON.parse(head.slice(0,boundary)),document=JSON.parse(head.slice(boundary+2));plain(header);plain(document);
  if(header.type!=="DOCHEAD"||document.uuid!==target.pageUuid||document.docType!=="SCH_PAGE")bad("HEADER");

@@ -210,7 +210,9 @@ function need(value: boolean, reason: string): asserts value { if (!value) { thr
 export function projectGeneratedSchematicRelevanceNativeAttributeBody(input: Readonly<Record<string, unknown>>, wireId: string): Readonly<Record<string, unknown>> {
   need(/^0[a-f0-9]{15}$/u.test(wireId) && canonicalJson(input) === canonicalJson({ ...MANAGED_SCHEMATIC_RELEVANCE_ATTRIBUTE, parentId: wireId }), "ATTRIBUTE_INPUT");
   const { groupId: _group, version: _version, ...body } = input;
-  return freezeDeep({ ...body, fillColor: input["color"] });
+  // Original NetPointManager.init adds two source-excluded endpoint markers.
+  // The original Wire sort then orders LINE, both markers, Relevance ATTR.
+  return freezeDeep({ ...body, zIndex: 3, fillColor: input["color"] });
 }
 export interface GeneratedSchematicRelevanceDisplayBodyPlan {
   readonly schema: "easyeda-pro-control.generated-schematic-relevance-display-body-plan.v1";

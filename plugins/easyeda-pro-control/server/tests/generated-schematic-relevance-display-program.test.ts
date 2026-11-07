@@ -19,3 +19,12 @@ void test("unsettled roots, later root drift and original-window drift refuse wi
   const drift = fixture(); await drift.call("capture"); drift.edit('rootModel.children[0].zIndex=2;rootModel.children[2].zIndex=0;'); const changed = generatedSchematicRelevanceDisplayStageResultSchema.parse(await drift.call("preflight")); assert.equal(changed.ok, false);
   const window = fixture("window-drift"); await window.call("capture"); const partial = generatedSchematicRelevanceDisplayStageResultSchema.parse(await window.call("modify")); assert.equal(partial.ok, false); assert.equal(partial.modifyAttempted, true); assert.equal(partial.source, null); assert.deepEqual(window.counts(), { setSource: 0, setters: 1, transactions: 1, save: 0 });
 });
+void test("seven-row display admits only its two original qualified endpoint markers and keeps them stable", async () => {
+  for (const change of ['markers[0]._cx+=1;', 'sourceMap.set(markers[0].id,1);', 'attribute.zIndex=1;', 'markers[0].connectionPointNode.Pin.add({});']) {
+    const vm = fixture(); vm.edit(change); const refused = generatedSchematicRelevanceDisplayStageResultSchema.parse(await vm.call("capture"));
+    assert.equal(refused.ok, false); assert.deepEqual(vm.counts(), { setSource: 0, setters: 0, transactions: 0, save: 0 });
+  }
+  const vm = fixture(); await vm.call("capture");
+  vm.edit('const oldMarker=wire.children[1],replacement={...oldMarker};wire.children[1]=replacement;index.set(oldMarker.id,replacement);wire._unConnectDotModels.delete(oldMarker);wire._unConnectDotModels.add(replacement);shapes.netPointManager.unConnectDotModels.delete(oldMarker);shapes.netPointManager.unConnectDotModels.add(replacement);');
+  const refused = generatedSchematicRelevanceDisplayStageResultSchema.parse(await vm.call("preflight")); assert.equal(refused.ok, false); assert.deepEqual(vm.counts(), { setSource: 0, setters: 0, transactions: 0, save: 0 });
+});

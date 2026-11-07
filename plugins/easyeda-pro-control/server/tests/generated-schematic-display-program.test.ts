@@ -11,7 +11,7 @@ import { prepareGeneratedSchematicDisplayBodyPlan } from "../src/generated-schem
 import type { GeneratedSchematicDisplayPatch } from "../src/generated-schematic-display.ts";
 
 const defaultPatch = Object.freeze({ x: 25, bold: true });
-function fixture(mode: "success" | "save-refused" | "window-drift" | "read-only" = "success", patch: GeneratedSchematicDisplayPatch = defaultPatch): { call: (stage: GeneratedSchematicDisplayStage) => Promise<unknown>; counts: () => Record<string, number>; guard: () => unknown; sameGuard: () => unknown } {
+function fixture(mode: "success" | "save-refused" | "window-drift" | "read-only" | "unknown-child" = "success", patch: GeneratedSchematicDisplayPatch = defaultPatch): { call: (stage: GeneratedSchematicDisplayStage) => Promise<unknown>; counts: () => Record<string, number>; guard: () => unknown; sameGuard: () => unknown } {
   const body = prepareGeneratedSchematicDisplayBodyPlan(patch);
   const target = { rawWindowsPath: `C:\\SyntheticTemp\\CodexEasyedaFixture_${"1".repeat(32)}\\Codex_schematic_${"2".repeat(16)}.eprj2`,
     projectUuid: "3".repeat(64), branchUuid: "4".repeat(32), schematicUuid: "5".repeat(32), pageUuid: "6".repeat(32), expectedSourceSha256: "7".repeat(64) };
@@ -34,6 +34,7 @@ const textModel=index.get(op.textId),textRecord=records.find(r=>r.id===op.textId
 let h=Math.floor(labels.indexOf(textRecord.body.align)/3),v=labels.indexOf(textRecord.body.align)%3;
 for(const field of ["x","y","rotation","fontFamily","fontSize","fontWeight","italic","underline","hAlign","vAlign"]){Object.defineProperty(textModel,field,{get(){return field==="hAlign"?h:field==="vAlign"?v:textRecord.body[field];},set(value){counters.setters++;if(field==="hAlign")h=value;else if(field==="vAlign")v=value;else textRecord.body[field]=value;if(field==="hAlign"||field==="vAlign")textRecord.body.align=h===null&&v===null?null:labels[(h??0)*3+(v??0)];if(mode==="window-drift")globalThis._TAB_ID_="foreign-window";}});}
 const sourceMap=new Map([...index.keys()].map(id=>[id,1]));const handler={docManager:page,getSourceCodeIdMap(){return new Map(sourceMap);}};
+if(mode==="unknown-child"){const child={id:"unplanned-model",modelType:"Attr",parent:rootModel,shapeManager:shapes,isConnected:true,locked:false,children:[]};rootModel.children.push(child);index.set(child.id,child);}
 const consistency={docManager:page,state:"initialized",decodeAndRealTimeSyncHandler:handler,handler,getSourceCode(){return JSON.stringify({type:"DOCHEAD"})+"||"+JSON.stringify({uuid:t.pageUuid,docType:"SCH_PAGE"})+"|\\n"+records.map((r,i)=>JSON.stringify({type:r.type,id:r.id,ticket:i+1})+"||"+JSON.stringify(r.body)).join("|\\n")+"|\\n";},async setSourceCode(){counters.setSource++;throw new Error("Whole-source application is forbidden by this Text-only fixture");}};
 handler.consistencyImpl=consistency;page.consistencyImpl=consistency;
 const runner={running:false,currentAction:null,async run(fn){counters.transactions++;this.running=true;this.currentAction={status:"running"};try{await fn();return true;}finally{this.currentAction.status="finished";this.running=false;}}};Object.defineProperty(shapes,"actionRunner",{get(){return runner;}});
@@ -75,4 +76,8 @@ void test("original setters accept zero and independent alignment axes while pre
   assert.equal(modified.modifyAcknowledged, true); assert.equal(native.counts()["setSource"], 0); assert.equal(native.counts()["setters"], 3);
   const locked = fixture("read-only"); const refused = generatedSchematicDisplayStageResultSchema.parse(await locked.call("capture"));
   assert.equal(refused.ok, false); assert.equal(refused.dispatchAttempted, false); assert.equal(locked.counts()["transactions"], 0); assert.equal(locked.counts()["setters"], 0);
+});
+void test("six-row stage refuses a source-excluded child instead of accepting its unknown model effects", async () => {
+  const vm = fixture("unknown-child"); const refused = generatedSchematicDisplayStageResultSchema.parse(await vm.call("capture"));
+  assert.equal(refused.ok, false); assert.equal(refused.dispatchAttempted, false); assert.equal(vm.counts()["setters"], 0); assert.equal(vm.counts()["transactions"], 0); assert.equal(vm.counts()["save"], 0);
 });

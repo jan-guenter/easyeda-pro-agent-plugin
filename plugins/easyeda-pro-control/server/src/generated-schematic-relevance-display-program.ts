@@ -1,6 +1,7 @@
 /** Fixed separate seven-row stage. Reuse of immutable syntax is explicit and
  * fails on anchor drift. Only a new genuine checkpoint/owner can admit it. */
 import { GENERATED_SCHEMATIC_DISPLAY_FUNCTION } from "./generated-schematic-display-program.ts";
+import { GENERATED_SCHEMATIC_RELEVANCE_SCENE_FUNCTION } from "./generated-schematic-relevance-scene-program.ts";
 import { requireOriginalGeneratedSchematicRelevanceDisplayNativeArguments } from "./generated-schematic-relevance-display-source.ts";
 import type { GeneratedSchematicRelevanceDisplayNativeArguments } from "./generated-schematic-relevance-display-source.ts";
 import type { GeneratedSchematicRelevanceFixtureOpenCheckpoint } from "./managed-schematic-relevance-fixture-open-checkpoint.ts";
@@ -19,9 +20,10 @@ function build(): string {
   source = replaceOnce(source, 'const identity=json({target,operation}),tabId=', `dense(operation.rootIds,3);if(operation.rootIds.length!==3||new Set(operation.rootIds).size!==3||operation.rootIds.some(id=>typeof id!=="string"||!/^0[a-f0-9]{15}$/.test(id))||json(operation.rootIds)!==json([operation.textId,...operation.peers.filter(r=>r.type==="WIRE"||r.type==="BUS").map(r=>r.id)].sort()))bad("ROOT_IDS");
 const identity=json({target,operation}),tabId=`);
   source = replaceOnce(source, 'failed:false,before:null', 'failed:false,before:null,rootIndices:null');
-  source = replaceOnce(source, 'if(tree.length!==b.index.size)bad("TREE");', `if(tree.length!==6||tree.length!==b.index.size)bad("TREE");
- const roots=dense(own(rootModel,"children"),3),invalid=own(rootModel,"invalidZIndexChildMap");if(roots.length!==3||!(invalid instanceof Map)||invalid.size!==0||own(rootModel,"_childZIndexChange")!==undefined||own(rootModel,"minChildZIndex")!==0||own(rootModel,"maxChildZIndex")!==2)bad("ROOT_NOT_SETTLED");
- const rootIndices=roots.map((model,index)=>{if(model.zIndex!==index||!operation.rootIds.includes(model.id))bad("ROOT_INDEX");return{id:model.id,zIndex:index};}).sort((left,right)=>left.id<right.id?-1:left.id>right.id?1:0);
+  source = replaceOnce(source, 'if(tree.length!==b.index.size)bad("TREE");', 'if(tree.length!==8||tree.length!==b.index.size)bad("TREE");');
+  source = replaceOnce(source, 'if(tree.some(row=>!sourceMap.has(row.id)))bad("SOURCE_EXCLUDED_MODEL_REQUIRES_EXPLICIT_PROFILE");', `const wire=operation.peers.find(row=>row.type==="WIRE"),line=operation.peers.find(row=>row.type==="LINE"&&row.body.lineGroup===wire?.id);if(!wire||!line)bad("WIRE_SCENE");
+ const scene=(${GENERATED_SCHEMATIC_RELEVANCE_SCENE_FUNCTION})(b.shapes,b.index,sourceMap,operation.rootIds,wire.id,line.id,line.body);if(scene.rootModel!==rootModel||scene.tree.length!==6||scene.markers.length!==2)bad("SCENE");
+ const rootIndices=scene.rootIndices;
  if(state.rootIndices===null){Object.defineProperty(state,"rootIndices",{value:json(rootIndices),writable:false,configurable:false,enumerable:true});}else if(state.rootIndices!==json(rootIndices))bad("ROOT_INDEX_CHANGED");
  const projected=body=>({...body,zIndex:rootIndices.find(row=>row.id===operation.textId).zIndex});
  const projectedPeers=operation.peers.map(row=>operation.rootIds.includes(row.id)?{...row,body:{...row.body,zIndex:rootIndices.find(root=>root.id===row.id).zIndex}}:row);`);
