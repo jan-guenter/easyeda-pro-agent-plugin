@@ -132,3 +132,5 @@ for (const Constructor of [CurrentPcbViaEventRouter, CurrentSchematicDisplayEven
     assert.throws(() => { f.router.reservePeriodicSyncResume(original, "syncLast"); }); assert.equal(f.reads.failed, false);
   });
 }
+
+void test("Via deletion consumes only its exact delivered original pause once",async()=>{const f=fixture();assert.ok(f.router instanceof CurrentPcbViaEventRouter);const router=f.router;const point={...save,breakpointId:"delete-call",role:"cacheDeleteCall",lineNumber:106,columnNumber:57_581};f.router.register("producer",point);const waiting=f.router.next("producer");await f.entered();f.deliver(paused(point));const event=await waiting;assert.throws(()=>{router.reserveSaveTailDeleteResume(structuredClone(event),"cacheDeleteCall");});assert.throws(()=>{router.reserveSaveTailDeleteResume(event,"cacheDeleteReturned");});router.reserveSaveTailDeleteResume(event,"cacheDeleteCall");assert.throws(()=>{router.reserveSaveTailDeleteResume(event,"cacheDeleteCall");});const resumed=f.router.next("producer");await f.entered();f.deliver({method:"Debugger.resumed",sessionId:point.sessionId,params:{}});await resumed;assert.equal(f.reads.failed,false);});

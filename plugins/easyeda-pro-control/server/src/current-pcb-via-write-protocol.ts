@@ -1,3 +1,7 @@
+/* oxlint-disable import/max-dependencies -- The original Via wire composes independent fixed SDK, cold bootstrap, worker observer, scene and legacy grammars while retaining their distinct validators. */
+import { currentPcbViaSaveTailDeleteControlWire } from "./current-pcb-via-save-tail-delete-control-wire.ts";
+import { currentPcbViaSaveTailObservationWire } from "./current-pcb-via-save-tail-observation-wire.ts";
+import { currentPcbViaSaveTailExtraObservationWire } from "./current-pcb-via-save-tail-extra-observation-wire.ts";
 import { currentPcbViaUploadRequestWire } from "./current-pcb-via-upload-request-wire.ts";
 import { currentProjectSyncQuiesceWire } from "./current-project-sync-quiesce-wire.ts";
 import { currentPcbViaLocalUploadWire } from "./current-pcb-via-local-upload-wire.ts";
@@ -9,7 +13,6 @@ import { currentProjectSaveProducerGuardWire } from "./current-project-save-prod
 import { currentProjectStructureTransportWire } from "./current-project-structure-transport-wire.ts";
 /** Finite Via renderer vocabulary. Only this new birth can select these fixed
  * programs; no caller JavaScript, SDK receiver or pipe handle is accepted. */
-/* oxlint-disable import/max-dependencies -- The original Via wire composes independent fixed SDK, cold bootstrap, worker observer, scene and legacy grammars while retaining their distinct validators. */
 import { z } from "zod";
 import { currentPcbViaClockWire } from "./current-pcb-via-clock-wire.ts";
 import { currentPcbViaWorkerWire } from "./current-pcb-via-worker-wire.ts";
@@ -61,6 +64,9 @@ export function currentPcbViaWriteNativeRequest(chunk: Buffer): Readonly<Record<
     raw["id"] < 1 || raw["id"] > PROFILE.renderer.total || !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("PCB_VIA_WIRE"); }
   const { id, sessionId, ...input } = raw;
   if (typeof sessionId !== "string" && Object.hasOwn(raw, "viaWritePhase")) { throw new Error("PCB_VIA_SESSION"); }
+  if(Object.hasOwn(raw,"viaTailDeleteCommand")){const{id:tailId,sessionId:tailSession,viaTailDeleteCommand,...tailInput}=raw;if(viaTailDeleteCommand!==true||typeof tailSession!=="string"){throw new Error("VIA_TAIL_DELETE_WIRE");}const fixed=currentPcbViaSaveTailDeleteControlWire(tailInput,tailId);if(!chunk.equals(Buffer.from(`${JSON.stringify({id:tailId,...fixed.command,viaTailDeleteCommand:true,sessionId:tailSession})}\0`))){throw new Error("VIA_TAIL_DELETE_WIRE");}return fixed.request;}
+  if(Object.hasOwn(raw,"viaTailObservationCommand")){const{id:tailId,sessionId:tailSession,viaTailObservationCommand,...tailInput}=raw;if(viaTailObservationCommand!==true||typeof tailSession!=="string"){throw new Error("VIA_TAIL_WIRE");}const fixed=currentPcbViaSaveTailObservationWire(tailInput,tailId);if(!chunk.equals(Buffer.from(`${JSON.stringify({id:tailId,...fixed.command,viaTailObservationCommand:true,sessionId:tailSession})}\0`))){throw new Error("VIA_TAIL_WIRE");}return fixed.request;}
+  if(Object.hasOwn(raw,"viaTailExtraObservationCommand")){const{id:tailId,sessionId:tailSession,viaTailExtraObservationCommand,...tailInput}=raw;if(viaTailExtraObservationCommand!==true||typeof tailSession!=="string"){throw new Error("VIA_TAIL_EXTRA_WIRE");}const fixed=currentPcbViaSaveTailExtraObservationWire(tailInput,tailId);if(!chunk.equals(Buffer.from(`${JSON.stringify({id:tailId,...fixed.command,viaTailExtraObservationCommand:true,sessionId:tailSession})}\0`))){throw new Error("VIA_TAIL_EXTRA_WIRE");}return fixed.request;}
   if(Object.hasOwn(raw,"viaUploadRequestCommand")){const{id:uploadId,sessionId:uploadSession,viaUploadRequestCommand,...uploadInput}=raw;if(viaUploadRequestCommand!==true||typeof uploadSession!=="string"){throw new Error("VIA_UPLOAD_WIRE");}const fixed=currentPcbViaUploadRequestWire(uploadInput,uploadId);if(!chunk.equals(Buffer.from(`${JSON.stringify({id:uploadId,...fixed.command,viaUploadRequestCommand:true,sessionId:uploadSession})}\0`))){throw new Error("VIA_UPLOAD_WIRE");}return fixed.request;}
   if(Object.hasOwn(raw,"syncQuiesceCommand")){const{id:quiesceId,sessionId:quiesceSession,syncQuiesceCommand,...quiesceInput}=raw;if(syncQuiesceCommand!==true||typeof quiesceSession!=="string"){throw new Error("SYNC_QUIESCE_WIRE");}const fixed=currentProjectSyncQuiesceWire(quiesceInput,quiesceId,"via");if(!chunk.equals(Buffer.from(`${JSON.stringify({id:quiesceId,...fixed.command,syncQuiesceCommand:true,sessionId:quiesceSession})}\0`))){throw new Error("SYNC_QUIESCE_WIRE");}return fixed.request;}
   if (Object.hasOwn(raw, "viaLocalUploadCommand")) {

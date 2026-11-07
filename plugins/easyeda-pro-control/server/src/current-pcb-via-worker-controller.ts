@@ -1,4 +1,6 @@
 /* oxlint-disable import/max-dependencies -- One original cursor joins independent bootstrap, Save, clock, structure, transport and producer source grammars. */
+import { CURRENT_PCB_VIA_SAVE_TAIL_DELETE_SITES as TAIL_SITES } from "./current-pcb-via-save-tail-observation-source.ts";
+import type { CurrentPcbViaSaveTailDeleteRole } from "./current-pcb-via-save-tail-observation-source.ts";
 import { CURRENT_PCB_VIA_WORKER_SETUP_HELPER_REQUESTS as CURRENT_PROJECT_WORKER_SETUP_HELPER_REQUESTS, qualifyCurrentPcbViaWorkerSetupHelperSource as qualifyCurrentProjectWorkerSetupHelperSource, requireCurrentPcbViaWorkerSetupHelper as requireCurrentProjectWorkerSetupHelper } from "./current-pcb-via-worker-setup-helpers.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_ROLES, CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS } from "./current-project-save-producer-protocol.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_SITES as PRODUCER_SITES } from "./current-project-save-producer-source.ts";
@@ -42,6 +44,7 @@ export class CurrentPcbViaWorkerController {
   readonly #setupHelpers: string[] = []; readonly #setupHelperScripts = new Set<string>();
   readonly #events: CurrentPcbViaWorkerBootstrapEvent[] = [];
   readonly #savePoints = new Map<CurrentPcbViaSaveSite, string>();
+  readonly #tailPoints=new Map<CurrentPcbViaSaveTailDeleteRole,string>();
   readonly #syncQuiescePoints=new Map<"entry"|"returned",string>(); #syncQuiesceComplete=false;
   readonly #producerGuardPoints = new Map<CurrentProjectSaveProducerGuardRole, string>();
   readonly #producerPoints = new Map<CurrentProjectSaveProducerRole, string>();
@@ -137,6 +140,7 @@ export class CurrentPcbViaWorkerController {
     if (event.method === "Debugger.breakpointResolved" && record(event.params)) { const params = event.params, producer = [...this.#producerPoints].find(([_role, id]) => id === params["breakpointId"]);
       if (producer !== undefined) { const location = params["location"], site = PRODUCER_SITES[producer[0]]; need(this.#source !== null && record(location) && Reflect.ownKeys(params).length === 2 && Reflect.ownKeys(location).length === 3 && location["scriptId"] === this.#source.scriptId && location["lineNumber"] === site.lineNumber && location["columnNumber"] === site.columnNumber); return true; }
     }
+    if(event.method==="Debugger.breakpointResolved"&&record(event.params)){const params=event.params,tail=[...this.#tailPoints].find(([_role,id])=>id===params["breakpointId"]);if(tail!==undefined){const p=TAIL_SITES[tail[0]];const location=params["location"];need(this.#source!==null&&record(location)&&Reflect.ownKeys(params).length===2&&Reflect.ownKeys(location).length===3&&location["scriptId"]===this.#source.scriptId&&location["lineNumber"]===p.lineNumber&&location["columnNumber"]===p.columnNumber);return true;}}
     if (this.#result !== null) { return false; }
     if (event.method !== "Debugger.breakpointResolved") { return false; }
     need(this.#source !== null && record(event.params) && record(event.params["location"]));
@@ -219,6 +223,7 @@ export class CurrentPcbViaWorkerController {
   /** Pure retained barrier. It never infers completion from elapsed time or
    * starts another native poll; the original abort/failure settles false. */
   public async whenOriginalSourceResumed(): Promise<void> { const resumed = await this.#sourceResumed.promise; need(resumed && !this.#failed && this.#result !== null && this.#router !== null); }
+  public bindSaveTailBreakpoint(source:CurrentPcbViaProjectSourceHeld,role:CurrentPcbViaSaveTailDeleteRole,id:string):void{need(this.#source===source&&this.#result===null&&!this.#tailPoints.has(role)&&token(id));this.#tailPoints.set(role,id);}
   public bindSyncQuiesceBreakpoint(source:CurrentPcbViaProjectSourceHeld,role:"entry"|"returned",breakpointId:string):void {need(this.#source===source&&this.#result===null&&!this.#syncQuiescePoints.has(role)&&token(breakpointId));this.#syncQuiescePoints.set(role,breakpointId);}
   public async nextSyncQuiesceEvent():Promise<CurrentPcbViaRoutedEvent>{await this.whenOriginalSourceResumed();return this.#eventRouter().next("quiesce");}
   public reserveSyncQuiesceResume(source:CurrentPcbViaProjectSourceHeld,role:"entry"|"returned"):void{need(this.#source===source&&this.#child!==null);this.#eventRouter().reserveResume("quiesce",this.#child.sessionId,role);}
@@ -239,6 +244,7 @@ export class CurrentPcbViaWorkerController {
   public reserveSaveUploadResume(source: CurrentPcbViaProjectSourceHeld, event: CurrentPcbViaRoutedEvent, role: "bufferDrain" | "cloudIngress" | "historyCloud"): void {
     need(this.#source === source && this.#child !== null); this.#eventRouter().reserveSaveUploadResume(event,role);
   }
+  public reserveSaveTailDeleteResume(source:CurrentPcbViaProjectSourceHeld,event:CurrentPcbViaRoutedEvent,role:"cacheDeleteCall"|"cacheDeleteReturned"):void{need(this.#source===source&&this.#child!==null);this.#eventRouter().reserveSaveTailDeleteResume(event,role);}
   public async nextStructureTransportEvent(): Promise<CurrentPcbViaRoutedEvent> { await this.whenOriginalSourceResumed(); return this.#eventRouter().next("structureTransport"); }
   public reserveStructureTransportResume(source: CurrentPcbViaProjectSourceHeld, role: "send" | "returned"): void {
     need(this.#source === source && this.#child !== null); this.#eventRouter().reserveResume("structureTransport", this.#child.sessionId, role);
@@ -281,6 +287,7 @@ export class CurrentPcbViaWorkerController {
     for (const [role, breakpointId] of this.#transportPoints) { const site = TRANSPORT_SITES[role]; router.register("structureTransport", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
     for (const [role, breakpointId] of this.#producerPoints) { const site = PRODUCER_SITES[role]; router.register("producer", { sessionId: child.sessionId, scriptId: this.#source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); }
     this.#router = router;
+    for(const[role,breakpointId]of this.#tailPoints){const p=TAIL_SITES[role];router.register("producer",{sessionId:child.sessionId,scriptId:this.#source.scriptId,breakpointId,lineNumber:p.lineNumber,columnNumber:p.columnNumber,role});}
     for(const[role,breakpointId]of this.#syncQuiescePoints){router.register("quiesce",{sessionId:child.sessionId,scriptId:this.#source.scriptId,breakpointId,lineNumber:110,columnNumber:role==="entry"?112_810:112_997,role});}
   }
   /** The outer original renderer call drives this, including its still-pending

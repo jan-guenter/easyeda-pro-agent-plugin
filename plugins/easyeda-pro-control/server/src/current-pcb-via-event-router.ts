@@ -43,7 +43,7 @@ export class CurrentPcbViaEventRouter {
   }
   public register(lane: CurrentPcbViaEventLane, input: CurrentPcbViaEventPoint): void {
     need(!this.#failed && (lane === "quiesce" || lane === "save" || lane === "clock" || lane === "structure" || lane === "structureTransport" || lane === "producer")); const point = Object.freeze(pointSchema.parse(captureCurrentPcbStringClockReply(input).value));
-    need((point.sessionId === this.#bindings.workerSessionId || lane === "clock" && point.sessionId === this.#bindings.uiSessionId) && this.#points.size < 61);
+    need((point.sessionId === this.#bindings.workerSessionId || lane === "clock" && point.sessionId === this.#bindings.uiSessionId) && this.#points.size < 64);
     const key = `${point.sessionId}\0${point.breakpointId}`;
     need(!this.#points.has(key) && ![...this.#points.values()].some(value => value.point.sessionId === point.sessionId && value.point.scriptId === point.scriptId &&
       value.point.lineNumber === point.lineNumber && value.point.columnNumber === point.columnNumber));
@@ -86,6 +86,7 @@ export class CurrentPcbViaEventRouter {
     need(!this.#failed && original !== undefined && original === current && original.lane === "producer" && original.delivered && !original.resumeAttempted && original.point.role === role && event.sessionId === this.#bindings.workerSessionId);
     original.resumeAttempted = true; this.notifyEvent();
   }
+  public reserveSaveTailDeleteResume(event:CurrentPcbViaSaveWorkerEvent,role:"cacheDeleteCall"|"cacheDeleteReturned"):void{const current=this.#paused.get(this.#bindings.workerSessionId),original=this.#pauseEvents.get(event);need(!this.#failed&&original!==undefined&&original===current&&original.lane==="producer"&&original.delivered&&!original.resumeAttempted&&original.point.role===role&&event.sessionId===this.#bindings.workerSessionId);original.resumeAttempted=true;this.notifyEvent();}
   /** Wake readers for an actual queued event or owned continuation. */
   public notifyEvent(): void { const signal = this.#changed; this.#changed = Promise.withResolvers<true>(); signal.resolve(true); }
   /** Revocation wakes parked readers without abandoning an in-flight poll. */

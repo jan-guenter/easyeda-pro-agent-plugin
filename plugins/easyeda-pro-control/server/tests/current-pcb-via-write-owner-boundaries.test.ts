@@ -41,7 +41,7 @@ void test("new SDK wire contains fixed scalars only and cannot be spent by relea
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, functionDeclaration: `${CURRENT_PCB_VIA_WRITE_FUNCTION}\n` } })));
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, awaitPromise: false } })));
   }
-  assert.equal(PROFILE.renderer.total, 3149); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [1120, 43, 1163]);
+  assert.equal(PROFILE.renderer.total, 3209); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [1120, 43, 1163]);
 });
 void test("fixed Via SDK retains its reviewed large-program schema and identical packed bytes", async () => {
   assert.ok(CURRENT_PCB_VIA_WRITE_FUNCTION.length > 16_384); assert.throws(() => captureCurrentPcbStringClockReply({ program: CURRENT_PCB_VIA_WRITE_FUNCTION }));

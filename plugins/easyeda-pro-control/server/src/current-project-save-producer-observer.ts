@@ -2,6 +2,9 @@
  * startup-cache cursor admits that exact packet. There is no generic resume,
  * cleanup-CDP or timer authority; incomplete retirement needs Job exit. */
 /* oxlint-disable import/max-dependencies -- One original collector joins separately audited source, native intrinsic, caller and actual owner boundaries. */
+import type { CurrentPcbViaSaveTailObservationBindings } from "./current-pcb-via-save-tail-observation-origin.ts";
+import { CURRENT_PCB_VIA_SAVE_TAIL_DELETE_ROLES } from "./current-pcb-via-save-tail-observation-source.ts";
+import type { CurrentPcbViaSaveTailDeleteRole } from "./current-pcb-via-save-tail-observation-source.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_PROMISE_CAPTURE, currentProjectSaveProducerCachePromiseHandle, decodeCurrentProjectSaveProducerCachePromise } from "./current-project-save-producer-cache-replies.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLS as CACHE_CALLS, CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CAPTURE_LENGTH } from "./current-project-save-producer-cache-programs.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS as CACHE_CALLERS, currentProjectSaveProducerCacheCallerFrame } from "./current-project-save-producer-cache-source.ts";
@@ -9,7 +12,7 @@ import type { CurrentGeneratedStartupProgress } from "./current-generated-startu
 import type { CurrentProjectSaveProducerCacheCaller } from "./current-project-save-producer-cache-source.ts";
 import { types } from "node:util";
 import { z } from "zod";
-import { continueOriginalCurrentGeneratedInitialCacheCall,continueOriginalCurrentGeneratedInitialSyncCall,continueOriginalCurrentGeneratedPeriodicSyncCall, continueOriginalCurrentPcbViaLocalUploadCall, continueOriginalCurrentPcbViaPreSavePeriodicSyncCall, continueOriginalCurrentPcbViaUploadRequestCall, originalCurrentProjectSaveProducerStartupProgress, requireOriginalCurrentPcbViaLocalUploadCompleted, requireOriginalCurrentPcbViaUploadRequestDispatched, requireOriginalCurrentProjectSaveProducerOrigin, settleOriginalCurrentGeneratedInitialCacheCalls, settleOriginalCurrentGeneratedInitialSyncCall, settleOriginalCurrentGeneratedPeriodicSyncCall, settleOriginalCurrentPcbViaPreSavePeriodicSyncCall } from "./current-pcb-diagnostic-owner.ts";
+import { continueOriginalCurrentGeneratedInitialCacheCall, continueOriginalCurrentGeneratedInitialSyncCall,continueOriginalCurrentGeneratedPeriodicSyncCall,continueOriginalCurrentPcbViaLocalUploadCall,continueOriginalCurrentPcbViaPreSavePeriodicSyncCall, continueOriginalCurrentPcbViaSaveTailDeleteCall, continueOriginalCurrentPcbViaUploadRequestCall, originalCurrentPcbViaSaveTailObservation, originalCurrentProjectSaveProducerStartupProgress, requireOriginalCurrentPcbViaLocalUploadCompleted, requireOriginalCurrentPcbViaUploadRequestDispatched, requireOriginalCurrentProjectSaveProducerOrigin, settleOriginalCurrentGeneratedInitialCacheCalls, settleOriginalCurrentGeneratedInitialSyncCall, settleOriginalCurrentGeneratedPeriodicSyncCall, settleOriginalCurrentPcbViaPreSavePeriodicSyncCall } from "./current-pcb-diagnostic-owner.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { decodeCurrentFootprintCopyClockRpcV2ArrayCapture } from "./current-footprint-copy-clock-rpc-v2-protocol.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_PRODUCER_FRAME_FLAGS as FRAME_FLAGS,
@@ -30,7 +33,7 @@ const property = z.looseObject({ name: z.string(), isOwn: z.literal(true), value
 const properties = z.looseObject({ result: z.array(property).min(2).max(11) });
 export type { CurrentProjectSaveProducerHeldCall } from "./current-project-save-producer-origin.ts";
 interface CacheHeldCall { readonly caller: CurrentProjectSaveProducerCacheCaller; readonly fields: readonly Readonly<{ name: string; value: z.infer<typeof remote> }>[] }
-interface OriginalHeldCall { readonly promise: "pending" | "fulfilled" | null; readonly cache: Readonly<CacheHeldCall> | null; readonly observer: CurrentProjectSaveProducerObserver; readonly role: CurrentProjectSaveProducerRole; readonly fields: readonly Readonly<{ name: string; value: z.infer<typeof remote> }>[] }
+interface OriginalHeldCall { readonly promise: "pending" | "fulfilled" | null; readonly cache: Readonly<CacheHeldCall> | null; readonly observer: CurrentProjectSaveProducerObserver; readonly role: CurrentProjectSaveProducerRole | CurrentPcbViaSaveTailDeleteRole; readonly fields: readonly Readonly<{ name: string; value: z.infer<typeof remote> }>[] }
 const heldCalls = new WeakMap<CurrentProjectSaveProducerHeldCall, OriginalHeldCall>();
 /** Private observations only; these fields provide no original continuation. */
 export function requireOriginalCurrentProjectSaveProducerHeldCall(packet: CurrentProjectSaveProducerHeldCall, observer: CurrentProjectSaveProducerObserver): OriginalHeldCall {
@@ -46,18 +49,18 @@ function binding(value: CurrentProjectSaveProducerBindings): CurrentProjectSaveP
   return value;
 }
 export class CurrentProjectSaveProducerObserver {
-  readonly #origin: CurrentProjectSaveProducerOrigin; readonly #owner: object; readonly #operation: object; readonly #binding: CurrentProjectSaveProducerBindings;
+  readonly #tail:CurrentPcbViaSaveTailObservationBindings|null; readonly #origin: CurrentProjectSaveProducerOrigin; readonly #owner: object; readonly #operation: object; readonly #binding: CurrentProjectSaveProducerBindings;
   readonly #points = new Map<CurrentProjectSaveProducerRole, string>(); readonly #occurrences = new Map<CurrentProjectSaveProducerRole, number>();
   #busy = false; #armed = false; #failed = false; #closed = false; #requests = 0; #events = 0;
   #held: CurrentProjectSaveProducerHeldCall | null = null;
   public constructor(origin: CurrentProjectSaveProducerOrigin, owner: object, operation: object) {
-    this.#origin = origin; this.#owner = owner; this.#operation = operation; this.#binding = binding(requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation)); Object.freeze(this);
+    this.#origin = origin; this.#owner = owner; this.#operation = operation; this.#binding = binding(requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation));this.#tail=originalCurrentPcbViaSaveTailObservation(origin,owner,operation);if(this.#tail!==null){const tail=this.#tail;need(!types.isProxy(tail)&&Object.getPrototypeOf(tail)===Object.prototype&&Object.isFrozen(tail)&&Reflect.ownKeys(tail).length===6,"TAIL_BINDING");const keys=["additionalHeadJobs","additionalSharedRequests","arm","originalBreakpoint","captureHeldCall","assertCurrent"];for(const[index,key]of keys.entries()){const d=Object.getOwnPropertyDescriptor(tail,key);need(d!==undefined&&Object.hasOwn(d,"value")&&(index<2?d.value===(index===0?3:42):typeof d.value==="function"&&!types.isProxy(d.value)),"TAIL_BINDING_DATA");}} Object.freeze(this);
   }
   async #current(): Promise<void> { need(!this.#failed && !this.#closed && requireOriginalCurrentProjectSaveProducerOrigin(this.#origin, this.#owner, this.#operation) === this.#binding, "ORIGINAL");
-    await this.#binding.assertCurrent(); need(!this.#failed && !this.#closed && requireOriginalCurrentProjectSaveProducerOrigin(this.#origin, this.#owner, this.#operation) === this.#binding, "CHANGED"); }
+    await this.#binding.assertCurrent();if(this.#tail!==null){need(originalCurrentPcbViaSaveTailObservation(this.#origin,this.#owner,this.#operation)===this.#tail,"TAIL_CHANGED");await this.#tail.assertCurrent();} need(!this.#failed && !this.#closed && requireOriginalCurrentProjectSaveProducerOrigin(this.#origin, this.#owner, this.#operation) === this.#binding, "CHANGED"); }
   #refuse(): void { if (!this.#failed) { this.#failed = true; this.#binding.fail(); } }
   async #send(input: unknown): Promise<unknown> {
-    const command = validateCurrentProjectSaveProducerCommand(input); await this.#current(); this.#requests += 1; need(this.#requests <= REQUESTS.cdpRequests, "REQUEST_CAPACITY");
+    const command = validateCurrentProjectSaveProducerCommand(input); await this.#current(); this.#requests += 1; need(this.#requests <= REQUESTS.cdpRequests+(this.#tail?.additionalSharedRequests??0), "REQUEST_CAPACITY");
     const captured = captureCurrentPcbStringClockReply(await this.#binding.request(command)).value; await this.#current(); return captured;
   }
   public async arm(): Promise<void> {
@@ -65,17 +68,18 @@ export class CurrentProjectSaveProducerObserver {
     try { for (const command of currentProjectSaveProducerNativeCases()) {
       if (command.phase === "project-save-producer-arm") { const reply = z.strictObject({ breakpointId: handle, actualLocation: location }).parse(await this.#send({ ...command, params: { ...command.params, location: { ...command.params.location, scriptId: this.#binding.scriptId } } }));
         need(reply.actualLocation.scriptId === this.#binding.scriptId && reply.actualLocation.lineNumber === command.params.location.lineNumber && reply.actualLocation.columnNumber === command.params.location.columnNumber && ![...this.#points.values()].includes(reply.breakpointId), "ARM_REPLY"); this.#points.set(command.role, reply.breakpointId); }
-    } need(this.#points.size === REQUESTS.newArms, "ARM_ROSTER"); this.#armed = true;
+    } need(this.#points.size === REQUESTS.newArms, "ARM_ROSTER");if(this.#tail!==null){await this.#tail.arm();await this.#current();} this.#armed = true;
     } catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
   public async observeHeldCall(): Promise<CurrentProjectSaveProducerHeldCall> {
     need(this.#armed && !this.#busy && !this.#failed && !this.#closed && this.#held === null, "HELD_CALL_ONCE"); this.#busy = true;
-    try { await this.#current(); this.#events += 1; need(this.#events <= REQUESTS.events, "EVENT_CAPACITY");
+    try { await this.#current(); this.#events += 1; need(this.#events <= REQUESTS.events+(this.#tail===null?0:11), "EVENT_CAPACITY");
       const received = event.parse(captureCurrentPcbStringClockReply(await this.#binding.nextEvent()).value); await this.#current(); need(received.sessionId === this.#binding.sessionId, "EVENT_SESSION");
       for (const role of SHARED) { const id = this.#binding.originalBreakpoint(role); handle.parse(id); const prior = this.#points.get(role); need(prior === id || prior === undefined && ![...this.#points.values()].includes(id), "SHARED_POINT_ALIAS"); this.#points.set(role, id); }
+      if(this.#tail!==null){const tail=this.#tail;const extra=CURRENT_PCB_VIA_SAVE_TAIL_DELETE_ROLES.find(role=>tail.originalBreakpoint(role)===received.params.hitBreakpoints[0]);if(extra!==undefined){const original=await tail.captureHeldCall(extra);await this.#current();need(original.role===extra,"TAIL_CAPTURE_ROLE");heldCalls.set(original.packet,Object.freeze({observer:this,role:extra,fields:original.fields,cache:null,promise:null}));this.#held=original.packet;return original.packet;}}
       const role = ROLES.find(name => this.#points.get(name) === received.params.hitBreakpoints[0]), top = received.params.callFrames[0]; need(role !== undefined && top !== undefined, "ORIGINAL_POINT"); const site = SITES[role];
       need(top.location.scriptId === this.#binding.scriptId && top.location.lineNumber === site.lineNumber && top.location.columnNumber === site.columnNumber && top.functionLocation.scriptId === this.#binding.scriptId && top.functionLocation.lineNumber === site.functionLineNumber && top.functionLocation.columnNumber === site.functionColumnNumber, "ORIGINAL_FRAME");
-      const count = (this.#occurrences.get(role) ?? 0) + 1; need(count <= currentProjectSaveProducerRoleLimit(role), "ROLE_CAPACITY"); this.#occurrences.set(role, count);
+      const count = (this.#occurrences.get(role) ?? 0) + 1; need(count <= currentProjectSaveProducerRoleLimit(role)+(this.#tail!==null&&["headEntry","headPromise","headSuccess"].includes(role)?this.#tail.additionalHeadJobs:0), "ROLE_CAPACITY"); this.#occurrences.set(role, count);
       const captured = await this.#send({ phase: "project-save-producer-frame", role, method: "Debugger.evaluateOnCallFrame", params: { ...FRAME_FLAGS, callFrameId: top.callFrameId, expression: site.expression } });
       const frameId = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(captured, site.length), original = this.#binding.originalReceivers();
       const joined = await this.#send({ phase: "project-save-producer-receiver", role, method: "Runtime.callFunctionOn", params: { ...CALL_FLAGS, objectId: frameId, functionDeclaration: CALLS[role], arguments: [{ objectId: original.project }, { objectId: original.wrapper }, { objectId: original.callback }] } });
@@ -116,6 +120,7 @@ export class CurrentProjectSaveProducerObserver {
     catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
   public async continueSaveUploadCall(packet:CurrentProjectSaveProducerHeldCall):Promise<void>{need(!this.#busy&&!this.#failed&&!this.#closed&&this.#held===packet,"SAVE_UPLOAD_ORIGINAL_HELD");this.#busy=true;try{await this.#current();await continueOriginalCurrentPcbViaUploadRequestCall(this.#origin,this.#owner,this.#operation,packet);await this.#current();this.#held=null;}catch(error){this.#refuse();throw error;}finally{this.#busy=false;}}
+  public async continueSaveDeleteCall(packet:CurrentProjectSaveProducerHeldCall):Promise<void>{need(!this.#busy&&!this.#failed&&!this.#closed&&this.#held===packet,"SAVE_DELETE_ORIGINAL_HELD");this.#busy=true;try{await this.#current();await continueOriginalCurrentPcbViaSaveTailDeleteCall(this.#origin,this.#owner,this.#operation,packet);await this.#current();this.#held=null;}catch(error){this.#refuse();throw error;}finally{this.#busy=false;}}
   public requireSaveUploadDispatched():void{need(!this.#busy&&!this.#failed&&!this.#closed,"SAVE_UPLOAD_STATE");requireOriginalCurrentPcbViaUploadRequestDispatched(this.#origin,this.#owner,this.#operation);}
   public requireSaveLocalCompleted(): void { need(!this.#busy && !this.#failed && !this.#closed,"SAVE_LOCAL_COMPLETION_STATE"); requireOriginalCurrentPcbViaLocalUploadCompleted(this.#origin,this.#owner,this.#operation); }
   public startupProgress(): CurrentGeneratedStartupProgress { need(!this.#busy && !this.#failed && !this.#closed, "STARTUP_PROGRESS_STATE"); return originalCurrentProjectSaveProducerStartupProgress(this.#origin, this.#owner, this.#operation); }

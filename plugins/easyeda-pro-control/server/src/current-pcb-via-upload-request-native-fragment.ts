@@ -27,7 +27,7 @@ public static void VerifySmoke(){Need(Rows.Length==9);string[] hashes=${currentP
 public sealed partial class EasyedaDiagnosticOwner {
 int viaUploadRequestStep;
 public static string UploadRequestQuote(string text){return JsonString(text);}
-public void SendPcbViaUploadRequest(int id,string phase,string method,System.Collections.IDictionary fields){if(!pcbViaWrite209||viaAbortAttempted||!viaSaveGenerationAttempted||!viaSdkStages[4]||!viaStructureTransportBodyReserved||viaWorkerStage!=7||viaWorkerSession==null||!viaSyncQuiesceCompleted||viaLocalUploadStep!=16||!viaStructureTransportPublished||!viaMainPrecreateEnrolled||viaUploadRequestStep>=9||phase!=EasyedaPcbViaUploadRequestProtocol.Phase(viaUploadRequestStep))throw Error("via-upload-original-order");string encoded=EasyedaPcbViaUploadRequestProtocol.Encode(id,viaWorkerSession,phase,method,fields);AssertLive();viaUploadRequestStep++;SendMessage(id,encoded);}
+public void SendPcbViaUploadRequest(int id,string phase,string method,System.Collections.IDictionary fields){if(!pcbViaWrite209||viaAbortAttempted||!viaSaveGenerationAttempted||!viaSdkStages[4]||!viaStructureTransportBodyReserved||viaWorkerStage!=7||viaWorkerSession==null||!viaSyncQuiesceCompleted||viaLocalUploadStep!=20||!viaStructureTransportPublished||!viaMainPrecreateEnrolled||viaUploadRequestStep>=9||phase!=EasyedaPcbViaUploadRequestProtocol.Phase(viaUploadRequestStep))throw Error("via-upload-original-order");string encoded=EasyedaPcbViaUploadRequestProtocol.Encode(id,viaWorkerSession,phase,method,fields);AssertLive();viaUploadRequestStep++;SendMessage(id,encoded);}
 }
 `;
 }
