@@ -101,10 +101,12 @@ must not be reported as measured connected latency improvements.
 
 Match inspector descriptors to the embedded engine as well as the application
 source. V8 builds can move legacy function properties between the function and
-its prototype without changing the function's JavaScript. The209 debounce
-profile has three own properties; the older profile has five. Keep each exact
-contract and retain source/location checks. A test running on the facade's
-pinned Node version does not establish the embedded browser's property roster.
+its prototype without changing the function's JavaScript. Strict methods and
+sloppy wrappers also have different rosters in the same engine. The separate
+seven-record decoder recognizes the pinned plain wrapper's immutable null
+`caller`/`arguments` fields; class-method decoders retain their own contracts.
+Keep exact role/source/location checks. A test running on the facade's pinned
+Node version does not establish the embedded browser's property roster.
 
 CDP `internal#scope` handles also need their real receiver shape. On the pinned
 engine, `getProperties(scope)` lists lexical variables, while a fixed
@@ -112,6 +114,19 @@ engine, `getProperties(scope)` lists lexical variables, while a fixed
 Qualify that exact envelope and closure label before reading its lexical object;
 direct `this.alias` lookups refuse on the wrapper. Local inspector regressions
 can catch this distinction, but do not admit an embedded application generation.
+
+Closure scope contains context-retained bindings. A name declared in the source
+may be optimized out when no original closure needs it. Capture the original
+reachable values and prove their exact prototype/class relationships. Do not
+search alternate scopes or accept a same-named function as the missing binding.
+
+Exercise fixed readonly capture programs with the actual
+`throwOnSideEffect: true` option in local Inspector checks. Freezing a fresh
+array or spreading an input object can still trigger V8's side-effect refusal.
+Private ordinary tuples with exact original descriptor/value reproof can avoid
+those operations. Preserve the flag and application-object guards. A test that
+omits the flag misses this failure. Label substitute browser globals and local
+Inspector results explicitly; they do not prove connected execution.
 
 For data-only input capture, reject proxies before reflection and check scalar
 types before passing them to schema validation. Even error formatting can
