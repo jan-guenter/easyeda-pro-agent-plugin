@@ -34,3 +34,15 @@ source-only tests cover the real observer state machine through explicit inert
 registry seams. Both TypeScript projects and strict changed-file lint pass;
 dedicated schematic generation is idempotent and stays below the existing
 compiler bound. No application or native owner ran.
+
+The own7 run-prefix source leaf pins 34 exact callees in each complete SCH
+script. Its metadata decoder follows actual AST strictness and function kind:
+sloppy regular functions have immutable null caller/arguments, methods and
+classes do not, and the generator iterator additionally has the native
+`[[IsGenerator]]:true` internal. Ten actual uninvoked Node24 declarations check
+both source variants at their pinned locations, including sloppy helpers,
+queue constructors and the generator. Full installed-byte qualification checks
+both scripts and all 68 spans. This leaf supplies no graph or resume authority;
+the two original history listeners, delivery queues and native callees still
+need the separate original graph collector. Both TypeScript projects and
+strict changed-file lint pass.
