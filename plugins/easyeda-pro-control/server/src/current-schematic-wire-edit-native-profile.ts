@@ -6,6 +6,6 @@ export const CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE = "schematic-wire-edit20
 export const CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PROFILE = Object.freeze({
   purpose: CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PURPOSE, nativeSwitch: "-SchematicWireEdit209",
   main: Object.freeze({ ...SHARED.main }), renderer: Object.freeze({ ...SHARED.renderer,
-    stageCalls: 4, stageBrackets: 4 * 8, total: SHARED.renderer.total - SHARED.renderer.stageCalls - SHARED.renderer.stageBrackets + 4 + 4 * 8 }),
+    modifyEntryObservation: 0, stageCalls: 4, stageBrackets: 4 * 8, total: SHARED.renderer.total - SHARED.renderer.modifyEntryObservation - SHARED.renderer.stageCalls - SHARED.renderer.stageBrackets + 4 + 4 * 8 }),
   executionAuthorized: false, saveAuthorized: false, persistenceVerified: false,
 });

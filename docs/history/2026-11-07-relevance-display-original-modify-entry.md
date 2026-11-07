@@ -34,3 +34,9 @@ metadata and the fixed scene's collateral checks. Both TypeScript projects,
 strict changed-file lint, idempotent bounded helper generation and full Linux
 C# fixed-codec smoke checks pass. No native/application call, tracked helper or
 pin refresh, installation or connected writer validation occurred.
+
+Integration with the separate Wire birth retains its original2721 renderer
+allowance. Its explicit `modifyEntryObservation:0` subtracts the display-only
+five-read reservation. Both new pending-Modify markers and all seven-record
+native mutation-origin verbs refuse for Wire. Five focused merged codec/source
+cases, both TypeScript projects and strict changed-file lint pass.
