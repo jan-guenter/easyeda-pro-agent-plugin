@@ -95,3 +95,21 @@ and returns a failed stage. Both TypeScript projects, strict changed lint,
 two-pass helper generation and Linux pure C# protocol smoke checks pass. Native
 request bounds and old result schemas are unchanged. No generated artifact,
 compatibility pin, application process or MCP connection was changed.
+
+## Original startup controls joined by the group
+
+The group now requires this journal's two original startup intents before
+navigation. It arms Save, structure, transport and producer first, followed by
+polling cancellation and library refresh. Both collectors start without waiting
+inside the source-held setup callback. The library collector retains first-loop
+suspension and the separate mount-return wave. Startup readiness waits both
+actual completions, reproves each original receipt, and calls the owner's joined
+startup guard before accessor or Modify preparation.
+
+Original exit settlement joins both retained collector Promises and caches their
+original exit-only retirement. A focused third scheduling case proves polling
+completion alone and library first-loop suspension cannot admit startup; the
+mount return is required, and repeated exit settlement retires each once. All
+three group scheduling cases, both TypeScript projects and strict changed lint
+pass. No native grammar, request budget or write grant changes in this group
+composition.

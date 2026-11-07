@@ -8,7 +8,11 @@ import { assertOriginalCurrentSchematicRelevanceDisplayWriteOwner, originalCurre
 import type { CurrentSchematicRelevanceDisplayWriteOwner } from "./current-schematic-relevance-display-write-owner.ts";
 import { requireOriginalGeneratedSchematicRelevanceDisplayNativeArguments } from "./generated-schematic-relevance-display-source.ts";
 import type { GeneratedSchematicRelevanceDisplayNativeArguments } from "./generated-schematic-relevance-display-source.ts";
-import type { GeneratedSchematicRelevanceDisplayDispatch } from "./generated-schematic-relevance-display-journal.ts";
+import { CurrentProjectSyncQuiesceObserver } from "./current-project-sync-quiesce-observer.ts";
+import type { CurrentProjectSyncQuiesceCompletion } from "./current-project-sync-quiesce-observer.ts";
+import { CurrentProjectLibraryRefreshObserver } from "./current-project-library-refresh-observer.ts";
+import type { CurrentProjectLibraryRefreshCompletion } from "./current-project-library-refresh-observer.ts";
+import type { GeneratedSchematicRelevanceDisplayDispatch, GeneratedSchematicRelevanceDisplayLibraryIntent, GeneratedSchematicRelevanceDisplayPollingIntent } from "./generated-schematic-relevance-display-journal.ts";
 import { CurrentSchematicRelevanceDisplayActionObserver } from "./current-schematic-relevance-display-action-observer.ts";
 import type { CurrentSchematicRelevanceDisplayActionObservation } from "./current-schematic-relevance-display-action-observer.ts";
 import { CurrentSchematicRelevanceDisplaySaveObserver } from "./current-schematic-relevance-display-save-observer.ts";
@@ -37,6 +41,9 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
   #accessor: CurrentSchematicRelevanceDisplayAccessorObserver | null = null; #accessorPacket: CurrentSchematicRelevanceDisplayAccessorObservation | null = null;
   #structurePacket: Promise<StructurePacketOutcome> | null = null;
   #construction: Promise<Outcome> | null = null; #collector: Promise<Outcome> | null = null; #pendingProducer: Promise<unknown> | null = null;
+  #polling: CurrentProjectSyncQuiesceObserver | null = null; #pollingCompletion: CurrentProjectSyncQuiesceCompletion | null = null; #pollingCollection: Promise<Outcome> | null = null;
+  #library: CurrentProjectLibraryRefreshObserver | null = null; #libraryCompletion: CurrentProjectLibraryRefreshCompletion | null = null; #libraryCollection: Promise<Outcome> | null = null;
+  #controlsRetirement: Promise<void> | null = null;
   #modifyEntryAttempted = false; #modifyEntryCollection: Promise<CurrentSchematicRelevanceDisplayModifyEntryObservation> | null = null;
   #modifyEntryObserver: CurrentSchematicRelevanceDisplayModifyEntryObserver | null = null; #modifyEntryPacket: CurrentSchematicRelevanceDisplayModifyEntryObservation | null = null;
   #modifyRawPacket: CurrentSchematicRelevanceDisplayRawSceneObservation | null = null;
@@ -58,7 +65,7 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
   }
   /** Install trusted callbacks before the one original project navigation.
    * Each callback receives only its own actual fresh source-held origin. */
-  public armBeforeNavigation(): void {
+  public armBeforeNavigation(intents: Readonly<{ polling: GeneratedSchematicRelevanceDisplayPollingIntent; library: GeneratedSchematicRelevanceDisplayLibraryIntent }>): void {
     this.#current(); need(!this.#armed, "ARM_CONSUMED"); this.#armed = true;
     try {
       this.#owner.armSchematicDisplaySaveWorker(this.#arguments, async origin => {
@@ -81,6 +88,22 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
       this.#owner.armSchematicDisplayProducerObservationWorker(this.#arguments, async origin => {
         this.#current(); need(this.#producer === null && this.#collector === null, "ORIGINAL_PRODUCER"); const observer = new CurrentProjectSaveProducerObserver(origin, this.#owner, this.#arguments);
         this.#producer = observer; await observer.arm(); this.#current(); this.#collector = this.#retain(this.#collectStartup(observer));
+      });
+      this.#owner.armSchematicRelevanceDisplayPollingQuiescence(this.#arguments, intents.polling, async origin => {
+        this.#current(); need(this.#polling === null && this.#pollingCollection === null, "ORIGINAL_POLLING");
+        const observer = new CurrentProjectSyncQuiesceObserver(origin, this.#owner, this.#arguments); this.#polling = observer;
+        await observer.arm(); this.#current(); this.#pollingCollection = this.#retain((async (): Promise<void> => {
+          const completion = await observer.observeFirstTimer(); this.#current(); await observer.requireOriginal(completion); this.#current(); this.#pollingCompletion = completion;
+        })());
+      });
+      this.#owner.armSchematicRelevanceDisplayLibraryRefresh(this.#arguments, intents.library, async origin => {
+        this.#current(); need(this.#library === null && this.#libraryCollection === null, "ORIGINAL_LIBRARY");
+        const observer = new CurrentProjectLibraryRefreshObserver(origin, this.#owner, this.#arguments); this.#library = observer;
+        const pristine = await observer.preparePristine(); this.#current(); await observer.arm(pristine); this.#current();
+        this.#libraryCollection = this.#retain((async (): Promise<void> => {
+          const suspension = await observer.observeFirstLoop(); this.#current(); const completion = await observer.observeMountReturn(suspension); this.#current();
+          await observer.requireOriginal(completion); this.#current(); this.#libraryCompletion = completion;
+        })());
       });
     } catch (error) { this.#stop(error); throw error; }
   }
@@ -115,7 +138,14 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
     }
     throw new Error("SCHEMATIC_RELEVANCE_DISPLAY_SETUP_STARTUP_EVENT_BOUND");
   }
-  public async waitForStartupObservations(): Promise<void> { result(await this.#startup.promise); this.#current(); }
+  public async waitForStartupObservations(): Promise<void> {
+    result(await this.#startup.promise); this.#current();
+    const library = this.#libraryCollection, polling = this.#pollingCollection; need(polling !== null && library !== null, "ORIGINAL_STARTUP_CONTROLS_REQUIRED");
+    const settled = await Promise.all([polling, library]); this.#current(); for (const outcome of settled) { result(outcome); }
+    need(this.#polling !== null && this.#pollingCompletion !== null && this.#library !== null && this.#libraryCompletion !== null, "ORIGINAL_STARTUP_COMPLETIONS_REQUIRED");
+    await this.#polling.requireOriginal(this.#pollingCompletion); this.#current(); await this.#library.requireOriginal(this.#libraryCompletion); this.#current();
+    this.#owner.requireSchematicRelevanceDisplayStartupQuiesced(this.#arguments);
+  }
   /** Capture/preflight are separately journaled by the enclosing workflow.
    * This observes the actual original holder's full setter/decorator graph. */
   public async observeAccessors(): Promise<CurrentSchematicRelevanceDisplayAccessorObservation> {
@@ -175,7 +205,12 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
     current(); const pending: Promise<unknown>[] = [];
     if (this.#construction !== null) { pending.push(this.#construction); } if (this.#structurePacket !== null) { pending.push(this.#structurePacket); } if (this.#collector !== null) { pending.push(this.#collector); } if (this.#pendingProducer !== null) { pending.push(this.#pendingProducer); }
     if (this.#modifyEntryCollection !== null) { pending.push(this.#modifyEntryCollection, this.#owner.settleSchematicRelevanceDisplayModifyEntryAfterExit()); }
+    if (this.#pollingCollection !== null) { pending.push(this.#pollingCollection); } if (this.#libraryCollection !== null) { pending.push(this.#libraryCollection); }
     await Promise.allSettled(pending); current();
+    this.#controlsRetirement ??= (async (): Promise<void> => {
+      const controls: Promise<void>[] = []; if (this.#polling !== null) { controls.push(this.#polling.retireAfterOriginalExit()); } if (this.#library !== null) { controls.push(this.#library.retireAfterOriginalExit()); }
+      const settled = await Promise.allSettled(controls); current(); for (const item of settled) { if (item.status === "rejected") { throw item.reason; } }
+    })(); await this.#controlsRetirement; current();
   }
   public cancel(): void { this.#stop(new Error("SCHEMATIC_RELEVANCE_DISPLAY_SETUP_CANCELLED")); }
   public status(): Readonly<{ armed: boolean; failed: boolean; pendingOriginalProducerRead: boolean; accessorObserved: boolean; preModifyMainRetained: boolean; modifyAuthorized: false; saveAuthorized: false; persistenceVerified: false }> {
