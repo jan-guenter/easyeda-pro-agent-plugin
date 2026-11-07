@@ -1,4 +1,5 @@
 /* oxlint-disable import/max-dependencies -- Each fixed purpose lane validates its own complete native codec; a caller-selected generic encoder would erase those boundaries. */
+import { currentSchematicRelevanceDisplayObservedSourceWire } from "./current-schematic-relevance-display-observed-source.ts";
 import { currentProjectLibraryRefreshWire } from "./current-project-library-refresh-wire.ts";
 import { currentSchematicRelevanceDisplayLocalCacheWire, currentSchematicRelevanceDisplayLocalWire, currentSchematicRelevanceDisplayUploadWire } from "./current-schematic-relevance-display-save-upload-wire.ts";
 import { currentSchematicRelevanceDisplaySyncQuiesceWire } from "./current-schematic-relevance-display-sync-quiesce-wire.ts";
@@ -22,6 +23,7 @@ export function currentSchematicRelevanceDisplayWriteNativeRequest(chunk: Buffer
   if (Object.hasOwn(raw, "schematicDisplayPhase") || Object.hasOwn(raw, "schematicAccessorCommand") || Object.hasOwn(raw, "schematicActionCommand") || Object.hasOwn(raw, "schematicActionGuardCommand") || Object.hasOwn(raw, "schematicClockCommand")) {
     throw new Error("SCHEMATIC_RELEVANCE_DISPLAY_OWN_MUTATION_ORIGIN_REQUIRED");
   }
+  if(Object.hasOwn(raw,"schematicRelevanceObservedSourceCommand")){const {id,sessionId,schematicRelevanceObservedSourceCommand:marker,...input}=raw;if(marker!==true||typeof sessionId!=="string"||!/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)){throw new Error("RELEVANCE_HELPER_SOURCE_WIRE");}const fixed=currentSchematicRelevanceDisplayObservedSourceWire(input,id);if(!chunk.equals(Buffer.from(`${JSON.stringify({id,...fixed.command,schematicRelevanceObservedSourceCommand:true,sessionId})}\0`))){throw new Error("RELEVANCE_HELPER_SOURCE_WIRE");}return fixed.request;}
   if (Object.hasOwn(raw, "schematicRelevanceLibraryRefreshCommand")) {
     const { id, sessionId, schematicRelevanceLibraryRefreshCommand: marker, ...input } = raw;
     if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_RELEVANCE_LIBRARY_WIRE"); }

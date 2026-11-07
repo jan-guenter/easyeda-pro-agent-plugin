@@ -105,6 +105,7 @@ export class CurrentSchematicDisplayWorkerController {
   public expectSetupHelper(source: CurrentSchematicDisplayProjectSourceHeld, program: string): void {
     need(this.#source === source && this.#result === null && this.#pumping && this.#setupHelpers.length < this.setupHelperRequestLimit()); this.qualifySetupHelper(program); this.#setupHelpers.push(program);
   }
+  protected originalProjectSetupActive():boolean{return this.#projectSourceCallbackActive;}
   public assertOriginalProjectSourceHeld(source: CurrentSchematicDisplayProjectSourceHeld): void { need(!this.#failed && this.#source === source && this.#projectSourceCallbackActive && this.#result === null && this.#pumping); }
   public consumeOriginalSetupHelpers(source: CurrentSchematicDisplayProjectSourceHeld): Promise<void> { this.assertOriginalProjectSourceHeld(source); return this.#consumeSetupHelpers(source); }
   async #consumeSetupHelpers(source: CurrentSchematicDisplayProjectSourceHeld): Promise<void> {

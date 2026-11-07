@@ -29,30 +29,22 @@ export class CurrentSchematicRelevanceDisplayHelperReceipts {
     // oxlint-disable-next-line promise/prefer-await-to-then -- Retain rejection handling immediately; the original receipt and event reader still report this failure.
     void done.promise.catch(() => null); const script: Script = { id, event, done, verified: false }; this.#scripts.push(script); this.#byId.set(id, script);
   }
-  public verify(command: object, raw: unknown, read: (scriptId: string) => Promise<unknown>): Promise<void> {
-    const submission = this.#submissions.get(command); need(!this.#failed && submission !== undefined && !submission.verified && submission.raw === undefined && typeof read === "function" && !types.isProxy(read));
-    submission.raw=raw;submission.read=read;submission.ready.resolve(true);const previous=this.#tail;
-    const task=(async():Promise<void>=>{await previous;need(!this.#failed);
-      try {
-        if (submission.kind === null) { submission.verified = true; }
-        else {
-          while (!submission.verified) {
-            const expected=this.#pending[0];need(expected!==undefined);await expected.ready.promise;need(!this.#failed&&expected.read!==null);
-            const script = this.#scripts.find(value => !value.verified); need(script !== undefined); this.#reads += 1; need(this.#reads <= LIMIT);
-            const source = await expected.read(script.id); need(!this.#failed); const result = own(source); need(Reflect.ownKeys(result).length === 1 && typeof result["scriptSource"] === "string");
-            const text = result["scriptSource"];
-            if (expected.kind !== null && expected.text !== null && text === (expected.kind === "function" ? `(${expected.text})` : expected.text)) { qualify(source, expected.kind, expected.text); need(expected.raw !== undefined); expected.verified = true; this.#pending.shift(); }
-            else { need(this.#conditions.has(text)); condition(text); qualify(source, "expression", text); }
-            script.verified = true; script.done.resolve(true);
-          }
-        }
-        need(submission.command === command && submission.raw === raw && submission.verified);
-      } catch (error) { this.fail(); throw error; }
-    })();
-    this.#tail=(async():Promise<void>=>{try{await task;}catch{
+  #enqueue(work:()=>Promise<void>):Promise<void>{const previous=this.#tail;const task=(async():Promise<void>=>{await previous;need(!this.#failed);try{await work();}catch(error){this.fail();throw error;}})();this.#tail=(async():Promise<void>=>{try{await task;}catch{
       // The original caller and cursor retain this refusal.
-    }})();return task;
+    }})();return task;}
+  async #readNext(fallback:(scriptId:string)=>Promise<unknown>):Promise<void>{
+    const expected=this.#pending[0];if(expected!==undefined){await expected.ready.promise;need(!this.#failed&&expected.read!==null);}
+    const script=this.#scripts.find(value=>!value.verified);need(script!==undefined);this.#reads+=1;need(this.#reads<=LIMIT);
+    const reader=expected?.read??fallback;const source=await reader(script.id);need(!this.#failed);const result=own(source);need(Reflect.ownKeys(result).length===1&&typeof result["scriptSource"]==="string");const text=result["scriptSource"];
+    if(expected!==undefined&&expected.kind!==null&&expected.text!==null&&text===(expected.kind==="function"?`(${expected.text})`:expected.text)){qualify(source,expected.kind,expected.text);need(expected.raw!==undefined);expected.verified=true;this.#pending.shift();}
+    else{need(this.#conditions.has(text));condition(text);qualify(source,"expression",text);}
+    script.verified=true;script.done.resolve(true);
   }
+  public verify(command:object,raw:unknown,read:(scriptId:string)=>Promise<unknown>):Promise<void>{
+    const submission=this.#submissions.get(command);need(!this.#failed&&submission!==undefined&&!submission.verified&&submission.raw===undefined&&typeof read==="function"&&!types.isProxy(read));submission.raw=raw;submission.read=read;submission.ready.resolve(true);
+    return this.#enqueue(async():Promise<void>=>{if(submission.kind===null){submission.verified=true;}else{while(!submission.verified){await this.#readNext(read);}}need(submission.command===command&&submission.raw===raw&&submission.verified);});
+  }
+  public verifyObserved(event:object,read:(scriptId:string)=>Promise<unknown>):Promise<void>{const e=own(event);const p=own(e["params"]);const id=p["scriptId"];need(typeof id==="string"&&typeof read==="function"&&!types.isProxy(read));const script=this.#byId.get(id);need(!this.#failed&&script!==undefined);return this.#enqueue(async():Promise<void>=>{while(!script.verified){await this.#readNext(read);}});}
   public async requireVerified(event: object): Promise<void> { const e = own(event); const p = own(e["params"]); const id = p["scriptId"]; need(typeof id === "string"); const script = this.#byId.get(id); need(!this.#failed && script !== undefined); await script.done.promise; need(!this.#failed && script.verified); }
   public fail(): void { if (!this.#failed) { this.#failed = true; for(const original of this.#originals){original.ready.reject(new Error("SCHEMATIC_RELEVANCE_ORIGINAL_HELPER_FAILED"));} for (const script of this.#scripts) { script.done.reject(new Error("SCHEMATIC_RELEVANCE_ORIGINAL_HELPER_FAILED")); } } }
 }

@@ -22,9 +22,11 @@ export class CurrentSchematicRelevanceDisplayWorkerController extends CurrentSch
   #ownRouter: CurrentSchematicRelevanceDisplayEventRouter | null = null;
   #pollingComplete = false; readonly #helpers = new CurrentSchematicRelevanceDisplayHelperReceipts();
   #helperSource: CurrentSchematicDisplayProjectSourceHeld | null = null;
-  public registerSubmitted(source: CurrentSchematicDisplayProjectSourceHeld, command: object): void { this.requireHeld(source); need(!this.status().failed && this.status().ready && (this.#helperSource === null || this.#helperSource === source)); this.#helperSource = source; this.#helpers.register(command); }
+  #originalSourceReader:((scriptId:string)=>Promise<unknown>)|null=null;
+  public bindOriginalSourceReader(source:CurrentSchematicDisplayProjectSourceHeld,read:(scriptId:string)=>Promise<unknown>):void{this.assertOriginalProjectSourceHeld(source);need(this.#originalSourceReader===null&&typeof read==="function");this.#helperSource=source;this.#originalSourceReader=read;}
+  public registerSubmitted(source: CurrentSchematicDisplayProjectSourceHeld, command: object): void { this.requireHeld(source); need(!this.status().failed && (this.#helperSource === null || this.#helperSource === source)); if(!this.status().ready){ this.assertOriginalProjectSourceHeld(source); } this.#helperSource = source; this.#helpers.register(command); }
   public async verifyOriginalHelperReceipt(source: CurrentSchematicDisplayProjectSourceHeld, command: object, raw: unknown, read: (scriptId: string) => Promise<unknown>): Promise<void> { this.requireHeld(source); need(this.#helperSource === source); try { await this.#helpers.verify(command, raw, read); this.requireHeld(source); need(!this.status().failed); } catch (error) { this.fail(); throw error; } }
-  protected override qualifyObservedWorkerScript(event: DiagnosticEvent): Promise<void> { return this.#helpers.requireVerified(event); }
+  protected override qualifyObservedWorkerScript(event: DiagnosticEvent): Promise<void> { const reader=this.#originalSourceReader;need(reader!==null);return this.#helpers.verifyObserved(event,reader); }
   public override fail(): void { super.fail(); this.#helpers.fail(); }
   protected override setupHelperRequestLimit(): number { return super.setupHelperRequestLimit() + 2; }
   protected override qualifySetupHelper(program: string): void { if (program !== CURRENT_PROJECT_SYNC_QUIESCE_PROGRAMS.capture && program !== CURRENT_PROJECT_LIBRARY_REFRESH_PROGRAMS.pristine) { super.qualifySetupHelper(program); } }
@@ -40,7 +42,7 @@ export class CurrentSchematicRelevanceDisplayWorkerController extends CurrentSch
   }
   protected override observeStartupControlEvent(event: DiagnosticEvent): void {
     super.observeStartupControlEvent(event);
-    if (this.status().ready && event.method === "Debugger.scriptParsed") { const source = this.#helperSource; need(source !== null); this.#helpers.observe(event, source.executionContextId, source.scriptId); }
+    if (this.#helperSource!==null && !this.originalProjectSetupActive() && event.method === "Debugger.scriptParsed") { const source = this.#helperSource; need(source !== null); this.#helpers.observe(event, source.executionContextId, source.scriptId); }
     if (this.#pollingComplete && event.method === "Debugger.paused" && Array.isArray(event.params["hitBreakpoints"]) && event.params["hitBreakpoints"].includes(this.#pollingPoints.get("entry")?.point.breakpointId)) { this.fail(); throw new Error("SCHEMATIC_RELEVANCE_POLLING_REENTERED"); }
   }
   #bind(source: CurrentSchematicDisplayProjectSourceHeld, role: string, breakpointId: string, site: Readonly<{ lineNumber: number; columnNumber: number }>, lane: "quiesce" | "library"): CurrentSchematicDisplayStartupEventPoint {

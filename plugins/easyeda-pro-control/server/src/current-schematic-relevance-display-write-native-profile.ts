@@ -1,3 +1,4 @@
+import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_OBSERVED_WORKER_SOURCE_REQUESTS as SOURCES } from "./current-schematic-relevance-display-helper-source-catalogue.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_SAVE_UPLOAD_REQUESTS as UPLOAD } from "./current-schematic-relevance-display-save-upload-wire.ts";
 /* oxlint-disable import/max-dependencies -- Exact own-purpose budgets are derived from each separately qualified finite lane; accepting caller totals would weaken native bounds. */
 import { CURRENT_PROJECT_LIBRARY_REFRESH_REQUESTS as LIBRARY } from "./current-project-library-refresh-protocol.ts";
@@ -22,8 +23,9 @@ export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE = Object.f
     structureObservation: STRUCTURE.cdpRequests,
     startupPollingObservation: POLLING.cdpRequests, startupPollingHelperSources: 1, startupLibraryObservation: LIBRARY.controls, startupLibrarySetupHelperSources: 1,
     actionPreflightObservation: ACTION.total, actionGuardObservation: ACTION_GUARD.cdpRequests, actionGuardBindingControls: ACTION_GUARD.bindingControls,
+    submittedHelperSources:SOURCES,
     localUploadObservation: UPLOAD.local, uploadRequestObservation: UPLOAD.upload, localCacheExtraObservation: UPLOAD.localCacheMetadata,
     modifyEntryObservation: MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation,
     total: SHARED.renderer.total - SHARED.renderer.structureObservation - SHARED.renderer.actionPreflightObservation - SHARED.renderer.actionGuardObservation - SHARED.renderer.actionGuardBindingControls +
-      UPLOAD.local + UPLOAD.upload + UPLOAD.localCacheMetadata + STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + POLLING.cdpRequests + 1 + LIBRARY.controls + 1 }),
+      SOURCES + UPLOAD.local + UPLOAD.upload + UPLOAD.localCacheMetadata + STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + POLLING.cdpRequests + 1 + LIBRARY.controls + 1 }),
 });

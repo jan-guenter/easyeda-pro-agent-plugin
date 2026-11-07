@@ -3223,7 +3223,13 @@ class CurrentPcbRetainedOwnerCore {
       assertCurrent: async () => { original(); await this.#verify(); original(); },
       projectSourceHeld: async (source: CurrentSchematicDisplayProjectSourceHeld, selectedController: CurrentSchematicDisplayWorkerController): Promise<void> => {
         const selected = original(); if (selected !== selectedController || this.#schematicWorkerOrigin !== null) { throw error("SCHEMATIC_DISPLAY_WORKER_SOURCE_CONSUMED"); }
-        const child = selected.requireHeld(source); const sourceToken = qualifyCurrentSchematicDisplaySaveSource(source.source);
+        const child = selected.requireHeld(source);
+        if(selected instanceof CurrentSchematicRelevanceDisplayWorkerController){
+          const originalController=selected;const read=(scriptId:string):Promise<RecordValue>=>this.#transfer(()=>{original();originalController.requireOriginal(source,child);return pipe.readSchematicRelevanceDisplayObservedSource({phase:"via-observed-source",method:"Debugger.getScriptSource",params:{scriptId}});});
+          originalController.bindOriginalSourceReader(source,read);
+          pipe.bindSchematicRelevanceDisplaySubmittedHelpers(command=>{original();originalController.requireOriginal(source,child);if(!originalController.status().ready&&!("method"in command&&(command.method==="Debugger.setBreakpoint"||command.method==="Debugger.setBreakpointOnFunctionCall"))){return false;}originalController.registerSubmitted(source,command);return true;},async(command,raw):Promise<void>=>{original();await originalController.verifyOriginalHelperReceipt(source,command,raw,read);original();});
+        }
+ const sourceToken = qualifyCurrentSchematicDisplaySaveSource(source.source);
         const owner = originalSchematicAllocation(this).owner;
         if (owner === undefined || owner === null || owner !== this) { throw error("SCHEMATIC_DISPLAY_WORKER_ORIGINAL_OWNER"); }
         const origin: CurrentSchematicDisplaySaveWorkerOrigin = Object.freeze({ profile: schematicOperationValue(argumentsValue, "private.current-schematic-wire-edit-save-worker-origin.v1", "private.current-schematic-relevance-display-save-worker-origin.v1", "private.current-schematic-display-save-worker-origin.v1") });

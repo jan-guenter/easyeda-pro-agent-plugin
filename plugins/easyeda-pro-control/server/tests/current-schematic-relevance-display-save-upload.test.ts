@@ -36,3 +36,9 @@ void test("copied JSON origins cannot issue an own7 local continuation", async (
   const origin = Object.freeze({ profile: "private.current-schematic-relevance-display-save-producer-origin.v1" as const });
   await assert.rejects(continueOriginalCurrentSchematicRelevanceDisplayLocalUploadCall(origin, {}, {}, Object.freeze({ profile: "private.current-project-save-producer-held-call.v1" })));
 });
+
+void test("the helper source selector is seven-record-only and contains no execution fields", () => {
+  const command={id:1,phase:"via-observed-source",method:"Debugger.getScriptSource",params:{scriptId:"original-script"},schematicRelevanceObservedSourceCommand:true,sessionId:"worker"};const bytes=Buffer.from(`${JSON.stringify(command)}\0`);
+  assert.deepEqual(currentSchematicRelevanceDisplayWriteNativeRequest(bytes),{action:"schematic-relevance-display-observed-source",requestId:1,scriptId:"original-script"});
+  assert.throws(()=>currentSchematicDisplayWriteNativeRequest(bytes));assert.throws(()=>currentSchematicWireEditNativeRequest(bytes));assert.throws(()=>currentSchematicRelevanceDisplayWriteNativeRequest(Buffer.from(`${JSON.stringify({...command,params:{scriptId:"original-script",expression:"this"}})}\0`)));
+});

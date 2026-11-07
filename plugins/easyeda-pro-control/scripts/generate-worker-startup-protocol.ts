@@ -1,3 +1,4 @@
+import { applyCurrentSchematicRelevanceDisplayObservedSourceNativeFragment } from "../server/src/current-schematic-relevance-display-observed-source-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayLibraryRefreshNativeFragment } from "../server/src/current-schematic-relevance-display-library-refresh-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplaySaveUploadNativeFragment } from "../server/src/current-schematic-relevance-display-save-upload-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplaySyncQuiesceNativeFragment } from "../server/src/current-schematic-relevance-display-sync-quiesce-native-fragment.ts";
@@ -9,7 +10,6 @@ import { applyCurrentSchematicRelevanceDisplayModifyEntryNativeFragment } from "
 import { applyCurrentSchematicRelevanceDisplayActionNativeFragment } from "../server/src/current-schematic-relevance-display-action-native-fragment.ts";
 import { applyCurrentSchematicWireEditNativeFragment, normalizeCurrentSchematicWireEditNativeFamily, prepareCurrentSchematicWireEditNativeSwitch } from "../server/src/current-schematic-wire-edit-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayWriteNativeFragment, normalizeCurrentSchematicRelevanceDisplayNativeFamily, prepareCurrentSchematicRelevanceDisplayNativeSwitch } from "../server/src/current-schematic-relevance-display-write-native-fragment.ts";
-/* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
 import { currentPcbDiagnosticCSharpReviewSource, expandCurrentPcbDiagnosticCSharpReviewSource, packCurrentPcbDiagnosticCSharpReviewStorage } from "../server/src/current-pcb-diagnostic-csharp-review-storage.ts";
 import { applyCurrentPcbViaObservedSourceNativeFragment } from "../server/src/current-pcb-via-observed-source-native-fragment.ts";
 import { applyCurrentPcbViaSaveDrainNativeFragment } from "../server/src/current-pcb-via-save-drain-native-fragment.ts";
@@ -180,6 +180,7 @@ export function generateWorkerStartupProtocol(source: string): string {
   next = applyCurrentSchematicRelevanceDisplayStructureNativeFragment(next);
   next = applyCurrentSchematicRelevanceDisplaySaveNativeFragment(next);
   next = applyCurrentSchematicRelevanceDisplaySaveUploadNativeFragment(next);
+  next = applyCurrentSchematicRelevanceDisplayObservedSourceNativeFragment(next);
   next = applyCurrentSchematicWireEditNativeFragment(next);
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
   assertCurrentFootprintCopyForwardNativeRequestIds(next);
