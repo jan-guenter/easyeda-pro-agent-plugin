@@ -50,6 +50,7 @@ export class CurrentPcbViaWriteObservers {
   #armAttempted = false; #failed = false; #failure: unknown; #phase: "startup" | "action" = "startup";
   #save: CurrentPcbViaSaveObserver | null = null; #structure: CurrentProjectSaveStructureObserver | null = null;
   #transport: CurrentProjectStructureTransportObserver | null = null; #producer: CurrentProjectSaveProducerObserver | null = null;
+  #structurePacket: Promise<Outcome<Awaited<ReturnType<CurrentProjectSaveStructureObserver["observePacket"]>>>> | null = null;
   #construction: Promise<Outcome<void>> | null = null; #collector: Promise<Outcome<void>> | null = null;
   #quiesce: CurrentProjectSyncQuiesceObserver | null = null; #quiescence: Promise<Outcome<CurrentProjectSyncQuiesceCompletion>> | null = null;
   #originalPendingProducer: Promise<CurrentProjectSaveProducerHeldCall> | null = null;
@@ -103,6 +104,10 @@ export class CurrentPcbViaWriteObservers {
         this.#current(); need(this.#structure === null && this.#construction === null, "STRUCTURE_OBSERVER_CONSUMED");
         const observer = new CurrentProjectSaveStructureObserver(origin, this.#owner, this.#plan); this.#structure = observer;
         await observer.arm(); this.#current(); this.#construction = this.#retain(observer.observeConstruction());
+        // Startup structure calls run before editor readiness. Keep the same
+        // Reader alive across startup and the later original Save publication.
+        const construction = this.#construction;
+        this.#structurePacket = this.#retain((async (): Promise<Awaited<ReturnType<CurrentProjectSaveStructureObserver["observePacket"]>>> => { result(await construction); this.#current(); return observer.observePacket(); })());
       });
       this.#owner.armViaStructureTransportWorker(this.#plan, async origin => {
         this.#current(); need(this.#transport === null, "TRANSPORT_OBSERVER_CONSUMED"); const observer = new CurrentProjectStructureTransportObserver(origin, this.#owner, this.#plan);
@@ -254,7 +259,8 @@ export class CurrentPcbViaWriteObservers {
       // Resume it first while the separate planned local producer is serviced.
       // Its SDK acknowledgment alone never completes this orchestration.
       await this.#save.observeCompletion(); this.#current();
-      const packet = await this.#structure.observePacket(); this.#current();
+      need(this.#structurePacket !== null, "ORIGINAL_STRUCTURE_READER_REQUIRED");
+      const packet = result(await this.#structurePacket); this.#current();
       await this.#structure.releasePrehistoryPacket(packet, reservation); this.#current();
       const transport = await this.#transport.observeSend(); this.#current(); await this.#transport.releaseSend(transport, reservation); this.#current();
       await this.#transport.observeReturned(transport); this.#current(); await this.#mainStructure.observe(); this.#current();
@@ -356,6 +362,7 @@ export class CurrentPcbViaWriteObservers {
     };
     current(); const pending: Promise<unknown>[] = [];
     if (this.#construction !== null) { pending.push(this.#construction); }
+    if (this.#structurePacket !== null) { pending.push(this.#structurePacket); }
     if (this.#quiescence !== null) { pending.push(this.#quiescence); }
     if (this.#collector !== null) { pending.push(this.#collector); }
     if (this.#originalPendingProducer !== null) { pending.push(this.#originalPendingProducer); }

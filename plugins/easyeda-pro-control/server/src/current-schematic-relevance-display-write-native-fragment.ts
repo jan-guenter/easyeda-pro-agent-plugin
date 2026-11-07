@@ -39,6 +39,7 @@ export function normalizeCurrentSchematicRelevanceDisplayNativeFamily(input: str
   return source.replaceAll("SchematicDisplayFamily", "schematicDisplayWrite209")
     .replaceAll("-not ($SchematicDisplayWrite209 -or $SchematicRelevanceDisplayWrite209)", "-not $SchematicDisplayWrite209")
     .replace(`schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(SEVEN_STRUCTURE.normal)}:${String(SIX_STRUCTURE.normal)})`, `schematicStructureNormal>=${String(SIX_STRUCTURE.normal)}`)
+    .replace("schematicWorkerHelperScripts.Count>=(schematicRelevanceDisplayWrite209?5:4)", "schematicWorkerHelperScripts.Count>=4")
     .replace("schematicStartupCalls>=(schematicRelevanceDisplayWrite209?8:7)", "schematicStartupCalls>=7")
     .replace(` if(schematicRelevanceDisplayWrite209)return ${String(PROFILE.renderer.total)};`, "")
     .replace("elseif ($SchematicRelevanceDisplayWrite209) {[EasyedaDiagnosticOwner]::CreateSchematicRelevanceDisplayWrite209()} ", "")
@@ -127,6 +128,7 @@ export function applyCurrentSchematicRelevanceDisplayWriteNativeFragment(input: 
   source = source.replaceAll("-not $SchematicDisplayWrite209", "-not ($SchematicDisplayWrite209 -or $SchematicRelevanceDisplayWrite209)");
   source = once(source, admissionMarker, sixAdmission); source = once(source, stageMarker, sixStage);
   source = once(source, `schematicStructureNormal>=${String(SIX_STRUCTURE.normal)}`, `schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(SEVEN_STRUCTURE.normal)}:${String(SIX_STRUCTURE.normal)})`);
+  source = once(source, "schematicWorkerHelperScripts.Count>=4", "schematicWorkerHelperScripts.Count>=(schematicRelevanceDisplayWrite209?5:4)");
   source = once(source, "schematicStartupCalls>=7", "schematicStartupCalls>=(schematicRelevanceDisplayWrite209?8:7)");
   source = prepareCurrentSchematicRelevanceDisplayNativeSwitch(source);
   const switches = [...source.slice(0, source.indexOf("\n")).matchAll(/\[switch\]\$(\w+)/gu)].map(match => match[1]).filter(name => name !== undefined && name !== "CompileOnly" && name !== "SchematicRelevanceDisplayWrite209");

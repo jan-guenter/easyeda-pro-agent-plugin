@@ -1,3 +1,4 @@
+import { applyCurrentSchematicRelevanceDisplaySyncQuiesceNativeFragment } from "../server/src/current-schematic-relevance-display-sync-quiesce-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayStructureNativeFragment } from "../server/src/current-schematic-relevance-display-structure-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplaySaveNativeFragment } from "../server/src/current-schematic-relevance-display-save-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayMainNativeFragment } from "../server/src/current-schematic-relevance-display-main-native-fragment.ts";
@@ -171,6 +172,7 @@ export function generateWorkerStartupProtocol(source: string): string {
   next = applyCurrentSchematicRelevanceDisplayActionNativeFragment(next);
   next = applyCurrentSchematicRelevanceDisplayModifyEntryNativeFragment(next);
   next = applyCurrentSchematicRelevanceDisplayClockNativeFragment(next);
+  next = applyCurrentSchematicRelevanceDisplaySyncQuiesceNativeFragment(next);
   next = applyCurrentSchematicRelevanceDisplayMainNativeFragment(next);
   next = applyCurrentSchematicRelevanceDisplayStructureNativeFragment(next);
   next = applyCurrentSchematicRelevanceDisplaySaveNativeFragment(next);

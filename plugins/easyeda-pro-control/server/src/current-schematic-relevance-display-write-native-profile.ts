@@ -1,3 +1,5 @@
+/* oxlint-disable import/max-dependencies -- Exact own-purpose budgets are derived from each separately qualified finite lane; accepting caller totals would weaken native bounds. */
+import { CURRENT_PROJECT_SYNC_QUIESCE_REQUESTS as POLLING } from "./current-project-sync-quiesce-protocol.ts";
 import { CURRENT_PCB_VIA_MAIN_STRUCTURE_REQUESTS as STRUCTURE_MAIN } from "./current-pcb-via-main-structure-protocol.ts";
 import { CURRENT_PCB_VIA_MAIN_REQUESTS as MAIN } from "./current-pcb-via-main-protocol.ts";
 import { CURRENT_PCB_VIA_MAIN_STEP_REQUESTS as STEP } from "./current-pcb-via-main-step-protocol.ts";
@@ -16,8 +18,9 @@ export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE = Object.f
   purpose: CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE, nativeSwitch: "-SchematicRelevanceDisplayWrite209",
   main: Object.freeze({ normal: SHARED.main.normal + MAIN.normal + STEP.normal + BEGIN.normal + HISTORY.normal + STRUCTURE_MAIN.normal, cleanup: SHARED.main.cleanup + MAIN.cleanup + BEGIN.cleanup + HISTORY.cleanup + STRUCTURE_MAIN.cleanup, total: SHARED.main.total + MAIN.total + STEP.total + BEGIN.total + HISTORY.total + STRUCTURE_MAIN.total }), renderer: Object.freeze({ ...SHARED.renderer,
     structureObservation: STRUCTURE.cdpRequests,
+    startupPollingObservation: POLLING.cdpRequests, startupPollingHelperSources: 1,
     actionPreflightObservation: ACTION.total, actionGuardObservation: ACTION_GUARD.cdpRequests, actionGuardBindingControls: ACTION_GUARD.bindingControls,
     modifyEntryObservation: MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation,
     total: SHARED.renderer.total - SHARED.renderer.structureObservation - SHARED.renderer.actionPreflightObservation - SHARED.renderer.actionGuardObservation - SHARED.renderer.actionGuardBindingControls +
-      STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation }),
+      STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + POLLING.cdpRequests + 1 }),
 });

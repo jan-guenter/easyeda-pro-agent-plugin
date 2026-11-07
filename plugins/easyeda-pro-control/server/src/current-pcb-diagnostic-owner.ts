@@ -39,8 +39,8 @@ import { validateCurrentFootprintInverseInitialCacheCommand } from "./current-fo
 import type { CurrentFootprintInverseInitialCacheCommand } from "./current-footprint-inverse-initial-cache-protocol.ts";
 import type { CurrentFootprintInverseInitialCacheBindings, CurrentFootprintInverseInitialCacheCompletion, CurrentFootprintInverseInitialCacheOrigin } from "./current-footprint-inverse-initial-cache-origin.ts";
 import type { CurrentFootprintInverseInitialCacheObserver } from "./current-footprint-inverse-initial-cache-observer.ts";
-import { consumeGeneratedSchematicRelevanceDisplayDispatch, enrollGeneratedSchematicRelevanceDisplayModifyIntent, enrollGeneratedSchematicRelevanceDisplaySaveIntent } from "./generated-schematic-relevance-display-journal.ts";
-import type { GeneratedSchematicRelevanceDisplayDispatch, GeneratedSchematicRelevanceDisplayModifyEnrollment, GeneratedSchematicRelevanceDisplaySaveEnrollment } from "./generated-schematic-relevance-display-journal.ts";
+import { consumeGeneratedSchematicRelevanceDisplayDispatch, consumeGeneratedSchematicRelevanceDisplayPollingIntent, enrollGeneratedSchematicRelevanceDisplayModifyIntent, enrollGeneratedSchematicRelevanceDisplayPollingIntent, enrollGeneratedSchematicRelevanceDisplaySaveIntent } from "./generated-schematic-relevance-display-journal.ts";
+import type { GeneratedSchematicRelevanceDisplayDispatch, GeneratedSchematicRelevanceDisplayModifyEnrollment, GeneratedSchematicRelevanceDisplayPollingIntent, GeneratedSchematicRelevanceDisplaySaveEnrollment, GeneratedSchematicRelevanceDisplayStartupEnrollment } from "./generated-schematic-relevance-display-journal.ts";
 import { deriveCurrentFootprintInverseMainHistoryBaseline } from "./current-footprint-inverse-main-history-baseline.ts";
 import type { CurrentFootprintInverseMainHistoryBaseline } from "./current-footprint-inverse-main-history-baseline.ts";
 import type { CurrentFootprintInverseMainHistoryRows } from "./current-footprint-inverse-main-history-custody.ts";
@@ -119,7 +119,7 @@ import { consumeCurrentPcbViaPollingCancellationIntent,enrollCurrentPcbViaPollin
 import type { CurrentPcbViaPollingCancellationEnrollment,CurrentPcbViaPollingCancellationIntent } from "./current-pcb-via-polling-cancellation-intent.ts";
 import { CURRENT_PROJECT_SYNC_QUIESCE_CAPTURE_LENGTH,currentProjectSyncQuiesceNativeCases,validateCurrentProjectSyncQuiesceCommand } from "./current-project-sync-quiesce-protocol.ts";
 import type { CurrentProjectSyncQuiesceCommand } from "./current-project-sync-quiesce-protocol.ts";
-import type { CurrentFootprintInverseProjectSyncQuiesceOrigin, CurrentPcbViaProjectSyncQuiesceOrigin, CurrentProjectSyncQuiesceBindings, CurrentProjectSyncQuiesceEvent, CurrentProjectSyncQuiesceOrigin } from "./current-project-sync-quiesce-origin.ts";
+import type { CurrentFootprintInverseProjectSyncQuiesceOrigin, CurrentPcbViaProjectSyncQuiesceOrigin, CurrentProjectSyncQuiesceBindings, CurrentProjectSyncQuiesceEvent, CurrentProjectSyncQuiesceOrigin, CurrentSchematicRelevanceDisplayProjectSyncQuiesceOrigin } from "./current-project-sync-quiesce-origin.ts";
 import type { CurrentPcbViaMainLiveHistoryRows } from "./current-pcb-via-main-live-history-custody.ts";
 import type { CurrentPcbViaMainLiveHistoryCommand } from "./current-pcb-via-main-live-history-protocol.ts";
 import { currentPcbViaMainLiveHistoryWire } from "./current-pcb-via-main-live-history-wire.ts";
@@ -1774,6 +1774,13 @@ class CurrentPcbRetainedOwnerCore {
   #pcbFrameObservation: CurrentPcbDiagnosticPcbOpeningResult | null = null;
   #pcbSourceQualified = false;
   #pcbSourceProfile: DiagnosticScriptProfile | null = null;
+  #schematicRelevancePollingArguments: GeneratedSchematicRelevanceDisplayNativeArguments | null = null;
+  #schematicRelevancePollingIntent: GeneratedSchematicRelevanceDisplayPollingIntent | null = null;
+  #schematicRelevancePollingEnrollment: GeneratedSchematicRelevanceDisplayStartupEnrollment | null = null;
+  #schematicRelevancePollingSetup: CurrentProjectSyncQuiesceSetup | null = null;
+  #schematicRelevancePollingOrigin: CurrentSchematicRelevanceDisplayProjectSyncQuiesceOrigin | null = null;
+  #schematicRelevancePollingCancelAttempted = false;
+  #schematicRelevancePollingCompleted = false;
   #schematicWorkerArguments: CurrentSchematicDisplayOperationArguments | null = null;
   #schematicWorkerSetup: CurrentSchematicDisplaySaveWorkerSetup | null = null;
   #schematicTransportSetup: CurrentProjectStructureTransportSetup | null = null;
@@ -3039,6 +3046,17 @@ class CurrentPcbRetainedOwnerCore {
    * requires the fresh direct worker and all original imported source pauses. */
   /** Trusted arm callback only. It installs the fixed structure sites while
    * the same original project source is held; construction waits its resume. */
+  public armSchematicRelevanceDisplayPollingQuiescence(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments, intent: GeneratedSchematicRelevanceDisplayPollingIntent, setup: CurrentProjectSyncQuiesceSetup): void {
+    assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this); requireSchematicArguments(this, argumentsValue); this.#available();
+    if (this.#busy || this.#projectOpeningConsumed || this.#schematicWorkerController !== null || this.#schematicWorkerArguments !== argumentsValue || this.#schematicStructureSetup === null || this.#schematicProducerObservationSetup === null || this.#schematicRelevancePollingSetup !== null || typeof setup !== "function" || types.isProxy(setup)) { throw error("SCHEMATIC_RELEVANCE_POLLING_ARM_UNAVAILABLE"); }
+    const enrollment = enrollGeneratedSchematicRelevanceDisplayPollingIntent(intent, this, argumentsValue);
+    this.#schematicRelevancePollingArguments = argumentsValue; this.#schematicRelevancePollingIntent = intent; this.#schematicRelevancePollingEnrollment = enrollment; this.#schematicRelevancePollingSetup = setup;
+  }
+  public requireOriginalSchematicRelevanceDisplayPollingQuiesced(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): void {
+    assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this); requireSchematicArguments(this, argumentsValue); const origin = this.#schematicRelevancePollingOrigin;
+    if (origin === null || !this.#schematicRelevancePollingCompleted) { throw error("SCHEMATIC_RELEVANCE_POLLING_COMPLETION_REQUIRED"); }
+    requireOriginalCurrentProjectSyncQuiesceOrigin(origin, this, argumentsValue);
+  }
   public armSchematicDisplayProducerObservationWorker(argumentsValue: CurrentSchematicDisplayOperationArguments, setup: CurrentProjectSaveProducerSetup): void {
     requireSchematicArguments(this, argumentsValue); this.#available();
     if (this.#busy || this.#schematicWorkerController !== null || this.#projectOpeningConsumed || this.#schematicProducerGuardOperation !== argumentsValue || this.#schematicProducerObservationSetup !== null || typeof setup !== "function" || types.isProxy(setup)) { throw error("PROJECT_SAVE_PRODUCER_OBSERVATION_ARM_UNAVAILABLE"); }
@@ -3492,6 +3510,38 @@ class CurrentPcbRetainedOwnerCore {
           originalProducerStartupProgress.set(producerOrigin, Object.freeze({ owner: this, operation: argumentsValue, read: (): CurrentGeneratedStartupProgress => { original(); assertProducerOriginal(); return Object.freeze({ initialCache: initialCacheCursor?.startupProgress() ?? null, initialSync: initialSyncCursor?.startupProgress() ?? null, periodicSync: periodicSyncCursor?.startupProgress() ?? null, executionAuthorized: false }); } }));
           await Reflect.apply(producerSetup, undefined, [producerOrigin]); original(); assertProducerOriginal();
           for (const role of CURRENT_PROJECT_SAVE_PRODUCER_SHARED_GUARDS) { selected.bindProducerObservationBreakpoint(source, role, selected.originalProducerGuardBreakpoint(source, role)); } selected.sealProducerObservation(source); selected.requireProducerObservationArmed(source);
+        }
+        const quiesceSetup=this.#schematicRelevancePollingSetup;
+        if(quiesceSetup!==null){if (!isSchematicRelevanceDisplayArguments(argumentsValue) || !(selected instanceof CurrentSchematicRelevanceDisplayWorkerController) || !(pipe instanceof CurrentSchematicRelevanceDisplayWritePipe)) { throw error("SCHEMATIC_RELEVANCE_POLLING_ORIGINAL_PURPOSE"); }const intent=this.#schematicRelevancePollingIntent;const enrollment=this.#schematicRelevancePollingEnrollment;if(this.#schematicRelevancePollingArguments!==argumentsValue||intent===null||enrollment===null||this.#schematicRelevancePollingOrigin!==null||this.#schematicProducerObservationOrigin===null){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_ARM");}
+          enrollment.assertBeforeAttempt();const bound=await this.#request({action:"schematic-relevance-display-sync-quiesce-bind",context:source.uniqueContextId});original();if(!exact(bound,["bound"])||bound["bound"]!==true){throw error("PROJECT_SYNC_QUIESCE_BIND_ACK");}
+          const quiesceOrigin:CurrentSchematicRelevanceDisplayProjectSyncQuiesceOrigin=Object.freeze({profile:"private.current-schematic-relevance-display-project-sync-quiesce-origin.v1"});
+          let capture:string|null=null,entry:string|null=null,entryMethod:string|null=null,returned:string|null=null,step=0;const natives=new Map<number,string>();const frames=new Map<string,string>();const points=new Map<string,string>();let heldFrame:string|null=null,heldRole:"entry"|"returned"|null=null;
+          const cases=currentProjectSyncQuiesceNativeCases();
+          const quiesceOriginal=():void=>{original();selected.requireOriginal(source,child);enrollment.assertCurrent();if(this.#schematicRelevancePollingArguments!==argumentsValue||this.#schematicRelevancePollingIntent!==intent||this.#schematicRelevancePollingEnrollment!==enrollment||this.#schematicRelevancePollingSetup!==quiesceSetup||this.#schematicRelevancePollingOrigin!==quiesceOrigin){throw error("PROJECT_SYNC_QUIESCE_CUSTODY_CHANGED");}if(this.#schematicRelevancePollingCancelAttempted){enrollment.assertOriginalAttempted();}else{enrollment.assertBeforeAttempt();}};
+          const quiesceBindings:CurrentProjectSyncQuiesceBindings=Object.freeze({sessionId:child.sessionId,scriptId:source.scriptId,uniqueContextId:source.uniqueContextId,source:source.source,
+            originalProject:():string=>{quiesceOriginal();const project=this.#schematicProducerOriginalProject;if(project===null){throw error("PROJECT_SYNC_QUIESCE_CONSTRUCTOR_REQUIRED");}return project;},
+            request:async(input:CurrentProjectSyncQuiesceCommand):Promise<unknown>=>{quiesceOriginal();const command=validateCurrentProjectSyncQuiesceCommand(input),expected=cases[step];if(expected===undefined||command.phase!==expected.phase||("role" in command?command.role:null)!==("role" in expected?expected.role:null)||("index" in command?command.index:null)!==("index" in expected?expected.index:null)){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_SEQUENCE");}
+              if(command.phase==="sync-quiesce-capture"){if(command.params.uniqueContextId!==source.uniqueContextId){throw error("PROJECT_SYNC_QUIESCE_CONTEXT");}selected.expectSetupHelper(source,command.params.functionDeclaration);}
+              if(command.phase==="sync-quiesce-arm"&&command.params.location.scriptId!==source.scriptId){throw error("PROJECT_SYNC_QUIESCE_SCRIPT");}
+              if(command.phase==="sync-quiesce-properties"){let expectedObject=returned;if(command.role==="capture"){expectedObject=capture;}else if(command.role==="entry"){expectedObject=entry;}if(command.params.objectId!==expectedObject){throw error("PROJECT_SYNC_QUIESCE_PROPERTIES");}}
+              if(command.phase==="sync-quiesce-native"&&command.params.objectId!==natives.get(command.index)||command.phase==="sync-quiesce-callee"&&command.params.objectId!==entryMethod){throw error("PROJECT_SYNC_QUIESCE_CALLEE");}
+              if(command.phase==="sync-quiesce-frame"&&(heldRole!==command.role||heldFrame!==command.params.callFrameId)){throw error("PROJECT_SYNC_QUIESCE_FRAME");}
+              if(command.phase==="sync-quiesce-entry"&&(command.params.objectId!==frames.get("entry")||command.params.arguments[0].objectId!==this.#schematicProducerOriginalProject||command.params.arguments[1].objectId!==capture)||command.phase==="sync-quiesce-returned"&&(command.params.objectId!==frames.get("returned")||command.params.arguments[0].objectId!==entry)||command.phase==="sync-quiesce-cancel"&&command.params.objectId!==returned){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_JOIN");}
+              if(command.phase==="sync-quiesce-remove-returned"&&command.params.breakpointId!==points.get("returned")){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_POINT");}
+              if(command.phase==="sync-quiesce-resume"&&heldRole!==command.role){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_RESUME");}
+              step+=1;
+              if(command.phase==="sync-quiesce-cancel"){const dispatch=consumeGeneratedSchematicRelevanceDisplayPollingIntent(intent,this,argumentsValue);this.#schematicRelevancePollingCancelAttempted=true;await dispatch.assertPublished();quiesceOriginal();}
+              const raw=await this.#serializeSchematicDisplayObserver(()=>this.#transfer(()=>{quiesceOriginal();if(command.phase==="sync-quiesce-resume"){selected.reserveSyncQuiesceResume(source,command.role);}return pipe.observeSchematicRelevanceDisplaySyncQuiesce(command);}));quiesceOriginal();
+              if(command.phase==="sync-quiesce-capture"){capture=decodeCurrentFootprintCopyClockRpcV2ArrayCapture(raw,CURRENT_PROJECT_SYNC_QUIESCE_CAPTURE_LENGTH);}
+              else if(command.phase==="sync-quiesce-properties"){let expectedLength=3;if(command.role==="capture"){expectedLength=CURRENT_PROJECT_SYNC_QUIESCE_CAPTURE_LENGTH;}else if(command.role==="entry"){expectedLength=5;}const fields=decodeCurrentProjectSyncQuiesceArray(raw,expectedLength);if(command.role==="capture"){for(let index=1;index<=13;index+=1){natives.set(index,currentFootprintCopyClockRpcV2ArrayObject(fields,index));}}else if(command.role==="entry"){entryMethod=currentFootprintCopyClockRpcV2ArrayObject(fields,1);}else{const reference=fields.get("0");if(reference?.type!=="object"||reference.subtype!=="array"||reference.className!=="Array"||reference.description!=="Array(5)"||reference.objectId===undefined){throw error("PROJECT_SYNC_QUIESCE_RETURNED_REFERENCE");}}}
+              else if(command.phase==="sync-quiesce-frame"){frames.set(command.role,decodeCurrentFootprintCopyClockRpcV2ArrayCapture(raw,1));}
+              else if(command.phase==="sync-quiesce-entry"){entry=decodeCurrentFootprintCopyClockRpcV2ArrayCapture(raw,5);}else if(command.phase==="sync-quiesce-returned"){returned=decodeCurrentFootprintCopyClockRpcV2ArrayCapture(raw,3);}
+              else if(command.phase==="sync-quiesce-arm"){if(!record(raw)||typeof raw["breakpointId"]!=="string"){throw error("PROJECT_SYNC_QUIESCE_POINT_REPLY");}points.set(command.role,raw["breakpointId"]);selected.bindSyncQuiesceBreakpoint(source,command.role,raw["breakpointId"]);}
+              return raw;
+            },nextEvent:async()=>{quiesceOriginal();const event=await selected.nextSyncQuiesceEvent();quiesceOriginal();if(event.method==="Debugger.paused"){if(heldRole!==null||!record(event.params)||!Array.isArray(event.params["hitBreakpoints"])||!Array.isArray(event.params["callFrames"])){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_EVENT");}const top:unknown=event.params["callFrames"][0];let role:"entry"|"returned"|null=null;if(event.params["hitBreakpoints"][0]===points.get("entry")){role="entry";}else if(event.params["hitBreakpoints"][0]===points.get("returned")){role="returned";}if(role===null||!record(top)||typeof top["callFrameId"]!=="string"){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_EVENT");}heldRole=role;heldFrame=top["callFrameId"];}else{heldRole=null;heldFrame=null;}return event;},
+            assertCurrent:async()=>{quiesceOriginal();await this.#verify();quiesceOriginal();},complete:async()=>{quiesceOriginal();if(step!==cases.length||!this.#schematicRelevancePollingCancelAttempted||heldRole!==null){throw error("PROJECT_SYNC_QUIESCE_ORIGINAL_COMPLETION");}const result=await this.#request({action:"schematic-relevance-display-sync-quiesce-complete"});quiesceOriginal();if(!exact(result,["completed"])||result["completed"]!==true){throw error("PROJECT_SYNC_QUIESCE_COMPLETE_ACK");}selected.completeSyncQuiesce(source,child);this.#schematicRelevancePollingCompleted=true;},
+            assertOriginalGenerationExited:():Promise<void>=>{requireSchematicArguments(this,argumentsValue);if(!this.#terminationObserved||this.#terminationObservation?.terminated!==true){return Promise.reject(error("PROJECT_SYNC_QUIESCE_EXIT_REQUIRED"));}return Promise.resolve();},fail:()=>{ selected.fail(); }});
+          projectSyncQuiesceOrigins.set(quiesceOrigin,Object.freeze({owner:this,operation:argumentsValue,bindings:quiesceBindings,assertOriginal:quiesceOriginal}));this.#schematicRelevancePollingOrigin=quiesceOrigin;await Reflect.apply(quiesceSetup,undefined,[quiesceOrigin]);quiesceOriginal();if(step!==17||points.size!==2){throw error("PROJECT_SYNC_QUIESCE_SETUP_INCOMPLETE");}
         }
       }, releaseParentWait: async () => { original(); const reply = await this.#transfer(() => pipe.configureSchematicDisplayWorkerRunning());
         if (!exact(reply, [])) { throw error("SCHEMATIC_DISPLAY_WORKER_PARENT_RUNNING_REPLY"); } original(); },

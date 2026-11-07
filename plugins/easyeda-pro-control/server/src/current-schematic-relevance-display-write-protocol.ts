@@ -1,3 +1,4 @@
+import { currentSchematicRelevanceDisplaySyncQuiesceWire } from "./current-schematic-relevance-display-sync-quiesce-wire.ts";
 import { currentSchematicDisplayClockWire } from "./current-schematic-display-clock-wire.ts";
 import { currentSchematicRelevanceDisplayModifyEntryWire } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
 import { currentSchematicDisplayAccessorWire } from "./current-schematic-display-accessor-wire.ts";
@@ -17,6 +18,13 @@ export function currentSchematicRelevanceDisplayWriteNativeRequest(chunk: Buffer
     !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("SCHEMATIC_RELEVANCE_DISPLAY_WIRE"); }
   if (Object.hasOwn(raw, "schematicDisplayPhase") || Object.hasOwn(raw, "schematicAccessorCommand") || Object.hasOwn(raw, "schematicActionCommand") || Object.hasOwn(raw, "schematicActionGuardCommand") || Object.hasOwn(raw, "schematicClockCommand")) {
     throw new Error("SCHEMATIC_RELEVANCE_DISPLAY_OWN_MUTATION_ORIGIN_REQUIRED");
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceSyncQuiesceCommand")) {
+    const { id, sessionId, schematicRelevanceSyncQuiesceCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_RELEVANCE_QUIESCE_WIRE"); }
+    const fixed = currentSchematicRelevanceDisplaySyncQuiesceWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceSyncQuiesceCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_RELEVANCE_QUIESCE_FIXED_WIRE"); }
+    return fixed.request;
   }
   if (Object.hasOwn(raw, "schematicRelevanceClockCommand")) {
     const { id, sessionId, schematicRelevanceClockCommand: marker, schematicClockRealm: realm, ...input } = raw;
