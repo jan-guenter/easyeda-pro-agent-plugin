@@ -1700,3 +1700,24 @@ stored bytes and1,969,932 compiler bytes. Full emitted Linux C#5 passes the20
 RPC cases, once/purpose limits and entry/bus/public/encoder smokes
 (ORIGINAL_INVERSE_DELETE_RPC_NATIVE_OK). No tracked helper/pin was emitted,
 no app/SDK/native operation ran, and no clock/effect/SQL completion is claimed.
+
+## Actual paused worker caller stack and packet/new-Ke data
+
+A separate job data leaf now requires the exact held before-qe stack through
+Tg.deleteString109:40070, Tg.deleteData's call109:40416, EP's call110:138712
+and the strict-CJS Mb.rpcService callback's call0:8431. Each function location,
+script, name and distinct frame ID is checked. Its fixed service-frame read
+omits the callback's still-uninitialized a variable. Descriptor-only packet
+capture joins the original RPC tuples with the already-observed Ke instance
+and its guard; a later reproof preserves both without invoking a clock,
+manager, task or channel method.
+
+The actual Node24 paused-thread Inspector test executes pinned declarations
+only on inert project/task data. It reaches that real synchronous stack,
+qualifies/captures the actual packet, and refuses a foreign reply topic,
+foreign session and shifted caller PC. The clock call count remains zero
+through the proof. Both types and strict changed lint pass. This closes the
+earlier manually assembled frame test gap, but remains a data-only leaf.
+The genuine manager-forwarded-job registry, native peer/envelope relation and
+Core/native continuation must still be joined; reply-topic equality by itself
+is not an original native job proof. No EasyEDA process or native owner ran.
