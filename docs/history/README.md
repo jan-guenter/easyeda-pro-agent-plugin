@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 failed disposable Via abandonment](2026-11-07-via-failed-disposable-abandonment.md). Separate immutable closure sidecar clears historical quarantine only after all original resources settle; failed Save/reopen proofs remain false and old records stay exact.
+
 - [2026-11-07 original Via save drain DAG](2026-11-07-via-original-save-drain-dag.md). Retain original cloud/buffer/deferred/dropped Promises and overlapping cache jobs with source finalizer ordering; native mounting and persistence remain separate.
 
 - [2026-11-07 Via changed-head sync cursor](2026-11-07-via-changed-head-sync-cursor.md). Separate prospective branch and genuine late SQLite rows, exact changed index and original Promise settlement; actual producer/native mounting remains separate.

@@ -7,6 +7,8 @@ export interface CurrentPcbViaWriteFailureClosure { readonly profile: "private.c
 export type CurrentPcbViaWriteGenerationClosure = Readonly<{
   outcome: "allocation-never-entered"; helperAllocated: false; rootCreated: false; exitClaimed: false;
 }> | Readonly<{
+  outcome: "no-resource-allocated"; helperAllocated: false; rootCreated: false; exitClaimed: false;
+}> | Readonly<{
   outcome: "root-never-created"; helperAllocated: true; helperReleased: true; rootCreated: false; exitClaimed: false;
 }> | Readonly<{
   outcome: "root-exited"; helperAllocated: true; helperReleased: true; rootCreated: true;

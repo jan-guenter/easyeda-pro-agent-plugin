@@ -256,6 +256,7 @@ async function qualifyViaWrite(candidate: DetailedScanCandidate): Promise<Qualif
       const { inspectCurrentPcbViaWriteAdmission } = await import("./current-pcb-via-write-admission.ts");
       const result = await inspectCurrentPcbViaWriteAdmission(expected);
       if (result.terminal) { return { ...observation(candidate, "legacy"), bridgeBlocking: false, unfinished: false }; }
+      if (result.abandoned === true) { return { ...observation(candidate, "historical-abandonment-verified"), bridgeBlocking: false, unfinished: false }; }
       qualification = "incomplete";
     }
   } catch (error) { qualification = failureClass(error); }
