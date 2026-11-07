@@ -2162,3 +2162,22 @@ session while keeping the SDK request unsettled, then settles that exact SDK
 request. Both the ordinary worker-prefix case and this pending case pass.
 No caller program, new native operation or broader pending-request allowance
 was added. The full manager forwarding Job remains a separate prerequisite.
+
+## Actual worker registration closure correction
+
+Preparing the preceding GET exposed a concrete older delete setup refusal:
+its scope decoder required `Closure (EP)`, and its test manufactured a named
+EP factory around the real callback text. Both actual callbacks belong to
+`var cP=e=>{...}` in the pinned worker. A source-preserving compile/run of
+that complete2824-byte registration body with inert registration collectors
+reports `Closure (cP), Closure, Global` for GET and delete. No callback/model
+method runs in this check. The initial pure experiment omitted the inert
+subscribe collector and failed during registration; adding that test fixture
+member supplies the full actual body, without changing production behavior.
+
+The decoder now requires only the correct cP label; its optional Script tail,
+all descriptors, IDs and remaining scope labels are unchanged. The maintained
+actual worker bus/task test now retains the complete original cP body instead
+of constructing EP. Two focused cases and strict changed-file lint pass.
+This corrects an unreachable source predicate, not connected deletion proof.
+No application/native helper was run or changed.

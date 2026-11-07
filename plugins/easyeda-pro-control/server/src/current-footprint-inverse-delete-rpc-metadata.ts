@@ -14,7 +14,7 @@ export function qualifyCurrentFootprintInverseDeleteRpcFunction(input:unknown,ro
 /** Select only the callback's own lexical closure. The CJS factory and outer
  * classic-IIFE scopes are checked by label only; Script/Global are never read. */
 export function currentFootprintInverseDeleteRpcScope(input: unknown, role: CurrentFootprintInverseDeleteRpcRole): string {
- const expected = role === "service" ? ["Closure (rpcService)", "Closure", "Closure"] : ["Closure (EP)", "Closure"];
+ const expected = role === "service" ? ["Closure (rpcService)", "Closure", "Closure"] : ["Closure (cP)", "Closure"];
  const value = z.strictObject({ result: z.array(property).min(expected.length + 1).max(expected.length + 2) }).parse(capture(input));
  const tail = value.result.length === expected.length + 2 ? [...expected, "Script", "Global"] : [...expected, "Global"];
  const ids = new Set<string>();
