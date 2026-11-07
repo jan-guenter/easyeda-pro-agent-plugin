@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-07 Via replay and global admission](2026-11-07-via-replay-and-global-admission.md). Recheck the original unpended node before replay and quarantine incomplete private writer journals through global admission; full native upload drain and public mounting remain open.
+
 - [2026-11-07 combined writer choreography](2026-11-07-combined-writer-choreography.md). Join genuine timer startup and original collector closure, preserve exact fixed programs within the helper limit, and retain the full producer-drain requirement before writer exposure.
 
 - [2026-11-07 CBB reader omission decision](2026-11-07-cbb-omission-decision.md). Close the anonymous CBB implementation group with concrete retained routing/data limitations and exact reopening conditions; no new absence probes or online-absence claim.

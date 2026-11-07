@@ -44,6 +44,7 @@ interface DetailedScanCandidate {
   readonly terminal: TerminalCandidate | null;
   readonly incomplete: IncompleteCandidate | null;
   readonly historicalSource?: IncompleteCandidate | null;
+  readonly viaWriteSource?: IncompleteCandidate | null;
 }
 interface CompletedLegacyCandidate {
   readonly compact: true;
@@ -91,16 +92,26 @@ function project(operation: UnknownRecord): ScanCandidate {
   const state = operation["state"];
   const bridgeBlocking = state === "journal-unreadable" || operationHasOrphanedCallRisk(operation);
   const unfinished = !isTerminalOperation(operation);
+  const viaWrite = family === "private.pcb209-via-write-journal.v1" || family === "private.pcb209-via-write-journal.v2" ||
+    typeof operation["operationId"] === "string" && operation["operationId"].startsWith("pcb209-via-write-");
   const reserved = family === FAMILY || typeof family === "string" && family.startsWith("easyeda-pro-control.project-symbol-closed-session.") ||
     typeof state === "string" && state.startsWith("closed-session-") || Object.hasOwn(operation, "terminalArtifact") || Object.hasOwn(operation, "closedPlanSha256");
   // These legacy entries are omitted by both rich-summary consumers. Only the
   // State list exposes them, so retain precisely its two input fields. Every
   // Other class keeps its full summary, including terminal journals with risk.
-  if (family !== "easyeda-pro-control.current-symbol-closed-baseline.v1" && !reserved && !bridgeBlocking && !unfinished) {
+  if (!viaWrite && family !== "easyeda-pro-control.current-symbol-closed-baseline.v1" && !reserved && !bridgeBlocking && !unfinished) {
     return { compact: true, classification: "legacy", operationId: operation["operationId"], state };
   }
   const summary = operationSummary(asOperationJournal(operation));
   const base = { compact: false as const, bridgeBlocking, unfinished, summary };
+  if (viaWrite) {
+    const operationId = operation["operationId"], storedJournalSha256 = operation["journalSha256"];
+    const viaWriteSource = typeof operationId === "string" && typeof storedJournalSha256 === "string" && HASH.test(storedJournalSha256)
+      ? { operationId, storedJournalSha256, entireStoredJournalSha256: sha256Json(operation) } : null;
+    // Exact own journal parsing below applies even to a claimed completed state.
+    // Until it succeeds, this reserved family quarantines all bridge calls.
+    return { ...base, bridgeBlocking: true, unfinished: true, classification: "legacy", terminal: null, incomplete: null, viaWriteSource };
+  }
   if (family === "private.current-footprint-forward-execution-opening.v2") {
     const operationId = operation["operationId"], storedJournalSha256 = operation["journalSha256"];
     const historicalSource = typeof operationId === "string" && typeof storedJournalSha256 === "string" && HASH.test(storedJournalSha256)
@@ -237,6 +248,21 @@ async function qualifySourceRelinquishment(candidate: DetailedScanCandidate): Pr
     return observation(candidate, failureClass(error) === "terminal-evidence-invalid" ? "abandonment-evidence-invalid" : "abandonment-evidence-unavailable");
   }
 }
+async function qualifyViaWrite(candidate: DetailedScanCandidate): Promise<QualifiedAdmissionOperation> {
+  let qualification: QualifiedAdmissionOperation["qualification"] = "terminal-evidence-invalid";
+  try {
+    const expected = candidate.viaWriteSource;
+    if (expected !== undefined && expected !== null) {
+      const { inspectCurrentPcbViaWriteAdmission } = await import("./current-pcb-via-write-admission.ts");
+      const result = await inspectCurrentPcbViaWriteAdmission(expected);
+      if (result.terminal) { return { ...observation(candidate, "legacy"), bridgeBlocking: false, unfinished: false }; }
+      qualification = "incomplete";
+    }
+  } catch (error) { qualification = failureClass(error); }
+  const result = observation(candidate, qualification);
+  return { ...result, bridgeBlocking: true, unfinished: true, summary: { ...result.summary, hardStop: true,
+    orphanedCallPossible: true, nextSafeAction: "Inspect and settle the original disposable Via workflow. Do not replay Create, Save, navigation or cleanup controls." } };
+}
 async function qualifyTerminal(candidate: DetailedScanCandidate, runtime: MachineProfile["runtime"], lease: CurrentProcessSqlRuntimeLease): Promise<QualifiedAdmissionOperation | undefined> {
   const expected = candidate.terminal;
   if (expected === null) { return observation(candidate, "terminal-evidence-invalid"); }
@@ -279,7 +305,8 @@ async function qualifiedCandidates(): Promise<QualifiedStateScan> {
       } else {
         let result: QualifiedAdmissionOperation | undefined;
         if (candidate.classification === "legacy") {
-          result = Object.hasOwn(candidate, "historicalSource") ? await qualifySourceRelinquishment(candidate) : observation(candidate, "legacy");
+          if (Object.hasOwn(candidate, "viaWriteSource")) { result = await qualifyViaWrite(candidate); }
+          else { result = Object.hasOwn(candidate, "historicalSource") ? await qualifySourceRelinquishment(candidate) : observation(candidate, "legacy"); }
         } else if (candidate.classification === "current-baseline") {
           result = await qualifyCurrentBaselineAbandonment(candidate);
         } else if (candidate.classification === "incomplete") {

@@ -113,6 +113,15 @@ function entries(input: Readonly<Record<string, unknown>>): readonly Entry[] {
   for (const [index, record] of records.entries()) { need(canonicalJson(artifacts[index]) === canonicalJson(artifact(record)), "ARTIFACT_BINDING"); }
   return records;
 }
+/** Historical validation only. Full artifact bytes and a fresh final journal
+ * read are separately required by global admission. This cannot issue a plan,
+ * recreate an owner, retry an action or adopt a native allocation. */
+export function currentPcbViaWriteHistoricalTerminal(input: Readonly<Record<string, unknown>>): boolean {
+  const data = input["plan"], records = entries(input);
+  need(input["schema"] === OPERATION_SCHEMA && isRecord(data) && isRecord(data["plan"]) && data["plan"]["operationId"] === input["operationId"] &&
+    input["planHash"] === buildPlanHash(data) && (records.length === 0 || canonicalJson(records[0]?.evidence["plan"]) === canonicalJson(data["plan"])), "HISTORICAL_PLAN");
+  return terminal(records.at(-1)?.kind);
+}
 function manifestCore(operation: OperationJournal): string {
   const { journalSha256: _hash, integrityModel: _model, ...value } = operation; return canonicalJson(value);
 }

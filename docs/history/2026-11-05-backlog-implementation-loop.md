@@ -317,3 +317,11 @@ get/search inventory entries and the extension engineering reference name the
 retained routing/data limitations and positive-witness reopening condition.
 No earlier HTTP403/empty result was replayed or promoted to online absence.
 The other implementation groups and final publication work remain active.
+
+The later [Via replay and global admission](2026-11-07-via-replay-and-global-admission.md)
+increment adds an original compressed-node reproof and fresh full journal/phase
+qualification before clearing a private writer blocker. Main history GET rows
+now use their actual request-specific database connection. The outer workflow
+still awaits complete original upload/cache/finalizer drain before public
+mounting or connected validation. These source changes are batched with the
+ongoing schematic and library work; no new plugin has been published.
