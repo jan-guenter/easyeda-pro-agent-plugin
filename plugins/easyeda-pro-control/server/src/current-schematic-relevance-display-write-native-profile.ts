@@ -15,7 +15,7 @@ import { CURRENT_PCB_VIA_MAIN_REQUESTS as MAIN } from "./current-pcb-via-main-pr
 import { CURRENT_PCB_VIA_MAIN_STEP_REQUESTS as STEP } from "./current-pcb-via-main-step-protocol.ts";
 import { CURRENT_PCB_VIA_MAIN_BEGIN_REQUESTS as BEGIN } from "./current-pcb-via-main-begin-protocol.ts";
 import { CURRENT_PCB_VIA_MAIN_HISTORY_REQUESTS as HISTORY } from "./current-pcb-via-main-history-protocol.ts";
-import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_REQUESTS as MODIFY_ENTRY } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_REQUESTS as CALLBACK, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_REQUESTS as MODIFY_ENTRY } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
 /** New original seven-record birth, with its own immutable accounting. Equal
  * finite source algorithms do not transfer the six-record owner's resources. */
 import { CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE as SHARED } from "./current-schematic-display-write-native-profile.ts";
@@ -37,7 +37,8 @@ export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE = Object.f
     saveTailObservation: TAIL.cdpRequests, saveTailCacheMetadata:TAIL.additionalSharedRequests, saveTailDelete: DELETE.cdpRequests, saveDrainObservation:DRAIN.cdpRequests, savePostSyncObservation:POST.total, saveDrainCompletion:2,
     localUploadObservation: UPLOAD.local, uploadRequestObservation: UPLOAD.upload, localCacheExtraObservation: UPLOAD.localCacheMetadata,
     runPrefixObservation: PREFIX_READS, runPrefixControls: 2, runGuardObservation: RUN_GUARD.total, runGuardControls: 2,
+    callbackObservation: CALLBACK.total,
     modifyEntryObservation: MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + MODIFY_ENTRY.underlineEligibility,
     total: SHARED.renderer.total - SHARED.renderer.accessorObservation + ACCESSOR.total - SHARED.renderer.structureObservation - SHARED.renderer.actionPreflightObservation - SHARED.renderer.actionGuardObservation - SHARED.renderer.actionGuardBindingControls +
-      RUN_GUARD.total + 2 + PREFIX_READS + 2 + STARTUP_STRUCTURE.total + TAIL.cdpRequests + TAIL.additionalSharedRequests + DELETE.cdpRequests + DRAIN.cdpRequests + POST.total + 2 + SOURCES + UPLOAD.local + UPLOAD.upload + UPLOAD.localCacheMetadata + STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + MODIFY_ENTRY.underlineEligibility + POLLING.cdpRequests + 1 + LIBRARY.controls + 1 }),
+      RUN_GUARD.total + 2 + PREFIX_READS + 2 + STARTUP_STRUCTURE.total + TAIL.cdpRequests + TAIL.additionalSharedRequests + DELETE.cdpRequests + DRAIN.cdpRequests + POST.total + 2 + SOURCES + UPLOAD.local + UPLOAD.upload + UPLOAD.localCacheMetadata + STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + CALLBACK.total + MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + MODIFY_ENTRY.underlineEligibility + POLLING.cdpRequests + 1 + LIBRARY.controls + 1 }),
 });

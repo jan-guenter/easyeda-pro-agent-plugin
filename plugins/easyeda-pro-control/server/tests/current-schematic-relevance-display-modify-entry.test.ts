@@ -37,7 +37,7 @@ void test("one original seven-record Modify remains pending while its fixed entr
   const original = f.pipe.generateSchematicRelevanceDisplayModify("original-holder", args.target, args.operation), refused = assert.rejects(original);
   const turn = Promise.withResolvers<true>(); setImmediate(() => { turn.resolve(true); }); await turn.promise;
   f.pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original); assert.throws(() => { f.pipe.requireOriginalSchematicRelevanceDisplayModifyPending(Promise.resolve({})); }, /ORIGINAL_REQUEST_PENDING/u);
-  const command = currentSchematicRelevanceDisplayModifyEntryNativeCases()[0]; assert.ok(command !== undefined); await f.pipe.observeSchematicRelevanceDisplayModifyEntry(command);
+  const command = currentSchematicRelevanceDisplayModifyEntryNativeCases().find(value => value.phase === "schematic-modify-entry-frame"); assert.ok(command !== undefined); await f.pipe.observeSchematicRelevanceDisplayModifyEntry(command);
   assert.deepEqual(f.sent.map(row => row["id"]), [1, 2, 3]); assert.equal(f.pipe.status().pendingRequestId, 2);
   const generated = f.sent[1], observed = f.sent[2]; assert.ok(generated !== undefined && observed !== undefined);
   const generationBytes = Buffer.from(`${JSON.stringify(generated)}\0`), generationRequest = currentSchematicRelevanceDisplayWriteNativeRequest(generationBytes);

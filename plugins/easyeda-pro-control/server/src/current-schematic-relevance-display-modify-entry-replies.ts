@@ -10,6 +10,7 @@ export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_CALLBACK_SCRIPT = `(${CU
 const callbackStart = CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_CALLBACK_SCRIPT.indexOf(CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_CALLBACK_SOURCE);
 const before = CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_CALLBACK_SCRIPT.slice(0, callbackStart);
 const callbackColumn = before.length - before.lastIndexOf("\n") - 1, callbackLine = before.split("\n").length - 1;
+export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_CALLBACK_LOCATION = Object.freeze({ lineNumber: callbackLine, columnNumber: callbackColumn });
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 const remote = z.strictObject({ type: z.enum(["object", "function", "string", "number"]), subtype: z.string().optional(), className: z.string().optional(), objectId: handle.optional(), value: z.unknown().optional(), description: z.string().optional() });
 const field = z.strictObject({ name: z.string(), value: remote, writable: z.literal(false), configurable: z.literal(true), enumerable: z.literal(false), isOwn: z.literal(true) });

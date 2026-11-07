@@ -1,5 +1,6 @@
 /** Original held runner-entry reads only. No prefix/setter resume exists. */
 import { z } from "zod";
+import { CURRENT_SCHEMATIC_RELEVANCE_ACTION_AFTER_RUN_PROOF as AFTER_RUN_PROOF, CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_BIND as CALLBACK_BIND, CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_DETAILS as CALLBACK_DETAILS, CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_EXPRESSIONS as CALLBACK_EXPRESSIONS, CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_SAME as CALLBACK_SAME, CURRENT_SCHEMATIC_RELEVANCE_ACTION_RECEIVER_PROOF as RECEIVER_PROOF } from "./current-schematic-relevance-action-callback-programs.ts";
 import { GENERATED_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_RUN_ENTRY_FUNCTION } from "./generated-schematic-display-action-program.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -10,6 +11,7 @@ import { CURRENT_SCHEMATIC_RELEVANCE_RAW_COMBINE_PROGRAM, CURRENT_SCHEMATIC_RELE
 
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_GROUP = "easyeda-pro-control-schematic-relevance-modify-entry-v1";
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_REQUESTS = Object.freeze({ generation: 1, observation: 5, rawObservation: 63, underlineEligibility: 5, resume: 0 });
+export const CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_REQUESTS = Object.freeze({ arms: 3, entry: 9, receiver: 3 * 3, binding: 1, total: 22 });
 const originalEntryProof = GENERATED_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_RUN_ENTRY_FUNCTION;
 const oldOptions = 'Reflect.ownKeys(options).length!==2||own(options,"history")!==true||own(options,"name")!=="Codex disposable Text display"';
 const newOptions = 'Reflect.ownKeys(options).length!==4||own(options,"history")!==true||own(options,"name")!=="Codex disposable Text display"||own(options,"timeout")!==0||!Array.isArray(own(options,"dependencies"))||Object.getPrototypeOf(own(options,"dependencies"))!==Array.prototype||Reflect.ownKeys(own(options,"dependencies")).length!==1||own(own(options,"dependencies"),"length")!==0';
@@ -26,6 +28,10 @@ const propertiesParams = z.strictObject({ objectId: handle, ownProperties: z.lit
 const sourceParams = z.strictObject({ scriptId: handle });
 const argumentsSchema = z.tuple([object, data, data, object, object]);
 const proofParams = z.strictObject({ ...flags, objectId: handle, functionDeclaration: z.literal(CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_PROOF), arguments: argumentsSchema, returnByValue: z.literal(true), awaitPromise: z.literal(false), userGesture: z.literal(false) });
+export const CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_CALLS = Object.freeze([
+  ["schematic-callback-details", CALLBACK_DETAILS, 1, false], ["schematic-callback-bind", CALLBACK_BIND, 4, false], ["schematic-callback-same", CALLBACK_SAME, 5, true],
+  ["schematic-callback-after-run", AFTER_RUN_PROOF, 3, true], ["schematic-callback-receiver-proof", RECEIVER_PROOF, 2, true],
+] as const);
 export const CURRENT_SCHEMATIC_RELEVANCE_RAW_CALLS = Object.freeze([
   ["schematic-raw-native", CURRENT_SCHEMATIC_RELEVANCE_RAW_NATIVE_PROGRAM, 19, false], ["schematic-raw-references", CURRENT_SCHEMATIC_RELEVANCE_RAW_REFERENCE_PROGRAM, 1, false],
   ["schematic-raw-related", CURRENT_SCHEMATIC_RELEVANCE_RAW_RELATED_PROGRAM, 1, false], ["schematic-raw-detail", CURRENT_SCHEMATIC_RELEVANCE_RAW_DETAIL_PROGRAM, 1, false],
@@ -39,7 +45,18 @@ const underlineMainParams = frameParams.extend({ expression: z.literal(UNDERLINE
 const underlineChildParams = frameParams.extend({ expression: z.literal(UNDERLINE_EXPRESSIONS[1]) });
 const underlineArguments = z.tuple([object, object]);
 const underlineProofParams = z.strictObject({ ...flags, objectId: handle, functionDeclaration: z.literal(UNDERLINE), arguments: underlineArguments, returnByValue: z.literal(true), awaitPromise: z.literal(false), userGesture: z.literal(false) });
+const callbackEntryParams = frameParams.extend({ expression: z.literal(CALLBACK_EXPRESSIONS.entry) });
+const callbackReceiverParams = frameParams.extend({ expression: z.literal(CALLBACK_EXPRESSIONS.receiver) });
+const callbackArmParams = z.strictObject({ objectId: handle, condition: z.literal("") });
+const callbackPhases = z.enum(["schematic-callback-details", "schematic-callback-bind", "schematic-callback-same", "schematic-callback-after-run", "schematic-callback-receiver-proof"]);
 const schema = z.discriminatedUnion("phase", [
+  z.strictObject({ phase: z.literal("schematic-callback-arm-setAttribute"), method: z.literal("Debugger.setBreakpointOnFunctionCall"), params: callbackArmParams }),
+  z.strictObject({ phase: z.literal("schematic-callback-arm-record"), method: z.literal("Debugger.setBreakpointOnFunctionCall"), params: callbackArmParams }),
+  z.strictObject({ phase: z.literal("schematic-callback-arm-ast"), method: z.literal("Debugger.setBreakpointOnFunctionCall"), params: callbackArmParams }),
+  z.strictObject({ phase: z.literal("schematic-callback-entry-frame"), method: z.literal("Debugger.evaluateOnCallFrame"), params: callbackEntryParams }),
+  z.strictObject({ phase: z.literal("schematic-callback-receiver-frame"), method: z.literal("Debugger.evaluateOnCallFrame"), params: callbackReceiverParams }),
+  z.strictObject({ phase: z.literal("schematic-callback-properties"), method: z.literal("Runtime.getProperties"), params: propertiesParams }),
+  z.strictObject({ phase: callbackPhases, method: z.literal("Runtime.callFunctionOn"), params: rawCalls }),
   z.strictObject({ phase: z.literal("schematic-underline-frame-main"), method: z.literal("Debugger.evaluateOnCallFrame"), params: underlineMainParams }),
   z.strictObject({ phase: z.literal("schematic-underline-frame-child"), method: z.literal("Debugger.evaluateOnCallFrame"), params: underlineChildParams }),
   z.strictObject({ phase: z.literal("schematic-underline-properties"), method: z.literal("Runtime.getProperties"), params: propertiesParams }),
@@ -56,11 +73,15 @@ const schema = z.discriminatedUnion("phase", [
 export type CurrentSchematicRelevanceDisplayModifyEntryCommand = z.infer<typeof schema>;
 export function validateCurrentSchematicRelevanceDisplayModifyEntryCommand(input: unknown): CurrentSchematicRelevanceDisplayModifyEntryCommand {
   const command = schema.parse(captureCurrentPcbStringClockReply(input).value);
-  if (command.method === "Runtime.callFunctionOn" && command.phase !== "schematic-modify-entry-proof" && command.phase !== "schematic-underline-proof") { const row = CURRENT_SCHEMATIC_RELEVANCE_RAW_CALLS.find(item => item[0] === command.phase); if (row === undefined || command.params.functionDeclaration !== row[1] || command.params.arguments.length !== row[2] || command.params.returnByValue !== row[3]) { throw new Error("SCHEMATIC_RAW_FIXED_PROGRAM"); } }
+  if (command.method === "Runtime.callFunctionOn" && command.phase !== "schematic-modify-entry-proof" && command.phase !== "schematic-underline-proof") { const row = [...CURRENT_SCHEMATIC_RELEVANCE_RAW_CALLS, ...CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_CALLS].find(item => item[0] === command.phase); if (row === undefined || command.params.functionDeclaration !== row[1] || command.params.arguments.length !== row[2] || command.params.returnByValue !== row[3]) { throw new Error("SCHEMATIC_RAW_FIXED_PROGRAM"); } }
   return freezeDeep(command);
 }
 export function currentSchematicRelevanceDisplayModifyEntryNativeCases(): readonly CurrentSchematicRelevanceDisplayModifyEntryCommand[] {
   return freezeDeep([
+    ...["setAttribute", "record", "ast"].map(role => ({ phase: `schematic-callback-arm-${role}`, method: "Debugger.setBreakpointOnFunctionCall", params: { objectId: "entry_function", condition: "" } })),
+    ...Object.entries(CALLBACK_EXPRESSIONS).map(([role, expression]) => ({ phase: `schematic-callback-${role}-frame`, method: "Debugger.evaluateOnCallFrame", params: { ...CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_FLAGS, callFrameId: "entry_frame", expression, returnByValue: false, includeCommandLineAPI: false } })),
+    { phase: "schematic-callback-properties", method: "Runtime.getProperties", params: { objectId: "entry_object", ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } },
+    ...CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_CALLS.map(row => ({ phase: row[0], method: "Runtime.callFunctionOn", params: { ...CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_FLAGS, objectId: "entry_object", functionDeclaration: row[1], arguments: Array.from({ length: row[2] }, () => ({ objectId: "entry_argument" })), returnByValue: row[3], awaitPromise: false, userGesture: false } })),
     ...UNDERLINE_EXPRESSIONS.map((expression, index) => ({ phase: index === 0 ? "schematic-underline-frame-main" : "schematic-underline-frame-child", method: "Debugger.evaluateOnCallFrame", params: { ...CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_FLAGS, callFrameId: "entry_frame", expression, returnByValue: false, includeCommandLineAPI: false } })),
     { phase: "schematic-underline-properties", method: "Runtime.getProperties", params: { objectId: "entry_object", ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } },
     { phase: "schematic-underline-proof", method: "Runtime.callFunctionOn", params: { ...CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_FLAGS, objectId: "entry_object", functionDeclaration: UNDERLINE, arguments: [{ objectId: "entry_native" }, { objectId: "entry_map" }], returnByValue: true, awaitPromise: false, userGesture: false } },
