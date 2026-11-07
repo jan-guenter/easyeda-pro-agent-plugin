@@ -86,7 +86,7 @@ import { currentProjectStructureMainGenerationExited, isCurrentProjectStructureM
 import type { CurrentProjectStructureMainCapability } from "./current-project-structure-main-capability.ts";
 
 // oxlint-disable-next-line import/no-cycle -- The actual selected-file native factory creates this runner; no capability issues during module initialization.
-import { originalCurrentFootprintInverseMainHistoryBaseline, prepareOriginalCurrentSelectedFileStartupActors, requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentFootprintInverseMainHistory, sendOriginalCurrentPcbViaMainBegin, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainHistory, sendOriginalCurrentPcbViaMainLiveHistory, sendOriginalCurrentPcbViaMainStep, sendOriginalCurrentPcbViaMainStructure, sendOriginalCurrentSchematicRelevanceDisplayMain } from "./current-selected-file-main-sql-fence-bootstrap.ts";
+import { originalCurrentFootprintInverseMainHistoryBaseline, prepareOriginalCurrentSelectedFileStartupActors, requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentFootprintInverseMainHistory, sendOriginalCurrentPcbViaMainBegin, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainHistory, sendOriginalCurrentPcbViaMainLiveHistory, sendOriginalCurrentPcbViaMainStep, sendOriginalCurrentPcbViaMainStructure, sendOriginalCurrentSchematicRelevanceDisplayMain, sendOriginalCurrentSchematicRelevanceDisplayMainStructure } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import type { CurrentSelectedFileMainSqlFenceBootstrap } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SQL_SOURCE, qualifyCurrentSelectedFileMainSqlFenceSource } from "./current-selected-file-main-sql-fence-source.ts";
 import type { CurrentSelectedFileMainSqlFenceSite } from "./current-selected-file-main-sql-fence-source.ts";
@@ -837,7 +837,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     const requestMaximum = cleanup && this.#selectedSqlBootstrap === null ? 72 : initialMaximum + (this.#inverseMainHistoryIntent === null ? 0 : INVERSE_HISTORY.repetitions * INVERSE_HISTORY.total);
     let withinBound: boolean;
     if (inverseHistory) { withinBound = this.#selectedSqlBootstrap !== null && this.#inverseMainHistoryIntent !== null && this.#requests < initialMaximum + INVERSE_HISTORY.repetitions * INVERSE_HISTORY.total; }
-    else if (via) { withinBound = this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null && this.#requests < initialMaximum + VIA_REQUESTS.total + VIA_STEPS.total + VIA_BEGIN.total + VIA_HISTORY.total + (this.#viaMainOrigin.profile === "private.current-pcb-via-main-origin.v1" ? VIA_STRUCTURE.total + VIA_LIVE_HISTORY.total : 0); }
+    else if (via) { withinBound = this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null && this.#requests < initialMaximum + VIA_REQUESTS.total + VIA_STEPS.total + VIA_BEGIN.total + VIA_HISTORY.total + (this.#viaMainOrigin.profile === "private.current-pcb-via-main-origin.v1" ? VIA_STRUCTURE.total + VIA_LIVE_HISTORY.total : VIA_STRUCTURE.total); }
     else if (this.#originAttempted || this.#structureAttempted) { withinBound = this.#requests < normalMaximum + cleanupMaximum && (cleanupCommand ? this.#cleanupRequests < cleanupMaximum : this.#normalRequests < normalMaximum); }
     else { withinBound = this.#requests < requestMaximum; }
     need(this.#pendingId === null && withinBound, "REQUEST_BOUND");
@@ -851,16 +851,7 @@ export class CurrentFootprintCopyMainBackendRunner {
       await sendOriginalCurrentFootprintInverseMainHistory(this.#selectedSqlBootstrap, this, validateCurrentFootprintInverseMainHistoryCommand(input), id);
     } else if (via) {
       need(this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null, "VIA_MAIN_ORIGINAL_BOOTSTRAP");
-      if (this.#viaMainOrigin.profile === "private.current-schematic-relevance-display-save-main-origin.v1") {
-        need(!input.phase.startsWith("via-main-structure-") && !input.phase.startsWith("via-main-live-"), "SCHEMATIC_MAIN_OWN_HISTORY_ONLY");
-        let command: CurrentPcbViaMainCommand | CurrentPcbViaMainHistoryCommand | CurrentPcbViaMainBeginCommand | CurrentPcbViaMainStepCommand;
-        if (input.phase.startsWith("via-main-history-")) { command = validateCurrentPcbViaMainHistoryCommand(input); }
-        else if (input.phase.startsWith("via-main-begin-")) { command = validateCurrentPcbViaMainBeginCommand(input); }
-        else if (input.phase === "via-main-driver-step" || input.phase === "via-main-context-step" || input.phase === "via-main-controller-step") { command = validateCurrentPcbViaMainStepCommand(input); }
-        else { command = validateCurrentPcbViaMainCommand(input); }
-        const window = await sendOriginalCurrentSchematicRelevanceDisplayMain(this.#selectedSqlBootstrap, this, command, id);
-        if (command.phase === "via-main-history-step") { need(this.#viaHistoryCustody !== null, "SCHEMATIC_HISTORY_ORIGINAL_CUSTODY"); this.#viaHistoryCustody.acknowledge(validateCurrentPcbViaMainHistoryCommand(command), id, window); }
-      }
+      if (this.#viaMainOrigin.profile === "private.current-schematic-relevance-display-save-main-origin.v1") { await this.#sendRelevanceMain(input, id); }
       else if (input.phase.startsWith("via-main-structure-")) { const command = validateCurrentPcbViaMainStructureCommand(input), window = await sendOriginalCurrentPcbViaMainStructure(this.#selectedSqlBootstrap, this, command, id);
         if (command.phase === "via-main-structure-step") { need(this.#viaStructureCustody !== null, "VIA_STRUCTURE_ORIGINAL_CUSTODY"); this.#viaStructureCustody.acknowledge(command, id, window); }
       }
@@ -1332,6 +1323,21 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(!this.#busy, "SELECTED_REQUEST_CURSOR_BUSY"); this.#busy = true;
     try { await this.#continueSelectedReadonlyRequest(packet); } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
   }
+  async #sendRelevanceMain(input: Readonly<{ phase: string }>, id: number): Promise<void> {
+    need(this.#selectedSqlBootstrap !== null && this.#viaMainOrigin?.profile === "private.current-schematic-relevance-display-save-main-origin.v1", "SCHEMATIC_MAIN_ORIGINAL_BOOTSTRAP");
+    need(!input.phase.startsWith("via-main-live-"), "SCHEMATIC_MAIN_LIVE_ROWS_NOT_ENROLLED");
+    if (input.phase.startsWith("via-main-structure-")) {
+      const command = validateCurrentPcbViaMainStructureCommand(input), window = await sendOriginalCurrentSchematicRelevanceDisplayMainStructure(this.#selectedSqlBootstrap, this, command, id);
+      if (command.phase === "via-main-structure-step") { need(this.#viaStructureCustody !== null, "SCHEMATIC_STRUCTURE_ORIGINAL_CUSTODY"); this.#viaStructureCustody.acknowledge(command, id, window); } return;
+    }
+    let command: CurrentPcbViaMainCommand | CurrentPcbViaMainHistoryCommand | CurrentPcbViaMainBeginCommand | CurrentPcbViaMainStepCommand;
+    if (input.phase.startsWith("via-main-history-")) { command = validateCurrentPcbViaMainHistoryCommand(input); }
+    else if (input.phase.startsWith("via-main-begin-")) { command = validateCurrentPcbViaMainBeginCommand(input); }
+    else if (input.phase === "via-main-driver-step" || input.phase === "via-main-context-step" || input.phase === "via-main-controller-step") { command = validateCurrentPcbViaMainStepCommand(input); }
+    else { command = validateCurrentPcbViaMainCommand(input); }
+    const window = await sendOriginalCurrentSchematicRelevanceDisplayMain(this.#selectedSqlBootstrap, this, command, id);
+    if (command.phase === "via-main-history-step") { need(this.#viaHistoryCustody !== null, "SCHEMATIC_HISTORY_ORIGINAL_CUSTODY"); this.#viaHistoryCustody.acknowledge(validateCurrentPcbViaMainHistoryCommand(command), id, window); }
+  }
   /** Same original cursor, no second inspector. A held write remains paused;
    * this method never treats its data as permission to continue native SQL. */
   public async pumpSelectedSqlFence(): Promise<void> {
@@ -1388,9 +1394,9 @@ export class CurrentFootprintCopyMainBackendRunner {
   public async beginSchematicRelevanceDisplaySaveMainObservation(): Promise<Readonly<{ origin: CurrentSchematicRelevanceDisplaySaveMainOrigin; bindings: CurrentSchematicRelevanceDisplaySaveMainBackendBindings }>> {
     const captured = await this.#beginSelectedMainObservation(Object.freeze({ profile: "private.current-schematic-relevance-display-save-main-origin.v1" }));
     const actual = captured.bindings;
-    // Project only this purpose's fixed request/BEGIN/history lane. Unarmed
-    // STRUCTURE/live-row closures are never published as seven-record APIs.
-    const bindings: CurrentSchematicRelevanceDisplaySaveMainBackendBindings = Object.freeze({ scriptId: actual.scriptId, constructionObjectId: actual.constructionObjectId, source: actual.source, persistentDriverBreakpointId: actual.persistentDriverBreakpointId, sqlCaptureObjectId: actual.sqlCaptureObjectId, historyRequest: actual.historyRequest, requireHistoryArmed: actual.requireHistoryArmed, startHistory: actual.startHistory, originalHistoryEffects: actual.originalHistoryEffects, beginRequest: actual.beginRequest, requireBeginArmed: actual.requireBeginArmed, originalBeginResult: actual.originalBeginResult, request: actual.request, nextEvent: actual.nextEvent, observeRequest: actual.observeRequest, requireOriginalRequest: actual.requireOriginalRequest, requireOriginalControllerBody: actual.requireOriginalControllerBody, requireOriginalActorSql: actual.requireOriginalActorSql, continuePlannedController: actual.continuePlannedController, continuePlannedContext: actual.continuePlannedContext, continuePlannedDriver: actual.continuePlannedDriver, continueReadonlyRequest: actual.continueReadonlyRequest, assertCurrent: actual.assertCurrent, fail: actual.fail });
+    // The original seven-record cursor exposes its fixed request, BEGIN,
+    // History and enrolled STRUCTURE lanes. Live rows remain unavailable.
+    const bindings: CurrentSchematicRelevanceDisplaySaveMainBackendBindings = Object.freeze({ structureRequest: actual.structureRequest, requireStructureArmed: actual.requireStructureArmed, startStructure: actual.startStructure, structureExpected: actual.structureExpected, originalStructureEffects: actual.originalStructureEffects, scriptId: actual.scriptId, constructionObjectId: actual.constructionObjectId, source: actual.source, persistentDriverBreakpointId: actual.persistentDriverBreakpointId, sqlCaptureObjectId: actual.sqlCaptureObjectId, historyRequest: actual.historyRequest, requireHistoryArmed: actual.requireHistoryArmed, startHistory: actual.startHistory, originalHistoryEffects: actual.originalHistoryEffects, beginRequest: actual.beginRequest, requireBeginArmed: actual.requireBeginArmed, originalBeginResult: actual.originalBeginResult, request: actual.request, nextEvent: actual.nextEvent, observeRequest: actual.observeRequest, requireOriginalRequest: actual.requireOriginalRequest, requireOriginalControllerBody: actual.requireOriginalControllerBody, requireOriginalActorSql: actual.requireOriginalActorSql, continuePlannedController: actual.continuePlannedController, continuePlannedContext: actual.continuePlannedContext, continuePlannedDriver: actual.continuePlannedDriver, continueReadonlyRequest: actual.continueReadonlyRequest, assertCurrent: actual.assertCurrent, fail: actual.fail });
     return Object.freeze({ origin: captured.origin, bindings });
   }
   async #beginSelectedMainObservation<O extends CurrentSelectedProjectMainOrigin>(origin: O): Promise<Readonly<{ origin: O; bindings: CurrentPcbViaMainBackendBindings }>> {

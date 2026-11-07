@@ -6,7 +6,6 @@ export interface CurrentSchematicRelevanceDisplaySaveMainOrigin {
   readonly profile: "private.current-schematic-relevance-display-save-main-origin.v1";
 }
 export type CurrentSchematicRelevanceDisplaySaveMainBackendBindings = Omit<CurrentPcbViaMainBackendBindings,
-  "structureRequest" | "requireStructureArmed" | "startStructure" | "structureExpected" | "originalStructureEffects" |
   "liveHistoryRequest" | "originalLiveHistoryRequestObjectId" | "originalLiveHistoryRows">;
 export interface CurrentSchematicRelevanceDisplaySaveMainBindings extends CurrentSchematicRelevanceDisplaySaveMainBackendBindings {
   readonly assertSaveAttempt: () => void;

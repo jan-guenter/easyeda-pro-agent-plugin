@@ -1,3 +1,4 @@
+import { applyCurrentSchematicRelevanceDisplayStructureNativeFragment } from "../server/src/current-schematic-relevance-display-structure-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplaySaveNativeFragment } from "../server/src/current-schematic-relevance-display-save-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayMainNativeFragment } from "../server/src/current-schematic-relevance-display-main-native-fragment.ts";
 import { applyCurrentSchematicRelevanceDisplayClockNativeFragment } from "../server/src/current-schematic-relevance-display-clock-native-fragment.ts";
@@ -171,6 +172,7 @@ export function generateWorkerStartupProtocol(source: string): string {
   next = applyCurrentSchematicRelevanceDisplayModifyEntryNativeFragment(next);
   next = applyCurrentSchematicRelevanceDisplayClockNativeFragment(next);
   next = applyCurrentSchematicRelevanceDisplayMainNativeFragment(next);
+  next = applyCurrentSchematicRelevanceDisplayStructureNativeFragment(next);
   next = applyCurrentSchematicRelevanceDisplaySaveNativeFragment(next);
   next = applyCurrentSchematicWireEditNativeFragment(next);
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);

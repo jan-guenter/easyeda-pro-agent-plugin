@@ -1,5 +1,6 @@
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import { currentSchematicRelevanceDisplayMainStructureWire } from "./current-schematic-relevance-display-main-structure-protocol.ts";
 import { validateCurrentPcbViaMainBeginCommand } from "./current-pcb-via-main-begin-protocol.ts";
 import { validateCurrentPcbViaMainHistoryCommand } from "./current-pcb-via-main-history-protocol.ts";
 import type { CurrentSelectedProjectMainOrigin } from "./current-selected-project-main-origin.ts";
@@ -1501,6 +1502,13 @@ export async function sendOriginalCurrentSchematicRelevanceDisplayMain(capabilit
   assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(original.owner); original.reprove();
   const window = await original.owner.sendSchematicRelevanceDisplayMain(capability, runner, command, id); original.reprove(); return window;
 }
+export async function sendOriginalCurrentSchematicRelevanceDisplayMainStructure(capability: CurrentSelectedFileMainSqlFenceBootstrap,
+  runner: CurrentFootprintCopyMainBackendRunner, command: CurrentPcbViaMainStructureCommand, id: number): Promise<CurrentPcbViaMainStructureNativeWindow | null> {
+  const original = selectedSqlFenceBootstraps.get(capability);
+  // oxlint-disable-next-line eslint/no-use-before-define -- Only the dedicated seven-record factory can enroll this selected cursor.
+  if (original === undefined || original.runner() !== runner || !(original.owner instanceof CurrentSchematicRelevanceDisplayWriteOwner)) { throw error("SCHEMATIC_STRUCTURE_MAIN_ORIGINAL_OWNER"); }
+  original.reprove(); const window = await original.owner.sendSchematicRelevanceDisplayMainStructure(capability, runner, command, id); original.reprove(); return window;
+}
 export interface CurrentSchematicRelevanceDisplayHistorySqlCompletion {
   readonly profile: "private.current-schematic-relevance-display-history-sql-completion.v1";
   readonly originalFiveNativeCallbacksCompleted: true; readonly originalControllerAwaitCompleted: true;
@@ -1928,6 +1936,10 @@ class CurrentPcbRetainedOwnerCore {
   #schematicSaveMainBodyAttempted = false;
   #schematicHistorySqlCompletion: CurrentSchematicRelevanceDisplayHistorySqlCompletion | null = null;
   #schematicHistorySqlEffects: CurrentProjectHistorySqlEffects | null = null;
+  #schematicStructureBodyAttempted = false;
+  #schematicStructureBodyReservation: CurrentProjectStructureBodyReservation | null = null;
+  #schematicStructurePublication: CurrentProjectStructureMainPublication | null = null;
+  #schematicStructureSqlEffects: CurrentProjectStructureSqlEffects | null = null;
   #viaMainBoundBody: CurrentPcbViaPendingSaveDelta | null = null;
   #viaMainAttempted = false;
   #viaMainCreateEnrollment: CurrentPcbViaCreateIntentEnrollment | null = null;
@@ -4649,7 +4661,7 @@ class CurrentPcbRetainedOwnerCore {
           if (this.#schematicSaveMainData !== null) { requireOriginalGeneratedSchematicRelevanceDisplaySaveData(this.#schematicSaveMainData, this, argumentsValue); } } });
       this.#schematicSaveMainOrigin = origin; schematicRelevanceSaveMainOrigins.set(origin, Object.freeze({ owner: this, argumentsValue, effect, bindings, assertOriginal: original }));
       await Reflect.apply(setup, undefined, [origin]); original(); await this.#verify(); original();
-      runner.requireViaMainObservationArmed(origin); bindings.requireBeginArmed(); bindings.requireHistoryArmed(); this.#schematicSaveMainReady = true; return origin;
+      runner.requireViaMainObservationArmed(origin); bindings.requireBeginArmed(); bindings.requireHistoryArmed(); bindings.requireStructureArmed(); this.#schematicSaveMainReady = true; return origin;
     } catch (caughtError) { this.#schematicFailed = true; throw caughtError; } finally { this.#busy = false; }
   }
   /** Valid before Save and during its original pending pre-body interval.
@@ -4661,7 +4673,7 @@ class CurrentPcbRetainedOwnerCore {
     if (origin === null || runner === null || !this.#schematicSaveMainReady || this.#schematicSaveMainEffect !== effect || this.#schematicSaveMainData !== null || this.#schematicFailed || this.#schematicDisplayCleanupOnly) { throw error("SCHEMATIC_SAVE_MAIN_READY_REQUIRED"); }
     const original = schematicRelevanceSaveMainOrigins.get(origin); if (original === undefined || original.owner !== this || original.argumentsValue !== argumentsValue || original.effect !== effect) { throw error("SCHEMATIC_SAVE_MAIN_ORIGINAL_READY"); }
     original.assertOriginal(); requireOriginalGeneratedSchematicRelevanceDisplayEffect(effect, original.owner, argumentsValue);
-    runner.requireViaMainObservationArmed(origin); original.bindings.requireBeginArmed(); original.bindings.requireHistoryArmed(); return origin;
+    runner.requireViaMainObservationArmed(origin); original.bindings.requireBeginArmed(); original.bindings.requireHistoryArmed(); original.bindings.requireStructureArmed(); return origin;
   }
   public async bindSchematicRelevanceDisplaySaveMainData(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments,
     origin: CurrentSchematicRelevanceDisplaySaveMainOrigin, packet: GeneratedSchematicRelevanceDisplayNativeSaveData): Promise<GeneratedSchematicRelevanceDisplaySaveDelta> {
@@ -4678,6 +4690,48 @@ class CurrentPcbRetainedOwnerCore {
         projectKey: argumentsValue.target.projectUuid, path: argumentsValue.target.rawWindowsPath, dataStr: delta.body });
       this.#schematicSaveMainData = packet; return delta;
     } catch (caughtError) { this.#schematicFailed = true; throw caughtError; }
+  }
+  /** Reserve the exact pending body/clock/tree before releasing its original
+   * worker body. Shared packet and transport consumers retain this same token. */
+  public async reserveSchematicRelevanceDisplayStructurePublication(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments,
+    origin: CurrentSchematicRelevanceDisplaySaveMainOrigin): Promise<CurrentProjectStructureBodyReservation> {
+    assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this); requireSchematicArguments(this, argumentsValue);
+    const actual = schematicRelevanceSaveMainOrigins.get(origin), workerOrigin = this.#schematicWorkerOrigin;
+    const worker = workerOrigin === null ? undefined : schematicDisplaySaveWorkers.get(workerOrigin); const sharedOrigin = this.#schematicStructureOrigin;
+    const transportOrigin = this.requireSchematicDisplayStructureTransportReady(argumentsValue); const packet = this.#schematicSaveMainData; const runner = this.#mainRunner; const clock = this.#schematicRelevanceClockValue;
+    if (this.#schematicStructureBodyAttempted || actual?.owner !== this || actual.argumentsValue !== argumentsValue || worker?.owner !== this || worker.argumentsValue !== argumentsValue || sharedOrigin === null || sharedOrigin.profile !== "private.current-schematic-relevance-display-save-structure-origin.v1" || runner === null || packet === null || clock === null || this.#schematicSaveCapturedBody?.clock !== clock || !this.#schematicStages.has("save") || this.#schematicFailed || this.#schematicDisplayCleanupOnly) { throw error("SCHEMATIC_STRUCTURE_BODY_UNAVAILABLE"); }
+    actual.assertOriginal(); worker.assertOriginal(); worker.controller.requireClockCompletionWithHeldSaveBody(worker.source); this.#schematicStructureBodyAttempted = true;
+    const delta = requireOriginalGeneratedSchematicRelevanceDisplaySaveData(packet, actual.owner, argumentsValue), prepared = originalCurrentSchematicRelevanceDisplayWriteTarget(actual.owner);
+    const expected = currentPcbViaMainStructureExpectedSchema.parse({ projectUuid: argumentsValue.target.projectUuid, branchUuid: argumentsValue.target.branchUuid, ticket: delta.headTicket, structureText: expectedCurrentGeneratedProjectSaveStructure(prepared, clock) });
+    const value: CurrentProjectStructureBodyReservationValue = Object.freeze({ projectUuid: expected.projectUuid, branchUuid: expected.branchUuid, documentUuid: delta.documentUuid, bodySha256: delta.bodySha256, saveHeadTicket: delta.headTicket, workerClock: clock, expectedStructureText: expected.structureText });
+    const same = (): void => { actual.assertOriginal(); worker.assertOriginal(); requireOriginalCurrentProjectSaveStructureOrigin(sharedOrigin, this, argumentsValue);
+      if (this.#schematicFailed || this.#schematicDisplayCleanupOnly || this.#mainRunner !== runner || this.#schematicSaveMainOrigin !== origin || this.#schematicSaveMainData !== packet || this.#schematicRelevanceClockValue !== clock || this.#schematicStructureOrigin !== sharedOrigin || this.requireSchematicDisplayStructureTransportReady(argumentsValue) !== transportOrigin || requireOriginalGeneratedSchematicRelevanceDisplaySaveData(packet, actual.owner, argumentsValue) !== delta) { throw error("SCHEMATIC_STRUCTURE_BODY_CHANGED"); } };
+    try { same(); await this.#verify(); same(); worker.controller.requireClockCompletionWithHeldSaveBody(worker.source);
+      const reply = await this.#request({ action: "schematic-relevance-display-structure-body-enroll", projectUuid: expected.projectUuid, branchUuid: expected.branchUuid, ticket: expected.ticket, structureText: expected.structureText });
+      if (!exact(reply, ["reserved"]) || reply["reserved"] !== true) { throw error("SCHEMATIC_STRUCTURE_BODY_NATIVE_ACK"); } await this.#verify(); same(); worker.controller.requireClockCompletionWithHeldSaveBody(worker.source); runner.bindViaExpectedStructure(origin, expected);
+      const token: CurrentProjectStructureBodyReservation = Object.freeze({ profile: "private.current-project-structure-body-reservation.v1" });
+      const assertCurrent = (): void => { same(); if (this.#schematicStructureBodyReservation !== token || canonicalJson(runner.requireViaExpectedStructure(origin)) !== canonicalJson(expected)) { throw error("SCHEMATIC_STRUCTURE_BODY_ORIGINAL_CHANGED"); } };
+      this.#schematicStructureBodyReservation = token; originalStructureBodies.set(token, { owner: this, operation: argumentsValue, transportOrigin, sharedOrigin, value, assertCurrent, consumed: false }); assertCurrent(); return token;
+    } catch (caughtError) { this.#schematicFailed = true; throw caughtError; }
+  }
+  public completeSchematicRelevanceDisplayStructurePublication(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): CurrentProjectStructureMainPublication {
+    assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this); requireSchematicArguments(this, argumentsValue);
+    const origin = this.#schematicSaveMainOrigin; const sharedOrigin = this.#schematicStructureOrigin; const runner = this.#mainRunner; const transportOrigin = this.requireSchematicDisplayStructureTransportReady(argumentsValue);
+    const body = sharedOrigin === null ? undefined : projectSaveStructureBodyGrants.get(sharedOrigin);
+    if (origin === null || sharedOrigin === null || runner === null || body === undefined || body.transportOrigin !== transportOrigin || this.#schematicStructurePublication !== null || this.#schematicStructureSqlEffects !== null || this.#schematicFailed || this.#schematicDisplayCleanupOnly) { throw error("SCHEMATIC_STRUCTURE_PUBLICATION_UNAVAILABLE"); }
+    body.assertCurrent(); const effects = runner.requireViaStructureCompleted(origin);
+    if (effects.projectUuid !== body.value.projectUuid || effects.branchUuid !== body.value.branchUuid || effects.ticket !== body.value.saveHeadTicket || effects.structureText !== body.value.expectedStructureText) { throw error("SCHEMATIC_STRUCTURE_PUBLICATION_EXPECTED"); }
+    const value: CurrentProjectStructureMainPublicationValue = Object.freeze({ projectUuid: effects.projectUuid, branchUuid: effects.branchUuid, ticket: effects.ticket, structureSha256: sha256Text(effects.structureText), nativeChanges: 1, nativeBeforeEpochMs: effects.nativeBeforeEpochMs, nativeAfterEpochMs: effects.nativeAfterEpochMs, originalResponsePublished: true, selectedSqlStillFenced: true });
+    const token: CurrentProjectStructureMainPublication = Object.freeze({ profile: "private.current-project-structure-main-publication.v1" });
+    const assertCurrent = (): void => { body.assertCurrent(); if (this.#schematicStructurePublication !== token || this.#schematicStructureSqlEffects !== effects || this.#mainRunner !== runner || this.#schematicSaveMainOrigin !== origin || runner.requireViaStructureCompleted(origin) !== effects) { throw error("SCHEMATIC_STRUCTURE_PUBLICATION_CHANGED"); } };
+    this.#schematicStructureSqlEffects = effects; this.#schematicStructurePublication = token; originalStructurePublications.set(token, { owner: this, operation: argumentsValue, transportOrigin, sharedOrigin, value, assertCurrent, consumed: false }); assertCurrent(); return token;
+  }
+  /** Historical original effects only, after live publication was issued.
+   * Root/Job closure does not turn this retained receipt into a live grant. */
+  public requireOriginalSchematicRelevanceDisplayStructureEffects(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments,
+    publication: CurrentProjectStructureMainPublication): CurrentProjectStructureSqlEffects {
+    requireSchematicArguments(this, argumentsValue); const original = originalStructurePublications.get(publication); const effects = this.#schematicStructureSqlEffects;
+    if (original?.owner !== this || original.operation !== argumentsValue || this.#schematicStructurePublication !== publication || effects === null || effects.projectUuid !== original.value.projectUuid || effects.branchUuid !== original.value.branchUuid || effects.ticket !== original.value.ticket || sha256Text(effects.structureText) !== original.value.structureSha256) { throw error("SCHEMATIC_STRUCTURE_ORIGINAL_HISTORICAL_EFFECTS"); } return effects;
   }
   public requireSchematicRelevanceDisplayHistorySqlEffects(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): CurrentProjectHistorySqlEffects {
     assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this); requireSchematicArguments(this, argumentsValue);
@@ -7398,6 +7452,28 @@ class CurrentPcbRetainedOwnerCore {
       const reply = await this.#request({ ...wire.request });
       registrationSame(); held.reprove(); if (!exact(reply, ["written"]) || reply["written"] !== true || this.#requireFootprintMain(true) !== original) { throw error("SELECTED_SQL_WRITE_REPLY"); }
       await this.#verify(); registrationSame(); held.reprove();
+    } finally { this.#leaveFootprintMain(); }
+  }
+  public async sendSchematicRelevanceDisplayMainStructure(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner,
+    command: CurrentPcbViaMainStructureCommand, requestId: number): Promise<CurrentPcbViaMainStructureNativeWindow | null> {
+    const held = selectedSqlFenceBootstraps.get(capability); const original = this.#requireFootprintMain(true); const origin = this.#schematicSaveMainOrigin;
+    const cleanup = command.phase === "via-main-structure-remove" || command.phase === "via-main-structure-release";
+    if (this.#purpose !== CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE || held?.owner !== this || held.runner() !== runner || this.#mainRunner !== runner || origin === null || requestId !== this.#mainRequestId + 1 || this.#schematicFailed || this.#schematicDisplayCleanupOnly ||
+      (cleanup ? this.#mainCleanupRequests >= CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE.main.cleanup : this.#mainNormalRequests >= CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE.main.normal)) { throw error("SCHEMATIC_STRUCTURE_ORIGINAL_SENDER"); }
+    if (command.phase === "via-main-structure-arm" && command.role !== "context" && command.role !== "finalReturned" && command.role !== "finalFailed") { if (this.#schematicStages.has("save")) { throw error("SCHEMATIC_STRUCTURE_PRE_SAVE_ARM"); } }
+    else {
+      const sharedOrigin = this.#schematicStructureOrigin; const grant = sharedOrigin === null ? undefined : projectSaveStructureBodyGrants.get(sharedOrigin); const packet = this.#schematicSaveMainData;
+      const operation = schematicRelevanceSaveMainOrigins.get(origin);
+      if (sharedOrigin === null || grant === undefined || packet === null || operation?.owner !== this || !this.#schematicStages.has("save") || !this.#schematicSaveMainReady || grant.transportOrigin !== this.requireSchematicDisplayStructureTransportReady(operation.argumentsValue)) { throw error("SCHEMATIC_STRUCTURE_BODY_REQUIRED"); }
+      requireOriginalGeneratedSchematicRelevanceDisplaySaveData(packet, operation.owner, operation.argumentsValue);
+      grant.assertCurrent(); const expected = currentPcbViaMainStructureExpectedSchema.parse({ projectUuid: grant.value.projectUuid, branchUuid: grant.value.branchUuid, ticket: grant.value.saveHeadTicket, structureText: grant.value.expectedStructureText });
+      if (canonicalJson(runner.requireViaExpectedStructure(origin)) !== canonicalJson(expected)) { throw error("SCHEMATIC_STRUCTURE_ORIGINAL_EXPECTED"); }
+      if (command.phase === "via-main-structure-step") { const actual = runner.consumeOriginalViaMainStructure(command, requestId); if (actual.origin !== origin || actual.role !== command.role || canonicalJson(actual.expected) !== canonicalJson(expected)) { throw error("SCHEMATIC_STRUCTURE_ORIGINAL_PENDING_GRANT"); } }
+    }
+    held.reprove(); const fixed = currentSchematicRelevanceDisplayMainStructureWire(command, requestId);
+    this.#enterFootprintMain(); this.#mainRequestId += 1; if (cleanup) { this.#mainCleanupRequests += 1; } else { this.#mainNormalRequests += 1; }
+    try { await this.#verify(); held.reprove(); const reply = await this.#request({ ...fixed.request }); const window = decodeCurrentPcbViaMainStructureNativeAck(reply, command);
+      if (this.#requireFootprintMain(true) !== original) { throw error("SCHEMATIC_STRUCTURE_ORIGINAL_WRITE_OWNER"); } await this.#verify(); held.reprove(); return window;
     } finally { this.#leaveFootprintMain(); }
   }
   public async sendSchematicRelevanceDisplayMain(capability: CurrentSelectedFileMainSqlFenceBootstrap, runner: CurrentFootprintCopyMainBackendRunner,
@@ -10565,6 +10641,7 @@ class CurrentPcbRetainedOwnerCore {
         (request["action"] === "main-request-send" || request["action"] === "footprint-clock-rpc-send" || request["action"] === "main-completion-send" || request["action"] === "structure-worker-send" || request["action"] === "structure-main-send");
       // Only already-owned Via body values receive the corresponding fixed
       // Body capacity. No expression or caller program is admitted here.
+      const relevanceStructureEnrollment = this.#purpose === CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE && request["action"] === "schematic-relevance-display-structure-body-enroll" && this.#schematicStructureBodyAttempted;
       const viaStructureEnrollment = this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && request["action"] === "pcb-via-structure-body-enroll" && this.#viaStructureBodyAttempted;
       const relevanceHistoryController = this.#purpose === CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE && request["action"] === "schematic-relevance-display-main-observe" && request["phase"] === "via-main-request-controller" && this.#schematicSaveMainData !== null && request["dataStr"] === this.#schematicSaveMainData.delta.body;
       const viaHistoryController = this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && request["action"] === "pcb-via-main-observe" && request["phase"] === "via-main-request-controller" && this.#viaMainBoundBody !== null && request["dataStr"] === this.#viaMainBoundBody.dataStr;
@@ -10573,7 +10650,7 @@ class CurrentPcbRetainedOwnerCore {
       const periodicSyncBranch = (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE && request["action"] === "pcb-via-periodic-sync" || schematicDisplayPurpose(this.#purpose) && request["action"] === "schematic-display-periodic-sync") && request["phase"] === "periodic-sync-branch";
       const inverseSyncCommand=this.#inverseInitialSyncCommand;const inverseInitialSyncEntry=this.#purpose===CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE&&request["action"]==="footprint-inverse-initial-sync"&&inverseSyncCommand?.phase==="inverse-initial-sync-capture"&&request["body"]===inverseSyncCommand.params.arguments[5].value;
       const inverseCacheCommand=this.#inverseInitialCacheCommand;const inverseInitialCacheEntry=this.#purpose===CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE&&request["action"]==="footprint-inverse-initial-cache"&&inverseCacheCommand!==null&&(inverseCacheCommand.phase==="inverse-initial-cache-flow"||inverseCacheCommand.phase==="inverse-initial-cache-head")&&request["body"]===inverseCacheCommand.params.arguments[1].value;
-      const maximum = inverseInitialSyncEntry || inverseInitialCacheEntry || periodicSyncBranch || initialSyncEntry || initialCacheEntry || combinedRequest || viaStructureEnrollment || viaHistoryController || relevanceHistoryController || request["method"] === "Runtime.callFunctionOn" && (request["action"] === "worker-startup-parent" &&
+      const maximum = inverseInitialSyncEntry || inverseInitialCacheEntry || periodicSyncBranch || initialSyncEntry || initialCacheEntry || combinedRequest || viaStructureEnrollment || relevanceStructureEnrollment || viaHistoryController || relevanceHistoryController || request["method"] === "Runtime.callFunctionOn" && (request["action"] === "worker-startup-parent" &&
         (request["parentPhase"] === "preflight" || request["parentPhase"] === "open-project" ||
           request["parentPhase"] === "pcb-preflight" || request["parentPhase"] === "pcb-open-document" || request["parentPhase"] === "pcb-observe") || request["action"] === "send" &&
         (request["openingPhase"] === "preflight" || request["openingPhase"] === "open-project" ||
