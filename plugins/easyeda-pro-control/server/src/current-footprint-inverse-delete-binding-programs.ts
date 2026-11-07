@@ -31,10 +31,10 @@ const qe=own(this,"11"),Ke=own(this,"12"),xt=own(this,"13"),atom=own(this,"14"),
 for(const[f,name]of[[qe,"qe"],[Ke,"Ke"],[xt,"xt"],[atom,"$e"],[rl,"rl"],[of,"of"]])if(typeof f!=="function"||own(f,"name")!==name)bad();
 if(separator!=="|\n"||proto(Ke)!==Function.prototype||proto(own(Ke,"prototype"))!==Object.prototype||proto(rl)!==of||proto(of)!==Function.prototype||proto(own(rl,"prototype"))!==own(of,"prototype")||proto(own(of,"prototype"))!==Object.prototype)bad();
 const encoder=own(of,"prototype"),encoderMethod=name=>{const d=desc(encoder,name);if(!d||!Object.hasOwn(d,"value")||typeof d.value!=="function"||!d.writable||d.enumerable||!d.configurable)bad();return d.value;};
-const functions=Object.freeze([...constructors,Ke,rl,of,...methods,qe,xt,atom,encoderMethod("head"),encoderMethod("delete")]);
+const functions=[...constructors,Ke,rl,of,...methods,qe,xt,atom,encoderMethod("head"),encoderMethod("delete")];
 if(functions.length!==28||new Set(functions).size!==28)bad();verify();
 const check=()=>{verify();return true;};
-return Object.freeze([functions,Object.freeze([project,bus,manager,consistency,notification,client,maximumTicket,targetUuid,entry]),check,Object.freeze({...expected})]);`;
+return [functions,[project,bus,manager,consistency,notification,client,maximumTicket,targetUuid,entry],check,{projectUuid,branchUuid,targetUuid,maximumTicket}];`;
 const selected=String.raw`dense(this,4);const functions=own(this,"0"),state=own(this,"1"),check=own(this,"2");dense(functions,28);dense(state,9);if(typeof check!=="function"||check()!==true||own(globalThis,"PROJECT")!==own(state,"0"))bad();`;
 export const CURRENT_FOOTPRINT_INVERSE_DELETE_BINDING_PROGRAMS=freezeDeep({
  capture:`function(project,expected){${helpers}${capture}}`,

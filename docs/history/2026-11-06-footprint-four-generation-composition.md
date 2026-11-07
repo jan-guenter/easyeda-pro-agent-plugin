@@ -1325,3 +1325,28 @@ pass, including all14 actual pinned pure constructor bodies and descriptor/
 prototype/scope drift refusals with zero clock calls. Both typechecks and strict
 changed lint pass. Original native Ke scope/instance issuance and subsequent
 single-clock/delete/producer/Main/closed/fourth-reader joins remain pending.
+
+The actual Node24.18.0 Inspector exposed a capture defect before original
+encoder mounting. With `throwOnSideEffect:true`, `Object.freeze([1,2])` refuses
+with `EvalError: Possible side-effect in debug-evaluate` (exact expression SHA
+`eb7a569c56b1d5cc5c815cd1ee7f207ccf44ad199d75b58669e886d21e95ff7d`).
+A freshly allocated plain array succeeds. Ready capture also refused spreading
+an existing expected-value object; explicit already-checked primitive fields
+succeed. The inverse-only programs now return private ordinary tuples and retain
+the exact references, descriptor/prototype guards and later reproofs. The
+side-effect flag remains true; no application object is frozen or changed.
+
+A distinct encoder grammar reserves25 setup commands and two exact helper
+source receipts, then three dispatch-time metadata/reproof commands and one
+receipt:31 CDP requests and33 native controls. It only describes original Ke
+metadata, fresh closure wrappers,18 constructor metadata rows and reproof; it
+contains no constructor, clock, delete, SQL or resume command. Its strict tuple
+decoder accepts only this new private19-element ordinary array. Actual inert
+Inspector checks now qualify every pinned ready callee and the fresh Ke closure
+and18 constructors, then reprove them under the unchanged true side-effect flag.
+All eight focused cases, both typechecks and strict changed-file lint pass.
+Native encoder issuance, its actual new-Ke instance and subsequent single-clock,
+producer/Main, closure and fourth-reader composition remain pending.
+The corrected source also passes complete legacy two-pass generation and the
+three original Linux C#5 binding/library/model smokes:1,374,217 stored helper
+bytes and1,897,927 compiler bytes. No tracked helper or pins were emitted.

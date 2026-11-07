@@ -23,9 +23,9 @@ const entry=`const b=ready(original);${encoder}
 dense(this,5);const manager=own(b.state,"2"),uuid=own(b.state,"7"),value=own(this,"2"),rows=own(this,"3");dense(rows,0);if(own(this,"0")!==manager||own(this,"1")!==uuid||own(this,"4")!==own(b.functions,"23")||proto(value)!==own(classes.Ke,"prototype"))bad();
 const fields=${JSON.stringify(FIELDS.map(row=>row.field))};if(Reflect.ownKeys(value).length!==fields.length||Reflect.ownKeys(value).some((name,index)=>name!==fields[index]))bad();
 ${FIELDS.map(row=>`{const f=created(value,${JSON.stringify(row.field)});if(proto(f)!==own(classes[${JSON.stringify(row.constructor)}],"prototype")||Reflect.ownKeys(f).length!==1||Reflect.ownKeys(f)[0]!=="doctype"||created(f,"doctype")!==${JSON.stringify(row.docType)})bad();}`).join("\n")}
-verify();return Object.freeze([original,originalEncoder,value,rows,()=>{verify();return true;}]);`;
+verify();return [original,originalEncoder,value,rows,()=>{verify();return true;}];`;
 export const CURRENT_FOOTPRINT_INVERSE_DELETE_ENCODER_PROGRAMS=freezeDeep({
- capture:`function(original){${helpers}${scope}verify();const guard=()=>{verify();return true;};return Object.freeze([...selected,guard]);}`,
+ capture:`function(original){${helpers}${scope}verify();const guard=()=>{verify();return true;};return [...selected,guard];}`,
  reprove:`function(original,originalEncoder){${helpers}${scope}dense(originalEncoder,19);for(let i=0;i<18;i++)if(own(originalEncoder,String(i))!==selected[i])bad();const guard=own(originalEncoder,"18");if(typeof guard!=="function"||guard()!==true)bad();verify();return true;}`,
  instance:`function(original,originalEncoder){${helpers}${entry}}`,
 } as const);

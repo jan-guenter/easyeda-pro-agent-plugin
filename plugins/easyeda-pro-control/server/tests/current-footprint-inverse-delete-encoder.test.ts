@@ -2,11 +2,17 @@
  * process, native encoder scope, clock, delete or upload is authorized. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { Session } from "node:inspector/promises";
+import type { Runtime } from "node:inspector/promises";
 import { test } from "node:test";
 import vm from "node:vm";
 import { CURRENT_FOOTPRINT_INVERSE_DELETE_ENCODER_CLASSES as CLASSES, CURRENT_FOOTPRINT_INVERSE_DELETE_ENCODER_FIELDS as FIELDS, qualifyCurrentFootprintInverseDeleteEncoderSource } from "../src/current-footprint-inverse-delete-encoder-source.ts";
 import { CURRENT_FOOTPRINT_INVERSE_DELETE_ENCODER_ENTRY_EXPRESSION as ENTRY, CURRENT_FOOTPRINT_INVERSE_DELETE_ENCODER_PROGRAMS as PROGRAMS } from "../src/current-footprint-inverse-delete-encoder-programs.ts";
 
+import { currentFootprintInverseDeleteEncoderClasses, currentFootprintInverseDeleteEncoderKeScopes, currentFootprintInverseDeleteEncoderScope, qualifyCurrentFootprintInverseDeleteEncoderClass } from "../src/current-footprint-inverse-delete-encoder-protocol.ts";
+
+// The installed protocol supports this field; Node's generated type omits it.
+function checkedCall(session:Session,params:Runtime.CallFunctionOnParameterType):Promise<Runtime.CallFunctionOnReturnType>{const checked={...params,throwOnSideEffect:true};return session.post("Runtime.callFunctionOn",checked);}
 const installed="/mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-mgr/3.2.185.bf63a159/js/project-worker.js";
 async function source():Promise<string|null>{try{return await readFile(installed,"utf8");}catch(error){if(error!==null&&typeof error==="object"&&"code"in error&&error.code==="ENOENT"){return null;}throw error;}}
 function fixture(full:string):vm.Context{
@@ -21,7 +27,18 @@ void test("all eighteen pinned classes close the fourteen eager constructor grap
 });
 void test("fresh scope derives unavailable parents and actual Ke instance relations without constructing or calling in the leaf",async context=>{
  const full=await source();if(full===null){context.skip("installed source unavailable");return;}const f=fixture(full);assert.equal(vm.runInContext("Object.keys(scope.object).length",f),14);for(const name of ["Ke","of","th","Fo"]){assert.equal(vm.runInContext(`Object.hasOwn(scope.object,${JSON.stringify(name)})`,f),false);}
- assert.equal(vm.runInContext(`(${PROGRAMS.reprove}).call(scope,original,captured)`,f),true);assert.equal(vm.runInContext(`const bound=(${PROGRAMS.instance}).call(entry,original,captured);bound.length===5&&Object.isFrozen(bound)`,f),true);assert.equal(vm.runInContext("clockCalls",f),0);assert.equal(ENTRY,"[this,s,r,i,qe]");
+ assert.equal(vm.runInContext(`(${PROGRAMS.reprove}).call(scope,original,captured)`,f),true);assert.equal(vm.runInContext(`const bound=(${PROGRAMS.instance}).call(entry,original,captured);bound.length===5&&!Object.isFrozen(bound)`,f),true);assert.equal(vm.runInContext("clockCalls",f),0);assert.equal(ENTRY,"[this,s,r,i,qe]");
  vm.runInContext("value.footprint.doctype='PCB'",f);assert.throws(()=>vm.runInContext("bound[4]()",f));assert.equal(vm.runInContext("clockCalls",f),0);
  for(const change of ["scope.object.rN=class rN{}","Object.defineProperty(value.footprint,'doctype',{get(){clockCalls++;throw new Error('getter')},configurable:true})","Object.setPrototypeOf(value.footprint,rl.prototype)","entry[4]=async function(){}"]){const altered=fixture(full);vm.runInContext(change,altered);assert.throws(()=>vm.runInContext(`(${PROGRAMS.reprove}).call(scope,original,captured);(${PROGRAMS.instance}).call(entry,original,captured)`,altered));assert.equal(vm.runInContext("clockCalls",altered),0);}
+});
+
+void test("actual inert Ke closure supplies the referenced constructors and fresh scope equality",async context=>{
+ const full=await source();if(full===null){context.skip("installed source unavailable");return;}let isolated=full.replaceAll(/[^\r\n]/gu," ");const intro=`(()=>{"use strict";let ${CLASSES.map(row=>row.name).join(",")};`;isolated=intro+isolated.slice(intro.length);for(const row of CLASSES.toSorted((left,right)=>left.start-right.start)){const prefix=`;${row.name}=`;isolated=isolated.slice(0,row.start-prefix.length)+prefix+full.slice(row.start,row.end)+isolated.slice(row.end);}
+ isolated+=`;const functions=Array.from({length:28},()=>function(){});functions[11]=Ke;functions[12]=rl;functions[13]=of;const project={};globalThis.PROJECT=project;const original=Object.freeze([Object.freeze(functions),Object.freeze([project,{}, {},{}, {},"a".repeat(16),19,"b".repeat(16),{}]),()=>true,Object.freeze({})]);return[Ke,original];})()`;
+ const inspector=new Session();inspector.connect();try{await inspector.post("Runtime.enable");const compiled=await inspector.post("Runtime.compileScript",{expression:isolated,sourceURL:"inert-inverse-ke-closure.js",persistScript:true});assert.equal(typeof compiled.scriptId,"string");if(compiled.scriptId===undefined){throw new Error("inert source compile refused");}const scriptId=compiled.scriptId;const run=await inspector.post("Runtime.runScript",{scriptId,objectGroup:"inert-inverse-ke-closure",returnByValue:false});const tuple=run.result.objectId;if(tuple===undefined){throw new Error("inert original missing");}
+ const get=async(slot:number):Promise<string>=>{const result=await inspector.post("Runtime.callFunctionOn",{objectId:tuple,functionDeclaration:"function(i){return this[i];}",arguments:[{value:slot}],objectGroup:"inert-inverse-ke-closure",returnByValue:false});if(result.result.objectId===undefined){throw new Error("inert selected missing");}return result.result.objectId;};const ke=await get(0),original=await get(1);
+ const fresh=async():Promise<string>=>{const metadata:unknown=await inspector.post("Runtime.getProperties",{objectId:ke,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false});const scopes=currentFootprintInverseDeleteEncoderKeScopes(metadata,scriptId,full);return currentFootprintInverseDeleteEncoderScope(await inspector.post("Runtime.getProperties",{objectId:scopes,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}));};
+ const before=await fresh();const captured=await checkedCall(inspector,{objectId:before,functionDeclaration:PROGRAMS.capture,arguments:[{objectId:original}],objectGroup:"inert-inverse-ke-closure",returnByValue:false});assert.equal(captured.result.subtype,"array",JSON.stringify(captured));const value=captured.result.objectId;assert.equal(typeof value,"string",JSON.stringify(captured));if(value===undefined){throw new Error("inert scope capture missing");}const fields=await inspector.post("Runtime.getProperties",{objectId:value,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false});const classes=currentFootprintInverseDeleteEncoderClasses(fields,full);for(const[index,objectId]of classes.entries()){qualifyCurrentFootprintInverseDeleteEncoderClass(await inspector.post("Runtime.getProperties",{objectId,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}),index,scriptId,full);}
+ const after=await fresh();const result=await checkedCall(inspector,{objectId:after,functionDeclaration:PROGRAMS.reprove,arguments:[{objectId:original},{objectId:value}],objectGroup:"inert-inverse-ke-closure",returnByValue:true});assert.deepEqual(result,{result:{type:"boolean",value:true}});await inspector.post("Runtime.releaseObjectGroup",{objectGroup:"inert-inverse-ke-closure"});
+ }finally{inspector.disconnect();}
 });

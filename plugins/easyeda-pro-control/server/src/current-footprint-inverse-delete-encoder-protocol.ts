@@ -1,0 +1,47 @@
+/** Inverse-only Ke scope grammar. These source projections never invoke a
+ * constructor/clock/delete and cannot issue original scope or runtime custody. */
+import { createHash } from "node:crypto";
+import { z } from "zod";
+import { captureCurrentFootprintInverseDeleteBindingReply } from "./current-footprint-inverse-delete-binding-capture.ts";
+
+import { currentFootprintCopyClockRpcV2ArrayObject, decodeCurrentFootprintCopyClockRpcV2Array } from "./current-footprint-copy-clock-rpc-v2-protocol.ts";
+import { qualifyCurrentFootprintInverseDeleteBindingFunction } from "./current-footprint-inverse-delete-binding-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_DELETE_ENCODER_CLASSES as CLASSES, qualifyCurrentFootprintInverseDeleteEncoderSource } from "./current-footprint-inverse-delete-encoder-source.ts";
+import { CURRENT_FOOTPRINT_INVERSE_DELETE_ENCODER_PROGRAMS as PROGRAMS } from "./current-footprint-inverse-delete-encoder-programs.ts";
+import { freezeDeep } from "./sqlite-inventory-core.ts";
+
+export { decodeCurrentFootprintCopyProducerScope as currentFootprintInverseDeleteEncoderScope } from "./current-footprint-copy-producer-scope.ts";
+const handle=z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);const step=z.enum(["before","after","dispatch"]);const slot=z.number().int().min(0).max(CLASSES.length-1).refine(value=>!Object.is(value,-0));
+export const CURRENT_FOOTPRINT_INVERSE_DELETE_ENCODER_GROUP="easyeda-footprint-inverse-delete-encoder-v1";
+export const CURRENT_FOOTPRINT_INVERSE_DELETE_ENCODER_FLAGS=Object.freeze({objectGroup:CURRENT_FOOTPRINT_INVERSE_DELETE_ENCODER_GROUP,silent:true,generatePreview:false,throwOnSideEffect:true,awaitPromise:false,userGesture:false}as const);
+const ref=z.strictObject({objectId:handle});const properties=z.strictObject({objectId:handle,ownProperties:z.literal(true),accessorPropertiesOnly:z.literal(false),generatePreview:z.literal(false)});
+const flags={objectGroup:z.literal(CURRENT_FOOTPRINT_INVERSE_DELETE_ENCODER_GROUP),silent:z.literal(true),generatePreview:z.literal(false),throwOnSideEffect:z.literal(true),awaitPromise:z.literal(false),userGesture:z.literal(false)};
+/* oxlint-disable unicorn/max-nested-calls -- Exact closed positional argument schemas stay at this fixed native projection boundary. */
+const schema=z.discriminatedUnion("phase",[
+ z.strictObject({phase:z.literal("inverse-delete-encoder-ke"),step,method:z.literal("Runtime.getProperties"),params:properties}),
+ z.strictObject({phase:z.literal("inverse-delete-encoder-scope"),step,method:z.literal("Runtime.getProperties"),params:properties}),
+ z.strictObject({phase:z.literal("inverse-delete-encoder-capture"),method:z.literal("Runtime.callFunctionOn"),params:z.strictObject({...flags,objectId:handle,functionDeclaration:z.literal(PROGRAMS.capture),arguments:z.tuple([ref]),returnByValue:z.literal(false)})}),
+ z.strictObject({phase:z.literal("inverse-delete-encoder-tuple"),method:z.literal("Runtime.getProperties"),params:properties}),
+ z.strictObject({phase:z.literal("inverse-delete-encoder-class"),slot,method:z.literal("Runtime.getProperties"),params:properties}),
+ z.strictObject({phase:z.literal("inverse-delete-encoder-reprove"),step:z.enum(["after","dispatch"]),method:z.literal("Runtime.callFunctionOn"),params:z.strictObject({...flags,objectId:handle,functionDeclaration:z.literal(PROGRAMS.reprove),arguments:z.tuple([ref,ref]),returnByValue:z.literal(true)})}),
+ z.strictObject({phase:z.literal("inverse-delete-encoder-helper"),method:z.literal("Debugger.getScriptSource"),params:z.strictObject({scriptId:handle})}),
+]);
+/* oxlint-enable unicorn/max-nested-calls */
+export type CurrentFootprintInverseDeleteEncoderCommand=Readonly<z.infer<typeof schema>>;
+export const CURRENT_FOOTPRINT_INVERSE_DELETE_ENCODER_REQUESTS=Object.freeze({classes:18,setup:25,setupHelpers:2,dispatchReproof:3,dispatchHelper:1,cdpRequests:31,controls:33,cleanupAfterOriginalExit:0});
+function bad():never{throw new Error("FOOTPRINT_INVERSE_DELETE_ENCODER_PROTOCOL");}
+function need(value:boolean):asserts value{if(!value){bad();}}
+export function validateCurrentFootprintInverseDeleteEncoderCommand(input:unknown):CurrentFootprintInverseDeleteEncoderCommand{return freezeDeep(schema.parse(captureCurrentFootprintInverseDeleteBindingReply(input)));}
+/** The actual existing Ke object is re-read for every fresh scope snapshot. */
+const scopeValueSchema=z.looseObject({objectId:handle.optional()});const scopeInternalSchema=z.looseObject({name:z.string(),value:scopeValueSchema});const keMetadataSchema=z.looseObject({internalProperties:z.array(scopeInternalSchema).length(3)});
+export function currentFootprintInverseDeleteEncoderKeScopes(input:unknown,scriptId:string,source:string):string{qualifyCurrentFootprintInverseDeleteBindingFunction(input,11,scriptId,source);const value=keMetadataSchema.parse(captureCurrentFootprintInverseDeleteBindingReply(input));const result=value.internalProperties.find(row=>row.name==="[[Scopes]]")?.value.objectId;need(result!==undefined);return result;}
+/** Tuple descriptions qualify complete class text; individual metadata below
+ * must separately qualify every constructor's actual original script location. */
+export function currentFootprintInverseDeleteEncoderClasses(input:unknown,source:string):readonly string[]{qualifyCurrentFootprintInverseDeleteEncoderSource(source);const fields=decodeCurrentFootprintCopyClockRpcV2Array(input,19);const ids=CLASSES.map((row,index)=>{const remote=fields.get(String(index));need(remote!==undefined&&remote.type==="function"&&remote.className==="Function"&&typeof remote.description==="string"&&Buffer.byteLength(remote.description)===row.bytes&&createHash("sha256").update(remote.description).digest("hex")===row.sha256);return currentFootprintCopyClockRpcV2ArrayObject(fields,index);});need(new Set(ids).size===18);const guard=fields.get("18");need(guard?.type==="function"&&guard.className==="Function");return Object.freeze(ids);}
+const text=z.string().max(8192);const remote=z.strictObject({type:z.enum(["object","function","number","string"]),subtype:text.optional(),className:text.optional(),description:text.optional(),objectId:handle.optional(),value:z.unknown().optional()});const property=z.strictObject({name:text,value:remote,writable:z.boolean(),configurable:z.boolean(),enumerable:z.boolean(),isOwn:z.literal(true)});const internal=z.strictObject({name:text,value:remote});
+export function qualifyCurrentFootprintInverseDeleteEncoderClass(input:unknown,index:number,scriptId:string,source:string):void{
+ qualifyCurrentFootprintInverseDeleteEncoderSource(source);const row=CLASSES[index];need(row!==undefined&&Number.isInteger(index)&&!Object.is(index,-0));handle.parse(scriptId);const data=z.strictObject({result:z.array(property).length(3),internalProperties:z.array(internal).length(3)}).parse(captureCurrentFootprintInverseDeleteBindingReply(input));const fields=new Map(data.result.map(value=>[value.name,value]));need(fields.size===3);
+ for(const[name,value]of[["name",row.name],["length",0]]as const){const d=fields.get(name);need(d!==undefined&&!d.writable&&!d.enumerable&&d.configurable&&d.value.type===(name==="name"?"string":"number")&&d.value.value===value&&!Object.is(d.value.value,-0)&&d.value.objectId===undefined&&d.value.subtype===undefined&&d.value.className===undefined);}
+ const parentName=row.parent??"Object";const prototype=fields.get("prototype");need(prototype!==undefined&&!prototype.writable&&!prototype.enumerable&&!prototype.configurable&&prototype.value.type==="object"&&prototype.value.className===parentName&&prototype.value.description===parentName&&prototype.value.objectId!==undefined&&prototype.value.value===undefined&&prototype.value.subtype===undefined);
+ const internals=new Map(data.internalProperties.map(value=>[value.name,value.value]));need(internals.size===3);const at=internals.get("[[FunctionLocation]]"),parent=internals.get("[[Prototype]]"),scopes=internals.get("[[Scopes]]");const point=z.strictObject({scriptId:handle,lineNumber:z.literal(row.lineNumber),columnNumber:z.literal(row.columnNumber)}).parse(at?.value);need(at?.type==="object"&&at.subtype==="internal#location"&&at.objectId===undefined&&point.scriptId===scriptId);let description="function () { [native code] }";if(row.parent!==null){const p=CLASSES.find(value=>value.name===row.parent);need(p!==undefined);description=source.slice(p.start,p.end);}need(parent?.type==="function"&&parent.className==="Function"&&parent.description===description&&parent.objectId!==undefined&&parent.value===undefined&&scopes?.type==="object"&&scopes.subtype==="internal#scopeList"&&scopes.className==="Array"&&scopes.objectId!==undefined&&/^Scopes\[[1-4]\]$/u.test(scopes.description??""));
+}
