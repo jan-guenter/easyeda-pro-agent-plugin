@@ -1455,3 +1455,40 @@ refuses. No original application module or SDK/RPC method runs. The complete
 API source/accessor rejection test, both types and strict changed lint pass.
 Original receiver issuance, installed service callback/native pending-job joins
 and all collateral/clock/producer/Main/lifecycle grants remain separate.
+
+## Original public SDK receiver mount
+
+The inverse's actual idle transition now mounts the separate public SDK
+observer. Core issues its opaque origin only from the original idle token,
+saved checkpoint, completed Ke observation, retained UI/context/pipe and ready
+Main fence. The first receiver is selected in that exact original context;
+function/scope/tuple/target IDs are subsequently substituted only from its
+correlated original replies. The actual SDK script is read from the original
+function location and checked in full. A same-text function or copied target
+cannot choose a replacement SDK instance, dispatcher, context or script.
+
+All31 setup commands and three parent-realm helper receipts must complete
+before the original native ledger acknowledges this observation. The four
+helpers, including the reserved final reproof, are individually paired with
+actual same-context scriptParsed IDs and exact helper-source reads. Both SDK
+and dispatcher scopes are freshly compared after all17 callee metadata reads.
+The original observer retains one Promise and consumed failures. Core reproof
+also retains the exact constructor, source functions, original runtime and idle
+owner. The public packet can be required only through that original owner.
+It supplies no invocation or post-effect owner upgrade.
+
+The new purpose-local lane adds40 renderer requests,42 action controls and40
+associated Main reproofs. Branch totals are renderer17,177, Main993,
+Main reproofs92,844 and aggregate controls161,185; earlier purpose ceilings are
+unchanged. Its37 fixed message variants use one packed table and complete
+expanded hashes. Complete legacy generation twice is exact at1,386,709 stored
+helper bytes and1,923,107 compiler bytes. Full emitted Linux C#5 passes all37
+message parity cases, original-purpose/control refusals and the previous Ke/
+callee smokes. Twelve focused original-factory/cursor/Inspector/projection cases,
+both typechecks and strict changed lint pass. No tracked helper or pins were
+emitted; no actual SDK or native application call ran.
+
+The installed public-service callback and its returned Promise, the independently
+retained worker deleteData job, complete reference-check/collateral branches,
+single clock and producer/Main completion remain required before SDK invocation.
+The fixed public receiver vocabulary intentionally contains no invoke command.
