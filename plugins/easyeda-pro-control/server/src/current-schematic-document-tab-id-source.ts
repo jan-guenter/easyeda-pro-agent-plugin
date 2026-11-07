@@ -42,6 +42,17 @@ export const CURRENT_SCHEMATIC_DOCUMENT_TAB_ID_SOURCE = freezeDeep([
         "sha256": "24874f0b7d637254283b26f23edb9f3269b28da4b6a7ffb81b3b88d8d7c49de0",
         "lineNumber": 3673,
         "columnNumber": 60_090
+      },
+      "schematicType": {
+        "start": 5_370_427,
+        "end": 5_370_450,
+        "name": "get type",
+        "kind": "getter",
+        "arity": 0,
+        "bytes": 23,
+        "sha256": "6c4d6aa33c3d3563f520209b3affa9982e2b92d481614edb8bcd2213eede3788",
+        "lineNumber": 3673,
+        "columnNumber": 58_258
       }
     }
   },
@@ -83,12 +94,23 @@ export const CURRENT_SCHEMATIC_DOCUMENT_TAB_ID_SOURCE = freezeDeep([
         "sha256": "24874f0b7d637254283b26f23edb9f3269b28da4b6a7ffb81b3b88d8d7c49de0",
         "lineNumber": 4191,
         "columnNumber": 65_190
+      },
+      "schematicType": {
+        "start": 5_669_433,
+        "end": 5_669_456,
+        "name": "get type",
+        "kind": "getter",
+        "arity": 0,
+        "bytes": 23,
+        "sha256": "6c4d6aa33c3d3563f520209b3affa9982e2b92d481614edb8bcd2213eede3788",
+        "lineNumber": 4191,
+        "columnNumber": 63_358
       }
     }
   }
 ] as const);
 export type CurrentSchematicDocumentTabIdRole = keyof typeof CURRENT_SCHEMATIC_DOCUMENT_TAB_ID_SOURCE[0]["roles"];
-export const CURRENT_SCHEMATIC_DOCUMENT_TAB_ID_ROLES = Object.freeze(["base", "waveform", "schematicPage"] as const);
+export const CURRENT_SCHEMATIC_DOCUMENT_TAB_ID_ROLES = Object.freeze(["base", "waveform", "schematicPage", "schematicType"] as const);
 const digest = (value: string): string => createHash("sha256").update(value).digest("hex");
 export function qualifyCurrentSchematicDocumentTabIdSource(input: string): 0 | 1 {
   if (!input.isWellFormed()) { throw new Error("SCHEMATIC_DOCUMENT_TAB_ID_SOURCE"); }

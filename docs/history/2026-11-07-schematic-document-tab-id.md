@@ -33,3 +33,9 @@ manager and ja/Ha is the schematic-page manager. The table now names them
 Inspector coordinates remain unchanged. No symbol getter is claimed by this
 leaf. A future original receiver proof must qualify the actual prototype and
 manager type independently of these role labels.
+
+The same separate leaf now also pins the two actual schematic-page `type`
+getters returning `"sch"`. The original collector can qualify these functions
+without invoking them, then bind their exact prototypes separately. Eight
+uninvoked getters passed actual Inspector metadata checks. No original model,
+page type read, getter execution or writer continuation is issued by this leaf.
