@@ -2,8 +2,8 @@
 
 The inverse generation has a separate selected-file Main reader for saved
 history. It accepts up to eight original history heads, including nonzero
-segment counts and locked heads. The generated-project reader's single-head,
-num-zero baseline and the Via post-Save reader remain unchanged.
+segment counts and locked heads. The generated-project reader's single head with
+`num = 0` and the Via post-Save reader remain unchanged.
 
 The genuine inverse factory derives the expected rows from its original saved
 flow plan and completed checkpoint. The retained Main cursor binds that exact
@@ -20,8 +20,8 @@ request's retained completion Promise. A changed row, foreign scope, stale
 owner or uncertain native acknowledgment refuses continuation. Main failure,
 original worker failure and original inverse abort wake pending waits without
 replaying reads or issuing another resume. Generic Main-send capacity retains
-its prior allowance; the new finite native lane owns the additional44 normal
-and8 cleanup commands separately. The Main cursor also retains each native
+its prior allowance; the new finite native lane owns the additional 44 normal
+and 8 cleanup commands separately. The Main cursor also retains each native
 breakpoint-resolution identity and joins it to the actual arm acknowledgment.
 
 Opening first makes a separate cold-loader history request. The four requests

@@ -50,11 +50,11 @@ pin, bundle, application, native owner or MCP action was emitted or launched.
 
 ## Combined-source verification
 
-Canonical integration8a77bf22 preserves the separate inverse timer, queue and
+Commit `8a77bf22` preserves the separate inverse timer, queue and
 saved-history Main protocols. Both TypeScript projects, strict changed-file
-lint and26 focused schematic owner/native checks pass after that merge.
-PinnedNode24.18.0 two-pass private generation produced1,446,119stored helper
-bytes and1,999,571decoded C# bytes, below the unchanged2MiB bounds. The complete
-C#5 source compiles, eighteen fixed-codec checks pass, and all fourteen
+lint and 26 focused schematic owner/native checks pass after that merge.
+Node 24.18.0 two-pass private generation produced 1,446,119 stored helper
+bytes and 1,999,571 decoded C# bytes, below the unchanged 2 MiB bounds. The complete
+C# 5 source compiles, eighteen fixed-codec checks pass, and all fourteen
 seven-record stage/ID message hashes match without constructing a native owner
-or starting an application. Tracked helper/pins/bundles remain un-emitted.
+or starting an application. Tracked helper/pins/bundles have not been emitted.
