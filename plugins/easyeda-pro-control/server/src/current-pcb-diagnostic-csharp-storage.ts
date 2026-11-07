@@ -96,3 +96,11 @@ export function packCurrentPcbDiagnosticCSharpStorage(input: string): string {
 export function retainCurrentPcbDiagnosticCSharpStorage(source: string, original: string): string {
   return original.includes(BEGIN) ? packCurrentPcbDiagnosticCSharpStorage(source) : source;
 }
+
+/** Complete readable review artifact only; runtime never loads the .cs copy. */
+export function currentPcbDiagnosticCSharpCompilerInput(input: string): string {
+  const source = expandCurrentPcbDiagnosticCSharpStorage(input), { start, stop } = section(source, LITERAL_BEGIN, LITERAL_END);
+  const body = source.slice(start + LITERAL_BEGIN.length, stop - LITERAL_END.length), bytes = Buffer.from(body);
+  if (bytes.length === 0 || bytes.length > MAXIMUM || bytes.some(byte => byte > 127)) { return bad(); }
+  return body;
+}

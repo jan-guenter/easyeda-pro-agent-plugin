@@ -69,7 +69,10 @@ Builds use pinned Node 24.18.0 with core dumps disabled. Generation restores the
 exact literal `Add-Type` body before applying source markers, then packs only
 the final combined output. Forward and cold-forward migration restore that same
 body before checking their original source identities; their six released
-artifacts remain byte-identical. Source readers must use this closed restoration
+artifacts remain byte-identical. The generated complete
+`scripts/pcb-diagnostic-native.cs` copy remains readable for review; startup
+`--write`/`--check` maintain exact equality with the decoded compiler input.
+Runtime does not load that review copy. Source readers must use this closed restoration
 path rather than assume every combined helper contains a literal here-string.
 
 The emitted decoder takes metadata only from its embedded fixed literals. It

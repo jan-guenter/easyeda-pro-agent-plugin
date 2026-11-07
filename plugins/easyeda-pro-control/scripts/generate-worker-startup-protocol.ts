@@ -1,5 +1,5 @@
 /* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
-import { expandCurrentPcbDiagnosticCSharpStorage, packCurrentPcbDiagnosticCSharpStorage } from "../server/src/current-pcb-diagnostic-csharp-storage.ts";
+import { currentPcbDiagnosticCSharpCompilerInput, expandCurrentPcbDiagnosticCSharpStorage, packCurrentPcbDiagnosticCSharpStorage } from "../server/src/current-pcb-diagnostic-csharp-storage.ts";
 import { applyCurrentPcbViaObservedSourceNativeFragment } from "../server/src/current-pcb-via-observed-source-native-fragment.ts";
 import { applyCurrentPcbViaSaveDrainNativeFragment } from "../server/src/current-pcb-via-save-drain-native-fragment.ts";
 import { applyCurrentPcbViaPostHistorySyncNativeFragment } from "../server/src/current-pcb-via-post-history-sync-native-fragment.ts";
@@ -113,8 +113,9 @@ async function main(): Promise<void> {
   const path = new URL("pcb-diagnostic-owner.ps1", import.meta.url);
   const source = await readFile(path, "utf8");
   const next = generateWorkerStartupProtocol(source);
-  if (action === "--write") { await writeFile(path, next); }
-  else if (next !== source) { throw new Error("Generated native startup protocol differs"); }
+  const reviewPath = new URL("pcb-diagnostic-native.cs", import.meta.url); const compilerInput = currentPcbDiagnosticCSharpCompilerInput(next);
+  if (action === "--write") { await writeFile(path, next); await writeFile(reviewPath, compilerInput); }
+  else if (next !== source || await readFile(reviewPath, "utf8") !== compilerInput) { throw new Error("Generated native startup protocol or review copy differs"); }
 }
 /** Pure complete composition, used by repeated-generation regressions without writing a helper. */
 export function generateWorkerStartupProtocol(source: string): string {

@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { gzipSync } from "node:zlib";
 import { generateWorkerStartupProtocol } from "../../scripts/generate-worker-startup-protocol.ts";
-import { CURRENT_PCB_DIAGNOSTIC_CSHARP_DECODER as DECODER, expandCurrentPcbDiagnosticCSharpStorage as expand, packCurrentPcbDiagnosticCSharpStorage as pack } from "../src/current-pcb-diagnostic-csharp-storage.ts";
+import { CURRENT_PCB_DIAGNOSTIC_CSHARP_DECODER as DECODER, currentPcbDiagnosticCSharpCompilerInput, expandCurrentPcbDiagnosticCSharpStorage as expand, packCurrentPcbDiagnosticCSharpStorage as pack } from "../src/current-pcb-diagnostic-csharp-storage.ts";
 import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES as MAXIMUM } from "../src/current-pcb-diagnostic-helper-source-profile.ts";
 import { currentFootprintForwardNativeOutputs } from "../src/current-footprint-forward-native-graph-source.ts";
 import { currentFootprintForwardColdNativeOutputs } from "../src/current-footprint-forward-cold-native-graph-source.ts";
@@ -25,6 +25,7 @@ void test("final emission is reversible, bounded and preserves every released fo
     for (const output of expected) { assert.equal(await readFile(new URL(`../../${output.relativePath}`, import.meta.url), "utf8"), output.source); }
   }
   const generated = generateWorkerStartupProtocol(shared); assert.equal(generateWorkerStartupProtocol(generated), generated);
+  assert.equal(await readFile(new URL("../../scripts/pcb-diagnostic-native.cs", import.meta.url), "utf8"), currentPcbDiagnosticCSharpCompilerInput(generated));
   assert.ok(Buffer.byteLength(generated) <= MAXIMUM); const restored = expand(generated), start = restored.indexOf("Add-Type @'\n") + 12, stop = restored.indexOf("\n'@\n");
   assert.ok(start >= 12 && stop > start); assert.ok(Buffer.byteLength(restored.slice(start, stop)) <= MAXIMUM);
   assert.ok(Buffer.byteLength(generated) + 15_000 < Buffer.byteLength(restored));
