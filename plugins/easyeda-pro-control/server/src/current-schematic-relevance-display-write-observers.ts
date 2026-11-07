@@ -18,6 +18,7 @@ import type { CurrentSchematicRelevanceDisplayActionObservation } from "./curren
 import { CurrentSchematicRelevanceDisplaySaveObserver } from "./current-schematic-relevance-display-save-observer.ts";
 import { CurrentProjectSaveStructureObserver } from "./current-project-save-structure-observer.ts";
 import type { CurrentProjectSaveStructurePacket } from "./current-project-save-structure-observer.ts";
+import type { CurrentSchematicRelevanceStartupStructureDrained } from "./current-schematic-relevance-startup-structure-origin.ts";
 import { CurrentProjectStructureTransportObserver } from "./current-project-structure-transport-observer.ts";
 import { CurrentProjectSaveProducerObserver, requireOriginalCurrentProjectSaveProducerHeldCall } from "./current-project-save-producer-observer.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_REQUESTS } from "./current-project-save-producer-protocol.ts";
@@ -40,6 +41,7 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
   #transport: CurrentProjectStructureTransportObserver | null = null; #producer: CurrentProjectSaveProducerObserver | null = null;
   #accessor: CurrentSchematicRelevanceDisplayAccessorObserver | null = null; #accessorPacket: CurrentSchematicRelevanceDisplayAccessorObservation | null = null;
   #structurePacket: Promise<StructurePacketOutcome> | null = null;
+  #startupStructureDrain: CurrentSchematicRelevanceStartupStructureDrained | null = null;
   #construction: Promise<Outcome> | null = null; #collector: Promise<Outcome> | null = null; #pendingProducer: Promise<unknown> | null = null;
   #polling: CurrentProjectSyncQuiesceObserver | null = null; #pollingCompletion: CurrentProjectSyncQuiesceCompletion | null = null; #pollingCollection: Promise<Outcome> | null = null;
   #library: CurrentProjectLibraryRefreshObserver | null = null; #libraryCompletion: CurrentProjectLibraryRefreshCompletion | null = null; #libraryCollection: Promise<Outcome> | null = null;
@@ -165,6 +167,8 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
     this.#current(); need(!this.#preparationAttempted && this.#accessor !== null && this.#accessorPacket !== null, "MODIFICATION_PREPARATION_CONSUMED"); this.#preparationAttempted = true; this.#dispatch = dispatch;
     try {
       this.#accessor.requireData(this.#accessorPacket, this.#owner, this.#arguments); await this.waitForStartupObservations(); this.#current();
+      need(this.#structure !== null && this.#startupStructureDrain === null, "ORIGINAL_STARTUP_STRUCTURE_REQUIRED");
+      this.#startupStructureDrain = await this.#structure.observeOriginalSchematicRelevanceStartupDrain(); this.#current();
       await this.#owner.enrollSchematicRelevanceDisplayProducerPrefix(this.#arguments); this.#current();
       const origin = await this.#owner.prepareSchematicRelevanceDisplayPreModifyMain(this.#arguments, dispatch); this.#current(); this.#main = origin;
       await requireOriginalCurrentSchematicRelevanceDisplayPreModifyMainOrigin(origin, this.#owner, this.#arguments).assertCurrent(); this.#current();
@@ -184,8 +188,8 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
     this.#current(); need(!this.#modifyEntryAttempted, "MODIFY_GENERATION_CONSUMED"); this.#modifyEntryAttempted = true;
     this.#modifyEntryCollection = (async (): Promise<CurrentSchematicRelevanceDisplayModifyEntryObservation> => {
       try {
-        await this.requirePrepared(dispatch); this.#current(); const guard = this.#guard, main = this.#main; need(main !== null && guard !== null, "ORIGINAL_MODIFY_PREPARATION");
-        const origin = await this.#owner.generateSchematicRelevanceDisplayModifyEntry(this.#arguments, main, dispatch, guard); this.#current();
+        await this.requirePrepared(dispatch); this.#current(); const guard = this.#guard, main = this.#main, startup = this.#startupStructureDrain; need(main !== null && guard !== null && startup !== null, "ORIGINAL_MODIFY_PREPARATION");
+        const origin = await this.#owner.generateSchematicRelevanceDisplayModifyEntry(this.#arguments, main, dispatch, guard, startup); this.#current();
         const observer = new CurrentSchematicRelevanceDisplayModifyEntryObserver(origin, this.#owner, this.#arguments); this.#modifyEntryObserver = observer;
         const packet = await observer.observe(); this.#current(); observer.requireData(packet, this.#owner, this.#arguments); this.#modifyEntryPacket = packet;
         const raw = await observer.observeRawScene(); this.#current(); observer.requireRawData(raw, this.#owner, this.#arguments); this.#modifyRawPacket = raw; return packet;

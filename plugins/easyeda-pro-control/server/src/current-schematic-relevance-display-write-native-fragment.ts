@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- The fixed own-purpose generator joins independently pinned stage programs, exact budgets and immutable native installers; no caller-selected codec is admitted. */
 import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
 /** Build-only distinct Relevance birth. Shared fixed worker/SQL codecs retain
  * their bytes; no existing six-record owner is upgraded or retargeted. */
@@ -9,6 +10,7 @@ import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_NAVIGATION_FUNCTION as NAVIGATION, 
 import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE as PROFILE } from "./current-schematic-relevance-display-write-native-profile.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE as SIX_PROFILE } from "./current-schematic-display-write-native-profile.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS as SEVEN_STRUCTURE, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as SIX_STRUCTURE } from "./current-project-save-structure-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_STARTUP_STRUCTURE_REQUESTS as STARTUP_STRUCTURE } from "./current-schematic-relevance-startup-structure-origin.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_CAPTURE_FUNCTION as CAPTURE, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_CAPTURE_REPLACEMENTS as CAPTURE_REPLACEMENTS, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_FUNCTION as MODIFY, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_REPLACEMENTS as MODIFY_REPLACEMENTS } from "./current-schematic-relevance-display-action-programs.ts";
 import { installNativeCompileOnlyHook } from "./native-compile-only-hook.ts";
 import { installOwnedNativeDispatch } from "./native-owned-dispatch.ts";
@@ -40,6 +42,7 @@ export function normalizeCurrentSchematicRelevanceDisplayNativeFamily(input: str
   }
   return source.replaceAll("SchematicDisplayFamily", "schematicDisplayWrite209")
     .replaceAll("-not ($SchematicDisplayWrite209 -or $SchematicRelevanceDisplayWrite209)", "-not $SchematicDisplayWrite209")
+    .replace(`schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(SEVEN_STRUCTURE.normal + STARTUP_STRUCTURE.total)}:${String(SIX_STRUCTURE.normal)})`, `schematicStructureNormal>=${String(SIX_STRUCTURE.normal)}`)
     .replace(`schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(SEVEN_STRUCTURE.normal)}:${String(SIX_STRUCTURE.normal)})`, `schematicStructureNormal>=${String(SIX_STRUCTURE.normal)}`)
     .replace("schematicWorkerHelperScripts.Count>=(schematicRelevanceDisplayWrite209?6:4)", "schematicWorkerHelperScripts.Count>=4")
     .replace("schematicStartupCalls>=(schematicRelevanceDisplayWrite209?8:7)", "schematicStartupCalls>=7")
@@ -130,7 +133,7 @@ export function applyCurrentSchematicRelevanceDisplayWriteNativeFragment(input: 
   });
   source = source.replaceAll("-not $SchematicDisplayWrite209", "-not ($SchematicDisplayWrite209 -or $SchematicRelevanceDisplayWrite209)");
   source = once(source, admissionMarker, sixAdmission); source = once(source, stageMarker, sixStage);
-  source = once(source, `schematicStructureNormal>=${String(SIX_STRUCTURE.normal)}`, `schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(SEVEN_STRUCTURE.normal)}:${String(SIX_STRUCTURE.normal)})`);
+  source = once(source, `schematicStructureNormal>=${String(SIX_STRUCTURE.normal)}`, `schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(SEVEN_STRUCTURE.normal + STARTUP_STRUCTURE.total)}:${String(SIX_STRUCTURE.normal)})`);
   source = once(source, "schematicWorkerHelperScripts.Count>=4", "schematicWorkerHelperScripts.Count>=(schematicRelevanceDisplayWrite209?6:4)");
   source = once(source, "schematicStartupCalls>=7", "schematicStartupCalls>=(schematicRelevanceDisplayWrite209?8:7)");
   source = prepareCurrentSchematicRelevanceDisplayNativeSwitch(source);

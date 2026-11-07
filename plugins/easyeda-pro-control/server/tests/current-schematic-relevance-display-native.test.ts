@@ -38,7 +38,7 @@ void test("seven-record calls and common readonly requests use their own fixed r
   }
   const query = { id: PROFILE.renderer.total, method: "Target.getTargets" };
   assert.equal(encode(wire(query))["requestId"], PROFILE.renderer.total); assert.throws(() => sixEncode(wire(query)));
-  assert.equal(PROFILE.renderer.total, SIX.renderer.total + 18 + PROFILE.renderer.modifyEntryObservation + PROFILE.renderer.startupPollingObservation + PROFILE.renderer.startupPollingHelperSources + PROFILE.renderer.startupLibraryObservation + PROFILE.renderer.startupLibrarySetupHelperSources + PROFILE.renderer.localUploadObservation + PROFILE.renderer.uploadRequestObservation + PROFILE.renderer.localCacheExtraObservation + PROFILE.renderer.submittedHelperSources); assert.equal(PROFILE.renderer.structureObservation, SIX.renderer.structureObservation + 18);
+  assert.equal(PROFILE.renderer.total, SIX.renderer.total + 18 + PROFILE.renderer.startupStructureDrainObservation + PROFILE.renderer.modifyEntryObservation + PROFILE.renderer.startupPollingObservation + PROFILE.renderer.startupPollingHelperSources + PROFILE.renderer.startupLibraryObservation + PROFILE.renderer.startupLibrarySetupHelperSources + PROFILE.renderer.localUploadObservation + PROFILE.renderer.uploadRequestObservation + PROFILE.renderer.localCacheExtraObservation + PROFILE.renderer.submittedHelperSources); assert.equal(PROFILE.renderer.structureObservation, SIX.renderer.structureObservation + 18);
   const old = sixCommand("start", "original-binding"); assert.throws(() => encode(wire({ id: 1, ...old, sessionId: "original-session" })));
   assert.throws(() => command("capture", "original-binding", args.target, { ...args.operation, peers: args.operation.peers.slice(0, 5) }));
 });
@@ -53,6 +53,7 @@ void test("combined seven-record native source is idempotent, bounded and retain
   assert.equal(expanded.split("    [EasyedaDiagnosticOwner]::VerifySchematicRelevanceDisplaySmoke()\n").length, 2);
   assert.match(compiler, /schematicStartupCalls>=\(\(schematicRelevanceDisplayWrite209\|\|schematicWireEdit209\)\?8:7\)/u);
   const oldAdmission = compiler.slice(compiler.indexOf("public void AdmitSchematicDisplayAction("), compiler.indexOf("void SchematicDisplayDiscovery("));
+  assert.match(compiler, /schematicStructureNormal>=\(schematicRelevanceDisplayWrite209\?357:schematicWireEdit209\?317:299\)/u);
   assert.match(oldAdmission, /\bschematicDisplayWrite209\b/u); assert.doesNotMatch(oldAdmission, /\bSchematicDisplayFamily\b/u);
   const ownEncoder = compiler.slice(compiler.indexOf("public static string SchematicRelevanceDisplayProtocolMessage("), compiler.indexOf("public void SendSchematicRelevanceDisplayNative("));
   assert.ok(ownEncoder.includes(`id>${String(PROFILE.renderer.total)}||`));

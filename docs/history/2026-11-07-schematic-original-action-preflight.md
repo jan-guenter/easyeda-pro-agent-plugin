@@ -9,3 +9,28 @@ The reservation remains unspent. `prepareModification()` now joins startup, actu
 The separate profile derives 22 normal requests (capture, tuple properties, 18 function metadata, one full source, final reproof) and one cleanup request. Only the SCH renderer cap grows by 23; other purposes and the released helper outputs are unchanged. The new fragment uses the owned dispatcher and compile-hook installers. Two complete generation passes are identical; the generated helper is 2,083,710 bytes on this source base, below the unchanged 2 MiB bound. No generated helper or pin was written to the repository.
 
 Focused tests exercise the maintained collector with explicit inert origin/source issuer seams, real function metadata decoders, metadata substitution refusal, fixed selector-free rows, same-reference reproof and group ordering. The emitted full C# helper compiles on Linux and its five new fixed message vectors, existing accessor, SCH and Via smoke methods pass. Both TypeScript projects and strict changed-file lint pass. These are source/codec checks; no Windows process, app, live native owner, setter, Save or design was invoked, and no connected lifecycle is claimed.
+
+The Relevance7 structure reader now retains each actual startup Nd finalizer
+Promise in its original object group before resume. Before action preparation,
+it requires every retained Promise to be fulfilled with `undefined`, reads a
+fresh scope from the original wrapper, and proves the original callback, latest
+arguments and null active/queued Promise slots. The existing bootstrap read
+also rechecks the same current PROJECT and uploadStructure wrapper. Native
+empty counters alone cannot issue this proof.
+
+The maintained group retains an opaque original drain token. Core requires its
+private observer/origin/owner/arguments lookup and consumes a second readonly
+pass after the Modify intent is published and before generating the request.
+Pending fulfillment, another result, a live scope, token copies, another origin
+and a third pass refuse. Both passes use existing fixed commands and helper
+bytes. The own7 allowance adds at most eight retains and two sixteen-request
+passes. Old6 keeps its existing structure budget; Wire keeps 317 normal
+structure requests and its complete 2,721-request renderer reservation.
+
+Run, setters and Modify publication remain held. The ready TEXT callback needs
+its own consumed-Modify, original UI publication and worker no-publication join;
+it does not consume another initial record or a Save-local allowance. The
+source-only tests cover the real observer state machine through explicit inert
+registry seams. Both TypeScript projects and strict changed-file lint pass;
+dedicated schematic generation is idempotent and stays below the existing
+compiler bound. No application or native owner ran.

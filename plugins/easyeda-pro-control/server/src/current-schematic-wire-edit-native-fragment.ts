@@ -8,6 +8,7 @@ import { currentSchematicWireEditNativeCommand } from "./current-schematic-wire-
 import { CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PROFILE as PROFILE } from "./current-schematic-wire-edit-native-profile.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE as SIX_PROFILE } from "./current-schematic-display-write-native-profile.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as SIX_STRUCTURE, CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS as STRUCTURE } from "./current-project-save-structure-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_STARTUP_STRUCTURE_REQUESTS as STARTUP_STRUCTURE } from "./current-schematic-relevance-startup-structure-origin.ts";
 import { CURRENT_SCHEMATIC_WIRE_EDIT_NAVIGATION_FUNCTION as NAVIGATION, CURRENT_SCHEMATIC_WIRE_EDIT_STAGE_FUNCTION as STAGE, CURRENT_SCHEMATIC_WIRE_EDIT_START_FUNCTION as START } from "./current-schematic-wire-edit-programs.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_NAVIGATION_FUNCTION as SHARED_NAVIGATION, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_START_FUNCTION as SHARED_START } from "./current-schematic-relevance-display-write-programs.ts";
 import { installOwnedNativeDispatch } from "./native-owned-dispatch.ts";
@@ -39,7 +40,8 @@ export function normalizeCurrentSchematicWireEditNativeFamily(input: string): st
   }
   return source.replace("schematicDisplayWrite209||schematicRelevanceDisplayWrite209||schematicWireEdit209", "schematicDisplayWrite209||schematicRelevanceDisplayWrite209")
     .replaceAll("-not ($SchematicDisplayWrite209 -or $SchematicRelevanceDisplayWrite209 -or $SchematicWireEdit209)", "-not ($SchematicDisplayWrite209 -or $SchematicRelevanceDisplayWrite209)")
-    .replace(`schematicStructureNormal>=((schematicRelevanceDisplayWrite209||schematicWireEdit209)?${String(STRUCTURE.normal)}:${String(SIX_STRUCTURE.normal)})`, `schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(STRUCTURE.normal)}:${String(SIX_STRUCTURE.normal)})`)
+    .replace(`schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(STRUCTURE.normal + STARTUP_STRUCTURE.total)}:schematicWireEdit209?${String(STRUCTURE.normal)}:${String(SIX_STRUCTURE.normal)})`, `schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(STRUCTURE.normal + STARTUP_STRUCTURE.total)}:${String(SIX_STRUCTURE.normal)})`)
+    .replace(`schematicStructureNormal>=((schematicRelevanceDisplayWrite209||schematicWireEdit209)?${String(STRUCTURE.normal)}:${String(SIX_STRUCTURE.normal)})`, `schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(STRUCTURE.normal + STARTUP_STRUCTURE.total)}:${String(SIX_STRUCTURE.normal)})`)
     .replace("schematicStartupCalls>=((schematicRelevanceDisplayWrite209||schematicWireEdit209)?8:7)", "schematicStartupCalls>=(schematicRelevanceDisplayWrite209?8:7)")
     .replace(` if(schematicWireEdit209)return ${String(PROFILE.renderer.total)};`, "")
     .replace("elseif ($SchematicWireEdit209) {[EasyedaDiagnosticOwner]::CreateSchematicWireEdit209()} ", "")
@@ -109,7 +111,7 @@ export function applyCurrentSchematicWireEditNativeFragment(input: string): stri
   const extra = native(source);
   source = once(source, "schematicDisplayWrite209||schematicRelevanceDisplayWrite209", "schematicDisplayWrite209||schematicRelevanceDisplayWrite209||schematicWireEdit209");
   source = source.replaceAll("-not ($SchematicDisplayWrite209 -or $SchematicRelevanceDisplayWrite209)", "-not ($SchematicDisplayWrite209 -or $SchematicRelevanceDisplayWrite209 -or $SchematicWireEdit209)");
-  source = once(source, `schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(STRUCTURE.normal)}:${String(SIX_STRUCTURE.normal)})`, `schematicStructureNormal>=((schematicRelevanceDisplayWrite209||schematicWireEdit209)?${String(STRUCTURE.normal)}:${String(SIX_STRUCTURE.normal)})`);
+  source = once(source, `schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(STRUCTURE.normal + STARTUP_STRUCTURE.total)}:${String(SIX_STRUCTURE.normal)})`, `schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(STRUCTURE.normal + STARTUP_STRUCTURE.total)}:schematicWireEdit209?${String(STRUCTURE.normal)}:${String(SIX_STRUCTURE.normal)})`);
   source = once(source, "schematicStartupCalls>=(schematicRelevanceDisplayWrite209?8:7)", "schematicStartupCalls>=((schematicRelevanceDisplayWrite209||schematicWireEdit209)?8:7)");
   source = prepareCurrentSchematicWireEditNativeSwitch(source);
   const switches = [...source.slice(0, source.indexOf("\n")).matchAll(/\[switch\]\$(\w+)/gu)].map(match => match[1]).filter(name => name !== undefined && name !== "CompileOnly" && name !== "SchematicWireEdit209");

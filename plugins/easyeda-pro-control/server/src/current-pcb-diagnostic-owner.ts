@@ -37,6 +37,7 @@ import { currentFootprintInverseModelStepNativeFrame, validateCurrentFootprintIn
 import type { CurrentFootprintInverseColdLoadProgress } from "./current-footprint-inverse-cold-load-progress.ts";
 import type { CurrentFootprintInverseModelStepCommand, CurrentFootprintInverseStartupIdle } from "./current-footprint-inverse-model-step-protocol.ts";
 import type { CurrentSchematicRelevanceDisplayModifyEntryBindings, CurrentSchematicRelevanceDisplayModifyEntryOrigin } from "./current-schematic-relevance-display-modify-entry-origin.ts";
+import type { CurrentSchematicRelevanceStartupStructureDrained } from "./current-schematic-relevance-startup-structure-origin.ts";
 import { validateCurrentSchematicRelevanceDisplayModifyEntryCommand } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
 import type { CurrentSchematicRelevanceDisplayModifyEntryCommand } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
 import { CurrentSchematicRelevanceRawCursor } from "./current-schematic-relevance-action-raw-cursor.ts";
@@ -4542,18 +4543,23 @@ class CurrentPcbRetainedOwnerCore {
    * This grants neither action-start nor setter continuation. The original
    * async call remains retained until its own settlement or original Job exit. */
   public async generateSchematicRelevanceDisplayModifyEntry(argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments, main: CurrentSchematicRelevanceDisplayPreModifyMainOrigin,
-    dispatch: GeneratedSchematicRelevanceDisplayDispatch, guard: CurrentSchematicRelevanceDisplayActionGuardObservation): Promise<CurrentSchematicRelevanceDisplayModifyEntryOrigin> {
+    dispatch: GeneratedSchematicRelevanceDisplayDispatch, guard: CurrentSchematicRelevanceDisplayActionGuardObservation, startup: CurrentSchematicRelevanceStartupStructureDrained): Promise<CurrentSchematicRelevanceDisplayModifyEntryOrigin> {
     assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this);
     const selected = this.#schematicReadContext(argumentsValue); const enrollment = this.#schematicRelevancePreModifyMainEnrollment, holder = this.#schematicSdkBinding, idle = this.#schematicRelevanceActionArray, runner = this.#mainRunner;
     const before = requireOriginalCurrentSchematicRelevanceDisplayPreModifyMainOrigin(main, this, argumentsValue); requireOriginalCurrentSchematicRelevanceDisplayActionGuard(guard, this, argumentsValue);
     if (this.#schematicRelevanceModifyGenerationAttempted || enrollment === null || this.#schematicRelevancePreModifyDispatch !== dispatch || holder === null || idle === null || runner === null || this.#schematicRelevanceActionGuardPacket !== guard || this.#schematicRelevancePreModifyMainOrigin !== main) { throw error("SCHEMATIC_MODIFY_GENERATION_UNAVAILABLE"); }
     this.#schematicRelevanceModifyGenerationAttempted = true; this.#enter(true); let launched = false;
     try {
+      // The actual observer registry is loaded only after Core initialization.
+      // No caller function table or serialized summary can supply this proof.
+      const originalStartup = await import("./current-project-save-structure-observer.ts");
+      const structureOrigin = this.#schematicStructureOrigin; if (structureOrigin === null) { throw error("SCHEMATIC_MODIFY_ORIGINAL_STARTUP_STRUCTURE"); }
+      const startupDrain = originalStartup.requireOriginalCurrentSchematicRelevanceStartupStructureDrained(startup, structureOrigin, this, argumentsValue);
       await before.assertCurrent(); requireOriginalCurrentSchematicRelevanceDisplayActionGuard(guard, this, argumentsValue); enrollment.assertBeforeAttempt();
       const attempted = consumeGeneratedSchematicRelevanceDisplayDispatch(dispatch, "modify", this, argumentsValue);
       const current = (): void => { selected.current(); enrollment.assertOriginalAttempted(); const fence = runner.selectedSqlFenceState(), retained = runner.retained();
         if (this.#schematicFailed || this.#schematicDisplayCleanupOnly || this.#mainRunner !== runner || !retained.completed || retained.failed || retained.released || fence["originalBootstrapRetained"] !== true || fence["ready"] !== true || fence["mutationGrantAvailable"] !== false || fence["selectedProjectMutationsResumed"] !== 0 || this.#schematicSdkBinding !== holder || this.#schematicRelevanceActionArray !== idle || this.#schematicRelevanceActionGuardPoints.size !== 3 || this.#schematicRelevanceActionGuardArming !== null || this.#schematicStages.has("modify") || this.#schematicStages.has("save")) { throw error("SCHEMATIC_MODIFY_GENERATION_CHANGED"); } };
-      current(); await attempted.assertPublished(); current(); await this.#verify(); current();
+      current(); await attempted.assertPublished(); current(); await startupDrain.refresh(); current(); await this.#verify(); current(); startupDrain.assertCurrent();
       const bound = await this.#request({ action: "schematic-relevance-display-modify-bind", idle }); current(); if (!exact(bound, ["bound"]) || bound["bound"] !== true) { throw error("SCHEMATIC_MODIFY_GENERATION_BIND_ACK"); }
       const origin: CurrentSchematicRelevanceDisplayModifyEntryOrigin = Object.freeze({ profile: "private.current-schematic-relevance-display-modify-entry-origin.v1" });
       const operationJson = canonicalJson(argumentsValue.operation), targetJson = canonicalJson(argumentsValue.target); let callback: string | null = null, frameId: string | null = null, rawCursor: CurrentSchematicRelevanceRawCursor | null = null, source: string | null = null, step = 0, tuple: string | null = null;

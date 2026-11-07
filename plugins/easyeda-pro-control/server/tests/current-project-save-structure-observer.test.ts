@@ -4,8 +4,8 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
 import { CURRENT_PCB_209_WORKER_CALLBACK_LOCATIONS as CALLBACKS, CURRENT_PCB_209_WORKER_PRODUCER_LOCATIONS as PRODUCERS } from "../src/current-pcb-209-worker-startup-profile.ts";
-import { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS, CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES, validateCurrentProjectSaveStructureCommand } from "../src/current-project-save-structure-protocol.ts";
-import type { CurrentProjectSaveStructureCommand, CurrentProjectSaveStructureSite as Site } from "../src/current-project-save-structure-protocol.ts";
+import { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS, CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS, CURRENT_SCHEMATIC_RELEVANCE_STARTUP_STRUCTURE_REQUESTS as DRAIN, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES, validateCurrentProjectSaveStructureCommand } from "../src/current-project-save-structure-protocol.ts";
+import type { CurrentProjectSaveStructureCommand, CurrentSchematicRelevanceStartupStructureDrained, CurrentProjectSaveStructureSite as Site } from "../src/current-project-save-structure-protocol.ts";
 import type { CurrentProjectStructureBodyReservation, CurrentProjectStructureMainPublication } from "../src/current-project-structure-transport-origin.ts";
 import type { CurrentFootprintInverseBootstrapPermit, CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureEvent, CurrentProjectSaveStructureOrigin } from "../src/current-project-save-structure-origin.ts";
 import type { CurrentProjectSaveStructureObserver } from "../src/current-project-save-structure-observer.ts";
@@ -13,6 +13,24 @@ import { worker209ConstructionFixtureSource } from "./helpers/current-pcb-209-wo
 import { loadSyntheticRegistryModule } from "./helpers/load-synthetic-registry-module.ts";
 
 type Remote = Record<string, unknown>;
+async function observedFailure(pending: Promise<unknown>): Promise<unknown> { try { return await pending; } catch (error) { return error; } }
+void test("own7 startup retains actual finalizer Promises and refreshes the same idle scope before Modify", async () => {
+  const f = await fixture(false, false, false, false, false, 2, false, false, false, false, null, false, true, false, null, true);
+  await f.observer.arm(); await f.observer.observeConstruction(); const pending = f.observer.observePacket(); const outcome = observedFailure(pending);
+  await f.startupReady; const before = f.observer.retained().normalRequests;
+  const token = await f.observer.observeOriginalSchematicRelevanceStartupDrain(); const original = f.lookupStartup(token);
+  assert.throws(() => f.lookupStartup(Object.freeze({ ...token })), /ORIGINAL_STARTUP_DRAIN/u); assert.throws(() => f.lookupStartup(token, true), /ORIGINAL_STARTUP_DRAIN/u);
+  original.assertCurrent(); await original.refresh(); assert.equal(f.observer.retained().normalRequests - before, DRAIN.passes * (2 + DRAIN.perPass - DRAIN.retain));
+  await assert.rejects(original.refresh(), /DRAIN_PASS_BOUND/u); f.exit(); await outcome; await f.observer.cleanup(); assert.equal(f.consumed(), false);
+});
+void test("pending startup Promise, nonundefined fulfillment and an active serial scope each keep Modify refused", async () => {
+  for (const fault of ["pending", "result", "scope"] as const) {
+    const f = await fixture(false, false, false, false, false, 2, false, false, false, false, null, false, true, false, fault, true);
+    await f.observer.arm(); await f.observer.observeConstruction(); const outcome = observedFailure(f.observer.observePacket()); await f.startupReady;
+    await assert.rejects(f.observer.observeOriginalSchematicRelevanceStartupDrain(), /STARTUP_ORIGINAL_(?:PROMISE_FULFILLED_UNDEFINED|SERIAL_IDLE)/u);
+    f.exit(); await outcome; await f.observer.cleanup(); assert.equal(f.consumed(), false);
+  }
+});
 void test("only the separately branded Relevance worker admits its eight original startup callbacks", async () => {
   const original = await fixture(false, false, false, false, false, 8); await original.observer.arm(); await original.observer.observeConstruction();
   await assert.rejects(original.observer.observePacket(), /STARTUP_SOURCE_RECORD_BOUND/u); original.exit(); await original.observer.cleanup();
@@ -21,7 +39,7 @@ void test("only the separately branded Relevance worker admits its eight origina
   await seven.observer.arm(); await seven.observer.observeConstruction(); const packet = await seven.observer.observePacket();
   assert.equal(seven.resumes.filter(role => role === "startupEntry").length, 8); assert.equal(seven.consumed(), false);
   await seven.observer.releasePacket(packet, seven.token); await seven.observer.observeCompletion(); await seven.observer.cleanup();
-  assert.equal(seven.observer.retained().normalRequests, CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS.normal);
+  assert.equal(seven.observer.retained().normalRequests, CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS.normal + 8);
   assert.equal(seven.observer.retained().cleanupRequests, CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS.cleanup);
   assert.equal(CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS.normal + 18, CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS.normal);
 });
@@ -63,7 +81,7 @@ const scopes = (id: string): object => {
 function constructorName(role: Site): string { if (role === "producerUpload") { return "Gd"; } return "Lg"; }
 
 
-async function fixture(changedTree = false, changedTimer = false, changedReceiver = false, changedCallback = false, changedCaller = false, startupCalls = 0, wrongStartupReady = false, wrongStartupReturn = false, wrongStartupFinalizer = false, earlySave = false, prehistoryFault: "body" | "publication" | "mode" | null = null, inverse = false, relevance = false, wireEdit = false): Promise<Readonly<{ bootstrapPermit:CurrentFootprintInverseBootstrapPermit;bootstrapConsumed:()=>boolean;lookupBootstrap: (hold: object, wrong?: "observer" | "owner" | "origin" | "prepared") => unknown;  reservation: CurrentProjectStructureBodyReservation; publication: CurrentProjectStructureMainPublication; publish: () => void; bodyConsumed: () => boolean; observer: CurrentProjectSaveStructureObserver; origin: CurrentProjectSaveStructureOrigin; token: CurrentProjectHistorySqlCompletion; resumes: Site[]; consumed: () => boolean; exit: () => void }>> {
+async function fixture(changedTree = false, changedTimer = false, changedReceiver = false, changedCallback = false, changedCaller = false, startupCalls = 0, wrongStartupReady = false, wrongStartupReturn = false, wrongStartupFinalizer = false, earlySave = false, prehistoryFault: "body" | "publication" | "mode" | null = null, inverse = false, relevance = false, wireEdit = false, drainFault: "pending" | "scope" | "result" | null = null, holdStartup = false): Promise<Readonly<{ startupReady: Promise<true>; lookupStartup: (token: CurrentSchematicRelevanceStartupStructureDrained, copy?: boolean) => Readonly<{ assertCurrent: () => void; refresh: () => Promise<void> }>; bootstrapPermit:CurrentFootprintInverseBootstrapPermit;bootstrapConsumed:()=>boolean;lookupBootstrap: (hold: object, wrong?: "observer" | "owner" | "origin" | "prepared") => unknown;  reservation: CurrentProjectStructureBodyReservation; publication: CurrentProjectStructureMainPublication; publish: () => void; bodyConsumed: () => boolean; observer: CurrentProjectSaveStructureObserver; origin: CurrentProjectSaveStructureOrigin; token: CurrentProjectHistorySqlCompletion; resumes: Site[]; consumed: () => boolean; exit: () => void }>> {
   const excerpt = worker209ConstructionFixtureSource(); const descriptions = { upload: sourceAt(excerpt, PRODUCERS.serial), structure: sourceAt(excerpt, PRODUCERS.serial), debounce: sourceAt(excerpt, PRODUCERS.debounce),
     uploadCallback: sourceAt(excerpt, CALLBACKS.uploadStructure), structureCallback: sourceAt(excerpt, CALLBACKS.structure), bufferedUpload: sourceAt(excerpt, PRODUCERS.upload), cooperationWrapper: sourceAt(excerpt, PRODUCERS.cooperation), bufferedCallback: sourceAt(excerpt, CALLBACKS.upload), cooperationCallback: sourceAt(excerpt, CALLBACKS.cooperation) };
   const target = { projectUuid: "1".repeat(64), branchUuid: "2".repeat(32), documentUuid: "3".repeat(32) };
@@ -74,6 +92,7 @@ async function fixture(changedTree = false, changedTimer = false, changedReceive
   const publication: CurrentProjectStructureMainPublication = Object.freeze({ profile: "private.current-project-structure-main-publication.v1" }), reservation: CurrentProjectStructureBodyReservation = Object.freeze({ profile: "private.current-project-structure-body-reservation.v1" });
   const bootstrapPermit:CurrentFootprintInverseBootstrapPermit=Object.freeze({profile:"private.current-footprint-inverse-bootstrap-permit.v1"});let originalObserver:object|null=null;let bootstrapConsumed=false;
   let bodyConsumed = false, consumed = false, exited = false, finalizer = 0, published = false, startupFinalizers = 0; const resumes: Site[] = [];
+  const blocked = Promise.withResolvers<CurrentProjectSaveStructureEvent>(), startupReady = Promise.withResolvers<true>(); let retainedStartup = 0;
   const events: CurrentProjectSaveStructureEvent[] = []; const points = new Map<Site, string>();
   const roles: readonly Site[] = [...SEQUENCE, "bootstrap", ...Array.from({ length: startupCalls }, (_, index) => ["startupEntry", "startupReturn", index % 2 === 0 ? "initialFinally" : "queuedFinally"] as const).flat(), "packet", "response", "callbackReturn", "initialFinally", "initialFinally"];
   for (const [index, role] of roles.entries()) { events.push({ method: "Debugger.paused", sessionId: "worker.session", params: { reason: "other", hitBreakpoints: [`bp.${role}`], callFrames: [{ callFrameId: `frame.${String(index)}`,
@@ -86,6 +105,8 @@ async function fixture(changedTree = false, changedTimer = false, changedReceive
   const value = { projectUuid: target.projectUuid, branchUuid: target.branchUuid, ticket: 20, structureText: changedTree ? "unrelated metadata" : "fixed expected metadata" };
   const readProperties = (id: string): object => {
     if (id === "unowned.sameSourceCallback") { return metadata("bufferedCallback"); } if (id in descriptions) { return metadata(id); } if (id.endsWith(".scopes")) { return scopes(id); }
+    if (id === "upload.scopes.scope0") { return { result: [property("e", selected("uploadCallback")), property("t", drainFault === "scope" ? ref("still.pending") : { type: "object", subtype: "null", value: null }), property("s", { type: "object", subtype: "null", value: null }), property("r", ref("startup.arguments"))] }; }
+    if (id.startsWith("retained.startup.promise.")) { return { result: [], internalProperties: [{ name: "[[PromiseState]]", value: { type: "string", value: drainFault === "pending" ? "pending" : "fulfilled" } }, { name: "[[PromiseResult]]", value: drainFault === "result" ? { type: "boolean", value: true } : { type: "undefined" } }] }; }
     if (id === "frame.startupEntry" || id === "frame.startupReturn") { return array([ref("project"), { type: "string", value: "PCB" }, { type: "string", value: "VIA" }, { type: "boolean", value: true }]); }
     if (id === "frame.startupCaller") { return array([selected("uploadCallback"), ref("startup.promise"), { type: "object", subtype: "null", value: null }, ref("startup.arguments")]); }
     if ((id === "frame.initialFinally" || id === "frame.queuedFinally") && startupFinalizers < startupCalls) { return array([ref("startup.promise"), { type: "object", subtype: "null", value: null }, selected(wrongStartupFinalizer ? "debounce" : "uploadCallback")]); }
@@ -117,7 +138,8 @@ async function fixture(changedTree = false, changedTimer = false, changedReceive
     else if (command.method === "Debugger.removeBreakpoint" || command.method === "Runtime.releaseObjectGroup") { raw = {}; }
     else { const id = command.params.objectId;
       if (command.phase === "project-save-structure-uploadRelation") { assert.equal(command.params.arguments[2]?.objectId, "bufferedCallback", "only original constructor arrow can join upload wrapper"); }
-      if (command.phase === "project-save-structure-startupEntry") { raw = { result: { type: "boolean", value: !wrongStartupReady } }; }
+      if (command.phase === "project-save-structure-retain") { assert.equal(id, "startup.promise"); raw = { result: { type: "object", subtype: "promise", className: "Promise", objectId: `retained.startup.promise.${String(retainedStartup)}` } }; retainedStartup += 1; }
+      else if (command.phase === "project-save-structure-startupEntry") { raw = { result: { type: "boolean", value: !wrongStartupReady } }; }
       else if (command.phase === "project-save-structure-startupFinalizer") { raw = { result: { type: "boolean", value: !wrongStartupFinalizer } }; }
       else if (command.phase === "project-save-structure-uploadSelect") { raw = { result: selected("bufferedUpload") }; }
       else if (command.phase === "project-save-structure-cooperationSelect") { raw = { result: selected("cooperationWrapper") }; }
@@ -135,7 +157,7 @@ async function fixture(changedTree = false, changedTimer = false, changedReceive
   const bindings: CurrentProjectSaveStructureBindings = Object.freeze({ sessionId: "worker.session", scriptId: "worker.script", uniqueContextId: "worker.context",
     // Explicit synthetic checkpoint seam; the actual expectation issuer is separately tested and never replaced in production.
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This explicit synthetic registry seam does not issue a production checkpoint.
-    prepared: prepared as unknown as CurrentProjectSaveStructureBindings["prepared"], request, nextEvent: (): Promise<CurrentProjectSaveStructureEvent> => { const event = events.shift(); assert.ok(event); return Promise.resolve(event); },
+    prepared: prepared as unknown as CurrentProjectSaveStructureBindings["prepared"], request, nextEvent: (): Promise<CurrentProjectSaveStructureEvent> => { const event = events.shift(); assert.ok(event); const hits: unknown = event.params !== null && typeof event.params === "object" ? Reflect.get(event.params, "hitBreakpoints") : null; if (holdStartup && event.method === "Debugger.paused" && Array.isArray(hits) && hits.includes("bp.packet")) { startupReady.resolve(true); return blocked.promise; } return Promise.resolve(event); },
     assertCurrent: (): Promise<void> => Promise.resolve(), assertStartupPending: (): void => { assert.equal(earlySave, false); }, assertOperationPending: (): void => { assert.equal(exited, false); },
     assertOriginalGenerationExited: (): Promise<void> => { assert.ok(exited); return Promise.resolve(); }, fail: (): void => {
       // Synthetic source revocation only.
@@ -160,7 +182,8 @@ async function fixture(changedTree = false, changedTimer = false, changedReceive
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The compiled original class is instantiated only behind this explicit synthetic native-registry seam; no production capability is supplied.
   const observer = Reflect.construct(constructor, [origin, owner, operation]) as CurrentProjectSaveStructureObserver;
   originalObserver=observer;const lookup = loaded["requireOriginalCurrentFootprintInverseBootstrapHeld"]; assert.ok(typeof lookup === "function");
-  return { bootstrapPermit,bootstrapConsumed:():boolean=>bootstrapConsumed,lookupBootstrap: (hold: object, wrong?: "observer" | "owner" | "origin" | "prepared"): unknown => Reflect.apply(lookup, undefined, [hold, wrong === "observer" ? Object.freeze({}) : observer, wrong === "origin" ? Object.freeze({ ...origin }) : origin, wrong === "owner" ? Object.freeze({}) : owner, wrong === "prepared" ? Object.freeze({ ...prepared }) : prepared]), observer, origin, token, reservation, publication, publish: (): void => { published = true; }, bodyConsumed: (): boolean => bodyConsumed, resumes, consumed: (): boolean => consumed, exit: (): void => { exited = true; } };
+  const requireDrain = loaded["requireOriginalCurrentSchematicRelevanceStartupStructureDrained"]; assert.ok(typeof requireDrain === "function");
+  return { startupReady: startupReady.promise, lookupStartup: (input: CurrentSchematicRelevanceStartupStructureDrained, copy = false) => { const bindingValue: unknown = Reflect.apply(requireDrain, undefined, [input, copy ? Object.freeze({ ...origin }) : origin, owner, operation]); assert.ok(bindingValue !== null && typeof bindingValue === "object"); const assertCurrent: unknown = Reflect.get(bindingValue, "assertCurrent"), refresh: unknown = Reflect.get(bindingValue, "refresh"); assert.ok(typeof assertCurrent === "function" && typeof refresh === "function"); return { assertCurrent: () => { Reflect.apply(assertCurrent, undefined, []); }, refresh: async () => { await Reflect.apply(refresh, undefined, []); } }; }, bootstrapPermit,bootstrapConsumed:():boolean=>bootstrapConsumed,lookupBootstrap: (hold: object, wrong?: "observer" | "owner" | "origin" | "prepared"): unknown => Reflect.apply(lookup, undefined, [hold, wrong === "observer" ? Object.freeze({}) : observer, wrong === "origin" ? Object.freeze({ ...origin }) : origin, wrong === "owner" ? Object.freeze({}) : owner, wrong === "prepared" ? Object.freeze({ ...prepared }) : prepared]), observer, origin, token, reservation, publication, publish: (): void => { published = true; }, bodyConsumed: (): boolean => bodyConsumed, resumes, consumed: (): boolean => consumed, exit: (): void => { exited = true; if (holdStartup) { blocked.reject(new Error("original exited")); } } };
 }
 void test("original-held packet waits history consumption and observes both original serial finalizers within exact budget", async () => {
   const f = await fixture(false, false, false, false, false, 7); await f.observer.arm(); await f.observer.observeConstruction(); const packet = await f.observer.observePacket();

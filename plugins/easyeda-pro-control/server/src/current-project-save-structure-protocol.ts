@@ -11,6 +11,8 @@ export { CURRENT_PROJECT_SAVE_PRODUCER_GUARD_SITES } from "./current-project-sav
 export type { CurrentProjectSaveProducerGuardRole } from "./current-project-save-producer-guard-source.ts";
 export { CURRENT_PROJECT_SAVE_STRUCTURE_CALLS } from "./current-project-save-structure-programs.ts";
 export { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES, CURRENT_PROJECT_SAVE_STRUCTURE_STARTUP_CONDITION, qualifyCurrentProjectSaveStructureSource } from "./current-project-save-structure-source.ts";
+export { CURRENT_SCHEMATIC_RELEVANCE_STARTUP_STRUCTURE_REQUESTS } from "./current-schematic-relevance-startup-structure-origin.ts";
+export type { CurrentSchematicRelevanceStartupStructureDrained } from "./current-schematic-relevance-startup-structure-origin.ts";
 export type { CurrentProjectSaveStructureSite } from "./current-project-save-structure-source.ts";
 
 export const CURRENT_PROJECT_SAVE_STRUCTURE_GROUP = "easyeda-pro-control-project-save-structure209-v1";

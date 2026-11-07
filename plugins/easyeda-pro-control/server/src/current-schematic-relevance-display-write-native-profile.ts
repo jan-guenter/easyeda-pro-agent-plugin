@@ -20,12 +20,14 @@ import { CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE as SHARED } from "./curr
 import { CURRENT_SCHEMATIC_DISPLAY_ACTION_REQUESTS as ACTION } from "./current-schematic-display-action-protocol.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_ACTION_GUARD_REQUESTS as ACTION_GUARD } from "./current-schematic-display-action-guard-protocol.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS as STRUCTURE } from "./current-project-save-structure-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_STARTUP_STRUCTURE_REQUESTS as STARTUP_STRUCTURE } from "./current-schematic-relevance-startup-structure-origin.ts";
 
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE = "schematic-relevance-display-write209";
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE = Object.freeze({
   purpose: CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE, nativeSwitch: "-SchematicRelevanceDisplayWrite209",
   main: Object.freeze({ normal: SHARED.main.normal + MAIN.normal + STEP.normal + BEGIN.normal + HISTORY.normal + STRUCTURE_MAIN.normal + LIVE.normal, cleanup: SHARED.main.cleanup + MAIN.cleanup + BEGIN.cleanup + HISTORY.cleanup + STRUCTURE_MAIN.cleanup + LIVE.cleanup, total: SHARED.main.total + MAIN.total + STEP.total + BEGIN.total + HISTORY.total + STRUCTURE_MAIN.total + LIVE.total }), renderer: Object.freeze({ ...SHARED.renderer,
     structureObservation: STRUCTURE.cdpRequests,
+    startupStructureDrainObservation: STARTUP_STRUCTURE.total,
     startupPollingObservation: POLLING.cdpRequests, startupPollingHelperSources: 1, startupLibraryObservation: LIBRARY.controls, startupLibrarySetupHelperSources: 1,
     actionPreflightObservation: ACTION.total, actionGuardObservation: ACTION_GUARD.cdpRequests, actionGuardBindingControls: ACTION_GUARD.bindingControls,
     submittedHelperSources:SOURCES,
@@ -33,5 +35,5 @@ export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE = Object.f
     localUploadObservation: UPLOAD.local, uploadRequestObservation: UPLOAD.upload, localCacheExtraObservation: UPLOAD.localCacheMetadata,
     modifyEntryObservation: MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation,
     total: SHARED.renderer.total - SHARED.renderer.structureObservation - SHARED.renderer.actionPreflightObservation - SHARED.renderer.actionGuardObservation - SHARED.renderer.actionGuardBindingControls +
-      TAIL.cdpRequests + TAIL.additionalSharedRequests + DELETE.cdpRequests + DRAIN.cdpRequests + POST.total + 2 + SOURCES + UPLOAD.local + UPLOAD.upload + UPLOAD.localCacheMetadata + STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + POLLING.cdpRequests + 1 + LIBRARY.controls + 1 }),
+      STARTUP_STRUCTURE.total + TAIL.cdpRequests + TAIL.additionalSharedRequests + DELETE.cdpRequests + DRAIN.cdpRequests + POST.total + 2 + SOURCES + UPLOAD.local + UPLOAD.upload + UPLOAD.localCacheMetadata + STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + POLLING.cdpRequests + 1 + LIBRARY.controls + 1 }),
 });

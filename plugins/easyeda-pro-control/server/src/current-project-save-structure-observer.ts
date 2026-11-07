@@ -11,10 +11,10 @@ import { captureCurrentProjectStructureCompletionReply } from "./current-project
 import { matchesCurrentProjectSaveStructureIntent, requireCurrentProjectPrehistoryBodyIntent, requireCurrentProjectPrehistoryPublication } from "./current-project-save-structure-prehistory.ts";
 import type { CurrentProjectStructureBodyReservation, CurrentProjectStructureMainPublication } from "./current-project-save-structure-prehistory.ts";
 import type { CurrentFootprintInverseBootstrapArguments, CurrentFootprintInverseBootstrapHeld, CurrentFootprintInverseBootstrapPermit, CurrentFootprintInverseBootstrapPrepared, CurrentFootprintInverseStructureOrigin, CurrentGeneratedProjectSaveStructureBindings, CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureEvent, CurrentProjectSaveStructureOrigin } from "./current-project-save-structure-origin.ts";
-import { CURRENT_PROJECT_SAVE_STRUCTURE_CALLS as CALLS, CURRENT_PROJECT_SAVE_STRUCTURE_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS as FRAME_FLAGS,
-  CURRENT_PROJECT_SAVE_STRUCTURE_GROUP as GROUP, CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS as RELEVANCE_REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES, CURRENT_PROJECT_SAVE_STRUCTURE_STARTUP_CONDITION as STARTUP_CONDITION,
+import { CURRENT_PROJECT_SAVE_STRUCTURE_CALLS as CALLS, CURRENT_PROJECT_SAVE_STRUCTURE_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS as FRAME_FLAGS, CURRENT_PROJECT_SAVE_STRUCTURE_GROUP as GROUP,
+  CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS as RELEVANCE_REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES, CURRENT_PROJECT_SAVE_STRUCTURE_STARTUP_CONDITION as STARTUP_CONDITION, CURRENT_SCHEMATIC_RELEVANCE_STARTUP_STRUCTURE_REQUESTS as STARTUP_DRAIN,
   qualifyCurrentProjectSaveStructureSource, validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
-import type { CurrentProjectSaveStructureSite as Site } from "./current-project-save-structure-protocol.ts";
+import type { CurrentSchematicRelevanceStartupStructureDrained, CurrentProjectSaveStructureSite as Site } from "./current-project-save-structure-protocol.ts";
 
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 const remote = z.looseObject({ type: z.string(), subtype: z.string().optional(), className: z.string().optional(), description: z.string().optional(), objectId: handle.optional(), value: z.unknown().optional() });
@@ -80,6 +80,12 @@ export function requireOriginalCurrentProjectPrehistoryStructureCompletion(value
 }
 interface Retained { readonly observer: CurrentProjectSaveStructureObserver; readonly packet: CurrentProjectSaveStructurePacket; readonly completion: CurrentProjectHistorySqlCompletion }
 const completions = new WeakMap<CurrentProjectSaveStructureCompletion, Retained>();
+const startupDrains = new WeakMap<CurrentSchematicRelevanceStartupStructureDrained, Readonly<{ origin: CurrentProjectSaveStructureOrigin; owner: object; operation: object; assertCurrent: () => void; refresh: () => Promise<void> }>>();
+/** Exact private token lookup. A transcript or another observer/origin cannot
+ * supply the original startup Promise and scope proof. */
+export function requireOriginalCurrentSchematicRelevanceStartupStructureDrained(token: CurrentSchematicRelevanceStartupStructureDrained, origin: CurrentProjectSaveStructureOrigin, owner: object, operation: object): Readonly<{ assertCurrent: () => void; refresh: () => Promise<void> }> {
+  const original = startupDrains.get(token); need(original !== undefined && original.origin === origin && original.owner === owner && original.operation === operation, "ORIGINAL_STARTUP_DRAIN"); original.assertCurrent(); return original;
+}
 export function requireOriginalCurrentProjectSaveStructureCompletion(value: CurrentProjectSaveStructureCompletion, observer: CurrentProjectSaveStructureObserver): void {
   need(completions.get(value)?.observer === observer, "ORIGINAL_COMPLETION");
 }
@@ -106,6 +112,8 @@ export class CurrentProjectSaveStructureObserver {
   #normal = 0; #cleanup = 0; #events = 0; #busy = false; #failed = false; #armed = false; #constructionAttempted = false; #constructed = false; #packetAttempted = false;
   #releaseAttempted = false; #completionAttempted = false; #complete = false; #closed = false; #uncertainAllocation = false; #groupReleaseAttempted = false;
   #cleanupUncertain = false; #startupMode = false; #startupCalls = 0; #startupOutstanding = 0; #startupActive: string | null = null;
+  readonly #startupPromises: string[] = []; #startupArguments: string | null = null; #startupPass: Promise<true> | null = null;
+  #startupDrain: CurrentSchematicRelevanceStartupStructureDrained | null = null; #startupDrainAttempted = false; #startupDrainPasses = 0;
   #error: unknown = null; #revocationError: unknown = null;
   #pause: Readonly<{ role: Site; frameId: string; callerFrameId: string | null; resumeAttempted: boolean }> | null = null;
   #constructorProject: string | null = null;
@@ -124,7 +132,9 @@ export class CurrentProjectSaveStructureObserver {
     this.#binding = bindingsSchema.parse(this.#lookup(origin, owner, operation));
     const relevance = origin.profile === "private.current-schematic-relevance-display-save-structure-origin.v1" || origin.profile === "private.current-schematic-wire-edit-save-structure-origin.v1";
     need(relevance === (this.#binding.prepared.profile === "easyeda-pro-control.generated-schematic-relevance-fixture-open-checkpoint.v1"), "ORIGINAL_STARTUP_DATA_FAMILY");
-    this.#requests = relevance ? RELEVANCE_REQUESTS : REQUESTS; this.#startupRecordLimit = relevance ? 8 : 7; Object.freeze(this);
+    let requests: Readonly<{ normal: number; cleanup: number; events: number }> = relevance ? RELEVANCE_REQUESTS : REQUESTS;
+    if (origin.profile === "private.current-schematic-relevance-display-save-structure-origin.v1") { requests = Object.freeze({ ...RELEVANCE_REQUESTS, normal: RELEVANCE_REQUESTS.normal + STARTUP_DRAIN.total }); }
+    this.#requests = requests; this.#startupRecordLimit = relevance ? 8 : 7; Object.freeze(this);
   }
   async #current(): Promise<void> { need(!this.#failed && !this.#closed && this.#lookup(this.#origin, this.#owner, this.#operation) === this.#binding, "ORIGINAL");
     if (this.#startupMode) { this.#binding.assertStartupPending(); } await this.#binding.assertCurrent(); if (this.#startupMode) { this.#binding.assertStartupPending(); } need(!this.#failed && !this.#closed && this.#lookup(this.#origin, this.#owner, this.#operation) === this.#binding, "CHANGED"); }
@@ -321,25 +331,57 @@ export class CurrentProjectSaveStructureObserver {
   }
   async #serviceStartup(role: Site): Promise<void> {
     need(this.#constructed && this.#history === null && !this.#startupMode && this.#project !== null && this.#uploadWrapper !== null && this.#uploadCallback !== null, "STARTUP_ORIGINAL_CONSTRUCTION");
-    this.#startupMode = true;
+    this.#startupMode = true; const completed = Promise.withResolvers<true>(); this.#startupPass = completed.promise;
     try {
       this.#binding.assertStartupPending();
       if (role === "startupEntry") {
         need(this.#startupActive === null, "STARTUP_CALLBACK_ACTIVE"); const count = this.#generatedPrepared().history.documents.reduce((total, document) => total + document.records.length, 0);
         need(Number.isSafeInteger(count) && count >= 1 && count <= this.#startupRecordLimit && this.#startupCalls < count, "STARTUP_SOURCE_RECORD_BOUND"); this.#startupCalls += 1;
-        await this.#frame(role); await this.#frame("startupCaller"); const caller = this.#frameArrays.get("startupCaller"), entry = this.#frameArrays.get(role);
+        await this.#frame(role); const callerFields = await this.#frame("startupCaller"); const caller = this.#frameArrays.get("startupCaller"), entry = this.#frameArrays.get(role);
         const scopes = await this.#scope(this.#uploadWrapper, "serial"); need(entry !== undefined && caller !== undefined && scopes[0] !== undefined, "STARTUP_ORIGINAL_FRAMES");
         await this.#true("startupEntry", entry, [this.#project, this.#uploadCallback, caller, scopes[0]]); this.#startupActive = entry;
+        this.#startupArguments = object(callerFields.get("3"));
       } else if (role === "startupReturn") {
         need(this.#startupActive !== null, "STARTUP_ORIGINAL_ENTRY"); await this.#frame(role); const current = this.#frameArrays.get(role); need(current !== undefined, "STARTUP_ORIGINAL_RETURN");
         await this.#true("startupReturn", current, [this.#startupActive, this.#project]); this.#startupActive = null; this.#startupOutstanding += 1;
       } else {
         need((role === "initialFinally" || role === "queuedFinally") && this.#startupActive === null && this.#startupOutstanding > 0, "STARTUP_NO_PUBLICATION_RETURN_REQUIRED");
-        await this.#frame(role); const frame = this.#frameArrays.get(role), scopes = await this.#scope(this.#uploadWrapper, "serial"); need(frame !== undefined && scopes[0] !== undefined, "STARTUP_ORIGINAL_FINALIZER");
+        const fields = await this.#frame(role); const frame = this.#frameArrays.get(role), scopes = await this.#scope(this.#uploadWrapper, "serial"); need(frame !== undefined && scopes[0] !== undefined, "STARTUP_ORIGINAL_FINALIZER");
         await this.#true("startupFinalizer", frame, [this.#project, this.#uploadCallback, scopes[0]]); this.#startupOutstanding -= 1;
+        if (this.#origin.profile === "private.current-schematic-relevance-display-save-structure-origin.v1") {
+          need(this.#startupPromises.length < STARTUP_DRAIN.retain, "STARTUP_ORIGINAL_PROMISE_BOUND");
+          const promise = object(fields.get("0")); const retained = remoteResult(await this.#call("retain", promise, [], false));
+          need(retained.type === "object" && retained.subtype === "promise" && retained.className === "Promise", "STARTUP_ORIGINAL_PROMISE"); this.#startupPromises.push(object(retained));
+        }
       }
       await this.#resume(role); this.#binding.assertStartupPending();
-    } finally { this.#startupMode = false; }
+    } finally { this.#startupMode = false; this.#startupPass = null; completed.resolve(true); }
+  }
+  #startupDrainCurrent(): void {
+    need(this.#origin.profile === "private.current-schematic-relevance-display-save-structure-origin.v1" && !this.#failed && !this.#closed && this.#constructed && this.#lookup(this.#origin, this.#owner, this.#operation) === this.#binding && this.#pause === null && !this.#startupMode && this.#startupPass === null && this.#startupActive === null && this.#startupOutstanding === 0 && this.#startupCalls > 0 && this.#startupPromises.length > 0 && this.#startupPromises.length <= STARTUP_DRAIN.retain && !this.#releaseAttempted && this.#history === null && this.#held === null, "STARTUP_ORIGINAL_DRAIN_STATE");
+    this.#binding.assertStartupPending();
+  }
+  async #readStartupDrain(): Promise<void> {
+    const current = this.#startupPass; if (current !== null) { await current; }
+    this.#startupDrainCurrent(); need(this.#startupDrainPasses < STARTUP_DRAIN.passes, "STARTUP_ORIGINAL_DRAIN_PASS_BOUND"); this.#startupDrainPasses += 1;
+    for (const promise of this.#startupPromises) {
+      const value = promiseProperties.parse(await this.#properties(promise)); const fields = new Map(value.internalProperties.map(field => [field.name, field.value]));
+      need(fields.size === value.internalProperties.length && fields.get("[[PromiseState]]")?.type === "string" && fields.get("[[PromiseState]]")?.value === "fulfilled" && fields.get("[[PromiseResult]]")?.type === "undefined", "STARTUP_ORIGINAL_PROMISE_FULFILLED_UNDEFINED"); this.#startupDrainCurrent();
+    }
+    need(this.#uploadWrapper !== null && this.#uploadCallback !== null && this.#startupArguments !== null, "STARTUP_ORIGINAL_DRAIN_REFERENCES");
+    const scopes = await this.#scope(this.#uploadWrapper, "serial"); need(scopes[0] !== undefined, "STARTUP_ORIGINAL_DRAIN_SCOPE"); const fields = await this.#own(scopes[0]);
+    need(fields.size === 4 && ["e", "t", "s", "r"].every(key => fields.has(key)) && fields.get("t")?.type === "object" && fields.get("t")?.subtype === "null" && fields.get("t")?.value === null && fields.get("s")?.type === "object" && fields.get("s")?.subtype === "null" && fields.get("s")?.value === null, "STARTUP_ORIGINAL_SERIAL_IDLE");
+    await this.#true("same", fn(fields.get("e")), [this.#uploadCallback]); await this.#true("same", object(fields.get("r")), [this.#startupArguments]);
+    const bootstrap = this.#frameArrays.get("bootstrap"); need(bootstrap !== undefined, "STARTUP_ORIGINAL_BOOTSTRAP"); const actual = await this.#array(await this.#call("bootstrap", bootstrap, [], false), 3);
+    await this.#true("same", fn(actual.get("1")), [this.#uploadWrapper]); this.#startupDrainCurrent();
+  }
+  /** Joins actual startup finalizer Promises while the same early packet
+   * reader waits. A later Modify refresh consumes the second fixed pass. */
+  public async observeOriginalSchematicRelevanceStartupDrain(): Promise<CurrentSchematicRelevanceStartupStructureDrained> {
+    need(!this.#startupDrainAttempted, "STARTUP_ORIGINAL_DRAIN_CONSUMED"); this.#startupDrainAttempted = true;
+    try { await this.#readStartupDrain(); const token: CurrentSchematicRelevanceStartupStructureDrained = Object.freeze({ profile: "private.current-schematic-relevance-startup-structure-drained.v1" });
+      this.#startupDrain = token; startupDrains.set(token, Object.freeze({ origin: this.#origin, owner: this.#owner, operation: this.#operation, assertCurrent: (): void => { need(this.#startupDrain === token, "STARTUP_ORIGINAL_DRAIN_CHANGED"); this.#startupDrainCurrent(); }, refresh: async (): Promise<void> => { need(this.#startupDrain === token, "STARTUP_ORIGINAL_DRAIN_CHANGED"); try { await this.#readStartupDrain(); } catch (error) { this.#failure(error); throw error; } } })); return token;
+    } catch (error) { this.#failure(error); throw error; }
   }
   async #queues(): Promise<void> { need(this.#uploadCallback !== null && this.#debounce !== null && this.#structureCallback !== null, "QUEUES"); const scopes = await this.#freshScopes();
     const debounce = await this.#array(await this.#call("debounce", scopes.debounce, [scopes.parameters, this.#structureCallback], false), 2); const resolver = fn(debounce.get("1")), timer = debounce.get("0")?.value;

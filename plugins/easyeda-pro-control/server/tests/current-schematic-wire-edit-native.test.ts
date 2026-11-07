@@ -1,5 +1,4 @@
 import { currentSchematicRelevanceDisplayModifyEntryNativeCases } from "../src/current-schematic-relevance-display-modify-entry-protocol.ts";
-import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE as DISPLAY } from "../src/current-schematic-relevance-display-write-native-profile.ts";
 /** Finite transport data only; no original owner, helper or native process. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -30,7 +29,7 @@ void test("existing-LINE stages keep their original Wire grammar; display aliase
 
 void test("Wire retains its own read budget and refuses seven-record pending-Modify selectors", () => {
   assert.equal(PROFILE.renderer.modifyEntryObservation, 0);
-  assert.equal(PROFILE.renderer.total, DISPLAY.renderer.total - DISPLAY.renderer.modifyEntryObservation - DISPLAY.renderer.stageCalls - DISPLAY.renderer.stageBrackets + PROFILE.renderer.stageCalls + PROFILE.renderer.stageBrackets);
+  assert.equal(PROFILE.renderer.total, 2721, "The distinct readonly Wire reservation does not inherit new own7 write lanes.");
   const entry = currentSchematicRelevanceDisplayModifyEntryNativeCases()[0]; assert.ok(entry !== undefined);
   assert.throws(() => encode(wire({ id: 1, ...entry, schematicRelevanceModifyEntryCommand: true, sessionId: "original-session" })), /OWN_MUTATION_ORIGIN_REQUIRED/u);
   assert.throws(() => encode(wire({ id: 1, ...display("start", "original-binding"), schematicRelevanceModifyGeneration: true, sessionId: "original-session" })), /OWN_MUTATION_ORIGIN_REQUIRED/u);
