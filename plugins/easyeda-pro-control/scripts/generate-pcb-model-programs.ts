@@ -1,4 +1,5 @@
 /* oxlint-disable import/max-dependencies -- This deterministic generator preserves the exact bytes of independent fixed native programs. */
+import { expandCurrentPcbDiagnosticCSharpReviewSource, retainCurrentPcbDiagnosticCSharpReviewStorage } from "../server/src/current-pcb-diagnostic-csharp-review-storage.ts";
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
@@ -201,8 +202,9 @@ async function main(): Promise<void> {
   const grouped = new Map([...packedStringWorkerPrograms(), ...packedCommonPacketPrograms(), ...packedDiagnosticCorePrograms(), ...packedDiagnosticSupportPrograms()]);
   const bytes = await readFile(path);
   // Preserve a valid BOM and refuse malformed input before replacing any block.
-  const source = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
-  if (!Buffer.from(source).equals(bytes)) { throw new Error("Native helper UTF-8 bytes did not round-trip"); }
+  const stored = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+  if (!Buffer.from(stored).equals(bytes)) { throw new Error("Native helper UTF-8 bytes did not round-trip"); }
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(stored);
   let next = source;
   for (const [marker, name, program] of programs) {
     if (!/^[A-Z][A-Z ]{1,63}$/u.test(marker) || !/^[A-Z][A-Za-z0-9]{1,63}Function$/u.test(name)) { throw new Error("Invalid fixed native program marker or name"); }
@@ -214,8 +216,9 @@ async function main(): Promise<void> {
     const generated = `${begin}\n${grouped.get(name) ?? packedNativeProgram(name, program)}\n  ${end}`;
     next = next.slice(0, start) + generated + next.slice(stop + end.length);
   }
+  next = retainCurrentPcbDiagnosticCSharpReviewStorage(next, stored);
   if (action === "--write") { await writeFile(path, next); }
-  else if (next !== source) { throw new Error("Generated packed native programs differ"); }
+  else if (next !== stored) { throw new Error("Generated packed native programs differ"); }
 }
 
 // oxlint-disable-next-line node/no-top-level-await -- ESM-only deterministic generator with one bounded helper-file replacement.

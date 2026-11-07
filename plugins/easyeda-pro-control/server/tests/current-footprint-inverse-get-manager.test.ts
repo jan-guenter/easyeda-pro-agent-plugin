@@ -1,0 +1,37 @@
+/** Source-preserving manager definitions and the actual readonly collector.
+ * The fixture provides no original owner or native-forwarding authority. */
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { Session } from "node:inspector/promises";
+import type { Runtime } from "node:inspector";
+import { test } from "node:test";
+import { collectCurrentFootprintInverseGetManager } from "../src/current-footprint-inverse-get-manager-collector.ts";
+import { CURRENT_FOOTPRINT_INVERSE_GET_MANAGER_REQUESTS as REQUESTS, validateCurrentFootprintInverseGetManagerCommand } from "../src/current-footprint-inverse-get-manager-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_INITIALIZED_GET_SOURCE as SOURCE } from "../src/current-footprint-inverse-initialized-get-source.ts";
+
+void test("native Map selects the exact original singleton project while app lookup and transport stay uncalled", async context => {
+  assert.equal(process.versions.node, "24.18.0"); let full: string;
+  try { full = await readFile("/mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-mgr/3.2.185.bf63a159/js/pro-mgr.js", "utf8"); } catch (error) { if (error !== null && typeof error === "object" && "code" in error && error.code === "ENOENT") { context.skip("installed source unavailable"); return; } throw error; }
+  const intro = "(()=>{"; let source = intro + full.replaceAll(/[^\r\n]/gu, " ").slice(intro.length);
+  const classStart = full.indexOf("var Xo=class{constructor(){this.map=new Map;"); const classEnd = full.indexOf("var aO=mi(Li())", classStart); assert.equal(classStart, 1_701_619); assert.equal(classEnd, 1_702_368); source = source.slice(0, classStart) + full.slice(classStart, classEnd) + source.slice(classEnd);
+  const method = SOURCE.managerProjectGetData; const prefix = ";var V0=class{constructor(t){this.project=t}"; source = `${source.slice(0, method.start - prefix.length) + prefix + full.slice(method.start, method.end)  }};${  source.slice(method.end + 2)}`;
+  source += ';let calls=0;const project={uuid:"a".repeat(64),isReady:true,workerBus:{rpcCall(){calls++;throw Error("transport must remain uncalled")}}};project.footprint=new V0(project);el.tool=new el;el.tool.map.set(project.uuid,project);const guard=()=>true;globalThis.getManagerFixture={project,module:[null,null,so,guard],calls:()=>calls,asyncPrototype:Object.getPrototypeOf(async()=>{}),receipt:[Object.getOwnPropertyDescriptor,Object.getPrototypeOf,Object.hasOwn,Object.getOwnPropertyNames,Object.getOwnPropertySymbols,Array.isArray,Function.prototype.apply,Object.prototype,Array.prototype,Function.prototype,globalThis]};})();';
+  const session = new Session(); session.connect(); await session.post("Runtime.enable"); await session.post("Debugger.enable");
+  try {
+    const compiled = await session.post("Runtime.compileScript", { expression: source, sourceURL: "inert-original-get-manager-project.js", persistScript: true }); assert.ok(compiled.scriptId !== undefined); const scriptId = compiled.scriptId; const run = await session.post("Runtime.runScript", { scriptId }); assert.equal(run.exceptionDetails, undefined);
+    const ref = async (expression: string): Promise<string> => { const raw = await session.post("Runtime.evaluate", { expression }); assert.equal(raw.exceptionDetails, undefined); assert.ok(raw.result.objectId !== undefined); return raw.result.objectId; };
+    const receipt = await ref("getManagerFixture.receipt"); const managerModule = await ref("getManagerFixture.module"); const asyncPrototype = await ref("getManagerFixture.asyncPrototype"); let calls = 0, properties = 0;
+    const graph = await collectCurrentFootprintInverseGetManager({ receipt, managerModule, asyncPrototype, managerScriptId: scriptId, target: { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16) }, current: (): void => { assert.ok(scriptId.length > 0); }, request: async input => { const command = validateCurrentFootprintInverseGetManagerCommand(input); if (command.method === "Runtime.getProperties") { properties += 1; return session.post("Runtime.getProperties", command.params); } assert.equal(command.method, "Runtime.callFunctionOn"); if (command.method !== "Runtime.callFunctionOn") { throw new Error("unexpected helper source read"); } calls += 1; const params: Runtime.CallFunctionOnParameterType = { ...command.params, arguments: command.params.arguments.map(value => ({ ...value })) }; const raw = await session.post("Runtime.callFunctionOn", params); assert.equal(raw.exceptionDetails, undefined, command.role); return raw; } });
+    assert.equal(calls, REQUESTS.calls); assert.equal(properties, REQUESTS.properties); const selected = await session.post("Runtime.callFunctionOn", { objectId: graph.projectId, functionDeclaration: "function(){return this===getManagerFixture.project}", returnByValue: true }); assert.equal(selected.result.value, true); const unchanged = await session.post("Runtime.evaluate", { expression: "getManagerFixture.calls()", returnByValue: true }); assert.equal(unchanged.result.value, 0);
+    await session.post("Runtime.evaluate", { expression: 'getManagerFixture.project.isReady=false' }); const program = await import("../src/current-footprint-inverse-get-manager-programs.ts"); const parameters: Runtime.CallFunctionOnParameterType = { objectId: receipt, functionDeclaration: program.CURRENT_FOOTPRINT_INVERSE_GET_MANAGER_PROGRAMS.footprint, arguments: [graph.selected, graph.project].map(objectId => ({ objectId })), returnByValue: false }; const refused = await session.post("Runtime.callFunctionOn", parameters); assert.ok(refused.exceptionDetails !== undefined);
+  } finally { await session.post("Debugger.disable"); session.disconnect(); Reflect.deleteProperty(globalThis, "getManagerFixture"); }
+});
+
+void test("manager metadata wire preserves the exact selected identity and admits no app call or resume", async () => {
+  const protocol = await import("../src/current-footprint-inverse-get-manager-protocol.ts"); const cases = protocol.currentFootprintInverseGetManagerCases(); assert.equal(cases.length, 12);
+  for (const command of cases) {
+    const row = protocol.currentFootprintInverseGetManagerTemplate(command); let text = row.template; if (command.method === "Runtime.callFunctionOn") { text = text.replace(JSON.stringify(`__get_manager_program_${command.role}__`), JSON.stringify(command.params.functionDeclaration)); }
+    const domains = new Map([["projectUuid", "a".repeat(64)], ["branchUuid", "b".repeat(32)], ["documentUuid", "c".repeat(16)]]); for (const name of row.names) { text = text.replace(JSON.stringify(`__get_manager_${name}__`), JSON.stringify(domains.get(name) ?? "original_ref")); } assert.deepEqual(JSON.parse(text), { method: command.method, params: command.params }); const bytes = Buffer.from(`${JSON.stringify(protocol.currentFootprintInverseGetManagerWire(command, 79, "original_ui"))}\0`); assert.equal(protocol.currentFootprintInverseGetManagerNativeFrame(bytes, command, "original_ui")["action"], "footprint-inverse-get-manager"); assert.throws(() => protocol.currentFootprintInverseGetManagerNativeFrame(bytes, command, "foreign_ui"));
+  }
+  for (const phase of ["inverse-get-manager-resume", "inverse-get-manager-invoke", "inverse-get-manager-forwarded"]) { assert.throws(() => validateCurrentFootprintInverseGetManagerCommand({ phase, method: "Debugger.resume", params: {} })); }
+});

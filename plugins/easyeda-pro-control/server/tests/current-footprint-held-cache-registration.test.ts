@@ -40,7 +40,7 @@ async function fixture(blocked = true): Promise<Readonly<{ invoke: Invoke; schem
       checks += 1; return blocked ? Promise.reject(new Error("synthetic unresolved engine operation")) : Promise.resolve();
     } };
   let registration: { invoke: Invoke; schema: z.ZodType } | undefined;
-  const scope = vm.createContext({ z, currentPcb209WorkerStartupToolRequestSchema,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, currentPcb209WorkerStartupToolRequestSchema,
     CurrentFootprintHeldCacheValidation: Selected, CURRENT_PCB_DIAGNOSTIC_PROFILE, engine, upstream,
     bridgeGate: new SerializedGate(), diagnostic209: true, facadeMode: "public-utilities-only", facadeToolRegistered: (): boolean => true,
     process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "synthetic" } },
