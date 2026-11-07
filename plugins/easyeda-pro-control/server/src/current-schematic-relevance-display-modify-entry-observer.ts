@@ -5,7 +5,7 @@ import type { CurrentSchematicRelevanceDisplayWriteOwner } from "./current-schem
 import type { GeneratedSchematicRelevanceDisplayNativeArguments } from "./generated-schematic-relevance-display-source.ts";
 import type { CurrentSchematicRelevanceDisplayModifyEntryBindings, CurrentSchematicRelevanceDisplayModifyEntryOrigin } from "./current-schematic-relevance-display-modify-entry-origin.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_EXPRESSION as EXPRESSION, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_FLAGS as FLAGS,
-  CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_PROOF as PROOF, validateCurrentSchematicRelevanceDisplayModifyEntryCommand } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
+  CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_PROOF as PROOF, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_REQUESTS as REQUESTS, validateCurrentSchematicRelevanceDisplayModifyEntryCommand } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
 import type { CurrentSchematicRelevanceDisplayModifyEntryCommand } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
 import { decodeCurrentSchematicRelevanceDisplayModifyEntryCallback, decodeCurrentSchematicRelevanceDisplayModifyEntryTuple, requireCurrentSchematicRelevanceDisplayModifyCallbackSource } from "./current-schematic-relevance-display-modify-entry-replies.ts";
 import { decodeCurrentFootprintCopyClockRpcV2ArrayCapture } from "./current-footprint-copy-clock-rpc-v2-protocol.ts";
@@ -17,9 +17,17 @@ export interface CurrentSchematicRelevanceDisplayModifyEntryObservation {
   readonly actionStarted: false; readonly firstSetterEntered: false; readonly continuationAuthorized: false; readonly modifyAcknowledged: false; readonly saveAuthorized: false;
 }
 const packets = new WeakMap<CurrentSchematicRelevanceDisplayModifyEntryObservation, CurrentSchematicRelevanceDisplayModifyEntryObserver>();
+export interface CurrentSchematicRelevanceDisplayRawSceneObservation {
+  readonly profile: "private.current-schematic-relevance-display-raw-scene-observation.v1";
+  readonly originalRunStillHeld: true; readonly originalReferenceSlots: number; readonly nativeFunctions: 15; readonly prototypeDepth: 12;
+  readonly allOwnDescriptorsRetained: true; readonly prototypeDescriptorsRetained: true; readonly nativeCollectionsRetained: true;
+  readonly applicationGetterInvoked: false; readonly encoderInvoked: false; readonly continuationAuthorized: false; readonly persistenceVerified: false;
+}
+const rawPackets = new WeakMap<CurrentSchematicRelevanceDisplayRawSceneObservation, CurrentSchematicRelevanceDisplayModifyEntryObserver>();
 export class CurrentSchematicRelevanceDisplayModifyEntryObserver {
   readonly #origin: CurrentSchematicRelevanceDisplayModifyEntryOrigin; readonly #owner: CurrentSchematicRelevanceDisplayWriteOwner; readonly #arguments: GeneratedSchematicRelevanceDisplayNativeArguments; readonly #bindings: CurrentSchematicRelevanceDisplayModifyEntryBindings;
   #attempted = false; #failed = false; #packet: CurrentSchematicRelevanceDisplayModifyEntryObservation | null = null;
+  #rawAttempted = false; #rawPacket: CurrentSchematicRelevanceDisplayRawSceneObservation | null = null;
   public constructor(origin: CurrentSchematicRelevanceDisplayModifyEntryOrigin, owner: CurrentSchematicRelevanceDisplayWriteOwner, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments) {
     this.#origin = origin; this.#owner = owner; this.#arguments = argumentsValue; this.#bindings = requireOriginalCurrentSchematicRelevanceDisplayModifyEntryOrigin(origin, owner, argumentsValue); Object.freeze(this);
   }
@@ -43,5 +51,25 @@ export class CurrentSchematicRelevanceDisplayModifyEntryObserver {
   public requireData(packet: CurrentSchematicRelevanceDisplayModifyEntryObservation, owner: CurrentSchematicRelevanceDisplayWriteOwner, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): void {
     if (packets.get(packet) !== this || this.#packet !== packet || this.#failed || owner !== this.#owner || argumentsValue !== this.#arguments) { throw new Error("SCHEMATIC_MODIFY_ENTRY_ORIGINAL_PACKET"); }
     requireOriginalCurrentSchematicRelevanceDisplayModifyEntryOrigin(this.#origin, owner, argumentsValue);
+  }
+  /** The owner supplies every next command from its original private cursor.
+   * The complete baseline is retained before any vendor prefix may proceed. */
+  public async observeRawScene(): Promise<CurrentSchematicRelevanceDisplayRawSceneObservation> {
+    if (this.#rawAttempted || this.#packet === null) { throw new Error("SCHEMATIC_RAW_ORIGINAL_ENTRY_REQUIRED"); } this.#rawAttempted = true;
+    try {
+      for (let count = 0; count < REQUESTS.rawObservation; count += 1) {
+        await this.#current(); const command = this.#bindings.nextRawCommand(); if (command === null) { throw new Error("SCHEMATIC_RAW_PREMATURE_COMPLETION"); }
+        await this.#bindings.request(command); await this.#current();
+      }
+      if (this.#bindings.nextRawCommand() !== null) { throw new Error("SCHEMATIC_RAW_REQUEST_BOUND"); } const original = this.#bindings.requireRawCapture();
+      const packet: CurrentSchematicRelevanceDisplayRawSceneObservation = Object.freeze({ profile: "private.current-schematic-relevance-display-raw-scene-observation.v1", originalRunStillHeld: true,
+        originalReferenceSlots: original.originalReferenceSlots, nativeFunctions: 15, prototypeDepth: 12, allOwnDescriptorsRetained: true, prototypeDescriptorsRetained: true, nativeCollectionsRetained: true,
+        applicationGetterInvoked: false, encoderInvoked: false, continuationAuthorized: false, persistenceVerified: false });
+      this.#rawPacket = packet; rawPackets.set(packet, this); return packet;
+    } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; }
+  }
+  public requireRawData(packet: CurrentSchematicRelevanceDisplayRawSceneObservation, owner: CurrentSchematicRelevanceDisplayWriteOwner, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): void {
+    if (rawPackets.get(packet) !== this || this.#rawPacket !== packet || this.#failed || owner !== this.#owner || argumentsValue !== this.#arguments) { throw new Error("SCHEMATIC_RAW_ORIGINAL_PACKET"); }
+    requireOriginalCurrentSchematicRelevanceDisplayModifyEntryOrigin(this.#origin, owner, argumentsValue); this.#bindings.requireRawCapture();
   }
 }

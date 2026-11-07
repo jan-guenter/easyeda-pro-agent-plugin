@@ -16,7 +16,7 @@ export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE = Object.f
   main: Object.freeze({ normal: SHARED.main.normal + MAIN.normal + STEP.normal + BEGIN.normal + HISTORY.normal, cleanup: SHARED.main.cleanup + MAIN.cleanup + BEGIN.cleanup + HISTORY.cleanup, total: SHARED.main.total + MAIN.total + STEP.total + BEGIN.total + HISTORY.total }), renderer: Object.freeze({ ...SHARED.renderer,
     structureObservation: STRUCTURE.cdpRequests,
     actionPreflightObservation: ACTION.total, actionGuardObservation: ACTION_GUARD.cdpRequests, actionGuardBindingControls: ACTION_GUARD.bindingControls,
-    modifyEntryObservation: MODIFY_ENTRY.observation,
+    modifyEntryObservation: MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation,
     total: SHARED.renderer.total - SHARED.renderer.structureObservation - SHARED.renderer.actionPreflightObservation - SHARED.renderer.actionGuardObservation - SHARED.renderer.actionGuardBindingControls +
-      STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + MODIFY_ENTRY.observation }),
+      STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation }),
 });

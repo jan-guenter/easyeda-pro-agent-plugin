@@ -757,3 +757,5 @@ layout. The connected ledger retains its generation and case anchors.
 - [2026-11-07 original inverse startup history reads](2026-11-07-inverse-initial-history-main.md)
 
 - [2026-11-07 publication history privacy](2026-11-07-publication-history-privacy.md). Scan outgoing Git objects before pushing, including deleted content, with bounded output that omits matches.
+
+- [Original seven-record held descriptor baseline](2026-11-07-relevance-held-descriptor-baseline.md). Actual original invocation, native metadata and complete descriptor retention; run, setters and persistence remain held.

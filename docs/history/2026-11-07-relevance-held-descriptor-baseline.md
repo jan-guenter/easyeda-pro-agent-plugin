@@ -1,0 +1,41 @@
+# Original seven-record held descriptor baseline
+
+This source-only increment extends the distinct Relevance display owner at its
+original held `run` entry. The original Modify request stays pending on the same
+pipe. The owner independently checks all five existing entry replies before it
+creates a private 63-request cursor. Each readonly command is reserved before
+its await, and only that exact command object may consume the corresponding
+reply. A lost reply permits no retry.
+
+The cursor qualifies 15 actual native functions, classifies original references
+before inspecting them, and retains complete own descriptors, twelve prototype
+levels, and native Map/Set membership. It preserves unused data by descriptor
+and JavaScript reference. It invokes no application getter or source encoder.
+The complete baseline and its comparison closure remain in the original
+Inspector object group. Independently wrapped Inspector IDs are never compared
+as JavaScript identity.
+
+The maintained observer group performs these reads after original entry
+collection. A separate private observation records this baseline. Existing
+entry, stage and persisted result schemas are unchanged. The seven-record
+renderer reservation grows from 2735 to 2798. The old six-record reservation stays
+2712 and the Wire reservation stays 2721. The native codebook reuses the existing
+packed fixed table and substitutes the retained original holder for the initial
+reference capture.
+
+Validation used Node 24.18.0 and inert graphs only. Ten focused entry, raw-data,
+codec and Wire tests passed, with both TypeScript projects and strict changed
+lint. A real paused-main Inspector test executes all 63 reads, rejects unknown
+descriptor drift, rejects an own getter without invoking it, and rejects a Proxy
+before any trap executes. Existing pending-request and lost-write-ACK tests
+remain passing. Combined generation is identical on its second pass; at base
+4758c032 the stored helper is 1,524,924 bytes and its runtime compiler input is
+2,066,206 bytes. No generated helper, compatibility pin or installed bundle was
+changed, and no app, native owner or MCP request was started.
+
+This baseline does not resume `run`, enter a setter or authorize Save. The actual
+vendor prefix, callback entry, active history recorder, setters and action
+completion still need their original source and continuation proofs. The
+separate `fu` library loop and `checkProject` worker controls also remain required
+before a run grant. Matching this baseline proves no persistence or reopened
+result. Full source preflight and observe checks are preserved.

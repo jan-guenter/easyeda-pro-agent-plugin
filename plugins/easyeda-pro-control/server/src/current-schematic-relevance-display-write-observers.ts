@@ -1,5 +1,5 @@
 import { CurrentSchematicRelevanceDisplayModifyEntryObserver } from "./current-schematic-relevance-display-modify-entry-observer.ts";
-import type { CurrentSchematicRelevanceDisplayModifyEntryObservation } from "./current-schematic-relevance-display-modify-entry-observer.ts";
+import type { CurrentSchematicRelevanceDisplayModifyEntryObservation, CurrentSchematicRelevanceDisplayRawSceneObservation } from "./current-schematic-relevance-display-modify-entry-observer.ts";
 /** Maintained original SCH setup. The durable enclosing operation owns birth,
  * navigation and intent publication. This group never dispatches Modify/Save. */
 /* oxlint-disable import/max-dependencies -- One original group joins separately branded worker, accessor, action and Main collectors without accepting caller implementation. */
@@ -36,6 +36,7 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
   #construction: Promise<Outcome> | null = null; #collector: Promise<Outcome> | null = null; #pendingProducer: Promise<unknown> | null = null;
   #modifyEntryAttempted = false; #modifyEntryCollection: Promise<CurrentSchematicRelevanceDisplayModifyEntryObservation> | null = null;
   #modifyEntryObserver: CurrentSchematicRelevanceDisplayModifyEntryObserver | null = null; #modifyEntryPacket: CurrentSchematicRelevanceDisplayModifyEntryObservation | null = null;
+  #modifyRawPacket: CurrentSchematicRelevanceDisplayRawSceneObservation | null = null;
   #guard: CurrentSchematicRelevanceDisplayActionGuardObservation | null = null;
   #action: CurrentSchematicRelevanceDisplayActionObserver | null = null; #actionPacket: CurrentSchematicRelevanceDisplayActionObservation | null = null;
   #main: CurrentSchematicRelevanceDisplayPreModifyMainOrigin | null = null; #dispatch: GeneratedSchematicRelevanceDisplayDispatch | null = null;
@@ -139,12 +140,16 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
         await this.requirePrepared(dispatch); this.#current(); const guard = this.#guard, main = this.#main; need(main !== null && guard !== null, "ORIGINAL_MODIFY_PREPARATION");
         const origin = await this.#owner.generateSchematicRelevanceDisplayModifyEntry(this.#arguments, main, dispatch, guard); this.#current();
         const observer = new CurrentSchematicRelevanceDisplayModifyEntryObserver(origin, this.#owner, this.#arguments); this.#modifyEntryObserver = observer;
-        const packet = await observer.observe(); this.#current(); observer.requireData(packet, this.#owner, this.#arguments); this.#modifyEntryPacket = packet; return packet;
+        const packet = await observer.observe(); this.#current(); observer.requireData(packet, this.#owner, this.#arguments); this.#modifyEntryPacket = packet;
+        const raw = await observer.observeRawScene(); this.#current(); observer.requireRawData(raw, this.#owner, this.#arguments); this.#modifyRawPacket = raw; return packet;
       } catch (error) { this.#stop(error); throw error; }
     })(); return this.#modifyEntryCollection;
   }
   public requireOriginalModificationEntry(): CurrentSchematicRelevanceDisplayModifyEntryObservation {
     this.#current(); need(this.#modifyEntryObserver !== null && this.#modifyEntryPacket !== null, "ORIGINAL_MODIFY_ENTRY_REQUIRED"); this.#modifyEntryObserver.requireData(this.#modifyEntryPacket, this.#owner, this.#arguments); return this.#modifyEntryPacket;
+  }
+  public requireOriginalModificationRawScene(): CurrentSchematicRelevanceDisplayRawSceneObservation {
+    this.#current(); need(this.#modifyEntryObserver !== null && this.#modifyRawPacket !== null, "ORIGINAL_RAW_SCENE_REQUIRED"); this.#modifyEntryObserver.requireRawData(this.#modifyRawPacket, this.#owner, this.#arguments); return this.#modifyRawPacket;
   }
   /** Original Job exit wakes existing collectors; retain and join those exact
    * requests rather than starting another read or detaching live breakpoints. */
