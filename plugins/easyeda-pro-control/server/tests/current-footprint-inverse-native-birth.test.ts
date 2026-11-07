@@ -98,6 +98,9 @@ void test("an original inverse factory cannot adopt a copied source or construct
   const { f, token } = await prepared();
   context.after(async () => { if (f.child().exitCode === null) { const closed = once(f.child(), "close"); f.child().stdin.end(); await closed; } });
   const owner = await pending(f.api.startCurrentFootprintInverseNativeOwner, [token]); assert.ok(owner instanceof f.api.CurrentFootprintInverseNativeOwner);
+  const armProducer:unknown=Reflect.get(owner,"armFootprintInverseProducers"),lookupProducer:unknown=Reflect.get(f.api,"requireOriginalCurrentFootprintInverseProducerOrigin");assert.ok(typeof armProducer==="function"&&typeof lookupProducer==="function");
+  assert.throws(()=>Reflect.apply(armProducer,owner,[Object.freeze({profile:"private.current-footprint-inverse-bootstrap-held.v1"})]),/FOOTPRINT_INVERSE_PRODUCER_BOOTSTRAP_ORIGINAL/u);
+  assert.throws(()=>Reflect.apply(lookupProducer,undefined,[Object.freeze({profile:"private.current-footprint-inverse-producer-origin.v1"}),owner,token]),/FOOTPRINT_INVERSE_PRODUCER_ORIGINAL/u);
   const copiedSource = Object.freeze({ profile: "private.current-footprint-inverse-worker-origin.v1" });
   const arm: unknown = Reflect.get(owner, "armFootprintInverseConstruction"), lookup: unknown = Reflect.get(f.api, "requireOriginalCurrentFootprintInverseConstruction");
   assert.ok(typeof arm === "function" && typeof lookup === "function"); const attempt: unknown = Reflect.apply(arm, owner, [copiedSource]); assert.ok(attempt instanceof Promise);

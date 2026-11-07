@@ -1,6 +1,7 @@
 /** Separate inverse event cursor. It shares only the fixed seven-source
  * bootstrap algorithm, not a saved reader controller, origin or purpose.
  * Browser/page attachments must name the same suspended original target. */
+import type { CurrentFootprintInverseProducerArmCommand } from "./current-footprint-inverse-producer-protocol.ts";
 import type { CurrentProjectSaveStructureEvent } from "./current-project-save-structure-origin.ts";
 import type { CurrentFootprintInverseConstructionCommand } from "./current-footprint-inverse-construction-protocol.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES } from "./current-project-save-structure-protocol.ts";
@@ -23,6 +24,7 @@ export interface CurrentFootprintInverseWorkerControllerBindings {
   readonly poll: () => Promise<void>; readonly assertCurrent: () => Promise<void>;
   readonly projectSourceHeld: (source: CurrentPcbViaSavedLoadProjectSourceHeld, controller: CurrentFootprintInverseWorkerController) => Promise<void>;
   readonly constructionRequest: (command: CurrentFootprintInverseConstructionCommand, retainAllocationReply?: (reply: unknown) => void) => Promise<unknown>;
+  readonly producerArmRequest: (command: CurrentFootprintInverseProducerArmCommand) => Promise<unknown>;
   readonly constructionHeld: (role: CurrentProjectSaveStructureSite, event: DiagnosticEvent) => Promise<void>;
   readonly fail: () => void;
 }
@@ -42,6 +44,10 @@ export class CurrentFootprintInverseWorkerController {
   readonly #constructionResolutions = new Map<string, CurrentProjectSaveStructureSite>();
   readonly #constructionPoints = new Map<CurrentProjectSaveStructureSite, string>();
   readonly #constructionRemoved = new Set<string>();
+  #producerArming: Readonly<{ key: string; lineNumber: number; columnNumber: number }> | null = null;
+  readonly #producerPoints = new Map<string, Readonly<{ id: string; lineNumber: number; columnNumber: number }>>();
+  readonly #producerResolutions = new Map<string, string>();
+  readonly #producerHelpers: { program: string; scriptId: string | null }[] = [];
   readonly #constructionHelpers: { program: string; scriptId: string | null }[] = [];
   #constructionWork: Readonly<{ run: () => Promise<void>; result: ReturnType<typeof Promise.withResolvers<boolean>> }> | null = null;
   #bootstrapSetupWork: Readonly<{ run: () => Promise<void>; result: ReturnType<typeof Promise.withResolvers<boolean>> }> | null = null;
@@ -51,7 +57,7 @@ export class CurrentFootprintInverseWorkerController {
   #source: CurrentPcbViaSavedLoadProjectSourceHeld | null = null; #failed = false; #reading = false; #eventCount = 0; #networkEvents = 0; #pumping = false;
   public constructor(bindings: CurrentFootprintInverseWorkerControllerBindings) {
     need(bindings !== null && typeof bindings === "object" && !types.isProxy(bindings) && Object.getPrototypeOf(bindings) === Object.prototype && Object.isFrozen(bindings));
-    const fields = ["parentSessionId", "projectUuid", "windowTabId", "bindWorker", "request", "poll", "assertCurrent", "projectSourceHeld", "constructionRequest", "constructionHeld", "fail"];
+    const fields = ["parentSessionId", "projectUuid", "windowTabId", "bindWorker", "request", "poll", "assertCurrent", "projectSourceHeld", "constructionRequest", "producerArmRequest", "constructionHeld", "fail"];
     need(Reflect.ownKeys(bindings).length === fields.length);
     for (const [index, name] of fields.entries()) { const d = Object.getOwnPropertyDescriptor(bindings, name); need(d !== undefined && Object.hasOwn(d, "value") && typeof d.value === (index < 3 ? "string" : "function") && !types.isProxy(d.value)); }
     need(token(bindings.parentSessionId) && token(bindings.windowTabId) && /^[a-f\d]{64}$/u.test(bindings.projectUuid)); this.#bindings = bindings; Object.freeze(this);
@@ -78,11 +84,16 @@ export class CurrentFootprintInverseWorkerController {
         this.#networkEvents += 1; need(this.#networkEvents <= 512); return;
       }
       if (this.#source !== null && event.method === "Debugger.scriptParsed" && event.params["url"] === "") {
-        const expected = this.#constructionHelpers.find(value => value.scriptId === null);
+        const expected = [...this.#constructionHelpers,...this.#producerHelpers].find(value => value.scriptId === null);
         need(expected !== undefined && token(event.params["scriptId"]) && event.params["executionContextId"] === this.#source.executionContextId);
         expected.scriptId = event.params["scriptId"]; return;
       }
       if (this.#source !== null && event.method === "Debugger.breakpointResolved") {
+        const producerId = event.params["breakpointId"]; const knownProducer = [...this.#producerPoints].find(([,point])=>point.id===producerId), producerLocation = event.params["location"];
+        const producer = knownProducer === undefined ? this.#producerArming : {key:knownProducer[0],...knownProducer[1]};
+        if(producer!==null && record(producerLocation) && producerLocation["scriptId"]===this.#source.scriptId && producerLocation["lineNumber"]===producer.lineNumber && producerLocation["columnNumber"]===producer.columnNumber){
+          need(token(producerId));const prior=this.#producerResolutions.get(producerId);need(prior===undefined||prior===producer.key);this.#producerResolutions.set(producerId,producer.key);return;
+        }
         const breakpointId = event.params["breakpointId"], known = [...this.#constructionPoints].find(([, id]) => id === breakpointId), location = event.params["location"], role = known?.[0] ?? this.#constructionArming;
         need(role !== null && role !== undefined && token(breakpointId) && record(location) && location["scriptId"] === this.#source.scriptId && location["lineNumber"] === SITES[role].lineNumber && location["columnNumber"] === SITES[role].columnNumber);
         const prior = this.#constructionResolutions.get(breakpointId); need(prior === undefined || prior === role); this.#constructionResolutions.set(breakpointId, role); return;
@@ -133,6 +144,23 @@ export class CurrentFootprintInverseWorkerController {
     const expected = this.#constructionHelpers[0]; need(expected !== undefined && expected.program === program && expected.scriptId !== null);
     const reply = await this.#bindings.constructionRequest({ phase: "inverse-construction-helper", method: "Debugger.getScriptSource", params: { scriptId: expected.scriptId } }); await this.#current();
     need(record(reply) && Reflect.ownKeys(reply).length === 1 && reply["scriptSource"] === program && this.#constructionHelpers[0] === expected); this.#constructionHelpers.shift();
+  }
+  public requestProducerArm(command:CurrentFootprintInverseProducerArmCommand):Promise<unknown>{this.requireConstructionBootstrap();need(this.#pumping);return this.#bindings.producerArmRequest(command);}
+  public expectProducerArm(command: CurrentFootprintInverseProducerArmCommand): void {
+    this.requireConstructionBootstrap(); need(this.#pumping && this.#producerArming===null && (command.phase==="project-save-producer-arm"||command.phase==="project-save-producer-guard") && this.#source!==null && command.params.location.scriptId===this.#source.scriptId);
+    const key=`${command.phase}-${command.role}`;need(!this.#producerPoints.has(key));this.#producerArming=Object.freeze({key,lineNumber:command.params.location.lineNumber,columnNumber:command.params.location.columnNumber});
+  }
+  public registerProducerArm(command: CurrentFootprintInverseProducerArmCommand,id:string):void {
+    this.requireConstructionBootstrap();const armed=this.#producerArming;need(armed!==null&&token(id)&&!this.#producerPoints.has(armed.key)&&![...this.#producerPoints.values()].some(point=>point.id===id)&&(command.phase==="project-save-producer-arm"||command.phase==="project-save-producer-guard")&&armed.key===`${command.phase}-${command.role}`);
+    for(const[resolved,key]of this.#producerResolutions){if(key===armed.key){need(resolved===id);}}
+    this.#producerPoints.set(armed.key,Object.freeze({id,lineNumber:armed.lineNumber,columnNumber:armed.columnNumber}));this.#producerArming=null;
+  }
+  public originalProducerArms():readonly Readonly<{role:string;id:string}>[]{this.requireConstructionBootstrap();need(this.#producerPoints.size===37&&this.#producerArming===null&&this.#producerHelpers.length===0);return Object.freeze([...this.#producerPoints].map(([role,point])=>Object.freeze({role,id:point.id})));}
+  public expectProducerHelper(program:string):void{this.requireConstructionBootstrap();need(this.#pumping&&this.#producerHelpers.length===0&&this.#constructionHelpers.length===0&&typeof program==="string"&&program.length<=65_536);this.#producerHelpers.push({program,scriptId:null});}
+  public async qualifyProducerHelper(program:string):Promise<void>{
+    const original=this.#producerHelpers[0];need(original!==undefined&&original.program===program&&original.scriptId!==null);
+    const reply=await this.#bindings.producerArmRequest({phase:"inverse-producer-helper",method:"Debugger.getScriptSource",params:{scriptId:original.scriptId}});await this.#current();
+    need(record(reply)&&Reflect.ownKeys(reply).length===1&&reply["scriptSource"]===program&&this.#producerHelpers[0]===original);this.#producerHelpers.shift();
   }
   public queueConstruction(run: () => Promise<void>): Promise<boolean> {
     need(this.#result !== null && !this.#constructionWorkAttempted && !this.#failed && typeof run === "function" && !types.isProxy(run)); this.#constructionWorkAttempted = true;

@@ -757,3 +757,36 @@ strict changed-file lint pass. No original producer origin, native sender,
 bootstrap resume, Cache put or delete/Save authority is issued by these leaves.
 Their genuine inverse-only enrollment and complete producer frontier remain the
 next required joins.
+
+The genuine inverse owner now exposes
+`armFootprintInverseProducers(originalBootstrapHold)` during its retained
+bootstrap callback. It consumes one retained Promise, derives all receiver,
+worker/context and source arguments from the private original hold, qualifies
+the worker's actual Cache/CacheStorage/Response constructor/member metadata, and
+arms ten fixed refusal guards plus27 producer source points before EP. The
+three actual Runtime helpers are correlated to their own original empty-URL
+scripts and read back byte exactly. Every breakpoint must acknowledge the exact
+source location and retain its own original ID. The inverse controller's full
+prototype/method identity is now pinned at the original owner boundary as well.
+
+Only this genuine owner can issue the separately branded inverse producer
+origin. Its live private lookup requires the exact owner and completed saved
+checkpoint. Copies and constructor summaries refuse. The retained actual
+receivers, original worker intrinsic tuple and37 breakpoint receipts belong to
+this new generation; no Via/SCH observer, origin, lease or pending Promise is
+adopted. No bootstrap or producer resume exists in the new native vocabulary.
+A failed arm/helper receipt remains consumed and requires original process
+cleanup, with no automatic reenrollment.
+
+The complete fixed enrollment is28 intrinsic commands,10 guards and27 producer
+arms, plus three helper-source reads:68 renderer commands. The inverse renderer
+limit becomes903, original-main reproofs76,466 and aggregate controls126,840;
+older purpose limits stay unchanged. Ten focused factory/grammar/cursor checks,
+full types, strict changed-file lint, two-pass full generation and complete
+C#5/.NET10 Linux compile/fixed-codec smokes pass. With the exact two-file packing
+from25865979, this source composition is2,035,499 helper bytes and1,838,286 C#
+bytes under the unchanged2MiB ceiling. Tracked helper/pins/bundles are untouched.
+No Windows/app/native/MCP operation ran. The eight-job continuation sender/mux,
+initial startup/sync/timer joins, actual copied-model delete/clock/main SQL,
+closed inverse proof and fourth original absence generation remain incomplete;
+all execution/Save/four-generation acceptance flags remain false.
