@@ -53,3 +53,16 @@ Native prefix bind requires the original five entry observations and 63 raw
 observations. Five additional underline eligibility observations belong after
 the prefix and before any run continuation. Requiring those five to begin the
 prefix would create a dependency cycle with the callback prearm step.
+
+The independent function-entry guard controller now models the original
+FirstStart, WillEnd and FirstEnd pauses. Its 22-message grammar verifies each
+actual paused receiver, removes each original breakpoint once, and requires
+both the CDP resume acknowledgment and the original resumed event. It retains
+a next pause that arrives before the preceding response. Its end packet does
+not claim callback-body completion or durability.
+
+Two focused synthetic ordering cases pass, including both acknowledgment/event
+orders and refusal of a wrong-source pause before another read or resume.
+These cases test the state machine only. The original callback/native transport
+and Core continuation mount remain pending; the readonly native lane still
+cannot encode a resume.
