@@ -17,6 +17,7 @@ import { captureCurrentSchematicEditNativeHelper } from "./current-schematic-edi
 import { CURRENT_PCB_DIAGNOSTIC_HELPER_BYTES as HELPER_BYTES, CURRENT_PCB_DIAGNOSTIC_HELPER_SHA256 as HELPER_SHA256 } from "./current-pcb-diagnostic-helper-identity.ts";
 import { currentFootprintInversePublicApiCallees,currentFootprintInversePublicApiFunction,currentFootprintInversePublicApiInitial,currentFootprintInversePublicApiKey,currentFootprintInversePublicApiNativeFrame,currentFootprintInversePublicApiObject,currentFootprintInversePublicApiOrder,currentFootprintInversePublicApiProgram,currentFootprintInversePublicApiScope,currentFootprintInversePublicApiScript,qualifyCurrentFootprintInversePublicApiHelper,validateCurrentFootprintInversePublicApiCommand } from "./current-footprint-inverse-public-api-protocol.ts";
 import type { CurrentFootprintInversePublicDeleteCall, CurrentFootprintInversePublicDeleteCallBindings } from "./current-footprint-inverse-public-delete-call.ts";
+import type { CurrentFootprintInversePublicDeleteJob, CurrentFootprintInversePublicDeleteJobBindings } from "./current-footprint-inverse-public-delete-job.ts";
 import type { CurrentFootprintInversePublicDeleteEnrollment, CurrentFootprintInversePublicDeleteIntent } from "./current-footprint-inverse-public-delete-intent.ts";
 import { currentFootprintInversePublicServiceKey, currentFootprintInversePublicServiceNativeFrame, currentFootprintInversePublicServiceOrder, currentFootprintInversePublicServiceProgram, qualifyCurrentFootprintInversePublicServiceHelper, validateCurrentFootprintInversePublicServiceCommand } from "./current-footprint-inverse-public-service-protocol.ts";
 import type { CurrentFootprintInversePublicServiceCommand } from "./current-footprint-inverse-public-service-protocol.ts";
@@ -1260,6 +1261,14 @@ export function requireOriginalCurrentFootprintInversePublicDeleteCall(packet: C
   const original = footprintInversePublicDeleteCalls.get(packet);
   if (original === undefined || original.owner !== owner || original.prepared !== prepared) { throw error("FOOTPRINT_INVERSE_PUBLIC_DELETE_CALL_ORIGINAL"); }
   assertOriginalCurrentFootprintInverseNativeOwner(owner); original.current(); original.bindings.assertCurrent(); return original.bindings;
+}
+// This registry stays unissued until the actual manager/native forwarding
+// Collector joins the original Call and worker peer. No structural issuer.
+const footprintInversePublicDeleteJobs = new WeakMap<CurrentFootprintInversePublicDeleteJob, Readonly<{ owner: CurrentFootprintInverseNativeOwner; prepared: CurrentFootprintForwardSavedCheckpoint; bindings: CurrentFootprintInversePublicDeleteJobBindings; current: () => void }>>();
+export function requireOriginalCurrentFootprintInversePublicDeleteJob(packet: CurrentFootprintInversePublicDeleteJob, owner: CurrentFootprintInverseNativeOwner, prepared: CurrentFootprintForwardSavedCheckpoint): CurrentFootprintInversePublicDeleteJobBindings {
+  const original = footprintInversePublicDeleteJobs.get(packet);
+  if (original === undefined || original.owner !== owner || original.prepared !== prepared) { throw error("FOOTPRINT_INVERSE_PUBLIC_DELETE_JOB_ORIGINAL"); }
+  assertOriginalCurrentFootprintInverseNativeOwner(owner); original.current(); original.bindings.assertCurrent(); original.bindings.assertOriginalForwarded(); return original.bindings;
 }
 interface FootprintInversePublicDeleteIntentOriginal {
   readonly owner: CurrentFootprintInverseNativeOwner; readonly prepared: CurrentFootprintForwardSavedCheckpoint;

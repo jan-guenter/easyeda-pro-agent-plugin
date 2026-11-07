@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { consumeCurrentFootprintInversePublicDeleteIntent, enrollCurrentFootprintInversePublicDeleteIntent, requireOriginalCurrentFootprintInversePublicDeleteIntent } from "../src/current-footprint-inverse-public-delete-intent.ts";
 import { requireOriginalCurrentFootprintInversePublicDeleteCall } from "../src/current-footprint-inverse-public-delete-call.ts";
+import { requireOriginalCurrentFootprintInversePublicDeleteJob } from "../src/current-footprint-inverse-public-delete-job.ts";
 import { CurrentFootprintInversePublicServiceObserver } from "../src/current-footprint-inverse-public-service-observer.ts";
 import { CurrentFootprintInverseNativeOwner } from "../src/current-footprint-inverse-native-owner.ts";
 
@@ -24,7 +25,9 @@ void test("written-looking caller DTO cannot issue an original public call or in
   let reads = 0; const trap = (): never => { reads += 1; throw new Error("caller callback"); };
   const packet = Object.freeze({ profile: "private.current-footprint-inverse-public-delete-call.v1", written: Promise.resolve(), assertCurrent: trap, assertOriginalWritten: trap });
   const owner = new Proxy({}, { get: trap, getPrototypeOf: trap });
-  assert.throws(() => Reflect.apply(requireOriginalCurrentFootprintInversePublicDeleteCall, undefined, [packet, owner, owner])); assert.equal(reads, 0);
+  assert.throws(() => Reflect.apply(requireOriginalCurrentFootprintInversePublicDeleteCall, undefined, [packet, owner, owner]));
+  const job = Object.freeze({ profile: "private.current-footprint-inverse-public-delete-job.v1", call: packet, get replyTopic(): never { return trap(); }, assertCurrent: trap, assertOriginalForwarded: trap });
+  assert.throws(() => Reflect.apply(requireOriginalCurrentFootprintInversePublicDeleteJob, undefined, [job, owner, owner])); assert.equal(reads, 0);
 });
 
 void test("source-shaped service origin cannot borrow the original SDK holder or read caller getters", () => {
