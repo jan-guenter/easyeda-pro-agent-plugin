@@ -712,3 +712,5 @@ layout. The connected ledger retains its generation and case anchors.
 - [Original buffered upload request](2026-11-07-original-buffered-upload-request.md) — actual same-worker scheduled-body transfer to the first history request; response and final drain remain separate.
 
 - [Inspector reference rewrapping](2026-11-07-inspector-reference-rewrapping.md) — actual same-realm identity remains proved by fixed code; different inspector handles cannot be compared as object identity.
+
+- [Original Via upload deletion projections](2026-11-07-original-via-upload-delete-projections.md) — fixed readonly call/return/catch and exact original cache/caller joins; no continuation authority.
