@@ -16,6 +16,8 @@ export const CURRENT_NATIVE_MESSAGE_EVENT_PROFILES=freezeDeep([
  {name:"get data",arity:0,constructor:false},
  {name:"get origin",arity:0,constructor:false},
  {name:"get source",arity:0,constructor:false},
+ {name:"get currentTarget",arity:0,constructor:false},
+ {name:"get eventPhase",arity:0,constructor:false},
 ]as const);
 const handle=z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u),text=z.string().max(8192);
 const remote=z.strictObject({type:z.enum(["object","function","number","string"]),subtype:text.optional(),className:text.optional(),description:text.optional(),objectId:handle.optional(),value:z.union([z.string(),z.number()]).optional()});

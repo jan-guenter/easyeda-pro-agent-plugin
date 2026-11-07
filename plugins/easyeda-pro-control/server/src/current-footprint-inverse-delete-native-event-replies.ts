@@ -12,3 +12,9 @@ export function currentFootprintInverseDeleteNativeEventFrame(input:unknown,sess
  for(const expected of CALLERS){const row=parsed.params.callFrames[expected.index];need(row!==undefined&&!ids.has(row.callFrameId)&&row.functionName===expected.functionName&&row.functionLocation.scriptId===scriptId&&row.functionLocation.lineNumber===expected.lineNumber&&row.functionLocation.columnNumber===expected.columnNumber&&row.location.scriptId===scriptId&&row.location.lineNumber===expected.lineNumber&&row.location.columnNumber===expected.pausedColumn);ids.add(row.callFrameId);}
  const callback=parsed.params.callFrames[7];need(callback!==undefined);return callback.callFrameId;
 }
+/** Conservative native dispatch stack: no additional JavaScript caller may
+ * manually invoke the registered callback during another delivery. Actual
+ * browser native getters and full original sender custody remain mandatory. */
+export function currentFootprintInverseDeleteNativeDeliveryFrame(input:unknown,sessionId:string,scriptId:string,breakpointId:string):string{
+ const selected=currentFootprintInverseDeleteNativeEventFrame(input,sessionId,scriptId,breakpointId);need(event.parse(capture(input)).params.callFrames.length===8);return selected;
+}

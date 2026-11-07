@@ -8,7 +8,9 @@ import { currentFootprintInverseDeleteWorkerPeerCases } from "../src/current-foo
 import { currentFootprintInverseDeleteJobCases } from "../src/current-footprint-inverse-delete-job-protocol.ts";
 
 import { createCurrentFootprintInverseWorkerPrefixPipe } from "./fixtures/current-footprint-inverse-worker-prefix-pipe.ts";
+import { currentFootprintInverseNativeDeliveryCases } from "../src/current-footprint-inverse-native-delivery-protocol.ts";
 import { currentFootprintInverseNativeChannelCases } from "../src/current-footprint-inverse-native-channel-protocol.ts";
+// oxlint-disable-next-line import/max-dependencies -- One actual retained pipe verifies the independent finite inverse command families together.
 import { currentFootprintInverseOwnDataCases } from "../src/current-footprint-inverse-own-data-protocol.ts";
 
 void test("actual inverse byte pipe admits only its retained worker for bus, RPC, entry, intrinsics and forwarded-job observations",async context=>{
@@ -19,5 +21,6 @@ void test("actual inverse byte pipe admits only its retained worker for bus, RPC
  for(const command of currentFootprintInverseOwnDataCases()){const pending=pipe.observeInverseOwnData(command);assert.equal(last().sessionId,pair.pageSessionId);reply({});await pending;}
  for(const command of currentFootprintInverseNativeChannelCases()){const pending=pipe.observeInverseNativeChannel(command);assert.equal(last().sessionId,pair.pageSessionId);reply({});await pending;}
  for(const command of currentFootprintInverseDeleteEntryCases()){const pending=pipe.observeInverseDeleteEntry(command);assert.equal(last().sessionId,pair.pageSessionId);reply({});await pending;}
- for(const command of currentFootprintInverseDeleteJobCases()){const pending=pipe.observeInverseDeleteJob(command);assert.equal(last().sessionId,pair.pageSessionId);reply({});await pending;}assert.equal(pipe.status().failureObservation,null);
+ for(const command of currentFootprintInverseDeleteJobCases()){const pending=pipe.observeInverseDeleteJob(command);assert.equal(last().sessionId,pair.pageSessionId);reply({});await pending;}
+ for(const command of currentFootprintInverseNativeDeliveryCases()){const pending=pipe.observeInverseNativeDelivery(command);assert.equal(last().sessionId,pair.pageSessionId);reply({});await pending;}assert.equal(pipe.status().failureObservation,null);
 });

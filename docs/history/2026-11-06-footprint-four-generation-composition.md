@@ -1992,3 +1992,66 @@ at1,442,481 stored/2,020,705 compiler bytes. Full emitted Linux C#5 passes the
 new19-message codec/cap and intrinsic/entry smokes
 (ORIGINAL_INVERSE_EVENT_TARGET_OK, private inverse-event-target-Vbr5d7).
 No helper/pin or app/native call was changed or performed.
+
+## Original native Event to forwarded Job join
+
+`observeFootprintInverseNativeDelivery(originalWorkerJob)` now reserves one
+finite observation while the original before-qe Entry remains held. Core
+requires the original worker Job and its original Entry, forwarded manager Job,
+same original peer, intrinsic receipt and qualified channel. It snapshots the
+actual issuer's full envelope/origin, pins their references and assertion
+functions, and rechecks them around every await. A caller packet or matching
+JSON cannot populate the new private delivery registry.
+
+The source-qualified callback stack must end at its original onmessage arrow:
+exactly8 JavaScript frames, with no additional manual caller. The maintained
+inert callback test has a ninth caller and now explicitly refuses this native
+delivery selector; its earlier data-only source/stack result remains intact.
+The new observation captures the original MessageEvent while that callback is
+still synchronously active. Actual Inspector property metadata must show the
+native Event shape before any prototype traversal. All8 native getter
+metadata roles qualify before a getter runs. V2 uses only its original
+same-realm reflection/prototype receipt and preallocated own-index storage;
+V1 remains unchanged and unmounted.
+
+The fixed read requires native isTrusted true, type message, original channel
+identity for both target and currentTarget, eventPhase AT_TARGET2 and null
+source. It joins Event.data.message by JavaScript identity to the actual
+worker service packet, and compares every envelope and payload field plus the
+actual serialized sender origin to the original forwarded Job. A retained
+proof re-invokes those same qualified getters and detects dispatch completion
+or descriptor/data changes. This addresses replay of an earlier trusted Event:
+the [DOM dispatch algorithm](https://dom.spec.whatwg.org/#concept-event-dispatch)
+resets phase and currentTarget after dispatch. The
+[MessageEvent interface](https://html.spec.whatwg.org/multipage/comms.html#the-messageevent-interface)
+provides the inherited Event and message data/origin/source fields. These
+standard facts do not replace actual browser metadata or sender provenance.
+
+Six focused leaf cases cover actual Node Inspector capture/reproof with
+throwOnSideEffect true on inert getters, full-envelope/RPC identity, stale
+trusted events, descriptor changes, strict metadata/protocol and forged-token
+refusal. The real byte pipe also transports all17 finite messages only to its
+retained worker. The original Node shim/native rejection and hostile inherited
+array/prototype cases remain in place. These are source/inert transport checks,
+not connected native MessageEvent or original manager Job validation.
+
+The exact derivation is16 normal commands +four source reads =20 CDP requests,
+22 controls including bind/complete and four helper events. There is no
+handler resume, qe invocation, postMessage, clock or mutation command. The
+current source union derives renderer17,464, main reproof93,131, main993 and
+161,785 aggregate controls; old purpose limits are unchanged. Both type
+projects and strict changed lint pass. Two-pass private generation is exact at
+1,453,019 stored/2,039,357 compiler bytes, retaining both2MiB limits. Full emitted
+Linux C#5 passes every fixed message hash and original-purpose/once admission
+case (ORIGINAL_INVERSE_NATIVE_DELIVERY_OK, private
+inverse-native-delivery-DkMPEa). The initial generation check caught a missing
+compile-only-hook anchor before output; installing the new hook after its
+owned anchor corrected the ordering, with the repeated-generation check kept.
+
+The new opaque delivery token grants no worker continuation, clock, producer,
+Main mutation, Save or persistence authority. The actual manager native-post
+Job issuer and the separate readonly GET completion/rearm remain unissued in
+this batch. The next inverse slice must join original clock request/response,
+queue/producer effects and selected Main SQL under its own custody. No helper,
+pin, bundle, application, native transport or Windows process was changed or
+started by this work.
