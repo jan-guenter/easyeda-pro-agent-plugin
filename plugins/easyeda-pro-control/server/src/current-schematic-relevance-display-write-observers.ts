@@ -13,6 +13,7 @@ import { CurrentSchematicRelevanceDisplayActionObserver } from "./current-schema
 import type { CurrentSchematicRelevanceDisplayActionObservation } from "./current-schematic-relevance-display-action-observer.ts";
 import { CurrentSchematicRelevanceDisplaySaveObserver } from "./current-schematic-relevance-display-save-observer.ts";
 import { CurrentProjectSaveStructureObserver } from "./current-project-save-structure-observer.ts";
+import type { CurrentProjectSaveStructurePacket } from "./current-project-save-structure-observer.ts";
 import { CurrentProjectStructureTransportObserver } from "./current-project-structure-transport-observer.ts";
 import { CurrentProjectSaveProducerObserver, requireOriginalCurrentProjectSaveProducerHeldCall } from "./current-project-save-producer-observer.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_REQUESTS } from "./current-project-save-producer-protocol.ts";
@@ -22,6 +23,7 @@ import type { CurrentSchematicRelevanceDisplayActionGuardObservation } from "./c
 import type { CurrentSchematicRelevanceDisplayPreModifyMainOrigin } from "./current-schematic-relevance-display-pre-modify-main-origin.ts";
 
 type Outcome = Readonly<{ ok: true }> | Readonly<{ ok: false; error: unknown }>;
+type StructurePacketOutcome = Readonly<{ ok: true; packet: CurrentProjectSaveStructurePacket }> | Readonly<{ ok: false; error: unknown }>;
 const consumed = new WeakSet<CurrentSchematicRelevanceDisplayWriteOwner>();
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`SCHEMATIC_RELEVANCE_DISPLAY_SETUP_${code}`); } }
 function result(value: Outcome): void { if (!value.ok) { throw value.error; } }
@@ -33,6 +35,7 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
   #save: CurrentSchematicRelevanceDisplaySaveObserver | null = null; #structure: CurrentProjectSaveStructureObserver | null = null;
   #transport: CurrentProjectStructureTransportObserver | null = null; #producer: CurrentProjectSaveProducerObserver | null = null;
   #accessor: CurrentSchematicRelevanceDisplayAccessorObserver | null = null; #accessorPacket: CurrentSchematicRelevanceDisplayAccessorObservation | null = null;
+  #structurePacket: Promise<StructurePacketOutcome> | null = null;
   #construction: Promise<Outcome> | null = null; #collector: Promise<Outcome> | null = null; #pendingProducer: Promise<unknown> | null = null;
   #modifyEntryAttempted = false; #modifyEntryCollection: Promise<CurrentSchematicRelevanceDisplayModifyEntryObservation> | null = null;
   #modifyEntryObserver: CurrentSchematicRelevanceDisplayModifyEntryObserver | null = null; #modifyEntryPacket: CurrentSchematicRelevanceDisplayModifyEntryObservation | null = null;
@@ -64,7 +67,11 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
       });
       this.#owner.armSchematicDisplaySaveStructureWorker(this.#arguments, async origin => {
         this.#current(); need(this.#structure === null && this.#construction === null, "ORIGINAL_STRUCTURE"); const observer = new CurrentProjectSaveStructureObserver(origin, this.#owner, this.#arguments);
-        this.#structure = observer; await observer.arm(); this.#current(); this.#construction = this.#retain(observer.observeConstruction());
+        this.#structure = observer; await observer.arm(); this.#current();
+        const construction = this.#retain(observer.observeConstruction()); this.#construction = construction;
+        // This one reader must service original parsing callbacks while the
+        // Opening is still pending. Save later joins the same packet Promise.
+        this.#structurePacket = this.#retainStructurePacket(observer, construction);
       });
       this.#owner.armSchematicDisplayStructureTransportWorker(this.#arguments, async origin => {
         this.#current(); need(this.#transport === null, "ORIGINAL_TRANSPORT"); const observer = new CurrentProjectStructureTransportObserver(origin, this.#owner, this.#arguments);
@@ -76,6 +83,16 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
         this.#producer = observer; await observer.arm(); this.#current(); this.#collector = this.#retain(this.#collectStartup(observer));
       });
     } catch (error) { this.#stop(error); throw error; }
+  }
+  async #retainStructurePacket(observer: CurrentProjectSaveStructureObserver, construction: Promise<Outcome>): Promise<StructurePacketOutcome> {
+    try { result(await construction); this.#current(); const packet = await observer.observePacket(); this.#current(); return Object.freeze({ ok: true, packet }); }
+    catch (error) { this.#stop(error); return Object.freeze({ ok: false, error }); }
+  }
+  /** Joins the reader started during original construction. A Save body never
+   * starts a second event read or replays the already serviced startup calls. */
+  public async waitForOriginalSaveStructurePacket(): Promise<CurrentProjectSaveStructurePacket> {
+    this.#current(); const original = this.#structurePacket; need(original !== null, "ORIGINAL_STRUCTURE_READER_REQUIRED");
+    const outcome = await original; this.#current(); if (!outcome.ok) { throw outcome.error; } return outcome.packet;
   }
   async #settleStartup(observer: CurrentProjectSaveProducerObserver): Promise<void> {
     let progress = observer.startupProgress();
@@ -156,7 +173,7 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
   public async settleOriginalCallsAfterExit(): Promise<void> {
     const current = (): void => { assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this.#owner); originalCurrentSchematicRelevanceDisplayWriteTermination(this.#owner); need(originalCurrentSchematicRelevanceDisplayWriteTarget(this.#owner) === this.#prepared, "ORIGINAL_EXIT_OWNER"); };
     current(); const pending: Promise<unknown>[] = [];
-    if (this.#construction !== null) { pending.push(this.#construction); } if (this.#collector !== null) { pending.push(this.#collector); } if (this.#pendingProducer !== null) { pending.push(this.#pendingProducer); }
+    if (this.#construction !== null) { pending.push(this.#construction); } if (this.#structurePacket !== null) { pending.push(this.#structurePacket); } if (this.#collector !== null) { pending.push(this.#collector); } if (this.#pendingProducer !== null) { pending.push(this.#pendingProducer); }
     if (this.#modifyEntryCollection !== null) { pending.push(this.#modifyEntryCollection, this.#owner.settleSchematicRelevanceDisplayModifyEntryAfterExit()); }
     await Promise.allSettled(pending); current();
   }

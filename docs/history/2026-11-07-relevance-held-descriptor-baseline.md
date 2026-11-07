@@ -54,3 +54,19 @@ source locations, rejection of missing or contradictory fields, and the prior
 idle/active projection cases. Both TypeScript projects and changed strict lint
 pass. The declarations are compiled without invocation; these checks establish
 no application effect or write authority.
+
+## Retained structure reader during opening
+
+The seven-record observer group now starts its one structure packet reader as
+soon as original construction settles. This services the original startup
+no-publication callbacks while project opening remains pending. Later Save work
+joins that exact packet Promise through `waitForOriginalSaveStructurePacket()`.
+It never starts a second event read. Original exit settlement joins this retained
+reader as well as the constructor and producer requests; rejected background
+work is retained as an outcome rather than an unhandled rejection.
+
+Two focused scheduling cases use explicit synthetic native registries. They
+prove the reader starts before opening/Save settles, repeated consumers join the
+same actual packet, and exit settlement waits the original pending read. Both
+TypeScript projects and strict changed lint pass. No protocol, native budget,
+application continuation, write authority or persistence claim changes here.
