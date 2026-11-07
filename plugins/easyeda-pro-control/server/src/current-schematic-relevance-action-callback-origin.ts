@@ -1,3 +1,5 @@
+import type { CurrentSchematicRelevanceUiPublicationCommand } from "./current-schematic-relevance-ui-publication-protocol.ts";
+import type { CurrentSchematicRelevanceUiPublicationReceipt } from "./current-schematic-relevance-ui-publication-cursor.ts";
 /** Original callback entry custody. This read lane cannot continue a setter. */
 import type { CurrentSchematicRelevanceDisplayActionCallbackOrigin } from "./current-schematic-relevance-display-run-handoff.ts";
 import type { CurrentSchematicRelevanceActiveHistoryReceipt } from "./current-schematic-relevance-active-history-cursor.ts";
@@ -21,6 +23,9 @@ export interface CurrentSchematicRelevanceActionCallbackBindings {
   readonly requestSetAttribute: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand) => Promise<unknown>;
   readonly nextActiveHistoryCommand: () => CurrentSchematicRelevanceDisplayModifyEntryCommand | null;
   readonly requestActiveHistory: (command: CurrentSchematicRelevanceDisplayModifyEntryCommand) => Promise<unknown>;
+  readonly nextUiPublicationCommand: () => CurrentSchematicRelevanceUiPublicationCommand | null;
+  readonly requestUiPublication: (command: CurrentSchematicRelevanceUiPublicationCommand) => Promise<unknown>;
+  readonly requireOriginalUiPublication: () => CurrentSchematicRelevanceUiPublicationReceipt;
   readonly requireOriginalActiveHistory: () => CurrentSchematicRelevanceActiveHistoryReceipt;
   readonly requireOriginalSetAttribute: () => CurrentSchematicRelevanceSetAttributeReceipt;
   readonly continueToFirstSetter: () => Promise<void>;

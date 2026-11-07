@@ -814,3 +814,4 @@ layout. The connected ledger retains its generation and case anchors.
 - 2026-11-07: [Separate schematic saved-reader preparation](2026-11-07-schematic-saved-reader-preparation.md), genuine closed lifecycle/checkpoint and namespace data for a later separately admitted reader; no new owner or cache/open grant.
 
 - 2026-11-07: [Readonly saved schematic scene program](2026-11-07-schematic-readonly-saved-scene-program.md), separate fixed reader stages with writer methods removed, exact tree/source/marker checks and no connected reopen claim.
+- [Original schematic publisher pristine custody](2026-11-07-schematic-publisher-pristine-custody.md), connected held-setter readonly graph, complete descriptor preservation and separate native dependencies; continuation remains held.

@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { test } from "node:test";
 import { CurrentPcbDiagnosticContext, diagnosticBoundedObservation, validateDiagnosticFrameExpectation, validateDiagnosticScriptProfile } from "../src/current-pcb-diagnostic-context.ts";
 import { DIAGNOSTIC_REQUEST_LIMIT, diagnosticNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
+import { GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE as SCHEMATIC_SOURCE } from "../src/generated-schematic-display-accessor-source.ts";
 import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
 
 const SOURCE = "const syntheticIdentity = true;\n";
@@ -725,4 +726,20 @@ void test("schematic route refuses missing project commit, another page, changed
     }
   }
   const replay = openingFixture(); replay.beginSchematicOpeningTransition(PROJECT_UUID, page); assert.throws(() => replay.beginSchematicOpeningTransition(PROJECT_UUID, page));
+});
+
+function finishedSchematicFixture(): CurrentPcbDiagnosticContext {
+  const context = openingFixture(), page = "b".repeat(32), url = `${OPEN_URL},tab=*${page}@${PROJECT_UUID}`;
+  context.beginSchematicOpeningTransition(PROJECT_UUID, page); within(context); context.observeEvent(event("Page.navigatedWithinDocument", { frameId: "frame-1", url, navigationType: "fragment" }));
+  context.finishSchematicOpeningTransition({ targetInfos: [{ ...UI_TARGET, url, title: "native selected page", attached: true }] }, { frameTree: { frame: { ...UI_FRAME, urlFragment: url.slice(UI_BASE.length) } } }, "native selected page"); return context;
+}
+void test("schematic callee realm lookup keeps the original opened UI default context and rejects foreign or ambiguous scripts", () => {
+  for (const variant of [0, 1] as const) { const context = finishedSchematicFixture(); context.observeEvent(event("Debugger.scriptParsed", { ...SCRIPT, scriptId: "schematic-callee", url: `https://client/${SCHEMATIC_SOURCE[variant].relativePath}` })); assert.deepEqual(context.schematicCalleeContext("schematic-callee", variant), { sessionId: "session-1", scriptId: "schematic-callee", uniqueContextId: UI_CONTEXT.uniqueId }); }
+  assert.throws(() => openingFixture().schematicCalleeContext("schematic-callee", 0), /IDENTITY/u);
+  for (const fault of ["foreign", "duplicate", "sourceURL", "liveEdit", "wrongScript", "wrongVariant"] as const) {
+    const context = finishedSchematicFixture(); const parsed = { ...SCRIPT, scriptId: "schematic-callee", url: `https://client/${SCHEMATIC_SOURCE[0].relativePath}`, ...(fault === "sourceURL" ? { hasSourceURL: true } : {}), ...(fault === "liveEdit" ? { isLiveEdit: true } : {}) };
+    if (fault === "foreign") { context.observeEvent(event("Runtime.executionContextCreated", { context: { ...UI_CONTEXT, id: 8, uniqueId: "foreign-unique", auxData: { ...UI_CONTEXT.auxData, isDefault: false, type: "isolated" } } })); context.observeEvent(event("Debugger.scriptParsed", { ...parsed, executionContextId: 8 })); }
+    else { context.observeEvent(event("Debugger.scriptParsed", parsed)); if (fault === "duplicate") { context.observeEvent(event("Debugger.scriptParsed", { ...parsed, scriptId: "schematic-duplicate" })); } }
+    assert.throws(() => context.schematicCalleeContext(fault === "wrongScript" ? "foreign-script" : "schematic-callee", fault === "wrongVariant" ? 1 : 0), /IDENTITY/u); assert.throws(() => context.openingContext(), /IDENTITY/u);
+  }
 });

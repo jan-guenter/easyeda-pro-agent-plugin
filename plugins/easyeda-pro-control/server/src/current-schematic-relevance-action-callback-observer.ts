@@ -1,3 +1,4 @@
+import type { CurrentSchematicRelevanceUiPublicationReceipt } from "./current-schematic-relevance-ui-publication-cursor.ts";
 /** Maintained original callback entry collector. Every read remains bound to
  * the original held callback and pending Modify; it has no resume method. */
 import { requireOriginalCurrentSchematicRelevanceActionCallbackOrigin } from "./current-pcb-diagnostic-owner.ts";
@@ -56,6 +57,11 @@ export class CurrentSchematicRelevanceActionCallbackObserver {
   public async observeActiveHistory(): Promise<CurrentSchematicRelevanceActiveHistoryReceipt> {
     this.#current(); need(!this.#busy && this.#setAttribute !== null && !this.#activeAttempted); this.#activeAttempted = true; this.#busy = true;
     try { need(this.#setAttribute === this.#bindings.requireOriginalSetAttribute()); await this.#bindings.assertCurrent(); this.#current(); for (let command = this.#bindings.nextActiveHistoryCommand(); command !== null; command = this.#bindings.nextActiveHistoryCommand()) { await this.#bindings.requestActiveHistory(command); this.#current(); } this.#active = this.#bindings.requireOriginalActiveHistory(); await this.#bindings.assertCurrent(); this.#current(); need(this.#active === this.#bindings.requireOriginalActiveHistory()); return this.#active; }
+    catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
+  }
+  public async observeUiPublicationPristine(): Promise<CurrentSchematicRelevanceUiPublicationReceipt> {
+    this.#current(); if (this.#busy) { throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY"); } this.#busy = true;
+    try { for (;;) { const command = this.#bindings.nextUiPublicationCommand(); if (command === null) { break; } await this.#bindings.requestUiPublication(command); this.#current(); } return this.#bindings.requireOriginalUiPublication(); }
     catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; }
   }
   public requireOriginalEntry(): CurrentSchematicRelevanceActionCallbackEntry { this.#current(); need(!this.#busy && this.#entry !== null && this.#entry === this.#bindings.requireOriginalEntry()); return this.#entry; }

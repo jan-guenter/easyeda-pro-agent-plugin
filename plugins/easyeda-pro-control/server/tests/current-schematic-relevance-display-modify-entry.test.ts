@@ -1,3 +1,5 @@
+/* oxlint-disable import/max-dependencies -- The retained original request is exercised with its two separately fixed readonly lanes and purpose encoder. */
+import { currentSchematicRelevanceUiPublicationCases } from "../src/current-schematic-relevance-ui-publication-wire.ts";
 /** Original pipe/Inspector behavior on inert streams and synthetic models.
  * No native owner, application action, setter, Save or SQL is invoked. */
 /* oxlint-disable promise/prefer-await-to-callbacks -- Inspector and Writable callbacks are the acknowledgement boundaries under test. */
@@ -34,11 +36,14 @@ async function fixture(context: TestContext, holdWrite = false): Promise<Readonl
 }
 void test("one original seven-record Modify remains pending while its fixed entry read settles on the same ID stream", async context => {
   const args = data().args, f = await fixture(context);
+  const publicationBeforeModify = currentSchematicRelevanceUiPublicationCases()[0]; assert.ok(publicationBeforeModify !== undefined); assert.throws(() => f.pipe.observeSchematicRelevanceUiPublication(publicationBeforeModify), /ORIGINAL_PENDING/u);
   const original = f.pipe.generateSchematicRelevanceDisplayModify("original-holder", args.target, args.operation), refused = assert.rejects(original);
   const turn = Promise.withResolvers<true>(); setImmediate(() => { turn.resolve(true); }); await turn.promise;
   f.pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original); assert.throws(() => { f.pipe.requireOriginalSchematicRelevanceDisplayModifyPending(Promise.resolve({})); }, /ORIGINAL_REQUEST_PENDING/u);
   const command = currentSchematicRelevanceDisplayModifyEntryNativeCases().find(value => value.phase === "schematic-modify-entry-frame"); assert.ok(command !== undefined); await f.pipe.observeSchematicRelevanceDisplayModifyEntry(command);
   assert.deepEqual(f.sent.map(row => row["id"]), [1, 2, 3]); assert.equal(f.pipe.status().pendingRequestId, 2);
+  const publication = currentSchematicRelevanceUiPublicationCases().find(value => value.phase === "global"); assert.ok(publication !== undefined); await f.pipe.observeSchematicRelevanceUiPublication(publication);
+  const publicationSent = f.sent[3]; assert.ok(publicationSent !== undefined); assert.equal(publicationSent["id"], 4); assert.equal(f.pipe.status().pendingRequestId, 2); const publicationRequest = currentSchematicRelevanceDisplayWriteNativeRequest(Buffer.from(`${JSON.stringify(publicationSent)}\0`)); assert.equal(publicationRequest["action"], "schematic-relevance-ui-publication"); assert.equal(Object.hasOwn(publicationRequest, "uniqueContextId"), false);
   const generated = f.sent[1], observed = f.sent[2]; assert.ok(generated !== undefined && observed !== undefined);
   const generationBytes = Buffer.from(`${JSON.stringify(generated)}\0`), generationRequest = currentSchematicRelevanceDisplayWriteNativeRequest(generationBytes);
   assert.equal(generationRequest["action"], "schematic-relevance-display-modify-generate");

@@ -8,6 +8,7 @@ import { CurrentPcbDiagnosticSameDocument } from "./current-pcb-diagnostic-same-
 import { CurrentSchematicDisplaySameDocument } from "./current-schematic-display-same-document.ts";
 import { CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_SOURCE } from "./current-footprint-copy-manager-route-source.ts";
 import { CurrentPcbDiagnosticChildNavigation } from "./current-pcb-diagnostic-child-navigation.ts";
+import { GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE } from "./generated-schematic-display-accessor-source.ts";
 
 type Row = Readonly<Record<string, unknown>>;
 export interface DiagnosticFrameExpectation {
@@ -369,6 +370,17 @@ export class CurrentPcbDiagnosticContext {
     const ancillary = this.openingAncillaryFrame();
     if (this.#frames?.length !== (ancillary === null ? 1 : 2) || ancillary !== null && this.#ancillaryOwner === null) { return this.#refuse(); }
     return selected;
+  }
+  /** Data selector for the already observed schematic callee's original UI
+   * realm. Its bytes and the actual function still require independent source
+   * qualification. This does not grant evaluation or a foreign child context. */
+  public schematicCalleeContext(scriptId: string, variant: 0 | 1): Readonly<{ sessionId: string; scriptId: string; uniqueContextId: string }> {
+    const ui = this.#uiSourceContext(); const original = this.#sourceIdentity;
+    if (!diagnosticToken(scriptId) || variant !== 0 && variant !== 1 || !this.#openingConsumed || this.#schematicNavigation === null || this.#schematicOpening !== null ||
+        this.#rootNavigation !== null || this.#priorRootNavigation !== null || this.#pcbOpening !== null || this.#opening !== null || this.#frame === null || original === null) { return this.#refuse(); }
+    const profile = GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE[variant]; const selected = this.#scriptFor(this.#frame, { family: "ui", relativePath: profile.relativePath, scriptBytes: profile.bytes, scriptSha256: profile.sha256 });
+    if (selected.scriptId !== scriptId || selected.context["id"] !== original.contextId || selected.context["uniqueId"] !== original.uniqueContextId) { return this.#refuse(); }
+    return Object.freeze({ ...ui, scriptId });
   }
   /** This fixed metadata probe belongs to the original Start Page UI only.
    * Keep the complete UI/source/ancillary proof and exclude every opening
