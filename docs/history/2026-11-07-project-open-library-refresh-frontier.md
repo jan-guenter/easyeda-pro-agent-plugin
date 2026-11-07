@@ -182,3 +182,9 @@ shared encoder adds13,762 compiler bytes; that private base plus the encoder
 and smoke entry was2,080,035 bytes, below the unchanged2MiB compiler cap.
 This measures that source combination, not a future merged helper or Windows
 execution. No tracked helper, pins, generated bundle or native owner changed.
+
+The shared order now stores43 template-row indices instead of repeated phase
+strings. `Phase(step)` still yields the exact earlier phase sequence, verified
+by its complete SHA256 as well as all52 unchanged message hashes. The codec is
+12,773 compiler bytes (989 fewer); the same private combined C# smoke is
+2,079,046 bytes and passes. No role, field, program, cap or validator widened.
