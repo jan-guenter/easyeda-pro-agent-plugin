@@ -1,4 +1,5 @@
 import { currentFootprintInverseStartupCallbackNativeSource } from "./current-footprint-inverse-startup-callback-native.ts";
+import { CURRENT_FOOTPRINT_INVERSE_TIMER_DISPATCH, currentFootprintInverseTimerNativeSource } from "./current-footprint-inverse-timer-native.ts";
 import { CURRENT_FOOTPRINT_INVERSE_CACHE_DISPATCH, CURRENT_FOOTPRINT_INVERSE_INVALIDATION_DISPATCH, currentFootprintInverseCacheNative } from "./current-footprint-inverse-cache-native.ts";
 import { CURRENT_FOOTPRINT_INVERSE_CONSTRUCTION_REQUESTS as CONSTRUCTION } from "./current-footprint-inverse-construction-protocol.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS, currentProjectSaveStructureNativeCases } from "./current-project-save-structure-protocol.ts";
@@ -9,6 +10,7 @@ import { createHash } from "node:crypto";
 import { currentFootprintInverseRegistrationParams } from "./current-footprint-inverse-registration.ts";
 import { installOwnedNativeDispatch } from "./native-owned-dispatch.ts";
 import { installNativeCompileOnlyHook } from "./native-compile-only-hook.ts";
+// oxlint-disable-next-line import/max-dependencies -- The sole fixed inverse native assembler must compose each separately bounded phase and exact aggregate limits.
 import { CURRENT_FOOTPRINT_INVERSE_ACTION_LIMITS as ACTIONS, CURRENT_FOOTPRINT_INVERSE_DISCOVERY_METHODS as METHODS, CURRENT_FOOTPRINT_INVERSE_PRODUCER_ARM_REQUESTS as PRODUCER, CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE as PROFILE, currentFootprintInverseColdLoadNativeSource, currentFootprintInverseNoPublicationNativeSource, currentFootprintInverseProducerArmOrder } from "./current-footprint-inverse-native-profile.ts";
 
 const BEGIN = "// BEGIN GENERATED ORIGINAL FOOTPRINT INVERSE BIRTH", END = "// END GENERATED ORIGINAL FOOTPRINT INVERSE BIRTH";
@@ -93,7 +95,7 @@ public void AbortFootprintInverse(){if(!footprintInverse209||footprintInverseAbo
 public static void VerifyFootprintInverseSmoke(){var value=CreateFootprintInverse209();if(!value.footprintInverse209||!value.workerStartupFootprintMain209||value.pcbViaWrite209||value.schematicDisplayWrite209||value.workerStartupFootprintCombined209||value.workerStartupFootprintCopy209||value.workerStartupFootprintForward209||value.layers209||value.visual209||value.spatial209||value.originalMain==null||!value.originalMain.NeverAttached||value.RequestLimit!=${String(PROFILE.renderer.total)})throw Error("footprint-inverse-purpose-smoke");foreach(string method in new[]{${METHODS.map(method => `"${method}"`).join(",")}})value.FootprintInverseDiscovery(method,null);foreach(string method in new[]{"Runtime.evaluate","Runtime.callFunctionOn","Debugger.resume"}){bool refused=false;try{value.FootprintInverseDiscovery(method,null);}catch(InvalidOperationException){refused=true;}if(!refused)throw Error("footprint-inverse-discovery-refusal");}foreach(string action in new[]{"footprint-delete-trigger-send","footprint-delete-clock-send","pcb-via-native","schematic-display-native","footprint-copy-native-create"}){bool refused=false;try{value.AdmitFootprintInverseAction(action);}catch(InvalidOperationException){refused=true;}if(!refused)throw Error("footprint-inverse-writer-refusal");}bool denied=false;try{value.AbortFootprintInverse();}catch(InvalidOperationException){denied=true;}if(!denied)throw Error("footprint-inverse-no-job-abort");foreach(System.Action action in new System.Action[]{()=>value.PermitFootprintInverseColdBootstrap(),()=>value.StartFootprintInverseCold(1),()=>value.HoldFootprintInverseCold("branch")}){bool blocked=false;try{action();}catch(InvalidOperationException){blocked=true;}if(!blocked)throw Error("footprint-inverse-unissued-startup-refusal");}VerifyFootprintInverseRegistrationSmoke();VerifyFootprintInverseWorkerSmoke();VerifyFootprintInverseProducerArmSmoke();VerifyFootprintInverseNoPublicationSmoke();EasyedaFootprintInverseColdProtocol.VerifySmoke();VerifyFootprintInverseColdStepSmoke();VerifyFootprintInverseStartupCallbackSmoke();VerifyFootprintInverseConditionSmoke();VerifyFootprintInverseCacheSmoke();value.originalMain.Release();}
 public static void VerifyFootprintInverseRegistrationSmoke(){string path=@"${path}",project="${project}";string text=FootprintInverseRegistrationProtocolMessage(${String(PROFILE.renderer.total)},"parent","original",path,project,new string('a',32),new string('b',16),new string('c',64));using(var sha=System.Security.Cryptography.SHA256.Create())if(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(text))).Replace("-","").ToLowerInvariant()!="${expectedHash}")throw Error("footprint-inverse-registration-byte-parity");foreach(int id in new[]{0,${String(PROFILE.renderer.total + 1)}}){bool denied=false;try{FootprintInverseRegistrationProtocolMessage(id,"parent","original",path,project,new string('a',32),new string('b',16),new string('c',64));}catch(InvalidOperationException){denied=true;}if(!denied)throw Error("footprint-inverse-registration-id-bound");}foreach(string document in new[]{"bad",new string('b',17),new string('b',16)+"!"}){bool denied=false;try{FootprintInverseRegistrationProtocolMessage(1,"parent","original",path,project,new string('a',32),document,new string('c',64));}catch(InvalidOperationException){denied=true;}if(!denied)throw Error("footprint-inverse-registration-document-bound");}}
 }
-${currentFootprintInverseColdLoadNativeSource()}${currentFootprintInverseStartupCallbackNativeSource()}
+${currentFootprintInverseColdLoadNativeSource()}${currentFootprintInverseStartupCallbackNativeSource()}${currentFootprintInverseTimerNativeSource()}
 ${END}`; }
 const producerDispatch=`        'footprint-inverse-producer-arm' {
           if (-not $FootprintInverse209) {throw 'footprint-inverse-producer-purpose'}
@@ -232,7 +234,7 @@ const dispatch = `        'footprint-inverse-preflight' {
           if (-not $FootprintInverse209 -or -not $launched) {throw 'footprint-inverse-abort-purpose'}
           $owner.AbortFootprintInverse(); $result=@{terminationDispatched=$true}
         }
-${workerDispatch}${constructionDispatch}${producerDispatch}${coldDispatch}${CURRENT_FOOTPRINT_INVERSE_CACHE_DISPATCH}${CURRENT_FOOTPRINT_INVERSE_INVALIDATION_DISPATCH}`;
+${workerDispatch}${constructionDispatch}${producerDispatch}${coldDispatch}${CURRENT_FOOTPRINT_INVERSE_TIMER_DISPATCH}${CURRENT_FOOTPRINT_INVERSE_CACHE_DISPATCH}${CURRENT_FOOTPRINT_INVERSE_INVALIDATION_DISPATCH}`;
 const readyBegin = "  # BEGIN ORIGINAL FOOTPRINT INVERSE READY", readyEnd = "  # END ORIGINAL FOOTPRINT INVERSE READY";
 function ready(): string { return `${readyBegin}
   if ($FootprintInverse209 -and -not $CompileOnly) {
@@ -266,6 +268,7 @@ export function applyCurrentFootprintInverseNativeFragment(input: string): strin
   source = one(source, "      if ($PcbViaSavedReadback209) {$owner.AdmitSavedViaReadbackAction($request.action)}", "      if ($FootprintInverse209) {$owner.AdmitFootprintInverseAction($request.action)}\n      if ($PcbViaSavedReadback209) {$owner.AdmitSavedViaReadbackAction($request.action)}");
   source = installOwnedNativeDispatch(source, dispatch, "        'pcb-via-main-observe' {");
   source = installNativeCompileOnlyHook(source, "    [EasyedaDiagnosticOwner]::VerifyFootprintInverseSmoke()", "    [EasyedaDiagnosticOwner]::VerifySchematicDisplaySmoke()");
+  source = installNativeCompileOnlyHook(source, "    [EasyedaDiagnosticOwner]::VerifyFootprintInverseTimerSmoke()", "    [EasyedaDiagnosticOwner]::VerifyFootprintInverseSmoke()");
   const start = source.indexOf(BEGIN), stop = source.indexOf(END);
   if (start !== -1 || stop !== -1) { if (start === -1 || stop < start || source.includes(BEGIN, start + BEGIN.length) || source.includes(END, stop + END.length)) { throw new Error("FOOTPRINT_INVERSE_NATIVE_MARKERS"); } source = source.slice(0, start) + native() + source.slice(stop + END.length); }
   else { source = one(source, "\n'@\n", `\n${native()}\n'@\n`); }

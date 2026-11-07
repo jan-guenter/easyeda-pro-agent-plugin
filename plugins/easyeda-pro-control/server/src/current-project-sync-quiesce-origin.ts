@@ -4,7 +4,8 @@ import type { CurrentProjectSyncQuiesceCommand } from "./current-project-sync-qu
 
 export interface CurrentPcbViaProjectSyncQuiesceOrigin { readonly profile:"private.current-pcb-via-project-sync-quiesce-origin.v1" }
 export interface CurrentSchematicDisplayProjectSyncQuiesceOrigin { readonly profile:"private.current-schematic-display-project-sync-quiesce-origin.v1" }
-export type CurrentProjectSyncQuiesceOrigin=CurrentPcbViaProjectSyncQuiesceOrigin|CurrentSchematicDisplayProjectSyncQuiesceOrigin;
+export interface CurrentFootprintInverseProjectSyncQuiesceOrigin { readonly profile:"private.current-footprint-inverse-project-sync-quiesce-origin.v1" }
+export type CurrentProjectSyncQuiesceOrigin=CurrentPcbViaProjectSyncQuiesceOrigin|CurrentSchematicDisplayProjectSyncQuiesceOrigin|CurrentFootprintInverseProjectSyncQuiesceOrigin;
 export interface CurrentProjectSyncQuiesceEvent { readonly method:"Debugger.paused"|"Debugger.resumed";readonly sessionId:string;readonly params:unknown }
 export interface CurrentProjectSyncQuiesceBindings {
   readonly sessionId:string;readonly scriptId:string;readonly uniqueContextId:string;readonly source:string;

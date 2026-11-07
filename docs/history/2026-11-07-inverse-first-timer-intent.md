@@ -29,3 +29,40 @@ not positive native cancellation validation. The inverse timer origin,
 transport, actual event routing and native cancellation completion remain to
 be composed. No timer was cancelled and no writer, Save, helper, version,
 application or production project was changed by this increment.
+
+## Original timer transport composition
+
+The original inverse bootstrap can now arm a separately branded timer origin.
+Core owns its actual observer, worker source/context, original project reference,
+durable intent enrollment and all28 fixed command steps. Each request rechecks
+its original handles and expected step. Its six runtime/frame helper scripts
+receive exact source readback; the shared inverse condition reader separately
+qualifies the actual fixed entry condition once. Via and old schematic timer
+grammars stay unchanged. The new pipe/native action accepts only these fixed
+templates and this inverse worker. Unknown frames, sessions and fields refuse.
+
+One original event reader handles both timer pauses and resumed events. The
+native ledger admits two original holds, burns cancellation before dispatch,
+and requires all28 commands and six helper receipts before completion. Cold
+bootstrap needs the timer arms, while final idle/write readiness needs its
+actual later completion. This preserves the source order: the original ready
+continuation can reach `checkProject` before cancellation completes. No early
+cancellation boolean substitutes for that later event sequence. A copied timer
+origin or serialized completion cannot acquire the actual observer.
+
+Eight focused original-leaf, inverse frame/refusal and worker tests passed.
+Both facade TypeScript projects and changed-file strict type-aware lint passed.
+PinnedNode24 private two-pass generation produced1,401,364 stored helper bytes
+and1,941,726 decoded compiler bytes, both within their unchanged2MiB ceilings.
+Complete Linux .NET10.0.113/C#5 compilation and17 pure fixed-codec checks passed
+without constructing an owner or application. This is not Windows PowerShell,
+native cancellation, saved content or connected writer validation. That exact
+snapshot has inverse renderer15,020, main normal933/total941, main reproof90,583
+and156,655 aggregate controls. The timer owns34 direct commands/38 controls;
+its condition read belongs to the separate shared condition reservation.
+
+Tracked helper emission, migration pins and bundles remain deferred until the
+combined source batch settles. No application/native call, host signal,
+marketplace publication or production design change occurred. Queue/cache/sync
+frontier completion, parser/ready continuation, actual inverse delete/SQL and
+fourth saved-absence generation remain separate implementation tasks.

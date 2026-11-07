@@ -2,6 +2,9 @@
 /* oxlint-disable max-classes-per-file -- Fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
 import type { CurrentFootprintInversePollingCancellationEnrollment, CurrentFootprintInversePollingCancellationIntent } from "./current-footprint-inverse-polling-intent.ts";
 import { currentFootprintInverseConditionNativeFrame } from "./current-footprint-inverse-condition-source.ts";
+import { currentFootprintInverseTimerNativeFrame, validateCurrentFootprintInverseTimerCommand } from "./current-footprint-inverse-timer-protocol.ts";
+import type { CurrentFootprintInverseTimerCommand } from "./current-footprint-inverse-timer-protocol.ts";
+import type { CurrentProjectSyncQuiesceCompletion, CurrentProjectSyncQuiesceObserver } from "./current-project-sync-quiesce-observer.ts";
 import { currentFootprintInverseStartupCallbackNativeFrame, validateCurrentFootprintInverseStartupCallbackCommand } from "./current-footprint-inverse-startup-callback-protocol.ts";
 import type { CurrentFootprintInverseStartupCallbackCommand, CurrentFootprintInverseStartupCallbackRole } from "./current-footprint-inverse-startup-callback-protocol.ts";
 import type { CurrentFootprintInverseStartupCallbackBindings, CurrentFootprintInverseStartupCallbackOrigin } from "./current-footprint-inverse-startup-callback-origin.ts";
@@ -59,7 +62,7 @@ import { consumeCurrentPcbViaPollingCancellationIntent,enrollCurrentPcbViaPollin
 import type { CurrentPcbViaPollingCancellationEnrollment,CurrentPcbViaPollingCancellationIntent } from "./current-pcb-via-polling-cancellation-intent.ts";
 import { CURRENT_PROJECT_SYNC_QUIESCE_CAPTURE_LENGTH,currentProjectSyncQuiesceNativeCases,validateCurrentProjectSyncQuiesceCommand } from "./current-project-sync-quiesce-protocol.ts";
 import type { CurrentProjectSyncQuiesceCommand } from "./current-project-sync-quiesce-protocol.ts";
-import type { CurrentPcbViaProjectSyncQuiesceOrigin,CurrentProjectSyncQuiesceBindings,CurrentProjectSyncQuiesceOrigin } from "./current-project-sync-quiesce-origin.ts";
+import type { CurrentFootprintInverseProjectSyncQuiesceOrigin, CurrentPcbViaProjectSyncQuiesceOrigin, CurrentProjectSyncQuiesceBindings, CurrentProjectSyncQuiesceEvent, CurrentProjectSyncQuiesceOrigin } from "./current-project-sync-quiesce-origin.ts";
 import type { CurrentPcbViaMainLiveHistoryRows } from "./current-pcb-via-main-live-history-custody.ts";
 import type { CurrentPcbViaMainLiveHistoryCommand } from "./current-pcb-via-main-live-history-protocol.ts";
 import { currentPcbViaMainLiveHistoryWire } from "./current-pcb-via-main-live-history-wire.ts";
@@ -1852,6 +1855,13 @@ class CurrentPcbRetainedOwnerCore {
   #inverseUiPreflightAttempted = false;
   #inversePollingIntentPromise: Promise<CurrentFootprintInversePollingCancellationIntent> | null = null;
   #inversePollingIntent: CurrentFootprintInversePollingCancellationIntent | null = null;
+  #inversePollingEnrollment: CurrentFootprintInversePollingCancellationEnrollment | null = null;
+  #inverseTimerArmPromise: Promise<CurrentFootprintInverseProjectSyncQuiesceOrigin> | null = null;
+  #inverseTimerOrigin: CurrentFootprintInverseProjectSyncQuiesceOrigin | null = null;
+  #inverseTimerObserver: CurrentProjectSyncQuiesceObserver | null = null;
+  #inverseTimerCompletion: CurrentProjectSyncQuiesceCompletion | null = null;
+  #inverseTimerCancelAttempted = false; #inverseTimerNativeCompleted = false;
+  #inverseTimerCommand: CurrentFootprintInverseTimerCommand | null = null;
   #inverseUiReady: Readonly<{ source: CurrentFootprintCopyNativeTarget; context: CurrentPcbDiagnosticContext; pipe: CurrentFootprintInversePipe; selected: ReturnType<CurrentPcbDiagnosticContext["openingContext"]>; windowTabId: string }> | null = null;
   #inverseFrame: Readonly<{ phase: "preflight" | "register" | "open-project"; session: string; context: string; target: CurrentDisposableOpenSealedTarget }> | null = null;
   #inverseHelper: { phase: "preflight" | "register" | "open-project"; scriptId: string | null } | null = null;
@@ -7643,7 +7653,7 @@ class CurrentPcbRetainedOwnerCore {
       };
       await published(); beforeNavigation(); token = Object.freeze({ profile: "private.current-footprint-inverse-polling-cancellation-intent.v1" });
       footprintInversePollingIntents.set(token, { owner: this, prepared, current, beforeNavigation, published, enrolled: false, consumed: false });
-      this.#inversePollingIntent = token; current(); return token;
+      this.#inversePollingIntent = token; current(); this.#inversePollingEnrollment = enrollCurrentFootprintInversePollingIntent(token, this, prepared); return token;
     })(); this.#inversePollingIntentPromise = pending; return pending;
   }
   public async armFootprintInverseWorker(setup: (origin: CurrentFootprintInverseWorkerOrigin) => Promise<void>): Promise<void> {
@@ -7685,6 +7695,15 @@ class CurrentPcbRetainedOwnerCore {
           }); original(); } finally { this.#inverseConstructionCommand = null;if(coldBootstrap){this.#inverseColdBootstrapFrame=false;} }
           if (command.method === "Runtime.callFunctionOn" || command.method === "Debugger.evaluateOnCallFrame") { await selected.qualifyConstructionHelper(command.method === "Runtime.callFunctionOn" ? `(${command.params.functionDeclaration})` : command.params.expression); original(); }
           return result;
+        }, timerRequest: async (input: CurrentFootprintInverseTimerCommand): Promise<unknown> => {
+          const command = validateCurrentFootprintInverseTimerCommand(input); original();
+          if (this.#inverseTimerCommand !== null || this.#inverseColdCommand !== null || this.#inverseColdStepCommand !== null || this.#inverseConstructionCommand !== null || this.#inverseStartupCallbackCommand !== null) { throw error("FOOTPRINT_INVERSE_TIMER_PENDING"); }
+          this.#inverseTimerCommand = command;
+          try { const reply = await this.#transfer(() => pipe.observeInverseTimer(command)); original(); return reply; } finally { this.#inverseTimerCommand = null; }
+        }, timerHeld: async (): Promise<void> => {
+          original(); const observer = this.#inverseTimerObserver, origin = this.#inverseTimerOrigin;
+          if (observer === null || origin === null || this.#inverseTimerCompletion !== null) { throw error("FOOTPRINT_INVERSE_TIMER_ORIGINAL_OBSERVER"); }
+          const completion = await observer.observeFirstTimer(); original(); await observer.requireOriginal(completion); original(); this.#inverseTimerCompletion = completion;
         }, startupCallbackRequest:async(input:CurrentFootprintInverseStartupCallbackCommand):Promise<unknown>=>{
           const command=validateCurrentFootprintInverseStartupCallbackCommand(input),selected=original();if(this.#inverseStartupCallbackObserver===null||this.#inverseStartupCallbackCommand!==null||this.#inverseColdCommand!==null||this.#inverseColdStepCommand!==null||this.#inverseConstructionCommand!==null){throw error("FOOTPRINT_INVERSE_STARTUP_CALLBACK_PENDING");}
           let helper:string|null=null;if(command.method==="Runtime.callFunctionOn"){helper=`(${command.params.functionDeclaration})`;}else if(command.method==="Debugger.evaluateOnCallFrame"){helper=command.params.expression;}if(helper!==null){selected.expectStartupCallbackHelper(helper);}this.#inverseStartupCallbackCommand=command;
@@ -7724,6 +7743,107 @@ class CurrentPcbRetainedOwnerCore {
       const reply = await this.#transfer(() => pipe.armInverseParent((event: DiagnosticEvent): void => { original().observeEvent(event); })); original();
       if (!exact(reply, [])) { throw error("FOOTPRINT_INVERSE_PARENT_ACK"); }
     } catch (caughtError) { controller?.fail(); throw caughtError; } finally { this.#inverseParentPending = false; this.#busy = false; }
+  }
+  /** Only the original bootstrap hold and earlier durable intent can arm this
+   * separate first-timer observer. Parsing its returned brand grants no effect. */
+  public armFootprintInverseFirstTimer(hold: CurrentFootprintInverseBootstrapHeld): Promise<CurrentFootprintInverseProjectSyncQuiesceOrigin> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); const held = footprintInverseBootstraps.get(hold); const prepared = originalCurrentFootprintInverseTarget(this);
+    if (held === undefined || held.owner !== this || held.prepared !== prepared) { throw error("FOOTPRINT_INVERSE_TIMER_BOOTSTRAP_ORIGINAL"); } held.assertOriginal();
+    if (this.#inverseTimerArmPromise !== null) { return this.#inverseTimerArmPromise; }
+    const intent = this.#inversePollingIntent; const enrollment = this.#inversePollingEnrollment;
+    if (intent === null || enrollment === null) { throw error("FOOTPRINT_INVERSE_TIMER_PRENAVIGATION_INTENT_REQUIRED"); } enrollment.assertBeforeAttempt();
+    const pending = (async (): Promise<CurrentFootprintInverseProjectSyncQuiesceOrigin> => {
+      const controller = held.controller; const args = held.args; const pair = controller.requireConstructionBootstrap(); const source = controller.originalProjectSource();
+      const module = await import("./current-project-sync-quiesce-observer.ts"); held.assertOriginal(); const Constructor = module.CurrentProjectSyncQuiesceObserver;
+      const descriptors = Object.getOwnPropertyDescriptors(Constructor.prototype); const pipe = this.#pipe; const runner = this.#mainRunner;
+      if (!(pipe instanceof CurrentFootprintInversePipe) || runner === null || this.#inverseTimerOrigin !== null) { throw error("FOOTPRINT_INVERSE_TIMER_ORIGINAL_PIPE"); }
+      const origin: CurrentFootprintInverseProjectSyncQuiesceOrigin = Object.freeze({ profile: "private.current-footprint-inverse-project-sync-quiesce-origin.v1" });
+      let observer: CurrentProjectSyncQuiesceObserver | null = null; let step = 0; let capture: string | null = null; let entry: string | null = null; let returned: string | null = null; let entryMethod: string | null = null;
+      let heldRole: "entry" | "returned" | null = null; let heldFrame: string | null = null;
+      const frames = new Map<string, string>(), natives = new Map<number, string>(), points = new Map<string, string>(); const cases = currentProjectSyncQuiesceNativeCases();
+      const current = (): void => {
+        assertOriginalCurrentFootprintInverseNativeOwner(this); assertOriginalFootprintInverseController(controller); this.#available(); enrollment.assertCurrent();
+        requireOriginalCurrentProjectSaveStructureOrigin(held.origin, this, prepared);
+        if (this.#inverseWorkerController !== controller || this.#inverseWorkerPair !== pair || controller.requireHeld(source) !== pair || this.#inversePollingIntent !== intent || this.#inversePollingEnrollment !== enrollment ||
+          this.#inverseTimerOrigin !== origin || this.#inverseTimerObserver !== observer || this.#mainRunner !== runner || this.#pipe !== pipe || runner.selectedSqlFenceState()["ready"] !== true ||
+          this.#mainTerminateAttempted || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed || originalCurrentFootprintInverseTarget(this) !== prepared ||
+          module.CurrentProjectSyncQuiesceObserver !== Constructor || !originalFootprintDescriptors(Constructor.prototype, descriptors)) { throw error("FOOTPRINT_INVERSE_TIMER_OWNER_CHANGED"); }
+        if (this.#inverseTimerCancelAttempted) { enrollment.assertOriginalAttempted(); } else { enrollment.assertBeforeAttempt(); }
+      };
+      const bindings: CurrentProjectSyncQuiesceBindings = Object.freeze({ sessionId: pair.pageSessionId, scriptId: source.scriptId, uniqueContextId: source.uniqueContextId, source: source.source,
+        originalProject: (): string => { current(); return args.project; },
+        request: async (input: CurrentProjectSyncQuiesceCommand): Promise<unknown> => {
+          current(); const command = validateCurrentProjectSyncQuiesceCommand(input), expected = cases[step];
+          if (expected === undefined || command.phase !== expected.phase || ("role" in command ? command.role : null) !== ("role" in expected ? expected.role : null) || ("index" in command ? command.index : null) !== ("index" in expected ? expected.index : null)) { throw error("FOOTPRINT_INVERSE_TIMER_SEQUENCE"); }
+          if (command.phase === "sync-quiesce-capture" && command.params.uniqueContextId !== args.uniqueContextId || command.phase === "sync-quiesce-arm" && command.params.location.scriptId !== args.scriptId) { throw error("FOOTPRINT_INVERSE_TIMER_SOURCE"); }
+          if (command.phase === "sync-quiesce-properties") {
+            let expectedObject = returned; if (command.role === "capture") { expectedObject = capture; } else if (command.role === "entry") { expectedObject = entry; }
+            if (command.params.objectId !== expectedObject) { throw error("FOOTPRINT_INVERSE_TIMER_PROPERTIES"); }
+          }
+          if (command.phase === "sync-quiesce-native" && command.params.objectId !== natives.get(command.index) || command.phase === "sync-quiesce-callee" && command.params.objectId !== entryMethod) { throw error("FOOTPRINT_INVERSE_TIMER_CALLEE"); }
+          if (command.phase === "sync-quiesce-frame" && (heldRole !== command.role || heldFrame !== command.params.callFrameId)) { throw error("FOOTPRINT_INVERSE_TIMER_FRAME"); }
+          if (command.phase === "sync-quiesce-entry" && (command.params.objectId !== frames.get("entry") || command.params.arguments[0].objectId !== args.project || command.params.arguments[1].objectId !== capture) ||
+            command.phase === "sync-quiesce-returned" && (command.params.objectId !== frames.get("returned") || command.params.arguments[0].objectId !== entry) || command.phase === "sync-quiesce-cancel" && command.params.objectId !== returned) { throw error("FOOTPRINT_INVERSE_TIMER_JOIN"); }
+          if (command.phase === "sync-quiesce-remove-returned" && command.params.breakpointId !== points.get("returned") || command.phase === "sync-quiesce-resume" && heldRole !== command.role) { throw error("FOOTPRINT_INVERSE_TIMER_POINT"); }
+          let helper: string | null = null;
+          if (command.method === "Runtime.callFunctionOn") { helper = `(${command.params.functionDeclaration})`; } else if (command.method === "Debugger.evaluateOnCallFrame") { helper = command.params.expression; }
+          if (helper !== null) { controller.expectTimerHelper(helper); }
+          if (command.phase === "sync-quiesce-arm") { controller.expectTimerArm(command.role); if (command.role === "entry") { controller.expectOriginalCondition("timer"); } }
+          step += 1;
+          if (command.phase === "sync-quiesce-cancel") { const dispatch = consumeCurrentFootprintInversePollingIntent(intent, this, prepared); this.#inverseTimerCancelAttempted = true; await dispatch.assertPublished(); current(); }
+          if (command.phase === "sync-quiesce-resume") { controller.reserveTimerResume(command.role); }
+          const raw = await controller.requestTimer(command); current();
+          if (helper !== null) { await controller.qualifyTimerHelper(helper); current(); }
+          if (command.phase === "sync-quiesce-capture") { capture = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(raw, CURRENT_PROJECT_SYNC_QUIESCE_CAPTURE_LENGTH); }
+          else if (command.phase === "sync-quiesce-frame") { frames.set(command.role, decodeCurrentFootprintCopyClockRpcV2ArrayCapture(raw, 1)); }
+          else if (command.phase === "sync-quiesce-entry") { entry = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(raw, 5); }
+          else if (command.phase === "sync-quiesce-returned") { returned = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(raw, 3); }
+          else if (command.phase === "sync-quiesce-properties") {
+            let length = 3; if (command.role === "capture") { length = CURRENT_PROJECT_SYNC_QUIESCE_CAPTURE_LENGTH; } else if (command.role === "entry") { length = 5; }
+            const fields = decodeCurrentProjectSyncQuiesceArray(raw, length);
+            if (command.role === "capture") { for (let index = 1; index <= 13; index += 1) { natives.set(index, currentFootprintCopyClockRpcV2ArrayObject(fields, index)); } }
+            else if (command.role === "entry") { entryMethod = currentFootprintCopyClockRpcV2ArrayObject(fields, 1); }
+          } else if (command.phase === "sync-quiesce-arm") {
+            if (!record(raw) || !diagnosticToken(raw["breakpointId"])) { throw error("FOOTPRINT_INVERSE_TIMER_ARM_REPLY"); }
+            points.set(command.role, raw["breakpointId"]); controller.registerTimerArm(command.role, raw["breakpointId"]);
+          }
+          return raw;
+        },
+        nextEvent: async (): Promise<CurrentProjectSyncQuiesceEvent> => {
+          current(); const event = await controller.nextTimerEvent(); current();
+          if (event.method === "Debugger.paused") {
+            const hits = event.params["hitBreakpoints"]; const stack = event.params["callFrames"]; const role = Array.isArray(hits) && hits.length === 1 ? [...points].find(([, id]) => id === hits[0])?.[0] : undefined;
+            if ((role !== "entry" && role !== "returned") || !Array.isArray(stack) || !record(stack[0]) || typeof stack[0]["callFrameId"] !== "string" || heldRole !== null) { throw error("FOOTPRINT_INVERSE_TIMER_ORIGINAL_PAUSE"); }
+            const result = await this.#request({ action: "footprint-inverse-timer", requestId: 0, phase: `held-${role}`, method: "control" }); current();
+            if (!exact(result, ["written"]) || result["written"] !== true) { throw error("FOOTPRINT_INVERSE_TIMER_HELD_ACK"); } heldRole = role; heldFrame = stack[0]["callFrameId"];
+          } else if (event.method === "Debugger.resumed") { heldRole = null; heldFrame = null; } else { throw error("FOOTPRINT_INVERSE_TIMER_EVENT"); }
+          return { method: event.method, sessionId: pair.pageSessionId, params: event.params };
+        },
+        assertCurrent: async (): Promise<void> => { current(); await this.#verify(); current(); },
+        complete: async (): Promise<void> => {
+          current(); if (step !== cases.length || !this.#inverseTimerCancelAttempted || heldRole !== null) { throw error("FOOTPRINT_INVERSE_TIMER_COMPLETION"); }
+          const result = await this.#request({ action: "footprint-inverse-timer", requestId: 0, phase: "complete", method: "control" }); current();
+          if (!exact(result, ["written"]) || result["written"] !== true) { throw error("FOOTPRINT_INVERSE_TIMER_COMPLETE_ACK"); } controller.completeTimer(); this.#inverseTimerNativeCompleted = true;
+        },
+        assertOriginalGenerationExited: (): Promise<void> => { assertOriginalCurrentFootprintInverseNativeOwner(this); if (!this.#terminationObserved || this.#terminationObservation?.terminated !== true) { return Promise.reject(error("FOOTPRINT_INVERSE_TIMER_EXIT_REQUIRED")); } return Promise.resolve(); },
+        fail: (): void => { controller.fail(); },
+      });
+      this.#inverseTimerOrigin = origin; projectSyncQuiesceOrigins.set(origin, Object.freeze({ owner: this, operation: prepared, bindings, assertOriginal: current }));
+      try {
+        current(); await enrollment.assertPublished(); current(); const bound = await this.#request({ action: "footprint-inverse-timer", requestId: 0, phase: "bind", method: "control" }); current();
+        if (!exact(bound, ["written"]) || bound["written"] !== true) { throw error("FOOTPRINT_INVERSE_TIMER_BIND_ACK"); }
+        observer = new Constructor(origin, this, prepared); this.#inverseTimerObserver = observer; current(); await observer.arm(); current();
+        if (step !== 17 || points.size !== 2) { throw error("FOOTPRINT_INVERSE_TIMER_ARM_INCOMPLETE"); } controller.requireTimerArmed(); return origin;
+      } catch (caughtError) { controller.fail(); throw caughtError; }
+    })(); this.#inverseTimerArmPromise = pending; return pending;
+  }
+  /** Final startup/write readiness must join this original native effect;
+   * arming and a matching historical artifact cannot satisfy completion. */
+  public async requireFootprintInverseFirstTimerQuiesced(): Promise<void> {
+    assertOriginalCurrentFootprintInverseNativeOwner(this); const observer = this.#inverseTimerObserver; const completion = this.#inverseTimerCompletion; const controller = this.#inverseWorkerController;
+    if (observer === null || completion === null || controller === null || !this.#inverseTimerNativeCompleted) { throw error("FOOTPRINT_INVERSE_TIMER_COMPLETION_REQUIRED"); }
+    await observer.requireOriginal(completion); assertOriginalCurrentFootprintInverseNativeOwner(this);
+    if (this.#inverseTimerObserver !== observer || this.#inverseTimerCompletion !== completion || this.#inverseWorkerController !== controller) { throw error("FOOTPRINT_INVERSE_TIMER_COMPLETION_CHANGED"); } controller.requireTimerCompleted();
   }
   /** Arm only on this owner's actual original project-source pause. The
    * separately branded collector cannot use generated-fixture publication. */
@@ -7892,7 +8012,7 @@ class CurrentPcbRetainedOwnerCore {
   }
   public startFootprintInverseColdIngress():Promise<CurrentFootprintInverseColdHeld>{
     assertOriginalCurrentFootprintInverseNativeOwner(this);if(this.#inverseColdStartPromise!==null){return this.#inverseColdStartPromise;}
-    if(this.#inverseStartupCallbackObserver===null||this.#inverseStartupCallbackOrigin===null){throw error("FOOTPRINT_INVERSE_COLD_START_PREREQUISITES");}
+    if(this.#inverseStartupCallbackObserver===null||this.#inverseStartupCallbackOrigin===null||this.#inverseTimerObserver===null||this.#inverseTimerOrigin===null){throw error("FOOTPRINT_INVERSE_COLD_START_PREREQUISITES");} this.#inverseWorkerController?.requireTimerArmed();
     const prepared=originalCurrentFootprintInverseTarget(this);const controller=this.#inverseWorkerController;const observer=this.#inverseConstructionObserver;const origin=this.#inverseConstructionOrigin;const producer=this.#inverseProducerOrigin;const cold=this.#inverseColdOrigin;const absence=this.#inverseCacheAbsence;const runner=this.#mainRunner;
     if(controller===null||observer===null||origin===null||producer===null||cold===null||absence===null||runner===null||this.#inverseBootstrapSetupPromise===null||this.#inverseBootstrapPermit!==null){throw error("FOOTPRINT_INVERSE_COLD_START_PREREQUISITES");}
     const coldBindings=requireOriginalCurrentFootprintInverseColdLoadOrigin(cold,this,prepared);const producerBindings=requireOriginalCurrentFootprintInverseProducerOrigin(producer,this,prepared);const cache=footprintInverseCacheAbsences.get(absence);
@@ -9216,6 +9336,7 @@ class CurrentPcbRetainedOwnerCore {
       if (this.#inverseCacheMetadataPlan !== null && this.#inverseCache !== null) { this.#footprintInverseCacheCurrent(this.#inverseCache); encoded = currentFootprintInverseCacheMetadataNativeFrame(chunk, this.#inverseCacheMetadataPlan, this.#inverseCache.selected.sessionId); }
       else if (this.#inverseCachePlan !== null && this.#inverseCache !== null) { this.#footprintInverseCacheCurrent(this.#inverseCache); encoded = this.#inverseCacheInvalidation === null ? currentFootprintInverseCacheNativeFrame(chunk, this.#inverseCachePlan, this.#inverseCache.selected.sessionId) : currentFootprintInverseCacheInvalidationNativeFrame(chunk, this.#inverseCachePlan, this.#inverseCache.selected.sessionId); }
       else if(this.#inverseConditionSource!==null&&this.#inverseWorkerPair!==null){encoded=currentFootprintInverseConditionNativeFrame(chunk,this.#inverseConditionSource,this.#inverseWorkerPair.pageSessionId);}
+      else if(this.#inverseTimerCommand!==null&&this.#inverseWorkerPair!==null){encoded=currentFootprintInverseTimerNativeFrame(chunk,this.#inverseTimerCommand,this.#inverseWorkerPair.pageSessionId);}
       else if(this.#inverseStartupCallbackCommand!==null&&this.#inverseWorkerPair!==null){encoded=currentFootprintInverseStartupCallbackNativeFrame(chunk,this.#inverseStartupCallbackCommand,this.#inverseWorkerPair.pageSessionId);}
       else if(this.#inverseColdStepCommand!==null&&this.#inverseWorkerPair!==null){encoded=currentFootprintInverseColdStepNativeFrame(chunk,this.#inverseColdStepCommand,this.#inverseWorkerPair.pageSessionId);}
       else if(this.#inverseColdCommand!==null&&this.#inverseWorkerPair!==null){encoded=currentFootprintInverseColdLoadNativeFrame(chunk,this.#inverseColdCommand,this.#inverseWorkerPair.pageSessionId);}

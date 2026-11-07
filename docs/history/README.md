@@ -1,5 +1,8 @@
 # Project history
 
+- [2026-11-07 schematic display scene baseline](2026-11-07-schematic-display-scene-baseline.md). Preserve all persistent models and the exact derived endpoint markers; refuse unsupported source-excluded children in the older six-row profile.
+- [2026-11-07 Relevance display original journal](2026-11-07-schematic-relevance-display-original-journal.md). Separate seven-row original mutation/Save intents, publication settlement and consumers; earlier six-row brands and journals stay distinct.
+
 - [2026-11-07 inverse first-timer intent](2026-11-07-inverse-first-timer-intent.md). One original durable pre-navigation intent, separate once-only enrollment/consumption and derived native reservation; actual timer transport and completion remain separate.
 
 - [2026-11-07 fixed schematic Wire stage](2026-11-07-schematic-wire-native-stage.md). Retain one existing LINE and native geometry methods, prove two source-excluded endpoint dots and fixed Relevance index3, and preserve the unmounted original-lifecycle boundary.
