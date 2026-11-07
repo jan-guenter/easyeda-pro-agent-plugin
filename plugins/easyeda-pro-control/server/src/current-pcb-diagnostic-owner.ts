@@ -15,6 +15,7 @@ import { CURRENT_FOOTPRINT_INVERSE_GET_CALLBACK_REQUESTS as INVERSE_GET_CALLBACK
 import type { CurrentFootprintInverseGetCallbackCommand } from "./current-footprint-inverse-get-callback-protocol.ts";
 import {CurrentSchematicRelevanceNoEchoCursor} from "./current-schematic-relevance-noecho-cursor.ts";
 import type {CurrentSchematicRelevanceNoEchoCommand} from "./current-schematic-relevance-noecho-protocol.ts";
+import type { CurrentSchematicRelevanceSavedSceneBindings, CurrentSchematicRelevanceSavedSceneOrigin } from "./current-schematic-relevance-saved-scene-origin.ts";
 import type { CurrentSchematicRelevanceSavedRegistrationBindings, CurrentSchematicRelevanceSavedRegistrationIntent } from "./current-schematic-relevance-saved-registration-intent.ts";
 import type { CurrentSchematicRelevanceSavedCacheBindings, CurrentSchematicRelevanceSavedCacheOrigin } from "./current-schematic-relevance-saved-cache-origin.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_SAVED_READBACK_PROFILE as SCH_SAVED_PROFILE, CURRENT_SCHEMATIC_RELEVANCE_SAVED_READBACK_PURPOSE as SCH_SAVED_PURPOSE } from "./current-schematic-relevance-saved-readback-profile.ts";
@@ -1350,6 +1351,7 @@ const schematicSavedReadbackFactories = new WeakMap<object, Readonly<{ allocatio
 const schematicSavedReadbackTerminations = new WeakMap<object, Readonly<{ token: object; binding: Binding }>>();
 const schematicSavedCacheOrigins = new WeakMap<CurrentSchematicRelevanceSavedCacheOrigin, Readonly<{ owner: CurrentSchematicRelevanceSavedReadbackOwner; prepared: GeneratedSchematicRelevanceSavedReadbackPlan; bindings: CurrentSchematicRelevanceSavedCacheBindings; reprove: () => void }>>();
 const schematicSavedRegistrationIntents = new WeakMap<CurrentSchematicRelevanceSavedRegistrationIntent, Readonly<{ owner: CurrentSchematicRelevanceSavedReadbackOwner; prepared: GeneratedSchematicRelevanceSavedReadbackPlan; runner: CurrentFootprintCopyMainBackendRunner; bindings: CurrentSchematicRelevanceSavedRegistrationBindings; reprove: () => void }>>();
+const schematicSavedSceneOrigins = new WeakMap<CurrentSchematicRelevanceSavedSceneOrigin, Readonly<{ owner: CurrentSchematicRelevanceSavedReadbackOwner; prepared: GeneratedSchematicRelevanceSavedReadbackPlan; bindings: CurrentSchematicRelevanceSavedSceneBindings; reprove: () => void; send: (ordinal: 0 | 1 | 2, phase: "capture" | "observe" | "release") => Promise<unknown> }>>();
 function requireSchematicSavedPreparation(allocation: SchematicSavedReadbackAllocation): void {
   if (allocation.namespace.requireOriginalGeneratedSchematicRelevanceSavedReadbackPlan !== allocation.lookup || allocation.checkpointNamespace.verifyGeneratedSchematicRelevanceDisplayClosedCheckpoint !== allocation.verifyCheckpoint || schematicSavedReadbackAllocations.get(allocation.prepared) !== allocation) { throw error("SCHEMATIC_SAVED_ORIGINAL_PREPARATION"); }
   const current = allocation.lookup(allocation.prepared), status = current.closed.owner.status();
@@ -13914,6 +13916,16 @@ export function currentSchematicRelevanceSavedReadbackAllocationOutcome(prepared
 }
 /** Only the original fresh generation and same retained runner may obtain
  * these bindings. No token is issued until actual cache/loading custody joins. */
+export function requireOriginalCurrentSchematicRelevanceSavedSceneOrigin(origin: CurrentSchematicRelevanceSavedSceneOrigin, owner: CurrentSchematicRelevanceSavedReadbackOwner): CurrentSchematicRelevanceSavedSceneBindings {
+  const original = schematicSavedSceneOrigins.get(origin); if (original === undefined || original.owner !== owner) { throw error("SCHEMATIC_SAVED_SCENE_ORIGINAL"); }
+  assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(owner); if (originalCurrentSchematicRelevanceSavedReadbackTarget(owner) !== original.prepared || original.bindings.prepared !== original.prepared) { throw error("SCHEMATIC_SAVED_SCENE_ORIGINAL"); } original.reprove(); return original.bindings;
+}
+export function sendOriginalCurrentSchematicRelevanceSavedScene(owner: CurrentSchematicRelevanceSavedReadbackOwner, origin: CurrentSchematicRelevanceSavedSceneOrigin, ordinal: 0 | 1 | 2, phase: "capture" | "observe" | "release"): Promise<unknown> {
+  const original = schematicSavedSceneOrigins.get(origin); if (original === undefined || original.owner !== owner || (ordinal !== 0 && ordinal !== 1 && ordinal !== 2) || ["capture", "observe", "release"][ordinal] !== phase) { throw error("SCHEMATIC_SAVED_SCENE_ORIGINAL"); }
+  // The privately issued sender owns once reservations and the original cleanup
+  // Session. In particular, release must not re-read a lost document context.
+  assertOriginalCurrentSchematicRelevanceSavedReadbackOwner(owner); return original.send(ordinal, phase);
+}
 export function requireOriginalCurrentSchematicRelevanceSavedRegistrationIntent(intent: CurrentSchematicRelevanceSavedRegistrationIntent, runner: CurrentFootprintCopyMainBackendRunner): CurrentSchematicRelevanceSavedRegistrationBindings {
   const original = schematicSavedRegistrationIntents.get(intent);
   if (original === undefined || original.runner !== runner) { throw error("SCHEMATIC_SAVED_REGISTRATION_ORIGINAL"); }

@@ -75,3 +75,10 @@ required separate pending/no-dispatch checks. Both registries remain unissued
 until the actual cache/loading and original request joins exist. A forged
 intent/runner with getters refuses before either getter runs; this contract
 adds no dispatch, cache, opening or Main SQL permission.
+
+A separate saved-scene Core registry/getter and finite ordinal/phase sender
+contract now exists for the dependent readonly controller. The map remains
+empty until a genuine cold/page/source creator joins this new reader. Forged
+owner/origin objects, including a release label, refuse before getters run.
+The eventual private sender must retain its original cleanup session and group;
+release cannot borrow a replacement context or fabricate a CDP acknowledgment.
