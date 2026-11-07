@@ -1,6 +1,7 @@
 # Project history
 
 - [2026-11-07 original seven-record display action setup](2026-11-07-relevance-display-original-action-setup.md). Distinct prefix, accessor, Main, idle action and refusal-point custody; actual setter and persistence remain fenced.
+- [2026-11-07 original fixed Wire-edit birth](2026-11-07-wire-edit-original-birth.md). Distinct seven-record checkpoint owner, four-stage transport and original readonly startup; Modify and Save remain blocked pending their own proofs.
 
 - [2026-11-07 schematic display scene baseline](2026-11-07-schematic-display-scene-baseline.md). Preserve all persistent models and the exact derived endpoint markers; refuse unsupported source-excluded children in the older six-row profile.
 - [2026-11-07 Relevance display original journal](2026-11-07-schematic-relevance-display-original-journal.md). Separate seven-row original mutation/Save intents, publication settlement and consumers; earlier six-row brands and journals stay distinct.

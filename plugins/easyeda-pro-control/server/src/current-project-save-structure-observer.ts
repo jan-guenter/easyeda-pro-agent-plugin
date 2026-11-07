@@ -122,7 +122,7 @@ export class CurrentProjectSaveStructureObserver {
     this.#origin = origin; this.#owner = owner; this.#operation = operation;
     this.#lookup = lookupFunction.parse(Reflect.get(native, "requireOriginalCurrentProjectSaveStructureOrigin"));
     this.#binding = bindingsSchema.parse(this.#lookup(origin, owner, operation));
-    const relevance = origin.profile === "private.current-schematic-relevance-display-save-structure-origin.v1";
+    const relevance = origin.profile === "private.current-schematic-relevance-display-save-structure-origin.v1" || origin.profile === "private.current-schematic-wire-edit-save-structure-origin.v1";
     need(relevance === (this.#binding.prepared.profile === "easyeda-pro-control.generated-schematic-relevance-fixture-open-checkpoint.v1"), "ORIGINAL_STARTUP_DATA_FAMILY");
     this.#requests = relevance ? RELEVANCE_REQUESTS : REQUESTS; this.#startupRecordLimit = relevance ? 8 : 7; Object.freeze(this);
   }

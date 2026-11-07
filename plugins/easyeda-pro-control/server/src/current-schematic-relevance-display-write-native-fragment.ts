@@ -47,6 +47,8 @@ export function normalizeCurrentSchematicRelevanceDisplayNativeFamily(input: str
     .replace("$footprintMainPurpose=$SchematicRelevanceDisplayWrite209 -or ", "$footprintMainPurpose=");
 }
 export function prepareCurrentSchematicRelevanceDisplayNativeSwitch(input: string): string {
+  const count = input.slice(0, input.indexOf("\n")).split("[switch]$SchematicRelevanceDisplayWrite209,").length - 1;
+  if (count > 1) { throw new Error("SCHEMATIC_RELEVANCE_NATIVE_SWITCH_DUPLICATE"); } if (count === 1) { return input; }
   return once(input, "[switch]$SchematicDisplayWrite209,", "[switch]$SchematicRelevanceDisplayWrite209,[switch]$SchematicDisplayWrite209,");
 }
 function native(source: string): string {
@@ -126,7 +128,7 @@ export function applyCurrentSchematicRelevanceDisplayWriteNativeFragment(input: 
   source = once(source, admissionMarker, sixAdmission); source = once(source, stageMarker, sixStage);
   source = once(source, `schematicStructureNormal>=${String(SIX_STRUCTURE.normal)}`, `schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(SEVEN_STRUCTURE.normal)}:${String(SIX_STRUCTURE.normal)})`);
   source = once(source, "schematicStartupCalls>=7", "schematicStartupCalls>=(schematicRelevanceDisplayWrite209?8:7)");
-  source = once(source, "[switch]$SchematicDisplayWrite209,", "[switch]$SchematicRelevanceDisplayWrite209,[switch]$SchematicDisplayWrite209,");
+  source = prepareCurrentSchematicRelevanceDisplayNativeSwitch(source);
   const switches = [...source.slice(0, source.indexOf("\n")).matchAll(/\[switch\]\$(\w+)/gu)].map(match => match[1]).filter(name => name !== undefined && name !== "CompileOnly" && name !== "SchematicRelevanceDisplayWrite209");
   const conflict = `if ($SchematicRelevanceDisplayWrite209 -and (${switches.map(name => `$${name}`).join(" -or ")})) {throw 'pcb-diagnostic-conflicting-schematic-relevance-purpose'}\n`;
   const prior = source.split("\n").filter(line => line.startsWith("if ($SchematicRelevanceDisplayWrite209 -and ("));

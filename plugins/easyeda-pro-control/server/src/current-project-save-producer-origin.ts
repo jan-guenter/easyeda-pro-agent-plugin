@@ -5,7 +5,7 @@ import type { CurrentProjectSaveProducerCommand } from "./current-project-save-p
 import type { CurrentProjectSaveStructureEvent } from "./current-project-save-structure-origin.ts";
 
 export interface CurrentPcbViaSaveProducerOrigin { readonly profile: "private.current-pcb-via-save-producer-origin.v1" }
-export interface CurrentSchematicDisplaySaveProducerOrigin { readonly profile: "private.current-schematic-display-save-producer-origin.v1" | "private.current-schematic-relevance-display-save-producer-origin.v1" }
+export interface CurrentSchematicDisplaySaveProducerOrigin { readonly profile: "private.current-schematic-display-save-producer-origin.v1" | "private.current-schematic-relevance-display-save-producer-origin.v1" | "private.current-schematic-wire-edit-save-producer-origin.v1" }
 export type CurrentProjectSaveProducerOrigin = CurrentPcbViaSaveProducerOrigin | CurrentSchematicDisplaySaveProducerOrigin;
 export interface CurrentProjectSaveProducerHeldCall { readonly profile: "private.current-project-save-producer-held-call.v1" }
 export interface CurrentProjectSaveProducerBindings {

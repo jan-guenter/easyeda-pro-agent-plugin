@@ -18,6 +18,8 @@ import { currentSchematicRelevanceDisplayNativeCommand as command, validateCurre
 import { currentSchematicRelevanceDisplayWriteNativeRequest as encode } from "../src/current-schematic-relevance-display-write-protocol.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE as PROFILE } from "../src/current-schematic-relevance-display-write-native-profile.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_NAVIGATION_FUNCTION as NAVIGATION, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_STAGE_FUNCTION as STAGE, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_START_FUNCTION as START } from "../src/current-schematic-relevance-display-write-programs.ts";
+import { CURRENT_SCHEMATIC_WIRE_EDIT_NAVIGATION_FUNCTION as WIRE_NAVIGATION, CURRENT_SCHEMATIC_WIRE_EDIT_STAGE_FUNCTION as WIRE_STAGE, CURRENT_SCHEMATIC_WIRE_EDIT_START_FUNCTION as WIRE_START } from "../src/current-schematic-wire-edit-programs.ts";
+import { prepareCurrentSchematicWireEditNativeSwitch } from "../src/current-schematic-wire-edit-native-fragment.ts";
 import { data } from "./generated-schematic-relevance-display-fixture.ts";
 
 const wire = (value: unknown): Buffer => Buffer.from(`${JSON.stringify(value)}\0`);
@@ -39,15 +41,33 @@ void test("seven-record calls and common readonly requests use their own fixed r
 void test("combined seven-record native source is idempotent, bounded and retains exact packed program bytes", async () => {
   assert.equal(process.versions.node, "24.18.0");
   const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"); const first = generateWorkerStartupProtocol(source), second = generateWorkerStartupProtocol(first);
+  assert.equal(expandCurrentPcbDiagnosticCSharpStorage(first).split("[switch]$SchematicWireEdit209,").length, 2);
+  assert.throws(() => prepareCurrentSchematicWireEditNativeSwitch("param([switch]$SchematicWireEdit209,[switch]$SchematicWireEdit209,)\n"), /SWITCH_DUPLICATE/u);
   assert.ok(second === first, "Complete fixed generation must remain byte-identical on its second pass."); assert.ok(Buffer.byteLength(first) <= MAXIMUM); const compiler = currentPcbDiagnosticCSharpCompilerInput(first); assert.ok(Buffer.byteLength(compiler) <= MAXIMUM);
   const expanded = expandCurrentPcbDiagnosticCSharpStorage(first);
   assert.equal(expanded.split("        'schematic-relevance-display-native' {").length, 2);
   assert.equal(expanded.split("    [EasyedaDiagnosticOwner]::VerifySchematicRelevanceDisplaySmoke()\n").length, 2);
-  assert.match(compiler, /schematicStartupCalls>=\(schematicRelevanceDisplayWrite209\?8:7\)/u);
+  assert.match(compiler, /schematicStartupCalls>=\(\(schematicRelevanceDisplayWrite209\|\|schematicWireEdit209\)\?8:7\)/u);
   const oldAdmission = compiler.slice(compiler.indexOf("public void AdmitSchematicDisplayAction("), compiler.indexOf("void SchematicDisplayDiscovery("));
   assert.match(oldAdmission, /\bschematicDisplayWrite209\b/u); assert.doesNotMatch(oldAdmission, /\bSchematicDisplayFamily\b/u);
   const ownEncoder = compiler.slice(compiler.indexOf("public static string SchematicRelevanceDisplayProtocolMessage("), compiler.indexOf("public void SendSchematicRelevanceDisplayNative("));
   assert.ok(ownEncoder.includes(`id>${String(PROFILE.renderer.total)}||`));
+  assert.equal(expanded.split("        'schematic-wire-edit-native' {").length, 2);
+  assert.equal(expanded.split("    [EasyedaDiagnosticOwner]::VerifySchematicWireEditSmoke()\n").length, 2);
+  assert.match(compiler, /static int SchematicWireEditIndex\(string phase\)\{return Array.IndexOf\(new\[\]\{"start","navigate","capture","preflight","modify","observe"\}/u);
+  assert.equal(WIRE_START, START); assert.equal(WIRE_NAVIGATION, NAVIGATION);
+  assert.ok(compiler.includes("static string SchematicWireEditStart {get{return SchematicRelevanceDisplayStart;}}"));
+  assert.ok(compiler.includes("static string SchematicWireEditNavigation {get{return SchematicRelevanceDisplayNavigation;}}"));
+  const wirePrograms = [WIRE_STAGE];
+  const wireRows = [...compiler.matchAll(/SchematicWireEdit(?:Start|Navigation|Stage)=UnpackFixedProgram\(@"([A-Za-z\d+/=]+)",(\d+),@"([a-f\d]{64})",@"([a-f\d]{64})"\)/gu)]; assert.equal(wireRows.length, 1);
+  for (const [index, row] of wireRows.entries()) {
+    const [, encoded, length, hash, gzipHash] = row; assert.ok(encoded !== undefined);
+    const gzip = Buffer.from(encoded, "base64");
+    // oxlint-disable-next-line node/no-sync -- Bounded immutable fixed-program parity, no process or helper write.
+    const raw = gunzipSync(gzip, { maxOutputLength: 65_536 });
+    assert.equal(raw.toString("utf8"), wirePrograms[index]); assert.equal(raw.length, Number(length));
+    assert.equal(createHash("sha256").update(raw).digest("hex"), hash); assert.equal(createHash("sha256").update(gzip).digest("hex"), gzipHash);
+  }
   const expected: Readonly<Record<string, string>> = { Start: START, Navigation: NAVIGATION, Stage: STAGE };
   const rows = [...compiler.matchAll(/static readonly string SchematicRelevanceDisplay(Start|Navigation|Stage)=UnpackFixedProgram\(@"([A-Za-z\d+/=]+)",(\d+),@"([a-f\d]{64})",@"([a-f\d]{64})"\);/gu)]; assert.equal(rows.length, 3);
   for (const row of rows) {

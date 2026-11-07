@@ -1,3 +1,4 @@
+import { CURRENT_SCHEMATIC_WIRE_EDIT_NATIVE_PROFILE as WIRE_PROFILE } from "./current-schematic-wire-edit-native-profile.ts";
 import { currentSchematicDisplayActionGuardWire } from "./current-schematic-display-action-guard-protocol.ts";
 import { currentSchematicDisplayActionWire } from "./current-schematic-display-action-wire.ts";
 import { currentGeneratedPeriodicSyncWire } from "./current-generated-periodic-sync-wire.ts";
@@ -26,14 +27,17 @@ export function currentSchematicDisplayWriteNativeRequest(chunk: Buffer): Readon
 export function currentSchematicRelevanceDisplaySharedNativeRequest(chunk: Buffer): Readonly<Record<string, unknown>> {
   return decodeSharedNativeRequest(chunk, "relevance");
 }
-function decodeSharedNativeRequest(chunk: Buffer, family: "six" | "relevance"): Readonly<Record<string, unknown>> {
-  const profile = family === "six" ? PROFILE : RELEVANCE_PROFILE;
+export function currentSchematicWireEditSharedNativeRequest(chunk: Buffer): Readonly<Record<string, unknown>> { return decodeSharedNativeRequest(chunk, "wire"); }
+function decodeSharedNativeRequest(chunk: Buffer, family: "six" | "relevance" | "wire"): Readonly<Record<string, unknown>> {
+  let profile: typeof PROFILE | typeof RELEVANCE_PROFILE | typeof WIRE_PROFILE = PROFILE;
+  if (family === "wire") { profile = WIRE_PROFILE; } else if (family === "relevance") { profile = RELEVANCE_PROFILE; }
   if (chunk.length > 65_536 || chunk.at(-1) !== 0) { throw new Error("SCHEMATIC_DISPLAY_WIRE"); }
   const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(chunk.subarray(0, -1)));
   if (!diagnosticRecord(raw) || typeof raw["id"] !== "number" || !Number.isSafeInteger(raw["id"]) || raw["id"] < 1 || raw["id"] > profile.renderer.total ||
     typeof raw["method"] !== "string" || !chunk.equals(Buffer.from(`${JSON.stringify(raw)}\0`))) { throw new Error("SCHEMATIC_DISPLAY_WIRE"); }
-  if (family === "six" && ["schematicRelevanceAccessorCommand", "schematicRelevanceActionCommand", "schematicRelevanceActionGuardCommand"].some(key => Object.hasOwn(raw, key))) { throw new Error("SCHEMATIC_SIX_FOREIGN_ACTION_MARKER"); }
-  if (family === "relevance" && ["schematicDisplayPhase", "schematicAccessorCommand", "schematicActionCommand", "schematicActionGuardCommand", "schematicClockCommand"].some(key => Object.hasOwn(raw, key))) {
+  if (family === "six" && ["schematicWireEditPhase", "schematicRelevanceAccessorCommand", "schematicRelevanceActionCommand", "schematicRelevanceActionGuardCommand"].some(key => Object.hasOwn(raw, key))) { throw new Error("SCHEMATIC_SIX_FOREIGN_ACTION_MARKER"); }
+  if (family === "wire" && ["schematicRelevanceDisplayPhase", "schematicDisplayPhase", "schematicAccessorCommand", "schematicRelevanceAccessorCommand", "schematicActionCommand", "schematicRelevanceActionCommand", "schematicActionGuardCommand", "schematicRelevanceActionGuardCommand", "schematicClockCommand"].some(key => Object.hasOwn(raw, key))) { throw new Error("SCHEMATIC_WIRE_FOREIGN_MUTATION_MARKER"); }
+  if (family === "relevance" && ["schematicWireEditPhase", "schematicDisplayPhase", "schematicAccessorCommand", "schematicActionCommand", "schematicActionGuardCommand", "schematicClockCommand"].some(key => Object.hasOwn(raw, key))) {
     throw new Error("SCHEMATIC_RELEVANCE_OWN_MUTATION_ORIGIN_REQUIRED");
   }
   if (Object.hasOwn(raw, "periodicSyncCommand")) {

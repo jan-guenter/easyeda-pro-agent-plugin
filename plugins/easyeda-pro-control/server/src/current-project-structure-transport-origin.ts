@@ -7,7 +7,7 @@ import type { CurrentProjectStructureTransportCommand } from "./current-project-
 import type { CurrentProjectSaveStructureEvent } from "./current-project-save-structure-origin.ts";
 
 export interface CurrentPcbViaStructureTransportOrigin { readonly profile: "private.current-pcb-via-structure-transport-origin.v1" }
-export interface CurrentSchematicDisplayStructureTransportOrigin { readonly profile: "private.current-schematic-display-structure-transport-origin.v1" | "private.current-schematic-relevance-display-structure-transport-origin.v1" }
+export interface CurrentSchematicDisplayStructureTransportOrigin { readonly profile: "private.current-schematic-display-structure-transport-origin.v1" | "private.current-schematic-relevance-display-structure-transport-origin.v1" | "private.current-schematic-wire-edit-structure-transport-origin.v1" }
 export type CurrentProjectStructureTransportOrigin = CurrentPcbViaStructureTransportOrigin | CurrentSchematicDisplayStructureTransportOrigin;
 export interface CurrentProjectStructureTransportBindings {
   readonly sessionId: string; readonly scriptId: string; readonly uniqueContextId: string;

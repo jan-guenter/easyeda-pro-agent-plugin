@@ -9,8 +9,9 @@ import type { GeneratedSchematicRelevanceFixtureOpenCheckpoint } from "./managed
 export interface CurrentPcbViaSaveStructureOrigin { readonly profile: "private.current-pcb-via-save-structure-origin.v1" }
 export interface CurrentSchematicDisplaySaveStructureOrigin { readonly profile: "private.current-schematic-display-save-structure-origin.v1" }
 export interface CurrentSchematicRelevanceDisplaySaveStructureOrigin { readonly profile: "private.current-schematic-relevance-display-save-structure-origin.v1" }
+export interface CurrentSchematicWireEditStructureOrigin { readonly profile: "private.current-schematic-wire-edit-save-structure-origin.v1" }
 export interface CurrentFootprintInverseStructureOrigin { readonly profile: "private.current-footprint-inverse-structure-origin.v1" }
-export type CurrentProjectSaveStructureOrigin = CurrentPcbViaSaveStructureOrigin | CurrentSchematicDisplaySaveStructureOrigin | CurrentSchematicRelevanceDisplaySaveStructureOrigin | CurrentFootprintInverseStructureOrigin;
+export type CurrentProjectSaveStructureOrigin = CurrentPcbViaSaveStructureOrigin | CurrentSchematicDisplaySaveStructureOrigin | CurrentSchematicRelevanceDisplaySaveStructureOrigin | CurrentSchematicWireEditStructureOrigin | CurrentFootprintInverseStructureOrigin;
 export interface CurrentProjectSaveStructureEvent { readonly method: "Debugger.paused" | "Debugger.resumed"; readonly sessionId: string; readonly params: unknown }
 export interface CurrentGeneratedProjectSaveStructureBindings {
   readonly sessionId: string; readonly scriptId: string; readonly uniqueContextId: string;
