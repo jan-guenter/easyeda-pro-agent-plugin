@@ -19,7 +19,7 @@ export function requireCurrentFootprintInversePublicServiceDescription(value: st
 }
 export function decodeCurrentFootprintInversePublicServiceFunction(input: unknown, role: CurrentFootprintInversePublicServiceRole, expectedScriptId?: string): Readonly<{ scriptId: string; scopes: string }> {
   const expected = SOURCE[role], packet = fieldsSchema.parse(capture(input));
-  const fields = new Map(packet.result.map(row => [row.name, row])); const regular = expected.kind === "regular";
+  const fields = new Map(packet.result.map(row => [row.name, row])); const regular = expected.kind === "regular" && !expected.async;
   const names = ["name", "length", ...(regular ? ["prototype"] : []), ...(!expected.strict && regular ? ["arguments", "caller"] : [])];
   need(fields.size === packet.result.length && fields.size === names.length && names.every(name => fields.has(name)));
   for (const [name, value] of [["name", expected.name], ["length", expected.arity]] as const) {

@@ -67,17 +67,39 @@ void test("actual uninvoked service and UI handler metadata matches exact source
   if (!await sourceAvailable(testContext)) { return; }
   const session = new Session(); session.connect(); const key = "__inertInverseServiceMethod";
   try {
-    for (const role of ["rpcServiceCallback", "publicUiDelete"] as const) {
+    for (const role of ["rpcServiceCallback", ...ORDER] as const) {
       const row = SOURCE[role]; const texts = await serviceSources(); const full = texts[row.file];
       const text = full.slice("descriptionStart" in row ? row.descriptionStart : row.start, row.end);
-      const prefix = role === "rpcServiceCallback" ? "let i=(" : "class M8{static ";
-      const offset = role === "rpcServiceCallback" ? 0 : text.indexOf("(");
-      const source = "\n".repeat(row.lineNumber) + " ".repeat(row.columnNumber - offset - prefix.length) + prefix + text + (role === "rpcServiceCallback" ? ");i" : "};M8.delete");
-      const fn: unknown = runInContext(source, createContext({})); Object.defineProperty(globalThis, key, { value: fn, configurable: true });
+      // Preserve the installed source positions independently of the expected
+      // Location pins. Padding derived from a pin would reproduce a wrong pin.
+      let padding = full.slice(0, "descriptionStart" in row ? row.descriptionStart : row.start).replaceAll(/[^\n]/gu, " ");
+      if (row.strict) { padding = `"use strict";${padding.slice(13)}`; }
+      const context = createContext({}); let fn: unknown;
+      if (row.kind === "method") {
+        const constructor: unknown = runInContext(`${padding.slice(0, -7)}(class{${text}})`, context);
+        assert.equal(typeof constructor, "function"); assert.ok(typeof constructor === "function");
+        fn = Object.getOwnPropertyDescriptor(constructor.prototype, row.name)?.value;
+      } else {
+        const prefix = `const ${row.name}=`;
+        fn = runInContext(`${padding.slice(0, -prefix.length)}${prefix}${text};${row.name}`, context);
+      }
+      Object.defineProperty(globalThis, key, { value: fn, configurable: true });
       const evaluated = await session.post("Runtime.evaluate", { expression: `globalThis[${JSON.stringify(key)}]`, objectGroup: "inert-inverse-service-metadata" }); const objectId = evaluated.result.objectId; assert.ok(typeof objectId === "string");
       const metadata = await session.post("Runtime.getProperties", { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false });
+      assert.equal(evaluated.result.description, text);
       const decoded = decodeCurrentFootprintInversePublicServiceFunction(metadata, role); assert.equal(typeof decoded.scopes,"string");
       assert.throws(() => decodeCurrentFootprintInversePublicServiceFunction(metadata, role, "foreign-script"));
+      const shifted = structuredClone(metadata);
+      const at = shifted.internalProperties?.find(value => value.name === "[[FunctionLocation]]")?.value;
+      assert.ok(at !== undefined && typeof at.value === "object" && at.value !== null);
+      Reflect.set(at.value, "columnNumber", row.columnNumber - 1);
+      assert.throws(() => decodeCurrentFootprintInversePublicServiceFunction(shifted, role));
+      if (row.async && row.kind === "regular") {
+        assert.deepEqual(metadata.result.map(value => value.name).toSorted(), ["length", "name"]);
+        const extra = structuredClone(metadata);
+        extra.result.push({ name: "prototype", value: { type: "object", objectId: "foreign-prototype" }, writable: true, configurable: false, enumerable: false, isOwn: true });
+        assert.throws(() => decodeCurrentFootprintInversePublicServiceFunction(extra, role));
+      }
     }
   } finally { Reflect.deleteProperty(globalThis,key); await session.post("Runtime.releaseObjectGroup",{objectGroup:"inert-inverse-service-metadata"}); session.disconnect(); }
 });

@@ -800,3 +800,5 @@ layout. The connected ledger retains its generation and case anchors.
 
 - [Held active history custody](2026-11-07-schematic-active-history-custody.md)
 - 2026-11-07: [Normal history completion callees](2026-11-07-schematic-normal-history-callees.md), thirty uninvoked function checks for the normal record path; actual event rosters and continuation remain separate.
+
+- 2026-11-07: [Inverse service and lookup metadata](2026-11-07-inverse-service-lookup-metadata.md), actual source-position corrections, async function metadata and the separately observed original process cleanup.
