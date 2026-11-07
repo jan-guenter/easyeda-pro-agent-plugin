@@ -8,6 +8,7 @@ import { CURRENT_PCB_VIA_SAVED_LOAD_BOOTSTRAP_REQUESTS as WORKER } from "./curre
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUESTS as FENCE } from "./current-selected-file-main-sql-fence-protocol.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_TRANSPORT as MAIN } from "./current-footprint-copy-main-transport-contract.ts";
 
+export { currentFootprintInverseNoPublicationNativeSource } from "./current-footprint-inverse-no-publication-native.ts";
 export { CURRENT_FOOTPRINT_INVERSE_PRODUCER_ARM_REQUESTS, currentFootprintInverseProducerArmOrder } from "./current-footprint-inverse-producer-protocol.ts";
 
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE = "footprint-inverse209";

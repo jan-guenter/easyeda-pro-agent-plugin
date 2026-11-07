@@ -32,3 +32,9 @@ C#5/.NET10 Linux registration/metadata/inverse smokes pass. The original six
 forward/cold artifacts reproduce byte exactly. This remains new-program storage
 only: no request, method, field guard, origin, path permission or native effect
 changes, and no tracked helper/pin/bundle is regenerated.
+
+The separate inverse readonly-gate increment stores its capture/reproof pair
+in another exact two-row table under the same bounds. Both fixed programs,
+role/index guards and all five complete native wire hashes remain. Joint
+storage saves1,410 bytes against the separately packed pair; no gate metadata,
+callee association, request field or no-resume rule changes.

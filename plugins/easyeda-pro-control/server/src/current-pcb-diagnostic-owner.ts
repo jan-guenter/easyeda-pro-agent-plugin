@@ -1,5 +1,7 @@
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 /* oxlint-disable max-classes-per-file -- Fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+import { CURRENT_FOOTPRINT_INVERSE_NO_PUBLICATION_PROGRAMS as INVERSE_GATES, CURRENT_FOOTPRINT_INVERSE_NO_PUBLICATION_FLAGS as INVERSE_GATE_FLAGS } from "./current-footprint-inverse-no-publication-programs.ts";
+import { decodeCurrentPcb209WorkerGateProperties } from "./current-pcb-string-worker-gate-scope.ts";
 import { currentFootprintInverseProducerArmNativeFrame, validateCurrentFootprintInverseProducerArmCommand } from "./current-footprint-inverse-producer-protocol.ts";
 import type { CurrentFootprintInverseProducerArmCommand } from "./current-footprint-inverse-producer-protocol.ts";
 import type { CurrentFootprintInverseProducerBindings, CurrentFootprintInverseProducerOrigin } from "./current-footprint-inverse-producer-origin.ts";
@@ -7478,12 +7480,19 @@ class CurrentPcbRetainedOwnerCore {
       };
       try{
         const intrinsics=await CurrentPcbRetainedOwnerCore.#captureProducerIntrinsics(args.uniqueContextId,send);current();
+        const readOnlyGates=decodeCurrentFootprintCopyClockRpcV2ArrayCapture(await send({phase:"inverse-producer-gate-capture",method:"Runtime.callFunctionOn",params:{...INVERSE_GATE_FLAGS,objectId:args.project,functionDeclaration:INVERSE_GATES.capture,arguments:[],returnByValue:false}}),2);current();
+        const gateFields=decodeCurrentFootprintCopyClockRpcV2Array(await send({phase:"inverse-producer-gate-properties",method:"Runtime.getProperties",params:{objectId:readOnlyGates,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}}),2);current();
+        for(const[index,kind]of (["readOnly","format"] as const).entries()){
+          const objectId=currentFootprintCopyClockRpcV2ArrayObject(gateFields,index);decodeCurrentPcb209WorkerGateProperties(await send({phase:`inverse-producer-gate-metadata-${kind}`,method:"Runtime.getProperties",params:{objectId,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}}),args.scriptId,kind);current();
+        }
+        const gateReproof=await send({phase:"inverse-producer-gate-reprove",method:"Runtime.callFunctionOn",params:{...INVERSE_GATE_FLAGS,objectId:args.project,functionDeclaration:INVERSE_GATES.reprove,arguments:[{objectId:readOnlyGates}],returnByValue:true}});current();
+        if(!record(gateReproof)||!exact(gateReproof,["result"])||!record(gateReproof["result"])||!exact(gateReproof["result"],["type","value"])||gateReproof["result"]["type"]!=="boolean"||gateReproof["result"]["value"]!==true){throw error("FOOTPRINT_INVERSE_GATE_REPROOF");}
         for(const command of currentProjectSaveProducerGuardCases(args.scriptId)){await send(command);current();}
         for(const command of currentProjectSaveProducerNativeCases()){if(command.phase==="project-save-producer-arm"){await send({...command,params:{...command.params,location:{...command.params.location,scriptId:args.scriptId}}});current();}}
         const points=controller.originalProducerArms();const origin:CurrentFootprintInverseProducerOrigin=Object.freeze({profile:"private.current-footprint-inverse-producer-origin.v1"});
         const live=():void=>{assertOriginalFootprintInverseController(controller);assertOriginalCurrentFootprintInverseNativeOwner(this);this.#available();requireOriginalCurrentProjectSaveStructureOrigin(structureOrigin,this,prepared);
           if(this.#inverseProducerOrigin!==origin||this.#requireFootprintInverseStartup()!==startup||this.#inverseWorkerController!==controller||this.#inverseConstructionObserver!==structureObserver||this.#inverseConstructionOrigin!==structureOrigin||this.#inverseWorkerPair===null||this.#mainTerminateAttempted||this.#closeConsumed||this.#terminationObserved||this.#releaseConsumed||originalCurrentFootprintInverseTarget(this)!==prepared){throw error("FOOTPRINT_INVERSE_PRODUCER_OWNER_CHANGED");}};
-        const bindings:CurrentFootprintInverseProducerBindings=Object.freeze({prepared,startup,actual:args,intrinsics,originalBreakpoints:points,assertCurrent:live,producerBootstrapResumeAuthorized:false,fullProducerFrontierVerified:false});
+        const bindings:CurrentFootprintInverseProducerBindings=Object.freeze({prepared,startup,actual:args,intrinsics,readOnlyGates,originalBreakpoints:points,assertCurrent:live,producerBootstrapResumeAuthorized:false,fullProducerFrontierVerified:false});
         current();this.#inverseProducerOrigin=origin;footprintInverseProducerOrigins.set(origin,Object.freeze({owner:this,prepared,bindings}));live();return origin;
       }catch(caughtError){controller.fail();throw caughtError;}
     })();this.#inverseProducerArmPromise=promise;return promise;

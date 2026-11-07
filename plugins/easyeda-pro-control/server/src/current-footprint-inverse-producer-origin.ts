@@ -10,6 +10,7 @@ export interface CurrentFootprintInverseProducerBindings {
   readonly startup:CurrentFootprintInverseStartupPlan;
   readonly actual: CurrentFootprintInverseBootstrapArguments;
   readonly intrinsics: string;
+  readonly readOnlyGates:string;
   readonly originalBreakpoints: readonly Readonly<{ role: string; id: string }>[];
   readonly assertCurrent: () => void;
   readonly producerBootstrapResumeAuthorized: false;

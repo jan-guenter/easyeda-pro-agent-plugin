@@ -838,3 +838,26 @@ to its copied footprint. Mixed callbacks still require actual no-publication
 predicate/return/task proof; they cannot use the all-FOOTPRINT optimization.
 That optimization itself requires its explicit complete-family eligibility plus
 original live callback/receiver/queued-argument and fulfilled-promise joins.
+
+The inverse-only enrollment now captures the actual original `isReadOnly`
+method and format getter as a retained Array2 without invoking either. The
+fixed prototype/accessor association is rechecked, each actual callee's native
+metadata is qualified against the original worker script, and the same tuple
+is reproved before the private producer origin is issued. Own shadows, changed
+methods/getters and prototype drift refuse without application invocation.
+The origin retains this exact tuple; it still grants no callback, task,
+bootstrap resume or no-publication conclusion.
+
+This adds five fixed commands and two exact helper-source reads:75 enrollment
+CDP requests,910 inverse renderer requests,76,473 original-main reproofs and
+126,854 aggregate controls. Older purposes retain their existing budgets. The
+two new helper programs share one exact role/index-checked bounded table via
+the existing decoder, saving1,410 bytes against separate packed values. Five
+wire hashes bind their full program text and options. Eleven focused inert
+factory/program/grammar checks, full types, strict changed-file lint, two-pass
+full generation and complete C#5/.NET10 Linux fixed-codec smokes pass. Together
+with the new metadata and registration tables, this branch emits2,055,832
+helper bytes and1,855,021 C# bytes; all six old forward/cold source artifacts
+remain byte exact. No tracked helper/pins/bundles or native runtime changes.
+The original startup callback/queue/Promise collector remains required before
+any inverse bootstrap continuation or writer action.

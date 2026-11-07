@@ -8,12 +8,12 @@ import { currentProjectSaveProducerNativeCases } from "../src/current-project-sa
 void test("inverse producer enrollment has one fixed intrinsic sequence, ten guards and twenty-seven arms without a resume",()=>{
   const cases=currentFootprintInverseProducerArmCases(),order=currentFootprintInverseProducerArmOrder();assert.equal(order.length,REQUESTS.normal);assert.equal(new Set(order).size,order.length);
   const phases=cases.map(command=>{
-    if(command.phase==="inverse-producer-helper"){return command.phase;}
+    if(command.phase==="inverse-producer-helper"||command.phase.startsWith("inverse-producer-gate-")){return command.phase;}
     if(command.phase==="project-save-producer-guard"){return `${command.phase}-${command.role}`;}
     return currentProjectSaveProducerTemplate(command).phase;
   });
-  assert.equal(phases.length,66);assert.equal(new Set(phases).size,phases.length);assert.ok(order.every(phase=>phases.includes(phase)));
-  assert.equal(REQUESTS.intrinsics+REQUESTS.guards+REQUESTS.producerArms,REQUESTS.normal);assert.equal(REQUESTS.normal+REQUESTS.helperSources,REQUESTS.cdpRequests);
+  assert.equal(phases.length,71);assert.equal(new Set(phases).size,phases.length);assert.ok(order.every(phase=>phases.includes(phase)));
+  assert.equal(REQUESTS.intrinsics+REQUESTS.gateAssociation+REQUESTS.guards+REQUESTS.producerArms,REQUESTS.normal);assert.equal(REQUESTS.normal+REQUESTS.helperSources,REQUESTS.cdpRequests);
   for(const command of cases){
     const wire=currentFootprintInverseProducerArmWire(command,79,"original-worker");const bytes=Buffer.from(`${JSON.stringify(wire)}\0`),native=currentFootprintInverseProducerArmNativeFrame(bytes,command,"original-worker");
     assert.equal(native["action"],"footprint-inverse-producer-arm");assert.equal(Object.hasOwn(native,"sessionId"),false);assert.equal(Object.hasOwn(native,"functionDeclaration"),false);assert.notEqual(native["method"],"Debugger.resume");
