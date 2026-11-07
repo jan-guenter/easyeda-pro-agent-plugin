@@ -773,3 +773,4 @@ layout. The connected ledger retains its generation and case anchors.
 
 - 2026-11-07: [Original seven-record live history rows](2026-11-07-relevance-original-live-history.md).
 - 2026-11-07: [Schematic saved-load preparation](2026-11-07-schematic-saved-load-preparation.md), separate original checkpoint plan, complete two-document cold data and exact native Save delimiter handling.
+- 2026-11-07: [Polling Inspector tuple custody](2026-11-07-polling-inspector-tuple-custody.md), actual side-effect-checked capture execution and original private tuple reproof.

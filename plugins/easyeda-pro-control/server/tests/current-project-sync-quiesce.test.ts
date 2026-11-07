@@ -14,15 +14,18 @@ import { currentPcbViaWriteNativeRequest } from "../src/current-pcb-via-write-pr
 import { currentSchematicDisplayWriteNativeRequest } from "../src/current-schematic-display-write-protocol.ts";
 import { diagnosticNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
 
-function fixture():Readonly<{run:(source:string)=>unknown}> {
-  const context=vm.createContext({});
-  vm.runInContext(`let scheduled=0,cleared=0,lastCleared=null;function EventTarget(){}function WorkerGlobalScope(){}function DedicatedWorkerGlobalScope(){};
+// Node's Inspector declarations omit this supported CDP option. Keep it as
+// Explicit extra data so the actual transport still receives the exact flag.
+const SIDE_EFFECT = { throwOnSideEffect: true } as const;
+function initialization(): string { return `let scheduled=0,cleared=0,lastCleared=null;function EventTarget(){}function WorkerGlobalScope(){}function DedicatedWorkerGlobalScope(){};
 Object.setPrototypeOf(WorkerGlobalScope,EventTarget);Object.setPrototypeOf(WorkerGlobalScope.prototype,EventTarget.prototype);Object.setPrototypeOf(DedicatedWorkerGlobalScope.prototype,WorkerGlobalScope.prototype);Object.setPrototypeOf(globalThis,DedicatedWorkerGlobalScope.prototype);
 Object.defineProperty(WorkerGlobalScope.prototype,"setTimeout",{value:function setTimeout(callback){scheduled++;return 17;},writable:true,enumerable:true,configurable:true});Object.defineProperty(WorkerGlobalScope.prototype,"clearTimeout",{value:function clearTimeout(){cleared++;lastCleared=arguments[0];},writable:true,enumerable:true,configurable:true});
 const nativeString=Function.prototype.toString;Function.prototype.toString=function(){if(this===WorkerGlobalScope.prototype.setTimeout)return "function setTimeout() { [native code] }";if(this===WorkerGlobalScope.prototype.clearTimeout)return "function clearTimeout() { [native code] }";return nativeString.call(this);};
 const Fe=false,proto={${METHOD.source}},project=Object.create(proto);project.isEstablished=false;project.projectTimer=null;globalThis.PROJECT=project;
-const captured=(${PROGRAMS.capture})();const original=(${PROGRAMS.entry}).call([project],project,captured);
-`,context);
+`; }
+function fixture():Readonly<{run:(source:string)=>unknown}> {
+  const context=vm.createContext({});
+  vm.runInContext(`${initialization()}\nconst captured=(${PROGRAMS.capture})();const original=(${PROGRAMS.entry}).call([project],project,captured);`,context);
   return Object.freeze({run:(source:string):unknown=>vm.runInContext(source,context)});
 }
 void test("the original first timer is cancelled once while its positive application slot remains unchanged",()=>{
@@ -55,10 +58,34 @@ void test("the pinned original method exposes exact entry, native call, return a
   }finally{inspector.disconnect();}
 });
 
-void test("actual inert Inspector frozen arrays use readonly descriptors and mutable tuples refuse",async()=>{
-  const inspector=new Session();inspector.connect();try{await inspector.post("Runtime.enable");for(const frozen of [true,false]){const captured=await inspector.post("Runtime.evaluate",{expression:frozen?"Object.freeze([1,{},function(){}])":"[1,{},function(){}]",returnByValue:false});const objectId=captured.result.objectId;assert.ok(objectId!==undefined);const properties=await inspector.post("Runtime.getProperties",{objectId,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false});if(frozen){const fields=decodeCurrentProjectSyncQuiesceArray(properties,3);assert.equal(fields.get("0")?.value,1);}else{assert.throws(()=>decodeCurrentProjectSyncQuiesceArray(properties,3));}}}finally{inspector.disconnect();}
+void test("actual inert Inspector private arrays use exact mutable descriptors and frozen tuples refuse",async()=>{
+  const inspector=new Session();inspector.connect();try{await inspector.post("Runtime.enable");for(const frozen of [true,false]){const captured=await inspector.post("Runtime.evaluate",{expression:frozen?"Object.freeze([1,{},function(){}])":"[1,{},function(){}]",returnByValue:false});const objectId=captured.result.objectId;assert.ok(objectId!==undefined);const properties=await inspector.post("Runtime.getProperties",{objectId,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false});if(frozen){assert.throws(()=>decodeCurrentProjectSyncQuiesceArray(properties,3));}else{const fields=decodeCurrentProjectSyncQuiesceArray(properties,3);assert.equal(fields.get("0")?.value,1);}}}finally{inspector.disconnect();}
+});
+
+void test("actual Inspector permits fixed polling captures with side-effect checking and rejects tuple drift",async()=>{
+  // Browser globals/timer implementations are inert substitutes. The actual
+  // Inspector executes unchanged production programs with the production flag.
+  const world=vm.createContext({},{name:"inert-polling-capture"});vm.runInContext(initialization(),world);
+  const inspector=new Session();inspector.connect();const contexts:number[]=[];
+  inspector.on("Runtime.executionContextCreated",notification=>{if(notification.params.context.name==="inert-polling-capture"){contexts.push(notification.params.context.id);}});
+  try{await inspector.post("Runtime.enable");const contextId=contexts[0];assert.ok(contextId!==undefined);
+    const capture=await inspector.post("Runtime.evaluate",{contextId,expression:`(${PROGRAMS.capture})()`,...SIDE_EFFECT,returnByValue:false});
+    assert.equal(capture.exceptionDetails,undefined);const captured=capture.result.objectId;assert.ok(captured!==undefined);
+    decodeCurrentProjectSyncQuiesceArray(await inspector.post("Runtime.getProperties",{objectId:captured,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}),20);
+    const frame=await inspector.post("Runtime.evaluate",{contextId,expression:"[PROJECT]",...SIDE_EFFECT,returnByValue:false}),project=await inspector.post("Runtime.evaluate",{contextId,expression:"PROJECT",...SIDE_EFFECT,returnByValue:false});
+    const frameId=frame.result.objectId,projectId=project.result.objectId;assert.ok(frameId!==undefined&&projectId!==undefined);
+    const entry=await inspector.post("Runtime.callFunctionOn",{objectId:frameId,functionDeclaration:PROGRAMS.entry,arguments:[{objectId:projectId},{objectId:captured}],...SIDE_EFFECT,returnByValue:false});
+    assert.equal(entry.exceptionDetails,undefined);const original=entry.result.objectId;assert.ok(original!==undefined);
+    vm.runInContext("project.projectTimer=17",world);
+    const returned=await inspector.post("Runtime.callFunctionOn",{objectId:frameId,functionDeclaration:PROGRAMS.returned,arguments:[{objectId:original}],...SIDE_EFFECT,returnByValue:false});
+    assert.equal(returned.exceptionDetails,undefined);const returnedId=returned.result.objectId;assert.ok(returnedId!==undefined);
+    decodeCurrentProjectSyncQuiesceArray(await inspector.post("Runtime.getProperties",{objectId:returnedId,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}),3);
+    const mutation=await inspector.post("Runtime.callFunctionOn",{objectId:captured,functionDeclaration:"function(){this[0]={};}",returnByValue:true});assert.equal(mutation.exceptionDetails,undefined);
+    const refused=await inspector.post("Runtime.callFunctionOn",{objectId:frameId,functionDeclaration:PROGRAMS.returned,arguments:[{objectId:original}],...SIDE_EFFECT,returnByValue:false});assert.ok(refused.exceptionDetails!==undefined);
+    assert.equal(vm.runInContext("scheduled+cleared",world),0);assert.equal(vm.runInContext("project.projectTimer",world),17);
+  }finally{inspector.disconnect();}
 });
 
 void test("Inspector rewraps original references and equality must be proved inside the original realm",async()=>{
-  const inspector=new Session();inspector.connect();try{await inspector.post("Runtime.enable");const entry=await inspector.post("Runtime.evaluate",{expression:"Object.freeze([1,2,3,4,5])",objectGroup:"inert-timer-alias",returnByValue:false});const id=entry.result.objectId;assert.ok(id!==undefined);const returned=await inspector.post("Runtime.callFunctionOn",{objectId:id,functionDeclaration:"function(){return Object.freeze([this,17,{}])}",objectGroup:"inert-timer-alias",returnByValue:false});const returnedId=returned.result.objectId;assert.ok(returnedId!==undefined);const fields=decodeCurrentProjectSyncQuiesceArray(await inspector.post("Runtime.getProperties",{objectId:returnedId,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}),3);const rewrapped=fields.get("0")?.objectId;assert.ok(rewrapped!==undefined);assert.notEqual(rewrapped,id);const identity:unknown=await inspector.post("Runtime.callFunctionOn",{objectId:rewrapped,functionDeclaration:"function(original){return this===original}",arguments:[{objectId:id}],returnByValue:true});assert.deepEqual(identity,{result:{type:"boolean",value:true}});await inspector.post("Runtime.releaseObjectGroup",{objectGroup:"inert-timer-alias"});}finally{inspector.disconnect();}
+  const inspector=new Session();inspector.connect();try{await inspector.post("Runtime.enable");const entry=await inspector.post("Runtime.evaluate",{expression:"[1,2,3,4,5]",objectGroup:"inert-timer-alias",returnByValue:false});const id=entry.result.objectId;assert.ok(id!==undefined);const returned=await inspector.post("Runtime.callFunctionOn",{objectId:id,functionDeclaration:"function(){return [this,17,{}]}",objectGroup:"inert-timer-alias",returnByValue:false});const returnedId=returned.result.objectId;assert.ok(returnedId!==undefined);const fields=decodeCurrentProjectSyncQuiesceArray(await inspector.post("Runtime.getProperties",{objectId:returnedId,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}),3);const rewrapped=fields.get("0")?.objectId;assert.ok(rewrapped!==undefined);assert.notEqual(rewrapped,id);const identity:unknown=await inspector.post("Runtime.callFunctionOn",{objectId:rewrapped,functionDeclaration:"function(original){return this===original}",arguments:[{objectId:id}],returnByValue:true});assert.deepEqual(identity,{result:{type:"boolean",value:true}});await inspector.post("Runtime.releaseObjectGroup",{objectGroup:"inert-timer-alias"});}finally{inspector.disconnect();}
 });
