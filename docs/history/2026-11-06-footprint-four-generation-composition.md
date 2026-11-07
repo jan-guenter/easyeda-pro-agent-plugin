@@ -729,3 +729,31 @@ no-resume behavior and failed setup cleanup. This increment adds no CDP command,
 helper bytes or request authority. The separate footprint cache cursor and
 producer codebook remain unmounted; full upload/delete/Save and four-generation
 acceptance remain false. No Windows/app/native/MCP operation ran.
+
+The separate footprint startup-cache leaf now has eight fixed slots: at most
+seven grouped data bodies and one original head index. Its cursor admits only
+the exact original packet at entry, retained Promise and success, acknowledges
+all three corresponding resumes, and requires all eight actual Promise states
+to fulfill. One additional metadata settlement pass is bounded and consumed;
+pending state is not completion. The derived maximum is64 cursor commands plus
+24 exact helper-source reads, with24 held events. The96 grammar variants include
+the alternative document/head entry form and never authorize a ninth job or an
+arbitrary program. These are unmounted data/grammar capacities, not a new native
+reservation.
+
+A separate descriptor-only head encoder uses1,024 nodes, depth12,256 array items
+and32 object fields. It retains native JSON omission of own undefined object
+values and null substitution in arrays. This matters because the pinned
+`flowParseFull` DOCHEAD fallback explicitly creates undefined actor fields.
+Every original descriptor still needs reproof; application serialization hooks
+are neither read nor invoked. Full expected JSON graphs are qualified before
+cursor construction. Older generated-project encoder/cursor semantics remain
+unchanged.
+
+Five focused inert parser/VM/cursor checks cover eight concurrent jobs, actual
+pending/fulfilled Promise observations, descriptor/Response/callback drift,
+undefined fallback, graph bounds and sealed grammar refusal. Full types and
+strict changed-file lint pass. No original producer origin, native sender,
+bootstrap resume, Cache put or delete/Save authority is issued by these leaves.
+Their genuine inverse-only enrollment and complete producer frontier remain the
+next required joins.
