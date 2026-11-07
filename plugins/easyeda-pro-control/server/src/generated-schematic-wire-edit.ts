@@ -64,7 +64,10 @@ export function buildGeneratedSchematicWireEditNativeArguments(prepared: Generat
     need(row.type === "TEXT" || row.type === "WIRE" || row.type === "BUS" || row.type === "LINE" || row.type === "ATTR", "PEER_TYPE");
     let body = structuredClone(row.body);
     if (row.type === "TEXT") { body = { ...projectGeneratedSchematicInitialNativeTextBody(body) }; }
-    else if (row.type === "ATTR") { body = { ...projectGeneratedSchematicRelevanceNativeAttributeBody(body, wire.id) }; }
+    // The original archive stores index1. NetPointManager.init creates the two
+    // Isolated endpoint dots; the source-pinned category sort places ATTR at3.
+    // This is a fixed native baseline, not an arbitrary observed peer value.
+    else if (row.type === "ATTR") { body = { ...projectGeneratedSchematicRelevanceNativeAttributeBody(body, wire.id), zIndex: 3 }; }
     if (row.type === "TEXT" || row.type === "WIRE" || row.type === "BUS") {
       need(body["zIndex"] === null, "INITIAL_ROOT_INDEX"); rootIds.push(row.id);
       const { groupId: _group, zIndex: _index, ...rest } = body; body = rest;

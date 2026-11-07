@@ -2,6 +2,8 @@
 
 - [2026-11-07 inverse first-timer intent](2026-11-07-inverse-first-timer-intent.md). One original durable pre-navigation intent, separate once-only enrollment/consumption and derived native reservation; actual timer transport and completion remain separate.
 
+- [2026-11-07 fixed schematic Wire stage](2026-11-07-schematic-wire-native-stage.md). Retain one existing LINE and native geometry methods, prove two source-excluded endpoint dots and fixed Relevance index3, and preserve the unmounted original-lifecycle boundary.
+
 - [2026-11-07 generated schematic Wire data](2026-11-07-generated-schematic-wire-data.md). Strict existing-LINE geometry, full seven-record effect and separate pending LINE body; actual source confirms ID reuse while original invocation and persistence remain unproved.
 
 - [2026-11-07 controlled disposable Via registration](2026-11-07-disposable-via-mode-registration.md). Register only the generated-fixture validation route in the exact current profile, align explicit prompt policy and offline coverage, and retain all original runtime gates and unclaimed connected acceptance.
