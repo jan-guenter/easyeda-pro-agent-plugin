@@ -28,3 +28,13 @@ parser, which accepts that input. No production parser guard was relaxed.
 These checks use synthetic SQL and inert parser objects. Original writer
 completion, fresh cache exclusion, native cold loading and saved/reopened
 validation remain pending. No user design was opened or edited.
+
+The next source slice adds an opaque closed-lifecycle composition. It requires
+the original completed Save-drain token, observed original termination and
+closed snapshot before comparing the full SQL delta, preparing the managed
+checkpoint and deriving cold-load inputs. Repeated calls retain the same
+preparation promise, including failure. Its original-reference lookup joins
+every constituent again for a later separately admitted reader. Matching JSON
+cannot issue the packet or bypass the drain token. The focused entry-guard
+check, strict changed-file lint and TypeScript checks passed. Positive original
+writer completion and native reopening remain pending.
