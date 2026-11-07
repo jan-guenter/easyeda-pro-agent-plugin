@@ -1389,3 +1389,41 @@ deleteString entry, its single awaited clock and once-only original SDK call.
 Upload/queue/cache producer settlement, inverse Main mutation/SQL completion,
 closed inverse proof and the independent fourth reader remain required before
 four-generation success can be claimed.
+
+## Supported public deletion path and completion boundary
+
+The current public `lib_Footprint.delete(footprintUuid, libraryUuid)` contract is
+[documented by the vendor](https://prodocs.lceda.cn/en/api/reference/pro-api.lib_footprint.delete.html).
+The pinned SDK method dispatches `extensionApi.LIB_Footprint.delete` on its
+original extension message bus. UI `M8.delete` supports the literal `"Project"`,
+substitutes the current project and retains its project-reference checks.
+Passing the raw current project UUID would instead bypass those checks; the
+inverse route must not use that shortcut. PCB primitive String deletion refers
+to text primitives and is unrelated to a FOOTPRINT document tombstone.
+
+A new origin-free profile pins19 critical fragments across the complete API,
+UI and manager files: the public methods, lookup/path helpers, four dependency
+queries plus their PCB traversal, project facade/RPC handler, logging/tab helpers
+and the force-sync service. The public path reaches `Tg.deleteData`, but the
+UI helper calls the project delete facade from `forEach` without awaiting its
+Promise, then reports success. It subsequently dispatches UI logging/tab work,
+an awaited force-sync RPC, both clear-history publications, a success notice
+and `deleteDataBottomCb`. These are additional original effect/callback joins,
+not a reason to treat the public boolean as native completion.
+
+The force-sync label needs a source-specific distinction: the pinned manager
+registers `/pro-mgr/project/sync/force` with the empty `async t=>{}` handler.
+That awaited service cannot prove a syncCloud or upload drain. In this current
+project, `P4` skips its component log when the resolved path equals the current
+project; `yy` returns before tab effects when the exact target tab is absent.
+Those branches still require actual original receiver/return and roster custody
+before being excluded. The separate clear-history subscribers and bottom-panel
+callback also remain unqualified; no listener absence is inferred here.
+
+Three focused regressions execute only the exact extracted pure wrappers on
+synthetic dependencies. They prove the literal-Project mapping/check flag, the
+SDK's exact topic/arguments, the successful public return while its native
+Promise remains pending, and the empty force-sync handler. Complete file/hash
+and all19 fragment checks, both types and strict changed lint pass. No actual
+SDK/native call, direct manager equivalent, delete dispatch or collateral
+completion has been enabled by this source leaf.
