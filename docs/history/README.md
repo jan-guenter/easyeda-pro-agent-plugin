@@ -721,3 +721,5 @@ layout. The connected ledger retains its generation and case anchors.
 - [Original Via upload deletion custody](2026-11-07-original-via-upload-delete-custody.md) — one retained event lane, exact uploaded-body/history/native delete continuation, and source-correct 16-character local keys.
 - [Exact new-program native table packing](2026-11-07-native-shared-program-table-packing.md)
 - [Original Via drain owner API](2026-11-07-via-original-drain-owner-api.md) — one retained 32-event pump, actual Main readiness joins, exact script/condition correlation and opaque final completion; native packing remains separate.
+
+- [Original disposable Via controller and cleanup](2026-11-07-original-via-controller-and-cleanup.md). Retained two-generation composition, exact generated-worker source catalogue and failed-resource closure; connected validation remains pending.

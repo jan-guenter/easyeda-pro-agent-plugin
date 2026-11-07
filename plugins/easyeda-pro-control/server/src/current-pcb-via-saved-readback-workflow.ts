@@ -78,7 +78,7 @@ export class CurrentPcbViaSavedReadbackWorkflow {
     return Object.freeze({ native: Object.freeze({ generation: "readback", allocation,
       nativeResourcesRetained: allocation === "retained" || allocation === "unresolved", abortAttempted: this.#abort !== null,
       originalTerminationVerified: this.#closed, helperReleaseVerified: released,
-      publicationPending: this.#publication !== null || this.#journal?.retained().publicationPending === true }),
+      publicationPending: this.#cleanupPublicationBlocked || this.#publication !== null || this.#journal?.retained().publicationPending === true }),
       captureReleasePending: this.#capture !== null && !this.#capture.isReleaseAcknowledged(),
       originalCallsPending: this.#pending !== null || this.#factory !== null && !this.#factorySettled });
   }

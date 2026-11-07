@@ -29,6 +29,9 @@ import { CURRENT_PROJECT_SAVE_PRODUCER_REQUESTS } from "./current-project-save-p
 import { CurrentProjectStructureTransportObserver } from "./current-project-structure-transport-observer.ts";
 import { qualifyOriginalCurrentPcbViaSaveProjection } from "./current-pcb-via-save-projection.ts";
 import { CURRENT_PCB_VIA_LOCAL_UPLOAD_ROLES } from "./current-pcb-via-local-upload-protocol.ts";
+import { CURRENT_PCB_VIA_UPLOAD_REQUEST_REQUESTS } from "./current-pcb-via-upload-request-protocol.ts";
+import { CURRENT_PCB_VIA_SAVE_DRAIN_REQUESTS } from "./current-pcb-via-save-drain-protocol.ts";
+import { CURRENT_PCB_VIA_POST_HISTORY_SYNC_REQUESTS } from "./current-pcb-via-post-history-sync-protocol.ts";
 
 type Outcome<T> = Readonly<{ ok: true; value: T }> | Readonly<{ ok: false; error: unknown }>;
 type NativeObservation = Awaited<ReturnType<CurrentPcbViaWriteOwner["observeViaPrimitives"]>>;
@@ -59,6 +62,7 @@ export class CurrentPcbViaWriteObservers {
   #createPrepared = false; #sdkCreateAttempted = false; #createDispatch: CurrentPcbViaWriteDispatch | null = null;
   #createAcknowledgement: CurrentPcbViaWriteStageResult | null = null; #localAttempted = false;
   #bodyReleaseEntered = false;
+  #localService: Promise<void> | null = null; #drain: Promise<void> | null = null; #drainCompleted = false;
   #createAttempted = false; #effect: CurrentPcbViaWriteEffect | null = null; #clockAttempted = false; #bodyAttempted = false;
   public constructor(owner: CurrentPcbViaWriteOwner, plan: CurrentPcbViaWritePlan) {
     assertOriginalCurrentPcbViaWriteOwner(owner); const prepared = requireOriginalCurrentPcbViaWritePlan(plan).prepared;
@@ -287,8 +291,9 @@ export class CurrentPcbViaWriteObservers {
   }
   /** A separate original collector services the fixed local put/buffer chain
    * alongside clock/body handling. It issues no final upload-drain authority. */
-  public async serviceSaveLocalCalls(): Promise<void> {
+  public serviceSaveLocalCalls(): Promise<void> {
     this.#current(); need(!this.#localAttempted && this.#phase === "action" && this.#bodyAttempted, "SAVE_LOCAL_CONSUMED"); this.#localAttempted = true;
+    const original = (async (): Promise<void> => {
     try {
       const first = await this.originalProducerAfterAction(); this.#current(); let packet = first.packet;
       for (const [index, role] of CURRENT_PCB_VIA_LOCAL_UPLOAD_ROLES.entries()) {
@@ -301,6 +306,42 @@ export class CurrentPcbViaWriteObservers {
       }
       first.observer.requireSaveLocalCompleted(); this.#current();
     } catch (error) { this.#stop(error); throw error; }
+    })(); this.#localService = original; return original;
+  }
+  async #nextOriginalProducer(observer: CurrentProjectSaveProducerObserver): Promise<CurrentProjectSaveProducerHeldCall> {
+    this.#current(); need(this.#originalPendingProducer === null, "ORIGINAL_PRODUCER_READ_PENDING");
+    const pending = observer.observeHeldCall(); this.#originalPendingProducer = pending;
+    const packet = await pending; need(this.#originalPendingProducer === pending, "ORIGINAL_PRODUCER_READ_CHANGED");
+    this.#originalPendingProducer = null; this.#current(); requireOriginalCurrentProjectSaveProducerHeldCall(packet, observer); return packet;
+  }
+  /** One reader services the original upload, deferred sync, cache jobs and
+   * later full sync. All continuations remain in the same original observer. */
+  public drainOriginalSave(): Promise<void> {
+    this.#current(); need(this.#drain === null && this.#localService !== null, "ORIGINAL_DRAIN_CONSUMED");
+    const local = this.#localService;
+    const original = (async (): Promise<void> => {
+      try {
+        await local; this.#current(); const observer = this.#producer; need(observer !== null, "ORIGINAL_PRODUCER_REQUIRED");
+        const maximum = CURRENT_PCB_VIA_UPLOAD_REQUEST_REQUESTS.events + CURRENT_PCB_VIA_SAVE_DRAIN_REQUESTS.events + CURRENT_PCB_VIA_POST_HISTORY_SYNC_REQUESTS.events;
+        for (let index = 0; index < maximum; index += 1) {
+          const packet = await this.#nextOriginalProducer(observer);
+          await observer.continueSaveDrainCall(packet); this.#current();
+          let progress = observer.saveDrainProgress();
+          // The final cache callbacks provide a causal settlement point. Never
+          // Enqueue an extra event read after every known call resumed.
+          if (progress.allCallsResumed && progress.canSettle) {
+            await observer.settleSaveDrain(); this.#current(); progress = observer.saveDrainProgress();
+          }
+          if (progress.completed) { observer.requireOriginalSaveDrained(); this.#drainCompleted = true; return; }
+          need(!progress.allCallsResumed, "ORIGINAL_DRAIN_SETTLEMENT_UNRESOLVED");
+        }
+        throw new Error("PCB_VIA_OBSERVER_GROUP_ORIGINAL_DRAIN_CAPACITY");
+      } catch (error) { this.#stop(error); throw error; }
+    })(); this.#drain = original; return original;
+  }
+  public requireOriginalSaveDrained(): void {
+    this.#current(); need(this.#drainCompleted && this.#producer !== null, "ORIGINAL_DRAIN_COMPLETION_REQUIRED");
+    this.#producer.requireOriginalSaveDrained(); this.#current();
   }
   public retainedCreateState(): Readonly<{ requestGenerationEntered: boolean; originalAcknowledgement: CurrentPcbViaWriteStageResult | null }> {
     assertOriginalCurrentPcbViaWriteOwner(this.#owner); need(originalCurrentPcbViaWriteTarget(this.#owner) === this.#prepared, "ORIGINAL_CHANGED");
@@ -318,6 +359,8 @@ export class CurrentPcbViaWriteObservers {
     if (this.#quiescence !== null) { pending.push(this.#quiescence); }
     if (this.#collector !== null) { pending.push(this.#collector); }
     if (this.#originalPendingProducer !== null) { pending.push(this.#originalPendingProducer); }
+    if (this.#localService !== null) { pending.push(this.#localService); }
+    if (this.#drain !== null) { pending.push(this.#drain); }
     await Promise.allSettled(pending); current();
   }
   /** Revoke only this orchestration. The original native owner and every
