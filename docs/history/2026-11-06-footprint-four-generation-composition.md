@@ -1533,3 +1533,42 @@ both typechecks and strict changed lint pass. Complete legacy generation twice
 is exact at1,393,269 stored helper bytes and1,935,813 compiler bytes; full
 emitted Linux C#5 passes all41 message parity cases, purpose/cap refusals and
 previous public/Ke smokes. No helper/pins/bundles or live process were changed.
+
+## Strict CJS scope correction before native use
+
+The preceding worker-binding increment and its earlier ready module lookup
+were runtime-unreachable. Source ancestry places JP/KP/Mb/wu/Hg/Ac/WP inside
+the strict ui() CJS factory at804..18,560; Lg/Tg/wa/oo/qe are in the outer
+bundle. The flattened inert fixture had incorrectly made those names visible
+to the ready frame. Its five-field Hg/Ac/WP result described that simulation,
+not their actual strict factory. The source failure and earlier checks remain
+recorded above. No native case, SDK call or frozen build used that increment.
+
+Ready still captures the same18 slots, but derives JP/KP/Mb through the actual
+notification bus's descriptor/prototype chain. It no longer names the private
+CJS classes. The worker binding captures only outer wa/oo/qe in that frame,
+then takes the actual retained KP.subscribe method's metadata and leading
+Closure. That original scope supplies wu/Hg/Ac/WP/VP; all34 callee/source/
+descriptor relations remain required. After those metadata reads and again
+before dispatch, a fresh scope of that same method must reproduce the private
+bindings. The complete strict factory text/hash and classic importScripts
+bootstrap supply the strictness facts: Hg/Ac/WP have exactly three own fields;
+outer xt/$e/wa/oo have exactly five, including immutable null caller/arguments.
+There is no optional metadata tail or global decoder relaxation.
+
+Both Inspector fixtures now preserve the genuine nested strict factory and
+leave JP/KP/Mb/Hg/WP unavailable in the outer ready scope. The revised ready
+lookup and all28 original callee metadata checks pass. The new bus capture,
+all34 actual metadata replies and fresh-scope reproof pass under the unchanged
+true side-effect flag; queue/counter drift still refuses. Its derived bound
+is45 setup commands/four helpers plus three final commands/one helper:
+53 CDP requests and55 controls, with49 fixed wire variants. Ready's92/94 bound
+is unchanged. Branch totals become renderer17,230, Main993,
+Main reproofs92,897 and aggregate controls161,293. Original purpose ceilings
+and all invocation/clock/delete grants remain unchanged.
+
+Sixteen focused nested-scope/original-factory/cursor checks, both typechecks
+and strict changed lint pass. Complete private legacy generation twice is
+exact at1,394,005 stored helper bytes and1,938,165 compiler bytes. Full emitted
+Linux C#5 passes all49 bus messages and the ready/public/Ke smokes. No tracked
+helper, pins or bundle was emitted; connected inverse proof remains pending.

@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { qualifyCurrentFootprintDeleteSource } from "./current-footprint-delete-source.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
-export const CURRENT_FOOTPRINT_INVERSE_DELETE_BINDING_MODULES = "[Tg,ar,Pi,ja,Vc,zy,Lg,Gd,JP,KP,Mb,qe,Ke,xt,$e,Ie,rl,of]";
+export const CURRENT_FOOTPRINT_INVERSE_DELETE_BINDING_MODULES = "[Tg,ar,Pi,ja,Vc,zy,Lg,Gd,Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Object.getOwnPropertyDescriptor(PROJECT,\"wsBus\").value),\"constructor\").value,Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Object.getPrototypeOf(Object.getOwnPropertyDescriptor(PROJECT,\"wsBus\").value)),\"constructor\").value,Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Object.getPrototypeOf(Object.getPrototypeOf(Object.getOwnPropertyDescriptor(PROJECT,\"wsBus\").value))),\"constructor\").value,qe,Ke,xt,$e,Ie,rl,of]";
 export const CURRENT_FOOTPRINT_INVERSE_DELETE_CALLEES = freezeDeep([
   {
     "key": "Tg",
