@@ -5,6 +5,8 @@
 - [2026-11-07 Bounded facade identifier compaction](2026-11-07-bounded-facade-identifier-compaction.md)
 
 - [2026-11-07 Separate diagnostic and inverse native layouts](2026-11-07-native-diagnostic-inverse-layouts.md)
+- [2026-11-07 inverse GET native and row preparation](2026-11-07-inverse-get-native-row-preparation.md). Original held-F2 readonly intrinsic preparation and passive exact-reference row checks; GET forwarding and completion remain separate.
+
 - [2026-11-07 inner manager GET transport source](2026-11-07-inverse-inner-get-functions.md). Exact43-function Li BroadcastChannel roster; runtime native sender and request custody remain separate.
 
 - [2026-11-07 Initialized Footprint GET function qualification](2026-11-07-initialized-footprint-get-functions.md)
