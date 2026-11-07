@@ -20,7 +20,7 @@ export function generateFootprintInverseNativeSource(seed: string): Readonly<{ h
   source = one(source, ownerLine, "$owner=[EasyedaDiagnosticOwner]::CreateFootprintInverse209()");
   const begin = source.indexOf("  if ($CompileOnly) {"), end = source.indexOf("  $launched=$false", begin); if (begin === -1 || end <= begin) { throw new Error("INVERSE_NATIVE_DRIVER_COMPILE"); }
   const smoke = source.slice(begin, end).split("\n").filter(line => /^ {4}\[EasyedaDiagnosticOwner\]::VerifyFootprintInverse\w*\(\)$/u.test(line));
-  if (smoke.length !== 22 || new Set(smoke).size !== smoke.length) { throw new Error("INVERSE_NATIVE_DRIVER_SMOKE_ROSTER"); }
+  if (smoke.length !== 23 || new Set(smoke).size !== smoke.length) { throw new Error("INVERSE_NATIVE_DRIVER_SMOKE_ROSTER"); }
   source = `${source.slice(0, begin)}  if ($CompileOnly) {\n${smoke.join("\n")}\n    if (-not $owner.Terminated()) {throw 'inverse-native-compile-job-not-empty'}\n    $owner.ReleaseUnlaunched()\n    @{schema='easyeda-pro-control.footprint-inverse-compile.v1';compiled=$true;emptyJob=$true;pipesChecked=$true;processLaunched=$false} | ConvertTo-Json -Compress\n    exit\n  }\n${source.slice(end)}`;
   const compiler = currentPcbDiagnosticCSharpRuntimeCompilerInput(source), review = currentPcbDiagnosticCSharpReviewSource(source);
   if (Buffer.byteLength(source) > MAXIMUM || Buffer.byteLength(compiler) > MAXIMUM) { throw new Error("INVERSE_NATIVE_FIXED_BOUND"); }

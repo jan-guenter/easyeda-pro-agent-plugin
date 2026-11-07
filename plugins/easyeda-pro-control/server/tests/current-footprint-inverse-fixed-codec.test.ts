@@ -2,6 +2,9 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
+import { currentFootprintInverseUiOwnDataCases } from "../src/current-footprint-inverse-ui-own-data-protocol.ts";
+import { currentFootprintInverseOwnDataCases } from "../src/current-footprint-inverse-own-data-protocol.ts";
+import { currentFootprintInverseLookupPreentryCases } from "../src/current-footprint-inverse-lookup-preentry-protocol.ts";
 import { currentFootprintInverseFixedCodecNativeMethod, currentFootprintInverseFixedCodecNativeSource } from "../src/current-footprint-inverse-fixed-codec-native.ts";
 import { CURRENT_FOOTPRINT_INVERSE_GET_INTRINSICS_CALLS as INTRINSIC, currentFootprintInverseGetIntrinsicsCases, currentFootprintInverseGetIntrinsicsTemplate, validateCurrentFootprintInverseGetIntrinsicsCommand } from "../src/current-footprint-inverse-get-intrinsics-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_GET_RPC_ENTRY_CALLS as RPC, currentFootprintInverseGetRpcEntryCases, currentFootprintInverseGetRpcEntryTemplate, validateCurrentFootprintInverseGetRpcEntryCommand } from "../src/current-footprint-inverse-get-rpc-entry-protocol.ts";
@@ -14,4 +17,13 @@ void test("both original fixed tables retain golden wire bytes while sibling gra
   const native = currentFootprintInverseFixedCodecNativeSource(); assert.ok(native.includes("fields.Count!=names.Length") && native.includes("GetByteCount(text)>65536") && native.includes("InverseDeleteBindingHandle"));
   assert.throws(() => currentFootprintInverseFixedCodecNativeMethod("FootprintInverseGetIntrinsicsMessage", "InverseGetRpcEntryRows", "inverse-get-rpc-entry-", "get_rpc_entry_"));
   assert.throws(() => currentFootprintInverseFixedCodecNativeMethod("FootprintInverseGetRpcEntryMessage", "InverseGetIntrinsicsRows", "inverse-get-intrinsics-", "get_intrinsics_"));
+});
+
+void test("the three newly shared renderers preserve all 66 retained pre-factor C# wire hashes", () => {
+  const hashes: string[] = [];
+  for (const cases of [currentFootprintInverseUiOwnDataCases(), currentFootprintInverseOwnDataCases(), currentFootprintInverseLookupPreentryCases()]) {
+    for (const command of cases) { hashes.push(createHash("sha256").update(`${JSON.stringify({ id: 79, method: command.method, params: command.params, sessionId: "original_ui" })}\0`).digest("hex")); }
+  }
+  assert.equal(hashes.length, 66);
+  assert.equal(createHash("sha256").update(hashes.join("\n")).digest("hex"), "73ea7f65fdaf536a5563794f60a5d2f87444b5004351096d9b2099205f6f6a21");
 });

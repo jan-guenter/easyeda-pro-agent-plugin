@@ -1,3 +1,4 @@
+import { currentFootprintInverseGetForwardingCases } from "../src/current-footprint-inverse-get-forwarding-protocol.ts";
 /* oxlint-disable import/max-dependencies -- This real byte-stream test composes the SDK and every independent finite concurrent vocabulary. */
 /** Actual byte transport only: synthetic replies issue no native owner or
  * runtime source/call/delete authority. */
@@ -38,6 +39,7 @@ void test("original SDK write and reply remain separate while fixed UI and worke
   // Still pending. A raw Promise reply is not needed to free this finite lane.
   for (const command of currentFootprintInverseGetIntrinsicsCases()) { const observation = pipe.observeInverseGetIntrinsics(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
   for (const command of currentFootprintInverseGetRpcEntryCases()) { const observation = pipe.observeInverseGetRpcEntry(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
+  for (const command of currentFootprintInverseGetForwardingCases()) { const observation = pipe.observeInverseGetForwarding(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
   input.write(Buffer.from(`${JSON.stringify({...sdkRequest,result:{result:{type:"object",subtype:"promise",className:"Promise",objectId:"original-sdk-promise"}}})}\0`));
   assert.deepEqual(await pending,{result:{type:"object",subtype:"promise",className:"Promise",objectId:"original-sdk-promise"}});pipe.requireInversePublicDeleteWritten(pending);
   const commands=cases.filter(command=>command.phase!=="inverse-public-call-sdk");
@@ -48,6 +50,7 @@ void test("original SDK write and reply remain separate while fixed UI and worke
   for(const command of currentFootprintInverseLookupPreentryCases()){const observation=pipe.observeInverseLookupPreentry(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   for (const command of currentFootprintInverseGetIntrinsicsCases()) { const observation = pipe.observeInverseGetIntrinsics(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
   for (const command of currentFootprintInverseGetRpcEntryCases()) { const observation = pipe.observeInverseGetRpcEntry(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
+  for (const command of currentFootprintInverseGetForwardingCases()) { const observation = pipe.observeInverseGetForwarding(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
   assert.equal(pipe.status().failureObservation,null);
   const before=sent.length;const first=currentFootprintInversePublicCallCases()[0];assert.ok(first!==undefined);const other:unknown=Object.create(CurrentPcbViaWritePipe.prototype);
   // oxlint-disable-next-line typescript/unbound-method -- Invalid sibling receiver must reject before emitting bytes.

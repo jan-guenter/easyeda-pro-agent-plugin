@@ -10,6 +10,7 @@ import { requireCurrentFootprintInversePublicLookupGraphDescription as graphDesc
 import { currentFootprintInverseGetRpcEntryProfile as profile, qualifyCurrentFootprintInverseGetRpcManagerSource, currentFootprintInverseGetRpcEntryScope as scope } from "./current-footprint-inverse-get-rpc-entry-replies.ts";
 import type { CurrentFootprintInverseGetRpcEntryProfile as Profile } from "./current-footprint-inverse-get-rpc-entry-replies.ts";
 import { requireCurrentFootprintInversePublicServiceTrue as truth } from "./current-footprint-inverse-public-service-replies.ts";
+import { currentFootprintInverseLookupIdentity } from "./current-footprint-inverse-lookup-identity.ts";
 
 export interface CurrentFootprintInverseGetRpcEntryCollectorBindings {
   readonly receipt: string; readonly roots: string; readonly context: string; readonly originalEntry: string; readonly uiScriptId: string; readonly managerScriptId: string;
@@ -19,9 +20,10 @@ export interface CurrentFootprintInverseGetRpcEntryCollectorBindings {
   readonly f2Frame: () => string; readonly waitEntry: (breakpoint: string, profile: Profile) => Promise<string>;
 }
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_GET_RPC_ENTRY_COLLECTOR"); } }
-export async function collectCurrentFootprintInverseGetRpcEntry(b: CurrentFootprintInverseGetRpcEntryCollectorBindings): Promise<Readonly<{ selected: string; functions: string; scope: string; getterScope: string; entry: string; argument: string; profile: Profile }>> {
+export async function collectCurrentFootprintInverseGetRpcEntry(b: CurrentFootprintInverseGetRpcEntryCollectorBindings): Promise<Readonly<{ selected: string; functions: string; scope: string; getterScope: string; entry: string; argument: string; rpc: string; profile: Profile }>> {
+  const identity = currentFootprintInverseLookupIdentity(b.target);
   const props = async (objectId: string): Promise<unknown> => { b.current(); const raw = await b.request({ phase: "inverse-get-rpc-entry-properties", method: "Runtime.getProperties", params: { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }); b.current(); return raw; };
-  const call = async (role: keyof typeof CALLS, refs: readonly string[], target = false): Promise<unknown> => { b.current(); const row = CALLS[role]; const args: unknown[] = refs.map(objectId => ({ objectId })); if (target) { args.push({ value: b.target }); } const raw = await b.request(validate({ phase: "inverse-get-rpc-entry-call", role, method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: b.receipt, functionDeclaration: row.program, arguments: args, returnByValue: row.byValue } })); b.current(); return raw; };
+  const call = async (role: keyof typeof CALLS, refs: readonly string[], target = false): Promise<unknown> => { b.current(); const row = CALLS[role]; const args: unknown[] = refs.map(objectId => ({ objectId })); if (target) { args.push({ value: identity }); } const raw = await b.request(validate({ phase: "inverse-get-rpc-entry-call", role, method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: b.receipt, functionDeclaration: row.program, arguments: args, returnByValue: row.byValue } })); b.current(); return raw; };
   const tuple = async (role: keyof typeof CALLS, refs: readonly string[], size: number): Promise<string> => result(await call(role, refs), size);
   const frame = async (role: keyof typeof EXPRESSIONS, callFrameId: string, size: number): Promise<string> => result(await b.request({ phase: "inverse-get-rpc-entry-frame", role, method: "Debugger.evaluateOnCallFrame", params: { callFrameId, expression: EXPRESSIONS[role], objectGroup: FLAGS.objectGroup, silent: true, generatePreview: false, throwOnSideEffect: true, returnByValue: false, includeCommandLineAPI: false } }), size);
   await b.control("bind"); qualifyCurrentFootprintInverseGetRpcManagerSource(await b.request({ phase: "inverse-get-rpc-entry-source", method: "Debugger.getScriptSource", params: { scriptId: b.managerScriptId } })); b.current(); const selected = await tuple("select", [b.roots, b.context, b.originalEntry], 4); const selectedValues = array(await props(selected), 4); for (const value of selectedValues) { properties(await props(object(value))); }
@@ -36,5 +38,5 @@ export async function collectCurrentFootprintInverseGetRpcEntry(b: CurrentFootpr
   truth(await call("same", [selected, functions, capturedScope, getterScope])); truth(await call("f2", [fresh, b.originalEntry, b.roots, functions, capturedScope, getterScope], true));
   await b.request({ phase: "inverse-get-rpc-entry-resume", method: "Debugger.resume", params: {} }); const heldFrame = await b.waitEntry(breakpoint, actualProfile); b.current(); await b.control("resumed"); await b.control("held");
   const entry = await frame(actualProfile === "ui" ? "rpc" : "managerRpc", heldFrame, 5); const entryValues = array(await props(entry), 5); const argument = entryValues[2]; need(argument !== undefined); array(await props(object(argument)), 2); truth(await call("entry", [entry, selected, functions, capturedScope, getterScope], true)); await b.control("complete");
-  return Object.freeze({ selected, functions, scope: capturedScope, getterScope, entry, argument: object(argument), profile: actualProfile });
+  return Object.freeze({ selected, functions, scope: capturedScope, getterScope, entry, argument: object(argument), rpc: rpcId, profile: actualProfile });
 }

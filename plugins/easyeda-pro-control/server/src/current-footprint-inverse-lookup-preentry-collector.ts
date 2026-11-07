@@ -9,6 +9,7 @@ import type { CurrentFootprintInversePublicLookupGraphRole } from "./current-foo
 import { requireCurrentFootprintInversePublicLookupDescription as lookupDescription, decodeCurrentFootprintInversePublicLookupFunction as lookupFunction } from "./current-footprint-inverse-public-lookup-replies.ts";
 import { decodeCurrentNativeFunctionMetadata } from "./current-native-function-metadata.ts";
 import { requireCurrentFootprintInversePublicServiceTrue as trueReply } from "./current-footprint-inverse-public-service-replies.ts";
+import { currentFootprintInverseLookupIdentity } from "./current-footprint-inverse-lookup-identity.ts";
 
 export interface CurrentFootprintInverseLookupPreentryBindings {
   readonly receipt: string; readonly scope: string; readonly original: string; readonly proof: string; readonly handler: string; readonly task: string; readonly uiScriptId: string;
@@ -21,6 +22,7 @@ function need(value: boolean): asserts value { if (!value) { throw new Error("IN
 /** No callback selected by caller is run. The only resume belongs to the
  * originally held API service and stops before F2's first statement. */
 export async function collectCurrentFootprintInverseLookupPreentry(b: CurrentFootprintInverseLookupPreentryBindings): Promise<Readonly<{ roots: string; context: string; selected: string; service: string; entry: string; argument: string }>> {
+  const target = currentFootprintInverseLookupIdentity(b.target);
   const invoke = async (role: keyof typeof CALLS, values: readonly string[], value?: unknown): Promise<unknown> => { b.current(); const row = CALLS[role]; const args: unknown[] = values.map(objectId => ({ objectId })); if (value !== undefined) { args.push({ value }); } const raw = await b.request(validate({ phase: "inverse-lookup-preentry-call", role, method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: b.receipt, functionDeclaration: row.program, arguments: args, returnByValue: row.byValue } })); b.current(); return raw; };
   const props = (id: string, role: "tuple" | "object" | "function" | "scopes" | "argument" = "tuple"): Promise<unknown> => b.request(validate({ phase: "inverse-lookup-preentry-properties", role, method: "Runtime.getProperties", params: { objectId: id, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }));
   const decoded = async (id: string, size?: number, qualify = true, skipRoot = false): Promise<readonly Remote[]> => { const values = array(await props(id), size); if (qualify) { for (const [index, value] of values.entries()) { if (!(skipRoot && index === 0 || value.type === "object" && value.subtype === "null") && (value.type === "object" || value.type === "function")) { properties(await props(object(value), "object")); } } } return values; };
@@ -45,9 +47,9 @@ export async function collectCurrentFootprintInverseLookupPreentry(b: CurrentFoo
   trueReply(await invoke("registryMembership", [selected, roots, context, b.original], b.target.projectUuid)); trueReply(await invoke("registrySame", [selected]));
   const f2 = members[6]; need(f2 !== undefined); const functionId = object(f2); await b.control("prepared", functionId);
   const breakpoint = point(await b.request(validate({ phase: "inverse-lookup-preentry-arm", method: "Debugger.setBreakpointOnFunctionCall", params: { objectId: functionId, condition: "" } }))); await b.control("armed", breakpoint);
-  const serviceEntry = await frame("service", b.serviceFrame()); await decoded(serviceEntry, 5, false); trueReply(await invoke("serviceEntry", [serviceEntry, b.original, b.proof, b.handler, b.task, service], b.target));
+  const serviceEntry = await frame("service", b.serviceFrame()); await decoded(serviceEntry, 5, false); trueReply(await invoke("serviceEntry", [serviceEntry, b.original, b.proof, b.handler, b.task, service], target));
   await b.request(validate({ phase: "inverse-lookup-preentry-resume", method: "Debugger.resume", params: {} }));
-  const entryFrame = await b.waitEntry(breakpoint); b.current(); await b.control("resumed"); await b.control("held"); const entry = await frame("entry", entryFrame); const fields = await decoded(entry, 2, false); const argument = fields[1]; need(argument !== undefined); properties(await props(object(argument), "argument")); trueReply(await invoke("f2Entry", [entry, roots, selected], b.target)); await b.control("complete");
+  const entryFrame = await b.waitEntry(breakpoint); b.current(); await b.control("resumed"); await b.control("held"); const entry = await frame("entry", entryFrame); const fields = await decoded(entry, 2, false); const argument = fields[1]; need(argument !== undefined); properties(await props(object(argument), "argument")); trueReply(await invoke("f2Entry", [entry, roots, selected], target)); await b.control("complete");
   return Object.freeze({ roots, context, selected, service, entry, argument: object(argument) });
   function resultUnknown(raw: unknown): string { need(raw !== null && typeof raw === "object" && "result" in raw && raw.result !== null && typeof raw.result === "object" && "description" in raw.result && typeof raw.result.description === "string"); const match = /^Array\((0|[1-9]\d?)\)$/u.exec(raw.result.description); need(match !== null); const length = Number(match[1]); need(length <= 64); return result(raw, length); }
   async function tupleUnknown(role: "merge2" | "merge3" | "merge4" | "merge5", values: readonly string[]): Promise<string> { return resultUnknown(await invoke(role, values)); }
