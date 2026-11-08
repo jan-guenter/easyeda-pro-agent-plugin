@@ -2,6 +2,8 @@
  * the fixed after-import pause. Descriptive replies issue no native lease. */
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { createOriginalSourceError } from "./original-source-error.ts";
+import { currentSelectedFileMainSqlFenceNativeShape, matchesCurrentSelectedFileMainSqlFenceNapi3 } from "./current-selected-file-main-sql-napi3-profile.ts";
 
 const handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const remote = z.object({ type: z.string(), subtype: z.string().optional(), className: z.string().optional(), objectId: handle.optional(),
@@ -9,6 +11,27 @@ const remote = z.object({ type: z.string(), subtype: z.string().optional(), clas
 const property = z.object({ name: z.string(), value: remote, writable: z.boolean(), enumerable: z.boolean(), configurable: z.boolean(), isOwn: z.literal(true) }).strict();
 const internal = z.object({ name: z.string(), value: remote }).strict();
 function need(value: boolean): asserts value { if (!value) { throw new Error("SELECTED_FILE_MAIN_SQL_FENCE_NATIVE_METADATA"); } }
+/** Inspect the original after-import Array(4) without calling its operands.
+ * This diagnostic check adds no binding or native-execution authority. The
+ * unchanged capture still proves the actual prototype and retained identities. */
+export function currentSelectedFileMainSqlFenceImportsError(input: unknown): string | null {
+  const parsed = z.object({ result: z.array(property).length(5), internalProperties: z.array(internal).length(1) }).strict().safeParse(captureCurrentPcbStringClockReply(input).value);
+  if (!parsed.success) { return "SELECTED_SQL_IMPORT_ARRAY_METADATA"; }
+  const reply = parsed.data;
+  const fields = new Map(reply.result.map(item => [item.name, item])), length = fields.get("length"), parent = reply.internalProperties[0];
+  if (!(fields.size === 5 && length?.value.type === "number" && length.value.value === 4 && length.value.objectId === undefined && length.writable && !length.enumerable && !length.configurable &&
+    parent?.name === "[[Prototype]]" && parent.value.type === "object" && parent.value.subtype === "array" && parent.value.className === "Array" && parent.value.objectId !== undefined)) {
+    return "SELECTED_SQL_IMPORT_ARRAY_METADATA";
+  }
+  for (const [index, code] of ["SELECTED_SQL_IMPORT_KEEPER", "SELECTED_SQL_IMPORT_CONTEXT", "SELECTED_SQL_IMPORT_SQLITE", "SELECTED_SQL_IMPORT_UTIL"].entries()) {
+    const callable = index < 2, field = fields.get(String(index));
+    if (!(field !== undefined && field.writable && field.enumerable && field.configurable && field.value.type === (callable ? "function" : "object") &&
+      field.value.className === (callable ? "Function" : "Object") && field.value.subtype === undefined && field.value.objectId !== undefined && field.value.value === undefined)) {
+      return code;
+    }
+  }
+  return null;
+}
 export function decodeCurrentSelectedFileMainSqlFenceNativeArray(input: unknown): readonly string[] {
   const reply = z.object({ result: z.array(property).length(6), internalProperties: z.array(internal).length(1) }).strict().parse(captureCurrentPcbStringClockReply(input).value);
   const fields = new Map(reply.result.map(item => [item.name, item])), length = fields.get("length");
@@ -20,7 +43,7 @@ export function decodeCurrentSelectedFileMainSqlFenceNativeArray(input: unknown)
       field.value.description === `function ${name}() { [native code] }`); return field.value.objectId;
   }));
 }
-export function decodeCurrentSelectedFileMainSqlFenceNative(input: unknown, role: "Database" | "Statement" | "proxy"): void {
+function decodeLegacyNative(input: unknown, role: "Database" | "Statement" | "proxy"): void {
   const count = role === "proxy" ? 2 : 3;
   const name = role === "proxy" ? "" : role;
   const reply = z.object({ result: z.array(property).length(count), internalProperties: z.array(internal).length(2) }).strict().parse(captureCurrentPcbStringClockReply(input).value);
@@ -36,4 +59,24 @@ export function decodeCurrentSelectedFileMainSqlFenceNative(input: unknown, role
   const entries = new Map(reply.internalProperties.map(item => [item.name, item.value])), parent = entries.get("[[Prototype]]"), scopes = entries.get("[[Scopes]]");
   need(entries.size === 2 && parent?.type === "function" && parent.className === "Function" && parent.objectId !== undefined && parent.value === undefined &&
     scopes?.type === "object" && scopes.subtype === "internal#scopeList" && scopes.className === "Array" && scopes.description === "Scopes[0]" && scopes.objectId !== undefined && scopes.value === undefined);
+}
+const nativeFailures = new WeakMap<object, string>();
+/** Original decoder failures only; messages, getters and copied Errors cannot
+ * issue the bounded role/count/shape code used by the original runner. */
+export function currentSelectedFileMainSqlFenceNativeFailure(input: unknown): string | null {
+  return input !== null && typeof input === "object" ? nativeFailures.get(input) ?? null : null;
+}
+function failNative(input: unknown, role: "Database" | "Statement" | "proxy"): never {
+  let label = "UNKNOWN";
+  if (role === "Database") { label = "DATABASE"; } else if (role === "Statement") { label = "STATEMENT"; } else if (role === "proxy") { label = "PROXY"; }
+  const shape = currentSelectedFileMainSqlFenceNativeShape(input);
+  const detail = `SELECTED_SQL_NATIVE_${label}_P${String(shape.fields)}_${shape.fingerprint}`;
+  const error = createOriginalSourceError("FOOTPRINT_MAIN_CONSTRUCTION", detail); nativeFailures.set(error, detail); throw error;
+}
+export function decodeCurrentSelectedFileMainSqlFenceNative(input: unknown, role: "Database" | "Statement" | "proxy"): void {
+  let captured: unknown;
+  try { captured = captureCurrentPcbStringClockReply(input).value; } catch { return failNative(null, role); }
+  if (role !== "Database" && role !== "Statement" && role !== "proxy") { return failNative(captured, role); }
+  if (role !== "proxy" && matchesCurrentSelectedFileMainSqlFenceNapi3(captured, role)) { return; }
+  try { decodeLegacyNative(captured, role); } catch { return failNative(captured, role); }
 }

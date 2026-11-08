@@ -5,6 +5,9 @@ import type { EasyedaControlEngine } from "./engine.ts";
 import type { UpstreamEasyedaClient } from "./upstream.ts";
 
 const MAX_BYTES = 262_144;
+// The complete reviewed source roster is sealed internally, never archived as
+// A fingerprint. Keep its distinct finite bound separate from artifact limits.
+const MAX_MANIFEST_BYTES = 4_194_304;
 export interface ClosedSymbolExpectedFingerprint {
   readonly profile: "easyeda-pro-control.closed-symbol-expected-fingerprint.v1";
   readonly fingerprint: ExpectedFingerprint;
@@ -13,12 +16,13 @@ export interface ClosedSymbolExpectedFingerprint {
   readonly executionAuthorized: false;
 }
 
-function dataText(value: unknown): string {
+function dataText(value: unknown, kind: "fingerprint" | "reviewed-manifest" = "fingerprint"): string {
+  const maximum = kind === "reviewed-manifest" ? MAX_MANIFEST_BYTES : MAX_BYTES;
   let bytes = 0, nodes = 0;
   const seen = new Set<object>();
   function string(text: string): void {
     bytes += Buffer.byteLength(text);
-    if (bytes > MAX_BYTES) { throw new Error("Expected fingerprint exceeds its data bound."); }
+    if (bytes > maximum) { throw new Error("Expected fingerprint exceeds its data bound."); }
   }
   function visit(item: unknown, depth: number): void {
     nodes += 1;
@@ -42,7 +46,7 @@ function dataText(value: unknown): string {
   }
   visit(value, 0);
   const text = JSON.stringify(value);
-  if (Buffer.byteLength(text) + 1 > MAX_BYTES) { throw new Error("Expected fingerprint plus artifact newline exceeds 256 KiB."); }
+  if (Buffer.byteLength(text) + 1 > maximum) { throw new Error(kind === "reviewed-manifest" ? "Reviewed manifest exceeds its separate internal seal bound." : "Expected fingerprint plus artifact newline exceeds 256 KiB."); }
   return text;
 }
 
@@ -86,14 +90,14 @@ export async function buildClosedSymbolExpectedFingerprint(engine: EasyedaContro
   if (launcherReader === undefined || bundleReader === undefined) { throw new Error("Expected fingerprint local readers are unavailable."); }
   const manifestFingerprint = reviewedCompatibilityManifestFingerprint();
   const manifest = loadReviewedCompatibilityManifest();
-  const manifestDataSeal = dataText(manifest), manifestSeal = dataText(manifestFingerprint);
+  const manifestDataSeal = dataText(manifest, "reviewed-manifest"), manifestSeal = dataText(manifestFingerprint);
   const retained: { original: unknown; seal: string }[] = [];
   function current(): void {
     if (ownValue(engine, "upstream") !== upstream || ownValue(engine, "controlFingerprintPromise") !== facadePromise ||
         method(upstream, "launcherFingerprint") !== launcherReader || method(upstream, "installedEasyedaBundles") !== bundleReader) {
       throw new Error("Expected fingerprint local owner or reader changed.");
     }
-    if (dataText(reviewedCompatibilityManifestFingerprint()) !== manifestSeal || dataText(loadReviewedCompatibilityManifest()) !== manifestDataSeal) {
+    if (dataText(reviewedCompatibilityManifestFingerprint()) !== manifestSeal || dataText(loadReviewedCompatibilityManifest(), "reviewed-manifest") !== manifestDataSeal) {
       throw new Error("Expected fingerprint reviewed manifest changed.");
     }
     for (const item of retained) { if (dataText(item.original) !== item.seal) { throw new Error("Expected fingerprint local identity changed."); } }

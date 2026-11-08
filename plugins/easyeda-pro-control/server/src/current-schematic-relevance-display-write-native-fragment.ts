@@ -1,4 +1,6 @@
 /* oxlint-disable import/max-dependencies -- The fixed own-purpose generator joins independently pinned stage programs, exact budgets and immutable native installers; no caller-selected codec is admitted. */
+import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_REGISTRATION_REQUESTS as REGISTRATION } from "./current-schematic-relevance-display-registration.ts";
+import { normalizeCurrentSchematicRelevanceDisplayRegistrationNative } from "./current-schematic-relevance-display-registration-native.ts";
 import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
 /** Build-only distinct Relevance birth. Shared fixed worker/SQL codecs retain
  * their bytes; no existing six-record owner is upgraded or retargeted. */
@@ -34,13 +36,16 @@ function packed(text: string): string {
 /** Restore only this unpublished adapter's deterministic family predicates
  * before the maintained fragments replace their original marker blocks. */
 export function normalizeCurrentSchematicRelevanceDisplayNativeFamily(input: string): string {
-  let source = input; const from = source.indexOf(begin), to = source.indexOf(end);
+  let source = normalizeCurrentSchematicRelevanceDisplayRegistrationNative(input); const from = source.indexOf(begin), to = source.indexOf(end);
   if (from !== -1 || to !== -1) {
     if (from === -1 || to < from || source.includes(begin, from + begin.length) || source.includes(end, to + end.length)) { throw new Error("SCHEMATIC_RELEVANCE_NATIVE_MARKERS"); }
     if (source[from - 1] !== "\n" || source[to + end.length] !== "\n") { throw new Error("SCHEMATIC_RELEVANCE_NATIVE_MARKER_LINES"); }
     source = source.slice(0, from - 1) + source.slice(to + end.length);
   }
-  return source.replaceAll("SchematicDisplayFamily", "schematicDisplayWrite209")
+  return source.replace(`id>(schematicRelevanceDisplayWrite209?${String(PROFILE.main.total - REGISTRATION.main)}:${String(SIX_PROFILE.main.total)})`, `id>${String(SIX_PROFILE.main.total)}`)
+    .replace(` if(schematicRelevanceDisplayWrite209)return ${String(PROFILE.renderer.total - REGISTRATION.rendererHelperSource)};`, "")
+    .replace(`          if ($SchematicRelevanceDisplayWrite209) {$requestLimit=${String(PROFILE.renderer.total - REGISTRATION.rendererHelperSource)}}\n`, "")
+    .replaceAll("SchematicDisplayFamily", "schematicDisplayWrite209")
     .replaceAll("-not ($SchematicDisplayWrite209 -or $SchematicRelevanceDisplayWrite209)", "-not $SchematicDisplayWrite209")
     .replace(`schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(SEVEN_STRUCTURE.normal + STARTUP_STRUCTURE.total)}:${String(SIX_STRUCTURE.normal)})`, `schematicStructureNormal>=${String(SIX_STRUCTURE.normal)}`)
     .replace(`schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(SEVEN_STRUCTURE.normal)}:${String(SIX_STRUCTURE.normal)})`, `schematicStructureNormal>=${String(SIX_STRUCTURE.normal)}`)
@@ -82,7 +87,7 @@ bool SchematicDisplayFamily {get{return schematicDisplayWrite209||schematicRelev
 static readonly string SchematicRelevanceDisplayStart=${packed(START)};
 static readonly string SchematicRelevanceDisplayNavigation=${packed(NAVIGATION)};
 static readonly string SchematicRelevanceDisplayStage=${packed(STAGE)};
-static string SchematicRelevancePhase(string changes,int length,string hash){string text=SchematicRelevanceDisplayStage;string[] rows=changes.Split('\\0');if(rows.Length<2||rows.Length>4||rows.Length%2!=0)throw Error("schematic-relevance-phase-rows");for(int i=0;i<rows.Length;i+=2){int at=text.IndexOf(rows[i],StringComparison.Ordinal);if(at<0||text.IndexOf(rows[i],at+rows[i].Length,StringComparison.Ordinal)>=0)throw Error("schematic-relevance-phase-anchor");text=text.Substring(0,at)+rows[i+1]+text.Substring(at+rows[i].Length);}byte[] bytes=Encoding.UTF8.GetBytes(text);using(var sha=System.Security.Cryptography.SHA256.Create())if(bytes.Length!=length||BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()!=hash)throw Error("schematic-relevance-phase-hash");return text;}
+static string SchematicRelevancePhase(string changes,int length,string hash){string text=SchematicRelevanceDisplayStage;string[] rows=changes.Split('\\0');if(rows.Length!=${String(CAPTURE_REPLACEMENTS.length*2)}&&rows.Length!=${String(MODIFY_REPLACEMENTS.length*2)})throw Error("schematic-relevance-phase-rows");for(int i=0;i<rows.Length;i+=2){int at=text.IndexOf(rows[i],StringComparison.Ordinal);if(at<0||text.IndexOf(rows[i],at+rows[i].Length,StringComparison.Ordinal)>=0)throw Error("schematic-relevance-phase-anchor");text=text.Substring(0,at)+rows[i+1]+text.Substring(at+rows[i].Length);}byte[] bytes=Encoding.UTF8.GetBytes(text);using(var sha=System.Security.Cryptography.SHA256.Create())if(bytes.Length!=length||BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()!=hash)throw Error("schematic-relevance-phase-hash");return text;}
 static readonly string SchematicRelevanceDisplayCapture=SchematicRelevancePhase(${packed(CAPTURE_REPLACEMENTS.flat().join("\0"))},${String(Buffer.byteLength(CAPTURE))},${quote(createHash("sha256").update(CAPTURE).digest("hex"))});
 static readonly string SchematicRelevanceDisplayModify=SchematicRelevancePhase(${packed(MODIFY_REPLACEMENTS.flat().join("\0"))},${String(Buffer.byteLength(MODIFY))},${quote(createHash("sha256").update(MODIFY).digest("hex"))});
 EasyedaDiagnosticOwner(EasyedaSchematicRelevanceDisplayBirth birth):this(){if(birth!=EasyedaSchematicRelevanceDisplayBirth.Original)throw Error("schematic-relevance-birth");schematicRelevanceDisplayWrite209=true;workerStartupFootprintMain209=true;originalMain=new EasyedaOriginalMainTransport(EasyedaSchematicRelevanceDisplayBirth.Original);}

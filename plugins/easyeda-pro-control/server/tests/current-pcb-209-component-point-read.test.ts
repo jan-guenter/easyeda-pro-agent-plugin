@@ -44,3 +44,11 @@ void test("retained cache/ATTR/scratch mutation refuses after the first sample a
   assert.equal(currentPcb209ComponentPointQueriesSchema.safeParse(Array.from({ length: 16 }, () => ({ kind: "point", xMil: 0, yMil: 0 }))).success, true);
   assert.equal(currentPcb209ComponentPointQueriesSchema.safeParse([{ kind: "region", mode: "inside", leftMil: -100, rightMil: 100, bottomMil: -100, topMil: 100 }]).success, false);
 });
+
+void test("component evidence rejects duplicate keys and accessor envelopes before getter effects", () => {
+  const text = read(fixture()); assert.equal(typeof text, "string"); assert.ok(typeof text === "string");
+  assert.throws(() => decodeCurrentPcb209ComponentPointReply({ result: { type: "string", value: `{"schema":"contradiction",${text.slice(1)}` } }));
+  let getters = 0; const envelope = Object.defineProperty({}, "result", { enumerable: true, get: (): never => { getters += 1; throw new Error("foreign getter"); } });
+  assert.throws(() => decodeCurrentPcb209ComponentPointReply(envelope)); assert.equal(getters, 0);
+  assert.equal(Object.isFrozen(decodeCurrentPcb209ComponentPointReply({ result: { type: "string", value: text } })), true);
+});

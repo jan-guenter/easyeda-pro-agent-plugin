@@ -1,3 +1,31 @@
+/* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
+import {expandCurrentSelectedMainNativePrograms} from "../server/src/current-selected-main-native-program-storage.ts";
+import {expandCurrentFootprintInverseNativePrograms,projectCurrentFootprintInverseNativePrograms} from "../server/src/current-footprint-inverse-native-program-storage.ts";
+import {expandCurrentSchematicNativePrograms,projectCurrentSchematicNativePrograms} from "../server/src/current-schematic-native-program-storage.ts";
+import {applyCurrentSchematicRelevanceNotificationNativeFragment} from "../server/src/current-schematic-relevance-notification-native-fragment.ts";
+import {applyCurrentSchematicRelevanceSdkGateNativeFragment} from "../server/src/current-schematic-relevance-sdk-gate-native-fragment.ts";
+import {applyCurrentSchematicRelevanceModifyWorkerNativeFragment} from "../server/src/current-schematic-relevance-modify-worker-native-fragment.ts";
+import {applyCurrentSchematicRelevancePublicationNativeFragment} from "../server/src/current-schematic-relevance-publication-native-fragment.ts";
+import {applyCurrentSchematicRelevanceNormalCommandUiNativeFragment} from "../server/src/current-schematic-relevance-normal-command-ui-native-fragment.ts";
+import {applyCurrentSchematicRelevanceFileSaveUiNativeFragment} from "../server/src/current-schematic-relevance-file-save-ui-native-fragment.ts";
+import {applyCurrentSchematicRelevanceRenderDelegateNativeFragment} from "../server/src/current-schematic-relevance-render-delegate-native-fragment.ts";
+import {applyCurrentSchematicRelevanceStatusTabMutationNativeFragment} from "../server/src/current-schematic-relevance-status-tab-mutation-native-fragment.ts";
+import {applyCurrentSchematicRelevanceStatusTabLookupNativeFragment} from "../server/src/current-schematic-relevance-status-tab-lookup-native-fragment.ts";
+import {applyCurrentSchematicRelevanceStatusSubscriberNativeFragment} from "../server/src/current-schematic-relevance-status-subscriber-native-fragment.ts";
+import{expandCurrentFootprintInverseSmokeVectors,projectCurrentFootprintInverseSmokeVectors}from"../server/src/current-footprint-inverse-smoke-vector-storage.ts";
+import { projectCurrentFootprintInverseComponentRuntime } from "../server/src/current-footprint-inverse-component-projection.ts";
+import {applyCurrentSchematicRelevanceStatusCloneNativeFragment} from "../server/src/current-schematic-relevance-status-clone-native-fragment.ts";
+import { projectCurrentFootprintInverseSchematicRuntime } from "../server/src/current-footprint-inverse-native-schematic-projection.ts";
+import {applyCurrentSchematicRelevanceUiFixedCodec} from "../server/src/current-schematic-relevance-ui-fixed-codec-native.ts";
+import {applyCurrentSchematicRelevanceStatusDeliveryNativeFragment} from "../server/src/current-schematic-relevance-status-delivery-native-fragment.ts";
+import { applyCurrentSelectedFileMainInstallationNative } from "../server/src/current-selected-file-main-installation-native.ts";
+import { applySchematicPublicCompileSmokes, normalizeSchematicPublicCompileSmokes } from "../server/src/current-schematic-native-compile-smoke-fragment.ts";
+
+import {applyCurrentSchematicRelevanceStatusBusNativeFragment} from "../server/src/current-schematic-relevance-status-bus-native-fragment.ts";
+import {applyCurrentSchematicRelevanceHistoryStatusNativeFragment} from "../server/src/current-schematic-relevance-history-status-native-fragment.ts";
+import {applyCurrentSchematicRelevanceUploadReturnNativeFragment} from "../server/src/current-schematic-relevance-upload-return-native-fragment.ts";
+import {applyCurrentSchematicRelevancePendingCacheNativeFragment} from "../server/src/current-schematic-relevance-pending-cache-native-fragment.ts";
+import {applyCurrentSchematicRelevanceUploadCmNativeFragment} from "../server/src/current-schematic-relevance-upload-cm-native-fragment.ts";
 import {applyCurrentSchematicRelevanceUploadSerializeNativeFragment} from "../server/src/current-schematic-relevance-upload-serialize-native-fragment.ts";
 import {applyCurrentSchematicRelevanceUploadModelNativeFragment} from "../server/src/current-schematic-relevance-upload-model-native-fragment.ts";
 import {applyCurrentSchematicRelevanceUploadEntryNativeFragment} from "../server/src/current-schematic-relevance-upload-entry-native-fragment.ts";
@@ -7,7 +35,6 @@ import {applyCurrentSchematicRelevanceNormalDisposalNativeFragment} from "../ser
 import {applyCurrentSchematicRelevanceNormalUpdateNativeFragment} from "../server/src/current-schematic-relevance-normal-update-native-fragment.ts";
 import {applyCurrentSchematicRelevanceHistoryCommandNativeFragment} from "../server/src/current-schematic-relevance-history-command-native-fragment.ts";
 import {applyCurrentSchematicRelevanceMonitorBatchNativeFragment} from "../server/src/current-schematic-relevance-monitor-batch-native-fragment.ts";
-/* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
 import { applyPcb209SpatialNativeSource } from "./pcb209-spatial-native-source.ts";
 import { CURRENT_NATIVE_BASELINE, assertCurrentNativeBaseline } from "./native-baseline-source.ts";
 import { sharedNativeIdentitySource, sharedNativeSmokeSource } from "./shared-native-identity-source.ts";
@@ -30,15 +57,16 @@ import { applyCurrentSchematicRelevanceDisplayModifyEntryNativeFragment } from "
 import { applyCurrentSchematicRelevanceDisplayActionNativeFragment } from "../server/src/current-schematic-relevance-display-action-native-fragment.ts";
 import { applyCurrentSchematicRelevanceSavedReadbackNative, normalizeCurrentSchematicRelevanceSavedReadbackNative, prepareCurrentSchematicRelevanceSavedReadbackNativeSwitch } from "../server/src/current-schematic-relevance-saved-readback-native.ts";
 import { applyCurrentSchematicWireEditNativeFragment, normalizeCurrentSchematicWireEditNativeFamily, prepareCurrentSchematicWireEditNativeSwitch } from "../server/src/current-schematic-wire-edit-native-fragment.ts";
+import { applyCurrentSchematicRelevanceDisplayRegistrationNative } from "../server/src/current-schematic-relevance-display-registration-native.ts";
 import { applyCurrentSchematicRelevanceDisplayWriteNativeFragment, normalizeCurrentSchematicRelevanceDisplayNativeFamily, prepareCurrentSchematicRelevanceDisplayNativeSwitch } from "../server/src/current-schematic-relevance-display-write-native-fragment.ts";
-import { currentPcbDiagnosticCSharpReviewSource, expandCurrentPcbDiagnosticCSharpReviewSource, packCurrentPcbDiagnosticCSharpReviewStorage } from "../server/src/current-pcb-diagnostic-csharp-review-storage.ts";
-import { applyCurrentPcbViaObservedSourceNativeFragment } from "../server/src/current-pcb-via-observed-source-native-fragment.ts";
-import { applyCurrentPcbViaSaveDrainNativeFragment } from "../server/src/current-pcb-via-save-drain-native-fragment.ts";
-import { applyCurrentPcbViaPostHistorySyncNativeFragment } from "../server/src/current-pcb-via-post-history-sync-native-fragment.ts";
-import { applyCurrentPcbViaSaveTailObservationNativeFragment } from "../server/src/current-pcb-via-save-tail-observation-native-fragment.ts";
-import { applyCurrentPcbViaUploadRequestNativeFragment } from "../server/src/current-pcb-via-upload-request-native-fragment.ts";
+import { currentPcbDiagnosticCSharpReviewSource, expandCurrentPcbDiagnosticCSharpReviewSource, packCurrentPcbDiagnosticCSharpReviewStorage, packCurrentPcbDiagnosticCSharpTokenFusionStorage } from "../server/src/current-pcb-diagnostic-csharp-review-storage.ts";
+import { applyCurrentPcbViaObservedSourceCodecNativeFragment, applyCurrentPcbViaObservedSourceNativeFragment } from "../server/src/current-pcb-via-observed-source-native-fragment.ts";
+import { applyCurrentPcbViaSaveDrainCodecNativeFragment, applyCurrentPcbViaSaveDrainNativeFragment } from "../server/src/current-pcb-via-save-drain-native-fragment.ts";
+import { applyCurrentPcbViaPostHistorySyncCodecNativeFragment, applyCurrentPcbViaPostHistorySyncNativeFragment } from "../server/src/current-pcb-via-post-history-sync-native-fragment.ts";
+import { applyCurrentPcbViaSaveTailObservationCodecNativeFragment, applyCurrentPcbViaSaveTailObservationNativeFragment } from "../server/src/current-pcb-via-save-tail-observation-native-fragment.ts";
+import { applyCurrentPcbViaUploadRequestCodecNativeFragment, applyCurrentPcbViaUploadRequestNativeFragment } from "../server/src/current-pcb-via-upload-request-native-fragment.ts";
 import { applyCurrentProjectSyncQuiesceCodecNativeFragment, applyCurrentProjectSyncQuiesceNativeFragment } from "../server/src/current-project-sync-quiesce-native-fragment.ts";
-import { applyCurrentPcbViaLocalUploadNativeFragment } from "../server/src/current-pcb-via-local-upload-native-fragment.ts";
+import { applyCurrentPcbViaLocalUploadCodecNativeFragment, applyCurrentPcbViaLocalUploadNativeFragment } from "../server/src/current-pcb-via-local-upload-native-fragment.ts";
 import { applyCurrentPcbViaSaveGenerationNativeFragment } from "../server/src/current-pcb-via-save-generation-native-fragment.ts";
 import { applyCurrentGeneratedPeriodicSyncNativeFragment } from "../server/src/current-generated-periodic-sync-native-fragment.ts";
 import { applyCurrentGeneratedInitialSyncNativeFragment } from "../server/src/current-generated-initial-sync-native-fragment.ts";
@@ -54,7 +82,7 @@ import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES } from "../server/src/cu
 import { currentPcbDiagnosticFixedTableNativeSource } from "../server/src/current-pcb-diagnostic-fixed-table-native.ts";
 import { applyCurrentProjectStructureNativeFragment } from "../server/src/current-project-structure-native-fragment.ts";
 import { applyCurrentSchematicDisplayWriteNativeFragment } from "../server/src/current-schematic-display-write-native-fragment.ts";
-import { applyCurrentPcbViaWriteNativeFragment } from "../server/src/current-pcb-via-write-native-fragment.ts";
+import { applyCurrentPcbViaWriteNativeFragment, projectCurrentFootprintInverseViaSdkRuntime, projectCurrentSchematicViaSdkRuntime } from "../server/src/current-pcb-via-write-native-fragment.ts";
 import { applyManagedFixtureRegistrationNativeFragment } from "../server/src/managed-fixture-registration-native-fragment.ts";
 import { compactGeneratedCSharpIndentation } from "./csharp-generated-indentation.ts";
 import { currentFootprintCopyManagerRouteNativeSource } from "../server/src/current-footprint-copy-manager-route-native.ts";
@@ -155,10 +183,14 @@ async function main(): Promise<void> {
   else if (next !== source || await readFile(reviewPath, "utf8") !== compilerInput || await readFile(identityPath, "utf8") !== identity || smoke !== nextSmoke) { throw new Error("Generated native startup protocol, review copy or independent pins differ"); }
 }
 /** Pure complete composition, used by repeated-generation regressions without writing a helper. */
-export function generateWorkerStartupProtocol(source: string, layout: "diagnostic" | "inverse" | "schematic" = "diagnostic"): string {
-  if (layout !== "diagnostic" && layout !== "inverse" && layout !== "schematic") { throw new Error("NATIVE_BUILD_LAYOUT"); }
-  const original = normalizeCurrentSchematicWireEditNativeFamily(normalizeCurrentSchematicRelevanceSavedReadbackNative(expandCurrentPcbDiagnosticCSharpReviewSource(source)));
-  const prepared = layout === "schematic" ? prepareCurrentSchematicRelevanceSavedReadbackNativeSwitch(original) : original;
+export function generateWorkerStartupProtocol(source: string, layout: "diagnostic" | "inverse" | "schematic" | "schematic-saved" = "diagnostic"): string {
+  if (layout !== "diagnostic" && layout !== "inverse" && layout !== "schematic" && layout !== "schematic-saved") { throw new Error("NATIVE_BUILD_LAYOUT"); }
+  const storedPrograms = expandCurrentFootprintInverseNativePrograms(expandCurrentSchematicNativePrograms(expandCurrentPcbDiagnosticCSharpReviewSource(source)));
+  const view = expandCurrentSelectedMainNativePrograms(storedPrograms);
+  const expanded = view.includes("// BEGIN FIXED INVERSE SMOKE VECTORS V1\n") ? inverseSmokeVectorView(view,expandCurrentFootprintInverseSmokeVectors) : view;
+  const publicSmokesNormalized = normalizeSchematicPublicCompileSmokes(expanded);
+  const original = normalizeCurrentSchematicWireEditNativeFamily(normalizeCurrentSchematicRelevanceSavedReadbackNative(publicSmokesNormalized, layout === "schematic-saved" ? "saved-only" : "default"));
+  const prepared = layout === "schematic-saved" ? prepareCurrentSchematicRelevanceSavedReadbackNativeSwitch(original) : original;
   const spatial = layout === "diagnostic" ? applyPcb209SpatialNativeSource(prepared) : prepared;
   const normalized = normalizeCurrentSchematicRelevanceDisplayNativeFamily(spatial);
   // Cold generation starts from the exact published shared source, before any
@@ -194,20 +226,26 @@ export function generateWorkerStartupProtocol(source: string, layout: "diagnosti
   next = applyCurrentGeneratedInitialCacheNativeFragment(applyCurrentProjectSaveProducerNativeFragment(applyCurrentProjectSaveProducerGuardNativeFragment(next)));
   next = applyCurrentGeneratedInitialSyncNativeFragment(next);
   next = applyCurrentGeneratedPeriodicSyncNativeFragment(next);
-  if(layout!=="inverse"){
+  if(layout==="diagnostic"){
     next = applyCurrentPcbViaSaveGenerationNativeFragment(next);
     next = applyCurrentPcbViaLocalUploadNativeFragment(next);
-  }
-  next = layout === "inverse" ? applyCurrentProjectSyncQuiesceCodecNativeFragment(next) : applyCurrentProjectSyncQuiesceNativeFragment(next);
-  if(layout!=="inverse"){
+  }else if(layout==="schematic"){next=applyCurrentPcbViaLocalUploadCodecNativeFragment(next);}
+  next = layout === "diagnostic" ? applyCurrentProjectSyncQuiesceNativeFragment(next) : applyCurrentProjectSyncQuiesceCodecNativeFragment(next);
+  if(layout==="diagnostic"){
     next = applyCurrentPcbViaUploadRequestNativeFragment(next);
     next = applyCurrentPcbViaSaveTailObservationNativeFragment(next);
     next = applyCurrentPcbViaPostHistorySyncNativeFragment(next);
     next = applyCurrentPcbViaSaveDrainNativeFragment(next);
     next = applyCurrentPcbViaObservedSourceNativeFragment(next);
+  }else if(layout==="schematic"){
+    next=applyCurrentPcbViaUploadRequestCodecNativeFragment(next);
+    next=applyCurrentPcbViaSaveTailObservationCodecNativeFragment(next);
+    next=applyCurrentPcbViaPostHistorySyncCodecNativeFragment(next);
+    next=applyCurrentPcbViaSaveDrainCodecNativeFragment(next);
+    next=applyCurrentPcbViaObservedSourceCodecNativeFragment(next);
   }
-  if (layout !== "schematic") { next = applyCurrentPcbComponentSpatialNativeFragment(next, layout === "diagnostic"); }
-  if (layout !== "schematic") { next = applyCurrentPcbViaSavedReadbackNativeFragment(next); }
+  if (layout === "diagnostic" || layout === "inverse") { next = applyCurrentPcbComponentSpatialNativeFragment(next, layout === "diagnostic"); }
+  if (layout === "diagnostic" || layout === "inverse") { next = applyCurrentPcbViaSavedReadbackNativeFragment(next, layout === "inverse" ? "inverse-closed" : "default"); }
   if (layout === "inverse") { next = applyCurrentFootprintInverseNativeFragment(next); }
   if (layout === "schematic") {
     next = applyCurrentSchematicRelevanceDisplayWriteNativeFragment(next);
@@ -226,11 +264,30 @@ export function generateWorkerStartupProtocol(source: string, layout: "diagnosti
     next = applyCurrentSchematicRelevanceUploadEntryNativeFragment(next);
     next = applyCurrentSchematicRelevanceUploadModelNativeFragment(next);
     next = applyCurrentSchematicRelevanceUploadSerializeNativeFragment(next);
+    next = applyCurrentSchematicRelevanceUploadCmNativeFragment(next);
+    next = applyCurrentSchematicRelevancePendingCacheNativeFragment(next);
+    next = applyCurrentSchematicRelevanceUploadReturnNativeFragment(next);
+    next = applyCurrentSchematicRelevanceHistoryStatusNativeFragment(next);
+    next = applyCurrentSchematicRelevanceStatusBusNativeFragment(next);
+    next = applyCurrentSchematicRelevanceStatusDeliveryNativeFragment(next);
+    next = applyCurrentSchematicRelevanceStatusCloneNativeFragment(next);
+    next = applyCurrentSchematicRelevanceStatusSubscriberNativeFragment(next);
+    next = applyCurrentSchematicRelevanceStatusTabLookupNativeFragment(next);
+    next = applyCurrentSchematicRelevanceStatusTabMutationNativeFragment(next);
+    next = applyCurrentSchematicRelevanceRenderDelegateNativeFragment(next);
+    next = applyCurrentSchematicRelevanceFileSaveUiNativeFragment(next);
+    next = applyCurrentSchematicRelevanceNormalCommandUiNativeFragment(next);
+    next = applyCurrentSchematicRelevanceNotificationNativeFragment(next);
+    next = applyCurrentSchematicRelevanceSdkGateNativeFragment(next);
+    next = applyCurrentSchematicRelevancePublicationNativeFragment(next);
+    next = applyCurrentSchematicRelevanceModifyWorkerNativeFragment(next);
+    next = applyCurrentSchematicRelevanceUiFixedCodec(next);
     next = applyCurrentSchematicRelevanceRunGuardNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplayClockNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplaySyncQuiesceNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplayLibraryRefreshNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplayMainNativeFragment(next);
+    next = applyCurrentSchematicRelevanceDisplayRegistrationNative(next);
     next = applyCurrentSchematicRelevanceDisplayStructureNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplaySaveNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplaySaveUploadNativeFragment(next);
@@ -238,16 +295,28 @@ export function generateWorkerStartupProtocol(source: string, layout: "diagnosti
     next = applyCurrentSchematicRelevanceDisplayMainLiveHistoryNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplaySaveDrainNativeFragment(next);
     next = applyCurrentSchematicWireEditNativeFragment(next);
-    next = applyCurrentSchematicRelevanceSavedReadbackNative(next);
+    next = applySchematicPublicCompileSmokes(next);
   }
+  if (layout === "schematic-saved") { next = applyCurrentSchematicRelevanceSavedReadbackNative(next, "saved-only"); }
+  next = applyCurrentSelectedFileMainInstallationNative(next);
+  if (layout === "inverse") {
+    next = projectCurrentFootprintInverseSchematicRuntime(next);
+    next = projectCurrentFootprintInverseComponentRuntime(next);
+    next = projectCurrentFootprintInverseViaSdkRuntime(next);
+  }
+  if(layout==="schematic"){next=projectCurrentSchematicViaSdkRuntime(next);}
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
   assertCurrentFootprintCopyForwardNativeRequestIds(next);
-  next = packCurrentPcbDiagnosticCSharpReviewStorage(next);
+  if(layout==="inverse"){next=projectCurrentFootprintInverseNativePrograms(next);}
+  if(layout==="schematic"){next=projectCurrentSchematicNativePrograms(next);}
+  if(layout==="inverse"){next=inverseSmokeVectorView(next,projectCurrentFootprintInverseSmokeVectors);}
+  next = layout==="inverse" || layout==="schematic" ? packCurrentPcbDiagnosticCSharpTokenFusionStorage(next) : packCurrentPcbDiagnosticCSharpReviewStorage(next);
   if (Buffer.byteLength(next) > CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES) {
     throw new Error(`Native startup helper exceeds its fixed byte bound: ${String(Buffer.byteLength(next))} >${String(CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES)}`);
   }
   return next;
 }
+function inverseSmokeVectorView(source:string,project:(body:string)=>string):string{const begin="Add-Type @'\n",end="\n'@\n";const start=source.indexOf(begin),stop=source.indexOf(end,start);if(start===-1||stop<=start||source.split(begin).length!==2||source.split(end).length!==2){throw new Error("INVERSE_SMOKE_VECTOR_LITERAL");}return source.slice(0,start+begin.length)+project(source.slice(start+begin.length,stop))+source.slice(stop);}
 function continuationSource(): string {
   const limits = { RequestLimit: continuation.requestLimit, NormalRequestLimit: continuation.normalRequestLimit, CleanupRequestLimit: continuation.cleanupRequests,
     NormalByteLimit: continuation.bytes.normal, TotalByteLimit: continuation.bytes.total, NormalPollLimit: continuation.polling.normalLimit, PollLimit: continuation.polling.limit,

@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { Session } from "node:inspector/promises";
 import type { Runtime } from "node:inspector";
-import { readFile } from "node:fs/promises";
+import { INSTALLED_EASYEDA_SOURCE_SKIP_REASON, readConfiguredEasyedaAsset } from "./helpers/installed-easyeda-source.ts";
 import { createContext, runInContext, runInThisContext } from "node:vm";
 import { Worker } from "node:worker_threads";
 import { test } from "node:test";
@@ -33,9 +33,7 @@ void test("original decorator and monitor entry proofs preserve the raw value an
   for (const fault of ["receiver", "value"] as const) { const changed = fixture(); changed.fault(fault); assert.throws(changed.entry, /SET_ATTRIBUTE_ENTRY/u); assert.equal(changed.invoked(), 0); }
 });
 void test("actual pinned decorator forwarding reaches the original setAttribute function entry before the raw getter or write", { timeout: 20_000 }, async context => {
-  assert.equal(process.versions.node, "24.18.0"); const source = SOURCE[0]; let text: string;
-  try { text = await readFile(`/mnt/c/Program Files/EasyEDA-Pro/resources/app/assets/${source.relativePath}`, "utf8"); }
-  catch (error) { if (error instanceof Error && "code" in error && error.code === "ENOENT") { context.skip("Pinned installed SCH source is unavailable in this source-only CI environment."); return; } throw error; }
+  assert.equal(process.versions.node, "24.18.0"); const source = SOURCE[0]; const text = await readConfiguredEasyedaAsset(source.relativePath); if (text === null) { context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON); return; }
   assert.equal(qualifyGeneratedSchematicDisplayAccessorSource({ scriptSource: text }), 0);
   const snippet = (role: "decoratedSetter" | "decoratorSetter" | "monitorSetAttribute"): string => { const row = source.methods[role]; return text.slice(row.start, row.end); };
   let gets = 0, sets = 0; const model = { _underline: false, shapeManager: {} }, raw = { get(this: { _underline: boolean }): boolean { gets += 1; return Reflect.get(this, "_underline"); }, set(this: { _underline: boolean }, value: boolean): void { sets += 1; Reflect.set(this, "_underline", value); } };

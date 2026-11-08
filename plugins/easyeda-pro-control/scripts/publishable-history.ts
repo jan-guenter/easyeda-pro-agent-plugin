@@ -12,7 +12,10 @@ import { privacyPatterns, secretPatterns } from "./repository-content-policy.ts"
 const execute = promisify(execFile);
 const oid = /^(?:[a-f\d]{40}|[a-f\d]{64})$/u;
 const limits = Object.freeze({ objects: 50_000, objectBytes: 33_554_432, totalBytes: 1_073_741_824, metadataBytes: 4_194_304, milliseconds: 300_000 });
-const environment = Object.freeze({ ...process.env, GIT_NO_REPLACE_OBJECTS: "1", GIT_NO_LAZY_FETCH: "1", GIT_OPTIONAL_LOCKS: "0" });
+// Git's configuration and discovery variables can redirect history as well as
+// Its explicit repository variables. Inherit none; set only these fixed guards.
+const inherited = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith("GIT_")));
+export const gitEnvironment = Object.freeze({ ...inherited, GIT_NO_REPLACE_OBJECTS: "1", GIT_NO_LAZY_FETCH: "1", GIT_OPTIONAL_LOCKS: "0" });
 export interface PublishableHistoryResult {
   readonly ok: boolean; readonly base: string; readonly head: string; readonly scannedObjects: number; readonly scannedBytes: number;
   /** Object IDs and rule labels only. A finding never includes matched text. */
@@ -21,7 +24,7 @@ export interface PublishableHistoryResult {
 function need(condition: boolean, code: string): asserts condition { if (!condition) { throw new Error(`PUBLISHABLE_HISTORY_${code}`); } }
 async function git(repository: string, args: readonly string[]): Promise<string> {
   try {
-    const result = await execute("git", [...args], { cwd: repository, env: environment, maxBuffer: limits.metadataBytes, timeout: limits.milliseconds }); return result.stdout;
+    const result = await execute("git", [...args], { cwd: repository, env: gitEnvironment, maxBuffer: limits.metadataBytes, timeout: limits.milliseconds }); return result.stdout;
   } catch { throw new Error("PUBLISHABLE_HISTORY_GIT_COMMAND"); }
 }
 async function noGrafts(repository: string): Promise<void> {
@@ -85,7 +88,7 @@ export async function checkPublishableHistory(repository: string, base: string, 
   let scannedObjects = 0;
   let scannedBytes = 0;
   if (objects.length > 0) {
-    const child = spawn("git", ["cat-file", "--batch"], { cwd: repository, env: environment, stdio: ["pipe", "pipe", "pipe"], timeout: limits.milliseconds });
+    const child = spawn("git", ["cat-file", "--batch"], { cwd: repository, env: gitEnvironment, stdio: ["pipe", "pipe", "pipe"], timeout: limits.milliseconds });
     // Retain a nonrejecting close observation even when stdin fails or parsing
     // Refuses first. Closing our own pipes cannot become an unhandled EPIPE.
     const closed = Promise.withResolvers<Readonly<{ code: number | null; signal: NodeJS.Signals | null }>>();

@@ -2,6 +2,8 @@
  * only the original controller can correlate a submitted program with its
  * same-session Inspector event and source reply. */
 /* oxlint-disable import/max-dependencies -- The closed catalogue derives its strings and repeated-call bounds from every original finite lane; a caller registry would admit arbitrary execution. */
+import {CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_REQUESTS} from "./current-schematic-relevance-modify-worker-protocol.ts";
+import {currentSchematicRelevanceModifyWorkerCases} from "./current-schematic-relevance-modify-worker-wire.ts";
 import { CURRENT_PROJECT_LIBRARY_REFRESH_REQUESTS, currentProjectLibraryRefreshCases } from "./current-project-library-refresh-protocol.ts";
 import { types } from "node:util";
 import { CURRENT_SCHEMATIC_DISPLAY_SAVE_REQUESTS, currentSchematicDisplaySaveNativeCases } from "./current-schematic-display-save-protocol.ts";
@@ -25,6 +27,7 @@ import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_REPLAY_NO_PUBLICATION_PROGRAM } fro
 type Kind = "function" | "expression";
 const conditions = new Set<string>(), expressions = new Set<string>(), functions = new Set<string>([CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_REPLAY_NO_PUBLICATION_PROGRAM]);
 const cases: readonly (Readonly<{ method: string; params: object }> | Readonly<{ phase: "via-post-sync-replay" }>)[] = [
+  ...currentSchematicRelevanceModifyWorkerCases(),
   ...currentSchematicDisplaySaveNativeCases(),
   ...currentProjectSaveStructureNativeCases(),
   ...currentProjectSaveProducerNativeCases(),
@@ -48,7 +51,7 @@ for (const command of cases) {
     conditions.add(command.params.condition); expressions.add(command.params.condition);
   }
   if (command.method === "Runtime.callFunctionOn" && "functionDeclaration" in command.params && typeof command.params.functionDeclaration === "string") { functions.add(command.params.functionDeclaration); }
-  else if (command.method === "Debugger.evaluateOnCallFrame" && "expression" in command.params && typeof command.params.expression === "string") { expressions.add(command.params.expression); }
+  else if ((command.method === "Debugger.evaluateOnCallFrame" || command.method === "Runtime.evaluate") && "expression" in command.params && typeof command.params.expression === "string") { expressions.add(command.params.expression); }
   }
 }
 /** Each source-producing call spends an original lane request. Summing the
@@ -57,6 +60,7 @@ for (const command of cases) {
  * remain included through their own derived bounds. The fourth schematic local cache job adds one full shared head-job budget.
  * The independent fixed TEXT replay uses the same retained original Save node and its own source receipt. */
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_OBSERVED_WORKER_SOURCE_REQUESTS =
+  CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_REQUESTS.reads +
   CURRENT_SCHEMATIC_DISPLAY_SAVE_REQUESTS.total +
   CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS.cdpRequests +
   CURRENT_PROJECT_SAVE_PRODUCER_REQUESTS.cdpRequests +

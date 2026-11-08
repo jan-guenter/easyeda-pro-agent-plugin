@@ -1,7 +1,9 @@
+/* oxlint-disable import/max-dependencies -- This extracted-module fixture retains the independent production schemas and exact source/gate collaborators. */
 /** Actual registered index callback and schemas, with inert lifecycle peers.
  * This verifies routing/ownership refusal, not a Windows launch or live CAD. */
 /* oxlint-disable max-classes-per-file -- Distinct inert lifecycle classes preserve the production instanceof and fixed-purpose routing checks. */
 import assert from "node:assert/strict";
+import { installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
@@ -27,7 +29,7 @@ function startupRegistration(source: string): string {
     statement.type === "IfStatement" && statement.consequent.type === "BlockStatement" && statement.consequent.body.some(node =>
       node.type === "VariableDeclaration" && node.declarations.some(declaration => declaration.id.type === "Identifier" && declaration.id.name === "runStartup")) ? [statement.consequent] : []);
   assert.equal(blocks.length, 1); const block = blocks[0]; assert.ok(block);
-  const declarations = ["startupOriginal", "startupCalls", "combinedHistoricalOriginal", "forwardOpeningHistoricalOriginal", "forwardSourceHistoricalOriginal", "runStartup"].map(name => {
+  const declarations = ["viaPreopeningHistoricalOriginal", "startupOriginal", "startupCalls", "combinedHistoricalOriginal", "forwardOpeningHistoricalOriginal", "forwardSourceHistoricalOriginal", "runStartup"].map(name => {
     const matches = block.body.filter(node => node.type === "VariableDeclaration" && node.declarations.length === 1 &&
       node.declarations[0]?.id.type === "Identifier" && node.declarations[0].id.name === name);
     assert.equal(matches.length, 1); const node = matches[0]; assert.ok(node?.type === "VariableDeclaration");
@@ -146,6 +148,7 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; calls: readonly Ro
   assert.ok(helperStart > 0 && helperEnd > helperStart);
   for (const selected of [source.slice(helperStart, helperEnd), startupRegistration(source)]) {
     assert.ok(selected.length > 0 && selected.length < 40_000);
+    installIndexFixtureDependencies(scope,source);
     vm.runInContext(selected.replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   }
   assert.ok(handler !== null);

@@ -127,3 +127,15 @@ each once-only namespace deletion, fresh absence/loading custody, the distinct
 cold worker/parser/page/source joins, actual registration/navigation and the
 saved-scene creator/controller. This checkpoint proves no reopened model,
 durability, Save or writer authority.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `bb8b442edef17b0f04d00ef08c14113cb8630dcd`; its
+committed tree is `fcf20a8e7a0b985a088b51d5742736e48f650220`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

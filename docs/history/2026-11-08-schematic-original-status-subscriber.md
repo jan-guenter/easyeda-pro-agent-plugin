@@ -1,0 +1,24 @@
+# Original clone, subscriber wrapper and held UI function
+
+The own7 callback observer now exposes `continueOriginalCloneToUiFunction()` after its genuine original task-to-clone preparation. It qualifies the actual initialized UI subscriber wrapper `N4e` and its closed-over original `setTabUnSaved` function from correlated Inspector metadata and the complete pinned UI source. This narrow direct UI subscriber branch requires the already-qualified UI bus family; alternate subscriber/bus shapes remain held before the clone body.
+
+Two once-only source-owned resumes proceed from the held primitive-array clone to the actual subscriber wrapper, then to the original UI function entry. The clone guard is removed once before recursion; both later function guards are armed first. Every step joins its own actual write acknowledgement and original resumed event, including when the next pause arrives before the prior response. Fixed caller-frame captures prove the same original task receiver and the same freshly cloned argument array by JavaScript reference equality. Native reflection/instance/species/map/apply dependencies, all original pending snapshots and the pending publisher Promise are reproved. The complete allowance is 77: 25 preparation reads, 22 wrapper reads, 21 UI-entry reads, two arms, one clone-guard removal, two resumes and four controls.
+
+An actual Node24 experiment exposed an important boundary: `Runtime.getProperties` reports the N4e `t` binding, but an internal scope handle is not a normal JS descriptor object when passed to `Runtime.callFunctionOn`. No product program reads a virtual scope with `Object.getOwnPropertyDescriptor`. Original correlated scope metadata retains the callee; the held real wrapper frame then proves its actual lexical `t` is that same function before its body can run. The three UI source/metadata profiles cover the wrapper, UI method and tab-store method, with the latter still uninvoked.
+
+The UI function body stays held before tab lookup/render/menu effects. Its receipt reports only the original clone and wrapper invocation, with UI effects, worker TEXT, Modify and Save completion/authority false. The pending original SDK Modify remains retained; this is not an SDK completion or a public workflow composition token.
+
+Verification: 48 focused stream/controller/source/Inspector cases plus seven native-source/codec cases passed; both TypeScript projects and changed strict lint passed. Actual source-preserving Inspector runs prove both original caller layouts and both entry points before any UI body; synthetic mutations and accessor replacements are refused with zero invoked hooks. Four full purpose graphs generate twice identically and compile as C#5. Eleven own7 codec goldens and diagnostic Via-local, inverse initial-cache and saved-scene goldens pass. Final compiler/helper bytes are diagnostic 1,865,158/1,411,947; inverse 2,055,196/1,456,612; writer 1,998,090/1,466,217; saved 1,612,895/1,155,762. The three other layouts remain byte-identical to their previously compiled sources.
+
+Two first-check failures were corrected before commitment: the wrapper proof declared a local name twice, which actual readonly Inspector execution rejected; and the new remove-breakpoint smoke example used a different sample ID from the shared codec's fixed sample ID. The source program and inert sample were corrected and their checks passed without guard relaxation. No application, native owner, MCP connection, process signal, tracked helper, package pin or installed byte changed.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`f44765e74ef3adb922d71493d35d6ea0749729e9`; its committed tree is
+`18230130af3a2729b398293e50107dec184b8a26`. Its Git author timestamp is
+`2026-11-08T02:26:16+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

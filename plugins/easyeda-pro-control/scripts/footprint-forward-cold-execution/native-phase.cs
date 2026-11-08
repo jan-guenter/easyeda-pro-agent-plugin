@@ -91,8 +91,8 @@ BeginFootprintCopyAllocatedCreateClock(first);
 }
 void RequireForwardColdTail(){if(!forwardExecution||!forwardColdTailBegun||!footprintCreateClockBegun||!footprintCreateClockRetired||footprintCreateClockActive||footprintClockRpcActive||footprintCreateClockLedger==null||footprintCreateClockLedger.CreateId<1||footprintCreateClockLedger.Failed)throw Error("forward-cold-tail-original");}
 public void BeginForwardColdTail(){
-if(forwardColdTailBegun||!forwardExecution||!footprintCreateClockBegun||!footprintCreateClockRetired||footprintCreateClockActive||footprintCreateClockLedger==null||footprintCreateClockLedger.CreateId<1||footprintCreateClockLedger.Failed)throw Error("forward-cold-tail-begin");
-AssertLive();forwardColdTailBegun=true;RequireForwardColdTail();
+if(forwardColdTailBegun||!forwardExecution||!footprintCreateClockBegun||!footprintCreateClockRetired||footprintCreateClockActive||footprintClockRpcActive||footprintCreateClockLedger==null||footprintCreateClockLedger.CreateId<1||footprintCreateClockLedger.Failed)throw Error("forward-cold-tail-begin");
+AssertLive();forwardColdTailBegun=true;try{RequireForwardColdTail();}catch{forwardColdTailBegun=false;throw;}
 }
 static string ForwardColdField(System.Collections.IDictionary fields,string name){string value=fields[name] as string;if(value==null||!System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z"))throw Error("forward-cold-field");return "\""+value+"\"";}
 static string ForwardColdTailMessage(int id,string phase,string method,System.Collections.IDictionary fields){
@@ -101,13 +101,15 @@ if(selected==null||method!=selected||fields==null||fields.Count!=(phase=="tail-r
 string parameters=phase=="tail-properties"?"{\"objectId\":"+ForwardColdField(fields,"objectId")+",\"ownProperties\":true,\"generatePreview\":false}":phase=="tail-remove"?"{\"breakpointId\":"+ForwardColdField(fields,"breakpointId")+"}":"{}";
 return "{\"id\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+",\"method\":\""+method+"\",\"sessionId\":"+ForwardColdField(fields,"sessionId")+",\"params\":"+parameters+"}";
 }
+static string ForwardColdFrame(string text){if(text==null||text.Length<2||text[0]!='{'||text[text.Length-1]!='}'||text.IndexOf((char)0)>=0||System.Text.Encoding.UTF8.GetByteCount(text)>65535)throw Error("forward-cold-frame");return text+"\0";}
+public static void VerifyForwardColdFrameSmoke(){string raw="{\"id\":1}";string framed=ForwardColdFrame(raw);if(framed.Length!=raw.Length+1||framed[framed.Length-1]!=(char)0||framed.Substring(0,raw.Length)!=raw)throw Error("forward-cold-frame-smoke");bool refused=false;try{ForwardColdFrame(framed);}catch(System.InvalidOperationException){refused=true;}if(!refused)throw Error("forward-cold-double-frame-smoke");}
 public void SendFootprintForwardCold(int id,string phase,string method,System.Collections.IDictionary fields){
 if(!forwardExecution||!workerStartupFootprintCopy209||footprintCopyWorkerSession==null||fields==null||fields["sessionId"] as string!=footprintCopyWorkerSession||footprintCreateClockActive)throw Error("forward-cold-original-worker");
 bool admitted=false;foreach(string value in new string[]{"call-cold-project","call-cold-stream","call-cold-cooperation","call-pristine","site-detached-entry","site-detached-returned","site-detached-headEntry","site-detached-headPromise","site-detached-headSuccess","site-detached-cacheRetry","site-detached-historyRetry","call-detached-admit","call-detached-matches","call-head-admit","call-head-matches","call-head-retain","call-head-barrier","detached-frame","head-frame","detached-release"})if(value==phase)admitted=true;
 bool tail=phase=="tail-properties"||phase=="tail-remove"||phase=="tail-resume";if(!admitted&&!tail||tail&&!forwardColdTailBegun)throw Error("forward-cold-phase");
 bool cleanup=phase=="detached-release"||phase=="tail-remove"||phase=="tail-resume";CheckFootprintWork(id,cleanup);
 string message=tail?ForwardColdTailMessage(id,phase,method,fields):EasyedaFootprintForwardColdProtocol.Encode(id,phase,method,fields);
-SendMessage(id,message,cleanup,forwardColdTailBegun?RendererWriteRole.ForwardCold:RendererWriteRole.Existing);
+SendMessage(id,ForwardColdFrame(message),cleanup,forwardColdTailBegun?RendererWriteRole.ForwardCold:RendererWriteRole.Existing);
 }
 bool registrationV2Started,registrationV2WrapperSource,registrationV2CallbackSource,registrationV2Callback,registrationV2Bindings,registrationV2Released;
 int registrationV2Requests,registrationV2Samples;
@@ -130,6 +132,7 @@ footprintCreateClockLedger.Clock(id,cleanup);SendMessage(id,text,cleanup,Rendere
 }catch{if(footprintCreateClockLedger!=null)footprintCreateClockLedger.Fail();throw;}
 }
 public static void VerifyFootprintForwardExecutionGraphSmoke(){
+VerifyForwardColdFrameSmoke();
 var born=CreateFootprintForwardExecution209();born.RequireForwardExecutionUnallocated();
 if(born.FootprintRequestLimit!=EasyedaFootprintForwardExecutionLimits.Requests||born.forwardNormalRequests!=0||born.forwardCleanupRequests!=0)throw Error("forward-execution-graph-birth");
 foreach(var old in new[]{new EasyedaDiagnosticOwner(),CreateWorkerStartupFootprintCombined209(),CreateWorkerStartupFootprintForward209()}){

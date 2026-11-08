@@ -1,5 +1,6 @@
 /** V2 alone separates original review bytes from compact runtime compiler
  * bytes. Historical v1 parsing/decoding and its original bounds stay intact. */
+import { currentPcbDiagnosticCSharpRuntimeCompilerInputV3, expandCurrentPcbDiagnosticCSharpReviewSourceV3, hasCurrentPcbDiagnosticCSharpReviewStorageV3, packCurrentPcbDiagnosticCSharpReviewStorageV3 as packV3 } from "./current-pcb-diagnostic-csharp-review-storage-v3.ts";
 import { createHash } from "node:crypto";
 import { gunzipSync, gzipSync } from "node:zlib";
 import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES as MAXIMUM } from "./current-pcb-diagnostic-helper-source-profile.ts";
@@ -13,10 +14,12 @@ const hash = (bytes: Uint8Array): string => createHash("sha256").update(bytes).d
 const bad = (): never => { throw new Error("PCB_DIAGNOSTIC_CSHARP_REVIEW_STORAGE"); };
 interface Blob { readonly encoded: string; readonly length: number; readonly sha256: string; readonly packedLength: number; readonly packedSha256: string }
 interface Metadata { readonly compiler: Blob; readonly spacing: Blob; readonly originalLength: number; readonly originalSha256: string; readonly tokenSha256: string }
-function pack(bytes: Buffer, maximum: number): Blob {
-  if (bytes.length === 0 || bytes.length > maximum) { return bad(); }
+function pack(bytes: Buffer, maximum: number, kind: "COMPILER" | "SPACING"): Blob {
+  if (bytes.length === 0) { return bad(); }
+  if (bytes.length > maximum) { throw new Error(`PCB_DIAGNOSTIC_CSHARP_REVIEW_STORAGE_CAPACITY_${kind}_BYTES_${String(bytes.length)}_GT_${String(maximum)}`); }
   // oxlint-disable-next-line node/no-sync -- Fixed immutable build data, bounded before compression.
-  const packed = gzipSync(bytes, { level: 9 }); if (packed.length > maximum) { return bad(); }
+  const packed = gzipSync(bytes, { level: 9 });
+  if (packed.length > maximum) { throw new Error(`PCB_DIAGNOSTIC_CSHARP_REVIEW_STORAGE_CAPACITY_${kind}_GZIP_BYTES_${String(packed.length)}_GT_${String(maximum)}`); }
   return { encoded: packed.toString("base64"), length: bytes.length, sha256: hash(bytes), packedLength: packed.length, packedSha256: hash(packed) };
 }
 function unpack(meta: Blob, maximum: number): Buffer {
@@ -63,6 +66,7 @@ function read(source: string): Readonly<{ start: number; stop: number; original:
 }
 /** Original bytes/markers only. This is NOT the actual runtime compiler input. */
 export function expandCurrentPcbDiagnosticCSharpReviewSource(source: string): string {
+  if (hasCurrentPcbDiagnosticCSharpReviewStorageV3(source)) { return expandCurrentPcbDiagnosticCSharpReviewSourceV3(source); }
   if (!source.includes(BEGIN.slice(0, -1)) && !source.includes(END.slice(0, -1))) { return expandCurrentPcbDiagnosticCSharpStorage(source); }
   const value = read(source); return source.slice(0, value.start) + LITERAL_BEGIN + value.original + LITERAL_END + source.slice(value.stop);
 }
@@ -72,11 +76,15 @@ export function currentPcbDiagnosticCSharpReviewSource(input: string): string {
 }
 /** Only these bytes may be written to Native.cs or passed to a compiler. */
 export function currentPcbDiagnosticCSharpRuntimeCompilerInput(input: string): string {
+  if (hasCurrentPcbDiagnosticCSharpReviewStorageV3(input)) { return currentPcbDiagnosticCSharpRuntimeCompilerInputV3(input); }
   return input.includes(BEGIN.slice(0, -1)) || input.includes(END.slice(0, -1)) ? read(input).compact : currentPcbDiagnosticCSharpCompilerInput(input);
 }
+/** Pack the literal review source into the V2 compiler and spacing sections with independent length and hash checks.
+ * Both the compiler bytes and final helper remain bounded, while spacing must reconstruct the exact original review body.
+ */
 export function packCurrentPcbDiagnosticCSharpReviewStorage(input: string): string {
   const source = expandCurrentPcbDiagnosticCSharpReviewSource(input); const { start, stop } = section(source, LITERAL_BEGIN, LITERAL_END); const body = currentPcbDiagnosticCSharpReviewSource(source);
-  const value = compactCurrentPcbDiagnosticCSharp(body); const compiler = pack(Buffer.from(value.compact), MAXIMUM); const spacing = pack(value.spacing, SPACING_MAXIMUM);
+  const value = compactCurrentPcbDiagnosticCSharp(body); const compiler = pack(Buffer.from(value.compact), MAXIMUM, "COMPILER"); const spacing = pack(value.spacing, SPACING_MAXIMUM, "SPACING");
   if (Buffer.byteLength(body) > compiler.length + SPACING_MAXIMUM) { return bad(); }
   const meta: Metadata = { compiler, spacing, originalLength: Buffer.byteLength(body), originalSha256: hash(Buffer.from(body)), tokenSha256: value.tokenSha256 };
   const result = source.slice(0, start) + block(meta) + source.slice(stop); if (Buffer.byteLength(result) > MAXIMUM) { return bad(); } return result;
@@ -84,5 +92,11 @@ export function packCurrentPcbDiagnosticCSharpReviewStorage(input: string): stri
 /** V1 marker operations retain their old format/limits. Only explicit final
  * combined composition introduces the separately versioned review format. */
 export function retainCurrentPcbDiagnosticCSharpReviewStorage(source: string, original: string): string {
+  if (hasCurrentPcbDiagnosticCSharpReviewStorageV3(original)) { return packV3(expandCurrentPcbDiagnosticCSharpReviewSource(source)); }
   return original.includes(BEGIN) ? packCurrentPcbDiagnosticCSharpReviewStorage(source) : retainCurrentPcbDiagnosticCSharpStorage(source, original);
+}
+
+/** Explicit opt-in for the inverse and schematic writer compositions. Historical pack remains V2. */
+export function packCurrentPcbDiagnosticCSharpTokenFusionStorage(input: string): string {
+  return packV3(expandCurrentPcbDiagnosticCSharpReviewSource(input));
 }

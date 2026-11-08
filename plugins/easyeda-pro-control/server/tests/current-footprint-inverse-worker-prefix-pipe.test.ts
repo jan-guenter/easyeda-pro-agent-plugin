@@ -14,6 +14,7 @@ import { createCurrentFootprintInverseWorkerPrefixPipe } from "./fixtures/curren
 import { currentFootprintInverseNativeDeliveryCases } from "../src/current-footprint-inverse-native-delivery-protocol.ts";
 import { currentFootprintInverseNativeChannelCases } from "../src/current-footprint-inverse-native-channel-protocol.ts";
 import { currentFootprintInverseOwnDataCases } from "../src/current-footprint-inverse-own-data-protocol.ts";
+import { currentFootprintInverseReferenceWorkerCases } from "../src/current-footprint-inverse-reference-worker-protocol.ts";
 import { currentFootprintInverseGetCompletionCases } from "../src/current-footprint-inverse-get-completion-protocol.ts";
 import { currentFootprintInverseGetNativeCases } from "../src/current-footprint-inverse-get-native-delivery-protocol.ts";
 import { currentFootprintInverseGetWorkerCases } from "../src/current-footprint-inverse-get-worker-protocol.ts";
@@ -43,6 +44,7 @@ void test("original forwarded Event observations progress while their SDK reques
   for(const command of currentFootprintInverseGetWorkerCases()){const observation=pipe.observeInverseGetWorker(command);const request=last();if(request.id===original.id){await observation;assert.fail("Original GET preparation command was not written");}reply({});await observation;assert.equal(request.sessionId,pair.pageSessionId);assert.equal(settled,false);pipe.requireInversePublicDeleteWritten(pending);}
   for(const command of currentFootprintInverseGetNativeCases()){const observation=pipe.observeInverseGetNative(command);const request=last();if(request.id===original.id){await observation;assert.fail("Original GET native command was not written");}reply({});await observation;assert.equal(request.sessionId,pair.pageSessionId);assert.equal(settled,false);pipe.requireInversePublicDeleteWritten(pending);}
   for(const command of currentFootprintInverseGetCompletionCases()){const observation=pipe.observeInverseGetCompletion(command);const request=last();if(request.id===original.id){await observation;assert.fail("Original GET completion command was not written");}reply({});await observation;assert.equal(request.sessionId,pair.pageSessionId);assert.equal(settled,false);pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseReferenceWorkerCases()){const observation=pipe.observeInverseReferenceWorker(command);const request=last();if(request.id===original.id){await observation;assert.fail("Original reference-worker command was not written");}reply({});await observation;assert.equal(request.sessionId,pair.pageSessionId);assert.equal(settled,false);pipe.requireInversePublicDeleteWritten(pending);}
  }finally{replyTo(original,{result:{type:"object",subtype:"promise",className:"Promise",objectId:"original-sdk-promise"}});await observed;}
  assert.equal(settled,true);assert.equal(pipe.status().failureObservation,null);
 });

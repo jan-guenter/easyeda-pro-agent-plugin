@@ -33,3 +33,20 @@ models and accessor replacement without invoking a hook. Original-event ordering
 foreign codecs, fixed expressions and the pending Modify pipe are also checked.
 The existing complete native-source generation remains idempotent and bounded.
 No EasyEDA, native helper, MCP transport or installed payload was used.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `d003eadf649048776fbbdac934aa653dbf713265`; its
+committed tree is `fbf99e9b7cb4e9ca2319c5786934959c00548f9c`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.
+
+The installed-source/per-variant distinction for the Inspector results is
+clarified in the [PR185 evidence assessment](2026-11-08-pr185-history-attribution.md).
+The earlier blanket installed-payload sentence does not mean installed source
+files were unnecessary or that both historical variants are proved to have run.

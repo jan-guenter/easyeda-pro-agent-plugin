@@ -2,13 +2,13 @@
 /* oxlint-disable unicorn/numeric-separators-style -- Generated numeric pins use canonical JSON serialization for reproducible output. */
 export const CURRENT_FOOTPRINT_FORWARD_COLD_NATIVE_GRAPH = Object.freeze({
   schema: "private.footprint-forward-cold-native-graph.v1", legacySha256: "58f681b7c896069fd748b957fe925e39ed4b8990f88de3483fbda781a65dccee",
-  aggregateBytes: 1084551,
+  aggregateBytes: 1085329,
   files: Object.freeze([
   {
     "role": "driver",
     "relativePath": "scripts/footprint-forward-cold-execution/owner.ps1",
     "bytes": 95539,
-    "sha256": "abd801d6571421892f00194bf1040653c43642a52817d722df22dd7cba046230",
+    "sha256": "ccde3fdb3bbd02ec1b2b42e605c1f3e14928be06b2d73d7bd55fe58c02c5c220",
     "maximumBytes": 131072
   },
   {
@@ -21,8 +21,8 @@ export const CURRENT_FOOTPRINT_FORWARD_COLD_NATIVE_GRAPH = Object.freeze({
   {
     "role": "phase",
     "relativePath": "scripts/footprint-forward-cold-execution/native-phase.cs",
-    "bytes": 43570,
-    "sha256": "4a2bf509c848280f3db17456ab14a8c6ca51a60b4fb6e9be85f3ad872614a8c3",
+    "bytes": 44348,
+    "sha256": "04610bbaea510a1c2a40efd266efa3e8ef03ed8206d23e7cb772bd636b45784b",
     "maximumBytes": 65536
   }
 ].map(value => Object.freeze(value))),

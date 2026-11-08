@@ -2,6 +2,7 @@
  * joins only and cannot issue the original main/native request capability. */
 import assert from "node:assert/strict";
 import { open } from "node:fs/promises";
+import { INSTALLED_EASYEDA_EXECUTABLE_SKIP_REASON, configuredEasyedaExecutablePath } from "./helpers/installed-easyeda-source.ts";
 import { test } from "node:test";
 import { types } from "node:util";
 import { createContext, runInContext } from "node:vm";
@@ -43,9 +44,17 @@ void test("legacy ownmethod is admitted only under its distinct original wrapper
   assert.ok(value !== null && typeof value === "object"); assert.equal(Reflect.get(value, "mode"), "legacy"); assert.equal(Reflect.get(value, "method"), "HEAD");
   runInContext('Object.defineProperty(legacy.req,"method",{get:forbidden});', context); assert.throws(() => runInContext(`(${CALLS.read}).call(saved)`, context)); assert.equal(runInContext("calls", context), 0);
 });
+void test("the copied request SQL proof retains the v2 complete module scope", () => {
+  for (const mutation of ['F5.extra=1', 'F5.types.extra=1', 'Object.setPrototypeOf(F5,{})', 'F5[Symbol("extra")]=1']) {
+    const context = fixture(); runInContext(mutation, context);
+    assert.throws(() => runInContext(`(${CALLS.read}).call(bound)`, context), /SELECTED_MAIN_REQUEST_BINDING/u);
+    assert.equal(runInContext("calls", context), 0);
+  }
+});
 void test("the installed PE embedded builtin qualifies exact complete source; source JSON and accessors cannot issue it", async context => {
-  const handle = await open("/mnt/c/Program Files/easyeda-pro/easyeda-pro.exe", "r").catch((error: unknown): undefined => { if (error !== null && typeof error === "object" && "code" in error && error.code === "ENOENT") { return undefined; } throw error; });
-  if (handle === undefined) { context.skip("Pinned vendor PE is not present in this source-only environment."); return; }
+  const executable = configuredEasyedaExecutablePath();
+  if (executable === null) { context.skip(INSTALLED_EASYEDA_EXECUTABLE_SKIP_REASON); return; }
+  const handle = await open(executable, "r");
   try {
     const before = await handle.stat(); assert.equal(before.size, SOURCE.executable.bytes); const bytes = Buffer.alloc(SOURCE.embedded.bytes);
     const read = await handle.read(bytes, 0, bytes.length, SOURCE.embedded.offset); assert.equal(read.bytesRead, bytes.length); const after = await handle.stat(); assert.equal(before.ino, after.ino); assert.equal(before.mtimeMs, after.mtimeMs); assert.equal(before.ctimeMs, after.ctimeMs);
