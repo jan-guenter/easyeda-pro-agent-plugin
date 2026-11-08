@@ -1,6 +1,77 @@
 # Project history
 
+- [2026-11-08 Original native GET worker readiness](2026-11-08-inverse-native-get-worker-readiness.md). Separate original Core/cursor/native prerequisites preserve old books and caps; actual GET Jobs, reference checks and DEL remain closed.
+
+- [2026-11-08 Original fresh native DEL sender hold](2026-11-08-inverse-native-delete-call-hold.md). Original pending invocation, actual entry/helper custody and exit settlement have inert Inspector proof; Core Call/Job and body dispatch remain closed.
+
+- [2026-11-08 Main raw-frame refusal](2026-11-08-main-raw-frame-refusal.md). Verified development handoff and failed disposable run, complete original cleanup, and prospective bounded failure labels; no Create/Save or target-runtime completion.
+- [2026-11-08 PR199 corrected-head full review](2026-11-08-pr199-full-review-complete.md). Current-head coverage, no new actionable comments and five checks passed; later runtime/source reviews remain separate.
+
+- [2026-11-08 Captured Main native storage](2026-11-08-captured-main-native-storage.md). Separate fixed schematic V5/inverse V2 dictionaries preserve original wire bytes and historical decoders; source sizes/checks precede compilation and connected validation.
+
+- [2026-11-08 Main SQL captured-frame classifier](2026-11-08-main-sql-captured-frame-classifier.md). Original module provenance, immutable historical predicates and source-only classifier checks; no connected writer admission.
+
+- [2026-11-08 Readonly Via bookkeeping](2026-11-08-via-readonly-bookkeeping.md). Thirty-two fixed observer joins retain true readonly flags and original caps; prototype-safe scratch copies and pinned lossless storage prefixes have focused Inspector/source proof.
+
+- [Main captured-frame integration](2026-11-08-main-captured-frame-integration.md): original held-frame predicates, fixed request/registration joins and source-only checks; connected write lifecycles remain pending.
+
+- [2026-11-08 Original Core readonly native DEL qualification](2026-11-08-inverse-native-delete-core-qualification.md). Separate original enrollment, readonly native ledgers, fixed inverse aliases and source/C# evidence; actual Call/Job and dispatch remain closed.
+
+
+- [2026-11-08 Original schematic TEXT-wave custody](2026-11-08-schematic-original-text-wave-custody.md). Separate original reader/native lane and page/project correction; full worker/Modify/Save remains closed.
+
+- [2026-11-08 Fixed schematic compiler type aliases](2026-11-08-schematic-native-type-aliases.md). Reversible fixed framework-type tokens preserve original review bytes without raising compiler limits.
+
+- [2026-11-08 Captured utility joins for nested Main frames](2026-11-08-main-captured-util-frames.md). Fixed ten-role readonly reconstruction, exact old tuple parity and ambient-F5 source inventory; private original capture provenance remains required.
+
+- [2026-11-08 Captured utility frames in Via observers](2026-11-08-via-captured-main-frames.md). Six paired readonly roles retain exact legacy books, original custody and fixed request caps; actual Node Inspector proof remains separate from connected execution.
+
+- [2026-11-08 PR199 function contracts](2026-11-08-pr199-function-contracts.md). Nine contracts across six originally touched files preserve identical emitted code and zero-warning strict lint; the external coverage gate still needs review.
+
+- [2026-11-08 Schematic Modify ticket source](2026-11-08-schematic-modify-ticket-source.md). Fixed timer/source spans and passive deltas identify the separate ticket task; source checks grant no completion or native authority.
+- [2026-11-08 Schematic Modify CM and Sheet callees](2026-11-08-schematic-modify-cm-callee-source.md). Thirty original metadata roles are qualified in configured-source fixtures; worker completion and persistence remain separate.
+- [2026-11-08 Canvas echo and pending suppression](2026-11-08-schematic-canvas-echo-source.md). Exact page/project constructor bindings and sixteen UI receiver roles preserve the distinction between worker publication and UI completion.
+
+- [2026-11-08 PR199 documentation corrections](2026-11-08-pr199-documentation-corrections.md). Seven inline issues and the review-only title corrected; exact unsealed-source limits retained, with documentation coverage still pending.
+
+- [2026-11-08 Initializer guard failure and separate diagnostic](2026-11-08-selected-main-predicate-diagnostic.md). Original Via startup refusal and cleanup are retained; a fixed failure-only guard probe preserves conditions, request ceilings and false execution authority.
+
+- [2026-11-08 Fresh native DEL registration preparation](2026-11-08-inverse-native-delete-registration.md). Original callback/body/receiver join, readonly codec and focused source/compiler evidence; no Call, Job or dispatch authority.
+
+- [2026-11-08 Main startup diagnostic development batch](2026-11-08-main-startup-diagnostic-development-batch.md). Frozen162916 passes mandatory local non-suite checks, reproducibility and exact package/process admission; automated controller replacement uses no Codex restart, while the fresh Via result remains pending.
+
+- [2026-11-08 PR197 touched function documentation](2026-11-08-pr197-touched-function-documentation.md). Eighteen contracts on originally changed complex functions, with identical emitted code and strict lint; external documentation coverage still needs review.
+
+- [2026-11-08 PR198 coverage correction](2026-11-08-pr198-coverage-correction.md). Remove one unreachable point-query omission and document six originally touched functions with identical emitted code; the external documentation gate remains unproved.
+
+- [2026-11-08 Generated Component import qualification](2026-11-08-generated-component-import-qualification.md). Initial two-document/35-table capture, three cloned-Pad point results, complete closed raw/SQL preservation and original cleanup; fresh post-reader clock qualification retains its refusal.
+
+- [2026-11-08 Review 197 observer comments](2026-11-08-review-197-observer-comments.md). Correct two orphaned method contracts with identical emitted code; the separate documentation coverage gate remains open.
+
+- [2026-11-08 First Main startup refusal diagnostic](2026-11-08-selected-main-first-startup-diagnostic.md). Retain a bounded closed site/frame classification before the original refusal, with no new SQL continuation or public v1 result changes.
+
+- [2026-11-08 Complete MCP result custody](2026-11-08-mcp-result-custody.md). Retain structured replies before formatting; recover a lost metadata-only projection without native replay, owner adoption or signals.
+
+- [2026-11-08 Original native post and held worker batch](2026-11-08-original-native-post-worker-batch-hold.md). Trusted original worker event comparison and one guarded handler continuation stop before the batch body; immutable V4 storage and bounded compiler checks preserve false Modify/Save completion.
+- [2026-11-08 Modify TEXT no-publication reader](2026-11-08-schematic-modify-text-no-publication-reader.md). A distinct unmounted same-reader branch proves the one ready-state TEXT serial wave without widening startup-eight or Save grammars.
+
+- [2026-11-08 Explicit-Relevance schematic readers](2026-11-08-explicit-relevance-schematic-readers.md). Three native reader equivalents pass on the seven-record disposable fixture, followed by original root/Job/helper cleanup and complete closed-file byte equivalence.
+
+- [2026-11-08 PR196 review corrections](2026-11-08-pr196-review-corrections.md). Bounded cold-state claims, linked historical scope correction, checked inert counter instrumentation and explicit final-freeze compatibility disposition.
+- [2026-11-08 PR195 code corrections](2026-11-08-pr195-code-corrections.md). Early spacing-overflow diagnostics and a genuine packed, unclosed inverse SDK regression, with preserved failures and unchanged guards and caps.
+- [2026-11-08 PR195 function contracts](2026-11-08-pr195-function-contracts.md). Twenty-six contracts on originally changed functions, exact source restoration after comment removal and strict changed-file lint.
+- [2026-11-08 Foreground tool argument files](2026-11-08-foreground-argument-files.md). SHA-bound private data snapshots avoid long terminal argument lines while retaining the existing input limits, original cleanup custody and refusal before dispatch.
+
+- [2026-11-08 Native constructor accessor metadata](2026-11-08-native-accessor-constructor-profile.md). A source-built accessor-retaining header profile matches the next stopped Windows descriptor fingerprint while preserving strict old profiles and false ABI/payload claims.
+- [2026-11-08 Eager subagent connection during replacement](2026-11-08-eager-subagent-handoff.md). Supported unused-child cleanup and original idle-connection closure allow a new admitted manager without a Codex restart.
+- [2026-11-08 Current coverage and skill boundaries](2026-11-08-current-coverage-boundaries.md). Component point discovery, current inverse DEL omissions, raw schematic read limits and cloned v2 guidance without new execution authority.
+- [2026-11-08 Original publisher post and worker preparation](2026-11-08-original-publisher-post-and-worker-preparation.md). Same-stream publisher prefix holds before native sending; passive original worker preparation and lossless V3 storage preserve false completion claims and fixed caps.
+
+- [2026-11-08 Bounded schematic native storage](2026-11-08-bounded-schematic-native-storage.md). Explicit token fusion and exact Main-table restoration retain the byte caps; fixed phase reconstruction now includes the unchanged SDK wait program.
 - [2026-11-08 Fixed selected-Main helper storage](2026-11-08-selected-main-native-program-sharing.md). Lossless shared JOIN/SCOPE table data restores every prior compiler byte and retains expanded length/hash checks without changing caps or authority.
+- [2026-11-08 Original DEL body and method holds](2026-11-08-inverse-del-method-hold.md). Fixed original continuation ends before worker forwarding; later owner-free C# compilation and 13 pure codecs passed, while live validation remains unrun.
+
+- [2026-11-08 Original retained getter in DEL preparation](2026-11-08-inverse-del-retained-getter.md). Configured-source fixture checks preserve the metadata-read bound after correcting the null getter slot; no application tuple or native owner ran, and the unsealed source limit is recorded.
 
 - [2026-11-08 Original notifications through the SDK action result](2026-11-08-original-notification-sdk-hold.md). Same-stream queued bodies and original visitor Promises stop at the held action-result marker; full Modify/worker/Save remain closed.
 - [2026-11-08 Inverse SDK projection hook](2026-11-08-inverse-sdk-projection-hook.md). Exact inverse-only omission of an unreachable SDK family, unchanged other layouts and recovered compiler space under existing bounds.
@@ -1068,3 +1139,20 @@ layout. The connected ledger retains its generation and case anchors.
 - [Closed inverse Component runtime](2026-11-08-inverse-component-runtime-projection.md), exact build-only closure of the unreachable Component family, preserved shared declarations, and measured compiler capacity under unchanged bounds.
 - [Remaining schematic command-store comparisons](2026-11-08-schematic-command-store-deltas.md), fixed undo/redo value and ticket deltas with original store mapping, full descriptors and ordered Maps, plus exact status queue states.
 
+- [Original SDK park and publication timer](2026-11-08-original-sdk-publication-timer.md), three original resume joins, exact retained timer identity and unchanged peer state, stopping before the publisher body with all downstream completion claims false.
+- [Fresh DEL collateral entry lexicals](2026-11-08-inverse-del-live-entry-lexicals.md), fixed live Ja/P4/yy frame proofs, fresh passive row/tab guards and late lexical replacement refusal. Source-only, unmounted and without forwarding authority.
+
+- [Coupled DEL sender and collateral preparations](2026-11-08-inverse-del-coupled-preparation.md), closed string-payload sender/worker/force/history observations and codecs, metadata-before-traversal and synchronous attempt guards. Unmounted, with no runtime Job issuer or dispatch authority.
+
+- [Fresh native-equivalent DEL sender entry](2026-11-08-inverse-native-delete-sender-entry.md), independent original MessageBus preparation, single-use invocation, exact original/generated entry stack and zero-trap late-refusal checks. Unmounted; separate fresh Core intent, reference/collateral proof and accepted native Job remain required.
+
+- [Fresh native-equivalent inverse intent and UI bootstrap](2026-11-08-inverse-native-delete-fresh-bootstrap.md), distinct original Core publication and native reflection lane, exact helper correlation and mutually exclusive branch budgets under unchanged aggregate caps. Source/C# codec checks; sender Call, native Job and connected inverse remain unavailable.
+
+
+- [Bounded schematic program groups](2026-11-08-schematic-codec-program-groups.md), exact historical class bytes and bounded ordered program groups through the existing decoder and join limits.
+
+- [Passive original schematic CM graph](2026-11-08-schematic-modify-cm-graph.md), complete selected original graph and entry lexicals before any CM body, with descriptor and ordered-collection seals.
+- [Original worker CM entry](2026-11-08-schematic-original-worker-cm-entry.md), two consumed original resumes into a held onChange body, exact source-derived delta and closed downstream completion.
+
+- [Passive original Sheet canvas preparation](2026-11-08-schematic-modify-canvas-preparation.md), exact enum and receiver branches, ordered cache state and native Promise construction lineage without a body or timer-delivery grant.
+- [Source-bound worker handler name](2026-11-08-schematic-worker-handler-name.md), actual constructor-created anonymous-arrow metadata and preserved strict source/location checks.

@@ -195,12 +195,25 @@ try the other action after a refusal on that reader.
 The cloned-Pad action qualifies295 original callees and accepts1–11 points.
 Five extra Pad getters consume the five request slots saved by the smaller
 batch, preserving the419 request ceiling and64KiB physical message ceiling.
-Its result schema is `easyeda-pro-control.pcb209-component-cloned-point.v1`.
+Its current result schema is `easyeda-pro-control.pcb209-component-cloned-point.v2`.
 It requires the exact generated footprint geometry and reciprocal parent/index
 relations but reports `templateReferenceLinked:false`. The older reference-linked
-result remains separate. The cloned form accepts only the source-derived0 or5202
-model bitmap while its fixed point getters leave model state and descriptors
-unchanged. These source and offline checks do not establish a connected match.
+result remains separate. V2 accepts the source-derived0,64or5202 model bitmap,
+including the independently modeled normalized64 state, while its fixed point
+getters leave model state and descriptors unchanged. Historical cloned v1 keeps
+its immutable0or5202 contract; parsing it grants no current ownership. These
+source and offline checks do not establish a connected match.
+
+Frozen build `20261108135950` subsequently passed one three-point cloned-Pad v2 case: the centre
+returned its owned Pad, two outside points returned no identities, and both
+samples preserved selection and retained descriptors. Its model state was64.
+The original root/Job closed and helper release was acknowledged. Complete closed
+raw bytes and all 35 SQL tables matched the initial capture. Fresh initial
+qualification separately refused WSL birth time zero and retained its false
+acceptance flags. This
+[scoped case](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-08-generated-component-import-qualification.md#original-cloned-pad-point-reader-and-closure)
+does not validate another payload, reference-linked representation or ordinary
+populated board. It supplies no writer or persistent-registration authority.
 
 No caller chooses classes, supplies alternate source or relaxes guards. Normal
 close, complete closed capture, original process/Job termination and helper

@@ -4,6 +4,8 @@ import { CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_NATIVE_CALLS as CALLS, CURRENT_
 import type { CurrentSchematicRelevancePublicationNativeCommand as Command } from "./current-schematic-relevance-publication-native-protocol.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
+/** Enumerate every fixed passive phase and proof call for native codec parity.
+ * Each placeholder case passes the same strict validator as an actual request. */
 export function currentSchematicRelevancePublicationNativeCases(): readonly Command[] {
   const rows: Command[] = [
     validate({ phase: "publication-native-properties", method: "Runtime.getProperties", params: { objectId: "original_ref", ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }),
@@ -14,6 +16,9 @@ export function currentSchematicRelevancePublicationNativeCases(): readonly Comm
   return freezeDeep(rows);
 }
 export interface CurrentSchematicRelevancePublicationNativeTemplate { readonly phase: string; readonly method: string; readonly names: readonly string[]; readonly values: Readonly<Record<string, string>>; readonly template: string }
+/** Convert a validated request to a fixed template and named handle values.
+ * Function text comes only from the closed codebook; an unknown call role
+ * refuses before a native program index can be emitted. */
 export function currentSchematicRelevancePublicationNativeTemplate(input: unknown): CurrentSchematicRelevancePublicationNativeTemplate {
   const command = validate(input), names: string[] = [], values: Record<string, string> = {};
   const params: Record<string, unknown> = { ...command.params }; let phase: string = command.phase;
@@ -30,6 +35,8 @@ export function currentSchematicRelevancePublicationNativeTemplate(input: unknow
   }
   return freezeDeep({ phase, method: command.method, names, values, template: JSON.stringify({ method: command.method, params }) });
 }
+/** Bind one positive native request ID to the validated passive command and
+ * its exact template fields. This encoding issues no owner or resume grant. */
 export function currentSchematicRelevancePublicationNativeWire(input: unknown, requestId: number): Readonly<{ command: Command; request: Readonly<Record<string, string | number>> }> {
   if (!Number.isSafeInteger(requestId) || requestId < 1 || requestId > 2_147_483_647) { throw new Error("SCH_PUBLICATION_NATIVE_REQUEST_ID"); }
   const command = validate(input), row = currentSchematicRelevancePublicationNativeTemplate(command);
