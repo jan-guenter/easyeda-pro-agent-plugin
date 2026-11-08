@@ -49,3 +49,15 @@ reads `this._base`. Its receiver, backing base and UUID still require original
 runtime custody before the manager's default parameter may execute. Two focused
 metadata/accessor checks and strict type-aware lint passed. No default argument
 or manager body was invoked by this source qualification.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `a9b9e1122d35be58528e0cbc7e7f7a9e4ff5bf14`; its
+committed tree is `1b5c168fb34537489b9e4621b398130368cf4bf6`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

@@ -9,9 +9,10 @@ import { GENERATED_SCHEMATIC_WIRE_SET_LINES_SOURCE, GENERATED_SCHEMATIC_WIRE_SOU
 import { GENERATED_SCHEMATIC_WIRE_NATIVE_SOURCE } from "../server/src/generated-schematic-wire-native-source.ts";
 
 async function main(): Promise<void> {
-const assetsRoot = process.argv[2] ?? "/mnt/c/Program Files/easyeda-pro/resources/app/assets";
+const assetsRoot = process.argv[2] ?? process.env["EASYEDA_ASSETS_ROOT"];
+if (assetsRoot === undefined || assetsRoot === "") { throw new Error("EASYEDA_ASSETS_ROOT_REQUIRED"); }
 for (const file of GENERATED_SCHEMATIC_WIRE_SOURCE_PROFILE.files) {
-  const bytes = await readFile(join(assetsRoot, file.relativePath)); assert.equal(bytes.length, file.bytes); assert.equal(createHash("sha256").update(bytes).digest("hex"), file.sha256);
+  const bytes: Buffer = await readFile(join(assetsRoot, file.relativePath)); assert.equal(bytes.length, file.bytes); assert.equal(createHash("sha256").update(bytes).digest("hex"), file.sha256);
   const method = bytes.toString("utf8").slice(file.setLines.start, file.setLines.end);
   assert.equal(createHash("sha256").update(method).digest("hex"), file.setLines.sha256); assert.equal(method, GENERATED_SCHEMATIC_WIRE_SET_LINES_SOURCE);
   const result: unknown = runInNewContext(`const line={id:"original-line",points:[{x:0,y:0},{x:100,y:0}]},originalPoints=line.points;

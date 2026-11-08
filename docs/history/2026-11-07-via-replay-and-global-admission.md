@@ -37,3 +37,15 @@ created by these checks. The outer writer draft still awaits the actual upload
 drain before it can compile and be mounted. No helper pin, bundle, release,
 installation or connected writer support is claimed here. The production project remains
 unopened and unchanged.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `240754ba46a58a86c0482d8663e34c91cc874a3c`; its
+committed tree is `c5b7bac584c2d66cf00d6dde961c5fc7c3e55a1e`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

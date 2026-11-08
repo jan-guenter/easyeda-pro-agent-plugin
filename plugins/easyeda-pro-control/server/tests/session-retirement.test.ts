@@ -9,6 +9,8 @@ import vm from "node:vm";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { z } from "zod";
+import { parse } from "acorn";
+import { installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 import { ForegroundSessionTransport } from "../../scripts/control-session-transport.ts";
 import { SerializedGate } from "../src/engine.ts";
 import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
@@ -272,10 +274,12 @@ void test("actual index native guard refuses every retained runtime and native r
   scope["CurrentFootprintForwardSourceValidation"] = SourceController;
   scope["currentFootprintForwardSourceValidation"] = undefined;
   scope["closedSymbolUnreservedFailure"] = { observed: false };
-  const custodyStart = source.indexOf("const forwardSourceCustodyMethods =");
-  const custodyEnd = source.indexOf("function ownedWindowsRuntime(", custodyStart);
-  assert.ok(custodyStart > 0 && custodyEnd > custodyStart && custodyEnd - custodyStart < 2500);
-  vm.runInContext(source.slice(custodyStart, custodyEnd), scope);
+  installIndexFixtureDependencies(scope, source);
+  const custody = parse(source, { ecmaVersion: "latest", sourceType: "module" }).body.filter(row =>
+    row.type === "VariableDeclaration" && row.declarations.some(item => item.id.type === "Identifier" && item.id.name === "forwardSourceCustodyMethods") ||
+    row.type === "FunctionDeclaration" && row.id?.name === "hasForwardSourceCustody");
+  assert.equal(custody.length, 2);
+  for (const row of custody) { assert.ok(row.end - row.start < 2500); vm.runInContext(source.slice(row.start, row.end), scope); }
   vm.runInContext(source.slice(start, end), scope);
   const check = (): unknown => vm.runInContext("assertSessionRetirementNativeOwnersSettled()", scope);
   check();

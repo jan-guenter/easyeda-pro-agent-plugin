@@ -128,6 +128,17 @@ function cursorFixture(): Readonly<{ cursor: CurrentFootprintInverseInitialSyncC
 void test("original inverse cursor joins four Main receipts at their held worker responses before each resume",async()=>{
  const f=cursorFixture();for(const role of ["syncEntry","syncFull"]as const){await f.cursor.continue(f.next(role));}for(const ordinal of[1,2,3,4]){await f.cursor.continue(f.next("syncHistory",ordinal));}for(const role of["syncMerged","syncFinalizing","syncReturned"]as const){await f.cursor.continue(f.next(role));}f.cursor.requireCompleted();assert.equal(f.state.completed,1);assert.equal(f.state.resumes,9);assert.equal(f.run("hooks+modelParses"),0);
 });
+void test("second unfulfilled sync settlement fails once without a third native sample", async () => {
+  const f = cursorFixture(); f.state.pending = true;
+  for (const role of ["syncEntry", "syncFull"] as const) { await f.cursor.continue(f.next(role)); }
+  for (const ordinal of [1, 2, 3, 4]) { await f.cursor.continue(f.next("syncHistory", ordinal)); }
+  for (const role of ["syncMerged", "syncFinalizing", "syncReturned"] as const) { await f.cursor.continue(f.next(role)); }
+  assert.equal(f.cursor.startupProgress().settlementPasses, 1); assert.equal(f.cursor.startupProgress().canSettle, true); assert.equal(f.state.failed, false);
+  await assert.rejects(f.cursor.settle()); assert.equal(f.cursor.startupProgress().settlementPasses, 2); assert.equal(f.state.failed, true);
+  assert.equal(f.cursor.startupProgress().canSettle, false); assert.equal(f.state.completed, 0);
+  const after = f.state.requests; await assert.rejects(f.cursor.settle()); assert.equal(f.state.requests, after); assert.throws(() => { f.cursor.requireCompleted(); });
+});
+
 void test("a replaced original Main receipt refuses at the actual response before its resume",async()=>{
  const f=cursorFixture();await f.cursor.continue(f.next("syncEntry"));await f.cursor.continue(f.next("syncFull"));const packet=f.next("syncHistory");f.state.ambiguous=true;await assert.rejects(f.cursor.continue(packet));assert.equal(f.state.resumes,2);assert.equal(f.state.failed,true);assert.equal(f.state.completed,0);assert.equal(f.run("hooks+modelParses"),0);
 });

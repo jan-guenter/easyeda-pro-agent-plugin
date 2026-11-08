@@ -1,6 +1,6 @@
 /** Real observer with an explicit synthetic registry; no original native authority is issued. */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { CURRENT209_SYNTHETIC_WORKER_SOURCE, current209SyntheticSourceModule } from "./helpers/current209-source-excerpts.ts";
 import { test } from "node:test";
 import type { CurrentProjectSyncQuiesceObserver } from "../src/current-project-sync-quiesce-observer.ts";
 import type { CurrentProjectSyncQuiesceBindings,CurrentProjectSyncQuiesceEvent,CurrentProjectSyncQuiesceOrigin } from "../src/current-project-sync-quiesce-origin.ts";
@@ -17,7 +17,7 @@ function nativeMetadata(index:number):object {
   return {result,internalProperties:[{name:"[[Prototype]]",value:{type:"function",className:"Function",description:"parentDescription" in p?p.parentDescription:"function () { [native code] }",objectId:"native-parent"}},{name:"[[Scopes]]",value:{type:"object",className:"Array",subtype:"internal#scopeList",description:"Scopes[0]",objectId:"native-scopes"}}]};
 }
 async function fixture():Promise<Readonly<{observer:CurrentProjectSyncQuiesceObserver;ack:PromiseWithResolvers<unknown>;cancelEntered:Promise<unknown>;state:{requests:number;resumes:number;completed:number;failed:boolean;exited:boolean}}>> {
-  const source=await readFile('/mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-mgr/3.2.185.bf63a159/js/project-worker.js','utf8');
+  const source=CURRENT209_SYNTHETIC_WORKER_SOURCE;
   const origin:CurrentProjectSyncQuiesceOrigin=Object.freeze({profile:"private.current-pcb-via-project-sync-quiesce-origin.v1"});const owner=Object.freeze({syntheticOwner:true});const operation=Object.freeze({syntheticOperation:true});
   const state={requests:0,resumes:0,completed:0,failed:false,exited:false};const ack=Promise.withResolvers<unknown>();const entered=Promise.withResolvers<unknown>();let pauseIndex=0;const notices:CurrentProjectSyncQuiesceEvent[]=[];
   const bindings:CurrentProjectSyncQuiesceBindings=Object.freeze({sessionId:"worker",scriptId:"original",uniqueContextId:"context",source,originalProject:():string=>"project",assertCurrent:():Promise<void>=>Promise.resolve(),assertOriginalGenerationExited:():Promise<void>=>{assert.equal(state.exited,true);return Promise.resolve();},fail:():void=>{state.failed=true;},complete:():Promise<void>=>{state.completed+=1;return Promise.resolve();},
@@ -29,7 +29,7 @@ async function fixture():Promise<Readonly<{observer:CurrentProjectSyncQuiesceObs
       if(command.phase==="sync-quiesce-cancel"){entered.resolve(null);return ack.promise;}
       if(command.phase==="sync-quiesce-resume"){state.resumes+=1;notices.push({method:"Debugger.resumed",sessionId:"worker",params:{}});}return Promise.resolve({});
     }});
-  const exports=await loadSyntheticRegistryModule(new URL("../src/current-project-sync-quiesce-observer.ts",import.meta.url),(name,actual)=>name==="./current-pcb-diagnostic-owner.ts"?{...actual,requireOriginalCurrentProjectSyncQuiesceOrigin:(candidate:object,actualOwner:object,actualOperation:object):CurrentProjectSyncQuiesceBindings=>{assert.equal(candidate,origin);assert.equal(actualOwner,owner);assert.equal(actualOperation,operation);return bindings;}}:actual);const Constructor=exports["CurrentProjectSyncQuiesceObserver"];assert.equal(typeof Constructor,"function");assert.ok(typeof Constructor==="function");
+  const exports=await loadSyntheticRegistryModule(new URL("../src/current-project-sync-quiesce-observer.ts",import.meta.url),(name,actual)=>name==="./current-pcb-diagnostic-owner.ts"?{...actual,requireOriginalCurrentProjectSyncQuiesceOrigin:(candidate:object,actualOwner:object,actualOperation:object):CurrentProjectSyncQuiesceBindings=>{assert.equal(candidate,origin);assert.equal(actualOwner,owner);assert.equal(actualOperation,operation);return bindings;}}:current209SyntheticSourceModule(name,actual));const Constructor=exports["CurrentProjectSyncQuiesceObserver"];assert.equal(typeof Constructor,"function");assert.ok(typeof Constructor==="function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only the explicit original-registry accessor is substituted; the real class has just been runtime checked.
   const observer=Reflect.construct(Constructor,[origin,owner,operation]) as CurrentProjectSyncQuiesceObserver;
   return {observer,ack,cancelEntered:entered.promise,state};

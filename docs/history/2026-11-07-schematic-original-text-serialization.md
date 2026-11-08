@@ -62,3 +62,15 @@ These are source-only implementation checks. CM/order/echo callbacks,
 publication, matching worker TEXT, remaining normal action completion, Modify,
 Save, fresh reopen and persistence remain later held frontiers. No native owner,
 MCP transport, app/design, tracked generated helper or installed byte changed.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `3d3ba9a29821eb692773a2d2bb75a53521aaa617`; its
+committed tree is `4cc3a642178f8dcee0bcf8ceafba428217e9f627`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

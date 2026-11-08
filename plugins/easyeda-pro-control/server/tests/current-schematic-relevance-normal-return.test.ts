@@ -1,7 +1,7 @@
 /** Actual uninvoked pinned functions in an inert VM. No model, original
  * renderer, actor, receiver, mutation or saved result is established. */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { INSTALLED_EASYEDA_SOURCE_SKIP_REASON, readConfiguredEasyedaAssets } from "./helpers/installed-easyeda-source.ts";
 import { Session } from "node:inspector/promises";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
@@ -23,13 +23,11 @@ function inertFunction(source: string, variant: 0 | 1, role: CurrentSchematicRel
  return runInContext(`${padding.slice(0, -prefix.length)}${prefix}${text}${tail}`, context) as unknown;
 }
 void test("actual Node24 metadata binds all eight normal-return callbacks in both exact sources", async context => {
-  let sources: readonly string[];
-  try { sources = await Promise.all(SOURCE.map(row => readFile(`/mnt/c/Program Files/EasyEDA-Pro/resources/app/assets/${row.relativePath}`, "utf8"))); }
-  catch (error) { if (error !== null && typeof error === "object" && "code" in error && error.code === "ENOENT") { context.skip("installed source unavailable"); return; } throw error; }
+  const sources: readonly string[] | null = await readConfiguredEasyedaAssets(SOURCE.map(row => row.relativePath)); if (sources === null) { context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON); return; }
   assert.equal(process.versions.node, "24.18.0"); const session = new Session(); session.connect(); const key = "__inertSchematicNormalReturn";
   try {
     for (const variant of [0, 1] as const) {
-      const source = sources[variant]; assert.ok(typeof source === "string"); assert.equal(qualifyCurrentSchematicRelevanceNormalReturnSource(source), variant);
+      const source: string | undefined = sources[variant]; assert.ok(typeof source === "string"); assert.equal(qualifyCurrentSchematicRelevanceNormalReturnSource(source), variant);
       for (const role of ROLES) {
         Object.defineProperty(globalThis, key, { value: inertFunction(source, variant, role), configurable: true });
         const value = await session.post("Runtime.evaluate", { expression: `globalThis[${JSON.stringify(key)}]`, objectGroup: "inert-schematic-normal-return" });

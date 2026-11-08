@@ -3,10 +3,10 @@
 The maintained importer now accepts the distinct `circular-smt-pad-only` kind.
 It generates one fresh PCB with exactly DOCHEAD, META and one PAD, without any
 Component, footprint library, image, hole, placed-pad parent or existing design
-input. The native PAD body uses the exact29-field current-format `Jg.getPAD`
-roster. The fixed default style is ELLIPSE200 by200 in source units, top copper1,
-center0/0, angle0, NORMAL pad type and unlocked. The pinned decoder divides
-positions and dimensions by ten. Its native top `tC` style is20 by20 with radius10,
+input. The native PAD body uses the exact 29-field current-format `Jg.getPAD`
+roster. The fixed default style is ELLIPSE 200 by 200 in source units, top copper 1,
+center 0/0, angle 0, NORMAL pad type and unlocked. The pinned decoder divides
+positions and dimensions by ten. Its native top `tC` style is 20 by 20 with radius 10,
 and bottom/inner/hole are null.
 
 `managed-pad-fixture-generator.ts` records the full pinned PCB source and exact
@@ -59,7 +59,7 @@ closure. It claims no surviving importer handles, new target, startup-effect
 acceptance or writer authority. Historical fresh-manager closed-data reuse does
 not yet parse the new Pad profile; do not present old receipt IDs as Pad owners.
 
-Pinned Node24.18.0 checks passed23 focused generator, real synthetic SQLite,
+Pinned Node 24.18.0 checks passed 23 focused generator, real synthetic SQLite,
 old-profile, copy/refusal, once-only staging, actual import coordinator and fixed
 registration regressions. The installed full-source/actual decoder-style check,
 both TypeScript projects and strict type-aware lint passed. A temporary generated

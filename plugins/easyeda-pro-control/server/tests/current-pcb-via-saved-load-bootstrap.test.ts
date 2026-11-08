@@ -15,10 +15,10 @@ import type { CurrentPcbViaSavedLoadBootstrapCommand } from "../src/current-pcb-
 
 type Fault = "none" | "online" | "copy" | "log" | "resume";
 async function fixture(fault: Fault = "none"): Promise<Readonly<{ runner: CurrentPcbViaSavedLoadBootstrap; commands: CurrentPcbViaSavedLoadBootstrapCommand[];
-  state: { failed: boolean; callbacks: number; browserRan: number; pageRan: number; projectResumed: boolean } }>> {
+  state: { failed: boolean; callbacks: number; browserRan: number; pageRan: number; projectResumed: boolean };submitResumeAfterProjectPause:()=>Promise<unknown> }>> {
   const projectUuid = "a".repeat(64), targetUrl = "https://client/editor?entry=mgr-project-worker.js&cll=&debugOpen=0", windowTabId = "window_original";
   const targetTitle = `project_${projectUuid}_${windowTabId}`; const queue: CurrentPcbViaSavedLoadBootstrapEvent[] = []; const commands: CurrentPcbViaSavedLoadBootstrapCommand[] = [];
-  const state = { failed: false, callbacks: 0, browserRan: 0, pageRan: 0, projectResumed: false };
+  const state = { failed: false, callbacks: 0, browserRan: 0, pageRan: 0, projectResumed: false };let projectPauseQueued=false;
   const event = (method: string, params: unknown): void => { queue.push({ method, sessionId: "worker-session", params }); };
   const stage = (role: CurrentPcb209StartupScriptRole): void => {
     let url = ""; if (role === "bootstrap") { url = targetUrl; } else if (role === "preload") { url = PRELOAD; } else if (role === "project") { url = PROJECT; }
@@ -30,6 +30,7 @@ async function fixture(fault: Fault = "none"): Promise<Readonly<{ runner: Curren
       { functionName: "", location: { scriptId, lineNumber: 0, columnNumber: 0 } },
       { functionName: COPY.creator.functionName, location: { scriptId: "script-preload", lineNumber: COPY.creator.lineNumber, columnNumber: COPY.creator.columnNumber } },
       { functionName: "", location: { scriptId: "script-preload", lineNumber: caller.lineNumber, columnNumber: caller.columnNumber } }];
+    if(role==="project"){projectPauseQueued=true;}
     event("Debugger.paused", { reason: "instrumentation", data: { scriptId, url }, hitBreakpoints: caller === null ? ["instrument"] : [], callFrames });
   };
   const bindings = { sessionId: "worker-session", targetId: "worker-target", targetUrl, targetTitle, expectedWindowTabId: windowTabId, projectUuid,
@@ -48,6 +49,7 @@ async function fixture(fault: Fault = "none"): Promise<Readonly<{ runner: Curren
       if (command.phase === "saved-load-run-page") { assert.equal(state.browserRan, 1); state.pageRan += 1; }
       if (command.phase === "saved-load-source") { return Promise.resolve({ scriptSource: command.role === "bootstrap" ? BOOTSTRAPS[fault === "online" ? 0 : 1] : `source-${command.role}` }); }
       if (command.phase === "saved-load-resume") {
+        if(projectPauseQueued){state.projectResumed=true;}
         event(fault === "resume" ? "Debugger.paused" : "Debugger.resumed", {});
 
         const index = ROLES.indexOf(command.role), next = ROLES[index + 1];
@@ -73,7 +75,7 @@ async function fixture(fault: Fault = "none"): Promise<Readonly<{ runner: Curren
   }, loaded, loaded.exports]);
   const Constructor = loaded.exports["CurrentPcbViaSavedLoadBootstrap"]; assert.ok(typeof Constructor === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The actual pure runner is VM-loaded with the explicit full-source-byte seam above; creator/pause/log/source-order guards remain production code.
-  const runner = Reflect.construct(Constructor, [Object.freeze(bindings)]) as CurrentPcbViaSavedLoadBootstrap; return { runner, commands, state };
+  const runner = Reflect.construct(Constructor, [Object.freeze(bindings)]) as CurrentPcbViaSavedLoadBootstrap; return { runner, commands, state,submitResumeAfterProjectPause:():Promise<unknown>=>{const command=commands.find(value=>value.phase==="saved-load-resume");assert.ok(command!==undefined&&projectPauseQueued);return bindings.request(command);} };
 }
 void test("saved readonly bootstrap instruments before both waits and leaves the original project script paused", async () => {
   const f = await fixture(), result = await f.runner.observe();
@@ -89,3 +91,5 @@ void test("ONLINE source, foreign copy creators, missing original preload log an
     assert.equal(f.state.callbacks, 0); assert.equal(f.state.projectResumed, false); await assert.rejects(f.runner.observe(), /CONSUMED/u);
   }
 });
+
+void test("the inert bootstrap fixture detects a later resume even when its fixed role is not project",async()=>{const f=await fixture();await f.runner.observe();assert.equal(f.state.projectResumed,false);await f.submitResumeAfterProjectPause();assert.equal(f.state.projectResumed,true);});
