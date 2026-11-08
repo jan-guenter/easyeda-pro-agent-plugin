@@ -35,7 +35,9 @@ needs a fixed source-derived opaque-field contract, complete module identity,
 prototype and ordered-key checks, and unchanged critical descriptor checks.
 Report opaque descriptor invariance as unproved; unknown lazy fields still
 refuse. Where relevant, compare the historical capture's refusal before and
-after the replacement to show the unused exports remain uninitialized.
+after the replacement and report the specific access that refused. That
+comparison does not establish every unused export's initialization state; a
+broader cold-state claim needs an independent check for each export.
 
 Engine-version comparisons also need this cold/warm control. A newer engine
 is a diagnostic analogue, not evidence that the admitted application or its

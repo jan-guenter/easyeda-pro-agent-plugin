@@ -491,6 +491,22 @@ After its `ready` response, send one JSON request per line:
 {"id":1,"tool":"easyeda_control_api","arguments":{"request":{"action":"loaded-facade"}}}
 ```
 
+A frontend containing file-input support also accepts `argumentsFile` in
+place of inline `arguments`, using the same ordinary tool-call metadata:
+
+```json
+{"id":2,"tool":"easyeda_control_api","argumentsFile":{"path":"/absolute/private/session-args.json","expectedSha256":"<actual 64 lowercase hexadecimal SHA-256 digits>"}}
+```
+
+The file contains only the tool argument object. It must be canonical,
+owner-only mode `0600`, regular and single-link, inside a canonical owner-only
+`0700` directory. The client verifies the complete bytes and SHA before strict
+UTF-8 and JSON decoding; BOMs, aliases, malformed/non-object JSON and drift
+refuse before dispatch. The selector and file share the existing 65,536-byte
+input bound. Shutdown and manager control/cleanup selectors cannot use this
+field. Keep the selector line short enough for the actual input channel. The
+client reads it once and never reloads or retries the request automatically.
+
 Only tools actually listed by that facade are accepted. The client dispatches serially and never retries a timeout, disconnect, or failed result publication. Such failures close the session; inspect the facade journal before retrying an uncertain operation. Tool error results remain errors, even though transport succeeded. All facade authentication, compatibility, quarantine and writer restrictions remain in force.
 
 The caller timeout defaults to a finite 3,720,000 milliseconds and accepts
