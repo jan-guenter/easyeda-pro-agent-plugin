@@ -78,8 +78,11 @@ export class CurrentPcbViaWriteCoordinator {
     if (request.action === "execute") { need(!this.#executeRequested && !this.#abortedBeforeExecution, "EXECUTE_CONSUMED"); this.#executeRequested = true; }
     await this.#preparation; const workflow = this.#workflow; need(workflow !== null, "ORIGINAL_WORKFLOW");
     if (request.action === "execute") {
+      // A preparation continuation can create the workflow just before an
+      // Original abort wins this await. No execution or failure source exists.
+      if (this.#abortedBeforeExecution) { this.#executionSettled = true; }
+      need(!this.#abortedBeforeExecution, "EXECUTION_ABORTED_BEFORE_BIRTH");
       try {
-        need(!this.#abortedBeforeExecution, "EXECUTION_ABORTED_BEFORE_BIRTH");
         need(this.#execution === null, "ORIGINAL_EXECUTION"); const original = workflow.execute(); this.#execution = original;
         this.#executionObservation = (async (): Promise<void> => {
           try { const result = await original; workflow.requireOriginalResult(result); }

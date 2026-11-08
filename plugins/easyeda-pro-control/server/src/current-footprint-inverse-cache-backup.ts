@@ -61,6 +61,10 @@ export interface CurrentFootprintInverseCachePublishedData {
   readonly completeDataDurablyPublished: true; readonly nativeProvenanceVerified: false; readonly cacheDeletionAuthorized: false;
 }
 const publications = new WeakMap<CurrentFootprintInverseCachePublishedData, Readonly<{ data: CurrentFootprintInverseCacheBackupData; text: string }>>();
+/* Retain rejected attempts too. Exclusive publication can have durably created
+ * an artifact before its acknowledgment or later reproof fails. Eviction could
+ * create a second orphan backup under a new random path. Only the original
+ * promise may settle; a fresh call never retries this publication. */
 const pending = new WeakMap<CurrentFootprintInverseCacheBackupData, Promise<CurrentFootprintInverseCachePublishedData>>();
 export function publishCurrentFootprintInverseCacheBackupData(data: CurrentFootprintInverseCacheBackupData): Promise<CurrentFootprintInverseCachePublishedData> {
   const original = originals.get(data); need(original !== undefined && original.text === canonicalJson(data)); current(original);
