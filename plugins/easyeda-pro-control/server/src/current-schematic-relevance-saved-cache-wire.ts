@@ -10,7 +10,7 @@ import { CURRENT_PCB_VIA_SAVED_READBACK_PARENT_PARAMS as PARENT } from "./curren
 import { CURRENT_SCHEMATIC_RELEVANCE_SAVED_READBACK_PROFILE as PROFILE } from "./current-schematic-relevance-saved-readback-profile.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
-function domain(id: number, sessionId: string): void { if (!Number.isSafeInteger(id) || id < 1 || id > PROFILE.renderer.activeCache || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_SAVED_CACHE_WIRE"); } }
+function domain(id: number, sessionId: string): void { if (!Number.isSafeInteger(id) || id < 1 || id > PROFILE.renderer.activeLoading || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_SAVED_CACHE_WIRE"); } }
 export function currentSchematicRelevanceSavedCacheWire(plan: CurrentPcbViaSavedCachePlan, id: number, sessionId: string): Readonly<{
   id: number; method: CurrentPcbViaSavedCachePlan["method"]; params: CurrentPcbViaSavedCachePlan["params"]; sessionId: string; schematicSavedCache: true;
 }> { domain(id, sessionId); return freezeDeep({ id, method: plan.method, params: plan.params, sessionId, schematicSavedCache: true }); }
@@ -49,4 +49,13 @@ export function currentSchematicRelevanceSavedParentFrame(chunk: Buffer, session
 export function currentSchematicRelevanceSavedPreflightFrame(chunk: Buffer, sessionId: string, uniqueContextId: string, target: CurrentDisposableOpenSealedTarget): Readonly<Record<string, unknown>> {
   const id = exact(chunk, value => currentSchematicRelevanceSavedPreflightWire(value, sessionId, uniqueContextId, target));
   return freezeDeep({ action: "schematic-saved-preflight", requestId: id, sessionId, uniqueContextId, targetRawWindowsPath: target.rawWindowsPath, targetProjectUuid: target.projectUuid, targetBranchUuid: target.branchUuid, targetDocumentUuid: target.documentUuid, targetExpectedSourceSha256: target.expectedSourceSha256 });
+}
+
+export type CurrentSchematicSavedCacheGuard = "before-delete-0" | "before-delete-1" | "loading";
+export function currentSchematicRelevanceSavedGuardWire(id: number, sessionId: string, uniqueContextId: string, target: CurrentDisposableOpenSealedTarget, stage: CurrentSchematicSavedCacheGuard): Readonly<{
+  id: number; method: "Runtime.callFunctionOn"; params: ReturnType<typeof diagnosticOpeningParams>; sessionId: string; schematicSavedGuard: CurrentSchematicSavedCacheGuard;
+}> { domain(id, sessionId); if (!["before-delete-0", "before-delete-1", "loading"].includes(stage)) { throw new Error("SCHEMATIC_SAVED_GUARD_STAGE"); } return freezeDeep({ id, method: "Runtime.callFunctionOn", params: diagnosticOpeningParams(uniqueContextId, target, "preflight"), sessionId, schematicSavedGuard: stage }); }
+export function currentSchematicRelevanceSavedGuardFrame(chunk: Buffer, sessionId: string, uniqueContextId: string, target: CurrentDisposableOpenSealedTarget, stage: CurrentSchematicSavedCacheGuard): Readonly<Record<string, unknown>> {
+  const id = exact(chunk, value => currentSchematicRelevanceSavedGuardWire(value, sessionId, uniqueContextId, target, stage));
+  return freezeDeep({ action: "schematic-saved-guard", requestId: id, sessionId, uniqueContextId, cacheGuardStage: stage, targetRawWindowsPath: target.rawWindowsPath, targetProjectUuid: target.projectUuid, targetBranchUuid: target.branchUuid, targetDocumentUuid: target.documentUuid, targetExpectedSourceSha256: target.expectedSourceSha256 });
 }

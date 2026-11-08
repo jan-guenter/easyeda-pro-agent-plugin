@@ -23,3 +23,15 @@ scene execution in an inert graph and the existing argument issuer's refusal
 of copied plans. Strict type-aware lint and both TypeScript projects passed.
 Native generation, cold-load custody and connected saved/reopened acceptance
 remain separate from this source codec.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `c4790fee73bd60bbe1182755ee7241f1b7aca5d2`; its
+committed tree is `1f6066c1b21aea3da27f1bc3b05bb949845d8519`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

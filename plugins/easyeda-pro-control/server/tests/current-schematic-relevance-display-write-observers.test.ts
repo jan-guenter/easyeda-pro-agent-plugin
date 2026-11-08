@@ -6,7 +6,7 @@ import type { CurrentSchematicRelevanceDisplayWriteObservers } from "../src/curr
 import { loadSyntheticRegistryModule } from "./helpers/load-synthetic-registry-module.ts";
 
 function armOnly(): object { return { arm: (): Promise<void> => Promise.resolve() }; }
-async function fixture(startupReady = false): Promise<Readonly<{ group: CurrentSchematicRelevanceDisplayWriteObservers; construction: PromiseWithResolvers<true>; packet: PromiseWithResolvers<object>; producer: PromiseWithResolvers<object>; exit: () => void; calls: string[]; setups: Promise<unknown>[]; polling: PromiseWithResolvers<object>; libraryFirst: PromiseWithResolvers<object>; libraryMount: PromiseWithResolvers<object>; intents: Readonly<{ polling: { profile: "private.generated-schematic-relevance-display-polling-intent.v1" }; library: { profile: "private.generated-schematic-relevance-display-library-intent.v1" } }> }>> {
+async function fixture(startupReady = false): Promise<Readonly<{ group: CurrentSchematicRelevanceDisplayWriteObservers; requireComposition: (value: unknown, copiedOwner?: boolean, copiedArguments?: boolean) => unknown; requireCompositionSource: () => void; construction: PromiseWithResolvers<true>; packet: PromiseWithResolvers<object>; producer: PromiseWithResolvers<object>; exit: () => void; calls: string[]; setups: Promise<unknown>[]; polling: PromiseWithResolvers<object>; libraryFirst: PromiseWithResolvers<object>; libraryMount: PromiseWithResolvers<object>; intents: Readonly<{ polling: { profile: "private.generated-schematic-relevance-display-polling-intent.v1" }; library: { profile: "private.generated-schematic-relevance-display-library-intent.v1" } }> }>> {
   const construction = Promise.withResolvers<true>(), packet = Promise.withResolvers<object>(), producer = Promise.withResolvers<object>();
   const libraryFirst = Promise.withResolvers<object>(), libraryMount = Promise.withResolvers<object>(), polling = Promise.withResolvers<object>();
   const intents = Object.freeze({ polling: Object.freeze({ profile: "private.generated-schematic-relevance-display-polling-intent.v1" as const }), library: Object.freeze({ profile: "private.generated-schematic-relevance-display-library-intent.v1" as const }) });
@@ -63,7 +63,8 @@ async function fixture(startupReady = false): Promise<Readonly<{ group: CurrentS
   const constructor = loaded["CurrentSchematicRelevanceDisplayWriteObservers"]; assert.ok(typeof constructor === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Explicit inert registry seams above exercise the actual group implementation and issue no production capability.
   const group = Reflect.construct(constructor, [owner, args]) as CurrentSchematicRelevanceDisplayWriteObservers;
-  return { group, construction, packet, producer, calls, setups, polling, libraryFirst, libraryMount, intents, exit: (): void => { exited = true; } };
+  const composition = loaded["requireOriginalCurrentSchematicRelevanceDisplayWriteComposition"], compositionSource = loaded["requireCurrentSchematicRelevanceDisplayWriteCompositionSource"]; assert.ok(typeof composition === "function" && typeof compositionSource === "function");
+  return { group, requireComposition: (value: unknown, copiedOwner = false, copiedArguments = false): unknown => Reflect.apply(composition, undefined, [value, copiedOwner ? { ...owner } : owner, copiedArguments ? { ...args } : args]), requireCompositionSource: (): void => { Reflect.apply(compositionSource, undefined, []); }, construction, packet, producer, calls, setups, polling, libraryFirst, libraryMount, intents, exit: (): void => { exited = true; } };
 }
 async function turn(): Promise<void> { const next = Promise.withResolvers<true>(); setImmediate(() => { next.resolve(true); }); await next.promise; }
 void test("one structure reader starts after construction while opening remains pending, and later Save joins it", async () => {
@@ -95,4 +96,25 @@ void test("startup waits both actual control waves and original exit retires eac
   f.exit(); f.packet.reject(new Error("original structure lane exited")); f.producer.reject(new Error("original producer lane exited"));
   await f.group.settleOriginalCallsAfterExit(); await f.group.settleOriginalCallsAfterExit();
   assert.equal(f.calls.filter(call => call === "polling-retired").length, 1); assert.equal(f.calls.filter(call => call === "library-retired").length, 1);
+});
+
+void test("composition lookup rejects copies and Proxy groups before any caller reflection", async () => {
+  const f = await fixture(); let calls = 0;
+  const proxy = new Proxy({}, { get: (): never => { calls += 1; throw new Error("UNEXPECTED_GET"); }, getPrototypeOf: (): never => { calls += 1; throw new Error("UNEXPECTED_PROTOTYPE"); } });
+  assert.throws(() => f.requireComposition(proxy), /ORIGINAL_COMPOSITION/u); assert.equal(calls, 0);
+  const prototype: unknown = Object.getPrototypeOf(f.group); assert.ok(prototype !== null && typeof prototype === "object");
+  assert.throws(() => f.requireComposition(Object.create(prototype)), /ORIGINAL_COMPOSITION/u);
+  assert.throws(() => f.requireComposition(f.group, true), /ORIGINAL_COMPOSITION/u); assert.throws(() => f.requireComposition(f.group, false, true), /ORIGINAL_COMPOSITION/u);
+});
+void test("late source-method substitution cannot create an original composition", async () => {
+  const f = await fixture(); const prototype: unknown = Object.getPrototypeOf(f.group); assert.ok(prototype !== null && typeof prototype === "object");
+  const before = Object.getOwnPropertyDescriptor(prototype, "continueOriginalRun"); let calls = 0;
+  try {
+    Object.defineProperty(prototype, "continueOriginalRun", { value: (): Promise<void> => { calls += 1; return Promise.resolve(); }, configurable: true, writable: true });
+    assert.throws(() => { f.requireCompositionSource(); }, /COMPOSITION_SOURCE_CHANGED/u);
+    assert.throws(() => f.requireComposition(f.group), /COMPOSITION_SOURCE_CHANGED/u); assert.equal(calls, 0);
+  } finally { if (before === undefined) { Reflect.deleteProperty(prototype, "continueOriginalRun"); } else { Object.defineProperty(prototype, "continueOriginalRun", before); } }
+});
+void test("original group cancellation invalidates its composition custody", async () => {
+  const f = await fixture(); f.group.cancel(); assert.throws(() => f.requireComposition(f.group), /SETUP_CANCELLED/u);
 });

@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { basename,join } from "node:path";
 import test from "node:test";
 import { controlDataDirectory, ensureManagedDirectory, publishManagedAttachmentExclusive } from "../src/artifacts.ts";
 import { GENERATED_READER_KNOWN_FACADE_SHA256, GENERATED_READER_KNOWN_ROSTER_SHA256, currentGeneratedReaderRelinquishmentIntentSchema, currentGeneratedReaderRelinquishmentRequestSchema,
@@ -79,7 +79,8 @@ async function publicationFixture(): Promise<Readonly<{
     try { return JSON.parse(await readFile(join(directory, name), "utf8")) as unknown; }
     catch (error) { if (error instanceof Error && "code" in error && error.code === "ENOENT") { return null; } throw error; }
   };
-  const options = { pluginRoot: "/mnt/c/Reviewed/Plugin", assetsRoot: "/mnt/c/Reviewed/EasyEDA/resources/app/assets", powershellSha256: "d".repeat(64), powershellBytes: 123,
+  const inertMappedRoot=join("/mnt/c","easyeda-test-fixtures",basename(directory));
+  const options = { pluginRoot: join(inertMappedRoot,"plugin"), assetsRoot: join(inertMappedRoot,"EasyEDA","resources","app","assets"), powershellSha256: "d".repeat(64), powershellBytes: 123,
     assertLocalAllowed: (): void => undefined, assertAllowed: (): Promise<void> => Promise.resolve(), assertOtherLaunchesSettled: (): Promise<void> => Promise.resolve(),
     assertFreshNoOwnedAllocations: (): void => { assert.equal(state.fresh, true, "synthetic earlier native allocation"); } };
   const owner = new CurrentGeneratedReaderRelinquishment(options, {

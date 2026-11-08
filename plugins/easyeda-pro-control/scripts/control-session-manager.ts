@@ -23,6 +23,8 @@ import { captureOriginalSpatialManagerRequest, consumeOriginalSpatialManagerCont
 import type { OriginalSpatialManagerRecovery, OriginalSpatialManagerRequest } from "./control-session-spatial-adapter.ts";
 import { captureOriginalViaManagerRequest, isOriginalViaManagerControl, originalViaManagerControl } from "./control-session-via-adapter.ts";
 import type { OriginalViaManagerRequest } from "./control-session-via-adapter.ts";
+import { captureOriginalSchematicDisplayManagerRequest, isOriginalSchematicDisplayManagerControl, originalSchematicDisplayManagerControl } from "./control-session-schematic-display-adapter.ts";
+import type { OriginalSchematicDisplayManagerRequest } from "./control-session-schematic-display-adapter.ts";
 import { ForegroundSessionTransport } from "./control-session-transport.ts";
 import { createPrivateTemporaryDirectory } from "./private-temporary-directory.ts";
 import type { PrivateTemporaryDirectory } from "./private-temporary-directory.ts";
@@ -200,6 +202,7 @@ interface InterruptedCall {
   readonly requestId: string | number;
   readonly tool: string;
   readonly via: OriginalViaManagerRequest | null;
+  readonly schematicDisplay: OriginalSchematicDisplayManagerRequest | null;
   readonly spatial: OriginalSpatialManagerRequest | null;
   readonly spatialRecovery: OriginalSpatialManagerRecovery;
   readonly forwardFamily: "footprint-forward-prewrite" | "footprint-forward-source-validation" | null;
@@ -218,11 +221,13 @@ interface InterruptedCall {
 /** Fixed tool selection comes only from the retained original strict request. */
 function originalManagerTool(original: InterruptedCall): string {
   if (original.spatial !== null) { return "easyeda_control_pcb209_opening"; }
+  if (original.schematicDisplay !== null) { return "easyeda_control_current_schematic_relevance_display_write"; }
   return original.via === null ? "easyeda_control_pcb209_worker_startup" : "easyeda_control_current_pcb_via_write";
 }
 function originalManagerInFlightAllowed(original: InterruptedCall, action: string): boolean {
   if (original.spatial !== null) { return isOriginalSpatialManagerControl(action, true, original.spatial.family); }
   if (original.via !== null) { return original.via.action === "execute" && isOriginalViaManagerControl(action, true); }
+  if (original.schematicDisplay !== null) { return original.schematicDisplay.action === "execute" && isOriginalSchematicDisplayManagerControl(action, true); }
   return original.forward !== null && original.forwardCapture && (action === "inspect" || action === "abort-generation");
 }
 interface InFlightCapture {
@@ -354,16 +359,16 @@ export class ForegroundSessionManager {
       startupCleanupAttempted: this.startupCleanupAttempted,
       callerToolDispatchStarted: observed === undefined ? false : this.callerToolDispatches.has(observed.transport),
       inFlightRequest: this.inFlight === undefined ? null : { id: this.inFlight.original.requestId,
-        generation: this.inFlight.original.generation, tool: this.inFlight.original.tool, forward: this.inFlight.original.forward, via: this.inFlight.original.via, spatial: this.inFlight.original.spatial,
+        generation: this.inFlight.original.generation, tool: this.inFlight.original.tool, forward: this.inFlight.original.forward, via: this.inFlight.original.via, schematicDisplay: this.inFlight.original.schematicDisplay, spatial: this.inFlight.original.spatial,
         rpcPending: this.inFlight.rpcPending, sidePending: this.inFlight.sidePending, controlCalls: this.inFlight.controls.size,
         abortAttempted: this.inFlight.original.abortReservation.attempted },
       controlledCapture: this.controlledCapture === undefined ? null : { id: this.controlledCapture.original.requestId,
         generation: this.controlledCapture.original.generation, forward: this.controlledCapture.original.forward, parentOutcome: this.controlledCapture.parentOutcome },
       interruptedRequest: this.interrupted === undefined ? null : { id: this.interrupted.requestId,
-        generation: this.interrupted.generation, tool: this.interrupted.tool, action: this.interrupted.spatial?.action ?? this.interrupted.via?.action ?? this.interrupted.forwardAction, via: this.interrupted.via, spatial: this.interrupted.spatial,
+        generation: this.interrupted.generation, tool: this.interrupted.tool, action: this.interrupted.spatial?.action ?? this.interrupted.via?.action ?? this.interrupted.schematicDisplay?.action ?? this.interrupted.forwardAction, via: this.interrupted.via, schematicDisplay: this.interrupted.schematicDisplay, spatial: this.interrupted.spatial,
         ...(this.interrupted.originalCaptureRequestId === undefined ? {} : { originalCaptureRequestId: this.interrupted.originalCaptureRequestId }),
         forward: this.interrupted.forward ?? this.interrupted.inspectedLaunchBinding ?? null, outcome: "unknown", cleanupAvailable: this.stage === "blocked" &&
-          !this.retirementUncertain && (this.interrupted.forward !== null || this.interrupted.forwardLaunchOperationId !== null || this.interrupted.forwardSourceOperationId !== null || this.interrupted.sourceHistoricalRequest !== null || this.interrupted.via !== null || this.interrupted.spatial !== null) &&
+          !this.retirementUncertain && (this.interrupted.forward !== null || this.interrupted.forwardLaunchOperationId !== null || this.interrupted.forwardSourceOperationId !== null || this.interrupted.sourceHistoricalRequest !== null || this.interrupted.via !== null || this.interrupted.schematicDisplay !== null || this.interrupted.spatial !== null) &&
           this.interrupted.connection === this.connection && this.connection.client.transport === this.connection.transport &&
           this.connection.transport.hasUnclosedChild() && !this.evidenceFault && !this.publicationFault &&
           !this.records.some(row => Object.hasOwn(row, "unpublishedValue")) },
@@ -465,7 +470,7 @@ export class ForegroundSessionManager {
     if (this.evidenceFault || this.publicationFault || this.records.some(row => Object.hasOwn(row, "unpublishedValue"))) { throw new Error("manager-evidence-unsettled"); }
     if (this.stage === "active") { return this.requireActive(); }
     const connection = this.connection, interrupted = this.interrupted ?? this.controlledCapture?.original;
-    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.inspectedLaunchBinding === undefined && interrupted.prelaunchCleanupAcknowledged !== true && interrupted.forwardSourceOperationId === null && interrupted.sourceHistoricalRequest === null && interrupted.via === null && interrupted.spatial === null || connection === undefined ||
+    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.inspectedLaunchBinding === undefined && interrupted.prelaunchCleanupAcknowledged !== true && interrupted.forwardSourceOperationId === null && interrupted.sourceHistoricalRequest === null && interrupted.via === null && interrupted.schematicDisplay === null && interrupted.spatial === null || connection === undefined ||
         interrupted.connection !== connection || interrupted.generation !== this.generation ||
         connection.client.transport !== connection.transport || !connection.transport.hasUnclosedChild()) {
       throw new Error("manager-original-connection-required");
@@ -495,7 +500,7 @@ export class ForegroundSessionManager {
       request: currentFootprintForwardSourceRelinquishmentRequestSchema }) }).safeParse(request.arguments);
     const sourceHistoricalRequest = request.tool === "easyeda_control_pcb209_worker_startup" && historical.success ? Object.freeze(historical.data.request.request) : null;
     const spatial = captureOriginalSpatialManagerRequest(request.tool, request.arguments);
-    return { connection, generation: this.generation, requestId: request.id, tool: request.tool, via: captureOriginalViaManagerRequest(request.tool, request.arguments), spatial, spatialRecovery: createOriginalSpatialManagerRecovery(spatial),
+    return { connection, generation: this.generation, requestId: request.id, tool: request.tool, via: captureOriginalViaManagerRequest(request.tool, request.arguments), schematicDisplay: captureOriginalSchematicDisplayManagerRequest(request.tool, request.arguments), spatial, spatialRecovery: createOriginalSpatialManagerRecovery(spatial),
       forwardFamily: outer.success && request.tool === "easyeda_control_pcb209_worker_startup" ? outer.data.request.action : null,
       forward, forwardLaunchOperationId, forwardSourceOperationId, forwardCapture: selected?.action === "capture-project" || selected?.action === "capture-source", sourceHistoricalRequest,
       forwardAction: selected?.action ?? null, abortReservation: { attempted: false } };
@@ -547,14 +552,15 @@ export class ForegroundSessionManager {
       if ("tool" in request || request.action !== "in-flight-original") { throw new Error("manager-in-flight-command-required"); }
       if (this.requireInFlightControl(request, current) !== current) { throw new Error("manager-in-flight-original-not-authorized"); }
       if (!sessionManagerCallBudgetAvailable(true, this.recordCounts.cleanup + 1, this.byteCounts.cleanup)) { throw new Error("manager-cleanup-reserve-required"); }
-      const binding = current.original.forward, spatial = current.original.spatial, via = current.original.via;
-      if (binding === null && via === null && spatial === null) { throw new Error("manager-in-flight-original-not-authorized"); }
+      const binding = current.original.forward, schematicDisplay = current.original.schematicDisplay, spatial = current.original.spatial, via = current.original.via;
+      if (binding === null && via === null && schematicDisplay === null && spatial === null) { throw new Error("manager-in-flight-original-not-authorized"); }
       const selectedVia = via === null ? null : originalViaManagerControl(via, request.request.action);
+      const selectedSchematicDisplay = schematicDisplay === null ? null : originalSchematicDisplayManagerControl(schematicDisplay, request.request.action);
       const selectedSpatial = spatial === null ? null : originalSpatialManagerControl(spatial, current.original.spatialRecovery, request.request);
-      const input = selectedSpatial?.arguments.request ?? selectedVia?.arguments.request ?? (request.request.action === "inspect" ? { action: "inspect" as const, operationId: binding?.operationId } : {
+      const input = selectedSpatial?.arguments.request ?? selectedVia?.arguments.request ?? selectedSchematicDisplay?.arguments.request ?? (request.request.action === "inspect" ? { action: "inspect" as const, operationId: binding?.operationId } : {
         action: "abort-generation" as const, operationId: binding?.operationId, expectedBindingSha256: binding?.bindingSha256, confirmAbortOriginalForwardJob: true as const });
-      const call: CallRequest = { id, tool: selectedSpatial?.tool ?? selectedVia?.tool ?? "easyeda_control_pcb209_worker_startup", timeoutMs: 120_000,
-        arguments: selectedSpatial?.arguments ?? selectedVia?.arguments ?? originalForwardArguments(current.original, input),
+      const call: CallRequest = { id, tool: selectedSpatial?.tool ?? selectedVia?.tool ?? selectedSchematicDisplay?.tool ?? "easyeda_control_pcb209_worker_startup", timeoutMs: 120_000,
+        arguments: selectedSpatial?.arguments ?? selectedVia?.arguments ?? selectedSchematicDisplay?.arguments ?? originalForwardArguments(current.original, input),
         ...(request.responseFile === undefined ? {} : { responseFile: request.responseFile }) };
       reservation = true;
       await this.retain("in-flight-control-intent", { id, originalRequestId: current.original.requestId,
@@ -574,7 +580,7 @@ export class ForegroundSessionManager {
         // This is the actual rejected side request, not an invented timeout of
         // The parent. Its same-owner binding remains available after settlement.
         this.interrupted = { ...this.interruptedCall(current.original.connection, call), forward: binding,
-          originalCaptureRequestId: current.original.requestId, abortReservation: current.original.abortReservation, via: current.original.via, spatial, spatialRecovery: current.original.spatialRecovery };
+          originalCaptureRequestId: current.original.requestId, abortReservation: current.original.abortReservation, via: current.original.via, schematicDisplay: current.original.schematicDisplay, spatial, spatialRecovery: current.original.spatialRecovery };
         this.stage = "blocked"; throw error;
       }
       const evidence = await this.retain("in-flight-control-result", { id, originalRequestId: current.original.requestId, result }, "cleanup");
@@ -604,7 +610,7 @@ export class ForegroundSessionManager {
   }> {
     if (request.request.action === "settle-historical-metadata") { throw new Error("manager-original-family-required"); }
     const connection = this.connection, interrupted = this.interrupted ?? this.controlledCapture?.original;
-    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.forwardLaunchOperationId === null && interrupted.forwardSourceOperationId === null && interrupted.via === null && interrupted.spatial === null || connection === undefined ||
+    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.forwardLaunchOperationId === null && interrupted.forwardSourceOperationId === null && interrupted.via === null && interrupted.schematicDisplay === null && interrupted.spatial === null || connection === undefined ||
         this.retirementUncertain || this.evidenceFault || this.publicationFault || this.records.some(row => Object.hasOwn(row, "unpublishedValue")) ||
         interrupted.connection !== connection || interrupted.generation !== this.generation || request.generation !== this.generation ||
         request.interruptedRequestId !== interrupted.requestId || connection.client.transport !== connection.transport ||
@@ -619,6 +625,10 @@ export class ForegroundSessionManager {
     if (interrupted.via !== null) {
       if (!isOriginalViaManagerControl(request.request.action) || request.request.action === "abort" && interrupted.abortReservation.attempted) { throw new Error("manager-original-via-control-refused"); }
       return { connection, interrupted, operationId: interrupted.via.operationId, binding: undefined };
+    }
+    if (interrupted.schematicDisplay !== null) {
+      if (!isOriginalSchematicDisplayManagerControl(request.request.action) || request.request.action === "abort" && interrupted.abortReservation.attempted) { throw new Error("manager-original-schematic-display-control-refused"); }
+      return { connection, interrupted, operationId: interrupted.schematicDisplay.operationId, binding: undefined };
     }
     if (request.request.action === "abort" || request.request.action === "release" || request.request.action === "settle-publication") { throw new Error("manager-original-family-required"); }
     const binding = interrupted.forward ?? interrupted.inspectedLaunchBinding;
@@ -739,6 +749,18 @@ export class ForegroundSessionManager {
     }
     if (interrupted.via !== null) {
       const command = originalViaManagerControl(interrupted.via, selected.action);
+      const call: CallRequest = { id: request.id, tool: command.tool, arguments: command.arguments, timeoutMs: SESSION_CALL_TIMEOUT_MS,
+        ...(request.responseFile === undefined ? {} : { responseFile: request.responseFile }) };
+      await this.retain("original-cleanup-intent", { id: request.id, interruptedRequestId: interrupted.requestId,
+        generation: this.generation, tool: call.tool, request: command.arguments.request }, "cleanup");
+      this.requireOriginalCleanup(request);
+      if (selected.action === "abort") { interrupted.abortReservation.attempted = true; }
+      const result = await connection.client.callTool({ name: call.tool, arguments: call.arguments }, undefined, { timeout: call.timeoutMs });
+      const evidence = await this.retain("original-cleanup-result", { id: request.id, result }, "cleanup");
+      toolResultSchema.parse(result); await this.publishCallResult(call, result, evidence); return;
+    }
+    if (interrupted.schematicDisplay !== null) {
+      const command = originalSchematicDisplayManagerControl(interrupted.schematicDisplay, selected.action);
       const call: CallRequest = { id: request.id, tool: command.tool, arguments: command.arguments, timeoutMs: SESSION_CALL_TIMEOUT_MS,
         ...(request.responseFile === undefined ? {} : { responseFile: request.responseFile }) };
       await this.retain("original-cleanup-intent", { id: request.id, interruptedRequestId: interrupted.requestId,
@@ -956,7 +978,7 @@ export class ForegroundSessionManager {
         }
         reserved = true;
         const interrupted = this.interruptedCall(connection, request);
-        if (request.cleanup !== true && (interrupted.forwardCapture && interrupted.forward !== null || interrupted.via?.action === "execute" || interrupted.spatial !== null)) {
+        if (request.cleanup !== true && (interrupted.forwardCapture && interrupted.forward !== null || interrupted.via?.action === "execute" || interrupted.schematicDisplay?.action === "execute" || interrupted.spatial !== null)) {
           this.inFlight = { original: interrupted, controls: new Set(), rpcPending: false, parentOutcome: "pending", sidePending: false, sideIdle: Promise.resolve(null) };
         }
         await this.call(request, interrupted); return;

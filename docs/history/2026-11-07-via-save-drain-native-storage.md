@@ -13,3 +13,15 @@ The shared pending storage factors the exact JSON-escaped pending capture, Via r
 Two private generation passes were identical. On the checked source base with the joint saved-metadata and registration packing, the complete helper was 2,094,847 bytes, 2,305 below the unchanged 2,097,152-byte limit. Applying the newer canonical inverse fragment increased that private result to 2,101,777 bytes; the combined candidate therefore still requires another lossless saving before release. The generator's cap remains unchanged. No tracked helper, pin or bundle was rewritten.
 
 Linux compilation of the complete private C# succeeded. Static encoders passed every new 63/68/1 message hash, together with the full expanded Via and schematic worker encoders. The two focused shared-storage regressions, both TypeScript projects and changed-file strict type-aware lint passed. These checks allocate no EasyEDA owner, application, Job, native inspector connection or Windows process. No live writer was run.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `ecb590f7bdec47a13d03ee0b14d05ef5f4e53827`; its
+committed tree is `50071dea6482e3117b29866dc8d8dbb5f54aa0b3`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

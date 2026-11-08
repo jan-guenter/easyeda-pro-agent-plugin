@@ -41,7 +41,8 @@ sameSource:placed._model===pad,sameBox:placed._bbox===ownBox,boxCalls,parentAbse
     sameSource: true, sameBox: true, boxCalls: 3, parentAbsent: true, watcherAbsent: true }));
 }
 async function main(): Promise<void> {
-  const root = process.argv[2] ?? "/mnt/c/Program Files/easyeda-pro/resources/app/assets";
+  const root = process.argv[2] ?? process.env["EASYEDA_ASSETS_ROOT"];
+  if (root === undefined || root === "") { throw new Error("EASYEDA_ASSETS_ROOT_REQUIRED"); }
   const bytes = await readFile(join(root, CURRENT_PCB_209_SPATIAL_SOURCE_PROFILE.relativePath));
   assert.equal(bytes.length, CURRENT_PCB_209_SPATIAL_SOURCE_PROFILE.bytes); assert.equal(createHash("sha256").update(bytes).digest("hex"), CURRENT_PCB_209_SPATIAL_SOURCE_PROFILE.sha256);
   const source = bytes.toString("utf8"); const methods = new Map<string, string>();

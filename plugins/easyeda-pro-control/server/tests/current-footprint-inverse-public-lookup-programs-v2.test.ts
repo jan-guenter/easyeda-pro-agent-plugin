@@ -1,3 +1,4 @@
+import {INSTALLED_EASYEDA_SOURCE_SKIP_REASON} from "./helpers/installed-easyeda-source.ts";
 /** Actual readonly Inspector on an inert exact-source graph. */
 import assert from "node:assert/strict";
 import type { Runtime } from "node:inspector";
@@ -5,11 +6,10 @@ import { Session } from "node:inspector/promises";
 import { test } from "node:test";
 import { runInContext } from "node:vm";
 import { CURRENT_FOOTPRINT_INVERSE_PUBLIC_LOOKUP_PROGRAMS_V2 as P } from "../src/current-footprint-inverse-public-lookup-programs-v2.ts";
-import { currentInverseLookupGraphRealm } from "./fixtures/current-footprint-inverse-public-lookup-graph.ts";
+import { currentInverseLookupGraphRealm,currentInverseLookupGraphSources } from "./fixtures/current-footprint-inverse-public-lookup-graph.ts";
 
 void test("all receipt-bound lookup stages pass readonly Inspector with hostile array setters and iterators", async context => {
-  const name = "inert-original-ui-lookup-v2"; let realm: Awaited<ReturnType<typeof currentInverseLookupGraphRealm>>;
-  try { realm = await currentInverseLookupGraphRealm(name); } catch (error) { if (error !== null && typeof error === "object" && "code" in error && error.code === "ENOENT") { context.skip("installed source unavailable"); return; } throw error; }
+  if(await currentInverseLookupGraphSources()===null){context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);return;}const name="inert-original-ui-lookup-v2",realm=await currentInverseLookupGraphRealm(name);
   runInContext('original[0].lib_Footprint=original[1];globalThis._EXTAPI_ROOT_=original[0];globalThis._MSG_BUS2_EXTAPI_=original[5];gVars.extensionApiMessageBus2=original[5];globalThis.I=[Object.getOwnPropertyDescriptor,Object.getPrototypeOf,Object.hasOwn,Object.getOwnPropertyNames,Object.getOwnPropertySymbols,Array.isArray,Function.prototype.apply,Object.prototype,Array.prototype,Function.prototype,globalThis];globalThis.qualifiedV2=flat(roots,context,maps,queue,task,selectedCallback);globalThis.targetV2={projectUuid:"a".repeat(64),branchUuid:"b".repeat(32)};Object.defineProperty(Array.prototype,"0",{set(){effects++;throw "setter"},configurable:true});Array.prototype[Symbol.iterator]=function(){effects++;throw "iterator"};Array.prototype.push=function(){effects++;throw "push"};Array.prototype.map=function(){effects++;throw "map"};Array.prototype.some=function(){effects++;throw "some"};RegExp.prototype.test=function(){effects++;throw "test"};', realm);
   const session = new Session(); session.connect(); let contextId: number | null = null;
   session.on("Runtime.executionContextCreated", event => { if (event.params.context.name === name) { assert.equal(contextId, null); contextId = event.params.context.id; } });

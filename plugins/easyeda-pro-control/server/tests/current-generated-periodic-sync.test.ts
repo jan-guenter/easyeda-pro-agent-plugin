@@ -1,5 +1,6 @@
 /* oxlint-disable import/max-dependencies -- This inert cursor regression joins the actual fixed programs, schemas, native rows and original source functions. */
 import assert from "node:assert/strict";
+import { CURRENT209_SYNTHETIC_WORKER_SOURCE, assertCurrent209PinnedSourceRows } from "./helpers/current209-source-excerpts.ts";
 import { test } from "node:test";
 import vm from "node:vm";
 import { types } from "node:util";
@@ -13,7 +14,6 @@ import type { CurrentGeneratedPeriodicSyncHeld } from "../src/current-generated-
 import { currentGeneratedPeriodicSyncNativeCases, validateCurrentGeneratedPeriodicSyncCommand } from "../src/current-generated-periodic-sync-protocol.ts";
 import type { CurrentGeneratedPeriodicSyncCommand } from "../src/current-generated-periodic-sync-protocol.ts";
 import { CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_CALLS as INTRINSICS } from "../src/current-native-cache-response-intrinsics.ts";
-import { readFile } from "node:fs/promises";
 
 const project = "b".repeat(64); const branch = "d".repeat(32); const history = "a".repeat(32);
 const api = { id: 1, uuid: history, parent: null, key: "inert-private-key", is_lock: 0, num: 0, snapshot_num: 0, created_at: "2026-11-06", updated_at: "2026-11-06", lock_time: null, iv: history, dataStrUrl: `/api/v4/histories/dataStr?path=${project}&uuid=${history}` };
@@ -108,7 +108,7 @@ void test("changed history, foreign caller metadata and ambiguous native ACK nev
   const unknown = cursorFixture(); unknown.state.ambiguous = true; const entry = unknown.next("syncEntry"); await assert.rejects(unknown.cursor.continue(entry)); const count = unknown.state.requests; await assert.rejects(unknown.cursor.continue(entry)); assert.equal(unknown.state.requests, count); assert.equal(unknown.state.resumes, 1);
   const cases = currentGeneratedPeriodicSyncNativeCases(); assert.equal(cases.length, 26); for (const command of cases) { if (command.method === "Runtime.callFunctionOn") { assert.throws(() => validateCurrentGeneratedPeriodicSyncCommand({ ...command, params: { ...command.params, functionDeclaration: "function(){return true;}" } })); } }
 });
-void test("fixed periodic source sites qualify against the complete pinned worker", async () => { qualifyCurrentGeneratedPeriodicSyncSource(await readFile("/mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-mgr/3.2.185.bf63a159/js/project-worker.js", "utf8")); assert.ok(PROGRAMS.branch.includes("own(reply,\"success\")")); });
+void test("retained periodic method hashes verify while incomplete worker source refuses", () => { assertCurrent209PinnedSourceRows(CALLEES);assertCurrent209PinnedSourceRows(INITIAL_CALLEES);assert.throws(()=>{qualifyCurrentGeneratedPeriodicSyncSource(CURRENT209_SYNTHETIC_WORKER_SOURCE);}); assert.ok(PROGRAMS.branch.includes("own(reply,\"success\")")); });
 
 const point = (columnNumber: number): Readonly<{ scriptId: string; lineNumber: number; columnNumber: number }> => ({ scriptId: "original-script", lineNumber: 110, columnNumber });
 void test("periodic entry accepts only its source-fixed timer caller and retains the original returned Promise", () => {

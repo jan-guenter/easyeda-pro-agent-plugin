@@ -15,20 +15,21 @@ import { assertCurrentPcbViaWriteJournalChain } from "../src/current-pcb-via-wri
 import { CurrentPcbViaWriteWorkflow, requireOriginalCurrentPcbViaWriteFailureClosure } from "../src/current-pcb-via-write-workflow.ts";
 import { acquireCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLaunchExclusion, releaseCurrentPcbDiagnosticLaunchExclusion } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 
-type Mode = "reserve-unknown" | "no-resource" | "unlaunched" | "main-failed" | "save-unknown" | "abort-unknown" | "publication-blocked";
+type Mode = "reserve-unknown" | "no-resource" | "unlaunched" | "main-failed" | "save-unknown" | "abort-unknown" | "publication-blocked" | "exit-late";
 function ack(stage: "preflight" | "create" | "save"): Readonly<Record<string, unknown>> {
   return Object.freeze({ schema: "easyeda-pro-control.pcb209-via-write-stage.v1", stage, ok: true,
     dispatchAttempted: true, originalPromiseAcknowledged: true, primitiveId: stage === "preflight" ? null : "original-via",
     createAttempted: stage !== "preflight", createAcknowledged: stage !== "preflight", saveAttempted: stage === "save", saveAcknowledged: stage === "save",
     inverseAvailable: false, persistenceVerified: false });
 }
-async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWriteWorkflow; calls: string[]; saveAck: unknown }>> {
+async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWriteWorkflow; calls: string[]; saveAck: unknown; permitOriginalExit: () => void; rejectNextOriginalExit: (error: Error) => void }>> {
   const calls: string[] = [], operationId = `pcb209-via-write-workflow-${randomUUID()}`;
   const prepared = Object.freeze({ qualification: {}, history: {}, inertOriginalPreparation: true });
   const plan = Object.freeze({ operationId, target: { expectedSourceSha256: "a".repeat(64) }, initialLogicalSha256: "b".repeat(64) });
   const options = Object.freeze({ inertOptions: true }); const saveAck = ack("save");
   const body = Promise.withResolvers<undefined>(), local = Promise.withResolvers<undefined>();
   let binding: object | null = null, exited = false, factoryEntered = false, released = false;
+  let exitPermitted = mode !== "exit-late"; let nextExitError: Error | null = null;
   const noResource = Object.freeze({ inertOriginalNoResource: true });
   const owner = Object.freeze({
     status: (): object => ({ binding, released, helperClosed: released, helperPid: 1, launchConsumed: false, noProcessCleanupAvailable: false }),
@@ -45,7 +46,7 @@ async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWr
       calls.push(`sdk-${stage}`);
       if (stage === "capture") { return Promise.resolve({ captured: true }); }
       if (stage === "preflight") { return Promise.resolve(ack("preflight")); }
-      assert.equal(stage, "save"); return ["save-unknown", "abort-unknown", "publication-blocked"].includes(mode) ? Promise.reject(new Error("original Save acknowledgement unknown")) : Promise.resolve(saveAck);
+      assert.equal(stage, "save"); return ["save-unknown", "abort-unknown", "publication-blocked", "exit-late"].includes(mode) ? Promise.reject(new Error("original Save acknowledgement unknown")) : Promise.resolve(saveAck);
     },
     requireViaProspectiveSaveMainReady: (): void => { calls.push("original-prospective-save"); }, prepareViaSaveGeneration: (): Promise<void> => Promise.resolve(),
     abortPcbViaWrite: (): Promise<void> => {
@@ -53,9 +54,12 @@ async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWr
       // oxlint-disable-next-line unicorn/no-useless-undefined -- TypeScript7 requires the exact Promise<undefined> resolver argument; this inert collector carries no authority value.
       if (mode === "main-failed") { body.resolve(undefined); } else { body.reject(new Error("original body stopped")); }
       local.reject(new Error("original local stopped"));
-      return mode === "abort-unknown" ? Promise.reject(new Error("original Abort acknowledgement unknown")) : Promise.resolve();
+      return mode === "abort-unknown" || mode === "exit-late" ? Promise.reject(new Error("original Abort acknowledgement unknown")) : Promise.resolve();
     },
-    observeTermination: (): Promise<boolean> => { calls.push("original-exit"); exited = true; return Promise.resolve(true); },
+    observeTermination: (): Promise<boolean> => {
+      calls.push("original-exit"); if (nextExitError !== null) { const original = nextExitError; nextExitError = null; return Promise.reject(original); }
+      exited = exitPermitted; return Promise.resolve(exited);
+    },
     releaseClosed: (): Promise<void> => { assert.ok(exited); calls.push("original-release"); released = true; return Promise.resolve(); },
     releaseUnlaunched: (): Promise<void> => { assert.equal(binding, null); calls.push("original-unlaunched-release"); released = true; return Promise.resolve(); },
   });
@@ -141,6 +145,7 @@ async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWr
     originalCurrentPcbViaWriteTermination: (): object => { assert.ok(exited); return Object.freeze({ inertTermination: true }); },
   };
   const replacements: Readonly<Record<string, unknown>> = {
+    "node:timers/promises": { setTimeout: (): Promise<void> => Promise.resolve() },
     "./current-pcb-via-write-plan.ts": { requireOriginalCurrentPcbViaWritePlan: (actual: unknown): object => { assert.equal(actual, plan); return { prepared }; } },
     "./current-pcb-string-clock-reply.ts": { captureCurrentPcbStringClockReply: (): void => { calls.push("captured-options"); } },
     "./current-pcb-via-write-owner.ts": native,
@@ -159,7 +164,8 @@ async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWr
   const Constructor = loaded.exports["CurrentPcbViaWriteWorkflow"]; assert.ok(typeof Constructor === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only the explicit inert original issuers/observers above differ; the actual workflow's private state and Promise scheduling run unchanged.
   const workflow = Reflect.construct(Constructor, [options, plan]) as CurrentPcbViaWriteWorkflow;
-  return { workflow, calls, saveAck };
+  return { workflow, calls, saveAck, permitOriginalExit: (): void => { exitPermitted = true; },
+    rejectNextOriginalExit: (error: Error): void => { nextExitError = error; } };
 }
 
 void test("actual original plan custody refuses an equal-looking outer workflow before factory birth", () => {
@@ -247,4 +253,44 @@ void test("ambiguous original reservation retains custody until exact publicatio
   assert.equal(f.workflow.inspect()["originalLaunchExclusionRetained"], false);
   assert.ok(f.calls.includes("journal-no-allocation")); assert.ok(f.workflow.requireOriginalFailurePublicationSource() !== null);
   assert.equal(f.calls.includes("original-abort"), false); assert.equal(f.calls.includes("original-release"), false);
+});
+
+void test("each explicit exhausted original exit round stays bounded and shared until the same root finally exits", async () => {
+  const f = await fixture("exit-late"); await assert.rejects(f.workflow.execute(), /Save acknowledgement unknown/u);
+  const initialReads = f.calls.filter(value => value === "original-exit").length; assert.equal(initialReads, 40);
+  assert.equal(f.workflow.inspect()["cleanupExitWaitExhausted"], true);
+  assert.equal(f.workflow.inspect()["originalLaunchExclusionRetained"], true);
+  const exhausted = f.workflow.settleCleanup(); assert.equal(f.workflow.settleCleanup(), exhausted);
+  await assert.rejects(exhausted, /ORIGINAL_EXIT_NOT_OBSERVED/u);
+  assert.equal(f.calls.filter(value => value === "original-exit").length, 2 * initialReads);
+  assert.equal(f.workflow.inspect()["cleanupExitWaitExhausted"], true);
+  const observed = f.workflow.settleCleanup(); assert.notEqual(observed, exhausted); assert.equal(f.workflow.settleCleanup(), observed);
+  f.permitOriginalExit(); await observed;
+  assert.equal(f.calls.filter(value => value === "original-exit").length, 2 * initialReads + 1);
+  await assert.rejects(exhausted, /ORIGINAL_EXIT_NOT_OBSERVED/u);
+  assert.equal(f.workflow.settleCleanup(), observed); await f.workflow.abort(true);
+  assert.equal(f.workflow.inspect()["cleanupExitWaitExhausted"], false);
+  assert.equal(f.workflow.inspect()["originalAbortAcknowledged"], false);
+  assert.equal(f.workflow.inspect()["originalLaunchExclusionRetained"], false);
+  for (const action of ["original-abort", "original-release", "sdk-save", "journal-abort-intent", "journal-abort-result", "journal-termination-intent", "journal-termination-result", "journal-release-intent", "journal-release-result"]) {
+    assert.equal(f.calls.filter(value => value === action).length, 1, action);
+  }
+  assert.equal(f.workflow.operationResult("inspect").verification.saved, false);
+  assert.equal(f.workflow.operationResult("inspect").verification.reopened, false);
+  assert.ok(Object.isFrozen(f.workflow.requireOriginalFailureClosure()));
+});
+
+void test("a new protocol failure cannot reuse the prior exhausted-round eligibility", async () => {
+  const f = await fixture("exit-late"); await assert.rejects(f.workflow.execute(), /Save acknowledgement unknown/u);
+  const initialReads = f.calls.filter(value => value === "original-exit").length;
+  const protocolFailure = new Error("original termination protocol failed"); f.rejectNextOriginalExit(protocolFailure);
+  const failed = f.workflow.settleCleanup(); await assert.rejects(failed, error => error === protocolFailure);
+  assert.equal(f.workflow.inspect()["cleanupExitWaitExhausted"], false); f.permitOriginalExit();
+  assert.equal(f.workflow.settleCleanup(), failed); await assert.rejects(failed, error => error === protocolFailure);
+  assert.equal(f.calls.filter(value => value === "original-exit").length, initialReads + 1);
+  assert.equal(f.calls.filter(value => value === "original-abort").length, 1);
+  assert.equal(f.calls.includes("original-release"), false);
+  // The final inert fixture deliberately retains its process-local launch
+  // Quarantine; it has no helper, application, file handles or active timers.
+  assert.equal(f.workflow.inspect()["originalLaunchExclusionRetained"], true);
 });

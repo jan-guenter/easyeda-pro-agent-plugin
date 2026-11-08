@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import { test } from "node:test";
 import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE } from "../src/current-footprint-forward-execution-contract.ts";
-import { CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE as LIMITS } from "../src/current-footprint-copy-forward-profile.ts";
+import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_BIRTH_PROFILE as LIMITS } from "../src/current-footprint-forward-execution-profile.ts";
 import { combinedReadyFactoryFixture } from "./helpers/current-footprint-combined-ready-fixture.ts";
 
 void test("writer-v2 birth has its own original factory and cannot promote a read-only owner or data clone", async context => {
@@ -123,10 +123,12 @@ void test("actual writer-v2 owner charges every shared physical ID and preserves
   await assert.rejects(request({ action: "footprint-copy-allocated-create-clock-begin", firstRequestId: 925 }), /QUALIFICATION_REQUIRED/u);
   assert.equal(f.state.writes, writes); assert.equal(owner.status().forwardResources?.generation.rendererRequests, 924);
   // Complete only ordinary fixed traffic at this source-only birth boundary.
-  for (; id <= 981; id += 1) { await request({ action: "worker-startup-send", requestId: id, method: "Runtime.enable", sessionId: "ui" }); }
+  const remainingNormal = LIMITS.renderer.normalClassLimit - before.rendererNormalRequests;
+  const normalEnd = id + remainingNormal - 1;
+  for (; id <= normalEnd; id += 1) { await request({ action: "worker-startup-send", requestId: id, method: "Runtime.enable", sessionId: "ui" }); }
   for (; id <= LIMITS.renderer.requestLimit; id += 1) { await request({ action: "worker-startup-send", requestId: id, method: "Runtime.releaseObjectGroup", sessionId: "ui" }); }
   const final = owner.status().forwardResources?.generation; assert.ok(final !== undefined);
-  assert.equal(final.rendererNormalRequests, 941); assert.equal(final.rendererCleanupRequests, 61); assert.equal(final.rendererRequests, 1002);
+  assert.equal(final.rendererNormalRequests, LIMITS.renderer.normalClassLimit); assert.equal(final.rendererCleanupRequests, LIMITS.renderer.cleanupClassLimit); assert.equal(final.rendererRequests, LIMITS.renderer.requestLimit);
   const consumed = f.state.writes;
   await assert.rejects(request({ action: "worker-startup-send", requestId: id, method: "Runtime.enable", sessionId: "ui" }));
   assert.equal(f.state.writes, consumed); assert.equal(owner.status().forwardResources?.cleanupOnly, true);

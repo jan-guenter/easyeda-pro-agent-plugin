@@ -91,3 +91,8 @@ and the [foreground manager](autonomous-controller-updates.md) for an update.
 Verify the replacement's actual loaded snapshot and source admission. A new
 subagent alone does not refresh a plugin, and historical closure never adopts
 an unfinished native owner.
+
+For the separate historical failed-main boundary, consult
+[Via failure before opening](failed-via-preopening-relinquishment.md). That route
+preserves missing original Job/release proof and never continues the failed
+writer. It is available only when the installed offline catalog exposes it.

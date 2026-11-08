@@ -1,6 +1,8 @@
+/* oxlint-disable import/max-dependencies -- This extracted-module fixture retains the independent production schemas and exact source/gate collaborators. */
 /** Actual registration guards with inert coordinators; no native process or historical collector runs. */
 /* oxlint-disable max-classes-per-file -- Two inert controller peers exercise the distinct production constructor paths. */
 import assert from "node:assert/strict";
+import { installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
@@ -108,6 +110,7 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; scope: vm.Context;
   assert.ok(helperStart > 0 && helperEnd > helperStart);
   for (const selected of [source.slice(helperStart, helperEnd), registrationSource(source)]) {
     assert.ok(selected.length > 0 && selected.length < 60_000);
+    installIndexFixtureDependencies(scope,source);
     vm.runInContext(selected.replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   }
   assert.ok(handler);
