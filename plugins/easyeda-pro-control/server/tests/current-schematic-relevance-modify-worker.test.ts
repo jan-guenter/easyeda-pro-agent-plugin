@@ -11,6 +11,8 @@ import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_CALLS as CALLS, CURRENT_SCHEM
 import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_SOURCE as SOURCE, qualifyCurrentSchematicRelevanceModifyWorkerSource as source } from "../src/current-schematic-relevance-modify-worker-replies.ts";
 
 function run(program: string, receiver: unknown, args: readonly unknown[]): unknown { const fn: unknown = runInThisContext(`(${program})`); assert.ok(typeof fn === "function"); return Reflect.apply(fn, receiver, args); }
+/** Build an inert worker PROJECT/bus/task graph with real native intrinsics
+ * and counted callbacks, so descriptor joins can prove no callback executed. */
 function model(): { readonly intrinsics: readonly unknown[]; readonly root: Record<string, unknown>; readonly project: Record<string, unknown>; readonly bus: Record<string, unknown>; readonly known: readonly unknown[]; readonly task: object; readonly callback: () => void; readonly calls: () => number } {
   let calls = 0; const callback = (): void => { calls += 1; };
   class Mb {} class KP extends Mb { public onReceivedPublish(): void { calls += 1; } } class JP extends KP { [key: string]: unknown; public onMessage(): void { calls += 1; } } class Lg { [key: string]: unknown; } class Task { public callback = callback; public unsafe = true; public isRunning = true; public running(): void { calls += 1; } public execute(): void { calls += 1; } }

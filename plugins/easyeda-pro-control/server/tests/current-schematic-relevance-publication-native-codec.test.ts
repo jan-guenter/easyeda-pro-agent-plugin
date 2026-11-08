@@ -11,12 +11,16 @@ import { CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_NATIVE_CALLS as CALLS, validate
 import type { CurrentSchematicRelevancePublicationNativeCommand as Command } from "../src/current-schematic-relevance-publication-native-protocol.ts";
 
 function hash(value: Uint8Array): string { return createHash("sha256").update(value).digest("hex"); }
+/** Replace only the finite publication command handle slots with stable
+ * markers and revalidate each variant before comparing its native encoding. */
 function retainedHandles(command: Command): Command {
   if (command.phase === "publication-native-source") { return validate({ ...command, params: { ...command.params, scriptId: "original_scriptId" } }); }
   if (command.phase === "publication-native-frame") { return validate({ ...command, params: { ...command.params, callFrameId: "original_callFrameId" } }); }
   if (command.phase === "publication-native-properties") { return validate({ ...command, params: { ...command.params, objectId: "original_objectId" } }); }
   return validate({ ...command, params: { ...command.params, objectId: "original_objectId", arguments: command.params.arguments.map((_argument, index) => ({ objectId: `original_argument${String(index)}` })) } });
 }
+/** Recover a bounded immutable publication table, verifying both hashes and
+ * every row width before its templates are compared with facade commands. */
 function table(code: string, name: string): readonly (readonly string[])[] {
   const pattern = new RegExp(`${name}=EasyedaDiagnosticFixedTable\\.Load\\(@"([^"]*)",(\\d+),@"([a-f0-9]{64})",@"([a-f0-9]{64})",(\\d+),(\\d+)\\);`, "u"); const match = pattern.exec(code);
   assert.ok(match !== null); const [packedText, size, rawHash, packedHash, count, columns] = match.slice(1); assert.ok(packedText !== undefined);

@@ -13,12 +13,16 @@ import type { CurrentSchematicRelevanceModifyWorkerCommand as Command } from "..
 import { qualifyCurrentSchematicRelevanceDisplayObservedWorkerSource } from "../src/current-schematic-relevance-display-helper-source-catalogue.ts";
 
 function hash(value: Uint8Array): string { return createHash("sha256").update(value).digest("hex"); }
+/** Substitute deterministic original-handle markers in every fixed worker
+ * variant, then revalidate it so the codec test cannot introduce extra fields. */
 function retainedHandles(command: Command): Command {
   if (command.phase === "modify-worker-source") { return validate({ ...command, params: { ...command.params, scriptId: "original_scriptId" } }); }
   if (command.phase === "modify-worker-literal") { return validate({ ...command, params: { ...command.params, uniqueContextId: "original_uniqueContextId" } }); }
   if (command.phase === "modify-worker-properties") { return validate({ ...command, params: { ...command.params, objectId: "original_objectId" } }); }
   return validate({ ...command, params: { ...command.params, objectId: "original_objectId", arguments: command.params.arguments.map((_argument, index) => ({ objectId: `original_argument${String(index)}` })) } });
 }
+/** Decode one fixed generated table after checking its packed/raw hashes,
+ * byte ceiling and complete row/column counts. This never executes C#. */
 function table(code: string, name: string): readonly (readonly string[])[] {
   const pattern = new RegExp(`${name}=EasyedaDiagnosticFixedTable\\.Load\\(@"([^"]*)",(\\d+),@"([a-f0-9]{64})",@"([a-f0-9]{64})",(\\d+),(\\d+)\\);`, "u"); const match = pattern.exec(code);
   assert.ok(match !== null); const [packedText, size, rawHash, packedHash, count, columns] = match.slice(1); assert.ok(packedText !== undefined);

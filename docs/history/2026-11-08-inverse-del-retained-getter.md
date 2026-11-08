@@ -19,3 +19,20 @@ TypeScript configurations, strict lint on the collector/test and both focused
 cases with configured sources and no skips. The separate deeper method and
 forwarding drafts were excluded. No application, native owner, C# process or
 closed MCP connection was invoked, and no helper, pin or bundle was emitted.
+
+## 2026-11-08 source identity qualification
+
+The implementation was subsequently recorded in commit
+`2db30e8c0b56a2bfb92a24f3f63907843bde42d6`, based on
+`415f9127f02c2b2c48072afc03542d96d9af0509`. Its source changes remove the
+redundant getter metadata read from the delete-manager collector and supply
+the retained function slot in the configured-source regression. The commit
+also adds this history record and its index entry.
+
+The earlier checks ran before that commit in an unsealed worktree. An exact
+snapshot of every uncommitted file at each check cannot be recovered from the
+retained record. The later commit identifies the implementation, not an exact
+sealed test payload. The check results above remain recorded with that limit;
+the excluded deeper method and forwarding drafts are not covered by them.
+These were configured-source fixture checks, not execution of an actual
+application function tuple or a native owner.

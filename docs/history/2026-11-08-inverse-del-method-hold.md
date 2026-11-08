@@ -52,7 +52,9 @@ The 3,148-byte compiler margin is a measurement, not a compiler result.
 
 **C# compilation was not run for this checkpoint. Live validation was not run.**
 The original transport remains closed. No application, owner allocation,
-Windows process, helper/pin/bundle generation, Save or user-design action ran.
+Windows process, tracked helper/pin/bundle update, Save or user-design action ran.
+The private helper generation measured above did run; it did not publish or
+replace tracked artifacts.
 The next required boundaries are original manager-to-worker native forwarding,
 its genuine Job, concurrent Ja/P4/absent-tab yy and force/history tails, then
 worker clock/Main/persistence and closed readback. The dropped UI Promises and

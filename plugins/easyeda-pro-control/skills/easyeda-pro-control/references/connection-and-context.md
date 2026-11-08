@@ -6,6 +6,25 @@ Project opening may restore PCB tabs, and public or native tab navigation may
 write global preferences and prune backups. A safe target type alone is not
 sufficient. Do not change settings or use a UI fallback to pass admission.
 
+## Retain the complete tool result
+
+MCP replies can put their actual result in `structuredContent` while `content`
+contains only a byte count and digest. Retain the complete reply in private
+evidence or a persistent host store before displaying a summary. Printing only
+the text blocks can discard process identity, operation state and cleanup proof.
+The foreground manager's `responseFile` retains the complete reply.
+
+For an ownership-conflict session, `structuredContent.result.pid` identifies
+this connection. `observedOwnerPid` identifies another controller. Never use
+the latter as this connection's cleanup target.
+
+If formatting lost a successful metadata-only session inspection, first recover
+the retained reply. If it was not retained and the same original conflict-only
+transport is still open, make one correctly retained read-only inspection.
+Use only that connection's returned identity and the normal pidfd and supported
+closure checks. Preserve the lost projection. This does not replay a native
+operation, recover an owner from JSON or permit retrying a closed transport.
+
 ## Current-version disposable opening
 
 First inspect the registered toolset. On the separately reviewed 3.2.209 utility
@@ -506,6 +525,12 @@ refuse before dispatch. The selector and file share the existing 65,536-byte
 input bound. Shutdown and manager control/cleanup selectors cannot use this
 field. Keep the selector line short enough for the actual input channel. The
 client reads it once and never reloads or retries the request automatically.
+
+In the foreground client, file-validation failure returns `invalid-request`
+with `dispatched:false` and ends the session before dispatch. This closes the
+original connection. When earlier workflow resources may need that connection
+for cleanup, use the maintained manager from the start. Its failed request
+selection leaves the original controller available for supported cleanup.
 
 Only tools actually listed by that facade are accepted. The client dispatches serially and never retries a timeout, disconnect, or failed result publication. Such failures close the session; inspect the facade journal before retrying an uncertain operation. Tool error results remain errors, even though transport succeeded. All facade authentication, compatibility, quarantine and writer restrictions remain in force.
 

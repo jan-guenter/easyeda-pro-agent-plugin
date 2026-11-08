@@ -7,6 +7,8 @@ import { test } from "node:test";
 import { decodeCurrentSelectedFileMainSqlFenceNative as decode } from "../src/current-selected-file-main-sql-fence-replies.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_NAPI3_ACCESSOR_PROFILE as PROFILE, matchesCurrentSelectedFileMainSqlFenceNapi3 as matches, currentSelectedFileMainSqlFenceNativeShape as shape } from "../src/current-selected-file-main-sql-napi3-profile.ts";
 
+/** Narrow decoded fixture JSON to a non-null, non-array record before any
+ * packet member is read or deliberately mutated by the regression. */
 function record(input: unknown): asserts input is Record<string, unknown> {
   assert.ok(input !== null && typeof input === "object" && !Array.isArray(input));
 }

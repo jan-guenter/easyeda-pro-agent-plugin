@@ -10,8 +10,12 @@ import { CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_NATIVE_CALLS as CALLS, CURRENT_
 import { qualifyCurrentSchematicRelevancePublicationNativeFunction as nativeFunction, currentSchematicRelevancePublicationNativeOrigin as origin, currentSchematicRelevancePublicationNativeProperties as properties, currentSchematicRelevancePublicationNativeRecord as record } from "../src/current-schematic-relevance-publication-native-replies.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_SNAPSHOT_SAME as SAME, CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_SNAPSHOT as SNAPSHOT } from "../src/current-schematic-relevance-publication-snapshot-programs.ts";
 
+/** Require an own data descriptor and return its value without invoking an
+ * accessor while assembling hostile fixture mutations. */
 function own(object: object, key: string): unknown { const descriptor = Object.getOwnPropertyDescriptor(object, key); assert.ok(descriptor !== undefined && Object.hasOwn(descriptor, "value")); return descriptor.value as unknown; }
 function run(program: string, receiver: unknown, args: readonly unknown[]): unknown { const fn: unknown = runInThisContext(`(${program})`); assert.ok(typeof fn === "function"); return Reflect.apply(fn, receiver, args); }
+/** Construct an inert publisher/bus prototype graph and counted methods.
+ * Retained links and state support drift checks without application effects. */
 function fixture(): { readonly raw: readonly unknown[]; readonly known: unknown[]; readonly publisher: Record<string, unknown>; readonly bus: Record<string, unknown>; readonly topic: string; readonly links: readonly unknown[]; readonly state: readonly unknown[]; readonly calls: () => number } {
   let calls = 0;
   const broadcastPublish = (): void => { calls += 1; }; const onMessage = (): void => { calls += 1; }; const onReceivedPublish = (): void => { calls += 1; }; const post = (): void => { calls += 1; }; const publish = (): void => { calls += 1; };

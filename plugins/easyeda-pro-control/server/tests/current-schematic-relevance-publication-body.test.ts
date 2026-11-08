@@ -7,7 +7,9 @@ import {CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_BODY_PROGRAMS as P} from "../src
 import {CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_CALLEE_SOURCE as SOURCE,qualifyCurrentSchematicRelevancePublicationCalleeSource as qualify} from "../src/current-schematic-relevance-publication-callee-source.ts";
 import {INSTALLED_EASYEDA_SOURCE_SKIP_REASON,readConfiguredEasyedaAssets} from "./helpers/installed-easyeda-source.ts";
 
-/** A clean worker keeps test-runner Promise tracking out of the native value. */
+/** Use a worker-local VM so test-runner Promise tracking cannot alter the
+ * native value. Await its message or failure and always terminate the test
+ * worker. No EasyEDA owner, inspector or application process is involved. */
 async function inert(code:string):Promise<unknown>{const worker=new Worker('const{parentPort,workerData}=require("node:worker_threads"),vm=require("node:vm");parentPort.postMessage(vm.runInNewContext(workerData,{}));parentPort.close();',{eval:true,execArgv:[],workerData:code});const done=Promise.withResolvers<unknown>();worker.once("message",done.resolve);worker.once("error",done.reject);worker.once("exit",exitCode=>{if(exitCode!==0){done.reject(new Error(`inert source worker exit ${String(exitCode)}`));}});try{return await done.promise;}finally{await worker.terminate();}}
 
 void test("both original publishers clear only their selected row and timer while complete unknown peer descriptors stay fixed",async context=>{

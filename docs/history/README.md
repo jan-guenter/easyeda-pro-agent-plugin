@@ -14,9 +14,9 @@
 
 - [2026-11-08 Bounded schematic native storage](2026-11-08-bounded-schematic-native-storage.md). Explicit token fusion and exact Main-table restoration retain the byte caps; fixed phase reconstruction now includes the unchanged SDK wait program.
 - [2026-11-08 Fixed selected-Main helper storage](2026-11-08-selected-main-native-program-sharing.md). Lossless shared JOIN/SCOPE table data restores every prior compiler byte and retains expanded length/hash checks without changing caps or authority.
-- [2026-11-08 Original DEL body and method holds](2026-11-08-inverse-del-method-hold.md). Fixed original continuation ends before worker forwarding; source-only checks and unrun C#/live boundaries are explicit.
+- [2026-11-08 Original DEL body and method holds](2026-11-08-inverse-del-method-hold.md). Fixed original continuation ends before worker forwarding; later owner-free C# compilation and 13 pure codecs passed, while live validation remains unrun.
 
-- [2026-11-08 Original retained getter in DEL preparation](2026-11-08-inverse-del-retained-getter.md). The actual function tuple completes within its unchanged metadata-read bound; the previous null fixture mismatch is corrected.
+- [2026-11-08 Original retained getter in DEL preparation](2026-11-08-inverse-del-retained-getter.md). Configured-source fixture checks preserve the metadata-read bound after correcting the null getter slot; no application tuple or native owner ran, and the unsealed source limit is recorded.
 
 - [2026-11-08 Original notifications through the SDK action result](2026-11-08-original-notification-sdk-hold.md). Same-stream queued bodies and original visitor Promises stop at the held action-result marker; full Modify/worker/Save remain closed.
 - [2026-11-08 Inverse SDK projection hook](2026-11-08-inverse-sdk-projection-hook.md). Exact inverse-only omission of an unreachable SDK family, unchanged other layouts and recovered compiler space under existing bounds.

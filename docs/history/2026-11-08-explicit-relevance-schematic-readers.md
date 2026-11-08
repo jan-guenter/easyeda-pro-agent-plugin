@@ -52,3 +52,12 @@ The scoped result does not admit another installed generation, a writer,
 placed components or pins, arbitrary annotations, or an ordinary project.
 The complete connected lifecycle remains separate from source tests, final
 GitHub CI, publication and official marketplace installation.
+
+## 2026-11-08 correction to group membership
+
+The earlier sentence about both groups retaining explicit Relevance membership
+was too broad. Both groups retained their Line children, but only the Wire had
+a Relevance attribute. The Bus had no such child. The fixture records one Wire
+Relevance attribute and zero Bus Relevance attributes. The earlier observation
+is retained above; this correction narrows that description without changing
+the reader's result flags or admitting additional fixture shapes.
