@@ -1,5 +1,6 @@
 /* oxlint-disable eslint/max-classes-per-file -- The actual extracted index dispatcher selects between these eight synthetic lifecycle classes. */
 import assert from "node:assert/strict";
+import { indexFixtureGateSource } from "./helpers/index-fixture-dependencies.ts";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { resolve } from "node:path";
@@ -17,7 +18,7 @@ function startupDeclarations(source: string): string {
     statement.type === "IfStatement" && statement.consequent.type === "BlockStatement" && statement.consequent.body.some(node =>
       node.type === "VariableDeclaration" && node.declarations.some(declaration => declaration.id.type === "Identifier" && declaration.id.name === "runStartup")) ? [statement.consequent] : []);
   assert.equal(blocks.length, 1); const block = blocks[0]; assert.ok(block);
-  const selected = ["startupOriginal", "startupCalls", "combinedHistoricalOriginal", "forwardOpeningHistoricalOriginal", "forwardSourceHistoricalOriginal", "runStartup"].map(name => {
+  const selected = ["generatedReaderHistoricalOriginal", "startupOriginal", "startupCalls", "combinedHistoricalOriginal", "forwardOpeningHistoricalOriginal", "forwardSourceHistoricalOriginal", "runStartup"].map(name => {
     const matches = block.body.filter(node => node.type === "VariableDeclaration" && node.declarations.length === 1 &&
       node.declarations[0]?.id.type === "Identifier" && node.declarations[0].id.name === name);
     assert.equal(matches.length, 1); const node = matches[0]; assert.ok(node?.type === "VariableDeclaration");
@@ -100,7 +101,7 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
     // Stable synthetic validator.
   },
     assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
-  const data = { diagnostic209: true, CurrentPcbWorkerStartupLifecycle: Owner, CurrentPcb209WorkerStartupLifecycle: Owner209,
+  const data = { stagedComponentOpeningSource: undefined, stagedFixtureOpeningSource: undefined, stagedSchematicOpeningSource: undefined, hasGeneratedSchematicCustody: ():boolean=>false, hasClosedGeneratedDataCustody: ():boolean=>false, hasViaWriteCustody: ():boolean=>false, hasSchematicDisplayWriteCustody: (): boolean => false, diagnostic209: true, CurrentPcbWorkerStartupLifecycle: Owner, CurrentPcb209WorkerStartupLifecycle: Owner209,
     CurrentPcb209EmptyStartupLifecycle: Empty209, CurrentPcb209RatlineStartupLifecycle: Ratline209,
     CurrentPcb209RatlineContinuationLifecycle: Continuation209, CurrentFootprintCopyPreparationLifecycle: Footprint209,
     CurrentFootprintCopyRoutePreparationLifecycle: FootprintRoute209, CurrentFootprintForwardPrewriteLifecycle: ForwardPrewrite209, engine, bridgeGate, upstream,
@@ -119,6 +120,7 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
   // Collaborators. The module itself is never imported or started by this test.
   const wrapper = `export function create(context) { const { ${Object.keys(data).join(",")} } = context;
     let currentPcbWorkerStartupLifecycle;
+    ${indexFixtureGateSource(source)}
     ${source.slice(helpersBegin, helpersEnd)}
     ${startup}
     return runStartup;

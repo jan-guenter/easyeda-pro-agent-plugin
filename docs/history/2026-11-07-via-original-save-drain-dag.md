@@ -56,3 +56,15 @@ ordering, foreign cloud-result references, retry-shaped frames and lost ACKs.
 The original delete source/proof tests also pass. Both TypeScript projects and
 changed-file strict lint pass under Node24.18.0/npm11.16.0. No native helper,
 Windows process, application, SDK action or live tool was started.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `1c3d76f8ae89d27bfbc516661ff14691e03b676f`; its
+committed tree is `56e2b90b56803e55cb581d91ee9d9b3734d0eb55`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

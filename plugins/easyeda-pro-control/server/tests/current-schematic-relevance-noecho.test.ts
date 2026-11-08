@@ -6,7 +6,7 @@ import {CURRENT_SCHEMATIC_RELEVANCE_NOECHO_BRANCH as BRANCH,CURRENT_SCHEMATIC_RE
 import {z} from "zod";
 import {CURRENT_SCHEMATIC_RELEVANCE_NOECHO_CALLS as CALLS,validateCurrentSchematicRelevanceNoEchoCommand as validate} from "../src/current-schematic-relevance-noecho-protocol.ts";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { INSTALLED_EASYEDA_SOURCE_SKIP_REASON, readConfiguredEasyedaAssets } from "./helpers/installed-easyeda-source.ts";
 import { Session } from "node:inspector/promises";
 import { test } from "node:test";
 import { Script, createContext, runInContext } from "node:vm";
@@ -17,13 +17,11 @@ import { decodeCurrentSchematicRelevanceNoEchoCalleeFunction, requireCurrentSche
 function inertFunction(source:string,variant:0|1,role:CurrentSchematicRelevanceNoEchoCalleeRole):unknown{const row=SOURCE[variant].roles[role],text=source.slice(row.start,row.end);let padding=source.slice(0,row.start).replaceAll(/[^\r\n]/gu,char=>" ".repeat(char.length));const directive='"use strict";';padding=directive+padding.slice(directive.length);const context=createContext({});if(row.kind==="method"||row.kind==="getter"){const object:unknown=runInContext(`${padding.slice(0,-2)}({${text}})`,context);assert.ok(object!==null&&typeof object==="object");const key=row.kind==="getter"?row.name.slice(4):row.name;const field=Object.getOwnPropertyDescriptor(object,key);assert.ok(field!==undefined);const actual:unknown=Reflect.get(field,row.kind==="getter"?"get":"value");return actual;}return runInContext(`${padding.slice(0,-1)}(${text})`,context)as unknown;}
 
 void test("actual Node24 metadata binds all34 CM/no-echo callbacks in both exact sources", async context => {
-  let sources: readonly string[];
-  try { sources = await Promise.all(SOURCE.map(row => readFile(`/mnt/c/Program Files/EasyEDA-Pro/resources/app/assets/${row.relativePath}`, "utf8"))); }
-  catch (error) { if (error !== null && typeof error === "object" && "code" in error && error.code === "ENOENT") { context.skip("installed source unavailable"); return; } throw error; }
+  const sources: readonly string[] | null = await readConfiguredEasyedaAssets(SOURCE.map(row => row.relativePath)); if (sources === null) { context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON); return; }
   assert.equal(process.versions.node, "24.18.0"); const session = new Session(); session.connect(); const key = "__inertSchematicNoEchoCallee";
   try {
     for (const variant of [0, 1] as const) {
-      const source = sources[variant]; assert.ok(typeof source === "string"); assert.equal(qualifyCurrentSchematicRelevanceNoEchoCalleeSource(source), variant);
+      const source: string | undefined = sources[variant]; assert.ok(typeof source === "string"); assert.equal(qualifyCurrentSchematicRelevanceNoEchoCalleeSource(source), variant);
       for (const role of ROLES) {
         Object.defineProperty(globalThis, key, { value: inertFunction(source, variant, role), configurable: true });
         const value = await session.post("Runtime.evaluate", { expression: `globalThis[${JSON.stringify(key)}]`, objectGroup: "inert-schematic-noecho-callee" });

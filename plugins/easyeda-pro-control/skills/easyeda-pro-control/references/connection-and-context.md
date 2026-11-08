@@ -34,6 +34,13 @@ or admit the legacy workflow below.
 
 After contained launch and authenticated status, `easyeda_control_runtime` accepts `request.action:"open-existing"` with `projectUuid`, `projectPath`, `documentUuid`, `documentType:1|3`, the current `expectedFingerprint`, and `confirmOpen:true`. The target must already exist in the saved `.eprj2` checkpoint and the native project-path registry. This path does not require a fabricated active-editor context.
 
+For a large development source inventory, status accepts fresh managed
+`evidence:{resultPath,receiptPath}` and `returnMode:"receipt-only"` or
+`"summary"`. Retrieve the complete archived result with bounded artifact
+paging and verify its receipt before using the unchanged `stableFingerprint`.
+The inline limit remains 512 KiB. The ordinary no-argument response keeps its
+existing shape; an oversized refusal grants no smaller admission fingerprint.
+
 The operation refuses another active project or document and checks the entire split-screen tab tree for hidden unrelated editors. It does not create, replace, close, save or discard a project. It opens only the existing target, verifies its actual tab/context, and checks the complete logical SQLite dump plus all materialized selected-branch document records for changes. This proves saved-state invariance, not that previously unsaved editor contents equal the database.
 
 On failure, use `inspect-open` with its operation ID. If orphan risk remains, `recover-open-authority` requires the normal retained-runtime recovery and `confirmRecovery:true`. `reconcile-open` performs read-only exclusive-tab inspection and database proof without repeating navigation. A later facade-only upgrade can use `rebind-open-runtime` with the replacement fingerprint and `confirmRuntimeUpgrade:true`. No recovery branch chooses Save or Discard or infers a successful open from an unchanged database.

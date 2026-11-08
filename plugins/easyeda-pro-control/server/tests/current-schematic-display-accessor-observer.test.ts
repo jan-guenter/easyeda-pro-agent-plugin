@@ -1,6 +1,7 @@
-/** Real metadata observer with explicit original-origin/inspector seams. Full
- * installed SCH source and all metadata decoders run; no app method executes. */
+/** Real metadata observer with explicit original-origin/inspector seams. Version-pinned excerpt
+ * fixture and all metadata decoders run; no app method executes. */
 import assert from "node:assert/strict";
+import { CURRENT209_SYNTHETIC_SCH_SOURCE, current209SyntheticSourceModule } from "./helpers/current209-source-excerpts.ts";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { test } from "node:test";
@@ -16,7 +17,7 @@ const array = (values: unknown[]): unknown => ({ result: [...values.map((value, 
 function scopes(id: string): unknown { return ({ result: [prop("0", { type: "object", subtype: "internal#scope", className: "Object", objectId: `scope:${id.slice("scopes:".length)}`, description: "Closure" }),
     prop("1", { type: "object", subtype: "internal#scope", className: "Object", objectId: "scope-global", description: "Global" })] }); }
 async function fixture(fault: "none" | "validator" | "raw" = "none"): Promise<Readonly<{ observer: CurrentSchematicDisplayAccessorObserver; state: { normal: number; cleanup: number; failed: boolean; exited: boolean }; owner: object; args: object }>> {
-  const source = SOURCES[0]; const text = await readFile(`/mnt/c/Program Files/easyeda-pro/resources/app/assets/${source.relativePath}`, "utf8");
+  const source = SOURCES[0]; const text = CURRENT209_SYNTHETIC_SCH_SOURCE;
   const owner = Object.freeze({ explicitOriginalOwnerSeam: true }); const origin = Object.freeze({ explicitOriginSeam: true }); const args = Object.freeze({ explicitArgumentsSeam: true });
   const state = { normal: 0, cleanup: 0, failed: false, exited: false };
   const roleFor = (id: string): GeneratedSchematicDisplayAccessorRole => {
@@ -62,13 +63,13 @@ async function fixture(fault: "none" | "validator" | "raw" = "none"): Promise<Re
   const url = new URL("../src/current-schematic-display-accessor-observer.ts", import.meta.url); const sourceRequire = createRequire(url);
   const compiled = await transform(await readFile(url, "utf8"), { loader: "ts", format: "cjs", target: "node24" }); const loaded: { exports: Record<string, unknown> } = { exports: {} };
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${compiled.code}\n})`); assert.ok(typeof evaluate === "function");
-  Reflect.apply(evaluate, undefined, [(name: string): unknown => name === "./current-pcb-diagnostic-owner.ts" ? { requireOriginalCurrentSchematicDisplayAccessorOrigin: (o: unknown, actual: unknown, a: unknown): unknown => { assert.equal(o, origin); assert.equal(actual, owner); assert.equal(a, args); return bindings; } } : sourceRequire(name) as unknown, loaded, loaded.exports]);
+  Reflect.apply(evaluate, undefined, [(name: string): unknown => name === "./current-pcb-diagnostic-owner.ts" ? { requireOriginalCurrentSchematicDisplayAccessorOrigin: (o: unknown, actual: unknown, a: unknown): unknown => { assert.equal(o, origin); assert.equal(actual, owner); assert.equal(a, args); return bindings; } } : current209SyntheticSourceModule(name,sourceRequire(name)), loaded, loaded.exports]);
   const Constructor = loaded.exports["CurrentSchematicDisplayAccessorObserver"]; assert.ok(typeof Constructor === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Runtime checked production class with explicit original-origin/inspector seams; no app or native owner is allocated.
   const observer = Reflect.construct(Constructor, [origin, owner, args]) as CurrentSchematicDisplayAccessorObserver;
   return { observer, state, owner, args };
 }
-void test("actual observer qualifies complete imported source, all original metadata, decorator validators and monitor AST without action grants", async () => {
+void test("actual observer qualifies pinned excerpt metadata under an explicit synthetic source seam without action grants", async () => {
   const f = await fixture(); const packet = await f.observer.observe(); assert.equal(f.state.normal, 120); assert.equal(packet.fields, 10); assert.equal(packet.executionAuthorized, false); assert.equal(packet.activeActionHistoryCallbackQualified, false);
   const check: unknown = Reflect.get(f.observer, "requireData"); assert.ok(typeof check === "function"); Reflect.apply(check, f.observer, [packet, f.owner, f.args]); assert.throws(() => Reflect.apply(check, f.observer, [structuredClone(packet), f.owner, f.args]), /ORIGINAL_PACKET_DATA/u);
   await f.observer.release(); assert.equal(f.state.cleanup, 1); await assert.rejects(f.observer.observe(), /CONSUMED/u);

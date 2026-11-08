@@ -1,6 +1,7 @@
 /** One original live selected-history read. Actual DB timestamps remain
  * private data; no SQL, producer, cache or persistence grant is issued. */
 import { z } from "zod";
+import {canonicalJson} from "./core.ts";
 import { requireOriginalCurrentSchematicRelevanceDisplaySaveMainOrigin } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentSchematicRelevanceDisplayWriteOwner } from "./current-schematic-relevance-display-write-owner.ts";
 import type { GeneratedSchematicRelevanceDisplayNativeArguments } from "./generated-schematic-relevance-display-source.ts";
@@ -11,6 +12,7 @@ import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_FUNCTIONS as FUNCTIONS, CURRENT_PCB_V
 import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_CALL_FLAGS as CALL, CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_FRAME_FLAGS as FRAME, CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_GROUP as GROUP, validateCurrentPcbViaMainLiveHistoryCommand } from "./current-pcb-via-main-live-history-protocol.ts";
 import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_PROGRAMS as PROGRAMS } from "./current-pcb-via-main-live-history-programs.ts";
 
+const location=z.strictObject({scriptId:z.string(),lineNumber:z.number().int().nonnegative(),columnNumber:z.number().int().nonnegative()});
 const object = z.strictObject({ result: z.looseObject({ type: z.literal("object"), subtype: z.literal("array"), objectId: z.string() }) });
 const frameDescription = z.looseObject({ callFrameId: z.string() });
 const pauseDescription = z.looseObject({ hitBreakpoints: z.tuple([z.string()]), callFrames: z.array(frameDescription).min(1).max(64) });
@@ -38,8 +40,11 @@ export class CurrentSchematicRelevanceDisplayMainLiveHistoryObserver {
   }
   public async arm(): Promise<void> {
     need(!this.#armAttempted && !this.#busy, "ARM_CONSUMED"); this.#armAttempted = true; this.#busy = true;
-    try { const reply = await this.#send({ phase: "via-main-live-arm", method: "Debugger.setBreakpoint", params: { location: { scriptId: this.#bindings.scriptId, lineNumber: SITE.lineNumber, columnNumber: SITE.columnNumber } } });
-      this.#point = z.strictObject({ breakpointId: z.string(), actualLocation: z.unknown() }).parse(reply).breakpointId;
+    try { const requested={scriptId:this.#bindings.scriptId,lineNumber:SITE.lineNumber,columnNumber:SITE.columnNumber};
+      const reply = await this.#send({ phase: "via-main-live-arm", method: "Debugger.setBreakpoint", params: { location: requested } });
+      const allocated=z.strictObject({breakpointId:z.string(),actualLocation:location}).parse(reply);
+      need(canonicalJson(allocated.actualLocation)===canonicalJson(requested),"ARM_LOCATION");
+      need(allocated.breakpointId!==this.#bindings.persistentDriverBreakpointId,"ARM_DRIVER_ALIAS");this.#point=allocated.breakpointId;
     } catch (caughtError) { this.#failed = true; this.#bindings.fail(); throw caughtError; } finally { this.#busy = false; }
   }
   public async observe(): Promise<CurrentPcbViaMainLiveHistoryRows> {

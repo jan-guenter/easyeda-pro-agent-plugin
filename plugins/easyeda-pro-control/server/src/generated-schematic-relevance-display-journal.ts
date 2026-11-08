@@ -147,6 +147,9 @@ export function enrollGeneratedSchematicRelevanceDisplayLibraryIntent(token: Gen
 export function consumeGeneratedSchematicRelevanceDisplayPollingIntent(token: GeneratedSchematicRelevanceDisplayPollingIntent, owner: object, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): Readonly<{ assertPublished: () => Promise<void> }> { return consumeStartup(token, "polling", owner, argumentsValue); }
 export function consumeGeneratedSchematicRelevanceDisplayLibraryIntent(token: GeneratedSchematicRelevanceDisplayLibraryIntent, owner: object, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): Readonly<{ assertPublished: () => Promise<void> }> { return consumeStartup(token, "library", owner, argumentsValue); }
 
+interface OriginalJournal { readonly argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments; readonly prepared: GeneratedSchematicRelevanceFixtureOpenCheckpoint }
+const originalJournals = new WeakMap<GeneratedSchematicRelevanceDisplayJournal, OriginalJournal>();
+
 /** One original retained journal. Publication settlement joins its immutable
  * pending candidate and same marker; it performs no native dispatch itself. */
 export class GeneratedSchematicRelevanceDisplayJournal {
@@ -163,9 +166,14 @@ export class GeneratedSchematicRelevanceDisplayJournal {
       state: "prepared", mutationState: "schematic-display-intent", mutationMayHaveOccurred: false, hardStop: true, saved: false, reopened: false,
       orphanedCallPossible: false, createdAt: time, updatedAt: time, sequence: 0, records: [], artifacts: [],
       nextSafeAction: "Retain this original schematic writer through exact effect, one Save, closed SQL and reopen; never replay mutation or Save." };
-    this.#publication = new GeneratedFixtureJournalPublication(this.#operation, (): void => { this.#current(); }, dependencies); Object.freeze(this);
+    this.#publication = new GeneratedFixtureJournalPublication(this.#operation, (): void => { this.#current(); }, dependencies); originalJournals.set(this, Object.freeze({ argumentsValue, prepared })); Object.freeze(this);
   }
-  #current(): void { requireOriginalGeneratedSchematicRelevanceDisplayNativeArguments(this.#arguments, this.#prepared); }
+  #current(): void { const original = originalJournals.get(this); need(original?.argumentsValue === this.#arguments && original.prepared === this.#prepared, "ORIGINAL_JOURNAL"); requireOriginalGeneratedSchematicRelevanceDisplayNativeArguments(this.#arguments, this.#prepared); }
+  /** Historical writer linkage only. It cannot create a native owner, effect,
+   * Save dispatch or reader authority from journal records. */
+  public requireOriginalWriter(owner: object, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): GeneratedSchematicRelevanceFixtureOpenCheckpoint {
+    this.#current(); need(this.#reserved && this.#owner === owner && this.#arguments === argumentsValue, "ORIGINAL_JOURNAL_WRITER"); return this.#prepared;
+  }
   #records(): readonly Entry[] {
     const records = assertGeneratedSchematicRelevanceDisplayJournalChain(this.#operation["records"]); need(records.length === this.#operation.sequence && records.every(record => record.operationId === this.#operation.operationId) &&
       records.length === this.#operation.artifacts.length, "MANIFEST"); return records;
@@ -248,4 +256,15 @@ export class GeneratedSchematicRelevanceDisplayJournal {
     return freezeDeep({ records: [...this.#records()], reserved: this.#reserved, publicationPending: this.#publication.pending(), busy: this.#busy,
       mutationMayHaveOccurred: this.#operation.mutationMayHaveOccurred, saved: this.#operation.saved, reopened: this.#operation.reopened, journalPath: this.#operation.journalPath });
   }
+}
+
+const originalJournalDescriptors = Object.getOwnPropertyDescriptors(GeneratedSchematicRelevanceDisplayJournal.prototype);
+/** Check the private registry before reading any caller-visible method. */
+export function assertOriginalGeneratedSchematicRelevanceDisplayJournal(journal: GeneratedSchematicRelevanceDisplayJournal, owner: object,
+  argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): GeneratedSchematicRelevanceFixtureOpenCheckpoint {
+  const original = originalJournals.get(journal); need(original !== undefined && original.argumentsValue === argumentsValue && Object.getPrototypeOf(journal) === GeneratedSchematicRelevanceDisplayJournal.prototype && Reflect.ownKeys(journal).length === 0, "ORIGINAL_JOURNAL");
+  need(Reflect.ownKeys(GeneratedSchematicRelevanceDisplayJournal.prototype).length === Reflect.ownKeys(originalJournalDescriptors).length && Object.entries(originalJournalDescriptors).every(([name, before]) => {
+    const actual = Object.getOwnPropertyDescriptor(GeneratedSchematicRelevanceDisplayJournal.prototype, name); return actual !== undefined && actual.value === before.value && actual.get === before.get && actual.set === before.set && actual.writable === before.writable && actual.enumerable === before.enumerable && actual.configurable === before.configurable;
+  }), "ORIGINAL_JOURNAL_METHODS");
+  const prepared = journal.requireOriginalWriter(owner, argumentsValue); need(prepared === original.prepared, "ORIGINAL_JOURNAL_CHECKPOINT"); return prepared;
 }

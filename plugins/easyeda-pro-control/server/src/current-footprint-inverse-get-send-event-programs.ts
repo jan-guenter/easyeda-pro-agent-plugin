@@ -1,0 +1,7 @@
+/** UI-realm native event read. Return data stays opaque until the host's
+ * correlated non-Proxy metadata; no envelope property is read here. */
+import { CURRENT_NATIVE_MESSAGE_EVENT_PROGRAMS_V2 as BASE,CURRENT_NATIVE_MESSAGE_EVENT_CAPTURE_HELPERS_V2 as HELPERS } from "./current-native-message-event-programs-v2.ts";
+import { freezeDeep } from "./sqlite-inventory-core.ts";
+
+const opaque=`function(channel){"use strict";const intrinsics=this[0];${HELPERS}array(this,12);const event=own(this,"2"),target=own(this,"3"),type=own(this,"4"),trusted=own(this,"5"),data=own(this,"6"),origin=own(this,"7"),source=own(this,"8"),currentTarget=own(this,"9"),eventPhase=own(this,"10"),before=own(this,"11");if(typeof before!=="function"||before()!==true)bad();const active=()=>{if(invoke(trusted,event,[])!==true||invoke(type,event,[])!=="message"||invoke(target,event,[])!==channel||invoke(currentTarget,event,[])!==channel||invoke(eventPhase,event,[])!==2||invoke(source,event,[])!==null)bad();return true;};active();const envelope=invoke(data,event,[]),nativeOrigin=invoke(origin,event,[]);if(typeof nativeOrigin!=="string"||nativeOrigin.length<1||nativeOrigin.length>2048)bad();return[intrinsics,this,envelope,nativeOrigin,()=>{if(before()!==true)bad();verify();active();if(invoke(data,event,[])!==envelope||invoke(origin,event,[])!==nativeOrigin)bad();return true;}];}`;
+export const CURRENT_FOOTPRINT_INVERSE_GET_SEND_EVENT_PROGRAMS=freezeDeep({constructors:BASE.constructors,members:BASE.members,opaque}as const);

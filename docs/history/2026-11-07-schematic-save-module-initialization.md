@@ -34,3 +34,15 @@ Save source invariants and original closed proof. This is initialization and
 offline verification, not connected Save or durability acceptance. The full
 non-suite pass will resume against the updated frozen payload before any
 replacement controller is selected.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `7e530f422f9bc47b53eb4789c377ba4e240a5999`; its
+committed tree is `689e217de4a8300402ccfdd03c88701f830adbb8`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

@@ -718,16 +718,23 @@ before(async () => {
   coldApiResult = await apiReference({ action: "sdk", query: { namespace: "sys_WebSocket", detail: true } });
   coldApiCallLog = await readFile(upstreamCallLogPath, "utf8");
   assert.equal(coldApiCallLog, "", "MCP discovery and API references must not start the upstream process");
+  const statusEvidence = freshEvidence("complete-source-status");
   const status = await client.callTool({
     name: "easyeda_control_status",
-    arguments: {},
+    arguments: { evidence: statusEvidence, returnMode: "receipt-only" },
   });
   assert.equal(
     status.isError,
     undefined,
     JSON.stringify(status.structuredContent),
   );
-  const statusPayload = structured(status);
+  const receipt = requireRecord(structured(status)["evidence"], "status evidence");
+  assert.equal(receipt["resultPath"], statusEvidence.resultPath);
+  const archived: unknown = JSON.parse(await readFile(statusEvidence.resultPath, "utf8"));
+  const archivedStatus = requireRecord(archived, "archived status");
+  const statusPayload = requireRecord(archivedStatus["result"], "complete archived status");
+  const inlineStatusBytes = Buffer.byteLength(JSON.stringify(structured(status)));
+  assert.ok(inlineStatusBytes < 512 * 1024);
   publicStatusPayload = statusPayload;
   fixtureBridgeEndpoint = requireRecord(
     requireRecord(statusPayload["bridgeConnection"], "status.bridgeConnection")["fixturePublicEndpoint"],
@@ -752,7 +759,7 @@ after(async () => {
 });
 
 void describe("published facade contracts", { concurrency: false }, () => {
-  void test("published status summarizes its duplicate inventory and preserves the full admission fingerprint", context => {
+  void test("archived status summarizes its duplicate inventory and preserves the full admission fingerprint", context => {
     const upstreamStatus = requireRecord(publicStatusPayload["upstream"], "status.upstream");
     const summary = requireRecord(upstreamStatus["facadeImplementation"], "implementation summary");
     const complete = requireRecord(expectedFingerprint["facadeImplementation"], "complete implementation fingerprint");
@@ -763,7 +770,8 @@ void describe("published facade contracts", { concurrency: false }, () => {
     assert.equal(Object.hasOwn(summary, "files"), false);
     assert.equal(upstreamStatus["stableFingerprint"], expectedFingerprint);
     const statusBytes = Buffer.byteLength(JSON.stringify(publicStatusPayload));
-    assert.ok(files.length > 0); assert.ok(statusBytes <= 512 * 1024);
+    assert.ok(files.length > 0);
+    assert.ok(statusBytes > 0, "The exact complete status is archived without truncating its runtime fingerprint.");
     context.diagnostic(`Status retains ${String(files.length)} implementation files in ${String(statusBytes)} bytes.`);
   });
   void test("synthetic facade uses an ephemeral loopback listener isolated from the production bridge port", async () => {
@@ -798,7 +806,7 @@ void describe("published facade contracts", { concurrency: false }, () => {
     const selectors = requireRecord(query["properties"], "SDK selectors");
     assert.deepEqual(Object.keys(selectors).toSorted(), ["detail", "kind", "limit", "namespace", "offset", "reference", "search"]);
     const reference = requireRecord(selectors["reference"], "SDK reference selector");
-    assert.deepEqual(reference["enum"], ["reviewed-installed", "official-latest", "installed-209"]);
+    assert.deepEqual(reference["enum"], ["reviewed-installed", "official-latest", "installed-209", "packaged-4197"]);
     const limit = requireRecord(selectors["limit"], "SDK page limit");
     assert.equal(limit["maximum"], 100);
   });

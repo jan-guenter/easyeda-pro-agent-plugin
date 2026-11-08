@@ -7,3 +7,15 @@ A separate source/metadata table now covers the selected publisher class, pendin
 The source confirms that completed initialization sets the publisher's own `isDestroy` false, even though its constructor omits that field. The zero-delay timer calls the original batch publisher, resolves its captured Promise and then clears `pendTimer`; it retains the Promise field. Publishing empties the old per-document pending arrays and replaces the cache object. The source reads its module topic namespace, not the instance `busTopic.pushPend`. The live controller must bind that actual namespace and its data property before publication.
 
 Both TypeScript projects, strict changed-file lint and two focused actual Inspector/refusal cases pass. Source audit tools and raw metadata remain private. No application, timer, publisher instance, native helper, primitive write or Save was created. The controller's original callback, receiver and publication completion work remains separate.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `307aac56c041410c494947a6a598c82e757410f4`; its
+committed tree is `9cd2ceede8a6f850e12e413e7ace7bf28280f3b7`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

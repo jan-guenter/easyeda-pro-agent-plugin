@@ -96,7 +96,10 @@ export class CurrentProjectStructureObservationWorkflow {
     this.#current(); need(!this.#busy && !this.#armAttempted, "ARM_CONSUMED"); this.#armAttempted = true; this.#busy = true;
     try {
       const lease = await this.#input.main.issueStructureLease(this.#input.capability, this.#input.construction);
-      this.#main = new CurrentProjectStructureMainObserver(lease, this.#plan); this.#current();
+      this.#main = new CurrentProjectStructureMainObserver(lease, this.#plan);
+      // Cancellation may have won while the original issuer was pending. Its
+      // Newly received lease must be revoked before the retained error escapes.
+      if (this.#failed) { this.#main.cancel(); } this.#current();
       await this.#main.arm(); this.#current(); await this.#worker.arm(); this.#current(); this.#armed = true;
     } catch (error) { this.#stop(error); throw error; } finally { this.#busy = false; }
   }

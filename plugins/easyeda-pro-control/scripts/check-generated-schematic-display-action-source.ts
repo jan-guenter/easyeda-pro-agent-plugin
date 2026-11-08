@@ -10,9 +10,10 @@ import { qualifyGeneratedSchematicDisplayActionSource } from "../server/src/gene
 import { GENERATED_SCHEMATIC_DISPLAY_ACTION_SOURCE_ROLES as ROLES, GENERATED_SCHEMATIC_DISPLAY_ACTION_SOURCE as SOURCES } from "../server/src/generated-schematic-display-action-source.ts";
 
 async function main(): Promise<void> {
-  const assetsRoot = process.argv[2] ?? "/mnt/c/Program Files/easyeda-pro/resources/app/assets";
+  const assetsRoot = process.argv[2] ?? process.env["EASYEDA_ASSETS_ROOT"];
+  if (assetsRoot === undefined || assetsRoot === "") { throw new Error("EASYEDA_ASSETS_ROOT_REQUIRED"); }
   for (const [index, profile] of SOURCES.entries()) {
-    const bytes = await readFile(join(assetsRoot, profile.relativePath)), source = bytes.toString("utf8");
+    const bytes: Buffer = await readFile(join(assetsRoot, profile.relativePath)), source: string = bytes.toString("utf8");
     assert.equal(bytes.length, profile.bytes); assert.equal(createHash("sha256").update(bytes).digest("hex"), profile.sha256);
     assert.equal(qualifyGeneratedSchematicDisplayActionSource({ scriptSource: source }), index);
     assert.ok(source.includes(index === 0 ? 'var Fl="parent";' : 'var Zl="parent";'));

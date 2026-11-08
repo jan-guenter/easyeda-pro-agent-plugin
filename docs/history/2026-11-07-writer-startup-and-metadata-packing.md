@@ -38,3 +38,15 @@ checks are retained privately while actual timer and full producer-drain APIs
 are integrated. They are not part of this ready source increment. No writer
 route, connected validation, publication, installation or production edit is
 claimed. Tracked helper files, external pins and installed caches are unchanged.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `418517e48f37720da759a62a311472138f80d4dc`; its
+committed tree is `1b13b98aca79600033b417165e7be8a3943f9f9c`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

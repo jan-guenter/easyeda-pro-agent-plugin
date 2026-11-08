@@ -1,7 +1,7 @@
+import {INSTALLED_EASYEDA_SOURCE_SKIP_REASON,readConfiguredEasyedaAsset} from "./helpers/installed-easyeda-source.ts";
 /** Pinned source-only compilation and inert original-method control. Synthetic
  * frame/native-string fixtures issue no native origin or completion authority. */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { Session } from "node:inspector/promises";
 import { test } from "node:test";
 import vm from "node:vm";
@@ -11,8 +11,7 @@ import { CURRENT_PROJECT_LIBRARY_REFRESH_REQUESTS as REQUESTS, currentProjectLib
 import { currentProjectLibraryRefreshArrayObject,decodeCurrentProjectLibraryRefreshFrame,decodeCurrentProjectLibraryRefreshFunction } from "../src/current-project-library-refresh-replies.ts";
 import { CURRENT_PROJECT_LIBRARY_REFRESH_METHODS as METHODS, CURRENT_PROJECT_OPEN_STARTUP_METHODS as OPENING,CURRENT_PROJECT_LIBRARY_REFRESH_FUNCTION_PROFILES as PROFILES, CURRENT_PROJECT_LIBRARY_REFRESH_SITES as SITES, qualifyCurrentProjectLibraryRefreshSource } from "../src/current-project-library-refresh-source.ts";
 
-const installed="/mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-mgr/3.2.185.bf63a159/js/project-worker.js";
-async function source():Promise<string|null>{try{return await readFile(installed,"utf8");}catch(error){if(error!==null&&typeof error==="object"&&"code"in error&&error.code==="ENOENT"){return null;}throw error;}}
+const source=():Promise<string|null>=>readConfiguredEasyedaAsset("pro-mgr/3.2.185.bf63a159/js/project-worker.js");
 function fixture(full:string):Readonly<{run:(program:string)=>unknown}> {
   const context=vm.createContext({});
   const classRanges=[['Hm',1_651_566,1_652_838],['mr',1_844_116,1_844_807],['Kr',1_946_988,1_947_733],['Ld',1_947_741,1_949_996],['kd',1_950_004,1_952_422],['Bd',1_952_430,1_954_611],['Md',1_954_619,1_957_297],['jd',1_957_305,1_959_498],['Fd',1_959_506,1_962_159],['Ud',1_962_167,1_964_458],['fu',1_964_491,1_967_988]] as const;
@@ -26,7 +25,7 @@ const project=Object.create({get updateData(){return this._updateData}});project
   return Object.freeze({run:(program:string):unknown=>vm.runInContext(program,context)});
 }
 void test("first loop suspension excludes todo/condition and cancels only its original RAF once",async context=>{
-  const full=await source();if(full===null){context.skip("Pinned installed source unavailable");return;}const f=fixture(full);
+  const full=await source();if(full===null){context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);return;}const f=fixture(full);
   const suspended=structuredClone(f.run(`(${PROGRAMS.suspend}).call(original)`));assert.deepEqual(suspended,{schema:"private.project-library-refresh-suspend.v1",firstTodoExcluded:true,timerMinusOne:true});
   await f.run("refresh.loop(false)");assert.equal(f.run("clockReads"),1);assert.equal(f.run("rpcCalls"),0);assert.equal(f.run("scheduled"),1);
   f.run(`const returned=(${PROGRAMS.loopReturned}).call([refresh,false,[],refresh,42,undefined],original)`);
@@ -36,13 +35,13 @@ void test("first loop suspension excludes todo/condition and cancels only its or
   assert.equal(f.run(`(${PROGRAMS.mountReturned}).call([refresh],original).originalLoopAwaitCompleted`),true);assert.equal(f.run(`(${PROGRAMS.reprove}).call(original).fullProducerFrontierVerified`),false);assert.equal(f.run(`(${PROGRAMS.reprove}).call(original).originalMountPromiseObjectRetained`),false);assert.equal(f.run("cancelled"),1);
 });
 void test("original descriptors, source, cache roster and RAF slot drift refuse before cancellation",async context=>{
-  const full=await source();if(full===null){context.skip("Pinned installed source unavailable");return;}
+  const full=await source();if(full===null){context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);return;}
   for(const change of ['refresh.animation=32','refresh._timer=1','refresh.profiles.extra={}','refresh.symbol.cache.cache.extra={}','globalThis.PROJECT={}','Hm.prototype.suspend=function(){}','refresh.conditions[0]=async()=>true','Object.defineProperty(refresh,"timer",{set(){throw Error("unexpected setter")}})' ]){
     const f=fixture(full);f.run(`(${PROGRAMS.suspend}).call(original)`);await f.run("refresh.loop(false)");f.run(`const returned=(${PROGRAMS.loopReturned}).call([refresh,false,[],refresh,42,undefined],original)`);f.run(change);assert.throws(()=>f.run(`(${PROGRAMS.cancel}).call(returned)`),change);assert.equal(f.run("cancelled"),0);
   }
 });
 void test("complete pinned opening closure and every fixed loop point compile without app execution",async context=>{
-  const full=await source();if(full===null){context.skip("Pinned installed source unavailable");return;}qualifyCurrentProjectLibraryRefreshSource(full);assert.equal(OPENING.length,60);assert.equal(Object.keys(METHODS).length,19);assert.throws(()=>{ qualifyCurrentProjectLibraryRefreshSource(`${full}\n`); });
+  const full=await source();if(full===null){context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);return;}qualifyCurrentProjectLibraryRefreshSource(full);assert.equal(OPENING.length,60);assert.equal(Object.keys(METHODS).length,19);assert.throws(()=>{ qualifyCurrentProjectLibraryRefreshSource(`${full}\n`); });
   const inspector=new Session();inspector.connect();try{await inspector.post("Runtime.enable");await inspector.post("Debugger.enable");const compiled=await inspector.post("Runtime.compileScript",{expression:full,sourceURL:"inert-library-refresh-source-only.js",persistScript:true});assert.ok(compiled.scriptId!==undefined);
     for(const [role,site]of Object.entries(SITES)){const found:unknown=await inspector.post("Debugger.getPossibleBreakpoints",{start:{scriptId:compiled.scriptId,lineNumber:site.lineNumber,columnNumber:site.columnNumber},end:{scriptId:compiled.scriptId,lineNumber:site.lineNumber,columnNumber:site.columnNumber+1},restrictToFunction:true});assert.deepEqual(found,{locations:[{scriptId:compiled.scriptId,lineNumber:site.lineNumber,columnNumber:site.columnNumber,...(role==="loopReturned"||role==="mountReturned"?{type:"return"}:{})}]},role);}
   }finally{inspector.disconnect();}
@@ -61,7 +60,7 @@ void test("fixed selector grammar and complete native reservation accept no call
   assert.throws(()=>validateCurrentProjectLibraryRefreshCommand({phase:"library-refresh-resume",role:"refreshTodo",method:"Debugger.resume",params:{}}));
 });
 void test("actual Inspector class metadata has the strict constructor shape and rejects extra own fields",async context=>{
-  const full=await source();if(full===null){context.skip("Pinned installed source unavailable");return;}
+  const full=await source();if(full===null){context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);return;}
   const classes=PROFILES.filter(row=>!row.native);let isolated=full.replaceAll(/[^\r\n]/gu," ");
   for(const row of classes){const prefix=`;var ${row.name}=`;isolated=isolated.slice(0,row.start-prefix.length)+prefix+full.slice(row.start,row.end)+isolated.slice(row.end);}
   const inspector=new Session();inspector.connect();try{await inspector.post("Runtime.enable");

@@ -14,7 +14,7 @@ import { CURRENT_PCB_VIA_WRITE_EXECUTE_ACKNOWLEDGEMENTS } from "../src/current-p
 const request = { action: "prepare", fixtureOperationId: "original-closed-data", operationId: "pcb209-via-write-coordinator-test",
   via: { netName: "", xMil: 100, yMil: 100, holeDiameterMil: 20, diameterMil: 40 } } as const;
 type Mode = "no-journal" | "terminal" | "sidecar" | "lost-ack";
-async function fixture(mode: Mode = "no-journal"): Promise<Readonly<{ coordinator: CurrentPcbViaWriteCoordinator; calls: string[]; releasePreparation: () => void; releasePublication: () => void; failExecution: () => void }>> {
+async function fixture(mode: Mode = "no-journal", abortAtBirth = false): Promise<Readonly<{ coordinator: CurrentPcbViaWriteCoordinator; calls: string[]; releasePreparation: () => void; releasePublication: () => void; failExecution: () => void; birthAbort: () => Promise<unknown> }>> {
   const calls: string[] = [], url = new URL("../src/current-pcb-via-write-coordinator.ts", import.meta.url);
   const originalRequire = createRequire(url); const source = await readFile(url, "utf8");
   const compiled = await transform(source, { loader: "ts", format: "cjs", target: "node24" });
@@ -26,9 +26,10 @@ async function fixture(mode: Mode = "no-journal"): Promise<Readonly<{ coordinato
   const bindings = Object.freeze({ plan, journal, value: Object.freeze({ originalInertClosure: true }), assertCurrent: (): Promise<void> => Promise.resolve() });
   const inspection = Object.freeze({ operationId: request.operationId, saved: false, reopened: false });
   let aborted = false, consumed = false, failed = false, started = false;
+  let originalBirthAbort: Promise<unknown> | null = null, triggerBirthAbort: (() => void) | null = null;
   /* oxlint-disable eslint/class-methods-use-this -- The inert replacement preserves the production instance method signatures without inventing production private state. */
   class Workflow {
-    public constructor(actualOptions: unknown, actualPlan: unknown) { assert.equal(actualOptions, options); assert.equal(actualPlan, plan); calls.push("workflow"); }
+    public constructor(actualOptions: unknown, actualPlan: unknown) { assert.equal(actualOptions, options); assert.equal(actualPlan, plan); calls.push("workflow"); if (abortAtBirth) { queueMicrotask(() => { triggerBirthAbort?.(); }); } }
     public execute(): Promise<never> { assert.equal(started, false); assert.equal(aborted, false); started = true; calls.push("execute"); return execution.promise; }
     public requireOriginalFailurePublicationSource(): typeof failureSource | null { assert.equal(started && failed, true); calls.push("original-failure-source"); return mode === "no-journal" ? null : failureSource; }
     public settlePublication(): Promise<void> { calls.push("journal-settlement"); return Promise.resolve(); }
@@ -66,7 +67,12 @@ async function fixture(mode: Mode = "no-journal"): Promise<Readonly<{ coordinato
   const Constructor = loaded.exports["CurrentPcbViaWriteCoordinator"]; assert.ok(typeof Constructor === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only the explicit inert source/checkpoint/plan/workflow imports differ; actual private coordinator state and scheduling run unchanged.
   const coordinator = Reflect.construct(Constructor, [options, sourceToken, request]) as CurrentPcbViaWriteCoordinator;
-  return { coordinator, calls, releasePreparation: (): void => { preparation.resolve(true); }, releasePublication: (): void => { publication.resolve(true); }, failExecution: (): void => { failed = true; execution.reject(new Error("original execution failure")); } };
+  triggerBirthAbort = (): void => { const pending = coordinator.run({ action: "abort", operationId: request.operationId, confirmOriginalJobOnly: true }); originalBirthAbort = pending;
+    void (async (): Promise<void> => { try { await pending; } catch {
+      // Retain the original rejected Promise for the regression's own await.
+    } })();
+  };
+  return { coordinator, calls, birthAbort: (): Promise<unknown> => { assert.ok(originalBirthAbort !== null); return originalBirthAbort; }, releasePreparation: (): void => { preparation.resolve(true); }, releasePublication: (): void => { publication.resolve(true); }, failExecution: (): void => { failed = true; execution.reject(new Error("original execution failure")); } };
 }
 void test("equal-looking source JSON refuses before checkpoint or native allocation", () => {
   assert.throws(() => Reflect.construct(CurrentPcbViaWriteCoordinator, [Object.freeze({}), {}, request]), /Original unconsumed/u);
@@ -122,4 +128,14 @@ void test("a genuine already-terminal refusal needs fresh original journal proof
   await f.coordinator.run({ action: "execute", operationId: request.operationId, ...CURRENT_PCB_VIA_WRITE_EXECUTE_ACKNOWLEDGEMENTS }); f.failExecution(); await nextTurn();
   assert.ok(f.calls.includes("fresh-original-journal")); assert.equal(f.calls.includes("original-sidecar"), false);
   assert.equal(f.coordinator.hasActiveReservation(), false); assert.equal(f.coordinator.inspect().verification.saved, false);
+});
+
+void test("abort after preparation creates the workflow but before execute continuation never publishes a fake failure", async () => {
+  const f = await fixture("no-journal", true);
+  const execution = f.coordinator.run({ action: "execute", operationId: request.operationId, ...CURRENT_PCB_VIA_WRITE_EXECUTE_ACKNOWLEDGEMENTS });
+  f.releasePreparation(); await assert.rejects(execution, /EXECUTION_ABORTED_BEFORE_BIRTH/u); await f.birthAbort();
+  assert.deepEqual(f.calls, ["consume-source", "checkpoint", "plan", "workflow", "abort"]);
+  assert.equal(f.coordinator.failureObserved(), false); assert.equal(f.coordinator.hasActiveReservation(), false);
+  await f.coordinator.shutdownOriginal(); assert.equal(f.calls.includes("execute"), false); assert.equal(f.calls.includes("original-failure-source"), false);
+  assert.equal(f.coordinator.hasActiveReservation(), false);
 });

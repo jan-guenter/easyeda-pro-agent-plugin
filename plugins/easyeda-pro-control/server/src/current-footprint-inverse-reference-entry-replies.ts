@@ -1,0 +1,12 @@
+/** Exact original yw point and M8 call site. */
+import{z}from"zod";
+import{captureCurrentFootprintInversePreferenceReply as capture}from"./current-footprint-inverse-public-preferences-replies.ts";
+import{CURRENT_FOOTPRINT_INVERSE_REFERENCE_ENTRY_POINT as POINT}from"./current-footprint-inverse-reference-entry-programs.ts";
+
+const handle=z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
+const remote=z.strictObject({type:z.enum(["object","function","undefined","number","string","boolean"]),subtype:z.string().optional(),className:z.string().optional(),description:z.string().optional(),objectId:handle.optional(),value:z.unknown().optional(),unserializableValue:z.string().optional()});
+const location=z.strictObject({scriptId:handle,lineNumber:z.number().int().nonnegative(),columnNumber:z.number().int().nonnegative()});
+const frame=z.strictObject({callFrameId:handle,functionName:z.string(),functionLocation:location,location,url:z.string(),scopeChain:z.array(z.unknown()).max(16),this:remote,canBeRestarted:z.boolean().optional()});
+const packet=z.strictObject({method:z.literal("Debugger.paused"),sessionId:handle,params:z.strictObject({callFrames:z.array(frame).min(1).max(64),reason:z.enum(["other","debugCommand"]),hitBreakpoints:z.tuple([handle]),asyncStackTrace:z.unknown().optional(),asyncStackTraceId:z.unknown().optional()})});
+function need(value:boolean):asserts value{if(!value){throw new Error("INVERSE_REFERENCE_ENTRY_PAUSE");}}
+export function currentFootprintInverseReferenceEntryPause(input:unknown,sessionId:string,scriptId:string,breakpointId:string):Readonly<{frame:string;caller:string}>{const raw=packet.parse(capture(input));need(raw.sessionId===sessionId&&raw.params.hitBreakpoints[0]===breakpointId&&raw.params.callFrames.length===2);const caller=raw.params.callFrames[1],top=raw.params.callFrames[0];need(top!==undefined&&caller!==undefined);const same=(f:typeof top,name:string,line:number,fn:number,pcLine:number,pc:number):void=>{need(f.functionName===name&&f.functionLocation.scriptId===scriptId&&f.functionLocation.lineNumber===line&&f.functionLocation.columnNumber===fn&&f.location.scriptId===scriptId&&f.location.lineNumber===pcLine&&f.location.columnNumber===pc);};same(top,"yw",POINT.functionLine,POINT.functionColumn,POINT.lineNumber,POINT.columnNumber);same(caller,"delete",POINT.callerLine,POINT.callerFunction,POINT.callerLine,POINT.callerColumn);return Object.freeze({frame:top.callFrameId,caller:caller.callFrameId});}

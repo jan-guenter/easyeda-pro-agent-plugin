@@ -58,7 +58,7 @@ export class CurrentPcbViaWriteWorkflow {
   #saveEntered = false; #saveAcknowledgement: CurrentPcbViaWriteStageResult | null = null;
   #cleanup: Promise<void> | null = null; #cleanupSettled = false; #cleanupExitExhausted = false;
   #cleanupPublicationBlocked = false; #abortAcknowledged = false;
-  #cleanupBinding: string | null = null; #settlement: Promise<void> | null = null;
+  #cleanupBinding: string | null = null; #settlement: Promise<void> | null = null; #settlementSettled = false;
   #abort: Promise<void> | null = null; #release: Promise<void> | null = null;
   #launchLease: CurrentPcbDiagnosticLaunchLease | null = null; #launchLeaseReleased = false;
   #failureClosure: CurrentPcbViaWriteFailureClosure | null = null;
@@ -198,10 +198,16 @@ export class CurrentPcbViaWriteWorkflow {
     group.requireOriginalSaveDrained(); this.#current(); await this.#journal.append("save-result", ack); this.#current();
   }
   async #observeExit(owner: CurrentPcbViaWriteOwner, cleanup: boolean): Promise<void> {
+    if (cleanup) { this.#cleanupExitExhausted = false; }
+    const binding = owner.status().binding; need(binding !== null, "ORIGINAL_EXIT_BINDING"); const text = canonicalJson(binding);
+    const same = (): void => {
+      this.#current(cleanup); need(this.#owner === owner && canonicalJson(owner.status().binding) === text &&
+        (!cleanup || this.#cleanupBinding === text), "ORIGINAL_EXIT_BINDING");
+    };
     for (let index = 0; index < EXIT.observations; index += 1) {
-      this.#current(cleanup); const pending = this.#retain(owner.observeTermination());
-      if (await pending) { this.#current(cleanup); originalCurrentPcbViaWriteTermination(owner); this.#closed = true; return; }
-      this.#current(cleanup); if (index + 1 < EXIT.observations) { await delay(EXIT.delayMilliseconds); }
+      same(); const pending = this.#retain(owner.observeTermination());
+      if (await pending) { same(); originalCurrentPcbViaWriteTermination(owner); this.#closed = true; return; }
+      same(); if (index + 1 < EXIT.observations) { await delay(EXIT.delayMilliseconds); }
     }
     if (cleanup) { this.#cleanupExitExhausted = true; } throw new Error("PCB_VIA_WORKFLOW_ORIGINAL_EXIT_NOT_OBSERVED");
   }
@@ -403,8 +409,9 @@ export class CurrentPcbViaWriteWorkflow {
     this.#failurePublicationSource ??= Object.freeze({ token, plan: this.#plan, journal: this.#journal });
     need(this.#failurePublicationSource.token === token, "ORIGINAL_FAILURE_PUBLICATION_SOURCE"); return this.#failurePublicationSource;
   }
-  /** One later read-only exit round can settle the original exhausted wait.
-   * It never repeats Abort, Close or the original helper-release Promise. */
+  /** Each explicit settlement may observe another bounded read-only exit round
+   * only after genuine exhaustion. Pending rounds remain shared; no Abort, Close
+   * or original helper-release Promise is repeated. */
   public settleCleanup(): Promise<void> {
     if (this.#reader !== null) {
       const reader = this.#reader;
@@ -412,17 +419,22 @@ export class CurrentPcbViaWriteWorkflow {
       return this.#settlement;
     }
     const cleanup = this.#cleanup; need(cleanup !== null, "ORIGINAL_CLEANUP_NOT_SUBMITTED");
-    if (this.#settlement !== null) { return this.#settlement; }
+    const previous = this.#settlement;
+    if (previous !== null && (!this.#settlementSettled || !this.#cleanupExitExhausted)) { return previous; }
     if (!this.#cleanupSettled || !this.#cleanupExitExhausted && !this.#cleanupPublicationBlocked) { return cleanup; }
     const publicationRecovery = this.#cleanupPublicationBlocked;
     const binding = this.#cleanupBinding, owner = this.#owner;
     if (!publicationRecovery) { need(owner !== null && binding !== null, "ORIGINAL_SETTLEMENT_BINDING"); }
+    // Consume eligibility before any await; a later protocol, journal, binding or release failure cannot inherit prior exhaustion.
+    this.#cleanupExitExhausted = false; this.#settlementSettled = false;
     const settlement = (async (): Promise<void> => {
-      await Promise.allSettled([cleanup]); await this.#journalReady(); this.#current(true);
-      if (publicationRecovery) { await this.#runCleanup(); this.#releaseOriginalLaunchExclusion(); return; }
-      need(owner !== null && binding !== null, "ORIGINAL_SETTLEMENT_BINDING");
-      need(canonicalJson(owner.status().binding) === binding, "ORIGINAL_SETTLEMENT_BINDING"); await this.#observeExit(owner, true); this.#current(true);
-      await this.#runCleanup(); this.#releaseOriginalLaunchExclusion();
+      try {
+        await Promise.allSettled(previous === null ? [cleanup] : [cleanup, previous]); await this.#journalReady(); this.#current(true);
+        if (publicationRecovery) { await this.#runCleanup(); this.#releaseOriginalLaunchExclusion(); return; }
+        need(owner !== null && binding !== null, "ORIGINAL_SETTLEMENT_BINDING");
+        need(canonicalJson(owner.status().binding) === binding, "ORIGINAL_SETTLEMENT_BINDING"); await this.#observeExit(owner, true); this.#current(true);
+        await this.#runCleanup(); this.#releaseOriginalLaunchExclusion();
+      } finally { this.#settlementSettled = true; }
     })(); this.#settlement = settlement; return settlement;
   }
   #failureClosureValue(): CurrentPcbViaWriteFailureClosureValue {
