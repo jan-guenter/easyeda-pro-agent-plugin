@@ -44,6 +44,13 @@ void test("legacy ownmethod is admitted only under its distinct original wrapper
   assert.ok(value !== null && typeof value === "object"); assert.equal(Reflect.get(value, "mode"), "legacy"); assert.equal(Reflect.get(value, "method"), "HEAD");
   runInContext('Object.defineProperty(legacy.req,"method",{get:forbidden});', context); assert.throws(() => runInContext(`(${CALLS.read}).call(saved)`, context)); assert.equal(runInContext("calls", context), 0);
 });
+void test("the copied request SQL proof retains the v2 complete module scope", () => {
+  for (const mutation of ['F5.extra=1', 'F5.types.extra=1', 'Object.setPrototypeOf(F5,{})', 'F5[Symbol("extra")]=1']) {
+    const context = fixture(); runInContext(mutation, context);
+    assert.throws(() => runInContext(`(${CALLS.read}).call(bound)`, context), /SELECTED_MAIN_REQUEST_BINDING/u);
+    assert.equal(runInContext("calls", context), 0);
+  }
+});
 void test("the installed PE embedded builtin qualifies exact complete source; source JSON and accessors cannot issue it", async context => {
   const executable = configuredEasyedaExecutablePath();
   if (executable === null) { context.skip(INSTALLED_EASYEDA_EXECUTABLE_SKIP_REASON); return; }

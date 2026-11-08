@@ -46,16 +46,17 @@ function nativeArray(): Data {
   return { result: [...["Database", "Statement", "", "Date", "now"].map((name, index) => property(String(index), { type: "function", className: "Function", description: `function ${name}() { [native code] }`, objectId: `native${String(index)}` }, true, true)),
     property("length", { type: "number", value: 5 }, true, false, false)], internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", objectId: "array" } }] };
 }
-function nativeMetadata(id: string): Data {
+function nativeMetadata(id: string, unsupported = false): Data {
   let name = ""; if (id === "native0") { name = "Database"; } else if (id === "native1") { name = "Statement"; } else if (id === "native3") { name = "Date"; } else if (id === "native4") { name = "now"; }
   const result = [property("name", { type: "string", value: name }), property("length", { type: "number", value: name === "Date" ? 7 : 0 })];
   if (name !== "" && name !== "now") { result.push(property("prototype", { type: "object", className: "Object", objectId: "prototype" }, false, false, false)); }
   if (name === "Date") { for (const key of ["now", "parse", "UTC"]) { result.push(property(key, { type: "function", className: "Function", description: `function ${key}() { [native code] }`, objectId: `date-${key}` }, true, false)); } }
+  if (unsupported) { result.push(property("unexpected", { type: "string", value: "synthetic-private-metadata" })); }
   return { result, internalProperties: [{ name: "[[Prototype]]", value: { type: "function", className: "Function", objectId: "function" } },
     { name: "[[Scopes]]", value: { type: "object", subtype: "internal#scopeList", className: "Array", description: "Scopes[0]", objectId: "scopes" } }] };
 }
 const configPacket = (role: "jb" | "dc", site: "run" | "prepare" | "prepared", sql: string, transactionDepth: 0 | 1): Data => ({ recognized: true, role, site, sql, transactionDepth, parametersEmpty: true, designWriteGrant: false, nativeCompletionProven: false });
-async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = null): Promise<Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; phases: string[]; transport: CurrentFootprintCopyMainBackendTransport;
+async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = null, unsupportedNative = false): Promise<Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; phases: string[]; transport: CurrentFootprintCopyMainBackendTransport;
   injectStructurePoint: (role: CurrentPcbViaMainStructureFrameRole, caller?: CurrentPcbViaMainStructureFrameRole) => void; injectHistoryPoint: (role: CurrentPcbViaMainHistoryFrameRole, caller?: CurrentPcbViaMainHistoryFrameRole) => void; injectBeginPoint: (role: "save" | "transaction" | "run" | "callback" | "returned") => void; injectViaPoint: (role: "context" | "controller" | "editHead") => void; loseNextDriverStep: () => void; injectRequest: (method: string, foreign?: boolean, sourceDelta?: number, history?: boolean | "structure") => void; injectMutation: () => void; injectDriver: () => void; resumes: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
   const base = mainBackendTransportFixture();
   const ids = new Map<number, number>(), phases: string[] = [], queue: Data[] = [], retainedRegistration: Data[] = [];
@@ -98,7 +99,7 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
       result = { result: { type: "object", subtype: "array", className: "Array", description: `Array(${String(count)})`, objectId: command.phase } };
     } else if (command.phase === "sql-fence-properties") {
       if (command.params.objectId === "sql-fence-frame") { result = importsArray(); }
-      else { result = command.params.objectId === "sql-fence-native-frame" ? nativeArray() : nativeMetadata(command.params.objectId); }
+      else { result = command.params.objectId === "sql-fence-native-frame" ? nativeArray() : nativeMetadata(command.params.objectId, unsupportedNative && command.params.objectId === "native0"); }
     }
     else if (command.phase === "sql-fence-require") { result = { result: { type: "boolean", value: true } }; }
     else if (command.phase === "sql-fence-startup-version") { result = { result: { type: "object", subtype: "array", className: "Array", description: "Array(6)", objectId: "original-startup-tracker" } }; }
@@ -237,6 +238,17 @@ void test("actual runner arms every selected-file site before SQLite import and 
   assert.equal(f.runner.selectedSqlFenceState()["heldSite"], "run"); assert.equal(f.runner.selectedSqlFenceState()["selectedProjectMutationsResumed"], 0);
   await f.runner.pumpSelectedSqlFence(); assert.equal(f.resumes(), 55); assert.equal(f.phases.length, before);
   await assert.rejects(f.runner.prepareNormalClose(), /RETAIN_THROUGH_EXIT/u); await assert.rejects(f.runner.release(), /RETAIN_THROUGH_EXIT/u);
+});
+void test("an unsupported native ABI retains its source-issued diagnostic before startup SQL or resume", async () => {
+  const f = await fixture(0, null, true);
+  await assert.rejects(f.runner.observe(), /SELECTED_SQL_NATIVE_DATABASE/u);
+  const failure = f.runner.retained().failure;
+  assert.ok(typeof failure === "string"); assert.match(failure, /SELECTED_SQL_NATIVE_DATABASE_P4_[A-F\d]{16}$/u);
+  assert.equal(failure.includes("synthetic-private-metadata"), false);
+  assert.equal(f.phases.filter(phase => phase === "sql-fence-properties").length, 3);
+  assert.equal(f.phases.includes("sql-fence-require"), false);
+  assert.equal(f.phases.includes("sql-fence-startup-version"), false);
+  assert.equal(f.resumes(), 2); assert.equal(f.runner.selectedSqlFenceState()["ready"], false);
 });
 void test("an import pause at another actual column refuses before SQLite import continuation or conditional arming", async () => {
   const f = await fixture(1); await assert.rejects(f.runner.observe(), /SELECTED_SQL_LOCATION/u);

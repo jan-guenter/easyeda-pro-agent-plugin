@@ -1,3 +1,5 @@
+import {applyCurrentSchematicRelevanceNotificationNativeFragment} from "../server/src/current-schematic-relevance-notification-native-fragment.ts";
+import {applyCurrentSchematicRelevanceSdkGateNativeFragment} from "../server/src/current-schematic-relevance-sdk-gate-native-fragment.ts";
 import {applyCurrentSchematicRelevanceNormalCommandUiNativeFragment} from "../server/src/current-schematic-relevance-normal-command-ui-native-fragment.ts";
 import {applyCurrentSchematicRelevanceFileSaveUiNativeFragment} from "../server/src/current-schematic-relevance-file-save-ui-native-fragment.ts";
 import {applyCurrentSchematicRelevanceRenderDelegateNativeFragment} from "../server/src/current-schematic-relevance-render-delegate-native-fragment.ts";
@@ -75,7 +77,7 @@ import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES } from "../server/src/cu
 import { currentPcbDiagnosticFixedTableNativeSource } from "../server/src/current-pcb-diagnostic-fixed-table-native.ts";
 import { applyCurrentProjectStructureNativeFragment } from "../server/src/current-project-structure-native-fragment.ts";
 import { applyCurrentSchematicDisplayWriteNativeFragment } from "../server/src/current-schematic-display-write-native-fragment.ts";
-import { applyCurrentPcbViaWriteNativeFragment } from "../server/src/current-pcb-via-write-native-fragment.ts";
+import { applyCurrentPcbViaWriteNativeFragment, projectCurrentFootprintInverseViaSdkRuntime, projectCurrentSchematicViaSdkRuntime } from "../server/src/current-pcb-via-write-native-fragment.ts";
 import { applyManagedFixtureRegistrationNativeFragment } from "../server/src/managed-fixture-registration-native-fragment.ts";
 import { compactGeneratedCSharpIndentation } from "./csharp-generated-indentation.ts";
 import { currentFootprintCopyManagerRouteNativeSource } from "../server/src/current-footprint-copy-manager-route-native.ts";
@@ -269,6 +271,8 @@ export function generateWorkerStartupProtocol(source: string, layout: "diagnosti
     next = applyCurrentSchematicRelevanceRenderDelegateNativeFragment(next);
     next = applyCurrentSchematicRelevanceFileSaveUiNativeFragment(next);
     next = applyCurrentSchematicRelevanceNormalCommandUiNativeFragment(next);
+    next = applyCurrentSchematicRelevanceNotificationNativeFragment(next);
+    next = applyCurrentSchematicRelevanceSdkGateNativeFragment(next);
     next = applyCurrentSchematicRelevanceUiFixedCodec(next);
     next = applyCurrentSchematicRelevanceRunGuardNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplayClockNativeFragment(next);
@@ -290,7 +294,9 @@ export function generateWorkerStartupProtocol(source: string, layout: "diagnosti
   if (layout === "inverse") {
     next = projectCurrentFootprintInverseSchematicRuntime(next);
     next = projectCurrentFootprintInverseComponentRuntime(next);
+    next = projectCurrentFootprintInverseViaSdkRuntime(next);
   }
+  if(layout==="schematic"){next=projectCurrentSchematicViaSdkRuntime(next);}
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
   assertCurrentFootprintCopyForwardNativeRequestIds(next);
   if(layout==="inverse"){next=inverseSmokeVectorView(next,projectCurrentFootprintInverseSmokeVectors);}

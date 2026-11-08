@@ -1,13 +1,26 @@
 # Project history
 
+- [2026-11-08 Fixed selected-Main helper storage](2026-11-08-selected-main-native-program-sharing.md). Lossless shared JOIN/SCOPE table data restores every prior compiler byte and retains expanded length/hash checks without changing caps or authority.
+
+- [2026-11-08 Original notifications through the SDK action result](2026-11-08-original-notification-sdk-hold.md). Same-stream queued bodies and original visitor Promises stop at the held action-result marker; full Modify/worker/Save remain closed.
+- [2026-11-08 Inverse SDK projection hook](2026-11-08-inverse-sdk-projection-hook.md). Exact inverse-only omission of an unreachable SDK family, unchanged other layouts and recovered compiler space under existing bounds.
+- [2026-11-08 Closed-purpose Via SDK source projection](2026-11-08-closed-purpose-via-sdk-projection.md). Exact unused-member replacement with distinct schematic/inverse compatibility refusals and preserved fixed storage bounds.
 - [2026-11-08 PR192 provenance and review limits](2026-11-08-pr192-provenance-and-review-limits.md). All five inline issues and two nits corrected, specific test-helper docstrings, and explicit CodeRabbit coverage exclusions.
 
 - [2026-11-08 Main import capture diagnostics](2026-11-08-main-import-capture-diagnostics.md). Via d failed before opening and cleaned up automatically; static failure labels and one passive operand check retain the fixed restrictions.
 
 - [2026-11-08 Combined UI lint correction](2026-11-08-combined-ui-lint-correction.md). Retained full-lint failure, corrected premature success report, explicit notify proof and separately observed focused check exits.
+- [2026-11-08 Original DEL callback hold](2026-11-08-inverse-del-callback-hold.md). One source-bound RPC continuation, fresh descriptor guards and correlated helper receipts, stopping before the selected handler; exact tested source seal and compiler bounds recorded.
+
 - [2026-11-08 Original DEL manager runtime seal](2026-11-08-inverse-del-manager-runtime-seal.md). Plugin-only immutable test payload, actual owner/native/pipe preparation, retained async-return limits, and explicit correction of the failed strict-lint result.
 
 - [2026-11-08 Original inverse delete collateral preparation](2026-11-08-inverse-delete-collateral-preparation.md). Actual same-project source/row join and complete absent-tab census before DEL continuation; original execution and dropped-Promise receipts remain required.
+- [2026-11-08 Selected Main N-API3 metadata](2026-11-08-selected-main-napi3-metadata.md). Two source-backed complete constructor profiles preserve old native guards and issue only bounded role/count/shape diagnostics on refusal.
+
+- [2026-11-08 Selected Main cold CommonJS capture](2026-11-08-selected-main-cold-util-capture.md). Fixed v2 unused-lazy-export scope, complete module roster/prototype reproof and cold Inspector controls preserve the side-effect and SQL guards.
+
+- [2026-11-08 Original watcher and React dispatch data](2026-11-08-schematic-notification-data.md). Complete ordered Maps, native bound arguments and passive fiber/queue snapshots with separate event and completion custody.
+
 - [2026-11-08 DEL descriptor guards within one invocation](2026-11-08-inverse-del-invocation-guards.md). Fresh per-call traversal preserves every snapshot and rejects cycles without carrying checks across awaits.
 
 - [2026-11-08 Fresh DEL manager preparation](2026-11-08-inverse-del-manager-preparation.md). Readonly original queue, callback, singleton and selected method custody; no dispatch or worker Job grant.

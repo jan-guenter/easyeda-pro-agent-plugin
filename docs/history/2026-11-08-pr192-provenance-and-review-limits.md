@@ -51,3 +51,22 @@ updated to supply the new passive import Array(4) metadata, without bypassing
 the decoder; all eighteen SQL-fence runner cases passed. That check used
 `1edc26e4` plus the peer patch before the comment-only increment. The complete
 frozen batch still needs its mandatory types, build and compatibility checks.
+
+## PR193 follow-up
+
+CodeRabbit completed the first 50-path follow-up on source target `b3e04658`,
+with no inline review issues. Its general check measured 72.90 percent
+docstring coverage across 107 functions in 49 files, below the required
+80 percent; one file was too large. The separate title check requested a
+concrete description of the DEL manager/collateral work. The draft PR193 title
+is now "Add original DEL manager and collateral collectors". PR194's title
+is "Document validation provenance and test fixture contracts"; its full
+review was rate limited, not completed.
+
+Twenty-one further specific API contract docstrings now cover the new
+readonly collateral, DEL manager and UI-source validators. A parsed-AST and
+literal comparison against `51ff8465` proves all five source files are
+comment-only changes. Their strict type-aware lint exited zero. No later
+CodeRabbit coverage percentage is inferred; these additions still need the
+next source-batch review. The exact requested full-review comment remains the
+only review-trigger comment posted.

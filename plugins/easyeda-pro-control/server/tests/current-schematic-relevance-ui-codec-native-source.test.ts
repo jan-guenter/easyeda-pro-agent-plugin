@@ -1,5 +1,5 @@
 /* oxlint-disable import/max-dependencies -- This byte-preservation test must compare the nine independently owned native protocol emitters. */
-/** Source-factory refactoring preserves every prior complete native class byte,
+/** Source-factory refactoring preserves every current-base complete native class byte,
  * including its independently fixed rows, programs, markers and hash vectors. */
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
@@ -15,14 +15,14 @@ import {currentSchematicRelevanceStatusBusNativeSource as source7} from "../src/
 import {currentSchematicRelevanceStatusDeliveryNativeSource as source8} from "../src/current-schematic-relevance-status-delivery-native.ts";
 
 const originals=[
- [source0,7272,"e7e339ff50dca61376faa4af5e10ad562c0ffa191cf5bdf7cf62e3dd38a14e58"],
- [source1,10_486,"b11d952b899335cff27d8fe98abf3e59657c54b39ebbe08f521f9291b59edba5"],
- [source2,12_958,"1465f7584e390a0a288f8c480ab4c59725825f38fee1ef9225c822e4c4c2c668"],
- [source3,12_425,"4a2627c92000cd8158cee372d88de526faad39155650130ab72a8c49b27d9050"],
- [source4,10_489,"f41f1a0a47e4a957eec27b9cfd9607e199acff668e4edfbd4b2c39cbbc500470"],
- [source5,11_017,"468a1d61aa8b7b124b17e6a65ca58aac5a5494bbfa1b333b1ca5982c5269860d"],
- [source6,11_284,"a1e0a0c42e3092aa5d49b1a4f55142de2f2e3ec112b3d3917ec463761519bb5f"],
- [source7,9412,"406bdfa41045fe478df66d0290b5c4fbd8ede7e8f3b7a61c5c5cc2e5201fa80f"],
- [source8,9367,"88eaf8384bd4f3f2fe9140e9095232dcd91f36fdfa4330311af64a9e7b2e9a78"],
+ [source0,6420,"0b4356f608800b37ca0ffe4117931d4a63f37eb3878b671de0c4d2c0b741be1c"],
+ [source1,9634,"76c4462a5ec8ec5dfd85fe0c7eb43ba0bf3afe1ab883bee7a471173e34cabfdb"],
+ [source2,12_106,"d5cc5121a1143805b314b4d23475f52032b4290fc283c124883c8f12f39d9b9d"],
+ [source3,11_573,"56697c38ba4a15e745f02e6a090e9e9c50c1a5cc8fa3e372ac491f264dd11a5d"],
+ [source4,9637,"a1fda0cb7511d2d4e83508e5390573378b8ad69fff773b82566d89b8000d05e6"],
+ [source5,10_165,"f7a285ce4a411685fcfd316ef5f727089bcb19ad3aa4a13bcb628dc5bf86b8a1"],
+ [source6,10_432,"63298538f73cd3bd30789cc82c4f04643b4702346aeecd8cca9b1a4c09ee9671"],
+ [source7,8560,"1d68a0c48a37318b5bc8cdd07e77522fba4d07fd188a0203887d8ce32b5a42ed"],
+ [source8,8515,"c8ac0c0aa2659395b2e5a30153b221121566a92e55c59c8718494de1e30a4c53"],
 ]as const;
-void test("shared own7 source factory preserves all nine original complete C# class bytes",()=>{for(const[build,bytes,sha]of originals){const source=build();assert.equal(Buffer.byteLength(source),bytes);assert.equal(createHash("sha256").update(source).digest("hex"),sha);}});
+void test("shared own7 source factory preserves all nine current-base complete C# class bytes",()=>{for(const[build,bytes,sha]of originals){const source=build();assert.equal(Buffer.byteLength(source),bytes);assert.equal(createHash("sha256").update(source).digest("hex"),sha);}});

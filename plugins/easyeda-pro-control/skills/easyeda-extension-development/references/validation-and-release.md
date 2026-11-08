@@ -18,6 +18,29 @@ cases without revealing the intended answer.
 
 ## Failure and recovery cases
 
+### Cold-start Inspector captures
+
+When a capture includes Node builtins, control their initialization state as
+well as source bytes. An ESM `node:util` import can initialize its lazy named
+exports before the probe. A fresh CommonJS child can reproduce an application's
+still-cold builtin state without importing the facade or test module graph.
+Record the actual imports and runtime used; matching source files alone do not
+establish matching initialization state.
+
+Even `Object.getOwnPropertyDescriptor` can enter a native lazy data-property
+getter. Keep `throwOnSideEffect:true` on readonly captures and use an original
+side-effect trace to identify a refusal. Warming unrelated exports merely to
+make capture pass changes the state being tested. A getter-blind replacement
+needs a fixed source-derived opaque-field contract, complete module identity,
+prototype and ordered-key checks, and unchanged critical descriptor checks.
+Report opaque descriptor invariance as unproved; unknown lazy fields still
+refuse. Where relevant, compare the historical capture's refusal before and
+after the replacement to show the unused exports remain uninitialized.
+
+Engine-version comparisons also need this cold/warm control. A newer engine
+is a diagnostic analogue, not evidence that the admitted application or its
+custom runtime bytes match that engine.
+
 Test missing methods, stub returns, lossy public fields, native empty-net
 defaults, child order changes, ignored properties, auto-persistence and delayed
 disk writes. Include slow compilation, synchronous navigation followed by

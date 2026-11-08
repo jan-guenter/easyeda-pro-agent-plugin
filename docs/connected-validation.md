@@ -40,3 +40,7 @@ unsaved rollback or byte-for-byte history restoration.
 
 Link new results from the [history index](history/README.md). Existing generation
 records remain in the [archived ledger](history/2026-10-11-through-2026-10-19-api-connected-validation-ledger.md).
+
+For Inspector probes involving Node builtins, record module initialization as
+well as source identity. See the packaged
+[cold-start capture guidance](../plugins/easyeda-pro-control/skills/easyeda-extension-development/references/validation-and-release.md#cold-start-inspector-captures).
