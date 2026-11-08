@@ -1,3 +1,5 @@
+import{captureCurrentFootprintSavedFlowCacheInput}from"../src/current-footprint-saved-flow-cache-data.ts";
+import{qualifyCurrentFootprintInverseReferenceFilterSource}from"../src/current-footprint-inverse-reference-data-source.ts";
 /** Fixed vendor transforms over inert history and an isolated SQL reader.
  * These cases do not create an original inverse, row or delete authority. */
 /* oxlint-disable import/max-dependencies -- This boundary compares source, complete SQL, history transforms and its opaque issuer in one isolated fixture. */
@@ -11,7 +13,7 @@ import { test } from "node:test";
 import { runInNewContext } from "node:vm";
 import { sha256Text } from "../src/core.ts";
 import { CURRENT_FOOTPRINT_INVERSE_PUBLIC_ROW_FILES as FILES, CURRENT_FOOTPRINT_INVERSE_PUBLIC_ROW_SOURCE as SOURCE, qualifyCurrentFootprintInversePublicRowSource } from "../src/current-footprint-inverse-public-row-source.ts";
-import { CURRENT_FOOTPRINT_INVERSE_GET_MODEL_READ_FIELDS,deriveCurrentFootprintInverseGetModelInputData,deriveCurrentFootprintInversePublicRowData } from "../src/current-footprint-inverse-public-row-data.ts";
+import { CURRENT_FOOTPRINT_INVERSE_GET_MODEL_READ_FIELDS,deriveCurrentFootprintInverseGetModelInputData,deriveCurrentFootprintInversePublicRowData,deriveCurrentFootprintInverseReferenceData } from "../src/current-footprint-inverse-public-row-data.ts";
 import type { CurrentFootprintInversePublicRowValue } from "../src/current-footprint-inverse-public-row-data.ts";
 import { prepareCurrentFootprintInversePublicRowPlan, requireOriginalCurrentFootprintInversePublicRowPlan } from "../src/current-footprint-inverse-public-row-plan.ts";
 import { readExactSqlInventory } from "../src/sqlite-inventory.ts";
@@ -63,7 +65,7 @@ void test("all row-transform spans match their pinned installed assets and chang
     let source: string;
     try { source = await readFile(`/mnt/c/Program Files/EasyEDA-Pro/resources/app/assets/${FILES[file].relativePath}`, "utf8"); }
     catch (error) { if (error !== null && typeof error === "object" && "code" in error && error.code === "ENOENT") { context.skip("installed source unavailable"); return; } throw error; }
-    qualifyCurrentFootprintInversePublicRowSource(file, source); assert.throws(() => { qualifyCurrentFootprintInversePublicRowSource(file, `${source} `); });
+    qualifyCurrentFootprintInversePublicRowSource(file, source);if(file==="worker"){qualifyCurrentFootprintInverseReferenceFilterSource(source);} assert.throws(() => { qualifyCurrentFootprintInversePublicRowSource(file, `${source} `); });
   }
 });
 void test("actual Main show derives owner from its users join and controller retains that object while overriding project UUID", async () => {
@@ -85,4 +87,12 @@ void test("copied checkpoint, flow and row labels issue neither an original row 
   const flow = Object.freeze({ profile: "private.current-footprint-saved-flow-cache-plan.v1" as const });
   assert.throws(() => prepareCurrentFootprintInversePublicRowPlan(prepared, flow), /ORIGINAL_FORWARD_CHECKPOINT/u);
   assert.throws(() => requireOriginalCurrentFootprintInversePublicRowPlan(Object.freeze({ profile: "private.current-footprint-inverse-public-row-plan.v1" }), prepared, flow), /INVERSE_PUBLIC_ROW_PLAN_ORIGINAL/u);
+});
+
+void test("reference profile derives from complete original histories and refuses mixed documents or a derived footprint",async()=>{
+ const sql=await inventory();const source=captureCurrentFootprintSavedFlowCacheInput(input());const row=deriveCurrentFootprintInversePublicRowData(source,footprintUuid,sql);const reference=deriveCurrentFootprintInverseReferenceData(source,footprintUuid,sql,row);assert.equal(reference.deletionAuthorized,false);assert.equal(reference.actualReferenceResultsVerified,false);assert.deepEqual(reference.derivedFootprintUuids,[]);assert.ok(reference.documentFamilies.every(doc=>doc.families.every(family=>family.docType==="FOOTPRINT")));
+ const first=source.chunks[0];assert.ok(first!==null&&typeof first==="object"&&"plaintext"in first&&typeof first.plaintext==="string");
+ const variant=(docType:string,meta:unknown):unknown=>{const plaintext=first.plaintext+line("DOCHEAD",{uuid:"9".repeat(32),docType,client:"native",updateTime:1_700_000_002_000,version:"v1"},{ticket:5})+line("META",meta,{id:"META",ticket:6});return{...source,chunks:[{...first,plaintext,plaintextSha256:sha256Text(plaintext)}]};};
+ const mixed=variant("PCB",{title:"Board"});const mixedRow=deriveCurrentFootprintInversePublicRowData(mixed,footprintUuid,sql);assert.throws(()=>deriveCurrentFootprintInverseReferenceData(mixed,footprintUuid,sql,mixedRow),/INVERSE_PUBLIC_ROW_DATA/u);
+ const linked=variant("FOOTPRINT",{title:"Derived copy",description:"",tags:[],source:footprintUuid});const linkedRow=deriveCurrentFootprintInversePublicRowData(linked,footprintUuid,sql);assert.throws(()=>deriveCurrentFootprintInverseReferenceData(linked,footprintUuid,sql,linkedRow),/INVERSE_PUBLIC_ROW_DATA/u);
 });

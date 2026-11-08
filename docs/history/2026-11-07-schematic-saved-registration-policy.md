@@ -23,3 +23,15 @@ TypeScript projects passed.
 Connected registration, fresh cache/loading custody and saved/reopened
 acceptance remain separate. The original registry getter is implemented, while
 its actual issuer remains unavailable until those runtime prerequisites exist.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `1ac3ff48ee660abd81a986aaa9401a94b2ae73bc`; its
+committed tree is `4db0cc3f1025b99f9e46f2d37a4aaa5b9a9bf884`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

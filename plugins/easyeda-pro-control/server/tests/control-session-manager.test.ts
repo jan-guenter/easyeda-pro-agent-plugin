@@ -1487,8 +1487,8 @@ void test("historical Source timeout retains only original metadata settlement a
 
 /** Inert SDK peer for the exact Via family, with a genuinely pending execute
  * Promise and independently acknowledged original abort/exit/release stages. */
-function interruptedViaPeer(): string {
-  return `import {Server} from ${sdkModule("server/index.js")};
+function interruptedViaPeer(schematic = false): string {
+  const source = `import {Server} from ${sdkModule("server/index.js")};
 import {StdioServerTransport} from ${sdkModule("server/stdio.js")};
 import {CallToolRequestSchema,ListToolsRequestSchema} from ${sdkModule("types.js")};
 const server=new Server({name:'synthetic-original-via',version:'1.0.0'},{capabilities:{tools:{}}});
@@ -1512,10 +1512,13 @@ if(q.action==='settle-publication'){settled=true;return result({result:{operatio
 if(q.action==='inspect')return result({result:{operationId:op,action:q.action,active,executes,aborted,released,settled,calls}});return refused();
 });
 setTimeout(()=>{gate.resolve();void server.close();},18000).unref();await server.connect(new StdioServerTransport());`;
+  return schematic ? source.replaceAll("easyeda_control_current_pcb_via_write", "easyeda_control_current_schematic_relevance_display_write")
+    .replaceAll("pcb209-via-write-manager-original", "sch209-relevance-display-manager-original")
+    .replaceAll("confirmDisposableViaWrite", "confirmDisposableDisplayTransaction").replaceAll("confirmNormalOpenEffects", "acceptNormalOpenEffects") : source;
 }
-void test("Via original manager cleanup binds timeout and in-flight abort to the same retained request/client through facade retirement", { timeout: 25_000 }, async context => {
-  for (const mode of ["timeout", "in-flight"] as const) {
-    const selected = await fixture(interruptedViaPeer()); const outputs: unknown[] = [];
+void test("Via and schematic original manager cleanup binds timeout and in-flight abort to the same retained request/client through facade retirement", { timeout: 25_000 }, async context => {
+  for (const [mode, schematic] of [["timeout", false], ["in-flight", false], ["timeout", true], ["in-flight", true]] as const) {
+    const selected = await fixture(interruptedViaPeer(schematic)); const outputs: unknown[] = [];
     await selectedProfile(selected.profilePath, async () => {
       const manager = new ForegroundSessionManager(async value => { outputs.push(value); await Promise.resolve(); });
       context.after(async () => {
@@ -1525,8 +1528,10 @@ void test("Via original manager cleanup binds timeout and in-flight abort to the
         await manager.handle(request({ id: `${mode}-fixture-shutdown`, action: "shutdown" }));
       });
       await manager.initialize(selected.root); const pid = manager.inspect()["facadePid"];
-      const execute = { id: `${mode}-original-execute`, tool: "easyeda_control_current_pcb_via_write", timeoutMs: mode === "timeout" ? 1000 : 10_000,
-        arguments: { request: { action: "execute", operationId: "pcb209-via-write-manager-original", confirmDisposableViaWrite: true, confirmOneSave: true, confirmForwardOnly: true, confirmNormalOpenEffects: true } } };
+      const tool = schematic ? "easyeda_control_current_schematic_relevance_display_write" : "easyeda_control_current_pcb_via_write";
+      const execute = { id: `${mode}-original-execute`, tool, timeoutMs: mode === "timeout" ? 1000 : 10_000,
+        arguments: { request: { action: "execute", operationId: schematic ? "sch209-relevance-display-manager-original" : "pcb209-via-write-manager-original",
+          confirmOneSave: true, confirmForwardOnly: true, ...(schematic ? { confirmDisposableDisplayTransaction: true, acceptNormalOpenEffects: true } : { confirmDisposableViaWrite: true, confirmNormalOpenEffects: true }) } } };
       const cleanup = (id: string, action: string, extra: object = {}): string => request({ id, action: "cleanup-original", generation: 1,
         interruptedRequestId: execute.id, request: { action, ...extra } });
       const side = (id: string, action: string, extra: object = {}): string => request({ id, action: "in-flight-original", generation: 1,

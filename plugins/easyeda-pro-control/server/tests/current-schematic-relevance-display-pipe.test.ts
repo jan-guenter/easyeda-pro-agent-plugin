@@ -2,6 +2,7 @@
 /** Real Node stream, session and retained-request ordering. Synthetic peer
  * replies issue no native owner, application or connected execution evidence. */
 import { CurrentSchematicRelevanceDisplayHelperReceipts } from "../src/current-schematic-relevance-display-helper-receipts.ts";
+import { currentSchematicRelevanceDisplayWriteNativeRequest } from "../src/current-schematic-relevance-display-write-protocol.ts";
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import { PassThrough, Writable } from "node:stream";
@@ -24,7 +25,7 @@ function ignoreEvent(): void {
 void test("own7 original library and Save lanes transmit while the original navigation remains pending", async context => {
   const input = new PassThrough(), sent: Buffer[] = [];
   // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Exercise the actual Node Writable completion contract.
-  const output = new Writable({ autoDestroy: false, write(chunk: unknown, _encoding, callback): void { assert.ok(Buffer.isBuffer(chunk)); sent.push(Buffer.from(chunk)); callback(); } });
+  const output = new Writable({ autoDestroy: false, write(chunk: unknown, _encoding, callback): void { assert.ok(Buffer.isBuffer(chunk)); currentSchematicRelevanceDisplayWriteNativeRequest(chunk); sent.push(Buffer.from(chunk)); callback(); } });
   const pipe = new CurrentSchematicRelevanceDisplayWritePipe(input, output); pipe.start();
   context.after(async () => { const closed = [input, output].map(async stream => { if (!stream.closed) { const observed = once(stream, "close"); stream.destroy(); await observed; } }); await Promise.all(closed); pipe.releaseClosedListeners(); });
   const last = (): Readonly<{ id: number; sessionId?: string }> => { const chunk = sent.at(-1); assert.ok(chunk !== undefined); const value: unknown = JSON.parse(chunk.subarray(0, -1).toString("utf8")); assert.ok(value !== null && typeof value === "object" && "id" in value && typeof value.id === "number"); if ("sessionId" in value) { assert.ok(typeof value.sessionId === "string"); return { id: value.id, sessionId: value.sessionId }; } return { id: value.id }; };
@@ -34,7 +35,7 @@ void test("own7 original library and Save lanes transmit while the original navi
   const armed = pipe.enableSchematicDisplayWorkerDiscovery(event=>{if(event.method==="Debugger.scriptParsed"){receipts.observe(event,7,"original-project-script");}}); reply(last(), {}); await armed;
   input.write(Buffer.from(`${JSON.stringify({ method: "Target.attachedToTarget", sessionId: "original-ui-session", params: { sessionId: "original-worker-session", targetInfo: { type: "worker", attached: true, targetId: "original-worker-target" }, waitingForDebugger: true } })}\0`));
   pipe.bindSchematicDisplayWorker("original-worker-session", "original-worker-target");
-  const { args } = data(); const navigation = pipe.observeSchematicDisplay("navigate", "original-ui-context", args.target, args.operation); const navigationRequest = last();
+  const { args } = data(); const navigation = pipe.navigateSchematicRelevanceDisplayRegistered("original-ui-context", args.target, pending => { pipe.requireOriginalSchematicRelevanceDisplayRegistrationPending(pending); }); const navigationRequest = last();
   const library = currentProjectLibraryRefreshCases().find(command => command.phase === "library-refresh-pristine"); assert.ok(library !== undefined);
   const local = currentPcbViaLocalUploadNativeCases().find(command => command.method === "Runtime.callFunctionOn"); assert.ok(local !== undefined);
   const upload = currentPcbViaUploadRequestNativeCases().find(command => command.method === "Runtime.callFunctionOn"); assert.ok(upload !== undefined);

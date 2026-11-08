@@ -1,3 +1,9 @@
+import{currentFootprintInverseReferenceCallbackCases}from"../src/current-footprint-inverse-reference-callback-protocol.ts";
+import{currentFootprintInverseReferenceDispatchCases}from"../src/current-footprint-inverse-reference-dispatch-protocol.ts";
+import{currentFootprintInverseReferenceUiCases}from"../src/current-footprint-inverse-reference-ui-protocol.ts";
+import{currentFootprintInverseReferenceEntryCases}from"../src/current-footprint-inverse-reference-entry-protocol.ts";
+import { currentFootprintInverseGetResultCases } from "../src/current-footprint-inverse-get-result-protocol.ts";
+import { currentFootprintInverseGetSendCases } from "../src/current-footprint-inverse-get-send-protocol.ts";
 import { currentFootprintInverseGetCallbackCases } from "../src/current-footprint-inverse-get-callback-protocol.ts";
 import { currentFootprintInverseGetManagerCases } from "../src/current-footprint-inverse-get-manager-protocol.ts";
 import { currentFootprintInverseGetForwardingCases } from "../src/current-footprint-inverse-get-forwarding-protocol.ts";
@@ -44,6 +50,12 @@ void test("original SDK write and reply remain separate while fixed UI and worke
   for (const command of currentFootprintInverseGetForwardingCases()) { const observation = pipe.observeInverseGetForwarding(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
   for (const command of currentFootprintInverseGetManagerCases()) { const observation = pipe.observeInverseGetManager(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
   for (const command of currentFootprintInverseGetCallbackCases()) { const observation = pipe.observeInverseGetCallback(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
+  for (const command of currentFootprintInverseGetSendCases()) { const observation = pipe.observeInverseGetSend(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
+  for (const command of currentFootprintInverseGetResultCases()) { const observation = pipe.observeInverseGetResult(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
+  for(const command of currentFootprintInverseReferenceEntryCases()){const observation=pipe.observeInverseReferenceEntry(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseReferenceUiCases()){const observation=pipe.observeInverseReferenceUi(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseReferenceDispatchCases()){const observation=pipe.observeInverseReferenceDispatch(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseReferenceCallbackCases()){const observation=pipe.observeInverseReferenceCallback(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   input.write(Buffer.from(`${JSON.stringify({...sdkRequest,result:{result:{type:"object",subtype:"promise",className:"Promise",objectId:"original-sdk-promise"}}})}\0`));
   assert.deepEqual(await pending,{result:{type:"object",subtype:"promise",className:"Promise",objectId:"original-sdk-promise"}});pipe.requireInversePublicDeleteWritten(pending);
   const commands=cases.filter(command=>command.phase!=="inverse-public-call-sdk");
@@ -57,7 +69,16 @@ void test("original SDK write and reply remain separate while fixed UI and worke
   for (const command of currentFootprintInverseGetForwardingCases()) { const observation = pipe.observeInverseGetForwarding(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
   for (const command of currentFootprintInverseGetManagerCases()) { const observation = pipe.observeInverseGetManager(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
   for (const command of currentFootprintInverseGetCallbackCases()) { const observation = pipe.observeInverseGetCallback(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
+  for (const command of currentFootprintInverseGetSendCases()) { const observation = pipe.observeInverseGetSend(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
+  for (const command of currentFootprintInverseGetResultCases()) { const observation = pipe.observeInverseGetResult(command); assert.equal(last().sessionId, "original-ui"); reply({}); await observation; pipe.requireInversePublicDeleteWritten(pending); }
+  for(const command of currentFootprintInverseReferenceEntryCases()){const observation=pipe.observeInverseReferenceEntry(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseReferenceUiCases()){const observation=pipe.observeInverseReferenceUi(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseReferenceDispatchCases()){const observation=pipe.observeInverseReferenceDispatch(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseReferenceCallbackCases()){const observation=pipe.observeInverseReferenceCallback(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   assert.equal(pipe.status().failureObservation,null);
+  const resultCommand=currentFootprintInverseGetResultCases()[0];assert.ok(resultCommand!==undefined);const resultBefore=sent.length;
+  // oxlint-disable-next-line typescript/unbound-method -- Closed result sender rejects an extra caller field before native output.
+  assert.throws(()=>Reflect.apply(CurrentFootprintInversePipe.prototype.observeInverseGetResult,pipe,[{...resultCommand,params:{...resultCommand.params,callerCode:"foreign"}}]));assert.equal(sent.length,resultBefore);
   const outputBeforeInvalid=sent.length;const callback=currentFootprintInverseGetCallbackCases()[0];assert.ok(callback!==undefined);
   // oxlint-disable-next-line typescript/unbound-method -- Pass an intentionally invalid raw envelope through the actual sender.
   assert.throws(()=>Reflect.apply(CurrentFootprintInversePipe.prototype.observeInverseGetCallback,pipe,[{...callback,params:{...callback.params,callerCode:"foreign"}}]));assert.equal(sent.length,outputBeforeInvalid);

@@ -1,7 +1,7 @@
+import {INSTALLED_EASYEDA_SOURCE_SKIP_REASON,readConfiguredEasyedaAsset} from "./helpers/installed-easyeda-source.ts";
 /** Inert timer implementations and source-only compilation; no native owner or application is allocated. */
 /* oxlint-disable import/max-dependencies -- The same fixed programs, purpose wire and original source are checked together. */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { Session } from "node:inspector/promises";
 import { test } from "node:test";
 import vm from "node:vm";
@@ -52,7 +52,7 @@ void test("twenty-eight exact commands select only their original Via wire and a
   }
 });
 void test("the pinned original method exposes exact entry, native call, return and opening caller without executing it",async context=>{
-  let source:string;try{source=await readFile('/mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-mgr/3.2.185.bf63a159/js/project-worker.js','utf8');}catch(error){if(error!==null&&typeof error==="object"&&"code" in error&&error.code==="ENOENT"){context.skip("Pinned installed source unavailable");return;}throw error;}
+  const source=await readConfiguredEasyedaAsset("pro-mgr/3.2.185.bf63a159/js/project-worker.js");if(source===null){context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);return;}
   qualifyCurrentProjectSyncQuiesceSource(source);const inspector=new Session();inspector.connect();try{await inspector.post("Runtime.enable");await inspector.post("Debugger.enable");const compiled=await inspector.post("Runtime.compileScript",{expression:source,sourceURL:"source-only-sync-quiesce.js",persistScript:true});assert.ok(compiled.scriptId!==undefined);
     for(const [column,type]of [[112_810,undefined],[112_868,"call"],[112_997,"return"],[97_017,"call"]] as const){const locations:unknown=await inspector.post("Debugger.getPossibleBreakpoints",{start:{scriptId:compiled.scriptId,lineNumber:110,columnNumber:column},end:{scriptId:compiled.scriptId,lineNumber:110,columnNumber:column+1},restrictToFunction:true});assert.deepEqual(locations,{locations:[{scriptId:compiled.scriptId,lineNumber:110,columnNumber:column,...(type===undefined?{}:{type})}]});}
   }finally{inspector.disconnect();}

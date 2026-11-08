@@ -9,3 +9,15 @@ Core now retains a private rows-completion Promise on the same original owner. O
 Two focused production-Core regressions use an explicit inert allocation/row-getter seam. They prove that arm and resume alone never read rows, the final original release acknowledgement returns the same retained row object, and transport failure wakes the wait without a read or revival. Strict changed-file type-aware lint and TypeScript checks pass. Native phases, request counts, helper source and the six released native roles are unchanged.
 
 No further concrete completion gap was identified in the inspected workflow/selected-request chain. After this fix, final helper freeze/static compilation, current source admission and the separately reviewed exact tool-mode/approval registration, the route is suitable to begin controlled disposable validation. That is not connected lifecycle acceptance: the actual original writer and fresh reader must still complete their existing source/SQL/closure/helper-release proofs. General ordinary-project writes remain disabled. No completed design edit or Save was replayed.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `bf3428b26dfeaadb9268a9989349b34e3a776424`; its
+committed tree is `7d6c64b3edd5600e371146158923449e0103cfa2`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

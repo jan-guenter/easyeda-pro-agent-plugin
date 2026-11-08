@@ -6,8 +6,8 @@ import type { CurrentFootprintForwardSavedCheckpoint } from "./current-footprint
 import { currentFootprintCopyV2SavedTarget } from "./current-footprint-copy-v2-saved-source.ts";
 import { requireOriginalCurrentFootprintSavedFlowCacheInput, requireOriginalCurrentFootprintSavedFlowCachePlan } from "./current-footprint-saved-flow-cache-plan.ts";
 import type { CurrentFootprintSavedFlowCachePlan } from "./current-footprint-saved-flow-cache-plan.ts";
-import { deriveCurrentFootprintInverseGetModelInputData,deriveCurrentFootprintInversePublicRowData } from "./current-footprint-inverse-public-row-data.ts";
-import type { CurrentFootprintInverseGetModelInputData,CurrentFootprintInversePublicRowData } from "./current-footprint-inverse-public-row-data.ts";
+import{deriveCurrentFootprintInverseGetModelInputData,deriveCurrentFootprintInversePublicRowData,deriveCurrentFootprintInverseReferenceData}from"./current-footprint-inverse-public-row-data.ts";
+import type { CurrentFootprintInverseGetModelInputData,CurrentFootprintInversePublicRowData,CurrentFootprintInverseReferenceData } from "./current-footprint-inverse-public-row-data.ts";
 import { readerCompletion } from "./sqlite-inventory.ts";
 
 export interface CurrentFootprintInversePublicRowPlan { readonly profile: "private.current-footprint-inverse-public-row-plan.v1" }
@@ -52,4 +52,12 @@ const modelInputs=new WeakMap<CurrentFootprintInversePublicRowPlan,Readonly<{dat
 export function requireOriginalCurrentFootprintInverseGetModelInput(token:CurrentFootprintInversePublicRowPlan,prepared:CurrentFootprintForwardSavedCheckpoint,flow:CurrentFootprintSavedFlowCachePlan):CurrentFootprintInverseGetModelInputData{
  const data=requireOriginalCurrentFootprintInversePublicRowPlan(token,prepared,flow),original=issued.get(token);need(original!==undefined&&original.data===data);const prior=modelInputs.get(token);if(prior!==undefined){need(prior.text===canonicalJson(prior.data));current(original);return prior.data;}
  const input=deriveCurrentFootprintInverseGetModelInputData(original.input,data.footprintUuid,original.prior.inventory,data);current(original);modelInputs.set(token,Object.freeze({data:input,text:canonicalJson(input)}));return input;
+}
+
+const referenceInputs=new WeakMap<CurrentFootprintInversePublicRowPlan,Readonly<{data:CurrentFootprintInverseReferenceData;text:string}>>();
+/** Same complete original closed SQL and saved-flow refs. Matching this data
+ * is not an actual query result or a deletion grant. */
+export function requireOriginalCurrentFootprintInverseReferenceData(token:CurrentFootprintInversePublicRowPlan,prepared:CurrentFootprintForwardSavedCheckpoint,flow:CurrentFootprintSavedFlowCachePlan):CurrentFootprintInverseReferenceData{
+ const data=requireOriginalCurrentFootprintInversePublicRowPlan(token,prepared,flow),original=issued.get(token);need(original!==undefined&&original.data===data);const prior=referenceInputs.get(token);if(prior!==undefined){need(prior.text===canonicalJson(prior.data));current(original);return prior.data;}
+ const reference=deriveCurrentFootprintInverseReferenceData(original.input,data.footprintUuid,original.prior.inventory,data);current(original);referenceInputs.set(token,Object.freeze({data:reference,text:canonicalJson(reference)}));return reference;
 }

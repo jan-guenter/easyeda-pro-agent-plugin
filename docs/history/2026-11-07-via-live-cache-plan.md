@@ -47,3 +47,15 @@ and native cache Promise/finalizer custody. This plan supplies comparison data;
 its worker ownership, cache continuation and complete upload frontier flags stay
 false. Local detached-save cache URLs still require their original producer
 source/time lineage and are not guessed from the Save clock.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `86406c2af0bdf68e3dc8241f95128f40a65aed7c`; its
+committed tree is `c114daa0a61576dfa412a0a94b7112c80615f9c6`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

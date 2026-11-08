@@ -120,7 +120,7 @@ export async function readGeneratedReaderRelinquishment(token: GeneratedReaderHi
 }> | null> {
   const original = requireGeneratedReaderHistoricalSnapshot(token); await assertGeneratedReaderHistoricalSnapshot(token);
   const slot = await readSlot(join(controlDataDirectory(), GENERATED_READER_RELINQUISHMENT_DIRECTORY, original.operationId), ["intent.json", "relinquished.json"], true);
-  if (slot === null) { return null; }
+  if (slot === null || slot.files.size === 0) { await assertGeneratedReaderHistoricalSnapshot(token); return null; }
   const first = slot.files.get("intent.json"); need(first !== undefined);
   const intent = currentGeneratedReaderRelinquishmentIntentSchema.parse(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(first.bytes)) as unknown);
   const last = slot.files.get("relinquished.json");
