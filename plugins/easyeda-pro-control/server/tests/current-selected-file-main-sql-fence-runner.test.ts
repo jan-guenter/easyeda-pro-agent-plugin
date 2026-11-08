@@ -19,6 +19,8 @@ import type { CurrentFootprintCopyMainBackendRunner, CurrentFootprintCopyMainBac
 import type { CurrentSelectedFileMainSqlFenceCommand as SqlCommand } from "../src/current-selected-file-main-sql-fence-protocol.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_EARLY_ID as EARLY_ID } from "../src/current-selected-file-main-sql-fence-protocol.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SOURCE } from "../src/current-selected-file-main-sql-fence-source.ts";
+import { CURRENT_SELECTED_FILE_MAIN_SQL_CAPTURED_FRAME_EXPRESSIONS as CAPTURED_EXPRESSIONS, CURRENT_SELECTED_FILE_MAIN_SQL_CAPTURED_FRAME_PROGRAM as CAPTURED_FRAME } from "../src/current-selected-file-main-sql-fence-programs.ts";
+import { currentSelectedFileMainSqlStartupDiagnosticSchema } from "../src/current-selected-file-main-sql-startup-diagnostic.ts";
 import { CurrentFootprintCopyMainBackendRunner as OriginalRunner, requireOriginalCurrentSelectedFileMainRequest } from "../src/current-footprint-copy-main-backend-runner.ts";
 import { selectedRequestPeer, selectedRequestReaderConstructor } from "./helpers/selected-main-request-reader-fixture.ts";
 import { CONFIG_SQL, mainBackendModule, mainBackendTransportFixture } from "./helpers/footprint-main-backend-runner-fixture.ts";
@@ -26,6 +28,11 @@ import type { CurrentPcbViaMainCommand } from "../src/current-pcb-via-main-proto
 import { currentPcbViaMainNativeCases, validateCurrentPcbViaMainCommand } from "../src/current-pcb-via-main-protocol.ts";
 
 type Data = Record<string, unknown>;
+type CapturedSite = keyof typeof CAPTURED_EXPRESSIONS;
+type Classification = "held" | "guard-passed" | "guard-refused" | "malformed" | "legacy-count" | "lost-ack";
+type SqlPauseFixture = Readonly<{ site: CapturedSite; classification?: Classification;
+  fault?: "frame" | "properties" | "probe" | "raw-count" | "raw-exception" | "raw-reference" | "raw-side-effect" | "original-pause" | "resume-ack";
+  hitBreakpoints?: readonly string[]; following?: "driver"; batchResume?: boolean }>;
 type CurrentPcbViaMainStepCommand = Parameters<CurrentFootprintCopyMainBackendRunner["consumeOriginalViaMainDriverStep"]>[0];
 function structurePeerFrame(kind: CurrentPcbViaMainStructureFrameRole): Data { const fixed = currentPcbViaMainStructureFrame(kind); const column: unknown = Object.getOwnPropertyDescriptor(fixed,"columnNumber")?.value; let columnNumber = typeof column === "number" ? column : fixed.functionColumn; if(kind === "run") { columnNumber = 875; } return { callFrameId: `structure-frame-${kind}`, functionName: fixed.name, location:{scriptId:"app",lineNumber:fixed.lineNumber,columnNumber},functionLocation:{scriptId:"app",lineNumber:fixed.lineNumber,columnNumber:fixed.functionColumn} }; }
 const captureArrayId=(raw:unknown):string=>{assert.ok(raw!==null&&typeof raw==="object");const result:unknown=Reflect.get(raw,"result");assert.ok(result!==null&&typeof result==="object");const value:unknown=Reflect.get(result,"objectId");assert.ok(typeof value==="string");return value;};
@@ -56,8 +63,12 @@ function nativeMetadata(id: string, unsupported = false): Data {
     { name: "[[Scopes]]", value: { type: "object", subtype: "internal#scopeList", className: "Array", description: "Scopes[0]", objectId: "scopes" } }] };
 }
 const configPacket = (role: "jb" | "dc", site: "run" | "prepare" | "prepared", sql: string, transactionDepth: 0 | 1): Data => ({ recognized: true, role, site, sql, transactionDepth, parametersEmpty: true, designWriteGrant: false, nativeCompletionProven: false });
-async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = null, unsupportedNative = false): Promise<Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; phases: string[]; transport: CurrentFootprintCopyMainBackendTransport;
-  injectStructurePoint: (role: CurrentPcbViaMainStructureFrameRole, caller?: CurrentPcbViaMainStructureFrameRole) => void; injectHistoryPoint: (role: CurrentPcbViaMainHistoryFrameRole, caller?: CurrentPcbViaMainHistoryFrameRole) => void; injectBeginPoint: (role: "save" | "transaction" | "run" | "callback" | "returned") => void; injectViaPoint: (role: "context" | "controller" | "editHead") => void; loseNextDriverStep: () => void; injectRequest: (method: string, foreign?: boolean, sourceDelta?: number, history?: boolean | "structure") => void; injectMutation: () => void; injectDriver: () => void; resumes: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
+/** Run the production scheduler against a source-labelled synthetic peer.
+ * Classifier replies describe only that peer's original held pause; they do
+ * not replace the real command validators, counters or continuation gates. */
+async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = null, unsupportedNative = false,
+  firstStartup: SqlPauseFixture | null = null): Promise<Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; phases: string[]; transport: CurrentFootprintCopyMainBackendTransport;
+  injectStructurePoint: (role: CurrentPcbViaMainStructureFrameRole, caller?: CurrentPcbViaMainStructureFrameRole) => void; injectHistoryPoint: (role: CurrentPcbViaMainHistoryFrameRole, caller?: CurrentPcbViaMainHistoryFrameRole) => void; injectBeginPoint: (role: "save" | "transaction" | "run" | "callback" | "returned") => void; injectViaPoint: (role: "context" | "controller" | "editHead") => void; loseNextDriverStep: () => void; injectRequest: (method: string, foreign?: boolean, sourceDelta?: number, history?: boolean | "structure") => void; injectMutation: () => void; injectSql: (pause: SqlPauseFixture) => void; injectDriver: () => void; resumes: () => number; resumeBatches: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
   const base = mainBackendTransportFixture();
   const ids = new Map<number, number>(), phases: string[] = [], queue: Data[] = [], retainedRegistration: Data[] = [];
   let currentRequest = { method: "GET", url: "", delta: 0, pathHeader:"f".repeat(64) }, fetchScriptSeen = false;
@@ -71,43 +82,110 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
     { site: "prepare", value: configPacket("dc", "prepare", CONFIG_SQL.cookieUpsert, 0) }, { site: "prepared", value: configPacket("dc", "prepared", CONFIG_SQL.cookieUpsert, 0) }];
   if (wrongStartup === "order") { startup[2] = { site: "run", value: configPacket("jb", "run", CONFIG_SQL.scripts.jb[0]?.sql ?? "", 1) }; }
   if (wrongStartup === "foreign") { startup[2] = { site: "run", value: { recognized: false } }; }
+  if (firstStartup !== null) { startup.unshift({ site: firstStartup.site }); }
   let startupIndex = -1; let historySlot = "data";
-  let queuedBytes = Buffer.alloc(0); let contextPointActive = false, loseDriverStep = false, plannedResumes = 0;
+  let queuedBytes = Buffer.alloc(0); let contextPointActive = false, loseDriverStep = false, plannedResumes = 0, resumeBatches = 0;
   let holdRegistration = false, normalResumes = 0, runner: CurrentFootprintCopyMainBackendRunner | null = null, sqlResumes = 0;
+  let currentSqlFrame: string | null = null, currentSqlPause: SqlPauseFixture | null = null;
   let heldPoll: Readonly<{ started: PromiseWithResolvers<null>; settle: PromiseWithResolvers<null> }> | null = null;
-  const event = (method: string, params: Data): void => { queue.push({ method, params }); };
-  const location = (site: keyof typeof SOURCE.sites): Data => ({ scriptId: "app", lineNumber: SOURCE.sites[site].lineNumber, columnNumber: SOURCE.sites[site].breakpointColumnNumber + (site === "import" ? delta : 0) });
-  const pause = (site: keyof typeof SOURCE.sites): void => { const frames:Data[]=[{callFrameId:`frame-${site}`,location:location(site),...(site==="driver"?{functionName:"",functionLocation:{scriptId:"app",lineNumber:1164,columnNumber:2434}}:{})}];
-    if(site==="driver"){frames.push({callFrameId:"frame-caller",functionName:"interceptHttpProtocol",functionLocation:{scriptId:"app",lineNumber:1164,columnNumber:51_072},location:{scriptId:"app",lineNumber:1164,columnNumber:51_414}});}
-    event("Debugger.paused",{reason:"other",hitBreakpoints:[site==="import"?EARLY_ID:`sql-${site}`],callFrames:frames});
+  const event = (method: string, params: Data): void => {
+    if (method === "Debugger.paused") { const frames = params["callFrames"]; assert.ok(Array.isArray(frames)); const frame: unknown = frames[0]; assert.ok(frame !== null && typeof frame === "object"); const id: unknown = Reflect.get(frame, "callFrameId"); assert.ok(typeof id === "string"); currentSqlFrame = id; }
+    queue.push({ method, params });
   };
+  const location = (site: keyof typeof SOURCE.sites): Data => ({ scriptId: "app", lineNumber: SOURCE.sites[site].lineNumber, columnNumber: SOURCE.sites[site].breakpointColumnNumber + (site === "import" ? delta : 0) });
+  /** Deliver the exact armed SQL point, with optional negative event data. */
+  const pause = (site: keyof typeof SOURCE.sites, options: SqlPauseFixture | null = null): void => { currentSqlPause = options; const frames:Data[]=[{callFrameId:`frame-${site}`,location:location(site),...(site==="driver"?{functionName:"",functionLocation:{scriptId:"app",lineNumber:1164,columnNumber:2434}}:{})}];
+    if(site==="driver"){frames.push({callFrameId:"frame-caller",functionName:"interceptHttpProtocol",functionLocation:{scriptId:"app",lineNumber:1164,columnNumber:51_072},location:{scriptId:"app",lineNumber:1164,columnNumber:51_414}});}
+    event("Debugger.paused",{reason:"other",hitBreakpoints:options?.hitBreakpoints??[site==="import"?EARLY_ID:`sql-${site}`],callFrames:frames});
+  };
+  /** Preserve the original raw-frame/classifier/ACK order and independently
+   * check its fixed arguments before issuing each synthetic CDP response. */
   const sqlSend = (command: SqlCommand, id: number): Promise<void> => {
     phases.push(command.phase); let result: unknown = {};
+    const batchResume = command.phase === "sql-fence-resume" && currentSqlPause?.batchResume === true;
     if (command.phase === "sql-fence-early-arm") { result = { breakpointId: EARLY_ID, locations: [] }; }
-    else if (command.phase === "sql-fence-after-imports-arm" || command.phase === "sql-fence-arm") {
+    else if (command.phase === "sql-fence-after-imports-arm" || command.phase === "sql-fence-held-arm") {
+      if (command.phase === "sql-fence-held-arm") { assert.equal(command.params.condition, "true"); }
       const site = command.phase === "sql-fence-after-imports-arm" ? "afterImports" : command.site; result = { breakpointId: `sql-${site}`, actualLocation: location(site) };
     } else if (command.phase === "sql-fence-resume") {
+      if (currentSqlPause?.fault === "resume-ack") { return Promise.reject(new Error("original-sql-resume-ack-lost")); }
+      const following = currentSqlPause?.following;
       sqlResumes += 1; event("Debugger.resumed", {});
       if(contextPointActive&&currentRequest.method==="GET"){event("Debugger.paused",{reason:"other",hitBreakpoints:["via-2540"],callFrames:[{callFrameId:"wrong-get-context",location:{scriptId:"app",lineNumber:1164,columnNumber:2540}}]});}
       if (sqlResumes === 1) { pause("afterImports"); }
       else { startupIndex += 1; const next = startup[startupIndex]; if (next === undefined) { holdRegistration = false; queue.push(...retainedRegistration.splice(0)); }
-        else { pause(next.site); } }
+        else { pause(next.site, startupIndex === 0 ? firstStartup : null); } }
+      if (following === "driver") { pause("driver"); }
+    } else if (command.phase === "sql-fence-raw-frame") {
+      assert.equal(command.params.callFrameId, currentSqlFrame); assert.equal(command.params.expression, CAPTURED_EXPRESSIONS[command.site]);
+      assert.equal(command.params.throwOnSideEffect, true); assert.equal(command.params.expression.includes("F5"), false);
+      let count = CAPTURED_EXPRESSIONS[command.site].slice(1, -1).split(",").length;
+      if (currentSqlPause?.fault === "raw-count") { count += 1; }
+      result = currentSqlPause?.fault === "raw-exception" ? { result: { type: "undefined" }, exceptionDetails: { text: "private-frame-error" } } :
+        { result: { type: "object", subtype: "array", className: "Array", description: `Array(${String(count)})`, objectId: `raw-${command.site}` } };
+      if (currentSqlPause?.fault === "raw-reference" || currentSqlPause?.fault === "raw-side-effect") {
+        const reference = currentSqlPause.fault === "raw-reference";
+        result = { result: { type: "object", subtype: "error", className: reference ? "ReferenceError" : "EvalError",
+          description: reference ? "ReferenceError: t is not defined" : "EvalError: Possible side-effect in debug-evaluate" }, exceptionDetails: { text: "private-frame-error" } };
+      }
+    } else if (command.phase === "sql-fence-captured-frame") {
+      assert.equal(command.params.objectId, `raw-${command.site}`); assert.equal(command.params.functionDeclaration, CAPTURED_FRAME);
+      assert.deepEqual(command.params.arguments, [{ objectId: "sql-fence-capture" }, { value: command.site }]);
+      assert.equal(command.params.throwOnSideEffect, false); assert.equal(command.params.awaitPromise, false); assert.equal(command.params.returnByValue, false);
+      if (currentSqlPause?.classification === "lost-ack") { return Promise.reject(new Error("original-classifier-ack-lost")); }
+      if (currentSqlPause?.fault === "original-pause") { event("Debugger.resumed", {}); }
+      const classification = currentSqlPause?.classification ?? "held";
+      if (classification === "guard-passed") { result = { result: { type: "boolean", value: true } }; }
+      else if (classification === "guard-refused") { result = { result: { type: "string", value: "guard-refused" } }; }
+      else if (classification === "malformed") { result = { result: { type: "boolean", value: false } }; }
+      else { const count = SOURCE.sites[command.site].expression.slice(1, -1).split(",").length + Number(classification === "legacy-count");
+        result = { result: { type: "object", subtype: "array", className: "Array", description: `Array(${String(count)})`, objectId: `legacy-${command.site}` } }; }
     } else if (command.phase === "sql-fence-frame" || command.phase === "sql-fence-capture" || command.phase === "sql-fence-native-frame") {
       let count = 5;
       if (command.phase === "sql-fence-frame") { const counts = { afterImports: 4, startupVersion: 13, startupJB: 12, startupDC: 11, prepare: 6, prepared: 7 }; const actual: unknown = Object.getOwnPropertyDescriptor(counts, command.site)?.value; count = typeof actual === "number" ? actual : 5; }
       else if (command.phase === "sql-fence-capture") { count = 11; }
       result = { result: { type: "object", subtype: "array", className: "Array", description: `Array(${String(count)})`, objectId: command.phase } };
+      if (command.phase === "sql-fence-frame" && firstStartup !== null && command.site === firstStartup.site) {
+        const retained = runner?.retainedSelectedSqlStartupDiagnostic();
+        assert.ok(retained !== undefined && retained !== null); assert.equal(retained.site, firstStartup.site); assert.equal(retained.frameState, "not-read");
+        assert.equal(retained.originalPhase, "sql-fence-captured-frame"); assert.equal(runner?.retained().failure, "SELECTED_SQL_UNQUALIFIED_STARTUP_MUTATION");
+        count = SOURCE.sites[command.site].expression.slice(1, -1).split(",").length;
+        result = firstStartup.fault === "frame" ? { exceptionDetails: { text: "synthetic-private-error" }, result: { type: "undefined" } } :
+          { result: { type: "object", subtype: "array", className: "Array", description: `Array(${String(count)})`, objectId: "startup-diagnostic-frame" } };
+      }
+    } else if (command.phase === "sql-fence-predicate-diagnostic") {
+      assert.equal(firstStartup?.site, "initializerBirth");
+      assert.equal(runner?.retained().failure, "SELECTED_SQL_UNQUALIFIED_STARTUP_MUTATION");
+      assert.equal(runner?.retainedSelectedSqlStartupDiagnostic()?.diagnosticRequests, 2);
+      assert.equal(runner?.retainedSelectedSqlPredicateDiagnostic()?.probeState, "not-read");
+      result = firstStartup?.fault === "probe" ? { result: { type: "undefined" }, exceptionDetails: { text: "private" } } : { result: { type: "string", value: "proxy-positive" } };
     } else if (command.phase === "sql-fence-properties") {
-      if (command.params.objectId === "sql-fence-frame") { result = importsArray(); }
+      if (command.params.objectId === "startup-diagnostic-frame" && firstStartup !== null) {
+        let data: Data[];
+        if (firstStartup.site === "initializerBirth") { data = [{ type: "string", value: "C:\\private\\other.db" }, ...[0, 1, 2].map(index => ({ type: "function", className: "Function", objectId: `diagnostic-${String(index)}` }))]; }
+        else { data = firstStartup.site === "keeperBirth" ? [{ type: "string", value: "C:\\private\\other.db" }, { type: "object", className: "Object", objectId: "diagnostic-sqlite" }] :
+          [{ type: "object", className: "Object", objectId: "diagnostic-wrapper" }, { type: "string", value: "DELETE FROM private_table WHERE secret='private-value'" },
+            { type: "object", subtype: "array", className: "Array", objectId: "diagnostic-parameters" }, { type: "object", className: "Object", objectId: "diagnostic-sqlite" }, { type: "object", className: "Object", objectId: "diagnostic-util" }]; }
+        result = { result: [...data.map((value, index) => property(String(index), value, true, true)),
+          property("length", { type: "number", value: data.length }, true, false, false)],
+          internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", objectId: "diagnostic-array-prototype" } }] };
+        if (firstStartup.fault === "properties") { result = { result: [], internalProperties: [] }; }
+      }
+      else if (command.params.objectId === "sql-fence-frame") { result = importsArray(); }
       else { result = command.params.objectId === "sql-fence-native-frame" ? nativeArray() : nativeMetadata(command.params.objectId, unsupportedNative && command.params.objectId === "native0"); }
     }
     else if (command.phase === "sql-fence-require") { result = { result: { type: "boolean", value: true } }; }
-    else if (command.phase === "sql-fence-startup-version") { result = { result: { type: "object", subtype: "array", className: "Array", description: "Array(6)", objectId: "original-startup-tracker" } }; }
-    else if (command.phase === "sql-fence-startup-jb" || command.phase === "sql-fence-startup-dc") { result = { result: { type: "boolean", value: true } }; }
-    else if (command.phase === "sql-fence-startup-select") { result = { result: { type: "object", value: startup[startupIndex]?.value ?? { recognized: false } } }; }
-    if (command.phase.startsWith("sql-fence-request-") || command.phase === "sql-fence-driver-frame" || command.phase === "sql-fence-fetch-source" ||
-      command.phase === "sql-fence-properties" && "objectId" in command.params && !["sql-fence-frame", "sql-fence-native-frame", "native0", "native1", "native2", "native3", "native4"].includes(command.params.objectId)) { result = selectedRequestPeer(command, currentRequest); }
-    queue.push({ id, result }); return Promise.resolve();
+    else if (command.phase === "sql-fence-startup-version") { assert.equal(command.params.objectId, "legacy-startupVersion"); result = { result: { type: "object", subtype: "array", className: "Array", description: "Array(6)", objectId: "original-startup-tracker" } }; }
+    else if (command.phase === "sql-fence-startup-jb" || command.phase === "sql-fence-startup-dc") { assert.equal(command.params.objectId, command.phase === "sql-fence-startup-jb" ? "legacy-startupJB" : "legacy-startupDC"); result = { result: { type: "boolean", value: true } }; }
+    else if (command.phase === "sql-fence-startup-select") { assert.equal(command.params.objectId, `legacy-${command.site}`); result = { result: { type: "object", value: startup[startupIndex]?.value ?? { recognized: false } } }; }
+    if (command.phase.startsWith("sql-fence-request-") || command.phase.startsWith("sql-fence-driver-") || command.phase === "sql-fence-fetch-source" ||
+      command.phase === "sql-fence-properties" && "objectId" in command.params && !["sql-fence-frame", "sql-fence-native-frame", "startup-diagnostic-frame", "native0", "native1", "native2", "native3", "native4"].includes(command.params.objectId)) { result = selectedRequestPeer(command, currentRequest); }
+    queue.push({ id, result });
+    if (batchResume) {
+      assert.equal(queuedBytes.length, 0); assert.equal(queue[0]?.["method"], "Debugger.resumed"); assert.equal(queue[1]?.["method"], "Debugger.paused");
+      queuedBytes = Buffer.from(queue.splice(0).map(packet => `${JSON.stringify(packet)}\0`).join("")); resumeBatches += 1;
+    }
+    return Promise.resolve();
   };
   const transport: CurrentFootprintCopyMainBackendTransport = Object.freeze({
     assertCurrent: (): Promise<void> => base.transport.assertCurrent(),
@@ -177,7 +255,7 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
         let result:unknown={};
         if(command.phase==="via-main-begin-arm"){result={breakpointId:`begin-${command.role}`,actualLocation:command.params.location};}
         else if(command.phase==="via-main-begin-step"){const grant=runner.consumeOriginalViaMainBegin(command,id);assert.equal(grant.nativeSql,command.role==="run");if(loseDriverStep){return Promise.reject(new Error("original-driver-step-ack-lost"));}plannedResumes+=1;event("Debugger.resumed",{});}
-        else if(command.phase==="via-main-begin-frame"||command.phase==="via-main-begin-join"){const counts=command.phase==="via-main-begin-frame"?{save:4,transaction:2,run:7,callback:8,returned:2}:{save:4,transaction:3,run:10,callback:4,returned:0};result={result:{type:"object",subtype:"array",className:"Array",description:`Array(${String(counts[command.role])})`,objectId:`begin-${command.phase}-${command.role}`}};
+        else if(command.phase==="via-main-begin-frame"||command.phase==="via-main-begin-raw-frame"||command.phase==="via-main-begin-join"||command.phase==="via-main-begin-rebase"||command.phase==="via-main-begin-bookkeeping"){const counts=command.phase==="via-main-begin-frame"||command.phase==="via-main-begin-raw-frame"?{save:4,transaction:2,run:7,callback:8,returned:2}:{save:4,transaction:3,run:10,callback:4,returned:0};const count=counts[command.role]-(command.phase==="via-main-begin-raw-frame"?1:0);result={result:{type:"object",subtype:"array",className:"Array",description:`Array(${String(count)})`,objectId:`begin-${command.phase}-${command.role}`}};
           if(command.phase==="via-main-begin-join"&&command.role==="returned"){result={result:{type:"object",value:{schema:"private.current-pcb-via-main-begin-result.v1",originalNativeCallbackSucceeded:true,originalBeginAwaitCompleted:true,transactionDepth:1,historySqlCompleted:false,furtherSelectedSqlAuthorized:false,persistenceVerified:false}}};}}
         queue.push({id,result});return Promise.resolve();
       },
@@ -225,19 +303,83 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
   }, loseNextDriverStep: ():void=>{loseDriverStep=true;}, injectRequest: (method: string, foreign = false, sourceDelta = 0, history: boolean | "structure"=false): void => {
     const project = foreign ? "d".repeat(64) : createHash("sha256").update(String.raw`C:\Synthetic\fixture.eprj2`).digest("hex"); currentRequest = { method, url: `/api/v4/projects/${project}/branches${history===false?"":`/${"b".repeat(32)}/${history==="structure"?"structures":"histories"}`}`, delta: sourceDelta, pathHeader:project };
     if (!fetchScriptSeen) { event("Debugger.scriptParsed", { scriptId: "builtin-fetch", url: "node:internal/deps/undici/undici", executionContextId: 1, startLine: 0, startColumn: 0, endLine: 17_434, endColumn: 0, length: 745_782, isLiveEdit: false, hasSourceURL: false, isModule: false, scriptLanguage: "JavaScript" }); fetchScriptSeen = true; }
-    pause("driver"); }, injectMutation: (): void => { pause("run"); }, injectDriver: (): void => { pause("driver"); }, resumes: (): number => normalResumes + sqlResumes + plannedResumes,
+    pause("driver"); }, injectMutation: (): void => { pause("run"); }, injectSql: (original): void => { pause(original.site, original); }, injectDriver: (): void => { pause("driver"); }, resumes: (): number => normalResumes + sqlResumes + plannedResumes, resumeBatches: (): number => resumeBatches,
     deferPoll: () => { assert.equal(heldPoll, null); const original = { started: Promise.withResolvers<null>(), settle: Promise.withResolvers<null>() }; heldPoll = original;
       return { started: original.started.promise, release: (): void => { original.settle.resolve(null); } }; } };
 }
 void test("actual runner arms every selected-file site before SQLite import and retains its original fence after construction", async () => {
   const f = await fixture(); await f.runner.observe();
   assert.deepEqual(f.phases.slice(0, 6), ["runtime-enable", "debugger-enable", "sql-fence-early-arm", "registration-arm", "run-waiting", "resume"]);
-  assert.equal(f.phases.filter(phase => phase === "sql-fence-arm").length, 23); assert.equal(f.resumes(), 55);
+  assert.equal(f.phases.filter(phase => phase === "sql-fence-held-arm").length, 23); assert.equal(f.resumes(), 55);
+  assert.equal(f.phases.filter(phase => phase === "sql-fence-raw-frame").length, 51);
+  assert.equal(f.phases.filter(phase => phase === "sql-fence-captured-frame").length, 51);
   assert.equal(f.runner.selectedSqlFenceState()["ready"], true); assert.equal(f.runner.selectedSqlFenceState()["conditionalBreakpoints"], 23);
   f.injectMutation(); await f.runner.pumpSelectedSqlFence(); const before = f.phases.length;
   assert.equal(f.runner.selectedSqlFenceState()["heldSite"], "run"); assert.equal(f.runner.selectedSqlFenceState()["selectedProjectMutationsResumed"], 0);
   await f.runner.pumpSelectedSqlFence(); assert.equal(f.resumes(), 55); assert.equal(f.phases.length, before);
   await assert.rejects(f.runner.prepareNormalClose(), /RETAIN_THROUGH_EXIT/u); await assert.rejects(f.runner.release(), /RETAIN_THROUGH_EXIT/u);
+});
+void test("captured module bindings pass each genuine birth pause before the unchanged startup SQL sequence", async () => {
+  for (const site of ["keeperBirth", "initializerBirth"] as const) {
+    const f = await fixture(0, null, false, { site, classification: "guard-passed" }); await f.runner.observe();
+    assert.equal(f.resumes(), 56); assert.equal(f.runner.selectedSqlFenceState()["ready"], true);
+    assert.equal(f.runner.selectedSqlFenceState()["profileSqlContinuationsAcknowledged"], 48);
+    assert.equal(f.runner.selectedSqlFenceState()["profileMetadataContinuationsAcknowledged"], 3);
+    assert.equal(f.runner.retainedSelectedSqlStartupDiagnostic(), null); assert.equal(f.runner.retainedSelectedSqlPredicateDiagnostic(), null);
+    assert.equal(f.phases.filter(phase => phase === "sql-fence-raw-frame").length, 52);
+    assert.equal(f.phases.filter(phase => phase === "sql-fence-captured-frame").length, 52);
+    assert.equal(f.phases.filter(phase => phase === "sql-fence-frame").length, 1);
+    assert.equal(f.phases.includes("sql-fence-predicate-diagnostic"), false);
+    assert.equal(f.runner.selectedSqlFenceState()["selectedProjectMutationsResumed"], 0);
+  }
+});
+void test("guard refusal, malformed frames and lost classifier ACKs keep the same startup pause stopped without retry", async () => {
+  for (const scenario of [
+    { classification: "guard-refused", error: /CAPTURED_FRAME_GUARD/u },
+    { classification: "malformed", error: /Invalid input/u },
+    { classification: "legacy-count", error: /CAPTURED_FRAME_LEGACY_TUPLE/u },
+    { classification: "lost-ack", error: /original-classifier-ack-lost/u },
+    { fault: "raw-count", error: /CAPTURED_FRAME_RAW_TUPLE/u },
+    { fault: "raw-exception", error: /Invalid input/u },
+    { fault: "original-pause", error: /UNEXPECTED_RESUME/u },
+  ] as const) {
+    const { error, ...options } = scenario; const f = await fixture(0, null, false, { site: "keeperBirth", ...options });
+    await assert.rejects(f.runner.observe(), error); assert.equal(f.resumes(), 3);
+    assert.equal(f.runner.retainedSelectedSqlStartupDiagnostic(), null); assert.equal(f.runner.retainedSelectedSqlPredicateDiagnostic(), null);
+    assert.equal(f.phases.filter(phase => phase === "sql-fence-raw-frame").length, 1);
+    const expected = "fault" in scenario && (scenario.fault === "raw-count" || scenario.fault === "raw-exception") ? 0 : 1;
+    assert.equal(f.phases.filter(phase => phase === "sql-fence-captured-frame").length, expected);
+    assert.equal(f.phases.includes("sql-fence-startup-version"), false); assert.equal(f.phases.includes("capture"), false);
+    const before = f.phases.length; await assert.rejects(f.runner.observe(), /OBSERVE_CONSUMED/u); assert.equal(f.phases.length, before);
+    assert.equal(f.resumes(), 3); assert.equal(f.runner.selectedSqlFenceState()["selectedProjectMutationsResumed"], 0);
+  }
+});
+void test("refused raw frame replies retain their fixed site/category and schema issues without another request", async () => {
+  for (const [fault, failure] of [["raw-reference", "SELECTED_SQL_RAW_FRAME_KEEPERBIRTH_BINDING_T"], ["raw-side-effect", "SELECTED_SQL_RAW_FRAME_KEEPERBIRTH_SIDE_EFFECT_CHECK"]] as const) {
+    const f = await fixture(0, null, false, { site: "keeperBirth", fault });
+    await assert.rejects(f.runner.observe(), /Invalid input/u);
+    assert.equal(f.runner.retained().failure, failure); assert.ok(f.runner.retained().schemaIssues !== null);
+    assert.equal(f.phases.filter(phase => phase === "sql-fence-raw-frame").length, 1);
+    assert.equal(f.phases.filter(phase => phase === "sql-fence-captured-frame").length, 0);
+    assert.equal(f.resumes(), 3);
+    const before = f.phases.length; await assert.rejects(f.runner.observe(), /OBSERVE_CONSUMED/u); assert.equal(f.phases.length, before);
+  }
+});
+void test("a missing original resume ACK consumes its single guard-passed continuation", async () => {
+  const f = await fixture(0, null, false, { site: "keeperBirth", classification: "guard-passed", fault: "resume-ack" });
+  await assert.rejects(f.runner.observe(), /original-sql-resume-ack-lost/u);
+  assert.equal(f.phases.filter(phase => phase === "sql-fence-resume").length, 3); assert.equal(f.resumes(), 3);
+  assert.equal(f.phases.filter(phase => phase === "sql-fence-captured-frame").length, 1);
+  const before = f.phases.length; await assert.rejects(f.runner.observe()); assert.equal(f.phases.length, before);
+  assert.equal(f.runner.selectedSqlFenceState()["selectedProjectMutationsResumed"], 0);
+});
+void test("unknown and mixed breakpoint hits never reach captured SQL classification or resume", async () => {
+  for (const hitBreakpoints of [["foreign-point"], ["sql-keeperBirth", "foreign-point"]]) {
+    const f = await fixture(0, null, false, { site: "keeperBirth", classification: "guard-passed", hitBreakpoints });
+    await assert.rejects(f.runner.observe(), /REGISTRATION_PAUSE|INITIAL_PAUSE/u);
+    assert.equal(f.phases.includes("sql-fence-raw-frame"), false); assert.equal(f.phases.includes("sql-fence-captured-frame"), false);
+    assert.equal(f.resumes(), 3); assert.equal(f.runner.selectedSqlFenceState()["selectedProjectMutationsResumed"], 0);
+  }
 });
 void test("an unsupported native ABI retains its source-issued diagnostic before startup SQL or resume", async () => {
   const f = await fixture(0, null, true);
@@ -250,9 +392,50 @@ void test("an unsupported native ABI retains its source-issued diagnostic before
   assert.equal(f.phases.includes("sql-fence-startup-version"), false);
   assert.equal(f.resumes(), 2); assert.equal(f.runner.selectedSqlFenceState()["ready"], false);
 });
+void test("a held reconstructed tuple retains the v1 bounded diagnostic and first failure across diagnostic refusals", async () => {
+  for (const first of [{ site: "keeperBirth" }, { site: "run" }, { site: "run", fault: "frame" }, { site: "run", fault: "properties" }] as const) {
+    const f = await fixture(0, null, false, { ...first, classification: "held" });
+    assert.equal(f.runner.retainedSelectedSqlStartupDiagnostic(), null);
+    await assert.rejects(f.runner.observe(), /SELECTED_SQL_UNQUALIFIED_STARTUP_MUTATION/u);
+    const retained = f.runner.retainedSelectedSqlStartupDiagnostic();
+    const diagnostic = currentSelectedFileMainSqlStartupDiagnosticSchema.parse(retained);
+    assert.equal(f.runner.retainedSelectedSqlStartupDiagnostic(), retained); assert.equal(Object.isFrozen(retained), true);
+    assert.equal(diagnostic.site, first.site); assert.equal(diagnostic.originalPhase, "sql-fence-captured-frame");
+    assert.equal(diagnostic.refusal, first.site === "run" ? "tracker-absent" : "site-outside-startup-profile");
+    assert.equal(diagnostic.predicateBranchVerified, false); assert.equal(diagnostic.resumeAuthorized, false);
+    assert.equal(diagnostic.diagnosticRequests, "fault" in first && first.fault === "frame" ? 1 : 2);
+    if ("fault" in first) { assert.equal(diagnostic.frameState, first.fault === "frame" ? "frame-refused" : "properties-refused"); assert.equal(diagnostic.summary, null); }
+    else { assert.equal(diagnostic.frameState, "captured"); assert.equal(diagnostic.summary?.pathKind, first.site === "keeperBirth" ? "other" : "not-applicable"); assert.equal(diagnostic.summary?.sqlKind, first.site === "run" ? "delete" : "not-applicable"); }
+    assert.equal(f.runner.retained().phase, "sql-fence-captured-frame"); assert.equal(f.runner.retained().failure, "SELECTED_SQL_UNQUALIFIED_STARTUP_MUTATION");
+    assert.equal(f.runner.retained().schemaIssues, null); assert.equal(f.resumes(), 3);
+    assert.equal(f.phases.includes("sql-fence-startup-version"), false); assert.equal(f.phases.includes("sql-fence-startup-select"), false); assert.equal(f.phases.includes("capture"), false);
+    assert.equal(JSON.stringify(diagnostic).includes("private-value"), false); assert.equal(JSON.stringify(diagnostic).includes("other.db"), false);
+    assert.equal(JSON.stringify(diagnostic).includes("diagnostic-wrapper"), false); assert.equal(JSON.stringify(diagnostic).includes("synthetic-private-error"), false);
+    const before = f.phases.length; await assert.rejects(f.runner.observe()); assert.equal(f.phases.length, before); assert.equal(f.runner.retainedSelectedSqlStartupDiagnostic(), retained);
+    assert.equal(currentSelectedFileMainSqlStartupDiagnosticSchema.safeParse({ ...diagnostic, sql: "private-value" }).success, false);
+  }
+});
+void test("initializer guard probe is separately retained once without changing v1 requests, original refusal or resume count", async () => {
+  for (const fault of [undefined, "probe"] as const) {
+    const f = await fixture(0, null, false, { site: "initializerBirth", classification: "held", ...(fault === undefined ? {} : { fault }) });
+    assert.equal(f.runner.retainedSelectedSqlPredicateDiagnostic(), null);
+    await assert.rejects(f.runner.observe(), /SELECTED_SQL_UNQUALIFIED_STARTUP_MUTATION/u);
+    const retained = f.runner.retainedSelectedSqlPredicateDiagnostic(); assert.ok(retained !== null);
+    assert.equal(retained.probeState, fault === undefined ? "captured" : "evaluation-refused");
+    assert.equal(retained.stage, fault === undefined ? "proxy-positive" : null); assert.equal(retained.diagnosticRequests, 1);
+    assert.equal(retained.originalPredicateBranchVerified, false); assert.equal(retained.resumeAuthorized, false);
+    assert.equal(f.runner.retainedSelectedSqlStartupDiagnostic()?.diagnosticRequests, 2); assert.equal(f.resumes(), 3);
+    assert.equal(f.runner.retained().phase, "sql-fence-captured-frame"); assert.equal(f.runner.retained().failure, "SELECTED_SQL_UNQUALIFIED_STARTUP_MUTATION");
+    assert.equal(f.phases.filter(phase => phase === "sql-fence-predicate-diagnostic").length, 1);
+    const before = f.phases.length; await assert.rejects(f.runner.observe()); assert.equal(f.phases.length, before);
+    assert.equal(f.runner.retainedSelectedSqlPredicateDiagnostic(), retained); assert.equal(Object.isFrozen(retained), true);
+    assert.equal(f.phases.includes("capture"), false);
+    assert.equal(JSON.stringify(retained).includes("other.db"), false);
+  }
+});
 void test("an import pause at another actual column refuses before SQLite import continuation or conditional arming", async () => {
   const f = await fixture(1); await assert.rejects(f.runner.observe(), /SELECTED_SQL_LOCATION/u);
-  assert.equal(f.phases.includes("sql-fence-arm"), false); assert.equal(f.resumes(), 1);
+  assert.equal(f.phases.includes("sql-fence-held-arm"), false); assert.equal(f.resumes(), 1);
 });
 void test("the production original bootstrap issuer rejects a matching token and bare fake transport before sending", () => {
   let sent = 0; const transport: CurrentFootprintCopyMainBackendTransport = { assertCurrent: (): Promise<void> => Promise.resolve(),
@@ -313,6 +496,65 @@ void test("after genuine Via cursor handoff the original Fetch GET is serviced a
   const held = await original.bindings.observeRequest(); assert.equal(held.method, "POST"); original.bindings.requireOriginalRequest(held);
   assert.equal(f.runner.selectedSqlFenceState()["heldSite"], "driver"); assert.equal(f.runner.selectedSqlFenceState()["selectedProjectMutationsResumed"], 0);
   await assert.rejects(original.bindings.continueReadonlyRequest(held), /NO_WRITE_GRANT/u); assert.equal(f.resumes(), before + 1);
+});
+void test("the Via handoff drains only a sole guard-passed SQL pair and preserves its next driver and owned source points", async () => {
+  const f = await fixture(); await f.runner.observe(); const original = await f.runner.beginViaMainObservation();
+  const before = f.resumes(), classifications = f.phases.filter(phase => phase === "sql-fence-captured-frame").length;
+  f.injectSql({ site: "run", classification: "guard-passed", following: "driver", batchResume: true });
+  await f.runner.pumpSelectedSqlFence();
+  const driver = await original.bindings.nextEvent(); assert.equal(driver.method, "Debugger.paused");
+  assert.equal(f.resumes(), before + 1); assert.equal(f.runner.selectedSqlFenceState()["heldSite"], "driver"); assert.equal(f.resumeBatches(), 1);
+  assert.equal(f.phases.filter(phase => phase === "sql-fence-captured-frame").length, classifications + 2);
+  assert.equal(f.runner.selectedSqlFenceState()["readonlyRequestContinuations"], 0);
+  const separate = await fixture(); await separate.runner.observe(); const owner = await separate.runner.beginViaMainObservation();
+  await owner.bindings.request(validateCurrentPcbViaMainCommand({ phase: "via-main-request-site-arm", method: "Debugger.setBreakpoint",
+    params: { location: { scriptId: "app", lineNumber: 8573, columnNumber: 1663 } } }), false);
+  const captured = separate.phases.filter(phase => phase === "sql-fence-captured-frame").length, resumes = separate.resumes();
+  separate.injectViaPoint("controller"); const owned = await owner.bindings.nextEvent(); assert.equal(owned.method, "Debugger.paused");
+  assert.equal(separate.phases.filter(phase => phase === "sql-fence-captured-frame").length, captured);
+  assert.equal(separate.resumes(), resumes); assert.equal(separate.runner.selectedSqlFenceState()["selectedProjectMutationsResumed"], 0);
+});
+
+void test("Via nextEvent filters guard-passed SQL pauses before delivering the next original held driver", async () => {
+  for (const site of ["queryOne", "run", "driver"] as const) {
+    const f = await fixture(); await f.runner.observe(); const original = await f.runner.beginViaMainObservation();
+    const before = f.resumes(), start = f.phases.length;
+    f.injectSql({ site, classification: "guard-passed", following: "driver" });
+    const event = await original.bindings.nextEvent(); assert.equal(event.method, "Debugger.paused");
+    assert.ok(event.params !== null && typeof event.params === "object"); const frames: unknown = Reflect.get(event.params, "callFrames");
+    assert.ok(Array.isArray(frames)); const frame: unknown = frames[0];
+    assert.ok(frame !== null && typeof frame === "object"); assert.equal(Reflect.get(frame, "callFrameId"), "frame-driver");
+    assert.equal(f.resumes(), before + 1); assert.equal(f.runner.selectedSqlFenceState()["heldSite"], "driver");
+    assert.equal(f.phases.slice(start).filter(phase => phase === "sql-fence-captured-frame").length, 2);
+    assert.equal(f.phases.slice(start).filter(phase => phase === "sql-fence-resume").length, 1);
+    assert.equal(f.runner.selectedSqlFenceState()["readonlyRequestContinuations"], 0);
+    assert.equal(f.runner.selectedSqlFenceState()["selectedProjectMutationsResumed"], 0);
+  }
+});
+
+void test("a guard-passed Via pause clears only its own held reference before body binding", async () => {
+  const f = await fixture(); await f.runner.observe(); const original = await f.runner.beginViaMainObservation();
+  for (const [lineNumber, columnNumber] of [[8573, 1663], [8572, 27_776]]) {
+    await original.bindings.request(validateCurrentPcbViaMainCommand({ phase: "via-main-request-site-arm", method: "Debugger.setBreakpoint", params: { location: { scriptId: "app", lineNumber, columnNumber } } }), false);
+  }
+  const before = f.resumes(); f.injectSql({ site: "run", classification: "guard-passed" });
+  await f.runner.pumpSelectedSqlFence(); assert.equal(f.resumes(), before + 1);
+  assert.equal(f.runner.selectedSqlFenceState()["heldSite"], null);
+  const body = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), projectKey: "a".repeat(64), path: String.raw`C:\Synthetic\fixture.eprj2`, dataStr: "original-producer-body" };
+  f.runner.bindViaExpectedHistoryBody(original.origin, body); assert.deepEqual(f.runner.requireViaExpectedHistoryBody(original.origin), body);
+});
+
+void test("Via filtering never resumes a refused classifier or retries a lost original resume acknowledgment", async () => {
+  for (const fault of ["guard-refused", "resume-ack"] as const) {
+    const f = await fixture(); await f.runner.observe(); const original = await f.runner.beginViaMainObservation();
+    const before = f.resumes(), start = f.phases.length;
+    f.injectSql({ site: "queryOne", classification: fault === "guard-refused" ? "guard-refused" : "guard-passed", ...(fault === "resume-ack" ? { fault } : {}) });
+    await assert.rejects(original.bindings.nextEvent()); const stopped = f.phases.length;
+    await assert.rejects(original.bindings.nextEvent()); assert.equal(f.phases.length, stopped);
+    assert.equal(f.resumes(), before);
+    assert.equal(f.phases.slice(start).filter(phase => phase === "sql-fence-resume").length, fault === "resume-ack" ? 1 : 0);
+    assert.equal(f.runner.selectedSqlFenceState()["selectedProjectMutationsResumed"], 0);
+  }
 });
 
 void test("the actual startup cursor consumes all original profile SQL before registration and never resumes reordered or foreign calls", async () => {

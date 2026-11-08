@@ -48,6 +48,26 @@ const conditions = {
 /** A condition exception must pause, since V8 otherwise ignores an exception
  * thrown by a breakpoint predicate. No readonly/unknown path can fail open. */
 const condition = (body: string): string => `(function(){try{${conditionalHelpers}\n${readonlySql}\n${body}}catch{return true;}}).call(this)`;
+/** Instrument a separate reevaluation without changing any armed condition.
+ * Each replacement must match once so source drift cannot silently omit a
+ * guard. Labels contain no operands, SQL, paths or exception text. */
+function predicateDiagnosticProgram(): string {
+  let helpers = conditionalHelpers;
+  const replace = (before: string, after: string): void => {
+    if (helpers.split(before).length !== 2) { throw new Error("SELECTED_SQL_PREDICATE_DIAGNOSTIC_SOURCE"); }
+    helpers = helpers.replace(before, after);
+  };
+  replace('const types=own(F5,"types"),isProxy=own(types,"isProxy");if(typeof isProxy!=="function"||Function.prototype.toString.call(isProxy)!=="function () { [native code] }"||!isProxy(new Proxy({},{}))||isProxy({}))bad();',
+    'stage="util-types";const types=own(F5,"types");stage="proxy-member";const isProxy=own(types,"isProxy");stage="proxy-kind";if(typeof isProxy!=="function")bad();stage="proxy-source";if(Function.prototype.toString.call(isProxy)!=="function () { [native code] }")bad();stage="proxy-positive";if(!isProxy(new Proxy({},{})))bad();stage="proxy-negative";if(isProxy({}))bad();');
+  replace('const native=(c)=>{plain(c);if(', 'const native=(c)=>{stage="database-proxy";plain(c);stage="database-source";if(');
+  replace('return own(c,"prototype");', 'stage="database-prototype";return own(c,"prototype");');
+  return `(function(){let stage="helper-definitions";try{${helpers}\nstage="path";text(t,4096);stage="database-member";native(own(sc,"Database"));return "condition-false";}catch{return stage;}}).call(this)`;
+}
+/** One fixed failure-only probe repeats descriptor/native/path guards with
+ * ephemeral local scratch, including the original Proxy sanity check. It
+ * executes no SQL or application method and never resumes the held call.
+ * Its label describes reevaluation, not the original predicate's exception. */
+export const CURRENT_SELECTED_FILE_MAIN_SQL_PREDICATE_DIAGNOSTIC_PROGRAM = predicateDiagnosticProgram();
 export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CONDITIONS = freezeDeep({
   keeperBirth: condition(conditions.keeperBirth),
   contextBirth: condition(conditions.contextBirth),
@@ -102,3 +122,44 @@ export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_PREPARE_RETURN_PROGRAM = `func
  * a project write grant. Only this capture's actual DB/sql-owner pair can use
  * each half once; bookkeeping changes only the inspector's private Map. */
 export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CONFIGURATION_PROGRAM = `function(capture,stage){${joins}\nconst z=original(capture),proxy=z.proxy;if(proxy(this))bad();arr(this,5);const path=own(this,"0"),db=own(this,"1"),owner=own(this,"2"),configs=own(capture,"8");if(proxy(db)||proxy(owner)||own(this,"3")!==z.sc||own(this,"4")!==z.util||typeof path!=="string"||path.length===0||path.length>4096||Object.getPrototypeOf(db)!==own(own(z.sc,"Database"),"prototype")||own(db,"filename")!==path||Object.getPrototypeOf(owner)!==own(own(capture,"2"),"prototype")||own(owner,"path")!==path||own(owner,"db")!==db||own(own(owner,"dbWrap"),"db")!==db||Object.getPrototypeOf(own(owner,"dbWrap"))!==own(own(capture,"1"),"prototype")||Object.getPrototypeOf(configs)!==Map.prototype||configs.size>32)bad();const previous=configs.get(db);if(stage==="serialize"){if(previous!==undefined||configs.size>=32)bad();}else if(stage==="pragma"){if(previous===undefined||previous.owner!==owner||previous.stage!=="serialize")bad();}else bad();verify();configs.set(db,{owner,stage});return{schema:"private.selected-file-main-sql-initializer-config.v1",stage,path,selectedFile:path===z.path,readonlySql:false,nativeCompletionProven:false,designWriteGrant:false};}`;
+
+const capturedFrameSites = ["keeperBirth", "contextBirth", "initializerBirth", "keeperBound", "contextBound", "initializerBound", "queryAll", "queryOne", "run", "prepare", "prepared", "statementEach", "statementRun", "finalize", "wrapClose", "keeperClose", "initializerClose", "initializerSerialize", "initializerPragma", "startupVersion", "startupJB", "startupDC", "driver"] as const;
+type CapturedFrameSite = typeof capturedFrameSites[number];
+/** Only the unavailable util operand is removed. Every other source operand
+ * retains its original position relative to the fixed original site recipe. */
+function capturedFrameOperands(site: CapturedFrameSite): readonly string[] {
+  const expression = SOURCE.sites[site].expression;
+  const operands = expression.slice(1, -1).split(",");
+  if (!expression.startsWith("[") || !expression.endsWith("]") || operands.length === 0 || operands.length > 13 || operands.some(value => !/^(?:[A-Za-z_$][A-Za-z\d_$]*|sc\.Database|Date\.now)$/u.test(value)) || operands.filter(value => value === "F5").length > 1) { throw new Error("SELECTED_SQL_CAPTURED_FRAME_EXPRESSION"); }
+  return operands;
+}
+/** The app-name alias is used only while constructing the startup paths and
+ * is unavailable in the later nested callbacks. Require the actual retained
+ * documents/root pair to prove its source-selected name. Other aliases retain
+ * their original values; the existing globals() check still verifies all paths. */
+const startupName = String.raw`(typeof nl==="string"&&typeof Je==="string"&&Je===nl+"\\EasyEDA-Pro"?"EasyEDA-Pro":void 0)`;
+/** Keep the raw frame's non-util operand positions. The separate classifier
+ * supplies util from its original capture; this recipe derives the app name. */
+const capturedFrameExpression = (site: CapturedFrameSite): string => `[${capturedFrameOperands(site).filter(value => value !== "F5").map(value => value === "lc" ? startupName : value).join(",")}]`;
+/** Fixed v2 capture expressions. Import and afterImports keep their historical
+ * module-frame recipes outside this site table. No caller expression exists. */
+export const CURRENT_SELECTED_FILE_MAIN_SQL_CAPTURED_FRAME_EXPRESSIONS = freezeDeep({
+  keeperBirth: capturedFrameExpression("keeperBirth"), contextBirth: capturedFrameExpression("contextBirth"), initializerBirth: capturedFrameExpression("initializerBirth"),
+  keeperBound: capturedFrameExpression("keeperBound"), contextBound: capturedFrameExpression("contextBound"), initializerBound: capturedFrameExpression("initializerBound"),
+  queryAll: capturedFrameExpression("queryAll"), queryOne: capturedFrameExpression("queryOne"), run: capturedFrameExpression("run"), prepare: capturedFrameExpression("prepare"), prepared: capturedFrameExpression("prepared"),
+  statementEach: capturedFrameExpression("statementEach"), statementRun: capturedFrameExpression("statementRun"), finalize: capturedFrameExpression("finalize"), wrapClose: capturedFrameExpression("wrapClose"),
+  keeperClose: capturedFrameExpression("keeperClose"), initializerClose: capturedFrameExpression("initializerClose"), initializerSerialize: capturedFrameExpression("initializerSerialize"), initializerPragma: capturedFrameExpression("initializerPragma"),
+  startupVersion: capturedFrameExpression("startupVersion"), startupJB: capturedFrameExpression("startupJB"), startupDC: capturedFrameExpression("startupDC"), driver: capturedFrameExpression("driver"),
+});
+/** Rebind the unchanged predicate to the original retained module/proxy and
+ * source-selected frame operands. A thrown guard never becomes approval or a
+ * policy-true array; only ordinary true conditions reach the legacy source lane. */
+function capturedFrameProgram(): string {
+  const specs = Object.fromEntries(capturedFrameSites.map(site => [site, capturedFrameOperands(site)]));
+  const cases = capturedFrameSites.map(site => `case ${JSON.stringify(site)}:{${conditions[site]}}`).join("");
+  return `function(capture,site){"use strict";try{${joins}\nconst z=original(capture);verify();if(z.proxy!==own(own(z.util,"types"),"isProxy"))bad();if(z.proxy(this)||typeof site!=="string")bad();const specs=${JSON.stringify(specs)},operands=own(specs,site),length=own(operands,"length");arr(operands,length);let rawLength=length;for(let n=0;n<length;n++)if(own(operands,String(n))==="F5")rawLength--;arr(this,rawLength);const legacy=[void 0,void 0,void 0,void 0,void 0,void 0,void 0,void 0,void 0,void 0,void 0,void 0,void 0];legacy.length=length;let at=0,t,e,r,s,a,_,receiver;for(let n=0;n<length;n++){const key=own(operands,String(n)),value=key==="F5"?z.util:own(this,String(at++));legacy[n]=value;if(key==="sc"&&value!==z.sc||key==="sc.Database"&&value!==own(z.sc,"Database"))bad();switch(key){case"this":receiver=value;break;case"t":t=value;break;case"e":e=value;break;case"r":r=value;break;case"s":s=value;break;case"a":a=value;break;case"_":_=value;break;}}const result=(function(F5,sc,Z2,t,e,r,s,a,_){${conditionalHelpers}\n${readonlySql}\nswitch(site){${cases}default:bad();}}).call(receiver,z.util,z.sc,own(capture,"1"),t,e,r,s,a,_);verify();if(result===false)return true;if(result===true)return legacy;bad();}catch{return"guard-refused";}}`;
+}
+/** Passive v2 classifier only. The original capture reference is supplied by
+ * the private runner; arbitrary Proxy capture inputs are outside that boundary.
+ * It executes no application/SQL body, publishes nothing and grants no resume. */
+export const CURRENT_SELECTED_FILE_MAIN_SQL_CAPTURED_FRAME_PROGRAM = capturedFrameProgram();
