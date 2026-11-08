@@ -414,9 +414,13 @@ turns while the admitted controller still holds its lease. Attribute any new
 process to its original connection before inspection or supported closure;
 never retry the old closed transport or adopt a process through another client.
 Source/review subagents can initialize their plugin connection while the live
-controller still owns the lease. A competing connection from the same agent
-team must retire through its own supported tool; another chat's owner cannot
-be displaced. If startup fails, inspect first. A selection or runtime failure
+controller still owns the lease. An owning connection from the same agent
+team must finish its original workflows and retire through its own supported
+path. A conflict-only connection instead uses its own `inspect`, then one
+`close-conflict` with `confirmCloseConflict:true`; retain the original pidfd and
+observe that process exiting separately. It cannot retire or displace the
+owning connection. Another chat's owner cannot be displaced. If startup fails,
+inspect first. A selection or runtime failure
 before child allocation leaves no original starting child, so `cleanup-startup`
 refuses. Shut down only after inspection confirms no owned child remains.
 If startup retained an unused child, with no caller tool dispatched, use

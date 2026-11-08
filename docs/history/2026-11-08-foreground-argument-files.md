@@ -50,3 +50,19 @@ reached EasyEDA or the running controller. No Windows, C#, host MCP, helper or
 native-owner action occurred.
 No helper, pin, bundle, official version or current frontend changed. The new
 input form becomes available only in a later verified frontend build.
+
+Provenance correction, 2026-11-08: the retained final report records these five
+changed source/test hashes, all rechecked against introducing commit
+`89237b0de1986880521ed1bba654dd0b6e808b41`. Paths below are relative to
+`plugins/easyeda-pro-control/`. The complete test worktree was not sealed; that
+commit identifies matching changed files, not a reconstructed full tested tree.
+The opening `0169ed8d` remains the starting context only. The 57-case count and
+other reported check scopes are unchanged.
+
+| Tested path | SHA-256 |
+| --- | --- |
+| `scripts/control-session-arguments-file.ts` | `690507cddc5e5021459640953a272297345b9fe646a075a2ce66b4e3777ac37b` |
+| `scripts/control-session.ts` | `dbdef35788a8ca7145bd3da7cffae4ac2bbdc5ee359d6c3a09d8cd7747fad09f` |
+| `scripts/control-session-manager.ts` | `dbe38619c6d121cf6e4b75062a5ea152765c0c1dc923b96ca4511052897c8b29` |
+| `server/tests/control-session-arguments-file.test.ts` | `75f7b31b81b2c449cc08f21aa20a6a2dd10dd8bf8d0582061d031a01157e4732` |
+| `server/tests/control-session-manager.test.ts` | `a1ff10e662a51bf67fb7281115d865e91913beb23add0a79002ae19e24323cd9` |

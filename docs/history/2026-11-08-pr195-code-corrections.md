@@ -47,3 +47,12 @@ CodeRabbit measured 55.26% documentation coverage for 76 complex functions in
 undocumented functions actually changed in that review's before/after blobs.
 The original context-only comment candidate remains private and unused.
 An updated percentage is not claimed before a new completed review.
+
+Provenance correction, 2026-11-08: the five spacing/storage and three projection
+case results above came from an unsealed test worktree. No exact complete
+runtime/test tree was retained for those runs. `ee303e06119037af622d4e6a94159c56ed6f8b51`
+and `5ffe45bd` identify the review target/context; introducing correction commit
+`fd81756a9fc6354c468da3f61af63b8d848d5096` does not retrospectively identify the
+full tested worktree. The retained individual process logs support the listed
+counts and outcomes within that limit. No checks were replayed to create a
+retroactive seal, and no broader payload claim is added.

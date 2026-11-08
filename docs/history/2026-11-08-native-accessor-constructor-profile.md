@@ -51,3 +51,7 @@ the scanner. The normalized Linux fixtures preserve complete packet
 content and replace only opaque handle labels. Full frozen-payload generation,
 connected continuation, final CI, review, publication and installation remain
 separate work.
+
+Origin-link correction, 2026-11-08: the earlier 3.0.2 Linux model is recorded in
+[Selected Main N-API3 constructor metadata](2026-11-08-selected-main-napi3-metadata.md).
+The narrower limits and subsequent correction above preserve that observation.
