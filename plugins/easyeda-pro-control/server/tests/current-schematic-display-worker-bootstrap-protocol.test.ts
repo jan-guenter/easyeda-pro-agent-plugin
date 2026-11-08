@@ -5,7 +5,7 @@ import { CURRENT_SCHEMATIC_DISPLAY_WORKER_PARENT_PARAMS, CURRENT_SCHEMATIC_DISPL
   currentSchematicDisplayWorkerBootstrapNativeCases, validateCurrentSchematicDisplayWorkerBootstrapCommand } from "../src/current-schematic-display-worker-bootstrap-protocol.ts";
 
 void test("cold schematic bootstrap has a finite seven-source instrumentation vocabulary and derived request reservation", () => {
-  const cases = currentSchematicDisplayWorkerBootstrapNativeCases(); assert.equal(cases.length, 20);
+  const cases = currentSchematicDisplayWorkerBootstrapNativeCases(); assert.equal(cases.length, 21);
   for (const command of cases) {
     assert.deepEqual(validateCurrentSchematicDisplayWorkerBootstrapCommand(command), command);
     for (const field of ["sessionId", "url", "expression", "targetId", "purpose", "requestLimit"]) {
@@ -13,7 +13,7 @@ void test("cold schematic bootstrap has a finite seven-source instrumentation vo
     }
   }
   assert.deepEqual(cases.filter(command => command.phase === "schematic-worker-source").map(command => command.role), CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES);
-  assert.equal(REQUESTS.workerNormal, 12); assert.equal(REQUESTS.workerCleanup, 8); assert.equal(REQUESTS.total, 23);
+  assert.equal(REQUESTS.workerNormal, 16); assert.equal(REQUESTS.workerCleanup, 8); assert.equal(REQUESTS.total, 27);
   assert.deepEqual(CURRENT_SCHEMATIC_DISPLAY_WORKER_RUNNING_PARAMS, { ...CURRENT_SCHEMATIC_DISPLAY_WORKER_PARENT_PARAMS, waitForDebuggerOnStart: false });
   assert.equal(CURRENT_SCHEMATIC_DISPLAY_WORKER_RUNNING_PARAMS.autoAttach, true);
 });
