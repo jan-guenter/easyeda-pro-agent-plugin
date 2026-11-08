@@ -78,6 +78,7 @@ export function queryManagedFixtureImport(input: unknown = {}): Record<string, u
     effect: "fresh-managed-disposable-native-import", nativeImportLiveValidation: "not-recorded", importedFixtureAccepted: false,
     retryAllowed: false, deletionAuthorized: false, designExecutionAuthorized: false,
     limitations: ["Requires the same original ordinary 209 launch, exact empty StartPage, current SDK/UI/manager/main pins and authenticated tracked dispatch.",
+      "The canonical Windows TEMP root must contain only ASCII letters, digits, spaces, underscores, hyphens and path separators after its drive colon; dots and non-ASCII characters are unsupported. Configure a compatible TEMP path before starting fixture import.",
       "Generates a fresh fixed Via-only, Line+Via, Arc+Line+Via, standalone circular SMT Pad, Component with its own complete local circular-Pad footprint, or separate SCH/SCH_PAGE Text/Wire/Bus archives with either the original source profile or one explicit Wire Relevance ATTR; no caller file, path, geometry, code, SQL or profile override is accepted.",
       "The schematic initial data target has its own complete SQL/source profile and cannot satisfy PCB staging/opening. A dedicated fresh schematic registration/page owner remains required before native reading or writing.",
       "The Component data target retains both local FOOTPRINT and PCB documents and explicit hidden attributes. Its fresh Component spatial owner/cache/index proof is separate; older PCB/Pad owners and historical loaders do not accept its brand.",

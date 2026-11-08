@@ -109,6 +109,47 @@ const retire = (id: string, generation: number): string => request({ id, action:
 const loaded = (id: string): string => request({ id, tool: "easyeda_control_api", arguments: { request: { action: "loaded-facade" } } });
 
 const sdkModule = (path: string): string => JSON.stringify(pathToFileURL(join(pluginRoot, "node_modules/@modelcontextprotocol/sdk/dist/esm", path)).href);
+/** An inert metadata peer can exit without claiming native retirement. */
+function selfClosingMetadataPeer(): string {
+  return `import {Server} from ${sdkModule("server/index.js")};
+import {StdioServerTransport} from ${sdkModule("server/stdio.js")};
+import {CallToolRequestSchema,ListToolsRequestSchema} from ${sdkModule("types.js")};
+const server=new Server({name:'self-closing-metadata-peer',version:'1.0.0'},{capabilities:{tools:{}}});
+const result=value=>({content:[{type:'text',text:JSON.stringify(value)}],structuredContent:value});
+server.setRequestHandler(ListToolsRequestSchema,async()=>({tools:['easyeda_control_api','easyeda_control_session'].map(name=>({name,inputSchema:{type:'object'}}))}));
+server.setRequestHandler(CallToolRequestSchema,async({params})=>{
+ const action=params.arguments?.request?.action;
+ if(params.name==='easyeda_control_api'&&action==='loaded-facade')return result({offline:true,result:{schema:'easyeda-pro-control.loaded-facade.v1',pid:process.pid,moduleUrl:import.meta.url,nodeVersion:process.version,admissionGranted:false}});
+ if(params.name==='easyeda_control_api'&&action==='fixture-exit'){setTimeout(()=>{void server.close().then(()=>{process.exitCode=7;});},30);return result({closingSyntheticPeer:true,nativeCleanupClaimed:false});}
+ throw new Error('No retirement or native operation is implemented by this synthetic peer.');
+});await server.connect(new StdioServerTransport());`;
+}
+
+void test("manager shutdown closes only itself after its original active child has already exited", { timeout: 15_000 }, async () => {
+  const outputs: unknown[] = [], selected = await fixture(selfClosingMetadataPeer());
+  await selectedProfile(selected.profilePath, async () => {
+    const manager = new ForegroundSessionManager(async value => { outputs.push(value); await Promise.resolve(); }); await manager.initialize(selected.root);
+    const pid = manager.inspect()["facadePid"]; assert.ok(typeof pid === "number");
+    try {
+      await manager.handle(request({ id: "live-child-shutdown-refused", action: "shutdown" }));
+      assert.equal(manager.inspect()["stage"], "active"); assert.equal(record(outputs.at(-1))["error"], "manager-request-rejected");
+      await manager.handle(request({ id: "exit-synthetic-child", tool: "easyeda_control_api", arguments: { request: { action: "fixture-exit" } } }));
+      for (let attempt = 0; attempt < 80 && manager.inspect()["closure"] === null; attempt += 1) { await wait(25); }
+      assert.deepEqual(record(manager.inspect()["closure"]), { pid, exitObserved: true, closeObserved: true, exitCode: 7, signal: null, stdinEof: false });
+      assert.equal(manager.inspect()["stage"], "active");
+      await manager.handle(request({ id: "closed-child-normal-shutdown", action: "shutdown" }));
+      assert.equal(manager.inspect()["stage"], "closed"); const closing = record(outputs.at(-1));
+      assert.equal(closing["closing"], true); assert.equal(closing["originalFacadeClosed"], true);
+      assert.equal(closing["retirementAcknowledged"], false); assert.equal(closing["nativeCleanupProved"], false); assert.equal(closing["replacementAllowed"], false);
+      await manager.handle(request({ id: "no-replacement-after-shutdown", action: "start", afterGeneration: 1, pluginRoot: selected.root }));
+      assert.equal(record(outputs.at(-1))["error"], "manager-request-rejected"); assert.equal(manager.inspect()["facadePid"], pid); assert.equal(manager.inspect()["stage"], "closed");
+    } finally {
+      if (manager.inspect()["stage"] === "active" && manager.inspect()["closure"] === null) { await manager.handle(request({ id: "finally-exit-synthetic-child", tool: "easyeda_control_api", arguments: { request: { action: "fixture-exit" } } })); }
+      for (let attempt = 0; attempt < 80 && manager.inspect()["closure"] === null; attempt += 1) { await wait(25); }
+      if (manager.inspect()["closure"] !== null && manager.inspect()["stage"] !== "closed") { await manager.handle(request({ id: "finally-shutdown-closed-child", action: "shutdown" })); }
+    }
+  });
+});
 /** Emit one controlled RPC rejection or contradictory retirement reply from a
  * synthetic peer that closes itself without the manager signalling its child. */
 function syntheticPeer(kind: "rpc-rejection" | "bad-retirement"): string {
@@ -1487,8 +1528,8 @@ void test("historical Source timeout retains only original metadata settlement a
 
 /** Inert SDK peer for the exact Via family, with a genuinely pending execute
  * Promise and independently acknowledged original abort/exit/release stages. */
-function interruptedViaPeer(): string {
-  return `import {Server} from ${sdkModule("server/index.js")};
+function interruptedViaPeer(schematic = false): string {
+  const source = `import {Server} from ${sdkModule("server/index.js")};
 import {StdioServerTransport} from ${sdkModule("server/stdio.js")};
 import {CallToolRequestSchema,ListToolsRequestSchema} from ${sdkModule("types.js")};
 const server=new Server({name:'synthetic-original-via',version:'1.0.0'},{capabilities:{tools:{}}});
@@ -1512,10 +1553,13 @@ if(q.action==='settle-publication'){settled=true;return result({result:{operatio
 if(q.action==='inspect')return result({result:{operationId:op,action:q.action,active,executes,aborted,released,settled,calls}});return refused();
 });
 setTimeout(()=>{gate.resolve();void server.close();},18000).unref();await server.connect(new StdioServerTransport());`;
+  return schematic ? source.replaceAll("easyeda_control_current_pcb_via_write", "easyeda_control_current_schematic_relevance_display_write")
+    .replaceAll("pcb209-via-write-manager-original", "sch209-relevance-display-manager-original")
+    .replaceAll("confirmDisposableViaWrite", "confirmDisposableDisplayTransaction").replaceAll("confirmNormalOpenEffects", "acceptNormalOpenEffects") : source;
 }
-void test("Via original manager cleanup binds timeout and in-flight abort to the same retained request/client through facade retirement", { timeout: 25_000 }, async context => {
-  for (const mode of ["timeout", "in-flight"] as const) {
-    const selected = await fixture(interruptedViaPeer()); const outputs: unknown[] = [];
+void test("Via and schematic original manager cleanup binds timeout and in-flight abort to the same retained request/client through facade retirement", { timeout: 25_000 }, async context => {
+  for (const [mode, schematic] of [["timeout", false], ["in-flight", false], ["timeout", true], ["in-flight", true]] as const) {
+    const selected = await fixture(interruptedViaPeer(schematic)); const outputs: unknown[] = [];
     await selectedProfile(selected.profilePath, async () => {
       const manager = new ForegroundSessionManager(async value => { outputs.push(value); await Promise.resolve(); });
       context.after(async () => {
@@ -1525,8 +1569,10 @@ void test("Via original manager cleanup binds timeout and in-flight abort to the
         await manager.handle(request({ id: `${mode}-fixture-shutdown`, action: "shutdown" }));
       });
       await manager.initialize(selected.root); const pid = manager.inspect()["facadePid"];
-      const execute = { id: `${mode}-original-execute`, tool: "easyeda_control_current_pcb_via_write", timeoutMs: mode === "timeout" ? 1000 : 10_000,
-        arguments: { request: { action: "execute", operationId: "pcb209-via-write-manager-original", confirmDisposableViaWrite: true, confirmOneSave: true, confirmForwardOnly: true, confirmNormalOpenEffects: true } } };
+      const tool = schematic ? "easyeda_control_current_schematic_relevance_display_write" : "easyeda_control_current_pcb_via_write";
+      const execute = { id: `${mode}-original-execute`, tool, timeoutMs: mode === "timeout" ? 1000 : 10_000,
+        arguments: { request: { action: "execute", operationId: schematic ? "sch209-relevance-display-manager-original" : "pcb209-via-write-manager-original",
+          confirmOneSave: true, confirmForwardOnly: true, ...(schematic ? { confirmDisposableDisplayTransaction: true, acceptNormalOpenEffects: true } : { confirmDisposableViaWrite: true, confirmNormalOpenEffects: true }) } } };
       const cleanup = (id: string, action: string, extra: object = {}): string => request({ id, action: "cleanup-original", generation: 1,
         interruptedRequestId: execute.id, request: { action, ...extra } });
       const side = (id: string, action: string, extra: object = {}): string => request({ id, action: "in-flight-original", generation: 1,

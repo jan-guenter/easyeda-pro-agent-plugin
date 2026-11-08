@@ -51,7 +51,7 @@ async function loadFixture(lifecycle: Row): Promise<FixtureModule> {
   assert.ok(offset > 10_000 && offset < 40_000);
   let source = complete.slice(0, offset);
   const substitutions = [
-    ["diagnostic-test|pcb209-test|string-precreate-test|worker-startup-test", "diagnostic-test|pcb209-test|pcb209-empty-test|string-precreate-test|worker-startup-test"],
+    ["diagnostic-test|pcb209-test|pcb209-ordinary-test|string-precreate-test|worker-startup-test", "diagnostic-test|pcb209-test|pcb209-empty-test|string-precreate-test|worker-startup-test"],
     ['const startupPurpose = id.startsWith("worker-startup-");', 'const startupPurpose = id.startsWith("worker-startup-") || id.startsWith("pcb209-empty-");'],
     ['profile: ownerPurpose, stringPrecreateConsumed:', 'profile: startupPurpose ? "worker-startup-empty209" : ownerPurpose, stringPrecreateConsumed:'],
     ['if (opening209) { coordinator =', 'if (opening209 && !startupPurpose) { coordinator ='],

@@ -1,7 +1,7 @@
+import {INSTALLED_EASYEDA_SOURCE_SKIP_REASON,readConfiguredEasyedaAssets} from "./helpers/installed-easyeda-source.ts";
 /** Real pinned event/disposable methods on an inert VM graph. This creates no
  * original renderer, owner, action continuation, CAD model or native process. */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { Session } from "node:inspector/promises";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
@@ -10,11 +10,12 @@ import { CURRENT_SCHEMATIC_RELEVANCE_PREFIX_QUEUE_PROGRAMS as P } from "../src/c
 import { CURRENT_SCHEMATIC_RELEVANCE_PREFIX_QUEUE_SOURCE as SOURCE, qualifyCurrentSchematicRelevancePrefixQueueSource } from "../src/current-schematic-relevance-action-prefix-queue-source.ts";
 import { decodeCurrentSchematicRelevancePrefixQueueScope, decodeCurrentSchematicRelevancePrefixQueueWeakRef, requireCurrentSchematicRelevancePrefixQueueDescription } from "../src/current-schematic-relevance-action-prefix-queue-replies.ts";
 
-let installedSources: Promise<readonly string[]> | null = null;
-function sourceTexts(): Promise<readonly string[]> { installedSources ??= Promise.all(SOURCE.map(row => readFile(`/mnt/c/Program Files/EasyEDA-Pro/resources/app/assets/${row.relativePath}`, "utf8"))); return installedSources; }
-async function sourceAvailable(context: TestContext): Promise<boolean> { try { await sourceTexts(); return true; } catch (error) { if (error !== null && typeof error === "object" && "code" in error && error.code === "ENOENT") { context.skip("installed source unavailable"); return false; } throw error; } }
+let installedSources:Promise<readonly string[]|null>|null=null;
+function sourceTexts():Promise<readonly string[]|null>{installedSources??=readConfiguredEasyedaAssets(SOURCE.map(row=>row.relativePath));return installedSources;}
+async function sourceAvailable(context:TestContext):Promise<boolean>{if(await sourceTexts()===null){context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);return false;}return true;}
+
 async function fixture(variant:0|1):Promise<ReturnType<typeof createContext>>{
- const profile=SOURCE[variant];const texts=await sourceTexts();const source=texts[variant];assert.ok(typeof source === "string");assert.equal(qualifyCurrentSchematicRelevancePrefixQueueSource(source),variant);
+ const profile=SOURCE[variant];const texts=await sourceTexts();assert.ok(texts!==null);const source=texts[variant];assert.ok(typeof source === "string");assert.equal(qualifyCurrentSchematicRelevancePrefixQueueSource(source),variant);
  const raw=(role:keyof typeof profile.roles):string=>{const row=profile.roles[role];return source.slice(row.start,row.end);};
  const q=profile.roles.queueConstructor.name;
  const b=profile.roles.eventBaseConstructor.name;

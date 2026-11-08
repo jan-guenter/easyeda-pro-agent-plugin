@@ -9,6 +9,14 @@ export interface CurrentCSharpSpacing {
 }
 type Kind = "space" | "comment" | "identifier" | "number" | "symbol" | "string" | "verbatim" | "char";
 interface Token { readonly kind: Kind; readonly start: number; readonly end: number; readonly text: string }
+/** Read-only build analysis of the same restricted lexer. No new lexical form
+ * or historical compaction rule is admitted by exposing these observations. */
+export function currentPcbDiagnosticCSharpLexicalTokens(source: string): readonly Readonly<Token>[] {
+  return Object.freeze(tokens(source).map(token => Object.freeze(token)));
+}
+export function currentPcbDiagnosticCSharpTokenSha256(source: string): string {
+  return hashTokens(tokens(source));
+}
 const number = /^(?:0[xX][a-fA-F\d]+(?:[uU][lL]?|[lL][uU]?)?|(?:\d+\.\d+|\.\d+)(?:[eE][+-]?\d+)?[fFdDmM]?|\d+[eE][+-]?\d+[fFdDmM]?|\d+[fFdDmM]|\d+(?:[uU][lL]?|[lL][uU]?)?)/u;
 const operators = Object.freeze([">>=", "<<=", "++", "--", "->", "&&", "||", "??", "::", "=>", "==", "!=", "<=", ">=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<", ">>"]);
 const bad = (): never => { throw new Error("PCB_DIAGNOSTIC_CSHARP_SPACING"); };

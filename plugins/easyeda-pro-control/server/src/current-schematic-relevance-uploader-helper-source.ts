@@ -218,6 +218,20 @@ export const CURRENT_SCHEMATIC_RELEVANCE_UPLOADER_HELPER_SOURCE=freezeDeep([
         "sha256": "e1cb29724e2c1f58a74559c280c3e4c2c13301bba92a24320e6269c662aa8ed4",
         "lineNumber": 30,
         "columnNumber": 47_278
+      },
+      "publisherHeadTypeGet": {
+        "name": "get headType",
+        "kind": "getter",
+        "strict": true,
+        "arity": 0,
+        "async": false,
+        "generator": false,
+        "start": 772_943,
+        "end": 772_980,
+        "bytes": 37,
+        "sha256": "761264bc6e8cf12025c7ed24846860f0c2b5a68fa8c46b45dd4ab57d2beb692b",
+        "lineNumber": 30,
+        "columnNumber": 16_721
       }
     }
   },
@@ -435,10 +449,24 @@ export const CURRENT_SCHEMATIC_RELEVANCE_UPLOADER_HELPER_SOURCE=freezeDeep([
         "sha256": "e1cb29724e2c1f58a74559c280c3e4c2c13301bba92a24320e6269c662aa8ed4",
         "lineNumber": 556,
         "columnNumber": 47_278
+      },
+      "publisherHeadTypeGet": {
+        "name": "get headType",
+        "kind": "getter",
+        "strict": true,
+        "arity": 0,
+        "async": false,
+        "generator": false,
+        "start": 1_796_355,
+        "end": 1_796_392,
+        "bytes": 37,
+        "sha256": "761264bc6e8cf12025c7ed24846860f0c2b5a68fa8c46b45dd4ab57d2beb692b",
+        "lineNumber": 556,
+        "columnNumber": 16_721
       }
     }
   }
 ] as const);
-export const CURRENT_SCHEMATIC_RELEVANCE_UPLOADER_HELPER_ROLES=Object.freeze(["checkerBaseText","checkerText","textUploadCallback","displayHAlignGet","displayVAlignGet","alignValue","isBusEntry","isNetGroup","valueIsBoolean","alignString","alignNullish","idleCallback","shapeManagerRootGet","modelCommandUploadCallback","managerBaseGet"] as const);
+export const CURRENT_SCHEMATIC_RELEVANCE_UPLOADER_HELPER_ROLES=Object.freeze(["checkerBaseText","checkerText","textUploadCallback","displayHAlignGet","displayVAlignGet","alignValue","isBusEntry","isNetGroup","valueIsBoolean","alignString","alignNullish","idleCallback","shapeManagerRootGet","modelCommandUploadCallback","managerBaseGet","publisherHeadTypeGet"] as const);
 export type CurrentSchematicRelevanceUploaderHelperRole=typeof CURRENT_SCHEMATIC_RELEVANCE_UPLOADER_HELPER_ROLES[number];
 export function qualifyCurrentSchematicRelevanceUploaderHelperSource(source:string):0|1{if(!source.isWellFormed()){throw new Error("SCH_UPLOADER_HELPER_SOURCE");}const bytes=Buffer.byteLength(source),sha=createHash("sha256").update(source).digest("hex");for(const variant of [0,1]as const){const row=CURRENT_SCHEMATIC_RELEVANCE_UPLOADER_HELPER_SOURCE[variant];if(bytes===row.bytes&&sha===row.sha256){for(const role of CURRENT_SCHEMATIC_RELEVANCE_UPLOADER_HELPER_ROLES){const at=row.roles[role],text=source.slice(at.start,at.end);if(Buffer.byteLength(text)!==at.bytes||createHash("sha256").update(text).digest("hex")!==at.sha256){throw new Error("SCH_UPLOADER_HELPER_SPAN");}}return variant;}}throw new Error("SCH_UPLOADER_HELPER_SOURCE");}

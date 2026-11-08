@@ -1,3 +1,5 @@
+/* oxlint-disable import/max-dependencies -- Source metadata, inert observer/graph execution and the configured installed-source gate are independent test obligations. */
+import {INSTALLED_EASYEDA_SOURCE_SKIP_REASON,readConfiguredEasyedaAsset} from "./helpers/installed-easyeda-source.ts";
 /** Real metadata observer with explicit original-origin/inspector seams. Full
  * installed SCH source and all metadata decoders run; no app method executes. */
 import assert from "node:assert/strict";
@@ -13,10 +15,8 @@ import type { CurrentSchematicDisplayAccessorCommand } from "../src/current-sche
 import { GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_CALLEES as CALLEES, GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE as SOURCES } from "../src/generated-schematic-display-accessor-source.ts";
 import type { GeneratedSchematicDisplayAccessorRole } from "../src/generated-schematic-display-accessor-source.ts";
 
-async function installedSource(context: TestContext): Promise<string | null> {
-  try { return await readFile(`/mnt/c/Program Files/EasyEDA-Pro/resources/app/assets/${SOURCES[0].relativePath}`, "utf8"); }
-  catch (error) { if (error instanceof Error && "code" in error && error.code === "ENOENT") { context.skip("Pinned installed SCH source is unavailable in this source-only CI environment."); return null; } throw error; }
-}
+async function installedSource(context:TestContext):Promise<string|null>{const source=await readConfiguredEasyedaAsset(SOURCES[0].relativePath);if(source===null){context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);}return source;}
+
 function addNames(fields: readonly Readonly<{ name: string }>[], names: Set<string>): void { for (const field of fields) { names.add(field.name); } }
 const prop = (name: string, value: unknown, writable = true, enumerable = true, configurable = true): unknown => ({ name, value, writable, enumerable, configurable, isOwn: true });
 const array = (values: unknown[]): unknown => ({ result: [...values.map((value, index) => prop(String(index), value)), prop("length", { type: "number", value: values.length }, true, false, false)], internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", objectId: "array-prototype" } }] });

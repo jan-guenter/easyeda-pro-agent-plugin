@@ -2,5 +2,5 @@
  * by this new native generation. Serialized data cannot recreate an owner. */
 export { CurrentSchematicRelevanceSavedReadbackOwner, startCurrentSchematicRelevanceSavedReadbackOwner,
   assertOriginalCurrentSchematicRelevanceSavedReadbackOwner, currentSchematicRelevanceSavedReadbackAllocationOutcome,
-  originalCurrentSchematicRelevanceSavedReadbackTarget, originalCurrentSchematicRelevanceSavedReadbackTermination,
+  originalCurrentSchematicRelevanceSavedReadbackTarget, originalCurrentSchematicRelevanceSavedReadbackTermination, originalCurrentSchematicRelevanceSavedReadbackNormalClose,
   assertOriginalCurrentSchematicRelevanceSavedReadbackTermination, requireOriginalCurrentSchematicRelevanceSavedCacheOrigin } from "./current-pcb-diagnostic-owner.ts";

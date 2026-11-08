@@ -1,5 +1,6 @@
 /* oxlint-disable max-classes-per-file -- Actual index callbacks use distinct inert coordinator, runtime and diagnostic collaborators. */
 import assert from "node:assert/strict";
+import { installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
@@ -17,12 +18,13 @@ const release = { action: "release-closed", operationId: launch.operationId, exp
 
 /** Select the actual startup dispatcher and its original retained state by
  * AST shape, with separate finite bounds for the dispatcher and retained state. */
+/** Extract the actual startup declarations used by registration tests, refusing a missing or ambiguous source boundary. */
 function startupDeclarations(source: string): string {
   const blocks = parse(source, { ecmaVersion: "latest", sourceType: "module" }).body.flatMap(statement =>
     statement.type === "IfStatement" && statement.consequent.type === "BlockStatement" && statement.consequent.body.some(node =>
       node.type === "VariableDeclaration" && node.declarations.some(declaration => declaration.id.type === "Identifier" && declaration.id.name === "runStartup")) ? [statement.consequent] : []);
   assert.equal(blocks.length, 1); const block = blocks[0]; assert.ok(block);
-  const selected = ["startupOriginal", "startupCalls", "combinedHistoricalOriginal", "forwardOpeningHistoricalOriginal", "forwardSourceHistoricalOriginal", "runStartup"].map(name => {
+  const selected = ["viaPreopeningHistoricalOriginal", "startupOriginal", "startupCalls", "combinedHistoricalOriginal", "forwardOpeningHistoricalOriginal", "forwardSourceHistoricalOriginal", "runStartup"].map(name => {
     const matches = block.body.filter(node => node.type === "VariableDeclaration" && node.declarations.length === 1 &&
       node.declarations[0]?.id.type === "Identifier" && node.declarations[0].id.name === name);
     assert.equal(matches.length, 1); const node = matches[0]; assert.ok(node?.type === "VariableDeclaration");
@@ -52,6 +54,7 @@ function startupDeclarations(source: string): string {
 
 /** Join the real ordinary allocation guard, launch registration and startup
  * dispatcher with inert peers whose helper release can remain pending or fail. */
+/** Register the actual launch and release handlers in an inert VM with explicit dependency controls and retained cleanup. */
 async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unknown>; scope: vm.Context; finish: () => void;
   state: { releaseCalls: number; released: boolean; failRelease: boolean; runtimeCount: number; diagnosticAllocations: number } }> {
   const barrier = Promise.withResolvers<null>();
@@ -156,8 +159,10 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
   const registrationEnd = source.indexOf('registerFacadeTool(\n  "easyeda_control_project_open",', registrationStart);
   for (const [begin, end] of [[helperStart, helperEnd], [allocationStart, allocationEnd], [registrationStart, registrationEnd]] as const) {
     assert.ok(begin > 0 && end > begin && end - begin < 24_000);
+    installIndexFixtureDependencies(scope,source);
     vm.runInContext(source.slice(begin, end).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   }
+  installIndexFixtureDependencies(scope,source);
   vm.runInContext(startupDeclarations(source).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   assert.ok(invoke);
   return { invoke, scope, state, finish: (): void => { barrier.resolve(null); }, startup: (): Promise<unknown> =>

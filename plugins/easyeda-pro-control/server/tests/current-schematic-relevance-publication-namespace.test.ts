@@ -1,7 +1,7 @@
 /** Original complete watch class and publisher method, with only inert outer
  * services. The namespace is read at the actual setAttribute entry pause. */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { INSTALLED_EASYEDA_SOURCE_SKIP_REASON, readConfiguredEasyedaAsset } from "./helpers/installed-easyeda-source.ts";
 import { runInThisContext } from "node:vm";
 import { Worker } from "node:worker_threads";
 import { test } from "node:test";
@@ -11,9 +11,7 @@ import { CURRENT_SCHEMATIC_RELEVANCE_UI_PUBLICATION_NAMESPACE_EXPRESSIONS as EXP
 
 for (const variant of [0, 1] as const) {
   void test(`original variant ${String(variant)} watch closure exposes the selected publisher namespace at the held setAttribute entry`, { timeout: 20_000 }, async context => {
-    assert.equal(process.versions.node, "24.18.0"); const profile = SOURCE[variant]; let source: string;
-    try { source = await readFile(`/mnt/c/Program Files/EasyEDA-Pro/resources/app/assets/${profile.relativePath}`, "utf8"); }
-    catch (error) { if (error instanceof Error && "code" in error && error.code === "ENOENT") { context.skip("Pinned installed SCH source is unavailable in this source-only CI environment."); return; } throw error; }
+    assert.equal(process.versions.node, "24.18.0"); const profile = SOURCE[variant]; const source = await readConfiguredEasyedaAsset(profile.relativePath); if (source === null) { context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON); return; }
     assert.equal(qualifyCurrentSchematicRelevancePublicationCalleeSource(source), variant); const constructor = ACCESSOR[variant].methods.monitorConstructor; const publish = profile.roles.publishPendData; const ctorText = source.slice(constructor.start, constructor.end); const pubText = source.slice(publish.start, publish.end);
     const base = /^class extends ([A-Za-z$\d_]+)\{/u.exec(ctorText)?.[1]; const noop = /this\.record=([A-Za-z$\d_]+),/u.exec(ctorText)?.[1]; const dispose = /return r\.register\(([A-Za-z$\d_]+)\(/u.exec(ctorText)?.[1]; assert.ok(base !== undefined && noop !== undefined && dispose !== undefined);
     const namespace = variant === 0 ? "da" : "ya"; const value: unknown = runInThisContext(`(function(){const ${namespace}={pushPend:"/pro-mgr/worker/batchPendData"};const ${noop}=()=>{};const ${dispose}=value=>value;class ${base}{register(value){return value;}}const Monitor=(${ctorText});const retainedPublisher=({${pubText}}).publishPendData;const monitor=new Monitor({isSchShapeManager(){return false}});monitor.watch();return{monitor,retainedPublisher,namespace:${namespace}};})()`); assert.ok(value !== null && typeof value === "object"); const monitor: unknown = Reflect.get(value, "monitor"); assert.ok(monitor !== null && typeof monitor === "object"); const fn: unknown = Reflect.get(monitor, "setAttribute"); assert.equal(typeof fn, "function");

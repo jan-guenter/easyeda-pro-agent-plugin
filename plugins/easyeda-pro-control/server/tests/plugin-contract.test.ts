@@ -51,9 +51,9 @@ void test("repository metadata parsing retains the portable launch fields for va
     assert.equal(mcpConfigurationSchema.safeParse({ mcpServers: { easyeda_pro_control: { ...server, args } } }).success, false);
   }
   assert.deepEqual(Object.keys(parsed.mcpServers.easyeda_pro_control.tools).toSorted(), FACADE_TOOL_POLICY_NAMES);
-  assert.equal(FACADE_TOOL_POLICY_NAMES.length, 63);
+  assert.equal(FACADE_TOOL_POLICY_NAMES.length, 64);
   assert.equal(new Set<string>(FACADE_TOOL_NAMES).has("easyeda_control_current_pcb_via_write"), false);
-  for (const tool of ["easyeda_control_current_pcb_via_write", "easyeda_control_public_readers", "easyeda_control_netlist_files", "easyeda_control_catalog_footprint", "easyeda_control_catalog_components", "easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup"]) { assert.equal(server.tools[tool]?.approval_mode, "prompt"); }
+  for (const tool of ["easyeda_control_current_pcb_via_write", "easyeda_control_current_schematic_relevance_display_write", "easyeda_control_public_readers", "easyeda_control_netlist_files", "easyeda_control_catalog_footprint", "easyeda_control_catalog_components", "easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup"]) { assert.equal(server.tools[tool]?.approval_mode, "prompt"); }
   assert.equal(parsed.mcpServers.easyeda_pro_control.tools["easyeda_control_disposable_symbol_copy"]?.approval_mode, "prompt");
   assert.equal(parsed.mcpServers.easyeda_pro_control.tools["easyeda_control_disposable_pcb_rename"]?.approval_mode, "prompt");
   assert.equal(parsed.mcpServers.easyeda_pro_control.tools["easyeda_control_disposable_schematic_rename"]?.approval_mode, "prompt");

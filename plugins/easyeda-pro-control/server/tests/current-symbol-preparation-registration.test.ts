@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
@@ -46,6 +47,7 @@ void test("project-symbol tool routes both strict read shapes through the authen
       assert.equal(name, "easyeda_control_project_symbol"); schema = config.inputSchema.request; invoke = handler;
     },
   });
+  installIndexFixtureDependencies(scope,source);
   vm.runInContext(stripTypeScriptTypes(source.slice(start, end)), scope);
   assert.ok(invoke !== undefined && schema !== undefined); assert.equal(wrappers, 1);
   const pcb = { method: "eda.lib_Symbol.get", arguments: { symbolUuid: preparation.target.symbolUuid }, target: {
@@ -102,6 +104,7 @@ void test(`${entry} registers asynchronous preparation without allocating a live
     runOfflineApi: (request: Request): Promise<unknown> => { calls.push(request); return completion.promise; },
     registerFacadeTool: register, server: { registerTool: register },
   });
+  if(entry==="index"){installIndexFixtureDependencies(scope,source);}
   vm.runInContext(stripTypeScriptTypes(source.slice(start, end)), scope);
   assert.ok(invoke);
   const request = apiRequestSchema.parse({ action: "project-symbol-prepare", query: { request: preparation } });

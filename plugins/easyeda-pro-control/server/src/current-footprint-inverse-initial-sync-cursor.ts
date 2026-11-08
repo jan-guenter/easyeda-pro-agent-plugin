@@ -108,7 +108,8 @@ export class CurrentFootprintInverseInitialSyncCursor {
     let fulfilled = true; for (const [role, objectId] of [["task", this.#task], ["outer", this.#outer]] as const) {
       const state = decodeCurrentProjectSaveProducerCachePromise(await this.#send({ phase: "inverse-initial-sync-settled", role, method: "Runtime.getProperties", params: properties(objectId) })); fulfilled &&= state === "fulfilled";
     }
-    if (fulfilled) { await this.#current(); await this.#bindings.complete(); await this.#current(); this.#completed = true; }
+    if (fulfilled) { await this.#current(); await this.#bindings.complete(); await this.#current(); this.#completed = true; return; }
+    need(this.#passes < 2);
   }
   public async settle(): Promise<void> { need(!this.#busy && !this.#failed && !this.#completed); this.#busy = true; try { await this.#settle(); } catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; } }
   public startupProgress(): CurrentFootprintInverseInitialSyncProgress { return Object.freeze({ acknowledgedResumes: this.#resumes, settlementPasses: this.#passes,

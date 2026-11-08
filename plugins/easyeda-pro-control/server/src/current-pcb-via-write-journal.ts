@@ -8,6 +8,7 @@ import { OPERATION_SCHEMA, buildPlanHash, canonicalJson, isRecord, sha256Json } 
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { requireOriginalCurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
 import type { CurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
+import type { CurrentPcbViaPreopeningHistoricalSnapshot } from "./current-pcb-via-preopening-relinquishment-journal.ts";
 import { artifact, entries, entrySchema, legacyProfile, profile, terminal } from "./current-pcb-via-write-journal-codec.ts";
 import type { Entry, Kind } from "./current-pcb-via-write-journal-codec.ts";
 
@@ -359,4 +360,20 @@ export async function assertNoUnresolvedCurrentPcbViaWrites(except?: CurrentPcbV
     const qualified = await inspectCurrentPcbViaWriteAdmission(row); need(qualified.terminal || qualified.abandoned === true, "UNRESOLVED_OPERATION"); }
   }
   if (except !== undefined) { await except.assertCurrent(); }
+}
+
+/** A separate historical resolver can exempt only its reader-issued complete
+ * failed-main snapshot. Normal writer admission has no such selector. */
+export async function assertCurrentPcbViaPreopeningRelinquishmentIsolated(
+  snapshot: CurrentPcbViaPreopeningHistoricalSnapshot,
+): Promise<void> {
+  const { assertCurrentPcbViaPreopeningHistoricalSnapshot, requireCurrentPcbViaPreopeningHistoricalSnapshot } = await import("./current-pcb-via-preopening-relinquishment-journal.ts");
+  const original = requireCurrentPcbViaPreopeningHistoricalSnapshot(snapshot); await assertCurrentPcbViaPreopeningHistoricalSnapshot(snapshot);
+  const { inspectCurrentPcbViaWriteAdmission } = await import("./current-pcb-via-write-admission.ts"); let found = false;
+  for (const row of await scan()) {
+    if (row.operationId === original.operationId) {
+      need(row.entireStoredJournalSha256 === original.originalEntireJournalSha256 && row.storedJournalSha256 === original.originalStoredJournalSha256, "HISTORICAL_ORIGINAL_CHANGED"); found = true;
+    } else { const result = await inspectCurrentPcbViaWriteAdmission(row); need(result.terminal || result.abandoned === true, "UNRESOLVED_OPERATION"); }
+  }
+  need(found, "HISTORICAL_ORIGINAL_MISSING"); await assertCurrentPcbViaPreopeningHistoricalSnapshot(snapshot);
 }

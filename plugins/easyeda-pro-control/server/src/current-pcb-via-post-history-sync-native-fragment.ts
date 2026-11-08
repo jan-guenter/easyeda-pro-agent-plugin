@@ -1,3 +1,4 @@
+import { applyNativeFixedProtocolProjection } from "./native-fixed-protocol-projection.ts";
 /** New Via-only changed-head cursor. Original Save/body receivers are retained by native custody, never selected on its replay wire. */
 import { currentProjectCanvasPendingNativeTemplate } from "./current-project-canvas-pending-native.ts";
 import { createHash } from "node:crypto";
@@ -56,3 +57,7 @@ export function applyCurrentPcbViaPostHistorySyncNativeFragment(input:string):st
 
 /** Fixed build-time state-machine syntax only; no native owner is issued. */
 export function currentPcbViaPostHistorySyncOwnerNative():string{const source=native();const anchor="public sealed partial class EasyedaDiagnosticOwner {";if(source.split(anchor).length!==2){throw new Error("FIXED_OWNER_NATIVE_ANCHOR");}return anchor+source.split(anchor)[1];}
+
+/** Retain the exact shared immutable codecs, without this Via owner's state,
+ * sender, action admission or dispatch. The closed schematic build uses it. */
+export function applyCurrentPcbViaPostHistorySyncCodecNativeFragment(input:string):string{return applyNativeFixedProtocolProjection(input,{begin,end,protocols:["EasyedaPcbViaPostHistorySyncProtocol"],quoteMethod:"PostSyncQuote"},native());}

@@ -1,5 +1,6 @@
 /** Fixed NEW-purpose artifact custody. Each complete read follows the same
  * original descriptor/path tuple; this source graph grants no native owner. */
+import { powershellSingleQuotedBody } from "./powershell-single-quoted-body.ts";
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import type { Stats } from "node:fs";
@@ -48,7 +49,7 @@ export async function captureCurrentFootprintForwardNativeGraph(distribution: st
   let bootstrap = "$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';$graphFiles=New-Object 'System.Collections.Generic.List[System.IO.FileStream]';try{";
   for (const [index, file] of GRAPH.files.entries()) {
     const path = windowsPaths[index]; need(path !== undefined);
-    bootstrap += `$f=[IO.File]::Open('${path.replaceAll("'", "''")}',[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read);$graphFiles.Add($f);if($f.Length -ne ${String(file.bytes)} -or $f.Length -gt ${String(file.maximumBytes)}){throw 'forward-graph-size'};$b${String(index)}=New-Object byte[] ([int]$f.Length);$o=0;while($o -lt $f.Length){$n=$f.Read($b${String(index)},$o,$b${String(index)}.Length-$o);if($n -le 0){throw 'forward-graph-eof'};$o+=$n};if($f.ReadByte() -ne -1){throw 'forward-graph-grew'};$h=[Security.Cryptography.SHA256]::Create();try{$d=([BitConverter]::ToString($h.ComputeHash($b${String(index)}))).Replace('-','').ToLowerInvariant()}finally{$h.Dispose()};if($d -cne '${file.sha256}'){throw 'forward-graph-hash'};`;
+    bootstrap += `$f=[IO.File]::Open('${powershellSingleQuotedBody(path)}',[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read);$graphFiles.Add($f);if($f.Length -ne ${String(file.bytes)} -or $f.Length -gt ${String(file.maximumBytes)}){throw 'forward-graph-size'};$b${String(index)}=New-Object byte[] ([int]$f.Length);$o=0;while($o -lt $f.Length){$n=$f.Read($b${String(index)},$o,$b${String(index)}.Length-$o);if($n -le 0){throw 'forward-graph-eof'};$o+=$n};if($f.ReadByte() -ne -1){throw 'forward-graph-grew'};$h=[Security.Cryptography.SHA256]::Create();try{$d=([BitConverter]::ToString($h.ComputeHash($b${String(index)}))).Replace('-','').ToLowerInvariant()}finally{$h.Dispose()};if($d -cne '${file.sha256}'){throw 'forward-graph-hash'};`;
   }
   bootstrap += `$forwardExecutionCoreBytes=$b1;$forwardExecutionPhaseBytes=$b2;$decoder=New-Object Text.UTF8Encoding($false,$true);& ([ScriptBlock]::Create($decoder.GetString($b0))) -WorkerStartupFootprintForwardExecution209 -CombinedReadyChallenge '${challenge}'}finally{foreach($f in $graphFiles){$f.Dispose()}}`;
   need(Buffer.from(bootstrap, "utf16le").toString("base64").length <= LIMITS.bootstrapEncoded);

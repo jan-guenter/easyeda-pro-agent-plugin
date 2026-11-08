@@ -32,6 +32,9 @@ void test("source-known SELECT shapes pass without native/application calls or s
     ['select t1."uuid" as "uuid" from projects t1 where t1."uuid" = ?', ["known"]],
     ['SELECT COUNT(*) AS cnt FROM sqlite_master WHERE type = \'table\' AND name = ?', ["projects"]],
     ['select name from web_cookies where key=?', ["key"]],
+    ['select uuid, count(1) from projects where uuid in (?,?) group by uuid, ticket order by uuid, ticket limit 1', ["a", "b"]],
+    ['select (select count(1) from projects), uuid from users where uuid=?', ["a"]],
+    ['select min(1,2) from projects t1 join branches t2 on t1.uuid=t2.project_uuid where t1.uuid in (?,?)', ["a", "b"]],
     ['select count(1) as "cnt" from branches t1 where t1."uuid" IN (?,?)', ["a", "b"]],
     ['select max(t1."num") as "num" from project_history_0123456789abcdef0123456789abcdef t1 where t1."uuid" = ?', ["h"]],
   ];
@@ -42,6 +45,28 @@ void test("every non-source SQL/function/table/parameter form pauses instead of 
   for (const sql of blocked) { const context = fixture(); query(context, sql); assert.equal(predicate(context, "queryOne"), true, sql); assert.equal(runInContext("calls", context), 0); }
   const context = fixture(); query(context, "select uuid from projects where uuid=?", []); assert.equal(predicate(context, "queryOne"), true);
   runInContext('e="select uuid from projects where uuid=?";r=[{valueOf:forbidden,toString:forbidden}];', context); assert.equal(predicate(context, "run"), true); assert.equal(runInContext("calls", context), 0);
+});
+void test("comma table lists pause at every SQL boundary without classifying quoted or nested expression commas as tables", () => {
+  const blocked = [
+    'select uuid from users, device_fts_ids',
+    'select uuid from users, "device_fts_ids"',
+    'select uuid from projects t1 join branches t2 on t1.uuid=t2.project_uuid, sqlite_schema',
+    'select (select uuid from users, device_fts_ids) from projects',
+    'select uuid from projects where uuid in (select uuid from users, device_fts_ids)',
+    'select uuid from users, projects',
+  ];
+  for (const sql of blocked) {
+    for (const site of ["queryAll", "queryOne", "run", "prepare"] as const) {
+      const context = fixture(); query(context, sql); assert.equal(predicate(context, site), true, `${site}: ${sql}`); assert.equal(runInContext("calls", context), 0);
+    }
+    for (const site of ["prepared", "statementEach", "statementRun", "finalize"] as const) {
+      const context = fixture(); query(context, sql);
+      runInContext(`const blockedStatement=new Set;Object.defineProperty(blockedStatement,"sql",{value:e});s=blockedStatement;`, context);
+      if (site !== "prepared") { runInContext("e=blockedStatement", context); }
+      assert.equal(predicate(context, site), true, `${site}: ${sql}`); assert.equal(runInContext("calls", context), 0);
+    }
+  }
+  const context = fixture(); query(context, "select 'from users, device_fts_ids' from users"); assert.equal(predicate(context, "queryOne"), false); assert.equal(runInContext("calls", context), 0);
 });
 void test("prepared SQL checks the actual native statement's immutable own SQL field; mutation preparation pauses before native compile", () => {
   const context = fixture(); assert.equal(predicate(context, "prepare"), false); runInContext("e=stmt", context); assert.equal(predicate(context, "statementEach"), false);

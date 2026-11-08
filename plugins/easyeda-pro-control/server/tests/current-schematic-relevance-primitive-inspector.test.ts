@@ -1,7 +1,7 @@
 /** Source-preserving synchronous raw write to the actual original record
  * function entry. No EasyEDA process or native owner is involved. */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { INSTALLED_EASYEDA_SOURCE_SKIP_REASON, readConfiguredEasyedaAsset } from "./helpers/installed-easyeda-source.ts";
 import { runInThisContext } from "node:vm";
 import { Worker } from "node:worker_threads";
 import { test } from "node:test";
@@ -10,9 +10,7 @@ import { qualifyGeneratedSchematicDisplayAccessorSource } from "../src/generated
 
 for (const variant of [0, 1] as const) {
   void test(`actual variant ${String(variant)} setAttribute writes only underline before the armed record body`, { timeout: 20_000 }, async context => {
-    assert.equal(process.versions.node, "24.18.0"); const profile = SOURCE[variant]; let source: string;
-    try { source = await readFile(`/mnt/c/Program Files/EasyEDA-Pro/resources/app/assets/${profile.relativePath}`, "utf8"); }
-    catch (error) { if (error instanceof Error && "code" in error && error.code === "ENOENT") { context.skip("Pinned installed SCH source is unavailable in this source-only CI environment."); return; } throw error; }
+    assert.equal(process.versions.node, "24.18.0"); const profile = SOURCE[variant]; const source = await readConfiguredEasyedaAsset(profile.relativePath); if (source === null) { context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON); return; }
     assert.equal(qualifyGeneratedSchematicDisplayAccessorSource({ scriptSource: source }), variant);
     const snippet = (role: "monitorConstructor" | "underline.get" | "underline.set"): string => { const row = profile.methods[role]; return source.slice(row.start, row.end); }; const ctorText = snippet("monitorConstructor"); const base = /^class extends ([A-Za-z$\d_]+)\{/u.exec(ctorText)?.[1]; const noop = /this\.record=([A-Za-z$\d_]+),/u.exec(ctorText)?.[1]; const disposer = /return r\.register\(([A-Za-z$\d_]+)\(/u.exec(ctorText)?.[1]; assert.ok(base !== undefined && noop !== undefined && disposer !== undefined);
     const actual: unknown = runInThisContext(`(function(){const ${noop}=()=>{};const ${disposer}=value=>value;class ${base}{register(value){return value}}const Monitor=(${ctorText});class Text{${snippet("underline.get")}${snippet("underline.set")}}const counts={modify:0,bbox:0,watch:0,history:0};const shapes={shouldUpdateAst:false,isSchShapeManager(){return true},bboxMonitor:{onModelAttributeChange(){counts.bbox++}},attrWatcher:{onModelAttributeChange(){counts.watch++}},historyRecorder:{onModelAttributeChange(){counts.history++}}};const monitor=new Monitor(shapes);shapes.modifyMonitor=monitor;monitor.watch();monitor.onModelAttributeChange=()=>{counts.modify++};const text=Object.assign(new Text,{_underline:false,modelType:"Text",isConnected:true,shapeManager:shapes,originalPeer:42});const d=Object.getOwnPropertyDescriptor(Text.prototype,"underline"),raw={get:d.get,set:d.set,configurable:true,writable:undefined,enumerable:false};return{monitor,text,raw,shapes,counts};})()`); assert.ok(actual !== null && typeof actual === "object"); const monitor: unknown = Reflect.get(actual, "monitor"); const text: unknown = Reflect.get(actual, "text"); const raw: unknown = Reflect.get(actual, "raw"); assert.ok(monitor !== null && typeof monitor === "object" && text !== null && typeof text === "object"); const fn: unknown = Reflect.get(monitor, "setAttribute"); assert.ok(typeof fn === "function"); const before = Object.getOwnPropertyDescriptors(text);

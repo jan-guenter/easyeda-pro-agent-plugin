@@ -38,3 +38,21 @@ production custody state machine with lost-acknowledgment/foreign-scope refusal.
 Existing production selected-file/history/structure cursor checks retain their
 strict source/transport seams. These are source and inert tests, with no EasyEDA,
 native helper, live SQL, SDK write or connected persistence result.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `82eaeed7385342a421d9455e43c8bac5628bfebe`; its
+committed tree is `b3981b38928a6753feb19567a4a84eb682d26a16`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.
+
+A later [request-owned SQLite correction](2026-11-07-via-live-cache-plan.md)
+replaces the earlier connection-identity wording above. Main middleware creates
+a distinct DB owner per request. The corrected collector proves the original
+GET request and its own fulfilled DB Promise, rather than reusing a preceding
+POST connection. The earlier observation remains preserved as historical.
