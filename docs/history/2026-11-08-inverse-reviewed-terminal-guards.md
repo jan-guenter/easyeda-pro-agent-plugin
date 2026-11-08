@@ -1,0 +1,11 @@
+# Inverse terminal guards from PR review
+
+Four CodeRabbit findings remain valid in the reviewed source and are fixed here:
+
+- [4504116944](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/172#discussion_r4504116944): a read-path cache untrack now consumes the original read route before its native await. The Core and C# guards refuse later invalidation before any cache deletion or notification wait. An earlier backup remains historical data, including when the untrack reply is lost.
+- [4504116947](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/172#discussion_r4504116947): the native RPC-entry `armed` transition now requires its original arm attempt. A control message cannot invent the breakpoint.
+- [4504120991](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/173#discussion_r4504120991) and [4504120998](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/173#discussion_r4504120998): the second unfulfilled initial-cache or initial-sync settlement sample now throws through the existing failure handler. The first pending sample remains retryable; no third native sample is offered. Both existing completion paths already reprove current custody after awaiting their completion callback.
+
+Seventeen focused tests pass under pinned Node 24.18.0, including actual extracted Core request/invalidation bodies over a completed real cache data ledger, lost-reply refusal, and both bounded cursor failures. Both TypeScript projects and changed strict lint pass. The full private C#5 body compiles and all 28 inverse codec smoke entry points pass, including the new negative transition checks. No native owner is initialized and no app or MCP call occurs.
+
+Measured on source parent `99386fa3` plus these fixes: actual compact compiler input is 2,089,396 bytes, SHA-256 `291b93f0b077efd95d5c6cc942faeb43af6606c2689eebe43785e78021b4143c`; the stored helper is 1,489,451 bytes. Both remain below the unchanged 2,097,152-byte limits. This is private build evidence, not a newer canonical measurement or connected validation. No tracked helper, pins or bundles were emitted. The unfinished UI GET result collector remains unmounted and is excluded from this commit.

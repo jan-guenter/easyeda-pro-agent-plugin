@@ -36,3 +36,15 @@ strict type-aware lint pass. The fixed stage remains without original
 action/setter closure admission, worker/Main SQL lifecycle, connectivity or
 saved/reopened authority. No Core/pipe/native helper, pin, bundle, public
 registration, application or MCP action changed.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `cc170fca7e898c5e70796f789bf0729dbd24ab3c`; its
+committed tree is `eef41c5b3aa215c6dc71426b878f4960340e1e55`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.
