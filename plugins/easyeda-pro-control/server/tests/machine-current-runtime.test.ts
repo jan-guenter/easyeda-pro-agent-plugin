@@ -10,7 +10,7 @@ void test("current runtime uses retained kernel and named descriptors, exact min
   assert.deepEqual(runtime, { nodeExecutable: process.execPath, nodeVersion: "24.18.0",
     nodeSha256: createHash("sha256").update("synthetic executable\n").digest("hex") });
   assert.equal(Object.isFrozen(runtime), true);
-  assert.equal(f.probes.length, 2);
+  assert.equal(f.probes.length, 1);
   assert.deepEqual(f.closed.toSorted(), ["kernel", "named"]);
   assert.equal(f.opened[0]?.label, "kernel");
   assert.equal(f.opened[1]?.label, "named");
@@ -20,10 +20,10 @@ void test("current runtime uses retained kernel and named descriptors, exact min
 
 void test("scan retention keeps both original descriptors and rechecks them on every assertion", async (context) => {
   const f = await runtimeFixture(context), node = await f.module.retainCurrentProcessSqlNode();
-  assert.equal(f.opened.length, 2); assert.equal(f.closed.length, 0); assert.equal(f.probes.length, 2);
+  assert.equal(f.opened.length, 2); assert.equal(f.closed.length, 0); assert.equal(f.probes.length, 1);
   try {
     for (let index = 0; index < 12; index += 1) { await node.assertCurrent(); }
-    assert.equal(f.opened.length, 2); assert.equal(f.closed.length, 0); assert.equal(f.probes.length, 14);
+    assert.equal(f.opened.length, 2); assert.equal(f.closed.length, 0); assert.equal(f.probes.length, 13);
     for (const { handle } of f.opened) {
       assert.ok(handle instanceof EventEmitter);
       assert.equal(handle.listenerCount("close"), 0);
@@ -31,20 +31,20 @@ void test("scan retention keeps both original descriptors and rechecks them on e
     }
     f.state.namedPath = f.files.sameBytes;
     await assert.rejects(node.assertCurrent(), /machine-node-changed/u);
-    assert.equal(f.probes.length, 14);
+    assert.equal(f.probes.length, 13);
   } finally { await node.close(); }
   assert.deepEqual(f.closed.toSorted(), ["kernel", "named"]);
 });
-void test("positional runtime hashing accepts short reads but rejects premature EOF", async (context) => {
+void test("kernel positional runtime hashing accepts short reads but rejects premature EOF", async (context) => {
   const f = await runtimeFixture(context), node = await f.module.retainCurrentProcessSqlNode();
-  const named = f.opened.find(entry => entry.label === "named"); assert.ok(named);
-  const original = named.handle.read.bind(named.handle); let prematureEnd = false;
-  context.mock.method(named.handle, "read", (buffer: Buffer, offset: number, length: number, position: number) =>
+  const kernel = f.opened.find(entry => entry.label === "kernel"); assert.ok(kernel);
+  const original = kernel.handle.read.bind(kernel.handle); let prematureEnd = false;
+  context.mock.method(kernel.handle, "read", (buffer: Buffer, offset: number, length: number, position: number) =>
     prematureEnd ? Promise.resolve({ bytesRead: 0, buffer }) : original(buffer, offset, Math.min(length, 3), position));
   try {
-    await node.assertCurrent(); assert.equal(f.probes.length, 3);
+    await node.assertCurrent(); assert.equal(f.probes.length, 2);
     prematureEnd = true; await assert.rejects(node.assertCurrent(), /machine-node-changed/u);
-    assert.equal(f.probes.length, 3);
+    assert.equal(f.probes.length, 2);
   } finally { await node.close(); }
   assert.deepEqual(f.closed.toSorted(), ["kernel", "named"]);
 });
@@ -150,7 +150,7 @@ for (const closeFailure of ["kernel", "named", "both"] as const) {
   void test(`attempts every owned close and returns no runtime when ${closeFailure} cleanup fails`, async (context) => {
     const f = await runtimeFixture(context); f.state.closeFailure = closeFailure;
     await assert.rejects(f.module.currentProcessSqlRuntime(), /close-failed/u);
-    assert.equal(f.probes.length, 2); assert.deepEqual(f.closed.toSorted(), ["kernel", "named"]);
+    assert.equal(f.probes.length, 1); assert.deepEqual(f.closed.toSorted(), ["kernel", "named"]);
   });
 }
 void test("kernel close is still attempted after a named rejection close throws", async (context) => {
@@ -192,7 +192,9 @@ void test("second version probe mutation still refuses and closes both original 
   f.state.beforeProbe = async (count): Promise<void> => {
     if (count === 2) { await f.rewrite(f.files.original, "replaced executable!\n"); }
   };
-  await assert.rejects(f.module.currentProcessSqlRuntime(), /machine-node-version-or-identity-mismatch/u);
+  const node = await f.module.retainCurrentProcessSqlNode();
+  try { await assert.rejects(node.assertCurrent(), /machine-node-version-or-identity-mismatch/u); }
+  finally { await node.close(); }
   assert.equal(f.probes.length, 2); assert.deepEqual(f.closed.toSorted(), ["kernel", "named"]);
 });
 void test("kernel-derived content hash independently refuses changed bytes even if named metadata is reported unchanged", async (context) => {
@@ -218,8 +220,8 @@ void test("close-time replacement leaves only original observed data and the nex
   assert.equal(Object.isFrozen(runtime), true);
   assert.equal("descriptorPath" in runtime, false);
   assert.equal("assertCurrent" in runtime, false);
-  assert.equal(f.probes.length, 2);
+  assert.equal(f.probes.length, 1);
   await assert.rejects(f.module.openVerifiedMachineNode(runtime), /machine-node-hash-mismatch/u);
-  assert.equal(f.probes.length, 2);
+  assert.equal(f.probes.length, 1);
   assert.deepEqual(f.closed.toSorted(), ["kernel", "named", "named"]);
 });

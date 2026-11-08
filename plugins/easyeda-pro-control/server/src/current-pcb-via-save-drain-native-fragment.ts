@@ -1,3 +1,4 @@
+import { applyNativeFixedProtocolProjection } from "./native-fixed-protocol-projection.ts";
 /** One original Via uploader DAG and nine actual Promise settlements. No shared role or released budget is expanded. */
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
@@ -52,3 +53,7 @@ export function applyCurrentPcbViaSaveDrainNativeFragment(input:string):string{l
 
 /** Fixed build-time state-machine syntax only; no native owner is issued. */
 export function currentPcbViaSaveDrainOwnerNative():string{const source=native();const anchor="public sealed partial class EasyedaDiagnosticOwner {";if(source.split(anchor).length!==2){throw new Error("FIXED_OWNER_NATIVE_ANCHOR");}return anchor+source.split(anchor)[1];}
+
+/** Retain the exact shared immutable codecs, without this Via owner's state,
+ * sender, action admission or dispatch. The closed schematic build uses it. */
+export function applyCurrentPcbViaSaveDrainCodecNativeFragment(input:string):string{return applyNativeFixedProtocolProjection(input,{begin,end,protocols:["EasyedaPcbViaSaveDrainProtocol"],quoteMethod:"SaveDrainQuote"},native());}

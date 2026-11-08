@@ -49,7 +49,8 @@ export function compareCurrentPcbViaLiveHistoryCacheData(input: Readonly<{
   const rawHead = raw[0], rawVia = raw[1]; need(rawHead !== undefined && rawVia !== undefined);
   const divider = rawHead.indexOf("||"); const header = object(parse(rawHead.slice(0, divider))); const document = object(parse(rawHead.slice(divider + 2)));
   need(divider > 0 && header["type"] === "DOCHEAD" && document["uuid"] === documentUuid && document["docType"] === "PCB" && document["updateTime"] === clock && document["version"] === String(clock));
-  const viaDivider = rawVia.indexOf("||"), viaHeaderText = rawVia.slice(0, viaDivider); const viaHeader = object(parse(viaHeaderText)); need(viaHeader["type"] === "VIA");
+  const viaDivider = rawVia.indexOf("||"); need(viaDivider > 0);
+  const viaHeaderText = rawVia.slice(0, viaDivider); const viaHeader = object(parse(viaHeaderText)); need(viaHeader["type"] === "VIA");
   const rows = native.rows.map(row => rowCore(row));
   const old = rows.find(row => row["uuid"] === initial.historyUuid); need(old !== undefined);
   const expectedOld = rowCore(initialHead); expectedOld["num"] = effects.mode === "mutable" ? 1 : 0;

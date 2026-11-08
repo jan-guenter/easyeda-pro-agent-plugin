@@ -54,3 +54,15 @@ runs refused fixture ordering, a source-field spelling and an unsafe test-cast
 shape; those logs remain retained. No native source was promoted by these
 inert tests. Core's actual scene issuer still requires the new cold/page/source
 lifecycle and remains unissued at this checkpoint.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `8515fcc67a3287a4f3592c8247ab2a5a194db78a`; its
+committed tree is `c41e826cfd03f660bf49f68056288cf9e899f6dd`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

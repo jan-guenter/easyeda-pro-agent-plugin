@@ -64,24 +64,29 @@ source-body pages return `metadataOnly:false` and `cadFramingValidated:false`.
 To create new fixture data without editing a project, send
 `request:{action:"generate-fixture-archive",fixtureKind:"via-only",
 confirmDisposableFixture:true,confirmLocalArtifact:true}`. The other fixed
-scenario is `line-and-via`. Generation allocates fresh document, primitive and
-client IDs, writes one root PCB with its DOCHEAD/META and exact reviewed 209
-VIA/LINE fields, and runs both normal preparation stages. The result includes
+scenarios are `line-and-via` and `arc-line-and-via`. Generation allocates fresh
+document, primitive and client IDs, writes one root PCB with its DOCHEAD/META and exact reviewed 209
+VIA/LINE/ARC fields, and runs both normal preparation stages. The result includes
 the original managed `input` descriptor and the prepared staging package.
 
 The ordinary through Via has source center `(0,0)`, hole diameter `100` and
 outer diameter `200`, with explicit zero solder expansions. The native decoder
 maps it to center `(0,0)`, hole radius `5` and outer radius `10`. The optional
 top-layer LINE maps to a disjoint native Track from `(50,0)` to `(150,0)` with
-width `10`. Both are unlocked, ungrouped and have an empty net. The generated
-archive has no components, pads, symbols, assets, board attachment or libraries.
+width `10`. The `arc-line-and-via` scenario adds a disjoint top-layer circular
+ArcTrack with center `(350,100)`, radius `100`, endpoints `(250,100)` and
+`(350,0)`, a 90-degree sweep and width `10`. All generated primitives are
+unlocked, ungrouped and have an empty net. The generated archive has no
+components, pads, symbols, assets, board attachment or libraries.
 These are intended decoded values. Native scene and importability verification
 remain false. PCB frame initialization may add default layers, rules or other
 metadata and needs its own original-owner proof.
 
 Generation uses fixed versioned templates and retained source pins. It does not
 read the current installation, an existing project or SQLite. The separate
-maintainer checker `node scripts/check-managed-fixture-codecs.ts` uses configured
+maintainer checker
+`node plugins/easyeda-pro-control/scripts/check-managed-fixture-codecs.ts`,
+run from the repository root, uses configured
 `EASYEDA_ASSETS_ROOT` to verify whole installed source and method hashes, then
 executes the selected codec methods offline with synthetic vector/model
 constructors. It establishes those field mappings, not a native scene, importer
@@ -108,10 +113,12 @@ The facade retains directory descriptors and checks their original identities
 through publication. It writes the intent before copying the archive or report.
 A preparation error names the retained staging directory, which can contain an
 empty directory or an intent and partial package. It performs no native import,
-registration or project deletion. No native import action is registered. A
-native route still needs its original process and job owner, an exclusive native
-destination, exact registration and complete closed-SQL proof, and original
-closure. Do not call the public importer to skip those prerequisites.
+registration or project deletion. The registered `easyeda_control_fixture_import`
+route imports fresh generated fixtures through its original owner and complete
+qualification flow; it does not accept this supplied archive. Follow the
+[managed generated-fixture import workflow](managed-fixture-import.md) for that
+separate route. It requires its original process and Job owner, exclusive native
+destination, exact registration, complete closed-SQL proof and original closure.
 
 ## Read reusable library archive sources
 

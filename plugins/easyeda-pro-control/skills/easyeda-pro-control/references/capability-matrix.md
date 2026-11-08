@@ -81,6 +81,17 @@ requires the original released fixture data, explicit create/Save confirmations,
 current source admission, complete closed SQL/source proof and a separate fresh
 saved reader. Connected validation remains unclaimed. Discovery grants no
 execution, ordinary-project writer or inverse authority.
+The separate [pre-opening Via historical resolver](failed-via-preopening-relinquishment.md)
+can clear one complete failed-main prefix after fresh process-absence checks.
+Its missing original Job/release proof stays missing, and it cannot replay the
+operation or grant native ownership.
+The separate [explicit-Relevance schematic display controller](generated-schematic-display-write.md)
+has its own original journal, native owner and fresh saved reader. Its public
+schema accepts one seven-record fixture and one Text display patch. Missing
+original Modify/Save/drain completion keeps execution blocked before allocation.
+Writer-specific pre-opening Main registration has its own original intent and
+32-request continuation. Connected execution and
+ordinary-project writing remain unclaimed; no Via or Saved intent is borrowed.
 The separate `observe-primitives` stage returns two matching Line/Arc/Via and
 parentless String loaded-view projections with ordered IDs. Its256-row per-family
 and384KiB aggregate bounds refuse excess output. It does not include raw models

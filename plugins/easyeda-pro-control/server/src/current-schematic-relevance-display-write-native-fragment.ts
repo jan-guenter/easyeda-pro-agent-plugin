@@ -1,4 +1,6 @@
 /* oxlint-disable import/max-dependencies -- The fixed own-purpose generator joins independently pinned stage programs, exact budgets and immutable native installers; no caller-selected codec is admitted. */
+import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_REGISTRATION_REQUESTS as REGISTRATION } from "./current-schematic-relevance-display-registration.ts";
+import { normalizeCurrentSchematicRelevanceDisplayRegistrationNative } from "./current-schematic-relevance-display-registration-native.ts";
 import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
 /** Build-only distinct Relevance birth. Shared fixed worker/SQL codecs retain
  * their bytes; no existing six-record owner is upgraded or retargeted. */
@@ -34,13 +36,16 @@ function packed(text: string): string {
 /** Restore only this unpublished adapter's deterministic family predicates
  * before the maintained fragments replace their original marker blocks. */
 export function normalizeCurrentSchematicRelevanceDisplayNativeFamily(input: string): string {
-  let source = input; const from = source.indexOf(begin), to = source.indexOf(end);
+  let source = normalizeCurrentSchematicRelevanceDisplayRegistrationNative(input); const from = source.indexOf(begin), to = source.indexOf(end);
   if (from !== -1 || to !== -1) {
     if (from === -1 || to < from || source.includes(begin, from + begin.length) || source.includes(end, to + end.length)) { throw new Error("SCHEMATIC_RELEVANCE_NATIVE_MARKERS"); }
     if (source[from - 1] !== "\n" || source[to + end.length] !== "\n") { throw new Error("SCHEMATIC_RELEVANCE_NATIVE_MARKER_LINES"); }
     source = source.slice(0, from - 1) + source.slice(to + end.length);
   }
-  return source.replaceAll("SchematicDisplayFamily", "schematicDisplayWrite209")
+  return source.replace(`id>(schematicRelevanceDisplayWrite209?${String(PROFILE.main.total - REGISTRATION.main)}:${String(SIX_PROFILE.main.total)})`, `id>${String(SIX_PROFILE.main.total)}`)
+    .replace(` if(schematicRelevanceDisplayWrite209)return ${String(PROFILE.renderer.total - REGISTRATION.rendererHelperSource)};`, "")
+    .replace(`          if ($SchematicRelevanceDisplayWrite209) {$requestLimit=${String(PROFILE.renderer.total - REGISTRATION.rendererHelperSource)}}\n`, "")
+    .replaceAll("SchematicDisplayFamily", "schematicDisplayWrite209")
     .replaceAll("-not ($SchematicDisplayWrite209 -or $SchematicRelevanceDisplayWrite209)", "-not $SchematicDisplayWrite209")
     .replace(`schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(SEVEN_STRUCTURE.normal + STARTUP_STRUCTURE.total)}:${String(SIX_STRUCTURE.normal)})`, `schematicStructureNormal>=${String(SIX_STRUCTURE.normal)}`)
     .replace(`schematicStructureNormal>=(schematicRelevanceDisplayWrite209?${String(SEVEN_STRUCTURE.normal)}:${String(SIX_STRUCTURE.normal)})`, `schematicStructureNormal>=${String(SIX_STRUCTURE.normal)}`)

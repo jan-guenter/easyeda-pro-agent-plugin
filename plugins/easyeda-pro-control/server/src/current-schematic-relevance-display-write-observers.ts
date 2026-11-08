@@ -1,3 +1,6 @@
+import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_COMPOSITION_METHODS as COMPOSITION_METHODS } from "./current-schematic-relevance-display-write-composition.ts";
+import { createOriginalSourceError } from "./original-source-error.ts";
+import type { CurrentSchematicRelevanceDisplayWriteComposition } from "./current-schematic-relevance-display-write-composition.ts";
 import { CurrentSchematicRelevanceRunPrefixObserver } from "./current-schematic-relevance-run-prefix-observer.ts";
 import type { CurrentSchematicRelevanceRunPrefixObservation } from "./current-schematic-relevance-run-prefix-observer.ts";
 import type { CurrentSchematicRelevanceDisplayModifyEntryOrigin } from "./current-schematic-relevance-display-modify-entry-origin.ts";
@@ -33,8 +36,9 @@ import type { CurrentSchematicRelevanceDisplayPreModifyMainOrigin } from "./curr
 type Outcome = Readonly<{ ok: true }> | Readonly<{ ok: false; error: unknown }>;
 type StructurePacketOutcome = Readonly<{ ok: true; packet: CurrentProjectSaveStructurePacket }> | Readonly<{ ok: false; error: unknown }>;
 const consumed = new WeakSet<CurrentSchematicRelevanceDisplayWriteOwner>();
-function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`SCHEMATIC_RELEVANCE_DISPLAY_SETUP_${code}`); } }
+function need(value: boolean, code: string): asserts value { if (!value) { throw createOriginalSourceError("SCHEMATIC_RELEVANCE_DISPLAY_SETUP", code); } }
 function result(value: Outcome): void { if (!value.ok) { throw value.error; } }
+const originalGroups = new WeakMap<CurrentSchematicRelevanceDisplayWriteObservers, Readonly<{ owner: CurrentSchematicRelevanceDisplayWriteOwner; argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments; assertCurrent: () => void }>>();
 export class CurrentSchematicRelevanceDisplayWriteObservers {
   readonly #owner: CurrentSchematicRelevanceDisplayWriteOwner; readonly #arguments: GeneratedSchematicRelevanceDisplayNativeArguments;
   readonly #prepared: ReturnType<typeof originalCurrentSchematicRelevanceDisplayWriteTarget>;
@@ -61,7 +65,7 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
   public constructor(owner: CurrentSchematicRelevanceDisplayWriteOwner, argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments) {
     assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(owner); const prepared = originalCurrentSchematicRelevanceDisplayWriteTarget(owner);
     requireOriginalGeneratedSchematicRelevanceDisplayNativeArguments(argumentsValue, prepared); need(!consumed.has(owner), "ORIGINAL_OWNER_CONSUMED"); consumed.add(owner);
-    this.#owner = owner; this.#arguments = argumentsValue; this.#prepared = prepared; Object.freeze(this);
+    this.#owner = owner; this.#arguments = argumentsValue; this.#prepared = prepared; originalGroups.set(this, Object.freeze({ owner, argumentsValue, assertCurrent: (): void => { this.#current(); } })); Object.freeze(this);
   }
   #current(): void {
     if (this.#failed) { throw this.#failure; } assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this.#owner);
@@ -244,4 +248,43 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
     return Object.freeze({ armed: this.#armed, failed: this.#failed, pendingOriginalProducerRead: this.#pendingProducer !== null, accessorObserved: this.#accessorPacket !== null,
       preModifyMainRetained: this.#main !== null, modifyAuthorized: false, saveAuthorized: false, persistenceVerified: false });
   }
+}
+
+type GroupDescriptor = Readonly<{ value: unknown; get: unknown; set: unknown; writable: boolean | undefined; enumerable: boolean | undefined; configurable: boolean | undefined }>;
+function groupDescriptor(object: object, key: PropertyKey): GroupDescriptor | undefined {
+  const descriptor = Object.getOwnPropertyDescriptor(object, key);
+  if (descriptor === undefined) { return undefined; }
+  const value: unknown = descriptor.value; const get: unknown = Object.getOwnPropertyDescriptor(descriptor, "get")?.value; const set: unknown = Object.getOwnPropertyDescriptor(descriptor, "set")?.value;
+  return Object.freeze({ value, get, set, writable: descriptor.writable, enumerable: descriptor.enumerable, configurable: descriptor.configurable });
+}
+const originalGroupPrototype = CurrentSchematicRelevanceDisplayWriteObservers.prototype;
+const originalGroupParent: unknown = Object.getPrototypeOf(originalGroupPrototype);
+const originalGroupDescriptors = new Map(Reflect.ownKeys(originalGroupPrototype).map(key => [key, groupDescriptor(originalGroupPrototype, key)]));
+/** Build/source prerequisite only. Missing real wrappers refuse before native
+ * allocation; matching methods injected after initialization are insufficient. */
+export function requireCurrentSchematicRelevanceDisplayWriteCompositionSource(): void {
+  need(Object.getPrototypeOf(originalGroupPrototype) === originalGroupParent && Reflect.ownKeys(originalGroupPrototype).length === originalGroupDescriptors.size, "COMPOSITION_SOURCE_CHANGED");
+  for (const [key, before] of originalGroupDescriptors) {
+    const current = groupDescriptor(originalGroupPrototype, key);
+    need(before !== undefined && current !== undefined && current.value === before.value && current.get === before.get && current.set === before.set && current.writable === before.writable && current.enumerable === before.enumerable && current.configurable === before.configurable, "COMPOSITION_SOURCE_CHANGED");
+  }
+  for (const key of COMPOSITION_METHODS) { need(typeof groupDescriptor(originalGroupPrototype, key)?.value === "function", "ORIGINAL_MODIFY_COMPLETION_UNAVAILABLE"); }
+}
+/** Only the actual constructor can populate this registry. No caller function
+ * table, profile string, proxy, owner copy or cross-purpose group is accepted. */
+export function requireOriginalCurrentSchematicRelevanceDisplayWriteComposition(group: CurrentSchematicRelevanceDisplayWriteObservers, owner: CurrentSchematicRelevanceDisplayWriteOwner,
+  argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments): CurrentSchematicRelevanceDisplayWriteComposition {
+  const original = originalGroups.get(group);
+  need(original !== undefined && original.owner === owner && original.argumentsValue === argumentsValue, "ORIGINAL_COMPOSITION");
+  const current = (): void => {
+    need(originalGroups.get(group) === original && Object.getPrototypeOf(group) === originalGroupPrototype && Reflect.ownKeys(group).length === 0, "ORIGINAL_COMPOSITION");
+    original.assertCurrent(); assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(owner); requireOriginalGeneratedSchematicRelevanceDisplayNativeArguments(argumentsValue, originalCurrentSchematicRelevanceDisplayWriteTarget(owner));
+    requireCurrentSchematicRelevanceDisplayWriteCompositionSource();
+  }; current();
+  const methods = Object.fromEntries(COMPOSITION_METHODS.map(key => {
+    const value: unknown = Object.getOwnPropertyDescriptor(originalGroupPrototype, key)?.value; need(typeof value === "function", "ORIGINAL_COMPOSITION_METHOD");
+    return [key, (...args: unknown[]): unknown => { current(); need(args.length === (key === "armSaveClock" || key === "prepareSaveMain" ? 1 : 0), "COMPOSITION_ARGUMENTS"); return Reflect.apply(value, group, args); }];
+  }));
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The fixed closed roster is derived only from unchanged original source descriptors and a constructor-private owner/args registry. Original receipt qualifiers remain separate.
+  return Object.freeze(methods) as unknown as CurrentSchematicRelevanceDisplayWriteComposition;
 }

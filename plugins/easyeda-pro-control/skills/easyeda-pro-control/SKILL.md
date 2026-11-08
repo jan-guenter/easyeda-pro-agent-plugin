@@ -37,6 +37,8 @@ the original ordinary launch, exclusive native destination and tracked Promise;
 its partial SDK result does not accept closed SQL or registration.
 For the separate generated disposable Via controller, read
 [its original writer and cleanup workflow](references/generated-pcb-via-write.md).
+For the separate explicit-Relevance schematic Text display lifecycle, read
+[its original writer and saved-reader workflow](references/generated-schematic-display-write.md).
 It is registered only in the exact public-utilities profile for controlled
 disposable validation. Query its mounted status and actual tool list first;
 schemas and source composition are not connected validation or ordinary-project

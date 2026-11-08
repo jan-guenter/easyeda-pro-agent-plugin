@@ -1,7 +1,7 @@
 /** Actual uninvoked history command classes and methods in inert VMs. No
  * command instance, original owner, history effect or continuation is issued. */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { INSTALLED_EASYEDA_SOURCE_SKIP_REASON, readConfiguredEasyedaAssets } from "./helpers/installed-easyeda-source.ts";
 import { decodeGeneratedSchematicDisplayActionFunction } from "../src/generated-schematic-display-action-replies.ts";
 import { Session } from "node:inspector/promises";
 import { test } from "node:test";
@@ -12,7 +12,7 @@ import { decodeCurrentSchematicRelevanceHistoryCalleeFunction, requireCurrentSch
 
 function inertFunction(source: string, variant: 0 | 1, role: CurrentSchematicRelevanceHistoryCalleeRole): unknown {
   const row = SOURCE[variant].roles[role]; const text = source.slice(row.start, row.end);
-  const padding = source.slice(0, row.start).replaceAll(/[^\n]/gu, " ");
+  const padding = source.slice(0, row.start).replaceAll(/[^\n]/gu, value => " ".repeat(value.length));
   const context = createContext({});
   if (role === "commandConstructor") {
     const base = SOURCE[variant].roles.commandBaseConstructor;
@@ -27,13 +27,11 @@ function inertFunction(source: string, variant: 0 | 1, role: CurrentSchematicRel
   const method: unknown = Object.getOwnPropertyDescriptor(prototype, row.name)?.value; assert.ok(typeof method === "function"); return method;
 }
 void test("actual Node24 metadata qualifies both implicit history classes and their base and methods without constructing them", async context => {
-  let sources: readonly string[];
-  try { sources = await Promise.all(SOURCE.map(row => readFile(`/mnt/c/Program Files/EasyEDA-Pro/resources/app/assets/${row.relativePath}`, "utf8"))); }
-  catch (error) { if (error !== null && typeof error === "object" && "code" in error && error.code === "ENOENT") { context.skip("installed source unavailable"); return; } throw error; }
+  const sources: readonly string[] | null = await readConfiguredEasyedaAssets(SOURCE.map(row => row.relativePath)); if (sources === null) { context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON); return; }
   assert.equal(process.versions.node, "24.18.0"); const session = new Session(); session.connect(); const key = "__inertSchematicHistoryCallee";
   try {
     for (const variant of [0, 1] as const) {
-      const source = sources[variant]; assert.ok(typeof source === "string"); assert.equal(qualifyCurrentSchematicRelevanceHistoryCalleeSource(source), variant);
+      const source: string | undefined = sources[variant]; assert.ok(typeof source === "string"); assert.equal(qualifyCurrentSchematicRelevanceHistoryCalleeSource(source), variant);
       for (const role of ROLES) {
         Object.defineProperty(globalThis, key, { value: inertFunction(source, variant, role), configurable: true });
         const value = await session.post("Runtime.evaluate", { expression: `globalThis[${JSON.stringify(key)}]`, objectGroup: "inert-schematic-history-callee" });

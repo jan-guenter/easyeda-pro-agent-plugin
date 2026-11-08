@@ -41,3 +41,15 @@ owner constructors, Job or app allocation. Combined dispatcher generation remain
 idempotent. No live bridge/app, modify, Save, stored SQL or reopen case ran; SDK
 modify/Save and project SQL grants remain blocked. Helpers, pins, bundles and
 coverage were not regenerated.
+
+
+## Historical source attribution, 2026-11-08
+
+This record first entered canonical source history in commit `3d0f62ae6cf3ca70671bc4d3e319ab433a2777dc`,
+whose complete committed tree is `71b080f352f89ea8f6147d2992b6a17a7848d631`. Those identities establish
+which committed increment introduced this record. The full working tree used
+for the earlier reported checks, including any concurrent uncommitted work,
+was not retained as an independently sealed snapshot. The introducing commit
+is therefore not asserted to be the exact tested payload. The earlier results
+remain historical observations and cannot replace final exact-commit release
+validation. See the [review assessment](2026-11-08-pr184-history-attribution.md).
