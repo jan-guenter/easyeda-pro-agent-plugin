@@ -46,7 +46,7 @@ void test("doctor preserves the exact reviewed legacy tuple and full catalog", (
   assert.deepEqual(result.bundleHashes, { pcbImplementation: legacy.pcbEditor.implementationSha256,
     publicApiImplementation: legacy.publicApi.implementationSha256, publicApiAdapter: legacy.publicApi.adapterSha256,
     publicApiDeclarations: legacy.publicApi.declarationsSha256 });
-  assert.deepEqual(result.toolNames, FACADE_TOOL_NAMES); assert.equal(result.toolNames.length, 54);
+  assert.deepEqual(result.toolNames, FACADE_TOOL_NAMES); assert.equal(result.toolNames.length, 56);
   assert.equal(result.executionAuthorized, false); assert.equal(result.connectedValidation, false);
 });
 

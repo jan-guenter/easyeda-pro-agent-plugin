@@ -1,12 +1,14 @@
+import { indexFixtureRegistrationHelpersSource, installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
-import { runInNewContext } from "node:vm";
+import { createContext, runInContext } from "node:vm";
 import { z } from "zod";
 import { SerializedGate } from "../src/engine.ts";
 import { facadeToolRegistered } from "../src/facade-mode.ts";
 import { netlistFilesRequestSchema, queryNetlistFiles, validateNetlistFilesArguments } from "../src/netlist-files.ts";
+// oxlint-disable-next-line import/max-dependencies -- This registration test composes the actual API, gate and custody dependencies; independent validators must remain in the same callback exercise.
 import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
 
 const prepared = { action: "prepare-file", name: "sample.tel", text: "$PACKAGES\nR ; R1\n$NETS\nN ; R1.1\n$END\n", confirmLocalArtifact: true };
@@ -33,7 +35,7 @@ async function registration(options: { deny?: boolean; failComparison?: boolean 
   const engine = { assertBridgeDispatchAllowed: (): Promise<boolean> => {
     calls.push("admission"); return options.deny === true ? Promise.reject(new Error("synthetic authentication refusal")) : Promise.resolve(true);
   } };
-  const scope = {
+  const scope = createContext({
     z, netlistFilesRequestSchema, privateFingerprintSchema: z.record(z.string(), z.unknown()),
     facadeMode: "public-utilities-only", facadeToolRegistered, bridgeGate: gate, engine,
     toolOutputSchemas: { easyeda_control_netlist_files: z.unknown() },
@@ -61,8 +63,9 @@ async function registration(options: { deny?: boolean; failComparison?: boolean 
       try { return await task(); }
       finally { scoped = false; calls.push("authenticated-exit"); }
     } },
-  };
-  runInNewContext(stripTypeScriptTypes(`${source.slice(guardedStart, guardedEnd)}\n${source.slice(registerStart, registerEnd)}\n${source.slice(registrationStart, registrationEnd + "\n);".length)}`), scope);
+  });
+  installIndexFixtureDependencies(scope, source);
+  runInContext(`${indexFixtureRegistrationHelpersSource(source)}\n${stripTypeScriptTypes(source.slice(registrationStart, registrationEnd + "\n);".length))}`, scope);
   assert.ok(handler); assert.ok(inputSchema);
   const selectedHandler = handler, selectedSchema = inputSchema;
   return { calls, forwarded, gate, invoke: async (input): Promise<unknown> => {

@@ -9,3 +9,15 @@ The project owner follows `projects.owner_uuid` and its left join to `users`. Th
 Four focused cases, both TypeScript projects and strict changed-file lint pass. They cover all pinned installed assets, the complete worker/UI row, omitted actor fields, equal-clock version selection, the SQL owner join and forged issuer rejection. Initial development failures for the missing lexical arrow receiver and an absent inert console error adapter are retained privately; the final fixed projection passes. No application, helper, source edit, deletion or Save was performed.
 
 The title profile is deliberately limited to printable ASCII without uppercase I. For that subset the source's locale-aware and ASCII normalization branches agree. Other titles refuse until an actual locale/branch proof is available. Non-finite UI timestamps, unsupported SQL scalar encodings and oversized projections also refuse. The result is expected data for the original live collector; runtime row identity, tab/storage invariants, native forwarding, clock and deletion completion remain separate.
+
+
+## Historical source attribution, 2026-11-08
+
+This record first entered canonical source history in commit `615e34d5ee67a23e100c6cf76712bcdeed69632f`,
+whose complete committed tree is `06488b046ad99a22ab342cd14ec791185212b754`. Those identities establish
+which committed increment introduced this record. The full working tree used
+for the earlier reported checks, including any concurrent uncommitted work,
+was not retained as an independently sealed snapshot. The introducing commit
+is therefore not asserted to be the exact tested payload. The earlier results
+remain historical observations and cannot replace final exact-commit release
+validation. See the [review assessment](2026-11-08-pr184-history-attribution.md).

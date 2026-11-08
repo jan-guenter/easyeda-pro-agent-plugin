@@ -241,6 +241,13 @@ are build/check dependencies only.
   action, retaining its original pidfd through observed exit, before returning
   or waiting through another controller's native work. This grants no native
   allocation, signal, owner adoption or retry of a closed transport.
+- Keep new and resumed agent turns outside the controller's retirement-to-
+  replacement window. The host can eagerly create a new MCP connection on a
+  follow-up turn after that agent's previous transport closed. Attribute a new
+  process to its original connection before inspecting or closing it. Previous
+  closure neither proves the new turn has no connection nor permits retrying
+  the old closed transport. Prefer starting source agents while the admitted
+  controller holds its lease, then close their own startup-conflict stubs.
 
 ## Maintaining documentation and history
 

@@ -30,7 +30,7 @@ export async function forwardExecutionOpeningProviderFixture(request: CurrentFoo
   const modules: Record<string, unknown> = {};
   if (supplied.verifyNativeGraph !== undefined) {
     const verify = supplied.verifyNativeGraph;
-    modules["./current-footprint-forward-native-graph.ts"] = { captureCurrentFootprintForwardNativeGraph: (distribution: unknown, challenge: unknown): Promise<object> => {
+    modules["./current-footprint-forward-cold-native-graph.ts"] = { captureCurrentFootprintForwardColdNativeGraph: (distribution: unknown, challenge: unknown): Promise<object> => {
       assert.equal(distribution, "Synthetic"); assert.equal(typeof challenge, "string"); assert.match(String(challenge), /^[a-f\d]{32}$/u);
       return Promise.resolve(Object.freeze({ verify,
         bootstrap: `$ErrorActionPreference='Stop';# synthetic fixed graph, never executed\n& {} -WorkerStartupFootprintForwardExecution209 -CombinedReadyChallenge '${String(challenge)}'` }));

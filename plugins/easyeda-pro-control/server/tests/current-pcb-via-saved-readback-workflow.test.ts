@@ -15,6 +15,7 @@ async function fixture(mode: "complete" | "pending-cache" | "pending-launch" | "
   const url = new URL("../src/current-pcb-via-saved-readback-workflow.ts", import.meta.url); const sourceRequire = createRequire(url);
   const originalSource = await readFile(url, "utf8");
   const compiledSource = mode === "late-exit" || mode === "exit-never" ? originalSource.replace("delayMilliseconds: 250", "delayMilliseconds: 0") : originalSource;
+  if(mode==="late-exit"||mode==="exit-never"){assert.notEqual(compiledSource,originalSource,"The inert fixture must remove its original exit delay.");}
   const compiled = await transform(compiledSource, { loader: "ts", format: "cjs", target: "node24" });
   const originalPlan = Object.freeze({ syntheticOriginalPlan: true });
   const prepared = Object.freeze({ operationId: "synthetic-original-saved" }); const options = Object.freeze({ pluginRoot: "synthetic" });

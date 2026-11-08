@@ -22,7 +22,10 @@ export function bindFootprintPreparationConstructionTransport(dependency: Curren
   }
   if (isOriginalFootprintSavedDependency(dependency)) { savedOriginals.add(transport); }
   if (isOriginalFootprintHeldSavedDependency(dependency)) { heldSavedOriginals.add(transport); }
-  if (isOriginalProjectStructureDependency(dependency)) { structureOriginals.set(transport, dependency); }
+  if (isOriginalProjectStructureDependency(dependency)) {
+    if (structureOriginals.has(transport)) { throw new Error("PROJECT_STRUCTURE_CONSTRUCTION_ISSUED"); }
+    structureOriginals.set(transport, dependency);
+  }
 }
 /** Join only the native owner's exact dependency to its original constructor
  * transport. Neither equal source nor a genuine foreign lease can satisfy it. */

@@ -34,6 +34,13 @@ or admit the legacy workflow below.
 
 After contained launch and authenticated status, `easyeda_control_runtime` accepts `request.action:"open-existing"` with `projectUuid`, `projectPath`, `documentUuid`, `documentType:1|3`, the current `expectedFingerprint`, and `confirmOpen:true`. The target must already exist in the saved `.eprj2` checkpoint and the native project-path registry. This path does not require a fabricated active-editor context.
 
+For a large development source inventory, status accepts fresh managed
+`evidence:{resultPath,receiptPath}` and `returnMode:"receipt-only"` or
+`"summary"`. Retrieve the complete archived result with bounded artifact
+paging and verify its receipt before using the unchanged `stableFingerprint`.
+The inline limit remains 512 KiB. The ordinary no-argument response keeps its
+existing shape; an oversized refusal grants no smaller admission fingerprint.
+
 The operation refuses another active project or document and checks the entire split-screen tab tree for hidden unrelated editors. It does not create, replace, close, save or discard a project. It opens only the existing target, verifies its actual tab/context, and checks the complete logical SQLite dump plus all materialized selected-branch document records for changes. This proves saved-state invariance, not that previously unsaved editor contents equal the database.
 
 On failure, use `inspect-open` with its operation ID. If orphan risk remains, `recover-open-authority` requires the normal retained-runtime recovery and `confirmRecovery:true`. `reconcile-open` performs read-only exclusive-tab inspection and database proof without repeating navigation. A later facade-only upgrade can use `rebind-open-runtime` with the replacement fingerprint and `confirmRuntimeUpgrade:true`. No recovery branch chooses Save or Discard or infers a successful open from an unchanged database.
@@ -483,6 +490,22 @@ After its `ready` response, send one JSON request per line:
 ```json
 {"id":1,"tool":"easyeda_control_api","arguments":{"request":{"action":"loaded-facade"}}}
 ```
+
+A frontend containing file-input support also accepts `argumentsFile` in
+place of inline `arguments`, using the same ordinary tool-call metadata:
+
+```json
+{"id":2,"tool":"easyeda_control_api","argumentsFile":{"path":"/absolute/private/session-args.json","expectedSha256":"<actual 64 lowercase hexadecimal SHA-256 digits>"}}
+```
+
+The file contains only the tool argument object. It must be canonical,
+owner-only mode `0600`, regular and single-link, inside a canonical owner-only
+`0700` directory. The client verifies the complete bytes and SHA before strict
+UTF-8 and JSON decoding; BOMs, aliases, malformed/non-object JSON and drift
+refuse before dispatch. The selector and file share the existing 65,536-byte
+input bound. Shutdown and manager control/cleanup selectors cannot use this
+field. Keep the selector line short enough for the actual input channel. The
+client reads it once and never reloads or retries the request automatically.
 
 Only tools actually listed by that facade are accepted. The client dispatches serially and never retries a timeout, disconnect, or failed result publication. Such failures close the session; inspect the facade journal before retrying an uncertain operation. Tool error results remain errors, even though transport succeeded. All facade authentication, compatibility, quarantine and writer restrictions remain in force.
 

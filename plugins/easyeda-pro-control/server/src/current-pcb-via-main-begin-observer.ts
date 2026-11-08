@@ -16,7 +16,7 @@ import { CURRENT_PCB_VIA_MAIN_BEGIN_CALLS as CALLS } from "./current-pcb-via-mai
 import { currentPcbViaMainBeginResultSchema } from "./current-pcb-via-main-begin-custody.ts";
 import type { CurrentPcbViaMainBeginResult } from "./current-pcb-via-main-begin-custody.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
-import { decodeCurrentFootprintCopyMainRequestArrayCapture as decodeArray } from "./current-footprint-copy-main-request-protocol.ts";
+import { decodeCurrentFootprintCopyMainRequestArrayCapture as decodeArray, decodeCurrentFootprintCopyMainRequestCollectionPause as decodePause } from "./current-footprint-copy-main-request-protocol.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_GROUP as GROUP } from "./current-footprint-copy-main-request-programs.ts";
 
 export interface CurrentPcbViaHeldBeginResult {
@@ -50,7 +50,7 @@ export class CurrentPcbViaMainBeginObserver {
   async #next(role: Role): Promise<string> {
     for (let count = 0; count < 64; count += 1) { const raw = captureCurrentPcbStringClockReply(await this.#bindings.nextEvent()).value;
       const event = eventSchema.parse(raw); await this.#current(true);
-      if (event.params.hitBreakpoints[0] === this.#bindings.persistentDriverBreakpointId) { const request = await this.#bindings.observeRequest(); this.#bindings.requireOriginalRequest(request); need(request.method === "GET" || request.method === "HEAD", "FOREIGN_REQUEST"); await this.#bindings.continueReadonlyRequest(request); }
+      if (event.params.hitBreakpoints[0] === this.#bindings.persistentDriverBreakpointId) { decodePause(event.params, "driver", this.#bindings.scriptId, this.#bindings.persistentDriverBreakpointId); const request = await this.#bindings.observeRequest(); this.#bindings.requireOriginalRequest(request); need(request.method === "GET" || request.method === "HEAD", "FOREIGN_REQUEST"); await this.#bindings.continueReadonlyRequest(request); }
       else { if (role !== "run") { need(event.params.hitBreakpoints[0] === this.#points.get(role), "ORIGINAL_POINT"); } const frame = event.params.callFrames[0]; need(frame !== undefined, "FRAME"); return frame.callFrameId; }
     } throw new Error("PCB_VIA_BEGIN_OBSERVER_READ_BOUND");
   }

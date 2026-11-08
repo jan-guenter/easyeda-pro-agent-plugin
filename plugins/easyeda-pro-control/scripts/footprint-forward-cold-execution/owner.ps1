@@ -51,13 +51,13 @@ if ($forwardExecutionCoreBytes -isnot [byte[]] -or $forwardExecutionCoreBytes.Le
 $graphHasher=[Security.Cryptography.SHA256]::Create()
 try {$graphDigest=([BitConverter]::ToString($graphHasher.ComputeHash($forwardExecutionCoreBytes))).Replace('-','').ToLowerInvariant()} finally {$graphHasher.Dispose()}
 if ($graphDigest -cne '23073a94f6bcdf5c6ef8853736fb90e411e7f393e48c65e7f2d0e6bad8b04251') {throw 'forward-graph-core-source'}
-if ($forwardExecutionPhaseBytes -isnot [byte[]] -or $forwardExecutionPhaseBytes.Length -ne 43570) {throw 'forward-graph-phase-size'}
+if ($forwardExecutionPhaseBytes -isnot [byte[]] -or $forwardExecutionPhaseBytes.Length -ne 44348) {throw 'forward-graph-phase-size'}
 $graphHasher=[Security.Cryptography.SHA256]::Create()
 try {$graphDigest=([BitConverter]::ToString($graphHasher.ComputeHash($forwardExecutionPhaseBytes))).Replace('-','').ToLowerInvariant()} finally {$graphHasher.Dispose()}
-if ($graphDigest -cne '4a2bf509c848280f3db17456ab14a8c6ca51a60b4fb6e9be85f3ad872614a8c3') {throw 'forward-graph-phase-source'}
+if ($graphDigest -cne '04610bbaea510a1c2a40efd266efa3e8ef03ed8206d23e7cb772bd636b45784b') {throw 'forward-graph-phase-source'}
 $graphDecoder=[Text.Encoding]::GetEncoding(20127,[Text.EncoderFallback]::ExceptionFallback,[Text.DecoderFallback]::ExceptionFallback)
 $graphNative=$graphDecoder.GetString($forwardExecutionCoreBytes)+"`n"+$graphDecoder.GetString($forwardExecutionPhaseBytes)
-if ([Text.Encoding]::UTF8.GetByteCount($graphNative) -ne 989013 -or [Text.Encoding]::UTF8.GetByteCount($graphNative) -gt 1048576) {throw 'forward-graph-compiled-size'}
+if ([Text.Encoding]::UTF8.GetByteCount($graphNative) -ne 989791 -or [Text.Encoding]::UTF8.GetByteCount($graphNative) -gt 1048576) {throw 'forward-graph-compiled-size'}
 Add-Type -TypeDefinition $graphNative
 $owner=[EasyedaDiagnosticOwner]::CreateFootprintForwardExecution209()
 $startupRequestLimit=[EasyedaFootprintForwardExecutionLimits]::Requests
