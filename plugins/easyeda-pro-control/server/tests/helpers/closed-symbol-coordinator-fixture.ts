@@ -68,9 +68,11 @@ function adjustEffectTimes(source: string, time: number): void {
 type Bundles = Awaited<ReturnType<UpstreamEasyedaClient["installedEasyedaBundles"]>>;
 export type SyntheticReplyKind = "runtime" | "write" | "witness" | "saved-read" | "navigation" | "startup";
 function fullFingerprint(): Record<string, unknown> & { installedBundles: Bundles } {
+  // Model the released bundled deployment. Growing development source inventories
+  // Are not this bounded synthetic coordinator's runtime identity.
   const manifest = loadReviewedCompatibilityManifest();
-  const facade = manifest.facadeImplementation["source-tree"], runtime = manifest.connectedRuntime;
-  return { facadeImplementation: { ...facade, mode: "source-tree", files: facade.files.map((file) => {
+  const facade = manifest.facadeImplementation.bundle, runtime = manifest.connectedRuntime;
+  return { facadeImplementation: { ...facade, mode: "bundle", files: facade.files.map((file) => {
     const projected = { path: `/synthetic/${file.relativePath}` }; return Object.assign(projected, file);
   }) },
     upstreamServer: { version: manifest.upstream.serverVersion }, upstreamLauncher: manifest.upstream.launcher, upstreamImplementationDrift: false,

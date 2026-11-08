@@ -109,9 +109,11 @@ export function validateCurrentSelectedFileMainSqlFenceCommand(input: unknown): 
  * completion budgets remain separate, and no mutation-resume grant exists. */
 export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUESTS = Object.freeze({
   earlyAndAfterImports: 2, conditionalArms: CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES.length,
-  captureAndNativeMetadata: 10, startupResumes: 2, mutationPauses: 64, perMutationMaximum: 3,
+  // One additional passive getProperties checks the actual four import operands
+  // Before capture. No program, SQL or resume allowance changes.
+  captureAndNativeMetadata: 11, startupResumes: 2, mutationPauses: 64, perMutationMaximum: 3,
   originalFetchSourceAndScopeProof: 20, readonlyRequestPauses: 64, perReadonlyRequestMaximum: 6,
   startupContexts: 3, startupNativeCalls: 48, perStartupPauseMaximum: 4,
-  normal: (3 + 48) * 4 + 2 + CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES.length + 10 + 2 + 64 * 3 + 20 + 64 * 6,
+  normal: (3 + 48) * 4 + 2 + CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES.length + 11 + 2 + 64 * 3 + 20 + 64 * 6,
   cleanup: 0, executionAuthorized: false,
 });

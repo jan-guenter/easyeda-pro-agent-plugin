@@ -1,0 +1,6 @@
+/** Fixed clone/native class; original state and messages remain purpose-owned. */
+import {currentSchematicRelevanceUiCodecNativeSource} from "./current-schematic-relevance-ui-codec-native-source.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_STATUS_SUBSCRIBER_CALLS as CALLS} from "./current-schematic-relevance-status-subscriber-protocol.ts";
+import {currentSchematicRelevanceStatusSubscriberCases,currentSchematicRelevanceStatusSubscriberTemplate} from "./current-schematic-relevance-status-subscriber-wire.ts";
+
+export function currentSchematicRelevanceStatusSubscriberNativeSource():string{const cases=currentSchematicRelevanceStatusSubscriberCases();const rows=cases.map(command=>{const row=currentSchematicRelevanceStatusSubscriberTemplate(command);return[row.phase,row.method,row.names.join(","),row.template];});return currentSchematicRelevanceUiCodecNativeSource({className:"EasyedaSchematicRelevanceStatusSubscriberProtocol",errorCode:"schematic-status-subscriber-codec",tableError:"SCHEMATIC_STATUS_SUBSCRIBER_FIXED_TABLE_BOUND",marker:"statussubscriber",rows,programs:CALLS.map(row=>row[1]),messages:cases.map(command=>`${JSON.stringify({id:83,method:command.method,params:command.params,sessionId:"original_ui"})}\0`)});}

@@ -1,0 +1,522 @@
+{
+  "schema": "test-only.current209-source-excerpts.v1",
+  "kind": "worker",
+  "completeSourceSha256": "0e7a474385029ac4f69dac08abdfd8beec7346aea8c2a4f71d5afb78bb454046",
+  "completeSourceBytes": 2181308,
+  "utf16Length": 2181306,
+  "syntheticSha256": "5eb4825ccae383b4e52c6c5963afa8ba7323d8deda0cb18cbfb565527a233e21",
+  "lineLengths": [
+    24758,
+    213391,
+    110,
+    1149,
+    7442,
+    85,
+    17567,
+    190,
+    2658,
+    24506,
+    167,
+    131,
+    1318,
+    631,
+    249,
+    144,
+    118,
+    13697,
+    59691,
+    259762,
+    8965,
+    9468,
+    0,
+    279,
+    294,
+    75,
+    20,
+    245,
+    10,
+    25,
+    24,
+    32,
+    64,
+    157,
+    42,
+    75,
+    20,
+    245,
+    10,
+    164,
+    42,
+    75,
+    20,
+    242,
+    10,
+    604,
+    3432,
+    3625,
+    4153,
+    45,
+    75,
+    20,
+    146,
+    45,
+    75,
+    20,
+    1831,
+    2711,
+    45,
+    75,
+    20,
+    4235,
+    3379,
+    249,
+    137,
+    143,
+    152,
+    146,
+    155,
+    8220,
+    58,
+    239,
+    45,
+    398,
+    187,
+    39,
+    2562,
+    123315,
+    50628,
+    98052,
+    1149,
+    7442,
+    85,
+    10577,
+    11971,
+    59691,
+    255733,
+    8764,
+    42,
+    75,
+    20,
+    242,
+    10,
+    1236,
+    3536,
+    45,
+    75,
+    20,
+    536,
+    2711,
+    45,
+    75,
+    20,
+    167812,
+    138,
+    138676,
+    73034,
+    0,
+    145816,
+    166896,
+    162944,
+    32,
+    0,
+    24,
+    5,
+    2,
+    73,
+    28,
+    2,
+    58,
+    108,
+    2,
+    62,
+    50,
+    4,
+    0,
+    19,
+    5,
+    39,
+    4,
+    55,
+    18,
+    5,
+    0,
+    26,
+    34,
+    2,
+    25,
+    17,
+    52,
+    4,
+    147,
+    4,
+    135,
+    213,
+    4,
+    760,
+    7,
+    2,
+    32,
+    17,
+    69,
+    37,
+    37,
+    7,
+    4,
+    0,
+    31,
+    34,
+    2,
+    28,
+    36,
+    4,
+    27,
+    19,
+    54,
+    6,
+    149,
+    6,
+    137,
+    215,
+    6,
+    762,
+    9,
+    4,
+    34,
+    19,
+    71,
+    39,
+    39,
+    9,
+    6,
+    4,
+    2,
+    95,
+    0
+  ],
+  "segments": [
+    {
+      "start": 238153,
+      "end": 238192,
+      "text": "function Gu(e,t,s){return e.slice(t,s)}",
+      "sha256": "34a339f4a743842890c591b8b8253e730cf36c57073cbf6aae3153f4e4f911c7"
+    },
+    {
+      "start": 238192,
+      "end": 238565,
+      "text": "function Ro(e,t,s,r){let i=e.length,n=0;for(;n<i;){let a=e.indexOf(`|\n`,n);if(a<0){if(s)return e.substring(n);a=i}let o=Gu(e,n,a);try{if(o){let c=o.indexOf(\"||\"),l=c>-1,u=l?Gu(o,0,c):o,h=l?Gu(o,c+2):\"\";if(t(u,h,o,l?n+c+2:n)===!1){o=null;break}o=null}}catch(c){if(console.error(c),r)throw new Error((c==null?void 0:c.message)||\"\\u89E3\\u6790\\u5931\\u8D25\\uFF01\")}n=a+2}e=null}",
+      "sha256": "fd048ca1f24caee0d2f52eee1cd93a869e05a678be8f557e8cf2f53d7a50f9f7"
+    },
+    {
+      "start": 238709,
+      "end": 238752,
+      "text": "function Na(e,t){return rI.includes(t)?t:e}",
+      "sha256": "b600911e11b7f1ee9a6b64c97ae33885953e22b09e846adeaa14c91ae5c53578"
+    },
+    {
+      "start": 665742,
+      "end": 665842,
+      "text": "function Uo(e,t,s,r){return $y(`dataStr/${e}${t&&t!==\"0\"?`-${t}`:\"\"}-${s}${r&&r!==\"0\"?`-${r}`:\"\"}`)}",
+      "sha256": "33c3594acd1121cb2917f5e792a549eb7601ef64abd05181b8abc5d534e1510a"
+    },
+    {
+      "start": 1430822,
+      "end": 1431273,
+      "text": "async function j6(){var e;if(!qh)return!0;let t=!1,s=oo();return typeof window>\"u\"&&s._TAB_ID_?t=await J1(`/${s._TAB_ID_}/notify`).rpcCall(\"/pro-ui/liveness/monitor/isActive\"):t=(e=await Ge.messageBus.rpcCall(\"/pro-ui/liveness/monitor/isActive\"))==null?void 0:e.message,t?!0:(console.error(\"[\\u7F16\\u8F91\\u5668\\u5904\\u4E8E\\u5931\\u6D3B\\u72B6\\u6001, \\u8BF7\\u68B3\\u7406\\u903B\\u8F91, \\u4E0D\\u8981\\u53D1\\u9001\\u4E0D\\u5FC5\\u8981\\u7684\\u8BF7\\u6C42!!!]\"),!1)}",
+      "sha256": "e17cc8986e758fa05d8b7f401c533cbb361d0d629401be2b7fb60b113e4b60b1"
+    },
+    {
+      "start": 1431577,
+      "end": 1431704,
+      "text": "async function Ve(e,t,s={},r={},i=!1){if(!await F6())throw new Error(\"\\u975E\\u6CD5\\u8BF7\\u6C42!!!\");return await U6(e,t,s,r,i)}",
+      "sha256": "5a85f502b7d2ab23337fc59cb3039872452d2d34f98c8bf8b646df9b85ee5f54"
+    },
+    {
+      "start": 1431704,
+      "end": 1431742,
+      "text": "async function F6(){return await j6()}",
+      "sha256": "f729102258affc631d66d08040ecbba8c7bb3f9eee4f52edb21298100b4d853a"
+    },
+    {
+      "start": 1431742,
+      "end": 1433672,
+      "text": "async function U6(e,t,s={},r={},i=!1){return new Promise(async(n,a)=>{let o=0,c=3,l=async()=>{try{var u;e=e||\"GET\",H6(e,s,r),u=s,r=r;let h=G6(e,t,u,r);u=h.params,t=h.url;let p=new XMLHttpRequest;r.withCredentials!==void 0&&(p.withCredentials=r.withCredentials),r.responseType!==void 0&&(p.responseType=r.responseType),p.open(e,t,!0),z6(p,e,r,i),u=await Y6(p,e,t,u,r);let d=!1,m=()=>{if(!d)if(d=!0,p.status===200)try{if(r.responseType===\"blob\")n(p.response);else{let f=JSON.parse(p.responseText);f.success===!1&&(f.message=ts(f)||f.message),n(f)}}catch(f){console.warn(\"catch ajax error...\",f),n({success:!1,message:\"Network Error!\"})}else if(p.status===429)if(o<c){let f=p.getResponseHeader(\"Retry-After\"),g=f?parseInt(f)*1e3:6e4;console.warn(`Too Many Requests, retry after ${g/1e3}s...`,p.status),o++,setTimeout(()=>{d=!1,l()},g)}else console.warn(\"Too Many Requests, max retry exceeded\",p.status),n({success:!1,code:p.status,message:\"\\u8BF7\\u6C42\\u8FC7\\u4E8E\\u9891\\u7E41\\uFF0C\\u8BF7\\u7A0D\\u540E\\u518D\\u8BD5\"});else p.status===404?(console.warn(\"catch ajax error...\",p.status),n({success:!1,code:p.status,message:\"Network Error!\"})):p.status===500?(console.warn(\"catch ajax error...\",p.status),n({success:!1,code:p.status,message:\"Network Error!\"})):(console.warn(\"catch ajax error...\",p.status),n({success:!1,code:p.status,message:\"Network Error!\"}))};if(p.onreadystatechange=function(){p.readyState===4&&m()},p.onerror=function(f){d||(console.warn(\"catch ajax error...\",f),n({success:!1,message:\"Network Error!\"}))},p.ontimeout=function(){d||(d=!0,console.warn(\"ajax timeout...\"),n({success:!1,message:\"\\u8BF7\\u6C42\\u8D85\\u65F6\"}))},p.onabort=function(){d||(d=!0,console.warn(\"ajax aborted...\"),n({success:!1,message:\"\\u8BF7\\u6C42\\u5DF2\\u53D6\\u6D88\"}))},u instanceof Uint8Array){let f=new Blob([u]);p.send(f)}else p.send(u)}catch(h){console.warn(\"catch ajax error...\",h),n({success:!1,message:\"Network Error!\"})}};await l()})}",
+      "sha256": "19b7255c69ed60bae00d780cda39cd45c9bbd2b02969abf3addaa2dfb5ff5a8d"
+    },
+    {
+      "start": 1684363,
+      "end": 1684885,
+      "text": "async put(t,s,r){t=nu(t);let i=0,n=async()=>{try{console.time(`CustomCache clone ${t}`);let a=s.clone();console.timeEnd(`CustomCache clone ${t}`),console.time(`CustomCache put ${t}`);let o=await this.cache.put(t,a);return console.timeEnd(`CustomCache put ${t}`),o}catch(a){if(++i,console.error(\"cache \\u5199\\u5165\\u5931\\u8D25\",t,i),i>5)throw new Error(`cache \\u5199\\u5165\\u5931\\u8D25:${t},${i},${a.message}`,a);return!r&&(a==null?void 0:a.name)===\"NotFoundError\"?(await this.open(),n()):(await tu(100*i),n())}};return n()}",
+      "sha256": "fbcf4d11c5d4b47e9ffa46057e13721851543486f43797f13c72d840a8cf159e"
+    },
+    {
+      "start": 1708962,
+      "end": 1709078,
+      "text": "async function IA(e,t,s){return await Re.getInstance().projectHistory.get({projectId:t,branchUuid:s,historyUuid:e})}",
+      "sha256": "c74f4554d2be2f6a1b7c2fd7365c4774db8bd7a2d712b055f0f2749018d3fa22"
+    },
+    {
+      "start": 1709078,
+      "end": 1709123,
+      "text": "function ou(e){return $y(`index/v${1}/${e}`)}",
+      "sha256": "f07495a6795f39c12f4058f9844d62b2660d4bab80dcf42e3933242b2d4ec5ef"
+    },
+    {
+      "start": 1710049,
+      "end": 1710234,
+      "text": "function ag(e,t){t.docs&&(e.docs=t.docs),t.editHead&&(e.editHead=t.editHead),t.docIds&&(e.docIds=t.docIds),t.snapDocs&&(e.snapDocs=t.snapDocs),t.snapDocIds&&(e.snapDocIds=t.snapDocIds)}",
+      "sha256": "38448745b4250d33e4db78ec23205aa713e4048d6bfaf6ddbd25d62ff6a191c0"
+    },
+    {
+      "start": 1710234,
+      "end": 1710968,
+      "text": "function hd(e,t){var n,a,o,c,l,u,h,p,d;if(!e.length||!t.length)return e;let s=!!e[e.length-1].snapshot,r=e[e.length-1].uuid===t[t.length-1].uuid,i=e[e.length-1].snapshot===t[t.length-1].snapshot;if(r&&i){let m=e.length-t.length;if(m>=0)for(let f=0;f<t.length;++f)(n=t[f])!=null&&n.uuid&&((a=t[f])==null?void 0:a.uuid)===((o=e[f+m])==null?void 0:o.uuid)&&(((c=t[f])==null?void 0:c.num)||0)<=(((l=e[f+m])==null?void 0:l.num)||0)&&ag(e[f+m],t[f])}if(s&&!i){let m=e[e.length-1],f=t.findIndex(y=>y.uuid===m.uuid),g=e.length-1;if(f>-1)for(let y=f-1;y>=0;--y){let b=g-(f-y);b>=0&&((u=e[b])==null?void 0:u.uuid)===((h=t[y])==null?void 0:h.uuid)&&(((p=t[y])==null?void 0:p.num)||0)<=(((d=e[b])==null?void 0:d.num)||0)&&ag(e[b],t[y])}}return e}",
+      "sha256": "3e05a08be3ba94d5563853cd2fe235929b7abe8d44cf914c8ab492505715fb8a"
+    },
+    {
+      "start": 1802345,
+      "end": 1802609,
+      "text": "async upload1(t){let{branchData:s,datas:r}=t,i=[],n=new ra;n.onChunk(a=>{i.push(Re.getInstance().projectHistory.set({projectId:this.uuid,branchData:s,dataStr:a}))});for(let a=0;a<r.length;++a)n.push(r[a]),r[a]=null;return n.end(),await Promise.all(i),{success:!0}}",
+      "sha256": "e218343323c35e0d20c3470bf8da35b30930348c1de3c721b8cb4631df21a584"
+    },
+    {
+      "start": 1811116,
+      "end": 1811291,
+      "text": "static pcb(t){return{uuid:t.uuid,title:t.title,board:t.board,zIndex:t.zIndex,docType:t.docType,parent_uuid:t.parent,source:t.source,version:t.version,updateTime:t.updateTime}}",
+      "sha256": "b4780bdc55594870e9421dff5901b6aea06f247eef26328d7194d0d6927c1626"
+    },
+    {
+      "start": 1811291,
+      "end": 1811416,
+      "text": "static schematic(t){return{uuid:t.uuid,name:t.title,board:t.board,source:t.source,version:t.version,updateTime:t.updateTime}}",
+      "sha256": "ad87f6cfa2c54ade38c07ed1669565cd5c1b06eabc923d55a86ce2fda1d312a9"
+    },
+    {
+      "start": 1811416,
+      "end": 1811585,
+      "text": "static sheet(t){return{uuid:t.uuid,title:t.title,schematic_uuid:t.schematic,docType:t.docType,zIndex:t.zIndex,source:t.source,version:t.version,updateTime:t.updateTime}}",
+      "sha256": "6246106c47bf7613dc924a7db24d3bac10afc350e31d9f1ddc4e24e9eb35c1e3"
+    },
+    {
+      "start": 1822850,
+      "end": 1824938,
+      "text": "async flowUpload(t={}){var s;try{t.progress&&(this.progress=t.progress),console.time(\"convert project\");let r=await this.flow(t);if(r.success===!1)return this.onfailed(),{success:!1,code:r.code,message:r.message};let i=r.result,n={map:this.map,channelId:i};if(!this.uuid)return this.onfailed(),{success:!1,message:\"Missing project id!\"};let{permissions:a}=this.project;if(!Fe&&!a.includes(\"project.branch.create\")){let y={uuid:this.uuid,noPermission:!0};y.channelId=i;let b=\"No permission to create branches\";return this.onfailed(),et(\"warn\",[b]),{success:!1,message:b,args:y}}console.time(\"convert project upload\");let o=await this.getBranch();if(o.success===!1){let y={uuid:this.uuid};return qs(o.code)&&(y.channelId=i),this.onfailed(),et(\"warn\",this.getMessage(o.message)),{success:!1,code:o.code,message:o.message,args:y}}if(!Fe&&!a.includes(\"project.document.add\")){let y={uuid:this.uuid,noPermission:!0};y.channelId=i;let b=\"There is no permission to upload the project history\";return this.onfailed(),et(\"warn\",[b]),{success:!1,message:b,args:y}}let c=o.result,l=this.createStructure?new il:null;(s=l==null?void 0:l.setNotCanvas)==null||s.call(l,!0);let u=this.createStructure?l.flowParseFull():null,h=[],p=[],d=new ra;d.onChunk(y=>{h.push(Re.getInstance().projectHistory.set({projectId:this.uuid,branchData:c,dataStr:y}))}),await(0,pg.flowRead)(i,{update:y=>{d.push(y),u==null||u.update(y),t.needOriginStr&&y&&p.push(y)}}),d.end(),u==null||u.end();let g=(await Promise.all(h)).filter(y=>y.success===!1);if(g&&g.length){this.onfailed();let y={uuid:this.uuid};return p&&p.length&&(y.dataStr=p),console.error(\"The upload of the project log failed!\",g),{success:!1,code:g[0].code,message:\"The upload of the project log failed!\",args:y}}else p.length=0;return n.project=this.project,n.branchData=c,u&&await this.buildStructure(l.getProject(),this.info.owner,c.uuid),this.onsuccess(),console.timeEnd(\"convert project upload\"),console.timeEnd(\"convert project\"),{success:!0,result:n}}catch(r){return this.onfailed(),{success:!1,message:this.getMessage(r.message),args:{uuid:this.uuid}}}}",
+      "sha256": "b1426693d15b62f7d944a6386286157ed73bc24fad3c66fb1e0e8f6dbe0f0009"
+    },
+    {
+      "start": 1843024,
+      "end": 1843616,
+      "text": "async upload(t,s){if(s&&s.length){let r=this.createStructure?new il:null,i=this.createStructure?r.flowParseFull():null,n=[],a=new ra;a.onChunk(l=>{n.push(Re.getInstance().projectHistory.set({projectId:this.uuid,branchData:t,dataStr:l}))});for(let l of s)a.push(l),i==null||i.update(l);a.end(),i==null||i.end();let c=(await Promise.all(n)).filter(l=>l.success===!1);if(c&&c.length)return console.error(\"The upload of the project log failed!\",c),{success:!1,message:\"The upload of the project log failed!\"};i&&await this.buildStructure(r.getProject(),this.info.owner,t.uuid)}return{success:!0}}",
+      "sha256": "f8e8cd8b6299ecdb4055b19f1cb77d6b4123df32937535bd8a8e08e0af2d9bf6"
+    },
+    {
+      "start": 1845836,
+      "end": 1845980,
+      "text": "function Us(e,t,s){let r=qA(e),i=[];if(s)for(let n of s){let a=Array.isArray(n)?n:[n];i.push(r(t,...a))}else i.push(r(t));return Promise.all(i)}",
+      "sha256": "873138ae51548e1e8769898c4974956b90a1294bf161b17acea995af2d739a27"
+    },
+    {
+      "start": 1847057,
+      "end": 1847248,
+      "text": "function Nd(e){let t=null,s=null,r;return(...i)=>(r=i,t?(s||(s=(async()=>{try{await t,t=s,s=null,await e(...r)}finally{t=null}})()),s):(t=(async()=>{try{await e(...r)}finally{t=null}})(),t))}",
+      "sha256": "99fca9f1568807ff06f32f3fba55b490def72b5b07d9325974dc153db217909e"
+    },
+    {
+      "start": 1850334,
+      "end": 1851314,
+      "text": "async function mg(e,t=e.dataStrUrl,s=!0,r,i){let n=new Headers;n.append(yt.ContentType,gt.Text);let a=await fetch(t,{method:\"GET\",redirect:\"error\",headers:n});if(!a.ok){if(i)return\"\";throw new Error(`\\u65E0\\u6CD5\\u4ECE\\u540E\\u7AEF\\u83B7\\u53D6\\u5386\\u53F2\\u6570\\u636E(HTTP ${a.status}): ${t}`)}let o=await a.arrayBuffer();if(!(o!=null&&o.byteLength))return\"\";let c=new Kn,l=new Ql;try{let{key:u}=e,h=s&&e.snapshot?e.snapshot:e.iv||e.uuid;if(o&&h&&u){let p=Ca(u),d=Ca(h);await c.init({key:p,iv:d});try{let f=await c.decrypt2(o),g=Do(new Uint8Array(f));l.write(g,y=>{y&&r.update(y)})}catch{let g=await c.decrypt(o),y=Do(new Uint8Array(g));l.write(y,b=>{b&&r.update(b)})}let m=l.end();m&&r.update(m),r.end()}else throw new Error(`\\u5386\\u53F2\\u6570\\u636E\\u89E3\\u5BC6\\u4FE1\\u606F\\u7F3A\\u5931\\uFF0C\\u65E0\\u6CD5\\u89E3\\u5BC6: ${t}`)}catch(u){if(l.end(),console.error(\"\\u6570\\u636E\\u89E3\\u5BC6\\u5931\\u8D25!!!\",t,u),!i)throw new Error(\"\\u6570\\u636E\\u89E3\\u5BC6\\u5931\\u8D25!!!\"+u);return\"\"}}",
+      "sha256": "5856d83c813dbfd56885d3d35d0a74d6c9732bd0e158069c72418d9c24b9ce74"
+    },
+    {
+      "start": 1851314,
+      "end": 1851385,
+      "text": "function fc(e,t,s){return s&&e.snapshot?e.snapshotUrl+t:e.dataStrUrl+t}",
+      "sha256": "3b25ecd849db5090a980bd17480569946ec0fd2dc91253d24ce4a9b0d4501f5f"
+    },
+    {
+      "start": 1852674,
+      "end": 1852979,
+      "text": "async function du(e,t,s,r=!0,i){let n=e.snapshot?0:s||0,a=e.snapshot?e.snapshot_num||0:e.num||0,o=Math.min(a-n+1,30),c=async(u,h,p,d,m,f)=>{try{await mg(u,h,p,d,m)}catch(g){throw f!=null&&yg(u,f,p),g}},l=[];for(let u=n;u<=a;u++){let h=u?`-${u}`:\"\",p=fc(e,h,r),d=t(u);l.push([e,p,r,d,i,u])}await Us(o,c,l)}",
+      "sha256": "52d4edbe1deeb3f0ed5e733a1347d381797954e0a38fce453a0b294490ff6354"
+    },
+    {
+      "start": 1856052,
+      "end": 1856219,
+      "text": "function ZA(e,t){let s=new Array,r=null,i=null;return n=>{s.push(n),r||(r=setTimeout(()=>{r=null,i&&clearTimeout(i),i=setTimeout(()=>{e(s),s.length=0,i=null},t)},0))}}",
+      "sha256": "1de1846330650da2945eb6b280c1309feae47df438902a4c67370f3976f9b3d3"
+    },
+    {
+      "start": 1857186,
+      "end": 1857789,
+      "text": "setEditData(s,r,i,n,a,o){var l,u;let c=o===this.client;if(!this.data[s])this.data[s]={[this.mainKey]:s,creator:r,createTime:i,modifier:r,updateTime:i,version:n,path:this.projectManager.uuid,owner:{uuid:this.projectManager.uuid,nickname:(u=(l=this.projectManager)==null?void 0:l.projectDetails)==null?void 0:u.name}},a&&this.projectManager.notifyWatcher(a,{uuid:s,projectId:this.projectManager.uuid,localChange:c});else{let h=this.data[s];(!h.createTime||i<h.createTime)&&(h.createTime=i,h.creator=r),(!h.updateTime||h.updateTime<i)&&(h.updateTime=i,r&&(h.modifier=r),h.version=n,this.publishUpdate(s))}}",
+      "sha256": "0f0d25706407a59aa9e31b4c21723b7d66ab4e5aa605c6c13ff0c4754dd8f860"
+    },
+    {
+      "start": 2011158,
+      "end": 2011378,
+      "text": "function QA(e,t,s=!1){let r,i=null;return function(...n){return s?(clearTimeout(r),i&&i(),s=!1,e.apply(this,n)):(clearTimeout(r),i&&i(),new Promise(a=>{i=a,r=setTimeout(async()=>{let o=await e.apply(this,n);a(o)},t)}))}}",
+      "sha256": "e44cd89d5dd9cc4c851c01a55247782eacd16b97d057add3b1cd472ad31a97db"
+    },
+    {
+      "start": 2011492,
+      "end": 2012659,
+      "text": "constructor(t){this.mainMesBus=t;this.task1=new Set;this.task2=new Set;this.task3=new Set;this.isApplyShot=!1;this.cachePromise=new Set;this.syncPendingNodeUuids=new Set;this.confirmedEmptyNodeUuids=new Set;this.warnedEmptyNodeUuids=new Set;this.isHistoryBack=!1;this._isV2Format=!1;this._notifySwitch=!0;this.historyIndex=[];this.consistencyManager=new ja;this.isTemporary=!1;this.isReady=!1;this.watcherAddSet={footprint:new Map,symbol:new Map,device:new Map,board:new Map,sch:new Map,sheet:new Map,pcb:new Map,panel:new Map,simulation:new Map};this.watcherDeleteSet={footprint:new Map,symbol:new Map,device:new Map,board:new Map,sch:new Map,sheet:new Map,pcb:new Map,panel:new Map,simulation:new Map};this.watcherUpdateSet={footprint:new Map,symbol:new Map,device:new Map,board:new Map,sch:new Map,sheet:new Map,pcb:new Map,panel:new Map,simulation:new Map};this.bufferUploadData=new Map;this.bufferUploadCache=new Map;this.bufferedUploadCloud=this.bufferedStream(async()=>{this.isBatchUpload||await this.batchUploadCloud()},500);this.isUploadingCloud=!1;this.pendingSyncCloud=!1;this.isBatchUpload=!1;this.consistencyManager.setCacheData(()=>this.getCacheData())}",
+      "sha256": "a312e0fe696ec2ddab8f60124aeb72684da65046731ca0f5f23bb60f9e283842"
+    },
+    {
+      "start": 2013239,
+      "end": 2013316,
+      "text": "isReadOnly(){return!!(this.isTemporary||this.isHistoryBack||this.isV2Format)}",
+      "sha256": "1ac8269d07d8f1283d909cb61e6cb2a5e8b078079e5350625d6ef1101f2c2540"
+    },
+    {
+      "start": 2020230,
+      "end": 2020325,
+      "text": "async getLastHistoryUuid(t){return Re.getInstance().branch.get({uuid:this.uuid,branch_uuid:t})}",
+      "sha256": "d5f02079bd8ba7735ac9288c5d3de48bb0bf30fc30081e9d48d46e0ac875970b"
+    },
+    {
+      "start": 2020325,
+      "end": 2021153,
+      "text": "getFlowParse(t,s,r,i=!0,n,a,o){var f;let c=[],l={uuid:i&&t.snapshot||t.uuid,num:s,editHead:(f=t==null?void 0:t.editHead)==null?void 0:f[s],dNum:n};t.editHead||(t.editHead=[]),a&&(t.editHead[s]=a);let u=r?(g,y,b)=>{let E=Uo(l.uuid,s,g,y);o&&o(E,b);let T=this.cache.put(E,new Response(b));this.cachePromise.add(T),T.then(()=>this.cachePromise.delete(T))}:void 0,h=r?g=>{!a&&(t.editHead[s]=g)}:void 0,p=this.consistencyManager.flowParseFull({cache:u,history:l,onEditHead:h}),d=g=>{r&&c.push(g),p.update(g)},m=()=>{if(p.end(),r){let g=p.getDocIds();t.snapshot&&i?(t.snapDocs||(t.snapDocs=[]),p.docMap&&(t.snapDocs[s]=p.docMap),t.snapDocIds||(t.snapDocIds=[]),g.length&&(t.snapDocIds[s]=g)):(t.docs||(t.docs=[]),p.docMap&&(t.docs[s]=p.docMap),t.docIds||(t.docIds=[]),g.length&&(t.docIds[s]=g))}};return{start:p.start,end:m,update:d}}",
+      "sha256": "73b0e0541118ecd7aac7e62fba245364f69d1c77c36cecb2b76dee1e1ad4db97"
+    },
+    {
+      "start": 2020529,
+      "end": 2020677,
+      "text": "(g,y,b)=>{let E=Uo(l.uuid,s,g,y);o&&o(E,b);let T=this.cache.put(E,new Response(b));this.cachePromise.add(T),T.then(()=>this.cachePromise.delete(T))}",
+      "sha256": "ef093e302befb28bb6e946f7ae47ac8607db6aac204e4ca1ac118a02efd68642"
+    },
+    {
+      "start": 2021757,
+      "end": 2022380,
+      "text": "async getUploadedData(){var r,i;let t=[];if(!0){let n=await this.cache.keys(_b(this.branchUuid),{ignoreSearch:!0});for(let a=0;a<n.length;++a){let o=n[a],c=o.url,l=await((r=await this.cache.match(o))==null?void 0:r.text());l&&(t.push(l),this.bufferUploadCache.set(c,this.cache),this.bufferedUploadCloud({dataUrl:c,dataStr:l}))}}let s=await this.localCache.keys(_b(this.branchUuid),{ignoreSearch:!0});for(let n=0;n<s.length;++n){let a=s[n],o=a.url,c=await((i=await this.localCache.match(a))==null?void 0:i.text());c&&(t.push(c),this.bufferedUploadCloud({dataUrl:o,dataStr:c}))}return t.length&&this.publishUploadPending(),t}",
+      "sha256": "624d97b03cbcb2747b400ab24d603ddd6ae3760ea41b0233b8dd61c857973159"
+    },
+    {
+      "start": 2022867,
+      "end": 2024986,
+      "text": "async uploadCloud(){if(this.isV2Format)return{success:!1,message:\"This project is in V2 format and is currently in read-only mode. Saving is not allowed.\"};this.isUploadingCloud=!0;let t=new Map,s=[],r=[],i=[],n=0,a=50*1024*1024;for(let[c,l]of this.bufferUploadData)n>a&&(s.push({url:r,data:i}),r=[],r=[],n=0),r.push(c),i.push(l),n+=l.length,t.set(c,l),this.bufferUploadData.delete(c);i.length&&s.push({url:r,data:i});let o=()=>{for(let[c,l]of t)this.bufferUploadData.set(c,l);t.clear()};if(this.isTemporary)return t.clear(),this.publishUploadPending(),{success:!0};try{let c;for(let l of s){let u=l.data.join(Ie);if(!u.length)continue;let h=0,p=3,d=this.uuid,m=async()=>{let f=await Re.getInstance().projectHistory.set({projectId:d,branchData:{uuid:this.branchUuid},dataStr:u});if(!f.success||!f.result){console.error(\"\\u5B9E\\u65F6\\u4E0A\\u4F20\\u8BF7\\u6C42\\u5931\\u8D25\\uFF1Axxxxxxxxxxxxxxxxxxxx..........,\\u8BF7\\u67E5\\u770B\\u65E5\\u5FD7\\u4FE1\\u606F\",f);let g=await this.onerror(f);if(!g&&++h===p&&(g=!0),g)return et(\"error\",[\"Failed to upload data!\",ts(f)||f.message||\"\"]),this.notifyWatcher(be.PROJECT.UPLOAD_FAILED,f),this.mainMesBus.publish(\"ui/openProjectUploadFailed\",{project:this.uuid,branch:this.branchUuid}),{success:!1,message:`\\u4FDD\\u5B58\\u4E0A\\u4F20\\u5931\\u8D25\\uFF1A${ts(f)||f.message||\"\"}`};if(await tu(200*h),h<p)return await m()}else{(async()=>{let b=cg(`localSave/${this.branchUuid}?key=${f.result}&time=${new Date().getTime()}`);await this.localCache.put(b,new Response(u));for(let E of l.url)t.delete(E),this.bufferUploadCache.has(E)?(await this.bufferUploadCache.get(E).delete(E),this.bufferUploadCache.delete(E)):await this.localCache.delete(E)})();let y=this.syncCloud();return this.task1.add(y),y.finally(()=>{this.task1.delete(y)}),{success:!0}}};if(c=await m(),!(c!=null&&c.success)){o();break}}return c||{success:!0}}catch(c){return console.error(\"\\u4E0A\\u4F20\\u5931\\u8D25\\uFF01\\uFF01\\uFF01\",c),o(),{success:!1,message:`\\u4E0A\\u4F20\\u4E91\\u7AEF\\u5931\\u8D25\\uFF1A${c.message}`}}finally{this.isUploadingCloud=!1,this.publishUploadPending(),this.pendingSyncCloud&&this.syncCloud().catch(()=>{})}}",
+      "sha256": "7175c3c38cab0dc6026c461488a90b5c08ca8e235abff4d0a8ad469174aa4964"
+    },
+    {
+      "start": 2024218,
+      "end": 2024533,
+      "text": "async()=>{let b=cg(`localSave/${this.branchUuid}?key=${f.result}&time=${new Date().getTime()}`);await this.localCache.put(b,new Response(u));for(let E of l.url)t.delete(E),this.bufferUploadCache.has(E)?(await this.bufferUploadCache.get(E).delete(E),this.bufferUploadCache.delete(E)):await this.localCache.delete(E)}",
+      "sha256": "ad456d32d1566392b497d007ec7241c49ee7944d7dfeb54334cd0366cf14d1e0"
+    },
+    {
+      "start": 2024986,
+      "end": 2025453,
+      "text": "async applySnap(){var s;if(Fe)return;let t;if(Fe&&Gm?t=150:Fe?t=30:t=100,this.historyIndex.length>t){let r={headers:{path:this.uuid}},i=await Ve(\"POST\",ae.SNAPSHOT.APPLY,{project:this.uuid,branch:this.branchUuid,path:this.uuid},r);i!=null&&i.success&&(i!=null&&i.result)&&this.createSnapshot((s=i==null?void 0:i.result)==null?void 0:s.history_uuid).catch(n=>console.error(`\\u521B\\u5EFA\\u5FEB\\u7167\\u5931\\u8D25 [project=${this.uuid}, branch=${this.branchUuid}]:`,n))}}",
+      "sha256": "0333b96969d98746ce578b1a643ca71f75b205f7c3cd279e13664b1b27be4022"
+    },
+    {
+      "start": 2025453,
+      "end": 2025698,
+      "text": "isSegmentsLoaded(t){var i,n;let s=!!t.snapshot,r=(s?t.snapshot_num:t.num)||0;for(let a=0;a<=r;a++){let o=s?(i=t==null?void 0:t.snapDocIds)==null?void 0:i[a]:(n=t==null?void 0:t.docIds)==null?void 0:n[a];if(!(o!=null&&o.length))return!1}return!0}",
+      "sha256": "e5065424ee73e234520992e6c8d433e46d2365ac5bb8c4ca92106a2d697b592d"
+    },
+    {
+      "start": 2025698,
+      "end": 2026219,
+      "text": "async ensureHistoryDataLoaded(t){this.isSegmentsLoaded(t)||this.confirmedEmptyNodeUuids.has(t.uuid)||(await du(t,s=>this.getFlowParse(t,s,!0,!0)),this.isSegmentsLoaded(t)||this.confirmedEmptyNodeUuids.has(t.uuid)||(this.confirmedEmptyNodeUuids.add(t.uuid),this.warnedEmptyNodeUuids.has(t.uuid)||(this.warnedEmptyNodeUuids.add(t.uuid),console.warn(`ensureHistoryDataLoaded \\u8865\\u9F50\\u540E\\u4ECD\\u4E0D\\u5B8C\\u6574 [project=${this.uuid}, uuid=${t.uuid}]: \\u540E\\u7AEF\\u53EF\\u80FD\\u65E0\\u8BE5\\u5206\\u6BB5\\u6570\\u636E`))))}",
+      "sha256": "af96f515e68e9b5f00f31abf5eb1226d7dfbf676093dc4c8669a6161f859103e"
+    },
+    {
+      "start": 2026219,
+      "end": 2026598,
+      "text": "async ensureNodesLoaded(t,s,r=!1){for(let i of t){let n=this.historyIndex.find(a=>a.uuid===i);if(n)try{r&&this.confirmedEmptyNodeUuids.delete(i),await this.ensureHistoryDataLoaded(n),this.syncPendingNodeUuids.delete(i),this.isSegmentsLoaded(n)&&(this.confirmedEmptyNodeUuids.delete(i),this.warnedEmptyNodeUuids.delete(i))}catch(a){if(this.syncPendingNodeUuids.add(i),s)throw a}}}",
+      "sha256": "20c8f18498216198c73978a48a8f120f305163b3e0ee4437efa529d64a5c89f2"
+    },
+    {
+      "start": 2029672,
+      "end": 2030081,
+      "text": "bufferedStream(t,s){let r=null,i=null,n=null,a=this;return l=>{r&&(clearTimeout(r),r=null),n&&n(),i&&a.task1.delete(i),i=new Promise(u=>n=u),a.task1.add(i),o(l),r=setTimeout(()=>c(),s)};function o(l){let u=Array.isArray(l)?l:[l];for(let h of u)a.bufferUploadData.set(h.dataUrl,h.dataStr)}async function c(){r=null;let l=i,u=n;n=null,i=null;try{await t()}catch(h){console.error(h)}u&&u(),l&&a.task1.delete(l)}}",
+      "sha256": "ab5308d9747401e42204794c3a3d8eb7dfa99af4a34bcb90481c7761752f83a7"
+    },
+    {
+      "start": 2030081,
+      "end": 2030196,
+      "text": "async batchUploadCloud(){let t;try{t=this.uploadCloud(),this.task1.add(t),await t}finally{t&&this.task1.delete(t)}}",
+      "sha256": "b0973c07ee483cba9a9eb304387e2c07070bc675cecb953eaa49ca9ff5f9c4bf"
+    },
+    {
+      "start": 2031202,
+      "end": 2031622,
+      "text": "async uploadLocal(t,s=!0,r){let i=t.filter(n=>!!n).join(Ie);if(i.length){s&&this.consistencyManager.parseFull(i,void 0,void 0,r);let n=cg(`upload/${this.branchUuid}?key=${Qe()}`);try{await this.localCache.put(n,new Response(i))}catch{return this.bufferUploadData.set(n,i),this.publishUploadPending(),await this.uploadCloud()}this.bufferedUploadCloud({dataStr:i,dataUrl:n}),this.publishUploadPending()}return{success:!0}}",
+      "sha256": "5add70c985bd271d5683fc48abd3d69ed0627cb54a9638acc73a164e583b5ea4"
+    },
+    {
+      "start": 2031219,
+      "end": 2031622,
+      "text": "(t,s=!0,r){let i=t.filter(n=>!!n).join(Ie);if(i.length){s&&this.consistencyManager.parseFull(i,void 0,void 0,r);let n=cg(`upload/${this.branchUuid}?key=${Qe()}`);try{await this.localCache.put(n,new Response(i))}catch{return this.bufferUploadData.set(n,i),this.publishUploadPending(),await this.uploadCloud()}this.bufferedUploadCloud({dataStr:i,dataUrl:n}),this.publishUploadPending()}return{success:!0}}",
+      "sha256": "bb1a8fd6e1c5cd760a6cf77c7c054fd9a0b3d56e15270bc28585454201e3f0b8"
+    },
+    {
+      "start": 2031622,
+      "end": 2031689,
+      "text": "async getHistories(t){return await IA(t,this.uuid,this.branchUuid)}",
+      "sha256": "1f3549124a2aa6b20ec763a133a168b06860c9e0e173312648a58d475fa3342d"
+    },
+    {
+      "start": 2031728,
+      "end": 2031853,
+      "text": "async loadLastSnap(t){let s=t[t.length-1];s.snapshot&&!this.isSegmentsLoaded(s)&&await du(s,r=>this.getFlowParse(s,r,!0,!0))}",
+      "sha256": "7876ce966380310a559c1d8401691fdce93dba4ef61514d4a4aba96e6dc08b4f"
+    },
+    {
+      "start": 2031853,
+      "end": 2034689,
+      "text": "async syncCloud(t){var n,a,o,c,l;if(this.isReadOnly()||this.notSyncCloud)return;if(this.isUploadingCloud){this.pendingSyncCloud=!0;return}this.notSyncCloud=!0,this.pendingSyncCloud=!1;let s=!!t,r=null,i=new Promise(u=>r=u);this.task3.add(i);try{if(!t){let g=await this.getLastHistoryUuid(this.branchUuid);if(g.success===!1)throw new Error(\"GetLastHistoryUuid Failed!\");t=g.result.history_uuid}let u=(n=this.historyIndex)==null?void 0:n[0],h=(a=this.historyIndex)==null?void 0:a[1];if((u==null?void 0:u.uuid)!==t&&this.historyIndex.some(g=>g.uuid===t))throw new Hd;let p=[];if(t){let g=1;do{let y=await this.getHistories(t);if(!y.success)throw new Error(\"GetHistories Failed!\");p=(o=y==null?void 0:y.result)!=null&&o.length?y==null?void 0:y.result:[],p.length||await tu(50*g)}while(++g<5&&s&&(!p.length||((c=p==null?void 0:p[0])==null?void 0:c.uuid)===(u==null?void 0:u.uuid)&&((l=p==null?void 0:p[0])==null?void 0:l.num)===(u==null?void 0:u.num)));if(!p.length)throw new Error(\"\\u65E0\\u6CD5\\u4ECE\\u540E\\u7AEF\\u83B7\\u53D6\\u5230\\u5386\\u53F2\\u6570\\u636E\\uFF0C\\u540C\\u6B65\\u5931\\u8D25\\uFF01\")}p=hd(p,this.historyIndex);let d=p.findIndex(g=>(g==null?void 0:g.uuid)===(h==null?void 0:h.uuid)||(g==null?void 0:g.uuid)===(u==null?void 0:u.uuid)&&(g==null?void 0:g.num)===(u==null?void 0:u.num)),m=!1;this.cachePromise.add(i),this.isSyncing=!0;for(let g=d===-1?p.length-1:d;g>=0;--g){let y=p[g];g===d&&(y.uuid===(h==null?void 0:h.uuid)||y.uuid===(u==null?void 0:u.uuid)&&(y==null?void 0:y.num)===(u==null?void 0:u.num))||(m=!0,await du(y,b=>this.getFlowParse(y,b,!0,!0),y.uuid===(u==null?void 0:u.uuid)?(u==null?void 0:u.num)+1:void 0))}if(await this.loadLastSnap(p),m){this.historyIndex=p;let g={[yt.ContentType]:gt.Json};this.cache.put(ou(this.branchUuid),new Response(JSON.stringify(this.historyIndex),{headers:g})),this.isApplyShot&&(this.isApplyShot=!1,this.applySnap())}let f=this.syncPendingNodeUuids.size?this.historyIndex.filter(g=>this.syncPendingNodeUuids.has(g.uuid)):this.historyIndex;await this.ensureNodesLoaded(f.map(g=>g.uuid),!1)}catch(u){console.error(`syncCloud \\u540C\\u6B65\\u5931\\u8D25 [project=${this.uuid}, branch=${this.branchUuid}, historyUuid=${t}]:`,u);let h=u instanceof Error?u:new Error(String(u));throw h.project=this.uuid,h.branch=this.branchUuid,h.historyUuid=t,h}finally{r==null||r(),this.cachePromise.delete(i),this.task3.delete(i),this.notSyncCloud=!1,this.isSyncing=!1;for(let u of Array.from(this.syncPendingNodeUuids))this.historyIndex.some(h=>h.uuid===u)||this.syncPendingNodeUuids.delete(u);for(let u of Array.from(this.confirmedEmptyNodeUuids))this.historyIndex.some(h=>h.uuid===u)||this.confirmedEmptyNodeUuids.delete(u);for(let u of Array.from(this.warnedEmptyNodeUuids))this.historyIndex.some(h=>h.uuid===u)||this.warnedEmptyNodeUuids.delete(u);this.pendingSyncCloud&&this.syncCloud().catch(()=>{})}}",
+      "sha256": "3c5101bdf6a0ee65825bb16063044d2dbb812d146f639fb67623e1092e6ee15a"
+    },
+    {
+      "start": 2031868,
+      "end": 2034689,
+      "text": "(t){var n,a,o,c,l;if(this.isReadOnly()||this.notSyncCloud)return;if(this.isUploadingCloud){this.pendingSyncCloud=!0;return}this.notSyncCloud=!0,this.pendingSyncCloud=!1;let s=!!t,r=null,i=new Promise(u=>r=u);this.task3.add(i);try{if(!t){let g=await this.getLastHistoryUuid(this.branchUuid);if(g.success===!1)throw new Error(\"GetLastHistoryUuid Failed!\");t=g.result.history_uuid}let u=(n=this.historyIndex)==null?void 0:n[0],h=(a=this.historyIndex)==null?void 0:a[1];if((u==null?void 0:u.uuid)!==t&&this.historyIndex.some(g=>g.uuid===t))throw new Hd;let p=[];if(t){let g=1;do{let y=await this.getHistories(t);if(!y.success)throw new Error(\"GetHistories Failed!\");p=(o=y==null?void 0:y.result)!=null&&o.length?y==null?void 0:y.result:[],p.length||await tu(50*g)}while(++g<5&&s&&(!p.length||((c=p==null?void 0:p[0])==null?void 0:c.uuid)===(u==null?void 0:u.uuid)&&((l=p==null?void 0:p[0])==null?void 0:l.num)===(u==null?void 0:u.num)));if(!p.length)throw new Error(\"\\u65E0\\u6CD5\\u4ECE\\u540E\\u7AEF\\u83B7\\u53D6\\u5230\\u5386\\u53F2\\u6570\\u636E\\uFF0C\\u540C\\u6B65\\u5931\\u8D25\\uFF01\")}p=hd(p,this.historyIndex);let d=p.findIndex(g=>(g==null?void 0:g.uuid)===(h==null?void 0:h.uuid)||(g==null?void 0:g.uuid)===(u==null?void 0:u.uuid)&&(g==null?void 0:g.num)===(u==null?void 0:u.num)),m=!1;this.cachePromise.add(i),this.isSyncing=!0;for(let g=d===-1?p.length-1:d;g>=0;--g){let y=p[g];g===d&&(y.uuid===(h==null?void 0:h.uuid)||y.uuid===(u==null?void 0:u.uuid)&&(y==null?void 0:y.num)===(u==null?void 0:u.num))||(m=!0,await du(y,b=>this.getFlowParse(y,b,!0,!0),y.uuid===(u==null?void 0:u.uuid)?(u==null?void 0:u.num)+1:void 0))}if(await this.loadLastSnap(p),m){this.historyIndex=p;let g={[yt.ContentType]:gt.Json};this.cache.put(ou(this.branchUuid),new Response(JSON.stringify(this.historyIndex),{headers:g})),this.isApplyShot&&(this.isApplyShot=!1,this.applySnap())}let f=this.syncPendingNodeUuids.size?this.historyIndex.filter(g=>this.syncPendingNodeUuids.has(g.uuid)):this.historyIndex;await this.ensureNodesLoaded(f.map(g=>g.uuid),!1)}catch(u){console.error(`syncCloud \\u540C\\u6B65\\u5931\\u8D25 [project=${this.uuid}, branch=${this.branchUuid}, historyUuid=${t}]:`,u);let h=u instanceof Error?u:new Error(String(u));throw h.project=this.uuid,h.branch=this.branchUuid,h.historyUuid=t,h}finally{r==null||r(),this.cachePromise.delete(i),this.task3.delete(i),this.notSyncCloud=!1,this.isSyncing=!1;for(let u of Array.from(this.syncPendingNodeUuids))this.historyIndex.some(h=>h.uuid===u)||this.syncPendingNodeUuids.delete(u);for(let u of Array.from(this.confirmedEmptyNodeUuids))this.historyIndex.some(h=>h.uuid===u)||this.confirmedEmptyNodeUuids.delete(u);for(let u of Array.from(this.warnedEmptyNodeUuids))this.historyIndex.some(h=>h.uuid===u)||this.warnedEmptyNodeUuids.delete(u);this.pendingSyncCloud&&this.syncCloud().catch(()=>{})}}",
+      "sha256": "f4cb891b2f5f01881e9ffb6af78a1903d6df207e7047ac97e06acf464d053cc3"
+    },
+    {
+      "start": 2103288,
+      "end": 2107660,
+      "text": "constructor(s,r,i=!1){super(s);this.workerBus=r;this.debugOpen=i;this.isOpening=!1;this._updateData=null;this.isEstablished=!1;this.projectTimer=null;this.publishTimer=null;this.publishTask=new Set;this.orderTimer=null;this.orderCache={};this.selectWatch=new Map;this.cacheMaxTicket=null;this.watchType=0;this.rollbackHistoryIndex=null;this.oldRollbackHistoryIndex=null;this.historyErrorNodes=new Map;this.convertProjectInstance=null;this.bufferedPendDataStream=ZA(s=>{this.isReadOnly()||this.wsBus.publish(\"/pro-mgr/notify/send\",{topic:\"/document/sendMsg/cooperation\",uuid:\"pendData\",path:this.branchUuid,msg:{type:\"pendData\",data:s}})},10);this.historyNodeLimit=()=>{let s;return Gm&&Fe||jr?s=150:s=30,s};this.rollbackPromise=new Set;this.uploadStructure=Nd((s,r,i)=>{if(this.isReady&&!this.isReadOnly()&&!this.isSyncing&&[ve.BOARD,ve.PCB,ve.SCH,ve.SCH_PAGE,ve.SYMBOL,ve.PANEL].includes(s)&&!(i&&r!=De.META&&r!==De.DELETE_DOC))return this.structure()});this.structure=Nd(QA(async()=>{console.time(\"structure throttle\");let s=null,r=new Promise(i=>s=i);this.task2.add(r);try{let i=this.board.getStructure().result,n=this.schematic.getStructure().result,a=this.sheet.getStructure().result,o=this.pcb.getStructure().result,c=this.panel.getStructure().result,l=this.symbol.getStructure().result,u={boards:i,schematics:n,sheets:a,pcbs:o,panels:c,blockSymbols:l,owner:this.projectDetails.owner},h=this.consistencyManager.getMaxTicket(),p={uuid:this.uuid,branch_uuid:this.branchUuid,ticket:h,datas:u},d=await Re.getInstance().project.setProfile(p);if(s(),this.task2.delete(r),d&&!(d!=null&&d.success)){let m=\"Project tree structure generation failed!\";return et(\"warn\",[m]),{success:!1,message:m}}return console.timeEnd(\"structure throttle\"),d}catch(i){throw s(),this.task2.delete(r),new Error(i)}},300));this.config=new Pg(this),this.board=new Cg(this),this.instance=new bg(this),this.schematic=new Dg(this),this.sheet=new vg(this),this.simulation=new Og(this),this.pcb=new Sg(this),this.panel=new wg(this),this.device=new Eg(this),this.symbol=new _g(this),this.footprint=new Tg(this),this.blob=new Ag(this),this.font=new xg(this),this.variant=new Ig(this),this.consistencyManager.onHeadChange((n,a)=>this.onHeadChange(n,a)),this.consistencyManager.onChange((n,a,o,c,l,u,h,p,d,m,f,g,y)=>{var E,T,w;let b=this.consistencyManager.getDoctype(n);switch(b){case ve.BLOB:{this.blob.onDataChange(n,a,o,c,u,l,p,d,f,m);break}case ve.BOARD:{this.board.onDataChange(n,o,c,p,l,u,m);break}case ve.CONFIG:{this.config.onDataChange(n,a,o,c,l,u,m);break}case ve.DEVICE:{this.device.onDataChange(n,o,c,l,u,m);break}case ve.FONT:{this.font.onDataChange(n,a,o,c,u,l,p,d,f,m);break}case ve.FOOTPRINT:{this.footprint.onDataChange(n,a,o,c,l,u,p,d,f,m,y);break}case ve.INSTANCE:{this.instance.onDataChange(n,a,o,c,l,u,p,d);break}case ve.PANEL:{this.panel.onDataChange(n,a,o,c,l,u,p,d,f,m,y);break}case ve.PCB:{this.pcb.onDataChange(n,a,o,c,l,u,p,d,f,m,y);break}case ve.SCH:{this.schematic.onDataChange(n,a,o,c,l,u,p,d,f,m,y);break}case ve.SCH_PAGE:{if(this.sheet.onDataChange(n,a,o,c,l,u,p,d,f,m,y),c===De.META){let S=(E=this.sheet.data[n])==null?void 0:E.schematic,v=(T=this.sheet.data[n])==null?void 0:T.updateTime,_=(w=this.sheet.data[n])==null?void 0:w.version;S&&this.schematic.setEditData(S,void 0,v,_)}break}case ve.SIMULATION:{this.simulation.onDataChange(n,a,o,c,l,u,p,d,f,m,y);break}case ve.SYMBOL:{this.symbol.onDataChange(n,a,o,c,l,u,p,d,f,m,y);break}case ve.VARIANT:{!m&&this.variant.onVariantChange(n,o,c);break}case ve.COMPONENT_GROUP:{!m&&this.variant.onGroupChange(n,a,o,c);break}case ve.COMPONENT_GROUP_DATA:{!m&&this.variant.onGroupDataChange(n,a,o,c);break}}if(this.uploadStructure(b,c,p),this.localPublishTicket(),this.canWsPublish()&&!d){if([ve.SYMBOL,ve.FOOTPRINT].includes(b)&&p&&c!==De.META)return;let S=[n,a,l,u,o,c,b,p];this.bufferedPendDataStream(S)}}),this.consistencyManager.orderTree.orderChange((n,a,o,c)=>{this.orderCache[n]||(this.orderCache[n]=new Map);let l=this.orderCache[n];if(l.set(a,[a,o,c]),l.size>=5e4){this.workerBus.publish(`/pro-mgr/${n}/number/update`,[...l.values()]),l.clear(),delete this.orderCache[n];return}this.orderTimer||(this.orderTimer=setTimeout(()=>{for(let u in this.orderCache){let h=this.orderCache[u];this.workerBus.publish(`/pro-mgr/${u}/number/update`,[...h.values()]),h.clear(),delete this.orderCache[u]}this.orderTimer=null},20))})}",
+      "sha256": "1aac1292d0d86688476aaf3299417cad64c01a2e0d1d9226e029f1aa4bb0a014"
+    },
+    {
+      "start": 2119189,
+      "end": 2120251,
+      "text": "onHeadChange(s,r){var l;let i=(s==null?void 0:s.user)||{uuid:r==null?void 0:r.uuid,username:r==null?void 0:r.username,nickname:r==null?void 0:r.nickname},n=s.client,a=s.uuid,o=s.updateTime||(r==null?void 0:r.updateTime),c=s.version;switch(s.docType){case ve.CONFIG:break;case ve.BOARD:break;case ve.SCH:{this.schematic.setEditData(a,i,o,c,be.SCHEMATIC.ON_ADD,n);break}case ve.SCH_PAGE:{this.sheet.setEditData(a,i,o,c,be.SHEET.ON_ADD,n);let u=(l=this.sheet.data[a])==null?void 0:l.schematic;u&&this.schematic.setEditData(u,i,o,c);break}case ve.SIMULATION:{this.simulation.setEditData(a,i,o,c,be.SIMULATION.ON_ADD,n);break}case ve.PCB:{this.pcb.setEditData(a,i,o,c,be.PCB.ON_ADD,n);break}case ve.PANEL:{this.panel.setEditData(a,i,o,c,be.PANEL.ON_ADD,n);break}case ve.SYMBOL:{this.symbol.setEditData(a,i,o,c,be.SYMBOL.ON_ADD,n);break}case ve.FOOTPRINT:{this.footprint.setEditData(a,i,o,c,be.FOOTPRINT.ON_ADD,n);break}case ve.DEVICE:{this.device.setEditData(a,i,o,c,be.DEVICE.ON_ADD,n);break}case ve.INSTANCE:break;case ve.BLOB:break}this.publishMaxTicket(s.ticket)}",
+      "sha256": "898da83f178027276c6ecfcaf80ec0530ff6b72b3002e73ddad731e605a8566b"
+    },
+    {
+      "start": 2123569,
+      "end": 2124630,
+      "text": "async uploadConvertedSource(){try{let s=this.uuid;if(console.log(\"[UPLOAD CONVERT] Starting upload converted source for project:\",s),!this.isV2Format)return{success:!1,message:\"\\u5F53\\u524D\\u5DE5\\u7A0B\\u4E0D\\u662F v2 \\u683C\\u5F0F\\u5DE5\\u7A0B\\uFF0C\\u65E0\\u6CD5\\u8F6C\\u6362\\uFF01\\uFF01\\uFF01\"};let r=await this.getOrCreateBranch(s);if(r.success!==!0)return{success:!1,message:r.message};if(!r.result)return{success:!1,message:\"Missing branch data!\"};let i=r.result,n=new ra,a=[];n.onChunk(l=>{a.push(Re.getInstance().projectHistory.set({projectId:s,branchData:i,dataStr:l}))}),await this.consistencyManager.flowCompressFull({keepPendPrev:!0,writer:l=>{n.push(l)},keepFirst:!0}),n.end();let c=(await Promise.all(a)).filter(l=>l.success===!1);return c&&c.length?(console.error(\"[UPLOAD CONVERT] Upload failed\",c),{success:!1,message:\"The upload of the project log failed!\"}):(await this.postConversionSync(s,i),{success:!0,result:{project:this.projectDetails,branchData:i}})}catch(s){return console.error(\"[UPLOAD CONVERT] Error\",s),{success:!1,message:s.message}}}",
+      "sha256": "c7c2baa12c0f5389928f0a7566bea96febc4274fadc1974a6382a4b1228cf3a4"
+    },
+    {
+      "start": 2127005,
+      "end": 2127208,
+      "text": "checkProject(){this.isEstablished||this.projectTimer||(this.projectTimer=setTimeout(()=>{this.updateProjectInNet(),this.syncCloud().catch(()=>{}),this.projectTimer=null,this.checkProject()},Fe?1e3:3e3))}",
+      "sha256": "10deedd359565cfcdecc0e55394276f91fd77011bd8a0432f40c61e9f3da413e"
+    },
+    {
+      "start": 2128316,
+      "end": 2129074,
+      "text": "(s){let r=await this.getHistories(s);if(!r.success||!r.result)throw new Error(\"Get Histories Failed!\");this.historyIndex=hd(r.result||[],this.historyIndex);let i=0;for(let a=0;a<this.historyIndex.length;++a){let o=this.historyIndex[a],c=o.snapshot?o.snapshot_num||0:o.num||0;for(let l=0;l<=c;l++){let u=gg(o,l,!0);if(u&&Object.keys(u).length)for(let h in u)i+=(u[h]||0)+1;else i+=1}if(o.snapshot)break}this.scaleProgress(i),this.isSyncing=!0;let n=await this.flowGetLocalHistory(this.historyIndex,this.debugOpen);if(this.isSyncing=!1,!n.success)return{success:!1,...n};if(this.clearLocalSave(),n.cloudFetched){let a={[yt.ContentType]:gt.Json};this.cache.put(ou(this.branchUuid),new Response(JSON.stringify(this.historyIndex),{headers:a}))}return{success:!0}}",
+      "sha256": "13ee74b9d7b16384808762a13f4ad2460612eb0d7388fd6c477f1bf66a97385e"
+    },
+    {
+      "start": 2129091,
+      "end": 2129915,
+      "text": "(s){let r=[];if(s){let c=await this.getHistories(s);if(!c.success)throw new Error(\"Get Histories Failed!\");r=(c==null?void 0:c.result)||[]}let i=0;for(let c=0;c<r.length;++c){let l=r[c];if(i+=(l.snapshot?l.snapshot_num||0:l.num||0)+1,l.snapshot)break}this.scaleProgress(i),this.isSyncing=!0;let n=[],a=0;for(let c=0;c<r.length;++c){let l=r[c],u=(l.snapshot?l.snapshot_num||0:l.num||0)+1;if(a+u>30&&(await Promise.all(n),n.length=0,a=0),a+=u,n.push(du(l,h=>{let p=this.getFlowParse(l,h,!0,!0),d=p.end;return p.end=()=>{d==null||d(),this.progress.update()},p},void 0,void 0,this.debugOpen)),l.snapshot)break}n.length&&await Promise.all(n),this.isSyncing=!1,this.historyIndex=r;let o={[yt.ContentType]:gt.Json};return this.cache.put(ou(this.branchUuid),new Response(JSON.stringify(this.historyIndex),{headers:o})),{success:!0}}",
+      "sha256": "d842e91fbe1ccdbed2de69583ea19e5909c5124c1a4947600f28109893a78426"
+    },
+    {
+      "start": 2144996,
+      "end": 2145566,
+      "text": "async saveCanvas(s){if(this.isV2Format)return{success:!1,message:\"This project is in V2 format and is currently in read-only mode. Saving is not allowed.\"};let r=this.consistencyManager;if(!r.isHasData(s.uniqueId))return await this.uploadCloud();let i=await this.wsBus.rpcCall($s.getTime),n=r.getMaxTicket()+1;this.consistencyManager.setMaxTicket(n);let a=await r.asyncCompressFull({uniqueId:s.uniqueId,docIds:s.docIds,client:s.client,updateTime:i,versions:{[s.uuid]:String(i)},user:this.user,headTicket:n}),o=await this.uploadLocal([a],!1);return this.isApplyShot=!0,o}",
+      "sha256": "689bf1d38385331693dcfb9b28887ce2a46ada8b077495616f0e703d0a802178"
+    }
+  ]
+}

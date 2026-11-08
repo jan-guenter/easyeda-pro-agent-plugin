@@ -47,7 +47,7 @@ void test("native ratline acquisition checks the exact extended table before ret
   for (const pin of CURRENT_PCB_209_RATLINE_INSTALLATION_PROFILE.installedFiles) { assert.ok(source.includes(pin.sha256)); }
   assert.ok(source.includes("[EasyedaRatline209Installation]::VerifySmoke()"));
   assert.ok(source.includes("$ratlinePurpose=$WorkerStartupRatline209 -or $WorkerStartupRatlineContinuation209"));
-  assert.ok(source.includes("$fileCount=if ($ratlinePurpose) {[EasyedaRatline209Installation]::FileCount} else {5}"));
+  assert.ok(source.includes("$fileCount=if ($owner.SelectedSqlInstallation) {[EasyedaSelectedSql209Installation]::FileCount} elseif ($ratlinePurpose) {[EasyedaRatline209Installation]::FileCount} else {5}"));
 });
 for (const assetsRoot of ["/mnt/c/CON/resources/app/assets", "/mnt/c/Valid./resources/app/assets", "/mnt/c/Valid /resources/app/assets",
   "/mnt/c/Bad:stream/resources/app/assets", "/mnt/c/Bad\u007F/resources/app/assets", "/mnt/c/A?B/resources/app/assets",
@@ -188,11 +188,18 @@ void test("native DOS creation verifies the retained original image before one p
         }`;
   assert.equal(dispatcher.split(headAgeDispatch).length, 2);
   assert.equal(source.split("$owner.AbortHeadAge()").length, 2);
+  const component = `public void AbortComponentSpatial(){
+if(!componentSpatial209||componentAbortAttempted||released||root==IntPtr.Zero||job==IntPtr.Zero||rootCreated==0)throw Error("component-abort-owner");
+componentAbortAttempted=true;AssertLimits();long created,exited,kernel,user;bool member;
+if(GetProcessId(root)!=rootPid||!GetProcessTimes(root,out created,out exited,out kernel,out user)||created!=rootCreated||!IsProcessInJob(root,job,out member)||!member)throw Error("component-abort-identity");
+Native(TerminateJobObject(job,0x45444350));
+}`;
+  assert.equal(source.split(component).length, 2); assert.equal(component.match(/\bTerminateJobObject\(/gu)?.length, 1);
   const declaration = '[DllImport("kernel32.dll",SetLastError=true)] static extern bool TerminateJobObject(IntPtr job,uint code);';
   const outsideMain = source.slice(0, mainBegin) + source.slice(mainEnd);
   assert.equal(outsideMain.split(declaration).length, 2); assert.equal(outsideMain.split(visual).length, 2); assert.equal(outsideMain.split(held).length, 2);
   assert.equal(outsideMain.split(headAge).length, 2);
-  assert.ok(!outsideMain.replace(declaration, "").replace(visual, "").replace(held, "").replace(headAge, "").includes("TerminateJobObject"));
+  assert.ok(!outsideMain.replace(declaration, "").replace(visual, "").replace(held, "").replace(headAge, "").replace(component, "").includes("TerminateJobObject"));
   assert.ok(source.includes("public void TerminateMain(){MainPurpose();originalMain.RequestOriginalJobTermination();}"));
   assert.ok(source.includes("$request.confirmTerminateOriginalDiagnosticJob -isnot [bool]"));
   assert.ok(source.includes("if (-not $Visual209 -or $request.confirmAbortOriginalVisualJob -isnot [bool] -or -not $request.confirmAbortOriginalVisualJob"));

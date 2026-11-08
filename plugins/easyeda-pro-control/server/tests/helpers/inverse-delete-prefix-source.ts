@@ -1,0 +1,22 @@
+/** Inert original prefix fixture. It issues no owner or native transport. */
+import {CURRENT_FOOTPRINT_INVERSE_PUBLIC_SERVICE_SOURCE as S} from "../../src/current-footprint-inverse-public-service-source.ts";
+
+/** Instrument the inert callback counter only after both unique fixture targets
+ * match. Missing or duplicated targets refuse before the source can execute. */
+export function instrumentInertInverseDeleteHandlerSource(input: string): string {
+ const replacements = [
+  ['w.messageBus.rpcService("/PrjDB/footprint/delete",()=>true);', 'w.messageBus.rpcService("/PrjDB/footprint/delete",()=>{globalThis.inertDeleteHandlerCalls+=1;return true});'],
+  [';w.messageBus=new(KU().MessageBus);', ';globalThis.inertDeleteHandlerCalls=0;w.messageBus=new(KU().MessageBus);'],
+ ] as const;
+ if (replacements.some(([before]) => input.split(before).length !== 2)) { throw new Error("INERT_DELETE_PREFIX_FIXTURE_DRIFT"); }
+ let source = input;
+ for (const [before, after] of replacements) { source = source.replace(before, after); }
+ return source;
+}
+
+/** Build an inert source-position-preserving caller chain with explicit fixture services. */
+export function buildInertInverseDeletePrefixSource(full:string,trackDeleteHandler=false):string{
+ const intro='(()=>{let KU,Ze,F2,Lo;const xe=callback=>{const m={exports:{}};callback({},m);return()=>m.exports},console={debug(){},warn(){},error(){}},setTimeout=()=>0,BroadcastChannel=class{},Wo={SystematicUuid:"system"},w={currentProject:{projectId:"a".repeat(64)}},tw=async()=>({uuid:"c".repeat(16),path:"a".repeat(64),display_title:"target"}),$e={PCB:{GET_ALL_ARR:"/PrjDB/pcb/getAllArrDatas"},FOOTPRINT:{GET_KEYS_BY_SOURCE:"/PrjDB/footprint/getKeysBySource",DEL:"/PrjDB/footprint/delete"},DEVICE:{GET_ALL_ARR:"/PrjDB/device/getAllArrDatas"}},hl={deleteFootprint(){throw Error("wrong branch")}},Ja=()=>{},dn=t=>t.path,co=()=>"selected",yy=()=>Promise.resolve(),Ae=()=>{};';let source=intro+full.replaceAll(/[^\r\n]/gu,' ').slice(intro.length);source=source.slice(0,1_643_706)+full.slice(1_643_706,1_661_621)+source.slice(1_661_621);const insert=(start:number,end:number,text:string,before='',after=''):void=>{source=source.slice(0,start-before.length)+before+text+after+source.slice(end+after.length)};for(const role of['publicUiDelete','projectPath','deleteHelper','referenceLabels','pcbReferences','schematicReferences','derivedReferences','deviceReferences']as const){const row=S[role];insert(row.start,row.end,full.slice(row.start,row.end),role==='publicUiDelete'?'globalThis.inertReferenceM8=class {':'',role==='publicUiDelete'?'};':'');}insert(6_232_612,6_232_763,full.slice(6_232_612,6_232_763),'F2=new(class{','})();');insert(6_246_284,6_246_379,full.slice(6_246_284,6_246_379),'Ze=class{','};');source+=';w.messageBus=new(KU().MessageBus);Lo={messageBus:w.messageBus};globalThis.Lo=Lo;globalThis.inertHost=w;globalThis.gVars=w;for(const t of ["/PrjDB/pcb/getAllArrDatas","getDeviceByUuid","/PrjDB/footprint/getKeysBySource","/PrjDB/device/getAllArrDatas"])w.messageBus.rpcService(t,()=>[]);w.messageBus.rpcService("/PrjDB/footprint/delete",()=>true);w.messageBus.rpcService("/pro-mgr/project/sync/force",()=>undefined);globalThis.inertBus=w.messageBus;globalThis.inertF2=F2;globalThis.inertZe=Ze;})();';
+ if(trackDeleteHandler){source=instrumentInertInverseDeleteHandlerSource(source);}
+ return source;
+}

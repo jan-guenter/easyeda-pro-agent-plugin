@@ -53,3 +53,15 @@ and detached cleanup Promises, and prove the complete uploader drain. The
 cursor's completion explicitly leaves `completeUploadFrontierVerified` false.
 It grants no SQL, structure publication, SDK Save, persistence or reopened proof.
 No application, native helper, Windows process or live tool was started.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `68c5c68d5127cc5b6973f13cc00bf704cb236248`; its
+committed tree is `75962cafbe0581c4a60ccf3ae28bde1e01cb273f`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

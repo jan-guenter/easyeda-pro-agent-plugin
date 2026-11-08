@@ -22,7 +22,7 @@ const NODE_VERSION = "24.18.0";
 const MAX_REPLY_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
-const CATALOG_QUERY_COUNT = 79;
+const CATALOG_QUERY_COUNT = 81;
 // Initialize and tool discovery plus the fixed catalog requests below.
 const REQUEST_LIMIT = 2 + CATALOG_QUERY_COUNT;
 const EXPECTED_TOOLS = [
@@ -485,6 +485,17 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
       required.includes(key) && record(properties[key])["const"] === false), "Disposable source result schemas must retain false execution and Save boundaries.");
   }
   const sourceHistorical = await offlineApi(child, { action: "footprint-forward-source-relinquishment", query: { includeSchemas: true } });
+  const viaHistorical = await offlineApi(child, { action: "via-preopening-relinquishment", query: { includeSchemas: true } });
+  requireCheck(viaHistorical["action"] === "relinquish-failed-via-before-opening" && viaHistorical["historicalMetadataOnly"] === true &&
+    viaHistorical["originalJobEmptyProved"] === false && viaHistorical["originalHelperReleaseAcknowledged"] === false &&
+    viaHistorical["processSignalOffered"] === false && viaHistorical["executionAuthorized"] === false &&
+    record(viaHistorical["requestSchema"])["additionalProperties"] === false, "Historical Via discovery changed its metadata-only scope.");
+  const viaHistoricalValid = await offlineApi(child, { action: "via-preopening-relinquishment-validate", query: { request: {
+    action: "relinquish-failed-via-before-opening", operationId: "pcb209-via-write-offline-catalog", expectedEntireJournalSha256: "a".repeat(64),
+    confirmHistoricalRelinquishment: true, acceptMissingOriginalJobAndReleaseProof: true, acceptUnknownProfileEffects: true,
+  } } });
+  requireCheck(viaHistoricalValid["valid"] === true && viaHistoricalValid["executionAuthorized"] === false,
+    "Historical Via validation granted execution or refused its fixed request.");
   requireCheck(sourceHistorical["wrapperAction"] === "footprint-forward-source-relinquishment" && sourceHistorical["executionReady"] === false &&
     sourceHistorical["executionAuthorized"] === false && sourceHistorical["saveAuthorized"] === false &&
     Array.isArray(sourceHistorical["actions"]) && sourceHistorical["actions"].length === 2 &&

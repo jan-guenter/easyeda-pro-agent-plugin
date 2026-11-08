@@ -2,6 +2,7 @@
  * on inert values. No application, original owner or cache method runs. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { sha256Text } from "../src/core.ts";
 import { runInNewContext } from "node:vm";
 import { CURRENT_GENERATED_INITIAL_CACHE_SOURCE as SOURCE } from "../src/current-generated-initial-cache-source.ts";
 import { CURRENT_GENERATED_INITIAL_SYNC_CALLEES as CALLEES } from "../src/current-generated-initial-sync-source.ts";
@@ -33,4 +34,11 @@ void test("every known initial row field remains exact and native append timesta
     assert.throws(()=>compareCurrentPcbViaLiveHistoryCacheData({...input,plaintext:`${input.plaintext}|\n`}),/LIVE_HISTORY_CACHE_DATA/u);
     const branch:unknown=JSON.parse(data.branch.body);assert.ok(branch!==null&&typeof branch==="object");assert.equal(Reflect.get(branch,"history_uuid"),input.effects.historyUuid);assert.equal(Reflect.get(branch,"project_histories_id"),mode==="append"?2:1);assert.equal(Object.keys(branch).length,17);
   }
+});
+
+void test("a missing VIA header/body separator refuses even when the complete supplied hashes agree", () => {
+  const input = viaLiveHistoryCacheInput("mutable"); const body = `${input.body.slice(0, input.body.indexOf("|\n") + 2)}{"type":"VIA"}X`;
+  const plaintext = input.plaintext.slice(0, -input.body.length) + body;
+  assert.throws(() => compareCurrentPcbViaLiveHistoryCacheData({ ...input, body, plaintext,
+    effects: { ...input.effects, bodySha256: sha256Text(body), plaintextSha256: sha256Text(plaintext) } }), /LIVE_HISTORY_CACHE_DATA/u);
 });

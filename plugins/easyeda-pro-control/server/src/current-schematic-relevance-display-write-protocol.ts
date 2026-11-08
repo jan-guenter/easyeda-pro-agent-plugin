@@ -1,4 +1,22 @@
+import {currentSchematicRelevanceModifyWorkerWire} from "./current-schematic-relevance-modify-worker-wire.ts";
+import {currentSchematicRelevancePublicationWire} from "./current-schematic-relevance-publication-wire.ts";
+import {currentSchematicRelevanceNotificationWire} from "./current-schematic-relevance-notification-wire.ts";
+import {currentSchematicRelevanceSdkGateWire} from "./current-schematic-relevance-sdk-gate-wire.ts";
+import {currentSchematicRelevanceNormalCommandUiWire} from "./current-schematic-relevance-normal-command-ui-wire.ts";
+import {currentSchematicRelevanceFileSaveUiWire} from "./current-schematic-relevance-file-save-ui-wire.ts";
+import {currentSchematicRelevanceRenderDelegateWire} from "./current-schematic-relevance-render-delegate-wire.ts";
+import {currentSchematicRelevanceStatusTabMutationWire} from "./current-schematic-relevance-status-tab-mutation-wire.ts";
+import {currentSchematicRelevanceStatusTabLookupWire} from "./current-schematic-relevance-status-tab-lookup-wire.ts";
+import {currentSchematicRelevanceStatusSubscriberWire} from "./current-schematic-relevance-status-subscriber-wire.ts";
 /* oxlint-disable import/max-dependencies -- Each fixed purpose lane validates its own complete native codec; a caller-selected generic encoder would erase those boundaries. */
+import {currentSchematicRelevanceStatusCloneWire} from "./current-schematic-relevance-status-clone-wire.ts";
+import {currentSchematicRelevanceStatusDeliveryWire} from "./current-schematic-relevance-status-delivery-wire.ts";
+import {currentSchematicRelevanceStatusBusWire} from "./current-schematic-relevance-status-bus-wire.ts";
+import {currentSchematicRelevanceHistoryStatusWire} from "./current-schematic-relevance-history-status-wire.ts";
+import {currentSchematicRelevanceUploadReturnWire} from "./current-schematic-relevance-upload-return-wire.ts";
+import {currentSchematicRelevancePendingCacheWire} from "./current-schematic-relevance-pending-cache-wire.ts";
+import { currentSchematicRelevanceDisplayDrainWire, currentSchematicRelevanceDisplayPostSyncWire, currentSchematicRelevanceDisplayTailDeleteWire, currentSchematicRelevanceDisplayTailExtraWire, currentSchematicRelevanceDisplayTailWire } from "./current-schematic-relevance-display-save-drain-wire.ts";
+import {currentSchematicRelevanceUploadCmWire} from "./current-schematic-relevance-upload-cm-wire.ts";
 import {currentSchematicRelevanceUploadSerializeWire} from "./current-schematic-relevance-upload-serialize-wire.ts";
 import {currentSchematicRelevanceUploadModelWire} from "./current-schematic-relevance-upload-model-wire.ts";
 import {currentSchematicRelevanceUploadEntryWire} from "./current-schematic-relevance-upload-entry-wire.ts";
@@ -37,11 +55,138 @@ export function currentSchematicRelevanceDisplayWriteNativeRequest(chunk: Buffer
   if (Object.hasOwn(raw, "schematicDisplayPhase") || Object.hasOwn(raw, "schematicAccessorCommand") || Object.hasOwn(raw, "schematicActionCommand") || Object.hasOwn(raw, "schematicActionGuardCommand") || Object.hasOwn(raw, "schematicClockCommand")) {
     throw new Error("SCHEMATIC_RELEVANCE_DISPLAY_OWN_MUTATION_ORIGIN_REQUIRED");
   }
+  const tail = [
+    { marker: "schematicRelevanceTailCommand", encode: currentSchematicRelevanceDisplayTailWire },
+    { marker: "schematicRelevanceTailExtraCommand", encode: currentSchematicRelevanceDisplayTailExtraWire },
+    { marker: "schematicRelevanceTailDeleteCommand", encode: currentSchematicRelevanceDisplayTailDeleteWire },
+    { marker: "schematicRelevanceDrainCommand", encode: currentSchematicRelevanceDisplayDrainWire },
+    { marker: "schematicRelevancePostSyncCommand", encode: currentSchematicRelevanceDisplayPostSyncWire },
+  ].find(row => Object.hasOwn(raw, row.marker));
+  if (tail !== undefined) {
+    const { id, sessionId } = raw;
+    if (raw[tail.marker] !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_RELEVANCE_DRAIN_WIRE"); }
+    const input = Object.fromEntries(Object.entries(raw).filter(([key]) => key !== "id" && key !== "sessionId" && key !== tail.marker));
+    const selector = tail.marker === "schematicRelevancePostSyncCommand" && input["phase"] === "via-post-sync-replay" ? { phase: "via-post-sync-replay" } : input;
+    const fixed = tail.encode(selector, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, [tail.marker]: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_RELEVANCE_DRAIN_FIXED_WIRE"); }
+    return fixed.request;
+  }
   if (Object.hasOwn(raw, "schematicRelevanceMonitorBatchCommand")) {
     const { id, sessionId, schematicRelevanceMonitorBatchCommand: marker, ...input } = raw;
     if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_MONITOR_BATCH_WIRE"); }
     const fixed = currentSchematicRelevanceMonitorBatchWire(input, id);
     if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceMonitorBatchCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_MONITOR_BATCH_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevancePendingCacheCommand")) {
+    const { id, sessionId, schematicRelevancePendingCacheCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_PENDING_CACHE_WIRE"); }
+    const fixed = currentSchematicRelevancePendingCacheWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevancePendingCacheCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_PENDING_CACHE_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceUploadReturnCommand")) {
+    const { id, sessionId, schematicRelevanceUploadReturnCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_UPLOAD_RETURN_WIRE"); }
+    const fixed = currentSchematicRelevanceUploadReturnWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceUploadReturnCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_UPLOAD_RETURN_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceNotificationCommand")) {
+    const { id, sessionId, schematicRelevanceNotificationCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_NOTIFICATION_WIRE"); }
+    const fixed = currentSchematicRelevanceNotificationWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceNotificationCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_NOTIFICATION_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if(Object.hasOwn(raw,"schematicRelevanceModifyWorkerCommand")){
+    const{id,sessionId,schematicRelevanceModifyWorkerCommand:marker,...input}=raw;if(marker!==true||typeof sessionId!=="string"||!/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)){throw new Error("SCHEMATIC_MODIFY_WORKER_WIRE");}const fixed=currentSchematicRelevanceModifyWorkerWire(input,id);if(!chunk.equals(Buffer.from(`${JSON.stringify({id,...fixed.command,schematicRelevanceModifyWorkerCommand:true,sessionId})}\0`))){throw new Error("SCHEMATIC_MODIFY_WORKER_FIXED_WIRE");}return fixed.request;
+  }
+  if(Object.hasOwn(raw,"schematicRelevancePublicationCommand")){
+    const{id,sessionId,schematicRelevancePublicationCommand:marker,...input}=raw;if(marker!==true||typeof sessionId!=="string"||!/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)){throw new Error("SCHEMATIC_PUBLICATION_WIRE");}const fixed=currentSchematicRelevancePublicationWire(input,id);if(!chunk.equals(Buffer.from(`${JSON.stringify({id,...fixed.command,schematicRelevancePublicationCommand:true,sessionId})}\0`))){throw new Error("SCHEMATIC_PUBLICATION_FIXED_WIRE");}return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceSdkGateCommand")) {
+    const { id, sessionId, schematicRelevanceSdkGateCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_SDK_GATE_WIRE"); }
+    const fixed = currentSchematicRelevanceSdkGateWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceSdkGateCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_SDK_GATE_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceNormalCommandUiCommand")) {
+    const { id, sessionId, schematicRelevanceNormalCommandUiCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_NORMAL_COMMAND_UI_WIRE"); }
+    const fixed = currentSchematicRelevanceNormalCommandUiWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceNormalCommandUiCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_NORMAL_COMMAND_UI_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceFileSaveUiCommand")) {
+    const { id, sessionId, schematicRelevanceFileSaveUiCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_FILE_SAVE_UI_WIRE"); }
+    const fixed = currentSchematicRelevanceFileSaveUiWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceFileSaveUiCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_FILE_SAVE_UI_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceRenderDelegateCommand")) {
+    const { id, sessionId, schematicRelevanceRenderDelegateCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_RENDER_DELEGATE_WIRE"); }
+    const fixed = currentSchematicRelevanceRenderDelegateWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceRenderDelegateCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_RENDER_DELEGATE_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceStatusTabMutationCommand")) {
+    const { id, sessionId, schematicRelevanceStatusTabMutationCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_STATUS_TAB_MUTATION_WIRE"); }
+    const fixed = currentSchematicRelevanceStatusTabMutationWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceStatusTabMutationCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_STATUS_TAB_MUTATION_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceStatusTabLookupCommand")) {
+    const { id, sessionId, schematicRelevanceStatusTabLookupCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_STATUS_TAB_LOOKUP_WIRE"); }
+    const fixed = currentSchematicRelevanceStatusTabLookupWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceStatusTabLookupCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_STATUS_TAB_LOOKUP_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceStatusSubscriberCommand")) {
+    const { id, sessionId, schematicRelevanceStatusSubscriberCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_STATUS_SUBSCRIBER_WIRE"); }
+    const fixed = currentSchematicRelevanceStatusSubscriberWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceStatusSubscriberCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_STATUS_SUBSCRIBER_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceStatusCloneCommand")) {
+    const { id, sessionId, schematicRelevanceStatusCloneCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_STATUS_CLONE_WIRE"); }
+    const fixed = currentSchematicRelevanceStatusCloneWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceStatusCloneCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_STATUS_CLONE_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceStatusDeliveryCommand")) {
+    const { id, sessionId, schematicRelevanceStatusDeliveryCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_STATUS_DELIVERY_WIRE"); }
+    const fixed = currentSchematicRelevanceStatusDeliveryWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceStatusDeliveryCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_STATUS_DELIVERY_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceStatusBusCommand")) {
+    const { id, sessionId, schematicRelevanceStatusBusCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_STATUS_BUS_WIRE"); }
+    const fixed = currentSchematicRelevanceStatusBusWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceStatusBusCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_STATUS_BUS_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceHistoryStatusCommand")) {
+    const { id, sessionId, schematicRelevanceHistoryStatusCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_HISTORY_STATUS_WIRE"); }
+    const fixed = currentSchematicRelevanceHistoryStatusWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceHistoryStatusCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_HISTORY_STATUS_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceUploadCmCommand")) {
+    const { id, sessionId, schematicRelevanceUploadCmCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_UPLOAD_CM_WIRE"); }
+    const fixed = currentSchematicRelevanceUploadCmWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceUploadCmCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_UPLOAD_CM_FIXED_WIRE"); }
     return fixed.request;
   }
   if (Object.hasOwn(raw, "schematicRelevanceUploadSerializeCommand")) {

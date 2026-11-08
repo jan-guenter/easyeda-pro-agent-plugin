@@ -1,0 +1,11 @@
+# Inverse reference namespace preparation
+
+The source-only owner now exposes `prepareFootprintInverseReferenceDispatch` for the original first reference RPC held by `advanceFootprintInverseReferenceQueries`. It reads the four actual subscribed namespace slots, their sole original tasks/callbacks, the initialized manager wrappers and the selected schematic store. It invokes no application handler, constructor, getter, iterator, request or resume.
+
+The schematic callback and method must match one complete pinned source variant. The actual module scopes bind the original `Ue`, `C`, `Z`, iterator and factory; the selected project's `pureSchematics` dictionary must be empty. The callback's async-function prototype must be the original same-realm prototype. Missing registrations, forwarding wrappers, another realm or nonempty stores refuse while the first RPC remains held. A fixture label or a supplied empty array cannot satisfy these checks.
+
+Actual Node24 Inspector evaluation of the original initialized KU factory confirms that its RPC callback exposes only the handler `e` in the leading `Closure (rpcService)`, with no lexical `this`. The production fixed selector passes with `throwOnSideEffect:true`. Receiver identity will therefore be checked at the original callback entry before its handler is released. The manager facades' unmodified-source first instruction locations were also observed for the following forwarding implementation: PCB104:81465, footprint keys104:74581 and device104:67265.
+
+The finite grammar has30 cases,28 original helper receipts, at most128 property reads and one complete schematic-source read:185 CDP requests and188 controls. The native table uses two existing bounded fixed-table groups; decoder limits are unchanged. A retained SDK transport test exercises every new case both before and after the initial CDP request returns its Promise handle.
+
+Five focused namespace checks and two transport checks pass, as do both TypeScript projects and changed strict lint. This checkpoint adds the original Core/pipe preflight and its native source, but the native adapter remains unmounted until the distinct worker readiness ledger is integrated. It issues no forwarded query Job, worker completion, deletion, clock or Save authority. No helper, pin, bundle, owner, application or MCP action was emitted or run.

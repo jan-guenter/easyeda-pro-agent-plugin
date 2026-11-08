@@ -22,3 +22,15 @@ nonconsuming enrollment. Both TypeScript projects and strict changed-file lint
 pass. This journal issues no native owner, setter, worker, clock, SQL, Save or
 saved/reopened authority. The distinct Relevance native lifecycle must still
 join its actual records and original factory before any generation is admitted.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `9fa0c877d12ac4e8bc6a9cd655f5c21c1aa6c366`; its
+committed tree is `55bd798561b1e7f452096c43e8a78f34e6c8ae11`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

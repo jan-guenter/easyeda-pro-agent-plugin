@@ -47,3 +47,15 @@ Next joins remain actual monitor/normal-history receivers, the selected
 consistency callback/calculation/no-echo branch, original native broadcast/timer
 and Promise settlement, and the separate Modify-time worker TEXT no-publication
 wave. Matching source or the new readonly receipt does not replace any of them.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `e8fe0757deae9d5aa6fd0c8c785da7b220e329ab`; its
+committed tree is `311a3e9ac0ae52f8f67ee39d3bf82f492c0b76f4`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

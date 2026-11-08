@@ -1153,7 +1153,7 @@ void test("spatial coverage separates the restricted native reader from the loss
     assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
     assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
     const selectors = ["spatial/observe-spatial", "spatial/observe-spatial-lines", "spatial/observe-spatial-arcs"];
-    if (path.endsWith("getPrimitiveAtPoint")) { selectors.push("spatial/observe-spatial-pads"); }
+    if (path.endsWith("getPrimitiveAtPoint")) { selectors.push("spatial/observe-spatial-pads", "component-spatial/observe-components", "component-spatial/observe-components-cloned-pads"); }
     assert.deepEqual(row.routes.map(route => route.selector).toSorted(), selectors.toSorted());
     const route = row.routes.find(candidate => candidate.selector === "spatial/observe-spatial"); assert.ok(route);
     assert.equal(route.tool, "easyeda_control_pcb209_opening"); assert.equal(route.selector, "spatial/observe-spatial");
@@ -1166,6 +1166,47 @@ void test("spatial coverage separates the restricted native reader from the loss
       assert.ok(route.scope.includes(text));
     }
     assert.equal(route.inputDiscovery?.arguments["request"] !== undefined, true);
+  }
+});
+
+void test("Component point discovery retains both bounded representations without region or writer admission", () => {
+  const rows = inventoryExtensionApiCoverage();
+  const point = rows.find(row => row.path === "eda.pcb_Document.getPrimitiveAtPoint"); assert.ok(point);
+  const routes = point.routes.filter(route => route.selector.startsWith("component-spatial/"));
+  assert.equal(routes.length, 2); assert.equal(point.currentGenerationLiveValidation, "not-recorded");
+  assert.equal(point.completeDeclaredContractSupported, false); assert.equal(point.runtimeAdmission, "not-granted-by-inventory");
+  for (const [action, limit] of [["observe-components", 16], ["observe-components-cloned-pads", 11]] as const) {
+    const route = routes.find(value => value.selector === `component-spatial/${action}`); assert.ok(route);
+    assert.equal(route.implementation, "native-task-equivalent"); assert.equal(route.executionState, "available-with-runtime-guards");
+    assert.equal(route.validation, "offline-regression;current-live-unclaimed"); assert.deepEqual(route.documentTypes, [3]);
+    assert.ok(route.inputDiscovery);
+    const discovery = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments["request"])).result;
+    assert.ok(isRecord(discovery)); assert.ok(isRecord(discovery["requestSchema"]));
+    assert.equal(discovery["wrapperAction"], "component-spatial"); assert.equal(discovery["requestLimit"], 419);
+    assert.equal(discovery[action === "observe-components" ? "maximumPoints" : "maximumClonedPadPoints"], limit);
+    for (const flag of ["connectedValidation", "executionAuthorized", "saveAuthorized"]) { assert.equal(discovery[flag], false); }
+    const request = { action, operationId: "pcb209-spatial-component-coverage", expectedBindingSha256: "a".repeat(64),
+      queries: Array.from({ length: limit }, () => ({ kind: "point", xMil: 0, yMil: 0 })), acceptNativeScratchEffects: true };
+    const accepted = queryOfflineApi(apiRequestSchema.parse({ action: "pcb209-component-spatial-validate", query: { request } })).result; assert.ok(isRecord(accepted)); assert.equal(accepted["valid"], true);
+    for (const input of [{ ...request, queries: [...request.queries, request.queries[0]] },
+      { ...request, queries: [{ kind: "region", leftMil: 0, rightMil: 1, bottomMil: 0, topMil: 1, mode: "inside" }] },
+      { ...request, operationId: "pcb209-spatial-older-owner" }, { ...request, acceptNativeScratchEffects: false }]) {
+      const refused = queryOfflineApi(apiRequestSchema.parse({ action: "pcb209-component-spatial-validate", query: { request: input } })).result; assert.ok(isRecord(refused)); assert.equal(refused["valid"], false);
+      assert.equal(refused["executionAuthorized"], false); assert.equal(refused["saveAuthorized"], false);
+    }
+  }
+  for (const row of rows.filter(candidate => candidate.path !== point.path)) {
+    assert.equal(row.routes.some(route => route.selector.startsWith("component-spatial/")), false, row.path);
+  }
+});
+
+void test("footprint deletion remains omitted while its current retained inverse prefixes are discoverable evidence", () => {
+  const row = inventoryExtensionApiCoverage().find(entry => entry.path === "eda.lib_Footprint.delete"); assert.ok(row?.omission);
+  assert.equal(row.status, "omitted"); assert.deepEqual(row.routes, []);
+  assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+  for (const file of ["current-footprint-inverse-public-delete-intent.ts", "current-footprint-inverse-delete-worker-admission.ts",
+    "current-footprint-inverse-delete-callback-collector.ts", "current-footprint-inverse-native-fragment.ts", "current-footprint-delete-observed-saved-source.ts"]) {
+    assert.ok(row.omission.evidence.includes(file), file);
   }
 });
 
@@ -1339,11 +1380,13 @@ void test("every coverage input-discovery request resolves to an actual strict a
     assert.ok(isRecord(result));
     if (request["action"] === "fixture-import") {
       assert.ok(isRecord(result["requestSchema"])); assert.equal(result["designExecutionAuthorized"], false);
-    } else if (["generated-schematic-opening", "project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-via-write", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files", "pcb209-ordinary-read", "schematic-page-opening", "schematic-page-read"].includes(String(request["action"]))) {
+    } else if (request["action"] === "pcb209-component-spatial") {
+      assert.ok(isRecord(result["requestSchema"])); assert.equal(result["executionAuthorized"], false);
+    } else if (["generated-schematic-opening", "project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-via-write", "schematic209-relevance-display-write", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files", "pcb209-ordinary-read", "schematic-page-opening", "schematic-page-read"].includes(String(request["action"]))) {
       assert.ok(isRecord(result["inputSchema"]));
       // The ordinary SCH and 209 opening routes expose their lifecycle union at the root;
       // Existing routes still promise a separate phase schema as well.
-      if (!["generated-schematic-opening", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-via-write", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files", "pcb209-ordinary-read", "schematic-page-opening", "schematic-page-read"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
+      if (!["generated-schematic-opening", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-via-write", "schematic209-relevance-display-write", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files", "pcb209-ordinary-read", "schematic-page-opening", "schematic-page-read"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
       assert.equal(result["executionAuthorized"], false);
     } else {
       const entries = result["entries"];

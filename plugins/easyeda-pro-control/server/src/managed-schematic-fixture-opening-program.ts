@@ -32,6 +32,8 @@ function projectFunction(): string {
   return one(source, 'schema:"easyeda-pro-control.pcb-diagnostic-opening.v1"', 'schema:"easyeda-pro-control.generated-schematic-project-opening.v1"');
 }
 const registration = registrationFunction(); const projectOpening = projectFunction();
+/** Exact existing six-field body for the separate saved-Relevance birth. */
+export const GENERATED_SCHEMATIC_RELEVANCE_REGISTRATION_FUNCTION = registrationFunction(true);
 export const GENERATED_SCHEMATIC_PROJECT_OPENING_FUNCTION = projectOpening;
 const opaque = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/u); const hex = z.string().regex(/^[a-f0-9]{64}$/u); const uuid = z.string().regex(/^[a-f0-9]{32}$/u);
 const failure = z.strictObject({ stage: z.string().min(1).max(64), code: z.string().min(1).max(64), substage: z.string().min(1).max(64).optional() });
@@ -42,6 +44,8 @@ const projectResultSchema = z.strictObject({ schema: z.literal("easyeda-pro-cont
   projectUuid: hex, branchUuid: uuid, pageUuid: uuid, ok: z.boolean(), status: z.enum(["ready", "opened-prefix-observed", "refused"]), failure: failure.nullable(), cleanupFailure: failure.nullable().optional(),
   dispatchAttempted: z.boolean(), publicResult: z.boolean().nullable(), prefixObserved: z.boolean(), nativeWorkMayRemain: z.boolean(), observation: projectObservationSchema.nullable(),
 });
+/** Exporting this schema changes no existing navigation bytes. */
+export const generatedSchematicProjectOpeningResultSchema = projectResultSchema;
 const nativeEnvelopeSchema = z.strictObject({ schema: z.literal("easyeda-pro-control.exact-json.v1"), utf8Bytes: z.number().int().nonnegative(), json: z.string().max(MAX) });
 
 export const generatedSchematicIdentitySchema = z.strictObject({ schema: z.literal("easyeda-pro-control.generated-schematic-page-identity.v1"),
@@ -173,3 +177,6 @@ export function validateGeneratedSchematicReaders(value: unknown, qualified: Qua
     additionalNativeChildEffectsAccepted: false,
     completeSourceVerified: false, connectivityVerified: false, persistenceVerified: false, executionAuthorized: false, saveAuthorized: false };
 }
+
+/** Existing independent page identity, bound to the original fresh window. */
+export const GENERATED_SCHEMATIC_RELEVANCE_PAGE_IDENTITY_FUNCTION = `async function(boundTarget,expectedWindowTabId){"use strict";if(globalThis._TAB_ID_!==expectedWindowTabId)throw new Error("GENERATED_SCHEMATIC_PAGE_IDENTITY_WINDOW");${identityProgram(fixedNavigationTarget, undefined, "boundTarget")}}`;

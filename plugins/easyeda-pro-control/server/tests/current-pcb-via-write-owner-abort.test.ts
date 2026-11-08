@@ -26,7 +26,8 @@ pcbViaWriteAllocations.set(prepared,allocation);pcbViaWriteFactories.set(owner,O
     if (name === "./current-pcb-via-write-plan.ts") { assert.ok(actual !== null && typeof actual === "object"); return {...actual,requireOriginalCurrentPcbViaWritePlan:(candidate: unknown): object=>{assert.equal(candidate,operationPlan);return {prepared};}}; }
     if (name !== "./managed-fixture-generated-open-checkpoint.ts") { return actual; }
     assert.ok(typeof actual === "object" && actual !== null);
-    return { ...actual, assertOriginalGeneratedFixtureOpenCheckpoint: (value: unknown): void => { assert.equal(value, prepared); } };
+    return { ...actual, assertOriginalGeneratedFixtureOpenCheckpoint: (value: unknown): void => { assert.equal(value, prepared); },
+      verifyGeneratedFixtureOpenCheckpoint: (value: unknown): Promise<void> => { assert.equal(value, prepared); return Promise.resolve(); } };
   }, loaded, loaded.exports]);
   const Constructor = loaded.exports["CurrentPcbViaWriteOwner"], seed = loaded.exports["seedSyntheticViaAbortOwner"];
   assert.ok(typeof Constructor === "function" && typeof seed === "function");
@@ -36,7 +37,7 @@ input.on('line',line=>{const q=JSON.parse(line);
 if(q.action==='launch')send(q,{helperInstance:'b'.repeat(32),jobId:'c'.repeat(32),rootPid:123,rootCreated:'123456789012345'});
 else if(q.action==='send')send(q,{written:true});
 else if(q.action==='poll')setTimeout(()=>${malformed ? String.raw`process.stdout.write('malformed\n')` : "send(q,{bytes:''})"},50);
-else if(q.action==='pcb-via-abort'){terminated=true;send(q,{terminationDispatched:true});}
+else if(q.action==='pcb-via-abort'){if(q.confirmOriginalJob!==true||Object.keys(q).sort().join(',')!=='action,confirmOriginalJob,helperInstance,id,jobId,rootCreated,rootPid')throw Error('native-abort-fields');terminated=true;send(q,{terminationDispatched:true});}
 else if(q.action==='termination')send(q,{terminated,originalRootExited:terminated,originalJobEmpty:terminated});
 else if(q.action==='release')send(q,{released:true});else throw Error('unexpected '+q.action);});`;
   const child = spawn(process.execPath, ["-e", script], { stdio: ["pipe", "pipe", "pipe"] });

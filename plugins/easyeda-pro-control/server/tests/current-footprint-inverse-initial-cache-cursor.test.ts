@@ -33,6 +33,22 @@ void test("eight original jobs may interleave and require actual later fulfillme
   assert.equal(resumes, 24); assert.equal(complete, 0); assert.equal(cursor.status().canSettle, true); await cursor.settle(); cursor.requireCompleted(); assert.equal(complete, 1); assert.equal(cursor.status().completeProducerFrontierVerified, false); await assert.rejects(cursor.settle());
   const budget = currentFootprintInverseInitialCacheBudget(8); assert.equal(budget.captureNormal + budget.cursorNormal + budget.helperSources, budget.cdpRequests); assert.equal(budget.cdpRequests, 272);
 });
+void test("second unfulfilled cache settlement fails once without a third native sample", async () => {
+  const source = data(); assert.equal(source.jobs.length, 8); const original = new WeakMap<object, CurrentFootprintInverseInitialCacheHeld>(); let complete = 0, failures = 0, pass = 0, requests = 0, resumes = 0;
+  const cursor = new CurrentFootprintInverseInitialCacheCursor(source, Object.freeze<CurrentFootprintInverseInitialCacheBindings>({ assertCurrent: (): Promise<void> => Promise.resolve(),
+    requireHeld: (packet: object): CurrentFootprintInverseInitialCacheHeld => { const value = original.get(packet); assert.ok(value !== undefined); return value; },
+    request: (input): Promise<unknown> => { requests += 1; const command = validateCurrentFootprintInverseInitialCacheCommand(input); if (command.phase === "inverse-initial-cache-settled") { if (command.slot === 0) { pass += 1; } return Promise.resolve(metadata(command.slot === 7 ? "pending" : "fulfilled")); } return Promise.resolve({ result: { type: "boolean", value: true } }); },
+    resume: (_held, command): Promise<void> => { assert.equal(command.phase, "inverse-initial-cache-resume"); resumes += 1; return Promise.resolve(); }, complete: (): Promise<void> => { complete += 1; return Promise.resolve(); }, fail: (): void => { failures += 1; } }));
+  for (const role of ["headEntry", "headPromise", "headSuccess"] as const) {
+    for (const job of source.jobs) {
+      const packet = Object.freeze({ role, slot: job.slot }); const cache: CurrentFootprintInverseInitialCacheHeld["cache"] = role === "headEntry" ? Object.freeze({ role: job.kind === "flow" ? "flow" : "openCloudHead", joinedId: `cache.${String(job.slot)}` }) : null; const promise = role === "headPromise" ? Object.freeze({ objectId: `promise.${String(job.slot)}` }) : null; original.set(packet, Object.freeze({ packet, role, key: job.key, joinedId: `${role}.${String(job.slot)}`, cache, promise })); await cursor.continue(packet);
+    }
+  }
+  assert.equal(resumes, 24); assert.equal(pass, 1); assert.equal(complete, 0); assert.equal(failures, 0); assert.equal(cursor.status().canSettle, true);
+  await assert.rejects(cursor.settle()); assert.equal(pass, 2); assert.equal(failures, 1); assert.equal(complete, 0);
+  assert.equal(cursor.status().failed, true); assert.equal(cursor.status().canSettle, false); assert.equal(cursor.status().complete, false);
+  const after = requests; await assert.rejects(cursor.settle()); assert.equal(requests, after); assert.equal(failures, 1); assert.throws(() => { cursor.requireCompleted(); });
+});
 void test("copied cache packets and eight-slot grammar overflow refuse before a resume", async () => {
   let failed = false, requests = 0;
   const cursor = new CurrentFootprintInverseInitialCacheCursor(data(), Object.freeze<CurrentFootprintInverseInitialCacheBindings>({ assertCurrent: (): Promise<void> => Promise.resolve(), requireHeld: (): CurrentFootprintInverseInitialCacheHeld => { throw new Error("not an original packet"); }, request: (): Promise<unknown> => { requests += 1; return Promise.resolve({}); }, resume: (): Promise<void> => { requests += 1; return Promise.resolve(); }, complete: (): Promise<void> => Promise.resolve(), fail: (): void => { failed = true; } }));

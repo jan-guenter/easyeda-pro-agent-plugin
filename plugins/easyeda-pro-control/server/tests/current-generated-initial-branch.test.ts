@@ -2,6 +2,7 @@
 /** Complete genuine synthetic SQL plus pinned MC/te/Q on inert objects.
  * No owner, application, native clock or continuation is allocated. */
 import assert from "node:assert/strict";
+import { CURRENT209_SYNTHETIC_WORKER_SOURCE, assertCurrent209PinnedSourceRows } from "./helpers/current209-source-excerpts.ts";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { test } from "node:test";
@@ -47,7 +48,7 @@ void test("genuine initial branch data matches exact original MC projection, joi
     assert.throws(()=>derive(structuredClone(qualified.qualification),qualified.history.headHistoryUuid));assert.throws(()=>derive(qualified.qualification,"0".repeat(32)));
   }
 });
-void test("complete installed source qualifies; serialized checkpoints cannot issue a branch continuation data plan",async()=>{
-  const worker=await readFile("/mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-mgr/3.2.185.bf63a159/js/project-worker.js","utf8"); const main=await readFile("/mnt/c/Program Files/easyeda-pro/resources/app/app.js","utf8");qualifyCurrentGeneratedInitialBranchSource(worker,main);
+void test("retained exact branch methods verify and incomplete source cannot issue a branch continuation data plan",()=>{
+  assertCurrent209PinnedSourceRows(SOURCE);assert.throws(()=>{qualifyCurrentGeneratedInitialBranchSource(CURRENT209_SYNTHETIC_WORKER_SOURCE,"incomplete-main-source");});
   assert.throws(()=>Reflect.apply(prepareCurrentGeneratedInitialBranchDataPlan,undefined,[{profile:"easyeda-pro-control.generated-fixture-open-checkpoint.v1"},{profile:"private.current-generated-initial-flow-cache-plan.v1"}]));
 });
