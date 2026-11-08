@@ -5,15 +5,19 @@ import { setTimeout as delay } from "node:timers/promises";
 import { canonicalJson, sha256Json } from "./core.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import type { CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
+import { createOriginalSourceError } from "./original-source-error.ts";
+import { currentPcbViaWriteDiagnostic, currentPcbViaWriteErrorCode } from "./current-pcb-via-write-diagnostic.ts";
+import type { CurrentPcbViaWriteDiagnostic } from "./current-pcb-via-write-diagnostic.ts";
+import {currentPcbViaWriteMainFailure,refusedCurrentPcbViaWriteMainFailure} from "./current-pcb-via-write-main-failure.ts";
+import type {CurrentPcbViaWriteMainFailure} from "./current-pcb-via-write-main-failure.ts";
 import { CURRENT_PCB_209_OPENING_SCRIPTS } from "./current-pcb-209-opening-profile.ts";
 import { selectCurrentPcb209StartPage, selectCurrentPcb209StartPageFrame } from "./current-pcb-209-start-page-selection.ts";
 import { verifyGeneratedFixtureOpenCheckpoint } from "./managed-fixture-generated-open-checkpoint.ts";
 import { requireOriginalCurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
 import type { CurrentPcbViaWriteFailureClosure, CurrentPcbViaWriteFailureClosureBindings, CurrentPcbViaWriteFailureClosureValue, CurrentPcbViaWriteGenerationClosure } from "./current-pcb-via-write-abandonment-origin.ts";
 import type { CurrentPcbViaWritePlan } from "./current-pcb-via-write-plan.ts";
-import { assertOriginalCurrentPcbViaWriteOwner, currentPcbViaWriteAllocationOutcome, originalCurrentPcbViaWriteNoResource,
+import { CurrentPcbViaWriteOwner, assertOriginalCurrentPcbViaWriteOwner, currentPcbViaWriteAllocationOutcome, originalCurrentPcbViaWriteNoResource,
   originalCurrentPcbViaWriteTarget, originalCurrentPcbViaWriteTermination, requireOriginalCurrentPcbViaWriteNoResourceProof, startCurrentPcbViaWriteOwner } from "./current-pcb-via-write-owner.ts";
-import type { CurrentPcbViaWriteOwner } from "./current-pcb-via-write-owner.ts";
 import { CurrentPcbViaWriteJournal, assertNoUnresolvedCurrentPcbViaWrites } from "./current-pcb-via-write-journal.ts";
 import type { CurrentPcbViaWriteJournalStage } from "./current-pcb-via-write-journal.ts";
 import { currentPcbViaWriteResultSchema, currentPcbViaWriteStageResultSchema } from "./current-pcb-via-write-contract.ts";
@@ -28,9 +32,13 @@ import type { CurrentPcbViaSavedReadbackWorkflowResult } from "./current-pcb-via
 import { acquireCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLaunchExclusion, releaseCurrentPcbDiagnosticLaunchExclusion } from "./current-pcb-diagnostic-lifecycle-journal.ts";
 import type { CurrentPcbDiagnosticLaunchLease } from "./current-pcb-diagnostic-lifecycle-journal.ts";
 
+/* oxlint-disable-next-line typescript/unbound-method -- Invoke only after original factory/target and method identity checks on the same private-field owner. */
+const originalMainStatus=CurrentPcbViaWriteOwner.prototype.retainedFootprintMainConstruction;
+/* oxlint-disable-next-line typescript/unbound-method -- This separate captured private-field getter supplies only its fixed safe native failure fields on the same admitted owner. */
+const originalOwnerStatus=CurrentPcbViaWriteOwner.prototype.status;
 const attempts = new WeakSet<CurrentPcbViaWritePlan>();
 const EXIT = Object.freeze({ observations: 40, delayMilliseconds: 250 });
-function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PCB_VIA_WORKFLOW_${code}`); } }
+function need(value: boolean, code: string): asserts value { if (!value) { throw createOriginalSourceError("PCB_VIA_WORKFLOW", code); } }
 type Evidence = Readonly<Record<string, unknown>>;
 export interface CurrentPcbViaWriteWorkflowResult {
   readonly profile: "private.current-pcb-via-write-workflow-result.v1";
@@ -55,6 +63,8 @@ export class CurrentPcbViaWriteWorkflow {
   #normalPending: Promise<unknown> | null = null; #reader: CurrentPcbViaSavedReadbackWorkflow | null = null;
   #capture: CurrentPcbViaWriteClosedCapture | null = null;
   #stage = "prepared"; #aborted = false; #failed = false; #closed = false; #normalClose = false;
+  #failureDiagnostic: CurrentPcbViaWriteDiagnostic | null = null;
+  #mainFailure:CurrentPcbViaWriteMainFailure|null=null;
   #saveEntered = false; #saveAcknowledgement: CurrentPcbViaWriteStageResult | null = null;
   #cleanup: Promise<void> | null = null; #cleanupSettled = false; #cleanupExitExhausted = false;
   #cleanupPublicationBlocked = false; #abortAcknowledged = false;
@@ -96,6 +106,31 @@ export class CurrentPcbViaWriteWorkflow {
     await this.#journal.append(`${stage}-intent`, before); this.#current();
     const value = await this.#invoke(stage, action); this.#current(); await this.#journal.append(`${stage}-result`, after(value)); this.#current(); return value;
   }
+  #captureFirstMainFailure():void {
+    if(this.#stage!=="main"||this.#mainFailure!==null){return;}
+    try{
+      this.#current(true);const owner=this.#owner;need(owner!==null,"MAIN_FAILURE_ORIGINAL_OWNER");
+      for(const[name,method]of [["retainedFootprintMainConstruction",originalMainStatus],["status",originalOwnerStatus]]as const){
+        let prototype:object|null=CurrentPcbViaWriteOwner.prototype;let same=false;
+        for(let depth=0;prototype!==null&&depth<4;depth+=1){
+          const descriptor=Object.getOwnPropertyDescriptor(prototype,name);
+          if(descriptor!==undefined){same=Object.hasOwn(descriptor,"value")&&descriptor.value===method;break;}
+          const parent:unknown=Object.getPrototypeOf(prototype);need(parent===null||typeof parent==="object"||typeof parent==="function","MAIN_FAILURE_ORIGINAL_PROTOTYPE");prototype=parent;
+        }
+        need(same,"MAIN_FAILURE_ORIGINAL_METHOD");
+      }
+      const status=originalMainStatus.call(owner);const ownerStatus=originalOwnerStatus.call(owner);this.#current(true);
+      const native=Object.getOwnPropertyDescriptor(ownerStatus,"mainNativeFailure");const failure=Object.getOwnPropertyDescriptor(ownerStatus,"failure");
+      need((native===undefined||Object.hasOwn(native,"value"))&&failure!==undefined&&Object.hasOwn(failure,"value"),"MAIN_FAILURE_ORIGINAL_STATUS");
+      this.#mainFailure=currentPcbViaWriteMainFailure(status,native?.value??null,failure.value);
+    }catch{
+      // Retain capture refusal without inspecting its Error or replacing the
+      // Original execution failure, pending calls or mandatory cleanup.
+      this.#mainFailure=refusedCurrentPcbViaWriteMainFailure();
+    }
+  }
+  public mainFailure():CurrentPcbViaWriteMainFailure|null{return this.#mainFailure;}
+  public diagnostic(): CurrentPcbViaWriteDiagnostic { return this.#failureDiagnostic ?? currentPcbViaWriteDiagnostic(this.#stage, null); }
   public inspect(): Readonly<Record<string, unknown>> {
     const original = currentPcbViaWriteAllocationOutcome(this.#prepared);
     return Object.freeze({ profile: "private.current-pcb-via-write-workflow-status.v1", operationId: this.#plan.operationId, stage: this.#stage,
@@ -278,7 +313,9 @@ export class CurrentPcbViaWriteWorkflow {
         this.#releaseOriginalLaunchExclusion(); need(this.#launchLeaseReleased, "ORIGINAL_LAUNCH_EXCLUSION_NOT_RELEASED");
         results.set(result, this); this.#result = result; this.#stage = "complete"; return result;
       } catch (caughtError) {
-        this.#failed = true; try { await this.#cleanupOriginal(); } catch {
+        this.#failed = true; this.#failureDiagnostic ??= currentPcbViaWriteDiagnostic(this.#stage, currentPcbViaWriteErrorCode(caughtError));
+        this.#captureFirstMainFailure();
+        try { await this.#cleanupOriginal(); } catch {
           // Preserve the first execution failure, original pending calls and
           // Separately inspectable unresolved cleanup. Nothing is repeated.
         } throw caughtError;

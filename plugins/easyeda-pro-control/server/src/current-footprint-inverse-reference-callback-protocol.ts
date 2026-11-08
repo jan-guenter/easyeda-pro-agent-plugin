@@ -6,10 +6,10 @@ import { CURRENT_FOOTPRINT_INVERSE_REFERENCE_CALLBACK_EXPRESSIONS as EXPRESSIONS
 
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u), ref = z.strictObject({ objectId: handle });
 const target = z.strictObject({ projectUuid: z.string().regex(/^[a-f\d]{64}$/u), branchUuid: z.string().regex(/^[a-f\d]{32}$/u), documentUuid: z.string().regex(/^(?:[a-f\d]{16}|[a-f\d]{32})$/u) });
-export const CURRENT_FOOTPRINT_INVERSE_REFERENCE_CALLBACK_CALLS = freezeDeep({ prepare:{program:P.prepare,refs:7,value:false,byValue:false},before:{program:P.before,refs:1,value:false,byValue:true},payload:{program:P.payload,refs:2,value:true,byValue:false},entry:{program:P.entry,refs:5,value:true,byValue:true}}as const);
+export const CURRENT_FOOTPRINT_INVERSE_REFERENCE_CALLBACK_CALLS = freezeDeep({ prepare:{program:P.prepare,refs:7,value:false,byValue:false},before:{program:P.before,refs:1,value:false,byValue:true},payload:{program:P.payload,refs:2,value:true,byValue:false},entry:{program:P.entry,refs:5,value:true,byValue:true},outer:{program:P.outer,refs:5,value:false,byValue:false}}as const);
 export const CURRENT_FOOTPRINT_INVERSE_REFERENCE_CALLBACK_FLAGS = Object.freeze({ objectGroup: "easyeda-footprint-inverse-reference-callback-v1", silent: true, generatePreview: false, throwOnSideEffect: true, awaitPromise: false, userGesture: false } as const);
 const flags = { objectGroup: z.literal(CURRENT_FOOTPRINT_INVERSE_REFERENCE_CALLBACK_FLAGS.objectGroup), silent: z.literal(true), generatePreview: z.literal(false), throwOnSideEffect: z.literal(true), awaitPromise: z.literal(false), userGesture: z.literal(false) };
-const roles = ["prepare","before","payload","entry"] as const;
+const roles = ["prepare","before","payload","entry","outer"] as const;
 const argument = z.union([ref, z.strictObject({ value: target })]);
 const callParams = z.strictObject({ ...flags, objectId: handle, functionDeclaration: z.string().max(16_384), arguments: z.array(argument).max(7), returnByValue: z.boolean() });
 const propertyParams = z.strictObject({ objectId: handle, ownProperties: z.literal(true), accessorPropertiesOnly: z.literal(false), generatePreview: z.literal(false) });
@@ -25,7 +25,7 @@ const schema = z.discriminatedUnion("phase", [
   z.strictObject({ phase: z.literal("inverse-reference-callback-resume"), method: z.literal("Debugger.resume"), params: z.strictObject({}) }),
 ]);
 export type CurrentFootprintInverseReferenceCallbackCommand = Readonly<z.infer<typeof schema>>;
-export const CURRENT_FOOTPRINT_INVERSE_REFERENCE_CALLBACK_REQUESTS = Object.freeze({calls:4,properties:13,frames:2,arm:1,remove:1,resume:1,helpers:6,cdpRequests:28,controls:34}as const);
+export const CURRENT_FOOTPRINT_INVERSE_REFERENCE_CALLBACK_REQUESTS = Object.freeze({calls:5,properties:18,frames:2,arm:1,remove:1,resume:1,helpers:7,cdpRequests:35,controls:41}as const);
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_REFERENCE_CALLBACK_COMMAND"); } }
 export function validateCurrentFootprintInverseReferenceCallbackCommand(input: unknown): CurrentFootprintInverseReferenceCallbackCommand { const command = schema.parse(capture(input)); if (command.method === "Runtime.callFunctionOn") { const row = CURRENT_FOOTPRINT_INVERSE_REFERENCE_CALLBACK_CALLS[command.role]; need(command.params.functionDeclaration === row.program && command.params.returnByValue === row.byValue && command.params.arguments.length === row.refs + Number(row.value)); for (const [index, value] of command.params.arguments.entries()) { need(index < row.refs ? "objectId" in value : "value" in value); } } else if (command.method === "Debugger.evaluateOnCallFrame") { need(command.params.expression === EXPRESSIONS[command.role]); } return freezeDeep(command); }
 export function currentFootprintInverseReferenceCallbackProgram(command: CurrentFootprintInverseReferenceCallbackCommand): string | null { if (command.method === "Runtime.callFunctionOn") { return command.params.functionDeclaration; } if (command.method === "Debugger.evaluateOnCallFrame") { return command.params.expression; } return null; }

@@ -1,3 +1,9 @@
+/* oxlint-disable import/max-dependencies -- This real byte-stream test composes the SDK and every independent finite concurrent vocabulary. */
+import{currentFootprintInverseDeletePrefixCases}from"../src/current-footprint-inverse-delete-prefix-protocol.ts";
+
+import{currentFootprintInverseReferenceProgressCases}from"../src/current-footprint-inverse-reference-progress-protocol.ts";
+import{currentFootprintInverseReferenceResultCases}from"../src/current-footprint-inverse-reference-result-protocol.ts";
+import{currentFootprintInverseReferenceSendCases}from"../src/current-footprint-inverse-reference-send-protocol.ts";
 import{currentFootprintInverseReferenceCallbackCases}from"../src/current-footprint-inverse-reference-callback-protocol.ts";
 import{currentFootprintInverseReferenceDispatchCases}from"../src/current-footprint-inverse-reference-dispatch-protocol.ts";
 import{currentFootprintInverseReferenceUiCases}from"../src/current-footprint-inverse-reference-ui-protocol.ts";
@@ -7,7 +13,6 @@ import { currentFootprintInverseGetSendCases } from "../src/current-footprint-in
 import { currentFootprintInverseGetCallbackCases } from "../src/current-footprint-inverse-get-callback-protocol.ts";
 import { currentFootprintInverseGetManagerCases } from "../src/current-footprint-inverse-get-manager-protocol.ts";
 import { currentFootprintInverseGetForwardingCases } from "../src/current-footprint-inverse-get-forwarding-protocol.ts";
-/* oxlint-disable import/max-dependencies -- This real byte-stream test composes the SDK and every independent finite concurrent vocabulary. */
 /** Actual byte transport only: synthetic replies issue no native owner or
  * runtime source/call/delete authority. */
 import assert from "node:assert/strict";
@@ -56,6 +61,10 @@ void test("original SDK write and reply remain separate while fixed UI and worke
   for(const command of currentFootprintInverseReferenceUiCases()){const observation=pipe.observeInverseReferenceUi(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   for(const command of currentFootprintInverseReferenceDispatchCases()){const observation=pipe.observeInverseReferenceDispatch(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   for(const command of currentFootprintInverseReferenceCallbackCases()){const observation=pipe.observeInverseReferenceCallback(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseReferenceProgressCases()){const observation=pipe.observeInverseReferenceProgress(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseReferenceResultCases()){const observation=pipe.observeInverseReferenceResult(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseReferenceSendCases()){const observation=pipe.observeInverseReferenceSend(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseDeletePrefixCases()){const observation=pipe.observeInverseDeletePrefix(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   input.write(Buffer.from(`${JSON.stringify({...sdkRequest,result:{result:{type:"object",subtype:"promise",className:"Promise",objectId:"original-sdk-promise"}}})}\0`));
   assert.deepEqual(await pending,{result:{type:"object",subtype:"promise",className:"Promise",objectId:"original-sdk-promise"}});pipe.requireInversePublicDeleteWritten(pending);
   const commands=cases.filter(command=>command.phase!=="inverse-public-call-sdk");
@@ -75,6 +84,13 @@ void test("original SDK write and reply remain separate while fixed UI and worke
   for(const command of currentFootprintInverseReferenceUiCases()){const observation=pipe.observeInverseReferenceUi(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   for(const command of currentFootprintInverseReferenceDispatchCases()){const observation=pipe.observeInverseReferenceDispatch(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   for(const command of currentFootprintInverseReferenceCallbackCases()){const observation=pipe.observeInverseReferenceCallback(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseReferenceProgressCases()){const observation=pipe.observeInverseReferenceProgress(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseReferenceResultCases()){const observation=pipe.observeInverseReferenceResult(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseReferenceSendCases()){const observation=pipe.observeInverseReferenceSend(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseDeletePrefixCases()){const observation=pipe.observeInverseDeletePrefix(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  const prefix=currentFootprintInverseDeletePrefixCases()[0];assert.ok(prefix!==undefined);const prefixBefore=sent.length;
+  // oxlint-disable-next-line typescript/unbound-method -- An extra raw field must fail before this finite lane writes bytes.
+  assert.throws(()=>Reflect.apply(CurrentFootprintInversePipe.prototype.observeInverseDeletePrefix,pipe,[{...prefix,callerCode:"foreign"}]));assert.equal(sent.length,prefixBefore);
   assert.equal(pipe.status().failureObservation,null);
   const resultCommand=currentFootprintInverseGetResultCases()[0];assert.ok(resultCommand!==undefined);const resultBefore=sent.length;
   // oxlint-disable-next-line typescript/unbound-method -- Closed result sender rejects an extra caller field before native output.

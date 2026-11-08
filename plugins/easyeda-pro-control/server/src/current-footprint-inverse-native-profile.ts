@@ -1,14 +1,19 @@
+/* oxlint-disable import/max-dependencies -- This sole inverse reservation composes every independently bounded lane rather than duplicating native limits. */
+import{CURRENT_FOOTPRINT_INVERSE_DELETE_PREFIX_REQUESTS as DELETE_PREFIX}from"./current-footprint-inverse-delete-prefix-protocol.ts";
+
+import{CURRENT_FOOTPRINT_INVERSE_REFERENCE_PROGRESS_REQUESTS as REFERENCE_PROGRESS}from"./current-footprint-inverse-reference-progress-protocol.ts";
+import{CURRENT_FOOTPRINT_INVERSE_REFERENCE_RESULT_REQUESTS as REFERENCE_RESULT}from"./current-footprint-inverse-reference-result-protocol.ts";
+import{CURRENT_FOOTPRINT_INVERSE_REFERENCE_SEND_REQUESTS as REFERENCE_SEND}from"./current-footprint-inverse-reference-send-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_REFERENCE_WORKER_MAXIMUM as REFERENCE_WORKER } from "./current-footprint-inverse-reference-worker-protocol.ts";
 import{CURRENT_FOOTPRINT_INVERSE_REFERENCE_CALLBACK_REQUESTS as REFERENCE_CALLBACK}from"./current-footprint-inverse-reference-callback-protocol.ts";
 import{CURRENT_FOOTPRINT_INVERSE_REFERENCE_DISPATCH_REQUESTS as REFERENCE_DISPATCH}from"./current-footprint-inverse-reference-dispatch-protocol.ts";
 import{CURRENT_FOOTPRINT_INVERSE_REFERENCE_UI_REQUESTS as REFERENCE_UI}from"./current-footprint-inverse-reference-ui-protocol.ts";
-import { CURRENT_FOOTPRINT_INVERSE_REFERENCE_WORKER_MAXIMUM as REFERENCE_WORKER } from "./current-footprint-inverse-reference-worker-protocol.ts";
 import{CURRENT_FOOTPRINT_INVERSE_REFERENCE_ENTRY_REQUESTS as REFERENCE_ENTRY}from"./current-footprint-inverse-reference-entry-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_GET_RESULT_REQUESTS as GET_RESULT } from "./current-footprint-inverse-get-result-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_GET_SEND_REQUESTS as GET_SEND } from "./current-footprint-inverse-get-send-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_GET_CALLBACK_REQUESTS as GET_CALLBACK } from "./current-footprint-inverse-get-callback-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_GET_MANAGER_REQUESTS as GET_MANAGER } from "./current-footprint-inverse-get-manager-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_GET_FORWARDING_REQUESTS as GET_FORWARDING } from "./current-footprint-inverse-get-forwarding-protocol.ts";
-/* oxlint-disable import/max-dependencies -- This sole inverse reservation composes every independently bounded lane rather than duplicating native limits. */
 import { CURRENT_FOOTPRINT_INVERSE_GET_INTRINSICS_REQUESTS as GET_INTRINSICS } from "./current-footprint-inverse-get-intrinsics-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_GET_RPC_ENTRY_REQUESTS as GET_RPC_ENTRY } from "./current-footprint-inverse-get-rpc-entry-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_GET_COMPLETION_MAXIMUM as GET_COMPLETION } from "./current-footprint-inverse-get-completion-protocol.ts";
@@ -42,7 +47,7 @@ import { CURRENT_FOOTPRINT_INVERSE_COLD_LOAD_REQUESTS as COLD, CURRENT_FOOTPRINT
 import { CURRENT_FOOTPRINT_INVERSE_PRODUCER_ARM_REQUESTS as PRODUCER } from "./current-footprint-inverse-producer-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_CACHE_REQUESTS as CACHE } from "./current-footprint-inverse-cache-wire.ts";
 /** Separate third-generation source-held prefix. Original registration and
- * discovery, fixed readonly query continuations and a held SDK prefix are admitted; DELETE and Save remain closed. */
+ * discovery and original readonly reference continuations are admitted; deletion and Save remain closed. */
 import { CURRENT_FOOTPRINT_INVERSE_CONSTRUCTION_REQUESTS as CONSTRUCTION } from "./current-footprint-inverse-construction-protocol.ts";
 import { CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_REQUESTS as REGISTRATION, CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITE_NAMES as REGISTRATION_SITES } from "./current-saved-project-registration-config-protocol.ts";
 import { CURRENT_PCB_VIA_SAVED_LOAD_BOOTSTRAP_REQUESTS as WORKER } from "./current-pcb-via-saved-load-bootstrap-protocol.ts";
@@ -58,7 +63,7 @@ const mainCleanup = MAIN.cleanupRequests + INITIAL_HISTORY.repetitions * INITIAL
 const discovery = 16, emptyGuard = 9 + 1, parent = 3 + 1, projectOpening = 9 + 1, registration = 2;
 const generic = discovery + 2 * 8 + 3 + 4;
 const sourceHeldPrefix = discovery + emptyGuard + registration + parent + WORKER.totalUntilProjectHeld + projectOpening;
-const renderer = sourceHeldPrefix + CONSTRUCTION.cdpRequests + CACHE.total + PRODUCER.cdpRequests + COLD.total + 1 + STEP.maximum + STARTUP.cdpRequests + CONDITIONS.reads + TIMER.direct + QUEUE.cdpRequests + INITIAL_CACHE.cdpRequests + INITIAL_SYNC.cdpRequests + MODEL.cdpRequests + LIBRARY.total + DELETE_BINDING.cdpRequests + DELETE_ENCODER.cdpRequests + PUBLIC_API.cdpRequests + CLOCK_WORKER.cdpRequests + PUBLIC_SERVICE.cdpRequests + DELETE_ENTRY.cdpRequests + PUBLIC_CALL.cdpRequests + DELETE_RPC.cdpRequests + DELETE_JOB.cdpRequests + WORKER_PEER.cdpRequests + PUBLIC_PREFERENCES.cdpRequests + OWN_DATA.cdpRequests + NATIVE_CHANNEL.cdpRequests + UI_OWN_DATA.cdpRequests + LOOKUP_PREENTRY.cdpRequests + NATIVE_DELIVERY.cdpRequests + GET_INTRINSICS.cdpRequests + GET_WORKER.cdpRequests + GET_RPC_ENTRY.cdpRequests + GET_FORWARDING.cdpRequests + GET_SEND.cdpRequests + GET_CALLBACK.cdpRequests + GET_MANAGER.cdpRequests + GET_NATIVE.cdpRequests + GET_COMPLETION.cdpRequests + GET_RESULT.cdpRequests + REFERENCE_ENTRY.cdpRequests + REFERENCE_UI.cdpRequests + REFERENCE_WORKER.cdpRequests + REFERENCE_DISPATCH.cdpRequests + REFERENCE_CALLBACK.cdpRequests;
+const renderer = sourceHeldPrefix + CONSTRUCTION.cdpRequests + CACHE.total + PRODUCER.cdpRequests + COLD.total + 1 + STEP.maximum + STARTUP.cdpRequests + CONDITIONS.reads + TIMER.direct + QUEUE.cdpRequests + INITIAL_CACHE.cdpRequests + INITIAL_SYNC.cdpRequests + MODEL.cdpRequests + LIBRARY.total + DELETE_BINDING.cdpRequests + DELETE_ENCODER.cdpRequests + PUBLIC_API.cdpRequests + CLOCK_WORKER.cdpRequests + PUBLIC_SERVICE.cdpRequests + DELETE_ENTRY.cdpRequests + PUBLIC_CALL.cdpRequests + DELETE_RPC.cdpRequests + DELETE_JOB.cdpRequests + WORKER_PEER.cdpRequests + PUBLIC_PREFERENCES.cdpRequests + OWN_DATA.cdpRequests + NATIVE_CHANNEL.cdpRequests + UI_OWN_DATA.cdpRequests + LOOKUP_PREENTRY.cdpRequests + NATIVE_DELIVERY.cdpRequests + GET_INTRINSICS.cdpRequests + GET_WORKER.cdpRequests + GET_RPC_ENTRY.cdpRequests + GET_FORWARDING.cdpRequests + GET_SEND.cdpRequests + GET_CALLBACK.cdpRequests + GET_MANAGER.cdpRequests + GET_NATIVE.cdpRequests + GET_COMPLETION.cdpRequests + GET_RESULT.cdpRequests + REFERENCE_ENTRY.cdpRequests + REFERENCE_UI.cdpRequests + REFERENCE_DISPATCH.cdpRequests + REFERENCE_CALLBACK.cdpRequests + REFERENCE_WORKER.cdpRequests + 3 * REFERENCE_SEND.cdpRequests + REFERENCE_PROGRESS.cdpRequests + REFERENCE_RESULT.cdpRequests + DELETE_PREFIX.cdpRequests;
 // One finite renderer poll lane, paired with the existing original-main poll
 // Envelope. A consumed failure does not replenish this reservation.
 const rendererPolls = MAIN.totalPolls;
@@ -87,6 +92,9 @@ export const CURRENT_FOOTPRINT_INVERSE_ACTION_LIMITS = Object.freeze({
   "footprint-inverse-reference-callback":REFERENCE_CALLBACK.controls,
   "footprint-inverse-reference-dispatch":REFERENCE_DISPATCH.controls,
   "footprint-inverse-reference-ui":REFERENCE_UI.controls,
+  "footprint-inverse-reference-progress":REFERENCE_PROGRESS.controls,"footprint-inverse-reference-result":REFERENCE_RESULT.controls,
+  "footprint-inverse-reference-send":3 * REFERENCE_SEND.controls,
+  "footprint-inverse-delete-prefix":DELETE_PREFIX.controls,
   "footprint-inverse-reference-entry": REFERENCE_ENTRY.controls,
   "footprint-inverse-reference-worker": REFERENCE_WORKER.controls,
   "footprint-inverse-get-result": GET_RESULT.controls,
@@ -101,7 +109,7 @@ export const CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE = Object.freeze({
   main: Object.freeze({ constructionNormal: MAIN.normalRequests, fenceNormal: FENCE.normal,
     registrationNormal: REGISTRATION, initialHistory: INITIAL_HISTORY, normal: mainNormal, cleanup: mainCleanup, total: mainNormal + mainCleanup,
     reproofs: mainReproofs, polls: MAIN.totalPolls }),
-  renderer: Object.freeze({ discovery, emptyGuard, generic, registration, parent, projectOpening, sourceHeldPrefix, construction: CONSTRUCTION.cdpRequests, producerArm: PRODUCER, libraryRefresh:LIBRARY,deleteBindings:DELETE_BINDING,deleteEncoder:DELETE_ENCODER,publicApi:PUBLIC_API,clockWorker:CLOCK_WORKER,deleteEntry:DELETE_ENTRY,publicService:PUBLIC_SERVICE,publicCall:PUBLIC_CALL,publicPreferences:PUBLIC_PREFERENCES,deleteRpc:DELETE_RPC,deleteJob:DELETE_JOB,workerPeer:WORKER_PEER,ownData:OWN_DATA,nativeChannel:NATIVE_CHANNEL,nativeDelivery:NATIVE_DELIVERY,uiOwnData:UI_OWN_DATA,lookupPreentry:LOOKUP_PREENTRY,getIntrinsics:GET_INTRINSICS,getWorker:GET_WORKER,getRpcEntry:GET_RPC_ENTRY,getForwarding:GET_FORWARDING,getSend:GET_SEND,getCallback:GET_CALLBACK,getManager:GET_MANAGER,getNative:GET_NATIVE,getCompletion:GET_COMPLETION,getResult:GET_RESULT,referenceEntry:REFERENCE_ENTRY,referenceUi:REFERENCE_UI,referenceWorker:REFERENCE_WORKER,referenceDispatch:REFERENCE_DISPATCH, cold: COLD, cache: CACHE, sourceHeldBootstrap: WORKER.totalUntilProjectHeld, total: renderer, polls: rendererPolls }), controls,
+  renderer: Object.freeze({ discovery, emptyGuard, generic, registration, parent, projectOpening, sourceHeldPrefix, construction: CONSTRUCTION.cdpRequests, producerArm: PRODUCER, libraryRefresh:LIBRARY,deleteBindings:DELETE_BINDING,deleteEncoder:DELETE_ENCODER,publicApi:PUBLIC_API,clockWorker:CLOCK_WORKER,deleteEntry:DELETE_ENTRY,publicService:PUBLIC_SERVICE,publicCall:PUBLIC_CALL,publicPreferences:PUBLIC_PREFERENCES,deleteRpc:DELETE_RPC,deleteJob:DELETE_JOB,workerPeer:WORKER_PEER,ownData:OWN_DATA,nativeChannel:NATIVE_CHANNEL,nativeDelivery:NATIVE_DELIVERY,uiOwnData:UI_OWN_DATA,lookupPreentry:LOOKUP_PREENTRY,getIntrinsics:GET_INTRINSICS,getWorker:GET_WORKER,getRpcEntry:GET_RPC_ENTRY,getForwarding:GET_FORWARDING,getSend:GET_SEND,getCallback:GET_CALLBACK,getManager:GET_MANAGER,getNative:GET_NATIVE,getCompletion:GET_COMPLETION,getResult:GET_RESULT,deletePrefix:DELETE_PREFIX,referenceProgress:REFERENCE_PROGRESS,referenceResult:REFERENCE_RESULT,referenceSend:REFERENCE_SEND,referenceWorker:REFERENCE_WORKER,referenceEntry:REFERENCE_ENTRY,referenceUi:REFERENCE_UI,referenceDispatch:REFERENCE_DISPATCH, cold: COLD, cache: CACHE, sourceHeldBootstrap: WORKER.totalUntilProjectHeld, total: renderer, polls: rendererPolls }), controls,
   completeInverseReserved: false, deleteInvocationAuthorized: false, executionAuthorized: false, saveAuthorized: false,
 });
 export const CURRENT_FOOTPRINT_INVERSE_DISCOVERY_METHODS = Object.freeze(["Browser.getVersion", "Target.getTargets", "Target.attachToTarget", "Page.enable", "Page.getFrameTree",

@@ -18,7 +18,7 @@ export function currentFootprintInverseReferenceDispatchNativeSource():string{
 ${tables}
 static System.Collections.Generic.IEnumerable<string[]> InverseReferenceDispatchRows(){return InverseFixedRows(new[]{InverseReferenceDispatchRows0,InverseReferenceDispatchRows1});}
 bool inverseReferenceDispatchBound,inverseReferenceDispatchSourceBound,inverseReferenceDispatchComplete;string inverseReferenceDispatchSource,inverseReferenceDispatchProfile;int inverseReferenceDispatchCalls,inverseReferenceDispatchProperties,inverseReferenceDispatchHelpers,inverseReferenceDispatchScripts,inverseReferenceDispatchSources;readonly System.Collections.Generic.Dictionary<string,int> inverseReferenceDispatchRoles=new System.Collections.Generic.Dictionary<string,int>(System.StringComparer.Ordinal);
-static System.InvalidOperationException ReferenceDispatchError(string value){return Error("inverse-reference-dispatch-"+value);}
+static System.Exception ReferenceDispatchError(string value){return Error("inverse-reference-dispatch-"+value);}
 void AssertInverseReferenceDispatch(){if(!footprintInverse209||footprintInverseAborted||!inverseReferenceUiComplete||!inverseReferenceDispatchBound||inverseReferenceDispatchComplete)throw ReferenceDispatchError("original");AssertLive();}
 void AssertFootprintInverseReferenceDispatchPrepared(){if(!footprintInverse209||footprintInverseAborted||!inverseReferenceUiComplete||!inverseReferenceDispatchComplete)throw ReferenceDispatchError("ready");AssertLive();}
 int ReferenceDispatchRole(string role){int value;return inverseReferenceDispatchRoles.TryGetValue(role,out value)?value:0;}

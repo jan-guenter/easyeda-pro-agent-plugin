@@ -11,18 +11,20 @@ import { test } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { sha256Json } from "../src/core.ts";
+import {mainBackendModule,mainBackendTransportFixture} from "./helpers/footprint-main-backend-runner-fixture.ts";
+import { createOriginalSourceError } from "../src/original-source-error.ts";
 import { assertCurrentPcbViaWriteJournalChain } from "../src/current-pcb-via-write-journal.ts";
 import { CurrentPcbViaWriteWorkflow, requireOriginalCurrentPcbViaWriteFailureClosure } from "../src/current-pcb-via-write-workflow.ts";
 import { acquireCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLaunchExclusion, releaseCurrentPcbDiagnosticLaunchExclusion } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 
-type Mode = "reserve-unknown" | "no-resource" | "unlaunched" | "main-failed" | "save-unknown" | "abort-unknown" | "publication-blocked" | "exit-late";
+type Mode = "reserve-unknown" | "no-resource" | "unlaunched" | "main-failed" | "main-construction-failed" | "main-attach-failed" | "save-unknown" | "abort-unknown" | "publication-blocked" | "exit-late";
 function ack(stage: "preflight" | "create" | "save"): Readonly<Record<string, unknown>> {
   return Object.freeze({ schema: "easyeda-pro-control.pcb209-via-write-stage.v1", stage, ok: true,
     dispatchAttempted: true, originalPromiseAcknowledged: true, primitiveId: stage === "preflight" ? null : "original-via",
     createAttempted: stage !== "preflight", createAcknowledged: stage !== "preflight", saveAttempted: stage === "save", saveAcknowledged: stage === "save",
     inverseAvailable: false, persistenceVerified: false });
 }
-async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWriteWorkflow; calls: string[]; saveAck: unknown; permitOriginalExit: () => void; rejectNextOriginalExit: (error: Error) => void }>> {
+async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWriteWorkflow; calls: string[]; saveAck: unknown; permitOriginalExit: () => void; rejectNextOriginalExit: (error: Error) => void; replaceMainStatus:()=>void }>> {
   const calls: string[] = [], operationId = `pcb209-via-write-workflow-${randomUUID()}`;
   const prepared = Object.freeze({ qualification: {}, history: {}, inertOriginalPreparation: true });
   const plan = Object.freeze({ operationId, target: { expectedSourceSha256: "a".repeat(64) }, initialLogicalSha256: "b".repeat(64) });
@@ -30,6 +32,13 @@ async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWr
   const body = Promise.withResolvers<undefined>(), local = Promise.withResolvers<undefined>();
   let binding: object | null = null, exited = false, factoryEntered = false, released = false;
   let exitPermitted = mode !== "exit-late"; let nextExitError: Error | null = null;
+  const main=mode==="main-construction-failed"?await mainBackendModule():null;const mainTransport=mainBackendTransportFixture();mainTransport.state.metadataShapeRole="capture";
+  const mainRunner=main===null?null:new main.Constructor(mainTransport.transport);
+  let mainStatusOwner:object|null=null;
+  class InertOwner{
+    public status():object{assert.equal(this,mainStatusOwner);return Object.freeze({failure:null,mainNativeFailure:mode==="main-attach-failed"?Object.freeze({action:"main-attach",code:"pcb-diagnostic-main-endpoint-deadline"}):null});}
+    public retainedFootprintMainConstruction():unknown{assert.equal(this,mainStatusOwner);calls.push("main-failure-snapshot");return mainRunner?.retained()??null;}
+  }
   const noResource = Object.freeze({ inertOriginalNoResource: true });
   const owner = Object.freeze({
     status: (): object => ({ binding, released, helperClosed: released, helperPid: 1, launchConsumed: false, noProcessCleanupAvailable: false }),
@@ -37,7 +46,11 @@ async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWr
       calls.push("launch"); if (mode === "unlaunched") { return Promise.reject(new Error("original prelaunch refusal")); }
       binding = Object.freeze({ originalBinding: true }); return Promise.resolve();
     },
-    observeFootprintMainConstruction: (): Promise<object> => Promise.resolve({}), observeViaWriteStartPage: (): Promise<object> => Promise.resolve({}),
+    observeFootprintMainConstruction: (): Promise<object> => {
+      if(mode==="main-attach-failed"){return Promise.reject(new Error("Inert original Main attach refusal"));}
+      if(mainRunner===null){return Promise.resolve({});}
+      return mainRunner.observe();
+    }, observeViaWriteStartPage: (): Promise<object> => Promise.resolve({}),
     inspectFrames: (): Promise<object> => Promise.resolve({}), inspectScript: (): Promise<object> => Promise.resolve({}),
     openGeneratedFixtureProject: (): Promise<object> => { calls.push("project-open"); return Promise.resolve({ ok: true }); },
     openPcb: (): Promise<object> => { calls.push("pcb-open"); return Promise.resolve({ ok: true }); },
@@ -52,8 +65,11 @@ async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWr
     abortPcbViaWrite: (): Promise<void> => {
       calls.push("original-abort");
       // oxlint-disable-next-line unicorn/no-useless-undefined -- TypeScript7 requires the exact Promise<undefined> resolver argument; this inert collector carries no authority value.
-      if (mode === "main-failed") { body.resolve(undefined); } else { body.reject(new Error("original body stopped")); }
-      local.reject(new Error("original local stopped"));
+      if (mode === "main-failed"||mode==="main-construction-failed"||mode==="main-attach-failed") { body.resolve(undefined); } else { body.reject(new Error("original body stopped")); }
+      if(mode==="main-construction-failed"||mode==="main-attach-failed"){
+        // oxlint-disable-next-line unicorn/no-useless-undefined -- The original test deferred retains Promise<undefined>; TypeScript requires its explicit settlement value.
+        local.resolve(undefined);
+      }else{local.reject(new Error("original local stopped"));}
       return mode === "abort-unknown" || mode === "exit-late" ? Promise.reject(new Error("original Abort acknowledgement unknown")) : Promise.resolve();
     },
     observeTermination: (): Promise<boolean> => {
@@ -63,6 +79,7 @@ async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWr
     releaseClosed: (): Promise<void> => { assert.ok(exited); calls.push("original-release"); released = true; return Promise.resolve(); },
     releaseUnlaunched: (): Promise<void> => { assert.equal(binding, null); calls.push("original-unlaunched-release"); released = true; return Promise.resolve(); },
   });
+  mainStatusOwner=owner;
   type Entry = Parameters<typeof assertCurrentPcbViaWriteJournalChain>[0][number];
   const records: Entry[] = [];
   class InertJournal {
@@ -126,7 +143,7 @@ async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWr
     public observeAfterScene(): Promise<object> { return Promise.resolve({}); }
     public qualifyEffect(): object { return Object.freeze({ inertOriginalEffect: true }); }
     public armSaveClock(): Promise<void> { return Promise.resolve(); }
-    public observeOriginalSave(): Promise<void> { return mode === "main-failed" ? Promise.reject(new Error("original Main history refused")) : body.promise; }
+    public observeOriginalSave(): Promise<void> { return mode === "main-failed" ? Promise.reject(createOriginalSourceError("PCB_DIAGNOSTIC_OWNER", "MAIN_HISTORY_REFUSED")) : body.promise; }
     public serviceSaveLocalCalls(): Promise<void> { return local.promise; }
     public drainOriginalSave(): Promise<void> { return local.promise; }
     public cancel(): void { calls.push("observers-cancel"); }
@@ -135,6 +152,7 @@ async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWr
     public retainedCreateState(): object { return { requestGenerationEntered: true, originalAcknowledgement: this.#ack }; }
   }
   const native = {
+    CurrentPcbViaWriteOwner:InertOwner,
     assertOriginalCurrentPcbViaWriteOwner: (actual: unknown): void => { assert.equal(actual, owner); },
     originalCurrentPcbViaWriteTarget: (): object => prepared,
     startCurrentPcbViaWriteOwner: (): Promise<object> => {
@@ -165,7 +183,8 @@ async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWr
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only the explicit inert original issuers/observers above differ; the actual workflow's private state and Promise scheduling run unchanged.
   const workflow = Reflect.construct(Constructor, [options, plan]) as CurrentPcbViaWriteWorkflow;
   return { workflow, calls, saveAck, permitOriginalExit: (): void => { exitPermitted = true; },
-    rejectNextOriginalExit: (error: Error): void => { nextExitError = error; } };
+    rejectNextOriginalExit: (error: Error): void => { nextExitError = error; },
+    replaceMainStatus:():void=>{Object.defineProperty(InertOwner.prototype,"retainedFootprintMainConstruction",{get:():never=>{calls.push("replacement-main-getter");throw new Error("must not execute");},configurable:true});} };
 }
 
 void test("actual original plan custody refuses an equal-looking outer workflow before factory birth", () => {
@@ -206,7 +225,9 @@ void test("original prelaunch failure releases the actual unlaunched helper with
 });
 void test("later Main failure preserves the original Save ACK and aborts before joining blocked local work", async () => {
   const f = await fixture("main-failed"); const original = f.workflow.execute(); assert.equal(f.workflow.execute(), original);
-  await assert.rejects(original, /Main history refused/u);
+  await assert.rejects(original, /MAIN_HISTORY_REFUSED/u);
+  const diagnostic = f.workflow.diagnostic(); assert.equal(diagnostic.errorCode, "PCB_DIAGNOSTIC_OWNER_MAIN_HISTORY_REFUSED");
+  assert.equal(diagnostic.stage, "writer-original-save"); assert.equal(diagnostic.executionAuthorized, false);
   assert.equal(f.workflow.inspect()["originalSaveAcknowledgement"], f.saveAck); assert.equal(f.workflow.inspect()["saved"], false);
   assert.equal(f.calls.filter(value => value === "sdk-save").length, 1); assert.equal(f.calls.includes("journal-save-result"), false);
   assert.ok(f.calls.indexOf("original-abort") < f.calls.indexOf("original-exit"));
@@ -215,6 +236,7 @@ void test("later Main failure preserves the original Save ACK and aborts before 
   assert.ok(f.calls.indexOf("journal-create-intent") < f.calls.indexOf("sdk-create"));
   const result = f.workflow.operationResult("inspect"); assert.equal(result.effects.saveOutcome, "acknowledged");
   assert.equal(result.verification.saved, false); assert.equal(result.verification.reopened, false);
+  await f.workflow.settleCleanup(); assert.equal(f.workflow.diagnostic(), diagnostic);
 });
 void test("unknown original Save is never replayed while original abort wakes both blocked collectors", async () => {
   const f = await fixture("save-unknown"); await assert.rejects(f.workflow.execute(), /acknowledgement unknown/u);
@@ -278,6 +300,29 @@ void test("each explicit exhausted original exit round stays bounded and shared 
   assert.equal(f.workflow.operationResult("inspect").verification.saved, false);
   assert.equal(f.workflow.operationResult("inspect").verification.reopened, false);
   assert.ok(Object.isFrozen(f.workflow.requireOriginalFailureClosure()));
+});
+
+void test("first Main snapshot retains the real runner schema refusal before cleanup and cannot be replaced",async()=>{
+ const f=await fixture("main-construction-failed");assert.equal(f.workflow.mainFailure(),null);
+ await assert.rejects(f.workflow.execute());const snapshot=f.workflow.mainFailure();assert.ok(snapshot!==null,JSON.stringify({diagnostic:f.workflow.diagnostic(),calls:f.calls}));
+ assert.equal(snapshot.capture,"original-status-retained");assert.equal(snapshot.status?.failure,"REPLY_SCHEMA");assert.equal(snapshot.status.metadataRole,"retained-array");
+ assert.ok(snapshot.status.schemaIssues!==null&&snapshot.status.schemaIssues.length>0);assert.ok(snapshot.status.requests>0);
+ assert.equal(snapshot.status.releaseAttempted,false);assert.equal(snapshot.executionAuthorized,false);assert.equal(snapshot.persistenceVerified,false);
+ assert.ok(f.calls.indexOf("main-failure-snapshot")<f.calls.indexOf("original-abort"));
+ assert.equal(f.calls.filter(value=>value==="main-failure-snapshot").length,1);assert.equal(f.calls.includes("project-open"),false);
+ assert.equal(JSON.stringify(snapshot).includes("sensitive-foreign-value"),false);assert.ok(Object.isFrozen(snapshot)&&Object.isFrozen(snapshot.status)&&Object.isFrozen(snapshot.status.schemaIssues));
+ f.replaceMainStatus();await f.workflow.settleCleanup();assert.equal(f.workflow.mainFailure(),snapshot);assert.equal(f.calls.includes("replacement-main-getter"),false);
+});
+void test("a substituted Main retained-status accessor is never invoked and cannot replace the execution failure",async()=>{
+ const f=await fixture("main-construction-failed");f.replaceMainStatus();await assert.rejects(f.workflow.execute());
+ const snapshot=f.workflow.mainFailure();assert.ok(snapshot!==null,JSON.stringify({diagnostic:f.workflow.diagnostic(),calls:f.calls}));assert.equal(snapshot.capture,"capture-refused");assert.equal(snapshot.status,null);
+ assert.equal(f.calls.includes("replacement-main-getter"),false);assert.ok(f.calls.includes("original-abort")&&f.calls.includes("original-release"));
+});
+
+void test("original native Main refusal remains visible when no runner was constructed",async()=>{
+ const f=await fixture("main-attach-failed");await assert.rejects(f.workflow.execute());const snapshot=f.workflow.mainFailure();assert.ok(snapshot!==null);
+ assert.equal(snapshot.capture,"runner-absent");assert.equal(snapshot.status,null);assert.deepEqual(snapshot.nativeFailure,{action:"main-attach",code:"pcb-diagnostic-main-endpoint-deadline"});assert.equal(snapshot.ownerFailure,null);
+ assert.ok(f.calls.includes("original-abort")&&f.calls.includes("original-release"));assert.equal(f.calls.includes("project-open"),false);assert.equal(f.workflow.mainFailure(),snapshot);
 });
 
 void test("a new protocol failure cannot reuse the prior exhausted-round eligibility", async () => {

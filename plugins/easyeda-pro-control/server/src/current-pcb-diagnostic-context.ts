@@ -386,7 +386,7 @@ export class CurrentPcbDiagnosticContext {
   }
   /** Fixed metadata-only selector for the original local status bus. No new realm or function is admitted by caller data. */
   public schematicStatusBusContext(scriptId:string,variant:CurrentSchematicRelevanceStatusBusVariant):Readonly<{sessionId:string;scriptId:string;uniqueContextId:string}>{
-    const ui=this.#uiSourceContext(),original=this.#sourceIdentity;
+    const ui=this.#uiSourceContext();const original=this.#sourceIdentity;
     if(!diagnosticToken(scriptId)||variant!==0&&variant!==1&&variant!==2||!this.#openingConsumed||this.#schematicNavigation===null||this.#schematicOpening!==null||this.#rootNavigation!==null||this.#priorRootNavigation!==null||this.#pcbOpening!==null||this.#opening!==null||this.#frame===null||original===null){return this.#refuse();}
     const profile=STATUS_BUS_SOURCE[variant],selected=this.#scriptFor(this.#frame,{family:"ui",relativePath:profile.relativePath,scriptBytes:profile.bytes,scriptSha256:profile.sha256});
     if(selected.scriptId!==scriptId||selected.context["id"]!==original.contextId||selected.context["uniqueId"]!==original.uniqueContextId){return this.#refuse();}return Object.freeze({...ui,scriptId});

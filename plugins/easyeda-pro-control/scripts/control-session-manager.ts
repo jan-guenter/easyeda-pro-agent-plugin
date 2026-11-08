@@ -1028,11 +1028,19 @@ export class ForegroundSessionManager {
       }
       const noOwnedProcess = this.connection?.transport.hasUnclosedChild() !== true &&
         this.startingConnection?.transport.hasUnclosedChild() !== true;
-      if (this.stage !== "between-facades" && this.stage !== "closed" && !(this.stage === "blocked" && noOwnedProcess)) {
+      const originalClosure = this.connection?.transport.inspectClosure();
+      // A failed original facade can close without completing retirement. The
+      // Manager may then close itself, but cannot grant a replacement or turn
+      // Facade exit into native cleanup, retirement or lease-release proof.
+      const activeOriginalClosed = this.stage === "active" && noOwnedProcess && this.connection !== undefined &&
+        this.startingConnection === undefined && this.inFlight === undefined && this.controlledCapture === undefined &&
+        this.interrupted === undefined && !this.retirementUncertain && originalClosure !== null && originalClosure !== undefined &&
+        originalClosure.pid === this.connection.loadedFacade.pid && originalClosure.exitObserved && originalClosure.closeObserved;
+      if (this.stage !== "between-facades" && this.stage !== "closed" && !(this.stage === "blocked" && noOwnedProcess) && !activeOriginalClosed) {
         throw new Error("manager-retirement-required-before-shutdown");
       }
       this.replacementFrom = undefined;
-      await this.publish({ id, closing: true });
+      await this.publish({ id, closing: true, ...(activeOriginalClosed ? { originalFacadeClosed: true, retirementAcknowledged: false, nativeCleanupProved: false, replacementAllowed: false } : {}) });
       await this.evidence?.handle.close();
       this.stage = "closed";
     } catch (error) {

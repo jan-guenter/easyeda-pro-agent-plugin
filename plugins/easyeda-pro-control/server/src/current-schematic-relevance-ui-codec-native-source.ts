@@ -20,6 +20,6 @@ static void Need(bool value){if(!value)throw new System.InvalidOperationExceptio
 ${table("Rows", rows, 4)}
 ${table("Programs", programs, 2)}
 public static string Encode(int id,string session,string phase,string method,System.Collections.IDictionary fields){return EasyedaSchematicUiFixedCodec.Encode(id,session,phase,method,fields,Rows,Programs,"${input.marker}",Need);}
-public static void VerifySmoke(){string[] hashes=${currentPcbDiagnosticNativeHashVector(hashes)};for(int index=0;index<Rows.Length;index++){string[] row=Rows[index];var fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);foreach(string name in row[2].Length==0?new string[0]:row[2].Split(','))fields.Add(name,"original_ref");string text=Encode(83,"original_ui",row[0],row[1],fields);using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(text))).Replace("-","").ToLowerInvariant()==hashes[index]);fields.Add("functionDeclaration","caller");bool refused=false;try{Encode(83,"original_ui",row[0],row[1],fields);}catch(System.InvalidOperationException){refused=true;}Need(refused);}bool resumeRefused=false;try{Encode(83,"original_ui","unknown-resume","Debugger.resume",new System.Collections.Hashtable());}catch(System.InvalidOperationException){resumeRefused=true;}Need(resumeRefused);}
+public static void VerifySmoke(){EasyedaSchematicUiFixedCodec.VerifySmoke(Rows,${currentPcbDiagnosticNativeHashVector(hashes)},Encode,Need);}
 }`;
 }

@@ -1,6 +1,6 @@
 /** Bounded readonly diagnostics, separate from immutable journal/result data.
  * Only the private original source issuer can supply a code. */
-import { originalSourceErrorCode } from "./original-source-error.ts";
+import { originalNativeOrSourceErrorCode } from "./original-native-error-code.ts";
 import { z } from "zod";
 
 export const currentSchematicRelevanceDisplayWriteDiagnosticSchema = z.strictObject({
@@ -11,7 +11,7 @@ export const currentSchematicRelevanceDisplayWriteDiagnosticSchema = z.strictObj
 }).refine(value => value.originalFailureObserved === (value.errorCode !== null));
 export type CurrentSchematicRelevanceDisplayWriteDiagnostic = z.infer<typeof currentSchematicRelevanceDisplayWriteDiagnosticSchema>;
 export function currentSchematicRelevanceDisplayWriteErrorCode(error: unknown): string {
-  return originalSourceErrorCode(error) ?? "ORIGINAL_ERROR_UNCLASSIFIED";
+  return originalNativeOrSourceErrorCode(error) ?? "ORIGINAL_ERROR_UNCLASSIFIED";
 }
 export function currentSchematicRelevanceDisplayWriteDiagnostic(stage: string, errorCode: string | null): CurrentSchematicRelevanceDisplayWriteDiagnostic {
   return Object.freeze(currentSchematicRelevanceDisplayWriteDiagnosticSchema.parse({ schema: "easyeda-pro-control.schematic209-relevance-display-write-diagnostic.v1", stage,

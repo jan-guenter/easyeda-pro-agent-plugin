@@ -1,3 +1,5 @@
+import {currentSchematicRelevanceNormalCommandUiWire} from "./current-schematic-relevance-normal-command-ui-wire.ts";
+import {currentSchematicRelevanceFileSaveUiWire} from "./current-schematic-relevance-file-save-ui-wire.ts";
 import {currentSchematicRelevanceRenderDelegateWire} from "./current-schematic-relevance-render-delegate-wire.ts";
 import {currentSchematicRelevanceStatusTabMutationWire} from "./current-schematic-relevance-status-tab-mutation-wire.ts";
 import {currentSchematicRelevanceStatusTabLookupWire} from "./current-schematic-relevance-status-tab-lookup-wire.ts";
@@ -84,6 +86,20 @@ export function currentSchematicRelevanceDisplayWriteNativeRequest(chunk: Buffer
     if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_UPLOAD_RETURN_WIRE"); }
     const fixed = currentSchematicRelevanceUploadReturnWire(input, id);
     if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceUploadReturnCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_UPLOAD_RETURN_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceNormalCommandUiCommand")) {
+    const { id, sessionId, schematicRelevanceNormalCommandUiCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_NORMAL_COMMAND_UI_WIRE"); }
+    const fixed = currentSchematicRelevanceNormalCommandUiWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceNormalCommandUiCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_NORMAL_COMMAND_UI_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceFileSaveUiCommand")) {
+    const { id, sessionId, schematicRelevanceFileSaveUiCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_FILE_SAVE_UI_WIRE"); }
+    const fixed = currentSchematicRelevanceFileSaveUiWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceFileSaveUiCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_FILE_SAVE_UI_FIXED_WIRE"); }
     return fixed.request;
   }
   if (Object.hasOwn(raw, "schematicRelevanceRenderDelegateCommand")) {
