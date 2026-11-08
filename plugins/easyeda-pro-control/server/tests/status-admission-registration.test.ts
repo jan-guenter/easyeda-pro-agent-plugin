@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
@@ -34,8 +35,8 @@ async function registeredStatus(options: { connectDuringProbe?: boolean; disconn
   const calls: string[] = [];
   let admissionCount = 0, connected = options.disconnected !== true, refused = false;
   let invoke: Handler | undefined;
-  const scope = {
-    CONTROL_VERSION: "synthetic",
+  const scope = vm.createContext({
+    z, CONTROL_VERSION: "synthetic",
     facadeMode: options.facadeMode ?? "legacy-reviewed",
     CALCULATION_ONLY_TOOLS,
     projectPublicEngineStatus,
@@ -92,11 +93,15 @@ async function registeredStatus(options: { connectDuringProbe?: boolean; disconn
         finally { calls.push("lease-end"); }
       },
     },
-  };
+  });
   // Execute the actual registration and status wrapper with synthetic collaborators.
   // No facade initialization, bridge, lease acquisition or editor is started.
+  const evidenceStart=source.indexOf("const evidenceSchema =");const evidenceEnd=source.indexOf("const nonEmptyStringSchema =",evidenceStart);
+  const statusStart=source.indexOf("const statusEvidenceInputSchema =");const statusEnd=source.indexOf("registerFacadeTool(",statusStart);assert.ok(evidenceStart>0&&evidenceEnd>evidenceStart&&statusStart>0&&statusEnd>statusStart);
+  const inputSchemas=source.slice(evidenceStart,evidenceEnd)+source.slice(statusStart,statusEnd);
   const errorHandlingSource = options.failureStage === undefined ? "" : source.slice(failureStart, failureEnd);
-  vm.runInNewContext(stripTypeScriptTypes(`${errorHandlingSource}\n${source.slice(wrapperStart, wrapperEnd)}\n${source.slice(registrationStart, registrationEnd)}`), scope);
+  installIndexFixtureDependencies(scope,source);
+  vm.runInNewContext(stripTypeScriptTypes(`${inputSchemas}\n${errorHandlingSource}\n${source.slice(wrapperStart, wrapperEnd)}\n${source.slice(registrationStart, registrationEnd)}`), scope);
   assert.ok(invoke !== undefined);
   return { calls, invoke, implementation, refuseAdmission: (): void => { refused = true; } };
 }

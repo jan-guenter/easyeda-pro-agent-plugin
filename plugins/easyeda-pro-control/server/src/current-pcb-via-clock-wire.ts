@@ -8,6 +8,7 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 export type CurrentPcbViaClockFieldKind = "handle" | "project" | "branch" | "uuid" | "tab" | "topic" | "count" | "time";
 export interface CurrentPcbViaClockTemplate { readonly phase: string; readonly method: string; readonly realm: CurrentPcbViaClockRealm | "either";
   readonly fields: Readonly<Record<string, CurrentPcbViaClockFieldKind>>; readonly values: Readonly<Record<string, string | number>>; readonly template: string }
+const reservedFields = new Set(["action", "requestId", "phase", "method", "realm", "id", "jobId", "helperInstance", "rootCreated", "rootPid"]);
 function sourceRealm(value: string): CurrentPcbViaClockRealm { if (value !== "worker" && value !== "ui") { throw new Error("PCB_VIA_CLOCK_SOURCE_REALM"); } return value; }
 function kind(value: string): CurrentPcbViaClockFieldKind {
   if (/^[a-f\d]{64}$/u.test(value)) { return "project"; } if (/^[a-f\d]{32}$/u.test(value)) { return "branch"; }
@@ -16,7 +17,7 @@ function kind(value: string): CurrentPcbViaClockFieldKind {
 export function currentPcbViaClockTemplate(input: unknown): CurrentPcbViaClockTemplate {
   const command = validateCurrentPcbViaClockCommand(input);
   const fields: Record<string, CurrentPcbViaClockFieldKind> = {}, values: Record<string, string | number> = {};
-  const field = (name: string, value: string | number, type: CurrentPcbViaClockFieldKind): string => { if (Object.hasOwn(fields, name)) { throw new Error("PCB_VIA_CLOCK_FIELD_ALIAS"); } fields[name] = type; values[name] = value; return `__via_clock_${name}__`; };
+  const field = (name: string, value: string | number, type: CurrentPcbViaClockFieldKind): string => { if (reservedFields.has(name) || Object.hasOwn(fields, name)) { throw new Error("PCB_VIA_CLOCK_FIELD_ALIAS"); } fields[name] = type; values[name] = value; return `__via_clock_${name}__`; };
   const params: Record<string, unknown> = { ...command.params }; let phase: string = command.phase, realm: CurrentPcbViaClockRealm | "either" = "ui";
   if (command.method === "Runtime.callFunctionOn") {
     realm = ["via-clock-worker", "via-clock-push", "via-clock-dispatch", "via-clock-reply"].includes(command.phase) ? "worker" : "ui";
@@ -28,7 +29,7 @@ export function currentPcbViaClockTemplate(input: unknown): CurrentPcbViaClockTe
       if (typeof argument.value === "string") { return { value: field(`value${String(index)}`, argument.value, kind(argument.value)) }; }
       const value = argument.value;
       if ("replyTopic" in value) { return { value: { replyTopic: field("replyTopic", value.replyTopic, "topic"), workerUuid: field("workerUuid", value.workerUuid, "uuid"),
-        uiUuid: field("uiUuid", value.uiUuid, "uuid"), requestId: field("requestId", value.requestId, "count"), ordinal: 1 } }; }
+        uiUuid: field("uiUuid", value.uiUuid, "uuid"), requestId: field("rpcRequestId", value.requestId, "count"), ordinal: 1 } }; }
       return { value: { uiUuid: field("uiUuid", value.uiUuid, "uuid"), value: field("time", value.value, "time") } };
     });
   } else if (command.phase === "via-clock-arm") {

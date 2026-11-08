@@ -1,5 +1,6 @@
 /* oxlint-disable max-classes-per-file -- Actual index callbacks use distinct inert coordinator, runtime and diagnostic collaborators. */
 import assert from "node:assert/strict";
+import { installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
@@ -156,8 +157,10 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
   const registrationEnd = source.indexOf('registerFacadeTool(\n  "easyeda_control_project_open",', registrationStart);
   for (const [begin, end] of [[helperStart, helperEnd], [allocationStart, allocationEnd], [registrationStart, registrationEnd]] as const) {
     assert.ok(begin > 0 && end > begin && end - begin < 24_000);
+    installIndexFixtureDependencies(scope,source);
     vm.runInContext(source.slice(begin, end).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   }
+  installIndexFixtureDependencies(scope,source);
   vm.runInContext(startupDeclarations(source).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   assert.ok(invoke);
   return { invoke, scope, state, finish: (): void => { barrier.resolve(null); }, startup: (): Promise<unknown> =>

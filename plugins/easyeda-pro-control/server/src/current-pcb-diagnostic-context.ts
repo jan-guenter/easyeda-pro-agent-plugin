@@ -1,5 +1,7 @@
 /** Observed CDP identity only. Matching URLs or bytes never admit a CAD owner,
  * project worker, compiler, writable receiver or arbitrary JavaScript. */
+import {CURRENT_SCHEMATIC_RELEVANCE_STATUS_BUS_SOURCE as STATUS_BUS_SOURCE} from "./current-schematic-relevance-status-bus-source.ts";
+import type {CurrentSchematicRelevanceStatusBusVariant} from "./current-schematic-relevance-status-bus-source.ts";
 import { createHash } from "node:crypto";
 import { DIAGNOSTIC_SOURCE_BYTES, diagnosticExact, diagnosticRecord, diagnosticToken } from "./current-pcb-diagnostic-protocol.ts";
 import type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
@@ -381,6 +383,13 @@ export class CurrentPcbDiagnosticContext {
     const profile = GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE[variant]; const selected = this.#scriptFor(this.#frame, { family: "ui", relativePath: profile.relativePath, scriptBytes: profile.bytes, scriptSha256: profile.sha256 });
     if (selected.scriptId !== scriptId || selected.context["id"] !== original.contextId || selected.context["uniqueId"] !== original.uniqueContextId) { return this.#refuse(); }
     return Object.freeze({ ...ui, scriptId });
+  }
+  /** Fixed metadata-only selector for the original local status bus. No new realm or function is admitted by caller data. */
+  public schematicStatusBusContext(scriptId:string,variant:CurrentSchematicRelevanceStatusBusVariant):Readonly<{sessionId:string;scriptId:string;uniqueContextId:string}>{
+    const ui=this.#uiSourceContext(),original=this.#sourceIdentity;
+    if(!diagnosticToken(scriptId)||variant!==0&&variant!==1&&variant!==2||!this.#openingConsumed||this.#schematicNavigation===null||this.#schematicOpening!==null||this.#rootNavigation!==null||this.#priorRootNavigation!==null||this.#pcbOpening!==null||this.#opening!==null||this.#frame===null||original===null){return this.#refuse();}
+    const profile=STATUS_BUS_SOURCE[variant],selected=this.#scriptFor(this.#frame,{family:"ui",relativePath:profile.relativePath,scriptBytes:profile.bytes,scriptSha256:profile.sha256});
+    if(selected.scriptId!==scriptId||selected.context["id"]!==original.contextId||selected.context["uniqueId"]!==original.uniqueContextId){return this.#refuse();}return Object.freeze({...ui,scriptId});
   }
   /** This fixed metadata probe belongs to the original Start Page UI only.
    * Keep the complete UI/source/ancillary proof and exclude every opening

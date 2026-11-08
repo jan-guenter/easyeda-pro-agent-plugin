@@ -68,7 +68,7 @@ interface SpatialFixture {
   readonly request: (action: string, extra?: Record<string, unknown>) => Promise<Record<string, unknown>>;
   readonly state: { bound: boolean; terminated: boolean; released: boolean; nativeLoss: boolean; publicationLoss: boolean; wrongTarget: boolean; decodeFailure: unknown };
 }
-function fixture(context: TestContext, id: string): SpatialFixture {
+function fixture(context: TestContext, id: string, large = false): SpatialFixture {
   // Refuse an omitted preload before constructing a lifecycle or registering cleanup.
   directory(id);
   const calls: string[] = [];
@@ -122,8 +122,8 @@ function fixture(context: TestContext, id: string): SpatialFixture {
       assert.equal(intent.schema, "easyeda-pro-control.pcb209-spatial-line-via-observation-intent.v1");
       assert.deepEqual(intent.queries, input); calls.push("spatial-lines");
       return intent.queries.map(query => ({ schema: "easyeda-pro-control.pcb209-spatial-line-via-read.v1",
-        documentUuid: TARGET.documentUuid, query, identities: [{ primitiveId: "track", family: "Line" }],
-        sceneViaCount: 0, sceneLineCount: 1, selectedPrimitiveIds: [], samples: 2, nativeOrderingPreserved: true,
+        documentUuid: TARGET.documentUuid, query, identities: large ? Array.from({ length: 256 }, (_, index) => ({ primitiveId: `${String(index)}-${"a".repeat(128)}`, family: "Line" })) : [{ primitiveId: "track", family: "Line" }],
+        sceneViaCount: 0, sceneLineCount: large ? 256 : 1, selectedPrimitiveIds: [], samples: 2, nativeOrderingPreserved: true,
         retainedSceneDescriptorsUnchanged: true, selectionUnchanged: true,
         allowedExistingStateEffect: "D0.code;vMe.boxCache;Jdt-local-bbox-scratch;BLe.JJ", scope: "standalone-line-via-ready-bbox-scene-no-region-border-crossings",
         nativeFunctionGraphVerified: false, nativeIntrinsicsVerified: false, sourceMembershipVerified: false, persistenceVerified: false }));
@@ -135,8 +135,8 @@ function fixture(context: TestContext, id: string): SpatialFixture {
       assert.equal(intent.schema, "easyeda-pro-control.pcb209-spatial-arc-line-via-observation-intent.v1");
       assert.deepEqual(intent.queries, input); calls.push("spatial-arcs");
       return intent.queries.map(query => ({ schema: "easyeda-pro-control.pcb209-spatial-arc-line-via-read.v1",
-        documentUuid: TARGET.documentUuid, query, identities: [{ primitiveId: "arc", family: "Arc" }],
-        sceneViaCount: 0, sceneLineCount: 0, sceneArcCount: 1, selectedPrimitiveIds: [], samples: 2, nativeOrderingPreserved: true,
+        documentUuid: TARGET.documentUuid, query, identities: large ? Array.from({ length: 256 }, (_, index) => ({ primitiveId: `${String(index)}-${"a".repeat(128)}`, family: "Arc" })) : [{ primitiveId: "arc", family: "Arc" }],
+        sceneViaCount: 0, sceneLineCount: 0, sceneArcCount: large ? 256 : 1, selectedPrimitiveIds: [], samples: 2, nativeOrderingPreserved: true,
         retainedSceneDescriptorsUnchanged: true, selectionUnchanged: true,
         allowedExistingStateEffect: "D0.code;vMe.boxCache;Jdt-local-bbox-scratch;BLe.JJ", scope: "standalone-arc-line-via-ready-bbox-scene-no-region-border-crossings",
         nativeFunctionGraphVerified: false, nativeIntrinsicsVerified: false, sourceMembershipVerified: false, persistenceVerified: false }));
@@ -354,5 +354,21 @@ void test("a changed original spatial method or a wrong result target cannot pub
         await assert.rejects(value.request("observe-spatial", { queries: QUERIES, acceptNativeScratchEffects: true }), /OWNER_PURPOSE_CHANGED|SPATIAL_OBSERVATION_BINDING/u);
       } finally { if (mode === "method") { value.owner.observeSpatial209 = original; } }
     });
+  }
+});
+
+void test("large Line and Arc observations remain inspectable after their original publication", async context => {
+  for (const family of ["lines", "arcs"]) {
+    const id = `pcb209-spatial-test-large-${family}`, value = fixture(context, id, true);
+    await ready(value, id);
+    const queries = Array.from({ length: 6 }, () => ({ kind: "region", mode: "inside", leftMil: 0, rightMil: 10, bottomMil: 0, topMil: 10 }));
+    const observed = await value.request(`observe-spatial-${family}`, { queries, acceptNativeScratchEffects: true });
+    const summary = observed["result"]; assert.ok(summary !== null && typeof summary === "object");
+    assert.equal(Reflect.get(summary, "schema"), "easyeda-pro-control.pcb209-spatial-summary.v1");
+    assert.equal(Reflect.get(summary, "summaryOnly"), true);
+    const inspected = await value.lifecycle.run({ action: "inspect", operationId: id, observation: "spatial209" });
+    assert.ok(JSON.stringify(inspected).includes('"summaryOnly":true'));
+    assert.equal(value.calls.filter(call => call === `spatial-${family}`).length, 1);
+    value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
   }
 });

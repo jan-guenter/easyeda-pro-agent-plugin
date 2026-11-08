@@ -13,17 +13,20 @@ journal and every failure unchanged.
 1. Select and admit a verified new facade with no previous application-owner
    allocation. Source/reference queries are permitted. Do not stage a fixture,
    launch EasyEDA or reserve another native workflow in that facade first.
-2. Query offline `{action:"closed-reader-relinquishment",query:{includeSchemas:true}}`
-   through `easyeda_control_api`. Validate through
-   `{action:"closed-reader-relinquishment-validate",query:{request:...}}`.
+2. Query `easyeda_control_api` with the complete tool arguments
+   `{request:{action:"closed-reader-relinquishment",query:{includeSchemas:true}}}`.
+   Validate with
+   `{request:{action:"closed-reader-relinquishment-validate",query:{request:candidateRequest}}}`.
+   Here `candidateRequest` stands for the inner request being checked.
    `includeSchemas` belongs inside `query`. A top-level field is rejected before
    any historical qualification or native request.
-3. Send the validated request directly under `easyeda_control_pcb209_opening`.
-   Use `action:"relinquish-closed-reader"`, the original operation ID, the exact
-   reviewed roster digest, `confirmRelinquishClosedReader:true` and
+3. Send `easyeda_control_pcb209_opening` the complete tool arguments
+   `{request:validatedRequest}` using the validator's returned request.
+   The inner request uses `action:"relinquish-closed-reader"`, the original
+   operation ID, the exact reviewed roster digest, `confirmRelinquishClosedReader:true` and
    `acceptMissingHelperReleaseAcknowledgment:true`. The schema accepts no PID,
    path, caller observation, nonce, replacement target or release-success flag.
-4. The coordinator checks all21 original records by descriptor, exact raw-byte
+4. The coordinator checks all 21 original records by descriptor, exact raw-byte
    digest, complete roster and maintained chain validation. It verifies the
    retained complete raw project, SQL and raw-history artifacts. It then makes
    two native Windows absence samples and two independent Linux facade checks.

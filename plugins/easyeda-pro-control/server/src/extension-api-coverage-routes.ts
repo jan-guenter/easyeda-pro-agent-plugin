@@ -56,6 +56,21 @@ for (const [namespace, methods] of [["pcb_PrimitiveVia", ["create"]], ["pcb_Docu
   } });
 }
 
+// This original seven-record route has its own lifecycle. Its missing original
+// Action completion remains an explicit blocker before allocation.
+for (const [namespace, methods] of [["sch_PrimitiveText", ["modify"]], ["sch_Document", ["save"]]] as const) {
+  groups.push({ namespace, methods: [...methods], route: {
+    tool: "easyeda_control_current_schematic_relevance_display_write", selector: "execute;original-generated-explicit-Relevance-seven-record-display", implementation: "public-method",
+    executionState: "blocked", blockedReason: "Original Modify/Save/drain group completion is required; missing composition refuses before allocation. The separate original writer registration/Main continuation grants no action completion.", documentTypes: [1],
+    scope: "One original generated seven-record explicit-Relevance schematic, one bounded Text display patch and one Save. The same-facade released data token, original UI/worker/Main/producer receipts, full closed SQL/source comparison, original closure/helper release and a separate cold saved-reader generation are mandatory. Relevance ATTR and all peers remain exact; root zIndex normalization is an explicit bookkeeping effect. JSON, caller paths, SDK acknowledgements and historical owners cannot issue authority. General schematic edits, ordinary projects and inverse operations remain unavailable. Connected execution is unclaimed.",
+    source: ["current-schematic-relevance-display-write-validation.ts", "current-schematic-relevance-display-write-contract.ts", "current-schematic-relevance-display-write-coordinator.ts", "current-schematic-relevance-display-write-workflow.ts", "current-schematic-relevance-display-write-diagnostic.ts",
+      "current-schematic-relevance-display-write-observers.ts", "current-schematic-relevance-display-write-composition.ts", "current-schematic-relevance-display-registration.ts", "current-schematic-relevance-display-registration-native.ts", "generated-schematic-relevance-closed-lifecycle.ts", "current-schematic-relevance-saved-readback-workflow.ts", "current-schematic-relevance-display-write-abandonment.ts", "index.ts"],
+    tests: ["current-schematic-relevance-display-write-validation.test.ts", "current-schematic-relevance-display-write-workflow.test.ts", "current-schematic-relevance-display-write-coordinator.test.ts", "current-schematic-relevance-display-write-observers.test.ts", "current-schematic-relevance-saved-readback-workflow.test.ts"],
+    validation: "offline-regression;current-live-unclaimed",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "schematic209-relevance-display-write", query: { includeSchemas: true } } } },
+  } });
+}
+
 for (const method of ["getPrimitiveByPrimitiveId", "getPrimitivesByPrimitiveId"]) {
   groups.push({ namespace: "pcb_Primitive", methods: [method], route: {
     tool: "easyeda_control_pcb_geometry", selector: `eda.pcb_Primitive.${method}`, implementation: "native-task-equivalent",

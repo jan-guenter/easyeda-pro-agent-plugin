@@ -1,0 +1,12 @@
+/** Shared fixed byte encoder only. Each private stage retains its own table,
+ * purpose state, metadata cursor, original pause and exact message hash vectors. */
+export const CURRENT_SCHEMATIC_RELEVANCE_UI_FIXED_CODEC=String.raw`public static class EasyedaSchematicUiFixedCodec{
+static string Handle(object input,System.Action<bool> Need){string value=input as string;Need(value!=null&&System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z"));return value;}
+static string Json(string value){return "\""+value+"\"";}
+public static string Encode(int id,string session,string phase,string method,System.Collections.IDictionary fields,string[][] Rows,string[][] Programs,string marker,System.Action<bool> Need){Need(id>0&&fields!=null);Handle(session,Need);string[] row=null;foreach(string[] candidate in Rows)if(candidate[0]==phase){Need(row==null);row=candidate;}Need(row!=null&&row[1]==method);string[] names=row[2].Length==0?new string[0]:row[2].Split(',');Need(fields.Count==names.Length);var values=new System.Collections.Generic.Dictionary<string,string>(System.StringComparer.Ordinal);foreach(string name in names){Need(fields.Contains(name));values.Add(name,Json(Handle(fields[name],Need)));}foreach(string[] program in Programs)values.Add("program"+program[0],program[1]);string text=System.Text.RegularExpressions.Regex.Replace(row[3],"\"__schematic_"+marker+"_([A-Za-z0-9]+)__\"",match=>{string value;Need(values.TryGetValue(match.Groups[1].Value,out value));return value;});text="{\"id\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+","+text.Substring(1,text.Length-2)+",\"sessionId\":"+Json(session)+"}\0";Need(System.Text.Encoding.UTF8.GetByteCount(text)<=65536);return text;}
+}`;
+const begin="// BEGIN ORIGINAL SCHEMATIC SHARED UI CODEC",end="// END ORIGINAL SCHEMATIC SHARED UI CODEC";
+export function applyCurrentSchematicRelevanceUiFixedCodec(input:string):string{const block=`${begin}
+${CURRENT_SCHEMATIC_RELEVANCE_UI_FIXED_CODEC}
+${end}`;const from=input.indexOf(begin),to=input.indexOf(end);if(from!==-1||to!==-1){if(from===-1||to<from||input.includes(begin,from+begin.length)||input.includes(end,to+end.length)){throw new Error("SCH_SHARED_UI_CODEC_MARKERS");}return input.slice(0,from)+block+input.slice(to+end.length);}const anchor="// BEGIN ORIGINAL SCHEMATIC UPLOAD ENTRY";if(input.split(anchor).length!==2){throw new Error("SCH_SHARED_UI_CODEC_ANCHOR");}return input.replace(anchor,`${block}
+${anchor}`);}
