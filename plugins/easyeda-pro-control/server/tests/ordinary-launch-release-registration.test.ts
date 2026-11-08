@@ -18,6 +18,7 @@ const release = { action: "release-closed", operationId: launch.operationId, exp
 
 /** Select the actual startup dispatcher and its original retained state by
  * AST shape, with separate finite bounds for the dispatcher and retained state. */
+/** Extract the actual startup declarations used by registration tests, refusing a missing or ambiguous source boundary. */
 function startupDeclarations(source: string): string {
   const blocks = parse(source, { ecmaVersion: "latest", sourceType: "module" }).body.flatMap(statement =>
     statement.type === "IfStatement" && statement.consequent.type === "BlockStatement" && statement.consequent.body.some(node =>
@@ -53,6 +54,7 @@ function startupDeclarations(source: string): string {
 
 /** Join the real ordinary allocation guard, launch registration and startup
  * dispatcher with inert peers whose helper release can remain pending or fail. */
+/** Register the actual launch and release handlers in an inert VM with explicit dependency controls and retained cleanup. */
 async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unknown>; scope: vm.Context; finish: () => void;
   state: { releaseCalls: number; released: boolean; failRelease: boolean; runtimeCount: number; diagnosticAllocations: number } }> {
   const barrier = Promise.withResolvers<null>();

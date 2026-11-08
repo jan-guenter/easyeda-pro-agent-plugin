@@ -9,7 +9,8 @@ now have the corresponding explicit source-provenance correction.
 
 For each row, `git log --follow --diff-filter=A` identifies the introducing
 commit. `git show` verifies its tree, author timestamp and changed source/test
-files. These are verifiable Git provenance. They do not identify the complete
+files. These are locally verifiable Git provenance in the retained private
+repository. They do not identify the complete
 worktree used for the earlier checks. The test-time worktrees were not sealed
 in the evidence retained for this correction and cannot be reconstructed from
 it. The dates in the table are Git author timestamps, not recovered test-run
@@ -151,3 +152,17 @@ MCP-contract checks use an isolated offline validation child and do not contact
 the closed host connection, EasyEDA or native owners. No runtime source,
 regenerated helper/bundle, installed artifact, new review, broad suite or
 connected validation is part of this correction.
+
+## 2026-11-08 public availability correction
+
+The introducing objects in this table, including `dd5db47b` and `201cea5b`,
+are retained local implementation ancestors. They are not publicly available
+GitHub commit or API references. The earlier phrase "verifiable Git provenance"
+meant verification against those local objects and should not imply public
+availability. Do not push private ancestors to make those links resolve.
+
+The table itself is publicly inspectable in the
+[PR192 review snapshot](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/0472924415a801f995314549259942e6dfeb102f/docs/history/2026-11-08-pr190-history-attribution.md).
+That published review tree preserves the report; it does not establish the
+historical tested worktree or turn its private introduction objects into
+public commits. The existing unsealed-test-worktree limit still applies.

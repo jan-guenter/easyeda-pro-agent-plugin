@@ -1,6 +1,17 @@
 # Project history
 
+- [2026-11-08 PR192 provenance and review limits](2026-11-08-pr192-provenance-and-review-limits.md). All five inline issues and two nits corrected, specific test-helper docstrings, and explicit CodeRabbit coverage exclusions.
+
+- [2026-11-08 Main import capture diagnostics](2026-11-08-main-import-capture-diagnostics.md). Via d failed before opening and cleaned up automatically; static failure labels and one passive operand check retain the fixed restrictions.
+
 - [2026-11-08 Combined UI lint correction](2026-11-08-combined-ui-lint-correction.md). Retained full-lint failure, corrected premature success report, explicit notify proof and separately observed focused check exits.
+- [2026-11-08 Original DEL manager runtime seal](2026-11-08-inverse-del-manager-runtime-seal.md). Plugin-only immutable test payload, actual owner/native/pipe preparation, retained async-return limits, and explicit correction of the failed strict-lint result.
+
+- [2026-11-08 Original inverse delete collateral preparation](2026-11-08-inverse-delete-collateral-preparation.md). Actual same-project source/row join and complete absent-tab census before DEL continuation; original execution and dropped-Promise receipts remain required.
+- [2026-11-08 DEL descriptor guards within one invocation](2026-11-08-inverse-del-invocation-guards.md). Fresh per-call traversal preserves every snapshot and rejects cycles without carrying checks across awaits.
+
+- [2026-11-08 Fresh DEL manager preparation](2026-11-08-inverse-del-manager-preparation.md). Readonly original queue, callback, singleton and selected method custody; no dispatch or worker Job grant.
+
 - [2026-11-08 Original schematic menu and toolbar command bodies](2026-11-08-schematic-menu-toolbar-command-bodies.md)
 
 - [2026-11-08 Batched native diagnostic build and Via cleanup](2026-11-08-batched-native-diagnostic-and-via-cleanup.md). Exact private payload checks, fresh preopening failure, automatic original cleanup and normal manager handoff without a Codex restart.
@@ -1043,3 +1054,4 @@ layout. The connected ledger retains its generation and case anchors.
 
 - [Closed inverse Component runtime](2026-11-08-inverse-component-runtime-projection.md), exact build-only closure of the unreachable Component family, preserved shared declarations, and measured compiler capacity under unchanged bounds.
 - [Remaining schematic command-store comparisons](2026-11-08-schematic-command-store-deltas.md), fixed undo/redo value and ticket deltas with original store mapping, full descriptors and ordered Maps, plus exact status queue states.
+

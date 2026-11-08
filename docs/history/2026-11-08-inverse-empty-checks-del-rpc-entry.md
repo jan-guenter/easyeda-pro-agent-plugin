@@ -4,7 +4,9 @@ This source-only increment connects the genuine four-query completion to the
 three original empty `l` calls, original `yw.c`, footprint `forEach`, `Ze` and
 `F2` calls. The original DEL RPC is held before its first body statement.
 `advanceFootprintInversePublicDelete()` returns a distinct private entry packet;
-its getter checks the same owner, checkpoint, original call and live held event.
+its getter calls `assertCurrent()` for the same owner, checkpoint and original
+call. The binding exposes the separate `assertOriginalHeld()` check for the
+original live held event.
 No manager-to-worker delete Job is issued by this increment.
 
 The native ledger consumes the completed reference hold before its first resume,
@@ -58,3 +60,23 @@ closed fourth-generation absence/full-peer/readback lifecycle. The UI's
 optimistic success object and dropped async method promises prove none of those
 boundaries. The DEL RPC body remains held until its prospective collateral
 proofs are present.
+
+## 2026-11-08 provenance correction
+
+This record entered the local implementation history in `9f496551989439ca27805074b340d49a8b77b3fa`,
+Git tree `370a58ca68b7286e915f559bc9d4363885845fcc`, with Git author timestamp
+`2026-11-08T08:24:27+01:00`. Those objects are retained in the local private
+repository. They are source-introduction provenance, not a recovered timestamp
+or sealed identity for the earlier tested worktree. That worktree and its
+uncommitted changes were not completely sealed in the retained evidence and
+cannot be reconstructed for attribution. The stated checks and measurements
+remain historical observations with that limit. Any compiler SHA256 above
+identifies only its emitted C# input; it does not identify the complete
+TypeScript, test or generator tree. No earlier test was rerun or attributed to
+a later commit for this correction. Private implementation ancestors are not
+published to fill this gap.
+
+The earlier getter summary incorrectly claimed it also checked the live held
+event. The getter actually calls `assertCurrent()` only. This correction
+distinguishes that call from the separately exposed `assertOriginalHeld()`;
+it adds no execution grant or runtime behavior change.
