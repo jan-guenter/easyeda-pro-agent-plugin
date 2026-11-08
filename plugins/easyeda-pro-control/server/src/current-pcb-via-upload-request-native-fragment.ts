@@ -1,3 +1,4 @@
+import { applyNativeFixedProtocolProjection } from "./native-fixed-protocol-projection.ts";
 /** Original first buffered upload on the same Via worker; response/drain remain separate. */
 import { createHash } from "node:crypto";
 import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
@@ -48,3 +49,7 @@ export function applyCurrentPcbViaUploadRequestNativeFragment(input:string):stri
   if(start!==-1||stop!==-1){if(start===-1||stop<start||source.includes(begin,start+1)||source.includes(end,stop+1)) { throw new Error("VIA_UPLOAD_MARKERS"); }return source.slice(0,start)+value+source.slice(stop+end.length);}
   const anchor="internal enum EasyedaPcbViaWriteBirth { Original }";if(source.split(anchor).length!==2) { throw new Error("VIA_UPLOAD_BODY_ANCHOR"); }return source.replace(anchor,`${value}\n${anchor}`);
 }
+
+/** Retain the exact shared immutable codecs, without this Via owner's state,
+ * sender, action admission or dispatch. The closed schematic build uses it. */
+export function applyCurrentPcbViaUploadRequestCodecNativeFragment(input:string):string{return applyNativeFixedProtocolProjection(input,{begin,end,protocols:["EasyedaPcbViaUploadRequestProtocol"],quoteMethod:"UploadRequestQuote"},native());}

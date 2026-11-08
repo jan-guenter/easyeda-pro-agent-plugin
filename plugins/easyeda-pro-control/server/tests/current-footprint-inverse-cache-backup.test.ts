@@ -11,7 +11,8 @@ import { canonicalJson } from "../src/core.ts";
 import { completeSyntheticSavedCacheFixture } from "./helpers/current-pcb-via-saved-cache-fixture.ts";
 
 function verified(value: unknown): Promise<unknown> { assert.ok(value instanceof Promise); return value; }
-async function fixture(): Promise<Readonly<{ call: (name: string, args: readonly unknown[]) => unknown; build: () => unknown; drift: () => void }>> {
+async function fixture(failAfterPublication = false): Promise<Readonly<{ call: (name: string, args: readonly unknown[]) => unknown; build: () => unknown; drift: () => void; publicationCount: () => number }>> {
+  const artifacts = await import("../src/artifacts.ts"); let publicationCount = 0;
   const f = completeSyntheticSavedCacheFixture(true); const cdp = f.ledger.snapshot(), metadata = f.metadata.snapshot();
   const target = z.object({ rawWindowsPath: z.string(), projectUuid: z.string(), branchUuid: z.string(), sourceSha256: z.string() }).parse(f.prepared["target"]);
   const origin = Object.freeze({ inertInverseOrigin: true }), owner = Object.freeze({ inertInverseOwner: true }), prepared = Object.freeze({ inertForwardSavedData: true });
@@ -24,12 +25,21 @@ async function fixture(): Promise<Readonly<{ call: (name: string, args: readonly
   const url = new URL("../src/current-footprint-inverse-cache-backup.ts", import.meta.url); const sourceRequire = createRequire(url);
   const compiled = await transform(await readFile(url, "utf8"), { loader: "ts", format: "cjs", target: "node24" });
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${compiled.code}\n})`), loaded: { exports: Record<string, unknown> } = { exports: {} }; assert.ok(typeof evaluate === "function");
-  Reflect.apply(evaluate, undefined, [(name: string): unknown => name === "./current-footprint-inverse-native-owner.ts" ? {
+  Reflect.apply(evaluate, undefined, [(name: string): unknown => {
+    if (name === "./current-footprint-inverse-native-owner.ts") { return {
     originalCurrentFootprintInverseNativeSource: (actual: unknown): object => { assert.equal(actual, owner); assert.equal(changed, false); return source; },
     requireOriginalCurrentFootprintInverseCacheOrigin: (actual: unknown, actor: unknown, token: unknown): object => { assert.equal(actual, origin); assert.equal(actor, owner); assert.equal(token, prepared); return bindings; },
-  } : sourceRequire(name) as unknown, loaded, loaded.exports]);
+  }; }
+    if (name === "./artifacts.ts") { return { ...artifacts,
+    publishManagedAttachmentExclusive: async (...args: Parameters<typeof artifacts.publishManagedAttachmentExclusive>): ReturnType<typeof artifacts.publishManagedAttachmentExclusive> => {
+      publicationCount += 1; const artifact = await artifacts.publishManagedAttachmentExclusive(...args);
+      if (failAfterPublication) { throw new Error("original publication acknowledgment lost"); } return artifact;
+    },
+  }; }
+    return sourceRequire(name) as unknown;
+  }, loaded, loaded.exports]);
   const call = (name: string, args: readonly unknown[]): unknown => { const fn = loaded.exports[name]; assert.ok(typeof fn === "function"); return Reflect.apply(fn, undefined, args); };
-  return { call, build: (): unknown => call("buildCurrentFootprintInverseCacheBackupData", [owner, prepared, origin, cdp, metadata]), drift: (): void => { changed = true; } };
+  return { call, build: (): unknown => call("buildCurrentFootprintInverseCacheBackupData", [owner, prepared, origin, cdp, metadata]), drift: (): void => { changed = true; }, publicationCount: (): number => publicationCount };
 }
 void test("inverse complete cache data publishes its own exact artifact once and admits no copied receipt", async () => {
   const f = await fixture(); const data = f.build();
@@ -44,4 +54,14 @@ void test("inverse complete cache data publishes its own exact artifact once and
 });
 void test("inverse original source drift refuses publication before it can issue a receipt", async () => {
   const f = await fixture(); const data = f.build(); f.drift(); assert.throws(() => f.call("publishCurrentFootprintInverseCacheBackupData", [data]));
+});
+
+void test("a failed original publication cannot create another backup after a lost acknowledgment", async () => {
+  const f = await fixture(true); const data = f.build();
+  const original = verified(f.call("publishCurrentFootprintInverseCacheBackupData", [data]));
+  await assert.rejects(original, /original publication acknowledgment lost/u);
+  assert.equal(f.publicationCount(), 1);
+  const repeated = f.call("publishCurrentFootprintInverseCacheBackupData", [data]);
+  assert.equal(repeated, original); await assert.rejects(verified(repeated), /original publication acknowledgment lost/u);
+  assert.equal(f.publicationCount(), 1);
 });

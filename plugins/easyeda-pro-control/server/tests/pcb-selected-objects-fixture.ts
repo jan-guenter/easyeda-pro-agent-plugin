@@ -52,9 +52,9 @@ export function sourceString(objects: NativeSourceObject[]): string {
   const value = snapshot(objects); return [`{"type":"DOCHEAD"}||${JSON.stringify(value.document)}`,
     ...value.objects.map((row) => `${JSON.stringify({ type: row.type, id: row.id })}||${JSON.stringify(row.body)}`)].join("|\n");
 }
-export function fingerprint(): Value {
-  const manifest = loadReviewedCompatibilityManifest(); const facade = manifest.facadeImplementation["source-tree"], pinned = manifest.connectedRuntime;
-  return { facadeImplementation: { ...facade, mode: "source-tree", files: facade.files.map((file) => ({ path: `/opt/control/${file.relativePath}`, relativePath: file.relativePath, bytes: file.bytes, sha256: file.sha256 })) },
+export function fingerprint(mode: "bundle" | "source-tree" = "source-tree"): Value {
+  const manifest = loadReviewedCompatibilityManifest(); const facade = manifest.facadeImplementation[mode], pinned = manifest.connectedRuntime;
+  return { facadeImplementation: { ...facade, mode, files: facade.files.map((file) => ({ path: `/opt/control/${file.relativePath}`, relativePath: file.relativePath, bytes: file.bytes, sha256: file.sha256 })) },
     upstreamServer: { version: manifest.upstream.serverVersion }, upstreamLauncher: manifest.upstream.launcher, upstreamImplementationDrift: false,
     reviewedCompatibilityManifest: reviewedCompatibilityManifestFingerprint(), toolCount: manifest.upstream.toolCatalog.count, toolCatalogSha256: manifest.upstream.toolCatalog.sha256,
     health: { payload: { version: pinned.healthVersion, node_version: pinned.nodeVersion, bridge_connected: true, easyeda_version: pinned.easyedaVersion,

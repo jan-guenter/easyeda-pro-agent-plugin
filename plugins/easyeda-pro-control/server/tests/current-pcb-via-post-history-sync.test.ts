@@ -1,6 +1,6 @@
 /* oxlint-disable import/max-dependencies -- The inert source cursor regression joins its finite codebook and exact source/data leaves. */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { CURRENT209_SYNTHETIC_WORKER_SOURCE, assertCurrent209PinnedSourceRows } from "./helpers/current209-source-excerpts.ts";
 import { test } from "node:test";
 import { types } from "node:util";
 import vm from "node:vm";
@@ -77,6 +77,6 @@ void test("unknown original resume ACK consumes the cursor and finite replay sel
   const cases=currentPcbViaPostHistorySyncNativeCases();for(const command of cases){if(command.phase==="via-post-sync-call"){assert.throws(()=>validateCurrentPcbViaPostHistorySyncCommand({...command,params:{...command.params,functionDeclaration:"function(){return true}"}}));}if(command.phase==="via-post-sync-replay"){assert.throws(()=>validateCurrentPcbViaPostHistorySyncCommand({...command,params:{objectId:"caller_handle"}}));}}
 });
 const point=(columnNumber:number):Readonly<{scriptId:string;lineNumber:number;columnNumber:number}>=>({scriptId:"original_script",lineNumber:110,columnNumber});
-void test("source qualification and exact upload-finally caller refuse the startup/periodic caller",async()=>{
-  qualifyCurrentPcbViaPostHistorySyncSource(await readFile("/mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-mgr/3.2.185.bf63a159/js/project-worker.js","utf8"));const top={callFrameId:"sync",functionName:"syncCloud",location:point(17_676),functionLocation:point(17_658)};const caller={callFrameId:"cloud",functionName:"uploadCloud",location:point(CALLER.columnNumber),functionLocation:point(CALLER.functionColumnNumber)};const event={method:"Debugger.paused",sessionId:"worker",params:{callFrames:[top,caller]}};assert.equal(currentPcbViaPostHistorySyncFrames(event,"syncEntry","original_script").callerFrameId,"cloud");assert.throws(()=>currentPcbViaPostHistorySyncFrames({...event,params:{callFrames:[top,{...caller,functionName:"checkProject"}]}},"syncEntry","original_script"));
+void test("source qualification and exact upload-finally caller refuse the startup/periodic caller",()=>{
+  assertCurrent209PinnedSourceRows(CALLEES);assert.throws(()=>{qualifyCurrentPcbViaPostHistorySyncSource(CURRENT209_SYNTHETIC_WORKER_SOURCE);});const top={callFrameId:"sync",functionName:"syncCloud",location:point(17_676),functionLocation:point(17_658)};const caller={callFrameId:"cloud",functionName:"uploadCloud",location:point(CALLER.columnNumber),functionLocation:point(CALLER.functionColumnNumber)};const event={method:"Debugger.paused",sessionId:"worker",params:{callFrames:[top,caller]}};assert.equal(currentPcbViaPostHistorySyncFrames(event,"syncEntry","original_script").callerFrameId,"cloud");assert.throws(()=>currentPcbViaPostHistorySyncFrames({...event,params:{callFrames:[top,{...caller,functionName:"checkProject"}]}},"syncEntry","original_script"));
 });

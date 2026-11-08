@@ -45,3 +45,15 @@ compiler bound. No application helper or EasyEDA process was launched or edited.
 The record body remains held until its active-history, normal-completion and
 publication frontiers have their own original continuations. This partial
 receipt is not a full native effect, SDK success, SQL completion or persistence.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `c3052f26bf8959896bea1050b460cdef4d182c83`; its
+committed tree is `6de98a710d4e32f14b180f9f27fa5277f9b0b5a7`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

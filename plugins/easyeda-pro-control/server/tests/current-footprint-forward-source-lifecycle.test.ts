@@ -60,7 +60,7 @@ async function fixtureModule(lifecycle: Row): Promise<Module> {
   const complete = await readFile(path, "utf8");
   const offset = complete.indexOf("\nvoid test("); assert.ok(offset > 10_000 && offset < 40_000); let source = complete.slice(0, offset);
   const substitutions = [
-    ["diagnostic-test|pcb209-test|string-precreate-test|worker-startup-test", "diagnostic-test|pcb209-test|footprint-copy-qualify-test|string-precreate-test|worker-startup-test"],
+    ["diagnostic-test|pcb209-test|pcb209-ordinary-test|string-precreate-test|worker-startup-test", "diagnostic-test|pcb209-test|footprint-copy-qualify-test|string-precreate-test|worker-startup-test"],
     ['const startupPurpose = id.startsWith("worker-startup-");', 'const startupPurpose = id.startsWith("worker-startup-") || id.startsWith("footprint-copy-qualify-");'],
     ['profile: ownerPurpose, stringPrecreateConsumed:', 'profile: startupPurpose ? "worker-startup-footprint-forward209" : ownerPurpose, stringPrecreateConsumed:'],
     ['return Promise.resolve({ sourceVerified: true, family: profile.family, executionAuthorized: false });', 'return Promise.resolve({ sourceVerified: true, family: profile.family, sourceSha256: profile.scriptSha256, sourceBytes: profile.scriptBytes, relativePath: profile.relativePath, executionAuthorized: false });'],

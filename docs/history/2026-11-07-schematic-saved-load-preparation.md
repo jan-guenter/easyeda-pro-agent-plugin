@@ -38,3 +38,15 @@ every constituent again for a later separately admitted reader. Matching JSON
 cannot issue the packet or bypass the drain token. The focused entry-guard
 check, strict changed-file lint and TypeScript checks passed. Positive original
 writer completion and native reopening remain pending.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `5200b7f7519f77b113bb47704a9d5eec732accaa`; its
+committed tree is `de5edfc86bb1fdf477837723eb85635f11ca9715`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

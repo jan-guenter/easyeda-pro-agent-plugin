@@ -5,8 +5,8 @@ It generates new data, then uses the existing original environment, exclusive
 destination, authenticated one-shot import, partial-state journal and normal
 cleanup owner. There are no caller paths, geometry, assets, account IDs or
 library choices. Native importability and a positive Component reader case
-remain unverified; this commit does not enable the prospective408-request
-spatial birth or enlarge an existing384-request purpose.
+remain unverified; this commit does not enable the prospective 408-request
+spatial birth or enlarge an existing 384-request purpose.
 
 The archive has exactly `project2.json` and one combined native source member.
 Two complete documents are explicit. FOOTPRINT has META, one circular SMT PAD
@@ -20,14 +20,14 @@ The current ATTR codec's `groupID` spelling is retained; its decoder reads
 `groupId`, and absent/zero both select no group in this fixed input.
 
 A field-roster-only intermediate check did not establish ATTR eligibility.
-The exact inherited `Q8.getAlign` source exposed that raw numeric3 is invalid:
-it maps the raw string `LEFT_BOTTOM` to internal3, opposite to the serializer.
+The exact inherited `Q8.getAlign` source exposed that raw numeric 3 is invalid:
+it maps the raw string `LEFT_BOTTOM` to internal 3, opposite to the serializer.
 The fixed generator uses that string. The maintained checker now executes the
 actual inherited mapper, enum and ATTR feed/check; a matching archive and SQL
-payload with numeric3 is explicitly refused. This correction preceded any
+payload with numeric 3 is explicitly refused. This correction preceded any
 native attempt; no earlier native eligibility was claimed.
 
-The source profile pins both full PCB/manager files and30 codec, decoder,
+The source profile pins both full PCB/manager files and 30 codec, decoder,
 footprint-cache and import methods. A maintained offline checker runs actual
 codec, Component field/reference and explicit-attribute cache syntax against
 inert data. It does not construct an actual native model/cache. The existing
@@ -65,11 +65,11 @@ file lease/clocks, complete Linux descriptor/rehash/SQL/history capture and
 original root/empty-Job reproof. All existing report shapes are preserved.
 Cache/index, registration, imported-fixture and design acceptance stay false.
 The native destination adds only this fixed basename to its exact whitelist;
-command shapes, complete rosters, watcher/handle checks and the16-command
-ceiling remain unchanged. Capture plus reproof and release still needs8 IDs.
-The helper is25714 bytes, SHA256
+command shapes, complete rosters, watcher/handle checks and the 16-command
+ceiling remain unchanged. Capture plus reproof and release still needs 8 IDs.
+The helper is 25714 bytes, SHA256
 `8f759421b352548a81d5de373ee4222d0158c5e6c2b24b5d945dae9808324550`.
-Extracted C# compiles on Linux with zero warnings/errors; actual Windows5.1
+Extracted C# compiles on Linux with zero warnings/errors; actual Windows 5.1
 `-CompileOnly` and all constructor/lease/import proof remain separate.
 
 The registered import schema now accepts the new kind. After complete original
@@ -83,7 +83,7 @@ Component slot and consume it only into the new Component native factory.
 Older reader slots and historical closed-data loaders remain unchanged.
 The fresh Component owner/point implementation and that mount follow separately.
 
-Thirty focused archive, actual synthetic35-table SQL, original one-shot
+Thirty focused archive, actual synthetic 35-table SQL, original one-shot
 coordinator, destination transport/metadata and unchanged Pad/closed-capture
 cases pass. They include altered Component angle/footprint link/raw alignment, unticked
 header, unknown auxiliary SQL row, copy/old-brand/reuse refusal and no native

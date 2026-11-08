@@ -41,3 +41,17 @@ void test("Pad and Relevance paths require the distinct original lease schema an
     const refusedRelease = await wrong.release(); assert.equal(refusedRelease.fileLeaseHeldUntilRelease, false);
   }
 });
+
+void test("malformed helper JSON permanently poisons inspections and cannot produce a clean release proof", async () => {
+  const original = owner("malformed-inspect"); await original.initialize();
+  await assert.rejects(original.inspect(), /malformed JSON/u);
+  await assert.rejects(original.inspect(), /malformed JSON/u);
+  const released = await original.release(); assert.equal(released.originalTransportClosed, true);
+  assert.equal(released.fileLeaseHeldUntilRelease, false); assert.equal(released.finalObservation, null);
+  assert.equal(original.isOriginalTransportClosed(), true); await assert.rejects(original.release());
+});
+void test("a valid release followed by unsolicited malformed output cannot grant clean lease release", async () => {
+  const original = owner("malformed-after-release"); await original.initialize();
+  const released = await original.release(); assert.equal(released.originalTransportClosed, true);
+  assert.equal(released.fileLeaseHeldUntilRelease, false); assert.equal(original.isOriginalTransportClosed(), true);
+});

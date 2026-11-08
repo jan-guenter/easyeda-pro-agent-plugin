@@ -61,7 +61,8 @@ export class CurrentFootprintInverseInitialCacheCursor {
   async #settle(): Promise<void> {
     need(this.#jobs.every(job => job.stage === 6 && job.promise !== null) && this.#settlementPasses < 2); this.#settlementPasses += 1; let fulfilled = true;
     for (const job of this.#jobs) { need(job.promise !== null); const state = decodeCurrentProjectSaveProducerCachePromise(await this.#send({ phase: "inverse-initial-cache-settled", slot: job.slot, method: "Runtime.getProperties", params: { objectId: job.promise, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } })); fulfilled &&= state === "fulfilled"; }
-    if (fulfilled) { await this.#current(); await this.#bindings.complete(); await this.#current(); this.#complete = true; }
+    if (fulfilled) { await this.#current(); await this.#bindings.complete(); await this.#current(); this.#complete = true; return; }
+    need(this.#settlementPasses < 2);
   }
   public async settle(): Promise<void> { need(!this.#busy && !this.#failed && !this.#complete); this.#busy = true; try { await this.#settle(); } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; } }
   public originalHeadEntry(): string { need(!this.#failed); const head = this.#jobs.find(job => job.kind === "head"); need(head !== undefined && head.stage >= 2 && head.entry !== null); return head.entry; }

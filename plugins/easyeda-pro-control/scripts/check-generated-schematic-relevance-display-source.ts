@@ -10,13 +10,17 @@ import { GENERATED_SCHEMATIC_RELEVANCE_DISPLAY_SOURCE, prepareGeneratedSchematic
 import { MANAGED_SCHEMATIC_RELEVANCE_ATTRIBUTE } from "../server/src/managed-schematic-relevance-fixture-generator.ts";
 
 async function main(): Promise<void> {
-const assets = process.argv[2] ?? "/mnt/c/Program Files/easyeda-pro/resources/app/assets";
+const assets = process.argv[2] ?? process.env["EASYEDA_ASSETS_ROOT"];
+if (assets === undefined || assets === "") { throw new Error("EASYEDA_ASSETS_ROOT_REQUIRED"); }
 for (const profile of GENERATED_SCHEMATIC_RELEVANCE_DISPLAY_SOURCE.files) {
-  const bytes = await readFile(join(assets, profile.relativePath)); assert.equal(bytes.length, profile.bytes); assert.equal(createHash("sha256").update(bytes).digest("hex"), profile.sha256);
-  const source = bytes.toString("utf8"); const methods: Record<string, string> = {};
+  const bytes: Buffer = await readFile(join(assets, profile.relativePath)); assert.equal(bytes.length, profile.bytes); assert.equal(createHash("sha256").update(bytes).digest("hex"), profile.sha256);
+  const source: string = bytes.toString("utf8"); const methods: Record<string, string> = {};
   for (const [role, span] of Object.entries(profile.methods)) { const text = source.slice(span.start, span.end); assert.equal(createHash("sha256").update(text).digest("hex"), span.sha256); methods[role] = text; }
   const fixture = { ...MANAGED_SCHEMATIC_RELEVANCE_ATTRIBUTE, parentId: `0${"1".repeat(15)}` };
-  const result: unknown = runInNewContext(`const input=${JSON.stringify(fixture)},Di=()=>false,Ni=()=>false;
+  // The stored child index is not its global normalized native model index.
+  // Test the serializer with the exact native projection required by this profile.
+  const nativeFixture = projectGeneratedSchematicRelevanceNativeAttributeBody(fixture, fixture.parentId);
+  const result: unknown = runInNewContext(`const input=${JSON.stringify(nativeFixture)},Di=()=>false,Ni=()=>false;
 const methods={${methods["attr"]},${methods["attrValue"]},${methods["blockValue"]},${methods["common"]}};
 const receiver={_x:input.x,_y:input.y,_rotation:input.rotation,_color:input.color,_fontFamily:input.fontFamily,_fontSize:input.fontSize,_fontWeight:input.fontWeight,_italic:input.italic,_underline:input.underline,_strikeout:input.strikeout,_blockValue:input.value,_blockKeyVisible:input.keyVisible,_blockValueVisible:input.valueVisible,key:input.key,zIndex:input.zIndex,locked:input.locked,parent:{id:input.parentId},_parent:{id:input.parentId},shapeManager:{isSymbolShapeManager:()=>false},docManager:{isSchSheetDoc:()=>true},getAlignConsistencyValue:()=>input.align,getUploadValue:methods.getUploadValue,setCommonPropsForConsistencyManager:methods.setCommonPropsForConsistencyManager};
 Object.defineProperty(receiver,"blockValue",Object.getOwnPropertyDescriptor(methods,"blockValue"));JSON.parse(JSON.stringify(methods.getConsistencyData.call(receiver)));`, {}, { timeout: 1000 });

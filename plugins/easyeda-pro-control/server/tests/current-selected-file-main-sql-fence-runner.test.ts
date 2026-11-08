@@ -36,6 +36,12 @@ function historyPeerFrame(kind: CurrentPcbViaMainHistoryFrameRole): Data {
   return { callFrameId: `history-frame-${kind}`, functionName: site.name, location: { scriptId: "app", lineNumber: site.lineNumber, columnNumber }, functionLocation: { scriptId: "app", lineNumber: site.lineNumber, columnNumber: site.functionColumn } };
 }
 function property(name: string, value: Data, writable = false, enumerable = false, configurable = true): Data { return { name, value, writable, enumerable, configurable, isOwn: true }; }
+/** Synthetic response for the additional passive import-array check. The
+ * runner still executes its real decoder and fixed capture schedule. */
+function importsArray(): Data {
+  return { result: [...["keeper", "context", "sqlite", "util"].map((name, index) => property(String(index), { type: index < 2 ? "function" : "object", className: index < 2 ? "Function" : "Object", objectId: `import-${name}` }, true, true)),
+    property("length", { type: "number", value: 4 }, true, false, false)], internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", objectId: "array" } }] };
+}
 function nativeArray(): Data {
   return { result: [...["Database", "Statement", "", "Date", "now"].map((name, index) => property(String(index), { type: "function", className: "Function", description: `function ${name}() { [native code] }`, objectId: `native${String(index)}` }, true, true)),
     property("length", { type: "number", value: 5 }, true, false, false)], internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", objectId: "array" } }] };
@@ -90,13 +96,16 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | null = nul
       if (command.phase === "sql-fence-frame") { const counts = { afterImports: 4, startupVersion: 13, startupJB: 12, startupDC: 11, prepare: 6, prepared: 7 }; const actual: unknown = Object.getOwnPropertyDescriptor(counts, command.site)?.value; count = typeof actual === "number" ? actual : 5; }
       else if (command.phase === "sql-fence-capture") { count = 11; }
       result = { result: { type: "object", subtype: "array", className: "Array", description: `Array(${String(count)})`, objectId: command.phase } };
-    } else if (command.phase === "sql-fence-properties") { result = command.params.objectId === "sql-fence-native-frame" ? nativeArray() : nativeMetadata(command.params.objectId); }
+    } else if (command.phase === "sql-fence-properties") {
+      if (command.params.objectId === "sql-fence-frame") { result = importsArray(); }
+      else { result = command.params.objectId === "sql-fence-native-frame" ? nativeArray() : nativeMetadata(command.params.objectId); }
+    }
     else if (command.phase === "sql-fence-require") { result = { result: { type: "boolean", value: true } }; }
     else if (command.phase === "sql-fence-startup-version") { result = { result: { type: "object", subtype: "array", className: "Array", description: "Array(6)", objectId: "original-startup-tracker" } }; }
     else if (command.phase === "sql-fence-startup-jb" || command.phase === "sql-fence-startup-dc") { result = { result: { type: "boolean", value: true } }; }
     else if (command.phase === "sql-fence-startup-select") { result = { result: { type: "object", value: startup[startupIndex]?.value ?? { recognized: false } } }; }
     if (command.phase.startsWith("sql-fence-request-") || command.phase === "sql-fence-driver-frame" || command.phase === "sql-fence-fetch-source" ||
-      command.phase === "sql-fence-properties" && "objectId" in command.params && !["sql-fence-native-frame", "native0", "native1", "native2", "native3", "native4"].includes(command.params.objectId)) { result = selectedRequestPeer(command, currentRequest); }
+      command.phase === "sql-fence-properties" && "objectId" in command.params && !["sql-fence-frame", "sql-fence-native-frame", "native0", "native1", "native2", "native3", "native4"].includes(command.params.objectId)) { result = selectedRequestPeer(command, currentRequest); }
     queue.push({ id, result }); return Promise.resolve();
   };
   const transport: CurrentFootprintCopyMainBackendTransport = Object.freeze({

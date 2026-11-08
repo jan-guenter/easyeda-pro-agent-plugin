@@ -207,4 +207,11 @@ export class ClosedGeneratedFixtureDataCoordinator {
     need(qualification.schema === "easyeda-pro-control.qualified-generated-schematic-fixture-target.v1", "SCHEMATIC_DATA_REQUIRED");
     const source = stageRequalifiedManagedSchematicFixtureOpeningSource({ qualification, archive: locator.archive }); this.#staged = true; return source;
   }
+  /** This writer consumes only the distinct seven-record source. Refuse other
+   * qualifications before staging, leaving their original reader route usable. */
+  public stageSchematicRelevanceDisplaySourceForFreshOpening(operationId: string): ReturnType<typeof stageRequalifiedManagedSchematicRelevanceFixtureOpeningSource> {
+    const { qualification, locator } = this.#staging(operationId);
+    need(qualification.schema === "easyeda-pro-control.qualified-generated-schematic-relevance-fixture-target.v1", "RELEVANCE_SCHEMATIC_DATA_REQUIRED");
+    const source = stageRequalifiedManagedSchematicRelevanceFixtureOpeningSource({ qualification, archive: locator.archive }); this.#staged = true; return source;
+  }
 }

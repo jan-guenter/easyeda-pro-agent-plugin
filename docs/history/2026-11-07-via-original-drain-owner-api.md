@@ -28,3 +28,15 @@ pass. This interface batch deliberately precedes final combined native packing
 and codec compilation. No helper/pin/bundle or application was changed, and no
 live writer or saved/reopened result is claimed. Native completion remains
 mandatory; an older helper cannot satisfy the new completion request.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `97b1c6777f006d55977e96c5dba40d4460faa676`; its
+committed tree is `face77322187afcafa56b945be18b2a4e1fbd059`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

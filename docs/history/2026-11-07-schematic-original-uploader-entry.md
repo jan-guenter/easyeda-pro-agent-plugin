@@ -52,3 +52,15 @@ native bus/timer, real status callbacks, and the matching original worker TEXT
 and separate Nd no-publication wave. The already armed shared `IB.dispose`
 function point also needs an explicit later ownership transfer for final action
 cleanup; it must not be silently reused or rearmed.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `0dd56a8030537cc34407fc718f025ee5dfaa35ee`; its
+committed tree is `ec8c1630961639348d136a9d3f9704f74c0124b4`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

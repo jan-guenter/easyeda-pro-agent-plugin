@@ -91,3 +91,15 @@ and the [foreground manager](autonomous-controller-updates.md) for an update.
 Verify the replacement's actual loaded snapshot and source admission. A new
 subagent alone does not refresh a plugin, and historical closure never adopts
 an unfinished native owner.
+
+Inspection returns a separate `diagnostic` alongside the unchanged operation
+result. It retains the first failure's phase and original source-issued code,
+including while cleanup is still pending. `ORIGINAL_ERROR_UNCLASSIFIED` means
+the original error has no registered safe code. Never infer success, dispatch
+absence or retry permission from diagnostics. Vendor messages, stacks, causes
+and project data are excluded; cleanup does not replace the first diagnostic.
+
+For the separate historical failed-main boundary, consult
+[Via failure before opening](failed-via-preopening-relinquishment.md). That route
+preserves missing original Job/release proof and never continues the failed
+writer. It is available only when the installed offline catalog exposes it.

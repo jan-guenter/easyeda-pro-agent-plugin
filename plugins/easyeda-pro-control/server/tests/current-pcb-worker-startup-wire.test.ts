@@ -158,7 +158,7 @@ void test("native startup source is generated exactly and keeps the distinct pur
   assert.ok(native.includes("if(!workerStartup || stringPrecreate)throw Error(\"startup-purpose\")"));
   assert.ok(native.includes("if (($StringPrecreate -and $WorkerStartup) -or ($Layers209 -and ($StringPrecreate -or $WorkerStartup)))"));
   assert.ok(native.includes("[EasyedaWorkerStartupProtocol]::VerifySmoke()"));
-  assert.ok(native.includes("if ($startupPurpose -and @('Browser.getVersion'"));
+  assert.ok(native.includes("if ($startupPurpose -and -not $PcbViaWrite209 -and @('Browser.getVersion'"));
 });
 
 void test("native 209 cases preserve every command except the reviewed serial site and refuse the other generation", () => {
