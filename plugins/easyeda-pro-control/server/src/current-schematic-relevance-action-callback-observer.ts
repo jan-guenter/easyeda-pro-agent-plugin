@@ -1,10 +1,11 @@
+/* oxlint-disable import/max-dependencies -- The original callback facade binds independently fixed read and partial-continuation cursors to one genuine owner and event lane. */
+import type {CurrentSchematicRelevanceSdkGateRun} from "./current-schematic-relevance-sdk-gate-collector.ts";
 import type {CurrentSchematicRelevanceNormalCommandUiReturned} from "./current-schematic-relevance-normal-command-ui-collector.ts";
 import type {CurrentSchematicRelevanceFileSaveUiReturned} from "./current-schematic-relevance-file-save-ui-collector.ts";
 import type {CurrentSchematicRelevanceRenderDelegateStoreReturned} from "./current-schematic-relevance-render-delegate-collector.ts";
 import type {CurrentSchematicRelevanceStatusTabLookupHeld} from "./current-schematic-relevance-status-tab-lookup-collector.ts";
 import type {CurrentSchematicRelevanceStatusTabMutationHeld} from "./current-schematic-relevance-status-tab-mutation-collector.ts";
 import type {CurrentSchematicRelevanceStatusSubscriberHeld} from "./current-schematic-relevance-status-subscriber-collector.ts";
-/* oxlint-disable import/max-dependencies -- The original callback facade binds independently fixed read and partial-continuation cursors to one genuine owner and event lane. */
 import type {CurrentSchematicRelevanceStatusCloneDependencies} from "./current-schematic-relevance-status-clone-collector.ts";
 import type {CurrentSchematicRelevanceStatusDeliveryHeld} from "./current-schematic-relevance-status-delivery-cursor.ts";
 import type {CurrentSchematicRelevanceStatusBusHeld} from "./current-schematic-relevance-status-bus-cursor.ts";
@@ -106,6 +107,10 @@ export class CurrentSchematicRelevanceActionCallbackObserver {
     catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}
   }
   public async continueOriginalNormalRecordToUpload():Promise<CurrentSchematicRelevanceNormalRecordReceipt>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{for(let stage=0;stage<8;stage+=1){for(;;){const command=this.#bindings.nextNormalRecordCommand();if(command===null){break;}await this.#bindings.requestNormalRecord(command);this.#current();}const receipt=this.#bindings.requireOriginalNormalRecord();if(receipt.stage==="didRecord"){return receipt;}await this.#bindings.continueOriginalNormalRecord();this.#current();}throw new Error("SCH_RECORD_DID_RECORD_NOT_REACHED");}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}
+  /** Complete only the original queued UI callbacks, retain each visitor's
+   * actual fulfilled Promise, then hold the original SDK fulfillment marker.
+   * The wrapper, worker TEXT wave, Modify and Save remain incomplete. */
+  public async continueOriginalQueuedNotifications():Promise<CurrentSchematicRelevanceSdkGateRun>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const data=await this.#bindings.prepareOriginalNotifications();this.#current();return data;}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}
   public async continueOriginalStatusCommands():Promise<CurrentSchematicRelevanceNormalCommandUiReturned>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const data=await this.#bindings.prepareOriginalStatusCommands();this.#current();return data;}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}
   public async continueOriginalFileSaveUi():Promise<CurrentSchematicRelevanceFileSaveUiReturned>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const data=await this.#bindings.prepareOriginalFileSaveUi();this.#current();return data;}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}
   public async continueOriginalRenderDelegate():Promise<CurrentSchematicRelevanceRenderDelegateStoreReturned>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const data=await this.#bindings.prepareOriginalRenderDelegate();this.#current();return data;}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}

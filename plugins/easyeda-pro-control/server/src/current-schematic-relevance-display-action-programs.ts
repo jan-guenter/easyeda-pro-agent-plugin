@@ -1,6 +1,7 @@
 /** Phase-specific fixed seven-record programs. The shared stage remains exact
  * for the separate Wire owner. No supplied callback or setter table is accepted. */
 import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_STAGE_FUNCTION as BASE } from "./generated-schematic-relevance-display-program.ts";
+import {applyCurrentSchematicRelevanceSdkGate} from "./current-schematic-relevance-sdk-gate-template.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 const oldCallback = 'async()=>{ownedAction=b.runner.currentAction;check();same(before,capture(operation.beforeBody));for(const[field,value]of changes){check();const binding=b.setters[field];if(binding.object!==before.text)bad("TEXT_RECEIVER");reproveSetter(binding);apply(binding.set,before.text,[value]);}check();}';
@@ -22,13 +23,13 @@ export function replaceCurrentSchematicRelevanceDisplayPhase(source: string, rep
   return result;
 }
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_CAPTURE_FUNCTION = replaceCurrentSchematicRelevanceDisplayPhase(BASE, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_CAPTURE_REPLACEMENTS);
-export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_FUNCTION = replaceCurrentSchematicRelevanceDisplayPhase(BASE, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_REPLACEMENTS);
+export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_FUNCTION = applyCurrentSchematicRelevanceSdkGate(replaceCurrentSchematicRelevanceDisplayPhase(BASE, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_REPLACEMENTS));
 /** Exact debugger statements in the original Runtime-compiled Modify wrapper.
  * Locations are selectors only; the actual owner must join its original script. */
 const originalScript = `(${CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_FUNCTION})`;
 const markerRoles = ["entry", "setter", "finish", "failure"] as const;
 const offsets = [...originalScript.matchAll(/debugger;/gu)].map(match => match.index);
-if (offsets.length !== markerRoles.length) { throw new Error("SCHEMATIC_RELEVANCE_ACTION_MARKERS"); }
+if (offsets.length !== markerRoles.length+2) { throw new Error("SCHEMATIC_RELEVANCE_ACTION_MARKERS"); }
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_MARKERS = freezeDeep(markerRoles.map((role, index) => {
   const offset = offsets[index]; if (offset === undefined) { throw new Error("SCHEMATIC_RELEVANCE_ACTION_MARKER"); }
   const prefix = originalScript.slice(0, offset); return { role, lineNumber: prefix.split("\n").length - 1, columnNumber: prefix.length - prefix.lastIndexOf("\n") - 1 };

@@ -15,10 +15,12 @@ const bad = (): never => { throw new Error("PCB_DIAGNOSTIC_CSHARP_REVIEW_STORAGE
 interface Blob { readonly encoded: string; readonly length: number; readonly sha256: string; readonly packedLength: number; readonly packedSha256: string }
 interface Metadata { readonly compiler: Blob; readonly spacing: Blob; readonly originalLength: number; readonly originalSha256: string; readonly tokenSha256: string }
 /** Compress one bounded source blob and retain both raw and compressed lengths and SHA256 values. */
-function pack(bytes: Buffer, maximum: number): Blob {
-  if (bytes.length === 0 || bytes.length > maximum) { return bad(); }
+function pack(bytes: Buffer, maximum: number, kind: "COMPILER" | "SPACING"): Blob {
+  if (bytes.length === 0) { return bad(); }
+  if (bytes.length > maximum) { throw new Error(`PCB_DIAGNOSTIC_CSHARP_REVIEW_STORAGE_V3_CAPACITY_${kind}_BYTES_${String(bytes.length)}_GT_${String(maximum)}`); }
   // oxlint-disable-next-line node/no-sync -- Fixed immutable build data, bounded before compression.
-  const packed = gzipSync(bytes, { level: 9 }); if (packed.length > maximum) { return bad(); }
+  const packed = gzipSync(bytes, { level: 9 });
+  if (packed.length > maximum) { throw new Error(`PCB_DIAGNOSTIC_CSHARP_REVIEW_STORAGE_V3_CAPACITY_${kind}_GZIP_BYTES_${String(packed.length)}_GT_${String(maximum)}`); }
   return { encoded: packed.toString("base64"), length: bytes.length, sha256: hash(bytes), packedLength: packed.length, packedSha256: hash(packed) };
 }
 /** Validate encoded length, compressed hash and expansion bound before checking the exact restored source hash. */
@@ -88,8 +90,8 @@ export function packCurrentPcbDiagnosticCSharpReviewStorageV3(input: string): st
   const bytes = Buffer.from(body);
   if (bytes.length === 0 || bytes.length > CURRENT_PCB_DIAGNOSTIC_CSHARP_REVIEW_V3_MAX_BYTES || bytes.some(byte => byte > 127 || byte === 0)) { return bad(); }
   const value = compactCurrentPcbDiagnosticCSharp(body);
-  const compiler = pack(Buffer.from(value.compact), MAXIMUM);
-  const spacing = pack(value.spacing, SPACING_MAXIMUM);
+  const compiler = pack(Buffer.from(value.compact), MAXIMUM, "COMPILER");
+  const spacing = pack(value.spacing, SPACING_MAXIMUM, "SPACING");
   if (bytes.length > compiler.length + SPACING_MAXIMUM) { return bad(); }
   const meta: Metadata = { compiler, spacing, originalLength: bytes.length, originalSha256: hash(bytes), tokenSha256: value.tokenSha256 };
   const result = source.slice(0, start) + block(meta) + source.slice(stop);

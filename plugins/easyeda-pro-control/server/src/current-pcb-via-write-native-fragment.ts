@@ -1,3 +1,4 @@
+import { expandCurrentFootprintInverseSmokeVectors, projectCurrentFootprintInverseSmokeVectors } from "./current-footprint-inverse-smoke-vector-storage.ts";
 import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
 import { applyCurrentPcbViaMainLiveHistoryNativeFragment } from "./current-pcb-via-main-live-history-native-fragment.ts";
 /* oxlint-disable import/max-dependencies -- Build the separate original Via protocols and pack only its fixed SDK bytes without changing their runtime encoding. */
@@ -74,6 +75,54 @@ public static void VerifyPcbViaSmoke(){VerifyPcbViaSdkWireSmoke();var owner=Crea
 }
 ${end}`;
 }
+function count(source:string,value:string):number{return source.split(value).length-1;}
+/** The closed schematic driver has no Via birth or SDK dispatch. Retain
+ * explicit rejecting compatibility methods while omitting only its unused
+ * packed SDK and positive codec smoke. Other purpose graphs use native(). */
+export function projectCurrentSchematicViaSdkRuntime(input:string):string {return projectUnusedViaSdkRuntime(input,"SCHEMATIC");}
+/** The closed inverse driver likewise cannot select a Via birth or SDK call.
+ * Its own generator must opt in after proving the complete inverse driver. */
+export function projectCurrentFootprintInverseViaSdkRuntime(input:string):string {
+  if(!input.includes("// BEGIN FIXED INVERSE SMOKE VECTORS V1\n")){return projectUnusedViaSdkRuntime(input,"INVERSE");}
+  const beginBody="Add-Type @'\n",endBody="\n'@\n",start=input.indexOf(beginBody),stop=input.indexOf(endBody,start);
+  if(start===-1||stop<=start||count(input,beginBody)!==1||count(input,endBody)!==1){throw new Error("INVERSE_VIA_SDK_CSHARP_BODY");}
+  const body=input.slice(start+beginBody.length,stop),expanded=expandCurrentFootprintInverseSmokeVectors(body);
+  const projected=projectUnusedViaSdkRuntime(input.slice(0,start+beginBody.length)+expanded+input.slice(stop),"INVERSE");
+  const nextStop=projected.indexOf(endBody,start);const nextBody=projected.slice(start+beginBody.length,nextStop);
+  return projected.slice(0,start+beginBody.length)+projectCurrentFootprintInverseSmokeVectors(nextBody)+projected.slice(nextStop);
+}
+function projectUnusedViaSdkRuntime(input:string,family:"SCHEMATIC"|"INVERSE"):string {
+  const beginClosed=`// BEGIN CLOSED ${family} VIA SDK`,endClosed=`// END CLOSED ${family} VIA SDK`;
+  const error=family==="SCHEMATIC"?"schematic-via-sdk-codec-closed":"inverse-via-sdk-codec-closed";
+  const encoderSignature="public static string PcbViaSdkProtocolMessage(int id,string session,string stage,System.Collections.IDictionary fields)";
+  const senderSignature="public void SendPcbViaSdk(int id,string session,string stage,System.Collections.IDictionary fields)";
+  const field=`static readonly string ViaSdkFunction=${packedSdk()};`;
+  const codec=`${encoderSignature}{throw new InvalidOperationException("${error}");}`;
+  const sender=`${senderSignature}{throw new InvalidOperationException("${error}");}`;
+  const smoke=`public static void VerifyPcbViaSdkWireSmoke(){bool refused=false;try{PcbViaSdkProtocolMessage(1,"closed_schematic","capture",null);}catch(InvalidOperationException failure){if(failure.Message!="${error}")throw;refused=true;}if(!refused)throw Error("schematic-via-sdk-closure-smoke");}`;
+  const marker=`${beginClosed}\n// The fixed selected driver excludes the Via SDK.\n${endClosed}`;
+  const verify=(source:string):void=>{if(count(source,beginClosed)!==1||count(source,endClosed)!==1||count(source,marker)!==1||count(source,codec)!==1||count(source,sender)!==1||count(source,smoke)!==1||source.includes("ViaSdkFunction")||count(source,"PcbViaSdkProtocolMessage(")!==2||count(source,"SendPcbViaSdk(")!==2){throw new Error("SCHEMATIC_VIA_SDK_CLOSED_CENSUS");}};
+  const scopes=family==="SCHEMATIC"?["// BEGIN GENERATED SCHEMATIC RELEVANCE DISPLAY BIRTH209","// BEGIN GENERATED SCHEMATIC WIRE EDIT BIRTH209"]:["public static EasyedaDiagnosticOwner CreateFootprintInverse209()","public void AdmitFootprintInverseAction(string action)"];
+  for(const scope of scopes){if(count(input,scope)!==1){throw new Error("SCHEMATIC_VIA_SDK_PURPOSE_CENSUS");}}
+  if(input.includes(beginClosed)||input.includes(endClosed)){verify(input);return input;}
+  const original=native();
+  const member=(signature:string):string=>{const rows=original.split("\n").filter(line=>line.startsWith(signature));if(rows.length!==1||rows[0]===undefined||!rows[0].endsWith("}")){throw new Error("SCHEMATIC_VIA_SDK_MEMBER");}return rows[0];};
+  // These are the exact fixed target enrollment and startup guards mounted after the Via base.
+  // Any changed or additional sender body refuses the exact-member match.
+  const upgrades=Object.freeze([
+    ['string message=PcbViaSdkProtocolMessage(id,session,stage,fields);','if(index==0){viaStructureNativeProject=fields["targetProjectUuid"] as string;viaStructureNativeBranch=fields["targetBranchUuid"] as string;}string message=PcbViaSdkProtocolMessage(id,session,stage,fields);'],
+    ['if(index==0){viaStructureNativeProject=','if(stage=="create"&&!viaMainPrecreateEnrolled)throw Error("via-main-precreate-required");if(index==0){viaStructureNativeProject='],
+    ['||stage=="save")throw Error("via-sdk-stage-eligibility");','||stage=="save"||stage=="create"&&!viaProducerPrefixEnrolled)throw Error("via-sdk-stage-eligibility");'],
+    ['viaSdkStages[index]=true;SendMessage(id,message);','if(stage=="create"&&viaPeriodicSyncStage!=0&&(!viaMainPrecreateEnrolled||!viaProducerPrefixEnrolled))throw Error("periodic-sync-create-held");viaSdkStages[index]=true;SendMessage(id,message);'],
+  ]as const);
+  let mountedSender=member(senderSignature);
+  for(const[before,after]of upgrades){if(count(mountedSender,before)!==1){throw new Error("SCHEMATIC_VIA_SDK_SENDER_GUARDS");}mountedSender=mountedSender.replace(before,after);}
+  const replacements=Object.freeze([[field,marker],[member(encoderSignature),codec],[mountedSender,sender],[sdkWireSmoke(),smoke]]as const);
+  let source=input;
+  for(const[index,[before,after]]of replacements.entries()){if(count(source,before)!==1){throw new Error(`SCHEMATIC_VIA_SDK_EXACT_MEMBER:${String(index)}:${String(count(source,before))}`);}source=source.replace(before,after);}
+  verify(source);return source;
+}
+
 const dispatch = String.raw`        'pcb-via-sdk-properties' {
           if (-not $PcbViaWrite209 -or -not $launched -or $request.sessionId -isnot [string] -or $request.objectId -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,helperInstance,id,jobId,objectId,requestId,rootCreated,rootPid,sessionId') {throw 'pcb-diagnostic-via-properties-fields'}
           $owner.SendPcbViaSdkProperties([int]$request.requestId,$request.sessionId,$request.objectId);$result=@{written=$true}

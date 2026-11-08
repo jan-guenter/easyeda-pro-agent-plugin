@@ -41,6 +41,7 @@ export interface CurrentFootprintInverseDeleteManagerPrepared {
 }
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_DELETE_MANAGER_PREPARATION"); } }
 
+/** Collect the fresh original RPC queue, registered callback, singleton and V0 method while DEL remains held; no runtime Job or handler execution is granted. */
 export async function collectCurrentFootprintInverseDeleteManager(b: CurrentFootprintInverseDeleteManagerBindings): Promise<Readonly<CurrentFootprintInverseDeleteManagerPrepared>> {
   need(b.profile === "ui" || b.profile === "manager");
   const identity = currentFootprintInverseLookupIdentity(b.target);

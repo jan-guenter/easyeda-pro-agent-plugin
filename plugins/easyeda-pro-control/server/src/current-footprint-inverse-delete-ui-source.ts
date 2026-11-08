@@ -387,9 +387,14 @@ export const CURRENT_FOOTPRINT_INVERSE_DELETE_UI_LINKS=freezeDeep({
 }as const);
 export type CurrentFootprintInverseDeleteUiMethod=keyof typeof CURRENT_FOOTPRINT_INVERSE_DELETE_UI_METHODS;
 function need(value:boolean):asserts value{if(!value){throw new Error("FOOTPRINT_INVERSE_DELETE_UI_SOURCE");}}
+/** Extract the exact original UI function or class span and refuse a missing, truncated or changed source range. */
 function fragment(text:string,row:Readonly<{bytes:number;sha256:string}>):void{need(text.isWellFormed()&&Buffer.byteLength(text)===row.bytes&&createHash("sha256").update(text).digest("hex")===row.sha256);}
+/** Require the complete pinned UI file and each original collateral span before selecting any tab or component-log metadata. */
 export function qualifyCurrentFootprintInverseDeleteUiSource(source:string):void{qualifyCurrentFootprintInversePublicDeleteSource("ui",source);for(const r of Object.values(CURRENT_FOOTPRINT_INVERSE_DELETE_UI_METHODS)){fragment(source.slice(r.descriptionStart,r.end),r);}for(const r of [...Object.values(CURRENT_FOOTPRINT_INVERSE_DELETE_UI_CLASSES),...Object.values(CURRENT_FOOTPRINT_INVERSE_DELETE_UI_LINKS)]){fragment(source.slice(r.start,r.end),r);}}
+/** Compare a returned function description with its exact original collateral source span before using its location or scopes. */
 export function requireCurrentFootprintInverseDeleteUiDescription(text:string,role:CurrentFootprintInverseDeleteUiMethod):void{fragment(text,CURRENT_FOOTPRINT_INVERSE_DELETE_UI_METHODS[role]);}
+/** Check original function metadata and location for the selected UI role without invoking its log, tab or close operation. */
 export function qualifyCurrentFootprintInverseDeleteUiFunction(input:unknown,role:CurrentFootprintInverseDeleteUiMethod,scriptId:string):string{return qualifyCurrentFootprintSourceFunctionMetadata(input,CURRENT_FOOTPRINT_INVERSE_DELETE_UI_METHODS[role],scriptId);}
 
+/** Require the complete original class description before its static fields or selected methods participate in readonly collateral proof. */
 export function requireCurrentFootprintInverseDeleteUiClassDescription(text:string):void{fragment(text,CURRENT_FOOTPRINT_INVERSE_DELETE_UI_CLASSES.tab);}

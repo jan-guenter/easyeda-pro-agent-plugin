@@ -14,10 +14,12 @@ const hash = (bytes: Uint8Array): string => createHash("sha256").update(bytes).d
 const bad = (): never => { throw new Error("PCB_DIAGNOSTIC_CSHARP_REVIEW_STORAGE"); };
 interface Blob { readonly encoded: string; readonly length: number; readonly sha256: string; readonly packedLength: number; readonly packedSha256: string }
 interface Metadata { readonly compiler: Blob; readonly spacing: Blob; readonly originalLength: number; readonly originalSha256: string; readonly tokenSha256: string }
-function pack(bytes: Buffer, maximum: number): Blob {
-  if (bytes.length === 0 || bytes.length > maximum) { return bad(); }
+function pack(bytes: Buffer, maximum: number, kind: "COMPILER" | "SPACING"): Blob {
+  if (bytes.length === 0) { return bad(); }
+  if (bytes.length > maximum) { throw new Error(`PCB_DIAGNOSTIC_CSHARP_REVIEW_STORAGE_CAPACITY_${kind}_BYTES_${String(bytes.length)}_GT_${String(maximum)}`); }
   // oxlint-disable-next-line node/no-sync -- Fixed immutable build data, bounded before compression.
-  const packed = gzipSync(bytes, { level: 9 }); if (packed.length > maximum) { return bad(); }
+  const packed = gzipSync(bytes, { level: 9 });
+  if (packed.length > maximum) { throw new Error(`PCB_DIAGNOSTIC_CSHARP_REVIEW_STORAGE_CAPACITY_${kind}_GZIP_BYTES_${String(packed.length)}_GT_${String(maximum)}`); }
   return { encoded: packed.toString("base64"), length: bytes.length, sha256: hash(bytes), packedLength: packed.length, packedSha256: hash(packed) };
 }
 function unpack(meta: Blob, maximum: number): Buffer {
@@ -79,7 +81,7 @@ export function currentPcbDiagnosticCSharpRuntimeCompilerInput(input: string): s
 }
 export function packCurrentPcbDiagnosticCSharpReviewStorage(input: string): string {
   const source = expandCurrentPcbDiagnosticCSharpReviewSource(input); const { start, stop } = section(source, LITERAL_BEGIN, LITERAL_END); const body = currentPcbDiagnosticCSharpReviewSource(source);
-  const value = compactCurrentPcbDiagnosticCSharp(body); const compiler = pack(Buffer.from(value.compact), MAXIMUM); const spacing = pack(value.spacing, SPACING_MAXIMUM);
+  const value = compactCurrentPcbDiagnosticCSharp(body); const compiler = pack(Buffer.from(value.compact), MAXIMUM, "COMPILER"); const spacing = pack(value.spacing, SPACING_MAXIMUM, "SPACING");
   if (Buffer.byteLength(body) > compiler.length + SPACING_MAXIMUM) { return bad(); }
   const meta: Metadata = { compiler, spacing, originalLength: Buffer.byteLength(body), originalSha256: hash(Buffer.from(body)), tokenSha256: value.tokenSha256 };
   const result = source.slice(0, start) + block(meta) + source.slice(stop); if (Buffer.byteLength(result) > MAXIMUM) { return bad(); } return result;

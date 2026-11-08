@@ -1,7 +1,8 @@
+/* oxlint-disable import/max-dependencies -- Typed cursor and command boundaries remain separate while this one original callback capability shares their retained owner custody. */
+import type {CurrentSchematicRelevanceSdkGateRun} from "./current-schematic-relevance-sdk-gate-collector.ts";
 import type {CurrentSchematicRelevanceNormalCommandUiReturned} from "./current-schematic-relevance-normal-command-ui-collector.ts";
 import type {CurrentSchematicRelevanceFileSaveUiReturned} from "./current-schematic-relevance-file-save-ui-collector.ts";
 import type {CurrentSchematicRelevanceRenderDelegateStoreReturned} from "./current-schematic-relevance-render-delegate-collector.ts";
-/* oxlint-disable import/max-dependencies -- Typed cursor and command boundaries remain separate while this one original callback capability shares their retained owner custody. */
 import type {CurrentSchematicRelevanceStatusTabMutationHeld} from "./current-schematic-relevance-status-tab-mutation-collector.ts";
 import type {CurrentSchematicRelevanceStatusTabLookupHeld} from "./current-schematic-relevance-status-tab-lookup-collector.ts";
 import type {CurrentSchematicRelevanceStatusSubscriberHeld} from "./current-schematic-relevance-status-subscriber-collector.ts";
@@ -85,6 +86,7 @@ export interface CurrentSchematicRelevanceActionCallbackBindings {
   readonly requestNormalRecord:(command:CurrentSchematicRelevanceNormalRecordCommand)=>Promise<unknown>;
   readonly requireOriginalNormalRecord:()=>CurrentSchematicRelevanceNormalRecordReceipt;
   readonly continueOriginalNormalRecord:()=>Promise<void>;
+  readonly prepareOriginalNotifications:()=>Promise<CurrentSchematicRelevanceSdkGateRun>;
   readonly prepareOriginalStatusCommands:()=>Promise<CurrentSchematicRelevanceNormalCommandUiReturned>;
   readonly prepareOriginalFileSaveUi:()=>Promise<CurrentSchematicRelevanceFileSaveUiReturned>;
   readonly prepareOriginalRenderDelegate:()=>Promise<CurrentSchematicRelevanceRenderDelegateStoreReturned>;

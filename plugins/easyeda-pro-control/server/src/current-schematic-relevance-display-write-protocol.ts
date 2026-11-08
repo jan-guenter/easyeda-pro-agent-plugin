@@ -1,3 +1,5 @@
+import {currentSchematicRelevanceNotificationWire} from "./current-schematic-relevance-notification-wire.ts";
+import {currentSchematicRelevanceSdkGateWire} from "./current-schematic-relevance-sdk-gate-wire.ts";
 import {currentSchematicRelevanceNormalCommandUiWire} from "./current-schematic-relevance-normal-command-ui-wire.ts";
 import {currentSchematicRelevanceFileSaveUiWire} from "./current-schematic-relevance-file-save-ui-wire.ts";
 import {currentSchematicRelevanceRenderDelegateWire} from "./current-schematic-relevance-render-delegate-wire.ts";
@@ -86,6 +88,20 @@ export function currentSchematicRelevanceDisplayWriteNativeRequest(chunk: Buffer
     if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_UPLOAD_RETURN_WIRE"); }
     const fixed = currentSchematicRelevanceUploadReturnWire(input, id);
     if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceUploadReturnCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_UPLOAD_RETURN_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceNotificationCommand")) {
+    const { id, sessionId, schematicRelevanceNotificationCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_NOTIFICATION_WIRE"); }
+    const fixed = currentSchematicRelevanceNotificationWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceNotificationCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_NOTIFICATION_FIXED_WIRE"); }
+    return fixed.request;
+  }
+  if (Object.hasOwn(raw, "schematicRelevanceSdkGateCommand")) {
+    const { id, sessionId, schematicRelevanceSdkGateCommand: marker, ...input } = raw;
+    if (marker !== true || typeof sessionId !== "string" || !/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)) { throw new Error("SCHEMATIC_SDK_GATE_WIRE"); }
+    const fixed = currentSchematicRelevanceSdkGateWire(input, id);
+    if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceSdkGateCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_SDK_GATE_FIXED_WIRE"); }
     return fixed.request;
   }
   if (Object.hasOwn(raw, "schematicRelevanceNormalCommandUiCommand")) {

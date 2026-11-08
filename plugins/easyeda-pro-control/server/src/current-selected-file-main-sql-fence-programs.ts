@@ -4,6 +4,7 @@
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SOURCE } from "./current-selected-file-main-sql-fence-source.ts";
 import type { CurrentSelectedFileMainSqlFenceSite } from "./current-selected-file-main-sql-fence-source.ts";
+import { CURRENT_SELECTED_FILE_MAIN_SQL_CAPTURE_SCOPE_HELPERS as SCOPE } from "./current-selected-file-main-sql-capture-scope.ts";
 
 export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_GROUP = "easyeda-selected-file-main-sql-fence-v1";
 export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_MAXIMUM_MUTATIONS = 64;
@@ -73,16 +74,21 @@ export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CONDITIONS = freezeDeep({
   driver: condition(conditions.driver),
 });
 
-const joins = String.raw`"use strict";const bad=()=>{throw new Error("SELECTED_FILE_MAIN_SQL_FENCE_BINDING");},seen=[];
+const legacyJoins = String.raw`"use strict";const bad=()=>{throw new Error("SELECTED_FILE_MAIN_SQL_FENCE_BINDING");},seen=[];
 const own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();seen.push([o,k,d]);return d.value;};
 const arr=(o,n)=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype||own(o,"length")!==n||Reflect.ownKeys(o).length!==n+1)bad();for(let i=0;i<n;i++)own(o,String(i));return o;};
 const descriptors=o=>Reflect.ownKeys(o).map(k=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)bad();return[o,k,d];});
 const verify=()=>{for(const[o,k,d]of seen){const n=Object.getOwnPropertyDescriptor(o,k);if(!n||Reflect.ownKeys(n).length!==Reflect.ownKeys(d).length||Reflect.ownKeys(d).some(k=>!Object.is(n[k],d[k])))bad();}};
 const original=o=>{arr(o,11);const frame=own(o,"0");arr(frame,4);for(let i=0;i<4;i++)if(own(frame,String(i))!==own(o,String(i+1)))bad();for(const[item,key,d]of own(o,"5")){const n=Object.getOwnPropertyDescriptor(item,key);if(!n||Reflect.ownKeys(n).length!==Reflect.ownKeys(d).length||Reflect.ownKeys(d).some(k=>!Object.is(n[k],d[k])))bad();}return{sc:own(o,"3"),util:own(o,"4"),proxy:own(o,"6"),path:own(o,"7"),date:own(o,"9"),now:own(o,"10")};};`;
+/** Historical v1 programs remain exact; their all-export descriptor traversal
+ * refuses cold native lazy properties. They cannot consume a v2 scope. */
+export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_V1_JOIN_HELPERS = legacyJoins;
+export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_V1_CAPTURE_PROGRAM = `function(expectedPath){${legacyJoins}\narr(this,4);const z2=own(this,"0"),yo=own(this,"1"),sqlite=own(this,"2"),util=own(this,"3"),types=own(util,"types"),proxy=own(types,"isProxy"),db=own(sqlite,"Database"),stmt=own(sqlite,"Statement"),date=own(globalThis,"Date"),now=own(date,"now");if(typeof expectedPath!=="string"||expectedPath.length===0||expectedPath.length>4096||!expectedPath.isWellFormed()||expectedPath.includes("\\0")||typeof proxy!=="function")bad();const held=[...descriptors(own(z2,"prototype")),...descriptors(own(yo,"prototype")),...descriptors(sqlite),...descriptors(util),...descriptors(types),...descriptors(db),...descriptors(stmt),...descriptors(own(db,"prototype")),...descriptors(own(stmt,"prototype")),...descriptors(date),...descriptors(now)];verify();return[this,z2,yo,sqlite,util,held,proxy,expectedPath,new Map,date,now];}`;
+const joins = legacyJoins.replace("const original=", `${SCOPE}\nconst original=`).replace('of own(o,"5")', 'of captureScope(o,arr)');
 export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_JOIN_HELPERS = joins;
 /** Capture only after the actual sqlite3/util imports; both prototypes and
  * exports remain original. The immutable target is comparison data only. */
-export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM = `function(expectedPath){${joins}\narr(this,4);const z2=own(this,"0"),yo=own(this,"1"),sqlite=own(this,"2"),util=own(this,"3"),types=own(util,"types"),proxy=own(types,"isProxy"),db=own(sqlite,"Database"),stmt=own(sqlite,"Statement"),date=own(globalThis,"Date"),now=own(date,"now");if(typeof expectedPath!=="string"||expectedPath.length===0||expectedPath.length>4096||!expectedPath.isWellFormed()||expectedPath.includes("\\0")||typeof proxy!=="function")bad();const held=[...descriptors(own(z2,"prototype")),...descriptors(own(yo,"prototype")),...descriptors(sqlite),...descriptors(util),...descriptors(types),...descriptors(db),...descriptors(stmt),...descriptors(own(db,"prototype")),...descriptors(own(stmt,"prototype")),...descriptors(date),...descriptors(now)];verify();return[this,z2,yo,sqlite,util,held,proxy,expectedPath,new Map,date,now];}`;
+export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM = `function(expectedPath){${joins}\narr(this,4);const z2=own(this,"0"),yo=own(this,"1"),sqlite=own(this,"2"),util=own(this,"3"),types=own(util,"types"),proxy=own(types,"isProxy"),db=own(sqlite,"Database"),stmt=own(sqlite,"Statement"),date=own(globalThis,"Date"),now=own(date,"now");if(typeof expectedPath!=="string"||expectedPath.length===0||expectedPath.length>4096||!expectedPath.isWellFormed()||expectedPath.includes("\\0")||typeof proxy!=="function")bad();const utilPrototype=Object.getPrototypeOf(util),utilKeys=Reflect.ownKeys(util),typesPrototype=Object.getPrototypeOf(types),typesKeys=Reflect.ownKeys(types),held=[...descriptors(own(z2,"prototype")),...descriptors(own(yo,"prototype")),...descriptors(sqlite),...safeUtilDescriptors(util),...descriptors(types),...descriptors(db),...descriptors(stmt),...descriptors(own(db,"prototype")),...descriptors(own(stmt,"prototype")),...descriptors(date),...descriptors(now)],scope=[captureProfile,held,utilPrototype,utilKeys,types,typesPrototype,typesKeys,false],captured=[this,z2,yo,sqlite,util,scope,proxy,expectedPath,new Map,date,now];original(captured);verify();return captured;}`;
 export const CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUIRE_PROGRAM = `function(){${joins}\noriginal(this);verify();return true;}`;
 /** Retain the actual original frame/connection/SQL/parameter identities. This
  * packet is descriptive and grants no resume; the existing source collector
