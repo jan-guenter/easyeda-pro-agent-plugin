@@ -1,4 +1,5 @@
 /* oxlint-disable max-classes-per-file -- The registration constructs two distinct production owners; both constructors need independent inert doubles. */
+import { installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
@@ -65,6 +66,7 @@ void test("ordinary launcher registration keeps quarantine and exact shared runt
   });
   // Actual registration and coordinator with an isolated journal root and inert
   // Runtime. No facade, helper, bridge or application is started.
+  installIndexFixtureDependencies(scope, source);
   vm.runInContext(stripTypeScriptTypes(source.slice(start, end)).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   assert.ok(invoke);
   quarantine = true;

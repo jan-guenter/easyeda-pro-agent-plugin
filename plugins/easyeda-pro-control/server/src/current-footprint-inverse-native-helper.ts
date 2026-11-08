@@ -1,5 +1,6 @@
 /** Exact fixed-purpose helper custody only. Capturing source grants no native
  * owner, app launch, journal recovery or continuation of another generation. */
+import { powershellSingleQuotedBody } from "./powershell-single-quoted-body.ts";
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import type { Stats } from "node:fs";
@@ -37,7 +38,7 @@ export async function captureCurrentFootprintInverseNativeHelper(distribution: s
   else { need(typeof distribution === "string" && /^[A-Za-z\d][A-Za-z\d_.-]{0,127}$/u.test(distribution)); windowsPath = `\\\\wsl.localhost\\${distribution}${path.replaceAll("/", "\\")}`; }
   const flag = `-FootprintInverse209 -InverseReadyChallenge '${challenge}'`;
   const pin = IDENTITY.helper;
-  const bootstrap = `$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';$file=[IO.File]::Open('${windowsPath.replaceAll("'", "''")}',[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read);try{if($file.Length -ne ${String(pin.bytes)} -or $file.Length -gt ${String(MAXIMUM)}){throw 'inverse-helper-size'};$bytes=New-Object byte[] ([int]$file.Length);$offset=0;while($offset -lt $file.Length){$read=$file.Read($bytes,$offset,$bytes.Length-$offset);if($read -le 0){throw 'inverse-helper-eof'};$offset+=$read};if($file.ReadByte() -ne -1){throw 'inverse-helper-grew'};$hasher=[Security.Cryptography.SHA256]::Create();try{$digest=([BitConverter]::ToString($hasher.ComputeHash($bytes))).Replace('-','').ToLowerInvariant()}finally{$hasher.Dispose()};if($digest -cne '${pin.sha256}'){throw 'inverse-helper-hash'};$decoder=New-Object Text.UTF8Encoding($false,$true);& ([ScriptBlock]::Create($decoder.GetString($bytes))) ${flag}}finally{$file.Dispose()}`;
+  const bootstrap = `$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';$file=[IO.File]::Open('${powershellSingleQuotedBody(windowsPath)}',[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read);try{if($file.Length -ne ${String(pin.bytes)} -or $file.Length -gt ${String(MAXIMUM)}){throw 'inverse-helper-size'};$bytes=New-Object byte[] ([int]$file.Length);$offset=0;while($offset -lt $file.Length){$read=$file.Read($bytes,$offset,$bytes.Length-$offset);if($read -le 0){throw 'inverse-helper-eof'};$offset+=$read};if($file.ReadByte() -ne -1){throw 'inverse-helper-grew'};$hasher=[Security.Cryptography.SHA256]::Create();try{$digest=([BitConverter]::ToString($hasher.ComputeHash($bytes))).Replace('-','').ToLowerInvariant()}finally{$hasher.Dispose()};if($digest -cne '${pin.sha256}'){throw 'inverse-helper-hash'};$decoder=New-Object Text.UTF8Encoding($false,$true);& ([ScriptBlock]::Create($decoder.GetString($bytes))) ${flag}}finally{$file.Dispose()}`;
   need(Buffer.from(bootstrap, "utf16le").toString("base64").length <= 16_000);
   return Object.freeze({ verify: async (): Promise<void> => { await read(original); }, bootstrap });
 }

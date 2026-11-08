@@ -54,6 +54,13 @@ cd ../..
 npm --prefix plugins/easyeda-pro-control run repository:validate
 ```
 
+Offline installed-source tests use `EASYEDA_ASSETS_ROOT` for the installed
+`resources/app/assets` directory. The embedded-builtin PE check uses
+`EASYEDA_PRO_EXECUTABLE` for the installed executable. Unset configuration skips
+only those optional installed-source checks with an explicit reason. Empty,
+missing or invalid configured files fail; no workstation path is assumed.
+These checks read source bytes and never launch the application.
+
 The plugin's `.npmrc` disables dependency install hooks. Explicit `npm run`
 commands still run the reviewed project scripts. Keep the matching esbuild
 optional platform package installed; do not enable a download fallback.

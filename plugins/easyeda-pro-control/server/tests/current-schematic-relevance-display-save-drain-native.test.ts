@@ -1,6 +1,7 @@
 /** Fixed encoder/source parity only. No original owner, app or native call. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { currentSchematicRelevanceDisplayWriteNativeRequest } from "../src/current-schematic-relevance-display-write-protocol.ts";
 import { applyCurrentSchematicRelevanceDisplaySaveDrainNativeFragment as apply, currentSchematicRelevanceDisplaySaveDrainOwnerNative as body } from "../src/current-schematic-relevance-display-save-drain-native-fragment.ts";
 import { currentSchematicRelevanceDisplayDrainWire, currentSchematicRelevanceDisplayPostSyncWire, currentSchematicRelevanceDisplayTailDeleteWire, currentSchematicRelevanceDisplayTailExtraWire, currentSchematicRelevanceDisplayTailWire } from "../src/current-schematic-relevance-display-save-drain-wire.ts";
 import { currentPcbViaSaveDrainNativeCases } from "../src/current-pcb-via-save-drain-protocol.ts";
@@ -9,13 +10,16 @@ import { currentPcbViaSaveTailObservationNativeCases } from "../src/current-pcb-
 import { currentPcbViaSaveTailDeleteControlNativeCases } from "../src/current-pcb-via-save-tail-delete-control-protocol.ts";
 import { currentProjectSaveProducerNativeCases } from "../src/current-project-save-producer-protocol.ts";
 
+const encode=(value:object):Readonly<Record<string,unknown>>=>currentSchematicRelevanceDisplayWriteNativeRequest(Buffer.from(`${JSON.stringify(value)}\0`));
+
 void test("own7 fixed tail selectors preserve their finite command bytes and reject caller code",()=>{
- for(const [make,cases,action] of [
-  [currentSchematicRelevanceDisplayTailWire,currentPcbViaSaveTailObservationNativeCases(),"tail"],
-  [currentSchematicRelevanceDisplayTailDeleteWire,currentPcbViaSaveTailDeleteControlNativeCases(),"tail-delete"],
-  [currentSchematicRelevanceDisplayDrainWire,currentPcbViaSaveDrainNativeCases(),"drain"],
-  [currentSchematicRelevanceDisplayPostSyncWire,currentPcbViaPostHistorySyncNativeCases(),"post-sync"],
- ] as const){for(const command of cases){const wire=make(command,79);assert.equal(wire.request["action"],`schematic-relevance-display-save-${action}`);assert.throws(()=>make({...command,owner:"foreign"},79));}}
+ for(const [make,cases,action,marker] of [
+  [currentSchematicRelevanceDisplayTailWire,currentPcbViaSaveTailObservationNativeCases(),"tail","schematicRelevanceTailCommand"],
+  [currentSchematicRelevanceDisplayTailDeleteWire,currentPcbViaSaveTailDeleteControlNativeCases(),"tail-delete","schematicRelevanceTailDeleteCommand"],
+  [currentSchematicRelevanceDisplayDrainWire,currentPcbViaSaveDrainNativeCases(),"drain","schematicRelevanceDrainCommand"],
+  [currentSchematicRelevanceDisplayPostSyncWire,currentPcbViaPostHistorySyncNativeCases(),"post-sync","schematicRelevancePostSyncCommand"],
+ ] as const){for(const command of cases){const wire=make(command,79);assert.equal(wire.request["action"],`schematic-relevance-display-save-${action}`);assert.throws(()=>make({...command,owner:"foreign"},79));
+ const frame={id:79,...wire.command,[marker]:true,sessionId:"original-worker"};assert.deepEqual(encode(frame),wire.request);assert.throws(()=>encode({...frame,[marker]:false}));assert.throws(()=>encode({...frame,sessionId:"caller session"}));assert.throws(()=>encode({...frame,extra:"caller"}));}}
  for(const command of currentProjectSaveProducerNativeCases()){if(command.phase==="project-save-producer-cache-caller"&&command.cacheRole==="localSave"){assert.equal(currentSchematicRelevanceDisplayTailExtraWire(command,79).request["action"],"schematic-relevance-display-save-tail-extra");}}
  assert.throws(()=>currentSchematicRelevanceDisplayPostSyncWire({phase:"via-post-sync-replay",params:{objectId:"foreign"}},79));
 });

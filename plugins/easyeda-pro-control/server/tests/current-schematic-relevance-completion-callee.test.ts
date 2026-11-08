@@ -1,7 +1,7 @@
+import {INSTALLED_EASYEDA_SOURCE_SKIP_REASON,readConfiguredEasyedaAssets} from "./helpers/installed-easyeda-source.ts";
 /** Uninvoked normal-history functions. No original history, receiver, record,
  * command mutation or callback continuation is established. */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { Session } from "node:inspector/promises";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
@@ -11,7 +11,7 @@ import { decodeCurrentSchematicRelevanceCompletionCalleeFunction, requireCurrent
 
 function inertFunction(source: string, variant: 0 | 1, role: CurrentSchematicRelevanceCompletionCalleeRole): unknown {
   const row = SOURCE[variant].roles[role]; const text = source.slice(row.start, row.end);
-  const padding = source.slice(0, row.start).replaceAll(/[^\n]/gu, " "); const context = createContext({});
+  const padding = source.slice(0, row.start).replaceAll(/[^\r\n]/gu, value=>" ".repeat(value.length)); const context = createContext({});
   if (row.kind === "arrow") { return runInContext(`${padding.slice(0, -1)}(${text})`, context) as unknown; }
   const ctor: unknown = runInContext(`${padding.slice(0, -7)}(class{${text}})`, context);
   assert.ok(typeof ctor === "function"); const prototype: unknown = Reflect.get(ctor, "prototype"); assert.ok(prototype !== null && typeof prototype === "object");
@@ -20,13 +20,11 @@ function inertFunction(source: string, variant: 0 | 1, role: CurrentSchematicRel
   const fn: unknown = row.kind === "getter" ? descriptor?.get : descriptor?.value; assert.ok(typeof fn === "function"); return fn;
 }
 void test("actual Node24 metadata binds normal history callbacks, command and group methods in both pinned sources", async context => {
-  let sources: readonly string[];
-  try { sources = await Promise.all(SOURCE.map(row => readFile(`/mnt/c/Program Files/EasyEDA-Pro/resources/app/assets/${row.relativePath}`, "utf8"))); }
-  catch (error) { if (error !== null && typeof error === "object" && "code" in error && error.code === "ENOENT") { context.skip("installed source unavailable"); return; } throw error; }
+  const sources=await readConfiguredEasyedaAssets(SOURCE.map(row=>row.relativePath));if(sources===null){context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);return;}
   assert.equal(process.versions.node, "24.18.0"); const session = new Session(); session.connect(); const key = "__inertSchematicCompletionCallee";
   try {
     for (const variant of [0, 1] as const) {
-      const source = sources[variant]; assert.ok(typeof source === "string"); assert.equal(qualifyCurrentSchematicRelevanceCompletionCalleeSource(source), variant);
+      const source: string|undefined = sources[variant]; assert.ok(typeof source === "string"); assert.equal(qualifyCurrentSchematicRelevanceCompletionCalleeSource(source), variant);
       for (const role of ROLES) {
         Object.defineProperty(globalThis, key, { value: inertFunction(source, variant, role), configurable: true });
         const value = await session.post("Runtime.evaluate", { expression: `globalThis[${JSON.stringify(key)}]`, objectGroup: "inert-schematic-completion-callee" });
@@ -52,4 +50,25 @@ void test("normal completion metadata refuses foreign source and leaves reply ge
   assert.throws(() => qualifyCurrentSchematicRelevanceCompletionCalleeSource("\uD800"));
   let invoked = 0; const input = Object.defineProperty({}, "result", { enumerable: true, get() { invoked += 1; return []; } });
   assert.throws(() => decodeCurrentSchematicRelevanceCompletionCalleeFunction(input, 0, "historyRecord", "script")); assert.equal(invoked, 0);
+});
+
+void test("synthetic astral prefix preserves the getter's actual V8 UTF-16 coordinates",async()=>{
+  const role="historyStatusGet";
+  const row=SOURCE[0].roles[role];
+  const header="get status(){return null}";
+  const column=row.columnNumber-header.indexOf("(");
+  const lines="\n".repeat(row.lineNumber);
+  assert.ok(column>=2&&row.end-row.start>=header.length);
+  const before=`${" ".repeat(row.start-lines.length-column)}${lines}${" ".repeat(column-2)}😀`;
+  const text=`${before}${header}${" ".repeat(row.end-row.start-header.length)}`;
+  const fn=inertFunction(text,0,role);
+  const key="__inertCompletionUtf16";
+  const session=new Session;session.connect();Object.defineProperty(globalThis,key,{value:fn,configurable:true});
+  try{
+    const reference=await session.post("Runtime.evaluate",{expression:`globalThis.${key}`,objectGroup:"inert-completion-utf16"});assert.ok(typeof reference.result.objectId==="string");
+    const packet=await session.post("Runtime.getProperties",{objectId:reference.result.objectId,ownProperties:true,generatePreview:false});
+    const location=packet.internalProperties?.find(value=>value.name==="[[FunctionLocation]]");
+    const point:unknown=location?.value?.value;
+    assert.ok(point!==null&&typeof point==="object");assert.equal(typeof Reflect.get(point,"scriptId"),"string");assert.equal(Reflect.get(point,"lineNumber"),row.lineNumber);assert.equal(Reflect.get(point,"columnNumber"),row.columnNumber);
+  }finally{Reflect.deleteProperty(globalThis,key);await session.post("Runtime.releaseObjectGroup",{objectGroup:"inert-completion-utf16"});session.disconnect();}
 });

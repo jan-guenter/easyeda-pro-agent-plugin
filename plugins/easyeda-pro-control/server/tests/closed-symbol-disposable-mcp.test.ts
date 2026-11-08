@@ -202,7 +202,7 @@ void test("actual SDK strict envelope does not consume the sole offline validati
   const catalog = f.catalogObservation();
   assert.ok(catalog.largestLineBytes > 65_536 && catalog.largestLineBytes <= 1_048_576);
   const entry = listed.tools.find(item => item.name === tool); assert.ok(entry !== undefined);
-  assert.equal(listed.tools.length, 54); assert.equal(entry.inputSchema["additionalProperties"], false);
+  assert.equal(listed.tools.length, 56); assert.equal(entry.inputSchema["additionalProperties"], false);
   assert.ok(listed.tools.some(item => item.name === "easyeda_control_disposable_schematic_rename"));
   assert.equal(entry.annotations?.readOnlyHint, false); assert.equal(entry.annotations?.destructiveHint, true);
   assert.equal(entry.annotations?.idempotentHint, false);

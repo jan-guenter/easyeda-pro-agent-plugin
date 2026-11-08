@@ -1,7 +1,7 @@
 /** Only inert function definitions are compiled in our Node process. No
  * original method, decoder, network or EasyEDA worker is executed. */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { CURRENT209_SYNTHETIC_WORKER_SOURCE } from "./helpers/current209-source-excerpts.ts";
 import { Session } from "node:inspector/promises";
 import { test } from "node:test";
 import { CURRENT_PCB_VIA_POST_HISTORY_SYNC_CALLEES as CALLEES, CURRENT_PCB_VIA_POST_HISTORY_SYNC_CALLER as CALLER } from "../src/current-pcb-via-post-history-sync-source.ts";
@@ -9,7 +9,7 @@ import { decodeCurrentGeneratedSyncCallee } from "../src/current-generated-initi
 import { CURRENT_PROJECT_SAVE_PRODUCER_METHODS as METHODS, CURRENT_PROJECT_SAVE_PRODUCER_METHOD_SOURCE as SOURCE } from "../src/current-project-save-producer-source.ts";
 
 void test("actual V8 function metadata and cloud-finally call site agree with the pinned source offsets", async () => {
-  const source = await readFile("/mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-mgr/3.2.185.bf63a159/js/project-worker.js", "utf8");
+  const source = CURRENT209_SYNTHETIC_WORKER_SOURCE;
   const session = new Session(); session.connect();
   try {
     await session.post("Runtime.enable"); await session.post("Debugger.enable");

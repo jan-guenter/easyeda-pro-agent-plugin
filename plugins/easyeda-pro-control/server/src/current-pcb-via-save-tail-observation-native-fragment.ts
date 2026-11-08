@@ -1,3 +1,4 @@
+import { applyNativeFixedProtocolProjection } from "./native-fixed-protocol-projection.ts";
 import { currentPcbViaSaveTailDeleteControlTemplates } from "./current-pcb-via-save-tail-delete-control-wire.ts";
 import { currentPcbViaSaveTailExtraObservationNativePhases } from "./current-pcb-via-save-tail-extra-observation-wire.ts";
 /** Additional Via-only readonly observations on the same original worker. */
@@ -98,3 +99,7 @@ export function applyCurrentPcbViaSaveTailObservationNativeFragment(input:string
 
 /** Fixed build-time state-machine syntax only; no native owner is issued. */
 export function currentPcbViaSaveTailOwnerNative():string{const source=native();const anchor="public sealed partial class EasyedaDiagnosticOwner {";if(source.split(anchor).length!==2){throw new Error("FIXED_OWNER_NATIVE_ANCHOR");}return anchor+source.split(anchor)[1];}
+
+/** Retain the exact shared immutable codecs, without this Via owner's state,
+ * sender, action admission or dispatch. The closed schematic build uses it. */
+export function applyCurrentPcbViaSaveTailObservationCodecNativeFragment(input:string):string{return applyNativeFixedProtocolProjection(input,{begin,end,protocols:["EasyedaPcbViaSaveTailDeleteControlProtocol","EasyedaPcbViaSaveTailObservationProtocol"],quoteMethod:"SaveTailObservationQuote"},native());}

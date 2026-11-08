@@ -1,0 +1,9 @@
+# Original Via abort and exit settlement
+
+The Via owner now sends the fixed `confirmOriginalJob:true` field required by the original native abort dispatcher. Previously the TypeScript request omitted it, so the exact native roster could refuse before requesting original Job termination. The real synthetic-child regression now checks that full roster and confirmation before it accepts the abort. A consumed or unknown abort remains nonrepeatable.
+
+Explicit `settle-cleanup` may start another bounded read-only original root/Job observation round after the previous round actually exhausted its finite observations. Concurrent calls share the same pending round. Each round retains the same original owner and binding, verifies that binding around each observation, and clears exhaustion eligibility before any await. Protocol, journal, binding and helper-release failures cannot inherit an earlier exhaustion. Original Abort, Close, helper-release Promises and historical journal records remain unchanged and nonrepeatable.
+
+The scheduling regression exercises two complete exhausted rounds followed by a successful original exit proof and one helper release, with one Abort/Save and one copy of each cleanup record. It also proves a protocol failure after prior exhaustion keeps its original error and does not authorize another round. All saved/reopened claims stay false.
+
+Verification: 13 focused owner/scheduler tests pass, including the real synthetic child and both in-flight/exhausted settlement paths; both TypeScript projects and changed strict lint pass. The bounded independent review found no scheduling regression. No helper artifact, native owner, application, MCP connection, process control or installed byte was changed by this source correction. An already-consumed failed abort cannot be retried or repaired by this change.

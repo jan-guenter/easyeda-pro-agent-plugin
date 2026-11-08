@@ -20,5 +20,5 @@ void test("new cache and native metadata frames retain exact original plans and 
   const fields = currentSchematicRelevanceSavedMetadataFrame(Buffer.from(`${JSON.stringify(selectedWire)}\0`), selected, session);
   assert.equal(fields["action"], "schematic-saved-metadata"); assert.equal(fields["uniqueContextId"], "original_context"); assert.equal(fields["intrinsicKind"], "cache-response");
   const parent = currentSchematicRelevanceSavedParentWire(22, session); const parentBytes = Buffer.from(`${JSON.stringify(parent)}\0`); assert.deepEqual(currentSchematicRelevanceSavedParentFrame(parentBytes, session), { action: "schematic-saved-parent", requestId: 22, sessionId: session });
-  assert.equal(PROFILE.renderer.activeCache, 145); assert.equal(PROFILE.renderer.total, 19); assert.throws(() => currentSchematicRelevanceSavedCacheWire(plan, 146, session));
+  assert.equal(PROFILE.renderer.activeCache, 145); assert.equal(PROFILE.renderer.total, 19); assert.throws(() => currentSchematicRelevanceSavedCacheWire(plan, 176, session));
 });

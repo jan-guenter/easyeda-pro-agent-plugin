@@ -4,6 +4,7 @@
  * deriving a pathname or hashing an unknown executable does not establish it.
  * Native ancestry/file leases are acquired by the original diagnostic helper.
  */
+import { CURRENT_SELECTED_FILE_MAIN_INSTALLATION_FILES } from "./current-selected-file-main-installation-profile.ts";
 import { CURRENT_PCB_VIA_WRITE_SDK_SOURCE } from "./current-pcb-via-write-program.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_INSTALLATION_FILES } from "./current-selected-file-main-sql-fence-source.ts";
 import { createHash } from "node:crypto";
@@ -73,6 +74,16 @@ export function createCurrentPcb209DiagnosticInstallationPlan(options: CurrentPc
   paths: WindowsRuntimePaths; plan: CurrentPcbDiagnosticInstallationPlan;
 }> {
   return createFixedInstallationPlan(options, ORDINARY_LAUNCH_209_PROFILE.installedFiles);
+}
+/** Core five slots retain their historical order. All selected-SQL imports
+ * are extra original deny-write/delete leases before the process is created. */
+export function createCurrentSelectedFileMainInstallationPlan(options: CurrentPcbDiagnosticInstallationOptions): Readonly<{
+  paths: WindowsRuntimePaths; plan: CurrentPcbDiagnosticInstallationPlan;
+}> {
+  const result = createFixedInstallationPlan(options, CURRENT_SELECTED_FILE_MAIN_INSTALLATION_FILES);
+  const files = [...result.plan.files], powershell = files.pop();
+  if (powershell === undefined) { refuse(); } files.splice(4, 0, powershell);
+  return Object.freeze({ paths: result.paths, plan: Object.freeze({ ...result.plan, files: Object.freeze(files) }) });
 }
 /** New launch purpose only. Core files remain in the original first five
  * positions; every additional source is a fixed, deduplicated retained lease. */
@@ -274,4 +285,17 @@ async function verifyFacadeHelper(hostPath: string): Promise<void> {
         !sameFacadeHelper(before, await handle.stat({ bigint: true })) || !sameFacadeHelper(before, await lstat(hostPath, { bigint: true })) ||
         await realpath(hostPath) !== hostPath) { refuse(); }
   } finally { await handle.close(); }
+}
+
+/** Snapshot checks precede native admission; the original helper retains every
+ * admitted dependency continuously from before launch through original exit. */
+export async function verifyCurrentSelectedFileMainInstallation(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticInstallation> {
+  const base = await verifyCurrentPcb209DiagnosticInstallation(options);
+  await verifyCurrentSelectedFileMainSqlFenceInstallation(options);
+  const selected = createCurrentSelectedFileMainInstallationPlan(options);
+  return Object.freeze({ ...base, plan: selected.plan });
+}
+export async function verifyCurrentSelectedFileMainFacade(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticInstallation> {
+  const base = await verifyCurrentPcb209DiagnosticFacade(options);
+  return Object.freeze({ ...base, plan: createCurrentSelectedFileMainInstallationPlan(options).plan });
 }

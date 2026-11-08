@@ -196,8 +196,12 @@ copies together. Review those generated changes before freezing the payload.
 The seven-record display and wire purposes use their separate generated
 `schematic-edit-native.ps1`. Rebuild and check it with `schematic:native:update`
 and `schematic:native:check`; its generated identity covers complete helper,
-readable review and actual compiler bytes. Keep the shared published baseline
-immutable. Verify both build layouts and all six released forward artifacts
+readable review and actual compiler bytes. Saved seven-record schematic readers
+use only the fixed `schematic-saved-readback-native.ps1` helper and its separate
+identity, generated with `schematic:saved:native:update` and verified with
+`schematic:saved:native:check`. The readonly helper retains its own birth and
+SQL installation leases. Keep the shared published baseline
+immutable. Verify all four build layouts and all six released forward artifacts
 after generator changes. Each runtime helper and compiler input remains within
 the existing 2 MiB bound. Native compilation and an empty Job prove neither an
 application launch nor a writer lifecycle.

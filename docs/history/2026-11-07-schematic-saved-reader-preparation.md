@@ -20,3 +20,15 @@ required. The Via owner and its cache receipts are not accepted by this issuer.
 
 The focused forged-input check, changed-file strict type-aware lint and both
 TypeScript projects pass. No connected reopen or persistence claim is made.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `bbf6d40195949d40337c4f253f746ef73b9599e4`; its
+committed tree is `ddf74b9db3fa2cf7623a9b134307af3a0ae012cb`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.
