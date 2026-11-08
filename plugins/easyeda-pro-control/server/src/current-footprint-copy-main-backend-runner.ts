@@ -100,7 +100,7 @@ import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CALL_FLAGS as SQL_CALL, CURRENT_SE
   CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUESTS as SQL_REQUESTS, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES as SQL_SITES,
   validateCurrentSelectedFileMainSqlFenceCommand } from "./current-selected-file-main-sql-fence-protocol.ts";
 import type { CurrentSelectedFileMainSqlFenceCommand } from "./current-selected-file-main-sql-fence-protocol.ts";
-import { decodeCurrentSelectedFileMainSqlFenceNative, decodeCurrentSelectedFileMainSqlFenceNativeArray } from "./current-selected-file-main-sql-fence-replies.ts";
+import { currentSelectedFileMainSqlFenceImportsError, decodeCurrentSelectedFileMainSqlFenceNative, decodeCurrentSelectedFileMainSqlFenceNativeArray } from "./current-selected-file-main-sql-fence-replies.ts";
 import type { CurrentPcbViaMainBeginPause } from "./current-pcb-via-main-begin-custody.ts";
 import { currentGeneratedProjectHistorySqlBaselineSchema } from "./current-generated-project-history-sql-baseline.ts";
 import type { CurrentPcbViaMainHistoryHandoff } from "./current-pcb-via-main-history-custody.ts";
@@ -134,6 +134,7 @@ import { qualifyCurrentMainStartupConfigSource } from "./current-main-startup-co
 import { CurrentMainStartupConfigProgress, currentMainStartupConfigSelectionSchema } from "./current-main-startup-config-progress.ts";
 import type { CurrentSavedProjectRegistrationBindings, CurrentSavedProjectRegistrationIntent } from "./current-saved-project-registration-origin.ts";
 import { CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITES as SAVED_CONFIG_SITES, qualifyCurrentSavedProjectRegistrationConfigSource } from "./current-saved-project-registration-config-source.ts";
+import { currentSelectedFileMainSqlCaptureError } from "./current-selected-file-main-sql-capture-error.ts";
 
 type MainCapability = CurrentFootprintCombinedMainCapability | CurrentFootprintForwardExecutionMainCapability | CurrentProjectStructureMainCapability;
 function mainCapability(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
@@ -1019,8 +1020,14 @@ export class CurrentFootprintCopyMainBackendRunner {
     const after = this.#pause; need(after?.sqlSite === "afterImports", "SELECTED_SQL_AFTER_IMPORTS_REQUIRED");
     const selected = objectReply.parse(await this.#request({ phase: "sql-fence-frame", site: "afterImports", method: "Debugger.evaluateOnCallFrame", params: {
       ...SQL_FRAME, callFrameId: after.frameId, expression: SQL_SOURCE.sites.afterImports.expression } })); need(selected.result.description === "Array(4)", "SELECTED_SQL_MODULE_FRAME");
-    const captured = objectReply.parse(await this.#request({ phase: "sql-fence-capture", method: "Runtime.callFunctionOn", params: {
-      ...SQL_CALL, objectId: selected.result.objectId, functionDeclaration: SQL_CAPTURE, arguments: [{ value: this.#selectedSqlPath }], returnByValue: false } }));
+    const importsError = currentSelectedFileMainSqlFenceImportsError(await this.#request({ phase: "sql-fence-properties", method: "Runtime.getProperties", params: {
+      objectId: selected.result.objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }));
+    if (importsError !== null) { need(false, importsError); }
+    const captureReply = await this.#request({ phase: "sql-fence-capture", method: "Runtime.callFunctionOn", params: {
+      ...SQL_CALL, objectId: selected.result.objectId, functionDeclaration: SQL_CAPTURE, arguments: [{ value: this.#selectedSqlPath }], returnByValue: false } });
+    const captureError = currentSelectedFileMainSqlCaptureError(captureReply);
+    if (captureError !== null) { need(false, captureError); }
+    const captured = objectReply.parse(captureReply);
     need(captured.result.description === "Array(11)", "SELECTED_SQL_ORIGINAL_CAPTURE"); this.#sqlCapture = captured.result.objectId;
     const natives = objectReply.parse(await this.#request({ phase: "sql-fence-native-frame", method: "Debugger.evaluateOnCallFrame", params: {
       ...SQL_FRAME, callFrameId: after.frameId, expression: SQL_NATIVE_EXPRESSION } })); need(natives.result.description === "Array(5)", "SELECTED_SQL_NATIVE_FRAME");

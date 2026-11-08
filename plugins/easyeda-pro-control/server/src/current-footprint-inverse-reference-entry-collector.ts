@@ -18,6 +18,7 @@ export interface CurrentFootprintInverseReferenceEntryBindings{
  readonly wait:(breakpoint:string)=>Promise<Readonly<{frame:string;caller:string}>>;
 }
 function need(value:boolean):asserts value{if(!value){throw new Error("INVERSE_REFERENCE_ENTRY_COLLECTOR");}}
+/** Join the original M8 and yw entry objects and retain the first reference await; later queries and deletion require separate continuations. */
 export async function collectCurrentFootprintInverseReferenceEntry(b:CurrentFootprintInverseReferenceEntryBindings):Promise<Readonly<{m8:string;entry:string;caller:string;native:string;selected:string;point:string;rowGuard:string}>>{
  const props=async(objectId:string):Promise<unknown>=>{b.current();const raw=await b.request({phase:"inverse-reference-entry-properties",method:"Runtime.getProperties",params:{objectId,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}});b.current();return raw;};
  const call=async(role:keyof typeof CALLS,refs:readonly string[],target=false):Promise<unknown>=>{const row=CALLS[role];const args:unknown[]=refs.map(objectId=>({objectId}));if(target){args.push({value:b.target});}b.current();const raw=await b.request(validate({phase:"inverse-reference-entry-call",role,method:"Runtime.callFunctionOn",params:{...FLAGS,objectId:b.receipt,functionDeclaration:row.program,arguments:args,returnByValue:row.byValue}}));b.current();return raw;};

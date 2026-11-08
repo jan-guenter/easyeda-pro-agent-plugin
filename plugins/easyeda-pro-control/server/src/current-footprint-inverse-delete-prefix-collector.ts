@@ -21,6 +21,7 @@ export interface CurrentFootprintInverseDeletePrefixBindings{
 }
 export interface CurrentFootprintInverseDeletePrefixReceipt{readonly selected:string;readonly members:string;readonly topics:string;readonly topic:string;readonly entry:string;readonly frames:readonly string[];readonly point:string;readonly emptyCalls:3;readonly rpcBodyHeld:true;readonly nativeSendObserved:false;readonly droppedPromisesCompleted:false;readonly deletionAuthorized:false;}
 function need(value:boolean):asserts value{if(!value){throw new Error("INVERSE_DELETE_PREFIX_COLLECTOR");}}
+/** Join the completed four-query frontier, run the original empty-check continuation once, and retain the first DEL RPC statement before its body. */
 export async function collectCurrentFootprintInverseDeletePrefix(b:CurrentFootprintInverseDeletePrefixBindings):Promise<Readonly<CurrentFootprintInverseDeletePrefixReceipt>>{
  let helpers=0,normal=0,resumes=0;const send=async(input:Command):Promise<unknown>=>{b.current();const c=validate(input);normal+=1;if(c.method==="Runtime.callFunctionOn"||c.method==="Debugger.evaluateOnCallFrame"){helpers+=1;}need(normal<=LIMIT.normal&&helpers<=LIMIT.helpers);const raw=await b.request(c);b.current();return raw;};
  const props=(id:string):Promise<unknown>=>send({phase:"inverse-delete-prefix-properties",method:"Runtime.getProperties",params:{objectId:id,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}});

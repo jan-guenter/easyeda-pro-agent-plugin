@@ -43,6 +43,7 @@ export const CURRENT_FOOTPRINT_INVERSE_REFERENCE_RESULT_WORKER_PROGRAMS = freeze
   const selected = CURRENT_FOOTPRINT_INVERSE_REFERENCE_RESULT_TOPICS[kind];
   return [kind, { roots: topic(GET.roots, selected.outer, selected.inner), tasks: GET.tasks, callbacks: GET.callbacks, innerCallback: GET.innerCallback, innerResolvers: GET.innerResolvers, local: topic(GET.local, selected.outer, selected.inner), incoming: topic(GET.incoming, selected.outer, selected.inner), response, wrapper: GET.wrapper, raw: GET.raw, same: GET.same, reply: GET.reply, outerCallback: GET.outerCallback, final: GET.final }];
 })));
+/** Select the fixed next-query continuation program for the current reference kind; no caller-supplied JavaScript is accepted. */
 export function currentFootprintInverseReferenceNextProgram(kind: Kind): string {
   if (kind === "pcb-all") { return UI.rpcSchematic; } if (kind === "schematic") { return UI.rpcDerived; } if (kind === "footprint-derived") { return UI.rpcDevice; } throw new Error("INVERSE_REFERENCE_RESULT_FINAL_HAS_NO_RPC");
 }

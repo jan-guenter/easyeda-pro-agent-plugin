@@ -25,17 +25,21 @@ export const CURRENT_FOOTPRINT_INVERSE_DELETE_MANAGER_LINKS = freezeDeep({
 } as const);
 export type CurrentFootprintInverseDeleteManagerRole = keyof typeof CURRENT_FOOTPRINT_INVERSE_DELETE_MANAGER_SOURCE;
 function need(value: boolean): asserts value { if (!value) { throw new Error("FOOTPRINT_INVERSE_DELETE_MANAGER_SOURCE"); } }
+/** Extract the pinned registered DEL callback or selected V0 method span; source drift refuses before metadata is admitted. */
 function fragment(text: string, row: Readonly<{ bytes: number; sha256: string }>): void {
   need(Buffer.byteLength(text) === row.bytes && createHash("sha256").update(text).digest("hex") === row.sha256);
 }
+/** Require the complete pinned UI source and both original DEL manager spans; equal-shaped substitute source is insufficient. */
 export function qualifyCurrentFootprintInverseDeleteManagerSource(source: string): void {
   qualifyCurrentFootprintInversePublicDeleteSource("manager", source);
   for (const row of Object.values(CURRENT_FOOTPRINT_INVERSE_DELETE_MANAGER_SOURCE)) { fragment(source.slice(row.descriptionStart, row.end), row); }
   for (const row of Object.values(CURRENT_FOOTPRINT_INVERSE_DELETE_MANAGER_LINKS)) { fragment(source.slice(row.start, row.end), row); }
 }
+/** Compare the CDP function description with the exact selected source span before its metadata is used. */
 export function requireCurrentFootprintInverseDeleteManagerDescription(text: string, role: CurrentFootprintInverseDeleteManagerRole): void {
   fragment(text, CURRENT_FOOTPRINT_INVERSE_DELETE_MANAGER_SOURCE[role]);
 }
+/** Decode the selected original function location and scopes without invoking the registered handler or delete method. */
 export function qualifyCurrentFootprintInverseDeleteManagerFunction(input: unknown, role: CurrentFootprintInverseDeleteManagerRole, scriptId: string): string {
   return qualifyCurrentFootprintSourceFunctionMetadata(input, CURRENT_FOOTPRINT_INVERSE_DELETE_MANAGER_SOURCE[role], scriptId);
 }

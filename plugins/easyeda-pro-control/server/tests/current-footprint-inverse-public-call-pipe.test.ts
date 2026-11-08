@@ -1,3 +1,5 @@
+import{currentFootprintInverseDeleteManagerCases}from"../src/current-footprint-inverse-delete-manager-protocol.ts";
+import{currentFootprintInverseDeleteCollateralCases}from"../src/current-footprint-inverse-delete-collateral-protocol.ts";
 /* oxlint-disable import/max-dependencies -- This real byte-stream test composes the SDK and every independent finite concurrent vocabulary. */
 import{currentFootprintInverseDeletePrefixCases}from"../src/current-footprint-inverse-delete-prefix-protocol.ts";
 
@@ -64,6 +66,8 @@ void test("original SDK write and reply remain separate while fixed UI and worke
   for(const command of currentFootprintInverseReferenceProgressCases()){const observation=pipe.observeInverseReferenceProgress(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   for(const command of currentFootprintInverseReferenceResultCases()){const observation=pipe.observeInverseReferenceResult(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   for(const command of currentFootprintInverseReferenceSendCases()){const observation=pipe.observeInverseReferenceSend(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseDeleteManagerCases()){const observation=pipe.observeInverseDeleteManager(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseDeleteCollateralCases()){const observation=pipe.observeInverseDeleteCollateral(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   for(const command of currentFootprintInverseDeletePrefixCases()){const observation=pipe.observeInverseDeletePrefix(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   input.write(Buffer.from(`${JSON.stringify({...sdkRequest,result:{result:{type:"object",subtype:"promise",className:"Promise",objectId:"original-sdk-promise"}}})}\0`));
   assert.deepEqual(await pending,{result:{type:"object",subtype:"promise",className:"Promise",objectId:"original-sdk-promise"}});pipe.requireInversePublicDeleteWritten(pending);
@@ -87,6 +91,8 @@ void test("original SDK write and reply remain separate while fixed UI and worke
   for(const command of currentFootprintInverseReferenceProgressCases()){const observation=pipe.observeInverseReferenceProgress(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   for(const command of currentFootprintInverseReferenceResultCases()){const observation=pipe.observeInverseReferenceResult(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   for(const command of currentFootprintInverseReferenceSendCases()){const observation=pipe.observeInverseReferenceSend(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseDeleteManagerCases()){const observation=pipe.observeInverseDeleteManager(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
+  for(const command of currentFootprintInverseDeleteCollateralCases()){const observation=pipe.observeInverseDeleteCollateral(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   for(const command of currentFootprintInverseDeletePrefixCases()){const observation=pipe.observeInverseDeletePrefix(command);assert.equal(last().sessionId,"original-ui");reply({});await observation;pipe.requireInversePublicDeleteWritten(pending);}
   const prefix=currentFootprintInverseDeletePrefixCases()[0];assert.ok(prefix!==undefined);const prefixBefore=sent.length;
   // oxlint-disable-next-line typescript/unbound-method -- An extra raw field must fail before this finite lane writes bytes.

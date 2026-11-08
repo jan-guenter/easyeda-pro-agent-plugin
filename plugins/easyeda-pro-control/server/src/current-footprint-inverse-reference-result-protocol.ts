@@ -14,6 +14,7 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 interface Call { readonly program: string; readonly refs: number; readonly value: 0 | 1 | 2; readonly byValue: boolean }
 function row(program: string, refs: number, byValue = false, value: 0 | 1 | 2 = 0): Call { return Object.freeze({ program, refs, value, byValue }); }
+/** Select the immutable four-query reference result call roster for the current query kind. */
 export function currentFootprintInverseReferenceResultCalls(kind: Kind): Readonly<Record<string, Call>> {
   const shared: Record<string, Call> = { nativeInstance: row(NATIVE.defaultInstance, 3, true), nativeHooks: row(NATIVE.hooks, 2, true), rowReprove: row(ROW.reprove, 1, true), promise: row(SEND.promise, 2, true), same: row(SHARED.same, 2, true), empty: row(SHARED.empty, 2), emptyReprove: row(SHARED.emptyReprove, 1, true), referenceReprove: row(SHARED.referenceReprove, 1, true), outerResult: row(SHARED.outerResult, 2, true) };
   if (kind === "schematic") { Object.assign(shared, { roots: row(SHARED.schRoots, 8), tasks: row(SHARED.schTasks, 1), callbacks: row(SHARED.schCallbacks, 6), reply: row(SHARED.schReply, 3, true), outerCallback: row(SHARED.schOuterCallback, 7), final: row(SHARED.schFinal, 5, true), returned: row(SHARED.schReturned, 8, true, 1) }); }
@@ -44,6 +45,7 @@ const schema = z.discriminatedUnion("phase", [
 /* oxlint-enable unicorn/max-nested-calls */
 export type CurrentFootprintInverseReferenceResultCommand = Readonly<z.infer<typeof schema>>;
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_REFERENCE_RESULT_COMMAND"); } }
+/** Validate the closed four-query reference result command, including its exact fixed program and argument shape, before native encoding. */
 export function validateCurrentFootprintInverseReferenceResultCommand(input: unknown): CurrentFootprintInverseReferenceResultCommand {
   const command = schema.parse(capture(input));
   if (command.method === "Runtime.callFunctionOn") { const selected = currentFootprintInverseReferenceResultCalls(command.queryKind)[command.role]; need(selected !== undefined && command.params.functionDeclaration === selected.program && command.params.returnByValue === selected.byValue && command.params.arguments.length === selected.refs + Number(selected.value !== 0)); for (const [index, arg] of command.params.arguments.entries()) { if (index < selected.refs) { need("objectId" in arg); } else { need("value" in arg && (selected.value === 1 ? typeof arg.value === "object" : typeof arg.value === "string")); } } }
@@ -51,15 +53,20 @@ export function validateCurrentFootprintInverseReferenceResultCommand(input: unk
   else if (command.method === "Debugger.setBreakpointOnFunctionCall") { need(command.role !== "nextRpc" || command.queryKind !== "device-all"); }
   return freezeDeep(command);
 }
+/** Return the fixed four-query reference result program associated with this command, or null for commands that execute no helper. */
 export function currentFootprintInverseReferenceResultProgram(command: CurrentFootprintInverseReferenceResultCommand): string | null { if (command.method === "Runtime.callFunctionOn") { return command.params.functionDeclaration; } if (command.method === "Debugger.evaluateOnCallFrame") { return command.params.expression; } return null; }
+/** Require the complete returned helper source to match the selected four-query reference result program, including the Inspector wrapper. */
 export function qualifyCurrentFootprintInverseReferenceResultHelper(input: unknown, command: CurrentFootprintInverseReferenceResultCommand): void { const selected = validateCurrentFootprintInverseReferenceResultCommand(command); const program = currentFootprintInverseReferenceResultProgram(selected); need(program !== null); const raw = z.strictObject({ scriptSource: z.string().max(16_386) }).parse(capture(input)); need(raw.scriptSource === (selected.method === "Runtime.callFunctionOn" ? `(${program})` : program)); }
+/** Encode the validated four-query reference result command with its positive request ID and exact session; no ownership receipt is issued. */
 export function currentFootprintInverseReferenceResultWire(input: CurrentFootprintInverseReferenceResultCommand, id: number, sessionId: string): CurrentFootprintInverseReferenceResultCommand & Readonly<{ id: number; sessionId: string; inverseReferenceResult: true }> { need(Number.isSafeInteger(id) && id > 0); handle.parse(sessionId); return freezeDeep({ ...validateCurrentFootprintInverseReferenceResultCommand(input), id, sessionId, inverseReferenceResult: true }); }
+/** Decode one bounded NUL-terminated four-query reference result frame and require exact byte parity with its validated command before returning native fields. */
 export function currentFootprintInverseReferenceResultNativeFrame(bytes: Buffer, input: CurrentFootprintInverseReferenceResultCommand, sessionId: string): Readonly<Record<string, string | number>> {
   need(bytes.length <= 65_536 && bytes.at(-1) === 0); const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, -1))); const id = z.looseObject({ id: z.number().int().positive() }).parse(capture(raw)).id; const command = validateCurrentFootprintInverseReferenceResultCommand(input); need(bytes.toString("utf8") === `${JSON.stringify(currentFootprintInverseReferenceResultWire(command, id, sessionId))}\0`);
   const fields: Record<string, string | number> = { action: "footprint-inverse-reference-result", requestId: id, phase: command.phase, method: command.method, queryKind: command.queryKind }; if ("role" in command) { fields["role"] = command.role; }
   if (command.method === "Debugger.getScriptSource") { fields["scriptId"] = command.params.scriptId; } else if (command.method === "Debugger.evaluateOnCallFrame") { fields["callFrameId"] = command.params.callFrameId; } else if (command.method === "Debugger.removeBreakpoint") { fields["breakpointId"] = command.params.breakpointId; } else if (command.method === "Debugger.setBreakpoint") { fields["scriptId"] = command.params.location.scriptId; } else if (command.method !== "Debugger.resume") { fields["objectId"] = command.params.objectId; if (command.method === "Runtime.callFunctionOn") { for (const [index, arg] of command.params.arguments.entries()) { if ("objectId" in arg) { fields[`reference${String(index)}`] = arg.objectId; } else if (typeof arg.value === "string") { fields["workerUuid"] = arg.value; } else { Object.assign(fields, arg.value); } } } }
   return Object.freeze(fields);
 }
+/** Enumerate the fixed four-query reference result golden cases used by both TypeScript and the native codec checks. */
 export function currentFootprintInverseReferenceResultCases(): readonly CurrentFootprintInverseReferenceResultCommand[] {
   const out: unknown[] = [];
   for (const queryKind of ORDER) {
@@ -71,6 +78,7 @@ export function currentFootprintInverseReferenceResultCases(): readonly CurrentF
   }
   return freezeDeep(out.map(command => validateCurrentFootprintInverseReferenceResultCommand(command)));
 }
+/** Derive the fixed four-query reference result native template and its unique field placeholders from a validated command. */
 export function currentFootprintInverseReferenceResultTemplate(input: CurrentFootprintInverseReferenceResultCommand): Readonly<{ key: string; method: string; names: readonly string[]; template: string }> {
   const command = validateCurrentFootprintInverseReferenceResultCommand(input); const names: string[] = []; const field = (name: string): string => { need(!names.includes(name)); names.push(name); return `__reference_result_${name}__`; }; const params: Record<string, unknown> = { ...command.params };
   if (command.method === "Debugger.getScriptSource") { params["scriptId"] = field("scriptId"); } else if (command.method === "Debugger.evaluateOnCallFrame") { params["callFrameId"] = field("callFrameId"); } else if (command.method === "Debugger.removeBreakpoint") { params["breakpointId"] = field("breakpointId"); } else if (command.method === "Debugger.setBreakpoint") { params["location"] = { ...command.params.location, scriptId: field("scriptId") }; } else if (command.method !== "Debugger.resume") { params["objectId"] = field("objectId"); if (command.method === "Runtime.callFunctionOn") { params["functionDeclaration"] = `__reference_result_program_${command.queryKind}_${command.role}__`; params["arguments"] = command.params.arguments.map((arg, index) => { if ("objectId" in arg) { return { objectId: field(`reference${String(index)}`) }; } if (typeof arg.value === "string") { return { value: field("workerUuid") }; } return { value: { projectUuid: field("projectUuid"), branchUuid: field("branchUuid"), documentUuid: field("documentUuid") } }; }); } }
@@ -87,6 +95,7 @@ const workerNormal = [45, 66, 5, 12, 5, 8, 4, 21, 3, 5, 8, 11, 11, 4, 27].reduce
 const workerHelpers = [6, 10, 2, 3, 1, 2, 2, 3, 1, 1, 4, 11, 4, 27].reduce((sum, value) => sum + value, 0);
 const schematicNormal = [20, 9, 4, 11, 8, 29, 8, 8, 9, 16].reduce((sum, value) => sum + value, 0);
 const schematicHelpers = [3, 4, 4, 2, 5, 4, 2, 9, 16].reduce((sum, value) => sum + value, 0);
+/** Derive the complete four-query reference result request and control reservation from its fixed query schedule. */
 export function currentFootprintInverseReferenceResultBudget(kind: Kind): Readonly<{ normalMaximum: number; helpersMaximum: number; cdpRequests: number; events: number; resumes: number; controls: number }> {
   z.enum(ORDER).parse(kind); const schematic = kind === "schematic";
   const normalMaximum = schematic ? schematicNormal : workerNormal + (kind === "device-all" ? 27 : 8); const helpersMaximum = schematic ? schematicHelpers : workerHelpers + (kind === "device-all" ? 4 : 2);

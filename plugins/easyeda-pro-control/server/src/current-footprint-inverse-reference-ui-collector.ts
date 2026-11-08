@@ -18,6 +18,7 @@ export interface CurrentFootprintInverseReferenceUiCollectorBindings{
  readonly wait:(breakpoint:string)=>Promise<Readonly<{frame:string}>>;
 }
 function need(value:boolean):asserts value{if(!value){throw new Error("INVERSE_REFERENCE_UI_COLLECTOR");}}
+/** Collect the source-bound reference UI entries in their fixed query order; no returned observation permits deletion or Save. */
 export async function collectCurrentFootprintInverseReferenceUi(b:CurrentFootprintInverseReferenceUiCollectorBindings):Promise<Readonly<{proof:string;extras:string;entry:string;rpcEntry:string;argument:string;point:string}>>{
  const props=async(objectId:string):Promise<unknown>=>{b.current();const raw=await b.request({phase:"inverse-reference-ui-properties",method:"Runtime.getProperties",params:{objectId,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}});b.current();return raw;};
  const call=async(role:keyof typeof CALLS,refs:readonly string[],target=false):Promise<unknown>=>{const args:unknown[]=refs.map(objectId=>({objectId})),row=CALLS[role];if(target){args.push({value:b.target});}b.current();const raw=await b.request(validate({phase:"inverse-reference-ui-call",role,method:"Runtime.callFunctionOn",params:{...FLAGS,objectId:b.receipt,functionDeclaration:row.program,arguments:args,returnByValue:row.byValue}}));b.current();return raw;};

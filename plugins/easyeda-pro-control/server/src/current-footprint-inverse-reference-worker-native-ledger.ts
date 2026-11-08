@@ -4,6 +4,7 @@ import { CURRENT_FOOTPRINT_INVERSE_REFERENCE_WORKER_MAXIMUM as MAXIMUM, currentF
 import { CURRENT_FOOTPRINT_INVERSE_REFERENCE_WORKER_ORDER as ORDER, CURRENT_FOOTPRINT_INVERSE_REFERENCE_WORKER_ROLES as ROLES } from "./current-footprint-inverse-reference-worker-source.ts";
 
 type CountKey = "setupNormal" | "setupHelpers" | "entryNormal" | "entryHelpers" | "queryNormal" | "queryHelpers";
+/** Compute the bounded worker-ledger expression for the fixed reference kind without allocating a native owner. */
 function formula(key: CountKey): string {
   const one = budget([1])[key]; const more = budget([2])[key]; const two = budget([1, 1])[key];
   const nodes = more - one; const models = two - one - nodes; const base = one - models - nodes;
@@ -17,6 +18,7 @@ function formula(key: CountKey): string {
   }
   return `(${String(base)}+${String(models)}*inverseReferenceWorkerModels+${String(nodes)}*inverseReferenceWorkerNodeSum)`;
 }
+/** Generate the inverse-only worker ledger with distinct original query Jobs and exact send, completion and rearm ordering. */
 export function currentFootprintInverseReferenceWorkerLedgerNativeSource(): string {
   const setupNormal = formula("setupNormal"); const setupHelpers = formula("setupHelpers"); const entryNormal = formula("entryNormal"); const entryHelpers = formula("entryHelpers"); const queryNormal = formula("queryNormal"); const queryHelpers = formula("queryHelpers");
   return `public sealed partial class EasyedaDiagnosticOwner{

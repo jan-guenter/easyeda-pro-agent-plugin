@@ -14,6 +14,7 @@ interface Token { readonly kind: Kind; readonly start: number; readonly end: num
 export function currentPcbDiagnosticCSharpLexicalTokens(source: string): readonly Readonly<Token>[] {
   return Object.freeze(tokens(source).map(token => Object.freeze(token)));
 }
+/** Hash the complete ordered token kinds and texts for reversible spacing verification. */
 export function currentPcbDiagnosticCSharpTokenSha256(source: string): string {
   return hashTokens(tokens(source));
 }
@@ -22,6 +23,7 @@ const operators = Object.freeze([">>=", "<<=", "++", "--", "->", "&&", "||", "??
 const bad = (): never => { throw new Error("PCB_DIAGNOSTIC_CSHARP_SPACING"); };
 const need = (value: boolean): void => { if (!value) { bad(); } };
 const ascii = (text: string): void => { need(text.length > 0 && text.length === Buffer.byteLength(text) && !/[\u0080-\uFFFF\0]/u.test(text)); };
+/** Find the end of one C# verbatim string while preserving doubled quotes and refusing an unfinished literal. */
 function verbatimEnd(source: string, start: number): number {
   let index = start + 2;
   while (index < source.length) {
@@ -31,6 +33,7 @@ function verbatimEnd(source: string, start: number): number {
   }
   return bad();
 }
+/** Read one supported quoted-literal escape and reject malformed or unsupported encodings. */
 function escapeEnd(source: string, start: number, character: boolean): number {
   const marker = source[start + 1]; if (marker === undefined) { return bad(); }
   if (String.raw`'"\0abfnrtv`.includes(marker)) { return start + 2; }
@@ -41,6 +44,7 @@ function escapeEnd(source: string, start: number, character: boolean): number {
   need(value.length === length && /^[a-fA-F\d]+$/u.test(value));
   need(Number.parseInt(value, 16) <= (character ? 65_535 : 1_114_111)); return start + length + 2;
 }
+/** Find the matching quoted-literal end using the restricted escape grammar. */
 function quotedEnd(source: string, start: number, quote: string): number {
   need(!source.startsWith('"""', start)); let index = start + 1; let characters = 0;
   while (index < source.length) {
@@ -50,6 +54,7 @@ function quotedEnd(source: string, start: number, quote: string): number {
   }
   return bad();
 }
+/** Lex the complete bounded ASCII C# input into exact token spans without discarding unknown syntax. */
 function tokens(source: string): readonly Token[] {
   ascii(source); const result: Token[] = []; let index = 0;
   while (index < source.length) {
@@ -75,6 +80,7 @@ function tokens(source: string): readonly Token[] {
   }
   return result;
 }
+/** Hash every ordered token kind and text so spacing changes cannot alter the compiler token stream. */
 function hashTokens(values: readonly Token[]): string {
   const hash = createHash("sha256");
   for (const token of values) {
@@ -82,6 +88,7 @@ function hashTokens(values: readonly Token[]): string {
   }
   return hash.digest("hex");
 }
+/** Encode a bounded spacing offset without numeric coercion or truncation. */
 function integer(value: number): Buffer {
   need(Number.isSafeInteger(value) && value >= 0); const bytes: number[] = []; let remaining = value;
   do { let byte = remaining % 128; remaining = Math.floor(remaining / 128); if (remaining > 0) { byte += 128; } bytes.push(byte); } while (remaining > 0);
@@ -103,6 +110,7 @@ export function compactCurrentPcbDiagnosticCSharp(source: string): CurrentCSharp
   need(spacing.length <= CURRENT_PCB_DIAGNOSTIC_CSHARP_SPACING_MAX_BYTES && tokenSha256 === hashTokens(tokens(compact)));
   return Object.freeze({ compact, spacing, tokenSha256 });
 }
+/** Restore the historical spacing format and require its original token hash and canonical metadata. */
 export function restoreCurrentPcbDiagnosticCSharp(compact: string, spacing: Buffer, expectedTokenSha256: string): string {
   ascii(compact); need(spacing.length > 0 && spacing.length <= CURRENT_PCB_DIAGNOSTIC_CSHARP_SPACING_MAX_BYTES && /^[a-f\d]{64}$/u.test(expectedTokenSha256));
   let offset = 0;

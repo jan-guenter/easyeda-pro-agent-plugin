@@ -14,12 +14,14 @@ const hash = (bytes: Uint8Array): string => createHash("sha256").update(bytes).d
 const bad = (): never => { throw new Error("PCB_DIAGNOSTIC_CSHARP_REVIEW_STORAGE_V3"); };
 interface Blob { readonly encoded: string; readonly length: number; readonly sha256: string; readonly packedLength: number; readonly packedSha256: string }
 interface Metadata { readonly compiler: Blob; readonly spacing: Blob; readonly originalLength: number; readonly originalSha256: string; readonly tokenSha256: string }
+/** Compress one bounded source blob and retain both raw and compressed lengths and SHA256 values. */
 function pack(bytes: Buffer, maximum: number): Blob {
   if (bytes.length === 0 || bytes.length > maximum) { return bad(); }
   // oxlint-disable-next-line node/no-sync -- Fixed immutable build data, bounded before compression.
   const packed = gzipSync(bytes, { level: 9 }); if (packed.length > maximum) { return bad(); }
   return { encoded: packed.toString("base64"), length: bytes.length, sha256: hash(bytes), packedLength: packed.length, packedSha256: hash(packed) };
 }
+/** Validate encoded length, compressed hash and expansion bound before checking the exact restored source hash. */
 function unpack(meta: Blob, maximum: number): Buffer {
   if (!Number.isSafeInteger(meta.length) || meta.length === 0 || meta.length > maximum || !Number.isSafeInteger(meta.packedLength) || meta.packedLength < 18 || meta.packedLength > maximum || meta.encoded.length > Math.ceil(maximum / 3) * 4) { return bad(); }
   const packed = Buffer.from(meta.encoded, "base64"); if (packed.length !== meta.packedLength || packed.toString("base64") !== meta.encoded || hash(packed) !== meta.packedSha256) { return bad(); }
@@ -30,21 +32,26 @@ function unpack(meta: Blob, maximum: number): Buffer {
   // oxlint-disable-next-line node/no-sync -- Canonical pinned-Node24 compression rejects extra gzip members and ignored tails.
   if (!gzipSync(buffer, { level: 9 }).equals(packed)) { return bad(); } return buffer;
 }
+/** Encode the fixed PowerShell metadata arguments from an already validated source blob. */
 function argumentsText(value: Blob): string { return `'${value.encoded}' ${String(value.length)} '${value.sha256}' ${String(value.packedLength)} '${value.packedSha256}'`; }
+/** Emit the fixed version-three storage block containing the compact body and reversible review metadata. */
 function block(meta: Metadata): string {
   // Spacing is build-only data in a comment, covered by the admitted whole
   // Helper identity. Runtime decodes/compiles only the compact bounded body.
   return `${BEGIN}# fixed-review-spacing ${argumentsText(meta.spacing)} ${String(meta.originalLength)} '${meta.originalSha256}' '${meta.tokenSha256}'\n${CURRENT_PCB_DIAGNOSTIC_CSHARP_DECODER}$fixedCurrent209CompactCompiler=Expand-FixedCurrent209CSharp ${argumentsText(meta.compiler)}\nAdd-Type -TypeDefinition $fixedCurrent209CompactCompiler\nRemove-Variable fixedCurrent209CompactCompiler\n${END}`;
 }
+/** Locate exactly one supported storage section and refuse missing, repeated or reordered boundaries. */
 function section(source: string, begin: string, end: string): Readonly<{ start: number; stop: number }> {
   const start = source.indexOf(begin); const last = source.indexOf(end);
   if (start === -1 || last <= start || source.includes(begin, start + begin.length) || source.includes(end, last + end.length)) { return bad(); } return { start, stop: last + end.length };
 }
+/** Parse one complete fixed storage-blob metadata tuple from the matched version-three block. */
 function readBlob(match: RegExpMatchArray, offset: number): Blob {
   const [encoded, length, sha256, packedLength, packedSha256] = match.slice(offset, offset + 5);
   if (encoded === undefined || length === undefined || sha256 === undefined || packedLength === undefined || packedSha256 === undefined) { return bad(); }
   return { encoded, length: Number(length), sha256, packedLength: Number(packedLength), packedSha256 };
 }
+/** Read and validate the exact version-three block, then restore its original and compact C# forms. */
 function read(source: string): Readonly<{ start: number; stop: number; original: string; compact: string }> {
   if (Buffer.byteLength(source) > MAXIMUM || source.includes(LITERAL_BEGIN) || source.includes(LITERAL_END) || source.includes("# BEGIN FIXED CURRENT209 CSHARP STORAGE") || source.includes("# END FIXED CURRENT209 CSHARP STORAGE") || source.includes("# BEGIN FIXED CURRENT209 CSHARP REVIEW STORAGE V2") || source.includes("# END FIXED CURRENT209 CSHARP REVIEW STORAGE V2")) { return bad(); }
   const { start, stop } = section(source, BEGIN, END), stored = source.slice(start, stop);
@@ -62,14 +69,18 @@ function read(source: string): Readonly<{ start: number; stop: number; original:
   if (bytes.length !== originalLength || hash(bytes) !== originalSha256 || bytes.length > compiler.length + SPACING_MAXIMUM) { return bad(); }
   return { start, stop, original, compact };
 }
+/** Recognize the explicit version-three marker without treating it as authority to compile or execute. */
 export function hasCurrentPcbDiagnosticCSharpReviewStorageV3(source: string): boolean {
   return source.includes(BEGIN.slice(0, -1)) || source.includes(END.slice(0, -1));
 }
+/** Restore the original review source from a validated version-three block without changing historical version decoders. */
 export function expandCurrentPcbDiagnosticCSharpReviewSourceV3(source: string): string {
   const value = read(source);
   return source.slice(0, value.start) + LITERAL_BEGIN + value.original + LITERAL_END + source.slice(value.stop);
 }
+/** Return only the validated compact compiler body; review metadata is not part of the runtime C# input. */
 export function currentPcbDiagnosticCSharpRuntimeCompilerInputV3(source: string): string { return read(source).compact; }
+/** Pack the original C# source through explicit version-three token fusion with exact restoration and fixed size bounds. */
 export function packCurrentPcbDiagnosticCSharpReviewStorageV3(input: string): string {
   const source = hasCurrentPcbDiagnosticCSharpReviewStorageV3(input) ? expandCurrentPcbDiagnosticCSharpReviewSourceV3(input) : input;
   const { start, stop } = section(source, LITERAL_BEGIN, LITERAL_END);

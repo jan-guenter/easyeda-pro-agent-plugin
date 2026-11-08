@@ -7,6 +7,7 @@ import type { CurrentCSharpSpacing } from "./current-pcb-diagnostic-csharp-spaci
 type Token = ReturnType<typeof tokenize>[number];
 const bad = (): never => { throw new Error("PCB_DIAGNOSTIC_CSHARP_SPACING_V3"); };
 const need = (value: boolean): void => { if (!value) { bad(); } };
+/** Encode a nonnegative bounded spacing integer; unsupported offsets refuse rather than truncate. */
 function integer(value: number): Buffer {
   need(Number.isSafeInteger(value) && value >= 0);
   const bytes: number[] = [];
@@ -19,6 +20,7 @@ function integer(value: number): Buffer {
   } while (remaining > 0);
   return Buffer.from(bytes);
 }
+/** Decide whether two adjacent token texts lex as the same two tokens; retain trivia when concatenation changes either token. */
 function adjacent(left: Token | undefined, right: Token): boolean {
   if (left === undefined) { return true; }
   // Keep the separator before a dot after a number. The historical restricted
@@ -33,6 +35,7 @@ function adjacent(left: Token | undefined, right: Token): boolean {
     throw error;
   }
 }
+/** Compact the restricted C# token stream with reversible trivia metadata and a complete token hash, preserving the unchanged compiler bound. */
 export function compactCurrentPcbDiagnosticCSharpV3(source: string): CurrentCSharpSpacing {
   const active = tokenize(source).filter(token => token.kind !== "space" && token.kind !== "comment");
   need(active.length > 0);
@@ -68,6 +71,7 @@ export function compactCurrentPcbDiagnosticCSharpV3(source: string): CurrentCSha
   need(spacing.length <= MAXIMUM && tokenSha256 === hashTokens(compact));
   return Object.freeze({ compact, spacing, tokenSha256 });
 }
+/** Restore the exact C# review bytes, verify the token hash and require canonical version-three recompaction. */
 export function restoreCurrentPcbDiagnosticCSharpV3(compact: string, spacing: Buffer, expectedTokenSha256: string): string {
   need(spacing.length > 0 && spacing.length <= MAXIMUM && /^[a-f\d]{64}$/u.test(expectedTokenSha256));
   // Validate the complete compact input before interpreting restoration offsets.

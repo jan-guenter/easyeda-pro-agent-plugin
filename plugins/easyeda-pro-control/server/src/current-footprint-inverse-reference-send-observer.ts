@@ -47,6 +47,7 @@ const remote=z.strictObject({type:z.enum(["object","function","string","number",
 const property=z.strictObject({name:z.string(),value:remote,writable:z.boolean(),enumerable:z.boolean(),configurable:z.boolean(),isOwn:z.literal(true)});
 const promiseInternal=z.strictObject({name:z.enum(["[[Prototype]]","[[PromiseState]]","[[PromiseResult]]"]),value:remote});
 const promisePacket=z.strictObject({result:z.array(property).length(0),internalProperties:z.array(promiseInternal).length(3)});
+/** Retain the original source continuation through its native IGIVE normal return; this descriptive result does not itself issue a private worker Job. */
 export async function observeCurrentFootprintInverseReferenceSend(b:CurrentFootprintInverseReferenceSendBindings):Promise<Readonly<CurrentFootprintInverseReferenceSendReceipt>>{
  const identity=currentFootprintInverseLookupIdentity(b.target);const CALLS=TABLES[b.query];const POINTS=POINTS_BY_QUERY[b.query];const EXPRESSIONS=EXPRESSIONS_BY_QUERY[b.query];
  const props=async(id:string):Promise<unknown>=>{b.current();const raw=await b.request({query:b.query,phase:"inverse-reference-send-properties",method:"Runtime.getProperties",params:{objectId:id,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}});b.current();return raw;};
