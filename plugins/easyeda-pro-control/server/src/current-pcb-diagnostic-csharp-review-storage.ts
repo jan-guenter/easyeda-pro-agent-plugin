@@ -79,6 +79,9 @@ export function currentPcbDiagnosticCSharpRuntimeCompilerInput(input: string): s
   if (hasCurrentPcbDiagnosticCSharpReviewStorageV3(input)) { return currentPcbDiagnosticCSharpRuntimeCompilerInputV3(input); }
   return input.includes(BEGIN.slice(0, -1)) || input.includes(END.slice(0, -1)) ? read(input).compact : currentPcbDiagnosticCSharpCompilerInput(input);
 }
+/** Pack the literal review source into the V2 compiler and spacing sections with independent length and hash checks.
+ * Both the compiler bytes and final helper remain bounded, while spacing must reconstruct the exact original review body.
+ */
 export function packCurrentPcbDiagnosticCSharpReviewStorage(input: string): string {
   const source = expandCurrentPcbDiagnosticCSharpReviewSource(input); const { start, stop } = section(source, LITERAL_BEGIN, LITERAL_END); const body = currentPcbDiagnosticCSharpReviewSource(source);
   const value = compactCurrentPcbDiagnosticCSharp(body); const compiler = pack(Buffer.from(value.compact), MAXIMUM, "COMPILER"); const spacing = pack(value.spacing, SPACING_MAXIMUM, "SPACING");
@@ -93,7 +96,7 @@ export function retainCurrentPcbDiagnosticCSharpReviewStorage(source: string, or
   return original.includes(BEGIN) ? packCurrentPcbDiagnosticCSharpReviewStorage(source) : retainCurrentPcbDiagnosticCSharpStorage(source, original);
 }
 
-/** Explicit opt-in for the inverse composition only. Historical pack remains V2. */
+/** Explicit opt-in for the inverse and schematic writer compositions. Historical pack remains V2. */
 export function packCurrentPcbDiagnosticCSharpTokenFusionStorage(input: string): string {
   return packV3(expandCurrentPcbDiagnosticCSharpReviewSource(input));
 }

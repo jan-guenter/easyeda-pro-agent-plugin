@@ -107,7 +107,10 @@ export function compactCurrentPcbDiagnosticCSharp(source: string): CurrentCSharp
   }
   if (last < source.length) { const bytes = Buffer.from(source.slice(last)); records.push([integer(position - prior), integer(0), integer(bytes.length), bytes]); count += 1; }
   const compact = parts.join(""), spacing = Buffer.concat([integer(count), ...records.flat()]), tokenSha256 = hashTokens(original);
-  need(spacing.length <= CURRENT_PCB_DIAGNOSTIC_CSHARP_SPACING_MAX_BYTES && tokenSha256 === hashTokens(tokens(compact)));
+  if (spacing.length > CURRENT_PCB_DIAGNOSTIC_CSHARP_SPACING_MAX_BYTES) {
+    throw new Error(`PCB_DIAGNOSTIC_CSHARP_SPACING: measured=${String(spacing.length)}, limit=${String(CURRENT_PCB_DIAGNOSTIC_CSHARP_SPACING_MAX_BYTES)}`);
+  }
+  need(tokenSha256 === hashTokens(tokens(compact)));
   return Object.freeze({ compact, spacing, tokenSha256 });
 }
 /** Restore the historical spacing format and require its original token hash and canonical metadata. */

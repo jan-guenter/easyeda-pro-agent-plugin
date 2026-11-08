@@ -1,5 +1,8 @@
 /* oxlint-disable import/max-dependencies -- Typed cursor and command boundaries remain separate while this one original callback capability shares their retained owner custody. */
-import type {CurrentSchematicRelevanceSdkGateRun} from "./current-schematic-relevance-sdk-gate-collector.ts";
+import type {CurrentSchematicRelevanceModifyWorkerPrepared} from "./current-schematic-relevance-modify-worker-collector.ts";
+import type {CurrentSchematicRelevancePublicationNativePrepared} from "./current-schematic-relevance-publication-native-collector.ts";
+import type {CurrentSchematicRelevancePublicationPostHeld} from "./current-schematic-relevance-publication-body-collector.ts";
+import type {CurrentSchematicRelevancePublicationPublishHeld,CurrentSchematicRelevanceSdkGateRun} from "./current-schematic-relevance-sdk-gate-collector.ts";
 import type {CurrentSchematicRelevanceNormalCommandUiReturned} from "./current-schematic-relevance-normal-command-ui-collector.ts";
 import type {CurrentSchematicRelevanceFileSaveUiReturned} from "./current-schematic-relevance-file-save-ui-collector.ts";
 import type {CurrentSchematicRelevanceRenderDelegateStoreReturned} from "./current-schematic-relevance-render-delegate-collector.ts";
@@ -86,6 +89,10 @@ export interface CurrentSchematicRelevanceActionCallbackBindings {
   readonly requestNormalRecord:(command:CurrentSchematicRelevanceNormalRecordCommand)=>Promise<unknown>;
   readonly requireOriginalNormalRecord:()=>CurrentSchematicRelevanceNormalRecordReceipt;
   readonly continueOriginalNormalRecord:()=>Promise<void>;
+  readonly prepareOriginalModifyWorker:()=>Promise<CurrentSchematicRelevanceModifyWorkerPrepared>;
+  readonly prepareOriginalPublicationNative:()=>Promise<CurrentSchematicRelevancePublicationNativePrepared>;
+  readonly continueOriginalPublisherToPost:()=>Promise<CurrentSchematicRelevancePublicationPostHeld>;
+  readonly prepareOriginalPublicationTimer:()=>Promise<CurrentSchematicRelevancePublicationPublishHeld>;
   readonly prepareOriginalNotifications:()=>Promise<CurrentSchematicRelevanceSdkGateRun>;
   readonly prepareOriginalStatusCommands:()=>Promise<CurrentSchematicRelevanceNormalCommandUiReturned>;
   readonly prepareOriginalFileSaveUi:()=>Promise<CurrentSchematicRelevanceFileSaveUiReturned>;

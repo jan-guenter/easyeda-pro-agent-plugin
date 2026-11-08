@@ -68,7 +68,10 @@ export function compactCurrentPcbDiagnosticCSharpV3(source: string): CurrentCSha
   const compact = parts.join("");
   const spacing = Buffer.concat([integer(count), ...records.flat()]);
   const tokenSha256 = hashTokens(source);
-  need(spacing.length <= MAXIMUM && tokenSha256 === hashTokens(compact));
+  if (spacing.length > MAXIMUM) {
+    throw new Error(`PCB_DIAGNOSTIC_CSHARP_SPACING_V3: measured=${String(spacing.length)}, limit=${String(MAXIMUM)}`);
+  }
+  need(tokenSha256 === hashTokens(compact));
   return Object.freeze({ compact, spacing, tokenSha256 });
 }
 /** Restore the exact C# review bytes, verify the token hash and require canonical version-three recompaction. */

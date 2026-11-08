@@ -1,3 +1,5 @@
+import {currentSchematicRelevanceModifyWorkerWire} from "./current-schematic-relevance-modify-worker-wire.ts";
+import {currentSchematicRelevancePublicationWire} from "./current-schematic-relevance-publication-wire.ts";
 import {currentSchematicRelevanceNotificationWire} from "./current-schematic-relevance-notification-wire.ts";
 import {currentSchematicRelevanceSdkGateWire} from "./current-schematic-relevance-sdk-gate-wire.ts";
 import {currentSchematicRelevanceNormalCommandUiWire} from "./current-schematic-relevance-normal-command-ui-wire.ts";
@@ -96,6 +98,12 @@ export function currentSchematicRelevanceDisplayWriteNativeRequest(chunk: Buffer
     const fixed = currentSchematicRelevanceNotificationWire(input, id);
     if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceNotificationCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_NOTIFICATION_FIXED_WIRE"); }
     return fixed.request;
+  }
+  if(Object.hasOwn(raw,"schematicRelevanceModifyWorkerCommand")){
+    const{id,sessionId,schematicRelevanceModifyWorkerCommand:marker,...input}=raw;if(marker!==true||typeof sessionId!=="string"||!/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)){throw new Error("SCHEMATIC_MODIFY_WORKER_WIRE");}const fixed=currentSchematicRelevanceModifyWorkerWire(input,id);if(!chunk.equals(Buffer.from(`${JSON.stringify({id,...fixed.command,schematicRelevanceModifyWorkerCommand:true,sessionId})}\0`))){throw new Error("SCHEMATIC_MODIFY_WORKER_FIXED_WIRE");}return fixed.request;
+  }
+  if(Object.hasOwn(raw,"schematicRelevancePublicationCommand")){
+    const{id,sessionId,schematicRelevancePublicationCommand:marker,...input}=raw;if(marker!==true||typeof sessionId!=="string"||!/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)){throw new Error("SCHEMATIC_PUBLICATION_WIRE");}const fixed=currentSchematicRelevancePublicationWire(input,id);if(!chunk.equals(Buffer.from(`${JSON.stringify({id,...fixed.command,schematicRelevancePublicationCommand:true,sessionId})}\0`))){throw new Error("SCHEMATIC_PUBLICATION_FIXED_WIRE");}return fixed.request;
   }
   if (Object.hasOwn(raw, "schematicRelevanceSdkGateCommand")) {
     const { id, sessionId, schematicRelevanceSdkGateCommand: marker, ...input } = raw;

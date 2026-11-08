@@ -1,7 +1,7 @@
 /** Phase-specific fixed seven-record programs. The shared stage remains exact
  * for the separate Wire owner. No supplied callback or setter table is accepted. */
 import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_STAGE_FUNCTION as BASE } from "./generated-schematic-relevance-display-program.ts";
-import {applyCurrentSchematicRelevanceSdkGate} from "./current-schematic-relevance-sdk-gate-template.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_SDK_GATE_REPLACEMENT} from "./current-schematic-relevance-sdk-gate-template.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 const oldCallback = 'async()=>{ownedAction=b.runner.currentAction;check();same(before,capture(operation.beforeBody));for(const[field,value]of changes){check();const binding=b.setters[field];if(binding.object!==before.text)bad("TEXT_RECEIVER");reproveSetter(binding);apply(binding.set,before.text,[value]);}check();}';
@@ -16,14 +16,14 @@ export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_CAPTURE_REPLACEMENTS = freezeDe
 const oldModifyBaseline = 'const before=capture(operation.beforeBody);same(state.before,before);';
 const retainedModifyBaseline = 'const before=state.before;same(before,capture(operation.beforeBody));';
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_REPLACEMENTS = freezeDeep([[oldModifyBaseline, retainedModifyBaseline], [oldCallback, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_CALLBACK],
-  ['{history:true,name:"Codex disposable Text display"}', '{history:true,name:"Codex disposable Text display",timeout:0,dependencies:[]}']] as const);
+  ['{history:true,name:"Codex disposable Text display"}', '{history:true,name:"Codex disposable Text display",timeout:0,dependencies:[]}'],CURRENT_SCHEMATIC_RELEVANCE_SDK_GATE_REPLACEMENT] as const);
 export function replaceCurrentSchematicRelevanceDisplayPhase(source: string, replacements: readonly (readonly [string, string])[]): string {
   let result = source;
   for (const [before, after] of replacements) { if (result.split(before).length !== 2) { throw new Error("SCHEMATIC_RELEVANCE_PHASE_PROGRAM_ANCHOR"); } result = result.replace(before, after); }
   return result;
 }
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_CAPTURE_FUNCTION = replaceCurrentSchematicRelevanceDisplayPhase(BASE, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_CAPTURE_REPLACEMENTS);
-export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_FUNCTION = applyCurrentSchematicRelevanceSdkGate(replaceCurrentSchematicRelevanceDisplayPhase(BASE, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_REPLACEMENTS));
+export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_FUNCTION = replaceCurrentSchematicRelevanceDisplayPhase(BASE, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_REPLACEMENTS);
 /** Exact debugger statements in the original Runtime-compiled Modify wrapper.
  * Locations are selectors only; the actual owner must join its original script. */
 const originalScript = `(${CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_FUNCTION})`;

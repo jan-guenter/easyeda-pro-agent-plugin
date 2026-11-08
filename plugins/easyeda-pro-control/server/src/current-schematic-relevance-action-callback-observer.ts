@@ -1,5 +1,8 @@
 /* oxlint-disable import/max-dependencies -- The original callback facade binds independently fixed read and partial-continuation cursors to one genuine owner and event lane. */
-import type {CurrentSchematicRelevanceSdkGateRun} from "./current-schematic-relevance-sdk-gate-collector.ts";
+import type {CurrentSchematicRelevanceModifyWorkerPrepared} from "./current-schematic-relevance-modify-worker-collector.ts";
+import type {CurrentSchematicRelevancePublicationNativePrepared} from "./current-schematic-relevance-publication-native-collector.ts";
+import type {CurrentSchematicRelevancePublicationPostHeld} from "./current-schematic-relevance-publication-body-collector.ts";
+import type {CurrentSchematicRelevancePublicationPublishHeld,CurrentSchematicRelevanceSdkGateRun} from "./current-schematic-relevance-sdk-gate-collector.ts";
 import type {CurrentSchematicRelevanceNormalCommandUiReturned} from "./current-schematic-relevance-normal-command-ui-collector.ts";
 import type {CurrentSchematicRelevanceFileSaveUiReturned} from "./current-schematic-relevance-file-save-ui-collector.ts";
 import type {CurrentSchematicRelevanceRenderDelegateStoreReturned} from "./current-schematic-relevance-render-delegate-collector.ts";
@@ -110,6 +113,14 @@ export class CurrentSchematicRelevanceActionCallbackObserver {
   /** Complete only the original queued UI callbacks, retain each visitor's
    * actual fulfilled Promise, then hold the original SDK fulfillment marker.
    * The wrapper, worker TEXT wave, Modify and Save remain incomplete. */
+  /** Retain the private SDK wait and stop the actual timer at the original publisher entry before any native sender runs. */
+  /** Capture the same original worker channel/event metadata while the UI native send stays held. */
+  public async prepareOriginalModifyWorker():Promise<CurrentSchematicRelevanceModifyWorkerPrepared>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const data=await this.#bindings.prepareOriginalModifyWorker();this.#current();return data;}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}
+  /** Qualify the original publisher/channel dependencies without yielding its held body. */
+  public async prepareOriginalPublicationNative():Promise<CurrentSchematicRelevancePublicationNativePrepared>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const data=await this.#bindings.prepareOriginalPublicationNative();this.#current();return data;}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}
+  /** Run only the qualified original publisher prefix, ending before native BC postMessage. */
+  public async continueOriginalPublisherToPost():Promise<CurrentSchematicRelevancePublicationPostHeld>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const data=await this.#bindings.continueOriginalPublisherToPost();this.#current();return data;}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}
+  public async continueOriginalPublicationTimer():Promise<CurrentSchematicRelevancePublicationPublishHeld>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const data=await this.#bindings.prepareOriginalPublicationTimer();this.#current();return data;}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}
   public async continueOriginalQueuedNotifications():Promise<CurrentSchematicRelevanceSdkGateRun>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const data=await this.#bindings.prepareOriginalNotifications();this.#current();return data;}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}
   public async continueOriginalStatusCommands():Promise<CurrentSchematicRelevanceNormalCommandUiReturned>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const data=await this.#bindings.prepareOriginalStatusCommands();this.#current();return data;}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}
   public async continueOriginalFileSaveUi():Promise<CurrentSchematicRelevanceFileSaveUiReturned>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const data=await this.#bindings.prepareOriginalFileSaveUi();this.#current();return data;}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}

@@ -101,11 +101,17 @@ function projectUnusedViaSdkRuntime(input:string,family:"SCHEMATIC"|"INVERSE"):s
   const sender=`${senderSignature}{throw new InvalidOperationException("${error}");}`;
   const smoke=`public static void VerifyPcbViaSdkWireSmoke(){bool refused=false;try{PcbViaSdkProtocolMessage(1,"closed_schematic","capture",null);}catch(InvalidOperationException failure){if(failure.Message!="${error}")throw;refused=true;}if(!refused)throw Error("schematic-via-sdk-closure-smoke");}`;
   const marker=`${beginClosed}\n// The fixed selected driver excludes the Via SDK.\n${endClosed}`;
+  /** Require the exact closed-family marker, refusal methods and negative smoke after Via SDK projection.
+   * Each encoder and sender must also retain its exact two-reference census.
+   */
   const verify=(source:string):void=>{if(count(source,beginClosed)!==1||count(source,endClosed)!==1||count(source,marker)!==1||count(source,codec)!==1||count(source,sender)!==1||count(source,smoke)!==1||source.includes("ViaSdkFunction")||count(source,"PcbViaSdkProtocolMessage(")!==2||count(source,"SendPcbViaSdk(")!==2){throw new Error("SCHEMATIC_VIA_SDK_CLOSED_CENSUS");}};
   const scopes=family==="SCHEMATIC"?["// BEGIN GENERATED SCHEMATIC RELEVANCE DISPLAY BIRTH209","// BEGIN GENERATED SCHEMATIC WIRE EDIT BIRTH209"]:["public static EasyedaDiagnosticOwner CreateFootprintInverse209()","public void AdmitFootprintInverseAction(string action)"];
   for(const scope of scopes){if(count(input,scope)!==1){throw new Error("SCHEMATIC_VIA_SDK_PURPOSE_CENSUS");}}
   if(input.includes(beginClosed)||input.includes(endClosed)){verify(input);return input;}
   const original=native();
+  /** Select one complete generated native member by its exact line prefix.
+   * A missing, ambiguous or unfinished member refuses projection before any replacement occurs.
+   */
   const member=(signature:string):string=>{const rows=original.split("\n").filter(line=>line.startsWith(signature));if(rows.length!==1||rows[0]===undefined||!rows[0].endsWith("}")){throw new Error("SCHEMATIC_VIA_SDK_MEMBER");}return rows[0];};
   // These are the exact fixed target enrollment and startup guards mounted after the Via base.
   // Any changed or additional sender body refuses the exact-member match.

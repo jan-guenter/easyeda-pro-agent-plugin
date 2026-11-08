@@ -31,7 +31,7 @@ export interface CurrentFootprintInverseDeleteManagerPrepared {
   readonly callbackScope: string; readonly handlerScope: string; readonly bodyScope: string; readonly lookupScope: string;
   readonly handler: string; readonly body: string; readonly managerModule: string;
   readonly registry: string; readonly map: string; readonly mapMethods: string; readonly selected: string; readonly project: string; readonly footprint: string;
-  readonly method: string; readonly methodScope: string; readonly topics: string; readonly topicGroup: string; readonly innerTopic: string;
+  readonly method: string; readonly methodScope: string; readonly originalLookupScope: string; readonly registrySelfScope: string; readonly topics: string; readonly topicGroup: string; readonly innerTopic: string;
   readonly callbackId: string; readonly handlerId: string; readonly bodyId: string; readonly methodId: string; readonly busId: string;
   /** Prospective original ticket, before rpcCall executes or increments it. */
   readonly replyTopic: string;
@@ -50,13 +50,15 @@ export async function collectCurrentFootprintInverseDeleteManager(b: CurrentFoot
   const call = async (role: keyof typeof CALLS, refs: readonly string[]): Promise<unknown> => { b.current(); calls += 1; const row = CALLS[role]; const args: unknown[] = refs.map(objectId => ({ objectId })); if (row.value) { args.push({ value: identity }); } const raw = await b.request(validate({ phase: "inverse-delete-manager-call", role, method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: b.receipt, functionDeclaration: row.program, arguments: args, returnByValue: row.byValue } })); b.current(); return raw; };
   // Each returned opaque value is checked before a later projection traverses it.
   // The specialized original I11 root is never enumerated as an ordinary object.
-  const readTuple = async (id: string, size: number): Promise<Tuple> => { const values = array(await props(id), size); const packets: unknown[] = []; for (const value of values) { if (value.type === "object" && value.subtype !== "null" || value.type === "function") { const raw = await props(object(value)); properties(raw); packets.push(raw); } else { packets.push(null); } } return { id, values, packets }; };
+  const readTuple = async (id: string, size: number, retainedGetter = false): Promise<Tuple> => { const values = array(await props(id), size); const packets: unknown[] = []; for (const [index,value] of values.entries()) { if(retainedGetter&&index===2){packets.push(null);}else if (value.type === "object" && value.subtype !== "null" || value.type === "function") { const raw = await props(object(value)); properties(raw); packets.push(raw); } else { packets.push(null); } } return { id, values, packets }; };
   const tuple = async (role: keyof typeof CALLS, refs: readonly string[], size: number): Promise<Tuple> => readTuple(result(await call(role, refs), size), size);
   const qualify = (captured: Tuple, index: number, role: Role, scriptId: string): Readonly<{ scriptId: string; scopes: string }> => { const fn = captured.values[index]; need(fn?.type === "function" && typeof fn.description === "string"); description(fn.description, role); return metadata(captured.packets[index], role, scriptId); };
   const functionId = (captured: Tuple, index: number): string => { const fn = captured.values[index]; need(fn?.type === "function"); return object(fn); };
   const scriptId = b.profile === "ui" ? b.uiScriptId : b.managerScriptId;
   const roots = await tuple("outer", [b.selected, b.functions, b.forwarding.module, b.entry, b.rpc], 6);
-  const originalFunctions = await readTuple(b.functions, 4);
+  // Slot 2 is the already-qualified original Lo getter, retained only as data.
+  // This phase neither traverses nor calls it.
+  const originalFunctions = await readTuple(b.functions, 4, true);
   const rpcMetadata = qualify(originalFunctions, 1, b.profile === "ui" ? "uiBusRpcCall" : "managerBusRpcCall", scriptId);
   const rpcScope = moduleScope(await props(rpcMetadata.scopes));
   const module = await tuple(b.profile === "ui" ? "moduleUi" : "moduleManager", [rpcScope, b.forwarding.module, roots.id], 14);
@@ -96,5 +98,5 @@ export async function collectCurrentFootprintInverseDeleteManager(b: CurrentFoot
   const topics = await tuple("topics", [methodScope, method.id], 2); const topicGroup = await tuple("topicGroup", [topics.id], 2); const innerTopic = await tuple("innerTopic", [topicGroup.id], 1);
   truth(await call("before", [reply.id, lookup.id, method.id, innerTopic.id])); b.current();
   const bus = project.values[1]; need(bus !== undefined && calls === REQUESTS.calls && propertyCount === REQUESTS.properties);
-  return Object.freeze({ profile: b.profile, entry: b.entry, rpcScope, roots: roots.id, module: module.id, queue: queue.id, task: task.id, members: members.id, methods: methods.id, reply: reply.id, callbackScope: originalCallbackScope, handlerScope: originalHandlerScope, bodyScope, lookupScope: lookup.id, handler: handler.id, body: body.id, managerModule: managerModule.id, registry: registry.id, map: map.id, mapMethods: mapMethods.id, selected: selected.id, project: project.id, footprint: footprint.id, method: method.id, methodScope, topics: topics.id, topicGroup: topicGroup.id, innerTopic: innerTopic.id, callbackId: functionId(members, 1), handlerId: functionId(handler, 0), bodyId: functionId(body, 0), methodId: functionId(method, 0), busId: object(bus), replyTopic: key.value, calls, properties: propertyCount, applicationMethodInvoked: false, outerRpcResumed: false, nativeForwardingProved: false, workerJobIssued: false, deletionReady: false });
+  return Object.freeze({ profile: b.profile, entry: b.entry, rpcScope, roots: roots.id, module: module.id, queue: queue.id, task: task.id, members: members.id, methods: methods.id, reply: reply.id, callbackScope: originalCallbackScope, handlerScope: originalHandlerScope, bodyScope, lookupScope: lookup.id, handler: handler.id, body: body.id, managerModule: managerModule.id, registry: registry.id, map: map.id, mapMethods: mapMethods.id, selected: selected.id, project: project.id, footprint: footprint.id, method: method.id, methodScope, originalLookupScope, registrySelfScope: selfScope, topics: topics.id, topicGroup: topicGroup.id, innerTopic: innerTopic.id, callbackId: functionId(members, 1), handlerId: functionId(handler, 0), bodyId: functionId(body, 0), methodId: functionId(method, 0), busId: object(bus), replyTopic: key.value, calls, properties: propertyCount, applicationMethodInvoked: false, outerRpcResumed: false, nativeForwardingProved: false, workerJobIssued: false, deletionReady: false });
 }
