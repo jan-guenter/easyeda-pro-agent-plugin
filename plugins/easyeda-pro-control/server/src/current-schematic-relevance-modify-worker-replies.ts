@@ -82,7 +82,7 @@ export const CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_SOURCE = freezeDeep({
       "end": 11_812,
       "bytes": 27,
       "sha256": "d257238e1366dbd0132b6a8f3445117f2db2c2c2daa50815aaacf4de8506d4b7",
-      "name": "JP.bc.onmessage",
+      "name": "",
       "arity": 1,
       "kind": "arrow",
       "lineNumber": 0,
@@ -135,10 +135,16 @@ export const CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_SOURCE = freezeDeep({
   }
 } as const);
 export type CurrentSchematicRelevanceModifyWorkerRole = keyof typeof CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_SOURCE.roles;
+/** Reject inconsistent source/native metadata using the worker reader's
+ * closed error code rather than inspecting or returning an application error. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("SCH_MODIFY_WORKER_METADATA"); } }
+/** Select one own data descriptor from a proxy-checked metadata reply. An
+ * accessor or Proxy-valued field cannot become the next traversed worker ref. */
 export function currentSchematicRelevanceModifyWorkerField(input: unknown, key: string): Remote {
   const row = properties(input).result.find(value => value.name === key); need(row?.value !== undefined && row.get === undefined && row.set === undefined && row.value.subtype !== "proxy"); return row.value;
 }
+/** Obtain the actual Inspector prototype handle while rejecting a Proxy
+ * parent; this does not infer inheritance from a supplied object description. */
 export function currentSchematicRelevanceModifyWorkerParent(input: unknown): Remote {
   const row = properties(input).internalProperties?.find(value => value.name === "[[Prototype]]"); need(row !== undefined && row.value.subtype !== "proxy"); return row.value;
 }
@@ -146,11 +152,15 @@ export function currentSchematicRelevanceModifyWorkerScript(input: unknown): str
   const location = properties(input).internalProperties?.find(row => row.name === "[[FunctionLocation]]");
   need(location?.value.subtype === "internal#location"); return z.strictObject({ scriptId: z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u), lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() }).parse(location.value.value).scriptId;
 }
+/** Require the complete pinned worker bytes and every selected callable span
+ * before its source locations can be used by later metadata comparisons. */
 export function qualifyCurrentSchematicRelevanceModifyWorkerSource(source: string): void {
   const expected = CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_SOURCE;
   need(source.isWellFormed() && Buffer.byteLength(source) === expected.bytes && createHash("sha256").update(source).digest("hex") === expected.sha256);
   for (const row of Object.values(expected.roles)) { const span = source.slice(row.start, row.end); need(Buffer.byteLength(span) === row.bytes && createHash("sha256").update(span).digest("hex") === row.sha256); }
 }
+/** Join one described class/method/arrow to its exact own fields, full source
+ * digest and original script/location; matching text alone grants no receiver. */
 export function qualifyCurrentSchematicRelevanceModifyWorkerFunction(input: unknown, actual: Remote | undefined, role: CurrentSchematicRelevanceModifyWorkerRole, scriptId: string): void {
   const row = CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_SOURCE.roles[role]; need(actual?.type === "function" && actual.className === "Function" && actual.objectId !== undefined && actual.subtype === undefined && typeof actual.description === "string");
   need(Buffer.byteLength(actual.description) === row.bytes && createHash("sha256").update(actual.description).digest("hex") === row.sha256);

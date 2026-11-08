@@ -1,7 +1,20 @@
+/* oxlint-disable import/max-dependencies -- The closed catalogue derives its strings and repeated-call bounds from every original finite lane; a caller registry would admit arbitrary execution. */
 /** Fixed generated seven-record schematic worker programs only. Exact text membership is inert;
  * only the original controller can correlate a submitted program with its
  * same-session Inspector event and source reply. */
-/* oxlint-disable import/max-dependencies -- The closed catalogue derives its strings and repeated-call bounds from every original finite lane; a caller registry would admit arbitrary execution. */
+import { currentSchematicRelevanceModifyCmCases } from "./current-schematic-relevance-modify-cm-wire.ts";
+import { currentSchematicRelevanceModifyCmControlCases } from "./current-schematic-relevance-modify-cm-control-wire.ts";
+import { currentSchematicRelevanceModifyCmDeltaCases } from "./current-schematic-relevance-modify-cm-delta-wire.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_CM_REQUESTS as MODIFY_CM } from "./current-schematic-relevance-modify-cm-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_CM_CONTROL_REQUESTS as MODIFY_CM_CONTROL } from "./current-schematic-relevance-modify-cm-control-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_CM_DELTA_REQUESTS as MODIFY_CM_DELTA } from "./current-schematic-relevance-modify-cm-delta-protocol.ts";
+import { currentSchematicRelevanceModifyStructureCases } from "./current-schematic-relevance-modify-structure-wire.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_STRUCTURE_REQUESTS as MODIFY_STRUCTURE } from "./current-schematic-relevance-modify-structure-protocol.ts";
+import { currentSchematicRelevanceModifyControlCases } from "./current-schematic-relevance-modify-control-wire.ts";
+import { currentSchematicRelevanceModifyEventCases } from "./current-schematic-relevance-modify-event-wire.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_CONTROL_REQUESTS as MODIFY_CONTROL } from "./current-schematic-relevance-modify-control-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_EVENT_REQUESTS as MODIFY_EVENT } from "./current-schematic-relevance-modify-event-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_BODY_REQUESTS as MODIFY_BODY } from "./current-schematic-relevance-modify-body-programs.ts";
 import {CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_REQUESTS} from "./current-schematic-relevance-modify-worker-protocol.ts";
 import {currentSchematicRelevanceModifyWorkerCases} from "./current-schematic-relevance-modify-worker-wire.ts";
 import { CURRENT_PROJECT_LIBRARY_REFRESH_REQUESTS, currentProjectLibraryRefreshCases } from "./current-project-library-refresh-protocol.ts";
@@ -27,7 +40,10 @@ import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_REPLAY_NO_PUBLICATION_PROGRAM } fro
 type Kind = "function" | "expression";
 const conditions = new Set<string>(), expressions = new Set<string>(), functions = new Set<string>([CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_REPLAY_NO_PUBLICATION_PROGRAM]);
 const cases: readonly (Readonly<{ method: string; params: object }> | Readonly<{ phase: "via-post-sync-replay" }>)[] = [
+  ...currentSchematicRelevanceModifyCmCases(), ...currentSchematicRelevanceModifyCmControlCases(), ...currentSchematicRelevanceModifyCmDeltaCases(),
   ...currentSchematicRelevanceModifyWorkerCases(),
+  ...currentSchematicRelevanceModifyStructureCases(), ...currentSchematicRelevanceModifyControlCases(),
+  ...currentSchematicRelevanceModifyEventCases(),
   ...currentSchematicDisplaySaveNativeCases(),
   ...currentProjectSaveStructureNativeCases(),
   ...currentProjectSaveProducerNativeCases(),
@@ -60,7 +76,8 @@ for (const command of cases) {
  * remain included through their own derived bounds. The fourth schematic local cache job adds one full shared head-job budget.
  * The independent fixed TEXT replay uses the same retained original Save node and its own source receipt. */
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_OBSERVED_WORKER_SOURCE_REQUESTS =
-  CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_REQUESTS.reads +
+  MODIFY_CM.reads + MODIFY_CM_DELTA.reads + MODIFY_CM_CONTROL.helpers + CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_REQUESTS.reads +
+  MODIFY_STRUCTURE.reads + MODIFY_CONTROL.cdpRequests + MODIFY_BODY.reads + MODIFY_BODY.reproofReads * 2 + MODIFY_EVENT.reads + MODIFY_EVENT.reproofReads * 2 +
   CURRENT_SCHEMATIC_DISPLAY_SAVE_REQUESTS.total +
   CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS.cdpRequests +
   CURRENT_PROJECT_SAVE_PRODUCER_REQUESTS.cdpRequests +

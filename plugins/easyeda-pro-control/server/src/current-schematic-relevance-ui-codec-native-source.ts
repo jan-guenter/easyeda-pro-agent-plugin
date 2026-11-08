@@ -18,12 +18,22 @@ export function currentSchematicRelevanceUiCodecNativeSource(input:Input):string
   // oxlint-disable-next-line node/no-sync -- Immutable fixed compile-time tables retain the original bounded pinned-Node gzip and both hashes.
   const packed=gzipSync(raw,{level:9});return `static readonly string[][] ${name}=EasyedaDiagnosticFixedTable.Load(${quote(packed.toString("base64"))},${String(raw.length)},${quote(hash(raw))},${quote(hash(packed))},${String(rows.length)},${String(columns)});`;
  };
+ /** Split only a previously oversized program pool. Every decoder call
+  * keeps the same byte/hash/shape ceiling; joining preserves exact row order
+  * and the existing common 384-program bound. Successful old pools keep bytes. */
+ const programTables=(name:string,rows:readonly(readonly string[])[]):string=>{
+  const bytes=Buffer.byteLength(rows.map(row=>row.join("\t")).join("\0"));if(bytes<=65_536){return table(name,rows,2);}
+  if(rows.length>384){throw new Error(input.tableError);}const groups:string[][][]=[];let current:string[][]=[],used=0;
+  for(const row of rows){const size=Buffer.byteLength(row.join("\t"));if(size>65_536){throw new Error(input.tableError);}if(used+size+(current.length===0?0:1)>65_536){groups.push(current);current=[];used=0;}current.push([...row]);used+=size+(current.length===1?0:1);}
+  if(current.length>0){groups.push(current);}let declarations="",joined="";
+  for(const[index,group]of groups.entries()){const part=`${name}Group${String(index)}`;declarations+=`${table(part,group,2)}\n`;joined=index===0?part:`EasyedaSchematicUiFixedCodec.JoinPrograms(${joined},${part})`;}
+  return `${declarations}static readonly string[][] ${name}=${joined};`;
+ };
  const rows=input.rows;const programs=input.programs.map((program,index)=>[String(input.programIndexes?.[index]??index),JSON.stringify(program)]);const hashes=input.messages.map(message=>hash(Buffer.from(message)));
  let programTable:string;
- if(input.sharedProgramClass===undefined){programTable=table("Programs",programs,2);if(input.exportPrograms===true){programTable=programTable.replace("static readonly","internal static readonly");}}
+ if(input.sharedProgramClass===undefined){programTable=programTables("Programs",programs);if(input.exportPrograms===true){programTable=programTable.replace("static readonly string[][] Programs=","internal static readonly string[][] Programs=");}}
  else if(programs.length===0){programTable=`static readonly string[][] Programs=${input.sharedProgramClass}.Programs;`;}
- else{programTable=`${table("OwnPrograms",programs,2)}\nstatic readonly string[][] Programs=JoinPrograms(${input.sharedProgramClass}.Programs,OwnPrograms);
-static string[][] JoinPrograms(string[][] shared,string[][] local){if(shared==null||local==null||shared.Length+local.Length>384)throw new System.InvalidOperationException("schematic-shared-program-bound");var result=new string[shared.Length+local.Length][];System.Array.Copy(shared,0,result,0,shared.Length);System.Array.Copy(local,0,result,shared.Length,local.Length);return result;}`;}
+ else{programTable=`${programTables("OwnPrograms",programs)}\nstatic readonly string[][] Programs=EasyedaSchematicUiFixedCodec.JoinPrograms(${input.sharedProgramClass}.Programs,OwnPrograms);`;}
  if(input.exportPrograms===true&&!programTable.includes("internal static readonly string[][] Programs=")){programTable=programTable.replace("static readonly string[][] Programs=","internal static readonly string[][] Programs=");}
   return `public static class ${input.className}{
 static void Need(bool value){if(!value)throw new System.InvalidOperationException("${input.errorCode}");}

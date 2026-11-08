@@ -10,7 +10,7 @@ import {CURRENT_SCHEMATIC_RELEVANCE_SDK_GATE_CALLS as SDK} from "./current-schem
 import {CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_BODY_PROGRAMS as P} from "./current-schematic-relevance-publication-body-programs.ts";
 
 export const CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_CONTROL_FLAGS=Object.freeze({objectGroup:"easyeda-pro-control-schematic-publication-control-v1",silent:true,generatePreview:false,throwOnSideEffect:true}as const);
-export const CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_CONTROL_CALLS=freezeDeep([...SDK.filter(row=>["hooks","reflection-reprove","native-defaultInstance","native-hooks","run","native","wait","context-same","pending-delta","timer-id"].some(role=>role===row[0])).map(row=>[`prior-${row[0]}`,row[1],row[2],row[3]]as const),["before",P.before,4,true],["post",P.post,5,true],["payload",P.payload,5,true],["post-same",P.postSame,2,true],["cache",P.cache,2,false],["cleared",P.cleared,7,true],["timer",P.timer,7,true]]as const);
+export const CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_CONTROL_CALLS=freezeDeep([...SDK.filter(row=>["hooks","reflection-reprove","native-defaultInstance","native-hooks","run","native","wait","context-same","pending-delta","timer-id"].some(role=>role===row[0])).map(row=>[`prior-${row[0]}`,row[1],row[2],row[3]]as const),["before",P.before,4,true],["post",P.post,5,true],["payload",P.payload,5,true],["post-same",P.postSame,2,true],["target",P.target,1,true],["cache",P.cache,2,false],["cleared",P.cleared,7,true],["timer",P.timer,7,true]]as const);
 export const CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_CONTROL_FRAMES=freezeDeep({post:"[this,j]",publisher:"[this]",timer:"[this,a,Promise]"}as const);
 export const CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_RETURN_ROLES=Object.freeze(["post","publisher","timer","loopback"]as const);
 export type CurrentSchematicRelevancePublicationReturnRole=typeof CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_RETURN_ROLES[number];
@@ -30,8 +30,8 @@ export function currentSchematicRelevancePublicationFunctionPoint(variant:0|1,ro
  const b=BUS[variant].roles,p=PUBLISHER[variant].roles;
  if(role==="post"){return b.post;}if(role==="loopback"){return b.onMessage;}return role==="publisher"?p.publishPendData:p.timerCallback;
 }
-const perStage=2*(NATIVE.reproofReads+16)+16;
-export const CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_CONTROL_REQUESTS=Object.freeze({stages:7,perStage,reads:7*perStage,helpers:7*perStage,armReads:10,resumes:6,controls:9,total:2*(7*perStage+10)+6+9});
+const perStage=2*(NATIVE.reproofReads+16)+30;
+export const CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_CONTROL_REQUESTS=Object.freeze({stages:7,perStage,postSendReproof:perStage,reads:8*perStage,helpers:8*perStage,armReads:10,resumes:6,controls:9,total:2*(8*perStage+10)+6+9});
 const handle=z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 const arg=z.strictObject({objectId:handle});
 const point=z.strictObject({scriptId:handle,lineNumber:z.number().int().nonnegative(),columnNumber:z.number().int().nonnegative()});

@@ -147,6 +147,11 @@ export class CurrentSchematicDisplayWorkerController {
   public requireProducerGuardsArmed(source: CurrentSchematicDisplayProjectSourceHeld): void { need(this.#source === source && this.#producerGuardPoints.size === 10 && this.#producerGuardHeld === null && !this.#failed); }
   public requireStructureTransportArmed(source: CurrentSchematicDisplayProjectSourceHeld): void { need(this.#source === source && this.#transportPoints.size === 3); }
   public requireStructureArmed(source: CurrentSchematicDisplayProjectSourceHeld): void { need(this.#source === source && this.#structurePoints.size === 14); }
+  /** Keep the original fourteen-point birth record immutable while an own7
+   * subclass retires only the two completed startup routing allocations. */
+  protected originalStartupStructurePoint(source: CurrentSchematicDisplayProjectSourceHeld, role: "startupEntry" | "startupReturn"): string {
+    this.requireHeld(source); const id = this.#structurePoints.get(role); need(id !== undefined && this.#result !== null); return id;
+  }
   #resolution(event: CurrentSchematicDisplayWorkerBootstrapEvent): boolean {
     if(event.method==="Debugger.breakpointResolved"&&record(event.params)){const params=event.params;const original=this.originalStartupPoints().find(value=>value.point.breakpointId===params["breakpointId"]);if(original!==undefined){const location=params["location"],point=original.point;need(event.sessionId===point.sessionId&&Reflect.ownKeys(params).length===2&&record(location)&&Reflect.ownKeys(location).length===3&&location["scriptId"]===point.scriptId&&location["lineNumber"]===point.lineNumber&&location["columnNumber"]===point.columnNumber);return true;}}
 
